@@ -283,10 +283,16 @@ export async function seaToFarHead(
     check(trip < 8, 'Q5 funds in bounded depot trips');
     const seen = new Set<number>();
     const waiting = l2().depot + l2().depotRails === 0;
-    await until(() => {
-      seen.add(l2().cart.phase);
-      return l2().depot > 0 || l2().depotRails > 0 || job().start >= 0;
-    }, 'Q5 depot brings a load');
+    // The cart runs on the server's real-time clock while the page's clock races ahead (about 10x in a --long run), and
+    // Q5's rack is 469 m down the cart road, so each Q5 trip needs a much longer page-time wait than the default.
+    await until(
+      () => {
+        seen.add(l2().cart.phase);
+        return l2().depot > 0 || l2().depotRails > 0 || job().start >= 0;
+      },
+      'Q5 depot brings a load',
+      2400000,
+    );
     if (job().start >= 0) break;
     if (waiting) check(seen.has(CART_PHASE.RUN) || seen.has(CART_PHASE.DROP), 'Q5 cart seen bringing the load');
     if (l2().depot > 0 && job().stock < 24) {
