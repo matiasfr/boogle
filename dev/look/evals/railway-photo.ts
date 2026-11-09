@@ -25,6 +25,7 @@ const frame = frames[beat];
 if (!frame) throw new Error(`Choose a played railway photo: ${Object.keys(frames).join(', ')}`);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const shot = window as Window & { __railStop?: string; __placeDone?: boolean; __railPhoto?: boolean };
+setTimeout(() => window.__debugCam!.clear(), 100);
 if (new URLSearchParams(location.search).has('railFrom')) {
   shot.__railPhoto = true;
   await import('/dev/look/evals/railway-b4-bot.ts' as string);

@@ -159,12 +159,28 @@ type B4Route = {
   bot: Bot;
   checkpoint: (name: string) => Promise<void>;
   walkQuarry?: (from: number, to: number) => Promise<void>;
+  quarryFrom?: number;
 };
 
 async function walkQuarryRail(bot: Bot, from: number, to: number) {
-  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  const { LINKS, ORIGIN, lineAt, railY } = await import('../../../src/proto/place/layout.ts');
+  const { besideLine } = await import('../../../src/proto/place/rail.ts');
   const direction = Math.sign(to - from);
   for (let s = from; direction * (to - s) >= 0; s += direction * 3) {
+    if (from === 286 && s >= 535) {
+      // On Far Head's broad ground, round the solid parked machine rather than walking into its rear.
+      for (const [along, side] of [
+        [535, 4.5],
+        [540, 4.5],
+        [546, 4.5],
+        [546, 0],
+      ] as const) {
+        const p = besideLine(LINKS[1]!.line, along, side);
+        hookCheck(bot, await bot.straight(p.x, p.z, 0.5, 12000), 'walked around the Far Head machine');
+        hookCheck(bot, await bot.until(() => me.coyote > 0 && !me.swimming, 5000), 'Far Head bypass stays supported');
+      }
+      return;
+    }
     const point = lineAt(LINKS[1]!.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
     hookCheck(
       bot,
@@ -176,12 +192,31 @@ async function walkQuarryRail(bot: Bot, from: number, to: number) {
       await bot.until(() => me.coyote > 0 && !me.swimming, 5000, 'quarry track supports the walker'),
       'quarry track supports the walker',
     );
+    if (from === 286 && direction > 0) {
+      for (const [seam, side] of [
+        [351, 0],
+        [351, 1],
+        [416, -1],
+        [481, -1],
+      ] as const) {
+        if (seam < s || seam >= s + 3) continue;
+        let lowest = Infinity;
+        for (let along = seam - 2; along <= seam + 2; along += 0.5) {
+          const p = besideLine(LINKS[1]!.line, along, side);
+          hookCheck(bot, await bot.straight(p.x, p.z, 0.15, 6000), `walked seam ${seam} side ${side}`);
+          await bot.wait(60);
+          lowest = Math.min(lowest, me.body!.position.y - PLAYER_R - railY(LINKS[1]!.line, along));
+          hookCheck(bot, !me.swimming && lowest > -0.25, `seam ${seam} side ${side} has no fall-through`);
+        }
+        bot.note(`trestle seam ${seam} side ${side}: no fall-through, lowest ${lowest.toFixed(3)} m`);
+      }
+    }
   }
 }
 
 /** Real inputs only, shared by the production route and the two accepted-state seeded half-runs. */
 export async function seaToFarHead(
-  { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
+  { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b), quarryFrom = 10 }: B4Route,
   from: 'sea' | 'q5' = 'sea',
 ) {
   const read = () => inspectRailway()!;
@@ -198,9 +233,9 @@ export async function seaToFarHead(
   check(l2().stations[3]?.completion === 1, 'B4 starts with Q4 laid');
   if (from === 'sea') {
     const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
-    const deck = lineAt(LINKS[1]!.line, 84, { x: 0, z: 0, ux: 0, uz: 1 });
+    const deck = lineAt(LINKS[1]!.line, quarryFrom, { x: 0, z: 0, ux: 0, uz: 1 });
     await walk(deck.x + ORIGIN.x, deck.z, 1);
-    await walkQuarry(84, 92);
+    await walkQuarry(quarryFrom, 92);
     const jumps = read().reward.tools.jumps;
     await climbNeedleBell(bot);
     const sea = view().sea!;
@@ -218,13 +253,14 @@ export async function seaToFarHead(
   const q5 = view().frames[4]!;
   check(q5, 'Q5 frame exists');
   const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
-  if (!(await bot.plan(q5.x, q5.z, 2.4)).arrives) {
-    // The finished Q4 track is the dry fallback across the gorge, just as for Q3/Q4 deliveries.
-    const start = lineAt(LINKS[1]!.line, 10, { x: 0, z: 0, ux: 0, uz: 1 });
+  {
+    // Always use the laid track: the general terrain planner can falsely connect the gorge banks.
+    const entry = from === 'sea' ? 84 : quarryFrom;
+    const start = lineAt(LINKS[1]!.line, entry, { x: 0, z: 0, ux: 0, uz: 1 });
     await walk(start.x + ORIGIN.x, start.z, 1);
     const home = [CART_PHASE.HOME, CART_PHASE.REST, CART_PHASE.LOAD] as number[];
     await until(() => home.includes(l2().cart.phase), 'the cart is off the quarry track');
-    await walkQuarry(10, 274);
+    await walkQuarry(entry, 274);
     const off = lineAt(LINKS[1]!.line, 274, { x: 0, z: 0, ux: 0, uz: 1 });
     const x = off.x + ORIGIN.x;
     const side = Math.sign(-off.uz * (q5.x - x) + off.ux * (q5.z - off.z)) || 1;
@@ -1145,19 +1181,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         require(seen.has(CART_PHASE.RUN) || seen.has(CART_PHASE.DROP), `${beat}: the cart was seen bringing it`);
       mark(`${beat} (the cart unloaded at the rack)`);
     };
-    const walkQuarry = async (from: number, to: number) => {
-      const direction = Math.sign(to - from);
-      for (let s = from; direction * (to - s) >= 0; s += direction * 3) {
-        const point = qAt(s);
-        require(await bot.straight(
-          point.x + layout.ORIGIN.x,
-          point.z,
-          0.5,
-          12000,
-        ), `walked quarry rail at ${s.toFixed(0)} m`);
-        await until(() => me.coyote > 0 && !me.swimming, 'quarry track supports the walker', 5000);
-      }
-    };
+    const walkQuarry = (from: number, to: number) => walkQuarryRail(bot, from, to);
     if (second) {
       // The friend stays in the room through line two; the leader plays it. Both peers report hashes per beat.
       await until(() => read().line2?.gateOpen, 'leader opens the quarry gate', 1800000);
@@ -1566,7 +1590,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await checkpoint('Q4 funded');
     await until(() => q4Job().completion === 1, 'Q4 laid once', LAYING_MS);
     await checkpoint('Q4 laid');
-    await seaToFarHead({ bot, checkpoint, walkQuarry });
+    await seaToFarHead({ bot, checkpoint, walkQuarry, quarryFrom: 172 });
     const totals = read().counts;
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
     require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');

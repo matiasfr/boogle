@@ -15,6 +15,8 @@ const bot = makeBot({
   },
 });
 const shot = window as Window & { __railStop?: string; __placeDone?: boolean; __railPhoto?: boolean };
+// look installs its default still camera after setup returns. Hook picking needs the player's follow camera.
+setTimeout(() => window.__debugCam!.clear(), 100);
 background(
   (async () => {
     if (!(await bot.until(() => inspectRailway()?.ready && me.body && me.coyote > 0, 300000, 'B4 seed arrived')))
