@@ -173,15 +173,12 @@ export function createRailwayBoiler(
         // It takes rail.boilerTake's empty back (no load, footing or beam) and, like the beam, empty hands.
         // Say so rather than offer nothing: the forge's rails rack stands 4.5 m off, so a back of rails is common here.
         const free = !s.carry && !s.railsCarry && !s.stoneCarry && !s.foot && s.beam?.holder !== s.pid && !heldId();
+        // `r`, the pedestal's radius: measured to its edge, so a log pile dropped against it doesn't win the prompt.
+        const target = { id: 'railway-boiler', verb: 'Shoulder the boiler', at, r: 1.3 };
         return [
           free
-            ? {
-                id: 'railway-boiler',
-                verb: 'Shoulder the boiler',
-                at,
-                run: () => void adapter.shoulderBoiler(b.revision),
-              }
-            : { id: 'railway-boiler', verb: 'Shoulder the boiler', at, blocked: 'Empty your back first' },
+            ? { ...target, run: () => void adapter.shoulderBoiler(b.revision) }
+            : { ...target, blocked: 'Empty your back first' },
         ];
       }
       if (
