@@ -125,7 +125,7 @@ export function railwayAtQ5(stage: RailSeedStage): World {
   if (stage !== 'q4-done') assert.equal(act(w, 'a', 'rail.seaSwitch'), 1);
   if (stage === 'q5-stocked' || stage === 'q5-finishing' || stage === 'q5-done') {
     let waited = 0;
-    while (!(w.s.line2!.depot === 24 && w.s.line2!.depotRails === 16 && w.s.line2!.cart.phase === CART_PHASE.DROP)) {
+    while (!(w.s.line2!.depot === 24 && w.s.line2!.depotRails === 24 && w.s.line2!.cart.phase === CART_PHASE.DROP)) {
       assert.ok(waited++ < 3 * cartCycleTicks(4), 'Q5 cart stock arrived');
       advance(w, 1);
     }
