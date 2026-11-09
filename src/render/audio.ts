@@ -3,6 +3,7 @@
 // Character/work/social feed SFX; they never bypass its parent trim.
 import { clamp } from '../math-pure.ts';
 import { audioSettings, onAudioSettingChange, type AudioSetting } from './audio-tuning.ts';
+import { startupWork } from '../boot/startup-frames.ts';
 
 const BUS_NAMES = ['music', 'ambience', 'sfx', 'ui', 'voice', 'character', 'work', 'social'] as const;
 export type Bus = (typeof BUS_NAMES)[number];
@@ -70,10 +71,14 @@ onAudioSettingChange((key: AudioSetting) => {
 });
 
 function unlock() {
+  const t = performance.now();
   try {
     if (!ctx) {
       const AC = window.AudioContext || w.webkitAudioContext;
       if (!AC) return;
+      // Named in the startup frames (and a long frame past them): the 9 November iPhone's 440 ms load hitches fell
+      // outside any frame's own work, around the first gesture.
+      queueMicrotask(() => startupWork('audio unlock', performance.now() - t));
       if (nav.audioSession) nav.audioSession.type = 'playback';
       ctx = new AC();
       const comp = ctx.createDynamicsCompressor();

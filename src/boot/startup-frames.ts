@@ -30,7 +30,7 @@ let longMarks = 0,
   visibilityEvents = 0,
   hiddenMs = 0,
   hiddenAt = -1;
-document.addEventListener('visibilitychange', () => {
+globalThis.document?.addEventListener('visibilitychange', () => {
   visibilityEvents++;
   const now = performance.now();
   if (document.hidden) {
