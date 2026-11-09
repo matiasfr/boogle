@@ -734,7 +734,7 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **F1a.** Port `props.ts`'s `FIND_SPOTS`, `trinket()`, `updateFinds` and the pinned board on the shelf. Use the
+- [x] **F1a.** Port `props.ts`'s `FIND_SPOTS`, `trinket()`, `updateFinds` and the pinned board on the shelf. Use the
   `finds` field and the mark `find found`.
 
 **Proofs.**
@@ -743,6 +743,25 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 - `npm run bench`: the finds are one instanced mesh if more than 6 draws are added.
 
 **Done means.** The gold finds work as in Place, personally.
+
+**As built (9 November).**
+- **Store:** `takeFind(id)`/`hasFind(id)`/`finds()` beside `takeCrystal`, written at once; event kind `find`.
+  `test/railway-finds.test.ts`. Ids are Place's (0–2, 10–12, 50–52: `PATH_SAMPLES` has two paths, so nine finds).
+- **View** (`src/entities/finds/view.ts`): `FIND_SPOTS` computed from `PATH_SAMPLES` as Place did. The trinket is one
+  geometry and one material: a `glow` vertex attribute (1 on the disc, 0 on the crossed stamp) picks the stamp's colour,
+  roughness, metalness and no emissive, so the finds are one instanced mesh in the world and one (`pins`) on the shelf.
+  Reach, clank and spark ring are Place's; mark `find found`.
+- **The board** is part of the curio shelf's frame (`curio-shelf.ts`, no draw of its own), where Place pinned it,
+  now on two posts (Place's hung in the air). The shelf's `findPeg(k, out)` is where pin k goes. No collider, as in
+  Place.
+- **The shelf's layout** (orchestrator default, `docs/agent-calls.md`): each gift is lifted by how far its shape reaches
+  below its origin, so it stands on its board, and the top board is 16 cm higher (`ROWS_Y[1]` 2.2 → 2.36) so the tall
+  sheeted outfits fit under it. The crystals' row is clear.
+- **Bench, `town` pose:** 233 → 236 calls (+2 main, +1 shadow: the world finds cast shadows, as Place's did).
+- **Eval:** `railway-finds.ts` takes `findgold=<id>`, and `findsact=board` frames the shelf and board.
+- **The bot:** K1's long-run trace passes 2.8 m from find 1 and 3.3 m from find 0 (one-second samples), so `f1-long`
+  ran: 109 game minutes (K1's 111), the same stalls (still 76 min, pushing 2 s), no `find found`. The bot takes none.
+- **Note for F2:** gold find 0 stands 2 m from crystal 1 (the arch): walking into one takes both.
 
 ### Job F2: secrets and the finders' bay
 
