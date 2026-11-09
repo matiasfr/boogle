@@ -422,6 +422,29 @@ The press immediately starts its sound, 70 ms reaching cable and arm pose; arriv
 
 The production railway shows eight rings from the start: p2, t0–t5 and the summit. Rings are brass before ownership, teal when owned or in range, and bright when picked or pulling. Six 0.9 m floating stone slabs have teal undersides; the 0.4 m wooden summit deck is at 102.4 m. Positions and ring placement read Place's `tech-layout.ts` directly. Thin 1.5 m collider tiles preserve the camera's view beneath the next slab. The existing p2 slab is reused. The t0 secret box, t3 side slab and all other Place rings stay out of production. The summit ring and its post retain Place's off-deck east-edge placement for the orchestrator's review.
 
+### Production Q5, the sea gate and Far Head (8 November 2026)
+
+Job A supplies Q5's Server state: the summit switch needs Q4 complete, opens the sea gate and permits Q5's
+24-log/24-rail bill. The cart stocks the rack even before the switch is pulled; its 16-rail capacity requires two
+trips. The bot now reuses the Needle Bell climb and descent after Q4, pulls `railway-sea-switch`, unloads logs
+before taking shelf rails, funds Q5, waits for laying and walks the 260 m trestle with dry support checks every
+3 m. Checkpoints are `sea gate`, `Q5 funded`, `Q5 laid` and `Far Head`; a friend witnesses Q5 completion.
+
+The Local gate slab, switch drum and posts read accepted `sea`; the switch lights the posts
+down to the gate. Far Head's lamps follow Q5 completion; rockets play only on the live completion edge, never
+on rebuild, reload or late join. C reads B's pinned `sea`, `seaGateSolid`, `farHead` and `trestleLamps` inspection
+fields. After B merged as `bfe5cf30`, both seeded halves passed without recovery: sea gate 38.8 s;
+Q5 funded 123.9 s, laid 153.9 s, Far Head 208.3 s. The bot follows the laid track across the gorge and rounds
+the solid parked machine on Far Head's broad ground. Physical seam walks at s=351 centre/right, 416 left and
+481 left remained supported, with minimum foot clearance 0.087 m above rail height; no collider repair was needed.
+
+The finishing fixture now leaves 45 s for mounting, and the look waits for the moving head before recording.
+Opened frames show final rail pairs completing (184→188), 10 rockets over Far Head and five over the village,
+and lamps sequencing to 54. The summit, rim and reverse Far Head stills show the switch/gate approach and a
+continuous trestle; daylight reduces the distant lamps' contrast. These are targeted seeded proofs, not a full
+campaign or real-time smoothness verdict. The long route and owner playtest remain with the orchestrator.
+`WORLD_NS` v20; not tested on a device.
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.

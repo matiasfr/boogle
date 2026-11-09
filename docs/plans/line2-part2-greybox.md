@@ -150,11 +150,36 @@ reset, no migration) and keeps the paused world and away credit whole.
   300 s wall limit stops it near Q2, about 20 game minutes in) finished: quarry gate 27:05, cart ride 29:57, Q4 laid
   32:53, no errors. Stills: the cart unloading at the Q4 rack; a real-time ride from the forge to Q4. `WORLD_NS` v19.
   Not tested on a device.
-- [ ] **B4. Q5 and the sea gate.** Add `Q5` (24/24, 28600 → 54600, speed 180) and `sea` with `rail.seaSwitch` at
+- [x] **B4. Q5 and the sea gate.** Add `Q5` (24/24, 28600 → 54600, speed 180) and `sea` with `rail.seaSwitch` at
   `SEA_SWITCH`, which requires Q4. Views: the sea slab and switch, the 260 m trestle, Far Head rockets and lamps
   (Local, on `onAccepted`). Proof: tests as in B2; bot checkpoints `sea gate`, `Q5 laid` and `Far Head`; a still from
   Far Head back down the trestle; `npm run perf` (trestle and lamps).
-  Hook prerequisite is implemented on the hook-shot branch: the production bot reaches checkpoint `needle bell summit`; B4's switch remains out of that branch's scope.
+  *Built 8 November (B4, job C; targeted verification after B merged as `bfe5cf30`).* The production bot continues after
+  `Q4 laid`: the shared Needle Bell climb, summit switch, `sea gate`, 24/24 Q5 depot deliveries, `Q5 funded`,
+  `Q5 laid`, supported trestle walk and `Far Head`. The original `needle bell summit` ring order, reload probe and
+  return route are retained. The friend's witness now waits through Q5. `WORLD_NS` v20 comes from job A.
+  Departures: depot shelf deliveries wait for the second rail shipment; no hand-carry from the forge. The bot uses
+  laid track across the gorge and walks around the solid parked machine on Far Head's existing ground. The look
+  eval releases the harness's fixed camera while playing the hook route. Earlier failures were a frozen aim camera,
+  a terrain-planner gorge fall at 24.4 s (recovery requested and refused; no relocation), and collision at s=541.
+  All were fixed in the bot/evals; no world geometry changed. The earlier missing-B evidence is superseded.
+  Final seeded halves, no recovery: `sea gate` **38.8 s**; Q5 `funded` **123.9 s**, `laid` **153.9 s**, `Far Head`
+  **208.3 s**. These are independent seeded observer times, not fresh-campaign pacing. The rim-photo replay separately
+  funded at 76.6 s and laid at 107.1 s. Walked s=351 centre/right, s=416 left and s=481 left, ±2 m at each:
+  minimum foot clearances 0.098 / 0.087 / 0.098 / 0.098 m above rail height; no fall-through or recovery.
+  The finishing seed now leaves 45 s instead of 6 s; the eval waits for the moving head at s=532 before recording.
+  Opened live sheets, before/after frames and three consecutive video frames: final rail pairs **184→188**, rocket
+  queue **0→15** (10 Far Head, 5 village), lamps **0→54**; visible trails/bursts at both ends and progressive lamps.
+  Opened all three played stills: summit switch and distant gate approach; rim-to-head continuous deck with rockets;
+  Far Head back toward the quarry, with the lamp rows. Daylight and distance limit individual lamp contrast.
+  `npm run check` passed (494 unit tests); broker `net` passed **111/111**. The resumed short opening check lacked
+  `at-cove`; fresh `playthrough --to t1-done` passed, 3:10 game time, no errors or water falls.
+  Evidence manifests under `.look/evidence/`: sea `1794185574403-76271`, Q5/walk/head `1794185535677-75749`,
+  rim `1794185589979-76446`, live head `1794185407747-73302`, live village `1794185471083-74271`,
+  net `1794185553172-76032`, short opening `1794186021129-81902` (each has `evidence.json`). Runtime was unchanged
+  during these proofs; this record was updated afterwards. Solo warped looks still hit the trusted harness's
+  `--clock-url` rejection, so the targeted looks used `--real`. The orchestrator still owns the long full-route
+  final pass and owner playtest guide; neither ran here. Real-time smoothness unverified. Not tested on a device.
 - [ ] **B5. Halts as views.** Add the platforms at the pinned halts, shown only once `trains` is set (Local, from
   state; the boxes stay straight, checked as in `dev/level/timber-track.ts`). No new kind. Proof: a still of the
   village halt before and after.

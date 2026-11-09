@@ -16,13 +16,20 @@ const frames: Record<string, Frame> = {
   'early lever does nothing': { camera: [1088, 31, 56], target: [1098, 26.5, 42] },
   'Q3 laid': { camera: [1085, 33, 64], target: [1098, 26, 43] },
   'quarry gate open': { camera: [1078, 34, 52], target: [1092, 25, 38] },
+  'sea gate': { camera: [983, 120, 25], target: [1090, 62, -18] },
+  'Q5 laid': { camera: [1150, 42, -10], target: [1260, 25, -88] },
+  'Far Head': { camera: [1385, 44, -188], target: [1220, 25, -58] },
 };
 const beat = new URLSearchParams(location.search).get('railStop') ?? '';
 const frame = frames[beat];
 if (!frame) throw new Error(`Choose a played railway photo: ${Object.keys(frames).join(', ')}`);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const shot = window as Window & { __railStop?: string; __placeDone?: boolean };
-background(play(), 'played railway photo');
+const shot = window as Window & { __railStop?: string; __placeDone?: boolean; __railPhoto?: boolean };
+setTimeout(() => window.__debugCam!.clear(), 100);
+if (new URLSearchParams(location.search).has('railFrom')) {
+  shot.__railPhoto = true;
+  await import('/dev/look/evals/railway-b4-bot.ts' as string);
+} else background(play(), 'played railway photo');
 background(
   (async () => {
     while (!shot.__railStop) await wait(100);

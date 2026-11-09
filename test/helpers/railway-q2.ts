@@ -134,7 +134,8 @@ export function railwayAtQ5(stage: RailSeedStage): World {
     logs(w, 'a', 'Q5', 24);
     rails(w, 'b', 'Q5', 24);
     const total = line2Schedule(4, w.s.line2!.jobs[4]!).totalTicks;
-    advance(w, stage === 'q5-finishing' ? total - 60 : total);
+    // Leave 45 s for broker acquisition and page mounting; the look waits near the live final pair before capture.
+    advance(w, stage === 'q5-finishing' ? total - 450 : total);
     clear(w);
   }
   assert.equal(railwayInvariant(w.s), null);
