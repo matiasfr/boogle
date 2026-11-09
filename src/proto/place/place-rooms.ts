@@ -25,7 +25,10 @@ scene.add(owner.root);
 export const roomEnv: { up: (id: RoomId) => boolean } = { up: (id) => id === 'house' };
 export const placeRooms = createRooms(owner, { up: (id) => roomEnv.up(id) });
 export const { rooms, indoors, onRoom, indoorCamera, stakeBoard } = placeRooms;
-export const updateRooms = placeRooms.update;
+export const updateRooms = (dt: number) => {
+  placeRooms.update(dt);
+  placeRooms.cull();
+};
 export const warmRooms = placeRooms.warm;
 export const snapRooms = placeRooms.snap;
 /** The owner, for ./town-life.ts's house. */

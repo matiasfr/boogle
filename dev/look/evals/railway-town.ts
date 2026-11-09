@@ -122,6 +122,8 @@ await wait(600);
 console.log(`TOWN ${JSON.stringify({ at, stand, ...inspectTown(), target: interactTarget()?.id ?? null })}`);
 
 async function runAct() {
+  // Deferred (towndefer=1), the capture's own camera has been placed since: frame the door again.
+  setCam();
   for (const one of (act ?? '').split(',').filter(Boolean)) await actOnce(one);
 }
 async function actOnce(act: string) {

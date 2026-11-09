@@ -537,13 +537,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
     const step = reducedMotion ? 1 : dt / ROOM_CAM.reveal;
     for (const r of LIST) {
       const on = r === room;
-      // From the camera, not from you: a far view of the village pays for none of it (place-retirement T2's draw budget).
-      const fromCam = Math.hypot(cx - r.x, cz - r.z);
-      const near = r.ready && (on || fromCam < ROOM_CAM.drawWithin);
-      if (r.near.visible !== near) r.near.visible = near;
       if (!r.ready) continue;
-      const dressed = fromCam < ROOM_CAM.dressWithin;
-      r.outside.visible = dressed;
       let any = false;
       const c = on ? worldToRoom(r, cx, cz) : null;
       r.t.roof = on ? Math.min(1, r.t.roof + step) : Math.max(0, r.t.roof - step);
@@ -569,6 +563,21 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
         writePiece(q.k, t, -(r.high + 0.4));
       }
       r.proxy.visible = any;
+    }
+  }
+  /** What's drawn near the camera that's about to render: interiors within `drawWithin` (or the one you're in), and
+   * what's outside and over the door within `dressWithin`, so a far view of the village pays for none of it
+   * (place-retirement T2's draw budget). Call after anything that moves the camera this frame, after `update`. */
+  function cull() {
+    const cx = camera.position.x,
+      cz = camera.position.z;
+    for (const r of LIST) {
+      const fromCam = Math.hypot(cx - r.x, cz - r.z);
+      const near = r.ready && (r === indoors.room || fromCam < ROOM_CAM.drawWithin);
+      if (r.near.visible !== near) r.near.visible = near;
+      if (!r.ready) continue;
+      const dressed = fromCam < ROOM_CAM.dressWithin;
+      r.outside.visible = dressed;
       r.over.visible = dressed && r.t.roof < 1;
     }
   }
@@ -577,6 +586,6 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
     const k = camConstraints.indexOf(indoorCamera);
     if (k >= 0) camConstraints.splice(k, 1);
   });
-  return { rooms, indoors, onRoom, indoorCamera, update, warm, snap, stakeBoard };
+  return { rooms, indoors, onRoom, indoorCamera, update, cull, warm, snap, stakeBoard };
 }
 export type Rooms = ReturnType<typeof createRooms>;
