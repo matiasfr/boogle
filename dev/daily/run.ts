@@ -1,10 +1,13 @@
 // Foreground launchd job. A crash deliberately leaves the lock for inspection: children may still be running.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { jobs, jobName, prompt, reviewPrompt, stateDir, scenarios, liveScenarios as LIVE } from './jobs.ts';
-import { compare, invalid, report, type Bench, type Entry } from './perf.ts';
+import { execFileSync, spawnSync, type SpawnSyncReturns } from 'node:child_process';
+import { acquireBotSlot } from '../look/bot-queue.ts';
+import { jobs, jobName, longArgs, prompt, reviewPrompt, stateDir, scenarios, liveScenarios as LIVE } from './jobs.ts';
+import { longReport } from './long.ts';
+import { PERF_POLICY, compare, invalid, report, type Bench, type Entry } from './perf.ts';
 
 const args = process.argv.slice(2);
 const job = jobName(args.shift());
@@ -25,9 +28,10 @@ if (
   (onlyIndex >= 0 && !only)
 )
   throw new Error(
-    'Usage: npm run daily -- atlas|patch-video|scenarios|perf [--dry-run] [--force] [--notes "..."] [--only scenario] [--local]',
+    'Usage: npm run daily -- atlas|patch-video|scenarios|perf|long [--dry-run] [--force] [--notes "..."] [--only scenario] [--local]',
   );
-if (args.includes('--local') && job !== 'perf') throw new Error('--local is for the perf job');
+if (args.includes('--local') && job !== 'perf' && job !== 'long')
+  throw new Error('--local is for the perf and long jobs');
 // A local check: this worktree and its installed dependencies, no GitHub (scenarios --only, perf --local).
 const local = only !== undefined || args.includes('--local');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -79,6 +83,78 @@ function codex(work: string, report: string, brief: string) {
   }
 }
 
+// GitHub calls run from the durable checkout with an explicit repository, never from the run's worktree: on 9 November
+// another session's worktree cleanup removed that worktree mid-run and the report then failed outside a git repository.
+let repo = '';
+const gh = (argv: string[]) => run('gh', [...argv, '--repo', repo]);
+
+/** Holds the machine bot slot (dev/look/bot-queue.ts) around `fn`, so no other harness browser shares the GPU and a
+ * child's timeout starts once the slot is ours. The child inherits it through BOOGLE_BOT_LEASE; one child per slot. */
+async function holding<T>(job: string, long: boolean, fn: (leased: NodeJS.ProcessEnv) => T | Promise<T>) {
+  const lease = await acquireBotSlot(job, () => {}, long);
+  try {
+    return await fn({ ...env, BOOGLE_BOT_LEASE: lease.file });
+  } finally {
+    lease.release();
+  }
+}
+
+/** Harness Chromium processes (Playwright's, not the owner's browser). With the slot held, any is an orphan or a launcher
+ * that skips the queue, and it would share the GPU. */
+function harnessBrowsers() {
+  const ps = spawnSync('ps', ['-Ao', 'command'], { encoding: 'utf8' }).stdout ?? '';
+  return ps.split('\n').filter((l) => l.includes('/ms-playwright/') && !l.includes(' --type=')).length;
+}
+
+/** Waits, bounded, for a quiet machine. Returns '' once quiet, or the reason it gave up. */
+async function waitForQuiet() {
+  const { maxLoad, waitMinutes } = PERF_POLICY.quiet;
+  const until = Date.now() + waitMinutes * 60_000;
+  for (;;) {
+    const load = os.loadavg()[0]!;
+    const browsers = harnessBrowsers();
+    if (load <= maxLoad && !browsers) return '';
+    if (Date.now() > until)
+      return `skipped: machine busy (load ${load.toFixed(1)}${browsers ? `; ${browsers} other harness browser${browsers > 1 ? 's' : ''}` : ''})`;
+    await new Promise((resolve) => setTimeout(resolve, 15_000));
+  }
+}
+
+/** The one open issue labelled `performance`, created on the first run. */
+function performanceIssue(dir: string) {
+  const issues = JSON.parse(
+    gh(['issue', 'list', '--label', 'performance', '--state', 'open', '--limit', '100', '--json', 'number']),
+  ) as { number: number }[];
+  if (issues.length > 1) throw new Error('Multiple open performance issues; resolve duplicates before reporting');
+  if (issues[0]) return String(issues[0].number);
+  gh(['label', 'create', 'performance', '--color', '1d76db', '--description', 'Daily benchmark', '--force']);
+  const intro = path.join(dir, 'issue.md');
+  fs.writeFileSync(
+    intro,
+    'The daily benchmark comments here every night (dev/daily/README.md, the perf job; dev/look/bench.ts). Each ' +
+      'comment compares origin/main with the median of the last valid runs and lists regressions, budgets and ' +
+      'the commit range. Keep it open: it is the history agents read.\n',
+  );
+  return gh(['issue', 'create', '--title', 'Performance', '--label', 'performance', '--body-file', intro]);
+}
+
+/** One issue per check (scenarios, long-run): created or commented on a failure, commented and closed on a pass. */
+function reportIssue(label: string, title: string, description: string, file: string, failed: boolean) {
+  const issues = JSON.parse(
+    gh(['issue', 'list', '--label', label, '--state', 'open', '--limit', '100', '--json', 'number']),
+  ) as { number: number }[];
+  if (issues.length > 1) throw new Error(`Multiple open ${label} issues; resolve duplicates before reporting`);
+  if (failed && !issues.length) {
+    gh(['label', 'create', label, '--color', 'd93f0b', '--description', description, '--force']);
+    gh(['issue', 'create', '--title', title, '--label', label, '--body-file', file]);
+  } else if (issues.length) {
+    gh(['issue', 'comment', String(issues[0]!.number), '--body-file', file]);
+    if (!failed) gh(['issue', 'close', String(issues[0]!.number)]);
+  }
+}
+
+const output = (execution: SpawnSyncReturns<string>) => (execution.stdout ?? '') + (execution.stderr ?? '');
+
 if (onlyIndex >= 0 && (job !== 'scenarios' || !scenarios.includes(only!))) throw new Error('Unknown nightly scenario');
 const selected = only ? [only] : scenarios;
 const perfHistory = path.join(stateDir, 'perf', 'history.jsonl');
@@ -95,11 +171,39 @@ if (dry && job === 'perf') {
           'acquire shared lock',
           ...(local
             ? ['use current worktree and installed dependencies; do not contact GitHub or write history']
-            : ['fetch origin/main and create fresh worktree', 'npm ci', 'install Playwright Chromium']),
-          'caffeinate -dimu node dev/look/bench.ts --out <run>/bench.json (visible Chromium on the Mac GPU)',
+            : ['fetch origin/main and create a fresh, locked worktree', 'npm ci', 'install Playwright Chromium']),
+          'take the machine bot slot and hold it until the benchmark ends',
+          `wait up to ${PERF_POLICY.quiet.waitMinutes} min for 1-minute load <= ${PERF_POLICY.quiet.maxLoad} and no other harness browser; else "skipped: machine busy (load N)"`,
+          'caffeinate -dimu node dev/look/bench.ts --out <run>/bench.json (visible Chromium on the Mac GPU, in the held slot)',
           'compare with the median of the last valid runs; flag regressions, budgets and the commit range',
           ...(local ? [] : ['append a valid run to history', 'comment on the Performance issue (created once)']),
           'keep bench.json, bench.log, comparison.json and notification.md; remove the worktree; release lock',
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+} else if (dry && job === 'long') {
+  console.log(
+    JSON.stringify(
+      {
+        job,
+        stateDir,
+        lock: path.join(stateDir, 'active'),
+        time: '07:40 local',
+        steps: [
+          'acquire shared lock',
+          ...(local
+            ? ['use current worktree and installed dependencies; do not contact GitHub']
+            : ['fetch origin/main and create a fresh, locked worktree', 'npm ci', 'install Playwright Chromium']),
+          'take the machine bot slot as a long job (shorter runs pass it for 20 min), then start the 60 min timeout',
+          `node dev/look/playthrough.ts ${longArgs.join(' ')} --out <run>/playthrough --name long`,
+          'read verdict.json and report.txt: checkpoints (RAIL_STOPS) with game times, total game-minutes',
+          ...(local
+            ? ['print the report']
+            : ['update the long-run issue: open or comment on failure, close on a pass']),
+          'keep playthrough/long, long.log and notification.md; remove the worktree; release lock',
         ],
       },
       null,
@@ -119,8 +223,9 @@ if (dry && job === 'perf') {
           'acquire shared lock',
           ...(local
             ? ['use current worktree and installed dependencies; do not contact GitHub']
-            : ['fetch origin/main and create fresh worktree', 'npm ci', 'install Playwright Chromium']),
-          'run scenarios sequentially on Mac GPU',
+            : ['fetch origin/main and create a fresh, locked worktree', 'npm ci', 'install Playwright Chromium']),
+          'run scenarios sequentially on Mac GPU, each in its own bot slot; its 15 min timeout starts once the slot is held',
+          'stop and report a runner failure if the worktree disappears mid-run',
           ...(local ? ['skip issue reporting'] : ['update scenarios issue once']),
           'preserve artifacts and release lock',
         ],
@@ -191,6 +296,15 @@ if (dry && job === 'perf') {
   let created = false;
   let succeeded = false;
   const result: Record<string, unknown> = { job, dir, branch, started: new Date().toISOString() };
+  /** Why the run's worktree is gone, or '' while it is intact. The runner locks it, so this means something forced it. */
+  const vanished = () => {
+    if (!created || fs.existsSync(path.join(work, '.git'))) return '';
+    const kept = spawnSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], { cwd: root }).status;
+    return (
+      `the run's worktree ${work} was removed mid-run (its .git file is gone` +
+      `${kept === 0 ? '' : ' and its branch deleted, as a worktree cleanup does'}) although the run had locked it`
+    );
+  };
   try {
     if (job === 'atlas' || job === 'patch-video') {
       const login = spawnSync('codex', ['login', 'status'], {
@@ -203,8 +317,12 @@ if (dry && job === 'perf') {
     }
     if (!local) {
       run('gh', ['auth', 'status']);
+      repo = run('gh', ['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner']);
       run('git', ['fetch', '--prune', '--tags', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
-      run('git', ['worktree', 'add', '-b', branch, work, 'origin/main']);
+      // Locked: on 9 November another session's cleanup of "merged, clean" worktrees removed this run's worktree (a
+      // daily branch sits at origin/main) halfway through the scenarios. Cleanups that honour locks now leave it.
+      const reason = `daily ${job} run, pid ${process.pid}; the runner removes it, a failed run keeps it for inspection`;
+      run('git', ['worktree', 'add', '--lock', '--reason', reason, '-b', branch, work, 'origin/main']);
       created = true;
     }
     const base = run('git', ['rev-parse', 'HEAD'], work);
@@ -215,83 +333,78 @@ if (dry && job === 'perf') {
         run('npx', ['playwright', 'install', 'chromium'], work);
       }
       const benchFile = path.join(dir, 'bench.json');
-      // A visible browser: keep the display awake for the run (a sleeping display stops animation frames).
-      const execution = spawnSync(
-        'caffeinate',
-        ['-dimu', process.execPath, 'dev/look/bench.ts', '--out', benchFile, '--commit', base],
-        { cwd: work, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 30 * 60 * 1000 },
-      );
-      fs.writeFileSync(path.join(dir, 'bench.log'), (execution.stdout ?? '') + (execution.stderr ?? ''));
-      if (execution.status !== 0 || !fs.existsSync(benchFile))
-        throw new Error(
-          `Benchmark failed (exit ${execution.status}${execution.error ? ': ' + execution.error.message : ''}); see bench.log`,
+      // The whole measurement holds the bot slot: no agent's browser shares the GPU while it waits or measures.
+      const measured = await holding(`daily perf ${id}`, false, async (leased) => {
+        const busy = await waitForQuiet();
+        if (busy) return { busy };
+        const before = os.loadavg()[0]!;
+        // A visible browser: keep the display awake for the run (a sleeping display stops animation frames).
+        const execution = spawnSync(
+          'caffeinate',
+          ['-dimu', process.execPath, 'dev/look/bench.ts', '--out', benchFile, '--commit', base],
+          { cwd: work, env: leased, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 30 * 60 * 1000 },
         );
-      const bench = JSON.parse(fs.readFileSync(benchFile, 'utf8')) as Bench;
-      const history: Entry[] = fs.existsSync(perfHistory)
-        ? fs
-            .readFileSync(perfHistory, 'utf8')
-            .split('\n')
-            .filter(Boolean)
-            .map((l) => JSON.parse(l) as Entry)
-        : [];
-      const problems = invalid(bench);
-      const comparison = compare(bench, history);
-      let range = '';
-      if (comparison.baselineFrom && comparison.baselineFrom !== base)
-        try {
-          const lines = run('git', ['log', '--oneline', '--first-parent', `${comparison.baselineFrom}..${base}`], work)
-            .split('\n')
-            .filter(Boolean);
-          range = lines.slice(0, 40).join('\n') + (lines.length > 40 ? `\n... and ${lines.length - 40} more` : '');
-        } catch {
-          range = `${comparison.baselineFrom}..${base} (log unavailable)`;
-        }
-      const body = report(bench, comparison, { base, range, dir, problems });
-      fs.writeFileSync(path.join(dir, 'comparison.json'), JSON.stringify({ problems, ...comparison }, null, 2) + '\n');
+        return { execution, load: [before, os.loadavg()[0]!] as [number, number] };
+      });
       const file = path.join(dir, 'notification.md');
-      fs.writeFileSync(file, body + '\n');
-      console.log(body);
-      result.regressions = comparison.regressions.map((c) => c.name);
-      result.overBudget = comparison.over;
-      result.problems = problems;
-      if (!local) {
+      if (!measured.execution) {
+        // Not "invalid": nothing was measured. The night says why, and the baseline is untouched.
+        result.status = 'skipped';
+        result.reason = measured.busy;
+        fs.writeFileSync(
+          file,
+          `Daily benchmark of ${base.slice(0, 8)}: ${measured.busy}. Waited ${PERF_POLICY.quiet.waitMinutes} min with ` +
+            `the bot slot held for a 1-minute load of at most ${PERF_POLICY.quiet.maxLoad} and no other harness ` +
+            `browser; nothing was measured.\n\nMac run: ${dir}\n`,
+        );
+        console.log(measured.busy);
+      } else {
+        const { execution, load } = measured;
+        result.load = load;
+        fs.writeFileSync(path.join(dir, 'bench.log'), output(execution));
+        if (execution.status !== 0 || !fs.existsSync(benchFile))
+          throw new Error(
+            `Benchmark failed (exit ${execution.status}${execution.error ? ': ' + execution.error.message : ''}); see bench.log`,
+          );
+        const bench = JSON.parse(fs.readFileSync(benchFile, 'utf8')) as Bench;
+        const history: Entry[] = fs.existsSync(perfHistory)
+          ? fs
+              .readFileSync(perfHistory, 'utf8')
+              .split('\n')
+              .filter(Boolean)
+              .map((l) => JSON.parse(l) as Entry)
+          : [];
+        const problems = invalid(bench);
+        const comparison = compare(bench, history);
+        let range = '';
+        if (comparison.baselineFrom && comparison.baselineFrom !== base)
+          try {
+            const lines = run('git', ['log', '--oneline', '--first-parent', `${comparison.baselineFrom}..${base}`])
+              .split('\n')
+              .filter(Boolean);
+            range = lines.slice(0, 40).join('\n') + (lines.length > 40 ? `\n... and ${lines.length - 40} more` : '');
+          } catch {
+            range = `${comparison.baselineFrom}..${base} (log unavailable)`;
+          }
+        const body = report(bench, comparison, { base, range, dir, problems, load });
+        fs.writeFileSync(
+          path.join(dir, 'comparison.json'),
+          JSON.stringify({ problems, ...comparison }, null, 2) + '\n',
+        );
+        fs.writeFileSync(file, body + '\n');
+        console.log(body);
+        result.regressions = comparison.regressions.map((c) => c.name);
+        result.overBudget = comparison.over;
+        result.problems = problems;
         // An invalid run (a hidden page, missing GPU times) is reported but never becomes a baseline.
-        if (!problems.length) {
+        if (!local && !problems.length) {
           fs.mkdirSync(path.dirname(perfHistory), { recursive: true });
           const entry: Entry = { date: new Date().toISOString(), base, dir, metrics: comparison.metrics };
           fs.appendFileSync(perfHistory, JSON.stringify(entry) + '\n');
         }
-        const issues = JSON.parse(
-          run(
-            'gh',
-            ['issue', 'list', '--label', 'performance', '--state', 'open', '--limit', '100', '--json', 'number'],
-            work,
-          ),
-        ) as { number: number }[];
-        if (issues.length > 1) throw new Error('Multiple open performance issues; resolve duplicates before reporting');
-        let issue = String(issues[0]?.number ?? '');
-        if (!issue) {
-          run(
-            'gh',
-            ['label', 'create', 'performance', '--color', '1d76db', '--description', 'Daily benchmark', '--force'],
-            work,
-          );
-          const intro = path.join(dir, 'issue.md');
-          fs.writeFileSync(
-            intro,
-            'The daily benchmark comments here every night (dev/daily/README.md, the perf job; dev/look/bench.ts). Each ' +
-              'comment compares origin/main with the median of the last valid runs and lists regressions, budgets and ' +
-              'the commit range. Keep it open: it is the history agents read.\n',
-          );
-          issue = run(
-            'gh',
-            ['issue', 'create', '--title', 'Performance', '--label', 'performance', '--body-file', intro],
-            work,
-          );
-        }
-        run('gh', ['issue', 'comment', issue, '--body-file', file], work);
+        result.status = problems.length ? 'invalid' : comparison.regressions.length ? 'regressed' : 'passed';
       }
-      result.status = problems.length ? 'invalid' : comparison.regressions.length ? 'regressed' : 'passed';
+      if (!local) gh(['issue', 'comment', performanceIssue(dir), '--body-file', file]);
       succeeded = true;
     } else if (job === 'scenarios') {
       if (!local) {
@@ -300,42 +413,43 @@ if (dry && job === 'perf') {
       }
       const failures: string[] = [];
       for (const name of selected) {
-        const execution = spawnSync(
-          process.execPath,
-          [
-            'dev/scenarios/run.ts',
-            name,
-            ...(LIVE[name] ? ['--url', LIVE[name]] : []),
-            '--out',
-            path.join(dir, 'artifacts', 'scenarios'),
-          ],
-          {
-            cwd: work,
-            env,
-            encoding: 'utf8',
-            maxBuffer: 64 * 1024 * 1024,
-            timeout: 15 * 60 * 1000,
-          },
-        );
-        const output = (execution.stdout ?? '') + (execution.stderr ?? '');
-        fs.writeFileSync(path.join(dir, `${name}.log`), output);
+        const gone = vanished();
+        if (gone) {
+          // Not a scenario result: stop, and say so in the report (which runs from the durable checkout).
+          result.runnerError = gone;
+          failures.push(`- runner: ${gone}; stopped before ${name}, so the remaining scenarios did not run`);
+          break;
+        }
+        // Each scenario takes the bot slot first, so its 15 minutes measure the scenario, not the queue: on 9 November
+        // reconnect-edit and shared-kinds spent their whole timeout queued behind an agent's long playthrough.
+        const started = Date.now();
+        const { execution, waited } = await holding(`daily scenario ${name}`, false, (leased) => {
+          const waited = Date.now() - started;
+          const execution = spawnSync(
+            process.execPath,
+            [
+              'dev/scenarios/run.ts',
+              name,
+              ...(LIVE[name] ? ['--url', LIVE[name]] : []),
+              '--out',
+              path.join(dir, 'artifacts', 'scenarios'),
+            ],
+            { cwd: work, env: leased, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 15 * 60 * 1000 },
+          );
+          return { execution, waited };
+        });
+        const log = output(execution);
+        const header = `daily: bot slot after ${Math.round(waited / 1000)} s queued; 1-minute load ${os.loadavg()[0]!.toFixed(1)} at the end\n`;
+        fs.writeFileSync(path.join(dir, `${name}.log`), header + log);
         if (execution.status !== 0) {
-          const lines = output.split('\n').filter((line) => /\bFAIL\b/i.test(line));
+          const lines = log.split('\n').filter((line) => /\bFAIL\b/i.test(line));
           failures.push(
-            `- ${name}: ${(execution.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT' ? 'FAIL: timed out after 15 minutes' : lines.length ? lines.join('\n  ') : `exit ${execution.status}: ${execution.error?.message ?? 'no FAIL line'}`}`,
+            `- ${name}: ${(execution.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT' ? 'FAIL: timed out after 15 minutes (after taking the bot slot)' : lines.length ? lines.join('\n  ') : `exit ${execution.status}: ${execution.error?.message ?? 'no FAIL line'}`}`,
           );
         }
       }
       result.failures = failures;
       if (!local) {
-        const issues = JSON.parse(
-          run(
-            'gh',
-            ['issue', 'list', '--label', 'scenarios', '--state', 'open', '--limit', '100', '--json', 'number'],
-            work,
-          ),
-        ) as { number: number }[];
-        if (issues.length > 1) throw new Error('Multiple open scenarios issues; resolve duplicates before reporting');
         const body = path.join(dir, 'notification.md');
         fs.writeFileSync(
           body,
@@ -343,45 +457,52 @@ if (dry && job === 'perf') {
             ? `Nightly scenarios failed on ${base}:\n\n${failures.join('\n')}\n\nMac run: ${dir}\n`
             : `Nightly scenarios passed on ${base}.\n\nMac run: ${dir}\n`,
         );
-        if (failures.length && !issues.length) {
-          run(
-            'gh',
-            [
-              'label',
-              'create',
-              'scenarios',
-              '--color',
-              'd93f0b',
-              '--description',
-              'Nightly browser scenarios',
-              '--force',
-            ],
-            work,
-          );
-          run(
-            'gh',
-            [
-              'issue',
-              'create',
-              '--title',
-              'Nightly browser scenarios are failing',
-              '--label',
-              'scenarios',
-              '--body-file',
-              body,
-            ],
-            work,
-          );
-        } else if (issues.length) {
-          run('gh', ['issue', 'comment', String(issues[0]!.number), '--body-file', body], work);
-          if (!failures.length) run('gh', ['issue', 'close', String(issues[0]!.number)], work);
-        }
+        reportIssue(
+          'scenarios',
+          'Nightly browser scenarios are failing',
+          'Nightly browser scenarios',
+          body,
+          failures.length > 0,
+        );
       }
       result.status = failures.length ? 'failed' : 'passed';
       succeeded = true;
+    } else if (job === 'long') {
+      if (!local) {
+        run('npm', ['ci'], work);
+        run('npx', ['playwright', 'install', 'chromium'], work);
+      }
+      const out = path.join(dir, 'playthrough');
+      // A long ticket: shorter runs pass it while it waits (dev/look/bot-queue.ts); its hour starts once it has the slot.
+      const execution = await holding(`daily long ${id}`, true, (leased) =>
+        spawnSync(process.execPath, ['dev/look/playthrough.ts', ...longArgs, '--out', out, '--name', 'long'], {
+          cwd: work,
+          env: leased,
+          encoding: 'utf8',
+          maxBuffer: 64 * 1024 * 1024,
+          timeout: 60 * 60 * 1000,
+        }),
+      );
+      fs.writeFileSync(path.join(dir, 'long.log'), output(execution));
+      const gone = vanished();
+      if (gone) throw new Error(gone);
+      const read = longReport(path.join(out, 'long'), { base, dir });
+      const timedOut = (execution.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT';
+      const passed = read.passed && execution.status === 0;
+      const body = path.join(dir, 'notification.md');
+      fs.writeFileSync(
+        body,
+        (timedOut ? 'The runner stopped the playthrough after 60 minutes with the bot slot held.\n\n' : '') + read.body,
+      );
+      console.log(read.body);
+      Object.assign(result, { verdict: read.verdict, gameMinutes: read.gameMinutes, checkpoints: read.checkpoints });
+      if (!local)
+        reportIssue('long-run', 'Nightly long playthrough is failing', 'Nightly long playthrough', body, !passed);
+      result.status = passed ? 'passed' : 'failed';
+      succeeded = true;
     } else {
       const prs = JSON.parse(
-        run('gh', ['pr', 'list', '--state', 'open', '--limit', '1000', '--json', 'number,title,headRefName'], work),
+        gh(['pr', 'list', '--state', 'open', '--limit', '1000', '--json', 'number,title,headRefName']),
       ) as { number: number; title: string; headRefName: string }[];
       const pending = prs.find(
         (p) => p.title.startsWith(`Daily ${job}:`) || p.headRefName.startsWith(`claude/${job}-`),
@@ -477,32 +598,24 @@ if (dry && job === 'perf') {
           const url = /^url=(.+)$/m.exec(fs.readFileSync(output, 'utf8'))?.[1];
           if (!url || !url.startsWith('https://')) throw new Error('Publisher did not return a share URL');
           result.url = url;
-          const owner = run('gh', ['repo', 'view', '--json', 'owner', '-q', '.owner.login'], work);
+          const owner = repo.split('/')[0];
           const issues = JSON.parse(
-            run(
-              'gh',
-              ['issue', 'list', '--state', 'open', '--search', 'Patch videos in:title', '--json', 'number,title'],
-              work,
-            ),
+            gh(['issue', 'list', '--state', 'open', '--search', 'Patch videos in:title', '--json', 'number,title']),
           ) as { number: number; title: string }[];
           let issue = String(issues.find((i) => i.title === 'Patch videos')?.number ?? '');
           if (!issue)
-            issue = run(
-              'gh',
-              [
-                'issue',
-                'create',
-                '--title',
-                'Patch videos',
-                '--body',
-                'Every published patch video is posted here by the owner Mac daily Codex job (dev/daily/README.md).',
-              ],
-              work,
-            );
+            issue = gh([
+              'issue',
+              'create',
+              '--title',
+              'Patch videos',
+              '--body',
+              'Every published patch video is posted here by the owner Mac daily Codex job (dev/daily/README.md).',
+            ]);
           const request = JSON.parse(fs.readFileSync(publish, 'utf8'));
           const body = path.join(dir, 'notification.md');
           fs.writeFileSync(body, `@${owner} new patch video, **${request.title}**: ${url}\n\nMac run: ${id}`);
-          run('gh', ['issue', 'comment', issue, '--body-file', body], work);
+          gh(['issue', 'comment', issue, '--body-file', body]);
         }
         result.status = result.shipped || result.url ? 'delivered' : 'no changes';
       }
@@ -520,10 +633,12 @@ if (dry && job === 'perf') {
       `# Daily ${job}\n\nStatus: ${result.status}\n\n[Evidence](evidence.json) · [Agent report](report.md)\n\n${result.error ?? result.reason ?? ''}\n`,
     );
     try {
-      if (created && succeeded) {
+      // A worktree something else removed is left as it is; its error is in the evidence.
+      if (created && succeeded && !vanished()) {
         const artifacts = path.join(work, '.look');
         if (job !== 'scenarios' && fs.existsSync(artifacts)) fs.renameSync(artifacts, path.join(dir, 'artifacts'));
-        run('git', ['worktree', 'remove', '--force', work]);
+        // Twice --force: the worktree is locked for the run, and may hold untracked output.
+        run('git', ['worktree', 'remove', '--force', '--force', work]);
         run('git', ['branch', '-D', branch]);
       }
     } finally {
