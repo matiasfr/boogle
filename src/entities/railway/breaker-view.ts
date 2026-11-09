@@ -15,10 +15,35 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { WORKS_BREAKER, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
+import { reducedMotion } from '../../constants.ts';
 import { createForgeCall } from './forge-call.ts';
+import { STALL_SLAB, THROAT_SLAB } from './works-shape.ts';
 
 /** Seconds: the wind-up ends, the head meets the seam, the swing is put away. */
 export const SWING = { raise: 0.42, contact: 0.58, end: 0.85 } as const;
+const GOLD = new THREE.Color('#ffdc7a');
+/** The pedestal's gold mote, rising and fading: the breaker's "this is for that" wherever it points (the seams it
+ * hasn't struck, the bowl's rocks while the kiln wants stone). Larger where it must read from further off. */
+export function goldMote(x: number, y: number, z: number, side: number, size = 0.09) {
+  emit({
+    x,
+    y,
+    z,
+    vx: side * 0.025,
+    vy: 0.35,
+    vz: 0,
+    life: 1.6,
+    size,
+    color: GOLD,
+    intensity: readableIntensity() * 1.4,
+    alpha: 0.75,
+    grow: [0.6, 1],
+    shrink: 0.5,
+    fade: 0.7,
+  });
+}
+/** Seconds between motes on each unstruck seam while the breaker is out: a few a second (pool budget). */
+const SEAM_MOTE_S = 0.3;
 const RAISED = -2.5,
   DOWN = 1.35;
 
@@ -47,10 +72,36 @@ export function createRailwayBreaker(
   geometry.dispose();
   owner.cleanup(() => mat.dispose());
   const call = createForgeCall({ x: bx, y: by, z: bz }, owner);
-  const gold = new THREE.Color('#ffdc7a');
   let mote = 0,
     side = 1,
-    shown = false;
+    shown = false,
+    seamMote = 0,
+    glint = 0,
+    onBack = false;
+  // Each seam's slab, from the shape both seams' views draw: motes rise off either broad face, never inside the stone.
+  const slabs = [STALL_SLAB, THROAT_SLAB[1]!] as const;
+  function seamMotes(dt: number, seams: number) {
+    seamMote -= dt;
+    if (seamMote > 0) return;
+    seamMote = SEAM_MOTE_S;
+    for (const seam of WORKS_SEAMS) {
+      if (seams & (seam.id === 0 ? SEAM_STALL : SEAM_THROAT)) continue;
+      const b = slabs[seam.id]!,
+        face = Math.random() < 0.5 ? -1 : 1,
+        u = (Math.random() - 0.5) * b.w * 0.6;
+      // The slab's yaw turns its local x (width) and z (depth) into the world.
+      const cx = Math.cos(b.yaw),
+        sx = Math.sin(b.yaw);
+      const off = face * (b.d / 2 + 0.12);
+      goldMote(
+        b.x + cx * u + sx * off,
+        b.y - b.h * 0.35 + Math.random() * b.h * 0.7,
+        b.z - sx * u + cx * off,
+        face,
+        seam.id === 0 ? 0.12 : 0.2,
+      );
+    }
+  }
   // The swing: t seconds since the press (-1 idle), the seam aimed at, and where the contact lands.
   const swing = { t: -1, id: -1, contactAt: 0, struck: false };
   const pivot = new THREE.Vector3(),
@@ -141,7 +192,7 @@ export function createRailwayBreaker(
       breaker.position.copy(contact);
       breaker.quaternion.copy(q).multiply(q2.setFromAxisAngle(axis.set(0, 0, 1), 0.5));
       breaker.scale.setScalar(0.8);
-      breaker.visible = true;
+      breaker.visible = onBack = true;
       return;
     }
     breaker.visible = false;
@@ -161,27 +212,38 @@ export function createRailwayBreaker(
     update(dt: number) {
       const w = adapter.inspect().works;
       call.update(dt, w.breaker === 1);
+      onBack = false;
       pose(dt);
       shown = w.breaker === 1;
       mote -= dt;
       if (shown && mote <= 0) {
         mote = 0.35;
         side *= -1;
+        goldMote(bx + side * 0.42, by + 1.4, bz + side * 0.5, side);
+      }
+      if (reducedMotion || w.breaker !== 2) return;
+      seamMotes(dt, w.seams);
+      // A glint off the head's brass bands on the carrier's back while a seam is left.
+      glint -= dt;
+      if (onBack && glint <= 0) {
+        glint = 0.9 + Math.random() * 0.5;
+        contact.set(0, 1.36, 0);
+        breaker.localToWorld(contact);
         emit({
-          x: bx + side * 0.42,
-          y: by + 1.4,
-          z: bz + side * 0.5,
-          vx: side * 0.025,
-          vy: 0.35,
+          x: contact.x,
+          y: contact.y,
+          z: contact.z,
+          vx: 0,
+          vy: 0.05,
           vz: 0,
-          life: 1.6,
-          size: 0.09,
-          color: gold,
-          intensity: readableIntensity() * 1.4,
-          alpha: 0.75,
-          grow: [0.6, 1],
-          shrink: 0.5,
-          fade: 0.7,
+          life: 0.45,
+          size: 0.16,
+          color: GOLD,
+          intensity: readableIntensity() * 2,
+          alpha: 0.9,
+          shrink: 0.6,
+          fade: 0.5,
+          shape: 'glint',
         });
       }
     },
