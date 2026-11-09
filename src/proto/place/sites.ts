@@ -74,10 +74,14 @@ export type Site = {
   struck: number;
   onDone: (() => void) | null;
   id: string;
+  foot: Foot;
 };
 const boxes: Box[] = [];
 export const sites: Site[] = [];
 let set: DropSet | null = null;
+let owned: OwnedView | undefined;
+/** Sites before this one were there at the last buildSites. */
+let built = 0;
 export function addSite(id: string, plan: Plan, pace = 1): Site {
   const k0 = boxes.length;
   boxes.push(...plan.scaffold);
@@ -109,8 +113,9 @@ export function addSite(id: string, plan: Plan, pace = 1): Site {
     struck: 0,
     onDone: null,
     id,
+    foot: { x: plan.x, z: plan.z, c: Math.cos(plan.yaw), s: Math.sin(plan.yaw), hw: plan.hw, hd: plan.hd },
   };
-  addFoot(plan.x, plan.z, plan.yaw, plan.hw, plan.hd);
+  feet.push(site.foot);
   sites.push(site);
   return site;
 }
@@ -136,13 +141,14 @@ export function hullBodies(plan: Plan, hulls: Hull[], owner?: OwnedView) {
     ),
   );
 }
+const unbody = (b: Body) => (owned ? owned.removeBody(b) : removeBody(b));
 const polesOff = (site: Site) => {
-  for (const b of site.poleBodies) removeBody(b);
+  for (const b of site.poleBodies) unbody(b);
   site.poleBodies.length = 0;
 };
 function solid(site: Site, on: boolean) {
   if (!on) {
-    for (const b of site.bodies) removeBody(b);
+    for (const b of site.bodies) unbody(b);
     site.bodies.length = 0;
     return;
   }
@@ -150,8 +156,8 @@ function solid(site: Site, on: boolean) {
   const { x, y, z, yaw, hulls } = site.plan;
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
-  site.bodies.push(...hullBodies(site.plan, hulls));
-  if (site.state === 'building') site.poleBodies.push(...hullBodies(site.plan, site.plan.poles));
+  site.bodies.push(...hullBodies(site.plan, hulls, owned));
+  if (site.state === 'building') site.poleBodies.push(...hullBodies(site.plan, site.plan.poles, owned));
   // Standing in the plot when the walls go up: you're moved to the nearest edge.
   const me_ = me.body;
   if (!me_) return;
@@ -163,10 +169,32 @@ function solid(site: Site, on: boolean) {
     me_.velocity.set(0, 0, 0);
   }
 }
-/** Call once, after every addSite. */
-export function buildSites() {
-  set = dropSet(boxes, onLand);
+/** Call once, after every addSite. With an owner, its mesh and bodies are the owner's, and disposing it (or calling the
+ * returned disposer) forgets every site added since the last call. */
+export function buildSites(owner?: OwnedView) {
+  set = dropSet(boxes, onLand, owner);
   paintSite(set.mesh, boxes);
+  owned = owner;
+  const from = built;
+  built = sites.length;
+  let done = false;
+  const dispose = () => {
+    if (done) return;
+    done = true;
+    const gone = sites.splice(from);
+    for (const site of gone) {
+      polesOff(site);
+      solid(site, false);
+      const k = feet.indexOf(site.foot);
+      if (k >= 0) feet.splice(k, 1);
+    }
+    if (gone.length) boxes.length = gone[0]!.k0;
+    built = from;
+    set = null;
+    owned = undefined;
+  };
+  owner?.cleanup(dispose);
+  return dispose;
 }
 /** The pieces fall in order, starting after `delay` s. */
 export function startSite(site: Site, delay = 0, onDone?: () => void) {

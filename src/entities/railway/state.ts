@@ -1,6 +1,15 @@
 // Read-only observation of the mounted railway. Debug setup lives outside the production entry.
 import type { RailwayInspection } from '../../adapters/railway.ts';
 
+let read: (() => RailwayInspection) | null = null;
+/** The adapter's cached read (the same object until something changes): cheap enough for every frame, unlike
+ * inspectRailway, which walks the railway's scene. Null until the railway is mounted. */
+export const railwayRead = () => read?.() ?? null;
+/** Lifecycle owner only. */
+export function setRailwayRead(fn: (() => RailwayInspection) | null) {
+  read = fn;
+}
+
 export type RailwayViewInspection = RailwayInspection & {
   owned: { meshes: number; bodies: number; geometries: number; animations: number };
   head: number;

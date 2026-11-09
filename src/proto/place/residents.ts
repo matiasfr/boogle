@@ -24,7 +24,7 @@ import { showing } from './gifts.ts';
 import { newestFact } from './growth.ts';
 import { job, personalSlice, save } from './job.ts';
 import { VILLAGE, toWorld, type RoomId } from './layout.ts';
-import { indoors, onRoom, roomToWorld, rooms, type Room } from './rooms.ts';
+import { indoors, onRoom, roomToWorld, rooms, type Room } from './place-rooms.ts';
 import { endTalk, startTalk, type Answer, type Beat } from './talk.ts';
 import { SHORE_COAST, SHORE_WORKER, SHORE_WORKER_LOOK } from './shore-layout.ts';
 import {
