@@ -177,3 +177,59 @@ All `npm run look -- --rail-seed <seed> --eval dev/look/evals/railway-works-at.t
 - Suspect copy already on the owner's list, unchanged here: "Take the breaker", "Strike the seam", "Fill the kiln",
   "Shoulder a footing", "Set the footing", "Fit the cradle", "Turn the table", "Help carry", "Let go", "Empty your back
   first".
+
+## Designer recommendation: from the quarry halt to the kiln (2026-11-09)
+
+Owner question (9 November, "Designer proposes"): from the quarry halt you can't see the kiln's gold. Who stands
+there with the throat open: the striker walking back for a train to fetch logs, the same player arriving back with
+logs, a friend, and anyone starting a later session. Only the striker gets the throat shot.
+
+**What the halt actually shows** (stills taken for this answer, `works-open` seed, `.look/`): from the platform at eye
+height (`dsg-halt-kiln`, cam 1082, 26.6, 42 toward `WORKS_KILN`) the quarry camp's blue stone blocks hide the throat;
+the kiln's frame peeks through as a few dark pixels, the gold not at all. The brightest path in view is the sand track
+running east, the long way round the rock. The cold roller road's grey sleepers run from the rack (1088, 50) toward the
+cut but read as track, not a way to walk. From the roller road's first bend, **21 m and about 4 s on foot**
+(`dsg-road-kiln`, cam 1096, 26.4, 62), the cut frames the kiln, its chimney, both bays and their gold ghosts clearly.
+In the third-person framing (`sig-halt-open`) the halt's train board (`halts-view.ts`, 5.2 m over the halt's centre)
+sits exactly in the throat's gap whenever you stand on the platform, because standing there calls a train. Not seen:
+a phone camera, and the view from a train arriving.
+
+So the halt doesn't need to show the kiln; it needs to send you 21 m up the roller road, where the kiln shows itself.
+
+### Candidates, ranked
+
+1. **Recommended: a trodden path up the roller road.** While the throat is struck (`works.seams`, permanent once
+   struck), draw a worn-earth strip about 1.6 m wide beside `ROLLER_ROAD`, from the platform end nearest the rack to
+   the throat floor (rack → (1096, 50) → (1096, 72) → (1104, 78) → `WORKS_SEAMS[1]`), the same sand as the track east
+   but a shade paler, as if the fallen slabs' dust and the quarry folk's feet had worn it. From the halt you see two
+   paths: the old one east and a new one alongside the rollers into the opened cut; four seconds up it the kiln and its
+   gold are framed in the cut. View-only (Local, derived from accepted state; snaps on reload, same for a late joiner),
+   no collider, so no travel or work edge and the bot's route are unchanged. Serves DESIGN.md 11 and 7, and
+   progression-flow rule 1 (the next goal can be found) by layout, not a marker. Also tells the footing's story ahead
+   of time: what rolls down this road ends at the rack beside you.
+2. **Move the train board off the halt's centre, at every halt**: hang it above the signal arm at the platform's end
+   (the arm's post, about 1 m higher than the arm). It stops covering the view along the platform at every halt, keeps
+   "the signal and the board say a train is coming" in one place, and costs one position. Alone it doesn't fix the
+   kiln (the gold is a few pixels at 66 m and the camp blocks hide the throat at eye height), so it ships with 1.
+   Check with a halt still that the post's end isn't itself on the throat line.
+3. **Held back: one gold ghost footing on the halt rack**, from the throat strike until the first real footing lands.
+   It reads at 7 m from the platform, sits beside the broken sample, and the roller road runs from it into the cut, so
+   "where do these come from?" walks you to the kiln. It bends the gold grammar (you never put a footing on the rack;
+   the kiln does) and adds gold at a sixth site, so only if the next session still shows idling at the halt after the
+   throat strike with 1 and 2 in place.
+
+**Not recommended:** larger or brighter seam or rock motes (a beacon, ruled out); smoke or warmth from the cold kiln
+(smoke means lit: "What's on screen is true"); gold along the roller road (gold on something not waiting for a part);
+any word or tag at the halt; a camera shot on arriving at the halt (shows don't replay, and one per arrival is heavy);
+moving the quarry camp's blocks (a camp, not scenery).
+
+### Calls
+
+| Call | Kind | Source or recommendation |
+| --- | --- | --- |
+| No beacon, marker or glow at the halt | Decided | decisions.md, 3 November, objective marker removed; this brief's "What I would NOT add" |
+| No words at the halt or kiln | Default (open) | agent-calls, 9 November, works-signposting question 4 |
+| Gold only on what waits for a part | Default (open) | agent-calls, 9 November, question 1; rules out gold on the road |
+| The trodden path along the roller road, shown once the throat is struck, paler sand, about 1.6 m, view-only | Default | Recommended here; a placement and a colour, cheap to change |
+| The train board moves to above each halt's signal arm | Default | Recommended here; affects every halt, one position |
+| A gold ghost footing on the halt rack | New, held | Bends the gold grammar; build only if a session shows halt idling with 1 and 2 in place |
