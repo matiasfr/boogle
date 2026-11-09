@@ -37,7 +37,7 @@ Codex reads AGENTS.md and the docs its table triggers like you do, and can't pus
 | `task` | medium (high for server or sync work) | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
 | `review` | xhigh | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |
 
-Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question. For straightforward implementation with a clear shape, use `--model gpt-6.1-terra --effort low` first (docs/agents/owner-calls.md, "Codex first").
+Check `npm run models` first: it names the model and effort per kind of work, and in normal (Claude-only) mode the runner refuses everything but previz. Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question. For straightforward implementation with a clear shape, use `--model gpt-6.1-terra --effort low` first (see `npm run models`).
 
 ## Previz
 

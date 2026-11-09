@@ -4,7 +4,7 @@ Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket se
 
 - Keep The Boogler's copy; list suspect lines for the owner.
 - No ROM data or anything cut from it, on any branch or in builds.
-- Codex (Sol medium) is the workhorse; save Claude for Opus. Pause and tell the owner at a usage limit.
+- Models and effort come from `npm run models` (dev/models.ts; normal is Claude only, withCodex adds Codex). Pause and tell the owner at a usage limit.
 - Stop at the owner's playtest; full exceptions are in owner-calls.
 - Decisions live in the repo and bind every agent.
 - Never force-push, skip hooks or push main unless a human asks.
