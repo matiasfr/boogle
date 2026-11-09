@@ -570,6 +570,7 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   // The production player can surface-swim. Opt in only for this return, preserving the main route's dry checks.
   const returning = makeBot({
     allowSwimming: true,
+    avoid: waitingBoxes,
     recover: () => {
       throw new Error('Gorge return requested forbidden relocation recovery');
     },
@@ -643,6 +644,11 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   );
   bot.note(`hook drop ${id} walked/swam home without recovery`);
 }
+
+/** The station boxes waiting for this player (Q2-Q6): the route walks round them, so their cards never interrupt a
+ * walk at an awkward spot. A player opens one by walking into it; the route's job is the railway. */
+const waitingBoxes = () =>
+  (inspectRailway()?.reward.stationBoxes.boxes ?? []).filter((b) => b.visible).map((b) => ({ x: b.x, z: b.z, r: 1.4 }));
 
 const HOOK_RELOAD_KEY = 'look.railway-hook-reload';
 let hookReloadStarted = false;
@@ -741,6 +747,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     recover: () => {
       throw new Error('Production route needed recovery; no relocation is permitted');
     },
+    avoid: waitingBoxes,
   });
   const read = (): RailwayViewInspection => {
     const state = inspectRailway();
