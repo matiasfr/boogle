@@ -3,8 +3,8 @@
 // itself (2 November). Swap a slot here as at the shop's rail, and the pet slot's stowaway (C2). Ported from Place's
 // gifts.ts "the curio shelf"; Personal Local, read from the wardrobe (../wardrobe/state.ts). The finders' bay across the
 // path is F2's.
-// `shelfGroup` and `crystalPeg` are for K1's crystal row; the finds board pinned beside it (Place's props.ts) is part of
-// the frame, and `findPeg` is where F1's gold finds go on it.
+// `shelfGroup` and `crystalPeg` are for K1's crystal row. F1's finds board beside it went with the owner's cut of the
+// gold finds (9 November).
 // Each gift stands on its board (its lowest point on the board's top), and the top board sits higher than Place's so the
 // tall sheeted outfits fit under it: in Place they hung below the middle board, over the crystals' row.
 import * as THREE from 'three/webgpu';
@@ -23,8 +23,6 @@ const COLS = 6,
   CRYSTAL_Y = 0.82,
   REACH = 4.4;
 const SLOT_X: Record<WornSlot, number> = { hat: -2, accessory: -0.7, outfit: 0.7, pet: 2 };
-/** The finds board's centre, in shelf space: beside the shelf, as Place pinned it. */
-const BOARD = { x: 3.6, y: 1.55, z: -0.2 };
 /** What stands on it: the boxes' gifts, not the finds (the finders' bay) nor the shop's stock (its rail). */
 const ON_SHELF = GIFTS.filter((g) => !g.area);
 
@@ -59,11 +57,6 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
       ['b', 0, 3.1, 0.04, WIDE + 0.5, 0.14, 1.1, o],
       ['b', 0, 3.3, 0, WIDE + 0.1, 0.34, 0.5, '#c4453a'],
       ['b', 0, 0.12, 0.04, WIDE, 0.22, 0.68, o],
-      // The finds board, pinned beside the specimens.
-      ['b', BOARD.x, BOARD.y, BOARD.z, 1.5, 2.2, 0.12, '#493b2c'],
-      // On two posts: in Place it hung in the air.
-      ['b', BOARD.x - 0.62, 0.3, BOARD.z - 0.1, 0.12, 0.6, 0.12, o],
-      ['b', BOARD.x + 0.62, 0.3, BOARD.z - 0.1, 0.12, 0.6, 0.12, o],
     ];
     return merged(parts);
   })();
@@ -170,14 +163,11 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
     sheetMat.dispose();
   });
   return {
-    /** Shelf space, for what K1 and F1 stand on it. */
+    /** Shelf space, for what K1 stands on it. */
     shelfGroup: shelf,
     /** The crystals' row, in shelf space: one peg per crystal, along the bottom board. */
     crystalPeg: (k: number, n: number, out: THREE.Vector3) =>
       out.set(((k + 0.5) / n - 0.5) * (WIDE - 0.4), CRYSTAL_Y, 0.08),
-    /** The finds board's pins, in shelf space: three to a row, top down, facing out (Place's layout). */
-    findPeg: (k: number, out: THREE.Vector3) =>
-      out.set(BOARD.x + ((k % 3) - 1) * 0.44, BOARD.y + 0.8 - Math.floor(k / 3) * 0.43, BOARD.z + 0.1),
     /** Swap a slot you own something in, within reach of the shelf (Place's ids). */
     targets(): Interactable[] {
       const p = me.body?.position;

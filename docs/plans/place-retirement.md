@@ -746,6 +746,10 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 
 **Done means.** The gold finds work as in Place, personally.
 
+**Cut (9 November, owner):** "Yeah, I think I would cut them in that case." The gold finds, the finds board and
+`findPeg` are gone (the crystals stay). Kept: the shelf layout fix, and the store's `finds` field, still parsed and
+unused, so existing saves keep their other fields. The notes below are history.
+
 **As built (9 November).**
 - **Store:** `takeFind(id)`/`hasFind(id)`/`finds()` beside `takeCrystal`, written at once; event kind `find`.
   `test/railway-finds.test.ts`. Ids are Place's (0–2, 10–12, 50–52: `PATH_SAMPLES` has two paths, so nine finds).

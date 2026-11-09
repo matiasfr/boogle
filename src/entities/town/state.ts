@@ -38,7 +38,7 @@ export type TownInspection = {
 let current: (() => TownInspection) | null = null;
 let shelf: CurioShelf | null = null;
 export const inspectTown = () => current?.() ?? null;
-/** The mounted curio shelf, for what other entities stand on it (K1's crystal row, F1's finds board): its `shelfGroup`
+/** The mounted curio shelf, for what other entities stand on it (K1's crystal row): its `shelfGroup`
  * and `crystalPeg`. Null until the town has loaded, and again once it goes; a new town is a new shelf. */
 export const townShelf = () => shelf;
 /** Lifecycle owner only. */

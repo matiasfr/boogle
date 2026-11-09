@@ -853,22 +853,14 @@ avatar, so where it hops differs a little between tabs. No op or `WORLD_NS` chan
   where you took yours. A crystal is saved the moment it starts to fly, so a reload mid-flight keeps it.
 - **When pillars come** (open question 19's shared building crystals), these get a distinct name or look, or fold into
   them (place-retirement designer finding 4). Not now.
-
-### Gold finds in the live game (9 November 2026, place-retirement F1)
-
-- **Nine gold finds**, at Place's spots: three along each path (a fifth, nearly half and four fifths of the way, 4.5 m
-  to alternate sides) and three on Far Head, "something for the long way out". Each is a brass disc with a raised
-  crossed stamp, a metre off the ground, turning where it lies. Nothing marks them.
-- **Walk within 2.2 m** (and 3 m of its height) and it's yours: a clank, a ring of brass sparks, and it's pinned on the
-  **finds board**, a dark board standing beside the curio shelf, three to a row in Place's order of spots. No card, no
-  reward and no gate. Mark `find found`.
-- **Yours**, like the crystals: each player finds their own; a partner still sees theirs where you took yours. Saved
-  the moment you walk into it.
 - **The curio shelf** (9 November): each gift stands on its board, and the top board is 16 cm higher than Place's, so
   the sheeted outfits no longer hang over the crystals' row.
+- **Gold finds are cut** (owner, 9 November). F1 ported them with a finds board beside the shelf; both are gone. The
+  crystals stay.
 
-Sync: Personal Local, `boogle.railway-finds.v0:<railwayRoomId>:<pid>` (`crystals`, `finds`; F2's `secrets` and
-`hubbed` share the store), pruned by a world bump. No presence key, op or `WORLD_NS` change.
+Sync: Personal Local, `boogle.railway-finds.v0:<railwayRoomId>:<pid>` (`crystals`; F2's `secrets` and `hubbed` share
+the store; the cut gold finds' `finds` field is still parsed, unused), pruned by a world bump. No presence key, op or
+`WORLD_NS` change.
 
 ## Departures from the brief
 
