@@ -6,6 +6,9 @@ import path from 'node:path';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createStore } from './store.ts';
+import { inventorySaves, inventoryLine } from './save-inventory.ts';
+import { cleanupSaves, cleanupLine, type Cleanup } from './save-cleanup.ts';
+import { roomNamespaces } from './room-ids.ts';
 import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
 import { routeUpgrades } from './host/upgrade.ts';
@@ -62,6 +65,7 @@ export function loadConfig(
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
     reportToken: env.REPORT_TOKEN || '',
+    saveCleanup: env.SAVE_CLEANUP === 'off' ? 'off' : 'trash',
     serverRooms: env.SERVER_ROOMS ? list(env.SERVER_ROOMS) : ['*'], // rooms it hosts (docs/plans/server-host.md); default all
     tuneControllerKey: env.TUNE_CONTROLLER_KEY || '',
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
@@ -91,6 +95,7 @@ export type ServerConfig = {
   reportRatePerMin: number;
   reportMaxBytesPerDay: number;
   reportToken: string;
+  saveCleanup: 'trash' | 'off';
   serverRooms: string[];
   tuneControllerKey: string;
   maxPlayers: number;
@@ -202,6 +207,7 @@ export function createService(cfg: ServerConfig) {
   const store = createStore(cfg);
   const { readIfExists, withLock } = store;
   let roomHost: RoomHost | null = null; // the server-hosted rooms (./host/rooms.ts), made in listen() once the store is ready
+  let lastCleanup: Cleanup | null = null;
 
   const validRoom = (req: Request<{ roomId: string }>, res: Response, next: NextFunction) => {
     if (!ROOM_ID_RE.test(req.params.roomId)) return res.status(400).json({ error: 'invalid roomId' });
@@ -305,6 +311,17 @@ export function createService(cfg: ServerConfig) {
     return true;
   };
 
+  const saveInventory = () => inventorySaves(cfg.dataDir, { ns: roomNamespaces(cfg.serverRooms) });
+  app.get('/admin/saves', async (req: Request, res: Response, next: NextFunction) => {
+    if (!authed(req, res)) return;
+    try {
+      res.set('Cache-Control', 'no-store');
+      res.json({ ...(await saveInventory()), lastCleanup });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const reviewReport = addReviews(app, cfg, {
     authed,
     withLock,
@@ -351,7 +368,20 @@ export function createService(cfg: ServerConfig) {
     config: cfg,
     roomHost: () => roomHost,
     async listen(port = cfg.port) {
+      if (server.listening) throw new Error('Service is already listening');
       await store.init();
+      lastCleanup = null;
+      try {
+        const inventory = await saveInventory();
+        cfg.log(inventoryLine(inventory));
+        lastCleanup = await cleanupSaves(cfg.dataDir, inventory, store, {
+          enabled: cfg.saveCleanup !== 'off',
+          isLive: (id) => !!roomHost?.room(id),
+        });
+        cfg.log(cleanupLine(lastCleanup));
+      } catch (error) {
+        cfg.log(`save inventory/cleanup failed: ${String(error)}`);
+      }
       roomHost ??= createRoomHost(cfg, store);
       await new Promise<void>((resolve, reject) => {
         server.once('error', reject);

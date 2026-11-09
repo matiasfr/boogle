@@ -1,5 +1,5 @@
 // The server-hosted rooms (cfg.serverRooms; docs/plans/server-host.md, "The server host" and "Revision: full
-// switchover"). `*` hosts every valid room id: a room loads (from its save) on its first join, and is saved and
+// switchover"). `*` hosts current room ids (including bare generic names): a room loads on its first join, and is saved and
 // unloaded after cfg.roomIdleMs with nobody in it; at most cfg.maxHostedRooms are loaded at once. A listed room loads
 // with the process and stays. A railway room simulates only while someone is in it: hosted-room.ts pauses it
 // cfg.roomPauseMs after it empties and the next join applies its away credit (world-host.ts, the paused world). A
@@ -19,6 +19,7 @@ import { SERVER_ID, okId, okKey } from '../../../src/net/ids.ts';
 import { okPid } from '../../../src/sim/roster.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
+import { currentRoomId, roomNamespaces } from '../room-ids.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 
@@ -36,8 +37,9 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const boot = crypto.randomBytes(4).toString('hex');
   const rooms = new Map<string, HostedRoom>();
   const all = cfg.serverRooms.includes('*');
-  const listed = new Set(cfg.serverRooms.filter((id) => ROOM_ID_RE.test(id)));
-  const hosts = (id: string) => ROOM_ID_RE.test(id) && (all || listed.has(id));
+  const ns = roomNamespaces(cfg.serverRooms);
+  const listed = new Set(ns.currentRooms);
+  const hosts = (id: string) => currentRoomId(id, ns) && (all || listed.has(id));
   const load = (id: string) => {
     const room = createHostedRoom({ roomId: id, store, cfg, boot, log: cfg.log });
     rooms.set(id, room);

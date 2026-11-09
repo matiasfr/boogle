@@ -287,52 +287,65 @@ test('production railway relays bounded social cues without opening material or 
   }
 });
 
-test('world: a joiner gets the snapshot alone; an edit comes back stamped to everyone; it saves and resumes', async () => {
-  const { svc, base, dataDir } = await start({ SERVER_SAVE_MS: '300' });
-  const toss = { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }; // a frisbee on the beach
-  let saved = 0;
-  try {
-    const a = connect(base, 'beach', 'aaa');
-    await a.next(isWorld('w:snap'));
-    const b = connect(base, 'beach', 'bbb');
-    const chunks: Msg[] = [];
-    const first = await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb');
-    for (let k = 0; k < first.d.n; k++)
-      chunks.push((await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb' && m.d.k === k)).d);
-    assert.ok('gifts' in JSON.parse(chunks.map((c) => c.s).join('')).snap.data);
-    assert.equal(first.from, 'server');
-    assert.ok(!a.msgs.some((m) => m.d?.t === 'w:snap' && m.d.to === 'bbb'));
+for (const room of [worldRoomId('resume'), 'ws-current-test', 'v01-configured']) {
+  test(`world: real saved item and tick survive cleanup-on restart: ${room}`, async () => {
+    const env = { SERVER_SAVE_MS: '300', SERVER_ROOMS: room === 'v01-configured' ? room : '*', REPORT_TOKEN: 't' };
+    const { svc, base, dataDir } = await start(env);
+    assert.equal(svc.config.saveCleanup, 'trash');
+    const toss = { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }; // a frisbee on the beach
+    let saved = 0;
+    try {
+      const a = connect(base, room, 'aaa');
+      await a.next(isWorld('w:snap'));
+      const b = connect(base, room, 'bbb');
+      const chunks: Msg[] = [];
+      const first = await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb');
+      for (let k = 0; k < first.d.n; k++)
+        chunks.push((await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb' && m.d.k === k)).d);
+      assert.ok('gifts' in JSON.parse(chunks.map((c) => c.s).join('')).snap.data);
+      assert.equal(first.from, 'server');
+      assert.ok(!a.msgs.some((m) => m.d?.t === 'w:snap' && m.d.to === 'bbb'));
 
-    a.send({ t: 'm', d: { t: 'w:edit', e: toss } });
-    const stamped = (m: Msg) =>
-      isWorld('w:edits')(m) &&
-      m.d.list.some((x: Msg) => x.e.op === 'gift.toss' && x.e.p === 'aaa' && x.e.u === 'aaapid');
-    await Promise.all([a.next(stamped), b.next(stamped)]);
-    await sleep(700);
-    const doc = JSON.parse(await fs.readFile(path.join(dataDir, 'beach.json'), 'utf8'));
-    assert.equal(doc.writerId, 'server');
-    assert.ok('gifts' in doc.data.data);
+      a.send({ t: 'm', d: { t: 'w:edit', e: toss } });
+      const stamped = (m: Msg) =>
+        isWorld('w:edits')(m) &&
+        m.d.list.some((x: Msg) => x.e.op === 'gift.toss' && x.e.p === 'aaa' && x.e.u === 'aaapid');
+      await Promise.all([a.next(stamped), b.next(stamped)]);
+      await sleep(700);
+      const doc = JSON.parse(await fs.readFile(path.join(dataDir, `${room}.json`), 'utf8'));
+      assert.equal(doc.writerId, 'server');
+      assert.ok('gifts' in doc.data.data);
 
-    const closedA = a.closed;
-    await svc.close({ save: true });
-    assert.ok(a.msgs.some(is('bye')));
-    assert.equal(await closedA, 1012);
-    saved = JSON.parse(await fs.readFile(path.join(dataDir, 'beach.json'), 'utf8')).tick;
-  } catch (e) {
-    await svc.close({ save: false });
-    throw e;
-  }
-  const again = await start({}, dataDir);
-  try {
-    const world = again.svc.roomHost()!.room('beach')!.world;
-    await sleep(20);
-    assert.ok(world.sync.world.tick >= saved, `resumed at ${world.sync.world.tick}, saved ${saved}`);
-    assert.ok('gifts' in world.rules, 'ordinary rooms retain the classic registry');
-    assert.ok(world.rules.gifts.gifts.items.some((it: Msg) => it.i === toss.i && it.j === toss.j));
-  } finally {
-    await again.svc.close({ save: false });
-  }
-});
+      const closedA = a.closed;
+      await svc.close({ save: true });
+      assert.ok(a.msgs.some(is('bye')));
+      assert.equal(await closedA, 1012);
+      saved = JSON.parse(await fs.readFile(path.join(dataDir, `${room}.json`), 'utf8')).tick;
+    } catch (e) {
+      await svc.close({ save: false });
+      throw e;
+    }
+    const again = await start(env, dataDir);
+    try {
+      const back = connect(again.base, room, 'after');
+      await back.next(isWorld('w:snap'));
+      const world = again.svc.roomHost()!.room(room)!.world;
+      await sleep(20);
+      assert.ok(world.sync.world.tick >= saved, `resumed at ${world.sync.world.tick}, saved ${saved}`);
+      assert.ok('gifts' in world.rules, 'ordinary rooms retain the classic registry');
+      assert.ok(world.rules.gifts.gifts.items.some((it: Msg) => it.i === toss.i && it.j === toss.j));
+      const response = await fetch(`${again.base.replace('ws', 'http')}/admin/saves`, {
+        headers: { authorization: 'Bearer t' },
+      });
+      const inv = await response.json();
+      assert.equal(inv.current.count, 1);
+      assert.deepEqual(inv.lastCleanup.moved, []);
+      assert.deepEqual(inv.lastCleanup.errors, []);
+    } finally {
+      await again.svc.close({ save: false });
+    }
+  });
+}
 
 test('SERVER_ROOMS=*: a room loads on its first join, unloads with a save when idle, reloads, and loaded rooms are capped', async () => {
   const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*', ROOM_IDLE_MS: '300', MAX_HOSTED_ROOMS: '2' });

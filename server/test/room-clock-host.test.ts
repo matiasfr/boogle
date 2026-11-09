@@ -8,6 +8,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createWorldHost, createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { worldRoomId } from '../../src/world/namespace.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 
 type Obj = Record<string, unknown>;
@@ -16,7 +17,7 @@ test('w:c every 2 ticks and w:hash every 20 ticks, ticks every 6 steps, on a wor
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-clock-'));
   const store = createStore({ dataDir: dir, maxRooms: 4 });
   await store.init();
-  const host = createWorldHost({ roomId: 'v06-clock', store, tick: false });
+  const host = createWorldHost({ roomId: worldRoomId('clock'), store, tick: false });
   const sent: Obj[] = [];
   host.onSend((m) => sent.push(m));
   const steps: number[] = [];

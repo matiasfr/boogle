@@ -8,16 +8,19 @@
 //   await store.write(id, doc, { ifNewer })  { status: 200 | 409 | 507, body }: 409 when ifNewer and the saved tick is
 //                                         higher, 507 when a new room would pass maxRooms
 //   store.known(id), store.count()        rooms with a file
+//   store.forget(id)                      after boot cleanup moved its file, under withLock(id)
 //   store.withLock(key, fn)               run fn after every earlier call with the same key has settled
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
+import { currentRoomId, roomNamespaces } from './room-ids.ts';
 
 export type RoomDoc = { tick: number; writerId: string; data: unknown; updatedAt: string };
 export type WriteResult = { status: 200 | 409 | 507; body: Record<string, unknown> };
 
-export function createStore(cfg: { dataDir: string; maxRooms: number }) {
+export function createStore(cfg: { dataDir: string; maxRooms: number; serverRooms?: readonly string[] }) {
+  const ns = roomNamespaces(cfg.serverRooms);
   const knownRooms = new Set<string>();
   const locks = new Map<string, Promise<unknown>>(); // key -> promise chain
   const fileFor = (id: string) => path.join(cfg.dataDir, `${id}.json`);
@@ -66,6 +69,7 @@ export function createStore(cfg: { dataDir: string; maxRooms: number }) {
     },
     write(id: string, doc: RoomDoc, { ifNewer = false } = {}): Promise<WriteResult> {
       return withLock(id, async () => {
+        if (!currentRoomId(id, ns)) throw new Error(`Cannot write obsolete or invalid room: ${id}`);
         const current = await this.read(id);
         if (ifNewer && current && current.tick > doc.tick)
           return { status: 409, body: { error: 'stale tick', tick: current.tick } };
@@ -80,6 +84,7 @@ export function createStore(cfg: { dataDir: string; maxRooms: number }) {
     },
     known: (id: string) => knownRooms.has(id),
     count: () => knownRooms.size,
+    forget: (id: string) => knownRooms.delete(id),
   };
 }
 export type Store = ReturnType<typeof createStore>;

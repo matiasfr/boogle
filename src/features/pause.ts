@@ -8,6 +8,8 @@
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
+import { WORLD_NS } from '../world/namespace.ts';
+import { BUILD } from '../build-id.ts';
 import { onStart } from '../loop.ts';
 import { background } from '../async.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
@@ -270,6 +272,7 @@ function renderMain() {
     room,
     more,
     leave,
+    el('p', 'pause-version', `World ${WORLD_NS} · ${BUILD.slice(0, 7)}`),
   );
   return list;
 }

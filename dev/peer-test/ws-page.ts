@@ -6,6 +6,7 @@ import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
 import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { worldRoomId } from '../../src/world/namespace.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 import type { WorldRoom } from '../../src/world/sync.ts';
@@ -57,6 +58,7 @@ declare global {
 }
 
 const q = new URLSearchParams(location.search);
+const roomId = q.get('room') ?? worldRoomId('test');
 const HASH_EVERY = 10; // ticks between recorded state hashes
 const LAT = Number(q.get('lat') || 0); // added railway round trip, ms (half each way)
 const PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
@@ -92,7 +94,7 @@ const T = (window.T = {
     let room: Room;
     try {
       room = T.room = await createWsRoom({
-        roomId: q.get('room') ?? 'test',
+        roomId,
         server: q.get('server')!,
         pid: PID,
         key: q.get('key') ?? 'k' + PID.padEnd(16, '0'), // one browser per page unless the query says otherwise
@@ -207,7 +209,6 @@ function startWorld(room: Room) {
     return w.worldStatus().resyncs > before;
   };
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
-  const roomId = q.get('room') ?? '';
   const rules = installRules(w, land);
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
   railRoom = rail ? delayedRoom(room, LAT) : null;
@@ -391,7 +392,7 @@ function startWorld(room: Room) {
     if (t % HASH_EVERY === 0) T.hashes[t] = JSON.stringify(w.stateHashes());
   });
   w.setPid(PID);
-  w.attachWorld(room, { roomId: q.get('room') ?? 'test' });
+  w.attachWorld(room, { roomId });
   if (adapter && railRoom) adapter.attach(railRoom);
   let last = performance.now();
   setInterval(() => {

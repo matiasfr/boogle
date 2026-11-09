@@ -6,6 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
 import type { ServerConfig } from '../src/server.ts';
+import { inventorySaves } from '../src/save-inventory.ts';
+import { WORLD_NS } from '../../src/world/namespace.ts';
+import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
 
 async function start(env: Record<string, string> = {}, overrides: Partial<ServerConfig> = {}) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-test-'));
@@ -31,6 +34,63 @@ test('healthz', async () => {
     const r = await fetch(`${s.base}/healthz`);
     assert.equal(r.status, 200);
     assert.equal(await r.text(), 'ok');
+  } finally {
+    await s.stop();
+  }
+});
+
+test('save inventory is authed and fresh, reports cleanup, and honors the kill switch', async () => {
+  let s = await start();
+  try {
+    assert.equal((await fetch(`${s.base}/admin/saves`)).status, 404);
+  } finally {
+    await s.stop();
+  }
+  const logs: string[] = [];
+  s = await start(
+    { REPORT_TOKEN: 'tok', SAVE_CLEANUP: 'off' },
+    {
+      log: (...args) => {
+        logs.push(args.map(String).join(' '));
+      },
+    },
+  );
+  try {
+    assert.equal(s.svc.config.saveCleanup, 'off');
+    assert.equal(loadConfig({ SAVE_CLEANUP: 'other' }).saveCleanup, 'trash');
+    assert.equal(loadConfig({}).saveCleanup, 'trash');
+    assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 1);
+    const get = (token?: string) =>
+      fetch(`${s.base}/admin/saves`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
+    assert.equal((await get()).status, 401);
+    assert.equal((await get('wrong')).status, 401);
+    for (const name of [`${WORLD_NS}-a.json`, `${RAILWAY_PLAY_NS}-b.json`, 'v01-old.json', 'garden.json'])
+      await fs.writeFile(path.join(s.dataDir, name), 'inventory only');
+    const response = await get('tok');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const inv = await inventorySaves(s.dataDir, { ns: { world: WORLD_NS, rail: RAILWAY_PLAY_NS } });
+    const body = await response.json();
+    assert.equal(body.lastCleanup.enabled, false);
+    assert.deepEqual(body.lastCleanup.moved, []);
+    const { lastCleanup: _cleanup, ...fresh } = body;
+    assert.deepEqual(fresh, inv);
+    assert.equal(inv.current.count, 3);
+    assert.deepEqual(inv.files, ['v01-old.json']);
+    assert.deepEqual(inv.legacyFiles, []);
+    // The read endpoint never performs cleanup; the explicit kill switch also prevents it on boot.
+    await s.svc.close({ save: false });
+    await s.svc.listen(s.port);
+    const again = await (await get('tok')).json();
+    assert.equal(again.lastCleanup.enabled, false);
+    const { lastCleanup: _againCleanup, ...againInventory } = again;
+    assert.deepEqual(againInventory, inv);
+    assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 2);
+    assert.deepEqual(
+      (await fs.readdir(s.dataDir)).filter((name) => name.endsWith('.json')).sort(),
+      [`${WORLD_NS}-a.json`, `${RAILWAY_PLAY_NS}-b.json`, 'v01-old.json', 'garden.json'].sort(),
+    );
+    assert.ok(!(await fs.readdir(s.dataDir)).includes('.trash'));
   } finally {
     await s.stop();
   }
