@@ -40,7 +40,7 @@ Routing updated 7 November 2026. Read only the linked sections and dated entries
 
 ### Architecture, tools and prototype lifecycle
 
-[Process](#process): **6 November, conform to tested engine architecture / entity model: build E**, then **7 November, keep going while the owner is away**. ECS E answers the earlier evaluation. Read entity methods, pipeline and no-automatic-rollback calls only when relevant. **7 November, evaluate shared progression adventures** supersedes solo-first evidence. [Owner calls](agents/owner-calls.md) assigns Claude/Codex by task fit; images-only was a soft suggestion. **6 November, Godot migration evaluation assumptions** scopes an optional engine move (evaluation direction, not approval to migrate). Verification and test diet remain. Earlier one-playtest-path and prototype-lifecycle entries are superseded where explicitly recorded.
+[Process](#process): **6 November, conform to tested engine architecture / entity model: build E**, then **7 November, keep going while the owner is away**. ECS E answers the earlier evaluation. Read entity methods, pipeline and no-automatic-rollback calls only when relevant. **7 November, evaluate shared progression adventures** supersedes solo-first evidence. [Owner calls](agents/owner-calls.md) assigns Claude/Codex by task fit; images-only was a soft suggestion. Verification and test diet remain. Earlier one-playtest-path and prototype-lifecycle entries are superseded where explicitly recorded.
 
 ### Unresolved scope
 
