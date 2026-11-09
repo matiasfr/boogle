@@ -44,6 +44,8 @@ export type RailwayProbe = {
   messages: Record<string, unknown>[];
   registry: { states: string[]; ops: string[] };
   sources: { id: number; remaining: number }[];
+  /** Line two's job completions (Q1 first), empty before line two. */
+  line2: number[];
   people: { pid: string; name: string }[];
   classicItems: number;
 };
@@ -484,6 +486,7 @@ function startWorld(room: Room) {
         messages: [...T.railMessages.map((m) => ({ ...m })), ...acks, ...rej],
         registry: w.registry(),
         sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: s.sources[k]! })),
+        line2: s.line2?.jobs.map((j) => j.completion) ?? [],
         people: rules.roster.roster.pids.map((pid, k) => ({ pid, name: rules.roster.nameOf(k) })),
         classicItems: rules.gifts.gifts.items.length,
       };
