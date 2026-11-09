@@ -19,6 +19,7 @@ import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
 import { createRailwayGlideDevice } from './glide-device-view.ts';
+import { createGateRig, gateEyes } from './gate-rig.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
 import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
@@ -378,27 +379,28 @@ export async function createRailwayLine2(
   const hookTarget = hookAt.clone().add(new THREE.Vector3(0, 2.2, 0));
   const hookPrize = shapes.merged(HOOK_REWARD.parts);
   geometries.push(hookPrize);
-  // The quarry gate: two jambs and the slab across the bed, solid until it drops.
+  // The quarry gate: two jambs under a headstock, and the slab across the bed hung from it, solid until it drops. Its
+  // chains run from the slab's top over the headstock's sheaves to the lever's winch and pay out as it sinks (gate-rig.ts).
   const G = tech.GATES.quarry;
   const SLAB = { w: 6.4, h: 5.4, d: 0.9, pillar: 1.1 };
   const gateQ = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, G.yaw);
-  for (const side of [-1, 1]) {
-    const jamb = mesh(new THREE.BoxGeometry(SLAB.pillar, SLAB.h + 0.8, SLAB.pillar), flat(STONE, 0.9));
-    const along = (side * (SLAB.w + SLAB.pillar)) / 2;
-    jamb.position.set(G.x + ox + Math.cos(G.yaw) * along, G.y + (SLAB.h + 0.8) / 2, G.z - Math.sin(G.yaw) * along);
-    jamb.quaternion.copy(gateQ);
-    land.addStatic(
-      { kind: 'box', hx: SLAB.pillar / 2, hy: (SLAB.h + 0.8) / 2, hz: SLAB.pillar / 2 },
-      jamb.position,
-      gateQ,
-      undefined,
-      owner,
-    );
-  }
+  const gateRig = createGateRig(
+    owner,
+    { land, shapes, flat, partMat },
+    {
+      x: G.x + ox,
+      y: G.y,
+      z: G.z,
+      yaw: G.yaw,
+      slab: SLAB,
+      winch: { x: winch.position.x, y: lever.y + 0.7, z: winch.position.z, r: 0.42 },
+    },
+  );
   const slab = mesh(
     shapes.merged([
       ['b', 0, 0, 0, SLAB.w, SLAB.h, SLAB.d, STONE2],
       ['b', 0, SLAB.h / 2 - 0.3, SLAB.d / 2 + 0.01, SLAB.w - 0.6, 0.2, 0.04, '#39e6c6'],
+      ...gateEyes(SLAB),
     ]),
   );
   slab.quaternion.copy(gateQ);
@@ -412,28 +414,6 @@ export async function createRailwayLine2(
   const farHead = createRailwayFarHead(owner, { layout, rail, land, flat, sounds });
   const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces });
   const pier = createRailwayPier(owner, { layout, rail, sounds });
-  // The chain from the slab's top to the winch.
-  {
-    const a = new THREE.Vector3(G.x + ox, G.y + SLAB.h + 1.25, G.z),
-      b = new THREE.Vector3(lever.x + ox + 0.8, lever.y + 1, lever.z - 0.6);
-    const n = Math.round(a.distanceTo(b) / 0.2);
-    const link = new THREE.TorusGeometry(0.1, 0.03, 5, 8);
-    geometries.push(link);
-    const links = new THREE.InstancedMesh(link, flat('#3a3530', 0.8), n);
-    const o = new THREE.Object3D();
-    for (let k = 0; k < n; k++) {
-      const t = k / (n - 1);
-      o.position.lerpVectors(a, b, t);
-      o.position.y -= (1 - (2 * t - 1) * (2 * t - 1)) * 0.55;
-      o.lookAt(b);
-      o.rotateZ(k % 2 ? Math.PI / 2 : 0);
-      o.updateMatrix();
-      links.setMatrixAt(k, o.matrix);
-    }
-    links.castShadow = true;
-    links.frustumCulled = false;
-    owner.add(links);
-  }
 
   // ---------------------------------------------------------------- the machine on line two
   const TURN_HEAD = layout.STUB.east;
@@ -984,6 +964,7 @@ export async function createRailwayLine2(
           pieces.dustRing(G.x + ox, G.y + 0.4, G.z, 16, 5, 0.5);
         }
       }
+      gateRig.pose(slab.position.y);
       leverArm.rotation.z += ((l.lever ? -0.85 : 0.75) - leverArm.rotation.z) * Math.min(1, dt * 10);
       for (const o of [hookRing, hookCore]) o.visible = l.completed >= 2 && !l.hook;
       hookRing.rotation.z += dt * 0.7;
