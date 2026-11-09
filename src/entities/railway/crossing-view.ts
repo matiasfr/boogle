@@ -30,7 +30,7 @@ const TIMBER = '#8a6236',
   STAKE = '#e8a33a';
 
 export async function createRailwayCrossing(adapter: RailwayAdapter, owner: OwnedView, deps: { toPier: () => number }) {
-  const [{ H }, layout] = await Promise.all([
+  const [{ H, addStatic }, layout] = await Promise.all([
     import('../../proto/place/land.ts'),
     import('../../proto/place/layout.ts'),
   ]);
@@ -80,9 +80,29 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
     );
   };
 
-  // ---------------------------------------------------------------- the jib at the pier head
+  // ---------------------------------------------------------------- the pier head's side deck and its jib
+  // PIER_FRAME stands 3.5 m east of the rails' end, past the trestle's 3.6 m planks: a plank apron along the east side
+  // (s 729-746, out to 5.3 m) carries it, stepped onto from the track before Q6's parked machine.
+  layout.lineAt(line, 737.5, P);
+  const apronYaw = Math.atan2(P.ux, P.uz);
+  const apron = { x: P.x - P.uz * 3.55 + layout.ORIGIN.x, z: P.z + P.ux * 3.55 + layout.ORIGIN.z, hx: 1.75, hz: 8.5 };
+  const deckY = layout.railY(line, 737.5) + 0.04;
+  let apronBody: ReturnType<typeof addStatic> | null = null;
+  const solidApron = (on: boolean) => {
+    if (on && !apronBody)
+      apronBody = addStatic(
+        { kind: 'box', hx: apron.hx, hy: 0.1, hz: apron.hz },
+        { x: apron.x, y: deckY - 0.1, z: apron.z },
+        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, apronYaw),
+        undefined,
+        owner,
+      );
+    else if (!on && apronBody) {
+      owner.removeBody(apronBody);
+      apronBody = null;
+    }
+  };
   const frame = { x: PIER_FRAME.x / 100, z: PIER_FRAME.z / 100 };
-  const deckY = layout.railY(line, 742) + 0.1;
   const jibYaw = Math.atan2(first.x / 100 - frame.x, first.z / 100 - frame.z);
   const jibHead = new THREE.Vector3(frame.x + Math.sin(jibYaw) * 3.2, deckY + 4.6, frame.z + Math.cos(jibYaw) * 3.2);
 
@@ -120,6 +140,7 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
     shownCrossing = state.works.crossing;
     show = -1;
     rockets = [];
+    solidApron(open());
   }
   snap();
 
@@ -203,6 +224,18 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
       for (let k = 0; k < Math.min(resting, WORKS.pier); k++) {
         rackSlot(k, p);
         footingParts(batch, footingFrame(m, p.x, p.y, p.z, rackYaw));
+      }
+      // The apron's planks and its legs down to the sea floor.
+      batch.box(apron.x, deckY - 0.1, apron.z, apron.hx * 2, 0.2, apron.hz * 2, '#a97a45', apronYaw);
+      for (const [dl, ds] of [
+        [1.4, -7.5],
+        [1.4, 7.5],
+        [-1.2, 0],
+      ] as const) {
+        const lx = apron.x + Math.cos(apronYaw) * dl + Math.sin(apronYaw) * ds,
+          lz = apron.z - Math.sin(apronYaw) * dl + Math.cos(apronYaw) * ds,
+          foot = H(lx, lz);
+        batch.box(lx, (foot + deckY - 0.2) / 2, lz, 0.4, deckY - 0.2 - foot, 0.4, TIMBER);
       }
       // The jib: a mast on the pier head and an arm reaching out over the sea toward the crossing.
       const mastH = jibHead.y - deckY;
@@ -330,6 +363,7 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
     rackSlot,
     update(dt: number) {
       state = adapter.inspect();
+      solidApron(open());
       stepLowering(dt);
       // A bent whose pair arrived without a lowering here (a correction, a late accept) still rises.
       const pairs = Math.floor(inSea() / 2);

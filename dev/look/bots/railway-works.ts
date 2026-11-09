@@ -222,15 +222,37 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
   await ride(HALT.village2, 3);
   await until(() => works().pierRack >= 1, 'the wagon unloads at the pier rack');
   await checkpoint('footings at the pier');
+  // The pier rack stands on the Pier halt's deck (west of the rails) and the jib on the pier head's east apron; the
+  // track between them is the way, short of Q6's parked machine. `lat` < 0 is the halt's side.
+  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  const beside = (along: number, lat: number) => {
+    const p = lineAt(LINKS[1]!.line, along, { x: 0, z: 0, ux: 0, uz: 1 });
+    return { x: p.x - p.uz * lat + ORIGIN.x, z: p.z + p.ux * lat + ORIGIN.z };
+  };
+  // A train standing at the pier fills the track there (s 721-736): cross only while it is away.
+  const trackClear = () => until(() => l2().train[1]!.phase === 1 || l2().train[1]!.at !== 3, 'no train at the pier');
+  const step = async (along: number, lat: number, beat: string) => {
+    if (Math.abs(lat) < 1.9) await trackClear();
+    const p = beside(along, lat);
+    check(await bot.straight(p.x, p.z, 0.5, 12000), beat);
+    await until(() => me.coyote > 0 && !me.swimming, `${beat}: supported`, 5000);
+  };
+  await step(731, 0, 'down off the Pier halt onto the track');
   for (let n = 0; works().pierSet < WORKS.pier; n++) {
     check(n < WORKS.pier + 2, 'the pier takes twelve in bounded sets');
+    await step(732.5, -1.2, 'beside the pier rack');
     await until(() => works().pierRack >= 1, `a footing on the pier rack (set ${n + 1})`);
     await use(pierRack, /^Shoulder a footing$/, `shoulder pier footing ${n + 1}`);
     await until(() => read().foot === 1, `pier footing ${n + 1} on the back`, 30000);
+    await step(731.5, 0, 'back onto the track');
+    await step(731.5, 3, 'onto the pier-head apron');
+    await step(741, 3.4, 'along the apron to the jib');
     const before = works().pierSet;
     await use(pierFrame, /^Set the footing$/, `set pier footing ${n + 1}`);
     await until(() => works().pierSet > before && read().foot === 0, `pier footing ${n + 1} set`, 30000);
     await settle(`pier footing ${n + 1}`);
+    await step(731.5, 3, 'back along the apron');
+    await step(731.5, 0, 'back onto the track');
   }
   await until(() => works().crossing >= 0, 'twelve footed: the crossing stands', 30000);
   await checkpoint('crossing footed');
