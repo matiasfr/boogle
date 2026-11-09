@@ -13,6 +13,8 @@ export type TownInspection = {
   indoors: { room: string | null; inside: string | null };
   /** The house desk's stage: how many of its facts are true. */
   houseStage: number;
+  /** How many bits the museum's 1:120 table drew last (0 until the museum stands and you're near it). */
+  museumBits: number;
   /** What this player owns and wears (src/entities/wardrobe/state.ts), for Fine Prices' evals. */
   wardrobe: ReturnType<typeof import('../wardrobe/state.ts').inspectWardrobe>;
   /** Where each resident stands, and whether they're drawn and can be talked to (only near their standing room). */
