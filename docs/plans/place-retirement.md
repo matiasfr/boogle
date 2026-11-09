@@ -441,7 +441,7 @@ beats.
 `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **T3a.** `createMuseum(owner, rooms, env: TownEnv & MuseumEnv)`, with:
+- [x] **T3a.** `createMuseum(owner, rooms, env: TownEnv & MuseumEnv)`, with:
 
   ```ts
   type MuseumEnv = {
@@ -454,7 +454,7 @@ beats.
   ```
 
   - Remove its imports of `job`, `lines`, `run`, `forge`, `chop` and `sites`. The people count is `env.people()`.
-- [ ] **T3b. Production env**, sampled at 2 Hz:
+- [x] **T3b. Production env**, sampled at 2 Hz:
   - buildings: `plans.openingBuildings()` at `grow: 1`, plus T6's sites when they exist;
   - forge lit: `line2Lit`;
   - trees: `inspectRailway().trees` not `cleared` (the great tree has id 28);
@@ -462,7 +462,7 @@ beats.
     `[0, 30]`; line 2 is `[fromCm, toCm] / 100` over completed `LINE2_STATIONS`;
   - movers: `inspectRailway().machine` and the trains from `line2View`.
   - Place's env reads its own modules.
-- [ ] **T3c.** `up = (id) => id === 'house' || (id === 'museum' && env.has('path'))`. Add `'museum'` to `inspect().rooms`.
+- [x] **T3c.** `up = (id) => id === 'house' || (id === 'museum' && env.has('path'))`. Add `'museum'` to `inspect().rooms`.
 
 **Proofs.**
 - `npm run check`.
@@ -476,6 +476,21 @@ beats.
 
 **Done means.** On the shared first-path fact the museum rises for everyone in the room, and the 1:120 table shows
 the live railway.
+
+**As built (9 November).**
+- `createMuseum(owner, rooms, env: MuseumEnv)`. `MuseumEnv` carries `people()` itself, rather than importing
+  `TownEnv` from `entities/town/view.ts` into `src/proto`. Positions are world metres. The factory disposes of the
+  geometry it makes, and the shared materials stay module-level.
+- Buildings: `openingBuildings()` at `grow: 1`, plus the town's three room sites as they stand or rise. T6's sites
+  join through the same iterator.
+- Rails also include line 1's camp stub `[T1.fromCm / 100, len]` and line 2's turntable stub `[0, Q1.fromCm / 100]`,
+  which Place drew too. Track shows by completed station, not at the live laying head.
+- Movers: `inspectRailway().machine` and `line2View.trains[k].cars[0]` once `trains`. Trees and movers are sampled at
+  2 Hz only while the interior draws. `RailwayViewInspection.line2View`'s type now includes `train-view.ts`'s
+  `inspect()`, which `view.ts` already spread into it.
+- `inspectTown().museumBits` counts what the table drew last, for evals.
+- Draw calls: `town` pose 221 → 221 fresh, 279 → 278 at `q1-done`; 18 m from the museum 312 → 335 (the interior,
+  within 34 m only). The long production playthrough finished with no errors.
 
 ### Job T4: the wardrobe (what you own and wear)
 
