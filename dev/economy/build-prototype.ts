@@ -22,6 +22,7 @@ export const SOURCES = [
   'dev/economy/play-page.ts',
   'dev/economy/build-prototype.ts',
   'src/proto/greybox/map-data.ts',
+  'src/sickle/map-data.ts',
   'docs/world/map-prototypes.html',
 ];
 export const sourceHash = () => {

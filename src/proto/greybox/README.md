@@ -1,8 +1,12 @@
 # Greybox
 
-A dev-only blockout of a map layout from [docs/world/map-prototypes.html](../../../docs/world/map-prototypes.html),
+A dev-only walkable blockout of a map layout from [docs/world/map-prototypes.html](../../../docs/world/map-prototypes.html),
 added to today's world at the real scale, to walk, look and ride round before anything is dressed. New areas after
 Ring Island start here, greybox-first.
+
+The live game also draws a separate, non-walkable, merged silhouette of this map
+(`src/entities/sickle-backdrop/`), with no review tools. It shares the pure parser in `src/sickle/map-data.ts`;
+the local `map-data.ts` re-exports it for existing tools. Dev `?greybox=` replaces that horizon with this full blockout.
 
 - **The fog.** With the greybox on, the fog runs to 3.6 km (the crossing's range, owner, 7 November), so the islands
   read at the real scale; the live game keeps its own. `index.ts` writes it late each frame, outside caves.
