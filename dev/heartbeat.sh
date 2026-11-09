@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# npm run heartbeat: everything an orchestrator checks each round, in one read-only report: model mode, main, open pull
-# requests, the last CI, deploy and smoke runs, recent play sessions, the bot queue, the ship lock, machine load and
-# every worktree holding unmerged or uncommitted work.
+# npm run heartbeat [-- --all]: everything an orchestrator checks each round, in one read-only report: model mode, main,
+# open pull requests, the last CI, deploy and smoke runs, recent play sessions, the bot queue, the nightly jobs and their
+# open issues, the ship lock, machine load and the worktrees holding unmerged or uncommitted work (those active in the
+# last 48 hours and a count of the rest; --all lists every one).
 set -uo pipefail
+all=0
+for arg in "$@"; do
+  case "$arg" in --all) all=1 ;; *) echo "Unknown argument: $arg"; exit 1 ;; esac
+done
 cd "$(git rev-parse --show-toplevel)" || exit 1
 for d in "$HOME"/.nvm/versions/node/v26*/bin; do [ -d "$d" ] && PATH="$d:$PATH"; done
 main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
@@ -30,16 +35,53 @@ const rows = (fs.existsSync(dir) ? fs.readdirSync(dir) : []).filter((n) => n.end
 }).sort((a, b) => b.held - a.held || a.number - b.number);
 for (const t of rows) console.log(`${t.held ? "running" : "waiting"}${t.long ? " long" : ""} ${t.since ? Math.round((Date.now() - t.since) / 60000) + "m " : ""}${t.job.replace(/\/\S*\//g, "").slice(0, 120)}`);
 if (!rows.length) console.log("empty");'
+say "Nightly jobs (last verdict; streak = consecutive runs that were not a pass)"
+daily=${BOOGLE_DAILY_DIR:-$HOME/.boogle/daily}
+for job in scenarios perf atlas patch-video; do
+  # Each verdict line names its evidence dir, <job>-<ISO time with dashes>-<pid>; the time is UTC.
+  { grep "^Daily $job:" "$daily/$job.log" 2>/dev/null || true; } | awk -v job="$job" '
+    { line[NR] = $0 }
+    END {
+      if (!NR) { print job ": no runs"; exit }
+      streak = 0
+      for (i = NR; i > 0 && line[i] !~ /^Daily [^:]*: (passed|no changes|delivered)\./; i--) streak++
+      v = line[NR]; sub(/^Daily [^:]*: /, "", v); sub(/\. Evidence: .*/, "", v)
+      d = "?"
+      if (match(line[NR], /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]-[0-9][0-9]/))
+        d = substr(line[NR], RSTART, 10) " " substr(line[NR], RSTART + 11, 2) ":" substr(line[NR], RSTART + 14, 2) " UTC"
+      printf "%s: %s, %s; %s\n", job, v, d, streak ? "not passing for " streak " run" (streak > 1 ? "s" : "") (streak == NR ? " (every logged run)" : "") : "passing"
+    }'
+done
+for label in scenarios performance; do
+  gh issue list --label "$label" --state open --json number,title,updatedAt \
+    -q ".[] | \"open $label issue #\(.number) \(.title) (updated \(.updatedAt[0:10]))\"" 2>/dev/null | cut -c1-150
+done
 say "Ship lock and load"
 lock=${BOOGLE_SHIP_LOCK:-/tmp/boogle-ship-$(id -u).lock}
 [ -d "$lock" ] && echo "a ship holds the lock (pid $(cat "$lock/pid" 2>/dev/null))" || echo "no ship running"
 uptime | sed 's/.*load averages*: */load: /'
-say "Worktrees with unmerged or uncommitted work"
-git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r w; do
+say "Worktrees with unmerged or uncommitted work$([ "$all" = 1 ] || echo ', active in the last 48 hours')"
+since=$(($(date +%s) - 48 * 3600))
+older=0 runs=0
+while read -r w; do
   [ "$w" = "$main" ] && continue
   case "$w" in */boogle-daily*|*/boogle-trusted) continue ;; esac
   ahead=$(git -C "$w" rev-list --count origin/main..HEAD 2>/dev/null || echo '?')
-  dirty=$(git -C "$w" status --short 2>/dev/null | wc -l | tr -d ' ')
+  status=$(git -C "$w" status --porcelain 2>/dev/null)
+  dirty=$(printf '%s' "$status" | grep -c . || true)
   [ "$ahead" = 0 ] && [ "$dirty" = 0 ] && continue
+  # A daily job's own worktree is its evidence; the nightly section above reports the run.
+  case "$w" in */.boogle/daily/runs/*) [ "$all" = 0 ] && { runs=$((runs + 1)); continue; } ;; esac
+  if [ "$all" = 0 ]; then
+    # Active: the last commit, or any uncommitted file's modification time, within 48 hours.
+    latest=$(git -C "$w" log -1 --format=%ct 2>/dev/null || echo 0)
+    if [ "$latest" -lt "$since" ] && [ -n "$status" ]; then
+      m=$(printf '%s\n' "$status" | cut -c4- | sed 's/.* -> //; s/^"//; s/"$//' | (cd "$w" && tr '\n' '\0' | xargs -0 stat -f %m 2>/dev/null) | sort -n | tail -1)
+      [ -n "$m" ] && [ "$m" -gt "$latest" ] && latest=$m
+    fi
+    [ "$latest" -lt "$since" ] && { older=$((older + 1)); continue; }
+  fi
   echo "$(basename "$w") [$(git -C "$w" rev-parse --abbrev-ref HEAD)]: $ahead ahead, $dirty uncommitted, last commit $(git -C "$w" log -1 --format=%cr): $(git -C "$w" log -1 --format=%s | cut -c1-70)"
-done
+done < <(git worktree list --porcelain | sed -n 's/^worktree //p')
+[ "$older" = 0 ] || echo "$older older worktrees with unmerged or uncommitted work; \`npm run heartbeat -- --all\` lists them"
+[ "$runs" = 0 ] || echo "$runs daily-run worktrees under ~/.boogle/daily/runs (the jobs' evidence); --all lists them too"
