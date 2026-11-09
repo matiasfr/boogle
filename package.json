@@ -57,6 +57,7 @@
     "ship": "bash scripts/ship.sh",
     "ship-branch": "bash dev/codex/ship-branch.sh",
     "ship-queue": "bash dev/ship-queue.sh",
+    "review-stamp": "node dev/review-stamp.ts",
     "heartbeat": "bash dev/heartbeat.sh",
     "prepare": "git config core.hooksPath .githooks || true",
     "clip": "node dev/video/clip.ts",
