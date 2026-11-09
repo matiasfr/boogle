@@ -6,7 +6,8 @@
 // you put the card away. Once you've gone on past one, its box turns up at the finders' bay too (`hubbed`), and opening
 // either takes the other. The designer fit check (docs/agent-calls.md, 9 November) set what's here: nine of Place's ten
 // (the jump course's "block" waits for job E); the two glide-only ones (the village balcony, Far Head's sea stack)
-// stand in the world once the room has the glider, and wait at the bay only at the end of the run; each goes to the bay
+// wait at the bay only at the end of the run; in the world the balcony's stands once the room has the glider, the stack's
+// always (a drop from stack-return reaches it, an accepted sequence break); each goes to the bay
 // in the order production's abilities really come (`passed`). Hook and jump secrets are reached with production's
 // abilities: their rings are the hook view's side rings (../railway/hook-path.ts HOOK_SIDE).
 // What you've found and what's at the bay are ./state.ts's (Personal Local, written the moment it happens). Everything
@@ -387,7 +388,11 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
     for (const [k, box] of boxes.entries()) {
       const rattling = show.opening() === box.pose && !show.burst();
       if (box.bay && shelf) shelf.bayPeg(SECRETS.indexOf(secretOf.get(box.id)!), box.at);
-      const there = box.bay ? !!shelf && store.isHubbed(box.id) : gliding || secretOf.get(box.id)!.how !== 'glide';
+      // The stack's world box stands without the glider too: a double jump down from stack-return reaches it
+      // (designer, 9 November, accepted). Its bay timing stays the glide-only end of the run (`passed`).
+      const there = box.bay
+        ? !!shelf && store.isHubbed(box.id)
+        : gliding || box.id === 'stack' || secretOf.get(box.id)!.how !== 'glide';
       box.waiting = rattling || (!store.hasSecret(box.id) && there);
       if (!box.waiting) continue;
       if (!rattling) {
