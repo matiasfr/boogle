@@ -3,12 +3,15 @@
 import * as THREE from 'three/webgpu';
 import {
   cameraPosition,
-  color,
+  cubeTexture,
+  float,
   fog,
   mix,
   normalize,
+  normalWorldGeometry,
   positionWorld,
   rangeFogFactor,
+  smoothstep,
   uniform,
   uv,
   vec3,
@@ -26,6 +29,7 @@ import { bind, tuningEnabled } from './live.ts';
 import { eveningPreview, prepareEvening, SKY_CUBE_SIZE } from './flags.ts';
 import { summerSky } from './sky-art.ts';
 import { bootMark } from '../../boot/timeline.ts';
+import { playMark } from '../../proto/mark.ts';
 import { lightingDefault, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
 import { validValue } from '../../tunables/spec.ts';
 import { createEveningTransition } from './evening-transition.ts';
@@ -103,7 +107,9 @@ export function createFrozenWaterSky() {
   const near = uniform(FOG_NEAR).onRenderUpdate(() => (scene.fog as THREE.Fog | null)?.near ?? FOG_NEAR),
     far = uniform(FOG_FAR).onRenderUpdate(() => (scene.fog as THREE.Fog | null)?.far ?? FOG_FAR),
     underground = uniform(0).onRenderUpdate(() => atmosphere.underground),
-    skyReady = uniform(0);
+    skyReady = uniform(0),
+    // The haze before the bake (the fog colour), and the fallback's horizon after a failed one (fallBack).
+    flatSky = uniform(new THREE.Color(FOG_HEX));
   const upper = new THREE.Color(),
     lower = new THREE.Color();
   const evening = prepareEvening ? createWaterSky(undefined, SKY_CUBE_SIZE) : undefined;
@@ -146,7 +152,7 @@ export function createFrozenWaterSky() {
       );
   }
   const haze = mix(
-    color(new THREE.Color(FOG_HEX)),
+    flatSky,
     mix(
       environment.skyLod(normalize(positionWorld.sub(cameraPosition)), 3),
       vec3(CAVE.fog.r, CAVE.fog.g, CAVE.fog.b),
@@ -159,13 +165,19 @@ export function createFrozenWaterSky() {
   // fog after the bake (seen 6 November: far greybox islets drew as pure haze). The placeholder colour holds until then.
   scene.fogNode = fogNode;
   let disposed = false,
-    baked = false;
+    baked = false,
+    flat = false; // no usable bake: the frozen lighting over a flat sky (fallBack)
+  // The fallback is a healthy summer bake read back on 9 November (linear): hemisphere fill luma up 2.02, down 0.434
+  // (the light profile keeps luma); sky radiance at the horizon and, averaged over 45-90 degrees, the zenith. The fog
+  // colour scaled up instead drew a slate-grey sky through the tone mapping.
+  const FLAT = { upper: 2.02, lower: 0.434, horizon: new THREE.Color(4.69, 5.97, 7.17) };
+  const flatBackground = mix(flatSky, vec3(0.47, 2.0, 5.27), smoothstep(0, 0.5, normalWorldGeometry.y));
   let readyMs = 0;
   function update(dt = 0) {
     if (!baked || disposed) return;
     if (dt) transition?.update(dt);
-    scene.backgroundNode = environment.background;
-    scene.environment = selectedEnvironment;
+    scene.backgroundNode = flat ? flatBackground : environment.background;
+    scene.environment = flat ? null : selectedEnvironment;
     scene.environmentIntensity = 1 - atmosphere.underground; // the outdoor cube cannot reflect through cave roofs
     scene.fogNode = fogNode;
     sky.visible = false;
@@ -203,10 +215,17 @@ export function createFrozenWaterSky() {
     renderer.toneMappingExposure = 1;
   }
   async function readFill(source: ReturnType<typeof createWaterSky>) {
-    // Lambert toy materials need the same cube's coarse irradiance as their hemisphere fill.
-    const target = new THREE.RenderTarget(2, 1, { type: THREE.FloatType, depthBuffer: false });
+    // Lambert toy materials need the same cube's coarse irradiance as their hemisphere fill: the cube's last mip, up
+    // and down. The last two texels read the sky itself (level 0, what the background draws) at the zenith and the
+    // horizon, so a bake that left the cube black is seen here (healthy, below) rather than as a black sky on a phone.
+    const target = new THREE.RenderTarget(4, 1, { type: THREE.FloatType, depthBuffer: false });
     const material = new THREE.MeshBasicNodeMaterial({ depthTest: false, depthWrite: false });
-    material.fragmentNode = vec4(source.ambient(vec3(0, uv().x.lessThan(0.5).select(1, -1), 0)), 1);
+    const x = uv().x;
+    const probe = cubeTexture(source.cube, x.lessThan(0.75).select(vec3(0, 1, 0), vec3(0.7, 0.1, 0.7))).level(float(0));
+    material.fragmentNode = vec4(
+      x.lessThan(0.5).select(source.ambient(vec3(0, x.lessThan(0.25).select(1, -1), 0)), probe.rgb),
+      1,
+    );
     const previous = renderer.getRenderTarget(),
       face = renderer.getActiveCubeFace(),
       mip = renderer.getActiveMipmapLevel();
@@ -217,25 +236,73 @@ export function createFrozenWaterSky() {
       } finally {
         renderer.setRenderTarget(previous, face, mip);
       }
-      const pixels = (await renderer.readRenderTargetPixelsAsync(target, 0, 0, 2, 1)) as Float32Array;
-      return { upper: new THREE.Color().fromArray(pixels, 0), lower: new THREE.Color().fromArray(pixels, 4) };
+      const pixels = (await renderer.readRenderTargetPixelsAsync(target, 0, 0, 4, 1)) as Float32Array;
+      return {
+        upper: new THREE.Color().fromArray(pixels, 0),
+        lower: new THREE.Color().fromArray(pixels, 4),
+        zenith: luma(new THREE.Color().fromArray(pixels, 8)),
+        horizon: luma(new THREE.Color().fromArray(pixels, 12)),
+      };
     } finally {
       target.dispose();
       material.dispose();
     }
   }
+  // A bake that left the cube black (no error, no lost device: the 9 November iPhone after its reloads, black sky and
+  // no sky light) is baked once more, then falls back to the flat placeholder sky and default fill, never black.
+  // Each attempt leaves a 'sky baked' mark with what it read back and any GPU error its draws raised.
+  const healthy = (f: Awaited<ReturnType<typeof readFill>>) =>
+    [luma(f.upper), f.zenith, f.horizon].every((v) => Number.isFinite(v) && v > 1e-4);
+  async function bakeChecked(again: boolean) {
+    const device = (renderer.backend as unknown as { device?: GPUDevice }).device;
+    device?.pushErrorScope('out-of-memory');
+    device?.pushErrorScope('validation');
+    let thrown: unknown;
+    try {
+      environment.bake({}, again);
+    } catch (error) {
+      thrown = error;
+    }
+    const errors = device ? await Promise.all([device.popErrorScope(), device.popErrorScope()]).catch(() => []) : [];
+    if (thrown) throw thrown;
+    return errors.find((e) => e)?.message.slice(0, 120) ?? '';
+  }
+  const mark = (attempt: number, f: Awaited<ReturnType<typeof readFill>>, error: string, ms: number) =>
+    playMark('sky baked', {
+      attempt,
+      ms: Math.round(ms),
+      fill: +luma(f.upper).toPrecision(3),
+      zenith: +f.zenith.toPrecision(3),
+      horizon: +f.horizon.toPrecision(3),
+      hidden: document.hidden,
+      error,
+    });
   async function bake() {
     if (disposed) return;
     bootMark('sky-start');
     const started = performance.now();
-    environment.bake();
-    if (tuningEnabled) direction.copy(environment.sunDirection.value);
-    const fill = await readFill(environment);
+    let fill: Awaited<ReturnType<typeof readFill>> | null = null;
+    for (let attempt = 1; attempt <= 2 && !disposed; attempt++) {
+      const error = await bakeChecked(attempt > 1);
+      if (tuningEnabled) direction.copy(environment.sunDirection.value);
+      const read = await readFill(environment);
+      mark(attempt, read, error, performance.now() - started);
+      if (healthy(read)) {
+        fill = read;
+        break;
+      }
+    }
     readyMs = performance.now() - started;
     if (disposed) return;
+    if (!fill) {
+      fallBack();
+      bootMark('sky-ready');
+      return;
+    }
     upper.copy(fill.upper);
     lower.copy(fill.lower);
     baked = true;
+    flat = false;
     skyReady.value = 1;
     flushLighting = update;
     updateFrozenDay();
@@ -297,6 +364,7 @@ export function createFrozenWaterSky() {
     update();
   }
   const ready = rendererReady.then(prepare);
+  document.addEventListener('visibilitychange', recheck);
   let pending = ready;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let dirtySky = false;
@@ -388,24 +456,8 @@ export function createFrozenWaterSky() {
       disposed = true;
       transition?.dispose();
       if (timer) clearTimeout(timer);
-      scene.backgroundNode = prior.background;
-      scene.environment = prior.environment;
-      scene.environmentIntensity = prior.environmentIntensity;
-      scene.fogNode = prior.fogNode;
-      sky.visible = prior.skyVisible;
-      for (const [cloud, visible] of prior.clouds) cloud.visible = visible;
-      sun.color.copy(prior.sunColor);
-      sun.intensity = prior.intensity;
-      sun.position.copy(prior.position);
-      sun.shadow.intensity = prior.shadowIntensity;
-      sun.shadow.autoUpdate = prior.shadowUpdate;
-      SUN_DIR.copy(prior.direction);
-      renderer.toneMappingExposure = prior.exposure;
-      if (hemi && prior.hemi) {
-        hemi.color.copy(prior.hemi.color);
-        hemi.groundColor.copy(prior.hemi.ground);
-        hemi.intensity = prior.hemi.intensity;
-      }
+      document.removeEventListener('visibilitychange', recheck);
+      restorePrior();
       // A pending readback owns its source textures until it settles; never dispose a GPU resource beneath it.
       void pending
         .finally(() => {
@@ -416,4 +468,56 @@ export function createFrozenWaterSky() {
         .catch(() => {});
     },
   };
+  /** The look before the bake: the flat placeholder dome, its fog colour and the default sun and fill. */
+  function restorePrior() {
+    scene.backgroundNode = prior.background;
+    scene.environment = prior.environment;
+    scene.environmentIntensity = prior.environmentIntensity;
+    scene.fogNode = prior.fogNode;
+    sky.visible = prior.skyVisible;
+    for (const [cloud, visible] of prior.clouds) cloud.visible = visible;
+    sun.color.copy(prior.sunColor);
+    sun.intensity = prior.intensity;
+    sun.position.copy(prior.position);
+    sun.shadow.intensity = prior.shadowIntensity;
+    sun.shadow.autoUpdate = prior.shadowUpdate;
+    SUN_DIR.copy(prior.direction);
+    renderer.toneMappingExposure = prior.exposure;
+    if (hemi && prior.hemi) {
+      hemi.color.copy(prior.hemi.color);
+      hemi.groundColor.copy(prior.hemi.ground);
+      hemi.intensity = prior.hemi.intensity;
+    }
+  }
+  /** No usable bake: never black. The sun and fill stay the frozen sky's (from constants), over a two-colour sky (FLAT)
+   *  with no reflection cube; the haze is the flat horizon colour while skyReady is 0. Restoring the pre-bake look instead was
+   *  tried: its placeholder dome is 700 m round the origin, so Far Head stood outside it under a dark clear colour,
+   *  lit by the dimmer pre-bake lights. The next return to visible tries the bake again. */
+  function fallBack() {
+    baked = true;
+    flat = true;
+    skyReady.value = 0;
+    upper.setScalar(FLAT.upper);
+    lower.setScalar(FLAT.lower);
+    flatSky.value.copy(FLAT.horizon);
+    flushLighting = update;
+    updateFrozenDay();
+    update();
+    playMark('sky fallback', { readyMs: Math.round(readyMs), hidden: document.hidden });
+  }
+  /** Back from hidden: the cube may not have survived (a GPU process restart reports no lost device on every
+   *  browser), so read it again and rebake if it went dark; a fallback sky tries the bake again. */
+  function recheck() {
+    if (document.hidden || !baked || disposed || evening) return;
+    pending = pending.then(async () => {
+      if (!baked || disposed) return;
+      if (!flat) {
+        const read = await readFill(environment);
+        if (healthy(read)) return;
+        mark(0, read, 'dark after visible', 0);
+      }
+      await bake();
+    });
+    void pending.catch(() => {});
+  }
 }

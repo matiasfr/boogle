@@ -42,18 +42,32 @@ export async function createRailwayPath(owner: OwnedView) {
   const slots: { x: number; y: number; z: number }[] = [];
   for (let s = 116; s >= 60; s -= 7)
     for (const side of [-1, 1]) {
-      const p = besideLine(line, s, side * 1.72),
-        y = railY(line, s);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.5, 0.12), flat('#5c4530'));
-      post.position.set(p.x, y + 0.75, p.z);
-      post.castShadow = true;
-      const light = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.26), glow);
-      light.position.set(p.x, y + 1.55, p.z);
-      row.add(post, light);
-      slots.push({ x: p.x, y: y + 0.75, z: p.z });
+      const p = besideLine(line, s, side * 1.72);
+      slots.push({ x: p.x, y: railY(line, s) + 0.75, z: p.z });
     }
+  // One instanced batch each for the posts and the lights: 36 draws as separate meshes, seen from every far view of
+  // the island (the iPhone pass, 9 November).
+  const postGeo = new THREE.BoxGeometry(0.12, 1.5, 0.12),
+    lightGeo = new THREE.BoxGeometry(0.26, 0.26, 0.26);
+  const posts = new THREE.InstancedMesh(postGeo, flat('#5c4530'), slots.length),
+    lights = new THREE.InstancedMesh(lightGeo, glow, slots.length);
+  posts.castShadow = true;
+  const o = new THREE.Object3D();
+  slots.forEach((at, k) => {
+    o.position.set(at.x, at.y, at.z);
+    o.updateMatrix();
+    posts.setMatrixAt(k, o.matrix);
+    o.position.y = at.y + 0.8;
+    o.updateMatrix();
+    lights.setMatrixAt(k, o.matrix);
+  });
+  row.add(posts, lights);
   owner.add(row);
-  owner.cleanup(() => glow.dispose());
+  owner.cleanup(() => {
+    glow.dispose();
+    postGeo.dispose();
+    lightGeo.dispose();
+  });
   let placed = false;
   return {
     update(open: boolean, quiet = false) {

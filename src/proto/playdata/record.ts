@@ -34,6 +34,7 @@ import type { PlayEvent } from '../../../server/src/playdata.ts';
 import { onTuneRecord } from '../../tunables/events.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
 import { background } from '../../async.ts';
+import { bootMarks } from '../../boot/timeline.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const SEND_MS = 5000;
@@ -51,6 +52,7 @@ const PERF_WINDOW = 1024; // frames kept per window
 const CPU_EVERY = 6; // perf windows between the per-section CPU lines
 const PROMPTS_PER_ID = 8; // a prompt coming and going
 const ERRORS = 40;
+const STALL_MS = 3000; // a 1 s timer this late: the page stopped
 
 const round = (v: number) => Math.round(v);
 const clock = (ms = performance.now()) => Math.round(ms / 100) / 10; // s since the page loaded, to a tenth
@@ -522,6 +524,30 @@ setInterval(() => {
   perf();
   void pump();
 }, SEND_MS);
+
+// A page that stops running while visible: a 1 s timer more than 3 s late, with no real hide in between. Loading
+// included (no frames run then, so src/boot/startup-frames.ts' 'long frame' can't see it). On 9 November an iPhone
+// sent nothing for 29 s at Far Head and its reloads stalled 24-40 s while loading. A stalled page's queued
+// visibility events all read "visible", so only a hide seen as hidden excuses the gap. Twelve at most.
+let tickAt = performance.now(),
+  hidSinceTick = false,
+  stalls = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) hidSinceTick = true;
+});
+setInterval(() => {
+  const now = performance.now();
+  if (now - tickAt > STALL_MS && !hidSinceTick && !document.hidden && stalls < 12) {
+    stalls++;
+    playMark('page stalled', {
+      ms: round(now - tickAt),
+      phase: bootMarks().at(-1)?.name ?? '',
+      frames: prof.last.frames,
+    });
+  }
+  tickAt = now;
+  hidSinceTick = false;
+}, 1000);
 
 // ---------------------------------------------------------------- errors, each message once
 const seen = new Set<string>();

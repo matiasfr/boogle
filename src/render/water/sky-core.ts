@@ -41,11 +41,7 @@ const fbm = Fn(([p]: [N]) => {
   return sum;
 });
 
-export function createWaterSkyFor(
-  renderer: THREE.WebGPURenderer,
-  bakedArt?: SkyArt,
-  cubeSize: SkyCubeSize = 1024,
-) {
+export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: SkyArt, cubeSize: SkyCubeSize = 1024) {
   const params: SkyParams = {
     elevation: 50,
     azimuth: 205,
@@ -231,10 +227,10 @@ export function createWaterSkyFor(
       atmosphere.multiple.texture.dispose();
       atmosphere.sky.texture.dispose();
     },
-    bake(changes: Partial<SkyParams> = {}) {
+    bake(changes: Partial<SkyParams> = {}, again = false) {
       Object.assign(params, changes);
       const key = Object.values(params).join('/');
-      if (key !== lastKey) {
+      if (key !== lastKey || again) {
         lastKey = key;
         sunDirection.value.setFromSphericalCoords(
           1,

@@ -77,9 +77,12 @@ let gpuChecks = 0;
 let gpuCheckGeneration = 0;
 let gpuChecksDone: Promise<void> = Promise.resolve();
 let visibilityAt = performance.now();
+let frameAt = -1; // the last frame callback that ran; -1 before the first
 const graphicsContext = () => ({
   visibility: document.visibilityState,
   sinceVisibilityMs: Math.round(performance.now() - visibilityAt),
+  // A visibility event long after the last frame, while it never went hidden: the page stopped, not the tab.
+  sinceFrameMs: frameAt < 0 ? -1 : Math.round(performance.now() - frameAt),
   stopped: graphicsStopped,
   calls: renderer.info.render.calls,
   drawCalls: renderer.info.render.drawCalls,
@@ -115,6 +118,7 @@ function stopGraphics(cause: string, message: string) {
 // Catch the entire callback: water compute can throw before the final draw. No timer/second frame loop.
 export const guardGraphicsFrame = (frame: (now: number) => void) => (now: number) => {
   if (graphicsStopped || document.hidden) return;
+  frameAt = performance.now();
   // Scopes only after an uncaptured error. Include compute before the draw, and fence submitted work without
   // awaiting it in the game loop. Bound in-flight checks; an unchecked draw invalidates the streak, never proves failure.
   const device =
@@ -265,6 +269,34 @@ function resize() {
   renderer.setSize(view.w, view.h, false);
   camera.aspect = view.w / Math.max(1, view.h);
   camera.updateProjectionMatrix();
+  markSize();
+}
+// The canvas against the window, the visual viewport and the screen, in the play data whenever one changes (24 at
+// most): the 9 November iPhone showed a pale band below a canvas 844 px tall on a 912 px screen, and a 420x420 window
+// mid-rotation. CSS pixels, but buffer width and height in device pixels.
+let sizeMarks = 0,
+  lastSize = '';
+function markSize() {
+  const vv = visualViewport;
+  const size = {
+    cssW: view.w,
+    cssH: view.h,
+    innerW: innerWidth,
+    innerH: innerHeight,
+    vvW: Math.round(vv?.width ?? 0),
+    vvH: Math.round(vv?.height ?? 0),
+    vvTop: Math.round(vv?.offsetTop ?? 0),
+    screenW: screen.width,
+    screenH: screen.height,
+    bufW: canvas.width,
+    bufH: canvas.height,
+    standalone: (navigator as Navigator & { standalone?: boolean }).standalone === true,
+  };
+  const key = Object.values(size).join(' ');
+  if (key === lastSize || sizeMarks >= 24) return;
+  lastSize = key;
+  sizeMarks++;
+  playMark('canvas size', size);
 }
 addEventListener('resize', resize);
 new ResizeObserver(resize).observe(canvas);
