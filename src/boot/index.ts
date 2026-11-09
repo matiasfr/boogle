@@ -10,4 +10,7 @@ import { bootFailed } from './failure.ts';
 if (new URLSearchParams(location.search).get('startup') === '1')
   (await import('../debug/startup-record.ts')).installStartupRecorder();
 bootMark('files-start');
+// A playtest jump-in (./jump-in.ts): seed a fresh private room first, before anything reads the room from the address.
+const from = new URLSearchParams(location.search).get('from');
+if (from !== null) await (await import('./jump-in.ts')).jumpIn(from);
 void import('../main.ts').catch(bootFailed);
