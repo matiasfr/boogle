@@ -21,8 +21,8 @@ const claude = (who: string, model: string, effort: string): Pick => ({ who, mod
 export const routes: Route[] = [
   {
     work: 'Orchestration, review of returned work, owner conversation',
-    withCodex: claude('main session', 'opus', 'medium'),
-    normal: claude('main session', 'opus', 'medium'),
+    withCodex: claude('main session', 'fable', 'medium'),
+    normal: claude('main session', 'fable', 'medium'),
   },
   {
     work: 'Design review of a plan or brief with gameplay calls, before it is built',
@@ -31,8 +31,8 @@ export const routes: Route[] = [
   },
   {
     work: 'Planning complex work (docs/plans/<topic>.md)',
-    withCodex: claude('planner agent', 'opus', 'high'),
-    normal: claude('planner agent', 'opus', 'high'),
+    withCodex: claude('planner agent', 'fable', 'high'),
+    normal: claude('planner agent', 'fable', 'high'),
   },
   {
     work: 'Implementation, fixes, tooling, captures-driven tasks',
@@ -43,6 +43,20 @@ export const routes: Route[] = [
     work: 'High-risk implementation (server, sync, src/world, src/net)',
     withCodex: codex('gpt-6.1-sol', 'high'),
     normal: claude('implementer agent, effort raised at spawn', 'opus', 'high'),
+  },
+  {
+    work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
+    withCodex: {
+      who: "the other vendor from the author: Codex review job for Claude's code, a fresh Claude general-purpose subagent for Codex's",
+      model: 'gpt-6-astra, or fable',
+      effort: 'xhigh',
+    },
+    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'xhigh'),
+  },
+  {
+    work: 'Runner: owed proofs on a built branch (rebase, bot runs, stills, tick marks); reports failures, changes no design or game code',
+    withCodex: codex('gpt-6-luna', 'low'),
+    normal: claude('general-purpose subagent', 'sonnet', 'medium'),
   },
   {
     work: 'Hardest design, research or second-opinion review',
@@ -72,7 +86,7 @@ export const routes: Route[] = [
 
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
-  planner: { model: 'opus', effort: 'high' },
+  planner: { model: 'fable', effort: 'high' },
   implementer: { model: 'opus', effort: 'medium' },
   designer: { model: 'opus', effort: 'medium' },
 };

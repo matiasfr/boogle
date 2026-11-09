@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../decisions.md#current-decision-index).
 
-**Updated:** 9 November 2026, 20:15 UTC. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 9 November 2026, 21:00 UTC. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
 
 ## Links
 
@@ -21,11 +21,15 @@ Claude only until 12 November (`npm run models`). Agents run in `.claude/worktre
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| F2: secrets and the finders' bay | running, built | `.claude/worktrees/agent-af6410c7219d14e16`. Resumed 20:10 UTC after the restart: rebase, then the long run `f2-long2` and four stills. Then the designer's layout call (three secrets reachable before their ability: lookout, alcove, sea stack), the review and ship. Cuts the gold finds from the live game |
-| Glider B + Home flow fixes | running, built | `.claude/worktrees/agent-a1c64a5b32fc10f09`. The restart killed its long run (`gb-long`: browser closed, no verdict); resumed 20:10 UTC to rebase and run `gb-long2`. An independent review of the branch runs beside it. WORLD_NS v23: ship only when no owner session is live, with `--reviewed` |
-| Playtest jump-ins | running, part built | `.claude/worktrees/agent-a1abf1ff2a1170b5a`. Owner ask, 9 Nov. Plan: docs/plans/playtest-jump-in.md. Resumed 20:10 UTC: rebase onto J5, then the plan's seven owed runs and step 7's `land` values. The glider B rows wait until glider B is on main (message the agent then). Needs an independent review; lands before D1 |
-| Review of unreviewed lockstep merges | running | `578d8d3d`, `0d3f4190`, `a67afce9`, `9efed0ad`, `2afdbb86`, `6a41ab2b` merged on 9 November with only their author's checks. A reviewer resumed 20:10 UTC on `docs/reviews/lockstep-merges-2026-11-09.md` (branch `worktree-agent-af4d03be8160ce481`): finish `9efed0ad`, re-verify the seven findings, write fix briefs. Then dispatch the fixes (forge-rack cap after the fit and the remembered release epoch look the most likely) |
-| Next | | D1 (delete `?proto=place`, with D1c per the jump-in plan) → R1–R3; kiln mouth polish; Split-rock cleft placement; the leftovers below |
+| F2: secrets and the finders' bay | running, built | `.claude/worktrees/agent-af6410c7219d14e16`. Rebased; `f2-long2` and six stills are queued behind glider B's long run. Then the designer's layout call (three secrets reachable before their ability: lookout, alcove, sea stack), an independent review and ship. Cuts the gold finds from the live game |
+| Glider B + Home flow fixes | running, review back | `.claude/worktrees/agent-a1c64a5b32fc10f09`. `gb-long2` running. The independent review says ship after one fix (`holds` in `src/adapters/railway.ts` lacks `rail.glide`: a lost race plays the reward twice) plus four small tests and a plume fix; sent to the agent for after the run. Then a re-review of the fix, and ship with WORLD_NS v23 when no owner session is live. Prefer landing "a reset starts players fresh" first |
+| A reset starts players fresh | running | Owner, 9 Nov: after a world reset a returning player gets the opening and character creation, not their old spot in town. Implementer dispatched; touches `src/boot/world-reset.ts`, `src/features/return-spot.ts`, the arrival. Lands before glider B's v23 if it can |
+| Playtest jump-ins | running, part built | `.claude/worktrees/agent-a1abf1ff2a1170b5a`. Owner ask, 9 Nov. Plan: docs/plans/playtest-jump-in.md. Rebased onto J5; working through the plan's seven owed runs and step 7's `land` values. The glider B rows wait until glider B is on main (message the agent then). Needs an independent review; lands before D1 |
+| Lockstep merges: fixes | running | The review is finished (`docs/reviews/lockstep-merges-2026-11-09.md`, shipping): one real bug (the forge rack gives a full back after the cradle is fitted, blocking the footings), one narrow one (a carrier back for under a rule tick keeps an old grace), one test nit. An implementer is building fixes A–C; needs an independent review. Findings 3–5 are not fixed ([agent-calls](../agent-calls.md)) |
+| Workflow pass: heartbeat and ship queue | running | Owner call "Workflow pass", 9 Nov. Nightly verdicts and recent-only worktrees in `npm run heartbeat`; `ship-queue` binds `--reviewed` to a fingerprint of the risky diff (`npm run review-stamp`) and holds risky ships on a red night. When it lands, name the new flags in the orchestrate skill |
+| Workflow pass: nightly triage | running | The nightly scenarios failed 5–9 Nov ([issue 916](https://github.com/matiasfr/boogle/issues/916)) and perf has been invalid since 7 Nov. Diagnose each scenario, fix the runner (9 Nov: its worktree vanished mid-run), make perf wait for a quiet GPU, add a nightly `long` job. After it ships: reinstall the daily jobs, post the triage on issue 916 |
+| Workflow pass: bot queue | running | The queue waits for load under 30 itself; every `verdict.json` records commit, tree, load and command; a killed run says "killed". When it lands, drop the "check uptime" line from briefs |
+| Next | | One long playthrough on main after glider B, F2 and jump-ins land (not one per branch). Then the hot-file split and the train stools under "Queued", D1 (delete `?proto=place`, with D1c per the jump-in plan) → R1–R3; kiln mouth polish; Split-rock cleft placement; the leftovers below |
 
 ## Merged 9 November
 
@@ -53,6 +57,9 @@ Small things jobs reported and didn't fix. Fold each into the next job that touc
 - **For the D1 brief**, still on Place after X1: `sheet.ts` (Place saves and beats), `saves.ts`, `restore-pair.ts`, `coop-playthrough.ts`, `coop-warp.ts`'s `__place` read, railway-halts `skipTrains`, `dev/codex/see.ts`, `dev/audio/render.ts`, the video shots, and the level, economy and scan tools. The production co-op runner has no reload or rejoin. `--from` knows only `q5-done` and `trains-on`. Short runs print "Never marked" noise from the Place playdata card. The cold-start shore camera is unverified on production. Two peers hold 3x warp, not 5x (one sample each).
 
 ## Queued
+
+- **Train stools (owner, 9 November: "positioning is weird and sitting feels broken").** The two stools on each empty flat car (`src/entities/railway/train-view.ts`, `stool.position.set(car.spec.hx - 0.2, car.hy, z)`; seats from `src/proto/place/seat.ts`) stand at the car's edge, and in the owner's screenshot the player stands half inside one while seated. A pass on where they stand, which way a sitter faces, the sit pose and getting on and off a moving car; prove it with real-time video on a moving train, one and two players. Start when a GPU slot frees.
+- **Split the hot files, and start the bot from any seed (owner call "Workflow pass", items 2 and 6).** After glider B, F2 and jump-ins land, since all three edit these files: `dev/look/rail-seed.ts` as a table keyed by seed name; `dev/look/bots/railway.ts` (1,900 lines) by segment, each segment startable from its jump-in seed so `playthrough --from <stage>` works for every stage; `docs/game-design/place.md` (1,411 lines, 66 commits in three days) as one file per feature. Planner first.
 
 From 5–7 November and not on the roadmap anywhere else, so kept here; check each against [direction.md](../direction.md) before starting it.
 
@@ -82,7 +89,8 @@ From 5–6 November; drop each when answered.
 3. **Brief questions** in money, cart first and first evening.
 4. **Suspect copy:** `SHOP.kept[0]` says "the hat" for any item; "Chops trees, breaks rocks, and more" appears before rocks exist in T1; the Works verbs under Leftovers.
 5. **Museum:** inspect the miniature, the crystal specimen, or both.
-6. **Worktree cleanup:** about 280 old worktrees, most with one unmerged research or experiment commit (`npm run heartbeat` lists them).
+6. **Worktrees left after the 9 November cleanup** (30 archived as local `archive/worktree/<branch>` tags, 39 merged ones removed): three with uncommitted changes (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`) and four recent ones (`claude/godot-assumptions`, `claude/glider-b-plan`, `claude/idea-land-ack`, `claude/playtest-jump-in-plan`). Commit-and-archive, or keep?
+7. **Model routes:** the main session, planner and pre-merge review now run on Fable ([agent-calls](../agent-calls.md)); say if any should go back to Opus.
 
 - **Tidy:** last code pass `ca3212d0` (render/audio, #1248, 9 November). Next: the other areas since `1af61213`, then architecture, docs, memory.
 
