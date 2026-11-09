@@ -4,6 +4,7 @@
 import { beatsOf, placeAt, type Place } from './beats.ts';
 import { clock, num, span, str, type Ev, type Session } from './read.ts';
 import { tuneDigest } from '../../src/tunables/events.ts';
+import { jumpOf } from '../../src/world/railway-jump.ts';
 
 const template = (s: string) => s.replace(/\d+/g, '#');
 const percentile = (sorted: number[], q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
@@ -173,12 +174,22 @@ function perfBySection(s: Session, steps: Step[]) {
 }
 
 /** One session, as lines. */
+// A playtest jump-in (docs/plans/playtest-jump-in.md): the room was seeded at a stage, so its beats are a segment.
+const seedLabel = (stage: string) => jumpOf(stage)?.label ?? stage;
+export function startedAs(m: Session['meta']): string {
+  const stage = str(m.seed);
+  if (!stage) return '';
+  if (stage === 'start') return 'from the beginning, in a fresh private room';
+  return `jump-in "${seedLabel(stage)}" (${stage}), a seeded private room, not a first run`;
+}
+
 export function summarize(s: Session, others: Session[], places: Place[]): string[] {
   const out: string[] = [];
   const m = s.meta;
   const when = new Date(s.start).toISOString().slice(0, 16).replace('T', ' ');
   out.push(`=== ${playerName(s)}: ${s.card} (${s.id}) ===`);
   out.push(`When: ${when} UTC, room ${str(m.room) || '?'}, build ${str(m.build) || '?'}`);
+  if (startedAs(m)) out.push(`Started: ${startedAs(m)}`);
   const hidden = s.hiddenS >= 5 ? `, plus ${span(s.hiddenS)} with the tab hidden` : '';
   const ended = s.events.some((e) => e.k === 'end') ? 'left the page' : 'no goodbye (tab killed, or still open)';
   out.push(`Played: ${span(playedS(s))}${hidden}; ${ended}`);
@@ -329,7 +340,9 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
     const namesSeen = [...marks.keys()];
     for (const [label, re] of beats) (namesSeen.some((n) => re.test(n)) ? did : never).push(label);
     out.push('', `Did: ${did.join(', ') || 'none of the beats'}`);
-    out.push(`Never (or this build doesn't mark it): ${never.join(', ') || 'nothing'}`);
+    const seeded =
+      str(m.seed) && str(m.seed) !== 'start' ? `(seeded: beats before ${seedLabel(str(m.seed))} were not played here) ` : '';
+    out.push(`Never (or this build doesn't mark it): ${seeded}${never.join(', ') || 'nothing'}`);
   }
 
   // Time per place and per activity, from the 1 Hz samples.
@@ -452,6 +465,7 @@ export function compare(a: Session, b: Session): string[] {
   const row = (label: string, x: string, y: string) => `  ${label.padEnd(30).slice(0, 30)} ${x.padEnd(16)} ${y}`;
   const out = [row('', `${playerName(a)} ${a.id.slice(-4)}`, `${playerName(b)} ${b.id.slice(-4)}`)];
   out.push(row('Played', span(playedS(a)), span(playedS(b))));
+  out.push(row('Start', str(a.meta.seed) || 'first run', str(b.meta.seed) || 'first run'));
   out.push(row('Device', str(a.meta.device), str(b.meta.device)));
   out.push(row('Variant', str(a.meta.v) || 'default', str(b.meta.v) || 'default'));
   out.push(row('Idle', span(idleS(a)), span(idleS(b))));
