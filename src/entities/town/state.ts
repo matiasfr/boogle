@@ -13,6 +13,8 @@ export type TownInspection = {
   indoors: { room: string | null; inside: string | null };
   /** The house desk's stage: how many of its facts are true. */
   houseStage: number;
+  /** What this player owns and wears (src/entities/wardrobe/state.ts), for Fine Prices' evals. */
+  wardrobe: ReturnType<typeof import('../wardrobe/state.ts').inspectWardrobe>;
 };
 let current: (() => TownInspection) | null = null;
 export const inspectTown = () => current?.() ?? null;
