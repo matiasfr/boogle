@@ -1,7 +1,7 @@
 // Round 4's local material and movement cues. Finite native sources on the existing SFX bus; no game state.
 // Research: construction-sound recommendations 1-5, 10; audio-architecture 11; collect-sounds section 3.
 import { dbToGain, getAudio } from './audio.ts';
-import { audioSettings } from './audio-tuning.ts';
+import { audioSettings, type AudioSetting } from './audio-tuning.ts';
 import { noiseBuffer } from './noise.ts';
 import { camera } from './scene.ts';
 
@@ -104,9 +104,13 @@ export const placeCues: Record<PlaceCue, string> = {
   seesaw: 'A springy wooden creak rising into the launch.',
 };
 
+/** Cues with a tunable trim on top of their authored layers. */
+const CUE_TRIM: Partial<Record<PlaceCue, AudioSetting>> = { rockBreak: 'placeImpactDb', treeLand: 'placeImpactDb' };
+
 /** Same recipe live and offline. Gain is distance only; the authored levels above stay comparable. */
 export function renderPlaceSound(ctx: BaseAudioContext, out: AudioNode, cue: PlaceCue, at: number, gain = 1) {
-  if (cue === 'rockBreak' || cue === 'treeLand') gain *= dbToGain(audioSettings.placeImpactDb);
+  const trim = CUE_TRIM[cue];
+  if (trim) gain *= dbToGain(audioSettings[trim]);
   let seconds = 0;
   for (const layer of recipes[cue]) {
     const t = at + layer.delay;

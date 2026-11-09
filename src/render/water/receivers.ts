@@ -87,7 +87,6 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   // Keep the default path unchanged for all ordinary receivers.
   const sandMask = sand ? float(sand.mask).clamp(0, 1) : float(0);
   // The terrain owns slope eligibility in its sand mask; do not reject that authored beach a second time.
-  const sandUp = float(1);
   const film = smoothstep(0, 0.004, wash.x).mul(smoothstep(-0.05, 0.05, positionWorld.y));
   const dampBand = sand
     ? (() => {
@@ -103,10 +102,10 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   // Only the exposed beach follows backwash drying; submerged pigment joins it continuously at sea level.
   const substrateWet = max(wash.z, smoothstep(-0.05, 0, positionWorld.y).oneMinus());
   // Pigment contrast must not weaken the physical wet sheen. Keep the demo's wetness for roughness.
-  const sandWet = max(dampBand, substrateWet).mul(sandUp);
+  const sandWet = max(dampBand, substrateWet);
   // Preserve colour recovery inside the persistent damp band; max(static, wet) hid it there.
   const damp = sand
-    ? persistent.add(substrateWet.mul(sand.tideMarkStrength).mul(persistent.oneMinus())).mul(sandUp)
+    ? persistent.add(substrateWet.mul(sand.tideMarkStrength).mul(persistent.oneMinus()))
     : surface.a;
   const sandFoam = sand
     ? (() => {

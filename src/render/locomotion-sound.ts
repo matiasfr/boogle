@@ -1,5 +1,6 @@
 // Procedural sole/body recipes, context-injected for the listening pack. No samples or second audio context.
 import type { StepSurface } from './locomotion-surfaces.ts';
+import { cachedBuffer } from './noise.ts';
 
 export type LocomotionKind = 'walk' | 'run' | 'jump' | 'land';
 export type LocomotionSound = {
@@ -12,13 +13,12 @@ export type LocomotionSound = {
   at?: number;
   onEnded?: () => void;
 };
-const buffers = new WeakMap<BaseAudioContext, Map<string, AudioBuffer>>();
 const MATERIAL = {
-  grass: { body: 125, decay: 48, grain: 0.18, band: 650, width: 400, ms: 8, ring: 0, overtone: 2 },
-  sand: { body: 105, decay: 55, grain: 0.26, band: 900, width: 500, ms: 10, ring: 0, overtone: 2 },
-  wood: { body: 210, decay: 36, grain: 0.1, band: 700, width: 200, ms: 5, ring: 0.18, overtone: 2.08 },
-  rail: { body: 165, decay: 43, grain: 0.12, band: 1300, width: 300, ms: 5, ring: 0.14, overtone: 3.47 },
-  water: { body: 145, decay: 46, grain: 0.2, band: 1200, width: 600, ms: 9, ring: 0, overtone: 2 },
+  grass: { body: 125, decay: 48, grain: 0.18, band: 650, width: 400, ms: 8, ring: 0, overtone: 2, bubble: 0 },
+  sand: { body: 105, decay: 55, grain: 0.26, band: 900, width: 500, ms: 10, ring: 0, overtone: 2, bubble: 0 },
+  wood: { body: 210, decay: 36, grain: 0.1, band: 700, width: 200, ms: 5, ring: 0.18, overtone: 2.08, bubble: 0 },
+  rail: { body: 165, decay: 43, grain: 0.12, band: 1300, width: 300, ms: 5, ring: 0.14, overtone: 3.47, bubble: 0 },
+  water: { body: 145, decay: 46, grain: 0.2, band: 1200, width: 600, ms: 9, ring: 0, overtone: 2, bubble: 0.28 },
 };
 // A: soft sole, B: a drier/material-rich contact, C: a rounded toy tick.
 const STYLES = [
@@ -28,16 +28,23 @@ const STYLES = [
 ] as const;
 
 function recipe(ctx: BaseAudioContext, surface: StepSurface, kind: LocomotionKind, take: number, style: number) {
-  let cache = buffers.get(ctx);
-  if (!cache) buffers.set(ctx, (cache = new Map()));
-  const key = `${style}:${surface}:${kind}:${take}`;
-  const known = cache.get(key);
-  if (known) return known;
+  const duration = kind === 'land' ? 0.18 : kind === 'jump' ? 0.09 : 0.12;
+  return cachedBuffer(ctx, `step:${style}:${surface}:${kind}:${take}`, duration, 1, (data) =>
+    fill(data, ctx.sampleRate, duration, surface, kind, take, style),
+  );
+}
+
+function fill(
+  data: Float32Array,
+  sampleRate: number,
+  duration: number,
+  surface: StepSurface,
+  kind: LocomotionKind,
+  take: number,
+  style: number,
+) {
   const m = MATERIAL[surface],
-    s = STYLES[style] ?? STYLES[0],
-    duration = kind === 'land' ? 0.18 : kind === 'jump' ? 0.09 : 0.12;
-  const b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate),
-    data = b.getChannelData(0);
+    s = STYLES[style] ?? STYLES[0];
   let seed = 0x5b00 + take * 173 + Object.keys(MATERIAL).indexOf(surface) * 7919;
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -53,7 +60,7 @@ function recipe(ctx: BaseAudioContext, surface: StepSurface, kind: LocomotionKin
   const f = m.body * s.pitch * (0.94 + take * 0.024) * (kind === 'land' ? 0.9 : 1),
     bodyDecay = m.decay * s.decay * (kind === 'land' ? 0.8 : kind === 'run' ? 1.12 : 1);
   for (let i = 0; i < data.length; i++) {
-    const t = i / ctx.sampleRate;
+    const t = i / sampleRate;
     const attack = 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, t / 0.004)),
       fade = 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, (duration - t) / 0.02));
     const body = Math.sin(2 * Math.PI * f * t) * Math.exp(-bodyDecay * t);
@@ -65,13 +72,12 @@ function recipe(ctx: BaseAudioContext, surface: StepSurface, kind: LocomotionKin
     const tick = Math.sin(2 * Math.PI * f * 3 * t) * Math.exp(-95 * t);
     // Delayed descending bubble under the tiny splash, with its own click-free onset.
     const bt = Math.max(0, t - 0.012);
-    const bubble =
-      surface === 'water'
-        ? Math.sin(2 * Math.PI * (330 * bt + 3 * (1 - Math.exp(-40 * bt)))) *
-          (1 - Math.exp(-600 * bt)) ** 2 *
-          Math.exp(-65 * bt) *
-          0.28
-        : 0;
+    const bubble = m.bubble
+      ? Math.sin(2 * Math.PI * (330 * bt + 3 * (1 - Math.exp(-40 * bt)))) *
+        (1 - Math.exp(-600 * bt)) ** 2 *
+        Math.exp(-65 * bt) *
+        m.bubble
+      : 0;
     data[i] =
       attack *
       fade *
@@ -81,8 +87,6 @@ function recipe(ctx: BaseAudioContext, surface: StepSurface, kind: LocomotionKin
   // One measured source reference; performance strength lives in dB at the caller, never accidental waveform peaks.
   const scale = 10 ** (-12 / 20) / peak;
   for (let i = 0; i < data.length; i++) data[i]! *= scale;
-  cache.set(key, b);
-  return b;
 }
 
 export function renderLocomotionSound(ctx: BaseAudioContext, out: AudioNode, sound: LocomotionSound) {

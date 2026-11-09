@@ -8,12 +8,12 @@
 import './honk.css';
 import * as THREE from 'three';
 import { SpriteNodeMaterial } from 'three/webgpu';
-import { camera } from '../render/scene.ts';
 import { readableUnlit } from '../render/readable-unlit.ts';
 import { COLORS } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio, onBeat } from '../render/audio.ts';
+import { farGain } from '../render/boing.ts';
 import { onStart } from '../loop.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { registerAction } from '../player/controls.ts';
@@ -32,7 +32,6 @@ const incoming = createLimiter(3, 1000);
 const chord = createChordDetector({ windowMs: TUNE.chordWindowMs, min: TUNE.chordMin });
 
 // ---------------------------------------------------------------- sound
-const farGain = (x: number, z: number) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 500);
 
 // One horn voice: the bwAH (a quick bend down onto the note), a slight sag at the end. `wave` is the player's flavour.
 type Voice = { f: number; at: number; dur: number; bend: number; lp: number; vol: number; wave: OscillatorType };
@@ -282,7 +281,7 @@ function onHonk(who: string, now: number, v: number) {
   const colorIdx = own ? me.colorIdx : (r?.colorIdx ?? 0);
   const avatar = own ? me.avatar : r?.avatar;
   const pos = own ? me.body?.position : r?.target;
-  const vol = own ? 0.16 : 0.14 * (pos ? farGain(pos.x, pos.z) : 0.3);
+  const vol = own ? 0.16 : 0.14 * (pos ? farGain(pos.x, pos.z, 500) : 0.3);
   const [f, f2] = honkNotes(colorIdx, sharedSeconds(), v);
   honkSound(f, vol, v, colorIdx, f2);
   lastNote.set(who, v === 2 ? f2 : f);

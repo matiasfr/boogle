@@ -4,8 +4,12 @@
 import { clamp } from '../math-pure.ts';
 import { audioSettings, onAudioSettingChange, type AudioSetting } from './audio-tuning.ts';
 
-export type Bus = 'music' | 'ambience' | 'sfx' | 'ui' | 'voice' | 'character' | 'work' | 'social';
-const BUS_NAMES: readonly Bus[] = ['music', 'ambience', 'sfx', 'ui', 'voice', 'character', 'work', 'social'];
+const BUS_NAMES = ['music', 'ambience', 'sfx', 'ui', 'voice', 'character', 'work', 'social'] as const;
+export type Bus = (typeof BUS_NAMES)[number];
+/** Buses that feed another bus instead of the compressor. Parents come first in BUS_NAMES. */
+const PARENT: Partial<Record<Bus, Bus>> = { character: 'sfx', work: 'sfx', social: 'sfx' };
+/** The voice-duck depth for each ducked bus. */
+const DUCK: Partial<Record<Bus, AudioSetting>> = { music: 'duckMusicDb', ambience: 'duckAmbienceDb' };
 const VOLUME_KEY = 'boogle.volume';
 const MUTED_KEY = 'boogle.muted';
 export const dbToGain = (db: number) => 10 ** (db / 20);
@@ -35,21 +39,20 @@ type BusNodes = { authored: GainNode; user: GainNode; duck: GainNode };
 const buses = new Map<Bus, BusNodes>();
 const masterGain = () => (muted ? 0 : volume * volume);
 const authoredDb = (bus: Bus) => audioSettings[`${bus}Db`];
-const duckDb = (bus: Bus) =>
-  !voiceDucking
-    ? 0
-    : bus === 'music'
-      ? audioSettings.duckMusicDb
-      : bus === 'ambience'
-        ? audioSettings.duckAmbienceDb
-        : 0;
+const duckDb = (bus: Bus) => {
+  const key = DUCK[bus];
+  return voiceDucking && key ? audioSettings[key] : 0;
+};
 const w = window as Window & { webkitAudioContext?: typeof AudioContext };
 const nav = navigator as Navigator & { audioSession?: { type: string } };
 
+/** A click-free 30 ms move to `value`, for live level edits. */
+export function rampParam(param: AudioParam, value: number, now: number) {
+  param.cancelAndHoldAtTime(now);
+  param.linearRampToValueAtTime(value, now + 0.03);
+}
 function smooth(param: AudioParam, value: number) {
-  if (!ctx) return;
-  param.cancelAndHoldAtTime(ctx.currentTime);
-  param.linearRampToValueAtTime(value, ctx.currentTime + 0.03);
+  if (ctx) rampParam(param, value, ctx.currentTime);
 }
 function applyDuck() {
   if (!ctx) return;
@@ -89,7 +92,8 @@ function unlock() {
         user.gain.value = 1;
         duck.gain.value = dbToGain(duckDb(bus));
         authored.connect(user).connect(duck);
-        duck.connect(bus === 'character' || bus === 'work' || bus === 'social' ? buses.get('sfx')!.authored : comp);
+        const parent = PARENT[bus];
+        duck.connect(parent ? buses.get(parent)!.authored : comp);
         buses.set(bus, { authored, user, duck });
       }
     }
@@ -130,6 +134,13 @@ export function setMuted(on: boolean) {
   store(MUTED_KEY, on ? '1' : '0');
   applyVolume();
 }
+/** A bus's own gain stages times its parent's: what reaches the compressor. */
+function chainGain(bus: Bus): number {
+  const nodes = buses.get(bus)!,
+    parent = PARENT[bus];
+  const own = nodes.authored.gain.value * nodes.user.gain.value * nodes.duck.gain.value;
+  return parent ? own * chainGain(parent) : own;
+}
 export function audioSnapshot() {
   return {
     context: ctx?.state ?? 'locked',
@@ -149,17 +160,8 @@ export function audioSnapshot() {
         authoredGain: nodes?.authored.gain.value ?? null,
         userGain: nodes?.user.gain.value ?? null,
         duckGain: nodes?.duck.gain.value ?? null,
-        effectiveGain: nodes
-          ? nodes.authored.gain.value *
-            nodes.user.gain.value *
-            nodes.duck.gain.value *
-            (bus === 'character' || bus === 'work' || bus === 'social'
-              ? buses.get('sfx')!.authored.gain.value *
-                buses.get('sfx')!.user.gain.value *
-                buses.get('sfx')!.duck.gain.value
-              : 1)
-          : null,
-        parent: bus === 'character' || bus === 'work' || bus === 'social' ? 'sfx' : null,
+        effectiveGain: nodes ? chainGain(bus) : null,
+        parent: PARENT[bus] ?? null,
       };
     }),
   };

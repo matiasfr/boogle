@@ -1,4 +1,5 @@
-// Shared Local tree geometry, fall poses and colliders. Legacy Place and the railway entity use the same view.
+// Local tree geometry, fall poses and colliders for the railway entity. Legacy Place still keeps its own copy in
+// src/proto/place/chop.ts until the town port retires it.
 // No material account, save, co-op or progression owner lives here.
 import * as THREE from 'three/webgpu';
 import { createTreeRoots, type TreeRoot } from './tree-roots.ts';
@@ -192,7 +193,8 @@ export function createTreeView(
   const Q0 = new THREE.Quaternion(),
     S1 = new THREE.Vector3(),
     P1 = new THREE.Vector3(),
-    stumpColor = new THREE.Color();
+    OLD_STUMP = new THREE.Color('#c9a06a'),
+    RENEWED_STUMP = new THREE.Color('#dec89f');
   function pose(t: Tree, now: number) {
     if (t.cleared) {
       for (const m of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) m.setMatrixAt(t.index, ZERO);
@@ -271,7 +273,7 @@ export function createTreeView(
           )
         : ZERO,
     );
-    parts.stump.setColorAt(t.index, stumpColor.set(t.growth === undefined ? '#c9a06a' : '#dec89f'));
+    parts.stump.setColorAt(t.index, t.growth === undefined ? OLD_STUMP : RENEWED_STUMP);
     parts.stump.instanceColor!.needsUpdate = true;
     // A naturally fallen branch with a pale end shows what this dense wood is good for before the axe upgrade.
     if (hardwoodIndex !== undefined) {

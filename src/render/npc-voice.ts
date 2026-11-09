@@ -2,7 +2,7 @@
 // Web Audio nodes (a saw through three parallel vowel filters) performs it. The plan is seeded by the line, so the same
 // line in the same mood always comes out the same. Its numbers start from docs/research/npc-babble-voices.md (sections
 // 4, 7 and 9). Cosmetic and local; never read by the sim. A new speaker is a new VoiceSpec.
-import { dbToGain, duckForVoice, getAudio } from './audio.ts';
+import { dbToGain, duckForVoice, getAudio, rampParam } from './audio.ts';
 import { noiseBuffer } from './noise.ts';
 import { audioSettings, onAudioSettingChange } from './audio-tuning.ts';
 import { hash2 } from '../math-pure.ts';
@@ -171,8 +171,7 @@ export function createLane(ctx: BaseAudioContext, out: AudioNode, v: VoiceSpec) 
   calibration.gain.value = dbToGain(audioSettings.voicePhraseDb);
   const releaseCalibration = onAudioSettingChange((key, value) => {
     if (key !== 'voicePhraseDb') return;
-    calibration.gain.cancelAndHoldAtTime(ctx.currentTime);
-    calibration.gain.linearRampToValueAtTime(dbToGain(value), ctx.currentTime + 0.03);
+    rampParam(calibration.gain, dbToGain(value), ctx.currentTime);
   });
   env.connect(bright).connect(cut).connect(calibration).connect(out);
   const bands = [0, 1, 2].map(() => {

@@ -59,5 +59,5 @@ export function boing(speed: number, vol: number, low: boolean) {
   }
 }
 
-export const farGain = (x: number, z: number) =>
-  1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 300);
+export const farGain = (x: number, z: number, falloff = 300) =>
+  1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / falloff);
