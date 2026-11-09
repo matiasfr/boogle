@@ -93,6 +93,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     awake: () => state.phase !== 'asleep' && state.phase !== 'waking',
     hush: () => reward.inspect().busy,
     pathOpen: opened,
+    progress: () => state,
   });
   // hard: rebuild from the state (first join); soft: the state came again after a lost connection or a resync, and
   // the machine eases to it (it catches up at twice its speed) unless it is more than 12 m off.
@@ -473,6 +474,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     lateUpdate: sources.lateUpdate,
     targets(): Interactable[] {
       const targets = [
+        ...opening.targets(),
         ...sources.targets(),
         ...reward.targets(),
         ...line2.targets(),

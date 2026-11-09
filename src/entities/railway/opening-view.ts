@@ -1,6 +1,8 @@
 // The authored opening scenery and local cast, with no legacy run, job or save owner.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
+import type { RailwayInspection } from '../../adapters/railway.ts';
+import { createTownGreeter } from './greeter.ts';
 
 type OpeningEnv = {
   machine: () => { mesh: THREE.Object3D; top: number };
@@ -11,6 +13,7 @@ type OpeningEnv = {
   awake: () => boolean;
   hush: () => boolean;
   pathOpen: () => boolean;
+  progress: () => RailwayInspection;
 };
 
 export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
@@ -27,7 +30,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     import('../../proto/place/folk.ts'),
     import('../../proto/place/rail.ts'),
   ]);
-  if (!owner.alive) return { update: () => {}, numbers: () => {} };
+  if (!owner.alive) return { update: () => {}, numbers: () => {}, targets: () => [] };
   const footprints = new Set<(typeof sites.feet)[number]>();
   const foot = (x: number, z: number, yaw: number, hw: number, hd: number) => {
     sites.addFoot(x, z, yaw, hw, hd);
@@ -134,8 +137,10 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     hush: env.hush,
   });
   folk.setPopulation(layout.TUNE.people);
+  const greeter = await createTownGreeter(owner, env.progress);
   let pathOpen = false;
   return {
+    targets: greeter.targets,
     numbers(score: { money: number; logs: number; metres: number }, snapshot = false) {
       signs.setNumbers(score, layout.TUNE.people + (env.pathOpen() ? 8 : 0), snapshot);
     },
@@ -146,6 +151,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
         folk.setCommuters(pathOpen, 14);
       }
       folk.setCamp(0, env.awake());
+      greeter.update(dt);
       folk.updateFolk(dt);
     },
   };
