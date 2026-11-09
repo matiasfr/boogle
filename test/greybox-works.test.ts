@@ -4,6 +4,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { EAST, LINES, LINKS, ORIGIN, STUB, lineAt } from '../src/proto/place/layout.ts';
+import {
+  WORKS_BREAKER,
+  WORKS_SEAMS,
+  SHED_STALL,
+  SHED_TABLE,
+  WORKS_CLEFT,
+  WORKS_KILN,
+  WORKS_ROCKS,
+  WORKS_RACK,
+  PIER_STOP,
+  PIER_RACK,
+  PIER_FRAME,
+  CROSSING_BENTS,
+} from '../src/sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { distToLine, layout, parseMapPage, polyLen, rideSeconds, type XZ } from '../src/proto/greybox/map-data.ts';
 import {
@@ -104,4 +118,28 @@ test('rides: legs match the rails (±2 m) and the plan sums', () => {
   // The boiler: 546 m home in about 98 s, then on to the old train at the camp.
   assert.equal(legLength(boiler!.legs[0]!), EAST.head);
   assert.ok(Math.abs(legLength(boiler!.legs[0]!) / boiler!.mps - 98) < 0.01);
+});
+
+test('works: Split-rock and Roundhouse marks agree with every pinned catalog position', () => {
+  const expected = {
+    breaker: WORKS_BREAKER,
+    'stall-slab': WORKS_SEAMS[0],
+    stall: SHED_STALL,
+    turntable: SHED_TABLE,
+    seam: WORKS_SEAMS[1],
+    cleft: WORKS_CLEFT,
+    kiln: WORKS_KILN,
+    'works-rocks': WORKS_ROCKS[0],
+    'works-rack': WORKS_RACK,
+    'pier-stop': PIER_STOP,
+    'pier-rack': PIER_RACK,
+    'pier-frame': PIER_FRAME,
+    bents: CROSSING_BENTS[0],
+  };
+  const marks = works.filter((w) => w.kind === 'works');
+  assert.deepEqual(marks.map((w) => w.id).sort(), Object.keys(expected).sort());
+  for (const [id, p] of Object.entries(expected)) {
+    const mark = marks.find((w) => w.id === id)!;
+    assert.ok(Math.hypot(mark.at[0] - (p.x / 100 - ORIGIN.x), mark.at[1] - (p.z / 100 - ORIGIN.z)) <= 1, id);
+  }
 });

@@ -131,7 +131,7 @@ export type Work = {
   id: string;
   name: string;
   at: XZ;
-  kind: 'frame' | 'gate' | 'chest' | 'halt' | 'boiler' | 'train';
+  kind: 'frame' | 'gate' | 'chest' | 'halt' | 'boiler' | 'train' | 'works';
   line?: 'l1' | 'l2';
   s?: number;
   off?: number;
