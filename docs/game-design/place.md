@@ -18,6 +18,13 @@ Playtest reports label the default visit as `place` and include its effective fl
 
 ## Production T1 branch (5 November 2026)
 
+**Production visibility repair (8 November).** The depot's log pile commits its visibility and matrix/colour uploads
+with its accepted stock, using the same `commitPieces()` path as loose piles; an empty pile hides again. Spending
+your second-jump charge emits the existing 14 ivory-gold star glints below your feet, as the prototype does.
+Reduced motion suppresses the burst. These are Local presentation repairs: stock, jump physics,
+shared unlocks and wire data retain their owners. The cart/shelf/rocket WebKit report still needs an iPad check;
+the restricted Chromium profile is a validation check, not a WebKit emulator. [Investigation](../research/safari-render-gap.md).
+
 **Q5 rules and the sea switch (8 November; B4 job A).** Production line two now reaches Q5: 24 logs and 24 rails
 fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Its frame waits for the Server-kind
 `rail.seaSwitch`: Q4 must be complete, and the server checks the actor's reach and height at Needle Bell's summit

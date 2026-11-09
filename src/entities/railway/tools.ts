@@ -11,10 +11,11 @@ import { frameOf } from '../../render/haul-bundle.ts';
 import { remotes } from '../../netplay/net.ts';
 import { inputState } from '../../player/input-state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
-import { GRAVITY, PLAYER_MASS, FIXED } from '../../constants.ts';
+import { GRAVITY, PLAYER_MASS, PLAYER_R, FIXED, reducedMotion } from '../../constants.ts';
 import { T1_CRATE_PARTS, MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
-import { readableUnlit } from '../../render/readable-unlit.ts';
+import { readableUnlit, readableIntensity } from '../../render/readable-unlit.ts';
+import { emit } from '../../render/particles.ts';
 import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
 import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
@@ -39,7 +40,7 @@ export async function createRailwayTools(
   reveal: ReturnType<typeof createRewardReveal>,
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
-  const [layout, tech, land, shapes, axes, flat, gear] = await Promise.all([
+  const [layout, tech, land, shapes, axes, flat, gear, sparkle] = await Promise.all([
     import('../../proto/place/layout.ts'),
     import('../../proto/place/tech-layout.ts'),
     import('../../proto/place/land.ts'),
@@ -47,6 +48,7 @@ export async function createRailwayTools(
     import('../../proto/place/axe-models.ts'),
     import('../../proto/flat.ts'),
     import('../../proto/place/gear-models.ts'),
+    import('../../proto/place/axe-sparkle.ts'),
   ]);
   const root = new THREE.Group();
   owner.root.add(root);
@@ -350,6 +352,8 @@ export async function createRailwayTools(
           b.velocity.z += ((me.wish.z / wish) * speed - b.velocity.z) * movement.jumpTurn;
         }
         jumps++;
+        const p = b.interpolatedPosition;
+        if (!reducedMotion) sparkle.sparkleBurst(p.x, p.y - PLAYER_R, p.z, emit, readableIntensity());
       }
       if (!second) return;
       if (b.velocity.y <= 0) {
