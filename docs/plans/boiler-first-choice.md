@@ -333,7 +333,7 @@ Step 2 is the guard only and can ship with step 3.
     `test/railway-adapter.test.ts`: `takeBreaker()` and `strike(0)` return false while you hold the boiler.
     `server/test/railway-works-host.test.ts` must pass unchanged.
   - Verify: `npm run check`; `npm --prefix server test`.
-- [ ] **3. Station 6 takes nothing before trains (option B, ruled). Review (`src/sim`).**
+- [x] **3. Station 6 takes nothing before trains (option B, ruled). Review (`src/sim`).**
   - `src/sim/railway-systems.ts`: add `const trainOwed = (w: World) => { const k = qActive(w); return k >= 0 &&
     LINE2_STATIONS[k]!.feed === 'train' && w.get(Rail, railId(w))!.trains < 0; }`. In `deposit2`, after the forge
     branch: `if (trainOwed(w)) return 0;` (`deposit2` already writes `Rail`). In `forgeTake`, before

@@ -499,6 +499,7 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
   const { LINE2_BOILER, LINE2_OLD_TRAIN } = await import('../../src/sim/railway-line2-layout.ts');
   const { LINE_HALTS, trainAlong } = await import('../../src/sim/railway-train.ts');
   const { line2Rails } = await import('../../src/sim/railway-line2.ts');
+  const { chopTo } = await import('../../test/helpers/railway-works.ts');
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-trains-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
@@ -546,10 +547,21 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
   try {
     await host.whenReady();
     const w = railwayAtTrains('boiler');
+    chopTo(w, 'a', 4);
     while (host.sync.world.tick <= w.t) await ticks(1);
     host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
     host.rules.railway.touchAll();
     await open();
+    // Station 6 takes nothing by hand before the fit (docs/plans/boiler-first-choice.md, step 3): a real load at its
+    // frame is refused and stays on the back.
+    const q6: [number, number, number] = [LINE2_STATIONS[5]!.x, 2400, LINE2_STATIONS[5]!.z];
+    const carry = host.rules.railway.account('a')!.carry;
+    assert.ok(carry >= 4);
+    assert.equal((await action({ op: 'rail.deposit', station: 'Q6', n: carry, kind: 0 }, q6)).status, 'noop');
+    assert.equal(host.rules.railway.railway.line2!.jobs[5]!.stock, 0);
+    assert.equal(host.rules.railway.account('a')!.carry, carry);
+    const drop = { op: 'rail.drop', n: carry, kind: 0, x: q6[0], y: q6[1], z: q6[2] };
+    assert.equal((await action(drop, q6)).status, 'accepted');
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, camp)).status, 'rejected');
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
     host.depart('s');

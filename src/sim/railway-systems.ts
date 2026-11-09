@@ -134,6 +134,13 @@ function qActive(w: World) {
   if (w.get(Forge, forgeId(w))!.lit < 0) return -1;
   return LINE2_STATIONS.findIndex((_s, k) => !w.get(QJob, qjob(w, k))!.completion);
 }
+/** Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 3; owner, 9 November): while the active
+ * stretch is train-fed and trains don't run, its kit is the train's, so the frame takes nothing by hand and the forge
+ * rack gives no rails (they stay for the kit). The view's `trainOwed` (src/entities/railway/forge-offer.ts) mirrors it. */
+const trainOwed = (w: World) => {
+  const k = qActive(w);
+  return k >= 0 && LINE2_STATIONS[k]!.feed === 'train' && w.get(Rail, railId(w))!.trains < 0;
+};
 const timingOf = (t: LineTiming) => Object.fromEntries(TIMING_KEYS.map((k) => [k, t[k]])) as LineTiming;
 const scheduleOf = (spec: (typeof LINE1_STATIONS)[number] | (typeof LINE2_STATIONS)[number], j: LineTiming) =>
   lineSchedule(spec, timingOf(j));
@@ -612,7 +619,7 @@ const deposit2 = defineSystem(
     const j = w.get(QJob, qjob(w, k))!,
       spec = LINE2_STATIONS[k]!;
     // A gate holds the machine, not deliveries to its frame.
-    if (j.start >= 0) return 0;
+    if (j.start >= 0 || trainOwed(w)) return 0;
     const rails = e.kind === RAILS;
     if (e.kind !== undefined && e.kind !== 0 && !rails) return 0;
     const n = Math.min(e.n!, rails ? a.rails : a.carry, spec.bill[rails ? 1 : 0] - (rails ? j.railStock : j.stock));
@@ -635,6 +642,7 @@ const forgeTake = defineSystem(
   'rail.forgeTake',
   { reads: [Boiler, Rail, Beam, QJob, Shed], writes: [Forge, Account], phase: 'act', order: 21 },
   (w, { a: aid }: Act) => {
+    if (trainOwed(w)) return 0;
     const a = w.mut(Account, aid)!;
     let room = free(w, a);
     // Once no Q station takes rails, the cradle is the rack's only use: take just what it still needs, so a full
