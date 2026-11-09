@@ -27,7 +27,9 @@
 // v20 (2026-11-08): line 2 part 2, B4: Q5 joins line two (a fifth qjob slot) behind the sea gate; new rail fields
 // `sea` and `out4`; `rail.seaSwitch`.
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v20';
+// v21 (2026-11-08): line 2 part 2, B5-B8: boiler and train components; rail.boilerTake/boilerDrop/boilerFit,
+// rail.call; Q6 (sixth qjob) fed by the line-2 kit; new rail fields trains and out5.
+export const WORLD_NS = 'v21';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

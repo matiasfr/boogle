@@ -416,3 +416,29 @@ test('before ready a session request hears starting at once; a full roster of ac
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('mover clock probes echo the current room step only for a live session, bounded and without state writes', async () => {
+  const f = await fixture(railwayRoomId('mover-clock'));
+  const replies = () => f.sent.filter((m) => m.t === 'r:clock');
+  try {
+    f.host.deliver({ t: 'r:clock', at: 100 }, 'a');
+    assert.equal(replies().length, 0, 'a clock probe cannot create a session');
+    await f.open('a');
+    const hash = f.host.rules.railway.world().hash();
+    for (const at of [null, '100', NaN, -1, -0, 1.5, 2147483648]) f.host.deliver({ t: 'r:clock', at }, 'a');
+    assert.equal(replies().length, 0, 'malformed probes do not consume the reply budget');
+    f.host.deliver({ t: 'r:clock', at: 100 }, 'a');
+    assert.deepEqual(replies().at(-1), { t: 'r:clock', to: 'a', at: 100, step: f.host.sync.roomStep() });
+    assert.equal(f.host.rules.railway.world().hash(), hash);
+    f.host.deliver({ t: 'r:clock', at: 999999 }, 'a');
+    assert.equal(replies().length, 1, 'client timestamps cannot bypass the host step rate limit');
+    await f.step(1);
+    f.host.deliver({ t: 'r:clock', at: 200 }, 'a');
+    assert.equal(replies().length, 2);
+    await f.open('a2');
+    f.host.deliver({ t: 'r:clock', at: 300 }, 'a');
+    assert.equal(replies().length, 2, 'a taken-over socket cannot sample the room');
+  } finally {
+    await f.close();
+  }
+});

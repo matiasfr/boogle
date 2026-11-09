@@ -113,7 +113,16 @@ function useful(s: Railway, pid: string): Partial<RailAction> {
       }
       return { op: 'rail.drop', x: 500, z: 500, y: 0, n: 1, kind: a.carry ? 0 : a.stone ? 1 : 2 };
     }
-    return pick2([{ op: 'rail.lever' }, { op: 'rail.seaSwitch' }, { op: 'rail.hook' }, { op: 'rail.jump' }]);
+    return pick2([
+      { op: 'rail.lever' },
+      { op: 'rail.seaSwitch' },
+      { op: 'rail.hook' },
+      { op: 'rail.jump' },
+      { op: 'rail.boilerTake', revision: l2.boiler.revision },
+      { op: 'rail.boilerDrop', revision: l2.boiler.revision, x: 91900, y: 1815, z: 540 },
+      { op: 'rail.boilerFit', revision: l2.boiler.revision },
+      { op: 'rail.call', id: 2 },
+    ]);
   }
   return { op: 'rail.jump' };
 }
@@ -251,9 +260,13 @@ function run(seed: number, steps: number) {
       () => ({ op: 'rail.lever' }),
       () => ({ op: 'rail.seaSwitch' }),
       () => ({ op: 'rail.hook' }),
+      () => ({ op: 'rail.boilerTake', revision: s.line2!.boiler.revision }),
+      () => ({ op: 'rail.boilerDrop', revision: s.line2!.boiler.revision, x: 91900, y: 1815, z: 540 }),
+      () => ({ op: 'rail.boilerFit', revision: s.line2!.boiler.revision }),
+      () => ({ op: 'rail.call', id: Math.floor(r() * 5) }),
       () => ({ op: 'rail.reject' }),
     ];
-    const weights = [1, 8, 3, 8, 3, 3, 1, 1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 0.3];
+    const weights = [1, 8, 3, 8, 3, 3, 1, 1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 0.3];
     let x = r() * weights.reduce((a, b) => a + b, 0),
       k = 0;
     while ((x -= weights[k]!) > 0) k++;

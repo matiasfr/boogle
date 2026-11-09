@@ -95,6 +95,7 @@ export const railYaw = (v: unknown): v is number =>
   typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 6.283185307179586 && !Object.is(v, -0);
 export const railAccount = (s: Railway, pid: string) => s.accounts.find((a) => a.pid === pid);
 export const railSource = (id: number) => RAILWAY_SOURCES.findIndex((row) => row[0] === id);
+/** Conserved totals include both the depot cart and the line-2 kit train through line2Logs/line2Rails. */
 export function railCounts(s: Railway) {
   const source = s.sources.reduce((a, b) => a + b, 0) + (s.line?.hardwood.reduce((a, b) => a + b, 0) ?? 0);
   const carry = s.accounts.reduce((a, b) => a + b.carry, 0);

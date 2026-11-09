@@ -1,4 +1,5 @@
 // Accepted railway beats written through the real host's save path before a look opens its room.
+import { railwayAtTrains, TRAIN_STAGES, type TrainStage } from '../../test/helpers/railway-trains.ts';
 import { pathToFileURL } from 'node:url';
 import { createStore } from '../../server/src/store.ts';
 import { createRailwayWorldHost } from '../../server/src/host/world-host.ts';
@@ -19,7 +20,10 @@ import { CART_PHASE, CART_ROAD, cartCycleTicks } from '../../src/sim/railway-car
 import { createRailway, railSession, railApply, railTick, worldOf } from '../../test/railway-live.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
+  // B5-B8 stages stay separate from the earlier/depot fixture blocks.
+  const trainStage = TRAIN_STAGES.includes(stage as TrainStage);
   if (
+    !trainStage &&
     ![
       'awake',
       'q1-done',
@@ -39,8 +43,9 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
     ].includes(stage)
   )
     throw new Error(`Unknown railway seed: ${stage}`);
-  const w =
-    stage === 'awake'
+  const w = trainStage
+    ? railwayAtTrains(stage as TrainStage)
+    : stage === 'awake'
       ? { s: createRailway(), t: 40 }
       : stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q2-arriving' || stage === 'q3-stocked'
         ? railwayAtQ2()
