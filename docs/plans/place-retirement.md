@@ -717,11 +717,16 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **A1a.** Move `ambience.ts`'s body to `src/render/ambience.ts` as `startAmbience()`. The feature calls it from
+- [x] **A1a.** Move `ambience.ts`'s body to `src/render/ambience.ts` as `startAmbience()`. The feature calls it from
   `onStart`. It uses the ambience bus, as now.
-- [ ] **A1b.** Register `registerAction('playtest-flag', { key: 'KeyM', pad: 'right', label: 'Flag', group: 'menu' })`.
+  *Built:* an entity with no mesh (`ambience`, update -3), started in Place's world (`productionRailway ||
+  protoOn('place')`), so `?proto=place` uses it too and its own copy is gone. Place's land comes in by `import()`.
+- [x] **A1b.** Register `registerAction('playtest-flag', { key: 'KeyM', pad: 'right', label: 'Flag', group: 'menu' })`.
   Confirm `freeSlots()` still lists `right` on the production page. Carried counts come from `railwayRead()`
   (`carry`, `stoneCarry`, `railsCarry`). Mark `flag`, with the same fields as Place.
+  *Built:* `right` was free before; after, `freeSlots()` is lb, rb, up, down on a fresh production page. `big` is
+  `'footing'` when a footing is on your back. Production only: `src/proto/place/flag.ts` stays for `?proto=place`
+  until D1 deletes it.
 
 **Proofs.**
 - `npm run check`.

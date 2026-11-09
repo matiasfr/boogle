@@ -1,16 +1,15 @@
 // The sound of the place when nothing is happening: the sea, far gulls and a little breeze, under everything. Local and
-// cosmetic, on the shared audio context's ambience bus (src/render/audio.ts), so it starts after the first gesture, ducks
-// under voices and follows the player's volume. docs/research/audio-and-music.md, section 12: brown noise rather than
-// hiss, slow unrelated periods, one-shots far away on long gaps. Serves DESIGN.md 1 (Toys before chores: a place worth being in with nothing to do).
+// cosmetic, on the shared audio context's ambience bus (./audio.ts), so it starts after the first gesture, ducks under
+// voices and follows the player's volume. docs/research/audio-and-music.md, section 12: brown noise rather than hiss,
+// slow unrelated periods, one-shots far away on long gaps. Serves DESIGN.md 1 (Toys before chores: a place worth being in
+// with nothing to do). src/features/ambience.ts starts it in Place's world: the live game, and ?proto=place.
 //
 // Turn it off with &ambience=off; shift the whole bed with &ambience=-6 (dB). Everything else is in LEVELS and FEEL.
-import { onFrame } from '../../loop.ts';
-import { dbToGain, getAudio } from '../../render/audio.ts';
-import { brownNoiseBuffer, darkReverbBuffer } from '../../render/noise.ts';
-import { smoothstep } from '../../math.ts';
-import { cam, me } from '../../player/player.ts';
-import { H } from './land.ts';
-import { ORIGIN, SPIRE } from './layout.ts';
+import { dbToGain, getAudio } from './audio.ts';
+import { brownNoiseBuffer, darkReverbBuffer } from './noise.ts';
+import { smoothstep } from '../math.ts';
+import { cam, me } from '../player/player.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 
 // All in dB, before the bus and master. To hear them away from the game: node dev/audio/render.ts --only place.
 const LEVELS = {
@@ -52,11 +51,9 @@ const CELL = 4,
   CELLS = (EXT * 2) / CELL + 1;
 const RIVER_WITHIN = 185; // m from the spire: water further out is the sea, even where the river meets it
 
-function distances(isWater: (x: number, z: number) => boolean) {
+function distances(water: Uint8Array) {
   const d = new Float32Array(CELLS * CELLS);
-  for (let j = 0; j < CELLS; j++)
-    for (let i = 0; i < CELLS; i++)
-      d[i + j * CELLS] = isWater(-EXT + i * CELL + ORIGIN.x, -EXT + j * CELL + ORIGIN.z) ? 0 : 1e6;
+  for (let k = 0; k < d.length; k++) d[k] = water[k] ? 0 : 1e6;
   const STEPS = [
     [-1, 0, CELL],
     [0, -1, CELL],
@@ -76,18 +73,32 @@ function distances(isWater: (x: number, z: number) => boolean) {
       }
   return d;
 }
-const fromSpire = (x: number, z: number) => Math.hypot(x - ORIGIN.x - SPIRE.x, z - ORIGIN.z - SPIRE.z);
+// Place's land (src/proto/place/terrain.ts and layout.ts), which startAmbience loads; the railway has loaded it already.
+type Land = { H: (x: number, z: number) => number; ORIGIN: { x: number; z: number }; SPIRE: { x: number; z: number } };
+let land: Land | null = null;
 let seaField: Float32Array | null = null,
   riverField: Float32Array | null = null,
   bakeMs = 0;
-function bakeFields() {
+// One height sample a cell, sorted into sea and river.
+function bakeFields({ H, ORIGIN, SPIRE }: Land) {
   const t0 = performance.now();
-  seaField = distances((x, z) => H(x, z) < 0 && fromSpire(x, z) >= RIVER_WITHIN);
-  riverField = distances((x, z) => H(x, z) < 0 && fromSpire(x, z) < RIVER_WITHIN);
+  const sea = new Uint8Array(CELLS * CELLS),
+    river = new Uint8Array(CELLS * CELLS);
+  for (let j = 0; j < CELLS; j++)
+    for (let i = 0; i < CELLS; i++) {
+      const x = -EXT + i * CELL + ORIGIN.x,
+        z = -EXT + j * CELL + ORIGIN.z;
+      if (H(x, z) >= 0) continue;
+      const fromSpire = Math.hypot(x - ORIGIN.x - SPIRE.x, z - ORIGIN.z - SPIRE.z);
+      (fromSpire >= RIVER_WITHIN ? sea : river)[i + j * CELLS] = 1;
+    }
+  seaField = distances(sea);
+  riverField = distances(river);
   bakeMs = performance.now() - t0;
 }
 // Off the grid is open sea: distance 0.
 function fieldAt(f: Float32Array, x: number, z: number) {
+  const { ORIGIN } = land!;
   const i = Math.round((x - ORIGIN.x + EXT) / CELL),
     j = Math.round((z - ORIGIN.z + EXT) / CELL);
   return i < 0 || j < 0 || i >= CELLS || j >= CELLS ? 0 : f[i + j * CELLS]!;
@@ -117,7 +128,7 @@ function setup(): Bed | null {
   if (!a) return null;
   const { ctx } = a;
   const t = ctx.currentTime;
-  bakeFields();
+  bakeFields(land!);
   const out = ctx.createGain();
   out.gain.value = 0;
   out.gain.setTargetAtTime(bedGain(), t, 1.5); // eases in, so the first press doesn't switch the sea on
@@ -314,7 +325,7 @@ function update() {
   }
 }
 
-// What's sounding, for the listening checks in a page (`await import('/src/proto/place/ambience.ts')`).
+// What's sounding, for the listening checks in a page (`await import('/src/render/ambience.ts')`).
 export const ambienceState = () => ({
   on: !!bed,
   wash,
@@ -324,8 +335,18 @@ export const ambienceState = () => ({
   sides: bed?.sides.map((s) => s.level.gain.value) ?? [],
 });
 
-if (!OFF) {
-  onFrame(update, { phase: 'update', order: -3 });
+defineKind('ambience', { update: -3 });
+let started = false;
+/** Starts the bed once Place's land has loaded; the sound itself waits for the first gesture. Once a page. */
+export async function startAmbience(): Promise<void> {
+  if (OFF || started) return;
+  started = true;
+  const [{ H }, { ORIGIN, SPIRE }] = await Promise.all([
+    import('../proto/place/terrain.ts'),
+    import('../proto/place/layout.ts'),
+  ]);
+  land = { H, ORIGIN, SPIRE };
+  spawn({ kind: 'ambience', update });
   // A hidden tab stops frames, so nothing new is scheduled: the bed fades instead of holding one note of sea.
   document.addEventListener('visibilitychange', () => {
     if (bed) bed.out.gain.setTargetAtTime(document.hidden ? 0 : bedGain(), bed.ctx.currentTime, 0.3);

@@ -18,7 +18,6 @@
 //
 // Sync: Local, all of it, kept in localStorage per room. With `&coop=1`, ./coop.ts shares the railway between the tabs in the room.
 import './place.css';
-import './ambience.ts';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { worldStatus, world } from '../../world/sync.ts';
