@@ -67,6 +67,7 @@
     "assets": "node dev/assets/build.ts",
     "review-card": "node scripts/review-card.ts",
     "playtest": "node dev/playtest/cli.ts",
+    "server": "node dev/server-admin.ts",
     "tune": "node dev/tune.ts",
     "sim": "node --import ./dev/sim/hooks.ts dev/sim/run.ts",
     "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts",

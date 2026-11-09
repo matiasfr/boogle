@@ -9,6 +9,7 @@
 //   roomHost.upgrade(req, socket, head)   a /room/:id upgrade: checks, then the room's join (or a refusal)
 //   roomHost.room(id)                     the hosted room, or undefined
 //   roomHost.hosts(id), status(id)       whether it hosts that room; GET /rooms/:id/host
+//   await roomHost.offline(id, fn)        admin.ts: close the room unsaved, run fn while joins are refused; 'busy' if closing
 //   await roomHost.close({ save })
 import crypto from 'node:crypto';
 import type http from 'node:http';
@@ -157,6 +158,25 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);
         room.join(ws, self, pid, key);
       });
+    },
+    // The operator replacing a room's save (../admin.ts). The room's state is being discarded, so a failed last
+    // write does not fence it; the slot stays `closing` until fn has settled, so no join loads the old file.
+    async offline<T>(id: string, fn: () => Promise<T>): Promise<T | 'busy'> {
+      if (stopping || closing.has(id)) return 'busy';
+      closing.add(id);
+      try {
+        const room = rooms.get(id);
+        if (room) {
+          await room
+            .close({ save: false })
+            .catch((error: unknown) => cfg.log(`room ${id}: offline close`, String(error)));
+          rooms.delete(id);
+        }
+        return await fn();
+      } finally {
+        closing.delete(id);
+        if (listed.has(id) && !rooms.has(id) && !stopping) load(id);
+      }
     },
     async close({ save = true } = {}) {
       stopping = true;
