@@ -26,7 +26,7 @@ export const CRYSTALS = CRYSTAL_SPOTS.length;
 
 export const FINDS_PREFIX = 'boogle.railway-finds.v0:';
 export type FindsSave = { crystals: number[]; finds: number[]; secrets: string[]; hubbed: string[] };
-export type FindsEvent = { kind: 'crystal' | 'load'; id: number | null };
+export type FindsEvent = { kind: 'crystal' | 'find' | 'load'; id: number | null };
 export type FindsStorage = { read(): string | null; write(text: string): void };
 
 const MAX_TEXT = 4096;
@@ -105,6 +105,18 @@ export function createFinds(storage: FindsStorage) {
       changed({ kind: 'crystal', id: k });
       return true;
     },
+    /** Found gold finds, by Place's find id, in the order found. */
+    finds: (): readonly number[] => save.finds,
+    hasFind: (id: number) => save.finds.includes(id),
+    /** Records gold find `id` (Place's ids, 0–99) as found and writes the store at once, as takeCrystal does. False if
+     * it isn't a find id or was already found. */
+    takeFind(id: number): boolean {
+      if (!index(MAX_FIND_ID + 1)(id) || save.finds.includes(id)) return false;
+      save = { ...save, finds: [...save.finds, id] };
+      write();
+      changed({ kind: 'find', id });
+      return true;
+    },
     onFinds(fn: (e: FindsEvent) => void) {
       listeners.add(fn);
       return () => void listeners.delete(fn);
@@ -140,6 +152,10 @@ export type FindsViewInspection = {
   /** How many of the shelf's crystal stubs are lit, and whether the row is on the shelf yet. */
   lit: number;
   onShelf: boolean;
+  /** Each gold find: Place's id, where it stands in the world, and whether you've found it. */
+  gold: { id: number; x: number; y: number; z: number; found: boolean }[];
+  /** How many gold finds are pinned on the finds board beside the shelf. */
+  pinned: number;
 };
 export const inspectFinds = () => (mine ? { ...mine.inspect(), ...(shown?.() ?? null) } : null);
 /** Lifecycle owner only. */
