@@ -18,6 +18,7 @@ import { line2Active, line2SeaOpen } from '../../src/sim/railway-line2.ts';
 import { CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { worldOf } from '../../test/railway-live.ts';
 import { railwayAtQ4, railwayAtQ5 } from '../../test/helpers/railway-q2.ts';
+import type { TuneApi } from '../../src/world/rules/tune.ts';
 
 type Obj = Record<string, unknown>;
 for (const early of [true, false]) {
@@ -197,8 +198,11 @@ test('line host: the glider judged on the summit device, only after Q5; one shar
     assert.equal((await edit('a', glide, [LINE2_GLIDE.x, 2000, LINE2_GLIDE.z])).status, 'rejected');
     assert.equal((await edit('a', glide, [LINE2_SEA.x, LINE2_SEA.y, LINE2_SEA.z])).status, 'rejected');
     assert.equal((await edit('a', glide, [LINE2_HOOK.x, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'rejected');
+    // Reach is 3.2 m across the deck and from 2.2 m below to 3 m above the device's foot.
+    assert.equal((await edit('a', glide, [LINE2_GLIDE.x + 330, LINE2_GLIDE.y, LINE2_GLIDE.z])).status, 'rejected');
+    assert.equal((await edit('a', glide, [LINE2_GLIDE.x, LINE2_GLIDE.y + 320, LINE2_GLIDE.z])).status, 'rejected');
     assert.equal(host.rules.railway.railway.line2!.glide, false);
-    assert.equal((await edit('a', glide, device)).status, 'accepted');
+    assert.equal((await edit('a', glide, [LINE2_GLIDE.x + 300, LINE2_GLIDE.y, LINE2_GLIDE.z])).status, 'accepted');
     assert.equal((await edit('b', glide, device)).status, 'noop', 'one shared take');
     assert.equal(host.rules.railway.railway.line2!.glide, true);
     await host.close({ save: true });
@@ -606,5 +610,46 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("line host: a proto room's controller can tune all eight of the glider's numbers", async (t) => {
+  const { supplyFixture } = await import('./fixtures/railway-supply-fixture.ts');
+  const { CATALOG } = await import('../../src/tunables/catalog.ts');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-glide-tune-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const f = await supplyFixture(dir, railwayRoomId('proto-glide-tune'), false);
+  const tune = () => {
+    assert.ok('tune' in f.host.rules);
+    return f.host.rules.tune as TuneApi;
+  };
+  const keys = CATALOG.filter((c) => c.owner === 'src/entities/railway/glide-step.ts');
+  assert.equal(keys.length, 8, "the glider's eight tunables");
+  let request = 0;
+  try {
+    for (const spec of keys) {
+      const key = spec.sharedKey!;
+      const before = tune().get(key);
+      const v = before + 1 <= spec.max ? before + 1 : before - 1;
+      f.host.deliver(
+        {
+          t: 'w:edit',
+          e: {
+            op: 'tune.commit',
+            i: 0,
+            j: 0,
+            key,
+            v,
+            expectedRevision: tune().tune.revision,
+            requestId: `glide-tune-${++request}`,
+          },
+        },
+        'supplysession',
+      );
+      await f.ticks(4);
+      assert.equal(tune().get(key), v, `${key} accepted from the controller`);
+    }
+  } finally {
+    await f.host.close({ save: false });
   }
 });
