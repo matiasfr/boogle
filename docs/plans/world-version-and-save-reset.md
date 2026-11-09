@@ -55,7 +55,8 @@ After `store.init()` and inventory, **before `createRoomHost` or listening**, ca
 obsolete digest and legacy configuration fields; digests remain inventory metadata only.
 
 - Move all old-namespace classic/railway saves, unprefixed legacy saves and stale non-current temp files into a
-  unique `DATA_DIR/.trash/<UTC ISO timestamp>-<suffix>/` folder. Never delete a root save directly.
+  unique `DATA_DIR/.trash/<UTC ISO timestamp>-<suffix>/files/` folder. Keep the audit manifest in the parent run
+  folder, so a room named `manifest` cannot overwrite it. Never delete a root save directly.
 - Under `store.withLock(roomId)`, independently reject current names, recheck file type, recheck temp age and check
   `roomHost?.room(roomId)` for a loaded, closing or blocked authority. Recheck protection before rename. Normal boot
   has no loaded room or writer; the guard also protects explicit helper/relisten use.
@@ -86,7 +87,7 @@ no-op is a new result; older detailed manifests remain in trash until their rete
    real reload proves stale keys gone and graphics retained. The reload/reward bot passes.
 2. Add locked trash/purge helpers, store forgetting and independent protection tests. Verify exact names, sizes,
    reasons and bytes; current/nested-current/temp preservation; live ownership; symlinks and unknowns; fresh temps;
-   seven-day boundary; freed capacity; kill switch; and a no-op repeat cleanup.
+   seven-day boundary; freed capacity; kill switch; manifest-name collisions; and a no-op repeat cleanup.
 3. Enable boot cleanup and expose `lastCleanup`; update server docs. A real service temp-directory test verifies
    moves before hosting, API reporting, manifest contents, current bytes/mtime, untouched auxiliary directories,
    older trash removal, newer retention, and a second process boot doing nothing. The classic resume proof uses a

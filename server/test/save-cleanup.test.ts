@@ -62,7 +62,7 @@ test('cleanup moves exactly old-world, legacy and stale temp saves, manifests th
   for (const name of keep) assert.equal(await fs.readFile(path.join(f.dir, name), 'utf8'), `keep:${name}`);
   for (const name of moved) {
     await assert.rejects(fs.stat(path.join(f.dir, name)), { code: 'ENOENT' });
-    assert.equal(await fs.readFile(path.join(f.dir, result.trash!, name), 'utf8'), `move:${name}`);
+    assert.equal(await fs.readFile(path.join(f.dir, result.trash!, 'files', name), 'utf8'), `move:${name}`);
   }
   const manifest = JSON.parse(await fs.readFile(path.join(f.dir, result.trash!, 'manifest.json'), 'utf8'));
   assert.deepEqual(manifest, {
@@ -75,7 +75,8 @@ test('cleanup moves exactly old-world, legacy and stale temp saves, manifests th
       reason: name.endsWith('.tmp') ? 'tmp' : name.startsWith('garden') ? 'legacy' : 'old-ns',
     })),
   });
-  assert.deepEqual((await fs.readdir(path.join(f.dir, result.trash!))).sort(), [...moved, 'manifest.json'].sort());
+  assert.deepEqual((await fs.readdir(path.join(f.dir, result.trash!))).sort(), ['files', 'manifest.json']);
+  assert.deepEqual((await fs.readdir(path.join(f.dir, result.trash!, 'files'))).sort(), moved);
   assert.ok(await fs.stat(path.join(f.dir, `.trash/${stamp(6)}`)));
   assert.ok(await fs.stat(path.join(f.dir, `.trash/${stamp(7)}`)));
   assert.equal(
@@ -137,7 +138,7 @@ test('purging preserves current/live files, unknown entries and symlinks in tras
   const f = await fixture();
   t.after(() => fs.rm(f.dir, { recursive: true, force: true }));
   const rows = [
-    [9, `${ns.world}-a.json`],
+    [9, `files/${ns.world}-a.json`],
     [10, 'v01-live.json'],
     [11, 'notes.txt'],
   ] as const;
@@ -151,6 +152,22 @@ test('purging preserves current/live files, unknown entries and symlinks in tras
     assert.equal(await fs.readFile(path.join(f.dir, `.trash/${stamp(age)}/${name}`), 'utf8'), 'data');
   assert.equal(result.skipped.length, 2);
   assert.equal(result.unknown.length, 3);
+});
+
+test('a legacy room named manifest cannot overwrite audit metadata, and its archive still expires', async (t) => {
+  const f = await fixture();
+  t.after(() => fs.rm(f.dir, { recursive: true, force: true }));
+  await put(f.dir, 'manifest.json', 'room data');
+  await f.store.init();
+  const result = await cleanupSaves(f.dir, await f.inventory(), f.store, { now });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.moved, [{ name: 'manifest.json', bytes: 9, reason: 'legacy' }]);
+  assert.equal(await fs.readFile(path.join(f.dir, result.trash!, 'files/manifest.json'), 'utf8'), 'room data');
+  const manifest = JSON.parse(await fs.readFile(path.join(f.dir, result.trash!, 'manifest.json'), 'utf8'));
+  assert.deepEqual(manifest.files, result.moved);
+  const later = await cleanupSaves(f.dir, await f.inventory(), f.store, { now: now + 8 * day });
+  assert.deepEqual(later.purged, [result.trash]);
+  assert.deepEqual(later.errors, []);
 });
 
 test('kill switch disables moves and purge; a symlinked trash root cannot redirect cleanup', async (t) => {

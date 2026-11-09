@@ -86,13 +86,14 @@ Unknown entries are reported. Inventory failure is logged without stopping boot 
 
 Cleanup is **enabled by default**, following the owner's 8 November approval. After inventory and before loading any
 rooms, old-world classic and railway saves, unprefixed legacy saves and stale non-current temp files move to
-`DATA_DIR/.trash/<UTC ISO stamp>-<unique suffix>/`. There is no digest gate or legacy opt-in. Each run logs one
+`DATA_DIR/.trash/<UTC ISO stamp>-<unique suffix>/files/`. There is no digest gate or legacy opt-in. Each run logs one
 `save cleanup:` line with moved counts/bytes by reason, purged folder count, skipped count, unknown names and errors.
 Unknown root entries, symlinks, `reports/`, `playdata/` and `reviews/` stay in place.
 
 Every move rechecks the filename, file type, temp age and live-room ownership under the store's per-room writer lock.
 Current namespace files (classic, railway and temp), including idle rooms, never move. A moved room is forgotten by
-the store so obsolete saves no longer occupy `MAX_ROOMS`. Each trash run has an atomic `manifest.json` recording
+the store so obsolete saves no longer occupy `MAX_ROOMS`. The separate `files/` directory lets even a legacy room
+named `manifest` keep its original filename without colliding with metadata. Each trash run has an atomic `manifest.json` recording
 `{ at, ns, rail, files: [{ name, bytes, reason }] }`, where reason is `old-ns`, `legacy` or `tmp`. The next entry is
 recorded before its rename; after an interrupted run, compare source and destination to resolve any pending entry.
 

@@ -74,8 +74,29 @@ export async function cleanupSaves(
   const unknown = (name: string) => {
     if (!result.unknown.includes(name)) result.unknown.push(name);
   };
+  async function keepArchive(dir: string, relative: string, inFiles = false): Promise<boolean> {
+    let keep = false;
+    for (const child of await fs.readdir(dir, { withFileTypes: true })) {
+      const name = `${relative}/${child.name}`;
+      if (!inFiles && child.name === 'files' && child.isDirectory()) {
+        if (await keepArchive(path.join(dir, 'files'), name, true)) keep = true;
+        continue;
+      }
+      const reason = protectedFile(child.name);
+      const kind = classify(child.name, ns);
+      const metadata = !inFiles && (child.name === 'manifest.json' || child.name === 'manifest.json.tmp');
+      if (reason) {
+        result.skipped.push({ name, reason });
+        keep = true;
+      } else if (!child.isFile() || (!metadata && kind !== 'old-ns' && kind !== 'legacy' && kind !== 'tmp')) {
+        unknown(name);
+        keep = true;
+      }
+    }
+    return keep;
+  }
 
-  // Only our flat, UTC-stamped run folders are eligible. Unknown directories and symlinks are never followed.
+  // Only UTC-stamped run folders and their files/ payload are eligible; never follow unknown dirs or symlinks.
   try {
     const root = await lstat(trashRoot);
     if (root && !root.isDirectory()) throw new Error('.trash is not a regular directory');
@@ -89,24 +110,7 @@ export async function cleanupSaves(
         }
         if (time >= now - TRASH_AGE_MS) continue;
         const dir = path.join(trashRoot, entry.name);
-        let keep = false;
-        for (const child of await fs.readdir(dir, { withFileTypes: true })) {
-          const name = `${relative}/${child.name}`;
-          const reason = protectedFile(child.name);
-          if (reason) {
-            result.skipped.push({ name, reason });
-            keep = true;
-          } else if (
-            !child.isFile() ||
-            (child.name !== 'manifest.json' &&
-              child.name !== 'manifest.json.tmp' &&
-              classify(child.name, ns) === 'unknown')
-          ) {
-            unknown(name);
-            keep = true;
-          }
-        }
-        if (keep) continue;
+        if (await keepArchive(dir, relative)) continue;
         await fs.rm(dir, { recursive: true });
         result.purged.push(relative);
       }
@@ -123,6 +127,7 @@ export async function cleanupSaves(
       if (!(await fs.lstat(trashRoot)).isDirectory()) throw new Error('.trash is not a regular directory');
       destination = await fs.mkdtemp(path.join(trashRoot, `${result.at}-`));
       result.trash = `.trash/${path.basename(destination)}`;
+      await fs.mkdir(path.join(destination, 'files'));
     }
     const file = path.join(destination, 'manifest.json');
     await fs.writeFile(
@@ -167,7 +172,7 @@ export async function cleanupSaves(
             result.skipped.push({ name, reason: lateProtection });
             return;
           }
-          await fs.rename(source, path.join(destination!, name));
+          await fs.rename(source, path.join(destination!, 'files', name));
           result.moved.push(moved);
           if (kind !== 'tmp') store.forget(id);
         } finally {
