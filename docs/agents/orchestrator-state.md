@@ -69,7 +69,7 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
 ## Next moves
 
 - Ship playtest fixes after review; show the owner the unlit board and the wedge boards.
-- Start the next queued item whenever fewer than three Codex jobs run.
+- Start the next queued item whenever fewer than three agents run. Who runs it (model and effort) comes from `npm run models` (dev/models.ts): Claude only until 12 November, Codex as workhorse from 13 November.
 
 ## Peers
 
