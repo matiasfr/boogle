@@ -1,16 +1,42 @@
-// Place's celebration pull-out, with an owned lifetime and shared input dismissal.
+// Place's celebration pull-out, with an owned lifetime and one highlighted skip.
 // Local only: the ordinary follow camera continues underneath, ready for the return blend.
 import * as THREE from 'three/webgpu';
+import './camera-pull-out.css';
 import { cam, camConstraints, camForward, me } from '../player/player.ts';
 import { inputState } from '../player/input-state.ts';
-import { dismissInput } from '../player/dismiss-pointer.ts';
+import { skipInput } from '../player/dismiss-pointer.ts';
+import { glyph } from '../player/glyphs.ts';
 import { reducedMotion } from '../constants.ts';
 import { clamp, smoothstep } from '../math-pure.ts';
+
+// Owner, 9 November: "the cinematic should be uninterruptible unless by maybe a specific highlighted button press".
+// Nothing ends a shot by accident; Interact skips it once its glyph has shown this long. null takes the skip out.
+const SKIP_AFTER_S: number | null = 0.8;
+const BACK_S = 0.55; // the blend home at the end of a shot
+
+// One chip for every pull-out: Interact's glyph, ringed, with a skip mark. On touch the Grab button lights instead.
+let chip: HTMLElement | null = null;
+let chipOwner: object | null = null;
+function showSkip(owner: object, on: boolean) {
+  if (!on && chipOwner !== owner) return;
+  chipOwner = on ? owner : null;
+  document.body.classList.toggle('shot-skip', on);
+  if (!on) return chip?.classList.remove('on');
+  if (!chip) {
+    chip = document.createElement('div');
+    chip.className = 'shot-skip-chip';
+    (document.querySelector('.hud') ?? document.body).append(chip);
+  }
+  const html = `${glyph('interact')}<i>▸▸</i>`;
+  if (chip.innerHTML !== html) chip.innerHTML = html;
+  chip.classList.toggle('on', !!glyph('interact'));
+}
 
 type Shot = { from: THREE.Vector3; to: THREE.Vector3; at: THREE.Vector3; seconds: number; drift: number };
 export function createCameraPullOut(busy = () => false, behindBuddy = false, seated = () => false) {
   const inSeat = () => inputState.seated || seated();
   const listeners = new AbortController();
+  const self = {};
   let shot: Shot | null = null,
     pending: Shot | null = null,
     t = 0,
@@ -25,7 +51,15 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     pending = null;
     cut = Math.min(cut, 0.999);
   };
-  const input = dismissInput(() => !!shot, cancel, listeners.signal);
+  const skipping = () => SKIP_AFTER_S !== null && !!shot && cut === 1 && t >= SKIP_AFTER_S && t < shot.seconds - BACK_S;
+  const skip = () => {
+    if (!skipping()) return;
+    // Behind Buddy at once, so the short blend home lands where the full shot would have.
+    if (behindBuddy && !returned) cam.yaw = me.yaw;
+    returned = true;
+    cancel();
+  };
+  const input = skipInput(skipping, skip, listeners.signal);
   const constraint: (typeof camConstraints)[number] = (look, pos) => {
     if (!shot || weight <= 0 || inSeat() || busy()) return false;
     camForward(forward);
@@ -37,11 +71,16 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     return true;
   };
   camConstraints.push(constraint);
-  const reset = () => {
-    shot = pending = null;
+  const settle = () => {
     t = weight = 0;
     cut = 1;
     returned = false;
+    input.release();
+    showSkip(self, false);
+  };
+  const reset = () => {
+    shot = pending = null;
+    settle();
   };
   return {
     play(from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds = 3.2, drift = seconds) {
@@ -53,29 +92,33 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
       if (pending && !busy() && !inputState.held) {
         shot = pending;
         pending = null;
-        t = weight = 0;
-        cut = 1;
-        input.reset();
+        settle();
       }
       if (!shot) return;
-      if (busy() || inputState.held) return reset();
-      input.update();
+      // A reward card over a shot the player was meant to see: it goes back in the queue and plays whole after the card.
+      if (busy() || inputState.held) {
+        if (cut === 1) pending ??= shot;
+        shot = null;
+        return settle();
+      }
       t += dt;
       // Reorient the underlying follow camera while the gate shot has full weight, before blending home.
-      if (behindBuddy && !returned && cut === 1 && t >= shot.seconds - 0.55) {
+      if (behindBuddy && !returned && cut === 1 && t >= shot.seconds - BACK_S) {
         cam.yaw = me.yaw;
         returned = true;
       }
       if (cut < 1) cut = Math.max(0, cut - dt / 0.14);
       const out = Math.min(1, t / 0.8),
-        back = clamp((t - shot.seconds + 0.55) / 0.55, 0, 1);
+        back = clamp((t - shot.seconds + BACK_S) / BACK_S, 0, 1);
       weight = ease(out) * (1 - ease(back)) * cut;
-      if (t >= shot.seconds || cut <= 0) reset();
+      if (t >= shot.seconds || cut <= 0) return reset();
+      input.update();
+      showSkip(self, skipping());
     },
     cancel,
     reset,
     active: () => !!shot || !!pending,
-    inspect: () => ({ active: !!shot, pending: !!pending, seconds: t, weight }),
+    inspect: () => ({ active: !!shot, pending: !!pending, seconds: t, weight, skip: skipping() }),
     dispose() {
       reset();
       listeners.abort();
