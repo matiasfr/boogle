@@ -204,9 +204,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       owner.cleanup(plaque.dispose);
     }
     const board = label(3, 1.5);
-    // An island's two boards stand over their own edges, not on top of each other.
-    const edge = island ? sign * (hw - 0.8) : 0;
-    board.sprite.position.set(c.x + edge * cosY, low + 5.2, c.z - edge * sinY);
+    // Over the signal's arm at the platform's end, not over its middle where it covered the view along the line
+    // (at the quarry, the opened throat): the signal and the board say "a train is coming" in one place.
+    board.sprite.position.set(arm.position.x, low + 5.3, arm.position.z);
     board.sprite.visible = false;
     owner.add(board.sprite);
     owner.cleanup(() => {

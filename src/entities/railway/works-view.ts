@@ -20,6 +20,8 @@ import { reducedMotion } from '../../constants.ts';
 import { goldMote } from './breaker-view.ts';
 import { WORKS, WORKS_KILN, WORKS_RACK, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
 import { SEAM_THROAT } from '../../sim/railway-works.ts';
+import { LINE_HALTS } from '../../sim/railway-train.ts';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
 
@@ -145,7 +147,93 @@ export async function createRailwayWorks(
   }
 
   // ---------------------------------------------------------------- moving parts: one draw
-  const batch = createBoxBatch(owner, 260);
+  const batch = createBoxBatch(owner, 320);
+
+  // The trodden path and its fingerpost (designer, 9 November: the halt can't show the kiln, so send you 21 m up the
+  // roller road, where the cut frames it). From the quarry halt's platform end by the rack, beside the road, to the
+  // throat floor; shown once the throat is struck. Paler than the track's dirt, no collider: no route changes.
+  const halt = LINE_HALTS.find((h) => h.name === 'Quarry')!,
+    haltAt = { x: halt.x / 100, z: halt.z / 100 };
+  const pathSegments: { x: number; y: number; z: number; length: number; yaw: number; pitch: number }[] = [];
+  const post = { x: 0, z: 0, yaw: 0 };
+  {
+    const line = [...ROLLER_ROAD].reverse(); // rack, …, throat
+    const normal = (a: { x: number; z: number }, b: { x: number; z: number }) => {
+      const n = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+      return { x: -(b.z - a.z) / n, z: (b.x - a.x) / n };
+    };
+    // Beside the rollers on the halt's side of the first leg, mitred round each bend.
+    const n0 = normal(line[0]!, line[1]!);
+    const side = n0.x * (haltAt.x - line[0]!.x) + n0.z * (haltAt.z - line[0]!.z) > 0 ? 1.9 : -1.9;
+    const offset = line.map((p, i) => {
+      const a = normal(line[Math.max(0, i - 1)]!, line[Math.max(1, i)]!),
+        b = normal(line[Math.min(i, line.length - 2)]!, line[Math.min(i + 1, line.length - 1)]!);
+      const m = { x: a.x + b.x, z: a.z + b.z },
+        k = (a.x * m.x + a.z * m.z) / (m.x * m.x + m.z * m.z || 1);
+      return { x: p.x + m.x * k * side, z: p.z + m.z * k * side };
+    });
+    // It starts under the platform's edge, 4 m out from the halt toward the rack.
+    const d = Math.hypot(offset[0]!.x - haltAt.x, offset[0]!.z - haltAt.z);
+    const start = {
+      x: haltAt.x + ((offset[0]!.x - haltAt.x) * 4) / d,
+      z: haltAt.z + ((offset[0]!.z - haltAt.z) * 4) / d,
+    };
+    const points = [start, ...offset];
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1]!,
+        b = points[i]!,
+        n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 1.5);
+      for (let j = 0; j < n; j++) {
+        const u0 = j / n,
+          u1 = (j + 1) / n;
+        const x0 = a.x + (b.x - a.x) * u0,
+          z0 = a.z + (b.z - a.z) * u0,
+          x1 = a.x + (b.x - a.x) * u1,
+          z1 = a.z + (b.z - a.z) * u1;
+        const y0 = H(x0, z0),
+          y1 = H(x1, z1),
+          length = Math.hypot(x1 - x0, z1 - z0);
+        pathSegments.push({
+          x: (x0 + x1) / 2,
+          y: (y0 + y1) / 2 + 0.03,
+          z: (z0 + z1) / 2,
+          length: length + 0.12,
+          yaw: Math.atan2(x1 - x0, z1 - z0),
+          pitch: -Math.atan2(y1 - y0, length),
+        });
+      }
+    }
+    // The post stands just off the path where it leaves the platform, its arm pointing up the road.
+    const out = normal(start, offset[0]!);
+    post.x = offset[0]!.x + out.x * Math.sign(side) * 1.3;
+    post.z = offset[0]!.z + out.z * Math.sign(side) * 1.3;
+    post.yaw = Math.atan2(-(offset[1]!.z - offset[0]!.z), offset[1]!.x - offset[0]!.x);
+  }
+  const { paintBoard } = await import('../../proto/place/signs.ts');
+  const postY = H(post.x, post.z);
+  const signMat = paintBoard([{ t: 'Kiln', px: 190 }], 1.2, 0.34);
+  const front = new THREE.PlaneGeometry(1.2, 0.34),
+    behind = new THREE.PlaneGeometry(1.2, 0.34).rotateY(Math.PI);
+  const signGeo = mergeGeometries([front.translate(0, 0, 0.03), behind.translate(0, 0, -0.03)])!;
+  front.dispose();
+  behind.dispose();
+  const sign = new THREE.Mesh(signGeo, signMat);
+  signGeo.dispose();
+  sign.castShadow = true;
+  sign.position.set(post.x + Math.cos(post.yaw) * 0.62, postY + 2.25, post.z - Math.sin(post.yaw) * 0.62);
+  sign.rotation.y = post.yaw;
+  sign.visible = false;
+  owner.add(sign);
+  owner.cleanup(() => {
+    signMat.map?.dispose();
+    signMat.dispose();
+  });
+  function drawPath() {
+    for (const s of pathSegments) batch.box(s.x, s.y, s.z, 1.6, 0.04, s.length, '#efdcb0', s.yaw, s.pitch);
+    batch.box(post.x, postY + 1.2, post.z, 0.14, 2.6, 0.14, '#7f5630');
+    // The arm's backing board, a hair behind the painted faces.
+    batch.box(sign.position.x, sign.position.y, sign.position.z, 1.26, 0.4, 0.04, '#7f5630', post.yaw);
+  }
   const glowMat = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#2a1206', emissive: '#ff6a10', emissiveIntensity: 1.7 }),
   );
@@ -590,6 +678,8 @@ export async function createRailwayWorks(
       mouth.scale.setScalar(1 + flare * 0.35);
       batch.begin();
       drawSlabs(dt);
+      if (open) drawPath();
+      sign.visible = open;
       drawKiln();
       drawKilnFlights(dt);
       drawRack(dt);
