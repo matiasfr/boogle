@@ -608,6 +608,23 @@ slabs have sunk (4.8 s). All Local over accepted state, so a friend and a late j
 only the striker gets the shot. No words; motes are off under reduced motion, the ghosts stay. The ghosts are one
 instanced draw (`src/render/ghost-outline.ts`, shared with the boiler plan's saddle echo).
 
+**From the quarry halt to the kiln** (9 November, the designer's answer in the same brief; words and beacons are
+allowed sparingly, [decisions](../decisions.md)). Once the throat is struck a trodden path, paler sand 1.6 m wide,
+runs beside the roller road from the platform end by the rack up to the throat floor, and a painted fingerpost
+reading **Kiln** stands where it leaves the platform, its arm pointing up the road. The path has no collider: the bot
+route and the route contract are unchanged. Path, post and arm board ride the Works box batch; only the painted arm
+face is a draw of its own.
+
+**Departure boards at the halts** (owner, 9 November: "a real sign rather than a big floating text countdown"). The
+big hovering countdown over each halt's centre is gone. Every standing halt has a departure board fixed to its
+signal mast below the arm, inboard of the rails at the end the train comes in: a dark backing and a red cap, and a
+five-flap split-flap face either side reading the seconds to the next train ("27 S"), blank when none is called. The
+face is ported from the 1 November departures board prototype (`src/entities/railway/flap-face.ts`): a ticking digit
+turns one flap, a changed letter riffles three, 70 ms apart; reduced motion swaps them plainly. It is lit like the
+scene, reads from the platform and small but legible from about 25 m, not across the map. Same information as
+before, Local over accepted train state. One draw per standing halt (the old sprite was one draw while calling).
+Not tested on a device.
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
