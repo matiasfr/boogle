@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { stripTypeScriptTypes } from 'node:module';
 import type { Browser } from 'playwright';
-import { startStack, launch, Game, VIEWS, reportGfxErrors } from './lib.ts';
+import { startStack, launch, Game, VIEWS, reportGfxErrors, root } from './lib.ts';
+import { finishRun, startRun } from './verdict.ts';
 import type { Stack } from './lib.ts';
 import { findSave, listSaves, POSE_AT, SEED } from './saves.ts';
 import { plotCurves, readCsv, readings, START_CURVES, STOP_CURVES, writeCsv } from './curves.ts';
@@ -231,6 +232,7 @@ const save = opt.at ? findSave(opt.at, opt.saves) : null;
 if (opt.restoreReport && !save) throw new Error('--restore-report requires --at');
 if (save) console.log(`at: "${save.beat}", ${Math.round(save.t)} s into the run ${save.run}`);
 
+startRun(path.join(opt.out, `${label}-verdict.json`), { checkout: path.resolve(opt.root ?? root) });
 let stack: Stack | undefined, browser: Browser | undefined;
 let coopWarp: Awaited<ReturnType<typeof startCoopWarp>> | undefined;
 async function pageScript(g: Game, file: string) {
@@ -394,9 +396,11 @@ try {
   console.log(
     'Capture checks passed: WebGPU, advancing game frames, no page or console errors. Inspect the artifacts to answer the question.',
   );
+  finishRun({ verdict: 'pass', view: label });
 } catch (e) {
   console.error(e);
   process.exitCode = 1;
+  finishRun({ verdict: 'failure', view: label, error: String(e) });
 } finally {
   await coopWarp?.stop().catch((e) => console.error('warp cleanup:', e));
   await browser?.close().catch(() => {});

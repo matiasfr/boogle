@@ -24,7 +24,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Browser, Page } from 'playwright';
-import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors } from '../look/lib.ts';
+import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors, root } from '../look/lib.ts';
+import { finishRun, startRun } from '../look/verdict.ts';
 import type { GameOpts, Stack } from '../look/lib.ts';
 
 /** What a scenario's `run(t)` gets (described above). */
@@ -84,6 +85,7 @@ if (bad.length) {
 let stack: Stack | undefined,
   browser: Browser | undefined,
   failed = 0;
+startRun(path.join(outputRoot, 'verdict.json'), { checkout: root });
 try {
   stack = await startStack({ url });
   const st = stack;
@@ -173,9 +175,13 @@ try {
     console.log(`  ${bads ? 'FAILED' : 'ok'} in ${((Date.now() - t0) / 1000).toFixed(1)} s; images: ${out}`);
     if (bads) failed++;
   }
+} catch (e) {
+  finishRun({ verdict: 'failure', scenarios: names, error: String(e) });
+  throw e;
 } finally {
   await browser?.close().catch(() => {});
   await stack?.close();
 }
 console.log(`\n${failed ? failed + ' scenario(s) FAILED' : 'all scenarios passed'}`);
+finishRun({ verdict: failed ? 'failure' : 'pass', scenarios: names, failed });
 process.exit(failed ? 1 : 0);
