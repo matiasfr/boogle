@@ -827,6 +827,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   owner.cleanup(dispose);
   return {
     update,
+    lateUpdate: cargo.lateUpdate,
     prePhysics: cargo.prePhysics,
     targets,
     dispose,

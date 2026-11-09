@@ -234,13 +234,9 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
         drag = createBeamDrag(dragWorld, model.beam, H, ropeMaterial);
         drags.set(account.pid, drag);
       }
-      // The rope runs from the load frame over the shoulder to the trunk's near end, at the hip on the shoulder side.
-      frame.updateWorldMatrix(true, false);
-      anchor.copy(anchorLocal);
-      frame.localToWorld(anchor);
       const yaw = avatar.rotation.y,
         back = { x: Math.sin(yaw), z: Math.cos(yaw) };
-      // A short rope's length behind, so the rope shows as a line from the shoulder and the trunk clears Buddy.
+      // A short rope's length behind, so the trunk clears Buddy.
       hip.set(
         avatar.position.x + back.x * 1.05 + Math.cos(yaw) * side * 0.4,
         avatar.position.y + 0.15,
@@ -277,7 +273,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       } else {
         // Trail about 35 degrees off straight behind, on the shoulder side: the trunk shows its length across the view.
         trail.set(back.x * 0.82 + Math.cos(yaw) * side * 0.57, 0, back.z * 0.82 - Math.sin(yaw) * side * 0.57);
-        drag.update(dt, anchor, hip, from, trail, helped);
+        drag.update(dt, hip, from, trail, helped);
       }
     }
     for (const [pid, model] of worn)
@@ -363,6 +359,24 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   });
   return {
     update,
+    lateUpdate() {
+      // Both the local Buddy and friends have the held-item socket. Sample after feel.ts's squash/landing pose.
+      for (const [pid, drag] of drags) {
+        const avatar = avatarOf(pid);
+        if (!avatar) continue;
+        const hand = avatar.userData.handSocket;
+        if (hand) hand.getWorldPosition(anchor);
+        else {
+          // The diagnostic capsule has no rig; retain its existing load-frame fallback.
+          const frame = frameOf(avatar);
+          if (!frame) continue;
+          frame.updateWorldMatrix(true, false);
+          anchor.copy(anchorLocal);
+          frame.localToWorld(anchor);
+        }
+        drag.drawRope(anchor);
+      }
+    },
     targets,
     drop,
     rocks,

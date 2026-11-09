@@ -470,6 +470,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         );
       owner.update(ctx);
     },
+    lateUpdate: sources.lateUpdate,
     targets(): Interactable[] {
       const targets = [
         ...sources.targets(),
