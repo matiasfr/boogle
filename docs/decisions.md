@@ -16,7 +16,7 @@ Routing updated 7 November 2026. Read only the linked sections and dated entries
 
 ### Rail, construction, levels and travel
 
-[Trains and the world](#trains-and-the-world): **2 November** physical construction, solid objects, visible cargo/town growth, crossing and sitting decisions; sitting does not restore the cut bench camera. **6 November** sets Split-rock, Ring Island and the smallest Roundhouse after line-2 playtest. **7 November, great beam** allows any axe and delivery order, rope drag, and the proper axe at the forge. [Process](#process) routes the Sickle Isles greybox. **3 November, after round 4** removes the objective marker ([place](game-design/place.md#the-run)); older signs/beacons are history. **9 November, cut the "Call cart to forge" handle** supersedes the 5 November whistle pick; the cart's rack status stays. Free track remains direction, not a level specification; maps/fast-travel research stays deferred by the Design Table call.
+[Trains and the world](#trains-and-the-world): **2 November** physical construction, solid objects, visible cargo/town growth, crossing and sitting decisions; sitting does not restore the cut bench camera. **6 November** sets Split-rock, Ring Island and the smallest Roundhouse after line-2 playtest. **7 November, great beam** allows any axe and delivery order, rope drag, and the proper axe at the forge. [Process](#process) routes the Sickle Isles greybox. **3 November, after round 4** removes the objective marker ([place](game-design/place.md#the-run)); older signs/beacons are history. Free track remains direction, not a level specification; maps/fast-travel research stays deferred by the Design Table call.
 
 ### Rewards, co-op and town roles
 
