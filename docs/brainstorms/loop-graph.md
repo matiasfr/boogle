@@ -43,10 +43,10 @@ No browser: this is tooling with no player-visible change.
 
 ## Open questions
 
-1. Does "vestigial" also cover `npm run sim -- replay`, its golden recording and the `?record=1` recorder in the game? **Recommended: yes for replay and its recording (they compare player and ball physics); the recorder stays until you say, since it is game code.** Answer: ___
-2. Is straight-line distance good enough for the first grind numbers? **Recommended: yes, labelled, and calibrated against human sessions in build 3.** Answer: ___
-3. Should the trace reach you as a picture? **Recommended: a text table first; a strip chart on the Line Map board once the numbers are trusted.** Answer: ___
-4. Should a loop change have to pass `npm run loop -- run` before it ships? **Recommended: not yet; report it, and decide once it has caught something real.** Answer: ___
+1. Does "vestigial" also cover `npm run sim -- replay`, its golden recording and the `?record=1` recorder in the game? **Recommended: yes for replay and its recording (they compare player and ball physics); the recorder stays until you say, since it is game code.** Answer: the recommended option (owner, 2026-11-09).
+2. Is straight-line distance good enough for the first grind numbers? **Recommended: yes, labelled, and calibrated against human sessions in build 3.** Answer: the recommended option (owner, 2026-11-09).
+3. Should the trace reach you as a picture? **Recommended: a text table first; a strip chart on the Line Map board once the numbers are trusted.** Answer: the recommended option (owner, 2026-11-09).
+4. Should a loop change have to pass `npm run loop -- run` before it ships? **Recommended: not yet; report it, and decide once it has caught something real.** Answer: the recommended option (owner, 2026-11-09).
 
 ## Parked
 
