@@ -22,6 +22,10 @@ const { teleport } = (await import(
 const { interactDown, interactUp, interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');
+const { remotes } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
+const { partnerWearing } = (await import(
+  '/src/entities/wardrobe/state.ts' as string
+)) as typeof import('../../../src/entities/wardrobe/state.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
 const layout = (await import(
   '/src/proto/place/layout.ts' as string
@@ -149,7 +153,9 @@ async function actOnce(act: string) {
       await wait(800);
     }
   }
-  console.log(`TOWN ${JSON.stringify({ at, act, player: { ...body.position }, ...inspectTown() })}`);
+  // What each partner is seen wearing (their `wardrobe` presence), for two-player captures.
+  const partners = [...remotes.keys()].map((peer) => partnerWearing(peer));
+  console.log(`TOWN ${JSON.stringify({ at, act, player: { ...body.position }, ...inspectTown(), partners })}`);
 }
 // With towndefer=1 the act waits for an --action file to call window.__townAct() after warm-up (for --video).
 (window as unknown as { __townAct?: () => Promise<void> }).__townAct = runAct;
