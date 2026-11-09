@@ -14,6 +14,9 @@ COPY src/world ./src/world
 COPY src/sim ./src/sim
 COPY src/ecs ./src/ecs
 COPY src/net/ids.ts src/net/ws-wire.ts ./src/net/
+# The playtest jump-in seeds (docs/plans/playtest-jump-in.md), built here from this commit's sim so the VM never builds
+# one at runtime (JUMP_BUILD=prebuilt in fly.toml). About 30 s; each stage's time is in the build log.
+RUN node server/src/seeds/prebuild.ts --out server/seeds
 # su-exec (a tiny Alpine package) lets the start command drop root; see CMD.
 RUN apk add --no-cache su-exec && mkdir -p /data && chown -R node:node /data /app
 ENV DATA_DIR=/data PORT=9000

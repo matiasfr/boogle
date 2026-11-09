@@ -14,6 +14,7 @@ primary_region = "iad"
   DATA_DIR = "/data"
   SERVER_ROOMS = "*"
   NODE_OPTIONS = "--max-old-space-size=384"
+  JUMP_BUILD = "prebuilt"
   # The load run opens 60 sockets from one IP (production's limit is 20 a minute per IP).
   UPGRADES_PER_MIN = "1000"
 
