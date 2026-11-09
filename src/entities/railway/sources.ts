@@ -27,6 +27,8 @@ import { createRecoveryRack } from './supply-view.ts';
 import { createLineCargo } from './line-cargo.ts';
 import { createGreatTreeDress } from './great-tree-view.ts';
 import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
+import { worksPreview } from './works-flag.ts';
+import { insideSplitRock } from './works-shape.ts';
 
 type AvatarData = { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D } };
 const visualFrame = (avatar: THREE.Object3D | null) => {
@@ -35,6 +37,7 @@ const visualFrame = (avatar: THREE.Object3D | null) => {
 };
 const inner = () => (me.avatar?.userData as AvatarData | undefined)?.inner;
 const sourceIndex = new Map(RAILWAY_SOURCES.map((source, index) => [source[0], index]));
+const works = worksPreview();
 
 export async function createRailwaySources(adapter: RailwayAdapter, owner: OwnedView) {
   const [
@@ -75,7 +78,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   const hardwoodIndex = new Map<number, number>(LINE1_HARDWOODS.map((source, i) => [source[0], i]));
   const trees: TreePose[] = TREE_SOURCES.map((source) => ({
     ...source,
-    cleared: source.hardwood ? false : source.cleared,
+    cleared: source.hardwood ? false : source.cleared || (works && insideSplitRock(source)),
     work: 0,
     issued: 0,
     ceiling: source.great ? 0 : source.hardwood ? 15 : 10,
@@ -268,6 +271,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       stoneCount = 0,
       railCount = 0;
     for (const pile of state.piles) {
+      if (pile.kind === 3) continue; // footings draw themselves (footing-view.ts)
       let inFlight = 0;
       for (const flight of pileFlights) if (flight.id === pile.id) inFlight++;
       at.set(pile.x / 100, pileHeight(pile), pile.z / 100);
@@ -360,6 +364,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       event.pid !== state.pid
     )
       partnerSwing(event);
+    if ((event.op === 'rail.drop' || event.op === 'rail.take') && event.kind === 3) return; // footing-view.ts
     if (event.op === 'rail.drop') {
       // The event names its pile and the count right after it: a second drop in the same packet still flies.
       const pile = state.piles.find((pile) => pile.id === event.pile);
@@ -514,6 +519,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     state = adapter.inspect();
     const e = c.event;
     const k = 'kind' in e ? e.kind : undefined;
+    if (k === 3) return; // a footing goes back by state (footing-view.ts)
     const kind = e.op === 'rail.mine' || k === 1 ? 'stone' : k === 2 ? 'rail' : 'log';
     const held = kind === 'stone' ? state.stoneCarry : kind === 'rail' ? state.railsCarry : state.carry;
     let home: THREE.Vector3 | null = null;
@@ -612,6 +618,17 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   function dropOne() {
     state = adapter.inspect();
     if (cargo.drop()) return true;
+    if (state.foot && me.body) {
+      // The footing on your back comes down in front of you: the same control, the pile's kind 3.
+      const p = me.body.interpolatedPosition;
+      const x = p.x - Math.sin(me.yaw) * 1.6,
+        z = p.z - Math.cos(me.yaw) * 1.6;
+      const feet = p.y - PLAYER_R,
+        ground = H(x, z);
+      const y = Math.abs(ground - feet) < 1.5 ? ground : feet;
+      void adapter.drop(Math.round(x * 100) || 0, Math.round(y * 100) || 0, Math.round(z * 100) || 0, 1, 3);
+      return true;
+    }
     if (
       !state.ready ||
       (state.availableCarry <= 0 && state.availableStone <= 0 && state.availableRails <= 0) ||
@@ -762,6 +779,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         });
       }
     for (const pile of state.piles) {
+      if (pile.kind === 3) continue;
       if (Math.hypot(p.x - pile.x / 100, p.z - pile.z / 100) > 2.8 || Math.abs(p.y - PLAYER_R - pileHeight(pile)) > 2)
         continue;
       const point = new THREE.Vector3(pile.x / 100, pileHeight(pile) + 1.4, pile.z / 100);

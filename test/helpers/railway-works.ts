@@ -31,7 +31,7 @@ export const WORKS_STAGES: readonly WorksStage[] = [
 ];
 
 /** Logs onto a's back, from any standing tree or hardwood (the proper axe is out by now). */
-function chopTo(w: World, pid: string, n: number) {
+export function chopTo(w: World, pid: string, n: number) {
   const a = () => railAccount(w.s, pid)!;
   for (let guard = 0; a().carry < n; guard++) {
     assert.ok(guard < 200, 'logs to chop');

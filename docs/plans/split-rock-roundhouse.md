@@ -653,33 +653,33 @@ update and was repeated. No new scenario or harness was added.
 
 **Steps.**
 
-- [ ] **J4a. The breaker.** On C's pedestal while `breaker === 1`, with gold motes: a broad-faced hammer, 1.4 m long.
+- [x] **J4a. The breaker.** On C's pedestal while `breaker === 1`, with gold motes: a broad-faced hammer, 1.4 m long.
   The target `railway-breaker` (**Take the breaker**, within 3.6 m) runs `adapter.takeBreaker()`; on accepted, a
   `thump` and the breaker shown on Buddy's back. A taken breaker isn't drawn on the pedestal.
-- [ ] **J4b. Strikes.** The targets `railway-strike-0`/`-1` (**Strike the seam**) appear when `breaker === 2` and the
+- [x] **J4b. Strikes.** The targets `railway-strike-0`/`-1` (**Strike the seam**) appear when `breaker === 2` and the
   bit is unset, within reach of the seam. On the press, a Local 0.8 s swing with the breaker in hand (no state). On
   accepted, the slab pieces topple along authored arcs (or pop apart for the stall slab), a dust ring and a deep
   `clank`, and the colliders are removed. On restore they snap open, with no show. Offer the 8 November switch-zoom
   cinematic for the throat, for whoever struck, skippable and Local, reusing the sea switch's camera move.
-- [ ] **J4c. The kiln.** The frame faces the open cut. `railway-kiln` (**Fill the kiln**) when the throat is open, the
+- [x] **J4c. The kiln.** The frame faces the open cut. `railway-kiln` (**Fill the kiln**) when the throat is open, the
   kiln is unlit and your back has logs or stone; it runs `adapter.fillKiln()`. Draw the stock rising on the frame
   (logs stacked, stone in a hopper) from the prediction. When lit (accepted, or a live edge): fire glow, chimney smoke
   and a whoosh. Each cast (a `rack` rise) sends a footing down the roller road in 4 s to the rack (Local flight, as
   the forge's pour flights do). Rack stacks come from state.
-- [ ] **J4d. Footings.**
+- [x] **J4d. Footings.**
   - `railway-foot-take-0` (**Shoulder a footing**) at the Works rack runs `adapter.shoulderFooting(0)`.
   - The worn model is the sample block on the avatar's load frame, for you and remote holders by pid, with a stoop.
     Copy boiler-view's worn-model approach in this file; don't edit `line-cargo.ts`.
   - The drop uses the existing `place-drop`: no new binding, since `rail.drop` kind 3 already covers it. A footing pile
     draws as the block lying on the ground. (J3 review: J3 draws nothing for a kind-3 pile, so this is all J4's.)
-- [ ] **J4e. The stall.**
+- [x] **J4e. The stall.**
   - `railway-foot-set-0` (**Set the footing**) at the sockets runs `adapter.setFooting(0)`. Each footing lowers into
     its socket.
   - At `stall === 2`, the stall frame rises in 3 s of scaffold pieces (Place's physical build, not scaling), the tarp
     slides off, and the shunter and wagon show. Restore snaps it.
   - `railway-foot-set-1` and `railway-cradle` (**Fit the cradle**) at the wagon's bay. The cradle bolts on piece by
     piece (2 footing seats, 8 rail arms) from the prediction, and at `fitted` the wagon gets its brass cradle.
-- [ ] **J4f. The table.**
+- [x] **J4f. The table.**
   - `railway-turn` (**Turn the table**) by the turntable when `stall === 2` runs `adapter.turnTable(1 − table,
     tableRev)`. On accepted, rotate Place's `disc` (`src/proto/place/lines.ts`) 90° over 2 s through the same Place
     handle the views already use; don't import Place at module scope.
@@ -692,7 +692,7 @@ update and was repeated. No new scenario or harness was added.
   - When `train[1].wagon` is true, this view hides its wagon and B's train-view draws it (J5). Restore snaps to the
     right pose.
   - The wagon is a solid platform `railway:shed-wagon` while it is parked.
-- [ ] **J4g. Rocks.** `sources.ts` iterates `RAIL_ROCKS`, so the two limestone rocks mine like line 1's. Remove J2's
+- [x] **J4g. Rocks.** `sources.ts` iterates `RAIL_ROCKS`, so the two limestone rocks mine like line 1's. Remove J2's
   static boulders.
 - [x] **J4h. Already default on in J2.** `worksPreview()` returns true unless `works=0`; keep that off switch for
   before/after performance and the unchanged-still proof.
@@ -707,6 +707,39 @@ update and was repeated. No new scenario or harness was added.
   - Reload `wagon-on`, `stall-done` and `works-open`: no shows replay (5 s videos).
   - `npm run perf` at the quarry halt and the stall, against J2's numbers. `npm run check`.
 - **Done means.** Every proof passed and was looked at, no change outside the listed files, and the flag is default on.
+- **As built (9 November, no `WORLD_NS` bump).** Where J4 differs from the text above, J5 follows this:
+  - The views are split into `breaker-view.ts`, `works-view.ts`, `roundhouse-view.ts` and `footing-view.ts` behind
+    one seam, `works-live.ts` (`view.ts` calls only that). `inspect().worksView` merges their inspections, with
+    `footings` under its own key; `shedView` is gone.
+  - **The forge call** (Home flow findings 2 and 3) is `forge-call.ts`: a plume of 22 instanced puffs and a whistle
+    heard to 900 m on the live edge, shared by the boiler (while it waits on the pedestal) and the breaker. C had no
+    plume or whistle on main, so J4 built it once. The plume isn't drawn from the shared particle pool: at the pier
+    that pool turns over about 440 particles a second, and a 10 s puff was recycled before it climbed.
+  - **The table is Split-rock's own disc**, drawn and collided in `roundhouse-view.ts`, because Place's `disc` isn't
+    loaded in the production world. The turn target is hidden while a turn is pending (4 s), while the disc turns,
+    and while the wagon rolls out or waits (`ready ≥ 0 && !wagon`). That is the anti-grief rule, and it is
+    client-side only; a sim-level hold on `rail.turn` while `ready ≥ 0` would make it binding (J5 or later).
+  - The shunt clock runs at real time and leans at most half a step toward `tickNow()`. A live `ready` starts it
+    at the turn's own tick. In the look harness the mover clock jumps ±3 to 6 s after an action, and this keeps the
+    wagon from rushing or reversing.
+  - The parked wagon has a static box collider, not a named `railway:shed-wagon` platform. The rolling wagon has
+    no collider, so it passes through anyone standing on the stall road or the table's rails. J5 should make it a
+    `rail.makeCar` platform when it draws the wagon on the train.
+  - A footing is carried at the beam's solo speed (`beamSoloSpeed`), or its help speed with a friend. The friend
+    uses **Help carry** / **Let go** through the presence key `railwayFootHelp` (the beam's pattern). Your drop
+    control puts the footing down as kind 3 in front of you (`sources.ts` `dropOne`). `sources.ts` leaves
+    kind-3 piles, their targets and their flights to `footing-view.ts`.
+  - The bowl rocks (slots 3 and 4) are drawn and chopped by `line-cargo.ts` (it owns line 1's rocks, not
+    `sources.ts`). The plan's "don't edit `line-cargo.ts`" was about the worn footing. The trees growing through the
+    bowl are cleared locally with `insideSplitRock` (`works-shape.ts`).
+  - The strike doesn't need an empty back (J5's bot arrives carrying logs). The throat's three slabs topple into
+    the bowl about their inner feet, and the striker gets the sea switch's pull-out (`createCameraPullOut`).
+  - The dynamic box batch (`works-box-view.ts` `createBoxBatch`) creates its `instanceColor` up front. A WebGPU
+    pipeline compiled while it was empty drew every box white.
+  - Look tooling: `dev/look/evals/railway-works-act.ts` (`worksdo=take|strike0|strike1|kiln|foot|set|turn`, with
+    `workscam=play` for the pull-out). The look-only seed `--rail-seed works-stocked` (in `dev/look/rail-seed.ts`)
+    leaves the kiln a few stone short so a bot can light it live. New poses: `forge`, `kiln`, `throat`, `rack`,
+    `call`, `callmid`, `callnear`. `worksprobe=1` prints particle-pool turnover.
 
 **Codex brief (paste):**
 

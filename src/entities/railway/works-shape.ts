@@ -69,6 +69,18 @@ const back = [
   { x: 113 + 1000, z: 94 },
   cut(-4),
 ];
+/** Inside the outcrop's ring, or within `margin` metres of one of its walls: Local scenery clearance for the trees
+ * that grew through the bowl floor and the back wall (their harvest ids keep their accepted state). */
+export function insideSplitRock(p: WorksPoint, margin = 3) {
+  const ring = [...corners, ...back];
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i]!,
+      b = ring[j]!;
+    if (a.z > p.z !== b.z > p.z && p.x < ((b.x - a.x) * (p.z - a.z)) / (b.z - a.z) + a.x) inside = !inside;
+  }
+  return inside || SPLIT_ROCK_BOXES.some((b) => boxDistance(p, b) < margin);
+}
 export const SPLIT_ROCK_BOXES = [
   ...corners.slice(1).map((p, i) => wall(corners[i]!, p)),
   ...back.slice(1).map((p, i) => wall(back[i]!, p)),

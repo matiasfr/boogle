@@ -96,11 +96,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   line2.holdDepot(flying);
   shelf.holdRails(flying);
   const works = worksPreview()
-    ? await Promise.all([
-        import('./works-view.ts').then((m) => m.createRailwayWorks(adapter, owner)),
-        import('./roundhouse-view.ts').then((m) => m.createRailwayRoundhouse(adapter, owner)),
-      ])
-    : [];
+    ? await import('./works-live.ts').then((m) =>
+        m.createRailwayWorksLive(adapter, owner, { seated: () => !!seats.seated(), busy: () => reward.inspect().busy }),
+      )
+    : null;
   if (look.LOOK.contact)
     kit.installContact(
       [machine.flatbed, machine.loco],
@@ -202,7 +201,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     owner,
   );
   function restoreMotion() {
-    for (const view of works) view.restore();
+    works?.restore();
     const spec = LINE1_STATIONS[state.activeStation]!,
       job = state.stations[state.activeStation]!;
     visualHead = targetHead = head();
@@ -224,6 +223,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   function accepted(event: RailwayAccepted) {
     state = adapter.inspect();
     trains.accepted(event);
+    works?.accepted(event);
     if (event.op === 'rail.wake') {
       liveWake = true;
       wake.start();
@@ -268,6 +268,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   owner.cleanup(
     adapter.onCorrected((c: RailwayCorrection) => {
       state = adapter.inspect();
+      works?.corrected(c);
       const e = c.event;
       if (e.op === 'rail.wake') {
         liveWake = false;
@@ -356,6 +357,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     owner,
     prePhysics: () => {
       sources.prePhysics();
+      works?.prePhysics();
       hook.prePhysics();
     },
     fixedPre: () => {
@@ -384,6 +386,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       if (rebuild === 'soft') {
         trains.restore();
         halts.restore();
+        works?.restore();
       }
       rebuild = null;
       wasReady = state.ready;
@@ -462,7 +465,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       cart.update(dt);
       trains.update(dt);
       halts.update(dt);
-      for (const view of works) view.update();
+      works?.update(dt);
       line2.update(dt);
       hook.update(dt, now);
       glide.update(dt, now);
@@ -516,7 +519,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         );
       owner.update(ctx);
     },
-    lateUpdate: sources.lateUpdate,
+    lateUpdate: () => {
+      sources.lateUpdate();
+      works?.lateUpdate();
+    },
     targets(): Interactable[] {
       const targets = [
         ...opening.targets(),
@@ -525,7 +531,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...line2.targets(),
         ...shelf.targets(),
         ...cart.targets(),
-        ...works.flatMap((view) => view.targets()),
+        ...(works?.targets() ?? []),
       ];
       const p = me.body?.position;
       if (
@@ -563,9 +569,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       glider: glide.inspect(),
       pathOpen: opened(),
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
-      // The blockouts' own inspection; `works` and `shed` are the adapter's accepted state (J3).
-      worksView: works[0]?.inspect() ?? null,
-      shedView: works[1]?.inspect() ?? null,
+      // The Works and Roundhouse views' own inspection; `works` and `shed` are the adapter's accepted state (J3).
+      worksView: works?.inspect() ?? null,
     }),
     dispose: () => owner.dispose(),
   };

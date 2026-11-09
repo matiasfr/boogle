@@ -13,6 +13,7 @@ import { thump, clank } from '../../render/machine-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
+import { createForgeCall } from './forge-call.ts';
 
 type Deps = {
   land: typeof import('../../proto/place/land.ts');
@@ -37,6 +38,8 @@ export function createRailwayBoiler(adapter: RailwayAdapter, owner: OwnedView, {
   );
   pedestal.position.set(bx, by + 0.3, bz);
   owner.add(pedestal, loose, worn.root);
+  // The forge's call while the boiler waits; Split-rock's breaker uses the same one (forge-call.ts).
+  const call = createForgeCall({ x: bx, y: by, z: bz }, owner);
   let body: Body | null = null;
   let mote = 0,
     side = 1;
@@ -110,6 +113,7 @@ export function createRailwayBoiler(adapter: RailwayAdapter, owner: OwnedView, {
         (s.beam?.state === 'held' && s.beam.holder === s.pid) ||
         s.carry + s.railsCarry + s.stoneCarry > 0,
     );
+    call.update(dt, b?.state === 'pedestal');
     mote -= dt;
     if (b?.state === 'pedestal' && mote <= 0) {
       mote = 0.8;
@@ -137,6 +141,7 @@ export function createRailwayBoiler(adapter: RailwayAdapter, owner: OwnedView, {
     restore() {
       // Rebuild silently; the continuous pedestal invitation resumes on a later frame.
       mote = 0.8;
+      call.restore(adapter.inspect().line2?.boiler.state === 'pedestal');
       update(0);
     },
     drop,

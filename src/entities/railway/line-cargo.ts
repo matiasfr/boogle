@@ -7,7 +7,7 @@ import { me } from '../../player/player.ts';
 import { input } from '../../player/input-state.ts';
 import { heldId } from '../../player/inventory.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
-import { LINE1_ROCKS } from '../../sim/railway-line-layout.ts';
+import { RAIL_ROCKS } from '../../sim/railway-works-layout.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
@@ -42,8 +42,9 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   let state = adapter.inspect(),
     helping: string | null = null,
     alive = true;
-  const rocks = LINE1_ROCKS.map((source, i) => {
-    const radius = ROCKS[i]!.r,
+  // Line 1's three rocks and the Works bowl's two limestone ones (slots 3 and 4, J4: they replace J2's boulders).
+  const rocks = RAIL_ROCKS.map((source, i) => {
+    const radius = ROCKS[i]?.r ?? 1.3,
       x = source.x / 100,
       z = source.z / 100,
       y = H(x, z);
@@ -161,7 +162,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     last = now;
     if (!validHelp()) helping = null;
     for (const rock of rocks) {
-      const current = state.rocks.find((row) => row.id === rock.id);
+      const current =
+        state.rocks.find((row) => row.id === rock.id) ?? state.works?.rocks.find((row) => row.id === rock.id);
       const remaining = current?.remaining ?? 0;
       if (remaining === rock.remaining) continue;
       rock.remaining = remaining;

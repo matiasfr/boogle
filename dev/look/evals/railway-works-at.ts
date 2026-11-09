@@ -32,9 +32,18 @@ const poses: Record<
   stall: { body: [903, 14], camera: [901, 23, 11], aim: [909.5, 20, 18.5] },
   table: { body: [920, 14], camera: [923, 25, 8], aim: [909.5, 20, 20.5] },
   pier: { body: [1405, -366], camera: [1412, 31, -352], aim: [1403, 24, -390] },
+  // J4: the boiler's pedestal (the breaker), the kiln at the open cut, and the throat from inside the bowl.
+  forge: { body: [922, 9], camera: [925, 22.5, 13], aim: [918.5, 18.5, 5] },
+  kiln: { body: [1122, 88], camera: [1120.5, 28.5, 82.5], aim: [1128, 25.5, 87.5] },
+  throat: { body: [1124, 86], camera: [1141, 35, 104], aim: [1119, 25, 82] },
+  rack: { body: [1094, 57], camera: [1098, 27.5, 61], aim: [1090.5, 24.2, 52.5] },
+  // The plume over the forge as seen from the pier (Home flow finding 3: it calls you back).
+  call: { body: [1405, -366], camera: [1404, 30, -358], aim: [919, 40, 5] },
+  callmid: { body: [1000, -60], camera: [1150, 40, -200], aim: [919, 40, 5] },
+  callnear: { body: [1000, -60], camera: [1000, 32, -60], aim: [919, 35, 5] },
 };
 const pose = poses[mode];
-if (!pose) throw new Error('Choose worksat=halt|ledge|bowl|stall|table|pier');
+if (!pose) throw new Error(`Choose worksat=${Object.keys(poses).join('|')}`);
 const shot = window as Window & { __worksPrepared?: boolean; __worksWalkDone?: boolean };
 const action = !!shot.__worksPrepared;
 if (!action) {
@@ -50,8 +59,8 @@ shot.__worksPrepared = true;
 {
   const state = inspectRailway()!;
   console.log(`WORKS pose ${mode} ${JSON.stringify({ works: state.works, shed: state.shed, foot: state.foot })}`);
-  const view = state as typeof state & { worksView?: unknown; shedView?: unknown };
-  console.log(`WORKS view ${JSON.stringify({ works: view.worksView, shed: view.shedView })}`);
+  const view = state as typeof state & { worksView?: unknown };
+  console.log(`WORKS view ${JSON.stringify(view.worksView)}`);
 }
 if (query.get('workswalk') === '1' && action) {
   const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -80,6 +89,20 @@ if (query.get('workswalk') === '1' && action) {
   } finally {
     if (jump) Object.defineProperty(me, 'jumpQueued', jump);
   }
+}
+if (query.get('worksprobe') === '1') {
+  // Is the forge call's plume alive where the camera is? (particles near the pedestal, and the camera's distance)
+  await wait(3000);
+  const { particleCounts } = (await import(
+    '/src/render/particles.ts' as string
+  )) as typeof import('../../../src/render/particles.ts');
+  const { camera } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
+  const before = particleCounts();
+  await wait(2000);
+  const after = particleCounts();
+  console.log(
+    `WORKS PROBE ${JSON.stringify({ particles: after, perSecond: (after.admitted - before.admitted) / 2, far: camera.far, d: Math.hypot(camera.position.x - 918, camera.position.z - 5) })}`,
+  );
 }
 if (query.get('worksperf') === '1') {
   await wait(3000);
