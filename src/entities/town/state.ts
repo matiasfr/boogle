@@ -31,6 +31,8 @@ export type TownInspection = {
     street: TownFact | null;
     streetRumour: number;
   };
+  /** The curio shelf in the village: where it stands, what's uncovered and how many are still under sheets. */
+  shelf: { x: number; y: number; z: number; yaw: number; uncovered: string[]; covered: number } | null;
 };
 let current: (() => TownInspection) | null = null;
 export const inspectTown = () => current?.() ?? null;

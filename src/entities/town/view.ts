@@ -7,7 +7,7 @@
 import type { RailwayInspection } from '../../adapters/railway.ts';
 import type { FrameCtx } from '../../loop.ts';
 import { conversation } from '../../player/conversation.ts';
-import type { Interactable } from '../../player/hands.ts';
+import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import {
   TOWN_FACTS,
@@ -25,6 +25,7 @@ import { inspectWardrobe, wardrobe } from '../wardrobe/state.ts';
 import { inspectRailway, railwayYouGot } from '../railway/state.ts';
 import { createTownMemory } from './memory.ts';
 import type { TownInspection } from './state.ts';
+import { createCurioShelf } from './curio-shelf.ts';
 
 /** What every town piece reads of the world. All of it comes from the shared railway or is this tab's own moment. */
 export type TownEnv = {
@@ -156,18 +157,23 @@ export async function createTownView(read: () => RailwayInspection | null) {
     movers: () => movers,
     people: env.people,
   });
+  // Your wardrobe, stood up in the village: what you own on it, the rest under dust sheets (C1).
+  const shelf = clothes ? await createCurioShelf(owner, clothes, lines.SHOP.offVerb) : null;
   sites.buildSites(owner);
   rooms.snap();
   rooms.warm();
   const room = (id: 'house' | 'shop' | 'museum') => ({ up: rooms.rooms[id].up, ready: rooms.rooms[id].ready });
   return {
     root: owner.root,
-    /** The residents' Talk, and the shop's stands and rail. Joined only when both have something in reach. */
-    targets: (): Interactable[] => {
-      const a = residents.targets(),
-        b = shop?.targets() ?? [];
-      return !b.length ? a : !a.length ? b : [...a, ...b];
+    /** The residents' Talk, the shop's stands and rail, and the curio shelf's swaps. Joined only when more than one has something in reach. */
+    targets(): Interactable[] {
+      const parts = [residents.targets(), shop?.targets() ?? NO_TARGETS, shelf?.targets() ?? NO_TARGETS].filter(
+        (t) => t.length,
+      );
+      return parts.length === 0 ? NO_TARGETS : parts.length === 1 ? parts[0]! : parts.flat();
     },
+    /** The curio shelf, for K1's crystals and F1's finds board (`shelfGroup`, `crystalPeg`). */
+    shelf,
     update(ctx: FrameCtx) {
       refresh();
       if ((hushIn -= ctx.dt) <= 0) {
@@ -204,6 +210,7 @@ export async function createTownView(read: () => RailwayInspection | null) {
       ) as TownInspection['residents'],
       bark: residents.barking(),
       memory: structuredClone(residents.seen()),
+      shelf: shelf?.inspect() ?? null,
     }),
     dispose: () => owner.dispose(),
   };
