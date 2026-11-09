@@ -46,7 +46,11 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   ]);
   const { padById } = tech;
   // The jump course's cap ("block") moves to job E with the double jump's course (designer fit check, 9 November).
-  const SECRETS = tech.SECRETS.filter((s) => s.id !== 'block');
+  // The tower's first box stands on t0's east edge, not its north one: that's where you walk off back down to p2, and
+  // its plinth stood in the way (builder default, F2; docs/agent-calls.md). Both of t0's pulls leave from the west.
+  const SECRETS = tech.SECRETS.filter((s) => s.id !== 'block').map((s) =>
+    s.id === 'firstpull' ? { ...s, x: tech.padById('t0').x + 2.1, z: tech.padById('t0').z } : s,
+  );
   const ox = ORIGIN.x;
   const root = new THREE.Group();
   root.name = 'secrets';

@@ -869,7 +869,7 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
 - **Nine of Place's ten secrets** stand where Place had them (`tech-layout.ts`'s `SECRETS`), each a crate with a
   cosmetic only it gives, beside something that makes you look twice: laundry and a fence behind the cottage (yard),
   a scarf on a dead branch over the lookout shelf, a bell under a bracket you hear from the footbridge, the catwalk
-  under the trestle (alcove, its ring facing the bridge), the tower's first slab and its side nook (on plinths), a
+  under the trestle (alcove, its ring facing the bridge), the tower's first slab (its east edge, out of the way back down) and its side nook (on plinths), a
   yellow block on the quarry's low rock (loft, its ring facing the camp), a weather vane on the village column
   (balcony) and an orange flag on Far Head's sea stack. Walk into a crate (1.25 m) or Open it (at the bay, Open only): the station boxes'
   show and card play (one reveal queue, `src/render/crate-show.ts`), the gift is yours at once, and on you when you

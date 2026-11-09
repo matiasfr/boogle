@@ -810,6 +810,8 @@ unused, so existing saves keep their other fields. The notes below are history.
   written, then `wardrobe.grant(id, {wear: false})`, then the show; putting the card away calls `unbox` (worn if the
   slot's empty). The bell rings near the bridge until you have it. `glider()` reads the railway's `glide`, which is false
   in production until glider B (a TODO names it).
+- **Firstpull** stands on t0's east edge (10.1, 8), not Place's north edge: there its plinth blocked the walk off t0
+  back down to p2, and the first long run failed on it (`return hook p2: nothing`).
 - **The reveal** is now shared with the station boxes: `src/render/crate-show.ts` (`createCrateShow`), used by
   `crates-view.ts` and the secrets.
 - **Hook rings:** `hook-path.ts` `HOOK_SIDE = ['alcove', 'nook', 'loft', 'stack-return']` after the climb's eight;
