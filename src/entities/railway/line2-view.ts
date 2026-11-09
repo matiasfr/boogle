@@ -18,7 +18,7 @@ import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-lin
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
-import { forgeRailsOffered } from './forge-offer.ts';
+import { forgeRailsOffered, trainOwed } from './forge-offer.ts';
 import { createRailwayGlideDevice } from './glide-device-view.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
@@ -26,6 +26,7 @@ import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
 import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
+import { uiSound } from '../../ui/ui-sound.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
 const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
@@ -33,6 +34,10 @@ type Rail = typeof import('../../proto/place/rail.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
 type Line2 = NonNullable<Inspection['line2']>;
+/** Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 1): the active stretch is train-fed, unfunded,
+ * and trains don't run yet. No bill, no auto-unload, no rack or shelf take and no forge rails; the rack's sign shows
+ * the train until the first kit unloads. */
+const waitsForTrain = (l: Line2) => trainOwed(l.active, l.trains) && l.stations[l.active]!.start < 0;
 
 export async function createRailwayLine2(
   adapter: RailwayAdapter,
@@ -217,8 +222,8 @@ export async function createRailwayLine2(
     pieces.stackSlot(n, 4, depotPlace(k, depotAt), depotYaw(k), out);
   let drawnDepot = '';
   let cartFlying = () => ({ logs: 0 });
-  function drawDepot(k: number, n: number) {
-    const key = `${k}:${n}`;
+  function drawDepot(k: number, n: number, train: boolean) {
+    const key = `${k}:${n}:${train}`;
     if (key === drawnDepot) return;
     drawnDepot = key;
     depotRack.visible = k >= 0 && LINE2_STATIONS[k]!.depot;
@@ -235,6 +240,7 @@ export async function createRailwayLine2(
       .applyAxisAngle(THREE.Object3D.DEFAULT_UP, depotYaw(k))
       .add(depotRack.position);
     depotSign.set(n);
+    depotSign.show(train ? 'train' : 'logs');
     const shown = Math.min(32, n);
     for (let i = 0; i < shown; i++) pieces.setStackLog(depotLogs, i, depotSlot(k, i, tmp), depotYaw(k));
     // logStackMesh starts hidden. Commit visibility and colour uploads along with its matrices.
@@ -760,7 +766,9 @@ export async function createRailwayLine2(
 
   // ---------------------------------------------------------------- per frame
   let unload = 0,
-    wasWorking = false;
+    wasWorking = false,
+    nudged = false,
+    nudges = 0;
   const wake = new THREE.Vector3();
   function syncSolids(l: Line2) {
     for (const deck of decks) {
@@ -813,6 +821,7 @@ export async function createRailwayLine2(
       state = adapter.inspect();
       const l = l2();
       if (!l) return;
+      const owed = waitsForTrain(l);
       if (state.tick !== shownTick) {
         shownTick = state.tick;
         sinceTick = 0;
@@ -943,7 +952,7 @@ export async function createRailwayLine2(
         const gated = spec.gate === 'quarry' ? !l.gateOpen : spec.gate === 'sea' ? !l.seaOpen : false;
         const waiting = gated && job.stock === spec.bill[0] && job.railStock === spec.bill[1];
         frame.setTag(
-          now && k === l.active && job.start < 0,
+          now && k === l.active && job.start < 0 && !owed,
           waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : undefined,
         );
         if (now && k === activeIndex()) {
@@ -959,7 +968,8 @@ export async function createRailwayLine2(
         targetHead = head();
         panels.update(dt);
       }
-      drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs));
+      drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs), owed);
+      depotSign.update(dt);
       syncSolids(l);
       seaGate.update(dt, l);
       glideDevice.update(dt, l);
@@ -984,8 +994,18 @@ export async function createRailwayLine2(
       // Auto-unload at the forge frame and the active Q frame, as on line one.
       unload -= dt;
       const p = me.body?.position;
-      if (!state.ready || !p || unload > 0) return;
+      if (!state.ready || !p) return;
       const near = (x: number, z: number) => Math.hypot(p.x - x, p.z - z) <= layout.TUNE.reachStation;
+      // A loaded arrival at station 6 before trains: the frame takes nothing, so its rack sign answers once, without
+      // words (one bob, one puff, a soft tick); it re-arms only once you leave reach.
+      const arrived = owed && near(frames[l.active]!.x, frames[l.active]!.z);
+      if (arrived && !nudged && (state.carry > 0 || state.railsCarry > 0)) {
+        nudged = true;
+        nudges++;
+        depotSign.nudge();
+        uiSound('tick');
+      } else if (!arrived) nudged = false;
+      if (unload > 0) return;
       if (pathOpen && l.forge.used < LINE2_FORGE.logs && state.availableCarry > 0 && near(forgeFrame.x, forgeFrame.z)) {
         if (adapter.depositLine2('F', 1, 0)) unload = layout.TUNE.unloadS;
         return;
@@ -996,7 +1016,7 @@ export async function createRailwayLine2(
         spec = LINE2_STATIONS[k]!,
         frame = frames[k]!;
       // Retry both materials while in reach, even after a refused attempt. Gates only hold laying.
-      if (job.start >= 0 || !near(frame.x, frame.z)) return;
+      if (job.start >= 0 || owed || !near(frame.x, frame.z)) return;
       if (state.availableCarry > 0 && job.stock < spec.bill[0] && adapter.depositLine2(spec.id, 1, 0))
         unload = layout.TUNE.unloadS;
       else if (state.availableRails > 0 && job.railStock < spec.bill[1] && adapter.depositLine2(spec.id, 1, 2))
@@ -1018,7 +1038,7 @@ export async function createRailwayLine2(
       const full = state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {};
       if (
         l.forge.rack > 0 &&
-        forgeRailsOffered(l.active, state.shed.cradleRails, state.railsCarry) &&
+        forgeRailsOffered(l.active, l.trains, state.shed.cradleRails, state.railsCarry) &&
         Math.hypot(p.x - RX, p.z - RZ) <= 3
       )
         out.push({
@@ -1028,7 +1048,7 @@ export async function createRailwayLine2(
           run: () => void adapter.forgeTake(),
           ...full,
         });
-      if (l.depot > 0 && l.active >= 0) {
+      if (l.depot > 0 && l.active >= 0 && !waitsForTrain(l)) {
         depotPlace(l.active, from);
         if (
           Math.hypot(p.x - from.x, p.z - from.z) <= 3.2 &&
@@ -1076,6 +1096,8 @@ export async function createRailwayLine2(
         ...farHead.inspect(),
         ...boiler.inspect(),
         ...pier.inspect(),
+        trainOwed: !!l && waitsForTrain(l),
+        q6Sign: { kind: depotSign.kind, visible: depotSign.sprite.visible, nudges },
         q6Rack: (() => {
           const p = depotPlace(5, new THREE.Vector3());
           return {

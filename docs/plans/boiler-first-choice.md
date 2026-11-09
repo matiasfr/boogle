@@ -290,7 +290,7 @@ Step 2 is the guard only and can ship with step 3.
 
 ### Stage A: order and the pedestal
 
-- [ ] **1. Station 6 shows it waits for the train (view).**
+- [x] **1. Station 6 shows it waits for the train (view).**
   - `src/entities/railway/stock-sign.ts`: `stockSign(owner, kind)` returns `{ sprite, set(n), show(kind), nudge() }`;
     add the `'train'` drawing: the old train's own locomotive side-on (its tall chimney and cab, matching
     `train-view.ts`'s loco silhouette) in `#edcf8c` line work, its boiler a dashed `GOLD_ROPE` outline, pulling one

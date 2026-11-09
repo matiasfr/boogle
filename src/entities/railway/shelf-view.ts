@@ -10,6 +10,7 @@ import { me } from '../../player/player.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { stockSign } from './stock-sign.ts';
+import { trainOwed } from './forge-offer.ts';
 
 const MAX_RAILS = Math.max(...LINE2_STATIONS.map((station) => station.bill[1]));
 const REACH = 3.2;
@@ -91,13 +92,17 @@ export async function createRailwayShelf(
     shelf.position.copy(at);
     shelf.rotation.y = Math.atan2(p.ux, p.uz) + Math.PI / 2;
   }
-  function draw(k: number, n: number) {
-    const key = `${k}:${n}`;
+  /** Station 6 before trains: its kit is the train's, so the shelf and rack offer no take and the shelf shows no count
+   * (the rack's sign shows the train; line2-view.ts, waitsForTrain). */
+  const waits = (s: ReturnType<RailwayAdapter['inspect']>, k: number) =>
+    k >= 0 && trainOwed(k, s.line2.trains) && s.line2.stations[k]!.start < 0;
+  function draw(k: number, n: number, owed: boolean) {
+    const key = `${k}:${n}:${owed}`;
     if (key === drawn) return;
     drawn = key;
     const spec = LINE2_STATIONS[k];
     shelf.visible = !!spec?.shelf;
-    sign.sprite.visible = shelf.visible;
+    sign.sprite.visible = shelf.visible && !owed;
     if (!spec?.shelf) return;
     place(k);
     sign.sprite.position.copy(at).y += 1.5;
@@ -192,7 +197,7 @@ export async function createRailwayShelf(
     update() {
       const s = adapter.inspect();
       const k = s.line2.active;
-      draw(k, k >= 0 ? Math.max(0, s.line2.depotRails - inFlight().rails) : 0);
+      draw(k, k >= 0 ? Math.max(0, s.line2.depotRails - inFlight().rails) : 0, waits(s, k));
       drawStake(k);
     },
     targets(): Interactable[] {
@@ -200,6 +205,7 @@ export async function createRailwayShelf(
         p = me.body?.position;
       const k = s.line2.active;
       if (!s.ready || !p || k < 0 || !LINE2_STATIONS[k]!.shelf || s.line2.depotRails <= 0) return [];
+      if (waits(s, k)) return [];
       place(k);
       if (Math.hypot(p.x - at.x, p.z - at.z) > REACH) return [];
       return [

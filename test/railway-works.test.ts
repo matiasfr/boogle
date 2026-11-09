@@ -22,9 +22,10 @@ import {
   line2Completed,
   line2Rails,
   line2Schedule,
+  line2Trains,
   railCarryMax,
 } from '../src/sim/railway-line2.ts';
-import { forgeRailsOffered } from '../src/entities/railway/forge-offer.ts';
+import { forgeRailsOffered, trainOwed } from '../src/entities/railway/forge-offer.ts';
 import { CART_PHASE, cartAlong } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
@@ -247,8 +248,13 @@ test('"Take rails" is offered exactly where the forge rack gives some, from Q5 t
       const held = [s.line?.beam, s.line2?.boiler].some((x) => x?.state === 'held' && x.holder === pid);
       const room = railCarryMax(s) - a.carry - (a.stone ?? 0) - (a.rails ?? 0);
       if (held || (a.foot ?? 0) > 0 || room <= 0 || !s.line2?.forge.rack) continue;
-      const offered = forgeRailsOffered(line2Active(s), s.shed!.cradleRails, a.rails ?? 0);
+      const offered = forgeRailsOffered(line2Active(s), line2Trains(s), s.shed!.cradleRails, a.rails ?? 0);
       seen[offered ? 'offered' : 'hidden']++;
+      if (trainOwed(line2Active(s), line2Trains(s))) {
+        // Station 6 before trains: the view offers none; the rule refuses them from step 3.
+        assert.equal(offered, false, `${name} ${pid}: no forge rails for a train-fed station before trains`);
+        continue;
+      }
       assert.equal(offered, act(w, pid, 'rail.forgeTake') > 0, `${name} ${pid}`);
     }
   };
