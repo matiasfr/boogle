@@ -58,4 +58,4 @@ To point the game at our server, set a repo variable named `VITE_BOOGLE_SERVER` 
 
 ## Roadmap
 
-See [DESIGN.md](DESIGN.md) for principles, [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) for the owner's decisions and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) for current prototypes.
+The one roadmap is [docs/direction.md](docs/direction.md). See [DESIGN.md](DESIGN.md) for principles and [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) for the owner's decisions.

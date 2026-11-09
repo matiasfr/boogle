@@ -80,7 +80,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 - [x] Prepared earth/stakes beyond the gate (`88f34a3a`).
 - [x] Cart recall/delivery cues (`bfea44df`, checked in `c1c16342`); cart-first progression remains after replay.
 - [x] Track-layer ease-out and broader rear step (`74dcab6c`).
-- [ ] Distinct track-layer machine art remains for the art pass.
+- [x] Distinct track-layer machine art: crawler shell `85af518a`, flanged rail wheels `6657c5f6`, `4fa38246`, panel magazine and hoist `528560d4` (all in #1018, 6 November); seats as plain stools #1197 (8 November).
 - [x] Log-cell pickup pulse (`76f01598`) and fading seated Stand hint (`b7dd93f7`).
 - [x] Raised tower chests and hanger preview (`76f01598`); Station 3's earned axe stand (`2236d075`).
 - [x] Unnecessary long-way-round comparison banner removed (`eac11383`); crossing record and fanfare retained.

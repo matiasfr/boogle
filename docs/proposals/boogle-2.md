@@ -146,7 +146,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - [ ] Supply accounting, safe-rack integration, dropped-resource despawn and tree regrowth wait for the production plan before slice 2; no new design built for replay.
 - [x] HUD name/Live into pause on every platform, touch-only options and fewer pause stats: missing `6f46f171` restored locally as `3bae8f40`. D-pad conversation ownership: missing `af0e4239` restored locally as `5296357b`; guide/acceptance follow-up `ce5b3144`. These commits were absent from the initial main audit. Fresh broker assertions and opened desktop/phone-profile PNGs pass; not pushed and not tested on a device. Evidence is in the combined replay report.
 - [ ] First-stage worker framing still needs its targeted check; the shared conversation changes do not establish it.
-- [ ] Distinct track-layer machine art remains for the art pass.
+- [x] Distinct track-layer machine art: crawler shell `85af518a`, flanged rail wheels `6657c5f6`, `4fa38246`, panel magazine and hoist `528560d4` (all in #1018, 6 November); seats as plain stools #1197 (8 November).
 - [ ] Prepared warm-evening fade, smaller-sky comparison and room-owned time remain; night remains a stretch goal.
 - [ ] Cart-first and money design remain after replay; classic resource bug remains after T1.
 

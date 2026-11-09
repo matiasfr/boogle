@@ -1,5 +1,7 @@
 # Plan: find the fun
 
+> **8 November 2026:** historical; what's next is in the one roadmap, [direction.md](../direction.md).
+
 > **Status: in progress (started 2026-11-01).** The build plan for "Next: find the fun" in
 > [boogle-2.md](../proposals/boogle-2.md): five mechanics-only prototypes, each behind a `?proto=` flag, each asking
 > one playtest question. The design record owns the questions and what the answers decide; this file owns the order of

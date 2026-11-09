@@ -2,11 +2,12 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../proposals/boogle-2.md#current-decision-index).
 
-**Updated:** 5 November 2026, night, by the Claude orchestrator session (it also took over the closed axe session's work). Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 8 November 2026, status lines and next moves only; the queue, merged list and open questions below are from 5–6 November and may be stale. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
 
 ## Links
 
-- [Owner calls](owner-calls.md), [decision index](../proposals/boogle-2.md#current-decision-index), [direction](../direction.md)
+- [Owner calls](owner-calls.md), [decision index](../proposals/boogle-2.md#current-decision-index), [direction](../direction.md) (the one roadmap)
+- Current plans: [line 2 B5–B8](../plans/line2-b5-b8.md), [Split-rock Works and Roundhouse](../plans/split-rock-roundhouse.md)
 - [Production core](../plans/production-core.md), [slice 3 plan](../research/slice3-plan-2.md), [room-owned time plan](../research/room-time-plan-2.md)
 - [Round 4 tracker](../plans/round-4-notes.md), [playtests](../playtests.md), [replay guide](https://claude.ai/artifact/TAb4PhNz2E9g1DiZD5bHoF)
 - Briefs:
@@ -20,7 +21,7 @@ Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`,
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| (none running) | Overnight 6 November: every job finished and shipped | Owner decisions in the morning brief |
+| (not tracked here since 6 November) | 8 November: the playtest fixes, B5–B8 (v21), Split-rock J1 and J2 are merged | Check `npm run inflight` and `npm run codex-status` for live jobs |
 
 ## Merge queue
 
@@ -68,7 +69,8 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
 
 ## Next moves
 
-- Ship playtest fixes after review; show the owner the unlit board and the wedge boards.
+- Get the final long playthrough passing, publish the playtest guide, then stop for the owner's playtest of the 8 November fixes plus B5–B8 ([direction](../direction.md#now-next-later)).
+- Split-rock J3 (world v22) merges only after the owner's B5–B8 verdict; J4 and J5 follow it.
 - Start the next queued item whenever fewer than three agents run. Who runs it (model and effort) comes from `npm run models` (dev/models.ts): Claude only until 12 November, Codex as workhorse from 13 November.
 
 ## Peers

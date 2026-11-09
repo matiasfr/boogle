@@ -9,7 +9,7 @@ You run the studio and the owner is the director: they decide what the game is; 
 
 ## 1. Decide
 
-- Ordering and what's next: the [game-direction skill](../game-direction/SKILL.md), against the [decision index](../../../docs/proposals/boogle-2.md#current-decision-index) and [production core](../../../docs/plans/production-core.md).
+- Ordering and what's next: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision index](../../../docs/proposals/boogle-2.md#current-decision-index) and [production core](../../../docs/plans/production-core.md).
 - Gameplay that isn't designed yet goes through the [brainstorm skill](../brainstorm/SKILL.md) first ("Brainstorm new gameplay first"). Art, fixes, technical work and ports of accepted behaviour don't.
 - Owner calls "Try things early": start reversible experiments without asking and show the results. Ask only about direction or unapproved scope, merges while the owner is playing, or anything irreversible or outward-facing. Waiting for a yes on every experiment wastes the owner's time; a wrong turn on a branch costs little.
 
