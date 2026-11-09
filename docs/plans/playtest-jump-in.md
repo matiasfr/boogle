@@ -133,7 +133,7 @@ export type Jump = {
   stage: SeedStage | 'start';
   label: string; // owner-readable, shown in the menu and in playtest summaries
   line: string; // one short line under the label
-  land?: { x: number; z: number; yaw?: number }; // metres; omitted = the usual spawn
+  land?: { x: number; y: number; z: number; yaw?: number }; // metres, y = the surface (terrain, pad or deck); omitted = the usual spawn
 };
 export const JUMPS: readonly Jump[];
 export const jumpOf: (stage: string) => Jump | undefined;
@@ -157,9 +157,9 @@ Proposed rows, in route order (designer review: labels, which stages and landing
 | From the beginning | `start` | A fresh world, nothing built | the usual spawn |
 | Just woke | `awake` | The track layer is awake at Home | the usual spawn |
 | Line two begins | `q1-done` | Line one done, forge lit, Q1 laid | Q2's station (`LINE2_STATIONS[1]`) |
-| Quarry gate | `q3-done` | Q3 laid; the quarry lever is next | beside `LINE2_LEVER` |
-| Hook earned | `hook-earned` | The hook shot is yours; Needle Bell waits | Needle Bell's foot (`LINE2_HOOK`) |
-| Sea switch | `q4-done` | Q4 laid; the summit switch is next | Needle Bell's foot (`LINE2_HOOK`) |
+| Hook earned | `hook-taken` (new; see review) | Q2 laid and the hook shot is yours; Q3 is next | on pillar p2's pad by the hook device (`LINE2_HOOK`), facing Q3 |
+| Quarry gate | `hook-earned` | Q3 laid, hook in hand; the quarry lever is next | beside `LINE2_LEVER` |
+| Sea switch | `q4-done` | Q4 laid; the summit switch is next | on pillar p2's pad (`LINE2_HOOK`), facing the first ring |
 | Boiler waiting | `q5-done` | Q5 laid; the boiler sits on its pedestal | beside `LINE2_BOILER` |
 | Glide earned | `glide-earned` | The glider is yours (after glider B, v23) | Needle Bell's summit (`LINE2_SEA`) |
 | Trains running | `trains-on` | The boiler is fitted and both lines run | the usual spawn (Home's station) |
@@ -329,14 +329,21 @@ Pause's More page already lists every registered page (`renderMore`). The page s
 No new action, pad slot, key or guide row: Pause's existing `pause` action opens it, and pause pages handle focus and
 Back.
 
-**Landing** applies to everyone who opened a `?from=` link, not only with Dev:
-- `onEntered`: read and delete `sessionStorage['boogle.jump.v1']`.
-- If its `room === getRoomId()`, `!isFirstVisit()` (a first visit's fall lands where it lands), and `jumpOf(stage)?.land`
-  is set, then:
-  - set `y = groundHeight(x, z)` and require `y > SEA` and `|x|, |z| ≤ SOFT_WALL`, else keep the spawn;
-  - `teleport(me.body!, x, y + 1.2, z)`, zero the velocity, and set `cam.yaw` if given.
-
-  The same checks as `return-spot.ts`'s `trusted()`, without its PROTO skip.
+**Landing** applies to everyone who opened a `?from=` link, not only with Dev. (Corrected by the designer review: the
+first draft hooked `onEntered` with `return-spot.ts`'s `groundHeight` and `SOFT_WALL` checks. On the production entry
+`PROTO` is `'place'`, so return-spot never runs there; `groundHeight` is the old island's heightfield; and the railway
+sits at world x ≈ 900–1400 m, past `SOFT_WALL` (237 m), so every landing would silently have kept the spawn.)
+- The production railway already places you itself: `src/entities/railway/arrival.ts` puts you at `SPAWN`, then, once
+  accepted state, a Rapier step and the scenery are ready, restores your saved pose for this room
+  (`boogle.railway-pose.v0:<railwayRoomId>:<pid>`). The landing goes through that path, never around it: when that
+  pose is empty and this room has a seed whose `jumpOf(stage)?.land` is set, the arrival uses the landing as the pose
+  to restore, once.
+- `land` carries `y` as well as `x`, `z` and `yaw`, because several anchors are not on terrain: the hook device stands
+  on pillar p2's pad over water (Place `H` ≈ −2 m beneath it), Needle Bell's summit is a deck at 102.4 m, and the
+  pier stop is a deck at 24.3 m over the sea. Validate with a downward `sweepSphere` against `GROUP.SCENERY` that
+  finds a surface within 0.5 m of `y` (for a terrain spot, `posePolicy.safe` as today). If the check fails, use the
+  usual spawn.
+- `!isFirstVisit()` still holds: a first visit's fall lands where it lands.
 
 `src/netplay/room-seed.ts` exports `roomSeed(): Promise<RoomSeed | null>`. It makes one memoized
 `GET /rooms/<railwayRoomId(getRoomId())>/host` and returns `seed`, or null. It is used by the page and by playdata.
@@ -594,3 +601,116 @@ These are recommendations, not owner answers. Each is logged in `docs/agent-call
    HUD badge.
 6. **No sign-in for `POST /jump`.** Recommended: none, bounded as in Risks. A token would make the owner's phone
    harder to use than the risk justifies.
+
+## Design review (designer, 2026-11-09)
+
+**Verdict: build with changes.** The shape is right for an owner who playtests fast: a link per stage, a fresh private
+room per jump, the seed built by the real rules, and the shared `boogle` world out of reach by name, pattern, lock and
+test. Two things in the first draft would have failed on the device, and one row tested the wrong moment. All three are
+corrected in place above; the rest are small defaults.
+
+Read: DESIGN.md, owner-calls, the decision index (Process, Controls, 9 November jump-ins entry), direction.md, the
+newest playtests (6, 7 and twice on 8 November), [dev-menu-plan](../research/dev-menu-plan.md),
+[sharing-and-joining](../research/sharing-and-joining.md), [returning-player](../research/returning-player.md),
+[playtest-telemetry](../research/playtest-telemetry.md), and the code at `src/entities/railway/arrival.ts`,
+`src/features/return-spot.ts`, `src/proto/flags.ts`, `src/sim/railway-systems.ts` (lever, hook, sea switch),
+`src/sim/railway-line2-layout.ts`, `src/proto/place/tech-layout.ts`, `dev/look/rail-seed.ts`, the seed helpers and
+`dev/look/segments.ts`.
+
+### Changes before building
+
+1. **Landing went the wrong way (corrected above, in "The menu").** On the production entry `PROTO` is `'place'`
+   (`pageQuery` sets it), so `return-spot.ts`'s path never runs; `groundHeight` is the old island; and every anchor
+   sits at world x ≈ 900–1400 m, past `SOFT_WALL` (237 m). Every landing would have kept the spawn with no error. The
+   landing now feeds `createRailwayArrival`'s own pose restore, which already waits for accepted state, a Rapier step
+   and the scenery (a seeded deck has no collider until then).
+2. **Four anchors aren't on terrain (corrected above: `land` gets `y` and a surface sweep).** Measured with Place's `H`:
+   under the hook device, −2.2 m (pillar p2 stands in the water beside Needle Bell); Needle Bell's summit deck is
+   102.4 m over `H` = 4.0; the pier stop and pier frame are decks at 24.3 m over `H` = −6.0. A terrain landing "a few
+   metres onto open ground" from these would put you in the sea at the spire's foot or under the pier: the owner swims
+   instead of testing, and nobody-is-stranded (rule 3) leans on Get unstuck. Land on the pad or deck itself.
+3. **"Hook earned" was the quarry gate with a hook (row corrected above).** `hook-earned` is `railwayAtQ4()` plus
+   `rail.hook`: Q3 is already laid, so its line "Needle Bell waits" was wrong (the quarry lever is next). The route takes
+   the hook between Q2 and Q3 (`RAIL_STOPS`: `Q2`, `hook`, `Q3`; `rail.hook` needs two completions), and `q3-done`
+   is Q3 laid with the hook never taken, which a player at the gate almost never is. So:
+   - **Hook earned** uses a new stage `hook-taken`: `railwayAtQ2()`, Q2's 24 logs and 12 rails, finish Q2, then
+     `rail.hook`. Q3's frame is 29 m from the hook pad. Add it to `SEED_STAGES` after `q2-arriving` (step 1) and to
+     the checkpoints list; it costs about the same as `q3-done`.
+   - **Quarry gate** uses `hook-earned` (Q3 laid, hook in hand, lever next). `q3-done` stays look-only. Step 5's eval
+     and step 6's two-player check keep `q3-done`, which is fine: they test the pipe, not the segment.
+4. **A friend arrives 100–600 m from you.** The landing is keyed to the launching tab's `sessionStorage`, so a friend
+   who joins by invite gets `SPAWN` at Home. Walk-seconds from `SPAWN` (903, 14) at 5.6 m/s: the hook pad 17 s, the
+   lever 35 s, the kiln 42 s, the pier 111 s. Recommendation: take the landing from the room's seed (`roomSeed()`),
+   for anyone whose railway pose for this room is empty, not from `sessionStorage`. Everyone then starts at the
+   segment together (the co-op meeting-place lens), and a reload or second device does the same. Keep the
+   `sessionStorage` record only for the splash text.
+5. **A friend can't tell it's a test room.** The pause title is the room id (`hook-earned-k3x9qa`), which is enough for
+   the owner, but a friend who never opens pause sees an ordinary world. Recommendation: one light line, once per room
+   per device, through the existing arrival toast: "A test room, started at Hook earned. The shared island is
+   unchanged." No persistent badge, as planned.
+
+### Smaller recommendations (build on them, all logged)
+
+- **Show Jump in inside any jump room**, Dev or not. Nothing there can be spoiled, and the owner who opened a link on a
+  device without `?dev=1` can hop to the next stage from the menu. Elsewhere it stays Dev-only.
+- **Rename "Line two begins" to "Cart starts"**, line "Q1 laid; the cart brings Q2's logs". Q1 is line two's first
+  stretch, already laid, so "begins" misleads; Q2 is where the depot cart starts, and the cart was the owner's main
+  issue on 8 November.
+- **"Pier reached"**: line "Q6 laid to the pier; the forge has cast the breaker", so the owner knows what's next
+  (`q6-done` is the same state as `works-arrive`: the next goal is 600 m behind you, home-flow finding 3). Land on the
+  deck facing Ring Island; testing that call home is the point of the row.
+- **Jump rooms on disk:** 100 a day until the next `WORLD_NS` bump could reach `MAX_ROOMS` (1000) in ten days and give
+  507 to new private rooms. Trash jump rooms idle more than three days on boot (their sidecar names them), or cap them
+  at 200.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Seeded private rooms; the shared `boogle` world never seeded, reset or written | Decided | decisions.md, 9 November, playtest jump-ins |
+| 2 | Entry by a link or a menu; "From the beginning" one tap away; lands before D1 | Decided | same entry |
+| 3 | `?from=` links work for anyone who has one | Decided | same entry ("open a link"); see owner question 2 |
+| 4 | Invite through the Room page's existing Copy invite link | Decided | decisions.md, Controls, "Get unstuck … invite links wait"; sharing-and-joining rec 1 |
+| 5 | "From the beginning": fresh private room, identity kept, no fall unless the device is new | Default | returning-player (reset the person, not the world); Start fresh still gives the fall |
+| 6 | "Just woke" (`awake`) kept beside "From the beginning", one press apart | Default | owner-named (per the plan); line should say "The track layer is awake; T1's logs are next" |
+| 7 | "Cart starts" (`q1-done`), at Q2's station | Default | was "Line two begins"; 8 Nov cart and rack issues |
+| 8 | "Hook earned" = new `hook-taken` (Q2 laid + hook), on p2's pad facing Q3 | Default | route order `RAIL_STOPS`; owner-named label |
+| 9 | "Quarry gate" = `hook-earned` (Q3 laid, hook in hand), beside the lever | Default | 6 Nov playtest ended at the quarry gate; 7 Nov station 4 notes |
+| 10 | "Sea switch" (`q4-done`), on p2's pad facing the first ring | Default | 8 Nov switch-gating confusion |
+| 11 | "Boiler waiting" (`q5-done`), beside the boiler | Default | B5–B8 content; the carry is the segment |
+| 12 | "Glide earned" (`glide-earned`), on the summit deck, after glider B | Default | glider-b-home-flow step 5 |
+| 13 | "Trains running" (`trains-on`), the usual spawn at Home's station | Default | owner-named; you board at Home |
+| 14 | "Pier reached" (`q6-done`), on the pier deck, line names the breaker | Default | home-flow finding 3 |
+| 15 | "Works open" (`works-open`), beside the kiln | Default | owner-named |
+| 16 | "Crossing built" (`crossing-done`), beside the pier frame, after J5 | Default | split-rock-roundhouse J5 |
+| 17 | No rows yet for the town, the curio shelf or the Q5 rim wait | Default | town growth is production-core slice 5 and the shelf is C1; add rows when they land. `sea-open` (rim wait) is worth a row once the home-flow cart fix lands |
+| 18 | Menu at Pause → More → Jump in, Dev-gated, plus inside any jump room | Default | dev-menu-plan: debug destinations are testing aids, not player fast travel; showing everyone or the Leave page would offer skips to every player |
+| 19 | Land at the segment, through the railway arrival's pose restore, on pads and decks where the anchor is one | Default | dev-menu-plan (Unreal BugIt; Source's valid exit pose) |
+| 20 | Everyone with no pose in a jump room lands at the segment, not only the launching tab | Default | co-op meeting-place lens; walk-seconds in change 4 |
+| 21 | Marked by the room name, the page header and one arrival line; no HUD badge | Default | change 5 |
+| 22 | Personal Local state (wardrobe, crystals and finds, box claims, the stowaway, seen abilities, town memory) starts empty in a jump room | Default | it's what a late joiner gets (DESIGN 8), the hat and scarf claims read construction state so they stay claimable, and seeding personal stores would bring back the client fixtures D1 deletes |
+| 23 | Late-join flourishes for earned abilities play on entering | Default | the real late-join path; badges are about 1.5 s each |
+| 24 | `updatedAt` stamped now: no away credit, a funded job doesn't finish by itself | Default | 6 Nov paused-world entry; keeps the segment as built |
+| 25 | No sign-in for `POST /jump`; 6 per minute per IP, 100 per day | Default | a token would cost the owner on every new device |
+| 26 | Jump rooms kept until the next `WORLD_NS` bump, or trashed after three idle days | Default | `MAX_ROOMS` 1000 |
+| 27 | Splash copy: "Setting up <label>…", the four failure lines and the three buttons | Default | UI copy |
+| 28 | Page copy: the two headers, "Back to the shared island", no confirmation on a jump | Default | leaving loses nothing |
+| 29 | Production offers only rows; any seed stage works locally | Default | keeps the live list short |
+| 30 | `?proto=` pages ignore `?from=` | Default | jump-ins open the current game only |
+| 31 | Playtest summaries say "Started: jump-in …" and mark missing beats as unplayed | Default | playtest-telemetry rec 1 |
+
+Counts: 4 Decided, 27 Default, 0 New. Nothing here changes how the game plays.
+
+**Stills: none taken.** A still of the hook pad at `hook-earned` waited behind four other jobs in the shared bot queue
+and was stopped. The heights above were measured with Place's `H` in Node, not seen. Step 7's per-row stills, at the
+approach, the first sight and the spot, remain the proof that each landing stands on its surface and faces its
+segment.
+
+### Owner questions
+
+1. **Does "Hook earned" mean right after you take the hook, before Q3?** Recommended: yes (the row now does that). The
+   quarry gate with the hook in hand is its own row.
+2. **Should `?from=` links work for anyone who has one, not only Dev devices?** Recommended: yes. A link only makes a
+   new private room, so the shared world loses nothing, and you can send a friend a stage link.
+3. **Should "From the beginning" replay the first-visit fall?** Recommended: no, it keeps the jump fast. Start fresh in
+   pause gives the fall as someone new.
