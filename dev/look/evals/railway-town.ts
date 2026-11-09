@@ -8,6 +8,7 @@
 //   townact=try|take          (townat=shop) step up to the first stand, the paper hat, and press Try on; take presses
 //                             again for Take it: $0, which shows the "You got" card. The debug camera looks at Buddy and the stand.
 //   townact=try,walkout       acts run in order: try on, then walk out wearing it (it's yours anyway).
+//   townact=enter             start 3 m outside the door, walk in and wait for whoever's inside to bark
 //   townact=talk              walk up to a resident (townwho=pip|button|nell|moss|wren, default pip) and talk, towntalks=N
 //                             times (default 1), closing the card between; the camera frames you both. Prints each first
 //                             line as `said`, and what the residents remember (memory.ts) as it's stored.
@@ -63,7 +64,8 @@ if (at === 'house' || at === 'shop' || at === 'museum') {
   const d = door(at);
   const up = inspectTown()!.rooms[at].up;
   // Built: 1 m inside. A plot: 3.5 m in front of its board (the board stands 2 m out from the door line).
-  const out = up ? -1 : 5.5;
+  // townact=enter starts 3 m outside the door instead, to walk in.
+  const out = up ? (act === 'enter' ? 3 : -1) : 5.5;
   stand = ground(d.x - d.inX * out, d.z - d.inZ * out);
   look = { x: d.cx, y: stand.y + 1.2, z: d.cz };
   eye = { x: stand.x - d.inX * 4.5, y: stand.y + 3.2, z: stand.z - d.inZ * 4.5 };
@@ -146,6 +148,20 @@ async function actOnce(act: string) {
       input.keys.delete('KeyW');
     }
     await wait(800);
+  } else if (act === 'enter') {
+    if (at !== 'house' && at !== 'shop' && at !== 'museum') throw new Error('townact=enter needs a room');
+    const d = door(at);
+    // Walk in until over the threshold, then give whoever's inside a moment to look up (their hello or notice bark).
+    cam.yaw = me.yaw = Math.atan2(-d.inX, -d.inZ);
+    const end = performance.now() + 6000;
+    input.keys.add('KeyW');
+    try {
+      while (inspectTown()!.indoors.inside !== at && performance.now() < end) await wait(30);
+      await wait(250);
+    } finally {
+      input.keys.delete('KeyW');
+    }
+    await wait(1300);
   } else if (act === 'talk') {
     const who = (query.get('townwho') ?? 'pip') as keyof NonNullable<ReturnType<typeof inspectTown>>['residents'];
     const times = Math.max(1, Number(query.get('towntalks') ?? 1));
