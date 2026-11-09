@@ -1,10 +1,10 @@
 // Interaction prompts: one button (E, pad X, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you stand still while you talk and Esc leaves, and a chapter
-// left halfway picks up where you stopped. A tossed item gets a floating Pick up prompt,
-// E does nothing while you wind up a throw, a frisbee behind you does not hide the log bundle you face, riding him puts the
-// ball first, and a failed planting says why.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS, lowResOnCi } from './lib/world.ts';
+// left halfway picks up where you stopped. Riding him puts the ball first, and a failed planting says why. The toss checks
+// (a tossed item's Pick up prompt, E mid-throw, a frisbee behind a log bundle) wait for replication R3 (owner, 9
+// November): the live game's server refuses gift.toss until then.
+import { TP, INV, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const FACE = (x: string, z: string) => `
@@ -42,7 +42,7 @@ const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt
 
 export default {
   island: true, // the classic island by the court (run.ts)
-  about: 'one Talk prompt by The Boogler, gifts in the talk, Pick up over items, a reason when planting fails',
+  about: 'one Talk prompt by The Boogler, gifts in the talk, the ball first on his back, a reason when planting fails',
   timeout: 600000, // two software-rendered players in a row: the nightly runner was still going at 300 s
   async run(t: T) {
     const g = await t.open({ name: 'talker', hud: 'play' });
@@ -125,114 +125,21 @@ export default {
     await g.wait(0.2);
     t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
-    // A tossed frisbee, empty hands: a floating Pick up prompt over it, and E picks it up.
-    await g.eval(`${toss(1, 5)};`); // a frisbee
-    await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
-    const item = await g.eval(TOSSED_ITEM);
-    await g.eval(`${INV} I.emptyHand(); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
-    const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
-    await g.wait(0.4);
-    const itemShot = await g.still('item');
-    t.check('a Pick up prompt floats over the tossed item', pickMs >= 0, `${pickMs} ms; ${itemShot}`);
-    await g.key('KeyE');
-    const got = await g.waitFor(
-      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    await g.waitFor(`${text('.held-name')}.includes('Throw')`);
-    const tag = await g.eval(`return ${text('.held-name')};`);
-    const tagShot = await g.still('held');
-    t.check('E picks it up, and the name tag says Throw', got >= 0 && tag.includes('Throw'), `"${tag}"; ${tagShot}`);
+    // No toss checks until replication R3 (owner, 9 November, docs/decisions.md "Four more answers" (3)): the live
+    // game's server refuses gift.toss and the live game offers no throw, so a tossed item to pick up (and its name tag
+    // saying Throw), a wind-up at the stall and a dropped frisbee behind a log bundle come back with R3.
 
-    // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X alike).
-    const wind = await g.eval(`${INV}
-      const { STALL } = await import('/src/adapters/mushrooms.ts');
-      const { me } = window.boogle;
-      I.take('frisbee');
-      ${TP('STALL.x + Math.sin(STALL.yaw) * 1.6', 'STALL.z + Math.cos(STALL.yaw) * 1.6')}
-      await new Promise((r) => setTimeout(r, 300));
-      const at = H.interactTarget()?.id ?? '';
-      H.useDown();
-      H.interactDown(); H.interactUp();
-      const out = { at, charging: me.charging, held: I.heldId(), seeds: I.heldId() === 'seeds' };
-      me.charging = false;
-      return out;`);
-    t.check(
-      'mid-throw at the stall, E neither takes nor throws',
-      wind.at.startsWith('stall-') && wind.charging && wind.held === 'frisbee' && !wind.seeds,
-      JSON.stringify(wind),
-    );
-
-    // A frisbee behind you does not hide the log bundle you face: drop one on open ground past a bundle, stand
-    // between them facing the bundle, and the prompt says Take logs while the frisbee is still in reach.
-    const palm = await g.eval(`${INV}
-      const G = await import('/src/adapters/gifts.ts');
-      const { rules } = await import('/src/world/game-world.ts');
-      const { groundHeight, cellX, cellZ } = await import('/src/island/terrain.ts');
-      const { teleport } = await import('/src/physics/engine.ts');
-      const { camera } = await import('/src/render/scene.ts');
-      const { cam } = await import('/src/player/player.ts');
-      const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-      const { onApplied } = await import('/src/world/sync.ts');
-      const { SEA } = await import('/src/constants.ts');
-      const b = window.boogle.me.body, frisbee = giftIndex('frisbee');
-      const nap = (ms) => new Promise((r) => setTimeout(r, ms));
-      const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
-      I.emptyHand();
-      const bundles = rules.sources.list().map((p) => ({ x: cellX(p.i) + 0.9, z: cellZ(p.j) + 0.4 }));
-      for (let k = 0; k < bundles.length; k++) {
-        const P = bundles[k];
-        teleport(b, P.x + 1.2, groundHeight(P.x + 1.2, P.z) + 0.6, P.z);
-        await nap(150);
-        if (H.interactTarget()?.id !== 'logs' + k) continue;
-        for (let a = 0; a < 8; a++) {
-          const ux = Math.cos((a * Math.PI) / 4), uz = Math.sin((a * Math.PI) / 4);
-          const bx = P.x + ux * 2.5, bz = P.z + uz * 2.5;
-          if (!land(bx, bz) || !land(P.x + ux * 1.4, P.z + uz * 1.4)) continue;
-          const from = camera.position.clone().set(bx, groundHeight(bx, bz) + 0.6, bz);
-          const velocity = from.clone().set(0, -0.5, 0);
-          const launch = [...from.toArray(), ...velocity.toArray()].map((v) => Math.round(v * 100));
-          let it = null, listening = true;
-          // take('frisbee') above drops the old held frisbee. Its delayed edit can arrive here: a new id/kind
-          // alone does not identify this drop. Match its accepted launch, without assuming where it lands.
-          onApplied((e, _tick, result) => {
-            if (listening && e.op === 'gift.toss' && e.k === frisbee && JSON.stringify(e.l) === JSON.stringify(launch)) it = result;
-          });
-          if (G.throwItem(frisbee, from, velocity))
-            for (let n = 0; n < 150 && !it; n++) await nap(100);
-          listening = false;
-          if (!it) continue;
-          await nap(600); // its flight comes down
-          const sx = cellX(it.i), sz = cellZ(it.j);
-          const gap = Math.hypot(P.x - sx, P.z - sz), wx = (P.x - sx) / gap, wz = (P.z - sz) / gap;
-          const ahead = Math.min(1.8, gap - 0.8), x = P.x - wx * ahead, z = P.z - wz * ahead;
-          teleport(b, x, groundHeight(x, z) + 0.6, z);
-          b.velocity.set(0, 0, 0);
-          cam.yaw = Math.atan2(-wx, -wz);
-          cam.pitch = -0.2;
-          await nap(300);
-          return { palm: 'logs' + k, item: 'item' + it.id, drift: Math.hypot(sx - bx, sz - bz), behind: gap - ahead, ahead, ids: G.giftTargets().map((t) => t.id), pick: H.interactTarget()?.id };
-        }
-      }
-      return null;`);
-    const shakeMs = palm
-      ? await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Take logs')`, { timeout: 10000 })
-      : -1;
-    const shakeShot = await g.still('shake');
-    t.check(
-      'a frisbee behind you does not hide the log bundle ahead: the prompt says Take logs',
-      shakeMs >= 0 && palm.drift < 1 && palm.ids.includes(palm.item) && palm.pick === palm.palm,
-      `${shakeMs} ms; ${JSON.stringify(palm)}; ${shakeShot}`,
-    );
-
-    // A bag of seeds where nothing can grow: the click says why.
+    // A bag of seeds where nothing can grow: the click says why. The search starts at the beach cell west of the court
+    // where the tossed frisbee used to land (lib/world.ts, toss).
     const spot = await g.eval(`${INV}
       const G = await import('/src/adapters/mushrooms.ts');
+      const { CELL, HALF } = await import('/src/constants.ts');
       const { me } = window.boogle;
+      const bx = 230 * CELL - HALF, bz = HALF - 205 * CELL;
       I.take('seeds');
       for (let r = 0; r < 40; r += 2)
         for (let a = 0; a < 12; a++) {
-          const x = ${item.x} + r * Math.cos(a / 1.9), z = ${item.z} + r * Math.sin(a / 1.9);
+          const x = bx + r * Math.cos(a / 1.9), z = bz + r * Math.sin(a / 1.9);
           ${TP('x', 'z')}
           me.yaw = 0;
           if (!G.spotsAhead().length) return { x, z };

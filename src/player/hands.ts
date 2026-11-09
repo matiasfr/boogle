@@ -9,9 +9,10 @@
 //                            otherwise uses
 //   mainVerb()               what touchDown would do, for the button's label
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
-//   canThrow()               whether you hold anything (everything held can be thrown)
+//   canThrow()               whether you hold anything (everything held can be thrown), never in the live game
 //   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
-//   useVerb()                what using the thing in your hand does ('Throw', 'Sprout'), null for empty hands
+//   useVerb()                what using the thing in your hand does ('Throw', 'Sprout'), null for empty hands or when
+//                            it does nothing (a throw in the live game)
 //   handsNote                { text, until }: why the last use did nothing, for src/features/held.ts to show
 //   emptyHands               { down, up }: what using empty hands does; the guest's punch sets it. down returns true if
 //                            it acted.
@@ -40,6 +41,11 @@
 // nudge toward where you look. Ties go to the provider registered first.
 //
 // Thrown things other than the beach ball fly and land through src/adapters/gifts.ts; the ball keeps its own physics.
+//
+// The live game (the production railway room) offers no throw until replication R3 makes island throwing work: its
+// server refuses gift.toss, so nothing would leave the hand (owner, 9 November, docs/decisions.md "Four more answers"
+// (3)). There nothing winds up, and neither the name tag, the touch main button nor the Toss button says Throw; the
+// ball goes the same way. Holding, seeds, gifts to The Boogler and a swap's drop are unchanged. ?proto=place throws.
 import * as THREE from 'three';
 import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch, releasePoint } from './throw.ts';
@@ -51,6 +57,7 @@ import { sprout } from '../adapters/mushrooms.ts';
 import { giftIndex } from '../sim/gift-catalog.ts';
 import { pickInteract, NO_TARGETS, type InteractTarget } from '../sim/interact-pick.ts';
 import { currentFrame } from '../loop.ts';
+import { productionRailway } from '../proto/flags.ts';
 
 export { NO_TARGETS };
 
@@ -65,7 +72,8 @@ export type Interactable = InteractTarget & {
 };
 
 const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
-export const canThrow = () => !!heldId();
+const THROWS = !productionRailway;
+export const canThrow = () => THROWS && !!heldId();
 const ballAt = new THREE.Vector3();
 
 // The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves
@@ -214,7 +222,7 @@ export const throwDown = windUp;
 
 export function useVerb() {
   const id = heldId();
-  return id ? (USE_VERB[id] ?? 'Throw') : null;
+  return id ? (USE_VERB[id] ?? (THROWS ? 'Throw' : null)) : null;
 }
 
 export const mainVerb = () => (me.charging ? null : interactTarget())?.verb ?? useVerb() ?? 'Grab';
