@@ -36,6 +36,11 @@ open(p, "w").write(re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n"
     fi
   fi
 done
+# A worktree whose node_modules is a symlink shares another checkout's install: `npm ci` would empty that checkout
+# through the link (the main checkout lost its modules three times on 9 November this way). Drop the link first.
+for link in node_modules server/node_modules; do
+  if [ -L "$link" ]; then rm "$link"; fi
+done
 npm ci --silent >/dev/null 2>&1
 ship_args=(--silent ship --)
 if [ "$wait" = 1 ]; then ship_args+=(--wait); fi
