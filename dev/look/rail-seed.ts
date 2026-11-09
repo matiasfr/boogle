@@ -25,7 +25,7 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   // B5-B8 stages stay separate from the earlier/depot fixture blocks.
   const trainStage = TRAIN_STAGES.includes(stage as TrainStage);
   // Split-rock Works and the Roundhouse (J3f), built on `q6-done`.
-  // `works-stocked` (look only, J4): `works-open` with the kiln one stone short and one stone left in rock 3, so a
+  // `works-stocked` (look only, J4): `works-open` with the kiln a few stone short and those left in rock 3, so a
   // look's bot can chop it, fill the kiln and see it light live.
   const stocked = stage === 'works-stocked';
   const worksStage = stocked || WORKS_STAGES.includes(stage as WorksStage);
@@ -66,11 +66,12 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
     chopTo(w, 'a', WORKS.kilnLogs);
     if (act(w, 'a', 'rail.kiln') !== WORKS.kilnLogs) throw new Error('works-stocked: logs');
     for (const rock of WORKS_ROCKS) {
-      const keep = rock.id === WORKS_ROCKS[0].id ? 1 : 0;
+      const keep = rock.id === WORKS_ROCKS[0].id ? 3 : 0;
       while (w.s.line!.rocks[rock.id]! > keep) act(w, 'b', 'rail.mine', { id: rock.id });
     }
-    if (w.s.line!.rocks[WORKS_ROCKS[0].id] !== 1) throw new Error('works-stocked: one stone left');
-    if (act(w, 'b', 'rail.kiln') !== WORKS.kilnStone - 1) throw new Error('works-stocked: stone');
+    const left = w.s.line!.rocks[WORKS_ROCKS[0].id]!;
+    if (left < 1) throw new Error('works-stocked: stone left in rock 3');
+    if (act(w, 'b', 'rail.kiln') !== WORKS.kilnStone - left) throw new Error('works-stocked: stone');
   }
   if (stage === 'hook-earned') act(w, 'a', 'rail.hook');
   if (stage === 'awake') {

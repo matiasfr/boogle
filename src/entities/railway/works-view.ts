@@ -25,7 +25,7 @@ type Inspection = ReturnType<RailwayAdapter['inspect']>;
 const ROLL_S = 4,
   HOP_S = 0.45;
 /** The throat slabs: tipping into the bowl, then sinking into rubble. */
-const TOPPLE = { stagger: [0.08, 0, 0.14], fall: 0.95, sink: 1.2, rest: 1.6 } as const;
+const TOPPLE = { stagger: [0.08, 0, 0.14], fall: 0.95, sink: 1.2, rest: 0.9 } as const;
 
 export async function createRailwayWorks(
   adapter: RailwayAdapter,
@@ -65,6 +65,9 @@ export async function createRailwayWorks(
     boxes.push({ ...box(p.x, kilnGround + 1.5, p.z, 0.3, 3, 0.3, faceYaw), colour: '#6b5238' });
   }
   {
+    // A sooty arch round the firing mouth, so the glow sits in a hole rather than on the wall.
+    const m = at(2.53, 0);
+    boxes.push({ ...box(m.x, kilnGround + 1, m.z, 2.3, 1.9, 0.12, faceYaw), colour: '#2c2825', solid: false });
     const p = at(2.9, 0);
     boxes.push({ ...box(p.x, kilnGround + 3.1, p.z, 5.2, 0.3, 0.32, faceYaw), colour: '#6b5238' });
     const c = at(3.5, 1.5);
@@ -141,13 +144,13 @@ export async function createRailwayWorks(
   // ---------------------------------------------------------------- moving parts: one draw
   const batch = createBoxBatch(owner, 260);
   const glowMat = readableGlow(
-    new THREE.MeshStandardNodeMaterial({ color: '#ff8a3a', emissive: '#ff7a2a', emissiveIntensity: 2.4 }),
+    new THREE.MeshStandardNodeMaterial({ color: '#2a1206', emissive: '#ff6a10', emissiveIntensity: 1.7 }),
   );
-  const mouthGeo = new THREE.BoxGeometry(1.7, 1.3, 0.2);
+  const mouthGeo = new THREE.BoxGeometry(1.5, 1.1, 0.04);
   const mouth = new THREE.Mesh(mouthGeo, glowMat);
   mouthGeo.dispose();
   {
-    const p = at(2.56, 0);
+    const p = at(2.61, 0);
     mouth.position.set(p.x, kilnGround + 0.9, p.z);
     mouth.rotation.y = faceYaw;
   }
@@ -180,7 +183,8 @@ export async function createRailwayWorks(
     s = new THREE.Vector3(),
     normal = new THREE.Vector3(1, 0, 1).normalize(),
     edge = new THREE.Vector3(1, 0, -1).normalize();
-  const ember = new THREE.Color('#ffb14a'),
+  const flame = new THREE.Color('#ff7a1c'),
+    ember = new THREE.Color('#ffb14a'),
     ash = new THREE.Color('#d9d4cb'),
     dust = new THREE.Color('#cfc6b3');
 
@@ -279,7 +283,7 @@ export async function createRailwayWorks(
       const layer = Math.floor(i / 4),
         j = (i % 4) - 1.5;
       batch.box(
-        c.x + face.x * j * 0.32,
+        c.x + face.x * j * 0.37,
         kilnGround + 0.45 + layer * 0.3,
         c.z + face.z * j * 0.32,
         1.3,
@@ -364,9 +368,28 @@ export async function createRailwayWorks(
         shape: 'dust',
       });
     }
+    // The mouth breathes: a slow flicker on the glow, and flame licking up out of its top edge.
+    glowMat.emissiveIntensity = 1.7 + Math.sin(performance.now() / 90) * 0.25 + Math.sin(performance.now() / 37) * 0.15;
     fire -= dt;
     if (fire <= 0) {
-      fire = 0.12;
+      fire = 0.08;
+      const lick = at(2.7, (Math.random() - 0.5) * 1.3);
+      emit({
+        x: lick.x,
+        y: kilnGround + 1.35,
+        z: lick.z,
+        vx: face.x * 0.5,
+        vy: 1.6 + Math.random() * 0.8,
+        vz: face.z * 0.5,
+        life: 0.5,
+        size: 0.5,
+        color: Math.random() < 0.5 ? ember : flame,
+        intensity: readableIntensity() * 2.2,
+        alpha: 0.85,
+        grow: [1, 0.35],
+        fade: 0.45,
+        shape: 'dust',
+      });
       const mouthAt = at(2.75, (Math.random() - 0.5) * 1.2);
       emit({
         x: mouthAt.x,

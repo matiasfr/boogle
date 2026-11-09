@@ -38,6 +38,8 @@ const BUILD_S = 3,
   TURN_S = 2;
 const FLOOR = 18.05,
   RAIL = 18.35;
+/** Rule ticks per second (the railway sim runs at 10 Hz, as cart-view.ts says). */
+const TICKS_PER_S = 10;
 /** Along the stall's length (local z): the wagon parks at the door end, the shunter behind it, ready to push. */
 const PARK = { wagon: -0.9, gap: 3.6 } as const;
 const BRASS = '#c79a3e',
@@ -374,9 +376,26 @@ export async function createRailwayRoundhouse(
   }
   const smooth = (u: number) => u * u * (3 - 2 * u);
   let hidden = false,
-    puffs = 0;
+    puffs = 0,
+    shownTick = -Infinity,
+    shownReady = -1;
+  /** The room clock as the shunt shows it. It runs at real time, leaning at most half a step toward the room clock
+   * (`tickNow`), so a correction (an RTT probe settling) slows or hurries the wagon instead of sending it back and
+   * forth; it never runs backwards. A `ready` that changes live starts it at the turn's own tick (`ready − rollTicks`),
+   * so the roll-out starts from the parked pose whatever the clock says. More than 10 s adrift, or on a restore, it
+   * snaps to the room clock. */
+  function shuntClock(dt: number, snapTo: boolean) {
+    const now = adapter.tickNow(),
+      step = dt * TICKS_PER_S,
+      ready = state.shed.ready;
+    if (snapTo || !Number.isFinite(shownTick) || Math.abs(now - shownTick) > 10 * TICKS_PER_S) shownTick = now;
+    else if (ready !== shownReady && ready >= 0) shownTick = Math.min(now, ready - WORKS.rollTicks);
+    else shownTick += step * (1 + Math.min(0.5, Math.max(-0.5, (now - shownTick) / 20)));
+    shownReady = ready;
+    return shownTick;
+  }
   function drawShunt(dt: number, snapTo: boolean) {
-    const t = shuntTargets(adapter.tickNow());
+    const t = shuntTargets(shuntClock(dt, snapTo));
     if (snapTo) {
       wagonA = t.wagon;
       shunterA = t.shunter;
@@ -494,7 +513,7 @@ export async function createRailwayRoundhouse(
 
     lastCradle = state.shed.cradle;
     lastRails = state.shed.cradleRails;
-    const t = shuntTargets(adapter.tickNow());
+    const t = shuntTargets(shuntClock(0, true));
     wagonA = t.wagon;
     shunterA = t.shunter;
   }
@@ -701,7 +720,7 @@ export async function createRailwayRoundhouse(
           onTable: Math.abs(wagonA - TABLE_A) < 2,
           solid: !!wagonBody,
         },
-        shunter: { along: shunterA },
+        shunter: { along: shunterA, tick: adapter.tickNow(), shown: shownTick, ready: state.shed.ready },
       };
     },
   };

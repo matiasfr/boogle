@@ -58,9 +58,16 @@ if (doing === 'kiln') {
   const p = me.body!.position;
   from = { x: p.x, y: p.y, z: p.z };
 }
+// `workscam=play`: hand the view back to the game's camera just before the press (the throat's pull-out shot).
+if (new URLSearchParams(location.search).get('workscam') === 'play') window.__debugCam?.clear();
 if (!(await doAt(move, from))) throw new Error(`worksdo=${doing} was not offered`);
+if (doing === 'foot') {
+  // Carry it back toward the camera, so the worn footing and the stoop face the shot.
+  await bot.wait(700);
+  await bot.walk(start.x, start.z, 1);
+}
 console.log(`WORKS ACT ${doing} ${JSON.stringify(inspectRailway()!.works)}`);
-for (const ms of [400, 1500, 3000])
+for (const ms of [0, 200, 400, 700, 1000, 1500, 2000, 3000, 5000, 8000])
   setTimeout(() => {
     const view = inspectRailway() as unknown as { worksView: unknown; works: unknown };
     console.log(`WORKS AFTER ${ms} ${JSON.stringify({ view: view.worksView, works: view.works })}`);

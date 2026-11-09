@@ -34,10 +34,12 @@ const poses: Record<
   pier: { body: [1405, -366], camera: [1412, 31, -352], aim: [1403, 24, -390] },
   // J4: the boiler's pedestal (the breaker), the kiln at the open cut, and the throat from inside the bowl.
   forge: { body: [922, 9], camera: [925, 22.5, 13], aim: [918.5, 18.5, 5] },
-  kiln: { body: [1123, 93], camera: [1119, 29, 99], aim: [1127, 24.5, 87] },
-  throat: { body: [1124, 86], camera: [1128, 28, 92], aim: [1118, 24, 81] },
+  kiln: { body: [1122, 88], camera: [1120.5, 28.5, 82.5], aim: [1128, 25.5, 87.5] },
+  throat: { body: [1124, 86], camera: [1141, 35, 104], aim: [1119, 25, 82] },
+  rack: { body: [1094, 57], camera: [1098, 27.5, 61], aim: [1090.5, 24.2, 52.5] },
   // The plume over the forge as seen from the pier (Home flow finding 3: it calls you back).
   call: { body: [1405, -366], camera: [1404, 30, -358], aim: [919, 40, 5] },
+  callnear: { body: [1000, -60], camera: [1000, 32, -60], aim: [919, 35, 5] },
 };
 const pose = poses[mode];
 if (!pose) throw new Error(`Choose worksat=${Object.keys(poses).join('|')}`);

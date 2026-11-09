@@ -37,6 +37,9 @@ export function createBoxBatch(owner: OwnedView, max: number, shadows = true) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const mesh = new THREE.InstancedMesh(geometry, material('stone', { colour: '#ffffff' }), max);
   geometry.dispose();
+  // The colour attribute must exist before the first draw: WebGPU builds the pipeline once, and one compiled while
+  // the batch was empty (no instanceColor yet) would draw every later box white.
+  mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(max * 3).fill(1), 3);
   mesh.frustumCulled = false;
   mesh.castShadow = shadows;
   mesh.receiveShadow = true;

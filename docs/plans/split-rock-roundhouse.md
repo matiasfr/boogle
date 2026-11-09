@@ -653,33 +653,33 @@ update and was repeated. No new scenario or harness was added.
 
 **Steps.**
 
-- [ ] **J4a. The breaker.** On C's pedestal while `breaker === 1`, with gold motes: a broad-faced hammer, 1.4 m long.
+- [x] **J4a. The breaker.** On C's pedestal while `breaker === 1`, with gold motes: a broad-faced hammer, 1.4 m long.
   The target `railway-breaker` (**Take the breaker**, within 3.6 m) runs `adapter.takeBreaker()`; on accepted, a
   `thump` and the breaker shown on Buddy's back. A taken breaker isn't drawn on the pedestal.
-- [ ] **J4b. Strikes.** The targets `railway-strike-0`/`-1` (**Strike the seam**) appear when `breaker === 2` and the
+- [x] **J4b. Strikes.** The targets `railway-strike-0`/`-1` (**Strike the seam**) appear when `breaker === 2` and the
   bit is unset, within reach of the seam. On the press, a Local 0.8 s swing with the breaker in hand (no state). On
   accepted, the slab pieces topple along authored arcs (or pop apart for the stall slab), a dust ring and a deep
   `clank`, and the colliders are removed. On restore they snap open, with no show. Offer the 8 November switch-zoom
   cinematic for the throat, for whoever struck, skippable and Local, reusing the sea switch's camera move.
-- [ ] **J4c. The kiln.** The frame faces the open cut. `railway-kiln` (**Fill the kiln**) when the throat is open, the
+- [x] **J4c. The kiln.** The frame faces the open cut. `railway-kiln` (**Fill the kiln**) when the throat is open, the
   kiln is unlit and your back has logs or stone; it runs `adapter.fillKiln()`. Draw the stock rising on the frame
   (logs stacked, stone in a hopper) from the prediction. When lit (accepted, or a live edge): fire glow, chimney smoke
   and a whoosh. Each cast (a `rack` rise) sends a footing down the roller road in 4 s to the rack (Local flight, as
   the forge's pour flights do). Rack stacks come from state.
-- [ ] **J4d. Footings.**
+- [x] **J4d. Footings.**
   - `railway-foot-take-0` (**Shoulder a footing**) at the Works rack runs `adapter.shoulderFooting(0)`.
   - The worn model is the sample block on the avatar's load frame, for you and remote holders by pid, with a stoop.
     Copy boiler-view's worn-model approach in this file; don't edit `line-cargo.ts`.
   - The drop uses the existing `place-drop`: no new binding, since `rail.drop` kind 3 already covers it. A footing pile
     draws as the block lying on the ground. (J3 review: J3 draws nothing for a kind-3 pile, so this is all J4's.)
-- [ ] **J4e. The stall.**
+- [x] **J4e. The stall.**
   - `railway-foot-set-0` (**Set the footing**) at the sockets runs `adapter.setFooting(0)`. Each footing lowers into
     its socket.
   - At `stall === 2`, the stall frame rises in 3 s of scaffold pieces (Place's physical build, not scaling), the tarp
     slides off, and the shunter and wagon show. Restore snaps it.
   - `railway-foot-set-1` and `railway-cradle` (**Fit the cradle**) at the wagon's bay. The cradle bolts on piece by
     piece (2 footing seats, 8 rail arms) from the prediction, and at `fitted` the wagon gets its brass cradle.
-- [ ] **J4f. The table.**
+- [x] **J4f. The table.**
   - `railway-turn` (**Turn the table**) by the turntable when `stall === 2` runs `adapter.turnTable(1 − table,
     tableRev)`. On accepted, rotate Place's `disc` (`src/proto/place/lines.ts`) 90° over 2 s through the same Place
     handle the views already use; don't import Place at module scope.
@@ -692,7 +692,7 @@ update and was repeated. No new scenario or harness was added.
   - When `train[1].wagon` is true, this view hides its wagon and B's train-view draws it (J5). Restore snaps to the
     right pose.
   - The wagon is a solid platform `railway:shed-wagon` while it is parked.
-- [ ] **J4g. Rocks.** `sources.ts` iterates `RAIL_ROCKS`, so the two limestone rocks mine like line 1's. Remove J2's
+- [x] **J4g. Rocks.** `sources.ts` iterates `RAIL_ROCKS`, so the two limestone rocks mine like line 1's. Remove J2's
   static boulders.
 - [x] **J4h. Already default on in J2.** `worksPreview()` returns true unless `works=0`; keep that off switch for
   before/after performance and the unchanged-still proof.
