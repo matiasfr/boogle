@@ -1,4 +1,4 @@
-import { COLORS, DEFAULT_NAME } from '../constants.ts';
+import { COLORS, DEFAULT_NAME, isTouch } from '../constants.ts';
 import { sanitizeName } from '../math.ts';
 import { me } from './state.ts';
 import { enterIsland } from './player.ts';
@@ -15,25 +15,29 @@ import { showCard, friendlyName } from './arrival.ts';
 
 export { dom } from './dom.ts';
 
-let lastHint: boolean | null = null;
+let lastHint: string | null = null;
 function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeOf(performance.now() - me.chargeStart) * 100)}%`;
-  // No Pointer Lock (the iPad): the hint says how to look instead, until the player has (never in a seat: no looking).
+  // Touch guidance follows the active input, and retires once a touch drag has turned the camera.
   const { canLock } = inputState;
-  const hint =
-    me.entered &&
-    inputKind() === 'kbm' &&
+  const kind = inputKind();
+  const touchHint = kind === 'touch' && !inputState.touchLooked && !inputState.seated;
+  const mouseHint =
+    kind === 'kbm' &&
+    !isTouch &&
     !inputState.locked &&
     !inputState.lockFailed &&
     (canLock || (!inputState.looked && !inputState.seated));
+  const hint =
+    me.entered && (touchHint || mouseHint)
+      ? mouseHint && canLock
+        ? `${glyph('use')}<span>Look around</span>`
+        : '<span>Drag or scroll with two fingers to look around</span>'
+      : '';
   if (hint !== lastHint) {
     lastHint = hint;
-    dom.hintEl.innerHTML = !hint
-      ? ''
-      : canLock
-        ? `${glyph('use')}<span>Look around</span>`
-        : '<span>Drag or scroll with two fingers to look around</span>';
+    dom.hintEl.innerHTML = hint;
     dom.hintEl.hidden = !hint;
   }
   if (!document.body.classList.contains('touch') || !me.entered) return;
