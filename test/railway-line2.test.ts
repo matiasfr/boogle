@@ -254,7 +254,6 @@ test('malformed line-two documents fail atomically', () => {
     j.c[c.kind]![1 + c.names.indexOf(field)]!;
   const cases: [string, (j: Snap) => void][] = [
     ['lever before Q3', (j) => (col(j, Rail, 'lever')[0] = 1)],
-    ['sea before Q4', (j) => (col(j, Rail, 'sea')[0] = 1)],
     ['hook before Q2', (j) => (col(j, Rail, 'hook')[0] = 1)],
     ['minted rail', (j) => (col(j, Forge, 'rack')[0] = w.s.line2!.forge.rack + 1)],
     ['unlit pour', (j) => (col(j, Forge, 'lit')[0] = -1)],
@@ -484,10 +483,33 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   restore(w);
 });
 
-test('Q5: behind the sea gate; the switch needs Q4; two cart trips bring its rails, never minted', () => {
+test('the early sea switch opens once and reloads while Q5 still refuses both materials until Q4', () => {
   const early = railwayAtQ4();
-  assert.equal(act(early, 'a', 'rail.seaSwitch'), 0);
-  assert.equal(early.s.line2!.sea, false);
+  assert.equal(line2Completed(early.s), 3);
+  assert.equal(act(early, 'a', 'rail.seaSwitch'), 1);
+  assert.equal(act(early, 'b', 'rail.seaSwitch'), 0, 'the first pull is the only accepted pull');
+  assert.equal(line2SeaOpen(early.s), true);
+  restore(early);
+  assert.equal(line2SeaOpen(early.s), true, 'the relaxed sea invariant accepts the early-open save');
+  assert.equal(line2Active(early.s), 3);
+  chop(early, 'a');
+  assert.ok(act(early, 'b', 'rail.forgeTake') > 0);
+  const before = [railAccount(early.s, 'a')!.carry, railAccount(early.s, 'b')!.rails];
+  assert.equal(act(early, 'a', 'rail.deposit', { station: 'Q5', n: 8, kind: 0 }), 0);
+  assert.equal(act(early, 'b', 'rail.deposit', { station: 'Q5', n: 8, kind: 2 }), 0);
+  assert.deepEqual([railAccount(early.s, 'a')!.carry, railAccount(early.s, 'b')!.rails], before);
+  const q5 = early.s.line2!.jobs[4]!;
+  assert.deepEqual([q5.stock, q5.railStock, q5.start], [0, 0, -1]);
+  assert.equal(act(early, 'a', 'rail.lever'), 1);
+  logs(early, 'a', 'Q4', 16);
+  rails(early, 'b', 'Q4', 16);
+  finishQ(early, 3);
+  assert.equal(line2Active(early.s), 4);
+  chop(early, 'a');
+  assert.equal(act(early, 'a', 'rail.deposit', { station: 'Q5', n: 1, kind: 0 }), 1, 'Q5 starts taking only after Q4');
+});
+
+test('Q5: behind the sea gate; two cart trips bring its rails, never minted', () => {
   const w = railwayAtQ5('q4-done');
   const l = () => w.s.line2!;
   assert.equal(line2Active(w.s), 4);

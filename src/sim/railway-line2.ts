@@ -60,8 +60,8 @@ export const line2Active = (s: Railway) => {
 };
 /** The quarry gate is down only with Q3 complete and the lever pulled. */
 export const line2GateOpen = (s: Railway) => line2Completed(s) >= 3 && !!s.line2?.lever;
-/** The sea gate is down only with Q4 complete and the summit switch pulled. */
-export const line2SeaOpen = (s: Railway) => line2Completed(s) >= 4 && !!s.line2?.sea;
+/** The summit pull opens the sea gate immediately; active-stretch order still guards Q5 construction. */
+export const line2SeaOpen = (s: Railway) => !!s.line2?.sea;
 export const line2GateDown = (s: Railway, k: number) => {
   const g = LINE2_STATIONS[k]?.gate;
   return !g || (g === 'quarry' ? line2GateOpen(s) : line2SeaOpen(s));
@@ -208,7 +208,6 @@ export function validateRailLine2(s: Railway) {
   )
     throw new Error('railway: cart');
   if (l.lever && line2Completed(s) < 3) throw new Error('railway: lever before Q3');
-  if (l.sea && line2Completed(s) < 4) throw new Error('railway: sea before Q4');
   if (l.hook && line2Completed(s) < 2) throw new Error('railway: hook before Q2');
   if (l.pack && f.used < FORGE.bills[0]) throw new Error('railway: pack before the forge bill');
   // The shelf holds rails only for the active, unfunded `shelf` stretch (funding sends what is left back to the forge

@@ -355,9 +355,6 @@ test('a scripted run through line one, the pack and line two to Q5 replicates ex
   for (let k = 0; k < LINE2_STATIONS.length; k++) {
     const spec = LINE2_STATIONS[k]!;
     if (spec.gate === 'quarry') {
-      assert.equal(act('a', 'rail.lever'), 1);
-    }
-    if (spec.gate === 'sea') {
       chop('b');
       const shown = cloneRailway(mirror.at(r.sync.world.tick));
       const deposit = {
@@ -372,6 +369,10 @@ test('a scripted run through line one, the pack and line two to Q5 replicates ex
       assert.equal(shown.line2!.jobs[k]!.stock, 1);
       assert.equal(shown.line2!.jobs[k]!.start, -1);
       assert.equal(act('b', 'rail.deposit', { station: spec.id, n: 1, kind: 0 }), 1, 'gated deposit confirms');
+      assert.equal(act('a', 'rail.lever'), 1);
+    }
+    if (k === 3) {
+      assert.equal(s().line2!.jobs[3]!.completion, 0, 'Q4 has not been built');
       r.join('sea-predict');
       const seaMirror = r.mirrors.get('sea-predict')!;
       const adapter = createRailwayAdapter({
@@ -406,6 +407,7 @@ test('a scripted run through line one, the pack and line two to Q5 replicates ex
       r.pump();
       assert.equal(adapter.pullSeaSwitch(), true, 'sea switch predicts on the press');
       assert.equal(adapter.inspect().line2.sea, true);
+      assert.equal(adapter.inspect().line2.seaOpen, true, 'the early press immediately predicts the open gate');
       assert.equal(seaMirror.railway.line2!.sea, false, 'confirmed mirror waits');
       assert.equal(act('b', 'rail.seaSwitch'), 1, 'a friend pulled it first');
       assert.equal(act('a', 'rail.seaSwitch'), 0, 'the pending press settles as noop');
@@ -414,6 +416,24 @@ test('a scripted run through line one, the pack and line two to Q5 replicates ex
       assert.equal(adapter.inspect().line2.seaOpen, true);
       assert.equal(adapter.inspect().pending, 0, 'the noop acknowledges the predicted press');
       adapter.dispose();
+      chop('b');
+      assert.ok(act('b', 'rail.forgeTake') > 0);
+      const held = [account('b').carry, account('b').rails];
+      assert.equal(act('b', 'rail.deposit', { station: 'Q5', n: 1, kind: 0 }), 0, 'open sea cannot skip active Q4');
+      assert.equal(act('b', 'rail.deposit', { station: 'Q5', n: 1, kind: 2 }), 0, 'Q5 refuses rails too');
+      assert.deepEqual([account('b').carry, account('b').rails], held);
+      assert.deepEqual(
+        [s().line2!.jobs[4]!.stock, s().line2!.jobs[4]!.railStock, s().line2!.jobs[4]!.start],
+        [0, 0, -1],
+      );
+      const reload = room();
+      reload.sync.loadSnapshot(JSON.parse(JSON.stringify(r.sync.snapshot())));
+      reload.api.touchAll();
+      reload.join('returning');
+      reload.pump();
+      agree(reload, 'returning');
+      assert.equal(reload.mirrors.get('returning')!.railway.line2!.sea, true, 'reload keeps the early pull');
+      assert.equal(reload.api.railway.line2!.jobs[3]!.completion, 0, 'reload did not complete Q4');
     }
     advance(40);
     if (spec.shelf) {

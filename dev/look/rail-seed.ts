@@ -24,6 +24,7 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
       'awake',
       'q1-done',
       'q3-done',
+      'hook-earned',
       'q2-stocked',
       'q3-stocked',
       'q4-stocked',
@@ -41,9 +42,10 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
       ? { s: createRailway(), t: 40 }
       : stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q3-stocked'
         ? railwayAtQ2()
-        : stage === 'q3-done' || stage === 'q4-stocked'
+        : stage === 'q3-done' || stage === 'q4-stocked' || stage === 'hook-earned'
           ? railwayAtQ4()
           : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
+  if (stage === 'hook-earned') act(w, 'a', 'rail.hook');
   if (stage === 'awake') {
     railSession(w.s, 'a', 1);
     railApply(w.s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
