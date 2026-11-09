@@ -9,6 +9,8 @@ cottages, with one low optional rock hop. The target is 25–35 seconds with loo
 is 27.34 seconds including a three-second look. Mesh, collision and Node tools use one default height grid. Tree IDs retain their original seeded order;
 trees cleared for the shore stay in the catalog but have no local mesh or collider. This terrain, clearance
 and prop placement are local; no sim state or shared snapshot shape changes. Old tabs retain their local coast.
+Production contact shading also excludes those cleared trees, so their square contact planes do not remain
+on the dock's grass or coastal cliffs. This is Local presentation only.
 SPAWN stays at the village: returning players skip the fall, valid saved positions restore, and unsafe
 positions fall back there. Position saves include the ground height; moved ground, water, or an older
 save without that sample falls back to SPAWN. Get unstuck keeps its existing nearby-ground/path recovery.

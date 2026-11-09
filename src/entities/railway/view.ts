@@ -72,7 +72,12 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const cart = await createRailwayCart(adapter, owner, line2.depotPlace);
   line2.holdDepot(cart.flying);
   shelf.holdRails(cart.flying);
-  if (look.LOOK.contact) kit.installContact([machine.flatbed, machine.loco], sources.inspect(), owner);
+  if (look.LOOK.contact)
+    kit.installContact(
+      [machine.flatbed, machine.loco],
+      sources.inspect().filter((tree) => !tree.cleared),
+      owner,
+    );
   const wake = createWakePresentation(machine, owner, { fanfare: sounds.fanfare, dustRing: pieces.dustRing });
   const path = await createRailwayPath(owner);
   let state = adapter.inspect();
