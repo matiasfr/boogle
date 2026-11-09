@@ -4,10 +4,13 @@
 //   townat=street             on the lane between the three plots, looking at the house and the boards
 //   townat=sleeves            on the path at Sleeves, the shore greeter, looking toward the house door
 //   townact=walkout           after a moment indoors, walk 8 m out of the door, so the follow camera clears the shell
-//                             too (T2 adds talk); with towndefer=1 it waits for an --action body `await window.__townAct(); export {};`
+//                             too; with towndefer=1 it waits for an --action body `await window.__townAct(); export {};`
 //   townact=try|take          (townat=shop) step up to the first stand, the paper hat, and press Try on; take presses
 //                             again for Take it: $0, which shows the "You got" card. The debug camera looks at Buddy and the stand.
 //   townact=try,walkout       acts run in order: try on, then walk out wearing it (it's yours anyway).
+//   townact=talk              walk up to a resident (townwho=pip|button|nell|moss|wren, default pip) and talk, towntalks=N
+//                             times (default 1), closing the card between; the camera frames you both. Prints each first
+//                             line as `said`, and what the residents remember (memory.ts) as it's stored.
 // Prints `TOWN <json>` with the town's inspection after the setup and again after the act.
 const { inspectTown } = (await import(
   '/src/entities/town/state.ts' as string
@@ -27,6 +30,7 @@ const { partnerWearing } = (await import(
   '/src/entities/wardrobe/state.ts' as string
 )) as typeof import('../../../src/entities/wardrobe/state.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
+const talk = (await import('/src/proto/place/talk.ts' as string)) as typeof import('../../../src/proto/place/talk.ts');
 const layout = (await import(
   '/src/proto/place/layout.ts' as string
 )) as typeof import('../../../src/proto/place/layout.ts');
@@ -140,8 +144,57 @@ async function actOnce(act: string) {
       input.keys.delete('KeyW');
     }
     await wait(800);
+  } else if (act === 'talk') {
+    const who = (query.get('townwho') ?? 'pip') as keyof NonNullable<ReturnType<typeof inspectTown>>['residents'];
+    const times = Math.max(1, Number(query.get('towntalks') ?? 1));
+    const id = `place-talk-${who}`;
+    const g = inspectTown()!.residents[who];
+    if (!g?.on) throw new Error(`townact=talk: ${who} isn't standing here (is the room up and near?)`);
+    // Walk up to them until their Talk is offered.
+    const end = performance.now() + 8000;
+    try {
+      while (interactTarget()?.id !== id && performance.now() < end) {
+        const p = body.position;
+        cam.yaw = me.yaw = Math.atan2(-(g.x - p.x), -(g.z - p.z));
+        input.keys.add('KeyW');
+        await wait(30);
+      }
+    } finally {
+      input.keys.delete('KeyW');
+    }
+    await wait(300);
+    const said: string[] = [];
+    const sayEl = () => document.querySelector<HTMLElement>('.place-talk-say');
+    const optsUp = () => !document.querySelector<HTMLElement>('.place-talk-opts')?.hidden;
+    for (let n = 0; n < times; n++) {
+      if (n) {
+        talk.endTalk();
+        await wait(600);
+      }
+      const until = performance.now() + 4000;
+      while (interactTarget()?.id !== id && performance.now() < until) await wait(50);
+      interactDown();
+      interactUp();
+      const typed = performance.now() + 8000;
+      while (!(talk.talking() && optsUp()) && performance.now() < typed) await wait(50);
+      said.push(sayEl()?.textContent ?? '');
+    }
+    // Frame Buddy and the resident: from behind and above Buddy, looking between you.
+    const p = body.position,
+      dx = p.x - g.x,
+      dz = p.z - g.z,
+      len = Math.hypot(dx, dz) || 1;
+    eye = { x: p.x + (dx / len) * 3.2 - (dz / len) * 1.2, y: p.y + 1.6, z: p.z + (dz / len) * 3.2 + (dx / len) * 1.2 };
+    look = { x: (p.x + g.x) / 2, y: p.y + 0.4, z: (p.z + g.z) / 2 };
+    setCam();
+    await wait(400);
+    dispatchEvent(new Event('pagehide'));
+    const stored = Object.keys(localStorage).find((k) => k.startsWith('boogle.railway-town.v0:'));
+    console.log(
+      `TOWN ${JSON.stringify({ at, act, who, said, stored: stored ? JSON.parse(localStorage.getItem(stored)!) : null })}`,
+    );
   } else if (act) {
-    // T2 (talk) adds its target pattern here; press Interact once the matching one is offered.
+    // Press Interact once the matching target is offered.
     const want: Record<string, RegExp> = { try: /^place-stock-paperhat$/, take: /^place-stock-paperhat$/ };
     const re = want[act];
     if (!re) throw new Error(`townact=${act} is not available yet`);
