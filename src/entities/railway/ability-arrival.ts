@@ -4,14 +4,18 @@
 // at the ankles, the pickup's two notes and the charge mark lit by Buddy's feet. A friend who wasn't there gets that
 // flourish once on their first landing. All Local: what this player has been shown lives in this browser only.
 //
-//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'multi-axe', 'axe', 'pack',
-//                               'jump-taught', 'plinth:jump'
+//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'glide', 'multi-axe', 'axe',
+//                               'pack', 'jump-taught', 'glide-taught', 'plinth:jump'
 //
 // The axes follow the same rule. The multi-axe is the machine's wake: the player who pressed wake gets the card (once
 // the server has accepted it, reward.ts); everyone else gets the flourish as the wake finishes. The proper axe is
 // the chest's: the opener gets the card, everyone else the flourish. An axe has no charge ring: a small model of it
 // pops up over Buddy and settles away. The pack frame (the forge's chest, a back of 16 for everyone) works the same.
-//   update(dt)                  late flourishes, the charge mark and the first-jump teach
+//   update(dt)                  late flourishes, the charge mark, the first-jump teach and the first-fall glide teach
+//
+// The glider's teach is everyone's, the finder's too (its device teaches nothing): the first time you fall fast with the
+// glider and the canopy shut, the Glide action's glyph pulses at Buddy's back. Glide, not Jump, while the double jump is
+// still yours: Jump spends the air jump first and opens the canopy only on a second press (glider-b plan, finding 2).
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -28,6 +32,7 @@ import { rewardSparkles } from '../../render/reward-particles.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { toScreen } from '../../render/scene.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
+import { railwayGlideOpen } from './glide.ts';
 
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
 const AWAKE = (s: Inspection) => s.awake >= 0 && s.phase !== 'asleep' && s.phase !== 'waking';
@@ -43,6 +48,7 @@ const ABILITIES: {
 }[] = [
   { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: (s) => s.jump },
   { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: (s) => s.line2.hook },
+  { key: 'glide', op: 'rail.glide', cue: 'pickupGlider', has: (s) => s.glide, badge: true },
   { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
   { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: (s) => !!s.axe, badge: true },
   { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: (s) => s.line2.pack, badge: true },
@@ -52,6 +58,9 @@ const TEAL = new THREE.Color('#39e6c6');
 const FLASH_S = 1.6; // the mark stays lit this long after a flourish
 const FILL_S = 0.9; // and this long after it fills on landing
 const TEACH_S = 1.3;
+/** The glide teach: falling faster than this (m/s) with the canopy shut, a little over the step-off. */
+const GLIDE_TEACH_FALL = 4;
+const GLIDE_TEACH_UP = 1.2; // m over Buddy's feet: at the back, where the roll is
 
 /** This player's record of what they've been shown, per railway room. Unavailable storage just forgets. */
 function createSeen() {
@@ -152,6 +161,7 @@ export function createAbilityArrival(
 
   let flash = 0,
     pulse = 0,
+    glidePulse = 0,
     deferred = false,
     lastVy = 0,
     lateWait = 0,
@@ -231,6 +241,8 @@ export function createAbilityArrival(
   // A wake you pressed was predicted: if the server refuses it, there is no card, and nothing is marked as shown.
   const offCorrected = adapter.onCorrected((c) => {
     if (c.event.op === 'rail.wake') seen.forget('multi-axe');
+    // A refused glider take: no card stands for it, and no flourish was marked as shown.
+    if (c.event.op === 'rail.glide') seen.forget('glide');
   });
 
   const api = {
@@ -240,6 +252,7 @@ export function createAbilityArrival(
       keys: [...stats.keys],
       mark: mark.visible ? (fill.visible ? 'filled' : 'hollow') : 'off',
       teaching: pulse > 0,
+      glideTeaching: glidePulse > 0,
       badge: badge.visible ? [badge.position.x, badge.position.y, badge.position.z, badge.scale.x] : null,
       seen: ABILITIES.filter((a) => seen.has(a.key)).map((a) => a.key),
     }),
@@ -307,6 +320,23 @@ export function createAbilityArrival(
       lastVy = vy;
       if (pulse > 0 && (second || grounded)) pulse = Math.min(pulse, 0.15);
       pulse = Math.max(0, pulse - dt);
+      // The first fast fall with the glider and the canopy shut: the Glide glyph at Buddy's back, once.
+      const canopy = railwayGlideOpen();
+      if (
+        state.glide &&
+        airborne &&
+        vy < -GLIDE_TEACH_FALL &&
+        !canopy &&
+        !env.busy() &&
+        !pulse &&
+        !seen.has('glide-taught')
+      ) {
+        seen.add('glide-taught');
+        glidePulse = TEACH_S;
+        stats.teaches++;
+      }
+      if (glidePulse > 0 && (canopy || grounded)) glidePulse = 0;
+      glidePulse = Math.max(0, glidePulse - dt);
       mark.visible = state.jump && !me.swimming && (airborne || flash > 0 || pulse > 0);
       if (mark.visible) {
         feet(mark.position);
@@ -341,11 +371,13 @@ export function createAbilityArrival(
         ripple.scale.setScalar(0.35 + 1.6 * (1 - (1 - u) ** 2));
         rippleMaterial.opacity = 1 - u;
       }
-      const label = pulse > 0 ? glyph('jump') : '';
+      const label = pulse > 0 ? glyph('jump') : glidePulse > 0 ? glyph('glide') : '';
       chip.classList.toggle('on', !!label);
       if (label) {
         if (chip.innerHTML !== label) chip.innerHTML = label;
-        toScreen(at.copy(mark.position).add(CHIP_OFFSET), screen, innerWidth, innerHeight);
+        if (pulse > 0) at.copy(mark.position).add(CHIP_OFFSET);
+        else feet(at).y += GLIDE_TEACH_UP;
+        toScreen(at, screen, innerWidth, innerHeight);
         chip.style.transform = `translate(calc(${screen.x}px - 50%), calc(${screen.y}px - 50%))`;
       }
     },

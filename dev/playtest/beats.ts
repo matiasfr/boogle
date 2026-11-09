@@ -46,6 +46,7 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['lit the forge', /^forge lit$/],
   ['gained the proper axe', /^proper axe gained$/],
   ['gained the hook shot', /^hook shot gained$/],
+  ['gained the glider', /^glider gained$/],
   ['pulled on a hook ring', /^hook pulled$/],
   ['reached Needle Bell summit', /^needle bell summit reached$/],
   ['pulled the quarry lever', /^quarry lever pulled$/],

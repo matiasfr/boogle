@@ -16,7 +16,7 @@ import { T1_CRATE_PARTS, T1_REWARD, MULTI_AXE_REWARD } from '../../render/t1-rew
 import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
-import { T2_REWARD } from './reward-data.ts';
+import { GLIDE_REWARD, T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createRailwayTools, inReach } from './tools.ts';
 import { createAbilityArrival } from './ability-arrival.ts';
@@ -28,9 +28,10 @@ export async function createRailwayReward(
   owner: OwnedView,
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
-  const [{ softGlow }, { fanfare, pop }] = await Promise.all([
+  const [{ softGlow }, { fanfare, pop }, shapes] = await Promise.all([
     import('../../proto/place/look.ts'),
     import('../../proto/minis/common.ts'),
+    import('../../proto/place/part-geometry.ts'),
   ]);
   // One reveal queue owns input/camera holding for both personal boxes and shared tools.
   const reveal = createRewardReveal({ parent: owner.root, fanfare, pop, softGlow });
@@ -41,10 +42,17 @@ export async function createRailwayReward(
   const boxes = await createStationBoxes(adapter, owner, reveal.youGot, rewardSeat, machineFrom);
   const tools = await createRailwayTools(adapter, owner, reveal, machineFrom);
   // Shared abilities: the finder's card above; everyone's own arrival and Home's trophy (co-op abilities, option E).
+  // The glider's flourish badge: the folded wing from its card (reward-data.ts), on a material of its own.
+  const glidePrize = shapes.merged(GLIDE_REWARD.parts);
+  const glideMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
+  owner.cleanup(() => {
+    glidePrize.dispose();
+    glideMat.dispose();
+  });
   const arrival = createAbilityArrival(adapter, owner, {
     busy: reveal.gettingItem,
     jump: () => tools.inspect(),
-    axeModel: tools.axeModel,
+    axeModel: (key) => (key === 'glide' ? new THREE.Mesh(glidePrize, glideMat) : tools.axeModel(key)),
   });
   const plinth = await createTrophyPlinth(adapter, owner, arrival.seen, reveal.gettingItem);
   return {

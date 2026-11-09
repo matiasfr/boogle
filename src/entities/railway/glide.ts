@@ -24,6 +24,8 @@ type Active = { toggle: () => void; open: () => boolean };
 let active: Active | null = null;
 let registered = false;
 addPresenceField('railwayGlide', () => (active?.open() ? true : null));
+/** Your canopy is out (the first-fall teach in ability-arrival.ts ends on it). */
+export const railwayGlideOpen = () => active?.open() ?? false;
 /** Below this much air under you, a Jump press stays the controller's landing buffer rather than opening the canopy. */
 const JUMP_OPEN_CLEARANCE = 1.6;
 

@@ -400,6 +400,8 @@ function startWorld(room: Room) {
           return adapter.pullSeaSwitch();
         case 'rail.hook':
           return adapter.claimHook();
+        case 'rail.glide':
+          return adapter.claimGlide();
         case 'rail.drop':
           return intent.y !== undefined && adapter.drop(intent.x, intent.y, intent.z, intent.n, intent.kind);
         case 'rail.take':
