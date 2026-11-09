@@ -97,9 +97,10 @@ export function createRailwayBreaker(
     const swinging = swing.t >= 0 && !!me.body;
     if (swinging) {
       const before = swing.t;
-      // Hold the contact frame for a beat (hit-stop) before the recoil.
-      swing.t += before < SWING.contact && before + dt >= SWING.contact ? 0 : dt;
-      if (before < SWING.contact && swing.t >= SWING.contact - 1e-6 && !swing.struck) {
+      // Land exactly on the contact frame (it shows for that frame) before the recoil. Never hold `t` short of
+      // contact: with a steady dt it would never get there, and the swing (and every strike after it) froze.
+      swing.t = before < SWING.contact && before + dt >= SWING.contact ? SWING.contact : before + dt;
+      if (swing.t >= SWING.contact - 1e-6 && !swing.struck) {
         swing.t = SWING.contact + 1e-4;
         impact();
       }

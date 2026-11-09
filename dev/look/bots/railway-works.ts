@@ -52,8 +52,15 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
   const until = async (fn: () => unknown, beat: string, ms = 2400000) => check(await bot.until(fn, ms, beat), beat);
   const walk = async (x: number, z: number, radius = 1) =>
     check(await bot.walk(x, z, radius), `Works walked to ${x.toFixed(1)}, ${z.toFixed(1)} without recovery`);
-  const use = async (p: { x: number; z: number }, verb: RegExp, beat: string) =>
-    check(await bot.use(p.x, p.z, beat, verb), `${beat} offered`);
+  const use = async (p: { x: number; z: number }, verb: RegExp, beat: string) => {
+    if (await bot.use(p.x, p.z, beat, verb)) return;
+    const at = me.body!.position,
+      s = read() as ReturnType<typeof read> & { worksView?: unknown };
+    console.log(
+      `WORKS USE MISSED ${JSON.stringify({ beat, at, yaw: cam.yaw, carry: s.carry, works: s.works.breaker, view: s.worksView })}`,
+    );
+    check(false, `${beat} offered`);
+  };
   const settle = (beat: string) => until(() => read().pending === 0, `${beat} settles`, 30000);
   const face = (x: number, z: number) => {
     const p = me.body!.position;
@@ -93,12 +100,21 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
       // `railPerf`: one real-frame sample aboard a moving train (with the wagon once it is coupled).
       if (row.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf'))
         sample = (async () => {
-          const { hardwareTiming } = await import('../../../src/debug/prof-overlay.ts');
+          // As `worksperf` in railway-works-at.ts: the observer makes hardware timing work without `prof=1`.
+          const { hardwareTiming, observeGpu } = await import('../../../src/debug/prof-overlay.ts');
           const { renderer } = await import('../../../src/render/scene.ts');
-          const timing = await hardwareTiming(3);
-          const calls = renderer.info.render.drawCalls,
-            tris = renderer.info.render.triangles;
-          console.log(`RAILWAY MOVING PERF ${JSON.stringify({ wagon: row.wagon, calls, tris, timing })}`);
+          const observer = await observeGpu();
+          try {
+            const timing = await hardwareTiming(3);
+            const calls = renderer.info.render.drawCalls,
+              tris = renderer.info.render.triangles;
+            const gpu = timing.gpu.render.stats;
+            console.log(
+              `RAILWAY MOVING PERF ${JSON.stringify({ wagon: row.wagon, calls, tris, gpu, cpu: timing.cpu })}`,
+            );
+          } finally {
+            observer.stop();
+          }
         })();
       return ran && row.phase === 0 && row.at === destination;
     }, `line 2 arrives at stop ${destination} with its rider`);
