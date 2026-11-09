@@ -148,6 +148,11 @@ async function actOnce(act: string) {
     for (let n = act === 'take' ? 2 : 1; n > 0; n--) {
       const end = performance.now() + 8000;
       while (!re.test(interactTarget()?.id ?? '') && performance.now() < end) await wait(50);
+      // Press only what was asked for: a neighbour's stand (two players at one spot) is not the act.
+      if (!re.test(interactTarget()?.id ?? '')) {
+        console.log(`TOWN no ${act} target; offered ${interactTarget()?.id ?? 'nothing'}`);
+        break;
+      }
       interactDown();
       interactUp();
       await wait(800);
