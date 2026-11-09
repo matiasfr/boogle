@@ -312,8 +312,9 @@ export async function createRailwayWorks(
     }
   }
   // The kiln's missing load as dashed gold ghosts, from the cut opening until it lights: each goes as its real piece
-  // lands. One draw for all of them; rebuilt only when the counts change.
-  const ghosts = createGhostOutlines(owner, 1200);
+  // lands. One draw for all of them; rebuilt only when the counts change. Each ghost is a little smaller than its
+  // piece and squared to the kiln, so neighbouring outlines stay apart and read as pieces, not a cage.
+  const ghosts = createGhostOutlines(owner, 1200, 0.22, 0.13, 0.03);
   let ghostKey = '',
     ghostLogs = 0,
     ghostStone = 0,
@@ -332,11 +333,11 @@ export async function createRailwayWorks(
     ghosts.begin();
     for (let i = WORKS.kilnLogs - logs; i < WORKS.kilnLogs; i++) {
       const yaw = logAt(i);
-      ghosts.box(p.x, p.y, p.z, ...LOG, yaw);
+      ghosts.box(p.x, p.y, p.z, LOG[0] - 0.1, LOG[1] - 0.08, LOG[2] - 0.08, yaw);
     }
     for (let i = WORKS.kilnStone - stone; i < WORKS.kilnStone; i++) {
-      const yaw = stoneAt(i);
-      ghosts.box(p.x, p.y, p.z, ...STONE, yaw);
+      stoneAt(i);
+      ghosts.box(p.x, p.y, p.z, STONE[0] - 0.1, STONE[1] - 0.08, STONE[2] - 0.1, faceYaw);
     }
     ghosts.commit();
   }
