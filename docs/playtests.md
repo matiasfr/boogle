@@ -247,3 +247,10 @@ Not the replay: Grant couldn't play, so this doesn't answer the two-player quest
 - Liked: the new track-piece laying animation.
 - Data: frame p50 17 ms, p95 25 ms on the Mac. Dynamic resolution dropped from 2x to 1.2x at 6 min and stayed there. Slowest CPU sections: railway update 5.3 ms, render 4.5 ms, gifts 1.8 ms. The production railway marks no beats, so "Did" stays empty. A Windows Chrome 117 visitor couldn't create a WebGPU adapter.
 - After: fixes are running or queued (dark glows and piles, reveal, tab-resume rollback and track-layer jump, forge visuals, clipping platforms, laying smoke, double-jump sparkle, a great-beam clarity and carry design, smaller track chunks after R1b).
+
+## 2026-11-08 (quick solo, before the Needle Bell playtest)
+- Who: Matias, solo, iPad with Magic Keyboard, live build (world v20, main at #1190).
+- New: the hook shot, B4 (sea gate, Q5, Far Head), name dice, rickety cart intro, world version label.
+- Felt off: dark square patches on the grass near the dock where you arrive. Had to hold E to wake the track layer (it is meant to be one press). The track layer seats still have a back that clips: remove the back and keep the stool. A persistent "touch to look around" prompt stays up after switching to the Magic Keyboard.
+- Wants: a little guy at the town entrance you can talk to, who tells you to follow the path or that they need help getting the rail running; goofy.
+- After: one Codex job each (dock-patches, wake-press, seat-stool, ipad-look-hint, town-greeter).
