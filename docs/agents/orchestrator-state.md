@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../decisions.md#current-decision-index).
 
-**Updated:** 9 November 2026, 17:46 UTC (running, merged today, tidy, next moves). The queue and open questions below are from 5–6 November and may be stale. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 9 November 2026, 18:46 UTC (running, merged today, tidy, next moves). The queue and open questions below are from 5–6 November and may be stale. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
 
 ## Links
 
@@ -21,16 +21,17 @@ Claude only until 12 November (`npm run models`). Agents run in `.claude/worktre
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| F1: gold finds and the finds board | implementer | Built on K1; also tidies the crowded curio shelf; long run in progress. F2 after |
+| F2: secrets and the finders' bay | implementer | First commit cuts the gold finds (owner, 9 Nov). Scope per the designer fit check: glide secrets in the world once the glider is owned, bay timing by ability order, jump course deferred to job E |
+| Playtest jump-ins | designer review | Owner ask, 9 Nov. Plan on `claude/playtest-jump-in-plan` (docs/plans/playtest-jump-in.md); implementer next; lands before D1 |
 | Split-rock J5: wagon, Pier halt, crossing | implementer | Long production run failed at the pier: bot's back full at pier footing 1 ("Empty your back first"); fixing and rerunning. No WORLD_NS bump |
 | Glider B + Home flow fixes | implementer (Opus high) | Plan and designer review on `claude/glider-b-plan`; WORLD_NS v23, ship only when no owner session is live |
-| Queued | | F2 → D1 → R1–R3; kiln mouth polish; Split-rock cleft placement (after J5); J5 leftovers in the scratchpad notes |
+| Queued | | Jump-in build → D1 → R1–R3; kiln mouth polish; Split-rock cleft placement (after J5); J5 leftovers in the scratchpad notes |
 
 ## Merged 9 November
 
 - Docs split: decisions.md + direction.md (#1232), research index with top blocks (#1235), Godot evaluation notes (#1246).
 - Agents: designer agent with a level-design and flow pass grounded in research, lenses not rules (#1241–#1244, #1250); tidy skill (#1237); progression-flow research (#1249); Home flow audit (#1251, docs/reviews/home-flow.md).
-- Game: hook scoring fix (#1234); glider brief and design review (#1238); glider piece A, off in production (#1247); render/audio tidy (#1248); town T1, Pip's house live (#1252); Split-rock J3 rules, WORLD_NS v22, live (#1253); wardrobe T4 (#1254); buoys and telescope F3 (#1256); Fine Prices shop T5 (#1257); ambience and M flag A1 (#1258); residents T2, town back under its draw budget (#1259); Split-rock J4, the Works live (#1261); museum T3 (#1262); station boxes and curio shelf C1 (#1263); Q6 bot trap fix (#1265); the stowaway C2 (#1266); personal crystals K1 (#1267).
+- Game: hook scoring fix (#1234); glider brief and design review (#1238); glider piece A, off in production (#1247); render/audio tidy (#1248); town T1, Pip's house live (#1252); Split-rock J3 rules, WORLD_NS v22, live (#1253); wardrobe T4 (#1254); buoys and telescope F3 (#1256); Fine Prices shop T5 (#1257); ambience and M flag A1 (#1258); residents T2, town back under its draw budget (#1259); Split-rock J4, the Works live (#1261); museum T3 (#1262); station boxes and curio shelf C1 (#1263); Q6 bot trap fix (#1265); the stowaway C2 (#1266); personal crystals K1 (#1267); gold finds F1 (#1269, cut again by the owner the same day, #1270).
 - Tooling: X1, verification on the production game (#1239, #1245).
 
 ## Merge queue
@@ -81,7 +82,7 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
 
 ## Next moves
 
-- Keep about three agents running; F1, J5 and glider B now. As each lands: F2 after F1; then D1 and R1–R3; glider B's WORLD_NS v23 ships only while no owner session is live.
+- Keep about three agents running; F2, J5, glider B and the jump-in review now. Next: build jump-ins, then D1 and R1–R3. Every Place port gets a fit check first (owner-calls); glider B's WORLD_NS v23 ships only while no owner session is live.
 - `../boogle-trusted/node_modules` and one old agent worktree symlink to the main checkout's node_modules; an `npm ci` in either empties it (seen twice on 9 November). Reinstall with `npm ci` in the main checkout if `node dev/playtest/cli.ts` can't find playwright.
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
 - Tidy: run the remaining code areas, then architecture, docs and memory.
