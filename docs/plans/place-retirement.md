@@ -615,17 +615,17 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
   `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **C1a.** The curio shelf, from `gifts.ts`'s "the curio shelf" block, at `SHELF` in the village. It shows what you
+- [x] **C1a.** The curio shelf, from `gifts.ts`'s "the curio shelf" block, at `SHELF` in the village. It shows what you
   own; what you don't own stands under dust sheets. `Swap <slot>` targets call `swapSlot`. It exposes `shelfGroup`
   and `crystalPeg` for K1 and F1.
-- [ ] **C1b.** Crates. For each completed stretch after T2 (T3, Q1–Q6) not in `wardrobe.opened`, one personal crate
+- [x] **C1b.** Crates. For each completed stretch after T2 (T3, Q1–Q6) not in `wardrobe.opened`, one personal crate
   stands beside that stretch's frame.
   - Placement follows `run.ts`'s `handCrate` ground search, on `LINE1_STATIONS` and `LINE2_STATIONS` positions.
   - Walking into it (1.25 m, as Place) opens it: `nextGift()` rolls from `cosmetic-parts.ts` with `Math.random`
     (personal and Local), updates `dry`, and records `opened` **before** the reveal. This fixes the audit's
     mid-reveal save defect.
   - The reveal goes through `reward.ts`'s queue (`youGot`). Mark `crate opened`.
-- [ ] **C1c.** Late joiners and reloads see unopened crates for every completion already reached.
+- [x] **C1c.** Late joiners and reloads see unopened crates for every completion already reached.
 
 **Proofs.**
 - `npm run check`.
@@ -635,6 +635,29 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
   times.
 
 **Done means.** Boxes behave as Place's did, personal and from shared progress, and the shelf is the wardrobe.
+
+**As built (9 November).**
+- **Which stretches:** Q2–Q6, not "T3, Q1–Q6". Place's crate flags (`layout.ts`, and the same `crate` field in
+  `LINE1_STATIONS`/`LINE2_STATIONS`) give T1, T2 and Q2–Q6, seven boxes, matching `BOXES`' seven tiers; T3 and Q1
+  never had one, so "as Place's did" wins over the list. `STATION_BOXES` in `crates-view.ts` reads the flags, so
+  adding T3 or Q1 later is a catalog change. Tiers: Q2 Rare, Q3 Common, Q4 Rare, Q5 Common, Q6 Wonder.
+- **Mounted from `reward.ts`**, not `view.ts`: `createRailwayReward` owns the one reveal queue and the T1/T2 boxes,
+  so the station boxes sit beside them (`reward.inspect().stationBoxes`). `view.ts` is unchanged.
+- **The roll** is `boxGift(n, tier, got, dry)` in `cosmetic-parts.ts` (Place's `nextGift`, now shared; `gifts.ts`
+  calls it). Production's `n` is `2 + boxesOpened()`; the hat and scarf never roll. With no Wonder yet, the first box
+  opened is a Wonder (Place's "a Wonder by the third").
+- **Wardrobe:** `openBox(box, id, wonder)` saves `opened`, `got` and `dry` at once, before the rattle; `unbox(id)` at
+  the card's end wears it if its slot is empty and sends `grant`, which uncovers it on the shelf. A reload
+  mid-reveal leaves it owned and on the shelf but not worn (Place wore it).
+- **Placement:** `rewardSeat` takes any station index. The last station (Q6, whose stretch ends on the pier) uses its
+  own frame's far side; Place's `handCrate` put that box in the sea.
+- **The shelf** is `src/entities/town/curio-shelf.ts`, mounted by the town view, which returns it as `shelf`
+  (`shelfGroup`, `crystalPeg`) for K1 and F1. Swap ids are Place's `place-swap-<slot>`; the pet slot waits for C2.
+- **The bot does walk into boxes**: Q2–Q4's stand by the depot racks it works, so it opens three on the long route.
+  `dev/look/bots/railway.ts` now puts a station box's card away after 1.6 s, as a player would.
+- **Eval:** `railway-town.ts` gained `townat=shelf|crates`, `townact=open|swap|reload`, `townown=`, `townactor=`.
+  The reload proof: `--query '…townat=crates&townbox=Q2&townact=open,reload' --until "window.__townReloaded ??
+  (import('/dev/look/evals/railway-town.ts'), false)"`.
 
 ### Job C2: the stowaway
 
