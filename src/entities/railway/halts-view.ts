@@ -6,12 +6,13 @@ import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Platform } from '../../physics/platforms.ts';
-import { trainEtaTicks } from '../../sim/railway-train.ts';
+import { trainEtaTicks, LINE_HALTS } from '../../sim/railway-train.ts';
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { forEachStatic, teleport, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
-import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
+import { HEAD_OFFSET, PLAYER_R, SEA } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 type Box = import('../../proto/net/boxes.ts').Box;
 type Line = import('../../proto/place/layout.ts').Line;
@@ -82,6 +83,31 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       return b;
     };
     const ground = H(c.x, c.z);
+    // The Pier halt stands over the sea: its one ramp comes up off the trestle's deck at its landward end.
+    const overWater = ground < SEA;
+    /** Ramps: off each end, and off the back at the middle; over the sea, only the landward end, from the deck. */
+    const rampEnds = () => {
+      const out: { ax: number; az: number; bx: number; bz: number; foot: number }[] = [];
+      const a = { x: 0, z: 0 },
+        b = { x: 0, z: 0 };
+      const ramp = (foot: number) => out.push({ ax: a.x, az: a.z, bx: b.x, bz: b.z, foot });
+      lineAt(line, s0, P);
+      lateral(lat, a);
+      lineAt(line, s0 - 6, P);
+      lateral(lat, b);
+      ramp(overWater ? railY(line, s0 - 6) + 0.05 : H(b.x, b.z) + 0.05);
+      if (overWater) return out;
+      lineAt(line, s1, P);
+      lateral(lat, a);
+      lineAt(line, s1 + 6, P);
+      lateral(lat, b);
+      ramp(H(b.x, b.z) + 0.05);
+      lineAt(line, mid, P);
+      lateral(lat + sign * 1.25, a);
+      lateral(lat + sign * 7, b);
+      ramp(H(b.x, b.z) + 0.05);
+      return out;
+    };
     // The deck, in lengths, with its edge stones.
     const lengths = Math.ceil((half * 2) / 6);
     for (let k = 0; k < lengths; k++) {
@@ -89,8 +115,11 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       part(0, -0.5, ds, 2.5, 0.5, (half * 2) / lengths + 0.02, STONE);
     }
     for (const sl of [-1, 1]) part(sl * 1.1, -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a'); // a bright edge: this is the place
-    // Under it, down to the ground.
-    part(0, ground - low, 0, 2.5, low - 0.5 - ground, half * 2, '#9a9184');
+    // Under it, down to the ground; over the sea, timber piles to the sea floor like the trestle's.
+    if (!overWater) part(0, ground - low, 0, 2.5, low - 0.5 - ground, half * 2, '#9a9184');
+    else
+      for (let ds = -half + 1; ds <= half - 1 + 1e-6; ds += (half * 2 - 2) / 3)
+        for (const dl of [-0.9, 0.9]) part(dl, ground - low, ds, 0.4, low - 0.5 - ground, 0.4, '#a2743f');
     // Local +sign x points toward the rails. Face the train from the outer edge,
     // along from the middle entrance so the rear ramp and the aisle stay clear.
     const post = 3.2,
@@ -153,36 +182,21 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         z: c.z - dl * sinY + ds * cosY,
       });
       bodies.push(addStatic({ kind: 'box', hx: 1.25, hy: 0.25, hz: half }, at(0, -0.25, 0), q));
-      bodies.push(
-        addStatic(
-          { kind: 'box', hx: 1.25, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
-          at(0, (ground - low - 0.5) / 2, 0),
-          q,
-        ),
-      );
+      if (!overWater)
+        bodies.push(
+          addStatic(
+            { kind: 'box', hx: 1.25, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
+            at(0, (ground - low - 0.5) / 2, 0),
+            q,
+          ),
+        );
       for (const ds of [-3, 3])
         bodies.push(
           addStatic({ kind: 'box', hx: 0.11, hy: post / 2, hz: 0.11 }, at(-sign * 0.95, post / 2, shelter + ds), q),
         );
       bodies.push(addStatic({ kind: 'box', hx: 0.3, hy: 0.28, hz: 1.5 }, at(-sign * 0.8, 0.28, shelter), q));
       bodies.push(addStatic({ kind: 'box', hx: 0.07, hy: 2.2, hz: 0.07 }, at(sign * 0.95, 2.2, half - 0.8), q));
-      // Ramps: off each end, and off the back at the middle.
-      const a = { x: 0, z: 0 },
-        b = { x: 0, z: 0 };
-      lineAt(line, s0, P);
-      lateral(lat, a);
-      lineAt(line, s0 - 6, P);
-      lateral(lat, b);
-      bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low));
-      lineAt(line, s1, P);
-      lateral(lat, a);
-      lineAt(line, s1 + 6, P);
-      lateral(lat, b);
-      bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low));
-      lineAt(line, mid, P);
-      lateral(lat + sign * 1.25, a);
-      lateral(lat + sign * 7, b);
-      bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low));
+      for (const r of rampEnds()) bodies.push(slab(r.bx, r.bz, r.ax, r.az, r.foot, low));
       // A halt can arrive around someone, including a partner who did not fit the boiler. Rapier cannot
       // lift a sphere already trapped between the ground and a new ramp. Only displace actual overlaps,
       // testing in each box's frame so the pitched ramps and every halt's orientation are covered.
@@ -234,25 +248,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       m.castShadow = m.receiveShadow = true;
       ramps.add(m);
     };
-    {
-      const a = { x: 0, z: 0 },
-        b = { x: 0, z: 0 };
-      lineAt(line, s0, P);
-      lateral(lat, a);
-      lineAt(line, s0 - 6, P);
-      lateral(lat, b);
-      rampMesh(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low);
-      lineAt(line, s1, P);
-      lateral(lat, a);
-      lineAt(line, s1 + 6, P);
-      lateral(lat, b);
-      rampMesh(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low);
-      lineAt(line, mid, P);
-      lateral(lat + sign * 1.25, a);
-      lateral(lat + sign * 7, b);
-      rampMesh(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low);
-      lineAt(line, mid, P);
-    }
+    for (const r of rampEnds()) rampMesh(r.bx, r.bz, r.ax, r.az, r.foot, low);
+    lineAt(line, mid, P);
     ramps.visible = false;
     owner.add(ramps);
     let reveal = -1;
@@ -315,17 +312,26 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     };
     return halt;
   }
-  const halts = layout.HALTS.map((h) =>
-    makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop),
-  );
+  // Place's halts, then line 2's Pier halt (LINE_HALTS[5], Place's halt maths at s 719-741 m), which opens with Q6.
+  const PIER = LINE_HALTS.length - 1;
+  const rows = [
+    ...layout.HALTS,
+    { name: LINE_HALTS[PIER]!.name, line: 1 as const, s0: 719, s1: 741, lat: -2.9, stop: 3 },
+  ];
+  const halts = rows.map((h) => makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop));
   let shown = false;
   const inside = halts.map(() => false);
+  /** Whether halt `k` stands now: every halt once trains run, the Pier halt only once Q6 is laid. */
+  const wanted = (k: number) => {
+    const s = adapter.inspect();
+    return s.line2.trains && (k !== PIER || s.line2.completed >= LINE2_STATIONS.length);
+  };
   function signals(quiet = false) {
     const s = adapter.inspect();
     halts.forEach((h) => {
       const r = s.line2.train[h.k]!;
       h.signal(
-        shown && (r.call === h.stop || (r.phase === 0 && r.at === h.stop))
+        shown && h.up && (r.call === h.stop || (r.phase === 0 && r.at === h.stop))
           ? Math.ceil(trainEtaTicks(r, h.k, h.stop, adapter.tickNow()) / 10)
           : null,
         quiet,
@@ -336,7 +342,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     restore() {
       shown = adapter.inspect().line2.trains;
       inside.fill(false);
-      halts.forEach((h) => h.snap(shown));
+      halts.forEach((h, k) => h.snap(wanted(k)));
       signals(true);
     },
     fixedPre(isTrain: (platform: Platform | null) => boolean) {
@@ -346,6 +352,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         return;
       }
       halts.forEach((h, k) => {
+        if (!h.up) return;
         const on = h.onIt(p.x, p.y, p.z, inside[k] ? 0.4 : 0);
         if (on && !inside[k]) adapter.callTrain(k);
         inside[k] = on;
@@ -353,10 +360,14 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     },
     update(dt: number) {
       const on = adapter.inspect().line2.trains;
-      if (on !== shown) {
-        shown = on;
-        halts.forEach((h, k) => (on ? h.build(0.3 + k * 0.3) : h.snap(false)));
-      }
+      // Live edges only: trains coming drop every open halt in; Q6 completing drops the Pier halt in.
+      const was = shown;
+      shown = on;
+      halts.forEach((h, k) => {
+        const want = wanted(k);
+        if (want && !h.up) h.build(was ? 0.3 : 0.3 + k * 0.3);
+        else if (!want && h.up) h.snap(false);
+      });
       halts.forEach((h) => h.update(dt));
       signals();
     },

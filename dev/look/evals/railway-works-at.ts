@@ -24,7 +24,7 @@ if (query.get('room') === 'look-rail') {
 }
 const poses: Record<
   string,
-  { body: [number, number]; camera: [number, number, number]; aim: [number, number, number] }
+  { body: [number, number]; y?: number; camera: [number, number, number]; aim: [number, number, number] }
 > = {
   halt: { body: [1081.3, 41.1], camera: [1078, 29, 35], aim: [1119, 28, 82] },
   ledge: { body: [1164, 124], camera: [1171, 26, 131], aim: [1156, 24, 116] },
@@ -41,13 +41,33 @@ const poses: Record<
   call: { body: [1405, -366], camera: [1404, 30, -358], aim: [919, 40, 5] },
   callmid: { body: [1000, -60], camera: [1150, 40, -200], aim: [919, 40, 5] },
   callnear: { body: [1000, -60], camera: [1000, 32, -60], aim: [919, 35, 5] },
+  // J5: the crossing from the pier head, the Pier halt's rack and jib, and the wagon behind line 2's train at home.
+  // Over the sea the body stands on the Pier halt's deck (25 m), not the sea floor.
+  crossing: { body: [1399.7, -356], y: 26, camera: [1408, 33, -372], aim: [1404, 2, -470] },
+  pierhead: { body: [1399.7, -356], y: 26, camera: [1416, 31, -360], aim: [1403, 25, -370] },
+  bents: { body: [1399.7, -356], y: 26, camera: [1432, 16, -455], aim: [1404, 4, -482] },
+  wagon: { body: [935, 28], camera: [936, 25, 31], aim: [924, 19.5, 16] },
 };
 const pose = poses[mode];
 if (!pose) throw new Error(`Choose worksat=${Object.keys(poses).join('|')}`);
 const shot = window as Window & { __worksPrepared?: boolean; __worksWalkDone?: boolean };
+if (mode === 'wagon') {
+  // The coupled wagon shows behind line 2's train while it stands at the village.
+  const end = performance.now() + 240000;
+  const home = () => {
+    const row = inspectRailway()!.line2.train[1]!;
+    return row.phase === 0 && row.at === 0;
+  };
+  while (!home() && performance.now() < end) await wait(100);
+  const train = (inspectRailway() as unknown as { line2View: { trains: { wagon?: unknown; cars: unknown[] }[] } })
+    .line2View.trains[1];
+  console.log(
+    `WORKS wagon pose: line 2 at the village ${home()} ${JSON.stringify({ wagon: train?.wagon, cars: train?.cars })}`,
+  );
+}
 const action = !!shot.__worksPrepared;
 if (!action) {
-  teleport(me.body, pose.body[0], H(...pose.body) + 0.85, pose.body[1]);
+  teleport(me.body, pose.body[0], pose.y ?? H(...pose.body) + 0.85, pose.body[1]);
   me.body.velocity.set(0, 0, 0);
 }
 cam.yaw = me.yaw = Math.atan2(-(pose.aim[0] - pose.body[0]), -(pose.aim[2] - pose.body[1]));

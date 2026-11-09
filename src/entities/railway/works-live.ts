@@ -1,5 +1,6 @@
 // Split-rock Works and the Roundhouse, live (docs/plans/split-rock-roundhouse.md, J4): the breaker, the Works, the
-// stall and table, and footings on backs and the ground, behind one seam for view.ts. Local views of accepted state.
+// stall and table, footings on backs and the ground, and (J5) the crossing at the pier, behind one seam for view.ts.
+// Local views of accepted state.
 import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
@@ -7,21 +8,26 @@ import { createRailwayBreaker } from './breaker-view.ts';
 import { createRailwayWorks } from './works-view.ts';
 import { createRailwayRoundhouse } from './roundhouse-view.ts';
 import { createRailwayFootings } from './footing-view.ts';
+import { createRailwayCrossing } from './crossing-view.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  deps: { seated: () => boolean; busy: () => boolean },
+  deps: { seated: () => boolean; busy: () => boolean; toPier: () => number },
 ) {
   const shapes = await import('../../proto/place/part-geometry.ts');
   const breaker = createRailwayBreaker(adapter, owner, shapes);
-  const [works, roundhouse] = await Promise.all([
+  const [works, roundhouse, crossing] = await Promise.all([
     createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, seated: deps.seated, busy: deps.busy }),
     createRailwayRoundhouse(adapter, owner, { contactIn: breaker.contactIn }),
+    createRailwayCrossing(adapter, owner, { toPier: deps.toPier }),
   ]);
   const footings = createRailwayFootings(adapter, owner);
-  const views = [breaker, works, roundhouse, footings];
+  const views = [breaker, works, roundhouse, footings, crossing];
   return {
+    /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
+    footPlaces: { works: works.rackSlot, pier: crossing.rackSlot },
+    crossingInspect: () => crossing.inspect().crossingView,
     restore() {
       for (const view of views) view.restore();
     },
@@ -36,6 +42,7 @@ export async function createRailwayWorksLive(
     corrected(c: RailwayCorrection) {
       works.corrected(c);
       roundhouse.corrected(c);
+      crossing.corrected(c);
       footings.corrected(c);
     },
     targets: (): Interactable[] => [
@@ -43,6 +50,7 @@ export async function createRailwayWorksLive(
       ...works.targets(),
       ...roundhouse.targets(),
       ...footings.targets(),
+      ...crossing.targets(),
     ],
     inspect: () => ({
       ...works.inspect(),

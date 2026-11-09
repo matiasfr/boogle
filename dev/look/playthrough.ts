@@ -6,6 +6,7 @@
 //   --to t1-done                          stop after that beat of the production railway route (segments.ts, RAIL_STOPS)
 //   --from q5-done                        start from an accepted --rail-seed server save (RAIL_FROM), with its seeded bot
 //   --players 2                           two peers in one room, on the shared warp clock (rail-coop.ts)
+//   --wall 2700                           the wall-clock limit in seconds (default 300, or 1800 with --long)
 //   --query 'shot=play'                   the page and the bot's own settings (the default: the production entry)
 //   --eval dev/look/evals/railway-job.ts  the file with the bot (the default); it must set window.__placeDone
 //   --query 'proto=place&shot=play'       the legacy Place route and its fixture segments, until D1 deletes it
@@ -347,7 +348,7 @@ async function main() {
     let wallAt = Date.now();
     const w = await g.warp({
       until: 'window.__placeDone',
-      wallLimit: has('--long') ? 1800 : 300,
+      wallLimit: Number(opt('--wall', '')) || (has('--long') ? 1800 : 300),
       stalled: async (at) => {
         const last = await g.page.evaluate(
           () => (window as unknown as { __observe: { lastBeat: number } }).__observe.lastBeat,

@@ -97,9 +97,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   shelf.holdRails(flying);
   const works = worksPreview()
     ? await import('./works-live.ts').then((m) =>
-        m.createRailwayWorksLive(adapter, owner, { seated: () => !!seats.seated(), busy: () => reward.inspect().busy }),
+        m.createRailwayWorksLive(adapter, owner, {
+          seated: () => !!seats.seated(),
+          busy: () => reward.inspect().busy,
+          toPier: () => trains.footFlying().toPier,
+        }),
       )
     : null;
+  if (works) trains.footPlaces(works.footPlaces);
   if (look.LOOK.contact)
     kit.installContact(
       [machine.flatbed, machine.loco],
@@ -571,6 +576,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
       // The Works and Roundhouse views' own inspection; `works` and `shed` are the adapter's accepted state (J3).
       worksView: works?.inspect() ?? null,
+      crossingView: works?.crossingInspect() ?? null,
     }),
     dispose: () => owner.dispose(),
   };

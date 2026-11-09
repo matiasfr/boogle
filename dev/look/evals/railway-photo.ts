@@ -23,6 +23,12 @@ const frames: Record<string, Frame> = {
   TRAINS: { camera: [1023, 38, -137], target: [1009, 32, -149] },
   'Q6 laid': { camera: [1365, 39, -155], target: [1402, 25, -368] },
   pier: { camera: [1402, 34, -348], target: [1402, 27, -700] },
+  // Split-rock (J5f): through the cut from the quarry halt; the stall with its shunter and wagon; the footing wagon
+  // coupled behind line 2's train at the village; and the bents from the pier head toward Ring Island.
+  'throat open': { camera: [1078, 29, 35], target: [1121, 26, 84] },
+  'stall built': { camera: [923, 25, 8], target: [909.5, 20, 20.5] },
+  'wagon coupled': { camera: [936, 25, 31], target: [924, 19.5, 16] },
+  'crossing footed': { camera: [1408, 33, -372], target: [1404, 2, -470] },
 };
 const beat = new URLSearchParams(location.search).get('railStop') ?? '';
 const frame = frames[beat];
@@ -34,6 +40,7 @@ if (new URLSearchParams(location.search).has('railFrom')) {
   shot.__railPhoto = true;
   const from = new URLSearchParams(location.search).get('railFrom');
   if (from === 'boiler' || from === 'q6') await import('/dev/look/evals/railway-b5b8-bot.ts' as string);
+  else if (from === 'works' || from === 'wagon') await import('/dev/look/evals/railway-works-bot.ts' as string);
   else await import('/dev/look/evals/railway-b4-bot.ts' as string);
 } else background(play(), 'played railway photo');
 background(
@@ -41,6 +48,31 @@ background(
     while (!shot.__railStop) await wait(100);
     if (shot.__railStop !== beat) throw new Error(`Railway photo missed ${beat}`);
     window.__debugCam!.set(frame.camera, frame.target, 65);
+    // The train leaves as the wagon couples, so this frame rides with it: from beside and behind the wagon,
+    // along the train (the static frame above is only where it starts).
+    if (beat === 'wagon coupled') {
+      type Pose = { x: number; y: number; z: number };
+      const { inspectRailway } = (await import(
+        '/src/entities/railway/state.ts' as string
+      )) as typeof import('../../../src/entities/railway/state.ts');
+      const follow = () => {
+        const train = (inspectRailway() as unknown as { line2View?: { trains: { wagon?: Pose; cars: Pose[] }[] } })
+          .line2View?.trains[1];
+        const w = train?.wagon,
+          head = train?.cars[2];
+        if (!w || !head) return;
+        const d = Math.hypot(head.x - w.x, head.z - w.z) || 1,
+          fx = (head.x - w.x) / d,
+          fz = (head.z - w.z) / d;
+        window.__debugCam!.set(
+          [w.x - fz * 7 - fx * 5, w.y + 4.5, w.z + fx * 7 - fz * 5],
+          [w.x + fx * 4, w.y + 0.6, w.z + fz * 4],
+          65,
+        );
+      };
+      follow();
+      setInterval(follow, 30);
+    }
     // Hide only makeBot's diagnostic note panel; the console/report retains every note.
     for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
       if (panel.style.zIndex === '9999' && panel.style.whiteSpace === 'pre') panel.style.display = 'none';

@@ -530,6 +530,32 @@ pieces, the completed pier with rockets, and the northward Ring Island view (`gr
 [B8's record](../plans/line2-part2-greybox.md#b5b8-proof-record-8-november) links the manifests and limitations.
 `WORLD_NS` v21; not tested on a device. The orchestrator owns the long final pass and owner playtest guide.
 
+### Production Split-rock Works and the Roundhouse (9 November 2026)
+
+After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
+plume and whistle. **Take the breaker** is once for the room. **Strike the seam** at the cracked slab by Home's
+turntable opens the old Roundhouse stall (two empty sockets, a tarped shunter and wagon); at the quarry halt the same
+strike topples the split rock's throat and opens the haul cut. **Fill the kiln** at the cut takes 16 logs and 16
+stone (the bowl's two limestone rocks give 8 each); once lit it casts a footing every 8 s down the roller road onto
+the halt rack, at most six on the rack and exactly sixteen in all.
+
+A footing (**Shoulder a footing**) fills your back and slows you to the great beam's pace (a friend's **Help carry**
+speeds it). Four go home by hand, the deliberate "before": two raise the stall frame and pull its tarp off, two seat
+the wagon's cradle, and eight forge rails (**Fit the cradle**) turn it brass. **Turn the table** sends the shunter
+pushing the wagon out to wait on line 2; the table holds (in the rules, not only the view) until line 2 couples it, so
+no one can call a friend's wagon home. From then the wagon is line 2's fourth car: arriving at the quarry, up to six
+footings hop from the Works rack onto its cradle; arriving at the new **Pier** halt (open once Q6 is laid), they hop
+onto the pier rack. At the pier head a jib swings each set footing out over the stakes and lowers it on a rope into
+its socket on the sea floor; each pair raises a trestle bent to deck height, 4 m over the sea, and the twelfth set
+gives one whistle and two rockets at the last bent, toward Ring Island.
+
+Every footing has one home at a time (Works rack, back, ground pile, wagon, pier rack, stall, cradle, sea), and
+`footingTotal === poured` holds every tick; a leaver's footing returns to the Works rack after the beam's grace, so
+every partial state is safe to inherit. Effects play on the press, accepted events and live edges only; a reload
+snaps the stall, the cradle, the wagon, the bents and the racks. Serves DESIGN.md **7. Telegraph everything**, **8.
+Enjoyable alone and together** and **9. Leave something for the next visitor**. `WORLD_NS` v22; not tested on a
+device. Bot times and stills: [the plan's J5 record](../plans/split-rock-roundhouse.md#job-j5-the-footing-wagon-the-pier-and-the-crossing-the-bot-and-the-record-after-j3-j4-and-b5b8s-b-and-d).
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.

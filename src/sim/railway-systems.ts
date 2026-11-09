@@ -632,10 +632,14 @@ const deposit2 = defineSystem(
 );
 const forgeTake = defineSystem(
   'rail.forgeTake',
-  { reads: [Boiler, Rail, Beam], writes: [Forge, Account], phase: 'act', order: 21 },
+  { reads: [Boiler, Rail, Beam, QJob, Shed], writes: [Forge, Account], phase: 'act', order: 21 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
-    const room = free(w, a);
+    let room = free(w, a);
+    // Once no Q station takes rails, the cradle is the rack's only use: take just what it still needs, so a full
+    // back of spare rails never stands between you and the footings (which need an empty back).
+    const h = w.get(Shed, shedId(w))!;
+    if (qActive(w) < 0 && h.fitted < 0) room = Math.min(room, WORKS.cradleRails - h.cradleRails - a.rails);
     if (room <= 0) return 0;
     const f = w.mut(Forge, forgeId(w))!;
     const n = Math.min(f.rack, room);
@@ -829,8 +833,8 @@ const cradle = defineSystem(
     return n;
   },
 );
-/** Turn the table to a road, on the revision the actor saw. Before the wagon couples, turning back calls it home;
- * after, the table is a toy. */
+/** Turn the table to a road, on the revision the actor saw. It holds while the wagon rolls out or waits for its train
+ * (`ready ≥ 0`, not yet coupled), so nobody can call a friend's wagon home; after coupling the table is a toy. */
 const turn = defineSystem(
   'rail.turn',
   { reads: [Train], writes: [Shed], phase: 'act', order: 39 },
@@ -838,11 +842,11 @@ const turn = defineSystem(
     const h = w.get(Shed, shedId(w))!;
     if (h.stall !== WORKS.stall || !railInt(e.to, 1) || e.revision !== h.tableRev || e.to === h.table) return 0;
     if (h.tableRev >= RAILWAY_MAX_INT) return 0;
+    if (h.ready >= 0 && !w.get(Train, trainId(w, 1))!.wagon) return 0;
     const hm = w.mut(Shed, shedId(w))!;
     hm.table = e.to;
     hm.tableRev++;
-    if (e.to === 0 && !w.get(Train, trainId(w, 1))!.wagon) hm.ready = -1;
-    else commission(w, tick);
+    commission(w, tick);
     return 1;
   },
 );
@@ -1039,11 +1043,16 @@ function cartStep(w: World, tick: number) {
 }
 /** Line 2 arriving with the wagon: at the quarry it loads what the Works rack has and the pier still needs; at the
  * pier it unloads everything onto the pier rack. One apply each. */
+/** Footings the pier still needs that are neither set, racked there, nor aboard the wagon (`aboard`). */
+function pierOwed(w: World, aboard: number) {
+  const works = w.get(Works, worksId(w))!;
+  return WORKS.pier - works.pierSet - works.pierRack - aboard;
+}
 function wagonArrives(w: World, row: Row<typeof Train>) {
   if (!row.wagon) return;
   if (row.at === 1) {
     const works = w.get(Works, worksId(w))!;
-    const need = WORKS.pier - works.pierSet - works.pierRack - row.foot;
+    const need = pierOwed(w, row.foot);
     const n = Math.min(WORKS.wagonCap - row.foot, works.rack, need);
     if (n <= 0) return;
     w.mut(Works, worksId(w))!.rack -= n;
@@ -1125,7 +1134,11 @@ function trainStep(w: World, tick: number) {
       let sweep = r.sweep;
       if (r.at === 0) sweep = 1;
       else if (r.at === stops.length - 1) sweep = -1;
-      const to = r.call >= 0 && r.call !== r.at ? r.call : r.at + sweep;
+      // While the wagon still has footings to fetch for the pier, line 2 calls at every stop on its sweep instead of
+      // running straight to a caller: someone waiting on the Pier halt would otherwise keep it shuttling between the
+      // pier and Far Head, never reaching the quarry's rack. The call still stands, so the train stops for it.
+      const fetching = slot === 1 && r.wagon && pierOwed(w, r.foot) > 0;
+      const to = r.call >= 0 && r.call !== r.at && !fetching ? r.call : r.at + sweep;
       Object.assign(w.mut(Train, id)!, {
         phase: TRAIN_PHASE.RUN,
         to,

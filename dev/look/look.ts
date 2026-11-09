@@ -41,6 +41,7 @@ const opt: {
   hud: boolean;
   warp: boolean;
   until: string | null;
+  wall: number | null;
   at: string | null;
   saves?: string;
   root?: string;
@@ -74,6 +75,7 @@ const opt: {
   hud: false,
   warp: true,
   until: null,
+  wall: null,
   at: null,
   query: undefined,
   curves: false,
@@ -130,6 +132,8 @@ for (let k = 0; k < argv.length; k++) {
     opt.warp = false; // the warm-up in real time too: for what warps can't show, like how long something takes to load
   else if (a === '--until')
     opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
+  else if (a === '--wall')
+    opt.wall = Number(v()); // the warped warm-up's wall-clock limit in seconds (default 540)
   else if (a === '--saves')
     opt.saves = v(); // explicit checkpoint directory, including another worktree's bot run
   else if (a === '--at')
@@ -159,6 +163,7 @@ for (let k = 0; k < argv.length; k++) {
   [--rail-seed awake]                       start from an accepted railway server save (dev/look/rail-seed.ts)
   [--island]                                start on the classic island (the original island at the origin)
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
+  [--wall 540]                              the warped warm-up's wall-clock limit (seconds)
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
   [--saves <directory>]                     use checkpoints from this playthrough instead of latest
   [--restore-report]                        with --at: write live position, room/interior and place progress before capture
@@ -310,7 +315,11 @@ try {
     coopWarp = undefined;
     await running.stop();
   } else if (opt.warp) {
-    const w = await g.warp({ seconds: limit, until: opt.until ?? undefined });
+    const w = await g.warp({
+      seconds: limit,
+      until: opt.until ?? undefined,
+      ...(opt.wall ? { wallLimit: opt.wall } : {}),
+    });
     console.log(`warped: ${w.game.toFixed(0)} s of game in ${w.wall.toFixed(0)} s (${(w.game / w.wall).toFixed(0)}x)`);
     if (opt.until && !w.done) console.log(`NOT REACHED: ${opt.until}`);
   } else {

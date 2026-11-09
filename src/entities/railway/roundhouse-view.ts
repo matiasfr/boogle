@@ -671,7 +671,7 @@ export async function createRailwayRoundhouse(
         });
       }
       // The table: offered once the stall stands, while it is still, and never while the wagon is rolling out to
-      // wait for its train (a turn back then would only send it home: no one can stall a friend's shunt).
+      // wait for its train (the sim refuses a turn then too: no one can stall a friend's shunt).
       const rolling = sh.ready >= 0 && !state.line2.train[1]?.wagon;
       if (
         sh.stall >= WORKS.stall &&

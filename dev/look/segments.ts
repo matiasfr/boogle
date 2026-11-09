@@ -48,7 +48,7 @@ export function segmentOptions(args: string[]) {
 
 // ---------------------------------------------------------------- the production railway route (the default)
 // The names above are the legacy ?proto=place route's, kept only for an explicit `--query proto=place` until D1.
-/** `--to <name>`: the railway bot's beat it stops after (`?botTo=`), in route order. `pier` sets no stop. */
+/** `--to <name>`: the railway bot's beat it stops after (`?botTo=`), in route order. `crossing` sets no stop. */
 export const RAIL_STOPS = {
   'audio-loop': 'audio loop',
   wake: 'awake',
@@ -67,6 +67,7 @@ export const RAIL_STOPS = {
   trains: 'TRAINS',
   Q6: 'Q6 laid',
   pier: 'pier',
+  crossing: 'crossing footed',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** `--from <stage>`: an accepted `--rail-seed` server save that railway-b5b8-bot.ts resumes from (its `railFrom`).
@@ -86,6 +87,7 @@ export const RAIL_COOP_STOPS: readonly RailStop[] = [
   'Q5',
   'Q6',
   'pier',
+  'crossing',
 ];
 
 export function railSegmentOptions(args: string[]) {
