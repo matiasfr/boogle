@@ -1,4 +1,5 @@
-// T1's conductor hat and T2's scarf: profiles commit before the common-box reveal begins.
+// T1's conductor hat and T2's scarf: profiles commit before the common-box reveal begins. The boxes after them are
+// ./crates-view.ts, mounted here on the same reveal queue.
 // Construction is Lockstep; eligibility is read-only, claims are personal Local. A claimed hat or scarf goes into the
 // wardrobe (../wardrobe/state.ts), which owns what is worn and shows it to others.
 import * as THREE from 'three/webgpu';
@@ -20,6 +21,7 @@ import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createRailwayTools, inReach } from './tools.ts';
 import { createAbilityArrival } from './ability-arrival.ts';
 import { createTrophyPlinth } from './trophy-plinth.ts';
+import { createStationBoxes } from './crates-view.ts';
 
 export async function createRailwayReward(
   adapter: RailwayAdapter,
@@ -35,6 +37,8 @@ export async function createRailwayReward(
   owner.cleanup(() => reveal.dispose());
   const first = await createStationReward(adapter, owner, reveal, 0, machineFrom);
   const second = await createStationReward(adapter, owner, reveal, 1, machineFrom);
+  // The personal boxes after the scarf (Q2–Q6), through the same reveal queue.
+  const boxes = await createStationBoxes(adapter, owner, reveal.youGot, rewardSeat, machineFrom);
   const tools = await createRailwayTools(adapter, owner, reveal, machineFrom);
   // Shared abilities: the finder's card above; everyone's own arrival and Home's trophy (co-op abilities, option E).
   const arrival = createAbilityArrival(adapter, owner, {
@@ -61,15 +65,17 @@ export async function createRailwayReward(
         jumpDevice: toolState.jumpDevice,
         arrival: arrival.inspect(),
         plinth: plinth.inspect(),
+        stationBoxes: boxes.inspect(),
         showing: reveal.gettingItem(),
       };
     },
-    targets: () => [...first.targets(), ...second.targets(), ...tools.targets()],
+    targets: () => [...first.targets(), ...second.targets(), ...boxes.targets(), ...tools.targets()],
     youGot: reveal.youGot,
     gettingItem: reveal.gettingItem,
     update(dt: number, now: number) {
       first.update(dt, now);
       second.update(dt, now);
+      boxes.update(dt, now);
       tools.update(dt, now);
       reveal.updateGot(dt);
       arrival.update(dt);
@@ -91,16 +97,20 @@ export function rewardSeat(
   H: typeof import('../../proto/place/terrain.ts').H,
   railY: typeof import('../../proto/place/layout.ts').railY,
   frameOffset: number,
-  stationIndex: 0 | 1 = 0,
+  stationIndex = 0,
 ) {
-  // The same safe-ground choice as Place's handCrate, including its next-frame placement and fallbacks.
+  // The same safe-ground choice as Place's handCrate, including its next-frame placement and fallbacks. The last
+  // station has no next frame, and its stretch ends out on the pier, so its box stands by its own frame instead
+  // (Place's handCrate dropped it in the sea).
   const t1 = line.stations[stationIndex]!,
-    next = line.stations[stationIndex + 1]!;
+    next = line.stations[stationIndex + 1] ?? t1;
   const at = new THREE.Vector3();
   let placed = false;
   const nextAt = besideLine(line.line, next.s - line.dir * 1.5, next.side * frameOffset);
   const nextY = H(nextAt.x, nextAt.z);
-  for (const along of [-line.dir * 3.4, line.dir * 3.4]) {
+  // The last one tries the frame's far side first: the stretch before it already took the near side.
+  const sides = next === t1 ? [line.dir * 3.4, -line.dir * 3.4] : [-line.dir * 3.4, line.dir * 3.4];
+  for (const along of sides) {
     const q = besideLine(line.line, next.s - line.dir * 1.5 + along, next.side * frameOffset);
     const ground = (x: number, z: number) => Math.abs(H(x, z) - nextY) <= 1;
     if (
