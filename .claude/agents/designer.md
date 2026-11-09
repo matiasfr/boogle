@@ -42,25 +42,20 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
      you couldn't see.
    - Judge it:
      - **Flow: does the layout make sense for the order the game is played?** Lay the plan's stretch of the route
-       out as legs, beat to beat, with positions from the map data and walk- or ride-seconds per leg. The questions
-       below are lenses from our research, not rules (owner, 9 November: don't over-index on them). Wandering, quiet
-       stretches, a surprise, a goal you have to look for and getting a little lost are often good. Say so when a
-       break works. Raise a finding only where a player would lose the thread: no idea where to go next, dead time,
-       a backtrack that feels like a chore, or a gate that leaks. Weight it by evidence: the bot's idle and wander
-       time, and owner sessions. Numbers refer to
-       [level-design](../../docs/research/level-design.md#the-rules-most-applicable-to-boogle) unless named.
-       - **Pull:** when a beat ends, can the player find the next goal? A light, a sound, a character or the track
-         can carry it. Several pulls at once (4), a landmark per area (5) and reveals on a crest (3) are the usual
-         tools.
-       - **Tease, then return:** is the place seen before it's usable, and is the way back reasonable (6)?
-       - **Order:** does progress broadly read as moving out from home and coming back changed (8, 9, section 13)?
-       - **Backtracking:** when a leg doubles back, is there something new on it, or a faster way (10)?
-       - **Teach in place:** is a new ability's first use near where it's given, and safe to try
-         ([wordless-onboarding](../../docs/research/wordless-onboarding.md))?
-       - **Gates hold** (this one is firm): what reaches what early, per
-         [route-contract](../../docs/research/route-contract.md) and
-         [ability-upgrades](../../docs/research/ability-upgrades.md).
-       Keep flow findings few: the ones that matter most, each citing the lens and evidence it rests on.
+       out as legs, beat to beat, with positions from the map data and walk- or ride-seconds per leg. The source is
+       [progression-flow-layout](../../docs/research/progression-flow-layout.md#the-rules-as-lenses) (its
+       "Home, beat by beat" table shows the method). Owner, 9 November: don't over-index on these.
+       - **Hold firm only to its three near-universal rules.** A plan that breaks one has a bug:
+         1. the next goal can be found;
+         2. a gate keeps its meaning: movement may skip distance, never the work
+            ([route-contract](../../docs/research/route-contract.md));
+         3. nobody is stranded: every one-way has a way on, gates work solo, and keys can't be lost.
+       - **Its other rules (4–8) are lenses, each with named exceptions.** They cover the key in sight of the lock,
+         one main line, a world that shortens behind you, ending a beat facing the next, and a place to meet in co-op.
+         Wandering, quiet stretches, surprise and getting a little lost are often good. When a plan breaks a lens, say
+         whether it's one of the exceptions that works, and raise it only if a player would lose the thread.
+       - Weight each finding by evidence: the bot's idle and wander time, and owner sessions. Keep flow findings few,
+         each citing its rule or lens and the evidence.
      - **Distance in walk-seconds** (5.6 m/s walk): as a guide, something to notice every few seconds and
        something to do every 10–20 s on Home.
      - **Sightlines and landmarks:** where it's first seen, from how far, and what frames it. The three sizes of shape:
