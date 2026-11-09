@@ -189,6 +189,19 @@ test('fitted once; the table needs the stall; a stale revision is 0', () => {
   assert.equal(fitted.s.shed!.fitted, at);
   assert.equal(line2Rails(fitted.s), fitted.s.line2!.forge.poured, 'rails on the cradle are counted');
 });
+test('after Q6 the forge rack gives only what the cradle still needs, so the back is empty for the footings', () => {
+  const w = railwayAtWorks('stall-done'),
+    l2 = w.s.line2!;
+  for (let guard = 0; l2.forge.rack < WORKS.cradleRails * 2; guard++) {
+    assert.ok(guard < 4000, 'the forge pours rails');
+    advanceWorks(w, 1);
+  }
+  assert.equal(act(w, 'b', 'rail.forgeTake'), WORKS.cradleRails, 'not a full back');
+  assert.equal(act(w, 'b', 'rail.forgeTake'), 0, 'the cradle is covered by what you carry');
+  assert.equal(act(w, 'b', 'rail.cradle'), WORKS.cradleRails);
+  assert.equal(railAccount(w.s, 'b')!.rails ?? 0, 0, 'nothing left over');
+  assert.equal(line2Rails(w.s), l2.forge.poured, 'rails still conserved');
+});
 test('ready only after fitted and turned; the table holds while the wagon rolls out and waits', () => {
   const w = railwayAtWorks('stall-done'),
     shed = w.s.shed!,

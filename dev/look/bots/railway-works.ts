@@ -231,6 +231,12 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await settle('cradle rails');
     await use(stall, /^Fit the cradle$/, 'fit the cradle');
     await until(() => shed().fitted >= 0, 'cradle fitted', 30000);
+    // The pier's footings need an empty back: the forge rack gives only what the cradle takes.
+    await until(() => read().pending === 0, 'cradle fit settles', 30000);
+    check(
+      !read().carry && !read().stoneCarry && !read().railsCarry && !read().foot,
+      `an empty back after the cradle (rails ${read().railsCarry})`,
+    );
     await checkpoint('cradle fitted');
     // 7. Turn the table; the shunter pushes the wagon out and line 2 couples it at the village.
     await use(table, /^Turn the table$/, 'turn the table');

@@ -632,10 +632,14 @@ const deposit2 = defineSystem(
 );
 const forgeTake = defineSystem(
   'rail.forgeTake',
-  { reads: [Boiler, Rail, Beam], writes: [Forge, Account], phase: 'act', order: 21 },
+  { reads: [Boiler, Rail, Beam, QJob, Shed], writes: [Forge, Account], phase: 'act', order: 21 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
-    const room = free(w, a);
+    let room = free(w, a);
+    // Once no Q station takes rails, the cradle is the rack's only use: take just what it still needs, so a full
+    // back of spare rails never stands between you and the footings (which need an empty back).
+    const h = w.get(Shed, shedId(w))!;
+    if (qActive(w) < 0 && h.fitted < 0) room = Math.min(room, WORKS.cradleRails - h.cradleRails - a.rails);
     if (room <= 0) return 0;
     const f = w.mut(Forge, forgeId(w))!;
     const n = Math.min(f.rack, room);

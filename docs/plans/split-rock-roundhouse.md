@@ -848,6 +848,12 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
     a frame would cross it, so with a steady frame time the swing froze, and with it every later strike (the seeded
     run's throat strike was never offered). The swing now lands on the contact frame and recoils
     (`breaker-view.ts`).
+  - **The forge rack gives only what the cradle needs once Q6 is laid.** `rail.forgeTake` took a full back (16), the
+    cradle used 8, and the 8 left over blocked **Shoulder a footing** at the pier (it needs an empty back) until you
+    dropped them one at a time. The long playthrough stopped there. While no Q station takes rails and the cradle
+    isn't fitted, a take is capped at `cradleRails − shed.cradleRails − your rails`. A rule change, not a state
+    change: no `WORLD_NS` bump (`test/railway-works.test.ts`, "after Q6 the forge rack gives only what the cradle
+    still needs").
   - The bot comes at a stall socket from the stall's side: the set is offered within the stall's reach of its
     centre, and arriving from the halt stopped just outside it.
   - Look tooling: poses `crossing`, `pierhead`, `bents` and `wagon` in `railway-works-at.ts`, and `worksdo=pier`
