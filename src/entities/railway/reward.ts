@@ -85,6 +85,7 @@ export async function createRailwayReward(
       arrival.update(dt);
       plinth.update(dt, now);
     },
+    /** True when the air jump fired this step. */
     fixedPre: () => tools.fixedPre(),
     dispose() {
       first.dispose();
