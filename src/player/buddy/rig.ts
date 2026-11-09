@@ -173,6 +173,7 @@ function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: number, s
   lifeState.seated = seated;
   lifeState.down = u.flopAmt ?? 0;
   lifeState.aloft = !seated && !!u.aloft;
+  lifeState.beamGrip = seated ? null : u.beamGrip;
   lifeState.charging = r.options.charging(a);
   r.life.update(dt, lifeState);
   if (r.options.motion) {

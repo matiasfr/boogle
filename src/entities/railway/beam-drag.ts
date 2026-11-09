@@ -1,11 +1,25 @@
 // The great beam on its rope (the great beam pass, K2): the near end hangs at the carrier's hip on a short gold rope,
 // the far end drags on the ground like a towed rod, and a friend's Help carry lifts it level between two shoulders.
-// Local presentation derived from the carrier's smoothed pose: every tab computes the same look, nothing is sent.
+// Local presentation derived from smoothed Owner poses: independent bounded springs, nothing is sent.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { createRope } from '../../render/gold-rope.ts';
+import { bind } from '../../render/water/live.ts';
+import { beamCarry, BEAM_CARRY_PARAMETERS, type BeamCarryKey } from '../../player/beam-carry-tuning.ts';
+import { validValue } from '../../tunables/spec.ts';
+
+for (const [name, spec] of Object.entries(BEAM_CARRY_PARAMETERS)) {
+  const key = name as BeamCarryKey;
+  bind(
+    `beamCarry.${key}`,
+    () => beamCarry[key],
+    (value) => {
+      if (validValue({ ...spec, integer: false }, value)) beamCarry[key] = value;
+    },
+  );
+}
 
 /** The carried trunk's length (the worn beam model's). */
 export const BEAM_LENGTH = 5.4;
@@ -37,10 +51,65 @@ export function createBeamDrag(
     liftedA = new THREE.Vector3(),
     liftedB = new THREE.Vector3(),
     last = new THREE.Vector3();
+  const centre = new THREE.Vector3(),
+    velocity = new THREE.Vector3(),
+    target = new THREE.Vector3(),
+    offset = new THREE.Vector3(),
+    grip = new THREE.Vector3();
+  let springReady = false,
+    yaw = 0,
+    turn = 0;
   let started = false,
     lift = 0,
     scrape = 0;
   const groundAt = (v: THREE.Vector3) => ground(v.x, v.z) + RADIUS;
+  const wrapped = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
+  function present(dt: number) {
+    target.addVectors(a, b).multiplyScalar(0.5);
+    d.subVectors(b, a);
+    const heading = Math.atan2(d.x, d.z),
+      flat = Math.hypot(d.x, d.z),
+      dy = d.y;
+    // No inherited momentum on pickup, reload or a teleport. The caller already caps frame time at 0.1 s.
+    if (!springReady || reducedMotion || centre.distanceToSquared(target) > 16) {
+      centre.copy(target);
+      velocity.set(0, 0, 0);
+      yaw = heading;
+      turn = 0;
+      springReady = true;
+    } else {
+      // Lab k=520, c=95, mass=12, expressed as acceleration. This decorates the existing rod, never a body.
+      const steps = Math.max(1, Math.ceil(dt * 120)),
+        h = dt / steps;
+      for (let i = 0; i < steps; i++) {
+        velocity.x += ((target.x - centre.x) * beamCarry.stiffness - velocity.x * beamCarry.damping) * h;
+        velocity.z += ((target.z - centre.z) * beamCarry.stiffness - velocity.z * beamCarry.damping) * h;
+        centre.addScaledVector(velocity, h);
+        turn += (wrapped(heading - yaw) * beamCarry.stiffness - turn * beamCarry.damping) * h;
+        yaw += turn * h;
+        // Clamp displacement and discard only velocity pushing out of the bound; stops can still settle inward.
+        offset.subVectors(centre, target).setY(0);
+        if (offset.length() > beamCarry.maxLag) {
+          offset.normalize();
+          centre.copy(target).addScaledVector(offset, beamCarry.maxLag);
+          velocity.addScaledVector(offset, -Math.max(0, velocity.dot(offset)));
+        }
+        const error = wrapped(yaw - heading);
+        if (Math.abs(error) > beamCarry.maxAngle) {
+          yaw = heading + Math.sign(error) * beamCarry.maxAngle;
+          if (turn * error > 0) turn = 0;
+        }
+      }
+    }
+    // Retain the terrain/lift pitch and height. Only horizontal translation and turning have inertia.
+    centre.y = target.y;
+    beam.position.copy(centre);
+    d.set(Math.sin(yaw) * flat, dy, Math.cos(yaw) * flat).normalize();
+    if (d.lengthSq() > 1e-6) beam.quaternion.setFromUnitVectors(Z, d);
+    ropeEnd.copy(centre).addScaledVector(d, -BEAM_LENGTH / 2);
+    grip.copy(centre).addScaledVector(d, BEAM_LENGTH * 0.2);
+    grip.y += 0.5;
+  }
   /** Pull the far end to `BEAM_LENGTH` from the near end along the line it trails on, resting on the ground, eased
    * toward `trail` (off the shoulder side) so it swings wide on turns but settles out of the follow camera's way. */
   function follow(dt: number, trail: THREE.Vector3) {
@@ -61,9 +130,10 @@ export function createBeamDrag(
   }
   return {
     /** Where a friend reaches for the dragging end (the Help carry prompt). */
-    grip: new THREE.Vector3(),
+    grip,
     reset() {
       started = false;
+      springReady = false;
       lift = 0;
     },
     /**
@@ -112,12 +182,7 @@ export function createBeamDrag(
         dustRing(far.x, ground(far.x, far.z), far.z, 10, 1.8, 0.3);
         placeSound('beamDrop', far.x, far.z);
       }
-      beam.position.addVectors(a, b).multiplyScalar(0.5);
-      d.subVectors(b, a);
-      if (d.lengthSq() > 1e-6) beam.quaternion.setFromUnitVectors(Z, d.normalize());
-      ropeEnd.copy(a);
-      this.grip.lerpVectors(a, b, 0.7);
-      this.grip.y += 0.5;
+      present(dt);
       // The dragging end scuffs a little dust and scrapes now and then while it moves.
       const moved = Math.hypot(far.x - last.x, far.z - last.z);
       last.copy(far);
@@ -143,6 +208,7 @@ export function createBeamDrag(
       beam.visible = true;
       rope.visible = false;
       started = false;
+      springReady = false;
       if (helped) {
         beam.position.addVectors(helped[0], helped[1]).multiplyScalar(0.5);
         d.subVectors(helped[1], helped[0]);
@@ -159,6 +225,7 @@ export function createBeamDrag(
     hide() {
       rope.visible = false;
       started = false;
+      springReady = false;
       lift = 0;
     },
     dispose() {

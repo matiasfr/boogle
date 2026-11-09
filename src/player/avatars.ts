@@ -37,6 +37,7 @@ export type AvatarData = {
   riding?: boolean;
   jumpSequence?: number; // Local accepted launches, never a presence field
   aloft?: boolean;
+  beamGrip?: 'rope' | 'lift' | null; // Local railway view only, derived from the current carrier/helper
 };
 export type Avatar = THREE.Group & { userData: AvatarData };
 
