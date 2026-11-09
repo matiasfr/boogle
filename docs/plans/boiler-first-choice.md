@@ -552,9 +552,9 @@ forge apron's props, so the one thing this plan moves was probed with the game's
 From the designer's review, for the owner:
 
 8. **Station 6 refuses hand delivery until trains run, unlike your 8 November "fill before the switch" for gated
-   stretches?** Recommended: **yes**: the train hauls station 6's kit, not you. Answer: ___
+   stretches?** Recommended: **yes**: the train hauls station 6's kit, not you. Answer: **yes** (owner, 9 November).
 9. **Should whoever fits the boiler get a "You got" card after the wake, with copy you approve** (suggested "Steam" /
-   "Trains run both lines.")? Recommended: **yes** ("Rewards should be maximal", 2 November). Answer: ___
+   "Trains run both lines.")? Recommended: **yes** ("Rewards should be maximal", 2 November). Answer: **yes, with "Steam" / "Trains run both lines."** (owner, 9 November).
 10. **Wordless at station 6 now, adding a "Comes by train" tag only if your next session shows confusion there?**
     Recommended: **yes**. Answer: ___
 
