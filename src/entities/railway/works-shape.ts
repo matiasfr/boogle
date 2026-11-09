@@ -112,41 +112,49 @@ export const ROLLER_ROAD: WorksPoint[] = [
   { x: 1096, z: 50 },
   metres(WORKS_RACK),
 ];
+/** The stall in its own frame: local +z runs from the door (z -4.5) to the back, `yaw` turns it into the world. */
+export type StallFrame = { centre: WorksPoint; yaw: number; slabZ: number; rim: WorksPoint };
+/** The stall's greybox, anchors and road from its frame. */
+export function stallShape({ centre, yaw, slabZ, rim }: StallFrame) {
+  const STALL_YAW = yaw;
+  const stallPoint = (x: number, z: number): WorksPoint => ({
+    x: centre.x + Math.sin(yaw) * z + Math.cos(yaw) * x,
+    z: centre.z + Math.cos(yaw) * z - Math.sin(yaw) * x,
+  });
+  const STALL_BOXES = [
+    ...[-2, 2].map((x) => {
+      const p = stallPoint(x, 0);
+      return box(p.x, 18.7, p.z, 0.4, 1.4, 9, STALL_YAW);
+    }),
+    ...[-4, 0, 4].map((z) => {
+      const p = stallPoint(0, z);
+      return box(p.x, 22.5, p.z, 4.4, 0.35, 0.35, STALL_YAW);
+    }),
+    ...[-2, 2].flatMap((x) =>
+      [-4, 0, 4].map((z) => {
+        const p = stallPoint(x, z);
+        return box(p.x, 20.2, p.z, 0.4, 4.4, 0.4, STALL_YAW);
+      }),
+    ),
+  ];
+  const slab = stallPoint(0, slabZ);
+  const STALL_SLAB = box(slab.x, 19.9, slab.z, 4.4, 3.8, 0.65, STALL_YAW);
+  const STALL_ROAD = [rim, stallPoint(0, -4), stallPoint(0, 4.5)];
+  // Footing sockets occupy the clear apron in front of the sealed slab, never underneath a waiting vehicle.
+  const STALL_SOCKETS = [-1.5, 1.5].map((x) => stallPoint(x, -3.7));
+  return { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS };
+}
 const table = metres(SHED_TABLE),
   stall = metres(SHED_STALL);
-export const STALL_YAW = -Math.PI / 2;
 // J1 checked anchors. Its 7 x 14 m shell overlaps the rotated hall and path: fit a 4 x 9 m ruin
 // two metres north of the anchor, with a bent approach from the table. The seam stays within its slab.
-export const stallPoint = (x: number, z: number): WorksPoint => ({
-  x: stall.x - z,
-  z: stall.z - 2 + x,
+export const STALL_TODAY = stallShape({
+  centre: { x: stall.x, z: stall.z - 2 },
+  yaw: -Math.PI / 2,
+  slabZ: stall.x - metres(WORKS_SEAMS[0]).x,
+  rim: { x: table.x - 4.8 / Math.SQRT2, z: table.z + 4.8 / Math.SQRT2 },
 });
-export const STALL_BOXES = [
-  ...[-2, 2].map((x) => {
-    const p = stallPoint(x, 0);
-    return box(p.x, 18.7, p.z, 0.4, 1.4, 9, STALL_YAW);
-  }),
-  ...[-4, 0, 4].map((z) => {
-    const p = stallPoint(0, z);
-    return box(p.x, 22.5, p.z, 4.4, 0.35, 0.35, STALL_YAW);
-  }),
-  ...[-2, 2].flatMap((x) =>
-    [-4, 0, 4].map((z) => {
-      const p = stallPoint(x, z);
-      return box(p.x, 20.2, p.z, 0.4, 4.4, 0.4, STALL_YAW);
-    }),
-  ),
-];
-const door = metres(WORKS_SEAMS[0]);
-export const STALL_SLAB = box(door.x, 19.9, stall.z - 2, 4.4, 3.8, 0.65, STALL_YAW);
-const roadEnd = stallPoint(0, 4.5);
-export const STALL_ROAD = [
-  { x: table.x - 4.8 / Math.SQRT2, z: table.z + 4.8 / Math.SQRT2 },
-  stallPoint(0, -4),
-  roadEnd,
-];
-// Footing sockets occupy the clear apron in front of the sealed slab, never underneath a waiting vehicle.
-export const STALL_SOCKETS = [-1.5, 1.5].map((x) => stallPoint(x, -3.7));
+export const { STALL_YAW, stallPoint, STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS } = STALL_TODAY;
 const pier = metres(PIER_FRAME);
 export const PIER_SOCKETS = Array.from({ length: 12 }, (_, i) => ({
   x: pier.x + (i % 2 ? 2.5 : -2.5),
