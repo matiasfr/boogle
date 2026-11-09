@@ -8,11 +8,11 @@ import { camera } from './scene.ts';
 
 const HEAR = 45; // metres: silent beyond
 
-function at(x: number, z: number, gain: number) {
+function at(x: number, z: number, gain: number, hear = HEAR) {
   const a = getAudio('work');
   if (!a) return null;
   const d = Math.hypot(camera.position.x - x, camera.position.z - z);
-  const g = gain * Math.max(0, 1 - d / HEAR) ** 2;
+  const g = gain * Math.max(0, 1 - d / hear) ** 2;
   if (g < 0.003) return null;
   return { ...a, g, t: a.ctx.currentTime + 0.005 };
 }
@@ -89,9 +89,10 @@ export function clank(x: number, z: number): void {
   burst(ctx, hp, t, 0.06);
 }
 
-// The whistle at the end of a run: a two-note steam chord with a little wobble.
-export function whistle(x: number, z: number): void {
-  const a = at(x, z, 0.18 * dbToGain(audioSettings.machineWhistleDb));
+// The whistle at the end of a run: a two-note steam chord with a little wobble. `hear` widens its range for a call
+// meant to carry across the island (the forge's call, docs/reviews/home-flow.md findings 2 and 3).
+export function whistle(x: number, z: number, hear = HEAR): void {
+  const a = at(x, z, 0.18 * dbToGain(audioSettings.machineWhistleDb), hear);
   if (!a) return;
   const { ctx, out, g, t } = a;
   const amp = ctx.createGain();

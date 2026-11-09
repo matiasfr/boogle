@@ -32,9 +32,15 @@ const poses: Record<
   stall: { body: [903, 14], camera: [901, 23, 11], aim: [909.5, 20, 18.5] },
   table: { body: [920, 14], camera: [923, 25, 8], aim: [909.5, 20, 20.5] },
   pier: { body: [1405, -366], camera: [1412, 31, -352], aim: [1403, 24, -390] },
+  // J4: the boiler's pedestal (the breaker), the kiln at the open cut, and the throat from inside the bowl.
+  forge: { body: [922, 9], camera: [925, 22.5, 13], aim: [918.5, 18.5, 5] },
+  kiln: { body: [1123, 93], camera: [1119, 29, 99], aim: [1127, 24.5, 87] },
+  throat: { body: [1124, 86], camera: [1128, 28, 92], aim: [1118, 24, 81] },
+  // The plume over the forge as seen from the pier (Home flow finding 3: it calls you back).
+  call: { body: [1405, -366], camera: [1404, 30, -358], aim: [919, 40, 5] },
 };
 const pose = poses[mode];
-if (!pose) throw new Error('Choose worksat=halt|ledge|bowl|stall|table|pier');
+if (!pose) throw new Error(`Choose worksat=${Object.keys(poses).join('|')}`);
 const shot = window as Window & { __worksPrepared?: boolean; __worksWalkDone?: boolean };
 const action = !!shot.__worksPrepared;
 if (!action) {
@@ -50,8 +56,8 @@ shot.__worksPrepared = true;
 {
   const state = inspectRailway()!;
   console.log(`WORKS pose ${mode} ${JSON.stringify({ works: state.works, shed: state.shed, foot: state.foot })}`);
-  const view = state as typeof state & { worksView?: unknown; shedView?: unknown };
-  console.log(`WORKS view ${JSON.stringify({ works: view.worksView, shed: view.shedView })}`);
+  const view = state as typeof state & { worksView?: unknown };
+  console.log(`WORKS view ${JSON.stringify(view.worksView)}`);
 }
 if (query.get('workswalk') === '1' && action) {
   const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
