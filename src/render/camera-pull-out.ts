@@ -5,6 +5,7 @@ import { cam, camConstraints, camForward, me } from '../player/player.ts';
 import { inputState } from '../player/input-state.ts';
 import { dismissInput } from '../player/dismiss-pointer.ts';
 import { reducedMotion } from '../constants.ts';
+import { clamp, smoothstep } from '../math-pure.ts';
 
 type Shot = { from: THREE.Vector3; to: THREE.Vector3; at: THREE.Vector3; seconds: number; drift: number };
 export function createCameraPullOut(busy = () => false, behindBuddy = false, seated = () => false) {
@@ -19,7 +20,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
   const forward = new THREE.Vector3(),
     aim = new THREE.Vector3(),
     position = new THREE.Vector3();
-  const ease = (u: number) => u * u * (3 - 2 * u);
+  const ease = (u: number) => smoothstep(0, 1, u);
   const cancel = () => {
     pending = null;
     cut = Math.min(cut, 0.999);
@@ -67,7 +68,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
       }
       if (cut < 1) cut = Math.max(0, cut - dt / 0.14);
       const out = Math.min(1, t / 0.8),
-        back = Math.max(0, Math.min(1, (t - shot.seconds + 0.55) / 0.55));
+        back = clamp((t - shot.seconds + 0.55) / 0.55, 0, 1);
       weight = ease(out) * (1 - ease(back)) * cut;
       if (t >= shot.seconds || cut <= 0) reset();
     },

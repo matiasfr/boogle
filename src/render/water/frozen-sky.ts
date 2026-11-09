@@ -26,11 +26,11 @@ import { bind, tuningEnabled } from './live.ts';
 import { eveningPreview, prepareEvening, SKY_CUBE_SIZE } from './flags.ts';
 import { summerSky } from './sky-art.ts';
 import { bootMark } from '../../boot/timeline.ts';
-import { LIGHTING_SPECS, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
+import { lightingDefault, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
+import { validValue } from '../../tunables/spec.ts';
 import { createEveningTransition } from './evening-transition.ts';
 
 const WATER_TOD = 0.24;
-export let frozenSkyActive = false;
 let flushLighting: (() => void) | undefined;
 let prepareLighting: (() => Promise<void>) | undefined;
 let inspectSky: (() => unknown) | undefined;
@@ -66,8 +66,6 @@ export function updateFrozenDay() {
   f.near = ug > 0 ? THREE.MathUtils.lerp(CAVE_FOG.near[0], CAVE_FOG.near[1], ug) : FOG_NEAR;
   f.far = ug > 0 ? THREE.MathUtils.lerp(CAVE_FOG.far[0], CAVE_FOG.far[1], ug) : FOG_FAR;
   skyNow.frac = timeOfDay;
-  skyNow.phase = 0.5;
-  skyNow.illum = 1;
   skyNow.day = 1;
   skyNow.keyLight = true;
   skyNow.sunDir.copy(direction);
@@ -75,12 +73,11 @@ export function updateFrozenDay() {
 }
 
 export function createFrozenWaterSky() {
-  frozenSkyActive = true;
   timeOfDay = WATER_TOD;
   direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
   // Owner, 6 November: the summer sky is the daytime sky.
   const environment = createWaterSky(summerSky, SKY_CUBE_SIZE);
-  environment.params.cloudBrightness = SKY_AUTHORING_SPECS[0]!.default;
+  environment.params.cloudBrightness = lightingDefault('sky.cloudBrightness');
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
@@ -115,11 +112,11 @@ export function createFrozenWaterSky() {
   let selectedEnvironment: THREE.Texture = environment.cube;
   // Owner: retain round-two gains (5 November), select neutral light colour (6 November).
   const lighting = {
-    keyGain: LIGHTING_SPECS[0]!.default,
-    fillGain: LIGHTING_SPECS[1]!.default,
+    keyGain: lightingDefault('sky.keyGain'),
+    fillGain: lightingDefault('sky.fillGain'),
     keyTint: new THREE.Color(1, 1, 1),
     fillTint: new THREE.Color(1, 1, 1),
-    lightColourProfile: SKY_AUTHORING_SPECS[1]!.default,
+    lightColourProfile: lightingDefault('sky.lightColourProfile'),
   };
   // Linear RGB endpoints normalized to preserve each source light's luminance.
   const luma = (c: THREE.Color) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
@@ -355,13 +352,13 @@ export function createFrozenWaterSky() {
       },
     );
   // Prepared evening endpoints are immutable; an unavailable edit must not claim success.
+  const cloudBrightness = SKY_AUTHORING_SPECS.find((spec) => spec.id === 'sky.cloudBrightness')!;
   if (!evening)
     bind(
       'sky.cloudBrightness',
       () => environment.params.cloudBrightness,
       (value) => {
-        if (typeof value !== 'number' || !Number.isFinite(value) || value < 0.6 || value > 1)
-          throw new Error('Cloud brightness must be within 0.6–1');
+        if (!validValue(cloudBrightness, value)) throw new Error('Cloud brightness must be within 0.6–1');
         scheduleBake(() => {
           environment.params.cloudBrightness = value;
         });
@@ -391,7 +388,6 @@ export function createFrozenWaterSky() {
       disposed = true;
       transition?.dispose();
       if (timer) clearTimeout(timer);
-      frozenSkyActive = false;
       scene.backgroundNode = prior.background;
       scene.environment = prior.environment;
       scene.environmentIntensity = prior.environmentIntensity;

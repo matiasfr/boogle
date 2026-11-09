@@ -41,3 +41,10 @@ export const SKY_AUTHORING_SPECS = [
   scope: 'local' as const,
   owner: 'src/render/water/frozen-sky.ts',
 }));
+
+/** A spec's default by id, so readers never depend on the arrays' order. */
+export function lightingDefault(id: string) {
+  const spec = [...LIGHTING_SPECS, ...SKY_AUTHORING_SPECS].find((s) => s.id === id);
+  if (!spec) throw new Error(`No lighting spec ${id}`);
+  return spec.default;
+}

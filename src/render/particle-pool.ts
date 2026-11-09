@@ -300,6 +300,9 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
   function update(frameDt: number) {
     if (!computeReady) return;
     if (queued) {
+      // Upload only this frame's records: the spawn pass reads the first `queued`.
+      queue.value.clearUpdateRanges();
+      queue.value.addUpdateRange(0, queued * Q * 4);
       queue.value.needsUpdate = true;
       spawnCount.value = queued;
       void renderer.compute(spawnPass);

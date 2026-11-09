@@ -370,7 +370,6 @@ export type WaterSky = { sunColor: N; skyAt(direction: N, roughness: N): N; skyL
 type ShoreMotion = { wave: typeof SHORE_WAVE; noisePhase(xz: N): N; group(xz: N): N; exposure(dir: N): N };
 export type OceanOptions = {
   sky: WaterSky;
-  look?: typeof DEFAULT_LOOK;
   grid?: typeof DEFAULT_GRID;
   phaseOrigin?: { x: number; z: number };
   shoreMotion?: ShoreMotion;
@@ -410,7 +409,7 @@ export type Ocean = {
 };
 
 export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.Texture, options: OceanOptions): Ocean {
-  const LOOK = options.look ?? DEFAULT_LOOK,
+  const LOOK = DEFAULT_LOOK,
     GRID = options.grid ?? DEFAULT_GRID,
     demoSky = options.sky;
   const origin = options.phaseOrigin ?? { x: 0, z: 0 };
@@ -436,10 +435,9 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   const reflectGain = scalar('water.reflectGain', LOOK, 'reflectGain');
   const reflectCap = scalar('water.reflectCap', LOOK, 'reflectCap');
   const reflectTint = vector('water.reflectTint', LOOK, 'reflectTint');
-  const foam = ULTRA;
-  const glint = scalar('water.glitter', foam, 'glint');
-  const foamTint = vector('water.foamTint', foam, 'foamTint');
-  const foamBright = scalar('water.foamBright', foam, 'foamBright');
+  const glint = scalar('water.glitter', ULTRA, 'glint');
+  const foamTint = vector('water.foamTint', ULTRA, 'foamTint');
+  const foamBright = scalar('water.foamBright', ULTRA, 'foamBright');
   // Production supplies route fog; only a caller using optical distance fog can tune this coefficient.
   if (!options.fog) scalar('water.fogDensity', LOOK, 'fogDensity');
   const fogDensity = options.fog ? -LOOK.fogDensity : derived(() => -LOOK.fogDensity);
