@@ -1,0 +1,866 @@
+<title>Upgrade Tree</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta
+  name="description"
+  content="A 2D design aid for Boogle's upgrade choices: each part in play order, the inconvenience it repays and the number behind it, where its part would wait, what friends see, and an order fork."
+/>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f3ef;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #8a8984;
+    --line: #dddcd6;
+    --sea: #e3eef6;
+    --sea-line: #c9dceb;
+    --land: #e9e2cf;
+    --land-line: #d6ccb2;
+    --rail: #9b4a2c;
+    --live: #1f9e6e;
+    --live-bg: #e6f4ed;
+    --prop: #2a78d6;
+    --prop-bg: #e8f0fb;
+    --park: #8a8984;
+    --park-bg: #efeee9;
+    --gold: #d79a12;
+    --gold-bg: #fbf2dc;
+    --warn: #c43d3d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #121211;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --ink-3: #8f8e86;
+      --line: #34332f;
+      --sea: #16222c;
+      --sea-line: #213444;
+      --land: #2e2a20;
+      --land-line: #423c2d;
+      --rail: #d27a52;
+      --live: #35b886;
+      --live-bg: #14241c;
+      --prop: #4b93ea;
+      --prop-bg: #18232f;
+      --park: #8f8e86;
+      --park-bg: #22221f;
+      --gold: #e8b23a;
+      --gold-bg: #2a2414;
+      --warn: #e06464;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #8f8e86;
+    --line: #34332f;
+    --sea: #16222c;
+    --sea-line: #213444;
+    --land: #2e2a20;
+    --land-line: #423c2d;
+    --rail: #d27a52;
+    --live: #35b886;
+    --live-bg: #14241c;
+    --prop: #4b93ea;
+    --prop-bg: #18232f;
+    --park: #8f8e86;
+    --park-bg: #22221f;
+    --gold: #e8b23a;
+    --gold-bg: #2a2414;
+    --warn: #e06464;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      15px/1.5 system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+  }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-size: 19px;
+    margin: 28px 0 8px;
+  }
+  h3 {
+    font-size: 15px;
+    margin: 0 0 4px;
+  }
+  p {
+    margin: 0 0 8px;
+    color: var(--ink-2);
+  }
+  .lede {
+    font-size: 16px;
+    max-width: 70ch;
+  }
+  .note {
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    min-width: 0;
+  }
+  .tree {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .node {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: inherit;
+    cursor: pointer;
+  }
+  .node:hover {
+    border-color: var(--ink-3);
+  }
+  .node[aria-pressed='true'] {
+    outline: 2px solid var(--prop);
+    outline-offset: -1px;
+  }
+  .node .n {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--park-bg);
+    color: var(--ink-2);
+  }
+  .node.fitted .n {
+    background: var(--gold);
+    color: #1a1406;
+  }
+  .node .t {
+    font-weight: 600;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+  .node .s {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .tree .join {
+    margin-left: 20px;
+    height: 10px;
+    border-left: 2px solid var(--line);
+  }
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .pill.live {
+    background: var(--live-bg);
+    color: var(--live);
+  }
+  .pill.proposed {
+    background: var(--prop-bg);
+    color: var(--prop);
+  }
+  .pill.parked {
+    background: var(--park-bg);
+    color: var(--park);
+  }
+  .pill.ifwanted {
+    background: var(--gold-bg);
+    color: var(--gold);
+  }
+  dl {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 4px 12px;
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  dt {
+    color: var(--ink-3);
+  }
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 480px) {
+    dl {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    dt {
+      margin-top: 6px;
+    }
+  }
+  .ladder {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .step {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0 7px;
+    font-size: 13px;
+  }
+  .step.on {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+  }
+  .step.maybe {
+    border-style: dashed;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 10px 0;
+  }
+  button.act {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 7px 14px;
+    border: 1px solid var(--gold);
+    background: var(--gold);
+    color: #1a1406;
+    cursor: pointer;
+  }
+  button.act[disabled] {
+    opacity: 0.5;
+    cursor: default;
+  }
+  button.ghost {
+    font: inherit;
+    border-radius: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .seg button {
+    font: inherit;
+    font-size: 13px;
+    border: 0;
+    padding: 5px 12px;
+    background: var(--surface);
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--prop);
+    color: #fff;
+  }
+  .changes {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    font-size: 14px;
+  }
+  .changes li {
+    margin: 2px 0;
+  }
+  .changes.off li {
+    color: var(--ink-3);
+  }
+  .box {
+    border-left: 3px solid var(--prop);
+    background: var(--prop-bg);
+    padding: 8px 12px;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    margin: 10px 0;
+  }
+  .box.warn {
+    border-color: var(--warn);
+    background: var(--park-bg);
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  svg text {
+    font:
+      11px system-ui,
+      sans-serif;
+    fill: var(--ink-2);
+  }
+  svg .big {
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--ink);
+  }
+  .mark {
+    fill: var(--surface);
+    stroke: var(--ink-3);
+    stroke-width: 1.5;
+  }
+  .mark.sel {
+    fill: var(--gold);
+    stroke: var(--gold);
+  }
+  .fork {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 520px) {
+    .fork {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .fork .panel h3 {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 99px;
+    background: var(--park-bg);
+    color: var(--ink-2);
+  }
+  .tag.now {
+    background: var(--gold-bg);
+    color: var(--gold);
+  }
+  .tag.next {
+    background: var(--prop-bg);
+    color: var(--prop);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+  }
+  .scroll {
+    overflow-x: auto;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    color: var(--ink-3);
+    font-weight: 600;
+  }
+</style>
+
+<main>
+  <h1>Upgrade tree</h1>
+  <p class="lede">
+    A design aid for the <code>upgrade-choices</code> brief, to react to, not a game UI. Each part waits in the world
+    beside the machine it changes, and one press from anyone fits it for the room. Nodes are in play order. Click one to
+    see what it repays and where its part would wait, then fit it to see what changes down the line.
+  </p>
+  <p class="note">
+    Names are working labels, not final on-screen copy; there are no lines for The Boogler here. Numbers marked ≈ are
+    estimates from the code's constants (walk 5.6 m/s, train 20 m/s), not measurements.
+  </p>
+
+  <div class="row">
+    <span class="note">Players:</span>
+    <div class="seg" id="players" role="group" aria-label="Players">
+      <button aria-pressed="true" data-p="1">1</button><button aria-pressed="false" data-p="2">2</button
+      ><button aria-pressed="false" data-p="3">3</button>
+    </div>
+    <button class="ghost" id="reset">Reset fits</button>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h3>Parts, in play order</h3>
+      <div class="tree" id="tree"></div>
+      <p class="note" style="margin-top: 10px">
+        <span class="pill live">live today</span> exists in the game now (perhaps not yet staged as a choice) ·
+        <span class="pill proposed">proposed</span> in the brief · <span class="pill parked">parked</span> later ·
+        <span class="pill ifwanted">only if he wants it</span>
+      </p>
+    </div>
+    <div class="panel" id="detail" aria-live="polite"></div>
+  </div>
+
+  <h2>Where the parts would wait</h2>
+  <div class="panel">
+    <svg
+      id="map"
+      viewBox="0 0 760 300"
+      role="img"
+      aria-label="Schematic of Home, the camp, line 2 to Far Head and the pier"
+    >
+      <rect x="0" y="0" width="760" height="300" fill="var(--sea)" />
+      <path
+        d="M20 40 Q120 10 330 40 L520 70 Q600 80 640 120 L620 190 Q520 210 400 190 L200 230 Q80 250 30 200 Z"
+        fill="var(--land)"
+        stroke="var(--land-line)"
+      />
+      <path
+        d="M640 120 L700 210 L690 260"
+        fill="none"
+        stroke="var(--land-line)"
+        stroke-width="10"
+        stroke-linecap="round"
+        opacity="0.6"
+      />
+      <!-- line 1: Home to camp -->
+      <path d="M110 170 L170 70" stroke="var(--rail)" stroke-width="3" fill="none" stroke-dasharray="6 3" />
+      <!-- line 2 -->
+      <path
+        d="M110 170 L260 160 L360 150 L470 120 L620 130 L690 260"
+        stroke="var(--rail)"
+        stroke-width="3"
+        fill="none"
+      />
+      <text x="62" y="196" class="big">Home</text>
+      <text x="44" y="210">village · forge · turntable · Roundhouse</text>
+      <text x="176" y="66" class="big">Camp</text>
+      <text x="176" y="80">line 1, 196 m</text>
+      <text x="236" y="182">quarry ≈ 174 m</text>
+      <text x="340" y="172">rim (Q5 starts) 286 m</text>
+      <text x="560" y="114" class="big">Far Head 546 m</text>
+      <text x="610" y="252" class="big">Pier 742 m</text>
+      <text x="560" y="280">Q6: 546–742 m, by train</text>
+      <g id="marks"></g>
+    </svg>
+    <div class="box warn">
+      Home's layout is being redesigned: the owner's 9 November call makes it one unified station, and nothing there is
+      sited until he picks a layout. Home's positions here are schematic, and the works board has no spot yet.
+    </div>
+  </div>
+
+  <h2>What an order fork looks like</h2>
+  <p>
+    Taking one part makes the other the next part offered; nothing is lost. This example is ring-data's
+    <code>trainFirst</code> pick at the first spoke (later islands, not Home), and it is built only after the first
+    single choice.
+  </p>
+  <div class="fork" id="fork"></div>
+  <p class="note" id="forkNote"></p>
+
+  <h2>What each part needs to feel like power</h2>
+  <p>The designer's four tests (review finding 5). One option is enough; no fork is needed to test the feeling.</p>
+  <div class="panel scroll"><table id="tests"></table></div>
+</main>
+
+<script>
+  // One catalog, shaped like what the game would read: id, ladder, step values, when it appears, where its part
+  // waits, what it repays, and what a second player and a late joiner see.
+  const CATALOG = [
+    {
+      id: 'boiler',
+      name: 'Fit the boiler (extra engines)',
+      status: 'proposed',
+      statusNote: 'Live today as an unmarked step; the brief stages it as the first upgrade choice',
+      ladder: 'trains on lines 1 and 2',
+      steps: ['0', '1 each'],
+      start: 0,
+      appears:
+        'The forge casts it after Q5 is laid; it waits on the forge apron, then is hauled on a rope to the old train',
+      waits: 'camp',
+      waitsLabel: 'Old train at the camp, its empty brass saddles',
+      repays:
+        'Hand-carrying every kit. Station 6 needs 32 logs and 32 rails over 546–742 m: 4 back-loads of 16, each ≈ 1.1 km there and back (≈ 3¼ min on foot), so ≈ 13 min by hand, against one train unload ≈ 30 s from Home.',
+      keepsPaying:
+        'Yes: every later kit on line 2 rides the train; on 9 November he skipped it and laid station 6 by hand',
+      tests: [true, true, true, true],
+      changes: [
+        'Trains run on both lines at 20 m/s; the stations drop into place',
+        "Station 6's kit arrives in one train unload, not 4 back-loads",
+        'The fitted boiler keeps a mark on the engine for good',
+        'The Roundhouse engine part becomes the next thing worth wanting',
+      ],
+      players: {
+        1: 'You haul it on the rope alone, a little faster than the great beam; your press gets the full response.',
+        2: 'A friend can help pull. Whoever presses fits it for both; the other gets one flourish where they stand.',
+        3: 'Same as two; the third player sees the flourish and the first train wherever they are.',
+      },
+      friend: 'One flourish where they stand that never holds input, and the mark on the engine when they pass it',
+      late: 'One flourish on their first landing; the engine already wears the mark; no second flourish after a reload',
+    },
+    {
+      id: 'engine2',
+      name: 'Second engine',
+      status: 'parked',
+      ladder: 'trains per line (ring-data trains)',
+      steps: ['1', '2'],
+      start: 0,
+      appears: 'After the Roundhouse stall opens and its frame is raised (Split-rock Works)',
+      waits: 'home',
+      waitsLabel: "Roundhouse stall's empty socket by the turntable",
+      repays:
+        'Waiting for the one train. A line 2 loop to Far Head and back is ≈ 2 × 546 m at 20 m/s plus three 5 s dwells ≈ 70 s at worst; a second engine roughly halves the wait.',
+      keepsPaying: 'Yes, every ride and every train-fed kit',
+      tests: [true, true, true, true],
+      changes: ['Two trains share line 2, each half a loop apart', 'Boarding waits at most ≈ 35 s'],
+      players: {
+        1: 'Less standing at a halt between jobs.',
+        2: 'Friends heading opposite ways each catch a train sooner.',
+        3: 'Most useful with three: two trains rarely leave someone waiting.',
+      },
+      friend: 'A second engine rolls out of the stall; one flourish where they stand',
+      late: 'Two trains already running; one flourish on first landing',
+    },
+    {
+      id: 'pack',
+      name: 'Pack frame (back carry)',
+      status: 'live',
+      statusNote: 'Live: the pack chest by the forge is already a one-press, room-wide take',
+      ladder: 'pieces on your back',
+      steps: ['8', '16', '24'],
+      start: 0,
+      appears: "The forge's first bill (24 logs) puts the chest there",
+      waits: 'home',
+      waitsLabel: 'Chest beside the forge',
+      repays:
+        "Trips. Q1's 16 logs are 2 back-loads at 8 and 1 at 16; the forge's 32 for walls and chimney go from 4 to 2.",
+      keepsPaying: 'Yes, every hand haul; a third step (24) is parked',
+      tests: [true, true, true, true],
+      changes: ['Every back carries 16, for everyone in the room', 'Hand hauls halve from here on'],
+      players: {
+        1: 'The biggest early relief when you haul alone.',
+        2: 'Two backs of 16 cover most frames in one trip each.',
+        3: 'Three backs of 16 make most early bills one trip.',
+      },
+      friend: 'One flourish where they stand; their back grows the frame',
+      late: 'Arrives with the frame on; one flourish on first landing',
+    },
+    {
+      id: 'bed',
+      name: "Cart's bed",
+      status: 'live',
+      statusNote: '24 is live and stays the floor; a step above it is only if he wants it',
+      ladder: 'rails per cart trip',
+      steps: ['24', '32'],
+      maybe: [1],
+      start: 0,
+      fixedFloor: true,
+      appears: 'A step above 24 would wait at the cart. Not re-cast from 16: that brings the 216 s rim wait back',
+      waits: 'rim',
+      waitsLabel: 'Nowhere chosen; the cart comes to you, so a part on its road is seen ≈ 270 m from its payoff',
+      repays:
+        "Nothing on Home's line at 32: the biggest cart-fed rail bill is Q5's 24 (Q4 16, Q6 by train). It would only pay on later lines with bigger cart-fed bills.",
+      keepsPaying: 'No: its limit is hit once at most (review finding 3)',
+      tests: [false, true, false, false],
+      changes: ['Nothing changes on Home: one shipment already covers every cart-fed bill'],
+      players: {
+        1: 'No change on Home.',
+        2: 'No change on Home.',
+        3: 'No change on Home.',
+      },
+      friend: 'Taller sideboards on the passing cart',
+      late: 'Taller sideboards on the cart',
+    },
+    {
+      id: 'wagon',
+      name: 'Footing wagon',
+      status: 'parked',
+      ladder: 'footings per wagon run',
+      steps: ['6', '12'],
+      start: 0,
+      appears: 'Once the wagon runs on line 2 (after its cradle is fitted)',
+      waits: 'home',
+      waitsLabel: 'The wagon on the turntable',
+      repays: 'Pier runs: 12 footings to the pier are 2 wagon runs at 6, 1 at 12.',
+      keepsPaying: 'Only until the pier is set; later footing jobs would make it pay again',
+      tests: [true, true, true, false],
+      changes: ['The pier gets its 12 footings in one run'],
+      players: { 1: 'One fewer wait at the pier.', 2: 'Same.', 3: 'Same.' },
+      friend: 'A longer cradle on the wagon',
+      late: 'The longer cradle already on',
+    },
+    {
+      id: 'speed',
+      name: 'Train speed',
+      status: 'parked',
+      ladder: 'train cruise m/s (ring-data speed)',
+      steps: ['20', '25', '30', '40'],
+      start: 0,
+      appears: 'Later islands (ring-data: the steel boiler at the first spoke)',
+      waits: 'home',
+      waitsLabel: 'Roundhouse',
+      repays: 'Ride time. Home to Far Head, 546 m: ≈ 27 s at 20 m/s, ≈ 22 s at 25.',
+      keepsPaying: 'Yes, every ride; small on Home, large on long crossings',
+      tests: [true, true, true, true],
+      changes: ['Every train cruises 25 m/s; dwells shorten with each step (ring-data)'],
+      players: { 1: 'Shorter rides.', 2: 'Same for both.', 3: 'Same for all.' },
+      friend: 'The engine wears the new part',
+      late: 'Already faster',
+    },
+    {
+      id: 'pour',
+      name: 'Forge pour rate',
+      status: 'parked',
+      ladder: 'seconds per rail',
+      steps: ['0.5', '0.25'],
+      start: 0,
+      appears: 'At the forge',
+      waits: 'home',
+      waitsLabel: 'Forge',
+      repays:
+        'Almost nothing today: the 24-rail rack fills in 12 s, and the cart reaches a full rack. Kept for honesty, not for building.',
+      keepsPaying: 'No',
+      tests: [false, false, false, false],
+      changes: ['The rack refills in 6 s instead of 12; no wait is shortened today'],
+      players: { 1: 'No felt change.', 2: 'No felt change.', 3: 'No felt change.' },
+      friend: 'A faster pour at the forge',
+      late: 'Same',
+    },
+    {
+      id: 'kiln',
+      name: 'Kiln rate',
+      status: 'parked',
+      ladder: 'seconds per footing',
+      steps: ['8', '4'],
+      start: 0,
+      appears: 'At the Works kiln once lit',
+      waits: 'works',
+      waitsLabel: 'Split-rock kiln at the quarry',
+      repays: 'Waiting at the Works: 16 footings take ≈ 128 s, and the rack holds 6.',
+      keepsPaying: 'Only while footings are cast',
+      tests: [true, true, true, false],
+      changes: ['16 footings in ≈ 64 s'],
+      players: { 1: 'Less waiting at the rollers.', 2: 'Same.', 3: 'Same.' },
+      friend: 'A second roller lane',
+      late: 'Same',
+    },
+  ];
+  // Map marks (schematic positions).
+  const PLACES = {
+    home: [110, 170],
+    camp: [170, 70],
+    rim: [360, 150],
+    works: [260, 160],
+    farhead: [620, 130],
+    pier: [690, 260],
+  };
+  const FORK = [
+    {
+      id: 'steelBoiler',
+      name: 'Steel boiler',
+      effect: 'Train cruise 20 → 25 m/s',
+      repays: 'Ride time on long crossings',
+    },
+    {
+      id: 'chassis',
+      name: 'Freight chassis',
+      effect: 'Freight per train 24 → 32',
+      repays: 'Trips for big kits',
+    },
+  ];
+  const TESTS = [
+    'You felt the limit before the part appears',
+    'The press gets a big local response',
+    'You see the payoff within seconds',
+    'It keeps showing up afterwards',
+  ];
+
+  const state = { sel: 'boiler', fitted: new Set(), players: 1, fork: null };
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  const statusPill = (n) =>
+    n.status === 'live'
+      ? '<span class="pill live">live today</span>'
+      : n.status === 'proposed'
+        ? '<span class="pill proposed">proposed</span>'
+        : '<span class="pill parked">parked</span>';
+
+  function renderTree() {
+    $('tree').innerHTML = CATALOG.map(
+      (n, i) =>
+        (i ? '<div class="join"></div>' : '') +
+        `<button class="node${state.fitted.has(n.id) ? ' fitted' : ''}" data-id="${n.id}" aria-pressed="${
+          state.sel === n.id
+        }"><span class="n">${state.fitted.has(n.id) ? '✓' : i + 1}</span><span><span class="t">${esc(
+          n.name,
+        )}</span><br><span class="s">${esc(n.ladder)}</span></span>${statusPill(n)}</button>`,
+    ).join('');
+  }
+
+  function renderDetail() {
+    const n = CATALOG.find((c) => c.id === state.sel);
+    const on = state.fitted.has(n.id);
+    const at = on ? n.start + 1 : n.start;
+    const steps = n.steps
+      .map((s, i) => {
+        const maybe = n.maybe && n.maybe.includes(i);
+        return `<span class="step${i === at ? ' on' : ''}${maybe ? ' maybe' : ''}">${esc(s)}</span>${
+          maybe ? ' <span class="pill ifwanted">only if he wants it</span>' : ''
+        }`;
+      })
+      .join(' → ');
+    const canFit = n.start + 1 < n.steps.length;
+    $('detail').innerHTML = `
+      <h3>${esc(n.name)} ${statusPill(n)}</h3>
+      ${n.statusNote ? `<p class="note">${esc(n.statusNote)}</p>` : ''}
+      <div class="ladder">${steps}</div>
+      <dl>
+        <dt>Repays</dt><dd>${esc(n.repays)}</dd>
+        <dt>Keeps paying</dt><dd>${esc(n.keepsPaying)}</dd>
+        <dt>Appears</dt><dd>${esc(n.appears)}</dd>
+        <dt>Part waits</dt><dd>${esc(n.waitsLabel)}</dd>
+        <dt>A friend sees</dt><dd>${esc(n.friend)}</dd>
+        <dt>A late joiner sees</dt><dd>${esc(n.late)}</dd>
+        <dt>With ${state.players}</dt><dd>${esc(n.players[state.players])}</dd>
+      </dl>
+      <div class="row">
+        <button class="act" id="fit" ${canFit ? '' : 'disabled'}>${on ? 'Unfit (page only)' : 'Fit it'}</button>
+        <span class="note">Fits are not undone in the game; unfitting here is only for comparing.</span>
+      </div>
+      <h3>${on ? 'What changed down the line' : 'What fitting it would change'}</h3>
+      <ul class="changes${on ? '' : ' off'}">${n.changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
+      ${
+        n.id === 'bed'
+          ? '<div class="box warn">Not re-cast from 16 (review finding 1): starting at 16 brings back the 216 s rim wait for nearly every solo player.</div>'
+          : ''
+      }`;
+    $('fit').onclick = () => {
+      on ? state.fitted.delete(n.id) : state.fitted.add(n.id);
+      render();
+    };
+  }
+
+  function renderMap() {
+    const sel = CATALOG.find((c) => c.id === state.sel);
+    $('marks').innerHTML = Object.entries(PLACES)
+      .map(
+        ([k, [x, y]]) =>
+          `<circle class="mark${sel.waits === k ? ' sel' : ''}" cx="${x}" cy="${y}" r="${sel.waits === k ? 9 : 5}"/>`,
+      )
+      .join('');
+  }
+
+  function renderFork() {
+    $('fork').innerHTML = FORK.map((f) => {
+      const tag =
+        state.fork === null
+          ? '<span class="tag">offered</span>'
+          : state.fork === f.id
+            ? '<span class="tag now">fitted</span>'
+            : '<span class="tag next">next part offered</span>';
+      return `<div class="panel"><h3>${esc(f.name)} ${tag}</h3><p>${esc(f.effect)}</p><p class="note">Repays: ${esc(
+        f.repays,
+      )}</p><button class="ghost" data-fork="${f.id}" ${state.fork ? 'disabled' : ''}>Take this one first</button></div>`;
+    }).join('');
+    const other = FORK.find((f) => f.id !== state.fork);
+    $('forkNote').innerHTML =
+      state.fork === null
+        ? 'Either order is valid. The first accepted press wins for the room; a friend pressing the other one a moment later sees it become next.'
+        : `${esc(other.name)} becomes the next part offered (ring-data: at High Port). <a href="#" id="forkReset">Try the other order</a>`;
+    const r = $('forkReset');
+    if (r)
+      r.onclick = (e) => {
+        e.preventDefault();
+        state.fork = null;
+        renderFork();
+      };
+  }
+
+  function renderTests() {
+    const yes = '<span style="color:var(--live)">✓</span>',
+      no = '<span style="color:var(--warn)">✗</span>';
+    $('tests').innerHTML =
+      '<tr><th>Part</th>' +
+      TESTS.map((t) => `<th>${esc(t)}</th>`).join('') +
+      '</tr>' +
+      CATALOG.map(
+        (n) => `<tr><td>${esc(n.name)}</td>${n.tests.map((t) => `<td>${t ? yes : no}</td>`).join('')}</tr>`,
+      ).join('');
+  }
+
+  function render() {
+    renderTree();
+    renderDetail();
+    renderMap();
+  }
+
+  $('tree').addEventListener('click', (e) => {
+    const b = e.target.closest('.node');
+    if (!b) return;
+    state.sel = b.dataset.id;
+    render();
+  });
+  $('players').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    state.players = +b.dataset.p;
+    for (const x of $('players').children) x.setAttribute('aria-pressed', String(x === b));
+    renderDetail();
+  });
+  $('reset').onclick = () => {
+    state.fitted.clear();
+    state.fork = null;
+    render();
+    renderFork();
+  };
+  $('fork').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fork]');
+    if (!b || state.fork) return;
+    state.fork = b.dataset.fork;
+    renderFork();
+  });
+  render();
+  renderFork();
+  renderTests();
+</script>

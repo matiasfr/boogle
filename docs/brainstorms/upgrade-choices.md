@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-09).**
+> **Status: proposed (2026-11-09).** Revised the same day after the [design review](#design-review-designer-2026-11-09).
 
 # Upgrade choices
 
@@ -9,97 +9,97 @@ tree that is diagetic would be cool since the upgrades are synced across all pla
 went from 16 to 24 as a silent fix (#1280): the power arrived without anyone choosing it.
 
 "Cart table capacity" is read here as **what the cart's bed holds** (`CART.rails`, `CART.load`), the number he was
-reacting to. Its neighbours are the forge rack (24) and the turntable (`SHED_TABLE`), which has no capacity.
+reacting to. Its neighbours are the forge rack (24) and the turntable (`SHED_TABLE`), which has no capacity. Either way,
+its first step stays at 24 or above (review finding 1).
+
+**2D page:** [upgrade-tree.html](../world/upgrade-tree.html), a design aid built from one catalog: each node's
+inconvenience and number, where its part would wait, what friends see, and an order fork.
 
 ## Pitch
 
 Upgrades stop arriving silently: each one waits in the world as a part you can see, beside the machine it changes,
-and one press from anyone fits it for the whole room. The cart's 24-rail bed becomes the first one. The cart starts at
-16, and when Q4 is laid a pair of sideboards leans by the cart's forge stop. Fit them, and the next load leaves heaped
-higher. Once there are two or more parts, a works board in the forge workshop becomes the diegetic tree: a pegboard of
-silhouettes, with fitted parts shown as painted outlines. It serves DESIGN.md **6, Communal world** (every upgrade
-applies to everyone) and **11, Show, don't tell**, under the owner call "Machines show their work physically".
+and one press from anyone fits it for the whole room. The first is **the boiler fit, the "extra engines"**. You have
+just hand-carried stations, station 6's frame says its kit comes by train, and fitting the boiler gets the full upgrade
+treatment: an instant press response, the little guys bolting it on, one flourish for everyone, and a mark that stays
+on the engine. The cart keeps its 24-rail bed. A works board becomes the diegetic tree later, on the unified Home
+station. It serves DESIGN.md **6, Communal world** (every upgrade applies to everyone) and **11, Show, don't tell**,
+under the owner call "Machines show their work physically".
 
 ## Gut question
 
-When you fitted the sideboards, did the next load feel like *your* doing, or like a chore the game made you press?
+When you fitted the boiler, did the first train unload feel like *your* doing, or like a step the game made you take?
 
 ## Best suggestions
 
-1. **The part waits at the machine it changes** (creative). The sideboards stand at the cart's forge stop, glowing
-   like the pack chest, and the little guys bolt them on as the cart rolls in. The press and the bigger load sit in
-   one view, so the power reads as chosen.
-2. **Offer it just before the limit bites** (design). At 16 rails Q4 fits one shipment exactly, and Q5 needs 24. Show
-   the sideboards when Q4 is laid, so the choice answers a need you can already see coming
-   ([upgrade-economy](../research/upgrade-economy.md): an upgrade should repay an inconvenience the player has felt).
+1. **The part waits at the machine it changes** (creative). The boiler's saddles are on the old train, and the little
+   guys bolt it in. The press and the payoff (steam, wheels, the first train) sit in one view.
+2. **Offer it after the limit is felt, and make it keep paying** (design). The [upgrade-economy](../research/upgrade-economy.md)
+   research (recommendation 2) says an upgrade should repay an inconvenience the player has felt, and keep paying. By
+   the boiler you have carried every station's kit by hand, and station 6 (32 logs and 32 rails over 546–742 m) arrives
+   in one train unload. Every later haul pays it again. The cart's bed fails this test: its limit is hit at most once.
 3. **One accepted fact per ladder, with values as tunables** (systems). The rung pattern already exists (`rail.pack`:
-   first accepted press wins, a repeat is a no-op, a late joiner loads it). Add one op, `rail.fit {id}`, that moves a
-   small per-ladder step on `Rail`; the step values (`[16, 24]` for the bed) go in `TUNABLES`.
-4. **Forks are order choices, not exclusive branches** (design, systems). When two parts are offered (a bigger bed or
-   faster wheels), taking one makes the other the next part offered. This is ring-data's `pick` (`trainFirst: boiler |
-   chassis`). Choosing feels like it matters, and no friend's pick takes anything away from you.
+   first accepted press wins, a repeat is a no-op, a late joiner loads it). New parts later go through one op,
+   `rail.fit {id}`, moving a small per-ladder step on `Rail`; the step values go in `TUNABLES`. The boiler needs neither:
+   it is already one accepted fact.
+4. **Forks are order choices, not exclusive branches** (design, systems). When two parts are offered, taking one makes
+   the other the next part offered (ring-data's `pick`, `trainFirst: boiler | chassis`). This is built after the first
+   single choice.
 5. **A works board for the tree, once there is a tree** (creative). Fitted parts leave a painted outline and show on
-   the machine; the rest stay under dust sheets, as on the curio shelf. A late joiner reads the room's choices at a
-   glance. References: Valheim's Sacrificial Stones, a lasting record you walk back to; Spiritfarer, where the boat
-   physically grows with each building.
-6. **One catalog drives the 2D page and the game** (systems). Each entry gives its id, ladder, step, when it appears and
-   where its part waits. `dev/economy/ring-data.ts` `LADDERS` already has `carry`, `wagon`, `trains` and `speed`, so
-   adding a tree branch means adding data, not code.
+   the machine; the rest stay under dust sheets, as on the curio shelf. Its spot waits for the unified Home station.
+   References: Valheim's Sacrificial Stones, a lasting record you walk back to; Spiritfarer, where the boat physically
+   grows with each building.
+6. **One catalog drives the 2D page and the game** (systems). Each entry gives its id, ladder, step values, when it
+   appears, where its part waits, what it repays, and what friends see. `dev/economy/ring-data.ts` `LADDERS` already has
+   `carry`, `wagon`, `trains` and `speed`.
 
 **Tensions.**
 
 - **A menu reachable from anywhere, or a place in the world?** A menu is the cheapest to build and is always within
   reach. But one player could then change everyone's machine where nobody sees it, which goes against Show, don't tell,
   and "a menu purchase followed by a sparkle is insufficient" (upgrade-economy, from the machines call).
-  Recommendation: choose in the world, and offer no menu. Pause can show a read-only list later.
+  Recommendation: choose in the world, with no menu. Pause can show a read-only list later.
 - **One hub or the machine's side?** The hub gives the tree a place, and the machine's side gives the press an instant
-  result. The Roundhouse would be the natural hub, but it opens only after the pier, which is too late for the cart.
-  Recommendation: the first part goes at the cart's stop; the board goes in the forge workshop once there are two or
-  more parts; engine parts go in the Roundhouse when it opens.
-- **A choice, or the grind coming back?** If nobody fits the sideboards, Q5 is the 16-rail grind again.
-  Recommendation: offer them early (at Q4 laid), put them on the path you walk to the cart, and accept a press once.
-  The fix stays live until the choice ships.
+  result. Recommendation: parts go at their machine; the board's spot waits for the Home station pick.
+- **A part you can skip.** If nothing lets you skip it unknowingly, one option can still feel like power. If you can
+  skip it without seeing the cost, it can't (review finding 3: he skipped the boiler and laid station 6 by hand).
 
 ## Shape
 
-- **Sync:** lockstep, server-owned, one room-wide accepted fact per ladder on `Rail` (like `pack`, `axe`, `hook`).
-  The press shows its response locally at once ("Input gets instant feedback"); the fitted state follows from
-  acceptance. Two presses on the same part are one fit. On a fork, the first accepted press wins and the losing press
-  settles to the winner's part. Fits are not undone.
-- **Reuses:** `rail.pack` in `src/sim/railway-systems.ts` and its chest view; `CART` in `src/sim/railway-cart.ts`, read
-  through one function (`cartCycleTicks` and the away credit read it too); `TUNABLES` in `src/sim/tune.ts`; the
-  co-op abilities flourish for friends who weren't there (option E); `LADDERS` and `pick` in `ring-data.ts`.
-- **Smallest first build:** (a) a 2D HTML page of the tree from the catalog: what each part changes, when it appears,
-  and what two friends see when one fits it (required by "Visualize in 2D HTML first"); (b) in game, one part: the
-  sideboards, the bed going from 16 to 24, at the forge stop from Q4 laid. No board, no fork and no cost yet.
-- **Risks:** the cart's defaults change, so a `WORLD_NS` bump is likely (never mid-session). The board must not become
-  a checklist. `railway-systems.ts` is a hotspot file. A part's visual has to be readable on a phone from the normal
-  approach.
+- **Sync:** lockstep, server-owned, one room-wide accepted fact per part on `Rail` (like `pack`, `axe`, `hook`, and the
+  boiler today). The press shows its response locally at once ("Input gets instant feedback"); the fitted state
+  follows from acceptance. Two presses on the same part are one fit. Fits are not undone.
+- **Reuses:** the boiler's existing fit and wake; the co-op abilities flourish for friends who weren't there
+  (option E); `TUNABLES` in `src/sim/tune.ts` for later ladders; `LADDERS` and `pick` in `ring-data.ts`.
+- **Smallest first build:** (a) the 2D tree page ([upgrade-tree.html](../world/upgrade-tree.html)); (b) in the game,
+  the boiler fit staged as the first upgrade choice, inside the boiler work already queued (the rope haul and the
+  station-6 order fix). Station 6's frame says plainly that its kit comes by train. The fit gets an instant local
+  response, the little guys bolting it on, a one-time flourish for both players, and a mark that stays on the engine.
+  No new op, no `CART` change, no `WORLD_NS` bump. (c) If the owner still wants the bed as a choice, 24 stays the floor
+  and the part is a step above it; otherwise cut it.
+- **Risks:** the board must not become a checklist; the boiler work is already queued, so this rides on it rather than
+  forking it; a part's visual must read on a phone from the normal approach.
 
 ## Done means
 
-- `npm run look -- --rail-seed q4-done`, game camera at the cart's forge stop: the sideboards stand there, readable
-  without text, with the fit prompt in reach.
-- The same seed with `--eval` firing `rail.fit` then waiting one cart cycle: the cart leaves the forge carrying 24
-  rails, with a visibly taller load than a 16-rail still at `--rail-seed q4-stocked`; `CART` reads give 24.
-- `--rail-seed q5-stocked` without the fit: the bed holds 16 and the rack shows **More coming**. Q5 still finishes.
-- `--players 2`: A fits; B gets the flourish once where they stand and sees the sideboards on the passing cart. B
-  reloads and gets no second flourish. Both press within the same tick: one fit is accepted and both screens agree.
+- `npm run look -- --rail-seed q5-done`, with the boiler waiting: station 6's frame reads as "kit comes by train" from the normal approach,
+  in a game-camera still.
+- The same seed with `--eval` hauling the boiler to the old train and pressing the fit: the local response starts on the press frame (before acceptance), the little guys bolt the
+  boiler on, and the mark stays on the engine after a reload.
+- The first train unload at station 6 brings its kit in one stop; a timer shows it against the hand haul.
+- `--players 2`: A fits; B gets the flourish once where they stand. B reloads and gets no second flourish. Both press
+  within the same tick: one fit is accepted, and both screens agree.
 
 Whether choosing it feels powerful is the playtest's question.
 
 ## Open questions
 
-1. Where are choices made? **Recommended: in the world beside the machine; a works board in the forge workshop once
-   there are two or more parts; no menu reachable from anywhere.** Answer: ___
-2. Re-cast the 24-rail cart as the first choice (the cart starts at 16, sideboards appear when Q4 is laid)?
-   **Recommended: yes.** Answer: ___
-3. Forks: order choices (the other part comes next) or exclusive branches? **Recommended: order choices.**
-   Answer: ___
-4. Who may fit, and can it be undone? **Recommended: anyone; the first accepted press counts for the room; no undo.**
-   Answer: ___
-5. What does a part cost? **Recommended: free for the first build, one press. A price from the shared wallet waits
-   until the wallet ships ([money](money.md) is still proposed).** Answer: ___
+1. Where are choices made? **Recommended: at the machine the part changes; a works board later on the unified Home
+   station; no menu from anywhere, and Pause can show a read-only list.** Answer: ___
+2. Re-cast the 24-rail cart as the first choice, starting at 16? **Recommended: no. Keep 24 and make the boiler fit the
+   first upgrade choice.** Answer: ___
+3. Forks? **Recommended: order choices, built after the first single choice.** Answer: ___
+4. "Cart table capacity": the cart's bed, or the forge rack beside the turntable? **Recommended: the bed. Either way its
+   first step stays at 24 or above.** Answer: ___
 
 ## Parked
 
@@ -107,6 +107,50 @@ Whether choosing it feels powerful is the playtest's question.
   `speed`).
 - A bigger footing wagon (`WORKS.wagonCap` 6) and a faster kiln (`castTicks` 80).
 - Pack carry beyond 16 (ring-data `carry`: 24, 32) as a back part on the board.
-- The little guys straining at the heavier cart for one beat before setting off (after a yes).
+- A cart bed above 24, only if the owner wants it.
 - A museum table glow on fitted machines; a read-only list in Pause.
 - Material costs (rails into a part, like the cradle) if free fits feel unearned.
+
+## Design review (designer, 2026-11-09)
+
+The brief above is corrected where these findings contradict it (Pitch, suggestion 2, Shape's smallest first build,
+Done means and the open questions).
+
+1. **Must change before building: starting the cart back at 16 brings the grind back for nearly every solo player.**
+   The bed only counts for one shipment in the whole game: Q4 needs 16, Q5 needs 24, and Q6 comes by train. When Q4 is
+   laid, the cart leaves at once and reaches the forge stop in about 25 s, where the rack is already full, and leaves
+   3 s later. The player is at the rim, about 286 m (about 50 s) away, and their next goal, the sea switch at the
+   summit, is the other way. So a typical solo player fits it too late: Q5's first load has gone with 16, and the
+   other 8 need a second trip anyway. A player who never notices the part gets back the 216 s at the rim from
+   [home-flow](../reviews/home-flow.md#1-three-and-a-half-minutes-standing-at-the-rim-for-q5) finding 1, the evidence
+   behind #1280. "On the path you walk to the cart" doesn't hold: the cart comes to you. 16 is Place's value, and it
+   fails "Port from Place only what still fits".
+2. **It repeats the "Call cart to forge" mistake.** The sideboards would stand where that handle stood (the owner cut
+   it because its purpose wasn't visible), and the payoff, a heaped cart, is seen 270 m away at the rim. So "the press
+   and the bigger load in one view" doesn't hold.
+3. **The 9 November session already ran this experiment with the boiler**, an in-world, one-option upgrade to "extra
+   engines" (his words). Nothing made him fit it, so he funded and laid station 6 by hand. A part you can skip, with no
+   cost of skipping in view, doesn't feel like power. Upgrade-economy recommendation 2, read the right way round: an
+   upgrade should repay an inconvenience the player has felt, and keep paying. The bed's limit is hit once at most.
+4. **The works board's spot overlaps the owner's "Home gets one coherent station" decision**
+   ([decisions](../decisions.md#decided), 9 November). Don't fix it to the forge workshop: it belongs on the unified
+   station, sited after he picks a layout.
+5. **One option can feel powerful, and no fork is needed to test it** ("even if there's one action"). The feeling
+   needs four things: you have felt the limit before the part appears, the press gets a big local response, you see
+   the payoff within seconds, and it keeps showing up afterwards. The bed misses two of those. The boiler meets all of
+   them, once nothing lets you skip it unknowingly.
+
+**Smallest first build the designer approves:** (a) the 2D tree page now; (b) in the game, stage the boiler fit as the
+first upgrade choice inside the boiler work already queued (the rope haul and the station-6 order fix). Station 6's
+frame says plainly that its kit comes by train, and the fit gets the upgrade treatment: an instant local press
+response, the little guys bolting it on, a one-time flourish for both players, and a mark that stays on the engine. No
+new op, no `CART` change, no `WORLD_NS` bump. (c) If the owner still wants the bed as a choice, keep 24 as the floor
+and make the part a step above it, or cut it.
+
+**Cut:** the cart starting at 16 (the old open question 2, and Done-means checks 2 and 3).
+
+**Calls, as sorted:** logged in [agent-calls](../agent-calls.md) (9 November). New, with the owner: choices in the
+world with no menu; the cart is not re-cast and 24 stays. New: forks are order choices, later; the board's spot waits
+for the Home station pick. Defaults: the part glows like the pack chest, the little guys bolt it on, no undo, free
+until the wallet ships, the first accepted press wins a fork, painted outlines and dust sheets, a late joiner's
+one-time flourish, and a read-only Pause list later.
