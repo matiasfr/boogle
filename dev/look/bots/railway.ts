@@ -769,6 +769,19 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
           tickHashes.set(state.step, state.hash);
       }, 50)
     : 0;
+  // A station box (Q2-Q6) opens when you walk into it, and the route passes some. Its card holds you until you put it
+  // away, as a player would: wait the card's readable time, then press E. The route's own cards keep dismiss().
+  let boxCardAt = 0;
+  setInterval(() => {
+    const reward = inspectRailway()?.reward;
+    if (!reward?.stationBoxes.showing || !reward.showing) return void (boxCardAt = 0);
+    boxCardAt ||= performance.now();
+    if (performance.now() - boxCardAt < 1600) return;
+    boxCardAt = 0;
+    bot.note(`put away the ${reward.stationBoxes.showing} from a station box`);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+  }, 100);
   const logHashes = () =>
     console.log(`RAILWAY TICKHASH ${JSON.stringify({ player: player ?? 'solo', hashes: [...tickHashes] })}`);
   const mark = (name: string) => {
