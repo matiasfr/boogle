@@ -1,5 +1,9 @@
 # Fill the beach with cheap, honest critters
 
+> **Verdict:** Lots of cheap reactive critters, at most two with real AI.
+> **Top recommendations:** 1. Fill the island with many cheap cosmetic critters that react to the ball. 2. Give at most two creatures real AI; do not simulate an ecosystem.
+> **Status:** reference.
+
 Boogle should fill its island with lots of critters that are cheap, cosmetic, and react to the ball, plus at most two creatures with real AI. It should not try to simulate an ecosystem. The research points to a four-tier authority model. Fish, gulls and fireflies are purely local cosmetic critters. Crabs follow a shared, seeded spawn schedule but move locally. A few host-simulated characters (the Boogler, a giant-crab event) are published in presence. Integer sim state is used only for what changes the world or must persist, such as pet affinity. Movement comes from Craig Reynolds' boids and steering behaviours, which still beat anything fancier at this scale ([Reynolds](https://www.red3d.com/cwr/boids/)). Decisions come from a small utility layer with inertia, or simply from the shared 20-minute sky clock ([Game AI Pro ch.9](http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter09_An_Introduction_to_Utility_Theory.pdf)). Rendering uses one InstancedMesh per species, animated in the vertex shader ([Godot docs](https://docs.godotengine.org/en/3.1/tutorials/3d/vertex_animation/animating_thousands_of_fish.html)). The priorities, in order: a fish school that lives in water players dig and scatters when the ball splashes; gulls that burst off the sand; night crabs from shared burrows; a smarter Boogler who chases the ball; and a personal, tameable companion. Predator–prey population dynamics are the one idea to defer. They oscillate, they need stabilisers, and they create loss states that clash with "toys before chores" and "only the world is the antagonist".
 
 ## Three rules from 1987 still move every school and flock you need

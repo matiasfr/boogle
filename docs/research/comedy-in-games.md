@@ -1,5 +1,9 @@
 # Comedy in games: how games make people laugh, together
 
+> **Verdict:** Clean controls, messy outcomes, cheap failure make co-op laughter.
+> **Top recommendations:** 1. Clean controls, messy outcomes. 2. Failure has to be cheap or it stops being funny. 3. Script the setup, never the punchline.
+> **Status:** reference.
+
 *Research report, 1 November 2026. How games produce laughter: emergent physics comedy (Goat Simulator, Gang Beasts, Human Fall Flat, Octodad, QWOP, Totally Accurate Battle Simulator, Wobbly Life, Fall Guys, Peak, R.E.P.O.), systemic comedy (Untitled Goose Game, Hitman, Tears of the Kingdom), comic timing and staging (Portal, Psychonauts, Monkey Island, Thank Goodness You're Here!, Frog Detective, The Stanley Parable), comedic NPCs, proximity voice (Lethal Company, Content Warning), slapstick animation (anticipation, exaggeration, squash and stretch, hit-stop), sound, and why forced comedy fails. For The Boogler, opening-day ceremonies with physics props, wagon jump-offs and soapbox wipeouts. Builds on [big-walk-and-communal-endings.md](big-walk-and-communal-endings.md) (Goose's slapstick-cliché list, music as narrator, mundane stakes), [character-controller-feel.md](character-controller-feel.md) (pratfalls as tiny synced events, not ragdolls) and [vehicle-feel.md](vehicle-feel.md) §5 (crash as a show, no cost per crash); those findings are not repeated. Story is parked ([decisions.md](../decisions.md)): this report recommends mechanisms and craft, not plot, and makes no design decisions.*
 
 **Markers.** *Verified*: the page was fetched and read. *Secondary*: known only from search-result summaries, reviews or wikis, not read at the developer's own words. *Derived*: worked out for Boogle from the sources and the code, not stated by anyone.

@@ -1,5 +1,9 @@
 # Frozen demo sky comparison, 3 November 2026
 
+> **Verdict:** Frozen demo sky comparison, a viewing experiment.
+> **Top recommendations:** 1. Reuse the demo's 256×64 transmittance, 32×32 multiple scattering and 192×108 sky-view CPU LUTs, then six. 2. Derive the frozen sun from the game's existing day arc so toon/demo captures have identical directions. 3. Use that cube for background, environment and directional fog.
+> **Status:** reference. See [skybox](skybox.md).
+
 Serves DESIGN.md **Show, don't tell** and **Small and readable**. Local only. Owner decision:
 [Look](../decisions.md#look). This is a viewing experiment, not the final sky integration.
 

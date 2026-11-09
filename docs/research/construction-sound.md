@@ -1,5 +1,9 @@
 # Construction sound: materials, machines and a living railway
 
+> **Verdict:** Railway should sound like matter moved into place: logs, rails, cranes, trains.
+> **Top recommendations:** 1. Make material contact the first sound milestone. 2. Trigger sound from the visible accepted action. 3. Design variation for the fortieth sleeper.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 2 November 2026. How Boogle's logs, sleepers, rails, cranes, crystal supports, trains and inhabited places should sound. Live web research and inspection of checkout `5f8b9009`, grounded in the 1 November listening audit and the new railway direction. Recommendations and listening experiments, not an implementation or new owner decisions._
 
 **Verification.** **[V]** means fetched primary text supports the statement; an interview establishes the speaker's account, not access to the game's code. **[S]** means secondary, translated/reproduced testimony, search-only text or a video index whose underlying demonstration was not watched. **[C]** means inspected repository code or recorded owner decision. **[H]** means a hypothesis, proposed setting or calculation. All uncited design prescriptions and numerical budgets below are **[H]**, not measured properties of the reference games or an iPad. No games, audio examples or GDC videos were auditioned in this research; no device performance or listening result is claimed.

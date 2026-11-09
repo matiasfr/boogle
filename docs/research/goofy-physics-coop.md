@@ -1,5 +1,9 @@
 # Goofy physics co-op: helping, mishaps and coming back
 
+> **Verdict:** Co-op parcel relay and golf hole first, picnic tray third.
+> **Top recommendations:** 1. Start with a cooperative parcel relay. 2. Then a cooperative golf hole with adjustable ramps. 3. Keep a shared wobbling picnic tray as the third experiment.
+> **Status:** open. No decision cites it yet.
+
 _2 November 2026. Research for Boogle's co-op-only mini-games, cosmetic boxes and the old island as an endgame hangout. Live primary-source search, developer interviews, published research abstracts and a code audit at `3280c6ff`; recommendations, not implemented or playtested behaviour. Read the research index and both prerequisite reports before this pass. Sources are linked beside claims; fetched pages support the findings unless explicitly marked abstract-only. Numbers proposed for Boogle are starting hypotheses, not measurements from the reference games._
 
 ## Summary

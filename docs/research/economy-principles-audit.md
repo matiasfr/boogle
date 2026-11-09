@@ -1,5 +1,9 @@
 # Principles audit: the shared wallet and the paused world
 
+> **Verdict:** Shared wallet and paused world need amended principles; approved as worded.
+> **Top recommendations:** 1. Amend the principles for a shared wallet, shared progression and a paused world. 2. Annotate older reports that recommend a spendable personal wallet.
+> **Status:** adopted. See [Progress and rewards](../decisions.md#progress-and-rewards).
+
 _6 November 2026; **approved by the owner as worded the same day** ([economy principles amended](../decisions.md#progress-and-rewards)). This audit is for the owner's answers to the [ring-and-economy brief](../brainstorms/ring-and-economy.md):_
 
 - _a shared wallet anyone may spend;_

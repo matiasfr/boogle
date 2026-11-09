@@ -1,5 +1,9 @@
 # Why make the next trip?
 
+> **Verdict:** Bring routine rail supply to the frontier so the next load has a consequence.
+> **Top recommendations:** 1. Try frontier supply first on line two, holding costs and carrying capacity fixed.
+> **Status:** adopted. See [plan little-guys-rails](../plans/little-guys-rails.md).
+
 _Research report, 2 November 2026. Motivation after carrying already feels like building: repeated trips, changing routes and tools, useful automation, anticipation, surprises and visible consequences. Live-source research across fifteen game references, applied to the second-round `?proto=place` playtest. Recommendations are hypotheses for small comparisons, not owner decisions or an implementation plan._
 
 **Evidence markers.** **[V]** means the linked repository file, primary page or developer statement was fetched and read. An interview verifies what its speaker says, not a causal effect on all players. **[S]** means secondary evidence or a search excerpt; the Satisfactory onboarding wiki could not be opened and is labelled accordingly. **[I]** means interpretation, arithmetic or a proposed Boogle experiment. Commercial games were not played for this report; no videos were watched. The incremental-game GDC source is the slide deck, not an observed talk. No new Boogle timing run was made.

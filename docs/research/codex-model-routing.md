@@ -1,5 +1,9 @@
 # Route Codex work by uncertainty, then measure completed jobs
 
+> **Verdict:** Route Codex by uncertainty; replaced by dev/models.ts as the single model source.
+> **Top recommendations:** 1. Route by remaining uncertainty and acceptance risk. 2. Pass model and effort explicitly. 3. Give every worker a completion contract and an honest stop rule.
+> **Status:** superseded by `dev/models.ts`.
+
 _2026-11-03. Model and reasoning-effort selection for Boogle on Codex CLI 0.166.0. Live official documentation, an authenticated CLI inventory, independent API benchmarks, and nine local jobs were inspected. Repository references use this worktree at `2086f12c`; run evidence lives in the main checkout. This is a routing recommendation, not a launcher/configuration change or a new gameplay plan. All external sources were accessed on **2026-11-03**; publication dates appear where available. “Live, undated” means the page supplied no publication date, not that its contents are timeless._
 
 **Evidence labels:** **[O]** official documentation or OpenAI's own evaluation/claim; **[I]** independent evaluator's own measurements; **[L]** inspected local CLI, code or run record; **[A]** an operator's anecdote; **[R]** recommendation/inference, not a measured result. Reading a report establishes what it recorded, not independent reproduction of its gameplay or visual judgment. No model trials, game captures or GPU benchmarks were run for this research.

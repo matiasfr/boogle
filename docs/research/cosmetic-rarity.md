@@ -1,5 +1,9 @@
 # Cosmetic collecting and rarity, with no real money
 
+> **Verdict:** Three rarity tiers, 48-item wardrobe, generous saved guarantees, no real money.
+> **Top recommendations:** 1. Use three tiers with a generous upward surprise: Common boxes 60/30/10. 2. Guarantee the first Wonder by result three and later Wonders by result six, saving one personal counter across sessions. 3. Prevent same-tier repeats while an eligible item is unowned; turn three exhausted-tier results into a missing-item choice.
+> **Status:** open. See [rewards-rarity-gacha](rewards-rarity-gacha.md).
+
 _Research report, 2 November 2026. Earned boxes, personal wardrobes, readable rarity, finite collections and inexpensive cosmetic production for an approximately eight-hour Boogle campaign. Live web research and a code audit at `cec137f6`; recommendations, not implemented behaviour or an approved build plan. Serves **DESIGN.md 6: Communal world, personal rewards**._
 
 **Recommendation:** start with three tiers, a 48-item campaign wardrobe, generous saved guarantees and no useless duplicate inventory. Give each friend their own result from the same shared accomplishment. Make the result immediately wearable and recognizable in motion. For round 4, prove nine character cosmetics; train customization follows the roundhouse.

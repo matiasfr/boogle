@@ -1,5 +1,9 @@
 # Grow every room its own island, in integers
 
+> **Verdict:** Seed-deterministic integer island generation per room; not adopted for authored islands.
+> **Top recommendations:** 1. Build each room island from integer fields, splines and cellular automata so peers agree.
+> **Status:** reference.
+
 Boogle can generate a fresh, seed-deterministic island per room cheaply and safely if it builds the whole pipeline from integer fields and integer cellular automata: a falloff-shaped "continentalness" field passed through a hand-tuned lookup curve (Minecraft 1.18's idea at toy scale), a short pass of Jacob Olsen's speed-optimised thermal erosion, integer Priority-Flood to decide lakes and guarantee drainage, and a spring placed at the head of the longest drainage path so the existing water sim produces a stream that reaches the sea. At Boogle's 129 x 129 grid, a prototype of exactly that pipeline ran in **about 7 ms warm (21 ms cold) on an Apple M1 Max**, so even a slow phone finishes in well under a quarter second, once, at room join, with no worker. The real risks are not speed but determinism and persistence: transcendental `Math` functions are not reproducible across browsers ([MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math)), and generator edits silently change maps ([mapgen4](https://www.redblobgames.com/maps/mapgen4/)), which would shift terrain under a persistent garden. Heavier techniques the brief names (particle or pipe-model hydraulic erosion, stream-power uplift, wave function collapse) are either float-bound, built for terrains a thousand times larger, or a poor fit for a smooth diggable heightfield; WFC is worth keeping only for optional prop clusters. The rest of this report shows how the references support that design, where it bends DESIGN.md, and what to build first.
 
 ## Three shaped fields beat clever noise for a 160-metre island

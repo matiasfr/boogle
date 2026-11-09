@@ -1,5 +1,9 @@
 # Research map: what still serves Boogle
 
+> **Verdict:** Map of what research still serves Boogle; replaced by this index.
+> **Top recommendations:** 1. Bring both rails and timber to the next frontier station. 2. Extend the forge's visible cause and effect into a solid town district. 3. Give the little guys visible jobs without a worker economy.
+> **Status:** superseded by this index ([README](README.md)).
+
 _2 November 2026. Offline synthesis of the research present at `a8578f5b`: 69 reports plus the historical `0.1/SETTLED.md` record. Includes `0.1/`; excludes `notes/`, `_primary-source-notes.md`, the directory index and this map. No new web research or runtime validation. Source reports remain unchanged; their verification limits and dated measurements still apply._
 
 ## Ten valuable unused ideas: recommendations for Boogle

@@ -1,5 +1,9 @@
 # West-cove pilot assessment — 5 November 2026
 
+> **Verdict:** First west-cove assessment; status replaced by the follow-up.
+> **Top recommendations:** none; first-pass assessment, status replaced by the follow-up.
+> **Status:** superseded by [terrain-pilot-followup](terrain-pilot-followup.md).
+
 > Historical first-pass assessment. The [coordinator follow-up](terrain-pilot-followup.md) supersedes its current status,
 > geometry counts and stopping limitation. Earlier captures and failed runs remain preserved below.
 

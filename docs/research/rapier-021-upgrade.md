@@ -1,5 +1,9 @@
 # Rapier 0.21.0 upgrade assessment
 
+> **Verdict:** Rapier 0.21.0 upgrade; owner accepted the feel.
+> **Top recommendations:** none; upgrade record, owner accepted the feel.
+> **Status:** adopted.
+
 Updated 4 November 2026. The owner played the shipped Rapier 0.21 and accepted its feel for now. Accepted differences include ball rebounds, the sea crest, lighthouse stairs, steep-corner support, running-glide entry and one jump height on all ground. Old baseline: `75526a2a`; the parity investigation below records the remaining measured differences, not a claim of numerical equivalence.
 
 ## API and upstream changes

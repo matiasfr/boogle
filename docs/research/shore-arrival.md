@@ -1,5 +1,9 @@
 # Shore arrival: the first two minutes after landing
 
+> **Verdict:** West-shore cove to village in 25 to 35 seconds.
+> **Top recommendations:** 1. Compare west-cove A with today's village landing first. 2. Teach move/look, then one forgiving jump; make sprint and unlocked glide optional. 3. Let a little guy greet in passing: “Machine's asleep.
+> **Status:** partly adopted. See [plan terrain-pilot](../plans/terrain-pilot.md), [plan water-graduation](../plans/water-graduation.md).
+
 _Research report, 4 November 2026. Ten opening routes, first NPC asks, shore hazards, co-op arrivals and three placements for round 4. Builds on [wordless-onboarding.md](wordless-onboarding.md), especially sections 1–2 (teaching and lures), 4 (browser pacing) and 5 (joining friends), rather than repeating them. Live searches and page reads; repository facts rechecked at `392ee52d` after review (original inspection `45d042cd`). Recommendations only; the owner's shore idea is not a decision. Serves DESIGN.md 7 (Telegraph everything), 8 (Designed for drop-in, drop-out), 10 (Slapstick over precision) and 11 (Show, don't tell)._
 
 ## Summary

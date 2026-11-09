@@ -1,5 +1,9 @@
 # Chosen times of day for the new sea and sky
 
+> **Verdict:** Prove one prepared evening at a finished line with two authored lighting states.
+> **Top recommendations:** 1. Author named moments, not a clock. 2. Treat each look as a coherent lighting package. 3. Make the first proof two loading-prepared states and a fade.
+> **Status:** open. See [Look](../decisions.md#look).
+
 _4 November 2026. Research and proposal at `906ddad4026e2131eacbb99190e1f6035edc6485`, three.js 0.187.0. Live primary-source research, focused source inspection and a Mac CPU measurement; no game-source changes. **[L]** inspected local code/decisions; **[P]** primary documentation or developer account; **[R]** public reconstruction, not verified against the shipped binary; **[M]** measurement in this session; **[H]** historical report; **[E]** estimate; **[D]** proposal. Not tested on a device: no physical iPad/iPhone test. The requested browser broker was unavailable; no new GPU, transition or visual acceptance is claimed._
 
 **Recommendation: prove one prepared evening at a finished line, after the current replay/default-water work, using two authored lighting states and a brief fade. Keep late morning as the everyday look.** Start with both states prepared behind loading, share the meaningful milestone rather than a continuously advancing clock, and leave a visible sky blend for a second proof. A true night is a separate content-and-lighting task. This is a proposal for the owner, not approval to implement or extend water graduation.

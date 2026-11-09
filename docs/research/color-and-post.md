@@ -1,5 +1,9 @@
 # Colour and post: a sunny toy world
 
+> **Verdict:** Calibrate one sunny look under AgX; replaced by metered Neutral and fixed exposure.
+> **Top recommendations:** 1. Calibrate one outdoor look. 2. Repair material intent before post. 3. Use one output owner: linear HDR scene → underwater/fog composite → exposure/white balance → HDR bloom → AgX → gentle.
+> **Status:** superseded by [color-sources](color-sources.md); see [Look](../decisions.md#look).
+
 3 November 2026. Research recommendation, **not an approved renderer change**. Serves DESIGN.md **Show, don't tell**, **Telegraph everything**, and **Small and readable**.
 
 **Keep the frozen late-morning demo sky and water AgX; fix radiance/exposure and the material palette, then add a restrained grade and bloom.** A more saturated curve alone does not make this world sunny. Keep honey timber, warm cream/tan land, cyan shallows and blue distance; reserve stronger reds/purples/yellows for toys and feedback. Preserve the Buddy's Castle Story **Bricktrons-like proportions and soft shoulders, without rim light**, as the [owner decided](../decisions.md#characters-and-story).

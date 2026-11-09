@@ -1,5 +1,9 @@
 # GPU failure recovery, 5 November 2026
 
+> **Verdict:** GPU failure recovery that does not stop play on every uncaptured error.
+> **Top recommendations:** none; record of the GPU failure recovery work.
+> **Status:** adopted. See [plan round-4-notes](../plans/round-4-notes.md).
+
 Local work on `codex/gpu-recovery`, under the owner's early-start exception. Not pushed or shipped.
 Serves DESIGN.md **Show, don't tell**, **Leave something for the next visitor**, and **Small and readable**.
 

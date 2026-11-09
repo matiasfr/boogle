@@ -1,5 +1,9 @@
 # Texturing: procedural tiles first, Meshy only as a drafting source
 
+> **Verdict:** Procedural tiles baked to small textures; Meshy only as a drafting source.
+> **Top recommendations:** 1. Terrain rock and cliff faces: the largest surfaces on screen. 2. Wood: logs, rails, sleepers, station frames. 3. Turf, sand and soil edges: already covered by the terrain-texturing plan.
+> **Status:** adopted. See [Look](../decisions.md#look).
+
 _6 November 2026. Research only for the owner's question: should Boogle texture its surfaces procedurally, or generate reusable textures with Meshy? Source inspected at `224747fb` with installed three r187; live Meshy, Khronos, three.js and developer sources read today. Confidence tags: **[H]** read in source or measured here; **[M]** inferred from primary sources or partial evidence; **[L]** estimate, untested. No Meshy credits or paid API were used. Not tested on a device._
 
 **Status (6 November):** the owner chose option C after the timber proof ([decision](../decisions.md#current-decision-index)). Wood is now the first shared family: [wood.ts](../../src/render/wood.ts), baked at load through [baked-tile.ts](../../src/render/baked-tile.ts), with seeded jittered knots and per-piece offsets. The proof's flag, KTX2 tiles and recipes were not merged.

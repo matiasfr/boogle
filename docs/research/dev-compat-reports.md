@@ -1,5 +1,9 @@
 # Development report compatibility inventory — 5 November 2026
 
+> **Verdict:** Report-endpoint compatibility inventory, nothing deleted.
+> **Top recommendations:** none; inventory of what was kept or cut under the "No old builds in development" call.
+> **Status:** adopted.
+
 Implements the owner's "No old builds in development" call. Principle: **Small and readable**.
 
 | Machinery | Decision | Reason |

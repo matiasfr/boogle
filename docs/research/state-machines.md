@@ -1,5 +1,9 @@
 # State machines: transitions, recovery and acceptance
 
+> **Verdict:** State machine transitions and recovery audit ledger.
+> **Top recommendations:** none; audit ledger of state transitions and recovery.
+> **Status:** reference. See [state-ownership-audit](state-ownership-audit.md).
+
 _6 November 2026. Audit baseline `816068efcb6d5a9088c001001bec3fe2f8a18e3b`; current worktree only. This document is the inventory and finding ledger. Source links refer to this branch. The initial audit used no external network; the review follow-up fetched origin/main as explicitly requested. No running-game observations._
 
 Use [the ownership audit (#899)](state-ownership-audit.md#complete-player-facing-state-inventory) for ownership and persistence classifications. Its historical findings are leads, not current reproductions. This audit keeps existing owners and distinguishes queued intent, accepted work, applied state and durable checkpoints.

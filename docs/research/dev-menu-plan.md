@@ -1,5 +1,9 @@
 # A Dev menu for fast live playtests
 
+> **Verdict:** One opt-in Dev page in the pause menu, water tuning first.
+> **Top recommendations:** 1. Mount Water as the first tool. 2. Make “Go to” a named, reversible test action. 3. Add a Local camera tool with one-click return.
+> **Status:** adopted. See [plan dev-menu](../plans/dev-menu.md).
+
 _2026-11-03. Research and recommendation, not implementation approval. Code audited at `9b828d68`; live web sources below. **[V]** means source text/code read, **[S]** means secondary account or indexed abstract only, **[D]** means a Boogle recommendation. No game or device test performed._
 
 **Build one opt-in Dev page inside the existing pause menu, with eight tools below.** Water tuning is its first plug-in, delivered by the separate water track. Prioritize getting to a mechanic, seeing its state, and copying enough context for an agent to reproduce it. Keep cheats in disposable tests. This serves **Toys before chores**, **Clear authority**, and **Small and readable**.

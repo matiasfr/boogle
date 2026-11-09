@@ -1,5 +1,9 @@
 # Solo design pass: twelve small choices
 
+> **Verdict:** Make existing relationships visible; separate finds from keys.
+> **Top recommendations:** 1. Make existing relationships visible before adding systems. 2. Separate finds from keys. 3. Show what construction is waiting for.
+> **Status:** partly adopted. See [plan track-layer-machine](../plans/track-layer-machine.md), [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Research report, 5 November 2026. Proposals from the owner's 4 November solo iPhone run, checked against checkout `65f7b6a4` and live primary sources. Documentation only; no game changes or new playtest._
 
 **Recommendation:** make the existing relationships visible before adding systems. Separate finds from keys, show what construction is waiting for, and make boarding and rewards easy to read. Change the great-tree order explicitly; account for every regenerated resource.

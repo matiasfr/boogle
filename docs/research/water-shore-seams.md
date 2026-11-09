@@ -1,5 +1,9 @@
 # Shore seam diagnosis
 
+> **Verdict:** Shore seam diagnosis after the shore-water branch.
+> **Top recommendations:** 1. Wrong-side water faces: Ultra Water's OceanSurface.js:422 camera-side discard was absent. 2. Pale home shards: they remain when the ocean mesh is hidden and disappear when receiver roughness alone. 3. Place's displaced bank: its origin is correct (bounds x 740…1520, z −280…260), its 1024 m core has 2 m.
+> **Status:** reference.
+
 3 November 2026, `codex/water-shore-seams`. DESIGN.md: **Show, don't tell**; **Small and readable**.
 The required `codex/shore-water` branch was fast-forwarded first, to `cc9a85b6`. Baselines below include its
 partial `V.y < 0` underside repair. This supersedes the earlier all-angle implication in

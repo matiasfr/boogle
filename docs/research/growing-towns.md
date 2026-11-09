@@ -1,5 +1,9 @@
 # Growing towns
 
+> **Verdict:** Each cargo improves a named district; author the street skeleton.
+> **Top recommendations:** 1. Make each cargo improve a named district. 2. Author the street skeleton and constrain procedural infill. 3. Keep structural growth, era unlocks and town identity separate.
+> **Status:** partly adopted. See [plan rail-slice](../plans/rail-slice.md).
+
 _Research report, 2 November 2026. Towns that visibly grow from what the railway delivers: staging, procedural assembly, cargo causality, six-era identity, streets, shared history, kilometre-distance rendering and deterministic state. Reads the current audit picks in [decisions.md](../decisions.md), [DESIGN.md](../../DESIGN.md), [net.md](../game-design/net.md) and the [asset pipeline](../plans/asset-pipeline.md). Builds on [compounding-infrastructure.md](compounding-infrastructure.md), [construction-you-can-watch.md](construction-you-can-watch.md) and [era-progression.md](era-progression.md): those own the economic loop, construction rhythm and era language; this report owns the town assembled by them. Research and proposals, not implemented features or new owner decisions._
 
 **Verification.** **[V]** means the source was fetched and the relevant words checked; for interviews, it identifies the developer's own account, not independent proof of the game's internals. **[S]** means a secondary explanation, search excerpt or inaccessible original; do not promote it to a verified implementation fact. **[I]** means a Boogle inference, proposed number or experiment. Repository observations are marked **[V, code]**. Developer interviews and official documentation provide most evidence below. No game was played, talk video watched, prototype run or iPad benchmark performed for this report; Apple's talk transcript was read. The distinctions follow [sea-crossings.md](sea-crossings.md).

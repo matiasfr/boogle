@@ -1,5 +1,9 @@
 # Shared physics: server Rapier or deterministic Rapier
 
+> **Verdict:** Server-run Rapier at 60 Hz; two-grip great-beam proof.
+> **Top recommendations:** 1. Server Rapier is the right call, and it matches the engines. 2. Deterministic Rapier is real but costs more than it saves for Boogle. 3. This is net-roadmap phase 3's Server kind.
+> **Status:** partly adopted. See [plan replication](../plans/replication.md), [Process](../decisions.md#process).
+
 _6 November 2026. Code read at `2e289307`. Builds on [coop-physics-vehicles-netcode.md](coop-physics-vehicles-netcode.md)
 (rider frames, grab ownership, Rocket League, R.E.P.O., Gang Beasts) and doesn't repeat it. The brief cites a 6 November
 Process entry in decisions.md; it is **not on `main` yet**, so the owner calls below are taken from the brief: the server

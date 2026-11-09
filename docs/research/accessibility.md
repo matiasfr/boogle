@@ -1,5 +1,9 @@
 # Accessibility: one railway, different ways to play
 
+> **Verdict:** Make access to the same railway configurable; try a comfort camera option first.
+> **Top recommendations:** 1. Separate stabilizing follow from optional motion, and expose comfort before entry. 2. Give text a readable default, scalable layout and semantic equivalent. 3. Remap actions through every actual input path.
+> **Status:** open. No decision cites it yet.
+
 _5 November 2026. Research and recommendations, not implementation approval. Repository audited at `68ee082d` on `codex/accessibility`; live primary sources read on this date. **[V]** means repository code or primary-source text inspected, **[S]** an explicitly identified secondary example, and **[D]** a Boogle inference or proposal. No game, assistive technology or reference game was exercised for this report; not tested on a device. Costs are estimates, not measured delivery times._
 
 ## Recommendation and scope

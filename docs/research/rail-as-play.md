@@ -1,5 +1,9 @@
 # Rail as play: could building and running the network be a core system?
 
+> **Verdict:** Track as a toy before a network; one verb, pre-made snapping pieces.
+> **Top recommendations:** 1. Make the track a toy before it is a network. 2. One main verb and pre-made pieces that snap at fixed sockets.
+> **Status:** adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 *Research report, 30 October 2026. Whether laying and running track can be a core play system for the Boogle 2.0 concept, from Mini Metro, Factorio, Tracks, Railroads Online, Townscaper, Dorfromantik and others. Feeds [docs/proposals/progression-paths.md](../proposals/progression-paths.md).*
 
 **Markers.** *Verified*: a research agent fetched the page and matched the text word for word. *Secondary*: seen only in a summary, review or snippet. *Paraphrase*: a journalist's words, not the designer's.

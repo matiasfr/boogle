@@ -1,5 +1,9 @@
 # Ultra Water: what to take for Boogle's sea and gorge
 
+> **Verdict:** Take filtering, shared fields and accounting; no whole-renderer port.
+> **Top recommendations:** 1. Build a selective TSL treatment inside the existing sea, with provenance from the start. 2. Measure completed work and the actual pixel/pass budget before adding a simulation. 3. Fix local bathymetry and contacts before adding wave complexity.
+> **Status:** partly adopted. See [plan water-graduation](../plans/water-graduation.md), [Look](../decisions.md#look).
+
 _Research report, 2 November 2026. Source audit of Ultra Water, selective WebGPU/TSL adaptations, scene-performance lessons, wave queries and attribution. Target: Super Mario Sunshine's warmth and toy-like readability, an M4 iPad Pro with a controller, and train views at 20–50 m/s. Recommendations only; no implementation or performance measurements._
 
 ## Brief, evidence and scope

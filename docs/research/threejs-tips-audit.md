@@ -1,5 +1,9 @@
 # Three.js tips audit: small gaps, conditional scale work
 
+> **Verdict:** Keep the renderer; bounded culling, upload and delivery experiments.
+> **Top recommendations:** 1. Batching is explicit. 2. The async methods are not interchangeable. 3. KTX2 needs support detection, not necessarily a copied decoder directory.
+> **Status:** partly adopted. See [glb-delivery-audit](glb-delivery-audit.md).
+
 _2026-11-05. Research only. Read all 100 tips, introduction and FAQ in [Utsubo's article](https://www.utsubo.com/blog/threejs-best-practices-100-tips), then checked Boogle at `57ea7c4dae6ac3a6467f95c838a06ce35d0b6177` against installed three.js **0.187.0** and live primary documentation. **[V]** = repository or primary source inspected; **[D]** = recommendation/inference; **[U]** = unverified. No game changes or runtime benchmarks; not tested on a device._
 
 **Keep the existing renderer. The useful next work is bounded culling, upload and delivery experiments, not another graphics framework.** Boogle already has compute particles, compressed/quantized assets, shader preparation, shared materials, adaptive resolution, a Local graphics registry and GPU diagnostics. The shortlist below ranks remaining opportunities; later items are triggers for existing research, not newly approved architecture.

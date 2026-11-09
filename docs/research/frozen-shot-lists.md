@@ -1,5 +1,9 @@
 # Frozen shot lists
 
+> **Verdict:** Frozen shot queue for repeated look captures.
+> **Top recommendations:** 1. Keep the existing trusted broker. 2. Save small TS/JSON lists in dev/look/beats/. A beat names a checkpoint (at, optional saves) or an. 3. Group route/query, viewport, MSAA and resolution changes.
+> **Status:** adopted.
+
 4 November 2026. Implements the owner's agreed repeated-capture design. State is **Local harness state**;
 no lockstep, room, player feature, normal shader graph or startup import changes.
 

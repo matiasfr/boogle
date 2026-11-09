@@ -1,5 +1,9 @@
 # Tunables: one catalog, existing owners
 
+> **Verdict:** One typed catalog, existing owners keep execution.
+> **Top recommendations:** 1. Reuse rules.tune, the Dev command/result path and water bindings; add metadata and adapters, not another editor or state service. 2. Distinguish local, presentation and lockstep settings, and separately declare when a change can take effect. 3. Persist and hash the complete effective lockstep configuration.
+> **Status:** adopted. See [plan hook-shot](../plans/hook-shot.md), [plan production-core](../plans/production-core.md).
+
 **Development update, 5 November 2026:** the owner's later "No old builds in development" call supersedes this report's compatibility proposals. Current tuning retains complete effective values, revisions, ordered edits, controller authorization and strict value validation. Catalog fingerprints, admission fences, migrations and old-build proofs have been removed; save reshapes reset `WORLD_NS`. The report below remains the dated research record, not current compatibility guidance. See [the cleanup inventory](dev-compat-catalog.md).
 
 _Research report, 5 November 2026. Plan only. Live primary-source research and read-only code inspection at `e08f2730f8b27c1022a91e2cabb8d70d4a72edc2`. **V** = inspected code or fetched primary source; **R** = another report's evidence, not rerun; **P** = proposed design, range or estimate. No runtime implementation or performance measurements. Not tested on a device._

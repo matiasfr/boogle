@@ -1,5 +1,9 @@
 # Asset motion review — 4 November
 
+> **Verdict:** The asset stage's own motion evidence; cap seating repaired.
+> **Top recommendations:** none; review record, one repair to the cap peak made.
+> **Status:** reference. See [plan asset-motion-review](../plans/asset-motion-review.md).
+
 The stage now supplies its own motion evidence through `node dev/look/asset-motion.ts`. The command reuses the existing broker/local look harness and wall-time video, with no second browser driver. All sampling state is Local. Twelve successive completed canvas renders establish rendered-frame continuity; a separate sparse sheet covers the cycle. JSON retains every bone pose and attachment transform, CSV scalar curves, and outlier JSON the affected frame numbers. Exact Raw endpoint comparisons are separate from sampled wrap steps. Played body/life and windmill clocks continue across displayed cycles instead of resetting their state.
 
 ## Inspection and one cap repair

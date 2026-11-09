@@ -1,5 +1,9 @@
 # Graphics switches: Mac observations
 
+> **Verdict:** Mac measurements of graphics switch costs; MSAA and lab grass largest.
+> **Top recommendations:** none; measurements only, no proposals.
+> **Status:** reference. See [plan graphics-switches](../plans/graphics-switches.md).
+
 ## Mac verification — 4 November 2026
 
 **Partial sign-off: the gable gap is real; the native Looks PNGs do not reproduce severe posterization. Sunny’s blotchy grass is real surface shading. MSAA and lab grass are the largest clearly resolved costs.** Shadows and bloom now have visible on/off evidence; spray and active point-light removal remain unverified. No game code changed.

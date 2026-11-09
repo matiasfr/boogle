@@ -1,5 +1,9 @@
 # Make Boogle's beach bodies land with a splat
 
+> **Verdict:** Landing squash, coyote time, jump buffering and apex hang as small local changes.
+> **Top recommendations:** 1. Apply the prioritized controller changes in its table; all stay in the player body or render layer, none touch the lockstep sim.
+> **Status:** open. No decision cites it yet.
+
 Boogle's controller already gets the hard, invisible part right: a dynamic cannon-es body steered toward a camera-relative wish velocity, with near-instant ground acceleration (70 m/s²), weaker air control (14 m/s²), a 0.1 s ledge grace and a 0.15 s jump buffer, all on a client-authoritative body that never touches shared sim state ([src/physics/physics.ts](../../src/physics/physics.ts), [src/player/input.ts](../../src/player/input.ts)). What it lacks is the *shape* of motion that the canonical feel literature (Celeste, Kyle Pittman's "Building a Better Jump", the GMTK Platformer Toolkit) treats as essential: its jump is a symmetric 1.6 m parabola with no fall multiplier and no jump cut, and its limbless capsule only bobs, so landings, turns and stops carry no weight on screen. The highest-return work is therefore cheap and local. Reshape the jump with three gravity multipliers. Drive a spring-based "jelly" layer on the avatar for landing squash, takeoff stretch and lean into acceleration. Add ground snapping and a sand-ridge step assist, then give water a surface/dive split. None of this needs networking changes: player movement is client-owned, and remote avatars are already animated from interpolated motion ([src/main.ts](../../src/main.ts)). Full active ragdolls, IK legs and a kinematic rewrite are the wrong trade for a small, readable codebase whose comedy already comes from the ball, the face-plant and loose physics (DESIGN.md principle 10).
 
 ## The jump is a 0.84-second symmetric arc, the shape every reference calls floaty

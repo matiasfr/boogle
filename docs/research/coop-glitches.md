@@ -1,5 +1,9 @@
 # Co-op contact investigation, 5 November 2026
 
+> **Verdict:** Co-op contact investigation with telemetry; boarding and seated-carry fixes.
+> **Top recommendations:** none; investigation record with the boarding and seated-carry fixes.
+> **Status:** reference.
+
 The initial investigation below added diagnostic telemetry and a bounded reproduction probe. The [latest follow-up](#boarding-regression-and-seated-carry-fix) corrects boarding and the reproduced seated carry loss, superseding the earlier follow-up's conclusions on those two issues. Original full-route release and grounding limits remain. Work stayed on `codex/coop-glitches`, under the owner's early-start exception, with no push or ship. Serves DESIGN.md 4, **Cooperation is automatic, not negotiated**.
 
 The final seat, ground and world-inputs runs tested tree `9ba91a61783aa8e935a2558f7d86130166580e2e`, now committed as `6b4899d`. Their manifests report `changedDuringRun: false`. This report is a later documentation-only commit. All browser work used the existing broker; no Chromium launch, alternate harness or external network. `npm run inflight` was omitted because it fetches origin. Dependencies were already installed. The initial scenario used the shell's Node 24; subsequent work used installed Node 26.13.0.

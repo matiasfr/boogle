@@ -1,5 +1,9 @@
 # Fast look development for Boogle
 
+> **Verdict:** Extend frozen shot lists and tunables; do not build another renderer.
+> **Top recommendations:** 1. Extend the existing frozen-shot queue with explicit persistent-session reuse. 2. Make actual light application the first tunables proof. 3. Standardize three small fixtures with a diagnostic chart and exact cameras.
+> **Status:** partly adopted. See [Look](../decisions.md#look).
+
 5 November 2026. Live primary-source research and source audit at `57ea7c4dae6ac3a6467f95c838a06ce35d0b6177`, on `codex/lookdev-loop`. Research only: no renderer, tooling or visual defaults changed. Serves **Small and readable** and **Show, don't tell**. Disposition: **bounded tooling experiment first**, then an owner-reviewed pipeline pass.
 
 **Extend frozen shot lists and the existing tunables interface. Do not build another renderer or control panel.** The smallest useful build is one persistent Place scene, one fixed town camera, a nine-cell key/fill wedge at the accepted exposure, and a labelled PNG with exact settings. Target **30 seconds from submitting a warm batch to its finished board**, and **one second for a warm single-setting preview**. These are proposed acceptance targets, not measurements.

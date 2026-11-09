@@ -1,5 +1,9 @@
 # Sunshine sky: keep the sea, author the sky
 
+> **Verdict:** Keep the sea, author the sky; replaced by the summer sky default.
+> **Top recommendations:** 1. Keep the shared baked cube and FFT sea; review the clear toy sky with metered Neutral.
+> **Status:** superseded by [skybox](skybox.md).
+
 3 November 2026. Bounded look experiment, not a production switch. DESIGN: **Show, don't tell; Small and readable**.
 
 **Recommendation: keep the shared baked cube and FFT sea; review the `clear` toy sky with metered Neutral.** A skybox is a useful art source, but changing the container alone will not produce **Super Mario Sunshine**. The useful change is simpler clouds, deliberate sky colour and a restrained water palette. Metered Neutral is the leading curve candidate per the newer colour-source research; the broader three-look comparison is still coming. AgX Punchy belongs to the other job.

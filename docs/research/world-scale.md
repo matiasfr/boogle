@@ -1,5 +1,9 @@
 # World scale: do Boogle's proportions hold up?
 
+> **Verdict:** Proportions are reasonable; greybox good to move ahead; Canopy forest 50 to 70 m.
+> **Top recommendations:** 1. Buddy-scale things are right. 2. The village is built for Buddy, not for the little guys. 3. The greybox's big things are at real-world size, and that is fine where it is: the White Wall is about as tall.
+> **Status:** adopted.
+
 *Research report, 7 November 2026. The owner asked whether the world's scale makes sense for the little guys, if not for
 Buddy, given that the game is cartoonish and exaggerated, and whether the current greybox is good to move ahead with.
 Numbers come from the code at `97914968` and from the running game; references come from web sources. Analysis only:

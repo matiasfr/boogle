@@ -1,5 +1,9 @@
 # Environmental and co-op puzzles between stations
 
+> **Verdict:** Puzzles that permanently change the railway; prototype one linked-gate freight yard first.
+> **Top recommendations:** 1. Prototype one linked-gate freight yard first. 2. Require a solo continuation from every partial state. 3. Make roles voluntary and locally interesting.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 5 November 2026. Live web research across nine requested games, checked against repository documents at `68ee082d`. Covers solo-compatible cooperation, linked gates, carrying, ability keys, wordless teaching, recovery and an eight-hour difficulty curve. Research and proposals only: no code, new gameplay, device test or human playtest. The report does not approve its candidate places or prototype._
 
 ## Answer first

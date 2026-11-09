@@ -1,5 +1,9 @@
 # Great beam carry: Godot lab comparison
 
+> **Verdict:** Production carry fine except the floating rope; hand-attachment repair first.
+> **Top recommendations:** 1. Give the visual rod spring lag and a clearer grip pose. 2. Make solo hauling an Owner physics object; keep Help carry's authored lift. 3. Make co-carry a shared physical beam.
+> **Status:** partly adopted. See [Process](../decisions.md#process).
+
 8 November 2026. Read-only comparison with
 `/Users/matiasfranco/Developer/boogle-godot-lab/godot-lab`. No lab files were changed and nothing there was built or run.
 The owner says the current production carry is fine except for the floating rope, and liked the lab's carrying.

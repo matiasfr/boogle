@@ -1,5 +1,9 @@
 # Place route contract
 
+> **Verdict:** Separate travel and work edges; owner adopted recommendations 3 and 4.
+> **Top recommendations:** 1. Adopt separate travel and work edges before moving the grant. 2. Place the find on the baseline southern approach to Split-rock Works. 3. Make Q3 build the quarry ramp and connect its winch.
+> **Status:** adopted. See [plan production-core](../plans/production-core.md), [plan split-rock-roundhouse](../plans/split-rock-roundhouse.md).
+
 **Status (6 November 2026):** the owner adopted recommendations 3–4 as the default game; the `?route=v2` prototype is removed and the behaviour lands with [production-core slice 4](../plans/production-core.md#reviewable-promotion-slices).
 
 _Research report, 6 November 2026. Paper prerequisite for [jump upgrades](../brainstorms/jump-upgrades.md), checked against Place at `500da0dfcf35665502b5ea34e841df5ad19cfe88`, with live primary-source research, the current level check and isolated counterfactual queries of its reachability model. No gameplay changes or implementation approval. Companion: [interactive route map](route-contract.html)._

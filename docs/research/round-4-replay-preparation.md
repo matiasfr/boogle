@@ -1,5 +1,9 @@
 # Round 4 replay preparation, 5 November 2026
 
+> **Verdict:** Round 4 replay preparation captures and fixes.
+> **Top recommendations:** none; preparation record for the round-4 replay.
+> **Status:** reference. See [Process](../decisions.md#process).
+
 Serves DESIGN.md 11, Show, don't tell, and 8, Designed for drop-in, drop-out.
 
 Work stayed on `codex/replay-ready`, starting exactly at the available local `origin/main` `fd54894e`. External network use was prohibited, so this ref was not fetched and `npm run inflight` (which fetches) was not run. Nothing was pushed or shipped. The Boogler's copy is unchanged.

@@ -1,5 +1,9 @@
 # Roundhouse trains: improve the railway together
 
+> **Verdict:** Free early shed; research as a material fact; steel S4 as expansion.
+> **Top recommendations:** 1. Open a free early shed; treat steel S4 as its later expansion. 2. Make research a material/connection fact, followed by one finite fabrication bill. 3. Require a real trip saved before selling capacity or speed.
+> **Status:** partly adopted. See [Trains and the world](../decisions.md#trains-and-the-world), [plan split-rock-roundhouse](../plans/split-rock-roundhouse.md).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Note added 6 November 2026: the owner approved a shared wallet, fully shared progression and a world paused while empty, with a capped away credit on the next join ([economy principles amended](../decisions.md#progress-and-rewards)). "No shared wallets" below is superseded; contributions now come from one shared wallet and shared stock. The rest stands as written._

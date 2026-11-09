@@ -1,5 +1,9 @@
 # TypeScript 7 feasibility
 
+> **Verdict:** TypeScript 7.0.2 is the only compiler.
+> **Top recommendations:** 1. Coordinate the gpu-info.ts fix with the TS 6.0.3 job. 2. Keep canonical typescript at 5.9.3 (tested), or validate 6.0.3 after that. 3. Set typecheck to node node_modules/typescript-native/bin/tsc -p.
+> **Status:** adopted. See [typescript-tools-port](typescript-tools-port.md).
+
 Study: 3 November 2026, source `75526a2ad41bd567bdfa776e7e77ff5998423348`.
 The study itself was feasibility only; it proposed no dependency or application changes in its own commit.
 Implementation status, 4 November 2026: **complete. TypeScript 7.0.2 is the only compiler.** Oxlint 1.91.0, oxlint-tsgolint

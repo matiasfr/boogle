@@ -1,5 +1,9 @@
 # Cold-start recorder: true-cold reproduction remains blocked
 
+> **Verdict:** True-cold reproduction was blocked; replaced by the cold-start fix.
+> **Top recommendations:** none; historical report, the reproduction stayed blocked.
+> **Status:** superseded by [water-metal-cold](water-metal-cold.md).
+
 Historical report. The current exclusive-browser implementation, validation limits and exact owner commands are in
 [water-metal-cold.md](water-metal-cold.md). The shared-Metal and synchronous-threshold descriptions below describe
 the earlier runner, not the current implementation; headed cold/warm validation remains pending.

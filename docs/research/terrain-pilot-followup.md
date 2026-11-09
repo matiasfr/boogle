@@ -1,5 +1,9 @@
 # West-cove coordinator follow-up — 5 November 2026
 
+> **Verdict:** West-cove revisions; owner acceptance and device checks outstanding.
+> **Top recommendations:** none; revision record, owner acceptance and device checks outstanding.
+> **Status:** adopted. See [plan terrain-pilot](../plans/terrain-pilot.md).
+
 Implemented the three requested revisions on `codex/terrain-pilot`; local commits only, no push or deployment. **Final checks and full bot pass. Owner acceptance and device verification remain outstanding.** [Earlier assessment](terrain-pilot.md) is historical.
 
 Compare after coordinator merge: <https://boogle.club/?proto=place&terrain=cove&room=proto-place-cove&fresh=1>. Grey box remains the default. The Boogler's copy, progression and catalog identities are unchanged; no ROM data.

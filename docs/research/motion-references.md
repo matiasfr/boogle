@@ -1,5 +1,9 @@
 # Motion references: image-first experiment
 
+> **Verdict:** Image-first motion references; generation step blocked in this job.
+> **Top recommendations:** none; partial experiment record, generation step ran in later jobs.
+> **Status:** partly adopted. See [rack-model-compare](rack-model-compare.md).
+
 _5 November 2026. Partial experiment, not art approval. Work confined to `codex/motion-references`; no push or ship. DESIGN principles: **11. Show, don't tell**, **Small and readable**, and **Code first, images by approval** (generated work remains reference material)._
 
 ## Later results, 5 November

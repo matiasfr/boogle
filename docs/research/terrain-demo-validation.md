@@ -1,5 +1,9 @@
 # Dry demo terrain: pictures and GPU cost
 
+> **Verdict:** Dry demo terrain for shores only, about 0.3 ms.
+> **Top recommendations:** 1. Keep the court, dirt paths and POI paint as explicit authored masks, then layer natural colour/detail underneath. 2. Retune beach height/width for Boogle's small hills; the source's biome thresholds belong to a much larger landscape. 3. Keep deliberate facets, but author better bank transitions and less repetitive cliff silhouettes.
+> **Status:** reference. See [plan beautiful-corner](../plans/beautiful-corner.md).
+
 3 November 2026. Local comparison on `codex/terrain-demo`; implementation commit `38943241`. No push or rollout.
 DESIGN.md: **Small and readable** and **Show, don't tell**. Local presentation only.
 

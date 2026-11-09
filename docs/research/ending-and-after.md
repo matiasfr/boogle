@@ -1,5 +1,9 @@
 # Ending and after: finish the railway, keep the world
 
+> **Verdict:** End at the Home-port ring closure and keep the world afterward.
+> **Top recommendations:** 1. End the campaign at the accepted Home–port ring closure, with optional branches outside completion. 2. Pay off a landmark visible since chapter one; keep the port guaranteed and the shard's role conditional. 3. Separate permanent completion from an optional, replayable celebration.
+> **Status:** partly adopted. See [Audit picks](../decisions.md#the-audit-picks-2-november).
+
 _Research report, 2 November 2026. The ending of Boogle's roughly eight-hour rail campaign, celebration across uneven attendance, and life in a finished friend room. Live web research and repository inspection; structural alternatives for the owner and future story collaborators, not an approved finale or implementation plan._
 
 **Working recommendation [H]:** finish when the last Home–port connection closes the ring, make that achievement permanent, and let friends revisit its celebration. Test **arrival at the long-visible port** against **a homecoming through what the group built** first. Keep the archipelago, trains and personal finds. A satisfying goodbye and a pleasant reason to return can coexist; neither requires an infinite progression economy.

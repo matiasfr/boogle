@@ -1,5 +1,9 @@
 # Game direction: keep the vision, choose the next proof
 
+> **Verdict:** One game-direction skill, a derived direction doc, a narrow AGENTS.md trigger.
+> **Top recommendations:** 1. Use one game-direction skill, a small derived direction doc and a narrow AGENTS.md trigger.
+> **Status:** adopted. See [direction-skill-test](direction-skill-test.md).
+
 _Research report, 3 November 2026. Small-team game production, creative direction, dependency ordering and a shared Codex/Claude direction workflow. Repository inspected at `993416e2a5c54df23156cc4651030effb0b6b06f`; live web research conducted for this report. Includes a proposed phase map, eight recommendations, an install-ready skill draft and three worked answers. Proposal only: the owner decides. No skill, agent, gate or roadmap is installed by this report._
 
 **Evidence:** **[V]** primary-source text, developer interview answers or slide text read this run; **[A]** talk abstract only; **[S]** secondary reporting; **[R]** repository file inspected; **[D]** synthesis for Boogle; **[H]** proposed criterion, not a measured result. Videos were not watched. No new gameplay or device test was run. Existing playtest and test results below are attributed records, not independently repeated results.

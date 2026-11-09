@@ -2,6 +2,10 @@
 
 # Water and sky speed investigation — 5 November 2026
 
+> **Verdict:** Sky-size comparison removed with the summer sky default.
+> **Top recommendations:** none; historical comparison record.
+> **Status:** superseded by [skybox](skybox.md).
+
 **Partial.** The owner exception permits early work before the round-4 replay, on this branch only.
 No push or ship. The water and default 1024 sky retain their existing look. No copy was edited;
 no suspect Boogler lines were identified in this scope. No ROM data or new art assets.

@@ -1,5 +1,9 @@
 # Compounding infrastructure and towns supplied by a network
 
+> **Verdict:** Connect, inherit a service, build something newly possible; towns repay the connection.
+> **Top recommendations:** 1. The useful loop is connect → inherit a service → build something previously awkward or impossible. 2. A-Train is the closest supply-to-town precedent; Astroneer is the closest embodied rail-as-building-support precedent. 3. Automation is satisfying when it retires a solved task.
+> **Status:** reference. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Research report, 1 November 2026. Infrastructure that makes the next infrastructure easier to build; towns whose growth repays the connection; the player's work after routine logistics disappear. Live-source research across Death Stranding 1 and 2, Factorio, Satisfactory, Transport Tycoon Deluxe/OpenTTD, A-Train, Anno, Workers & Resources, Mini Metro, Dorfromantik, Islanders, Railroads Online, Dyson Sphere Program, Palworld, Against the Storm, Astroneer and Transport Fever 2. Recommendations for Boogle's rail-loop prototype, not new design decisions._
 
 **Markers, following [sea-crossings.md](sea-crossings.md).** **[V]** means the source was fetched and its words or code support the claim; its provenance is stated. **[S]** means a secondary wiki, guide, search summary or reporter's paraphrase, even when fetched. **[I]** marks analysis and proposed Boogle numbers, not measured outcomes. Developer interviews and developer-written postmortems count as primary testimony; announcements establish what developers describe, not independent playtest results. No games were played or talk videos watched for this report.

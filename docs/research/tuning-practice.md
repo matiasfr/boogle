@@ -1,5 +1,9 @@
 # Tuning practice: named data, explicit authority, reproducible playtests
 
+> **Verdict:** Typed defaults with owners, explicit authority, reproducible playtests.
+> **Top recommendations:** 1. Edit a workbook revision or Git-tracked source table, with stable IDs and units in the schema. 2. Export evaluated values and retain the exact export. 3. Parse strictly: reject duplicate IDs, unknown/missing columns, empty required cells, locale-dependent numbers.
+> **Status:** partly adopted. See [tunables](tunables.md).
+
 _5 November 2026. Live primary-source research into console variables, authored data, spreadsheet pipelines, live tuning, remote configuration, deterministic multiplayer and playtest provenance. Repository observations are pinned to `193de1c8`; the final fetched `origin/main` was `6a46755d`. Recommendations for Boogle's agent-first tuning workflow, with a UI optional as specified in the owner's research brief. Research only: no runtime changes, new gameplay decisions or approval to change the current playtest's values._
 
 **Evidence.** **[V]** means the relevant primary-source text, published code or local code was read; **[A]** means only a talk's official abstract was read; **[I]** marks a Boogle inference or proposal. Engine documentation establishes a supported capability, not that every shipped game uses it. Historical talks describe their named builds, not current implementations. Format references: [playtest telemetry](playtest-telemetry.md) and [browser netcode](netcode-browser-physics.md); their dated implementation claims are not treated as current contracts.

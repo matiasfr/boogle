@@ -1,5 +1,9 @@
 # Eight-hour pacing across six eras
 
+> **Verdict:** About eight active hours, first useful connection in 10 to 15 minutes; target is now about six.
+> **Top recommendations:** 1. Aim for eight active room-hours, including modest exploring and the ending, excluding scheduling, long breaks. 2. Separate the clocks. 3. Budget twelve required links, six key connections, thirty-six hauled segments, eight camps.
+> **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Research report, 2 November 2026. Pacing a finite co-op adventure through six eras: first payoff, novelty, places and work, solo versus group speed, evenings, absence and finishing. Live-source research on Big Walk, Grow Home, A Short Hike, Astroneer, Satisfactory, Dyson Sphere Program, Death Stranding, Ratchet & Clank, Super Mario Odyssey, It Takes Two, Tchia, LEGO games, Cozy Grove and Slime Rancher. Applies to the [2 November audit picks](../decisions.md#the-audit-picks-2-november) and [find-the-fun plan](../plans/find-the-fun.md). Recommendations and falsifiable budgets, not new owner decisions or claims about a built campaign._

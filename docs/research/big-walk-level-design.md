@@ -1,5 +1,9 @@
 # Research: Big Walk and a home island that keeps unfolding
 
+> **Verdict:** Test about 60,000 m2 of dry land in three lobes; home was later redesigned from the ground up.
+> **Top recommendations:** 1. Target about 60,000 m² of dry land, testing 46,600–69,900 m² before 93,200 m². Keep the 510 m grid and compact starter activities. 2. Fold three attached lobes around an inlet and a 35–45 m ridge. 3. Build a short starter loop, two outer loops and a shared ridge spine, with shortcuts back to home.
+> **Status:** superseded by the owner calls in [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Research report, 1 November 2026. Live web research and a read of Boogle at `dfa157b`. Covers the shape, pacing, traversal and production of a larger home island, with Big Walk as the lead reference. Builds on [big-walk-and-communal-endings.md](big-walk-and-communal-endings.md) and [level-design.md](level-design.md); their communication, ending, landmark and archipelago arguments are not repeated here. Recommendations are proposals for a greybox, not approved changes to the game._
 
 **Verification:** **[V, primary]** means a fetched developer-authored source, official material or developer transcript; **[V, interview]** means direct developer testimony mediated by a publication; **[V, secondary]** means a fetched review or commercial guide; **[V, fan]** means a fetched community source, not independently confirmed in play. **[S]** means only a search excerpt or talk abstract was available. **[I]** marks synthesis, calculations and proposed Boogle targets. The games were not played for this report; no video is claimed as watched. Repository facts were checked in the files linked below.

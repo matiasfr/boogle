@@ -1,5 +1,9 @@
 # Post-look round two — 4 November 2026
 
+> **Verdict:** Post-look boards; owner kept Current, layers archived on tag.
+> **Top recommendations:** 1. Keep Current; park the post looks for a later rendering pass.
+> **Status:** superseded by the owner calls in [Look](../decisions.md#look).
+
 **Decision: owner kept Current and parked these looks for a later rendering pass.** The layers and full evidence, including motion boards 7 and 8, are on tag `archive/post-looks-round2`. White marks along the shoreline in the water cells remain unexplained, and live water differs between cells.
 
 **My visual pick is Drawn toys: dark ink .8, width 2, toys 1.** Round one's ranking undersold outlines on toys. The rack, boots and shop become readable drawn objects once cliff triangulation is excluded. **Keep Current as the production default:** both finalists are expensive and their fine lines crawl.

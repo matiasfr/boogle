@@ -1,5 +1,9 @@
 # Entity components: a convention before a framework
 
+> **Verdict:** Document a composition convention, no component runtime; one name-label proof.
+> **Top recommendations:** 1. Approve a convention before a runtime. 2. Prove it with name labels in two real entities. 3. Keep ordering where agents can read it.
+> **Status:** adopted. See [plan entity-components](../plans/entity-components.md).
+
 _3 November 2026. Source audit at `050d6e252f5d`, with live primary engine documentation and a shipped-game developer account. Research and an approval-ready [plan](../plans/entity-components.md), not implementation authority. Counts are `wc -l` physical lines, including comments and blanks; code ranges refer to that commit. No runtime experiment or device test._
 
 ## Result: where the pain actually is

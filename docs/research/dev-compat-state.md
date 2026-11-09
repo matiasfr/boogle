@@ -1,5 +1,9 @@
 # Development state and recovery cleanup, 5 November 2026
 
+> **Verdict:** State and recovery cleanup; load current state only.
+> **Top recommendations:** none; inventory of what was cut under the "No old builds in development" call.
+> **Status:** adopted.
+
 The owner's **No old builds in development** call supersedes historical recovery and migration requirements. This inventory was made against local `origin/main` at `a2df1b35`, after Slice 3; the branch uses one dated `WORLD_NS` break for changed save shapes.
 
 | Disposition | Machinery | Reason |

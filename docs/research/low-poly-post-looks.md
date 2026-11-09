@@ -1,5 +1,9 @@
 # Low-poly post looks: clearer toys, intact water
 
+> **Verdict:** Compare shade, atmospheric depth and soft edges; owner kept Current.
+> **Top recommendations:** 1. Keep Current Neutral as the reference and add effects as independent Dev Looks layers. 2. Lead with gentle shade colour, output dither and coherent aerial perspective. 3. Make tinted, distance-faded depth ink the first structural challenger.
+> **Status:** superseded by [post-look-round2](post-look-round2.md); see [Look](../decisions.md#look).
+
 _4 November 2026. Live-source research and source audit at `2313fddc`, three.js r187. Screen-space polish for Boogle's low-poly world, with no per-asset painting, retexturing or second material library. Research only: no game code, generated images, captures or new GPU measurements. Not tested on a device._
 
 **Compare restrained coloured shade, atmospheric separation and soft tinted depth edges first. Keep the current water and Neutral control.** Low-poly art benefits when effects explain overlap, contact and distance; it suffers when they outline every triangle, bury colour in AO, or turn water detail into noise. Eight bounded candidates below include exact starting parameters and TSL-oriented recipes. None is an approved default.

@@ -1,5 +1,9 @@
 # Cold-start freeze: reproduced and fixed on the M1 Max
 
+> **Verdict:** Cold Metal cache froze place for 4.5 s; first-frame pipelines built behind loading.
+> **Top recommendations:** none; fix record for the cold-cache freeze.
+> **Status:** adopted. See [plan graphics-switches](../plans/graphics-switches.md).
+
 2026-11-03. DESIGN.md: **Small and readable — measure before optimizing**.
 
 **A cold Metal cache froze the place page for 4.5–4.8 s as the loading screen lifted (2 of 3 full runs). With first-frame pipelines built behind loading and a 16 s deadline, it no longer does in two coarse cold runs.** Local production, new sea, M1 Max, Chrome for Testing, headed, exclusive Metal cache cleared.

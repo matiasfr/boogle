@@ -1,5 +1,9 @@
 # Development compatibility inventory: tuning and registries
 
+> **Verdict:** Tuning and registry compatibility code cut.
+> **Top recommendations:** none; inventory of what was cut under the "No old builds in development" call.
+> **Status:** adopted.
+
 5 November 2026. Inventory against local `origin/main` at `a2df1b35`, before this cleanup, implementing the owner's "No old builds in development" call.
 
 | Machinery | Decision | Reason |

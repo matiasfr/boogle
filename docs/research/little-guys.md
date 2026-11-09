@@ -1,5 +1,9 @@
 # Little guys
 
+> **Verdict:** Five purposeful residents beat fifty aimless walkers.
+> **Top recommendations:** 1. The train/crane brings the real crate to its receiving position. 2. At a genuine handoff, the crate's presentation changes to an opened crate and a recognisable plank bundle. 3. They carry it along a 4–8 m side route.
+> **Status:** partly adopted. See [plan little-guys-rails](../plans/little-guys-rails.md).
+
 _Research report, 2 November 2026. Small ambient characters who make Boogle's stations and towns feel inhabited: readable behaviour, player reactions, cargo and construction, navigation, sound, multiplayer authority and rendering 5–100 residents on an M4 iPad Pro. Reads [DESIGN.md](../../DESIGN.md), the Characters and 2 November decisions in [decisions.md](../decisions.md), and [find-the-fun.md](../plans/find-the-fun.md). Builds on [creature-ai-and-ecosystems.md](creature-ai-and-ecosystems.md), [growing-towns.md](growing-towns.md), [characters.md](characters.md), [procedural-animation.md](procedural-animation.md), [comedy-in-games.md](comedy-in-games.md) and [npc-babble-voices.md](npc-babble-voices.md). Research and proposed experiments, not implemented features or new owner decisions._
 
 **Verification.** **[V]** means a fetched source and its relevant text were checked; developer testimony establishes what the developer said, not independent access to the implementation. **[S]** means a secondary account, translated/reproduced interview, or search-only evidence. **[I]** means a Boogle hypothesis, design interpretation, calculation or proposed starting number. **[V, code]** means this checkout was inspected, at `76f20fee`. Live searches and source reads were performed for this report. No referenced game was newly played, talk video watched, character prototype built or M4 iPad benchmark performed. The performance numbers below are test budgets, not results.

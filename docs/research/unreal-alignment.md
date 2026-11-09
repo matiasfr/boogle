@@ -1,5 +1,9 @@
 # Unreal alignment: keep the browser loop, preserve portable work
 
+> **Verdict:** Stay on TypeScript and three.js; align contracts and source assets.
+> **Top recommendations:** 1. Protect the edit→inspect→friend-play loop. 2. Preserve authority boundaries before engine vocabulary. 3. Keep authored intent portable.
+> **Status:** adopted. See [Process](../decisions.md#process).
+
 _3 November 2026. Live release/roadmap research and Boogle source inspection at `0e4376b1`. Recommendation, not migration approval. Primary passages and photographed slides checked; no Unreal installation, port, timing comparison or device test. House format: [engine architecture](engine-architecture.md), [places as modules](places-as-modules.md)._
 
 ## Result

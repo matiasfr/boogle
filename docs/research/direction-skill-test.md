@@ -1,5 +1,9 @@
 # Game-direction skill: four prompt tests
 
+> **Verdict:** Game-direction skill passed four prompt tests.
+> **Top recommendations:** 1. Keep the skill and its narrow trigger. 2. Make current-evidence discovery explicit. 3. Refresh the derived view with source revisions and named blockers.
+> **Status:** reference. See [game-direction](game-direction.md).
+
 _Research report, 3 November 2026. Manual acceptance test of the installed game-direction skill through `.agents/skills/game-direction/SKILL.md`, at checkout `75526a2ad41bd567bdfa776e7e77ff5998423348`. Four supplied prompts, seven pass criteria, reading cost and freshness findings. Live primary-source research checked the production reasoning. Recommendations only; no gameplay, skill, direction or plan changes are authorized by this report._
 
 **Evidence:** **[R]** repository text/history inspected; **[V]** primary-source web text read this run; **[D]** interpretation or recommendation. Existing gameplay results are attributed records, not repeated tests. Not tested on a device. No video, Line Map artifact or live deployment was inspected.

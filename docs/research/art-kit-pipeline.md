@@ -1,5 +1,9 @@
 # Art kit pipeline: repeatable pieces, physical assembly, one coherent world
 
+> **Verdict:** Small versioned kit of parts with assembly recipes; formalize the station frame first.
+> **Top recommendations:** 1. Adopt a versioned kit contract before producing more eras. 2. Keep structural families, era silhouettes and place recipes separate. 3. Use TypeScript for assembly and headless Blender for reusable shape.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 2 November 2026. An agent-driven production pipeline for Boogle's track, trestles, receiving stations, machines, cliffs, scaffolded buildings, engines and cosmetic attachments across six eras. Live primary-source research and repository inspection at `a88effba`. Proposes a contract, folder layout, validation workflow, device budgets and a two-place station proof. Research only: no new kit, gameplay, approved plan or device performance is claimed._
 
 **Evidence:** **[V]** primary text, developer interview answers, documentation or paper fetched and read; **[A]** official talk listing/abstract only; **[L]** local source or manifest inspected; **[I]** inference/proposal for Boogle; **[H]** untested hypothesis or estimate. No talk recording was watched. Morten Olsen's trim-sheet slides and Valve's illustrative-rendering paper were read as documents. Blender's public manual fetches failed; its bundled official manual/API excerpts were read through the Blender documentation tools instead. No live Blender scene was changed. No game or iPad benchmark was run; the existing asset freshness check was run successfully.

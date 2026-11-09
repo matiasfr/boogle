@@ -1,5 +1,9 @@
 # Simple harvesting with great game feel
 
+> **Verdict:** Contact agrees across pose, tree and sound; short hold, small chips, no shake.
+> **Top recommendations:** 1. The single beat that matters most is contact: the tool meets bark, the trunk gives. 2. Start with three strokes, 600 ms apart, four logs per accepted stroke: twelve per tree. 3. Keep progress on the object, not in a timing minigame: a growing cut, three increasingly conclusive responses, no combo expiry.
+> **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Research report, 2 November 2026. Hands-on harvesting for Boogle: one forgiving action, convincing contact, a short finish, automatic magnet collection, and tools that retire work. Live-source research and repository inspection; recommendations, not approved design or implemented behavior._
 
 **Brief.** The owner's target is “hands-on work. Essentially, really great game feel, but very simple harvest mechanics.” Serve [DESIGN.md](../../DESIGN.md) principles **1, toys before chores; 4, automatic cooperation; 6, communal world, personal rewards; 8, drop-in; and 10, slapstick over precision**. No stamina, durability, hazards, timed challenges, respawn countdowns or compulsory precision. Milliseconds below describe animation and input response, not another resource or timer the player manages.

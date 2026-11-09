@@ -1,5 +1,9 @@
 # Breath of the Wild paraglider: numeric comparison targets
 
+> **Verdict:** 10 m/s forward and 3.2 m/s sink as a labelled comparison target for the glide.
+> **Top recommendations:** 1. Use 10 ±0.5 m/s forward and 3.2 ±0.3 m/s sink as a clearly labeled comparison hypothesis, with a 3.125:1 nominal ratio. 2. Plot acceleration and neutral braking separately, starting at 18/12 m/s², 0.50 s to 90% speed and 0.83 s to stop. 3. Try heading response capped at 360°/s with a 0.12 s error time constant.
+> **Status:** partly adopted. See [plan round-4](../plans/round-4.md).
+
 _Research report, 2 November 2026. A source audit and plotting brief for the BotW-like glide in [round 4, step 5](../plans/round-4.md), extending [movement-abilities.md](movement-abilities.md). Live searches covered papers, speedrun techniques, public actor/camera parameter documentation, reverse-engineering code, mods and measurement videos, including Tears of the Kingdom. Boogle code was checked at `eedddacf`. No game was played or frame-counted in this session. Published measurements were inspected, not independently replicated; proposed curves below are Boogle hypotheses, not recovered Nintendo algorithms._
 
 ## What an agent can rely on

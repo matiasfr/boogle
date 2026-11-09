@@ -1,5 +1,9 @@
 # WebGPU particles with more than one silhouette
 
+> **Verdict:** Keep the GPU pool; crisp glints first; no particle library adopted.
+> **Top recommendations:** 1. Make the axe's four/two dots into controlled glints. 2. Add a small appearance vocabulary. 3. Give wood chips a physical silhouette.
+> **Status:** partly adopted. See [Process](../decisions.md#process).
+
 _Research report, 5 November 2026. Live primary-source research, published-package inspection and local source audit for prettier, more capable and efficient Boogle particles. Trigger: the floating-axe summon sparkle on `codex/axe-sparkle` inherits the shared pool's soft round dots. Research only; no game code, dependencies, rendering defaults or owner decisions changed._
 
 **Recommendation [R].** Keep the GPU pool and its `emit()` interface. First give the existing axe burst a crisp four-point glint, controlled rotation and a short size/opacity envelope, without increasing its particle count. Next distinguish solid chips, dissipating dust and water droplets. Improve admission, uploads and visibility budgets before introducing alive-list compaction, sorting or indirect draws. A library would supply authoring vocabulary, but replacing this small working GPU simulation is not the smallest route to a better sparkle.

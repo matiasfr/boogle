@@ -1,5 +1,9 @@
 # Buddy diffuse ramp — first comparison
 
+> **Verdict:** Owner kept Current; ramp code archived on tag.
+> **Top recommendations:** 1. Keep the Current diffuse; the ramp is not adopted.
+> **Status:** superseded by the owner calls in [Look](../decisions.md#look).
+
 **Decision: owner kept Current.** The ramp code is not on `main`; it is on tag `archive/buddy-light-ramp`.
 
 2026-11-04. Question 1 only of [render options](../brainstorms/render-options.md). **Current wins this comparison.** This is a Local Dev experiment, awaiting the owner's choice; no default change, ground work, outlines, haze, rim light or fill adjustment.

@@ -1,5 +1,9 @@
 # Water startup measurement appendix
 
+> **Verdict:** Startup timing data behind the water load stall.
+> **Top recommendations:** none; measurement data only.
+> **Status:** reference. See [water-load-stall](water-load-stall.md).
+
 2026-11-03. Read the [assessment](water-load-stall.md) first: the owner symptom remains unresolved. All durations are real wall-clock milliseconds. Each run uses a new Chromium process/profile, then reloads at 90 seconds; its two traces are named cold/warm. Each trace contains every observed rAF interval, previous completed game frame CPU time/top section, long tasks, Long Animation Frames and script attribution, resource timings, named water spans and boot marks, native shader/pipeline calls and async completions. Later runs also contain per-frame GPU queue fences and heap samples.
 
 The observer starts 24–143 ms after navigation; earlier frame callbacks are not observed (buffered long tasks and navigation timings remain). No actual scan-out timestamp is available. Named spans are inclusive and must not be summed when nested. Unattributed gaps remain explicitly unattributed; no shader ownership is invented. First-shadow timestamps are first shadow shader/pipeline creation, not proof of a visible shadow pixel. The early first-water callback also fired during precompile; only the later large runs guard it until boot:shaders. Use boot:first for readiness in every run.

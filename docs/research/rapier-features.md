@@ -1,5 +1,9 @@
 # Rapier JS 0.19.3 → 0.21.0: what Boogle can use
 
+> **Verdict:** What Rapier 0.19.3 to 0.21.0 offers; allocation gains, no new mechanic.
+> **Top recommendations:** 1. Use the allocation improvements and collision fixes. 2. Consider compound edge smoothing only for a demonstrated seam.
+> **Status:** reference. See [rapier-021-upgrade](rapier-021-upgrade.md).
+
 _Research report, 3 November 2026. Live primary-source research, published npm declaration comparisons for plain and SIMD builds, and Boogle source inspection at `0e4376b161dccd91f1069a38d2a409b1241e08ef`. Recommendations only; no game source or dependencies changed. The separate `rapier-021` job owns the upgrade. No gameplay benchmark or device playtest performed._
 
 ## Answer and evidence

@@ -1,5 +1,9 @@
 # Roblox patterns: what today's top games do, and what Boogle can take
 
+> **Verdict:** Run out, grab, carry home, it earns; try haul wave variant.
+> **Top recommendations:** 1. The chart, 1 November 2026: Steal An Egg (~1.0M playing), Brookhaven RP (650K), Murder Mystery 2 (445K), Blox Fruits (420K). 2. The dominant 2025–26 loop is "run out, grab, carry it home, it earns": Steal a Brainrot, Steal An Egg. 3. Roblox ranks games per user, not in total.
+> **Status:** reference.
+
 *1 November 2026. Research for the owner, who sees today's top Roblox games as the state of the art in pure mechanics. Covers the games most played on 1 November 2026 (checked on two live trackers that day, not assumed), the 2025 record-breakers, Roblox's own published guidance on what its recommendations reward, and benchmark data. Builds on [0.1/9-brainrot-hooks.md](0.1/9-brainrot-hooks.md) ("rarity done kindly"), which already covers Steal a Brainrot's rarity ladder, Grow a Garden's mutations, Pet Simulator 99, Adopt Me's Neon ladder and Bee Swarm; this report doesn't repeat those and points to it instead. Read beside [decisions.md](../decisions.md) (wary of material grinds, nothing decays, personal rewards only, every system ignorable), [DESIGN.md](../../DESIGN.md), [progression-models.md](progression-models.md) and [minigames-and-physics-minigames.md](minigames-and-physics-minigames.md). **[V]**: I fetched and read the linked page this session. **[S]**: from a search engine's summary, or a fan guide other guides contradict. Fan guides for these games disagree a lot, and live charts change hourly: every number is a snapshot. Recommendations only; nothing here is a decision.*
 
 ## Summary

@@ -1,5 +1,9 @@
 # Review Boogle for drift, not for missing engine parts
 
+> **Verdict:** Review for drift, not missing engine parts; freeze three boundaries.
+> **Top recommendations:** 1. Turn everything it can into mechanical rules. 2. Read only what rules can't see: the adapter contract, the choice of sync kind, time handling, hook order. 3. Say little, remember what was rejected, and be willing to report nothing.
+> **Status:** partly adopted. See [plan entity-architecture](../plans/entity-architecture.md).
+
 _2026-11-01. What engine programmers look for in a game's runtime architecture, what changes on the web, how small games
 fail as they grow, and how to run a recurring architecture review without noise. Written as the source a scheduled,
 read-only review agent cites. Code read at `39392fac`: every path cited as current exists there, and every number comes

@@ -1,5 +1,9 @@
 # Make desyncs diagnosable before making grids bigger
 
+> **Verdict:** Make desyncs diagnosable first: cheap per-tick check plus an expensive diagnostic.
+> **Top recommendations:** 1. Add a cheap always-on per-tick desync check. 2. Keep full snapshot diffs as the expensive diagnostic.
+> **Status:** reference.
+
 Boogle's shared sim already follows the pattern that shipped deterministic games converged on. Clients send edits, the host stamps them a few ticks ahead, everyone steps the same integer sim, and hashes plus snapshots catch drift. Its automatic snapshot resync is more forgiving than classic RTS lockstep, where a mismatch simply ended the match. The useful lessons from Factorio, Age of Empires, Supreme Commander, GGPO, Overwatch, Photon Quantum and Teardown are therefore not "switch architectures". They are about three things Boogle lacks today: **telling which system desynced and why**, **hashing and resyncing only what changed**, and **keeping sleeping regions asleep as the grid grows**. Rollback netcode solves a latency problem Boogle doesn't have, at a CPU cost it shouldn't pay; Boogle should borrow GGPO's sync test as a unit test instead. The highest-value next steps are cheap. Send per-subsystem hashes, add a save/load/step equivalence test, and show players a cosmetic preview of their own pending edits. Chunk-level dirty tracking, incremental hashes and partial resync are worth prototyping once the grid or player count actually grows.
 
 ## Every shipped lockstep game hashes; the good ones also say where it broke

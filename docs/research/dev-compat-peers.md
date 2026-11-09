@@ -1,5 +1,9 @@
 # Current-client Place cleanup — 5 November 2026
 
+> **Verdict:** Current-client Place compatibility removals.
+> **Top recommendations:** none; inventory of what was cut under the "No old builds in development" call.
+> **Status:** adopted.
+
 Inventory and disposition for the owner's **No old builds in development** call. DESIGN.md: **Small and readable**. These are compatibility removals; current gameplay and The Boogler's copy stay unchanged. Root's single `WORLD_NS` break covers the changed snapshots and presence meanings.
 
 | Machinery | Decision | Reason |

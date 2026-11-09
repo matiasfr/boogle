@@ -1,5 +1,9 @@
 # Build a storm tide the ball can break
 
+> **Verdict:** A telegraphed storm-tide cycle; written before the railway direction, never built.
+> **Top recommendations:** 1. Build one telegraphed Storm Tide cycle: a rising tide, wet sand that slumps, a ball that breaks a sea wall.
+> **Status:** reference.
+
 Boogle's most promising ambitious direction is a single, telegraphed **"Storm Tide" cycle**: a tide that rises on a schedule anyone can see coming, sand that gets wet and slumps, a ball that can smash a breach in a sea wall, rain squalls that roll in under visible clouds, and a heavy crate that washes up at king tide and only moves when two friends push it. These five mechanics fit together. The tide gives sand walls a purpose. Wet sand makes walls fail in slapstick ways. The ball becomes the tool that releases trapped water. Rain feeds the same water sim from above. The crate turns each king tide into a moment where cooperation just happens. Almost all the plumbing exists already: the water sim has an unused `setSeaLevel`, edits are host-stamped integer ops, and host-owned props follow the Boogler pattern (a codebase brief at the time, since deleted as stale; see git history). The bundle needs **no new gamepad buttons**, which matters because only View, R3 and D-pad right are free. It also stays inside every DESIGN.md principle: the world is the only antagonist, every event is announced 30-60 s ahead, and nothing is gated or scored. One strong coding agent can get it playable overnight on a `prototype/storm-tide` branch, provided each mechanic is its own toggleable plug-in and the room-wide toggles are synced. The last section is a ready-to-paste goal prompt for that run.
 
 ## The tide is the missing third of Boogle's core loop

@@ -1,5 +1,9 @@
 # State ownership: whose railway, whose hands?
 
+> **Verdict:** Keep T1 boundary; conserved work moves to server authority.
+> **Top recommendations:** 1. Keep T1 unchanged and execute its existing authority/recovery contract after the owner replay. 2. Repair the two beam capability consumers before core as one small integration task. 3. Fix local discovery keys and cosmetic claim serialization without centralizing profiles.
+> **Status:** partly adopted. See [plan production-core](../plans/production-core.md).
+
 _4 November 2026. Audit and proposal against live `main` at `dc1949f65c19d03879adc59d0133e451123a27f7`, verified with `git ls-remote` at the start; this branch began at that commit. Default Place first, its complete save-slice registry and gameplay owners, then the adapters, transport, server and classic systems. Live primary-source research; file/line references below refer to this pinned build. **V** = code/source inspected, **O** = recorded observation from an earlier build, **I** = inferred code consequence; recommendations are proposals. No gameplay source changes, public-room connections or shared-state mutations. One isolated in-memory classic-rule probe is described below; no new browser run or device test._
 
 **Keep the approved T1 production-core boundary. Move conserved work into its existing server-authority plan; keep movement, physical handling, cosmetics and presentation with the player where they belong.** The default game has a server-hosted connection, but its railway is still owned by browsers. That is the important distinction, not whether every number lives on the server.

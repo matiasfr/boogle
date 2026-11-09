@@ -1,5 +1,9 @@
 # 2. Discovery as progression for Boogle 2.0
 
+> **Verdict:** Knowledge-as-key progression and leads; its three-lead gate was dropped.
+> **Top recommendations:** 1. Treat discoveries as leads that unlock builds; the three-lead gate itself was dropped.
+> **Status:** reference.
+
 *Research for the eight-era archipelago concept, 30 October 2026. **[V]**: matched word for word on the linked page. **[S]**: from secondary coverage, a reprint or a wiki. Check [S] wording before reusing it.*
 
 **In short:** games that make discovery the progression either make **knowledge the key** (Outer Wilds, Tunic, The Witness, Fez) or make **finding things feed a tech tree** (Subnautica, Minecraft, Valheim, Pikmin). Boogle can use both:

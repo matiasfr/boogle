@@ -1,5 +1,9 @@
 # Reviewing agent-built Boogle
 
+> **Verdict:** Review loop first: one link, before and after, a pinned note, the right agent.
+> **Top recommendations:** 1. Agent submits evidence: record review ID, job/topic and launcher checkout, source tree/build, asset hashes, baseline. 2. Owner taps the image: capture normalized image coordinates plus frame/time and text. 3. Feedback arrives durably: extend the existing report path with versioned review records, IDs.
+> **Status:** partly adopted. See [plan review-inbox](../plans/review-inbox.md), [plan asset-stage](../plans/asset-stage.md), [plan look-compare](../plans/look-compare.md).
+
 _2026-11-03. Research, not implementation approval. **[V]** = primary text or code read; **[A]** = indexed excerpt/abstract only; **[S]** = secondary account; **[D]** = recommendation/inference. Local audit: `993416e2`; sibling Dev-menu checkout: `dfc8d8b6`, unshipped status supplied by the brief, deployment not checked. No game/device test or performance measurement._
 
 **Build a review loop first: one link → before/after → a pinned note or decision → the right agent → a revised comparison.** Next, give assets their own stage; then make the Dev shell persistent and non-modal, with free camera and a shared-HDR grade board. Keep the already-researched [eight-tool menu](dev-menu-plan.md); this report extends its review workflow, not its cheat inventory. Serves **Understandable at a glance**, **Show, don't tell**, and **Small and readable** in [DESIGN.md](../../DESIGN.md).

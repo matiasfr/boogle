@@ -1,5 +1,9 @@
 # Personal rewards without power
 
+> **Verdict:** No power from rewards; looks that record what you did.
+> **Top recommendations:** 1. The games that keep veterans and newcomers playing together give no power for progress. 2. A look is worth showing off when it records something you did. 3. A reward only motivates if the player notices it and knows what it's worth.
+> **Status:** partly adopted. See [Progress and rewards](../decisions.md#progress-and-rewards).
+
 _1 November 2026. Research for the personal half of "Three things you earn" in [docs/decisions.md](../decisions.md): **som** (a personal coin, earned only, spent on looks) and **knacks** (personal skill per activity that unlock options, never power), plus the cosmetics both pay for. Hats stay out of scope until the loop is fun, so this is research only. It builds on [0.1/8-collecting-tiers.md](0.1/8-collecting-tiers.md) (contribution tiers, Wobbly Life, Sea of Thieves' "no classes"), [0.1/9-brainrot-hooks.md](0.1/9-brainrot-hooks.md) (rarity done kindly) and [progression-models.md](progression-models.md), and doesn't repeat them. Sources are developer interviews, a GDC talk write-up, studio pages, one psychology study, and wikis where nothing better exists._
 
 **Markers.** **[V]**: I fetched the page and the wording matched. **[S]**: from a search summary, a wiki or a guide only; likely, not certain.

@@ -1,5 +1,9 @@
 # Friction without failure: challenge for an eight-hour railway
 
+> **Verdict:** Challenge as a burden to solve and retire, with loss-free recovery nearby.
+> **Top recommendations:** 1. Give every challenge a nearby, loss-free recovery. 2. Replace repeated commuting with a permanent spatial solution. 3. Make helping obvious and optional.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 5 November 2026. Challenge, tension and friction in a no-death, no-loss, drop-in co-op adventure. Studies A Short Hike, Death Stranding, Overcooked, PEAK, Super Mario Odyssey, Animal Crossing, Dredge, Townscaper and Valheim. Repository baseline: `68ee082d`. Research only: no gameplay changes, new playtest, campaign validation or implementation approval._
 
 **Evidence labels:** **[R]** = repository decision, plan or recorded observation; **[V]** = fetched primary-source text; **[I]** = interpretation; **[H]** = Boogle proposal. Developer interviews hosted by publications remain primary testimony; publisher pages establish advertised mechanics, not enjoyment. GDC abstracts were read, not the talks. Reference games were not played for this report. Every proposed duration and acceptance threshold is a test setting, not a scientific optimum.

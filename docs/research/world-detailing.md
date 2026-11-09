@@ -1,5 +1,9 @@
 # World detailing: intentional places within a measured art budget
 
+> **Verdict:** One accountable integrator, independent review, a visible-combination budget.
+> **Top recommendations:** 1. Budget visible combinations and residency, not eight hours of props. 2. Give each area an intent and a reserved child budget. 3. Use one builder and one holistic review for the first corner.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 5 November 2026. Live primary-source research and focused repository inspection at `68ee082d6484111991a59f7a8661338587573ad0`. Covers Mac/mobile art allocations, authored and procedural set dressing, bounded agent supervision, and a proposed one-corner pilot. Research only: no game changes, generated art, new captures, benchmark, pilot execution or owner acceptance._
 
 **Evidence:** **[L]** repository source inspected now; **[R]** a dated local report's measurements, not rerun here; **[V]** primary text/documentation or named developers' interview answers read live; **[A]** official talk description only, recording not watched; **[P]** Boogle proposal or arithmetic, not a measured device limit. No public source examined supplies a comparable six-column world budget for the requested games. Their production methods inform the allocations below; their screenshots do not establish triangle counts or browser performance. Not tested on a device.

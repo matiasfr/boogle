@@ -1,5 +1,9 @@
 # Upgrade economy: one material, many things worth improving
 
+> **Verdict:** Shallow tree, shared material spine, several kinds of improvement per stop.
+> **Top recommendations:** 1. Use the reconciled cement → steel → crystal → copper route as the comparison baseline, not an accepted map. 2. Make each upgrade repay a visible inconvenience and preserve the saving. 3. Keep starter abilities; let small places teach one new action or combinations without a resource tier.
+> **Status:** partly adopted. See [economy-principles-audit](economy-principles-audit.md).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Note added 6 November 2026: the owner approved a shared wallet, fully shared progression and a world paused while empty, with a capped away credit on the next join ([economy principles amended](../decisions.md#progress-and-rewards)). Its recommendations against a spendable shared wallet are superseded. The rest stands as written._

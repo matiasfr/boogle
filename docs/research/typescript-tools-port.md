@@ -1,5 +1,9 @@
 # Compiler-independent developer tools
 
+> **Verdict:** Compiler-independent developer tools.
+> **Top recommendations:** none; port record for the developer tools.
+> **Status:** adopted. See [typescript-7](typescript-7.md).
+
 3 November 2026; baseline `32a42ee5e7c2b10dc07d4536445316cae6ddb245`.
 This implements the tooling part of the owner's full TypeScript upgrade request.
 The compiler version, ESLint configuration and `src/` are unchanged.

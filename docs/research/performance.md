@@ -1,5 +1,9 @@
 # Performance: first report (6 November 2026)
 
+> **Verdict:** Cache railway adapter reads per tick; first measured performance report.
+> **Top recommendations:** 1. Cache the railway adapter's read once per tick (src/adapters/railway.ts; owner of the railway networking work). 2. Give the smoke a page CI can run, and keep it testing the current game. 3. Chunk and cull the committed track (src/proto/place/pieces.ts and the kit batches): split the rail and sleeper.
+> **Status:** partly adopted. See [Process](../decisions.md#process).
+
 What the current game costs on the owner's M1 Max, why the live smoke test has failed since bbc42281, what this branch
 fixes, and what to do next. Measured with `npm run bench` (dev/look/bench.ts), which the daily perf job now runs every
 night ([daily jobs](../../dev/daily/README.md), [test details](../agents/test-details/performance.md)), as the owner's

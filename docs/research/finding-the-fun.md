@@ -1,5 +1,9 @@
 # Finding the fun: how studios prototype and decide fast
 
+> **Verdict:** Verb before world; one feeling question per prototype.
+> **Top recommendations:** 1. The studios that find fun fastest build the verb before the world: Mario ran around a test garden for months. 2. A good prototype asks one question about a feeling, not about technology (Blow). 3. Toy first, then goal (Experimental Gameplay Project): if the bare mechanic isn't satisfying to fiddle with, a goal won't save it.
+> **Status:** adopted. See [plan find-the-fun](../plans/find-the-fun.md).
+
 *Research report, 1 November 2026. How studios known for play-first design prototype, playtest and kill ideas: Nintendo (Mario 64, Breath of the Wild, Tears of the Kingdom, Splatoon, Mario Odyssey, Pikmin, Miyamoto's over-the-shoulder test), Valve (Portal, Ambinder's playtest methods), the Experimental Gameplay Project, Vlambeer, Double Fine's Amnesia Fortnight, Supercell, Spry Fox, House House (Untitled Goose Game, Big Walk), Landfall, Jonathan Blow, thatgamecompany, Supergiant, Toby Fox, Mark Rosewater, and the little that exists on AI-assisted prototyping. For the process in [find-the-fun.md](../plans/find-the-fun.md), [decisions.md](../decisions.md) ("Next: find the fun") and the [protos page](../../protos/protos.ts). Recommendations only: nothing here is a design decision.*
 
 **Markers.** *Verified*: fetched and read at the source (for slides, the text extracted from the PDF). *Secondary*: a news report, wiki or summary of a talk, not the developer's own words on the page. *Derived*: worked out for Boogle from the sources, not stated by anyone. Nothing could be found on Media Molecule's, Mojang's or Supergiant's prototyping beyond origin stories, so they get one line each.

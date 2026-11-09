@@ -1,5 +1,9 @@
 # Wordless onboarding: the first five minutes, and joining friends mid-session
 
+> **Verdict:** Teach in the first five minutes without words; join friends mid-session.
+> **Top recommendations:** 1. The games that teach best without words put the lesson where the player can't miss it and fail safely: 1-1's first Goomba. 2. One idea, four beats: introduce it safely, develop it, twist it, then let the player show mastery (Hayashida's kishōtenketsu). 3. Players read the world literally.
+> **Status:** reference.
+
 *Research report, 1 November 2026. How games teach without text in their opening minutes (Super Mario Bros. 1-1, Nintendo's kishōtenketsu, Portal, Limbo and Inside, Celeste, Journey, Breath of the Wild, A Short Hike, Untitled Goose Game, Animal Crossing), how they pull a player toward a goal (Disney's "weenie", BotW's triangle rule), how multiplayer games bring in a late joiner and show shared progress (Journey, Deep Rock Galactic, Among Us, Animal Crossing visits, Fall Guys), and how a link-shared web game hooks someone in 30 seconds (Poki's developer guide, Roblox's creator docs, .io games, Bruno Simon's portfolio). Builds on [controls-guide-and-pause-menu.md](controls-guide-and-pause-menu.md) (the controls guide, pause view and first-run card) and does not repeat it. Serves DESIGN.md 7 (Telegraph everything) and 8 (Designed for drop-in). Recommendations only; nothing here is decided. Sources were checked with web search and page fetches; several talks (A Short Hike's GDC postmortem, Maddy Thorson's Celeste talk) were seen only through summaries, and the search budget ran out before A Short Hike and Animal Crossing's first day could be checked further. Each section says how solid its evidence is.*
 
 ## Summary

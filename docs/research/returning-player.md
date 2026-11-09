@@ -1,5 +1,9 @@
 # Coming back: continue, start over and where you land
 
+> **Verdict:** Continue first; start over resets the person, not the world.
+> **Top recommendations:** 1. Players press Continue far more often than New Game, so a returning player's first option is the one that carries on. 2. Shared-world games keep the person and the world apart. 3. Survival and sandbox games bring you back where you logged out; a spawn point is for people with no record.
+> **Status:** adopted. See [Controls](../decisions.md#controls).
+
 *Research report, 2 November 2026. What games do when a player returns: whether they ask anything, where you land, and what "start over" means when the world is shared. Serves DESIGN.md 8 (Designed for drop-in) and 9 (Leave something for the next visitor). Builds on [wordless-onboarding.md](wordless-onboarding.md), which covers first arrivals. Recommendations only; nothing here is decided. This was a quick pass: most sources are support pages, community wikis and opinion pieces rather than developer talks, and searches on Fall Guys, Among Us, Sky, A Short Hike, Terraria, Don't Starve Together, Sea of Thieves and Breath of the Wild found nothing usable. Where a line below rests on a community source, it says so.*
 
 ## Summary

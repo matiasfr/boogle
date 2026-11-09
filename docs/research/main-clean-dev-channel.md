@@ -1,5 +1,9 @@
 # Clean main, a separate dev channel
 
+> **Verdict:** Keep main on boogle.club, put a prototype on dev.boogle.club.
+> **Top recommendations:** 1. Create an isolated dev destination first. 2. Make Place's production dependencies explicit, then graduate them. 3. Keep main as the integration trunk; deploy bounded prototype branches.
+> **Status:** open. No decision cites it yet.
+
 _Research, 4 November 2026. Scope and migration proposal against `5b356980e7ccd56f0edff79010e7e92c35e8e393`; repository audit and live primary-source research, no implementation, deployment, deletion or policy change. Counts describe this checkout, not newer parallel jobs. Not tested on a device._
 
 ## Decision

@@ -1,5 +1,9 @@
 # Beautiful corner craft: a small, polished part that predicts the game
 
+> **Verdict:** Prove one complete repeatable action at full polish, then a second arrangement.
+> **Top recommendations:** 1. Polish the accepted material-to-track job before expanding its content. 2. Choose Station 2 and include the whole playable crossing. 3. Follow dependency order: action/contact, composition, light, kit, materials, final motion/sound, integrated validation.
+> **Status:** adopted. See [plan beautiful-corner](../plans/beautiful-corner.md), [plan look-pass](../plans/look-pass.md).
+
 _Research report, 2 November 2026. How to take one already promising Boogle job through composition, lighting, art, motion, sound, play and production validation quickly. Studies Nintendo, A Short Hike, Journey, Tiny Glade, Firewatch, Hollow Knight, Astro Bot, Uncharted, Valve and vertical-slice practice. Ends with numbered recommendations and a pass plan for one gorge station and one track-laying machine. Recommendations only; this report authorizes no implementation or change to the pending rail-slice plan._
 
 **Evidence.** **[V]** means developer text, interview, paper or slides fetched and read. **[A]** means only the official talk abstract was accessible; the recording was not watched. **[S]** means secondary reporting. **[D]** is a deduction for Boogle. **[H]** is an untested hypothesis, including proposed timeboxes and acceptance thresholds. Firewatch's original slides were downloaded, their text inspected, and slides 58–61 rendered and viewed. Other linked videos were not watched. Repository observations are from `6d24bcd0`; no game, device benchmark or new playtest was run for this report.

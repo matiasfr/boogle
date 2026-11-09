@@ -1,5 +1,9 @@
 # Playtest telemetry: heat maps, death maps and a few counters
 
+> **Verdict:** A handful of signals tied to a question; heat maps for where.
+> **Top recommendations:** 1. Every studio that uses telemetry well records a handful of signals tied to a question, not everything. 2. The heat map is the workhorse: positions or events binned into grid cells, coloured by count. 3. Heat maps answer where, not why or when: Valve lists "averages hide extreme examples" and "illusory patterns".
+> **Status:** open. See [plan find-the-fun](../plans/find-the-fun.md).
+
 *Research report, 1 November 2026. How studios record and show what playtesters do: Breath of the Wild's route heat maps, Microsoft's Halo 3 user research and Bungie's public heat maps, Valve's playtest methods, BioWare's development telemetry, Mega Crit's Slay the Spire metrics, an indie death heat map (Private Joe), Poki's web playtests, Super Meat Boy's replay of every attempt, Mario Maker's death marks, Drachen's spatial analytics, time-to-fun, privacy-first web analytics (Plausible, the UK's analytics exemption) and session replay for canvas games. For the owner's solo iPad playtests in [find-the-fun.md](../plans/find-the-fun.md), the counters in [src/proto/count.ts](../../src/proto/count.ts) and recommendation 18 in [level-design.md](level-design.md) ("check with heat maps"). Builds on [finding-the-fun.md](finding-the-fun.md) (rec 10, "record behaviour, not only verdicts") without repeating it. Recommendations only; no design decisions.*
 
 **Markers.** **[V]**: the page or slides were fetched and the claim matches. **[S]**: seen only in a search summary, a recap, a forum or a wiki, or the page refused the fetch; check before quoting.

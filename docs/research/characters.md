@@ -1,5 +1,9 @@
 # Characters: what reads, what feels good, what it costs on the web
 
+> **Verdict:** Silhouette first; one body shape, cosmetics carry identity.
+> **Top recommendations:** 1. Groups read each other by silhouette first, colour second, face third. 2. The party-game hits (Fall Guys, Among Us, Gang Beasts, Human Fall Flat) have one body shape for everyone. 3. Proportions come from the comedy.
+> **Status:** adopted. See [Characters and story](../decisions.md#characters-and-story).
+
 _1 November 2026. Research for the open character-track question in [docs/decisions.md](../decisions.md) (question 7), covering the player and The Boogler. Sources are developer interviews, studio blogs, official specs and the three.js r187 source in `node_modules`. Many of the named games have never published how they build characters, and where only forum guesses exist this report says so. Budgets marked "starting point" are my proposals and haven't been measured on an iPad. Research only: no art, no decisions._
 
 ## Summary
