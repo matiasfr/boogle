@@ -5,7 +5,7 @@ description: Co-develop Boogle with the owner as the orchestrator. Decide what t
 
 # Orchestrate
 
-You run the studio and the owner is the director: they decide what the game is; you turn that into running work, reviewed merges and clear status. Choose Claude or Codex for hands-on work by task fit ([owner calls](../../../docs/agents/owner-calls.md)); the images preference is a soft suggestion. Nothing here depends on an earlier conversation: start by reading [the state file](../../../docs/agents/orchestrator-state.md), then run `npm run heartbeat` (mode, main, pull requests, CI and deploys, play sessions, the bot queue, the ship lock and every worktree with unmerged work in one report) and `npm run inflight`; in withCodex mode also `npm run codex-status`. Run the same report at each check-in instead of the separate commands.
+You run the studio and the owner is the director: they decide what the game is; you turn that into running work, reviewed merges and clear status. Choose Claude or Codex for hands-on work by task fit ([owner calls](../../../docs/agents/owner-calls.md)); the images preference is a soft suggestion. Nothing here depends on an earlier conversation: start by reading [the state file](../../../docs/agents/orchestrator-state.md), then run `npm run heartbeat` (mode, main, pull requests, CI and deploys, play sessions, the bot queue, the ship lock and every worktree with unmerged work in one report) and `npm run inflight`; in withCodex mode also `npm run codex-status`. Run the same report at each check-in instead of the separate commands. The nightly jobs on the owner's Mac (`~/.boogle/daily/*.log`: scenarios, perf) are the only rendered two-player checks; a failed night is triaged that day like a red main (they failed five nights running to 9 November with nobody looking).
 
 Start a fresh orchestrator session each working day, from the state file. A session that runs for days rereads its whole history on every turn (the 2–9 November session reached 890k tokens of context), and everything a new one needs is in the repo.
 
@@ -14,6 +14,7 @@ Start a fresh orchestrator session each working day, from the state file. A sess
 - Ordering and what's next: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision index](../../../docs/decisions.md#current-decision-index) and [production core](../../../docs/plans/production-core.md).
 - Gameplay that isn't designed yet goes through the [brainstorm skill](../brainstorm/SKILL.md) first ("Brainstorm new gameplay first"). Art, fixes, technical work and ports of accepted behaviour don't.
 - A port from Place gets the designer's fit check before it is planned or built (owner call "Port from Place only what still fits"). The check takes minutes; on 9 November the gold finds took an hour to build and were cut the same day because it ran afterwards.
+- A plan that places anything in the world carries its level-check findings (the planner runs `npm run level-check` on the planned positions), so the designer rules on reach and order with the plan. On 9 November F2's three secrets reachable before their ability reached the designer after the build.
 - Every plan or build brief that makes gameplay calls (numbers, rules, rewards, pacing, what a character says) gets a design review by the [designer agent](../../agents/designer.md) after it is written and before it is built (owner, 9 November). Default and New calls both proceed on the designer's recommendation and are logged in [agent-calls](../../../docs/agent-calls.md) for the owner to revisit (owner, 9 November); only direction, unapproved scope or an irreversible step waits. Nothing waits for a playtest.
 - Owner calls "Try things early": start reversible experiments without asking and show the results. Ask only about direction or unapproved scope, or anything irreversible or outward-facing. Waiting for a yes on every experiment wastes the owner's time; a wrong turn on a branch costs little.
 
@@ -25,7 +26,9 @@ For every job, in either mode:
 
 - Before a job, check `npm run inflight` and which files it will touch, so two jobs don't edit the same files. Jobs that do share files run one after another.
 - Browser-heavy jobs (bots, captures) compete for one Mac and one GPU. The [bot queue](../../../docs/agents/test-details/bot-segments.md) runs one at a time and lets short looks pass waiting long playthroughs; `npm run heartbeat` shows it. Above a load of about 30 on 10 cores, timing and bot results prove little.
-- The 29-minute long playthrough is the slowest step of most jobs. Ask for it once, at the end, and only when the job changes the route, its rules or the bot. Otherwise the proof is a segment (`--from`, `--to`, `--rail-seed`) or a jump-in for the part that changed.
+- A branch proves itself with a segment (`--from`, `--to`, `--rail-seed`) or a jump-in for the part it changed, not with the 29-minute long playthrough (owner, 9 November). The long run belongs to main: once after each merge batch that changes the route, its rules or the bot, from a worktree at origin/main, and nightly once the daily `long` job is installed. On 9 November three branches each owed a long run: an hour and a half of one GPU, and each result was stale after the next rebase.
+- A built branch that only owes proofs (a rebase, bot runs, stills, tick marks) goes to the runner row of `npm run models`, not an implementer.
+- One plan file per job. A job's agent reads its own plan, not a 1,200-line plan shared by every job in the area.
 
 ### Claude subagents (normal mode)
 
@@ -33,7 +36,7 @@ For every job, in either mode:
 - A brief names the plan file and the step, the files it may touch, what done looks like (the stills or numbers to bring back), which checks to run, and the binding rules below. It ends with: commit on your branch, rebase onto origin/main, don't push or ship, update the plan's tick marks.
 - A subagent that waits on a queued bot run ends its turn and shows as finished; it wakes when the run reports. Check `npm run heartbeat` for its queued jobs before treating it as done or sending it more work.
 - Send corrections to the same agent with SendMessage, so it keeps its context. Start a new agent only for new work.
-- Keep about three running. More than that queue behind the one GPU.
+- Keep about three browser-heavy jobs running; more queue behind the one GPU. Reviews, planning and tooling that need no browser don't count toward the three.
 
 ### Codex jobs (withCodex mode)
 
@@ -49,6 +52,7 @@ Give every brief, Claude or Codex, the binding rules: stay on its branch, no pus
 
 ## 3. Review
 
+- Start a risky branch's independent review as soon as it is built and its check is green, beside its bot runs, not after them. The reviewer writes a failing test for each suspected defect that a test can show; in withCodex mode the reviewer is the other vendor from the author (`npm run models`).
 - Read every report and diff yourself. Open the key stills or frames when a player could see the change; a report's summary isn't proof.
 - Verify each review finding against the code before acting, then send the branch back (SendMessage to the subagent, or `resume` for a Codex job) naming the specific fix, the evidence wanted and "do not ship".
 - Anything that touches `src/sim`, `src/net`, `src/world`, `server/` or the wire format gets an independent review before it merges: the review row of `npm run models` (a fresh subagent that didn't write the code, or a Codex `review` job with `--ref-branch codex/<topic>`). Use the [shipping](../../../docs/agents/shipping.md) review tiers. `npm run ship-queue` refuses such a branch until you pass `--reviewed "<who, what they found>"`, because on 9 November six lockstep and server changes merged with only their author's checks.
@@ -60,7 +64,7 @@ Give every brief, Claude or Codex, the binding rules: stay on its branch, no pus
 - Read the output every time. `CODE CONFLICT` means nothing shipped: send it back to rebase. If a ship stalls, look at its pull request: a cancelled check usually needs `gh run rerun <id> --failed`, and a conflict needs a fresh ship. Confirm with `git fetch` that main has the commits before saying something merged.
 - Owner call "Nothing waits for a playtest" (9 November): keep merging while the owner plays. The one hold: don't ship a `WORLD_NS` bump (it resets saves) while the playdata shows the owner mid-session, since main deploys to boogle.club.
 - Owner call "Simplify in batches": after every few code merges, or once a working day, run the `/simplify` skill over the merged range (`git diff <last-pass>..origin/main`) in a fresh worktree, ship the cleanup, and record the pass's end commit in the state file.
-- Mark a merged branch's brief or tracker item. Remove worktrees whose branches are fully merged into origin/main and have no local changes (owner, 7 November) with `git worktree remove` (no force) and `git branch -d`; keep any with unmerged commits, leave worktrees locked by a live agent, and never touch the daily-job checkouts or `~/Developer/THAT FRANCO CODE`.
+- Mark a merged branch's brief or tracker item. Remove worktrees whose branches are fully merged into origin/main and have no local changes (owner, 7 November) with `git worktree remove` (no force) and `git branch -d`. A clean worktree with unmerged commits and no commit for 48 hours is archived, not kept (owner, 9 November): tag its tip `archive/worktree/<branch>`, check the tag, then remove the worktree and its branch; the tags stay local unless the owner asks to push them. Keep worktrees with uncommitted changes and list them for the owner, leave worktrees locked by a live agent, and never touch the daily-job checkouts or `~/Developer/THAT FRANCO CODE`.
 
 ## 5. Playtest cycle
 
@@ -83,7 +87,7 @@ List peers with ListAgents, and message them with SendMessage: what you're doing
 
 ## 8. Keep the owner informed
 
-- Update the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C) (database `items`: sections `running`, `queued`, `call`, `road`, `phase`) and the state file as jobs start, merge and finish. Leftovers a job reports but doesn't fix go in the state file's "Leftovers" section the same day, not in session notes: the next orchestrator can't read those.
+- Update the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C) (database `items`: sections `running`, `queued`, `call`, `road`, `phase`) and the state file as jobs start, merge and finish. The board is the live status; fold state-file edits into the next ship, and ship the file alone only at a pause, a session's end or an owner decision (13 of 104 merges from 7 to 9 November were bookkeeping, each through CI and a deploy). Leftovers a job reports but doesn't fix go in the state file's "Leftovers" section the same day, not in session notes: the next orchestrator can't read those.
 - Send only the images worth seeing, stitched into one where you can, and give complete links, never bare flags.
 - Say "not tested on a device" where it applies. Report failures and your own mistakes plainly, and correct a wrong status as soon as you find it.
 

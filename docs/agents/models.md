@@ -16,6 +16,16 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   in one pass; `--panel` runs three, one per role, for a new area or big mechanic (owner, 9 November).
 - **Design review:** every plan or brief with gameplay calls gets the `designer` agent before it is built (owner,
   9 November).
+- **Independent review** (owner, 9 November): the reviewer of a lockstep, net, world or server change is never the
+  model that wrote it in the same session, and in withCodex mode it is the other vendor (Codex reviews Claude's code,
+  Claude reviews Codex's), because an author and a reviewer on the same model share blind spots. Where a suspected
+  defect can be shown by a test, the reviewer writes the failing test instead of only describing it.
+- **Runner** (owner, 9 November): a built branch that only owes proofs (a rebase, bot runs, stills, tick marks) goes
+  to the runner route, not an implementer. A runner that hits a failure reports it; it doesn't change design or game
+  code.
+- **Strongest model for the few calls that steer the rest** (9 November, the orchestrator's reading of the owner's
+  "let's do 1-8"; logged in [agent-calls](../agent-calls.md)): the main session, the planner and the independent
+  review run on Fable; implementers stay on Opus.
 - **Daily jobs** (`dev/daily/jobs.ts`) stay on Codex; at a limit they fail and report rather than spend Claude usage
   unattended.
 - **Changing a route:** edit `dev/models.ts` and record the owner's words in
