@@ -8,7 +8,16 @@ import path from 'node:path';
 
 process.env.BOOGLE_BOT_QUEUE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-bot-queue-'));
 delete process.env.BOOGLE_BOT_LEASE;
-const { acquireBotSlot, ahead } = await import('../dev/look/bot-queue.ts');
+process.env.BOOGLE_BOT_MAX_LOAD = '0'; // ordering only; this machine's load must not hold these tests
+const { acquireBotSlot, ahead, loadGate } = await import('../dev/look/bot-queue.ts');
+
+test('load gate: wait while the load is above the limit, then go ahead under load; 0 turns it off', () => {
+  assert.equal(loadGate(12, 30, 0, 1000), 'go');
+  assert.equal(loadGate(30, 30, 0, 1000), 'go', 'at the limit is fine');
+  assert.equal(loadGate(41, 30, 999, 1000), 'wait');
+  assert.equal(loadGate(41, 30, 1000, 1000), 'timeout');
+  assert.equal(loadGate(99, 0, 0, 1000), 'go');
+});
 
 const ticket = (number: number, long: boolean, since: number, held = false) => ({
   file: `t${number}`,
