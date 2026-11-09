@@ -468,7 +468,7 @@ const PAGES: Page[] = [
         title: 'Gull calls, one of each',
         when: 'Each pattern the ambience picks from, near and far: a lone mew, a pair, a long call, and one answered.',
         body: seq(
-          `const { gullCall } = await import('/src/proto/place/ambience.ts');`,
+          `const { gullCall } = await import('/src/render/ambience.ts');`,
           [
             `gullCall('mew', 0.2);`,
             `gullCall('pair', 0.2);`,
