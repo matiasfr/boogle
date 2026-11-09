@@ -333,11 +333,11 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
 
 **Steps.**
 
-- [ ] **J1a. The catalog.** Write `src/sim/railway-works-layout.ts` with every constant in "Catalog", computed in a
+- [x] **J1a. The catalog.** Write `src/sim/railway-works-layout.ts` with every constant in "Catalog", computed in a
   throwaway script with Place's `lineAt`, `railY` and `H` (`src/proto/place/layout.ts`, `terrain.ts`) and
   `parseMapPage`. Commit the numbers, not the script. Header: the Works and Roundhouse positions; no import from
   `src/proto` (it is pure sim). Nothing imports it yet.
-- [ ] **J1b. Clearance tests** in `test/railway-works-layout.test.ts`, with node imports of Place's layout and terrain
+- [x] **J1b. Clearance tests** in `test/railway-works-layout.test.ts`, with node imports of Place's layout and terrain
   as `test/greybox-works.test.ts` does:
   - `'every Works point stands on its ground'`: `|y − H| ≤ 50 cm` for land points; the turntable and pier points
     within 5 cm of `railY`; each bent's ground ≤ 0 m (sea).
@@ -355,7 +355,7 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
     `WORKS_BREAKER` equals `LINE2_BOILER`'s position.
 
   Where a candidate fails, move it the least distance that passes, and list the move in the commit message.
-- [ ] **J1c. The map page.** In `#map-data`:
+- [x] **J1c. The map page.** In `#map-data`:
   - Add `common.works` rows `{ id, name, at, kind: 'works', note }` for breaker, stall-slab, stall, turntable, seam,
     cleft, kiln, works-rocks, works-rack, pier-stop, pier-rack, pier-frame and bents (at the first bent), at J1a's
     local metres.
@@ -372,6 +372,9 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
   the PNG and say what it shows.
 - **Done means.** The tests pass and document every clearance. The map page and greybox agree. No runtime module imports
   the new file.
+- **Built (8 November, #1218, `bef621eb`).** The catalog, its point clearance tests and 13 limestone survey marks on
+  the map page and greybox. It pins interaction anchors, not full footprints (J2 records what that meant). No runtime
+  module imported it until J3.
 
 **Codex brief (paste):**
 
@@ -765,16 +768,16 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
 
 **Steps.**
 
-- [ ] **J5a. The wagon on the train.**
+- [x] **J5a. The wagon on the train.**
   - With `train[1].wagon`, `train-view` adds a fourth car at −7.4 m: the wagon with its cradle, posed like the others,
     on platform `railway:train1-3`, `shared = true`. It has no seats.
   - Footings aboard are drawn on the cradle (`foot` blocks).
   - Arrival flights are Local, on the row's live edges: footings hop from the Works rack to the wagon at the quarry
     stop and from the wagon to the pier rack at the pier stop. They count in `trainFlying()`, so the racks hold their
     count until each flight lands, as the kit does.
-- [ ] **J5b. The Pier halt.** `halts-view` builds one more halt from `LINE_HALTS[5]`, shown once `line2Completed ≥ 6`
+- [x] **J5b. The Pier halt.** `halts-view` builds one more halt from `LINE_HALTS[5]`, shown once `line2Completed ≥ 6`
   and dropped in on that live edge. Calls and the board work as for the others.
-- [ ] **J5c. `crossing-view.ts`**, `createRailwayCrossing(adapter, owner)`:
+- [x] **J5c. `crossing-view.ts`**, `createRailwayCrossing(adapter, owner)`:
   - From Q6 completion, draw the 12 sockets and the north stakes along `ringx`, and the pier rack with its stack.
     `railway-foot-take-1` (**Shoulder a footing**) and `railway-foot-set-2` (**Set the footing**) sit at the pier
     head's frame.
@@ -783,7 +786,7 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
     pieces.
   - At `crossing ≥ 0`, a live edge only: one `whistle` and two rockets at the last bent. Snap on restore.
   - `inspect()` → `crossingView`.
-- [ ] **J5d. The bot.** `splitRockToCrossing({ bot, checkpoint, walkQuarry })`, after D's `boilerToPier`:
+- [x] **J5d. The bot.** `splitRockToCrossing({ bot, checkpoint, walkQuarry })`, after D's `boilerToPier`:
   1. Ride from the pier to the village; take the breaker → `checkpoint('breaker')`.
   2. Strike the stall slab → `checkpoint('stall open')`.
   3. Take 16 logs from the nearest grove (the existing chop helpers); ride line 2 to the quarry halt; strike the
@@ -797,13 +800,13 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
      `checkpoint('crossing footed')`.
 
   The friend (`second`) waits on `crossing` and checkpoints `crossing footed`. Checkpoints before `pier` are unchanged.
-- [ ] **J5e. Seeded halves.** `railway-works-bot.ts`, modelled on `railway-b5b8-bot.ts`: `railFrom=works` starts at
+- [x] **J5e. Seeded halves.** `railway-works-bot.ts`, modelled on `railway-b5b8-bot.ts`: `railFrom=works` starts at
   `--rail-seed works-arrive` and `railFrom=wagon` at `wagon-on`; `railStop` ends at a named checkpoint. No teleport, no
   direct op, no recovery.
-- [ ] **J5f. Frames** in `railway-photo.ts`: `'throat open'` (from the halt through the cut), `'stall built'` (the
+- [x] **J5f. Frames** in `railway-photo.ts`: `'throat open'` (from the halt through the cut), `'stall built'` (the
   stall with shunter and wagon), `'wagon coupled'` (the train at the village with the cradle wagon), `'crossing footed'`
   (from the pier head north along the bents toward Ring Island, with `greybox=sickle`).
-- [ ] **J5g. Record.**
+- [x] **J5g. Record.**
   - In `place.md`, add a "Production Split-rock Works and the Roundhouse" section after B5–B8's: the breaker, the
     strikes, the kiln, footings and their conservation, the stall, the cradle, the turn, the wagon and the crossing.
   - Write J1–J5's *Built* notes in this plan, with departures, checkpoint times, stills, the `WORLD_NS` version and
@@ -819,6 +822,62 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
   - `npm run perf` on a moving train with the wagon and at the pier with 6 bents.
   - `npm run test:net` (J5 changes the train consist).
 - **Done means.** Both halves pass with no recovery. Checkpoints before `pier` are unchanged. The docs are updated.
+- **As built (9 November, `WORLD_NS` v22, no bump; not tested on a device).** Where J5 differs from the text above:
+  - **The turn is held in the sim.** `rail.turn` is refused while `ready ≥ 0 && !train[1].wagon` (the wagon rolls
+    out and waits), so J4's client-side anti-grief rule is now binding. A turn no longer cancels `ready`; after the
+    couple the table is a toy again. No state shape changed; an older client's turn back is simply refused
+    (`test/railway-works.test.ts`, "the table holds while the wagon rolls out and waits").
+  - **The wagon** is line 2's fourth car (offsets `[3.7, 0, −3.7, −7.4]`), a `rail.makeCar` platform
+    `railway:train1-3` (shared, no seats), parked out of sight while `!wagon`. Its deck, cradle and aboard footings
+    are one box batch. The load and unload hops (0.9 s each, 0.3 s apart, a thump and a dust ring on landing) play
+    only on the row's live arrival edges at stops 1 and 3; restore clears them. `trains.footFlying()` holds the pier
+    rack's count until each hop lands. The shunt's rolling wagon (`roundhouse-view.ts`) still has no collider.
+  - **The Pier halt** is over water, so it stands on timber piles instead of a support wall, with only its landward
+    ramp. It appears on the live `line2Completed ≥ 6` edge and snaps on restore.
+  - **The crossing** is wired through `works-live.ts` (not `view.ts` directly); `works-view.ts` exposes `rackSlot`
+    so the train view can fly footings from the real rack slots. The 12 sockets are iron collars on the sea floor at
+    the six bents (`CROSSING_BENTS` ± `CROSSING_FOOT_OFF`), each bent with a stake; J2's `PIER_SOCKETS` is unused.
+    `PIER_FRAME` stood over air 3.5 m east of the track, so a solid plank apron (with legs) carries the jib and the
+    set. The jib lowers each footing on a rope from its head: up to the hook 0.6 s, out, then down 2.2 s with a
+    splash at the surface. A pair raises its bent (posts, an X brace and a cap) in four pieces over 2 s. The
+    crossing's whistle and two rockets wait for the last bent to stand (at most 10 s).
+  - **The bot segment** lives in a new `dev/look/bots/railway-works.ts` (`splitRockToCrossing`, re-exported from
+    `bots/railway.ts`), with `from: 'pier' | 'works' | 'wagon'` for the seeded halves; `railPerf=1` samples a ride
+    on the moving train with the wagon. The playthrough's stops gain `crossing` (`crossing footed`).
+  - **A J4 fix outside the listed files:** the breaker's hit-stop held its swing clock just short of contact whenever
+    a frame would cross it, so with a steady frame time the swing froze, and with it every later strike (the seeded
+    run's throat strike was never offered). The swing now lands on the contact frame and recoils
+    (`breaker-view.ts`).
+  - The bot comes at a stall socket from the stall's side: the set is offered within the stall's reach of its
+    centre, and arriving from the halt stopped just outside it.
+  - Look tooling: poses `crossing`, `pierhead`, `bents` and `wagon` in `railway-works-at.ts`, and `worksdo=pier`
+    (`pierN=2`) in `railway-works-act.ts`.
+  - `look` gained `--wall N` (the warped warm-up's wall-clock limit, 540 s by default): the Works half takes about
+    10.5 minutes of wall clock.
+  - **Proofs.** `npm run check` passed; `npm run test:net` 111/111.
+  - **Seeded halves, no recovery** (the eval's recovery throws). Times are the bot page's game seconds from the seed;
+    the page runs about 7x faster than the authority, so divide by about 7 for wall-clock time.
+    - `railFrom=works&railStop=wagon coupled` from `works-arrive` (`--warm 9000 --wall 1500`; 626 s of wall clock):
+      breaker 2.8, stall open 4.7, throat open 196.2, kiln lit 211.0, first footing 259.4; hand trips home at
+      1321.4 (stall), 2219.3 (stall; stall built), 3132.1 (cradle) and 4058.7 (cradle), so about 900–1060 s each
+      (two line-2 rides with their waits, about 2.5 minutes of wall clock); cradle fitted 4065.1, table turned
+      4067.2, wagon coupled 4106.6. An earlier pass of the same half gave the same shape (4260.9 at the couple).
+    - `railFrom=wagon&railStop=crossing footed` from `wagon-on` (`greybox=sickle`; 246 s of wall clock): footings at
+      the pier 502.7, crossing footed 1362.2 (twelve sets from the pier rack).
+    - The Q6/Far Head bot trap was not hit.
+  - **Stills** (opened): `.look/j5-photo-throat-still.png` (the quarry halt and line 2's train, the outcrop with the
+    cut open and the toppled slab), `.look/j5-photo-stall-still.png` (the stall standing on its two footings with
+    its roof, the shunter inside and the turntable in front), `.look/j5-half-works-still.png` (`wagon coupled`: the
+    frame rides with the departing train, the brass cradle wagon empty at the tail behind two crate cars and the
+    engine), `.look/j5-half-wagon-still.png` (from the pier head along the six bents to Ring Island, with the jib and the
+    halt's rack), and `.look/j5-pierset-1-motion.png` (two real pier sets: the footing on its rope, the bent rising,
+    the rockets).
+  - **Perf** (the `prof=1` overlay, live 240 frames, 960 × 600, Apple Metal, headless): at the pier with six bents
+    (`worksat=crossing`, `crossing-done`) GPU render 7.74 avg / 12.12 p95 ms against 5.72 / 10.72 with `works=0`;
+    presented interval 16.63 / 16.68 ms either way. The crossing is one instanced draw of up to 360 boxes. Draw-call
+    and triangle counts read under `prof=1` give only the last pass (3 calls) and aren't reported; the moving-train
+    sample (`railPerf=1`) has the same limit and its GPU stats aren't credible (p95 below the average), so the moving
+    train with the wagon is not measured yet. The wagon adds one instanced draw (its box batch) to line 2's train.
 
 **Codex brief (paste):**
 
