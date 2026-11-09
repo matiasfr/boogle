@@ -33,9 +33,9 @@ export function createRailwayBreaker(
   // A broad-faced hammer, 1.4 m: ash handle, a squat iron head with brass bands. Origin at the grip's end.
   const geometry = shapes.merged([
     ['c', 0, 0.62, 0, 0.055, 1.24, 0.055, '#9a7448'],
-    ['b', 0, 1.36, 0, 0.62, 0.34, 0.36, '#4d4f52'],
-    ['b', -0.33, 1.36, 0, 0.06, 0.4, 0.42, '#5c5e61'],
-    ['b', 0.33, 1.36, 0, 0.06, 0.4, 0.42, '#5c5e61'],
+    ['b', 0, 1.36, 0, 0.62, 0.34, 0.36, '#646a70'],
+    ['b', -0.33, 1.36, 0, 0.06, 0.4, 0.42, '#767c82'],
+    ['b', 0.33, 1.36, 0, 0.06, 0.4, 0.42, '#767c82'],
     ['b', -0.18, 1.36, 0, 0.05, 0.36, 0.38, '#c79a3e'],
     ['b', 0.18, 1.36, 0, 0.05, 0.36, 0.38, '#c79a3e'],
     ['c', 0, 0.06, 0, 0.075, 0.12, 0.075, '#3c3a36'],
@@ -164,17 +164,17 @@ export function createRailwayBreaker(
       shown = w.breaker === 1;
       mote -= dt;
       if (shown && mote <= 0) {
-        mote = 0.8;
+        mote = 0.35;
         side *= -1;
         emit({
           x: bx + side * 0.42,
           y: by + 1.4,
           z: bz + side * 0.5,
           vx: side * 0.025,
-          vy: 0.14,
+          vy: 0.35,
           vz: 0,
-          life: 1.1,
-          size: 0.055,
+          life: 1.6,
+          size: 0.09,
           color: gold,
           intensity: readableIntensity() * 1.4,
           alpha: 0.75,

@@ -615,6 +615,7 @@ export async function createRailwayWorks(
       seams: state.works.seams,
       throatSolid: slabBodies.length > 0,
       toppling: topple >= 0,
+      shot: throatCamera.inspect(),
       kiln: { ...state.works.kiln, glow: mouth.visible },
       rack: Math.max(0, state.works.rack - flights.length),
       rollers: flights.length,

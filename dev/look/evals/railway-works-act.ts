@@ -1,6 +1,6 @@
 // J4 Works moments as a person does them, for `look --action` after `--eval railway-works-at.ts` (which poses the
-// camera): `worksdo=take|strike0|strike1|foot|set|turn`. The bot walks up and presses what the game offers; the
-// motion sheet then films what follows (the swing, the slab, the roll, the table).
+// player): `worksdo=take|strike0|strike1|foot|set|turn`. The bot is set down a few metres short of the thing on the
+// pose's side, walks up and presses what the game offers; the motion sheet then films what follows.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
@@ -8,40 +8,61 @@ const { inspectRailway } = (await import(
 const { STALL_SOCKETS } = (await import(
   '/src/entities/railway/works-shape.ts' as string
 )) as typeof import('../../../src/entities/railway/works-shape.ts');
-const doing = new URLSearchParams(location.search).get('worksdo') ?? '';
-const bot = makeBot();
-const socket = STALL_SOCKETS[0]!;
-const moves: Record<string, [number, number, RegExp]> = {
-  take: [919, 5.4, /Take the breaker/],
-  strike0: [912.4, 17.6, /Strike the seam/],
-  strike1: [1119, 82, /Strike the seam/],
-  foot: [1088, 50, /Shoulder a footing/],
-  set: [socket.x, socket.z, /Set the footing/],
-  turn: [918, 12, /Turn the table/],
-};
-const move = moves[doing];
-if (!move) throw new Error(`Choose worksdo=${Object.keys(moves).join('|')}`);
-if (doing === 'strike0' || doing === 'strike1') {
-  // The breaker first, from the pedestal: the strike needs it in hand.
-  if (inspectRailway()!.works.breaker === 1 && !(await bot.use(919, 5.4, 'the breaker', /Take the breaker/)))
-    throw new Error('no breaker');
-  await bot.wait(600);
-}
-// Stand a few metres short of it on the pose's side (the eval put us there), so the walk is short and on camera.
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
-const p = me.body!.position,
-  d = Math.hypot(p.x - move[0], p.z - move[1]);
-if (d > 4) {
-  const x = move[0] + ((p.x - move[0]) / d) * 3.5,
-    z = move[1] + ((p.z - move[1]) / d) * 3.5;
-  teleport(me.body!, x, Math.max(H(x, z), p.y - 0.85) + 0.85, z);
-  me.body!.velocity.set(0, 0, 0);
-  await bot.wait(300);
+const doing = new URLSearchParams(location.search).get('worksdo') ?? '';
+const bot = makeBot();
+const socket = STALL_SOCKETS[0]!;
+type Move = [number, number, RegExp];
+const BREAKER: Move = [919, 5.4, /Take the breaker/];
+const moves: Record<string, Move> = {
+  take: BREAKER,
+  strike0: [912.4, 17.6, /Strike the seam/],
+  strike1: [1119, 82, /Strike the seam/],
+  foot: [1088, 50, /Shoulder a footing/],
+  set: [socket.x, socket.z, /Set the footing/],
+  turn: [918, 12, /Turn the table/],
+  kiln: [1128, 87, /Fill the kiln/],
+};
+const move = moves[doing];
+if (!move) throw new Error(`Choose worksdo=${Object.keys(moves).join('|')}`);
+const start = { x: me.body!.position.x, y: me.body!.position.y, z: me.body!.position.z };
+/** Set down 3.5 m short of (x, z) on the side of `from`, then walk up and press it. */
+async function doAt([tx, tz, verb]: Move, from: { x: number; y: number; z: number }) {
+  const d = Math.hypot(from.x - tx, from.z - tz);
+  if (d > 4) {
+    const x = tx + ((from.x - tx) / d) * 3.5,
+      z = tz + ((from.z - tz) / d) * 3.5;
+    teleport(me.body!, x, Math.max(H(x, z), from.y - 0.85) + 0.85, z);
+    me.body!.velocity.set(0, 0, 0);
+    await bot.wait(300);
+  }
+  return bot.use(tx, tz, verb.source, verb);
 }
-if (!(await bot.use(move[0], move[1], doing, move[2]))) throw new Error(`worksdo=${doing} was not offered`);
+if ((doing === 'strike0' || doing === 'strike1') && inspectRailway()!.works.breaker === 1) {
+  // The breaker first, from the pedestal: the strike needs it in hand.
+  if (!(await doAt(BREAKER, { x: 922, y: 19, z: 9 }))) throw new Error('no breaker');
+  await bot.wait(600);
+}
+let from = start;
+if (doing === 'kiln') {
+  // `--rail-seed works-stocked`: chop the bowl rock's last stone, then the fill lights the kiln live.
+  const rock = inspectRailway()!.works.rocks[0]!;
+  if (!(await doAt([rock.x / 100, rock.z / 100, /Chop/], start))) throw new Error('no rock');
+  if (!(await bot.work(() => inspectRailway()!.works.rocks[0]!.remaining === 0, 20000)))
+    throw new Error('the rock never gave its stone');
+  await bot.wait(500);
+  const p = me.body!.position;
+  from = { x: p.x, y: p.y, z: p.z };
+}
+if (!(await doAt(move, from))) throw new Error(`worksdo=${doing} was not offered`);
 console.log(`WORKS ACT ${doing} ${JSON.stringify(inspectRailway()!.works)}`);
+for (const ms of [400, 1500, 3000])
+  setTimeout(() => {
+    const view = inspectRailway() as unknown as { worksView: unknown; works: unknown };
+    console.log(`WORKS AFTER ${ms} ${JSON.stringify({ view: view.worksView, works: view.works })}`);
+  }, ms);
 export {};

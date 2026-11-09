@@ -1,6 +1,7 @@
 // Accepted railway beats written through the real host's save path before a look opens its room.
 import { railwayAtTrains, TRAIN_STAGES, type TrainStage } from '../../test/helpers/railway-trains.ts';
-import { railwayAtWorks, WORKS_STAGES, type WorksStage } from '../../test/helpers/railway-works.ts';
+import { chopTo, railwayAtWorks, WORKS_STAGES, type WorksStage } from '../../test/helpers/railway-works.ts';
+import { WORKS, WORKS_ROCKS } from '../../src/sim/railway-works-layout.ts';
 import { pathToFileURL } from 'node:url';
 import { createStore } from '../../server/src/store.ts';
 import { createRailwayWorldHost } from '../../server/src/host/world-host.ts';
@@ -24,7 +25,10 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   // B5-B8 stages stay separate from the earlier/depot fixture blocks.
   const trainStage = TRAIN_STAGES.includes(stage as TrainStage);
   // Split-rock Works and the Roundhouse (J3f), built on `q6-done`.
-  const worksStage = WORKS_STAGES.includes(stage as WorksStage);
+  // `works-stocked` (look only, J4): `works-open` with the kiln one stone short and one stone left in rock 3, so a
+  // look's bot can chop it, fill the kiln and see it light live.
+  const stocked = stage === 'works-stocked';
+  const worksStage = stocked || WORKS_STAGES.includes(stage as WorksStage);
   if (
     !trainStage &&
     !worksStage &&
@@ -48,7 +52,7 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   )
     throw new Error(`Unknown railway seed: ${stage}`);
   const w = worksStage
-    ? railwayAtWorks(stage as WorksStage)
+    ? railwayAtWorks(stocked ? 'works-open' : (stage as WorksStage))
     : trainStage
       ? railwayAtTrains(stage as TrainStage)
       : stage === 'awake'
@@ -58,6 +62,16 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
           : stage === 'q3-done' || stage === 'q4-stocked' || stage === 'q4-arriving' || stage === 'hook-earned'
             ? railwayAtQ4()
             : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
+  if (stocked) {
+    chopTo(w, 'a', WORKS.kilnLogs);
+    if (act(w, 'a', 'rail.kiln') !== WORKS.kilnLogs) throw new Error('works-stocked: logs');
+    for (const rock of WORKS_ROCKS) {
+      const keep = rock.id === WORKS_ROCKS[0].id ? 1 : 0;
+      while (w.s.line!.rocks[rock.id]! > keep) act(w, 'b', 'rail.mine', { id: rock.id });
+    }
+    if (w.s.line!.rocks[WORKS_ROCKS[0].id] !== 1) throw new Error('works-stocked: one stone left');
+    if (act(w, 'b', 'rail.kiln') !== WORKS.kilnStone - 1) throw new Error('works-stocked: stone');
+  }
   if (stage === 'hook-earned') act(w, 'a', 'rail.hook');
   if (stage === 'awake') {
     railSession(w.s, 'a', 1);

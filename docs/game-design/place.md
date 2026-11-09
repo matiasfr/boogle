@@ -1297,3 +1297,20 @@ with two empty sockets. These are Local views with owned static colliders; there
 yet. `?works=0` disables both for comparison. The outcrop and stall each use one coloured box batch, plus one
 boiler cylinder. The smaller 4 × 9 m stall clears the existing path and rotated hall; its road bends from the
 table. Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**. Not tested on a device.
+
+**Split-rock and the Roundhouse, live (9 November; J4).** The forge casts the breaker onto the boiler's old
+pedestal: a 1.4 m broad-faced hammer with gold motes, under a tall steam plume, and a whistle that carries about
+900 m on the frame it appears. The boiler uses the same call (`forge-call.ts`, Home flow findings 2 and 3). **Take
+the breaker** slings it on your back; **Strike the seam** at either seam swings it (a raise, a short hit-stop at
+contact, chips and a thump). The stall slab pops apart in three pieces; the throat's three slabs topple into the bowl,
+land with a thump and dust, sink, and leave rubble, and whoever struck gets the sea switch's pull-out camera. **Fill
+the kiln** at the open cut stacks logs across the frame and stone in the hopper. When it lights there are chuffs,
+sparks, a rush up the chimney and a glowing mouth; each cast rolls a footing 4 s down the roller road onto the rack.
+A footing (**Shoulder a footing**) is a pale block with an iron band, carried high on your back with a stoop. You
+walk at the beam's solo speed, or the beam's help speed when a friend uses **Help carry** (presence; **Let go** ends
+it). Your drop control puts it down as a block on the ground. At the stall, **Set the footing** lowers each one into
+its socket; the second raises the frame in 3 s of pieces and slides the tarp off. **Fit the cradle** bolts seats and
+rail arms onto the wagon until they turn brass. **Turn the table** turns Split-rock's own disc 90° over 2 s, and the
+shunter pushes the wagon over it onto line 2. The turn isn't offered while a turn is pending or the wagon is rolling
+out, so no one can send a friend's wagon home. The bowl's trees are cleared locally, and its two limestone rocks
+are chopped like line 1's. Serves DESIGN.md **7. Telegraph everything** and **8. Enjoyable alone and together**. Not tested on a device.
