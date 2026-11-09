@@ -10,7 +10,7 @@ import { reducedMotion } from '../../constants.ts';
 
 /** Metres: the call reaches the pier's end and Far Head (about 600 m). */
 export const FORGE_CALL_HEAR = 900;
-const steam = new THREE.Color('#ece6dc');
+const steam = new THREE.Color('#ffffff');
 
 export function createForgeCall(at: { x: number; y: number; z: number }) {
   let waiting: boolean | null = null,
@@ -31,22 +31,22 @@ export function createForgeCall(at: { x: number; y: number; z: number }) {
       if (puff > 0) return;
       puff = reducedMotion ? 0.9 : 0.22;
       k++;
-      // Big slow puffs: a column about 25 m tall that still reads as a few pixels from the pier.
+      // Big slow puffs: a column about 40 m tall, bright against the sky, that still reads from the pier.
       emit({
         x: at.x + Math.sin(k * 2.3) * 0.3,
         y: at.y + 2.2,
         z: at.z + Math.cos(k * 1.7) * 0.3,
         vx: 0.35 + Math.sin(k * 0.9) * 0.25,
-        vy: 3.2,
+        vy: 5.5,
         vz: Math.cos(k * 1.3) * 0.25,
-        life: 8,
-        size: 1.3,
+        life: 10,
+        size: 1.8,
         color: steam,
-        intensity: readableIntensity(),
-        alpha: 0.85,
-        drag: 0.12,
-        grow: [1, 7],
-        fade: 0.4,
+        intensity: readableIntensity() * 1.25,
+        alpha: 0.95,
+        drag: 0.06,
+        grow: [1, 8],
+        fade: 0.3,
         shape: 'dust',
         rotation: k,
         spin: 0.15,

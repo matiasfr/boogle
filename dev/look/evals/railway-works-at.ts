@@ -39,6 +39,7 @@ const poses: Record<
   rack: { body: [1094, 57], camera: [1098, 27.5, 61], aim: [1090.5, 24.2, 52.5] },
   // The plume over the forge as seen from the pier (Home flow finding 3: it calls you back).
   call: { body: [1405, -366], camera: [1404, 30, -358], aim: [919, 40, 5] },
+  callmid: { body: [1405, -366], camera: [1150, 40, -200], aim: [919, 40, 5] },
   callnear: { body: [1000, -60], camera: [1000, 32, -60], aim: [919, 35, 5] },
 };
 const pose = poses[mode];
@@ -88,6 +89,17 @@ if (query.get('workswalk') === '1' && action) {
   } finally {
     if (jump) Object.defineProperty(me, 'jumpQueued', jump);
   }
+}
+if (query.get('worksprobe') === '1') {
+  // Is the forge call's plume alive where the camera is? (particles near the pedestal, and the camera's distance)
+  await wait(3000);
+  const { particleCounts } = (await import(
+    '/src/render/particles.ts' as string
+  )) as typeof import('../../../src/render/particles.ts');
+  const { camera } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
+  console.log(
+    `WORKS PROBE ${JSON.stringify({ particles: particleCounts(), far: camera.far, camera: camera.position, d: Math.hypot(camera.position.x - 918, camera.position.z - 5) })}`,
+  );
 }
 if (query.get('worksperf') === '1') {
   await wait(3000);
