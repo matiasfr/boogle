@@ -1,19 +1,8 @@
 // Side-effect-free coloured primitives shared by rewards and worn gear.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'tube' | 'brim' | 'vest' | 'bib' | 'strap' | 'packstrap';
-export type Part = [
-  shape: Prim,
-  x: number,
-  y: number,
-  z: number,
-  sx: number,
-  sy: number,
-  sz: number,
-  color: string,
-  rx?: number,
-  rz?: number,
-];
+import type { Part, PartShape as Prim } from '../../render/cosmetic-parts.ts';
+export type { Part };
 const unit: Record<Prim, () => THREE.BufferGeometry> = {
   s: () => new THREE.SphereGeometry(1, 10, 8),
   c: () => new THREE.CylinderGeometry(1, 1, 1, 12),

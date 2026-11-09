@@ -668,6 +668,24 @@ Work and festival overalls have a fitted low waist, curved front/back bibs, open
 **Two players:** which buildings stand, and everything in the miniature, come from what's shared; cameras, cutaways, talks, what you've heard and what you've taken are your own. Nobody can spend anybody's money, since nobody spends any. A partner doesn't see what you're wearing yet.
 
 **In the live game (9 November 2026, place-retirement T1).** boogle.club has the town entity (`src/entities/town/`): the house, with the same cutaway, indoor camera and Pip's desk, and the shop's and museum's plots with their stake boards. The shop and museum stay boards until T3 and T5 open them on the first path; nobody lives in the house yet (T2 brings the residents). The town's facts are pure reads of the shared railway (`src/sim/town-facts.ts`): **path** when T3 is laid, **forge** when the forge is lit, **depot** at Q1, **head** at Q5 (Far Head), **trains** when the trains run, **pier** at Q6. **town** and **stone**, the cargo-built rows, stay false until train cargo arrives in production-core slice 5. Pip's desk follows path, forge and trains. The village sign and its walkers count 12 people, +8 when the path opens, +6 at Far Head and +6 at the pier (32). `?proto=place` mounts the same rooms and house through `place-rooms.ts` until it is deleted.
+### The wardrobe in the live game (9 November 2026, place-retirement T4)
+
+One personal wardrobe holds every wearable in the live game: the T1 conductor's hat and T2 scarf now, and later the
+shop's stock (T5), station boxes (C1) and secrets (F2). The catalog (names, lines, shapes, tiers, odds and fits) moved
+verbatim to `src/render/cosmetic-parts.ts`; Place's `gifts.ts` reads the same one.
+
+- **What you own** is yours alone and saved in this browser for this world (`boogle.railway-wardrobe.v0:<rail
+  room>:<pid>`). A world bump clears it, as it clears your claims. A malformed save starts empty.
+- **What you wear** is one thing per slot (hat, accessory, outfit), drawn on you and on every partner who can see you,
+  including what you're trying on. Each item sits where Place put it: the conductor's hat on the Head bone, other hats
+  on the head's centre, scarves at the neck, outfits on the chest. A partner who leaves takes their clothes with them.
+- **The T1 hat and T2 scarf** are worn as they arrive, when their reveal card is put away. A claim from an earlier
+  visit is put on the first time the wardrobe hears of it; after that, what you wear is the wardrobe's.
+- **Try on, keep, wear, take off and swap** behave as in Place (`src/entities/wardrobe/state.ts`). Production has no
+  place to use them yet: Fine Prices (T5) and the curio shelf (C1) bring them.
+
+Sync: ownership is Personal Local; what you wear is Owner presence `wardrobe` (`{ hat?, accessory?, outfit? }`, catalog
+ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwayScarf`. No `WORLD_NS` change.
 
 ## Departures from the brief
 
