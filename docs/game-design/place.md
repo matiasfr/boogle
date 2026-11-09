@@ -591,6 +591,19 @@ snaps the stall, the cradle, the wagon, the bents and the racks. Serves DESIGN.m
 Enjoyable alone and together** and **9. Leave something for the next visitor**. `WORLD_NS` v22; not tested on a
 device. Bot times and stills: [the plan's J5 record](../plans/split-rock-roundhouse.md#job-j5-the-footing-wagon-the-pier-and-the-crossing-the-bot-and-the-record-after-j3-j4-and-b5b8s-b-and-d).
 
+**Signposting: gold means "this is for that"** (9 November, [works-signposting](../brainstorms/works-signposting.md),
+suggestions 1 and 2). While the breaker is out, every seam it hasn't struck trickles the pedestal's gold motes up its
+crack, on the face you come from (the stall's toward the pedestal, the throat's toward the halt; larger than the
+pedestal's so a trickle reads at 10 m, only specks from the halt), and the breaker glints on your back while a seam is
+left. From the throat strike until the kiln lights, the missing load shows as dashed `GOLD_ROPE` ghosts: a log in the
+cradle and a stone in the hopper for each one still wanted, each going as its real piece appears, and the bowl's two
+limestone rocks give off the same gold motes while the hopper wants stone. The kiln's logs lie side by side across
+the cradle, four to a layer (they had stacked end to end in one column). The
+striker's throat shot now starts high on the halt side, aims through the cut at the bays and holds on them after the
+slabs have sunk (4.8 s). All Local over accepted state, so a friend and a late joiner see the same ghosts and motes;
+only the striker gets the shot. No words; motes are off under reduced motion, the ghosts stay. The ghosts are one
+instanced draw (`src/render/ghost-outline.ts`, shared with the boiler plan's saddle echo).
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
