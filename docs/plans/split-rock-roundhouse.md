@@ -530,7 +530,7 @@ update and was repeated. No new scenario or harness was added.
 
 **Steps.**
 
-- [ ] **J3a. State.**
+- [x] **J3a. State.**
   - `Works = defineComponent('works', { breaker: 'u8', seams: 'u8', logs: 'int', stone: 'int', lit: 'int',
     rack: 'int', poured: 'int', pierRack: 'int', pierSet: 'int', crossing: 'int' }, { requires: [WorksClock],
     defaults: { lit: -1, crossing: -1 } })`, with `WorksClock` `{ lastCast: 'int' }` (`replicate: false`).
@@ -542,14 +542,14 @@ update and was repeated. No new scenario or harness was added.
   - `railwayView`, `refreshRailway` and `copyRailway` carry `works`, `shed` and the new fields.
   - Write `src/sim/railway-works.ts` ("New module") and wire `validateRailWorks` into `railwayCheck`, together with
     the changed stone, log and rail totals.
-- [ ] **J3b. Systems.** Everything in "Systems", in a Works block after the train block, and the seven ops in `OPS`.
+- [x] **J3b. Systems.** Everything in "Systems", in a Works block after the train block, and the seven ops in `OPS`.
   Update the file header's index.
-- [ ] **J3c. Trains.** `trainStops`, `LINE_HALTS`' Pier row, the stop-0 couple, the stop-1 load and the stop-3 unload,
+- [x] **J3c. Trains.** `trainStops`, `LINE_HALTS`' Pier row, the stop-0 couple, the stop-1 load and the stop-3 unload,
   as in "Train changes". `trainEtaTicks` uses `trainStops`.
-- [ ] **J3d. Server, host, prediction, adapter** as in their paragraphs. `ws-page.ts` gets the op cases;
+- [x] **J3d. Server, host, prediction, adapter** as in their paragraphs. `ws-page.ts` gets the op cases;
   `railway-diff.ts` gets the ops in both lists.
-- [ ] **J3e. WORLD_NS** v22 (or the next free version) with its history line.
-- [ ] **J3f. Helpers and seeds.** `test/helpers/railway-works.ts` exports `railwayAtWorks(stage)`, built on B5–B8's
+- [x] **J3e. WORLD_NS** v22 (or the next free version) with its history line.
+- [x] **J3f. Helpers and seeds.** `test/helpers/railway-works.ts` exports `railwayAtWorks(stage)`, built on B5–B8's
   `railwayAtTrains('q6-done')`. Each stage asserts `railwayInvariant === null`:
   - `works-arrive`: the breaker on the pedestal;
   - `works-open`: `a` takes it and strikes both seams;
@@ -562,7 +562,7 @@ update and was repeated. No new scenario or harness was added.
 
   `rail-seed.ts` adds the eight stages. `railway-works-at.ts` waits for a seed when `--rail-seed` is given, and prints
   `inspect().works` and `inspect().shed`.
-- [ ] **J3g. Tests.**
+- [x] **J3g. Tests.**
   - `test/railway-works.test.ts`:
     - `'breaker cast once when Q6 completes; one taker'`;
     - `'a strike needs the breaker and is idempotent'`;
@@ -601,6 +601,24 @@ update and was repeated. No new scenario or harness was added.
     prints `works.rack 6`.
 - **Done means.** All of the above green, every seeded stage loads, `WORLD_NS` bumped with its history line, and no
   view file changed. Don't ship while the owner is mid-session (the `WORLD_NS` bump resets saves).
+- **As built (9 November, `WORLD_NS` v22).** Where J3 differs from the text above, J4 and J5 follow this:
+  - J2 had already named its blockout inspection `works` and `shed` in `view.ts`; J3 renamed those two keys to
+    `worksView` and `shedView` (its only `src/entities` edit) so the adapter's pinned `inspect().works` and `.shed` are
+    not shadowed. J4's `worksView` replaces J2's.
+  - `trainStops(s, k)` takes the read model (`src/sim/railway-line2.ts`); the systems use `trainStopsOf(k, pier)`
+    from `railway-train.ts`. The Pier halt is `LINE_HALTS[5]`, Place's halt maths at s 719–741 m, lat −2.9.
+    `trainEtaTicks` is unchanged: it indexes stops, which `TRAIN_STOPS[1]` keeps in the same order.
+  - `rail.take` also lifts a footing pile (kind 3) onto an empty back, so a dropped footing can be picked up again.
+  - Setting a footing at the pier also needs `pierSet + pierRack + train[1].foot < pier`, so a hand-carried footing
+    can never push the pier past twelve once the wagon has been loaded for it.
+  - `railValid` refuses `rail.kiln` before the throat is struck (its frame is in the sealed cut) and `rail.turn` on a
+    stale revision, so both are `rejected` as J3g's host test asks rather than `noop`.
+  - `inspect()` gains a top-level `foot` (beside `carry`, as there is no `me`), and `works` also carries `pierNeed` and
+    the bowl's two `rocks`. `state.rocks` stays line one's three.
+  - The host needed no change: its supply pulse already recovers any aged pile, and the sim sends kind 3 to the
+    Works rack.
+  - The friend's Help carry for a footing (owner, 8 November) is presence and movement, so it is J4's, beside the
+    beam's.
 
 **Codex brief (paste):**
 

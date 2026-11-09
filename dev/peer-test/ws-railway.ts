@@ -667,7 +667,11 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   const { worldOf } = await import('../../test/railway-live.ts');
   const { railwayCheck } = await import('../../src/sim/railway-world.ts');
   const { TRAIN, TRAIN_PHASE, trainAlong } = await import('../../src/sim/railway-train.ts');
-  const seed = railwayAtTrains('trains-on');
+  // WS_LOAD_TRAIN_SEED=wagon-on rides the line-2 train with its footing wagon and four stops (Works J3).
+  const seed =
+    process.env.WS_LOAD_TRAIN_SEED === 'wagon-on'
+      ? (await import('../../test/helpers/railway-works.ts')).railwayAtWorks('wagon-on')
+      : railwayAtTrains('trains-on');
   const roomId = railwayRoomId(`${c.room}-train`);
   const lats = [0, 100, 200];
   const pages: Page[] = [];
