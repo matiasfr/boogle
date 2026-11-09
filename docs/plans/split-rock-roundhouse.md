@@ -776,6 +776,8 @@ the solo/two-player time. **Stop all development** until the owner has played.
 
 ## Owner questions
 
+**Answered (owner, 2026-11-08):** all five as recommended, plus footings take a friend's Help carry like the great beam, and the J2 blockout shows by default (no `?works=1` flag). See the decision log.
+
 Each has a recommended answer. Without an answer, the orchestrator builds the recommendation, under the small-calls
 rule.
 
