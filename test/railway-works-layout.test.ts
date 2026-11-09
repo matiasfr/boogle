@@ -24,6 +24,10 @@ import { H, PATH_SAMPLES } from '../src/proto/place/terrain.ts';
 import { distToLine, parseMapPage, type XZ } from '../src/proto/greybox/map-data.ts';
 import { LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';
+import { TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
+import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
+/** src/proto/place/machine-model.ts MACHINE_GAP (that module loads three.js, so it is pinned here). */
+const MACHINE_GAP = 3.7;
 import {
   WORKS,
   WORKS_SEAMS,
@@ -143,6 +147,46 @@ test('the pier stop fits', () => {
     at = local(PIER_STOP);
   assert.ok(Math.hypot(at[0] - p.x, at[1] - p.z) <= 0.05);
   assert.ok(LINES.east.len >= 735.3);
+});
+// Line 2's footprints along its rails, in metres, from the constants the views pose with (src/proto/wagon/cars.ts):
+// train-view puts car n at the train's along + TRAIN_OFFSETS[n], sized TRAIN_CARS[n]; rail.ts `buildMachine().at(line,
+// head, 1, setback)` puts the track layer's flatbed (TRAILER) at head − setback and its loco (LOCO) MACHINE_GAP behind,
+// with line2-view's setback of 2.4 m whenever it isn't laying. `engine` grows the engine alone, as cars.ts places it.
+type Span = readonly [number, number];
+function trainSpan(along: number, engine = 1): Span {
+  const wagon = TRAIN_CARS.length - 1,
+    grown = LOCO.hz * (engine - 1);
+  return [
+    along + TRAIN_OFFSETS[wagon]! - TRAIN_CARS[wagon]!.hz,
+    along + TRAIN_OFFSETS[0]! + grown + TRAIN_CARS[0]!.hz + grown,
+  ];
+}
+const layerSpan = (head: number, setback = 2.4): Span => [
+  head - setback - MACHINE_GAP - LOCO.hz,
+  head - setback + TRAILER.hz,
+];
+/** Air between two spans along the line (negative: they overlap by that much). */
+const gap = (a: Span, b: Span) => Math.max(a[0], b[0]) - Math.min(a[1], b[1]);
+test('no train stands inside the track layer, even with an engine half as long again', () => {
+  // Trains run from the boiler on, after Q5 is laid: the track layer is then parked at Q6's start, laying Q6 (its
+  // flatbed never backs past where it stood) or parked at the rails' end once Q6 is laid and the Pier stop opens.
+  const q6 = LINE2_STATIONS.at(-1)!;
+  for (const engine of [1, 1.25, 1.5])
+    for (const [pier, head] of [
+      [false, q6.fromCm / 100],
+      [true, q6.toCm / 100],
+    ] as const) {
+      const layer = layerSpan(head);
+      for (const stop of trainStopsOf(1, pier)) {
+        const g = gap(trainSpan(stop / 100, engine), layer);
+        assert.ok(g >= 1, `line 2 at ${stop / 100} m, engine ×${engine}, pier ${pier}: ${g.toFixed(2)} m clear`);
+      }
+    }
+  // At the Pier halt (s 719-741 m) the engine stands at the deck and the wagon at least half on it.
+  const [rear, front] = trainSpan(PIER_STOP_CM / 100);
+  assert.ok(rear + TRAIN_CARS.at(-1)!.hz >= 719 && front <= 741, `${rear}..${front}`);
+  // Its consist is the one the wagon couples to at the village.
+  assert.equal(WAGON_S, TRAIN_STOPS[1]![0]! + TRAIN_OFFSETS.at(-1)! * 100);
 });
 test('bents follow the first sea crossing', () => {
   CROSSING_BENTS.forEach((p, i) => {

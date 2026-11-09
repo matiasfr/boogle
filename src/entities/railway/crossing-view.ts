@@ -61,24 +61,35 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
   );
 
   // ---------------------------------------------------------------- the pier rack, on the Pier halt's deck
+  // The halt's deck is 2.5 m wide (lat -1.65 to -4.15 m); PIER_RACK stands 3.5 m off the rails, so a single row of
+  // footings along its seaward edge (lat -2.9 to -4.1 m) leaves the track side clear to walk and board.
   const rack = { x: PIER_RACK.x / 100, z: PIER_RACK.z / 100 };
   layout.lineAt(line, 733, P);
   const rackYaw = Math.atan2(P.ux, P.uz);
   const rackY = layout.railY(line, 733) + 0.72; // the halt deck's top (halts-view's `low`)
-  const rackAxis = { x: Math.sin(rackYaw), z: Math.cos(rackYaw) },
-    rackSide = { x: rackAxis.z, z: -rackAxis.x };
-  /** Rack slot k's base centre: two across the deck, three along it, then a second layer. */
+  const rackAxis = { x: Math.sin(rackYaw), z: Math.cos(rackYaw) };
+  const RACK_PITCH = 1.3,
+    BEARER = 0.16;
+  /** Rack slot k's base centre: six in a row along the deck, landward first, then a second layer. */
   const rackSlot = (k: number, out: THREE.Vector3) => {
-    const layer = Math.floor(k / 6),
-      i = k % 6;
-    const u = (i % 2) - 0.5,
-      v = Math.floor(i / 2) - 1;
+    const v = (k % 6) - 2.5;
     return out.set(
-      rack.x + rackSide.x * u * 1.25 + rackAxis.x * v * 1.3,
-      rackY + 0.14 + layer * (FOOTING.h + 0.1),
-      rack.z + rackSide.z * u * 1.25 + rackAxis.z * v * 1.3,
+      rack.x + rackAxis.x * v * RACK_PITCH,
+      rackY + BEARER + Math.floor(k / 6) * (FOOTING.h + 0.1),
+      rack.z + rackAxis.z * v * RACK_PITCH,
     );
   };
+  /** The rack, as Line 2's depot racks are built: two bearers, a chock between slots and a post at each corner. */
+  const rackParts = (() => {
+    const out: [number, number, number, number, number, number, string][] = [];
+    const half = 3 * RACK_PITCH + 0.15;
+    for (const side of [-0.42, 0.42]) {
+      out.push([side, BEARER / 2, 0, 0.18, BEARER, half * 2, '#8a6236']);
+      for (const end of [-half, half]) out.push([side * 1.2, 0.65, end, 0.14, 1.3, 0.14, '#7f5630']);
+    }
+    for (let k = 0; k <= 6; k++) out.push([0, BEARER + 0.04, (k - 3) * RACK_PITCH, 1.1, 0.08, 0.1, '#7f5630']);
+    return out;
+  })();
 
   // ---------------------------------------------------------------- the pier head's side deck and its jib
   // PIER_FRAME stands 3.5 m east of the rails' end, past the trestle's 3.6 m planks: a plank apron along the east side
@@ -221,8 +232,12 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
         batch.box(b.x, SEA + 1.55, b.z, 0.3, 0.5, 0.3, STAKE);
       }
       bents.forEach((_, b) => drawBent(b));
-      // The pier rack's pallet and its stack (less what is still hopping off the wagon).
-      batch.box(rack.x, rackY + 0.07, rack.z, 2.6, 0.14, 4.1, '#6b5a44', rackYaw);
+      // The pier rack stands once the kiln has cast its first footing (there is something to bring), then its stack
+      // (less what is still hopping off the wagon).
+      if (state.works.poured > 0) {
+        footingFrame(m, rack.x, rackY, rack.z, rackYaw);
+        for (const r of rackParts) batch.part(m, ...r);
+      }
       const resting = Math.max(0, state.works.pierRack - deps.toPier());
       for (let k = 0; k < Math.min(resting, WORKS.pier); k++) {
         rackSlot(k, p);

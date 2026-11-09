@@ -1,0 +1,17 @@
+// Car sizes and how trains are made up from them, with no three.js, so the layout tests read the same numbers the views
+// pose (test/railway-works-layout.test.ts keeps line 2's stops clear of the parked track layer with them).
+
+/** A car's physical size, shared with the platforms: deck half sizes and the deck top's height over the ground. */
+export type CarSpec = { hx: number; hz: number; top: number };
+
+export const LOCO: CarSpec = { hx: 0.8, hz: 1.5, top: 1.75 }; // the boiler top: rideable, after a jump
+export const TRAILER: CarSpec = { hx: 1.1, hz: 1.6, top: 0.7 }; // a flatbed: a hop up from the ground
+/** The footing wagon, line 2's fourth car once the shed's wagon couples (docs/plans/split-rock-roundhouse.md, J5a): a
+ * low deck the size of the shunt's wagon, so the one in the stall and the one on the train read as the same thing. */
+export const WAGON_CAR: CarSpec = { hx: 1.1, hz: 1.6, top: 0.5 };
+
+/** A railway train's cars, engine first, and each car's centre from the train's along in metres: the engine 0.6 m
+ * ahead of the first flatbed's end (a longer engine reaches further forward), then cars every 3.7 m. Line 1 runs the
+ * first three; line 2 adds the footing wagon, which couples at the village (WAGON_S). */
+export const TRAIN_CARS: readonly CarSpec[] = [LOCO, TRAILER, TRAILER, WAGON_CAR];
+export const TRAIN_OFFSETS: readonly number[] = [TRAILER.hz + 0.6 + LOCO.hz, 0, -3.7, -7.4];
