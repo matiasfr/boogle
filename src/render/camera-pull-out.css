@@ -1,0 +1,53 @@
+/* The one skip of a camera pull-out: Interact's glyph, ringed in sun, bottom centre (src/render/camera-pull-out.ts). */
+.shot-skip-chip {
+  position: fixed;
+  left: 50%;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px 5px 6px;
+  border-radius: 12px;
+  background: rgba(14, 40, 38, 0.78);
+  box-shadow:
+    0 0 0 2px var(--sun, #ffd84a),
+    0 0 14px 2px rgba(255, 216, 74, 0.55);
+  pointer-events: none;
+  z-index: 6;
+  animation: shot-skip-in 0.25s ease-out;
+}
+.shot-skip-chip.on {
+  display: flex;
+}
+.shot-skip-chip i {
+  font: 800 15px/1 var(--font-body);
+  font-style: normal;
+  color: var(--sun, #ffd84a);
+  animation: shot-skip-blink 0.9s ease-in-out infinite;
+}
+/* Touch has no glyphs: its Grab button lights while it skips. */
+body.touch.shot-skip #btn-grab {
+  box-shadow:
+    0 0 0 3px var(--sun, #ffd84a),
+    0 0 18px 4px rgba(255, 216, 74, 0.6);
+  animation: shot-skip-blink 0.9s ease-in-out infinite;
+}
+@keyframes shot-skip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8);
+  }
+}
+@keyframes shot-skip-blink {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot-skip-chip,
+  .shot-skip-chip i,
+  body.touch.shot-skip #btn-grab {
+    animation: none;
+  }
+}

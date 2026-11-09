@@ -1,4 +1,6 @@
-// Far Head's Local payoff: two instanced lamp rows and an ephemeral show on the live Q5 completion edge only.
+// Far Head's Local payoff: two instanced lamp rows and an ephemeral show on the live Q5 completion edge only. The rockets
+// and a camera pull-out over them wait behind any reward card, so the show is seen whole (owner, 9 November: "got no
+// cutscene I could see").
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -12,8 +14,20 @@ type Deps = {
   land: typeof import('../../proto/place/land.ts');
   flat: (typeof import('../../proto/flat.ts'))['flat'];
   sounds: typeof import('../../proto/minis/common.ts');
+  /** A reward card has the screen: the show waits for it. */
+  busy: () => boolean;
+  /** The line's camera pull-out (createCameraPullOut): from, drifting to, looking at, seconds. */
+  shot: (from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds: number) => void;
 };
-export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, flat, sounds }: Deps) {
+/** The pull-out over Far Head's rockets: from back along the trestle (metres along the line, beside it, above the rail),
+ * drifting further out, looking this far over the rail's end. */
+const FAR_HEAD_SHOT = {
+  seconds: 6,
+  from: { s: 482, side: 22, up: 24 },
+  to: { s: 474, side: 27, up: 31 },
+  aimUp: 32,
+} as const;
+export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, flat, sounds, busy, shot }: Deps) {
   const line = layout.LINKS[1]!.line;
   // besideLine already includes ORIGIN, as it does for every production rail view.
   const end = rail.besideLine(line, 546, 0);
@@ -64,7 +78,28 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
   const rockets: Rocket[] = [];
   let completed = false,
     show = -1,
+    secondWhistle = false,
+    waiting = false; // the edge came while a reward card had the screen
+  const along = (s: number, side: number, up: number) => {
+    const p = rail.besideLine(line, s, side);
+    return new THREE.Vector3(p.x, layout.railY(line, s) + up, p.z);
+  };
+  function celebrate() {
+    waiting = false;
+    show = 0;
     secondWhistle = false;
+    sounds.fanfare(true);
+    whistle(farHead.x, farHead.z);
+    barrage(farHead.x, farHead.y + 6, farHead.z, 10, 0.5, 36, 2.2);
+    barrage(layout.VILLAGE.x + layout.ORIGIN.x, layout.VILLAGE.y, layout.VILLAGE.z, 5, 0.6, 26, 1.6);
+    const { from, to, aimUp, seconds } = FAR_HEAD_SHOT;
+    shot(
+      along(from.s, from.side, from.up),
+      along(to.s, to.side, to.up),
+      new THREE.Vector3(farHead.x, farHead.y + aimUp, farHead.z),
+      seconds,
+    );
+  }
   function barrage(x: number, y: number, z: number, count: number, gap: number, spread: number, size: number) {
     for (let k = 0; k < count; k++)
       rockets.push({
@@ -88,20 +123,16 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
       completed = done;
       show = -1;
       secondWhistle = false;
+      waiting = false;
       rockets.length = 0;
       lamps(done ? slots.length : 0);
     },
     update(dt: number, done: boolean) {
-      if (done && !completed) {
-        show = 0;
-        secondWhistle = false;
-        sounds.fanfare(true);
-        whistle(farHead.x, farHead.z);
-        barrage(farHead.x, farHead.y + 6, farHead.z, 10, 0.5, 36, 2.2);
-        barrage(layout.VILLAGE.x + layout.ORIGIN.x, layout.VILLAGE.y, layout.VILLAGE.z, 5, 0.6, 26, 1.6);
-      }
+      if (done && !completed) waiting = true;
+      if (waiting && done && !busy()) celebrate();
       if (!done && completed) {
         show = -1;
+        waiting = false;
         rockets.length = 0;
         lamps(0);
       }
@@ -158,6 +189,6 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
       }
       if (show > 6 && rockets.length === 0) show = -1;
     },
-    inspect: () => ({ farHead, trestleLamps: posts.count, farHeadRockets: rockets.length }),
+    inspect: () => ({ farHead, trestleLamps: posts.count, farHeadRockets: rockets.length, farHeadWaiting: waiting }),
   };
 }

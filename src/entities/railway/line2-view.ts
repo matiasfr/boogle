@@ -67,7 +67,7 @@ export async function createRailwayLine2(
   // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
   const switchCamera = createCameraPullOut(rewardBusy, true, seated);
   owner.cleanup(() => switchCamera.dispose());
-  let switchKind: 'sea' | 'quarry' | null = null;
+  let switchKind: 'sea' | 'quarry' | 'farHead' | null = null;
   function showSwitch(kind: 'sea' | 'quarry') {
     switchKind = kind;
     const gate = tech.GATES[kind];
@@ -412,7 +412,18 @@ export async function createRailwayLine2(
   let slabT = -1;
   const seaGate = createRailwaySeaGate(adapter, owner, { layout, tech, land, shapes, flat, sounds, partMat, glow });
   const glideDevice = createRailwayGlideDevice(adapter, owner, { land, shapes, partMat, glow, youGot });
-  const farHead = createRailwayFarHead(owner, { layout, rail, land, flat, sounds });
+  const farHead = createRailwayFarHead(owner, {
+    layout,
+    rail,
+    land,
+    flat,
+    sounds,
+    busy: rewardBusy,
+    shot: (from, to, at, seconds) => {
+      switchKind = 'farHead';
+      switchCamera.play(from, to, at, seconds);
+    },
+  });
   const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces }, chimneyTop);
   const pier = createRailwayPier(owner, { layout, rail, sounds });
 

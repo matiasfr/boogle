@@ -1,6 +1,6 @@
 // The moments of ?proto=place: the machine waking, a line coming through, and the one camera move in the run. The owner
 // "barely noticed" the last round's celebration and wanted more drama from the wake. You keep control throughout: nothing
-// here stops the player, and a deliberate press ends the pull-out (docs/research/construction-you-can-watch.md, rec 9: the
+// here stops the player, and only the highlighted Interact skip ends the pull-out early (docs/research/construction-you-can-watch.md, rec 9: the
 // completion beat is the one place for a camera move). Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
@@ -100,7 +100,7 @@ const pull = createCameraPullOut(
   false,
   () => !!seated(),
 );
-/** The camera eases out to `shot`, looking at `at`, drifting to `shotTo`. A deliberate press brings it straight back. */
+/** The camera eases out to `shot`, looking at `at`, drifting to `shotTo`. Only the highlighted Interact skip brings it back early. */
 export function pullOut(shot: THREE.Vector3, shotTo: THREE.Vector3, at: THREE.Vector3, seconds = 3) {
   pull.play(shot, shotTo, at, seconds);
 }
@@ -125,7 +125,7 @@ export function wakeShow(m: Waker, onLamps: () => void, done: () => void) {
 
 // ---------------------------------------------------------------- a path opening
 /** The first path: a warm opening chord, rockets down the gorge, a shake, the pull-out along what
- * you built, with the village running out onto it. A deliberate press ends the camera move; you keep control throughout. */
+ * you built, with the village running out onto it. Only the highlighted skip ends the camera move early; you keep control throughout. */
 export function firstPathShow(o: {
   village: THREE.Vector3;
   gorge: THREE.Vector3;

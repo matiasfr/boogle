@@ -1,5 +1,7 @@
-// Local pointer dismissal shared by the reward card and celebration camera.
+// Local pointer dismissal for the reward card, and the one skip of a celebration camera's shot (skipInput).
 // Each owner installs its listeners in place and keeps its own touch, timing gate and reset.
+import { onMenuKey, padGrab, setPadGrab, slotFor } from './controls.ts';
+
 export function dismissPointer(active: () => boolean, ready: () => boolean, press: () => void, signal?: AbortSignal) {
   let touch: { id: number; x: number; y: number; moved: boolean } | null = null;
   const reset = () => {
@@ -44,37 +46,69 @@ export function dismissPointer(active: () => boolean, ready: () => boolean, pres
   return reset;
 }
 
-/** A cinematic yields to any new input. Observe without swallowing it, so that same input resumes play. */
-export function dismissInput(active: () => boolean, press: () => void, signal: AbortSignal) {
-  const dismiss = () => {
-    if (active()) press();
-  };
-  addEventListener(
-    'keydown',
+/** A cinematic plays to its end: no key, click, tap, wheel, mouse move, pad button or stick ends it (owner, 9 November).
+ * The one way out is Interact while `ready()` (its glyph is on screen): E, its pad slot, or the touch Grab button. That
+ * press skips and goes no further, so it never also acts in the world; before `ready()` Interact is ordinary. */
+export function skipInput(ready: () => boolean, press: () => void, signal: AbortSignal) {
+  let upToo = false; // the release of a press that skipped is the skip's as well
+  onMenuKey(
     (e) => {
-      if (!e.repeat) dismiss();
+      if (e.key !== 'interact' || e.repeat || e.modified || e.typing || !ready()) return;
+      e.preventDefault();
+      e.stop();
+      upToo = true;
+      press();
+    },
+    { signal },
+  );
+  onMenuKey(
+    (e) => {
+      if (e.key !== 'interact' || !upToo) return;
+      upToo = false;
+      e.stop();
+    },
+    { edge: 'up', signal },
+  );
+  let touch: number | null = null;
+  const grabButton = (e: PointerEvent) => e.target instanceof Element && !!e.target.closest('#btn-grab');
+  addEventListener(
+    'pointerdown',
+    (e) => {
+      if (!ready() || !grabButton(e)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      touch = e.pointerId;
+      press();
     },
     { capture: true, signal },
   );
-  for (const event of ['pointerdown', 'pointermove', 'wheel'])
-    addEventListener(event, dismiss, { capture: true, passive: true, signal });
-  const buttons = () =>
-    [...(navigator.getGamepads?.() ?? [])].flatMap((pad) =>
-      pad ? pad.buttons.map((b) => b.pressed || b.value > 0.2) : [],
+  for (const event of ['pointerup', 'pointercancel'])
+    addEventListener(
+      event,
+      (e) => {
+        if ((e as PointerEvent).pointerId !== touch) return;
+        touch = null;
+        e.stopImmediatePropagation();
+      },
+      { capture: true, signal },
     );
-  let previous: boolean[] = [];
+  // The pad: Interact's slot, taken through the controls' grab only while the skip is offered.
+  let mine: ReturnType<typeof setPadGrab> = null;
+  const release = () => {
+    if (mine && padGrab() === mine) setPadGrab(null);
+    mine = null;
+  };
+  signal.addEventListener('abort', release);
   return {
-    reset: () => {
-      previous = buttons();
-    },
+    /** Each frame: hold Interact's pad slot while the skip is offered, and let go when it isn't. */
     update() {
-      if (!active()) return;
-      const next = buttons();
-      const moved = [...(navigator.getGamepads?.() ?? [])].some((pad) =>
-        pad?.axes.some((axis) => Math.abs(axis) > 0.2),
-      );
-      if (moved || next.some((down, k) => down && !previous[k])) press();
-      previous = next;
+      if (!ready()) return release();
+      if (padGrab() === mine && mine) return;
+      if (padGrab()) return; // a talk box or card has the pad; it gives it back when it closes
+      mine = setPadGrab(() => {
+        if (ready()) press();
+      }, [slotFor('interact') ?? 'x']);
     },
+    release,
   };
 }

@@ -36,7 +36,7 @@ Routing updated 7 November 2026. Read only the linked sections and dated entries
 
 ### Controls, HUD and arrival
 
-[Decided](#decided), introductory lines only: one thing in hand, no hotbar/empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, reset replays opening, confirmed fresh start, Get unstuck, stopped Leave menu and no first-run controls card. Later return/menu entries supersede earlier arrival descriptions; invite links wait.
+[Decided](#decided), introductory lines only: one thing in hand, no hotbar/empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, reset replays opening, confirmed fresh start, Get unstuck, stopped Leave menu, no first-run controls card, uncut cinematics. Later return/menu entries supersede earlier arrival descriptions; invite links wait.
 
 ### Architecture, tools and prototype lifecycle
 
@@ -346,6 +346,8 @@ The owner's answers to the standing design audit ([design-audit.md](proposals/de
 - **2026-11-01, night stays light, moonlit** (owner: "night mode feels too dark, it should feel light still maybe moonlit"). A cool, bright moonlight you can play by, not darkness. **The sun and moon lose their faces** (owner: "they can be a bit more real").
 
 ### Controls
+
+- **2026-11-09, a cinematic can't be interrupted by accident** (owner, after the quarry lever's gate shot ended as it began on desktop: "the cinematic should be uninterruptible unless by maybe a specific highlighted button press"). No key, click, tap, wheel, mouse move, pad button or stick ends a camera pull-out (the lever and summit-switch gate shots, the Works throat, Place's celebrations). The one exception, his "maybe", is built and removable in one place: a single highlighted button shown while the shot plays (the pick is logged in [agent calls](agent-calls.md)). A reward card opening mid-shot queues the shot behind it instead of dropping it.
 
 - **2026-11-09, a world reset starts the game over** (owner: "upon world resets, if I log in it shouldn't spawn me in town, it should start me at the beginning of the game with the character creation menu I believe"). The first load after a `WORLD_NS` bump is a first visit: the fall, then the name-and-colour card, landing on the shore rather than at the village spawn. The card comes pre-filled with the saved name and colour, so a reset costs one Jump in; what the reset already forgets (room progress, the railway wardrobe, reward claims, The Boogler) is unchanged, and identity and preferences stay. A reload after that, or any load without a reset, is a returning visit as before. Built in `src/player/world-reset.ts` (`newWorld`) and `src/player/arrival.ts`; [first-run](game-design/first-run.md#existing-arrival). The open calls it left are in [agent-calls](agent-calls.md).
 - **2026-11-03, no first-run controls card** (owner: "the pause menu has sufficient context for now"). The "Getting around" card that popped up on entering is removed; the pause view's Controls page is the one place controls are listed.
