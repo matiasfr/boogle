@@ -2,7 +2,13 @@
 // ever holds catalog ids.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createWardrobe, parseWardrobe, parseWorn, type WardrobeCatalog } from '../src/entities/wardrobe/state.ts';
+import {
+  createWardrobe,
+  parseStowaway,
+  parseWardrobe,
+  parseWorn,
+  type WardrobeCatalog,
+} from '../src/entities/wardrobe/state.ts';
 
 const items = [
   { id: 'hat', name: "A conductor's hat", slot: 'hat' },
@@ -96,4 +102,32 @@ test("a partner's presence keeps only catalog ids in their own slot", () => {
   });
   assert.deepEqual(parseWorn('hat', catalog), {});
   assert.deepEqual(parseWorn(null, catalog), {});
+});
+
+test('the stowaway comes out of its box, swaps at the shelf and is kept, but is never worn', () => {
+  const { store, io } = memory();
+  const w = createWardrobe(catalog, io);
+  w.openBox('Q5', 'critter', false);
+  assert.equal(w.pet(), null); // still in its box until the card is put away
+  w.unbox('critter');
+  assert.equal(w.pet(), 'critter');
+  assert.equal(w.wearing(), null); // not in the `wardrobe` presence
+  assert.deepEqual(parseWardrobe(store.text, catalog).worn, { pet: 'critter' });
+  assert.equal(w.swapLabel('pet', 'Take it off'), 'Swap pet: Take it off');
+  w.swapSlot('pet');
+  assert.equal(w.pet(), null);
+  assert.equal(w.swapLabel('pet', 'Take it off'), 'Swap pet: A small stowaway');
+  w.swapSlot('pet');
+  w.flush();
+  assert.equal(createWardrobe(catalog, io).pet(), 'critter'); // a reload keeps it out
+  assert.deepEqual(
+    parseWardrobe(JSON.stringify({ got: ['hat'], bought: [], worn: { pet: 'hat' }, dry: 0, opened: [] }), catalog).worn,
+    {},
+  );
+});
+
+test("a partner's stowaway is a riding flag and nothing else", () => {
+  assert.deepEqual(parseStowaway({ riding: true }), { riding: true });
+  assert.deepEqual(parseStowaway({ riding: false, extra: 1 }), { riding: false });
+  for (const v of [null, undefined, true, 'critter', [], { riding: 'yes' }, {}]) assert.equal(parseStowaway(v), null);
 });

@@ -1,7 +1,8 @@
 // The curio shelf in the village: your wardrobe, stood up (docs/plans/place-retirement.md, C1a; docs/game-design/place.md,
 // "Station boxes and the curio shelf"). What you own stands on it; what you don't is under a dust sheet, so it hints at
-// itself (2 November). Swap a slot here as at the shop's rail. Ported from Place's gifts.ts "the curio shelf"; Personal
-// Local, read from the wardrobe (../wardrobe/state.ts). The finders' bay across the path is F2's.
+// itself (2 November). Swap a slot here as at the shop's rail, and the pet slot's stowaway (C2). Ported from Place's
+// gifts.ts "the curio shelf"; Personal Local, read from the wardrobe (../wardrobe/state.ts). The finders' bay across the
+// path is F2's.
 // `shelfGroup` and `crystalPeg` are for K1's crystal row and F1's finds board.
 import * as THREE from 'three/webgpu';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
@@ -10,14 +11,14 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { GIFTS, type Gift, type GiftId, type Part } from '../../render/cosmetic-parts.ts';
-import { CLOTHES_SLOTS, type ClothesSlot, type WardrobeApi } from '../wardrobe/state.ts';
+import { WORN_SLOTS, type WardrobeApi, type WornSlot } from '../wardrobe/state.ts';
 
 const COLS = 6,
   WIDE = 5.4,
   ROWS_Y = [1.32, 2.2],
   CRYSTAL_Y = 0.82,
   REACH = 4.4;
-const SLOT_X: Record<ClothesSlot, number> = { hat: -2, accessory: -0.7, outfit: 0.7 };
+const SLOT_X: Record<WornSlot, number> = { hat: -2, accessory: -0.7, outfit: 0.7, pet: 2 };
 /** What stands on it: the boxes' gifts, not the finds (the finders' bay) nor the shop's stock (its rail). */
 const ON_SHELF = GIFTS.filter((g) => !g.area);
 
@@ -145,7 +146,7 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
     }),
   );
 
-  const spots = new Map<ClothesSlot, THREE.Vector3>();
+  const spots = new Map<WornSlot, THREE.Vector3>();
   owner.cleanup(() => {
     for (const g of [frameGeo, real.geometry, cover.geometry]) g.dispose();
     giftMat.dispose();
@@ -162,7 +163,7 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
       const p = me.body?.position;
       if (!p || Math.hypot(p.x - SX, p.z - SZ) >= REACH) return NO_TARGETS;
       let out: Interactable[] | null = null;
-      for (const slot of CLOTHES_SLOTS) {
+      for (const slot of WORN_SLOTS) {
         if (!wardrobe.owned(slot).length) continue;
         let at = spots.get(slot);
         if (!at) spots.set(slot, (at = shelf.localToWorld(new THREE.Vector3(SLOT_X[slot], 1.8, 0.4))));
