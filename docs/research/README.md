@@ -179,6 +179,7 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [gpu-recovery.md](gpu-recovery.md) (2026-11-05): GPU failure recovery that does not stop play on every uncaptured error. **Status:** adopted. See [plan round-4-notes](../plans/round-4-notes.md).
 - [graphics-settings.md](graphics-settings.md) (2026-11-03): three presets and six controls; registry and cost switches built, pages not. **Status:** partly adopted. See [plan graphics-switches](../plans/graphics-switches.md).
 - [graphics-switch-costs.md](graphics-switch-costs.md) (2026-11-04): Mac measurements of graphics switch costs; MSAA and lab grass largest. **Status:** reference. See [plan graphics-switches](../plans/graphics-switches.md).
+- [godot-migration-scope.md](godot-migration-scope.md) (2026-11-06): conditional native-first Godot migration scope, responsive authoritative physics, empty-world suspension and an agent workflow shortlist. **Status:** open. See [Process](../decisions.md#process).
 - [netcode-browser-physics.md](netcode-browser-physics.md) (2026-10-29): host-authoritative physics with a lockstep sim; older than the server plan. **Status:** reference. See [shared-physics](shared-physics.md).
 - [perf-pass-2026-11-05.md](perf-pass-2026-11-05.md) (2026-11-05): redundant instance writes removed, no proven frame-time gain. **Status:** reference.
 - [performance.md](performance.md) (2026-11-06): cache railway adapter reads per tick; first measured performance report. **Status:** partly adopted. See [Process](../decisions.md#process).
