@@ -4,7 +4,7 @@ One island, one beach ball, and everyone who has the page open.
 
 Boogle is a small multiplayer browser game built with [three.js](https://threejs.org) and [Rapier](https://rapier.rs) (physics, WASM). It is bundled with [Vite](https://vite.dev).
 
-**Contributing?** Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [DESIGN.md](DESIGN.md) (the principles that decide design arguments), [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) (the owner's decisions) and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) (what we're prototyping now).
+**Contributing?** Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [DESIGN.md](DESIGN.md) (the principles that decide design arguments), [docs/decisions.md](docs/decisions.md) (the owner's decisions) and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) (what we're prototyping now).
 
 ## Run it locally
 
@@ -58,4 +58,4 @@ To point the game at our server, set a repo variable named `VITE_BOOGLE_SERVER` 
 
 ## Roadmap
 
-See [DESIGN.md](DESIGN.md) for principles, [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) for the owner's decisions and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) for current prototypes.
+The one roadmap is [docs/direction.md](docs/direction.md). See [DESIGN.md](DESIGN.md) for principles and [docs/decisions.md](docs/decisions.md) for the owner's decisions.

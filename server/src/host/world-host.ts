@@ -179,7 +179,7 @@ export type RailwayHostOptions = WorldHostOptions & {
 // to clients by the room's replicator. Persistence is the sync's 2 s checkpoint plus the save on close: a crash may
 // roll the room back up to 2 s (owner, 6 November). Actions are not journalled before they apply.
 //
-// The paused world (docs/proposals/boogle-2.md, "2026-11-06, economy principles amended"): a room simulates only while
+// The paused world (docs/decisions.md, "2026-11-06, economy principles amended"): a room simulates only while
 // someone is in it. The hosted room pauses it after its last player has been gone a short grace (pause()), and the next
 // join wakes it (wake()) with one away credit for the time it stood still, the same credit a load from disk applies for
 // the time the server was down: the yards fill railAwayCredit(away) of production (src/sim/railway-away.ts), an absence

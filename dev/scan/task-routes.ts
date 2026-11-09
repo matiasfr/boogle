@@ -37,7 +37,7 @@ const design = {
     'docs/agents/context.md',
     'DESIGN.md',
     'docs/plans/find-the-fun.md#rules-for-every-prototype',
-    'docs/proposals/boogle-2.md#current-decision-index',
+    'docs/decisions.md#current-decision-index',
   ],
 };
 const visible = {
@@ -394,7 +394,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         'docs/agents/context.md',
         'DESIGN.md',
         'docs/plans/find-the-fun.md#rules-for-every-prototype',
-        'docs/proposals/boogle-2.md#current-decision-index',
+        'docs/decisions.md#current-decision-index',
       ],
       readIf: [{ when: 'Changing the place prototype', refs: ['docs/game-design/place.md#the-run'] }],
       sync: 'Choose per state; lockstep number changes need a separate proto room',

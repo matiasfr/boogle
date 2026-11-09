@@ -5,7 +5,7 @@
 *A mechanics-only prototype for [find-the-fun](../plans/find-the-fun.md), step 5: "Is driving a vehicle fun?" Feel
 first, no rewards. Serves DESIGN.md 1 (Toys before chores), with 2 (Physics toys first) and 10 (Slapstick over
 precision). Third try (2026-11-01): after two "no"s the cart drives as a suspensiony RC car with analog triggers
-([boogle-2.md](../proposals/boogle-2.md); research: [vehicle-feel.md](../research/vehicle-feel.md), "RC cars"). The
+([decisions.md](../decisions.md); research: [vehicle-feel.md](../research/vehicle-feel.md), "RC cars"). The
 owner's verdict on it: "pretty fun", so it stays (second run-through, 2026-11-01). Without the flag the cart never loads: `src/features/proto-soapbox.ts` imports `src/proto/soapbox/` only with
 it (and otherwise only hides a remote driver; see Sync).*
 

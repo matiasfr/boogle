@@ -16,7 +16,7 @@
 
 **[C]** [DESIGN.md](../../DESIGN.md) makes the relevant tests clear: **Toys before chores**, automatic cooperation, drop-in play, and leaving something for the next visitor. A musical reward cannot require a rhythm score, a party waiting together, or extra time on a train. [Find the fun, step 7](../plans/find-the-fun.md#7-does-a-long-crossing-feel-vast) is the existing crossing experiment, not a request to build a soundtrack system now.
 
-**[C]** The newer [owner decisions](../proposals/boogle-2.md) supersede several ideas in the earlier reports:
+**[C]** The newer [owner decisions](../decisions.md) supersede several ideas in the earlier reports:
 
 - The default crossing is about a minute, nominally 1.2 km at 20 m/s. The owner found 4 km at 50 m/s a novelty that could become annoying; 50 m/s over 1.2 km belongs nearer the endgame.
 - The audit retains **six eras**: wood; steam; iron and harbour; diesel and concrete; electric; future. The older eight-era music and speed ladders are not the current commissioning list. Opening-day ceremonies and the mayor framing are parked.
@@ -205,7 +205,7 @@ Read **confirmed applied world state**, never a queued `submitEdit` or every ind
 
 ### Six eras, one identity
 
-**[D]** These are timbre briefs for the six current eras in [boogle-2.md](../proposals/boogle-2.md), not six album commissions. First prove two contrasting palettes from one motif. Keep 132 BPM and compatible harmony during that test; early eras can feel slower through space and half-time phrasing.
+**[D]** These are timbre briefs for the six current eras in [decisions.md](../decisions.md), not six album commissions. First prove two contrasting palettes from one motif. Keep 132 BPM and compatible harmony during that test; early eras can feel slower through space and half-time phrasing.
 
 | Era | Arrangement direction | What remains recognisable |
 | --- | --- | --- |
@@ -300,12 +300,12 @@ Swing belongs in one place: a bounced garage stem already contains its groove. T
 
 ## 9. Numbered recommendations for Boogle
 
-1. **Prove one owner track against the crossing before commissioning a system.** Use an approved existing stereo bounce, native tempo and measured drop marker on [`?proto=crossing`](../../src/proto/crossing/index.ts); missing asset means silence. Serves **Toys before chores**; do not restore the cut groove in [Sound](../proposals/boogle-2.md#sound-listening-pack-audit-2026-11-01).
+1. **Prove one owner track against the crossing before commissioning a system.** Use an approved existing stereo bounce, native tempo and measured drop marker on [`?proto=crossing`](../../src/proto/crossing/index.ts); missing asset means silence. Serves **Toys before chores**; do not restore the cut groove in [Sound](../decisions.md#sound-listening-pack-audit-2026-11-01).
 2. **Make highlights occasional and keep control.** Start after departure, release at arrival, and test two quiet rides plus a ten-minute route cooldown between repeat highlights. Bind eligibility to ride identity and local listening history, not platform contact or forced camera changes in [crossing/index.ts](../../src/proto/crossing/index.ts).
 3. **Schedule backwards from a view, with shorter cuts for faster trains.** Use the [line timetable](../../src/proto/crossing/line.ts), an authored reveal interval and explicit pre-drop markers; test the 64 s, 29 s and 85 s [presets](../../src/proto/crossing/tuning.ts). Never stretch the track or slow the train to fit it.
 4. **Write a short arrangement with safe extension and exit points.** Commission a 32-bar reference at a proposed 132 BPM, yielding a 28-bar default cut and a 12-bar express cut; extend neutral four-bar travel, never an endless riser. Add section metadata beyond the [current stem manifest](../../src/proto/groove/stems.ts).
 5. **Let completed connections change four to six musical roles.** Map confirmed connection/town milestones to authored variations, with constant mix headroom; don't add a stem for every track segment or cargo delivery. Verify ownership of [network prototype state](../../src/proto/net/index.ts) before using it as shared progress.
-6. **Carry one motif through the six current eras.** Prove wood and electric palettes first; keep tempo/harmony compatible initially, then replace timbres and grooves rather than multiplying voices. Follow the current audit in [boogle-2.md](../proposals/boogle-2.md), not the historical eight-era list.
+6. **Carry one motif through the six current eras.** Prove wood and electric palettes first; keep tempo/harmony compatible initially, then replace timbres and grooves rather than multiplying voices. Follow the current audit in [decisions.md](../decisions.md), not the historical eight-era list.
 7. **Reuse the mixer and audit the clocks before playback.** Give the local crossing its own audio-time mapping, explicit cue epoch and cancellation on seek/resume; review timestamp validity and latency fallback in [clock.ts](../../src/proto/groove/clock.ts). Music stays Local, with no beat traffic or second AudioContext.
 8. **Budget short banks and reject incomplete mixes.** Target four normal/six peak roles, ≤2 MiB first compressed bank and 40/80 MiB steady/transition music PCM; validate the explicit asset choice, loop bodies and tails, and evict old banks in a successor to [stems.ts](../../src/proto/groove/stems.ts).
 9. **Keep honks immediate and harmonically compatible.** Use the current song section's chord for local pitch matching; reserve quantization for optional decorative replies. Preserve [honk.ts](../../src/features/honk.ts) responsiveness and existing messages, and leave [social.ts](../../src/sim/social.ts) independent of local music.

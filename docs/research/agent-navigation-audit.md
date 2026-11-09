@@ -283,7 +283,7 @@ aggregate estimates may differ by one from sums of rounded per-file estimates. C
 | docs/plans/find-the-fun.md |  2,183 |            3,448 |
 | src/README.md              |    669 |            1,231 |
 | docs/game-design.md        |    862 |            1,526 |
-| docs/proposals/boogle-2.md | 10,684 |           16,374 |
+| docs/decisions.md | 10,684 |           16,374 |
 
 Explicit unconditional minimum: **9,067 / ~14,586** words/tokens. Including supplied CLAUDE: **9,971 / ~16,137**. Add
 useful map/index (linked, not explicitly unconditional full reads): **11,502 / ~18,893**. Add the conditional design,

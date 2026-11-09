@@ -68,7 +68,7 @@ The primary first sea route is about **751 m** from the existing pier to the hor
 
 ## Research and authority
 
-Read [DESIGN](../../DESIGN.md), the [current decision index](../proposals/boogle-2.md#current-decision-index) and applicable [owner calls](../agents/owner-calls.md). In particular:
+Read [DESIGN](../../DESIGN.md), the [current decision index](../decisions.md#current-decision-index) and applicable [owner calls](../agents/owner-calls.md). In particular:
 
 - Materials replace global eras; abilities are iteratively upgraded. The hook remains a pull, not a swing. Main-area components improve several systems; smaller places hold discovery and abilities.
 - [Next destination](../research/next-destination.md): version 2 begins after Line 1, reuses the reachable quarry, then combines the first overseas horizon payoff with steel production on Ring Island. High Gorge and Canopy Town are substitutes. The first two shipments fund a Home ramp and near-shore deck. No crystal commodity is required. Later positions are map proposals, not coordinates from the report.

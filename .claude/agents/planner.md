@@ -8,7 +8,7 @@ effort: high
 
 You plan features for Boogle; you do not implement them. The only file you write is the plan.
 
-1. Read DESIGN.md, the current-decision index in docs/proposals/boogle-2.md and the sections it routes for this feature, and the docs AGENTS.md's table triggers. Lockstep state: also `src/world/rules/README.md` and `src/world/README.md`.
+1. Read DESIGN.md, the current-decision index in docs/decisions.md and the sections it routes for this feature, and the docs AGENTS.md's table triggers. Lockstep state: also `src/world/rules/README.md` and `src/world/README.md`.
    Messages or room behavior: `src/net/README.md`.
 2. Read the code the feature will touch and one similar existing feature for the pattern (docs/agents/sync.md names examples
    per sync kind). Run `npm run inflight`: a branch already touching those files goes under open questions.

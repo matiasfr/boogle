@@ -14,7 +14,7 @@ The [Round 4 record](../game-design/place.md#the-run) owns the baseline: satisfy
 
 ## Settled direction and dependencies
 
-The first [Shape of the game entries](../proposals/boogle-2.md#the-shape-of-the-game) and dated [Look calls](../proposals/boogle-2.md#look) supersede older research/plan prose.
+The first [Shape of the game entries](../decisions.md#the-shape-of-the-game) and dated [Look calls](../decisions.md#look) supersede older research/plan prose.
 
 - **Sea:** owner and Grant chose Ultra Water as the starting point, stylized alongside toon characters, retaining waves, shore response and below-water treatment. [Water graduation](water-graduation.md) owns replacing the real sea; no selective analytic corner sea. Steps 1–3, 5 and 6 are recorded complete, opt-in; step 4 started on 4 November; steps 7–8 await review. This plan grants none of those approvals.
 - **Sky:** demo sky with **AgX**, frozen late morning **`tod=0.24`**, baked once ahead of time. Rollout belongs with the real sea. Tune foliage, avatar and props under it. Neutral, the old sky and a running cycle are no longer open choices. Water-graduation's older “sky decision is open” wording predates this pick; its implementation gates still stand.
@@ -64,7 +64,7 @@ Each directory has `evidence.json` and `output.txt`; all listed stills, motion s
 
 1. **Great-beam identity changes:** 10.5 m felled → 5.4 m shoulder → 2.48 m flight → 5.6 m resting. Source: `chop.ts` trunk/shoulder geometry, `stations.ts` `flyToStock` and beam mesh, `pieces.ts` `size` × `PIECE.len`. The deposit flight ends and feed begins at `st.at` (+0.12 m), versus the resting beam centre (+1.7 m): **1.58 m jump**. Source-confirmed; sparse pictures cannot measure the entire transient.
 2. **Great-beam solid contact missing:** `stations.ts` creates collision for log rows only, not the deposited beam/overhangs. Its centre at +1.7 m also intersects the full pile (top +2.5752 m), confirmed in the held full-state still. Needs a coordinated beam/support/action pass after notes, not a silent collider change tonight.
-3. **Normal logs grow during delivery:** `flyToStock` requests `size: [1, 2.2]`, interpolated by `updatePieces`. Allowed by the owner's softened rule (boogle-2.md, 3 November): scale is fine for animation and juice. Keep it if it reads well.
+3. **Normal logs grow during delivery:** `flyToStock` requests `size: [1, 2.2]`, interpolated by `updatePieces`. Allowed by the owner's softened rule (decisions.md, 3 November): scale is fine for animation and juice. Keep it if it reads well.
 4. **Feed bypasses rollers:** `run.ts` `stepFeed` aims the arc directly at `machine.worldCradle`; the per-frame aim replaces `feederEnd`. Visible in the feed sheet and consecutive frames. Do not mistake the rough kit fit for a choreography repair.
 
 Existing fixes retained: the low empty frame and four separate post colliders; pile collision derived from the same row spacing, removed when empty; machine-deck inward idle correction that still lets movement/jumping leave. Normal delivery and the crossing-home walk succeed. No larger physics, state, saves or co-op changes were attempted. No suspect Boogler copy was changed or identified by this audit.

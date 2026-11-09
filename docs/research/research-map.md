@@ -19,7 +19,7 @@ _2 November 2026. Offline synthesis of the research present at `a8578f5b`: 69 re
 
 ## Conflicts with current decisions
 
-Authority is [Boogle 2's Decided section](../proposals/boogle-2.md#decided), especially **The audit picks (2 November)**, plus [DESIGN.md](../../DESIGN.md). The audit explicitly overrides older entries even when those remain lower in the same file. Playtests establish observations; plans and research propose implementations. The keys below name the controlling decisions for the report table.
+Authority is [Boogle 2's Decided section](../decisions.md#decided), especially **The audit picks (2 November)**, plus [DESIGN.md](../../DESIGN.md). The audit explicitly overrides older entries even when those remain lower in the same file. Playtests establish observations; plans and research propose implementations. The keys below name the controlling decisions for the report table.
 
 | Key | Reports or recommendations that conflict | Current decision and consequence |
 | --- | --- | --- |

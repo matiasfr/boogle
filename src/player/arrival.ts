@@ -1,4 +1,4 @@
-// Arrival: first visit or returning visit (docs/proposals/boogle-2.md, 2026-11-02; docs/game-design/first-run.md). A
+// Arrival: first visit or returning visit (docs/decisions.md, 2026-11-02; docs/game-design/first-run.md). A
 // first visit (no saved name on this device) gets the name-and-colour card (index.html's lobby, src/player/hud.ts);
 // a returning visit skips it and lands straight in the world with the saved name and colour, and
 // src/features/welcome-back.ts shows a light "Welcome back" that says what changed in this room since the last visit.

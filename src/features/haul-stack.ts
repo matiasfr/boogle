@@ -1,6 +1,6 @@
 // The haul stack: what you carry, drawn as a bundle of pieces on your back (and on everyone else's, from the lockstep
 // stacks matched to avatars through presence `pid`). A small chip shows your count (no contribution tier: tiers stay
-// data in src/sim/tiers.ts until rewards are designed; docs/proposals/boogle-2.md, 2026-11-02). Pickups fly to your back the moment you walk into a pile (Local), while the host confirms
+// data in src/sim/tiers.ts until rewards are designed; docs/decisions.md, 2026-11-02). Pickups fly to your back the moment you walk into a pile (Local), while the host confirms
 // (~0.5 s). Placeholder visuals (0.1 groundwork). No control of its own: pickup is walking into a pile, pouring is
 // walking into a site's ring (work-sites.ts).
 // Serves DESIGN.md 1 (toys before chores: wood on your back, carried around with nothing to do). Lockstep counts,

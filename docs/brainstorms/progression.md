@@ -2,7 +2,7 @@
 
 # Progression: places and the upgrade tree
 
-_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 Sources: [next-destinations](../research/next-destinations.md) and [upgrade-economy](../research/upgrade-economy.md) research, two brainstorm panels (destinations, then a freer places panel), and the owner's direction on 5 November:
 

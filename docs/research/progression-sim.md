@@ -1,6 +1,6 @@
 # Progression on paper: two candidate campaigns
 
-_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _5 November 2026. Owner-authorized early tooling exception; no route selected, gameplay changed, push or ship. Generated numbers are deterministic design arithmetic, not measurements or playtest approval._
 

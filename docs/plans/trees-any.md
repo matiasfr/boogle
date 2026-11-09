@@ -1,7 +1,7 @@
 # Every ordinary tree answers
 
 Approved scope: owner's **2026-11-03, trees** decision in
-[boogle-2](../proposals/boogle-2.md), implemented from
+[decisions](../decisions.md), implemented from
 [tree-tiers](../research/tree-tiers.md)'s recommendations and build plan. The owner's
 task authorizes implementation; this checklist does not add another approval gate.
 

@@ -3,7 +3,7 @@
 You make it read and delight: what the player sees, hears and laughs at, and how clearly the world says what's about
 to happen.
 
-Read: DESIGN.md, the decision index in docs/proposals/boogle-2.md (look, characters and story entries), the
+Read: DESIGN.md, the decision index in docs/decisions.md (look, characters and story entries), the
 files in docs/game-design/ the idea touches, docs/game-design/boogler.md, docs/research/comedy-in-games.md, and the
 game-feel and audio-design skills in .claude/skills/. Look at how shipped games stage this kind of moment, and use
 references by name (docs/agents/owner-calls.md, "Use references by name").

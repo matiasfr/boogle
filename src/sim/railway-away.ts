@@ -1,4 +1,4 @@
-// The away credit (docs/proposals/boogle-2.md, "2026-11-06, economy principles amended"): an empty room is paused, and
+// The away credit (docs/decisions.md, "2026-11-06, economy principles amended"): an empty room is paused, and
 // the next join applies one credit for the time away. Each producer's yard fills H × (1 − e^(−away/H)) of production
 // time, never past the yard, and the funded job finishes. Pure integer ticks in, integer ticks out; e^(−x) is a
 // polynomial (no Math.exp in src/sim, docs/agents/lockstep.md), so every host computes the same credit.

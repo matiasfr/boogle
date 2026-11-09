@@ -3,7 +3,7 @@
 _It describes what exists on `main` today, not what is planned, and is kept current by the rule in
 [AGENTS.md](../AGENTS.md) (player-facing changes update their file in [game-design/](game-design/) in the same commit). Every number is read from the code or the docs it links. Where the code does not say,
 the doc says "unclear from code". Current design lives in [DESIGN.md](../DESIGN.md) and the
-[decision log](proposals/boogle-2.md); prototype work is in [find-the-fun.md](plans/find-the-fun.md), engineering work
+[decision log](decisions.md); prototype work is in [find-the-fun.md](plans/find-the-fun.md), engineering work
 in [tech-plan.md](tech-plan.md). Undecided ideas live in [proposals/](proposals/README.md) and are only linked as "related ideas"._
 
 This page is the index: sections 1 and 2 are here, everything else has one file per section or system, so changes to

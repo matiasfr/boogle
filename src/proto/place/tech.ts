@@ -1,5 +1,5 @@
 // Ancient technology in ?proto=place: the three devices, the slabs across the line, the rings up Needle Bell, and what's hidden on
-// paths you've already walked. "Abilities are ancient technology you find"; "Abilities replace curios" (boogle-2.md, The shape of
+// paths you've already walked. "Abilities are ancient technology you find"; "Abilities replace curios" (decisions.md, The shape of
 // the game). Connecting a line gets you to where a device is; you still go and take it. Where and how much: ./tech-layout.ts. The
 // moves themselves: ./moves.ts. Serves DESIGN.md 1 (Toys before chores), 7 (Telegraph everything), 11 (Show, don't tell).
 //

@@ -1,7 +1,7 @@
 # Six eras: a railway that keeps changing what you can build
 
 > **Proposal for the owner to react to. Not approved, not an implementation plan, and not the game as built.**
-> Follows the [audit picks and later owner entries](boogle-2.md). Every gameplay number below is a hypothesis,
+> Follows the [audit picks and later owner entries](../decisions.md). Every gameplay number below is a hypothesis,
 > marked **[H]**, including the requested crossing and speed anchors. None is a measured playtime or new tuning decision.
 
 The arc is **make a local shortcut → establish a foothold overseas → join productive places → build above a town →
@@ -253,7 +253,7 @@ footprints, house shells and workshop additions around retained landmarks. The m
 Vegetation and rock kits recur in different landforms. Spend bespoke work on the era silhouettes, not complete replacements.
 
 **Reward-system slot — intentionally undesigned.** The owner's maximal, generous, distinctive reward direction
-remains in the [audit picks](boogle-2.md#the-audit-picks-2-november). Refer to the
+remains in the [audit picks](../decisions.md#the-audit-picks-2-november). Refer to the
 [rarity, incremental and gacha research](https://github.com/matiasfr/boogle/blob/97aed0dd/docs/research/rewards-rarity-gacha.md)
 (read from local Git history) and [personal-rewards.md](../research/personal-rewards.md). No reward systems are designed
 here; som, knacks and helpers stay parked or undecided. [Story and finale](story-and-finale.md) remains parked.

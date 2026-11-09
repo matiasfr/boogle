@@ -39,6 +39,6 @@ Add an entry to `docs/playtests.md` from: $ARGUMENTS
    the client's question tool with its free-text field when available; otherwise show the choices plus “Anything else:”.
    Label recommendations as suggestions, never as already selected owner answers. Do not repeat
    questions the call answered. Keep unknowns in the log if the owner does not answer.
-6. Commit the notes with an imperative subject and the DESIGN.md principle in the body. Stop at
-   the owner's playtest/feedback gate; recording a bug does not authorize gameplay changes. Ship
+6. Commit the notes with an imperative subject and the DESIGN.md principle in the body. Recording a bug
+   does not by itself authorize gameplay changes. Ship
    only when authorized by the caller.

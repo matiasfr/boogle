@@ -1,5 +1,7 @@
 # Plan: the net model for a co-op open world
 
+> **8 November 2026:** history for the net model, not the game's roadmap. The one roadmap is [direction.md](../direction.md); replication with prediction replaced lockstep on 6 November ([replication](replication.md)).
+
 > **Status: direction, approved by the user (2026-10-31).** Boogle is heading toward a co-op hybrid of a creature and
 > survival world (Palworld), building (Fortnite) and walking together through a big place (Big Walk). This file says what
 > that asks of the net model and in what order. It is a roadmap: each phase gets its own plan in `docs/plans/` when it

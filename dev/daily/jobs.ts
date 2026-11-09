@@ -55,7 +55,7 @@ Do not manufacture changes if nothing needs updating.`
 Run npm run video:changes -- --no-fetch --until ${base}. Keep this pinned range throughout the run.
 Fewer than three new things players would notice and enjoy: report why and stop,
 leaving no .look/publish.json. Fixes, tuning, performance, tooling and QoL do not count.
-Only cover features on this main build, never prototypes or other branches. Read docs/proposals/boogle-2.md.
+Only cover features on this main build, never prototypes or other branches. Read docs/decisions.md.
 Follow recording and editing steps 2-4; open every clip's contact sheet and the final cut's contact sheet.
 Use .look/reels/patch-<date>.ts and pass its full path to npm run reel.
 The runner will start a separate Codex reviewer after you finish; do not spawn one yourself.

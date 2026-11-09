@@ -78,7 +78,7 @@ unless stated.
   the newer copy.
 - Step 7 keeps `updateRemotes` as a named call in `main.ts`, and no later step removes it. `installStepHooks` appears in no
   step. Step 7's `declare module` fields on `Remote` have no step that removes them.
-- `docs/proposals/boogle-2.md`, 2026-11-02: the owner says the controls and motion are right on today's direct controller.
+- `docs/decisions.md`, 2026-11-02: the owner says the controls and motion are right on today's direct controller.
 
 ## Headless blockers found while reading
 

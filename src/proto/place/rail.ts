@@ -1,7 +1,7 @@
 // The rail of ?proto=place: each line's track and trestle as separate pieces that fall into place as the machine passes,
 // with colliders that grow with what's down; the machine itself, solid, with its rack and its cradle in plain sight; the
 // platforms; and one train per line (one track: the geometry doesn't need two). Trains are the wagon's look on kinematic
-// platforms, the crossing's way. docs/proposals/boogle-2.md, "construction is physical" and "what looks solid is solid".
+// platforms, the crossing's way. docs/decisions.md, "construction is physical" and "what looks solid is solid".
 // The machine's rhythm is ?proto=lay's (src/features/track-machine.ts). Local: every tab runs its own.
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
@@ -571,7 +571,7 @@ const BOTTOM = 0.4;
 // box (src/physics/platforms.ts). With its centre past the box, though, the contact's normal leans outward, so a player who
 // stopped at the edge crept off at about 0.1 m/s, moving or not, until the deck let go of them over the river. Standing with
 // no stick pushed, you're eased back inside instead. Push out and you walk off, and a jump's a jump, so no railing: nothing
-// here looks solid that isn't. Serves "you can stand on it", docs/proposals/boogle-2.md.
+// here looks solid that isn't. Serves "you can stand on it", docs/decisions.md.
 const HOLD = { inset: 0.04, speed: 1.2 }; // m inside the box's edge you settle; m/s you're eased back
 const decks = new Map<Platform, Car>();
 onPreStep(

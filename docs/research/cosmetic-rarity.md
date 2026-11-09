@@ -8,7 +8,7 @@ _Research report, 2 November 2026. Earned boxes, personal wardrobes, readable ra
 
 ## Scope and what this builds on
 
-The latest [decision log](../proposals/boogle-2.md#the-shape-of-the-game) and this research brief settle the following:
+The latest [decision log](../decisions.md#the-shape-of-the-game) and this research brief settle the following:
 
 - Character slots are **hat, accessory and full-body outfit**. Headphones, glasses and a scarf compete for the accessory slot; there are no separate shirt, trousers, gloves or boots slots.
 - Train slots are **flag, side accessory and chimney accessory**. Ownership is personal even when an equipped train is communal.
@@ -267,7 +267,7 @@ All twelve are **[I]**, scoped to DESIGN.md 6 and the current decision log. Buil
 1. **Use three tiers with a generous upward surprise:** Common boxes 60/30/10, Rare boxes 0/70/30 and Wonder boxes 0/0/100 across Common/Rare/Wonder items. Add catalogue/table data beside the future replacement for [`place/gifts.ts`](../../src/proto/place/gifts.ts); prototype common-first pacing through [round 4](../plans/round-4.md).
 2. **Guarantee the first Wonder by result three and later Wonders by result six, saving one personal counter across sessions.** Keep target choice distinct from tier pity; implement through the proposed receipt rules, not a presentation-time random draw. Apply the empty-pool rules above and disclose base versus guarantee-adjusted odds.
 3. **Prevent same-tier repeats while an eligible item is unowned; turn three exhausted-tier results into a missing-item choice.** Preserve family restrictions and stop minting inventory duplicates; replace `giftState.got/order` only when the production ledger exists. Round 4 can keep a no-repeat bag.
-4. **Budget 48 named campaign cosmetics: 24 Common, 16 Rare and 8 Wonder, from roughly 32 shape assemblies and 16 finish derivatives.** Respect the six slots in [boogle-2.md](../proposals/boogle-2.md), concentrating early work in hats/accessories and limiting expensive outfit shells.
+4. **Budget 48 named campaign cosmetics: 24 Common, 16 Rare and 8 Wonder, from roughly 32 shape assemblies and 16 finish derivatives.** Respect the six slots in [decisions.md](../decisions.md), concentrating early work in hats/accessories and limiting expensive outfit shells.
 5. **Use 24 global items plus four six-item source sets, preferring local finds 70/30 after tier selection.** Make box-exclusive membership explicit, retain old sources and recover missed prizes at the hub, as [round-4 step 5](../plans/round-4.md) requires; four sets are a budget, not a fixed island count.
 6. **Start near ten box results/hour, with 8–12 per one-hour session and 80 across the campaign.** Keep dense tactile rewards from [maximal-rewards](maximal-rewards.md), give a box on every accepted co-op clear, and accept faster finite-set completion rather than inventing a grind or withholding earned payouts.
 7. **Keep ability boxes authored and guaranteed, separate from cosmetic pity and collection progress.** If adopted, connect their results to [round-4 step 5](../plans/round-4.md) and [movement abilities](movement-abilities.md); a mini-game or lucky roll never gates the main route.

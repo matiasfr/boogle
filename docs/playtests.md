@@ -23,7 +23,7 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Who: Matias, solo, `?room=proto-haul&proto=haul`.
 - New: the haul playtest kit (live tuning, checklist).
 - Felt off: the tall, swaying Death Stranding-style stack. Wood should just sit on the character's back, not built so deliberately high, maybe stacked differently; it doesn't need to sway.
-- After: carry becomes a compact back bundle with no sway; the jump spill goes too, since nothing warns you of it without the sway (boogle-2.md, Decided).
+- After: carry becomes a compact back bundle with no sway; the jump spill goes too, since nothing warns you of it without the sway (decisions.md, Decided).
 
 ## 2026-11-01 (sound audit, listening pack)
 - Who: Matias, solo, the listening pack (39 recorded game sounds).
@@ -63,7 +63,7 @@ One short entry per session: date, who (first names), what was new, what was fun
 ## 2026-11-01 (night)
 - Who: Matias, solo.
 - Felt off: night is too dark; it should still feel light, moonlit. The sun and moon don't need faces; a bit more real.
-- After: a brighter moonlit night and faceless sun and moon (boogle-2.md, Decided, Look).
+- After: a brighter moonlit night and faceless sun and moon (decisions.md, Decided, Look).
 
 ## 2026-11-01 (full run-through, `/?play`)
 - Who: Matias, solo, the `?play` playlist. Verdicts reached the server on their own (first use).
@@ -73,7 +73,7 @@ One short entry per session: date, who (first names), what was new, what was fun
 - No: soapbox, twice ("needs to feel more like a suspensiony RC car"; bumper or trigger for throttle and brake); hero ("not yet", the other session's track).
 - No verdict: the wagon's variants.
 - Broke: a jump at the end of the laying animation.
-- After: decisions in boogle-2.md (Decided, 1 November): quick laying, construction and UI that answers into the game, RC-car soapbox try, topple retired, layout parked, moves as unlocks, train-riding research; fast travel is open question 8.
+- After: decisions in decisions.md (Decided, 1 November): quick laying, construction and UI that answers into the game, RC-car soapbox try, topple retired, layout parked, moves as unlocks, train-riding research; fast travel is open question 8.
 
 ## 2026-11-01 (second run-through)
 - Who: Matias, solo, `/?play`; told to the director rather than through the bar, except hero.
@@ -81,7 +81,7 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Soapbox (RC car): "pretty fun". Couldn't drive any more once down the hill, maybe a miss. Idea: races with these carts. The new camera looked nice; he didn't notice the near-camera dither.
 - Ride: still fine. Board: poles fine to start with. Look: what we have is okay, may iterate.
 - Hero: could see this rig working with a different model; the aerial animations didn't feel great (his other session's track).
-- After: snatch, stoke and grind cut; the soapbox stays and keeps driving after the run (boogle-2.md, Decided).
+- After: snatch, stoke and grind cut; the soapbox stays and keeps driving after the run (decisions.md, Decided).
 
 ## 2026-11-02 (the long crossing)
 - Who: Matias, solo, `?proto=crossing`; told to the director.
@@ -90,14 +90,14 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Default (1.2 km at 20 m/s): "pretty well balanced", a good compromise. The time felt more like Vast.
 - Wanted: press X or square to sit on the train. He wasn't falling off, but sitting would feel safe and more relaxing.
 - Felt off: it's greybox, but the world needs to be a lot more beautiful, through rendering settings in the future.
-- After: a crossing starts at about a minute, top speed goes to the end-game trains, and sitting is decided (boogle-2.md, Decided).
+- After: a crossing starts at about a minute, top speed goes to the end-game trains, and sitting is decided (decisions.md, Decided).
 
 ## 2026-11-02 (the line feeds the town)
 - Who: Matias, solo, `?proto=net`; told to the director.
 - Verdict: "not really sure still". Likes that "there's a lot of work happening from the rail network".
 - Idea: junctions unlock parts of the network, but you still haul for each track segment; Death Stranding "had some interesting work there".
 - Town: noticed the change for sure, though it's simple greybox and needs fleshing out in the real game.
-- After: the lean is logged (boogle-2.md, Decided, open question 11); the next test keeps hauling, with the network making it easier.
+- After: the lean is logged (decisions.md, Decided, open question 11); the next test keeps hauling, with the network making it easier.
 
 ## 2026-11-02 (the depot, `?proto=net&v=depot`)
 - Who: Matias, solo; told to the director.
@@ -122,7 +122,7 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Wanted: numbers on resources eventually, a bit of RPG progression "so you really feel it". Death Stranding's auto-pavers came up again: places you walk out to, where the rail comes up.
 - Compared to `?proto=net`: bigger and probably an improvement, but not yet "really in a place".
 - Broke: falling through the tracks; the train and track layer aren't solid in places. No stuck spots.
-- After: boogle-2.md (Decided, 2 November); follow-up questions with the owner.
+- After: decisions.md (Decided, 2 November); follow-up questions with the owner.
 
 ## 2026-11-02 (the fall, `?proto=fall`)
 - Who: Matias, solo; told to the director.
@@ -151,7 +151,7 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Kept: the turntable, hopping villagers, axe and beacon. The beacon read as a giant floating crystal, hinting at a fantasy element, "which is cool".
 - Broke: nothing literal, but walking through the town "like it's all billboard" feels weird.
 - Unclear: the answer on continuing reads "I didn't want to keep going", then "I was interested in continuing"; taken as wanting to continue, to confirm.
-- After: boogle-2.md (Decided, 2 November).
+- After: decisions.md (Decided, 2 November).
 
 ## 2026-11-02 (round 3, two players, `?proto=place&coop=1&fresh=1`)
 - Who: Matias and Grant; one survey for both. More notes to come.
@@ -197,7 +197,7 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 - **Small:** a square shadow under the character (both saw it). Double-jump rings off the feet. Rails floating where the line leaves the mountain. Z-fighting on the platform between the canyon rails and the tower. The junction snaps the cart. Pack floats off the body and its load sits outside it. Happy Clam has no way back but the water. Boxes on the train can be clipped through and should be solid enough to stand on. Some wall parts disappear oddly in the indoor cutaway. A wobble on some jump surfaces. Can't board the track layer. The reload prompt claims you must reload to stay with friends, and that's not true.
 
 ### Calls they raised (not decided)
-Owner's answers on the objective marker, trees, rails and the cart: [boogle-2.md](proposals/boogle-2.md), "2026-11-03, after round 4". The tree answer differs from this list: tougher trees may stay, as long as any tree can be attempted.
+Owner's answers on the objective marker, trees, rails and the cart: [decisions.md](decisions.md), "2026-11-03, after round 4". The tree answer differs from this list: tougher trees may stay, as long as any tree can be attempted.
 - **Remove the objective marker:** both want it gone, and the world should guide you. But Grant was still following it at the end ("that's my objective") and asked why he'd want a second train, so it's what carried that stretch.
 - **Remove orange bands; every tree can be chopped:** both agree. No axe tiers. Tension: Grant also said the long walk to the bands makes you feel the pain the little guys then relieve, and that's the gut question. Needs tuning, not just removal.
 - **Cut or soften the blue shafts at spawn:** both find them heavy-handed.
@@ -274,5 +274,5 @@ Not the replay: Grant couldn't play, so this doesn't answer the two-player quest
 - Who: Matias, solo, iPad with Magic Keyboard, sessions mw8mn9bg and mw8n0kbk (about 16 min active, no errors, 60 fps).
 - Main issues (owner): visibility and understanding of the cart mechanic, visibility of the side resources (the depot rack and shelf), and confusion over the switch gating.
 - Data: Pull pressed 18 times on 4 showings (the sea switch before Q4, no feedback); the rack's Pick up shown 26 times, pressed 4 (the rack and cart were invisible on the iPad while their prompts worked); 41 drops (dropping and re-picking rails to make them register); Wake it up pressed 3 for 3 showings. Reached Far Head along the line; didn't notice any rockets (they fire only when Q5 finishes laying). The live build marks no railway beats, so the data can't show progress.
-- Calls: fill a gated stretch before its switch (boogle-2.md); carried rails show on the pack frame; the summit handle's rotation looked wrong.
+- Calls: fill a gated stretch before its switch (decisions.md); carried rails show on the pack frame; the summit handle's rotation looked wrong.
 - After: Codex jobs depot-rack-carry, gated-fill, sea-switch-early, wake-press; the puzzle-order brainstorm.

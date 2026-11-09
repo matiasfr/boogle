@@ -1,6 +1,6 @@
 # Roblox patterns: what today's top games do, and what Boogle can take
 
-*1 November 2026. Research for the owner, who sees today's top Roblox games as the state of the art in pure mechanics. Covers the games most played on 1 November 2026 (checked on two live trackers that day, not assumed), the 2025 record-breakers, Roblox's own published guidance on what its recommendations reward, and benchmark data. Builds on [0.1/9-brainrot-hooks.md](0.1/9-brainrot-hooks.md) ("rarity done kindly"), which already covers Steal a Brainrot's rarity ladder, Grow a Garden's mutations, Pet Simulator 99, Adopt Me's Neon ladder and Bee Swarm; this report doesn't repeat those and points to it instead. Read beside [boogle-2.md](../proposals/boogle-2.md) (wary of material grinds, nothing decays, personal rewards only, every system ignorable), [DESIGN.md](../../DESIGN.md), [progression-models.md](progression-models.md) and [minigames-and-physics-minigames.md](minigames-and-physics-minigames.md). **[V]**: I fetched and read the linked page this session. **[S]**: from a search engine's summary, or a fan guide other guides contradict. Fan guides for these games disagree a lot, and live charts change hourly: every number is a snapshot. Recommendations only; nothing here is a decision.*
+*1 November 2026. Research for the owner, who sees today's top Roblox games as the state of the art in pure mechanics. Covers the games most played on 1 November 2026 (checked on two live trackers that day, not assumed), the 2025 record-breakers, Roblox's own published guidance on what its recommendations reward, and benchmark data. Builds on [0.1/9-brainrot-hooks.md](0.1/9-brainrot-hooks.md) ("rarity done kindly"), which already covers Steal a Brainrot's rarity ladder, Grow a Garden's mutations, Pet Simulator 99, Adopt Me's Neon ladder and Bee Swarm; this report doesn't repeat those and points to it instead. Read beside [decisions.md](../decisions.md) (wary of material grinds, nothing decays, personal rewards only, every system ignorable), [DESIGN.md](../../DESIGN.md), [progression-models.md](progression-models.md) and [minigames-and-physics-minigames.md](minigames-and-physics-minigames.md). **[V]**: I fetched and read the linked page this session. **[S]**: from a search engine's summary, or a fan guide other guides contradict. Fan guides for these games disagree a lot, and live charts change hourly: every number is a snapshot. Recommendations only; nothing here is a decision.*
 
 ## Summary
 
@@ -200,7 +200,7 @@ The pleasure is in the third step. A trip home where something chases you is wha
 
 ### (a) Patterns that fit, with the smallest prototype each
 
-Ordered by how directly each one serves the find-the-fun questions in [boogle-2.md](../proposals/boogle-2.md).
+Ordered by how directly each one serves the find-the-fun questions in [decisions.md](../decisions.md).
 
 **1. The trip home under a world threat (Escape Tsunami, Steal An Egg without the stealing, 99 Nights' night).**
 - *Why it fits:* it is principle 5 ("only the world is the antagonist") and 7 (telegraph everything) on top of the haul. It answers "is hauling a chore?" by adding tension rather than rewards. It also matches the storm-tide cycle [ambitious-mechanics.md](ambitious-mechanics.md) recommends.

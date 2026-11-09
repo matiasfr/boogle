@@ -1,6 +1,6 @@
 # Principles audit: the shared wallet and the paused world
 
-_6 November 2026; **approved by the owner as worded the same day** ([economy principles amended](../proposals/boogle-2.md#progress-and-rewards)). This audit is for the owner's answers to the [ring-and-economy brief](../brainstorms/ring-and-economy.md):_
+_6 November 2026; **approved by the owner as worded the same day** ([economy principles amended](../decisions.md#progress-and-rewards)). This audit is for the owner's answers to the [ring-and-economy brief](../brainstorms/ring-and-economy.md):_
 
 - _a shared wallet anyone may spend;_
 - _a world that is paused while nobody is in it, with a capped "while you were away" credit to producers on the next
@@ -86,11 +86,11 @@ changes are queued after R1b in [orchestrator-state](../agents/orchestrator-stat
   up as surplus sells and empty when someone buys, so the number is also a pile you can see. A HUD figure only
   supplements it.
 
-## The decision log ([boogle-2.md](../proposals/boogle-2.md))
+## The decision log ([decisions.md](../decisions.md))
 
 ### 7. The audit picks, while nobody plays
 
-- **Source:** [boogle-2.md:113](../proposals/boogle-2.md), "**While nobody plays:** the network banks one project, and
+- **Source:** [decisions.md:113](../decisions.md), "**While nobody plays:** the network banks one project, and
   the next step waits for players."
 - **Conflict:** this banked one project during absence.
 - **Proposed amendment:** mark it superseded: "Replaced 6 November: the world is paused while empty; on the next join
@@ -98,7 +98,7 @@ changes are queued after R1b in [orchestrator-state](../agents/orchestrator-stat
 
 ### 8. Design Table call, 2 November
 
-- **Source:** [boogle-2.md:185](../proposals/boogle-2.md), "**While nobody plays,** whatever you kicked off finishes,
+- **Source:** [decisions.md:185](../decisions.md), "**While nobody plays,** whatever you kicked off finishes,
   as a small incremental touch."
 - **Conflict:** under a paused world, nothing finishes while away.
 - **Proposed amendment:** this is an owner choice, open question 2 in the brief. **Recommended:** keep the small touch
@@ -107,7 +107,7 @@ changes are queued after R1b in [orchestrator-state](../agents/orchestrator-stat
 
 ### 9. The production core's scope, 4 November, and its offline contract
 
-- **Source:** [boogle-2.md:196](../proposals/boogle-2.md), "offline completion only for already-funded work".
+- **Source:** [decisions.md:196](../decisions.md), "offline completion only for already-funded work".
 - **Source:** [production-core.md:497](../plans/production-core.md), "Server-running empty time uses ordinary ticks;
   server-down/idle-unloaded time only completes already-started work."
 - **Source:** [production-core.md:592](../plans/production-core.md), "Approve offline completion only for
@@ -122,7 +122,7 @@ changes are queued after R1b in [orchestrator-state](../agents/orchestrator-stat
 
 ### 10. After round 3, 2 November
 
-- **Source:** [boogle-2.md:197](../proposals/boogle-2.md), "**Money is a comic score**, with The Boogler's prices as a
+- **Source:** [decisions.md:197](../decisions.md), "**Money is a comic score**, with The Boogler's prices as a
   gag".
 - **Conflict:** Bucks becomes spendable shared money.
 - **Proposed amendment:** "Money is the shared wallet: town sales of surplus, spent by anyone. The Boogler's prices
@@ -131,7 +131,7 @@ changes are queued after R1b in [orchestrator-state](../agents/orchestrator-stat
 
 ### 11. Progress and rewards, three things you earn
 
-- **Source:** [boogle-2.md:282](../proposals/boogle-2.md), "**Three things you earn, none of them a shared wallet**",
+- **Source:** [decisions.md:282](../decisions.md), "**Three things you earn, none of them a shared wallet**",
   with som as "a personal coin, earned only and spent on looks".
 - **Conflict:** this contradicts the wallet directly.
 - **Proposed amendment:** "Two things you earn and one you share: shared progress and the shared wallet are the
@@ -139,7 +139,7 @@ changes are queued after R1b in [orchestrator-state](../agents/orchestrator-stat
 
 ### 12. Boxes have rarity, Design Table call
 
-- **Source:** [boogle-2.md:182](../proposals/boogle-2.md), "**Boxes have rarity.**"
+- **Source:** [decisions.md:182](../decisions.md), "**Boxes have rarity.**"
 - **Conflict:** this is a tension, not a contradiction. If the wallet can buy looks, boxes and the shop become two
   channels for the same things.
 - **Proposed rule:** box cosmetics stay box-only, and the wallet buys a separate shop line and train fittings.
@@ -154,7 +154,7 @@ changes are queued after R1b in [orchestrator-state](../agents/orchestrator-stat
 
 ### 14. Supply and no lockout, 5 November
 
-- **Source:** [boogle-2.md:137](../proposals/boogle-2.md), "Nobody may ever be locked out: dropped resources recover
+- **Source:** [decisions.md:137](../decisions.md), "Nobody may ever be locked out: dropped resources recover
   to a rack after about 20 minutes with nobody near, and cut trees regrow after about 30 minutes".
 - **Conflict:** paused time no longer advances those timers.
 - **Proposed rule, keeping the safety call:** recovery and regrowth count time away, because they restore access and

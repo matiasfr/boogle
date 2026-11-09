@@ -3,7 +3,7 @@
 // chimney. Then the chimney lights and rails pour onto a rack in plain sight, roof or no roof. When trains come they take over:
 // a crane lifts each crate off the dock onto it, the roof goes on, the poles come down and it pours twice as fast. Every other
 // building copies its plan (./sites.ts).
-// docs/proposals/boogle-2.md, 2026-11-02 "construction is physical" and "the next test". Local.
+// docs/decisions.md, 2026-11-02 "construction is physical" and "the next test". Local.
 import * as THREE from 'three/webgpu';
 import { guardInstances } from '../../render/draw-count.ts';
 import { scene } from '../../render/scene.ts';

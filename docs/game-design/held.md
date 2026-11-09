@@ -6,7 +6,7 @@
   hand while you own it and leaves when ownership does. Using what you hold: a bag of seeds sprouts mushrooms, anything
   else winds up a throw. Winding up a throw, you pick up nothing: an item already on its way goes back on the ground.
 - **Controls.** E / pad X picks up; use (click / pad RT); Toss on touch. No keys or buttons to change what you hold: no
-  1-5, LB or RB (the owner cut the hotbar, 2 November: [boogle-2.md](../proposals/boogle-2.md)).
+  1-5, LB or RB (the owner cut the hotbar, 2 November: [decisions.md](../decisions.md)).
 - **Sync kind.** Local for what you hold; Owner for what others see (presence `hd`, a catalog index or −1). Items cross
   into the world only through `gift.take` and `gift.toss`.
 - **On screen.** No slots. The held thing's name and what its button does fade in for 2.4 s when it changes, at the

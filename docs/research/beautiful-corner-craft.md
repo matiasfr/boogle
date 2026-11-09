@@ -8,7 +8,7 @@ _Research report, 2 November 2026. How to take one already promising Boogle job 
 
 **Build a quality target around one complete, repeatable action, then prove its production method on a second arrangement.** The best early returns should come from a clear purpose, convincing contact, broad composition and coherent light. Materials and details reinforce those decisions. Motion and sound start as rough feedback immediately and receive their final pass together. More effects cannot compensate for an unreadable delivery, a slippery deck or an attractive scene that is exhausting to traverse. This ordering is a Boogle hypothesis, not a universal ranking established by the sources.
 
-The binding principles are [DESIGN.md](../../DESIGN.md): **Toys before chores**, **Telegraph everything**, **Cooperation is automatic**, **Designed for drop-in, drop-out**, **Leave something for the next visitor**, and **Small and readable**. The owner's [decision log](../proposals/boogle-2.md) already selects the sunlit, toy-like Mario Sunshine direction, the crossing references and the place look without GTAO. Keep the approved camera and Buddy; a polish pass is not permission to reopen character design, introduce a new progression system or replace the art direction.
+The binding principles are [DESIGN.md](../../DESIGN.md): **Toys before chores**, **Telegraph everything**, **Cooperation is automatic**, **Designed for drop-in, drop-out**, **Leave something for the next visitor**, and **Small and readable**. The owner's [decision log](../decisions.md) already selects the sunlit, toy-like Mario Sunshine direction, the crossing references and the place look without GTAO. Keep the approved camera and Buddy; a polish pass is not permission to reopen character design, introduce a new progression system or replace the art direction.
 
 The inputs already contain unusually useful evidence:
 
@@ -210,7 +210,7 @@ For planning, separate **one-time setup + repeated known work + new content fami
 
 ## Numbered recommendations for Boogle
 
-1. **Polish the accepted material-to-track job before expanding its content.** Use [find-the-fun](../plans/find-the-fun.md) and the recorded [place loop](../game-design/place.md); keep the approved Sunshine look and camera from [boogle-2](../proposals/boogle-2.md).
+1. **Polish the accepted material-to-track job before expanding its content.** Use [find-the-fun](../plans/find-the-fun.md) and the recorded [place loop](../game-design/place.md); keep the approved Sunshine look and camera from [decisions](../decisions.md).
 2. **Choose Station 2 and include the whole playable crossing.** Use [`LINKS`, `GROVES` and `TUNE`](../../src/proto/place/layout.ts); bound approach, source, frame, machine, gorge and exit by actual sightlines, with ordinary access and a return view.
 3. **Follow dependency order: action/contact, composition, light, kit, materials, final motion/sound, integrated validation.** Start rough feedback immediately; use [look-pass](../plans/look-pass.md) for the existing baseline and revise earlier passes when play exposes a fault.
 4. **Define polish as readable, responsive and consistent states.** Apply the checklist above to [`stations.ts`](../../src/proto/place/stations.ts), [`rail.ts`](../../src/proto/place/rail.ts) and [`pieces.ts`](../../src/proto/place/pieces.ts); solid-looking surfaces and accepted contributions are hard gates.

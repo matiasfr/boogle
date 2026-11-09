@@ -9,9 +9,9 @@ You run the studio and the owner is the director: they decide what the game is; 
 
 ## 1. Decide
 
-- Ordering and what's next: the [game-direction skill](../game-direction/SKILL.md), against the [decision index](../../../docs/proposals/boogle-2.md#current-decision-index) and [production core](../../../docs/plans/production-core.md).
+- Ordering and what's next: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision index](../../../docs/decisions.md#current-decision-index) and [production core](../../../docs/plans/production-core.md).
 - Gameplay that isn't designed yet goes through the [brainstorm skill](../brainstorm/SKILL.md) first ("Brainstorm new gameplay first"). Art, fixes, technical work and ports of accepted behaviour don't.
-- Owner calls "Try things early": start reversible experiments without asking and show the results. Ask only about direction or unapproved scope, merges while the owner is playing, or anything irreversible or outward-facing. Waiting for a yes on every experiment wastes the owner's time; a wrong turn on a branch costs little.
+- Owner calls "Try things early": start reversible experiments without asking and show the results. Ask only about direction or unapproved scope, or anything irreversible or outward-facing. Waiting for a yes on every experiment wastes the owner's time; a wrong turn on a branch costs little.
 
 ## 2. Dispatch
 
@@ -37,13 +37,13 @@ Use the [codex skill](../codex/SKILL.md) and `node dev/codex/run.ts`, each job w
 
 - Ship one branch at a time with `npm run ship-branch -- <worktree>` (see [tools](../../../docs/agents/tools.md)). When branches touch the same files, decide the order and rebase the later one.
 - Read the output every time. `CODE CONFLICT` means nothing shipped: send it back to rebase. If a ship stalls, look at its pull request: a cancelled check usually needs `gh run rerun <id> --failed`, and a conflict needs a fresh ship. Confirm with `git fetch` that main has the commits before saying something merged.
-- Hold every merge while the owner is playing, since main deploys to boogle.club.
+- Owner call "Nothing waits for a playtest" (9 November): keep merging while the owner plays. The one hold: don't ship a `WORLD_NS` bump (it resets saves) while the playdata shows the owner mid-session, since main deploys to boogle.club.
 - Owner call "Simplify in batches": after every few code merges, or once a working day, run the `/simplify` skill over the merged range (`git diff <last-pass>..origin/main`) in a fresh worktree, ship the cleanup, and record the pass's end commit in the state file.
 - Mark a merged branch's brief or tracker item. Remove worktrees whose branches are fully merged into origin/main and have no local changes (owner, 7 November) with `git worktree remove` (no force) and `git branch -d`; keep any with unmerged commits, leave worktrees locked by a live agent, and never touch the daily-job checkouts or `~/Developer/THAT FRANCO CODE`.
 
 ## 5. Playtest cycle
 
-- Before: refresh the replay guide artifact: what to try, what changed, a few tap questions, and how to flag moments. Freeze merges.
+- Before: refresh the replay guide artifact: what to try, what changed, a few tap questions, and how to flag moments. Work and merges carry on; the owner plays whatever is live.
 - After: read the Granola call (`get_meetings`, then the transcript), `npm run playtest` for each session, and the guide's saved answers. Triage notes into [the tracker](../../../docs/plans/round-4-notes.md) and [playtests](../../../docs/playtests.md) (the [playtest-notes skill](../playtest-notes/SKILL.md)). Ask at most five tap questions on one page, each with a recommended answer and an optional free field, then record the answers.
 
 ## 6. Turn the owner's words into rules
@@ -51,7 +51,7 @@ Use the [codex skill](../codex/SKILL.md) and `node dev/codex/run.ts`, each job w
 Every agent follows the repo, not this conversation ("Decisions live in the repo"). So record each one there:
 
 - A standing working preference ("try things early", "every model gets detail references") becomes an [owner call](../../../docs/agents/owner-calls.md).
-- A game decision ("regrowth only needs to be slow") becomes a dated entry in the decision log in [boogle-2.md](../../../docs/proposals/boogle-2.md), superseding older entries by name.
+- A game decision ("regrowth only needs to be slow") becomes a dated entry in the decision log in [decisions.md](../../../docs/decisions.md), superseding older entries by name.
 - An answer about one feature updates its brief's status and text.
 - Ship these as docs right away.
 - If a remark is ambiguous, record your reading and say so; if it reverses a recorded decision, check with the owner first.

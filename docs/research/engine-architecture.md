@@ -47,7 +47,7 @@ Four things turned up while reading. They are examples of checks firing, not an 
   can merge with a type error. DESIGN.md calls types the way many agents avoid breaking each other's wire messages.
   `tsc` is clean at this commit.
 - **Two binding docs disagree on the target device.** [architecture.md](../plans/architecture.md) says a 2021 iPad and a
-  mid-range Android phone with a 4 ms CPU budget. [boogle-2.md](../proposals/boogle-2.md) (lines 143-144) replaced those
+  mid-range Android phone with a 4 ms CPU budget. [decisions.md](../decisions.md) (lines 143-144) replaced those
   with an M4 iPad Pro and said not to over-index on the iPad. The decision log wins; the 4 ms figure has no current
   owner.
 
@@ -363,7 +363,7 @@ agent reads what's left.
 
 **Procedure.**
 
-1. Load AGENTS.md, DESIGN.md, this report, the ledger, and decisions added to [boogle-2.md](../proposals/boogle-2.md)
+1. Load AGENTS.md, DESIGN.md, this report, the ledger, and decisions added to [decisions.md](../decisions.md)
    since the last run.
 2. Collect facts: `npm run atlas` (writes only the gitignored `.look/`), `npm run registry -- --json`, `git log` since the
    last reviewed SHA, the latest metrics. Don't run `perf` or `hitches` here: their numbers need a GPU nothing else is using.

@@ -212,7 +212,7 @@ selector. Step 7 remains partial, and step 8 documentation/acceptance remains op
 
 ### Evidence and the starting point
 
-Code inspected at `0fe0799b83742144e706aa26700e27e349b73d90`, 3 November 2026. Read AGENTS.md, DESIGN.md, [the decision log](../proposals/boogle-2.md), [find-the-fun](find-the-fun.md), the render contract and the following existing research:
+Code inspected at `0fe0799b83742144e706aa26700e27e349b73d90`, 3 November 2026. Read AGENTS.md, DESIGN.md, [the decision log](../decisions.md), [find-the-fun](find-the-fun.md), the render contract and the following existing research:
 
 - [Ultra Water](../research/ultra-water.md), especially shore fields, filtering, engine comparisons, wave queries, recommendations 2–4 and 7–8. Its earlier recommendation to defer FFT/underwater predates the owner's decision to start from the full demo and retain its features; it is not a reason to replace the now-built FFT with a smaller analytic sea.
 - [Demo validation and cost follow-up](../research/water-demo-validation.md) and [wave diagnosis](../research/water-demo-diagnosis.md): source-shaped `.25` spectral energy, caustics/refraction, pass accounting and measurement limits. These are earlier evidence, not new measurements made for this plan.
@@ -703,7 +703,7 @@ Replay passed all **1,103** frames within the existing 0.01 tolerance after cont
 
 ### Step 6 implementation and evidence (3 November 2026)
 
-The owner's override replaces the original sky recommendation only under `water=new`: reusable demo atmosphere/sky factories live in production, with thin retained-demo wrappers. `createFrozenWaterSky()` bakes exactly once at tod=0.24; `main.play()` explicitly awaits `waterReady` before starting the eight-second shader deadline. No play update calls the bake. The matching real sun stays fixed, the toon dome/billboards/faceted clouds and legacy clock overrides are bypassed, and the route clip distances/fog ranges remain. The owner decision and current index are updated in `boogle-2.md`.
+The owner's override replaces the original sky recommendation only under `water=new`: reusable demo atmosphere/sky factories live in production, with thin retained-demo wrappers. `createFrozenWaterSky()` bakes exactly once at tod=0.24; `main.play()` explicitly awaits `waterReady` before starting the eight-second shader deadline. No play update calls the bake. The matching real sun stays fixed, the toon dome/billboards/faceted clouds and legacy clock overrides are bypassed, and the route clip distances/fog ranges remain. The owner decision and current index are updated in `decisions.md`.
 
 The production post uses `render/tone.ts`'s AgX and exposure meter after underwater HDR, disabling the pipeline's automatic output transform only for that composition and restoring it on disposal. Diagnostic `tone=` and `sky=demo` cannot override the production path. The old route retains its original renderer/clock/tone behavior. **`src/render/scene.ts` is untouched.** Crossing skips the four outer rectangles with the new range-fitted polar sea, and actual viaduct pillars register conservative contacts. Mobile stays 0.6 world resolution and desktop high, normalized once against adaptive DPR.
 

@@ -58,4 +58,4 @@ Capture with `--query 'proto=place&shot=forge&carry=<mode>' --eval dev/look/eval
 
 ## Disposition
 
-**Bounded experiment, proceeding on the owner's answers.** The tag shipped in [#914](https://github.com/matiasfr/boogle/pull/914) and the owner asked for this pass. It's presentation only, so it doesn't reopen the bills, carry limits or the [no-sway bundle decision](../proposals/boogle-2.md). It doesn't change the flow under test, so it passes the "Stop at the owner's playtest" rule. The ideas parked under [HUD](../ideas.md#hud), such as moving counters into the world, stay parked.
+**Bounded experiment, proceeding on the owner's answers.** The tag shipped in [#914](https://github.com/matiasfr/boogle/pull/914) and the owner asked for this pass. It's presentation only, so it doesn't reopen the bills, carry limits or the [no-sway bundle decision](../decisions.md). It doesn't change the flow under test, so it passes the "Stop at the owner's playtest" rule. The ideas parked under [HUD](../ideas.md#hud), such as moving counters into the world, stay parked.

@@ -1,4 +1,4 @@
-// `?proto=net&v=depot`: the network helps you haul instead of hauling for you (docs/proposals/boogle-2.md, "leaning:
+// `?proto=net&v=depot`: the network helps you haul instead of hauling for you (docs/decisions.md, "leaning:
 // junctions unlock the network"; open question 11), after Death Stranding's auto-pavers fed from nearby stock. Connect a
 // camp and a depot goes up beside the line just laid; the wagon brings the town's yellow crates out and throws them off
 // as it passes; one press takes a whole section's load on your back, and you carry it to the open ring. Depot 2 stands

@@ -107,7 +107,7 @@ A fan mod that read positions out of the game's memory and connected players by 
 
 ## What this means for Boogle
 
-Recommendations, not decisions. Voice is multiplayer-only, so it sits outside the solo-first prototypes ([boogle-2.md](../proposals/boogle-2.md)); it should never be needed to contribute (DESIGN.md 4, "Cooperation is automatic") or to enjoy a drop-in (8).
+Recommendations, not decisions. Voice is multiplayer-only, so it sits outside the solo-first prototypes ([decisions.md](../decisions.md)); it should never be needed to contribute (DESIGN.md 4, "Cooperation is automatic") or to enjoy a drop-in (8).
 
 ### Architecture (2 to 8 players, a server per room)
 

@@ -13,7 +13,7 @@ of a direction consultation.
 ## Establish the current state
 
 Start with `npm run map -- --kind docs`, then the triggered guidance. Read DESIGN.md,
-docs/agents/owner-calls.md and the current-decision index in docs/proposals/boogle-2.md;
+docs/agents/owner-calls.md and the current-decision index in docs/decisions.md;
 open the entries routed for this question. Running as Codex also requires
 docs/agents/codex.md. Read nested instructions before reviewing high-risk code.
 
@@ -42,8 +42,8 @@ unless the owner has accepted it.
 For each proposed next step, identify only prerequisites that change the order:
 hard correctness requirements, missing player/production evidence, or quality
 integration dependencies. Say which are met, missing or unknown. Name the smallest
-proof that resolves the highest consequential uncertainty. Separate approved
-independent work from work that depends on an unanswered owner playtest.
+proof that resolves the highest consequential uncertainty. Playtests do not gate
+work (owner-calls, "Nothing waits for a playtest"); name what a playtest could adjust.
 
 Push back when the requested order would multiply unproved behavior or contradict
 a recorded decision. Explain the concrete rework or player failure, recommend one
@@ -76,17 +76,16 @@ only the owner can change the binding design choice.
 
 ## Preserve continuity without a second decision log
 
-Read-only by default. When asked to update direction, keep docs/direction.md a small
+Read-only by default. When asked to update direction, keep docs/direction.md, the one roadmap, a small
 current view of phase, gate, next proofs and evidence links, with reviewed commit and
-source revisions. Existing plans own tasks. DESIGN owns principles; boogle-2 owns
+source revisions. Existing plans own tasks. DESIGN owns principles; docs/decisions.md owns
 design decisions; owner-calls owns standing preferences; playtests and game-design
 own observations and as-built behavior. Write an authorized decision to its owner
 first, then refresh links. Never store binding decisions only in agent memory or
 the Line Map. The Line Map is the owner's view of this: Claude keeps it current, and
 it never outranks the repo.
 
-Do not ask again for already-authorized work. Stop the dependent track when a new
-owner choice or their playtest is required, with one recommendation, one alternative
-and the consequence. Respect the exact independent-work exceptions in owner-calls.
-No polling loop or automatic continuation past a playtest. At a Codex usage limit,
+Do not ask again for already-authorized work. Stop the dependent track only when a new
+owner choice is required, with one recommendation, one alternative and the
+consequence. Nothing waits for a playtest (owner-calls). At a Codex usage limit,
 pause and tell the owner; do not shift the work to Claude.

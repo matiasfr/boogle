@@ -93,7 +93,7 @@ Scenario: `npm run scenario -- hut-build`.
 Once the open site's Track ring holds a whole section, anyone standing by it gets "Start the machine" (E, the
 Interact button). The run is scripted and the same for everyone, including a late joiner: 1.5 s warming up, 11 s
 laying the section's sleepers and rails, 1.5 s whistle (140 ticks, 14 s; drawn at smooth shared time; the quick run
-picked in the laying playtest, docs/proposals/boogle-2.md). Then
+picked in the laying playtest, docs/decisions.md). Then
 the section is laid, whoever started it gets 5 points on that plaque, every palm refills, and the next site opens.
 A built helper hut adds one piece of freight to the open site's Track ring every 27 s (it waits while that ring is
 full or running). When an age's last section is laid the age moves on; whatever is left of the old material on

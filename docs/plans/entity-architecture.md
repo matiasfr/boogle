@@ -198,7 +198,7 @@ folder; later steps run in order, because they share files.
       engines (PlayCanvas, Needle); how to split state and view in networked games (Photon Fusion, Unreal replication);
       how to migrate incrementally without a long freeze; costs in a browser's frame budget. Done: the direction holds, and
       its details are folded into this plan.
-- [x] **6. Record the decision.** `docs/proposals/boogle-2.md`, with notes in `boogle-2-architecture-fit.md` and
+- [x] **6. Record the decision.** `docs/decisions.md`, with notes in `boogle-2-architecture-fit.md` and
       `engine-architecture.md`. The binding AGENTS.md rule ("new gameplay objects are entities") lands with step 11, once
       `spawn` exists.
 

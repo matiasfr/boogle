@@ -1,4 +1,4 @@
-// The paused world (docs/proposals/boogle-2.md, "2026-11-06, economy principles amended"): an empty railway room stops
+// The paused world (docs/decisions.md, "2026-11-06, economy principles amended"): an empty railway room stops
 // simulating after a short grace, and the next join applies one away credit (src/sim/railway-away.ts) to the forge
 // rack and the depot cart, finishes the funded job, and catches up regrowth and drop recovery.
 import test from 'node:test';

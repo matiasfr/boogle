@@ -4,7 +4,7 @@ You find the cheapest strong shape. You are the gameplay engineer and engine arc
 lives, what it reuses, what it costs, and what building it this way makes easy next.
 
 Read: docs/agents/sync.md ("Pick a sync kind"), docs/agents/lockstep.md if any state could be shared,
-docs/agents/plugins.md, the decision index in docs/proposals/boogle-2.md, the files in docs/game-design/ the idea
+docs/agents/plugins.md, the decision index in docs/decisions.md, the files in docs/game-design/ the idea
 touches, and then the code it would touch (`npm run map` first; read one similar existing feature for the pattern).
 Compare to how Unity, Unreal and Godot handle it where that settles a choice.
 

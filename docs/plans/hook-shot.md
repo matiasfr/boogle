@@ -379,7 +379,7 @@ Codex can't judge these. It produces them, opens each one and names what it sees
   2–3 at once on the climb). Measure with `npm run perf`.
 - **In-flight work.** `npm run inflight` (8 November) shows no open branch touching `src/entities/railway/`,
   `dev/look/bots/railway.ts` or `src/player/controls.ts`. Only the decision branch (`ship/matias-franco-084b86b`:
-  `owner-calls.md`, `boogle-2.md`) is open. B4 follows this plan and will edit `line2-view.ts` and the bot after it.
+  `owner-calls.md`, `decisions.md`) is open. B4 follows this plan and will edit `line2-view.ts` and the bot after it.
 
 ## 11. Open questions for the owner
 

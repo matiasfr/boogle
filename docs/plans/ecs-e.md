@@ -1,7 +1,7 @@
 # Plan: E, the in-house ECS-shaped store
 
 > **Status: plan, 7 November 2026.** Owner call of 6 November, confirmed 7 November: "Build ECS-shaped E now, one
-> domain at a time, starting with the railway's components" ([decision log](../proposals/boogle-2.md#process),
+> domain at a time, starting with the railway's components" ([decision log](../decisions.md#process),
 > "entity model: build E"; [ecs-evaluation](../research/ecs-evaluation.md), "E in brief"). Code read at `bb084e75`.
 > The owner asked for a critical, adversarial plan: the aim is not our own engine but a data layer whose shape a real
 > ECS (Bevy, Flecs, Unity DOTS) takes over by rewriting syntax and storage, not design.

@@ -1,7 +1,7 @@
 # Plan: the asset pipeline (authored models)
 
 > **Status: proposal (2026-11-01), first cut built.** Started on the owner's call of 1 November
-> ([boogle-2.md](../proposals/boogle-2.md), "Process"): a pipeline ready for Blender (and later Blender MCP) to feed,
+> ([decisions.md](../decisions.md), "Process"): a pipeline ready for Blender (and later Blender MCP) to feed,
 > including animated construction. The rule in "Models or code" is a proposal for the director to adopt; nothing here
 > replaces a shipped code-built object. Architecture: [architecture.md](architecture.md) phase 4,
 > [open-world.md](open-world.md) section 2, [boogle-2-architecture-fit.md](boogle-2-architecture-fit.md) section 3.

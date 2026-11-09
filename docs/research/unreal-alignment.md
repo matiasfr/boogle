@@ -50,7 +50,7 @@ Epic's June statement explicitly backs external models and reports success with 
 
 ## What moving Boogle would actually replace
 
-**L:** [entity core](../../src/entity/entity.ts), [control registry](../../src/player/controls.ts), [world sync](../../src/world/sync.ts), [server host](../../server/src/host/world-host.ts), [physics facade](../../src/physics/engine.ts), [render contracts](../../src/render/README.md), [asset plan](../plans/asset-pipeline.md), [src map](../../src/README.md), and the current [decision routes](../proposals/boogle-2.md#current-decision-index) were inspected. Important qualification: [mainline-conversion findings](../plans/mainline-architecture.md) document the railway prototype's separate tab authority/localStorage; the production server does **not** already own all visible railway progress.
+**L:** [entity core](../../src/entity/entity.ts), [control registry](../../src/player/controls.ts), [world sync](../../src/world/sync.ts), [server host](../../server/src/host/world-host.ts), [physics facade](../../src/physics/engine.ts), [render contracts](../../src/render/README.md), [asset plan](../plans/asset-pipeline.md), [src map](../../src/README.md), and the current [decision routes](../decisions.md#current-decision-index) were inspected. Important qualification: [mainline-conversion findings](../plans/mainline-architecture.md) document the railway prototype's separate tab authority/localStorage; the production server does **not** already own all visible railway progress.
 
 | Work | Carry over | Rewrite / retest [I] |
 | --- | --- | --- |

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 type Authority = { status: 'current' | 'historical' | 'parked'; next: string; why: string };
-const decisions = 'docs/proposals/boogle-2.md';
+const decisions = 'docs/decisions.md';
 const work = 'docs/plans/find-the-fun.md';
 const built = 'docs/game-design.md';
 

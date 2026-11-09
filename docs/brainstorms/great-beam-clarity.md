@@ -17,7 +17,7 @@ Earlier, the owner also asked: "I can't figure out where to get the great beam. 
 
 - **Page:** [great-beam-clarity.html](../world/great-beam-clarity.html), a small storyboard of today's chain, the
   recommended chain and the three carries, in light and dark.
-- **Builds on:** the 3 November [trees call](../proposals/boogle-2.md#the-shape-of-the-game) ("the great tree needs no special
+- **Builds on:** the 3 November [trees call](../decisions.md#the-shape-of-the-game) ("the great tree needs no special
   axe"), the 5 November [solo design pass, topic 9](../research/solo-design-pass.md#9-move-the-proper-axe-before-the-great-tree-without-shortening-station-3s-ordinary-work)
   (the proper axe moved before the beam), the 5 November boiler call (an empty matching saddle on the old train), the
   [beam weight](../plans/beam-weight.md) carry and the floating axe (#1098, [place.md](../game-design/place.md)).

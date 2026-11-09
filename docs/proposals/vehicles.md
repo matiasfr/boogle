@@ -1,6 +1,6 @@
 # Vehicles: feel sheet and starting numbers
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal, 29 October 2026. Starting values and feel rules for the vehicles in [boogler-tech-tree.md](boogler-tech-tree.md), chapter 4. The cannon-es behaviour and example values were read from source (see [progression-feel-exploration.md](../research/progression-feel-exploration.md), §3.6). The Boogle numbers below are derived from those and from `src/constants.ts`. They are first guesses to tune in play, not tested values. Updated 30 October 2026 for `main` at `8b3517c`: one-button interactions, pad layers, the Owner/Host APIs and the storm tide.*
 

@@ -9,4 +9,4 @@ cap, logs per take, takes per bundle, refill), **Reset haul** (tap twice), **Def
 with every number, to paste with your take).
 
 Without the flag nothing changes. If hauling is a chore, say so plainly:
-[boogle-2.md](../proposals/boogle-2.md) says to test a different core loop before building trains on it.
+[decisions.md](../decisions.md) says to test a different core loop before building trains on it.

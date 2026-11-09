@@ -25,7 +25,7 @@ export function runAt(script: readonly Phase[], t0: number, tick: number): RunSt
 }
 
 // The wood-age track layer: it warms up, lays the section's sleepers and rails, and whistles. 14 s: the quick run the
-// laying playtest picked (docs/proposals/boogle-2.md, 2026-11-01); the 50 s crawl and the push run were cut.
+// laying playtest picked (docs/decisions.md, 2026-11-01); the 50 s crawl and the push run were cut.
 export const MACHINE_RUN: readonly Phase[] = [
   { name: 'warm', len: 15 },
   { name: 'lay', len: 110 },

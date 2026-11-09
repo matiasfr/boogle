@@ -99,7 +99,7 @@
 - **Text is small for the main device [C].** XAG's mobile rule (18 px glyph height at 100 DPI, linear in DPI) on a 264 ppi iPad Pro at device pixel ratio 2 gives about 24 CSS px of glyph height, roughly a 24–25 px font size. The PC rule is gentler, about 18 px. Hotbar names, notes and glass pills are 13 px; the haul chip 14 px; the prompt 18 px; pause rows 15–18 px. An iPad on a Magic Keyboard sits at laptop distance, so the PC figure is a fair floor and the tablet figure a fair target for anything read mid-play.
 - **Contrast mostly passes [C].** White on `--glass` is about 4.8:1 over sky or sand but 4.0:1 over white (clouds, foam, the bright sea), ignoring the blur; the haul chip is 4.9–5.6:1; the red hotbar note 4.4:1; the blocked prompt 2.8:1, fine for disabled text. The work-site rings are told apart by colour (gold Track, green Helper) and position only.
 - **Touch targets are generous.** Touch buttons are 64–76 px, the corner menu button 44 px minimum; the first-run close button is drawn at 28–32 px inside a 44 px hit area.
-- **World-space UI already exists.** The interact prompt is a DOM sticker placed over the target each frame; pings are DOM; plaques at work sites are `CanvasTexture` sprites in the scene. The design record's departures board ([boogle-2.md](../proposals/boogle-2.md), "Stations are the fast-travel board") is a natural diegetic UI.
+- **World-space UI already exists.** The interact prompt is a DOM sticker placed over the target each frame; pings are DOM; plaques at work sites are `CanvasTexture` sprites in the scene. The design record's departures board ([decisions.md](../decisions.md), "Stations are the fast-travel board") is a natural diegetic UI.
 
 ### A small UI style guide (proposal)
 

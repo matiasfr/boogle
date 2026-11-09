@@ -1,6 +1,6 @@
 # Contributing to Boogle
 
-Boogle is a friends' project: keep changes small, readable and fun. [DESIGN.md](DESIGN.md) says how we decide, [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) records the owner's decisions, [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) tracks what we're prototyping now, and [AGENTS.md](AGENTS.md) holds the code, testing and shipping rules. AGENTS.md is written for coding agents but applies to humans too; it's short, read it once.
+Boogle is a friends' project: keep changes small, readable and fun. [DESIGN.md](DESIGN.md) says how we decide, [docs/decisions.md](docs/decisions.md) records the owner's decisions, [docs/direction.md](docs/direction.md) is the one roadmap, and [AGENTS.md](AGENTS.md) holds the code, testing and shipping rules. AGENTS.md is written for coding agents but applies to humans too; it's short, read it once.
 
 ## Setup
 
@@ -27,7 +27,7 @@ Repo settings this relies on (owner only): Settings > Actions > General > "Allow
 
 - Every feature names the DESIGN.md principle it serves and flags any it bends (commit message body, or the PR).
 - If a change conflicts with a principle, change the idea, or change the principle in DESIGN.md with the reason, in its own commit.
-- Use [DESIGN.md](DESIGN.md) and [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) for current design; pick prototype work from [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) and tick its checkboxes in the same commit.
+- Use [DESIGN.md](DESIGN.md) and [docs/decisions.md](docs/decisions.md) for current design; pick prototype work from [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) and tick its checkboxes in the same commit.
 
 ## Playtesting
 

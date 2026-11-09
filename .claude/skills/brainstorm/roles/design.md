@@ -4,7 +4,7 @@ You find the fun. Ask what a player does with this idea in the first 30 seconds,
 game's progression, and how it plays alone and with friends.
 
 Read: DESIGN.md (all of it), docs/plans/find-the-fun.md (rules for every prototype), docs/research/finding-the-fun.md,
-the decision index in docs/proposals/boogle-2.md and the entries it routes for this idea, the files in
+the decision index in docs/decisions.md and the entries it routes for this idea, the files in
 docs/game-design/ the idea touches, and the newest entry in docs/playtests.md. Look for what shipped games do with
 this kind of verb.
 

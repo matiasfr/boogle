@@ -1,6 +1,6 @@
 # Little guys
 
-_Research report, 2 November 2026. Small ambient characters who make Boogle's stations and towns feel inhabited: readable behaviour, player reactions, cargo and construction, navigation, sound, multiplayer authority and rendering 5–100 residents on an M4 iPad Pro. Reads [DESIGN.md](../../DESIGN.md), the Characters and 2 November decisions in [boogle-2.md](../proposals/boogle-2.md), and [find-the-fun.md](../plans/find-the-fun.md). Builds on [creature-ai-and-ecosystems.md](creature-ai-and-ecosystems.md), [growing-towns.md](growing-towns.md), [characters.md](characters.md), [procedural-animation.md](procedural-animation.md), [comedy-in-games.md](comedy-in-games.md) and [npc-babble-voices.md](npc-babble-voices.md). Research and proposed experiments, not implemented features or new owner decisions._
+_Research report, 2 November 2026. Small ambient characters who make Boogle's stations and towns feel inhabited: readable behaviour, player reactions, cargo and construction, navigation, sound, multiplayer authority and rendering 5–100 residents on an M4 iPad Pro. Reads [DESIGN.md](../../DESIGN.md), the Characters and 2 November decisions in [decisions.md](../decisions.md), and [find-the-fun.md](../plans/find-the-fun.md). Builds on [creature-ai-and-ecosystems.md](creature-ai-and-ecosystems.md), [growing-towns.md](growing-towns.md), [characters.md](characters.md), [procedural-animation.md](procedural-animation.md), [comedy-in-games.md](comedy-in-games.md) and [npc-babble-voices.md](npc-babble-voices.md). Research and proposed experiments, not implemented features or new owner decisions._
 
 **Verification.** **[V]** means a fetched source and its relevant text were checked; developer testimony establishes what the developer said, not independent access to the implementation. **[S]** means a secondary account, translated/reproduced interview, or search-only evidence. **[I]** means a Boogle hypothesis, design interpretation, calculation or proposed starting number. **[V, code]** means this checkout was inspected, at `76f20fee`. Live searches and source reads were performed for this report. No referenced game was newly played, talk video watched, character prototype built or M4 iPad benchmark performed. The performance numbers below are test budgets, not results.
 
@@ -94,7 +94,7 @@ All costs and starting values in this section are **[I]**, relative engineering/
 
 **[I] Distance changes the acting.** Far away, use path arcs, stops, paired loads and a clear up/down gesture. Midrange, use a turn before motion and a carry pose different from a walk. Near the player, eyes, a hand adjustment, foot contact and a quiet acknowledgement matter. Do not scale subtle eye motion into exaggerated whole-body flailing at a distance. An idler looking at the harbour is useful negative space; every resident need not run constantly.
 
-**[I] Cute is a brief, not a mesh primitive.** Try a separate head, low centre of gravity, short limbs, readable eyes and slightly oversized work props: Bricktron proportions, Pikmin effort and soot-sprite timing, as Boogle's own residents. Keep the mayor's silhouette and Buddy's player silhouette distinguishable at a glance. Start near half to two-thirds of Buddy's height only as a comparison; avoid an unreadably tiny cast. The owner rejected earlier code-made hero looks and run cycles in [the character decisions](../proposals/boogle-2.md), so a successful bobbing greybox is not art approval. For final close-up residents, test authored locomotion and carry clips before prescribing procedural wobble.
+**[I] Cute is a brief, not a mesh primitive.** Try a separate head, low centre of gravity, short limbs, readable eyes and slightly oversized work props: Bricktron proportions, Pikmin effort and soot-sprite timing, as Boogle's own residents. Keep the mayor's silhouette and Buddy's player silhouette distinguishable at a glance. Start near half to two-thirds of Buddy's height only as a comparison; avoid an unreadably tiny cast. The owner rejected earlier code-made hero looks and run cycles in [the character decisions](../decisions.md), so a successful bobbing greybox is not art approval. For final close-up residents, test authored locomotion and carry clips before prescribing procedural wobble.
 
 ## Make cargo's effect physical and honest
 
@@ -195,7 +195,7 @@ Use `?dpr=fixed` for comparable renders, then repeat with normal adaptive resolu
 
 ## Sound should confirm attention, not announce population
 
-**[I] Begin silent apart from existing world sounds.** The owner's [sound decisions](../proposals/boogle-2.md) cut several freight/vehicle sounds pending better references; the NPC feature should not restore them by another name. A handoff can use an already approved world sound when appropriate, but five simultaneous footsteps, tool taps and babble loops would obscure friends and the player's actions.
+**[I] Begin silent apart from existing world sounds.** The owner's [sound decisions](../decisions.md) cut several freight/vehicle sounds pending better references; the NPC feature should not restore them by another name. A handoff can use an already approved world sound when appropriate, but five simultaneous footsteps, tool taps and babble loops would obscure friends and the player's actions.
 
 **[I] Then try one local audible foreground resident at a time**, within roughly 4–6 m, with an encounter cooldown around 15–30 s. Prefer a tiny acknowledgement after eye contact or a rare completion chirp; do not continuously feed ambient text into the [dialogue voice system](../../src/render/npc-voice.ts). Priority goes to actual dialogue and deliberate player actions, then one nearby reaction. Drop excess ambient vocal requests rather than queuing a chorus that plays after the event. Shared events can have locally selected audible participants. Crowd voices must not repeatedly duck music/ambience through independent calls. No per-resident distant chatter sources; at larger scales a quiet place-level texture is an optional, separately judged sound-design choice.
 
@@ -250,7 +250,7 @@ Use the station cast above in [place](../../src/proto/place/index.ts), serving T
 
 ### 2. Establish a cute, readable silhouette before adding variety
 
-Use Bricktron proportions, Pikmin effort and soot-sprite timing by name; keep the mayor and player recognisable. Follow the [character decisions](../proposals/boogle-2.md) and [Buddy's authored-clip conventions](../../src/player/buddy/body.ts), without changing Buddy. A primitive behaviour test must be followed by a proper model/animation comparison before final art is chosen.
+Use Bricktron proportions, Pikmin effort and soot-sprite timing by name; keep the mayor and player recognisable. Follow the [character decisions](../decisions.md) and [Buddy's authored-clip conventions](../../src/player/buddy/body.ts), without changing Buddy. A primitive behaviour test must be followed by a proper model/animation comparison before final art is chosen.
 
 **Smallest prototype:** one resident walking empty and carrying a broad plank, seen close up and from the train; compare two proportions with identical acting. **Gut question:** “Would you stop to watch this little guy?”
 
@@ -268,7 +268,7 @@ Extend the presentation around [`feedCrane()`](../../src/proto/place/index.ts) a
 
 ### 5. Author safe work routes and explicit recovery before general navigation
 
-Add sockets, side lanes and waiting pockets alongside [place layout](../../src/proto/place/layout.ts). Reachable residents use [entity-owned bodies](../../src/entity/entity.ts); honour the [solidity decision](../proposals/boogle-2.md). Start with the six-state controller and one paired-carry task, with players having right of way. Geometry/layout changes go through [level-check](../../dev/level/check.ts), plus actual resident-contact inspection because the static checker does not prove crowd safety.
+Add sockets, side lanes and waiting pockets alongside [place layout](../../src/proto/place/layout.ts). Reachable residents use [entity-owned bodies](../../src/entity/entity.ts); honour the [solidity decision](../decisions.md). Start with the six-state controller and one paired-carry task, with players having right of way. Geometry/layout changes go through [level-check](../../dev/level/check.ts), plus actual resident-contact inspection because the static checker does not prove crowd safety.
 
 **Smallest prototype:** two carriers and one solid resident in a narrow approach with a safe passing pocket; agents exercise parked cargo, opposite approaches, sprinting and standing on a resident. **Gut question:** “Could you forget about navigating around them?”
 
@@ -292,12 +292,12 @@ Apply screen-size and decision-rate LOD, spatial batches and reduced distant sha
 
 ### 9. Give the crowd a silence budget before a voice palette
 
-Start silent, then allow one nearby acknowledgement at a time through [NPC voice](../../src/render/npc-voice.ts) and [the mixer](../../src/render/audio.ts). Respect the owner's [existing sound decisions](../proposals/boogle-2.md); avoid per-agent chatter loops, repeated ducking and restored freight noises. Hearing a resident should correspond to something worth noticing.
+Start silent, then allow one nearby acknowledgement at a time through [NPC voice](../../src/render/npc-voice.ts) and [the mixer](../../src/render/audio.ts). Respect the owner's [existing sound decisions](../decisions.md); avoid per-agent chatter loops, repeated ducking and restored freight noises. Hearing a resident should correspond to something worth noticing.
 
 **Smallest prototype:** compare the five-resident scene silent and with one rare greeting/completion chirp, including a Boogler conversation nearby. **Gut question:** “Was hearing them pleasant after the novelty wore off?”
 
 ### 10. Grow into place-specific routines, not a labour economy
 
-Try the twelve-resident town set against [growing-towns.md](growing-towns.md) and [the helper decisions](../proposals/boogle-2.md). New deliveries should create places residents use; return visits should reveal familiar habits in a changed town. Frontier harvesting, track hauling, staffing bonuses and upkeep stay outside this feature unless the owner changes the design.
+Try the twelve-resident town set against [growing-towns.md](growing-towns.md) and [the helper decisions](../decisions.md). New deliveries should create places residents use; return visits should reveal familiar habits in a changed town. Frontier harvesting, track hauling, staffing bonuses and upkeep stay outside this feature unless the owner changes the design.
 
 **Smallest prototype:** add one paid bench/shelter and move two familiar residents into a new routine there; leave the next player haul untouched. **Gut question:** “Did your work make this a nicer place to come back to?”

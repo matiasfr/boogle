@@ -26,7 +26,7 @@ additional recommendations.
 ## Scope, evidence and limits
 
 - Read AGENTS.md, DESIGN.md, `src/README.md`, `src/loop.ts`, `src/entity/entity.ts`, the current prototype plan and
-  `docs/proposals/boogle-2.md`, both architecture research documents, and the architecture-review ledger. The ledger has
+  `docs/decisions.md`, both architecture research documents, and the architecture-review ledger. The ledger has
   only AR-1–AR-3, all **open**; no rejected or deferred finding is being reopened, and those unrelated issues are not repeated.
 - External network use was prohibited. Engine comparisons below use the checked-in primary-source research notes dated
   November 1; URLs are supplied for traceability, **not represented as freshly fetched**. No new GDC/postmortem search
@@ -499,7 +499,7 @@ an implementation and controlled before/after evidence. No owner playtest or fur
 ## Sources and validation
 
 - Local contracts: [AGENTS.md](../../AGENTS.md), [DESIGN.md](../../DESIGN.md), [source map](../../src/README.md),
-  [loop](../../src/loop.ts), [entity core](../../src/entity/entity.ts), [current direction](../proposals/boogle-2.md),
+  [loop](../../src/loop.ts), [entity core](../../src/entity/entity.ts), [current direction](../decisions.md),
   [prototype plan](../plans/find-the-fun.md), [ledger](../architecture-review/ledger.md).
 - Prior research: [engine architecture](engine-architecture.md), [entity architecture](entity-architecture.md),
   [primary-source provenance](notes/entity-architecture/sources.md), [engine source notes](notes/engine-architecture/sources.md).

@@ -109,7 +109,7 @@ is present, but an integrated shared-beam physics service is not established by 
 
 This serves [DESIGN 11, Show, don't tell](../../DESIGN.md#11-show-dont-tell),
 [8, Enjoyable alone and together](../../DESIGN.md#8-enjoyable-alone-and-together), and **Clear authority**. The later
-[6 November decisions](../proposals/boogle-2.md#process) supersede DESIGN's older sync table for new shared state:
+[6 November decisions](../decisions.md#process) supersede DESIGN's older sync table for new shared state:
 Local/Owner/Server, responsive personal movement, and server physics when multiple people act on one object.
 The [shared-physics research](shared-physics.md) already compares standard-engine approaches and recommends server-only
 first; its historical measurements are not refreshed here. `docs/direction.md` is dated 3 November, so it is not used

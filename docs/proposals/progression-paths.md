@@ -1,6 +1,6 @@
 # Progression paths: find it, reach it, build it
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal, 30 October 2026. Progression for the Boogle 2.0 concept that does not depend on mini-games. Builds on [system-cohesion.md](../research/system-cohesion.md), [discovery-progression.md](../research/discovery-progression.md), [progression-models.md](../research/progression-models.md) and [rail-as-play.md](../research/rail-as-play.md). Nothing here is decided or built.*
 

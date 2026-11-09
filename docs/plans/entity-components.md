@@ -62,7 +62,7 @@ Keep these exact contracts, as defined by [entity.ts](../../src/entity/entity.ts
 | postPhysics (`world`)         | ball -300 → player -290 → ball-carry -280                                                                              |
 | update                        | ball-view -300 → player-view -290 → remote-player -280 → camera -200; fall-preview remains 15                          |
 
-One kind still gets one slot per phase. Spawned entities first run at the next walk of that phase that starts after spawn; cached list length prevents same-walk insertion. Components add no competing walk semantics. A second global slot still means a second kind, per the [owner's decision](../proposals/boogle-2.md#process).
+One kind still gets one slot per phase. Spawned entities first run at the next walk of that phase that starts after spawn; cached list length prevents same-walk insertion. Components add no competing walk semantics. A second global slot still means a second kind, per the [owner's decision](../decisions.md#process).
 
 ### Inspection and profiling
 

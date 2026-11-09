@@ -1,6 +1,6 @@
 // The rail loop (docs/plans/find-the-fun.md step 6; loaded by src/features/proto-net.ts behind ?proto=net, on the line
 // of dev/layouts/net-line.json). Gut question: when the village steps up, do you want to go connect the next camp?
-// After Death Stranding's auto-pavers and monorails (docs/proposals/boogle-2.md, 2026-11-02): connect a camp and its
+// After Death Stranding's auto-pavers and monorails (docs/decisions.md, 2026-11-02): connect a camp and its
 // goods get on the line by themselves, the town grows from what arrives, and the grown town gives back what extends
 // your reach: a faster train, and the rail filling the next work site (docs/research/carrying-and-logistics-play.md,
 // finding 2 and rec 7). `&v=haul` never fills it: you still haul every section by hand, to tell which part is the fun.

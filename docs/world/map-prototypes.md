@@ -127,7 +127,7 @@ backdrop is up close for minutes at a time. That's why this lens favours the isl
   purpose: this one is the forest town, that one the harbour. The sea between is the boundary that reads as "not this
   way" without an invisible wall, and a sea gap is also where a crossing, the railway's main verb, goes.
 - **The download budget.** 25 MB first load, 100 MB in all streamed by priority, 4 MB per asset, 2048 px textures for
-  hero surfaces only ([decision log, 6 November](../proposals/boogle-2.md); [asset pipeline](../plans/asset-pipeline.md)).
+  hero surfaces only ([decision log, 6 November](../decisions.md); [asset pipeline](../plans/asset-pipeline.md)).
   Home and the first crossing are the first load; each later island is one streamed bundle, roughly what's left of the
   100 MB divided by the number of islands. Sea and sky cost almost nothing per island.
 - **Streaming and draw distance.** With 300 m or more of sea between places, one island is resident at full detail and

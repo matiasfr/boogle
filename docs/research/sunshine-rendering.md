@@ -2,7 +2,7 @@
 
 _3 November 2026. Super Mario Sunshine's GameCube water, sky and sunny light, translated to Boogle at `0e4376b1`. Live source research and local code inspection; no implementation. Not tested on a device._
 
-**Recommendation: use metered Khronos Neutral for the Sunshine-feeling candidate, with an authored toy sky and restrained water retuning.** A tone curve is the finishing transform, not the main explanation of Sunshine's look. The evidence points to deliberately coloured materials, vertex lighting, animated texture combiners, selective glare and stage-specific atmosphere—not a modern filmic HDR grade. Keep Boogle's FFT, shore, caustics, foam and underwater treatment. This is a comparison recommendation, not a replacement of the [frozen demo-sky/AgX decision](../proposals/boogle-2.md#look).
+**Recommendation: use metered Khronos Neutral for the Sunshine-feeling candidate, with an authored toy sky and restrained water retuning.** A tone curve is the finishing transform, not the main explanation of Sunshine's look. The evidence points to deliberately coloured materials, vertex lighting, animated texture combiners, selective glare and stage-specific atmosphere—not a modern filmic HDR grade. Keep Boogle's FFT, shore, caustics, foam and underwater treatment. This is a comparison recommendation, not a replacement of the [frozen demo-sky/AgX decision](../decisions.md#look).
 
 ## What was actually read
 

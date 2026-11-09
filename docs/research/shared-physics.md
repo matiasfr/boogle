@@ -2,7 +2,7 @@
 
 _6 November 2026. Code read at `2e289307`. Builds on [coop-physics-vehicles-netcode.md](coop-physics-vehicles-netcode.md)
 (rider frames, grab ownership, Rocket League, R.E.P.O., Gang Beasts) and doesn't repeat it. The brief cites a 6 November
-Process entry in boogle-2.md; it is **not on `main` yet**, so the owner calls below are taken from the brief: the server
+Process entry in decisions.md; it is **not on `main` yet**, so the owner calls below are taken from the brief: the server
 runs shared physics, deterministic Rapier is the alternative to evaluate, and one fixed clock drives physics at 60 Hz
 with rules every N steps. Tags: [H] high, [M] medium, [L] low confidence; **[measured]** = run for this doc;
 **unverified** = not checked._
@@ -332,7 +332,7 @@ entities. Grips stay Owner presence, as hand targets.
 
 ## 5. Recommendation
 
-1. **Record the decision** in boogle-2.md Process and DESIGN.md's table (Host becomes Server; Owner stays the avatar).
+1. **Record the decision** in decisions.md Process and DESIGN.md's table (Host becomes Server; Owner stays the avatar).
    The 6 November entry isn't on `main`.
 2. **Measure the server first.** Run the same scene and benchmark inside a Fly `shared-cpu-1x` machine: step time,
    burst-balance drain with 1, 3 and 10 rooms. If it drains, budget `shared-cpu-2x` or `performance-1x` (owner call:
