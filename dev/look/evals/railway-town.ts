@@ -3,7 +3,8 @@
 //   townat=house|shop|museum  1 m inside that door, facing in (a plot not yet built: in front of its stake board)
 //   townat=street             on the lane between the three plots, looking at the house and the boards
 //   townat=sleeves            on the path at Sleeves, the shore greeter, looking toward the house door
-//   townact=walkout           after a moment indoors, walk 3 m out of the door (T2 adds talk, T5 try and take)
+//   townact=walkout           after a moment indoors, walk 3 m out of the door (T2 adds talk, T5 try and take);
+//                             with towndefer=1 it waits for an --action body `await window.__townAct(); export {};`
 // Prints `TOWN <json>` with the town's inspection after the setup and again after the act.
 const { inspectTown } = (await import(
   '/src/entities/town/state.ts' as string
@@ -87,33 +88,38 @@ setTimeout(setCam, 100);
 await wait(600);
 console.log(`TOWN ${JSON.stringify({ at, stand, ...inspectTown(), target: interactTarget()?.id ?? null })}`);
 
-if (act === 'walkout') {
-  if (at !== 'house' && at !== 'shop' && at !== 'museum') throw new Error('townact=walkout needs a room');
-  const d = door(at);
-  // Face out and hold forward until 3 m past the door line.
-  cam.yaw = me.yaw = Math.atan2(d.inX, d.inZ);
-  const end = performance.now() + 8000;
-  input.keys.add('KeyW');
-  try {
-    while (performance.now() < end) {
-      const p = body.position;
-      if ((p.x - d.x) * -d.inX + (p.z - d.z) * -d.inZ >= 3) break;
-      await wait(30);
+async function runAct() {
+  if (act === 'walkout') {
+    if (at !== 'house' && at !== 'shop' && at !== 'museum') throw new Error('townact=walkout needs a room');
+    const d = door(at);
+    // Face out and hold forward until 3 m past the door line.
+    cam.yaw = me.yaw = Math.atan2(d.inX, d.inZ);
+    const end = performance.now() + 8000;
+    input.keys.add('KeyW');
+    try {
+      while (performance.now() < end) {
+        const p = body.position;
+        if ((p.x - d.x) * -d.inX + (p.z - d.z) * -d.inZ >= 3) break;
+        await wait(30);
+      }
+    } finally {
+      input.keys.delete('KeyW');
     }
-  } finally {
-    input.keys.delete('KeyW');
+    await wait(800);
+  } else if (act) {
+    // T2 (talk) and T5 (try, take) add their target patterns here; press Interact once the matching one is offered.
+    const want: Record<string, RegExp> = {};
+    const re = want[act];
+    if (!re) throw new Error(`townact=${act} is not available yet`);
+    const end = performance.now() + 8000;
+    while (!re.test(interactTarget()?.id ?? '') && performance.now() < end) await wait(50);
+    interactDown();
+    interactUp();
+    await wait(800);
   }
-  await wait(800);
-} else if (act) {
-  // T2 (talk) and T5 (try, take) add their target patterns here; press Interact once the matching one is offered.
-  const want: Record<string, RegExp> = {};
-  const re = want[act];
-  if (!re) throw new Error(`townact=${act} is not available yet`);
-  const end = performance.now() + 8000;
-  while (!re.test(interactTarget()?.id ?? '') && performance.now() < end) await wait(50);
-  interactDown();
-  interactUp();
-  await wait(800);
+  console.log(`TOWN ${JSON.stringify({ at, act, player: { ...body.position }, ...inspectTown() })}`);
 }
-if (act) console.log(`TOWN ${JSON.stringify({ at, act, player: { ...body.position }, ...inspectTown() })}`);
+// With towndefer=1 the act waits for an --action file to call window.__townAct() after warm-up (for --video).
+(window as unknown as { __townAct?: () => Promise<void> }).__townAct = runAct;
+if (act && query.get('towndefer') !== '1') await runAct();
 export {};
