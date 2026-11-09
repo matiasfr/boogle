@@ -1,135 +1,16 @@
-// Accepted railway beats written through the real host's save path before a look opens its room.
-import { railwayAtTrains, TRAIN_STAGES, type TrainStage } from '../../test/helpers/railway-trains.ts';
-import { chopTo, railwayAtWorks, WORKS_STAGES, type WorksStage } from '../../test/helpers/railway-works.ts';
-import { WORKS, WORKS_ROCKS } from '../../src/sim/railway-works-layout.ts';
+// Accepted railway beats written through the real host's save path before a look opens its room. The worlds come from
+// src/sim/railway-seeds.ts (buildSeedWorld), the same builders the server's jump-ins use.
 import { pathToFileURL } from 'node:url';
 import { createStore } from '../../server/src/store.ts';
 import { createRailwayWorldHost } from '../../server/src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-world.ts';
-import {
-  act,
-  advance,
-  logs,
-  rails,
-  railwayAtQ2,
-  railwayAtQ4,
-  railwayAtQ5,
-  type RailSeedStage,
-} from '../../test/helpers/railway-q2.ts';
-import { line2Schedule } from '../../src/sim/railway-line2.ts';
-import { CART_PHASE, CART_ROAD, cartCycleTicks } from '../../src/sim/railway-cart.ts';
-import { createRailway, railSession, railApply, railTick, worldOf } from '../../test/railway-live.ts';
+import { buildSeedWorld, isSeedStage } from '../../src/sim/railway-seeds.ts';
+import { worldOf } from '../../src/sim/railway-live.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
-  // B5-B8 stages stay separate from the earlier/depot fixture blocks.
-  const trainStage = TRAIN_STAGES.includes(stage as TrainStage);
-  // Split-rock Works and the Roundhouse (J3f), built on `q6-done`.
-  // `works-stocked` (look only, J4): `works-open` with the kiln a few stone short and those left in rock 3, so a
-  // look's bot can chop it, fill the kiln and see it light live.
-  const stocked = stage === 'works-stocked';
-  const worksStage = stocked || WORKS_STAGES.includes(stage as WorksStage);
-  if (
-    !trainStage &&
-    !worksStage &&
-    ![
-      'awake',
-      'q1-done',
-      'q3-done',
-      'hook-earned',
-      'q2-stocked',
-      'q2-arriving',
-      'q3-stocked',
-      'q4-stocked',
-      'q4-arriving',
-      'q5-carry',
-      'q4-done',
-      'sea-open',
-      'q5-stocked',
-      'q5-finishing',
-      'q5-done',
-      // Glider piece B: the room has taken the glider (the dev grant's replacement); and, look only, Q5's single
-      // 24-rail shipment on the shelf and on its way.
-      'glide-earned',
-      'q5-shelved',
-      'q5-arriving',
-    ].includes(stage)
-  )
-    throw new Error(`Unknown railway seed: ${stage}`);
-  const w = worksStage
-    ? railwayAtWorks(stocked ? 'works-open' : (stage as WorksStage))
-    : trainStage
-      ? railwayAtTrains(stage as TrainStage)
-      : stage === 'awake'
-        ? { s: createRailway(), t: 40 }
-        : stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q2-arriving' || stage === 'q3-stocked'
-          ? railwayAtQ2()
-          : stage === 'q3-done' || stage === 'q4-stocked' || stage === 'q4-arriving' || stage === 'hook-earned'
-            ? railwayAtQ4()
-            : stage === 'glide-earned'
-              ? railwayAtQ5('q5-done')
-              : stage === 'q5-shelved' || stage === 'q5-arriving'
-                ? railwayAtQ5('q4-done')
-                : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
-  if (stocked) {
-    chopTo(w, 'a', WORKS.kilnLogs);
-    if (act(w, 'a', 'rail.kiln') !== WORKS.kilnLogs) throw new Error('works-stocked: logs');
-    for (const rock of WORKS_ROCKS) {
-      const keep = rock.id === WORKS_ROCKS[0].id ? 3 : 0;
-      while (w.s.line!.rocks[rock.id]! > keep) act(w, 'b', 'rail.mine', { id: rock.id });
-    }
-    const left = w.s.line!.rocks[WORKS_ROCKS[0].id]!;
-    if (left < 1) throw new Error('works-stocked: stone left in rock 3');
-    if (act(w, 'b', 'rail.kiln') !== WORKS.kilnStone - left) throw new Error('works-stocked: stone');
-  }
-  if (stage === 'hook-earned') act(w, 'a', 'rail.hook');
-  if (stage === 'glide-earned' && act(w, 'a', 'rail.glide') !== 1) throw new Error('glide-earned: the take');
-  if (stage === 'awake') {
-    railSession(w.s, 'a', 1);
-    railApply(w.s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
-    for (let tick = 1; tick <= w.t; tick++) railTick(w.s, tick);
-  }
-  if (stage === 'q3-stocked') {
-    logs(w, 'a', 'Q2', 24);
-    rails(w, 'b', 'Q2', 12);
-    advance(w, line2Schedule(1, w.s.line2!.jobs[1]!).totalTicks);
-  }
-  if (stage === 'q4-stocked' || stage === 'q4-arriving') act(w, 'a', 'rail.lever');
-  if (stage === 'q2-arriving' || stage === 'q4-arriving' || stage === 'q5-arriving') {
-    const k = stage === 'q2-arriving' ? 1 : stage === 'q4-arriving' ? 3 : 4;
-    let waited = 0;
-    // Q4 can inherit a timber-only cart already en route; its later steel delivery exercises the shelf flight. Q5's
-    // one shipment carries all 24 of its rails.
-    while (!(
-      w.s.line2!.cart.phase === CART_PHASE.RUN &&
-      w.s.line2!.cart.to === CART_ROAD.rackCm(k) &&
-      (k < 3 || w.s.line2!.cart.rails >= (k === 4 ? 24 : 1))
-    )) {
-      if (waited++ > 3 * cartCycleTicks(k)) throw new Error(`${stage}: cart never approached`);
-      advance(w, 1);
-    }
-  }
-  if (['q2-stocked', 'q3-stocked', 'q4-stocked'].includes(stage)) {
-    const k = stage === 'q2-stocked' ? 1 : stage === 'q3-stocked' ? 2 : 3;
-    let waited = 0;
-    while (!(
-      w.s.line2!.depot > 0 &&
-      w.s.line2!.cart.phase === CART_PHASE.DROP &&
-      (k < 3 || w.s.line2!.depotRails > 0)
-    )) {
-      if (waited++ > 3 * cartCycleTicks(k)) throw new Error(`${stage}: cart never unloaded`);
-      advance(w, 1);
-    }
-  }
-  if (stage === 'q5-shelved') {
-    let waited = 0;
-    while (!(w.s.line2!.cart.phase === CART_PHASE.DROP && w.s.line2!.depotRails === 24)) {
-      if (waited++ > 3 * cartCycleTicks(4)) throw new Error('q5-shelved: cart never unloaded 24 rails');
-      advance(w, 1);
-    }
-  }
-  // The rail bill is full while the log bill remains open: a log deposit must leave carried rails visible.
-  if (stage === 'q5-carry') rails(w, 'b', 'Q5', 24);
+  if (!isSeedStage(stage)) throw new Error(`Unknown railway seed: ${stage}`);
+  const w = buildSeedWorld(stage);
   const store = createStore({ dataDir, maxRooms: 2 });
   await store.init();
   const host = createRailwayWorldHost({
