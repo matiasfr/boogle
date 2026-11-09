@@ -6,7 +6,7 @@ import { hideControls } from '../../player/controls.ts';
 import { haulHooks } from '../../player/haul-hooks.ts';
 import { softWall } from '../player/state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
-import { physicsTime, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
+import { physicsTime, raycastClosest, rayHit, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
 import { camera } from '../../render/scene.ts';
@@ -76,8 +76,8 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     }
   };
   // A jump room's landing (docs/plans/playtest-jump-in.md): with no saved pose here, everyone starts at the segment the
-  // room was seeded for, standing on its terrain, pad or deck. undefined until the room's seed is known. A first
-  // visit's fall lands where it lands, so a page that showed the fall keeps it.
+  // room was seeded for, standing on its terrain, pad or deck. undefined until the room's seed is known. A jump room
+  // skips the first visit's fall (src/features/fall.ts); a page that showed one anyway (`intro=1`) keeps where it fell.
   let landing: JumpLand | null | undefined;
   let fell = fallArrival.active;
   void roomSeed().then((seed) => {
@@ -89,13 +89,24 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     x: 1.4 * Math.sin((k * Math.PI) / 3),
     z: 1.4 * Math.cos((k * Math.PI) / 3),
   }));
-  // Thin shapes count too: ring pads such as the summit deck are tiled in pieces under 1.6 m across.
+  // Thin shapes count too: ring pads such as the summit deck are tiled in pieces under 1.6 m across. A ray down the
+  // spot's centre must meet the surface as well, so a ring spot past a deck's edge (where the sphere's side still
+  // touches it) is refused; a ray that starts inside a shape (an overhang over the spot) meets it at once and fails.
+  // The ray runs a centimetre off the spot: one straight down a terrain cell's edge can miss the heightfield.
+  const hit = rayHit();
   const surfaceAt = (x: number, y: number, z: number) => {
     const from = { x, y: y + 3, z };
     const hits = (['skip', 'only'] as const)
       .map((thin) => sweepSphere(from, { x, y: y - 1, z }, PLAYER_R, { mask: GROUP.SCENERY, thin }))
       .filter((h) => h >= 0);
-    return hits.length > 0 && Math.abs(from.y - Math.min(...hits) - PLAYER_R - y) <= 0.5;
+    if (!hits.length || Math.abs(from.y - Math.min(...hits) - PLAYER_R - y) > 0.5) return false;
+    const ray = raycastClosest(
+      { x: x + 0.01, y: y + 3, z: z + 0.01 },
+      { x: x + 0.01, y: y - 1, z: z + 0.01 },
+      { mask: GROUP.SCENERY },
+      hit,
+    );
+    return ray && hit.distance > 0 && Math.abs(hit.hitPointWorld.y - y) <= 0.5;
   };
   const taken = (x: number, y: number, z: number) =>
     [...remotes.values()].some((r) => {
