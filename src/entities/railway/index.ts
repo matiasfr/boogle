@@ -1,7 +1,7 @@
 // Default T1 entry. Explicit Place keeps its isolated legacy regression entry until its last promotion slice.
 import { railwayMirror, rules } from '../../world/game-world.ts';
 import { productionRailway } from '../../proto/flags.ts';
-import { defineKind, spawn } from '../../entity/entity.ts';
+import { defineKind, despawn, spawn } from '../../entity/entity.ts';
 import { identity } from '../../player/identity.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
 import { net, onRoomReady, onNetState, localPresence } from '../../netplay/net.ts';
@@ -12,11 +12,17 @@ import { createRailwayView, type RailwayView } from './view.ts';
 import { setRailwayView } from './state.ts';
 
 defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10, lateUpdate: 0 });
+// The glide keeps the heading it had before the controller's air steering (Place's order-22 note, at 23 here): a second slot.
+defineKind('railway-glide', { fixedPre: 23 });
 let active: RailwayView | null = null;
 registerInteractable(() => active?.targets() ?? NO_TARGETS);
 
 if (productionRailway && railwayMirror) {
+  const query = new URLSearchParams(location.search);
   const adapter = createRailwayAdapter({
+    // Dev only: &railGlide=1 grants the glider to this tab's test room (the glider's piece A; production stays false
+    // until the accepted rail.glide fact lands in piece B).
+    glide: import.meta.env.DEV && query.get('railGlide') === '1',
     mirror: railwayMirror,
     movement: () => railMovement(rules.tune),
     pid: identity.pid,
@@ -26,9 +32,7 @@ if (productionRailway && railwayMirror) {
     },
   });
   // Dev only: &railLag=<ms> adds that round trip to the railway's own messages (replication R1b captures).
-  const lag = import.meta.env.DEV
-    ? Math.min(1000, Math.max(0, Number(new URLSearchParams(location.search).get('railLag')) || 0))
-    : 0;
+  const lag = import.meta.env.DEV ? Math.min(1000, Math.max(0, Number(query.get('railLag')) || 0)) : 0;
   onRoomReady((room) => adapter.attach(delayedRoom(room, lag)));
   onNetState(() => {
     if (net.room) adapter.attach(delayedRoom(net.room, lag));
@@ -36,6 +40,12 @@ if (productionRailway && railwayMirror) {
   const loaded = createRailwayView(adapter).then((view) => {
     active = view;
     setRailwayView(view.inspect);
+    const note = spawn({
+      kind: 'railway-glide',
+      fixedPre() {
+        view.noteVelocity();
+      },
+    });
     return spawn({
       kind: 'railway',
       mesh: view.root,
@@ -54,6 +64,7 @@ if (productionRailway && railwayMirror) {
       },
       describe: view.inspect,
       dispose() {
+        despawn(note);
         active = null;
         setRailwayView(null);
         view.dispose();

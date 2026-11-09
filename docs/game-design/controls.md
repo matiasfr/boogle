@@ -15,6 +15,7 @@ and [updates.ts](../../src/features/updates.ts).
 | Move (`move`)                                | described      | WASD, ↑ ↓ (← → too while the mouse is locked)          | Left stick                                                               | Drag on the left                                           | Getting around |              |
 | Jump, or swim up (`jump`)                    | action         | Space                                                  | A                                                                        | Jump                                                       | Getting around |              |
 | Hook shot, at a ring (`hook`) | action, after finding hook | F | RB | Hook | Getting around | |
+| Open or close the glider, in the air (`glide`) | action, after the room has the glider | Q; Jump in the air once no air jump is left | LB | Glide | Getting around | |
 | Sprint (`sprint`)                            | action         | Left Shift                                             | L3 (latches)                                                             | Push the stick far                                         | Getting around |              |
 | Look around (`look`)                         | described      | Mouse; unlocked: drag, two-finger scroll, ← →          | Right stick                                                              | Drag on the right                                          | Camera         |              |
 | Bring the ball back (`respawn`)              | action         | R                                                      | View                                                                     | none                                                       | The ball       |              |
@@ -65,7 +66,7 @@ Notes:
   pad's brand (`body[data-pad]`, set from `Gamepad.id` in [src/features/gamepad.ts](../../src/features/gamepad.ts)):
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
-- **Free pad slots** (`npm run registry -- --json`): LB, D-pad ↑, D-pad ↓ and D-pad →. Production Hook owns RB after acquisition; Drop owns R3.
+- **Free pad slots** (`npm run registry -- --json`): D-pad ↑, D-pad ↓ and D-pad →. Production Hook owns RB after acquisition, Glide owns LB once the room has the glider (Jump while it's open does nothing); Drop owns R3.
   Place uses LB, RB and R3 for its moves, and D-pad → for Flag. Claims in `src/proto/` don't count as taken
   and can't clash with the game's in the registry. The update notice borrows D-pad ↑ while it is up (or the first free
   slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.

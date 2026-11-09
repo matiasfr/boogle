@@ -26,6 +26,7 @@ export type RailwayViewInspection = RailwayInspection & {
     ReturnType<Awaited<ReturnType<typeof import('./cart-view.ts').createRailwayCart>>['inspect']>;
   reward: ReturnType<Awaited<ReturnType<typeof import('./reward.ts').createRailwayReward>>['inspect']>;
   hookShot: ReturnType<Awaited<ReturnType<typeof import('./hook-shot.ts').createRailwayHook>>['inspect']>;
+  glider: ReturnType<Awaited<ReturnType<typeof import('./glide.ts').createRailwayGlide>>['inspect']>;
 };
 let current: (() => RailwayViewInspection) | null = null;
 export const inspectRailway = () => current?.() ?? null;
