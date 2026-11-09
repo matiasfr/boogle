@@ -210,7 +210,10 @@ The request is `{ stage, ns }`, sent as `text/plain` JSON, so there is no CORS p
    - `stage` is `'start'` or in `SEED_STAGES`, else 400 `unknown stage`;
    - in `prebuilt` mode, `stage` is `'start'` or has a prebuilt doc, else 503 `stage not built`.
 3. Namespace: if `ns !== RAILWAY_PLAY_NS`, answer 409 `{ error: 'world changed', ns: RAILWAY_PLAY_NS }`.
-4. Daily cap: an in-memory count per UTC day, against `cfg.jumpMaxPerDay` (default 100). Over it: 429.
+4. Daily caps (changed after the branch review): in-memory counts per UTC day, against `cfg.jumpMaxPerDay` (500, for
+   everyone) and `cfg.jumpMaxPerAddressDay` (30, per IPv4 address or IPv6 /64). Over either: 429. Only a jump that
+   makes a room counts; one in flight holds a reservation, taken synchronously after the sweep, against both day caps
+   and `jumpMaxRooms`.
 5. Name and reserve the room, up to three tries:
    - the suffix is six base-36 characters from `crypto.randomBytes`, and `id = railwayRoomId(name)`;
    - the sidecar is written with `fs.writeFile(…, { flag: 'wx' })`. EEXIST means try another name. The sidecar is the
@@ -244,8 +247,9 @@ adds `'jumps'` to `DIRS`, so the inventory doesn't list it as unknown.
 
 New config in `loadConfig` and `ServerConfig`, with `server/README.md` rows:
 - `JUMP_RATE_PER_MIN` (6);
-- `JUMP_MAX_PER_DAY` (100);
-- `JUMP_BUILD` (`any` | `prebuilt`; default `any`). `server/fly.toml` sets `JUMP_BUILD = "prebuilt"`.
+- `JUMP_MAX_PER_DAY` (500) and `JUMP_MAX_PER_ADDRESS_DAY` (30);
+- `JUMP_BUILD` (`any` | `prebuilt`; default `any`). The image (`server/Dockerfile`) and `server/fly.toml` set
+  `JUMP_BUILD=prebuilt`.
 
 Add `server/seeds/` to `.gitignore` and `.dockerignore`: the image builds its own and never copies a stale local one.
 
