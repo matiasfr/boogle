@@ -5,12 +5,11 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R } from '../../constants.ts';
 import { onStart } from '../../loop.ts';
 import { fallArrival } from '../../fall/arrival.ts';
-import { me, camForward } from '../../player/player.ts';
+import { me, camForward, followEye } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
 import { registerAction, wrapAction } from '../../player/controls.ts';
 import { getMask, raycastClosest, rayHit, sweepSphere } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
-import { camera } from '../../render/scene.ts';
 import { addPresenceField } from '../../netplay/net.ts';
 import {
   buildPull,
@@ -63,7 +62,8 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     owned && !!me.body && !fallArrival.active && !me.swimming && !inputState.seated && !inputState.held && !me.down;
   function score(r: HookRing) {
     const b = me.body!;
-    to.set(r.at.x - camera.position.x, r.at.y - camera.position.y, r.at.z - camera.position.z).normalize();
+    // The player's aim, never a cinematic's camera: a switch shot must not steer or blank the pick.
+    to.set(r.at.x - followEye.x, r.at.y - followEye.y, r.at.z - followEye.z).normalize();
     return ringScore(
       to.dot(fwd),
       Math.hypot(r.at.x - b.position.x, r.at.y - b.position.y, r.at.z - b.position.z),
