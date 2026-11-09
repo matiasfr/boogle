@@ -298,8 +298,10 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   function passed(s: (typeof SECRETS)[number]) {
     const r = railwayRead();
     if (!r?.ready) return false;
-    if (s.how === 'glide') return r.line2.completed;
-    if (s.how === 'jump') return r.jump && r.line2.completed;
+    // The end of the run: every line-2 station complete (`completed` counts them).
+    const ended = r.line2.completed >= r.line2.stations.length;
+    if (s.how === 'glide') return ended;
+    if (s.how === 'jump') return r.jump && ended;
     if (s.after === 'hook') return r.line2.hook;
     if (s.after === 'glide') return r.glide;
     return r.line2.trains;
