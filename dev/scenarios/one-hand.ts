@@ -1,8 +1,9 @@
-// One thing in your hands: a new player starts empty-handed; pick something up and it is in your hand; throw it and it
-// lands for everyone; pick up something else and what you held lands by you, the beach ball too; The Boogler takes what
-// you hold; a bag of seeds sprouts mushrooms; the frisbee on the lighthouse deck glides far. On a phone: Toss shows only
-// for a throwable thing the main button would not throw, and the name tag clears the HUD.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS, lowResOnCi } from './lib/world.ts';
+// One thing in your hands: a new player starts empty-handed; something new knocks the beach ball out of your hand; The
+// Boogler takes what you hold; a bag of seeds sprouts mushrooms; the frisbee waits on the lighthouse deck. On a phone the
+// live game offers no throw, and the name tag clears the HUD. The toss checks (a tossed item picked up, a throw landing, a
+// swap's drop, the deck frisbee taken and gliding) wait for replication R3 (owner, 9 November): the live game's server
+// refuses gift.toss and gift.take until then.
+import { TP, INV, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const AIM = (yaw: number | string, pitch: number | string = 0) =>
@@ -26,7 +27,7 @@ const LAYOUT = `${DOM}
 
 export default {
   island: true, // the classic island by the court (run.ts)
-  about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone HUD',
+  about: 'hold and give what you pick up; plant anywhere; the frisbee on the lighthouse; the phone HUD offers no throw',
   timeout: 800000, // two software-rendered players in a row; the nightly runner took over 450 s, with checks timing out
   async run(t: T) {
     const g = await t.open({ name: 'holder', hud: 'play' });
@@ -46,65 +47,9 @@ export default {
         return kept;`),
     );
 
-    // A tossed item: walk up, grab it, and it is in your hand.
-    await g.eval(`${toss(1, 5)};`); // a frisbee
-    await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
-    const item = await g.eval(TOSSED_ITEM);
-    await g.eval(TP(item.x + 0.6, item.z));
-    await g.wait(0.5);
-    await g.eval(`${INV} H.interactDown(); H.interactUp();`);
-    const held = await g.waitFor(
-      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    await g.view({ cam: [item.x + 3.5, 2.2, item.z + 3.5], look: [item.x + 0.6, 0.6, item.z] });
-    const s1 = await g.still('in-hand');
-    t.check('the picked-up thing is in your hand', held >= 0, s1);
-
-    // Throw it from just inland of spawn towards the island's middle: it flies and lands as a shared item.
-    // Aim follows the camera, so give it a moment to catch up before letting go.
-    await g.eval(`window.__debugCam.clear(); ${TP(14, 24)} ${AIM(0.49, -0.05)}`);
-    await g.wait(0.4);
-    await g.eval(`${INV} H.useDown();`);
-    await g.wait(1.5); // a full charge: a short one can land in the pit by the court
-    await g.eval(`${INV} H.useUp();`);
-    const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === ${item.kind})`, {
-      timeout: EDIT_WAIT_MS,
-    });
-    const far = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.ts');
-      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === ${item.kind});
-      const p = window.boogle.me.body.position;
-      return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
-    t.check('a thrown thing lands as a shared item, metres away', landed >= 0 && far > 4, `${far.toFixed(1)} m`);
-
-    // Swap: holding a bag, pick up a tossed frisbee, and the bag lands by you as a shared item, in reach to swap back.
-    await g.eval(`${toss(1, 6)};`);
-    await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
-    const next = await g.eval(TOSSED_ITEM);
-    await g.eval(`${INV} I.take('seeds'); ${TP(next.x + 0.6, next.z)}`);
-    await g.wait(0.5);
-    await g.eval(`${INV} H.interactDown(); H.interactUp();`);
-    const swapped = await g.waitFor(
-      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${next.kind}].id; })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    const bagDown = await g.waitFor(
-      `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-        return window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === giftIndex('seeds')); })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    const bagAway = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.ts');
-      const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === giftIndex('seeds'));
-      const p = window.boogle.me.body.position;
-      return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
-    t.check(
-      'picking something up replaces what you hold, which lands by you',
-      swapped >= 0 && bagDown >= 0 && bagAway >= 0 && bagAway < 5,
-      `${bagAway.toFixed(1)} m`,
-    );
+    // No toss checks until replication R3 (owner, 9 November, docs/decisions.md "Four more answers" (3)): the live
+    // game's server refuses gift.toss, so a tossed item, a thrown one landing and a swap's dropped bag never appear.
+    // They come back with R3.
 
     // The ball: grab it, it is in your hand; pick up something else and it flies off, out of your hands and your claim.
     const ball = await g.eval(`${INV}
@@ -190,44 +135,9 @@ export default {
     });
     const deck = await g.still('deck');
     t.check('the frisbee waits on the lighthouse deck', perched, deck);
-    // The camera comes back first: the still's wide view of the deck is the slowest thing a runner draws here, and its tab
-    // applied the pick-up only once this view had gone (nightlies 41434493212, 41436663037: over 180 s, then the throw took
-    // 40 s). Press again if nothing came, as a player would.
+    // Picking it up and its glide off the deck wait for replication R3 too: the live game's server accepts no gift op
+    // (gift.take as well as gift.toss; server/src/host/world-host.ts, deliver), so the take never comes.
     await g.eval(`window.__debugCam.clear();`);
-    let got = -1;
-    for (let k = 0; k < 3 && got < 0; k++) {
-      await g.eval(`${INV} H.interactDown(); H.interactUp();`);
-      got = await g.waitFor(`(async () => { ${INV} return I.heldId() === 'frisbee'; })()`, {
-        timeout: EDIT_WAIT_MS / 3,
-      });
-    }
-    t.check('you can pick the frisbee up', got >= 0);
-    await g.eval(AIM(3.0, 0.12));
-    await g.wait(0.4);
-    // Half a charge: a full one glides about 85 m, past the beach into the sea in this direction.
-    await g.eval(`${INV} H.useDown();`);
-    await g.wait(0.45);
-    await g.eval(`${INV} H.useUp();`);
-    await g.view({
-      cam: [FRISBEE.x + 30, FRISBEE.y + 6, FRISBEE.z + 34],
-      look: [FRISBEE.x + 10, FRISBEE.y - 4, FRISBEE.z + 12],
-    });
-    const flight = await g.motion('frisbee', { frames: 8, seconds: 3 });
-    const fris = await g.waitFor(
-      `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-        return window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === giftIndex('frisbee')); })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    const dist = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.ts');
-      const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === giftIndex('frisbee'));
-      return it ? Math.hypot(it.i * CELL - HALF - 6, HALF - it.j * CELL + 58) : -1;`);
-    t.check(
-      'the frisbee glides far from the lighthouse',
-      fris >= 0 && dist > 20,
-      `${dist?.toFixed?.(1)} m; ${flight.sheet}`,
-    );
     t.check('no failed edits ([world] console errors)', !consoleErrors.length, consoleErrors.join(' | '));
 
     // ------------------------------------------------------------ on a phone, portrait
@@ -240,10 +150,11 @@ export default {
 
     await thumb.eval(`${INV} ${TP(14, 24)}`);
     await thumb.eval(`${INV} I.take('frisbee');`);
-    const frisbee = await thumb.waitFor(when(`label() === 'Throw' && throws() && !shown('.tbtn.toss')`));
+    // The live game offers no throw until replication R3 (owner, 9 November): no Throw on the main button, no Toss.
+    const frisbee = await thumb.waitFor(when(`label() !== 'Throw' && !throws() && !shown('.tbtn.toss')`));
     const away = await thumb.eval(`${INV} return H.interactTarget()?.id ?? null;`);
     t.check(
-      'holding a frisbee: the main button throws and Toss hides',
+      'holding a frisbee in the live game: no Throw on the main button, and no Toss',
       frisbee >= 0,
       `${frisbee} ms; in reach: ${away}`,
     );
