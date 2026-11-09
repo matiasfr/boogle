@@ -8,7 +8,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { Beam, Boiler, railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
 import {
   SHED_TABLE,
   WORKS,
@@ -250,5 +250,61 @@ test("works host: a leaver's footing waits out the grace, then goes back to the 
     assert.equal(footingTotal(r.h.rules.railway.railway), works().poured);
   } finally {
     await r.done();
+  }
+});
+
+test('works host: a carrier back for less than a rule tick still gets a fresh grace', async () => {
+  const r = await host('brief', fixture('wagon-on'));
+  try {
+    const works = () => r.h.rules.railway.railway.works!;
+    const foot = () => r.h.rules.railway.account('a')!.foot;
+    const grace = () => r.h.rules.tune.get('railBeamGraceS') * 1000;
+    assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
+    r.h.depart('s');
+    await r.ticks(1);
+    r.later(grace() - 1000);
+    // Back in a new session and gone again (a newer tab took over) before any rule tick saw them.
+    r.h.deliver({ t: 'r:open' }, 's');
+    r.h.depart('s');
+    r.later(1500);
+    await r.ticks(1);
+    assert.equal(foot(), 1, 'the second absence has its own grace');
+    const before = { ...works() };
+    r.later(grace());
+    await r.ticks(1);
+    assert.equal(foot(), 0);
+    assert.equal(works().rack, before.rack + 1 + works().poured - before.poured);
+    assert.equal(footingTotal(r.h.rules.railway.railway), works().poured);
+  } finally {
+    await r.done();
+  }
+});
+test('works host: the beam and the boiler too get a fresh grace after a return shorter than a rule tick', async () => {
+  for (const [kind, C] of [
+    ['beam', Beam],
+    ['boiler', Boiler],
+  ] as const) {
+    const r = await host(`brief-${kind}`, fixture('wagon-on'));
+    try {
+      const w = r.h.rules.railway.world();
+      const id = w.single(C);
+      const epoch = r.h.rules.railway.account('a')!.epoch;
+      Object.assign(w.mut(C, id)!, { state: 'held', holder: 'a', epoch, revision: w.get(C, id)!.revision + 1 });
+      const state = () => (kind === 'beam' ? r.h.rules.railway.beam() : r.h.rules.railway.boiler()).state;
+      const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
+      r.h.depart('s');
+      await r.ticks(1);
+      r.later(grace - 1000);
+      r.h.deliver({ t: 'r:open' }, 's');
+      r.h.depart('s');
+      r.later(1500);
+      await r.ticks(1);
+      assert.equal(state(), 'held', `${kind}: the second absence has its own grace`);
+      r.later(grace);
+      await r.ticks(1);
+      assert.notEqual(state(), 'held', `${kind}: and it ends`);
+    } finally {
+      await r.done();
+    }
   }
 });

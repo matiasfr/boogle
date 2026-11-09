@@ -638,9 +638,10 @@ const forgeTake = defineSystem(
     const a = w.mut(Account, aid)!;
     let room = free(w, a);
     // Once no Q station takes rails, the cradle is the rack's only use: take just what it still needs, so a full
-    // back of spare rails never stands between you and the footings (which need an empty back).
+    // back of spare rails never stands between you and the footings (which need an empty back). Once the cradle is
+    // fitted nothing uses rails, so the rack gives none.
     const h = w.get(Shed, shedId(w))!;
-    if (qActive(w) < 0 && h.fitted < 0) room = Math.min(room, WORKS.cradleRails - h.cradleRails - a.rails);
+    if (qActive(w) < 0) room = h.fitted >= 0 ? 0 : Math.min(room, WORKS.cradleRails - h.cradleRails - a.rails);
     if (room <= 0) return 0;
     const f = w.mut(Forge, forgeId(w))!;
     const n = Math.min(f.rack, room);
@@ -1050,13 +1051,13 @@ function cartStep(w: World, tick: number) {
     }
   }
 }
-/** Line 2 arriving with the wagon: at the quarry it loads what the Works rack has and the pier still needs; at the
- * pier it unloads everything onto the pier rack. One apply each. */
 /** Footings the pier still needs that are neither set, racked there, nor aboard the wagon (`aboard`). */
 function pierOwed(w: World, aboard: number) {
   const works = w.get(Works, worksId(w))!;
   return WORKS.pier - works.pierSet - works.pierRack - aboard;
 }
+/** Line 2 arriving with the wagon: at the quarry it loads what the Works rack has and the pier still needs; at the
+ * pier it unloads everything onto the pier rack. One apply each. */
 function wagonArrives(w: World, row: Row<typeof Train>) {
   if (!row.wagon) return;
   if (row.at === 1) {
@@ -1529,8 +1530,10 @@ const footRelease = defineSystem(
     return 1;
   },
 );
-/** A footing's carrier stayed away past the grace (the session `epoch` the host saw leave): it goes back to the Works
- * rack, so the kiln's sixteen always reach their sites. Never once they are back in a new session. */
+/** A footing's carrier stayed away past the grace: it goes back to the Works rack, so the kiln's sixteen always reach
+ * their sites. What keeps it on a returned carrier's back is the host's live-session check: `r:open` makes the session
+ * active and bumps the account epoch in one synchronous step. `epoch` only refuses a release for a session that has
+ * since changed; the host passes the current one, so in practice it never does. */
 export const railFootRelease = (w: World, pid: string, epoch: number): number => w.run(footRelease, { pid, epoch });
 /** Who carries a footing, and in which session (the host's leaver check; accepted state only). */
 export function railFootHolders(w: World) {

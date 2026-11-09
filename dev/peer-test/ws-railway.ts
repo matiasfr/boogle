@@ -514,7 +514,9 @@ export async function railwayLoad(
         const server = world.rules.railway.railway;
         const counts = railCounts(server);
         const conserved =
-          counts.total === INITIAL + counts.produced && counts.stone!.total === RAIL_STONE && counts.rails!.total === 0;
+          counts.total === INITIAL + counts.produced &&
+          counts.stone!.total === RAIL_STONE + counts.stone!.produced &&
+          counts.rails!.total === 0;
         const probes = await Promise.all([...pages, late].map(rail));
         const mirrorsAgree = probes.every((s) => s.hash === probes[0]!.hash && s.counts.total === counts.total);
         world.sync.saveNow(true);
