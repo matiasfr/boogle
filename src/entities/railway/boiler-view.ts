@@ -23,7 +23,13 @@ type Deps = {
   pieces: typeof import('../../proto/place/pieces.ts');
 };
 
-export function createRailwayBoiler(adapter: RailwayAdapter, owner: OwnedView, { land, props, carry, pieces }: Deps) {
+/** `chimney`: the top of the forge's chimney, where the call's plume rises (line2-view.ts owns the forge). */
+export function createRailwayBoiler(
+  adapter: RailwayAdapter,
+  owner: OwnedView,
+  { land, props, carry, pieces }: Deps,
+  chimney: { x: number; y: number; z: number },
+) {
   const pedestal = props.makeProp('pedestal');
   const loose = carry.makeBoiler(); // boilerShape's safe factory, without chop.ts's campaign owner
   const worn = carry.makeCarryModels();
@@ -38,8 +44,10 @@ export function createRailwayBoiler(adapter: RailwayAdapter, owner: OwnedView, {
   );
   pedestal.position.set(bx, by + 0.3, bz);
   owner.add(pedestal, loose, worn.root);
-  // The forge's call while the boiler waits; Split-rock's breaker uses the same one (forge-call.ts).
-  const call = createForgeCall({ x: bx, y: by, z: bz }, owner);
+  // The forge's call while the boiler waits; Split-rock's breaker uses the same one (forge-call.ts). Its plume rises
+  // from the forge's chimney, not the boiler: a boiler steaming on its pedestal reads as an engine already running
+  // (owner, 9 November). The boiler first steams once it's fitted to the old train. The call starts 2 m above `at`.
+  const call = createForgeCall({ x: chimney.x, y: chimney.y - 2, z: chimney.z }, owner);
   let body: Body | null = null;
   let mote = 0,
     side = 1;
@@ -160,23 +168,19 @@ export function createRailwayBoiler(adapter: RailwayAdapter, owner: OwnedView, {
         b = s.line2?.boiler,
         p = me.body?.position;
       if (!s.ready || !b || !p) return [];
-      if (
-        (b.state === 'pedestal' || b.state === 'ground') &&
-        Math.hypot(p.x - b.x / 100, p.z - b.z / 100) <= 3.6 &&
-        !s.carry &&
-        !s.railsCarry &&
-        !s.stoneCarry &&
-        s.beam?.holder !== s.pid &&
-        !heldId()
-      )
+      if ((b.state === 'pedestal' || b.state === 'ground') && Math.hypot(p.x - b.x / 100, p.z - b.z / 100) <= 3.6) {
+        const at = new THREE.Vector3(b.x / 100, b.y / 100 + 2, b.z / 100);
+        // It takes rail.boilerTake's empty back (no load, footing or beam) and, like the beam, empty hands.
+        // Say so rather than offer nothing: the forge's rails rack stands 4.5 m off, so a back of rails is common here.
+        const free = !s.carry && !s.railsCarry && !s.stoneCarry && !s.foot && s.beam?.holder !== s.pid && !heldId();
+        // `r`, the pedestal's radius: measured to its edge, so a log pile dropped against it doesn't win the prompt.
+        const target = { id: 'railway-boiler', verb: 'Shoulder the boiler', at, r: 1.3 };
         return [
-          {
-            id: 'railway-boiler',
-            verb: 'Shoulder the boiler',
-            at: new THREE.Vector3(b.x / 100, b.y / 100 + 2, b.z / 100),
-            run: () => void adapter.shoulderBoiler(b.revision),
-          },
+          free
+            ? { ...target, run: () => void adapter.shoulderBoiler(b.revision) }
+            : { ...target, blocked: 'Empty your back first' },
         ];
+      }
       if (
         b.state === 'held' &&
         b.holder === s.pid &&
