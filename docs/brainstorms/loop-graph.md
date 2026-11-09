@@ -1,4 +1,4 @@
-> **Status: approved (owner, 2026-11-09: "let's do all 3"). Open questions build on their recommended answers.**
+> **Status: building (approved, owner, 2026-11-09: "let's do all 3"; designer-reviewed). Open questions build on their recommended answers.**
 
 # Loop graph
 
@@ -35,9 +35,9 @@ Owner's words it answers (9 November, [playtests](../playtests.md)): the order p
 
 No browser: this is tooling with no player-visible change.
 
-- `npm run loop` prints every node with its bill, distance and cue. On today's main it lists the kiln's missing cue, station 6 as doable before trains or its refusal as a rule (whichever main holds), and Far Head's rails as the largest grind.
+- `npm run loop` prints every node with its bill, distance and cue. On today's main it lists the kiln as prompt-only (no cue), reports station 6 before trains as a defect until the refusal rule lands, and names the largest grind, whichever node it is.
 - `npm run loop -- run --players 2` finishes line 1, line 2 and the Works through the real rules in under ten seconds and prints time per node; a deliberately broken bill makes it report a softlock.
-- `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, and ranks station 6 and the boiler among the most confused beats.
+- `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, with a confusion rank per node. Which beats rank highest is a finding, not a pass test.
 - A unit test fails when a rail action or mark has no node.
 - `npm run check` passes with the ball and player runs gone.
 
@@ -54,3 +54,27 @@ No browser: this is tooling with no player-visible change.
 - Tunable sweeps through the headless run.
 - Feeding the graph to the economy model in place of its own route inputs.
 - The Boogler as a cue type once it gives directions.
+
+## Design review (designer, 2026-11-09)
+
+| Call | Kind | Source or recommendation |
+| --- | --- | --- |
+| Q5 complete casts the boiler; the fit runs trains; Q6's kit (32 + 32) comes by train | Decided | decisions, 8 Nov (B5–B8) and 9 Nov ("Yes, boiler first") |
+| Station 6 refuses hand logs, rails and forge rails until trains run | Decided | decisions, 9 Nov (station 6); [boiler-first-choice](../plans/boiler-first-choice.md) step 3, not yet on main |
+| Q4 and Q5 take material before their gate; only funding and laying wait | Decided (free order) | decisions, 8 Nov, "fill a gated stretch" |
+| Station 3: logs and beam in either order, any axe | Decided (free order) | decisions, 7 Nov, great beam |
+| Works: slab → stall → cradle; throat before kiln; pier after Q6 | Decided | [split-rock-roundhouse](../plans/split-rock-roundhouse.md) |
+| Q5's switch reached by hook pulls up Needle Bell | Decided | decisions, 8 Nov, hook shot |
+| Cues: forge plume and gold motes at the cold boiler; the "Steam" card; frame shows a train | Decided (tag unbuilt) | decisions, 9 Nov; 5 Nov |
+| Kiln cue: today only "Fill the kiln" to a loaded back within 4.1 m; the gold ghost is **proposed** | Default: record it as prompt-only | [works-signposting](works-signposting.md) |
+| Grind for 1–4 players | Default: headline 1–3, the target | DESIGN.md |
+
+**Findings that change the build**
+
+1. **Each order edge carries a status and source:** `decided` (cite the entry), `free` (decided either order) or `unruled`. Only a `decided` edge the rules accept out of order is a defect (today: station 6 before trains, until step 3). `free` and `unruled` print as neutral facts; `unruled` goes on the owner's list. A blanket defect would flag the beam and gated-fill calls he chose.
+2. **Each cue carries a kind and a state:** world or prompt-only; decided, on main or observed. Prompt-only reports as no cue (that catches the kiln); decided-but-unbuilt cues don't count.
+3. **"Far Head's rails as the largest grind" presumes a fact.** No bill is the owner's 40 (Q5 24 + 24, Q6 32 + 32), and step 3 ends Q6's hand grind. Done means: it names the largest grind, whichever node.
+4. **"Ranks station 6 and the boiler among the most confused"** is a hypothesis, not a pass condition; don't tune the scoring to make it true.
+5. Home-station is proposed: encode today's Home, not layout B.
+
+No owner questions; nothing here is direction or irreversible.
