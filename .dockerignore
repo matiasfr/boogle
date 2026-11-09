@@ -11,3 +11,4 @@ dev
 test
 server/data
 server/test
+server/seeds

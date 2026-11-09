@@ -1,35 +1,23 @@
-// Accepted railway beats written through the real host's save path before a look opens its room. The worlds come from
-// src/sim/railway-seeds.ts (buildSeedWorld), the same builders the server's jump-ins use.
+// Accepted railway beats written through the real host's save path before a look opens its room: the same seed doc the
+// server's jump-ins write (server/src/seeds/build.ts, from src/sim/railway-seeds.ts), into the look stack's store.
 import { pathToFileURL } from 'node:url';
 import { createStore } from '../../server/src/store.ts';
-import { createRailwayWorldHost } from '../../server/src/host/world-host.ts';
+import { buildSeedDoc } from '../../server/src/seeds/build.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { railwayCheck } from '../../src/sim/railway-world.ts';
-import { buildSeedWorld, isSeedStage } from '../../src/sim/railway-seeds.ts';
-import { worldOf } from '../../src/sim/railway-live.ts';
+import { isSeedStage } from '../../src/sim/railway-seeds.ts';
+import { SERVER_ID } from '../../src/net/ids.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
   if (!isSeedStage(stage)) throw new Error(`Unknown railway seed: ${stage}`);
-  const w = buildSeedWorld(stage);
+  const doc = await buildSeedDoc(stage);
   const store = createStore({ dataDir, maxRooms: 2 });
   await store.init();
-  const host = createRailwayWorldHost({
-    roomId: railwayRoomId(room),
-    store,
-    tick: false,
-    now: () => Date.now(),
-    pidOf: () => 'a',
+  const result = await store.write(railwayRoomId(room), {
+    ...doc,
+    writerId: SERVER_ID,
+    updatedAt: new Date().toISOString(),
   });
-  try {
-    await host.whenReady();
-    while (host.sync.world.tick <= w.t) host.step(0.1);
-    await host.sync.whenDurable();
-    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
-    host.rules.railway.touchAll();
-    await host.close({ save: true });
-  } finally {
-    await host.close({ save: false });
-  }
+  if (result.status !== 200) throw new Error(`rail seed ${stage}: the store refused it (${result.status})`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
