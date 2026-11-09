@@ -533,12 +533,12 @@ rewards still arrive and are worn as before.
 `dev/playtest/beats.ts`, `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **T5a.** `createShop(owner, rooms, env, wardrobe: WardrobeApi, say: (id, line) => void)`.
+- [x] **T5a.** `createShop(owner, rooms, env, wardrobe: WardrobeApi, say: (id, line) => void)`.
   - `WardrobeApi` is the T4 surface. Place adapts `gifts.ts` to it.
   - `hasFact` → `env.has`; `money()` → `env.money()` (production: `counts.score`).
   - `residentSay` comes from T2's residents.
   - Prices stay as they are: the joke list price climbs with the wallet, and you pay $0 (**owner question 4**).
-- [ ] **T5b.** `up` adds `shop` on `env.has('path')`. Add the shop beats.
+- [x] **T5b.** `up` adds `shop` on `env.has('path')`. Add the shop beats.
 
 **Proofs.**
 - `npm run check`.
@@ -550,6 +550,22 @@ rewards still arrive and are worn as before.
 
 **Done means.** Fine Prices opens with the first path. Try on, Take it, Wear and Swap work. What you take is personal,
 and what you wear is shown to others.
+
+**As built (9 November).**
+- `createShop(owner, rooms, env, wardrobe, say)` takes `ShopWardrobe` (a `Pick` of `WardrobeApi`) and
+  `env = { has, money, youGot }`. The shop no longer imports `gifts.ts` or `score.ts` (their module side effects are
+  Place's): the stock comes from `cosmetic-parts.ts` and `dollars` moved to `signs.ts`.
+- The "You got" card: `railwayYouGot` in `entities/railway/state.ts`, registered by the railway view on its one
+  reveal queue (`registerRailwayYouGot`). Place passes `got.ts`'s `youGot`; `gifts.ts`'s `keepTried` no longer
+  shows the card itself, and `placeWardrobe` adapts `gifts.ts` to the shop.
+- The rail swaps the three clothes slots. Place's stowaway is no longer on the shop's rail (it still swaps at Place's
+  shelf); production's comes with C2.
+- **Button is silent in production** until T2: the town view passes a no-op `say`. T2 should pass its
+  `residentSay` as `createShop`'s last argument in `entities/town/view.ts`. The lines are unchanged.
+- Town files touched: `entities/town/view.ts` (the shop's import, `up`, `createShop`, targets, update, inspect) and
+  `entities/town/state.ts` (`wardrobe` in `TownInspection`).
+- `railway-town.ts`: `townact=try|take`, chained acts (`try,walkout`), `partners` in the after-act print, and the
+  debug camera held through look's warm-up (look otherwise reframes to its `--view`).
 
 ### Job T6: town growth rows and the forge workshop (needs owner question 1)
 

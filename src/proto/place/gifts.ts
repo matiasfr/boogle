@@ -40,6 +40,7 @@ import { FINDERS } from './tech-layout.ts';
 import { dustRing } from './pieces.ts';
 import { softGlow } from './look.ts';
 import { dropGot, youGot } from './got.ts';
+import type { ShopWardrobe } from './shop.ts';
 import { addFoot } from './sites.ts';
 import { SHOP } from './town-lines.ts';
 
@@ -373,14 +374,12 @@ export function tryOn(id: GiftId) {
   trying = { id, slot, was };
   pop(4, 0.5);
 }
-/** What you're trying on is yours: free, personal, and it stays on. */
+/** What you're trying on is yours: free, personal, and it stays on. The shop shows its "You got" card. */
 export function keepTried() {
   if (!trying) return null;
   const { id } = trying;
   trying = null;
   if (!giftState.bought.includes(id)) giftState.bought.push(id);
-  const g = byId(id);
-  youGot({ name: g.name, line: g.line, model: new THREE.Mesh(geoOf(id), giftMat) });
   saveHook();
   return id;
 }
@@ -411,6 +410,22 @@ export function swapSlot(slot: Slot) {
   pop(next ? 5 : 2, 0.5);
   saveHook();
 }
+/** This wardrobe on the live game's surface (src/entities/wardrobe/state.ts), for the shop that both mount. */
+export const placeWardrobe: ShopWardrobe = {
+  owned: (slot) => owned(slot as Slot),
+  isOwned: (id) => isOwned(id as GiftId),
+  isWorn: (id) => isWorn(id as GiftId),
+  tried,
+  tryOn(id) {
+    tryOn(id as GiftId);
+    return true;
+  },
+  keepTried,
+  wearOwned: (id) => wearOwned(id as GiftId),
+  takeOff: (id) => takeOff(id as GiftId),
+  swapLabel: (slot) => swapLabel(slot),
+  swapSlot: (slot) => swapSlot(slot),
+};
 const SLOT_X: Record<Slot, number> = { hat: -2, accessory: -0.7, outfit: 0.7, pet: 2 };
 /** Where a slot's prompt stands on the shelf. */
 export function shelfSpot(slot: Slot, out: THREE.Vector3) {

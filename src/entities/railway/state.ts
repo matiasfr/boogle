@@ -54,6 +54,17 @@ export function registerRailwayRecovery(fn: () => void) {
   };
 }
 
+type YouGot = Awaited<ReturnType<typeof import('./reward.ts').createRailwayReward>>['youGot'];
+let youGot: YouGot | null = null;
+/** The railway's one reveal queue ("You got"), for the town's shop. False when nothing's mounted to show it. */
+export const railwayYouGot: YouGot = (got) => youGot?.(got) ?? false;
+export function registerRailwayYouGot(fn: YouGot) {
+  youGot = fn;
+  return () => {
+    if (youGot === fn) youGot = null;
+  };
+}
+
 let hookProbe: ((id: string) => string) | null = null;
 export const hookWhyNot = (id: string): string => hookProbe?.(id) ?? 'hook view unavailable';
 export function registerHookProbe(fn: (id: string) => string) {

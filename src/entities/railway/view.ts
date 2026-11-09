@@ -12,6 +12,7 @@ import type { FrameCtx } from '../../loop.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { createRailwaySources } from './sources.ts';
 import { createRailwayReward } from './reward.ts';
+import { registerRailwayYouGot } from './state.ts';
 import { createRailwayArrival } from './arrival.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
@@ -69,6 +70,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const reward = await createRailwayReward(adapter, owner, (out) =>
     out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
   );
+  owner.cleanup(registerRailwayYouGot(reward.youGot));
   let demo = () => {};
   const line2 = await createRailwayLine2(
     adapter,

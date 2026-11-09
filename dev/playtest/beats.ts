@@ -62,6 +62,9 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['called a train', /^train called$/],
   ['rode a train', /^train ride$/],
   ['reached the pier', /^pier reached$/],
+  ['tried something on', /^shop tried on$/],
+  ['took something from the shop', /^shop kept$/],
+  ['swapped on the rail', /^shop swapped$/],
 ];
 export const beatsOf = (card: string, railway = false) => (railway ? RAILWAY_BEATS : (BEATS[card] ?? []));
 
