@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sunshine Water Board</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1e8;
+        --surface: #fffdf7;
+        --ink: #1f2f3a;
+        --muted: #586873;
+        --border: #c8cbc0;
+        --accent: #0f6c9a;
+        --split: #b2452c;
+        --pass: #dfeef2;
+        --pass-ink: #174a5c;
+        --compute: #efe4cf;
+        --none: #ebe9e0;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          color-scheme: dark;
+          --bg: #121c22;
+          --surface: #1b2a32;
+          --ink: #e9eee9;
+          --muted: #a9b8bd;
+          --border: #3c5059;
+          --accent: #7cc8ef;
+          --split: #ff9c82;
+          --pass: #22414d;
+          --pass-ink: #cdeaf2;
+          --compute: #3d3626;
+          --none: #26343b;
+        }
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+        --bg: #121c22;
+        --surface: #1b2a32;
+        --ink: #e9eee9;
+        --muted: #a9b8bd;
+        --border: #3c5059;
+        --accent: #7cc8ef;
+        --split: #ff9c82;
+        --pass: #22414d;
+        --pass-ink: #cdeaf2;
+        --compute: #3d3626;
+        --none: #26343b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      main {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+      h1 {
+        font-size: 1.6rem;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 1.1rem;
+        margin: 32px 0 8px;
+      }
+      p {
+        margin: 6px 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .demo {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 260px;
+        gap: 14px;
+      }
+      @media (max-width: 760px) {
+        .demo {
+          grid-template-columns: 1fr;
+        }
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 8px;
+        image-rendering: pixelated;
+        background: #9cc6e0;
+      }
+      label {
+        display: block;
+        font-size: 0.85rem;
+        margin: 10px 0 2px;
+      }
+      input[type='range'] {
+        width: 100%;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      button {
+        font: inherit;
+        font-size: 0.85rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--ink);
+        cursor: pointer;
+      }
+      button[aria-pressed='true'] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--surface);
+      }
+      .out {
+        font-variant-numeric: tabular-nums;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      .passes svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+      }
+      .sw {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--surface);
+        font-size: 0.8rem;
+      }
+      .sw div {
+        height: 44px;
+      }
+      .sw span {
+        display: block;
+        padding: 4px 6px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.85rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Sunshine water board</h1>
+      <p class="muted">
+        Own diagrams and a toy renderer for the plan in <code>docs/plans/water-sunshine.md</code>. No game frames, no
+        textures from any game: the wave texture here is generated noise. Costs are from code, not measured.
+      </p>
+
+      <h2>1. Two scrolling layers and a sparkle band</h2>
+      <p>
+        A tiny ray-cast sea at low resolution. One generated wave-cell texture is sampled twice with different scrolls; the
+        second is added at double weight. The band of sparkle is picked by how much texture one pixel covers. Switch
+        <b>Band source</b> to see why the plan computes that footprint instead of relying on authored mip levels: with
+        authored mips, the band moves when the resolution changes.
+      </p>
+      <div class="demo">
+        <div class="card"><canvas id="sea" width="360" height="200"></canvas></div>
+        <div class="card">
+          <div class="row" role="group" aria-label="Viewpoint">
+            <button data-view="shore" aria-pressed="true">Shore</button>
+            <button data-view="pier">Pier head</button>
+            <button data-view="summit">Summit</button>
+          </div>
+          <label>Band source</label>
+          <div class="row" role="group" aria-label="Band source">
+            <button data-band="footprint" aria-pressed="true">Computed footprint</button>
+            <button data-band="mips">Authored mips</button>
+          </div>
+          <label for="res">Resolution scale <span class="out" id="resOut"></span></label>
+          <input id="res" type="range" min="0.5" max="4" step="0.1" value="1" />
+          <label for="peak">Band peak level <span class="out" id="peakOut"></span></label>
+          <input id="peak" type="range" min="1" max="6" step="0.1" value="3.2" />
+          <label for="speed">Scroll speed <span class="out" id="speedOut"></span></label>
+          <input id="speed" type="range" min="0" max="3" step="0.1" value="1" />
+          <label><input id="alpha" type="checkbox" checked /> Alpha test (drop the middle band)</label>
+          <label><input id="layer2" type="checkbox" checked /> Second layer</label>
+        </div>
+      </div>
+
+      <h2>2. Passes per frame</h2>
+      <p>
+        Each red bar is a pass split: the scene target is stored and reloaded so the water can read it. On the owner's
+        Mac (4× MSAA, 5.7 MP) one split moves about 275 MB; on a phone without MSAA, about 7 MB.
+      </p>
+      <div class="card passes">
+        <svg viewBox="0 0 1060 300" role="img" aria-label="Pass diagram for Ultra and candidates A, B and C">
+          <defs>
+            <style>
+              .lbl {
+                font: 600 15px system-ui, sans-serif;
+                fill: var(--ink);
+              }
+              .t {
+                font: 13px system-ui, sans-serif;
+                fill: var(--pass-ink);
+              }
+              .s {
+                font: 12px system-ui, sans-serif;
+                fill: var(--muted);
+              }
+              .p {
+                fill: var(--pass);
+                stroke: var(--border);
+              }
+              .c {
+                fill: var(--compute);
+                stroke: var(--border);
+              }
+              .x {
+                fill: var(--split);
+              }
+            </style>
+          </defs>
+          <g id="rows"></g>
+        </svg>
+      </div>
+
+      <h2>3. Budgets</h2>
+      <div class="card scroll">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Ultra today</th>
+              <th>A: Sunshine plane</th>
+              <th>B: plus depth</th>
+              <th>C: Ultra lite</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pass splits</td>
+              <td>2</td>
+              <td>0</td>
+              <td>1</td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td>Fetches per water pixel</td>
+              <td>23–35 + contact loop</td>
+              <td>4–6</td>
+              <td>6–8</td>
+              <td>12–16</td>
+            </tr>
+            <tr>
+              <td>Vertices</td>
+              <td>193k</td>
+              <td>10–20k</td>
+              <td>10–20k</td>
+              <td>51k</td>
+            </tr>
+            <tr>
+              <td>Water-owned memory</td>
+              <td>~170 MB + copies</td>
+              <td>~6–12 MB</td>
+              <td>~6–12 MB + depth</td>
+              <td>~80–100 MB + copies</td>
+            </tr>
+            <tr>
+              <td>GPU estimate, Mac 5.7 MP</td>
+              <td>4–15 ms</td>
+              <td>0.4–2.5 ms</td>
+              <td>0.9–4.5 ms</td>
+              <td>2–9 ms</td>
+            </tr>
+            <tr>
+              <td>GPU estimate, iPhone Air</td>
+              <td>3–9 ms</td>
+              <td>0.2–1.0 ms</td>
+              <td>0.3–1.3 ms</td>
+              <td>1–3.5 ms</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>4. Starting ramp against the Fresh palette</h2>
+      <p class="muted">Water stops are starting values to tune in game, not sampled from any game.</p>
+      <div class="swatches" id="swatches"></div>
+    </main>
+
+    <script>
+      (() => {
+        // ---------- generated wave-cell texture (Worley F2 - F1 lines), 128², tiling ----------
+        const N = 128;
+        const rnd = (() => {
+          let s = 7;
+          return () => ((s = (s * 16807) % 2147483647) / 2147483647);
+        })();
+        function cells(count) {
+          const pts = [];
+          for (let i = 0; i < count; i++) pts.push([rnd(), rnd()]);
+          const out = new Float32Array(N * N);
+          for (let y = 0; y < N; y++)
+            for (let x = 0; x < N; x++) {
+              const u = x / N,
+                v = y / N;
+              let f1 = 9,
+                f2 = 9;
+              for (const [px, py] of pts)
+                for (let oy = -1; oy <= 1; oy++)
+                  for (let ox = -1; ox <= 1; ox++) {
+                    const d = Math.hypot(u - px - ox, v - py - oy);
+                    if (d < f1) {
+                      f2 = f1;
+                      f1 = d;
+                    } else if (d < f2) f2 = d;
+                  }
+              const edge = (f2 - f1) * Math.sqrt(count);
+              out[y * N + x] = Math.max(0, 1 - edge / 0.22);
+            }
+          return out;
+        }
+        const a = cells(18),
+          b = cells(40);
+        const base = new Float32Array(N * N);
+        for (let i = 0; i < N * N; i++) base[i] = Math.min(1, a[i] * 0.75 + b[i] * 0.45);
+        // box-filtered mip chain
+        const mips = [base];
+        for (let s = N; s > 1; s /= 2) {
+          const src = mips[mips.length - 1],
+            h = s / 2,
+            dst = new Float32Array(h * h);
+          for (let y = 0; y < h; y++)
+            for (let x = 0; x < h; x++)
+              dst[y * h + x] =
+                (src[2 * y * s + 2 * x] +
+                  src[2 * y * s + 2 * x + 1] +
+                  src[(2 * y + 1) * s + 2 * x] +
+                  src[(2 * y + 1) * s + 2 * x + 1]) /
+                4;
+          mips.push(dst);
+        }
+        const levels = mips.length - 1;
+        function fetch(level, u, v) {
+          const s = N >> level,
+            m = mips[level];
+          const x = ((Math.floor(u * s) % s) + s) % s,
+            y = ((Math.floor(v * s) % s) + s) % s;
+          return m[y * s + x];
+        }
+        function sample(lod, u, v) {
+          const l = Math.max(0, Math.min(levels, lod)),
+            l0 = Math.floor(l),
+            f = l - l0;
+          const l1 = Math.min(levels, l0 + 1);
+          return fetch(l0, u, v) * (1 - f) + fetch(l1, u, v) * f;
+        }
+        // authored-mip brightness per level: empty near, brightest at level 2, calm far (the trick, as a curve)
+        const AUTHORED = [0.0, 0.45, 1.0, 0.55, 0.25, 0.12, 0.06, 0.03];
+        const authored = (lod) => {
+          const l = Math.max(0, Math.min(AUTHORED.length - 1, lod)),
+            l0 = Math.floor(l),
+            f = l - l0;
+          return AUTHORED[l0] * (1 - f) + AUTHORED[Math.min(AUTHORED.length - 1, l0 + 1)] * f;
+        };
+
+        // ---------- toy renderer ----------
+        const lin = (h) => {
+          const c = parseInt(h.slice(1), 16);
+          return [(c >> 16) & 255, (c >> 8) & 255, c & 255].map((x) => {
+            x /= 255;
+            return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+          });
+        };
+        const enc = (x) => {
+          x = Math.max(0, Math.min(1, x));
+          return 255 * (x <= 0.0031308 ? x * 12.92 : 1.055 * x ** (1 / 2.4) - 0.055);
+        };
+        const RAMP = { shallow: '#6fe0d0', mid: '#19b5cf', deep: '#1667b8', sand: '#ddc08c', foam: '#ffffff' };
+        const L = Object.fromEntries(Object.entries(RAMP).map(([k, v]) => [k, lin(v)]));
+        const HORIZON = [0.62, 0.76, 0.88],
+          ZENITH = [0.17, 0.48, 0.88];
+        const VIEWS = {
+          shore: { h: 3, pitch: 0.16, shore: 6 },
+          pier: { h: 8, pitch: 0.2, shore: -40 },
+          summit: { h: 100, pitch: 0.42, shore: -400 },
+        };
+        const state = { view: 'shore', band: 'footprint', res: 1, peak: 3.2, speed: 1, alpha: true, layer2: true };
+        const cv = document.getElementById('sea'),
+          ctx = cv.getContext('2d');
+        const W = cv.width,
+          H = cv.height,
+          img = ctx.createImageData(W, H);
+        const FOV = (50 * Math.PI) / 180,
+          TILE = 8,
+          TPM = N / TILE; // texels per metre
+        const REF_H = 528; // footprint reference height: band holds at any resolution
+        const sun = (() => {
+          const v = [0.0, 0.32, 1];
+          const l = Math.hypot(...v);
+          return v.map((x) => x / l);
+        })();
+        const mix = (p, q, t) => p.map((x, i) => x + (q[i] - x) * t);
+        const sm = (e0, e1, x) => {
+          const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
+          return t * t * (3 - 2 * t);
+        };
+        function draw(time) {
+          const v = VIEWS[state.view],
+            t = time * 0.001 * state.speed;
+          const cp = Math.cos(v.pitch),
+            sp = Math.sin(v.pitch),
+            tanH = Math.tan(FOV / 2);
+          const actualPixAngle = FOV / (H * state.res),
+            refPixAngle = FOV / REF_H;
+          const d = img.data;
+          for (let py = 0; py < H; py++) {
+            const ny = (1 - (2 * (py + 0.5)) / H) * tanH;
+            for (let px = 0; px < W; px++) {
+              const nx = ((2 * (px + 0.5)) / W - 1) * tanH * (W / H);
+              // camera looks along +z, pitched down
+              let dx = nx,
+                dy = ny * cp - sp,
+                dz = ny * sp + cp;
+              const len = Math.hypot(dx, dy, dz);
+              dx /= len;
+              dy /= len;
+              dz /= len;
+              let c;
+              if (dy > -0.002) {
+                c = mix(HORIZON, ZENITH, sm(0, 0.5, dy));
+              } else {
+                const dist = v.h / -dy,
+                  wx = dx * dist,
+                  wz = dz * dist;
+                const foot = dist / Math.max(-dy, 0.02); // metres per radian along the view
+                const lodActual = Math.log2(Math.max(1e-3, foot * actualPixAngle * TPM));
+                const lodRef = Math.log2(Math.max(1e-3, foot * refPixAngle * TPM));
+                const u1 = wx / TILE + t * 0.03,
+                  v1 = wz / TILE;
+                const u2 = wx / (TILE * 1.7) - t * 0.018,
+                  v2 = wz / (TILE * 1.7) + t * 0.024;
+                let s = sample(lodActual, u1, v1);
+                if (state.layer2) s += 2 * sample(lodActual + 0.77, u2, v2);
+                s /= state.layer2 ? 2.2 : 1;
+                const band =
+                  state.band === 'footprint'
+                    ? Math.exp(-(((lodRef - state.peak) / 1.1) ** 2)) * sm(-0.5, 1.5, lodRef)
+                    : authored(lodActual);
+                let spark = s * band;
+                if (state.alpha && spark > 0.18 && spark < 0.42) spark = 0;
+                // sun lane: reflected view vs sun
+                const ry = -dy,
+                  lane = Math.max(0, dx * sun[0] + ry * sun[1] + dz * sun[2]) ** 24;
+                // bed depth from distance past the shoreline
+                const depth = Math.max(0, (wz - v.shore) * 0.06);
+                let water =
+                  depth < 0.5 ? mix(L.shallow, L.mid, depth / 0.5) : mix(L.mid, L.deep, Math.min(1, (depth - 0.5) / 1.5));
+                const clear = 1 - sm(0, 0.35, depth); // see the sand in the first metres
+                water = mix(water, mix(L.sand, L.shallow, 0.35), clear * 0.8);
+                const foam = depth > 0 && depth < 0.05 ? 0.8 : 0;
+                c = water.map((x, i) => x + spark * (0.5 + 1.8 * lane) + foam * (L.foam[i] - x));
+                c = mix(c, HORIZON, sm(80, 1400, dist) * 0.85);
+                if (wz < v.shore) c = L.sand;
+              }
+              const o = (py * W + px) * 4;
+              d[o] = enc(c[0]);
+              d[o + 1] = enc(c[1]);
+              d[o + 2] = enc(c[2]);
+              d[o + 3] = 255;
+            }
+          }
+          ctx.putImageData(img, 0, 0);
+        }
+        let last = 0;
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function loop(time) {
+          if (time - last > 33) {
+            draw(reduce ? 0 : time);
+            last = time;
+          }
+          if (!reduce) requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+
+        // ---------- controls ----------
+        const out = (id, text) => (document.getElementById(id).textContent = text);
+        function sync() {
+          out('resOut', state.res.toFixed(1) + '×');
+          out('peakOut', state.peak.toFixed(1));
+          out('speedOut', state.speed.toFixed(1) + '×');
+          if (reduce) draw(0);
+        }
+        document.querySelectorAll('[data-view]').forEach((b) =>
+          b.addEventListener('click', () => {
+            state.view = b.dataset.view;
+            document.querySelectorAll('[data-view]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+            sync();
+          }),
+        );
+        document.querySelectorAll('[data-band]').forEach((b) =>
+          b.addEventListener('click', () => {
+            state.band = b.dataset.band;
+            document.querySelectorAll('[data-band]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+            sync();
+          }),
+        );
+        for (const id of ['res', 'peak', 'speed'])
+          document.getElementById(id).addEventListener('input', (e) => {
+            state[id] = Number(e.target.value);
+            sync();
+          });
+        for (const id of ['alpha', 'layer2'])
+          document.getElementById(id).addEventListener('change', (e) => {
+            state[id] = e.target.checked;
+            sync();
+          });
+        sync();
+
+        // ---------- pass diagram ----------
+        const ROWS = [
+          {
+            name: 'Ultra today',
+            items: [
+              ['c', 'FFT ×10, query, lens'],
+              ['c', 'Caustics ×2 + mips'],
+              ['p', 'Opaque scene'],
+              ['x', 'copy colour'],
+              ['x', 'copy depth'],
+              ['p', 'Water 23–35 taps'],
+              ['p', 'Output'],
+            ],
+          },
+          {
+            name: 'A: Sunshine plane',
+            items: [
+              ['c', 'Lens'],
+              ['p', 'Opaque scene'],
+              ['p', 'Water 4–6 taps'],
+              ['p', 'Output'],
+            ],
+          },
+          {
+            name: 'B: plus depth',
+            items: [
+              ['c', 'Lens'],
+              ['p', 'Opaque scene'],
+              ['x', 'copy depth'],
+              ['p', 'Water 6–8 taps'],
+              ['p', 'Output'],
+            ],
+          },
+          {
+            name: 'C: Ultra lite',
+            items: [
+              ['c', 'FFT ×4, query, lens'],
+              ['p', 'Opaque scene'],
+              ['x', 'copy colour'],
+              ['x', 'copy depth'],
+              ['p', 'Water 12–16 taps'],
+              ['p', 'Output'],
+            ],
+          },
+        ];
+        const NS = 'http://www.w3.org/2000/svg',
+          g = document.getElementById('rows');
+        const el = (tag, attrs, text) => {
+          const e = document.createElementNS(NS, tag);
+          for (const k in attrs) e.setAttribute(k, attrs[k]);
+          if (text) e.textContent = text;
+          g.appendChild(e);
+          return e;
+        };
+        ROWS.forEach((row, r) => {
+          const y = 20 + r * 70;
+          el('text', { x: 0, y: y + 26, class: 'lbl' }, row.name);
+          let x = 170;
+          for (const [kind, text] of row.items) {
+            if (kind === 'x') {
+              el('rect', { x, y: y + 4, width: 8, height: 36, rx: 2, class: 'x' });
+              el('text', { x: x + 12, y: y + 26, class: 's' }, text);
+              x += 96;
+            } else {
+              const w = Math.max(84, text.length * 7.4 + 16);
+              el('rect', { x, y: y + 4, width: w, height: 36, rx: 6, class: kind });
+              el('text', { x: x + 8, y: y + 26, class: 't' }, text);
+              x += w + 8;
+            }
+          }
+        });
+
+        // ---------- swatches ----------
+        const SW = [
+          ['Shallow', RAMP.shallow],
+          ['Middle', RAMP.mid],
+          ['Deep', RAMP.deep],
+          ['Fresh sand', '#ddc08c'],
+          ['Fresh grass', '#589351'],
+          ['Fresh timber', '#9b784d'],
+          ['Fresh stone', '#c3b08c'],
+          ['Fresh walls', '#f5f3eb'],
+          ['Fresh roofs', '#ccb789'],
+        ];
+        const host = document.getElementById('swatches');
+        for (const [name, hex] of SW) {
+          const d = document.createElement('div');
+          d.className = 'sw';
+          d.innerHTML = '<div style="background:' + hex + '"></div><span>' + name + '<br><code>' + hex + '</code></span>';
+          host.appendChild(d);
+        }
+      })();
+    </script>
+  </body>
+</html>
