@@ -810,6 +810,16 @@ unused, so existing saves keep their other fields. The notes below are history.
   written, then `wardrobe.grant(id, {wear: false})`, then the show; putting the card away calls `unbox` (worn if the
   slot's empty). The bell rings near the bridge until you have it. `glider()` reads the railway's `glide`, which is false
   in production until glider B (a TODO names it).
+- **Where this stopped (9 November, paused for a Mac restart).** Built and committed on
+  `worktree-agent-af6410c7219d14e16`, rebased on origin/main (#1272); `npm run check` green (595/595, level check
+  with three EARLY findings). Not pushed or shipped. Owed:
+  - the long run, never completed after the firstpull move: `npm run playthrough -- --long --wall 3000 --stall 6000
+    --query shot=play --eval dev/look/evals/railway-job.ts --name f2-long2` (the first, `f2-long`, failed on firstpull's
+    old plinth at `return hook p2: nothing`). Expect `secret found` firstpull no longer, or only by choice, and no stall
+    on t0;
+  - stills: firstpull on t0's east edge, after the move; the balcony's vane and column, the sea stack with its flag
+    and the stack-return slab (with a dev glider grant, their crates); a mid-reveal frame with `--hud` showing a
+    name-only card; the brass whistle beside the station master's whistle on a wearer, to confirm they read apart.
 - **Firstpull** stands on t0's east edge (10.1, 8), not Place's north edge: there its plinth blocked the walk off t0
   back down to p2, and the first long run failed on it (`return hook p2: nothing`).
 - **The reveal** is now shared with the station boxes: `src/render/crate-show.ts` (`createCrateShow`), used by
