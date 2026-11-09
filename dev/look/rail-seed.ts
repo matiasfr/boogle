@@ -4,13 +4,23 @@ import { createStore } from '../../server/src/store.ts';
 import { createRailwayWorldHost } from '../../server/src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-world.ts';
-import { railwayAtQ5, type RailSeedStage } from '../../test/helpers/railway-q2.ts';
-import { worldOf } from '../../test/railway-live.ts';
+import { railwayAtQ2, railwayAtQ5, type RailSeedStage } from '../../test/helpers/railway-q2.ts';
+import { createRailway, railSession, railApply, railTick, worldOf } from '../../test/railway-live.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
-  if (!['q4-done', 'sea-open', 'q5-stocked', 'q5-finishing', 'q5-done'].includes(stage))
+  if (!['awake', 'q1-done', 'q4-done', 'sea-open', 'q5-stocked', 'q5-finishing', 'q5-done'].includes(stage))
     throw new Error(`Unknown railway seed: ${stage}`);
-  const w = railwayAtQ5(stage as RailSeedStage);
+  const w =
+    stage === 'awake'
+      ? { s: createRailway(), t: 40 }
+      : stage === 'q1-done'
+        ? railwayAtQ2()
+        : railwayAtQ5(stage as RailSeedStage);
+  if (stage === 'awake') {
+    railSession(w.s, 'a', 1);
+    railApply(w.s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+    for (let tick = 1; tick <= w.t; tick++) railTick(w.s, tick);
+  }
   const store = createStore({ dataDir, maxRooms: 2 });
   await store.init();
   const host = createRailwayWorldHost({
