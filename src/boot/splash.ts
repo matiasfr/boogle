@@ -6,6 +6,7 @@
 //   splashStage(from, to)          a new step: the decorative bar creeps toward `to` until the next call
 //   splashProgress(f)              how far through the current step (0..1), when a step can tell
 //   splashDone(failed?)             fade out at the existing handoff
+//   splashNote(text | null)        a line of its own in place of the loading steps (./jump-in.ts), null to clear
 //
 // A step that cannot report progress (a single compileAsync, a download) still moves: the bar eases toward `to`
 // and slows as it gets near, so it never sits still and never claims to be done early.
@@ -46,7 +47,19 @@ const warmLabels = ['Warming up the shaders', 'Filling the sea', 'Oiling the tra
 let warming = false;
 let labelSince = -Infinity;
 let labelPhase = '';
+let note: string | null = null;
+/** A line of its own in place of the loading steps (a jump-in's "Setting up …", or why it failed), until cleared. */
+export function splashNote(text: string | null) {
+  note = text;
+  labelSince = -Infinity;
+  statusText();
+}
 function statusText(now = performance.now()) {
+  if (note !== null) {
+    if (label.textContent !== note) label.textContent = note;
+    label.style.visibility = '';
+    return;
+  }
   const has = (name: string) => bootMarks().some((m) => m.name === name);
   let phase = 'graphics';
   let text = 'Waking up the graphics';
