@@ -1,6 +1,16 @@
-# Sickle Isles review rides (dev only)
+# Sickle Isles horizon and review rides
 
-`?greybox=sickle` loads the planning map as a Local, cosmetic blockout. It has no shared edits, saves or lockstep numbers and is excluded from production. The live railway and its tuning are unchanged.
+The live game defaults to a Local, non-walkable horizon from the same map page JSON, parsed by
+`src/sickle/map-data.ts`. One merged vertex-coloured material draws the White Wall, Canopy crown masses,
+clipped Gorge, High Port with its harbour and cranes, Lantern Notch's arch and the mainland coast/city.
+Ring Island and the Original Island retain their existing live meshes. It adds no colliders, railways,
+labels, flags, panels, shared state or per-frame work. The current line-2 production area is unchanged;
+Split-rock Works is a separate job. Existing outdoor fog (180–3600 m) fades the horizon.
+The low-detail silhouette is used on every quality tier: no shadows, textures or individual forest trees.
+The dev greybox replaces this horizon while reviewing, avoiding duplicate islands.
+
+`?greybox=sickle` loads the full planning blockout on the dev server. Its walkable geometry, review tools and rides
+remain excluded from production. It has no shared edits, saves or lockstep numbers. The live railway and its tuning are unchanged.
 
 The map page's `#map-data` owns route points and optional per-point `heights` (metres above sea; null uses the station or terrain deck). Sea decks sit at 4 m except clearance approaches; stations, places and land scale stay fixed. The bay shortcut, bay trestle, first crossing, Bell–Canopy and lantern causeway have a roughly 20° heading change at the last third. The south White Wall route follows the bay side at the chalk's foot. Other links retain their necessary coast and clearance turns.
 
