@@ -1,4 +1,8 @@
 > **Status: building (2026-11-09): the smallest first build, suggestions 1 and 2.**
+>
+> **Owner correction (9 November):** "there shouldn't be a hard rule against words or beacons, just shouldn't over-use
+> them". Words and beacons are allowed sparingly where they are the clearest answer ([decisions](../decisions.md#decided));
+> the "no words" and "no beacon" lines below are now preferences, not rules.
 
 # Works signposting: each strike points at the next thing
 
@@ -95,7 +99,7 @@ changes and the bot's route is untouched.
    quarry little guy carries one log of the 16 from the cut's mouth into the cradle while you watch. It must be a real
    counted log, or nothing (DESIGN.md 11: "What's on screen is true"), so it is a rule change and waits.
 
-**What I would NOT add:** words of any kind (no tag, banner, "Bring logs and stone" blocked line) in the first build;
+**What I would NOT add** (a preference since the owner's 9 November correction: words and beacons are fine sparingly)**:** words of any kind (no tag, banner, "Bring logs and stone" blocked line) in the first build;
 an objective marker, arrow or beacon (removed 3 November); a second plume or whistle (the forge's call means "the
 forge made something, go home", and moving it to the Works would muddle the rhythm three returns have taught); a new
 log source at the Works (an economy call, Open question 3); and gold on anything that isn't waiting for a part, or the
@@ -207,28 +211,38 @@ So the halt doesn't need to show the kiln; it needs to send you 21 m up the roll
    no collider, so no travel or work edge and the bot's route are unchanged. Serves DESIGN.md 11 and 7, and
    progression-flow rule 1 (the next goal can be found) by layout, not a marker. Also tells the footing's story ahead
    of time: what rolls down this road ends at the rack beside you.
-2. **Move the train board off the halt's centre, at every halt**: hang it above the signal arm at the platform's end
+2. **A one-word fingerpost at the platform end, if words are the clearest help** (allowed sparingly since the owner's
+   correction). A plain painted post where the trodden path leaves the platform, its arm pointing up the roller road,
+   reading **"Kiln"** (plain wording for the owner to change). Stands from the throat strike on; stays after the kiln is
+   lit, as a place name, not an instruction. One word at the one place a first-timer is observed to stall; it repeats
+   what the path already says, so it's cheap insurance, not a crutch. Default; build with 1 if the owner wants words
+   now, else hold as the first thing to add after the next session.
+3. **Move the train board off the halt's centre, at every halt**: hang it above the signal arm at the platform's end
    (the arm's post, about 1 m higher than the arm). It stops covering the view along the platform at every halt, keeps
    "the signal and the board say a train is coming" in one place, and costs one position. Alone it doesn't fix the
    kiln (the gold is a few pixels at 66 m and the camp blocks hide the throat at eye height), so it ships with 1.
    Check with a halt still that the post's end isn't itself on the throat line.
-3. **Held back: one gold ghost footing on the halt rack**, from the throat strike until the first real footing lands.
+4. **Held back: one gold ghost footing on the halt rack**, from the throat strike until the first real footing lands.
    It reads at 7 m from the platform, sits beside the broken sample, and the roller road runs from it into the cut, so
    "where do these come from?" walks you to the kiln. It bends the gold grammar (you never put a footing on the rack;
    the kiln does) and adds gold at a sixth site, so only if the next session still shows idling at the halt after the
    throat strike with 1 and 2 in place.
 
-**Not recommended:** larger or brighter seam or rock motes (a beacon, ruled out); smoke or warmth from the cold kiln
+**Not recommended:** a beacon here, though now allowed sparingly: the kiln shows itself 21 m up the road, so a
+beacon would solve a 4-second problem with the Works' only big signal; keep it for a place that can't be framed.
+Larger or brighter seam or rock motes (a beacon by another name); smoke or warmth from the cold kiln
 (smoke means lit: "What's on screen is true"); gold along the roller road (gold on something not waiting for a part);
-any word or tag at the halt; a camera shot on arriving at the halt (shows don't replay, and one per arrival is heavy);
+a sentence or banner at the halt (one place word, candidate 2, is enough); a camera shot on arriving at the halt (shows don't replay, and one per arrival is heavy);
 moving the quarry camp's blocks (a camp, not scenery).
 
 ### Calls
 
 | Call | Kind | Source or recommendation |
 | --- | --- | --- |
-| No beacon, marker or glow at the halt | Decided | decisions.md, 3 November, objective marker removed; this brief's "What I would NOT add" |
-| No words at the halt or kiln | Default (open) | agent-calls, 9 November, works-signposting question 4 |
+| Words and beacons allowed sparingly, not never | Decided | decisions.md, 9 November, owner correction (supersedes this brief's hard rule) |
+| No beacon at the halt; no objective marker | Default / Decided | Beacon: recommended against here (kiln framed 21 m away). Marker: decisions.md, 3 November |
+| A one-word "Kiln" fingerpost at the platform end | Default | Candidate 2; wording the owner's |
+| No words at the kiln itself (no blocked "Needs logs and stone" line) for now | Default (open) | agent-calls, 9 November, question 4; still the pick, now a preference |
 | Gold only on what waits for a part | Default (open) | agent-calls, 9 November, question 1; rules out gold on the road |
 | The trodden path along the roller road, shown once the throat is struck, paler sand, about 1.6 m, view-only | Default | Recommended here; a placement and a colour, cheap to change |
 | The train board moves to above each halt's signal arm | Default | Recommended here; affects every halt, one position |
