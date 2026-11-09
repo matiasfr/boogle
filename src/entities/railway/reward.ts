@@ -98,20 +98,23 @@ export function rewardSeat(
   railY: typeof import('../../proto/place/layout.ts').railY,
   frameOffset: number,
   stationIndex = 0,
+  /** Across the track from the frame: line two's frames have depot racks on their own side. */
+  across = false,
 ) {
   // The same safe-ground choice as Place's handCrate, including its next-frame placement and fallbacks. The last
   // station has no next frame, and its stretch ends out on the pier, so its box stands by its own frame instead
   // (Place's handCrate dropped it in the sea).
   const t1 = line.stations[stationIndex]!,
     next = line.stations[stationIndex + 1] ?? t1;
+  const flip = across ? -1 : 1;
   const at = new THREE.Vector3();
   let placed = false;
-  const nextAt = besideLine(line.line, next.s - line.dir * 1.5, next.side * frameOffset);
+  const nextAt = besideLine(line.line, next.s - line.dir * 1.5, flip * next.side * frameOffset);
   const nextY = H(nextAt.x, nextAt.z);
   // The last one tries the frame's far side first: the stretch before it already took the near side.
   const sides = next === t1 ? [line.dir * 3.4, -line.dir * 3.4] : [-line.dir * 3.4, line.dir * 3.4];
   for (const along of sides) {
-    const q = besideLine(line.line, next.s - line.dir * 1.5 + along, next.side * frameOffset);
+    const q = besideLine(line.line, next.s - line.dir * 1.5 + along, flip * next.side * frameOffset);
     const ground = (x: number, z: number) => Math.abs(H(x, z) - nextY) <= 1;
     if (
       ![0, 3.5].every(
@@ -133,7 +136,7 @@ export function rewardSeat(
       [-6, -3.6],
     ]) {
       const s = t1.to - line.dir * back!;
-      const q = besideLine(line.line, s, t1.side * lat!);
+      const q = besideLine(line.line, s, flip * t1.side * lat!);
       if (Math.abs(H(q.x, q.z) - railY(line.line, s)) > 1.4) continue;
       at.set(q.x, H(q.x, q.z), q.z);
       placed = true;
@@ -141,7 +144,7 @@ export function rewardSeat(
     }
   }
   if (!placed) {
-    const q = besideLine(line.line, t1.to, t1.side * 3.2);
+    const q = besideLine(line.line, t1.to, flip * t1.side * 3.2);
     at.set(q.x, H(q.x, q.z), q.z);
   }
   return at;

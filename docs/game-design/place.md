@@ -704,8 +704,9 @@ ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwaySc
 
 - **Station boxes.** Every stretch whose catalog row hands a crate down leaves one personal box once it's laid: Q2, Q3,
   Q4, Q5 and Q6, as in Place (T1 and T2 are the hat and scarf claims; T3 and Q1 never had one). Their tiers are Place's
-  order: Rare, Common, Rare, Common, Wonder. Each stands by the next stretch's frame on solid ground, by Place's
-  `handCrate` search; Q6's, whose stretch ends on the pier, stands on the far side of its own frame, out of the sea.
+  order: Rare, Common, Rare, Common, Wonder. Each stands on solid ground by the next stretch's frame, by Place's
+  `handCrate` search, but across the track from it: the frame's own side has its depot rack, and a box beside the
+  rack took its "Take" press. Q6's, whose stretch ends on the pier, stands across from its own frame, out of the sea.
   Laid while you watch, it flies down from the machine's flatbed.
 - **Your own roll** (owner question 3; design review finding 6). Each player opens their own box from the same shared
   stretch and rolls their own gift, so friends get different things. The rules are Place's: a Wonder by the third box

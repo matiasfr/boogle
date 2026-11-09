@@ -87,7 +87,9 @@ export async function createStationBoxes(
   };
 
   const boxes = STATION_BOXES.map((spec) => {
-    const at = rewardSeat(LINKS[spec.line]!, besideLine, H, railY, OUT, spec.station);
+    // Line two's boxes stand across the track: the frame's own side has its depot rack, whose Take a box's Open
+    // would otherwise beat (place-retirement C1, as built).
+    const at = rewardSeat(LINKS[spec.line]!, besideLine, H, railY, OUT, spec.station, spec.line === 1);
     const mesh = new THREE.Mesh(crateGeo[spec.tier], material);
     mesh.castShadow = true;
     const beam = new THREE.Mesh(beamGeo, glow[spec.tier].mat);

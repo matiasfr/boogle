@@ -650,11 +650,13 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
   the card's end wears it if its slot is empty and sends `grant`, which uncovers it on the shelf. A reload
   mid-reveal leaves it owned and on the shelf but not worn (Place wore it).
 - **Placement:** `rewardSeat` takes any station index. The last station (Q6, whose stretch ends on the pier) uses its
-  own frame's far side; Place's `handCrate` put that box in the sea.
+  own frame's far side; Place's `handCrate` put that box in the sea. Line two's boxes stand **across the track**
+  (`rewardSeat(…, across)`): beside the frame they sat by its depot rack, and on the long run the Q5 box's "Open the
+  crate" (0.4 m nearer) took the bot's press for "take Q6 depot logs". A player would have hit the same.
 - **The shelf** is `src/entities/town/curio-shelf.ts`, mounted by the town view, which returns it as `shelf`
   (`shelfGroup`, `crystalPeg`) for K1 and F1. Swap ids are Place's `place-swap-<slot>`; the pet slot waits for C2.
-- **The bot does walk into boxes**: Q2–Q4's stand by the depot racks it works, so it opens three on the long route.
-  `dev/look/bots/railway.ts` now puts a station box's card away after 1.6 s, as a player would.
+- **The bot walks round waiting boxes** (`makeBot`'s new `avoid`, 1.4 m, just outside the 1.25 m bump): a box's
+  card stopping it mid-walk by the Q6 frame left it stuck. If it does bump one, it puts the card away after 1.6 s.
 - **Eval:** `railway-town.ts` gained `townat=shelf|crates`, `townact=open|swap|reload`, `townown=`, `townactor=`.
   The reload proof: `--query '…townat=crates&townbox=Q2&townact=open,reload' --until "window.__townReloaded ??
   (import('/dev/look/evals/railway-town.ts'), false)"`.
