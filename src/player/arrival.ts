@@ -5,7 +5,7 @@
 // Local only: everything here is this browser's localStorage, read once at load. Serves DESIGN.md 8 (Designed for
 // drop-in) and 9 (Leave something for the next visitor: a returning player hears what the others did).
 //
-//   isFirstVisit()          no identity saved on this device: show the card
+//   isFirstVisit()          no identity saved on this device, or the world was reset since: show the card
 //   showCard()              the card shows this load: a first visit
 //   lastVisit               { at, room } of the previous visit (ms since 1970), or null; read at load
 //   roomMemory(room)        what the welcome items remembered about `room` at the last visit, or null
@@ -17,6 +17,7 @@
 //   leaveIsland()           the pause view's Leave: out to the menu page (/menu/), where the game isn't running
 //   startFresh()            the pause view's Start fresh: forget this person on this device and fall in as someone new
 
+import { worldWasReset } from '../boot/world-reset.ts';
 import { PROTO } from '../proto/flags.ts';
 
 const NAME = 'boogle.name'; // also written by the lobby (src/player/hud.ts) and the pause view's You editor
@@ -60,7 +61,9 @@ try {
 } catch {
   // no storage: every visit is a first visit
 }
-const first = !saved;
+// The first load after a world reset is a new game too: the fall and the card, pre-filled with the saved name and
+// colour (docs/decisions.md, 2026-11-09). A reload after that is a returning visit again.
+const first = !saved || worldWasReset;
 export const isFirstVisit = () => first;
 export const showCard = () => first || PROTO === 'fall'; // ?proto=fall replays the first visit
 const lastRead = readJson(LAST);
