@@ -17,7 +17,7 @@ import {
   type RailCart,
 } from '../src/sim/railway-cart.ts';
 import { line2CartStatus, line2Served } from '../src/sim/railway-line2.ts';
-import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import {
   createRailway,
   hash,
@@ -34,6 +34,8 @@ import { railwayAtQ2, railwayAtQ4, type World } from './helpers/railway-q2.ts';
 // The played-through worlds are slow to build: build each once, and start every test from a restored copy.
 let q2: World | null = null,
   q4: World | null = null;
+/** Q4's rail bill: what one Q4 trip brings, now that a cart holds more (24, for Q5). */
+const Q4_RAILS = LINE2_STATIONS[3]!.bill[1];
 const atQ2 = (): World => {
   q2 ??= railwayAtQ2();
   return { s: restore(q2.s), t: q2.t };
@@ -118,7 +120,7 @@ test('a load is conserved across a mid-trip snapshot and load, and the restored 
   until(w, () => cart(w).phase === CART_PHASE.RUN && cart(w).rails > 0, 2 * cartCycleTicks(3), 'rails aboard');
   tick(w, 20); // mid-run
   assert.equal(cart(w).phase, CART_PHASE.RUN);
-  assert.equal(cart(w).rails, CART.rails);
+  assert.equal(cart(w).rails, Q4_RAILS);
   assert.equal(rail(w).depotRails, 0, 'the shelf changes only at the unload');
   conserved(w);
   const back = { s: restore(w.s), t: w.t };
@@ -126,7 +128,7 @@ test('a load is conserved across a mid-trip snapshot and load, and the restored 
   until(w, () => cart(w).phase === CART_PHASE.DROP, cartCycleTicks(3), 'unloaded');
   tick(back, w.t - back.t);
   assert.equal(hash(back.s), hash(w.s), 'the restored world reached the same unload');
-  assert.equal(rail(w).depotRails, CART.rails);
+  assert.equal(rail(w).depotRails, Q4_RAILS);
   conserved(w);
 });
 
@@ -152,8 +154,8 @@ test('an empty forge keeps the cart waiting: it leaves only with the rails the s
   assert.equal(line2CartStatus(w.s), 'waiting', 'the tag reads Waiting for forge');
   const waited = until(w, () => cart(w).phase !== CART_PHASE.FORGE, 400, 'the cart left the forge');
   // The forge pours one rail every five ticks; the cart takes each as it lands and waits for the whole bill.
-  assert.ok(waited >= (CART.rails - 1) * 5, `waited ${waited} ticks`);
-  assert.equal(cart(w).rails, CART.rails);
+  assert.ok(waited >= (Q4_RAILS - 1) * 5, `waited ${waited} ticks`);
+  assert.equal(cart(w).rails, Q4_RAILS);
   assert.equal(cart(w).phase, CART_PHASE.RUN);
   conserved(w);
 });
@@ -204,10 +206,20 @@ test('the away credit counts the cart: the load under way lands, whole trips bri
   assert.equal(cart(w).phase, CART_PHASE.REST);
   assert.equal(cart(w).logs + cart(w).rails, 0);
   assert.equal(rail(w).depot, aboard + Math.max(0, LINE2_STATIONS[3]!.bill[0] - aboard));
-  assert.equal(rail(w).depotRails, CART.rails, "the shelf has Q4's rails, moved off the forge rack");
+  assert.equal(rail(w).depotRails, Q4_RAILS, "the shelf has Q4's rails, moved off the forge rack");
   assert.equal(railCounts(w.s).produced, produced + Math.max(0, 16 - aboard));
   conserved(w);
   const again = hash(w.s);
   railResume(w.s, 0, 51, w.t, 10 * cartCycleTicks(3));
   assert.equal(hash(w.s), again, 'once per marker');
+});
+
+test("one cart load of rails fills from one full forge rack and covers Q5's rail bill", () => {
+  assert.ok(CART.rails <= LINE2_FORGE.rackMax, 'a full rack fills a cart');
+  assert.ok(CART.rails >= LINE2_STATIONS[4]!.bill[1], "one shipment brings Q5's whole rail bill");
+  // A Q4 cart still takes only what Q4 is owed.
+  const w = atQ4();
+  until(w, () => cart(w).phase === CART_PHASE.RUN && cart(w).rails > 0, 2 * cartCycleTicks(3), 'rails aboard');
+  assert.equal(cart(w).rails, Q4_RAILS);
+  conserved(w);
 });

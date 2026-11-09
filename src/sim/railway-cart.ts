@@ -17,9 +17,10 @@ import { LINE2_STATIONS } from './railway-line2-layout.ts';
 export const CART = {
   speed: 90,
   accel: 3,
-  /** Logs minted onto it at the camp per trip (Place CART.load) and rails it holds from the forge rack. */
+  /** Logs minted onto it at the camp per trip (Place CART.load) and rails it holds from the forge rack: the cart holds
+   * 24 rails, one full forge rack, so one shipment covers Q5 (docs/reviews/home-flow.md, finding 1). */
   load: 24,
-  rails: 16,
+  rails: 24,
   loadTicks: 30,
   /** At the forge stop: with rails aboard it leaves after `leaveTicks`; called there, it waits `forgeTicks` to board. */
   leaveTicks: 30,
