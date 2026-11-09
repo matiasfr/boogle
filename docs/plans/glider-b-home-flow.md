@@ -482,7 +482,7 @@ All looks are opened and looked at. Report what each one shows.
 10. **Performance:** `npm run perf -- --render` before (on `origin/main`) and after. Report draw calls and triangles.
     Expect at most six more draws with the summit in view and none elsewhere. No tick work is added beyond one system.
 11. **The long production playthrough to the pier**, once, as the last pass: `npm run playthrough -- --long --stall
-    6000`.
+    6000`. _(Done 9 November: `gb-long2` passed; numbers in "As built".)_
     - Must pass with the new checkpoints in order: `pack` (before `Q1 funded`), `sea gate` (on the first climb, after
       `needle bell summit`), `Q5 laid`, `glider taken`, `glided home`, `boiler` … `pier`, plus J5's if rebased.
     - Report the Q5 rim wait (it was 216 s server time; expect 80–125 s, about 66 s of outbound cart plus what's left
@@ -505,7 +505,8 @@ All looks are opened and looked at. Report what each one shows.
 6. `npm run check:full` (including `npm run test:net`) and `npm run checks-for -- --run` pass. The perf delta is
    reported.
 7. The branch is rebased per "Rebasing onto J5", and exactly one `WORLD_NS` bump is in the shipped batch.
-8. The long playthrough to the pier passes on the rebased branch.
+8. The long playthrough to the pier passes on the rebased branch. _(Done 9 November: `gb-long2`, see "As built",
+   Proof 11.)_
 9. The records are written: place.md, agent-calls, this plan and the orchestrator state.
 10. `npm run playtest` shows no live owner session, then `npm run ship`. Report only what was verified, with "Not tested
     on a device".
@@ -611,6 +612,24 @@ looked at. Not tested on a device.
   from the plan's angle; the cart crosses the gorge bridge with a deep stack of rails aboard, `cart.rails` 24, no logs.
 - **Proof 9, restore** (`.look/glide-restore-still.png`, `glide-earned`): owned within 2 s, the folded roll on Buddy's
   back, the device dark and taken (no vane, mast or lights), no card.
+- **Proof 11, the long playthrough** (`.look/playthrough/gb-long2/`, rebased on `origin/main` at `c481d37f`, WORLD_NS
+  v22 → v23, run at a 1-minute load of about 26 after the machine's restart): verdict `pass`, "everything it expected
+  came", 0 errors. Checkpoints in order: `pack` (15:26) before `Q1 funded` (17:05); `needle bell summit` (26:04), then
+  `sea gate` (26:05) on the first climb; `Q4 laid`, `Q5 funded`, `Q5 laid` (1:04:01), `Far Head`, `glider taken`
+  (1:06:42), `glided home` (1:07:11), `boiler`, `TRAINS`, `Q6 laid`, `pier` (1:20:32), then J5's `breaker`, `stall
+  open`, `throat open`, `kiln lit`, `first footing`, `stall built`, `cradle fitted`, `table turned`, `wagon coupled`,
+  `footings at the pier`, `crossing footed` (2:41:12). Times are the warped game clock unless named.
+  - The Q5 rim wait (Q4 laid → Q5 funded): ticks 3776 → 4743, **96.7 s of server time** (was 216 s; expected 80–125
+    s). It is 12 min 31 s on the warped clock, and the bot stands still for most of it at the Q5 frame.
+  - The glide segment: `glider taken` → `glided home`, **29.5 game-seconds** (26.5 s from the canopy opening to the
+    landing at the forge, 923, 5).
+  - The total: **80.5 game-minutes to the pier** against `x1-long`'s 118 (161 game-minutes to J5's `crossing footed`;
+    27 min of wall clock).
+- **Review fixes (9 November, after Proof 11):** the adapter's `holds` now covers `rail.glide`, so a take lost to a
+  friend within one round trip settles as a noop with no correction and the reward plays once (the replicate test races
+  it, failing before the fix); the late joiner sees the glider taken; host tests cover the device's reach edges and all
+  eight glide tunables from a proto room's controller; the forge plume no longer draws at NaN scale with no body. None
+  of these touch the route, its rules or the bot, so the long run was not repeated.
 
 ## Design review (designer, 2026-11-09)
 
