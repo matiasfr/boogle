@@ -5,6 +5,7 @@ import path from 'node:path';
 import type { Browser } from 'playwright';
 import { Game, enterGame, launch, startStack, sleep, reportGfxErrors, type Stack } from './lib.ts';
 import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
+import { finishRun } from './verdict.ts';
 import { IGNORE_TEXT, installObserver, WATCH_MARKS, type Observed } from './observe.ts';
 import { SKIP_DRAWS } from './warp.ts';
 import { parseSession, type Session } from '../playtest/read.ts';
@@ -361,20 +362,13 @@ export async function coopPlaythrough(options: {
     await browser?.close();
     await stack?.close();
   }
-  fs.writeFileSync(
-    path.join(dir, 'verdict.json'),
-    JSON.stringify(
-      {
-        verdict: errors.some((e) => e.includes('TIMEOUT:')) ? 'timeout' : errors.length || !done ? 'failure' : 'pass',
-        from: selection.from,
-        to: selection.to,
-        wall: (Date.now() - start) / 1000,
-        errors,
-      },
-      null,
-      2,
-    ),
-  );
+  finishRun({
+    verdict: errors.some((e) => e.includes('TIMEOUT:')) ? 'timeout' : errors.length || !done ? 'failure' : 'pass',
+    from: selection.from,
+    to: selection.to,
+    wall: (Date.now() - start) / 1000,
+    errors,
+  });
   if (selection.regenerate && done && !errors.length) {
     paired.forEach(requireCheckpoints); // validate both peers before replacing either fixture set
     for (const [i, saves] of paired.entries()) writeCheckpoints(saves, fixtureDir, params.toString(), i);

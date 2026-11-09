@@ -34,11 +34,38 @@ Read `report.txt`, `verdict.json` and the images even on failure. The full produ
 `--from at-cove|t1-done|t2-funded|pier-ending` and `--regenerate`, until D1 deletes it; no routed check uses it.
 
 All harness browser launches share the machine queue at `/tmp/boogle-bots-<uid>` (across worktrees). Short runs go ahead of waiting `--long` playthroughs until a long one has waited 20 minutes (`BOOGLE_BOT_YIELD_MS`); a running job is never interrupted.
-Default capacity is 1; set `BOOGLE_BOT_CONCURRENCY` on launchers to raise it. Use the same setting everywhere;
-mixed settings take the smaller active limit. `BOOGLE_BOT_QUEUE_DIR` may select a shared path, never a per-worktree path.
+Light runs share the machine: a plain `npm run look` still (no `--video`, `--curves`, `--real`, `--players 2` or
+`--long`) may run beside one other light run (`BOOGLE_BOT_CONCURRENCY`, default 2; 1 restores one run at a time).
+Everything else is exclusive: every playthrough, scenario, net test, perf and bench, and any look that measures time or
+motion. An exclusive run starts only once the running light ones finish and nobody is ahead of it, and no light run
+starts beside it or past it, except past a waiting `--long` run inside its 20-minute yield. A verdict taken while
+another run held a slot says `shared: true`. Use the same setting everywhere; mixed settings take the smaller active
+limit, and a ticket from an older checkout turns the whole queue back to first come, first served (it runs alone).
+`BOOGLE_BOT_RANK=1|2|3` (default 2) is the work's P rank: among waiting runs of the same length, the lower rank goes
+first, then first come, first served. A run that has waited 30 minutes (`BOOGLE_BOT_RANK_WAIT_MS`) counts as P1, so a
+P3 is never stuck behind later arrivals. Tickets carry `rank`, `light` and `shared` for `npm run heartbeat`. `BOOGLE_BOT_QUEUE_DIR` may select a shared path, never a per-worktree path.
 The queue names the blocking job; a dead PID's unique ticket is reclaimed. Broker deadlines and co-op clock samples start
 after acquisition, and the slot lasts until browser/child cleanup. A timeout with a final observed expected beat can pass
 with a note; missing beats, health errors and co-op convergence/clock failures still fail. Timeouts are reported separately.
+
+The queue also waits for the machine: a free slot is not granted while the 1-minute load average is above
+`BOOGLE_BOT_MAX_LOAD` (default 30; `0` turns the gate off), and queue progress says so ("waiting for load 41 → 30").
+After `BOOGLE_BOT_LOAD_WAIT_MS` (default 20 minutes) at the front of the queue the run goes ahead and is marked under
+load. The gate is on acquisition only: a running job's own load never stops it, and the load wait comes before the
+browser budget and co-op clock samples start. So don't poll `uptime` or wait for the load yourself: enqueue the run and
+end your turn, naming the queued run.
+
+Every playthrough, look and scenario writes a verdict (`.look/playthrough/<name>/verdict.json`,
+`<out>/<label>-verdict.json` for look, `.look/scenarios/verdict.json`) through `dev/look/verdict.ts`. It reads
+`"running"` with the pid and start time from the start: a `running` verdict whose pid is gone did not finish, which is
+not a pass. The final verdict is stamped with `commit` (HEAD), `tree` (HEAD^{tree}), `dirty` (uncommitted file count),
+`loadAtStart`, `loadAtEnd`, `underLoad`, `queueWaitMs`, `startedAt`, `endedAt` and `command` (the exact command line,
+with any `BOOGLE_BOT_*`, `BOOGLE_QUERY` and `LOOK_*` settings), and the same in one line of `report.txt`. `underLoad`
+is true when either load is above the limit (30 when the gate is off) or the gate gave up waiting; a pass under load
+says "passed under load: not evidence of timing or feel". A run stopped from outside (SIGTERM, SIGINT or SIGHUP, or its
+browser, context or page closed under it) is `"killed"` with a `reason` (and the `outcome` its caller saw), exit code 3;
+a game failure stays a failure, exit 1. Rerun a killed run; it says nothing about the game. A brokered harness stamps
+the broker's queue wait only once the launcher checkout has this queue.
 
 The trusted broker and its Node harness come from the launcher checkout. Worker edits do not upgrade that process.
 New flags and queue-aware deadlines require review and a launcher restart. A rejected flag is a verification blocker,

@@ -32,6 +32,7 @@ import { writeRailSeed } from './rail-seed.ts';
 import { railCoopPlaythrough } from './rail-coop.ts';
 import { checkpointDirectory, readCheckpoint, ROUTE_SEED, POSE_AT, writeCheckpoints } from './saves.ts';
 import { expectedRestore, pairRestores, READ_RESTORED } from './restore-pair.ts';
+import { finishRun, runOpen, startRun } from './verdict.ts';
 
 const SIZE = [1180, 820];
 const LEGACY_ROOM = 'proto-place'; // a legacy Place save belongs to its room
@@ -283,6 +284,7 @@ async function main() {
   }
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(path.join(dir, 'saves'), { recursive: true });
+  startRun(path.join(dir, 'verdict.json'), { checkout, report: path.join(dir, 'report.txt') });
 
   if (players === 2 && legacy) return coopPlaythrough({ args, checkout, dir, query, stallS, report });
   if (players === 2) {
@@ -430,21 +432,14 @@ async function main() {
     fs.symlinkSync(name, latest);
     const missed = botLog.some((l) => /NEVER:/.test(l));
     const verdict = health.length ? 'health-failure' : missed ? 'beat-failure' : w.done ? 'pass' : w.reason;
-    fs.writeFileSync(
-      path.join(dir, 'verdict.json'),
-      JSON.stringify(
-        {
-          verdict,
-          from: segment?.from ?? rail?.from,
-          to: segment?.to ?? rail?.to,
-          wall: w.wall,
-          game: w.game,
-          timeoutAfterBeat: w.timeoutAfterBeat,
-        },
-        null,
-        2,
-      ),
-    );
+    finishRun({
+      verdict,
+      from: segment?.from ?? rail?.from,
+      to: segment?.to ?? rail?.to,
+      wall: w.wall,
+      game: w.game,
+      timeoutAfterBeat: w.timeoutAfterBeat,
+    });
     if (verdict !== 'pass') process.exitCode = 1;
     if (segment?.regenerate && verdict === 'pass') writeCheckpoints(observed.saves, fixtureDir, query);
   } catch (error) {
@@ -454,8 +449,8 @@ async function main() {
       to: segment?.to ?? rail?.to,
       error: String(error),
     };
-    fs.writeFileSync(path.join(dir, 'verdict.json'), JSON.stringify(failure, null, 2));
     fs.appendFileSync(path.join(dir, 'report.txt'), `\nFAIL: ${String(error)}\n`);
+    finishRun(failure);
     throw error;
   } finally {
     await browser?.close().catch(() => {});
@@ -465,6 +460,7 @@ async function main() {
 
 await main().catch((e) => {
   console.error(e);
+  if (runOpen()) finishRun({ verdict: 'failure', error: String(e) });
   process.exitCode = 1;
 });
 process.exit(process.exitCode || 0);

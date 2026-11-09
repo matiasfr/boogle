@@ -8,6 +8,7 @@ import { stripTypeScriptTypes } from 'node:module';
 import type { Browser } from 'playwright';
 import { Game, launch, startStack, sleep, reportGfxErrors, type Stack } from './lib.ts';
 import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
+import { finishRun } from './verdict.ts';
 
 type Progress = { done: boolean; now: number };
 
@@ -150,9 +151,6 @@ export async function railCoopPlaythrough(options: {
     await stack?.close();
   }
   const verdict = errors.some((e) => e.includes('TIMEOUT:')) ? 'timeout' : errors.length || !done ? 'failure' : 'pass';
-  fs.writeFileSync(
-    path.join(dir, 'verdict.json'),
-    JSON.stringify({ verdict, to, wall: (Date.now() - start) / 1000, errors }, null, 2),
-  );
+  finishRun({ verdict, to, wall: (Date.now() - start) / 1000, errors });
   if (verdict !== 'pass') process.exitCode = 1;
 }
