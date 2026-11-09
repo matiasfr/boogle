@@ -25,4 +25,4 @@ export function delivered(kind: Goods) {
   earn(PAY[kind], kind);
 }
 /** "$1,250", the way the HUD writes it. */
-export const dollars = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
+export { dollars } from './signs.ts';

@@ -5,6 +5,8 @@ import type { OwnedView } from '../../render/owned-view.ts';
 
 // ---------------------------------------------------------------- boards you can read
 /** Physical painted paper takes scene light and shadows, without inverse gain or an emissive floor. */
+/** Money as the town writes it: "$1,500". */
+export const dollars = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
 export function paperMaterial(map: THREE.CanvasTexture) {
   return new THREE.MeshStandardNodeMaterial({ map, roughness: 1, metalness: 0 });
 }

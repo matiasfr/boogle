@@ -4,14 +4,18 @@
 // museum rise when the first path opens, so you've got money to be priced out of and something to see in miniature when you walk
 // home across your bridge. They read shared state, so two people see the same buildings; everything else indoors is Local.
 import { camConstraints } from '../../player/player.ts';
+import { registerInteractable } from '../../player/hands.ts';
+import { placeWardrobe } from './gifts.ts';
+import { youGot } from './got.ts';
 import { hasFact } from './growth.ts';
 import { createHouse } from './house.ts';
 import { L1 } from './lines.ts';
 import { updateMuseum } from './museum.ts';
-import { guys, resetResidents, updateResidents } from './residents.ts';
+import { guys, resetResidents, residentSay, updateResidents } from './residents.ts';
 import {
   indoorCamera,
   indoors,
+  placeRooms,
   placeRoomsOwner,
   roomEnv,
   rooms,
@@ -19,7 +23,8 @@ import {
   updateRooms,
   warmRooms,
 } from './place-rooms.ts';
-import { listPrice, updateShop } from './shop.ts';
+import { money } from './score.ts';
+import { createShop } from './shop.ts';
 import { updateTalkCard, talking } from './talk.ts';
 import { BOARDS } from './town-lines.ts';
 
@@ -30,6 +35,9 @@ stakeBoard(rooms.museum, BOARDS.museumPlot);
 camConstraints.splice(camConstraints.indexOf(indoorCamera), 1);
 camConstraints.push(indoorCamera);
 const house = createHouse(placeRoomsOwner, rooms.house, { has: hasFact });
+const shop = createShop(placeRoomsOwner, placeRooms, { has: hasFact, money, youGot }, placeWardrobe, residentSay);
+registerInteractable(shop.targets);
+const { listPrice } = shop;
 let warmed = false;
 export function updateTownLife(dt: number) {
   if (!warmed) {
@@ -38,7 +46,7 @@ export function updateTownLife(dt: number) {
   }
   updateRooms(dt);
   house.update();
-  updateShop();
+  shop.update();
   updateMuseum(dt);
   updateResidents(dt);
   updateTalkCard();
