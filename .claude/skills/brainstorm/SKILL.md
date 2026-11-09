@@ -1,51 +1,40 @@
 ---
 name: brainstorm
-description: Flesh out a seeded feature idea before it is built. Three Codex panelists (play designer, systems architect, creative director) work it independently, read each other, and Claude synthesizes one brief with suggestions and at most five open questions for the owner; the approved brief goes straight to implementation. Use when the owner seeds an idea to explore, says /brainstorm, or asks to flesh out, amplify or pressure-test a feature idea.
-argument-hint: '<name> <the idea>'
+description: Flesh out a seeded feature idea before it is built. By default one agent looks at it through three lenses (play designer, systems architect, creative director) in a single pass and writes one short brief with suggestions and at most five open questions; `--panel` runs the full three-panelist, two-round version for a big new area or mechanic. The brief goes straight to building on its recommended answers. Use when the owner seeds an idea to explore, says /brainstorm, or asks to flesh out, amplify or pressure-test a feature idea.
+argument-hint: '<name> [--panel] <the idea>'
 ---
 
 Brainstorm `$0`. Seed: $ARGUMENTS
 
-You are the director: Codex runs the panel, you write the synthesis and make no design decisions the owner hasn't.
-In normal mode (Claude only; `npm run models`) run the panelists as Claude subagents with the same role files and briefs. If
-Codex hits a usage limit in withCodex mode, stop and tell the owner.
+You are the director: you write the brief and make no design decisions the owner hasn't. Models come from
+`npm run models` (the brainstorm row). Owner, 9 November: lighter by default, and nothing waits for a playtest.
 
 1. **Seed.** If the seed names a parked line in `docs/ideas.md`, use the owner's words from it. Add only facts the
    panel can't find itself (a playtest moment, a reference game the owner named). Don't pre-answer the idea.
-2. **Round 1, independent.** Start all three in the background (Bash `run_in_background: true`), same brief:
-
-   ```sh
-   node dev/codex/run.ts brainstorm $0-design --role design "<seed>"
-   node dev/codex/run.ts brainstorm $0-systems --role systems "<seed>"
-   node dev/codex/run.ts brainstorm $0-creative --role creative "<seed>"
-   ```
-
-   Roles are in `roles/`. Each job reads this checkout read-only with live web search; its contribution is
-   `.look/codex/<topic>/report.md`.
-3. **Round 2, cross-read.** When all three finish, resume each with the other two reports' paths:
-   `node dev/codex/run.ts resume $0-design "Round 2. Read .look/codex/$0-systems/report.md and .look/codex/$0-creative/report.md."`
-   (and the same for the other two). This round is where the angles build on each other.
-4. **Synthesize.** Read all six reports, run `npm run inflight` for branches touching the same files, then run the
-   game-direction skill's fit and ordering check (decision index, rejected ideas, current gate, "Stop at the owner's
-   playtest"). Write `docs/brainstorms/$0.md` for an owner who reads it in a couple of minutes, starting with
+2. **Light (default): one pass.** One agent (the brainstorm row's model) reads the three role files in `roles/`
+   (design, systems, creative) and the docs they name, then writes each lens's three strongest ideas and the tensions
+   between them, in one report.
+   **Panel (`--panel`, for a new area or a big new mechanic):** three panelists, one per role file, run independently
+   in the background; when all three finish, each reads the other two reports and revises once. In withCodex mode
+   they are `node dev/codex/run.ts brainstorm $0-<role> --role <role> "<seed>"` jobs (resume each for the second round);
+   in normal mode, Claude subagents given the same role files and seed. At a usage limit, stop and tell the owner.
+3. **Write the brief.** Run `npm run inflight` for branches touching the same files and the game-direction skill's fit
+   and ordering check. Write `docs/brainstorms/$0.md` for an owner who reads it in two minutes, starting with
    `> **Status: proposed (YYYY-MM-DD).**`, then:
-   - **Pitch**: the amplified idea in a short paragraph, and the DESIGN.md principle it serves (one it bends is a question).
-   - **Gut question**: the one feeling a playtest answers, and 2–3 variants that differ in one thing.
-   - **Best suggestions**: the panel's strongest, ranked, each tagged with its lens and one line on why.
-   - **Tensions**: where the panelists disagree, with your recommendation.
+   - **Pitch**: the idea in a short paragraph, and the DESIGN.md principle it serves (one it bends is a question).
+   - **Gut question**: the one feeling a playtest answers.
+   - **Best suggestions**: the strongest, ranked, each tagged with its lens and one line on why. Note real tensions
+     with your recommendation.
    - **Shape**: sync kind, the code it reuses, the smallest first build, and its risks, in a few lines.
-   - **Done means**: the moments the builder captures with `look` (each with its `?proto=` spawn or `--eval` setup)
-     and what should be visible or measurable there. Whether it's fun stays the playtest's question.
-   - **Open questions**: at most five (owner-calls, "Call-first playtest feedback"), each with a recommended answer
-     first and a free field (`Answer: ___`). Recommendations aren't owner answers.
-   - **Parked**: good ideas for later (polish after a "yes", follow-on features), one line each.
-   - **Disposition**: from game-direction (proceed, prerequisite first, bounded experiment, defer, owner decision).
-5. **Show the owner.** Give the pitch, the gut question, the top three suggestions and the open questions in chat,
-   with the file path. Stop and wait.
-6. **Build.** Record the owner's answers in the brief, set its status to `approved (owner, YYYY-MM-DD)`, and commit it
-   ("Brainstorm: <name>"). The brief is the build spec: hand it to a Codex `task` citing `docs/brainstorms/$0.md` (the
-   codex skill); no separate plan unless the owner asks for one. The builder checks its own captures against Done
-   means (docs/agents/verification.md); the review tiers in docs/agents/shipping.md still apply. Parked items the
-   owner wants kept go to `docs/ideas.md`. Remove the panel's `.look/codex/$0-*` folders once the brief is committed.
-7. **Track it.** Move the brief's status as the work moves: `building` when the task starts, `ready to playtest`
-   when it ships, `answered` with the owner's verdict after the playtest.
+   - **Done means**: the moments the builder captures with `look` (each with its spawn or `--eval` setup) and what
+     should be visible or measurable there.
+   - **Open questions**: at most five, each with a recommended answer first and a free field (`Answer: ___`).
+   - **Parked**: good ideas for later, one line each.
+4. **Show the owner, then build.** Give the pitch, the top three suggestions and the open questions in chat, with the
+   file path. Don't wait: the brief builds on its recommended answers, each logged in `docs/agent-calls.md` (owner,
+   9 November); only direction, unapproved scope or something irreversible waits for the owner. Commit the brief ("Brainstorm: <name>"), have the designer agent review it, and hand it to the implementer
+   (or a Codex `task` in withCodex mode) citing `docs/brainstorms/$0.md`. Record the owner's answers in the brief
+   whenever they come, and adjust what was built. Parked items the owner wants kept go to `docs/ideas.md`. Remove any
+   `.look/codex/$0-*` folders once the brief is committed.
+5. **Track it.** Status `building` when the build starts, `live` when it ships, `answered` with the owner's verdict
+   after they play it.
