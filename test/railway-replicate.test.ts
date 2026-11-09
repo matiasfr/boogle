@@ -191,7 +191,11 @@ test('a random multi-player action stream replicates exactly, live and to a late
                         ? { op: 'rail.depotTake' }
                         : roll < 0.97
                           ? { op: 'rail.rackTake', kind: int(2) }
-                          : { op: ['rail.axe', 'rail.beamChop', 'rail.lever', 'rail.hook', 'rail.jump'][int(5)]! };
+                          : {
+                              op: ['rail.axe', 'rail.beamChop', 'rail.lever', 'rail.hook', 'rail.jump', 'rail.glide'][
+                                int(6)
+                              ]!,
+                            };
     if (act(pid, fields).status === 'accepted') accepted++;
     // Rule ticks (and the steps between them) at random; a supply pulse now and then.
     if (rng() < 0.3) r.sync.stepWorld(int(4) * 50 + 17);

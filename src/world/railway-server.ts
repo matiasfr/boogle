@@ -34,6 +34,7 @@ import {
   LINE2_DEPOT,
   LINE2_LEVER,
   LINE2_SEA,
+  LINE2_GLIDE,
   LINE2_HOOK,
   LINE2_PACK,
   LINE2_BOILER,
@@ -126,6 +127,7 @@ export const RAIL_ACTIONS = new Set([
   'rail.lever',
   'rail.seaSwitch',
   'rail.hook',
+  'rail.glide',
   'rail.depotRailTake',
   'rail.pack',
   'rail.cartCall',
@@ -241,6 +243,9 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
       return height(LINE2_SEA.y) && near(LINE2_SEA.x, LINE2_SEA.z, 320);
     case 'rail.hook':
       return height(LINE2_HOOK.y) && near(LINE2_HOOK.x, LINE2_HOOK.z, 320);
+    case 'rail.glide':
+      // Readiness (Q5 laid, not yet taken) is the rule's; here only the summit device's reach.
+      return height(LINE2_GLIDE.y) && near(LINE2_GLIDE.x, LINE2_GLIDE.z, 320);
     case 'rail.breaker':
       return at(WORKS_BREAKER);
     case 'rail.strike':

@@ -47,6 +47,8 @@ export type RailLine2 = {
   lever: boolean;
   sea: boolean;
   hook: boolean;
+  /** The room has the glider (piece B): taken on Needle Bell's summit once Q5 is laid; never before. */
+  glide: boolean;
   /** The pack is open: everyone's back carries LINE2_PACK.carry. */
   pack: boolean;
   /** Rails on the shelf by a `shelf` stretch's rack, moved there from the forge rack (never minted). */
@@ -232,6 +234,7 @@ export function validateRailLine2(s: Railway) {
     throw new Error('railway: cart');
   if (l.lever && line2Completed(s) < 3) throw new Error('railway: lever before Q3');
   if (l.hook && line2Completed(s) < 2) throw new Error('railway: hook before Q2');
+  if (l.glide && line2Completed(s) < 5) throw new Error('railway: glide before Q5');
   if (l.pack && f.used < FORGE.bills[0]) throw new Error('railway: pack before the forge bill');
   // The shelf holds rails only for the active, unfunded `shelf` stretch (funding sends what is left back to the forge
   // rack), and never more than its rail bill.

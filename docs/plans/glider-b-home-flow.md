@@ -302,7 +302,9 @@ Branch `claude/glider-b-home-flow` from `origin/main`. Each step leaves `npm run
     cart still takes only 16.
   - Verify: `node --test test/railway-line2.test.ts test/railway-cart.test.ts test/railway-away.test.ts`, then `npm
     run check`.
-- [ ] **2. `Rail.glide` and `rail.glide`, with the bump.**
+- [x] **2. `Rail.glide` and `rail.glide`, with the bump.** _(Built as planned; order 40 was free. The host test uses
+  `pidOf: (sid) => sid` so the second session is a second player, and also refuses a take from the sea switch handle
+  4.5 m off. The malformed-document case is in both the forge-stage list and the new glider test at `q4-done`.)_
   - In `src/sim/`:
     - `railway-world.ts`: the field, `railwayView` and `refreshRailway`.
     - `railway-line2.ts`: the `glide` type and the invariant.

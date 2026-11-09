@@ -255,6 +255,7 @@ test('malformed line-two documents fail atomically', () => {
   const cases: [string, (j: Snap) => void][] = [
     ['lever before Q3', (j) => (col(j, Rail, 'lever')[0] = 1)],
     ['hook before Q2', (j) => (col(j, Rail, 'hook')[0] = 1)],
+    ['glide before Q5', (j) => (col(j, Rail, 'glide')[0] = 1)],
     ['minted rail', (j) => (col(j, Forge, 'rack')[0] = w.s.line2!.forge.rack + 1)],
     ['unlit pour', (j) => (col(j, Forge, 'lit')[0] = -1)],
     [
@@ -628,4 +629,28 @@ test("the away credit runs Q4's cart too: shelf rails come off the poured rack, 
   assert.equal(hashOf(w.s), hash, 'once per marker');
   restore(w);
   assert.equal(railwayInvariant(w.s), null);
+});
+
+test('the glider: sealed until Q5, one shared take after, kept through load; it opens no Works step early', () => {
+  const w = railwayAtQ5('q5-finishing');
+  assert.equal(act(w, 'a', 'rail.glide'), 0, 'sealed while Q5 is still laying');
+  assert.equal(w.s.line2!.glide, false);
+  finishQ(w, 4);
+  assert.equal(line2Completed(w.s), 5);
+  assert.equal(act(w, 'a', 'rail.glide'), 1);
+  assert.equal(act(w, 'b', 'rail.glide'), 0, 'one shared take: a second is a noop');
+  assert.equal(w.s.line2!.glide, true);
+  restore(w);
+  assert.equal(w.s.line2!.glide, true, 'kept through load');
+  // Reaching places early is fine; funding or opening a Works step early is not (route-contract rec 1).
+  for (const id of [0, 1]) assert.equal(act(w, 'a', 'rail.strike', { id }), 0, `seam ${id}`);
+  assert.equal(act(w, 'a', 'rail.kiln'), 0);
+  assert.equal(act(w, 'a', 'rail.footTake', { rack: 0 }), 0);
+  // A document with the glider before Q5 is refused whole.
+  const early = railwayAtQ5('q4-done');
+  const hash = hashOf(early.s);
+  const snap = worldOf(early.s).snapshot();
+  snap.c[Rail.kind]![1 + Rail.names.indexOf('glide')]![0] = 1;
+  assert.throws(() => worldOf(early.s).load(snap, railwayCheck), /railway: glide before Q5/);
+  assert.equal(hashOf(early.s), hash);
 });

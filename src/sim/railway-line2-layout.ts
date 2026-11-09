@@ -129,6 +129,9 @@ export const LINE2_LEVER = { x: 109740, z: 4220, y: 2620 } as const;
 export const LINE2_HOOK = { x: 99954, z: 2086, y: 2350 } as const;
 /** Place tech-layout.ts SEA_SWITCH, on Needle Bell's summit deck. */
 export const LINE2_SEA = { x: 101180, z: -600, y: 10240 } as const;
+/** The glider device on the same deck (glider piece B), 4.5 m from the switch handle and clear of the top rock drum: Q5
+ * wakes it and `rail.glide` takes it (docs/plans/glider-b-home-flow.md). */
+export const LINE2_GLIDE = { x: 101600, z: -450, y: 10240 } as const;
 /** Readiness from accepted completions only: Q2 builds the hook walkway, Q3 the quarry ramp and winch drive. */
 export const line2Routes = (completed: number) => ({ hook: completed >= 2, quarry: completed >= 3 });
 /** Integer-centimetre rail-pair boundaries for a line-two stretch: each stock rail lays as its rail pairs. */
