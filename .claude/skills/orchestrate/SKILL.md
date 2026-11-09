@@ -39,7 +39,7 @@ Use the [codex skill](../codex/SKILL.md) and `node dev/codex/run.ts`, each job w
 - Read the output every time. `CODE CONFLICT` means nothing shipped: send it back to rebase. If a ship stalls, look at its pull request: a cancelled check usually needs `gh run rerun <id> --failed`, and a conflict needs a fresh ship. Confirm with `git fetch` that main has the commits before saying something merged.
 - Hold every merge while the owner is playing, since main deploys to boogle.club.
 - Owner call "Simplify in batches": after every few code merges, or once a working day, run the `/simplify` skill over the merged range (`git diff <last-pass>..origin/main`) in a fresh worktree, ship the cleanup, and record the pass's end commit in the state file.
-- Mark a merged branch's brief or tracker item, and remove finished worktrees only with the owner's yes.
+- Mark a merged branch's brief or tracker item. Remove worktrees whose branches are fully merged into origin/main and have no local changes (owner, 7 November) with `git worktree remove` (no force) and `git branch -d`; keep any with unmerged commits, leave worktrees locked by a live agent, and never touch the daily-job checkouts or `~/Developer/THAT FRANCO CODE`.
 
 ## 5. Playtest cycle
 
