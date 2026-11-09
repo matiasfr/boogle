@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { alive } from './session.ts';
+import { activeMode, codexInNormal } from '../models.ts';
 
 type Job = {
   mode: string;
@@ -19,6 +20,12 @@ const max = maxIndex < 0 ? 5 : Number(args[maxIndex + 1]);
 if (!file || !Number.isInteger(max) || max < 1 || max > 8 || args.length !== (maxIndex < 0 ? 0 : 2))
   throw new Error('Usage: npm run queue -- <file.json> [--max 1..8]');
 const jobs: Job[] = JSON.parse(fs.readFileSync(file, 'utf8'));
+if (activeMode() === 'normal' && jobs.some((job) => !codexInNormal.includes(job.mode))) {
+  console.error(
+    'Normal mode is Claude only (dev/models.ts): Codex queues are off. Run `npm run models` for the Claude route.',
+  );
+  process.exit(2);
+}
 if (!Array.isArray(jobs) || !jobs.length) throw new Error('Queue must be a nonempty array');
 const entries: Entry[] = jobs.map((job) => {
   if (

@@ -22,6 +22,7 @@ import path from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { git, snapshot } from './source.ts';
 import { handoff } from './evidence.ts';
+import { activeMode, codexDefault, codexInNormal } from '../models.ts';
 import {
   archiveTurn,
   launchJob,
@@ -118,7 +119,13 @@ const metaFile = path.join(logs, 'meta.json');
 const previous: Job | undefined = command === 'resume' ? JSON.parse(fs.readFileSync(metaFile, 'utf8')) : undefined;
 const mode = previous?.mode ?? (command as Mode);
 const effort = opts.effort || previous?.effort || DEFAULT_EFFORT[mode];
-const model = opts.model || previous?.model || 'gpt-6.1-sol'; // the workhorse (owner, 8 November); --model gpt-6-astra for the hardest calls
+const model = opts.model || previous?.model || codexDefault; // dev/models.ts; --model gpt-6-astra for the hardest calls
+if (activeMode() === 'normal' && !codexInNormal.includes(mode)) {
+  console.error(
+    `Normal mode is Claude only (dev/models.ts): Codex ${mode} jobs are off. Run \`npm run models\` for the Claude route.`,
+  );
+  process.exit(2);
+}
 const eyes =
   mode === 'task' &&
   (previous ? previous.argv.includes('sandbox_workspace_write.network_access=true') : opts.eyes !== 'off');

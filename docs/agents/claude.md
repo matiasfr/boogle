@@ -24,7 +24,7 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 
 ### Codex: bot runs, visual checks and follow-ups
 
-Use `/codex` for implementation and gameplay checks (docs/agents/owner-calls.md, "Codex first"). The complete command and evidence
+Which model does which work is in `npm run models` ([models](models.md)); in normal mode (Claude only) use Claude subagents instead of Codex. The complete command and evidence
 contract is [dev/codex/README.md](../../dev/codex/README.md); visual framing and motion guidance is in
 [the look skill](../../.claude/skills/look/SKILL.md). Run the launcher in the background with Bash `run_in_background: true`.
 
@@ -66,7 +66,7 @@ resuming a Codex **conversation**. Sandboxed task workers use the broker command
 
 ### Working in parallel
 
-- One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, Opus at medium effort) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
+- One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, model and effort per `npm run models`) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
 - Give each agent a concrete stage and include the files, errors and decisions in its brief. Resume the same Codex job for feedback, fixes and repeated checks; use a new job for independent work or a new starting snapshot.
 - Each worker sees its own result (docs/agents/verification.md, "See it before you ship", required by AGENTS.md). The director reviews Codex task reports, diffs and stills before shipping their commits; other workers follow their assigned shipping workflow.
 - Research before deep facets (docs/agents/owner-calls.md, "Owner's standing calls") runs as a deep-research subagent.
