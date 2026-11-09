@@ -660,3 +660,83 @@ export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
   await Promise.all(pages.map((p) => p.page.close()));
   return row;
 }
+
+/** WS_LOAD_CHURN=train: the line-2 kit train across three tabs at 0/100/200 ms. Same sample clock as the cart. */
+export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
+  const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
+  const { worldOf } = await import('../../test/railway-live.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-world.ts');
+  const { TRAIN, TRAIN_PHASE } = await import('../../src/sim/railway-train.ts');
+  const seed = railwayAtTrains('trains-on');
+  const roomId = railwayRoomId(`${c.room}-train`);
+  const lats = [0, 100, 200];
+  const pages: Page[] = [];
+  for (const [k, l] of lats.entries())
+    pages.push(
+      await c.web.open(`T${k}`, `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=train${k}&lat=${l}&adapter=1`),
+    );
+  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
+  const world = c.hosted(roomId)!.world as RailwayWorldHost;
+  // The built world's clock is ahead of this fresh room's: advance the disposable room to pass it, then load it.
+  while (world.sync.world.tick <= seed.t + 5) world.step(0.1);
+  await world.sync.whenDurable();
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())), railwayCheck);
+  world.rules.railway.touchAll();
+  const trainOf = (p: Page) => ev(p.page, () => window.T.railTrain(1));
+  // Every tab has the loaded world's train (its phase and where it set out), then a moment to settle: the load itself
+  // relocates the train, which is a restart, not a ride.
+  const server = () => world.rules.railway.railway.line2!.train[1]!;
+  await waitFor(async () => {
+    const want = server();
+    return (await Promise.all(pages.map(adapter))).every(
+      (p) => p.state.line2.train[1]!.phase === want.phase && p.state.line2.train[1]!.depart === want.depart,
+    );
+  }, 10000);
+  await sleep(2000);
+  type Sample = { along: number; phase: number; depart: number; at: number };
+  const series: Sample[][] = lats.map(() => []);
+  let apart = 0;
+  const phases = new Set<number>();
+  const stats0 = { ...world.stats };
+  const end = Date.now() + seconds * 1000;
+  while (Date.now() < end) {
+    const now = (await Promise.all(pages.map(trainOf))) as Sample[];
+    now.forEach((x, k) => series[k]!.push(x));
+    // Only while every tab has the same phase (a phase change reaches each tab after its own latency).
+    if (now.every((x) => x.phase === now[0]!.phase && x.depart === now[0]!.depart)) {
+      const base = now[0]!;
+      // Less what the train can travel between the two pages' sample instants (cruise: TRAIN.speed cm per 100 ms).
+      for (const x of now)
+        apart = Math.max(apart, Math.abs(x.along - base.along) - (TRAIN.speed / 100) * Math.abs(x.at - base.at));
+    }
+    for (const x of now) phases.add(x.phase);
+    await sleep(50);
+  }
+  // A tab's train between two samples never moves faster than cruise (plus the sample's own timing slack).
+  const jumps = series.map((s) =>
+    s.slice(1).reduce((m, x, i) => {
+      const dt = Math.max(1, x.at - s[i]!.at) / 100; // ticks
+      return Math.max(m, Math.abs(x.along - s[i]!.along) - TRAIN.speed * dt * 1.25);
+    }, 0),
+  );
+  const moved = phases.has(TRAIN_PHASE.RUN);
+  const row = {
+    seconds,
+    stepMsMean: (world.stats.stepMs - stats0.stepMs) / Math.max(1, world.stats.steps - stats0.steps),
+    stepMsMax: world.stats.maxStepMs,
+    phases: [...phases].sort().join(','),
+    tabsApartMaxCm: Math.round(apart),
+    jumpMaxCm: Math.round(Math.max(...jumps)),
+    samples: series[0]!.length,
+  };
+  console.log(`  railway train ride ${JSON.stringify(row)}`);
+  c.check('railway train ride: the train ran while sampled', moved, row.phases);
+  c.check(
+    'railway train ride: tabs place the train within half a deck of each other',
+    apart < 160,
+    `${row.tabsApartMaxCm} cm`,
+  );
+  c.check('railway train ride: no tab jumps its train under a rider', Math.max(...jumps) < 50, `${row.jumpMaxCm} cm`);
+  await Promise.all(pages.map((p) => p.page.close()));
+  return row;
+}
