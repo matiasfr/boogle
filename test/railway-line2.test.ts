@@ -277,7 +277,7 @@ test('malformed line-two documents fail atomically', () => {
     assert.throws(() => worldOf(w.s).load(j, railwayCheck), Error, name);
     assert.equal(hashOf(w.s), hash, name);
   }
-  assert.equal(LINE2_STATIONS.length, 5);
+  assert.equal(LINE2_STATIONS.length, 6);
 });
 
 function toQ2(): World {
@@ -560,7 +560,9 @@ test('Q5: behind the sea gate; two cart trips bring its rails, never minted', ()
   restore(w);
   finishQ(w, 4);
   assert.equal(line2Completed(w.s), 5);
-  assert.equal(line2Active(w.s), -1);
+  assert.equal(line2Active(w.s), 5);
+  advance(w, cartCycleTicks(4));
+  assert.equal(l().cart.phase, CART_PHASE.REST, 'the cart never serves Q6');
   assert.equal(railsHeld(w).stations, 6 + 12 + 12 + 16 + 24);
   restore(w);
 });

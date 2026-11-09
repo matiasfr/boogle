@@ -5,11 +5,13 @@ import {
   STEP_HZ,
   RULE_STEPS,
   RULE_MS,
+  STEP_MS,
   MAX_CATCH_UP,
   createFixedSteps,
   createStepEstimate,
 } from '../src/world/room-clock.ts';
 import { createSync, TICK_MS } from '../src/world/sync.ts';
+import { createRailwayClock } from '../src/world/railway-clock.ts';
 
 test('a rule tick is exactly six 60 Hz steps, and lockstep keeps its 100 ms tick', () => {
   assert.equal(STEP_HZ, 60);
@@ -84,4 +86,46 @@ test('a local world ticks every sixth step and its room clock is tick * 6 + phas
   s.stepWorld(1000);
   assert.equal(s.world.tick, 6, 'a long frame catches up at most five ticks');
   for (let k = 1; k < steps.length; k++) assert.equal(steps[k], steps[k - 1]! + 1, 'steps never skip or repeat');
+});
+
+test('mover clocks remove one-way delay with round trips in each tab own time origin', () => {
+  const delays = [0, 50, 100];
+  const origins = [5000, 50000, 500000];
+  const clocks = delays.map(() => createRailwayClock());
+  clocks.forEach((clock, k) => {
+    const local = origins[k]!,
+      delay = delays[k]!;
+    assert.equal(clock.hear(600, local + 1000 - delay, local + 1000 + delay), true);
+  });
+  for (let at = 1200; at <= 3000; at += 17) {
+    const values = clocks.map((clock, k) => clock.now(at + origins[k]!, -1));
+    assert.ok(Math.max(...values) - Math.min(...values) < 1e-8);
+    assert.ok(Math.abs(values[0]! - (600 + (at - 1000) / STEP_MS)) < 1e-8);
+  }
+});
+
+test('mover clock corrections slew without backwards time or a deck jump; malformed samples do nothing', () => {
+  const clock = createRailwayClock();
+  assert.equal(clock.hear(0, 0, 0), true);
+  assert.equal(clock.now(0, -1), 0);
+  assert.equal(clock.now(100, -1), 6);
+  assert.equal(clock.hear(12, 100, 200), true); // correction: server step 12 at the local midpoint 150
+  let previous = clock.now(200, -1);
+  assert.ok(previous >= 11.4 - 1e-8 && previous <= 12.6 + 1e-8);
+  for (let at = 217; at < 2000; at += 17) {
+    const value = clock.now(at, -1),
+      dt = 17 / STEP_MS;
+    assert.ok(value >= previous + dt * 0.9 - 1e-8 && value <= previous + dt * 1.1 + 1e-8);
+    assert.equal(clock.now(at, -1), value, 'repeat reads do not move a deck');
+    previous = value;
+  }
+  for (const [step, sent, received] of [
+    [-1, 0, 1],
+    [NaN, 0, 1],
+    [1, 10, 9],
+    [1, 0, 3000],
+    [1, NaN, 2],
+  ])
+    assert.equal(clock.hear(step!, sent!, received!), false);
+  assert.equal(clock.rtt(), 100);
 });

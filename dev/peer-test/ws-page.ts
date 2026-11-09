@@ -23,6 +23,7 @@ import {
   type RailwayInspection,
   type RailwayIntent,
 } from '../../src/adapters/railway.ts';
+import { trainAlong } from '../../src/sim/railway-train.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
 import home from '../../src/world/home-land.json';
 
@@ -172,6 +173,15 @@ const T = (window.T = {
   rail: (): RailwayProbe | null => null,
   railAdapter: (): RailwayAdapterProbe | null => null,
   /** The depot cart where this tab draws it now (cm along its road), from its own estimate of the server's tick. */
+  railTrain: null as unknown as (k: number) => {
+    along: number;
+    phase: number;
+    depart: number;
+    at: number;
+    tick: number;
+    conservativeTick: number;
+    row: import('../../src/sim/railway-train.ts').RailTrain;
+  } | null,
   railCart: (): { along: number; phase: number; tick: number; at: number } | null => null,
   railIntent: null as unknown as (intent: RailwayIntent) => boolean,
   railSnapshot: null as unknown as () => boolean,
@@ -306,6 +316,20 @@ function startWorld(room: Room) {
       T.railCorrections.push({ at: Date.now(), op: c.event.op, lost: c.lost, reason: c.reason });
     });
     adapter.onReset(() => resets++);
+    T.railTrain = (k) => {
+      const row = adapter.inspect().line2.train[k];
+      if (!row) return null;
+      const tick = adapter.tickNow();
+      return {
+        along: trainAlong(row, k, tick),
+        phase: row.phase,
+        depart: row.depart,
+        tick,
+        row: { ...row },
+        conservativeTick: rail!.mirror.step(performance.now()) / RULE_STEPS,
+        at: performance.timeOrigin + performance.now(),
+      };
+    };
     T.railCart = () => {
       const c = adapter.inspect().line2.cart;
       const tick = adapter.tickNow();
@@ -357,6 +381,14 @@ function startWorld(room: Room) {
           return adapter.depotRailTake();
         case 'rail.pack':
           return adapter.openPack();
+        case 'rail.boilerTake':
+          return adapter.shoulderBoiler(intent.revision);
+        case 'rail.boilerDrop':
+          return adapter.dropBoiler(intent.x, intent.y, intent.z, intent.revision);
+        case 'rail.boilerFit':
+          return adapter.fitBoiler(intent.revision);
+        case 'rail.call':
+          return adapter.callTrain(intent.id);
         case 'rail.cartCall':
           return adapter.callCart();
         case 'rail.lever':

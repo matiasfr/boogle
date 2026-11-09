@@ -253,6 +253,7 @@ export function createRailwayWorldHost({
   const supplySafe = (e: SupplyPulse) => {
     const people = positions();
     const beam = api.beam();
+    const boiler = api.boiler();
     return (
       RAILWAY_SOURCES.every((_source, k) => !railGrows(e.grow, k) || railGrowthAllowed(k, true)) &&
       (e.beam === undefined ||
@@ -260,6 +261,11 @@ export function createRailwayWorldHost({
           beam.revision === e.beam &&
           beam.age === 21 &&
           railNobodyNear(people, now(), beam.x, beam.z))) &&
+      (e.boiler === undefined ||
+        (boiler.state === 'ground' &&
+          boiler.revision === e.boiler &&
+          boiler.age === 21 &&
+          railNobodyNear(people, now(), boiler.x, boiler.z))) &&
       e.recover.every((id) => {
         const pile = api.piles().find((p) => p.id === id);
         return !!pile && railNobodyNear(people, now(), pile.x, pile.z);
@@ -285,11 +291,20 @@ export function createRailwayWorldHost({
       ground.state === 'ground' && ground.age === 21 && railNobodyNear(people, now(), ground.x, ground.z)
         ? ground.revision
         : undefined;
-    if (marker === api.supplyMarker() && !recover.length && beam === undefined) return;
+    const b = api.boiler();
+    const boiler =
+      b.state === 'ground' && b.age === 21 && railNobodyNear(people, now(), b.x, b.z) ? b.revision : undefined;
+    if (marker === api.supplyMarker() && !recover.length && beam === undefined && boiler === undefined) return;
     const grow = railGrowthMask(
       RAILWAY_SOURCES.flatMap((_source, k) => (api.felled(k) && railGrowthAllowed(k, true) ? [k] : [])),
     );
-    const pulse: SupplyPulse = { marker, grow, recover, ...(beam === undefined ? {} : { beam }) };
+    const pulse: SupplyPulse = {
+      marker,
+      grow,
+      recover,
+      ...(beam === undefined ? {} : { beam }),
+      ...(boiler === undefined ? {} : { boiler }),
+    };
     if (supplySafe(pulse)) api.supply(pulse);
   };
   let startupError: string | null = null;
@@ -376,6 +391,19 @@ export function createRailwayWorldHost({
       beamAway = null;
     }
   };
+  let boilerAway: number | null = null;
+  const maintainBoiler = () => {
+    const b = api.boiler();
+    if (b.state !== 'held' || requests.active(b.holder)) {
+      boilerAway = null;
+      return;
+    }
+    boilerAway ??= now();
+    if (now() - boilerAway >= rules.tune.get('railBeamGraceS') * 1000) {
+      api.boilerRelease(b.holder, b.epoch, b.revision);
+      boilerAway = null;
+    }
+  };
   const ready = (async () => {
     attach();
     await sync.whenDurable();
@@ -431,6 +459,7 @@ export function createRailwayWorldHost({
           if (sync.world.tick !== before) {
             maintainSupply(); // on rule ticks only, not 60 times a second
             maintainBeam();
+            maintainBoiler();
           }
           const ms = performance.now() - time;
           stats.wakes++;
@@ -508,6 +537,7 @@ export function createRailwayWorldHost({
         sync.stepWorld(dt * 1000);
         maintainSupply();
         maintainBeam();
+        maintainBoiler();
       }
     },
     status: () => ({
@@ -539,6 +569,9 @@ export function createRailwayWorldHost({
       // The grace runs from the carrier's departure, not from when maintenance next notices it.
       if (session && beam.state === 'held' && beam.holder === session.pid && !requests.active(session.pid))
         beamAway ??= now();
+      const boiler = api.boiler();
+      if (session && boiler.state === 'held' && boiler.holder === session.pid && !requests.active(session.pid))
+        boilerAway ??= now();
     },
     async close({ save = true } = {}) {
       closed = true;

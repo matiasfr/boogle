@@ -408,3 +408,122 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('line host: the boiler and trains; a call judged on the halt; trains survive a restart', async () => {
+  const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
+  const { LINE2_BOILER, LINE2_OLD_TRAIN } = await import('../../src/sim/railway-line2-layout.ts');
+  const { LINE_HALTS, trainAlong } = await import('../../src/sim/railway-train.ts');
+  const { line2Rails } = await import('../../src/sim/railway-line2.ts');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-trains-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  let now = 1800000000000;
+  const sent: Obj[] = [];
+  let people: (RailwayPosition | null)[] = [];
+  const create = () => {
+    const h = createRailwayWorldHost({
+      roomId: railwayRoomId('line-trains'),
+      store,
+      tick: false,
+      now: () => now,
+      pidOf: () => 'a',
+      positions: () => people,
+    });
+    h.onSend((m) => sent.push(m));
+    return h;
+  };
+  let host = create(),
+    epoch = 0,
+    request = 0;
+  const ticks = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      now += 100;
+      host.step(0.1);
+    }
+    await host.sync.whenDurable();
+  };
+  const open = async () => {
+    host.deliver({ t: 'r:open' }, 's');
+    await ticks(3);
+    const session = sent.findLast((m) => m.t === 'r:session' && m.to === 's')!;
+    epoch = Number(session.epoch);
+    request = Number(session.next) - 1;
+  };
+  const action = async (e: Obj, at: [number, number, number]) => {
+    now += 1000;
+    host.deliver({ t: 'r:edit', e: { ...e, epoch, request: ++request, at, ms: now - 1800000000000 } }, 's');
+    await host.sync.whenDurable();
+    return host.rules.railway.outcome('a', epoch, request)!;
+  };
+  const apron: [number, number, number] = [LINE2_BOILER.x, LINE2_BOILER.y, LINE2_BOILER.z];
+  const camp: [number, number, number] = [LINE2_OLD_TRAIN.x, 3030, LINE2_OLD_TRAIN.z];
+  const boiler = () => host.rules.railway.boiler();
+  try {
+    await host.whenReady();
+    const w = railwayAtTrains('boiler');
+    while (host.sync.world.tick <= w.t) await ticks(1);
+    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    host.rules.railway.touchAll();
+    await open();
+    assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, camp)).status, 'rejected');
+    assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
+    host.depart('s');
+    await ticks(2);
+    assert.equal(boiler().state, 'held');
+    now += host.rules.tune.get('railBeamGraceS') * 1000;
+    await ticks(2);
+    assert.equal(boiler().state, 'pedestal');
+    await open();
+    assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
+    assert.equal((await action({ op: 'rail.boilerFit', revision: boiler().revision }, apron)).status, 'rejected');
+    // Unreachable ground cargo is protected by nearby players, then recovered by the same pulse on restart.
+    assert.equal(
+      (
+        await action(
+          { op: 'rail.boilerDrop', revision: boiler().revision, x: apron[0], y: apron[1], z: apron[2] },
+          apron,
+        )
+      ).status,
+      'accepted',
+    );
+    people = [{ pid: 'a', x: apron[0] / 100, z: apron[2] / 100, at: now + 22 * 60000 }];
+    now += 22 * 60000;
+    await ticks(2);
+    assert.equal(boiler().state, 'ground');
+    assert.equal(boiler().age, 21);
+    people = [];
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    await ticks(2);
+    assert.equal(boiler().state, 'pedestal');
+    await open();
+    assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
+    assert.equal((await action({ op: 'rail.boilerFit', revision: boiler().revision }, camp)).status, 'accepted');
+    const h = LINE_HALTS[4];
+    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x + h.reach + 2000, h.y, h.z])).status, 'rejected');
+    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x, h.y + 3000, h.z])).status, 'rejected');
+    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x, h.y, h.z])).status, 'accepted');
+    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x, h.y, h.z])).status, 'noop');
+    for (let t = 0; host.rules.railway.train(1)!.phase !== 1 && t < 200; t++) await ticks(1);
+    assert.equal(host.rules.railway.train(1)!.phase, 1);
+    const tick = host.sync.world.tick,
+      rows = [host.rules.railway.train(0)!, host.rules.railway.train(1)!];
+    const pose = rows.map((r, k) => trainAlong(r, k, tick));
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.equal(host.sync.world.tick, tick);
+    assert.deepEqual([host.rules.railway.train(0), host.rules.railway.train(1)], rows);
+    assert.deepEqual(
+      rows.map((_r, k) => trainAlong(host.rules.railway.train(k)!, k, host.sync.world.tick)),
+      pose,
+    );
+    const l = host.rules.railway.railway.line2!;
+    assert.equal(line2Rails(host.rules.railway.railway), l.forge.poured);
+    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

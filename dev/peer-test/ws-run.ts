@@ -22,7 +22,7 @@ useWorkerSource(root);
 const { startWeb, waitFor, ev, snap, seesAll, sleep } = await import('./harness.ts');
 const { freePort } = await import('../look/lib.ts');
 const { createService, loadConfig } = await import('../../server/src/server.ts');
-const { railwayChecks, railwayLoad, railwayCartRide } = await import('./ws-railway.ts');
+const { railwayChecks, railwayLoad, railwayCartRide, railwayTrainRide } = await import('./ws-railway.ts');
 const { worldRoomId } = await import('../../src/world/namespace.ts');
 // Namespaced like the real game's rooms, so boot cleanup keeps it across the restart check.
 const room = worldRoomId('ws' + Math.random().toString(36).slice(2, 8));
@@ -262,6 +262,8 @@ try {
     const list = (v: string | undefined) => v?.split(',').map(Number);
     if (process.env.WS_LOAD_CHURN?.split(',').includes('cart'))
       await railwayCartRide(ctx, { seconds: Number(process.env.WS_LOAD_SECONDS || 60) });
+    if (process.env.WS_LOAD_CHURN?.split(',').includes('train'))
+      await railwayTrainRide(ctx, { seconds: Number(process.env.WS_LOAD_SECONDS || 60) });
     await railwayLoad(ctx, {
       seconds: Number(process.env.WS_LOAD_SECONDS || 15),
       ...(process.env.WS_LOAD_PLAYERS ? { players: list(process.env.WS_LOAD_PLAYERS) } : {}),

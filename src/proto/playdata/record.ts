@@ -26,9 +26,10 @@ import { BUILD } from '../../build-id.ts';
 import { IDLE_S } from '../../../protos/store.ts';
 import { PROTO, protoV, pageQuery, productionRailway } from '../flags.ts';
 import { inspectRailway } from '../../entities/railway/state.ts';
+import { createRailwayJourneyMarks } from '../../adapters/railway-marks.ts';
 import { HEAD, ORIGIN } from '../place/layout.ts';
 import { currentCard } from '../card.ts';
-import { hookActivity, onPlayMark, playWhereNow, type PlayData } from '../mark.ts';
+import { hookActivity, onPlayMark, playMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
 import { onTuneRecord } from '../../tunables/events.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
@@ -322,6 +323,7 @@ let lastPrompt = '';
 let lastShownPrompt: { id: string; verb: string; at: number } | null = null;
 const seenPrompts = new Map<string, { verb: string; x: number; y: number; z: number }>();
 let reachedHead = false;
+const journeyMarks = createRailwayJourneyMarks();
 const promptsOf = new Map<string, number>();
 
 // ---------------------------------------------------------------- each frame: small comparisons, no garbage
@@ -369,11 +371,21 @@ function sample(ms: number) {
   const x = round(b.x),
     z = round(b.z);
   const a = activity();
+  const state = productionRailway ? inspectRailway() : null;
+  if (state?.ready)
+    for (const [name, data] of journeyMarks(
+      b,
+      carry.on?.id,
+      state.line2.trains,
+      state.line2.stations[5]?.completion === 1,
+      me.swimming,
+    ))
+      playMark(name, data);
   if (
     productionRailway &&
     !reachedHead &&
     !me.swimming &&
-    (inspectRailway()?.line2.completed ?? 0) >= 5 &&
+    (state?.line2.completed ?? 0) >= 5 &&
     Math.abs(b.y - HEAD.y) < 5 &&
     Math.hypot(b.x - HEAD.x - ORIGIN.x, b.z - HEAD.z - ORIGIN.z) < HEAD.r
   ) {
