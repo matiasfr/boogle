@@ -55,6 +55,7 @@ export async function stage() {
     hideNotes();
     console.log(`GLIDE staged by the device ${JSON.stringify(device)}`);
     page.__placeDone = true;
+    if (side > 0) background(watchTake(), "player 2 watches the leader's take");
     return;
   }
   if (!inspectRailway()!.glide)
@@ -73,6 +74,22 @@ export async function stage() {
   console.log(`GLIDE staged ${JSON.stringify(glider())}`);
   page.__placeDone = true;
   if (side > 0) background(watchPartner(), 'player 2 watches the leader glide');
+}
+
+/** glideTake=1, player 2: the leader's take reaches you as the flourish (no card) and the roll on your back. */
+async function watchTake() {
+  await until(() => inspectRailway()!.glide, "the leader's take reaches player 2", 90000);
+  await wait(1500);
+  const s = inspectRailway()!;
+  const seen = {
+    flourish: s.reward.arrival.seen.includes('glide'),
+    card: s.reward.showing,
+    owned: s.glider.owned,
+    rolls: s.glider.rolls,
+  };
+  console.log(`GLIDE partner take ${JSON.stringify(seen)}`);
+  if (!seen.flourish || seen.card || !seen.owned) console.error(`GLIDE partner take wrong: ${JSON.stringify(seen)}`);
+  await watchPartner();
 }
 
 /** Player 2 stays on the summit, looking out after the leader, and reports their canopy from presence railwayGlide. */
