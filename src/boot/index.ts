@@ -11,6 +11,14 @@ if (new URLSearchParams(location.search).get('startup') === '1')
   (await import('../debug/startup-record.ts')).installStartupRecorder();
 bootMark('files-start');
 // A playtest jump-in (./jump-in.ts): seed a fresh private room first, before anything reads the room from the address.
+// A chunk that fails to load stops here with the usual failure, rather than loading the address's room unseeded.
 const from = new URLSearchParams(location.search).get('from');
-if (from !== null) await (await import('./jump-in.ts')).jumpIn(from);
-void import('../main.ts').catch(bootFailed);
+const jump =
+  from === null
+    ? null
+    : await import('./jump-in.ts').catch((error: unknown) => {
+        bootFailed(error);
+        return undefined;
+      });
+if (jump && from !== null) await jump.jumpIn(from);
+if (jump !== undefined) void import('../main.ts').catch(bootFailed);
