@@ -274,6 +274,32 @@ body.touch.playing .touch {
   background: var(--paper);
   outline: none;
 }
+.name-row {
+  display: flex;
+  gap: 8px;
+}
+.name-row input {
+  min-width: 0;
+  flex: 1;
+}
+.name-reroll {
+  width: 48px;
+  flex: none;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--sun);
+  color: var(--ink);
+  font: 700 25px/1 var(--font-body);
+  cursor: pointer;
+}
+.name-reroll:hover {
+  background: #ffd35e;
+}
+.name-reroll:focus-visible {
+  outline: 3px solid var(--sea);
+  outline-offset: 3px;
+}
 .card input:focus-visible {
   box-shadow: 0 0 0 4px rgba(15, 159, 192, 0.3);
 }
