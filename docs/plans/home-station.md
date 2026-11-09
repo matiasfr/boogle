@@ -99,8 +99,9 @@ Axis: bearing 70°, unit d = (0.9397, −0.3420); its right-hand normal n = (0.3
   3.6 m clear and 4.0 m high (today's frame). Open stall: door (−59.37, 25.49), back (−60.94, 34.35). Outline backs
   (−51.91, 33.56) and (−69.15, 30.53). The page had 130°, 160°, 190° with the spur arriving at 160°, which puts the open
   stall straight through from the spur, so "Turn the table" would change nothing you can see. Here the table swings 60°.
-- **The cart's leg** (the page's "crossover"). Leaves line 1 at s 54 heading inbound, left R 15 for 3.7 m (14°),
-  straight 14.5 m, right R 15 for 20.4 m (78°), and meets road 2 at s 26, just past the island. 38.64 m.
+- **The cart's leg** (the page's "crossover"). Leaves line 1 at s 54 heading inbound, left R 15 for 3.33 m (12.7°),
+  straight 15.41 m, right R 15 for 19.57 m (74.8°), and meets road 2 at s 26, just past the island. 38.32 m (solved
+  exactly in step 1; the first estimate was 38.64 m).
 - **Moved yard props** (Place-local, drawn only): `RACK` (−84.90, 9.12), `CRANE` (−72.4, −3.1), `DOCK` (−76.15, −1.73),
   `YARD` (−46, 22), `SHELF` as above. Today's rack, pedestal and crane all stand on or within 1.7 m of road 1.
 - **Frames.** Q1's frame flips to the south side of road 2 (`side: 1`; the north side is the island): (−74.93, 17.51).
@@ -116,7 +117,7 @@ All are Server-kind rule constants. "Shape" means the saved or wire shape change
 
 | Constant (file) | Old | New | Shape |
 | --- | --- | --- | --- |
-| `CART_ROAD.forgeCm` (`src/sim/railway-cart.ts`) | 19600 | 20664 | saved cart rows hold road distances: yes |
+| `CART_ROAD.forgeCm` (`src/sim/railway-cart.ts`) | 19600 | 20632 | saved cart rows hold road distances: yes |
 | `rail.cartCall`, `Cart.recall`, `CART_CALL`, `CART.forgeTicks` (`railway-cart.ts`, `railway-systems.ts`, `railway-world.ts`, `railway-line2.ts`, `src/world/railway-server.ts`, `railway-predict.ts`, `src/adapters/railway.ts`) | present | removed | yes: an op and a field go |
 | `LINE_HALTS[0]` Village (`src/sim/railway-train.ts`) | x 92819, z −434 | x 93007, z 367 (y 1902, reach 1260 unchanged) | no |
 | `LINE_HALTS[2]` Village, line 2 | x 92779, z 2617 | x 93013, z 365 | no |
@@ -161,10 +162,10 @@ island's apron (3.9 m away). That is the forge stop. It then sets off the other 
 
 - **Rules:** no new phase. `cartStep` and `CART_PHASE` are untouched apart from losing `recall`. The reversal is the
   existing stop at `FORGE`: `OUT` ends there, `RUN` starts there. Only `forgeCm` grows, by the leg's detour:
-  (196 − 54) + 38.64 + 26 = 206.64 m. Past it, a distance still maps to line 2 at `d − F`, so every rack stop
+  (196 − 54) + 38.32 + 26 = 206.32 m. Past it, a distance still maps to line 2 at `d − F`, so every rack stop
   (`rackCm`) is where it was along line 2.
-- **View:** `cart-view.ts` gets a three-part road: line 1 at `196 − d` for d ≤ 142; the leg for 142 < d ≤ 180.64; road 2
-  at `206.64 − d` up to F; then line 2 at `d − F`. The cart keeps its heading through the reversal (it runs backwards;
+- **View:** `cart-view.ts` gets a three-part road: line 1 at `196 − d` for d ≤ 142; the leg for 142 < d ≤ 180.32; road 2
+  at `206.32 − d` up to F; then line 2 at `d − F`. The cart keeps its heading through the reversal (it runs backwards;
   no 180° snap).
 - **A rider** comes in facing forward, swings left at the throat with the station opening ahead, rolls up platform 2 to
   the buffers, pauses (0 s with nothing to load, 3 s with rails, longer if the forge owes rails), then rides out
@@ -335,7 +336,7 @@ change; the full loop once a day").
   - `src/entities/railway/works-shape.ts`, `roundhouse-view.ts`: under the flag, stall boxes on the 190° radial, two
     outline slabs, the table at B's centre with yaws 190° and 130°, rails on the spur and stall roads, `pathPts` from
     `shuntPath()`.
-  - `src/entities/railway/cart-view.ts`: under the flag, pose from `cartRoadAt(d × 206.64 / 196)` on the way in (the
+  - `src/entities/railway/cart-view.ts`: under the flag, pose from `cartRoadAt(d × 206.32 / 196)` on the way in (the
     rules still say 196), so the reversal can be seen.
   - Greybox boxes for the concourse, buffers and points (one merged mesh, static colliders for posts and buffers).
   - `src/proto/place/sites.ts`: feet for the concourse and stalls, so little guys walk round them.
@@ -347,6 +348,9 @@ change; the full loop once a day").
   - Built 9 November as the review's smallest version, with a greybox canopy on the island (it drops in with the deck)
     and a destination picture on each edge's mast. Cut to step 6: the cart's pose on `cartRoadAt`, the shunt on
     `shuntPath()`, `sites.ts` feet and the three videos. The leg measures 38.32 m (not 38.64), so `forgeCm` is 20632.
+  - Spawn's sightline (owner, 9 November: "Lower end walls"): the hall's end walls stop at 2.4 m with a coping, the
+    roof stays at 4.6 m on posts (corner posts added), and spawn keeps facing 14°. The curio shelf stands on the hall's
+    floor (`HALL.floor`, 18.34 m) against the north wall's inside face, with room for a finds board up to 2.2 m wide.
 - [ ] **4. The owner sees it.** Send the full link `https://boogle.club/?home=b` and the three stills. Designer rules on
   the Level findings and questions 1 to 7. Adjust step 1's numbers if he moves anything, and rerun steps 1 to 3's checks.
 - [ ] **5. Make tools follow the anchors.** No behaviour change.
@@ -395,6 +399,15 @@ change; the full loop once a day").
   roll-out in the asset stage first).
 - [ ] **11. Town paths meet the station** (look only): `PATHS`' hub and the path mask run to the concourse front; an
   apron of flagstones under the hall and the rack; a boarded crossing over road 2 at the island's end toward the stall.
+- [ ] **12. The live line map in the hall** (look only; owner's decision of 9 November, `docs/decisions.md`, "A live
+  line map stands at the Home station"). Port the line map of the archived departures board (`?proto=board`, in
+  26270adb) as the one big board: both lines, laid track solid and the rest dashed, this station ringed, trains at
+  their live positions. No fast travel or picker.
+  - **Where:** across the hall's back, the island side, hung under the roof between the two middle back posts (about
+    6 m wide by 1.8 m, its bottom at 2.4 m), facing the square. Everyone walking from the square to the trains faces it,
+    the square sees it straight through the open front, and it takes neither end wall: the north one holds the curio
+    shelf and stays low for the forge, the south one is the works board's (call 29).
+  - Verify: stills from the square and from spawn; a short video of a train moving on it; `npm run perf`.
 
 ## Level findings
 
@@ -529,6 +542,7 @@ are where these get checked (listed under "Smallest version", below).
    shelf, which is good) and lose most of the forge behind it. Keep end walls below eye height above the shelf (about
    2.4 m, open above to the roof) or turn spawn to about 40° so the forge and the hall's front share the frame. Decide
    from step 3's spawn still. Spawn is where a returning player starts; a newcomer lands on the shore (below).
+   **Decided 9 November (owner): "Lower end walls"**: 2.4 m, the roof on posts, spawn still facing 14°.
 10. **`WORKS.rollTicks` 60 to 110: yes.** 11 s once per world, while the wagon visibly comes out; same 4.3 m/s.
 
 ### My view on the owner's questions
@@ -564,7 +578,7 @@ are where these get checked (listed under "Smallest version", below).
 | 15 | Spur R 15 through 60°; table at (−57.90, 17.12), 24.6 m from today's | Default | Plan |
 | 16 | Stall doors 8.5 m out, 9 m deep, 3.6 m clear by 4.0 m high | Default | Research ratios |
 | 17 | The cart's forge stop is road 2 s 0 at the buffers | Default | Ruling 3 |
-| 18 | `CART_ROAD.forgeCm` 19600 to 20664 (about 2.4 s more per round trip) | Default | Plan; not felt at station 5 (home-flow finding 1) |
+| 18 | `CART_ROAD.forgeCm` 19600 to 20632 (about 2.4 s more per round trip) | Default | Plan; not felt at station 5 (home-flow finding 1) |
 | 19 | The cart keeps its heading through the reversal, so it rides out to the racks backwards | Default | Recommend a double-ended look (finding 11) |
 | 20 | The cart may pass through a standing line-2 train | Default | Ruling 6 |
 | 21 | Forge rack on the apron at (−84.90, 9.12), 8.1 m from the forge across road 1's stub | Default | Ruling 3, finding 9 |
@@ -583,7 +597,7 @@ are where these get checked (listed under "Smallest version", below).
 | 34 | Art budgets by prominence (hall 12k, canopy 8k, stall 6k, outlines 800, buffers 600) | Default | Owner call "Geometry budgets follow prominence" |
 | 35 | **Missing:** which parts stand from the start. Recommend the hall, buffers, apron and island kerb from the start; the island deck and canopy drop in with trains, as halts do today | New | Finding 1 |
 | 36 | **Missing:** how the track layer crosses from road 1 to road 2 at the forge's lighting. Recommend it drives the leg in the view, with `LINE2_FORGE.turnTicks` set to the drive in v24 | New | Finding 2 |
-| 37 | Spawn's facing: keep, or turn to about 40°, decided from the step-3 still | Default | Ruling 7 |
+| 37 | Spawn keeps facing 14°; the hall's end walls stop at 2.4 m so the forge reads over the north one | Decided | Owner, 9 November: "Lower end walls" |
 | 38 | **Missing:** which road goes where. One destination pictogram per platform edge on the halt boards (the camp's machine for road 1; the quarry, Far Head and pier for road 2) | Default | Finding 4 |
 | 39 | Town paths to the hall's front, flagstone apron, a boarded crossing toward the stall (step 11) | Default | Finding 5 for the crossing's site |
 
