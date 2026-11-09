@@ -319,11 +319,11 @@ export function runPlaceLevelCheck() {
     const bad = got.has(id);
     assertion(!bad, `${id} is out of reach: ${why}`, requiredState);
   };
-  /** A secret the model reaches before its ability, in Place's layout: reported for a layout call, not failed (F2,
-   * 9 November; docs/agent-calls.md). Turn it back into `mustNot` once the pad moves. */
-  const early = (got: Set<string>, id: string, why: string) =>
+  /** A secret the model reaches before its ability, accepted as a sequence break (designer, 9 November;
+   * docs/agent-calls.md): reported as a fact, not failed. */
+  const accepted = (got: Set<string>, id: string, how: string) =>
     fact(
-      `  ${got.has(id) ? 'EARLY' : 'ok   '} ${id}: ${why}${got.has(id) ? ' (reached early; layout call open)' : ''}`,
+      `  ${got.has(id) ? 'accepted' : 'ok      '} ${id}: ${got.has(id) ? `reached early, accepted: ${how}` : 'not reached'}`,
     );
   const must = (got: Set<string>, id: string, why: string) => {
     const ok = got.has(id);
@@ -365,7 +365,7 @@ export function runPlaceLevelCheck() {
     must(got, DEVICES.jump.pad, 'the first device, walking off the new deck');
     for (const p of JUMP_COURSE.slice(1)) mustNot(got, p.id, 'the course needs the air jump, even at sprint speed');
     mustNot(got, 'apron', "gate 1's ledge needs two jumps");
-    early(got, 'lookout', "the lookout's secret needs the second jump");
+    mustNot(got, 'lookout', "the lookout's secret needs the second jump");
     mustNot(got, 'p2', 'the second device: its line is not there yet, and it needs two jumps');
     mustNot(
       padsReachable(st1, { jump: false, hook: false, glide: false }, []),
@@ -394,7 +394,7 @@ export function runPlaceLevelCheck() {
     // The hook secrets (production's finds, place-retirement F2): each waits for the hook.
     for (const id of ['t0', 'nook', 'loft'])
       mustNot(got, id, `${id === 't0' ? "firstpull's" : `the ${id}'s`} secret needs the hook`);
-    early(got, 'alcove', "the alcove's secret needs the hook");
+    accepted(got, 'alcove', 'drop from the plateau');
     for (const id of ['balcony', 'stack']) mustNot(got, id, `the ${id}'s secret needs the glider`);
     mustNot(got, 'summit', 'the top');
     mustNot(
@@ -419,7 +419,7 @@ export function runPlaceLevelCheck() {
     section('hook-far-head', '\nThe line to Far Head with the hook, no glider: the glide secrets still wait');
     got = padsReachable(st4, { jump: true, hook: true, glide: false }, E3);
     mustNot(got, 'balcony', "the balcony's secret needs the glider");
-    early(got, 'stack', "the stack's secret needs the glider");
+    accepted(got, 'stack', 'drop from stack-return');
     section('glide', '\nWith the glider, and the line to Far Head');
     got = padsReachable(st4, { jump: true, hook: true, glide: true }, E3);
     for (const id of ['balcony', 'stack']) must(got, id, 'by air');
