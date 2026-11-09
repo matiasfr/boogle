@@ -41,11 +41,13 @@ jobs:
         ((github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') && startsWith(github.event.workflow_run.head_branch, 'ship/'))
       )
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       BRANCH: ${{ github.event.workflow_run.head_branch }}
       SHA: ${{ github.event.workflow_run.head_sha }}
+      CI_RUN: ${{ github.event.workflow_run.id }}
       GREEN: ${{ github.event.workflow_run.conclusion == 'success' }}
       SHIPPER: ${{ github.event.workflow_run.actor.login }}
       # GitHub logins excluded from the friends report.
@@ -104,56 +106,89 @@ jobs:
             for _ in $(seq 1 12); do
               tip=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
               if [ "$tip" != "$SHA" ]; then
+                before=$(gh run list --workflow ci.yml --branch "$BRANCH" --commit "$tip" --event workflow_dispatch \
+                  --json databaseId --jq 'map(.databaseId) | max // 0')
                 gh workflow run ci.yml --ref "$BRANCH"
-                return
+                # Own the continuation: never depend on a token-dispatched run emitting workflow_run.
+                # Include queue time in the deadline. A different/newer head cannot authorize this merge.
+                deadline=$((SECONDS + 1800))
+                while [ "$SECONDS" -lt "$deadline" ]; do
+                  current=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
+                  [ "$current" = "$tip" ] || { echo 'Head superseded while waiting for CI.'; return 1; }
+                  run=$(gh run list --workflow ci.yml --branch "$BRANCH" --commit "$tip" --event workflow_dispatch \
+                    --json databaseId,status,conclusion --jq "[.[] | select(.databaseId > $before)] | max_by(.databaseId) // empty")
+                  if [ -n "$run" ] && [ "$(jq -r .status <<<"$run")" = completed ]; then
+                    [ "$(jq -r .conclusion <<<"$run")" = success ] || { echo '::error::Refreshed CI did not succeed.'; return 1; }
+                    SHA=$tip
+                    CI_RUN=$(jq -r .databaseId <<<"$run")
+                    return 0
+                  fi
+                  sleep 10
+                done
+                echo '::error::Timed out waiting for refreshed CI; inspect the PR and rerun CI.'
+                return 1
               fi
               sleep 2
             done
             echo '::error::Branch update did not become visible; rerun CI after inspecting the PR.'
             return 1
           }
-          # GitHub works out mergeability in the background; UNKNOWN means not yet.
-          for _ in 1 2 3 4 5 6; do
-            info=$(gh pr view "$PR" --json isDraft,isCrossRepository,baseRefName,headRefOid,labels,mergeable,title)
-            [ "$(jq -r .mergeable <<<"$info")" != UNKNOWN ] && break
-            sleep 5
-          done
-          if [ "$(jq -r '.isDraft or .isCrossRepository or .baseRefName != "main" or .headRefOid != env.SHA or ([.labels[].name] | index("no-automerge") != null)' <<<"$info")" = true ]; then
-            echo "#$PR is a fork, targets another branch, is a draft, is labelled no-automerge, or has moved past $SHA; skipping."
-            exit 0
-          fi
-          if [ "$(jq -r .mergeable <<<"$info")" = CONFLICTING ]; then
-            echo "#$PR conflicts with main; asking ci-autofix.yml to merge main into $BRANCH."
-            gh workflow run ci-autofix.yml --ref main -f branch="$BRANCH" -f reason=conflict
-            exit 0
-          fi
-          main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
-          relation=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq .status)
-          if [ "$relation" != ahead ] && [ "$relation" != identical ]; then
-            # Merge latest main into this branch, preserving ship commit ancestry. The token's
-            # update does not trigger push CI, so explicitly dispatch CI on the NEW head.
-            refresh
-            echo 'Main moved: updated branch; a fresh full CI must pass before merge.'
-            exit 0
-          fi
-          # Two merges landing together fail one with "Base branch was modified", and nothing would run this again.
+          # Re-enter all guards after every refresh or failed merge, including opt-outs and CI reruns.
           for try in 1 2 3 4 5; do
+            # GitHub works out mergeability in the background; UNKNOWN means not yet.
+            for _ in 1 2 3 4 5 6; do
+              info=$(gh pr view "$PR" --json state,isDraft,isCrossRepository,baseRefName,headRefName,headRefOid,labels,mergeable,title)
+              [ "$(jq -r .mergeable <<<"$info")" != UNKNOWN ] && break
+              sleep 5
+            done
+            if [ "$(jq -r '.state != "OPEN" or .isDraft or .isCrossRepository or .baseRefName != "main" or .headRefName != env.BRANCH or .headRefOid != env.SHA or ([.labels[].name] | index("no-automerge") != null)' <<<"$info")" = true ]; then
+              echo "#$PR is closed, ineligible, opted out, or has moved past $SHA; skipping."
+              exit 0
+            fi
+            # Reject a superseded run (even if it was green) or a queued/failed/cancelled rerun.
+            runs=$(gh run list --workflow ci.yml --branch "$BRANCH" --commit "$SHA" --limit 100 \
+              --json databaseId,event,status,conclusion)
+            latest=$(jq -c '[.[] | select(.event == "workflow_dispatch" or
+              (if (env.BRANCH | startswith("ship/")) then .event == "push" else .event == "pull_request" end))]
+              | max_by(.databaseId) // empty' <<<"$runs")
+            if [ -z "$latest" ] || [ "$(jq -r '.databaseId | tostring' <<<"$latest")" != "$CI_RUN" ] ||
+               [ "$(jq -r '.status == "completed" and .conclusion == "success"' <<<"$latest")" != true ]; then
+              echo 'CI is superseded or no longer successful; skipping.'
+              exit 0
+            fi
+            if [ "$(jq -r .mergeable <<<"$info")" = CONFLICTING ]; then
+              echo "#$PR conflicts with main; asking ci-autofix.yml to merge main into $BRANCH."
+              gh workflow run ci-autofix.yml --ref main -f branch="$BRANCH" -f reason=conflict
+              exit 0
+            fi
+            main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
+            relation=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq .status)
+            if [ "$relation" != ahead ] && [ "$relation" != identical ]; then
+              # Merge latest main into this branch, preserving ship commit ancestry. The token's
+              # update does not trigger push CI, so dispatch and await CI on the NEW head.
+              refresh
+              echo 'Main moved: refreshed CI passed; rechecking current PR and main.'
+              continue
+            fi
+            # Two merges landing together fail one with "Base branch was modified".
             if [[ "$BRANCH" == ship/* ]]; then
               gh pr merge "$PR" --merge --subject "$(jq -r .title <<<"$info") (#$PR)" --delete-branch --match-head-commit "$SHA" && break
             else
               gh pr merge "$PR" --squash --delete-branch --match-head-commit "$SHA" && break
             fi
             # Main may have moved during merge. Never retry with stale green evidence;
-            # update the branch and let its new CI completion wake this workflow.
+            # update the branch, await its CI, then re-enter every guard in this job.
             main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
             relation=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq .status)
             if [ "$relation" != ahead ] && [ "$relation" != identical ]; then
               refresh
-              exit 0
+              continue
             fi
             [ "$try" != 5 ] || exit 1
             sleep $((try * 10))
           done
+          # Exhausting the refresh budget is not a successful merge.
+          [ "$(gh pr view "$PR" --json state --jq .state)" = MERGED ] || exit 1
           echo "merged=true" >> "$GITHUB_OUTPUT"
 
       - name: Deploy, and run CI on main
