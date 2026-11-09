@@ -430,14 +430,20 @@ trips. The bot now reuses the Needle Bell climb and descent after Q4, pulls `rai
 before taking shelf rails, funds Q5, waits for laying and walks the 260 m trestle with dry support checks every
 3 m. Checkpoints are `sea gate`, `Q5 funded`, `Q5 laid` and `Far Head`; a friend witnesses Q5 completion.
 
-**Pending job B:** the Local gate slab, switch drum and posts read accepted `sea`; the switch lights the posts
+The Local gate slab, switch drum and posts read accepted `sea`; the switch lights the posts
 down to the gate. Far Head's lamps follow Q5 completion; rockets play only on the live completion edge, never
 on rebuild, reload or late join. C reads B's pinned `sea`, `seaGateSolid`, `farHead` and `trestleLamps` inspection
-fields, failing explicitly when they are absent. The seeded sea proof currently stops on exactly that missing
-contract, before any new checkpoint or recovery. The q5 half and summit/rim/Far Head photos await B; the opened
-diagnostic still and sheet show only the startup hillside and missing-view error. This records the implementation
-and its dependency, not visual acceptance. `WORLD_NS` v20;
-not tested on a device.
+fields. After B merged as `bfe5cf30`, both seeded halves passed without recovery: sea gate 38.8 s;
+Q5 funded 123.9 s, laid 153.9 s, Far Head 208.3 s. The bot follows the laid track across the gorge and rounds
+the solid parked machine on Far Head's broad ground. Physical seam walks at s=351 centre/right, 416 left and
+481 left remained supported, with minimum foot clearance 0.087 m above rail height; no collider repair was needed.
+
+The finishing fixture now leaves 45 s for mounting, and the look waits for the moving head before recording.
+Opened frames show final rail pairs completing (184→188), 10 rockets over Far Head and five over the village,
+and lamps sequencing to 54. The summit, rim and reverse Far Head stills show the switch/gate approach and a
+continuous trestle; daylight reduces the distant lamps' contrast. These are targeted seeded proofs, not a full
+campaign or real-time smoothness verdict. The long route and owner playtest remain with the orchestrator.
+`WORLD_NS` v20; not tested on a device.
 
 ## Ancient technology (round 4, exploring)
 
