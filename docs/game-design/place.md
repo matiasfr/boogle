@@ -51,6 +51,12 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 ## Production line 1 continuation (5 November 2026, slice 3 branch)
 
+**Single-press wake (8 November solo playtest fix).** The six-metre “Wake it up” prompt and the server's existing
+ten-metre allowance now share the parked machine's centre. Previously the server measured from the receiving frame, so a visible prompt on
+the far side could start a predicted wake and then be refused. One E tap starts the existing 3.1 s show; no hold
+or repeat is needed. Unready connections keep the existing connecting status and offer no wake action.
+Serves DESIGN.md 7 (Telegraph everything).
+
 **Current branch, unshipped:** the integrated slice-2 base is `f0be49a3`. The [slice-3 plan](../research/slice3-plan-2.md) now continues the same accepted material authority through T1's 24 logs, T2's 32 logs + 8 stone, and T3's 40 logs + one unique great beam. Stations accept only their own outstanding bill in order; a funded station pins its feed and departure/lay schedule. Local swings, flights, piles, stock displays and the one machine display accepted state. Rejoining reconstructs that state without replaying historical sounds or rewards. This entry supersedes the T1-only scope above for this branch; the earlier records remain historical evidence.
 
 **Materials and recovery:** logs and stone share eight back slots. Each of three rocks supplies eight stone, two per accepted hit with either axe. Spent rocks re-form on the same slow `railway.regrowMinutes` control as trees, adding exactly eight counted stone production units per rock; departed players retain their carried units. The three-departed-carrier witness in `test/railway-line-authority.test.ts` exhausts all 24 initial stone into absent players' backs, renews the rocks and finishes T2 with another player. Drops of either material can age into the existing courtyard recovery rack. Ordinary tree renewal remains counted and leaves completed track clear.

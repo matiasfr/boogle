@@ -117,7 +117,8 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
   const height = (y: number) => actor.height(y + 40, 260);
   switch (e.op) {
     case 'rail.wake':
-      return near(T1.x, T1.z, 1000);
+      // Keep the existing ten-metre server allowance, centred on the machine like its six-metre prompt.
+      return near(T1.wake.x, T1.wake.z, 1000);
     case 'rail.chop': {
       const k = railInt(e.id) ? railSource(e.id) : -1;
       const source = RAILWAY_SOURCES[k] ?? LINE1_HARDWOODS.find((row) => row[0] === e.id);

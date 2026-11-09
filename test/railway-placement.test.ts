@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RailAction } from '../src/sim/railway.ts';
 import { Rail } from '../src/sim/railway-world.ts';
+import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { railValid } from '../src/world/railway-server.ts';
 import { createRailway, edit, hash, invariant, railApply, railSession, restore, worldOf } from './railway-live.ts';
 
@@ -15,6 +16,28 @@ function sourceFixture() {
     railApply(state, 'alice', { ...e, epoch: 1, request: ++request }, 100);
   return { state, action };
 }
+
+test('wake accepts the whole machine prompt circle, including the side away from the receiving frame', () => {
+  const w = worldOf(createRailway());
+  const e = { op: 'rail.wake', epoch: 1, request: 1 };
+  // This live-reproduced point offered Wake it up but was over 10 m from the old frame-centred check.
+  for (const [px, pz, expected] of [
+    [99636, -15489, true],
+    [T1.wake.x + 600, T1.wake.z, true],
+    [T1.wake.x - 600, T1.wake.z, true],
+    [T1.wake.x, T1.wake.z + 600, true],
+    [T1.wake.x, T1.wake.z - 600, true],
+    [T1.x, T1.z, true], // Preserve the previously accepted receiving-frame position.
+    [T1.wake.x, T1.wake.z - 1001, false],
+  ] as const) {
+    const actor = {
+      reach: (x: number, z: number, r: number) => Math.hypot(px - x, pz - z) <= r,
+      height: () => true,
+      cadence: () => true,
+    };
+    assert.equal(railValid(w, e, actor), expected, `${px}, ${pz}`);
+  }
+});
 
 test('a fall keeps its exact direction, and collapse only on the accepted final output', () => {
   const { state, action } = sourceFixture();

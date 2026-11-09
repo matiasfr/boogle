@@ -479,7 +479,12 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...cart.targets(),
       ];
       const p = me.body?.position;
-      if (p && state.ready && state.phase === 'asleep' && machine.distance(p.x, p.z) < 6)
+      if (
+        p &&
+        state.ready &&
+        state.phase === 'asleep' &&
+        Math.hypot(p.x * 100 - T1.wake.x, p.z * 100 - T1.wake.z) < T1.wake.reach
+      )
         targets.push({
           id: 'place-wake',
           verb: 'Wake it up',

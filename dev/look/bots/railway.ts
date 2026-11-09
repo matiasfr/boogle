@@ -855,8 +855,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         () => [...peers].some(([peer, p]) => remotes.has(peer) && Math.hypot(p.x - machine.x, p.z - machine.z) <= 3.2),
         'friend completes opening walk',
       );
-    if (!second) require(await bot.use(machine.x, machine.z, 'wake the machine', /^Wake it up$/), 'wake offered');
+    if (!second) {
+      await until(() => interactTarget()?.id === 'place-wake', 'wake offered');
+      // A real keyboard tap, once, as soon as offered. No retry or held key can hide a refused wake.
+      interact();
+      require(read().phase === 'waking' && read().pending === 1, 'single wake tap predicts immediately');
+    }
     await until(() => read().phase === 'idle', 'accepted wake ready');
+    require(read().prediction.corrected === 0, 'single wake tap was not refused');
     mark('awake');
     // Option E: the card is the waker's alone; a friend gets the flourish as the wake ends, and is never held.
     if (second) {
