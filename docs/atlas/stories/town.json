@@ -1,0 +1,23 @@
+{
+  "id": "town",
+  "title": "A resident notices what the railway did",
+  "kind": "local",
+  "order": 46,
+  "steps": [
+    {
+      "go": [["you.world", "you.features"]],
+      "text": "The town reads the railway's accepted completions from your mirror. Every tab works out the same facts and population, so everyone sees one town. Nothing new is sent or saved.",
+      "cite": [{ "file": "src/sim/town-facts.ts" }, { "file": "src/entities/town/view.ts" }]
+    },
+    {
+      "go": [["you.input", "you.features"]],
+      "text": "You walk into the house and talk to Pip. If something has changed since you last talked, Pip mentions the newest change once. The bubbles and the conversation card are on your screen only.",
+      "cite": [{ "file": "src/proto/place/residents.ts" }, { "file": "src/proto/place/town-lines.ts" }]
+    },
+    {
+      "go": [["you.features", "you.screen"]],
+      "text": "What the residents told you is yours: it's kept in this browser for this railway room, survives a reload and is cleared by a world wipe. A friend hears the same news for themselves.",
+      "cite": [{ "file": "src/entities/town/memory.ts" }, { "file": "src/player/world-reset.ts" }]
+    }
+  ]
+}

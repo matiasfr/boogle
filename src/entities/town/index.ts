@@ -8,7 +8,8 @@ import { railwayRead } from '../railway/state.ts';
 import { createTownView, type TownView } from './view.ts';
 import { setTownView } from './state.ts';
 
-defineKind('town', { update: 11 });
+// Late, after the debug camera (1000): the rooms draw what's near the camera that's about to render.
+defineKind('town', { update: 11, lateUpdate: 1001 });
 let active: TownView | null = null;
 registerInteractable(() => active?.targets() ?? NO_TARGETS);
 
@@ -21,6 +22,9 @@ if (productionRailway && railwayMirror) {
       mesh: view.root,
       update(ctx) {
         view.update(ctx);
+      },
+      lateUpdate() {
+        view.cull();
       },
       describe: view.inspect,
       dispose() {

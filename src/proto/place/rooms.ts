@@ -9,8 +9,9 @@
 // look of yours ends that at once. Unity's deoccluder, Unreal's spring arm and Godot's SpringArm3D all separate the wanted shot
 // from clearance (the research doc's table); so does this, with the cutaway as the shot's half.
 //
-// Interiors draw only near their building (`near`), so a village you're not in pays for its walls and nothing behind them. Local;
-// which rooms exist comes from `env.up`, read from what's shared. `createRooms` mounts them on an owner: the town entity's in
+// Interiors draw only with the camera near their building (`near`), so a village you're not in pays for its walls and
+// nothing behind them; what's outside and over the door, a little further out. Local; which rooms exist comes from
+// `env.up`, read from what's shared. `createRooms` mounts them on an owner: the town entity's in
 // the live game (src/entities/town/), and a never-disposed one in ?proto=place (./place-rooms.ts).
 import * as THREE from 'three/webgpu';
 import { registerStepFloor } from '../../render/locomotion-surfaces.ts';
@@ -25,7 +26,8 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { merged } from './part-geometry.ts';
 import { H, ROOM_GROUP, addStatic } from './land.ts';
 import { ROOM_PLOTS, toWorld, type RoomId } from './layout.ts';
-import { paintBoard } from './signs.ts';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { paintBoard, woodV } from './signs.ts';
 import {
   addSite,
   housePlan,
@@ -46,7 +48,8 @@ export const ROOM_CAM = {
   pitch: -0.4, // rad: a modest look down, suggested as you come in
   pitchRate: 2.6, // 1/s
   camClear: 1.8, // m the camera has to be outside a building before its walls come back, so they don't rise at the lens
-  drawWithin: 34, // m: interiors draw within this of their building
+  drawWithin: 34, // m: interiors draw while the camera is within this of their building
+  dressWithin: 60, // m: and what's outside and over the door (a mat, a window box, a sign) while it's within this
 };
 export const DOOR = { w: 2.6, rows: 3 };
 const FLOOR = 0.14;
@@ -205,6 +208,28 @@ export function plate(
   m.receiveShadow = true;
   m.position.set(x, y, z);
   m.rotation.y = yaw;
+  return m;
+}
+
+/** A stake board: its paper, frame and post as one mesh in the paper's material, the wood sampled from the strip
+ * `paintBoard` paints under the paper. One draw, and no shadow of its own: a plot's board is a small thing at the edge of the
+ * village, and its shadow cost two more draws per board (place-retirement T2). */
+function stakeMesh(lines: Parameters<typeof paintBoard>[0]) {
+  const W = 2.2,
+    H_ = 1.1;
+  const v0 = woodV(H_ / W);
+  const paper = new THREE.PlaneGeometry(W, H_).translate(0, 1.5, 0.08);
+  const uv = paper.getAttribute('uv');
+  for (let i = 0; i < uv.count; i++) uv.setY(i, v0 + uv.getY(i) * (1 - v0));
+  const wood = (g: THREE.BufferGeometry) => {
+    const a = g.getAttribute('uv');
+    for (let i = 0; i < a.count; i++) a.setXY(i, 0.5, v0 / 2);
+    return g;
+  };
+  const frame = wood(new THREE.BoxGeometry(2.4, 1.3, 0.12).translate(0, 1.5, 0));
+  const post = wood(new THREE.BoxGeometry(0.18, 0.9, 0.18).translate(0, 0.45, 0));
+  const m = new THREE.Mesh(mergeGeometries([frame, post, paper]), paintBoard(lines, W, H_, '#7f5630'));
+  m.receiveShadow = true;
   return m;
 }
 
@@ -374,13 +399,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       wz = r.z + out * Math.cos(r.yaw);
     g.position.set(wx, H(wx, wz), wz);
     g.rotation.y = r.yaw;
-    g.add(plate(lines, 2.2, 1.1, 0, 1.5, 0.08));
-    g.add(
-      roomMesh([
-        ['b', 0, 1.5, 0, 2.4, 1.3, 0.12, '#7f5630'],
-        ['b', 0, 0.45, 0, 0.18, 0.9, 0.18, '#7f5630'],
-      ]),
-    );
+    g.add(stakeMesh(lines));
     g.visible = false;
     owner.add(g);
     stakes.set(r, { g, body: null, lines });
@@ -465,7 +484,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       if (ready !== r.ready) {
         r.ready = ready;
         setSolid(r, ready);
-        r.outside.visible = r.over.visible = ready;
+        if (!ready) r.outside.visible = r.over.visible = false;
       }
     }
     const p = me.body?.interpolatedPosition;
@@ -518,8 +537,6 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
     const step = reducedMotion ? 1 : dt / ROOM_CAM.reveal;
     for (const r of LIST) {
       const on = r === room;
-      const near = r.ready && (on || Math.hypot(p.x - r.x, p.z - r.z) < ROOM_CAM.drawWithin);
-      if (r.near.visible !== near) r.near.visible = near;
       if (!r.ready) continue;
       let any = false;
       const c = on ? worldToRoom(r, cx, cz) : null;
@@ -546,7 +563,22 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
         writePiece(q.k, t, -(r.high + 0.4));
       }
       r.proxy.visible = any;
-      r.over.visible = r.t.roof < 1;
+    }
+  }
+  /** What's drawn near the camera that's about to render: interiors within `drawWithin` (or the one you're in), and
+   * what's outside and over the door within `dressWithin`, so a far view of the village pays for none of it
+   * (place-retirement T2's draw budget). Call after anything that moves the camera this frame, after `update`. */
+  function cull() {
+    const cx = camera.position.x,
+      cz = camera.position.z;
+    for (const r of LIST) {
+      const fromCam = Math.hypot(cx - r.x, cz - r.z);
+      const near = r.ready && (r === indoors.room || fromCam < ROOM_CAM.drawWithin);
+      if (r.near.visible !== near) r.near.visible = near;
+      if (!r.ready) continue;
+      const dressed = fromCam < ROOM_CAM.dressWithin;
+      r.outside.visible = dressed;
+      r.over.visible = dressed && r.t.roof < 1;
     }
   }
   camConstraints.push(indoorCamera);
@@ -554,6 +586,6 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
     const k = camConstraints.indexOf(indoorCamera);
     if (k >= 0) camConstraints.splice(k, 1);
   });
-  return { rooms, indoors, onRoom, indoorCamera, update, warm, snap, stakeBoard };
+  return { rooms, indoors, onRoom, indoorCamera, update, cull, warm, snap, stakeBoard };
 }
 export type Rooms = ReturnType<typeof createRooms>;

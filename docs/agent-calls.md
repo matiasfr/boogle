@@ -80,3 +80,5 @@ bump while they're mid-session ([owner calls](agents/owner-calls.md)).
 | 2026-11-08 | Steel on the pack shows as two upright bars | pack view | builder | Reads as rails at a glance | open |
 | 2026-11-08 | The switch cinematic's camera can be occluded by trees on the way in | `src/render/camera-pull-out.ts` | builder | Polish, not blocking | open |
 | 2026-11-08 | Q6's station label overlaps the rack's stock sign at Far Head | Far Head | orchestrator | Polish, not blocking | open |
+| 2026-11-09 | A line a resident says straight to you (Button answering a take) plays over a reward card; ambient barks, notices and street talk still hush during reveals and conversations | `src/proto/place/residents.ts` | builder (T2) | Otherwise Button is silent on every take in the live shop, since its "You got" card is a reward reveal | open |
+| 2026-11-09 | Suspect lines kept as written: Pip's depot notice says two folk push a cart (the live cart has none), and several `path`/`depot` lines mention a bridge | `src/proto/place/town-lines.ts` | builder (T2) | The Boogler's copy is the owner's to edit | open |

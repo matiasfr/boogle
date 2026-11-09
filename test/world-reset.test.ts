@@ -51,6 +51,13 @@ test('a world bump clears the old world wardrobe and keeps this one', () => {
   assert.equal(s.getItem('boogle.railway-wardrobe.v0:rail-v19-a:p'), 'mine');
 });
 
+test('town memory from an old rail namespace is removed', () => {
+  assert.deepEqual(
+    staleKeys(['boogle.railway-town.v0:rail-v18-a:p', 'boogle.railway-town.v0:rail-v19-a:p'], 'v19', ns),
+    ['boogle.railway-town.v0:rail-v18-a:p'],
+  );
+});
+
 test('several missed wipes reset all old-world progress, keeping identity, preferences and unrelated data', () => {
   const keep = [
     'boogle.name',

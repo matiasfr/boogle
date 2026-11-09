@@ -15,6 +15,20 @@ export type TownInspection = {
   houseStage: number;
   /** What this player owns and wears (src/entities/wardrobe/state.ts), for Fine Prices' evals. */
   wardrobe: ReturnType<typeof import('../wardrobe/state.ts').inspectWardrobe>;
+  /** Where each resident stands, and whether they're drawn and can be talked to (only near their standing room). */
+  residents: Record<'pip' | 'button' | 'nell' | 'moss' | 'wren', { on: boolean; x: number; z: number }>;
+  /** The bubble that's up, if any: who (a folk index) and what. */
+  bark: { k: number; text: string } | null;
+  /** What the residents have told this player (Personal Local; ./memory.ts). */
+  memory: {
+    met: Partial<Record<string, boolean>>;
+    noticed: Partial<Record<string, TownFact>>;
+    said: Partial<Record<string, number>>;
+    rumour: Partial<Record<string, number>>;
+    hello: Partial<Record<string, boolean>>;
+    street: TownFact | null;
+    streetRumour: number;
+  };
 };
 let current: (() => TownInspection) | null = null;
 export const inspectTown = () => current?.() ?? null;
