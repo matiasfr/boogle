@@ -119,7 +119,7 @@ export default {
     const hint = (await g.eval(
       `return document.getElementById('hint').hidden ? '' : document.getElementById('hint').textContent;`,
     )) as string;
-    t.check('keyboard mode, no lock: the hint says drag or scroll', /scroll/.test(hint), JSON.stringify(hint));
+    t.check('keyboard mode, no lock: touch guidance hides', hint === '', JSON.stringify(hint));
     t.check('still: keyboard mode at 1194x834', true, await g.still('ipad-tp-keyboard'));
 
     // Two-finger scroll turns the camera (rec 3).

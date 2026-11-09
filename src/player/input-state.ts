@@ -10,6 +10,7 @@ export const inputState = {
   lockFailed: false,
   canLock: 'requestPointerLock' in (globalThis.Element?.prototype ?? {}), // no Element in a headless run (dev/sim/)
   looked: false,
+  touchLooked: false, // Local to this visit; only a touch look retires touch guidance.
   seated: false,
   held: false,
 };
