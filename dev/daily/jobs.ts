@@ -22,15 +22,19 @@ export const jobs = {
   scenarios: { utcHour: 11, minute: 30, scope: '', model: '', effort: '' },
   // Before the scenarios (03:30) so both get a quiet GPU; about five minutes including npm ci.
   perf: { utcHour: 11, minute: 0, scope: '', model: '', effort: '' },
+  // The full production playthrough, the final pass instead of one per feature branch (owner call "Iterate fast").
+  // After patch video (06:23, done by about 07:00): every daily job shares one lock and a held lock skips the job.
+  long: { utcHour: 15, minute: 40, scope: '', model: '', effort: '' },
 } as const;
 /** Model-free jobs run at a fixed local time instead of a converted UTC hour. */
-export const localTimes: Partial<Record<Job, [number, number]>> = { scenarios: [3, 30], perf: [2, 50] };
+export const localTimes: Partial<Record<Job, [number, number]>> = { scenarios: [3, 30], perf: [2, 50], long: [7, 40] };
 export type Job = keyof typeof jobs;
+/** The long job's playthrough: `npm run playthrough -- --long --stall 6000`, about half an hour on the Mac. */
+export const longArgs = ['--long', '--stall', '6000'];
 
 export function jobName(value: string | undefined): Job {
-  if (value !== 'atlas' && value !== 'patch-video' && value !== 'scenarios' && value !== 'perf')
-    throw new Error('Expected atlas, patch-video, scenarios or perf');
-  return value;
+  if (!value || !Object.hasOwn(jobs, value)) throw new Error(`Expected ${Object.keys(jobs).join(', ')}`);
+  return value as Job;
 }
 
 export function prompt(job: Job, base: string, notes: string): string {
