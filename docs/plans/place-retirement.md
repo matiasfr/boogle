@@ -842,9 +842,16 @@ unused, so existing saves keep their other fields. The notes below are history.
   the shelf's two meshes. `bayPeg(k)` places missed crates either side of the trophy plinth that stands where Place's
   first ones did. The town's `townShelf()` exposes it; the shelf's inspection gains `bay`.
 - **Level check** (`dev/economy/place-level.ts`): firstpull (t0), nook and loft are out of reach before the hook, and
-  the balcony and stack before the glider (also with the line to Far Head). Three are reached early in Place's
-  layout and print as `EARLY` findings (an open layout call): the lookout with one jump, the alcove from the bank
-  without the hook, the stack by a double jump down from the stack-return slab.
+  the balcony and stack before the glider (also with the line to Far Head). The designer's ruling on the three early
+  ones (9 November): the lookout is closed (top 19.3 → 20.4 m, approach (−137, −117); `mustNot` before the second
+  jump); the alcove (a drop from the 30 m plateau east of it) and the stack (a double jump down from stack-return)
+  are accepted and print as facts, and the stack's world crate stands without the glider (its bay crate still waits
+  for the end of the run). In the game (`.look/lookout.ts`, scratch): one sprinting jump from the highest ground
+  near it peaks at 18.2 m; two jumps from (−137, −117), whose ground reads 17.46 m (the model's 17.78), reach the top
+  with good timing (peak 20.44) and fall short with others (19.78–20.49, sliding off): a margin of about 0.05 m, not
+  the model's 0.41, back with the designer.
+- **The bay's repack** for the Home station's 6 m end wall (3 × 3 at about ±1.1 m, centred on the trophy plinth) is
+  held: the plinth fills the grid's centre cell (1.5 m block), so nine crates need another shape; asked the designer.
 - **Eval:** `railway-finds.ts` `findsecret=<id>`, `findsecretbay=1`, `findsact=open|bay|spot`, `findsworldfrom=`.
 - **Bench, `town` pose** (fresh world, against the gold-find cut): 233 → 240 calls (+4 main, +3 shadow: the merged
   ground, the crate tiers in view and a side slab), 1.35 → 1.36 M triangles. The bay adds none.

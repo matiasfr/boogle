@@ -877,8 +877,11 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
 - **Not ported:** the jump course and its lamplighter's cap ("block") move to job E with the double jump; Place's Far
   Head glide pad and ramp are cut (glider B's device is on Needle Bell).
 - **Abilities are production's:** the alcove, nook, loft and the way back up from the sea stack are hook rings after
-  the climb's (`hook-path.ts` `HOOK_SIDE`); the lookout needs the double jump; the balcony and the stack need the
-  glider, and their crates appear only once the room has it (`glide`: false in production until glider B).
+  the climb's (`hook-path.ts` `HOOK_SIDE`); the lookout needs the double jump (its shelf raised to 20.4 m: a stone
+  block you see from the first path and can't quite reach); the balcony needs the glider and its crate appears once
+  the room has it (glider B, Needle Bell's summit). Two early ways in are accepted sequence breaks (designer,
+  9 November): a drop from the plateau east of the alcove, and a double jump down from the stack-return slab onto the
+  sea stack, whose crate therefore stands without the glider.
 - **The finders' bay** stands across the path from the curio shelf, drawn with it (no draws of its own): the secrets'
   gifts under sheets until they're yours. A secret you went on past without turns up there as a second crate, in the
   order the abilities come: yard and bell with the hook; alcove and firstpull with the glider; nook and loft with the
