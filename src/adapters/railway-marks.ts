@@ -21,6 +21,9 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.seaSwitch': 'sea switch pulled',
     'rail.pack': 'pack gained',
     'rail.cartCall': 'cart called',
+    'rail.boilerTake': 'boiler taken',
+    'rail.boilerFit': 'boiler fitted',
+    'rail.call': 'train called',
     'rail.depotTake': 'depot pick up',
     'rail.depotRailTake': 'depot pick up',
     'rail.deposit': 'deposit',
@@ -33,6 +36,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
   if (intent.op === 'rail.beamDeposit') data.material = 'beam';
   if (intent.op === 'rail.depotTake') data.material = 'logs';
   if (intent.op === 'rail.depotRailTake') data.material = 'rails';
+  if (intent.op === 'rail.call') data.halt = intent.id;
   return [[name, data]];
 }
 
@@ -51,11 +55,39 @@ export function createRailwayProgressMarks() {
       facts.set(`stretch laid Q${i + 1}`, !!job.completion);
     });
     facts.set('forge lit', !!state.line2 && state.line2.forge.lit >= 0);
+    facts.set('trains unlocked', !!state.line2 && state.line2.trains >= 0);
     const marks: RailwayMark[] = [];
     if (previous && !baseline)
       for (const [name, value] of facts)
         if (value && previous.get(name) === false) marks.push([name, { authority: 'server' }]);
     previous = facts;
+    return marks;
+  };
+}
+
+/** Local body observations. Boarding another car is the same ride; shared completion alone is not an arrival. */
+export function createRailwayJourneyMarks() {
+  let riding: number | null = null;
+  let reachedPier = false;
+  return (
+    position: Readonly<{ x: number; y: number; z: number }>,
+    platform: string | undefined,
+    trains: boolean,
+    pierLaid: boolean,
+    swimming: boolean,
+  ): RailwayMark[] => {
+    const match = trains && !swimming && /^railway:train([01])(?:-[0-2])?$/.exec(platform ?? '');
+    const line = match ? Number(match[1]) : null;
+    const marks: RailwayMark[] = [];
+    if (line !== null && line !== riding) marks.push(['train ride', { line, authority: 'local' }]);
+    riding = line;
+    // Pier end s=739, pinned world metres from line2-b5-b8.md. Height excludes swimming beneath its deck.
+    const dx = position.x - 1402.2,
+      dz = position.z + 367.5;
+    if (!reachedPier && pierLaid && !swimming && Math.abs(position.y - 24.3) < 2 && dx * dx + dz * dz < 36) {
+      reachedPier = true;
+      marks.push(['pier reached', { authority: 'local' }]);
+    }
     return marks;
   };
 }

@@ -1209,6 +1209,10 @@ Without both `proto=place` and `shelf=demo`, the original heights are retained. 
 
 ## Production boiler and train authority (8 November 2026, job A)
 
+Playtest marks record server-accepted boiler takes/fits and train calls, live train unlocks and Q6 funding/laying,
+and Local train boarding and arrival within six metres of the completed pier end. Refilled shared state establishes
+a baseline without replaying achievements; being near the pier while swimming or under its deck is not arrival.
+
 Q5 completion casts one revision-fenced boiler at the forge apron. Its carrier needs an empty back; fitting it at the
 old camp train enables two Server-kind train schedules at 20 m/s. Calls are judged from the actor's halt position and
 height and take effect at the next stop decision. An absent carrier keeps the boiler through the existing beam grace;
