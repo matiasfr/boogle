@@ -35,6 +35,14 @@ test('first boot prunes only stale namespaced progress and writes the world mark
   assert.equal(s.getItem('boogle.boogler'), 'keep');
 });
 
+test('only the first boot after a world bump starts the game over', () => {
+  assert.equal(resetForWorld(storage({ 'boogle.name': 'Ana' }), ns).newWorld, false, 'no marker yet');
+  const s = storage({ 'boogle.name': 'Ana', [WORLD_SEEN_KEY]: 'v18' });
+  assert.equal(resetForWorld(s, ns).newWorld, true);
+  assert.equal(resetForWorld(s, ns).newWorld, false, 'a reload in the same world is a returning visit');
+  assert.equal(s.getItem('boogle.name'), 'Ana', 'the name stays to pre-fill the card');
+});
+
 test('same-world boots keep progress', () => {
   assert.deepEqual(
     staleKeys(['boogle.visit.a', 'boogle.boogler', 'boogle.railway-pose.v0:rail-v19-a:p'], 'v19', ns),

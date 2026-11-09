@@ -79,7 +79,9 @@ function storageKeys(storage: Storage): string[] {
   return keys;
 }
 
-export function resetForWorld(storage: Storage, ns: Namespace): { removed: string[] } {
+/** `newWorld`: this browser last played an older world, so this load starts the game over (docs/decisions.md,
+ * 2026-11-09). A browser with no marker yet has never seen a world: it is a newcomer, or not, by its own saves. */
+export function resetForWorld(storage: Storage, ns: Namespace): { removed: string[]; newWorld: boolean } {
   let marker: string | null = null;
   try {
     marker = storage.getItem(WORLD_SEEN_KEY);
@@ -100,7 +102,7 @@ export function resetForWorld(storage: Storage, ns: Namespace): { removed: strin
   } catch {
     // Storage is optional.
   }
-  return { removed };
+  return { removed, newWorld: marker !== null && marker !== ns.world };
 }
 
 export async function pruneProfiles(storage: Storage, locks: LockManager | undefined, rail: string): Promise<void> {
