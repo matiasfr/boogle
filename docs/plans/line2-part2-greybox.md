@@ -154,7 +154,24 @@ reset, no migration) and keeps the paused world and away credit whole.
   `SEA_SWITCH`, which requires Q4. Views: the sea slab and switch, the 260 m trestle, Far Head rockets and lamps
   (Local, on `onAccepted`). Proof: tests as in B2; bot checkpoints `sea gate`, `Q5 laid` and `Far Head`; a still from
   Far Head back down the trestle; `npm run perf` (trestle and lamps).
-  Hook prerequisite is implemented on the hook-shot branch: the production bot reaches checkpoint `needle bell summit`; B4's switch remains out of that branch's scope.
+  *Built 8 November (B4, job C implementation; verification pending B).* The production bot now continues after
+  `Q4 laid`: the shared Needle Bell climb, summit switch, `sea gate`, 24/24 Q5 depot deliveries, `Q5 funded`,
+  `Q5 laid`, supported trestle walk and `Far Head`. The original `needle bell summit` ring order, reload probe and
+  return route are retained. The friend's witness now waits through Q5. `WORLD_NS` v20 comes from job A.
+  Departures: B4 stays unticked until B and the final proof pass; no production view is supplied by C. The seeded
+  route uses the shelf and waits for the cart's second rail load rather than hand-carrying from the forge.
+  `npm run check` passed (494 unit tests). The first broker look rejected solo `--clock-url`; its `--real` retry
+  reached WebGPU and failed at 0.0 game seconds on B's absent `line2View.sea`, `seaGateSolid`, `farHead` and
+  `trestleLamps`. No recovery; no new checkpoint times. That diagnostic run was stopped after the failure rather
+  than waiting out its warm-up. A bounded retry on the final runtime tree reproduced the same failure without
+  hanging: `.look/evidence/1794183904169-45765/evidence.json`. Its `hill-still.png` and `hill-motion.png` were
+  opened: both show the startup hillside and the missing-view diagnostic, not B4. The q5 half and three target
+  stills were deferred at this dependency stop; the switch/gate sightline and lit continuous trestle remain unverified.
+  Evidence: `.look/evidence/1794183736369-40484/evidence.json` (launcher rejection),
+  `.look/evidence/1794183761682-40984/evidence.json` (missing B inspection).
+  Resume both seeds with `dev/look/evals/railway-b4-bot.ts`, `railFrom=sea&railStop=sea gate` /
+  `railFrom=q5&railStop=Far Head`, then the `sea gate`, `Q5 laid`, `Far Head` frames in `railway-photo.ts`.
+  The orchestrator owns the long final pass. Not tested on a device.
 - [ ] **B5. Halts as views.** Add the platforms at the pinned halts, shown only once `trains` is set (Local, from
   state; the boxes stay straight, checked as in `dev/level/timber-track.ts`). No new kind. Proof: a still of the
   village halt before and after.
