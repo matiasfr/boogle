@@ -42,6 +42,15 @@ test('same-world boots keep progress', () => {
   );
 });
 
+test('a world bump clears the old world wardrobe and keeps this one', () => {
+  const s = storage({
+    'boogle.railway-wardrobe.v0:rail-v18-a:p': 'old',
+    'boogle.railway-wardrobe.v0:rail-v19-a:p': 'mine',
+  });
+  assert.deepEqual(resetForWorld(s, ns).removed, ['boogle.railway-wardrobe.v0:rail-v18-a:p']);
+  assert.equal(s.getItem('boogle.railway-wardrobe.v0:rail-v19-a:p'), 'mine');
+});
+
 test('several missed wipes reset all old-world progress, keeping identity, preferences and unrelated data', () => {
   const keep = [
     'boogle.name',

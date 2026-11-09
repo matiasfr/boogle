@@ -7,7 +7,19 @@
 // No duplicates. The ladder's tool chests use the same show (./ladder.ts). Personal, and Local.
 import * as THREE from 'three/webgpu';
 import { HAT_SEAT, headCenter } from './head-clearance.ts';
-import { CONDUCTOR_HAT_FIT, seatConductorHat } from '../../render/head-clearance.ts';
+import { seatConductorHat } from '../../render/head-clearance.ts';
+import {
+  BOXES,
+  GIFTS,
+  ODDS,
+  PITY,
+  STOCK,
+  WEAR,
+  type Gift,
+  type GiftId,
+  type Slot,
+  type Tier,
+} from '../../render/cosmetic-parts.ts';
 import { merged, type Part } from './part-geometry.ts';
 import { packParts } from './gear-models.ts';
 import { makeAxeModel } from './axe-models.ts';
@@ -29,11 +41,12 @@ import { dustRing } from './pieces.ts';
 import { softGlow } from './look.ts';
 import { dropGot, youGot } from './got.ts';
 import { addFoot } from './sites.ts';
-import { T1_REWARD } from '../../render/t1-reward-parts.ts';
 import { SHOP } from './town-lines.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
+// The catalog itself (names, lines, parts, tiers, odds and fits) is src/render/cosmetic-parts.ts.
 export { merged } from './part-geometry.ts';
+export { STOCK, type GiftId, type Slot, type Stock, type Tier } from '../../render/cosmetic-parts.ts';
 const m4 = new THREE.Matrix4(),
   e4 = new THREE.Euler(),
   q4 = new THREE.Quaternion(),
@@ -43,393 +56,8 @@ const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughne
 const clothMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });
 const sheetMat = new THREE.MeshStandardNodeMaterial({ color: '#ded5c2', roughness: 1, flatShading: true });
 const GOLD = '#f2b134',
-  RED = '#d8392b',
-  BRASS = '#d9a23a';
+  RED = '#d8392b';
 
-export type GiftId =
-  | 'hat'
-  | 'beanie'
-  | 'teacup'
-  | 'scarf'
-  | 'glasses'
-  | 'headphones'
-  | 'overalls'
-  | 'raincoat'
-  | 'festival'
-  | 'critter'
-  | 'egg'
-  | 'scope'
-  | 'strawhat'
-  | 'lampcap'
-  | 'mossscarf'
-  | 'whistle'
-  | 'goggles'
-  | 'bucket'
-  | 'pennant'
-  | 'hardhat'
-  | 'aviator'
-  | 'diving'
-  | 'paperhat'
-  | 'bigbutton'
-  | 'sandwich'
-  | 'tallhat'
-  | 'stationwhistle';
-export type Slot = 'hat' | 'accessory' | 'outfit' | 'pet';
-export type Tier = 'common' | 'rare' | 'wonder';
-// `area`: a find, not a box's luck: it comes only from its own hidden place in the world (./tech.ts), or the hub if you missed it.
-type Gift = { id: GiftId; name: string; line: string; parts: Part[]; slot?: Slot; tier?: Tier; area?: string };
-// Each drawn at about the size it sits on the shelf, base at y = 0.
-const overalls = (body: string, strap: string, trim: string): Part[] => [
-  ['vest', 0, -0.19, 0, 0.283, 0.19, 0.24, body],
-  ['bib', 0, -0.015, 0, 0.283, 0.3, 0.248, body],
-  ['bib', 0, -0.015, 0, 0.283, 0.3, 0.248, body, Math.PI],
-  ['strap', -0.14, 0, 0, 1, 1, 1, strap],
-  ['strap', 0.14, 0, 0, 1, 1, 1, strap],
-  ['b', 0, -0.055, 0.246, 0.15, 0.11, 0.012, trim],
-  ['s', -0.13, 0.065, 0.225, 0.022, 0.022, 0.012, '#d9a23a'],
-  ['s', 0.13, 0.065, 0.225, 0.022, 0.022, 0.012, '#d9a23a'],
-];
-// New pieces carry no line yet: those wait for the owner's writing pass. Existing lines stay as they were.
-const GIFTS: Gift[] = [
-  T1_REWARD,
-  {
-    id: 'beanie',
-    slot: 'hat',
-    tier: 'common',
-    name: 'A beanie',
-    line: '',
-    parts: [
-      ['s', 0, 0.06, 0, 0.32, 0.26, 0.32, '#3f9a8a'],
-      ['c', 0, 0.02, 0, 0.33, 0.12, 0.33, '#2f7d70'],
-      ['s', 0, 0.34, 0, 0.08, 0.08, 0.08, '#fff0c9'],
-    ],
-  },
-  {
-    id: 'teacup',
-    slot: 'hat',
-    tier: 'wonder',
-    name: 'A teacup',
-    line: '',
-    parts: [
-      ['c', 0, 0.02, 0, 0.42, 0.04, 0.42, '#f4f1e8'],
-      ['c', 0, 0.22, 0, 0.32, 0.36, 0.32, '#f4f1e8'],
-      ['c', 0, 0.38, 0, 0.33, 0.05, 0.33, '#d8392b'],
-      ['t', 0.38, 0.22, 0, 0.14, 0.2, 0.14, '#f4f1e8', Math.PI / 2],
-    ],
-  },
-  {
-    id: 'scarf',
-    slot: 'accessory',
-    tier: 'common',
-    name: 'A very long scarf',
-    line: 'Knitted by someone in the village, probably.',
-    parts: [
-      ['t', 0, 0.32, 0, 0.28, 0.22, 0.28, '#d8392b'],
-      ['b', 0.14, 0.14, 0.26, 0.11, 0.42, 0.04, '#d8392b'],
-      ['b', 0.14, 0.02, 0.26, 0.115, 0.06, 0.045, '#fff0c9'],
-    ],
-  },
-  {
-    id: 'glasses',
-    slot: 'accessory',
-    tier: 'common',
-    name: 'Round glasses',
-    line: '',
-    parts: [
-      ['t', -0.12, 0.16, 0.26, 0.09, 0.09, 0.09, '#24262c', Math.PI / 2],
-      ['t', 0.12, 0.16, 0.26, 0.09, 0.09, 0.09, '#24262c', Math.PI / 2],
-      ['b', 0, 0.17, 0.27, 0.08, 0.02, 0.02, '#24262c'],
-    ],
-  },
-  {
-    id: 'headphones',
-    slot: 'accessory',
-    tier: 'rare',
-    name: 'Oversized headphones',
-    line: '',
-    parts: [
-      ['c', -0.3, 0.12, 0, 0.13, 0.12, 0.13, '#e8392a', 0, Math.PI / 2],
-      ['c', 0.3, 0.12, 0, 0.13, 0.12, 0.13, '#e8392a', 0, Math.PI / 2],
-      ['b', 0, 0.35, 0, 0.5, 0.05, 0.08, '#24262c'],
-      ['b', -0.27, 0.24, 0, 0.05, 0.22, 0.08, '#24262c'],
-      ['b', 0.27, 0.24, 0, 0.05, 0.22, 0.08, '#24262c'],
-    ],
-  },
-  {
-    id: 'overalls',
-    slot: 'outfit',
-    tier: 'common',
-    name: 'Work overalls',
-    line: '',
-    parts: overalls('#3f6fb0', '#34609c', '#2f5589'),
-  },
-  {
-    id: 'raincoat',
-    slot: 'outfit',
-    tier: 'rare',
-    name: 'A raincoat',
-    line: '',
-    parts: [
-      ['vest', 0, -0.14, 0, 0.32, 0.65, 0.27, '#f2c81a'],
-      ['b', 0, -0.12, 0.27, 0.035, 0.4, 0.025, '#b38b16'],
-      ['b', -0.16, -0.2, 0.245, 0.14, 0.13, 0.035, '#e0ac13'],
-      ['b', 0.16, -0.2, 0.245, 0.14, 0.13, 0.035, '#e0ac13'],
-      ['t', 0, 0.19, 0, 0.18, 0.1, 0.14, '#e0ac13'],
-    ],
-  },
-  {
-    id: 'festival',
-    slot: 'outfit',
-    tier: 'wonder',
-    name: 'Festival overalls',
-    line: '',
-    parts: overalls('#ed6685', '#ed6685', '#ce4e70'),
-  },
-  {
-    id: 'critter',
-    slot: 'pet',
-    tier: 'rare',
-    name: 'A small stowaway',
-    line: 'It was in the crate. It seems to like you.',
-    parts: [
-      ['s', 0, 0.2, 0, 0.21, 0.2, 0.24, '#f08c3a'],
-      ['s', 0, 0.2, 0.08, 0.14, 0.14, 0.18, '#ffe1b8'],
-      ['s', 0, 0.42, 0.1, 0.17, 0.16, 0.16, '#f08c3a'],
-      ['k', -0.1, 0.59, 0.08, 0.05, 0.12, 0.05, '#c9601f'],
-      ['k', 0.1, 0.59, 0.08, 0.05, 0.12, 0.05, '#c9601f'],
-      ['s', -0.07, 0.45, 0.24, 0.03, 0.035, 0.02, '#1b1a1e'],
-      ['s', 0.07, 0.45, 0.24, 0.03, 0.035, 0.02, '#1b1a1e'],
-      ['s', 0, 0.2, -0.26, 0.08, 0.08, 0.13, '#c9601f'],
-    ],
-  },
-  // What's hidden in each area (./tech-layout.ts, SECRETS). They carry no line yet either.
-  {
-    id: 'strawhat',
-    slot: 'hat',
-    tier: 'common',
-    area: 'village',
-    name: 'A straw hat',
-    line: '',
-    parts: [
-      ['c', 0, 0.03, 0, 0.56, 0.04, 0.56, '#e6c76a'],
-      ['c', 0, 0.16, 0, 0.27, 0.24, 0.27, '#e0bd5c'],
-      ['c', 0, 0.1, 0, 0.28, 0.07, 0.28, '#c4453a'],
-    ],
-  },
-  {
-    id: 'lampcap',
-    slot: 'hat',
-    tier: 'common',
-    area: 'timber',
-    name: "A lamplighter's cap",
-    line: '',
-    parts: [
-      ['s', 0, 0.1, 0, 0.32, 0.2, 0.32, '#5a4a3a'],
-      ['b', 0, 0.03, 0.3, 0.3, 0.03, 0.2, '#463a2e'],
-      ['s', 0, 0.2, 0.28, 0.07, 0.07, 0.05, '#ffd76a'],
-    ],
-  },
-  {
-    id: 'mossscarf',
-    slot: 'accessory',
-    tier: 'common',
-    area: 'timber',
-    name: 'A mossy scarf',
-    line: '',
-    parts: [
-      ['t', 0, 0.32, 0, 0.28, 0.24, 0.28, '#5f8f3e'],
-      ['b', -0.14, 0.14, 0.26, 0.11, 0.42, 0.04, '#4f7f36'],
-    ],
-  },
-  {
-    id: 'whistle',
-    slot: 'accessory',
-    tier: 'common',
-    area: 'timber',
-    name: 'A brass whistle on a cord',
-    line: '',
-    parts: [
-      ['t', 0, 0.3, 0, 0.26, 0.05, 0.26, '#3a302c'],
-      ['c', 0, 0.02, 0.26, 0.05, 0.16, 0.05, '#d9a23a', Math.PI / 2],
-    ],
-  },
-  {
-    id: 'goggles',
-    slot: 'accessory',
-    tier: 'rare',
-    area: 'timber',
-    name: 'Cable goggles',
-    line: '',
-    parts: [
-      ['c', -0.13, 0.17, 0.26, 0.1, 0.06, 0.1, '#d9a23a', Math.PI / 2],
-      ['c', 0.13, 0.17, 0.26, 0.1, 0.06, 0.1, '#d9a23a', Math.PI / 2],
-      ['c', -0.13, 0.17, 0.29, 0.07, 0.02, 0.07, '#7fe0d0', Math.PI / 2],
-      ['c', 0.13, 0.17, 0.29, 0.07, 0.02, 0.07, '#7fe0d0', Math.PI / 2],
-      ['b', 0, 0.17, 0, 0.62, 0.05, 0.56, '#3a302c'],
-    ],
-  },
-  {
-    id: 'bucket',
-    slot: 'hat',
-    tier: 'common',
-    area: 'tower',
-    name: 'A bucket',
-    line: '',
-    parts: [
-      ['c', 0, 0.17, 0, 0.33, 0.34, 0.33, '#9aa0a8'],
-      ['t', 0, 0.34, 0, 0.33, 0.1, 0.33, '#7d838b'],
-      ['t', 0, 0.42, 0, 0.3, 0.05, 0.3, '#5c6168'],
-    ],
-  },
-  {
-    id: 'pennant',
-    slot: 'accessory',
-    tier: 'rare',
-    area: 'tower',
-    name: 'A tower pennant',
-    line: '',
-    parts: [
-      ['c', 0.06, 0.3, -0.26, 0.018, 1.0, 0.018, '#7f5630'],
-      ['b', 0.26, 0.62, -0.26, 0.38, 0.22, 0.02, '#f0752c'],
-    ],
-  },
-  {
-    id: 'hardhat',
-    slot: 'hat',
-    tier: 'rare',
-    area: 'quarry',
-    name: 'A hard hat',
-    line: '',
-    parts: [
-      ['s', 0, 0.08, 0, 0.34, 0.26, 0.34, '#f2c81a'],
-      ['c', 0, 0.03, 0, 0.42, 0.03, 0.42, '#e8bc14'],
-      ['b', 0, 0.24, 0, 0.06, 0.04, 0.5, '#d4aa10'],
-    ],
-  },
-  {
-    id: 'aviator',
-    slot: 'hat',
-    tier: 'rare',
-    area: 'village',
-    name: "An aviator's cap",
-    line: '',
-    parts: [
-      ['s', 0, 0.08, 0, 0.33, 0.26, 0.33, '#7a4b28'],
-      ['c', -0.3, -0.06, 0, 0.09, 0.05, 0.13, '#6a3f20', 0, Math.PI / 2],
-      ['c', 0.3, -0.06, 0, 0.09, 0.05, 0.13, '#6a3f20', 0, Math.PI / 2],
-      ['c', -0.12, 0.2, 0.25, 0.08, 0.05, 0.08, '#7fd0e0', Math.PI / 2],
-      ['c', 0.12, 0.2, 0.25, 0.08, 0.05, 0.08, '#7fd0e0', Math.PI / 2],
-    ],
-  },
-  {
-    id: 'diving',
-    slot: 'hat',
-    tier: 'wonder',
-    area: 'Far Head',
-    name: 'A brass diving helmet',
-    line: '',
-    parts: [
-      ['s', 0, 0.08, 0, 0.42, 0.42, 0.42, '#c79a3e'],
-      ['c', 0, 0.1, 0.36, 0.17, 0.08, 0.17, '#3a302c', Math.PI / 2],
-      ['c', 0, 0.1, 0.39, 0.13, 0.03, 0.13, '#7fd0e0', Math.PI / 2],
-      ['c', 0, -0.3, 0, 0.46, 0.08, 0.46, '#8a6a2c'],
-    ],
-  },
-  // Shapes that never come out of this run's crates. They promise more.
-  {
-    id: 'egg',
-    name: 'Something round',
-    line: '',
-    parts: [
-      ['s', 0, 0.3, 0, 0.24, 0.32, 0.24, '#5fd0c0'],
-      ['c', 0, 0.03, 0, 0.2, 0.06, 0.2, BRASS],
-    ],
-  },
-  {
-    id: 'scope',
-    name: 'Something on legs',
-    line: '',
-    parts: [
-      ['c', 0, 0.5, 0, 0.07, 0.56, 0.07, BRASS, 0, 0.9],
-      ['c', -0.13, 0.2, 0, 0.018, 0.5, 0.018, '#7a5a20', 0, -0.3],
-      ['c', 0.13, 0.2, 0, 0.018, 0.5, 0.018, '#7a5a20', 0, 0.3],
-      ['c', 0, 0.2, 0.1, 0.018, 0.5, 0.018, '#7a5a20', 0.3],
-    ],
-  },
-];
-/** What the shop sells (./shop.ts): never in a box, and never counted with what boxes gave you, so the boxes' order doesn't move.
- * `price` is a real number that you don't pay. `after`: it arrives with that. */
-export type Stock = Gift & { price: number; after?: 'forge' | 'trains' };
-export const STOCK: Stock[] = [
-  {
-    id: 'paperhat',
-    slot: 'hat',
-    name: 'A paper work hat',
-    line: '',
-    price: 40_000_000,
-    parts: [
-      ['k', 0, 0.22, 0, 0.43, 0.44, 0.38, '#f4f1e8'],
-      ['b', 0, 0.03, 0, 0.74, 0.07, 0.62, '#e4dfd2'],
-      ['b', 0, 0.1, 0.33, 0.16, 0.08, 0.02, '#c4453a'],
-    ],
-  },
-  {
-    id: 'bigbutton',
-    slot: 'accessory',
-    name: 'A very large button',
-    line: '',
-    price: 8_000_000,
-    parts: [
-      ['c', 0, 0.14, 0.29, 0.17, 0.05, 0.17, '#e4574a', Math.PI / 2],
-      ['c', 0, 0.14, 0.32, 0.11, 0.02, 0.11, '#fff0c9', Math.PI / 2],
-    ],
-  },
-  {
-    id: 'sandwich',
-    slot: 'outfit',
-    name: 'A sandwich board',
-    line: '',
-    price: 125_000_000,
-    parts: [
-      ['b', 0, -0.12, 0.33, 0.66, 0.92, 0.05, '#fff3d6'],
-      ['b', 0, -0.12, -0.33, 0.66, 0.92, 0.05, '#fff3d6'],
-      ['b', 0, 0.12, 0.36, 0.5, 0.14, 0.02, '#c4453a'],
-      ['b', 0, -0.12, 0.36, 0.5, 0.14, 0.02, '#c4453a'],
-      ['b', 0, -0.36, 0.36, 0.5, 0.14, 0.02, '#c4453a'],
-      ['b', 0, 0.12, -0.36, 0.5, 0.14, 0.02, '#c4453a'],
-      ['b', 0, -0.12, -0.36, 0.5, 0.14, 0.02, '#c4453a'],
-      ['b', 0, -0.36, -0.36, 0.5, 0.14, 0.02, '#c4453a'],
-      ['b', -0.2, 0.38, 0, 0.05, 0.03, 0.68, '#7f5630'],
-      ['b', 0.2, 0.38, 0, 0.05, 0.03, 0.68, '#7f5630'],
-    ],
-  },
-  {
-    id: 'tallhat',
-    slot: 'hat',
-    name: 'A very tall hat',
-    line: '',
-    price: 900_000_000,
-    after: 'forge',
-    parts: [
-      ['c', 0, 0.03, 0, 0.42, 0.05, 0.42, '#24262c'],
-      ['c', 0, 0.62, 0, 0.27, 1.15, 0.27, '#24262c'],
-      ['c', 0, 0.12, 0, 0.28, 0.1, 0.28, '#d8392b'],
-    ],
-  },
-  {
-    id: 'stationwhistle',
-    slot: 'accessory',
-    name: "A station master's whistle",
-    line: '',
-    price: 3_000_000_000,
-    after: 'trains',
-    parts: [
-      ['t', 0, 0.3, 0, 0.26, 0.2, 0.26, '#3f6fb0'],
-      ['c', 0, 0.02, 0.28, 0.06, 0.2, 0.06, '#d9a23a', Math.PI / 2],
-      ['s', 0, 0.02, 0.2, 0.09, 0.09, 0.09, '#d9a23a'],
-    ],
-  },
-];
 // The ladder's tool chests.
 type Extra = 'axe' | 'pack';
 const EXTRAS: Record<Extra, { name: string; line: string }> = {
@@ -470,15 +98,6 @@ const extraModel = (id: Extra) => {
   // The reveal owns transforms; its source geometry/materials remain cached like ordinary gift geometry.
   return model.clone(true);
 };
-// The box each crate is, in the order they come. The first Rare box is after the first path (./layout.ts: stations 1 and 2 first).
-const BOXES: Tier[] = ['common', 'common', 'rare', 'common', 'rare', 'common', 'wonder'];
-/** Odds of what's in a box: Common, Rare, Wonder. */
-const ODDS: Record<Tier, [number, number, number]> = {
-  common: [0.6, 0.3, 0.1],
-  rare: [0, 0.7, 0.3],
-  wonder: [0, 0, 1],
-};
-const PITY = { firstWonderBy: 3, mostWithout: 5 };
 const TIER_COLOR: Record<Tier, string> = { common: '#fff7e8', rare: '#8fd0ff', wonder: '#ffd76a' };
 const TIER_MARKS: Record<Tier, string> = { common: '★', rare: '★★', wonder: '★★★' };
 // How long the lid rattles; then it's held up over your head (./got.ts).
@@ -642,34 +261,7 @@ export const crystalPeg = (k: number, n: number, out: THREE.Vector3) =>
   out.set(((k + 0.5) / n - 0.5) * (WIDE - 0.4), CRYSTAL_Y, 0.08);
 
 // ---------------------------------------------------------------- what you wear, and who follows you
-// One thing a slot, put on by a crate, swapped at the shelf. The conductor follows Head rigidly; other items stay upright.
 type Named = THREE.Object3D & { getObjectByName: (n: string) => THREE.Object3D | undefined };
-const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: number }>> = {
-  hat: { bone: 'Head', y: CONDUCTOR_HAT_FIT.buddySeat, z: 0, scale: CONDUCTOR_HAT_FIT.scale },
-  beanie: { bone: 'Head', y: 0.3, z: 0, scale: 0.92 },
-  teacup: { bone: 'Head', y: 0.42, z: 0, scale: 0.85 },
-  scarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
-  glasses: { bone: 'Head', y: 0.03, z: 0.01, scale: 0.92 },
-  headphones: { bone: 'Head', y: 0.08, z: 0, scale: 1 },
-  overalls: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
-  raincoat: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
-  festival: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
-  strawhat: { bone: 'Head', y: 0.33, z: 0, scale: 0.9 },
-  lampcap: { bone: 'Head', y: 0.31, z: 0, scale: 0.92 },
-  mossscarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
-  whistle: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
-  goggles: { bone: 'Head', y: 0.1, z: 0.01, scale: 0.92 },
-  bucket: { bone: 'Head', y: 0.3, z: 0, scale: 0.9 },
-  pennant: { bone: 'spine_02', y: 0.1, z: 0, scale: 1 },
-  hardhat: { bone: 'Head', y: 0.32, z: 0, scale: 0.92 },
-  aviator: { bone: 'Head', y: 0.3, z: 0, scale: 0.92 },
-  diving: { bone: 'Head', y: 0.22, z: 0, scale: 0.92 },
-  paperhat: { bone: 'Head', y: 0.36, z: 0, scale: 0.92 },
-  bigbutton: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
-  sandwich: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
-  tallhat: { bone: 'Head', y: 0.33, z: 0, scale: 0.86 },
-  stationwhistle: { bone: 'neck_01', y: -0.22, z: 0, scale: 0.62 },
-};
 const on: Partial<Record<Slot, GiftId>> = {};
 const worn = new Map<Slot, { id: GiftId; m: THREE.Mesh }>();
 type ClothesSlot = 'hat' | 'accessory' | 'outfit';

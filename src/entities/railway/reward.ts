@@ -1,11 +1,13 @@
 // T1's conductor hat and T2's scarf: profiles commit before the common-box reveal begins.
-// Construction is Lockstep; eligibility is read-only, claims are personal Local, worn cosmetics are Owner presence.
+// Construction is Lockstep; eligibility is read-only, claims are personal Local. A claimed hat or scarf goes into the
+// wardrobe (../wardrobe/state.ts), which owns what is worn and shows it to others.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import { createBrowserRailwayProfile } from '../../railway-profile-browser.ts';
 import { claimsPruned } from '../../boot/world-reset.ts';
-import { addPresenceField, getRoomId, onRemotePresence, remotes } from '../../netplay/net.ts';
+import { getRoomId } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
+import { wardrobe } from '../wardrobe/state.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createRewardReveal } from '../../render/reward-reveal.ts';
@@ -18,18 +20,6 @@ import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createRailwayTools, inReach } from './tools.ts';
 import { createAbilityArrival } from './ability-arrival.ts';
 import { createTrophyPlinth } from './trophy-plinth.ts';
-import { seatConductorHat } from '../../render/head-clearance.ts';
-
-const localCosmetics = new Set<string>();
-const remoteCosmetics = new Map<string, Set<string>>();
-addPresenceField('railwayCosmetic', () => (localCosmetics.has('hat') ? 'hat' : null));
-addPresenceField('railwayScarf', () => (localCosmetics.has('scarf') ? true : null));
-onRemotePresence((remote, presence) => {
-  const items = new Set<string>();
-  if (remote.entered && presence.railwayCosmetic === 'hat') items.add('hat');
-  if (remote.entered && presence.railwayScarf === true) items.add('scarf');
-  remoteCosmetics.set(remote.peer, items);
-});
 
 export async function createRailwayReward(
   adapter: RailwayAdapter,
@@ -216,7 +206,6 @@ async function createStationReward(
     va: number;
     t: number;
   }[] = [];
-  const worn = new Map<string, THREE.Mesh>();
   let profile: ReturnType<typeof createBrowserRailwayProfile> | null = null;
   let error: string | null = null;
   let claimed = false,
@@ -252,6 +241,10 @@ async function createStationReward(
         (claim) => claim.world === world && claim.station === stationId && claim.completion === 1,
       );
       error = null;
+      // A claim the wardrobe hasn't heard of (an earlier visit, another tab, a reload mid-reveal) is put on, as the
+      // reveal's end does. After that, what you wear is the wardrobe's.
+      const mine = wardrobe();
+      if (owned && revealT < 0 && mine && !mine.isOwned(reward.id)) mine.grant(reward.id, { wear: true });
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Personal reward storage unavailable';
     }
@@ -308,6 +301,7 @@ async function createStationReward(
       from: at.clone().add(new THREE.Vector3(0, 0.9, 0)),
       done: () => {
         revealT = -1;
+        wardrobe()?.grant(reward.id, { wear: true }); // worn as it arrives
       },
     });
   }
@@ -317,11 +311,12 @@ async function createStationReward(
     try {
       const result = await profile.claim({ world, station: stationId, completion: 1 }, reward.id);
       if (disposed) return;
-      load();
+      // The reveal starts first, so the wardrobe gets the claim at the reveal's end, not before the card.
       if (result.status === 'accepted') {
         revealT = 0;
         revealCount++;
       }
+      load();
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Personal reward storage unavailable';
     } finally {
@@ -331,33 +326,6 @@ async function createStationReward(
   function requestOpen() {
     void open();
   } // open owns both storage and lock failures.
-  function wear(key: string, avatar: THREE.Object3D | null | undefined, visible: boolean) {
-    let hat = worn.get(key);
-    if (!visible || !avatar) {
-      hat?.removeFromParent();
-      worn.delete(key);
-      return;
-    }
-    if (!hat) {
-      hat = new THREE.Mesh(hatGeo, material);
-      hat.castShadow = true;
-      if (stationIndex === 1) {
-        hat.scale.setScalar(0.62);
-        hat.rotation.y = Math.PI;
-      }
-      worn.set(key, hat);
-    }
-    if (stationIndex === 0) {
-      seatConductorHat(avatar, hat);
-      return;
-    }
-    if (hat.parent !== avatar) avatar.add(hat);
-    avatar.updateWorldMatrix(true, false);
-    const bone = avatar.getObjectByName('neck_01');
-    if (bone) avatar.worldToLocal(bone.getWorldPosition(hat.position));
-    else hat.position.set(0, 0.9, 0);
-    hat.position.y -= 0.2;
-  }
   const api = {
     inspect: () => ({
       claims,
@@ -472,20 +440,6 @@ async function createStationReward(
       if (flying[0] && flying[0].t > 2.4) flying.length = 0;
       boards.count = flying.length;
       if (boards.count) boards.instanceMatrix.needsUpdate = true;
-      if (owned && revealT < 0) localCosmetics.add(reward.id);
-      else localCosmetics.delete(reward.id);
-      wear('self', me.avatar, localCosmetics.has(reward.id));
-      const present = new Set(['self']);
-      for (const remote of remotes.values()) {
-        present.add(remote.peer);
-        wear(remote.peer, remote.avatar, remoteCosmetics.get(remote.peer)?.has(reward.id) === true);
-      }
-      for (const key of worn.keys())
-        if (!present.has(key)) {
-          worn.get(key)!.removeFromParent();
-          worn.delete(key);
-        }
-      for (const key of remoteCosmetics.keys()) if (!remotes.has(key)) remoteCosmetics.delete(key);
       const p = me.body?.position;
       if (p && crate.visible && flight === 1 && revealT < 0 && !error && Math.hypot(p.x - at.x, p.z - at.z) < 1.25)
         requestOpen();
@@ -497,9 +451,6 @@ async function createStationReward(
       offAccepted();
       offCorrected();
       listeners.abort();
-      localCosmetics.delete(reward.id);
-      for (const hat of worn.values()) hat.removeFromParent();
-      worn.clear();
       root.removeFromParent();
       for (const geometry of [
         crate.geometry,
