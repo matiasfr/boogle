@@ -666,7 +666,7 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 **Files.** `src/entities/wardrobe/view.ts`, `src/entities/wardrobe/state.ts`, `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **C2a.** Port `gifts.ts`'s follower (`updateCritter`, `updatePartnerPets`) with presence `stowaway` (riding flag
+- [x] **C2a.** Port `gifts.ts`'s follower (`updateCritter`, `updatePartnerPets`) with presence `stowaway` (riding flag
   only). Each client animates its own copy of a remote's pet.
 
 **Proofs.**
@@ -676,6 +676,19 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 - Two-tab still: the partner's pet follows them and rides a train.
 
 **Done means.** Owning the stowaway shows it on you and to others, and it goes when you leave.
+
+**As built (9 November).**
+- **Wardrobe:** a `pet` slot beside the clothes (`WORN_SLOTS`, `WornSlot`). It's saved in `worn.pet` (an added
+  optional field, so no `WORLD_NS` change), cycles with `swapSlot('pet')`, and `unbox` brings it out when the slot is
+  empty, as for clothes. `wearing()` (the `wardrobe` presence) still carries clothes only; `pet()` is the new getter.
+  `tryOn` stays clothes only.
+- **Presence `stowaway`** (`{ riding }`, null when away) is registered in `state.ts` beside `wardrobe`, with
+  `parseStowaway` and `partnerStowaway(peer)`. Riding is `carry.on !== null` (Place's rule), handed in by `index.ts`
+  through `startWardrobe(…, onDeck)` so `state.ts` stays headless.
+- **View:** `stepPet` is `updateCritter` verbatim apart from names and a 0.1 s cap on `dt`. The pets live in one
+  group that is the wardrobe entity's `mesh`, so despawn takes them; a partner's goes when their presence drops it or
+  they leave. Mesh name `place-pet`, as in Place.
+- **Shelf:** `place-swap-pet` at Place's `SLOT_X.pet` (2). The shop's rail still swaps clothes only.
 
 ### Job K1: crystals (owner question 2)
 
