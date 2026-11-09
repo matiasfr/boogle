@@ -1930,15 +1930,13 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the track beside Q4');
       await walk(q4.x, q4.z, 2.4);
     };
-    // botOrder=legacy: out to Q4 on the depot cart: call it to the forge, board it by a real jump and ride it to the
-    // rack. A player walks from the lever to Q4 and waits there for the cart's loads.
+    // botOrder=legacy: out to Q4 on the depot cart: wait beside the turntable stop while it takes the forge's rails
+    // (no call handle since 9 November), board it by a real jump and ride it to the rack. A player walks from the
+    // lever to Q4 and waits there for the cart's loads.
     if (legacy) {
       const aboardCart = () => carry.on?.id === 'railway:cart';
-      const call = v2().cartCall;
-      await walk(call.x, call.z, 1.6);
-      require(await bot.use(call.x, call.z, 'call the cart', /^Call cart to forge$/), 'cart call handle offered');
-      require(await bot.work(() => l2().cart.recall || l2().cart.phase === CART_PHASE.FORGE, 5000, 380), 'cart called');
-      await checkpoint('cart called');
+      const stop = besideQ(0, rack);
+      await walk(stop.x, stop.z, 1.6);
       await until(() => l2().cart.phase === CART_PHASE.FORGE, 'the cart comes to the forge', CART_MS);
       // A loaded cart stands about 2 m tall: up with the optional double jump, as Place's porter boards it.
       const boardBy = performance.now() + 15000;
