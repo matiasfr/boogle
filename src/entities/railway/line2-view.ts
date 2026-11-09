@@ -1,5 +1,5 @@
 // Line two's Local views over accepted state: the forge rising and pouring, its rails rack, the machine on the quarry line,
-// Q1-Q5 frames, depot racks, route-v2 decks, both gates, the summit switch and Far Head's lamps and live arrival show.
+// Q1-Q6 frames, depot racks, route-v2 decks, both gates, the summit switch, Far Head, the boiler and the pier show.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
@@ -19,6 +19,8 @@ import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
+import { createRailwayBoiler } from './boiler-view.ts';
+import { createRailwayPier } from './pier-view.ts';
 import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 
@@ -40,20 +42,23 @@ export async function createRailwayLine2(
   rewardBusy: () => boolean = () => false,
   seated: () => boolean = () => false,
 ) {
-  const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/rail.ts'),
-    import('../../proto/place/stations.ts'),
-    import('../../proto/place/pieces.ts'),
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/opening-plans.ts'),
-    import('../../proto/place/tech-layout.ts'),
-    import('../../proto/place/part-geometry.ts'),
-    import('../../proto/flat.ts'),
-    import('../../proto/minis/common.ts'),
-    import('../../proto/place/look.ts'),
-    import('../../proto/place/look-kit.ts'),
-  ]);
+  const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
+    await Promise.all([
+      import('../../proto/place/layout.ts'),
+      import('../../proto/place/rail.ts'),
+      import('../../proto/place/stations.ts'),
+      import('../../proto/place/pieces.ts'),
+      import('../../proto/place/land.ts'),
+      import('../../proto/place/opening-plans.ts'),
+      import('../../proto/place/tech-layout.ts'),
+      import('../../proto/place/part-geometry.ts'),
+      import('../../proto/flat.ts'),
+      import('../../proto/minis/common.ts'),
+      import('../../proto/place/look.ts'),
+      import('../../proto/place/look-kit.ts'),
+      import('../../proto/place/prop-kit.ts'),
+      import('../../proto/place/carry-models.ts'),
+    ]);
   const { flat } = flatMod;
   const ox = layout.ORIGIN.x;
   // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
@@ -177,7 +182,7 @@ export async function createRailwayLine2(
     .slice(0, LINE2_STATIONS.length)
     .map((spec) => stations.buildStation(spec, stations.frameBesideLine(spec, quarry.line, quarry.dir), owner));
   track.snapTo(track.u(layout.STUB.east));
-  const depotLogs = pieces.logStackMesh(24, owner);
+  const depotLogs = pieces.logStackMesh(32, owner);
   depotLogs.count = 0;
   // The open ends of the rack and its logs face the path's approach, including on bends.
   const rackParts: Parameters<typeof shapes.merged>[0] = [];
@@ -196,8 +201,12 @@ export async function createRailwayLine2(
     const f = frames[k]!;
     // On the approach beside the frame: clear its posts, feeder, parked machine and Q5's gate jambs.
     // Use the frame's tangent; normalizing a vector toward the frame crowded the pile against it on bends.
-    // The full 3.2 m pickup zone must stay inside the server's existing 7 m reach around the frame.
+    // The full 3.2 m pickup zone stays inside the server's 7 m reach except Q6's dry approach rack below.
     out.set(f.x - Math.sin(f.yaw) * 3.4, 0, f.z - Math.cos(f.yaw) * 3.4);
+    if (LINE2_STATIONS[k]!.feed === 'train') {
+      const p = rail.besideLine(quarry.line, LINE2_STATIONS[k]!.fromCm / 100 - 8, quarry.stations[k]!.side * 7.5);
+      out.set(p.x, 0, p.z);
+    }
     out.y = land.H(out.x, out.z) + 0.16; // the bearer tops, shared by unload flights and pickup targets
     return out;
   };
@@ -223,7 +232,7 @@ export async function createRailwayLine2(
       .applyAxisAngle(THREE.Object3D.DEFAULT_UP, depotYaw(k))
       .add(depotRack.position);
     depotSign.set(n);
-    const shown = Math.min(24, n);
+    const shown = Math.min(32, n);
     for (let i = 0; i < shown; i++) pieces.setStackLog(depotLogs, i, depotSlot(k, i, tmp), depotYaw(k));
     // logStackMesh starts hidden. Commit visibility and colour uploads along with its matrices.
     commitPieces(depotLogs, shown);
@@ -399,6 +408,8 @@ export async function createRailwayLine2(
   let slabT = -1;
   const seaGate = createRailwaySeaGate(adapter, owner, { layout, tech, land, shapes, flat, sounds, partMat, glow });
   const farHead = createRailwayFarHead(owner, { layout, rail, land, flat, sounds });
+  const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces });
+  const pier = createRailwayPier(owner, { layout, rail, sounds });
   // The chain from the slab's top to the winch.
   {
     const a = new THREE.Vector3(G.x + ox, G.y + SLAB.h + 1.25, G.z),
@@ -540,6 +551,8 @@ export async function createRailwayLine2(
     });
     seaGate.restore(l);
     farHead.restore(l.stations[4]?.completion === 1);
+    boiler.restore();
+    pier.restore(l.stations[5]?.completion === 1);
     visualHead = targetHead = working() ? head() : TURN_HEAD;
     setback = 2.4;
     if (working()) {
@@ -567,6 +580,7 @@ export async function createRailwayLine2(
     const l = l2();
     if (!l) return;
     seaGate.accepted(event);
+    boiler.accepted(event);
     if (event.op === 'rail.seaSwitch' && event.pid === state.pid) showSwitch('sea');
     if (event.op === 'rail.forgeTake') {
       for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
@@ -672,6 +686,7 @@ export async function createRailwayLine2(
     const e = c.event;
     if (!l) return;
     seaGate.corrected(c);
+    boiler.corrected();
     if ((e.op === 'rail.seaSwitch' && !l.sea) || (e.op === 'rail.lever' && !l.lever)) switchCamera.cancel();
     if (e.op === 'rail.lever') {
       clank(lever.x + ox, lever.z);
@@ -952,6 +967,8 @@ export async function createRailwayLine2(
       syncSolids(l);
       seaGate.update(dt, l);
       farHead.update(dt, l.stations[4]?.completion === 1);
+      boiler.update(dt);
+      pier.update(dt, l.stations[5]?.completion === 1);
       if (slabT >= 0) {
         slabT += dt;
         const u = Math.min(1, slabT / 1.5);
@@ -999,6 +1016,7 @@ export async function createRailwayLine2(
         p = me.body?.position;
       if (!l || !p || !state.ready) return [];
       const out: Interactable[] = seaGate.targets(p, l);
+      out.push(...boiler.targets());
       const full = state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {};
       if (l.forge.rack > 0 && Math.hypot(p.x - RX, p.z - RZ) <= 3)
         out.push({
@@ -1010,7 +1028,11 @@ export async function createRailwayLine2(
         });
       if (l.depot > 0 && l.active >= 0) {
         depotPlace(l.active, from);
-        if (Math.hypot(p.x - from.x, p.z - from.z) <= 3.2)
+        if (
+          Math.hypot(p.x - from.x, p.z - from.z) <= 3.2 &&
+          (LINE2_STATIONS[l.active]!.feed !== 'train' ||
+            Math.hypot(p.x - frames[l.active]!.x, p.z - frames[l.active]!.z) <= 7)
+        )
           out.push({
             id: 'railway-depot-logs',
             verb: 'Pick up',
@@ -1049,6 +1071,19 @@ export async function createRailwayLine2(
         ...seaGate.inspect(),
         switchCamera: { ...switchCamera.inspect(), kind: switchKind },
         ...farHead.inspect(),
+        ...boiler.inspect(),
+        ...pier.inspect(),
+        q6Rack: (() => {
+          const p = depotPlace(5, new THREE.Vector3());
+          return {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+            ground: land.H(p.x, p.z),
+            frameDistance: Math.hypot(p.x - frames[5]!.x, p.z - frames[5]!.z),
+            shown: l?.active === 5 ? depotLogs.count : 0,
+          };
+        })(),
         head: visualHead,
         targetHead,
         setback,
