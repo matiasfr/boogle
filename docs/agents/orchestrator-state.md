@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../decisions.md#current-decision-index).
 
-**Updated:** 9 November 2026, 10:50 UTC (running, merged today, tidy, next moves). The queue and open questions below are from 5–6 November and may be stale. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 9 November 2026, 17:46 UTC (running, merged today, tidy, next moves). The queue and open questions below are from 5–6 November and may be stale. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
 
 ## Links
 
@@ -21,17 +21,16 @@ Claude only until 12 November (`npm run models`). Agents run in `.claude/worktre
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| C2: the stowaway | implementer | Presence key `stowaway`; ship when it passes |
-| K1: personal crystals | implementer | Finds store `boogle.railway-finds.v0`; F1 after |
-| Split-rock J5: wagon, Pier halt, crossing | implementer | Includes J4 leftovers: wagon collider, sim hold on `rail.turn`; stops if a WORLD_NS bump is needed |
-| Q6-frame bot trap | implementer (Sonnet) | Bot sticks on a ledge near (1365, −166) after "Q6 stocked"; fix committed, long run queued |
-| Queued | | Glider piece B (rules, next WORLD_NS; batch with J5's bump if it has one); Home flow fixes (cart 16→24 rails, bot route); kiln mouth polish; F1 → F2, then D1 and R1–R3 |
+| F1: gold finds and the finds board | implementer | Built on K1; also tidies the crowded curio shelf; long run in progress. F2 after |
+| Split-rock J5: wagon, Pier halt, crossing | implementer | Long production run failed at the pier: bot's back full at pier footing 1 ("Empty your back first"); fixing and rerunning. No WORLD_NS bump |
+| Glider B + Home flow fixes | implementer (Opus high) | Plan and designer review on `claude/glider-b-plan`; WORLD_NS v23, ship only when no owner session is live |
+| Queued | | F2 → D1 → R1–R3; kiln mouth polish; Split-rock cleft placement (after J5); J5 leftovers in the scratchpad notes |
 
 ## Merged 9 November
 
 - Docs split: decisions.md + direction.md (#1232), research index with top blocks (#1235), Godot evaluation notes (#1246).
 - Agents: designer agent with a level-design and flow pass grounded in research, lenses not rules (#1241–#1244, #1250); tidy skill (#1237); progression-flow research (#1249); Home flow audit (#1251, docs/reviews/home-flow.md).
-- Game: hook scoring fix (#1234); glider brief and design review (#1238); glider piece A, off in production (#1247); render/audio tidy (#1248); town T1, Pip's house live (#1252); Split-rock J3 rules, WORLD_NS v22, live (#1253); wardrobe T4 (#1254); buoys and telescope F3 (#1256); Fine Prices shop T5 (#1257); ambience and M flag A1 (#1258); residents T2, town back under its draw budget (#1259); Split-rock J4, the Works live (#1261); museum T3 (#1262); station boxes and curio shelf C1 (#1263).
+- Game: hook scoring fix (#1234); glider brief and design review (#1238); glider piece A, off in production (#1247); render/audio tidy (#1248); town T1, Pip's house live (#1252); Split-rock J3 rules, WORLD_NS v22, live (#1253); wardrobe T4 (#1254); buoys and telescope F3 (#1256); Fine Prices shop T5 (#1257); ambience and M flag A1 (#1258); residents T2, town back under its draw budget (#1259); Split-rock J4, the Works live (#1261); museum T3 (#1262); station boxes and curio shelf C1 (#1263); Q6 bot trap fix (#1265); the stowaway C2 (#1266); personal crystals K1 (#1267).
 - Tooling: X1, verification on the production game (#1239, #1245).
 
 ## Merge queue
@@ -82,9 +81,8 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
 
 ## Next moves
 
-- Keep about three agents running; C2, K1, J5 and the Q6 trap fix now. As each lands: F1 after K1; glider B with J5 or after (one WORLD_NS bump, never while the owner is mid-session); then the Home flow fixes.
+- Keep about three agents running; F1, J5 and glider B now. As each lands: F2 after F1; then D1 and R1–R3; glider B's WORLD_NS v23 ships only while no owner session is live.
 - `../boogle-trusted/node_modules` and one old agent worktree symlink to the main checkout's node_modules; an `npm ci` in either empties it (seen twice on 9 November). Reinstall with `npm ci` in the main checkout if `node dev/playtest/cli.ts` can't find playwright.
-- Home flow fixes from docs/reviews/home-flow.md go to an implementer when a slot frees.
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
 - Tidy: run the remaining code areas, then architecture, docs and memory.
 
