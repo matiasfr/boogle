@@ -1,6 +1,6 @@
 # Puzzle order: line 1 to Far Head
 
-> **Status: proposed (2026-11-08).**
+> **Status: approved (owner, 2026-11-08).**
 
 Seed: the owner's solo run to Far Head on an iPad (8 November, [playtests](../playtests.md)). They climbed Needle Bell
 with the hook right after earning it and the sea switch did nothing; the cart's rack was invisible, so its logs seemed
@@ -71,9 +71,9 @@ a reload while Q5 funding stays blocked until Q4. No world reset needed if the i
 ## Open questions
 
 1. **May the summit switch open the sea gate before Q4?** Recommended: yes (B); Q5 still waits for Q4.
-   Answer: ___
+   Answer: yes (owner, 2026-11-08: "Summit switch yes unlock"), plus a zoom cinematic for the switches.
 2. **Should the "materials ready" state use a short text cue as well as the latch?** Recommended: yes, one line on the
-   frame's sign, removed when laying starts. Answer: ___
+   frame's sign, removed when laying starts. Answer: as recommended (orchestrator's pick, owner's small-calls rule).
 
 ## Parked
 
