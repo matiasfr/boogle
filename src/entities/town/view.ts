@@ -2,7 +2,7 @@
 // shop's and museum's plots with their stake boards, and the residents who live in them. Which rooms stand and what's on
 // Pip's desk come from the town facts (src/sim/town-facts.ts), read from the shared railway, so everyone sees one town;
 // the cutaway, the indoor camera, the barks and what's drawn near you are Local; what the residents told you is Personal
-// Local (./memory.ts). Until place-retirement R3 the pieces load from src/proto/place with import(), as the railway's
+// Local (./memory.ts). The museum's 1:120 table shows the shared railway as it stands (place-retirement T3). Until place-retirement R3 the pieces load from src/proto/place with import(), as the railway's
 // view does.
 import type { RailwayInspection } from '../../adapters/railway.ts';
 import type { FrameCtx } from '../../loop.ts';
@@ -19,6 +19,8 @@ import {
   townReadOf,
   type TownRead,
 } from '../../sim/town-facts.ts';
+import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { inspectWardrobe, wardrobe } from '../wardrobe/state.ts';
 import { inspectRailway, railwayYouGot } from '../railway/state.ts';
 import { createTownMemory } from './memory.ts';
@@ -38,23 +40,31 @@ export type TownEnv = {
   hush(): boolean;
 };
 const HUSH_EVERY = 0.25; // s: the reward's state is read from inspectRailway, which walks the railway's scene
+const TABLE_EVERY = 0.5; // s: so is what the museum's table shows (trees, the machine, the trains)
+/** The great tree's id in the railway's sources (LINE1_GREAT_TREE). */
+const GREAT_TREE = 28;
 
 export async function createTownView(read: () => RailwayInspection | null) {
   const owner = createOwnedView();
   owner.root.name = 'town';
-  const [roomKit, houseKit, shopKit, sites, lines, residentKit] = await Promise.all([
+  const [roomKit, houseKit, shopKit, sites, lines, residentKit, museumKit, plans, layout] = await Promise.all([
     import('../../proto/place/rooms.ts'),
     import('../../proto/place/house.ts'),
     import('../../proto/place/shop.ts'),
     import('../../proto/place/sites.ts'),
     import('../../proto/place/town-lines.ts'),
     import('../../proto/place/residents.ts'),
+    import('../../proto/place/museum.ts'),
+    import('../../proto/place/opening-plans.ts'),
+    import('../../proto/place/layout.ts'),
   ]);
   let facts: TownRead = { path: false, forge: false, completed: 0, trains: false };
   let score = 0;
+  let railway: RailwayInspection | null = null;
   const refresh = () => {
     const r = read();
     if (!r) return;
+    railway = r;
     facts = townReadOf(r);
     score = r.counts.score;
   };
@@ -73,11 +83,12 @@ export async function createTownView(read: () => RailwayInspection | null) {
     money: () => score,
     hush: () => conversation.open || rewardUp,
   };
-  // The house stands from the start; Fine Prices opens on the first path (T5). The museum keeps its board until T3.
-  // The shop needs this player's wardrobe, which the wardrobe entity starts on the production railway.
+  // The house stands from the start; Fine Prices and the museum open on the first path (T5, T3). The shop needs this
+  // player's wardrobe, which the wardrobe entity starts on the production railway.
   const clothes = wardrobe();
   const rooms = roomKit.createRooms(owner, {
-    up: (id) => id === 'house' || (id === 'shop' && !!clothes && townHas(facts, 'path')),
+    up: (id) =>
+      id === 'house' || (id === 'museum' && env.has('path')) || (id === 'shop' && !!clothes && env.has('path')),
   });
   rooms.stakeBoard(rooms.rooms.shop, lines.BOARDS.shopPlot);
   rooms.stakeBoard(rooms.rooms.museum, lines.BOARDS.museumPlot);
@@ -99,6 +110,52 @@ export async function createTownView(read: () => RailwayInspection | null) {
         residents.say,
       )
     : null;
+  // The museum's table: the opening village and the town's rooms, the track down so far, the trees still up, and what
+  // moves, read from the shared railway. Trees and movers come from inspectRailway, so they're sampled at 2 Hz.
+  const opening = plans.openingBuildings().map((b) => ({ plan: b.plan, grow: 1 }));
+  const [line1, line2] = [layout.LINKS[0]!.line, layout.LINKS[1]!.line];
+  let tableTrees: { x: number; z: number; great: boolean }[] = [],
+    movers: { x: number; y: number; z: number; kind: 'machine' | 'train' }[] = [],
+    tableIn = 0;
+  const sampleTable = () => {
+    const r = inspectRailway();
+    if (!r) return;
+    tableTrees = r.trees.filter((t) => !t.cleared).map((t) => ({ x: t.x, z: t.z, great: t.id === GREAT_TREE }));
+    movers = [{ ...r.machine, kind: 'machine' }];
+    if (facts.trains)
+      for (const t of r.line2View.trains) {
+        const c = t.cars[0];
+        if (c) movers.push({ x: c.x, y: c.y, z: c.z, kind: 'train' });
+      }
+  };
+  const museum = museumKit.createMuseum(owner, rooms, {
+    *buildings() {
+      yield* opening;
+      for (const r of Object.values(rooms.rooms)) {
+        const q = r.site;
+        if (q.state !== 'none') yield { plan: q.plan, grow: q.state === 'done' ? 1 : q.t / q.doneAt };
+      }
+    },
+    forgeLit: () => facts.forge,
+    trees: () => tableTrees,
+    *rails() {
+      // Line 1 lays from the camp to the village: each station's stretch runs from its toCm back to its fromCm, and
+      // both ends' stubs are down from the start. Line 2 lays out from the turntable.
+      yield { line: line1, lo: 0, hi: layout.STUB.village };
+      yield { line: line1, lo: LINE1_STATIONS[0]!.fromCm / 100, hi: line1.len };
+      for (const [i, s] of (railway?.stations ?? []).entries()) {
+        const q = LINE1_STATIONS[i];
+        if (q && s.completion) yield { line: line1, lo: q.toCm / 100, hi: q.fromCm / 100 };
+      }
+      yield { line: line2, lo: 0, hi: LINE2_STATIONS[0]!.fromCm / 100 };
+      for (const [i, s] of (railway?.line2.stations ?? []).entries()) {
+        const q = LINE2_STATIONS[i];
+        if (q && s.completion) yield { line: line2, lo: q.fromCm / 100, hi: q.toCm / 100 };
+      }
+    },
+    movers: () => movers,
+    people: env.people,
+  });
   sites.buildSites(owner);
   rooms.snap();
   rooms.warm();
@@ -120,6 +177,11 @@ export async function createTownView(read: () => RailwayInspection | null) {
       }
       sites.updateSites(ctx.dt);
       rooms.update(ctx.dt);
+      if (rooms.rooms.museum.near.visible && (tableIn -= ctx.dt) <= 0) {
+        tableIn = TABLE_EVERY;
+        sampleTable();
+      }
+      museum.update(ctx.dt);
       house.update();
       shop?.update();
       residents.update(ctx.dt);
@@ -135,6 +197,7 @@ export async function createTownView(read: () => RailwayInspection | null) {
       rooms: { house: room('house'), shop: room('shop'), museum: room('museum') },
       indoors: { room: rooms.indoors.room?.id ?? null, inside: rooms.indoors.inside?.id ?? null },
       houseStage: house.stage(),
+      museumBits: museum.shown(),
       wardrobe: inspectWardrobe(),
       residents: Object.fromEntries(
         Object.entries(residents.guys).map(([id, g]) => [id, { on: g.on, x: g.x, z: g.z }]),

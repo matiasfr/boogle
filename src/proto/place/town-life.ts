@@ -9,8 +9,8 @@ import { placeWardrobe } from './gifts.ts';
 import { youGot } from './got.ts';
 import { hasFact } from './growth.ts';
 import { createHouse } from './house.ts';
-import { L1 } from './lines.ts';
-import { updateMuseum } from './museum.ts';
+import { L1, lines, machine } from './lines.ts';
+import { createMuseum, type MuseumEnv } from './museum.ts';
 import { placeResidents, shoreWorker } from './place-residents.ts';
 import {
   indoorCamera,
@@ -24,6 +24,11 @@ import {
   warmRooms,
 } from './place-rooms.ts';
 import { money } from './score.ts';
+import { TREES, standing } from './chop.ts';
+import { forge } from './forge.ts';
+import { job } from './job.ts';
+import { run } from './run.ts';
+import { sites } from './sites.ts';
 import { createShop } from './shop.ts';
 import { updateTalkCard, talking } from './talk.ts';
 import { BOARDS } from './town-lines.ts';
@@ -37,6 +42,39 @@ camConstraints.push(indoorCamera);
 const house = createHouse(placeRoomsOwner, rooms.house, { has: hasFact });
 const shop = createShop(placeRoomsOwner, placeRooms, { has: hasFact, money, youGot }, placeWardrobe, placeResidents.say);
 registerInteractable(shop.targets);
+/** The museum's table, from Place's own modules: every site going up or done, the track as far as it's laid. */
+const museumEnv: MuseumEnv = {
+  *buildings() {
+    for (const q of sites)
+      if (q.state !== 'none') yield { plan: q.plan, grow: q.state === 'done' ? 1 : q.t / q.doneAt };
+  },
+  forgeLit: () => forge.lit,
+  *trees() {
+    for (const t of TREES) if (standing(t)) yield t;
+  },
+  *rails() {
+    for (const l of lines) {
+      const { line, dir } = l.spec;
+      const head = run.line === l ? run.head : l.open ? (dir > 0 ? line.len : 0) : dir > 0 ? 7 : line.len - 30;
+      const stubTo = dir < 0 ? 30 : 0; // line 1 starts with its village stub down
+      const lo = dir > 0 ? 0 : head,
+        hi = dir > 0 ? head : line.len;
+      yield { line, lo, hi };
+      if (stubTo && lo > stubTo) yield { line, lo: 0, hi: stubTo };
+    }
+  },
+  *movers() {
+    const f = machine.flatbed;
+    yield { x: f.x, y: f.y, z: f.z, kind: 'machine' };
+    if (job.rung.trains)
+      for (const l of lines) {
+        const c = l.train.tr.cars[0]!;
+        yield { x: c.x, y: c.y, z: c.z, kind: 'train' };
+      }
+  },
+  people: () => job.people,
+};
+const museum = createMuseum(placeRoomsOwner, placeRooms, museumEnv);
 const { listPrice } = shop;
 let warmed = false;
 export function updateTownLife(dt: number) {
@@ -47,7 +85,7 @@ export function updateTownLife(dt: number) {
   updateRooms(dt);
   house.update();
   shop.update();
-  updateMuseum(dt);
+  museum.update(dt);
   shoreWorker.update(dt);
   placeResidents.update(dt);
   updateTalkCard();
