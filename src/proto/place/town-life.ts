@@ -11,7 +11,7 @@ import { hasFact } from './growth.ts';
 import { createHouse } from './house.ts';
 import { L1 } from './lines.ts';
 import { updateMuseum } from './museum.ts';
-import { guys, resetResidents, residentSay, updateResidents } from './residents.ts';
+import { placeResidents, shoreWorker } from './place-residents.ts';
 import {
   indoorCamera,
   indoors,
@@ -35,7 +35,7 @@ stakeBoard(rooms.museum, BOARDS.museumPlot);
 camConstraints.splice(camConstraints.indexOf(indoorCamera), 1);
 camConstraints.push(indoorCamera);
 const house = createHouse(placeRoomsOwner, rooms.house, { has: hasFact });
-const shop = createShop(placeRoomsOwner, placeRooms, { has: hasFact, money, youGot }, placeWardrobe, residentSay);
+const shop = createShop(placeRoomsOwner, placeRooms, { has: hasFact, money, youGot }, placeWardrobe, placeResidents.say);
 registerInteractable(shop.targets);
 const { listPrice } = shop;
 let warmed = false;
@@ -48,9 +48,13 @@ export function updateTownLife(dt: number) {
   house.update();
   shop.update();
   updateMuseum(dt);
-  updateResidents(dt);
+  shoreWorker.update(dt);
+  placeResidents.update(dt);
   updateTalkCard();
 }
-export const resetTownLife = resetResidents;
+export function resetTownLife() {
+  placeResidents.reset();
+  shoreWorker.reset();
+}
 /** For the evals. */
-export const townLife = { rooms, indoors, talking, listPrice, guys };
+export const townLife = { rooms, indoors, talking, listPrice, guys: placeResidents.guys };
