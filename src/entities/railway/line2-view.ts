@@ -11,6 +11,7 @@ import { me } from '../../player/player.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
+import { commitPieces } from '../../render/haul-pieces.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_FORGE, LINE2_STATIONS, line2Panels } from '../../sim/railway-line2-layout.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
@@ -176,14 +177,14 @@ export async function createRailwayLine2(
     if (key === drawnDepot) return;
     drawnDepot = key;
     if (k < 0 || !LINE2_STATIONS[k]!.depot) {
-      depotLogs.count = 0;
+      commitPieces(depotLogs, 0);
       return;
     }
     depotPlace(k, depotAt);
-    depotLogs.count = Math.min(24, n);
-    for (let i = 0; i < depotLogs.count; i++)
-      pieces.setStackLog(depotLogs, i, pieces.stackSlot(i, 4, depotAt, 0, tmp), 0);
-    depotLogs.instanceMatrix.needsUpdate = true;
+    const shown = Math.min(24, n);
+    for (let i = 0; i < shown; i++) pieces.setStackLog(depotLogs, i, pieces.stackSlot(i, 4, depotAt, 0, tmp), 0);
+    // logStackMesh starts hidden. Commit visibility and colour uploads along with its matrices.
+    commitPieces(depotLogs, shown);
   }
 
   // ---------------------------------------------------------------- route v2: the hook walk, the quarry ramp, the drive

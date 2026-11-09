@@ -194,7 +194,12 @@ export function graphicsFailed() {
 }
 
 bootMark('graphics-start');
-export const rendererReady = renderer.init().then(
+const initializeRenderer = async () => {
+  if (import.meta.env.DEV && params.get('gpuProfile') === 'portable')
+    await (await import('./portable-device.ts')).installPortableDevice(renderer);
+  return renderer.init();
+};
+export const rendererReady = initializeRenderer().then(
   (r) => {
     started = true;
     // three ignores deliberate destruction. Observe it too so a forced loss exercises the real recovery path.

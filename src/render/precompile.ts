@@ -61,7 +61,7 @@ async function compileNow(root: THREE.Object3D) {
     restore();
     await done;
   } catch (e) {
-    console.warn('[precompile]', e);
+    console.error('[precompile]', e);
   } finally {
     restore();
   }
@@ -250,7 +250,7 @@ async function compileFrame() {
   bootMark('frame-pipelines');
 }
 
-// Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
+// Compile exceptions are reported as errors so the look harness cannot accept an incomplete scene.
 export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
   if (root) return compile(root);
   warmStart = performance.now();
@@ -263,7 +263,7 @@ export async function precompile(root: THREE.Object3D | null = null, onProgress:
   // compileFrame restores renderer state before its first await; only compileNow uses three's mutable
   // compileAsync state. Await BOTH: scene compilation can reuse still-pending wrappers from the frame.
   await (queue = queue.then(() =>
-    Promise.all([compileFrame().catch((e) => console.warn('[precompile frame]', e)), compileNow(scene)]),
+    Promise.all([compileFrame().catch((e) => console.error('[precompile frame]', e)), compileNow(scene)]),
   ));
   onProgress((preparations.length + 1) / parts);
   for (let i = 0; i < warmups.length; i++) {
