@@ -16,8 +16,6 @@ const REACH = 3.2;
 export async function createRailwayShelf(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  /** Where line2-view stands the depot rack for stretch k (world metres, on the ground). */
-  depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
   /** Where pid's carried bundle is, holding `count` (sources.ts). */
   bundleOrigin: (pid: string, count: number, out: THREE.Vector3) => boolean,
 ) {
@@ -79,14 +77,13 @@ export async function createRailwayShelf(
   const from = new THREE.Vector3();
   const to = new THREE.Vector3();
   let drawn = '';
-  /** Stand the shelf beside stretch k's depot rack, a little further out from its frame. */
+  /** Beside the frame's forward outer corner, clear of its posts and within the existing server pickup reach. */
   function place(k: number) {
-    depotPlace(k, at);
     const spec = LINE2_STATIONS[k]!;
-    const p = layout.lineAt(quarry.line, spec.fromCm / 100 + 5, { x: 0, z: 0, ux: 0, uz: 1 });
-    // Along the line from the rack, so the logs and the rails sit side by side facing the frame.
-    at.x += p.ux * 3.4;
-    at.z += p.uz * 3.4;
+    const p = layout.lineAt(quarry.line, spec.fromCm / 100 - 1.5, { x: 0, z: 0, ux: 0, uz: 1 });
+    const side = quarry.stations[k]!.side;
+    // Its centre is 3.36 m from the authoritative frame; even the far side of the 3.2 m prompt zone is in reach.
+    at.set(spec.x / 100 + p.ux * 3 - p.uz * side * 1.5, 0, spec.z / 100 + p.uz * 3 + p.ux * side * 1.5);
     at.y = land.H(at.x, at.z);
     shelf.position.copy(at);
     shelf.rotation.y = Math.atan2(p.ux, p.uz) + Math.PI / 2;

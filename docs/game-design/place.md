@@ -25,6 +25,16 @@ Reduced motion suppresses the burst. These are Local presentation repairs: stock
 shared unlocks and wire data retain their owners. The cart/shelf/rocket WebKit report still needs an iPad check;
 the restricted Chromium profile is a validation check, not a WebKit emulator. [Investigation](../research/safari-render-gap.md).
 
+**Depot and carried-material visibility (8 November iPad playtest repair).** Q2–Q5's depot logs stand in the
+existing prototype's timber rack form, 3.4 m toward the approach from the active frame, outside the parked
+machine and frame footprint. Q4/Q5's rail shelf stands at the frame's forward outer corner (3 m along the line,
+1.5 m outward), clear of the sea-gate posts. Both full pickup zones fit inside the existing 7 m server reach
+around the frame. Delivered log batches commit visibility and instance colours as well as their counts; the nearby rack
+offers the existing **Pick up** interaction. Rails from the forge or shelf use the existing worn steel model
+for every mirrored player account, independently of the log bundle, so unloading logs leaves remaining rails
+visible. These are Local views over existing accepted stock; supply, bills, capacity and copy are unchanged.
+Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**.
+
 **Q5 rules and the sea switch (8 November; B4 job A).** Production line two now reaches Q5: 24 logs and 24 rails
 fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Its frame waits for the Server-kind
 `rail.seaSwitch`: Q4 must be complete, and the server checks the actor's reach and height at Needle Bell's summit
