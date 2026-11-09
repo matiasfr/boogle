@@ -21,17 +21,16 @@ Claude only until 12 November (`npm run models`). Agents run in `.claude/worktre
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| Town T2: residents, talk, notices | implementer | Also brings T1's +18 draw calls back down (agent-calls) |
-| Town T5: the shop | implementer | After T2 lands, T3 (museum); after T5, C1 then C2 |
-| F3: buoys and telescope | implementer, final bench and long run | Ship when it passes |
-| Split-rock J4: Works and Roundhouse live | implementer | Includes the breaker/boiler plume and whistle (home-flow finding 3); J5 after |
-| Queued | | Glider piece B (rules, next WORLD_NS, after J4; batch with any other bump); Home flow fixes (cart 16→24 rails, boiler plume, bot route); A1; then C1 → K1 → F1 → F2, D1 |
+| Town T3: the museum | implementer | Captures queued; next C2 after C1, K1 after C1 |
+| C1: station boxes and curio shelf | implementer, long run rerun | Ship when it passes; then C2 (stowaway) and K1 |
+| Split-rock J4: Works and Roundhouse live | implementer, final probe and bench | Includes the breaker/boiler plume and whistle (home-flow finding 3); J5 after |
+| Queued | | Glider piece B (rules, next WORLD_NS, after J4; batch with any other bump); Home flow fixes (cart 16→24 rails, bot route); C2, K1 → F1 → F2, then D1 and R1–R3 |
 
 ## Merged 9 November
 
 - Docs split: decisions.md + direction.md (#1232), research index with top blocks (#1235), Godot evaluation notes (#1246).
 - Agents: designer agent with a level-design and flow pass grounded in research, lenses not rules (#1241–#1244, #1250); tidy skill (#1237); progression-flow research (#1249); Home flow audit (#1251, docs/reviews/home-flow.md).
-- Game: hook scoring fix (#1234); glider brief and design review (#1238); glider piece A, off in production (#1247); render/audio tidy (#1248); town T1, Pip's house live (#1252); Split-rock J3 rules, WORLD_NS v22, live (#1253); wardrobe T4 (#1254).
+- Game: hook scoring fix (#1234); glider brief and design review (#1238); glider piece A, off in production (#1247); render/audio tidy (#1248); town T1, Pip's house live (#1252); Split-rock J3 rules, WORLD_NS v22, live (#1253); wardrobe T4 (#1254); buoys and telescope F3 (#1256); Fine Prices shop T5 (#1257); ambience and M flag A1 (#1258); residents T2, town back under its draw budget (#1259).
 - Tooling: X1, verification on the production game (#1239, #1245).
 
 ## Merge queue
@@ -82,7 +81,8 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
 
 ## Next moves
 
-- Keep about three agents running; T2, T5, F3 and J4 now. As each lands: T3 after T2; C1 after T5; J5 after J4; glider B after J4 (one WORLD_NS bump, never while the owner is mid-session).
+- Keep about three agents running; T3, C1 and J4 now. As each lands: C2 and K1 after C1; J5 after J4; glider B after J4 (one WORLD_NS bump, never while the owner is mid-session).
+- `../boogle-trusted/node_modules` and one old agent worktree symlink to the main checkout's node_modules; an `npm ci` in either empties it (seen twice on 9 November). Reinstall with `npm ci` in the main checkout if `node dev/playtest/cli.ts` can't find playwright.
 - Home flow fixes from docs/reviews/home-flow.md go to an implementer when a slot frees.
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
 - Tidy: run the remaining code areas, then architecture, docs and memory.
