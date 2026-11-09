@@ -24,6 +24,7 @@ import { RAIL_STOPS } from '../segments.ts';
 import { RAIL_STONE } from '../../../src/sim/railway-works-layout.ts';
 import { splitRockToCrossing } from './railway-works.ts';
 export { splitRockToCrossing };
+import { LINE2_BOILER } from '../../../src/sim/railway-line2-layout.ts';
 
 /** `?botTo=<stop>` ends the route after that beat: a segment, not a failure. */
 class RouteStop extends Error {}
@@ -357,6 +358,132 @@ export async function seaToFarHead(
   check(Math.hypot(me.body!.position.x - end.x, me.body!.position.z - end.z) < 3, 'Far Head reached along the trestle');
   check(view().trestleLamps! > 0, 'Far Head trestle lamps placed');
   await checkpoint('Far Head');
+}
+
+/** The glide home (glider piece B, Home flow finding 2): back up Needle Bell by hook after Q5, take the woken glider,
+ * and fly off the summit's west edge to the boiler's apron by the forge, letting go of the stick 9 m short so the
+ * canopy brakes and sinks you onto dry ground. Real inputs only; the result goes in the bot's notes. */
+export async function glideHome(
+  { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
+  from: 'far-head' | 'village',
+) {
+  const read = () => inspectRailway()!;
+  const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
+  check(read().line2.stations[4]?.completion === 1, 'the glide home starts after Q5');
+  if (from === 'far-head') await walkQuarry(546, 92);
+  else {
+    const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+    const deck = lineAt(LINKS[1]!.line, 84, { x: 0, z: 0, ux: 0, uz: 1 });
+    check(await bot.walk(deck.x + ORIGIN.x, deck.z, 1), 'walked to the quarry deck below Needle Bell');
+    await walkQuarry(84, 92);
+  }
+  await climbNeedleBell(bot);
+  await takeGlider(bot);
+  await checkpoint('glider taken');
+  await glideToBoiler(bot);
+  await checkpoint('glided home');
+}
+
+/** Take the woken glider on Needle Bell's summit with Interact, standing by it; the finder's card is dismissed with
+ * Interact after `cardMs` (a co-op partner's find shows none). Returns whether the card showed. */
+export async function takeGlider(bot: Bot) {
+  const read = () => inspectRailway()!;
+  const view = () => read().line2View;
+  const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
+  const until = async (fn: () => unknown, beat: string, ms = 60000) => check(await bot.until(fn, ms, beat), beat);
+  const query = new URLSearchParams(location.search);
+  const coop = query.get('player') === '1' || query.get('player') === '2';
+  const device = view().glideDevice;
+  check(device.available && device.woken, 'the summit glider is woken and waiting after Q5');
+  check(await bot.use(device.x, device.z, 'take the glider', /^Take it$/), 'glider device offered');
+  check(await bot.work(() => read().glide, 5000, 380), 'the glider accepted after bounded retries');
+  await bot.wait(1200);
+  const card = read().reward.showing;
+  if (card || !coop) {
+    await until(() => read().reward.showing, 'glider reveal appears', 10000);
+    await bot.wait(Number(query.get('cardMs')) || 1600);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+    await until(() => !read().reward.showing, 'glider reveal dismissed with Interact', 10000);
+  }
+  await until(() => read().glider.owned, 'the glider is owned', 5000);
+  check(view().glideDevice.taken, 'the summit device reads taken');
+  return { card };
+}
+
+/** From beside the taken device: step off the summit's west edge and fly to the boiler's apron by the forge, letting go
+ * of the stick 9 m short so the canopy brakes and sinks you onto dry ground. Full stick from 3 s after the canopy
+ * opens to the let-go is sampled for the BotW numbers. Real inputs only; the result goes in the bot's notes. */
+export async function glideToBoiler(bot: Bot) {
+  const read = () => inspectRailway()!;
+  const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
+  const until = async (fn: () => unknown, beat: string, ms = 60000) => check(await bot.until(fn, ms, beat), beat);
+  const device = read().line2View.glideDevice;
+  // The step-off: a stride south-east of the drum, so the line to the pedestal clears it, the switch on the left.
+  const pedestal = { x: LINE2_BOILER.x / 100, z: LINE2_BOILER.z / 100 };
+  check(await bot.straight(device.x + 1, device.z + 1.3, 0.4, 6000), 'stood at the summit step-off');
+  const face = () => {
+    const p = me.body!.position;
+    cam.yaw = me.yaw = Math.atan2(-(pedestal.x - p.x), -(pedestal.z - p.z));
+    cam.pitch = -0.35;
+  };
+  const toPedestal = () => Math.hypot(me.body!.position.x - pedestal.x, me.body!.position.z - pedestal.z);
+  const b = me.body!;
+  const flightsBefore = read().glider.flights;
+  face();
+  input.keys.add('KeyW');
+  const started = performance.now();
+  const samples: { sink: number; speed: number }[] = [];
+  let opened: number,
+    released = 0;
+  try {
+    await until(() => me.coyote <= 0 && b.velocity.y < -0.5, 'stepped off the summit, falling', 8000);
+    triggerAction('glide', 'down');
+    triggerAction('glide', 'up');
+    await until(() => read().glider.open, 'the Glide action opens the canopy', 1000);
+    opened = performance.now();
+    for (;;) {
+      face();
+      if (!released && performance.now() - opened >= 3000)
+        samples.push({ sink: -b.velocity.y, speed: Math.hypot(b.velocity.x, b.velocity.z) });
+      if (!released && toPedestal() < 9) {
+        input.keys.delete('KeyW');
+        released = performance.now();
+      }
+      if (me.coyote > 0 || me.swimming) break;
+      check(performance.now() - started < 90000, 'the glide lands within 90 s');
+      await bot.wait(100);
+    }
+  } finally {
+    input.keys.delete('KeyW');
+  }
+  await bot.wait(300);
+  const sinkMean = samples.reduce((a, s) => a + s.sink, 0) / Math.max(1, samples.length);
+  const speedMax = Math.max(0, ...samples.map((s) => s.speed));
+  const result = {
+    seconds: +((performance.now() - started) / 1000).toFixed(1),
+    sinkMean: +sinkMean.toFixed(2),
+    speedMax: +speedMax.toFixed(2),
+    samples: samples.length,
+    released: released ? +((released - started) / 1000).toFixed(1) : null,
+    landing: {
+      x: +b.position.x.toFixed(1),
+      y: +b.position.y.toFixed(1),
+      z: +b.position.z.toFixed(1),
+      dry: !me.swimming,
+      toPedestal: +toPedestal().toFixed(1),
+    },
+    flights: read().glider.flights - flightsBefore,
+  };
+  bot.note(`GLIDE HOME ${JSON.stringify(result)}`);
+  console.log(`GLIDE HOME ${JSON.stringify(result)}`);
+  check(samples.length > 0 && Math.abs(sinkMean - 3.2) <= 0.3, `glide sink 3.2 m/s at full stick (${result.sinkMean})`);
+  check(Math.abs(speedMax - 10) <= 0.5, `glide speed 10 m/s at full stick (${result.speedMax})`);
+  check(!me.swimming, 'the first flight lands dry');
+  check(result.landing.toPedestal < 14, `landed within 14 m of the boiler (${result.landing.toPedestal} m)`);
+  check(result.flights === 1, `one flight (${result.flights})`);
+  check(!read().glider.open, 'the canopy shuts on the ground');
+  return result;
 }
 
 /** B5–B8, observing accepted state and using the same inputs as the full route. */
@@ -715,6 +842,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const player = query.get('player');
   const coop = !solo && (player === '1' || player === '2');
   const second = coop && player === '2';
+  // &botOrder=legacy keeps the route's old order (the pack after the quarry lever, a cart ride to Q4, a second climb
+  // for the sea switch and the walk home from Far Head); the default plays in a player's order (Home flow finding 4):
+  // the pack at the forge, the switch on the first climb and the glide home from Needle Bell after Q5.
+  const legacy = query.get('botOrder') === 'legacy';
   const botTo = query.get('botTo');
   if (botTo !== null && !(botTo in RAIL_STOPS)) throw new Error(`Unknown botTo ${botTo}`);
   // `pier` is the whole route: its closing totals still run.
@@ -1402,8 +1533,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       6000,
     );
     require(Math.abs(me.body!.position.y - PLAYER_R - pillar.top) < 1, 'air jump returns to the same pillar');
-    const { registry } = await import('../../../src/world/sync.ts');
-    require(!registry().ops.some((op) => /^rail\.(glide|train)/.test(op)), 'no later railway ability is installed');
+    // The railway's ops are Server kind, never in the lockstep registry: ask the state.
+    require(!read().glide && !read().glider.owned, 'the glider is not granted after line one');
     await checkpoint('optional jump used');
     if (query.get('line2') === '0') {
       document.documentElement.dataset.railwayProof = 'done';
@@ -1437,16 +1568,21 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const walkQuarry = (from: number, to: number) => walkQuarryRail(bot, from, to);
     if (second) {
       // The friend stays in the room through line two; the leader plays it. Both peers report hashes per beat.
+      // The leader opens the pack (at the forge, or after the lever under botOrder=legacy): the friend's back carries
+      // 16 too, and they get the flourish, not the card.
+      const friendPack = async () => {
+        await until(() => read().line2?.pack, 'leader opens the pack', 1800000);
+        await bot.wait(1500);
+        require(read().carryMax === 16, "the friend's back carries 16");
+        require(read().reward.arrival.seen.includes('pack'), "friend's pack flourish played");
+        await checkpoint('pack');
+      };
+      if (!legacy) await friendPack();
       await until(() => read().line2?.gateOpen, 'leader opens the quarry gate', 1800000);
       require(hookSeen.size >= 5, `friend saw ${hookSeen.size} distinct hook ring ids`);
       require(remoteCableSeen, 'friend saw a remote hook cable');
       await checkpoint('quarry gate open');
-      // The leader opens the pack: the friend's back carries 16 too, and they get the flourish, not the card.
-      await until(() => read().line2?.pack, 'leader opens the pack', 600000);
-      await bot.wait(1500);
-      require(read().carryMax === 16, "the friend's back carries 16");
-      require(read().reward.arrival.seen.includes('pack'), "friend's pack flourish played");
-      await checkpoint('pack');
+      if (legacy) await friendPack();
       await until(
         () => read().stations.length && read().line2?.stations[3]?.completion === 1,
         'leader lays Q4',
@@ -1455,6 +1591,15 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await checkpoint('Q4 laid');
       await until(() => read().line2?.stations[4]?.completion === 1, 'leader lays Q5', LAYING_MS * 3);
       await checkpoint('Q5 laid');
+      if (!legacy) {
+        // The leader climbs back up and takes the glider: the friend gets the flourish wherever they stand, no card.
+        await until(() => read().glide, 'leader takes the glider', LAYING_MS * 3);
+        await bot.wait(1500);
+        require(read().reward.arrival.seen.includes('glide'), "friend's glider flourish played");
+        require(!read().reward.showing, 'no glider card for a friend’s find');
+        require(read().glider.owned, 'the friend owns the glider too');
+        await checkpoint('glider taken');
+      }
       await until(() => read().line2?.stations[5]?.completion === 1, 'leader lays Q6', LAYING_MS * 6);
       await checkpoint('Q6 laid');
       // Split-rock: the leader opens the Works and footes the crossing; the friend sees it stand.
@@ -1477,7 +1622,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await walkTrack(92, 30);
     await walkBypass(bypass.slice(1));
     mark('line two started');
-    const fill = async (max = 8) => {
+    const fill = async (max: number = read().carryMax) => {
       let attempts = 0;
       while (read().carry < max) {
         require(++attempts <= 24, 'found enough reachable logs for line two');
@@ -1509,9 +1654,24 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       }
     };
     const forge = v2().forgeFrame;
+    // The pack frame: its chest waits by the forge from the forge's first bill. Open it (a back of 16 for everyone).
+    const openPack = async () => {
+      const packChest = read().reward.tools.packChest;
+      require(packChest.available, 'the pack chest waits by the forge');
+      await walk(v2().forgeRack.x, v2().forgeRack.z, 3);
+      await walk(packChest.x, packChest.z);
+      require(await bot.use(packChest.x, packChest.z, 'open the pack chest', /^Open/), 'pack chest offered');
+      require(await bot.work(() => l2().pack, 5000, 380), 'pack accepted after bounded retries');
+      await bot.wait(1200);
+      if (read().reward.showing || !coop) await dismiss('pack reveal');
+      require(read().carryMax === 16, 'every back carries 16 with the pack');
+      await checkpoint('pack');
+    };
     for (let load = 0; l2().forge.used < 56; load++) {
       require(load < 12, 'forge bills fill in bounded loads');
-      await fill(Math.min(8, 56 - l2().forge.used));
+      // A player opens the pack as soon as its chest appears, beside the forge they are filling.
+      if (!legacy && l2().forge.used >= 24 && !l2().pack) await openPack();
+      await fill(Math.min(read().carryMax, 56 - l2().forge.used));
       await walk(forge.x, forge.z, 2.4);
       await until(() => read().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
       mark(`forge load ${load + 1} (${l2().forge.used}/56)`);
@@ -1553,7 +1713,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => v2().working, 'machine crosses to line two');
     const rack = v2().forgeRack;
     const takeRails = async (n: number) => {
-      await until(() => l2().forge.rack >= Math.min(n, 8), 'forge has poured enough rails', 60000);
+      await until(() => l2().forge.rack >= Math.min(n, read().carryMax), 'forge has poured enough rails', 60000);
       require(await bot.use(rack.x, rack.z, 'take rails from the forge rack', /^Take rails$/), 'forge rack offered');
       // As with the axe chest, a first press can precede the host's settled Owner position: repeat ordinary input.
       require(await bot.work(() => read().railsCarry > 0, 5000, 380), 'rails accepted after bounded retries');
@@ -1571,7 +1731,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     // Q1, by hand beside the turntable: 16 logs and 6 rails.
     const q1 = v2().frames[0]!;
     while (l2().stations[0]!.start < 0 && l2().stations[0]!.stock < 16) {
-      await fill(Math.min(8, 16 - l2().stations[0]!.stock));
+      await fill(Math.min(read().carryMax, 16 - l2().stations[0]!.stock));
       await deliver(0, q1);
     }
     await takeRails(6);
@@ -1680,11 +1840,23 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         });
         noJump('hook climb');
         await checkpoint('needle bell summit');
+        const sealed = v2().glideDevice;
+        require(!sealed.available && !sealed.woken && !read().glide, 'the summit glider is sealed before Q5');
         const drop = query.get('hookDrop');
         if (drop === 't3' || drop === 'summit') {
           await dropFromTower(bot, drop);
           bot.finish(`hook drop ${drop} walked home without recovery`);
           return;
+        }
+        if (!legacy) {
+          // The sea switch stands beside you on the first climb: a player pulls it now (seaToFarHead's pull).
+          const sea = v2().sea;
+          await walk(sea.x, sea.z, 0.8);
+          await until(() => interactTarget()?.id === 'railway-sea-switch', 'summit offers railway-sea-switch', 5000);
+          require(await bot.use(sea.x, sea.z, 'pull sea switch', /^Pull$/), 'sea switch offered');
+          require(await bot.work(() => l2().seaOpen, 5000, 380), 'sea switch accepted');
+          await until(() => l2().seaOpen && !v2().seaGateSolid, 'sea gate collider removed');
+          await checkpoint('sea gate');
         }
         await downFromNeedleBell(bot, noJump);
         if (query.get('earlyLedge') === '1') {
@@ -1739,17 +1911,11 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(await bot.work(() => l2().gateOpen, 5000, 380), 'quarry gate opens with Q3 complete and the lever pulled');
     await until(() => !v2().gateSolid, 'gate slab collider removed');
     await checkpoint('quarry gate open');
-    // The pack frame: its chest has waited by the forge since the forge's first bill. Home on foot, open it.
-    const packChest = read().reward.tools.packChest;
-    require(packChest.available, 'the pack chest waits by the forge');
-    await walk(rack.x, rack.z, 3);
-    await walk(packChest.x, packChest.z);
-    require(await bot.use(packChest.x, packChest.z, 'open the pack chest', /^Open/), 'pack chest offered');
-    require(await bot.work(() => l2().pack, 5000, 380), 'pack accepted after bounded retries');
-    await bot.wait(1200);
-    if (read().reward.showing || !coop) await dismiss('pack reveal');
-    require(read().carryMax === 16, 'every back carries 16 with the pack');
-    await checkpoint('pack');
+    // botOrder=legacy: the pack only now, home on foot after the lever.
+    if (legacy) {
+      await walk(rack.x, rack.z, 3);
+      await openPack();
+    }
     // Q4, behind the gate now down: the depot cart brings its logs to the rack and its rails from the forge rack to
     // the shelf beside it; one back of 16 takes a load of each to the frame.
     const q4 = v2().frames[3]!;
@@ -1764,52 +1930,55 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the track beside Q4');
       await walk(q4.x, q4.z, 2.4);
     };
-    // Out to Q4 on the depot cart: call it to the forge, board it by a real jump and ride it to the rack.
-    const aboardCart = () => carry.on?.id === 'railway:cart';
-    const call = v2().cartCall;
-    await walk(call.x, call.z, 1.6);
-    require(await bot.use(call.x, call.z, 'call the cart', /^Call cart to forge$/), 'cart call handle offered');
-    require(await bot.work(() => l2().cart.recall || l2().cart.phase === CART_PHASE.FORGE, 5000, 380), 'cart called');
-    await checkpoint('cart called');
-    await until(() => l2().cart.phase === CART_PHASE.FORGE, 'the cart comes to the forge', CART_MS);
-    // A loaded cart stands about 2 m tall: up with the optional double jump, as Place's porter boards it.
-    const boardBy = performance.now() + 15000;
-    while (!aboardCart() && performance.now() < boardBy && l2().cart.phase === CART_PHASE.FORGE) {
-      const c = v2().cart;
-      face(c.x, c.z);
-      input.keys.add('KeyW');
-      if (me.coyote > 0) {
-        pressJump();
-        await bot.wait(120);
-        releaseJump();
-        await bot.until(() => me.body!.velocity.y <= 0.5 || aboardCart(), 1500);
-        if (!aboardCart()) {
-          face(c.x, c.z);
+    // botOrder=legacy: out to Q4 on the depot cart: call it to the forge, board it by a real jump and ride it to the
+    // rack. A player walks from the lever to Q4 and waits there for the cart's loads.
+    if (legacy) {
+      const aboardCart = () => carry.on?.id === 'railway:cart';
+      const call = v2().cartCall;
+      await walk(call.x, call.z, 1.6);
+      require(await bot.use(call.x, call.z, 'call the cart', /^Call cart to forge$/), 'cart call handle offered');
+      require(await bot.work(() => l2().cart.recall || l2().cart.phase === CART_PHASE.FORGE, 5000, 380), 'cart called');
+      await checkpoint('cart called');
+      await until(() => l2().cart.phase === CART_PHASE.FORGE, 'the cart comes to the forge', CART_MS);
+      // A loaded cart stands about 2 m tall: up with the optional double jump, as Place's porter boards it.
+      const boardBy = performance.now() + 15000;
+      while (!aboardCart() && performance.now() < boardBy && l2().cart.phase === CART_PHASE.FORGE) {
+        const c = v2().cart;
+        face(c.x, c.z);
+        input.keys.add('KeyW');
+        if (me.coyote > 0) {
           pressJump();
           await bot.wait(120);
           releaseJump();
+          await bot.until(() => me.body!.velocity.y <= 0.5 || aboardCart(), 1500);
+          if (!aboardCart()) {
+            face(c.x, c.z);
+            pressJump();
+            await bot.wait(120);
+            releaseJump();
+          }
         }
+        await bot.wait(200);
       }
-      await bot.wait(200);
-    }
-    input.keys.delete('KeyW');
-    require(aboardCart(), 'boarded the cart by real jump');
-    await checkpoint('cart ride');
-    let stayed = true;
-    await until(
-      () => {
-        stayed &&= aboardCart() && !me.swimming;
-        return l2().cart.phase === CART_PHASE.DROP;
-      },
-      'the cart reaches the Q4 rack',
-      CART_MS,
-    );
-    require(stayed, 'rider stayed aboard the cart all the way');
-    await checkpoint('cart at the rack');
-    {
-      const s = v2().cart.along / 100 - 196; // metres along line two (the forge stop is 196 m along its road)
-      const off = besideQ(Math.round(s), q4);
-      require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the cart beside the track');
+      input.keys.delete('KeyW');
+      require(aboardCart(), 'boarded the cart by real jump');
+      await checkpoint('cart ride');
+      let stayed = true;
+      await until(
+        () => {
+          stayed &&= aboardCart() && !me.swimming;
+          return l2().cart.phase === CART_PHASE.DROP;
+        },
+        'the cart reaches the Q4 rack',
+        CART_MS,
+      );
+      require(stayed, 'rider stayed aboard the cart all the way');
+      await checkpoint('cart at the rack');
+      {
+        const s = v2().cart.along / 100 - 196; // metres along line two (the forge stop is 196 m along its road)
+        const off = besideQ(Math.round(s), q4);
+        require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the cart beside the track');
+      }
     }
     await toQ4();
     const q4Job = () => l2().stations[3]!;
@@ -1849,8 +2018,16 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await checkpoint('Q4 funded');
     await until(() => q4Job().completion === 1, 'Q4 laid once', LAYING_MS);
     await checkpoint('Q4 laid');
-    await seaToFarHead({ bot, checkpoint, walkQuarry, quarryFrom: 172 });
-    await boilerToPier({ bot, checkpoint, walkQuarry });
+    if (legacy) {
+      await seaToFarHead({ bot, checkpoint, walkQuarry, quarryFrom: 172 });
+      await boilerToPier({ bot, checkpoint, walkQuarry });
+    } else {
+      // The switch was pulled on the first climb: no second climb before Q5. After Far Head, back up Needle Bell
+      // for the glider and fly home to the boiler.
+      await seaToFarHead({ bot, checkpoint, walkQuarry, quarryFrom: 172 }, 'q5');
+      await glideHome({ bot, checkpoint, walkQuarry }, 'far-head');
+      await boilerToPier({ bot, checkpoint, walkQuarry }, 'boiler');
+    }
     await splitRockToCrossing({ bot, checkpoint, walkQuarry });
     const totals = read().counts;
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');

@@ -1,6 +1,9 @@
-// Run either half against an accepted host seed. No teleport, direct op or recovery.
+// Run either half against an accepted host seed. No teleport, direct op or recovery. railFrom=glide (from
+// --rail-seed q5-done) climbs Needle Bell from the village, takes the glider, glides home and plays on from the boiler.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { boilerToPier } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
+const { boilerToPier, glideHome } = (await import(
+  '/dev/look/bots/railway.ts' as string
+)) as typeof import('../bots/railway.ts');
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
@@ -8,7 +11,8 @@ const { me } = (await import('/src/player/player.ts' as string)) as typeof impor
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const query = new URLSearchParams(location.search);
 const from = query.get('railFrom');
-if (from !== 'boiler' && from !== 'q6') throw new Error('B5-B8 seeded proof needs railFrom=boiler or railFrom=q6');
+if (from !== 'boiler' && from !== 'q6' && from !== 'glide')
+  throw new Error('B5-B8 seeded proof needs railFrom=boiler, railFrom=q6 or railFrom=glide');
 const bot = makeBot({
   recover: () => {
     throw new Error('B5-B8 requested forbidden recovery');
@@ -21,32 +25,30 @@ background(
   (async () => {
     if (!(await bot.until(() => inspectRailway()?.ready && me.body && me.coyote > 0, 300000, 'B5-B8 seed arrived')))
       throw new Error('B5-B8 seed did not arrive');
-    await boilerToPier(
-      {
-        bot,
-        checkpoint: async (beat) => {
-          bot.note(beat);
-          const state = inspectRailway()!;
-          console.log(
-            `RAILWAY CHECKPOINT ${JSON.stringify({
-              beat,
-              tick: state.tick,
-              hash: state.hash,
-              line2: state.line2,
-              line2View: state.line2View,
-              wall: Date.now(),
-              position: me.body!.position,
-              swimming: me.swimming,
-            })}`,
-          );
-          if (query.get('railStop') !== beat) return;
-          shot.__railStop = beat;
-          if (!shot.__railPhoto) bot.finish(`B5-B8 seeded ${from}: ${beat}; no recovery`);
-          await new Promise<void>(() => {});
-        },
-      },
-      from,
-    );
+    const checkpoint = async (beat: string) => {
+      bot.note(beat);
+      const state = inspectRailway()!;
+      console.log(
+        `RAILWAY CHECKPOINT ${JSON.stringify({
+          beat,
+          tick: state.tick,
+          hash: state.hash,
+          line2: state.line2,
+          line2View: state.line2View,
+          wall: Date.now(),
+          position: me.body!.position,
+          swimming: me.swimming,
+        })}`,
+      );
+      if (query.get('railStop') !== beat) return;
+      shot.__railStop = beat;
+      if (!shot.__railPhoto) bot.finish(`B5-B8 seeded ${from}: ${beat}; no recovery`);
+      await new Promise<void>(() => {});
+    };
+    if (from === 'glide') {
+      await glideHome({ bot, checkpoint }, 'village');
+      await boilerToPier({ bot, checkpoint }, 'boiler');
+    } else await boilerToPier({ bot, checkpoint }, from);
     bot.finish(`B5-B8 seeded ${from} to the pier; no recovery`);
   })().catch((error: unknown) => {
     bot.never(`B5-B8 seeded ${from}: ${error instanceof Error ? error.message : String(error)}`);

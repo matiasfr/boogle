@@ -64,6 +64,7 @@ export const RAIL_STOPS = {
   Q3: 'Q3 laid',
   Q4: 'Q4 laid',
   Q5: 'Q5 laid',
+  glider: 'glided home',
   trains: 'TRAINS',
   Q6: 'Q6 laid',
   pier: 'pier',
