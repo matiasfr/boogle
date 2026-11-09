@@ -81,6 +81,21 @@
           "file": "src/entities/railway/opening-view.ts"
         }
       ]
+    },
+    {
+      "hl": ["you.world", "fr.world"],
+      "text": "After Q5 the server casts one revision-fenced boiler. Its accepted fit enables two train schedules. The line-2 kit moves forge rails and counted depot logs aboard, then unloads atomically at Far Head for Q6; every mirror derives pose from the train row and room tick.",
+      "cite": [
+        {
+          "file": "src/sim/railway-train.ts"
+        },
+        {
+          "file": "src/sim/railway-systems.ts"
+        },
+        {
+          "file": "src/world/railway-server.ts"
+        }
+      ]
     }
   ]
 }

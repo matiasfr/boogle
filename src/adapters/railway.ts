@@ -46,6 +46,8 @@ import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
 import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import {
   line2Active,
+  line2Trains,
+  line2KitOwed,
   line2CartStatus,
   line2Completed,
   line2GateOpen,
@@ -54,6 +56,7 @@ import {
   line2Served,
   railCarryMax,
 } from '../sim/railway-line2.ts';
+import { LINE_HALTS } from '../sim/railway-train.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
 import type { RailwayMirror } from '../world/railway-replicate.ts';
 import { createPredictor } from '../world/replicate-client.ts';
@@ -87,6 +90,9 @@ export type RailwayIntent =
         | 'rail.pack'
         | 'rail.cartCall';
     }
+  | { op: 'rail.call'; id: number }
+  | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
+  | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamTake'; revision: number }
   | { op: 'rail.beamDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamDeposit'; revision: number; station: 'T3' }
@@ -168,12 +174,15 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.cartCall'
   )
     return { op: e.op };
+  if (e.op === 'rail.call' && railInt(e.id, LINE_HALTS.length - 1)) return { op: e.op, id: e.id };
+  if ((e.op === 'rail.boilerTake' || e.op === 'rail.boilerFit') && railInt(e.revision))
+    return { op: e.op, revision: e.revision };
   if (e.op === 'rail.mine' && railInt(e.id, 2)) return { op: e.op, id: e.id };
   if (e.op === 'rail.beamTake' && railInt(e.revision)) return { op: e.op, revision: e.revision };
   if (e.op === 'rail.beamDeposit' && railInt(e.revision) && e.station === 'T3')
     return { op: e.op, revision: e.revision, station: 'T3' };
   if (
-    e.op === 'rail.beamDrop' &&
+    (e.op === 'rail.beamDrop' || e.op === 'rail.boilerDrop') &&
     railInt(e.revision) &&
     railInt(e.x, 200000, -200000) &&
     railInt(e.y, 200000, -200000) &&
@@ -198,7 +207,8 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
       e.station === 'Q2' ||
       e.station === 'Q3' ||
       e.station === 'Q4' ||
-      e.station === 'Q5') &&
+      e.station === 'Q5' ||
+      e.station === 'Q6') &&
     railInt(e.n, CARRY_MAX, 1)
   )
     return { op: e.op, station: e.station, n: e.n, kind };
@@ -238,18 +248,26 @@ function implied(v: Record<string, unknown>) {
 }
 /** Ops whose whole result is one shared flag: when it holds anyway (someone else woke the machine), losing the race
  * gives nothing back. */
-const holds = (s: Railway, op: string) =>
-  op === 'rail.wake'
-    ? s.awake >= 0
-    : op === 'rail.lever'
-      ? !!s.line2?.lever
-      : op === 'rail.seaSwitch'
-        ? !!s.line2?.sea
-        : op === 'rail.pack'
-          ? !!s.line2?.pack
-          : op === 'rail.cartCall'
-            ? !!s.line2?.cart.recall
-            : false;
+const holds = (s: Railway, op: string, event?: RailwayIntent) =>
+  op === 'rail.boilerFit'
+    ? line2Trains(s)
+    : op === 'rail.call' && event?.op === 'rail.call'
+      ? (() => {
+          const h = LINE_HALTS[event.id];
+          const r = h && s.line2?.train[h.line];
+          return !!r && (r.call === h!.stop || (r.phase === 0 && r.at === h!.stop));
+        })()
+      : op === 'rail.wake'
+        ? s.awake >= 0
+        : op === 'rail.lever'
+          ? !!s.line2?.lever
+          : op === 'rail.seaSwitch'
+            ? !!s.line2?.sea
+            : op === 'rail.pack'
+              ? !!s.line2?.pack
+              : op === 'rail.cartCall'
+                ? !!s.line2?.cart.recall
+                : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
@@ -278,6 +296,10 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.hook',
   'rail.pack',
   'rail.cartCall',
+  'rail.boilerTake',
+  'rail.boilerDrop',
+  'rail.boilerFit',
+  'rail.call',
   'rail.beamChop',
   'rail.beamTake',
   'rail.beamDrop',
@@ -502,7 +524,7 @@ export function createRailwayAdapter({
     const standing = new Set<string>();
     const differ = (was: Shown, kept: number, reason: RailwayCorrection['reason'], effect?: RailEffect | null) => {
       if (kept > was.n) more.push(Object.freeze({ ...was.event, ...(effect ?? {}), accepted: kept - was.n }));
-      else if (kept < was.n && holds(confirmed, was.event.op)) standing.add(was.event.op);
+      else if (kept < was.n && holds(confirmed, was.event.op, was.event)) standing.add(was.event.op);
       else if (kept < was.n) back.push({ event: was.event, kept, lost: was.n - kept, reason });
     };
     for (const [r, reason] of settled) {
@@ -607,7 +629,12 @@ export function createRailwayAdapter({
     const account = railAccount(v, pid);
     const beam = v.line?.beam;
     if (beam?.state === 'held' && beam.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
-    if (intent.op === 'rail.beamTake' && ((account ? railCarry(account) : 0) || predictor.pending().length))
+    const boiler = v.line2?.boiler;
+    if (boiler?.state === 'held' && boiler.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
+    if (
+      (intent.op === 'rail.beamTake' || intent.op === 'rail.boilerTake') &&
+      ((account ? railCarry(account) : 0) || predictor.pending().length)
+    )
       return false;
     const t = tick();
     const predict = RAIL_PREDICTED.has(intent.op);
@@ -737,6 +764,11 @@ export function createRailwayAdapter({
       packReady: line2PackReady(s),
       depot: l2.depot,
       depotRails: l2.depotRails,
+      boiler: Object.freeze({ ...l2.boiler }),
+      trains: line2Trains(s),
+      trainsAt: l2.trains,
+      train: Object.freeze(l2.train.map((r) => Object.freeze({ ...r }))),
+      kitOwed: Object.freeze(line2KitOwed(s)),
       cart: Object.freeze({ ...l2.cart }),
       /** The rack's tag: Loading, On the way, Unloading, Waiting for forge, or nothing. */
       cartStatus: line2CartStatus(s),
@@ -961,6 +993,15 @@ export function createRailwayAdapter({
     depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
     openPack: () => submit({ op: 'rail.pack' }),
     /** "Call cart to forge": the depot cart stops at the forge on its next pass and waits to be boarded. */
+    shoulderBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
+    dropBoiler: (x: number, y: number, z: number, revision: number) =>
+      railInt(revision) &&
+      railInt(x, 200000, -200000) &&
+      railInt(y, 200000, -200000) &&
+      railInt(z, 200000, -200000) &&
+      submit({ op: 'rail.boilerDrop', revision, x, y, z }),
+    fitBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerFit', revision }),
+    callTrain: (id: number) => railInt(id, LINE_HALTS.length - 1) && submit({ op: 'rail.call', id }),
     callCart: () => submit({ op: 'rail.cartCall' }),
     /** The server's tick as this tab estimates it, with its fraction (never going backwards). */
     tickNow,

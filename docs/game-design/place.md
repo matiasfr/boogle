@@ -1206,3 +1206,16 @@ The exact-profile strip is 70 m wide, blending to unchanged terrain by 110 m; cr
 −30 to −10 m inland and +60 to +90 m offshore. Its offshore bar is intentional. The finished 2 m height grid supplies
 the existing faceted mesh, heightfield collider, ground lookup and shore bake. Colour rules and water code are unchanged.
 Without both `proto=place` and `shelf=demo`, the original heights are retained. This is a comparison, not a new shore default.
+
+## Production boiler and train authority (8 November 2026, job A)
+
+Q5 completion casts one revision-fenced boiler at the forge apron. Its carrier needs an empty back; fitting it at the
+old camp train enables two Server-kind train schedules at 20 m/s. Calls are judged from the actor's halt position and
+height and take effect at the next stop decision. An absent carrier keeps the boiler through the existing beam grace;
+a longer absence or an unreachable aged drop returns it to the apron. No new control or presence field is added.
+
+The line-2 village train loads Q6's kit: up to 32 counted logs and 32 rails moved from the forge rack. At Far Head one
+atomic arrival unloads both onto the depot rack and shelf. Players carry them into Q6 (546–742 m, 32 logs/32 rails),
+which lays 64 rail pairs to the pier. Counts include cargo aboard, and trains receive no away credit. This is the
+headless authority and adapter API; the boiler, halt, train and pier presentation follows in jobs B/C. WORLD_NS v21.
+Serves DESIGN.md **Clear authority** and **Enjoyable alone and together**. Not tested on a device.

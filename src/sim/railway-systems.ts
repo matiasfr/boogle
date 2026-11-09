@@ -1,12 +1,13 @@
 // The railway's rules as E systems (docs/plans/ecs-e.md, section 4). The same rules as before the move, one system per
 // action op (line one's first, then line two's when line one moved nothing, as railLineApply || railLine2Apply did),
 // the receipt and remember systems around them, the rule tick, the supply pulse, offline resume, sessions and the
-// beam's absent-carrier paths. Each declares what it reads and writes. Pure; the server runs them on arrival and a
+// beam's and boiler's absent-carrier paths. Each declares what it reads and writes. Pure; the server runs them on arrival and a
 // client's prediction runs the very same ones on a clone of its mirror.
 //
 //   railApply(w, pid, e, tick, timing)   one action: receipt, the op, remember (the request history)
 //   railTick(w, tick)                    the rule tick: line one's job, line two's forge and job, the depot cart's trip
-//                                        (./railway-cart.ts), the job clocks
+//                                        (./railway-cart.ts), the two trains (./railway-train.ts), the job clocks
+//   railBoilerRelease                   return an absent carrier's boiler to the apron
 //   railResume / railSession / railSupplyPulse / railBeamRelease / railBeamStood / railBeamPutDown
 import { defineSystem, type System, type World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
@@ -16,11 +17,15 @@ import {
   LINE2_FORGE as FORGE,
   LINE2_PACK as PACK,
   LINE2_STATIONS,
+  LINE2_BOILER,
+  LINE2_KIT,
+  line2BoilerGround,
   RAILS,
   type Line2Station,
 } from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_ROAD, cartCycleTicks, cartEnd } from './railway-cart.ts';
+import { TRAIN, TRAIN_PHASE, TRAIN_STOPS, TRAIN_HOME, LINE_HALTS, trainArrives } from './railway-train.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import {
   railGrows,
@@ -35,6 +40,8 @@ import {
   Account,
   Beam,
   Cart,
+  Boiler,
+  Train,
   DEPOT_OUT,
   Forge,
   ForgeClock,
@@ -62,6 +69,8 @@ const railId = (w: World) => w.single(Rail);
 const beamId = (w: World) => w.single(Beam);
 const forgeId = (w: World) => w.single(Forge);
 const cartId = (w: World) => w.single(Cart);
+const boilerId = (w: World) => w.single(Boiler);
+const trainId = (w: World, slot: number) => w.lookup(Train, slot)!;
 const job = (w: World, slot: number) => w.lookup(Job, slot)!;
 const qjob = (w: World, slot: number) => w.lookup(QJob, slot)!;
 /** The line-one station taking materials now (railActiveStation). */
@@ -76,11 +85,16 @@ const held = (w: World, pid: string) => {
   const b = w.get(Beam, beamId(w))!;
   return b.state === 'held' && b.holder === pid;
 };
+const boilerHeld = (w: World, pid: string) => {
+  const b = w.get(Boiler, boilerId(w))!;
+  return b.state === 'held' && b.holder === pid;
+};
+const heldBig = (w: World, pid: string) => held(w, pid) || boilerHeld(w, pid);
 type AccountRow = Row<typeof Account>;
 const carried = (a: Readonly<AccountRow>) => a.carry + a.stone + a.rails;
 /** What a back carries (railCarryMax): the pack is shared progression, like the axe. */
 const carryMax = (w: World) => (w.get(Rail, railId(w))!.pack ? PACK.carry : T1.carry);
-const free = (w: World, a: Readonly<AccountRow>) => (held(w, a.pid) ? 0 : Math.max(0, carryMax(w) - carried(a)));
+const free = (w: World, a: Readonly<AccountRow>) => (heldBig(w, a.pid) ? 0 : Math.max(0, carryMax(w) - carried(a)));
 const balanceOf = (a: Readonly<AccountRow>, kind: number) => (kind === 1 ? a.stone : kind === 2 ? a.rails : a.carry);
 function credit(a: AccountRow, kind: number, n: number) {
   if (kind === 1) a.stone += n;
@@ -141,7 +155,7 @@ const wake = defineSystem('rail.wake', { writes: [Rail], phase: 'act', order: 1 
 });
 const chop = defineSystem(
   'rail.chop',
-  { reads: [Beam], writes: [Rail, Tree, Hardwood, Account], phase: 'act', order: 2 },
+  { reads: [Boiler, Beam], writes: [Rail, Tree, Hardwood, Account], phase: 'act', order: 2 },
   (w, { a: aid, e, tick }: Act) => {
     if (!ready(w, tick)) return 0;
     const a = w.mut(Account, aid)!;
@@ -182,7 +196,7 @@ const chop = defineSystem(
 );
 const mine = defineSystem(
   'rail.mine',
-  { reads: [Rail, Beam], writes: [Rock, Account], phase: 'act', order: 3 },
+  { reads: [Boiler, Rail, Beam], writes: [Rock, Account], phase: 'act', order: 3 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (!ready(w, tick) || free(w, a) <= 0 || !Number.isInteger(e.id) || e.id! < 0 || e.id! >= 3) return 0;
@@ -222,7 +236,7 @@ function fund(w: World, slot: number, tick: number, timing: LineTiming) {
 }
 const deposit = defineSystem(
   'rail.deposit',
-  { reads: [Rail, Beam], writes: [Job, JobRun, Account], phase: 'act', order: 4 },
+  { reads: [Boiler, Rail, Beam], writes: [Job, JobRun, Account], phase: 'act', order: 4 },
   (w, { a: aid, e, tick, timing }: Act) => {
     const slot = activeStation(w),
       spec = LINE1_STATIONS[slot]!;
@@ -271,7 +285,7 @@ const drop = defineSystem('rail.drop', { writes: [Pile, Account], phase: 'act', 
 });
 const take = defineSystem(
   'rail.take',
-  { reads: [Rail, Beam], writes: [Pile, Account], phase: 'act', order: 6 },
+  { reads: [Boiler, Rail, Beam], writes: [Pile, Account], phase: 'act', order: 6 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -287,7 +301,7 @@ const take = defineSystem(
 );
 const rackTake = defineSystem(
   'rail.rackTake',
-  { reads: [Beam], writes: [Rail, Account], phase: 'act', order: 7 },
+  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 7 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -332,7 +346,7 @@ const beamChop = defineSystem(
 );
 const beamTake = defineSystem(
   'rail.beamTake',
-  { reads: [Rail, Job, Account], writes: [Beam], phase: 'act', order: 10 },
+  { reads: [Rail, Job, Account, Boiler], writes: [Beam], phase: 'act', order: 10 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     const b = w.get(Beam, beamId(w))!;
@@ -341,7 +355,8 @@ const beamTake = defineSystem(
       (b.state !== 'available' && b.state !== 'ground') ||
       e.revision !== b.revision ||
       b.revision >= 2147483647 ||
-      carried(a) !== 0
+      carried(a) !== 0 ||
+      boilerHeld(w, a.pid)
     )
       return 0;
     Object.assign(w.mut(Beam, beamId(w))!, { state: 'held', holder: a.pid, epoch: a.epoch, age: 0 });
@@ -402,6 +417,106 @@ const beamDeposit = defineSystem(
     return 1;
   },
 );
+// ---------------------------------------------------------------- the unique boiler (Server kind; effects belong to accepted events)
+function boilerPedestal(w: World) {
+  const b = w.mut(Boiler, boilerId(w))!;
+  Object.assign(b, {
+    state: 'pedestal',
+    holder: '',
+    epoch: 0,
+    age: 0,
+    x: LINE2_BOILER.x,
+    y: LINE2_BOILER.y,
+    z: LINE2_BOILER.z,
+  });
+  b.revision++;
+}
+function boilerReleasable(w: World, pid: string, epoch: number, revision: number) {
+  const b = w.get(Boiler, boilerId(w))!;
+  return (
+    b.state === 'held' && b.holder === pid && b.epoch === epoch && b.revision === revision && revision < RAILWAY_MAX_INT
+  );
+}
+const boilerTake = defineSystem(
+  'rail.boilerTake',
+  { reads: [Account, Beam], writes: [Boiler], phase: 'act', order: 29 },
+  (w, { a: aid, e }: Act) => {
+    const a = w.get(Account, aid)!,
+      b = w.get(Boiler, boilerId(w))!;
+    if (
+      (b.state !== 'pedestal' && b.state !== 'ground') ||
+      e.revision !== b.revision ||
+      b.revision >= RAILWAY_MAX_INT ||
+      carried(a) ||
+      held(w, a.pid)
+    )
+      return 0;
+    Object.assign(w.mut(Boiler, boilerId(w))!, {
+      state: 'held',
+      holder: a.pid,
+      epoch: a.epoch,
+      age: 0,
+      revision: b.revision + 1,
+    });
+    return 1;
+  },
+);
+const boilerDrop = defineSystem(
+  'rail.boilerDrop',
+  { reads: [Account], writes: [Boiler], phase: 'act', order: 30 },
+  (w, { a: aid, e }: Act) => {
+    const a = w.get(Account, aid)!;
+    if (!boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
+    boilerPedestal(w);
+    if (
+      railInt(e.x, 200000, -200000) &&
+      railInt(e.y, 200000, -200000) &&
+      railInt(e.z, 200000, -200000) &&
+      line2BoilerGround(e.x, e.y, e.z)
+    )
+      Object.assign(w.mut(Boiler, boilerId(w))!, { state: 'ground', x: e.x, y: e.y, z: e.z });
+    return 1;
+  },
+);
+const boilerFit = defineSystem(
+  'rail.boilerFit',
+  { reads: [Account], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
+  (w, { a: aid, e, tick }: Act) => {
+    const a = w.get(Account, aid)!;
+    if (w.get(Rail, railId(w))!.trains >= 0 || !boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
+    const b = w.mut(Boiler, boilerId(w))!;
+    Object.assign(b, { state: 'fitted', holder: '', epoch: 0, age: 0, revision: b.revision + 1 });
+    w.mut(Rail, railId(w))!.trains = tick;
+    TRAIN_HOME.forEach((at, slot) =>
+      Object.assign(w.mut(Train, trainId(w, slot))!, {
+        phase: TRAIN_PHASE.STAND,
+        at,
+        to: at,
+        sweep: slot ? 1 : -1,
+        depart: tick + TRAIN.wakeTicks,
+        call: -1,
+      }),
+    );
+    return 1;
+  },
+);
+const call = defineSystem(
+  'rail.call',
+  { reads: [Rail], writes: [Train], phase: 'act', order: 32 },
+  (w, { e, tick }: Act) => {
+    const halt = railInt(e.id, LINE_HALTS.length - 1) ? LINE_HALTS[e.id] : undefined;
+    if (!halt || w.get(Rail, railId(w))!.trains < 0) return 0;
+    const id = trainId(w, halt.line),
+      r = w.get(Train, id)!;
+    if (r.phase === TRAIN_PHASE.STAND && r.at === halt.stop && tick > r.depart) {
+      w.mut(Train, id)!.depart = tick;
+      return 1;
+    }
+    if (r.call === halt.stop) return 0;
+    w.mut(Train, id)!.call = halt.stop;
+    return 1;
+  },
+);
 const jump = defineSystem('rail.jump', { writes: [Rail], phase: 'act', order: 13 }, (w) => {
   if (w.get(Rail, railId(w))!.jump) return 0;
   w.mut(Rail, railId(w))!.jump = true;
@@ -427,11 +542,13 @@ function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
   // Rails still on the shelf or aboard the cart go back to the forge rack: they only ever wait for an unfunded
   // stretch.
   const rail = w.get(Rail, railId(w))!,
-    aboard = w.get(Cart, cartId(w))!.rails;
-  if (spec.shelf && (rail.depotRails || rail.shelfOut || aboard)) {
-    w.mut(Forge, forgeId(w))!.rack += rail.depotRails + aboard;
+    aboard = w.get(Cart, cartId(w))!.rails,
+    trainRails = w.get(Train, trainId(w, 1))!.rails;
+  if (spec.shelf && (rail.depotRails || rail.shelfOut || aboard || trainRails)) {
+    w.mut(Forge, forgeId(w))!.rack += rail.depotRails + aboard + trainRails;
     Object.assign(w.mut(Rail, railId(w))!, { depotRails: 0, shelfOut: 0 });
     if (aboard) w.mut(Cart, cartId(w))!.rails = 0;
+    if (trainRails) w.mut(Train, trainId(w, 1))!.rails = 0;
   }
   // Each stretch pins the room's timing when funded; Q2/Q3 lay faster, as in Place.
   Object.assign(jm, timingOf(timing), {
@@ -440,10 +557,16 @@ function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
 }
 const deposit2 = defineSystem(
   'rail.deposit2',
-  { reads: [Beam, Job], writes: [Rail, Forge, ForgeClock, QJob, QJobRun, Account, Cart], phase: 'act', order: 20 },
+  {
+    reads: [Boiler, Beam, Job],
+    writes: [Rail, Forge, ForgeClock, QJob, QJobRun, Account, Cart, Train],
+    phase: 'act',
+    order: 20,
+  },
   (w, { a: aid, e, tick, timing }: Act) => {
     const a = w.mut(Account, aid)!;
     const fid = forgeId(w);
+    if (boilerHeld(w, a.pid)) return 0;
     if (e.station === 'F' && (e.kind ?? 0) === 0 && w.get(Job, job(w, 2))!.completion) {
       const f = w.get(Forge, fid)!;
       const n = Math.min(e.n!, a.carry, FORGE.logs - f.used);
@@ -480,7 +603,7 @@ const deposit2 = defineSystem(
 );
 const forgeTake = defineSystem(
   'rail.forgeTake',
-  { reads: [Rail, Beam], writes: [Forge, Account], phase: 'act', order: 21 },
+  { reads: [Boiler, Rail, Beam], writes: [Forge, Account], phase: 'act', order: 21 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -494,7 +617,7 @@ const forgeTake = defineSystem(
 );
 const depotTake = defineSystem(
   'rail.depotTake',
-  { reads: [Beam], writes: [Rail, Account], phase: 'act', order: 22 },
+  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 22 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -509,7 +632,7 @@ const depotTake = defineSystem(
 /** Rails from the shelf by a `shelf` stretch's rack (moved there from the forge; railValid checks the stretch). */
 const depotRailTake = defineSystem(
   'rail.depotRailTake',
-  { reads: [Beam], writes: [Rail, Account], phase: 'act', order: 25 },
+  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 25 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -530,7 +653,7 @@ const pack = defineSystem('rail.pack', { reads: [Forge], writes: [Rail], phase: 
 // Before Q3 the drive is uncoupled: a pull does nothing, even from a jump onto the apron.
 const lever = defineSystem(
   'rail.lever',
-  { writes: [Rail, QJob, QJobRun, Forge, Cart], phase: 'act', order: 23 },
+  { writes: [Rail, QJob, QJobRun, Forge, Cart, Train], phase: 'act', order: 23 },
   (w, { tick, timing }: Act) => {
     if (qCompleted(w) < 3 || w.get(Rail, railId(w))!.lever) return 0;
     w.mut(Rail, railId(w))!.lever = true;
@@ -545,7 +668,7 @@ const hook = defineSystem('rail.hook', { reads: [QJob], writes: [Rail], phase: '
 });
 const seaSwitch = defineSystem(
   'rail.seaSwitch',
-  { writes: [Rail, QJob, QJobRun, Forge, Cart], phase: 'act', order: 28 },
+  { writes: [Rail, QJob, QJobRun, Forge, Cart, Train], phase: 'act', order: 28 },
   (w, { tick, timing }: Act) => {
     if (w.get(Rail, railId(w))!.sea) return 0;
     w.mut(Rail, railId(w))!.sea = true;
@@ -590,6 +713,10 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.depotRailTake': [depotRailTake],
   'rail.pack': [pack],
   'rail.cartCall': [cartCall],
+  'rail.boilerTake': [boilerTake],
+  'rail.boilerDrop': [boilerDrop],
+  'rail.boilerFit': [boilerFit],
+  'rail.call': [call],
 };
 
 export function railOutcome(w: World, pid: string, epoch: number, request: number): RailResult | null {
@@ -640,20 +767,24 @@ const lineTick = defineSystem(
 function depotNeed(w: World, k: number, j: Readonly<{ stock: number; railStock: number }>) {
   const spec = LINE2_STATIONS[k]!,
     rail = w.get(Rail, railId(w))!,
-    cart = w.get(Cart, cartId(w))!;
+    cart = w.get(Cart, cartId(w))!,
+    train = w.get(Train, trainId(w, 1))!;
   const logs = Math.max(
     0,
-    Math.min(spec.bill[0] - j.stock - rail.depot - cart.logs, spec.bill[0] - rail[DEPOT_OUT[k]!]),
+    Math.min(spec.bill[0] - j.stock - rail.depot - cart.logs - train.logs, spec.bill[0] - rail[DEPOT_OUT[k]!]),
   );
   const rails = spec.shelf
-    ? Math.max(0, Math.min(spec.bill[1] - j.railStock - rail.depotRails - cart.rails, spec.bill[1] - rail.shelfOut))
+    ? Math.max(
+        0,
+        Math.min(spec.bill[1] - j.railStock - rail.depotRails - cart.rails - train.rails, spec.bill[1] - rail.shelfOut),
+      )
     : 0;
   return { logs, rails };
 }
 /** The stretch the cart serves now (a depot stretch not yet funded), or -1. */
 function cartServing(w: World) {
   const k = qActive(w);
-  if (k < 0 || !LINE2_STATIONS[k]!.depot) return -1;
+  if (k < 0 || !LINE2_STATIONS[k]!.depot || LINE2_STATIONS[k]!.feed === 'train') return -1;
   return w.get(QJob, qjob(w, k))!.start < 0 ? k : -1;
 }
 // The cart's three transfers, each one atomic: logs minted onto it at the camp (counted production), rails moved onto
@@ -741,6 +872,78 @@ function cartStep(w: World, tick: number) {
     }
   }
 }
+/** One train row per line; transfers and phase changes are atomic inside this tick apply. */
+function trainStep(w: World, tick: number) {
+  const on = w.get(Rail, railId(w))!.trains;
+  if (on < 0) return;
+  for (let slot = 0; slot < 2; slot++) {
+    const id = trainId(w, slot),
+      stops = TRAIN_STOPS[slot]!;
+    for (let guard = 0; guard < 16; guard++) {
+      const r = w.get(Train, id)!;
+      if (r.phase === TRAIN_PHASE.RUN) {
+        const arrival = trainArrives(r, slot);
+        if (tick < arrival) break;
+        const row = w.mut(Train, id)!;
+        Object.assign(row, {
+          phase: TRAIN_PHASE.STAND,
+          at: r.to,
+          depart: arrival,
+          call: r.call === r.to ? -1 : r.call,
+        });
+        if (slot === 1 && row.at === stops.length - 1 && (row.logs || row.rails)) {
+          const rail = w.mut(Rail, railId(w))!;
+          rail.depot += row.logs;
+          rail.depotRails += row.rails;
+          row.logs = row.rails = 0;
+        }
+        continue;
+      }
+      const k = qActive(w),
+        kitServing = slot === 1 && k === 5 && w.get(QJob, qjob(w, 5))!.start < 0;
+      const dwell = r.call >= 0 && r.call !== r.at ? TRAIN.callDwellTicks : TRAIN.dwellTicks;
+      if (kitServing && r.at === 0) {
+        const need = depotNeed(w, 5, w.get(QJob, qjob(w, 5))!);
+        const n = Math.min(LINE2_KIT.logs - r.logs, need.logs);
+        const rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
+        if (n || rails) {
+          const rail = w.mut(Rail, railId(w))!,
+            row = w.mut(Train, id)!;
+          rail.out5 += n;
+          rail.depotProduced += n;
+          row.logs += n;
+          rail.shelfOut += rails;
+          row.rails += rails;
+          if (rails) w.mut(Forge, forgeId(w))!.rack -= rails;
+        }
+        if (
+          depotNeed(w, 5, w.get(QJob, qjob(w, 5))!).rails > 0 &&
+          w.get(Forge, forgeId(w))!.lit >= 0 &&
+          tick < r.depart + dwell + TRAIN.kitWaitTicks
+        )
+          break;
+      }
+      if (
+        tick < r.depart + dwell ||
+        tick < on + TRAIN.wakeTicks ||
+        (slot === 0 && w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST)
+      )
+        break;
+      let sweep = r.sweep;
+      if (r.at === 0) sweep = 1;
+      else if (r.at === stops.length - 1) sweep = -1;
+      const to = r.call >= 0 && r.call !== r.at ? r.call : r.at + sweep;
+      Object.assign(w.mut(Train, id)!, {
+        phase: TRAIN_PHASE.RUN,
+        to,
+        sweep,
+        depart: tick,
+        call: r.call === r.at ? -1 : r.call,
+      });
+      break;
+    }
+  }
+}
 function layLine2(w: World, tick: number) {
   const fid = forgeId(w);
   const f = w.get(Forge, fid)!;
@@ -771,23 +974,31 @@ function layLine2(w: World, tick: number) {
   run.allocation = spec.bill[0] - run.used;
   run.railUsed = Math.min(spec.bill[1], Math.floor((laying * spec.bill[1]) / schedule.layTicks));
   run.railAllocation = spec.bill[1] - run.railUsed;
-  if (run.elapsed === schedule.totalTicks) w.mut(QJob, id)!.completion = 1;
+  if (run.elapsed === schedule.totalTicks) {
+    w.mut(QJob, id)!.completion = 1;
+    if (k === 4 && w.get(Boiler, boilerId(w))!.state === 'none') boilerPedestal(w);
+  }
 }
 const line2Tick = defineSystem(
   'rail.line2Tick',
-  { writes: [Forge, ForgeClock, QJob, QJobRun], phase: 'tick', order: 1 },
+  { writes: [Forge, ForgeClock, QJob, QJobRun, Boiler], phase: 'tick', order: 1 },
   (w, tick: number) => layLine2(w, tick),
 );
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */
 const cartTick = defineSystem(
   'rail.cartTick',
-  { reads: [QJob], writes: [Cart, Rail, Forge], phase: 'tick', order: 2 },
+  { reads: [QJob, Train], writes: [Cart, Rail, Forge], phase: 'tick', order: 2 },
   (w, tick: number) => cartStep(w, tick),
+);
+const trainTick = defineSystem(
+  'rail.trainTick',
+  { reads: [QJob, Cart], writes: [Train, Rail, Forge], phase: 'tick', order: 3 },
+  (w, tick: number) => trainStep(w, tick),
 );
 /** The wire's job clock: `ahead` and `end` follow from what the tick advanced (written only when they change). */
 const jobClock = defineSystem(
   'rail.jobClock',
-  { reads: [JobRun, QJobRun], writes: [Job, QJob], phase: 'tick', order: 3 },
+  { reads: [JobRun, QJobRun], writes: [Job, QJob], phase: 'tick', order: 4 },
   (w) => {
     const settle = (c: typeof Job | typeof QJob, run: typeof JobRun | typeof QJobRun, id: number) => {
       const j = w.get(c, id)!,
@@ -806,6 +1017,7 @@ export function railTick(w: World, tick: number) {
   w.run(lineTick, tick);
   w.run(line2Tick, tick);
   w.run(cartTick, tick);
+  w.run(trainTick, tick);
   w.run(jobClock, undefined);
 }
 
@@ -850,7 +1062,11 @@ function awayCredit(w: World, ticks: number, tick: number) {
 /** Bounded catch-up for the funded stretch only (the yards' credit comes first, from awayCredit). */
 const resume = defineSystem(
   'rail.resume',
-  { writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock, Cart], phase: 'resume', order: 0 },
+  {
+    writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock, Cart, Boiler, Train],
+    phase: 'resume',
+    order: 0,
+  },
   (w, { ticks, marker, tick, yard }: { ticks: number; marker: number; tick: number; yard: number }) => {
     const clock = w.mut(RailClock, railId(w))!;
     if (marker <= clock.resumeMarker) return 0;
@@ -886,7 +1102,7 @@ export function railResume(w: World, ticks: number, marker: number, tick: number
 }
 const session = defineSystem(
   'rail.session',
-  { writes: [Account, Beam], phase: 'session', order: 0 },
+  { writes: [Account, Beam, Boiler], phase: 'session', order: 0 },
   (w, { pid, epoch }: { pid: string; epoch: number }) => {
     if (!okPid(pid) || !railInt(epoch, RAILWAY_MAX_INT, 1)) return false;
     const id = w.lookup(Account, pid);
@@ -895,6 +1111,7 @@ const session = defineSystem(
       if (epoch !== old.epoch + 1) return false;
       Object.assign(w.mut(Account, id)!, { epoch, request: 0 });
       // A player who comes back (a reconnect, a reload) still carries the beam they held: it moves to the new session.
+      if (boilerHeld(w, pid)) w.mut(Boiler, boilerId(w))!.epoch = epoch;
       if (held(w, pid)) w.mut(Beam, beamId(w))!.epoch = epoch;
       return true;
     }
@@ -917,7 +1134,7 @@ const progressUnits = (marker: number, minutes: number, interval: number, units:
 /** Idempotent accepted event. Nearby/unknown players are excluded by the host before it stamps recover ids. */
 const supply = defineSystem(
   'rail.supply',
-  { writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam], phase: 'supply', order: 0 },
+  { writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler], phase: 'supply', order: 0 },
   (w, { e, intervals }: { e: SupplyPulse; intervals: SupplyIntervals }) => {
     const rid = railId(w);
     const clock = w.get(RailClock, rid)!;
@@ -981,6 +1198,15 @@ const supply = defineSystem(
         moved += 1;
       }
     }
+    const boiler = w.get(Boiler, boilerId(w))!;
+    if (boiler.state === 'ground') {
+      const row = w.mut(Boiler, boilerId(w))!;
+      row.age = Math.min(RECOVERY_MINUTES, row.age + recover);
+      if (e.boiler === row.revision && row.age === 21 && row.revision < RAILWAY_MAX_INT) {
+        boilerPedestal(w);
+        moved++;
+      }
+    }
     w.each([Rock], (id, r) => {
       if (r.left !== 0) return;
       const rm = w.mut(Rock, id)!;
@@ -1035,3 +1261,15 @@ const beamPutDown = defineSystem('rail.beamPutDown', { writes: [Beam], phase: 'b
 /** The carrier stayed away past the grace: the beam goes down where they last stood, or, off the work area, back to
  * the tree. Never while they hold it in a live session. */
 export const railBeamPutDown = (w: World, pid: string): number => w.run(beamPutDown, pid);
+
+const boilerRelease = defineSystem(
+  'rail.boilerRelease',
+  { writes: [Boiler], phase: 'boiler', order: 0 },
+  (w, q: { pid: string; epoch: number; revision: number }) => {
+    if (!boilerReleasable(w, q.pid, q.epoch, q.revision)) return 0;
+    boilerPedestal(w);
+    return 1;
+  },
+);
+export const railBoilerRelease = (w: World, pid: string, epoch: number, revision: number): number =>
+  w.run(boilerRelease, { pid, epoch, revision });

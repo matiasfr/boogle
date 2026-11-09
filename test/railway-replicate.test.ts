@@ -31,6 +31,8 @@ import {
   railwayAtQ4,
   railwayAtQ5,
 } from './helpers/railway-q2.ts';
+import { railwayAtTrains } from './helpers/railway-trains.ts';
+import { RAIL_PREDICTED } from '../src/world/railway-predict.ts';
 import { worldOf } from './railway-live.ts';
 import { cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
@@ -261,10 +263,10 @@ test('the railway state is a server state: saved by the host, never hashed or se
   const again = room();
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
-  assert.equal(RAIL_SCHEMAS.length, 11); // the depot cart joined (B3)
+  assert.equal(RAIL_SCHEMAS.length, 13); // the depot cart, boiler and trains
 });
 
-test('a scripted run through line one, the pack and line two to Q5 replicates exactly, live and to a late joiner', () => {
+test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
   const r = room();
   r.join('a');
   const s = () => r.api.railway; // rebuilt after each change
@@ -435,6 +437,17 @@ test('a scripted run through line one, the pack and line two to Q5 replicates ex
       assert.equal(reload.mirrors.get('returning')!.railway.line2!.sea, true, 'reload keeps the early pull');
       assert.equal(reload.api.railway.line2!.jobs[3]!.completion, 0, 'reload did not complete Q4');
     }
+    if (spec.feed === 'train') {
+      // Clear the remaining hand-carried units before shouldering the unique boiler.
+      for (const pid of ['a', 'b'])
+        for (const kind of [0, 2]) {
+          const n = kind ? account(pid).rails! : account(pid).carry;
+          if (n) act(pid, 'rail.drop', { kind, n, x: 91900, y: 1815, z: 540 });
+        }
+      assert.equal(act('a', 'rail.boilerTake', { revision: s().line2!.boiler.revision }), 1);
+      assert.equal(act('a', 'rail.boilerFit', { revision: s().line2!.boiler.revision }), 1);
+      advance(600);
+    }
     advance(40);
     if (spec.shelf) {
       // Q4's rails ride the depot from the forge rack to the shelf; taking them is predicted like any take.
@@ -474,4 +487,73 @@ test('a scripted run through line one, the pack and line two to Q5 replicates ex
   assert.equal(railCarryMax(mirrored), 16);
   assert.equal(railCounts(mirrored).rails!.total, railCounts(mirrored).rails!.poured, 'no rail minted');
   assert.equal(railCounts(mirrored).total, RAILWAY_SUPPLY + 30 + railCounts(mirrored).produced);
+});
+
+test('boiler and train packets patch the mirror; boiler blocks predicted material and call waits', () => {
+  const seed = railwayAtTrains('boiler'),
+    r = room();
+  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
+  r.api.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())));
+  r.api.touchAll();
+  r.join('a');
+  r.pump();
+  agree(r, 'a');
+  const a = r.api.account('a')!;
+  const result = r.api.act(
+    'a',
+    { op: 'rail.boilerTake', epoch: a.epoch, request: a.request + 1, revision: r.api.boiler().revision },
+    anywhere,
+  );
+  assert.equal(result.status, 'accepted');
+  r.pump();
+  agree(r, 'a');
+  const shown = cloneRailway(r.mirrors.get('a')!.at(r.sync.world.tick));
+  assert.equal(
+    railPredict(shown, 'a', { op: 'rail.depotTake', epoch: a.epoch, request: a.request + 2 }, r.sync.world.tick).n,
+    0,
+  );
+  assert.equal(
+    railPredict(shown, 'a', { op: 'rail.forgeTake', epoch: a.epoch, request: a.request + 2 }, r.sync.world.tick).n,
+    0,
+  );
+  assert.equal(RAIL_PREDICTED.has('rail.call'), false);
+  assert.equal(
+    r.api.act(
+      'a',
+      { op: 'rail.boilerFit', epoch: a.epoch, request: a.request + 2, revision: r.api.boiler().revision },
+      anywhere,
+    ).status,
+    'accepted',
+  );
+  r.sync.stepWorld(12000);
+  r.pump();
+  agree(r, 'a');
+  assert.equal(r.mirrors.get('a')!.railway.line2!.boiler.state, 'fitted');
+  assert.equal(r.mirrors.get('a')!.railway.line2!.train[1]!.logs, 32);
+});
+
+test('Q6 prediction keeps train rails aboard until funding is confirmed', () => {
+  const w = railwayAtTrains('trains-on');
+  seedAdvance(w, 100);
+  assert.equal(w.s.line2!.train[1]!.rails, 32);
+  seedAct(w, 'a', 'rail.pack');
+  seedLogs(w, 'a', 'Q6', 32);
+  seedRails(w, 'b', 'Q6', 16);
+  seedAdvance(w, 80);
+  assert.ok(seedAct(w, 'b', 'rail.forgeTake') > 0);
+  assert.equal(w.s.accounts.find((a) => a.pid === 'b')!.rails, 16);
+  const shown = cloneRailway(railwayOf(worldOf(w.s))),
+    before = structuredClone(shown.line2!);
+  const a = w.s.accounts.find((a) => a.pid === 'b')!;
+  const e = { op: 'rail.deposit', epoch: a.epoch, request: a.request + 1, station: 'Q6', kind: 2, n: 16 };
+  assert.equal(railPredict(shown, 'b', e, w.t).n, 16);
+  assert.equal(shown.line2!.jobs[5]!.start, -1);
+  assert.deepEqual(shown.line2!.train, before.train);
+  assert.equal(shown.line2!.forge.rack, before.forge.rack);
+  assert.equal(railCounts(shown).rails!.total, railCounts(shown).rails!.poured);
+  assert.equal(seedAct(w, 'b', 'rail.deposit', { station: 'Q6', kind: 2, n: 16 }), 16);
+  assert.equal(w.s.line2!.train[1]!.rails, 0);
+  assert.equal(w.s.line2!.train[1]!.logs, 32, 'logs already minted stay aboard');
+  seedAdvance(w, 500);
+  assert.equal(railCounts(w.s).rails!.total, railCounts(w.s).rails!.poured);
 });

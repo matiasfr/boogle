@@ -1,3 +1,4 @@
+// Boiler and train call ops are never predicted: the unique boiler and route decisions wait for acceptance.
 // Replication R1b (docs/plans/replication.md, section 2): what a client predicts of its own railway actions, and the
 // effect facts both ends compute for an accepted action. Headless and pure: the server runs railEffect after each
 // action it applies; a client runs railPredict on a scratch copy of its mirror with the very same railApply.
@@ -24,6 +25,7 @@ import { railApply } from '../sim/railway-systems.ts';
 import {
   Account,
   Cart,
+  Train,
   Forge,
   ForgeClock,
   Job,
@@ -163,6 +165,8 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   const rail0 = w.get(Rail, w.single(Rail))!;
   const cartId = w.single(Cart);
   const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut, w.get(Cart, cartId)!.rails] as const;
+  const kitId = w.lookup(Train, 1)!;
+  const kitRails = w.get(Train, kitId)!.rails;
   let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
@@ -190,6 +194,7 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     Object.assign(w.mut(Rail, w.single(Rail))!, { depotRails: shelf[0], shelfOut: shelf[2] });
     w.mut(Forge, fid)!.rack = shelf[1];
     w.mut(Cart, cartId)!.rails = shelf[3];
+    w.mut(Train, kitId)!.rails = kitRails;
   }
   if (lit[0] < 0 && w.get(Forge, fid)!.lit >= 0) {
     w.mut(Forge, fid)!.lit = lit[0];
