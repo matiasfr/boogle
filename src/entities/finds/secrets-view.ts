@@ -396,7 +396,9 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       if (rattling || !p) continue;
       const d = Math.hypot(p.x - box.at.x, p.z - box.at.z);
       if (d < SPARKLE_NEAR && Math.random() < dt * 3) rewardSparkles(box.at.x, box.at.y + 1.2, box.at.z, 1, 1.2);
-      if (d < BUMP && Math.abs(p.y - box.at.y) <= STEP) open(box);
+      // The bay's crates stand a metre apart, so walking among them would open whichever you brushed: Open only there
+      // (builder default, F2; docs/agent-calls.md).
+      if (!box.bay && d < BUMP && Math.abs(p.y - box.at.y) <= STEP) open(box);
     }
     for (const t of TIERS) {
       const mesh = meshes[t];

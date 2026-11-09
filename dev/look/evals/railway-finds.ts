@@ -3,9 +3,10 @@
 //   findk=0..6               which crystal (default 0, the lookout)
 //   findsecret=<id>          a secret's box in the world instead (F2; tech-layout.ts SECRETS ids: yard, bell, ...);
 //                            findsecretbay=1 its second box at the finders' bay (once it's there)
+//   findsact=…,open          step up to the box and press Interact (a bay box opens only so)
 //   findsact=…,dismiss       put the reward card away (Interact)
 //   findsact=…,bay           frame the finders' bay with the boxes waiting in front of it
-//   findsact=…,spot          frame the first spot again (after a bay box, to see its world box gone)
+//   findsact=…,spot          frame the first spot again (after a bay box, its world box: to see it gone)
 //   findsfrom=90             the side you stand on, in degrees round the crystal (default 0: +x); findsoff=7 how far (m)
 //   findsact=walk            walk straight into it: it comes to you with its magnet and chime
 //   findsact=walk,shelf      then go to the curio shelf and frame its bottom row
@@ -64,10 +65,9 @@ type V = { x: number; y: number; z: number };
 const ground = (x: number, z: number): V => ({ x, y: land.H(x, z), z });
 let stand: V, look: V, eye: V;
 
-function frameSpot() {
+function frameSpot(from = Number(query.get('findsfrom') ?? 0), off = Number(query.get('findsoff') ?? 7)) {
   // Two players stand a quarter turn apart, so neither shoves the other into the crystal's magnet.
-  const a = ((Number(query.get('findsfrom') ?? 0) + (query.get('player') === '2' ? 90 : 0)) * Math.PI) / 180,
-    off = Number(query.get('findsoff') ?? 7);
+  const a = ((from + (query.get('player') === '2' ? 90 : 0)) * Math.PI) / 180;
   const ux = Math.cos(a),
     uz = Math.sin(a);
   stand = ground(spot!.x + ux * off, spot!.z + uz * off);
@@ -145,9 +145,32 @@ async function runAct() {
       await wait(800);
     } else if (act === 'bay' || act === 'spot') {
       if (act === 'bay') frameBay();
-      else frameSpot();
+      else {
+        // After a bay box, frame its box in the world, from `findsworldfrom` (default 0), 6 m off.
+        if (secretId && secretAtBay) {
+          Object.assign(spot!, inspectFinds()!.boxes!.find((b) => b.id === secretId)!.world);
+          frameSpot(Number(query.get('findsworldfrom') ?? 0), 6);
+        } else frameSpot();
+      }
       goTo();
       await wait(800);
+    } else if (act === 'open') {
+      // Step up to it (1.3 m short, on the side you stand) and press Interact until it opens.
+      const dx = body.position.x - spot!.x,
+        dz = body.position.z - spot!.z,
+        far = Math.hypot(dx, dz) || 1;
+      const at = ground(spot!.x + (dx / far) * 1.3, spot!.z + (dz / far) * 1.3);
+      teleport(body, at.x, at.y + 0.9, at.z);
+      body.velocity.set(0, 0, 0);
+      cam.yaw = me.yaw = Math.atan2(dx, dz);
+      const end = performance.now() + 4000;
+      while (performance.now() < end && waiting()) {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+        await wait(60);
+        window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+        await wait(240);
+      }
+      await wait(Number(query.get('findswait') ?? 1200));
     } else if (act === 'dismiss') {
       // The card takes 1.5 s to become dismissable; press Interact until it's gone.
       const end = performance.now() + 6000;
@@ -163,7 +186,7 @@ async function runAct() {
       console.log(`FINDS reloading ${JSON.stringify(stored())}`);
       setTimeout(() => location.reload(), 300);
       return;
-    } else throw new Error(`findsact=${act}: choose walk, shelf, wholeshelf, bay, spot, dismiss or reload`);
+    } else throw new Error(`findsact=${act}: choose walk, open, shelf, wholeshelf, bay, spot, dismiss or reload`);
     console.log(
       `FINDS ${JSON.stringify({ k, act, player: { ...body.position }, ...inspectFinds(), stored: stored() })}`,
     );
