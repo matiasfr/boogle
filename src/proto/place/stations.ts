@@ -254,6 +254,8 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
   // on the source side, without moving the receiver, feeder or standing envelope.
   const billOut = spec0.id === 'T3' ? 4 : 0;
   tag.sprite.position.set(x + lx * billOut, y + 2.9, z + lz * billOut);
+  // The sea-gate lamp post cuts through Q5's rail bill from the path. Keep the existing count above its cap.
+  if (spec0.id === 'Q5') tag.sprite.position.y += 1;
   // The pack is on the working apron: put this existing bill on the building frontage,
   // not between the follow camera and the receiver as the player collects it. It stands out past the scaffold and
   // clear above the wall tops, so the second bill's walls rising around the old spot never hide it.

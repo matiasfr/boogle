@@ -15,7 +15,7 @@ import {
   type RailSeedStage,
 } from '../../test/helpers/railway-q2.ts';
 import { line2Schedule } from '../../src/sim/railway-line2.ts';
-import { CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
+import { CART_PHASE, CART_ROAD, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { createRailway, railSession, railApply, railTick, worldOf } from '../../test/railway-live.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
@@ -25,8 +25,10 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
       'q1-done',
       'q3-done',
       'q2-stocked',
+      'q2-arriving',
       'q3-stocked',
       'q4-stocked',
+      'q4-arriving',
       'q5-carry',
       'q4-done',
       'sea-open',
@@ -39,9 +41,9 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   const w =
     stage === 'awake'
       ? { s: createRailway(), t: 40 }
-      : stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q3-stocked'
+      : stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q2-arriving' || stage === 'q3-stocked'
         ? railwayAtQ2()
-        : stage === 'q3-done' || stage === 'q4-stocked'
+        : stage === 'q3-done' || stage === 'q4-stocked' || stage === 'q4-arriving'
           ? railwayAtQ4()
           : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
   if (stage === 'awake') {
@@ -54,7 +56,20 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
     rails(w, 'b', 'Q2', 12);
     advance(w, line2Schedule(1, w.s.line2!.jobs[1]!).totalTicks);
   }
-  if (stage === 'q4-stocked') act(w, 'a', 'rail.lever');
+  if (stage === 'q4-stocked' || stage === 'q4-arriving') act(w, 'a', 'rail.lever');
+  if (stage === 'q2-arriving' || stage === 'q4-arriving') {
+    const k = stage === 'q2-arriving' ? 1 : 3;
+    let waited = 0;
+    // Q4 can inherit a timber-only cart already en route; its later steel delivery exercises the shelf flight.
+    while (!(
+      w.s.line2!.cart.phase === CART_PHASE.RUN &&
+      w.s.line2!.cart.to === CART_ROAD.rackCm(k) &&
+      (k < 3 || w.s.line2!.cart.rails > 0)
+    )) {
+      if (waited++ > 3 * cartCycleTicks(k)) throw new Error(`${stage}: cart never approached`);
+      advance(w, 1);
+    }
+  }
   if (['q2-stocked', 'q3-stocked', 'q4-stocked'].includes(stage)) {
     const k = stage === 'q2-stocked' ? 1 : stage === 'q3-stocked' ? 2 : 3;
     let waited = 0;

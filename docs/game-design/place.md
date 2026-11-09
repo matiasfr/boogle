@@ -336,8 +336,12 @@ comparison, so the rail-pickup sightline remains unresolved. The hook pedestal s
 slab, keeping its ring and onward railway in the approach view. The camp's large shed moves south of the
 boarding approach, exposing the locomotive and platform. These are Local placement changes using the
 existing objects, materials and colliders, with no new copy, markers, rules, bills, unlocks or timing.
-The Q2 depot rack sits 8 m farther back along the track, putting the receiving pile in the same approach
-view as the coming cart. Cart stops, route, pushers and arrival sounds stay unchanged; a restored still
+The depot rack sits 3.4 m behind its frame along the approach tangent, with its log ends facing the path.
+This keeps its entire pickup zone inside the existing server reach. A small log glyph and stock count distinguish
+the source from the frame's own bill; the rails shelf has the matching steel badge. Q5's bill stands above the sea-gate lamp cap.
+The cart retains each waiting
+piece until its unload flight launches, and the receiving stock appears as those flights land. Taking flies logs
+from the pile to the carrier. Cart stops, route, pushers and arrival sounds stay unchanged; a restored still
 cannot show the fresh arrival or explain the wait by itself. [Walking evidence and remaining limits](../plans/world-cues.md).
 
 Stage-by-stage audit of what the objective text or marker used to explain. These are physical cues already in the round unless a change is stated. A cue's existence does not establish that a blind player understands it.
@@ -522,6 +526,11 @@ Both sealed gates have paired stone leaves, recessed courses, pale edge strips a
 **Reach:** `node dev/economy/place-level.ts` checks what each state of the run can stand on, and that nothing is reachable early. Known harmless skip: riding the machine across the stem as it lays gets you up onto the second pillar with one jump. The second device is still there on your way.
 
 ## Carried-resource display
+
+**Pack steel (8 November).** With the pack, carried rails stand in two banks on its shelf beside the log bundle,
+leaving both materials readable from behind and the side. Without it, the existing crosswise hold stays.
+The same seating and independent steel count apply to the player and friends as they take and deposit;
+capacity, accepted inventory and deposit rules are unchanged. DESIGN.md **11. Show, don't tell**.
 
 **Approach feedback (5 November, solo design pass topic 10).** Tower secret chests stand 1 m higher on plinths, with the nook chest shifted toward the preceding platform and clear of its central landing. The shop highlights the selected hanger; both wardrobe interactions preview the next owned item's existing name or “Take it off”. Draft composite wording for owner review: `Swap [slot]: [existing item name / Take it off]`. No Boogler lines are changed. Only a newly filled log UI cell pulses 1 → 1.12 → 1 over 0.16 s; reduced motion retains the fill/count response without a pulse. No avatar or collider scales, and no axe placement changes.
 

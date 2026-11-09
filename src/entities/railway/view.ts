@@ -69,7 +69,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const hook = await createRailwayHook(adapter, owner);
   demo = hook.demo;
   const shelf = await createRailwayShelf(adapter, owner, sources.bundleOrigin);
-  const cart = await createRailwayCart(adapter, owner, line2.depotPlace);
+  const cart = await createRailwayCart(adapter, owner, line2.depotPlace, line2.depotSlot, shelf.railSlot);
   line2.holdDepot(cart.flying);
   shelf.holdRails(cart.flying);
   if (look.LOOK.contact)
@@ -418,10 +418,11 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       // One machine: line two takes its panel frame and rack once it has crossed.
       machine.onPanelFrame = line2.working() ? line2.panelFrame : panels.frame;
       if (!line2.working()) panels.update(dt);
+      // Reserve the accepted delivery before the receiving views draw it; pieces appear there on landing.
+      cart.update(dt);
       line2.update(dt);
       hook.update(dt, now);
       shelf.update();
-      cart.update();
       if (!previousOpen && opened() && !reconstructed) {
         sounds.fanfare(true);
         whistle(machine.flatbed.x, machine.flatbed.z);
