@@ -20,6 +20,10 @@ import { PLAYER_R } from '../../../src/constants.ts';
 import { CART_PHASE } from '../../../src/sim/railway-cart.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, onRemotePresence, remotes } from '../../../src/netplay/net.ts';
+import { RAIL_STOPS } from '../segments.ts';
+
+/** `?botTo=<stop>` ends the route after that beat: a segment, not a failure. */
+class RouteStop extends Error {}
 
 function hookCheck(bot: Bot, ok: unknown, label: string) {
   bot.check(label, ok);
@@ -702,6 +706,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const player = query.get('player');
   const coop = !solo && (player === '1' || player === '2');
   const second = coop && player === '2';
+  const botTo = query.get('botTo');
+  if (botTo !== null && !(botTo in RAIL_STOPS)) throw new Error(`Unknown botTo ${botTo}`);
+  // `pier` is the whole route: its closing totals still run.
+  const stopAt = botTo && botTo !== 'pier' ? RAIL_STOPS[botTo as keyof typeof RAIL_STOPS] : null;
   const hookSeen = new Set<string>();
   let remoteCableSeen = false;
   const peers = new Map<
@@ -755,7 +763,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     ? setInterval(() => {
         const state = inspectRailway();
         if (second && state && state.hookShot.remoteCables >= 1) remoteCableSeen = true;
-        if (state?.ready && state.line2.forge.used > 0 && state.step >= 0) tickHashes.set(state.step, state.hash);
+        // A segment run (botTo) may end before the forge: witness its whole route.
+        if (state?.ready && (stopAt || state.line2.forge.used > 0) && state.step >= 0)
+          tickHashes.set(state.step, state.hash);
       }, 50)
     : 0;
   const logHashes = () =>
@@ -809,6 +819,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
           .map(({ id, remaining, work, growth }) => ({ id, remaining, work, growth })),
       })}`,
     );
+    if (name === stopAt) throw new RouteStop(name);
   };
   // A targeted still replays real inputs to this beat. Pose checkpoints cannot restore shared progress.
   const checkpoint = async (name: string) => {
@@ -1032,6 +1043,25 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const end = railAt(to);
       require(await bot.straight(end.x + layout.ORIGIN.x, end.z, 0.5, 12000), 'reached track endpoint');
     };
+    if (stopAt === RAIL_STOPS['audio-loop']) {
+      // Action coverage for audio changes: walk a leg of the opening path, jump, land dry; three times.
+      for (let i = 0; i < 3; i++) {
+        const point = PATH_SAMPLES[0]![Math.min(3 * (i + 1), PATH_SAMPLES[0]!.length - 1)]!;
+        await walk(point[0] + layout.ORIGIN.x, point[1]);
+        await until(() => me.coyote > 0, 'grounded before the audio-loop jump', 5000);
+        pressJump();
+        await until(
+          () => me.coyote <= 0 && me.body!.velocity.y > 0,
+          `audio-loop jump ${i + 1} leaves the ground`,
+          3000,
+        );
+        await bot.wait(330);
+        releaseJump();
+        await until(() => me.coyote > 0 && !me.swimming, `audio-loop jump ${i + 1} lands dry`, 5000);
+        await bot.wait(500);
+      }
+      mark(RAIL_STOPS['audio-loop']);
+    }
     mark('T1 opening started');
     for (let i = 0; i < PATH_SAMPLES[0]!.length; i += 3) {
       const point = PATH_SAMPLES[0]![i]!;
@@ -1408,6 +1438,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       document.documentElement.dataset.railwayProof = 'done';
       await bot.wait(3000);
       logHashes();
+      require(!stopAt, `botTo ${botTo} was reached`);
       bot.finish('line one with a friend; line two observed to the pier');
       return;
     }
@@ -1803,8 +1834,20 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await bot.wait(3000);
       logHashes();
     }
+    require(!stopAt, `botTo ${botTo} was reached`);
     bot.finish('line one, forge, Q1-Q6, Needle Bell, boiler, two train rides and the pier');
   } catch (error) {
+    if (error instanceof RouteStop) {
+      input.keys.clear();
+      releaseJump();
+      if (coop) {
+        // Let the peer reach the same beat before the witness is written.
+        await bot.wait(3000);
+        logHashes();
+      }
+      bot.finish(`segment complete: botTo ${botTo} (${error.message})`);
+      return;
+    }
     document.documentElement.dataset.railwayProof = 'failed';
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
     console.log(

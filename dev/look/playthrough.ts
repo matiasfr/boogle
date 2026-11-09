@@ -3,8 +3,12 @@
 // npm run playthrough -- --name before    keeps this run under that name (the default is the current commit)
 // npm run playthrough -- --compare a b    two runs side by side: time per beat, text gone and new
 //   --full                                print the whole report, not just what changed since the last run
-//   --query 'proto=place&shot=play'       the page and the bot's own settings; &from=line2 starts part way
-//   --eval dev/look/evals/place-job.ts    the file with the bot; it must set window.__placeDone
+//   --to t1-done                          stop after that beat of the production railway route (segments.ts, RAIL_STOPS)
+//   --from q5-done                        start from an accepted --rail-seed server save (RAIL_FROM), with its seeded bot
+//   --players 2                           two peers in one room, on the shared warp clock (rail-coop.ts)
+//   --query 'shot=play'                   the page and the bot's own settings (the default: the production entry)
+//   --eval dev/look/evals/railway-job.ts  the file with the bot (the default); it must set window.__placeDone
+//   --query 'proto=place&shot=play'       the legacy Place route and its fixture segments, until D1 deletes it
 //   --root <checkout>                     play another checkout's build, with this harness
 //   --stall 600                           give up after this many game seconds with no new beat or bot line
 // Everything lands in .look/playthrough/<name>/: report.txt (what's printed), bot.txt (all it said), summary.txt (the full session, as
@@ -22,12 +26,14 @@ import { beatsOf } from '../playtest/beats.ts';
 import { clock, parseSession, span, str, num, type Ev, type Session } from '../playtest/read.ts';
 import { marksByName, objectiveSteps, summarize, compare } from '../playtest/summary.ts';
 import { coopPlaythrough } from './coop-playthrough.ts';
-import { segmentOptions } from './segments.ts';
+import { railSegmentOptions, segmentOptions, RAIL_COOP_STOPS, RAIL_STOPS } from './segments.ts';
+import { writeRailSeed } from './rail-seed.ts';
+import { railCoopPlaythrough } from './rail-coop.ts';
 import { checkpointDirectory, readCheckpoint, ROUTE_SEED, POSE_AT, writeCheckpoints } from './saves.ts';
 import { expectedRestore, pairRestores, READ_RESTORED } from './restore-pair.ts';
 
 const SIZE = [1180, 820];
-const ROOM = 'proto-place'; // a save belongs to its room
+const LEGACY_ROOM = 'proto-place'; // a legacy Place save belongs to its room
 
 const args = process.argv.slice(2);
 const opt = (name: string, fallback: string) => {
@@ -229,24 +235,40 @@ async function main() {
     const i = args.indexOf('--compare');
     return compareRuns(args[i + 1]!, args[i + 2]!);
   }
-  const segment = segmentOptions(args);
-  const params = new URLSearchParams(opt('--query', 'proto=place&shot=play'));
-  if (
-    (segment.from || segment.to || segment.regenerate) &&
-    (params.has('from') || params.get('proto') !== 'place' || has('--eval'))
-  )
+  const params = new URLSearchParams(opt('--query', 'shot=play'));
+  const legacy = params.get('proto') === 'place';
+  const ROOM = legacy ? LEGACY_ROOM : 'playthrough';
+  // Legacy Place: client fixture segments. Production: rail stops, and accepted server seeds written per run.
+  const segment = legacy ? segmentOptions(args) : undefined;
+  const rail = legacy ? undefined : railSegmentOptions(args);
+  if (segment && (segment.from || segment.to || segment.regenerate) && (params.has('from') || has('--eval')))
     throw new Error('Segments use the Place route without a custom eval or query from=');
-  if (segment.to) params.set('botTo', segment.to);
+  if (segment?.to) params.set('botTo', segment.to);
+  if (rail && (rail.from || rail.to) && has('--eval')) throw new Error('Segments use the railway bot; omit --eval');
+  if (rail?.seed) {
+    params.set('railFrom', rail.seed.railFrom);
+    if (rail.to && rail.to !== 'pier') params.set('railStop', RAIL_STOPS[rail.to]);
+  } else if (rail?.to) params.set('botTo', rail.to);
   const query = params.toString();
   const checkout = path.resolve(opt('--root', root));
   const stallS = Number(opt('--stall', '600'));
   const players = Number(opt('--players', '1'));
   if (players !== 1 && players !== 2) throw new Error('--players must be 1 or 2');
-  const fixtureDir = segment.saves ? path.resolve(segment.saves) : checkpointDirectory(checkout, players);
-  const save = segment.from ? readCheckpoint(fixtureDir, segment.from, players) : undefined;
+  const fixtureDir = segment?.saves ? path.resolve(segment.saves) : checkpointDirectory(checkout, players);
+  const save = segment?.from ? readCheckpoint(fixtureDir, segment.from, players) : undefined;
   if (!Number.isFinite(stallS) || stallS <= 0) throw new Error('--stall must be positive game seconds');
   const job = path.join(checkout, 'dev/look/evals/place-job.ts');
-  const evalFile = path.resolve(checkout, opt('--eval', fs.existsSync(job) ? job : 'dev/look/evals/place.ts'));
+  const evalFile = path.resolve(
+    checkout,
+    opt(
+      '--eval',
+      !legacy
+        ? `dev/look/evals/${rail?.seed ? 'railway-b5b8-bot.ts' : 'railway-job.ts'}`
+        : fs.existsSync(job)
+          ? job
+          : 'dev/look/evals/place.ts',
+    ),
+  );
   const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: checkout, encoding: 'utf8' }).trim();
   const name = opt('--name', commit);
   if (!/^[a-zA-Z0-9_-]+$/.test(name) || name === 'latest') throw new Error('Use a simple run name, other than latest');
@@ -261,7 +283,13 @@ async function main() {
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(path.join(dir, 'saves'), { recursive: true });
 
-  if (players === 2) return coopPlaythrough({ args, checkout, dir, query, stallS, report });
+  if (players === 2 && legacy) return coopPlaythrough({ args, checkout, dir, query, stallS, report });
+  if (players === 2) {
+    if (rail?.from) throw new Error('Two-player runs start fresh; the seeded bot is solo');
+    if (rail?.to && !RAIL_COOP_STOPS.includes(rail.to))
+      throw new Error(`Two-player --to: ${RAIL_COOP_STOPS.join(', ')}, pier (beats both peers pass)`);
+    return railCoopPlaythrough({ args, checkout, dir, query, stallS, evalFile, to: rail?.to });
+  }
 
   let stack: Stack | undefined, browser: Browser | undefined;
   try {
@@ -271,6 +299,11 @@ async function main() {
       const dataDir = opt('--data-dir', '');
       if (!dataDir) throw new Error('--url needs --data-dir (the local server playtest data)');
       stack.dataDir = path.resolve(dataDir);
+    }
+    if (rail?.from) {
+      if (url) throw new Error('--from writes a server seed: it needs a local stack, not --url');
+      await writeRailSeed(stack.dataDir!, ROOM, rail.from);
+      console.log(`Seeded ${rail.from} (railFrom=${rail.seed!.railFrom}) through the host's save path`);
     }
     browser = await launch();
     const g = await Game.open(browser, stack, {
@@ -401,8 +434,8 @@ async function main() {
       JSON.stringify(
         {
           verdict,
-          from: segment.from,
-          to: segment.to,
+          from: segment?.from ?? rail?.from,
+          to: segment?.to ?? rail?.to,
           wall: w.wall,
           game: w.game,
           timeoutAfterBeat: w.timeoutAfterBeat,
@@ -412,9 +445,14 @@ async function main() {
       ),
     );
     if (verdict !== 'pass') process.exitCode = 1;
-    if (segment.regenerate && verdict === 'pass') writeCheckpoints(observed.saves, fixtureDir, query);
+    if (segment?.regenerate && verdict === 'pass') writeCheckpoints(observed.saves, fixtureDir, query);
   } catch (error) {
-    const failure = { verdict: 'failure', from: segment.from, to: segment.to, error: String(error) };
+    const failure = {
+      verdict: 'failure',
+      from: segment?.from ?? rail?.from,
+      to: segment?.to ?? rail?.to,
+      error: String(error),
+    };
     fs.writeFileSync(path.join(dir, 'verdict.json'), JSON.stringify(failure, null, 2));
     fs.appendFileSync(path.join(dir, 'report.txt'), `\nFAIL: ${String(error)}\n`);
     throw error;
