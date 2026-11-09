@@ -3,8 +3,8 @@
 //   townat=house|shop|museum  1 m inside that door, facing in (a plot not yet built: in front of its stake board)
 //   townat=street             on the lane between the three plots, looking at the house and the boards
 //   townat=sleeves            on the path at Sleeves, the shore greeter, looking toward the house door
-//   townact=walkout           after a moment indoors, walk 3 m out of the door (T2 adds talk, T5 try and take);
-//                             with towndefer=1 it waits for an --action body `await window.__townAct(); export {};`
+//   townact=walkout           after a moment indoors, walk 8 m out of the door, so the follow camera clears the shell
+//                             too (T2 adds talk, T5 try and take); with towndefer=1 it waits for an --action body `await window.__townAct(); export {};`
 // Prints `TOWN <json>` with the town's inspection after the setup and again after the act.
 const { inspectTown } = (await import(
   '/src/entities/town/state.ts' as string
@@ -92,14 +92,14 @@ async function runAct() {
   if (act === 'walkout') {
     if (at !== 'house' && at !== 'shop' && at !== 'museum') throw new Error('townact=walkout needs a room');
     const d = door(at);
-    // Face out and hold forward until 3 m past the door line.
+    // Hold forward until 8 m past the door line: the walls come back only once the camera is clear too.
     cam.yaw = me.yaw = Math.atan2(d.inX, d.inZ);
     const end = performance.now() + 8000;
     input.keys.add('KeyW');
     try {
       while (performance.now() < end) {
         const p = body.position;
-        if ((p.x - d.x) * -d.inX + (p.z - d.z) * -d.inZ >= 3) break;
+        if ((p.x - d.x) * -d.inX + (p.z - d.z) * -d.inZ >= 8) break;
         await wait(30);
       }
     } finally {
