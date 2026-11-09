@@ -51,7 +51,7 @@ export function acquisitionMotes(at: THREE.Vector3, tint: THREE.Color, kind: 'ga
     emit(mote);
   }
 }
-const CONFETTI = ['#ff4f4f', '#ffcf33', '#2f8cff', '#4fdc7a', '#ff7ad9', '#ffffff'].map((c) => new THREE.Color(c));
+export const CONFETTI = ['#ff4f4f', '#ffcf33', '#2f8cff', '#4fdc7a', '#ff7ad9', '#ffffff'].map((c) => new THREE.Color(c));
 // One reused birth record: emit copies its scalars synchronously, so bursts allocate nothing.
 const spark: Particle = { x: 0, y: 0, z: 0, life: 1, size: 0.2, color: GOLD };
 

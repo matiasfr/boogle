@@ -12,6 +12,8 @@ import { acquisitionMotes, acquisitionTint, rewardSparkles } from './reward-part
 import { headwearTop } from './head-clearance.ts';
 import { camera } from './scene.ts';
 import { dismissPointer } from '../player/dismiss-pointer.ts';
+import { clamp } from '../math-pure.ts';
+import { outCubic } from './motion.ts';
 
 export type Got = {
   /** Local presentation identity for a shared unlock; never saved or sent. */
@@ -216,8 +218,8 @@ export function createRewardReveal({
     if (!cur) return;
     const u = (cur.t += dt);
     overHead(top);
-    const rise = Math.max(0, Math.min(1, (u - BUILD_S) / RISE_S)),
-      ease = 1 - (1 - rise) ** 3;
+    const rise = clamp((u - BUILD_S) / RISE_S, 0, 1),
+      ease = outCubic(rise);
     holder.position.lerpVectors(cur.start, top, reducedMotion ? 1 : ease);
     spin.visible = u >= BUILD_S;
     rays.visible = u >= REVEAL_S;

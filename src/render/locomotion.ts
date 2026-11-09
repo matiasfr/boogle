@@ -5,7 +5,8 @@ import type { BuddyMotion } from '../player/buddy/rig.ts';
 import { cam, me } from '../player/state.ts';
 import { PLAYER_R } from '../constants.ts';
 import { dbToGain, getAudio } from './audio.ts';
-import { audioSettings as settings } from './audio-tuning.ts';
+import { audioSettings as settings, type AudioSetting } from './audio-tuning.ts';
+import { clamp } from '../math-pure.ts';
 import { stepSurfaceAt, type StepSurface } from './locomotion-surfaces.ts';
 import { renderLocomotionSound, type LocomotionKind } from './locomotion-sound.ts';
 import { landingDust } from './particle-effects.ts';
@@ -75,20 +76,14 @@ function take(h: History, surface: StepSurface) {
   return selected;
 }
 
-function trim(surface: StepSurface) {
-  switch (surface) {
-    case 'grass':
-      return settings.surfaceGrassDb;
-    case 'sand':
-      return settings.surfaceSandDb;
-    case 'wood':
-      return settings.surfaceWoodDb;
-    case 'rail':
-      return settings.surfaceRailDb;
-    case 'water':
-      return settings.surfaceWaterDb;
-  }
-}
+const TRIM: Record<StepSurface, AudioSetting> = {
+  grass: 'surfaceGrassDb',
+  sand: 'surfaceSandDb',
+  wood: 'surfaceWoodDb',
+  rail: 'surfaceRailDb',
+  water: 'surfaceWaterDb',
+};
+const trim = (surface: StepSurface) => settings[TRIM[surface]];
 
 function play(a: Avatar, h: History, motion: BuddyMotion, kind: LocomotionKind, level: number) {
   const audio = getAudio('character');
@@ -106,7 +101,7 @@ function play(a: Avatar, h: History, motion: BuddyMotion, kind: LocomotionKind, 
   const distance = Math.hypot(dx, dy, dz),
     far = kind === 'land' ? settings.landingDistance : settings.stepDistance;
   const near = Math.min(settings.stepNearDistance, far - 0.01);
-  const attenuation = local ? 1 : Math.max(0, Math.min(1, (far - distance) / (far - near))) ** 2;
+  const attenuation = local ? 1 : clamp((far - distance) / (far - near), 0, 1) ** 2;
   if (!attenuation) {
     totals.culled++;
     return;
@@ -146,7 +141,7 @@ function play(a: Avatar, h: History, motion: BuddyMotion, kind: LocomotionKind, 
   pan.pan.value =
     local || distance < 0.01
       ? 0
-      : Math.max(-1, Math.min(1, (dx * Math.cos(cam.yaw) - dz * Math.sin(cam.yaw)) / distance));
+      : clamp((dx * Math.cos(cam.yaw) - dz * Math.sin(cam.yaw)) / distance, -1, 1);
   pan.connect(out);
   const selected = take(h, surface);
   const voice = renderLocomotionSound(ctx, pan, {

@@ -30,7 +30,7 @@ export const ULTRA = {
 };
 
 // Default demo optics under the same physical lighting.
-export const RAW = {
+export const LOOK = {
   absorption: ULTRA.absorption,
   scatter: ULTRA.scatter,
   saturation: 1,
@@ -42,7 +42,6 @@ export const RAW = {
   shoreAmp: ULTRA.shoreAmp,
   shoreLambda: ULTRA.shoreLambda,
 };
-export const LOOK = RAW;
 
 // The mesh: OceanSurface.js's polar grid. ANGULAR 384 is its ~190k vertices.
 export const GRID = { angular: 384, inner: 1, outer: 3000, far: 1500 };
@@ -55,9 +54,6 @@ export const WAVES = [
   { lambda: 21, amp: 0.075, dir: -7, steep: 0.8 },
   { lambda: 13, amp: 0.04, dir: 48, steep: 0.8 },
 ];
-
-// Source shore field: 512² over 1800 m, 3.516 m per texel.
-export const SHORE = { extent: 1800, size: 512 };
 
 // All four source bands and 256². Demo diagnostics pass their settings to the reusable renderer explicitly.
 export const FFT = {

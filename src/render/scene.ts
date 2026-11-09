@@ -52,7 +52,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 // Neutral, not AgX: AgX greyed the toy palette (sea, sky and grass lost their saturation).
 renderer.toneMapping = THREE.NeutralToneMapping;
-renderer.toneMappingExposure = 1.0; // the one base exposure; sky.ts eases it up at night (eyes adapting), lights stay physical
+renderer.toneMappingExposure = 1.0; // the one base exposure; lights stay physical
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const lobbyNote = (text: string) => {

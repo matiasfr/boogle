@@ -1,5 +1,7 @@
 // Local visual proof only. A future accepted milestone may call setEveningLook after T1.
 // No clock, save, room message or gameplay availability belongs here.
+import { smoothstep } from '../../math-pure.ts';
+
 let request: ((evening: boolean) => boolean) | undefined;
 
 /** Returns false when the opt-in sea is unavailable or a fade is already running. */
@@ -33,7 +35,7 @@ export function createEveningTransition(initial: boolean, select: (evening: bool
       elapsed += dt;
       if (phase === 'out') {
         const t = Math.min(elapsed / 0.45, 1);
-        veil.style.opacity = String(t * t * (3 - 2 * t));
+        veil.style.opacity = String(smoothstep(0, 1, t));
         if (t === 1) phase = 'covered';
       } else if (phase === 'covered') {
         // Keep the veil opaque across the update that exchanges the whole lighting package.
@@ -43,7 +45,7 @@ export function createEveningTransition(initial: boolean, select: (evening: bool
         phase = 'in';
       } else {
         const t = Math.min(elapsed / 0.65, 1);
-        veil.style.opacity = String(1 - t * t * (3 - 2 * t));
+        veil.style.opacity = String(1 - smoothstep(0, 1, t));
         if (t === 1) {
           phase = 'idle';
           veil.style.display = 'none';

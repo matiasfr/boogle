@@ -2,6 +2,7 @@
 // localStorage, synthesized sounds, confetti. All Local: cosmetic, Math.random is fine.
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
+import { CONFETTI } from '../../render/reward-particles.ts';
 import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
 import { dbToGain, getAudio } from '../../render/audio.ts';
 import { audioSettings } from '../../render/audio-tuning.ts';
@@ -154,7 +155,6 @@ export function boing(k: number, vol = 1) {
 }
 
 // ---------------------------------------------------------------- particles
-const CONFETTI = ['#ff4f4f', '#ffcf33', '#2f8cff', '#4fdc7a', '#ff7ad9', '#ffffff'].map((c) => new THREE.Color(c));
 export function confetti(x: number, y: number, z: number, n = 90) {
   for (let k = 0; k < n; k++) {
     const a = Math.random() * Math.PI * 2,

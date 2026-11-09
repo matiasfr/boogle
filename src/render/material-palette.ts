@@ -6,10 +6,12 @@ import { bind, tuningEnabled } from './water/live.ts';
 import {
   DEFAULT_PALETTE,
   MATERIAL_FAMILIES,
+  MATERIAL_PALETTE_SPECS,
   MATERIAL_PALETTES,
   type MaterialFamily,
 } from './material-palette-tuning.ts';
 import { patchNode } from './material-patch.ts';
+import { validValue } from '../tunables/spec.ts';
 import type { OwnedView } from './owned-view.ts';
 
 const listeners = new Set<() => void>();
@@ -21,7 +23,7 @@ function ratio(family: MaterialFamily, choice: number, into: THREE.Color) {
   return into.setRGB(selected.r / anchor.r, selected.g / anchor.g, selected.b / anchor.b);
 }
 const families = Object.fromEntries(
-  MATERIAL_FAMILIES.map((family) => {
+  MATERIAL_FAMILIES.map((family, i) => {
     const factor = ratio(family, DEFAULT_PALETTE, new THREE.Color());
     const node = tuningEnabled ? uniform(factor) : null;
     const state = { choice: DEFAULT_PALETTE, factor, node };
@@ -29,8 +31,7 @@ const families = Object.fromEntries(
       `material.${family}`,
       () => state.choice,
       (value) => {
-        if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 3)
-          throw new Error(`Invalid ${family} palette`);
+        if (!validValue(MATERIAL_PALETTE_SPECS[i]!, value)) throw new Error(`Invalid ${family} palette`);
         if (state.choice === value) return;
         state.choice = value;
         ratio(family, value, factor);

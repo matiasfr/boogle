@@ -1,6 +1,7 @@
 // The unchanged Place wake presentation, shared by legacy Place and the owned production machine.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../constants.ts';
+import { clamp } from '../math-pure.ts';
 import { camConstraints, me } from '../player/player.ts';
 import { chuff, thump, whistle } from './machine-sfx.ts';
 import { emit } from './particles.ts';
@@ -28,14 +29,24 @@ export type Waker = {
   setSlip: (rate: number) => void;
   distance: (x: number, z: number) => number;
 };
-type Machine = Waker;
+// The machine's state through a waking, played by scheduleWake and restored by settle: rust flakes off in 16 steps,
+// the fire catches, the wheels slip, the lamps come on.
+const RUST = { start: 0.2, step: 0.11, steps: 16 };
+const WAKE_STATE: readonly { t: number; fire?: number; slip?: number; lamps?: true }[] = [
+  { t: 1, fire: 0.4, slip: 5 }, // the wheels try
+  { t: 1.5, fire: 0.7, slip: 11 },
+  { t: 1.95, fire: 1 },
+  { t: 2.35, lamps: true, slip: 4 },
+  { t: 2.9, slip: 0 },
+];
+const WAKE_END = 3.1;
 const rust = new THREE.Color('#8a5a34'),
   flake = new THREE.Color('#6d4426'),
   dustC = new THREE.Color('#cdb48c'),
   steam = new THREE.Color('#f6f4ee'),
   soot = new THREE.Color('#7c7770');
 const v = new THREE.Vector3();
-function shedRust(m: Machine, n: number) {
+function shedRust(m: Waker, n: number) {
   for (const c of [m.flatbed, m.loco])
     for (let k = 0; k < n; k++) {
       const sx = (Math.random() - 0.5) * 2 * c.spec.hx,
@@ -73,7 +84,7 @@ function shedRust(m: Machine, n: number) {
         });
     }
 }
-function cough(m: Machine, heavy: number) {
+function cough(m: Waker, heavy: number) {
   m.look.chimneyTop.getWorldPosition(v);
   chuff(v.x, v.z, heavy);
   for (let k = 0; k < 3 + heavy * 5; k++)
@@ -92,7 +103,7 @@ function cough(m: Machine, heavy: number) {
       color: heavy < 0.6 ? soot : steam,
     });
 }
-function steamBurst(m: Machine) {
+function steamBurst(m: Waker) {
   m.look.chimneyTop.getWorldPosition(v);
   for (let k = 0; k < 60; k++) {
     const a = Math.random() * Math.PI * 2,
@@ -140,7 +151,7 @@ function steamBurst(m: Machine) {
 /** About 3 s, and the player keeps control: a shudder, rust and dust shaking off, the boiler catching, a big burst of
  * steam, the headlamps, a whistle. `done` is when it's ready for work. */
 export function scheduleWake(
-  m: Machine,
+  m: Waker,
   { after, shakeView, fanfare, dustRing }: WakeEffects,
   onLamps: () => void,
   done: () => void,
@@ -170,38 +181,36 @@ export function scheduleWake(
       m.shudder(0.35 + heavy);
       shakeView(0.08 * near());
     });
-  for (let k = 0; k <= 16; k++) after(0.2 + k * 0.11, () => m.setRust(1 - k / 16));
-  after(1.0, () => {
-    m.setFire(0.4);
-    m.setSlip(5); // the wheels try
-  });
-  after(1.5, () => {
-    m.setFire(0.7);
-    m.setSlip(11);
-  });
-  after(1.95, () => {
-    m.setFire(1);
-    steamBurst(m);
-    chuff(x, z, 1);
-    thump(x, z);
-    shedRust(m, 10);
-    dustRing(m.flatbed.x, m.flatbed.y - 0.9, m.flatbed.z, 16, 4, 0.6);
-    m.shudder(1);
-    shakeView(0.16 * near());
-  });
-  after(2.35, () => {
-    m.setLamps(true);
-    onLamps();
-    m.shudder(0.25);
-  });
-  after(2.35, () => m.setSlip(4));
+  for (let k = 0; k <= RUST.steps; k++) after(RUST.start + k * RUST.step, () => m.setRust(1 - k / RUST.steps));
+  // What happens with a state change, after it: the boiler catches, then the lamps.
+  const alongside: Partial<Record<number, () => void>> = {
+    1.95: () => {
+      steamBurst(m);
+      chuff(x, z, 1);
+      thump(x, z);
+      shedRust(m, 10);
+      dustRing(m.flatbed.x, m.flatbed.y - 0.9, m.flatbed.z, 16, 4, 0.6);
+      m.shudder(1);
+      shakeView(0.16 * near());
+    },
+    2.35: () => {
+      onLamps();
+      m.shudder(0.25);
+    },
+  };
+  for (const s of WAKE_STATE)
+    after(s.t, () => {
+      if (s.fire !== undefined) m.setFire(s.fire);
+      if (s.slip !== undefined) m.setSlip(s.slip);
+      if (s.lamps) m.setLamps(true);
+      alongside[s.t]?.();
+    });
   after(2.6, () => {
     whistleHere();
     whistle(x, z);
     fanfare(false);
   });
-  after(2.9, () => m.setSlip(0));
-  after(3.1, () => {
+  after(WAKE_END, () => {
     m.shudder(0);
     done();
   });
@@ -235,11 +244,20 @@ export function createWakePresentation(
       machine.shudder(0);
       return;
     }
-    const rustStep = Math.max(0, Math.min(16, Math.floor((seconds - 0.2) / 0.11)));
-    machine.setRust(1 - rustStep / 16);
-    machine.setFire(seconds >= 1.95 ? 1 : seconds >= 1.5 ? 0.7 : seconds >= 1 ? 0.4 : 0);
-    machine.setLamps(seconds >= 2.35);
-    machine.setSlip(seconds >= 2.9 ? 0 : seconds >= 2.35 ? 4 : seconds >= 1.5 ? 11 : seconds >= 1 ? 5 : 0);
+    const rustStep = clamp(Math.floor((seconds - RUST.start) / RUST.step), 0, RUST.steps);
+    machine.setRust(1 - rustStep / RUST.steps);
+    let fire = 0,
+      slip = 0,
+      lamps = false;
+    for (const s of WAKE_STATE) {
+      if (s.t > seconds) break;
+      fire = s.fire ?? fire;
+      slip = s.slip ?? slip;
+      lamps ||= !!s.lamps;
+    }
+    machine.setFire(fire);
+    machine.setLamps(lamps);
+    machine.setSlip(slip);
     machine.shudder(0);
   }
   const api = {
@@ -272,15 +290,15 @@ export function createWakePresentation(
         event.fn();
       }
       shake = Math.max(0, shake - dt * 0.5);
-      if (restored >= 0 && restored < 3.1) {
-        restored = Math.min(3.1, restored + dt);
+      if (restored >= 0 && restored < WAKE_END) {
+        restored = Math.min(WAKE_END, restored + dt);
         settle(restored);
       }
     },
     reset(elapsedSeconds: number) {
       queue.length = 0;
       shake = 0;
-      restored = Math.min(3.1, elapsedSeconds);
+      restored = Math.min(WAKE_END, elapsedSeconds);
       settle(restored);
     },
     dispose() {

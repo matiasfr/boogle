@@ -2,7 +2,8 @@
 // so everyone can play the same one. Takes any context, so offline renders (dev/audio/) work too. Local and cosmetic.
 const made = new WeakMap<BaseAudioContext, Map<string, AudioBuffer>>();
 
-function buffer(
+/** A buffer made once per context and key by `fill`, shared by every source that plays it. */
+export function cachedBuffer(
   ctx: BaseAudioContext,
   kind: string,
   seconds: number,
@@ -22,14 +23,14 @@ function buffer(
 }
 
 export const noiseBuffer = (ctx: BaseAudioContext, seconds: number) =>
-  buffer(ctx, 'white', seconds, 1, (d) => {
+  cachedBuffer(ctx, 'white', seconds, 1, (d) => {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   });
 
 // Brown noise (leaky-integrated white): warm, no hiss, for surf and breeze. Its drift is taken out so it loops without a
 // click at the seam.
 export const brownNoiseBuffer = (ctx: BaseAudioContext, seconds: number) =>
-  buffer(ctx, 'brown', seconds, 1, (d) => {
+  cachedBuffer(ctx, 'brown', seconds, 1, (d) => {
     for (let i = 0, v = 0; i < d.length; i++) d[i] = (v = (v + 0.02 * (Math.random() * 2 - 1)) / 1.02) * 3.5;
     const drift = (d[d.length - 1]! - d[0]!) / (d.length - 1);
     for (let i = 0; i < d.length; i++) d[i] = d[i]! - drift * i;
@@ -37,7 +38,7 @@ export const brownNoiseBuffer = (ctx: BaseAudioContext, seconds: number) =>
 
 // A dark stereo reverb tail for a ConvolverNode: decaying noise, low-passed as it fades (air soaks up the highs first).
 export const darkReverbBuffer = (ctx: BaseAudioContext, seconds: number) =>
-  buffer(ctx, 'reverb', seconds, 2, (d) => {
+  cachedBuffer(ctx, 'reverb', seconds, 2, (d) => {
     const onset = ctx.sampleRate * 0.012;
     for (let k = 0, lp = 0; k < d.length; k++) {
       const u = k / d.length,
