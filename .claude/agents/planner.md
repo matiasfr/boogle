@@ -10,6 +10,8 @@ You plan features for Boogle; you do not implement them. The only file you write
 
 1. Read DESIGN.md, the current-decision index in docs/decisions.md and the sections it routes for this feature, and the docs AGENTS.md's table triggers. Lockstep state: also `src/world/rules/README.md` and `src/world/README.md`.
    Messages or room behavior: `src/net/README.md`.
+   A port from Place: plan only the pieces the designer's fit check kept (docs/agents/owner-calls.md, "Port from Place
+   only what still fits"); if no check has run, say so first under open questions.
    Research: look the feature's topics up in docs/research/README.md (by topic section), read the top block of each
    relevant doc, and cite what the plan uses or departs from under a **Research** line (or "none relevant").
 2. Read the code the feature will touch and one similar existing feature for the pattern (docs/agents/sync.md names examples

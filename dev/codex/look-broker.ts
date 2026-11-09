@@ -160,9 +160,13 @@ async function execute(id: string, request: Request) {
   const outputFile = path.join(out, 'output.txt');
   const job = `${path.basename(worktree)}: ${operation} ${request.args.join(' ')}`;
   publish(path.join(dir, 'active.json'), { id, job });
-  const lease = await acquireBotSlot(job, (message) => {
-    publish(path.join(dir, `${id}.queued.json`), { message });
-  });
+  const lease = await acquireBotSlot(
+    job,
+    (message) => {
+      publish(path.join(dir, `${id}.queued.json`), { message });
+    },
+    request.args.includes('--long'),
+  );
   publish(path.join(dir, `${id}.started.json`), { at: Date.now(), waitedMs: lease.waitedMs });
   const status = await new Promise<number>((resolve) => {
     const log = fs.openSync(outputFile, 'w');

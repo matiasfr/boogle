@@ -56,6 +56,8 @@
     "scenarios": "node dev/scenarios/run.ts",
     "ship": "bash scripts/ship.sh",
     "ship-branch": "bash dev/codex/ship-branch.sh",
+    "ship-queue": "bash dev/ship-queue.sh",
+    "heartbeat": "bash dev/heartbeat.sh",
     "prepare": "git config core.hooksPath .githooks || true",
     "clip": "node dev/video/clip.ts",
     "reel": "node dev/video/reel.ts",

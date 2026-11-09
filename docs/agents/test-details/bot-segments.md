@@ -33,7 +33,7 @@ Read `report.txt`, `verdict.json` and the images even on failure. The full produ
 `--query 'proto=place&shot=play'` keeps the legacy Place route with its `.look/checkpoints/{solo,coop}` fixtures,
 `--from at-cove|t1-done|t2-funded|pier-ending` and `--regenerate`, until D1 deletes it; no routed check uses it.
 
-All harness browser launches share the machine queue at `/tmp/boogle-bots-<uid>` (across worktrees).
+All harness browser launches share the machine queue at `/tmp/boogle-bots-<uid>` (across worktrees). Short runs go ahead of waiting `--long` playthroughs until a long one has waited 20 minutes (`BOOGLE_BOT_YIELD_MS`); a running job is never interrupted.
 Default capacity is 1; set `BOOGLE_BOT_CONCURRENCY` on launchers to raise it. Use the same setting everywhere;
 mixed settings take the smaller active limit. `BOOGLE_BOT_QUEUE_DIR` may select a shared path, never a per-worktree path.
 The queue names the blocking job; a dead PID's unique ticket is reclaimed. Broker deadlines and co-op clock samples start
