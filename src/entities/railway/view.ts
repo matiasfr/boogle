@@ -22,6 +22,8 @@ import { createRailwayCart } from './cart-view.ts';
 import { createRailwayTrains } from './train-view.ts';
 import { createRailwayHalts } from './halts-view.ts';
 import { createRailwayHook } from './hook-shot.ts';
+import { createRailwayGlide } from './glide.ts';
+import { stepMoves } from './move-order.ts';
 import { worksPreview } from './works-flag.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
@@ -80,6 +82,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   );
   const hook = await createRailwayHook(adapter, owner);
   demo = hook.demo;
+  const glide = await createRailwayGlide(adapter, owner, () => hook.inspect().pulling);
   const shelf = await createRailwayShelf(adapter, owner, sources.bundleOrigin);
   const cart = await createRailwayCart(adapter, owner, line2.depotPlace, line2.depotSlot, shelf.railSlot);
   const trains = await createRailwayTrains(adapter, owner, seats, line2.depotPlace);
@@ -355,8 +358,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     },
     fixedPre: () => {
       halts.fixedPre(trains.isTrain);
-      if (!hook.fixedPre()) reward.fixedPre();
+      stepMoves(hook, reward, glide);
     },
+    /** Railway-glide fixedPre (23), before the controller. */
+    noteVelocity: glide.noteVelocity,
     update(ctx: FrameCtx) {
       const { dt, now } = ctx;
       state = adapter.inspect();
@@ -458,6 +463,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       for (const view of works) view.update();
       line2.update(dt);
       hook.update(dt, now);
+      glide.update(dt, now);
       shelf.update();
       if (!previousOpen && opened() && !reconstructed) {
         sounds.fanfare(true);
@@ -552,6 +558,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       trees: sources.inspect(),
       reward: reward.inspect(),
       hookShot: hook.inspect(),
+      glider: glide.inspect(),
       pathOpen: opened(),
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
       works: works[0]?.inspect() ?? null,
