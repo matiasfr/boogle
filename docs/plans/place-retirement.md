@@ -822,7 +822,13 @@ unused, so existing saves keep their other fields. The notes below are history.
   the balcony and stack before the glider (also with the line to Far Head). Three are reached early in Place's
   layout and print as `EARLY` findings (an open layout call): the lookout with one jump, the alcove from the bank
   without the hook, the stack by a double jump down from the stack-return slab.
-- **Eval:** `railway-finds.ts` `findsecret=<id>`, `findsecretbay=1`, `findsact=bay|spot`.
+- **Eval:** `railway-finds.ts` `findsecret=<id>`, `findsecretbay=1`, `findsact=open|bay|spot`, `findsworldfrom=`.
+- **Bench, `town` pose** (fresh world, against the gold-find cut): 233 → 240 calls (+4 main, +3 shadow: the merged
+  ground, the crate tiers in view and a side slab), 1.35 → 1.36 M triangles. The bay adds none.
+- **Proofs** (`.look/f2-*`): the yard crate behind the cottage and its pickup (the straw hat over Buddy); the bay at
+  `q6-done` with six crates (yard, bell, nook, loft, balcony, stack; no glider or double jump in that seed); yard's
+  bay crate opened, then its world crate gone; a real reload keeps the bell's; two players, player 2 still sees their
+  own yard crate after player 1 takes theirs.
 
 ### Job F3: buoys and the telescope
 

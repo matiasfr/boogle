@@ -890,7 +890,7 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
   from the stack-return slab).
 
 Sync: Personal Local, the finds store's `secrets` and `hubbed`, each written the moment it changes. No presence key,
-op or `WORLD_NS` change; a partner sees their own crates.
+op or `WORLD_NS` change; a partner sees their own crates. Cost at the bench's `town` view: +7 draw calls (233 → 240).
 
 ## Departures from the brief
 
