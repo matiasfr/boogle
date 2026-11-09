@@ -13,11 +13,9 @@ import { reducedMotion } from '../../constants.ts';
 import { clamp } from '../../math.ts';
 import { damp, springStep, stiffnessOf, dampingOf, type Spring } from '../../render/motion.ts';
 
-/** A car's physical size, shared with the platforms: deck half sizes and the deck top's height over the ground. */
-export type CarSpec = { hx: number; hz: number; top: number };
-
-export const LOCO: CarSpec = { hx: 0.8, hz: 1.5, top: 1.75 }; // the boiler top: rideable, after a jump
-export const TRAILER: CarSpec = { hx: 1.1, hz: 1.6, top: 0.7 }; // a flatbed: a hop up from the ground
+import { LOCO, TRAILER } from './cars.ts';
+// The car sizes live in ./cars.ts (no three.js) so the layout tests read them too.
+export { LOCO, TRAILER, WAGON_CAR, TRAIN_CARS, TRAIN_OFFSETS, type CarSpec } from './cars.ts';
 
 /** The freight on the last flatbed: centre x, z on the deck, size, yaw, and how high its bottom sits over the deck. */
 export const CRATES = [

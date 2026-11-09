@@ -13,9 +13,6 @@ import { dustRing } from '../../render/particle-effects.ts';
 import { TRAIN_PHASE, TRAIN_HOME, trainAlong, type RailTrain } from '../../sim/railway-train.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 
-/** The footing wagon, line 2's fourth car once the shed's wagon couples (docs/plans/split-rock-roundhouse.md, J5a): a
- * low deck the size of the shunt's wagon, so the one in the stall and the one on the train read as the same thing. */
-const WAGON_CAR = { hx: 1.1, hz: 1.6, top: 0.5 } as const;
 const BRASS = '#c79a3e';
 /** Footings aboard stand in two stacks on the cradle's seats: slot k's centre in the wagon's rail frame. */
 const aboardAt = (k: number) => ({ y: 0.63 + Math.floor(k / 2) * (0.9 + 0.02), z: k % 2 ? 0.8 : -0.8 });
@@ -48,7 +45,7 @@ export async function createRailwayTrains(
     shudder = 0,
     secondVisible = false;
   // Line 2 has a fourth car, the footing wagon, behind its flatbeds; it waits under the land until it couples.
-  const offsets = [3.7, 0, -3.7, -7.4];
+  const offsets = wagon.TRAIN_OFFSETS;
   const WAGON = 3;
   const wagonRock = new THREE.Group();
   const trains = [0, 1].map((k) => {
@@ -56,7 +53,7 @@ export async function createRailwayTrains(
     const model = look.LOOK.kit ? kitModels![k]! : wagon.wagonLook(2, false, owner);
     const cars = offsets.slice(0, k ? 4 : 3).map((_, n) => {
       const car = rail.makeCar(
-        n === WAGON ? WAGON_CAR : n === 0 ? wagon.LOCO : wagon.TRAILER,
+        wagon.TRAIN_CARS[n]!,
         n === WAGON ? wagonRock : model.cars[n]!,
         () => {
           if (k === 0 && n === 0) step();
@@ -381,7 +378,15 @@ export async function createRailwayTrains(
         cars: tr.cars.map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
         ...(k === 1
-          ? { wagon: { shown: wagonCar.mesh.visible, x: wagonCar.x, y: wagonCar.y, z: wagonCar.z, flying: footFlights.length } }
+          ? {
+              wagon: {
+                shown: wagonCar.mesh.visible,
+                x: wagonCar.x,
+                y: wagonCar.y,
+                z: wagonCar.z,
+                flying: footFlights.length,
+              },
+            }
           : {}),
       })),
       oldTrain: { shown: !adapter.inspect().line2.trains, rust: look.rustTrainU.value, stop: TRAIN_HOME[0] },
