@@ -319,6 +319,7 @@ export function createRailwayAdapter({
   pid,
   pose = () => null,
   now = () => performance.now(),
+  glide = false,
 }: {
   mirror: RailwayMirror;
   movement: () => RailwayMovement;
@@ -327,6 +328,9 @@ export function createRailwayAdapter({
   pose?: ActorPose;
   /** The client's monotonic clock in ms: action times, the server step estimate and the stall cue. */
   now?: () => number;
+  /** The glider fact a dev test room grants (docs/brainstorms/glider-placement.md, piece A). Piece B replaces it with
+   * the accepted `Rail.glide`; until then production never sets it, so the glide stays off. */
+  glide?: boolean;
 }) {
   const confirmed = rail.railway;
   const progressMarks = createRailwayProgressMarks();
@@ -813,6 +817,8 @@ export function createRailwayAdapter({
       stations: Object.freeze(stations),
       axe: s.line!.axe,
       jump: s.line!.jump,
+      /** The room has the glider (piece A: only a dev test room's grant; piece B: accepted state). */
+      glide,
       beam: Object.freeze({ ...s.line!.beam }),
       rocks: Object.freeze(
         LINE1_ROCKS.map((rock, i) =>

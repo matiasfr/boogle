@@ -313,8 +313,14 @@ export async function createRailwayTools(
       ring2.rotation.y = now * 0.001;
       core.rotation.y = now * 0.0012;
     },
-    /** Entity fixedPre order 42: the same post-controller second-jump seam as the approved prototype. */
+    /** Entity fixedPre order 42: the same post-controller second-jump seam as the approved prototype. True when the air
+     * jump fired this step (move-order.ts re-arms an open canopy on it). */
     fixedPre() {
+      const before = jumps;
+      api.airJump();
+      return jumps !== before;
+    },
+    airJump() {
       const b = me.body;
       // An unlock that arrives in the air never adds a jump to that flight: the charge comes on landing.
       const unlocked = adapter.inspect().jump;
