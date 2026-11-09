@@ -15,7 +15,7 @@ import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
 import { railCounts } from '../../src/sim/railway.ts';
 import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { line2Active, line2SeaOpen } from '../../src/sim/railway-line2.ts';
-import { CART, CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
+import { CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { worldOf } from '../../test/railway-live.ts';
 import { railwayAtQ4, railwayAtQ5 } from '../../test/helpers/railway-q2.ts';
 
@@ -382,11 +382,11 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
       waited += (await ticks(10), 10);
     assert.equal(line2().cart.phase, CART_PHASE.DROP, 'the cart reached the rack');
     assert.equal(line2().cart.recall, false, 'the call was served at the forge on the way');
-    assert.equal(line2().depotRails, CART.rails);
+    assert.equal(line2().depotRails, LINE2_STATIONS[3]!.bill[1]);
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');
     const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.equal(take.accepted, CART.rails, 'a back of 16 takes them all');
+    assert.equal(take.accepted, LINE2_STATIONS[3]!.bill[1], 'a back of 16 takes them all');
     // The quarry gate is up: deliveries stock the frame without starting it.
     const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
     assert.equal(shut.status, 'accepted');
@@ -399,7 +399,7 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     host = create();
     await host.whenReady();
     assert.equal(line2().pack, true);
-    assert.equal(host.rules.railway.account('a')!.rails, CART.rails - 8);
+    assert.equal(host.rules.railway.account('a')!.rails, LINE2_STATIONS[3]!.bill[1] - 8);
     assert.equal(line2().jobs[3]!.railStock, 8);
     assert.equal(line2().lever, false);
     assert.equal(railCounts(host.rules.railway.railway).rails!.total, rails.total);

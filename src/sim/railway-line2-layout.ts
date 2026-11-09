@@ -118,7 +118,7 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
   },
 ];
 /** The depot's cart brings logs from the camp to a rack by the frame, never past the bill; from Q4 it stops at the
- * forge for rails too (Place: "the cart holds 16 rails"). Its trip and what a load holds: ./railway-cart.ts. `reach`:
+ * forge for rails too (24 a trip, one full rack: Place held 16). Its trip and what a load holds: ./railway-cart.ts. `reach`:
  * how near the frame a take from the rack or shelf is heard. */
 export const LINE2_DEPOT = { reach: 700 } as const;
 /** The pack chest beside the forge (Place ladder.ts CHEST_AT.pack): the forge's first bill (24 logs) puts it there, and

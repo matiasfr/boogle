@@ -441,9 +441,9 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   untilUnload(w, 3, () => l().depotRails > 0);
   assert.equal(l().depot, aboard, 'the load under way went on to the next rack');
   assert.equal(l().depotOut[3], 0, 'Q4 needed no logs minted');
-  assert.equal(l().depotRails, CART.rails, 'the cart holds all of the rails Q4 needs');
+  assert.equal(l().depotRails, LINE2_STATIONS[3]!.bill[1], 'the cart holds all of the rails Q4 needs');
   const pours = railsHeld(w).poured - poured;
-  assert.equal(l().forge.rack, rack + pours - CART.rails, 'the shelf rails left the forge rack');
+  assert.equal(l().forge.rack, rack + pours - LINE2_STATIONS[3]!.bill[1], 'the shelf rails left the forge rack');
   restore(w);
   assert.equal(act(w, 'a', 'rail.lever'), 1);
   assert.equal(line2GateOpen(w.s), true);
@@ -454,7 +454,7 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
   assert.equal(act(w, 'b', 'rail.depotRailTake'), RAILWAY_T1.carry, 'a full back of rails, no more');
   advance(w, cartCycleTicks(3));
-  assert.equal(l().depotRails, CART.rails - room - 8, 'rails on backs are not brought again');
+  assert.equal(l().depotRails, LINE2_STATIONS[3]!.bill[1] - room - 8, 'rails on backs are not brought again');
   assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q4', n: 8, kind: 2 }), 8);
   railsHeld(w);
   // Rails carried from the forge by hand fill the bill first, so the shelf's rest is left over when Q4 funds: it goes
@@ -509,17 +509,17 @@ test('the early sea switch opens once and reloads while Q5 still refuses both ma
   assert.equal(act(early, 'a', 'rail.deposit', { station: 'Q5', n: 1, kind: 0 }), 1, 'Q5 starts taking only after Q4');
 });
 
-test('Q5: behind the sea gate; two cart trips bring its rails, never minted', () => {
+test('Q5: behind the sea gate; one cart trip brings all 24 of its rails, never minted', () => {
   const w = railwayAtQ5('q4-done');
   const l = () => w.s.line2!;
   assert.equal(line2Active(w.s), 4);
   assert.equal(line2SeaOpen(w.s), false);
   assert.equal(line2GateDown(w.s, 4), false);
-  // The cart serves the frame even with the sea gate up.
-  untilUnload(w, 4, () => l().depotRails === 16);
+  // The cart serves the frame even with the sea gate up, and one shipment carries the whole rail bill.
+  untilUnload(w, 4, () => l().depotRails === 24);
   assert.equal(l().depot, 24);
   assert.ok(l().depotOut[4]! <= 24);
-  assert.equal(l().shelfOut, 16);
+  assert.equal(l().shelfOut, 24);
   railsHeld(w);
   const move = (pid: string, op: string, fields: Partial<RailAction> = {}) => {
     const n = act(w, pid, op, fields);
@@ -533,18 +533,20 @@ test('Q5: behind the sea gate; two cart trips bring its rails, never minted', ()
   assert.equal(line2SeaOpen(w.s), true);
   assert.equal(line2GateDown(w.s, 4), true);
   assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 0, 'the back is already empty');
+  // Eight rails stocked by hand from the forge first, so the shelf's last eight are left over when Q5 funds.
+  assert.equal(move('b', 'rail.forgeTake'), 8);
+  assert.equal(move('b', 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
   for (const pid of ['a', 'b']) {
     assert.equal(move(pid, 'rail.depotRailTake'), 8);
     assert.equal(move(pid, 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
   }
   restore(w);
-  untilUnload(w, 4, () => l().depotRails === 8);
-  assert.equal(l().shelfOut, 24, 'the second trip brings just the remaining eight rails');
+  advance(w, cartCycleTicks(4));
+  assert.equal(l().cart.phase, CART_PHASE.REST, 'no second trip: the rails are in and the logs are on the rack');
+  assert.equal(l().shelfOut, 24);
+  assert.equal(l().depotRails, 8);
   assert.equal(l().depot, 16, 'no more logs than the bill');
   railsHeld(w);
-  // Finish the rail bill by hand, leaving the second shipment on the shelf to return on funding.
-  assert.equal(move('b', 'rail.forgeTake'), 8);
-  assert.equal(move('b', 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
   for (let i = 0; i < 2; i++) {
     const before = l().forge.rack;
     assert.equal(move('a', 'rail.depotTake'), 8);
@@ -603,7 +605,7 @@ test("the away credit runs Q5's cart too: rails move from the forge, logs stop a
   const w = railwayAtQ5('q4-done');
   railResume(w.s, 0, 40, w.t, 1000000);
   assert.equal(w.s.line2!.depot, 24);
-  assert.equal(w.s.line2!.depotRails, 24, 'away credit runs both rail shipments up to the bill');
+  assert.equal(w.s.line2!.depotRails, 24, 'away credit runs one shipment: the whole rail bill');
   assert.ok(w.s.line2!.depotOut[4]! <= 24);
   railsHeld(w);
   const hash = hashOf(w.s);
