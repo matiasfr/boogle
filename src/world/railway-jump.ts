@@ -100,5 +100,18 @@ export function jumpRoomName(stage: string, suffix: string): string {
 /** POST /jump (wire shape): sent as text/plain JSON. */
 export type JumpRequest = { stage: string; ns: string };
 export type JumpReply = { room: string; stage: string };
+/** POST /jump's `error` for its two day budgets (429), which the splash tells apart from the per-minute rate limit. */
+export const JUMP_DAY_ERROR = 'too many jump-ins today';
+export const JUMP_ADDRESS_ERROR = 'too many jump-ins from here today';
+/** A claim's world (a railway room id) is a jump room's: its plain name has the jump room shape. */
+export function isJumpWorld(world: string): boolean {
+  const name = /^rail-v\d+-(.+)$/.exec(world)?.[1];
+  return !!name && JUMP_ROOM_RE.test(name);
+}
+/** Whether a reward claimed in `claimWorld` dresses you in `world`. A jump room keeps to itself both ways (playtest-
+ * jump-in.md, call 22): a crate opened there never grants its hat or scarf anywhere else, and the wardrobe there starts
+ * empty. Between other rooms a claim counts everywhere, as before. */
+export const claimCountsIn = (claimWorld: string, world: string): boolean =>
+  claimWorld === world || (!isJumpWorld(claimWorld) && !isJumpWorld(world));
 /** `seed` on GET /rooms/:id/host, and the playdata session's `seed` field. */
 export type RoomSeed = { stage: string; at: string };

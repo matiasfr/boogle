@@ -18,6 +18,7 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { GLIDE_REWARD, T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
+import { claimCountsIn } from '../../world/railway-jump.ts';
 import { createRailwayTools, inReach } from './tools.ts';
 import { createAbilityArrival } from './ability-arrival.ts';
 import { createTrophyPlinth } from './trophy-plinth.ts';
@@ -267,7 +268,7 @@ async function createStationReward(
     try {
       const value = profile.read();
       claims = value.claims.length;
-      owned = value.claims.some((claim) => claim.cosmetic === reward.id);
+      owned = value.claims.some((claim) => claim.cosmetic === reward.id && claimCountsIn(claim.world, world));
       claimed = value.claims.some(
         (claim) => claim.world === world && claim.station === stationId && claim.completion === 1,
       );
