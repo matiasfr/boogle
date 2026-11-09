@@ -1,0 +1,100 @@
+// Which model and effort each kind of work uses: the single source of truth (docs/agents/models.md).
+// `npm run models` prints the active table. Set `codexFrom` to switch modes.
+import fs from 'node:fs';
+import path from 'node:path';
+
+export type Mode = 'normal' | 'withCodex';
+export type Pick = { who: string; model: string; effort: string };
+export type Route = { work: string; withCodex: Pick; normal: Pick };
+
+/**
+ * Normal mode is Claude only. withCodex makes Codex the workhorse and saves Claude for Opus; it is on from `codexFrom`
+ * (owner's local date) onward, and off when `codexFrom` is null.
+ */
+export const codexFrom: string | null = '2026-11-13';
+export const codexWhy =
+  'Codex usage is out (owner, 8 November): Claude only until Thursday 12 November or a new model drops, whichever is first';
+
+const codex = (model: string, effort: string): Pick => ({ who: 'Codex (dev/codex/run.ts)', model, effort });
+const claude = (who: string, model: string, effort: string): Pick => ({ who, model, effort });
+
+export const routes: Route[] = [
+  {
+    work: 'Orchestration, review of returned work, owner conversation',
+    withCodex: claude('main session', 'opus', 'medium'),
+    normal: claude('main session', 'opus', 'medium'),
+  },
+  {
+    work: 'Planning complex work (docs/plans/<topic>.md)',
+    withCodex: claude('planner agent', 'opus', 'high'),
+    normal: claude('planner agent', 'opus', 'high'),
+  },
+  {
+    work: 'Implementation, fixes, tooling, captures-driven tasks',
+    withCodex: codex('gpt-6.1-sol', 'medium'),
+    normal: claude('implementer agent', 'opus', 'medium'),
+  },
+  {
+    work: 'High-risk implementation (server, sync, src/world, src/net)',
+    withCodex: codex('gpt-6.1-sol', 'high'),
+    normal: claude('implementer agent, effort raised at spawn', 'opus', 'high'),
+  },
+  {
+    work: 'Hardest design, research or second-opinion review',
+    withCodex: codex('gpt-6-astra', 'xhigh'),
+    normal: claude('general-purpose subagent, or /code-review high', 'opus', 'xhigh'),
+  },
+  {
+    work: 'Quick, easy, mechanical jobs',
+    withCodex: codex('gpt-6-luna', 'low'),
+    normal: claude('general-purpose subagent', 'sonnet', 'medium'),
+  },
+  {
+    work: 'Brainstorm panel (three panelists)',
+    withCodex: codex('gpt-6.1-sol', 'high'),
+    normal: claude('three general-purpose subagents with the role files', 'opus', 'medium'),
+  },
+  {
+    work: 'Images and previz (only Codex paints)',
+    withCodex: codex('gpt-6.1-sol', 'medium'),
+    normal: {
+      who: 'Codex, tried anyway (at a limit, wait and tell the owner)',
+      model: 'gpt-6.1-sol',
+      effort: 'medium',
+    },
+  },
+];
+
+/** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
+export const agents: Record<string, { model: string; effort: string }> = {
+  planner: { model: 'opus', effort: 'high' },
+  implementer: { model: 'opus', effort: 'medium' },
+};
+
+/** Default Codex model for dev/codex/run.ts. */
+export const codexDefault = 'gpt-6.1-sol';
+
+function localDate(now: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+export function activeMode(now = new Date(), from = codexFrom): Mode {
+  return from && localDate(now) >= from ? 'withCodex' : 'normal';
+}
+
+/** Codex modes still allowed in normal (Claude-only) mode. */
+export const codexInNormal = ['previz'];
+
+export function table(mode: Mode): string {
+  const cell = (p: Pick) => `${p.who}: ${p.model} ${p.effort}`;
+  const rows = routes.map((r) => `| ${r.work} | ${cell(r[mode])} |`);
+  return ['| Work | Who: model effort |', '| --- | --- |', ...rows].join('\n');
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fs.realpathSync(new URL(import.meta.url).pathname)) {
+  const mode = activeMode();
+  const note =
+    mode === 'normal' ? ` (Claude only${codexFrom ? `; withCodex from ${codexFrom}: ${codexWhy}` : ''})` : '';
+  console.log(`Mode: ${mode}${note}\n\n${table(mode)}`);
+}

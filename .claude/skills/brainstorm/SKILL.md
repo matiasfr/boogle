@@ -6,8 +6,9 @@ argument-hint: '<name> <the idea>'
 
 Brainstorm `$0`. Seed: $ARGUMENTS
 
-You are the director: Codex runs the panel (docs/agents/owner-calls.md, "Codex first"), you write the synthesis and
-make no design decisions the owner hasn't. If Codex hits a usage limit, stop and tell the owner.
+You are the director: Codex runs the panel, you write the synthesis and make no design decisions the owner hasn't.
+In normal mode (Claude only; `npm run models`) run the panelists as Claude subagents with the same role files and briefs. If
+Codex hits a usage limit in withCodex mode, stop and tell the owner.
 
 1. **Seed.** If the seed names a parked line in `docs/ideas.md`, use the owner's words from it. Add only facts the
    panel can't find itself (a playtest moment, a reference game the owner named). Don't pre-answer the idea.
