@@ -707,6 +707,39 @@ update and was repeated. No new scenario or harness was added.
   - Reload `wagon-on`, `stall-done` and `works-open`: no shows replay (5 s videos).
   - `npm run perf` at the quarry halt and the stall, against J2's numbers. `npm run check`.
 - **Done means.** Every proof passed and was looked at, no change outside the listed files, and the flag is default on.
+- **As built (9 November, no `WORLD_NS` bump).** Where J4 differs from the text above, J5 follows this:
+  - The views are split into `breaker-view.ts`, `works-view.ts`, `roundhouse-view.ts` and `footing-view.ts` behind
+    one seam, `works-live.ts` (`view.ts` calls only that). `inspect().worksView` merges their inspections, with
+    `footings` under its own key; `shedView` is gone.
+  - **The forge call** (Home flow findings 2 and 3) is `forge-call.ts`: a plume of 22 instanced puffs and a whistle
+    heard to 900 m on the live edge, shared by the boiler (while it waits on the pedestal) and the breaker. C had no
+    plume or whistle on main, so J4 built it once. The plume isn't drawn from the shared particle pool: at the pier
+    that pool turns over about 440 particles a second, and a 10 s puff was recycled before it climbed.
+  - **The table is Split-rock's own disc**, drawn and collided in `roundhouse-view.ts`, because Place's `disc` isn't
+    loaded in the production world. The turn target is hidden while a turn is pending (4 s), while the disc turns,
+    and while the wagon rolls out or waits (`ready ≥ 0 && !wagon`). That is the anti-grief rule, and it is
+    client-side only; a sim-level hold on `rail.turn` while `ready ≥ 0` would make it binding (J5 or later).
+  - The shunt clock runs at real time and leans at most half a step toward `tickNow()`. A live `ready` starts it
+    at the turn's own tick. In the look harness the mover clock jumps ±3 to 6 s after an action, and this keeps the
+    wagon from rushing or reversing.
+  - The parked wagon has a static box collider, not a named `railway:shed-wagon` platform. The rolling wagon has
+    no collider, so it passes through anyone standing on the stall road or the table's rails. J5 should make it a
+    `rail.makeCar` platform when it draws the wagon on the train.
+  - A footing is carried at the beam's solo speed (`beamSoloSpeed`), or its help speed with a friend. The friend
+    uses **Help carry** / **Let go** through the presence key `railwayFootHelp` (the beam's pattern). Your drop
+    control puts the footing down as kind 3 in front of you (`sources.ts` `dropOne`). `sources.ts` leaves
+    kind-3 piles, their targets and their flights to `footing-view.ts`.
+  - The bowl rocks (slots 3 and 4) are drawn and chopped by `line-cargo.ts` (it owns line 1's rocks, not
+    `sources.ts`). The plan's "don't edit `line-cargo.ts`" was about the worn footing. The trees growing through the
+    bowl are cleared locally with `insideSplitRock` (`works-shape.ts`).
+  - The strike doesn't need an empty back (J5's bot arrives carrying logs). The throat's three slabs topple into
+    the bowl about their inner feet, and the striker gets the sea switch's pull-out (`createCameraPullOut`).
+  - The dynamic box batch (`works-box-view.ts` `createBoxBatch`) creates its `instanceColor` up front. A WebGPU
+    pipeline compiled while it was empty drew every box white.
+  - Look tooling: `dev/look/evals/railway-works-act.ts` (`worksdo=take|strike0|strike1|kiln|foot|set|turn`, with
+    `workscam=play` for the pull-out). The look-only seed `--rail-seed works-stocked` (in `dev/look/rail-seed.ts`)
+    leaves the kiln a few stone short so a bot can light it live. New poses: `forge`, `kiln`, `throat`, `rack`,
+    `call`, `callmid`, `callnear`. `worksprobe=1` prints particle-pool turnover.
 
 **Codex brief (paste):**
 
