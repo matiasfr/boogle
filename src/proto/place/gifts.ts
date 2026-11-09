@@ -11,10 +11,13 @@ import { seatConductorHat } from '../../render/head-clearance.ts';
 import {
   BOXES,
   GIFTS,
-  ODDS,
-  PITY,
+  REVEAL_SHAKE,
   STOCK,
+  TIER_COLOR,
+  TIER_MARKS,
   WEAR,
+  boxGift,
+  crateParts,
   type Gift,
   type GiftId,
   type Slot,
@@ -56,9 +59,6 @@ const m4 = new THREE.Matrix4(),
 const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
 const clothMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });
 const sheetMat = new THREE.MeshStandardNodeMaterial({ color: '#ded5c2', roughness: 1, flatShading: true });
-const GOLD = '#f2b134',
-  RED = '#d8392b';
-
 // The ladder's tool chests.
 type Extra = 'axe' | 'pack';
 const EXTRAS: Record<Extra, { name: string; line: string }> = {
@@ -99,10 +99,7 @@ const extraModel = (id: Extra) => {
   // The reveal owns transforms; its source geometry/materials remain cached like ordinary gift geometry.
   return model.clone(true);
 };
-const TIER_COLOR: Record<Tier, string> = { common: '#fff7e8', rare: '#8fd0ff', wonder: '#ffd76a' };
-const TIER_MARKS: Record<Tier, string> = { common: '★', rare: '★★', wonder: '★★★' };
-// How long the lid rattles; then it's held up over your head (./got.ts).
-const REVEAL_SHAKE: Record<Tier, number> = { common: 0.12, rare: 0.18, wonder: 0.3 };
+// How long the lid rattles (REVEAL_SHAKE); then it's held up over your head (./got.ts).
 const SHAFT_S = 0.8;
 
 // ---------------------------------------------------------------- the curio shelf
@@ -537,42 +534,9 @@ function updatePartnerPets(dt: number) {
 }
 
 // ---------------------------------------------------------------- the crate
-const CRATE: Part[] = [
-  ['b', 0, 0.5, 0, 1, 1, 1, '#b57f44'],
-  ['b', 0, 0.5, 0, 1.04, 0.14, 1.04, GOLD],
-  ['b', 0, 0.5, 0, 0.14, 1.04, 1.04, GOLD],
-  ['b', 0, 0.5, 0, 1.04, 1.04, 0.14, GOLD],
-  ['b', 0, 1.03, 0, 1.06, 0.06, 1.06, '#8a6236'],
-  ['s', 0, 1.1, 0, 0.13, 0.1, 0.13, RED],
-];
-// Each tier's box, so you can tell before you open it: its bands, one to three marks on the lid and the seal's shape.
-const TIER_BAND: Record<Tier, string> = { common: '#c9a86a', rare: '#3f8ee0', wonder: GOLD };
-const SEAL: Record<Tier, Part> = {
-  common: ['s', 0, 1.1, 0, 0.13, 0.1, 0.13, RED],
-  rare: ['b', 0, 1.14, 0, 0.17, 0.17, 0.17, '#3f8ee0', 0.785, 0.615],
-  wonder: ['k', 0, 1.26, 0, 0.17, 0.42, 0.17, GOLD],
-};
-const MARKS: Record<Tier, number> = { common: 1, rare: 2, wonder: 3 };
+// Each tier's box, so you can tell before you open it (cosmetic-parts.ts, crateParts).
 const crateGeos = Object.fromEntries(
-  (Object.keys(TIER_BAND) as Tier[]).map((t) => [
-    t,
-    merged([
-      ...CRATE.filter((p) => p[1] === 0 && p[2] !== 1.1).map((p) =>
-        p[7] === GOLD ? (p.map((q, k) => (k === 7 ? TIER_BAND[t] : q)) as Part) : p,
-      ),
-      SEAL[t],
-      ...Array.from({ length: MARKS[t] }, (_, k): Part => [
-        's',
-        (k - (MARKS[t] - 1) / 2) * 0.24,
-        0.8,
-        0.53,
-        0.07,
-        0.07,
-        0.03,
-        '#fff0c9',
-      ]),
-    ]),
-  ]),
+  (['common', 'rare', 'wonder'] as Tier[]).map((t) => [t, merged(crateParts(t))]),
 ) as Record<Tier, THREE.BufferGeometry>;
 const TIER_GLOW: Record<Tier, ReturnType<typeof softGlow>> = {
   common: softGlow('#ffe9b0', 0.16, 'up'),
@@ -691,34 +655,10 @@ export const prizeHooks = {
   /** A find came out of its box (./tech.ts). */
   found: null as ((id: GiftId) => void) | null,
 };
-const inTier = (t: Tier) => GIFTS.filter((g) => g.tier === t && !isFind(g) && !giftState.got.includes(g.id));
 /** What's in the next box. The first two are authored: a hat, then an accessory; then a Wonder; then an outfit if you've none. */
 function nextGift(): GiftId | null {
   const n = boxesGot();
-  if (n === 0) return 'hat';
-  if (n === 1) return 'scarf';
-  const box = BOXES[Math.min(BOXES.length - 1, n)]!;
-  const firstWonder = !giftState.got.some((id) => byId(id).tier === 'wonder');
-  let tier: Tier;
-  if ((firstWonder && n + 1 >= PITY.firstWonderBy) || giftState.dry >= PITY.mostWithout) tier = 'wonder';
-  else if (n === 3 && !giftState.got.some((id) => byId(id).slot === 'outfit')) return 'overalls';
-  else {
-    const [c, r] = ODDS[box];
-    const roll = Math.random();
-    tier = roll < c ? 'common' : roll < c + r ? 'rare' : 'wonder';
-  }
-  // That tier's run out: up a tier, then down.
-  const order: Tier[] =
-    tier === 'common'
-      ? ['common', 'rare', 'wonder']
-      : tier === 'rare'
-        ? ['rare', 'wonder', 'common']
-        : ['wonder', 'rare', 'common'];
-  for (const t of order) {
-    const these = inTier(t);
-    if (these.length) return these[Math.floor(Math.random() * these.length)]!.id;
-  }
-  return null;
+  return boxGift(n, BOXES[Math.min(BOXES.length - 1, n)]!, giftState.got, giftState.dry);
 }
 /** The machine hands a crate down at (x, y, z). */
 export function deliver(x: number, y: number, z: number, from: THREE.Vector3 | null, content: Content = 'gift') {

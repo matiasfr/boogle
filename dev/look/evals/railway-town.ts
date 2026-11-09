@@ -12,11 +12,18 @@
 //   townact=talk              walk up to a resident (townwho=pip|button|nell|moss|wren, default pip) and talk, towntalks=N
 //                             times (default 1), closing the card between; the camera frames you both. Prints each first
 //                             line as `said`, and what the residents remember (memory.ts) as it's stored.
+//   townat=shelf              in front of the curio shelf, looking at it (C1)
+//   townat=crates             above the line-2 station boxes waiting for you; townbox=Q3 picks one, standing 4 m off it
+//   townact=open              (townat=crates) walk into that box: it opens and its card shows
+//   townact=swap              (townat=shelf) press the first Swap target
+//   townown=beanie,glasses    grant this capture's player those first, so the shelf has something uncovered
+//   townact=open,reload       reload the page for real after opening; with --until (see the act) the eval runs again
+//                             in the new document, frames the same spot and prints `TOWN reloaded <json>`
 // Prints `TOWN <json>` with the town's inspection after the setup and again after the act.
 const { inspectTown } = (await import(
   '/src/entities/town/state.ts' as string
 )) as typeof import('../../../src/entities/town/state.ts');
-const { railwayRead } = (await import(
+const { railwayRead, inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -27,7 +34,7 @@ const { interactDown, interactUp, interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');
 const { remotes } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
-const { partnerWearing } = (await import(
+const { partnerWearing, wardrobe } = (await import(
   '/src/entities/wardrobe/state.ts' as string
 )) as typeof import('../../../src/entities/wardrobe/state.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
@@ -48,7 +55,16 @@ if (!inspectTown() || !railwayRead()?.ready || !me.body)
 const body = me.body;
 const query = new URLSearchParams(location.search);
 const at = query.get('townat') ?? 'house';
-const act = query.get('townact');
+// After townact=reload, look's --until re-imports this file in the new document: set up the same view, act no more.
+const RELOAD_KEY = 'look.railway-town';
+const reloaded = sessionStorage.getItem(RELOAD_KEY);
+sessionStorage.removeItem(RELOAD_KEY);
+// townactor=1: with --players 2, only that player acts (the other stays put, for "does a partner see my box go?").
+const actor = query.get('townactor');
+const act = reloaded || (actor && query.get('player') !== actor) ? null : query.get('townact');
+// townown=beanie,glasses: give this player those (a capture's personal wardrobe only, for the shelf's still).
+for (const id of (reloaded ? '' : (query.get('townown') ?? '')).split(',').filter(Boolean))
+  wardrobe()?.grant(id, { wear: false });
 type V = { x: number; y: number; z: number };
 const ground = (x: number, z: number): V => ({ x, y: land.H(x, z), z });
 /** A room's door in world space, and the way in. */
@@ -60,6 +76,7 @@ function door(id: 'house' | 'shop' | 'museum') {
   return { x: x + (p.d / 2) * s, z: p.z + (p.d / 2) * c, inX: -s, inZ: -c, d: p.d, cx: x, cz: p.z };
 }
 let stand: V, look: V, eye: V;
+let crate: { station: string; x: number; y: number; z: number } | null = null;
 if (at === 'house' || at === 'shop' || at === 'museum') {
   const d = door(at);
   const up = inspectTown()!.rooms[at].up;
@@ -87,7 +104,33 @@ if (at === 'house' || at === 'shop' || at === 'museum') {
   stand = ground(g.x + (toX / len) * 1.5, g.z + (toZ / len) * 1.5);
   look = { x: h.x, y: land.H(h.x, h.z) + 1.5, z: h.z };
   eye = { x: stand.x - (toX / len) * 5, y: stand.y + 3, z: stand.z - (toZ / len) * 5 };
-} else throw new Error('Choose townat=house|shop|museum|street|sleeves');
+} else if (at === 'shelf') {
+  const s = inspectTown()!.shelf;
+  if (!s) throw new Error('townat=shelf needs the wardrobe');
+  // The shelf faces +z in its own space.
+  const fx = Math.sin(s.yaw),
+    fz = Math.cos(s.yaw);
+  stand = ground(s.x + fx * 2.6, s.z + fz * 2.6);
+  look = { x: s.x, y: s.y + 1.8, z: s.z };
+  eye = { x: s.x + fx * 6.5 + fz * 1.5, y: s.y + 3.4, z: s.z + fz * 6.5 - fx * 1.5 };
+} else if (at === 'crates') {
+  // After a reload the box you opened is gone: frame the same spot.
+  const boxes = (inspectRailway()?.reward.stationBoxes.boxes ?? []).filter((b) => b.visible || reloaded);
+  const want = query.get('townbox');
+  const box = want ? boxes.find((b) => b.station === want) : boxes[0];
+  if (!box) throw new Error(`townat=crates: no waiting box${want ? ` at ${want}` : ''}`);
+  // 4 m off the chosen box, on the side away from the rest, looking at it; the camera takes in the others too.
+  const others = boxes.filter((b) => b !== box);
+  const cx = others.length ? others.reduce((n, b) => n + b.x, 0) / others.length : box.x + 1,
+    cz = others.length ? others.reduce((n, b) => n + b.z, 0) / others.length : box.z;
+  const len = Math.hypot(box.x - cx, box.z - cz) || 1,
+    ux = (box.x - cx) / len,
+    uz = (box.z - cz) / len;
+  stand = ground(box.x + ux * 4, box.z + uz * 4);
+  look = { x: box.x, y: box.y + 0.8, z: box.z };
+  eye = { x: box.x + ux * 9 - uz * 3, y: box.y + 5, z: box.z + uz * 9 + ux * 3 };
+  crate = box;
+} else throw new Error('Choose townat=house|shop|museum|street|sleeves|shelf|crates');
 /** A point in the shop's room space (rooms.ts: floor at y = 0, door on +z), in the world. */
 function shopLocal(lx: number, ly: number, lz: number): V {
   const p = layout.ROOM_PLOTS.shop,
@@ -121,7 +164,10 @@ if (query.get('townhold') !== '0') {
   setTimeout(() => clearInterval(hold), 6000);
 }
 await wait(600);
-console.log(`TOWN ${JSON.stringify({ at, stand, ...inspectTown(), target: interactTarget()?.id ?? null })}`);
+console.log(
+  `TOWN ${reloaded ? 'reloaded ' : ''}${JSON.stringify({ at, stand, ...inspectTown(), boxes: inspectRailway()?.reward.stationBoxes ?? null, target: interactTarget()?.id ?? null })}`,
+);
+if (reloaded) (window as unknown as { __townReloaded?: boolean }).__townReloaded = true;
 
 async function runAct() {
   // Deferred (towndefer=1), the capture's own camera has been placed since: frame the door again.
@@ -211,9 +257,35 @@ async function actOnce(act: string) {
     console.log(
       `TOWN ${JSON.stringify({ at, act, who, said, stored: stored ? JSON.parse(localStorage.getItem(stored)!) : null })}`,
     );
+  } else if (act === 'reload') {
+    // A real page reload (mid-reveal, if a box was just opened). Pair it with
+    // --until "window.__townReloaded ?? (import('/dev/look/evals/railway-town.ts'), false)".
+    console.log(`TOWN reloading ${JSON.stringify(inspectTown()?.wardrobe ?? null)}`);
+    sessionStorage.setItem(RELOAD_KEY, '1');
+    // After this eval returns, so look's evaluation isn't torn down under it.
+    setTimeout(() => location.reload(), 300);
+    return;
+  } else if (act === 'open') {
+    if (!crate) throw new Error('townact=open needs townat=crates');
+    // Walk straight into it: the 1.25 m bump opens it, as in Place.
+    const c = crate;
+    cam.yaw = me.yaw = Math.atan2(-(c.x - body.position.x), -(c.z - body.position.z));
+    const end = performance.now() + 6000;
+    input.keys.add('KeyW');
+    try {
+      while (performance.now() < end && !inspectRailway()?.reward.stationBoxes.showing) await wait(30);
+    } finally {
+      input.keys.delete('KeyW');
+    }
+    console.log(`TOWN opened ${JSON.stringify(inspectRailway()?.reward.stationBoxes ?? null)}`);
+    await wait(Number(query.get('townwait') ?? 900));
   } else if (act) {
     // Press Interact once the matching target is offered.
-    const want: Record<string, RegExp> = { try: /^place-stock-paperhat$/, take: /^place-stock-paperhat$/ };
+    const want: Record<string, RegExp> = {
+      try: /^place-stock-paperhat$/,
+      take: /^place-stock-paperhat$/,
+      swap: /^place-swap-/,
+    };
     const re = want[act];
     if (!re) throw new Error(`townact=${act} is not available yet`);
     for (let n = act === 'take' ? 2 : 1; n > 0; n--) {

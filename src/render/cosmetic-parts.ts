@@ -412,6 +412,80 @@ export const ODDS: Record<Tier, [number, number, number]> = {
   wonder: [0, 0, 1],
 };
 export const PITY = { firstWonderBy: 3, mostWithout: 5 };
+/** What's in box `n` (how many boxes were opened before it; the T1 hat and T2 scarf are boxes 0 and 1), a `box`-tier
+ * box: the hat, then the scarf; then a Wonder by PITY.firstWonderBy or after PITY.mostWithout without one; the fourth
+ * an outfit if you've none; else the box's odds. A tier that's run out goes up one, then down. Finds never come out of
+ * a box, nor anything you've got. Place's gifts.ts nextGift, shared with the live game's station boxes. */
+export function boxGift(
+  n: number,
+  box: Tier,
+  got: readonly string[],
+  dry: number,
+  random: () => number = Math.random,
+): GiftId | null {
+  if (n === 0) return 'hat';
+  if (n === 1) return 'scarf';
+  const gift = (id: string) => GIFTS.find((g) => g.id === id);
+  const firstWonder = !got.some((id) => gift(id)?.tier === 'wonder');
+  let tier: Tier;
+  if ((firstWonder && n + 1 >= PITY.firstWonderBy) || dry >= PITY.mostWithout) tier = 'wonder';
+  else if (n === 3 && !got.some((id) => gift(id)?.slot === 'outfit')) return 'overalls';
+  else {
+    const [c, r] = ODDS[box];
+    const roll = random();
+    tier = roll < c ? 'common' : roll < c + r ? 'rare' : 'wonder';
+  }
+  const order: Tier[] =
+    tier === 'common'
+      ? ['common', 'rare', 'wonder']
+      : tier === 'rare'
+        ? ['rare', 'wonder', 'common']
+        : ['wonder', 'rare', 'common'];
+  for (const t of order) {
+    const these = GIFTS.filter(
+      (g) => g.tier === t && !g.area && g.id !== 'hat' && g.id !== 'scarf' && !got.includes(g.id),
+    );
+    if (these.length) return these[Math.floor(random() * these.length)]!.id;
+  }
+  return null;
+}
+// A box's look, so you can tell its tier before you open it: its bands, one to three marks on the lid and the seal's
+// shape. Then how its card reads, and how long its lid rattles first. Moved from Place's gifts.ts.
+const BOX_GOLD = '#f2b134',
+  BOX_RED = '#d8392b';
+const CRATE: Part[] = [
+  ['b', 0, 0.5, 0, 1, 1, 1, '#b57f44'],
+  ['b', 0, 0.5, 0, 1.04, 0.14, 1.04, BOX_GOLD],
+  ['b', 0, 0.5, 0, 0.14, 1.04, 1.04, BOX_GOLD],
+  ['b', 0, 0.5, 0, 1.04, 1.04, 0.14, BOX_GOLD],
+  ['b', 0, 1.03, 0, 1.06, 0.06, 1.06, '#8a6236'],
+];
+const TIER_BAND: Record<Tier, string> = { common: '#c9a86a', rare: '#3f8ee0', wonder: BOX_GOLD };
+const SEAL: Record<Tier, Part> = {
+  common: ['s', 0, 1.1, 0, 0.13, 0.1, 0.13, BOX_RED],
+  rare: ['b', 0, 1.14, 0, 0.17, 0.17, 0.17, '#3f8ee0', 0.785, 0.615],
+  wonder: ['k', 0, 1.26, 0, 0.17, 0.42, 0.17, BOX_GOLD],
+};
+const MARKS: Record<Tier, number> = { common: 1, rare: 2, wonder: 3 };
+/** A `tier` box's parts. */
+export const crateParts = (tier: Tier): Part[] => [
+  ...CRATE.map((p) => (p[7] === BOX_GOLD ? (p.map((q, k) => (k === 7 ? TIER_BAND[tier] : q)) as Part) : p)),
+  SEAL[tier],
+  ...Array.from({ length: MARKS[tier] }, (_, k): Part => [
+    's',
+    (k - (MARKS[tier] - 1) / 2) * 0.24,
+    0.8,
+    0.53,
+    0.07,
+    0.07,
+    0.03,
+    '#fff0c9',
+  ]),
+];
+export const TIER_COLOR: Record<Tier, string> = { common: '#fff7e8', rare: '#8fd0ff', wonder: '#ffd76a' };
+export const TIER_MARKS: Record<Tier, string> = { common: '★', rare: '★★', wonder: '★★★' };
+/** How long the lid rattles before it goes. */
+export const REVEAL_SHAKE: Record<Tier, number> = { common: 0.12, rare: 0.18, wonder: 0.3 };
 // One thing a slot, put on by a crate, swapped at the shelf. The conductor follows Head rigidly; other items stay upright.
 export const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: number }>> = {
   hat: { bone: 'Head', y: CONDUCTOR_HAT_FIT.buddySeat, z: 0, scale: CONDUCTOR_HAT_FIT.scale },

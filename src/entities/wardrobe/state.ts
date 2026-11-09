@@ -218,6 +218,33 @@ export function createWardrobe(catalog: WardrobeCatalog, storage: WardrobeStorag
         flush();
       }
     },
+    /** Whether this station box (a station id, e.g. `Q2`) has been opened. */
+    isOpened: (box: string) => save.opened.includes(box),
+    /** How many station boxes have been opened. */
+    boxesOpened: () => save.opened.length,
+    /** A station box opened with `id` in it (null: nothing left to give). Saved at once, before its reveal, with the
+     * run of boxes without a Wonder (`dry`), so a reload mid-reveal neither loses it nor rolls again. The shelf and
+     * your avatar hear of it from unbox, at the reveal's end. False if that box was already opened. */
+    openBox(box: string, id: CosmeticId | null, wonder: boolean) {
+      if (save.opened.includes(box) || save.opened.length >= MAX_OPENED || !/^[A-Za-z0-9-]{1,16}$/.test(box))
+        return false;
+      save.opened.push(box);
+      if (id !== null && slotOf(id) !== undefined) {
+        if (!isOwned(id)) save.got.push(id);
+        save.dry = wonder ? 0 : Math.min(MAX_DRY, save.dry + 1);
+      }
+      flush();
+      return true;
+    },
+    /** A box's reveal is over: it goes on you if its slot's empty (Place's rule), and on the shelf. */
+    unbox(id: CosmeticId) {
+      const slot = slotOf(id);
+      if (!isOwned(id)) return;
+      if (isClothes(slot) && catalog.wearable(id, slot) && !worn()[slot] && trying?.slot !== slot) putOn(id, slot);
+      changed('grant', id, false);
+      save.worn = worn();
+      flush();
+    },
     onWardrobe(fn: (e: WardrobeEvent) => void) {
       listeners.add(fn);
       return () => void listeners.delete(fn);

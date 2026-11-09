@@ -700,6 +700,32 @@ verbatim to `src/render/cosmetic-parts.ts`; Place's `gifts.ts` reads the same on
 Sync: ownership is Personal Local; what you wear is Owner presence `wardrobe` (`{ hat?, accessory?, outfit? }`, catalog
 ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwayScarf`. No `WORLD_NS` change.
 
+### Station boxes and the curio shelf in the live game (9 November 2026, place-retirement C1)
+
+- **Station boxes.** Every stretch whose catalog row hands a crate down leaves one personal box once it's laid: Q2, Q3,
+  Q4, Q5 and Q6, as in Place (T1 and T2 are the hat and scarf claims; T3 and Q1 never had one). Their tiers are Place's
+  order: Rare, Common, Rare, Common, Wonder. Each stands on solid ground by the next stretch's frame, by Place's
+  `handCrate` search, but across the track from it: the frame's own side has its depot rack, and a box beside the
+  rack took its "Take" press. Q6's, whose stretch ends on the pier, stands across from its own frame, out of the sea.
+  Laid while you watch, it flies down from the machine's flatbed.
+- **Your own roll** (owner question 3; design review finding 6). Each player opens their own box from the same shared
+  stretch and rolls their own gift, so friends get different things. The rules are Place's: a Wonder by the third box
+  (the Q2 box, if you have no Wonder yet), an outfit fourth if you've none, never more than five without a Wonder; no
+  repeats, no finds, and never the hat or scarf.
+- **Opening.** Walk into it (1.25 m) or press "Open the crate". The box is recorded as opened, with what's in it and
+  the run without a Wonder, before the lid rattles, so a reload mid-reveal keeps it and can't roll again. The card
+  goes through the railway's one reveal queue; when you put it away, it goes on you if its slot's empty, and on the
+  shelf. Mark `crate opened`.
+- **Late joiners and reloads** find an unopened box for every stretch already laid; an opened one is gone for you and
+  still there for a partner who hasn't opened theirs.
+- **The curio shelf** stands at Place's spot in the village, by the forge: what you own of the boxes' gifts stands on
+  it, the rest under dust sheets (and the two shapes that never come out of this run's boxes). A sheet comes off with a
+  puff of cloth when a box's card is put away within 40 m. Within 4.4 m, "Swap hat / accessory / outfit" cycles what
+  you own, as the shop's rail does. The stowaway's slot comes with C2; the finders' bay with F2.
+
+Sync: Personal Local in the wardrobe store (`opened`, `dry`, `got`); eligibility is the server's accepted completion.
+No new presence key, op or `WORLD_NS` change. Measured at the bench's town pose: 233 draw calls against 231 before.
+
 ## Departures from the brief
 
 The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2. The graybox turntable has a pale rim and paired dark rails within its existing disc footprint; collision and turning motion are unchanged.

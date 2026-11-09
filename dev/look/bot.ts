@@ -44,6 +44,8 @@ export type BotOptions = {
   recover?: () => void;
   /** Set when the run is over: the page expression `npm run playthrough` waits for. */
   doneFlag?: string;
+  /** Spots to walk round though nothing solid stands there (a box that opens when you walk into it), read per plan. */
+  avoid?: () => readonly { x: number; z: number; r: number }[];
 };
 
 export function makeBot(opts: BotOptions = {}) {
@@ -105,6 +107,9 @@ export function makeBot(opts: BotOptions = {}) {
   }
   /** From a spot to the next, one cell or so off. Returns the height there, or null if you can't. */
   function step(a: Point, x: number, z: number, steepest = WALKABLE_NY) {
+    // Into an avoided spot, never; out of one (you're standing in it), always.
+    for (const s of avoiding)
+      if (Math.hypot(x - s.x, z - s.z) < s.r && Math.hypot(a.x - s.x, a.z - s.z) >= s.r) return null;
     let y = ground(x, a.y, z, steepest);
     // A low bank can lead onto the water surface. Never turn a high ledge's missing floor into a shortcut down.
     if (opts.allowSwimming && a.y <= SEA + JUMP_UP && (y === null || water(x, y, z))) y = SEA - SWIM_DEPTH - PLAYER_R;
@@ -146,6 +151,7 @@ export function makeBot(opts: BotOptions = {}) {
 
   // ---------------------------------------------------------------- finding a way
   const blocked = new Map<string, number>(); // cells that held you up, until this game time
+  let avoiding: readonly { x: number; z: number; r: number }[] = [];
   let lastSeen = new Map<string, number>();
   async function plan(
     goalX: number,
@@ -154,6 +160,7 @@ export function makeBot(opts: BotOptions = {}) {
   ): Promise<{ path: Point[]; arrives: boolean; gaveUp: boolean }> {
     // The browser also sends room heartbeats. A harvest's batch of searches must not disconnect a peer.
     await wait(0);
+    avoiding = opts.avoid?.() ?? [];
     const p = body().position;
     const y0 =
       opts.allowSwimming && me.swimming
