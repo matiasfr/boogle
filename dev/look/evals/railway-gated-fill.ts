@@ -60,7 +60,9 @@ async function take(kind: 0 | 2) {
 async function unload(kind: 0 | 2) {
   const carried = kind === 0 ? read().carry : read().railsCarry;
   const stock = kind === 0 ? job().stock : job().railStock;
-  const piles = JSON.stringify(read().piles);
+  // A supply pulse ages existing piles independently of this carry. Compare material, not its recovery clock.
+  const piles = () => JSON.stringify(read().piles.map((p) => [p.id, p.kind, p.n]));
+  const beforePiles = piles();
   move(frame, 0, 2.8);
   await wait(250);
   const origin = { ...me.body!.position };
@@ -70,7 +72,7 @@ async function unload(kind: 0 | 2) {
     10000,
   );
   if ((kind === 0 ? job().stock : job().railStock) !== stock + carried) throw new Error('unload lost material');
-  if (JSON.stringify(read().piles) !== piles) throw new Error('unload required a drop');
+  if (piles() !== beforePiles) throw new Error(`unload changed ground material: ${beforePiles} -> ${piles()}`);
   if (Math.hypot(me.body!.position.x - origin.x, me.body!.position.z - origin.z) > 0.8)
     throw new Error('unload left reach');
   if (down() || job().start >= 0) throw new Error('gated delivery started laying');
