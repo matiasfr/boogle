@@ -259,6 +259,22 @@ finding. "Today" says what it finds at `39392fac`. Facts come from `npm run atla
 - **Today:** not assessed across recent merges. It also binds this reviewer: a suggested fix bigger than its problem gets
   dropped.
 
+### 13. A thing with phases has one named state, not loose flags
+
+- **Look for:** two or more booleans or optional fields on one object that are read together to decide what it is doing
+  (`awake && !laying && !done`, `shown && !flying`, `pending`, `working`), so some combinations are impossible but nothing
+  says so. Also a `phase` number or string set from several files with no single function that moves it, and an
+  `if` ladder that re-derives the same phase in more than one place.
+- **Why:** an implicit state machine lets impossible states through (a carried boiler that is also on its pedestal), and
+  each new agent adds one more flag. One named state with one transition function makes every allowed move visible and
+  testable. The railway already does this in places (`CART_PHASE`), which is the pattern to point at. Nystrom's
+  [State](https://gameprogrammingpatterns.com/state.html) chapter makes the same case [V].
+- **Not a problem when:** the flags are truly independent (any combination is valid), the object is a short-lived
+  cosmetic view, or the combination is already enforced by an invariant or test. Two flags read in one function only
+  don't count.
+- **Today:** not assessed. Added on the owner's 9 November call for a recurring cleanup that audits implicit state
+  machines.
+
 ## Watch list: numbers, not findings
 
 These are what ATAM calls sensitivity points: properties a quality attribute hangs on. Report a value only when it moved.
