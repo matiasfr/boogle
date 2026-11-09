@@ -44,6 +44,11 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
+  /* The large viewport (toolbars retracted), so the canvas reaches the bottom of the screen even when Safari's
+     layout viewport stays short: on 9 November an iPhone's canvas followed an 844 px innerHeight on a 912 px screen
+     and the body's pale sky showed in the 68 px below it. Elsewhere 100lvh is the window's height. The HUD keeps the
+     window's box; scene.ts sizes the drawing buffer from this box. Not tested on a device. */
+  height: max(100%, 100lvh);
   display: block;
   outline: none;
   touch-action: none;
