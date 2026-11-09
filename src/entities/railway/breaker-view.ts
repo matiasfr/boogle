@@ -42,8 +42,9 @@ export function goldMote(x: number, y: number, z: number, side: number, size = 0
     fade: 0.7,
   });
 }
-/** Seconds between motes on each unstruck seam while the breaker is out: a few a second (pool budget). */
-const SEAM_MOTE_S = 0.3;
+/** Seconds between motes on each unstruck seam while the breaker is out: under seven a second each,
+ * far inside the pool's budget (the pier already runs about 440). */
+const SEAM_MOTE_S = 0.15;
 const RAISED = -2.5,
   DOWN = 1.35;
 
@@ -88,7 +89,7 @@ export function createRailwayBreaker(
       if (seams & (seam.id === 0 ? SEAM_STALL : SEAM_THROAT)) continue;
       const b = slabs[seam.id]!,
         face = Math.random() < 0.5 ? -1 : 1,
-        u = (Math.random() - 0.5) * b.w * 0.6;
+        u = (Math.random() - 0.5) * b.w * 0.2;
       // The slab's yaw turns its local x (width) and z (depth) into the world.
       const cx = Math.cos(b.yaw),
         sx = Math.sin(b.yaw);
@@ -98,7 +99,7 @@ export function createRailwayBreaker(
         b.y - b.h * 0.35 + Math.random() * b.h * 0.7,
         b.z - sx * u + cx * off,
         face,
-        seam.id === 0 ? 0.12 : 0.2,
+        seam.id === 0 ? 0.18 : 0.3,
       );
     }
   }
