@@ -1,7 +1,8 @@
 import path from 'node:path';
 import os from 'node:os';
 
-export const stateDir = path.join(os.homedir(), '.boogle', 'daily');
+// BOOGLE_DAILY_STATE: another state folder (its own lock, runs and history), for trying a job without touching the real one.
+export const stateDir = process.env.BOOGLE_DAILY_STATE ?? path.join(os.homedir(), '.boogle', 'daily');
 // Two-player live WebGPU is a Mac-only daily check; CI Smoke uses dev/live-smoke.ts.
 export const scenarios = [
   'world-inputs', // moved from software WebGPU CI to the owner's Mac (8 November)
