@@ -853,7 +853,9 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
     dropped them one at a time. The long playthrough stopped there. While no Q station takes rails and the cradle
     isn't fitted, a take is capped at `cradleRails − shed.cradleRails − your rails`. A rule change, not a state
     change: no `WORLD_NS` bump (`test/railway-works.test.ts`, "after Q6 the forge rack gives only what the cradle
-    still needs").
+    still needs"). Once the cradle is fitted the rack gives nothing, and **Take rails** is offered only where a take
+    would give some (`forge-offer.ts` mirrors the rule; "after the cradle is fitted the forge rack gives nothing" and
+    "Take rails is offered exactly where the forge rack gives some").
   - **Line 2 sweeps every stop while the wagon still has footings to fetch.** A call sent the train straight to the
     caller, so anyone waiting on the Pier halt (stepping onto its deck calls) kept it shuttling between the pier and
     Far Head, and it never reached the quarry's rack: the second long playthrough sat 800 s at the pier after six
