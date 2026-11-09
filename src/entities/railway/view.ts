@@ -22,6 +22,7 @@ import { createRailwayCart } from './cart-view.ts';
 import { createRailwayTrains } from './train-view.ts';
 import { createRailwayHalts } from './halts-view.ts';
 import { createRailwayHook } from './hook-shot.ts';
+import { worksPreview } from './works-flag.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -89,6 +90,12 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   });
   line2.holdDepot(flying);
   shelf.holdRails(flying);
+  const works = worksPreview()
+    ? await Promise.all([
+        import('./works-view.ts').then((m) => m.createRailwayWorks(adapter, owner)),
+        import('./roundhouse-view.ts').then((m) => m.createRailwayRoundhouse(adapter, owner)),
+      ])
+    : [];
   if (look.LOOK.contact)
     kit.installContact(
       [machine.flatbed, machine.loco],
@@ -190,6 +197,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     owner,
   );
   function restoreMotion() {
+    for (const view of works) view.restore();
     const spec = LINE1_STATIONS[state.activeStation]!,
       job = state.stations[state.activeStation]!;
     visualHead = targetHead = head();
@@ -447,6 +455,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       cart.update(dt);
       trains.update(dt);
       halts.update(dt);
+      for (const view of works) view.update();
       line2.update(dt);
       hook.update(dt, now);
       shelf.update();
@@ -508,6 +517,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...line2.targets(),
         ...shelf.targets(),
         ...cart.targets(),
+        ...works.flatMap((view) => view.targets()),
       ];
       const p = me.body?.position;
       if (
@@ -544,6 +554,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       hookShot: hook.inspect(),
       pathOpen: opened(),
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
+      works: works[0]?.inspect() ?? null,
+      shed: works[1]?.inspect() ?? null,
     }),
     dispose: () => owner.dispose(),
   };

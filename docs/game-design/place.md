@@ -1230,3 +1230,11 @@ step, rate limited by host steps. The tab anchors that step at the local round-t
 latency offset between players. Small corrections slew at 90–110% clock rate so running decks do not jump. Action
 prediction retains its conservative receipt-time clock. Remote riders retain the existing Owner `riding` coordinates
 in the shared platform's frame, reconstructed on each tab's drawn deck rather than delayed world presence.
+
+**Split-rock and the Roundhouse, dormant blockout (8 November; J2).** Default visits include a limestone ring
+with a sealed throat, a narrow sea-facing walk-in cleft, a cold kiln, a roller road and a halt rack with a broken
+sample footing. At Home's turntable, a low stall ruin holds a tarped shunter and wagon behind a cracked slab,
+with two empty sockets. These are Local views with owned static colliders; there are no Works actions or stock
+yet. `?works=0` disables both for comparison. The outcrop and stall each use one coloured box batch, plus one
+boiler cylinder. The smaller 4 × 9 m stall clears the existing path and rotated hall; its road bends from the
+table. Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**. Not tested on a device.
