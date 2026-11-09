@@ -310,13 +310,15 @@ const holds = (s: Railway, op: string, event?: RailwayIntent) =>
             ? !!s.line2?.sea
             : op === 'rail.pack'
               ? !!s.line2?.pack
-              : op === 'rail.cartCall'
-                ? !!s.line2?.cart.recall
-                : op === 'rail.strike' && event?.op === 'rail.strike'
-                  ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
-                  : op === 'rail.turn' && event?.op === 'rail.turn'
-                    ? s.shed?.table === event.to
-                    : false;
+              : op === 'rail.glide'
+                ? !!s.line2?.glide
+                : op === 'rail.cartCall'
+                  ? !!s.line2?.cart.recall
+                  : op === 'rail.strike' && event?.op === 'rail.strike'
+                    ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
+                    : op === 'rail.turn' && event?.op === 'rail.turn'
+                      ? s.shed?.table === event.to
+                      : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
