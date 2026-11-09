@@ -6,6 +6,7 @@
 // parent is the arm's T-pose). Sockets are where the game hangs what the figure carries.
 import * as THREE from 'three/webgpu';
 import { clamp } from '../../math.ts';
+import { beamCarry } from '../beam-carry-tuning.ts';
 
 type Offset = [bone: string, axis: 'x' | 'y' | 'z', degrees: number];
 const RISE: Offset[] = [
@@ -57,6 +58,8 @@ const ARMS = {
   reach: { upper: [0.45, -0.25, 0.85], lower: [0.1, 0.05, 1] }, // the beach ball, out at arm's length
   sprawl: { upper: [0.82, 0.25, -0.5], lower: [0.9, 0.42, -0.1] }, // flat on its back
   aloft: { upper: [0.18, 1, 0.08], lower: [-0.06, 1, 0.04] }, // both hands up, holding something over its head
+  rope: { upper: [0.3, -0.88, -0.28], lower: [0.05, -0.38, -0.92] }, // braced back against the beam's pull
+  lift: { upper: [0.85, 0.15, 0.05], lower: [0.65, 0.6, 0.15] }, // a bent elbow out under the helped beam
 } satisfies Record<string, { upper: V3; lower: V3 }>;
 type ArmPose = keyof typeof ARMS;
 
@@ -73,6 +76,7 @@ export type LifeState = {
   down: number; // 0..1: how far flopped over (src/features/knockdown.ts)
   charging?: boolean; // winding up a throw (your own only: no presence says so)
   aloft?: boolean; // holding something up over its head
+  beamGrip?: 'rope' | 'lift' | null;
 };
 
 export type LifeClock = { now: () => number; random: () => number };
@@ -224,15 +228,17 @@ export function makeLife(
                       ? 'reach'
                       : s.hold === 'item' && right
                         ? 'hold'
-                        : s.hold === 'hang' && right
-                          ? 'hang'
-                          : s.load
-                            ? 'strap'
-                            : null;
+                        : s.beamGrip && right && beamCarry.grip > 0
+                          ? s.beamGrip
+                          : s.hold === 'hang' && right
+                            ? 'hang'
+                            : s.load
+                              ? 'strap'
+                              : null;
         for (let j = 0; j < NAMES.length; j++) {
           const n = NAMES[j]!;
           arm.w[n] += ((n === want ? 1 : 0) - arm.w[n]) * k;
-          const w = arm.w[n] * (n === 'hang' ? HANG_HOLD : 1); // a little of the walk's swing stays in a hanging arm
+          const w = arm.w[n] * (n === 'hang' ? HANG_HOLD : n === 'rope' || n === 'lift' ? beamCarry.grip : 1);
           if (w < 0.005) continue;
           const p = arm.pose[n];
           arm.upper.quaternion.slerp(p.upper, w);

@@ -304,6 +304,8 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
               : 0;
           avatar.userData.holdKind =
             pose === 'item' ? 'item' : pose === 'can' ? 'hang' : pose === 'ball' ? 'ball' : null;
+          avatar.userData.beamGrip =
+            pose === 'beam-help' ? 'lift' : pose === 'carrying' && worn?.cargo === 'beam' ? 'rope' : null;
           avatar.userData.flopAmt = pose === 'knocked' ? 1 : 0;
           avatar.userData.seatedAt = pose === 'seated' || clipName === 'Driving_Loop' ? clock.now() : -1e9;
           avatar.position.y = 0.45 + (airborne ? (clipName === 'Jump_Start' ? 4 : -3) * time : 0);

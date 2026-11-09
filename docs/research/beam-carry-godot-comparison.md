@@ -91,7 +91,10 @@ server-accepted beam and material accounting. A visual beam pose must never deci
    a blind owner comparison at 0/100/200 ms. Deterministic carry-island prediction is a later measured alternative,
    not part of the first implementation. Physics must stay out of lockstep rules.
 
-## Recommendation: owner decision needed
+## Recommendation and subsequent owner decision
+
+**8 November owner decision:** try option 1 as the bounded Local comparison. The implementation and its tunable
+control are described in [the run](../game-design/place.md#the-run); the owner's feel verdict remains pending.
 
 Keep the hand fix and offer **option 1 as a bounded comparison**, then stop for the owner's solo/co-op verdict. The
 owner already finds this carry acceptable; visual inertia is the cheapest way to test whether the lab's swing is the
@@ -110,5 +113,5 @@ This serves [DESIGN 11, Show, don't tell](../../DESIGN.md#11-show-dont-tell),
 Local/Owner/Server, responsive personal movement, and server physics when multiple people act on one object.
 The [shared-physics research](shared-physics.md) already compares standard-engine approaches and recommends server-only
 first; its historical measurements are not refreshed here. `docs/direction.md` is dated 3 November, so it is not used
-as current milestone authority. No option is approved or implemented by this document. No external network research
+as current milestone authority. Options 2 and 3 remain unapproved. No external network research
 was performed under this brief's loopback-only restriction.

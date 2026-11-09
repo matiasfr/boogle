@@ -157,6 +157,20 @@ The [brief](../brainstorms/telescope.md) remains proposed; recurrence/fun and de
 
 ## The run
 
+**Owner decision, 8 November: great-beam visual inertia (option 1 of [the Godot comparison](../research/beam-carry-godot-comparison.md)).**
+The existing rope drag and Help carry now have a Local horizontal/turn spring, derived only from the existing smoothed
+Owner avatars and helper state. Terrain pitch, the 0.3 s helped lift, speeds, claim, collision and progression stay as built.
+The response starts from the lab's 520 stiffness / 95 damping / 12 kg ratio (43.33/s² and 7.92/s), with centre lag capped
+at 0.2 m and yaw lag at 0.12 rad. A 5.4 m trunk's endpoints therefore stay within 0.524 m of the unsprung visual pose;
+even the tunables' maximum bounds stay under 0.84 m. Pickup, restore and relocation start without stored
+momentum; set-down hides and resets the spring. Reduced motion uses the unsprung pose. The rope still samples the final
+animated hand, and attaches to the rendered trunk's near tip. Buddy braces its right arm when pulling; a helper raises
+its right forearm under the lift. Those pose flags are Local and clear when the view stops carrying.
+`beamCarry.stiffness`, `.damping`, `.maxLag`, `.maxAngle` and `.grip` use the existing tunables interface on the next frame.
+Set the last three to zero for the comparison control. This is visual weight, not shared physical carrying.
+Serves DESIGN 11 (Show, don't tell), 8 (Enjoyable alone and together) and Clear authority.
+The owner's question: **does the beam feel connected to your hand and pleasantly heavy when you turn, alone and together?**
+
 Seats use the deck's actual cargo-top surface and refresh it while sitting. A loaded train no longer pulls a seated player toward the bare deck and silently ends the seat (and its Stand up prompt) when that error grows.
 
 A seated rider keeps the previous carry vertical speed until the ordinary carry controller applies the deck's next motion. This prevents a sharp slope or snapshot correction from looking like a jump during carry detection. Jump/Interact still release the seat first; no contact thresholds or shared state change.

@@ -87,6 +87,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   owner.add(dragWorld);
   const ropeMaterial = flat(GOLD_ROPE, 0.7);
   const drags = new Map<string, BeamDrag>();
+  const posing = new Set<NonNullable<typeof me.avatar>>();
   const side = Math.sign(BEAM_CARRY_POSITION[0]) || 1;
   const anchorLocal = new THREE.Vector3(BEAM_CARRY_POSITION[0] * 0.7, 0.55, 0.1),
     anchor = new THREE.Vector3(),
@@ -152,6 +153,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     return null;
   }
   function update() {
+    for (const avatar of posing) avatar.userData.beamGrip = null;
+    posing.clear();
     state = adapter.inspect();
     const now = performance.now(),
       dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
@@ -250,7 +253,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
         const sx = lay.x - hip.x > 0 ? 1 : -1;
         from.set(lay.x + sx * (BEAM_LENGTH / 2), lay.y, lay.z);
       } else from.set(hip.x + back.x * BEAM_LENGTH, hip.y, hip.z + back.z * BEAM_LENGTH);
-      const helper = frameOf(helperFor(account.pid));
+      const helperAvatar = helperFor(account.pid);
+      const helper = frameOf(helperAvatar);
       let helped: [THREE.Vector3, THREE.Vector3] | null = null;
       if (helper) {
         helper.updateWorldMatrix(true, false);
@@ -274,6 +278,12 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
         drag.float(now, avatar.position, yaw, side, helped);
         sparkleAxe(model.beam, true, reducedMotion, emit, readableIntensity(), dt);
       } else {
+        avatar.userData.beamGrip = 'rope';
+        posing.add(avatar);
+        if (helped && helperAvatar) {
+          helperAvatar.userData.beamGrip = 'lift';
+          posing.add(helperAvatar);
+        }
         // Trail about 35 degrees off straight behind, on the shoulder side: the trunk shows its length across the view.
         trail.set(back.x * 0.82 + Math.cos(yaw) * side * 0.57, 0, back.z * 0.82 - Math.sin(yaw) * side * 0.57);
         drag.update(dt, hip, from, trail, helped);
@@ -352,6 +362,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     return adapter.beamDrop(Math.round(x * 100), Math.round(H(x, z) * 100), Math.round(z * 100), beam.revision);
   }
   owner.cleanup(() => {
+    for (const avatar of posing) avatar.userData.beamGrip = null;
+    posing.clear();
     alive = false;
     if (localHelp === provider) localHelp = null;
     for (const model of worn.values()) model.root.removeFromParent();
