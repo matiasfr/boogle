@@ -547,7 +547,7 @@ const seaSwitch = defineSystem(
   'rail.seaSwitch',
   { writes: [Rail, QJob, QJobRun, Forge, Cart], phase: 'act', order: 28 },
   (w, { tick, timing }: Act) => {
-    if (qCompleted(w) < 4 || w.get(Rail, railId(w))!.sea) return 0;
+    if (w.get(Rail, railId(w))!.sea) return 0;
     w.mut(Rail, railId(w))!.sea = true;
     fundQ(w, 4, tick, timing);
     return 1;

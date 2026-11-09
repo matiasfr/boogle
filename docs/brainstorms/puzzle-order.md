@@ -84,4 +84,4 @@ a reload while Q5 funding stays blocked until Q4. No world reset needed if the i
 ## Disposition
 
 Proceed within the current scope (owner, 8 Nov: brainstorm answers within this scope ship as the orchestrator's picks),
-except question 1, which reverses an owner-approved B4 rule and needs the owner.
+including question 1, approved by the owner on 8 November: open the sea gate on the first summit pull, with Q5 still built after Q4.
