@@ -12,7 +12,7 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
 
 1. Read DESIGN.md, docs/agents/owner-calls.md, the decision index in docs/decisions.md and the entries it routes for
    this plan, docs/direction.md, the newest entries in docs/playtests.md and the
-   relevant find-the-fun sections in docs/plans/find-the-fun.md. Use the game-direction skill's fit and ordering check
+   relevant find-the-fun sections in docs/plans/find-the-fun.md. For anything ported from Place, first ask whether it still earns its place in the live game (owner call "Port from Place only what still fits"), and say so per piece. Use the game-direction skill's fit and ordering check
    (.claude/skills/game-direction/SKILL.md) for anything that changes scope or order.
 2. Read the plan, and the code it touches where a call depends on how the game behaves today. Look the plan's topics up
    in the research index (docs/research/README.md, by topic section) and read the top block of each relevant doc. A
