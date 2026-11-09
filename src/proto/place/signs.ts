@@ -13,20 +13,30 @@ export function paperMaterial(map: THREE.CanvasTexture) {
 
 const PAPER = '#fff3d6',
   INK = '#2a1c10';
-export function paintBoard(lines: { t: string; px: number; color?: string }[], w: number, h: number) {
+/** Rows of `wood` under the paper in `paintBoard(…, wood)`'s canvas: a stake board's frame and post sample them, so the
+ * whole board is one mesh in one material. */
+export const WOOD_ROWS = 64; // enough that a far mip level still samples wood, not paper
+/** A painted paper board, `w` by `h` m. With `wood`, the canvas has `WOOD_ROWS` of that colour under the paper: the
+ * paper's v runs from `woodV(h / w)` to 1, and anything at v below it is plain wood. */
+export function paintBoard(lines: { t: string; px: number; color?: string }[], w: number, h: number, wood?: string) {
   const c = document.createElement('canvas');
   c.width = 1024;
-  c.height = Math.round((1024 * h) / w);
+  const paper = Math.round((1024 * h) / w);
+  c.height = paper + (wood ? WOOD_ROWS : 0);
   const g = c.getContext('2d')!;
+  if (wood) {
+    g.fillStyle = wood;
+    g.fillRect(0, paper, c.width, WOOD_ROWS);
+  }
   g.fillStyle = PAPER;
-  g.fillRect(0, 0, c.width, c.height);
+  g.fillRect(0, 0, c.width, paper);
   g.strokeStyle = INK;
   g.lineWidth = 16;
-  g.strokeRect(8, 8, c.width - 16, c.height - 16);
+  g.strokeRect(8, 8, c.width - 16, paper - 16);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   const total = lines.reduce((t, l) => t + l.px * 1.22, 0);
-  let y = (c.height - total) / 2;
+  let y = (paper - total) / 2;
   for (const l of lines) {
     g.font = `900 ${l.px}px Figtree, system-ui, sans-serif`;
     g.fillStyle = l.color ?? INK;
@@ -38,6 +48,8 @@ export function paintBoard(lines: { t: string; px: number; color?: string }[], w
   tex.anisotropy = 4;
   return paperMaterial(tex);
 }
+/** Where the paper starts in a `paintBoard(…, wood)` texture of this height-to-width ratio (v, 0 at the bottom). */
+export const woodV = (ratio: number) => WOOD_ROWS / (Math.round(1024 * ratio) + WOOD_ROWS);
 
 // ---------------------------------------------------------------- the HUD
 const nums = document.createElement('div');
