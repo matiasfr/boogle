@@ -70,7 +70,7 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `MAX_PLAYERS`                | `8`         | Players per hosted room (the server is not one). A reconnecting player is always let back in.                                                                          |
 | `SERVER_SAVE_MS`             | `2000`      | How often a hosted room saves its world (when it changed).                                                                                                             |
 
-## Save inventory (read-only)
+## Save inventory and automatic cleanup
 
 Each boot logs one `save inventory <digest>` line before any room is loaded. `GET /admin/saves` returns a fresh
 inventory with the same `Authorization: Bearer <REPORT_TOKEN>` guard as reports (404 if the token is unset, 401
@@ -81,12 +81,28 @@ names. It uses directory entries and file metadata only, never save contents, an
 `files` lists old-namespace saves and temp files older than an hour; `legacyFiles` lists unprefixed saves separately.
 `digest` is the first 16 hex characters of SHA-256 over sorted `files` joined by newlines; `digestWithLegacy` includes
 both sorted lists. Current rooms, including idle ones, are never candidates. `reports/`, `playdata/`, `reviews/` and
-`.trash/` are only measured. Unknown entries are reported. Inventory failure is logged without stopping boot.
+`.trash/` are only measured by the inventory. Current-namespace temp files are also protected, regardless of age.
+Unknown entries are reported. Inventory failure is logged without stopping boot or running cleanup.
 
-`SAVE_CLEANUP` (`trash` or default `off`), `SAVE_CLEANUP_DIGEST` (default empty) and `SAVE_CLEANUP_LEGACY` (`1` or
-default false) are accepted configuration fields for the staged rollout, but have no effect in this version.
-There is no cleanup implementation: no save files are moved or deleted. The owner reviews the inventory before
-any later cleanup stage.
+Cleanup is **enabled by default**, following the owner's 8 November approval. After inventory and before loading any
+rooms, old-world classic and railway saves, unprefixed legacy saves and stale non-current temp files move to
+`DATA_DIR/.trash/<UTC ISO stamp>-<unique suffix>/`. There is no digest gate or legacy opt-in. Each run logs one
+`save cleanup:` line with moved counts/bytes by reason, purged folder count, skipped count, unknown names and errors.
+Unknown root entries, symlinks, `reports/`, `playdata/` and `reviews/` stay in place.
+
+Every move rechecks the filename, file type, temp age and live-room ownership under the store's per-room writer lock.
+Current namespace files (classic, railway and temp), including idle rooms, never move. A moved room is forgotten by
+the store so obsolete saves no longer occupy `MAX_ROOMS`. Each trash run has an atomic `manifest.json` recording
+`{ at, ns, rail, files: [{ name, bytes, reason }] }`, where reason is `old-ns`, `legacy` or `tmp`. The next entry is
+recorded before its rename; after an interrupted run, compare source and destination to resolve any pending entry.
+
+At boot, UTC-stamped trash run folders **strictly older than seven days** are permanently purged. Newer folders stay.
+Folders with current/live files or unexpected entries, non-stamped folders and symlinks are kept and reported.
+`SAVE_CLEANUP=off` is an emergency kill switch for both moving and purging; unset (or any other value) enables both.
+`GET /admin/saves` remains read-only and includes `lastCleanup`: the current process's latest boot result
+(`at`, `enabled`, `trash`, `moved`, `purged`, `skipped`, `unknown`, `errors`), or null if inventory failed.
+Per-file cleanup failures are recorded and do not stop boot. A second boot with no new eligible files moves nothing
+and creates no new trash folder. See [the plan](../docs/plans/world-version-and-save-reset.md).
 
 ## Run locally
 

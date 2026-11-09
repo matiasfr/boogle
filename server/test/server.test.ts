@@ -39,7 +39,7 @@ test('healthz', async () => {
   }
 });
 
-test('save inventory is authed, fresh, and read-only even with cleanup configured', async () => {
+test('save inventory is authed and fresh, reports cleanup, and honors the kill switch', async () => {
   let s = await start();
   try {
     assert.equal((await fetch(`${s.base}/admin/saves`)).status, 404);
@@ -48,7 +48,7 @@ test('save inventory is authed, fresh, and read-only even with cleanup configure
   }
   const logs: string[] = [];
   s = await start(
-    { REPORT_TOKEN: 'tok', SAVE_CLEANUP: 'trash', SAVE_CLEANUP_DIGEST: 'anything', SAVE_CLEANUP_LEGACY: '1' },
+    { REPORT_TOKEN: 'tok', SAVE_CLEANUP: 'off' },
     {
       log: (...args) => {
         logs.push(args.map(String).join(' '));
@@ -56,11 +56,9 @@ test('save inventory is authed, fresh, and read-only even with cleanup configure
     },
   );
   try {
-    assert.equal(s.svc.config.saveCleanup, 'trash');
-    assert.equal(s.svc.config.saveCleanupDigest, 'anything');
-    assert.equal(s.svc.config.saveCleanupLegacy, true);
-    assert.equal(loadConfig({ SAVE_CLEANUP: 'other' }).saveCleanup, 'off');
-    assert.equal(loadConfig({}).saveCleanupLegacy, false);
+    assert.equal(s.svc.config.saveCleanup, 'off');
+    assert.equal(loadConfig({ SAVE_CLEANUP: 'other' }).saveCleanup, 'trash');
+    assert.equal(loadConfig({}).saveCleanup, 'trash');
     assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 1);
     const get = (token?: string) =>
       fetch(`${s.base}/admin/saves`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
@@ -72,15 +70,21 @@ test('save inventory is authed, fresh, and read-only even with cleanup configure
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     const inv = await inventorySaves(s.dataDir, { ns: { world: WORLD_NS, rail: RAILWAY_PLAY_NS } });
-    assert.deepEqual(await response.json(), inv);
+    const body = await response.json();
+    assert.equal(body.lastCleanup.enabled, false);
+    assert.deepEqual(body.lastCleanup.moved, []);
+    const { lastCleanup: _cleanup, ...fresh } = body;
+    assert.deepEqual(fresh, inv);
     assert.equal(inv.current.count, 2);
     assert.deepEqual(inv.files, ['v01-old.json']);
     assert.deepEqual(inv.legacyFiles, ['garden.json']);
-    // Restart with the exact digest and all cleanup settings on: this stage still cannot move files.
+    // The read endpoint never performs cleanup; the explicit kill switch also prevents it on boot.
     await s.svc.close({ save: false });
-    s.svc.config.saveCleanupDigest = inv.digestWithLegacy;
     await s.svc.listen(s.port);
-    assert.deepEqual(await (await get('tok')).json(), inv);
+    const again = await (await get('tok')).json();
+    assert.equal(again.lastCleanup.enabled, false);
+    const { lastCleanup: _againCleanup, ...againInventory } = again;
+    assert.deepEqual(againInventory, inv);
     assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 2);
     assert.deepEqual(
       (await fs.readdir(s.dataDir)).filter((name) => name.endsWith('.json')).sort(),

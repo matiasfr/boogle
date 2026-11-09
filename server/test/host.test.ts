@@ -288,13 +288,14 @@ test('production railway relays bounded social cues without opening material or 
 });
 
 test('world: a joiner gets the snapshot alone; an edit comes back stamped to everyone; it saves and resumes', async () => {
-  const { svc, base, dataDir } = await start({ SERVER_SAVE_MS: '300' });
+  const room = worldRoomId('resume');
+  const { svc, base, dataDir } = await start({ SERVER_SAVE_MS: '300', SERVER_ROOMS: room });
   const toss = { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }; // a frisbee on the beach
   let saved = 0;
   try {
-    const a = connect(base, 'beach', 'aaa');
+    const a = connect(base, room, 'aaa');
     await a.next(isWorld('w:snap'));
-    const b = connect(base, 'beach', 'bbb');
+    const b = connect(base, room, 'bbb');
     const chunks: Msg[] = [];
     const first = await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb');
     for (let k = 0; k < first.d.n; k++)
@@ -309,7 +310,7 @@ test('world: a joiner gets the snapshot alone; an edit comes back stamped to eve
       m.d.list.some((x: Msg) => x.e.op === 'gift.toss' && x.e.p === 'aaa' && x.e.u === 'aaapid');
     await Promise.all([a.next(stamped), b.next(stamped)]);
     await sleep(700);
-    const doc = JSON.parse(await fs.readFile(path.join(dataDir, 'beach.json'), 'utf8'));
+    const doc = JSON.parse(await fs.readFile(path.join(dataDir, `${room}.json`), 'utf8'));
     assert.equal(doc.writerId, 'server');
     assert.ok('gifts' in doc.data.data);
 
@@ -317,14 +318,14 @@ test('world: a joiner gets the snapshot alone; an edit comes back stamped to eve
     await svc.close({ save: true });
     assert.ok(a.msgs.some(is('bye')));
     assert.equal(await closedA, 1012);
-    saved = JSON.parse(await fs.readFile(path.join(dataDir, 'beach.json'), 'utf8')).tick;
+    saved = JSON.parse(await fs.readFile(path.join(dataDir, `${room}.json`), 'utf8')).tick;
   } catch (e) {
     await svc.close({ save: false });
     throw e;
   }
-  const again = await start({}, dataDir);
+  const again = await start({ SERVER_ROOMS: room }, dataDir);
   try {
-    const world = again.svc.roomHost()!.room('beach')!.world;
+    const world = again.svc.roomHost()!.room(room)!.world;
     await sleep(20);
     assert.ok(world.sync.world.tick >= saved, `resumed at ${world.sync.world.tick}, saved ${saved}`);
     assert.ok('gifts' in world.rules, 'ordinary rooms retain the classic registry');

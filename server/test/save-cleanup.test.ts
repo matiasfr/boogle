@@ -6,6 +6,7 @@ import path from 'node:path';
 import { cleanupSaves, cleanupLine } from '../src/save-cleanup.ts';
 import { inventorySaves } from '../src/save-inventory.ts';
 import { createStore } from '../src/store.ts';
+import { createService, loadConfig } from '../src/server.ts';
 import { WORLD_NS } from '../../src/world/namespace.ts';
 import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
 
@@ -170,4 +171,89 @@ test('kill switch disables moves and purge; a symlinked trash root cannot redire
   assert.equal(result.errors.length, 1);
   assert.equal(await fs.readFile(path.join(f.dir, 'v01-old.json'), 'utf8'), 'data');
   assert.ok(await fs.stat(path.join(f.dir, `outside/${stamp(8)}/v01-archive.json`)));
+});
+
+test('default service boot cleans before hosting, exposes the last cleanup and is a no-op on the next boot', async (t) => {
+  const f = await fixture();
+  const expired = new Date(Date.now() - 8 * day).toISOString();
+  const newer = new Date(Date.now() - 6 * day).toISOString();
+  const current = [`${ns.world}-a.json`, `${ns.rail}-b.json`, `${ns.world}-a.json.12.abcdef01.tmp`];
+  for (const name of current) await put(f.dir, name, `keep:${name}`);
+  const candidates = ['garden.json', 'rail-v02-old.json', 'v01-old.json', 'v01-old.json.12.abcdef01.tmp'];
+  for (const name of candidates) await put(f.dir, name, `move:${name}`);
+  await put(f.dir, 'v01-fresh.json.12.abcdef01.tmp');
+  await fs.utimes(path.join(f.dir, 'v01-fresh.json.12.abcdef01.tmp'), new Date(), new Date());
+  await put(f.dir, 'notes.txt', 'unknown');
+  await put(f.dir, 'reports/x.jsonl', 'report');
+  await put(f.dir, 'reviews/r/card.json', 'review');
+  await put(f.dir, 'playdata/x.jsonl', 'play');
+  await put(f.dir, `.trash/${expired}/v01-expired.json`);
+  await put(f.dir, `.trash/${newer}/v01-newer.json`);
+  const before = await Promise.all(current.map((name) => fs.stat(path.join(f.dir, name))));
+  const logs: string[] = [];
+  const config = () =>
+    loadConfig(
+      { DATA_DIR: f.dir, REPORT_TOKEN: 't' },
+      {
+        log: (...args) => {
+          logs.push(args.map(String).join(' '));
+        },
+      },
+    );
+  let service = createService(config());
+  t.after(async () => {
+    await service.close({ save: false });
+    await fs.rm(f.dir, { recursive: true, force: true });
+  });
+  let port = await service.listen(0);
+  const get = async () => {
+    const response = await fetch(`http://127.0.0.1:${port}/admin/saves`, { headers: { authorization: 'Bearer t' } });
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  const first = await get();
+  assert.equal(first.current.count, 2);
+  assert.deepEqual(first.files, []);
+  assert.deepEqual(first.legacyFiles, []);
+  assert.deepEqual(first.unknown, ['notes.txt']);
+  assert.equal(first.lastCleanup.enabled, true);
+  assert.deepEqual(first.lastCleanup.errors, []);
+  assert.deepEqual(
+    first.lastCleanup.moved.map((file: { name: string }) => file.name),
+    candidates,
+  );
+  assert.deepEqual(first.lastCleanup.purged, [`.trash/${expired}`]);
+  const manifest = JSON.parse(await fs.readFile(path.join(f.dir, first.lastCleanup.trash, 'manifest.json'), 'utf8'));
+  assert.deepEqual(manifest.files, first.lastCleanup.moved);
+  assert.equal(logs.filter((line) => line.startsWith('save cleanup:')).length, 1);
+  assert.match(
+    logs.find((line) => line.startsWith('save cleanup:'))!,
+    /unknown 1 \["notes.txt"\]/,
+  );
+  assert.ok(
+    logs.findIndex((line) => line.startsWith('save cleanup:')) <
+      logs.findIndex((line) => line.startsWith('hosting rooms:')),
+  );
+  const folders = await fs.readdir(path.join(f.dir, '.trash'));
+  await service.close({ save: false });
+  service = createService(config());
+  port = await service.listen(0);
+  const again = await get();
+  assert.deepEqual(again.lastCleanup.moved, []);
+  assert.deepEqual(again.lastCleanup.purged, []);
+  assert.equal(again.lastCleanup.trash, null);
+  assert.deepEqual(await fs.readdir(path.join(f.dir, '.trash')), folders);
+  assert.equal(logs.filter((line) => line.startsWith('save cleanup:')).length, 2);
+  for (const [index, name] of current.entries()) {
+    assert.equal(await fs.readFile(path.join(f.dir, name), 'utf8'), `keep:${name}`);
+    assert.equal((await fs.stat(path.join(f.dir, name))).mtimeMs, before[index]!.mtimeMs);
+  }
+  for (const name of [
+    'notes.txt',
+    'reports/x.jsonl',
+    'reviews/r/card.json',
+    'playdata/x.jsonl',
+    'v01-fresh.json.12.abcdef01.tmp',
+  ])
+    assert.ok(await fs.stat(path.join(f.dir, name)));
 });
