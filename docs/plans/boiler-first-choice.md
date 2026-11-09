@@ -454,7 +454,9 @@ Step 2 is the guard only and can ship with step 3.
     ends?"`; the eval's log shows the boiler moving on the press frame, before acceptance. A still after a reload of
     the same room (`--rail-seed trains-on --eval dev/look/evals/railway-b5b8-at.ts --query 'b58at=camp'`): the lashing
     is on the engine. `npm run perf` once, compared with main (a few small meshes and two walkers; expect no change).
-- [ ] **9. One flourish for everyone else, once for a late joiner.**
+- [x] **9. One flourish for everyone else, once for a late joiner.** Built before step 8, so
+  `dev/look/evals/railway-boiler-fit.ts` is new here: an `--eval` on both pages (player 2 fits, player 1's page is
+  filmed); step 8 adds the press-frame log to it. Its reload and third-identity checks are not in it yet.
   - `src/entities/railway/ability-arrival.ts`: add `{ key: 'boiler', op: 'rail.boilerFit', cue: 'pickupHook', has:
     (s) => s.line2.trains, badge: true }` to `ABILITIES` (after glider B's row if that is on main) and `'boiler'` to
     the header's list of keys. Nothing else changes: the existing code marks the fitter as shown, plays it live for
