@@ -15,6 +15,9 @@ import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
+import { createGhostOutlines } from '../../render/ghost-outline.ts';
+import { reducedMotion } from '../../constants.ts';
+import { goldMote } from './breaker-view.ts';
 import { WORKS, WORKS_KILN, WORKS_RACK, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
 import { SEAM_THROAT } from '../../sim/railway-works.ts';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
@@ -275,40 +278,82 @@ export async function createRailwayWorks(
           );
       }
   }
+  // Log i stacked crosswise in the cradle, four to a layer; stone i filling the hopper.
+  const cradle = at(3.5, 1.5),
+    hopper = at(3.5, -1.5);
+  const LOG = [1.3, 0.28, 0.28] as const,
+    STONE = [0.42, 0.3, 0.42] as const;
+  const logAt = (i: number) => {
+    const layer = Math.floor(i / 4),
+      j = (i % 4) - 1.5;
+    // Side by side across the 1.6 m cradle (they had stacked end to end in one 0.3 m column).
+    p.set(cradle.x + across.x * j * 0.37, kilnGround + 0.45 + layer * 0.3, cradle.z + across.z * j * 0.37);
+    return faceYaw + Math.PI / 2;
+  };
+  const stoneAt = (i: number) => {
+    const layer = Math.floor(i / 4),
+      u = (i % 2) - 0.5,
+      v = (Math.floor(i / 2) % 2) - 0.5;
+    p.set(
+      hopper.x + across.x * u * 0.6 + face.x * v * 0.6,
+      kilnGround + 0.25 + layer * 0.24,
+      hopper.z + across.z * u * 0.6 + face.z * v * 0.6,
+    );
+    return i * 0.7;
+  };
   function drawKiln() {
     const k = state.works.kiln;
-    // Logs stacked crosswise in the cradle, four to a layer.
-    const c = at(3.5, 1.5);
     for (let i = 0; i < Math.min(k.logs, WORKS.kilnLogs); i++) {
-      const layer = Math.floor(i / 4),
-        j = (i % 4) - 1.5;
-      batch.box(
-        c.x + face.x * j * 0.37,
-        kilnGround + 0.45 + layer * 0.3,
-        c.z + face.z * j * 0.32,
-        1.3,
-        0.28,
-        0.28,
-        '#8a6238',
-        faceYaw + Math.PI / 2,
-      );
+      const yaw = logAt(i);
+      batch.box(p.x, p.y, p.z, ...LOG, '#8a6238', yaw);
     }
-    // Stone filling the hopper.
-    const h = at(3.5, -1.5);
     for (let i = 0; i < Math.min(k.stone, WORKS.kilnStone); i++) {
-      const layer = Math.floor(i / 4),
-        u = (i % 2) - 0.5,
-        v = (Math.floor(i / 2) % 2) - 0.5;
-      batch.box(
-        h.x + across.x * u * 0.6 + face.x * v * 0.6,
-        kilnGround + 0.25 + layer * 0.24,
-        h.z + across.z * u * 0.6 + face.z * v * 0.6,
-        0.42,
-        0.3,
-        0.42,
-        '#b5ae9f',
-        i * 0.7,
-      );
+      const yaw = stoneAt(i);
+      batch.box(p.x, p.y, p.z, ...STONE, '#b5ae9f', yaw);
+    }
+  }
+  // The kiln's missing load as dashed gold ghosts, from the cut opening until it lights: each goes as its real piece
+  // lands. One draw for all of them; rebuilt only when the counts change. Each ghost is a little smaller than its
+  // piece and squared to the kiln, so neighbouring outlines stay apart and read as pieces, not a cage.
+  const ghosts = createGhostOutlines(owner, 1200, 0.22, 0.13, 0.03);
+  let ghostKey = '',
+    ghostLogs = 0,
+    ghostStone = 0,
+    rockMote = 0,
+    rockSide = 1;
+  function drawGhosts() {
+    const k = state.works.kiln,
+      wants = open && k.lit < 0;
+    const logs = wants ? Math.max(0, WORKS.kilnLogs - k.logs) : 0,
+      stone = wants ? Math.max(0, WORKS.kilnStone - k.stone) : 0;
+    const key = `${logs} ${stone}`;
+    if (key === ghostKey) return;
+    ghostKey = key;
+    ghostLogs = logs;
+    ghostStone = stone;
+    ghosts.begin();
+    for (let i = WORKS.kilnLogs - logs; i < WORKS.kilnLogs; i++) {
+      const yaw = logAt(i);
+      ghosts.box(p.x, p.y, p.z, LOG[0] - 0.1, LOG[1] - 0.08, LOG[2] - 0.08, yaw);
+    }
+    for (let i = WORKS.kilnStone - stone; i < WORKS.kilnStone; i++) {
+      stoneAt(i);
+      ghosts.box(p.x, p.y, p.z, STONE[0] - 0.1, STONE[1] - 0.08, STONE[2] - 0.1, faceYaw);
+    }
+    ghosts.commit();
+  }
+  /** The bowl's limestone rocks give off the breaker's gold motes while the hopper still wants stone. */
+  function rockMotes(dt: number) {
+    if (reducedMotion || !ghostStone) return;
+    rockMote -= dt;
+    if (rockMote > 0) return;
+    rockMote = 0.2;
+    rockSide *= -1;
+    for (const rock of state.works.rocks) {
+      if (rock.remaining <= 0) continue;
+      // Round the top of the drawn pile (about 1.3 m tall, 2.4 m across), clear of the stone.
+      const a = Math.random() * Math.PI * 2;
+      goldMote(rock.x / 100 + Math.cos(a) * 1, rock.y / 100 + 1.5, rock.z / 100 + Math.sin(a) * 1, rockSide, 0.3);
     }
   }
   function drawRack(dt: number) {
@@ -459,10 +504,18 @@ export async function createRailwayWorks(
     landed = 0;
   }
   function throatShow() {
-    const c = new THREE.Vector3(throat.x, 26, throat.z);
-    const from = new THREE.Vector3(throat.x - 16, 33, throat.z - 15);
-    const to = new THREE.Vector3(throat.x - 10, 38, throat.z - 4);
-    throatCamera.play(from, to, c.clone().addScaledVector(normal, 8), 3.6, 3.6);
+    // From the halt side, aimed through the throat at the kiln's two bays: the slabs fall away out of frame, the
+    // camera settles in the opened cut and holds a beat on the empty cradle and hopper with their gold ghosts.
+    const bays = at(3.5, 0),
+      from = at(22, -7),
+      to = at(12, -2.5);
+    throatCamera.play(
+      new THREE.Vector3(from.x, kilnGround + 11, from.z),
+      new THREE.Vector3(to.x, kilnGround + 4.5, to.z),
+      new THREE.Vector3(bays.x, kilnGround + 0.6, bays.z),
+      4.8,
+      3.4,
+    );
   }
   const fromBack = new THREE.Vector3();
   function avatarBack(pid: string, out: THREE.Vector3) {
@@ -501,6 +554,7 @@ export async function createRailwayWorks(
     later.clear();
     throatCamera.reset();
     solid(!open);
+    ghostKey = '';
   }
   snap();
   return {
@@ -540,6 +594,8 @@ export async function createRailwayWorks(
       drawKilnFlights(dt);
       drawRack(dt);
       batch.commit();
+      drawGhosts();
+      rockMotes(dt);
       effects(dt);
     },
     accepted(e: RailwayAccepted) {
@@ -642,6 +698,7 @@ export async function createRailwayWorks(
       toppling: topple >= 0,
       shot: throatCamera.inspect(),
       kiln: { ...state.works.kiln, glow: mouth.visible },
+      ghosts: { logs: ghostLogs, stone: ghostStone, dashes: ghosts.count },
       rack: Math.max(0, state.works.rack - flights.length),
       rollers: flights.length,
     }),

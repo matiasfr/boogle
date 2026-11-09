@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-09).**
+> **Status: building (2026-11-09): the smallest first build, suggestions 1 and 2.**
 
 # Works signposting: each strike points at the next thing
 
