@@ -4,10 +4,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hearGain, MACHINE_HEAR } from '../src/render/hearing.ts';
-import { SHOW_AT, SHOW_FROM_PIER, SHOW_HEAR } from '../src/entities/railway/crossing-show.ts';
+import {
+  CROSSING_SPAN,
+  FINALE_ROCKETS,
+  FINALE_SHOT,
+  RING_SHARD,
+  SHARD_GLINT_S,
+  SHOW_AT,
+  SHOW_FROM_PIER,
+  SHOW_HEAR,
+  onCrossing,
+  towardRing,
+} from '../src/entities/railway/crossing-show.ts';
 import { CROSSING_BENTS, PIER_FRAME, PIER_RACK, PIER_STOP } from '../src/sim/railway-works-layout.ts';
 
 const from = (p: { x: number; z: number }) => Math.hypot(SHOW_AT.x - p.x / 100, SHOW_AT.z - p.z / 100);
+const along = { x: onCrossing(1, 0, 0).x - onCrossing(0, 0, 0).x, z: onCrossing(1, 0, 0).z - onCrossing(0, 0, 0).z };
 
 test('the finale plays at the last bent, beyond the machine sounds’ range from anywhere on the pier', () => {
   assert.deepEqual(SHOW_AT, { x: CROSSING_BENTS.at(-1)!.x / 100, z: CROSSING_BENTS.at(-1)!.z / 100 });
@@ -21,4 +33,30 @@ test('the finale whistle is heard at about half its gain where the twelfth footi
   // machine-sfx drops a sound under 0.003 of gain; the whistle's own gain is 0.18 at 0 dB.
   for (const p of [PIER_FRAME, PIER_RACK, PIER_STOP])
     assert.ok(0.18 * hearGain(from(p), SHOW_HEAR) > 0.06, `${from(p)} m`);
+});
+
+test('the finale shot travels the bents and ends on Ring Island, with the far end and the shard in frame', async () => {
+  const { FAR, ORIGIN } = await import('../src/proto/place/layout.ts');
+  assert.deepEqual(RING_SHARD, { x: FAR.x + ORIGIN.x + 10, y: 140, z: FAR.z + ORIGIN.z });
+  const { from: start, to, at, seconds } = FINALE_SHOT;
+  assert.ok(seconds >= 6 && seconds <= 8);
+  // Along the bents, from before the first to short of the last.
+  const o = onCrossing(0, 0, 0);
+  const s = (p: { x: number; z: number }) => (p.x - o.x) * along.x + (p.z - o.z) * along.z;
+  assert.ok(s(start) < 0 && s(to) > CROSSING_SPAN * 0.7 && s(to) < CROSSING_SPAN);
+  // From the shot's end, the shard and the last bent's deck sit inside the 62° vertical view around the aim.
+  const pitch = (p: { x: number; y: number; z: number }) =>
+    (Math.atan2(p.y - to.y, Math.hypot(p.x - to.x, p.z - to.z)) * 180) / Math.PI;
+  const aim = pitch(at);
+  for (const p of [RING_SHARD, onCrossing(CROSSING_SPAN, 0, 4)])
+    assert.ok(Math.abs(pitch(p) - aim) < 28, `${pitch(p).toFixed(1)}° against ${aim.toFixed(1)}°`);
+});
+
+test('ten rockets launch past the last bent and lean toward Ring Island', () => {
+  assert.equal(FINALE_ROCKETS.count, 10);
+  const r = towardRing();
+  assert.ok(Math.abs(Math.hypot(r.x, r.z) - 1) < 1e-9);
+  assert.ok(r.x * along.x + r.z * along.z > 0.95, 'the island lies on along the bents');
+  assert.ok(FINALE_ROCKETS.beyond[0] > 0 && FINALE_ROCKETS.lean > 0);
+  assert.ok(SHARD_GLINT_S < FINALE_SHOT.seconds - 0.55, 'the glint plays before the shot blends home');
 });

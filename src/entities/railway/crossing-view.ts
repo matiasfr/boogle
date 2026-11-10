@@ -1,8 +1,10 @@
 // The first sea crossing, live from accepted state (docs/plans/split-rock-roundhouse.md, J5c): from Q6 the pier head
 // shows twelve empty footing sockets on the sea floor along `ringx` and a stake at each bent, the pier rack on the Pier
 // halt holds what the wagon brought, and a jib at the pier head lowers each set footing on a rope into its socket.
-// Every pair raises a trestle bent to deck height; twelve set is one whistle and two rockets at the last bent. Local
-// view: lowering, bents rising and the show play on accepted events and live edges; restore snaps them.
+// Every pair raises a trestle bent to deck height; twelve set is the finale (./crossing-show.ts): a whistle, then a camera
+// pull-out along the bents to Ring Island with ten rockets and a banner. Local view: lowering, bents rising and the show
+// play on accepted events and live edges, so every page that sees the twelfth footing live plays the finale (the owner's
+// "shared moments play for everyone", 10 November); restore snaps them and never plays one.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -16,9 +18,11 @@ import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { camera } from '../../render/scene.ts';
+import { createCameraPullOut } from '../../render/camera-pull-out.ts';
+import { showMomentBanner, momentBanner } from '../../ui/moment-banner.ts';
 import { playMark } from '../../proto/mark.ts';
 import { SEA } from '../../constants.ts';
-import { SHOW_HEAR } from './crossing-show.ts';
+import { FINALE_ROCKETS, FINALE_SHOT, RING_SHARD, SHARD_GLINT_S, SHOW_HEAR, towardRing } from './crossing-show.ts';
 import { WORKS, PIER_RACK, PIER_FRAME, CROSSING_BENTS, CROSSING_FOOT_OFF } from '../../sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
@@ -32,11 +36,25 @@ const TIMBER = '#8a6236',
   IRON = '#3a3d44',
   STAKE = '#e8a33a';
 
-export async function createRailwayCrossing(adapter: RailwayAdapter, owner: OwnedView, deps: { toPier: () => number }) {
-  const [{ H, addStatic }, layout] = await Promise.all([
+export async function createRailwayCrossing(
+  adapter: RailwayAdapter,
+  owner: OwnedView,
+  deps: {
+    toPier: () => number;
+    /** A reward card has the screen: the finale's shot, rockets and banner wait for it (the whistle doesn't). */
+    busy: () => boolean;
+    seated: () => boolean;
+  },
+) {
+  const [{ H, addStatic }, layout, sounds] = await Promise.all([
     import('../../proto/place/land.ts'),
     import('../../proto/place/layout.ts'),
+    import('../../proto/minis/common.ts'),
   ]);
+  // The finale's shot: every pull-out's rules (plays to the end, the one highlighted Interact skip from 0.8 s; none for
+  // reduced motion or a seated player, who still get the rockets).
+  const finaleCamera = createCameraPullOut(deps.busy, true, deps.seated);
+  owner.cleanup(() => finaleCamera.dispose());
   const line = layout.LINKS[1]!.line;
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
   let state = adapter.inspect();
@@ -125,13 +143,32 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
   const lowering: Lowering[] = [];
   /** Per bent: seconds since it started rising (≥ RISE_S once stood), or −1 for not yet. */
   const rise = bents.map(() => -1);
+  type Rocket = {
+    t: number;
+    x: number;
+    y: number;
+    z: number;
+    height: number;
+    /** Metres it leans out toward Ring Island by its burst. */
+    dx: number;
+    dz: number;
+    colour: THREE.Color;
+  };
   let shownCrossing = -1,
     show = -1,
     /** Finales played on this page (a restore never plays one). */
     shows = 0,
-    rockets: { t: number; x: number; y: number; z: number; colour: THREE.Color }[] = [];
-  const colours = ['#ffcc63', '#39e6c6'].map((c) => new THREE.Color(c));
+    /** Seconds into the finale's shot and rockets, once a reward card has let them start; −1 for none. */
+    finale = -1,
+    /** The twelfth footing's whistle has played and the shot is waiting for the screen. */
+    finaleWaiting = false,
+    glinted = false,
+    rockets: Rocket[] = [];
+  // Far Head's four shell colours.
+  const colours = ['#ffcc63', '#39e6c6', '#ff7272', '#b9a0ff'].map((c) => new THREE.Color(c));
   const trail = new THREE.Color('#ffe9b0');
+  const shardLight = new THREE.Color('#9fe0ff');
+  const ring = towardRing();
 
   const open = () => state.ready && state.line2.trains && state.line2.completed >= LINE2_STATIONS.length;
   /** Footings standing in the sea now: set ones minus those still on their way down. */
@@ -155,7 +192,10 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
     rise.forEach((_, b) => (rise[b] = b < pairs ? RISE_S : -1));
     shownCrossing = state.works.crossing;
     show = -1;
+    finale = -1;
+    finaleWaiting = false;
     rockets = [];
+    finaleCamera.reset();
     solidApron(open());
   }
   snap();
@@ -339,6 +379,46 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
       }
     }
   }
+  /** The finale proper, once no reward card has the screen: the shot, the fanfare, the banner and the rockets. */
+  function startFinale() {
+    finaleWaiting = false;
+    finale = 0;
+    glinted = false;
+    const { from, to, at, seconds } = FINALE_SHOT;
+    finaleCamera.play(
+      new THREE.Vector3(from.x, from.y, from.z),
+      new THREE.Vector3(to.x, to.y, to.z),
+      new THREE.Vector3(at.x, at.y, at.z),
+      seconds,
+    );
+    sounds.fanfare(true);
+    // UI copy, not The Boogler's: flagged for the owner in docs/agent-calls.md.
+    showMomentBanner('Next stop: Ring Island', 'The crossing has begun', 4.5);
+    const R = FINALE_ROCKETS,
+      b = bents.at(-1)!;
+    for (let k = 0; k < R.count; k++) {
+      const out = R.beyond[0] + Math.random() * (R.beyond[1] - R.beyond[0]),
+        side = (Math.random() - 0.5) * R.side,
+        lean = R.lean * (0.7 + Math.random() * 0.6);
+      rockets.push({
+        t: -(R.first + k * R.gap),
+        x: b.x + ring.x * out - ring.z * side,
+        y: DECK,
+        z: b.z + ring.z * out + ring.x * side,
+        height: R.height[0] + Math.random() * (R.height[1] - R.height[0]),
+        dx: ring.x * lean,
+        dz: ring.z * lean,
+        colour: colours[Math.floor(Math.random() * colours.length)]!,
+      });
+    }
+    // For the playtest data: that it played, whether the bursts' height over the far end was on screen as it began,
+    // and whether this page took the shot (reduced motion and a seated player don't).
+    const burst = new THREE.Vector3(b.x, DECK + 30, b.z);
+    const metres = Math.round(camera.position.distanceTo(burst));
+    burst.project(camera);
+    const onScreen = burst.z < 1 && Math.abs(burst.x) <= 1 && Math.abs(burst.y) <= 1;
+    playMark('crossing finale', { authority: 'local', metres, onScreen, shot: finaleCamera.active() });
+  }
   function stepShow(dt: number) {
     if (show >= 0) {
       const lastBent = rise.at(-1)!;
@@ -346,38 +426,61 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
       if (show < 100 && (lastBent >= RISE_S || show > 10)) {
         const b = bents.at(-1)!;
         // Heard from the pier head, 121 m away (./crossing-show.ts): the machine sounds' 45 m range was silent there.
+        // The whistle never waits for a reward card; the rest does, as at Far Head.
         whistle(b.x, b.z, SHOW_HEAR);
-        for (const k of [0, 1])
-          rockets.push({ t: -k * 0.6, x: b.x + across.x * (k ? 3 : -3), y: DECK, z: b.z, colour: colours[k]! });
         show = 100;
         shows++;
-        // For the playtest data: that it played, and whether the bursts' height over the last bent was on screen.
-        const burst = new THREE.Vector3(b.x, DECK + 30, b.z);
-        const metres = Math.round(camera.position.distanceTo(burst));
-        burst.project(camera);
-        const onScreen = burst.z < 1 && Math.abs(burst.x) <= 1 && Math.abs(burst.y) <= 1;
-        playMark('crossing finale', { authority: 'local', metres, onScreen });
+        finaleWaiting = true;
       } else if (show < 100) show += dt;
+    }
+    if (finaleWaiting && !deps.busy()) startFinale();
+    if (finale >= 0) {
+      finale += dt;
+      if (!glinted && finale >= SHARD_GLINT_S) {
+        glinted = true;
+        // The shard's light catches once: a glint in the ring's middle, no more than what's there (a lit shard).
+        for (const [delay, size] of [
+          [0, 70],
+          [0.25, 46],
+        ] as const)
+          emit({
+            x: RING_SHARD.x,
+            y: RING_SHARD.y + delay * 8,
+            z: RING_SHARD.z,
+            life: 1.5 - delay,
+            size,
+            color: shardLight,
+            intensity: readableIntensity() * 1.6,
+            shape: 'glint',
+            spin: 0.8,
+            sizeCurve: [0.2, 1.2, 0.3],
+            alphaCurve: [0.4, 1, 0],
+          });
+      }
+      if (finale > FINALE_SHOT.seconds && rockets.length === 0) finale = -1;
     }
     for (let k = rockets.length - 1; k >= 0; k--) {
       const r = rockets[k]!;
       r.t += dt;
       if (r.t < 0) continue;
-      if (r.t >= 0.9) {
-        for (let n = 0; n < 60; n++) {
+      const u = r.t / 0.9;
+      if (u >= 1) {
+        // Far Head's burst, at size 2.6.
+        const size = FINALE_ROCKETS.size;
+        for (let n = 0; n < Math.round(44 + size * 8); n++) {
           const a = Math.random() * Math.PI * 2,
-            u = Math.random() * 2 - 1,
-            radius = Math.sqrt(1 - u * u),
-            speed = 18 + Math.random() * 4;
+            v = Math.random() * 2 - 1,
+            radius = Math.sqrt(1 - v * v),
+            speed = (10 + Math.random() * 3) * size;
           emit({
-            x: r.x,
-            y: r.y + 30,
-            z: r.z,
+            x: r.x + r.dx,
+            y: r.y + r.height,
+            z: r.z + r.dz,
             vx: Math.cos(a) * radius * speed,
-            vy: u * speed,
+            vy: v * speed,
             vz: Math.sin(a) * radius * speed,
-            life: 1.6,
-            size: 1.1,
+            life: 1.5 + Math.random() * 0.5,
+            size: 0.55 * size,
             color: r.colour,
             intensity: readableIntensity(),
             gravity: 7,
@@ -388,14 +491,14 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
         rockets.splice(k, 1);
       } else
         emit({
-          x: r.x,
-          y: r.y + 30 * (1 - (1 - r.t / 0.9) ** 2),
-          z: r.z,
+          x: r.x + r.dx * u * u,
+          y: r.y + r.height * (1 - (1 - u) ** 2),
+          z: r.z + r.dz * u * u,
           vx: 0,
           vy: -1,
           vz: 0,
           life: 0.5,
-          size: 0.6,
+          size: 0.35 * FINALE_ROCKETS.size,
           color: trail,
           intensity: readableIntensity(),
           shrink: 0.5,
@@ -421,6 +524,7 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
       if (state.works.crossing >= 0 && shownCrossing < 0) show = 0;
       shownCrossing = state.works.crossing;
       stepShow(dt);
+      finaleCamera.update(dt);
       draw();
     },
     accepted(e: RailwayAccepted) {
@@ -489,6 +593,7 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
         show: show >= 0,
         shows,
         rockets: rockets.length,
+        finale: { seconds: finale, waiting: finaleWaiting, shot: finaleCamera.inspect(), banner: momentBanner() },
       },
     }),
   };
