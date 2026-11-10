@@ -23,8 +23,7 @@ Claude only until 12 November (`npm run models`). Ship with `npm run ship-queue 
 | --- | --- | --- |
 | Double track, generic lines ([plan](../plans/generic-lines.md)) | steps 1–2 on main (#1416, #1422); step 3 on main (#1425): bents on the 4% bow, the ground banked along the up track, the bot's Far Head route | Step 4a/4b: the trains (sim and server, then client, bot, looks), shipped together as `WORLD_NS` v26. Step 4a must pass `RAIL_TRAINS[slot].line`, not the slot, in `replan`'s trainAlong/trainSpeed/trainArrives. Open owner question: one lever per platform side (call 19) or keep the two handles |
 | Ring Island ([brief](../brainstorms/ring-island.md)) | greybox on main behind `?ring=greybox` (#1418, #1420), matching the greybox rulings | Build 1 is v27, after v26. Still owed: walk the last bent's ramp; re-shoot its stills (taken before the landing fix); check the raised leaf from Home and the telescope |
-| Stuck room fix (#1424) | on main; server deployed; reviewed twice | Confirm the live smoke passes once the site deploy lands (it was stuck behind GitHub Pages timeouts at 16:00 UTC) |
-| Toon shading ([research](../research/toon-shading.md)) | candidates on main behind `?toon=a|b|c` (#1423) | The owner picks. Recommended B without the rim (`?toon=b&toonRim=0`). C's outline needs a motion check and the gaps at the feet fixed. Timings were taken under load |
+| Toon shading ([research](../research/toon-shading.md)) | B, rim off, is the default look on main (#1427); A, C and `?toon=a|b|c` removed; `?toon=off` for before/after | The owner may want the rim (one line: `rim` default in src/render/toon-tuning.ts). Check the shadow on/off stall on a quiet Mac and a phone (see Leftovers) |
 | Passenger car | Four (knifeboard) on main (#1411), built as the default | The owner may still pick Six. The upgrade (roof, lamps) is built and off, with no rule yet. Not checked: four seated, a pet in motion |
 | Glider cue (#1408) | on main | The owner rewords the banner draft ("The glider is awake" / "Up on Needle Bell's summit") |
 | Shared moments (#1415) | on main | Gate and throat shots have no banner copy; the owner's to write if wanted. A two-device playtest confirms the second player sees each shot |
@@ -33,7 +32,7 @@ Claude only until 12 November (`npm run models`). Ship with `npm run ship-queue 
 
 - Late game: client steps (#1403), v25 request stops, faster footings and the turntable rule (#1409, reviewed; it fixed kit and wagon starvation and the bell-cord reach), the held-jump float fix (#1404), the glider cue (#1408), shared gate cutscenes (#1415), Firefox sea and audio (#1414, not checked in a real Firefox: headless Firefox won't run on this Mac), the passenger car (#1411).
 - World: the whole-map blockout (#1406, `?blockout=world`), its rulings with a 4% ruling grade (#1407), the double-track decision, the generic-lines plan (#1412), steps 1 and 2 (#1416, #1422), the Ring Island brief and greybox (#1418, #1420) and its rulings.
-- Server and tooling: the stuck-room fix (#1424), a hard `--wall` on every look (#1410), the smoke's 5-minute wait for the server deploy (#1421), toon candidates (#1423), and the rule "never symlink node_modules; run npm ci" in tools.md.
+- Server and tooling: the stuck-room fix (#1424, live smoke passed at 5a4d24c3), a hard `--wall` on every look (#1410), the smoke's 5-minute wait for the server deploy (#1421), toon candidates (#1423), then B as the default look (#1427), and the rule "never symlink node_modules; run npm ci" in tools.md.
 
 ## Merged 9 November
 
@@ -54,6 +53,7 @@ Claude only until 12 November (`npm run models`). Ship with `npm run ship-queue 
   - **Level check:** it measures reach from the line's centre every 2 m, so it misses jumps from the deck's edge (one jump onto p2 from s 94–97 already works). Its hook-walk standing places turn on once line 2 is laid over s 84–92, earlier than the game does (Q2, s 122).
   - **Up-track bed edge:** still 0.25–0.89 m in about 11 m of each line (trestle and ramp ends, the Village merge s 40–45, line 2 s 307).
   - **Bot detour:** the B8 bot's Far Head detour is probably unneeded now that the ground is banked.
+  - **Toon B, shadow switching:** with toon on, two of three benches missed Home's timing sample right after the bench turned the sun's shadow off and on; a direct probe saw 3–21 s stalls in both modes (3 of 5 with toon, 1 of 4 with `?toon=off`), on a loaded Mac. Phones turn shadows off on the detail ladder, so bench it on a quiet Mac and a phone; `dev/look/toon-board.ts --modes off,on` gives before/after stills.
   - **Rooms:** a room whose disk never answers still refuses joins and holds a hosted-room slot. Shutdown skips a room that `offline()` is closing; the 8 s hard exit covers it.
   - **Smoke rooms:** `smoke-node-N` keep their names across `WORLD_NS` bumps, so an old save that won't load fails their close every week. Resetting them is an owner call.
   - **Pages deploy:** `actions/deploy-pages` timed out twice for f8576e65 (15:18 and about 15:40 UTC) and the site lagged the server. The smoke then fails on a build mismatch; wait for the site before treating it as real.
@@ -137,12 +137,14 @@ From 5–6 November; drop each when answered.
 4. **Suspect copy:** `SHOP.kept[0]` says "the hat" for any item; "Chops trees, breaks rocks, and more" appears before rocks exist in T1; the Works verbs under Leftovers.
 5. **Museum:** inspect the miniature, the crystal specimen, or both.
 6. **Worktrees left after the 9 November cleanup** (30 archived as local `archive/worktree/<branch>` tags, 39 merged ones removed): three with uncommitted changes (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`) and four recent ones (`claude/godot-assumptions`, `claude/glider-b-plan`, `claude/idea-land-ack`, `claude/playtest-jump-in-plan`). Commit-and-archive, or keep?
+7. **From 10 November:** one lever per platform side (call 19) or keep the two handles; passenger car Four (built) or Six; the glider banner wording; whether toon B gets its soft character rim (built off).
 
 - **Tidy:** last code pass `ca3212d0` (render/audio, #1248, 9 November). Next: the other areas since `1af61213`, then architecture, docs, memory.
 
 ## Next moves
 
-- Keep about three agents running. Next: D1, then R1–R3. Every Place port gets its fit check before planning (owner-calls).
+- Next session (from 11 November): generic-lines step 4 (4a sim and server, 4b client, bot, looks) as `WORLD_NS` v26, then Ring Island build 1 as v27. Neither bump ships while the owner is mid-session.
+- Keep about three agents running. Then D1 and R1–R3. Every Place port gets its fit check before planning (owner-calls).
 - Glider B's WORLD_NS v23 ships only while no owner session is live.
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
 - Tidy: run the remaining code areas, then architecture, docs and memory.
