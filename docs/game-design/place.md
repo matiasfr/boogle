@@ -839,13 +839,14 @@ No new presence key, op or `WORLD_NS` change. Measured at the bench's town pose:
 
 The stowaway (the pet slot's only gift, a Rare from a station box) is Place's follower. When its box's card is put
 away it comes out beside you if the pet slot is empty, and hops along behind you and a little to the side, squashing as
-it goes; on a moving deck (a train, the track layer) it hops up onto your shoulder and rides there, smaller. "Swap pet"
+it goes; on a moving deck (a train, the track layer), standing or seated on one of its stools, it hops up onto your
+shoulder and rides there, smaller, coming down with you when you sit (owner, 9 November). "Swap pet"
 at the curio shelf, beside the three clothes slots, puts it away and brings it back; the shop's rail still
 swaps only clothes. A reload keeps it out, or away. Partners see it follow you and ride on your shoulder, and it goes
 when you leave.
 
 Sync: owning it is Personal Local in the wardrobe store, saved with what you wear (`worn.pet`). That it's out is Owner
-presence `stowaway`, `{ riding: boolean }` (true on a moving deck), or null when it's away; the `wardrobe` presence
+presence `stowaway`, `{ riding: boolean }` (true on a moving deck or in one of its chairs), or null when it's away; the `wardrobe` presence
 still carries only the clothes. Each tab animates its own copy of a partner's from that flag and their interpolated
 avatar, so where it hops differs a little between tabs. No op or `WORLD_NS` change.
 ### Crystals in the live game (9 November 2026, place-retirement K1)

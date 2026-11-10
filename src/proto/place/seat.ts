@@ -124,6 +124,7 @@ function occupy(s: Seat) {
   const sliding = sitting !== null && sitting !== s && sitting.platform === s.platform && s.available();
   if (!me.body || (!sliding && !reachable(s))) return standUp('unreachable grant');
   sitting = s;
+  carry.seat = s.platform ?? null; // aboard for the `riding` presence and your stowaway, though off the deck
   const p = world(s);
   teleport(me.body, p.x, p.y, p.z);
   me.yaw = p.yaw;
@@ -133,6 +134,7 @@ export function standUp(reason = 'stand input') {
   recordRelease(reason);
   const s = sitting;
   sitting = null;
+  carry.seat = null;
   request = null;
   if (!s || !me.body) return;
   if (reason === 'stand input' || reason === 'jump input') pop(1, 0.3);
@@ -235,6 +237,7 @@ onPreStep(
     if (!s.available()) {
       recordRelease('seat unavailable', Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z));
       sitting = null;
+      carry.seat = null;
       request = null;
       return;
     }
