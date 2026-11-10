@@ -47,7 +47,9 @@ use Pause, because the pointer is locked during play.
   stopped"; Join voice takes a fresh mic.
 - **Lifecycle.** Voice stays on while the tab is hidden, if the browser keeps it alive. Leaving voice, closing the page,
   or losing the room closes every link, and the player rejoins whoever is there when the room comes back. A reload is
-  a new tab: the old link closes about 5 s after its presence goes, and the new one is offered to at once.
+  a new tab: the old link closes as soon as its presence no longer says `vc`, and the new one is offered to at once.
+  Nobody stays linked while the roster doesn't show them in voice. A brief server reconnect doesn't drop calls: the
+  room keeps every peer's presence through it.
 - **Sound.** Each voice plays from its own `<audio>` element. The game's WebAudio context only meters levels for the
   talking dots. On Safari the audio session switches to play-and-record while the mic is open and back to playback
   after. One volume point per peer (`peerVolume` in voice.ts) is the seam for a later proximity fade. Element volume is
