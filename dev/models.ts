@@ -21,8 +21,8 @@ const claude = (who: string, model: string, effort: string): Pick => ({ who, mod
 export const routes: Route[] = [
   {
     work: 'Orchestration, review of returned work, owner conversation',
-    withCodex: claude('main session', 'fable', 'medium'),
-    normal: claude('main session', 'fable', 'medium'),
+    withCodex: claude('main session', 'fable or opus', 'medium'),
+    normal: claude('main session', 'fable or opus', 'medium'),
   },
   {
     work: 'Design review of a plan or brief with gameplay calls, before it is built',
@@ -42,7 +42,7 @@ export const routes: Route[] = [
   {
     work: 'High-risk implementation (server, sync, src/world, src/net)',
     withCodex: codex('gpt-6.1-sol', 'high'),
-    normal: claude('implementer agent, effort raised at spawn', 'opus', 'high'),
+    normal: claude('implementer agent', 'opus', 'medium'),
   },
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
@@ -55,8 +55,8 @@ export const routes: Route[] = [
   },
   {
     work: 'Code review before shipping (/code-review, e.g. on src/net*, src/world/ or server/)',
-    withCodex: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'high'),
-    normal: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'high'),
+    withCodex: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'medium'),
+    normal: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'medium'),
   },
   {
     work: 'Runner: owed proofs on a built branch (rebase, bot runs, stills, tick marks); reports failures, changes no design or game code',
@@ -66,7 +66,7 @@ export const routes: Route[] = [
   {
     work: 'Hardest design, research or second-opinion review',
     withCodex: codex('gpt-6-astra', 'xhigh'),
-    normal: claude('general-purpose subagent', 'opus', 'high'),
+    normal: claude('general-purpose subagent', 'opus', 'medium'),
   },
   {
     work: 'Quick, easy, mechanical jobs',
@@ -88,6 +88,9 @@ export const routes: Route[] = [
     },
   },
 ];
+
+/** Opus runs at medium; raise one task to high only when it hits bugs medium can't fix or medium falls short (owner, 9 November). */
+export const opusEscalation = 'high';
 
 /** Fable never runs above this effort, on any route or at spawn (owner, 10 November; docs/agents/models.md). */
 export const fableTopEffort = 'high';
