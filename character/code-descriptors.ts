@@ -48,7 +48,7 @@ export const codeDescriptors = [
     source: 'src/pois/windmills/model.ts',
     motion: 'windmill',
   },
-  // Train engine previz blockouts (docs/plans/engine-previz.md): `&engineView=turn|halt|states`.
+  // Train engine previz blockouts (docs/plans/engine-previz.md): `&engineView=turn|cab|halt|states`.
   {
     id: 'engine-a',
     label: 'Engine previz A · stubby toy',

@@ -19,7 +19,7 @@ import {
 } from './engine-previz-parts.ts';
 
 export type KitPart = (asset: string, node: string) => Promise<THREE.Object3D>;
-export type PrevizView = 'turn' | 'halt' | 'states';
+export type PrevizView = 'turn' | 'cab' | 'halt' | 'states';
 type Placement = { x: number; y: number; z: number; yaw: number };
 
 const DECK = '#9a7b55',
@@ -33,12 +33,12 @@ const DECK = '#9a7b55',
 const FLAT_HZ = 1.6,
   GAP = 0.6; // today's gap from the flatbed's deck to the engine's frame (cars.ts TRAIN_OFFSETS)
 
-/** `?engineView=turn|halt|states`, or `window.enginePrevizView` set before a stage `select` (one page, many views). */
+/** `?engineView=turn|cab|halt|states`, or `window.enginePrevizView` set before a stage `select` (one page, many views). */
 export function previzView(): PrevizView {
   const v =
     (window as { enginePrevizView?: string }).enginePrevizView ??
     new URLSearchParams(location.search).get('engineView');
-  return v === 'halt' || v === 'states' ? v : 'turn';
+  return v === 'cab' || v === 'halt' || v === 'states' ? v : 'turn';
 }
 
 function partGeometry(p: Exclude<Part, { kind: 'wheel' }>) {
@@ -104,6 +104,23 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
     group.add(mesh);
     return mesh;
   };
+  /** A stand-in little guy at the controls, at the size docs/plans/home-station.md measured from folk.ts: 0.99 m
+   * standing, body 0.46 m wide, hat 0.58 m. Not folk.ts's model, which needs the world to build. */
+  const littleGuy = (x: number, y: number, z: number, yaw: number) => {
+    const guy = new THREE.Group();
+    const part = (geo: THREE.BufferGeometry, color: string, py: number) => {
+      const mesh = own(new THREE.Mesh(geo, flat(color)));
+      mesh.position.y = py;
+      guy.add(mesh);
+    };
+    part(new THREE.CylinderGeometry(0.2, 0.23, 0.55, 14), '#4f6f8f', 0.3); // body
+    part(new THREE.SphereGeometry(0.19, 14, 8), '#e9c39b', 0.73); // head
+    part(new THREE.CylinderGeometry(0.29, 0.29, 0.05, 16), '#5a3b26', 0.86); // hat brim
+    part(new THREE.CylinderGeometry(0.17, 0.19, 0.12, 14), '#5a3b26', 0.93); // crown, top at 0.99 m
+    guy.position.set(x, y, z);
+    guy.rotation.y = yaw;
+    group.add(guy);
+  };
   // The kit's wheel (r 1 × 0.12 m, scaled by radius as look-kit.ts does), one instanced batch for the whole scene.
   const wheelAt: { x: number; y: number; z: number; r: number }[] = [];
   const kitMesh = async (asset: string, node: string, color?: string) => {
@@ -151,7 +168,7 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
     for (const sx of [-0.5, 0.5]) for (const sz of [-1, 1]) wheelAt.push({ x: sx, y: 0.37, z: z + sz * 1.1, r: 0.22 });
   }
   /** One engine in a state, its frame's back end at `back` (+z forward) on the track at x. Returns its front. */
-  async function engine(state: StateId, x: number, back: number) {
+  async function engine(state: StateId, x: number, back: number, open = false, driver = false) {
     const holder = new THREE.Group();
     group.add(holder);
     if (id === 'today') {
@@ -173,20 +190,31 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
     }
     const c = CANDIDATES[id];
     const modules = STATES.find((s) => s.id === state)!.modules as readonly Module[];
-    for (const module of modules) {
+    for (const module of [...modules, ...(open ? [] : (['cabNear'] as const))]) {
       if (module === 'wheels') continue;
       const mesh = moduleMesh(c.parts, module, painted, state === 'base');
       if (mesh) holder.add(own(mesh));
     }
     const rods = moduleMesh(c.parts, 'wheels', painted, state === 'base');
     if (rods) holder.add(own(rods));
+    const at = back - c.rear;
     for (const p of c.parts)
-      if (p.kind === 'wheel') wheelAt.push({ x: x + p.at[0], y: p.at[1], z: back + c.hz + p.at[2], r: p.r });
-    holder.position.set(x, 0, back + c.hz);
-    return back + 2 * c.hz;
+      if (p.kind === 'wheel') wheelAt.push({ x: x + p.at[0], y: p.at[1], z: at + p.at[2], r: p.r });
+    holder.position.set(x, 0, at);
+    if (driver) {
+      const d = c.cab.driver;
+      littleGuy(x + d[0], d[1], at + d[2], 0);
+    }
+    return back + c.front - c.rear;
   }
+  /** Where Buddy stands in a candidate's cab, its frame's back end at `back`, facing `yaw`. */
+  const inCab = (back: number, yaw: number): Placement => {
+    const c = CANDIDATES[id as EngineId],
+      b = c.cab.buddy;
+    return { x: b[0], y: b[1], z: back - c.rear + b[2], yaw };
+  };
   const coupler = (x: number, z0: number, z1: number) => boxAt(BLACK, [x - 0.06, x + 0.06], [0.55, 0.66], [z0, z1]);
-  const length = id === 'today' ? 3 : CANDIDATES[id].hz * 2;
+  const length = id === 'today' ? 3 : CANDIDATES[id].front - CANDIDATES[id].rear;
 
   const view = previzView();
   let buddy: Placement;
@@ -195,15 +223,21 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
     platform([-length / 2 - 1.5, length / 2 + 1.5]);
     await engine('boiler', 0, -length / 2);
     buddy = { x: 2.35, y: 0.72, z: -length / 2 + 0.6, yaw: -0.5 };
+  } else if (view === 'cab') {
+    // The platform side's cab wall left out: Buddy standing in the cab, the driver at the controls beside him.
+    track(0, [-length / 2 - 2.5, length / 2 + 2.5]);
+    platform([-length / 2 - 1.5, length / 2 + 1.5]);
+    await engine('boiler', 0, -length / 2, true, true);
+    buddy = id === 'today' ? { x: 2.35, y: 0.72, z: -0.9, yaw: 1.2 } : inCab(-length / 2, 1.2);
   } else if (view === 'halt') {
-    // A real flatbed at z 0, the engine coupled ahead of it with today's gap, Buddy on the deck by the cab.
+    // A real flatbed at z 0, the engine coupled ahead of it with today's gap; Buddy in the cab (today: on the deck).
     track(0, [-6, 2 * length + 6]);
     platform([-5, 2 * length + 4]);
     await flatbed(0);
     const back = FLAT_HZ + GAP;
     coupler(0, FLAT_HZ - 0.1, back + 0.15);
-    await engine('boiler', 0, back);
-    buddy = { x: 2.35, y: 0.72, z: back + 0.5, yaw: Math.PI - 0.7 };
+    await engine('boiler', 0, back, false, true);
+    buddy = id === 'today' ? { x: 2.35, y: 0.72, z: back + 0.5, yaw: Math.PI - 0.7 } : inCab(back, Math.PI - 0.9);
   } else {
     // The upgrade states side by side, 5 m apart, all facing +z; the second engine leads the first.
     const states: StateId[] = id === 'today' ? ['base', 'boiler'] : ['base', 'boiler', 'speed', 'twin'];
