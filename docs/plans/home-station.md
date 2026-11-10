@@ -351,6 +351,9 @@ change; the full loop once a day").
   - Spawn's sightline (owner, 9 November: "Lower end walls"): the hall's end walls stop at 2.4 m with a coping, the
     roof stays at 4.6 m on posts (corner posts added), and spawn keeps facing 14°. The curio shelf stands on the hall's
     floor (`HALL.floor`, 18.34 m) against the north wall's inside face, with room for a finds board up to 2.2 m wide.
+    Found in the stills: the shelf (about 3.5 m tall) now does the hiding. From spawn it spans bearings −3° to 36°,
+    the forge frame is at 19°, and the forge shows about 40% of its face, as before, plus its frame's top beams over
+    the shelf. Open owner call: move the shelf off the north wall, or cut it under 2.4 m.
 - [ ] **4. The owner sees it.** Send the full link `https://boogle.club/?home=b` and the three stills. Designer rules on
   the Level findings and questions 1 to 7. Adjust step 1's numbers if he moves anything, and rerun steps 1 to 3's checks.
 - [ ] **5. Make tools follow the anchors.** No behaviour change.
