@@ -1,12 +1,12 @@
 // The stations trains stop at: a platform, a roof, a bench, a signal and a board. The owner asked "what is the platform", so
 // they don't exist until there's a train to wait for: they drop into place, piece by piece, when trains come. You call a train
-// by standing on one: the signal drops, a bell rings and the board says how long (no schedule to learn and no whims of a
-// timetable; "controlling this is not really relevant yet", so nothing to operate either). Local.
+// by standing on one: the signal drops, a bell rings and the board's line shows the train on its way (no schedule to
+// learn and no whims of a timetable; "controlling this is not really relevant yet", so nothing to operate either). Local.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Platform } from '../../physics/platforms.ts';
-import { trainEtaTicks, LINE_HALTS } from '../../sim/railway-train.ts';
+import { trainAlong, trainStopsOf, LINE_HALTS, TRAIN_PHASE, TRAIN_STOPS } from '../../sim/railway-train.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { forEachStatic, teleport, type Body } from '../../physics/engine.ts';
@@ -15,7 +15,10 @@ import { carry } from '../../physics/platforms.ts';
 import { HEAD_OFFSET, PLAYER_R, SEA } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { roadPlaque } from './home-pictogram.ts';
-import { createFlapFace } from './flap-face.ts';
+import { createStripFace } from './strip-face.ts';
+
+/** Each line's train marker on the boards: line 1 gold, line 2 teal. */
+const LINE_MARK = ['#ffd23f', '#4fd1c5'] as const;
 type Box = import('../../proto/net/boxes.ts').Box;
 type Line = import('../../proto/place/layout.ts').Line;
 type LinePoint = import('../../proto/place/layout.ts').LinePoint;
@@ -165,7 +168,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const mast = sign * (hw - 0.3);
     part(mast, 0, half - 0.8, 0.14, 4.4, 0.14, IRON);
     // The departure board fixed to the mast below the arm, across the platform end and wholly inboard of the mast: a
-    // dark backing, a red cap, and a split-flap face either side (owner, 9 November: a real sign, not floating text).
+    // dark backing, a red cap, and this halt's line drawn on it either side, with the train moving along it (owner,
+    // 9 November: a real sign, not floating text; the moving train rather than a strict timer).
     // An island edge carries its destination plaque at 2.9 m, so its board goes above the plaque instead.
     const FACE = { w: 1.5, h: 0.62, across: mast - sign * 0.88, up: island ? 3.3 : 2.15 };
     part(FACE.across, FACE.up - 0.06, half - 0.8, FACE.w + 0.12, FACE.h + 0.12, 0.08, '#23262d');
@@ -208,8 +212,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       owner.add(plaque.mesh);
       owner.cleanup(plaque.dispose);
     }
-    // Five flaps: the seconds to the next train, as the floating board said them ("23 S").
-    const board = createFlapFace(5, FACE.w, FACE.h, 0.045);
+    // The line: its stops, laid track solid and the rest dashed, this halt ringed, and the train where it is.
+    const board = createStripFace(FACE.w, FACE.h, 0.045);
+    const stops = TRAIN_STOPS[k]!;
     {
       const ds = half - 0.8;
       board.mesh.position.set(
@@ -317,7 +322,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       z: c.z,
       up: false,
       calling: false,
-      /** What the departure board's flaps read now. */
+      cue: false,
+      /** Where the board's train marker is drawn now (the trains' cm along this line; null for none). */
       get board() {
         return board.shown;
       },
@@ -338,7 +344,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         boxes.forEach((_, k) => set.snap(k, on));
         ramps.visible = arm.visible = board.mesh.visible = on;
         if (plaque) plaque.mesh.visible = on;
-        board.set('');
         if (on) addBodies();
       },
       /** A body at (x, y, z) stands on it; margin retains an already occupied halt through edge jitter. */
@@ -354,13 +359,17 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
           Math.abs(l) < hw + 0.35 + margin && Math.abs(s) < half + 0.4 + margin && Math.abs(y - low) < 1.6 + margin
         );
       },
-      /** The signal and the board, for a train on its way in `eta` s; null for nothing coming. */
-      signal(eta: number | null, quiet = false) {
-        const on = eta !== null;
+      /** The signal, for a train called here; false for nothing coming. */
+      signal(on: boolean, quiet = false) {
         if (on && !halt.calling && !quiet) clank(c.x, c.z);
         halt.calling = on;
         arm.rotation.z = on ? -0.75 : 0;
-        board.set(on && eta! > 0 ? `${eta} s` : '');
+      },
+      /** The board: the train at `train` cm along the line (null: none), track laid to `laid`, and the ring lit while
+       * the train's next stop is this one. */
+      strip(train: number | null, laid: number, cue: boolean) {
+        halt.cue = cue;
+        board.set({ stops, laid, here: stop, train, color: LINE_MARK[k]!, cue });
       },
       update: (dt: number) => {
         set.update(dt);
@@ -392,23 +401,29 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const s = adapter.inspect();
     return s.line2.trains && (k !== PIER || s.line2.completed >= LINE2_STATIONS.length);
   };
+  // The boards' own smooth clock in ticks, pulled gently onto shared time (as train-view's), so markers glide.
+  let clock = -1;
   function signals(quiet = false) {
     const s = adapter.inspect();
+    const pier = s.line2.completed >= LINE2_STATIONS.length;
     halts.forEach((h) => {
       const r = s.line2.train[h.k]!;
-      h.signal(
-        shown && h.up && (r.call === h.stop || (r.phase === 0 && r.at === h.stop))
-          ? Math.ceil(trainEtaTicks(r, h.k, h.stop, adapter.tickNow()) / 10)
-          : null,
-        quiet,
-      );
+      h.signal(shown && h.up && (r.call === h.stop || (r.phase === TRAIN_PHASE.STAND && r.at === h.stop)), quiet);
+      const moving = r.phase !== TRAIN_PHASE.STAND;
+      h.strip(shown ? trainAlong(r, h.k, clock) : null, trainStopsOf(h.k, pier).at(-1)!, moving && r.to === h.stop);
     });
   }
+  const tick = (dt: number) => {
+    const target = adapter.tickNow();
+    if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
+    else clock += dt * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
+  };
   return {
     restore() {
       shown = adapter.inspect().line2.trains;
       inside.fill(false);
       halts.forEach((h, k) => h.snap(wanted(k)));
+      clock = adapter.tickNow();
       signals(true);
     },
     fixedPre(isTrain: (platform: Platform | null) => boolean) {
@@ -434,8 +449,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         if (want && !h.up) h.build(was ? 0.3 : 0.3 + k * 0.3);
         else if (!want && h.up) h.snap(false);
       });
-      halts.forEach((h) => h.update(dt));
+      tick(dt);
       signals();
+      halts.forEach((h) => h.update(dt));
     },
     inspect: () => ({
       halts: halts.map((h) => ({
@@ -448,6 +464,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         up: h.up,
         calling: h.calling,
         board: h.board,
+        cue: h.cue,
       })),
     }),
   };
