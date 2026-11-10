@@ -339,7 +339,7 @@ leaves `npm run check` green.
   target on the folk's side within 24 m of our deck; nothing standable over the railhead platform's last 30 m stands
   more than 1.6 m above it (the jib's mast and arm are out of a double jump's 3.03 m reach); each recovery point is
   dry. Proof: `npm run level-check` prints the report (no player-visible change, no look).
-- [ ] **2a. R2a, the coast in regions (no bump).** `coast.ts`: providers group into regions (a provider whose bounds,
+- [x] **2a. R2a, the coast in regions (no bump).** `coast.ts`: providers group into regions (a provider whose bounds,
   grown by `MARGIN`, overlap another's joins its region; home and place are one region today). Each region bakes at
   `max(1, side / 1024)` m a texel with its own margin of open sea, and the regions pack as rows of one RG16F texture
   under the 2048 cap; `at(xz)` picks the region whose rect holds `xz` (two `select`s for two regions, a small uniform
@@ -350,6 +350,15 @@ leaves `npm run check` green.
   and a point between them reads open sea. Checks: `npm run check`, `npm run perf` before and after at
   `--rail-seed crossing-done` (no frame-time change expected; report `bakeMs` and texture bytes). Proof look: the pier
   head toward Far Head's shore, `--rail-seed crossing-done`, identical to before.
+  *Built 10 November.* Two departures from the text above, both forced by its own invariants: Home and Place are 485 m
+  apart, so grown by `MARGIN` they don't overlap; a region also joins when one rect over both costs at most 1.5× their
+  texels apart (`JOIN`; Home + Place 1.16×, an island 1.5 km off 1.7×). And the cell is `max(1, side / 2048)`, not
+  `/ 1024`, which would put today's 2015 m region at 1.97 m and break "Home and Place unchanged". The shader picks among
+  up to four regions (more merge the nearest pair). Home + Place: one region, 2015 × 780, 6,286,800 bytes before and
+  after, byte for byte (test). Bake in Node under load 12–22 (not a benchmark): 584–772 ms before, 577–669 ms after;
+  with a stand-in 700 m island the old union went to 1.46 m a texel (1509 × 2048, 12.4 MB, 1.2–1.5 s), the regions keep
+  both at 1 m (2015 × 1720, 13.9 MB, 0.84–1.1 s). Rows cost the full width, so the island adds 7.6 MB, not the 3.4 MB
+  estimated under Risks. Proof look identical; `npm run perf` not run (load over 6).
 - [ ] **2b. R2b, the island near view, default on (no bump).** Create `src/entities/ring-island/` as under "R2" above,
   reading R1's layout; arrival.ts's one hunk for recovery and the saved pose. Before and after, `npm run perf` at the
   pier head and at the island halt (desktop and phone tier), budget: no more than 14 draws and 1 ms CPU added at the
