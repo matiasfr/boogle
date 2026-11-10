@@ -158,7 +158,7 @@ function createRealSea() {
         ocean.setFarSea(farSea);
       },
     });
-    const underwater = createUnderwater(ocean, frozen.sky);
+    const underwater = createUnderwater(ocean, frozen.sky, s.shelf);
     const snow = createSnow(ocean, frozen.sky);
     const post = installWaterPost(underwater.outputNode, underwater.cameraDepth);
     const removeProvider = waterField.install(s.provider);

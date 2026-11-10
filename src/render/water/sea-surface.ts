@@ -14,6 +14,8 @@ export type SeaSurface = {
   ocean: Ocean;
   provider: WaterProvider;
   receivers: { field: ShoreFields; caustics: CausticSample };
+  /** How far the drawn seabed lies below the real one at a world point on it (zero off it), for the underwater fog. */
+  shelf?: (world: N) => N;
   /** The breaker and rock spray's shore sites; null keeps only impact crowns. */
   sprayAtlas: ShoreAtlas | null;
   /** Before physics, after the sea clock is set. */

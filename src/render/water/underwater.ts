@@ -14,6 +14,7 @@ import { derived, scalar, tuningEnabled } from './live.ts';
 import { registerGraphics } from '../../graphics-settings.ts';
 import { devEnabled } from '../../dev-preferences.ts';
 
+const SHELF_FOG = 4; // m of extra fog per metre the drawn shelf lies below the seabed the view hits
 const { Fn, If, Loop, abs, clamp, cos, dot, exp, float, floor, fract, instanceIndex, length, max, min, mix } = TSL;
 const { mod, normalize, pow, refract, rtt, select, sin, smoothstep, storage, storageTexture, texture, textureStore } =
   TSL;
@@ -81,7 +82,12 @@ function droplets(at: N, wet: N, aspect: N, resY: N) {
   return vec3(out.x.div(aspect), out.y.negate(), min(out.z, 0.5));
 }
 
-export function createUnderwater(ocean: Ocean, sky: WaterSky) {
+/**
+ * `shelf(world)`, when given, is how far the drawn seabed (the coast texture's shelf) lies below the seabed the view
+ * hits at that world point, zero off the seabed: that much more water is fogged in, so a terrain grid's flat floor fades
+ * out before its square edge while legs, swimmers and floating things keep their own distance.
+ */
+export function createUnderwater(ocean: Ocean, sky: WaterSky, shelf?: (world: N) => N) {
   const { deepWater, waterAbsorption, waterSun } = waterLighting(sky);
   const scattering = scalar('underwater.scattering', UNDER, 'scattering');
   scalar('underwater.shafts', UNDER, 'shafts');
@@ -291,7 +297,8 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
           // A cave pond transmits its locally lit scene; outdoor sky/sun in-scatter cannot pass through its roof.
           const fog = vec3(0).toVar();
           If(body.equal(1), () => fog.assign(deepWater(dir).mul(exp(waterAbsorption().mul(max(d, 0)).mul(-0.5)))));
-          const trans = exp(waterAbsorption().add(scattering).mul(dist).negate());
+          const below = shelf ? shelf(camPos.add(dir.mul(min(dist, 1e4)))).mul(SHELF_FOG) : float(0);
+          const trans = exp(waterAbsorption().add(scattering).mul(dist.add(below)).negate());
           col.assign(color.sample(sampleAt).level(0).rgb.mul(trans).add(fog.mul(trans.oneMinus())));
           If(devEnabled ? shaftsEnabled.and(body.equal(1)) : body.equal(1), () =>
             col.addAssign(waterSun().mul(upsample(sampleAt, dist)).mul(shaftStrength)),

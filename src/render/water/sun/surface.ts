@@ -145,7 +145,7 @@ export function createSunOcean(options: SunOceanOptions): Ocean & { vertices(): 
   material.name = options.depth ? 'sun-depth sea' : 'sun sea';
   material.positionNode = Fn(() => {
     const xz = vertexXZ.toVar();
-    const bed = coast.at(xz).r;
+    const bed = coast.at(xz).a;
     const s = swellNode(xz, float(SEA).sub(bed), uPhases);
     const fade = smoothstep(uGridScale.mul(OUTER * 0.65), uGridScale.mul(OUTER), length(xz.sub(cameraPosition.xz)))
       .oneMinus()
@@ -175,7 +175,8 @@ export function createSunOcean(options: SunOceanOptions): Ocean & { vertices(): 
     const w2 = texture(waveTex, xz.mul(scale2).add(speed2.xy.mul(time))).toVar();
     const blotch = texture(waveTex, xz.div(420)).b;
     const c = coast.at(xz).toVar();
-    const depthBelow = max(world.y.sub(c.r), 0).toVar();
+    const depthBelow = max(world.y.sub(c.a), 0).toVar(); // to the real bed: the clear shallows, the lip, the glints
+    const shadeDepth = max(world.y.sub(c.r), 0).toVar(); // to the drawn shelf: the colour ramp
     const sceneThick = opaqueDepth
       ? perspectiveDepthToViewZ(opaqueDepth.sample(screenUV).level(0).r, cameraNear, cameraFar)
           .negate()
@@ -185,7 +186,7 @@ export function createSunOcean(options: SunOceanOptions): Ocean & { vertices(): 
 
     // Slopes: the swell (analytic per pixel, calm beyond the displaced patch) and splash ripples.
     const patch = smoothstep(uGridScale.mul(OUTER * 0.65), uGridScale.mul(OUTER), dist).oneMinus();
-    const swell = swellNode(xz, float(SEA).sub(c.r), uPhases);
+    const swell = swellNode(xz, float(SEA).sub(c.a), uPhases);
     const ripple = impactWaves(world.xz, float(2).div(footprint));
     const slope = swell.yz.mul(patch).add(ripple.yz);
     const Nrm = normalize(vec3(slope.x.negate(), 1, slope.y.negate())).toVar();
@@ -212,9 +213,9 @@ export function createSunOcean(options: SunOceanOptions): Ocean & { vertices(): 
     }).Else(() => {
       // Body colour by bed depth, three stops, lit by the same sun and fill as the sand beside it.
       const ramp = mix(
-        mix(shallow, middle, smoothstep(0.3, middleDepth, depthBelow)),
+        mix(shallow, middle, smoothstep(0.3, middleDepth, shadeDepth)),
         deep,
-        smoothstep(middleDepth, deepDepth, depthBelow),
+        smoothstep(middleDepth, deepDepth, shadeDepth),
       ).toVar();
       ramp.mulAssign(blotch.sub(0.5).mul(macro).add(1));
       const sunY = max(dot(Nrm, seaU.uSun), 0);
@@ -282,7 +283,7 @@ export function createSunOcean(options: SunOceanOptions): Ocean & { vertices(): 
   const phases = [0, 0, 0, 0];
   return {
     mesh,
-    heightAt: (xz: N) => swellNode(xz, float(SEA).sub(coast.at(xz).r), uPhases).x,
+    heightAt: (xz: N) => swellNode(xz, float(SEA).sub(coast.at(xz).a), uPhases).x,
     setCameraDepth(depth) {
       cameraDepth = depth;
       material.needsUpdate = true;

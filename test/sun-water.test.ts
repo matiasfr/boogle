@@ -6,7 +6,7 @@ import { SEA } from '../src/constants.ts';
 import { swellAt, swellPhases, SWELL, SWELL_MAX, FADE } from '../src/render/water/sun/swell.ts';
 import { registerShoreProvider } from '../src/render/water/shore-providers.ts';
 import { registerWaterContact } from '../src/render/water/contacts.ts';
-import { createCoast, CONTACT_REACH } from '../src/render/water/sun/coast.ts';
+import { createCoast, CONTACT_REACH, SHELF } from '../src/render/water/sun/coast.ts';
 
 test('the swell averages to SEA, stays inside its budget and is still at the waterline', () => {
   let sum = 0,
@@ -81,4 +81,37 @@ test('the coast texture: depth falls off a slope, the waterline normal points to
     coast.dispose();
   }
   assert.ok(CONTACT_REACH > 0);
+});
+
+test('the drawn shelf replaces a flat floor and its square edge, and leaves the real bed alone', () => {
+  // A round island on a grid with a flat floor 5 m down, as Place's: waterline at r = 15, the floor from r = 40.
+  const floor = (x: number, z: number) => Math.max(-5, 3 - Math.hypot(x - 50, z - 50) / 5);
+  const remove = registerShoreProvider({
+    id: 'test-floor',
+    bounds: { minX: 0, maxX: 100, minZ: 0, maxZ: 100 },
+    seaLevel: SEA,
+    revision: 1,
+    extent: 128,
+    bedAt: (x, z) => ({ valid: true, height: floor(x, z) }),
+  });
+  const coast = createCoast();
+  try {
+    assert.ok(Math.abs(coast.sampleAt(95, 50).bed - -5) < 0.05, 'swimming still reads the floor');
+    assert.ok(Math.abs(coast.sampleAt(72, 50).shade - floor(72, 50)) < 0.05, 'the shallows are the terrain');
+    let last = Infinity;
+    for (let x = 90; x <= 200; x += 2) {
+      const { shade } = coast.sampleAt(x, 50);
+      assert.ok(shade < last, `the shelf keeps falling at x=${x}`);
+      assert.ok(last === Infinity || last - shade < 1, `no step at x=${x}`);
+      last = shade;
+    }
+    assert.ok(last > SEA - SHELF.shaped - SHELF.open, 'it eases toward open sea');
+    // Round, not square: at the same distance from the island the shelf is as deep along an axis and a diagonal.
+    const axis = coast.sampleAt(50 + 80, 50).shade,
+      diagonal = coast.sampleAt(50 + 80 / Math.SQRT2, 50 + 80 / Math.SQRT2).shade;
+    assert.ok(Math.abs(axis - diagonal) < 0.5, `axis ${axis} diagonal ${diagonal}`);
+  } finally {
+    remove();
+    coast.dispose();
+  }
 });

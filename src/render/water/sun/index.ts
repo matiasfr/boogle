@@ -18,6 +18,7 @@ export function createSunSurface(context: SurfaceContext, depth: boolean): SeaSu
     ocean,
     provider: field.provider,
     receivers: { field: coast.field, caustics: caustics.sample },
+    shelf: coast.shelfBelow,
     sprayAtlas: null,
     publish: field.publish,
     sync: coast.sync,
