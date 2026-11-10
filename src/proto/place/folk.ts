@@ -53,7 +53,6 @@ const limbs = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#
 const held = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), flat('#ffffff', 0.8), COUNT * 2);
 for (const m of [heads, coats, limbs, held]) {
   m.frustumCulled = false;
-  m.userData.toonCharacter = true; // read only by the toon rim, off by default (src/render/toon.ts)
   scene.add(m);
 }
 coats.castShadow = true; // the hat and the coat are the shadow's outline: the head inside it adds nothing but triangles

@@ -2,7 +2,7 @@
 
 > **Verdict:** Three cheap `?toon=` candidates against today's look; at play distance the step barely shows, the cool shade (B) and the ink line (C) do.
 > **Top recommendations:** 1. Pair B without its rim (`?toon=b&toonRim=0`) with the Odyssey-ish sea: a soft step and coloured shade, no draws, no pass. 2. Try C's line only if characters should pop at play distance; it is the one change you see at once, for about one draw per character mesh. 3. Keep the softness: the stronger bracket brings back the flattened dome turned down on 4 November.
-> **Status:** decided 10 November: B without its rim is the default lighting ([decision](../decisions.md#look), [src/render/toon.ts](../../src/render/toon.ts)). A, C, the `?toon=a|b|c` flag and its `toonEdge=`-style query knobs are removed; the knobs are now `toon.*` tunables and `?toon=off` shows the old lighting. The sections below record the comparison as it was run; the outcome and the after-numbers are at the end.
+> **Status:** superseded 10 November: the owner tried B live as the default and chose the baseline lighting ("I actually prefer the baseline"), so B, its `toon.*` tunables, the `?toon` flag and `dev/look/toon-board.ts` are removed ([decision](../decisions.md#look)). B had been picked earlier the same day; the research below is kept as it was run. Its file paths, flags and commands no longer exist on `main`.
 
 2026-11-10. The owner's 9 November note ("we will also revisit toon shading on characters and env", recorded with the
 Sunshine water call in [decisions](../decisions.md#decided)) asks for research and side-by-side boards first. It is one
