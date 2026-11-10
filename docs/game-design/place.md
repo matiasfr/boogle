@@ -312,7 +312,13 @@ The shared workshop seat builder also has no back. Each production train has one
 behind it (owner, 10 November: "if there's cargo then it shouldnt have seats I think"). The cargo car, the one whose
 deck takes the crates, has no stools and never offers Sit, loaded or empty. It carries dark stakes up both long sides
 with low boards between them (`cargoFittings`, src/proto/wagon/look.ts; cosmetic, no solid, outside the crate slots),
-so the two read apart at a glance. A train therefore seats two. The passenger car carries two of the track layer's low
+so the two read apart at a glance. The crates it carries are solid (owner, 10 November: "the cargo should have
+colliders so we dont clip through it"): each settled crate is a box on the car's own kinematic body, so it rides with
+the platform, blocks a player walking into it on the deck and carries one standing on top
+(src/proto/place/train-load.ts, `solidTrainLoad`). A crate in flight never collides. When a crate lands under a
+standing rider they are lifted onto its top, and when one leaves from under them they are lowered to what is beneath,
+both by the height change only, never by a launch. The stakes and boards stay without a collider: the car's deck edge
+is where the old rides already end, and a 0.2 m board would only catch feet. A train therefore seats two. The passenger car carries two of the track layer's low
 stools down the middle of the deck, at Z ±0.8 m, riders facing across the car (owner, 10 November: "It
 should likely go in the middle and be a low stool like the track layer"). They reuse its dimensions and its seat
 relationship (`lowStoolMesh` and `lowStoolAnchor`, seat top 0.32 m plus the seated hips' 0.63 m, in
