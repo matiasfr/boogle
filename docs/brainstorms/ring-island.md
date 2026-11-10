@@ -401,3 +401,12 @@ the hats and the rivet toss carry the religion without it, so keep those visual.
 4. **Does build 1 show steel waiting at the island halt?** Recommended: yes: static steel under a tarp, the hammer
    going, and the mural.
 5. **Four counterweight footings, with the leaf dipping a quarter per footing?** Recommended: yes.
+
+**Orchestrator's calls on the review (10 November, under the owner call "The orchestrator makes design calls too"):** all five recommendations accepted, and findings 1–7 bind build 1:
+1. The gap is 16–18 m. You glide down onto a brace platform about 4 m below the deck, with the hook ring within 20 m and ladders out of the sea on the hinge pier and the last bent.
+2. The brace (knock out the pawl, brace the heel) and the counterweight go in either order, each accepted once the gap is footed. The rivet needs the leaf down, and its gold and the jib's prompt show only when usable.
+3. The shared shot ends at the island halt. The first train is each player's own first-crossing beat.
+4. Steel waits at the island halt in build 1: stacked under a tarp, with the hammer going and the mural on the wall.
+5. Four counterweight footings, and the leaf dips a quarter per footing.
+
+The smaller points also apply: `WORKS.total` is set exactly, the 14 bent footings are set at one site with the rack within 15 m, the leaf goes into `buildFar`, the folk's lines are tied to their facts, standing riders are tested over the bow, and the rack, jib and lever sit on a platform at least 4 m wide beside the track.
