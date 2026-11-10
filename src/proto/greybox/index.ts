@@ -212,7 +212,7 @@ const LINE2_RIDE: WorkRide = {
   legs: [{ line: 'east', from: 17, to: LINES.east.len, stop: 'Rails end', dwellS: 0 }],
 };
 const ROUTES = [
-  ...NAMED_ROUTES.filter((r) => r.legs.every((id) => box.lines.some((l) => l.id === legId(id)))),
+  ...NAMED_ROUTES.filter((r) => r.legs.every((id) => id === '=l2' || box.lines.some((l) => l.id === legId(id)))),
   ...box.lines.filter((l) => l.stage !== 0).map((l) => ({ id: l.id, name: l.name, legs: [l.id] })),
   ...WORK_RIDES.map((r) => ({ id: r.id, name: r.name, legs: [] as string[] })),
 ];
