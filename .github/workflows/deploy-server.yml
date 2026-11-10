@@ -47,7 +47,11 @@ jobs:
       - run: npm test
       - name: Build the image (from the repo root)
         working-directory: .
-        run: docker build -f server/Dockerfile .
+        run: docker build -f server/Dockerfile --build-arg BOOGLE_BUILD=ci-boot -t boogle-server:ci .
+      # Runs what the image carries before the deploy job replaces the machine (a missing module crash-looped Fly once).
+      - name: Boot the image
+        working-directory: .
+        run: scripts/server-boot-check.sh boogle-server:ci ci-boot
       - name: Check for FLY_API_TOKEN
         id: token
         env:
