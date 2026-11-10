@@ -77,5 +77,20 @@ export const codeDescriptors = [
     source: 'assets/src/boiler-cart.py',
     motion: 'none',
   },
+  // Passenger car previz blockouts (docs/plans/passenger-car-previz.md): `&carView=halt|upgraded|plan|plan-upgraded`.
+  {
+    id: 'car-four',
+    label: 'Passenger car previz · four, knifeboard',
+    category: 'previz',
+    source: 'character/car-previz-parts.ts',
+    motion: 'none',
+  },
+  {
+    id: 'car-six',
+    label: 'Passenger car previz · six, toast rack',
+    category: 'previz',
+    source: 'character/car-previz-parts.ts',
+    motion: 'none',
+  },
 ] as const;
 export type CodeId = (typeof codeDescriptors)[number]['id'];

@@ -7,6 +7,7 @@ import { millBody, rotorParts, HUB_UP } from '../src/pois/windmills/model.ts';
 import { sailAngle } from '../src/pois/windmills/motion.ts';
 import type { CodeId } from './code-descriptors.ts';
 import type { KitPart } from './engine-previz.ts';
+import type { Figure } from './car-previz.ts';
 import { partGeometry } from '../src/proto/net/box-plan.ts';
 
 export type CodePreview = {
@@ -17,7 +18,9 @@ export type CodePreview = {
   /** Where the stage's Buddy stands, for previews staged at a real place (the engine previz's halt deck). */
   buddy?: { x: number; y: number; z: number; yaw: number };
 };
-export async function codePreview(id: CodeId, kit?: KitPart): Promise<CodePreview> {
+export async function codePreview(id: CodeId, kit?: KitPart, figure?: Figure): Promise<CodePreview> {
+  if (id === 'car-four' || id === 'car-six')
+    return (await import('./car-previz.ts')).carPreviz(id === 'car-four' ? 'four' : 'six', kit, figure);
   if (id.startsWith('engine-'))
     return (await import('./engine-previz.ts')).enginePreviz(id.slice(7) as 'a' | 'b' | 'c' | 'today', kit);
   const group = new THREE.Group();

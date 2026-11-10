@@ -155,6 +155,16 @@ const reference = buddy.create('raw', 'Idle_Loop', 'free', '');
 reference.seek(0.4);
 stage.add(reference.group);
 const crowd: ReturnType<typeof buddy.create>[] = [];
+/** More Buddies for a staged preview (the passenger car previz's riders): seated in the game's seated pose, or standing.
+ * The preview adds and disposes them. */
+const stagedBuddy = (seated: boolean, bodyColor: string) => {
+  const gear = { rings: false, spool: false, glider: false, frame: false, canopy: false };
+  const figure = seated
+    ? buddy.create('played', 'Driving_Loop', 'seated', '', undefined, { ...gear, cargo: 'logs', amount: 0, bodyColor })
+    : buddy.create('raw', 'Idle_Loop', 'free', '', undefined, { ...gear, cargo: 'logs', amount: 0, bodyColor });
+  figure.seek(0.4);
+  return figure;
+};
 type Preview = {
   group: THREE.Group;
   figure: THREE.Object3D;
@@ -469,7 +479,7 @@ async function choose(reframe = true) {
     const asset = entry.sourceKind === 'built' ? await load(state.asset) : undefined;
     const code =
       entry.sourceKind === 'code'
-        ? await (await import('./code-preview.ts')).codePreview(entry.codeId, kitPart)
+        ? await (await import('./code-preview.ts')).codePreview(entry.codeId, kitPart, stagedBuddy)
         : undefined;
     if (token !== generation) {
       code?.dispose();
