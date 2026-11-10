@@ -214,6 +214,12 @@ async function runChecks() {
         `place: ${result.failures ? `${result.failures} PROBLEMS` : 'ok'} in ${timingMs} ms (import + checks)`,
       );
     }
+    // Ring Island (planned): past Far Head, where place's grid stops (docs/plans/ring-island-build1.md, step 1).
+    const { checkRing, printRing } = await import('./ring.ts');
+    const ring = checkRing();
+    failed += ring.failures;
+    report.push(ring);
+    if (!json) printRing(ring);
   }
 
   const timingMs = Math.round(performance.now() - t0);

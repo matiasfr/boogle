@@ -331,7 +331,7 @@ leaves `npm run check` green.
   (the `gap` view), `ring-bentRamp`, `ring-hingeRamp`, `ring-hook`, `ring-home` (Home's summit: the leaf is not told
   from the Way at 8 px, and the lookout tower hides part of the line), `ring-scope1` and `ring-scope2` (at
   844x390 the orange leaf reads as an upright orange slab, about 13 px at zoom 1 and about 26 px at zoom 2).
-- [ ] **1. R1, the layout (no sim rule, no bump).** Create `src/sim/railway-ring-layout.ts` with everything under
+- [x] **1. R1, the layout (no sim rule, no bump).** Create `src/sim/railway-ring-layout.ts` with everything under
   "R1" above, integer cm, importing only `./railway-works-layout.ts` and the `RailPlatform` type from
   `./railway-lines.ts`. Numbers: the greybox's `RING_LAYOUT` with ruling 5's datum and the design review's ruling on
   Level finding 1 (the brace platform at 8.0 m from u 284 to 294, its gold strut's foot at u 284.5, the hook ring at
@@ -357,6 +357,21 @@ leaves `npm run check` green.
   target on the folk's side within 24 m of our deck; nothing standable over the railhead platform's last 30 m stands
   more than 1.6 m above it (the jib's mast and arm are out of a double jump's 3.03 m reach); each recovery point is
   dry. Proof: `npm run level-check` prints the report (no player-visible change, no look).
+  *Built (2026-11-10):* every assertion passes on the reviewed numbers. The stepped envelope (the controller's own
+  numbers, which match the plan's) gives the late double jump 21.8 m with grace and body (best press 1.10 s), 2.2 m
+  short of the platform; the cab roof (u 253.8 m, 18.5 m) 23.3 m against 30.3 m round the leaf's east side; glides
+  after both jumps 28.0 m conservative, after one 33.8 m raw, straight off 23.8 m (a splash); head 6 reaches the brace
+  platform from the cab roof (55.3 against 50.2 m, reported); hook corners 14.9, 11.3, 21.9, 19.7 m. Departures, for
+  review: `ringAt` uses unit axes (true cm, as `CROSSING_BENTS` stand; the greybox's `at` drifts 4 cm by bent 6 and
+  17 cm by the halt); `RING_PATH` runs from u 8 m (s 750 m), not u 10, so a point's index stays s / 1000
+  (`railLinePoint`) and it ends exactly at u 468 m; its first chord from line 2's last point is 11.55 m, not 10 (line 2
+  ends at s 740 m, 3.55 m short of the pier head: the pier's datum offset), so the test holds that chord to 10–12 m and
+  every other to 1000 ± 5 cm; rack to jib is 1504.8 cm at the plan's lats (4.8 and 3.6; the greybox's mast stands at
+  5.4), held at 1510; `RING_WALK` starts at u 95 m, not 100, so the first railhead platform's back 5 m stays walkway;
+  railheads 0–6 get a fourth flight (at most 28.5°), bent 13 keeps the greybox's three; the train's end stop is 10 m
+  short of the railhead (nose about 1 m off the buffer, wagon by the rack). Added: `RING_RAILHEAD_KIT`,
+  `RING_PLATFORM_LAT`, `RING_STEPS`, `RING_FORMATION`. Found for R3a: the greybox's loop neck runs 12 m on from the
+  halt's north end and then 30 m back south to the loop's west point beside the halt (`neckCm` 4262).
 - [x] **2a. R2a, the coast in regions (no bump).** `coast.ts`: providers group into regions (a provider whose bounds,
   grown by `MARGIN`, overlap another's joins its region; home and place are one region today). Each region bakes at
   `max(1, side / 1024)` m a texel with its own margin of open sea, and the regions pack as rows of one RG16F texture
