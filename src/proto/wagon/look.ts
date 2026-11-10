@@ -28,6 +28,34 @@ export const CRATES = [
 export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D };
 
 /** Builds one loco and `trailers` flatbeds, in train order from the outbound end. */
+/** A cargo flatbed's fittings, in its deck's frame (y = 0 on the deck top): dark stakes up both long sides and low
+ * side boards between them, so the freight car reads apart from the passenger car's stools at a glance. Cosmetic: no
+ * solid, and they stay outside the crate slots. */
+export function cargoFittings(owner?: OwnedView) {
+  const g = new THREE.Group();
+  g.name = 'cargo fittings';
+  const stakeMat = new THREE.MeshStandardNodeMaterial({ color: '#1e1e22', roughness: 0.6, metalness: 0.3 }),
+    boardMat = new THREE.MeshStandardNodeMaterial({ color: '#9a7b55', roughness: 0.85 }),
+    stake = new THREE.BoxGeometry(0.08, 0.75, 0.08),
+    board = new THREE.BoxGeometry(0.06, 0.2, TRAILER.hz * 1.9);
+  owner?.cleanup(() => {
+    for (const d of [stakeMat, boardMat, stake, board]) d.dispose();
+  });
+  for (const sx of [-1, 1]) {
+    for (const z of [-TRAILER.hz + 0.25, 0, TRAILER.hz - 0.25]) {
+      const m = new THREE.Mesh(stake, stakeMat);
+      m.position.set(sx * (TRAILER.hx - 0.05), 0.375, z);
+      m.castShadow = m.receiveShadow = true;
+      g.add(m);
+    }
+    const b = new THREE.Mesh(board, boardMat);
+    b.position.set(sx * (TRAILER.hx - 0.05), 0.12, 0);
+    b.castShadow = b.receiveShadow = true;
+    g.add(b);
+  }
+  return g;
+}
+
 export function wagonLook(trailers: number, crated = true, owner?: OwnedView): WagonLook {
   const mat = (color: string, metal = 0) => {
     const material = new THREE.MeshStandardNodeMaterial({ color, roughness: metal ? 0.45 : 0.85, metalness: metal });

@@ -308,8 +308,12 @@ The slab is 0.44 m wide to clear the hanging hands and 0.46 m deep, centred 0.13
 its front edge is 0.10 m ahead of that anchor. The 8 cm square legs sit at X ±0.15 m and Z −0.26/+0.02 m relative to it.
 The backrests are removed entirely, leaving plain stools (owner playtest, 8 November). Seat tops remain 0.32 m above the deck. Buddy's capsule anchor remains at seat top
 plus 0.63 m, X ±0.55 m and Z −1.15 m; the station hands retain their seat-height offset. This is Local mesh geometry.
-The shared workshop seat builder also has no back. The production trains' two flatbeds each carry two of the track
-layer's low stools down the middle of the deck, at Z ±0.8 m, riders facing across the car (owner, 10 November: "It
+The shared workshop seat builder also has no back. Each production train has one passenger car and one cargo car
+behind it (owner, 10 November: "if there's cargo then it shouldnt have seats I think"). The cargo car, the one whose
+deck takes the crates, has no stools and never offers Sit, loaded or empty. It carries dark stakes up both long sides
+with low boards between them (`cargoFittings`, src/proto/wagon/look.ts; cosmetic, no solid, outside the crate slots),
+so the two read apart at a glance. A train therefore seats two. The passenger car carries two of the track layer's low
+stools down the middle of the deck, at Z ±0.8 m, riders facing across the car (owner, 10 November: "It
 should likely go in the middle and be a low stool like the track layer"). They reuse its dimensions and its seat
 relationship (`lowStoolMesh` and `lowStoolAnchor`, seat top 0.32 m plus the seated hips' 0.63 m, in
 src/proto/place/seat.ts), so hips rest on the slab and feet on the deck. Like the track layer's, they have no solid:

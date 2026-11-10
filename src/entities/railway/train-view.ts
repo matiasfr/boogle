@@ -67,8 +67,15 @@ export async function createRailwayTrains(
       return car;
     });
     const deck = crates.deck(model.cars[2]!, () => {});
-    for (const n of [1, 2]) {
-      const car = cars[n]!;
+    // Car 2 carries the cargo (the deck above): a freight car, loaded or empty, with stakes and boards and no seats
+    // (owner, 10 November: "if there's cargo then it shouldnt have seats"). Car 1 is the passenger car, two stools.
+    const fittings = wagon.cargoFittings(owner);
+    fittings.position.y = cars[2]!.hy;
+    owner.add(fittings);
+    cars[2]!.mesh.add(fittings);
+    {
+      const n = 1,
+        car = cars[n]!;
       for (const [i, z] of [-0.8, 0.8].entries()) {
         // The track layer's low stool, down the middle of the deck (owner, 10 November); no solid, so the aisle and
         // a walk along the deck stay open. Riders face across the car, as before.
@@ -86,7 +93,7 @@ export async function createRailwayTrains(
             at: { x: 0, y: car.hy + seats.lowStoolAnchor, z, yaw: Math.PI / 2 },
             // Standing up steps you back off the stool, onto the deck behind it.
             exit: { x: 0.6, y: car.hy + PLAYER_R, z, yaw: Math.PI / 2 },
-            available: () => car.y > -30 && (n === 1 || crates.deckCount(deck) === 0),
+            available: () => car.y > -30,
           }),
         );
       }
