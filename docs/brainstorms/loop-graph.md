@@ -30,6 +30,9 @@ Owner's words it answers (9 November, [playtests](../playtests.md)): the order p
   2. `npm run loop -- run`: the headless run for 1 to 4 players, walk ticks from graph distances, cart and train time from the sim.
   3. `npm run loop -- trace`: one table per node for prediction, bot run and human session, with deltas and the confusion rank.
   4. Retire the headless ball and player runs (owner, 9 November: "vestigial").
+  5. Fallback supply (owner, 9 November): each vehicle-brought material names where it is fetched on foot (trees, forge rack, Works rack); `npm run loop` prints both carries x metres, a by-hand grind column, the largest by-hand grind and the nodes all on a vehicle. `loop -- run --by-hand <node|all>` plays that node fed on foot through the real rules: cart stations with their depot and shelf off in-process, Q6 before the boiler and the crossing before the table (src/sim hard-codes the kit train and the wagon). The orders share the canonical run's prefix through checkpoints (`--no-share` replays each in full; the results are identical).
+  6. Walking calibrated from human sessions: `npm run loop -- calibrate [ids...]` (default every session under the main checkout's `.look/playtest`) takes, per node, the metres a player walked over the straight-line prediction for the same canonical segment, and writes the median, range and n to `dev/loop/detour.json`. Grind and predicted times print raw and calibrated side by side; a node with fewer than 2 sessions stays uncalibrated and says so. Bots, prototype rooms, older worlds and sessions with no node reached are left out and counted. The trace adds a walked/pred column (wayfinding), apart from the confusion score.
+  7. The trace fetches what it lacks: a session id that isn't local downloads through `dev/playtest/fetch.ts`, the path `npm run playtest -- <id>` uses (our server, the report token); `--offline` keeps to local files. Several ids or `--since YYYY-MM-DD` (UTC; the server lists its newest 200) give one ranked table: confusion and wayfinding aggregated per node, with n.
 - **Risks:** straight-line distance understates real walking (hook walkway, sea); ability gates are not in the sim and live only in the graph; refactoring test helpers touches tests; human sessions carry mark names, not node ids, so the map is by pattern and older sessions must still read.
 
 ## Done means
@@ -44,6 +47,9 @@ No browser: this is tooling with no player-visible change.
 - `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, with a confusion rank per node. Which beats rank highest is a finding, not a pass test.
 - A unit test fails when a rail action or mark has no node.
 - `npm run check` passes with the ball and player runs gone.
+- `npm run loop` names the largest by-hand grind and the nodes that depend entirely on a vehicle; `loop -- run --by-hand <node|all>` reports each node's time fed on foot against the vehicle, and the whole loop's difference.
+- `npm run loop -- calibrate` prints a detour factor per node with n and range, says how many sessions it left out and why, and `npm run loop` and `loop -- run` print both straight-line and calibrated values, labelled.
+- `npm run loop -- trace mw9papxp` downloads the session when it isn't local and traces it; `npm run loop -- trace --since 2026-11-09` ranks every production loop session of that day in one table.
 
 ## Open questions
 
@@ -55,6 +61,13 @@ No browser: this is tooling with no player-visible change.
 2. Is straight-line distance good enough for the first grind numbers? **Recommended: yes, labelled, and calibrated against human sessions in build 3.** Answer: ___
 3. Should the trace reach you as a picture? **Recommended: a text table first; a strip chart on the Line Map board once the numbers are trusted.** Answer: ___
 4. Should a loop change have to pass `npm run loop -- run` before it ships? **Recommended: not yet; report it, and decide once it has caught something real.** Answer: ___
+
+## Queued
+
+Owner, 9 November: after the fallback supply, calibration and trace fetching.
+
+- The nightly long run's session feeds the trace's bot column, with a predicted-against-bot drift line in the heartbeat report.
+- The beat lists (`RAILWAY_BEATS`, `BEATS`, `RAIL_STOPS`) generate from the graph, verified by that nightly run.
 
 ## Parked
 

@@ -10,16 +10,15 @@
 // Server: BOOGLE_SERVER if set, else the production server.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, reportToken } from '../../scripts/report-token.ts';
+import { ROOT } from '../../scripts/report-token.ts';
 import type { PlaySession } from '../../server/src/playdata.ts';
 import { sketchOf } from './beats.ts';
+import { OUT, playdata, resolveSession } from './fetch.ts';
 import { writeHeatMap } from './heat.ts';
-import { parseSession, span, str, type Session } from './read.ts';
+import { span, str, type Session } from './read.ts';
 import { UNTRUSTED, compare, summarize } from './summary.ts';
 import { cleanText } from '../../server/src/clean-text.ts';
 
-const SERVER = process.env.BOOGLE_SERVER || 'https://boogle-server.fly.dev';
-const OUT = path.join(ROOT, '.look/playtest');
 const args = process.argv.slice(2);
 // Call digestion is entirely local, including latest; it needs neither credentials nor a browser.
 if (args[0] === 'call') {
@@ -43,40 +42,17 @@ const solo = flag('--solo');
 const noMap = flag('--no-map');
 const comparing = flag('--compare');
 
-const token = reportToken();
-if (!token) {
-  console.error('No REPORT_TOKEN: set it in the environment or as REPORT_TOKEN=... in .env.local (the Fly secret).');
+let server: ReturnType<typeof playdata>;
+try {
+  server = playdata();
+} catch (e) {
+  console.error(e instanceof Error ? e.message : String(e));
   process.exit(1);
 }
-const headers = { authorization: `Bearer ${token}` };
-
-async function get(p: string) {
-  const r = await fetch(`${SERVER}${p}`, { headers });
-  if (r.status === 401) throw new Error('the server refused the token (401)');
-  if (!r.ok) throw new Error(`GET ${p}: ${r.status}`);
-  return r;
-}
-const listSessions = async (): Promise<PlaySession[]> =>
-  (await get('/playdata?limit=200')).json() as Promise<PlaySession[]>;
+const listSessions = server.list;
+const download = server.download;
 const isPerson = (s: PlaySession) => all || !s.meta?.bot;
-
-async function download(id: string): Promise<Session> {
-  const text = await (await get(`/playdata/${id}`)).text();
-  fs.mkdirSync(OUT, { recursive: true });
-  fs.writeFileSync(path.join(OUT, `${id}.jsonl`), text);
-  return parseSession(id, text);
-}
-
-function resolve(list: PlaySession[], want: string) {
-  if (want === 'latest') {
-    const hit = list.find(isPerson);
-    if (!hit) throw new Error('no sessions yet');
-    return hit;
-  }
-  const hit = list.find((s) => s.id === want) ?? list.find((s) => s.id.endsWith(want) || s.id.startsWith(want));
-  if (!hit) throw new Error(`no session like "${want}" among the newest ${list.length}`);
-  return hit;
-}
+const resolve = (list: PlaySession[], want: string) => resolveSession(list, want, isPerson);
 
 function printList(list: PlaySession[]) {
   const rows = list.filter(isPerson).slice(0, 25);
