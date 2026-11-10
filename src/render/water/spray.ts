@@ -168,7 +168,8 @@ const preparations = new Set<() => void>();
 warmUp(() => {
   for (const prepare of preparations) prepare();
 });
-export function createSpray(atlas: ShoreAtlas) {
+/** With no atlas (the Sunshine sea has no breakers) only the impact crowns remain: no shore or rock sites. */
+export function createSpray(atlas: ShoreAtlas | null) {
   let enabled = true;
   const unregister = registerGraphics({
     id: 'spray',
@@ -203,7 +204,7 @@ export function createSpray(atlas: ShoreAtlas) {
     generation = -1,
     contactsGeneration = -1;
   const prepare = () => {
-    if (!enabled) return;
+    if (!enabled || !atlas) return;
     const next = shoreRevision(),
       contactNext = waterContactRevision();
     if (next === generation && contactNext === contactsGeneration) return;

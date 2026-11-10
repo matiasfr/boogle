@@ -83,7 +83,8 @@ async function start() {
   child.on('error', (error) => (failed = error.message));
   child.on('exit', (code) => (failed = `daemon exited ${code}`));
   child.unref();
-  const deadline = Date.now() + 240_000;
+  // BOOGLE_SESSION_START_MS lengthens the wait when the shared bot queue is busy (the daemon queues before it boots).
+  const deadline = Date.now() + (Number(process.env.BOOGLE_SESSION_START_MS) || 240_000);
   try {
     while (Date.now() < deadline) {
       if (failed) throw new Error(failed);
@@ -257,8 +258,15 @@ async function serve() {
       }
       case 'reload': {
         // fresh=1 is only for the first visit; remove it before reloading the same context and room.
+        // `reload key=value ...` changes those query parameters first (an empty value removes one): reload-only flags.
+        const set = JSON.stringify(a.map((pair) => pair.split('=')));
         await g.eval(`window.dispatchEvent(new Event('pagehide'));
-          const url = new URL(location.href); url.searchParams.delete('fresh'); history.replaceState(null, '', url);`);
+          const url = new URL(location.href); url.searchParams.delete('fresh');
+          for (const [k, v] of ${set}) v ? url.searchParams.set(k, v) : url.searchParams.delete(k);
+          history.replaceState(null, '', url);`);
+        // Errors belong to the page that raised them: the reloaded page starts with a clean health record.
+        g.errors.length = 0;
+        g.consoleErrors.length = 0;
         await g.page.reload();
         await g.page.waitForFunction(
           () => document.body.classList.contains('playing') && window.boogle?.prof?.last.frames,
@@ -279,12 +287,20 @@ async function serve() {
     for (const [key, value] of new URLSearchParams(option('--query'))) query.set(key, value);
     if (save) query.delete('fresh');
     stack = await startStack({ root: path.resolve(option('--root') ?? root) });
+    // --rail-seed <stage>: an accepted railway server save, as look's (dev/look/rail-seed.ts); the room defaults as look's.
+    const railSeed = option('--rail-seed');
+    const room = option('--room') ?? save?.room ?? (railSeed ? 'look-rail' : undefined);
+    if (railSeed) {
+      if (save) throw new Error('--rail-seed and --at are separate starts');
+      const { writeRailSeed } = await import('./rail-seed.ts');
+      await writeRailSeed(stack.dataDir!, room!, railSeed);
+    }
     browser = await launch();
     game = await Game.open(browser, stack, {
       out: path.join(dir, 'session'),
       hud: true,
       size: option('--size')?.split('x').map(Number) ?? [1180, 820],
-      room: option('--room') ?? save?.room,
+      room,
       query: query.toString(),
       warp: true,
       init: `${save ? SEED(save) : ''}\n(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)});`,
