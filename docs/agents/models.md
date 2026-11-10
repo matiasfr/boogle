@@ -8,12 +8,20 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
 - **Switching:** `codexFrom` in `dev/models.ts` is the local date withCodex starts (null: stay normal). Only the owner
   switches modes; an agent that hits a Codex limit in withCodex mode pauses and tells the owner.
 - **Enforcement:** in normal mode `dev/codex/run.ts` and `npm run queue` refuse Codex jobs except previz, which is
-  still tried because only Codex paints; at a limit, images wait and the owner is told. The `planner`, `implementer` and `designer`
+  still tried because only Codex paints; at a limit, images wait and the owner is told. The `planner`, `implementer`, `designer` and `Explore`
   frontmatter must match `agents` in `dev/models.ts` (`test/models.test.ts`).
 - **Opus at medium** (owner, 9 November: "use opus medium instead of opus high, unless we encounter bugs or opus
   medium is not sufficient to solve the problem"): every Opus route runs at medium. Raise a single task to high, as
   the Agent tool's `effort`, only when it hits bugs medium couldn't fix or medium's result falls short, and say so in
   the report. Opus `max` only when the owner asks.
+- **Escalating** (10 November, from Anthropic's model guide of 9 November; owner: "update our model routing if
+  appropriate"): before raising effort, check the task can verify its own work (a failing test, a build, a look, a
+  bot segment) and give it that; it is often cheaper than more effort. Then raise one level. Past `high`, Opus
+  `xhigh` costs about 2.5x `high` for about 1.4 points on SWE-bench Pro, so a task that `high` can't solve goes back to
+  the orchestrator, not to xhigh.
+- **Explore on Haiku** (same source): the built-in Explore agent otherwise runs on the session's model, Fable or Opus
+  here. `.claude/agents/Explore.md` pins it to Haiku 5.5 for searching, finding files and reading logs, where a wrong
+  answer is cheap to spot. Code edits and judgment calls stay on Opus or the main session.
 - **Orchestrator** runs Opus medium, Opus high or Fable medium (owner, 9 November: "orchestrator can use opus
   medium, high, or fable medium").
 - **Fable only for the orchestrator** (owner, 9 November, after measuring that Fable 5.2 uses the weekly limit about
