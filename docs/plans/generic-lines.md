@@ -388,7 +388,7 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   307: 0.89 m against 0.54 m, at the deck's end), and by the Village merge (0.25–0.29 m, today's side 0.18 m).
   Level-check: 0 problems, progression and the walking flood unchanged. The straight walk from the Q6 frame onto s
   546 now arrives; the segment passes with the bot's route kept.
-- [ ] **4a. The trains (sim and server; v26, with 4b).** New `src/sim/railway-trains.ts`: `circuitCm`, `cycleTicks`,
+- [x] **4a. The trains (sim and server; v26, with 4b).** New `src/sim/railway-trains.ts`: `circuitCm`, `cycleTicks`,
   `headTicks`, `blockFree`, `trainServes`, `trainStepLine(w, line, tick)`. In `railway-train.ts` delete `trainWayOut`
   and LOOK's branches of `trainNextStop`; it takes `track` and a `reasons(stop, dir)` callback. In `railway-world.ts`:
   `Train.track` for `sweep`, the `Line` component, `RAIL_TRAINS` rows spawned, `railwayView`'s `trains`/`lines`,
@@ -417,6 +417,33 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   Far Head's up lever refused before the pier opens. `npm run loop -- run` (supply by train changed; report the
   footing laps' time against the 10 November pair's 1:45); `npm run check`; `npm run check:full` (server and
   `src/world`).
+  *Built (2026-11-10, on its branch, not shipped: v26 ships with 4b after review):* three trains, slots [line 1 at
+  Camp on the down track, line 2 at the Village up, line 2 at Far Head down], from `trainPlaces` (train k at the open
+  halt nearest `home + k·C/n`; ends only on their way out). `circuitCm` and `trainPlaces` live in `railway-lines.ts`
+  beside `RAIL_TRAINS`, which derives from them; `trainStepLine` takes a `TrainIO` (arrive, standing holds, headway
+  exemption) from `railway-systems.ts`, so the trains module imports no systems. Numbers: line 2's cycle is 924 s
+  with the pier open, 722 s before (the plan's 928/348 were estimates); line 2's Village start signal is 4440 cm, not
+  4400, so the signal stands `sepCm` past the stub's stop. Lever asks are `Line.req`, rider asks `Train.req` with
+  `train`; a rider's ask to an end halt and an open end's way-in lever are refused; the turnback keeps only riders'
+  asks for the new way (`reqOnly`); commissioning no longer asks the Village. `trainServes` keeps a stop for a train
+  already braking for it (rounding had let the replan run past it). The spacing invariant is sampled per tick in tests
+  (`trainSpacing`); `validateRailway` checks the tick-free ones. Headway: at the default 75% two trains settle to
+  `headTicks`, within a dwell, and to half a cycle only at 100% (both tested). The server also had to pass `train`
+  through `railwayRequestEdit`, and `railTrainHeadPct` is in the world host's rail tune keys. **Worst wait (owner
+  call):** 600 ticks flat is not reachable on line 2 with request stops at any headPct tried (75/90/100): the worst
+  waits are about half a cycle plus about 11 s per request stop served meanwhile (Pier down 71 s, Quarry down 61 s at
+  q6-done, 75%). The test bounds a wait by 600 + 110 ticks per middle-halt stop the line's trains made during it and
+  prints every halt and direction; a third train or a higher hold is the lever if the owner wants 60 s flat. Far
+  Head's up and down platforms overlap (about 10 m apart, reach 12.6 m), so the up-lever refusal is tested from the
+  down platform's far edge. A train bound for Far Head lengthens to the pier when Q6 completes (4b's crossover
+  easing). Shims for 4b: `line2.train` is an alias of `trains`, `sweep` reads became `track` in `halts-view.ts`, the
+  look bots and evals and `dev/peer-test/ws-railway.ts` (whose request stop now reads `Line.req` and any line-2
+  train), and the adapter's `line2.lines`; the aboard cord sends no `train` yet and the lever lamp reads train asks
+  until 4b. The wagon couples to whichever line-2 train reaches the Village first, so the loop's `table` check and
+  the works host test look for any wagon train; `dev/look/bots/railway-works.ts` still reads `train[1]` (4b's bot).
+  `npm run loop -- run`: every player count finishes; the crossing (table turned to the twelfth pier footing) takes
+  3:20 alone, 2:59 for two, 2:52 for three or four, against the 10 November pair's 1:45 observed (the loop does not
+  ride and walks every footing; its 2:59 for two is the number to watch when 4b's bot runs it).
 - [ ] **4b. The trains (client and bot; v26, with 4a).** `src/adapters/railway.ts`: `railTrainsOf`, the mirrored
   `lines`, every `line2.train[k]` read moved to per-train reads. `train-view.ts`: one train mesh per `RAIL_TRAINS`
   slot, posed on its line at `trainAlong`, offset 4 m left on track 0, easing across each turnout and crossover over
