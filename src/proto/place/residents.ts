@@ -30,6 +30,7 @@ import {
   RESIDENTS,
   RUMOUR_ASK,
   STREET_NOTICE,
+  WORKS_FACTS,
   STREET_RUMOURS,
   type Fact,
   type ResidentId,
@@ -108,7 +109,8 @@ export type Seen = {
   street: Fact | null;
   streetRumour: number;
 };
-const isFact = (v: unknown): v is Fact => typeof v === 'string' && (TOWN_FACTS as readonly string[]).includes(v);
+const isFact = (v: unknown): v is Fact =>
+  typeof v === 'string' && ([...TOWN_FACTS, ...WORKS_FACTS] as readonly string[]).includes(v);
 const count = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 1e6 ? v : null);
 /** Only known residents, and only values `ok` accepts: anything else in a save is dropped. */
 function book<T>(v: unknown, ok: (x: unknown) => T | null): Partial<Record<ResidentId, T>> {

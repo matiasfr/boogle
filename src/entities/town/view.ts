@@ -25,12 +25,14 @@ import { inspectWardrobe, wardrobe } from '../wardrobe/state.ts';
 import { inspectRailway, railwayYouGot } from '../railway/state.ts';
 import { createTownMemory } from './memory.ts';
 import type { TownInspection } from './state.ts';
+type Fact = import('../../proto/place/town-lines.ts').Fact;
 import { createCurioShelf } from './curio-shelf.ts';
 
 /** What every town piece reads of the world. All of it comes from the shared railway or is this tab's own moment. */
 export type TownEnv = {
   has(f: TownFact): boolean;
-  newest(): TownFact | null;
+  /** The newest town fact, or the Works' breaker once it is taken (src/proto/place/town-lines.ts, `WORKS_FACTS`). */
+  newest(): Fact | null;
   level(): number;
   people(): number;
   /** The machine is awake (the railway's phase is past asleep and waking). */
@@ -74,7 +76,7 @@ export async function createTownView(read: () => RailwayInspection | null) {
     hushIn = 0;
   const env: TownEnv = {
     has: (f) => townHas(facts, f),
-    newest: () => newestTownFact(facts),
+    newest: () => (railway?.works.breaker === 2 ? 'breaker' : newestTownFact(facts)),
     level: () => townLevel(facts),
     people: () => townPopulation(facts),
     awake: () => {
