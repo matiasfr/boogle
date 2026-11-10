@@ -179,7 +179,7 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
       const s = along + off;
       const lat = r.track
         ? 0
-        : !open && f.crossover && s >= f.crossover[0]
+        : (r.turn || !open) && f.crossover && s >= f.crossover[0]
           ? (crossLat(f, s) ?? 0)
           : (upLat(f, s) ?? 0);
       return { s, lat, hx: TRAIN_CARS[n]!.hx, hz: TRAIN_CARS[n]!.hz };
