@@ -65,7 +65,9 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
        including secrets and the bot's route.
      - **Loops and return:** shortcuts back to home, and familiar places that become newly playable.
      - **Co-op spacing:** two or three players at once, splitting up and meeting again.
-   - Prove reach where a tool can: the production bot's route checks (`dev/look/bots/railway.ts`), `npm run
+   - For the rail route as it stands (bills, order, cues, grind, which beats confuse players) run `npm run loop`, or
+     `npm run loop -- node <id>` for one beat, instead of reading the layout files, older plans or the bot.
+   - Prove reach where a tool can: `npm run loop -- run` for order and softlocks, the production bot's route checks (`dev/look/bots/railway.ts`), `npm run
      level-check` where it covers the place, or a stated measurement. A reach claim with no proof is a finding.
 7. Write your review into the plan itself, as a section headed `## Design review (designer, YYYY-MM-DD)`: the calls
    table (call, kind, source or recommendation), findings, and at most five owner questions, each with a recommended

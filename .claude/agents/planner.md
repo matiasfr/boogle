@@ -14,6 +14,8 @@ You plan features for Boogle; you do not implement them. The only file you write
    only what still fits"); if no check has run, say so first under open questions.
    Research: look the feature's topics up in docs/research/README.md (by topic section), read the top block of each
    relevant doc, and cite what the plan uses or departs from under a **Research** line (or "none relevant").
+   The rail route as it stands: `npm run loop -- node <id>` per beat the plan touches (bill, supply, cue, what it
+   requires), not the layout files or the bot; a step that changes rail rules verifies with `npm run loop -- run`.
 2. Read the code the feature will touch and one similar existing feature for the pattern (docs/agents/sync.md names examples
    per sync kind). Run `npm run inflight`: a branch already touching those files goes under open questions.
 3. Write `docs/plans/<kebab-name>.md` with:
