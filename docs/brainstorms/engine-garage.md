@@ -435,6 +435,20 @@ train called onto the table, or the real train framed at its platform (1); bough
 now, or kept small for good (3); the Roundhouse as the one rail-management building, or a new signal box (4); per train
 (5).
 
+## Owner notes, round 2 (10 November, on the garage-frame mock)
+
+His words: "Instead of fit, maybe Install sounds more cool. Im not sure we need the comparison race visual. resources/min and speed or cars makes sense. village to island feels to abstract a metric. for the longer boiler, maybe certain boilers are faster but also raise the cap of the amount of cars. In general this should be really satisfying to upgrade"; and "Instead of a before/after button, toggling between the current option and the upgrade is sufficient".
+
+These supersede the text above and the design review where they differ:
+
+- **The verb is Install** ("Installed", "Ready to install"), not Fit. Earlier sections keep "fit" as written; read it as install.
+- **Readouts are speed, cars and resources a minute.** No race strip, and no trip-time metric such as "Village to the island" (section 3 and note (d) above proposed both).
+- **A boiler sets two things: top speed and how many cars the engine pulls.** Orchestrator's reading of "maybe certain boilers are faster but also raise the cap": this answers the review's question 1 (the longer boiler: 25 m/s and four cars), and it is the rule for every later boiler; whether a boiler may raise only one of the two is open.
+- **No Before / After button.** You compare by choosing the part you have or the upgrade in the parts strip; the picture and readouts follow the choice.
+- **Installing must be really satisfying.** Not designed yet. The first build's install moment is the next design step: what the little guys do, the sound, the camera, how the readouts land and what everyone else in the room sees. It gets its own design review before it is built.
+
+The mock (docs/world/engine-garage-mock.html) carries the first four. Two questions stay open: hold to install or press then confirm; roof and lamps as a look or an upgrade.
+
 ## Parked
 
 - **A world / rail map view.** Home: the hall's live line map (decisions.md:74, home-station step 12) and the halt
