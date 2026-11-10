@@ -47,7 +47,7 @@ export const routes: Route[] = [
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     withCodex: {
-      who: "the other vendor from the author: Codex review job for Claude's code, a fresh Claude general-purpose subagent for Codex's",
+      who: 'a fresh reviewer with none of the author\'s context: a Codex review job or a Claude general-purpose subagent',
       model: 'gpt-6-astra, or fable or opus',
       effort: 'xhigh for astra, medium for fable or opus',
     },

@@ -53,7 +53,7 @@ Give every brief, Claude or Codex, the binding rules: stay on its branch, no pus
 
 ## 3. Review
 
-- Start a risky branch's independent review as soon as it is built and its check is green, beside its bot runs, not after them. The reviewer writes a failing test for each suspected defect that a test can show; in withCodex mode the reviewer is the other vendor from the author (`npm run models`).
+- Start a risky branch's independent review as soon as it is built and its check is green, beside its bot runs, not after them. The reviewer writes a failing test for each suspected defect that a test can show; the reviewer is a fresh agent with none of the author's context, on any model the route allows (`npm run models`).
 - Read every report and diff yourself. Open the key stills or frames when a player could see the change; a report's summary isn't proof.
 - Verify each review finding against the code before acting, then send the branch back (SendMessage to the subagent, or `resume` for a Codex job) naming the specific fix, the evidence wanted and "do not ship".
 - Anything that touches `src/sim`, `src/net`, `src/world`, `server/` or the wire format gets an independent review before it merges: the review row of `npm run models` (a fresh subagent that didn't write the code, or a Codex `review` job with `--ref-branch codex/<topic>`). Use the [shipping](../../../docs/agents/shipping.md) review tiers. `npm run ship-queue` refuses such a branch until you pass `--reviewed "<who, what they found>"`, because on 9 November six lockstep and server changes merged with only their author's checks.
