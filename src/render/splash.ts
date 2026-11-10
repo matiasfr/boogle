@@ -6,7 +6,11 @@ import { seaRipples } from './water-render.ts';
 import { emit } from './particles.ts';
 import { waterField } from '../physics/water-field.ts';
 import { groundProbe } from '../physics/physics.ts';
+import { readableIntensity } from './readable-unlit.ts';
 
+// Display-range foam: the droplets are unlit, so at the fixed surface gain (0.12) intensity one drew them dark grey
+// against the lit sea (owner, 10 November: "the water splash particles are extremely dark/gray"). They take the
+// readable inverse gain at spawn, as the reward sparkles do, so they read as white foam like the sea's own lip.
 const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;
@@ -42,6 +46,7 @@ export function splash(x: number, z: number, strength: number, level: number) {
       alpha: 0.95,
       fade: 0.5,
       color: FOAM,
+      intensity: readableIntensity(),
       gravity: GRAVITY * 0.8,
       floor: level,
     });
