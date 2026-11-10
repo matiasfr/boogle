@@ -6,7 +6,8 @@
 //   mesh.join() / mesh.leave()   start; stop (closes every link and tells each peer 'bye')
 //   mesh.setMembers(ids)         the other tabs whose presence says they are in voice. Of each pair the smaller id
 //                                offers, so two tabs never offer each other. A link to a tab that stopped being a member
-//                                closes once it is MEMBER_GRACE_MS old
+//                                closes at once: nobody stays linked while the roster doesn't show them in voice (a
+//                                reload is a new tab and is offered to again; a brief server reconnect keeps presence)
 //   mesh.hear(msg, from)         an incoming signal (validated already). Only a member is answered: a signal from a tab
 //                                whose presence doesn't say it is in voice is held HOLD_MS (its presence can arrive just
 //                                after its offer) and dropped if it never does, so nobody listens in unseen. A second
@@ -35,7 +36,6 @@ export type MeshOpts = {
   retries?: number;
 };
 
-const MEMBER_GRACE_MS = 5000;
 const BYE_COOL_MS = 3000;
 const ICE_QUEUE_MAX = 64;
 const HOLD_MS = 3000;
@@ -139,8 +139,7 @@ export function createVoiceMesh(o: MeshOpts) {
     members = new Set([...ids].filter((id) => id !== o.self));
     if (!active) return;
     const now = o.now();
-    for (const rec of [...recs.values()])
-      if (!members.has(rec.peer) && now - rec.at > MEMBER_GRACE_MS) close(rec, rec.state !== 'failed');
+    for (const rec of [...recs.values()]) if (!members.has(rec.peer)) close(rec, false); // not in voice: the server would drop a bye to it anyway
     for (const [peer, h] of [...held]) {
       if (members.has(peer) || now - h.at > HOLD_MS) held.delete(peer);
       if (members.has(peer) && now - h.at <= HOLD_MS) for (const m of h.msgs) hear(m, peer);

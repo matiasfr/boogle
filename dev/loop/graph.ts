@@ -343,9 +343,10 @@ export const NODES: readonly LoopNode[] = [
     requires: [
       {
         on: 'T3',
-        status: 'unruled',
+        status: 'decided',
         by: 'world',
-        source: 'src/entities/railway/tools.ts:92 and the p1 lip that joins once the gantry passes; no ruling found',
+        source:
+          'decisions.md 2026-11-09 loop orders: the second jump comes after station 3 (the p1 lip joins once the gantry passes, src/entities/railway/tools.ts:92)',
       },
     ],
     cue: [onMain('world', 'the jump device on the first pillar', 'src/entities/railway/tools.ts:92,268-274')],
@@ -607,7 +608,7 @@ export const NODES: readonly LoopNode[] = [
     stops: [],
     requires: [
       dec('breaker', 'rules', `${RULES} strike: breaker taken`),
-      { on: 'slab', status: 'unruled', by: 'none', source: 'split-rock-roundhouse.md orders neither seam first' },
+      { on: 'slab', status: 'free', by: 'none', source: 'decisions.md 2026-11-09 loop orders: either seam first' },
     ],
     cue: [
       onMain(
@@ -687,7 +688,12 @@ export const NODES: readonly LoopNode[] = [
     stops: [],
     requires: [
       dec('stall', 'rules', `${RULES} turn: the stall stands`),
-      { on: 'cradle', status: 'unruled', by: 'none', source: 'commission() runs on either order; no ruling found' },
+      {
+        on: 'cradle',
+        status: 'unruled',
+        by: 'none',
+        source: 'commission() runs on either order; waits for the owner to play it (9 November)',
+      },
       dec('cradle', 'rules', `${RULES} commission(): fitted and table at line 2`, 'finish'),
       dec('trains', 'rules', `${RULES} wagonArrives: the wagon couples at line 2's train`, 'finish'),
     ],

@@ -15,6 +15,7 @@ export function serverBuild() {
       'src/ecs',
       'src/net/ids.ts',
       'src/net/ws-wire.ts',
+      'src/net/rtc-wire.ts',
       'package.json',
       '.dockerignore',
       '.github/workflows/deploy-server.yml',

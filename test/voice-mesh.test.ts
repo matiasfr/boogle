@@ -146,12 +146,7 @@ test('a reload is a new tab: the old link goes once its presence does, the new o
   b2.mesh.join();
   r.publish(a, b2); // b's presence is gone
   await r.settle();
-  assert.equal(states(a).bab, 'connected');
-  assert.equal(states(a).bbb, 'connected'); // inside the member grace an old link is kept
-  r.advance(6000);
-  a.mesh.tick();
-  await r.settle();
-  assert.deepEqual(states(a), { bab: 'connected' });
+  assert.deepEqual(states(a), { bab: 'connected' }); // the old link went with its presence
   assert.ok(a.links.get('bbb')!.closed);
 });
 
@@ -348,4 +343,54 @@ test('validateRtc: hostile shapes never throw and never pass extra fields', () =
     c: { candidate: '', sdpMid: null, sdpMLineIndex: null },
   });
   assert.equal(({} as Record<string, unknown>).polluted, undefined);
+});
+
+// From the delta review (9 November).
+test('RESIDUAL: a peer that flashes vc on for the offer and off again does not keep a link while out of the roster', async () => {
+  const v = lone('mmm');
+  v.mesh.join();
+  let unseenLinkedMs = 0;
+  for (let cycle = 0; cycle < 6; cycle++) {
+    v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: cycle + 1, sdp: 'x' }, 'flash');
+    v.mesh.setMembers(['flash']); // its presence says vc for an instant: the held offer is answered
+    await v.settle();
+    v.mesh.setMembers([]); // vc gone again: the chip leaves the roster
+    for (let t = 0; t < 4800; t += 200) {
+      v.advance(200);
+      v.mesh.tick();
+      if (v.mesh.links().has('flash')) unseenLinkedMs += 200;
+    }
+  }
+  assert.ok(unseenLinkedMs <= 1000, `linked while not shown in voice for ${unseenLinkedMs} ms of ${6 * 4800}`);
+});
+
+test('held signals: bounded, dropped after the hold, a bye from a member closes only its own link', async () => {
+  const v = lone('mmm');
+  v.mesh.join();
+  v.mesh.setMembers(['aaa']);
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: 1, sdp: 'x' }, 'aaa');
+  await v.settle();
+  for (let i = 0; i < 500; i++) v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: i, sdp: 'y'.repeat(12000) }, 'bbb');
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'bye', n: 1 }, 'bbb'); // a bye from someone else, same n
+  assert.ok(v.mesh.links().has('aaa'), "a third tab's bye cannot close the link to aaa");
+  v.advance(3100);
+  v.mesh.setMembers(['aaa', 'bbb']); // too late: nothing replays
+  await v.settle();
+  assert.equal(v.opens(), 1);
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'bye', n: 1 }, 'aaa');
+  assert.ok(!v.mesh.links().has('aaa'));
+});
+
+test('a real restart: bye then a re-offer inside 1 s is taken', async () => {
+  const v = lone('mmm');
+  v.mesh.join();
+  v.mesh.setMembers(['aaa']);
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: 1, sdp: 'x' }, 'aaa');
+  await v.settle();
+  v.advance(300);
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'bye', n: 1 }, 'aaa');
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: 2, sdp: 'x' }, 'aaa'); // left and rejoined at once
+  await v.settle();
+  assert.equal(v.opens(), 2);
+  assert.equal(v.sent.filter((m) => m.k === 'answer' && m.n === 2).length, 1);
 });
