@@ -362,8 +362,12 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.beamTake',
   'rail.beamDrop',
   'rail.beamDeposit',
+  'rail.breaker',
+  'rail.strike',
   'rail.turn',
 ]);
+/** Refused only while you haul the boiler, as the sim refuses them (one thing on your back at a time). */
+const NOT_WHILE_HAULING: ReadonlySet<string> = new Set(['rail.breaker', 'rail.strike']);
 /** Corrections kept for measurement. */
 const LOG_MAX = 256;
 
@@ -704,7 +708,12 @@ export function createRailwayAdapter({
     const beam = v.line?.beam;
     if (beam?.state === 'held' && beam.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
     const boiler = v.line2?.boiler;
-    if (boiler?.state === 'held' && boiler.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
+    if (
+      boiler?.state === 'held' &&
+      boiler.holder === pid &&
+      (!NOT_MATERIAL.has(intent.op) || NOT_WHILE_HAULING.has(intent.op))
+    )
+      return false;
     // A footing fills your back: only setting it or putting it down moves anything.
     const foot = account?.foot ?? 0;
     if (

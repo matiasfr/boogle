@@ -595,6 +595,12 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     stand(120000, -20000);
     await ticks(12);
     assert.equal(boiler().x, 120000);
+    // A few millimetres south of z = 0 rounds to -0, which the ECS int schema refuses: the host keeps it +0, and the
+    // room still saves while the boiler is held there (the beam's carrier goes through the same rounding).
+    people = [{ pid: 'a', x: 1200, y: (apron[1] + 45) / 100, z: -0.003, at: now }];
+    await ticks(12);
+    assert.ok(Object.is(boiler().z, 0));
+    assert.doesNotThrow(() => host.rules.railway.world().snapshot());
     people = [];
     host.depart('s');
     now += grace;

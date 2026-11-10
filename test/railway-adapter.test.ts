@@ -25,7 +25,8 @@ import { LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
 import { railwayAtTrains } from './helpers/railway-trains.ts';
-import { worldOf } from './railway-live.ts';
+import { edit, worldOf } from './railway-live.ts';
+import { Account } from '../src/sim/railway-world.ts';
 
 const MOVEMENT = {
   ...railMovement({ get: (k) => specOf(k)!.def }),
@@ -811,6 +812,18 @@ test('no breaker and no strike sent while you haul the boiler', () => {
   assert.equal(a.adapter.takeBreaker(), false);
   assert.equal(a.adapter.strike(0), false);
   assert.equal(b.adapter.takeBreaker(), true, 'someone else may still ask');
+});
+test('a footing on your back still lets you take the breaker, as the sim does', () => {
+  const seed = railwayAtTrains('boiler'),
+    w = world();
+  edit(seed.s, (e) => void (e.mut(Account, e.lookup(Account, 'a')!)!.foot = 1));
+  while (w.sync.world.tick < seed.t) w.sync.stepWorld(100);
+  w.api.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())));
+  w.api.touchAll();
+  const a = w.join('a', 'a');
+  w.ready();
+  assert.equal(w.api.account('a')!.foot, 1);
+  assert.equal(a.adapter.takeBreaker(), true);
 });
 
 test("a tune edit changes the boiler's haul pace the views read", () => {

@@ -352,11 +352,11 @@ export async function createRailwayTrains(
         z = loco.z - Math.sin(loco.yaw) * out;
       folk.boltAt(x, z, land.H(x, z));
     },
-    /** Where the old loco's boiler sits, as a world matrix (the hauled boiler flies to it; boiler-view.ts). */
     /** The hauled boiler is still flying to this loco's saddle (boiler-view.ts). */
     holdBoiler(fn: () => boolean) {
       boilerFlying = fn;
     },
+    /** Where the old loco's boiler sits, as a world matrix (the hauled boiler flies to it; boiler-view.ts). */
     boilerSeat(): THREE.Matrix4 {
       first.boiler.updateWorldMatrix(true, false);
       return seatMatrix.copy(first.boiler.matrixWorld);

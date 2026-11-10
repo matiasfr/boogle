@@ -1529,6 +1529,9 @@ const boilerStood = defineSystem(
   { writes: [Boiler], phase: 'boiler', order: 1 },
   (w, q: { pid: string; x: number; y: number; z: number }) => {
     const b = w.get(Boiler, boilerId(w))!;
+    // The point comes from presence: the same bounds as rail.boilerDrop, and never -0 (off the int schema).
+    if (!railInt(q.x, 200000, -200000) || !railInt(q.y, 200000, -200000) || !railInt(q.z, 200000, -200000))
+      return false;
     if (b.state !== 'held' || b.holder !== q.pid || (b.x === q.x && b.y === q.y && b.z === q.z)) return false;
     Object.assign(w.mut(Boiler, boilerId(w))!, { x: q.x, y: q.y, z: q.z });
     return true;

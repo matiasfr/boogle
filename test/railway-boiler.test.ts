@@ -113,6 +113,27 @@ test('the hauled boiler follows its holder; a leaver past the grace puts it down
   assert.equal(b.state, 'pedestal');
   assert.equal(invariant(w.s), null);
 });
+test("the hauler's stood point is checked: never -0, never out of range, and the room still saves", () => {
+  const w = railwayAtTrains('boiler'),
+    b = w.s.line2!.boiler;
+  act(w, 'a', 'rail.boilerTake', { revision: b.revision });
+  edit(w.s, (e) => assert.equal(railBoilerStood(e, 'a', 100700, 3030, -14400), true));
+  for (const [x, y, z] of [
+    [100700, 3030, -0],
+    [-0, 3030, -14400],
+    [100700, 1e300, -14400],
+    [200001, 3030, -14400],
+    [100700, 3030, 0.5],
+    [NaN, 3030, -14400],
+  ])
+    edit(w.s, (e) => assert.equal(railBoilerStood(e, 'a', x!, y!, z!), false, `${x}, ${y}, ${z}`));
+  assert.deepEqual([b.x, b.y, b.z], [100700, 3030, -14400]);
+  assert.doesNotThrow(() => worldOf(w.s).snapshot(), 'held');
+  edit(w.s, (e) => assert.equal(railBoilerPutDown(e, 'a'), 1));
+  assert.equal(b.state, 'ground');
+  assert.doesNotThrow(() => worldOf(w.s).snapshot(), 'put down');
+  assert.equal(invariant(w.s), null);
+});
 test('a ground boiler recovers after its minutes', () => {
   const w = railwayAtTrains('boiler-camp'),
     b = w.s.line2!.boiler;
