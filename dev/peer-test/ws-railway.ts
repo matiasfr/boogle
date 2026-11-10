@@ -153,10 +153,19 @@ export async function railwayChecks(c: Ctx) {
     JSON.stringify(initial.registry.states) ===
       JSON.stringify(['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'tune', 'opening']),
   );
-  await ev(RA2.page, () => window.T.railBaseEdit({ op: 'who.set', i: 0, j: 0, n: 'Alice', c: 2 }));
+  // Re-sent until it shows, as src/features/identity.ts does every 3 s: just after the restart the host can drop an
+  // edit that arrives before its world runs again (CI run 42723426132), and the host refuses one that changes nothing.
+  let whoSent = -Infinity;
   railCheck(
     'identity is accepted in the lockstep roster',
-    (await waitFor(async () => (await rail(RB)).people.some((p) => p.pid === 'raila' && p.name === 'Alice'))) >= 0,
+    (await waitFor(async () => {
+      if ((await rail(RB)).people.some((p) => p.pid === 'raila' && p.name === 'Alice')) return true;
+      if (Date.now() - whoSent >= 1000) {
+        whoSent = Date.now();
+        await ev(RA2.page, () => window.T.railBaseEdit({ op: 'who.set', i: 0, j: 0, n: 'Alice', c: 2 }));
+      }
+      return false;
+    })) >= 0,
   );
   await ev(RA2.page, () =>
     window.T.railBaseEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }),
