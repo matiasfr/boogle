@@ -136,6 +136,11 @@
   view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every tile
   border so there are no cracks ([far-ground.ts](../../src/proto/place/far-ground.ts)). Both wait for the
   owner's stills before becoming defaults; `?dev=1&graphics=farSea:true,farGround:true` turns them on.
+- **Toon-shading candidates (Local, off, 10 November).** `?toon=a` steps the sun's diffuse softly and flattens the
+  sky fill on characters (Buddy, remote Buddies, the folk); `toon=b` does that on every Standard-lit surface with a
+  cool shade side and a soft sun-side rim on characters; `toon=c` adds an inverted-hull ink line on characters. One
+  wrapped lighting model, no clones, no pass; the sea keeps its own shading. Knobs and boards:
+  [toon-shading](../research/toon-shading.md). No default change; the owner picks with the water.
 - **Production-water Looks.** Place or crossing with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
   Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
   the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
