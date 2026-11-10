@@ -269,7 +269,9 @@ export type FolkEnv = {
   trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
   /** The engine's driving stool on a line, in its car's frame: `top` is his footrest (his feet rest on it), `up` the seat
    * over it, `x`, `z` and `yaw` where he sits and faces; null while that line's engine has no driver. */
-  driver?: (line: number) => { mesh: THREE.Object3D; top: number; up: number; x: number; z: number; yaw: number } | null;
+  driver?: (
+    line: number,
+  ) => { mesh: THREE.Object3D; top: number; up: number; x: number; z: number; yaw: number } | null;
   /** Local drawn car envelopes; walkers give way without changing the train or its physics. */
   traffic: readonly { mesh: THREE.Object3D; spec: { hx: number; hz: number }; hy: number }[];
   /** The platform and where people gather when a line opens. */
@@ -544,6 +546,7 @@ function hammerAt(g: Guy, dt: number) {
 const SPARK = new THREE.Color('#ffd98a');
 function brain(g: Guy, dt: number) {
   const e = env;
+  if (crewBrain(g, dt)) return;
   if (g.cheer > 0) {
     g.cheer -= dt;
     if (g.gather && g.hasTarget) {
@@ -1020,8 +1023,77 @@ export function boltAt(x: number, z: number, y: number, seconds = 5) {
     g.route.left = -1;
   }
 }
+// The forge's roof crew (docs/plans/works-late-game.md, step 6): two strolling village little guys, sent to a point
+// each in turn by the forge's finish (src/entities/railway/forge-finish.ts). Local, about twenty seconds.
+let crew: {
+  guys: Guy[];
+  at: { x: number; z: number }[];
+  here: boolean[];
+  carrying: boolean;
+  face: { x: number; z: number };
+} | null = null;
+/** Take up to `n` village guys: the two hammering on the forge's scaffold first (they climb down), then the strollers
+ * nearest (x, z); returns how many came. */
+export function crewStart(x: number, z: number, n = 2) {
+  const rank = (g: Guy) => (g.job === 'scaffold' ? -1e6 : Math.hypot(g.x - x, g.z - z));
+  const near = guys
+    .filter((g) => g.on && (g.job === 'scaffold' || (g.job === 'stroll' && g.fy === null)))
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, n);
+  for (const g of near) {
+    if (g.job === 'scaffold') {
+      // Down off the poles (as when Place's forge lit) and on with the roof.
+      g.fy = null;
+      g.y = H(g.x, g.z);
+      g.job = 'stroll';
+    }
+    g.cheer = 0;
+    g.gather = false;
+    g.site = null;
+    g.follow = 0;
+    g.route.left = -1;
+  }
+  crew = near.length
+    ? { guys: near, at: near.map(() => ({ x, z })), here: near.map(() => false), carrying: false, face: { x, z } }
+    : null;
+  return near.length;
+}
+/** Send the crew: guy k to `at[k]`, facing `face` once there; `carrying` walks them under a load (the carry pose). */
+export function crewSend(at: readonly { x: number; z: number }[], carrying: boolean, face: { x: number; z: number }) {
+  if (!crew) return;
+  crew.at = crew.guys.map((_, k) => at[k % at.length]!);
+  crew.here = crew.guys.map(() => false);
+  crew.carrying = carrying;
+  crew.face = face;
+  for (const g of crew.guys) g.route.left = -1;
+}
+/** Where the crew is and who has arrived (null without a crew). */
+export const crewState = () =>
+  crew ? crew.guys.map((g, k) => ({ x: g.x, y: g.y, z: g.z, here: crew!.here[k]! })) : null;
+/** Back to their walks. */
+export function crewEnd() {
+  crew = null;
+}
+function crewBrain(g: Guy, dt: number) {
+  const k = crew ? crew.guys.indexOf(g) : -1;
+  if (!crew || k < 0) return false;
+  g.tx = crew.at[k]!.x;
+  g.tz = crew.at[k]!.z;
+  if (!crew.here[k]) {
+    if (!steer(g, dt, crew.carrying ? SPEED.walk * 1.2 : SPEED.run)) {
+      g.mood = crew.carrying ? 'carry' : 'run';
+      return true;
+    }
+    crew.here[k] = true;
+  }
+  g.yaw = Math.atan2(crew.face.x - g.x, crew.face.z - g.z);
+  if (crew.carrying) g.mood = 'carry';
+  else hammerAt(g, dt);
+  return true;
+}
 /** Who is bolting now (for the evals). */
-export const bolting = () => (bolt ? { left: bolt.left, guys: bolt.guys.length, here: bolt.here.filter(Boolean).length } : null);
+export const bolting = () =>
+  bolt ? { left: bolt.left, guys: bolt.guys.length, here: bolt.here.filter(Boolean).length } : null;
 export function setRiders(line: number, on: boolean) {
   for (const g of riders) if (g.camp === line) g.on = on;
 }
@@ -1065,6 +1137,7 @@ export function resetFolk() {
   setPushers(false);
   campBusy[0] = campBusy[1] = false;
   bolt = null;
+  crew = null;
 }
 
 // ---------------------------------------------------------------- chatter (docs/research/little-guys.md: rare, nearby, one at a time)

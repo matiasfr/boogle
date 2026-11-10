@@ -1,6 +1,9 @@
 > **Status: proposed (2026-11-10).** Docs only. Next: one sim branch (`WORLD_NS` v25) for steps 1–3, then the client
 > steps in parallel. The owner answered five calls on 10 November (recorded in [decisions](../decisions.md)); the rest
 > are recommendations, logged in [agent-calls](../agent-calls.md).
+> **Built, client only (10 November):** step 4's Help carry (the quarry dismount check stays P3), step 5 and step 6.
+> Steps 1–3 and step 3's client half wait for the sim branch. Step 5 also stops offering **Turn the table** once the
+> wagon is commissioned (the owner's question 5), since the deck then belongs to the choreography.
 
 # The Works' late game: from the stall's sockets to the pier
 

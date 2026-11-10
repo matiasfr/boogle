@@ -54,7 +54,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   g.add(chair);
   solidSpecs.push({ x: 2.7, y: 0.275, z: 0.3, w: 0.8, h: 0.55, d: 0.65, room: false });
   solidSpecs.push({ x: 2.7, y: 0.95, z: 0, w: 0.8, h: 0.8, d: 0.12, room: false });
-  registerSeat({
+  const unseat = registerSeat({
     id: 'forge-workshop',
     group: 'forge-workshop',
     at: { x: x + 2.7, y: floor + seatHeight, z: z + 0.55, yaw: 0 },
@@ -84,14 +84,30 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   const hidden = new Float32Array(plan.pieces.length);
   const arm = makeCameraArm(),
     from = new THREE.Vector3();
-  camConstraints.push((_look, pos) => {
+  const constraint = (_look: THREE.Vector3, pos: THREE.Vector3) => {
     if (!inside || !me.body) return false;
     const p = me.body.interpolatedPosition;
     pos.y = Math.max(pos.y, floor + 0.5);
     arm.solve(from.set(p.x, p.y + 1.35, p.z), pos, getMask(me.body) & ~ROOM_GROUP);
     return true;
-  });
+  };
+  camConstraints.push(constraint);
   return {
+    /** Undo everything it added (the production forge's view ends; Place's forge lives for the page). */
+    dispose() {
+      unseat();
+      const i = camConstraints.indexOf(constraint);
+      if (i >= 0) camConstraints.splice(i, 1);
+      for (const b of bodies) removeBody(b);
+      bodies.length = 0;
+      scene.remove(g);
+      g.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.geometry.dispose();
+      });
+      proxy.mesh.removeFromParent();
+      proxy.mesh.geometry.dispose();
+      (proxy.mesh.material as THREE.Material).dispose();
+    },
     snap() {
       hidden.fill(0);
     },

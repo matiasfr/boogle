@@ -4,6 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayInspection } from '../../adapters/railway.ts';
 import { townPopulation, townReadOf } from '../../sim/town-facts.ts';
 import { createTownGreeter } from './greeter.ts';
+import { forgePoles } from './forge-finish.ts';
 
 type OpeningEnv = {
   machine: () => { mesh: THREE.Object3D; top: number };
@@ -60,6 +61,15 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
       (scaffold.mesh.material as THREE.Material).dispose();
     });
   forge.scaffold.forEach((_, k) => scaffold.snap(k, true));
+  // The poles come down once the forge is roofed (forge-finish.ts); piece 0 is the foundation and stays.
+  let polesShown = 0;
+  const lowerPoles = (down: number) => {
+    polesShown = down;
+    for (let k = 1; k < forge.scaffold.length; k++)
+      if (down >= 1) scaffold.snap(k, false);
+      else if (down <= 0) scaffold.snap(k, true);
+      else scaffold.lift(k, -down * down * (plans.HIGH + 3));
+  };
   foot(forge.x, forge.z, 0, forge.hw, forge.hd);
   land.addStatic(
     { kind: 'box', hx: (plans.W + 1.6) / 2, hy: 0.25, hz: (plans.D + 1.6) / 2 },
@@ -129,7 +139,8 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     driver: env.driver,
     gather: { x: gather.x, z: gather.z, ux: p.ux, uz: p.uz, lx: p.uz, lz: -p.ux, len: 28 },
     platform: { x: platform.x, y: layout.railY(line, 19) + 0.72, z: platform.z, ux: p.ux, uz: p.uz, up: () => false },
-    forgeLit: () => false,
+    // The scaffold's two little guys climb down once the poles do (forge-finish.ts); until then the forge is roofless.
+    forgeLit: () => forgePoles.down >= 1,
     path: (u, lat) => {
       if (!env.pathOpen()) return null;
       const s = 30 + u * (layout.STUB.camp - 30);
@@ -151,6 +162,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
       signs.setNumbers(score, people(), snapshot);
     },
     update(dt: number) {
+      if (forgePoles.down !== polesShown) lowerPoles(forgePoles.down);
       if (population !== people()) folk.setPopulation((population = people()));
       if (pathOpen !== env.pathOpen()) {
         pathOpen = env.pathOpen();
