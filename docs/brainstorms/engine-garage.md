@@ -1,4 +1,4 @@
-> **Status: answered (2026-11-10).** The owner answered the five questions, each as recommended, with four notes ([answers](#owner-questions-answered-10-november), [what the notes change](#acting-on-the-owners-notes-10-november)); [design review](#design-review-designer-2026-11-10) below. Light brainstorm (one agent, three lenses). Mock: [engine-garage-mock.html](../world/engine-garage-mock.html). Owner rulings folded in the same day: cargo cars are an explicit category; trains may be longer than platforms (the passenger cars align); sources load by cargo loaders ([decision log](../decisions.md#decided), 10 November).
+> **Status: answered (2026-11-10).** The owner answered the five questions, each as recommended, with four notes ([answers](#owner-questions-answered-10-november), [what the notes change](#acting-on-the-owners-notes-10-november)); [design review](#design-review-designer-2026-11-10) below; [the install moment](#the-install-moment) is specified, with three questions open. Light brainstorm (one agent, three lenses). Mock: [engine-garage-mock.html](../world/engine-garage-mock.html). Owner rulings folded in the same day: cargo cars are an explicit category; trains may be longer than platforms (the passenger cars align); sources load by cargo loaders ([decision log](../decisions.md#decided), 10 November).
 
 # The train garage (engine-garage)
 
@@ -447,7 +447,307 @@ These supersede the text above and the design review where they differ:
 - **No Before / After button.** You compare by choosing the part you have or the upgrade in the parts strip; the picture and readouts follow the choice.
 - **Installing must be really satisfying.** Not designed yet. The first build's install moment is the next design step: what the little guys do, the sound, the camera, how the readouts land and what everyone else in the room sees. It gets its own design review before it is built.
 
-The mock (docs/world/engine-garage-mock.html) carries the first four. Two questions stay open: hold to install or press then confirm; roof and lamps as a look or an upgrade.
+The mock (docs/world/engine-garage-mock.html) carries the first four. Two questions stay open: hold to install or press then confirm; roof and lamps as a look or an upgrade. The install moment is now designed, with its own review: [The install moment](#the-install-moment).
+
+## The install moment
+
+Designer, 2026-11-10, on the owner's round-two note ("In general this should be really satisfying to upgrade"). A spec
+for one install from press to rest, to be built with the first build's view and judged there by a "Try it" (section 9
+below). It is also this step's design review: the calls, findings and owner questions are at its end.
+
+Read for this: the brief above, the round-two mock, DESIGN.md, the game-feel skill, `src/render/reward-reveal.ts`, the
+boiler fit (`boiler-view.ts:38`, `FIT`: a 0.45 s flight, a clank and a dust ring), `shared-moment.ts`,
+`camera-pull-out.ts` (one highlighted skip after 0.8 s), the forge's roofing crew (`forge-finish.ts`, on
+`folk.crewStart` / `crewSend`), `machine-sfx.ts` (chuff, thump, clank, whistle), `ui-sound.ts` (tick, pop, thunk, count,
+flap), `impact.ts` (a 55 ms hit-stop is the game's existing size), the Sound decisions of 1 November, and the top blocks
+of [construction-sound](../research/construction-sound.md), [audio-mix](../research/audio-mix.md),
+[ui-patterns](../research/ui-patterns.md) and [upgrade-economy](../research/upgrade-economy.md). **Not seen:** any of
+this in motion, the garage in the game (it is not built), layout B's table with a jib beside it, a phone. Everything
+timed below is a starting value to tune from a real-time capture (owner, 4 and 5 November: motion is judged in motion).
+
+**The idea in one line:** your hold cranks the part up over the engine; finishing the hold drops it; the engine
+answers. Three beats carry it and everything else is dressing:
+
+1. **The hold that is the lift, ending in the drop and the clank** (input you can feel, a breath of quiet, one hard hit).
+2. **The engine answers**: a puff, the wheels spinning up with the chuff quickening to its new rate, the whistle.
+3. **The numbers land**: speed, cars and a minute's load count from old to new just after the hit.
+
+If the rest were cut (the table's show-off turn, the crew's gags, sparks, the card, the camera push), these three would
+still be an install worth pressing for. Build them first and in this order.
+
+### Three sizes of install
+
+An install's size is set by what the part is, so a bigger upgrade is longer, louder and has more happen. Sizes are a
+tunable table, not three code paths.
+
+| | Small | Medium | Large |
+| --- | --- | --- | --- |
+| What | a look, a whistle | a car, a cradle, a plough or lamp | a boiler, a new engine |
+| Hold | 600 ms | 900 ms | 1200 ms |
+| Hang before the drop | none | 120 ms | 180 ms |
+| Hit-stop | none | 50 ms | 70 ms |
+| Camera shake (trauma, of 1) | none | 0.2 | 0.35 |
+| Sparks, dust, steam at the hit | 8 sparkles | 8, 6, 8 | 14, 10, 16 |
+| Bolts | none | 2 | 4 |
+| Crew | one little guy | two | two, and one falls over |
+| The engine's answer | a pop | one heavy chuff, a short toot | the run-up and the full whistle |
+| Show-off | a half turn | a tug or a half turn | a full turn of the table |
+| Press to rest | about 1.8 s | about 3.5 s | about 5.2 s |
+| Card | none | none | the boiler's card pattern, once (the owner's words) |
+
+### The reference install: the longer boiler (Large), beat by beat
+
+`h` is milliseconds since the press; `c` is milliseconds since the commit (`c+0` is `h+1200`).
+
+| When | On the table | Camera | Sound | Readouts and button |
+| --- | --- | --- | --- | --- |
+| `h+0` | The press frame. The two little guys at the jib grab on: one at the crank, one with a hand on the part where it lies on its stand by the table. They crouch (squash to 0.9 for 120 ms). The table's idle turn eases to a stop over 300 ms | Starts a slow push-in | A grip thunk; the first ratchet click | The ring round Install starts to fill |
+| `h+120` to `h+1200` | **The hold is the lift.** The crank turns and the part rises off its stand and swings in over the engine, its place along that path set directly by the ring (released, it goes back the same way). It ends hanging 0.6 m over its seat. The ghost on the engine brightens as the part nears (0.45 to 0.7). In the last third the guys strain: the part wobbles ±2° | Pushed in 8% by the end, scrubbed with the ring | Ratchet clicks quickening from 6 to 14 a second and rising seven semitones; chain creak under them | Ring fills. Releasing drains it in 250 ms: the part lowers home, one soft thunk, nothing spent, no "cancelled" message |
+| `c+0` | **Committed.** The ring completes; input is locked; the op is sent and the moment plays at once from the prediction. The crank guy lets go. The part lifts 6 cm and hangs | Quick push to the part's close framing, arriving at the hit | The ratchet stops. Ambience ducks. 180 ms of near quiet | Ring flashes and becomes a filled disc; a soft pop |
+| `c+180` | The drop: 0.6 m in 140 ms, speeding up | | A short falling whoosh | |
+| `c+320` | **The hit.** The part meets the ghost, which flashes white for 60 ms and is gone: the part is solid. Hit-stop 70 ms on the garage's own clock. Sparks from the seam, a dust ring from under the wheels (as the boiler fit's) | Shake 0.35, decaying in 400 ms | Clank and a low thump together, the loudest sound of the moment | |
+| `c+390` to `c+650` | Squash and settle: the engine sinks on its springs (0.94 tall, 1.03 wide) and comes back past true and settles; the table deck dips 3 cm; both guys leave the ground and the crank guy lands sitting | Eases back to the wide garage view by `c+1100` | Spring creak; ambience returns over 400 ms | |
+| `c+650` to `c+1450` | Bolting. The guide guy runs four bolts down, one every 200 ms: each bolt head pops in (to 1.2 and back to 1) with one small spark | Wide, still | Four ratchet zips, each a step higher than the last | **The numbers land** (below): from `c+650`, each changed row counts old to new |
+| `c+1450` | **The engine answers.** The safety valve puffs; the engine shudders (±1.5°, dying in 300 ms); the wheels spin up from the old rate to the new over 600 ms | Still | A steam burst; chuffs quickening with the wheels and then holding the **new** rate | |
+| `c+1800` | The whistle blows, with a plume | Still | The full whistle (1.5 s), carried across the island | Rows settle from the preview colour to ink over 400 ms; Install becomes "Installed" with a stamp-down pop |
+| `c+1800` to `c+4000` | **The show-off.** The table makes one full turn in 2.2 s, eased at both ends; the key light swells by a fifth and comes back; the guys stand back, one waves | Holds. The table turns, the camera does not | Table rumble; the chuff at its new rate under it | The Large card, once per player, after the turn |
+| `c+4000` | Rest: the idle turn and the breathing steam resume, at the new chuff rate. The stand by the table is empty | Yours again | | The strip shows the boiler as the installed part |
+
+**Skipping.** From `c+800` Interact shows the game's one skip chip and jumps to rest (the shot rule of 9 November). The
+hit at `c+320` can never be skipped; a skip snaps the numbers and still gives the whistle. Back does nothing between
+`c+0` and rest or skip.
+
+### 1. The commit: hold to install
+
+**Ruling: hold, no dialog.** The hold costs about the same second as a confirm, protects the room's store from a stray
+press just as well, and is the anticipation instead of a question before it. It is also the reason the rest works: the
+ring is the crank, so the lift is yours and the drop is the game's.
+
+- **Feel:** the response starts on the press frame (owner, 6 November, "Input gets instant feedback"): the grab, the
+  first click and the ring's first sliver. Ring, lift height, click rate and pitch are one value. The last third pushes
+  back a little (wobble, a slower-looking crank) so completing it is a small effort.
+- **Cancel:** release at any point before 100%. Never punished, never a message. A tap (under 150 ms) plays the grab
+  and lets go, and the button's label pulses "Hold to install" once.
+- **Inputs:** hold Interact on a pad or keys, or hold the Install button by mouse or touch, through the action
+  interface. Sliding a finger off the button is a release.
+- **After 100% there is no undo**, so the commit line is unmistakable: the ring's flash, the stop of the ratchet and
+  the quiet are the "it's done" before the hit.
+- **A refusal** (a friend's install of the same part was accepted first) changes nothing you see: theirs and yours are
+  the same moment. Any other refusal lifts the part back to its stand with `deny`, as the boiler fit's `refuseFit` does.
+
+### 2. On the table
+
+- **Who:** two little guys and a short jib at the table's rim, the jib a rigid machine (post, arm, crank, chain, hook)
+  that shows its work (owner, 5 November). They are the forge's roofing crew pattern (`folk.crewStart`,
+  `forge-finish.ts`), kept as lo-fi as they are ("Some lo-fi is character"). Before a part can be installed they stand
+  about; with a part ready they stand at the jib; when you select a part they both look at it.
+- **From ghost to solid:** the solid part and the ghost are never both on the engine. The ghost is the place; the part
+  travels to it; the white flash at the hit is the join.
+- **The squash is the engine's, not the part's:** the part is rigid steel and lands dead; the engine, the deck and the
+  crew take the weight. That contrast reads as heavy.
+- **Slapstick** (principle 10) lives in the crew, from a small pool so the same gag never runs twice in a row: the crank
+  guy sits down hard; the spanner is dropped and caught; the puff takes a hat off. Local, cosmetic, cut first if it
+  costs time.
+
+### 3. Camera, and who sees what
+
+- **Yours:** push in with the hold (8%), a quick push to the part for the hit, back to the wide view during the
+  bolting, then still while the table turns. It ends where the garage camera always sits, so there is no return blend
+  and no moment of lost control beyond the lock. The table shows the engine off; the camera never orbits by itself.
+- **A second player in the garage view:** sees the lift from the first frame of the hold (the holder's part and ring
+  value ride their presence, a few numbers), with the tag "Pip is installing the longer boiler". On the commit they get
+  the whole moment on their own camera with the same push, their own ghost hidden until rest, their readouts counting
+  too. Holding the same part at the same time: the first accepted commit wins and both rings complete into it.
+- **A player standing at the table, not in the view:** the same thing in the world on their ordinary camera: the jib,
+  the drop, the sounds placed at the table, the table's turn. No camera is taken.
+- **A player elsewhere:** no camera is taken, at any size (question 2). They hear the Large whistle across the island
+  and get one small corner note ("Pip installed the longer boiler", the ability-arrival flourish, never a card that
+  stops them). Their payoff comes to them on the platform.
+- **The platform beat, the second and smaller one.** Each real train takes the part the next time it stands at Home,
+  inside its 5 s dwell, in about 1.5 s: two little guys at the platform's end, a steam puff that covers the swap at
+  400 ms, a clank and a short squash of the engine, a short toot at 1200 ms, and the new chuff rate as it pulls out. A
+  new car couples at the tail with a buffer clank and a jolt down the train. No camera, no hit-stop, no lock; riders
+  keep their seats. Home's departure board says which train takes it next. A player who saw neither beat gets the card
+  once, the first time they see a train wearing it (call 36).
+
+### 4. Sound
+
+Layered one-shots from the existing procedural recipes, each fired by the visible thing (construction-sound,
+recommendation 2), with weight and no sparkle: an install is matter moved into place, not a pickup.
+
+| Layer | When | Source |
+| --- | --- | --- |
+| Grip | `h+0` | `uiSound('thunk')` |
+| Ratchet clicks, 6 to 14 a second, +7 semitones | the hold | new short click recipe in `machine-sfx.ts`, placed at the jib |
+| Chain creak | the hold | new, quiet, under the clicks |
+| The quiet | `c+0` to `c+320` | ambience ducked 4 dB and sustained machinery 3 dB, 80 ms in, 400 ms out from `c+390` |
+| Whoosh | `c+180` | new, 140 ms |
+| Clank and thump | `c+320` | `clank` and `thump`, same frame |
+| Ratchet zips, rising | each bolt | the click recipe, run fast |
+| Steam burst | `c+1450` | `chuff(…, 1)`, three as the Works' mouth does |
+| Chuff, old rate to new | `c+1450` on | `chuff`, timed by the wheels |
+| Whistle | `c+1800` | `whistle` with the wide range |
+| Count ticks | the readouts | `uiSound('count', +1)`, the kept haul count run |
+| Stamp | `c+1800` | `uiSound('pop')` |
+
+- **Music:** none plays today (1 November: the groove is cut and no placeholder plays), so the duck is ambience and
+  machinery. When the owner's music exists it takes the voice duck's depth over the same window, back by `c+800`.
+- **The new chuff rate is heard at once, as a change.** 20 to 25 m/s is a quarter faster, which is hard to hear as two
+  steady rates and easy to hear as an accelerando, so the wheels run up over 600 ms and the chuff follows them. From
+  rest on, the works engine's idle chuff is the new rate.
+- At most six voices sound together; the clank wins.
+
+### 5. The readouts landing
+
+Only the rows the part changes (call 37): for the longer boiler, top speed, cars it pulls, and each load a minute.
+
+- **Before the install,** with the upgrade selected, a row reads old → new, the new value in the preview colour (the
+  ghost's yellow).
+- **Nothing moves until the hit has happened.** From `c+650`, one row at a time, 150 ms apart, top to bottom: the
+  "old →" folds away and the number counts from old to new in 500 ms, fast then slowing, a count tick per step rising
+  in pitch. It lands with a pop (to 1.25 and back in 180 ms), still in the preview colour.
+- **Cars is not a count:** it is a row of car pips, and the fourth pip drops in with its own small clank.
+- **A minute's load** counts in tenths (2.5 to 2.9).
+- At `c+1800` every landed row settles from the preview colour to ink over 400 ms. That change of colour is the screen
+  saying it is now true.
+- No race strip and no trip time (owner, 10 November).
+
+### 6. Comparing by choosing
+
+The strip holds the part you have (marked "Installed") and the upgrades. There is no other compare control.
+
+- **Choose an upgrade:** within 100 ms its ghost arrives, sliding 0.4 m along the way the part will go on, in 220 ms
+  with a small overshoot; the rows change to old → new with a 150 ms roll; the wheels turn and the engine chuffs
+  quietly at the previewed rate; the crew look at it. One soft tick, pitched by the tile's place in the strip, so
+  running along the strip plays a little scale.
+- **Choose the part you have:** the ghost lifts off and fades in 160 ms, the rows show today's values in ink, the
+  wheels fall back to today's rate. The same tick, at that tile's pitch.
+- Every choice interrupts the last one's motion at once; flicking between two tiles is the comparison and must never
+  wait on a tween. The camera moves only when the category changes.
+- **A part you can't install yet** arrives as a paler, greyer ghost with its reason on the tile ("Needs steel"); the
+  crew sit.
+- **Idle:** the table turns at 6° a second (a turn a minute) and stops while you nudge the view; the cylinder cocks
+  breathe a wisp every 3.2 s with a soft hiss; the ghost's brightness breathes between 0.45 and 0.6 every two seconds;
+  with a part ready, Install carries a slow sheen.
+
+### 7. By category
+
+They differ in the direction of the hit and in who answers.
+
+| | How it arrives | The hit | The answer | Show-off |
+| --- | --- | --- | --- | --- |
+| **Engine part** (boiler, plough, lamp) | lifted by the jib, dropped from above | downward: clank, hit-stop, squash, bolts, steam | chuff run-up and whistle (Large); a heavy chuff and a toot (Medium) | the table turns |
+| **Car** (passenger, cargo, a second wagon) | the table lines up with its approach road and stops turning; two little guys push the car down the road, their distance set by the hold, and at the commit give it a shove so it rolls the last 2 m free | sideways: buffers meet, a 50 ms hit-stop, the car and the engine jolt 12 cm and spring back one after the other 80 ms apart, the hook drops with one click. No bolts, no steam | the engine takes the weight: one heavy chuff and a short toot; a new car pip drops in | a tug: the engine draws the train 1.5 m forward and back |
+| **A better car body** (the bigger cradle) | by the jib, onto the car | downward, Medium | the load pips refill to the new size | a half turn |
+| **Look** (paint, flag, accessory) | one little guy with a long brush, or the flag run up its staff | none: a colour wipe from nose to tail in 500 ms, or the flag snapping out. No hit-stop, no shake | 8 sparkles, a pop; no readouts | a half turn |
+| **Whistle** | screwed on with two zips | none | **the new whistle, blown in full, across the island**: the sound is the install | none |
+
+In Cars and Cargo the train is longer than the table (engine and first car are 8.5 m of 9.6 m), so the works train
+stands across the table and its approach road, the table stays lined up, and the camera sways ±15° in place of the turn.
+
+### 8. Length, repetition, comfort and budget
+
+- **Length:** 1.8, 3.5 and 5.2 s from press to rest by size, of which the hold is 0.6, 0.9 and 1.2 s. Control is
+  locked only from the commit to rest or skip.
+- **How often:** the catalogue is about a dozen installs over the six hours, so this is rarely repeated and should not
+  be cut down for speed. Two rules keep a second and third install in one visit from dragging: the show-off turn plays
+  for a Large install always and otherwise only for the first install of a visit; and the crew's gag changes.
+- **The tenth install** is the hold, the drop, the hit, the bolts, the answer and the numbers, with a different gag:
+  about 2.5 s for a Medium, and skippable from `c+800`.
+- **Reduced motion** (`reducedMotion`): no camera push, shake, hit-stop, wobble, table turn or count animation. The hold
+  and its ring stay; the part cross-fades from ghost to solid in 200 ms at the commit; one clank, one still puff that
+  fades, the whistle; the rows change colour and value in one step. About 1.5 s after the hold.
+- **Flashing:** the white flash is on the part only, 60 ms, never the screen.
+- **Phone budget:** all particles through the existing pool, at most 40 alive at the Large hit (24 on a phone, by
+  halving the counts), so no new draws for effects. New draws at the table while the garage is open: the jib (4), the
+  crew (the folk crew's own), the bolts as one instanced mesh, one per ghost node; ten or fewer in all, no new light
+  (the key's swell is its own intensity), no post effect. The hit-stop freezes the garage's animation clock only: the
+  frame loop, the sim and the world behind carry on. The count writes each row's text at most 20 times and animates
+  only transform and opacity.
+
+### 9. In the first build (view only)
+
+So the feel can be judged before any purchase rule exists:
+
+- **"Try it"** on the longer boiler, where Install will be: the same hold, ring and lift, then the whole Large moment on
+  the works copy, Local to you. It rests for 2.5 s with the rows in the preview colour under a "Trying it on" tag, never
+  "Installed", then comes off again in about 1.2 s: the bolts zip out, the jib lifts the part back to its stand, the
+  ghost returns, the rows count back down in 300 ms. Nothing is sent, saved or shown to anyone else, so what is on
+  screen stays true for the room.
+- Also in: the selection feel of section 6, the idle of the table, the readouts' count, the reduced-motion version and
+  the skip.
+- Not in: the presence of a friend's hold, the platform beat and the card. They come with the op in fit 1.
+- **Proof before the owner's look** (verification; owner, 4 November): a real-time capture of one Try it at desktop and
+  at phone width, with the frame of the press and the frame the part first moves (the boiler fit already records
+  `pressFrame` and `movedFrame`), and the frame of the hit against the clank.
+
+### Install calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| I1 | The verb is Install; readouts are speed, cars and a minute's load; no race strip, no trip time; compare by choosing | Decided | Owner, 10 November |
+| I2 | Installing must be really satisfying, and is designed before it is built | Decided | Owner, 10 November |
+| I3 | Anyone installs, for the room; the works copy takes it first and the real trains at their next Home stop | Decided | 6 and 10 November |
+| I4 | The response starts on the press frame | Decided | 6 November, "Input gets instant feedback" |
+| I5 | Once committed nothing ends the moment but one highlighted skip | Decided | 9 November (the shot rule) |
+| I6 | The jib is a rigid machine that shows its work, with a storyboard and parts sheet first; the little guys stay lo-fi; motion starts simple | Decided | 5 November, three calls |
+| I7 | Sounds are procedural; no music plays, so the duck is ambience and machinery | Decided | 1 November (Sound). Finding 1 |
+| I8 | **Hold to install, no dialog; the hold drives the lift; release cancels freely** | New | Take it. Question 1 |
+| I9 | Three sizes of install, set by the part, on one tunable table | New | Take it: it is how a bigger upgrade feels bigger |
+| I10 | Nobody's camera is taken away from the table, at any size; far players get the whistle, a corner note and the platform beat | New | Take it. Finding 2, question 2 |
+| I11 | The holder's lift is seen by others from the first frame (presence), before the commit | New | Take it: it makes the press a shared thing to watch |
+| I12 | The real trains' platform beat is about 1.5 s inside the dwell, with no camera | New | Take it; refines call 30 |
+| I13 | A jib and its two little guys stand at the table's rim | New | Take it. The crew is Place's folk code, already live at the forge: it still fits, keep. Finding 3 |
+| I14 | Installing a car lines the table up with its road and stops the idle turn in Cars and Cargo | New | Take it. Finding 4 |
+| I15 | A whistle's install is the whistle blown across the island | New | Take it |
+| I16 | "Try it" in the first build; kept in the game afterwards for parts you can't install yet, in a lighter form | New | Take the first; question 3 for the second |
+| I17 | Holds of 600, 900 and 1200 ms; hang 120 and 180 ms; hit-stop 50 and 70 ms; shake 0.2 and 0.35; the drop 0.6 m in 140 ms; the squash 0.94 | Default | Tunables. 55 ms is the game's existing hit-stop |
+| I18 | Bolts 2 and 4 at 200 ms; particle counts; the three crew gags | Default | Tunables |
+| I19 | The numbers land from `c+650`, 500 ms a row, 150 ms apart, a pop, the preview colour until `c+1800` | Default | Tunables |
+| I20 | Cars shows as pips, not a number | Default | An integer going 3 to 4 has nothing to count |
+| I21 | The show-off turn: always for Large, otherwise once a visit; skip from `c+800` | Default | Follows the shot rule's 0.8 s |
+| I22 | Selection: the ghost in 220 ms, a tick pitched by tile, idle turn 6° a second, a wisp every 3.2 s | Default | Tunables; inside finding 12(d)'s 100 to 300 ms |
+| I23 | The chuff changes rate as a 600 ms run-up | Default | A quarter faster is hard to hear as two steady rates |
+| I24 | The duck: ambience 4 dB, machinery 3 dB, for about 400 ms; six voices at most | Default | [audio-mix](../research/audio-mix.md)'s voice-claim depths |
+| I25 | Reduced motion and the phone budget as section 8 | Default | |
+| I26 | Strings: "Hold to install", "Try it", "Trying it on", "Pip is installing the longer boiler", "Pip installed the longer boiler" | Default | Drafts for the owner; none are The Boogler's. The Large card's words are the owner's |
+
+### Install findings
+
+1. **The install leans on two sounds the 1 November audit cut.** "Wagon whistle and clacks" and "stoke roar and chuffs"
+   were cut with "better sounds come later, from references". `machine-sfx.ts` has a chuff and a whistle live at the
+   Roundhouse and the Works today, and beats 2 and 4 use them as the engine's whole answer. They need the owner's ear in
+   the Try it; if they are not good enough the answer is weak, and the fix is those two recipes, not this spec. There
+   is also no music to duck, so the quiet before the hit comes from ambience alone and from stopping the ratchet.
+2. **This departs from one reading of "shared moments play for everyone" (10 November).** The gates take every camera
+   in the room. An install is chosen by someone who opened a screen, there may be a dozen of them, and it has a second
+   beat that travels to everyone anyway. Taking a rider's or a carrier's camera for it would cost more than it gives.
+   The decision's text is the orchestrator's reading of an unfinished sentence, so this is put to the owner.
+3. **The jib is a new thing in the world and is unplaced.** It must stand at the rim outside the stall arc (160° to
+   220°), off the spur and its approach, clear of the lever post and of the garage camera's arc, and move out with the
+   table when the Roundhouse grows (it sits inside the keep-clear, as the stone yard does). No still was taken; the
+   builder proves the spot with one from the garage camera and one from the platform. It adds no route and no reach.
+   Not checked: whether the folk crew can run here while another crew is out (the forge's is done long before).
+4. **A new car does not fit on the table with the engine and first car** (8.5 m of 9.6 m), and the brief's section 2
+   already sends cargo to the consist strip. So the car install happens on the table's approach road, which fixes the
+   table's angle in those two categories. That is a visible difference between categories, which helps; it also means
+   the car install needs the spur clear, so it is closed while anything is shunting there.
+5. **The works copy must not lie during a Try it** (principle 11, and finding 2 of the first review). It is Local, it
+   is tagged, it comes off again by itself, and nobody else sees it.
+6. **Do not spend the moment before it is earned.** If Try it stays in the game it should be the lighter version (no
+   whistle, no turn, no card), so the real install is still bigger than its rehearsal.
+7. **Solo and together.** Solo it is complete as written. Together the hold is something to watch and the far player's
+   beat is on the platform; a friend arriving late finds the trains wearing the part and gets the card once.
+
+### Install owner questions
+
+1. **Committing an install.** (a) **Recommended: hold for about a second; your hold cranks the part up, finishing it
+   drops the part; release to cancel; no dialog.** (b) Press Install, then confirm. Answer: ___
+2. **Players away from the table.** (a) **Recommended: nobody's camera is taken. They hear a new boiler's whistle
+   across the island, get a small corner note, and see the part go onto their train at its next Home stop.** (b) A new
+   boiler or engine plays for everyone in the room like a gate; smaller installs as (a). Answer: ___
+3. **"Try it" after the first build.** (a) **Recommended: keep it for parts you can't install yet, in a lighter form
+   (no whistle, no turn, no card).** (b) First build only; remove it once Install exists. Answer: ___
 
 ## Parked
 
