@@ -222,6 +222,21 @@ export function gpuDone(): Promise<void> {
   return device.queue.onSubmittedWorkDone();
 }
 
+// compileAsync builds each object's pipeline for the camera's pass only. The sun's shadow pass needs one more per caster
+// geometry layout, built the first frame that caster enters the shadow camera: on the arrival (10 November 2026) the
+// cove's casters did that halfway down the fall, and each synchronous build held the GPU 120-240 ms on a cold Metal
+// cache. For the warm-up frame every caster is drawn whatever the shadow camera sees, so those build here, off-screen.
+function castAllShadows() {
+  const undo: THREE.Object3D[] = [];
+  scene.traverseVisible((o) => {
+    if (o.castShadow && o.frustumCulled) {
+      o.frustumCulled = false;
+      undo.push(o);
+    }
+  });
+  return () => undo.forEach((o) => (o.frustumCulled = true));
+}
+
 // r187 has no RenderPipeline.compileAsync. Visit its REAL draw path (QuadMesh installs its vertex node
 // temporarily; RTT/shadow/fullscreen passes choose their own target and MSAA), but compile asynchronously.
 // Never hold renderer target/material overrides across an await. This also retains #35069's guard.
@@ -239,6 +254,7 @@ async function compileFrame() {
       const cleanup = prepare();
       if (cleanup) cleanups.push(cleanup);
     }
+    cleanups.push(castAllShadows());
     renderFrame();
   } finally {
     backend.createRenderPipeline = create;
