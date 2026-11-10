@@ -15,6 +15,7 @@ import {
   trainLegSpeed,
   trainAlong,
   trainArrives,
+  trainDir,
   trainIdle,
   trainRequestable,
   trainSpeed,
@@ -490,6 +491,32 @@ test('the wagon needs no request: loads at the quarry going out, unloads at the 
   assert.ok(loaded >= 2 && unloaded >= 2);
   assert.equal(farHead, 0, 'Far Head is a request stop: nobody asked');
   assert.ok(works.pierRack + works.pierSet <= WORKS.pier);
+  assert.equal(invariant(w.s), null);
+});
+test('asks never starve the footing wagon: a friend at Far Head asking for the pier each time it heads home empty', () => {
+  // Without the owed pickup as a turn point, the ask turned the empty wagon back at Far Head, never to the quarry.
+  const w = railwayAtWorks('wagon-on'),
+    r = line2(w);
+  let unloaded = 0,
+    pressed = 0;
+  for (let t = 0; unloaded < 2; t++) {
+    assert.ok(t < 12000, `the pier gets footings (Far Head pressed ${pressed} times, ${unloaded} unloads)`);
+    const foot = r.foot;
+    if (
+      r.phase === TRAIN_PHASE.RUN &&
+      trainDir(r) < 0 &&
+      r.wagon &&
+      r.foot === 0 &&
+      trainAlong(r, 1, w.t) - STOPS[2]! > BRAKE + 400 &&
+      !reqHas(r.req, 2, 1, STOPS.length)
+    ) {
+      ask(w, H.farHead, 1);
+      pressed++;
+    }
+    advanceWorks(w, 1);
+    if (r.phase === TRAIN_PHASE.STAND && r.at === 3 && foot > 0 && r.foot === 0) unloaded++;
+  }
+  assert.ok(pressed > 0, 'the friend asked');
   assert.equal(invariant(w.s), null);
 });
 test('every footing has one home every tick; fourteen in all', () => {

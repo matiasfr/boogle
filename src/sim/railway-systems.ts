@@ -921,7 +921,6 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.glide': [glide],
   'rail.depotRailTake': [depotRailTake],
   'rail.pack': [pack],
-
   'rail.boilerTake': [boilerTake],
   'rail.boilerDrop': [boilerDrop],
   'rail.boilerFit': [boilerFit],
@@ -941,7 +940,8 @@ export function railOutcome(w: World, pid: string, epoch: number, request: numbe
 /** All transfers recheck capacity at application, after preceding actions. */
 export function railApply(w: World, pid: string, e: RailAction, tick: number, timing: LineTiming = LINE_TIMING) {
   const previous = railOutcome(w, pid, e.epoch, e.request);
-  // The receipt answers 'snapshot-required' for a pid with no account, so one is here.
+  // A pid with no account never gets past here: the server refuses its action as 'session' before applying it, and
+  // the receipt answers 'snapshot-required' to any other caller.
   if (previous) return previous;
   const a = w.lookup(Account, pid)!;
   let n = 0;
@@ -1107,19 +1107,25 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
     row.foot = 0;
   }
 }
-/** The stops line 2 makes with no request (docs/plans/works-late-game.md, step 1): Far Head while the Q6 kit is
- * aboard; the quarry going out while the wagon has room, the Works rack a footing and the pier a need; the pier while
- * the wagon carries footings. Line 1 carries nothing by train. */
+/** Q6's kit is still owed to Far Head and none of it is aboard: the train must go home to the village to load it. */
+function kitOwed(w: World, r: Readonly<Row<typeof Train>>) {
+  if (r.logs + r.rails > 0 || qActive(w) !== 5) return false;
+  const j = w.get(QJob, qjob(w, 5))!;
+  if (j.start >= 0) return false;
+  const need = depotNeed(w, 5, j);
+  return need.logs > 0 || need.rails > 0;
+}
+/** The stops line 2 makes with no request (docs/plans/works-late-game.md, step 1): the village going home while the
+ * Q6 kit is owed and not aboard, and Far Head while it is aboard; the quarry going out while the wagon has room and
+ * the pier still needs footings; the pier while the wagon carries footings. Line 1 carries nothing by train. While
+ * anything is asked, a service stop ahead the other way is where the train turns (trainNextStop), so asks never
+ * starve these errands. */
 function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>): ServiceStop {
   if (slot !== 1) return () => false;
   return (k, dir) =>
+    (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === 2 && r.logs + r.rails > 0) ||
-    (k === 1 &&
-      dir > 0 &&
-      r.wagon &&
-      r.foot < WORKS.wagonCap &&
-      w.get(Works, worksId(w))!.rack > 0 &&
-      pierOwed(w, r.foot) > 0) ||
+    (k === 1 && dir > 0 && r.wagon && r.foot < WORKS.wagonCap && pierOwed(w, r.foot) > 0) ||
     (k === 3 && r.wagon && r.foot > 0);
 }
 /** A running train asked to stop at a halt nearer than its leg's end, which it can still brake for: the leg is

@@ -195,7 +195,9 @@ function reachable(stops: readonly number[], s: number, v: number, dir: number) 
 }
 /** The stop a train at `s` (cm), `v` (cm per tick), going `dir` makes next, or -1 if it can stop nowhere ahead:
  * the nearest halt asked for in its direction (or a service stop); else the farthest halt ahead asked for the other
- * way (it turns there); else, with requests only behind it, the next halt (it turns back early); else its end. */
+ * way, or (while anything is asked) owed a service that way: it turns there, so an ask never turns it back short of an
+ * errand the sim still owes ahead; else, with requests only behind it, the next halt (it turns back early); else its
+ * end (nothing asked anywhere: it runs the whole line). */
 export function trainNextStop(
   stops: readonly number[],
   s: number,
@@ -210,7 +212,7 @@ export function trainNextStop(
   if (!ahead.length) return -1;
   for (const k of ahead) if ((k !== end && reqHas(req, k, dir, n)) || service(k, dir)) return k;
   let far = -1;
-  for (const k of ahead) if (reqHas(req, k, -dir, n)) far = k;
+  for (const k of ahead) if (reqHas(req, k, -dir, n) || (req && service(k, -dir))) far = k;
   if (far >= 0) return far;
   for (let k = 0; k < n; k++) if (!ahead.includes(k) && reqAt(req, k)) return ahead[0]!;
   return ahead[ahead.length - 1]!;

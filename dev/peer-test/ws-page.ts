@@ -399,7 +399,6 @@ function startWorld(room: Room) {
           return adapter.fitBoiler(intent.revision);
         case 'rail.call':
           return adapter.callTrain(intent.id, intent.dir);
-
         case 'rail.lever':
           return adapter.pullLever();
         case 'rail.seaSwitch':

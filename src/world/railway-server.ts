@@ -41,7 +41,7 @@ import {
   LINE2_OLD_TRAIN,
 } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
-import { LINE_HALTS, trainAlong } from '../sim/railway-train.ts';
+import { LINE_HALTS, trainAlong, trainSpeed } from '../sim/railway-train.ts';
 import { railLinePoint } from '../sim/railway-line-path.ts';
 import {
   PIER_FRAME,
@@ -54,7 +54,6 @@ import {
   WORKS_RACK,
   WORKS_SEAMS,
 } from '../sim/railway-works-layout.ts';
-
 import { SEAM_THROAT } from '../sim/railway-works.ts';
 import { RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
 import {
@@ -149,15 +148,19 @@ export const RAIL_ACTIONS = new Set([
  * second before it (the rider's own view of the train lags the room clock). */
 export const RIDER_REACH = 1000;
 const RIDER_LAG_TICKS = 10;
+/** The farthest car from the train's pose: the rear car (line 2's footing wagon) sits 7.4 m behind it
+ * (TRAIN_OFFSETS in src/proto/wagon/cars.ts). */
+export const RIDER_SPAN = 740;
+/** A passenger's ask is judged against the train's pose now, widened by what it can travel in the lag window (its
+ * speed now × RIDER_LAG_TICKS) and by the train's length, all in integer cm. Not replayed from the row's past poses:
+ * a replan rewrites the row, which would collapse those to the replan point and refuse a lagging rider. */
 function nearTrain(w: World, line: number, tick: number, actor: Actor) {
   const id = w.lookup(Train, line);
   if (id === undefined) return false;
   const row = w.get(Train, id)!;
-  for (let t = tick; t >= tick - RIDER_LAG_TICKS; t--) {
-    const p = railLinePoint(line, trainAlong(row, line, t));
-    if (actor.reach(p.x, p.z, RIDER_REACH)) return true;
-  }
-  return false;
+  const p = railLinePoint(line, trainAlong(row, line, tick));
+  const travel = Math.ceil(trainSpeed(row, line, tick)) * RIDER_LAG_TICKS;
+  return actor.reach(p.x, p.z, RIDER_REACH + travel + RIDER_SPAN);
 }
 /** Whether a well-formed action is in range of its target. Readiness and balances are the rule's, not this. `tick` is
  * the rule tick it applies at (a passenger's stop request is judged against the train's pose then). */
@@ -253,7 +256,6 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     }
     case 'rail.pack':
       return near(LINE2_PACK.x, LINE2_PACK.z, 340);
-
     case 'rail.lever':
       return height(LINE2_LEVER.y) && near(LINE2_LEVER.x, LINE2_LEVER.z, 320);
     case 'rail.seaSwitch':

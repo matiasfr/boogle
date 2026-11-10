@@ -463,7 +463,6 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     while (!(line2().cart.phase === CART_PHASE.DROP && line2().depotRails > 0) && waited < 3 * cartCycleTicks(3))
       waited += (await ticks(10), 10);
     assert.equal(line2().cart.phase, CART_PHASE.DROP, 'the cart reached the rack');
-
     assert.equal(line2().depotRails, LINE2_STATIONS[3]!.bill[1]);
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');

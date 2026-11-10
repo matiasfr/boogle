@@ -7,7 +7,6 @@
 //
 //   CART                       speeds, dwells and what a load holds (Place's depot.ts CART)
 //   CART_ROAD                  the pinned stops: the camp (0), the forge stop at the turntable, each stretch's rack
-
 //   cartAlong(c, tick)         where the cart is, cm along the road (tick may be fractional in a view)
 //   cartEnd(c)                 the tick its current timed phase ends (Infinity while it rests or waits)
 //   cartCycleTicks(k)          one whole trip to stretch k's rack and home, for the away credit

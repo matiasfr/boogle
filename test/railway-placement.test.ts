@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import type { RailAction } from '../src/sim/railway.ts';
 import { Rail } from '../src/sim/railway-world.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
-import { RIDER_REACH, railValid } from '../src/world/railway-server.ts';
+import { RIDER_REACH, RIDER_SPAN, railValid } from '../src/world/railway-server.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { createRailway, edit, hash, invariant, railApply, railSession, restore, worldOf } from './railway-live.ts';
@@ -108,10 +108,12 @@ test("a stop request is judged from the halt's lever or aboard its line's train"
   const quarry = LINE_HALTS[3]!;
   const e = { op: 'rail.call', epoch: 1, request: 1, id: 3, dir: 1 };
   assert.equal(railValid(w, e, at(quarry.x + 200, quarry.z), 50), true, 'at the lever, on the platform');
-  // Line 2's train stands at its village stop (17 m along): a passenger beside it asks for the quarry.
+  // Line 2's train stands at its village stop (17 m along): a passenger on its rear car asks for the quarry. Standing,
+  // the reach is the rider's own plus the train's length (no travel in the lag window).
   const train = railLinePoint(1, TRAIN_STOPS[1]![0]!);
-  assert.equal(railValid(w, e, at(train.x + RIDER_REACH - 100, train.z), 50), true, 'aboard');
-  assert.equal(railValid(w, e, at(train.x + RIDER_REACH + 300, train.z), 50), false, 'beside neither');
+  const reach = RIDER_REACH + RIDER_SPAN;
+  assert.equal(railValid(w, e, at(train.x + reach - 100, train.z), 50), true, 'aboard');
+  assert.equal(railValid(w, e, at(train.x + reach + 300, train.z), 50), false, 'beside neither');
   assert.equal(railValid(w, { ...e, id: 0 }, at(train.x, train.z + 2000), 50), false, "line 1's halt, far from it");
   for (const dir of [undefined, 0, 2, -2])
     assert.equal(railValid(w, { ...e, dir }, at(quarry.x, quarry.z), 50), false, `dir ${dir}`);
