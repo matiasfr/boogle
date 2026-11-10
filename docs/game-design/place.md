@@ -853,22 +853,46 @@ avatar, so where it hops differs a little between tabs. No op or `WORLD_NS` chan
   where you took yours. A crystal is saved the moment it starts to fly, so a reload mid-flight keeps it.
 - **When pillars come** (open question 19's shared building crystals), these get a distinct name or look, or fold into
   them (place-retirement designer finding 4). Not now.
-
-### Gold finds in the live game (9 November 2026, place-retirement F1)
-
-- **Nine gold finds**, at Place's spots: three along each path (a fifth, nearly half and four fifths of the way, 4.5 m
-  to alternate sides) and three on Far Head, "something for the long way out". Each is a brass disc with a raised
-  crossed stamp, a metre off the ground, turning where it lies. Nothing marks them.
-- **Walk within 2.2 m** (and 3 m of its height) and it's yours: a clank, a ring of brass sparks, and it's pinned on the
-  **finds board**, a dark board standing beside the curio shelf, three to a row in Place's order of spots. No card, no
-  reward and no gate. Mark `find found`.
-- **Yours**, like the crystals: each player finds their own; a partner still sees theirs where you took yours. Saved
-  the moment you walk into it.
 - **The curio shelf** (9 November): each gift stands on its board, and the top board is 16 cm higher than Place's, so
   the sheeted outfits no longer hang over the crystals' row.
+- **Gold finds are cut** (owner, 9 November). F1 ported them with a finds board beside the shelf; both are gone. The
+  crystals stay.
 
-Sync: Personal Local, `boogle.railway-finds.v0:<railwayRoomId>:<pid>` (`crystals`, `finds`; F2's `secrets` and
-`hubbed` share the store), pruned by a world bump. No presence key, op or `WORLD_NS` change.
+Sync: Personal Local, `boogle.railway-finds.v0:<railwayRoomId>:<pid>` (`crystals`; F2's `secrets` and `hubbed` share
+the store; the cut gold finds' `finds` field is still parsed, unused), pruned by a world bump. No presence key, op or
+`WORLD_NS` change.
+
+### Secrets in the live game (9 November 2026, place-retirement F2)
+
+As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
+
+- **Nine of Place's ten secrets** stand where Place had them (`tech-layout.ts`'s `SECRETS`), each a crate with a
+  cosmetic only it gives, beside something that makes you look twice: laundry and a fence behind the cottage (yard),
+  a scarf on a dead branch over the lookout shelf, a bell under a bracket you hear from the footbridge, the catwalk
+  under the trestle (alcove, its ring facing the bridge), the tower's first slab (its east edge, out of the way back down) and its side nook (on plinths), a
+  yellow block on the quarry's low rock (loft, its ring facing the camp), a weather vane on the village column
+  (balcony) and an orange flag on Far Head's sea stack. Walk into a crate (1.25 m) or Open it (at the bay, Open only): the station boxes'
+  show and card play (one reveal queue, `src/render/crate-show.ts`), the gift is yours at once, and on you when you
+  put the card away if its slot is empty. Cards are name-only: these gifts have no line. Mark `secret found`.
+- **Not ported:** the jump course and its lamplighter's cap ("block") move to job E with the double jump; Place's Far
+  Head glide pad and ramp are cut (glider B's device is on Needle Bell).
+- **Abilities are production's:** the alcove, nook, loft and the way back up from the sea stack are hook rings after
+  the climb's (`hook-path.ts` `HOOK_SIDE`); the lookout needs the double jump (its shelf raised to 20.0 m: a stone
+  block you see from the first path and can't quite reach); the balcony needs the glider and its crate appears once
+  the room has it (glider B, Needle Bell's summit). Two early ways in are accepted sequence breaks (designer,
+  9 November): a drop from the plateau east of the alcove, and a double jump down from the stack-return slab onto the
+  sea stack, whose crate therefore stands without the glider.
+- **The finders' bay** stands across the path from the curio shelf, drawn with it (no draws of its own): the secrets'
+  gifts under sheets until they're yours. A secret you went on past without turns up there as a second crate, in the
+  order the abilities come: yard and bell with the hook; alcove and firstpull with the glider; nook and loft with the
+  trains; the lookout once the double jump is yours and line 2 is complete; the balcony and the stack at the end of
+  the run (line 2 complete). Open either crate and the other goes. Mark `secret at the hub`. The crates wait three by
+  three past the trophy plinth, within ±1.1 m sideways, so the bay fits the Home station hall's 6 m end wall.
+- **Reach** (`npm run level-check`, Place's model): each secret is out of reach before its ability, except the two
+  accepted sequence breaks above (the alcove from the plateau, the stack from stack-return), printed as facts.
+
+Sync: Personal Local, the finds store's `secrets` and `hubbed`, each written the moment it changes. No presence key,
+op or `WORLD_NS` change; a partner sees their own crates. Cost at the bench's `town` view: +7 draw calls (233 → 240).
 
 ## Departures from the brief
 

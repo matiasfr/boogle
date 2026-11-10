@@ -345,7 +345,7 @@ Where a job adds meshes, it runs before and after:
   - `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **T1a. Facts.** Write `src/sim/town-facts.ts` as in Design. Write `test/town-facts.test.ts` on the seed helpers
+- [x] **T1a. Facts.** Write `src/sim/town-facts.ts` as in Design. Write `test/town-facts.test.ts` on the seed helpers
   `dev/look/rail-seed.ts` uses (`test/helpers/railway-q2.ts`, `test/helpers/railway-trains.ts`):
   - `'a fresh railway has no facts and 12 people'`;
   - `'the first path opens on T3 completion: path, 20 people'`;
@@ -354,14 +354,14 @@ Where a job adds meshes, it runs before and after:
   - `'q6-done: every milestone fact, 32 people'`;
   - `'town and stone stay false'`;
   - `'newest is the last true fact in TOWN_FACTS order'`.
-- [ ] **T1b. Railway read.** Add `railwayRead` and `setRailwayRead` to `entities/railway/state.ts`. In
+- [x] **T1b. Railway read.** Add `railwayRead` and `setRailwayRead` to `entities/railway/state.ts`. In
   `entities/railway/index.ts`, call `setRailwayRead(adapter.inspect)` after `createRailwayAdapter`, and
   `setRailwayRead(null)` in `dispose`. In `opening-view.ts`, replace `layout.TUNE.people + (pathOpen ? 8 : 0)` with
   `townPopulation(env.progress())` for both `setPopulation` and `signs.setNumbers`.
-- [ ] **T1c. Sites take an owner.** In `sites.ts`, `buildSites(owner?: OwnedView)` keeps the owner for `dropSet(boxes,
+- [x] **T1c. Sites take an owner.** In `sites.ts`, `buildSites(owner?: OwnedView)` keeps the owner for `dropSet(boxes,
   onLand, owner)` and for every `hullBodies(…, owner)` in `solid()`, and returns a disposer that removes `sites`
   entries added since its last call. Place calls it with no owner, as now.
-- [ ] **T1d. Rooms as a factory.** In `rooms.ts`, replace module-level construction with
+- [x] **T1d. Rooms as a factory.** In `rooms.ts`, replace module-level construction with
   `createRooms(owner: OwnedView, env: { up(id: RoomId): boolean })`. It returns `{ rooms, indoors, onRoom,
   indoorCamera, update(dt), warm(), snap(), stakeBoard, plankFloor, roomMesh, plate, addSolid, roomToWorld,
   worldToRoom, DOOR }`.
@@ -370,14 +370,14 @@ Where a job adds meshes, it runs before and after:
     in `owner.cleanup`.
   - `house.ts` becomes `createHouse(owner, rooms, env)`. Its `stageOf(FACTS)` reads `env.has`.
   - Place's `town-life.ts` builds both with a Place env (`L1.open`, `growth.ts`) and a never-disposed owner.
-- [ ] **T1e. The town entity.**
+- [x] **T1e. The town entity.**
   - `view.ts` builds an owner and imports `rooms`, `house` and `sites`.
   - `up = (id) => id === 'house'`. In T1 the shop and museum keep their stake boards (the town's words: "Fine Prices,
     coming soon"; "A museum, once there is something to show").
   - Call `sites.buildSites(owner)` and `rooms.warm()`.
   - `update(ctx)` runs `rooms.update(dt)` and `house.update()`.
   - `inspect()` returns `{ facts, level, population, rooms: { house: { up }, … }, indoors }`.
-- [ ] **T1f. Eval.** Write `dev/look/evals/railway-town.ts`, modelled on `railway-b5b8-at.ts`. It waits for
+- [x] **T1f. Eval.** Write `dev/look/evals/railway-town.ts`, modelled on `railway-b5b8-at.ts`. It waits for
   `inspectTown()` and `railwayRead()?.ready`. `townat=house|shop|museum|street` puts Buddy 1 m inside that door,
   facing in, with the debug camera behind. `townact=talk|try|take|walkout` then presses Interact with
   `interactDown()`/`interactUp()` from `src/player/hands.ts` (as `dev/look/bot.ts`'s `press()` does) once the matching
@@ -409,19 +409,19 @@ works.
   `docs/atlas/stories/town.json`.
 
 **Steps.**
-- [ ] **T2a.** Move the shore-worker block (`shoreWorker`, `shoreGreeting`, `heardShoreAsk`, the `place-talk-shore`
+- [x] **T2a.** Move the shore-worker block (`shoreWorker`, `shoreGreeting`, `heardShoreAsk`, the `place-talk-shore`
   target and the `shoreNewcomer`/`shoreAsk` memory) out of `residents.ts` into Place's `shore-worker.ts`, unchanged.
   Production has Sleeves (`greeter.ts`).
-- [ ] **T2b.** `createResidents(owner, rooms, env, memory: { load(): Seen | null; save(s: Seen): void })` returns
+- [x] **T2b.** `createResidents(owner, rooms, env, memory: { load(): Seen | null; save(s: Seen): void })` returns
   `{ guys, update(dt), targets(), reset() }`.
   - `newestFact()` → `env.newest()`; `job.awake` → `env.awake()`; `showing() || pullOn()` → `env.hush()`.
   - Place passes a `personalSlice('town')`-backed memory; production passes `memory.ts` (key
     `boogle.railway-town.v0:…`).
-- [ ] **T2c.** Mount in the town entity; add its targets.
+- [x] **T2c.** Mount in the town entity; add its targets.
   - Production `env.hush` = `conversation.open || (inspectRailway()?.reward.busy ?? false)`, sampled at 4 Hz.
   - Add the prefix to `world-reset.ts` plus a test case
     (`'town memory from an old rail namespace is removed'`).
-- [ ] **T2d.** Add the resident and building beats to `RAILWAY_BEATS`. Add `docs/atlas/stories/town.json` (the town
+- [x] **T2d.** Add the resident and building beats to `RAILWAY_BEATS`. Add `docs/atlas/stories/town.json` (the town
   reads railway facts; memory is personal).
 
 **Proofs.**
@@ -702,7 +702,7 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 **Steps.**
 - [x] **K1a.** Port `crystals.ts` (`SPOTS`, the magnet and chime, the glowing shelf row through `crystalPeg`) into the
   finds view. The finds store is `boogle.railway-finds.v0:…`, field `crystals`. Mark `crystal found`.
-- [ ] **K1b.** If the owner chooses shared crystals instead, follow "WORLD_NS" above. Use the lockstep-system /
+- [ ] **K1b.** Cut: the owner chose personal crystals (owner question 2, 9 November). If the owner chooses shared crystals instead, follow "WORLD_NS" above. Use the lockstep-system /
   Server recipe: a field on `Rail`, op `rail.crystal`, server reach validation, prediction, adapter method
   `takeCrystal(id)`, a `test/railway-crystals.test.ts` (`'a crystal is taken once'`, `'out of reach is refused'`), and
   the namespace bump on merge.
@@ -746,6 +746,10 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 
 **Done means.** The gold finds work as in Place, personally.
 
+**Cut (9 November, owner):** "Yeah, I think I would cut them in that case." The gold finds, the finds board and
+`findPeg` are gone (the crystals stay). Kept: the shelf layout fix, and the store's `finds` field, still parsed and
+unused, so existing saves keep their other fields. The notes below are history.
+
 **As built (9 November).**
 - **Store:** `takeFind(id)`/`hasFind(id)`/`finds()` beside `takeCrystal`, written at once; event kind `find`.
   `test/railway-finds.test.ts`. Ids are Place's (0–2, 10–12, 50–52: `PATH_SAMPLES` has two paths, so nine finds).
@@ -771,7 +775,7 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **F2a.** Port `tech.ts`'s secrets (`tech-layout.ts`'s `SECRETS` / `FINDERS` data) and the finders' bay.
+- [x] **F2a.** Port `tech.ts`'s secrets (`tech-layout.ts`'s `SECRETS` / `FINDERS` data) and the finders' bay.
   - Each secret grants its cosmetic through `wardrobe.grant`.
   - Hook and double-jump secrets use production's `hook-shot.ts` rings and the `rail.jump` ability.
   - Glide-only secrets (the village balcony, Far Head's sea stack) never spawn in the world. They appear at the bay
@@ -784,6 +788,81 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 - The level check still passes (`npm run level-check`).
 
 **Done means.** Every Place secret is either reachable in production or waiting at the bay.
+
+**Designer fit check (9 November; [agent calls](../agent-calls.md)).** Changes the step above:
+- The glide-only two do stand in the world, once the room has the glider; their bay crates wait for the end of the run
+  (line 2 complete). Owner question 5 assumed no glider; glider B grants one on Needle Bell's summit.
+- Bay timing follows production's ability order: yard and bell at the hook; alcove and firstpull at the glider; nook
+  and loft at trains; the lookout once the double jump is yours plus a later milestone (built: line 2 complete).
+- **Deferred to job E:** the jump course (j1–j7, the end block, the catch ribbon, the ramp) and its lamplighter's cap
+  (the "block" secret, `lampcap`). Build them wherever the double jump ends up.
+- Not ported: Place's Far Head glide pad and ramp (`glide-home`, `GLIDE_RAMP`).
+- The ten secret gifts have no line: cards are name-only.
+
+**As built (9 November).**
+- **Store** (`src/entities/finds/state.ts`): `takeSecret`/`hasSecret`/`secrets()` and `hubSecret`/`isHubbed`/`hubbed()`,
+  each written at once, events `secret` and `hub`; ids validated (`[A-Za-z0-9-]{1,24}`, at most 32).
+  `test/railway-finds.test.ts`.
+- **View** (`src/entities/finds/secrets-view.ts`, mounted by the finds view): nine secrets (`block` filtered out).
+  The ground (the lookout's shelf, the loft's rock, the balcony's column and wood deck, the sea stack, the tower
+  plinths) and every clue are one merged mesh with Place's colliders; the crates, world and bay, are three instanced
+  meshes (one per tier), refilled each frame. Walk into one in the world (1.25 m) or Open it (3.4 m, 2.6 m of height); at the bay, Open only (the crates are 1.1 m apart). The store is
+  written, then `wardrobe.grant(id, {wear: false})`, then the show; putting the card away calls `unbox` (worn if the
+  slot's empty). The bell rings near the bridge until you have it. `glider()` reads the railway's `glide`, which is false
+  in production until glider B (a TODO names it).
+- **Long run (9 November, after the Mac restart; rebased on origin/main #1274, `npm run check` 597/597).**
+  `f2-long2` (`npm run playthrough -- --long --wall 3000 --stall 6000 --query shot=play --eval
+  dev/look/evals/railway-job.ts`) passed on a quiet machine (1-minute load 5–9): 174 game minutes in 29, everything
+  expected came, no gfx errors. No `secret found`: the bot takes none, firstpull included. No stall on t0 (`f2-long`
+  stood 100 min at (1008, 8)). Bay crates come in production's order: yard and bell at the hook (25:54), nook and loft
+  at trains (1:20:26), the lookout, balcony and stack at the end of the run (1:32:16); alcove and firstpull wait for
+  the glider, which production doesn't grant yet. Stalls: still 83 min, pushing 3 s, longest 15 min at (1165, -28);
+  the 5 min at (1026, 28) after the summit is also in another branch's `gb-long2` (6 min, 161 game minutes), so
+  it isn't F2's.
+- **Stills** (`.look/f2-*`, sheet `.look/f2-owed-sheet.png`): firstpull's crate on its plinth on t0, the walk across
+  the slab clear (`f2-firstpull`, `f2-firstpull-east`); with `railGlide=1`, the balcony's column, deck, teal vane and
+  crate, the yard crate below (`f2-balcony-wide`), and the sea stack with its orange flag and crate, the stack-return
+  slab and ring behind (`f2-stack-wide`); `--hud` mid-reveal, "You got a straw hat!" and its star, no second line
+  (`f2-reveal-hud`); on Buddy from the front, the brass whistle hangs on a thin dark cord, the station master's on a
+  wide blue band (`f2-wear-*`). They read apart by the cord; front-on, each whistle's brass body is an end-on disc.
+- **Rebased on world v23 (9 November, glider B merged; `npm run check` 609/609, same three EARLY findings).** Only
+  `docs/agent-calls.md` conflicted (main's new rows beside F1's and F2's; both kept). `railGlide=1` is gone, so the
+  stills above used a grant production now has for real. Tight looks at `BOOGLE_BOT_RANK=2`: at `--rail-seed
+  glide-earned` the bay holds yard, bell, alcove and firstpull, not the trains or end-of-run ones (`f2-bay-glide`);
+  from Needle Bell's summit (staged as the glide bot does) the real glider, by real input, landed Buddy on the balcony
+  and took its crate in 25 s (`.look/glide-to.ts`, scratch).
+- **Firstpull** stands on t0's east edge (10.1, 8), not Place's north edge: there its plinth blocked the walk off t0
+  back down to p2, and the first long run failed on it (`return hook p2: nothing`).
+- **The reveal** is now shared with the station boxes: `src/render/crate-show.ts` (`createCrateShow`), used by
+  `crates-view.ts` and the secrets.
+- **Hook rings:** `hook-path.ts` `HOOK_SIDE = ['alcove', 'nook', 'loft', 'stack-return']` after the climb's eight;
+  the hook view draws their rings and slabs as it does the climb's. Presence names rings by id, so an older build
+  just shows no cable for them.
+- **The bay** is part of the curio shelf (`curio-shelf.ts`): its frame is in the shelf's frame and its sheeted gifts in
+  the shelf's two meshes. `bayPeg(k)` places missed crates either side of the trophy plinth that stands where Place's
+  first ones did. The town's `townShelf()` exposes it; the shelf's inspection gains `bay`.
+- **Level check** (`dev/economy/place-level.ts`): firstpull (t0), nook and loft are out of reach before the hook, and
+  the balcony and stack before the glider (also with the line to Far Head). The designer's ruling on the three early
+  ones (9 November): the lookout is closed (`mustNot` before the second jump; approach (−137, −117)); the alcove (a
+  drop from the 30 m plateau east of it) and the stack (a double jump down from stack-return) are accepted and print
+  as facts, and the stack's world crate stands without the glider (its bay crate still waits for the end of the run).
+- **The lookout's height** (orchestrator default, after the ruling's 20.4 m): the ground at the approach reads 17.46 m
+  in the game, not the model's 17.78, and at 20.4 two jumps made it only with the best timing. Measured with
+  `.look/lookout.ts` (scratch; real sprint and Jump input, the jump device taken by Interact), five ordinary timings
+  (first press held 150–400 ms, second 50–150 ms later): at 20.15 m 3 of 5; at 20.0 m 3 of 5 taking off 0.9 m from
+  the face, 4 of 5 from 1.5 m, 3 of 5 from 2 m. Every miss peaked at or above the top and slid off its edge, so the
+  approach, not the height, decides them. Built at **20.0 m**. One sprinting jump from the highest ground near it
+  peaks at 18.53 m.
+- **The bay** (orchestrator default): nine crates in three columns of three, 1.1 m apart, running out from the trophy
+  plinth's far side, sideways within ±1.1 m (the Home station hall's end wall is 6 m), filled in order: the column
+  nearest the plinth first, middle row first. A 3 × 3 centred on the plinth would have put a crate in it.
+- **Eval:** `railway-finds.ts` `findsecret=<id>`, `findsecretbay=1`, `findsact=open|bay|spot`, `findsworldfrom=`.
+- **Bench, `town` pose** (fresh world, against the gold-find cut): 233 → 240 calls (+4 main, +3 shadow: the merged
+  ground, the crate tiers in view and a side slab), 1.35 → 1.36 M triangles. The bay adds none.
+- **Proofs** (`.look/f2-*`): the yard crate behind the cottage and its pickup (the straw hat over Buddy); the bay at
+  `q6-done` with six crates (yard, bell, nook, loft, balcony, stack; no glider or double jump in that seed); yard's
+  bay crate opened, then its world crate gone; a real reload keeps the bell's; two players, player 2 still sees their
+  own yard crate after player 1 takes theirs.
 
 ### Job F3: buoys and the telescope
 

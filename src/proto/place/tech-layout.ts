@@ -83,7 +83,8 @@ export const PADS: Pad[] = [
   // Gate 1's ledge at the quarry: 2.2 m, past one jump and inside two.
   { id: 'apron', x: 99, z: 44, top: 26.2, hx: 3.6, hz: 3.6, look: 'stone' },
   // Secrets.
-  { id: 'lookout', x: -134, z: -119, top: 19.3, hx: 2, hz: 2, look: 'stone' },
+  // 20.0: out of one sprinting jump (peaks about 18.2 m), inside two from beside it (ground 17.46 at the approach).
+  { id: 'lookout', x: -134, z: -119, top: 20, hx: 2, hz: 2, look: 'stone' },
   // Keep the original bank approach north of the slab, so its underside cannot mask the ring.
   { id: 'alcove', x: -40, z: -80.5, top: 12, hx: 2.2, hz: 1.6, look: 'wood', ring: 'bridge' },
   { id: 'loft', x: 110.5, z: 64, top: 28.4, hx: 2.4, hz: 2.8, look: 'stone', ring: 'camp' },
@@ -259,7 +260,7 @@ export const SECRETS: Secret[] = [
     z: -119,
     y: top('lookout'),
     after: 'hook',
-    from: { x: -131, z: -124 },
+    from: { x: -137, z: -117 }, // ground 17.46, two jumps under the raised top (the old (-131, -124) is 2.99 m below)
   },
   {
     id: 'bell',

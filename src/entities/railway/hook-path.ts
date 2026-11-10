@@ -12,6 +12,9 @@ export type HookPad = {
 export type Point = { x: number; y: number; z: number };
 export type HookRing = { id: string; pad: HookPad; at: Point; land: Point };
 export const HOOK_CLIMB = ['p2', 't0', 't1', 't2', 't3', 't4', 't5', 'summit'];
+/** The side trips to the secrets (place-retirement F2): the catwalk under the trestle, the tower's side slab, the
+ * quarry's low rock, and the way back up from Far Head's sea stack to the trestle. Their rings come after the climb's. */
+export const HOOK_SIDE = ['alcove', 'nook', 'loft', 'stack-return'];
 export type HookMove = {
   hookCruise: number;
   hookAccel: number;
@@ -23,7 +26,7 @@ export type Pull = { ring: HookRing; pts: Point[]; lens: number[]; total: number
 const FIXED = 1 / 60;
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 export function hookRings<P extends HookPad>(pads: P[], ringAt: (pad: P) => Point, ox: number): HookRing[] {
-  return HOOK_CLIMB.map((id) => {
+  return [...HOOK_CLIMB, ...HOOK_SIDE].map((id) => {
     const pad = pads.find((p) => p.id === id);
     if (!pad) throw new Error(`Missing hook pad ${id}`);
     const at = ringAt(pad);
