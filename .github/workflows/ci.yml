@@ -2,6 +2,8 @@ name: CI
 
 # Runs on PRs, on main, and on the ship/* branches `npm run ship` pushes (their checks count as the PR's required
 # checks: same commit). automerge.yml dispatches it on main after each merge, since a bot merge doesn't fire push.
+# A ship/* PR's own pull_request runs do nothing: the push run is the one automerge counts (owner call "Fast ships").
+# Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit, registry, server, net.
 on:
   pull_request:
   push:
@@ -17,13 +19,20 @@ concurrency:
 
 jobs:
   changes:
+    # GitHub has no head-branch filter for pull_request, so a ship PR's run starts and skips every job here. The bot's
+    # own PR events (opening it) still show as "action_required": GitHub holds those for approval; nothing needs them.
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'ship/')
     runs-on: ubuntu-latest
     outputs:
       heavy: ${{ steps.diff.outputs.heavy }}
+      docs: ${{ steps.diff.outputs.docs }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
@@ -36,19 +45,42 @@ jobs:
             BASE=$(git merge-base origin/main HEAD)
           fi
           # Main dispatches conservatively run all gates.
+          # Empty/unknown diffs and main dispatches conservatively run every gate.
           if { [ "$EVENT" = workflow_dispatch ] && [ "$REF" = main ]; } || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
-            echo 'heavy=true' >> "$GITHUB_OUTPUT"
+            class=code
           else
-            git diff --no-renames --name-only -z "$BASE" HEAD > /tmp/changed-files
-            node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const files = fs.readFileSync('/tmp/changed-files', 'utf8').split('\0').filter(Boolean);
-          const docs = files.length > 0 && files.every(f => f.startsWith('docs/') || f.startsWith('.claude/') || f.endsWith('.md'));
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `heavy=${!docs}\n`);
-          NODE
+            # Both sides of a rename: moving a file out of docs is a code change.
+            class=$(git diff --no-renames --name-only -z "$BASE" HEAD | node dev/ci/change-class.ts)
           fi
-  client:
+          echo "Change class: $class"
+          { [ "$class" = docs ] && echo 'docs=true' || echo 'docs=false'
+            [ "$class" = docs ] && echo 'heavy=false' || echo 'heavy=true'; } >> "$GITHUB_OUTPUT"
+
+  # Docs-only: the checks prose can break. Must-read and launch budgets, task routes and rules frontmatter (registry)
+  # and the agent definitions' model frontmatter. Nothing a docs path holds is built, bundled or tested otherwise.
+  docs:
     needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - if: github.ref != 'refs/heads/main'
+        run: git fetch -q --depth=1 origin main:refs/remotes/origin/main
+      - run: npm run registry
+      - run: node --test test/models.test.ts test/change-class.test.ts
+
+  # The client gate, as four parallel jobs sharing the npm cache: wall time is the slowest, not the sum.
+  lint:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,12 +95,55 @@ jobs:
       - name: Lint (Oxlint, type-aware rules and Boogle protections)
         run: npm run lint
       - run: npm run typecheck
-      # Reads committed files only: needs neither Blender nor KTX-Software.
-      - run: npm run assets -- --check
       # format:check is not enforced: the repo is Prettier-clean and Claude Code's hook formats each edited file,
       # but a red main for whitespace isn't worth it yet.
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run build
+
+  unit:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run test:unit
+
+  registry:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       # Current shared names (presence keys, message types, pad slots, frame orders) and debt ratchets against main.
       # On main the checkout's origin/main is this commit, so there's nothing to compare, and fetching a main that has
       # moved on since the checkout is a rejected non-fast-forward: a red run in every burst of merges.
@@ -76,6 +151,8 @@ jobs:
         run: git fetch -q --depth=1 origin main:refs/remotes/origin/main
       - run: npm run registry
       - run: npm run level-check
+      # Reads committed files only: needs neither Blender nor KTX-Software.
+      - run: npm run assets -- --check
 
   server:
     needs: changes
@@ -128,6 +205,37 @@ jobs:
       - name: Install Chromium and system deps
         run: npx playwright install --with-deps chromium
       - run: npm run test:net
+
+  # A red main is loud (owner call "Fast ships": one green run merges, so main's own CI is the combination check).
+  # ci-autofix.yml also has Claude open a claude/fix-main-* PR; this keeps one open `red-main` issue (GitHub notifies
+  # the owner) and closes it when main is green again. `npm run heartbeat` leads with the same verdict.
+  red-main:
+    needs: [changes, docs, lint, build, unit, registry, server, net]
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'matiasfr/boogle'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RED: ${{ contains(needs.*.result, 'failure') }}
+      GREEN: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    steps:
+      - run: |
+          run="$GITHUB_SERVER_URL/$GH_REPO/actions/runs/$GITHUB_RUN_ID"
+          num=$(gh issue list --label red-main --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ "$RED" = true ]; then
+            gh label create red-main --color b60205 --description 'CI is failing on main' 2>/dev/null || true
+            body="CI failed on main at $GITHUB_SHA: $run. ci-autofix.yml has Claude open a claude/fix-main-* PR; fixing main beats starting something new."
+            if [ -n "$num" ]; then
+              gh issue comment "$num" --body "$body"
+            else
+              gh issue create --title 'Main is red' --label red-main --body "$body"
+            fi
+          elif [ "$GREEN" = true ] && [ -n "$num" ]; then
+            gh issue close "$num" --comment "Green again at $GITHUB_SHA: $run"
+          fi
 
   # Rendered scenarios (world-inputs included) run daily on the owner's Mac, not software WebGPU CI.
   # CI retains headless test:net and replay units; post-deploy Smoke is browserless.
