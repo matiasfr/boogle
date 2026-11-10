@@ -11,6 +11,7 @@ import {
   GORGE,
   GRID,
   HEAD,
+  FORMATION,
   LINES,
   LINKS,
   LOBE,
@@ -22,6 +23,7 @@ import {
   VILLAGE,
   lineAt,
   railY,
+  upLat,
   YARD,
   type LinePoint,
   type Pt,
@@ -149,6 +151,8 @@ function strip(
   outer: number,
   painted: boolean,
   skip?: (x: number, z: number) => boolean,
+  /** false: grade the ground only, leaving `clearMask` (which the tree catalog reads) as it was. */
+  clears = true,
 ) {
   const best = new Map<number, [number, number]>();
   const cells = Math.ceil(outer / CELL) + 1;
@@ -170,7 +174,7 @@ function strip(
     if (skip?.(cellX(i), cellZ(j))) continue;
     const t = smoothstep(outer, inner, d);
     heights[k] = heights[k]! + (y - heights[k]!) * t;
-    clearMask[k] = Math.max(clearMask[k]!, t);
+    if (clears) clearMask[k] = Math.max(clearMask[k]!, t);
     if (painted) pathMask[k] = Math.max(pathMask[k]!, smoothstep(inner + 1, inner - 0.5, d));
   }
   return best;
@@ -225,6 +229,35 @@ function bake() {
     );
     // Four metres covers sleeper ends plus the vertices of their 2 m terrain triangles.
     // Include skipped cliff cells: a prop pad must not fill up through the trestle either.
+    for (const [k, [distance, height]] of bed)
+      if (distance <= 4) railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
+  }
+  // The up track (generic-lines step 2) gets the same cutting or bank along its own centre, so its bed meets the ground
+  // as today's does and nobody has to jump onto it from the side (orchestrator, 10 November: it stood about 0.36 m
+  // over the unbanked ground). Where it runs within 0.6 m of today's track (the turnouts' ends) today's strip covers it.
+  // It grades the ground but clears nothing: the starter trees are a shared catalog (test/railway.test.ts pins them),
+  // and step 2 already checked them against both tracks.
+  for (const link of LINKS) {
+    const formation = FORMATION[link.id],
+      line = link.line;
+    const samples: [number, number, number][] = [];
+    for (let s = formation.from; s <= formation.to; s += 1) {
+      const lat = upLat(formation, s);
+      if (lat === null || lat > -0.6) continue;
+      lineAt(line, s, P);
+      samples.push([P.x - P.uz * lat, P.z + P.ux * lat, railY(line, s) - 0.08]);
+    }
+    const y = railY(line, line.len);
+    const bed = strip(
+      samples,
+      4,
+      8,
+      false,
+      (x, z) =>
+        gorgeD(x, z) < GORGE.bank + GORGE.wall + 2 ||
+        heights[at(Math.round((x - GRID.x0) / CELL), Math.round((z - GRID.z0) / CELL))]! < y - 9,
+      false,
+    );
     for (const [k, [distance, height]] of bed)
       if (distance <= 4) railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
   }
