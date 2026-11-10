@@ -1,6 +1,6 @@
-// The stations trains stop at: a platform, a roof, a bench, a signal and a board. The owner asked "what is the platform", so
+// The stations trains stop at: a platform, a roof, a bench, a signal and a map display. The owner asked "what is the platform", so
 // they don't exist until there's a train to wait for: they drop into place, piece by piece, when trains come. You call a train
-// by standing on one: the signal drops, a bell rings and the board's line shows the train on its way (no schedule to
+// by standing on one: the signal drops, a bell rings and the display's map shows the train on its way (no schedule to
 // learn and no whims of a timetable; "controlling this is not really relevant yet", so nothing to operate either). Local.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -64,7 +64,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       })),
     };
   });
-  const boards = createIslandBoards(owner, mapLines, layout.HALTS.length + 1, 1.5, 1.2);
+  // One display a halt, the Pier's too; the Home island's two edges share one.
+  const displays = layout.HALTS.filter((h) => !('island' in h && h.island) || h.line === 0).length + 1;
+  const boards = createIslandBoards(owner, mapLines, displays, 1.0, 0.8);
   const addStatic = (
     shape: Parameters<typeof staticBody>[0],
     at: Parameters<typeof staticBody>[1],
@@ -190,13 +192,33 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     // The signal's mast, at the end the train comes in, on this edge.
     const mast = sign * (hw - 0.3);
     part(mast, 0, half - 0.8, 0.14, 4.4, 0.14, IRON);
-    // The board hung on the mast below the arm, across the platform end and wholly inboard of the mast, its bottom
-    // over head height: a dark backing, a red cap, and the island map either side with both trains moving on it
-    // (owner, 9 November: a real sign, not floating text; "Island map"). An island edge carries its destination
-    // plaque at 2.9 m, so its board hangs above the plaque, under the canopy, with the canopy for its cap.
-    const FACE = { w: 1.5, h: 1.2, across: mast - sign * 0.88, up: island ? 3.3 : 1.9 };
-    part(FACE.across, FACE.up - 0.06, half - 0.8, FACE.w + 0.12, FACE.h + 0.12, 0.08, '#23262d');
-    if (!island) part(FACE.across, FACE.up + FACE.h + 0.06, half - 0.8, FACE.w + 0.3, 0.08, 0.3, ROOF);
+    // The map display: a little stand at reading height with the island map on its face and both trains moving on
+    // it (owner, 9 November: a real sign, not floating text; "Island map"; 10 November: "on a little display at the
+    // station" rather than up the mast). Two short legs, a dark frame whose back is the plain panel, a roof-red cap.
+    // At a halt it stands at the back edge in the shelter, between the bench and the post nearer the rear ramp, facing
+    // the rails, so you read it where you wait and it is out of the aisle and the train's way. The Home island has one,
+    // in its middle between the canopy posts, facing the head ramp you come up. No collider: it stops no one.
+    const DISPLAY = island
+      ? { across: 0, along: 0, faceAlong: true }
+      : { across: -sign * 1.0, along: shelter + 2.25, faceAlong: false };
+    const SHOW = { w: 1.0, h: 0.8, mid: 1.35 };
+    const display = !island || k === 0;
+    if (display) {
+      // Sizes across and along the platform for a part `wide` along the face and `deep` through it.
+      const sized = (wide: number, deep: number): [number, number] => (DISPLAY.faceAlong ? [wide, deep] : [deep, wide]);
+      const frame = (dy: number, dh: number, wide: number, deep: number, color: string, dw = 0) => {
+        const [w, d] = sized(wide, deep);
+        const [ow, od] = sized(dw, 0);
+        part(DISPLAY.across + ow, dy, DISPLAY.along + od, w, dh, d, color);
+      };
+      const bottom = SHOW.mid - SHOW.h / 2;
+      for (const side of [-1, 1]) {
+        frame(0, bottom, 0.07, 0.07, POST, side * 0.42);
+        frame(0, 0.04, 0.1, 0.32, POST, side * 0.42);
+      }
+      frame(bottom - 0.04, SHOW.h + 0.08, SHOW.w + 0.08, 0.08, '#23262d');
+      frame(SHOW.mid + SHOW.h / 2 + 0.04, 0.07, SHOW.w + 0.2, 0.22, ROOF);
+    }
     const set = dropSet(
       boxes,
       (k) => {
@@ -235,15 +257,20 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       owner.add(plaque.mesh);
       owner.cleanup(plaque.dispose);
     }
-    // The island map, this halt ringed.
+    // The island map, this halt ringed (the Home island's display rings both its stops).
     const board = (() => {
-      const ds = half - 0.8;
+      if (!display) return -1;
       const at = new THREE.Vector3(
-        c.x + FACE.across * cosY + ds * sinY,
-        low + FACE.up + FACE.h / 2,
-        c.z - FACE.across * sinY + ds * cosY,
+        c.x + DISPLAY.across * cosY + DISPLAY.along * sinY,
+        low + SHOW.mid,
+        c.z - DISPLAY.across * sinY + DISPLAY.along * cosY,
       );
-      return boards.add(at, yaw, 0.045, { line: k, stop });
+      // The face's normal: toward the head ramp (-along), or toward the rails (+sign across).
+      const faceYaw = DISPLAY.faceAlong ? yaw + Math.PI : yaw + (sign > 0 ? Math.PI / 2 : -Math.PI / 2);
+      const here = island
+        ? layout.HALTS.flatMap((h) => ('island' in h && h.island ? [{ line: h.line, stop: h.stop }] : []))
+        : [{ line: k, stop }];
+      return boards.add(at, faceYaw, 0.045, here);
     })();
     let boardOn = false;
 
@@ -391,7 +418,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
           }
         }
         halt.cue = cue;
-        boards.set(board, boardOn, cue);
+        if (board >= 0) boards.set(board, boardOn);
       },
     };
     return halt;
@@ -430,7 +457,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       mapLines[1]!.laid = laid;
       boards.redraw();
     }
-    boards.trains(mapLines.map((_, k) => (shown ? trainAlong(s.line2.train[k]!, k, clock) / 100 : null)));
+    boards.trains(
+      mapLines.map((_, k) => (shown ? trainAlong(s.line2.train[k]!, k, clock) / 100 : null)),
+      mapLines.map((_, k) => {
+        const r = s.line2.train[k]!;
+        return shown && r.phase !== TRAIN_PHASE.STAND ? r.to : null;
+      }),
+    );
     halts.forEach((h) => {
       const r = s.line2.train[h.k]!;
       h.update(dt, r.phase !== TRAIN_PHASE.STAND && r.to === h.stop);
