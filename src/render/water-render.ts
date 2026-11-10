@@ -48,7 +48,7 @@ export function waterChoice(): WaterChoice {
   const flag = new URLSearchParams(location.search).get('water');
   const choices: readonly string[] = WATER_CHOICES;
   if (flag && choices.includes(flag)) return flag as WaterChoice;
-  return graphicsInitial('water', WATER_CHOICES, 'ultra') as WaterChoice;
+  return graphicsInitial('water', WATER_CHOICES, 'sun-depth') as WaterChoice;
 }
 
 // Ultra Water: the FFT sea, its shore atlas, caustics producer and GPU queries.
@@ -111,7 +111,7 @@ function createRealSea() {
     id: 'water',
     label: 'Water',
     choices: WATER_CHOICES,
-    default: 'ultra',
+    default: 'sun-depth',
     audience: 'dev',
     scope: 'Local',
     applyMode: 'reload',
