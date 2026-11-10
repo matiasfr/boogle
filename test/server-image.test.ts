@@ -113,6 +113,21 @@ test('every file the server image runs is copied, in the build identity and in t
   assert.deepEqual(missing, [], 'add these to all three lists (server/README.md, "Continuous deploy")');
 });
 
+// Review (scratch branch): parser cases the walk gets wrong. Each fails on the current specifiers().
+test('a glob string containing /* does not hide the imports after it', () => {
+  const src =
+    "const SEEDS = 'seeds/*.json';\nimport { a } from './hidden.ts';\n/** a doc comment */\nexport const b = a;\n";
+  assert.deepEqual(specifiers(src), ['./hidden.ts']);
+});
+
+test('a template-literal dynamic import is found', () => {
+  assert.deepEqual(specifiers('const m = await import(`./late.ts`);\n'), ['./late.ts']);
+});
+
+test('a trailing line comment is not read as an import', () => {
+  assert.deepEqual(specifiers("run(); // was: import old from './gone.ts'\n"), []);
+});
+
 test('the server image resolves every package the server imports', () => {
   const deps = Object.keys((JSON.parse(read('server/package.json')) as { dependencies?: object }).dependencies ?? {});
   const problems: string[] = [];
