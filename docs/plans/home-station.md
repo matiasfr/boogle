@@ -215,6 +215,46 @@ forge has turned it (`turnTicks`), exactly as today. It is never drawn crossing.
   road 2: 19 m if you hop off the platform edge and cross the track, 36 m by the end ramp. Today 11 m.
 - **Pedestal (the breaker) to the stall seam:** 32 m (today 14 m).
 
+### Hall as a space
+
+Owner, 9 November: "not everything has to be visible, it just has to be a well designed town spatially". The hall read
+as a plan of ways and places, as built in step 3 (2.4 m end walls, the shelf in the front's south half):
+
+- **Moving through.** Town, square, hall and island make one line along the station's axis: the village (−100, 14) and
+  the house, shop and museum plots lie off the hall's open front, and the square is 3.7 m from it. The way in is the
+  front's north half, 4.95 m from the north wall's inside face to the shelf's end, and it runs straight on through the
+  back bays to the island's apron, 1 m past the hall, and the head ramp 3.3 m beyond. The shelf frames that doorway: on
+  your right as you enter, gifts toward the square, used from the ground in front of it, off the walking line.
+- **The south half** behind the shelf is a quiet bay 4.5 m deep. Its back opens onto road 2's buffer end, which leads
+  nowhere, so it suits reading: the works board belongs on the south wall's back 4.3 m (a −11.0 to −6.7), where the
+  shelf's finds board does not crowd it at the front corner.
+- **The line map** goes back to 6 m, centred on the island (c 0.8 to 6.8; step 12): it hangs over the way out to the
+  platform, which everyone walks under. The 5 m cut only kept its south end in view from one spot in the square.
+- **Scale.** 13 × 6 m under a 4.6 m roof holds four small players and a 7.3 m shelf: the shelf fills just over half the
+  front, the doorway the rest, and the 2.4 m walls read as low walls under a big roof, not rooms. Nothing is cramped
+  inside. Two front posts stand 5 cm in front of the shelf's face, by its hat and pet slots: step 8's model should
+  space the front posts to the shelf's bays. Outside, the forecourt is tight (finding 6): spawn is 4.9 m from the
+  shelf's face and Sleeves 2.3 m, in front of its north end.
+- **How the parts relate.** Passengers: hall, apron, ramp, deck, straight on. Town: its plots all lie off the hall's open
+  front, across the square. Goods: road 1 is the forge's dock (pedestal, dock and crane on its north side, the forge
+  about 9 m from its buffers), and the hall's north end is a bare low wall toward that yard. The weak link is the rack:
+  the forge's rails stack centred on the passengers' apron (a −3.9, c 3.8), across the walking line between the hall
+  and the ramp.
+
+Changes I would make, ranked (not built):
+
+1. **The rack off the walking line.** Shift it about 1 m toward road 2, the cart's side (the cart stops beside it at
+   road 2's s 0), so a clear lane runs from the doorway along road 1's platform edge to the ramp. Passengers walk
+   straight; the goods stay where the cart and the island's carry to the frontier start. It moves `PROPS.rack` and
+   `LINE2_FORGE.rackX`/`rackZ` in the v24 table, so it belongs before step 6; check the stack's footprint on the
+   4.3 m apron.
+2. **Sleeves to the doorway's north side.** At (−95, 12) he stands in front of the shelf's north end, inside its 4.4 m
+   reach: two things answer in one spot at the mouth of the way in. About 2.5 m north he greets people into the open
+   half and still points up the bold path north.
+3. **A goods door in the north end wall.** A 1.5 m gap in the wall's back half, so the hall's goods side meets the
+   forge yard; today the way there goes out the back over road 1's buffer end or 3 m round the front corner. The
+   smallest of the three.
+
 ### The engine's size
 
 From the code today:
@@ -349,20 +389,18 @@ change; the full loop once a day").
   - Built 9 November as the review's smallest version, with a greybox canopy on the island (it drops in with the deck)
     and a destination picture on each edge's mast. Cut to step 6: the cart's pose on `cartRoadAt`, the shunt on
     `shuntPath()`, `sites.ts` feet and the three videos. The leg measures 38.32 m (not 38.64), so `forgeCm` is 20632.
-  - Spawn's sightline (owner, 9 November: "Lower end walls"): the hall's end walls stop at 2.4 m with a coping, the
-    roof stays at 4.6 m on posts (corner posts added), and spawn keeps facing 14°. The curio shelf stands on the hall's
-    floor (`HALL.floor`, 18.34 m) against the north wall's inside face, with room for a finds board up to 2.2 m wide.
-    Found in the stills: the shelf (about 3.5 m tall) then did the hiding: from spawn it spanned bearings −3° to 36°,
-    the forge frame is at 19°, and the forge showed about 40% of its face.
+  - **Decided 9 November (owner): "Lower end walls".** The hall's end walls stop at 2.4 m with a coping, the roof
+    stays at 4.6 m on posts (corner posts added), and spawn keeps facing 14°. The curio shelf stood against the north
+    wall's inside face; the stills showed it, at about 3.5 m, the tallest thing in the hall's north half.
   - **Decided 9 November (owner): "move shelf off north wall".** `SHELF_B` stands in the hall's front, south of the way
     in: just behind the front posts (5 cm clear), facing the square, its finds board toward the south wall, which keeps
-    0.15 m for the works board. From spawn its corners sit 51° to 119° right of north, clear of the forge (13° to 49°);
-    it is off the back span (the line map), and the way from the square to the trains (the hall's north half) stays
-    open. Entering from the square it stands on your right, gifts facing you. Full height and the finds board are kept.
-    The finders' bay (F2) is 10 m away at (−104, 7) and does not move. Stills (spawn pose 903, 19.8, 14): the forge
-    shows about half its face, up from about 40%; its top half reads over the coping and its south end through the
-    hall, and the wall itself hides its lower north third, as the coping (20.86 m) stands about 1 m over that eye.
-    Open owner call if "most of it" is wanted: the north end wall at about 1.1 m, or spawn's camera higher.
+    0.15 m for the works board. It is off the back span (the line map), and the way in from the square to the trains
+    (the hall's north half, 4.95 m wide) stays open. Entering from the square it stands on your right, gifts facing
+    you. Full height and the finds board are kept. The finders' bay (F2) is 10 m away at (−104, 7) and does not move.
+  - **Not pursued: the view from spawn as a measure** (owner, 9 November: "im not sure why we're evaluating the view
+    from spawn as the right metric. not everything has to be visible, it just has to be a well designed town
+    spatially"). The open call on a 1.1 m north wall or a higher spawn camera is closed; the 2.4 m walls and the
+    shelf's place stand as built. The hall is judged as a space ("Hall as a space", below).
 - [ ] **4. The owner sees it.** Send the full link `https://boogle.club/?home=b` and the three stills. Designer rules on
   the Level findings and questions 1 to 7. Adjust step 1's numbers if he moves anything, and rerun steps 1 to 3's checks.
 - [ ] **5. Make tools follow the anchors.** No behaviour change.
@@ -427,6 +465,12 @@ change; the full loop once a day").
     roof on two rods between the back posts. If the island side sees its back, that face gets its own cell fitted for
     a viewer on the island (as the halt boards' back faces are), otherwise the back stays blank.
   - Verify: stills from the square and from spawn; a short video of a train moving on it; `npm run perf`.
+  - **Where:** across the hall's back, the island side, hung under the roof over the way out to the island, centred on
+    it (c 0.8 to 6.8: about 6 m wide by 1.8 m, its bottom at 2.4 m), facing the square. Everyone walking from the
+    square to the trains walks toward it and under it, and it takes neither end wall: the north one stays low, open to
+    the forge yard, the south one is the works board's (call 29). Back to 6 m ("Hall as a space"): the 5 m cut only
+    kept its south end in view from one spot in the square.
+  - Verify: stills from the square and from under the roof; a short video of a train moving on it; `npm run perf`.
 
 ## Level findings
 
@@ -618,7 +662,7 @@ are where these get checked (listed under "Smallest version", below).
 | 34 | Art budgets by prominence (hall 12k, canopy 8k, stall 6k, outlines 800, buffers 600) | Default | Owner call "Geometry budgets follow prominence" |
 | 35 | **Missing:** which parts stand from the start. Recommend the hall, buffers, apron and island kerb from the start; the island deck and canopy drop in with trains, as halts do today | New | Finding 1 |
 | 36 | **Missing:** how the track layer crosses from road 1 to road 2 at the forge's lighting. Recommend it drives the leg in the view, with `LINE2_FORGE.turnTicks` set to the drive in v24 | New | Finding 2 |
-| 37 | Spawn keeps facing 14°; the hall's end walls stop at 2.4 m so the forge reads over the north one | Decided | Owner, 9 November: "Lower end walls" |
+| 37 | The hall's end walls stop at 2.4 m; spawn keeps facing 14°. The view from spawn is not a measure | Decided | Owner, 9 November: "Lower end walls"; "not everything has to be visible, it just has to be a well designed town spatially" |
 | 38 | **Missing:** which road goes where. One destination pictogram per platform edge on the halt boards (the camp's machine for road 1; the quarry, Far Head and pier for road 2) | Default | Finding 4 |
 | 39 | Town paths to the hall's front, flagstone apron, a boarded crossing toward the stall (step 11) | Default | Finding 5 for the crossing's site |
 

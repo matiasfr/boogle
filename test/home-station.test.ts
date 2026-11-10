@@ -35,7 +35,7 @@ import {
   toAxis,
   type XZ,
 } from '../src/proto/place/home-station.ts';
-import { CART, FORGE, LINES, ROOM_PLOTS, SPAWN, TOWN, lineAt, type Plot } from '../src/proto/place/layout.ts';
+import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/proto/place/layout.ts';
 import { LOCO, TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/proto/wagon/cars.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
@@ -311,17 +311,8 @@ test('the hall and shelf: 1 m behind the buffers, centred on the island; the she
   // The south wall's inside face keeps 0.15 m for the works board; the back span (the line map) keeps 3 m clear.
   assert.ok(c1 <= HALL.c + HALL.w / 2 - 0.3 - 0.15 + 1e-9, 'the works board fits on the south wall');
   assert.ok(HALL.a + HALL.d / 2 - 0.2 - a1 > 3, 'off the line map span at the back');
-  // South of spawn's view of the forge: every corner of it at least 50 degrees right of north, spawn facing 14.
-  for (const [a, c] of [
-    [a0, c0],
-    [a1, c0],
-    [a0, c1],
-    [a1, c1],
-  ] as const) {
-    const p = axisPoint(a, c);
-    const bearing = (Math.atan2(p.x - SPAWN.x, SPAWN.z - p.z) * 180) / Math.PI;
-    assert.ok(bearing > 50, `a corner at ${bearing.toFixed(1)} degrees from spawn`);
-  }
+  // The way in from the square, between the north end wall's inside face and the shelf's end, stays wide open.
+  assert.ok(c0 - (HALL.c - HALL.w / 2 + 0.3) > 4.5, 'the way in is over 4.5 m wide');
   // The floor is a slab 0.1 to 0.2 m over the highest ground under the hall, so nothing stands in it.
   const ground = [-1, 0, 1].flatMap((i) =>
     [-1, 0, 1].map((j) => {
