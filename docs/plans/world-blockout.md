@@ -228,8 +228,34 @@ Owner direction, 10 November: every rail corridor is double track, existing and 
 
 ### Performance
 
-Measured, not a gate (owner, 10 November). Numbers are in the report that shipped this plan; rerun with
-`npm run look -- --query 'blockout=world' --action draws.ts` (a 90-frame median of `renderer.info.render`).
+Measured, not a gate (owner, 10 November): a 90-frame median of `renderer.info.render` in the look harness (fixed
+DPR, fresh room, 10 November, on a shared Mac under load 8–17, so frame times are not timing evidence; they sat at the
+16.6 ms vsync either way).
+
+| View | Without (default horizon) | With `?blockout=world` | Difference |
+| --- | --- | --- | --- |
+| Home, looking west over the bay (play height) | 281 draws, 1.15 M triangles, 715 meshes | 339 draws, 1.16 M triangles, 808 meshes | +58 draws (+21%), +19 k triangles |
+| The whole map in view (900 m up, south-east) | 605 draws, 1.21 M triangles | 701 draws, 1.23 M triangles | +96 draws (+16%), +25 k triangles |
+
+The blockout has no far LOD: each island, line and landmark is its own merged mesh at full (greybox) detail, drawn to
+the 3.6 km fog. Its triangle cost is small; its cost is draw calls, about one per island, line and landmark kind. The
+default silhouette is one draw. With it off the game is unchanged: the flag's chunk is never loaded. Where the blockout
+replaces the silhouette, phones would want the same merge (one draw per material for the whole layer) before it is
+ever on by default.
+
+### What the stills show
+
+`docs/world/world-blockout/` (on the map page): three aerials, the bow to Ring Island in double track, the Bell Rock
+junction under `?blockout=world` with Buddy standing on a platform, the default silhouettes from Home and the pier, and
+a contact sheet of the full-loop ride clip (real time at the review's x4, 80 m/s: 8.9 km in 111 s, the model's 9:00 at
+20 m/s with stops). Seen in them, beyond the conflicts above:
+
+- **Bell Rock's platforms overlap.** Four lines' platforms cross at the skerry; the hub needs a station plan (one
+  island-wide station with parallel platforms) before it's built.
+- **The review camera passes through geometry twice** on the loop: in the Gorge's 83 m drop (conflict 5) and where the
+  White Wall line's 121 m clearance crosses the chalk at Canopy's cleft.
+- **The default silhouettes read from Home and the pier**: the White Wall, Canopy's mother trees, Bell Rock and the
+  stacks, pale in the fog; the Port's crane is small at 1.5 km.
 
 ## Future lines as data
 
