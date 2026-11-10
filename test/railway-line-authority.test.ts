@@ -357,6 +357,33 @@ test('safe loose beam keeps its identity; recovery is slow, explicit, revision-f
   assert.equal(railwayInvariant(s), null);
 });
 
+test("a beam drop's point is checked: never -0, never out of range, and the room still saves", () => {
+  const s = toT3();
+  logs(s, 'a', 40);
+  for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
+  const b = s.line!.beam;
+  for (const [x, y, z] of [
+    [99650, 3000, -0],
+    [-0, 3000, -13800],
+    [99650, 1e300, -13800],
+    [200001, 3000, -13800],
+    [99650, 3000, 0.5],
+    [NaN, 3000, -13800],
+  ]) {
+    act(s, 'a', 'rail.beamTake', { revision: b.revision });
+    assert.equal(b.state, 'held');
+    assert.doesNotThrow(() => worldOf(s).snapshot(), `held: ${x}, ${y}, ${z}`);
+    // The release still happens; the point is refused, so it goes back to the tree, as an off-ground drop does.
+    assert.equal(act(s, 'a', 'rail.beamDrop', { revision: b.revision, x: x!, y: y!, z: z! }).r.accepted, 1);
+    assert.equal(b.state, 'available', `${x}, ${y}, ${z}`);
+    assert.doesNotThrow(() => worldOf(s).snapshot(), `dropped: ${x}, ${y}, ${z}`);
+  }
+  act(s, 'a', 'rail.beamTake', { revision: b.revision });
+  act(s, 'a', 'rail.beamDrop', { revision: b.revision, x: 99650, y: 3000, z: -13800 });
+  assert.deepEqual([b.state, b.x, b.y, b.z], ['ground', 99650, 3000, -13800], 'a valid point still lands');
+  assert.equal(railwayInvariant(s), null);
+});
+
 test('production ceiling refuses an unrepresentable proper-axe bonus atomically', () => {
   const s = toForge();
   if (railAccount(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
