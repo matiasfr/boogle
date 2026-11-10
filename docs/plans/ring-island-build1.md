@@ -417,11 +417,21 @@ leaves `npm run check` green.
   call 31), and Get unstuck from the sea beside the island's shore lands dry. Checks: `npm run check`, `npm run
   level-check`. Proof look: from the island halt's west platform toward the shard and the ring
   (`--rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts`, its halt still).
-- [ ] **2c. R2c, the far leaf (no bump).** `src/entities/ring-island-far/` as under "R2"; it is drawn whenever the near
+- [x] **2c. R2c, the far leaf (no bump).** `src/entities/ring-island-far/` as under "R2"; it is drawn whenever the near
   view is not mounted. Checks: `npm run check`, `npm run perf` (two draws). Proof look: through the telescope at zoom 2,
   phone size (`--size 844x390`), `--rail-seed crossing-done --query shot=play --eval dev/look/evals/lookout.ts`: the orange leaf reads
   raised against the ring. (Home's summit and the finale's last frame are R6's stills; the finale is re-shot only
   after its rockets fix lands, review finding 7.)
+  *Built 10 November 2026* (`src/entities/ring-island-far/{index,view}.ts`; `npm run check` green; not tested on a device).
+  Leaf plate 17 x 7.6 x 0.5 m turned 78 degrees about the hinge's deck edge, grey hinge pier: 2 draws; the toe pennant
+  (`TOE_PENNANT`, off) is a third (cream mast and flag, 12 m mast, 10 x 5 m flag). Glow orange `#ff8a1f` lerps to the near
+  orange `LEAF_ORANGE` (`#e0701c`, exported for R2b) between 900 m and 500 m. Departures: the angle is a constant
+  (`ringIslandPose` is not on main); visibility is `nearViewMounted()` (distance, 500 m in, 650 m out; R2b's entity
+  replaces its body), so until the near view ships nothing draws the leaf within 500 m of the hinge; the glow ramp is
+  500 to 900 m, not 650, so the exit swap at 650 m is a 0.3 colour step. Not measured: frame time (load about 6, bot queue
+  not shown empty), `npm run perf`. Stills (`.look/`, 844x390; stitched `far-leaf-four.png`): the leaf reads as a raised
+  orange slab on a grey pier at telescope zoom 2 (about 26 px), with and without the pennant; from Home's summit it is
+  still a few-pixel orange tick behind the lookout tower and rock, the pennant adds a cream speck. Owner picks the pennant.
 - [ ] **3a. R3a, the catalog, the moving end, the loop and three trains (v27 branch, after v26 is on main).** In
   `railway-lines.ts`: line 2's row as under "R3" (path, halts, `trains: 3`, `RailOpen`, `at: 'ringHead'`); in
   `railway-train.ts`: `trainStopsOf(line, open)`; in `railway-trains.ts` (v26's file): the loop leg on pseudo-track 2
