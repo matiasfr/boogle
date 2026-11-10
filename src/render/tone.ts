@@ -1,33 +1,13 @@
-// Shared water-demo AgX look and GPU exposure meter. Local, lazy consumers only.
-// Source and rationale: docs/research/tone-comparison.md; preserves the demo's curve and adaptation.
-import * as THREE from 'three/webgpu';
+// Shared water-demo AgX look. Local, lazy consumers only. (The exposure meter that lived here went unused with fixed
+// exposure, 5 November, and was removed on 10 November.)
+// Source and rationale: docs/research/tone-comparison.md; preserves the demo's curve.
 import * as tsl from 'three/tsl';
 // TSL typings cannot follow the swizzles in this graph (as in the water shaders).
 // oxlint-disable-next-line typescript/no-explicit-any
 export type N = any;
 // oxlint-disable-next-line typescript/no-explicit-any
 export const TSL = tsl as unknown as Record<string, any>;
-const {
-  Fn,
-  Loop,
-  clamp,
-  dot,
-  exp2,
-  float,
-  log2,
-  mat3,
-  max,
-  mix,
-  pow,
-  rtt,
-  select,
-  texture,
-  uniform,
-  uv,
-  vec2,
-  vec3,
-  vec4,
-} = TSL;
+const { Fn, clamp, dot, log2, mat3, max, mix, pow, vec3 } = TSL;
 export const luma = (v: N) => dot(v, vec3(0.2126, 0.7152, 0.0722));
 export const agx = Fn(([input, power = 1.12, saturation = 1.3]: [N, N?, N?]) => {
   const to2020 = mat3(vec3(0.6274, 0.0691, 0.0164), vec3(0.3293, 0.9195, 0.088), vec3(0.0433, 0.0113, 0.8956));
@@ -71,96 +51,3 @@ export const agx = Fn(([input, power = 1.12, saturation = 1.3]: [N, N?, N?]) => 
   c.assign(outset.mul(c));
   return clamp(toSrgb.mul(pow(max(c, 0), vec3(2.2))), 0, 1);
 });
-
-/** Two tiny draws and a one-texel history copy; caller updates once before rendering. */
-export function createExposureMeter(hdr: N) {
-  const jitter = uniform(new THREE.Vector2()),
-    rates = uniform(new THREE.Vector2(1, 1));
-  const history = new THREE.DataTexture(
-    new Float32Array([Math.log2(0.18), 0, 0, 1]),
-    1,
-    1,
-    THREE.RGBAFormat,
-    THREE.FloatType,
-  );
-  history.minFilter = history.magFilter = THREE.NearestFilter;
-  history.needsUpdate = true;
-  const meter = rtt(
-    Fn(() => {
-      const sum = float(0).toVar();
-      Loop(4, ({ i }: { i: N }) => {
-        Loop(4, ({ i: j }: { i: N }) => {
-          const offset = vec2(float(i), float(j)).add(jitter).mul(0.25).sub(0.5).div(32);
-          const c = max(hdr.sample(uv().add(offset)).level(0).rgb, 0);
-          sum.addAssign(log2(clamp(luma(c), 1e-4, 64)));
-        });
-      });
-      return vec4(sum.div(16), 0, 0, 1);
-    })(),
-    32,
-    32,
-    { depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter },
-  );
-  meter.name = 'water exposure meter';
-  const adaptation = rtt(
-    Fn(() => {
-      const sum = float(0).toVar();
-      Loop(16, ({ i }: { i: N }) => {
-        Loop(16, ({ i: j }: { i: N }) => {
-          sum.addAssign(meter.sample(vec2(float(i), float(j)).add(0.5).div(16)).level(0).r);
-        });
-      });
-      const target = clamp(sum.div(256), Math.log2(0.18 / 20), Math.log2(0.18 / 0.05));
-      const previous = texture(history, vec2(0.5)).level(0).r,
-        k = select(target.greaterThan(previous), rates.x, rates.y);
-      const next = mix(previous, target, k).toVar();
-      return vec4(next, 0, 0, 1);
-    })(),
-    1,
-    1,
-    { depthBuffer: false, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter },
-  );
-  adaptation.name = 'water exposure adaptation';
-
-  const value = clamp(exp2(adaptation.sample(vec2(0.5)).level(0).r.negate()).mul(0.18), 0.05, 20);
-  let frames = 0;
-  let enabled = true;
-  let initialized = false;
-  return {
-    value,
-    get enabled() {
-      return enabled;
-    },
-    setEnabled(value: boolean) {
-      enabled = value;
-      // Retain the last adaptation texture: disabling holds exposure instead of flashing to a new gain.
-      meter.autoUpdate = adaptation.autoUpdate = enabled || !initialized;
-      meter.textureNeedsUpdate = adaptation.textureNeedsUpdate = enabled || !initialized;
-    },
-    async read(renderer: THREE.WebGPURenderer) {
-      const pixels = (await renderer.readRenderTargetPixelsAsync(adaptation.renderTarget, 0, 0, 1, 1)) as Float32Array;
-      return Math.max(0.05, Math.min(20, 0.18 * 2 ** -pixels[0]!));
-    },
-    dispose() {
-      meter.dispose();
-      adaptation.dispose();
-      history.dispose();
-    },
-    save(renderer: THREE.WebGPURenderer) {
-      if (!enabled && initialized) return;
-      renderer.copyTextureToTexture(adaptation.value, history);
-      initialized = true;
-      if (!enabled) {
-        meter.autoUpdate = adaptation.autoUpdate = false;
-        meter.textureNeedsUpdate = adaptation.textureNeedsUpdate = false;
-      }
-    },
-    update(dt: number) {
-      if (!enabled && initialized) return;
-      const f = frames++ & 255;
-      jitter.value.set((f * 0.7548776662466927) % 1, (f * 0.5698402909980532) % 1);
-      const delta = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 1)) : 0;
-      rates.value.set(frames < 3 ? 1 : 1 - Math.exp(-delta * 2.5), frames < 3 ? 1 : 1 - Math.exp(-delta));
-    },
-  };
-}

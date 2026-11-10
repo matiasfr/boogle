@@ -715,7 +715,8 @@ Projection runs after the current camera/avatar update, anchored to a stable bod
 Camera-facing station and halt names and work-site plaques divide linear RGB by the shared
 **surfaceExposure** in `render/exposure.ts`. There is no separate 10.9195 multiplier. Crystal and gold pickup glints,
 chest/box sparkles, reward-show sparkles, confetti and celebration fireworks use the same policy in the existing
-particle pool. Dust, smoke, steam, cloth puffs, water spray and already-HDR impact stars retain intensity one.
+particle pool, and since 10 November so do the sea's splash droplets (`src/render/splash.ts`; at intensity one they
+drew dark grey on the lit sea). Dust, smoke, steam, cloth puffs and already-HDR impact stars retain intensity one.
 Alpha, soft edges, fade/shrink, fog, depth occlusion and underwater attenuation are preserved; other routes retain
 their original brightness. This is Local presentation, with no shared state or save change.
 

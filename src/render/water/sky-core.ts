@@ -4,7 +4,7 @@ import * as THREE from 'three/webgpu';
 import { Atmosphere, atmosphereCoefficients, H_TOP, OBS_H, RB, RT, SKY_SIZE, transmittance } from './atmosphere.ts';
 import { TSL, type N } from './tsl.ts';
 
-const { Fn, asin, clamp, cubeTexture, dot, exp, float, floor, fract, inversesqrt, log2, max, mix, normalize } = TSL;
+const { Fn, asin, clamp, cubeTexture, dot, exp, float, floor, fract, inversesqrt, max, mix, normalize } = TSL;
 const { positionWorldDirection, pow, select, smoothstep, sqrt, step, texture, uniform, uv, vec2, vec3, vec4 } = TSL;
 export type SkyParams = {
   elevation: number;
@@ -171,14 +171,6 @@ export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: Sky
     samples.push(node);
     return node;
   };
-  // Public LODs retain the original 1024 cube's angular blur for water and fog.
-  // Keep the default graph unchanged; smaller comparisons only lose the unavailable finest levels.
-  const skyLod = (direction: N, lod: N | number = 0) =>
-    sample(vec3(direction.x, max(direction.y, 0), direction.z)).level(
-      cubeSize === 1024 ? lod : clamp(float(lod).add(maxMip - 10), 0, maxMip),
-    ).rgb;
-  const skyAt = (direction: N, roughness: N | number = 0) =>
-    skyLod(direction, clamp(log2(max(float(roughness).mul(650), 1)), 0, 10));
   const background = Fn(() => {
     const d = normalize(positionWorldDirection),
       sampled = sample(vec3(d.x, max(d.y, 0), d.z)).level(0);
@@ -200,8 +192,6 @@ export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: Sky
     sunDirection,
     sunColor,
     background,
-    skyAt,
-    skyLod,
     // Readback materials are temporary: do not retain their nodes for prepared-look swaps.
     ambient: (normal: N) => cubeTexture(sampledCube, normal).level(maxMip).rgb,
     selectPrepared(texture: THREE.CubeTexture, direction: THREE.Vector3, radiance: THREE.Vector3) {

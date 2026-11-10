@@ -11,18 +11,12 @@ import { scalar, vector } from './live.ts';
 import { swellNode, swellPhases } from './swell.ts';
 import type { Coast } from './coast.ts';
 import { WAVE_SIZE } from './art.ts';
+import { skyGradient } from './sky-art.ts';
 
 const { Fn, If, abs, cameraPosition, cos, dFdx, dFdy, dot, exp, float, length, log2, max } = TSL;
 const { mix, normalize, positionGeometry, positionView, positionWorld, pow, reflect, screenUV, sin } = TSL;
 const { select, smoothstep, texture, uniform, uniformArray, varying, vec3, vec4, viewportDepthTexture } = TSL;
 const { perspectiveDepthToViewZ, cameraNear, cameraFar } = TSL;
-
-// The sky the sea reflects and hazes toward: two colours read once (9 November, linear) from a healthy summer bake at
-// the blur the sea used, the horizon averaged round the compass and the clear sky above 45°. The visible sky stays the
-// baked cube (frozen-sky.ts); the sea no longer samples it.
-const HORIZON = vec3(3.6, 5.25, 7.15),
-  ZENITH = vec3(0.45, 1.96, 5.21);
-const skyGradient = (direction: N) => mix(HORIZON, ZENITH, smoothstep(0, 0.75, abs(direction.y)).sqrt());
 
 // Ripple rings from things hitting the water (Cauchy-Poisson), driven by the game's own splash slots (splash.ts): by
 // stationary phase a point impulse gives local wavenumber k = g t² / (4 r²) at radius r and phase k r, so long waves race
@@ -268,11 +262,7 @@ export function createOcean(options: OceanOptions): Ocean {
       ),
       toDeep = mix(
         smoothstep(middleDepth, deepDepth, shadeDepth),
-        exp(
-          max(shadeDepth.sub(middleDepth), 0)
-            .negate()
-            .div(deepDepth.mul(0.5)),
-        ).oneMinus(),
+        exp(max(shadeDepth.sub(middleDepth), 0).negate().div(deepDepth.mul(0.5))).oneMinus(),
         ody,
       );
     const ramp = mix(mix(shallow, middle, toMiddle), deep, toDeep).toVar();
@@ -285,7 +275,7 @@ export function createOcean(options: OceanOptions): Ocean {
     const R = reflect(V.negate(), Nrm).toVar();
     const NoV = max(dot(Nrm, V), 0);
     const F = pow(NoV.oneMinus(), 5).mul(0.98).add(0.02).mul(reflectGain);
-    const skyR = skyGradient(R).toVar();
+    const skyR = skyGradient(abs(R.y)).toVar();
     const col = mix(body, skyR, F).toVar();
     const inLane = smoothstep(lane, 1, dot(R, seaU.uSun)).toVar();
     const glint = smoothstep(threshold, threshold.add(0.5), pattern);
@@ -336,7 +326,7 @@ export function createOcean(options: OceanOptions): Ocean {
 
     // Haze to the summer horizon.
     const fog = options.fog(dist);
-    const haze = skyGradient(V);
+    const haze = skyGradient(max(V.y.negate(), 0)); // as the fog: the horizon colour below the horizon
     const outCol = mix(col.mul(alpha).add(add), haze, fog);
     return vec4(outCol, mix(alpha, 1, fog));
   })();

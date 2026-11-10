@@ -6,6 +6,7 @@ import {
   cubeTexture,
   float,
   fog,
+  max,
   mix,
   normalize,
   normalWorldGeometry,
@@ -27,7 +28,7 @@ import { seaU } from './state.ts';
 import { createWaterSky } from './sky.ts';
 import { bind, tuningEnabled } from './live.ts';
 import { eveningPreview, prepareEvening, SKY_CUBE_SIZE } from './flags.ts';
-import { summerSky } from './sky-art.ts';
+import { skyGradient, summerSky } from './sky-art.ts';
 import { bootMark } from '../../boot/timeline.ts';
 import { playMark } from '../../proto/mark.ts';
 import { lightingDefault, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
@@ -59,6 +60,9 @@ const angle = skyState(WATER_TOD, 0.5).sunAngle;
 const direction = east.clone().multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
 let timeOfDay = WATER_TOD;
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
+/** The summer day's hemisphere fill, read once (10 November, linear) from a healthy bake: the cube's coarsest level up and
+ *  down. The light colour profile then keeps only each one's luma. Rebaking the sky from Dev controls does not move it. */
+const FILL = { upper: new THREE.Color(0.6045, 2.1113, 5.293), lower: new THREE.Color(0.3665, 0.448, 0.4888) };
 // Caves keep their own fog: the ramp they had before the outdoor view grew (110/520 m closing to 6/80 m).
 const CAVE_FOG = { near: [110, 6], far: [520, 80] } as const;
 
@@ -151,10 +155,11 @@ export function createFrozenWaterSky() {
         },
       );
   }
+  // The haze is the baked sky's two colours (sky-art.ts), not a cube read: below the horizon it is the horizon colour.
   const haze = mix(
     flatSky,
     mix(
-      environment.skyLod(normalize(positionWorld.sub(cameraPosition)), 3),
+      skyGradient(max(normalize(positionWorld.sub(cameraPosition)).y, 0)),
       vec3(CAVE.fog.r, CAVE.fog.g, CAVE.fog.b),
       underground,
     ),
@@ -167,10 +172,9 @@ export function createFrozenWaterSky() {
   let disposed = false,
     baked = false,
     flat = false; // no usable bake: the frozen lighting over a flat sky (fallBack)
-  // The fallback is a healthy summer bake read back on 9 November (linear): hemisphere fill luma up 2.02, down 0.434
-  // (the light profile keeps luma); sky radiance at the horizon and, averaged over 45-90 degrees, the zenith. The fog
-  // colour scaled up instead drew a slate-grey sky through the tone mapping.
-  const FLAT = { upper: 2.02, lower: 0.434, horizon: new THREE.Color(4.69, 5.97, 7.17) };
+  // The fallback sky is a healthy summer bake read back on 9 November (linear): sky radiance at the horizon and, averaged
+  // over 45-90 degrees, the zenith. The fog colour scaled up instead drew a slate-grey sky through the tone mapping.
+  const FLAT = { horizon: new THREE.Color(4.69, 5.97, 7.17) };
   const flatBackground = mix(flatSky, vec3(0.47, 2.0, 5.27), smoothstep(0, 0.5, normalWorldGeometry.y));
   let readyMs = 0;
   function update(dt = 0) {
@@ -299,8 +303,9 @@ export function createFrozenWaterSky() {
       bootMark('sky-ready');
       return;
     }
-    upper.copy(fill.upper);
-    lower.copy(fill.lower);
+    // The fill is the summer bake's, as constants (FILL); the read-back only proves the cube is not black.
+    upper.copy(FILL.upper);
+    lower.copy(FILL.lower);
     baked = true;
     flat = false;
     skyReady.value = 1;
@@ -497,8 +502,8 @@ export function createFrozenWaterSky() {
     baked = true;
     flat = true;
     skyReady.value = 0;
-    upper.setScalar(FLAT.upper);
-    lower.setScalar(FLAT.lower);
+    upper.copy(FILL.upper);
+    lower.copy(FILL.lower);
     flatSky.value.copy(FLAT.horizon);
     flushLighting = update;
     updateFrozenDay();
