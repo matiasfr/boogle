@@ -248,6 +248,15 @@ cube. The cube stays because it is the visible summer sky the owner chose on 6 N
 drawn as the background) and it also feeds the distance fog's colour, the PBR environment and the hemisphere fill
 read at load; a flat gradient would change all four. It stays the 512 cube; the code is still under `water/`.
 
+**Cost, Ultra (main at `f4481457`) against now**, same session, same five poses (cove, pier head, Far Head, summit,
+telescope), 1180×820 on the Mac; counts, not timings (the machine was loaded, so no GPU times are claimed): render
+passes 5–6 → 3; compute dispatches 13–14 → 1–2 (all now the shared particle pool's, none water's); framebuffer
+copies 2 → 1 (the depth copy); triangles 1.10–1.65 M → 0.68–1.23 M (about 420 k fewer everywhere); GPU textures
+212.9 → 128.8 MB, storage buffers 14.9 → 0.2 MB, total 265.1 → 158.3 MB. Draws read 11–29 higher now at every pose;
+not explained here. The loaded water code is 30.4 kB (13.4 kB gzip) against 64.2 kB (28.0 kB) for Ultra's chunk
+plus the candidates'; the Dev tuning panel 20.1 against 23.0 kB. Per-frame CPU: the swell phases, the field publish,
+a shore-revision check and the camera's water lookup for the fog.
+
 **Kept for gameplay:** the CPU water field (swimming, plunges, floating things, the camera), splash ripples in the
 sea shader, splash droplets (`src/render/splash.ts`, the shared particle pool), and the telescope (no water code).
 
