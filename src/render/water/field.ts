@@ -1,7 +1,7 @@
-// The Sunshine sea's water field: synchronous CPU heights from the same swell the vertices draw, so swimming, plunges,
-// floaters and the camera read the surface with no GPU readback or latency. Local; the contract is ../../../physics/water-field.ts.
-import { SEA } from '../../../constants.ts';
-import type { WaterPosition, WaterProvider, WaterSample } from '../../../physics/water-field.ts';
+// The sea's water field: synchronous CPU heights from the same swell the vertices draw, so swimming, plunges,
+// floaters and the camera read the surface with no GPU readback or latency. Local; the contract is ../../physics/water-field.ts.
+import { SEA } from '../../constants.ts';
+import type { WaterPosition, WaterProvider, WaterSample } from '../../physics/water-field.ts';
 import type { Coast } from './coast.ts';
 import { swellAt } from './swell.ts';
 

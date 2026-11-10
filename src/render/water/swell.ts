@@ -1,9 +1,9 @@
-// The Sunshine sea's swell (docs/plans/water-sunshine.md, step 2): four long, low sines, one function in TypeScript and
+// The sea's swell (docs/plans/water-sunshine.md, step 2): four long, low sines, one function in TypeScript and
 // TSL so swimming reads the same heights the eye sees with no GPU readback. Vertical only (no horizontal push), so a
 // height at (x, z) needs no inversion and the two sides agree to float rounding. Mean level is SEA; the swell fades to
 // flat over the shallows, so the surface never dips below the bed and the bed clamp is not needed.
-import { SEA } from '../../../constants.ts';
-import { TSL, type N } from '../tsl.ts';
+import { SEA } from '../../constants.ts';
+import { TSL, type N } from './tsl.ts';
 
 const G = 9.81;
 const TAU = Math.PI * 2;
@@ -33,7 +33,7 @@ export function swellPhases(time: number, out: number[] = [0, 0, 0, 0]) {
   for (let i = 0; i < SWELL.length; i++) out[i] = (SWELL[i]!.omega * time + SWELL[i]!.phase) % TAU;
   return out;
 }
-export const swellFade = (depth: number) => smooth(FADE.shallow, FADE.full, depth);
+const swellFade = (depth: number) => smooth(FADE.shallow, FADE.full, depth);
 
 /** Height above SEA and its rate of change at (x, z), for water `depth` metres deep there (bed below SEA). */
 export function swellAt(x: number, z: number, time: number, depth: number) {
@@ -55,7 +55,7 @@ const { cos, float, sin, smoothstep, vec2, vec3 } = TSL;
  * vec4 uniform from swellPhases). The slope ignores the fade's own gradient, which is gentle over the shallows.
  */
 export function swellNode(xz: N, depth: N, phases: N) {
-  // A plain expression (no variables), so it builds inside or outside a Fn: heightAt is called from both.
+  // A plain expression (no variables), so it builds inside or outside a Fn.
   const fade = smoothstep(FADE.shallow, FADE.full, depth);
   const lanes = ['x', 'y', 'z', 'w'] as const;
   let out: N = vec3(0);

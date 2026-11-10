@@ -1,24 +1,23 @@
 import type { ShotList } from '../shot-types.ts';
 
-// Matched stills for the owner's call of 7 November 2026: the cheaper far sea and coarser far ground, off against on,
-// from spawn, the bench's far view and its bay view, at desktop and phone size. Frozen clock, fixed resolution.
+// Matched stills for the owner's call of 7 November 2026: the coarser far ground, off against on, from spawn, the
+// bench's far view and its bay view, at desktop and phone size. Frozen clock, fixed resolution. (The cheaper far sea
+// went with Ultra Water, 9 November 2026.)
 const sizes: [string, [number, number]][] = [
   ['desktop', [1280, 800]],
   ['phone', [375, 812]],
 ];
 const settings: [string, Record<string, boolean>][] = [
-  ['off', { farSea: false, farGround: false }],
-  ['far sea', { farSea: true, farGround: false }],
-  ['far ground', { farSea: false, farGround: true }],
-  ['both on', { farSea: true, farGround: true }],
+  ['off', { farGround: false }],
+  ['far ground', { farGround: true }],
 ];
 
 export default {
   question:
-    'Do the cheaper far sea and the coarser far ground look the same as the full ones from where players stand?',
+    'Does the coarser far ground look the same as the full one from where players stand?',
   beats: [
     {
-      name: 'Far sea and ground',
+      name: 'Far ground',
       query: 'dev=1',
       warm: 4,
       cameras: [

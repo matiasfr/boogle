@@ -1,7 +1,7 @@
-// One production Neutral output, after underwater HDR. AgX remains in the opt-in look comparisons.
+// One production Neutral output, after the underwater fog. AgX remains in the opt-in look comparisons.
 import { pipeline } from '../scene.ts';
 import { TSL, type N } from '../tone.ts';
-import { fixedExposureGain } from '../exposure.ts';
+import { surfaceExposure } from '../exposure.ts';
 import { bind, onChange, scalar, tuningEnabled } from './live.ts';
 import { createWaterBloom } from './bloom.ts';
 import { NeutralToneMapping } from 'three/webgpu';
@@ -10,7 +10,7 @@ import { registerGraphics } from '../../graphics-settings.ts';
 
 const { Fn, If, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
 
-export function installWaterPost(source: N, cameraDepth: N) {
+export function installWaterPost(source: N) {
   const previous = pipeline.outputNode;
   const transform = pipeline.outputColorTransform;
   // Authored fixed gain for the frozen lighting state; no meter draws or history copy.
@@ -25,7 +25,7 @@ export function installWaterPost(source: N, cameraDepth: N) {
   let stopCompare = () => {};
   const makeOutput = (hdr: N) =>
     Fn(() => {
-      const gain = fixedExposureGain(cameraDepth);
+      const gain = float(surfaceExposure);
       let c = compare ? compare(hdr, gain) : toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb;
       if (tuningEnabled) {
         c = c.toVar();

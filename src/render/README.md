@@ -55,30 +55,30 @@ Reward celebrations (box sparkles, confetti, the opening dust ring, the reveal's
 
 ## Water ownership
 
-`water-render.ts` owns the one sea every route uses, its FFT, shore atlas, queries, underwater HDR and
-once-baked late-morning sky. Its surface sits behind a seam (`water/sea-surface.ts`): Ultra by default, or the lazy
-Sunshine candidates in `water/sun/` under `?water=sun|sun-depth` ([water design](../../docs/game-design/water.md#sunshine-water-candidates-9-november-2026)). Neutral stays the output. [Water design](../../docs/game-design/water.md) records
-the fixed-exposure calibration. `exposure.ts` owns the Local surface gain
-and signed-depth underwater adjustment: 0.12, +0.81 EV through 0–1.5 m. The existing frozen-sky scene lights
-use key gain 1.12 and fill gain 3.2; the sky bake and water optics retain their values. `water/post.ts` uses the width-zero
-form of the bounded colour-research output; no exposure meter targets, draws or history copy are constructed.
-HDR scene targets, Neutral and the water/sky shader values remain. Dev Water/Post binds `post.centre` and
-`post.underwaterEV` through the existing reset/persist/copy path.
+`water-render.ts` owns the one sea every route uses ([water design](../../docs/game-design/water.md#the-sea-10-november-2026)):
+the surface (`water/surface.ts`, one blended draw and one opaque-depth copy), the coast texture (`water/coast.ts`),
+the swell and the CPU water field (`water/swell.ts`, `water/field.ts`), the caustic tile and seabed receivers
+(`water/caustics.ts`, `water/receivers.ts`), the flat underwater fog (`water/underwater.ts`) and the once-baked
+late-morning sky. Water has no compute pass and no setting. Neutral stays the output.
+[Water design](../../docs/game-design/water.md) records the fixed-exposure calibration. `exposure.ts` owns the Local
+surface gain, 0.12. The existing frozen-sky scene lights use key gain 1.12 and fill gain 3.2. `water/post.ts` uses
+the width-zero form of the bounded colour-research output; no exposure meter targets, draws or history copy are
+constructed. Dev Water/Post binds `post.centre` through the existing reset/persist/copy path.
 
 Physical Place boards and the shop price atlas use rough lit materials, their same sRGB canvas textures and
 received shadows, with no emissive floor or gain compensation. Camera-facing labels and rewards keep their policy.
 `readable-unlit.ts` divides scoped unlit ink's **linear RGB** by `surfaceExposure` from `exposure.ts`, preserving
-alpha and underwater attenuation. Scoped reward emitters fold the inverse of the same CPU setting into RGB
+alpha and underwater fog. Scoped reward emitters fold the inverse of the same CPU setting into RGB
 once at spawn; living particles retain their spawn intensity until expiry. Smoke/dust keep intensity one.
 The material helper ignores repeat calls on the same owned material. `readableGlow` is its lit counterpart: it divides
 only a display-range emission (`emissiveNode`, default `materialEmissive`) by the same gain, for glows rather than
 shaded-face fills. A new unlit or glowing material authored at display range opts into one of the two; the scoped
-list is in [place.md](../../docs/game-design/place.md#readable-ink-and-rewards). The explicit underwater lift remains
-intentional. No independent reference multiplier remains. Do not sample the framebuffer, boost all unlit materials,
-or apply both compensation paths to one surface. `fixedExposureGain(depth)` exposes the exact medium-dependent
-gain if a future material policy explicitly needs it.
+list is in [place.md](../../docs/game-design/place.md#readable-ink-and-rewards). No independent reference multiplier
+remains. Do not sample the framebuffer, boost all unlit materials, or apply both compensation paths to one surface.
 
-The classic island's cheaper sea (`classic-sea.ts`) was removed when it joined the one world (6 November). Live tuning/Looks and shore helpers remain; the demo is in `archive/water`, with notices retained in public/.
+The classic island's cheaper sea (`classic-sea.ts`) was removed when it joined the one world (6 November). Ultra
+Water was removed on 10 November (local tag `archive/water-ultra-2026-11-09`). Live tuning/Looks and the shore
+registry remain; the demo is in `archive/water`, with notices retained in public/.
 
 The water ceiling is requested each frame but only reapplied when its clamped value changes. Adaptive DPR
 and Dev resolution changes still apply through their existing setters. This skips redundant renderer/pass

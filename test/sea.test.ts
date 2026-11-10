@@ -1,12 +1,11 @@
-// The Sunshine sea's CPU halves (docs/plans/water-sunshine.md, steps 2 and 3): the swell the vertices and swimming share,
-// and the coast texture's bed, waterline distance and baked contacts. The TSL twin is checked in the browser.
+// The sea's CPU halves (docs/plans/water-sunshine.md, steps 2 and 3): the swell the vertices and swimming share, and the
+// coast texture's bed, drawn shelf and waterline normal. The swell's shader twin is judged in stills.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SEA } from '../src/constants.ts';
-import { swellAt, swellPhases, SWELL, SWELL_MAX, FADE } from '../src/render/water/sun/swell.ts';
+import { swellAt, swellPhases, SWELL, SWELL_MAX, FADE } from '../src/render/water/swell.ts';
 import { registerShoreProvider } from '../src/render/water/shore-providers.ts';
-import { registerWaterContact } from '../src/render/water/contacts.ts';
-import { createCoast, CONTACT_REACH, SHELF } from '../src/render/water/sun/coast.ts';
+import { createCoast, SHELF } from '../src/render/water/coast.ts';
 
 test('the swell averages to SEA, stays inside its budget and is still at the waterline', () => {
   let sum = 0,
@@ -49,7 +48,7 @@ test('the rate is the time derivative of the height', () => {
   assert.ok(Math.abs((b.height - a.height) / dt - a.rate) < 1e-3);
 });
 
-test('the coast texture: depth falls off a slope, the waterline normal points to sea, a leg reads as a contact', () => {
+test('the coast texture: depth falls off a slope and the waterline normal points to sea', () => {
   // A beach rising toward +x: bed = (x - 50) / 10, so the waterline sits at x = 50 and the sea lies at smaller x.
   const remove = registerShoreProvider({
     id: 'test-slope',
@@ -59,7 +58,6 @@ test('the coast texture: depth falls off a slope, the waterline normal points to
     extent: 128,
     bedAt: (x) => ({ valid: true, height: (x - 50) / 10 }),
   });
-  const removeLeg = registerWaterContact({ x: 30, z: 50, radius: 0.35, top: 3 });
   const coast = createCoast();
   try {
     let last = Infinity;
@@ -71,16 +69,11 @@ test('the coast texture: depth falls off a slope, the waterline normal points to
     assert.ok(Math.abs(coast.sampleAt(40, 50).bed - -1) < 0.05);
     const { normal } = coast.sampleAt(45, 50);
     assert.ok(normal[0] < -0.9, `outward normal ${normal}`);
-    assert.ok(coast.sampleAt(30, 50).contact < 0.5, 'at the leg');
-    assert.equal(coast.sampleAt(30, 70).contact, CONTACT_REACH, 'far from it');
-    const info = coast.inspect().coast;
-    assert.ok(info.cell >= 1 && info.contacts >= 1);
+    assert.ok(coast.inspect().coast.cell >= 1);
   } finally {
-    removeLeg();
     remove();
     coast.dispose();
   }
-  assert.ok(CONTACT_REACH > 0);
 });
 
 test('the drawn shelf replaces a flat floor and its square edge, and leaves the real bed alone', () => {

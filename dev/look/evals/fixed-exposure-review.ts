@@ -93,7 +93,6 @@ for (const view of views) {
       if (!Number.isFinite(value) || value <= 0 || !bindings.has('post.centre'))
         throw new Error('Invalid fixed gain bracket');
       bindings.get('post.centre')!.set(value);
-      bindings.get('post.underwaterEV')!.set(Math.log2(0.28 / value));
     }
     await wait(6000);
     if (view.name === 'town' && !q.has('noGPU')) {

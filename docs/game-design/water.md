@@ -1,5 +1,9 @@
 # 6.26b Water
 
+The sea as it is now is [The sea (10 November 2026)](#the-sea-10-november-2026). Sections dated before 10 November
+describe Ultra Water (FFT cascades, shore atlas, spray, contacts, underwater volume and lens), which was removed
+that day and is kept in the local tag `archive/water-ultra-2026-11-09`; read them as history.
+
 ## Visual pipeline stages 0–1 (5 November 2026)
 
 The iPhone follow-up (5 November, 23:45: clouds too bright and lighting too warm) is compared by
@@ -178,52 +182,58 @@ archived and removed; the [skybox research](../research/skybox.md) and
 Evening is decided later: `evening=1|preview` still prepares the procedural evening atmosphere beside the summer day.
 GOBI remains pending the actual pack and source-page licence verification.
 
-## Sunshine water candidates (9 November 2026)
+## The sea (10 November 2026)
 
-The owner's target: Super Mario Sunshine's water and grading, "really efficient for mobile without issue"
-([plan](../plans/water-sunshine.md), [research](../research/water-sunshine.md)). Ultra stays the default.
-Two candidates sit behind a Dev, Local, reload-only **Water** setting; `?water=sun` and `?water=sun-depth` are
-shorthand for it and, unlike other `?graphics=` overrides, work without Dev so the owner can try them on a friend's
-phone (an [open call](../agent-calls.md)). Their code (`src/render/water/sun/`, about 15 kB) loads only when chosen.
+The owner's calls, verbatim:
 
-- **A, `sun`.** One blended plane drawn after the opaques with no screen read: a polar grid of about 9,300 vertices
-  around the camera (scaled with height, then one flat skirt to the far plane), lifted by four slow vertical sines
-  (`sun/swell.ts`, 0.05–0.12 m, still in the first 6 m of depth). Colour comes from the bed depth in a baked coast
-  texture (`sun/coast.ts`: bed, distance to baked contacts and signed waterline distance, one RGBA16F texel per metre,
-  12.6 MB at Place), in three stops (#6fe0d0 shallow, #19b5cf, #1667b8 deep) lit by the same sun and fill as the sand.
-  Two scrolling samples of our own 128² wave cell (Worley lines, `sun/art.ts`; the second at twice the weight) make
-  the pattern; a sparkle band where one pixel covers a few texels makes Sunshine's mid-distance glitter, with the sun
-  lane in it. The sand shows through the first 2.5 m, a foam lip rides the waterline, rings sit around baked
-  contacts and the sky is one blurry Fresnel reflection. From below: the water's colour and a Snell window to the
-  sky. The seabed's caustics are a scrolling texture tile (`sun/caustics.ts`, the same Caustics setting).
-- **B, `sun-depth`.** A plus one opaque-depth copy: white foam where anything meets the water (rocks, legs, swimmers,
-  floating things) and a soft waterline against rock.
+- 9 November, the target: Super Mario Sunshine's water and grading, "really efficient for mobile without issue"
+  ([plan](../plans/water-sunshine.md), [research](../research/water-sunshine.md)).
+- 9 November, the pick: "Let's go with water B and fully clean up. also fix the geometry of the shallow bed so it
+  matches the terrain more realistically than the sharp edges/squares it has today".
+- 10 November: "since underwater doesn't matter, is that taken account for the water optimizations?"
+- 10 November: "yeah no essentially we should rebuild the water from scratch, we don't need almost anything from
+  ultra water and don't want to carry the perf baggage".
+- 10 November: "I do like that the water has the lighter blue and foam near shore, so make sure something like
+  that stays, it should still be cheap".
+- 10 November: "the water should look somewhere in the range of Mario odyssey and Mario sunshine".
 
-Swimming, plunges, floating things, the telescope, ripples, impact crowns, underwater tint, exposure, droplets and
-marine snow run unchanged on both: the water field reads the same swell and coast on the CPU (no GPU readback); the
-swell's TSL twin agrees with it to 5 µm on the GPU at three clocks.
+Ultra Water (the FFT sea, its shore atlas and per-shore travel solve, caustics producer passes, GPU height queries,
+framebuffer colour copy, per-pixel contact loop, glitter, breakers and their spray, marine snow, the underwater
+volume with its lens droplets, shafts and Snell window, and the underwater exposure offset) and candidate A were
+removed on 10 November. The local tag `archive/water-ultra-2026-11-09` keeps them. There is no `water` setting and no
+`?water=`.
 
-**Cost at five poses on this Mac** (1180×820, the session's counts; the sea's own share is shown minus hidden):
+**What is drawn.** One blended plane after the opaques (`src/render/water/surface.ts`): a polar grid of about 9,300
+vertices around the camera (scaled with height, then one flat skirt to the far plane; 48 spokes on the phone ladder's
+sea rung), lifted by four slow vertical sines (`swell.ts`, 0.05–0.12 m, still in the first 6 m of depth). Colour comes
+from depth in three stops (#6fe0d0 shallow, #19b5cf, #1667b8 deep), lit by the same sun and fill as the sand. Two
+scrolling samples of our own 128² wave cell (Worley lines, `art.ts`; the second at twice the weight) make the pattern;
+a sparkle band where one pixel covers a few texels makes the mid-distance glitter, with the sun lane in it. The sand
+shows through the first 2.5 m; a foam lip rides the waterline; the sky is one blurry Fresnel reflection; impact
+ripples ring out from splashes in the same draw. One opaque-depth copy gives white foam wherever anything meets the
+water (rocks, legs, swimmers, floating things) and a soft waterline against rock. The light cyan shallows and the
+foam lip are the owner's must-keeps: per sea pixel they cost one coast-texture read and a few multiply-adds.
 
-| | Ultra | A `sun` | B `sun-depth` |
-| --- | --- | --- | --- |
-| Render passes (cove / elsewhere) | 6 / 5 | 4 / 3 | 4 / 3 |
-| Compute dispatches | 12–14 | 2–3 | 2–3 |
-| Framebuffer copies (pass splits) | 2 | 0 | 1 |
-| Sea triangles | ~387,000 | 18,500–20,000 | 18,500–20,000 |
-| GPU memory (textures + storage) | 312.3 MB | 211.6 MB | 215.3 MB |
+**The coast texture** (`coast.ts`, RG16F, about 1 m a texel over every registered shore plus 120 m of sea, 6.3 MB
+at Place) is baked once per shore revision from the providers' own bed functions: G is the real bed (continued past
+a grid's edge by the terrain's own offshore apron), which the swell's fade, the clear shallows and the foam lip read;
+R is the bed the colour reads. In the shallows (to 4.5 m) R is the real bed; past them it is a shelf that falls away
+from the shaped coast, gently off beaches (0.1 m per m) and fast under cliffs (0.7 m per m, by how high the land
+stands in the 6 m behind the waterline, averaged over 30 m of coast), easing toward 34.5 m. So Place's flat 5 m
+grid floor and its square edge no longer show as a cyan rectangle from the summit, the telescope or the trestle.
+Swimming, plunges and floating things read the real bed on the CPU (`field.ts`); no terrain height changed.
 
-Measured before main halved the sky cube (which lowers all three columns' memory alike) and before Ultra's contact
-loop was limited to the nearest 64 (which changes Ultra's shading cost at Far Head, not these counts).
-Hiding Ultra's surface draw saves one draw, 387,000 triangles and both copies but none of the FFT, caustics, queries
-or memory, which keep running; A drops all of them. No hardware frame timings yet (the plan's [build notes](../plans/water-sunshine.md#build-notes-9-november) say why).
+**Seabed light.** One baked 256² caustic tile (`caustics.ts`, 0.35 MB with mips), sampled twice as it scrolls,
+lights the ground under the shallows through the receivers (`receivers.ts`), which also darken wet ground and tint
+it by the water above. Each web adds its own faint lines as well as their crossings, so the net reads up close.
+The receivers' cost is per terrain pixel under or at the water: two tile reads and a few multiply-adds; no pass.
 
-**What A and B lose against Ultra:** refraction (the shore and legs are not bent through the surface); the shore atlas's
-travelling swash, breakers and breaker spray (only impact crowns remain); the FFT's chop and Poisson glitter (A's
-sparkle is a texture band, not per-wave); the moving caustic net (now a scrolling tile, plainer up close); terrain seen
-through Snell's window from below (only the sky shows there); contact rings for things that move (A bakes contacts
-into 1 m texels, so they read as soft blobs; B's depth foam covers moving things). Contacts more than 120 m past the
-shores get no ring.
+**Underwater** is one flat fog in the existing output quad (`underwater.ts`): the CPU water field says whether the
+camera is under; if so, the scene's depth fogs toward the sea's deep colour (a cave pond's is near black). Dry
+frames pay one uniform branch. From below there is no surface (the sea is front-face only), so looking up shows fog.
+
+**Kept for gameplay:** the CPU water field (swimming, plunges, floating things, the camera), splash ripples in the
+sea shader, splash droplets (`src/render/splash.ts`, the shared particle pool), and the telescope (no water code).
 
 ## Production water tuning
 
@@ -233,27 +243,22 @@ Without Dev/tuning opt-in it loads no panel code, CSS, DOM or saved overrides. T
 they add no room state, messages, controls or gamepad slot. The cursor stays free on tuning visits; drag the scene
 to look around. The game keeps running while the panel takes mouse and keyboard events aimed at its controls.
 
-Groups follow the Ultra Water reference: **Sun & sky**, **Waves**, **Shore waves**, **Water**,
-**Floaters & underwater**, **Light fill**, **Post** and **Quality**. Light fill adjusts the existing frozen-sky key/hemisphere without rebaking; fixed exposure keeps the gain stable while judging it. Each group and the whole panel can reset to production defaults.
+Groups: **Water** (the sea's colours, depths, pattern, sparkle, foam, seabed light and absorption), **Sun & sky**,
+**Light fill**, **Post** and **Quality**. Light fill adjusts the existing frozen-sky key/hemisphere without rebaking; fixed exposure keeps the gain stable while judging it. Each group and the whole panel can reset to production defaults.
 Changes persist in localStorage only for Dev/tuning visits. A saved [Looks](dev-menu.md#looks) choice takes precedence over old Water overrides. **Copy settings** exports one JSON object containing only
 overrides; **Apply settings** accepts the same block, so the owner can send a look back to an agent to make permanent.
 
-The saved format is `{ "version": 1, "changes": { "wave.waveScale": 0.5, "post.centre": 0.12 } }`, under
-`boogle.water-tuning.v1`. Pasting replaces current overrides after validating every key, range and RGB array.
-Colour pickers display sRGB; exported scatter, reflection tint and foam tint arrays are linear RGB. Absorption
+The saved format is `{ "version": 1, "changes": { "sun.sparkle": 3, "post.centre": 0.12 } }`, under
+`boogle.water-tuning.v1`. Pasting replaces current overrides after validating every key, range and RGB array;
+saved keys of the removed Ultra controls are dropped on restore.
+Colour pickers display sRGB; exported colour arrays are linear RGB. Absorption
 is editable per channel in inverse metres. Invalid pasted data changes nothing; Copy leaves selectable JSON
 when clipboard access is unavailable.
 
-Spectrum controls rebake H0 in the existing FFT buffers after editing, without replacing textures used by queries.
-`waveScale` scales energy (height follows its square root); each cascade also has an amplitude multiplier.
-Wind, fetch, spread and swell shape rebake; choppiness, foam recovery and playback speed update live. Shore
-amplitude, wavelength, speed and steepness update the shared surface/receiver motion and spray. Water optics,
-foam, reflection gain/cap/tint, caustics, spray amount/size and underwater scattering/shafts/meniscus are live.
-Sun elevation, azimuth, intensity, cloud coverage, turbidity and time of day rebake the existing sky cube and
+Every Water control is live. Sun elevation, azimuth, intensity, cloud coverage, turbidity and time of day rebake the existing sky cube and
 matching sun/hemisphere lighting after editing; a brief stall is possible. This does not start a day/night cycle.
-Post controls expose **fixed gain** (0.01–2, step .001) and **underwater offset (EV)** (0–2, step .01),
-with numeric fields beside sliders; existing reset, persistence and copied settings include both.
-Looks reports surface gain/EV and fully submerged gain; there is no adaptive lock to operate.
+Post controls expose **fixed gain** (0.01–2, step .001), with a numeric field beside the slider; existing reset,
+persistence and copied settings include it. Looks reports surface gain/EV; there is no adaptive lock to operate.
 The old exposure-compensation, auto-exposure and key-value controls are retired. Contrast and saturation surround the
 selected tone curve, plus optional **bloom on**, **bloomStrength** (0–0.5, step .001) and **bloomThreshold**
 (0–10, step .01). Bloom starts off on desktop and mobile; first enable uses the reference's .05 strength and
@@ -347,35 +352,8 @@ Real-time feel, isolated GPU timing and mobile-device performance remain unverif
 
 ### Other controls and limits
 
-The panel lists the demo controls that are unavailable: camera presets and uncapped benchmark are demo tools;
-floater spawn/drop/clear and drag/angularDrag/buoyancy belong to gameplay bodies; planar `reflections`,
-`reflectionScale` and `reflectionDistort` have no production reflection target. Refraction distortion is adjustable
-on the existing production path. Colour presets and clarity are
-represented by the editable absorption, scatter and foam tint. Neutral is the production curve. MSAA and
-automatic resolution belong to the shared renderer, and distance fog belongs to the place/cave route. FFT size,
-cascade topology, polar mesh resolution, foam/shore bake dimensions, shaft steps and snow count require resource
-rebuilds and are intentionally omitted. Additional uniforms and grading arithmetic are enabled only on tuning visits;
-the flag-off shader graphs retain their constants and do not restore saved overrides.
-
-The home shore slice and dry-terrain comparisons (`src/proto/shore/`) were removed with classic home (6 November); every route uses this sea.
-Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
-the 512-contact registry bounds that list. The foam ring the surface draws round each contact loops, per water
-pixel within 180 m, over the nearest 64 contacts within that reach of the camera, re-picked every 4 m; before
-9 November it looped over every registered contact everywhere (123 with trains running, none of them near the cove).
-Provider obstacles retain their separate 256-site cap. Spray still
-uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
-Breaking-shore spray emits three separated droplets per fresh crest, with a short upward arc that clears the
-combined shore-wave lip. Stronger opacity and 20% larger breaker droplets keep sparse real-bank bursts readable;
-rock/support launches retain four droplets per site. Existing energy/crest gates and quiet intervals remain, so
-calm or sheltered water does not become a constant fountain. This is the existing Local cosmetic behavior of the production sea. See the [step-4 spray evidence](../plans/water-graduation.md#step-4-spray-visibility-follow-up-4-november-2026)
-for consecutive breaking-bank/support frames, measured costs and the retained-demo comparison.
-Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
-follow the slice. Wet receiver sheen uses continuous vertex normals instead of turning dry terrain facets into
-white triangles. The surface rejects faces on the wrong side of the camera, using the existing GPU lens-depth
-query and the reference's half-metre transition band; genuine submerged views retain the underside.
-See [shore seam validation](../research/water-shore-seams.md) for evidence and remaining limits.
-
-Place's 2 m bed is stored on its actual terrain vertices and sampled on the same triangle diagonal. Wave damping,
-bed clamping and receivers therefore follow the drawn bank, instead of a twice-filtered approximation. Travel-time
-and shore-distance fields keep their smoothing. These are Local rendering/query changes; Owner physics and all
-shared state retain their existing ownership and messages.
+The sea grid, the coast texture and the wave and caustic tiles are built once and are not live controls. MSAA and
+automatic resolution belong to the shared renderer, and distance fog to the place/cave route. Additional uniforms
+and grading arithmetic exist only on tuning visits; the flag-off shader graphs keep their constants and restore no
+saved overrides. The home shore registers the finalized stamped heightfield; Place registers its 1 m cove bed. These
+are Local rendering changes; Owner physics and all shared state keep their ownership and messages.

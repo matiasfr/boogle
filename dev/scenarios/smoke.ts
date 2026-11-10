@@ -23,10 +23,6 @@ const LOW_COST = {
     shadows: false,
     lights: false,
     caustics: false,
-    spray: false,
-    snow: false,
-    shafts: false,
-    lens: false,
     bloom: false,
   },
 };

@@ -25,10 +25,7 @@ const panel = document.querySelector<HTMLElement>('[data-water-panel]')!;
 const section = panel.querySelector<HTMLDetailsElement>('[data-water-section="Post"]')!;
 section.open = true;
 const input = (key: string) => panel.querySelector<HTMLInputElement>(`input[type="number"][data-water-key="${key}"]`)!;
-for (const [key, value] of [
-  ['post.centre', 0.18],
-  ['post.underwaterEV', 0.8],
-] as const) {
+for (const [key, value] of [['post.centre', 0.18]] as const) {
   const field = input(key);
   if (!field) throw new Error('Missing visible control: ' + key);
   field.value = String(value);
@@ -36,17 +33,17 @@ for (const [key, value] of [
   if (bindings.get(key)?.get() !== value) throw new Error('Control did not reach shader binding: ' + key);
 }
 const saved = JSON.parse(localStorage.getItem('boogle.water-tuning.v1') ?? 'null');
-if (saved?.changes?.['post.centre'] !== 0.18 || saved?.changes?.['post.underwaterEV'] !== 0.8)
+if (saved?.changes?.['post.centre'] !== 0.18)
   throw new Error('Fixed exposure controls did not persist');
 if (Math.abs(readableIntensity() * 0.18 - 1) > 1e-12)
   throw new Error('Reward compensation did not follow surface gain');
 panel.querySelector<HTMLButtonElement>('[data-water-action="copy"]')!.click();
 const copied = JSON.parse(panel.querySelector('textarea')!.value);
-if (copied.changes['post.centre'] !== 0.18 || copied.changes['post.underwaterEV'] !== 0.8)
+if (copied.changes['post.centre'] !== 0.18)
   throw new Error('Copy settings omitted fixed calibration');
 console.log('EXPOSURE CONTROLS ' + JSON.stringify({ saved, snapshot: lookSnapshot() }));
 panel.querySelector<HTMLButtonElement>('[data-water-group="Post"]')!.click();
-if (input('post.centre').valueAsNumber !== 0.12 || input('post.underwaterEV').valueAsNumber !== 0.81)
+if (input('post.centre').valueAsNumber !== 0.12)
   throw new Error('Post reset did not restore fixed calibration');
 if (Math.abs(readableIntensity() * 0.12 - 1) > 1e-12) throw new Error('Reward compensation did not reset');
 for (const [key, expected] of [

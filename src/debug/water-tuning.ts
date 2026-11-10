@@ -1,4 +1,4 @@
-// Ultra Water's familiar controls over the real sea. Values belong to their renderer bindings, not this UI.
+// The sea's look and the output's controls. Values belong to their renderer bindings, not this UI.
 import { Color } from 'three/webgpu';
 import { defineKind, spawn, despawn } from '../entity/entity.ts';
 import { releaseInput, requestLock } from '../player/input.ts';
@@ -22,63 +22,8 @@ const spec = (key: string, label: string, min: number, max: number, step = 0.01)
 const color = (key: string, label: string): Spec => ({ ...spec(key, label, 0, 1), color: true });
 const groups: Group[] = [
   {
-    name: 'Waves',
-    note: 'Spectrum controls rebake the existing FFT seed after editing; no reload. waveScale is energy, so height follows its square root.',
-    specs: [
-      spec('wave.windSpeed', 'windSpeed', 1, 25, 0.1),
-      spec('wave.windDirection', 'windDirection', -180, 180, 1),
-      spec('wave.fetchKm', 'fetchKm', 5, 1000, 1),
-      spec('wave.waveScale', 'waveScale', 0, 3),
-      spec('wave.spreadBlend', 'spreadBlend', 0, 1),
-      spec('wave.swellScale', 'swellScale', 0, 3),
-      spec('wave.swellDirection', 'swellDirection', -180, 180, 1),
-      spec('wave.choppiness', 'choppiness', 0, 2),
-      spec('wave.timeScale', 'timeScale', 0, 3),
-      ...[600, 85, 12, 2.1].map((length, i) => spec(`wave.cascade${i}`, `cascade ${i + 1} · ${length} m`, 0, 3)),
-    ],
-  },
-  {
-    name: 'Shore waves',
-    specs: [
-      spec('shore.amplitude', 'amplitude', 0, 1.5),
-      spec('shore.wavelength', 'wavelength', 8, 60, 0.5),
-      spec('shore.speed', 'speed', 0.3, 2),
-      spec('shore.steepness', 'steepness', 0, 1.5),
-      spec('shore.spray', 'spray', 0, 3),
-      spec('shore.spraySize', 'spray size', 0.2, 3),
-      spec('shore.swellFull', 'swell full depth', 3, 60, 0.5),
-      spec('shore.chopShallow', 'shallow choppiness', 0, 1),
-    ],
-  },
-  {
     name: 'Water',
-    note: 'Colour inputs display sRGB; copied RGB arrays and absorption coefficients are linear. Absorption is per metre.',
-    specs: [
-      color('water.scatter', 'scatter'),
-      spec('water.absorption', 'absorption RGB', 0.001, 3, 0.001),
-      spec('water.roughness', 'roughness', 0.005, 0.2, 0.001),
-      spec('water.refraction', 'refraction', 0, 0.2, 0.001),
-      spec('water.sssPeak', 'sssPeak', 0, 6),
-      spec('water.sssView', 'sssView', 0, 0.5, 0.001),
-      spec('water.sssShadow', 'sss shadow', 0, 1, 0.001),
-      spec('water.foamBias', 'foamBias', -0.5, 1.5),
-      spec('water.foamScale', 'foamScale', 0, 6),
-      spec('water.foamRecovery', 'foamRecovery', 0.05, 3),
-      spec('water.shoreFoamBand', 'shoreFoamBand', 0.001, 2, 0.001),
-      color('water.foamTint', 'foam tint'),
-      spec('water.foamBright', 'foam brightness', 0, 2),
-      spec('water.caustics', 'caustics', 0, 2),
-      spec('water.glitter', 'glitter', 0, 1),
-      spec('water.reflectGain', 'reflection gain', 0, 2),
-      spec('water.reflectCap', 'reflection cap', 0, 1),
-      color('water.reflectTint', 'reflection tint'),
-      spec('water.saturation', 'water saturation', 0, 2),
-      spec('water.sunGain', 'sun gain', 0, 3),
-    ],
-  },
-  {
-    name: 'Sunshine water',
-    note: '?water=sun and sun-depth only (docs/plans/water-sunshine.md). Band levels are log2 texels per pixel of the first layer.',
+    note: 'Band levels are log2 texels per pixel of the first layer. Absorption is per metre: the underwater fog and the ground under the sea.',
     specs: [
       color('sun.shallow', 'shallow'),
       color('sun.middle', 'middle'),
@@ -102,22 +47,12 @@ const groups: Group[] = [
       spec('sun.laneGain', 'sun lane gain', 0, 10),
       spec('sun.reflect', 'sky reflection', 0, 2),
       spec('sun.foamDepth', 'foam lip m', 0, 1),
-      spec('sun.ring', 'contact ring m', 0, 3),
-      spec('sun.edgeFoam', 'edge foam m (depth)', 0, 1.5),
+      spec('sun.edgeFoam', 'edge foam m', 0, 1.5),
       spec('sun.macro', 'macro variation', 0, 0.5),
       spec('sun.caustics', 'seabed caustics', 0, 8),
       spec('sun.causticLines', 'caustic lines', 0, 3),
-    ],
-  },
-  {
-    name: 'Floaters & underwater',
-    specs: [
-      spec('underwater.scattering', 'scattering', 0, 0.5, 0.001),
-      spec('underwater.shafts', 'shafts', 0, 4),
-      spec('underwater.shaftRange', 'shaftRange', 5, 120, 1),
-      spec('underwater.meniscus', 'meniscus', 0, 1),
-      spec('underwater.drySeconds', 'lens drying seconds', 0.5, 20, 0.1),
-      spec('underwater.exposure', 'underwater exposure', 0.2, 2),
+      spec('water.caustics', 'caustics on the ground', 0, 2),
+      spec('water.absorption', 'absorption RGB', 0.001, 3, 0.001),
     ],
   },
   {
@@ -150,7 +85,7 @@ const groups: Group[] = [
       spec('post.bloomStrength', 'bloomStrength', 0, 0.5, 0.001),
       spec('post.bloomThreshold', 'bloomThreshold', 0, 10),
       spec('post.centre', 'fixed gain', 0.01, 2, 0.001),
-      spec('post.underwaterEV', 'underwater offset (EV)', 0, 2, 0.01),
+
       spec('post.agxPower', 'agxPower', 0.5, 2),
       spec('post.agxSaturation', 'agxSaturation', 0, 2),
       spec('post.contrast', 'contrast', 0.7, 1.6),
@@ -751,29 +686,11 @@ export async function showWaterTuning(
   transfer.append(transferActions, json);
   moreContent.append(transfer);
   const limits = node('details');
-  limits.append(node('summary', 'Unavailable demo controls'));
+  limits.append(node('summary', 'Not live controls'));
   limits.append(
     node(
       'p',
-      'Camera presets and benchmark are archived with the demo. Floater spawn, drop, clear, drag, angularDrag and buoyancy are not local water looks; Boogle owns its gameplay bodies.',
-    ),
-  );
-  limits.append(
-    node(
-      'p',
-      'Planar reflections, reflectionScale and reflectionDistort have no production reflection target. Reflection gain/cap/tint adjust the existing sky reflections.',
-    ),
-  );
-  limits.append(
-    node(
-      'p',
-      'FFT size and cascade topology, polar mesh resolution, foam/shore bake dimensions, underwater shaft steps and snow count require rebuilding resources and are not live controls. MSAA and auto resolution belong to the shared renderer; resolution here scales its scene pass only.',
-    ),
-  );
-  limits.append(
-    node(
-      'p',
-      'Colour presets and clarity are represented by editable linear scatter, absorption and foam tint. Neutral is the production curve; AgX stays a comparison. Distance fog follows the place/cave route and is not a water setting.',
+      'The sea grid, the coast texture and the wave and caustic tiles are built once; MSAA and auto resolution belong to the shared renderer. Neutral is the production curve; AgX stays a comparison.',
     ),
   );
   const unavailable = groups.flatMap((group) => group.specs).filter((s) => !bindings.has(s.key));

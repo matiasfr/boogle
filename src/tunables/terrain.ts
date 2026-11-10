@@ -83,10 +83,7 @@ export const COVE_PARAMETERS = {
   tideMarkStrength: parameter(0.9, 0, 1, 'blend', 'Pigment contrast of the wet/dry tide-mark bands.'),
   rippleScale: parameter(1, 0.2, 4, 'scale', 'Scale multiplier for the demo-inspired sand ripples.'),
   rippleStrength: parameter(0.12, 0, 0.5, 'blend', 'Strength of the restrained sand ripple relief.'),
-  filmTint: parameter(0.65, 0, 1, 'blend', 'Extra wet-sand tint under moving swash film.'),
-  sheenStrength: parameter(0.7, 0, 1, 'blend', 'Thin-film sand sheen layered with the existing water receiver.'),
-  foamScale: parameter(1, 0.25, 4, 'scale', 'Scale of footprint-filtered sand swash foam lace.'),
-  foamStrength: parameter(0.7, 0, 1, 'blend', 'Strength of sand-tinted foam at the moving swash edge.'),
+  sheenStrength: parameter(0.7, 0, 1, 'blend', 'Wet sheen of damp cove sand, layered with the water receiver.'),
 } satisfies Record<string, Parameter>;
 
 export type CoveTunableKey = keyof typeof COVE_PARAMETERS;

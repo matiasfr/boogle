@@ -20,7 +20,7 @@ export const tool: Tool = {
   run(command) {
     if (command === 'reload') {
       const url = new URL(location.href);
-      url.searchParams.delete('water');
+
       url.searchParams.set('tune', '1');
       location.assign(url.href);
       return ok('Reloading with tuning.');

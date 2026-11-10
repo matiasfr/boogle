@@ -1,9 +1,7 @@
-// Ultra Water scene/terrain.js sand ripples, adapted to TSL and the existing shared receiver's swash.
-// Normals only: no render/collision displacement and no duplicate shore clock or atlas sampling.
+// Ultra Water scene/terrain.js sand ripples, adapted to TSL. Normals only: no render/collision displacement.
 import type { MeshStandardNodeMaterial } from 'three/webgpu';
 import { patchNode } from '../../render/material-patch.ts';
-import { registerWaterReceiver } from '../../render/water/receivers.ts';
-import { vnoise } from '../../render/water/shore-nodes.ts';
+import { registerWaterReceiver, vnoise } from '../../render/water/receivers.ts';
 import { TSL, type N } from '../../render/water/tsl.ts';
 import { coveU } from './cove-tuning.ts';
 
@@ -29,7 +27,7 @@ const rippleSlope = Fn(([p, d, frequency, noiseScale, warp, amplitude]: [N, N, N
 });
 
 /** Call after the cove's base colour/normal graph, instead of also registering a plain receiver. */
-export function registerCoveSand(material: MeshStandardNodeMaterial, sandMask: N, region: N) {
+export function registerCoveSand(material: MeshStandardNodeMaterial, sandMask: N) {
   const scale = float(coveU('rippleScale'));
   const p = positionWorld.xz.div(scale);
   // All derivatives stay outside variable control flow. Fade each band before its cells alias.
@@ -63,14 +61,10 @@ export function registerCoveSand(material: MeshStandardNodeMaterial, sandMask: N
   );
   registerWaterReceiver(material, {
     mask: sandMask,
-    region,
     dampHeight: coveU('dampHeight'),
     dampWidth: coveU('dampWidth'),
     dampStrength: coveU('dampStrength'),
     tideMarkStrength: coveU('tideMarkStrength'),
-    filmTint: coveU('filmTint'),
     sheenStrength: coveU('sheenStrength'),
-    foamScale: coveU('foamScale'),
-    foamStrength: coveU('foamStrength'),
   });
 }
