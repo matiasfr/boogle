@@ -71,6 +71,11 @@ onAudioSettingChange((key: AudioSetting) => {
 });
 
 function unlock() {
+  create();
+  if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+}
+/** The context and its graph, suspended until a gesture resumes it. */
+function create() {
   const t = performance.now();
   try {
     if (!ctx) {
@@ -102,7 +107,6 @@ function unlock() {
         buses.set(bus, { authored, user, duck });
       }
     }
-    if (ctx.state !== 'running') ctx.resume().catch(() => {});
   } catch {
     // Do not retain a half-built graph if the platform refused context creation.
     if (ctx) void ctx.close().catch(() => {});
@@ -114,6 +118,10 @@ function unlock() {
 for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click', 'keydown']) {
   addEventListener(ev, unlock, { passive: true, capture: true });
 }
+/** Behind the loading screen (main.ts): building the context took 220-250 ms on a Mac, in the first gesture's frame,
+ * which on a first visit is Jump in and the arrival's first frame (10 November 2026). It waits suspended, silent; the
+ * first gesture only resumes it. */
+export const prepareAudio = () => create();
 
 /** Voice chat holds the mic (src/features/voice.ts): Safari's audio session must allow recording while it does, and
  * opening the mic can interrupt this context on iOS, so it is resumed (a later gesture's unlock retries too). */
