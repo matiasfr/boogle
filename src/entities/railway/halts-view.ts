@@ -8,6 +8,8 @@ import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { trainAlong, trainStopsOf, TRAIN_PHASE } from '../../sim/railway-train.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { WORKS_KILN, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { forEachStatic, teleport, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
@@ -440,6 +442,15 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       const r = s.line2.train[h.k]!;
       h.update(dt, r.phase !== TRAIN_PHASE.STAND && r.to === h.stop);
     });
+    // The Works in gold (docs/plans/works-signposting-2.md, beats 2, 4 and 8): each seam still to strike while the
+    // breaker is out, then the kiln from the throat's opening until it lights.
+    const w = s.works;
+    boards.works(
+      WORKS_SEAMS.map((p, i) =>
+        w.breaker === 2 && !(w.seams & [SEAM_STALL, SEAM_THROAT][i]!) ? { x: p.x / 100, z: p.z / 100 } : null,
+      ),
+      w.seams & SEAM_THROAT && w.kiln.lit < 0 ? { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 } : null,
+    );
     boards.update(dt);
   }
   const tick = (dt: number) => {
@@ -496,6 +507,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       })),
       /** The boards' atlas texture memory in bytes (RGBA with mipmaps). */
       boardBytes: boards.bytes(),
+      /** The Works' gold marks every shown display carries (seams still to strike, the cold kiln). */
+      boardGold: boards.goldMarks(),
+      boardFaces: boards.faces(),
     }),
   };
 }
