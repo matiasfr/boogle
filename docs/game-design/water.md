@@ -312,7 +312,10 @@ the flag-off shader graphs retain their constants and do not restore saved overr
 
 The home shore slice and dry-terrain comparisons (`src/proto/shore/`) were removed with classic home (6 November); every route uses this sea.
 Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
-the 512-contact registry bounds that list. Provider obstacles retain their separate 256-site cap. Spray still
+the 512-contact registry bounds that list. The foam ring the surface draws round each contact loops, per water
+pixel within 180 m, over the nearest 64 contacts within that reach of the camera, re-picked every 4 m; before
+9 November it looped over every registered contact everywhere (123 with trains running, none of them near the cove).
+Provider obstacles retain their separate 256-site cap. Spray still
 uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
 Breaking-shore spray emits three separated droplets per fresh crest, with a short upward arc that clears the
 combined shore-wave lip. Stronger opacity and 20% larger breaker droplets keep sparse real-bank bursts readable;
