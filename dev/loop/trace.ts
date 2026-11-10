@@ -2,16 +2,20 @@
 // node comparing the prediction (`npm run loop -- run`), a bot run (.look/playthrough/<name>/session.jsonl) and a
 // human session (the playtest upload format, read by dev/playtest/read.ts). Human marks map to nodes by each node's
 // `reached` pattern; nothing new goes on the wire. Which beats rank as most confusing is a finding, not a target.
+// A session that isn't local is fetched the way `npm run playtest -- <id>` fetches it (--offline: don't). Several ids,
+// or `--since YYYY-MM-DD` (UTC), give one ranked table: confusion and wayfinding per node, with n.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import type { PlaySession } from '../../server/src/playdata.ts';
+import { OUT, playdata, resolveSession } from '../playtest/fetch.ts';
 import { parseSession, clock, num, str, type Ev, type Session } from '../playtest/read.ts';
 import { NODES, node, proposeOrders, type LoopNode, type NodeId, type Reached } from './graph.ts';
 import { playOrder } from './run.ts';
 
-/** Where sessions live: this checkout's .look and the main checkout's (worktrees share it). */
+/** Where sessions live: this checkout's .look (where the playtest download lands) and the main checkout's. */
 export function lookDirs() {
-  const dirs = [path.resolve('.look')];
+  const dirs = [path.resolve('.look'), path.dirname(OUT)];
   try {
     const common = execFileSync('git', ['rev-parse', '--git-common-dir'], { encoding: 'utf8' }).trim();
     dirs.push(path.resolve(path.dirname(path.resolve(common)), '.look'));
@@ -250,21 +254,169 @@ export function wayfinding(row: HumanRow, rows: readonly HumanRow[], pred: Reado
   return p !== undefined && p >= MIN_PREDICTED_M ? row.walked / p : undefined;
 }
 
-export function trace(args: string[]) {
+/** Every session file under the .look/playtest folders (this checkout's and the main checkout's), one per id. */
+export function localSessions() {
+  const byName = new Map<string, string>();
+  for (const dir of lookDirs()) {
+    const d = path.join(dir, 'playtest');
+    if (!fs.existsSync(d)) continue;
+    for (const f of fs.readdirSync(d)) if (f.endsWith('.jsonl') && !byName.has(f)) byName.set(f, path.join(d, f));
+  }
+  return [...byName.keys()].sort().map((f) => byName.get(f)!);
+}
+
+/** The session files to trace: each id local if it is, else downloaded through the playtest path (dev/playtest/
+ * fetch.ts); `since` adds every person's session the server lists from that UTC date (local ones only offline). */
+async function gather(wants: string[], since: string | undefined, offline: boolean) {
+  const files: string[] = [];
+  let server: ReturnType<typeof playdata> | null = null;
+  let list: PlaySession[] | null = null;
+  const online = async () => {
+    server ??= playdata();
+    list ??= await server.list();
+    return { server, list };
+  };
+  const where = () =>
+    lookDirs()
+      .map((d) => path.join(d, 'playtest'))
+      .join(' or ');
+  for (const want of wants) {
+    const local = findSession(want);
+    if (local) files.push(local);
+    else if (offline) throw new Error(`no session "${want}" under ${where()} (--offline: not fetched)`);
+    else {
+      const { server: s, list: l } = await online();
+      const row = resolveSession(l, want);
+      await s.download(row.id);
+      files.push(path.join(OUT, `${row.id}.jsonl`));
+    }
+  }
+  if (since) {
+    const from = Date.parse(since);
+    if (!Number.isFinite(from)) throw new Error(`--since: a date like 2026-11-09, not "${since}"`);
+    if (offline) {
+      for (const f of localSessions()) if (read(f).start >= from && !files.includes(f)) files.push(f);
+    } else {
+      const { server: s, list: l } = await online();
+      for (const row of l.filter((r) => Date.parse(r.first) >= from && !r.meta?.bot).reverse()) {
+        const local = findSession(row.id);
+        if (!local) await s.download(row.id);
+        const f = local ?? path.join(OUT, `${row.id}.jsonl`);
+        if (!files.includes(f)) files.push(f);
+      }
+    }
+  }
+  return files;
+}
+
+export async function trace(args: string[]) {
   const value = (flag: string) => {
     const i = args.indexOf(flag);
     return i >= 0 ? args[i + 1] : undefined;
   };
   const positional = args.filter((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));
-  const want = positional[1];
-  if (!want) throw new Error('npm run loop -- trace <session id prefix | path to a .jsonl>');
-  const file = findSession(want);
-  if (!file)
-    throw new Error(
-      `no session "${want}" under ${lookDirs()
-        .map((d) => path.join(d, 'playtest'))
-        .join(' or ')}`,
+  const wants = positional.slice(1);
+  const since = value('--since');
+  if (!wants.length && !since)
+    throw new Error('npm run loop -- trace <session id prefix | path to a .jsonl> [more...] [--since YYYY-MM-DD]');
+  const files = await gather(wants, since, args.includes('--offline'));
+  if (!files.length) throw new Error(`no sessions since ${since}`);
+  if (files.length > 1 || since) return aggregate(files, args.includes('--json'));
+  single(files[0]!, args, value);
+}
+
+/** One ranked table for many sessions: confusion and wayfinding per node, with n per node. */
+function aggregate(files: string[], json: boolean) {
+  const excluded: Record<string, number> = {};
+  type Agg = {
+    id: NodeId;
+    n: number;
+    reached: number;
+    confusion: number;
+    noReach: number;
+    refused: number;
+    ignored: number;
+    idle: number;
+    ways: number[];
+    rank?: number;
+  };
+  const agg = new Map<NodeId, Agg>(
+    NODES.map((n) => [
+      n.id,
+      { id: n.id, n: 0, reached: 0, confusion: 0, noReach: 0, refused: 0, ignored: 0, idle: 0, ways: [] },
+    ]),
+  );
+  const used: string[] = [];
+  for (const f of files) {
+    const s = read(f);
+    const why = notTheLoop(s);
+    if (why) {
+      excluded[why] = (excluded[why] ?? 0) + 1;
+      continue;
+    }
+    used.push(s.id);
+    const rows = humanRows(s);
+    const pred = predictedWalk(playersIn(s));
+    for (const r of rows) {
+      const touched = r.at !== undefined || r.confusion > 0 || r.walked > 0 || r.carries > 0;
+      if (!touched) continue;
+      const a = agg.get(r.id)!;
+      a.n++;
+      if (r.at !== undefined) a.reached++;
+      a.confusion += r.confusion;
+      a.noReach += r.noReach;
+      a.refused += r.refused;
+      a.ignored += Math.max(0, r.shown - r.pressed);
+      a.idle += r.idle;
+      const w = wayfinding(r, rows, pred);
+      if (w !== undefined) a.ways.push(w);
+    }
+  }
+  const ranked = [...agg.values()].filter((a) => a.confusion > 0).sort((a, b) => b.confusion - a.confusion);
+  ranked.forEach((a, i) => (a.rank = i + 1));
+  const med = (v: number[]) => {
+    const s = [...v].sort((a, b) => a - b);
+    return s.length % 2 ? s[s.length >> 1]! : (s[s.length / 2 - 1]! + s[s.length / 2]!) / 2;
+  };
+  if (json) return console.log(JSON.stringify({ sessions: used, excluded, nodes: [...agg.values()] }, null, 2));
+  const skipped =
+    Object.entries(excluded)
+      .map(([why, k]) => `${k} ${why}`)
+      .join(', ') || 'none';
+  const out = [
+    `Loop trace of ${used.length} production loop session(s) of ${files.length}; left out: ${skipped}. Untrusted: session data.`,
+    'n: sessions with activity at the node (its window, or its marks); confusion is summed over them, ranked; walked/pred',
+    'is the median wayfinding ratio over the sessions whose window is a canonical segment (count in brackets).',
+    '',
+    'node        n  reached  confusion (rank)  mean   no-reach  refused  prompts ignored  idle s  walked/pred',
+  ];
+  for (const a of agg.values()) {
+    if (!a.n) continue;
+    out.push(
+      `${a.id.padEnd(9)} ${String(a.n).padStart(3)} ${String(a.reached).padStart(8)} ${(a.confusion ? `${a.confusion.toFixed(1)} (${a.rank})` : '-').padStart(17)} ${(a.confusion / a.n).toFixed(1).padStart(6)} ${String(a.noReach).padStart(10)} ${String(a.refused).padStart(8)} ${String(a.ignored).padStart(16)} ${String(Math.round(a.idle)).padStart(7)}  ${a.ways.length ? `x${med(a.ways).toFixed(2)} (${a.ways.length})` : '-'}`,
     );
+  }
+  out.push(
+    '',
+    `Most confused (a finding): ${
+      ranked
+        .slice(0, 5)
+        .map((a) => `${a.id} ${a.confusion.toFixed(1)} over ${a.n}`)
+        .join(', ') || 'none'
+    }`,
+  );
+  const lost = [...agg.values()]
+    .filter((a) => a.ways.length)
+    .sort((a, b) => med(b.ways) - med(a.ways))
+    .slice(0, 5);
+  out.push(
+    `Most walking over the prediction (wayfinding): ${lost.map((a) => `${a.id} x${med(a.ways).toFixed(2)} (${a.ways.length})`).join(', ') || 'none'}`,
+  );
+  out.push(`Sessions: ${used.join(', ')}`);
+  console.log(out.join('\n'));
+}
+
+function single(file: string, args: string[], value: (flag: string) => string | undefined) {
   const human = read(file);
   const botFile = findBot(value('--bot'));
   const bot = botFile ? read(botFile) : null;

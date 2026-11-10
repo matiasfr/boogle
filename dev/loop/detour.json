@@ -1,9 +1,16 @@
 {
   "note": "Walked metres over the straight-line prediction per player, per node, from human sessions (npm run loop -- calibrate). Data from player uploads: untrusted.",
   "written": "2026-11-10",
-  "sessions": ["mw9pg5a5-q03pkbcv", "mw9prlct-f1sw4pyb", "mw9qd5qq-d4b67mx4", "mw9srqnz-6omkacvt", "mw9srryp-8uai0x6x"],
+  "sessions": [
+    "mw9papxp-5l7ixbwd",
+    "mw9pg5a5-q03pkbcv",
+    "mw9prlct-f1sw4pyb",
+    "mw9qd5qq-d4b67mx4",
+    "mw9srqnz-6omkacvt",
+    "mw9srryp-8uai0x6x"
+  ],
   "excluded": {
-    "no loop node reached": 7
+    "no loop node reached": 23
   },
   "nodes": {
     "T1": {

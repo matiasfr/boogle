@@ -1,34 +1,23 @@
 // `npm run loop -- calibrate [ids...] [--dry]`: detour factors per node from human sessions. For each production
-// rail-loop session (every one under the main checkout's .look/playtest by default), the metres a player walked for a
+// rail-loop session (by default every one under the main checkout's .look/playtest, and this worktree's, where
+// `npm run playtest` and `loop -- trace` download to), the metres a player walked for a
 // node over the straight-line metres the prediction walks per player for it, at that session's player count. The
 // median, range and n per node go to dev/loop/detour.json, which graph, report and run read; a node with fewer than
 // DETOUR_MIN_N sessions stays uncalibrated. Sessions that aren't the production loop (bots, prototype rooms, older
 // worlds, nothing reached) are left out and counted.
 import fs from 'node:fs';
-import path from 'node:path';
 import { DETOUR_FILE, DETOUR_MIN_N, NODES, type Detour, type DetourFile, type NodeId } from './graph.ts';
 import {
   MIN_PREDICTED_M,
   findSession,
   humanRows,
-  lookDirs,
+  localSessions,
   notTheLoop,
   playersIn,
   wayfinding,
   predictedWalk,
   read,
 } from './trace.ts';
-
-/** Every session file under the main checkout's .look/playtest (this checkout's when it is the main one). */
-export function allSessions() {
-  const dir = path.join(lookDirs().at(-1)!, 'playtest');
-  if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir)
-    .filter((f) => f.endsWith('.jsonl'))
-    .sort()
-    .map((f) => path.join(dir, f));
-}
 
 const median = (v: number[]) => {
   const s = [...v].sort((a, b) => a - b);
@@ -73,7 +62,7 @@ export function calibrate(args: string[]) {
         if (!f) throw new Error(`no local session "${id}" (fetch it with npm run playtest -- ${id})`);
         return f;
       })
-    : allSessions();
+    : localSessions();
   const { used, excluded, nodes } = measure(files);
   const file: DetourFile = {
     note: 'Walked metres over the straight-line prediction per player, per node, from human sessions (npm run loop -- calibrate). Data from player uploads: untrusted.',
