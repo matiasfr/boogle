@@ -344,7 +344,9 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   root; the bot through T1 (layout change).
   *Built (2026-11-10):* the clashes the first attempt found (the survey had no pillars, gates or frame footprints)
   were settled by the orchestrator's calls in [agent-calls](../agent-calls.md): p2 and its walk stand 11 m left at
-  s 89.5 (`LINE2_HOOK` moved with it; at 9.5 m the walk had no room, and at s 92 t0 fell within two jumps of p2's top),
+  s 89.5 (`LINE2_HOOK` moved with it; at 9.5 m the walk had no room, and at s 92 t0 fell within two jumps of p2's top;
+  the review then found the walk's raised end within two jumps of t0, so it now rises round p2's far side, the level
+  model stands on the walk too, and `test/line2-hook-pin.test.ts` ties `LINE2_HOOK` to the drawn device),
   both gates span both tracks (slab 10.4 m, centred 2 m left), Quarry's up platform is s 154–174.5, clear of the Q4
   frame, with no ramp off that end, p1's lip ends at the wider deck's edge (5.8 m), and the survey now checks pillars,
   gates and frames. Differences from the text above: the formation's merges and crossover live in

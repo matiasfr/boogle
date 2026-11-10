@@ -14,7 +14,9 @@ import {
   MOVE,
   PADS,
   PILLARS,
+  HOOK_FLUSH,
   SECRETS,
+  SERVICE_ROUTES,
   padById,
   ringAt,
 } from '../../src/proto/place/tech-layout.ts';
@@ -236,6 +238,21 @@ export function runPlaceLevelCheck() {
         }
       return false;
     };
+    // The hook walk (SERVICE_ROUTES.hook, drawn with line 2 over the stem): places to stand, sampled every metre along
+    // its centreline, the first points flush with the deck's walkable top. Measured from the centreline, as decks are.
+    const walk: { x: number; z: number; y: number }[] = [];
+    if (tracks.some(([l, a, b]) => l === E && a <= 84 && b >= 92)) {
+      const pts = SERVICE_ROUTES.hook.map((q, i) => ({ ...q, y: q.y + (i < HOOK_FLUSH.points ? HOOK_FLUSH.top : 0) }));
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1]!,
+          b = pts[i]!;
+        const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)));
+        for (let j = 0; j <= n; j++)
+          walk.push({ x: a.x + ((b.x - a.x) * j) / n, z: a.z + ((b.z - a.z) * j) / n, y: a.y + ((b.y - a.y) * j) / n });
+      }
+    }
+    const fromWalk = (x: number, z: number, y: number, hx: number, rise: number, reach: number) =>
+      walk.some((q) => Math.max(0, Math.hypot(q.x - x, q.z - z) - hx) <= reach && y - q.y <= rise && y >= q.y - 4);
     let grew = true;
     while (grew) {
       grew = false;
@@ -271,7 +288,10 @@ export function runPlaceLevelCheck() {
             : have.jump
               ? TWO_REACH
               : JUMP_REACH;
-        ok ||= groundAt(seen, p.x, p.z, p.top, rise, reach + r) || fromTrack(p.x, p.z, p.top, r, rise, reach);
+        ok ||=
+          groundAt(seen, p.x, p.z, p.top, rise, reach + r) ||
+          fromTrack(p.x, p.z, p.top, r, rise, reach) ||
+          fromWalk(p.x, p.z, p.top, r, rise, reach);
         for (const id of got) {
           const q = padById(id);
           const d = Math.max(0, Math.hypot(q.x - p.x, q.z - p.z) - r - Math.max(q.hx, q.hz));
@@ -308,6 +328,7 @@ export function runPlaceLevelCheck() {
               lineAt(l, s, P);
               ok = inRange(P.x, railY(l, s) + 1, P.z);
             }
+          ok ||= walk.some((q) => inRange(q.x, q.y + 1, q.z));
         }
         if (ok) {
           got.add(p.id);
@@ -399,11 +420,12 @@ export function runPlaceLevelCheck() {
     accepted(got, 'alcove', 'drop from the plateau');
     for (const id of ['balcony', 'stack']) mustNot(got, id, `the ${id}'s secret needs the glider`);
     mustNot(got, 'summit', 'the top');
-    mustNot(
+    // Route v2's hook walk (solid from Q2, line2Routes) climbs to p2's top, so one jump is enough: walk up it. The
+    // model stood only on decks and ground until generic-lines step 2's review, so this read "one jump is not enough".
+    must(
       padsReachable(st3, { jump: false, hook: false, glide: false }, E2),
       'p2',
-      'one jump is not enough for the second pillar',
-      'stem-line-one-jump',
+      'the second pillar, up the hook walk',
     );
 
     section('hook', '\nWith the hook');
