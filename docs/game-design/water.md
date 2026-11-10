@@ -164,7 +164,10 @@ The owner chose `summer` as the daytime sky ("I like the colors there"), so it i
 water, fog, PBR reflections and hemisphere fill: original direction-space cumulus, thirteen uneven clusters with varied
 aspect/size, soft bases and a saturated blue ramp with horizon haze. It keeps current water, production Neutral post,
 surface gain .12, key/fill 1.12/3.2, cloud radiance .8 and neutral scene lights (owner cell 5); only cloud radiance
-changes with the art, and the physical sun direction and water's solar lobe remain. The cube is always 1024.
+changes with the art, and the physical sun direction and water's solar lobe remain. The cube is 512 per face (owner,
+9 November: "halving sky texture feels fine"), 16 MiB with mips against 64 MiB at 1024; its blur levels keep the
+1024 cube's angles. Matched desktop stills of the horizon, sun, clouds and the water's reflection at Far Head and the
+cove could not tell the two apart, so 512 is used everywhere; `skyCube=1024` brings back the old size to compare.
 Recipe values live in `sky-art.ts`; edit and reload. Cube RGB contains no sun disc, and alpha remains sun
 transmittance. `inspect()` reports the cube payload, bake count, CPU bake submission time and readiness; none establish
 device residency or real-time smoothness. No shared state, network shapes or gameplay change.
@@ -309,7 +312,10 @@ the flag-off shader graphs retain their constants and do not restore saved overr
 
 The home shore slice and dry-terrain comparisons (`src/proto/shore/`) were removed with classic home (6 November); every route uses this sea.
 Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
-the 512-contact registry bounds that list. Provider obstacles retain their separate 256-site cap. Spray still
+the 512-contact registry bounds that list. The foam ring the surface draws round each contact loops, per water
+pixel within 180 m, over the nearest 64 contacts within that reach of the camera, re-picked every 4 m; before
+9 November it looped over every registered contact everywhere (123 with trains running, none of them near the cove).
+Provider obstacles retain their separate 256-site cap. Spray still
 uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
 Breaking-shore spray emits three separated droplets per fresh crest, with a short upward arc that clears the
 combined shore-wave lip. Stronger opacity and 20% larger breaker droplets keep sparse real-bank bursts readable;
