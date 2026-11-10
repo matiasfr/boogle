@@ -317,3 +317,31 @@ In the nightly history this shows as `*.cpu.room-clock-replicationMs` falling by
 - **No shadows** removes 48 draw calls and about 90k triangles: about −0.4 to −0.5 ms CPU and −0.3 to −0.5 ms GPU. It is the biggest CPU step on the phone profile.
 - **The far settings** (`farSea`, `farGround`, off by default) show no measurable gain. `farGround` drops about 150k triangles at far and bay, but GPU time is within noise, sometimes higher. The desktop and phone stills (`dev/look/beats/far-detail.ts`) show no visible difference either. Recommendation: leave both off; revisit only if a device profile shows the far sea or ground as the bottleneck.
 - Not measured: a real phone. These are desktop-browser emulations.
+
+## 8. The pier and the resolution scaler (9 November, on main df7c8527)
+
+The owner's Safari session of 9 November (mw9qd5qq, build 1b845f3b) dropped to 1.2x at the pier head and sat there four
+minutes; loads hitched 442 ms. Measured in Chromium on the M1 Max at the owner's 2712×2110 (1356×1055 at DPR 2, MSAA 4),
+`npm run bench -- --no-load --rail-seed q6-done --poses head,pier --size 1356x1055`, load average 3.5–6 unless noted.
+
+| | 1b845f3b (playtest build) | main df7c8527 |
+| --- | --- | --- |
+| pier head, facing open sea: calls / triangles / CPU / GPU avg (p95) | 156 / 1.06 M / 5.1 / 30–34 ms (38–40) | 164 / 0.63 M / 3.8–4.8 / 8.0 ms (9.5–10.3) |
+| Far Head: same | 187 / 1.14 M / 4.5 / 10.3–10.8 ms (14–15.5) | 198 / 0.72 M / 4.2–5.3 / 8.6–9.2 ms (9.6–10) |
+| worst startup frame, fresh world / q6-done world | 240 / 207 ms (`ambience update` 26–31 ms CPU) | 51 ms / none over 50 ms |
+| boarding line 2 at Home, worst frame from 3 s before to 6 s after | not run (old inspection API) | 16.8 ms (60 Hz page), no long frame |
+
+- **The pier was the sea.** The water rebuild (one sea draw, 63a09db5 and before) took the pier from 30–34 ms of GPU to 8.
+  At the pier on main, passes overlap (canvas ~4.5, shadow map ~4.3, scene ~3 ms per pass, 8 ms span); ablated, shadows
+  off saves 0.3–0.7 ms, MSAA off 0.6, resolution 0.6 only 1–1.5: nothing left is fill-bound or one dominant pass. The
+  village spawn (381 calls, 10.3 ms GPU) now costs more than the pier. The pier's draws are already instanced kits; no
+  merging was worth doing.
+- **The load hitch** was the ambience bake (618c412d moved it behind the loading screen) and pipelines on first use
+  (b847532e). **Boarding** shows no hitch in Chromium. Both are unmeasured in Safari, which compiles pipelines more slowly.
+- **The scaler.** 3235b933 (the same day) fixed Safari's four minutes. Watched live at 120 Hz (`bench --scaler`), it still
+  failed: after the load, Chromium's rAF stamps jitter by about a millisecond, the median sat 1.11–1.19 x the 10th
+  percentile against a 1.15 calm line, and it took 37 s to climb one step and never reached full in a minute. Calm now
+  allows 2 ms of jitter: full resolution 26 s after the load ends, 5 s a step.
+- `bench`'s first pose on a seeded world used to time the pipelines its own shadow toggle builds (4 frames in 5 s);
+  it now waits 3 s after counting.
+- Not tested on a device; Safari not measured.
