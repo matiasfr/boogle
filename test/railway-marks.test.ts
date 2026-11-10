@@ -80,6 +80,11 @@ test('consistent progress edges mark every stretch once, and baseline/refill nev
     ['trains unlocked'],
   );
   assert.deepEqual(observe(s), []);
+  s.works!.crossing = 40;
+  assert.deepEqual(observe(s), [['crossing footed', { authority: 'server' }]]);
+  assert.ok(beatsOf('place', true).some(([, pattern]) => pattern.test('crossing footed')));
+  assert.ok(beatsOf('place', true).some(([, pattern]) => pattern.test('crossing finale')));
+  assert.deepEqual(observe(s), []);
   const rejoin = createRailwayProgressMarks();
   assert.deepEqual(rejoin(s, true), []);
   assert.deepEqual(rejoin(s), []);
