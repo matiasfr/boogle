@@ -72,7 +72,9 @@ test('nothing the code gates read is classed as docs', () => {
   )
     .split('\n')
     // dev/ only where the build loads it (Vite plugins) or tests import it; the rest runs on the Mac, not in CI.
-    .filter((f) => /\.(?:[mc]?[jt]s|html)$/.test(f) && (!f.startsWith('dev/') || f.endsWith('vite-plugin.ts')));
+    .filter((f) => /\.(?:[mc]?[jt]s|html)$/.test(f) && (!f.startsWith('dev/') || f.endsWith('vite-plugin.ts')))
+    // This file's case table names paths; it reads none of them.
+    .filter((f) => f !== 'test/change-class.test.ts');
   const bad: string[] = [];
   for (const file of files) {
     const text = fs.readFileSync(path.join(ROOT, file), 'utf8');
