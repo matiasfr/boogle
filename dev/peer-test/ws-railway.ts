@@ -695,8 +695,7 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
   const world = c.hosted(roomId)!.world as RailwayWorldHost;
   // The built world's clock is ahead of this fresh room's: advance the disposable room to pass it, then load it.
-  while (world.sync.world.tick <= seed.t + 5) world.step(0.1);
-  await world.sync.whenDurable();
+  await advancePast(world, seed.t + 5);
   world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())), railwayCheck);
   world.rules.railway.touchAll();
   const trainOf = (p: Page) => ev(p.page, () => window.T.railTrain(1));
@@ -792,8 +791,7 @@ export async function railwayRequestStop(c: Ctx) {
   const host = await c.web.open('Q-host', `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=reqhost`);
   await waitFor(async () => !!c.hosted(roomId), 15000);
   const world = c.hosted(roomId)!.world as RailwayWorldHost;
-  while (world.sync.world.tick <= seed.t + 5) world.step(0.1);
-  await world.sync.whenDurable();
+  await advancePast(world, seed.t + 5);
   world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())), railwayCheck);
   world.rules.railway.touchAll();
   const pages: Page[] = [];
@@ -940,6 +938,35 @@ export async function railwayJumpIn(c: Ctx) {
     sharedBefore === null ? sharedAfter === null : !!sharedAfter && sharedAfter.equals(sharedBefore),
   );
   await Promise.all([J0, J1].map((p) => p.page.close()));
+}
+// Step a fresh railway room's clock past `tick`. A step does nothing until the room's startup checkpoint (and any stamp
+// it publishes) is durable, and that write lands only when the event loop runs: a plain synchronous step loop started
+// before then spins forever. So wait for startup, and yield whenever a step did not move the clock; every wait, a
+// stalled startup save included, shares one 30 s deadline.
+async function advancePast(world: RailwayWorldHost, tick: number) {
+  const end = performance.now() + 30000;
+  const held = () => new Error(`the room clock is held at tick ${world.sync.world.tick}`);
+  const within = async (p: Promise<unknown>) => {
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        p,
+        new Promise<never>((_, reject) => (timer = setTimeout(() => reject(held()), end - performance.now()))),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  await within(world.whenReady());
+  while (world.sync.world.tick <= tick) {
+    const before = world.sync.roomStep();
+    world.step(0.1);
+    if (world.sync.roomStep() !== before) continue;
+    if (performance.now() > end) throw held();
+    await within(world.sync.whenDurable());
+    await sleep(1);
+  }
+  await within(world.sync.whenDurable());
 }
 const agreeOn = async (group: Page[]) =>
   (await waitFor(async () => {
