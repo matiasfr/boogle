@@ -768,8 +768,9 @@
     <p class="sub">
       The Roundhouse turntable at Home, framed as the train's garage, the way a racing game frames its car. You walk up
       to the post by the table and press Interact; there is no menu for this anywhere else. The engine on the table is
-      the works copy, wearing the room's fits. Each category turns the camera to what it changes; Before and After swap
-      the picture. Brief: docs/brainstorms/engine-garage.md.
+      the works copy, wearing everything the room has installed. Each category turns the camera to what it changes;
+      choose the part you have or an upgrade in the strip to compare them. Installing should feel great: that moment is
+      designed next. Brief: docs/brainstorms/engine-garage.md.
     </p>
     <div class="sketchctl">
       <span>Sketch controls:</span>
@@ -788,10 +789,6 @@
       <div class="shade"></div>
       <div class="topbar">
         <span class="where">Roundhouse · <b id="camName">Engine</b></span>
-        <div class="toggle" role="group" aria-label="Before or after">
-          <button id="beforeBtn" type="button" aria-pressed="false">Before</button>
-          <button id="afterBtn" type="button" aria-pressed="true">After</button>
-        </div>
         <span class="tag" id="pipTag" hidden><span class="dot"></span><span id="pipText">Pip is looking</span></span>
       </div>
       <div class="legend" id="legend"></div>
@@ -812,18 +809,18 @@
       <div class="effect" id="effect" aria-live="polite"></div>
       <div>
         <div class="note" style="margin-bottom: 4px">
-          Room's store, shared: anyone may spend it; everyone sees the fit
+          Room's store, shared: anyone may spend it; everyone sees the install
         </div>
         <div class="store" id="store"></div>
       </div>
       <div class="fitrow">
-        <button class="btn primary" id="fitBtn" type="button">Fit</button>
+        <button class="btn primary" id="fitBtn" type="button">Install</button>
         <p class="why" id="why"></p>
       </div>
-      <div class="confirm" id="confirm" role="group" aria-label="Confirm fit">
-        <p id="confirmText">Fit it for everyone?</p>
+      <div class="confirm" id="confirm" role="group" aria-label="Confirm install">
+        <p id="confirmText">Install it for everyone?</p>
         <div class="row">
-          <button class="btn primary small" id="yesBtn" type="button">Yes, fit it</button>
+          <button class="btn primary small" id="yesBtn" type="button">Yes, install it</button>
           <button class="btn small" id="noBtn" type="button">Not yet</button>
         </div>
       </div>
@@ -861,7 +858,7 @@
           capture. Plough and headlamp, Six seats, Bigger cradle, Brass bands and the whistles have no model yet and
           show today's train.
         </li>
-        <li>The Cars, Looks, Cargo and Whistle pictures show today's boiler even after the longer one is fitted.</li>
+        <li>The Cars, Looks, Cargo and Whistle pictures show today's boiler even after the longer one is installed.</li>
       </ul>
     </div>
   </section>
@@ -870,8 +867,8 @@
     <h2>Answered, 10 November</h2>
     <ol class="answered">
       <li>
-        The engine on the table is a works copy the Roundhouse keeps, wearing every fit the room has; real trains take a
-        fit at their next Home stop.
+        The engine on the table is a works copy the Roundhouse keeps, wearing everything the room has installed; real
+        trains take a new part at their next Home stop.
       </li>
       <li>A new resource's first car is free at its unlock; the screen shows it owned and sells better ones.</li>
       <li>
@@ -883,6 +880,11 @@
         logistics readout.
       </li>
       <li>Cars are bought per line: every train on a line runs the same cars, bought once.</li>
+      <li>
+        A boiler sets both top speed and how many cars the engine pulls; the button says Install; the readouts are
+        speed, cars and resources a minute, with no race strip; no Before / After button, you compare by choosing the
+        current part or the upgrade (your notes on this page).
+      </li>
     </ol>
     <h2 style="margin-top: 16px">Open questions</h2>
     <p class="sub">
@@ -921,7 +923,7 @@
         id: 'boiler',
         cat: 'engine',
         name: 'Boiler',
-        desc: 'The first fit. It woke the trains ("Steam").',
+        desc: 'The first install. It woke the trains ("Steam").',
         owned: true,
         part: {},
       },
@@ -929,7 +931,7 @@
         id: 'long',
         cat: 'engine',
         name: 'Longer boiler',
-        desc: 'Steel boiler, 0.5 m longer ahead, with a taller chimney, a sand dome and a pony truck. Line 2 runs at 25 m/s and pulls one more car.',
+        desc: 'Steel boiler, 0.5 m longer ahead, with a taller chimney, a sand dome and a pony truck. A boiler sets two things: top speed and how many cars the engine pulls. This one: 25 m/s and four cars.',
         cost: { steel: 6 },
         part: { long: true },
       },
@@ -1062,13 +1064,13 @@
     const trip = (sec) => `${sec} s`;
 
     function state(it) {
-      if (S.owned.has(it.id)) return it.free ? ['free', 'Free with the kiln'] : ['owned', 'Fitted'];
+      if (S.owned.has(it.id)) return it.free ? ['free', 'Free with the kiln'] : ['owned', 'Installed'];
       if (it.coins) return ['locked', 'Coins: not built'];
       if (it.needs && !S.owned.has(it.needs)) return ['locked', 'Needs ' + item(it.needs).name.toLowerCase()];
       const c = it.cost || {};
       if (c.steel && S.steel < c.steel) return ['locked', `Needs ${c.steel} steel`];
       if (c.copper && S.copper < c.copper) return ['locked', `Needs ${c.copper} copper`];
-      return ['ready', 'Ready to fit'];
+      return ['ready', 'Ready to install'];
     }
     function blockReason(it) {
       if (it.id === 'wagon2') {
@@ -1099,10 +1101,10 @@
       } else key = 'whistle-base';
       if (S.cat === 'whistle') legend = 'A whistle is a sound: the picture stays the same.';
       else if (previewing && it.model === false) legend = 'No model of this part yet: the picture is today’s train.';
-      else if (previewing && it.part.paint) legend = 'The new paint, shown as fitted (a stand-in colour).';
-      else if (key.endsWith('Ghost')) legend = '<span class="sw"></span>Yellow: the previewed part, not fitted yet.';
+      else if (previewing && it.part.paint) legend = 'The new paint, shown as installed (a stand-in colour).';
+      else if (key.endsWith('Ghost')) legend = '<span class="sw"></span>Yellow: the previewed part, not installed yet.';
       else if (S.view === 'before' && !S.owned.has(it.id)) legend = 'Before: the train as the room has it.';
-      else legend = 'As fitted.';
+      else legend = 'As installed.';
       return { key, legend, L };
     }
     let shown = '';
@@ -1136,7 +1138,7 @@
       if (it.cat === 'looks') {
         rows.push(`<div class="stat"><span>What it changes</span><b>The look only</b></div>`);
       } else if (it.cat === 'engine') {
-        row('Village to the island', trip(L0.long ? 54 : 65), trip(L1.long ? 54 : 65));
+        row('Top speed', L0.long ? '25 m/s' : '20 m/s', L1.long ? '25 m/s' : '20 m/s');
         row('Cars it pulls', pulls(L0), pulls(L1));
       } else if (it.cat === 'cars') {
         const seats = (L) => (L.six ? 6 : 4);
@@ -1159,7 +1161,6 @@
     // ---- the effect on the line: the same trip before and after, and what reaches the far end a minute.
     // Sketch numbers from the brief's table: Village to the island 65.8 s at 20 m/s, 55.2 s at 25 m/s; a round trip
     // is two runs and three 5 s stands; one train.
-    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     function effect() {
       const el = $('effect');
       const it = item(S.sel);
@@ -1183,43 +1184,11 @@
             : '<h3>On line 2</h3><span class="note">This part leaves the trip and the loads as they are.</span>';
         return;
       }
-      // Drawn in its own small viewBox, so at 400 px the labels stay at about 13 px.
-      const x0 = 52,
-        x1 = 308;
-      const dot = (y, sec, fill, label) => {
-        const k = Math.min(1, sec / 80).toFixed(3);
-        const anim = still
-          ? ''
-          : `<animate attributeName="cx" values="${x0};${x1};${x1}" keyTimes="0;${k};1" dur="8s" repeatCount="indefinite"/>`;
-        return `<circle cx="${still ? x1 : x0}" cy="${y}" r="8" fill="${fill}" stroke="#050a14" stroke-width="2">${anim}</circle><text x="4" y="${y + 5}" font-family="Figtree, sans-serif" font-size="13" font-weight="800" fill="#a9b8d0">${label}</text>`;
-      };
-      const halts = [
-        ['Village', 0],
-        ['Quarry', 0.115],
-        ['Pier', 0.6],
-        ['Island', 1],
-      ];
-      let g = '';
-      for (const y of [44, 76]) g += `<rect x="${x0}" y="${y - 2}" width="${x1 - x0}" height="4" fill="#3b4f74"/>`;
-      for (const [n, f] of halts) {
-        const x = x0 + (x1 - x0) * f;
-        const anchor = f === 0 ? 'start' : f === 1 ? 'end' : 'middle';
-        const dx = f === 0 ? -6 : f === 1 ? 6 : 0;
-        g += `<rect x="${x - 1.5}" y="32" width="3" height="56" fill="#a9b8d0" opacity="0.45"/><text x="${x + dx}" y="${f === 0.115 ? 102 : 22}" text-anchor="${anchor}" font-family="Figtree, sans-serif" font-size="13" font-weight="700" fill="#eef4ff">${n}</text>`;
-      }
-      g += dot(44, run(L0), 'var(--hud-now)', 'Now') + dot(76, run(L1), 'var(--hud-preview)', 'After');
-      const saved = Math.round(run(L0)) - Math.round(run(L1));
       const line = (label, a, b) =>
         `<div class="stat"><span>${label}</span><b>${a === b ? a : `${a} <span class="to">→ ${b}</span>`}</b></div>`;
       el.innerHTML =
-        `<h3>On line 2: the same trip, now and after</h3>` +
-        `<svg viewBox="0 0 320 108" role="img" aria-label="Two trains run Village to the island: now ${Math.round(run(L0))} seconds, after ${Math.round(run(L1))} seconds">${g}</svg>` +
+        `<h3>On line 2, every minute</h3>` +
         `<div class="stats" style="margin-top: 6px">` +
-        line(
-          'Arrives',
-          `${Math.round(run(L0))} s`,
-          saved ? `${Math.round(run(L1))} s, ${saved} s sooner` : `${Math.round(run(L1))} s`,
-        ) +
         line('Footings to the island a minute', perMin(foot(L0), L0), perMin(foot(L1), L1)) +
         line('Rails and logs a minute', perMin(32, L0), perMin(32, L1)) +
         `</div><span class="note">One train, there and back with its stands. Sketch numbers; the game computes them from the line's own timetable.</span>`;
@@ -1310,9 +1279,6 @@
         .join('');
       const it = item(S.sel);
       const owned = S.owned.has(it.id);
-      $('beforeBtn').setAttribute('aria-pressed', S.view === 'before' && !owned);
-      $('afterBtn').setAttribute('aria-pressed', S.view === 'after' || owned);
-      $('beforeBtn').disabled = $('afterBtn').disabled = owned;
       showPicture();
       // The whole train, for cargo: the table holds only the engine and its first car.
       $('consistCard').hidden = S.cat !== 'cargo';
@@ -1333,7 +1299,7 @@
         `<span>Steel ${S.steel}</span><span>Copper ${S.copper}</span><span>Coins: wallet not built</span>`;
       const block = blockReason(it);
       $('fitBtn').disabled = k !== 'ready' || !!block;
-      $('fitBtn').textContent = owned ? 'Fitted' : 'Fit';
+      $('fitBtn').textContent = owned ? 'Installed' : 'Install';
       $('why').textContent = k === 'ready' && block ? block : '';
       $('confirm').classList.toggle('on', S.confirming);
       const cost = it.cost
@@ -1342,7 +1308,7 @@
             .join(', ')
         : '';
       $('confirmText').textContent =
-        `Fit the ${it.name.toLowerCase()} for everyone? It uses ${cost} from the room's store.`;
+        `Install the ${it.name.toLowerCase()} for everyone? It uses ${cost} from the room's store.`;
       $('steelBtn').textContent = `Steel in the bay: ${S.steel}`;
       $('copperBtn').textContent = `Copper: ${S.copper}`;
       $('pipBtn').setAttribute('aria-pressed', S.pip);
@@ -1371,14 +1337,6 @@
       const nb = document.querySelector(`[data-id="${S.sel}"]`);
       if (nb) nb.focus();
     });
-    $('beforeBtn').addEventListener('click', () => {
-      S.view = 'before';
-      render();
-    });
-    $('afterBtn').addEventListener('click', () => {
-      S.view = 'after';
-      render();
-    });
     $('fitBtn').addEventListener('click', () => {
       S.confirming = true;
       render();
@@ -1398,8 +1356,8 @@
       render();
       toast(
         S.pip
-          ? 'Fitted for everyone. Pip saw it too.'
-          : 'Fitted for everyone. The trains wear it from their next Home stop.',
+          ? 'Installed for everyone. Pip saw it too.'
+          : 'Installed for everyone. The trains wear it from their next Home stop.',
       );
       $('fitBtn').focus();
     });
@@ -1431,18 +1389,10 @@
     // ---- open questions
     const QS = [
       {
-        q: 'The longer boiler: speed alone saves 11 s of 65 s to the island. Should it also pull a fourth car?',
-        o: [
-          'Yes: faster and pulls four; steel’s own car is what fills the fourth place',
-          'Faster only',
-          'Faster still (a bigger speed step), no extra car',
-        ],
-      },
-      {
-        q: 'How do you commit a fit?',
+        q: 'How do you commit an install?',
         o: [
           'Hold the button for about a second while the little guys lift the part: one action, no dialog',
-          'Press Fit, then confirm "Fit it for everyone?" (this sketch)',
+          'Press Install, then confirm "Install it for everyone?" (this sketch)',
         ],
       },
       {
