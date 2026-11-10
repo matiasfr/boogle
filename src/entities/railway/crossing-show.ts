@@ -36,13 +36,14 @@ export function onCrossing(s: number, east: number, up: number): Point {
 /** Metres from the first bent to the last. */
 export const CROSSING_SPAN = span;
 
-/** The pull-out: from over the pier head's seaward end, east of the line, low along the bents to just short of the last,
- * looking out over the far end to Ring Island all the way (the ring and shard stay in frame). Seconds of the whole shot,
- * like Far Head's 6 s plus one for the longer travel. */
+/** The pull-out: from over the pier head's seaward end, east of the line, along the bents just over their decks (24.3 m
+ * at the pier head down to 20.3 m at the last, the 4% bow) to just short of the last, looking out over the far end to
+ * Ring Island all the way (the ring and shard stay in frame). Seconds of the whole shot, like Far Head's 6 s plus one
+ * for the longer travel. */
 export const FINALE_SHOT = {
   seconds: 7,
-  from: onCrossing(-10, 20, 28),
-  to: onCrossing(span - 22, 12, 13),
+  from: onCrossing(-10, 20, 34),
+  to: onCrossing(span - 22, 12, 27),
   /** Below the shard, so the bents keep the bottom of the frame and the ring sits under the banner. */
   at: { x: RING_SHARD.x, y: 5, z: RING_SHARD.z },
 } as const;

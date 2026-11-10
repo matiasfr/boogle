@@ -47,6 +47,7 @@ import {
   PIER_FRAME,
   CROSSING_BENTS,
   CROSSING_FOOT_OFF,
+  CROSSING_DECK_Y,
   RAIL_ROCKS,
 } from '../src/sim/railway-works-layout.ts';
 
@@ -190,18 +191,20 @@ test('no train stands inside the track layer, even with the longer boiler', () =
   // Its consist is the one the wagon couples to at the village.
   assert.equal(WAGON_S, TRAIN_STOPS[1]![0]! + TRAIN_OFFSETS.at(-1)! * 100);
 });
-test('bents follow the first sea crossing', () => {
+test('bents follow the first sea crossing, centred on the double deck', () => {
   CROSSING_BENTS.forEach((p, i) => {
-    const a = local(p),
-      b = ringAt(20 * (i + 1));
-    assert.ok(Math.hypot(a[0] - b[0], a[1] - b[1]) <= 0.005 * Math.SQRT2);
-    assert.ok(distToLine(a, ring) <= 0.5);
-    // Both footing positions remain at sea, on the crossing's perpendicular, not merely the bent centre.
+    // Bent n stands at u = 20 n, its centre the 7.6 m formation's middle: 2 m west of line 2's track (ruling 11).
     const before = ringAt(20 * (i + 1) - 0.01),
       after = ringAt(20 * (i + 1) + 0.01);
     const dx = after[0] - before[0],
       dz = after[1] - before[1],
       length = Math.hypot(dx, dz);
+    const a = local(p),
+      b = ringAt(20 * (i + 1)),
+      mid: XZ = [b[0] + (2 * dz) / length, b[1] - (2 * dx) / length];
+    assert.ok(Math.hypot(a[0] - mid[0], a[1] - mid[1]) <= 0.005 * Math.SQRT2, `bent ${i + 1}`);
+    assert.ok(Math.abs(distToLine(a, ring) - 2) <= 0.05);
+    // Both footing positions remain at sea, on the crossing's perpendicular, not merely the bent centre.
     for (const side of [-1, 1])
       assert.ok(
         H(
@@ -209,6 +212,27 @@ test('bents follow the first sea crossing', () => {
           p.z / 100 + (((side * dx) / length) * CROSSING_FOOT_OFF) / 100,
         ) <= 0,
       );
+  });
+});
+test('the bents carry the 7.6 m deck: two footings each, 3.3 m either side of the middle, posts under its edges', () => {
+  // The deck spans 3.8 m either side of the middle; the posts (0.75 m) stand under its edges, inside the cap.
+  assert.equal(CROSSING_FOOT_OFF, 330);
+  assert.ok(CROSSING_FOOT_OFF / 100 + 0.375 <= 3.8 && (2 * CROSSING_FOOT_OFF) / 100 >= 6);
+  for (let i = 1; i < CROSSING_BENTS.length; i++) {
+    const a = CROSSING_BENTS[i - 1]!,
+      b = CROSSING_BENTS[i]!;
+    assert.ok(Math.abs(Math.hypot(b.x - a.x, b.z - a.z) - 2000) <= 2, `bents ${i} to ${i + 1}`);
+  }
+});
+test('the bents bow down at the 4% ruling grade from the pier head', () => {
+  assert.equal(CROSSING_DECK_Y.length, CROSSING_BENTS.length);
+  assert.equal(CROSSING_DECK_Y[0], PIER_STOP.y); // bent 1 is level with the pier head (ring-island ruling 5)
+  assert.equal(CROSSING_DECK_Y.at(-1), 2030);
+  const first = CROSSING_BENTS[0]!;
+  CROSSING_BENTS.forEach((p, i) => {
+    const out = Math.hypot(p.x - first.x, p.z - first.z);
+    assert.ok(Math.abs(CROSSING_DECK_Y[i]! - (2430 - 0.04 * out)) <= 1, `bent ${i + 1}: ${CROSSING_DECK_Y[i]} cm`);
+    assert.ok(Number.isInteger(CROSSING_DECK_Y[i]));
   });
 });
 test('one footing for every use', () => {

@@ -41,15 +41,21 @@ export const PIER_STOP = { x: 140275, z: -35496, y: 2430 } as const;
 // Least displacement on the centimetre grid to clear the real rail by 3.5 m (not its 1 m sample vertices).
 export const PIER_RACK = { x: 139894, z: -36177, y: 2430, reach: 400 } as const;
 export const PIER_FRAME = { x: 140554, z: -37107, y: 2430, reach: 500 } as const;
+// The six bents carry the 7.6 m double deck (world-blockout ruling 11): each centre is the formation's middle, 2 m west
+// of line 2's track at u = 20 n (bent n), and its two footings stand 3.3 m either side of it. View only: the sim counts
+// set footings (`Works.pierSet`) and never reads a socket's position.
 export const CROSSING_BENTS = [
-  { x: 140254, z: -39199 },
-  { x: 140309, z: -41199 },
-  { x: 140363, z: -43198 },
-  { x: 140417, z: -45197 },
-  { x: 140472, z: -47196 },
-  { x: 140526, z: -49196 },
+  { x: 140054, z: -39205 },
+  { x: 140109, z: -41204 },
+  { x: 140163, z: -43203 },
+  { x: 140217, z: -45202 },
+  { x: 140272, z: -47202 },
+  { x: 140326, z: -49201 },
 ] as const;
-export const CROSSING_FOOT_OFF = 250;
+export const CROSSING_FOOT_OFF = 330;
+/** Each bent's deck top, world cm: the bow at the 4% ruling grade from the pier head (ring-island ruling 5), 24.3 m at
+ * bent 1 and 0.8 m lower each 20 m bent, so bent 6 is 20.3 m. */
+export const CROSSING_DECK_Y = [2430, 2350, 2270, 2190, 2110, 2030] as const;
 export const RAIL_ROCKS = [...LINE1_ROCKS, ...WORKS_ROCKS] as const;
 /** Every rock slot's starting stone: the conserved stone total before renewal (`railCounts(s).stone.total` and
  * validateRailLine both equal this plus `stoneProduced`). */

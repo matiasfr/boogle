@@ -23,12 +23,19 @@ import { showMomentBanner, momentBanner } from '../../ui/moment-banner.ts';
 import { playMark } from '../../proto/mark.ts';
 import { SEA } from '../../constants.ts';
 import { FINALE_ROCKETS, FINALE_SHOT, SHOW_HEAR, towardRing } from './crossing-show.ts';
-import { WORKS, PIER_RACK, PIER_FRAME, CROSSING_BENTS, CROSSING_FOOT_OFF } from '../../sim/railway-works-layout.ts';
+import {
+  WORKS,
+  PIER_RACK,
+  PIER_FRAME,
+  CROSSING_BENTS,
+  CROSSING_DECK_Y,
+  CROSSING_FOOT_OFF,
+} from '../../sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 
-/** Deck height over the sea (the 8 November low-lines call), and the pieces' timings in seconds. */
-const DECK = SEA + 4;
+/** The rockets' launch height over the sea, and the pieces' timings in seconds. */
+const LAUNCH = SEA + 4;
 const RISE_S = 2,
   OUT_SPEED = 28,
   LOWER_S = 2.2;
@@ -71,7 +78,8 @@ export async function createRailwayCrossing(
   along.z /= len;
   const across = { x: along.z, z: -along.x };
   const bentYaw = Math.atan2(along.x, along.z);
-  const bents = CROSSING_BENTS.map((b) => ({ x: b.x / 100, z: b.z / 100 }));
+  // Each bent's deck top on the 4% bow (CROSSING_DECK_Y), 7.6 m wide for the double track (world-blockout ruling 11).
+  const bents = CROSSING_BENTS.map((b, i) => ({ x: b.x / 100, z: b.z / 100, deck: CROSSING_DECK_Y[i]! / 100 }));
   const off = CROSSING_FOOT_OFF / 100;
   const sockets = bents.flatMap((b) =>
     [-1, 1].map((side) => {
@@ -203,7 +211,8 @@ export async function createRailwayCrossing(
     if (t < 0) return;
     const c = bents[b]!;
     const foot = Math.max(sockets[b * 2]!.y, sockets[b * 2 + 1]!.y) + FOOTING.h;
-    const postH = DECK - foot;
+    const deck = c.deck,
+      postH = deck - foot;
     // Four pieces in turn, each sliding up out of the water into place: two posts, the braces, the cap.
     const piece = (k: number) => Math.min(1, Math.max(0, (t - k * 0.4) / 0.6));
     for (const [k, side] of [
@@ -227,7 +236,7 @@ export async function createRailwayCrossing(
     const brace = piece(2);
     if (brace > 0) {
       // An X of braces in the post's top half, where it shows above the water.
-      const rise = DECK - 0.6 - (SEA - 1),
+      const rise = deck - 0.6 - (SEA - 1),
         span = Math.hypot(off * 2, rise);
       for (const lean of [-1, 1])
         batch.box(
@@ -244,7 +253,7 @@ export async function createRailwayCrossing(
         );
     }
     const cap = piece(3);
-    if (cap > 0) batch.box(c.x, DECK - 0.4 + (1 - cap) * 3, c.z, off * 2 + 1.8, 0.8, 1, '#5b4a3a', bentYaw);
+    if (cap > 0) batch.box(c.x, deck - 0.4 + (1 - cap) * 3, c.z, off * 2 + 1.8, 0.8, 1, '#5b4a3a', bentYaw);
   }
   function draw() {
     batch.begin();
@@ -400,7 +409,7 @@ export async function createRailwayCrossing(
       rockets.push({
         t: -(R.first + k * R.gap),
         x: b.x + ring.x * out - ring.z * side,
-        y: DECK,
+        y: LAUNCH,
         z: b.z + ring.z * out + ring.x * side,
         height: R.height[0] + Math.random() * (R.height[1] - R.height[0]),
         dx: ring.x * lean,
@@ -410,7 +419,7 @@ export async function createRailwayCrossing(
     }
     // For the playtest data: that it played, whether the bursts' height over the far end was on screen as it began,
     // and whether this page took the shot (reduced motion and a seated player don't).
-    const burst = new THREE.Vector3(b.x, DECK + 30, b.z);
+    const burst = new THREE.Vector3(b.x, LAUNCH + 30, b.z);
     const metres = Math.round(camera.position.distanceTo(burst));
     burst.project(camera);
     const onScreen = burst.z < 1 && Math.abs(burst.x) <= 1 && Math.abs(burst.y) <= 1;
