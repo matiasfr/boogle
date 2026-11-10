@@ -88,12 +88,12 @@ function frameShelf(whole = false) {
 }
 function frameBay() {
   const s = inspectTown()!.shelf!.bay;
-  // The bay faces +z in its own space; missed boxes wait 1.5–2.6 m in front of it, either side of the trophy plinth.
+  // The bay faces +z in its own space; missed boxes wait 2.8–5 m in front of it, three by three past the trophy plinth.
   const fx = Math.sin(s.yaw),
     fz = Math.cos(s.yaw);
   stand = ground(s.x + fx * 4.2 + fz * 4.6, s.z + fz * 4.2 - fx * 4.6);
-  look = { x: s.x + fx * 1.6, y: s.y + 1.2, z: s.z + fz * 1.6 };
-  eye = { x: s.x + fx * 9.5 - fz * 1.2, y: s.y + 3.4, z: s.z + fz * 9.5 + fx * 1.2 };
+  look = { x: s.x + fx * 2.6, y: s.y + 1.0, z: s.z + fz * 2.6 };
+  eye = { x: s.x + fx * 10.5 - fz * 2.4, y: s.y + 4.2, z: s.z + fz * 10.5 + fx * 2.4 };
 }
 const free = query.get('findscam') === 'follow';
 const setCam = () => {

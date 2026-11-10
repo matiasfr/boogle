@@ -245,14 +245,14 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
     /** The crystals' row, in shelf space: one peg per crystal, along the bottom board. */
     crystalPeg: (k: number, n: number, out: THREE.Vector3) =>
       out.set(((k + 0.5) / n - 0.5) * (WIDE - 0.4), CRYSTAL_Y, 0.08),
-    /** Where missed secret k's box waits in front of the finders' bay, in the world, on the ground (Place's hubSlot: two
-     * rows on the village's side of the path; here split either side of the jump trophy's plinth, which stands where
-     * Place's first boxes did). */
+    /** Where missed secret k (0–8, its index among the nine ported secrets) waits in front of the finders' bay, in the
+     * world, on the ground: three columns of three 1.1 m apart, running out from the far side of the jump trophy's
+     * plinth (which stands where Place's first boxes did), within ±1.1 m sideways so the bay fits the Home station
+     * hall's 6 m end wall (orchestrator default, 9 November). Filled in order, the column nearest the plinth first,
+     * middle row first. */
     bayPeg(k: number, out: THREE.Vector3) {
-      const side = k % 2 ? 1 : -1,
-        j = k >> 1;
-      const x = FX + 1.5 + (j % 2) * 1.1,
-        z = FZ + side * (1.5 + (j >> 1) * 1.15);
+      const x = FX + 1.5 + 1.3 + Math.floor(k / 3) * 1.1,
+        z = FZ + [0, -1.1, 1.1][k % 3]!;
       return out.set(x, H(x, z), z);
     },
     /** Swap a slot you own something in, within reach of the shelf (Place's ids). */
