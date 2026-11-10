@@ -31,6 +31,8 @@ const poses: Record<
   bowl: { body: [1140, 102], camera: [1146, 29, 110], aim: [1128, 27, 87] },
   stall: { body: [903, 14], camera: [901, 23, 11], aim: [909.5, 20, 18.5] },
   table: { body: [920, 14], camera: [923, 25, 8], aim: [909.5, 20, 20.5] },
+  // The whole turn from above: the stall door, the deck and line 2's first ten metres (works-late-game step 5).
+  turn: { body: [920, 14], camera: [934, 31, 0], aim: [916, 18.5, 17] },
   pier: { body: [1405, -366], camera: [1412, 31, -352], aim: [1403, 24, -390] },
   // J4: the boiler's pedestal (the breaker), the kiln at the open cut, and the throat from inside the bowl.
   forge: { body: [922, 9], camera: [925, 22.5, 13], aim: [918.5, 18.5, 5] },
