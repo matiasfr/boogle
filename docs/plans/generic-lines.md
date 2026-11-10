@@ -500,6 +500,23 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   `--to Q6` run fails at "walked the hook walkway" identically on main 64b2026d**, so two-player hashes over v26 are
   unproven by it (the peer test's are); the amber lamp lit is seen through inspect only, not in a still; the other
   train passing the down platform dark is logged, not shot.
+  *Amended (2026-11-10, after the whole-branch review of v26; not shipped, not tested on a device):* **P2-1:** a train
+  held at a stub end's signal stood on the drawn turnout (the signal was 10 m past the merge, the turnout 20 m and a
+  train reaches 9 m behind its along), so the train leaving the end drove through it. Each end now carries its
+  `edgeCm` (the merge plus a stub's `TURNOUT_CM`, 20 m, which `layout.ts` draws) and `signalCm` (outside that by an
+  inbound train's lead, `TRAIN_EXTENT`: 6.2 m ahead, 9.0 m behind, tested against the cars), and a train is in a
+  block while any of it is: the Village's signal is at 63 m (was 44.4), the pier's at 529.8 m (was 546), Far Head's
+  crossover's at 483.8 m (was 480). **P2-2:** a train already on Far Head's crossover when Q6 opens the pier ran on up
+  track 0 while the view drew it crossed over (a latch a restore lost); now a track-0 train whose nose is past the
+  crossover's start turns back at Far Head (`Train.turn`, cleared on arrival) and the view draws the crossover from
+  the rows alone. **P3:** every train has a folk driver (one a slot). The reviewer's tests are in
+  `test/review-v26.test.ts` (its every-tick save check 500 ticks a seed in check, `SAVE_TICKS=2500` for the review's
+  length; it passes at both). Waits after the move (`FUZZ_TICKS=40000`): heavy random asks unchanged, worst 91.8–96.0
+  s at 75% and 73.5–80.9 s at 0%, means 45.9 and 42.9 s; playtest-like rate worst 70.4 and 69.7 s, means 29.3 and
+  28.5 s (31 asks a seed). A train held at a stub signal doesn't arise at the Village in play with two trains (none in
+  12,000 ticks, with or without a rider asking at every halt), so the look (`dev/look/evals/railway-signal-hold.ts`,
+  `q6-done`, `--real`) shows the pier's: the up train stands short of the turnout while the other leaves on the down
+  track past it; the Village case is the reviewer's headless test. Far Head's lever overlap stays as logged.
 - [ ] **5. Docs.** The trains section of `docs/game-design/place.md` (two trains on line 2, both tracks, holds, who
   serves a request and its lamp, no early turn-back), the atlas railway story (`docs/atlas/stories/railway.json`: a
   lever ask through `Line.req` to the serving train), `world-blockout.md`'s "Double track" ("today's lines stay single

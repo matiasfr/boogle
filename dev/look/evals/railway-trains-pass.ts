@@ -1,7 +1,7 @@
 // Line 2's two trains passing each other mid-line, each on its own track (docs/plans/generic-lines.md, "What players
 // see"; v26), from `--rail-seed trains-on`: the camera stands off the line's left side, high where they will meet and the
 // still is taken as they pass. Logs where along the line they met and whether the ground under it is sea.
-// npm run look -- --rail-seed trains-on --eval dev/look/evals/railway-trains-pass.ts --until window.__placeDone \
+// npm run look -- --rail-seed trains-on --eval dev/look/evals/railway-trains-pass.ts --until window.__placeDone --real \
 //   --name trains-pass
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
@@ -44,7 +44,9 @@ const tick = setInterval(() => {
       `TRAINS MEET ${JSON.stringify({ meet: +meet.toFixed(1), ground: +H(cx, cz).toFixed(1), sea: SEA, overSea: H(cx, cz) < SEA, railY: +y.toFixed(1) })}`,
     );
   }
-  if (aim && gap < 16) {
+  // They close at 40 m/s and the capture lands about two seconds after the flag even with --real (a warped warm-up
+  // runs on further), so flag them 80 m apart and still closing to catch them alongside.
+  if (aim && up.along < down.along && gap < 80) {
     console.log(`TRAINS PASS ${JSON.stringify({ gap: +gap.toFixed(1), up: up.along / 100, down: down.along / 100 })}`);
     shot.__placeDone = true;
     clearInterval(tick);
