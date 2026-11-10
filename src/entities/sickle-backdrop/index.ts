@@ -3,6 +3,7 @@ import { defineKind, spawn } from '../../entity/entity.ts';
 import { createBackdrop } from './view.ts';
 
 defineKind('sickle-backdrop', {});
-// The dev review builds these same islands, including its own collision and labels.
-const reviewing = import.meta.env.DEV && new URLSearchParams(location.search).has('greybox');
+// The dev review and the walkable ?blockout=world build these same islands, with their own collision.
+const q = new URLSearchParams(location.search);
+const reviewing = (import.meta.env.DEV && q.has('greybox')) || q.get('blockout') === 'world';
 if (!reviewing) spawn({ kind: 'sickle-backdrop', mesh: createBackdrop() });
