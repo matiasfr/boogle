@@ -319,13 +319,18 @@ wait bound (probably a third train) and turns the island halt's end into the fir
 
 Each step leaves `npm run check` green and ships on its own except 4a and 4b, which ship together as the v26 bump.
 
-- [ ] **1. Lines as data (no behaviour change, no bump).** Create `src/sim/railway-lines.ts` with `RAIL_LINES` (line 1
+- [x] **1. Lines as data (no behaviour change, no bump).** Create `src/sim/railway-lines.ts` with `RAIL_LINES` (line 1
   and line 2 with v25's stops, halts, path, `speed: 200`, `accel: 3.5`, `trains: 1` each), `RAIL_TRAINS` and
   `RAIL_HALTS`; each halt's two platforms equal its v25 `LINE_HALTS` spot for now. In `railway-train.ts` derive
   `TRAIN_STOPS`, `LINE_HALTS`, `TRAIN_HOME` and `trainStopsOf` from it, and make `profile` and its callers take the
   line's `{ speed, accel }`. `railway-line-path.ts`'s `railLinePoint` reads `RAIL_LINES[line].path` (delete `PATHS`).
   Test: new `test/railway-lines.test.ts` asserts the derived tables equal v25's literals (stops, halts, homes, path)
   and that every halt's `opens` slot exists; `test/railway-train.test.ts` unchanged and green. `npm run check`.
+  *Built (2026-11-10):* `RailLineDef` gained `home` (the halt its first train stands at, which `RAIL_TRAINS` needs
+  until step 4a places trains by circuit); `trainStopsOf(line, laid)` takes the count of complete QJob slots or v25's
+  boolean, so callers are unchanged; `LINE_HALTS` maps `RAIL_HALTS` to v25's flat `{ x, z, y, reach }` shape (the
+  up platform) under v25's six-halt tuple type; `trainArrives(row, line?)` and `trainNextStop(…, kin)` take the line's
+  kinematics, defaulting to `TRAIN`.
 - [ ] **2. The double formation, drawn (view only, no bump).** In the line views (`src/proto/place/rail.ts`'s deck and
   rails, `line2-view.ts`'s panels, the line 1 view) draw the up track 4 m left from merge to merge, the stub turnouts
   at line 1 s 36 and 182 and line 2 s 34 and 556, Far Head's crossover at s 490–512, and the 7.6 m deck on both
