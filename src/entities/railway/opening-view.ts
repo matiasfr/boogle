@@ -15,6 +15,8 @@ type OpeningEnv = {
   hush: () => boolean;
   pathOpen: () => boolean;
   progress: () => RailwayInspection;
+  /** The engines' driving stools (train-view.ts), for the little guy at the controls. */
+  driver: (line: number) => { mesh: THREE.Object3D; top: number; up: number; x: number; z: number; yaw: number } | null;
 };
 
 export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
@@ -124,6 +126,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     machine: env.machine,
     traffic: env.traffic,
     trainCar: () => null,
+    driver: env.driver,
     gather: { x: gather.x, z: gather.z, ux: p.ux, uz: p.uz, lx: p.uz, lz: -p.ux, len: 28 },
     platform: { x: platform.x, y: layout.railY(line, 19) + 0.72, z: platform.z, ux: p.ux, uz: p.uz, up: () => false },
     forgeLit: () => false,

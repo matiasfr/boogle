@@ -5,7 +5,9 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
-import { stepAlpha } from '../../physics/engine.ts';
+import { setShapes, stepAlpha, type Shape } from '../../physics/engine.ts';
+import { me } from '../../player/player.ts';
+import { remotes } from '../../netplay/net.ts';
 import { createWakePresentation } from '../../render/wake-presentation.ts';
 import { emit } from '../../render/particles.ts';
 import { whistle, thump } from '../../render/machine-sfx.ts';
@@ -18,6 +20,10 @@ const BRASS = '#c79a3e';
 /** Footings aboard stand in two stacks on the cradle's seats: slot k's centre in the wagon's rail frame. */
 const aboardAt = (k: number) => ({ y: 0.63 + Math.floor(k / 2) * (0.9 + 0.02), z: k % 2 ? 0.8 : -0.8 });
 const FOOT_HOP_S = 0.9;
+/** The cab doors' default (docs/agent-calls.md): each swings out about 100° on its back post in 0.25 s when any
+ * player is within 1.2 m of its doorway, and shuts 0.6 s after the last one leaves. A local view of positions every
+ * tab already has: no state, op or presence of its own, and never solid. */
+const DOOR = { open: (100 * Math.PI) / 180, swingS: 0.25, near: 1.2, holdS: 0.6 } as const;
 type FootPlace = (k: number, out: THREE.Vector3) => THREE.Vector3;
 
 // Place's kit owns one page-lifetime wheel batch and animation hook. Reuse its two models across view lifetimes
@@ -30,8 +36,8 @@ export async function createRailwayTrains(
   seats: typeof import('../../proto/place/seat.ts'),
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
-  const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, props, folk, land, { flat }] = await Promise.all(
-    [
+  const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, shape, folk, land, { flat }] =
+    await Promise.all([
       import('../../proto/place/layout.ts'),
       import('../../proto/place/rail.ts'),
       import('../../proto/place/look.ts'),
@@ -41,16 +47,15 @@ export async function createRailwayTrains(
       import('../../proto/place/train-load.ts'),
       import('../../proto/place/pieces.ts'),
       import('../../proto/minis/common.ts'),
-      import('../../proto/place/carry-models.ts'),
+      import('../../proto/place/engine-kit.ts'),
+      import('../../proto/wagon/engine.ts'),
       import('../../proto/place/folk.ts'),
       import('../../proto/place/land.ts'),
       import('../../proto/flat.ts'),
-    ],
-  );
+    ]);
   // The mark (boiler-first-choice plan, step 8): the gold rope it was hauled on stays lashed round each fitted boiler,
   // two rings and a knot in the rope's own material (shared with the rope; never disposed here).
   const lashMaterial = flat(GOLD_ROPE, 0.7);
-  const lashGeometries: THREE.BufferGeometry[] = [];
   let clock = -1,
     shudder = 0,
     secondVisible = false;
@@ -59,7 +64,7 @@ export async function createRailwayTrains(
   const WAGON = 3;
   const wagonRock = new THREE.Group();
   const trains = [0, 1].map((k) => {
-    if (look.LOOK.kit) kitModels ??= [kit.trainLook(2), kit.trainLook(2)];
+    if (look.LOOK.kit) kitModels ??= [kit.trainLook(2, engineKit), kit.trainLook(2, engineKit)];
     const model = look.LOOK.kit ? kitModels![k]! : wagon.wagonLook(2, false, owner);
     const cars = offsets.slice(0, k ? 4 : 3).map((_, n) => {
       const car = rail.makeCar(
@@ -76,7 +81,28 @@ export async function createRailwayTrains(
       car.speedLimit = 30;
       return car;
     });
-    const deck = crates.deck(model.cars[2]!, () => {});
+    // The engine is a compound (docs/plans/engine-previz.md, "Collider"): its deck box is the frame and footplate up to
+    // the cab floor, and the cab's walls either side of each doorway, its roof, steps and (once fitted) the boiler stand
+    // on it. Its decks are stacked: you ride the floor, the boiler's top or the roof, whichever your feet are on.
+    const engine = cars[0]!,
+      centre = -engine.rock.position.y; // the body's centre over the rail line
+    const solid = (b: ReturnType<typeof shape.engineSolids>[number]): Shape => ({
+      kind: 'box',
+      hx: (b.x[1] - b.x[0]) / 2,
+      hy: (b.y[1] - b.y[0]) / 2,
+      hz: (b.z[1] - b.z[0]) / 2,
+      offset: { x: (b.x[0] + b.x[1]) / 2, y: (b.y[0] + b.y[1]) / 2 - centre, z: (b.z[0] + b.z[1]) / 2 },
+    });
+    const deck: Shape = { kind: 'box', hx: engine.spec.hx, hy: engine.hy, hz: engine.spec.hz };
+    let fitted = true;
+    const fit = (on: boolean) => {
+      fitted = on;
+      setShapes(engine.body, [deck, ...shape.engineSolids(on).map(solid)]);
+    };
+    fit(false);
+    engine.platform.topAt = (x, z, feet) =>
+      shape.engineDeckAt(x, z, feet === undefined ? -Infinity : feet + centre, fitted) - centre;
+    const crateDeck = crates.deck(model.cars[2]!, () => {});
     // Car 2 carries the cargo (the deck above): a freight car, loaded or empty, with stakes and boards and no seats
     // (owner, 10 November: "if there's cargo then it shouldnt have seats"). Car 1 is the passenger car, two stools.
     const fittings = wagon.cargoFittings(owner);
@@ -108,32 +134,10 @@ export async function createRailwayTrains(
         );
       }
     }
-    // The kit shell already has the two open brass receivers; its boiler is hidden in Place's saved state.
-    const boiler = props.makeBoiler();
-    {
-      // Sized from the boiler's own box (its barrel runs along its z, its bands the widest round it): the rings'
-      // inner edge 3 cm clear of the bands so they never z-fight, set between the chimney's foot and the rear band.
-      const box = new THREE.Box3().setFromObject(boiler),
-        size = box.getSize(new THREE.Vector3()),
-        centre = box.getCenter(new THREE.Vector3());
-      const tube = 0.03,
-        round = size.x / 2 + 0.03 + tube,
-        axisY = box.min.y + size.x / 2;
-      const ring = new THREE.TorusGeometry(round, tube, 6, 28),
-        knot = new THREE.BoxGeometry(0.14, 0.1, 0.16);
-      lashGeometries.push(ring, knot);
-      for (const z of [-0.08, 0.3]) {
-        const r = new THREE.Mesh(ring, lashMaterial);
-        r.name = 'boiler_lashing';
-        r.position.set(centre.x, axisY, centre.z + z * size.z);
-        boiler.add(r);
-      }
-      const k = new THREE.Mesh(knot, lashMaterial);
-      k.name = 'boiler_lashing_knot';
-      k.position.set(centre.x + round * 0.72, axisY + round * 0.72, centre.z + 0.3 * size.z);
-      k.rotation.z = -Math.PI / 4;
-      boiler.add(k);
-    }
+    // The fitted boiler: the same part that waits on its pedestal and is hauled on the rope (boiler-view.ts), set in
+    // the engine's saddles with its back end in the cab as the backhead, and the gold rope lashed round it.
+    const boiler = engineKit.makeEngineBoiler();
+    boiler.add(engineKit.engineLashing(lashMaterial));
     const boilerGeometries = new Set<THREE.BufferGeometry>();
     const boilerMaterials = new Set<THREE.Material>();
     boiler.traverse((part) => {
@@ -141,8 +145,7 @@ export async function createRailwayTrains(
       boilerGeometries.add(part.geometry);
       for (const mat of Array.isArray(part.material) ? part.material : [part.material]) boilerMaterials.add(mat);
     });
-    boiler.position.set(0, 1.2, 0.5);
-    boiler.rotation.y = Math.PI;
+    boiler.position.copy(engineKit.BOILER_CENTRE);
     owner.add(boiler);
     model.cars[0]!.add(boiler);
     owner.cleanup(() => {
@@ -154,11 +157,21 @@ export async function createRailwayTrains(
       for (const c of model.cars) c.removeFromParent();
       wagonRock.removeFromParent();
     });
-    const solid = load.solidTrainLoad(cars[2]!, deck);
-    return { model, cars, deck, solid, boiler, last: null as RailTrain | null, count: -1, puffs: 0, speed: 0 };
-  });
-  owner.cleanup(() => {
-    for (const g of lashGeometries) g.dispose();
+    const solidLoad = load.solidTrainLoad(cars[2]!, crateDeck);
+    return {
+      model,
+      cars,
+      deck: crateDeck,
+      solid: solidLoad,
+      boiler,
+      fit,
+      fitted: () => fitted,
+      doors: ((model as { doors?: THREE.Object3D[] }).doors ?? []).map((mesh) => ({ mesh, angle: 0, held: 0 })),
+      last: null as RailTrain | null,
+      count: -1,
+      puffs: 0,
+      speed: 0,
+    };
   });
   const first = trains[0]!;
   const seatMatrix = new THREE.Matrix4();
@@ -328,8 +341,39 @@ export async function createRailwayTrains(
     step();
     trains.forEach((tr) => tr.cars.forEach(rail.snapCar));
   }
-  owner.animate(({ now }) => {
+  // ---------------------------------------------------------------- the cab doors
+  const near = new THREE.Vector3(),
+    toCar = new THREE.Matrix4();
+  const people: THREE.Vector3[] = [];
+  function swingDoors(dt: number) {
+    people.length = 0;
+    if (me.body) people.push(near.set(me.body.position.x, me.body.position.y - PLAYER_R, me.body.position.z).clone());
+    for (const r of remotes.values()) if (r.entered && r.avatar) people.push(r.avatar.position.clone());
+    for (const tr of trains) {
+      const loco = tr.model.cars[0]!;
+      if (!tr.doors.length || !tr.cars[0]!.mesh.visible) continue;
+      toCar.copy(loco.matrixWorld).invert();
+      const c = shape.ENGINE_CAB,
+        mid = (c.door.z[0] + c.door.z[1]) / 2,
+        half = (c.door.z[1] - c.door.z[0]) / 2;
+      tr.doors.forEach((d, i) => {
+        const side = i === 0 ? 1 : -1;
+        const by = people.some((p) => {
+          near.copy(p).applyMatrix4(toCar);
+          const dz = Math.max(0, Math.abs(near.z - mid) - half);
+          return Math.hypot(near.x - side * c.hx, dz) <= DOOR.near && Math.abs(near.y - c.floor) < 2.5;
+        });
+        d.held = by ? DOOR.holdS : Math.max(0, d.held - dt);
+        const goal = d.held > 0 ? DOOR.open : 0,
+          rate = (DOOR.open / DOOR.swingS) * dt;
+        d.angle += Math.max(-rate, Math.min(rate, goal - d.angle));
+        d.mesh.rotation.y = side * d.angle;
+      });
+    }
+  }
+  owner.animate(({ now, dt }) => {
     trains.forEach((tr) => tr.cars.forEach((c) => rail.drawCar(c, stepAlpha())));
+    swingDoors(dt);
     drawWagon();
     if (shudder)
       first.cars.forEach((c, n) => {
@@ -361,6 +405,13 @@ export async function createRailwayTrains(
       first.boiler.updateWorldMatrix(true, false);
       return seatMatrix.copy(first.boiler.matrixWorld);
     },
+    /** The little guy's stool on line `k`'s engine (folk.ts), once it runs: his feet on the footrest, facing forward. */
+    driverSeat(k: number) {
+      const tr = trains[k];
+      if (!tr || !tr.boiler.visible || tr.cars[0]!.y < -30) return null;
+      const st = shape.ENGINE_STOOL;
+      return { mesh: tr.model.cars[0]!, top: st.footrest, up: st.seat - st.footrest - 0.035, x: st.x, z: st.z, yaw: 0 };
+    },
     isTrain: (platform: Platform | null) => trains.some((tr) => tr.cars.some((c) => c.platform === platform)),
     trainFlying: () => ({ logs: flyingLogs, rails: flyingRails }),
     update(dt: number) {
@@ -369,6 +420,7 @@ export async function createRailwayTrains(
       trains.forEach((tr, k) => {
         const row = s.line2.train[k]!;
         tr.boiler.visible = s.line2.trains && !(k === 0 && boilerFlying());
+        if (tr.boiler.visible !== tr.fitted()) tr.fit(tr.boiler.visible);
         if (tr.last && s.line2.trains && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
           whistle(tr.cars[0]!.x, tr.cars[0]!.z);
         if (
@@ -443,6 +495,7 @@ export async function createRailwayTrains(
         cars: tr.cars.map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
         lashed: tr.boiler.visible,
+        doors: tr.doors.map((d) => +((d.angle * 180) / Math.PI).toFixed(0)),
         ...(k === 1
           ? {
               wagon: {

@@ -436,7 +436,12 @@ export async function createRailwayLine2(
       switchCamera.play(from, to, at, seconds);
     },
   });
-  const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces, flat, youGot }, chimneyTop);
+  const boiler = createRailwayBoiler(
+    adapter,
+    owner,
+    { land, props, carry, engine: await import('../../proto/place/engine-kit.ts'), sounds, pieces, flat, youGot },
+    chimneyTop,
+  );
   const pier = createRailwayPier(owner, { layout, rail, sounds });
 
   // ---------------------------------------------------------------- the machine on line two

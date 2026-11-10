@@ -42,6 +42,8 @@ type Deps = {
   land: typeof import('../../proto/place/land.ts');
   props: typeof import('../../proto/place/prop-kit.ts');
   carry: typeof import('../../proto/place/carry-models.ts');
+  /** The engine's boiler (docs/plans/engine-previz.md): the one on the pedestal and the rope is the one fitted. */
+  engine: typeof import('../../proto/place/engine-kit.ts');
   sounds: typeof import('../../proto/minis/common.ts');
   pieces: typeof import('../../proto/place/pieces.ts');
   flat: typeof import('../../proto/flat.ts').flat;
@@ -92,17 +94,17 @@ function dashedOutline(length: number, radius: number, material: THREE.Material)
 export function createRailwayBoiler(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  { land, props, carry, pieces, flat, youGot }: Deps,
+  { land, props, carry, engine, pieces, flat, youGot }: Deps,
   chimney: { x: number; y: number; z: number },
 ) {
   const pedestal = props.makeProp('pedestal');
-  const loose = carry.makeBoiler(); // boilerShape's safe factory, without chop.ts's campaign owner
+  const loose = engine.makeEngineBoiler(); // the engine's own boiler, centred on its middle
   // The hauled boiler: the same model in a group whose +Z is its long horizontal axis, centred on its middle, with
   // the drag's length and radius measured once from it.
   const box = new THREE.Box3().setFromObject(loose),
     size = box.getSize(new THREE.Vector3());
   const hauled = new THREE.Group(),
-    hauledModel = carry.makeBoiler();
+    hauledModel = engine.makeEngineBoiler();
   if (size.x > size.z) hauledModel.rotation.y = Math.PI / 2;
   hauled.add(hauledModel);
   hauledModel.position.copy(new THREE.Box3().setFromObject(hauled).getCenter(new THREE.Vector3())).negate();
@@ -113,6 +115,7 @@ export function createRailwayBoiler(
     drop: 'beamDrop',
   };
   const lift = -box.min.y; // the loose model's origin above the ground it rests on
+  const onPedestal = 0.6 + lift; // ...and above the pedestal's origin (its plinth's top is 0.6 m up)
   const bx = LINE2_BOILER.x / 100,
     by = LINE2_BOILER.y / 100,
     bz = LINE2_BOILER.z / 100;
@@ -332,7 +335,7 @@ export function createRailwayBoiler(
     posing.clear();
     const b = state.line2?.boiler;
     const isLoose = b?.state === 'pedestal' || b?.state === 'ground';
-    if (b && isLoose) lay.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? 1.15 : lift), b.z / 100);
+    if (b && isLoose) lay.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
     // Your own Pick up takes the rope the frame you press it, before the server's answer (a refusal drops it again).
     const grabbed = isLoose && now - grabbing < 1500 && state.pending > 0;
     const holder = b?.state === 'held' ? b.holder : grabbed ? state.pid : '';
@@ -420,13 +423,13 @@ export function createRailwayBoiler(
       owner.removeBody(body);
       body = null;
     }
-    if (b) loose.position.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? 1.15 : lift), b.z / 100);
+    if (b) loose.position.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
     frames++;
     mine.helping();
     haul(frameDt, now);
     if (cardDue >= 0 && now >= cardDue) {
       cardDue = -1;
-      const model = carry.makeBoiler();
+      const model = engine.makeEngineBoiler();
       youGot?.({ name: BOILER_CARD_COPY.name, line: BOILER_CARD_COPY.line, model, from: seat.clone() });
     }
     const held = b?.state === 'held';

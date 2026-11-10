@@ -140,6 +140,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     hush: () => reward.inspect().busy,
     pathOpen: opened,
     progress: () => state,
+    driver: trains.driverSeat,
   });
   // hard: rebuild from the state (first join); soft: the state came again after a lost connection or a resync, and
   // the machine eases to it (it catches up at twice its speed) unless it is more than 12 m off.

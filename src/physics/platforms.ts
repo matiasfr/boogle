@@ -30,8 +30,9 @@ export type Platform = {
   hx: number;
   hz: number;
   top: number;
-  /** Optional stepped cargo surface in this same moving frame; ordinary decks use top. */
-  topAt?: (x: number, z: number) => number;
+  /** Optional stepped surface in this same moving frame (cargo, the engine's cab floor and boiler top); ordinary decks
+   * use top. `feet`: the rider's feet over the body's centre, for decks stacked one over another. */
+  topAt?: (x: number, z: number, feet?: number) => number;
   move: (dt: number) => void;
   id?: string;
   shared?: boolean;
@@ -140,7 +141,8 @@ function deckUnder(b: Body) {
     const lx = rx * c - rz * s,
       lz = rx * s + rz * c;
     if (Math.abs(lx) > p.hx + CARRY.edge || Math.abs(lz) > p.hz + CARRY.edge) continue;
-    const g = b.position.y - PLAYER_R - (q.y + (p.topAt?.(lx, lz) ?? p.top));
+    const feet = b.position.y - PLAYER_R - q.y;
+    const g = feet - (p.topAt?.(lx, lz, feet) ?? p.top);
     if (g > CARRY.above || g < -CARRY.below) continue;
     // An attached rider has last step's vertical speed. A crest changes the deck's next speed, not the rider's
     // intent: comparing against that new speed mistakes a descending deck for a jump.

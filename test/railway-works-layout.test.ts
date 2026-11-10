@@ -26,6 +26,7 @@ import { LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts'
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';
 import { TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
+import { ENGINE, ENGINE_LONG_AHEAD } from '../src/proto/wagon/engine.ts';
 /** src/proto/place/machine-model.ts MACHINE_GAP (that module loads three.js, so it is pinned here). */
 const MACHINE_GAP = 3.7;
 import {
@@ -151,11 +152,11 @@ test('the pier stop fits', () => {
 // Line 2's footprints along its rails, in metres, from the constants the views pose with (src/proto/wagon/cars.ts):
 // train-view puts car n at the train's along + TRAIN_OFFSETS[n], sized TRAIN_CARS[n]; rail.ts `buildMachine().at(line,
 // head, 1, setback)` puts the track layer's flatbed (TRAILER) at head − setback and its loco (LOCO) MACHINE_GAP behind,
-// with line2-view's setback of 2.4 m whenever it isn't laying. `engine` grows the engine alone, as cars.ts places it.
+// with line2-view's setback of 2.4 m whenever it isn't laying. `engine` grows the engine (ENGINE) alone, as cars.ts places it.
 type Span = readonly [number, number];
 function trainSpan(along: number, engine = 1): Span {
   const wagon = TRAIN_CARS.length - 1,
-    grown = LOCO.hz * (engine - 1);
+    grown = ENGINE.hz * (engine - 1);
   return [
     along + TRAIN_OFFSETS[wagon]! - TRAIN_CARS[wagon]!.hz,
     along + TRAIN_OFFSETS[0]! + grown + TRAIN_CARS[0]!.hz + grown,
@@ -167,11 +168,12 @@ const layerSpan = (head: number, setback = 2.4): Span => [
 ];
 /** Air between two spans along the line (negative: they overlap by that much). */
 const gap = (a: Span, b: Span) => Math.max(a[0], b[0]) - Math.min(a[1], b[1]);
-test('no train stands inside the track layer, even with an engine half as long again', () => {
+test('no train stands inside the track layer, even with the longer boiler', () => {
   // Trains run from the boiler on, after Q5 is laid: the track layer is then parked at Q6's start, laying Q6 (its
   // flatbed never backs past where it stood) or parked at the rails' end once Q6 is laid and the Pier stop opens.
   const q6 = LINE2_STATIONS.at(-1)!;
-  for (const engine of [1, 1.25, 1.5])
+  // A as built, and with the longer boiler's frame 0.5 m longer ahead (docs/plans/engine-previz.md).
+  for (const engine of [1, 1 + ENGINE_LONG_AHEAD / (2 * ENGINE.hz)])
     for (const [pier, head] of [
       [false, q6.fromCm / 100],
       [true, q6.toCm / 100],
