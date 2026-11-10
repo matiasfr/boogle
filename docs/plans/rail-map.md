@@ -1,6 +1,8 @@
-> **Status: audit and proposal for the designer's review and the owner's five questions (2026-11-10).** Nothing here
+> **Status: corrected per the design review below (2026-11-10); waiting on the owner's five questions.** Nothing here
 > changes game code; the map page and the level-check report are dev tools. Every number below is printed by
 > `node --import ./dev/sim/hooks.ts dev/level/rail-map.ts --numbers` or `npm run level-check` ("Track continuity").
+> The map draws Home as layout B (`dev/level/home-b.ts` sets `BOOGLE_HOME=b`); the live game still draws today's
+> turntable terminus until [home-station](home-station.md)'s flip (step 6), and `?home=b` previews B.
 
 # The rail map: ends, stations and continuity
 
@@ -37,17 +39,23 @@ platforms on their real sides (live lines at their real s ranges and lats); the 
 Head's crossover, the plank crossings and every loop; every track end with its symbol, switchable between "as
 planned" and "as proposed"; the continuity report's worst places as numbered marks; and where each cargo loader
 would stand. Tap anything for its detail. Tables under the map: every line (length, build, halts, trains, both
-ends before and after), every halt (role, platforms, turnbacks, what the player comes for, stopping marks and long
-train overhang), every end, the continuity marks and the loaders.
+ends before and after), every halt (role, platforms, turnbacks, what the player comes for, its one stop mark and long
+train overhang), every end, the continuity marks, the services for both branch orders and the loaders. Home is layout
+B's station (the island, the concourse, the engine spur, the stall roads, the cart's leg) with the grown Roundhouse's
+keep-clear sector. Ring Island shows the buffers and the crossover "as proposed", and the turning loop as an undrawn
+alternative. A third row of buttons colours the corridors by service, Gorge first or Canopy first.
 
-**Not rendered on a device.** Rendered once in the browser pane at desktop width (the whole network, Home and the
-pier zoomed) and at 375 px with the host's viewport meta added (page width 375, no sideways scroll; tables scroll in
-their own boxes).
+**Not rendered on a device.** Rendered in the browser pane at desktop width (the whole network in both service
+colourings, Home and Ring Island zoomed) and at 400 px with the host's viewport meta added (page width 400, no sideways
+scroll; tables scroll in their own boxes).
 
-**One stale input.** The blockout catalog still has ruling 3's superseded **Ring top** halt and crossover at 63 m on
-the cone's summit (three halts and two crossovers), and the cave line still climbs to High Port; the rulings said
-"map data now", but `world-lines.ts` wasn't regenerated. The map draws the catalog as it is and marks those ends
-"superseded". Regenerating it is the first thing the proposals below need (map data only).
+**One stale input, not regenerated here.** The blockout catalog still has ruling 3's superseded **Ring top** halt and
+crossover at 63 m on the cone's summit (three halts and two crossovers), and the cave line still climbs to High Port.
+Removing them means editing `SERVICES` in `dev/level/world-blockout.ts` and regenerating `src/sickle/world-lines.ts`,
+which the live build ships in the `?blockout=world` chunk (and the greybox prototype reads): game code that ships, so
+it is left for its own change (the owner or the orchestrator to call). The map draws the catalog as it is: the two
+removed legs (the draft's climb to Ring top, the lift to High Port) are drawn faint, their ends say "superseded", and
+the services view leaves them out. The end counts below still include those two ends.
 
 ## The ends audit
 
@@ -60,22 +68,22 @@ platforms, so on its own it doesn't comply.
 
 | # | Where | Today / as planned | Complies | Proposed | Cost |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Line 1, Village (s 0) | The terminal track from the s 36 stub turnout runs past the platform (s 8–30) into the turntable well. The table turns only between the stall road and line 2's road, so line 1's rails stop at an open pit edge. No buffers | No | **Terminal**: buffers at s 5 on the table rim, the Village end board. Behind: the table well and the forge yard | View. Long trains: stop s 14 → 23.5 (tail clear of the rim and of the grown table): v26 catalog |
-| 2 | Line 2, Village (s 0) | The terminal track runs onto the table's line-2 road (the wagon's way to the stall). Trains stop at s 17. Unmarked | Partly | **Terminal for trains, a connection for the wagon**: the table's rim shows stop blocks on every road it isn't turned to (from accepted `Shed.table`), a stop board at s 5. Behind: the table, then the stall road | View. Long trains: stop s 17 → 23.5: v26 catalog |
-| 3 | The Roundhouse stall road | A short siding from the table into the stall. No buffer stop | No | **Buffers** at the stall's back wall; the shed is the marking | View |
+| 1 | Line 1, Village (layout B) | Layout B: road 1 runs straight along the island (deck s 2.8–20.8) to buffer stops at s −5.53, its last 2.9 m the forge's goods dock. (Today's live game: a stub into the turntable well, no buffers, until the flip) | Yes | **Terminal**: buffers, the Village end board, the concourse 1 m behind | Home-station step 9 (look), after step 6. Stop stays s 14 |
+| 2 | Line 2, Village (layout B) | Layout B: road 2 along the island's other edge (deck s 5.7–23.7) to buffers at s −2.6; the engine spur leaves at s 5.5, the cart's leg joins at s 26. (Today: onto the table's line-2 road) | Yes | **Terminal**, as line 1's; the cart stops at these buffers | Home-station step 9. Stop stays s 17 |
+| 3 | The Roundhouse's open stall (layout B, the table's 190° road) | The spur (R 15, 60°) to the 9.6 m table, three radial stall roads (160°, 190° open, 220°), 9 m deep. No buffer stop | No | **Buffers** at the open stall's back wall; the table shows stop blocks on the roads it isn't turned to | View |
 | 4 | Line 1, Camp (rail end s 221) | One terminal track from the s 182 stub turnout past the platform (s 195–219) to a bare rail end; the ridge falls 32.5 m beyond | No | **Terminal**: buffers at s 220, an end board. No loop: the ridge (generic-lines' measurement); the camp is truly line 1's end | View |
-| 5 | Line 2, Far Head while it's the end (before Q6) | A facing crossover at s 490–512 turns up trains onto today's track before Far Head; the up track runs on to the laying frontier, Far Head's up platform chained | Partly | **Temporary**: keep the crossover for the first hour; the rails' end at the frontier is #6 | View. Long trains: stop s 524 → 526 (tail off the crossover): v26 catalog |
+| 5 | Line 2, Far Head while it's the end (before Q6) | A facing crossover at s 490–512 turns up trains onto today's track before Far Head; the up track runs on to the laying frontier, Far Head's up platform chained | Partly | **Temporary**: keep the crossover for the first hour; the rails' end at the frontier is #6 | View. Long trains: stop s 524 → 526 (tail off the crossover), with the longer consist or v27 |
 | 6 | The laying frontier (every stretch while it's laid) | The rails end with the track layer parked on them | Partly | **Temporary**: the machine is the buffer (a buffer beam on its back, a "line under construction" board) | View |
 | 7 | Line 2, the pier head (rail end s 743, Q6 → v27) | One terminal track from the s 556 stub turnout to a bare end 24.3 m over the sea, the track layer parked on it (its back at s 734.4) | No | **Temporary terminal**: buffers at s 742.5 and a Pier board, lifted by the machine when Q7 lays on. Behind: the bents and the raised leaf | View. Longer engine: pier stop 726.5 → 725 |
 | 8 | The moving railhead, bents 7–13 (v27, before the Meet) | A stub with a buffer stop (`RING_RAILHEAD_KIT`), platform, lever, rack and jib, moving 20 m a bent | Yes | As planned, plus an end board on the buffer. A longer-engine train stops 2 m shorter (its nose reaches the buffer face) | v27 data |
-| 9 | Ring Island halt (v27) | A balloon loop, r 40 m, centred 48 m east of the halt. **As laid out it can't be run**: the neck goes 12 m on (u 480) then 30.6 m straight back south to the circle's west point, a 165° reversal, then a 12° kink onto the circle (continuity report) | Partly | **Loop, redrawn** as a true balloon (below), while the island is the end (1.2–1.8 h); then the line runs on through the halt (question 3) | v27 layout (`RING_LOOP`, R2's deck, R3a's loop leg), before v27 ships |
+| 9 | Ring Island halt (v27) | A balloon loop, r 40 m, centred 48 m east of the halt. **As laid out it can't be run**: the neck goes 12 m on (u 480) then 30.6 m straight back south to the circle's west point, a 165° reversal, then a 12° kink onto the circle (continuity report) | Partly | **Buffers** (recommended, owner question 2): both tracks 15 m past the platforms to buffers and an end board at u 483; a facing crossover on the Way before the halt (about u 395–417), as Far Head's; trains stand at the east platform; the west lever chained, plaqued with the branch. The alternative, a turning loop, is undrawn (below) | A small R1 amendment (crossover and buffer positions, `RING_LOOP` out of line 2's row); R2b drops the loop deck; R3a loses its loop leg |
 | 10 | Catalog: Line 2 to Ring Island, Ring top | A crossover before the summit halt at 63 m | No | **Gone**: ruling 3 already removed Ring top; the catalog line ends at the island halt as R1 does | Map data |
-| 11 | Stack line, Ring top | A crossover after Ring top (superseded: ruling 3 starts it at the island halt) | No | **Through**: line 2 runs on through the Ring Island halt along the west shore (question 1) | The branch's bump: line 2's row grows, as `extends: 1` already does; one line, no junction rule needed |
-| 12 | Stack line, Bell Rock | A crossover before Bell Rock | No | **Through**: the incline and the Lantern causeway are collinear (1° apart at the skerry): one north–south line, High Gorge → Bell Rock → the Original Island. Stages 4–8: a terminal with buffers at the skerry's south end, facing the sunken causeway it becomes | Map data; Bell Rock's two-level plan (question 4) |
+| 11 | Stack line, Ring top | A crossover after Ring top (superseded: ruling 3 starts it at the island halt) | No | **Through**: line 2 runs on through the Ring Island halt along the west shore (owner question 1) | The branch's bump: line 2's row grows, as `extends: 1` already does; one line, no junction rule needed |
+| 12 | Stack line, Bell Rock | A crossover before Bell Rock | No | **Through**: the incline and the Lantern causeway are collinear (1° apart at the skerry): one north–south line, High Gorge → Bell Rock → the Original Island, at the water. Stages 4–8: a terminal with buffers at the skerry's foot, facing the sunken causeway at its own level | Map data; Bell Rock's two levels (owner question 3) |
 | 13 | Bay line, West landing | A crossover after West landing | No | **Terminal**: a bay platform at the one West landing station (ruling 6), buffers against the shore wall | Map data |
 | 14 | Bay line, Canopy Town | A 40 m loop | Yes | **Loop while it's the end** (stages 3/5–8); at stage 8 the bay line runs on as the Notch line (a 102° turn, 71 m of arc at r 40, on the 12 m isle) | Stage 8's bump |
-| 15 | Bay trestle, Ring top (Canopy first only) | A crossover | No | **Terminal**: a bay platform at the island halt, buffers | Map data |
-| 16 | Bay trestle, Bell Rock | A crossover | No | **Terminal**: a bay platform at Bell Rock, buffers | Map data |
+| 15 | Bay trestle, Ring top (Canopy first only) | A crossover | No | **Terminal**: buffers at the island halt's west side | Map data |
+| 16 | Bay trestle, Bell Rock | A crossover | No | **Through** onto the cleft to Canopy Town: Canopy first, Ring Island → Bell Rock → Canopy is one line (the review's finding 6) | Map data |
 | 17 | Cave line, West landing | A crossover after West landing | No | **Terminal**: the ring's Home end, buffers beside the bay line's platform; the walk to the Village halts is the hub (ruling 6) | Map data |
 | 18 | Cave line, High Port | A 40 m loop on the 55 m clifftop | Yes, but stale | **Through** at Port Quay into the White Wall line (a 48° turn on the 3 m harbour apron). The rulings already end the cave line at the quay, with the crane to High Port. Stages 6–7: buffers at the quay, the crane behind them | Map data (the lift leaves the rail catalog) |
 | 19 | White Wall line, High Port | A crossover | No | **Through** from the cave line at Port Quay (the ruling starts the line at the quay) | Map data |
@@ -89,32 +97,39 @@ Also audited and not ends: the four stub turnouts (line 1 s 36 and 182, line 2 s
 a terminal track whose end is one of the rows above; the Split-rock Works throat and the forge are a seam slab and a
 rack, the depot a cart road: none has rails.
 
-**Counts.** Before (today and as planned): **6 bare stubs, 12 crossovers, 1 stub with buffers, 5 loops** (24 ends).
-After: **9 terminals with buffers** (2 of them the railhead's and the stall's), **3 temporary** (buffers or the machine
-while a stretch is being built), **3 loops** (Ring Island while it's the end, Lantern Notch, the Original Island) and
-**9 through joins** where an end disappears. In the finished network (after stage 8, Gorge first) that leaves 7
-permanent terminals (both Village ends, the stall, Camp, West landing's two platforms, the north–south line's start in
-the Gorge) and 2 loops, with no crossover used as a terminus.
+**Counts** (Home as layout B). As planned: **3 with buffers** (layout B's two Village ends and the railhead),
+**4 bare stubs, 12 crossovers, 5 loops** (24 ends, two of them on legs ruled out). As proposed: **9 terminals with
+buffers** (3 of them the stall's, the railhead's and Ring Island's while it's the end), **3 temporary** (buffers or the
+machine while a stretch is being built), **2 loops** (Lantern Notch, the Original Island) and **10 through joins**
+where an end disappears. In the finished network (after stage 8, Gorge first) that leaves 7 permanent terminals (both
+Village ends, the stall, Camp, West landing's two platforms, the north–south line's start in the Gorge) and 2 loops,
+with no crossover used as a terminus.
 
 ### The shape it gives the network
 
-Five services instead of nine:
+Five services instead of nine, drawn on the map for both branch orders (the review's finding 6):
 
-1. **Line 1**, Village to Camp: two terminals. Unchanged.
-2. **The ring** (line 2 grown): Village → Quarry → Far Head → the pier → Ring Island → High Gorge → Canopy Town →
-   Port Quay → Saltpan → West landing. One line, built from both ends: line 2 from Home's east side (v26, v27, the first
-   branch), the cave line from West landing (stage 6), joined by the White Wall line (stage 7), so "the ring closes"
-   is the moment the two halves meet. Its two ends are both at Home, 100–130 m apart on foot (ruling 6's Firelink hub).
-   It's the greybox's own full loop (`FULL_LOOP`), now as one train. About 8.7 km: by generic-lines' wait bound
-   it wants about a dozen trains, which is a lot of life on the horizon (round 4's "lots of trains running").
-3. **The bay line**, West landing → Bell Rock → Canopy Town, on to Lantern Notch at stage 8.
-4. **The north–south line**, High Gorge → Bell Rock → the Original Island: the incline and the causeway.
-5. **The bay trestle**, Ring Island ↔ Bell Rock, only if Canopy is first: two terminals.
+| Service | High Gorge first | Canopy Town first |
+| --- | --- | --- |
+| **Line 1** | Village to Camp: two terminals | The same |
+| **The ring** (line 2 grown) | Village → Quarry → Far Head → the pier (homeward only) → the Meet's halt → Ring Island (v27) → High Gorge (stage 3) → Canopy Town → Port Quay (stage 7) → Saltpan → West landing (stage 6) | The same, but line 2 runs on from Ring Island at stage 5 |
+| **Bay line** | West landing → Bell Rock (stage 4) → Canopy Town (stage 5) → Lantern Notch (stage 8) | West landing → Bell Rock only (stage 4), the second line into Bell Rock, a terminal there |
+| **Island to Canopy line** | Not built | Ring Island (west side, buffers) → the bay trestle → Bell Rock → Canopy Town, one line at stage 3, on to Lantern Notch at stage 8 |
+| **North–south line** | High Gorge → Bell Rock (stage 4) → the Original Island (stage 8) | The same from stage 5 |
+
+The ring is one line built from both ends: line 2 from Home's east side (v26, v27, the first branch), the cave line
+from West landing (stage 6) as **its own row with its own trains** until the White Wall line joins the halves at stage
+7, with the cave half's `s` running the other way (a real step for stage 7's plan; the review's finding 5). Its two
+ends are both at Home, 100–130 m apart on foot (ruling 6's Firelink hub); plaques name the next big place that way,
+not the terminus (call 28). It's the greybox's own full loop (`FULL_LOOP`), now as one line, about 8.7 km one way; its
+train count is sized by an even headway of about a minute (about a dozen trains at 70 s), not v26's worst-wait bound
+(call 31). Canopy first, the trestle and the cleft are one line because two services would mean a change of train on
+an empty skerry on the first trip to the new town.
 
 **Junctions.** Every through join above is one line continuing, so generic-lines §6 (walk-between platforms, no shared
 track) still covers every junction: Ring Island (the ring, the trestle's bay platform), High Gorge (the ring through,
 the north–south line's terminus), Canopy Town (the ring and the bay line, both through, side by side), Bell Rock (the
-north–south line and the bay line, see question 4) and West landing (two terminals). Nothing needs through-running
+north–south line and the bay line, on two levels) and West landing (two terminals). Nothing needs through-running
 between lines, a diamond crossing or signals.
 
 **Loops: is there ground?** Measured on the greybox ground (`ringHeight`, the map's land) for a 40 m circle:
@@ -122,116 +137,144 @@ between lines, a diamond crossing or signals.
 | Loop | Ground under the circle | Verdict |
 | --- | --- | --- |
 | Ring Island, R1's centre (1462, −822) | Sea on its east half, up to 7.1 m on its west arc (deck 8.0) | A loop fits; R1's neck is the problem, not the site |
-| Ring Island, a true balloon beyond the halt, centre u 520 lat +45 (1461, −891) | 3.4–19.8 m | Fits with a cutting of up to about 12 m into the cone's flank on its north arc; the recommended redraw |
+| Ring Island, a balloon beyond the halt, centre u 520 lat +45 (1461, −891) | 3.4–19.8 m | A cutting of up to about 12 m into the cone's flank on its north arc; undrawn (below) |
 | Ring Island, centre u 540 lat +40 / −40 | 7.4–23.9 m / 14.1–30.5 m | Deeper cuttings; the west side is worse |
 | Camp (line 1) | The ridge falls 32.5 m (generic-lines) | No loop: buffers |
 | Far Head (east side) | Flat within 0.4 m (generic-lines) | Fits, but Far Head stops being an end at Q6: the crossover is enough |
 | Canopy, Lantern Notch, the Original Island | On the isles' 6–13 m tops (the catalog's loops) | Kept |
 
-The redraw at Ring Island: a turnout off the line 20 m past the halt's north end, a 20 m easing, then the r 40 circle
-round to rejoin the neck, with the 4 % grade at 0 (it's all 8.0 m). R2b's cone fill grades under it.
+**Ring Island while it is the end: buffers, not a redrawn balloon** (the review's finding 2, owner question 2). Both
+tracks run about 15 m past the platforms (to u 483) to buffers and an end board, facing the way the line will go on;
+a facing crossover on the Way before the halt, as Far Head's, turns up trains onto the down track; trains stand at the
+east platform (the works side), the west lever chained and plaqued with the branch. No train is ever turned, so v27
+needs no loop leg, no `railLoopSpeed` and no orientation state, and the cargo cars stay on the same side of every
+stop mark. The map draws this "as proposed". **The alternative, a turning loop beyond the halt, is not drawn**: the
+one sentence it had ("a turnout, a 20 m easing, r 40, centre u 520 lat +45") is a ground sample, not a track. A circle
+wholly east of both tracks can't take the up (west) track without crossing the down track, so it needs a merge to one
+track first or a teardrop about 80 m wide astride the line; it cuts up to 12 m into the cone beside the town, turns
+every train round, lengthens the cycle by about 35 s and is lifted when the line goes on. The map shows its circle as
+"undrawn alternative"; if the owner picks it, a planner draws it through the continuity report and the designer
+re-reviews before R3a. `src/sim/railway-ring-layout.ts` is unchanged either way until that call.
 
 ### What this changes in rulings and built geometry
 
 | Change | Ruling or geometry it touches | Cost |
 | --- | --- | --- |
-| Buffers and boards at the Village (both lines), the stall, Camp, the pier head, the frontier | Built view (no sim reads them) | View only, any time |
-| Stop marks per track and direction, moved for long trains (Village 14 and 17 → 23.5, Far Head 524 → 526, the pier 726.5 → 725, Quarry up 174 → 164.3) | v26's catalog (`RailHalt.s` per platform, below) | Sim: rides v26's `WORLD_NS` bump (no extra bump) |
-| Ring Island's loop redrawn as a true balloon | R1's `RING_LOOP` (v27 data), R2's deck, R3a's loop leg | v27 layout, before v27 ships |
-| The catalog regenerated: Ring top gone, the cave line ending at Port Quay, the White Wall line starting there | Rulings 3 and the High Port knock-on (already decided; data not yet done) | Map data |
-| The ring as one line (line 2 runs on through Ring Island; the cave and White Wall lines join it) | World-blockout's "Lines" table (eight services); generic-lines' "future rows arrive with their areas" holds (each stage appends to the ring's row) | Each stage's own bump, as planned; no extra |
-| Ring Island's loop lifted when the first branch opens | Ring Island build 1's loop (call 15) | That stage's bump (question 3) |
-| Bell Rock as two levels | World-blockout's "the 15 m deck rule keeps all four at one level" | Map data now; the hub's build later (question 4) |
-| Turnouts eased over 30 m instead of 20 (below) | Generic-lines step 2 (`TURNOUT`) | View only (the sim has no turnout geometry) |
-| A curve speed limit on the live lines | Generic-lines: one cruise per line | Sim, v26 (question 5) |
+| Buffers and boards at Camp, the stall, the pier head and the frontier | Built view (no sim reads them) | View only, any time |
+| Buffers and boards at the Village (both lines) | Layout B (home-station step 9, after the flip) | Look only; nothing on today's table rim |
+| One shared stop mark per halt, moved where a long train needs it (Quarry 174 → 170, Far Head 524 → 526, Camp 207 → 205.3, the pier 726.5 → 725 once the layer is measured) | `TRAIN_STOPS` values only; no per-platform field | Ships with the longer consist's bump or v27, whichever is first; not v26 |
+| Ring Island ends in buffers 15 m past the halt, a crossover on the Way | R1 (`RING_LOOP` out of line 2's row, the crossover and buffers in), R2b's loop deck, R3a's loop leg | A small R1 amendment before R3a starts (owner question 2) |
+| The catalog regenerated: Ring top gone, the cave line ending at Port Quay, the White Wall line starting there | Rulings 3 and the High Port knock-on (already decided) | `src/sickle/world-lines.ts` ships in the `?blockout=world` chunk: its own change, not this map's |
+| The ring as one line (line 2 runs on through Ring Island; the cave and White Wall lines join it) | World-blockout's "Lines" table (eight services) | Each stage's own bump; stage 7 merges the cave half's row into line 2's (the review's finding 5) |
+| Canopy first: Ring Island → Bell Rock → Canopy as one line | The bay trestle's row and the bay line's second leg | Stage 3's own bump (Canopy first) |
+| Bell Rock on two levels, the bay line on the skerry at 15 m, the north–south line at the water | World-blockout's "the 15 m deck rule keeps all four at one level" | Map data now; the hub's build later (owner question 3) |
+| Turnouts eased over 30 m instead of 20 (below) | Generic-lines step 2 (`TURNOUT`), after the stub-end signals stand 20 m outside each merge | View only (the sim has no turnout geometry) |
 
 ## The station plan
 
-**Per-track stopping marks (the owner's platform ruling).** Today a halt has one `s` for both tracks and the engine
-always stands at the +s end (`train-view.ts` poses every car with sign 1: push-pull), so the passenger car (car 1,
-`TRAIN_OFFSETS` 0) is the train's `s`. The long train used below is the engine, the passenger car and three cargo cars
-at 3.7 m pitch: 6.2 m ahead of the passenger car's centre with today's 4 m engine, 8.2 m with the longer boiler (taken
-as 6 m: its length isn't in the data), and 12.7 m behind. Proposed for v26's catalog: each `RailPlatform` carries its
-own stop `s`, the platform's middle unless an obstacle says otherwise, so the passenger car always lands on the
-platform and the cargo cars may overhang. Rule for a terminal with buffers: where the engine faces the buffers (the far
-ends, push-pull), the stop mark is 10.2 m from them; where the cargo cars do (the Home ends), 14.7 m.
+**One stop mark per halt (the owner's platform ruling; the design review's call 11).** A halt has one `s` for both
+tracks and the engine always stands at the +s end (`train-view.ts` poses every car with sign 1: push-pull), so the
+passenger car (car 1, `TRAIN_OFFSETS` 0) is the train's `s`. The long train used below is the engine, the passenger
+car and three cargo cars at 3.7 m pitch: 6.2 m ahead of the passenger car's centre with today's 4 m engine, 8.2 m with
+the longer boiler (taken as 6 m: its length isn't in the data), and 12.7 m behind. One shared mark per halt is enough:
+the only halt where it needed thought is the Quarry, whose platforms are staggered, and s 170 puts the passenger car on
+both. Rule for a terminal with buffers: the passenger car's mark is at least **14.7 m** from the buffers, whichever end
+faces them (call 12, tunable). None of this is a correctness fix today: the long train doesn't exist until cargo cars
+ship, so the marks ship with that bump or v27, whichever is first, not v26.
 
-| Halt | Platforms (length) | Stop today → proposed | Long train overhang, and what it fouls |
+| Halt | Platforms (length) | Mark today → proposed | Long train overhang, and what it fouls |
 | --- | --- | --- | --- |
-| Village (line 1) | One, s 8–30 (22 m), left; serves both directions (terminal track) | 14 → **23.5** | Today's 3-car train's tail is at s 5.0, the table's rim (r 4.8). The long train reaches s 1.3: **on the turntable**. At 23.5: s 10.8–31.7, clear of the grown table (its rim at s 8.5) and of the s 36 turnout |
-| Village, line 2 | One, s 6–28 (22 m), right | 17 → **23.5** | Long train s 4.3: **0.5 m onto the table**. At 23.5: s 10.8–31.7, the grown table and the s 34 turnout's fouling zone (34–46) clear |
-| Camp | One, s 195–219 (24 m), right | 207 | s 194.3–215.2, inside the platform but for 0.7 m; buffers at 220 leave 4.8 m |
-| Quarry | Down s 166–186 right; up s 154–174.5 left (20.5 m) | 174 (both) → **down 174, up 164.3** | **The up train's passenger car overhangs the up platform's end by 1.1 m** at the shared stop. Down: s 161.3–182.2, 4 m short of the quarry gate's slab (s 186, gone once opened). Up at 164.3: s 151.6–172.5, 4.8 m clear of the plank crossing (s 146.8) |
-| Far Head | Both s 513–535 (22 m), down right, up left | 524 → **526** | The long train's tail (511.3) **fouls the crossover** (490–512) on both tracks. At 526: s 513.3–534.2; the plank crossing (538.5) 3 m clear |
-| Pier | Down only, s 719–741 left (v27 adds the up platform, lat −6.9) | 726.5 → **725** | With the longer engine the nose reaches 734.7, **0.3 m into the parked track layer** (734.4). PIER_STOP_CM's note says 1.2 m clear for an engine half as long again; its arithmetic and this one differ by 1.5 m, so check the layer's position before moving the stop |
+| Village (line 1, layout B) | The island's north edge, s 2.8–20.8 (18 m); buffers at s −5.53 | 14 (kept: B's stops stand abeam, home-station call 10) | s 1.3–22.2: the passenger car on the deck, 19.5 m from the buffers (the rule allows down to 9.2). Nothing fouled |
+| Village, line 2 (layout B) | The island's south edge, s 5.7–23.7 (18 m); buffers at s −2.6 | 17 (kept, abeam) | s 4.3–25.2: the tail stands **over the engine spur's points** (s 5.5), as today's 3-car train's does (so the shunter moves only between trains), and the longer engine's nose is 0.8 m short of **the cart's leg** (s 26; the cart stops serving after Q6). Abeam marks at 12.6 and 15.5 would clear the leg; the rule allows down to 12.1 |
+| Camp | One, s 195–219 (24 m), right | 207 → **205.3** | 14.7 m from the buffers at s 220; s 192.6–213.5 |
+| Quarry | Down s 166–186 right; up s 154–174.5 left (20.5 m) | 174 → **170** (both) | The passenger car on both platforms (4.5 m to spare on the up side); s 157.3–178.2, 10.5 m clear of the plank crossing (s 146.8), less of the train on the bend |
+| Far Head | Both s 513–535 (22 m), down right, up left | 524 → **526** | At 524 the tail (511.3) **fouls the crossover** (490–512). At 526: s 513.3–534.2; the plank crossing (538.5) 3 m clear |
+| Pier | Down only, s 719–741 left (no up platform: homeward only after Q7) | 726.5 → **725**, once measured | With the longer engine the nose reaches 734.7, **0.3 m into the parked track layer** (734.4). PIER_STOP_CM's note and this differ by 1.5 m: measure the layer's position before moving the mark |
 | Railhead (v27) | Down only, 25 m (u − 25 to u) | u − 10 → **u − 12** for a longer engine | The longer engine's nose reaches u − 1.8, **the buffer face**. Tail u − 22.7, the merge (u − 30) clear |
-| Ring Island halt (v27) | Up (west) and down (east), 40 m each | u 448 | Up: u 435.3–456.2, inside; down (the consist faces home after the loop): u 439.8–460.7, inside |
-| Future halts | Two 40 m platforms per line | The platform's middle | 7.3 m and 11.8 m to spare; no future halt has an obstacle within the train's length except Bell Rock's crossing lines |
+| Ring Island halt (v27) | Up (west) and down (east), 40 m each; buffers at u 483 | u 448; trains stand at the east platform | u 435.3–456.2, inside, never turned; the passenger car 35 m from the buffers |
+| Future halts | Two 40 m platforms per line | The platform's middle | 7.3 m and 11.8 m to spare; no future halt has an obstacle within the train's length |
 
 **Cargo loaders** (the owner's "resource sources can have cargo loaders that can load where appropriate on the
-train"). A loader stands at the cargo cars of a train standing at its halt, so 3.7–11.1 m behind the passenger car's
-stop mark (Home-side while the engine is at the +s end), on the side the goods come from:
+train"). A loader stands at the cargo cars of a train standing at its halt: 3.7–11.1 m **Home-side** of the passenger
+car's mark, **in both directions**, because today's trains are push-pull and, with buffers at Ring Island, no train is
+ever turned (call 13). It stands on the side the goods come from:
 
 | Source | Along the line | Loader |
 | --- | --- | --- |
-| Split-rock Works rack (footings, the kiln) | s 179, 12.8 m right of line 2, 5 m pier-side of the Quarry stop | Down (right) side, s 170.3–162.9: the homeward platform side, so footings go home without crossing a track |
+| Split-rock Works rack (footings, the kiln) | s 179, 12.8 m right of line 2, 9 m pier-side of the Quarry mark | Down (right) side, s 166.3–158.9: the homeward platform side, so footings go home without crossing a track |
 | The kiln | s 190, 64 m right | Feeds the Works rack, not the train |
-| The depot (line 2's camp, the cart) | s 184.5, 18.8 m right | Down side by the Quarry, s 170–163, shared with the Works loader |
-| The pier rack | s 733.5, 3.5 m left | Up (left) side at the pier, s 722.8–715.4: unloading footings, not loading |
-| The forge (rails) and the Roundhouse stall | By the turntable (s 0), 7 m left / 12 m right | At the Village, s 13–6 with today's stop: in the turntable's reach. With the stop at 23.5, s 19.8–12.4, on the forge (left) side, clear of the grown table |
-| Line 1's timber camp (logs) | s 182.5, 5.8 m right, 24.5 m Home-side of the Camp stop | Right side s 203.3–195.9 |
-| Ring Island's steel works (build 2) | The island halt's down (east) side | After the loop the engine leads home and the cargo cars trail: u 451.7–459.1, east of the platform's north half |
+| The depot (line 2's camp, the cart) | s 184.5, 18.8 m right | Down side by the Quarry, shared with the Works loader |
+| The pier rack | s 733.5, 3.5 m left | Up (left) side at the pier, s 721.3–713.9: unloading footings, not loading |
+| The forge rack (rails, layout B) | On the island's apron at line 2's s −1, between the buffers and the deck's head ramp | The cargo end: 5.3 m behind the last car of a long train at s 17, on the island, so rails go from rack to car without crossing a track. The recovery rack (the Village yard, today at (905, 1)) moves beside it in B |
+| The Roundhouse's open stall (layout B) | Off the spur | Not a loader: the shunter brings stock over the table and up the spur |
+| Line 1's timber camp (logs) | s 182.5, 5.8 m right, 22.8 m Home-side of the Camp mark | Right side s 201.6–194.2 |
+| Ring Island's steel works (build 2) | The island halt's down (east) side | u 436.9–444.3, east of the platform's south half (Home-side, as everywhere) |
 | High Gorge's copper works (later) | The low station in the split | Beside the ring's homeward track at the cargo cars; the lift brings copper down |
+
+**Where this disagrees with the yards.** [Station-deposit](../brainstorms/station-deposit.md)'s review puts each yard
+on the ground at the foot of the down platform's back ramp, mid-platform, "not anchored to a cargo end", on the
+premise that each direction's train ends at opposite ends. This plan has the cargo cars Home-side of the mark both
+ways. The two agree on the side of the track (the down platform's, the Works side at the Quarry) and differ along it
+by 4–11 m. This plan is right about today's trains; the yard's premise becomes true only where a line turns its trains
+on a loop (stage 8's two). Build 1's yards stay where they are; build 2's gantry has to reach from the back ramp's
+foot to the cargo cars at the platform's Home end, across the deck's end ramp, which neither brief has drawn. By stage
+8 a line with one loop and one stub flips its consists every round trip: loaders then ride a gantry covering both
+sides of the mark, or those ends get buffers too.
 
 ### Halt by halt
 
-Levers, boards and maps follow generic-lines 4b: one lever per platform, plaqued with the end it goes to, at the
+Levers, boards and maps follow generic-lines 4b: one lever per platform, plaqued with the end it goes to (on the ring, the next big place that way: call 28), at the
 passenger car's stop mark; the departure board at the platform's entrance; the island map where the plank crossing
 lands.
 
-- **Village (both lines).** Terminus of both; a walk-between junction across the table (the two platforms are about
-  35 m apart, the table between). Each line one platform, its terminal track serving both directions. Lever and board
-  at each platform's stop mark; the island map on the table's railing, where the walk between them passes. Seen first
-  on arrival: the turntable and the forge chimney, the Needle Bell over the town. Unresolved: `?home=b`'s island
-  platform moves the table, so the buffer positions and stop marks there need their own numbers; the walk to West
-  landing (ruling 6) needs its trodden path and a board.
-- **Camp.** Terminus; one platform on the right, buffers at s 220. Seen first: the timber camp, and past the buffers
+- **Village (both lines), layout B.** One terminus: both roads end at buffer stops (s −5.53 and −2.6) beside one
+  island platform, the concourse 1 m behind the buffers, the forge as the goods side (road 1's stub is its dock).
+  The 9.6 m table stands on its own engine spur off road 2 at s 5.5, with one open stall and two ruin outlines; line
+  trains never turn on it. Marks s 14 and s 17, abeam. Seen first on arrival: the island running away between two
+  tracks, the forge's wall, the table beyond. Today's live game still draws the turntable terminus until the flip.
+  Unresolved: the walk to West landing (ruling 6) needs its trodden path and a board.
+- **Camp.** Terminus; one platform on the right, buffers at s 220, the mark at s 205.3. Seen first: the timber camp, and past the buffers
   the ridge falling away. Unresolved: nothing.
 - **Quarry.** Through halt, request stop. Down platform (right, homeward, the Works side) and up platform (left);
-  the plank crossing at s 146.8 at the up platform's start. Up lever at s 164.3, down lever at s 174; the island map
-  at the crossing's landing. Seen first: the split quarry face and the kiln stack. Unresolved: the up platform needs
-  its own stop mark (it misses today).
+  the plank crossing at s 146.8 at the up platform's start. One mark, s 170, for both levers; the island map at the
+  crossing's landing. Seen first: the split quarry face and the kiln stack.
 - **Far Head.** The end before Q6 (crossover), then a through halt. Both platforms s 513–535; the plank crossing at
   s 538.5, beyond the platforms' pier end. Up lever chained ("Pier") until Q6 (generic-lines call 31). Seen first:
   the pier running north to the bents, Ring Island's shard beyond. **This halt exists because line 2 stopped here
   before the pier**; it earns its place as the pier root and the glide pad.
-- **Pier.** The end Q6 → v27 (buffers), then a through halt. One platform (left, rack side) until v27 adds the up
-  platform. Seen first: the raised leaf at 280 m. **It exists because the line ended here**; it stays as the rack's
-  halt.
-- **Railhead (v27).** A moving terminus, then a through halt with an up platform on the last bent (call 14). Seen
-  first: the gap and the raised leaf. **It exists only while the line is being built.** Unresolved (owner, R1's
-  question 4): its name after the Meet.
-- **Ring Island halt.** The loop terminus, then a through halt and the branch junction (ruling 3). Up platform (west,
-  the branch side) and down (east, homeward, the steel works' loader). A plank crossing at the halt's south end.
+- **Pier.** The end Q6 → v27 (buffers), then **a homeward request stop only** (call 29, owner question 4): one
+  platform (left, rack side); v27 doesn't build its up platform or widen the pier 6 m west for it. After Q7 the
+  rack's footings are long set, so nothing else is here. Seen first: the raised leaf at 280 m. **It exists because the
+  line ended here.**
+- **Railhead (v27).** A moving terminus, then **the Meet's own halt** (through): the rivet, the leaf and the hook
+  ring below are something to see (owner question 4). Unresolved (owner, R1's question 4): its name.
+- **Ring Island halt.** While it is the end: buffers 15 m past the platforms and a crossover on the Way before it;
+  trains stand at the east platform (homeward, the steel works' loader); the west (branch side) lever is chained and
+  plaqued with the branch, which telegraphs the next line from the day you arrive. Then a through halt and the branch
+  junction (ruling 3). A plank crossing at the halt's south end. The first crossing's finale ends with the train
+  standing under the shard instead of circling.
   Seen first: the shard above the cone, the mural and the steel under its tarp. Each branch's platform faces its
   landmark (ruling 3's still, still to take).
 - **High Gorge.** A junction in the split at 3 m: the ring's through platforms and the north–south line's terminus
   (a bay platform, buffers against the falls-cave rock, the stair beside them). Seen first: the town's bridge 82 m
   overhead (ruling 5). Unresolved: whether the split's 90 m holds an 81° curve at r 40 and both stations (a still at
   the Gorge's build).
-- **Bell Rock.** Today four lines' platforms cross on one level (the stills' finding). Proposed: two levels: the
-  north–south line on the skerry at 15 m; the bay line through a granite cut at sea-deck height under it, its
-  platforms in the cut, stairs between (the Gorge's pattern). Seen first: the pinnacle; from the north–south platform,
-  the sunken causeway pointing at the Original Island (until stage 8, past the buffers). **The bay trestle's halt
-  exists only because that line ends here.**
+- **Bell Rock.** In the blockout four lines' platforms cross on one level (the stills' finding). Proposed: two
+  levels, **the bay line on the skerry at 15 m** (it comes off the skerry-high trestle and goes on to Canopy at 13 m:
+  it never needs to come down) and **the north–south line at the water** (it comes from the Gorge's low station at
+  3 m and goes on to the sunken causeway: it never needs height), crossing on a bridge rather than an 11 m cut, stairs
+  between (about 11 m of rise). Seen first: the pinnacle; from the bay line's train, the sunken causeway; the low
+  terminal's buffers face the causeway at its own level until stage 8. To check with a profile when the hub is built.
+  Canopy first, the trestle runs on through Bell Rock to Canopy, so no line ends here but the bay shortcut.
 - **West landing.** One station (ruling 6), two terminals side by side: the ring's Home end and the bay line's start,
   buffers at both. Seen first: the sea cave's cracked plug in the sandstone face (the day-one lock). **Two halts 63 m
   apart today, only because two lines started there**: one station.
 - **Canopy Town.** A junction: the ring through, the bay line's loop terminus (then through to the Notch). Seen first:
   the mother trees; from the west shore, the Notch ledge. Unresolved: the ring and the bay line both arrive from the
   east and leave at large angles (the drafts kink 102–132° here): the station needs its alignment drawn.
-- **Saltpan Halt.** Through halt. Seen first: the salt flats.
-- **Port Quay.** A through halt on the ring; the crane up to High Port. Seen first: the 75 m crane. **High Port as a
+- **Saltpan Halt.** Through halt. You come to slide the salt flats. Seen first: the salt flats.
+- **Port Quay.** A through halt on the ring; the crane up to High Port. You come for the harbour and the lift to
+  High Port's town services, the faster engine and the seed cradle. Seen first: the 75 m crane. **High Port as a
   rail halt exists only because the cave line ran to the top**: the ruling already makes it the crane's top.
 - **Lantern Notch.** Loop terminus. Seen first: the arch.
 - **The Original Island.** Loop terminus round the island. Seen first: The Boogler's island.
@@ -244,49 +287,53 @@ If we're upgrading per train line, then lines should be plenty long where it's w
 behind it (the Roundhouse keeps its 9.6 m table now and grows to about a 16 m table and 16 m stalls; engines and cars
 are bought per line) are the engine-garage brief's (`docs/brainstorms/engine-garage.md`), not repeated here.
 
-**Keep clear at Home: the grown Roundhouse.** The map draws a keep-clear circle of r 26 m round the table's centre
-(918, 12): the grown table (r 8 m) and a ring of 16 m stalls with their 2 m walls, so the stalls can go on any side,
-and the inner one the table itself. Inside it today (the generator lists them from the data):
+**Keep clear at Home: the grown Roundhouse, on layout B.** The grown Roundhouse is only ever built on layout B (the
+review's finding 1), so B's flip comes first and nothing in town moves. B's table stands on its own spur at world
+(942.1, 17.1), with stall roads at 160°, 190° (open) and 220°; open grass lies south and south-east, line 2's road
+about 13 m north. A full 26 m circle there would cross line 2 and the island's east end, so the map keeps clear a
+**sector from 130° to 250°** (clockwise from north) to r 26 m (the grown 16 m table, 16 m stalls and their 2 m
+walls), plus the grown table (r 8 m). The engine-garage brief's own keep-clear ("30 m on the stall side") and this one
+become one footprint here. Within 26 m of B's table (the generator lists them from the data):
 
-| What | Distance from the table's centre |
-| --- | --- |
-| Line 2's Village platform, its Home end (s 6) | 6.8 m: **inside the grown table** |
-| Line 1's Village platform, its Home end (s 8) | 8.5 m, at the grown rim |
-| The forge | 10.8 m |
-| Today's stall | 12 m (it is the thing that grows) |
-| A town hall (the wood hall at (−88, 31) local) | 14.4 m |
-| The forge's frame | 24.7 m |
+| What | Distance and bearing from B's table | In the sector? |
+| --- | --- | --- |
+| The three stall roads' backs (160°, 190° open, 220°) | 17.5–17.6 m | Yes: they are what grows |
+| Q1's frame (B flips it to road 2's south side) | 17 m at 269° | No |
+| The forge crane (B's place) | 24.9 m at 324° | No |
+| Line 2's road | nearest 12.9 m, at s 21.4 (339°) | No |
+| Line 1's road | nearest 20.5 m (339°) | No |
+| The engine spur | arrives from 310° | No |
 
-Both lines leave the grown table's rim at s 8.5, so a long train standing at the Village needs its stop at s 23.2 or
-more: the stop marks above (23.5) already allow for it. Line 2's platform loses its first 2 m to the grown table and
-the stalls can't go on the forge's or the hall's side, so **the stalls grow south-west, along today's stall road,
-away from the forge** (a default for the garage's build to confirm with a still); the forge and the hall stay. The
-other upgrade points (the steel works at Ring Island, High Port's faster engine) are unbuilt: each area's brief keeps
-a 26 m circle clear beside its station when it places a works or a garage.
+The forge, the concourse, the square and the forge rack (with the recovery rack beside it in B) are all on the other
+side of the station, more than 26 m away. Nothing on today's table rim (buffers at s 5, stop blocks, the old 23.5
+marks) is worth building. The other upgrade points (the steel works at Ring Island, High Port's faster engine) are
+unbuilt: each area's brief keeps room clear beside its station when it places a works or a garage.
 
 **Lines long enough for a speed upgrade.** End to end at 20 and 25 m/s (3.5 m/s² at both, the brief's comparison;
 5 s dwell), stopping at every halt, and what the longer boiler saves on the usual non-stop ride (trains stop only on
 request):
 
-| Line | Length | Every halt, 20 / 25 m/s | Saved non-stop | Felt? |
+| Line | Length | Every halt, 20 / 25 m/s | Saved non-stop | Speed part offered? |
 | --- | --- | --- | --- | --- |
-| Line 1 | 0.22 km | 15.4 / 14.9 s | 0.5 s | **No** |
-| Line 2 to the pier | 0.74 km | 62.6 / 59.8 s | 5.7 s | **No** |
+| Line 1 | 0.22 km | 15.4 / 14.9 s | 0.5 s | **No**: seats, looks, a whistle |
+| Line 2 to the pier | 0.74 km | 62.6 / 59.8 s | 5.7 s | **No**: seats, looks, a whistle |
 | Line 2 to Ring Island (v27) | 1.19 km | 96.5 / 90.5 s | 10.3 s | Yes (the brief's "11 s Village to the island") |
 | Stack line | 2.86 km | 157.2 / 131.9 s | 26.7 s | Yes |
 | Bay line | 2.43 km | 135.9 / 114.9 s | 22.5 s | Yes |
 | Bay trestle | 1.43 km | 75.1 / 62.6 s | 12.4 s | Yes |
 | Cave line | 1.68 km | 109.2 / 97.1 s | 15.0 s | Yes |
 | White Wall line | 3.82 km | 205.4 / 170.5 s | 36.4 s | Yes |
-| Notch line | 0.88 km | 47.9 / 40.9 s | 7.0 s | **No** |
-| Lantern causeway | 0.75 km | 41.0 / 35.4 s | 5.6 s | **No** |
+| Notch line | 0.88 km | 47.9 / 40.9 s | 7.0 s | Not on its own: it runs on from the bay line |
+| Lantern causeway | 0.75 km | 41.0 / 35.4 s | 5.6 s | Not on its own: it runs on from the north–south line |
 
-One non-stop leg saves L/100 − 1.43 s going from 20 to 25 m/s, so **a line needs about 1.15 km end to end for the
-upgrade to save 10 s a trip**; a halt spacing of at least 180 m lets a train reach 25 m/s between stops at all. The
-proposals already fix the short ones: the Notch line becomes the bay line's extension (3.3 km) and the causeway the
-north–south line's (1.9 km, the incline plus the causeway); the ring (about 8.7 km) is where a per-line upgrade pays most.
-Line 1 stays short on purpose: it's the first line, bought before any upgrade, and its engine never needs one. Rule
-for new lines: **at least 1.2 km between a line's ends**, or join it to its neighbour.
+One non-stop leg saves L/100 − 1.43 s going from 20 to 25 m/s, so a line needs about 1.15 km end to end for a speed
+part to save 10 s a trip; a halt spacing of at least 180 m lets a train reach 25 m/s between stops at all. **Short
+lines get seats, looks and a whistle rather than speed** (the review's call 27): the garage offers a speed part only on
+a line where its readout changes by something felt, about 1.2 km. That figure is **"when a speed part is offered"**, a
+guideline for the garage, not a rule on line length: no line is bent or joined to fit a shop. With the ring, the lines
+worth a speed part are the ring, the bay line and the north–south line: three purchases. Line 1 and line 2 before Ring
+Island offer seats, looks and a whistle (and the engine-garage brief's "pulls one more car"). The figure lives in one
+place, the garage's.
 
 ## Continuity and curves
 
@@ -315,7 +362,7 @@ small kinks is a smoother pose (view only)**: pose v27's and later lines on a sp
 | Track | Worst | Notes |
 | --- | --- | --- |
 | Line 1 (live) | Radius **11.8 m** at s 170 (the bend before Camp); 9 runs under 40 m; 3 straights into tight curves; grade 26.5 % (the ridge ramp) with 11 grade breaks over 2 % per 5 m | The ramps are ruled "stay as built"; the radius is not ruled |
-| Line 2 (live) | Radius **16.7 m** at s 180 (the Quarry bend), straight into a 25 m curve at s 175; grade 22.5 % on the town ramp (s 72–112), breaks up to 8.7 % per 5 m at s 75 | Trains pass the Quarry bend at 20 m/s unless asked to stop: 24 m/s² sideways, a 69°/s camera spin for a rider (riders are carried in the deck's frame, so nobody is thrown) |
+| Line 2 (live) | Radius **16.7 m** at s 180 (the Quarry bend), straight into a 25 m curve at s 175; grade 22.5 % on the town ramp (s 72–112), breaks up to 8.7 % per 5 m at s 75 | Trains pass the Quarry bend at 20 m/s unless asked to stop: 24 m/s² sideways, a 69°/s camera spin for a rider. On 10 November both players came off trains just east of the Quarry halt, standing, leaving a stop at about 6 m/s: the bend may throw riders, whatever the speed |
 | Up tracks (v26, drawn) | The stub turnouts leave today's track at **16.7–18.9°** and bend at **10.7–18 m** radius; the crossover 15.3° and 24.3 m | A real 1:8 turnout leaves at 7°. The 20 m smoothstep is the cause |
 | Platforms | Every platform edge is 0.55–0.75 m from a car's side on its own track and 4.5 m on the other | Clear |
 | Fouling points | Up and down tracks within 2.3 m: line 1 s 36–48 and 171–182; line 2 s 34–46 and 545–556 | Inside generic-lines' end blocks; no stop mark is in one |
@@ -339,12 +386,16 @@ about 37 m radius; the sim has no turnout geometry), leaving s 556, which v27 re
 (smoothstep the grade, not the height) on the town ramps, which keeps `railY`'s ends and only softens its breaks if
 done as a view easing over the deck.
 
-**Path fixes, with v26:** stop marks per platform (above). A curve speed limit, 10 m/s under r 40 as the loop has
-(ring-island call 12), on line 1 s 160–180 and line 2 s 170–185 (question 5); easing the curves themselves moves
-Place's rails and every s after them, which is a larger v26 change for little gain.
+**The curves stay** (the review's finding 7): line 1's 11.8 m bend (every train is braking for the Camp there) and
+line 2's 16.7 m Quarry bend read as a toy railway's bends, like the in-town ramps that were ruled to stay; easing them
+moves Place's rails and every `s` after them. **A standing-rider eval comes before any limit**: a standing rider
+through line 2 s 150–200, from a stop and at line speed, two clients. If speed is the cause, a 10 m/s limit under
+r 40 ships as a `railCurveSpeed` tunable as soon as it's ready; if not, the limit is only a comfort change and the P1
+needs its own fix. Nothing here goes into v26: the stop marks are values that ship with the longer consist or v27,
+and the stub-end signals stand 20 m outside each merge so a 30 m turnout can be drawn later without fouling them.
 
-**With v27:** redraw `RING_LOOP` as a true balloon (centre about u 520, lat +45: turnout, 20 m easing, r 40); make
-`RING_PATH` start from line 2's real end (s 743) with a 10 m chord and the pier's last 3.5 m on the spline, or pose
+**With v27:** end Ring Island in buffers with a crossover on the Way (owner question 2), so `RING_LOOP` leaves line 2's
+row (a loop, if picked instead, is a planner pass first); make `RING_PATH` start from line 2's real end (s 743) with a 10 m chord and the pier's last 3.5 m on the spline, or pose
 over the join with a spline, so the 11.55 m chord and the 3.9° turn at the pier head go.
 
 **Rules for every future line as data**, which the continuity report enforces once a line moves into `RAIL_LINES`:
@@ -356,61 +407,38 @@ over the join with a spline, so the 11.55 m chord and the 3.9° turn at the pier
 - turnouts leave at 7° or less (a 4 m shift over at least 50 m), and no stop mark inside a fouling zone;
 - every join between pieces within 5 cm and 2°.
 
-## Calls, for the designer's review
+## Calls
 
-| # | Call | Kind | Source or reason |
-| --- | --- | --- | --- |
-| 1 | Every track end has buffers and a terminal marking, or runs through, or loops | Decided | Owner, 10 November (decisions) |
-| 2 | No visible kinks; reasonable curves | Decided | Owner, 10 November (same entry) |
-| 3 | Cars may overhang the platform; the passenger car must be on it; loaders at the cargo cars | Decided | Owner, 10 November (the engine-garage brief records it) |
-| 4 | Junctions stay walk-between platforms; no through-running between lines | Decided | Ruling 6, generic-lines §6 |
-| 5 | Ring Island is the junction, at the island halt; no Ring top | Decided | Ruling 3 |
-| 6 | The cave line ends at Port Quay; High Port is the crane's top | Decided | Rulings' knock-ons |
-| 7 | One West landing station; the walk across the village is Home's hub | Decided | Ruling 6 |
-| 8 | Buffers and boards at both Village ends, the stall, Camp, the pier head and the frontier | Default | The rule applied; view only |
-| 9 | The turntable shows stop blocks on the roads it isn't turned to | Default | "Machines show their work physically"; the rule at a table |
-| 10 | Far Head's crossover stays as a temporary turnback for the first hour | Default | Generic-lines call 21 |
-| 11 | Stop marks per platform; moved stops at the Village (23.5 on both lines), Far Head (526), the pier (725), Quarry up (164.3) | New | The owner's platform ruling; long trains foul the table and the crossover today |
-| 12 | Terminal stop marks: 10.2 m from buffers the engine faces, 14.7 m from buffers the cargo cars face | New | The long train's length either side of the passenger car |
-| 13 | Loaders 3.7–11.1 m behind the passenger car's mark, on the goods' side (the Works on the homeward side) | New | The owner's loader ruling; today's footing carry never crosses a track |
-| 14 | Ring Island's loop redrawn as a true balloon beyond the halt | New | R1's neck reverses 165° |
-| 15 | The ring: line 2 runs on through Ring Island and joins the White Wall and cave lines into one line, built from both ends | New | Question 1 |
-| 16 | Home's two ring ends stay terminals 100–130 m apart; no rail across the village | New | Question 2; keeps ruling 6 |
-| 17 | Ring Island's loop lifted when the first branch opens | New | Question 3 |
-| 18 | The incline and the causeway are one north–south line through Bell Rock; buffers facing the causeway until stage 8 | New | They're collinear; the end telegraphs the ending |
-| 19 | Bell Rock as two levels (the bay line in a cut under the north–south line) | New | Question 4; the stills' crossing platforms |
-| 20 | Canopy keeps its loop until stage 8, then the bay line runs on as the Notch line | New | The loop serves 2.5–5 hours of play |
-| 21 | The bay trestle (Canopy first only) is a two-terminal shuttle with buffers | New | It's optional and short |
-| 22 | Turnouts eased over 30 m (view) | New | 17–19° today against a turnout's 7° |
-| 23 | A 10 m/s curve limit under r 40 on the live lines | New | Question 5 |
-| 24 | The continuity report fails only gross errors on run track and lists the rest | Default | Keeps level-check green on main while every finding stays visible |
-| 25 | A 26 m keep-clear circle round the turntable for the grown Roundhouse; the stalls grow south-west along today's stall road | Default | The owner's "accommodate the growing scale"; the forge and a hall stand on the other sides |
-| 26 | Village stop marks at s 23.5, clear of the grown table | New | Line 2's platform begins inside the grown table's rim |
-| 27 | New lines at least 1.2 km between their ends, or joined to a neighbour, so a per-line speed upgrade saves 10 s a trip | New | The owner's "lines should be plenty long where it's worth the upgrade" |
+The design review's Calls table (below) supersedes the plan's own list; this plan, the map and its numbers now follow
+it. In short: Home's two ring ends are terminals (decided by layout B); one shared stop mark per halt (Quarry 170,
+Far Head 526, the pier 725 once measured), the passenger car at least 14.7 m from any buffers; loaders Home-side of
+the mark at every halt in both directions while no line turns its trains; Ring Island ends in buffers with a crossover
+on the Way (recommended, owner question 2); the ring as one line (owner question 1); Bell Rock on two levels with the
+bay line on top (owner question 3); the Pier homeward-only after Q7 and the Railhead as the Meet's halt (owner question
+4); a speed part offered only where it saves about 10 s (owner question 5); the curves stay pending a standing-rider
+eval; the keep-clear is a sector south of layout B's table; the Village 23.5 marks are withdrawn.
 
 **Copy.** None of The Boogler's. Draft board words ("Village", "Camp", "Pier", "line under construction") are
 placeholders for the owner, as v25's plaques are.
 
 ## Questions for the owner
 
-1. **Should line 2 grow into one ring line?** Home → Ring Island → High Gorge → Canopy Town → Port Quay → Saltpan →
-   West landing, built from both ends and closed by the White Wall line, instead of eight separate lines meeting at
-   walk-between junctions. (a) One ring line, no change of train round the whole map; (b) separate lines, every
-   meeting end given buffers. **Recommended: (a)**: it makes "the ring closes" a real moment, needs no new junction
-   rules, and only the far ends at Home remain terminals.
-2. **Home's seam: keep the walk?** (a) The ring's two ends stay terminals at the Village and West landing, 100–130 m
-   apart on foot through the town (ruling 6); (b) lay rail across the village to close the ring fully, which reshapes
-   Home around the turntable. **Recommended: (a)**: Home is the one place a line truly ends, and the walk is the hub.
-3. **Ring Island's loop once the first branch opens?** (a) Lift it; the line runs on through the island halt;
-   (b) keep it as a turnback for some trains, which needs per-train routing in the sim. **Recommended: (a).** Either
-   way v27 builds it, redrawn as a true balloon.
-4. **Bell Rock on two levels?** (a) The north–south line on the skerry at 15 m, the bay line in a granite cut below,
-   stairs between; (b) four lines' platforms side by side on one level, which needs the lines bent parallel across the
-   skerry. **Recommended: (a)**: the Gorge already teaches the low station with a climb, and the platforms stop
-   crossing.
-5. **The live lines' tight curves (11.8 m on line 1, 16.7 m on line 2)?** (a) A 10 m/s limit through curves under
-   40 m, in v26's sim; (b) ease the curves, moving Place's rails and every stop after them; (c) leave them.
-   **Recommended: (a)**: the loop already runs at 10 m/s for the same reason, and riders spin less.
+The design review's five, recommendation first.
+
+1. **Should line 2 grow into one ring line round the map?** **Recommended: yes, as the working map.** One train from
+   the Village round to West landing; the bay line and the north–south line cross its middle; Home keeps the walk
+   between its two ends. Nothing is built on it before the first branch.
+2. **Ring Island while it is the end of the line: buffers past the halt, or a turning loop?** **Recommended:
+   buffers** about 15 m past the halt, with a crossover on the Way before it. The loop needs a cut of up to 12 m into
+   the cone beside the town, turns every train round, and is lifted when the line goes on; it isn't drawn yet (a circle
+   wholly east of both tracks can't take the up track without crossing the down track). The loop's lap of the island
+   is what is given up.
+3. **Bell Rock on two levels?** **Recommended: yes, with the bay line on top of the rock and the north–south line
+   down at the water**, stairs between.
+4. **Halts with nothing left to do: the Pier and the Railhead after the Meet.** **Recommended: the Railhead stays as
+   the Meet's halt (you name it); the Pier becomes a stop for homeward trains only.**
+5. **Short lines and the upgrade screen.** **Recommended: the screen offers a speed part only where it saves about ten
+   seconds a trip (about 1.2 km); line 1 and the early line 2 get seats, looks and a whistle instead.**
 
 ## Design review (designer, 2026-11-10)
 
