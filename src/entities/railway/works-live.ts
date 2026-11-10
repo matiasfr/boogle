@@ -20,7 +20,7 @@ export async function createRailwayWorksLive(
   const [works, roundhouse, crossing] = await Promise.all([
     createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, seated: deps.seated, busy: deps.busy }),
     createRailwayRoundhouse(adapter, owner, { contactIn: breaker.contactIn }),
-    createRailwayCrossing(adapter, owner, { toPier: deps.toPier }),
+    createRailwayCrossing(adapter, owner, deps),
   ]);
   const footings = createRailwayFootings(adapter, owner);
   const views = [breaker, works, roundhouse, footings, crossing];

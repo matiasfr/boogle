@@ -59,3 +59,9 @@ test("a crate opened in a jump room dresses you only there, and a jump room's wa
   assert.ok(claimCountsIn(shared, family), 'between ordinary rooms a claim counts, as before');
   assert.ok(claimCountsIn(family, shared));
 });
+
+test('the crossing almost finished is a jump-in, landing by the pier rack as the crossing built does', () => {
+  const finishing = JUMPS.find((j) => j.stage === 'crossing-finishing');
+  assert.ok(finishing && OFFERED_STAGES.includes('crossing-finishing'));
+  assert.deepEqual(finishing.land, JUMPS.find((j) => j.stage === 'crossing-done')!.land);
+});

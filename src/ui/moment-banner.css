@@ -1,0 +1,53 @@
+/* The big moments' banner, in Place's style (src/proto/place/place.css, .place-banner), for the railway's views. */
+.moment-banner {
+  position: absolute;
+  left: 50%;
+  top: 16%;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 30px 14px;
+  text-align: center;
+  color: var(--ink);
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 6px 0 var(--ink);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.moment-banner.on {
+  display: flex;
+  animation: moment-banner 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.moment-banner b {
+  font: 900 40px/1.1 var(--font-body);
+}
+.moment-banner span {
+  font: 700 19px/1.2 var(--font-body);
+}
+.moment-banner span:empty {
+  display: none;
+}
+@media (max-width: 520px) {
+  .moment-banner b {
+    font-size: 30px;
+  }
+}
+@keyframes moment-banner {
+  0% {
+    transform: translateX(-50%) scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moment-banner.on {
+    animation: none;
+  }
+}
