@@ -54,7 +54,12 @@ background(
       await bot.walk(h.x + (halt.x - h.x) * 1.6, h.z + (halt.z - h.z) * 1.6, 0.8);
       const p = me.body!.position;
       cam.yaw = me.yaw = Math.atan2(-(h.x - p.x), -(h.z - p.z));
-      await until(() => view().trains[1]!.stopLamp, "line 2's engine lamp lights for a request aboard");
+      // Player 2's request aboard: an outbound train bound for the quarry with its lamp lit (this lever's own request
+      // lights it too, on a train coming home).
+      await until(
+        () => view().trains[1]!.stopLamp && row().sweep === 1 && row().to === 1 && row().phase === 1,
+        "line 2's engine lamp lights for the request aboard",
+      );
       console.log(`REQUEST STOP ${JSON.stringify({ row: row(), lever: view().halts[3]!.lever })}`);
       shot.__placeDone = true;
       return;
