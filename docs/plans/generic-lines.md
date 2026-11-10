@@ -457,7 +457,7 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   Q6 opens the pier runs signal to signal (at = to = −1), which the validator had refused (P1; it now refuses only a
   halt-to-same-halt leg, and still any leg of no length); a train bound for Far Head as its end when the pier opens
   still makes that stop once (P3a).
-- [ ] **4b. The trains (client and bot; v26, with 4a).** `src/adapters/railway.ts`: `railTrainsOf`, the mirrored
+- [x] **4b. The trains (client and bot; v26, with 4a).** `src/adapters/railway.ts`: `railTrainsOf`, the mirrored
   `lines`, every `line2.train[k]` read moved to per-train reads. `train-view.ts`: one train mesh per `RAIL_TRAINS`
   slot, posed on its line at `trainAlong`, offset 4 m left on track 0, easing across each turnout and crossover over
   its 20 m (Local); the amber stop lamp on the train `trainServes` names (and on a train whose rider asked), the hold
@@ -474,6 +474,32 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   platform pulling the lever (the next up train stops, the other passes the down platform) and
   `--eval dev/look/evals/railway-request-stop.ts` updated for two trains; a still of the two trains passing on the sea
   trestle. Ship 4a + 4b together with `npm run ship`, not mid-session.
+  *Built (2026-11-10, on its branch, not shipped: 4a + 4b go to an independent review first; not tested on a device):*
+  every 4a shim is gone (`line2.train`, `line2.lines`, the lever lamp reading train asks, `train[1]` in the works bot);
+  the adapter's inspect has top-level `trains` and `lines`, and `railTrainsOf`, `railTrainAsked`, `railTrainHeld` and
+  `railServing` are the per-train reads. `train-view.ts` builds one three-car train per slot (the wagon a car of its
+  own that follows whichever train has it); a train on track 0 eases its lateral over the 20 m turnouts and Quarry's
+  crossover, latched as it nears the crossover so opening the pier mid-run moves no pose (`poseCarOnLine` takes a
+  `lat(s)`). The amber lamp shows a lever ask its train serves and a rider's ask it can still brake for (dark for a
+  rider's ask too late to serve, the review's P3c); a red hold lamp beside it shows a train standing past its dwell at a
+  signal or headway hold. Levers: one handle a platform direction; up platforms' levers stand at the end nearer the
+  plank crossing; an open end's way-in lever is chained (padlocked, no prompt, plaqued "Pier") until the pier opens.
+  Departure boards and the island map draw each train, a held train with a red badge. Bots board the standing train of
+  the line and cross the plank crossing to an up platform; the loop graph gets a per-platform lever cue; the peer test
+  mirrors both line-2 trains on three tabs and checks the serving train is the one that stops. Departures from the
+  plan: no third folk driver (the line's first train keeps the seat); up platforms have no signal head or board of their
+  own; `halt-map.ts` needed no change (the boards are `island-boards.ts`); `footing-view.ts`, `hook-shot.ts`, `glide.ts`
+  and `tools.ts` had no per-train reads to move. **The two trains do not pass on the sea trestle:** from `trains-on`
+  they meet at s ≈ 270 m on land by the rim table (headless, every ≈ 36 s at 269–272 m); from `q6-done` at 546 and
+  256 m; the still (`dev/look/evals/railway-trains-pass.ts`) shows them there. Checks: `npm run check`,
+  `check:full`, `test:net` (131), `checkpoints` (12 seeds); peer request stop served and stood by train 2 on server and
+  all tabs; `playthrough --from trains-on --to pier` passes (Far Head +3:59, the warped bot boarding late); the seeded
+  wagon half (`railway-works-bot.ts`, `wagon-on`) reaches the crossing in 20:02 game time from the seed against
+  main's 22:47 (64b2026d, same seed and bot; the beats split differently: footings at the pier 9:31 then 10:31 to the
+  crossing here, 20:36 then 2:11 on main, cause not traced); `npm run loop -- run`: crossing 3:20 alone, 2:55 for two (4a's 2:59), 2:52, 2:47. Not verified: **the two-player
+  `--to Q6` run fails at "walked the hook walkway" identically on main 64b2026d**, so two-player hashes over v26 are
+  unproven by it (the peer test's are); the amber lamp lit is seen through inspect only, not in a still; the other
+  train passing the down platform dark is logged, not shot.
 - [ ] **5. Docs.** The trains section of `docs/game-design/place.md` (two trains on line 2, both tracks, holds, who
   serves a request and its lamp, no early turn-back), the atlas railway story (`docs/atlas/stories/railway.json`: a
   lever ask through `Line.req` to the serving train), `world-blockout.md`'s "Double track" ("today's lines stay single
