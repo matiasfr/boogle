@@ -106,6 +106,7 @@ const groups: Group[] = [
       spec('sun.edgeFoam', 'edge foam m (depth)', 0, 1.5),
       spec('sun.macro', 'macro variation', 0, 0.5),
       spec('sun.caustics', 'seabed caustics', 0, 8),
+      spec('sun.causticLines', 'caustic lines', 0, 3),
     ],
   },
   {

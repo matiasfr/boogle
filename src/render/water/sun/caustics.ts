@@ -10,12 +10,13 @@ import { scalar } from '../live.ts';
 const { Fn, clamp, float, max, mix, texture, uniform, vec2 } = TSL;
 const PERIOD = CAUSTIC_SIZE / CAUSTIC_TEXELS_PER_M; // m: the tile's texel density matches the producer's
 const SCALE2 = 1.37;
-export const SUN_CAUSTICS = { gain: 3 };
+export const SUN_CAUSTICS = { gain: 3, lines: 0.8 };
 
 export function createStaticCaustics() {
   const tile = bakeCausticTile();
   const on = uniform(1);
-  const gain = scalar('sun.caustics', SUN_CAUSTICS, 'gain');
+  const gain = scalar('sun.caustics', SUN_CAUSTICS, 'gain'),
+    lines = scalar('sun.causticLines', SUN_CAUSTICS, 'lines');
   const unregister = registerGraphics({
     id: 'caustics',
     label: 'Caustics',
@@ -37,8 +38,11 @@ export function createStaticCaustics() {
       const b = texture(tile.texture, entryXZ.div(PERIOD * SCALE2).add(vec2(-0.016, 0.011).mul(t))).level(
         max(lod.sub(Math.log2(SCALE2)), 0),
       ).r;
-      // The product lights where the two webs cross; normalised so the mean stays one (the bed's brightness unchanged).
-      const intensity = max(float(1).add(a.mul(b).sub(mean2).mul(gain)), 0.3);
+      // The product lights where the two webs cross and each web adds its own faint lines, so the net keeps moving up
+      // close; both terms average to zero, so the mean stays one (the bed's brightness unchanged).
+      const crossing = a.mul(b).sub(mean2).mul(gain),
+        own = a.add(b).sub(2 * tile.mean).mul(lines);
+      const intensity = max(float(1).add(crossing).add(own), 0.3);
       return mix(1, intensity, clamp(depth.div(1.5), 0, 1).mul(on));
     })();
   return {
