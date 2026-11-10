@@ -28,7 +28,7 @@
 //                                  For a camera arm, line of sight, placing
 //   physicsTime()                  seconds of simulated time
 //   physicsClock(), setPhysicsClock(c)   that time and what's left under a step, for a replay to start from
-//                                  (dev/sim/replay.ts): sea state follows the time, and the steps a frame holds the rest
+//                                  (src/debug/record.ts writes it): sea state follows the time, and the steps a frame holds the rest
 //   stepAlpha()                    how far the drawn frame is between the last two fixed steps (0..1), for poses
 //                                  interpolatedPosition does not cover (a platform's yaw)
 //   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was

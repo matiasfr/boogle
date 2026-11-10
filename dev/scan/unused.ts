@@ -214,7 +214,6 @@ for (const [f, text] of texts) {
 }
 const loaders = [
   ['dev/scenarios/', 'dev/scenarios/run.ts', 'scenario CLI directory loader'],
-  ['dev/sim/', 'dev/sim/run.ts', 'sim CLI directory loader'],
   ['dev/video/shots/', 'dev/video/clip.ts', 'video shot CLI directory loader'],
   ['dev/look/evals/', 'dev/look/look.ts', 'manual --eval browser tool'],
 ] as const;

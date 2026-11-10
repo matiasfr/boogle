@@ -1,5 +1,6 @@
-// What a recording is (src/debug/record.ts makes one in the browser, dev/sim/replay.ts plays one headless), and the state
-// trace both of them write, one row a frame, so a replay can be compared with the session it came from. No DOM or scene.
+// What a recording is (src/debug/record.ts makes one in the browser), and the state trace it writes, one row a frame, so
+// a replay could be compared with the session it came from. The headless replay was retired on 9 November 2026
+// (dev/sim/README.md); the recorder stays. No DOM or scene.
 import { r3 } from '../math.ts';
 import type { ball } from '../entities/ball/state.ts';
 import type { me } from '../player/state.ts';

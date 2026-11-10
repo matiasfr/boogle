@@ -1,4 +1,5 @@
 > **Status: building (approved, owner, 2026-11-09: "let's do all 3"; designer-reviewed). Open questions build on their recommended answers.**
+> **Status: approved (owner, 2026-11-09: "let's do all 3"). Open questions build on their recommended answers.**
 
 # Loop graph
 
@@ -38,6 +39,9 @@ No browser: this is tooling with no player-visible change.
 - `npm run loop` prints every node with its bill, distance and cue. On today's main it lists the kiln as prompt-only (no cue), reports station 6 before trains as a defect until the refusal rule lands, and names the largest grind, whichever node it is.
 - `npm run loop -- run --players 2` finishes line 1, line 2 and the Works through the real rules in under ten seconds and prints time per node; a deliberately broken bill makes it report a softlock.
 - `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, with a confusion rank per node. Which beats rank highest is a finding, not a pass test.
+- `npm run loop` prints every node with its bill, distance and cue. On today's main it lists the kiln's missing cue, station 6 as doable before trains or its refusal as a rule (whichever main holds), and Far Head's rails as the largest grind.
+- `npm run loop -- run --players 2` finishes line 1, line 2 and the Works through the real rules in under ten seconds and prints time per node; a deliberately broken bill makes it report a softlock.
+- `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, with a confusion rank per node. Which beats rank highest is a finding, not a pass test.
 - A unit test fails when a rail action or mark has no node.
 - `npm run check` passes with the ball and player runs gone.
 
@@ -47,6 +51,10 @@ No browser: this is tooling with no player-visible change.
 2. Is straight-line distance good enough for the first grind numbers? **Recommended: yes, labelled, and calibrated against human sessions in build 3.** Answer: the recommended option (owner, 2026-11-09).
 3. Should the trace reach you as a picture? **Recommended: a text table first; a strip chart on the Line Map board once the numbers are trusted.** Answer: the recommended option (owner, 2026-11-09).
 4. Should a loop change have to pass `npm run loop -- run` before it ships? **Recommended: not yet; report it, and decide once it has caught something real.** Answer: the recommended option (owner, 2026-11-09).
+1. Does "vestigial" also cover `npm run sim -- replay`, its golden recording and the `?record=1` recorder in the game? **Recommended: yes for replay and its recording (they compare player and ball physics); the recorder stays until you say, since it is game code.** Answer: ___
+2. Is straight-line distance good enough for the first grind numbers? **Recommended: yes, labelled, and calibrated against human sessions in build 3.** Answer: ___
+3. Should the trace reach you as a picture? **Recommended: a text table first; a strip chart on the Line Map board once the numbers are trusted.** Answer: ___
+4. Should a loop change have to pass `npm run loop -- run` before it ships? **Recommended: not yet; report it, and decide once it has caught something real.** Answer: ___
 
 ## Parked
 

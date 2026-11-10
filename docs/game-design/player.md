@@ -11,8 +11,7 @@ a walkable normal; stale contacts cannot renew jump eligibility after takeoff. A
 landing needs current geometric support at both the start and end of the fixed step. Player support admits only the
 solver's 2 mm prediction envelope: Rapier can rest beside Q6 with a positive separation, so exact-overlap queries
 otherwise disable standing jumps. Other contact consumers retain strict overlap; stale manifolds and distant or
-wall-only contacts cannot grant support. `npm run sim -- player-support` covers the resting gap, takeoff and rejection
-boundaries. An eligible stationary launch uses falling gravity on its first step: held jump 1.552 m, hop 0.664 m. That holds on all ground: the 1.70 m flat-ground jump before Rapier 0.21 came from exact-zero resting speed, and the owner chose one height (4 November).
+wall-only contacts cannot grant support. An eligible stationary launch uses falling gravity on its first step: held jump 1.552 m, hop 0.664 m. That holds on all ground: the 1.70 m flat-ground jump before Rapier 0.21 came from exact-zero resting speed, and the owner chose one height (4 November).
 Carried-deck launches keep their existing first-step shaping and upward deck motion.
 Version comparisons and verification limits live in the [upgrade assessment](../research/rapier-021-upgrade.md).
 
