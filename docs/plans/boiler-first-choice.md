@@ -316,7 +316,7 @@ Step 2 is the guard only and can ship with step 3.
     stills. A second still from the normal approach along the deck: `--query 'b58at=head'`. **And a look the designer
     could not take:** from Far Head (`b58at=head`), aim at the forge apron (919, 18, 5) just after Q5 is laid: is the
     forge's call plume visible against the tree line? Say plainly if it is not (progression-flow-layout rule 1).
-- [ ] **2. No breaker and no strike while hauling the boiler (the guard; no stand). Review (`src/sim`).**
+- [x] **2. No breaker and no strike while hauling the boiler (the guard; no stand). Review (`src/sim`).**
   - The stand is not built: under option B a cast breaker means the boiler is fitted, so the two never share the
     pedestal in a world started after step 3 (Part 2). It comes back only if option A replaces B or a fork lets trains
     be skipped, sited by the Home station layout. `WORKS_BREAKER` and `test/railway-works-layout.test.ts` stay as they

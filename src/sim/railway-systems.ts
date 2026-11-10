@@ -741,21 +741,31 @@ const cartCall = defineSystem(
 
 // ---------------------------------------------------------------- the Works and the Roundhouse (./railway-works.ts)
 // Server kind: every op is judged from the actor's own position by railValid; each transfer is one apply.
-/** The breaker on the boiler's old pedestal: the forge's third made thing, cast when Q6 is laid. A room-wide rung. */
-const breaker = defineSystem('rail.breaker', { writes: [Works], phase: 'act', order: 33 }, (w) => {
-  if (w.get(Works, worksId(w))!.breaker !== 1) return 0;
-  w.mut(Works, worksId(w))!.breaker = 2;
-  return 1;
-});
-/** One generous strike opens a seam (0 the stall slab, 1 the throat); a repeat strike moves nothing. */
-const strike = defineSystem('rail.strike', { writes: [Works], phase: 'act', order: 34 }, (w, { e }: Act) => {
-  const works = w.get(Works, worksId(w))!;
-  if (!railInt(e.id, 1) || works.breaker !== 2) return 0;
-  const bit = e.id ? SEAM_THROAT : SEAM_STALL;
-  if (works.seams & bit) return 0;
-  w.mut(Works, worksId(w))!.seams = works.seams | bit;
-  return 1;
-});
+/** The breaker on the boiler's old pedestal: the forge's third made thing, cast when Q6 is laid. A room-wide rung.
+ * Not while you haul the boiler (docs/plans/boiler-first-choice.md, Part 2): a guard for worlds where the two met. */
+const breaker = defineSystem(
+  'rail.breaker',
+  { reads: [Account, Boiler], writes: [Works], phase: 'act', order: 33 },
+  (w, { a: aid }: Act) => {
+    if (w.get(Works, worksId(w))!.breaker !== 1 || boilerHeld(w, w.get(Account, aid)!.pid)) return 0;
+    w.mut(Works, worksId(w))!.breaker = 2;
+    return 1;
+  },
+);
+/** One generous strike opens a seam (0 the stall slab, 1 the throat); a repeat strike moves nothing. Not while you
+ * haul the boiler. */
+const strike = defineSystem(
+  'rail.strike',
+  { reads: [Account, Boiler], writes: [Works], phase: 'act', order: 34 },
+  (w, { a: aid, e }: Act) => {
+    const works = w.get(Works, worksId(w))!;
+    if (!railInt(e.id, 1) || works.breaker !== 2 || boilerHeld(w, w.get(Account, aid)!.pid)) return 0;
+    const bit = e.id ? SEAM_THROAT : SEAM_STALL;
+    if (works.seams & bit) return 0;
+    w.mut(Works, worksId(w))!.seams = works.seams | bit;
+    return 1;
+  },
+);
 /** Logs and stone off your back into the kiln's bills; it lights the moment both are full. */
 const kiln = defineSystem(
   'rail.kiln',

@@ -24,6 +24,8 @@ import { railCounts } from '../src/sim/railway.ts';
 import { LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
+import { railwayAtTrains } from './helpers/railway-trains.ts';
+import { worldOf } from './railway-live.ts';
 
 const MOVEMENT = {
   ...railMovement({ get: (k) => specOf(k)!.def }),
@@ -793,3 +795,20 @@ for (const how of ['a lost connection', 'a resync'] as const)
     assert.equal(s.carry, w.api.account('alice')!.carry);
     assert.equal(s.stations[0]!.start, w.api.railway.start);
   });
+
+test('no breaker and no strike sent while you haul the boiler', () => {
+  const seed = railwayAtTrains('boiler'),
+    w = world();
+  while (w.sync.world.tick < seed.t) w.sync.stepWorld(100);
+  w.api.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())));
+  w.api.touchAll();
+  const a = w.join('a', 'a'),
+    b = w.join('b', 'b');
+  w.ready();
+  assert.equal(a.adapter.shoulderBoiler(w.api.boiler().revision), true);
+  w.quiet();
+  assert.equal(w.api.boiler().state, 'held');
+  assert.equal(a.adapter.takeBreaker(), false);
+  assert.equal(a.adapter.strike(0), false);
+  assert.equal(b.adapter.takeBreaker(), true, 'someone else may still ask');
+});

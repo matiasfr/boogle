@@ -358,8 +358,6 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.beamTake',
   'rail.beamDrop',
   'rail.beamDeposit',
-  'rail.breaker',
-  'rail.strike',
   'rail.turn',
 ]);
 /** Corrections kept for measurement. */

@@ -271,7 +271,9 @@ export function createRailwayBreaker(
       const s = adapter.inspect(),
         w = s.works,
         p = me.body?.position;
-      if (!s.ready || !p || swing.t >= 0) return [];
+      // Not while you haul the boiler (docs/plans/boiler-first-choice.md, Part 2); the rule refuses it too.
+      if (!s.ready || !p || swing.t >= 0 || (s.line2.boiler.state === 'held' && s.line2.boiler.holder === s.pid))
+        return [];
       if (w.breaker === 1 && Math.hypot(p.x - bx, p.z - bz) <= 3.6)
         return [
           {
