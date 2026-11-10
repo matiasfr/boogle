@@ -48,5 +48,34 @@ export const codeDescriptors = [
     source: 'src/pois/windmills/model.ts',
     motion: 'windmill',
   },
+  // Train engine previz blockouts (docs/plans/engine-previz.md): `&engineView=turn|halt|states`.
+  {
+    id: 'engine-a',
+    label: 'Engine previz A · stubby toy',
+    category: 'previz',
+    source: 'character/engine-previz-parts.ts',
+    motion: 'none',
+  },
+  {
+    id: 'engine-b',
+    label: 'Engine previz B · longer',
+    category: 'previz',
+    source: 'character/engine-previz-parts.ts',
+    motion: 'none',
+  },
+  {
+    id: 'engine-c',
+    label: 'Engine previz C · tank engine',
+    category: 'previz',
+    source: 'character/engine-previz-parts.ts',
+    motion: 'none',
+  },
+  {
+    id: 'engine-today',
+    label: 'Engine previz · today',
+    category: 'previz',
+    source: 'assets/src/boiler-cart.py',
+    motion: 'none',
+  },
 ] as const;
 export type CodeId = (typeof codeDescriptors)[number]['id'];

@@ -6,10 +6,20 @@ import { itemModel } from '../src/player/item-models.ts';
 import { millBody, rotorParts, HUB_UP } from '../src/pois/windmills/model.ts';
 import { sailAngle } from '../src/pois/windmills/motion.ts';
 import type { CodeId } from './code-descriptors.ts';
+import type { KitPart } from './engine-previz.ts';
 import { partGeometry } from '../src/proto/net/box-plan.ts';
 
-export type CodePreview = { group: THREE.Group; seek(t: number): void; advance(dt: number): void; dispose(): void };
-export async function codePreview(id: CodeId): Promise<CodePreview> {
+export type CodePreview = {
+  group: THREE.Group;
+  seek(t: number): void;
+  advance(dt: number): void;
+  dispose(): void;
+  /** Where the stage's Buddy stands, for previews staged at a real place (the engine previz's halt deck). */
+  buddy?: { x: number; y: number; z: number; yaw: number };
+};
+export async function codePreview(id: CodeId, kit?: KitPart): Promise<CodePreview> {
+  if (id.startsWith('engine-'))
+    return (await import('./engine-previz.ts')).enginePreviz(id.slice(7) as 'a' | 'b' | 'c' | 'today', kit);
   const group = new THREE.Group();
   let rotor: THREE.Mesh | undefined;
   let time = 0;

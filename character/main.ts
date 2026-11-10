@@ -128,6 +128,8 @@ const load = async (id: string) => {
   return loader.load(entry.url);
 };
 const [buddyAsset, clipAsset, capAsset] = await Promise.all([load('buddy'), load('hero-clips'), load('conductor-cap')]);
+/** One built kit part, for code previews staged beside real game models (the engine previz's flatbed and wheel). */
+const kitPart = async (asset: string, node: string) => (await load(asset)).instance(node);
 // Deliberate preset opt-in for this trial only. The stage owns these clones; cached presets remain untouched.
 const capPaint = material('paintedToy').clone();
 capPaint.color.set('#31566d');
@@ -185,7 +187,7 @@ async function selectEntry(id: string) {
   history.replaceState(null, '', input('link').value);
 }
 const thumbnails = createThumbnails(renderer, async (entry) => {
-  if (entry.sourceKind === 'code') return (await import('./code-preview.ts')).codePreview(entry.codeId);
+  if (entry.sourceKind === 'code') return (await import('./code-preview.ts')).codePreview(entry.codeId, kitPart);
   if (entry.id === 'buddy') {
     const pose = buddy.create('raw', 'Idle_Loop', 'free', '');
     pose.seek(0.4);
@@ -459,7 +461,9 @@ async function choose(reframe = true) {
     if (!entry) throw new Error('Missing asset: ' + state.asset);
     const asset = entry.sourceKind === 'built' ? await load(state.asset) : undefined;
     const code =
-      entry.sourceKind === 'code' ? await (await import('./code-preview.ts')).codePreview(entry.codeId) : undefined;
+      entry.sourceKind === 'code'
+        ? await (await import('./code-preview.ts')).codePreview(entry.codeId, kitPart)
+        : undefined;
     if (token !== generation) {
       code?.dispose();
       return;
@@ -549,7 +553,10 @@ async function choose(reframe = true) {
     stats();
     seek(state.time);
     measure();
-    reference.group.position.set(selectionBox.max.x + 1.1, 0, 0);
+    // A staged preview (the engine previz's halt deck) says where Buddy stands; otherwise beside the selection.
+    const stand = code?.buddy;
+    reference.group.position.set(stand?.x ?? selectionBox.max.x + 1.1, stand?.y ?? 0, stand?.z ?? 0);
+    reference.group.rotation.y = stand?.yaw ?? 0;
     if (reframe) view(q.get('view') ?? (state.asset.startsWith('code:windmill') ? 'Back' : 'Three'));
     $('status').textContent = entry.label + (state.node ? ' / ' + state.node : '') + ' · ready';
     ready = true;
