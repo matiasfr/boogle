@@ -22,7 +22,7 @@ import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { showMomentBanner, momentBanner } from '../../ui/moment-banner.ts';
 import { playMark } from '../../proto/mark.ts';
 import { SEA } from '../../constants.ts';
-import { FINALE_ROCKETS, FINALE_SHOT, RING_SHARD, SHARD_GLINT_S, SHOW_HEAR, towardRing } from './crossing-show.ts';
+import { FINALE_ROCKETS, FINALE_SHOT, SHOW_HEAR, towardRing } from './crossing-show.ts';
 import { WORKS, PIER_RACK, PIER_FRAME, CROSSING_BENTS, CROSSING_FOOT_OFF } from '../../sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
@@ -162,12 +162,10 @@ export async function createRailwayCrossing(
     finale = -1,
     /** The twelfth footing's whistle has played and the shot is waiting for the screen. */
     finaleWaiting = false,
-    glinted = false,
     rockets: Rocket[] = [];
   // Far Head's four shell colours.
   const colours = ['#ffcc63', '#39e6c6', '#ff7272', '#b9a0ff'].map((c) => new THREE.Color(c));
   const trail = new THREE.Color('#ffe9b0');
-  const shardLight = new THREE.Color('#9fe0ff');
   const ring = towardRing();
 
   const open = () => state.ready && state.line2.trains && state.line2.completed >= LINE2_STATIONS.length;
@@ -383,7 +381,6 @@ export async function createRailwayCrossing(
   function startFinale() {
     finaleWaiting = false;
     finale = 0;
-    glinted = false;
     const { from, to, at, seconds } = FINALE_SHOT;
     finaleCamera.play(
       new THREE.Vector3(from.x, from.y, from.z),
@@ -436,27 +433,6 @@ export async function createRailwayCrossing(
     if (finaleWaiting && !deps.busy()) startFinale();
     if (finale >= 0) {
       finale += dt;
-      if (!glinted && finale >= SHARD_GLINT_S) {
-        glinted = true;
-        // The shard's light catches once: a glint in the ring's middle, no more than what's there (a lit shard).
-        for (const [delay, size] of [
-          [0, 70],
-          [0.25, 46],
-        ] as const)
-          emit({
-            x: RING_SHARD.x,
-            y: RING_SHARD.y + delay * 8,
-            z: RING_SHARD.z,
-            life: 1.5 - delay,
-            size,
-            color: shardLight,
-            intensity: readableIntensity() * 1.6,
-            shape: 'glint',
-            spin: 0.8,
-            sizeCurve: [0.2, 1.2, 0.3],
-            alphaCurve: [0.4, 1, 0],
-          });
-      }
       if (finale > FINALE_SHOT.seconds && rockets.length === 0) finale = -1;
     }
     for (let k = rockets.length - 1; k >= 0; k--) {

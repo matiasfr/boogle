@@ -9,7 +9,6 @@ import {
   FINALE_ROCKETS,
   FINALE_SHOT,
   RING_SHARD,
-  SHARD_GLINT_S,
   SHOW_AT,
   SHOW_FROM_PIER,
   SHOW_HEAR,
@@ -58,5 +57,7 @@ test('ten rockets launch past the last bent and lean toward Ring Island', () => 
   assert.ok(Math.abs(Math.hypot(r.x, r.z) - 1) < 1e-9);
   assert.ok(r.x * along.x + r.z * along.z > 0.95, 'the island lies on along the bents');
   assert.ok(FINALE_ROCKETS.beyond[0] > 0 && FINALE_ROCKETS.lean > 0);
-  assert.ok(SHARD_GLINT_S < FINALE_SHOT.seconds - 0.55, 'the glint plays before the shot blends home');
+  // The last launch bursts (0.9 s after it) before the shot blends home (0.55 s from its end).
+  const last = FINALE_ROCKETS.first + (FINALE_ROCKETS.count - 1) * FINALE_ROCKETS.gap + 0.9;
+  assert.ok(last < FINALE_SHOT.seconds - 0.55, `${last} s`);
 });

@@ -657,8 +657,7 @@ the Split-rock plan's gut question is whether it made you want to set off): afte
 the twelfth footing live gets a 7 s camera pull-out, from 28 m over the pier head's seaward end 20 m east of the line,
 low along the six bents to 13 m up just short of the last, looking out over their far end to Ring Island's broken
 ring the whole way. Ten rockets go up from the sea past the last bent, each leaning about 14 m out toward the island
-(a little bigger than Far Head's, as they're seen from further), the shard catches one glint in the ring's middle at
-5.8 s, and the fanfare plays with a banner,
+(a little bigger than Far Head's, as they're seen from further), and the fanfare plays with a banner,
 **Next stop: Ring Island** over *The crossing has begun* (UI copy, flagged for the owner). It plays to the end like
 every pull-out, with the one highlighted Interact skip from 0.8 s; the shot, rockets, fanfare and banner wait behind a
 reward card, the whistle doesn't. A seated player or reduced motion gets the rockets and banner without the camera.

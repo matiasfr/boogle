@@ -1,6 +1,7 @@
 // The crossing's finale (./crossing-view.ts): the twelfth footing set gives one whistle, then a shared camera pull-out
-// along the six bents to Ring Island, ten rockets over the bents' far end leaning out toward it, a glint on the shard
-// and a banner. Pure (layout constants only), for tests.
+// along the six bents to Ring Island, ten rockets over the bents' far end leaning out toward it, and a banner. The
+// shard itself does nothing: its one reaction is saved for the first train through the ring
+// (docs/brainstorms/ring-island.md, item 7). Pure (layout constants only), for tests.
 //
 // The whistle used to take the machine sounds' 45 m range (src/render/hearing.ts), but the last bent is about 121 m
 // from the pier head where the twelfth footing is set: it was silent for everyone on the pier (the owner's playtest,
@@ -59,8 +60,6 @@ export const FINALE_ROCKETS = {
   lean: 14,
   size: 3,
 } as const;
-/** The shard's glint: seconds into the shot, after the last burst, while the camera still holds the island. */
-export const SHARD_GLINT_S = 5.8;
 
 /** Unit vector from the last bent toward Ring Island's shard, on the sea. */
 export function towardRing(): { x: number; z: number } {
