@@ -137,19 +137,22 @@ export async function createRailwayTrains(
     // Car 2 carries the cargo (the deck above): a freight car, loaded or empty, with stakes and boards and no seats
     // (owner, 10 November: "if there's cargo then it shouldnt have seats"). Car 1 is the passenger car, a knifeboard of four seats.
     const fittings = wagon.cargoFittings(owner);
-    fittings.position.y = cars[2]!.hy;
+    // On the rock with the deck, as the passenger car's bench is: level boards on a pitched deck cross its planks.
+    fittings.position.y = cars[2]!.hy - cars[2]!.rock.position.y;
     owner.add(fittings);
-    cars[2]!.mesh.add(fittings);
+    cars[2]!.rock.add(fittings);
     {
       const n = 1,
         car = cars[n]!;
       // The knifeboard (docs/plans/passenger-car-previz.md, Four): one back-to-back bench down the middle, two seats a
       // side, riders facing out over the halt decks. The fittings are the kit's (car-kit.ts); the bench has no solid,
       // so the aisle and a walk along the deck stay open, and Sit snaps you on, as the stools did.
+      // On the car's rock, so the bench takes the deck's pitch on a grade and its shudder (owner, 10 November: "the
+      // sitting and bench do not follow the normal of the rail"); the rock's origin sits under the mesh's.
       const fit = carKit.passengerCar(PASSENGER_CAR_UPGRADED);
-      fit.position.y = car.hy - carKit.CAR_DECK;
+      fit.position.y = car.hy - carKit.CAR_DECK - car.rock.position.y;
       owner.add(fit);
-      car.mesh.add(fit);
+      car.rock.add(fit);
       let i = 0;
       for (const side of [1, -1])
         for (const bz of carKit.BENCH.z) {
@@ -162,6 +165,8 @@ export async function createRailwayTrains(
               group: `railway:train${k}-${n}`,
               platform: car.platform,
               anchorView: true,
+              // The drawn rider leans with the bench on a grade; the seat, capsule and wire stay level.
+              frame: car.rock,
               // The stowaway sits on the bench beside you (0.62 m to your right), not on the deck under it.
               perch: carKit.BENCH.seatTop,
               at: { x: side * carKit.BENCH.seatX, y: car.hy + seats.lowStoolAnchor, z, yaw },

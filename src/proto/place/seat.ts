@@ -31,6 +31,10 @@ export type Seat = {
   platform?: Platform;
   /** Nonblocking chairs have no standing support: draw the granted rider in the platform frame. */
   anchorView?: boolean;
+  /** View only, with `anchorView`: the drawn deck that pitches and shudders under this seat (a car's rock, a child of
+   * the platform's drawn frame, resting at its parent's x and z). The granted rider's drawn body leans with it; the seat,
+   * capsule, claims and wire keep the platform's level frame. */
+  frame?: THREE.Object3D;
   /** How far over the deck the sitter's stowaway sits (a bench it can sit on): view only, 0 sits it on the deck. */
   perch?: number;
   at: Local;
@@ -282,6 +286,8 @@ onFrame(
       me.avatar.userData.seatedAt = performance.now();
       me.avatar.userData.seatRise = seatRise(sitting);
     }
+    [leant, leaning] = [leaning, leant];
+    leaning.clear();
     for (const r of remotes.values()) {
       if (!r.avatar) continue;
       const seat = remoteSeats.get(r.peer);
@@ -295,6 +301,7 @@ onFrame(
       if (sitting.anchorView) drawAtSeat(me.avatar, sitting);
       if (me.avatar.userData.inner) (me.avatar.userData.inner as THREE.Object3D).position.y -= SEATED_DROP;
     }
+    for (const a of leant) if (!leaning.has(a)) a.rotation.x = a.rotation.z = 0;
   },
   { phase: 'update', order: 20 },
 );
@@ -303,8 +310,26 @@ function drawAtSeat(avatar: THREE.Object3D, seat: Seat) {
   // The accepted seat already supplies the frame; keep this cosmetic and leave body/support/exits alone.
   const p = world(seat, false, true);
   avatar.position.set(p.x, p.y, p.z);
-  avatar.rotation.y = p.yaw;
+  avatar.rotation.set(0, p.yaw, 0);
+  const f = seat.frame;
+  if (!f?.parent) return;
+  // The rock's own lean, round its resting place in the drawn deck's frame, carried into the world: the drawn deck's
+  // frame times the rock's matrix, with the rock's resting offset taken back out, times the deck frame's inverse.
+  f.updateWorldMatrix(true, false);
+  lean
+    .makeTranslation(0, -f.position.y, 0)
+    .premultiply(f.matrixWorld)
+    .multiply(unlean.copy(f.parent.matrixWorld).invert());
+  avatar.updateMatrix();
+  avatar.matrix.premultiply(lean).decompose(avatar.position, avatar.quaternion, leanScale);
+  leaning.add(avatar);
 }
+const lean = new THREE.Matrix4(),
+  unlean = new THREE.Matrix4(),
+  leanScale = new THREE.Vector3();
+/** Avatars drawn leaning this frame and the last: the other views write only yaw, so one who stands is set upright. */
+let leaning = new Set<THREE.Object3D>(),
+  leant = new Set<THREE.Object3D>();
 // Rigid Local geometry: all stools share one colored mesh.
 // The host surface still owns the matching solid and every seat anchor.
 const chairGeometry = merged([
