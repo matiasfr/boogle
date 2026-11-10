@@ -147,7 +147,8 @@ export default {
       return null;`);
     if (spot) {
       await g.eval(`${INV} H.useDown(); H.useUp();`);
-      await g.wait(0.3);
+      // The HUD shows the note on its next frame; a loaded nightly can take longer than a fixed wait (10 November).
+      await g.waitFor(shown('.notify.shown[data-kind="deny"]'), { timeout: 5000 });
       // The notification lane (src/ui/notify.ts) has said it since the UI that answers replaced the hands' own note.
       const note = await g.eval(
         `return { on: ${shown('.notify.shown[data-kind="deny"]')}, text: ${text('.notify-text')} };`,
