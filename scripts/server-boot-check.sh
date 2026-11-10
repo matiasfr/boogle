@@ -7,7 +7,9 @@ image=$1
 want=$2
 name="boogle-boot-$$"
 data=$(mktemp -d)
-trap 'docker rm -f "$name" >/dev/null 2>&1 || true; rm -rf "$data"' EXIT
+# The container writes root-owned files into the data dir, so the runner can't always remove it; that must not
+# turn a good boot into a failure.
+trap 'docker rm -f "$name" >/dev/null 2>&1 || true; rm -rf "$data" 2>/dev/null || true' EXIT
 
 docker run -d --name "$name" -p 127.0.0.1:9000:9000 -v "$data:/data" "$image" >/dev/null
 for _ in $(seq 1 30); do
