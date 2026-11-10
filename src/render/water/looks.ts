@@ -177,10 +177,8 @@ export function lookSnapshot() {
       meterGain: null,
       surfaceGain: exposureSettings.centre,
       surfaceEV: Math.log2(exposureSettings.centre),
-      underwaterEV: exposureSettings.underwaterEV,
-      submergedGain: exposureSettings.centre * 2 ** exposureSettings.underwaterEV,
       meaning:
-        'Fixed lighting gain; no meter. Underwater adds EV smoothly over signed depth 0–1.5 m. Lock is a capture compatibility marker only. Look trim multiplies this gain.',
+        'Fixed lighting gain; no meter. Lock is a capture compatibility marker only. Look trim multiplies this gain.',
     },
     values,
   };

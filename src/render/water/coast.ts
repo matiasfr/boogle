@@ -1,23 +1,20 @@
-// The Sunshine sea's coast texture (docs/plans/water-sunshine.md, step 3): one RGBA16F texture over the registered
-// shores at about 1 m a texel, baked from the providers' own bed functions. No travel-time solve.
-//   R  bed height (m, SEA = 0), easing to deep open water within OPEN_FADE of the providers' bounds
-//   G  distance to the nearest water contact or provider rock (m, capped at CONTACT_REACH), rebuilt when contacts change
-//   B  signed distance to the waterline (m, positive over water), for the receivers' swash and the coast normal
-// It also answers the receivers' shore lookups (a ShoreFields with no travel field), so the 72 MB atlas is not built.
+// The coast texture: one RG16F texture over the registered shores at about 1 m a texel, baked once per shore revision
+// from the providers' own bed functions (docs/game-design/water.md, "The sea").
+//   R  the bed the sea is coloured by: the providers' bed in the shallows, then a shelf falling from the coast (shelfBed)
+//   G  the providers' own bed height (m, SEA = 0), continued past their bounds by the terrain's offshore apron: what the
+//      swell's fade, the clear shallows and the foam lip read
+// The CPU keeps the bed, the drawn shelf and the signed waterline distance for the water field (swimming, floating
+// things and the coast normal they drift along).
 import * as THREE from 'three/webgpu';
-import { SEA } from '../../../constants.ts';
-import { shoreProviders, shoreRevision, type ShoreProvider } from '../shore-providers.ts';
-import { waterContacts, waterContactRevision } from '../contacts.ts';
-import type { ShoreFields } from '../shore-nodes.ts';
-import { TSL, type N } from '../tsl.ts';
+import { SEA } from '../../constants.ts';
+import { shoreApronHeight, shoreProviders, shoreRevision, type ShoreProvider } from './shore-providers.ts';
+import { TSL, type N } from './tsl.ts';
 
 const OPEN_BED = -60;
-const MARGIN = 120; // m of open sea kept around the shores (the pier head reaches 92 m past the place grid); contacts beyond get no ring
-const OPEN_FADE = 60; // m outside the bounds over which the edge bed eases to OPEN_BED
+const MARGIN = 120; // m of open sea kept around the shores (the pier head reaches 92 m past the place grid)
 const MAX_SIDE = 2048;
-export const CONTACT_REACH = 6;
 const SDF_CAP = 250;
-const { Fn, abs, float, texture, uniform, vec2, vec4 } = TSL;
+const { texture, uniform } = TSL;
 
 type Grid = { x0: number; z0: number; cell: number; nx: number; nz: number };
 const smooth = (a: number, b: number, x: number) => {
@@ -77,14 +74,85 @@ function distanceTo(seed: (k: number) => boolean, nx: number, nz: number) {
   return out;
 }
 
+/** Separable box blur of radius r texels (clamped at the edges), in a new array. */
+function boxBlur(src: Float32Array, nx: number, nz: number, r: number) {
+  const tmp = new Float32Array(nx * nz),
+    out = new Float32Array(nx * nz);
+  for (let j = 0; j < nz; j++) {
+    const row = j * nx;
+    let sum = 0;
+    for (let i = -r; i <= r; i++) sum += src[row + Math.min(Math.max(i, 0), nx - 1)]!;
+    for (let i = 0; i < nx; i++) {
+      tmp[row + i] = sum;
+      sum += src[row + Math.min(i + r + 1, nx - 1)]! - src[row + Math.max(i - r, 0)]!;
+    }
+  }
+  for (let i = 0; i < nx; i++) {
+    let sum = 0;
+    for (let j = -r; j <= r; j++) sum += tmp[Math.min(Math.max(j, 0), nz - 1) * nx + i]!;
+    for (let j = 0; j < nz; j++) {
+      out[j * nx + i] = sum;
+      sum += tmp[Math.min(j + r + 1, nz - 1) * nx + i]! - tmp[Math.max(j - r, 0) * nx + i]!;
+    }
+  }
+  return out;
+}
+
+// The bed the sea is coloured by. Terrain grids end in a flat floor (Place's is 5 m down) and a square edge, which read as
+// a cyan box from any height; so past the shallows the drawn bed instead falls away from the shaped coast, gently off
+// low shores and fast under high ones, and eases into open sea. Only the colour uses it: swimming, floating, the swell's
+// fade, the clear shallows and the foam lip keep the providers' own bed.
+export const SHELF = {
+  shaped: 4.5, // m: the providers' bed is used as it is while shallower than this
+  beach: 0.1, // m of depth gained per m off a low shore (about 5 m at 60 m out)
+  cliff: 0.7, // and off a shore whose land stands `high` or more above the sea
+  low: 1, // m: land this high or lower is a beach
+  high: 10, // m: and this high or higher a cliff
+  open: 30, // m: the depth the fall eases towards
+  band: 6, // m of land behind the waterline whose height says beach or cliff
+  reach: 30, // m over which that height is averaged along the coast
+};
+function shelfBed(bed: Float32Array, covered: Uint8Array, toWater: Float32Array, nx: number, nz: number, cell: number) {
+  const n = nx * nz;
+  // How high the land stands just behind the waterline, averaged along the coast and carried out to sea.
+  const height = new Float32Array(n),
+    weight = new Float32Array(n);
+  for (let k = 0; k < n; k++)
+    if (bed[k]! >= SEA && toWater[k]! * cell <= SHELF.band) {
+      height[k] = Math.min(bed[k]! - SEA, 25);
+      weight[k] = 1;
+    }
+  const r = Math.max(1, Math.round(SHELF.reach / cell));
+  const h = boxBlur(boxBlur(height, nx, nz, r), nx, nz, r),
+    w = boxBlur(boxBlur(weight, nx, nz, r), nx, nz, r);
+  const shaped = distanceTo((k) => covered[k] === 1 && bed[k]! >= SEA - SHELF.shaped, nx, nz);
+  const shade = new Float32Array(n);
+  for (let k = 0; k < n; k++) {
+    if (bed[k]! >= SEA || (covered[k] && bed[k]! >= SEA - SHELF.shaped)) {
+      shade[k] = bed[k]!;
+      continue;
+    }
+    const land = w[k]! > 1e-3 ? h[k]! / w[k]! : 0;
+    const slope = SHELF.beach + (SHELF.cliff - SHELF.beach) * smooth(SHELF.low, SHELF.high, land);
+    const fall = SHELF.open * (1 - Math.exp((-shaped[k]! * cell * slope) / SHELF.open));
+    const shelf = SEA - SHELF.shaped - fall;
+    // Terrain genuinely deeper than the shelf (a channel, a deep grid) stays; a flat floor is replaced.
+    shade[k] = covered[k] ? Math.min(bed[k]!, shelf) : shelf;
+  }
+  return shade;
+}
+
 const within = (p: ShoreProvider, x: number, z: number) =>
   x >= p.bounds.minX && x <= p.bounds.maxX && z >= p.bounds.minZ && z <= p.bounds.maxZ;
+let covered = false; // whether the last bedAt came from a provider's own bed
 function bedAt(providers: ShoreProvider[], x: number, z: number) {
   let nearest: ShoreProvider | null = null,
     gap = Infinity;
+  covered = false;
   for (const p of providers) {
     if (within(p, x, z)) {
       const s = p.bedAt(x, z);
+      covered = s.valid;
       if (s.valid) return s.height - p.seaLevel + SEA;
     }
     const b = p.bounds;
@@ -94,31 +162,29 @@ function bedAt(providers: ShoreProvider[], x: number, z: number) {
       nearest = p;
     }
   }
-  if (!nearest || gap > OPEN_FADE) return OPEN_BED;
+  if (!nearest) return OPEN_BED;
   const b = nearest.bounds;
   const edge = nearest.bedAt(Math.min(Math.max(x, b.minX), b.maxX), Math.min(Math.max(z, b.minZ), b.maxZ));
-  const height = edge.valid ? Math.min(edge.height - nearest.seaLevel + SEA, SEA - 0.5) : OPEN_BED;
-  return height + (OPEN_BED - height) * smooth(0, OPEN_FADE, gap);
+  if (!edge.valid) return OPEN_BED;
+  // The terrain's own offshore apron (proto/place/land.ts draws it from the same function), kept under the surface so
+  // no open water reads as dry land where a grid's edge meets its shore.
+  return Math.min(SEA + shoreApronHeight(edge.height - nearest.seaLevel, gap, nearest.extent), SEA - 0.5);
 }
 
 export function createCoast() {
   const transform = uniform(new THREE.Vector4(0, 0, 1, 1)); // x0, z0, 1/width, 1/depth (m)
-  const texel = uniform(1);
   let grid: Grid = { x0: 0, z0: 0, cell: 1, nx: 2, nz: 2 };
   let bed = new Float32Array(4),
-    sdf = new Float32Array(4),
-    contact = new Float32Array(4).fill(CONTACT_REACH);
+    shade = new Float32Array(4),
+    sdf = new Float32Array(4);
   const blank = () => {
-    const t = new THREE.DataTexture(new Uint16Array(16), 2, 2, THREE.RGBAFormat, THREE.HalfFloatType);
+    const t = new THREE.DataTexture(new Uint16Array(8), 2, 2, THREE.RGFormat, THREE.HalfFloatType);
     t.needsUpdate = true;
     return t;
   };
   const node = texture(blank());
   let seenShore = -1,
-    seenContacts = -1,
-    bakeMs = 0,
-    contactMs = 0,
-    contactCount = 0;
+    bakeMs = 0;
 
   const pack = () => {
     const tex = node.value as THREE.DataTexture;
@@ -126,47 +192,15 @@ export function createCoast() {
     const { nx, nz } = grid;
     for (let k = 0; k < nx * nz; k++) {
       // The sampler clamps beyond the texture, repeating its outermost texels across the whole sea: those are open
-      // water whatever the bake found there (a contact near the edge would otherwise run off as a stripe).
+      // water whatever the bake found there.
       const i = k % nx,
         j = (k - i) / nx;
       const border = i === 0 || j === 0 || i === nx - 1 || j === nz - 1;
-      data[k * 4] = THREE.DataUtils.toHalfFloat(border ? OPEN_BED : bed[k]!);
-      data[k * 4 + 1] = THREE.DataUtils.toHalfFloat(border ? CONTACT_REACH : contact[k]!);
-      data[k * 4 + 2] = THREE.DataUtils.toHalfFloat(border ? SDF_CAP : sdf[k]!);
-      data[k * 4 + 3] = 0;
+      data[k * 2] = THREE.DataUtils.toHalfFloat(border ? SEA - SHELF.shaped - SHELF.open : shade[k]!);
+      data[k * 2 + 1] = THREE.DataUtils.toHalfFloat(border ? OPEN_BED : bed[k]!);
     }
     tex.needsUpdate = true;
   };
-  function bakeContacts(providers: ShoreProvider[]) {
-    const start = performance.now();
-    contact.fill(CONTACT_REACH);
-    const { x0, z0, cell, nx, nz } = grid;
-    const circles: { x: number; z: number; radius: number }[] = waterContacts().contacts.map((c) => c);
-    for (const p of providers)
-      for (const o of p.obstacles ?? [])
-        if (o.kind === 'circle') circles.push(o);
-        else
-          circles.push({
-            x: (o.minX + o.maxX) / 2,
-            z: (o.minZ + o.maxZ) / 2,
-            radius: Math.hypot(o.maxX - o.minX, o.maxZ - o.minZ) / 2,
-          });
-    for (const c of circles) {
-      const reach = c.radius + CONTACT_REACH;
-      const i0 = Math.max(0, Math.floor((c.x - reach - x0) / cell)),
-        i1 = Math.min(nx - 1, Math.ceil((c.x + reach - x0) / cell));
-      const j0 = Math.max(0, Math.floor((c.z - reach - z0) / cell)),
-        j1 = Math.min(nz - 1, Math.ceil((c.z + reach - z0) / cell));
-      for (let j = j0; j <= j1; j++)
-        for (let i = i0; i <= i1; i++) {
-          const d = Math.hypot(x0 + (i + 0.5) * cell - c.x, z0 + (j + 0.5) * cell - c.z) - c.radius;
-          const k = j * nx + i;
-          if (d < contact[k]!) contact[k] = Math.max(d, 0);
-        }
-    }
-    contactCount = circles.length;
-    contactMs = performance.now() - start;
-  }
   function bake() {
     const start = performance.now();
     const providers = shoreProviders();
@@ -190,38 +224,33 @@ export function createCoast() {
       nz = Math.ceil((maxZ - minZ) / cell);
     grid = { x0: minX, z0: minZ, cell, nx, nz };
     bed = new Float32Array(nx * nz);
+    const inside = new Uint8Array(nx * nz);
     for (let j = 0; j < nz; j++)
-      for (let i = 0; i < nx; i++) bed[j * nx + i] = bedAt(providers, minX + (i + 0.5) * cell, minZ + (j + 0.5) * cell);
+      for (let i = 0; i < nx; i++) {
+        bed[j * nx + i] = bedAt(providers, minX + (i + 0.5) * cell, minZ + (j + 0.5) * cell);
+        inside[j * nx + i] = covered ? 1 : 0;
+      }
     const toLand = distanceTo((k) => bed[k]! >= SEA, nx, nz),
       toWater = distanceTo((k) => bed[k]! < SEA, nx, nz);
     sdf = new Float32Array(nx * nz);
     for (let k = 0; k < nx * nz; k++)
       sdf[k] = Math.max(-SDF_CAP, Math.min(SDF_CAP, (bed[k]! < SEA ? toLand[k]! - 0.5 : 0.5 - toWater[k]!) * cell));
-    contact = new Float32Array(nx * nz);
-    bakeContacts(providers);
+    shade = shelfBed(bed, inside, toWater, nx, nz, cell);
     const previous = node.value as THREE.Texture;
-    const tex = new THREE.DataTexture(new Uint16Array(nx * nz * 4), nx, nz, THREE.RGBAFormat, THREE.HalfFloatType);
+    const tex = new THREE.DataTexture(new Uint16Array(nx * nz * 2), nx, nz, THREE.RGFormat, THREE.HalfFloatType);
     tex.minFilter = tex.magFilter = THREE.LinearFilter;
     tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
     node.value = tex;
     pack();
     previous.dispose();
     transform.value.set(minX, minZ, 1 / (nx * cell), 1 / (nz * cell));
-    texel.value = cell;
     bakeMs = performance.now() - start;
   }
   function sync() {
-    const shore = shoreRevision(),
-      contacts = waterContactRevision();
-    if (shore !== seenShore) {
-      seenShore = shore;
-      seenContacts = contacts;
-      bake();
-    } else if (contacts !== seenContacts) {
-      seenContacts = contacts;
-      bakeContacts(shoreProviders());
-      pack();
-    }
+    const shore = shoreRevision();
+    if (shore === seenShore) return;
+    seenShore = shore;
+    bake();
   }
 
   /** The coast texel at world xz, explicit LOD so it may sit in branches and the vertex stage. */
@@ -246,28 +275,15 @@ export function createCoast() {
     const l = Math.hypot(gx, gz);
     return {
       bed: read(bed, x, z),
-      contact: read(contact, x, z),
+      shade: read(shade, x, z), // the drawn shelf (R), for checks; nothing in the game reads it on the CPU
       normal: l > 1e-6 ? ([gx / l, gz / l] as const) : ([0, 0] as const),
     };
   }
-  // The receivers' shore lookups: (bed, |distance to the waterline|, outward gradient), no travel field (swash then runs
-  // up the coast normal), and an exposed shelter everywhere.
-  const shore = Fn(([xz]: [N]) => {
-    const c = at(xz).toVar();
-    const step = texel;
-    const gx = at(xz.add(vec2(step, 0))).b.sub(c.b),
-      gz = at(xz.add(vec2(0, step))).b.sub(c.b);
-    return vec4(c.r, abs(c.b), vec2(gx, gz).div(step));
-  });
-  const field = { shore, travel: Fn(() => vec4(0)), surf: () => float(6) } as unknown as ShoreFields;
   return {
     at,
-    field,
     sync,
     sampleAt,
-    inspect: () => ({
-      coast: { ...grid, bakeMs, contactMs, contacts: contactCount, textureBytes: grid.nx * grid.nz * 8 },
-    }),
+    inspect: () => ({ coast: { ...grid, bakeMs, textureBytes: grid.nx * grid.nz * 4 } }),
     dispose() {
       (node.value as THREE.Texture).dispose();
     },

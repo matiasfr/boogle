@@ -126,11 +126,11 @@ export const tool: Tool = {
     const details = more(layout);
     note(
       details,
-      'Only this browser. Water → Post sets fixed gain and underwater offset. Select a look to restore its settings; each look keeps its recorded trim. Backslash switches A/B while this panel is open.',
+      'Only this browser. Water → Post sets the fixed gain. Select a look to restore its settings; each look keeps its recorded trim. Backslash switches A/B while this panel is open.',
     );
     note(
       details,
-      'No live tile board: the underwater HDR composite needs another target/pass, and water changes require another scene. Compare sequential same-camera captures instead.',
+      'No live tile board: water changes require another scene. Compare sequential same-camera captures instead.',
     );
     const output = el('textarea');
     output.readOnly = true;
@@ -150,7 +150,7 @@ export const tool: Tool = {
       if (document.activeElement !== trim) trim.value = snap.exposure.trimEV.toFixed(3);
       summary.textContent =
         reason ??
-        `${snap.label}${snap.modified ? ' · modified in Water/Post' : ''} · fixed gain ${snap.exposure.surfaceGain.toFixed(3)} (${snap.exposure.surfaceEV.toFixed(2)} EV) · underwater +${snap.exposure.underwaterEV.toFixed(2)} EV · ${snap.exposure.trimEV.toFixed(3)} EV trim`;
+        `${snap.label}${snap.modified ? ' · modified in Water/Post' : ''} · fixed gain ${snap.exposure.surfaceGain.toFixed(3)} (${snap.exposure.surfaceEV.toFixed(2)} EV) · ${snap.exposure.trimEV.toFixed(3)} EV trim`;
     };
     const key = (event: KeyboardEvent) => {
       if (

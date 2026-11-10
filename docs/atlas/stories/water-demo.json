@@ -6,22 +6,18 @@
   "steps": [
     {
       "go": [["you.features", "you.systems"]],
-      "text": "The production sea bakes registered real shores. Current-frame FFT waves and the depth field share the same metre scale.",
-      "cite": [{ "file": "src/render/water-render.ts" }, { "file": "src/render/water/fft.ts" }]
+      "text": "The sea bakes the registered real shores once into a coast texture: the real bed for swimming and the foam lip, and a drawn shelf that falls away from the coast for the colour.",
+      "cite": [{ "file": "src/render/water-render.ts" }, { "file": "src/render/water/coast.ts" }]
     },
     {
       "hl": ["you.systems"],
-      "text": "The 12 m wave slopes refract a grid onto three depth planes. Area-ratio splats redistribute sunlight into the bright net on sand and rocks.",
+      "text": "One baked caustic tile, sampled twice as it scrolls, lights the sand and rocks under the shallows.",
       "cite": [{ "file": "src/render/water/caustics.ts" }, { "file": "src/render/water/receivers.ts" }]
     },
     {
       "go": [["you.systems", "you.screen"]],
-      "text": "The water reads real opaque colour and depth in the existing pass. A once-baked late-morning sky cube, metered exposure and Neutral finish the image; classic home retains its cheaper sea.",
-      "cite": [
-        { "file": "src/render/water/surface.ts" },
-        { "file": "src/render/water/sky.ts" },
-        { "file": "src/render/water/post.ts" }
-      ]
+      "text": "The sea is one blended plane coloured by depth, with two scrolling layers of our own wave cell for the sparkle and one depth copy for foam where it meets things. Neutral finishes the image.",
+      "cite": [{ "file": "src/render/water/surface.ts" }, { "file": "src/render/water/post.ts" }]
     }
   ]
 }

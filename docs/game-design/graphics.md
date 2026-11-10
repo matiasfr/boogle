@@ -112,13 +112,12 @@
   colliders, gameplay or state seen by peers. Smooth edges stays independent across explicit presets;
   Auto resets it to the device default. Individual changes display Custom.
 - **Five player controls.** Resolution (Auto / 100 / 80 / 60%), Frame limit (Display / 60 / 30), Smooth edges
-  (On / Off), Seabed light (On / Off) and Detail (above). The last uses the real caustics producer skip, hidden with an
+  (On / Off), Seabed light (On / Off) and Detail (above). Seabed light switches the caustic tile off, hidden with an
   explanation when its route owner is absent. Smooth edges shows requested versus current state and a
   Reload now button, including after reset; it never mutates live sample-count attachments. Reduced shadow
-  maps, 30 Hz caustics and camera-comfort adapters from the research are not implemented, so the page does
-  not advertise them. Spray and point lights remain Dev-only because their visible effect was unverified
-  in the Mac review; there is no aggregate ambient switch that promises those savings. Presets keep the
-  other water effects. This narrows recommendations 1, 2 and 6 of [graphics settings](../research/graphics-settings.md)
+  maps and camera-comfort adapters from the research are not implemented, so the page does
+  not advertise them. Point lights remain Dev-only because their visible effect was unverified
+  in the Mac review; there is no aggregate ambient switch that promises those savings. This narrows recommendations 1, 2 and 6 of [graphics settings](../research/graphics-settings.md)
   to the current adapters and [measured limitations](../research/graphics-switch-costs.md).
 - **Detail ladder (phone tier, 7 November owner call).** When a device must shed load it drops resolution first,
   then sea detail, then sun shadows, then MSAA. Adaptive resolution is the first rung; below its 0.6x floor the
@@ -148,7 +147,7 @@
   [src/features/wake-lock.ts](../../src/features/wake-lock.ts);
   rules for drawing things in [src/render/README.md](../../src/render/README.md).
 - **Dev cost controls.** With Dev enabled, the lazy **Graphics** dock panel exposes owned Local settings for
-  resolution, frame limit, shadows, MSAA, caustics, spray, snow, shafts, wet lens, bloom, exposure meter and the
+  resolution, frame limit, shadows, MSAA, caustics, bloom, exposure meter and the
   two pooled point lights. Lab grass and lab post effects are available only when their existing owner and
   effects are present; they do not load onto the place page. Each row states the work skipped and whether the
   change is live, rebuild or reload. These are cost experiments, not player presets or an approved low look.
@@ -156,8 +155,8 @@
   world population or gameplay controls are included.
 - **One Local resolution/cap owner.** `render/quality.ts` combines adaptive resolution with the water ceiling
   using their minimum, preserving the existing default scale. Dev offers Auto / 100 / 80 / 60% and Display /
-  60 / 30 rendered fps. A cap skips only scene/output rendering: input, physics, networking, FFT and water
-  query callbacks continue. Adaptive observations retain uncapped callback timing. Dev choices are bounded
+  60 / 30 rendered fps. A cap skips only scene/output rendering: input, physics, networking and the water field
+  continue. Adaptive observations retain uncapped callback timing. Dev choices are bounded
   and stored separately in `boogle.dev.graphics.v1`; **Restore baseline** clears them, and Dev Off removes them.
   Closing the dock preserves them. Adapters register without Dev for player choices; the Dev panel chunk
   is still not loaded. Precedence is route baseline → player choice → explicit Dev override while Dev is on.
@@ -165,10 +164,8 @@
   overrides intact and explains their priority. Dev Off clears only Dev keys, retaining player choices.
   Baseline restore also resets registered owners whose effect is temporarily absent from the current lab
   preset, so returning to a grass/post preset restores those effects too.
-- **Actual work removed.** Caustics clear once before skipping producer draws; spray skips ambient scans
-  while preserving impact cues; snow skips update/draw; shafts skip their target update and composite;
-  wet lens skips droplet fragment evaluation while retaining the shared depth/water-boundary compute.
-  Bloom bypasses its chain but retains allocations; meter holds its last valid exposure and skips meter,
+- **Actual work removed.** Caustics skip the receivers' two tile reads. (Ultra's spray, marine snow, shafts and wet
+  lens were removed with it on 10 November; see [water](water.md#the-sea-10-november-2026).) Bloom bypasses its chain but retains allocations; meter holds its last valid exposure and skips meter,
   adaptation and history copy (one initialization result remains necessary). Point lights skip selection and
   lit membership, retaining emissive source glows. Shadows skip shadow rendering; MSAA chooses stored 4x or
   1x samples at reload. Live sample-count changes are unsupported: a broker check exposed cached depth-copy
@@ -183,7 +180,7 @@
 - **Owner-selected cloud and light defaults (6 November).** The production late-morning sky uses cloud/warmth
   cell 5: `sky.cloudBrightness=0.8` and `sky.lightColourProfile=1` (neutral). Runtime startup and the tunables
   catalog share those defaults. The owner kept the earlier town board's cell 1: surface gain `.12`, key `1.12`,
-  fill `3.2`; Neutral tone mapping and underwater `+0.81 EV` remain. Cloud radiance is reduced before atmospheric
+  fill `3.2`; Neutral tone mapping remains (the underwater `+0.81 EV` went with Ultra on 10 November). Cloud radiance is reduced before atmospheric
   compositing and the sky-derived fill is re-read at loading; shape and coverage stay fixed. Neutral replaces
   key, upper-fill and ground-fill chromaticity with equal linear RGB while preserving each source light's
   luminance. It is not a Kelvin setting or a warm post grade. Material colours and the separate airborne arrival
@@ -197,7 +194,7 @@
   unknown. The copied snapshot includes settings, route, camera, pixels, device and all samples. Repeated
   samples and a contention label do not prove machine exclusivity. MSAA requires separate matched reload
   captures and cannot use the live Measure button. Shadow/light membership, MSAA reload and first bloom
-  enable can compile or allocate; spray/shafts disabled at startup can defer first-use pipelines.
+  enable can compile or allocate.
   Live does not mean hitch-free. The 16-second startup escape remains in force.
 - **Unchanged instance data.** Station stock rebuilds its fixed log, rail and stone slots only when their
   displayed counts change. The continuous track layer's rack keeps its construction-time matrices when

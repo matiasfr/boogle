@@ -1,5 +1,8 @@
 # Graphics cost switches
 
+10 November 2026: the spray, snow, shafts and wet-lens switches below went with Ultra Water
+([water](../game-design/water.md#the-sea-10-november-2026)); their rows are history.
+
 Owner-approved scope, 4 November 2026: build order steps 1–2 from
 [graphics settings](../research/graphics-settings.md). Implementation is authorized by the task; no new
 approval gate. Principles: **Small and readable — measure before optimizing**, **Clear authority**, and

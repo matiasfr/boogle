@@ -1,9 +1,9 @@
-// The Sunshine sea's own textures (docs/plans/water-sunshine.md, "Art it needs"), baked once on the CPU at load from
+// The sea's own textures (docs/plans/water-sunshine.md, "Art it needs"), baked once on the CPU at load from
 // tiled Worley noise. Original procedural art; nothing sampled, traced or derived from any game.
 import * as THREE from 'three/webgpu';
 
 const fract = (x: number) => x - Math.floor(x);
-// David Hoskins, Hash without Sine (as ../foam.ts).
+// David Hoskins, Hash without Sine.
 function hash22(x: number, y: number, out: number[]) {
   let a = fract(x * 0.1031),
     b = fract(y * 0.103),
@@ -57,7 +57,7 @@ function vnoise(px: number, py: number, period: number) {
 
 export const WAVE_SIZE = 128;
 export type WaveArt = { cells: number; detail: number; line: number };
-export const WAVE_ART: WaveArt = { cells: 5, detail: 9, line: 2.2 };
+const WAVE_ART: WaveArt = { cells: 5, detail: 9, line: 2.2 };
 /**
  * The wave cell, 128² RGBA8, tiling: R bright rounded cell borders (two octaves), G the same blurred for far levels,
  * B a low-frequency blotch for macro variation. Mipmapped by the GPU.

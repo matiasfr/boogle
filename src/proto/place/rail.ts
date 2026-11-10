@@ -8,7 +8,7 @@ import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
-import { registerWaterContact } from '../../render/water/contacts.ts';
+
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
 import { background } from '../../async.ts';
@@ -73,8 +73,6 @@ type Solid = {
   u: number;
   add: () => Body | Body[];
   on: Body | Body[] | null;
-  water?: () => () => void;
-  removeWater?: () => void;
 };
 export type Track = {
   spec: LineSpec;
@@ -414,10 +412,7 @@ export function buildTrack(
   for (const l of legsAt)
     solids.push({
       u: panelled ? frontier(l.s) : u(l.s) - 5,
-      water:
-        l.g < 0 && l.top > 0
-          ? () => registerWaterContact({ x: l.x, z: l.z, radius: Math.SQRT2 * 0.25, top: l.top })
-          : undefined,
+
       add: () =>
         addStatic(
           { kind: 'box', hx: 0.25, hy: (l.top - l.g) / 2, hz: 0.25 },
@@ -551,12 +546,10 @@ function growSolids(t: Track, to: number) {
   while (t.nextSolid < t.solids.length && t.solids[t.nextSolid]!.u <= to) {
     const so = t.solids[t.nextSolid++]!;
     so.on = so.add();
-    so.removeWater = so.water?.();
   }
 }
 function removeBodies(so: Solid, owner?: OwnedView) {
-  so.removeWater?.();
-  so.removeWater = undefined;
+
   for (const b of [so.on].flat())
     if (b) {
       if (owner) owner.removeBody(b);

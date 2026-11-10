@@ -703,7 +703,7 @@ their original brightness. This is Local presentation, with no shared state or s
 
 Implements recommendations 1 and 3 of `docs/research/dark-unlit-exposure.md`, joined to the owner's fixed-exposure
 decision on 5 November. Compensation follows the authored surface gain in Dev and production; the explicit
-underwater lift and attenuation remain intentional. No scene/meter dependency or CPU GPU readback is introduced.
+underwater fog remains intentional. No scene/meter dependency or CPU GPU readback is introduced.
 The material helper applies at most once per owned material. Sky and water settings are unchanged.
 Serves **DESIGN.md 7, Telegraph everything**.
 
@@ -744,7 +744,7 @@ railway's one reveal queue, as the jump device does; before, it played only a so
 ordinary contact dust. Frozen stills only; not tested on a device.
 
 **Owner colour defaults (5 November, for now).** Real-sea Place and crossing use surface gain **0.12**, retained
-underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
+underwater **+0.81 EV** (removed with Ultra on 10 November), key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
 its albedo gain **0.7**. Selective green/timber/accent adjustments, the building instance palette and Buddy's
 albedo-only saturation adjustment reproduce round five's pick at their material owners.
 Production opening buildings, forge scaffold and source trees use those same material owners. Tapered gable
@@ -1384,8 +1384,8 @@ The beach ball's existing home-island return bounds remain unchanged; this does 
 
 Surface swimming is automatic. Fast falls (at least 14 m/s) retain downward momentum for a plunge, then
 buoyancy returns the player to the surface; there are no manual dive controls or breath mechanics.
-The underwater look, marine snow and surfacing droplets remain when the camera goes under. These are
-existing new-water behaviors, not new gameplay tuning for this switch.
+Since 10 November the camera under the surface sees one flat fog toward the sea's deep colour
+([water](water.md#the-sea-10-november-2026)); marine snow and surfacing droplets were removed with Ultra.
 
 With new water, the terrain includes its real submerged triangles and receives wave-driven caustics plus swash wetness
 through material patches, preserving the look's colour/normal nodes. Only built trestle legs register water contacts;
@@ -1447,8 +1447,10 @@ while retaining normal pressure, so standing on the beach does not slide. Moving
 upward impulses keep their normal behavior. Seven sampled eight-second post-stop assertions remain in the motion fixture;
 results are sampled, not exhaustive contact coverage.
 The [prior assessment](../research/terrain-pilot-followup.md) preserves round-two evidence, which predates this geometry.
-Water depth comes from the same terrain/solid surface; rounded rock footprints supply wave obstacles. Existing receiver
-wetness, caustics and swash stay separate from water foam. Cove sand adds the Ultra Water demo's damp pigment,
+Water depth comes from the same terrain/solid surface. (Since 10 November there are no wave obstacles, swash, film or
+sand foam: the receivers keep wetness, caustics, the damp band, pores and sheen; see
+[water](water.md#the-sea-10-november-2026). The rest of this paragraph is history.) Existing receiver
+wetness and caustics stay separate from water foam. Cove sand adds the Ultra Water demo's damp pigment,
 footprint-faded ripples and thin-film sheen using the existing swash/drying clock. Persistent dampness and dynamic
 drying contributions remain separate, so the static band cannot mask recovery between waves. The stronger drying
 contrast uses the existing backwash clock; filtered sand-tinted foam covers sand only. Cove rock contact uses the

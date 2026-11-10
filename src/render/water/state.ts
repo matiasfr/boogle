@@ -8,6 +8,6 @@ export const seaU = {
   uTime: uniform(0), // unwrapped frame elapsed; only FFT dispersion derives a periodic phase
   uSun: uniform(SUN_DIR),
   uSky: uniform(new Color('#a9dcf3')),
-  uLight: uniform(new Color(1, 1, 1)),
+
   uSpecCol: uniform(new Color(1, 0.97, 0.88)),
 };

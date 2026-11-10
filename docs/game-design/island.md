@@ -57,54 +57,12 @@ Cave mouths ([network.ts](../../src/pois/caves/network.ts)):
 Every route uses the real sea since the classic island joined the one world (6 November); its cheaper sea
 (`classic-sea.ts`) was removed. Before that, world-inputs/smoke/caves passed with the real sea but took
 5.2/13.8/9.1 s instead of 2.9/5.4/5.8 s on Metal; Linux CI cost is unverified. `water=old`/`water=new` are ignored.
-Its facade now registers the finalized stamped home heightfield with the Local shore registry. The provider uses
-the actual 409×409 grid, with negative-z source rows and explicit invalid exterior; bridges and roofs are not beds.
-The replacement's lazy shore atlas has a 512² core at 1 m/texel plus an 80-texel halo. Only verified underwater
-edges receive a separate deep-water apron. Connected regions share one travel/shelter solve, and all sampled
-fields select one coherent region.
 
-Every route uses this surface: four 256² FFT bands at `.25` energy, real shore
-attenuation, refraction from one opaque HDR colour/depth snapshot pair, crest/contact foam and impact rings. One sea
-entity owns its FFT, foam, shore atlas and snapshots. The demo atmosphere is baked once behind loading, frozen at
-late morning (`tod=0.24`), with the matching fixed real sun. Its cube supplies sky and reflections, replacing the toon
-dome, sun/moon billboards, faceted clouds and cycle. Metered Neutral maps the final underwater HDR once. Camera near/far/FOV stay unchanged. The polar detail
-ends by half the route's far range, with a monotonic altitude scale and a flat skirt inside the clip range.
-Desktop defaults to high; coarse-pointer devices default to 0.6 world resolution, normalized once against adaptive DPR
-(`q=high|mobile` overrides). This leaves canvas/output resolution and MSAA unchanged. `waterRuntime.dispose()` releases
-the replacement resources and restores the prior resolution; the main sea remains absent until
-`createWaterMesh()` recreates it. This is the default Place sea.
-
-The same current-frame wave function drives the underwater lens grid, Snell window, absorption, half-resolution
-sun shafts and a bounded 6000-seed marine-snow field. Surfacing leaves brief lens droplets. The cave pond uses its
-own flat level and ellipse; dry caves exclude the sea. Swimming stays at the surface; a fast high fall carries the
-player under and buoyancy floats them back up automatically ([plunge tuning](player.md#swim)). Manual dive controls
-are removed. Optics stay Local over the existing Owner body, with no new presence fields or drowning mechanic;
-they also show whenever the camera dips under independently of the player.
-
-On Place/crossing, swimming, the owned ball and entry splashes request the same inverse-displacement GPU kernel as
-the surface. One 64-point batch, at most two reusable readbacks, publishes only before physics; the player and ball
-have reserved capacity. Results more than 100 ms old or 0.5 m away are rejected, as are old generations and sequences.
-Surface velocity is estimated at a fixed position and bounded to ±3 m/s. Fresh heights extrapolate briefly; stale
-heights ease toward mean sea over 250 ms and cannot trigger entry splashes. Transfers, held-state changes and
-teleports invalidate the consumer. The unwrapped frame clock also drives breakers and ripple ages; only FFT phase loops.
-The cave pond is a named still-water volume at its original level and ellipse (`q < .81`); the 3D cave predicate excludes
-ocean waves under the roof. Pond splashes do not send rings to the sea. A stationary body overtaken by a crest does
-not emit a landing splash. Cameras use moving-water constraints; throw/flight/ping previews use nearby fresh cached
-heights or mean sea/pond, so their hypothetical arcs are approximate, not synchronous GPU queries.
-
-`waterRuntime.inspect().queries` reports consumed/accepted/rejected age summaries, rejection reasons and per-ID
-samples. Its prediction error compares the consumed estimate with a GPU evaluation at matching request time and
-position; it does not measure rasterized triangle error. Renderer teardown removes the provider and all query resources.
-
-The replacement includes the actual submerged terrain, applies shared FFT caustics and swash wetness to ground and rocks,
-and retains their colour, normals, shadow and cave-mask nodes. Wet-shore roughness blends toward 0.26 only near
-mean sea level; submerged terrain retains its original roughness. Two caustic targets share three splat draws
-and 17 mip draws. Receiver caustics modulate lit albedo, including ambient fill, with depth/orientation/daylight/shelter
-gates; this is not a separate sun-only lighting model. Dry cave interiors receive no ocean receiver patch.
-Refraction retreats foreground offsets and samples colour/depth at the final matching UV; resolved bank-edge pixels
-blend back to their undisplaced opaque colour. The broad facets in the home bed are the original terrain geometry.
-World-fixed shore/contact spray sites use the common crest clock and shared particle pool (96/frame, 420/second max).
-Real shoreline rocks register bounded analytic contacts; their disposal removes those contacts. These sub-texel
-contacts add foam/spray without rebuilding the large coast travel field.
+Home registers its finalized stamped heightfield (the actual 409×409 grid, negative-z rows, invalid exterior) with
+the Local shore registry; bridges and roofs are not beds. The sea itself, its coast texture, the seabed light on the
+ground and the underwater tint are described in [water](water.md#the-sea-10-november-2026). The cave pond is a named
+still-water volume at its own level and ellipse (`waterField`): no ocean waves under the roof, no sea rings from its
+splashes, and a near-black underwater tint. Ultra Water's FFT sea, shore atlas, GPU queries, spray and underwater
+volume are in the local tag `archive/water-ultra-2026-11-09`.
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

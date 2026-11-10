@@ -6,7 +6,7 @@ export const RETAINED: Record<string, string> = {
   'dev/layout/export.ts': 'Manual island layout export: node dev/layout/export.ts.',
   'dev/look/boot-time.ts': 'Manual boot timing: node dev/look/boot-time.ts.',
   'dev/look/sw-check.ts': 'Manual service worker check: node dev/look/sw-check.ts.',
-  'dev/water-diagnose.ts': 'Manual water diagnosis: node dev/water-diagnose.ts.',
+
   'docs/research/notes/entity-architecture/dispatch-bench.ts':
     'Reproducible research benchmark, run directly with Node.',
   'native/guest/build.ts': 'Manual guest engine build documented in native/guest/README.md.',

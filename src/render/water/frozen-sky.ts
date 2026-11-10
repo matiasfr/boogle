@@ -211,7 +211,7 @@ export function createFrozenWaterSky() {
     }
     seaU.uSun.value.copy(direction);
     seaU.uSpecCol.value.setRGB(c.x, c.y, c.z);
-    seaU.uLight.value.setRGB(1, 1, 1);
+
     renderer.toneMappingExposure = 1;
   }
   async function readFill(source: ReturnType<typeof createWaterSky>) {

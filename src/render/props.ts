@@ -7,7 +7,7 @@ import { clearedAt } from '../island/layout.ts';
 import { mulberry32 } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { freezeStatic } from './instances.ts';
-import { registerWaterContact } from './water/contacts.ts';
+
 import { registerWaterReceiver } from './water/receivers.ts';
 
 export { addPart, mergeParts } from './geometry-parts.ts';
@@ -19,7 +19,6 @@ const propsMat = new MeshStandardNodeMaterial({ vertexColors: true, flatShading:
 defineKind('props-view', {});
 export function createProps() {
   registerWaterReceiver(propsMat);
-  const removeContacts: (() => void)[] = [];
   const tiles = new Map<number, THREE.BufferGeometry[]>();
   for (const p of placements) {
     if (clearedAt(p.x, p.z) && !isHomePalm(p)) continue;
@@ -28,11 +27,7 @@ export function createProps() {
     const parts = tiles.get(k)!;
     if (p.blueprint === 'palm') addPalm(parts, p);
     else if (p.blueprint === 'broadleaf') addBroadleaf(parts, p);
-    else {
-      addRock(parts, p);
-      if (p.h < 0.5 && p.h + p.size * 1.25 > 0)
-        removeContacts.push(registerWaterContact({ x: p.x, z: p.z, radius: p.size * 1.1, top: p.h + p.size * 1.25 }));
-    }
+    else addRock(parts, p);
   }
   const group = new THREE.Group();
   for (const parts of tiles.values()) {
@@ -42,13 +37,7 @@ export function createProps() {
     mesh.receiveShadow = true;
     group.add(mesh);
   }
-  spawn({
-    kind: 'props-view',
-    mesh: group,
-    dispose: () => {
-      for (const remove of removeContacts) remove();
-    },
-  });
+  spawn({ kind: 'props-view', mesh: group });
   freezeStatic(group); // never moves: no per-frame matrix work
 }
 

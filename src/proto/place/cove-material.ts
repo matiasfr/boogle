@@ -171,5 +171,5 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   patchNode(material, 'normalNode', (previous) =>
     mix(previous ?? normalViewGeometry, mix(smooth, relief, coveU('detailStrength')).normalize(), region).normalize(),
   );
-  registerCoveSand(material, sand.mul(path.oneMinus()).mul(region), region);
+  registerCoveSand(material, sand.mul(path.oneMinus()).mul(region));
 }

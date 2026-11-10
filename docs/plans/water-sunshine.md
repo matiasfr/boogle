@@ -2,7 +2,7 @@
 
 Owner's direction, 9 November 2026: a water "a lot more inexpensive instead of ultra water, that also fits the style of the game better", with Super Mario Sunshine as the visual target, liking "the lighting/grading there too", and "really efficient for mobile without issue". Research: [water-sunshine](../research/water-sunshine.md); reference board: [water-sunshine.html](../research/water-sunshine.html).
 
-Serves DESIGN.md's look principles through [bang-for-buck aesthetics](../research/bang-for-buck-aesthetics.md) (spend on light, air and colour, not surfaces) and the principles **Small and readable — measure before optimizing** and **Clear authority**. Status: **A and B built behind `?water=` (9 November); C not built; awaiting the owner's pick.** Results: [water design](../game-design/water.md#sunshine-water-candidates-9-november-2026) and "Build notes" below.
+Serves DESIGN.md's look principles through [bang-for-buck aesthetics](../research/bang-for-buck-aesthetics.md) (spend on light, air and colour, not surfaces) and the principles **Small and readable — measure before optimizing** and **Clear authority**. Status: **closed, 10 November 2026.** The owner picked B on 9 November; on 10 November Ultra Water, candidate A, `?water=` and the underwater volume were deleted and the sea rebuilt as B's one draw (local tag `archive/water-ultra-2026-11-09` keeps Ultra). What shipped: [the sea (10 November)](../game-design/water.md#the-sea-10-november-2026) and the [decision](../decisions.md#decided). Everything below is the plan as written, kept as history; its paths under `water/sun/` now sit directly in `water/`.
 
 ## Goal
 
