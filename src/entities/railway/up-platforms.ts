@@ -144,14 +144,15 @@ export function createUpPlatforms(owner: OwnedView, deps: Deps) {
     const s = h.crossS;
     const edge = (d: number) => upLat(FORMATION.quarry, s + d) ?? 0;
     const top = railY(line, s) + 0.22;
-    for (const [l0, l1] of crossingPlanks(edge(-CROSSING_WIDTH / 2), edge(CROSSING_WIDTH / 2))) {
+    const to = h.crossTo ?? CROSSING_SPAN[1];
+    for (const [l0, l1] of crossingPlanks(edge(-CROSSING_WIDTH / 2), edge(CROSSING_WIDTH / 2), to)) {
       const a = at(line, s, (l0 + l1) / 2);
       const b = box(a.x, a.z, place(0, 0, 0, l0 - l1, 0.12, CROSSING_WIDTH, yaw), PLANK);
       b.y = top - 0.12;
       piece(b);
     }
     const a0 = at(line, s, CROSSING_SPAN[0]),
-      a1 = at(line, s, CROSSING_SPAN[1]);
+      a1 = at(line, s, to);
     g.solids.push(() => land.slab(a0.x, a0.z, a1.x, a1.z, top, top, CROSSING_WIDTH, owner, 0, 'grass'));
   }
   const set = deps.pieces.dropSet(

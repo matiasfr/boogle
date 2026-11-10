@@ -353,7 +353,8 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   turntable and the pier rack, both outside the formation); the greybox no longer draws lines 1 and 2's survey beds.
   The gantry carries both pairs of a double panel in one trip (seats today's pair, crosses, sets the up pair) on a
   7.0 m beam; no frame needed stepping out (each frame's near face stands 2.5 m from the up track's centre). The
-  plank crossings are at Quarry s 159 and Far Head s 538.5, by today's platforms' end ramps; the ridge trestle's left
+  plank crossings are at Quarry s 146.8, ending on a pad at the up platform's start-ramp foot, and Far Head s 538.5,
+  by today's platform's end ramp; the ridge trestle's left
   lamps moved to the formation's edge. Level-check covers track 0's rails, the up platforms, the crossings and the
   gates' jambs.
 - [ ] **3. The six bents, wide and on the bow (positions and view, no bump).** `CROSSING_BENTS` 200 cm west,

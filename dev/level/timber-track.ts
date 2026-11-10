@@ -344,6 +344,7 @@ export function timberDecks(): Deck[] {
     for (const [l0, l1] of crossingPlanks(
       upLat(FORMATION.quarry, h.crossS - CROSSING_WIDTH / 2) ?? 0,
       upLat(FORMATION.quarry, h.crossS + CROSSING_WIDTH / 2) ?? 0,
+      h.crossTo,
     )) {
       const c = lateral(line, h.crossS, (l0 + l1) / 2);
       decks.push(

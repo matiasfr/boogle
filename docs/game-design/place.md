@@ -674,8 +674,9 @@ the deck spans both tracks (7.6 m) on bents that reach out under the up track. T
 each panel in one trip: the gantry lifts the top two pairs off its stack, seats today's track's pair, lets go, crosses
 4 m and sets the up track's pair down, so its stack empties by two a panel (bills, panel counts and timing are
 unchanged; the beam is 7.0 m). Quarry and Far Head each get an up platform outside the new track (Quarry's s 154–174.5,
-clear of the Q4 frame, with no ramp off that end) and a plank crossing over both tracks by today's platform's end
-ramp; they drop in with today's halt and have no lever, signal or board yet. To make room the hook pillar p2 and its
+clear of the Q4 frame, with no ramp off that end) and a plank crossing over both tracks: at Far Head by today's
+platform's end ramp, at the Quarry (whose two platforms overlap along the line) just before the up platform's start
+ramp, its planks running on to a pad at that ramp's foot so you step straight onto it; they drop in with today's halt and have no lever, signal or board yet. To make room the hook pillar p2 and its
 walk stand 11 m out at s 89.5 (the hook device moved with it, accepted there by the server), p1's lip ends at the
 wider deck's edge, both line-2 gates span both tracks (slab 10.4 m, centred 2 m left) and the ridge trestle's left
 lamps stand at its new edge. Trains still run on today's track only (step 4). No `WORLD_NS` bump; not tested on a

@@ -435,7 +435,9 @@ export function crossLat(f: Formation, s: number): number | null {
 /** The up track's platforms, outside it (no lever, board or signal until step 4b), and the plank crossing over both
  * tracks at each pair's end (`crossS`), from today's platform to the up one. Quarry's stands clear of the Q4 frame
  * (s 175-178, 6.5-8.5 m left; orchestrator, 10 November), so it has no ramp off that end (`endRamp` false). Each
- * crossing lies by the foot of today's platform's end ramp, outside where a train stands. `pair`: today's halt's row. */
+ * crossing lies outside where a train stands: Far Head's by the foot of today's platform's end ramp; Quarry's, whose
+ * platforms overlap along the line, just before the up platform's start ramp, its planks running on (`crossTo`, lateral
+ * metres) to that ramp's far edge so you step off the crossing onto the ramp's foot. `pair`: today's halt's row. */
 export type UpHalt = {
   name: string;
   line: 1;
@@ -444,6 +446,7 @@ export type UpHalt = {
   lat: number;
   pair: number;
   crossS: number;
+  crossTo?: number;
   endRamp: boolean;
 };
 export const UP_HALTS: UpHalt[] = [
@@ -454,7 +457,8 @@ export const UP_HALTS: UpHalt[] = [
     s1: EAST.quarry - 3.5,
     lat: -6.95,
     pair: 3,
-    crossS: EAST.quarry - 19,
+    crossS: EAST.quarry - 24 - 6 - 1.2, // the start ramp's foot (s0 - 6), less half the crossing's width
+    crossTo: -6.95 - 1.25, // the ramp's far edge
     endRamp: false,
   },
   {
@@ -474,7 +478,7 @@ export const CROSSING_SPAN = [1.5, -5.5] as const;
 export const CROSSING_WIDTH = 2.4;
 /** The crossing's planks as lateral spans [from, to] (from > to), given the up track's offset at the crossing's two
  * edges (they differ where it still eases out of a turnout): a flangeway beside each rail over that range. */
-export function crossingPlanks(upA: number, upB = upA): [number, number][] {
+export function crossingPlanks(upA: number, upB = upA, to: number = CROSSING_SPAN[1]): [number, number][] {
   const hi = Math.max(upA, upB),
     lo = Math.min(upA, upB);
   const rails: [number, number][] = [
@@ -489,7 +493,7 @@ export function crossingPlanks(upA: number, upB = upA): [number, number][] {
     if (from - (top + 0.08) > 0.05) out.push([from, top + 0.08]);
     from = bottom - 0.08;
   }
-  out.push([from, CROSSING_SPAN[1]]);
+  out.push([from, to]);
   return out;
 }
 
