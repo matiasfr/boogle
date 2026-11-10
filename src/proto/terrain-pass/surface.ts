@@ -145,13 +145,12 @@ export function drawnHeight(x: number, z: number) {
   // A vertical offset dh is dh * ny along the face's normal.
   const rock = Math.max(-TOLERANCE.steep / ny, Math.min(TOLERANCE.steep / ny, ledge(x, z, collider) - collider));
   const offset = fade * (1 - keep) * ((1 - steep) * flat + steep * rock);
-  return { height: collider + offset, collider, offset, ny, steep, keep };
+  const ledgeOffset = fade * (1 - keep) * steep * rock;
+  return { height: collider + offset, collider, offset, ledgeOffset, ny, steep, keep };
 }
 
 export type WedgeSurface = {
-  /** Vertices per side. */
-  nx: number;
-  nz: number;
+  /** The drawn cell, metres (round two mixes 2 m and 1 m: 1). */
   step: number;
   position: Float32Array;
   normal: Float32Array;
@@ -166,6 +165,37 @@ export type WedgeSurface = {
   gorge: Float32Array;
   index: Uint32Array;
 };
+
+type Layers = Pick<WedgeSurface, 'steep' | 'foot' | 'path' | 'soil' | 'gorge'>;
+/** The material's per-vertex inputs at a Place-local point, all read from the collider's grid. */
+function describe(x: number, z: number, k: number, out: Layers) {
+  out.steep[k] = steepness(x, z);
+  out.path[k] = mask(pathMask, x, z);
+  // Foot-to-rim position within a 6 m neighbourhood of the collider.
+  let lo = Infinity,
+    hi = -Infinity;
+  for (const [dx, dz] of [
+    [-6, 0],
+    [6, 0],
+    [0, -6],
+    [0, 6],
+    [0, 0],
+  ]) {
+    const s = colliderHeight(x + dx!, z + dz!);
+    lo = Math.min(lo, s);
+    hi = Math.max(hi, s);
+  }
+  out.foot[k] = hi - lo > 0.5 ? (colliderHeight(x, z) - lo) / (hi - lo) : 1;
+  let gx = 0,
+    gz = 0;
+  for (const o of [-1.5, 0, 1.5]) {
+    const w = o === 0 ? 2 : 1;
+    gx += w * (colliderHeight(x + 3, z + o) - colliderHeight(x - 3, z + o));
+    gz += w * (colliderHeight(x + o, z + 3) - colliderHeight(x + o, z - 3));
+  }
+  out.soil[k] = 1 / Math.hypot(1, gx / 24, gz / 24);
+  out.gorge[k] = smoothstep(20, 16, gorgeD(x, z)) * smoothstep(3.6, 2.8, colliderHeight(x, z));
+}
 
 /** The wedge drawn `sub` vertices per 2 m cell side. sub 1 with `fine` false is today's mesh exactly. */
 export function buildWedgeSurface(sub: number, fine: boolean): WedgeSurface {
@@ -188,32 +218,7 @@ export function buildWedgeSurface(sub: number, fine: boolean): WedgeSurface {
         z = WEDGE.z0 + j * step,
         h = heightAt(x, z);
       position.set([x + ORIGIN.x, h, z + ORIGIN.z], k * 3);
-      steep[k] = steepness(x, z);
-      path[k] = mask(pathMask, x, z);
-      // Foot-to-rim position within a 6 m neighbourhood of the collider.
-      let lo = Infinity,
-        hi = -Infinity;
-      for (const [dx, dz] of [
-        [-6, 0],
-        [6, 0],
-        [0, -6],
-        [0, 6],
-        [0, 0],
-      ]) {
-        const s = colliderHeight(x + dx!, z + dz!);
-        lo = Math.min(lo, s);
-        hi = Math.max(hi, s);
-      }
-      foot[k] = hi - lo > 0.5 ? (colliderHeight(x, z) - lo) / (hi - lo) : 1;
-      let gx = 0,
-        gz = 0;
-      for (const o of [-1.5, 0, 1.5]) {
-        const w = o === 0 ? 2 : 1;
-        gx += w * (colliderHeight(x + 3, z + o) - colliderHeight(x - 3, z + o));
-        gz += w * (colliderHeight(x + o, z + 3) - colliderHeight(x + o, z - 3));
-      }
-      soil[k] = 1 / Math.hypot(1, gx / 24, gz / 24);
-      gorge[k] = smoothstep(20, 16, gorgeD(x, z)) * smoothstep(3.6, 2.8, colliderHeight(x, z));
+      describe(x, z, k, { steep, foot, path, soil, gorge });
     }
   // Normals: walkable ground takes the smooth surface's slope (visual only: no position moves for it), so lighting loses
   // the 2 m diamonds; rock takes the drawn ledges' own facets, which the material flattens per pixel anyway.
@@ -258,5 +263,117 @@ export function buildWedgeSurface(sub: number, fine: boolean): WedgeSurface {
       index.set([a, c, b, b, c, d], n);
       n += 6;
     }
-  return { nx, nz, step, position, normal, steep, foot, path, soil, gorge, index };
+  return { step, position, normal, steep, foot, path, soil, gorge, index };
+}
+
+/** Whether coarse cell (i, j) has a collider triangle you can't stand on. */
+function steepCell(i: number, j: number) {
+  const x = cellX(i),
+    z = cellZ(j);
+  return Math.min(colliderNy(x + 0.5, z + 0.5), colliderNy(x + 1.5, z + 1.5)) < WALKABLE_NY;
+}
+
+/** Round two (owner, 10 November: denser triangles only on unwalkable cells). Walkable cells keep today's 2 m
+ * triangles exactly; steep cells are drawn at 1 m with the strata ledges. Crack-free: a 1 m vertex moves only when every
+ * cell it touches is a 1 m cell, so a midpoint on an edge shared with a 2 m cell (or the wedge's border) stays on that
+ * edge's line. Normals: grass from the smooth surface (lighting only), rock from its own facets. */
+export function buildSteepSurface(): WedgeSurface {
+  const ci0 = Math.round((WEDGE.x0 - GRID.x0) / CELL),
+    cj0 = Math.round((WEDGE.z0 - GRID.z0) / CELL),
+    cw = Math.round((WEDGE.x1 - WEDGE.x0) / CELL),
+    cd = Math.round((WEDGE.z1 - WEDGE.z0) / CELL);
+  const fine = new Uint8Array(cw * cd);
+  for (let j = 0; j < cd; j++) for (let i = 0; i < cw; i++) fine[i + j * cw] = steepCell(ci0 + i, cj0 + j) ? 1 : 0;
+  const isFine = (i: number, j: number) => i >= 0 && j >= 0 && i < cw && j < cd && fine[i + j * cw] === 1;
+  // Lattice points in 1 m (half-cell) units from the wedge's corner.
+  const ids = new Map<number, number>();
+  const xs: number[] = [],
+    zs: number[] = [],
+    free: boolean[] = [];
+  const vertex = (a: number, b: number) => {
+    const key = a + b * (2 * cw + 1);
+    let id = ids.get(key);
+    if (id === undefined) {
+      id = xs.length;
+      ids.set(key, id);
+      xs.push(WEDGE.x0 + a * (CELL / 2));
+      zs.push(WEDGE.z0 + b * (CELL / 2));
+      const ia = a % 2 ? [(a - 1) / 2] : [a / 2 - 1, a / 2],
+        jb = b % 2 ? [(b - 1) / 2] : [b / 2 - 1, b / 2];
+      free.push(ia.every((i) => jb.every((j) => isFine(i, j))));
+    }
+    return id;
+  };
+  const tris: number[] = [];
+  const quad = (a: number, b: number, s: number) => {
+    const p = vertex(a, b),
+      q = vertex(a + s, b),
+      r = vertex(a, b + s),
+      t = vertex(a + s, b + s);
+    tris.push(p, r, q, q, r, t);
+  };
+  for (let j = 0; j < cd; j++)
+    for (let i = 0; i < cw; i++) {
+      if (!isFine(i, j)) quad(2 * i, 2 * j, 2);
+      else
+        for (const [da, db] of [
+          [0, 0],
+          [1, 0],
+          [0, 1],
+          [1, 1],
+        ] as const)
+          quad(2 * i + da, 2 * j + db, 1);
+    }
+  const count = xs.length;
+  const position = new Float32Array(count * 3),
+    normal = new Float32Array(count * 3),
+    layers: Layers = {
+      steep: new Float32Array(count),
+      foot: new Float32Array(count),
+      path: new Float32Array(count),
+      soil: new Float32Array(count),
+      gorge: new Float32Array(count),
+    };
+  for (let k = 0; k < count; k++) {
+    const x = xs[k]!,
+      z = zs[k]!;
+    const d = drawnHeight(x, z);
+    position.set([x + ORIGIN.x, d.collider + (free[k] ? d.ledgeOffset : 0), z + ORIGIN.z], k * 3);
+    describe(x, z, k, layers);
+  }
+  // Facet normals, area-weighted, then the smooth surface on grass away from any rock.
+  for (let t = 0; t < tris.length; t += 3) {
+    const [a, b, c] = [tris[t]!, tris[t + 1]!, tris[t + 2]!];
+    const ux = position[b * 3]! - position[a * 3]!,
+      uy = position[b * 3 + 1]! - position[a * 3 + 1]!,
+      uz = position[b * 3 + 2]! - position[a * 3 + 2]!,
+      vx = position[c * 3]! - position[a * 3]!,
+      vy = position[c * 3 + 1]! - position[a * 3 + 1]!,
+      vz = position[c * 3 + 2]! - position[a * 3 + 2]!;
+    // (b - a) x (c - a) points up for this winding.
+    const nx = uy * vz - uz * vy,
+      ny = uz * vx - ux * vz,
+      nz = ux * vy - uy * vx;
+    for (const v of [a, b, c]) {
+      normal[v * 3] = normal[v * 3]! + nx;
+      normal[v * 3 + 1] = normal[v * 3 + 1]! + ny;
+      normal[v * 3 + 2] = normal[v * 3 + 2]! + nz;
+    }
+  }
+  const e = 0.5;
+  for (let k = 0; k < count; k++) {
+    const x = xs[k]!,
+      z = zs[k]!;
+    let gx = -normal[k * 3]! / normal[k * 3 + 1]!,
+      gz = -normal[k * 3 + 2]! / normal[k * 3 + 1]!;
+    const sx = (smoothHeight(x + e, z) - smoothHeight(x - e, z)) / (2 * e),
+      sz = (smoothHeight(x, z + e) - smoothHeight(x, z - e)) / (2 * e);
+    const near = Math.max(steepness(x + 4, z), steepness(x - 4, z), steepness(x, z + 4), steepness(x, z - 4));
+    const w = (1 - near) * edgeFade(x, z);
+    gx += (sx - gx) * w;
+    gz += (sz - gz) * w;
+    const n = Math.hypot(gx, 1, gz);
+    normal.set([-gx / n, 1 / n, -gz / n], k * 3);
+  }
+  return { step: 1, position, normal, ...layers, index: Uint32Array.from(tris) };
 }

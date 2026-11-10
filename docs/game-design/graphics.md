@@ -136,8 +136,9 @@
   view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every tile
   border so there are no cracks ([far-ground.ts](../../src/proto/place/far-ground.ts)). Both wait for the
   owner's stills before becoming defaults; `?dev=1&graphics=farSea:true,farGround:true` turns them on.
-- **Terrain pass experiment (flag only, off).** `?terrain=a|b|ab` redraws one wedge of Place south of the village
-  (a denser drawn mesh with procedural bands, the cove's textured layers, or both); the collider and every ground
+- **Terrain pass experiment (flag only, off).** `?terrain=1` redraws one wedge of Place south of the village on the
+  owner's terrain answers (grass to a beach, sandstone with subtle beds and 1 m ledges only on unwalkable cliffs, worn
+  paths); `a`, `b` and `ab` keep the first round's candidates. The collider and every ground
   query are unchanged; not supported with `farGround` on (its tiles still draw the wedge). [Plan and stills](../plans/terrain-pass.md).
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
