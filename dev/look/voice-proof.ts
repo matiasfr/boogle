@@ -154,9 +154,18 @@ try {
   check(pb2.ok, `reloaded B hears A and C ${line(pb2.last)}`);
   const pa2 = await hears(a, [idb2, idc], 40000);
   check(pa2.ok, `A hears reloaded B and C ${line(pa2.last)}`);
-  await sleep(7000); // past the member grace: the old B link closes
+  await sleep(2000); // the old B link closes once its presence goes (the server's reconnect grace, then 'left')
   const pa3 = await probe(a);
   check(!pa3.peers.some((x) => x.peer === idb), `A dropped the old B link ${line(pa3)}`);
+
+  // A brief loss of the room's socket (it reconnects by itself) keeps the calls: presence survives the reconnect.
+  await a.evaluate(() => (window.boogle!.net.room as unknown as { pause(ms: number): void }).pause(1200));
+  await sleep(5000);
+  const pa4 = await hears(a, [idb2, idc], 10000);
+  check(
+    pa4.ok && pa4.last!.peers.length === 2 && (await a.evaluate(() => window.boogle!.net.state)) === 'live',
+    `A kept both calls through a room reconnect ${line(pa4.last)}`,
+  );
 
   const pd = await probe(d);
   const dc = await calls(d);

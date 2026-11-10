@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  AXIS,
   BUFFERS,
   CART_FORGE,
   HALL,
@@ -16,6 +17,7 @@ import {
   ROAD2_S,
   ROAD_GAP,
   SHELF_B,
+  SHELF_SIZE,
   SHUNT_CUSP_S,
   SPUR,
   STALLS,
@@ -33,7 +35,7 @@ import {
   toAxis,
   type XZ,
 } from '../src/proto/place/home-station.ts';
-import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/proto/place/layout.ts';
+import { CART, FORGE, LINES, ROOM_PLOTS, SPAWN, TOWN, lineAt, type Plot } from '../src/proto/place/layout.ts';
 import { LOCO, TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/proto/wagon/cars.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
@@ -283,15 +285,43 @@ test('the shunt fits the stub, over the cart forge stop', () => {
   assert.ok(shunter - SHUNTER_HZ < CART.hz && SHUNT_CUSP_S + WAGON_CAR.hz > -CART.hz, 'they overlap on the road');
 });
 
-test('the hall and shelf: 1 m behind the buffers, centred on the island; the shelf inside the north end wall', () => {
+test('the hall and shelf: 1 m behind the buffers, centred on the island; the shelf in the front, facing the square', () => {
   assert.ok(Math.abs(HALL.a + HALL.d / 2 - (BUFFERS[0] - 1)) < 1e-9);
   assert.ok(dist(HALL, { x: -90.16, z: 11.03 }) < 0.05, 'the plan put the hall at (-90.16, 11.03)');
-  const shelf = toAxis(SHELF_B);
-  assert.ok(shelf.c < HALL.c - HALL.w / 2 + 1 && shelf.c > HALL.c - HALL.w / 2, 'on the north end wall');
-  assert.ok(Math.abs(shelf.a - HALL.a) < HALL.d / 2, 'inside the hall');
-  // Seated on the floor and backed onto the wall's inside face (the frame's back is 0.35 m behind its centre).
-  assert.equal(SHELF_B.y, HALL.floor);
-  assert.ok(Math.abs(shelf.c - 0.35 - (HALL.c - HALL.w / 2 + 0.3)) < 1e-9, 'against the north end wall');
+  assert.equal(SHELF_B.y, HALL.floor, 'on the hall floor');
+  // Its footprint along the axis (front toward the square) and across (the finds board on +x, toward the south wall).
+  const s = toAxis(SHELF_B),
+    S = SHELF_SIZE;
+  const face = { x: Math.sin(SHELF_B.yaw), z: Math.cos(SHELF_B.yaw) };
+  assert.ok(face.x * AXIS.d.x + face.z * AXIS.d.z < -0.999, 'it faces the square');
+  const a0 = s.a - S.front,
+    a1 = s.a + S.back,
+    c0 = s.c - S.crown,
+    c1 = s.c + S.board;
+  // Backed onto the front posts' line, 5 cm clear of their inner face, and clear of every post.
+  const front = HALL.a - HALL.d / 2 + 0.2;
+  assert.ok(Math.abs(a0 - (front + 0.175 + 0.05)) < 1e-9, 'just behind the front posts');
+  for (const i of [-1, 1])
+    for (const x of [-(HALL.w / 2 - 0.15), -HALL.w / 4, 0, HALL.w / 4, HALL.w / 2 - 0.15]) {
+      const pa = HALL.a + i * (HALL.d / 2 - 0.2),
+        pc = HALL.c + x;
+      const apart = pa + 0.175 <= a0 || pa - 0.175 >= a1 || pc + 0.175 <= c0 || pc - 0.175 >= c1;
+      assert.ok(apart, `clear of the post at a ${pa.toFixed(2)}, c ${pc.toFixed(2)}`);
+    }
+  // The south wall's inside face keeps 0.15 m for the works board; the back span (the line map) keeps 3 m clear.
+  assert.ok(c1 <= HALL.c + HALL.w / 2 - 0.3 - 0.15 + 1e-9, 'the works board fits on the south wall');
+  assert.ok(HALL.a + HALL.d / 2 - 0.2 - a1 > 3, 'off the line map span at the back');
+  // South of spawn's view of the forge: every corner of it at least 50 degrees right of north, spawn facing 14.
+  for (const [a, c] of [
+    [a0, c0],
+    [a1, c0],
+    [a0, c1],
+    [a1, c1],
+  ] as const) {
+    const p = axisPoint(a, c);
+    const bearing = (Math.atan2(p.x - SPAWN.x, SPAWN.z - p.z) * 180) / Math.PI;
+    assert.ok(bearing > 50, `a corner at ${bearing.toFixed(1)} degrees from spawn`);
+  }
   // The floor is a slab 0.1 to 0.2 m over the highest ground under the hall, so nothing stands in it.
   const ground = [-1, 0, 1].flatMap((i) =>
     [-1, 0, 1].map((j) => {
