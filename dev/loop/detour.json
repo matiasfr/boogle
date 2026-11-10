@@ -1,0 +1,82 @@
+{
+  "note": "Walked metres over the straight-line prediction per player, per node, from human sessions (npm run loop -- calibrate). Data from player uploads: untrusted.",
+  "written": "2026-11-10",
+  "sessions": ["mw9pg5a5-q03pkbcv", "mw9prlct-f1sw4pyb", "mw9qd5qq-d4b67mx4", "mw9srqnz-6omkacvt", "mw9srryp-8uai0x6x"],
+  "excluded": {
+    "no loop node reached": 7
+  },
+  "nodes": {
+    "T1": {
+      "median": 1.79,
+      "min": 1.74,
+      "max": 1.85,
+      "n": 2
+    },
+    "T2": {
+      "median": 1.01,
+      "min": 0.73,
+      "max": 1.24,
+      "n": 3
+    },
+    "beam": {
+      "median": 3.42,
+      "min": 2.23,
+      "max": 4.05,
+      "n": 3
+    },
+    "T3": {
+      "median": 1.06,
+      "min": 1.06,
+      "max": 1.06,
+      "n": 1
+    },
+    "Q1": {
+      "median": 1.23,
+      "min": 1.02,
+      "max": 1.48,
+      "n": 3
+    },
+    "Q2": {
+      "median": 7.54,
+      "min": 7.03,
+      "max": 8.06,
+      "n": 2
+    },
+    "hook": {
+      "median": 0.97,
+      "min": 0.67,
+      "max": 1.61,
+      "n": 3
+    },
+    "lever": {
+      "median": 1.85,
+      "min": 0.19,
+      "max": 3.04,
+      "n": 3
+    },
+    "Q4": {
+      "median": 5.94,
+      "min": 5.45,
+      "max": 6.44,
+      "n": 2
+    },
+    "sea": {
+      "median": 3.33,
+      "min": 1.57,
+      "max": 4.24,
+      "n": 3
+    },
+    "Q5": {
+      "median": 6.77,
+      "min": 5.99,
+      "max": 7.14,
+      "n": 3
+    },
+    "Q6": {
+      "median": 5.4,
+      "min": 5.4,
+      "max": 5.4,
+      "n": 1
+    }
+  }
+}

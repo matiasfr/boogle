@@ -31,6 +31,7 @@ Owner's words it answers (9 November, [playtests](../playtests.md)): the order p
   3. `npm run loop -- trace`: one table per node for prediction, bot run and human session, with deltas and the confusion rank.
   4. Retire the headless ball and player runs (owner, 9 November: "vestigial").
   5. Fallback supply (owner, 9 November): each vehicle-brought material names where it is fetched on foot (trees, forge rack, Works rack); `npm run loop` prints both carries x metres, a by-hand grind column, the largest by-hand grind and the nodes all on a vehicle. `loop -- run --by-hand <node|all>` plays that node fed on foot through the real rules: cart stations with their depot and shelf off in-process, Q6 before the boiler and the crossing before the table (src/sim hard-codes the kit train and the wagon). The orders share the canonical run's prefix through checkpoints (`--no-share` replays each in full; the results are identical).
+  6. Walking calibrated from human sessions: `npm run loop -- calibrate [ids...]` (default every session under the main checkout's `.look/playtest`) takes, per node, the metres a player walked over the straight-line prediction for the same canonical segment, and writes the median, range and n to `dev/loop/detour.json`. Grind and predicted times print raw and calibrated side by side; a node with fewer than 2 sessions stays uncalibrated and says so. Bots, prototype rooms, older worlds and sessions with no node reached are left out and counted. The trace adds a walked/pred column (wayfinding), apart from the confusion score.
 - **Risks:** straight-line distance understates real walking (hook walkway, sea); ability gates are not in the sim and live only in the graph; refactoring test helpers touches tests; human sessions carry mark names, not node ids, so the map is by pattern and older sessions must still read.
 
 ## Done means
@@ -46,6 +47,7 @@ No browser: this is tooling with no player-visible change.
 - A unit test fails when a rail action or mark has no node.
 - `npm run check` passes with the ball and player runs gone.
 - `npm run loop` names the largest by-hand grind and the nodes that depend entirely on a vehicle; `loop -- run --by-hand <node|all>` reports each node's time fed on foot against the vehicle, and the whole loop's difference.
+- `npm run loop -- calibrate` prints a detour factor per node with n and range, says how many sessions it left out and why, and `npm run loop` and `loop -- run` print both straight-line and calibrated values, labelled.
 
 ## Open questions
 

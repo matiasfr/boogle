@@ -38,7 +38,7 @@ import {
   PIER_FRAME,
 } from '../../src/sim/railway-works-layout.ts';
 import { railAccount, type RailAction, type Railway } from '../../src/sim/railway.ts';
-import { NODES, WALK_MPS, cm, node, proposeOrders, type NodeId, type Point } from './graph.ts';
+import { DETOUR, NODES, WALK_MPS, cm, detourOf, node, proposeOrders, type NodeId, type Point } from './graph.ts';
 import { createHost, type Host } from './host.ts';
 
 type Cmd = { walk: Point } | { act: string; fields?: Partial<RailAction> } | { wait: number };
@@ -467,6 +467,9 @@ type Run = {
   policy: Record<NodeId, (pl: Player) => Policy>;
   /** World facts the sim doesn't hold (the pier is reached by walking there). */
   flags: { atPier: boolean };
+  /** The node being played, and how much farther than straight-line its walks are (1 unless calibrated). */
+  current: NodeId | null;
+  detour: (id: NodeId) => number;
 };
 function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run {
   const players: Player[] = Array.from({ length: n }, (_v, i) => ({
@@ -572,7 +575,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
             () => s().works!.pierRack,
           ),
   };
-  return { g, done, policy, flags };
+  return { g, done, policy, flags, current: null, detour: () => 1 };
 }
 
 /** Steps one player's generator until it asks for time. */
@@ -588,7 +591,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
     const cmd = next.value;
     input = 0;
     if ('walk' in cmd) {
-      const d = cm(pl.at, cmd.walk);
+      const d = cm(pl.at, cmd.walk) * (r.current ? r.detour(r.current) : 1);
       pl.at = { ...cmd.walk };
       pl.walked += d / 100;
       t.walked += d / 100;
@@ -692,6 +695,8 @@ export function playOrder(
     probes?: boolean;
     mutate?: (h: Host) => void;
     byHand?: ReadonlySet<NodeId>;
+    /** Scale each node's walks by its calibrated detour factor (graph.ts detourOf; uncalibrated nodes stay 1). */
+    detour?: boolean;
     /** Go on from this checkpoint (an earlier run of an order that shares `order`'s first `index` nodes). */
     from?: Checkpoint;
     /** Keep a checkpoint at the start of each node, for orders that share this one's prefix. */
@@ -702,6 +707,7 @@ export function playOrder(
   const h = opts.from ? createHost(pids, { snapshot: opts.from.snapshot, tick: opts.from.tick }) : createHost(pids);
   opts.mutate?.(h);
   const r = setup(h, players, opts.byHand);
+  if (opts.detour) r.detour = (id) => detourOf(id)?.median ?? 1;
   const { g, done } = r;
   const result: RunResult = { order: name, players, nodes: [], ticks: 0 };
   const log: string[] = [];
@@ -752,6 +758,7 @@ export function playOrder(
   for (let index = start; index < order.length; index++) {
     const id = order[index]!;
     if (opts.checkpoints) opts.checkpoints[index] = capture(index);
+    r.current = id;
     const t: NodeTime = {
       id,
       tick: -1,
@@ -862,8 +869,15 @@ export function runLoop(args: string[]) {
       results.push(res);
     }
   }
+  // The shown order again with each node's walks scaled by its calibrated detour (dev/loop/detour.json).
+  const calibrated = new Map<number, RunResult>();
+  const shownOrder = proposeOrders().find((o) => o.name === (only && !broken ? only : 'canonical'))!;
+  if (DETOUR && !broken && !args.includes('--no-calibrated'))
+    for (const players of counts)
+      calibrated.set(players, playOrder(shownOrder.order, `${shownOrder.name}, calibrated`, players, { detour: true }));
   const ms = Math.round(performance.now() - started);
-  if (args.includes('--json')) return console.log(JSON.stringify({ ms, results }, null, 2));
+  if (args.includes('--json'))
+    return console.log(JSON.stringify({ ms, results, calibrated: [...calibrated.values()] }, null, 2));
   const out: string[] = [
     `Loop run through the real rules (railway-server install: railValid, railApply, railTick). A lower bound: walking`,
     `is straight-line at ${WALK_MPS} m/s with no terrain, trains are not ridden, presses take ${PRESS / 10} s, there`,
@@ -893,13 +907,22 @@ export function runLoop(args: string[]) {
   for (const players of counts) {
     const shown = only && !broken ? only : 'canonical';
     const canon = results.find((r) => r.players === players && r.order === shown)!;
-    out.push('', `${players} player${players > 1 ? 's' : ''}, ${shown} order: ${verdict(canon)}`);
-    out.push('  node      reached    took     carries  walked m  refused');
+    const cal = calibrated.get(players);
+    out.push(
+      '',
+      `${players} player${players > 1 ? 's' : ''}, ${shown} order: straight-line ${verdict(canon)}${cal ? `; calibrated ${verdict(cal)}` : ''}`,
+    );
+    out.push('  node      reached    took     carries  walked m  refused   calibrated: reached  detour');
     for (const t of canon.nodes) {
       // From the moment its turn came to the moment it was reached (a parked node finishes later).
       const took = t.tick < 0 ? '-' : clock(t.tick - t.startTick);
+      const c = cal?.nodes.find((x) => x.id === t.id);
+      const d = detourOf(t.id);
+      const calCol = cal
+        ? `${(c && c.tick >= 0 ? clock(c.tick) : 'never').padStart(19)}  ${d ? `x${d.median.toFixed(2)} (n ${d.n})` : 'x1 (uncalibrated)'}`
+        : '';
       out.push(
-        `  ${t.id.padEnd(9)} ${(t.tick < 0 ? 'never' : clock(t.tick)).padStart(8)}  ${took.padStart(7)}${t.parked ? ' (parked)' : '         '}${String(t.carries).padStart(4)} ${String(Math.round(t.walked)).padStart(9)} ${String(t.refused).padStart(8)}`,
+        `  ${t.id.padEnd(9)} ${(t.tick < 0 ? 'never' : clock(t.tick)).padStart(8)}  ${took.padStart(7)}${t.parked ? ' (parked)' : '         '}${String(t.carries).padStart(4)} ${String(Math.round(t.walked)).padStart(9)} ${String(t.refused).padStart(8)}  ${calCol}`,
       );
     }
     for (const r of results.filter((x) => x.players === players && x.order !== shown))

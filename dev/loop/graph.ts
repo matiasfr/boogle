@@ -2,6 +2,8 @@
 // production route, what it requires, what it costs and which in-world cue telegraphs it. Bills, counts and
 // positions are imported from the sim's layout catalogs, never copied; only `requires` and `cue` are hand-authored,
 // each with its source. Encodes today's Home (not the proposed layout B). Read-only over src/: no runtime import.
+import fs from 'node:fs';
+import path from 'node:path';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import {
   LINE1_STATIONS,
@@ -156,6 +158,33 @@ export const ACTIVITY_MARKS: readonly RegExp[] = [
 
 /** Walking pace, metres per second: the economy model's `walkMps` (dev/economy/campaign-kit.ts). */
 export const WALK_MPS = 5.6;
+
+/** Detour factors per node, written by `npm run loop -- calibrate` (dev/loop/calibrate.ts) from human sessions: what
+ * a player really walked for a node over the straight-line prediction. */
+export type Detour = { median: number; min: number; max: number; n: number };
+export type DetourFile = {
+  note: string;
+  written: string;
+  sessions: string[];
+  excluded: Record<string, number>;
+  nodes: Partial<Record<NodeId, Detour>>;
+};
+/** A factor needs this many sessions; fewer stays uncalibrated, and says so. */
+export const DETOUR_MIN_N = 2;
+export const DETOUR_FILE = path.join(import.meta.dirname, 'detour.json');
+function readDetour(): DetourFile | null {
+  try {
+    return JSON.parse(fs.readFileSync(DETOUR_FILE, 'utf8')) as DetourFile;
+  } catch {
+    return null;
+  }
+}
+export const DETOUR = readDetour();
+/** The median detour for a node when at least DETOUR_MIN_N sessions measured it, else null (uncalibrated). */
+export function detourOf(id: NodeId): Detour | null {
+  const d = DETOUR?.nodes[id];
+  return d && d.n >= DETOUR_MIN_N ? d : null;
+}
 
 const station1 = (id: string) => LINE1_STATIONS.find((s) => s.id === id)!;
 const station2 = (id: string) => LINE2_STATIONS.find((s) => s.id === id)!;

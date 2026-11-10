@@ -2,7 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseSession } from '../dev/playtest/read.ts';
-import { humanRows, reachedTimes } from '../dev/loop/trace.ts';
+import { humanRows, notTheLoop, predictedSegment, reachedTimes } from '../dev/loop/trace.ts';
+import type { NodeId } from '../dev/loop/graph.ts';
 
 const session = (ev: Record<string, unknown>[]) =>
   parseSession('fixture', JSON.stringify({ at: '2026-11-09T00:00:00.000Z', card: 'railway', n: 0, now: 100, ev }));
@@ -41,4 +42,29 @@ test('trace tallies carries by station and confusion by window', () => {
   assert.equal(rows.get('T2')!.refused, 1);
   assert.equal(rows.get('T2')!.rank, 2);
   assert.equal(t1.rank, 1);
+});
+
+test('a detour compares only a window that is a canonical segment', () => {
+  const s = session([
+    { t: 1, k: 'm', n: 'woke' },
+    { t: 30, k: 'm', n: 'stretch laid T1' },
+    { t: 31, k: 'm', n: 'stretch laid T2' },
+    { t: 90, k: 'm', n: 'stretch laid T3' },
+    { t: 200, k: 'm', n: 'forge lit' },
+  ]);
+  const rows = humanRows(s);
+  const row = (id: NodeId) => rows.find((r) => r.id === id)!;
+  const pred = new Map<NodeId, number>([
+    ['T1', 30],
+    ['T3', 100],
+    ['jump', 7],
+    ['beam', 50],
+    ['forge', 80],
+  ]);
+  assert.equal(predictedSegment(row('T1'), rows, pred), 30);
+  assert.equal(predictedSegment(row('T2'), rows, pred), undefined, 'two marks a second apart');
+  assert.equal(predictedSegment(row('T3'), rows, pred), 100, 'the beam is not optional: done elsewhere, not inside');
+  assert.equal(predictedSegment(row('forge'), rows, pred), 87, 'the skipped optional jump sits inside');
+  assert.equal(notTheLoop(s), null);
+  assert.equal(notTheLoop(session([{ t: 1, k: 'm', n: 'stretch laid', id: 'T1' }])), 'an older world');
 });

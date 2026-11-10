@@ -1,7 +1,10 @@
 // `npm run loop`: every node of the loop graph with its bill, straight-line distance and cue; grind per beat; the
 // nodes with no cue; and the order facts. `--json` prints the same as one object.
 import {
+  DETOUR,
+  DETOUR_MIN_N,
   NODES,
+  detourOf,
   grindFor,
   grindOf,
   hasCue,
@@ -61,7 +64,19 @@ function loopReport() {
     vehicleOnly: nodes.filter((n) => n.vehicleOnly).map((n) => n.id),
     grindRank: ranked
       .filter((n) => n.perPlayer[0]! > 0)
-      .map((n) => ({ id: n.id, perPlayer: n.perPlayer, byHand: n.byHand, vehicleFed: n.vehicleFed })),
+      .map((n) => {
+        const d = detourOf(n.id);
+        return {
+          id: n.id,
+          perPlayer: n.perPlayer,
+          byHand: n.byHand,
+          vehicleFed: n.vehicleFed,
+          detour: d,
+          calibrated: d ? n.perPlayer.map((v) => Math.round(v * d.median)) : null,
+          measured: DETOUR?.nodes[n.id]?.n ?? 0,
+        };
+      }),
+    detourSessions: DETOUR?.sessions.length ?? 0,
     defects,
     free: edges.filter((e) => e.status === 'free'),
     unruled: edges.filter((e) => e.status === 'unruled'),
@@ -90,11 +105,17 @@ export function printReport(json: boolean) {
   out.push(
     'Grind per beat: loaded carry-metres per player (one way, straight-line). Headline 1-3 players; 4 secondary.',
     'By hand: the same with every vehicle away, each vehicle material fetched on foot from its nearest source.',
+    `Calibrated: straight-line times the node's median detour (walked over predicted) from ${r.detourSessions} human session(s), dev/loop/detour.json; a node needs ${DETOUR_MIN_N}.`,
   );
   for (const g of r.grindRank) {
     const row = (v: number[]) =>
       `1p ${fmt(v[0]!).padStart(6)}  2p ${fmt(v[1]!).padStart(6)}  3p ${fmt(v[2]!).padStart(6)}   (4p ${fmt(v[3]!).padStart(5)})`;
-    out.push(`  ${g.id.padEnd(9)} ${row(g.perPlayer)}${g.vehicleFed ? `   by hand ${row(g.byHand)}` : ''}`);
+    const cal = g.calibrated
+      ? `calibrated 1p ${fmt(g.calibrated[0]!).padStart(6)} (x${g.detour!.median.toFixed(2)}, n ${g.detour!.n})`
+      : `uncalibrated (n ${g.measured})`;
+    out.push(
+      `  ${g.id.padEnd(9)} straight-line ${row(g.perPlayer)}   ${cal.padEnd(34)}${g.vehicleFed ? `   by hand ${row(g.byHand)}` : ''}`,
+    );
   }
   out.push(`Largest grind: ${r.largestGrind}. Largest by hand: ${r.largestByHand ?? 'none'}.`);
   out.push(`All on a vehicle (nothing on the bill comes on foot today): ${r.vehicleOnly.join(', ') || 'none'}`, '');

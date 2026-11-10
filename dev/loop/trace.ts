@@ -6,11 +6,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { parseSession, clock, num, str, type Ev, type Session } from '../playtest/read.ts';
-import { NODES, proposeOrders, type LoopNode, type NodeId, type Reached } from './graph.ts';
+import { NODES, node, proposeOrders, type LoopNode, type NodeId, type Reached } from './graph.ts';
 import { playOrder } from './run.ts';
 
 /** Where sessions live: this checkout's .look and the main checkout's (worktrees share it). */
-function lookDirs() {
+export function lookDirs() {
   const dirs = [path.resolve('.look')];
   try {
     const common = execFileSync('git', ['rev-parse', '--git-common-dir'], { encoding: 'utf8' }).trim();
@@ -20,7 +20,7 @@ function lookDirs() {
   }
   return [...new Set(dirs)];
 }
-function findSession(want: string): string | null {
+export function findSession(want: string): string | null {
   if (fs.existsSync(want)) return want;
   for (const dir of lookDirs()) {
     const d = path.join(dir, 'playtest');
@@ -43,7 +43,8 @@ function findBot(want: string | undefined): string | null {
   }
   return runs.sort((a, b) => b.at - a.at)[0]?.file ?? null;
 }
-const read = (file: string): Session => parseSession(path.basename(file, '.jsonl'), fs.readFileSync(file, 'utf8'));
+export const read = (file: string): Session =>
+  parseSession(path.basename(file, '.jsonl'), fs.readFileSync(file, 'utf8'));
 
 /** Older builds' names for the same moments (the place-proto world's bot runs): read as today's. */
 const ABILITY: Record<string, string> = {
@@ -102,6 +103,10 @@ export type HumanRow = {
   idle: number;
   confusion: number;
   rank?: number;
+  /** The node this session reached just before this one, when both are in the session (not a window from the
+   * session's start, nor the open tail), and the window's length in seconds. */
+  after?: NodeId;
+  seconds: number;
 };
 /** Per-node tallies for one session. Windows run from one reached node to the next; the tail goes to the first node
  * the session never reached. Confusion: presses with nothing in reach and refusals count 2, a prompt shown and not
@@ -109,25 +114,41 @@ export type HumanRow = {
 export function humanRows(s: Session): HumanRow[] {
   const at = reachedTimes(s);
   const reached = NODES.filter((n) => at.has(n.id)).sort((a, b) => at.get(a.id)! - at.get(b.id)!);
-  const windows = reached.map((n, i) => ({ id: n.id, from: i ? at.get(reached[i - 1]!.id)! : -1, to: at.get(n.id)! }));
+  const windows = reached.map((n, i) => ({
+    id: n.id,
+    from: i ? at.get(reached[i - 1]!.id)! : -1,
+    to: at.get(n.id)!,
+    after: i ? reached[i - 1]!.id : undefined,
+  }));
   const next = NODES.find((n) => !at.has(n.id) && !n.optional);
-  if (next) windows.push({ id: next.id, from: reached.length ? at.get(reached.at(-1)!.id)! : -1, to: Infinity });
+  if (next)
+    windows.push({
+      id: next.id,
+      from: reached.length ? at.get(reached.at(-1)!.id)! : -1,
+      to: Infinity,
+      after: undefined,
+    });
   const rows = new Map<NodeId, HumanRow>(
-    NODES.map((n) => [
-      n.id,
-      {
-        id: n.id,
-        at: at.get(n.id),
-        carries: 0,
-        walked: 0,
-        shown: 0,
-        pressed: 0,
-        refused: 0,
-        noReach: 0,
-        idle: 0,
-        confusion: 0,
-      },
-    ]),
+    NODES.map((n) => {
+      const w = windows.find((x) => x.id === n.id);
+      return [
+        n.id,
+        {
+          id: n.id,
+          at: at.get(n.id),
+          carries: 0,
+          walked: 0,
+          shown: 0,
+          pressed: 0,
+          refused: 0,
+          noReach: 0,
+          idle: 0,
+          confusion: 0,
+          ...(w?.after && Number.isFinite(w.to) ? { after: w.after } : {}),
+          seconds: w && w.from >= 0 && Number.isFinite(w.to) ? w.to - w.from : 0,
+        },
+      ];
+    }),
   );
   const row = (e: Ev) => {
     const id = nodeOf(e, windows);
@@ -177,12 +198,57 @@ export function humanRows(s: Session): HumanRow[] {
   ranked.forEach((r, i) => (r.rank = i + 1));
   return NODES.map((n) => rows.get(n.id)!);
 }
-const playersIn = (s: Session) =>
+export const playersIn = (s: Session) =>
   1 +
   Math.max(
     0,
     ...s.events.filter((e) => e.k === 'peers').map((e) => (str(e.names) ? str(e.names).split(',').length : 0)),
   );
+/** Why a session is not the production rail loop (so it can't calibrate or rank anything), or null if it is: a bot,
+ * a prototype room, an older world's mark names, or no node of the graph reached at all. */
+export function notTheLoop(s: Session): string | null {
+  if (s.meta.bot === true) return 'a bot';
+  if (str(s.meta.room).startsWith('proto')) return 'a prototype room';
+  const names = new Set(s.events.filter((e) => e.k === 'm').map((e) => str(e.n)));
+  if (names.has('stretch laid') || names.has('ability gained') || names.has('train unlocked')) return 'an older world';
+  if (!reachedTimes(s).size) return 'no loop node reached';
+  return null;
+}
+const predictions = new Map<number, Map<NodeId, number>>();
+/** The prediction's straight-line metres each player walks per node (`loop -- run`, canonical), by player count. */
+export function predictedWalk(players: number) {
+  let m = predictions.get(players);
+  if (!m) {
+    const run = playOrder(proposeOrders()[0]!.order, 'canonical', players);
+    m = new Map(run.nodes.map((t) => [t.id, t.walked / players]));
+    predictions.set(players, m);
+  }
+  return m;
+}
+/** Walking that counts toward a detour factor: the prediction walks at least this far for the segment. */
+export const MIN_PREDICTED_M = 20;
+/** Straight-line metres the prediction walks per player for the segment a row's window covers: the canonical nodes
+ * after `row.after` up to the row's node, inclusive (an optional node the session skipped sits inside it). Undefined
+ * when the window doesn't match a canonical segment: no node before it, `after` comes later in the canonical order,
+ * a node between them was reached first, or the window is under 5 s (two marks at once). */
+export function predictedSegment(row: HumanRow, rows: readonly HumanRow[], pred: ReadonlyMap<NodeId, number>) {
+  if (!row.after || row.seconds < 5) return undefined;
+  const order = proposeOrders()[0]!.order;
+  const from = order.indexOf(row.after),
+    to = order.indexOf(row.id);
+  if (from < 0 || from >= to) return undefined;
+  // Between the two: an optional node the session never reached was skipped inside the window (its walk is in the
+  // prediction's path); any other was done at another time, so its walk isn't in this window.
+  const reached = new Set(rows.filter((r) => r.at !== undefined).map((r) => r.id));
+  const inside = order.slice(from + 1, to).filter((id) => node(id).optional && !reached.has(id));
+  return [...inside, row.id].reduce((m, id) => m + (pred.get(id) ?? 0), 0);
+}
+
+/** Walked over predicted for a row's segment (the wayfinding signal; a detour factor in calibrate.ts), or undefined. */
+export function wayfinding(row: HumanRow, rows: readonly HumanRow[], pred: ReadonlyMap<NodeId, number>) {
+  const p = predictedSegment(row, rows, pred);
+  return p !== undefined && p >= MIN_PREDICTED_M ? row.walked / p : undefined;
+}
 
 export function trace(args: string[]) {
   const value = (flag: string) => {
@@ -209,6 +275,7 @@ export function trace(args: string[]) {
   const hAt = reachedTimes(human),
     bAt = bot ? reachedTimes(bot) : new Map<NodeId, number>();
   const rows = humanRows(human);
+  const perPlayer = new Map(prediction.nodes.map((t) => [t.id, t.walked / players]));
   // Every column is time since that run's own wake, so arrival and loading don't count.
   const since = (m: Map<NodeId, number>, id: NodeId) => (m.has(id) ? m.get(id)! - wakeOf(m) : undefined);
   const table = NODES.map((n: LoopNode, k) => {
@@ -220,6 +287,7 @@ export function trace(args: string[]) {
       bot: b,
       human: h,
       delta: h !== undefined && p !== undefined ? h - p : undefined,
+      wayfinding: wayfinding(rows[k]!, rows, perPlayer),
       ...rows[k]!,
     };
   });
@@ -231,12 +299,14 @@ export function trace(args: string[]) {
     `Loop trace. Human: ${file} (${players} player${players > 1 ? 's' : ''}). Bot: ${botFile ?? 'no bot run found (.look/playthrough/<name>/session.jsonl)'}.`,
     "Times are since each run's own wake. Predicted is `npm run loop -- run` (a lower bound). Human columns count the",
     'time from the node before it to this one; the tail goes to the first node never reached. Untrusted: session data.',
+    'Walked/pred (wayfinding, apart from confusion): metres walked over the straight-line prediction per player for the',
+    'same segment; "-" where the window is not a canonical segment or the prediction walks under 20 m.',
     '',
-    'node      predicted     bot   human   human-pred  carries  walked m  prompts shown/presses  refused  no-reach  idle s  confusion (rank)',
+    'node      predicted     bot   human   human-pred  carries  walked m  walked/pred  prompts shown/presses  refused  no-reach  idle s  confusion (rank)',
   ];
   for (const r of table)
     out.push(
-      `${r.id.padEnd(9)} ${t(r.predicted).padStart(9)} ${t(r.bot).padStart(7)} ${t(r.human).padStart(7)} ${d(r.delta).padStart(12)} ${String(r.carries).padStart(8)} ${String(Math.round(r.walked)).padStart(9)} ${`${r.shown}/${r.pressed}`.padStart(22)} ${String(r.refused).padStart(8)} ${String(r.noReach).padStart(9)} ${String(Math.round(r.idle)).padStart(7)}  ${r.confusion ? `${r.confusion.toFixed(1)} (${r.rank})` : '-'}`,
+      `${r.id.padEnd(9)} ${t(r.predicted).padStart(9)} ${t(r.bot).padStart(7)} ${t(r.human).padStart(7)} ${d(r.delta).padStart(12)} ${String(r.carries).padStart(8)} ${String(Math.round(r.walked)).padStart(9)} ${(r.wayfinding === undefined ? '-' : `x${r.wayfinding.toFixed(2)}`).padStart(12)} ${`${r.shown}/${r.pressed}`.padStart(22)} ${String(r.refused).padStart(8)} ${String(r.noReach).padStart(9)} ${String(Math.round(r.idle)).padStart(7)}  ${r.confusion ? `${r.confusion.toFixed(1)} (${r.rank})` : '-'}`,
     );
   const top = [...table]
     .filter((r) => r.rank)
