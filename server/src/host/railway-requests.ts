@@ -161,10 +161,12 @@ export function createRailwayRequests({
       }
       if (message.t === 'r:open') {
         if (!available()) return state(from, unavailable());
-        if (current?.sid === from)
-          return send({ t: 'r:session', to: from, epoch: current.epoch, next: 1 + (api.account(pid)?.request ?? 0) });
-        // A new page (or a takeover): a new epoch retires whatever the old one had in flight.
-        const epoch = (api.account(pid)?.epoch ?? 0) + 1;
+        const account = api.account(pid);
+        if (current?.sid === from && account)
+          return send({ t: 'r:session', to: from, epoch: current.epoch, next: 1 + account.request });
+        // A new page, a takeover, or a session whose account a load replaced: a new epoch retires whatever the old
+        // one had in flight.
+        const epoch = (account?.epoch ?? 0) + 1;
         if (epoch > RAILWAY_MAX_INT || !api.session(pid, epoch)) return state(from, 'full');
         sessions.set(pid, { sid: from, epoch, clockStep: 0 });
         send({ t: 'r:session', to: from, epoch, next: 1 });
@@ -176,7 +178,13 @@ export function createRailwayRequests({
         request = e.request as number;
       if (!available()) return state(from, unavailable(), { epoch, request });
       if (!current || current.sid !== from || current.epoch !== epoch) return rej(from, epoch, request, 'session');
-      const account = api.account(pid)!;
+      const account = api.account(pid);
+      // A session whose account is gone (a load replaced the accounts): refused with no change, and dropped so the
+      // client's reopen makes a fresh one.
+      if (!account) {
+        sessions.delete(pid);
+        return rej(from, epoch, request, 'session');
+      }
       if (request <= account.request) {
         // Already settled (a resend): answer again from its recorded outcome.
         const old = api.outcome(pid, epoch, request);

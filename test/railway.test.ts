@@ -51,6 +51,15 @@ test('terminal receipts survive retries, rejection, eviction, takeover and resta
   assert.equal(r.accounts[0]!.carry, carry, 'nothing was spent twice');
 });
 
+test('an action from a player with no account is refused and changes nothing', () => {
+  const s = awake();
+  const hash = worldOf(s).hash();
+  const e = { op: 'rail.chop', id: RAILWAY_SOURCES[0]![0], yaw: 0, collapsed: false, epoch: 1, request: 2 };
+  assert.equal(railApply(s, 'nobody', e as RailAction, 100).status, 'snapshot-required');
+  assert.equal(worldOf(s).hash(), hash, 'no receipt, no state');
+  assert.equal(invariant(s), null);
+});
+
 test('wake eligibility is scheduled', () => {
   const s = createRailway();
   railSession(s, 'p0', 1);

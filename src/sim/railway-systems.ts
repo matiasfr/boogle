@@ -953,6 +953,7 @@ export function railOutcome(w: World, pid: string, epoch: number, request: numbe
 /** All transfers recheck capacity at application, after preceding actions. */
 export function railApply(w: World, pid: string, e: RailAction, tick: number, timing: LineTiming = LINE_TIMING) {
   const previous = railOutcome(w, pid, e.epoch, e.request);
+  // The receipt answers 'snapshot-required' for a pid with no account, so one is here.
   if (previous) return previous;
   const a = w.lookup(Account, pid)!;
   let n = 0;
