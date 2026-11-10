@@ -1,5 +1,5 @@
 > **Status: proposed (2026-11-10).** Light brainstorm (one agent, three lenses: play designer, systems architect,
-> creative director). Not built.
+> creative director), designer-reviewed (below). Not built.
 
 # Spares at the station (station-deposit)
 
@@ -9,22 +9,23 @@ somewhere like stations"
 
 ## Pitch
 
-Every halt gets a **yard**: a low timber bay at the cargo end of the platform with a log cradle, a rails shelf and a
-stone bin. Walk up with spares on your back and Interact (**Leave it here**): the pieces fly off your back and stack
-in the bay, one mesh per piece, where everyone can see them and anyone can take them back out. What lies in a yard
-stays in that yard; nothing appears anywhere else. Later the train's cargo car takes a yard's goods to whatever on its
-line still owes that material, so your spares ride to the next job. And you are never refused a big load for having a
-full back: shouldering the boiler, the great beam or a footing sets your load down in the nearest yard, or beside you.
-It serves **6, Communal world** (the stack is the room's, in a place everyone passes) and **11, Show, don't tell** (the
-stock is the stack). It deliberately is **not** a bank: deposit-here-withdraw-there would bend **"the rail builds the
-world"** (decisions.md, 2 November), where the network, not a menu, moves things.
+Three builds, smallest first. **Build 0:** hold Drop and your whole back goes down in one press, and you are never
+refused a big load for having a full back: shouldering the boiler, the great beam or a footing sets your load down
+beside you in the same press. **Build 1:** every halt site gets a **yard**, a low timber bay on the ground at the foot
+of the platform's back ramp with a log cradle, a rails shelf and a stone bin, put up when the track reaches the site.
+Walk up with spares and Interact (**Leave it here**): the pieces fly off your back and stack in the bay, where everyone
+can see them and anyone can take them back out. What lies in a yard stays in that yard. **Build 2:** with the cargo
+cars, a train's cargo car takes a yard's goods to whatever on its line still needs that material, so your spares ride
+to the next job. It serves **6, Communal world** (the stack is the room's, in a place everyone passes) and **11,
+Show, don't tell** (the stock is the stack). It deliberately is **not** a pooled bank: deposit-here-withdraw-there
+would bend **"the rail builds the world"** (decisions.md, 2 November), where the network, not a menu, moves things.
 
 ## Gut question
 
 With a back full of things you don't need, does leaving them at the halt feel like tidying up for the team, rather
 than throwing them away?
 
-## Today (what the repo says)
+## Today (what the repo shows)
 
 - **What a back holds:** logs and stone share eight slots, sixteen once the pack is open; rails share them too
   (`carried = carry + stone + rails`, `free`, `src/sim/railway-systems.ts:124`–`127`; place.md "Materials and recovery"
@@ -48,15 +49,19 @@ than throwing them away?
   stands about 23 m from the Village halt (`RAIL_HALTS`, `src/sim/railway-lines.ts:54`).
 - **No shared bank exists in the railway.** `src/sim/bank.ts` is classic rooms' offline helper bank and never wakes in
   a railway room. The shared wallet is decided (owner-calls, "Shared progression and one shared wallet") but unbuilt;
-  the [money](money.md) brief is still proposed. The engine-garage brief (branch `worktree-agent-af97bb1c3273e66ff`,
-  `docs/brainstorms/engine-garage.md`, section 4) prices upgrades in steel "from the room's store": no such store
-  exists, and nothing on main defines one.
+  the [money](money.md) brief is still proposed. The engine-garage brief prices upgrades in steel "from the room's
+  store"; no such store exists, and its own design review reads it as a physical stack in the Roundhouse bay (review
+  finding 8, below).
+- **The owner's own session** (`node dev/playtest/cli.ts mwa8zhlg`, iPad, 10 November, 27 min): **64 Drop presses, in
+  six runs of 7 to 15**, because Drop puts down one piece a press and a back holds 8 or 16. Three runs fall within
+  seconds of a bill being funded (case 2 below); three came before any halt was open (review, "What the owner
+  actually hit").
 
-**Where spares really come from** (playtests.md and the rules; the loop trace has no drop column):
+**Where spares really come from** (playtests.md, the owner's session and the rules):
 
 1. **A big load needs an empty back.** 10 November: Daniel took five "Empty your back first" refusals at the boiler,
-   then dropped his logs. Every footing (`works-view.ts:833`, `crossing-view.ts:552`, `footing-view.ts:234`), the beam and
-   the boiler (`boiler-view.ts:576`) do this.
+   then dropped his logs. Five sites refuse this way: footings at `works-view.ts:833`, `crossing-view.ts:552` and
+   `footing-view.ts:234`, the boiler at `boiler-view.ts:576` and the great beam at `line-cargo.ts:308`.
 2. **The bill filled under you.** Two players carrying 16 each to a 16-log Q frame; the last 24-log rack after the cart
    delivered too; the kiln's 16 and 16 with stone left over from the Works rocks (8 each).
 3. **The wrong material for this bill:** stone at line 2's frames, anything at Station 6 before trains.
@@ -71,105 +76,126 @@ session, mostly to re-pick rails (8 November); "dropped items might expire on a 
 
 | Shape | Verdict | Why |
 | --- | --- | --- |
-| **(a) A yard at every halt** | **Recommended** | Stock is where it lies, so it can't teleport; anyone adds or takes; trains can draw from it later. |
-| (b) One bank, deposit points at stations | Rejected | Chop at the grove, deposit at the Camp, withdraw at Far Head: the walk and the network both stop mattering. One count in many places also breaks 11 ("what's on screen is true"). The wallet already covers "one shared pot" for money. |
-| (c) No store; a tidy, reliable pile | Partly taken | The recovery rule already makes piles safe; what's missing is that they read. The recovery rack becomes the Village yard (Q5). |
-| (d) Fix the situations | Taken alongside (a) | Case 1 is a rule problem with an existing precedent: the one-thing-in-hand call puts what you held "by you" (decisions.md, 2 November, "The hotbar is cut"), and "Keeping your load" puts it "down where you stood". |
+| **(a) A yard at every halt site** | **Recommended (build 1)** | Stock is where it lies, so it can't teleport; anyone adds or takes; trains can draw from it later (build 2). |
+| (b) One bank, deposit points at stations | Rejected | Chop at the grove, deposit at the Camp, withdraw at Far Head: the walk and the network both stop mattering. One count in many places also breaks 11 ("what's on screen is true"). The wallet already covers "one shared pot" for money. Per-halt rows keep pooling possible later as a rule, with no reshape. |
+| (c) No store; a tidy, reliable pile | Partly taken | The recovery rule already makes piles safe; what's missing is that they read. The recovery rack becomes the Village yard. |
+| (d) Fix the situations | **Taken first (build 0)** | The 64 presses and the refusals are rule problems with precedents: one-thing-in-hand puts what you held "by you" (decisions.md, 2 November, "The hotbar is cut"), and "Keeping your load" puts it "down where you stood". |
 
 ## Best suggestions
 
-1. **Never refuse a big load for a full back** (design). Shouldering a footing, the beam or the boiler with a loaded
-   back puts the load into a yard in reach, else into a tidy pile at your feet, in the same press. Fixes the most
-   common real case outright and costs one rule.
-2. **A yard at every open halt, take only where it lies** (design + systems). Logs, stone and rails only; withdraw at
-   the same yard; up to 24 of each (the cart's load), shown piece by piece. It doesn't shorten a haul, because
-   someone had to carry the goods there first.
-3. **The recovery rack becomes the Village yard** (creative + systems). It already holds logs and stone 23 m from the
-   Village halt; give it the rails shelf and the **Leave it here** press. Recovered drops then land in the one place
-   players already think of as "where spares go".
-4. **The yard is the stack** (creative). No number board: one mesh per piece on reused rack, shelf and stone-pile
-   batches (`shelf-view.ts`, `line2-view.ts`, the station stone pile). Pieces fly in with the deposit flight and land
-   with the stack's wooden knock; a full bay gives the existing full-back cue. Machines show their work (owner-calls).
-5. **Trains draw from yards toward a debt, not a hub** (systems; build 2). When a train stops, its cargo car takes a
-   yard's goods only if something on its line still owes that material (Station 6's kit, the steel works' bill later),
-   and brings them there. Otherwise they stay put. This is the owner's "no routing or quotas" (2 November): connected
-   goods flow to need by themselves.
-6. **The yard is a loader source** (systems + creative; with engine-garage's loaders). The yard stands off the
-   platform's cargo end, beyond the passenger mark, so when trains are longer than platforms the passenger cars still
-   align and the cargo cars stop by the yard; its loader is the same short gantry the brief gives every source.
-7. **After a yes: a little guy keeps the yard** (creative). He squares up the stack after you leave, and pats the pile
+1. **Build 0: put the whole back down in one press** (design). Hold Drop empties the back; a tap still drops one
+   piece. This is the larger share of the owner's 64 presses.
+2. **Build 0: never refuse a big load for a full back** (design). Shouldering a footing, the beam or the boiler with a
+   loaded back sets the load down beside you, on the side away from the big thing and outside its prompt radius,
+   never on the rails, in the same press. A big thing already on your back still refuses another.
+3. **Build 1: a yard at every halt site, taken only where it lies** (design + systems). Logs, stone and rails only;
+   withdraw at the same yard. It appears when the track reaches the halt site (Camp with station 3, Quarry and Far
+   Head as line 2 passes), before trains, and the platform joins it later; this also telegraphs where a halt will be
+   (DESIGN 7). No Pier yard for now: its platform is on the trestle, with no ground.
+4. **A yard never refuses** (design + creative). Each bin shows one mesh a piece up to 24, then one strapped bundle for
+   each further 8, so the stack stays countable and true. A cap would send the second player back to dropping in
+   place at the one spot built to prevent it.
+5. **The recovery rack becomes the Village yard** (creative + systems). It already holds logs and stone 23 m from the
+   Village halt; keep the owner-picked rack model as its log cradle, add the rails shelf and stone bin beside it, and
+   the **Leave it here** press. It stays at (905, 1) until the Home station plan moves it. Recovered logs and stone go
+   to the nearest yard; rails keep recovering to the forge rack.
+6. **The yard is the stack** (creative). No number board: reused rack, shelf and stone-pile batches (`shelf-view.ts`,
+   `line2-view.ts`, the station stone pile). Pieces fly in with the deposit flight and land with the stack's wooden
+   knock. Machines show their work (owner-calls).
+7. **Build 2: trains draw from yards toward a need, not a hub** (systems), with engine-garage's cargo cars and
+   loaders, under four conditions: (i) the train takes yard stock before the source's own, so a deposit visibly
+   shortens the next wait; (ii) the goods ride in the cargo car and are unloaded, never credited at a distance; (iii)
+   it draws only for a bill that is open, never a gated one; (iv) it never empties a yard standing at the bill's own
+   halt. This is the owner's "no routing or quotas" (2 November). Until then a yard away from an open bill is a tidy
+   bin and nothing more.
+8. **After a yes: a little guy keeps the yard** (creative). He squares up the stack after you leave, and pats the pile
    when a friend takes from it; never delays a take (the recovery-rack brief's "interrupted tidier").
 
-**Tension:** (2) and (5) together make yards a slow, visible, train-moved store, which is close to what the seed calls
+**Tension:** (3) and (7) together make yards a slow, visible, train-moved store, which is close to what the seed calls
 a bank. The line held here is that a piece is only ever in one place you can see, and only the railway moves it.
 
 ## Shape
 
-- **Sync:** each yard's stock is accepted railway state, server-owned like the racks (a `HaltYard` row per halt:
-  logs, stone, rails), saved and replicated; flights and the keeper are Local. Deposit and take play on the press with
-  the existing instant-feedback rollback (place.md "Instant feedback").
-- **Reuses:** `rail.deposit`'s pattern for put (`station` = a halt id) and `rackTake`'s for take; `credit`,
-  `balanceOf`, `roomFor`; the supply pulse's recovery branch (aim it at the nearest open yard); the rack/shelf view
-  batches; `RAIL_HALTS` for positions.
-- **Conservation:** `railCounts` (`src/sim/railway.ts:115`) and the line-authority witnesses must count yard stock for
-  logs, stone and rails, or the totals break.
-- **Smallest first build:** suggestion 1 (the swap) plus yards at every open halt and the Village yard from the
-  recovery rack, with put and take; no train draw. One new op pair (or two new station ids on existing ops), one new
-  saved component, optional `x, y, z` on the big-cargo take ops for the swap pile: a wire and save change, so one
-  `WORLD_NS` bump, shipped when ready and not mid-session (owner-calls, "Nothing waits on a world bump").
-- **Build 2**, with engine-garage's cargo cars and loaders: trains draw from yards toward a debt.
-- **Risks:** yards becoming hoards that make bills trivial late on (the 24 cap and per-halt stock bound it); a
-  `railway-systems.ts` hotspot (put the rules in a new `railway-yard.ts` with one wiring hunk); pile and yard
-  recovery double-counting (one recovery destination per pile, tested).
+- **Build 0 (client only, existing ops, no bump):** composed on the client from ops that exist. `rail.drop` already
+  accepts `n` up to the pack's 16 (`src/adapters/railway.ts:269`) and `adapter.drop(x, y, z, n, kind)` exists
+  (`:1123`); a pile takes 8, so a full pack is two drops. The swap sends the drops, then the existing
+  `rail.boilerTake`, `rail.beamTake` or `rail.footTake`; the server applies them in order, so `carried(a) === 0`
+  holds when the take arrives. No wire, save or `WORLD_NS` change. First proof: a sim test with a back of 16 logs,
+  two drops and a `boilerTake` in one tick, accepted in order, and the same predicted on the client.
+- **Build 1 (one `WORLD_NS` bump):** each yard's stock is accepted railway state, server-owned like the racks (a
+  `HaltYard` row per halt site: logs, stone, rails), saved and replicated; flights and the keeper are Local. Put and
+  take play on the press with the instant-feedback rollback (place.md "Instant feedback"); the prompt re-arms only
+  once the flight has landed. Reuses `rail.deposit`'s pattern for put and `rackTake`'s for take; `credit`,
+  `balanceOf`, `roomFor`; the supply pulse's recovery branch (aimed at the nearest yard); the rack/shelf view batches;
+  halt positions from `RAIL_HALTS`. Yard stock is exempt from the 21-minute recovery. `railCounts`
+  (`src/sim/railway.ts:115`) and the line-authority witnesses must count yard stock for logs, stone and rails. Ships
+  when ready, not mid-session (owner-calls, "Nothing waits on a world bump").
+  - **Optional middle step:** **Leave it here** at the recovery rack alone, writing the existing `rail.rack` and
+    `rail.stoneRack` fields. It adds an op but reshapes no saved state, so by [mixed-builds](../agents/mixed-builds.md)
+    it should need no bump; the builder confirms.
+- **Where a yard stands:** on the ground at the foot of the original platform's back ramp, never on the 2.5 m deck
+  (bench, map display, mast and lever fill it), and not between the ramp and the display. The Village uses the
+  recovery rack's spot. Quarry: on the side away from the gate, 2 m clear of the reward crate. Not anchored to a
+  "cargo end": on double track each direction's train ends at opposite ends, and build 2's gantry reaches the bay from
+  the track.
+- **Build 2**, with engine-garage's cargo cars and loaders: the train draw, under suggestion 7's four conditions. The
+  yard becomes a loader source only then; build 1 must not depend on it.
+- **Risks:** a `railway-systems.ts` hotspot (put the rules in a new `railway-yard.ts` with one wiring hunk); pile and
+  yard recovery double-counting (one recovery destination per pile, tested); the set-down pile reading from the play
+  camera (piles were invisible from some angles on 6 November).
 
 ## Done means
 
-- **The swap:** `--eval` with a back of 8 logs at the boiler pedestal; press Pick up. The boiler is on the rope in
-  one press and 8 logs sit in a pile at the pickup spot (or in the Village yard if in reach); no refusal.
-- **Leave it here:** `--eval` at the Quarry halt with 10 logs and 4 rails; one press and `--video` shows the pieces
-  fly into the bay; the cradle shows 10 and the shelf 4; a second tab sees the same stack.
-- **Take back:** the same setup, Pick up at the yard with an empty back fills it to the back's cap; the rest stays.
-- **Recovery reads:** `--eval` with a pile aged past 21 minutes near the forge; after the pulse the pieces are on the
-  Village yard's stack in a still from the town path.
-- **Nothing duplicates:** reload and empty-room restart with yard stock; `railCounts` totals unchanged
-  (a focused test, not a full run).
+- **Build 0, hold Drop:** `--eval` with a back of 16 logs; hold Drop. Two piles of 8 at your feet, the back empty, in
+  one press; a tap still drops one.
+- **Build 0, the swap:** `--eval` with a back of 16 logs at the boiler pedestal; press Pick up. The boiler is on the
+  rope in one press and the logs sit in piles at your feet beside the pickup spot (the pedestal is about 15 m from the
+  recovery rack, so no yard is in reach); no refusal. A still from the play camera shows the pile.
+- **Build 1, Leave it here:** `--eval` at the Quarry halt site with 10 logs and 4 rails; one press and `--video` shows
+  the pieces fly into the bay; the cradle shows 10 and the shelf 4; a second tab sees the same stack.
+- **Build 1, take back:** the same setup, Pick up at the yard with an empty back fills it to the back's cap; the rest
+  stays.
+- **Build 1, never full:** `--eval` putting 40 logs into one yard shows 24 pieces and two strapped bundles.
+- **Build 1, recovery reads:** `--eval` with a pile aged past 21 minutes near the forge; after the pulse the pieces are
+  on the Village yard's stack in a still from the town path.
+- **Nothing duplicates:** reload and empty-room restart with yard stock; `railCounts` totals unchanged (a focused
+  test, not a full run).
 
 ## Open questions
 
-1. **A yard at each halt, or one bank you can reach from every station?**
-   Recommended: **a yard at each halt; what's in it is taken only there, and only trains move it on.**
+1. **A yard or a bank?**
+   Recommended: **a yard at each halt, taken where it lies; with the cargo cars, trains carry a yard's goods to
+   whatever on their line needs them. Not one pool you reach from every station.** Answer: ___
+2. **Put the whole back down in one press, and never be refused a big load?**
+   Recommended: **yes, now, as its own small build: hold Drop empties your back, and shouldering the boiler, beam or
+   a footing sets your load down beside you.** Answer: ___
+3. **Can a yard fill up?**
+   Recommended: **no. It always takes what you leave; past 24 of a kind the stack grows in strapped bundles of 8.**
    Answer: ___
-2. **What can go in a yard?**
-   Recommended: **the back's materials only (logs, stone, rails); footings, the beam, the boiler and later steel keep
-   their own homes (the Works rack, the pedestal, the Roundhouse bay).** Answer: ___
-3. **Do trains take from yards?**
-   Recommended: **yes, in build 2 with the cargo cars and loaders, and only towards something on their line that still
-   needs that material; the first build's yards just hold.** Answer: ___
-4. **Shouldering big cargo with a full back?**
-   Recommended: **your load goes into a yard in reach, else down at your feet as a tidy pile, in the same press; never
-   "Empty your back first".** Answer: ___
-5. **Does the recovery rack become the Village yard, with recovered drops going to the nearest open yard?**
-   Recommended: **yes; before trains, when there are no halts, drops recover to the Village yard as they do today.**
-   Answer: ___
+4. **When does a yard appear, and does the Pier get one?**
+   Recommended: **when the track reaches the halt site, before trains; none at the Pier for now.** Answer: ___
+5. **Where does steel for upgrades wait?**
+   Recommended: **as a stack in the Roundhouse bay, brought by train, spent in view by a Fit; no separate store and
+   never in a yard.** Answer: ___
 
 ## Draft strings for the owner
 
 - **Leave it here**: Interact at a yard with something on your back that it takes (new).
 - **Pick up**: the existing verb, reused at a yard.
-- A full yard: no words, the existing full cue.
 
-No Boogler lines are added or changed. If question 4 is taken, the existing system prompt "Empty your back first"
-(`src/entities/railway/works-view.ts:833`, `crossing-view.ts:552`, `footing-view.ts:234`, `boiler-view.ts:576`) stops
-being reachable; it is not his copy,
-but it is listed here for the owner rather than deleted silently.
+No Boogler lines are added or changed. If question 2 is taken, the existing system prompt "Empty your back first"
+stops being reachable for logs, stone and rails at its five sites (`src/entities/railway/works-view.ts:833`,
+`crossing-view.ts:552`, `footing-view.ts:234`, `boiler-view.ts:576`, `line-cargo.ts:308`); it stays for a big thing
+already on your back. It is not his copy, but it is listed here for the owner rather than changed silently.
 
 ## Parked
 
 - Yards feeding town growth (the "rail builds the world" heap that grows buildings from what arrives).
 - A yard tally on the halt's island-map display, if stacks ever stop reading at a glance.
-- The steel store engine-garage assumes: steel waits as a physical stack in the Roundhouse bay, brought by train, and a
-  Fit spends that stack; a yard is not that store, and a wallet is the money brief's job.
-- Hold Drop to put down your whole back at once.
+- A Pier yard, with Q7 and the loaders.
+- Pooling yards along a line into one shared stock, as a rule over the same per-halt rows, if the owner wants a bank
+  after all.
+
 
 ## Design review (designer, 2026-11-10)
 
