@@ -21,8 +21,8 @@ const claude = (who: string, model: string, effort: string): Pick => ({ who, mod
 export const routes: Route[] = [
   {
     work: 'Orchestration, review of returned work, owner conversation',
-    withCodex: claude('main session', 'fable or opus', 'medium'),
-    normal: claude('main session', 'fable or opus', 'medium'),
+    withCodex: claude('main session', 'opus or fable', 'medium, or high for opus'),
+    normal: claude('main session', 'opus or fable', 'medium, or high for opus'),
   },
   {
     work: 'Design review of a plan or brief with gameplay calls, before it is built',
@@ -48,15 +48,15 @@ export const routes: Route[] = [
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     withCodex: {
       who: "the other vendor from the author: Codex review job for Claude's code, a fresh Claude general-purpose subagent for Codex's",
-      model: 'gpt-6-astra, or fable',
-      effort: 'xhigh for astra, medium for fable',
+      model: 'gpt-6-astra, or fable or opus',
+      effort: 'xhigh for astra, medium for fable or opus',
     },
-    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'medium'),
+    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable or opus', 'medium'),
   },
   {
     work: 'Code review before shipping (/code-review, e.g. on src/net*, src/world/ or server/)',
-    withCodex: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'medium'),
-    normal: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'medium'),
+    withCodex: claude('general-purpose subagent running /code-review medium, not the main session', 'opus', 'medium'),
+    normal: claude('general-purpose subagent running /code-review medium, not the main session', 'opus', 'medium'),
   },
   {
     work: 'Runner: owed proofs on a built branch (rebase, bot runs, stills, tick marks); reports failures, changes no design or game code',
