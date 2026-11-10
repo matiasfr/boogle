@@ -25,6 +25,7 @@ import { input, inputState } from '../../player/input-state.ts';
 import { cam, me } from '../../player/state.ts';
 
 import { inv } from '../../player/inventory.ts';
+import { APEX_GRAVITY } from './apex-float.ts';
 
 export { cam, me };
 setLocalPresence(me);
@@ -50,7 +51,7 @@ const KEY_TURN = 2; // rad/s while ← or → is held without mouse look
 export const JUMP = {
   fallGravity: 1.7, // x gravity while falling
   cutGravity: 2.5, // x gravity while rising after the jump button was released (short hop)
-  apexGravity: 0.5, // x gravity near the top while the button is held
+  apexGravity: APEX_GRAVITY, // x gravity near the top while the button is held
   apexSpeed: 1.6, // m/s: "near the top"
 };
 export const MOVE = {

@@ -18,6 +18,7 @@ import { camForward, me } from '../../player/player.ts';
 import { registerAction, wrapAction } from '../../player/controls.ts';
 import { inputState } from '../../player/input-state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
+import { airJumpApexForce } from '../../entities/player/apex-float.ts';
 import { camera } from '../../render/scene.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
@@ -324,7 +325,8 @@ onPreStep(
       if (b.velocity.y <= 0) move.second = false;
       else {
         // The same family as the first jump: a little float at the top, whether you held it or not.
-        if (b.velocity.y < MOVE.apexSpeed) b.force.y += PLAYER_MASS * GRAVITY * 0.5;
+        // Never on top of the controller's float for a still-rising first jump (apex-float.ts).
+        if (b.velocity.y < MOVE.apexSpeed) b.force.y = airJumpApexForce(b.force.y, PLAYER_MASS * GRAVITY);
         // And more steering through it.
         const dx = me.wish.x * (me.sprint ? 9.5 : 5.6) - b.velocity.x,
           dz = me.wish.z * (me.sprint ? 9.5 : 5.6) - b.velocity.z,
