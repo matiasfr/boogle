@@ -1,4 +1,6 @@
-// Pre-merge review of WORLD_NS v25 (request stops): failing tests for suspected defects. Not for merging.
+// The independent review of WORLD_NS v25 (request stops): its two defects, kept as regression tests. Asks never starve
+// the kit (railway-train.ts trainNextStop, railway-systems.ts serviceOf); a rider's reach survives a replan
+// (railway-server.ts nearTrain).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
