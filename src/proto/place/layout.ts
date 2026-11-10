@@ -406,6 +406,103 @@ export const HALTS: Halt[] = [
   { name: 'Far Head', line: 1, s0: EAST.headStop - 11, s1: EAST.headStop + 11, lat: 2.9, stop: 2 },
 ];
 
+/** The double formation, drawn (docs/plans/generic-lines.md, step 2; view only, trains stay on today's track): each
+ * line's up track runs `UP_LAT` m left of today's (left-hand running, +s away from Home) from merge to merge, easing
+ * in and out over a 20 m stub turnout at each end; line 2 also has Far Head's facing crossover, up track to down,
+ * while Far Head is its end. Metres along each line. Step 4a moves the merges into the sim catalog's `RailHalt.end`. */
+export const UP_LAT = -4;
+export const TURNOUT = 20;
+export type Formation = { from: number; to: number; crossover?: readonly [number, number] };
+export const FORMATION: Record<LineSpec['id'], Formation> = {
+  timber: { from: 36, to: 182 },
+  quarry: { from: 34, to: 556, crossover: [490, 512] },
+};
+const ease = (t: number) => {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
+};
+/** The up track's lateral offset at `s` (UP_LAT between the turnouts), or null where the line is single. */
+export function upLat(f: Formation, s: number): number | null {
+  if (s < f.from || s > f.to) return null;
+  return UP_LAT * Math.min(ease((s - f.from) / TURNOUT), ease((f.to - s) / TURNOUT));
+}
+/** The crossover's lateral offset at `s`: from the up track at its start to today's track at its end; null off it. */
+export function crossLat(f: Formation, s: number): number | null {
+  const c = f.crossover;
+  if (!c || s < c[0] || s > c[1]) return null;
+  return UP_LAT * (1 - ease((s - c[0]) / (c[1] - c[0])));
+}
+/** The up track's platforms, outside it (no lever, board or signal until step 4b), and the plank crossing over both
+ * tracks at each pair's end (`crossS`), from today's platform to the up one. Quarry's stands clear of the Q4 frame
+ * (s 175-178, 6.5-8.5 m left; orchestrator, 10 November), so it has no ramp off that end (`endRamp` false). Each
+ * crossing lies by the foot of today's platform's end ramp, outside where a train stands. `pair`: today's halt's row. */
+export type UpHalt = {
+  name: string;
+  line: 1;
+  s0: number;
+  s1: number;
+  lat: number;
+  pair: number;
+  crossS: number;
+  endRamp: boolean;
+};
+export const UP_HALTS: UpHalt[] = [
+  {
+    name: 'Quarry, up',
+    line: 1,
+    s0: EAST.quarry - 24,
+    s1: EAST.quarry - 3.5,
+    lat: -6.95,
+    pair: 3,
+    crossS: EAST.quarry - 19,
+    endRamp: false,
+  },
+  {
+    name: 'Far Head, up',
+    line: 1,
+    s0: EAST.headStop - 11,
+    s1: EAST.headStop + 11,
+    lat: -6.95,
+    pair: 4,
+    crossS: EAST.headStop + 14.5,
+    endRamp: true,
+  },
+];
+/** A plank crossing's span across the formation, lateral metres (today's side, up side), and its width along the line.
+ * Its planks lie on the sleepers, flush with the rail tops, with a flangeway beside each rail. */
+export const CROSSING_SPAN = [1.5, -5.5] as const;
+export const CROSSING_WIDTH = 2.4;
+/** The crossing's planks as lateral spans [from, to] (from > to), given the up track's offset at the crossing's two
+ * edges (they differ where it still eases out of a turnout): a flangeway beside each rail over that range. */
+export function crossingPlanks(upA: number, upB = upA): [number, number][] {
+  const hi = Math.max(upA, upB),
+    lo = Math.min(upA, upB);
+  const rails: [number, number][] = [
+    [0.5, 0.5],
+    [-0.5, -0.5],
+    [hi + 0.5, lo + 0.5],
+    [hi - 0.5, lo - 0.5],
+  ];
+  const out: [number, number][] = [];
+  let from: number = CROSSING_SPAN[0];
+  for (const [top, bottom] of rails) {
+    if (from - (top + 0.08) > 0.05) out.push([from, top + 0.08]);
+    from = bottom - 0.08;
+  }
+  out.push([from, CROSSING_SPAN[1]]);
+  return out;
+}
+
+/** The lamps along the ridge trestle's edges, s 116 back to 60 every 7 m, 1.72 m in from each edge of the deck: on the
+ * left that edge is the up track's since the second track (generic-lines step 2), so they stand outside both tracks.
+ * `up` is the up track's offset at `s` (layout.ts upLat), 0 where the line is single. */
+export const pathLamps = (up: (s: number) => number) => {
+  const out: { s: number; l: number }[] = [];
+  for (let s = 116; s >= 60; s -= 7)
+    for (const side of [-1, 1]) out.push({ s, l: side * 1.72 + (side < 0 ? up(s) : 0) });
+  return out;
+};
+
 /** The forge's own frame, by its north wall: logs land in it and its pieces drop. By hand first; trains finish the roof. */
 export const FORGE_FRAME = { x: -88, z: -12, yaw: 0 };
 /** The proper axe's stand, beside the forge frame on the hardwoods' side: the lit forge's first made thing (7 November). */

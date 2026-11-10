@@ -40,7 +40,7 @@ export const JUMPS: readonly Jump[] = [
     stage: 'hook-taken',
     label: 'Hook earned',
     line: 'Q2 laid and the hook shot is yours; Q3 is next',
-    land: near(LINE2_HOOK, -2, 2.5, 23.5, LINE2_STATIONS[2]!), // on pillar p2's pad, facing Q3
+    land: near(LINE2_HOOK, -2, 2.5, LINE2_HOOK.y / 100, LINE2_STATIONS[2]!), // on pillar p2's pad, facing Q3
   },
   {
     stage: 'hook-earned',
@@ -52,7 +52,7 @@ export const JUMPS: readonly Jump[] = [
     stage: 'q4-done',
     label: 'Sea switch',
     line: 'Q4 laid; the summit switch is next',
-    land: near(LINE2_HOOK, -3, 0.5, 23.5, LINE2_SEA), // on p2's pad, facing the rings up to the summit
+    land: near(LINE2_HOOK, -3, 0.5, LINE2_HOOK.y / 100, LINE2_SEA), // on p2's pad, facing the rings up to the summit
   },
   {
     stage: 'q5-done',

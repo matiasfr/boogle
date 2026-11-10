@@ -33,10 +33,12 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
   const end = rail.besideLine(line, 546, 0);
   const farHead = { x: end.x, y: layout.railY(line, 546), z: end.z };
   const slots: THREE.Vector3[] = [];
-  // Rim outward, preserving Place's 27 stations (490, 483, ... 308), two lamps each.
+  // Rim outward, preserving Place's 27 stations (490, 483, ... 308), two lamps each, 1.72 m in from each edge of the
+  // deck: on the left that is the up track's edge since the second track (generic-lines step 2).
   for (let s = 308; s <= 490; s += 7)
     for (const side of [-1, 1]) {
-      const p = rail.besideLine(line, s, side * 1.72);
+      const up = side < 0 ? (layout.upLat(layout.FORMATION.quarry, s) ?? 0) : 0;
+      const p = rail.besideLine(line, s, side * 1.72 + up);
       slots.push(new THREE.Vector3(p.x, layout.railY(line, s) + 0.75, p.z));
     }
   const postGeo = new THREE.BoxGeometry(0.12, 1.5, 0.12),

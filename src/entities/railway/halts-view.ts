@@ -21,6 +21,7 @@ import { uiSound } from '../../ui/ui-sound.ts';
 import { me } from '../../player/player.ts';
 import { roadPlaque } from './home-pictogram.ts';
 import { createIslandBoards } from './island-boards.ts';
+import { createUpPlatforms } from './up-platforms.ts';
 import { displayYaw, haltDisplays, haltMapLines, haltRows } from './halt-map.ts';
 
 /** How near a request lever's knob its prompt is offered (m, flat). */
@@ -32,11 +33,11 @@ type LinePoint = import('../../proto/place/layout.ts').LinePoint;
 export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedView) {
   const [
     { flat },
-    { box, place },
-    { H, addStatic: staticBody, slab: staticSlab },
+    boxModule,
+    landModule,
     layout,
     { boardMaterial },
-    { dropSet, dustRing },
+    piecesModule,
     { ISLAND },
   ] = await Promise.all([
     import('../../proto/flat.ts'),
@@ -47,7 +48,12 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     import('../../proto/place/pieces.ts'),
     import('../../proto/place/home-station.ts'),
   ]);
+  const { box, place } = boxModule,
+    { H, addStatic: staticBody, slab: staticSlab } = landModule,
+    { dropSet, dustRing } = piecesModule;
   const { ORIGIN, lineAt, railY } = layout;
+  // The up track's platforms and plank crossings, standing with today's halt beside each (generic-lines step 2).
+  const ups = createUpPlatforms(owner, { layout, boxes: boxModule, land: landModule, pieces: piecesModule });
   const mapLines = haltMapLines(layout);
   const rows = haltRows(layout);
   // One display a halt, the Pier's too; the Home island's two edges share one.
@@ -540,6 +546,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       shown = adapter.inspect().line2.trains;
       pulled.clear();
       halts.forEach((h, k) => h.snap(wanted(k)));
+      ups.update(0, (k) => halts[k]!.up, true);
       clock = adapter.tickNow();
       signals(true);
       levers(0, true);
@@ -583,6 +590,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         if (want && !h.up) h.build(was ? 0.3 : 0.3 + k * 0.3);
         else if (!want && h.up) h.snap(false);
       });
+      ups.update(dt, (k) => halts[k]!.up);
       tick(dt);
       signals();
       levers(dt);
@@ -612,6 +620,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       /** Whether every shown display marks the waiting glider on Needle Bell's summit. */
       boardGlider: boards.gliderMark(),
       boardFaces: boards.faces(),
+      /** The up track's platforms (generic-lines step 2): each one's halt row and whether it stands. */
+      upPlatforms: ups.inspect(),
     }),
   };
 }

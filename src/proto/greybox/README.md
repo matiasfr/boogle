@@ -103,7 +103,7 @@ the raw import · `greybox.css` · `blockout.ts` the live client's `?blockout=wo
   `dev/level/world-blockout.ts`) gets a solid 40 m platform outside each of its two tracks, top 0.9 m over the deck.
 - **Double track.** Future decks are the 7.6 m `FORMATION` with two track beds (one merged `track-beds` mesh), each line
   end a crossover (an X of beds) or a solid 40 m turning loop. Rides and the rider's sleepers use the left-hand track.
-  Lines 1 and 2 get a non-solid `second-track-survey` bed on the side `LIVE_SECOND_TRACK` picks, with orange posts at
-  its clashes.
+  Lines 1 and 2's second track is built (generic-lines step 2): the live railway draws it, so the greybox no longer
+  draws their survey bed; `LIVE_SECOND_TRACK` stays the blockout page's record of that side's clashes.
 - **The full loop** (panel ride `loop`, `__greybox.ride('loop', 4)`): line 2's real rails from the Village halt (`=l2`),
   then `ringx`, `ledge`, and `wall-n`, `wall-s`, `lift`, `salt-quay`, `seacave` backwards (`~id`), 8.7 km.

@@ -6,7 +6,22 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dequantize } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { sourceModule, sourceFunction } from './source.ts';
-import { LINKS, ORIGIN, lineAt, railY, CRANE, RACK, ROCKS, STUB, AXE_STAND } from '../../src/proto/place/layout.ts';
+import {
+  AXE_STAND,
+  CRANE,
+  FORMATION,
+  LINKS,
+  ORIGIN,
+  RACK,
+  ROCKS,
+  STUB,
+  UP_LAT,
+  crossLat,
+  lineAt,
+  pathLamps,
+  railY,
+  upLat,
+} from '../../src/proto/place/layout.ts';
 import { openingBuildings, openingStops, forgePlan, WOOD2 } from '../../src/proto/place/opening-plans.ts';
 import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '../../src/proto/place/spatial-station.ts';
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
@@ -428,6 +443,11 @@ export async function checkMachineClearance() {
       carriedPiece,
       TOP: sourceFunction(trackFile, 'TOP', {}),
       DECK_W: sourceFunction(trackFile, 'DECK_W', {}),
+      BED_W: sourceFunction(trackFile, 'BED_W', {}),
+      FORMATION,
+      UP_LAT,
+      upLat,
+      crossLat,
       box: sourceFunction('src/proto/net/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: () => ({}),
       lookTrack: () => ({}),
@@ -439,7 +459,12 @@ export async function checkMachineClearance() {
     dir = new THREE.Vector3(),
     start = new THREE.Vector3(),
     toRig = new THREE.Matrix4();
-  const lengths = schedule.map((p) => p.to - p.from);
+  // The magazine holds a rail pair per track a panel lays (two where the up track runs).
+  const pairsOf = schedule.map((_, k) => track.pairs(k));
+  const lengths = schedule.flatMap((p, k) => Array<number>(pairsOf[k]!).fill(p.to - p.from));
+  const pairsFrom = (index: number) => pairsOf.slice(index).reduce((n, k) => n + k, 0);
+  const upSeat = new THREE.Vector3(),
+    upDir = new THREE.Vector3();
   function at(s: number) {
     poseCar(deck!, s);
     poseCar(power!, s + model.MACHINE_GAP);
@@ -453,7 +478,7 @@ export async function checkMachineClearance() {
     const r = Math.hypot(rig.trolley.position.x, rig.trolley.position.z);
     if (r > reach) [reach, reachAt] = [r, label];
   };
-  const pairs = schedule.length;
+  const pairs = pairsFrom(0);
   at(line.stations[0]!.s + 2.4);
   rig.drawStack(pairs, lengths, false);
   rig.home(1, pairs);
@@ -462,7 +487,7 @@ export async function checkMachineClearance() {
     acceptedPanels = schedule.slice(0, index).reduce((units, p) => units + p.stock, 0);
     const stage = line.stations[panel.stage]!;
     // The real stack and carried rail pair; falling track pieces are the track's own and are excluded.
-    rig.drawStack(pairs - index, lengths.slice(index), true);
+    rig.drawStack(pairsFrom(index), lengths.slice(pairs - pairsFrom(index)), pairsOf[index]!);
     for (let step = 0; step <= 1000; step++) {
       const phase = step / 1000,
         head = line.line.len - (panel.from + (panel.to - panel.from) * phase),
@@ -473,39 +498,50 @@ export async function checkMachineClearance() {
       seat.applyMatrix4(toRig);
       dir.transformDirection(toRig);
       track.panelStart(index, start).applyMatrix4(toRig);
+      const up = track.seatUp(index, upSeat, upDir);
+      if (up) {
+        upSeat.applyMatrix4(toRig);
+        upDir.transformDirection(toRig);
+      }
       rig.pose(
         phase,
-        pairs - index,
+        pairsFrom(index),
         seat,
         Math.atan2(dir.x, dir.z),
         Math.asin(Math.max(-1, Math.min(1, dir.y))),
         start,
         track.carriedLength(index),
+        up
+          ? {
+              seat: upSeat,
+              yaw: Math.atan2(upDir.x, upDir.z),
+              pitch: Math.asin(Math.max(-1, Math.min(1, upDir.y))),
+            }
+          : null,
       );
       inspect('panel ' + index + ' phase ' + phase);
       measureReach('panel ' + index + ' phase ' + phase);
     }
-    rig.drawStack(pairs - 1 - index, lengths.slice(index + 1), false);
+    rig.drawStack(pairsFrom(index + 1), lengths.slice(pairs - pairsFrom(index + 1)), false);
     if (index === schedule.length - 1 || schedule[index + 1]!.stage !== panel.stage) {
       if (index === schedule.length - 1) {
         // Production path.ts enables these only after T3, behind the already passed machine.
-        for (let s = 116; s >= 60; s -= 7)
-          for (const side of [-1, 1]) {
-            const at = besideLine(line.line, s, side * 1.72);
-            obstacle(
-              `path-lamp/${s}/${side}`,
-              new THREE.Matrix4()
-                .makeTranslation(at.x, railY(line.line, s), at.z)
-                .scale(new THREE.Vector3(0.26, 1.68, 0.26)),
-            );
-          }
+        for (const { s, l } of pathLamps((s) => upLat(FORMATION.timber, s) ?? 0)) {
+          const at = besideLine(line.line, s, l);
+          obstacle(
+            `path-lamp/${s}/${l}`,
+            new THREE.Matrix4()
+              .makeTranslation(at.x, railY(line.line, s), at.z)
+              .scale(new THREE.Vector3(0.26, 1.68, 0.26)),
+          );
+        }
       }
       const head = panel.end;
       const start = head + MAX_PANEL_LENGTH + 2.4;
       for (let k = 0; k <= 1500; k++) {
         const t = k / 500;
         at(Math.max(head + 2.4, start - t * 5));
-        rig.home(Math.min(1, t / 0.65), pairs - 1 - index);
+        rig.home(Math.min(1, t / 0.65), pairsFrom(index + 1));
         inspect('return ' + index + ' ' + k);
         measureReach('return ' + index + ' ' + k);
       }

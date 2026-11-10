@@ -9,6 +9,7 @@ import * as prettier from 'prettier';
 import {
   HALTS,
   LINES,
+  LINKS,
   ORIGIN,
   ROOM_PLOTS,
   SPIRE,
@@ -19,6 +20,8 @@ import {
   railY,
 } from '../../src/proto/place/layout.ts';
 import { H } from '../../src/proto/place/terrain.ts';
+import { GATES, GATE_SLAB, PILLARS } from '../../src/proto/place/tech-layout.ts';
+import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/proto/place/spatial-station.ts';
 import { layout, parseMapPage, polyLen, smoothRing, type XZ } from '../../src/sickle/map-data.ts';
 import { createGround } from '../../src/proto/greybox/ground.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
@@ -307,6 +310,21 @@ function secondTrack(lineIndex: 0 | 1) {
     { x: FORGE.x, z: FORGE.z, r: Math.max(FORGE.w, FORGE.d) / 2 + 1.5, what: 'the forge' },
     { x: TURNTABLE.x, z: TURNTABLE.z, r: TURNTABLE.r + 2, what: 'the turntable' },
     { x: SPIRE.x, z: SPIRE.z, r: 14, what: 'the Needle Bell' },
+    // The pillars, the gates' jambs and the station frames, which the survey missed before the second track was built
+    // (orchestrator, 10 November): each with the bed's 1.3 m half width added.
+    ...PILLARS.map((q) => ({ x: q.x, z: q.z, r: q.r + 1.3, what: `pillar ${q.id}` })),
+    ...Object.entries(GATES).flatMap(([id, g]) =>
+      [-1, 1].map((side) => {
+        const px = (side * (GATE_SLAB.w + GATE_SLAB.pillar)) / 2;
+        return { x: g.x + Math.cos(g.yaw) * px, z: g.z - Math.sin(g.yaw) * px, r: 0.8 + 1.3, what: `the ${id} gate` };
+      }),
+    ),
+    ...LINKS.flatMap((link) =>
+      link.stations.map((spec) => {
+        const f = frameBesideLine(spec, link.line, link.dir);
+        return { x: f.x - ORIGIN.x, z: f.z, r: Math.hypot(FRAME_D, FRAME_W) / 2 + 1.3, what: `the ${spec.id} frame` };
+      }),
+    ),
     // line 2's works beside the track (frames, racks, levers), pinned in the map JSON from the railway catalog
     ...A.works
       .filter((w) => w.kind !== 'halt' && w.id !== 'bents' && w.id !== 'turntable')

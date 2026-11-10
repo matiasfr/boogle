@@ -271,9 +271,10 @@ for i, side in enumerate((-1, 1)):
 
 # Logical origins are explicit runtime slide/pivot frames. Decode transforms stay on the meshes.
 # Sleeve geometry extends UP from its sliding bottom; the three 1.45 m pieces overlap at full stroke.
-# One rail pair per commit (at most 3.33 m) puts the deck 5.73 m behind the laying head, so the beam reaches 5.8 m
-# (was 17.5 m behind 14.3 m panels). Runtime PANEL_BEAM_LENGTH must match; the level check measures both.
-BEAM = 5.8
+# One rail pair per commit (at most 3.33 m) puts the deck 5.73 m behind the laying head; the second track's pair is
+# set 4 m to the side of the first (generic-lines step 2), so the beam reaches 7.0 m (was 5.8 m; 17.5 m behind 14.3 m
+# panels before that). Runtime PANEL_BEAM_LENGTH must match; the level check measures both.
+BEAM = 7.0
 part('lay_gantry_beam', ORANGE, lambda bm: box(bm, 0, 0, BEAM / 2, 0.26, 0.24, BEAM, BIG_BEVEL))
 part('lay_paint_trolley', ORANGE, lambda bm: box(bm, 0, 0, 0, 0.65, 0.35, 0.7, BIG_BEVEL))
 for name, width in [('upper', 0.32), ('middle', 0.25), ('lower', 0.18)]:

@@ -39,7 +39,20 @@ import { wagonLook, LOCO, TRAILER, type CarSpec } from '../wagon/look.ts';
 import { box, place } from '../net/boxes.ts';
 import { deck, type Deck } from '../net/crates.ts';
 import { H, addStatic, slab } from './land.ts';
-import { ORIGIN, STUB, TUNE, lineAt, railY, type Line, type LinePoint, type LineSpec } from './layout.ts';
+import {
+  FORMATION,
+  ORIGIN,
+  STUB,
+  TUNE,
+  UP_LAT,
+  crossLat,
+  lineAt,
+  railY,
+  upLat,
+  type Line,
+  type LinePoint,
+  type LineSpec,
+} from './layout.ts';
 import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
 import { flat } from '../flat.ts';
 import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
@@ -50,7 +63,7 @@ import { machineModel, MACHINE_CHAIR_SEAT, MACHINE_CHAIRS, MACHINE_DECK, MACHINE
 import { solidTrainLoad } from './train-load.ts';
 import { registerSeat, SEATED_HIPS } from './seat.ts';
 import { MAX_PANEL_LENGTH, carriedPiece, trackPanels, type TrackPanel } from './track-panels.ts';
-import { STACK_PAIRS } from './machine-panels.ts';
+import { FIRST_SEATED, type UpSeat } from './machine-panels.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -95,8 +108,13 @@ export type Track = {
   /** Rail-level world point the gantry's sweep starts from. */
   panelStart: (index: number, out: THREE.Vector3) => THREE.Vector3;
   carriedLength: (index: number) => number;
-  /** Lays the pending panel piece by piece: each piece falls as the gantry's jaw frame passes its place. */
-  presentPanel: (index: number, frame: THREE.Matrix4) => void;
+  /** The up track's carried pair for this panel, as `seat`; false where the panel has no up track. */
+  seatUp: (index: number, mid: THREE.Vector3, dir: THREE.Vector3) => boolean;
+  /** Rail pairs the gantry lays for this panel: 2 where it has up track, else 1 (the magazine empties by this). */
+  pairs: (index: number) => number;
+  /** Lays the pending panel piece by piece: each piece falls as the gantry's jaw frame passes its place.
+   * `firstSeated`: a two-pair panel's first pair has been let go and lies in its seat. */
+  presentPanel: (index: number, frame: THREE.Matrix4, firstSeated?: boolean) => void;
   layTo: (u: number) => void;
   snapTo: (u: number) => void;
   update: (dt: number) => void;
@@ -110,6 +128,8 @@ export function buildTrack(
 ) {
   const panelled = mode === 'panels';
   const { line, dir } = spec;
+  const formation = FORMATION[spec.id];
+  const ulOf = (s: number) => upLat(formation, s) ?? 0;
   const u = (s: number) => (dir > 0 ? s : line.len - s);
   const panels = panelled ? trackPanels(spec) : [];
   const stubbed = (s: number) =>
@@ -157,15 +177,30 @@ export function buildTrack(
     lateral(0, q);
     return railY(line, s) - H(q.x, q.z);
   };
+  const qUp = { x: 0, z: 0 };
+  /** The deck runs where either track's bed is over a metre above the ground, so the formation's planks start and stop
+   * together across both tracks (leaves P at `s` and q on today's track, as `bed`). */
+  const deck = (s: number) => {
+    const centre = bed(s),
+      ul = ulOf(s);
+    if (centre > 1 || ul > -0.5) return centre > 1;
+    lateral(ul, qUp);
+    return railY(line, s) - H(qUp.x, qUp.z) > 1;
+  };
   if (!panelled) {
     // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
     for (let s = 0.6; s < line.len;) {
-      const onDeck = bed(s) > 1;
+      const onDeck = deck(s);
       const yaw = Math.atan2(P.ux, P.uz),
         y = railY(line, s),
         lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
-      if (onDeck) add(s, 'plank', q.x, q.z, y - 0.02, place(0, 0, 0, DECK_W, 0.12, 0.84, yaw, lean), '#a97a45', 0, 1.1);
+      // Where the up track runs the deck is the whole formation, both tracks' width.
+      const ul = ulOf(s);
+      lateral(ul / 2, q);
+      if (onDeck)
+        add(s, 'plank', q.x, q.z, y - 0.02, place(0, 0, 0, DECK_W - ul, 0.12, 0.84, yaw, lean), '#a97a45', 0, 1.1);
       else {
+        lateral(0, q);
         add(s, 'sleeper', q.x, q.z, y - 0.02, place(0, 0, 0, 2.3, 0.12, 0.42, yaw, lean), '#8a6236', 0, 1.1);
         // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
         for (const side of [-0.75, 0.75]) {
@@ -206,13 +241,15 @@ export function buildTrack(
         to = cuts[cut]!;
       for (let at = from; at < to - 1e-7;) {
         const probe = dir > 0 ? at + 0.5 : line.len - at - 0.5;
-        const spacing = bed(probe) > 1 ? 1 : 1.2;
+        const spacing = deck(probe) ? 1 : 1.2;
         const length = Math.min(spacing, to - at);
         const s = dir > 0 ? at + length / 2 : line.len - at - length / 2;
-        const onDeck = bed(s) > 1;
+        const onDeck = deck(s);
         const yaw = Math.atan2(P.ux, P.uz),
           y = railY(line, s),
           lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
+        const ul = ulOf(s);
+        lateral(ul / 2, q);
         if (onDeck)
           add(
             s,
@@ -220,12 +257,13 @@ export function buildTrack(
             q.x,
             q.z,
             y - 0.02,
-            place(0, 0, 0, DECK_W, 0.12, Math.min(0.84, length), yaw, lean),
+            place(0, 0, 0, DECK_W - ul, 0.12, Math.min(0.84, length), yaw, lean),
             '#a97a45',
             0,
             1.1,
           );
         else {
+          lateral(0, q);
           add(
             s,
             'sleeper',
@@ -280,16 +318,173 @@ export function buildTrack(
       }
     }
   }
+  // The up track (generic-lines step 2, drawn only): its sleepers on the land (the deck above already spans it), its
+  // rails in the same cuts as today's so each panel lays both tracks, and Far Head's crossover. Its pieces go down with
+  // the panel at their place; `upRails` marks the up track's rails, of which the gantry carries a pair a panel.
+  const upRails = new Set<number>(),
+    crossRails = new Set<number>();
+  const wa = { x: 0, z: 0 },
+    wb = { x: 0, z: 0 };
+  const offsetAt = (s: number, l: number, out: { x: number; z: number }) => {
+    lineAt(line, s, P);
+    return lateral(l, out);
+  };
+  /** A box from (sa, la) to (sb, lb) along its own heading: a rail or a sleeper on a turnout's curve. */
+  const offsetBox = (
+    kind: PieceKind,
+    sa: number,
+    la: number,
+    sb: number,
+    lb: number,
+    w: number,
+    h: number,
+    dy: number,
+    color: string,
+    lead: number,
+    fall: number,
+    d?: number,
+  ) => {
+    offsetAt(sa, la, wa);
+    offsetAt(sb, lb, wb);
+    const ya = railY(line, sa),
+      yb = railY(line, sb);
+    const dx = wb.x - wa.x,
+      dz = wb.z - wa.z,
+      len = Math.hypot(dx, dz);
+    add(
+      (sa + sb) / 2,
+      kind,
+      (wa.x + wb.x) / 2,
+      (wa.z + wb.z) / 2,
+      (ya + yb) / 2 + dy,
+      place(0, 0, 0, w, h, d ?? len, Math.atan2(dx, dz), new THREE.Euler(-Math.atan2(yb - ya, len), 0, 0)),
+      color,
+      lead,
+      fall,
+    );
+  };
+  const upAt = (s: number) => upLat(formation, s);
+  // Sleepers: just under today's where the turnout still overlaps them, so neither flickers through the other.
+  for (let s = formation.from + 0.6; s < formation.to; s += 1.2) {
+    const l = upAt(s);
+    if (l === null || l > -0.3 || deck(s)) continue;
+    const half = 0.21;
+    offsetBox(
+      'sleeper',
+      s - half,
+      upAt(s - half) ?? l,
+      s + half,
+      upAt(s + half) ?? l,
+      2.3,
+      0.12,
+      -0.03,
+      '#8a6236',
+      0,
+      1.1,
+    );
+    // Low sleepers need support too, as today's (the trestle's bents only start beyond a metre of clearance).
+    const y = railY(line, s) - 0.03;
+    for (const side of [-0.75, 0.75]) {
+      offsetAt(s, l + side, wa);
+      const foot = H(wa.x, wa.z) - 0.08;
+      if (y - foot > 0.18) {
+        lineAt(line, s, P);
+        add(
+          s,
+          'leg',
+          wa.x,
+          wa.z,
+          foot,
+          place(0, 0, 0, 0.35, y - foot, 0.35, Math.atan2(P.ux, P.uz)),
+          '#a2743f',
+          0.4,
+          0.5,
+        );
+      }
+    }
+  }
+  if (formation.crossover) {
+    const [c0, c1] = formation.crossover;
+    // Long timbers under the crossover where it crosses the gap between the tracks.
+    for (let s = c0 + 0.6; s < c1; s += 1.2) {
+      const l = crossLat(formation, s)!;
+      if (l > -1.2 || l < UP_LAT + 1.2) continue;
+      offsetBox(
+        'sleeper',
+        s - 0.21,
+        crossLat(formation, s - 0.21)!,
+        s + 0.21,
+        crossLat(formation, s + 0.21)!,
+        2.3,
+        0.12,
+        -0.03,
+        '#8a6236',
+        0,
+        1.1,
+      );
+    }
+  }
+  const pieces: [number, number][] = [];
+  if (panelled)
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const from = cuts[cut - 1]!,
+        to = cuts[cut]!;
+      const piece = panelOf(from) >= 0 ? carriedPiece(to - from).length : 3;
+      for (let at = from; at < to - 1e-7; at += piece) {
+        const a = dir > 0 ? at : line.len - at,
+          b = dir > 0 ? Math.min(to, at + piece) : line.len - Math.min(to, at + piece);
+        pieces.push([Math.min(a, b), Math.max(a, b)]);
+      }
+    }
+  else for (let s = 0; s < line.len; s += 3) pieces.push([s, Math.min(line.len, s + 3)]);
+  for (const [s0, s1] of pieces) {
+    const a = Math.max(s0, formation.from),
+      b = Math.min(s1, formation.to);
+    if (b - a > 0.2) {
+      const la = upAt(a)!,
+        lb = upAt(b)!;
+      if (la < -0.12 || lb < -0.12)
+        for (const r of [-0.5, 0.5]) {
+          offsetBox('rail', a, la + r, b, lb + r, 0.1, 0.12, TOP, '#4c5058', -2.2, 0.8);
+          upRails.add(boxes.length - 1);
+        }
+    }
+    const c = formation.crossover;
+    if (!c) continue;
+    const ca = Math.max(s0, c[0]),
+      cb = Math.min(s1, c[1]);
+    if (cb - ca > 0.2)
+      for (const r of [-0.5, 0.5]) {
+        offsetBox(
+          'rail',
+          ca,
+          crossLat(formation, ca)! + r,
+          cb,
+          crossLat(formation, cb)! + r,
+          0.1,
+          0.12,
+          TOP + 0.005,
+          '#4c5058',
+          -2.2,
+          0.8,
+        );
+        crossRails.add(boxes.length - 1);
+      }
+  }
+
   // Bents where the ground has dropped away: they go in ahead of the machine, legs first, then the cap and stringers.
+  // Under the formation a bent spans both tracks: its cap, stringers and legs reach out under the up track too.
   const legsAt: { s: number; x: number; z: number; g: number; top: number }[] = [];
   for (let s = 3; s < line.len; s += 6.5) {
     const drop = bed(s);
     if (drop < 1.2) continue;
     const y = railY(line, s),
-      yaw = Math.atan2(P.ux, P.uz);
-    lateral(0, q);
-    add(s, 'cap', q.x, q.z, y - 0.97, place(0, 0, 0, 5, 0.55, 1, yaw), '#7f5630', 3, 2.2);
-    for (const t of [-1, 1]) {
+      yaw = Math.atan2(P.ux, P.uz),
+      ul = ulOf(s),
+      wide = ul < -0.5;
+    lateral(ul / 2, q);
+    add(s, 'cap', q.x, q.z, y - 0.97, place(0, 0, 0, 5 - ul, 0.55, 1, yaw), '#7f5630', 3, 2.2);
+    for (const t of wide ? [-1, 1, ul / 1.2 - 1, ul / 1.2 + 1] : [-1, 1]) {
       lateral(t * 1.2, q);
       add(
         s,
@@ -312,7 +507,7 @@ export function buildTrack(
         1.6,
       );
     }
-    for (const l of [-2.1, -0.7, 0.7, 2.1]) {
+    for (const l of wide ? [-2.1, -0.7, 0.7, 2.1, ul + 0.7, ul - 0.7, ul - 2.1] : [-2.1, -0.7, 0.7, 2.1]) {
       lateral(l, q);
       const g = H(q.x, q.z) - 0.4;
       add(s, 'leg', q.x, q.z, g, place(0, 0, 0, 0.5, y - 0.97 - g, 0.5, yaw), '#a2743f', 5, 3.2);
@@ -320,7 +515,7 @@ export function buildTrack(
     }
     if (drop > 5)
       for (const t of [-1, 1]) {
-        lateral(t * 2.1, q);
+        lateral(t < 0 && wide ? ul - 2.1 : t * 2.1, q);
         const g = H(q.x, q.z);
         const span = y - 1 - g,
           across = t * -1.4;
@@ -359,26 +554,36 @@ export function buildTrack(
   const solids: Solid[] = [];
   const a = { x: 0, z: 0 },
     c = { x: 0, z: 0 };
-  if (!panelled) {
-    for (let s = 0; s < line.len; s += 2) {
-      const s1 = Math.min(line.len, s + 2);
-      lineAt(line, s, P);
-      lateral(0, a);
-      const ya = railY(line, s) + TOP,
-        wide = railY(line, s + 1) - H(a.x, a.z) > 1;
-      lineAt(line, s1, P);
-      lateral(0, c);
-      const yc = railY(line, s1) + TOP;
+  /** The walkable top from `s` to `s1`: on the deck the whole formation's width; on the land today's bed and, where the
+   * up track has left it, the up track's bed. */
+  const bedSlabs = (s: number, s1: number, at: number, overlap: number) => {
+    const ul = ulOf((s + s1) / 2),
+      la = ulOf(s),
+      lc = ulOf(s1);
+    lineAt(line, s, P);
+    lateral(0, a);
+    const ya = railY(line, s) + TOP,
+      wide = deck(s + 1);
+    const yc = railY(line, s1) + TOP;
+    const push = (l0: number, l1: number, width: number) => {
+      offsetAt(s, l0, a);
+      offsetAt(s1, l1, c);
       const ax = a.x,
         az = a.z,
         cx = c.x,
         cz = c.z;
-      solids.push({
-        s: (s + s1) / 2,
-        u: stubbed(s + 1) ? -Infinity : u(s + 1),
-        add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner),
-        on: null,
-      });
+      solids.push({ s: (s + s1) / 2, u: at, add: () => slab(ax, az, cx, cz, ya, yc, width, owner, overlap), on: null });
+    };
+    if (wide) push(ul / 2, ul / 2, DECK_W - ul);
+    else {
+      push(0, 0, BED_W);
+      if (ul < -0.6) push(la, lc, BED_W);
+    }
+  };
+  if (!panelled) {
+    for (let s = 0; s < line.len; s += 2) {
+      const s1 = Math.min(line.len, s + 2);
+      bedSlabs(s, s1, stubbed(s + 1) ? -Infinity : u(s + 1), 0.05);
     }
   } else {
     for (let cut = 1; cut < cuts.length; cut++) {
@@ -389,23 +594,7 @@ export function buildTrack(
           hi = Math.min(end, at + 2);
         const s = dir > 0 ? lo : line.len - hi;
         const s1 = dir > 0 ? hi : line.len - lo;
-        lineAt(line, s, P);
-        lateral(0, a);
-        const ya = railY(line, s) + TOP,
-          wide = railY(line, s + 1) - H(a.x, a.z) > 1;
-        lineAt(line, s1, P);
-        lateral(0, c);
-        const yc = railY(line, s1) + TOP;
-        const ax = a.x,
-          az = a.z,
-          cx = c.x,
-          cz = c.z;
-        solids.push({
-          s: (s + s1) / 2,
-          u: frontier((s + s1) / 2),
-          add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner, 0),
-          on: null,
-        });
+        bedSlabs(s, s1, frontier((s + s1) / 2), 0);
       }
     }
   }
@@ -426,12 +615,34 @@ export function buildTrack(
   solids.sort((p, r) => p.u - r.u);
   const panelPieces = panels.map((p) => boxes.map((_, i) => i).filter((i) => !pre[i] && us[i] === p.to));
   // The gantry carries one rail pair per panel: the pair nearest the schedule's carried piece.
-  const carriedPair = panels.map((p, index) => {
+  const nearestPair = (index: number, of: (k: number) => boolean) => {
+    const p = panels[index]!;
     const centre = p.from + carriedPiece(p.to - p.from).centre;
-    const rails = panelPieces[index]!.filter((k) => kinds[k] === 'rail');
+    const rails = panelPieces[index]!.filter((k) => kinds[k] === 'rail' && of(k));
     const near = (k: number) => Math.abs(triggers[k]! - 2.2 - centre);
     return rails.sort((a, b) => near(a) - near(b)).slice(0, 2);
+  };
+  const carriedPair = panels.map((_, index) => nearestPair(index, (k) => !upRails.has(k) && !crossRails.has(k)));
+  // Where the panel has up track the gantry carries its pair too, a second pair in the jaws, seated after the first.
+  const carriedUp = panels.map((_, index) => {
+    const pair = nearestPair(index, (k) => upRails.has(k));
+    return pair.length === 2 ? pair : [];
   });
+  const pairMid = (pair: number[], mid: THREE.Vector3, dirOut: THREE.Vector3, index: number) => {
+    const [a, b] = pair;
+    mid.set(0, 0, 0);
+    for (const k of [a, b]) {
+      const box = boxes[k!]!;
+      mid.x += box.x / 2;
+      mid.y += box.y / 2;
+      mid.z += box.z / 2;
+    }
+    const local = boxes[a!]!.local.elements;
+    dirOut.set(local[8]!, local[9]!, local[10]!).normalize();
+    const panel = panels[index]!;
+    lineAt(line, dir > 0 ? panel.from : line.len - panel.from, P);
+    if (dirOut.x * P.ux * dir + dirOut.z * P.uz * dir < 0) dirOut.negate();
+  };
   const sweepEnd = panels.map((p) => p.from + carriedPiece(p.to - p.from).centre);
   const dropped = new Uint8Array(boxes.length);
   const along = new THREE.Vector3(),
@@ -478,20 +689,14 @@ export function buildTrack(
         .setPosition(P.x + ORIGIN.x, railY(line, s), P.z + ORIGIN.z);
     },
     seat(index, mid, dirOut) {
-      const [a, b] = carriedPair[index]!;
-      mid.set(0, 0, 0);
-      for (const k of [a, b]) {
-        const box = boxes[k!]!;
-        mid.x += box.x / 2;
-        mid.y += box.y / 2;
-        mid.z += box.z / 2;
-      }
-      const local = boxes[a!]!.local.elements;
-      dirOut.set(local[8]!, local[9]!, local[10]!).normalize();
-      const panel = panels[index]!;
-      lineAt(line, dir > 0 ? panel.from : line.len - panel.from, P);
-      if (dirOut.x * P.ux * dir + dirOut.z * P.uz * dir < 0) dirOut.negate();
+      pairMid(carriedPair[index]!, mid, dirOut, index);
     },
+    seatUp(index, mid, dirOut) {
+      if (!carriedUp[index]!.length) return false;
+      pairMid(carriedUp[index]!, mid, dirOut, index);
+      return true;
+    },
+    pairs: (index) => (carriedUp[index]!.length ? 2 : 1),
     panelStart(index, out) {
       // The sweep runs in from the pair's near quarter to its seat, so its sleepers go down under the jaws.
       const at = panels[index]!.from + Math.min(1.5, (panels[index]!.to - panels[index]!.from) / 4);
@@ -501,13 +706,22 @@ export function buildTrack(
       return out.set(probe.x, railY(line, s) + TOP, probe.z);
     },
     carriedLength: (index) => carriedPiece(panels[index]!.to - panels[index]!.from).length,
-    presentPanel(index, frame) {
+    presentPanel(index, frame, firstSeated = false) {
       if (index < t.cursor) return;
       along.setFromMatrixPosition(frame);
       const reach = Math.min(sweepEnd[index]!, nearestU(index, along.x, along.z));
       const [a, b] = carriedPair[index]!;
+      const [c, d] = carriedUp[index]!;
+      // Once the gantry has let go of the first pair (a two-pair panel), it lies where it was seated.
+      if (firstSeated && c !== undefined)
+        for (const k of [a!, b!])
+          if (!dropped[k]) {
+            dropped[k] = 1;
+            set.snap(k, true);
+          }
       for (const k of t.panelPieces[index] ?? []) {
-        if (dropped[k] || k === a || k === b || Math.min(triggers[k]!, sweepEnd[index]!) > reach) continue;
+        if (dropped[k] || k === a || k === b || k === c || k === d) continue;
+        if (Math.min(triggers[k]!, sweepEnd[index]!) > reach) continue;
         dropped[k] = 1;
         set.drop(k, t.heights[k]!);
       }
@@ -800,6 +1014,8 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
   const toRig = new THREE.Matrix4(),
     seatAt = new THREE.Vector3(),
     seatDir = new THREE.Vector3(),
+    upAt = new THREE.Vector3(),
+    upDir = new THREE.Vector3(),
     startAt = new THREE.Vector3();
   let heldRail: THREE.Object3D;
   let rack: THREE.InstancedMesh;
@@ -880,9 +1096,20 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
   }
   let rackCount = 0,
     rackLengths: number[] = [],
+    rackPairs: number[] = [],
     rackKey = '',
     selecting = false;
-  const drawPanelRack = () => rig?.drawStack(rackCount, rackLengths, selecting);
+  // The magazine holds a rail pair for each track a panel lays: `rackCount` panels in stock, `rackPairs` per panel.
+  /** Rail pairs in the magazine for its next `panels` panels. */
+  const pairsIn = (panels: number) => {
+    let n = 0;
+    for (let i = 0; i < panels; i++) n += rackPairs[i] ?? 1;
+    return n;
+  };
+  const drawPanelRack = () => {
+    const lengths = rackLengths.flatMap((length, i) => Array<number>(rackPairs[i] ?? 1).fill(length));
+    rig?.drawStack(pairsIn(rackCount), lengths, selecting ? (rackPairs[0] ?? 1) : 0);
+  };
   const cradle = logStackMesh(CRADLE_LOGS, owner);
   cradle.removeFromParent();
   flatRock.add(cradle);
@@ -918,7 +1145,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
   };
 
   function setRack(n: number) {
-    rackCount = Math.max(0, Math.min(panelled ? STACK_PAIRS : 12, n));
+    rackCount = Math.max(0, panelled ? n : Math.min(12, n));
     if (panelled) drawPanelRack();
     else {
       rack.count = rackCount;
@@ -1071,11 +1298,13 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
       st.bump = 1;
     },
     setRack,
-    panelRack(lengths: number[], selected: boolean) {
-      const key = lengths.join(',');
+    /** The panels still to lay, in order: each one's length and how many rail pairs it takes (default one). */
+    panelRack(lengths: number[], selected: boolean, pairs: number[] = []) {
+      const key = lengths.join(',') + '|' + pairs.join(',');
       if (rackKey === key && selecting === selected) return;
       rackKey = key;
       rackLengths = lengths;
+      rackPairs = pairs;
       selecting = selected;
       drawPanelRack();
     },
@@ -1088,20 +1317,28 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
       seatAt.applyMatrix4(toRig);
       seatDir.transformDirection(toRig);
       track.panelStart(index, startAt).applyMatrix4(toRig);
+      let up: UpSeat | null = null;
+      if (track.seatUp(index, upAt, upDir)) {
+        upAt.applyMatrix4(toRig);
+        upDir.transformDirection(toRig);
+        up = { seat: upAt, yaw: Math.atan2(upDir.x, upDir.z), pitch: Math.asin(Math.max(-1, Math.min(1, upDir.y))) };
+      }
+      // `stock` counts panels; the magazine holds a pair per track, and this panel's are on top.
       const frame = rig.pose(
         phase,
-        stock,
+        pairsIn(stock),
         seatAt,
         Math.atan2(seatDir.x, seatDir.z),
         Math.asin(Math.max(-1, Math.min(1, seatDir.y))),
         startAt,
         track.carriedLength(index),
+        up,
       );
-      track.presentPanel(index, frame);
+      track.presentPanel(index, frame, !!up && phase >= FIRST_SEATED);
     },
     /** Not laying: the gantry goes home over the stack on local time (0..1). */
     layHome(t: number, stock: number) {
-      rig?.home(t, stock);
+      rig?.home(t, pairsIn(stock));
     },
     setCradle,
     worldCradle,

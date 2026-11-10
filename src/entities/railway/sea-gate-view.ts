@@ -27,7 +27,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
   const { layout, tech, land, shapes, flat, partMat, glow } = deps;
   const ox = layout.ORIGIN.x;
   const G = tech.GATES.sea;
-  const SLAB = { w: 6.4, h: 5.4, d: 0.9, pillar: 1.1 };
+  const SLAB = tech.GATE_SLAB;
   const rotation = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, G.yaw);
   const geometry: THREE.BufferGeometry[] = [];
   const mesh = (g: THREE.BufferGeometry, m: THREE.Material = partMat) => {

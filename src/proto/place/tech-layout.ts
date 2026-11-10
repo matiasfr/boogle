@@ -1,7 +1,7 @@
 // What ancient technology stands where in ?proto=place, as numbers: no three.js, so dev/economy/place-level.ts can check it in
 // Node. Research: docs/research/movement-abilities.md, sections 5 and 6, with its coordinates moved to what the land really is.
 // All local metres, x z y like `Pt` in ./layout.ts; `top` is the surface you stand on. All of it hypotheses until played.
-import { LINES, lineAt, railY, type Line, type LinePoint } from './layout.ts';
+import { LINES, UP_LAT, lineAt, railY, type Line, type LinePoint } from './layout.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 /** A point `side * d` metres off the line at `s`: +1 is the side ./rail.ts's `besideLine` calls +1. */
@@ -51,12 +51,15 @@ export type Pad = {
 // first walk; you can't get to it until the line does.
 const N = LINES.north,
   E = LINES.east;
-// Translate the existing course rigidly to clear the wide panel magazines.
+// Translate the existing course rigidly to clear the wide panel magazines. The hook pillar and its walk stand out by the
+// up track's 4 m too (generic-lines step 2; orchestrator, 10 November), so the course keeps its shape beside the
+// wider formation: the deck edge, the walk and the pillar keep their gaps.
 const P1 = beside(N, 92, -1, 10.2),
-  P2 = beside(E, 92, -1, 7),
+  P2 = beside(E, 89.5, -1, 7 - UP_LAT),
   STACK_RETURN = beside(E, 477, 1, 5);
 export const PILLARS = [
-  { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.8) }, // ends at the trestle deck's edge (3.6 m wide), not through its planks
+  // p1's lip ends at the trestle deck's edge (both tracks' formation, 7.6 m wide), not through its planks.
+  { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.8 - UP_LAT) },
   { id: 'p2', x: P2.x, z: P2.z, top: P2.y + 2.2, r: 3.6, foot: -3, lipTo: null },
 ];
 
@@ -169,9 +172,13 @@ export const GATES: Record<GateId, { s: number; x: number; z: number; y: number;
   quarry: slabAt(186),
   sea: slabAt(297),
 };
+/** A gate spans both tracks (generic-lines step 2; orchestrator, 10 November): centred 2 m left, between them, and
+ * 4 m wider than the single track's 6.4 m slab. Jambs stand outside it. */
+export const GATE_SLAB = { w: 6.4 - UP_LAT, h: 5.4, d: 0.9, pillar: 1.1 } as const;
 function slabAt(s: number) {
   lineAt(E, s, P);
-  return { s, x: P.x, z: P.z, y: railY(E, s) - 0.3, yaw: Math.atan2(P.ux, P.uz) };
+  const l = UP_LAT / 2;
+  return { s, x: P.x - P.uz * l, z: P.z + P.ux * l, y: railY(E, s) - 0.3, yaw: Math.atan2(P.ux, P.uz) };
 }
 /** The lever on the apron, and the winch its chain runs to. */
 export const LEVER = { x: 97.4, z: 42.2, y: 26.2 };
@@ -186,10 +193,10 @@ export const SERVICE_ROUTES = {
     { x: apron.x, z: apron.z + apron.hz, y: apron.top },
   ],
   hook: [
-    // Runs alongside the trestle deck (3.6 m wide, 1.8 m each side) with its 3 m of stone butting the deck's edge, not through
-    // its planks, so you step on from anywhere along it: it's flush with the deck's top while it follows the grade.
-    beside(E, 86, -1, 3.4),
-    beside(E, 92, -1, 3.4),
+    // Runs alongside the trestle deck (both tracks' 7.6 m formation, its edge 5.8 m left) with its 3 m of stone butting the
+    // deck's edge, not through its planks, so you step on from anywhere along it: flush with the deck's top on the grade.
+    beside(E, 86, -1, 3.4 - UP_LAT),
+    beside(E, 92, -1, 3.4 - UP_LAT),
     { x: P2.x + 7.5, z: P2.z + 4.2, y: P2.y },
     { x: P2.x + 7.5, z: P2.z - 1.5, y: P2.y + 2.2 },
     { x: P2.x + 7.5, z: P2.z - 3, y: P2.y + 2.2 },

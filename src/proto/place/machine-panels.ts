@@ -4,11 +4,11 @@ import * as THREE from 'three/webgpu';
 import { carriedPiece, panelEase, panelPose } from './track-panels.ts';
 
 export const PANEL_BEAM_Y = 4;
-/** The slewing beam's reach from its pivot over the deck, as built (assets/src/track-layer.py BEAM; 17.5 m before rail
- * pairs). A pair is 2.3-3.3 m and the deck rides 5.73 m behind the head, so the trolley runs at most about 4.9 m out
- * (deck setback less a third of the shortest pair, at the end of the sweep); the level check holds the built beam to
+/** The slewing beam's reach from its pivot over the deck, as built (assets/src/track-layer.py BEAM; 5.8 m before the
+ * second track, 17.5 m before rail pairs). A pair is 2.3-3.3 m and the deck rides 5.73 m behind the head; the up track's
+ * pair sits 4 m to the side, so the trolley runs about 6.3 m out at its seat; the level check holds the built beam to
  * this constant and every sampled line-one trolley position, plus its 0.35 m half length, inside it. */
-export const PANEL_BEAM_LENGTH = 5.8;
+export const PANEL_BEAM_LENGTH = 7.0;
 /** The small rail stack on the gantry's shoulders: one pair per rail pair still to lay (drawn up to 36), left rail
  * left, right rail right.
  * Each layer fills inner column to outer before the next goes on, so a few pairs lie low and wide; the gantry takes
@@ -30,6 +30,16 @@ const GRIP_Y = 0.23,
   GAUGE = 0.5,
   SWEEP_Y = 1.5,
   RAIL_KIT_LENGTH = 3.05;
+/** Instances ahead of the stack in the rail batch: the carried pair and the up track's pair. */
+const CARRIED = 4;
+/** A double-track panel's timeline: its first pair's whole cycle is squeezed into [0, UP_SPLIT] of the phase, so it is
+ * seated at FIRST_SEATED; the second pair rides UP_LIFT m over the first and the crossing hops UP_HOP m. */
+const UP_SPLIT = 0.825,
+  UP_LIFT = 0.14,
+  UP_HOP = 0.35;
+export const FIRST_SEATED = 0.97 * UP_SPLIT;
+/** The up track's carried pair: its seat (rail bases' midpoint) and heading in the rig frame. */
+export type UpSeat = { seat: THREE.Vector3; yaw: number; pitch: number };
 /** Kit rail batch: native 0.1 x 0.12 x 3.05 m, base origin. */
 export type RailBatch = (n: number) => THREE.InstancedMesh;
 
@@ -55,13 +65,16 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
   const payload = new THREE.Object3D();
   payload.name = 'panel-payload-frame';
   sleeves[2]!.add(payload);
-  // One draw: instances 0-1 are the carried pair (zero-scaled when the jaws are empty), then the stack.
-  const rails = railBatch(2 + STACK_PAIRS * 2);
+  // One draw: instances 0-1 are the carried pair, 2-3 the up track's pair over it on a double-track panel (each
+  // zero-scaled when not in the jaws), then the stack.
+  const rails = railBatch(CARRIED + STACK_PAIRS * 2);
   rails.name = 'rail-stack';
-  rails.count = 2;
+  rails.count = CARRIED;
   root.add(rails);
   const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
   let carrying = false,
+    carryingUp = false,
+    upLift = 0,
     stackDrawn = 0;
   const batches: { mesh: THREE.InstancedMesh; pivots: THREE.Object3D[]; local: THREE.Matrix4[] }[] = [];
   const inverse = new THREE.Matrix4(),
@@ -81,6 +94,12 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       grip.makeTranslation((i ? 1 : -1) * GRIP_X, -GRIP_Y, 0).scale(scale.set(1, 1, carriedLength / RAIL_KIT_LENGTH));
       matrix.multiplyMatrices(inverse, jaw.matrixWorld).multiply(grip);
       rails.setMatrixAt(i, carrying ? matrix : ZERO);
+      // The second pair rides a rail's depth over the first, and settles into the jaws once the first is let go.
+      grip
+        .makeTranslation((i ? 1 : -1) * GRIP_X, -GRIP_Y + upLift, 0)
+        .scale(scale.set(1, 1, carriedLength / RAIL_KIT_LENGTH));
+      matrix.multiplyMatrices(inverse, jaw.matrixWorld).multiply(grip);
+      rails.setMatrixAt(2 + i, carryingUp ? matrix : ZERO);
     });
     rails.instanceMatrix.needsUpdate = true;
   };
@@ -89,6 +108,8 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
     at = new THREE.Vector3(),
     from = new THREE.Vector3(),
     seatJaw = new THREE.Vector3(),
+    seatUpJaw = new THREE.Vector3(),
+    upAxis = new THREE.Vector3(),
     up = new THREE.Vector3(),
     q = new THREE.Quaternion(),
     e = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -96,21 +117,21 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
   let hasContact = false,
     stackCount = 0,
     stackLengths: number[] = [],
-    selecting = false;
+    selecting = 0;
   function drawStack() {
     const shown = Math.min(STACK_PAIRS, stackCount),
-      n = Math.max(0, shown - (selecting ? 1 : 0));
+      n = Math.max(0, shown - selecting);
     for (let k = 0; k < n; k++) {
       // Slot k from the bottom holds the pair laid (shown - 1 - k)th from now; pairs beyond the drawn stack follow.
       const length = carriedPiece(stackLengths[shown - 1 - k] ?? 3).length;
       for (let side = 0; side < 2; side++) {
         stackSlot(k, side ? 1 : -1, slot);
         matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
-        rails.setMatrixAt(2 + k * 2 + side, matrix);
+        rails.setMatrixAt(CARRIED + k * 2 + side, matrix);
       }
     }
     stackDrawn = n;
-    rails.count = 2 + n * 2;
+    rails.count = CARRIED + n * 2;
     rails.instanceMatrix.needsUpdate = true;
   }
   function place(x: number, y: number, z: number, yaw: number, pitch: number, slide: number) {
@@ -167,11 +188,11 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       root.updateWorldMatrix(true, true);
       updateBatches();
     },
-    /** Held units in use order (index 0 is laid next) and whether the gantry has the top pair. */
-    drawStack(count: number, lengths: number[], selected: boolean) {
+    /** Held pairs in use order (index 0 is laid next) and how many of the top pairs the gantry has (true: one). */
+    drawStack(count: number, lengths: number[], selected: boolean | number) {
       stackCount = count;
       stackLengths = lengths;
-      selecting = selected && count > 0;
+      selecting = Math.min(count, Number(selected));
       drawStack();
     },
     /** Next free slot's left rail base, where a delivered rail lands. */
@@ -181,9 +202,23 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
      * `yaw`/`pitch` its travel heading, `start` the rail-level point the sweep starts from and `length` the
      * carried rails' length. Returns the jaw frame: the track drops each piece as this passes its place.
      */
-    pose(phase: number, n: number, seat: THREE.Vector3, yaw: number, pitch: number, start: THREE.Vector3, length = 3) {
-      const p = panelPose(phase);
+    pose(
+      phase: number,
+      n: number,
+      seat: THREE.Vector3,
+      yaw: number,
+      pitch: number,
+      start: THREE.Vector3,
+      length = 3,
+      second: UpSeat | null = null,
+    ) {
+      // A double-track panel carries both pairs in one trip: the first cycle runs to its seat by FIRST_SEATED, then the
+      // jaws let go, cross to the up track and set the second pair down.
+      const two = !!second && n > 1;
+      const p = panelPose(two ? phase / UP_SPLIT : phase);
       carriedLength = length;
+      carryingUp = two;
+      upLift = UP_LIFT;
       stackSlot(Math.max(0, n - 1), 1, slot);
       const slotSlide = slot.x - GRIP_X,
         pickY = slot.y + GRIP_Y;
@@ -200,11 +235,15 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
         const slide = THREE.MathUtils.lerp(last.slide, slotSlide + 0.04, r) - 0.04 * p.grip;
         carrying = n > 0;
         place(at.x, y, at.z, last.yaw * (1 - r), last.pitch * (1 - r), slide);
-        // Before the pick the top pair still lies in its slot, held by nothing.
+        // Before the pick the top pair (both top pairs on a double panel) still lies in its slot, held by nothing.
         for (let i = 0; i < 2 && n > 0; i++) {
           stackSlot(n - 1, i ? 1 : -1, slot);
           matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
           rails.setMatrixAt(i, matrix);
+          if (!two) continue;
+          stackSlot(n - 2, i ? 1 : -1, slot);
+          matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
+          rails.setMatrixAt(2 + i, matrix);
         }
         rails.instanceMatrix.needsUpdate = true;
         return payload.matrixWorld;
@@ -238,6 +277,20 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
         heading = yaw;
         tilt = pitch * p.seat;
       }
+      if (two && second && phase >= FIRST_SEATED) {
+        // Let go of the first pair (the track shows it seated), lift a little, cross to the up seat and lower.
+        carrying = false;
+        const k = panelEase((phase - FIRST_SEATED) / 0.09),
+          lower = panelEase((phase - FIRST_SEATED) / (0.97 - FIRST_SEATED));
+        upAxis.set(0, 1, 0).applyQuaternion(q.setFromEuler(e.set(-second.pitch, second.yaw, 0, 'YXZ')));
+        seatUpJaw.copy(second.seat).addScaledVector(upAxis, GRIP_Y);
+        x = THREE.MathUtils.lerp(seatJaw.x, seatUpJaw.x, k);
+        z = THREE.MathUtils.lerp(seatJaw.z, seatUpJaw.z, k);
+        y = THREE.MathUtils.lerp(seatJaw.y, seatUpJaw.y, k) + UP_HOP * Math.sin(Math.PI * k);
+        heading = THREE.MathUtils.lerp(yaw, second.yaw, k);
+        tilt = THREE.MathUtils.lerp(pitch, second.pitch, k);
+        upLift = UP_LIFT * (1 - lower);
+      }
       place(x, y, z, heading, tilt, slide);
       if (phase >= 0.98) {
         last.at.set(x, y, z);
@@ -251,6 +304,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
     /** Not laying: go home over the stack on local time and wait there, jaws open over the next pair. */
     home(t: number, n: number) {
       const r = panelEase(t);
+      carryingUp = false;
       stackSlot(Math.max(0, n - 1), 1, slot);
       const slotSlide = slot.x - GRIP_X;
       at.lerpVectors(last.at, slot.set(0, 0, STACK.z), r);

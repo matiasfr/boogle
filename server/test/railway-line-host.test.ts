@@ -216,6 +216,83 @@ test('line host: the glider judged on the summit device, only after Q5; one shar
   }
 });
 
+test('line host: the hook judged at p2 moved out for the second track, not its old spot; a taken hook survives a restart', async () => {
+  // generic-lines step 2 moved pillar p2 (and its device) 11 m left of line 2 at s 89.5. No saved field holds the
+  // device's position (Rail.hook is a flag), so a save with the hook taken loads as it was: no WORLD_NS bump.
+  const { LINE2_HOOK } = await import('../../src/sim/railway-line2-layout.ts');
+  const { buildSeedWorld } = await import('../../src/sim/railway-seeds.ts');
+  const OLD = { x: 99954, z: 2086, y: 2350 };
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-hook-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  let now = 1800000000000;
+  const sent: Obj[] = [];
+  const create = () => {
+    const value = createRailwayWorldHost({
+      roomId: railwayRoomId('line-host-hook'),
+      store,
+      tick: false,
+      now: () => now,
+      pidOf: (sid) => sid,
+    });
+    value.onSend((message) => sent.push(message));
+    return value;
+  };
+  let host = create();
+  const ticks = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      now += 100;
+      host.step(0.1);
+    }
+    await host.sync.whenDurable();
+  };
+  const sessions = new Map<string, { epoch: number; request: number }>();
+  const open = async (sid: string) => {
+    host.deliver({ t: 'r:open' }, sid);
+    await ticks(3);
+    const session = sent.findLast((m) => m.t === 'r:session' && m.to === sid);
+    assert.ok(session);
+    sessions.set(sid, { epoch: Number(session.epoch), request: Number(session.next) - 1 });
+  };
+  const edit = async (sid: string, e: Obj, at: [number, number, number]) => {
+    const s = sessions.get(sid)!;
+    now += 1000;
+    host.deliver({ t: 'r:edit', e: { ...e, epoch: s.epoch, request: ++s.request, at, ms: now - 1800000000000 } }, sid);
+    await ticks(3);
+    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    return host.rules.railway.outcome(sid, s.epoch, s.request)!;
+  };
+  const hook = { op: 'rail.hook' };
+  try {
+    await host.whenReady();
+    // Q3 laid, the hook not yet taken.
+    const w = buildSeedWorld('q3-done');
+    while (host.sync.world.tick <= w.t) await ticks(1);
+    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    host.rules.railway.touchAll();
+    for (const sid of ['a', 'b']) await open(sid);
+    assert.equal(host.rules.railway.railway.line2!.hook, false);
+    // The old device spot is 5 m off the new one: refused there, and past the 3.2 m reach of the new spot.
+    assert.equal((await edit('a', hook, [OLD.x, OLD.y, OLD.z])).status, 'rejected');
+    assert.equal((await edit('a', hook, [LINE2_HOOK.x + 330, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'rejected');
+    assert.equal(host.rules.railway.railway.line2!.hook, false);
+    assert.equal((await edit('a', hook, [LINE2_HOOK.x + 300, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'accepted');
+    assert.equal((await edit('b', hook, [LINE2_HOOK.x, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'noop', 'one shared take');
+    assert.equal(host.rules.railway.railway.line2!.hook, true);
+    const saved = JSON.stringify(host.rules.railway.world().snapshot());
+    for (const cm of [OLD.x, OLD.z, LINE2_HOOK.x, LINE2_HOOK.z])
+      assert.ok(!saved.includes(String(cm)), `no saved field holds the hook's position (${cm})`);
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.equal(host.rules.railway.railway.line2!.hook, true, 'a save with the hook taken loads as it was');
+    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('line host keeps a departed carrier the beam through its grace, then grounds it; a restart keeps it too', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });

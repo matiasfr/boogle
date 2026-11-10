@@ -664,6 +664,23 @@ pieces, the completed pier with rockets, and the northward Ring Island view (`gr
 [B8's record](../plans/line2-part2-greybox.md#b5b8-proof-record-8-november) links the manifests and limitations.
 `WORLD_NS` v21; not tested on a device. The orchestrator owns the long final pass and owner playtest guide.
 
+### The second track, drawn (10 November 2026, generic-lines step 2)
+
+Both lines are drawn double track ([generic-lines](../plans/generic-lines.md), step 2): the up track runs 4 m left of
+today's (left-hand running) from merge to merge, line 1 s 36–182 and line 2 s 34–556, easing in and out over a 20 m
+stub turnout at each end, so the turntable, both Village platforms, the Camp end and the pier stay one track. Far Head
+has a facing crossover at s 490–512, up track to down, while it is line 2's end. On the ridge, gorge and sea trestles
+the deck spans both tracks (7.6 m) on bents that reach out under the up track. The track layer lays both tracks of
+each panel in one trip: the gantry lifts the top two pairs off its stack, seats today's track's pair, lets go, crosses
+4 m and sets the up track's pair down, so its stack empties by two a panel (bills, panel counts and timing are
+unchanged; the beam is 7.0 m). Quarry and Far Head each get an up platform outside the new track (Quarry's s 154–174.5,
+clear of the Q4 frame, with no ramp off that end) and a plank crossing over both tracks by today's platform's end
+ramp; they drop in with today's halt and have no lever, signal or board yet. To make room the hook pillar p2 and its
+walk stand 11 m out at s 89.5 (the hook device moved with it, accepted there by the server), p1's lip ends at the
+wider deck's edge, both line-2 gates span both tracks (slab 10.4 m, centred 2 m left) and the ridge trestle's left
+lamps stand at its new edge. Trains still run on today's track only (step 4). No `WORLD_NS` bump; not tested on a
+device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's

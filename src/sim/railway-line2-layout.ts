@@ -124,9 +124,11 @@ export const LINE2_DEPOT = { reach: 700 } as const;
 /** The pack chest beside the forge (Place ladder.ts CHEST_AT.pack): the forge's first bill (24 logs) puts it there, and
  * opening it gives everyone in the world a back that carries `carry` instead of RAILWAY_T1.carry. */
 export const LINE2_PACK = { x: 91400, z: -900, carry: 16 } as const;
-/** The lever on the quarry apron (2.2 m up), and the hook device on pillar p2's top. */
+/** The lever on the quarry apron (2.2 m up), and the hook device on pillar p2's top. p2 stands 11 m left of line 2 at
+ * s 89.5 since the second track's formation (generic-lines step 2, 10 November; was 7 m at s 92, device at 99954, 2086,
+ * 2350): a position only, no saved field holds it. */
 export const LINE2_LEVER = { x: 109740, z: 4220, y: 2620 } as const;
-export const LINE2_HOOK = { x: 99954, z: 2086, y: 2350 } as const;
+export const LINE2_HOOK = { x: 99669, z: 1680, y: 2294 } as const;
 /** Place tech-layout.ts SEA_SWITCH, on Needle Bell's summit deck. */
 export const LINE2_SEA = { x: 101180, z: -600, y: 10240 } as const;
 /** The glider device on the same deck (glider piece B), 4.5 m from the switch handle and clear of the top rock drum: Q5

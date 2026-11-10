@@ -398,7 +398,7 @@ export async function createRailwayLine2(
   // The quarry gate: two jambs under a headstock, and the slab across the bed hung from it, solid until it drops. Its
   // chains run from the slab's top over the headstock's sheaves to the lever's winch and pay out as it sinks (gate-rig.ts).
   const G = tech.GATES.quarry;
-  const SLAB = { w: 6.4, h: 5.4, d: 0.9, pillar: 1.1 };
+  const SLAB = tech.GATE_SLAB;
   const gateQ = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, G.yaw);
   const gateRig = createGateRig(
     owner,

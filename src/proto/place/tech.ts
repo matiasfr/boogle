@@ -42,6 +42,7 @@ import {
   DEVICES,
   FINDERS,
   GATES,
+  GATE_SLAB,
   GLIDE_RAMP,
   JUMP_COURSE,
   JUMP_RECOVERY,
@@ -456,7 +457,7 @@ function updateDevices(dt: number, now: number) {
 // ---------------------------------------------------------------- the gates
 type Gate = { id: GateId; slab: THREE.Group; body: Body | null; t: number; y0: number; drop: number };
 const gates = {} as Record<GateId, Gate>;
-const SLAB = { w: 6.4, h: 5.4, d: 0.9, pillar: 1.1 };
+const SLAB = GATE_SLAB;
 const gateQ = (yaw: number) => new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
 function buildGates() {
   for (const id of Object.keys(GATES) as GateId[]) {

@@ -331,7 +331,7 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   boolean, so callers are unchanged; `LINE_HALTS` maps `RAIL_HALTS` to v25's flat `{ x, z, y, reach }` shape (the
   up platform) under v25's six-halt tuple type; `trainArrives(row, line?)` and `trainNextStop(…, kin)` take the line's
   kinematics, defaulting to `TRAIN`.
-- [ ] **2. The double formation, drawn (view only, no bump).** In the line views (`src/proto/place/rail.ts`'s deck and
+- [x] **2. The double formation, drawn (view only, no bump).** In the line views (`src/proto/place/rail.ts`'s deck and
   rails, `line2-view.ts`'s panels, the line 1 view) draw the up track 4 m left from merge to merge, the stub turnouts
   at line 1 s 36 and 182 and line 2 s 34 and 556, Far Head's crossover at s 490–512, and the 7.6 m deck on both
   trestles; the laying gantry sets both tracks of each panel as it goes. Add the up platforms at Quarry and Far Head
@@ -342,18 +342,20 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   check track 0's rails), `npm run perf` before and after (doubled rails and sleepers), looks at phone width:
   `--rail-seed trains-on` at the Village merges, Quarry, Far Head's crossover, the line 1 ridge trestle and the pier
   root; the bot through T1 (layout change).
-  *Blocked (2026-11-10, implementer):* the up track 4 m left meets things the Level findings and `LIVE_SECOND_TRACK`
-  don't list (the survey's obstacle list has no pillars, gates or frame footprints), and each needs a layout call
-  before the drawing goes in. (a) **The hook pillar p2** (`PILLARS`, line 2 s 92, 7 m left, r 3.6): its near edge is
-  3.4 m from today's track, so the up track's rails (3.5–4.5 m) run into it; its top sits against the gorge trestle's
-  left edge. That gorge trestle (about s 85–100) also needs the 7.6 m deck, which this step doesn't list. (b) **The
-  quarry and sea gates** (`GATES`, s 186 and 297): the jambs stand 3.2–4.3 m either side of today's track (`tech.ts`
-  `SLAB` w 6.4, pillar 1.1), so the up track runs through each left jamb. (c) **The Quarry up platform** (s 166–186,
-  lat −5.7 to −8.2) covers the Q4 frame (s 176.5, lat −6.5 to −8.5); a 1 m step-out doesn't clear it. (d) **Line 1's
-  p1 lip** (`lipTo` 1.8 m left at s 92, "ends at the trestle deck's edge") would cross the up track on the widened
-  ridge trestle. Suggested: move p2 out to about 9.5 m (a reach call: the level check's "p2 from the deck with two
-  jumps" must hold), widen both gate frames to span the formation (slab and jambs centred 2 m left), step Q4's frame
-  out about 3 m or shift the up platform clear of it, and end p1's lip at the new deck edge (5.8 m left).
+  *Built (2026-11-10):* the clashes the first attempt found (the survey had no pillars, gates or frame footprints)
+  were settled by the orchestrator's calls in [agent-calls](../agent-calls.md): p2 and its walk stand 11 m left at
+  s 89.5 (`LINE2_HOOK` moved with it; at 9.5 m the walk had no room, and at s 92 t0 fell within two jumps of p2's top),
+  both gates span both tracks (slab 10.4 m, centred 2 m left), Quarry's up platform is s 154–174.5, clear of the Q4
+  frame, with no ramp off that end, p1's lip ends at the wider deck's edge (5.8 m), and the survey now checks pillars,
+  gates and frames. Differences from the text above: the formation's merges and crossover live in
+  `src/proto/place/layout.ts` (`FORMATION`, `upLat`, `crossLat`) until 4a moves them into `RailHalt.end`, and the
+  blockout generator still reads `LIVE_SECOND_TRACK` from its own survey (its line-2 left side now reports only the
+  turntable and the pier rack, both outside the formation); the greybox no longer draws lines 1 and 2's survey beds.
+  The gantry carries both pairs of a double panel in one trip (seats today's pair, crosses, sets the up pair) on a
+  7.0 m beam; no frame needed stepping out (each frame's near face stands 2.5 m from the up track's centre). The
+  plank crossings are at Quarry s 159 and Far Head s 538.5, by today's platforms' end ramps; the ridge trestle's left
+  lamps moved to the formation's edge. Level-check covers track 0's rails, the up platforms, the crossings and the
+  gates' jambs.
 - [ ] **3. The six bents, wide and on the bow (positions and view, no bump).** `CROSSING_BENTS` 200 cm west,
   `CROSSING_FOOT_OFF` 330, the bent caps at the 4% heights in `crossing-view.ts` (bent k's deck at
   `2430 − 4·(distance from bent 1)`/100, bent 6 about 1960 cm). Test: `test/railway-works-layout.test.ts` gains the

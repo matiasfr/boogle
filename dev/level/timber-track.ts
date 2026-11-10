@@ -5,10 +5,25 @@
 import * as THREE from 'three/webgpu';
 import { sourceFunction } from './source.ts';
 import { trackBoxes } from './grounding-track.ts';
-import { HALTS, LINKS, ORIGIN, PATHS, lineAt, railY, type Line } from '../../src/proto/place/layout.ts';
+import {
+  CROSSING_WIDTH,
+  FORMATION,
+  HALTS,
+  LINKS,
+  ORIGIN,
+  PATHS,
+  UP_HALTS,
+  crossingPlanks,
+  lineAt,
+  railY,
+  upLat,
+  type Line,
+} from '../../src/proto/place/layout.ts';
 import { SHORE_COAST, SHORE_LANDING } from '../../src/proto/place/shore-layout.ts';
 import { openingStops } from '../../src/proto/place/opening-stops.ts';
 import {
+  GATES,
+  GATE_SLAB,
   GLIDE_RAMP,
   JUMP_COURSE,
   JUMP_RECOVERY,
@@ -198,7 +213,9 @@ export function timberDecks(): Deck[] {
     lineAt(line, s, at);
     return { x: at.x - at.uz * l + ORIGIN.x, z: at.z + at.ux * l + ORIGIN.z };
   };
-  for (const { name, line: which, s0, s1, lat } of HALTS) {
+  // The up track's platforms too (src/entities/railway/up-platforms.ts), the Quarry's with no ramp off its far end.
+  for (const { name, line: which, s0, s1, lat, ...rest } of [...HALTS, ...UP_HALTS]) {
+    const endRamp = !('endRamp' in rest) || rest.endRamp;
     const line = LINKS[which]!.line;
     const low = Math.min(railY(line, s0), railY(line, s1)) + 0.72;
     const mid = (s0 + s1) / 2,
@@ -232,7 +249,7 @@ export function timberDecks(): Deck[] {
     const ramp = (id: string, from: { x: number; z: number }, to: { x: number; z: number }) =>
       decks.push(between(`${name}/${id}`, file, from.x, from.z, to.x, to.z, H(from.x, from.z) + 0.05, low, 2.5, 0.4));
     ramp('ramp-start', lateral(line, s0 - 6, lat), lateral(line, s0, lat));
-    ramp('ramp-end', lateral(line, s1 + 6, lat), lateral(line, s1, lat));
+    if (endRamp) ramp('ramp-end', lateral(line, s1 + 6, lat), lateral(line, s1, lat));
     ramp('ramp-back', lateral(line, mid, lat + sign * 7), lateral(line, mid, lat + sign * 1.25));
   }
   // The forge, its scaffold and the opening's buildings (opening-plans.ts).
@@ -315,6 +332,50 @@ export function timberDecks(): Deck[] {
           0.5,
           len,
           Math.atan2(dx, dz),
+        ),
+      );
+    }
+  // The plank crossings over both tracks at the up platforms (up-platforms.ts): flush with the rail tops, on the sleepers.
+  for (const h of UP_HALTS) {
+    const line = LINKS[h.line]!.line;
+    const top = railY(line, h.crossS) + 0.22;
+    lineAt(line, h.crossS, at);
+    const yaw = Math.atan2(at.ux, at.uz);
+    for (const [l0, l1] of crossingPlanks(
+      upLat(FORMATION.quarry, h.crossS - CROSSING_WIDTH / 2) ?? 0,
+      upLat(FORMATION.quarry, h.crossS + CROSSING_WIDTH / 2) ?? 0,
+    )) {
+      const c = lateral(line, h.crossS, (l0 + l1) / 2);
+      decks.push(
+        standing(
+          `${h.name}/crossing/${l0.toFixed(2)}`,
+          'src/entities/railway/up-platforms.ts',
+          c.x,
+          top - 0.12,
+          c.z,
+          l0 - l1,
+          0.12,
+          CROSSING_WIDTH,
+          yaw,
+        ),
+      );
+    }
+  }
+  // Both line-2 gates' jambs (tech.ts buildGates): the gates span both tracks since the second track (generic-lines step 2).
+  for (const [id, g] of Object.entries(GATES))
+    for (const side of [-1, 1]) {
+      const px = (side * (GATE_SLAB.w + GATE_SLAB.pillar)) / 2;
+      decks.push(
+        standing(
+          `gate-jamb/${id}/${side}`,
+          tech,
+          g.x + ORIGIN.x + Math.cos(g.yaw) * px,
+          g.y,
+          g.z - Math.sin(g.yaw) * px,
+          GATE_SLAB.pillar,
+          GATE_SLAB.h + 0.8,
+          GATE_SLAB.pillar,
+          g.yaw,
         ),
       );
     }
