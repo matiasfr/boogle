@@ -1,10 +1,11 @@
 // The boiler fit as the room sees it (boiler-first-choice plan, steps 8 and 9), from `--rail-seed boiler-camp` (the
 // boiler on the ground by the old train). With `--players 2` this is an `--eval` on both pages: player 2 is the fitter
 // (set down by the boiler, a harness pose), player 1 the friend at the village, whose page the capture films. The
-// friend sets window.__boilerShot once the fitter holds the boiler by the saddle, then keeps walking; the fitter
+// friend sets window.__boilerShot once the fitter holds the boiler by the saddle, then keeps walking (the fitter's page
+// sets it at once: a two-player warm-up ends only when every page meets --until, see coop-warp.ts); the fitter
 // presses "Fit the boiler" once the friend has moved, so the press falls inside the capture.
 // npm run look -- --rail-seed boiler-camp --players 2 --eval dev/look/evals/railway-boiler-fit.ts
-//   --until "window.__boilerShot || location.search.includes('player=2')" --seconds 10 --video
+//   --until window.__boilerShot --seconds 10 --video
 //   --question "Does the friend get one boiler flourish where they stand, and keep walking through it?"
 // BOILER lines: the friend's `reward.arrival` before the fit, after it and as a trace every 100 ms; PASS/FAIL checks.
 // Solo (no `--players`, step 8's press as an `--action`): take it, walk to the saddle and fit it, watched side-on;
@@ -66,6 +67,7 @@ const near = (p: { x: number; z: number } | null, q: { x: number; z: number }, r
 const bot = makeBot({ doneFlag: '__boilerDone' });
 
 async function fit() {
+  if (!solo) w.__boilerShot = true; // the friend's page times the capture; this page must not hold the warm-up
   await until(landed, 'fitter landed');
   check(!read().line2.trains, 'trains are not running yet');
   const b = boiler();

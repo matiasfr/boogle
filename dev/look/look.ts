@@ -16,6 +16,7 @@ import { TARGETS } from './targets.ts';
 import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
 import { READ_RESTORED } from './restore-pair.ts';
 import { writeRailSeed } from './rail-seed.ts';
+import { CLEANUP_MS, raceTimeout, TIMEOUT_EXIT, unmetPages, wallSeconds } from './wall.ts';
 
 const opt: {
   view: string;
@@ -139,7 +140,7 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--until')
     opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
   else if (a === '--wall')
-    opt.wall = Number(v()); // the warped warm-up's wall-clock limit in seconds (default 540)
+    opt.wall = Number(v()); // hard wall-clock limit on the whole run in seconds (default 1200, ./wall.ts); also the warped warm-up's
   else if (a === '--saves')
     opt.saves = v(); // explicit checkpoint directory, including another worktree's bot run
   else if (a === '--at')
@@ -170,7 +171,7 @@ for (let k = 0; k < argv.length; k++) {
   [--island]                                start on the classic island (the original island at the origin)
   [--reduced-motion]                        every page emulates prefers-reduced-motion: reduce
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
-  [--wall 540]                              the warped warm-up's wall-clock limit (seconds)
+  [--wall 1200]                             hard limit on the whole run once it holds the bot slot (seconds): verdict "timeout", exit 4
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
   [--saves <directory>]                     use checkpoints from this playthrough instead of latest
   [--restore-report]                        with --at: write live position, room/interior and place progress before capture
@@ -243,6 +244,39 @@ startRun(path.join(opt.out, `${label}-verdict.json`), { checkout: path.resolve(o
 // it to themselves.
 if (!opt.video && !opt.curves && opt.warp && opt.players === 1 && !process.argv.includes('--long')) markLight();
 let stack: Stack | undefined, browser: Browser | undefined;
+// The hard wall (./wall.ts): armed once the run holds the bot slot, so a hang in any phase or page cannot keep it.
+const wall = wallSeconds(opt.wall);
+const pages: Game[] = [];
+let phase = 'startup';
+let wallTimer: ReturnType<typeof setTimeout> | undefined;
+let timedOut = false;
+async function wallFired() {
+  timedOut = true;
+  process.exitCode = TIMEOUT_EXIT;
+  const unmet = opt.until
+    ? await unmetPages(
+        pages.map((p, i) => ({
+          label: `player ${i + 1}`,
+          met: () => p.page.evaluate(`!!(${opt.until})`),
+        })),
+      )
+    : [];
+  const never = opt.until && !pages.length ? ['no page had opened'] : unmet;
+  const message = `--wall ${wall}: the run was still in ${phase} after ${wall} s${opt.until ? `; --until ${opt.until} never met on: ${never.join(', ') || 'none (all met)'}` : ''}`;
+  console.error(message);
+  finishRun({
+    verdict: 'timeout',
+    view: label,
+    wallSeconds: wall,
+    phase,
+    until: opt.until,
+    unmetPages: never,
+    error: message,
+  });
+  // Bounded: a hung page can make any of these wait forever.
+  await raceTimeout(Promise.allSettled([coopWarp?.stop(), browser?.close(), stack?.close()]), CLEANUP_MS);
+  process.exit(TIMEOUT_EXIT);
+}
 let coopWarp: Awaited<ReturnType<typeof startCoopWarp>> | undefined;
 async function pageScript(g: Game, file: string) {
   let body = fs.readFileSync(path.resolve(file), 'utf8');
@@ -259,6 +293,7 @@ try {
     await writeRailSeed(stack.dataDir!, opt.room, opt.railSeed);
   }
   browser = await launch();
+  wallTimer = setTimeout(() => void wallFired(), wall * 1000);
   const g = await Game.open(browser, stack, {
     sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
     island: opt.island,
@@ -276,6 +311,7 @@ try {
     ].join('\n'),
     warp: opt.warp,
   });
+  pages.push(g);
   // What an eval says as it goes (PLAY ..., RIDE ...): here as it happens, so a long run can be read without its still.
   g.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(m.text()));
   console.log(
@@ -299,6 +335,7 @@ try {
           warp: opt.warp,
         })
       : null;
+  if (g2) pages.push(g2);
   g2?.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(`[2] ${m.text()}`));
   if (g2) {
     coopWarp = await startCoopWarp(
@@ -308,6 +345,7 @@ try {
       path.join(g.out, `${label}-warp.json`),
     );
   }
+  phase = 'warm-up';
   // Warped, the setup's own waits take no time.
   const warpNow = (n: number) => g.page.evaluate((s) => window.__warp?.go(s ?? Infinity), n);
   if (opt.eval) {
@@ -349,6 +387,7 @@ try {
     fs.writeFileSync(file, JSON.stringify(restored, null, 2));
     console.log(`restored state: ${file} ${JSON.stringify(restored)}`);
   }
+  phase = 'capture';
   const video = opt.video ? path.join(g.out, `${label}-realtime.webm`) : null;
   if (video)
     await g.page.screencast.start({ path: video, size: { width: opt.size[0]!, height: opt.size[1]! }, fps: 30 });
@@ -407,12 +446,18 @@ try {
   console.log(
     'Capture checks passed: WebGPU, advancing game frames, no page or console errors. Inspect the artifacts to answer the question.',
   );
+  clearTimeout(wallTimer);
   finishRun({ verdict: 'pass', view: label });
 } catch (e) {
   console.error(e);
-  process.exitCode = 1;
-  finishRun({ verdict: 'failure', view: label, error: String(e) });
+  // After the wall fired, the closing browsers throw: that is the timeout's cleanup, not a failure.
+  if (!timedOut) {
+    process.exitCode = 1;
+    finishRun({ verdict: 'failure', view: label, error: String(e) });
+  }
 } finally {
+  clearTimeout(wallTimer);
+  if (timedOut) await new Promise(() => {}); // the wall handler writes the verdict, cleans up and exits
   await coopWarp?.stop().catch((e) => console.error('warp cleanup:', e));
   await browser?.close().catch(() => {});
   await stack?.close();
