@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { jobs, localTimes, scheduled, stateDir, type Job } from './jobs.ts';
+import { jobs, localTimes, scheduled, stateDir, weekday, type Job } from './jobs.ts';
 
 const args = process.argv.slice(2);
 const uninstall = args.includes('--uninstall');
@@ -60,14 +60,14 @@ for (const [job, spec] of Object.entries(jobs)) {
 <key>ProgramArguments</key><array><string>${xml(process.execPath)}</string><string>${xml(path.join(root, 'dev/daily/run.ts'))}</string><string>${job}</string></array>
 <key>WorkingDirectory</key><string>${xml(root)}</string>
 <key>EnvironmentVariables</key><dict><key>PATH</key><string>${xml(searchPath)}</string></dict>
-<key>StartCalendarInterval</key><dict><key>Hour</key><integer>${hour}</integer><key>Minute</key><integer>${minute}</integer></dict>
+<key>StartCalendarInterval</key><dict><key>Weekday</key><integer>${weekday}</integer><key>Hour</key><integer>${hour}</integer><key>Minute</key><integer>${minute}</integer></dict>
 <key>ProcessType</key><string>Background</string>
 <key>StandardOutPath</key><string>${xml(path.join(stateDir, `${job}.log`))}</string>
 <key>StandardErrorPath</key><string>${xml(path.join(stateDir, `${job}.error.log`))}</string>
 </dict></plist>
 `;
   console.log(
-    `${file}: daily ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} local (${Intl.DateTimeFormat().resolvedOptions().timeZone})${local ? '' : `; converted from ${spec.utcHour}:${spec.minute} UTC today`}.`,
+    `${file}: weekly, ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][weekday]} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} local (${Intl.DateTimeFormat().resolvedOptions().timeZone})${local ? '' : `; converted from ${spec.utcHour}:${spec.minute} UTC today`}.`,
   );
   if (dry) {
     console.log(plist);

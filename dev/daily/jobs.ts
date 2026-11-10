@@ -30,9 +30,12 @@ export const jobs = {
 /** Model-free jobs run at a fixed local time instead of a converted UTC hour. */
 export const localTimes: Partial<Record<Job, [number, number]>> = { scenarios: [3, 30], perf: [2, 50], long: [7, 40] };
 export type Job = keyof typeof jobs;
-/** The jobs launchd runs every night. The rest run by hand, `npm run daily -- <job>`: perf when a change could cost
- * frames or the owner asks; atlas and patch video are off (owner, 10 November: they spend Codex usage nobody needs now). */
+/** The jobs launchd runs, once a week on `weekday` (owner, 10 November: "we can change those to be weekly or on
+ * command"). Every job also runs by hand, `npm run daily -- <job>`: perf when a change could cost frames or the owner
+ * asks; atlas and patch video are off (owner, 10 November: they spend Codex usage nobody needs now). */
 export const scheduled: readonly Job[] = ['scenarios', 'long'];
+/** launchd's day for the scheduled jobs: 0 is Sunday. */
+export const weekday = 0;
 /** The long job's playthrough: `npm run playthrough -- --long --stall 6000`, about half an hour on the Mac. */
 export const longArgs = ['--long', '--stall', '6000'];
 
