@@ -10,6 +10,15 @@ import { WORKS } from '../../sim/railway-works-layout.ts';
 export const trainOwed = (active: number, trains: boolean): boolean =>
   active >= 0 && LINE2_STATIONS[active]!.feed === 'train' && !trains;
 
+/** Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 1): the active stretch is train-fed,
+ * unfunded, and trains don't run yet. No bill, no auto-unload, no rack or shelf take and no forge rails; the rack's
+ * sign shows the train until the first kit unloads. One reading for line2-view.ts and shelf-view.ts. */
+export const waitsForTrain = (l: {
+  active: number;
+  trains: boolean;
+  stations: readonly { start: number }[];
+}): boolean => trainOwed(l.active, l.trains) && l.stations[l.active]!.start < 0;
+
 /** `active`: line 2's Q station taking materials (-1 for none); `railsCarry`: the rails on your own back. */
 export const forgeRailsOffered = (active: number, trains: boolean, cradleRails: number, railsCarry: number): boolean =>
   !trainOwed(active, trains) && (active >= 0 || cradleRails + railsCarry < WORKS.cradleRails);

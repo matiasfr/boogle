@@ -19,7 +19,7 @@ import { railAccount } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { line2Active, line2KitOwed, line2Rails, line2Schedule, line2Trains } from '../src/sim/railway-line2.ts';
-import { trainOwed } from '../src/entities/railway/forge-offer.ts';
+import { trainOwed, waitsForTrain } from '../src/entities/railway/forge-offer.ts';
 import { TRAIN_HOME } from '../src/sim/railway-train.ts';
 
 test('cast once when Q5 completes, at the apron', () => {
@@ -230,4 +230,23 @@ test('the rule never fires before station 6 or once trains run; every stage cons
     assert.equal(line2Rails(s), l.forge.poured, name);
   }
   assert.ok(seen.owed > 0 && seen.free > 0, JSON.stringify(seen));
+});
+test('one reading of "station 6 waits for the train" for the frame, the rack and the shelf', () => {
+  const at = (active: number, trains: boolean, start = -1) =>
+    waitsForTrain({ active, trains, stations: Array.from({ length: 6 }, () => ({ start })) });
+  assert.equal(at(-1, false), false, 'no active stretch');
+  assert.equal(at(4, false), false, 'Q5 is fed by the cart');
+  assert.equal(at(5, false), true, 'station 6 before trains');
+  assert.equal(at(5, true), false, 'trains run');
+  assert.equal(at(5, false, 0), false, 'funded');
+  let waited = 0;
+  for (const k of TRAIN_STAGES) {
+    const s = railwayAtTrains(k).s,
+      active = line2Active(s);
+    const waits = waitsForTrain({ active, trains: line2Trains(s), stations: s.line2!.jobs });
+    // Exactly when the rule refuses hands (trainOwed in src/sim) and the stretch isn't funded yet.
+    assert.equal(waits, trainOwed(active, line2Trains(s)) && s.line2!.jobs[active]!.start < 0, k);
+    waited += Number(waits);
+  }
+  assert.ok(waited > 0, 'some train stage waits');
 });

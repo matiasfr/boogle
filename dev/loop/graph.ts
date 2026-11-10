@@ -262,7 +262,7 @@ function quarryStation(id: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6', requires: Ed
     reached: { mark: `stretch laid ${id}` },
     stops: [id],
     requires,
-    cue: [frameSign('src/entities/railway/line2-view.ts:946-965 frame.setTag')],
+    cue: [frameSign('src/entities/railway/line2-view.ts:942-960 frame.setTag')],
     ...extra,
   };
   return node;
@@ -362,7 +362,7 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'forge lit' },
     stops: ['forge-lit'],
     requires: [dec('T3', 'rules', `${RULES} deposit2: station F needs T3 complete`)],
-    cue: [onMain('world', "the forge frame's sign while unlit", 'src/entities/railway/line2-view.ts:893')],
+    cue: [onMain('world', "the forge frame's sign while unlit", 'src/entities/railway/line2-view.ts:906')],
   },
   {
     id: 'axe',
@@ -411,7 +411,7 @@ export const NODES: readonly LoopNode[] = [
         `${RULES} hook: two stretches laid; line2Routes(2).hook = ${String(line2Routes(2).hook)} (the walkway)`,
       ),
     ],
-    cue: [onMain('world', "the hook drum on pillar p2's top", 'src/entities/railway/line2-view.ts:358-370')],
+    cue: [onMain('world', "the hook drum on pillar p2's top", 'src/entities/railway/line2-view.ts:368-380')],
   },
   quarryStation('Q3', [dec('Q2', 'rules', `${RULES} qActive()`)]),
   {
@@ -426,8 +426,8 @@ export const NODES: readonly LoopNode[] = [
     stops: [],
     requires: [dec('Q3', 'rules', `${RULES} lever: three stretches laid (Q3 couples the drive)`)],
     cue: [
-      onMain('world', 'the quarry gate and its lever on the apron', 'src/entities/railway/line2-view.ts:383-384'),
-      onMain('world', 'Q4\'s sign: "Pull the lever to start" once full', 'src/entities/railway/line2-view.ts:944-947'),
+      onMain('world', 'the quarry gate and its lever on the apron', 'src/entities/railway/line2-view.ts:393-394'),
+      onMain('world', 'Q4\'s sign: "Pull the lever to start" once full', 'src/entities/railway/line2-view.ts:957-960'),
     ],
   },
   quarryStation('Q4', [
@@ -465,7 +465,7 @@ export const NODES: readonly LoopNode[] = [
         'the summit switch and the signal down Needle Bell',
         'src/entities/railway/sea-gate-view.ts:1,39',
       ),
-      onMain('world', 'Q5\'s sign: "Pull the switch to start" once full', 'src/entities/railway/line2-view.ts:944-947'),
+      onMain('world', 'Q5\'s sign: "Pull the switch to start" once full', 'src/entities/railway/line2-view.ts:957-960'),
     ],
   },
   quarryStation('Q5', [
@@ -544,11 +544,11 @@ export const NODES: readonly LoopNode[] = [
     ],
     {
       cue: [
-        frameSign('src/entities/railway/line2-view.ts:946-965 frame.setTag'),
+        frameSign('src/entities/railway/line2-view.ts:942-960 frame.setTag'),
         onMain(
           'world',
           'until trains run, no bill: the rack sign shows the old train hauling the kit',
-          'src/entities/railway/line2-view.ts:40-46 waitsForTrain; src/entities/railway/stock-sign.ts',
+          'src/entities/railway/forge-offer.ts waitsForTrain; line2-view.ts:37-44 kitComing; stock-sign.ts',
         ),
       ],
     },

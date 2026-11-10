@@ -18,7 +18,7 @@ import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-lin
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
-import { forgeRailsOffered, trainOwed } from './forge-offer.ts';
+import { forgeRailsOffered, waitsForTrain } from './forge-offer.ts';
 import { createRailwayGlideDevice } from './glide-device-view.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
@@ -34,10 +34,6 @@ type Rail = typeof import('../../proto/place/rail.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
 type Line2 = NonNullable<Inspection['line2']>;
-/** Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 1): the active stretch is train-fed, unfunded,
- * and trains don't run yet. No bill, no auto-unload, no rack or shelf take and no forge rails; the rack's sign shows
- * the train until the first kit unloads. */
-const waitsForTrain = (l: Line2) => trainOwed(l.active, l.trains) && l.stations[l.active]!.start < 0;
 /** The rack's sign keeps the train until the first kit is off it: so the flip back to the count lands as the train
  * unloads at Far Head, not at the fit 500 m away. Trains run, and the kit is still to load or still aboard. */
 const kitComing = (l: Line2) =>
