@@ -683,13 +683,10 @@ test('the kiln lit, the cradle fitted and the wagon rolling out are never predic
   assert.deepEqual([shown.works!.logs, shown.works!.stone, shown.works!.lit], [16, 16, -1], 'full, lit by the server');
   for (const e of [{ op: 'rail.strike', id: 0 }, { op: 'rail.turn', to: 1, revision: 0 }, { op: 'rail.breaker' }])
     assert.equal(railPredict(shown, 'a', { ...e, epoch: a('a').epoch, request: a('a').request + 1 }, w.t).n, 0);
+  // The cradle takes its eight rails and no footings (works-late-game step 2a); the table turns only once it is fitted.
   const s = railwayAtWorks('stall-done');
   const b = s.s.accounts.find((row) => row.pid === 'b')!;
-  assert.equal(seedAct(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
-  for (let i = 0; i < 2; i++) {
-    seedAct(s, 'a', 'rail.footTake', { rack: 0 });
-    seedAct(s, 'a', 'rail.footSet', { site: 1 });
-  }
+  assert.equal(seedAct(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 0, 'no turn before the fit');
   while (s.s.line2!.forge.rack < 8) seedAdvance(s, 1);
   seedAct(s, 'b', 'rail.forgeTake');
   shown = cloneRailway(railwayOf(worldOf(s.s)));
@@ -697,5 +694,7 @@ test('the kiln lit, the cradle fitted and the wagon rolling out are never predic
   assert.deepEqual([shown.shed!.cradleRails, shown.shed!.fitted, shown.shed!.ready], [8, -1, -1]);
   assert.equal(seedAct(s, 'b', 'rail.cradle'), 8);
   assert.equal(s.s.shed!.fitted, s.t);
+  assert.equal(s.s.shed!.ready, -1, 'fitted, the table still facing the stall');
+  assert.equal(seedAct(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
   assert.equal(s.s.shed!.ready, s.t + WORKS.rollTicks);
 });

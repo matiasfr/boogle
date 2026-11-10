@@ -50,6 +50,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
   if (e.op === 'rail.footTake') clean.rack = e.rack;
   if (e.op === 'rail.footSet') clean.site = e.site;
   if (e.op === 'rail.turn') clean.to = e.to;
+  if (e.op === 'rail.call') clean.dir = e.dir;
   if (e.op === 'rail.chop') {
     clean.yaw = e.yaw;
     clean.collapsed = e.collapsed;
@@ -85,7 +86,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
 
 /** The fields an accepted action's effect event carries (the intent and the actor; the count moved is `accepted`, a
  * felled tree's fall is in the state, and a kind of 0 is left out). */
-const EVENT_FIELDS = ['id', 'station', 'kind', 'revision', 'x', 'y', 'z', 'rack', 'site', 'to'] as const;
+const EVENT_FIELDS = ['id', 'station', 'kind', 'revision', 'x', 'y', 'z', 'rack', 'site', 'to', 'dir'] as const;
 /** What the result adds for effects (src/world/railway-predict.ts RailEffect), without what the intent already says:
  * a drop's pile stands at its x/y/z, and a take's pile is its id (its position still comes from here: it may be gone). */
 const EFFECT_FIELDS = ['carried', 'level', 'pile', 'px', 'py', 'pz'] as const;
@@ -160,10 +161,12 @@ export function createRailwayRequests({
       }
       if (message.t === 'r:open') {
         if (!available()) return state(from, unavailable());
-        if (current?.sid === from)
-          return send({ t: 'r:session', to: from, epoch: current.epoch, next: 1 + (api.account(pid)?.request ?? 0) });
-        // A new page (or a takeover): a new epoch retires whatever the old one had in flight.
-        const epoch = (api.account(pid)?.epoch ?? 0) + 1;
+        const account = api.account(pid);
+        if (current?.sid === from && account)
+          return send({ t: 'r:session', to: from, epoch: current.epoch, next: 1 + account.request });
+        // A new page, a takeover, or a session whose account a load replaced: a new epoch retires whatever the old
+        // one had in flight.
+        const epoch = (account?.epoch ?? 0) + 1;
         if (epoch > RAILWAY_MAX_INT || !api.session(pid, epoch)) return state(from, 'full');
         sessions.set(pid, { sid: from, epoch, clockStep: 0 });
         send({ t: 'r:session', to: from, epoch, next: 1 });
@@ -175,7 +178,13 @@ export function createRailwayRequests({
         request = e.request as number;
       if (!available()) return state(from, unavailable(), { epoch, request });
       if (!current || current.sid !== from || current.epoch !== epoch) return rej(from, epoch, request, 'session');
-      const account = api.account(pid)!;
+      const account = api.account(pid);
+      // A session whose account is gone (a load replaced the accounts): refused with no change, and dropped so the
+      // client's reopen makes a fresh one.
+      if (!account) {
+        sessions.delete(pid);
+        return rej(from, epoch, request, 'session');
+      }
       if (request <= account.request) {
         // Already settled (a resend): answer again from its recorded outcome.
         const old = api.outcome(pid, epoch, request);

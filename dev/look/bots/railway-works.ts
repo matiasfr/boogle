@@ -1,6 +1,7 @@
 // Split-rock Works and the Roundhouse through ordinary inputs (docs/plans/split-rock-roundhouse.md, J5d): after the
-// pier, take the breaker, open the stall and the throat, light the kiln, carry four footings home by hand, fit the
-// cradle, turn the table, then ride the footing wagon's train to the pier and set twelve footings in the sea.
+// pier, take the breaker, open the stall and the throat, light the kiln, carry two footings home by hand (trains on
+// request, at a lever and aboard), fit the cradle with rails, turn the table, then ride the footing wagon's train to
+// the pier and set twelve footings in the sea.
 // Inspection observes; it never seeds a world or moves a player.
 import type { Bot } from '../bot.ts';
 import { inspectRailway, type RailwayViewInspection } from '../../../src/entities/railway/state.ts';
@@ -67,13 +68,22 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     cam.yaw = me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
   };
 
-  /** Call a line-2 train at `haltId`, board it by a real jump, ride to `destination` and step off onto its halt. */
+  /** Request a line-2 train at `haltId` by its lever, the handle the way to `destination`, board it by a real jump,
+   * ask for a middle `destination` aboard ("Request stop: <halt>"), ride there and step off onto its halt. */
   const ride = async (haltId: number, destination: number) => {
     const halt = view().halts[haltId]!;
     await until(() => view().halts[haltId]!.up, `${halt.name} halt stands`);
+    const dir = destination > halt.stop ? 1 : -1;
+    const handle = view().halts[haltId]!.lever.find((h) => h.on && h.dir === dir);
+    check(handle, `${halt.name} has a handle toward stop ${destination}`);
+    if (!handle!.over) await use(handle!, /^Request stop/, `request a train at ${halt.name}`);
+    await until(() => view().halts[haltId]!.calling, `${halt.name} signal drops for the request`);
     await walk(halt.x, halt.z, 0.5);
-    await until(() => view().halts[haltId]!.calling, `${halt.name} halt calls a train`);
-    await until(() => l2().train[1]!.phase === 0 && l2().train[1]!.at === halt.stop, `train arrives at ${halt.name}`);
+    const row = () => l2().train[1]!;
+    await until(
+      () => row().phase === 0 && row().at === halt.stop && row().sweep === dir,
+      `a train toward stop ${destination} stands at ${halt.name}`,
+    );
     const aboard = () => view().trains[1]!.cars.some((car) => car.riding);
     const end = performance.now() + 20000;
     try {
@@ -91,6 +101,18 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
       releaseJump();
     }
     check(aboard(), `boarded line 2 at ${halt.name} by a real jump`);
+    const to = view().halts.find((h) => h.line === 1 && h.stop === destination)!;
+    if (to.lever.filter((h) => h.on).length === 2) {
+      // A middle halt stops only on request: ask aboard.
+      await until(
+        () => interactTarget()?.id === 'railway-request-aboard',
+        `"Request stop: ${to.name}" offered aboard`,
+        20000,
+      );
+      check(interactTarget()?.verb === `Request stop: ${to.name}`, `the prompt names ${to.name}`);
+      if (interactTarget()?.run) bot.press();
+      await until(() => row().to === destination || row().at === destination, `the train will stop at ${to.name}`);
+    }
     let ran = false;
     let sample: Promise<void> | undefined;
     await until(() => {
@@ -195,7 +217,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await walk(worksRack.x, worksRack.z, 2.5);
     await until(() => works().rack >= 1, 'first footing on the Works rack', 600000);
     await checkpoint('first footing');
-    // 6. Four footings home by hand: two raise the stall, two fit the cradle's seats.
+    // 6. The stall's two footings home by hand (the cradle takes rails only, works-late-game step 2a).
     for (let trip = 0; trip < WORKS.stall + WORKS.cradle; trip++) {
       if (trip > 0) await ride(HALT.village2, 1);
       await until(() => works().rack >= 1, `a footing waits on the Works rack (trip ${trip + 1})`, 600000);

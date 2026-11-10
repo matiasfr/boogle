@@ -7,7 +7,6 @@
 //
 //   CART                       speeds, dwells and what a load holds (Place's depot.ts CART)
 //   CART_ROAD                  the pinned stops: the camp (0), the forge stop at the turntable, each stretch's rack
-//   CART_CALL                  the "Call cart to forge" handle beside the turntable (world cm)
 //   cartAlong(c, tick)         where the cart is, cm along the road (tick may be fractional in a view)
 //   cartEnd(c)                 the tick its current timed phase ends (Infinity while it rests or waits)
 //   cartCycleTicks(k)          one whole trip to stretch k's rack and home, for the away credit
@@ -22,9 +21,8 @@ export const CART = {
   load: 24,
   rails: 24,
   loadTicks: 30,
-  /** At the forge stop: with rails aboard it leaves after `leaveTicks`; called there, it waits `forgeTicks` to board. */
+  /** At the forge stop: with rails aboard it leaves after `leaveTicks`. */
   leaveTicks: 30,
-  forgeTicks: 80,
   dropTicks: 22,
 } as const;
 /** The phases, in trip order. REST and LOAD stand at the camp, FORGE at the turntable, DROP at the rack. */
@@ -37,8 +35,6 @@ export const CART_ROAD = {
   behindCm: 1300,
   rackCm: (k: number) => CART_ROAD.forgeCm + (LINE2_STATIONS[k]?.fromCm ?? 0) - CART_ROAD.behindCm,
 } as const;
-/** The call handle beside the turntable stop (Place pair.ts callAt), world cm, and how near a call is heard. */
-export const CART_CALL = { x: 91520, z: 1480, reach: 340 } as const;
 
 export type RailCart = {
   phase: number;
@@ -49,10 +45,8 @@ export type RailCart = {
   to: number;
   logs: number;
   rails: number;
-  /** "Call cart to forge" is pending: served when the cart next reaches the forge stop. */
-  recall: boolean;
 };
-export const CART_IDLE: RailCart = { phase: 0, depart: 0, from: 0, to: 0, logs: 0, rails: 0, recall: false };
+export const CART_IDLE: RailCart = { phase: 0, depart: 0, from: 0, to: 0, logs: 0, rails: 0 };
 
 /** The eased leg: accelerate at `accel` to `speed`, cruise, brake; a short leg peaks below cruise. */
 function profile(dist: number) {

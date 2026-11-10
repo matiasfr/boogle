@@ -88,6 +88,40 @@ export function clank(x: number, z: number): void {
   burst(ctx, hp, t, 0.06);
 }
 
+// A train's stop bell (a passenger's request accepted): one struck note, its partials ringing out over a second.
+export function bell(x: number, z: number): void {
+  const a = at(x, z, 0.16);
+  if (!a) return;
+  const { ctx, out, g, t } = a;
+  for (const [mul, k, decay] of [
+    [1, 1, 1.4],
+    [2, 0.45, 0.9],
+    [2.76, 0.3, 0.6],
+    [5.4, 0.12, 0.3],
+  ] as const) {
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = 1320 * mul;
+    o.connect(env(ctx, out, t, g * k, 0.003, decay));
+    o.start(t);
+    o.stop(t + decay + 0.1);
+  }
+}
+
+// A bell cord's pull on your own press: a soft creak and tick, before the server has answered.
+export function cordPull(x: number, z: number): void {
+  const a = at(x, z, 0.1);
+  if (!a) return;
+  const { ctx, out, g, t } = a;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(1800, t);
+  bp.frequency.exponentialRampToValueAtTime(900, t + 0.12);
+  bp.Q.value = 3;
+  bp.connect(env(ctx, out, t, g, 0.004, 0.12));
+  burst(ctx, bp, t, 0.15);
+}
+
 // The whistle at the end of a run: a two-note steam chord with a little wobble. `hear` widens its range for a call
 // meant to carry across the island (the forge's call, docs/reviews/home-flow.md findings 2 and 3).
 export function whistle(x: number, z: number, hear = HEAR): void {

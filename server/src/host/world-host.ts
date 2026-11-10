@@ -648,4 +648,6 @@ const RAIL_TUNE_KEYS = new Set([
   'railGlideDeploy',
   'railBoilerSoloSpeed',
   'railBoilerHelpSpeed',
+  'railFootSoloSpeed',
+  'railFootHelpSpeed',
 ]);

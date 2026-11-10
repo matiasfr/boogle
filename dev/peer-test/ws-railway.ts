@@ -775,6 +775,101 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   return row;
 }
 
+/** Request stops (works-late-game step 1) over the real server: three adapter tabs at 0/100/200 ms in a trains-on room.
+ * A lever request from the quarry platform is accepted once and mirrored on every tab; a friend's same request is a
+ * noop and a press from off the platform is refused; the server's train then stands at the quarry that way, and every
+ * tab agrees on the row. The server is stepped ahead rather than waited for (state, not timing). */
+export async function railwayRequestStop(c: Ctx) {
+  const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
+  const { worldOf } = await import('../../test/railway-live.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-world.ts');
+  const { LINE_HALTS, TRAIN_PHASE, reqHas } = await import('../../src/sim/railway-train.ts');
+  const { trainStops } = await import('../../src/sim/railway-line2.ts');
+  const seed = railwayAtTrains('trains-on');
+  const roomId = railwayRoomId(`${c.room}-request`);
+  // A plain mirror (no session) brings the room up; the seed loads before any player opens a session, since a load
+  // replaces the accounts a live session's next action would read.
+  const host = await c.web.open('Q-host', `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=reqhost`);
+  await waitFor(async () => !!c.hosted(roomId), 15000);
+  const world = c.hosted(roomId)!.world as RailwayWorldHost;
+  while (world.sync.world.tick <= seed.t + 5) world.step(0.1);
+  await world.sync.whenDurable();
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())), railwayCheck);
+  world.rules.railway.touchAll();
+  const pages: Page[] = [];
+  for (const [k, l] of [0, 100, 200].entries())
+    pages.push(
+      await c.web.open(`Q${k}`, `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=req${k}&lat=${l}&adapter=1`),
+    );
+  await host.page.close();
+  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
+  const line2 = () => world.rules.railway.railway.line2!;
+  const n = trainStops(world.rules.railway.railway, 1).length;
+  const quarry = LINE_HALTS.findIndex((h) => h.name === 'Quarry');
+  const h = LINE_HALTS[quarry]!;
+  const asked = (req: number) => reqHas(req, h.stop, -1, n);
+  // Accepted requests by this tab's own player (every tab hears everyone's).
+  const accepted = async (p: Page, pid: string) =>
+    (await adapter(p)).effects.filter((e) => e.op === 'rail.call' && e.pid === pid).length;
+  const ask = (p: Page, at: [number, number, number]) =>
+    ev(
+      p.page,
+      ({ at, id }) => {
+        window.T.railStand(at[0], at[1], at[2]);
+        return window.T.railIntent({ op: 'rail.call', id, dir: -1 });
+      },
+      { at, id: quarry },
+    );
+  await waitFor(
+    async () =>
+      (await Promise.all(pages.map(adapter))).every((p) => p.state.line2.train[1]!.req === line2().train[1]!.req),
+    10000,
+  );
+  c.check('request stop: the seed starts with nothing asked at the quarry', !asked(line2().train[1]!.req));
+  // From off the platform: refused, nothing set.
+  await ask(pages[2]!, [h.x + h.reach + 3000, h.y, h.z]);
+  await sleep(600);
+  c.check('request stop: a press from off the platform sets nothing', !asked(line2().train[1]!.req));
+  await ask(pages[0]!, [h.x, h.y, h.z]);
+  const set = await waitFor(async () => asked(line2().train[1]!.req), 5000);
+  c.check('request stop: the lever request is accepted by the server', set >= 0);
+  const mirrored = await waitFor(
+    async () => (await Promise.all(pages.map(adapter))).every((p) => asked(p.state.line2.train[1]!.req)),
+    5000,
+  );
+  c.check('request stop: every tab mirrors the request', mirrored >= 0);
+  c.check(
+    'request stop: the asker hears it accepted',
+    (await waitFor(async () => (await accepted(pages[0]!, 'req0')) > 0, 5000)) >= 0,
+  );
+  const before = line2().train[1]!.req;
+  await ask(pages[1]!, [h.x, h.y, h.z]);
+  await sleep(800);
+  c.check(
+    "request stop: a friend's same request moves nothing",
+    line2().train[1]!.req === before && (await accepted(pages[1]!, 'req1')) === 0,
+    `req ${before} -> ${line2().train[1]!.req}`,
+  );
+  // Step the server ahead until its train stands at the quarry; it may pass outbound first and turn at Far Head.
+  let stood = false;
+  for (let k = 0; k < 6000 && !stood; k++) {
+    world.step(0.1);
+    const r = line2().train[1]!;
+    stood = r.phase === TRAIN_PHASE.STAND && r.at === h.stop && r.sweep === -1;
+  }
+  const row = line2().train[1]!;
+  c.check('request stop: the train stands at the quarry, leaving toward the village', stood, JSON.stringify(row));
+  const agreed = await waitFor(async () => {
+    const all = await Promise.all(pages.map(adapter));
+    return all.every((p) => {
+      const t = p.state.line2.train[1]!;
+      return t.phase === row.phase && t.at === row.at && t.sweep === row.sweep && t.dest === row.dest;
+    });
+  }, 10000);
+  c.check('request stop: every tab agrees on the standing train', agreed >= 0);
+  await Promise.all(pages.map((p) => p.page.close()));
+}
+
 // A playtest jump-in (docs/plans/playtest-jump-in.md): two players in one seeded room, through a restart. The seed is
 // an ordinary save, so play goes on from it and survives the restart; the shared room is never created or changed.
 export async function railwayJumpIn(c: Ctx) {

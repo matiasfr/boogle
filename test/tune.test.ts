@@ -87,6 +87,21 @@ test("the boiler's haul pace: appended after the glider's keys, 300 cm/s solo an
   assert.throws(() => loadTune(createTune(), { ...json, values: old }), /tune:/);
 });
 
+test("a footing's own pace: appended last, 300 cm/s solo and 540 helped (works-late-game step 2b)", () => {
+  const keys = TUNABLES.map((t) => t.key as string);
+  const foot = { railFootSoloSpeed: 300, railFootHelpSpeed: 540 };
+  assert.deepEqual(keys.slice(-2), Object.keys(foot), 'appended in order, at the end');
+  for (const [key, def] of Object.entries(foot)) {
+    const t = TUNABLES.find((s) => s.key === key)!;
+    assert.equal(t.def, def, key);
+    assert.ok(okTune(key, def), key);
+  }
+  const json = serializeTune(createTune());
+  const old: Record<string, number> = { ...json.values };
+  delete old.railFootSoloSpeed;
+  assert.throws(() => loadTune(createTune(), { ...json, values: old }), /tune:/, 'a save without them is refused');
+});
+
 test('only proto- rooms tune', () => {
   assert.ok(isProtoRoom('v02-proto-haul') && isProtoRoom('proto-haul'));
   assert.ok(!isProtoRoom('v02-beach') && !isProtoRoom('v02-myproto-x') && !isProtoRoom(undefined));

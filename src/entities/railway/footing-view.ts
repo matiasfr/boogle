@@ -12,6 +12,8 @@ import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.t
 import { thump } from '../../render/machine-sfx.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { PLAYER_R } from '../../constants.ts';
+/** A sprint with a footing on your back, over its carry pace. */
+const FOOT_SPRINT = 1.3;
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 
@@ -170,12 +172,17 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
         if (data) data.load = Math.max(data.load ?? 0, 16);
       }
     },
-    /** Full weight solo, the beam's helped pace together (owner, 8 November). */
+    /** A footing's own pace (docs/plans/works-late-game.md, step 2b): 3 m/s alone and a sprint 1.3 times that, 5.4 m/s
+     * helped with no sprint. The plain jump stays; the second jump, the glide and the hook are off while you carry one
+     * (tools.ts, glide.ts, hook-shot.ts), so a work item opens no new travel edge. */
     prePhysics() {
       state = adapter.inspect();
       if (state.foot) {
-        input.sprint = me.sprint = false;
-        me.wish.multiplyScalar((helperOf(state.pid) ? state.beamHelpSpeed : state.beamSoloSpeed) / 5.6);
+        const helped = !!helperOf(state.pid),
+          run = me.sprint && !helped;
+        if (helped) input.sprint = false;
+        me.sprint = false;
+        me.wish.multiplyScalar(((helped ? state.footHelpSpeed : state.footSoloSpeed) * (run ? FOOT_SPRINT : 1)) / 5.6);
       } else if (mineHelp.helping()) {
         input.sprint = me.sprint = false;
         mineHelp.ease(me.wish);

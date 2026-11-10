@@ -12,7 +12,7 @@ import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 import { railMaxDuration } from '../../src/sim/railway.ts';
-import { railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
@@ -297,6 +297,36 @@ test('requests apply in order: a resend is answered from its outcome, a gap or a
     await f.step(1);
     assert.deepEqual(f.heard('a2').rej.at(-1), [1, 1, 'session']);
     assert.equal(railwayInvariant(f.host.rules.railway.railway), null);
+  } finally {
+    await f.close();
+  }
+});
+
+test('a session whose account is gone is refused without a change and reopens; the room stays up', async () => {
+  const f = await fixture(railwayRoomId('lost-account'));
+  try {
+    const rules = () => f.host.rules.railway;
+    // A world with no accounts at all, loaded under a live session below (as a test reseed or a load can).
+    const bare = JSON.parse(JSON.stringify(rules().world().snapshot()));
+    await f.open('a');
+    await f.wake();
+    assert.ok(rules().account('alice'));
+    rules().world().load(bare, railwayCheck);
+    rules().touchAll();
+    assert.equal(rules().account('alice'), undefined);
+    const hash = rules().world().hash();
+    const r = f.send('a', { op: 'rail.wake' });
+    await f.step(1);
+    assert.deepEqual(f.heard('a').rej.at(-1), [1, r, 'session'], 'refused: reopen');
+    assert.equal(rules().world().hash(), hash, 'nothing changed');
+    assert.equal(rules().account('alice'), undefined);
+    // The reopen makes a fresh session (and account), and its actions apply.
+    const epoch = await f.open('a');
+    assert.ok(rules().account('alice'));
+    f.pose('a', T1.x, T1.z);
+    const first = f.send('a', { op: 'rail.wake' }, epoch, 1);
+    await f.step(3);
+    assert.equal(rules().outcome('alice', epoch, first)?.status, 'accepted');
   } finally {
     await f.close();
   }

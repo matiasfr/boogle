@@ -46,7 +46,8 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
     const s = adapter.inspect();
     return (
       (s.beam?.state === 'held' && s.beam.holder === s.pid) ||
-      (s.line2.boiler.state === 'held' && s.line2.boiler.holder === s.pid)
+      (s.line2.boiler.state === 'held' && s.line2.boiler.holder === s.pid) ||
+      !!s.foot
     );
   };
   const canAct = () =>

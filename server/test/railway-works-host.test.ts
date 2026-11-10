@@ -125,13 +125,24 @@ test('works host: strikes, the kiln and the table judged where their actor stand
   } finally {
     await r.done();
   }
-  const s = await host('table', fixture('stall-done'));
+  // Only when ready (owner, 10 November): the stall alone is refused by the rule; once the cradle is fitted, one turn.
+  const early = await host('early', fixture('stall-done'));
+  try {
+    assert.equal(await early.action({ op: 'rail.turn', to: 1, revision: 0 }, spot(SHED_TABLE)), 'noop', 'not fitted');
+  } finally {
+    await early.done();
+  }
+  const s = await host('table', fixture('cradle-fitted'));
   try {
     const far: At = [SHED_TABLE.x + 2000, SHED_TABLE.y, SHED_TABLE.z];
     assert.equal(await s.action({ op: 'rail.turn', to: 1, revision: 0 }, far), 'rejected');
     assert.equal(await s.action({ op: 'rail.turn', to: 1, revision: 0 }, spot(SHED_TABLE)), 'accepted');
     assert.equal(await s.action({ op: 'rail.turn', to: 0, revision: 0 }, spot(SHED_TABLE)), 'rejected', 'stale');
-    assert.equal(await s.action({ op: 'rail.turn', to: 0, revision: 1 }, spot(SHED_TABLE)), 'accepted');
+    assert.equal(
+      await s.action({ op: 'rail.turn', to: 0, revision: 1 }, spot(SHED_TABLE)),
+      'noop',
+      'never turned back once the wagon rolls out',
+    );
     assert.equal(
       await s.action({ op: 'rail.footTake', rack: 0 }, [WORKS_RACK.x, WORKS_RACK.y, WORKS_RACK.z + 2000]),
       'rejected',

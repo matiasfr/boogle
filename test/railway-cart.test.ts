@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { railAccount, railCounts } from '../src/sim/railway.ts';
-import { Cart, Forge, Rail } from '../src/sim/railway-world.ts';
+import { Cart, Forge, Rail, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { railwayRoomId } from '../src/world/railway-namespace.ts';
 import {
   CART,
   CART_PHASE,
@@ -18,17 +19,7 @@ import {
 } from '../src/sim/railway-cart.ts';
 import { line2CartStatus, line2Served } from '../src/sim/railway-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
-import {
-  createRailway,
-  hash,
-  invariant,
-  railApply,
-  railResume,
-  railSession,
-  railTick,
-  restore,
-  worldOf,
-} from './railway-live.ts';
+import { hash, invariant, railApply, railResume, railTick, restore, worldOf } from './railway-live.ts';
 import { railwayAtQ2, railwayAtQ4, type World } from './helpers/railway-q2.ts';
 
 // The played-through worlds are slow to build: build each once, and start every test from a restored copy.
@@ -98,13 +89,13 @@ test('the pose: whole centimetres along the road, eased, continuous across every
   const trip: RailCart[] = [];
   let depart = 100;
   for (const phase of [CART_PHASE.LOAD, CART_PHASE.OUT, CART_PHASE.FORGE, CART_PHASE.RUN, CART_PHASE.DROP]) {
-    const c = { phase, depart, from: F, to: R, logs: 0, rails: 0, recall: false };
+    const c = { phase, depart, from: F, to: R, logs: 0, rails: 0 };
     trip.push(c);
     depart = phase === CART_PHASE.FORGE ? depart + CART.leaveTicks : cartEnd(c);
   }
-  trip.push({ phase: CART_PHASE.BACK, depart, from: F, to: R, logs: 0, rails: 0, recall: false });
+  trip.push({ phase: CART_PHASE.BACK, depart, from: F, to: R, logs: 0, rails: 0 });
   depart = cartEnd(trip.at(-1)!);
-  trip.push({ phase: CART_PHASE.HOME, depart, from: F, to: R, logs: 0, rails: 0, recall: false });
+  trip.push({ phase: CART_PHASE.HOME, depart, from: F, to: R, logs: 0, rails: 0 });
   for (let i = 1; i < trip.length; i++) {
     const a = trip[i - 1]!,
       b = trip[i]!;
@@ -160,37 +151,26 @@ test('an empty forge keeps the cart waiting: it leaves only with the rails the s
   conserved(w);
 });
 
-test('"Call cart to forge": one call stands until served, the cart waits at the forge to be boarded, then runs', () => {
+test('"Call cart to forge" is gone (v25): its op moves nothing, and a resting cart rests until a stretch needs it', () => {
   const w = atQ2();
   assert.equal(line2Served(w.s), 1);
   until(w, () => cart(w).phase === CART_PHASE.HOME || cart(w).phase === CART_PHASE.REST, 2 * cartCycleTicks(1), 'home');
   until(w, () => cart(w).phase === CART_PHASE.REST, cartCycleTicks(1), 'resting');
-  // Q2's logs are all on the rack: the cart rests until it is called.
+  // Q2's logs are all on the rack: the cart rests, and the cut op does not send it.
+  assert.equal(act(w, 'a', 'rail.cartCall'), 0);
+  assert.equal('recall' in cart(w), false, 'no recall field');
   tick(w, 50);
   assert.equal(cart(w).phase, CART_PHASE.REST);
-  assert.equal(act(w, 'a', 'rail.cartCall'), 1);
-  assert.equal(act(w, 'b', 'rail.cartCall'), 0, 'a second call is the same call');
-  assert.equal(cart(w).recall, true);
-  until(w, () => cart(w).phase === CART_PHASE.FORGE, cartCycleTicks(1), 'at the forge');
-  const at = w.t;
-  until(w, () => cart(w).phase !== CART_PHASE.FORGE, CART.forgeTicks + 5, 'leaves the forge');
-  assert.equal(w.t - at, CART.forgeTicks, 'it waits to be boarded');
-  assert.equal(cart(w).phase, CART_PHASE.RUN, 'then runs out to the rack');
-  assert.equal(cart(w).recall, false, 'the call is served');
-  until(w, () => cart(w).phase === CART_PHASE.REST, cartCycleTicks(1), 'home again');
-  tick(w, 50);
-  assert.equal(cart(w).phase, CART_PHASE.REST, 'served once: it does not run again');
   conserved(w);
 });
 
-test('a call before the depot runs is a noop', () => {
-  const s = createRailway();
-  railSession(s, 'a', 1);
-  const w = { s, t: 0 };
-  assert.equal(act(w, 'a', 'rail.cartCall'), 0);
-  assert.equal(cart(w).recall, false);
-  tick(w, 10);
-  assert.equal(cart(w).phase, CART_PHASE.REST);
+test('a save still carrying the cart recall column is refused whole, and older saves sit under their own namespace', () => {
+  // Saves are columnar and never migrated (server/AGENTS.md): v24 rooms are rail-v24-*, which a v25 server never
+  // opens; a v24-shaped cart row in a v25 save would be refused, never half-loaded with the field dropped.
+  const snap = JSON.parse(JSON.stringify(worldOf(atQ2().s).snapshot()));
+  snap.c.cart.push(snap.c.cart[0].map(() => 0));
+  assert.throws(() => createRailwayWorld().load(snap, railwayCheck), /load: cart columns/);
+  assert.match(railwayRoomId('boogle'), /^rail-v25-/);
 });
 
 test('the away credit counts the cart: the load under way lands, whole trips bring the rest, the cart is home', () => {

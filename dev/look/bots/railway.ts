@@ -554,13 +554,24 @@ export async function boilerToPier(
     check(await bot.work(() => l2().trains, 30000, 380), 'boiler fitted at the old train');
     await checkpoint('TRAINS');
   }
+  // Trains stop on request (works-late-game step 1): the lever's handle the way to `destination`; every ride here ends
+  // at its line's end, so nothing is asked aboard.
   const ride = async (line: number, haltId: number, destination: number, called: boolean) => {
     const halt = view().halts[haltId]!;
     await until(() => view().halts[haltId]!.up, 'halt drops into place');
-    await walk(halt.x, halt.z, 0.5);
+    const dir = destination > halt.stop ? 1 : -1;
+    const handle = view().halts[haltId]!.lever.find((h) => h.on && h.dir === dir);
+    check(handle, `${halt.name} has a handle toward stop ${destination}`);
+    if (!handle!.over)
+      check(await bot.use(handle!.x, handle!.z, `request a train at ${halt.name}`, /^Request stop/), 'lever offered');
     await until(() => view().halts[haltId]!.calling, `${halt.name} halt calls a train`);
     if (called) await checkpoint('train called');
-    await until(() => l2().train[line]!.phase === 0 && l2().train[line]!.at === halt.stop, 'called train arrives');
+    await walk(halt.x, halt.z, 0.5);
+    await until(
+      () =>
+        l2().train[line]!.phase === 0 && l2().train[line]!.at === halt.stop && l2().train[line]!.sweep === dir,
+      'called train arrives',
+    );
     const aboard = () => view().trains[line]!.cars.some((car) => car.riding);
     const end = performance.now() + 20000;
     try {

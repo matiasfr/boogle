@@ -27,7 +27,7 @@ import {
 } from '../src/sim/railway-line2.ts';
 import { forgeRailsOffered, trainOwed } from '../src/entities/railway/forge-offer.ts';
 import { CART_PHASE, cartAlong } from '../src/sim/railway-cart.ts';
-import { TRAIN_HOME } from '../src/sim/railway-train.ts';
+import { TRAIN_HOME, TRAIN_STOPS, reqHas } from '../src/sim/railway-train.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
@@ -145,9 +145,12 @@ test('no breaker and no strike while hauling the boiler', () => {
     e.mut(Rail, e.single(Rail))!.trains = -1;
     Object.assign(e.mut(Boiler, e.single(Boiler))!, { state: 'held', holder: 'a', epoch, age: 0 });
     // Cold trains stand at home, empty (the kit was hand-carried in that world).
-    TRAIN_HOME.forEach((at, slot) =>
-      Object.assign(e.mut(Train, e.lookup(Train, slot)!)!, { phase: 0, at, to: at, depart: 0, call: -1 }),
-    );
+    TRAIN_HOME.forEach((at, slot) => {
+      const here = TRAIN_STOPS[slot]![at]!;
+      Object.assign(e.mut(Train, e.lookup(Train, slot)!)!, {
+        ...{ phase: 0, at, to: at, depart: 0, req: 0, from: here, v0: 0, dest: here },
+      });
+    });
   });
   assert.equal(l.boiler.state, 'held');
   assert.equal(invariant(w.s), null);
@@ -180,7 +183,9 @@ test('the kiln waits for the throat; lights once when both bills are full', () =
   assert.equal(act(w, 'a', 'rail.kiln'), 0, 'a lit kiln takes nothing');
   assert.equal(worksStage(w.s), 'lit');
 });
-test('pours one footing every 80 ticks to a rack of 6, 16 in all', () => {
+test('pours one footing every 80 ticks to a rack of 6, 14 in all: the stall two and the pier twelve', () => {
+  assert.equal(WORKS.total, WORKS.stall + WORKS.cradle + WORKS.pier);
+  assert.deepEqual([WORKS.cradle, WORKS.total], [0, 14], 'the cradle takes rails only (works-late-game step 2a)');
   const w = railwayAtWorks('works-lit'),
     works = w.s.works!;
   assert.deepEqual([works.rack, works.poured], [WORKS.rackCap, WORKS.rackCap]);
@@ -204,7 +209,7 @@ test('pours one footing every 80 ticks to a rack of 6, 16 in all', () => {
   assert.equal(pours[0], first + 1, 'the first comes as soon as the rack has room');
   for (let k = 1; k < pours.length; k++) assert.ok(pours[k]! - pours[k - 1]! >= WORKS.castTicks);
   advanceWorks(w, 400);
-  assert.equal(works.poured, WORKS.total, 'sixteen in all');
+  assert.equal(works.poured, WORKS.total, 'fourteen in all');
   assert.equal(invariant(w.s), null);
 });
 test('a footing fills your back', () => {
@@ -251,18 +256,23 @@ test('sites in order', () => {
   assert.equal(pierNeed(w.s), WORKS.pier - 1);
   assert.equal(footingTotal(w.s), w.s.works!.poured);
 });
-test('fitted once; the table needs the stall; a stale revision is 0', () => {
+test('fitted once; the table turns only when ready; a stale revision is 0', () => {
   const lit = railwayAtWorks('works-lit');
   assert.equal(act(lit, 'a', 'rail.turn', { to: 1, revision: 0 }), 0, 'no table before the stall');
   assert.equal(act(lit, 'a', 'rail.cradle'), 0);
-  const w = railwayAtWorks('stall-done'),
+  // The stall stands but the cradle is not fitted: refused, not accepted and silent (owner, 10 November).
+  const early = railwayAtWorks('stall-done');
+  assert.equal(act(early, 'a', 'rail.turn', { to: 1, revision: 0 }), 0, 'no turn before the fit');
+  assert.deepEqual([early.s.shed!.table, early.s.shed!.tableRev], [0, 0]);
+  const w = railwayAtWorks('cradle-fitted'),
     shed = w.s.shed!;
   assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 1 }), 0, 'stale');
   assert.equal(act(w, 'a', 'rail.turn', { to: 0, revision: 0 }), 0, 'already there');
   assert.equal(act(w, 'a', 'rail.turn', { to: 2, revision: 0 }), 0);
   assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
   assert.equal(act(w, 'b', 'rail.turn', { to: 1, revision: 0 }), 0, 'a second turn on the same revision');
-  assert.deepEqual([shed.table, shed.tableRev, shed.ready], [1, 1, -1], 'nothing to roll out yet');
+  assert.deepEqual([shed.table, shed.tableRev, shed.ready], [1, 1, w.t + WORKS.rollTicks], 'the one turn rolls it out');
+  assert.equal(invariant(w.s), null);
   const fitted = railwayAtWorks('cradle-fitted');
   const at = fitted.s.shed!.fitted;
   assert.ok(at >= 0);
@@ -343,25 +353,24 @@ test('"Take rails" is offered exactly where the forge rack gives some, from Q5 t
   assert.equal(act(w, 'b', 'rail.forgeTake'), WORKS.cradleRails);
   check('b carries the eight', w);
   assert.equal(act(w, 'b', 'rail.cradle'), WORKS.cradleRails);
-  assert.ok(w.s.shed!.fitted < 0);
-  check('cradle railed, footings to set', w);
+  assert.ok(w.s.shed!.fitted >= 0, 'eight rails fit it: it takes no footings');
+  check('cradle fitted', w);
   assert.ok(seen.offered > 0 && seen.hidden > 0 && seen.owed > 0, JSON.stringify(seen));
 });
 test('ready only after fitted and turned; the table holds while the wagon rolls out and waits', () => {
   const w = railwayAtWorks('stall-done'),
     shed = w.s.shed!,
     train = w.s.line2!.train[1]!;
-  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
-  assert.equal(shed.ready, -1);
-  // Fitting the cradle with the table already turned rolls the wagon out.
-  for (let i = 0; i < WORKS.cradle; i++) {
-    assert.equal(act(w, 'a', 'rail.footTake', { rack: 0 }), 1);
-    assert.equal(act(w, 'a', 'rail.footSet', { site: 1 }), 1);
-  }
+  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 0 }), 0, 'not before the fit');
+  assert.equal(act(w, 'a', 'rail.footSet', { site: 1 }), 0, 'the cradle takes no footings');
   while (w.s.line2!.forge.rack < WORKS.cradleRails) advanceWorks(w, 1);
   act(w, 'b', 'rail.forgeTake');
   assert.equal(act(w, 'b', 'rail.cradle'), WORKS.cradleRails);
+  assert.deepEqual([shed.fitted, shed.ready], [w.t, -1], 'fitted; the table still faces the stall');
+  // The one turn rolls the wagon out, and asks line 2 to come back to its village end for it.
+  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
   assert.equal(shed.ready, w.t + WORKS.rollTicks);
+  assert.ok(train.wagon || reqHas(train.req, 0, 1, 4), 'a request at the village');
   const due = shed.ready;
   assert.equal(act(w, 'b', 'rail.turn', { to: 0, revision: 1 }), 0, 'no turning back while it rolls out');
   assert.deepEqual([shed.table, shed.tableRev, shed.ready], [1, 1, due]);
@@ -376,10 +385,8 @@ test('ready only after fitted and turned; the table holds while the wagon rolls 
     assert.ok(train.wagon ? w.t >= shed.ready : true);
   }
   const ready = shed.ready;
-  assert.equal(act(w, 'a', 'rail.turn', { to: 0, revision: 1 }), 1);
-  assert.deepEqual([train.wagon, shed.ready], [true, ready], 'after coupling the table is a toy');
-  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 2 }), 1);
-  assert.deepEqual([train.wagon, shed.ready], [true, ready]);
+  assert.equal(act(w, 'a', 'rail.turn', { to: 0, revision: 1 }), 0, 'after coupling the table is never turned again');
+  assert.deepEqual([train.wagon, shed.ready, shed.table, shed.tableRev], [true, ready, 1, 1]);
   assert.equal(worksStage(w.s), 'wagon');
   assert.equal(invariant(w.s), null);
 });

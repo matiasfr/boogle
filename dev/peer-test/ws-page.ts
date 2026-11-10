@@ -203,6 +203,11 @@ const T = (window.T = {
     next: number;
   }) => Promise<number>,
   railBaseEdit: (e: Record<string, unknown>) => T.room!.send({ t: 'w:edit', e }),
+  /** Stand at a world point (cm): the next action carries it, and presence goes there. */
+  railStand(x: number, y: number, z: number) {
+    railAt = [x, y, z];
+    void T.room!.presence({ p: [x / 100, y / 100, z / 100], v: 1 });
+  },
   railPose(target: 'station' | 'source', id = RAILWAY_SOURCES[0]![0]) {
     const source = RAILWAY_SOURCES.find((row) => row[0] === id);
     if (target === 'source' && !source) throw new Error(`unknown railway source ${id}`);
@@ -393,9 +398,7 @@ function startWorld(room: Room) {
         case 'rail.boilerFit':
           return adapter.fitBoiler(intent.revision);
         case 'rail.call':
-          return adapter.callTrain(intent.id);
-        case 'rail.cartCall':
-          return false; // the call handle is cut (9 November); the op itself goes with the next WORLD_NS bump
+          return adapter.callTrain(intent.id, intent.dir);
         case 'rail.lever':
           return adapter.pullLever();
         case 'rail.seaSwitch':

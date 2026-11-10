@@ -98,6 +98,9 @@ export type RailAction = RailRequest & {
   site?: number;
   /** rail.turn: the road the table turns to (0 the stall road, 1 line 2's). */
   to?: number;
+  /** rail.call: the way the train is asked to be going, -1 to stop 0's end, +1 to the far end (an end halt's is its
+   * way out, whatever is sent). */
+  dir?: number;
   /** rail.wake: the rule tick its actor pressed at (the client's estimate); the server bounds it (railWakeTick). */
   tk?: number;
 };

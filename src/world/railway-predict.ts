@@ -61,7 +61,6 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.lever',
   'rail.seaSwitch',
   'rail.pack',
-  'rail.cartCall',
   'rail.kiln',
   'rail.footTake',
   'rail.footSet',
