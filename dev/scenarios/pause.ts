@@ -42,8 +42,8 @@ export default {
     await g.wait(0.3);
     t.check('H closes it again', !(await g.eval(`return ${isOpen};`)));
 
-    // 2. Opened by openPause(): Resume is focused, held keys do nothing behind it, T does not honk.
-    await g.eval(`${PAUSE} openPause();`);
+    // 2. Opened by openPause('options'): Resume is focused, held keys do nothing behind it, T does not honk.
+    await g.eval(`${PAUSE} openPause('options');`);
     await g.wait(0.5);
     const focus = await g.eval(`return document.activeElement?.dataset.act ?? document.activeElement?.tagName;`);
     await g.eval(`const { net } = await import('/src/netplay/net.ts'); window.__sent = [];
@@ -96,7 +96,7 @@ export default {
     await g.wait(0.3);
     t.check(
       'Esc on a sub-page goes back to the main page',
-      (await g.eval(`return document.querySelector('.pause-card').dataset.page;`)) === 'main',
+      (await g.eval(`return document.querySelector('.pause-card').dataset.page;`)) === 'options',
     );
 
     // 4. Leave asks first (do not press twice: it reloads).
@@ -133,7 +133,7 @@ export default {
     // 5. The talk box is not a modal: the pause view opens over it and ends the talk; it never opens over the pause view.
     await g.eval(`${TALK} open();`);
     await g.wait(0.3);
-    await g.eval(`${PAUSE} openPause();`);
+    await g.eval(`${PAUSE} openPause('options');`);
     await g.wait(0.3);
     t.check(
       'with the talk box open, openPause() opens the pause view and ends the talk',
@@ -149,7 +149,7 @@ export default {
       (await g.eval(`return ${isOpen};`)) && (await g.eval(`return document.querySelector('.bd').hidden;`)),
     );
     await g.eval(`${PAUSE} closePause();`);
-    await g.eval(`${PAUSE} openPause();`);
+    await g.eval(`${PAUSE} openPause('options');`);
     await g.wait(0.3);
     await g.eval(`${TALK} open();`);
     await g.wait(0.3);
@@ -185,7 +185,7 @@ export default {
       press('menu'); return { tab, page, open: document.querySelector('dialog.pause').open };`);
     t.check(
       'pad: right switches tab, B goes back, Menu resumes',
-      padNav.tab === 'touch' && padNav.page === 'main' && !padNav.open,
+      padNav.tab === 'touch' && padNav.page === 'options' && !padNav.open,
       JSON.stringify(padNav),
     );
     await g.eval(`document.body.classList.remove('gamepad');`);

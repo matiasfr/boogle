@@ -120,7 +120,7 @@ export function mountGraphics(parent: HTMLElement, resume: () => void) {
   reload.dataset.act = 'graphics-reload';
   const reset = button('Reset to Auto', () => void execute(() => setGraphicsPreset('auto')));
   const back = button('Back', () => {
-    pauseNavigation.open?.('main');
+    pauseNavigation.open?.('options');
   });
   const done = button('Resume', resume);
   footer.append(reset, back, done);

@@ -81,8 +81,8 @@ try {
     }) as Promise<Probe>;
   async function joinVoice(p: Page, phone = false) {
     await p.evaluate(async () => {
-      const m = (await import('/src/features/pause.ts' as string)) as { openPause(): boolean };
-      m.openPause();
+      const m = (await import('/src/features/pause.ts' as string)) as { openPause(start?: string): boolean };
+      m.openPause('options');
     });
     const button = p.locator('.voice-row button', { hasText: 'Join voice' });
     await (phone ? button.tap() : button.click());
@@ -187,7 +187,7 @@ try {
   await sleep(400);
   await a.screenshot({ path: path.join(out, 'pill-unmuted.png'), clip: corner });
   await a.evaluate(async () =>
-    ((await import('/src/features/pause.ts' as string)) as { openPause(): boolean }).openPause(),
+    ((await import('/src/features/pause.ts' as string)) as { openPause(start?: string): boolean }).openPause('options'),
   );
   await sleep(600);
   await a.screenshot({ path: path.join(out, 'desktop-pause-hint.png') });

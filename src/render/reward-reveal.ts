@@ -2,7 +2,8 @@
 // you dismiss. Generic finds (logs, stone, rails, money, crystals, gold) never come through here. You stand still while it's
 // up: Interact, Back, a click or a tap puts it away, and the next one in the queue comes up. Local and cosmetic.
 import * as THREE from 'three/webgpu';
-import { cam, camConstraints, camForward, me } from '../player/player.ts';
+import { camConstraints, me } from '../player/player.ts';
+import { faceCamera, frameBuddy, holdCamera } from './buddy-frame.ts';
 import { reducedMotion } from '../constants.ts';
 import { inputState } from '../player/input-state.ts';
 import { setPadGrab } from '../player/controls.ts';
@@ -113,7 +114,7 @@ export function createRewardReveal({
     document.body.classList.add('place-getting');
     inputState.held = true;
     me.charging = false;
-    me.yaw = cam.yaw + Math.PI; // turned to face you
+    faceCamera(); // turned to face you
     setAloft(false);
     setPadGrab(
       (slot) => {
@@ -193,28 +194,19 @@ export function createRewardReveal({
     });
 
   const top = new THREE.Vector3();
-  const focus = new THREE.Vector3(),
-    shot = new THREE.Vector3(),
-    forward = new THREE.Vector3();
+  const self = {};
   let cameraWeight = 0;
   const cameraConstraint: (typeof camConstraints)[number] = (look, pos) => {
     if (reducedMotion || cameraWeight <= 0 || !me.body) return false;
-    const p = me.body.interpolatedPosition;
     overHead(top);
-    const middle = Math.max(p.y + 1.1, (p.y - 0.45 + top.y + SIZE / 2) / 2);
-    const height = top.y + SIZE / 2 - (p.y - 0.45);
-    const distance = Math.max(3.8, height / (2 * Math.tan((camera.fov * Math.PI) / 360) * 0.7));
-    focus.set(p.x, middle, p.z);
-    shot.set(p.x + Math.sin(cam.yaw) * distance, middle + 1, p.z + Math.cos(cam.yaw) * distance);
-    camForward(forward);
-    pos.lerp(shot, cameraWeight);
-    look.addScaledVector(forward, 8).lerp(focus, cameraWeight).addScaledVector(forward, -8);
+    frameBuddy(look, pos, cameraWeight, top.y + SIZE / 2);
     return false; // keep the ordinary ground safety constraint
   };
   camConstraints.push(cameraConstraint);
   function updateGot(dt: number) {
     cameraWeight += ((cur ? 1 : 0) - cameraWeight) * (1 - Math.exp(-dt * (cur ? 3.5 : 7)));
     if (cameraWeight < 0.001) cameraWeight = 0;
+    holdCamera(self, cameraWeight > 0 || gettingItem());
     if (!cur) return;
     const u = (cur.t += dt);
     overHead(top);
@@ -295,6 +287,7 @@ export function createRewardReveal({
     updateGot,
     dispose() {
       dropGot();
+      holdCamera(self, false);
       listeners.abort();
       const index = camConstraints.indexOf(cameraConstraint);
       if (index >= 0) camConstraints.splice(index, 1);

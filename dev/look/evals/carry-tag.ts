@@ -265,7 +265,7 @@ const act = async () => {
     )
       throw new Error('Mixed slots differ from accepted contents');
     if (mode === 'pause') {
-      pauseNavigation.open?.('main');
+      pauseNavigation.open?.('options');
       await wait(300);
       const exact = document.querySelector<HTMLElement>('.carry-pause');
       if (!exact?.isConnected || !exact.innerText.includes('10 logs · 5 rails · 1 stone'))

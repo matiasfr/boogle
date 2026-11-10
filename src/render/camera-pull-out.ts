@@ -8,6 +8,7 @@ import { skipInput } from '../player/dismiss-pointer.ts';
 import { glyph } from '../player/glyphs.ts';
 import { reducedMotion } from '../constants.ts';
 import { clamp, smoothstep } from '../math-pure.ts';
+import { holdCamera } from './buddy-frame.ts';
 
 // Owner, 9 November: "the cinematic should be uninterruptible unless by maybe a specific highlighted button press".
 // Nothing ends a shot by accident; Interact skips it once its glyph has shown this long. null takes the skip out.
@@ -82,38 +83,42 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     shot = pending = null;
     settle();
   };
+  const step = (dt: number) => {
+    if (inSeat() || reducedMotion) return reset();
+    if (pending && !busy() && !inputState.held) {
+      shot = pending;
+      pending = null;
+      settle();
+    }
+    if (!shot) return;
+    // A reward card over a shot the player was meant to see: it goes back in the queue and plays whole after the card.
+    if (busy() || inputState.held) {
+      if (cut === 1) pending ??= shot;
+      shot = null;
+      return settle();
+    }
+    t += dt;
+    // Reorient the underlying follow camera while the gate shot has full weight, before blending home.
+    if (behindBuddy && !returned && cut === 1 && t >= shot.seconds - BACK_S) {
+      cam.yaw = me.yaw;
+      returned = true;
+    }
+    if (cut < 1) cut = Math.max(0, cut - dt / 0.14);
+    const out = Math.min(1, t / 0.8),
+      back = clamp((t - shot.seconds + BACK_S) / BACK_S, 0, 1);
+    weight = ease(out) * (1 - ease(back)) * cut;
+    if (t >= shot.seconds || cut <= 0) return reset();
+    input.update();
+    showSkip(self, skipping());
+  };
   return {
     play(from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds = 3.2, drift = seconds) {
       if (reducedMotion || inSeat()) return;
       pending = { from: from.clone(), to: to.clone(), at: at.clone(), seconds, drift };
     },
     update(dt: number) {
-      if (inSeat() || reducedMotion) return reset();
-      if (pending && !busy() && !inputState.held) {
-        shot = pending;
-        pending = null;
-        settle();
-      }
-      if (!shot) return;
-      // A reward card over a shot the player was meant to see: it goes back in the queue and plays whole after the card.
-      if (busy() || inputState.held) {
-        if (cut === 1) pending ??= shot;
-        shot = null;
-        return settle();
-      }
-      t += dt;
-      // Reorient the underlying follow camera while the gate shot has full weight, before blending home.
-      if (behindBuddy && !returned && cut === 1 && t >= shot.seconds - BACK_S) {
-        cam.yaw = me.yaw;
-        returned = true;
-      }
-      if (cut < 1) cut = Math.max(0, cut - dt / 0.14);
-      const out = Math.min(1, t / 0.8),
-        back = clamp((t - shot.seconds + BACK_S) / BACK_S, 0, 1);
-      weight = ease(out) * (1 - ease(back)) * cut;
-      if (t >= shot.seconds || cut <= 0) return reset();
-      input.update();
-      showSkip(self, skipping());
+      step(dt);
+      holdCamera(self, !!shot || !!pending); // the You page waits for every shot (src/render/buddy-frame.ts)
     },
     cancel,
     reset,
@@ -121,6 +126,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     inspect: () => ({ active: !!shot, pending: !!pending, seconds: t, weight, skip: skipping() }),
     dispose() {
       reset();
+      holdCamera(self, false);
       listeners.abort();
       const index = camConstraints.indexOf(constraint);
       if (index >= 0) camConstraints.splice(index, 1);

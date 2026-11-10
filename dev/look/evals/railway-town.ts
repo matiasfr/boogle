@@ -15,7 +15,6 @@
 //   townat=shelf              in front of the curio shelf, looking at it (C1)
 //   townat=crates             above the line-2 station boxes waiting for you; townbox=Q3 picks one, standing 4 m off it
 //   townact=open              (townat=crates) walk into that box: it opens and its card shows
-//   townact=swap              (townat=shelf) press the first Swap target
 //   townown=beanie,glasses    grant this capture's player those first, so the shelf has something uncovered
 //   townact=open,reload       reload the page for real after opening; with --until (see the act) the eval runs again
 //                             in the new document, frames the same spot and prints `TOWN reloaded <json>`
@@ -284,7 +283,6 @@ async function actOnce(act: string) {
     const want: Record<string, RegExp> = {
       try: /^place-stock-paperhat$/,
       take: /^place-stock-paperhat$/,
-      swap: /^place-swap-/,
     };
     const re = want[act];
     if (!re) throw new Error(`townact=${act} is not available yet`);

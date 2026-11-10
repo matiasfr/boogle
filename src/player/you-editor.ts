@@ -1,4 +1,5 @@
-// "You" on the pause view's Room page (src/features/pause.ts): your name and colour, changeable at any time and saved
+// "You" on the pause view's Room page (src/features/pause.ts): your name (and your colour, until the wardrobe's You page
+// has it: src/entities/wardrobe/menu.ts), changeable at any time and saved
 // for next time (the same localStorage keys the first-visit card writes; src/player/arrival.ts). Presence carries the
 // new name and colour on its next beat, and src/features/identity.ts tells the roster, so plaques follow. Local: only
 // your own identity. Serves DESIGN.md 8 (Designed for drop-in: a returning player skips the card, so this is where a
@@ -21,7 +22,47 @@ function save() {
   renderPeople(); // the Room page's list follows on its own (it watches who is on the island)
 }
 
-export function youEditor(): HTMLElement {
+/** Your colour as swatches: the one you wear is the focus stop (the rest are reached with left and right), and a
+ * `cycle` event steps through them. `onPick` hears every change. */
+export function colourSwatches(onPick?: () => void) {
+  const el = document.createElement('div');
+  el.className = 'pause-swatches';
+  const paint = () =>
+    el.querySelectorAll('button').forEach((b, k) => {
+      b.setAttribute('aria-pressed', String(k === me.colorIdx));
+      b.toggleAttribute('data-nostop', k !== me.colorIdx);
+    });
+  const pick = (k: number) => {
+    me.colorIdx = k;
+    paint();
+    save();
+    onPick?.();
+  };
+  COLORS.forEach((col, k) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pause-btn pause-swatch';
+    b.dataset.color = String(k);
+    b.style.background = col;
+    b.setAttribute('aria-label', `Colour ${k + 1}`);
+    b.addEventListener('click', () => {
+      pick(k);
+      b.focus({ preventScroll: true });
+    });
+    el.append(b);
+  });
+  paint();
+  const step = (dir: number) => {
+    const here = el.contains(document.activeElement);
+    pick((me.colorIdx + dir + COLORS.length) % COLORS.length);
+    if (here) el.querySelector<HTMLElement>('[aria-pressed="true"]')?.focus({ preventScroll: true });
+  };
+  el.dataset.cycle = '';
+  el.addEventListener('cycle', (e) => step((e as CustomEvent<number>).detail));
+  return { el, step };
+}
+
+export function youEditor({ colour = true }: { colour?: boolean } = {}): HTMLElement {
   const you = document.createElement('div');
   you.className = 'pause-you-edit';
   const h = document.createElement('h2');
@@ -43,25 +84,7 @@ export function youEditor(): HTMLElement {
   });
   // boogle-disable-next-line boogle/input-through-actions -- the name field is a text field: Enter finishes typing
   name.addEventListener('keydown', (e) => e.key === 'Enter' && name.blur());
-  const swatches = document.createElement('div');
-  swatches.className = 'pause-swatches';
-  const paint = () =>
-    swatches.querySelectorAll('button').forEach((b, k) => b.setAttribute('aria-pressed', String(k === me.colorIdx)));
-  COLORS.forEach((col, k) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'pause-btn pause-swatch';
-    b.dataset.color = String(k);
-    b.style.background = col;
-    b.setAttribute('aria-label', `Colour ${k + 1}`);
-    b.addEventListener('click', () => {
-      me.colorIdx = k;
-      paint();
-      save();
-    });
-    swatches.append(b);
-  });
-  paint();
-  you.append(h, name, swatches);
+  you.append(h, name);
+  if (colour) you.append(colourSwatches().el);
   return you;
 }
