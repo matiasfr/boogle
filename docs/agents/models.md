@@ -10,16 +10,18 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
 - **Enforcement:** in normal mode `dev/codex/run.ts` and `npm run queue` refuse Codex jobs except previz, which is
   still tried because only Codex paints; at a limit, images wait and the owner is told. The `planner`, `implementer` and `designer`
   frontmatter must match `agents` in `dev/models.ts` (`test/models.test.ts`).
-- **Effort at spawn:** where a route names an effort different from the agent's frontmatter (high-risk implementation),
-  pass it as the Agent tool's `effort`. Opus `max` only when the owner asks.
+- **Opus at medium** (owner, 9 November: "use opus medium instead of opus high, unless we encounter bugs or opus
+  medium is not sufficient to solve the problem"): every Opus route runs at medium. Raise a single task to high, as
+  the Agent tool's `effort`, only when it hits bugs medium couldn't fix or medium's result falls short, and say so in
+  the report. Opus `max` only when the owner asks.
+- **Orchestrator on Fable or Opus medium** (owner, 9 November: "orchestrator can also use opus medium").
 - **Fable only for the orchestrator** (owner, 9 November, after measuring that Fable 5.2 uses the weekly limit about
   2.9x as fast as Opus 5.5 per million output tokens, and fills its own Fable limit too): the main session is the only
   steady Fable user. The independent review stays on Fable at medium because it runs rarely and the reviewer can't be
   the Opus that wrote the code. Planning, the hardest design, research and second-opinion work, and every
   `/code-review` run on Opus. Per-task savings at API prices (the Fable 5.2 system card) don't carry over to a
   subscription, where the limit is what runs out.
-- **Code review** runs in an Opus high general-purpose subagent with `/code-review high`, never in the main session,
-  which runs on Fable. Opus reviewing Opus-written code is fine for this check; the independent review below is the
+- **Code review** runs in an Opus medium general-purpose subagent with `/code-review high`, never in the main session. Opus reviewing Opus-written code is fine for this check; the independent review below is the
   different-model one.
 - **Fable tops out at high** (owner, 10 November: "don't use fable xHigh, fable high should be the absolute top
   used"). No route, spawn or review runs Fable at xhigh or max (`fableTopEffort`, `test/models.test.ts`), and it
