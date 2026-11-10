@@ -2,8 +2,8 @@
 // faces it so what lies beyond the display is up the map (owner, 9 November: "Island map"; 10 November: on "a little
 // display at the station"). Every face is a cell of one shared canvas atlas that is drawn once and again only when the
 // pier is laid; the trains are small instanced quads gliding over the faces and the arrival blink is a red ring quad
-// per "you are here" stop, so a moving train never redraws a texture; the Works' gold marks are quads too. Four draws
-// for every marker, ring and gold mark on every display, plus one per display. Reduced motion: the markers step once a second and the ring stays lit. Local.
+// per "you are here" stop, so a moving train never redraws a texture; the Works' gold marks and the waiting glider's
+// teal canopy are quads too. Five draws for every marker, ring and mark on every display, plus one per display. Reduced motion: the markers step once a second and the ring stays lit. Local.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
 import {
@@ -13,6 +13,7 @@ import {
   mapPx,
   mapSizes,
   pathAt,
+  MAP_FACE,
   MAP_RING,
   type MapLine,
   type MapView,
@@ -130,6 +131,55 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
     zigs.geometry.dispose();
     squares.geometry.dispose();
   });
+  // The glider waiting on Needle Bell's summit (woken, untaken): a teal canopy over a dark outline, the device's
+  // colours, so it reads as the summit's prize and not a line-2 stop. One quad a display, still and never blinking.
+  const gliderTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    const canopy = () => {
+      g.beginPath();
+      g.moveTo(5, 30);
+      g.quadraticCurveTo(32, -8, 59, 30);
+      g.quadraticCurveTo(32, 26, 5, 30);
+      g.closePath();
+    };
+    g.lineJoin = g.lineCap = 'round';
+    g.strokeStyle = MAP_FACE;
+    g.lineWidth = 9;
+    canopy();
+    g.stroke();
+    g.beginPath();
+    for (const x of [10, 54]) {
+      g.moveTo(x, 30);
+      g.lineTo(32, 54);
+    }
+    g.stroke();
+    g.strokeStyle = '#efe4c8';
+    g.lineWidth = 3.5;
+    g.stroke();
+    g.fillStyle = '#39e6c6';
+    canopy();
+    g.fill();
+    g.fillStyle = '#efe4c8';
+    g.beginPath();
+    g.arc(32, 54, 5, 0, Math.PI * 2);
+    g.fill();
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  })();
+  const gliderMat = new THREE.MeshStandardNodeMaterial({ map: gliderTex, alphaTest: 0.5, roughness: 0.6 });
+  const gliderPx = S.dot * 5;
+  const gliders = new THREE.InstancedMesh(new THREE.PlaneGeometry(gliderPx * toM, gliderPx * toM), gliderMat, count);
+  gliders.frustumCulled = false;
+  owner.add(gliders);
+  owner.cleanup(() => {
+    gliderTex.dispose();
+    gliderMat.dispose();
+    gliders.geometry.dispose();
+  });
+  let glider: { x: number; z: number } | null = null;
   /** World x/z of each seam still to strike (null: struck, or the breaker not out), and the cold kiln's (null: none). */
   const works: { seams: ({ x: number; z: number } | null)[]; kiln: { x: number; z: number } | null } = {
     seams: [],
@@ -140,6 +190,7 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
   for (let k = 0; k < rings.count; k++) rings.setMatrixAt(k, hide);
   for (let k = 0; k < zigs.count; k++) zigs.setMatrixAt(k, hide);
   for (let k = 0; k < squares.count; k++) squares.setMatrixAt(k, hide);
+  for (let k = 0; k < gliders.count; k++) gliders.setMatrixAt(k, hide);
   const color = new THREE.Color();
   lines.forEach((l, li) => {
     color.set(l.color);
@@ -224,6 +275,12 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
     },
     /** How many gold marks each shown display carries now (seams, kiln). */
     goldMarks: () => ({ seams: works.seams.filter(Boolean).length, kiln: !!works.kiln }),
+    /** The glider's mark: world x/z of the woken, untaken device (null: sealed or taken). */
+    glider(at: { x: number; z: number } | null) {
+      glider = at;
+    },
+    /** Whether shown displays carry the glider's mark now. */
+    gliderMark: () => !!glider,
     /** Each display's face centre and its normal toward its reader, for evals to frame. */
     faces: () =>
       boards.map((bd) => ({
@@ -258,18 +315,25 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
           onFace(face, px, py, 0.006);
           rings.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
         }
-        const gold = (mesh: THREE.InstancedMesh, k: number, at: { x: number; z: number } | null | undefined) => {
+        const gold = (
+          mesh: THREE.InstancedMesh,
+          k: number,
+          at: { x: number; z: number } | null | undefined,
+          size = goldPx,
+        ) => {
           if (!bd.on || !at) return mesh.setMatrixAt(k, hide);
           // Kept whole on the face: the kiln sits just past the map's edge on some faces.
           const [px, py] = mapPx(face.view, at.x, at.z),
-            half = goldPx / 2 + 2;
+            half = size / 2 + 2;
           // Over the train markers: a seam beside a stop must not hide under a standing train.
           onFace(face, Math.min(CW - half, Math.max(half, px)), Math.min(CH - half, Math.max(half, py)), 0.016);
           mesh.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
         };
         for (let i = 0; i < SEAMS; i++) gold(zigs, b * SEAMS + i, works.seams[i]);
         gold(squares, b, works.kiln);
+        gold(gliders, b, glider, gliderPx);
       });
+      gliders.instanceMatrix.needsUpdate = true;
       marks.instanceMatrix.needsUpdate = true;
       rings.instanceMatrix.needsUpdate = true;
       zigs.instanceMatrix.needsUpdate = true;

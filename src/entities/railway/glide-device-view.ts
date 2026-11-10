@@ -1,6 +1,7 @@
 // The glider's device on Needle Bell's summit (docs/plans/glider-b-home-flow.md), Local over accepted state. Sealed
 // until Q5 is laid: a dark drum and a folded vane on a short mast, its long axis pointing at the forge, no ring, no
-// light and no prompt. Woken: the vane unfurls teal and cream, Place's rings and core turn, and a faint locator rises.
+// light and no prompt. Woken: the vane unfurls teal and cream, Place's rings and core turn, a teal locator rises
+// (flaring on the live edge, with the room's wake banner) and the halts' maps mark the spot (halts-view.ts).
 // Taken (the room's `glide`): the drum stays, the rest goes. The finder's card plays on their own accepted (predicted)
 // take; everyone else's flourish is ability-arrival.ts. Nothing here grants anything.
 import * as THREE from 'three/webgpu';
@@ -14,6 +15,8 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { warmDraw } from '../../render/precompile.ts';
 import { playMark } from '../../proto/mark.ts';
+import { reducedMotion } from '../../constants.ts';
+import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { GLIDE_REWARD } from './reward-data.ts';
 
 type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
@@ -27,7 +30,12 @@ type Deps = {
 /** The drum's light sits this high over its base (Place's tech.ts devices). */
 const LIGHT_Y = 1.45;
 const UNFURL_S = 0.6;
-const LOCATOR = { r: 0.1, h: 50 };
+/** The locator, wider and brighter than the jump device's (call 12's 0.1): on 10 November the glider woke and nobody
+ * in the room saw it, so it must read as a few pixels from the village and line 2 (about 110 m) and not be heavy up
+ * close. `opacity` breathes between its two values; `flare` is the wake edge's brief bright column and its seconds. */
+const LOCATOR = { r: 0.45, h: 70, opacity: [0.2, 0.32], flare: 0.85, flareS: 4 } as const;
+/** The wake banner, a draft for the owner to reword (not a Boogler line). */
+const WAKE_BANNER = ['The glider is awake', "Up on Needle Bell's summit"] as const;
 
 export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedView, deps: Deps) {
   const { land, shapes, partMat, glow, youGot } = deps;
@@ -87,17 +95,17 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   ring2.position.y = LIGHT_Y;
   const core = mesh(new THREE.OctahedronGeometry(0.26), glow);
   core.position.y = LIGHT_Y;
-  // The faint locator: as faint as the jump device's (call 12), additive and unlit, seen across Home once woken.
+  // The locator: additive and unlit, seen across Home once woken (LOCATOR).
   const shaftMat = readableUnlit(
     new THREE.MeshBasicNodeMaterial({
       color: '#39e6c6',
       transparent: true,
-      opacity: 0.1,
+      opacity: LOCATOR.opacity[0],
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     }),
   );
-  const shaft = mesh(new THREE.CylinderGeometry(LOCATOR.r, LOCATOR.r, LOCATOR.h, 6), shaftMat);
+  const shaft = mesh(new THREE.CylinderGeometry(LOCATOR.r, LOCATOR.r, LOCATOR.h, 8, 1, true), shaftMat);
   shaft.castShadow = shaft.receiveShadow = false;
   shaft.position.y = LOCATOR.h / 2 + 1.4;
   device.add(ring, ring2, core, shaft);
@@ -120,6 +128,8 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   /** -1: not yet seen this session (the first build snaps); otherwise the completed count last seen ready. */
   let seenCompleted = -1;
   let unfurlT = -1;
+  /** Seconds since the wake edge's flare began, -1 when none. */
+  let flareT = -1;
   let t = 0;
   const isWoken = (l: Line2) => l.completed >= 5;
   const available = (l: Line2) => isWoken(l) && !adapter.inspect().glide;
@@ -149,14 +159,18 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
     /** A restore (load, rejoin, resync) snaps to state: no wake show. */
     restore(l: Line2) {
       seenCompleted = l.completed;
-      unfurlT = -1;
+      unfurlT = flareT = -1;
       draw(l);
     },
     update(dt: number, l: Line2) {
       t += dt;
       // The live edge only: Q5's completion seen going from 4 to 5 in this session, while still sealed.
+      // Every client sees it from the same accepted edge, so the whole room gets the flare and the banner (shared
+      // moments, 10 November); a restore or a late join gets the steady locator only.
       if (seenCompleted === 4 && l.completed >= 5 && !adapter.inspect().glide) {
         unfurlT = 0;
+        flareT = 0;
+        showMomentBanner(WAKE_BANNER[0], WAKE_BANNER[1], 4.5);
         playMark('glider woken', { authority: 'local' });
       }
       if (adapter.inspect().ready) seenCompleted = l.completed;
@@ -164,6 +178,16 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
         unfurlT += dt;
         if (unfurlT >= UNFURL_S) unfurlT = -1;
       }
+      // The locator flares on the wake edge and eases down to a slow breath (held still under reduced motion).
+      const [lo, hi] = LOCATOR.opacity;
+      const breath = reducedMotion ? (lo + hi) / 2 : lo + (hi - lo) * (0.5 + 0.5 * Math.sin(t * 1.6));
+      if (flareT >= 0) {
+        flareT += dt;
+        if (flareT >= LOCATOR.flareS) flareT = -1;
+      }
+      const f = flareT < 0 ? 0 : 1 - flareT / LOCATOR.flareS;
+      shaftMat.opacity = breath + (LOCATOR.flare - breath) * f * f;
+      shaft.scale.set(1 + f * 1.5, 1, 1 + f * 1.5);
       const spin = unfurlT >= 0 ? 6 : 1;
       ring.rotation.z += dt * 0.7 * spin;
       ring2.rotation.y += dt * spin;
@@ -187,6 +211,7 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
           taken: adapter.inspect().glide,
           locator: shaft.visible,
           unfurling: unfurlT >= 0,
+          flaring: flareT >= 0,
         },
       };
     },
