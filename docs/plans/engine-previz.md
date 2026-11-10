@@ -1,6 +1,7 @@
-> **Status: previz, waiting for the owner (10 November 2026).** Nothing in the game changes. Per the decisions "the
-> train engine pass starts with a previz the owner approves" and "the train engine's cab fits Buddy", the build waits
-> for his answer. Revised the same day so Buddy fits the cab.
+> **Status: picked (10 November 2026): A to start, the longer boiler as an upgrade** ("2026-11-10, the starting
+> engine is A; the longer boiler is an upgrade" in the [decision log](../decisions.md)). Nothing in the game changes
+> yet: the [build plan](#build-plan-the-picked-engine) below is for the asset-author step, and the in-game build waits
+> for the boiler-fit branch (`train-view.ts` and the fit) to land.
 
 # Train engine previz
 
@@ -15,8 +16,8 @@ lackluster", and the P3 z-fighting where the red body meets its dark base).
 
 The asset stage (`npm run dev`, then `/character/`), category **previz**, four entries: `engine-a`, `engine-b`,
 `engine-c` and `engine-today`. `&engineView=cab` (side view, the platform side's cab wall left out, Buddy and the
-driver inside), `halt` (coupled to the real flatbed, Buddy in the cab), `states` (the upgrade states side by side) or
-`turn` (the engine alone by a halt deck). For example
+driver inside), `halt` (coupled to the real flatbed, Buddy in the cab), `states` (the upgrade states side by side),
+`turn` (the engine alone by a halt deck) or `long` (A with the longer boiler, alone). For example
 `/character/?asset=code:engine-a&engineView=cab&reference=1&bounds=0&light=production`.
 
 - Every scene is at the real sizes: rails at ±0.5 m (gauge 1.0 m, `rail.ts`), the halt deck's top 0.72 m over the
@@ -147,18 +148,114 @@ place to stand is a call for the build (see the canopy above).
   saved train can stand where the new stop no longer fits. No save shape changes, so no `WORLD_NS` bump on its own;
   the orchestrator decides with the Home station work.
 
-## Recommendation
+## Recommendation and the pick
 
-**A, the stubby toy**, with B's red valance and pony truck as optional detail: it is the only candidate that holds
-Buddy in its cab and still fits every halt and test unchanged, and its big separate boiler makes the fit read at a
-glance. The cab taller than its chimney is the price of fitting Buddy at this size.
+Recommended: **A, the stubby toy**, the only candidate that holds Buddy in its cab and still fits every halt and test
+unchanged. **Picked** (owner, 10 November): "Maybe Stubby to start, and longer boiler is an upgrade along the upgrade
+path? I like that it fits the buddy. the little guys can sit on stools to be higher when they are driving. it can also
+have side door closed so it's not visibly open from the side". The cab standing above the chimney is accepted.
 
-## Open questions for the owner
+## The picked engine in the viewer
 
-1. Which candidate (A, B or C), or which parts of each?
-2. The cab now stands above the chimney. Keep it, or accept a cab roof lower than Buddy's collider (he would duck,
-   or the camera would)?
+`engine-a` now has closed side doors (a panel set 1 cm into each doorway, a small high window, a brass handle), the
+driver seated on a stool beside standing Buddy, and an upgrade row of old train, boiler fitted, **longer boiler**
+and second engine (`&engineView=states`; `&engineView=long` is the longer boiler alone, side on).
 
-The previz images are in the handover, not in the repo (`.look/engine-previz-cab/`).
+- **The driver's stool:** 0.8 m. Seated he is 0.9 m from seat to hat top (head 0.39–0.84 m over the seat), so his
+  eyes are about 1.4 m over the floor: in the front windows (1.35–1.72 m) and over the boiler's back where it
+  passes beside him. The game's low stool (`seat.ts`, `lowStoolMesh`) is too low for this; a tall stool is a new prop.
+- **The longer boiler** (`A_LONG` in the parts file): A's cab, chassis, drivers and rods unchanged; the frame 0.5 m
+  longer ahead of the front drivers; B's fatter boiler (radius 0.69 m built, top 2.63 m) with a steam dome, a sand
+  dome and its smokebox; B's pony truck in the new length; its own lashing. Frame 4.5 m, 5.18 m over the buffers;
+  the chimney 3.25 m, still under the cab roof (3.30 m). It is 0.5 m, not B's full 1.3 m, because 4.5 m is the
+  longest frame the layout tests allow (below).
+
+## Build plan: the picked engine
+
+For the asset-author step (the asset-author skill; owner calls "Previz before modelling" and "Our own assets first").
+The in-game build waits for the boiler-fit branch (`train-view.ts` and the boiler fit, boiler-first-choice steps 8
+and after) to land, since both change the engine in `train-view.ts`.
+
+**Source.** One parametric Blender recipe, `assets/src/engine.py` with its `engine.json` sidecar, like
+`boiler-cart.py`'s `train_shell` and `boiler`, which it replaces. The numbers are `engine-previz-parts.ts`'s (A at
+`SCALE` 1.25, `CAB_FIT`, `DRIVER`, `LONG_AHEAD`): the sidecar holds the scale, the cab fit (floor, headroom, inner
+width, doorway, wall), the boiler radii and lengths, and the longer boiler's 0.5 m. Game axes in the recipe as
+`boiler-cart.py` does (`G(x, y, z)`). Broad toy surfaces and bevels as the kit has; no small detail beyond what the
+blockout shows, until the reference sheets (step 1 below) add the close-ups. The recipe asserts the coplanar rule at
+build time (no two same-facing faces in one plane: parts sink 2–8 cm into each other or stand proud), as
+`coplanarFaces` does for the blockout, so the z-fighting can't come back.
+
+**Separate meshes, by what an upgrade swaps.** Each is one named node in the GLB, one material, vertex colours as
+the kit does:
+
+| Node | What | Shown |
+| --- | --- | --- |
+| `engine_body` | frame, footplate, buffer beams and buffers, cab (walls, roof, floor, windows), saddles, steps | always (rust tint until the boiler is fitted, as today's `rustTrainU`) |
+| `engine_body_long` | the same with the frame 0.5 m longer and the pony truck's frame | instead of `engine_body` once the longer boiler is fitted |
+| `engine_rods` | the side rods | always; posed from the wheel angle as today |
+| `engine_door` | one door, hinged at its back edge | two instances, one per side |
+| `engine_boiler` | barrel, smokebox, door, chimney, dome | the boiler fit (today's `boiler` part, flown into the saddles) |
+| `engine_boiler_long` | the longer boiler: barrel, smokebox, chimney, steam and sand domes, safety valve | instead of `engine_boiler` |
+| `engine_lashing`, `engine_lashing_long` | the gold rope rings and knot, 3 cm clear of each boiler | with their boiler (boiler-first-choice's mark) |
+| `engine_stool` | the driver's tall stool | always, in the cab |
+
+The wheels stay in the existing kit wheel batch, scaled to the new radii (0.475 m drivers, 0.3 m pony); the driver
+is folk.ts's little guy, seated.
+
+**Draw calls**, the wheels in the existing batch (no new draw): old train 4 (body, rods, doors as one instanced
+draw, stool); boiler fitted 6 (+ boiler, lashing); longer boiler 6 (the long body, boiler and lashing replace the
+short ones); a second engine doubles it. About 760 triangles for the old train, 1,970 with the boiler, 2,190 with
+the longer boiler (the blockout's counts; the recipe's bevels add some).
+
+**Collider: compound, with a doorway each side.** Today the engine is `LOCO`, one box 1.6 × 3.0 m to 1.75 m, shared
+with the classic wagon prototype. The new engine gets its own spec in `src/proto/wagon/cars.ts` (the wagon prototype
+keeps `LOCO`) and `makeCar`'s `extra.shapes` (offset boxes, as `createBody` already takes):
+
+- the main box: the frame and footplate, 2.0 m wide, its top the cab floor (1.29 m);
+- the boiler: one box round the barrel to its top (2.5 m; 2.63 m on the longer boiler), from the cab's front wall forward;
+- the cab: the front wall, the back wall, and each side wall in two pieces either side of a 1.0 m doorway, 1.78 m
+  high; the roof, 3.20–3.30 m;
+- the doors are not solid: they are drawn shut and swing open (below), so the doorway never blocks the collider
+  (0.9 m wide, 1.7 m tall) and nothing pushes a player.
+
+Whether the roof is somewhere to stand: on it, a player is 5.0 m up, 0.4 m into Home's canopy (4.6 m). Proposed:
+no ride on the roof; the roof box has no standing top (a slope or a ceiling-only collider), so the boiler top stays
+the rideable top it is today. The longer boiler rebuilds the engine's car (the collider is sized at mount): the fit
+happens with the train standing; check that a rider keeps their place (`carry`) across the rebuild. Walking
+about inside a moving cab (trains run at up to 30 m/s) gets its own real-time look, one and two players, as the
+stools item in the orchestrator state asks for the flatbed.
+
+**Proposed default for the doors** (the owner left it open): each door swings open, hinged at its back post, about
+100° in 0.25 s, when any player is within 1.2 m of its doorway, and shuts 0.6 s after the last one leaves. It is a
+local view of every player's position (positions are already shared), so no new sync, op or state; a closed door
+never blocks. From the side the cab reads shut whenever no one is boarding.
+
+**Sync.** All of this is view and client physics. Which engine state shows comes from accepted room facts: `trains`
+(boiler fitted) today, and a new fact for the longer boiler once that upgrade is planned. That new fact is the only
+sim change, and it belongs to the upgrade's own plan (where it is chosen, what it costs, the fit), not this one; a new
+saved field is a schema change for the mixed-builds rules to rule on.
+
+**What the longer boiler needs at the halts.** At B's full length (frame 5.31 m) the earlier finding stands: line 1's
+train runs off Home's island deck, and at the Pier the parked track layer is 0.39 m clear against the 1 m wanted. So
+the upgrade lengthens the frame by 0.5 m only, to 4.5 m (1.5× today's), which both layout tests pass at (run at
+4.5 m: pass; at 4.75 m both fail, the island deck and the Pier at 0.95 m). At 4.5 m the train's front stands 1.5 m
+further on at every stop, inside what Home station B, the Pier and the older halts were measured for (up to 1.5×).
+**It can ship before Home step 6**: today's halts were measured clear up to 1.5×, and the island tests that step 6
+makes live already pass at 4.5 m. A longer boiler than that needs a layout change first (Home's island deck or line
+1's stop, and the Pier's stop or track layer) and should come after step 6, with the stops moved in the same change.
+
+**Steps** (each leaves `npm run check` green; one proof look each, per verification.md):
+
+1. Reference sheets: front, side, back and close-ups (cab door and hinge, the stool, the backhead, the lashing knot)
+   from the viewer's stills, per "Previz before modelling" (Codex is back 12 November).
+2. `assets/src/engine.py` and `engine.json`: the nodes above. `npm run assets -- engine`; inspect with
+   `dev/assets/inspect.ts`; stage it in `/character/` against Buddy, the seated driver and the flatbed; motion review
+   of the wheels, rods and a door swing (`dev/look/asset-motion.ts`).
+3. After the boiler-fit branch lands: `train-view.ts` swaps today's shell for the engine's nodes, the boiler fit
+   flies the new boiler into its saddles, and the lashing is the engine's; the new car spec and compound collider in
+   `cars.ts` and `rail.ts`; the `TRAIN_OFFSETS` engine entry moves forward to keep the 0.6 m gap; the layout tests
+   switch from `LOCO` to the new spec; the doors as above. Real-time looks: boarding at a halt, one and two players,
+   and standing in the cab on a moving train.
+4. The longer boiler, when its upgrade is planned: the long nodes, the rebuilt car, the upgrade's own fact and fit.
 
 Not tested on a device.
