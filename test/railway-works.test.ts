@@ -22,9 +22,10 @@ import {
   line2Completed,
   line2Rails,
   line2Schedule,
+  line2Trains,
   railCarryMax,
 } from '../src/sim/railway-line2.ts';
-import { forgeRailsOffered } from '../src/entities/railway/forge-offer.ts';
+import { forgeRailsOffered, trainOwed } from '../src/entities/railway/forge-offer.ts';
 import { CART_PHASE, cartAlong } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
@@ -49,6 +50,46 @@ test('the breaker stands on the boiler pedestal', () => {
     [WORKS_BREAKER.x, WORKS_BREAKER.y, WORKS_BREAKER.z],
     [LINE2_BOILER.x, LINE2_BOILER.y, LINE2_BOILER.z],
   );
+});
+test('a cast breaker means trains run: station 6 cannot be laid by hand before the fit', () => {
+  // Through ops from the boiler on its pedestal (docs/plans/boiler-first-choice.md, Part 2 and step 3).
+  const w = railwayAtTrains('boiler'),
+    l = w.s.line2!;
+  const castOnlyWithTrains = (beat: string) =>
+    assert.ok(w.s.works!.breaker === 0 || l.trains >= 0, `${beat}: breaker ${w.s.works!.breaker}, trains ${l.trains}`);
+  // Hand delivery first, as the owner tried on 9 November: nothing reaches the frame, so Q6 never funds.
+  for (const pid of ['a', 'b']) {
+    while (railAccount(w.s, pid)!.carry < 8) {
+      const k = w.s.sources.findIndex((left) => left > 0);
+      act(w, pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
+    }
+    assert.equal(act(w, pid, 'rail.deposit', { station: 'Q6', kind: 0, n: 8 }), 0);
+    assert.equal(act(w, pid, 'rail.forgeTake'), 0);
+  }
+  advance(w, 600);
+  assert.equal(l.jobs[5]!.start, -1);
+  castOnlyWithTrains('before the fit');
+  for (const pid of ['a', 'b']) assert.equal(act(w, pid, 'rail.drop', { x: 91900, y: 1815, z: 560, n: 8, kind: 0 }), 8);
+  assert.equal(act(w, 'a', 'rail.boilerTake', { revision: l.boiler.revision }), 1);
+  assert.equal(act(w, 'a', 'rail.boilerFit', { revision: l.boiler.revision }), 1);
+  // The train brings the kit; two backs carry it rack to frame; the machine lays Q6 and the breaker is cast.
+  for (let ticks = 0; l.depot !== 32 || l.depotRails !== 32; ticks++) {
+    assert.ok(ticks < 4000, 'the kit unloads at Far Head');
+    advance(w, 1);
+  }
+  assert.equal(act(w, 'a', 'rail.pack'), 1);
+  for (const kind of [0, 2])
+    for (const pid of ['a', 'b']) {
+      assert.equal(act(w, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake'), 16);
+      assert.equal(act(w, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }), 16);
+    }
+  for (let ticks = 0; line2Completed(w.s) < 6; ticks++) {
+    assert.ok(ticks < 20000, 'Q6 is laid');
+    advance(w, 1);
+    castOnlyWithTrains(`tick ${w.t}`);
+  }
+  assert.equal(w.s.works!.breaker, 1);
+  assert.ok(l.trains >= 0);
 });
 test('breaker cast once when Q6 completes; one taker', () => {
   const w = railwayAtTrains('q6-finishing'),
@@ -239,7 +280,7 @@ test('after the cradle is fitted the forge rack gives nothing', () => {
 test('"Take rails" is offered exactly where the forge rack gives some, from Q5 to the crossing', () => {
   // The view's offer (forge-offer.ts) against rail.forgeTake, for a back with room and no beam, boiler or footing
   // (those it does not judge: a full back is "Your back is full").
-  const seen = { offered: 0, hidden: 0 };
+  const seen = { offered: 0, hidden: 0, owed: 0 };
   const check = (name: string, w: Fixture) => {
     for (const pid of ['a', 'b']) {
       const s = w.s,
@@ -247,8 +288,10 @@ test('"Take rails" is offered exactly where the forge rack gives some, from Q5 t
       const held = [s.line?.beam, s.line2?.boiler].some((x) => x?.state === 'held' && x.holder === pid);
       const room = railCarryMax(s) - a.carry - (a.stone ?? 0) - (a.rails ?? 0);
       if (held || (a.foot ?? 0) > 0 || room <= 0 || !s.line2?.forge.rack) continue;
-      const offered = forgeRailsOffered(line2Active(s), s.shed!.cradleRails, a.rails ?? 0);
+      const offered = forgeRailsOffered(line2Active(s), line2Trains(s), s.shed!.cradleRails, a.rails ?? 0);
       seen[offered ? 'offered' : 'hidden']++;
+      // Station 6 before trains: neither offers any (its kit comes by train, from this rack).
+      if (trainOwed(line2Active(s), line2Trains(s))) seen.owed++;
       assert.equal(offered, act(w, pid, 'rail.forgeTake') > 0, `${name} ${pid}`);
     }
   };
@@ -270,7 +313,7 @@ test('"Take rails" is offered exactly where the forge rack gives some, from Q5 t
   assert.equal(act(w, 'b', 'rail.cradle'), WORKS.cradleRails);
   assert.ok(w.s.shed!.fitted < 0);
   check('cradle railed, footings to set', w);
-  assert.ok(seen.offered > 0 && seen.hidden > 0, JSON.stringify(seen));
+  assert.ok(seen.offered > 0 && seen.hidden > 0 && seen.owed > 0, JSON.stringify(seen));
 });
 test('ready only after fitted and turned; the table holds while the wagon rolls out and waits', () => {
   const w = railwayAtWorks('stall-done'),

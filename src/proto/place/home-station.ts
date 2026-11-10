@@ -130,12 +130,15 @@ export const ISLAND_A = {
 /** The island's centreline, across. */
 export const ISLAND_C = ROAD_GAP / 2;
 
-/** The concourse: an open hall on posts with end walls, its long side across the axis, 1 m behind the buffers. */
+/** The concourse: an open hall on posts with end walls, its long side across the axis, 1 m behind the buffers. Its
+ * roof stands `height` up on posts; the end walls stop at `endWall`, so the forge reads over the north one from spawn
+ * (owner, 9 November: "Lower end walls"). `floor` is its slab's top: 0.12 m over the highest ground under it. */
 export const HALL = (() => {
   const w = 13,
     d = 6,
     a = A0 - 1 - d / 2;
-  return { ...axisPoint(a, ISLAND_C), a, c: ISLAND_C, w, d, yaw: Math.atan2(AXIS.d.x, AXIS.d.z), height: 4.6 };
+  const yaw = Math.atan2(AXIS.d.x, AXIS.d.z);
+  return { ...axisPoint(a, ISLAND_C), a, c: ISLAND_C, w, d, yaw, height: 4.6, endWall: 2.4, floor: 18.34 };
 })();
 
 // ---------------------------------------------------------------- the engine spur, the table and the stalls
@@ -254,11 +257,12 @@ export const PROPS = {
   dock: { x: -76.15, z: -1.73 },
   yard: { x: -46, z: 22 },
 };
-/** The curio shelf, against the inside of the hall's north end wall, facing in. Its finds board makes it 7.05 m long
- * against the 6 m wall, so it is centred on the hall's depth: it stands 0.5 m proud at each end. */
+/** The curio shelf, against the inside of the hall's north end wall, facing in, standing on the hall's floor. Its finds
+ * board makes it 7.05 m long against the 6 m wall, so it is centred on the hall's depth: it stands 0.5 m proud at each
+ * end (0.85 m at the board's end if the board grows to 2.2 m). */
 export const SHELF_B = (() => {
   const p = axisPoint(HALL.a - 0.825, HALL.c - HALL.w / 2 + 0.3 + 0.35);
-  return { ...p, yaw: Math.atan2(AXIS.n.x, AXIS.n.z) };
+  return { ...p, yaw: Math.atan2(AXIS.n.x, AXIS.n.z), y: HALL.floor };
 })();
 /** The two village halts become one island: each line's platform edge, by its own `s`. */
 export const ISLAND_HALTS = [

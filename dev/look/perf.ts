@@ -12,8 +12,10 @@
 // rendering, so compare before/after on your change, not absolute numbers.
 import fs from 'node:fs';
 import type { Browser } from 'playwright';
-import { startStack, launch, Game, sleep, VIEWS, reportGfxErrors } from './lib.ts';
+import path from 'node:path';
+import { startStack, launch, Game, sleep, VIEWS, reportGfxErrors, root } from './lib.ts';
 import type { Stack } from './lib.ts';
+import { startRun, finishRun, runOpen } from './verdict.ts';
 
 const argv = process.argv.slice(2);
 const url = argv.includes('--url') ? argv[argv.indexOf('--url') + 1] : null;
@@ -25,6 +27,8 @@ const viewName = argv.includes('--view') ? argv[argv.indexOf('--view') + 1] : nu
 const query = argv.includes('--query') ? argv[argv.indexOf('--query') + 1] : '';
 const jsonOut = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : null;
 const size = argv.includes('--size') ? argv[argv.indexOf('--size') + 1]!.split('x').map(Number) : undefined;
+// `--verdict file` stamps the run (load at start/end, under load) like look's verdicts; timings under load aren't evidence.
+const verdictFile = argv.includes('--verdict') ? argv[argv.indexOf('--verdict') + 1]! : null;
 const IDLE_TICKS = 100;
 
 // The game draws from renderer.setAnimationLoop: three resets renderer.info at the start of each frame, then the game
@@ -128,6 +132,7 @@ async function profile(g: Game, label: string, ticks: number) {
 }
 
 let stack: Stack | undefined, browser: Browser | undefined;
+if (verdictFile) startRun(path.resolve(verdictFile), { checkout: root });
 try {
   if (hardware && !doRender) throw new Error('--hardware cannot be combined with --sim');
   if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1–30');
@@ -149,8 +154,8 @@ try {
   });
   if (doRender) {
     if (jsonOut || viewName) {
-      const { cam, look } = VIEWS[viewName ?? 'overview']!;
-      const pose = `${JSON.stringify(cam)}, ${JSON.stringify(look)}, null`;
+      const { cam, look, fov } = VIEWS[viewName ?? 'overview']!;
+      const pose = `${JSON.stringify(cam)}, ${JSON.stringify(look)}, ${fov ?? null}`;
       await g.eval(`window.__debugCam.set(${pose});`);
       await sleep(6000);
     }
@@ -191,9 +196,11 @@ try {
   reportGfxErrors([g]);
   const errors = g.healthErrors();
   if (errors.length) throw new Error(errors.join('\n'));
+  if (verdictFile) finishRun({ verdict: 'pass' });
 } catch (e) {
   console.error(e);
   process.exitCode = 1;
+  if (verdictFile && runOpen()) finishRun({ verdict: 'fail', error: e });
 } finally {
   await browser?.close().catch(() => {});
   await stack?.close();

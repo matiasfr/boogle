@@ -290,7 +290,7 @@ Step 2 is the guard only and can ship with step 3.
 
 ### Stage A: order and the pedestal
 
-- [ ] **1. Station 6 shows it waits for the train (view).**
+- [x] **1. Station 6 shows it waits for the train (view).**
   - `src/entities/railway/stock-sign.ts`: `stockSign(owner, kind)` returns `{ sprite, set(n), show(kind), nudge() }`;
     add the `'train'` drawing: the old train's own locomotive side-on (its tall chimney and cab, matching
     `train-view.ts`'s loco silhouette) in `#edcf8c` line work, its boiler a dashed `GOLD_ROPE` outline, pulling one
@@ -333,7 +333,7 @@ Step 2 is the guard only and can ship with step 3.
     `test/railway-adapter.test.ts`: `takeBreaker()` and `strike(0)` return false while you hold the boiler.
     `server/test/railway-works-host.test.ts` must pass unchanged.
   - Verify: `npm run check`; `npm --prefix server test`.
-- [ ] **3. Station 6 takes nothing before trains (option B, ruled). Review (`src/sim`).**
+- [x] **3. Station 6 takes nothing before trains (option B, ruled). Review (`src/sim`).**
   - `src/sim/railway-systems.ts`: add `const trainOwed = (w: World) => { const k = qActive(w); return k >= 0 &&
     LINE2_STATIONS[k]!.feed === 'train' && w.get(Rail, railId(w))!.trains < 0; }`. In `deposit2`, after the forge
     branch: `if (trainOwed(w)) return 0;` (`deposit2` already writes `Rail`). In `forgeTake`, before
