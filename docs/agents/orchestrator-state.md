@@ -69,7 +69,7 @@ Claude only until 12 November (`npm run models`). Ship with `npm run ship-queue 
   - **Agents and node_modules:** three agents symlinked node_modules; the rule is now in tools.md.
   - **Ring Island:** a strong swimmer can skip the glide (about 15 s against 2.5 s); accepted. Untested: the hook from the water, and a swimmer walking out at the last bent.
 
-- **Model rule (#1364, owner):** only the orchestrator runs Fable; code review, planner and hardest design run on Opus. `npm run models` has the table.
+- **Model rule (#1364, owner):** the orchestrator, planner and designer run Fable (planner and designer at medium, owner 10 November); code review and hardest design run on Opus. `npm run models` has the table.
 - **Pages deploys still hang:** twice more on 10 November (03:00 and 03:06 UTC). The server restarts first, so until the site deploy lands the smoke test fails on a build mismatch; cancel the hung run and the queued one goes. From 10 November 03:20 UTC the deploy step fails after three minutes instead of ten, so the workflow's own `recover` job retries; unproven until a hang meets it.
 - **Production resets of `rail-v23-boogle` on the owner's word (peer session):** 02:04 UTC (1 player kicked, backup `rail-v23-boogle@20261110T020452261Z.json`) and 02:51 UTC (empty, backup `rail-v23-boogle@20261110T025116035Z.json`). Both predate the reset feature, so players landed in town.
 

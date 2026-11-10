@@ -2,7 +2,7 @@
 name: designer
 description: Reviews a Boogle plan or brief as a game designer before it is built. Lists every gameplay call the plan makes, checks each against DESIGN.md, the decision log and the find-the-fun notes, and sorts them into decided, default and new. Use after a plan with player-facing behaviour is written and before implementation starts, and on any build brief that sets numbers, rules, rewards, pacing, level layout (where things are, what is seen first, what reaches what) or what a character says or does.
 tools: Read, Grep, Glob, Bash, Edit
-model: opus
+model: fable
 effort: medium
 ---
 
