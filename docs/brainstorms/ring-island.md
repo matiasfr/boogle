@@ -1,4 +1,9 @@
-> **Status: decided (2026-11-10), building.**
+> **Status: decided (2026-11-10); layout greyboxed, build 1 waits for v26.** Brought in line with the 10 November
+> rulings ([world-blockout](../plans/world-blockout.md#rulings-10-november), conflicts 1–4 and 11) and the generic-lines
+> sequencing ([generic-lines](../plans/generic-lines.md#sequencing-v26-alone-ring-island-as-v27)): build 1 is
+> `WORLD_NS` v27, build 2 v28. The near view is walkable behind `?ring=greybox` (no sim); see
+> [The layout, greyboxed](#the-layout-greyboxed-10-november). The design review below keeps its 6 m-bow numbers as
+> history; the rulings section supersedes them.
 
 Seed (owner, 10 November): "it should fit into the overall progression of the game though, do we know what happens at
 ring island?", then "Yes, brainstorm it". During the panel: "The townspeople there should have some weird religion
@@ -12,9 +17,10 @@ design calls to the orchestrator ([owner calls](../agents/owner-calls.md), "The 
 
 ## Pitch
 
-Line 2 runs out from the Split-rock pier over your bents and bows down from 24 m to about 6 m, so the ring climbs the
-sky as you ride. Ahead, the island folk's own orange steel half-crossing, **the Pilgrims' Way**, reaches out with its
-own track to an island halt and ends in a counterweighted drawbridge leaf, raised like a hand held up toward Home. You
+Line 2 runs out from the Split-rock pier over your bents and bows down at 4%, from 24.3 m at the pier head to about
+14.7 m at the railhead and 7.5 m at the island halt, so the ring climbs the sky as you ride. Ahead, the island folk's
+own orange steel half-crossing, **the Pilgrims' Way**, reaches out with its own double track to an island halt on the
+shore and ends in a counterweighted drawbridge leaf, raised like a hand held up toward Home. You
 foot the last bents out to meet it. One player glides the gap, braces the leaf from the island side, the jib hangs
 footings on its counterweight, and the leaf drops onto your bents. Anyone strikes the gold rivet with the breaker, and
 the whole room gets the shot, which runs into the first train over their steel. The island is a works town with a
@@ -50,10 +56,15 @@ set (the longer boiler is an upgrade, 10 November).
    - Tension: design wanted the train-first Meet with the glide only as an optional peek. Decided for the glide: it
      keeps the glider's one main-line use, makes the gap a two-ended co-op stage, and the hook and shore remove the
      strand risk design raised.
-2. **The bow** (systems finding 1, creative's read). Redraw the six built bents so the line comes down from the pier's
-   24 m to about 6 m. Low track over the sea rides better, the ring grows as you descend, and the folk call it a bow:
-   "Good manners." It changes a finished view, so take stills before and after, and re-shoot the Split-rock finale
-   pull-out on the new heights.
+2. **The bow** (systems finding 1, creative's read; re-profiled by ruling 2, 10 November). The line comes down at the
+   4% ruling grade from the first bent all the way to the island halt: 24.3 m at the pier head and the first bent,
+   about 19.6 m at bent 6, about 14.7 m at the railhead (bent 13, 260 m out) and about 7.5 m at the island halt (about
+   440 m, on the shore at about (1414, −820)). Low track over the sea rides better, the ring grows as you descend, and
+   the folk call it a bow: "Good manners." The six built bents widen to the 7.6 m double deck and come down to the
+   bow in generic lines' step 3, before v26, so they change once; build 1 adds the seven new bents, the folk's stub
+   and the leaf, all on the double deck with both tracks laid together (ruling 11 as amended by generic lines). It
+   changes a finished view, so take stills before and after, and re-shoot the Split-rock finale pull-out on the new
+   heights.
 3. **The Church of the Very Perfect Shard** (creative's core, design's pieces; working name, the owner's to rename).
    See [The religion](#the-religion) below. It is the area's payoff, and the shard stays unexplained.
 4. **Steel comes home as the longer boiler first** (all three panels). Line 2 grows from 743 m to about 1.2 km, so
@@ -66,7 +77,12 @@ set (the longer boiler is an upgrade, 10 November).
    marks is laid (a buoy marks a stretch's end, not a bent: their 62 m pitch doesn't match the bents' 20 m).
 6. **A railhead halt that moves** (design 1, systems). Line 2's end stop keeps one index while its position comes from
    the catalog (`RAILHEAD_CM[laid]`), with v25's request lever riding along. The wagon delivers to wherever the line
-   ends.
+   ends. On v26's data-driven lines this is line 2's row in `RAIL_LINES` (`src/sim/railway-lines.ts`) with the ring
+   halts appended in v27.
+   - **The island halt is the first turning loop** (generic lines, "Turnbacks"; the double-track decision). Past the
+     halt, line 2 swings round a 40 m-radius loop and comes back facing Home, so the first train's "reverse pull-out"
+     is the loop. The halt is also **the junction** (ruling 3): the stack line and the bay trestle start there, and each
+     branch's platform faces its destination's landmark.
 7. **Threading the ring, then the shard's one reaction** (design, creative; build 2). The ring's hole sits above the
    island's main cone, so the train can thread it only through a lowered saddle authored into the near and far LODs.
    That changes the horizon the owner has seen since minute one, so it needs a still first. When the first train
@@ -134,14 +150,21 @@ jokes don't wear out.
 `createBoxBatch` and `addStatic`; the shared-moment system (10 November, "shared moments play for everyone"); the bot's
 `railway-glide.ts`.
 
-**Build 1, "the line reaches the island": one `WORLD_NS` v26, after v25.** Systems' R1–R5 as reduced in round 2:
+**Build 1, "the line reaches the island": one `WORLD_NS` v27, after v26** (generic lines and the second tracks;
+[sequencing](../plans/generic-lines.md#sequencing-v26-alone-ring-island-as-v27)). R1 and R2 touch no sim and can be
+built in parallel with v26; R3 and R5 wait for it. **Ring Island stays at the live cones' size and position**
+(ruling 1): centred on (1330, −1120), its waterline about 640–680 m across; the map's outline is redrawn to match.
+Systems' R1–R5 as reduced in round 2:
 - **R1 layout** (new `src/sim/railway-ring-layout.ts`): their stub's points and deck height, the gap and leaf, the
   counterweight bracket, `RAILHEAD_CM[]` and its halt poses, the buoy-to-stretch map, the hook ring and island
-  recovery points, the rivet seam, and `railY` as a multi-knot profile for the bow. The saddle waits for build 2.
+  recovery points, the rivet seam, the island halt's two platforms and its 40 m loop, and the bow as the 4% profile
+  (24.3 m level to the first bent, then 4% down to the island halt, level after). Every deck is the 7.6 m double
+  formation. The greybox's `RING_LAYOUT` (`src/proto/greybox/ring.ts`) is a starting point. The saddle waits for
+  build 2.
 - **R2 island near-LOD, default on** (new `src/entities/ring-island/`): a heightfield collider, a shore provider, their
   walkable stub with laid track and the island halt, the leaf (raised) with its empty bracket and painted outline;
   `buildFar` unchanged; mounted within about 500 m or once Q7 is laid; `npm run perf` before and after.
-- **R3 rules, v26:** one laying job (Q7), the moving railhead (with the leg row's destination in cm if v25 hasn't
+- **R3 rules, v27:** one laying job (Q7), the moving railhead (with the leg row's destination in cm if v25 hasn't
   added it), `Aperture`, the counterweight site, `rail.brace`, the rivet row, the island halt; no steel. Seeds
   `deck-laid`, `gap-footed`, `leaf-raised` and `ring-joined`, with `JUMPS` rows for the first and last.
 - **R4 views:** buoys lifted, the railhead platform and lever moving, the leaf's brace, drop and rivet glint, the Meet
@@ -152,9 +175,11 @@ jokes don't wear out.
 Footings for the area: about 14 for the bents plus 2–4 for the counterweight (`WORKS.total` about 31). The train covers
 the distance; the hand moves are rack to jib.
 
-**Build 2 (v27):** the steel works on the live kiln's model (a bill brought by train, `lit`, a rack, cast ticks), the
+**Build 2 (v28):** the steel works on the live kiln's model (a bill brought by train, `lit`, a rack, cast ticks), the
 longer-boiler fit at the Roundhouse, and the train threading the ring through a lowered saddle (a still of the new
-horizon first), with the shard's one reaction. The branch-choice junction comes after build 2.
+horizon first; ruling 3 lowers it to what a 4% spur from the island halt reaches, about 30 m in 750 m), with the
+shard's one reaction. The branch lines come after build 2, from the island halt: **there is no summit halt**; the
+summit is the aperture lookout, a path walked up from the town.
 
 **Risks:**
 - **The sea's shore texture.** `coast.ts` bakes one texture over every shore, capped at 2048 a side; adding the island
@@ -168,7 +193,8 @@ horizon first), with the shard's one reaction. The branch-choice junction comes 
 - **The grind budget.** No item carried by hand more than twice, no hand carry over 60 m, and no train wait longer
   than one leg.
 - **The bow changes a finished view;** the saddle changes the horizon. Stills before and after each, logged.
-- **v26 never ships mid-session** (owner call); the `crossing-done` jump-in keeps the reset to one click.
+- **v27 never ships mid-session** (owner call), nor v26 before it; the `crossing-done` jump-in keeps each reset to one
+  click.
 
 ## Done means
 
@@ -197,10 +223,55 @@ All decided; the owner may overrule.
 1. **Is the glide how the gap is crossed, rather than the train-first Meet with the glide as an optional peek?**
    Decided: **the glide**, with the hook ring on the last bent and a swimmable shore, so the glider gets its one
    main-line use. Owner: ___
-2. **Do the six finished bents get redrawn so the line bows from 24 m to about 6 m?** Decided: **yes**, with stills
+2. **Do the six finished bents get redrawn so the line bows from 24 m to about 6 m?** Decided: **yes**, amended to
+   the 4% bow (24.3 m to about 14.7 m at the railhead and 7.5 m at the island halt; ruling 2, 10 November), with stills
    before and after and the finale re-shot. Owner: ___
 3. **Is the first steel the longer boiler outright, rather than a pick between boiler and cradle?** Decided: **the
    boiler**; the bigger orange cradle is the second steel pick. Owner: ___
+
+## The layout, greyboxed (10 November)
+
+`?ring=greybox` (any build; `src/proto/greybox/ring.ts`) lays the Meet out at the rulings' numbers, with local static
+colliders only, so it can be walked and glided before R1 is written: the bow at 4% to bent 13, the 17 m gap, the
+raised leaf, the brace platform, the hook ring, the island halt with its loop, the shore and the path to the summit
+lookout. The live cones are made solid for it. No sim, server or world change.
+
+**The glide numbers at the new heights** (the design review's finding 1, re-measured; gravity 18 m/s², jump 7.6 m/s,
+glide 10 m/s forward and 3.2 m/s down, hook 24 m):
+
+| Number | At the 6 m bow | At the 4% bow | Holds? |
+| --- | --- | --- | --- |
+| Railhead deck | about 6 m | 14.7 m (its platform 15.6 m) | — |
+| Brace platform, 4 m under the hinge's deck | about 2 m | 10.0 m (the deck drops 0.7 m across the gap) | Yes: 4.7 m under the railhead deck, 5.6 m under its platform |
+| Gap 16–18 m (greybox 17 m) | — | 17 m | Yes. A glide from the deck reaches about 26–29 m, so a platform from 17 to 29 m out leaves 9–12 m to spare; a sprint with the double jump falls about 3–4 m short |
+| Hook ring within 20 m | — | 18 m from the platform's near edge, 30 m from its far edge | Only from the platform's near half: the hook's 24 m reaches the first 7 m of it |
+| Ladders about 10 m | — | 10.0 m up the hinge pier; **15.6 m** up the last bent to its platform | The hinge pier's holds; the last bent's is half as long again |
+
+**What the greybox found** (stills: from the pier head at the leaf, from the last bent across the gap, from the brace
+platform back to the hook ring, from the island halt west, and from the summit lookout):
+1. **The raised leaf stands across the formation at the hinge,** so a glide straight off the deck's end flies into it.
+   The greybox puts the brace platform on the hinge pier's east wing, beside the leaf and in line with the railhead
+   platform, so the glide lane runs past the leaf onto the platform. From the last bent this reads: the platform, the
+   gold brace and the waving folk are straight ahead, 4 m down, with the leaf to the left. R1 should keep that lane.
+2. **The game has no climb verb.** The greybox's ladders are 50° sea stairs (`WALKABLE_NY` allows 56°), drawn with a
+   ladder at the foot; whether a swimmer walks out onto one is untested. Build 1 needs either those stairs or a ladder
+   verb.
+3. **From the island halt the Gorge is behind the island.** Its bearing (north-west) runs through the main cone; only
+   Bell Rock and Canopy's trees read over the west sea. The branch-junction build's "each platform faces its
+   destination's landmark" needs the Gorge's platform to look round the cone, or a sign of it at the halt.
+4. **From the summit lookout (66 m) the branch choice is mostly hidden.** The west-south-west cone (120 m) stands across
+   Canopy's bearing, and the ring's own tube comes down just north-west of the summit, across the Gorge's. Under the
+   shard the lookout reads well; as the place "where the branch choice can be seen" it doesn't, with the live cones as
+   they stand. Either the near-LOD reshapes the island, or the lookout moves to a shoulder with a clear west view.
+5. **A 40 m loop doesn't fit on land at 7.5 m north of the halt:** the main cone rises about 21% there. The greybox
+   swings it over the shallows east of the halt, centred about (1462, −822). The halt itself stands on a fill: the cone
+   is about 2 m under its 7.5 m deck.
+6. **Bent 6's height depends on where "out" is measured.** On a 4% profile that is 24.3 m at bent 1 (20 m past the
+   pier head), bent 6 is 20.3 m; the rulings' 19.6 m measures 137 m from the pier halt instead. The railhead's 14.7 m
+   and the halt's 7.5 m use the pier head. R1 should fix the datum.
+7. **The raised leaf reads from the pier head** as a small orange upright against the grey island, its top about 31 m
+   up; the brace platform and hook ring can't be made out from there, which is fine, since they are the next leg's.
+   Not yet checked from Home or the telescope.
 
 ## Parked
 

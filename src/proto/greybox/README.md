@@ -51,6 +51,17 @@ npm run look -- --query 'greybox=sickle&labels=0' --cam 812,8,22 --look -829,60,
 The review views as a shot list are `dev/look/beats/sickle-greybox.ts`; frozen shots can't refresh after warm-up, so
 check their cells against a look still.
 
+## Ring Island's near view (`?ring=greybox`)
+
+`ring.ts`, through `src/features/ring-greybox.ts`, in any build: the Meet laid out at the 10 November rulings
+([ring-island](../../../docs/brainstorms/ring-island.md)), hand-placed rather than read from the JSON. The bow at 4%
+to the railhead (bent 13), the 17 m gap, the folk's orange half-crossing with its raised leaf, the brace platform
+beside the leaf, the hook ring, the 50° sea stairs standing in for ladders, the island halt and its turning loop, a
+sand shore band and the path to the summit lookout. The live cones (Place's `buildFar`) become trimesh solids, so the
+island is walkable. Local static colliders only; no ops, state, saves or sim. `window.__ring` has the layout and named
+`views` (`pier`, `gap`, `halt`, `lookout`). It doesn't combine with `?blockout=world`, whose `ringx` still draws the
+old 7% bow and Ring top.
+
 ## What it reads from the JSON
 
 Everything the page draws, plus optional greybox fields the page ignores:
