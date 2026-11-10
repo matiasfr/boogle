@@ -426,7 +426,7 @@ const beamDrop = defineSystem(
       railInt(e.z, 200000, -200000) &&
       lineBeamGround(e.x, e.y, e.z)
     )
-      Object.assign(w.mut(Beam, beamId(w))!, { state: 'ground', x: e.x!, y: e.y!, z: e.z! });
+      Object.assign(w.mut(Beam, beamId(w))!, { state: 'ground', x: e.x, y: e.y, z: e.z });
     return 1;
   },
 );
@@ -1502,7 +1502,7 @@ const beamStood = defineSystem(
   { writes: [Beam], phase: 'beam', order: 1 },
   (w, q: { pid: string; x: number; y: number; z: number }) => {
     const b = w.get(Beam, beamId(w))!;
-    // The point comes from presence: the boiler's stood bounds (rail.beamDrop has none of its own), and never -0.
+    // The point comes from presence: the same bounds as rail.beamDrop and rail.boilerStood, and never -0.
     if (!railInt(q.x, 200000, -200000) || !railInt(q.y, 200000, -200000) || !railInt(q.z, 200000, -200000))
       return false;
     if (b.state !== 'held' || b.holder !== q.pid || (b.x === q.x && b.y === q.y && b.z === q.z)) return false;
