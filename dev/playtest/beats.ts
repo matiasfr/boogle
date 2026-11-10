@@ -69,6 +69,8 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['struck a seam', /^seam struck$/],
   ['filled the kiln', /^kiln filled$/],
   ['set a footing', /^footing set$/],
+  ['footed the crossing', /^crossing footed$/],
+  ['saw the crossing finale', /^crossing finale$/],
   ['fitted the cradle', /^cradle rails$/],
   ['turned the table', /^table turned$/],
   ['tried something on', /^shop tried on$/],

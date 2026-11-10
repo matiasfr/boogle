@@ -15,7 +15,10 @@ import { splash } from '../../render/splash.ts';
 import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
+import { camera } from '../../render/scene.ts';
+import { playMark } from '../../proto/mark.ts';
 import { SEA } from '../../constants.ts';
+import { SHOW_HEAR } from './crossing-show.ts';
 import { WORKS, PIER_RACK, PIER_FRAME, CROSSING_BENTS, CROSSING_FOOT_OFF } from '../../sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
@@ -124,6 +127,8 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
   const rise = bents.map(() => -1);
   let shownCrossing = -1,
     show = -1,
+    /** Finales played on this page (a restore never plays one). */
+    shows = 0,
     rockets: { t: number; x: number; y: number; z: number; colour: THREE.Color }[] = [];
   const colours = ['#ffcc63', '#39e6c6'].map((c) => new THREE.Color(c));
   const trail = new THREE.Color('#ffe9b0');
@@ -340,10 +345,18 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
       // The show waits for the last bent to stand (or 10 s, whichever is first).
       if (show < 100 && (lastBent >= RISE_S || show > 10)) {
         const b = bents.at(-1)!;
-        whistle(b.x, b.z);
+        // Heard from the pier head, 121 m away (./crossing-show.ts): the machine sounds' 45 m range was silent there.
+        whistle(b.x, b.z, SHOW_HEAR);
         for (const k of [0, 1])
           rockets.push({ t: -k * 0.6, x: b.x + across.x * (k ? 3 : -3), y: DECK, z: b.z, colour: colours[k]! });
         show = 100;
+        shows++;
+        // For the playtest data: that it played, and whether the bursts' height over the last bent was on screen.
+        const burst = new THREE.Vector3(b.x, DECK + 30, b.z);
+        const metres = Math.round(camera.position.distanceTo(burst));
+        burst.project(camera);
+        const onScreen = burst.z < 1 && Math.abs(burst.x) <= 1 && Math.abs(burst.y) <= 1;
+        playMark('crossing finale', { authority: 'local', metres, onScreen });
       } else if (show < 100) show += dt;
     }
     for (let k = rockets.length - 1; k >= 0; k--) {
@@ -474,6 +487,7 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
         rising: rise.filter((t) => t >= 0 && t < RISE_S).length,
         pierRack: Math.max(0, state.works.pierRack - deps.toPier()),
         show: show >= 0,
+        shows,
         rockets: rockets.length,
       },
     }),

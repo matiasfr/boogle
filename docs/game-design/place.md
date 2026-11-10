@@ -645,7 +645,12 @@ landward end. The pier rack is a timber row of six (two high)
 along the halt deck's seaward edge, leaving the track side free to walk and board; it stands once the kiln has cast
 its first footing. At the pier head a jib swings each set footing out over the stakes and lowers it on a rope into
 its socket on the sea floor; each pair raises a trestle bent to deck height, 4 m over the sea, and the twelfth set
-gives one whistle and two rockets at the last bent, toward Ring Island.
+gives one whistle and two rockets at the last bent, toward Ring Island. The last bent is 121 m from the pier head, so
+the whistle's range is sized from that distance (about half its gain at the jib and on the halt); until 10 November it
+had the machine sounds' 45 m and was silent for everyone on the pier (in the owner's playtest he heard and saw no
+finale).
+The playtest data marks `crossing footed` (the edge, as the page saw it) and `crossing finale` (it played, with the
+camera's distance to the bursts and whether they were on screen).
 
 Every footing has one home at a time (Works rack, back, ground pile, wagon, pier rack, stall, cradle, sea), and
 `footingTotal === poured` holds every tick; a leaver's footing returns to the Works rack after the beam's grace, so

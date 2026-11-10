@@ -5,14 +5,13 @@ import { dbToGain, getAudio } from './audio.ts';
 import { audioSettings } from './audio-tuning.ts';
 import { noiseBuffer } from './noise.ts';
 import { camera } from './scene.ts';
-
-const HEAR = 45; // metres: silent beyond
+import { hearGain, MACHINE_HEAR as HEAR } from './hearing.ts';
 
 function at(x: number, z: number, gain: number, hear = HEAR) {
   const a = getAudio('work');
   if (!a) return null;
   const d = Math.hypot(camera.position.x - x, camera.position.z - z);
-  const g = gain * Math.max(0, 1 - d / hear) ** 2;
+  const g = gain * hearGain(d, hear);
   if (g < 0.003) return null;
   return { ...a, g, t: a.ctx.currentTime + 0.005 };
 }

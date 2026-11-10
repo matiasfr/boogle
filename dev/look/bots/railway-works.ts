@@ -282,5 +282,8 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await step(731.5, 0, 'back onto the track');
   }
   await until(() => works().crossing >= 0, 'twelve footed: the crossing stands', 30000);
+  // The finale (whistle and two rockets at the last bent) plays on this page once the last bent stands, within 10 s.
+  const finale = () => (read() as { crossingView?: { shows: number } }).crossingView?.shows ?? 0;
+  await until(() => finale() >= 1, 'the crossing finale plays', 120000);
   await checkpoint('crossing footed');
 }

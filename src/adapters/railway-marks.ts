@@ -67,6 +67,8 @@ export function createRailwayProgressMarks() {
     });
     facts.set('forge lit', !!state.line2 && state.line2.forge.lit >= 0);
     facts.set('trains unlocked', !!state.line2 && state.line2.trains >= 0);
+    // The twelfth pier footing as this page saw it arrive; the view's finale marks 'crossing finale' when it plays.
+    facts.set('crossing footed', !!state.works && state.works.crossing >= 0);
     const marks: RailwayMark[] = [];
     if (previous && !baseline)
       for (const [name, value] of facts)
