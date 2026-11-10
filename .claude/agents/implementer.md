@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Implements a Boogle feature by following an approved plan, step by step. The plan is either a file in docs/plans/ or written out in the prompt. Use it when the user asks to send an implementer, or after the planner's plan is approved.
-model: opus
+model: sonnet
 effort: medium
 ---
 

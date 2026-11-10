@@ -19,6 +19,13 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   bot segment) and give it that; it is often cheaper than more effort. Then raise one level. Past `high`, Opus
   `xhigh` costs about 2.5x `high` for about 1.4 points on SWE-bench Pro, so a task that `high` can't solve goes back to
   the orchestrator, not to xhigh.
+- **Implementer on Sonnet** (owner, 10 November: "Sonnet 5.5 Medium Implementer makes sense if it's working off an
+  existing plan"): the `implementer` agent runs Sonnet 5.5 at medium and only builds an approved plan or written brief.
+  Work with no plan (fixes, tooling) goes to an Opus medium general-purpose subagent. High-risk implementation
+  (server, sync, `src/world`, `src/net`) stays on Opus: spawn the implementer with `model: opus`, an orchestrator
+  default logged in [agent-calls](../agent-calls.md). A Sonnet implementer that stalls on a plan step reports back;
+  the orchestrator reruns that step on Opus. Planning and deep research stay on Opus medium (owner: "we try planning
+  on and deep research on Opus Medium still").
 - **Explore on Haiku** (same source): the built-in Explore agent otherwise runs on the session's model, Fable or Opus
   here. `.claude/agents/Explore.md` pins it to Haiku 5.5 for searching, finding files and reading logs, where a wrong
   answer is cheap to spot. Code edits and judgment calls stay on Opus or the main session.

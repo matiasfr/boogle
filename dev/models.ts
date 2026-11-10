@@ -35,14 +35,19 @@ export const routes: Route[] = [
     normal: claude('planner agent', 'opus', 'medium'),
   },
   {
-    work: 'Implementation, fixes, tooling, captures-driven tasks',
+    work: 'Implementation of an approved plan (docs/plans/ or a written brief)',
     withCodex: codex('gpt-6.1-sol', 'medium'),
-    normal: claude('implementer agent', 'opus', 'medium'),
+    normal: claude('implementer agent', 'sonnet', 'medium'),
+  },
+  {
+    work: 'Fixes, tooling and captures-driven tasks with no plan to follow',
+    withCodex: codex('gpt-6.1-sol', 'medium'),
+    normal: claude('general-purpose subagent', 'opus', 'medium'),
   },
   {
     work: 'High-risk implementation (server, sync, src/world, src/net)',
     withCodex: codex('gpt-6.1-sol', 'high'),
-    normal: claude('implementer agent', 'opus', 'medium'),
+    normal: claude('implementer agent, spawned with model opus', 'opus', 'medium'),
   },
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
@@ -106,7 +111,7 @@ export const fableTopEffort = 'high';
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
   planner: { model: 'opus', effort: 'medium' },
-  implementer: { model: 'opus', effort: 'medium' },
+  implementer: { model: 'sonnet', effort: 'medium' },
   designer: { model: 'opus', effort: 'medium' },
   Explore: { model: 'haiku', effort: 'medium' },
 };
