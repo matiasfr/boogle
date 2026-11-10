@@ -18,7 +18,7 @@ design calls to the orchestrator ([owner calls](../agents/owner-calls.md), "The 
 ## Pitch
 
 Line 2 runs out from the Split-rock pier over your bents and bows down at 4%, from 24.3 m at the pier head to about
-14.7 m at the railhead and 7.5 m at the island halt, so the ring climbs the sky as you ride. Ahead, the island folk's
+14.7 m at the railhead and 8.0 m at the island halt, so the ring climbs the sky as you ride. Ahead, the island folk's
 own orange steel half-crossing, **the Pilgrims' Way**, reaches out with its own double track to an island halt on the
 shore and ends in a counterweighted drawbridge leaf, raised like a hand held up toward Home. You
 foot the last bents out to meet it. One player glides the gap, braces the leaf from the island side, the jib hangs
@@ -57,9 +57,10 @@ set (the longer boiler is an upgrade, 10 November).
      keeps the glider's one main-line use, makes the gap a two-ended co-op stage, and the hook and shore remove the
      strand risk design raised.
 2. **The bow** (systems finding 1, creative's read; re-profiled by ruling 2, 10 November). The line comes down at the
-   4% ruling grade from the first bent all the way to the island halt: 24.3 m at the pier head and the first bent,
-   about 19.6 m at bent 6, about 14.7 m at the railhead (bent 13, 260 m out) and about 7.5 m at the island halt (about
-   440 m, on the shore at about (1414, −820)). Low track over the sea rides better, the ring grows as you descend, and
+   4% ruling grade from the first bent all the way to the island halt, every distance measured from the pier head
+   (ruling 5, greybox): 24.3 m at the pier head and the first bent (20 m out), about 20.3 m at bent 6 (120 m out),
+   about 14.7 m at the railhead (bent 13, 260 m out) and 8.0 m at the island halt, level from its south end (428 m
+   out, on the shore at about (1414, −820)). Low track over the sea rides better, the ring grows as you descend, and
    the folk call it a bow: "Good manners." The six built bents widen to the 7.6 m double deck and come down to the
    bow in generic lines' step 3, before v26, so they change once; build 1 adds the seven new bents, the folk's stub
    and the leaf, all on the double deck with both tracks laid together (ruling 11 as amended by generic lines). It
@@ -224,7 +225,8 @@ All decided; the owner may overrule.
    Decided: **the glide**, with the hook ring on the last bent and a swimmable shore, so the glider gets its one
    main-line use. Owner: ___
 2. **Do the six finished bents get redrawn so the line bows from 24 m to about 6 m?** Decided: **yes**, amended to
-   the 4% bow (24.3 m to about 14.7 m at the railhead and 7.5 m at the island halt; ruling 2, 10 November), with stills
+   the 4% bow (24.3 m to about 14.7 m at the railhead and 8.0 m at the island halt; ruling 2, 10 November, with the
+   datum fixed at the pier head by the greybox rulings), with stills
    before and after and the finale re-shot. Owner: ___
 3. **Is the first steel the longer boiler outright, rather than a pick between boiler and cradle?** Decided: **the
    boiler**; the bigger orange cradle is the second steel pick. Owner: ___
@@ -272,6 +274,76 @@ platform back to the hook ring, from the island halt west, and from the summit l
 7. **The raised leaf reads from the pier head** as a small orange upright against the grey island, its top about 31 m
    up; the brace platform and hook ring can't be made out from there, which is fine, since they are the next leg's.
    Not yet checked from Home or the telescope.
+
+## Rulings (10 November, greybox)
+
+The orchestrator's calls on the greybox's findings, under the owner call "The orchestrator makes design calls too"
+([owner calls](../agents/owner-calls.md), #1396), made on the designer's recommendation before build 1's R1 layout
+starts. Each is logged in [agent-calls](../agent-calls.md) for the owner to overrule. Nothing here changes code: R1
+and R2 carry the numbers, and the greybox may be moved to match. Coordinates are the greybox's (`u` metres out from
+the pier head, `lat` metres east of line 2's track; the brace platform spans u 276.5–289, lat 2.2–10.2, at 10.0 m).
+**Measured:** `RING_LAYOUT` and its helpers, `MOVE` (hook 24 m in a 25° cone, a cancelled pull keeps 9.5 m/s),
+`hook-path.ts` (a pull ends on the ring's land pad, never at the ring), `WALKABLE_NY` (56°), `SWIM_JUMP_SPEED`, the
+branch halts in `src/sickle/world-lines.ts`. **Seen:** the greybox's five stills as described above; no new still
+(ruling 3).
+
+1. **The hook ring moves off the bent onto its own pile, 10 m into the gap and east of the glide lane: u 270, lat +12,
+   the ring 17.5 m up (about 2 m over the railhead platform).** Its land pad stays on the railhead platform's end,
+   moved to lat +5 (ruling 6). From every corner of the brace platform the ring is 9–22.3 m away (the far west corner
+   is the worst, 1.7 m inside the hook's 24 m), and in view when you turn round; a swimmer within about 17 m of its
+   foot is in reach too, if the hook works from the water (R5 checks). It doesn't make the glide unnecessary, because
+   the pull always ends on our pad, so the ring only ever takes you home; the pile has a collider only up to 3 m above
+   the sea (a thin spar above that, nothing to stand on: its top would be 1 m over the platform and about 11 m off, a
+   sprint jump's distance); and no hook target stands on the folk's side within 24 m of our deck, in build 1 or after
+   (route contract: movement skips distance, never the work). Rejected: a shorter brace platform (it would cut off the
+   glide's natural landing at 26–29 m) and an outrigger arm off the bent (an arm into the gap is a ledge to jump from).
+2. **Out of the sea by a ramp, drawn as stairs, with a beach-grade foot.** Each starts as a slipway about 1.2 m under
+   the water and rises at no more than 15° for its first 6 m to about 0.4 m above it, so a swimmer walks out the way
+   they do on every shore (no jump: a swimmer's lifts 0.56 m); then switchback flights at no more than 30°, 1.6 m wide
+   with a kerb, the collider a smooth ramp and the look steps and a handrail. The hinge pier's climbs 10 m to the brace
+   platform's far edge in two flights round its east leg (about 17 m of slope, 4 s); the last bent's climbs 15.6 m to
+   the railhead platform in three (about 27 m, 6 s). Solo by construction. Rejected: the greybox's 50° stair (6° from
+   the walk limit and untested from the water) and a float lift (a moving collider, a wait, and a second player can
+   leave it at the top). **Accepted knowingly:** jumping in at the railhead, swimming 17 m and climbing the hinge pier's
+   ramp reaches the brace platform without gliding, in roughly 15 s against the glide's 2.5 s. The swimmable island
+   shore (decided) already allows a longer version of it; the gate is the footings (the brace is accepted only once the
+   gap is footed), so the glide is the fast and cued way and the swim the slapstick one (DESIGN 10). Keep the hinge
+   pier's ramp foot on its far, east side, so the swim goes round.
+3. **The summit lookout stays under the shard as the shard's place; the branch read moves to the halt (ruling 4).** The
+   summit is the religion's centre (stand under it, look up, a looker on shift nods), which no shoulder keeps. The
+   live cones stay (world-blockout ruling 1), so nothing reshapes the island to open the view. Amends world-blockout
+   ruling 3's "where the branch choice can be seen": the Gorge's split end-on is the stack line's view as it rounds the
+   island's west shoulder, not the summit's. **Not seen by this pass:** a still from the summit toward the Gorge
+   (`npm run look -- --query ring=greybox --cam 1334,68,-1117 --look 897,40,-1988`) produced no image inside the
+   20-minute wall and was stopped; the ruling rests on the greybox's own stills (finding 4) and the bearings.
+4. **The branch choice reads at the island halt: its island-map display, with a fingerpost; not the train's approach.**
+   The approach can't carry both: from the pier head and the crossing the Gorge (bearing about 17–20° west of north)
+   is inside the island's silhouette (about ±27–40°), while Bell Rock (due west, 465 m from the halt) and Canopy's
+   trees (1.6 km west-south-west) show over the open sea on the left. The halt's low map display (decided 9–10
+   November: every line where it really runs, unlaid track dashed and its station dim) is the one place both
+   destinations show at once, so the branch-junction build draws the stack line and the bay trestle on it from the
+   moment the choice is open. Beside it, at the platforms' west end, a fingerpost with two arms along the two lines,
+   each with its place's name and a painted emblem of what's there ("Signs in the world", sparingly). Each platform
+   faces down its own line: Canopy's toward Bell Rock over the west sea (its landmark is in sight); the Gorge's along
+   the south shore toward the west shoulder, where its split comes into view. That replaces "each platform faces its
+   destination's landmark" for the Gorge. Build 1 only leaves room for the two branch platforms west of the halt
+   (the loop is east).
+5. **The datum is the pier head.** Every `u` is metres out from the pier head (bent n at 20 n, `CROSSING_BENTS`), the
+   greybox's convention and the one the railhead's 14.7 m already uses. The profile: 24.3 m to bent 1 (u 20); 4% down
+   to the island halt's south end (u 428); level through the halt and the loop. So bent 6 (u 120, 137 m from the pier
+   halt) is **20.3 m** (it comes down 3.7 m, not about 5), the railhead (u 260) 14.7 m, the hinge (u 277) 14.0 m, the
+   brace platform 10.0 m, and the halt and loop **8.0 m** (the old 7.5 m was mid-platform, u 440, with the halt's south
+   half on the grade). That matches world-blockout rulings 3 and 10's "about 8 m". The brief's pitch, suggestion 2 and
+   open question 2 now carry these numbers; world-blockout's "about 19.6 m at bent 6" and "7.5 m at the island halt"
+   are superseded by this ruling. The greybox's `deckY` (floored at 7.5 m) moves with R1.
+6. **The lane beside the leaf on the hinge pier's east side is confirmed,** with three conditions for R1 and R2. Keep
+   the lane clear of the leaf: a waist-high rail along the track side of the railhead platform's last 5 m, so take-off
+   is from lat 2.3–6.3, at least 0.5 m clear of the leaf's east edge (lat 1.8), onto the platform's lat 2.2–10.2; and the hook's land pad at lat +5, so a pull from the platform's west corner passes the leaf's toe
+   with about 1.6 m spare. Nothing in the lane to stand on or be hit by: the raised leaf has no ledge a glider can
+   land on, the hook pile stands east of it (ruling 1), and the jib's hanging load has no collider while it swings to
+   the bracket, so a co-op glide during the counterweight is never knocked into the sea. And the read from the take-off
+   stays as the greybox has it: the platform, the gold brace and the waving folk straight ahead, 4 m down, the leaf on
+   your left. Once the leaf is down the lane no longer matters: the joint is walked.
 
 ## Parked
 
