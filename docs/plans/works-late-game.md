@@ -450,6 +450,9 @@ go". No Boogler copy is touched, and none of it looks wrong against this plan.
 
 ## Owner questions
 
+**Answered by the owner, 10 November: every recommendation taken** (1 yes, 2 yes, 3 yes, 4 free at the twelfth pier
+footing, 5 no; recorded in [decisions](../decisions.md#decided)). The questions stay below as asked.
+
 1. **Should the cradle take only the 8 rails, so that just the stall's two footings go home by hand (14 cast, not
    16)?** Recommended: **yes**. It halves what you called the most pain, a pair does it in one trip, and the wagon still
    has its "before".
