@@ -11,24 +11,26 @@ data=$(mktemp -d)
 # turn a good boot into a failure.
 trap 'docker rm -f "$name" >/dev/null 2>&1 || true; rm -rf "$data" 2>/dev/null || true' EXIT
 
-docker run -d --name "$name" -p 127.0.0.1:9000:9000 -v "$data:/data" "$image" >/dev/null
+# Every failure names itself as a GitHub error and shows the container's last log lines (if it got that far).
+fail() {
+  echo "::error::$1"
+  docker logs "$name" 2>&1 | tail -40 || true
+  exit 1
+}
+
+docker run -d --name "$name" -p 127.0.0.1:9000:9000 -v "$data:/data" "$image" >/dev/null ||
+  fail "docker run could not start $image"
 for _ in $(seq 1 30); do
   if [ "$(docker inspect -f '{{.State.Running}}' "$name")" != true ]; then
-    echo "::error::the server image exited while booting"
-    docker logs "$name" 2>&1 | tail -40
-    exit 1
+    fail "the server image exited while booting"
   fi
   if body=$(curl -fsS --max-time 2 http://127.0.0.1:9000/version 2>/dev/null); then
-    if [ "$body" != "{\"build\":\"$want\"}" ]; then
-      echo "::error::/version answered $body, expected build $want"
-      exit 1
-    fi
-    curl -fsS --max-time 2 http://127.0.0.1:9000/healthz | grep -qx ok
+    [ "$body" = "{\"build\":\"$want\"}" ] || fail "/version answered $body, expected build $want"
+    health=$(curl -fsS --max-time 2 http://127.0.0.1:9000/healthz 2>&1) || health="no answer ($health)"
+    [ "$health" = ok ] || fail "/healthz answered '$health', expected ok"
     echo "Booted: /version $body"
     exit 0
   fi
   sleep 1
 done
-echo "::error::the server image did not answer /version within 30 s"
-docker logs "$name" 2>&1 | tail -40
-exit 1
+fail "the server image did not answer /version within 30 s"
