@@ -75,6 +75,8 @@ cam.pitch = -0.12;
 const frame = () => window.__debugCam!.set(pose.camera, pose.aim, 65);
 frame();
 setTimeout(frame, 100);
+// `workscam=play` on `--players 2`'s second page: its own follow camera (it never runs the action, which clears the first's).
+if (query.get('workscam') === 'play' && query.get('player') === '2') setTimeout(() => window.__debugCam?.clear(), 300);
 shot.__worksPrepared = true;
 {
   const state = inspectRailway()!;

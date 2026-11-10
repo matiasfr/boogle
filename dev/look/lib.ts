@@ -231,6 +231,8 @@ export type GameOpts = {
   /** Leave adaptive resolution on (no `?dpr=fixed`). */
   adaptive?: boolean;
   touch?: boolean;
+  /** Emulate `prefers-reduced-motion: reduce` (src/constants.ts reads it once at load; CSS follows it too). */
+  reducedMotion?: boolean;
   trace?: boolean;
   warp?: boolean;
   /** Start on the classic island (the original island at the world's origin) instead of the current game's landing:
@@ -284,6 +286,7 @@ export class Game {
     g.ctx = await browser.newContext({
       viewport: { width: g.size[0]!, height: g.size[1]! },
       hasTouch: !!opts.touch,
+      ...(opts.reducedMotion ? { reducedMotion: 'reduce' as const } : {}),
       ...(opts.scale ? { deviceScaleFactor: opts.scale } : {}),
     });
     if (opts.clock) await g.ctx.clock.install();

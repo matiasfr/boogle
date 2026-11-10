@@ -54,6 +54,7 @@ const opt: {
   clockUrl?: string;
   restoreReport: boolean;
   island: boolean;
+  reducedMotion: boolean;
 } = {
   view: 'hill',
   cam: null,
@@ -86,6 +87,7 @@ const opt: {
   players: 1,
   restoreReport: false,
   island: false,
+  reducedMotion: false,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -126,6 +128,8 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
   else if (a === '--restore-report') opt.restoreReport = true;
+  else if (a === '--reduced-motion')
+    opt.reducedMotion = true; // every page emulates prefers-reduced-motion: reduce
   else if (a === '--island')
     opt.island = true; // start on the classic island by the court, in the current game's world (lib.ts)
   else if (a === '--warp')
@@ -164,6 +168,7 @@ for (let k = 0; k < argv.length; k++) {
   [--query 'shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
   [--rail-seed awake]                       start from an accepted railway server save (dev/look/rail-seed.ts)
   [--island]                                start on the classic island (the original island at the origin)
+  [--reduced-motion]                        every page emulates prefers-reduced-motion: reduce
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--wall 540]                              the warped warm-up's wall-clock limit (seconds)
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
@@ -257,6 +262,7 @@ try {
   const g = await Game.open(browser, stack, {
     sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
     island: opt.island,
+    reducedMotion: opt.reducedMotion,
     out: opt.out,
     size: opt.size,
     hud: opt.hud,
@@ -282,6 +288,7 @@ try {
       ? await Game.open(browser, stack, {
           sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
           island: opt.island,
+          reducedMotion: opt.reducedMotion,
           out: opt.out,
           size: opt.size,
           hud: opt.hud,
