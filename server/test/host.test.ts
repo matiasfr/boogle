@@ -401,7 +401,16 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     await a.next(isWorld('w:snap'));
     a.send({ t: 'm', d: { t: 'w:edit', e: toss } });
     await a.next((m) => isWorld('w:edits')(m) && m.d.list.some((x: Msg) => x.e.op === 'gift.toss'));
-    await sleep(300);
+    // The edit applies on a later tick and the save follows it; under a loaded test run that takes a while.
+    const until = async (what: string, ok: () => unknown) => {
+      for (let k = 0; k < 100 && !(await ok()); k++) await sleep(50);
+      assert.ok(await ok(), what);
+    };
+    await until('the toss applied', tossed);
+    await until('the room saved it', async () =>
+      (await fs.readFile(path.join(dataDir, `${room}.json`), 'utf8').catch(() => '')).includes('"gifts"'),
+    );
+    await sleep(250); // one more checkpoint, so the save on disk holds the frisbee
     const list = await (await admin('', 'GET')).json();
     assert.deepEqual(
       list.rooms.map((r: Msg) => [r.id, r.loaded, r.players]),

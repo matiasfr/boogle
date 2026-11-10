@@ -5,7 +5,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { waitFor, ev, sleep } from './harness.ts';
-import { railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { DEFAULT_ROOM } from '../../src/constants.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { RAIL_STONE } from '../../src/sim/railway-works-layout.ts';
@@ -152,10 +153,19 @@ export async function railwayChecks(c: Ctx) {
     JSON.stringify(initial.registry.states) ===
       JSON.stringify(['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'tune', 'opening']),
   );
-  await ev(RA2.page, () => window.T.railBaseEdit({ op: 'who.set', i: 0, j: 0, n: 'Alice', c: 2 }));
+  // Re-sent until it shows, as src/features/identity.ts does every 3 s: just after the restart the host can drop an
+  // edit that arrives before its world runs again (CI run 42723426132), and the host refuses one that changes nothing.
+  let whoSent = -Infinity;
   railCheck(
     'identity is accepted in the lockstep roster',
-    (await waitFor(async () => (await rail(RB)).people.some((p) => p.pid === 'raila' && p.name === 'Alice'))) >= 0,
+    (await waitFor(async () => {
+      if ((await rail(RB)).people.some((p) => p.pid === 'raila' && p.name === 'Alice')) return true;
+      if (Date.now() - whoSent >= 1000) {
+        whoSent = Date.now();
+        await ev(RA2.page, () => window.T.railBaseEdit({ op: 'who.set', i: 0, j: 0, n: 'Alice', c: 2 }));
+      }
+      return false;
+    })) >= 0,
   );
   await ev(RA2.page, () =>
     window.T.railBaseEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }),
@@ -764,3 +774,80 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   await Promise.all(pages.map((p) => p.page.close()));
   return row;
 }
+
+// A playtest jump-in (docs/plans/playtest-jump-in.md): two players in one seeded room, through a restart. The seed is
+// an ordinary save, so play goes on from it and survives the restart; the shared room is never created or changed.
+export async function railwayJumpIn(c: Ctx) {
+  const jumpCheck = (name: string, ok: boolean, detail = '') => {
+    c.check(name, ok, detail);
+    if (!ok) throw new Error(`Jump-in proof stopped: ${name}`);
+  };
+  const sharedFile = path.join(c.dataDir, `${railwayRoomId(DEFAULT_ROOM)}.json`);
+  const sharedBefore = await fs.readFile(sharedFile).catch(() => null);
+  const r = await fetch(`http://127.0.0.1:${c.port()}/jump`, {
+    method: 'POST',
+    body: JSON.stringify({ stage: 'q3-done', ns: RAILWAY_PLAY_NS }),
+  });
+  jumpCheck('POST /jump seeds a room at q3-done', r.status === 200, String(r.status));
+  const { room } = (await r.json()) as { room: string };
+  const id = railwayRoomId(room);
+  console.log(`\nJump-in room: ${id}`);
+  const open = (name: string, pid: string) =>
+    c.web.open(name, `room=${id}&server=http://127.0.0.1:${c.port()}&pid=${pid}`);
+  const J0 = await open('J0', 'jump0'),
+    J1 = await open('J1', 'jump1');
+  const both = async (fn: (s: RailwayProbe) => boolean, ms = 8000) =>
+    (await waitFor(async () => (await Promise.all([J0, J1].map(rail))).every((s) => s.ready && fn(s)), ms)) >= 0;
+  jumpCheck('both players mirror the seed: Q3 laid, Q4 not', await both((s) => s.line2[2] === 1 && s.line2[3] !== 1));
+  await ev(J0.page, () => (window.T.railMessages.length = 0));
+  const opened = await waitFor(async () => {
+    await ev(J0.page, () => window.T.railOpen());
+    return (await rail(J0)).messages.some((m) => m.t === 'r:session');
+  });
+  jumpCheck('the first player gets a session in the seeded room', opened >= 0);
+  const epoch = Number((await rail(J0)).messages.findLast((m) => m.t === 'r:session')!.epoch);
+  const request = ((await rail(J0)).accounts.find((a) => a.pid === 'jump0')?.request ?? 0) + 1;
+  const source = (await rail(J1)).sources.find((s) => s.remaining > 0)!;
+  await ev(J0.page, (sid: number) => window.T.railPose('source', sid), source.id);
+  await ev(J0.page, (e: RailAction) => window.T.railEdit(e), {
+    op: 'rail.chop',
+    epoch,
+    request,
+    id: source.id,
+    yaw: 0,
+    collapsed: false,
+  });
+  // A chop takes its whole yield from the source (several logs), so the count drops by that, not by one.
+  const left = (s: RailwayProbe) => s.sources.find((x) => x.id === source.id)!.remaining;
+  const lowered = (s: RailwayProbe) => left(s) < source.remaining;
+  const chopped = await both(lowered);
+  const [s0, s1] = await Promise.all([J0, J1].map(rail));
+  const reply = s0!.messages.findLast((m) => (m.t === 'ack' || m.t === 'rej') && m.epoch === epoch);
+  jumpCheck(
+    "one player's chop shows in the other's mirror",
+    chopped,
+    `source ${source.id}: ${source.remaining} -> ${left(s0!)} / ${left(s1!)}; ${JSON.stringify(reply)}`,
+  );
+  jumpCheck('the two mirrors agree', await agreeOn([J0, J1]));
+  await c.restart();
+  jumpCheck(
+    'after a restart both rejoin with the seed and the chop kept',
+    await both((s) => lowered(s) && s.line2[2] === 1, 15000),
+  );
+  jumpCheck('and agree', await agreeOn([J0, J1]));
+  const host = (await (await fetch(`http://127.0.0.1:${c.port()}/rooms/${id}/host`)).json()) as {
+    seed?: { stage: string };
+  };
+  jumpCheck('the room still says it started at q3-done', host.seed?.stage === 'q3-done', JSON.stringify(host.seed));
+  const sharedAfter = await fs.readFile(sharedFile).catch(() => null);
+  jumpCheck(
+    'the shared room was not created or changed',
+    sharedBefore === null ? sharedAfter === null : !!sharedAfter && sharedAfter.equals(sharedBefore),
+  );
+  await Promise.all([J0, J1].map((p) => p.page.close()));
+}
+const agreeOn = async (group: Page[]) =>
+  (await waitFor(async () => {
+    const all = await Promise.all(group.map(rail));
+    return all.every((s) => s.ready && s.hash === all[0]!.hash);
+  }, 8000)) >= 0;

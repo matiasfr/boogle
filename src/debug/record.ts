@@ -1,5 +1,5 @@
-// `?record=1` (src/features/record.ts): writes down what this tab's player does, for `npm run sim -- replay` to play back
-// headless on another build (dev/sim/README.md). Each frame, before anything reads them: the frame's dt, what changed in
+// `?record=1` (src/features/record.ts): writes down what this tab's player does, to play back on another build (nothing
+// replays it headless since 9 November 2026; dev/sim/README.md). Each frame, before anything reads them: the frame's dt, what changed in
 // `input`, `inputState` and the camera's yaw and pitch, and the presses since the frame before. Each frame, after the
 // world phase: the state the replay will be compared with.
 //

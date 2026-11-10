@@ -891,8 +891,15 @@ Today `npm run checks-for` routes every gameplay, render, terrain and audio chan
 - [ ] **D1b. Pause.** `pause.ts`'s Get unstuck keeps `getRailwayUnstuck()` and `backToSpawn()`; the Place branch goes.
 - [ ] **D1c. Dev menu.** `src/debug/dev/place.ts` is rewritten as a production read-only adapter: destinations from
   `layout`; inspect from `inspectRailway()` and `inspectTown()`. Or delete it, and have `camera.ts`, `inspect.ts`,
-  `room.ts`, `report.ts` and `scenarios.ts` use `productionRailway` branches only. `fixtures.ts` goes, since
-  production setups are `--rail-seed`.
+  `room.ts`, `report.ts` and `scenarios.ts` use `productionRailway` branches only. Then, per
+  [playtest-jump-in](playtest-jump-in.md#ordering-and-d1):
+  - **Delete:** `src/debug/dev/fixtures.ts`; `src/debug/dev/scenarios.ts` (the dock's Tests panel) and its
+    `registerDockPanel` line; `src/debug/dev/destinations.ts`, whose Start test, Go and Return are Place-only; the TEST
+    badge and `dev-launch` block in `src/debug/dev-menu.ts` (the `fixture()` and `VERSION` imports); `setup`, `fixture`,
+    `test`, `scenario` and `destination` from `dev-preferences.ts`'s `debugFlags`, and its `boogle.dev.launch.v1` clear.
+  - **Keep:** `src/features/jump-in.ts`, `src/boot/jump-in.ts`, `src/world/railway-jump.ts`, `src/sim/railway-seeds*.ts`,
+    `server/src/jump.ts` and `server/src/seeds/`. People's setups are jump-ins; agents' setups are `--rail-seed`, and
+    both come from `buildSeedWorld`.
 - [ ] **D1d. look-kit.** It takes `boilerShown: () => boolean` from its caller instead of reading `job.boiler`.
 - [ ] **D1e.** Delete or retarget the tools and tests listed under "Every reference to `?proto=place`".
   `npm run level-check`'s place progression (`dev/level/check.ts --place=place`, `replay.ts`, `timber-track.ts`)

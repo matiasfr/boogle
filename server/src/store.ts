@@ -7,6 +7,7 @@
 //   store.readSync(id)                    the same, synchronously (startup only)
 //   await store.write(id, doc, { ifNewer })  { status: 200 | 409 | 507, body }: 409 when ifNewer and the saved tick is
 //                                         higher, 507 when a new room would pass maxRooms
+//   await store.create(id, doc)           a new room's first save only: 409 if it has a file, 507 past maxRooms
 //   store.known(id), store.count()        rooms with a file
 //   store.forget(id)                      after boot cleanup moved its file, under withLock(id)
 //   store.withLock(key, fn)               run fn after every earlier call with the same key has settled
@@ -78,6 +79,27 @@ export function createStore(cfg: { dataDir: string; maxRooms: number; serverRoom
         const tmp = `${fileFor(id)}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
         await fs.writeFile(tmp, JSON.stringify(doc));
         await fs.rename(tmp, fileFor(id));
+        knownRooms.add(id);
+        return { status: 200, body: { ok: true, tick: doc.tick } };
+      });
+    },
+    /** A new room's first save, never over one: the temp file is hard-linked into place, so an existing file (or a
+     * write racing this one) refuses rather than replaces. Jump-in seeds only (./jump.ts). */
+    create(id: string, doc: RoomDoc): Promise<WriteResult> {
+      return withLock(id, async () => {
+        if (!currentRoomId(id, ns)) throw new Error(`Cannot write obsolete or invalid room: ${id}`);
+        if (knownRooms.has(id)) return { status: 409, body: { error: 'room exists' } };
+        if (knownRooms.size >= cfg.maxRooms) return { status: 507, body: { error: 'room limit reached' } };
+        const tmp = `${fileFor(id)}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+        await fs.writeFile(tmp, JSON.stringify(doc));
+        try {
+          await fs.link(tmp, fileFor(id));
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code === 'EEXIST') return { status: 409, body: { error: 'room exists' } };
+          throw e;
+        } finally {
+          await fs.rm(tmp, { force: true });
+        }
         knownRooms.add(id);
         return { status: 200, body: { ok: true, tick: doc.tick } };
       });

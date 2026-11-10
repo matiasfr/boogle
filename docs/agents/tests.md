@@ -11,7 +11,7 @@ Run `npm run checks-for`; see [bot checks](test-details/bot-segments.md). Read t
 | Trigger | Required details |
 | --- | --- |
 | Choosing/running browser scenarios or GPU checks | [scenarios](test-details/scenarios.md) |
-| Headless simulation, player/ball physics or inspecting state | [simulation](test-details/simulation.md) |
+| Headless world, the rail loop in Node, or inspecting state | [simulation](test-details/simulation.md) |
 | Presence, room or relay changes | [load](test-details/load.md) |
 | Many meshes, lights or post passes; count diagnostics | [performance](test-details/performance.md) |
 | Any harness run; networking or render-pipeline changes | [gpu](test-details/gpu.md) |

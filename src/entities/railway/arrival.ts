@@ -6,16 +6,18 @@ import { hideControls } from '../../player/controls.ts';
 import { haulHooks } from '../../player/haul-hooks.ts';
 import { softWall } from '../player/state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
-import { physicsTime, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
+import { physicsTime, raycastClosest, rayHit, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
 import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { registerRailwayRecovery } from './state.ts';
 import { identity } from '../../player/identity.ts';
-import { getRoomId } from '../../netplay/net.ts';
+import { getRoomId, remotes } from '../../netplay/net.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createPoseReadiness } from './pose-readiness.ts';
+import { roomSeed } from '../../netplay/room-seed.ts';
+import { jumpOf, type JumpLand } from '../../world/railway-jump.ts';
 
 type RecoveryPoint = { x: number; y: number; z: number };
 export async function createRailwayArrival(owner: OwnedView, laidPath: () => readonly RecoveryPoint[]) {
@@ -72,6 +74,59 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     } catch {
       // Unavailable local storage leaves the next visit at the ordinary spawn.
     }
+  };
+  // A jump room's landing (docs/plans/playtest-jump-in.md): with no saved pose here, everyone starts at the segment the
+  // room was seeded for, standing on its terrain, pad or deck. undefined until the room's seed is known. A jump room
+  // skips the first visit's fall (src/features/fall.ts); a page that showed one anyway (`intro=1`) keeps where it fell.
+  let landing: JumpLand | null | undefined;
+  let fell = fallArrival.active;
+  void roomSeed().then((seed) => {
+    landing = seed ? (jumpOf(seed.stage)?.land ?? null) : null;
+  });
+  // The surface must be where the catalog says (a sphere swept down meets it within 0.5 m), else the usual spawn. A
+  // friend already standing there moves you to a spot on a 1.4 m ring around it, so nobody lands on someone's head.
+  const RING = [0, 1, 2, 3, 4, 5].map((k) => ({
+    x: 1.4 * Math.sin((k * Math.PI) / 3),
+    z: 1.4 * Math.cos((k * Math.PI) / 3),
+  }));
+  // Thin shapes count too: ring pads such as the summit deck are tiled in pieces under 1.6 m across. A ray down the
+  // spot's centre must meet the surface as well, so a ring spot past a deck's edge (where the sphere's side still
+  // touches it) is refused; a ray that starts inside a shape (an overhang over the spot) meets it at once and fails.
+  // The ray runs a centimetre off the spot: one straight down a terrain cell's edge can miss the heightfield.
+  const hit = rayHit();
+  const surfaceAt = (x: number, y: number, z: number) => {
+    const from = { x, y: y + 3, z };
+    const hits = (['skip', 'only'] as const)
+      .map((thin) => sweepSphere(from, { x, y: y - 1, z }, PLAYER_R, { mask: GROUP.SCENERY, thin }))
+      .filter((h) => h >= 0);
+    if (!hits.length || Math.abs(from.y - Math.min(...hits) - PLAYER_R - y) > 0.5) return false;
+    const ray = raycastClosest(
+      { x: x + 0.01, y: y + 3, z: z + 0.01 },
+      { x: x + 0.01, y: y - 1, z: z + 0.01 },
+      { mask: GROUP.SCENERY },
+      hit,
+    );
+    return ray && hit.distance > 0 && Math.abs(hit.hitPointWorld.y - y) <= 0.5;
+  };
+  const taken = (x: number, y: number, z: number) =>
+    [...remotes.values()].some((r) => {
+      const p = r.entered ? r.avatar?.position : undefined;
+      return !!p && Math.hypot(p.x - x, p.z - z) < 1.2 && Math.abs(p.y - y) < 3;
+    });
+  const land = (to: JumpLand) => {
+    const body = me.body;
+    if (!body) return;
+    const spot = [{ x: 0, z: 0 }, ...RING]
+      .map((d) => ({ x: to.x + d.x, z: to.z + d.z }))
+      .find((p) => !taken(p.x, to.y, p.z) && surfaceAt(p.x, to.y, p.z));
+    if (!spot) {
+      console.warn(`[jump-in] no free surface at the landing (${to.x}, ${to.y}, ${to.z}); keeping the spawn`);
+      return;
+    }
+    teleport(body, spot.x, to.y + PLAYER_R + 0.4, spot.z);
+    body.velocity.set(0, 0, 0);
+    if (to.yaw !== undefined) cam.yaw = me.yaw = to.yaw;
+    cam.pitch = -0.14;
   };
   const restorePose = () => {
     const body = me.body;
@@ -180,6 +235,7 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
       // Accepted state and a completed Rapier step are both required. snapshot() can rebuild
       // colliders in this same update, before the broad phase knows a partner's new track exists.
       const poseReady = ready && tick > 0 && scenery.ready();
+      fell ||= fallArrival.active;
       if (!loaded && poseReady) {
         loaded = true;
         try {
@@ -189,8 +245,18 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
         }
         restorePending = true;
       }
-      if (loaded && restorePending && poseReady && body && !fallArrival.active) {
-        restorePose();
+      // An empty pose waits for the room's seed (one fetch, at most ten seconds) before it settles for the spawn.
+      if (
+        loaded &&
+        restorePending &&
+        poseReady &&
+        body &&
+        !fallArrival.active &&
+        (savedPose || landing !== undefined)
+      ) {
+        if (savedPose) restorePose();
+        else if (landing && !fell) land(landing);
+        landing = null; // once
         restorePending = false;
       }
       if (loaded && poseReady && !restorePending) {

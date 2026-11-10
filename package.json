@@ -28,6 +28,7 @@
     "map": "node dev/map.ts",
     "models": "node dev/models.ts",
     "economy": "node dev/economy/cli.ts",
+    "loop": "node dev/loop/cli.ts",
     "unused": "node dev/scan/unused.ts",
     "look": "node dev/look/look.ts",
     "session": "node dev/look/session.ts",

@@ -26,7 +26,7 @@ export type Inventory = {
 
 const ROOM = /^[a-z0-9-]{1,32}\.json$/;
 const TMP = /^[a-z0-9-]{1,32}\.json\.\d+\.[0-9a-f]{8}\.tmp$/;
-const DIRS = new Set(['reports', 'playdata', 'reviews', '.trash', '.backups']);
+const DIRS = new Set(['reports', 'playdata', 'reviews', 'jumps', '.trash', '.backups']);
 export function classify(name: string, ns: RoomNamespaces): Classification {
   if (DIRS.has(name)) return 'dir';
   if (ROOM.test(name)) {

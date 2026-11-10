@@ -197,7 +197,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       ],
       readIf: [],
       sync: 'Owner physics; other tabs interpolate presence',
-      checks: `${look}; npm run sim -- replay; npm run level-check (reachability derives from launch speed/gravity)`,
+      checks: `${look}; npm run level-check (reachability derives from launch speed/gravity)`,
       lookalikes: ['src/player/player.ts', 'src/player/state.ts'],
       warning: 'player/player is a facade; player/state stores records. Neither owns the controller.',
     },
