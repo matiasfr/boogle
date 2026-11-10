@@ -22,6 +22,8 @@ import { pop } from '../minis/common.ts';
 import { assignSeats, readGrants, seatVerdict, type Grants, type SeatRequest } from './seat-claims.ts';
 import { flat } from '../flat.ts';
 import { merged } from './part-geometry.ts';
+import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
+import type { Part } from '../../render/cosmetic-parts.ts';
 
 export type Seat = {
   id: string;
@@ -318,3 +320,37 @@ export function seatMesh() {
   return g;
 }
 export const seatHeight = 0.55 + PLAYER_R;
+
+/** The seated pose (Driving_Loop) puts Buddy's hips this far under his capsule centre (measured on the bones, with
+ * SEATED_DROP applied): a chair whose top is `t` over the deck holds its rider at t + SEATED_HIPS. */
+export const SEATED_HIPS = 0.63;
+/** The track layer's low stool (assets/src/track-layer.py chair_wood): its seat top and where its rider's capsule sits
+ * over the deck, hips over the seat and feet on the deck. */
+export const lowStoolAnchor = MACHINE_CHAIR_SEAT + SEATED_HIPS;
+// The track layer's stool, in its rider's frame (they face +Z here): a 6 cm slab, 0.44 m wide and 0.46 m deep, set
+// 0.13 m behind the rider anchor, on four 8 cm legs at X ±0.15 m, Z −0.26/+0.02 m. Turn it by the rider's yaw + π.
+const SLAB = 0.06;
+const lowStoolGeometry = merged([
+  ['b', 0, MACHINE_CHAIR_SEAT - SLAB / 2, -0.13, 0.44, SLAB, 0.46, '#bd8a50'],
+  ...[-0.15, 0.15].flatMap((x) =>
+    [-0.26, 0.02].map((z): Part => [
+      'b',
+      x,
+      (MACHINE_CHAIR_SEAT - SLAB) / 2,
+      z,
+      0.08,
+      MACHINE_CHAIR_SEAT - SLAB,
+      0.08,
+      '#bd8a50',
+    ]),
+  ),
+]);
+/** The track layer's low stool, at its rider anchor's deck point: rotation.y = the seat's yaw + π. No solid. */
+export function lowStoolMesh() {
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(lowStoolGeometry, chairMaterial);
+  m.name = 'low stool';
+  m.castShadow = m.receiveShadow = true;
+  g.add(m);
+  return g;
+}

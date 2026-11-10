@@ -70,8 +70,11 @@ export async function createRailwayTrains(
     for (const n of [1, 2]) {
       const car = cars[n]!;
       for (const [i, z] of [-0.8, 0.8].entries()) {
-        const stool = seats.seatMesh();
-        stool.position.set(car.spec.hx - 0.2, car.hy, z);
+        // The track layer's low stool, down the middle of the deck (owner, 10 November); no solid, so the aisle and
+        // a walk along the deck stay open. Riders face across the car, as before.
+        const stool = seats.lowStoolMesh();
+        stool.position.set(0, car.hy, z);
+        stool.rotation.y = Math.PI / 2 + Math.PI;
         owner.add(stool);
         car.mesh.add(stool);
         owner.cleanup(
@@ -80,8 +83,9 @@ export async function createRailwayTrains(
             group: `railway:train${k}-${n}`,
             platform: car.platform,
             anchorView: true,
-            at: { x: car.spec.hx - 0.2, y: car.hy + seats.seatHeight, z, yaw: Math.PI / 2 },
-            exit: { x: 0, y: car.hy + PLAYER_R, z, yaw: Math.PI / 2 },
+            at: { x: 0, y: car.hy + seats.lowStoolAnchor, z, yaw: Math.PI / 2 },
+            // Standing up steps you back off the stool, onto the deck behind it.
+            exit: { x: 0.6, y: car.hy + PLAYER_R, z, yaw: Math.PI / 2 },
             available: () => car.y > -30 && (n === 1 || crates.deckCount(deck) === 0),
           }),
         );
