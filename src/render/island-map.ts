@@ -119,10 +119,177 @@ export function pathAt(l: MapLine, s: number): { x: number; z: number } {
   return p[p.length - 1]!;
 }
 
-/** Sizes in pixels for a map `h` tall: line width, stop dot radius, ring radius, label size. */
+/** Sizes in pixels for a map `h` tall: line width, stop dot radius, ring radius, label size, and a train marker's
+ * width and height (callers drawing markers in the world use these too). */
 export function mapSizes(h: number) {
-  const r = h * 0.034;
-  return { track: h * 0.032, dot: r, ring: r * 2.1, label: h * 0.085 };
+  const r = h * 0.034,
+    mark = r * 1.15;
+  return { track: h * 0.032, dot: r, ring: r * 2.1, label: h * 0.085, markW: mark * 3.2, markH: mark * 2.27 };
+}
+
+/** A placed name: its box (top-left, size) and how it is inked. */
+export type MapLabel = {
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  lit: boolean;
+  here: boolean;
+  /** The box's side nearer its stop, where the (narrower) drawn text is set. */
+  align: CanvasTextAlign;
+};
+/** A name's box width at `size` px: a per-letter allowance for the bold face with 8% to spare, so placing names needs no
+ * canvas and a unit test sees the same boxes the game draws (the drawn text, set at its stop's side, is narrower:
+ * measured in the game, Figtree 700, "Camp" 2.73 em against 3.07, "Quarry" 3.23 against 3.54). */
+export function labelWidth(name: string, size: number) {
+  let em = 0;
+  for (const c of name)
+    em += c === ' ' ? 0.25 : /[mwMW]/.test(c) ? 0.92 : /[iljrtfI]/.test(c) ? 0.38 : /[A-Z]/.test(c) ? 0.72 : 0.6;
+  return em * size * 1.08;
+}
+/** What each stop keeps clear of names, in pixels: its ring, or a train marker standing on it, whichever is wider. */
+export function stopClear(h: number) {
+  const S = mapSizes(h);
+  return Math.max(S.ring, Math.hypot(S.markW, S.markH) / 2) + S.label * 0.08;
+}
+
+// Where a name may sit around its stop: right, left, above, below, then the diagonals; the bias prefers the sides.
+const SIDES: readonly [number, number, number][] = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, -1, 1.5],
+  [0, 1, 1.5],
+  [Math.SQRT1_2, -Math.SQRT1_2, 1],
+  [-Math.SQRT1_2, -Math.SQRT1_2, 1],
+  [Math.SQRT1_2, Math.SQRT1_2, 1],
+  [-Math.SQRT1_2, Math.SQRT1_2, 1],
+];
+
+/** Every station's name placed on a `w` × `h` face for view `v`: one per name at the middle of its stops, on whichever
+ * side of it keeps the names off each other, off the face's edge, off every stop's ring and standing train, and as far
+ * as it can off the track, preferring the side away from the map's middle, close to its stop. Small enough (a handful
+ * of names, a few dozen spots each) to search every combination, cutting branches that can't beat the best so far. */
+export function mapLabels(
+  lines: readonly MapLine[],
+  v: MapView,
+  w: number,
+  h: number,
+  here: readonly { line: number; stop: number }[],
+): MapLabel[] {
+  const S = mapSizes(h),
+    clear = stopClear(h),
+    gap = S.label * 0.15,
+    lh = S.label * 1.05,
+    edge = h * 0.04;
+  const stops: [number, number][] = [];
+  const names = new Map<string, { x: number; y: number; n: number; lit: boolean; here: boolean }>();
+  lines.forEach((l, li) =>
+    l.stops.forEach((st, si) => {
+      const [x, y] = mapPx(v, st.x, st.z);
+      stops.push([x, y]);
+      const n = names.get(st.name) ?? { x: 0, y: 0, n: 0, lit: false, here: false };
+      n.x += x;
+      n.y += y;
+      n.n++;
+      n.lit ||= st.s <= l.laid + 0.01;
+      n.here ||= here.some((hr) => hr.line === li && hr.stop === si);
+      names.set(st.name, n);
+    }),
+  );
+  // The track as points every few pixels, to keep names off it where there is room.
+  const track: [number, number][] = [];
+  for (const l of lines)
+    for (let k = 1; k < l.path.length; k++) {
+      const [ax, ay] = mapPx(v, l.path[k - 1]!.x, l.path[k - 1]!.z),
+        [bx, by] = mapPx(v, l.path[k]!.x, l.path[k]!.z);
+      const steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 3));
+      for (let i = 0; i <= steps; i++) track.push([ax + ((bx - ax) * i) / steps, ay + ((by - ay) * i) / steps]);
+    }
+  const list = [...names].map(([name, n]) => ({ name, x: n.x / n.n, y: n.y / n.n, lit: n.lit, here: n.here }));
+  let mx = 0,
+    my = 0;
+  for (const n of list) {
+    mx += n.x / list.length;
+    my += n.y / list.length;
+  }
+  const hitsCircle = (b: MapLabel, cx: number, cy: number, r: number) => {
+    const dx = cx - Math.max(b.x, Math.min(cx, b.x + b.w)),
+      dy = cy - Math.max(b.y, Math.min(cy, b.y + b.h));
+    return dx * dx + dy * dy < r * r;
+  };
+  // Each name's candidate boxes with their own cost, cheapest first.
+  const options = list.map((n) => {
+    const lw = labelWidth(n.name, S.label);
+    const ox = n.x - mx,
+      oy = n.y - my,
+      od = Math.hypot(ox, oy) || 1;
+    const spots: [number, number, number, number, number][] = [];
+    for (const [cx, cy, bias] of SIDES)
+      for (const far of [0, 1])
+        for (const slide of cx === 0 || cy === 0 ? [0, -1, 1] : [0]) spots.push([cx, cy, bias, far, slide]);
+    return spots
+      .map(([cx, cy, bias, far, slide]) => {
+        // Just outside the stop's clear circle, or a line further out; a side's name can also slide along it.
+        const d = clear + gap + far * lh * 0.9,
+          sx = Math.abs(cx) < 0.3 ? 0 : Math.sign(cx),
+          sy = Math.abs(cy) < 0.3 ? 0 : Math.sign(cy);
+        const box: MapLabel = {
+          name: n.name,
+          x: n.x + cx * d + (sx * lw) / 2 - lw / 2 + (cx === 0 ? slide * lw * 0.35 : 0),
+          y: n.y + cy * d + (sy * lh) / 2 - lh / 2 + (cy === 0 ? slide * lh * 0.6 : 0),
+          w: lw,
+          h: lh,
+          lit: n.lit,
+          here: n.here,
+          align: sx > 0 ? 'left' : sx < 0 ? 'right' : 'center',
+        };
+        const out =
+          Math.max(0, edge - box.x) +
+          Math.max(0, box.x + lw - (w - edge)) +
+          Math.max(0, edge - box.y) +
+          Math.max(0, box.y + lh - (h - edge));
+        let cost =
+          bias + far * 2.5 + Math.abs(slide) + 3 * (1 - (cx * ox + cy * oy) / od) + (out > 0 ? 1e5 + out * 100 : 0);
+        for (const [x, y] of stops) if (hitsCircle(box, x, y, clear)) cost += 1e4;
+        for (const [x, y] of track)
+          if (
+            x > box.x - S.track / 2 &&
+            x < box.x + lw + S.track / 2 &&
+            y > box.y - S.track / 2 &&
+            y < box.y + lh + S.track / 2
+          )
+            cost += 0.5;
+        return { box, cost };
+      })
+      .sort((a, b) => a.cost - b.cost);
+  });
+  const PAD = S.label * 0.1;
+  const clash = (a: MapLabel, b: MapLabel) =>
+    a.x < b.x + b.w + PAD && b.x < a.x + a.w + PAD && a.y < b.y + b.h + PAD && b.y < a.y + a.h + PAD;
+  let best = Infinity,
+    pick: MapLabel[] = [];
+  const chosen: MapLabel[] = [];
+  // The cheapest the names still to place could cost, to stop early on a branch that can't win.
+  const rest = options.map(() => 0);
+  for (let i = options.length - 2; i >= 0; i--) rest[i] = rest[i + 1]! + options[i + 1]![0]!.cost;
+  const search = (i: number, sum: number) => {
+    if (sum + (i < options.length ? options[i]![0]!.cost + rest[i]! : 0) >= best) return;
+    if (i === options.length) {
+      best = sum;
+      pick = [...chosen];
+      return;
+    }
+    for (const o of options[i]!) {
+      let extra = o.cost;
+      for (const c of chosen) if (clash(o.box, c)) extra += 1e6;
+      chosen.push(o.box);
+      search(i + 1, sum + extra);
+      chosen.pop();
+    }
+  };
+  search(0, 0);
+  return pick;
 }
 
 /** The map's base: face, track, stops, names and the "you are here" ring outline (`here`: lines and stop indices), in
@@ -170,8 +337,6 @@ export function drawMapBase(
     g.strokeStyle = l.color;
     trace(l, l.path[0]!.s, Math.min(l.laid, end));
   }
-  // Labels: one per name, at the middle of its stops, pushed outward from the map's middle.
-  const names = new Map<string, { x: number; y: number; n: number; lit: boolean; here: boolean }>();
   lines.forEach((l, li) =>
     l.stops.forEach((st, si) => {
       const [x, y] = mapPx(v, st.x, st.z);
@@ -190,43 +355,15 @@ export function drawMapBase(
       g.beginPath();
       g.arc(x, y, me ? S.dot * 1.15 : S.dot, 0, Math.PI * 2);
       g.fill();
-      const n = names.get(st.name) ?? { x: 0, y: 0, n: 0, lit: false, here: false };
-      n.x += x;
-      n.y += y;
-      n.n++;
-      n.lit ||= laid;
-      n.here ||= me;
-      names.set(st.name, n);
     }),
   );
-  let mx = 0,
-    my = 0;
-  for (const n of names.values()) {
-    mx += n.x / n.n / names.size;
-    my += n.y / n.n / names.size;
-  }
+  // Names, each in the box `mapLabels` gave it, set against the side nearer its stop.
   g.font = `700 ${S.label}px ${FONT}`;
   g.textBaseline = 'middle';
-  for (const [name, n] of names) {
-    const x = n.x / n.n,
-      y = n.y / n.n;
-    let dx = x - mx,
-      dy = y - my;
-    const d = Math.hypot(dx, dy) || 1;
-    dx /= d;
-    dy /= d;
-    const off = S.ring + S.label * 0.25;
-    g.textAlign = dx > 0.35 ? 'left' : dx < -0.35 ? 'right' : 'center';
-    let lx = x + dx * off,
-      ly = y + dy * off + (Math.abs(dx) <= 0.35 ? Math.sign(dy || 1) * S.label * 0.35 : 0);
-    // Keep the label on the face.
-    const tw = g.measureText(name).width,
-      left = g.textAlign === 'left' ? lx : g.textAlign === 'right' ? lx - tw : lx - tw / 2,
-      edge = h * 0.04;
-    lx += Math.max(0, x0 + edge - left) - Math.max(0, left + tw - (x0 + w - edge));
-    ly = Math.max(y0 + edge + S.label / 2, Math.min(y0 + h - edge - S.label / 2, ly));
-    g.fillStyle = n.here ? MAP_INK : n.lit ? NAME_LIT : MAP_DIM;
-    g.fillText(name, lx, ly);
+  for (const b of mapLabels(lines, v, w, h, here)) {
+    g.textAlign = b.align;
+    g.fillStyle = b.here ? MAP_INK : b.lit ? NAME_LIT : MAP_DIM;
+    g.fillText(b.name, b.align === 'left' ? b.x : b.align === 'right' ? b.x + b.w : b.x + b.w / 2, b.y + b.h / 2);
   }
   g.restore();
 }

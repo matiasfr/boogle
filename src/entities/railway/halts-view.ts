@@ -6,7 +6,7 @@ import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Platform } from '../../physics/platforms.ts';
-import { trainAlong, trainStopsOf, LINE_HALTS, TRAIN_PHASE, TRAIN_STOPS } from '../../sim/railway-train.ts';
+import { trainAlong, trainStopsOf, TRAIN_PHASE } from '../../sim/railway-train.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { forEachStatic, teleport, type Body } from '../../physics/engine.ts';
@@ -16,10 +16,8 @@ import { HEAD_OFFSET, PLAYER_R, SEA } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { roadPlaque } from './home-pictogram.ts';
 import { createIslandBoards } from './island-boards.ts';
-import { simplify, type MapLine } from '../../render/island-map.ts';
+import { displayYaw, haltDisplays, haltMapLines, haltRows } from './halt-map.ts';
 
-/** Each line's colour on the boards' map, track and train: line 1 gold, line 2 teal. */
-const LINE_MARK = ['#ffd23f', '#2ec4b6'] as const;
 type Box = import('../../proto/net/boxes.ts').Box;
 type Line = import('../../proto/place/layout.ts').Line;
 type LinePoint = import('../../proto/place/layout.ts').LinePoint;
@@ -43,30 +41,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     import('../../proto/place/home-station.ts'),
   ]);
   const { ORIGIN, lineAt, railY } = layout;
-  // The island map every board shows: each line's track from its first stop to its last, every 4 m then simplified
-  // to within 1.5 m, and its stops named as the halts are ("Village, line 2" is Village).
-  const Q: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  const mapLines: MapLine[] = TRAIN_STOPS.map((cm, k) => {
-    const line = layout.LINKS[k]!.line,
-      s0 = cm[0]! / 100,
-      s1 = cm[cm.length - 1]! / 100;
-    const at = (s: number) => (lineAt(line, s, Q), { x: Q.x + ORIGIN.x, z: Q.z + ORIGIN.z, s });
-    const dense = [];
-    for (let s = s0; s < s1; s += 4) dense.push(at(s));
-    dense.push(at(s1));
-    return {
-      color: LINE_MARK[k]!,
-      path: simplify(dense, 1.5),
-      laid: s1,
-      stops: cm.map((c, i) => ({
-        name: LINE_HALTS.find((h) => h.line === k && h.stop === i)!.name.split(',')[0]!,
-        ...at(c / 100),
-      })),
-    };
-  });
+  const mapLines = haltMapLines(layout);
+  const rows = haltRows(layout);
   // One display a halt, the Pier's too; the Home island's two edges share one.
-  const displays = layout.HALTS.filter((h) => !('island' in h && h.island) || h.line === 0).length + 1;
-  const boards = createIslandBoards(owner, mapLines, displays, 1.0, 0.8);
+  const boards = createIslandBoards(owner, mapLines, haltDisplays(layout).length, 1.0, 0.8);
   const addStatic = (
     shape: Parameters<typeof staticBody>[0],
     at: Parameters<typeof staticBody>[1],
@@ -265,12 +243,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         low + SHOW.mid,
         c.z - DISPLAY.across * sinY + DISPLAY.along * cosY,
       );
-      // The face's normal: toward the head ramp (-along), or toward the rails (+sign across).
-      const faceYaw = DISPLAY.faceAlong ? yaw + Math.PI : yaw + (sign > 0 ? Math.PI / 2 : -Math.PI / 2);
       const here = island
-        ? layout.HALTS.flatMap((h) => ('island' in h && h.island ? [{ line: h.line, stop: h.stop }] : []))
+        ? rows.filter((r) => r.island).map((r) => ({ line: r.line, stop: r.stop }))
         : [{ line: k, stop }];
-      return boards.add(at, faceYaw, 0.045, here);
+      return boards.add(at, displayYaw(yaw, lat, island), 0.045, here);
     })();
     let boardOn = false;
 
@@ -423,14 +399,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     };
     return halt;
   }
-  // Place's halts, then line 2's Pier halt (LINE_HALTS[5], Place's halt maths at s 719-741 m), which opens with Q6.
-  const PIER = LINE_HALTS.length - 1;
-  const rows = [
-    ...layout.HALTS,
-    { name: LINE_HALTS[PIER]!.name, line: 1 as const, s0: 719, s1: 741, lat: -2.9, stop: 3 },
-  ];
+  // Place's halts, then line 2's Pier halt (the last row), which opens with Q6.
+  const PIER = rows.length - 1;
   const halts = rows.map((h) =>
-    makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop, 'island' in h && !!h.island),
+    makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop, h.island),
   );
   let shown = false;
   const inside = halts.map(() => false);
