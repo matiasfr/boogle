@@ -1,5 +1,5 @@
-> **Status: proposed (2026-11-10).** Docs only. Next: one sim branch (`WORLD_NS` v25) for steps 1–3, then the client
-> steps in parallel. The owner answered five calls on 10 November (recorded in [decisions](../decisions.md)); the rest
+> **Status: steps 1–3 built (2026-11-10), awaiting review.** One sim branch (`WORLD_NS` v25) for steps 1–3; the client
+> steps 4–6 run in parallel on their own branch. Built differences are noted under "Sync and server cost". The owner answered five calls on 10 November (recorded in [decisions](../decisions.md)); the rest
 > are recommendations, logged in [agent-calls](../agent-calls.md).
 > **Built, client only (10 November):** step 4's Help carry (the quarry dismount check stays P3), step 5 and step 6.
 > Steps 1–3 and step 3's client half wait for the sim branch. Step 5 also stops offering **Turn the table** once the
@@ -90,7 +90,8 @@ The code is `trainStep` and `call` in `src/sim/railway-systems.ts`, and `fixedPr
    This is the run-through the triage saw. Note that place.md's "Trains come last" still says "with someone aboard a
    train runs straight through to the end of the line", but the live sim has no rider rule at all; place.md's line 591,
    "no mid-leg reversal or rider express", is the true one (finding 1).
-2. **One call slot per line.** `call` holds one stop, so a later call anywhere on the line overwrites yours.
+2. **One call slot per line.** Each line holds one call, and a later call replaces an earlier one, wherever on the
+   line it was made.
 3. **The call is sent once.** The client calls on stepping onto the halt (`on && !inside[k]`) and never again while you
    stand there. An overwritten call is lost until you step off and on again.
 4. **The train forgets which way it was going.** Serving a call behind it leaves `sweep` unchanged, so it comes back
@@ -185,6 +186,12 @@ Service stops are decided by the sim from state, so they never wait for a player
 - **State.** `Train.call` (one stop) becomes `Train.req`, a bitmask with two bits per stop, one per direction (at most
   8 bits). Line 2's leg row adds a start position and an entry speed: about three integers per train in state, the hash
   and the snapshot. It costs no bandwidth while running, because the pose is derived from them.
+  **As built:** `req` is a plain safe integer with room for 26 stops (two digits per stop, set with arithmetic, not
+  32-bit bit operators), so line 2's six stops in v26 need no schema change; and the leg row stores its destination in
+  cm too (`from`, `v0`, `dest`), so a halt that moves with the railhead never makes a running train jump (both at the
+  Ring Island systems review's request). The railway is Server kind, so the request is the server's accepted
+  `rail.call`, replicated, rather than a lockstep edit; the lever check uses the halt's platform reach and the rider
+  check is 10 m of the train's pose on a coarse line path, over the last 10 ticks.
 - **The op.** `rail.call {id, dir}`: a halt id and −1/+1 (ignored at an end). The **sim owns the request**: a server-
   stamped lockstep edit sets the bit, and the train's own tick clears it on the stop, so every tab and the headless
   server agree and it survives a save. The server validates the halt and `dir` with `railInt`, and the caller's

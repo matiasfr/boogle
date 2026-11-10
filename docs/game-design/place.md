@@ -236,8 +236,8 @@ All numbers are hypotheses until played, set with `node dev/economy/model.ts rou
    - **A pack frame:** a chest when the frame's up. An open timber frame with shoulder straps and a shallow canvas cradle, proportioned to Buddy and below the head so it stays clear of the follow view, **16 on your back**. Then 32 logs for walls and chimney, and the forge lights, roofless, and pours rails. The machine turns on the turntable for line 2.
    - **Line 2, station 1:** 16 logs and 6 rails: finite nearby trees for logs, the forge for rails. When it's laid, **the depot**: the camp builds its sawmill, and two little guys start shoving a cart of 24 logs down your track, over the turntable, to **a rack by the next frame**. You do the last carry. Rails stay yours to fetch from the forge through station 3, unless a partner loads the cart.
 6. **The long second route.** Four more frames, each bigger: 24 logs and 12 rails, over the stem of the gorge; 16 and 12, to the quarry; 16 and 16, across the table; 24 and 24, out over the sea, 260 m of trestle in one go, all the way to Far Head. **From station 4, the little guys bring rails too:** the same cart stops at the forge, loads real forge stock onto its logs, and heaves both onto the frontier rack. Rails land on their own low timber shelf beside the log cradle, visible even after the logs are taken. You still take the pieces and carry them into the frame. The cart holds 16 rails: station 4 fits one mixed shipment; station 5 gets a second rail shipment unless a partner brings the balance. An empty forge makes the cart wait for production. Bills, automatic-cart speed (9 m/s) and forge output are unchanged; a manually loaded cart with a rider now earns the co-op bonus below. Machine speeds rise, 5 m/s on line 1 to 9 m/s on the sea. Far Head gets rockets at both ends, a big "Far Head!" and lamps along the trestle.
-7. **Trains come last.** The forge has cast a boiler. It waits on the open apron beside the rail rack and return track, at local (-81, 5.4), rather than behind the forge. The mesh and pickup share that position. It's 546 m home, about 98 s, and the walk is meant to be felt. **Pick up** the boiler and haul it on the great beam's gold rope over your bridge to the old train at the camp (its nose at your hip, its tail dragging and scuffing dust, sprint off, 3 m/s; a friend's **Help carry** lifts it between you and the pair walk at 5.4 m/s, about a free walk; boiler-first-choice plan, step 6), **Fit the boiler**: it wakes as the machine did, with steam, wheels and whistle, and no words. Then the biggest show since the first path: **TRAINS**, and the stations drop into place all along both lines. Line 1's train runs camp to village, line 2's village to quarry to Far Head, at 20 m/s. With someone aboard a train runs straight through to the end of the line. **Station 6 waits for the train** (boiler-first-choice plan, steps 1 and 3; owner, 9 November): until trains run, its frame takes no logs or rails by hand and shows no bill, its rack and rails shelf offer no **Pick up** or **Take rails** (leftover logs from station 5 stay on the rack and count towards the kit), and the forge rack offers no **Take rails**. The rack's sign shows the old train's own loco side-on, its missing boiler a dashed gold outline in the rope's gold, pulling one wagon heaped with a log and a rail; no number. Walk into the frame's reach carrying anything and the sign answers once, wordlessly: one bob, one steam puff from the drawn chimney and a soft tick (the puff only under reduced motion); it answers again only after you leave. The first train's unload is when the sign flips back to the log count and the frame takes its kit: a station 6 part-filled by hand before this keeps its stock and the train brings the rest.
-8. **Stations and calling a train.** There are no platforms until there are trains, so what they're for is obvious: a platform with a bright edge, a roof, a bench, a signal and a board, one at each stop. **Stand on one and a train comes straight there:** the signal drops, it clanks, and the board says how long. No timetable to learn and nothing to operate. Otherwise trains shuttle with their cargo.
+7. **Trains come last.** The forge has cast a boiler. It waits on the open apron beside the rail rack and return track, at local (-81, 5.4), rather than behind the forge. The mesh and pickup share that position. It's 546 m home, about 98 s, and the walk is meant to be felt. **Pick up** the boiler and haul it on the great beam's gold rope over your bridge to the old train at the camp (its nose at your hip, its tail dragging and scuffing dust, sprint off, 3 m/s; a friend's **Help carry** lifts it between you and the pair walk at 5.4 m/s, about a free walk; boiler-first-choice plan, step 6), **Fit the boiler**: it wakes as the machine did, with steam, wheels and whistle, and no words. Then the biggest show since the first path: **TRAINS**, and the stations drop into place all along both lines. Line 1's train runs camp to village, line 2's village to quarry to Far Head, at 20 m/s. Trains stop on request (owner, 10 November): a train stops at a middle halt only when someone asked it to, from the halt's lever or aboard, and otherwise runs straight through (step 8 and "Stop on request" below). **Station 6 waits for the train** (boiler-first-choice plan, steps 1 and 3; owner, 9 November): until trains run, its frame takes no logs or rails by hand and shows no bill, its rack and rails shelf offer no **Pick up** or **Take rails** (leftover logs from station 5 stay on the rack and count towards the kit), and the forge rack offers no **Take rails**. The rack's sign shows the old train's own loco side-on, its missing boiler a dashed gold outline in the rope's gold, pulling one wagon heaped with a log and a rail; no number. Walk into the frame's reach carrying anything and the sign answers once, wordlessly: one bob, one steam puff from the drawn chimney and a soft tick (the puff only under reduced motion); it answers again only after you leave. The first train's unload is when the sign flips back to the log count and the frame takes its kit: a station 6 part-filled by hand before this keeps its stock and the train brings the rest.
+8. **Stations and asking a train to stop.** There are no platforms until there are trains, so what they're for is obvious: a platform with a bright edge, a roof, a bench, a signal, a request lever and a board, one at each stop. **Pull the lever at the foot of the signal mast** (**Request stop**): the handle stays over, its lamp lights, the signal's arm drops with a clank, and the next train heading your way stops. A middle halt (the quarry, and Far Head once the pier is open) has two handles, each on a plaque naming the end it goes to. Aboard, Interact offers **Request stop: <halt>** for the next halt the train can still brake for; the bell rings for everyone aboard and an amber lamp lights on the engine's cab roof until it stops. Standing on a platform no longer calls anything. Otherwise trains run end to end with their cargo.
 9. **Cargo.** Timber crates land on the dock and the crane lifts each onto the forge: 8 of them put its **roof** on, the poles come down, and it pours rails twice as fast (hands started it, trains finish it). After that timber goes to the village's heap and the town answers at 6 and 16 crates, buildings rising on scaffolding. Stone from the quarry builds the stone street the same way. A crate sails to the first plot of each step-up.
 10. **The pier.** The first train out of the village carries the whole kit, 8 crates, to the rack at Far Head: 32 rails and 32 logs, a short carry to the last frame. The machine lays the pier north over the sea towards the shard. Rockets, and a pull-out down the buoys to the island, with "Thanks for playing!". The pier and buoys point toward the shard and nothing stops: the trains keep running.
 
@@ -616,9 +616,28 @@ its roof lifts off and each wall within 0.8 m of the camera's side (or past it) 
 out. Colliders stay and a shadow-only shell keeps the cab's shade. A friend outside sees the cab whole. Local, no state.
 Not tested on a device.
 
-Standing on a halt calls its train from the player's accepted position. A running train finishes its current leg
-before acting on the call; there is no mid-leg reversal or rider express. The two Server-owned lines run at
-20 m/s: camp–village, and village–quarry–Far Head, including the quarry dwell. Owner platform carry keeps a rider
+**Stop on request (10 November 2026; [works-late-game](../plans/works-late-game.md), step 1; `WORLD_NS` v25).** A
+train stops at a halt only when that halt has a request in the train's direction, at an end of its line, or at a
+service stop the sim decides; otherwise it runs straight through at cruise. A request is one digit per halt per
+direction on the train's row (`req`, a safe integer with room for 26 stops); an end halt has one, its way out. The
+lever's handle and a passenger's press set the same digit, so a repeat or a friend's same ask moves nothing, and a
+later request never replaces an earlier one (until 10 November each line held one call and a later call replaced it).
+The server takes `rail.call {id, dir}` from the halt's platform or from within 10 m of the train's pose (a coarse
+line path in `src/sim/railway-line-path.ts`), and the train's own tick clears the digit as it leaves the halt that way.
+A request made mid-run replaces the leg from the train's pose that tick, at its speed, when it can still brake for the
+halt (about 57 m at cruise); inside that it waits for the next train that way, and the passenger's prompt already
+names the following halt. A leg row holds its start, entry speed and destination in cm (`from`, `v0`, `dest`), and the
+pose reads only the row, so a stop that moves never makes a running train jump. With requests only behind it a train
+turns back early at the next halt it can stop at (LOOK, as lifts do); with nothing asked anywhere it sweeps end to end.
+The service stops need no request: Far Head while the Q6 kit is aboard, the quarry going out while the footing wagon
+has room, the Works rack a footing and the pier a need, and the pier while the wagon carries footings; the wagon's
+roll-out counts as a request at line 2's village end. Dwell is 5 s at every stop (the 1.5 s call dwell is gone), and a
+request at the halt a train stands at, leaving that way, restarts its dwell. Owner calls behind it: "Stop on request"
+and the passenger request (decisions, 10 November); the two handles, LOOK turn-backs and replanning are recommended
+details logged in the plan. Not tested on a device.
+
+The two Server-owned lines run at
+20 m/s: camp–village, and village–quarry–Far Head. Owner platform carry keeps a rider
 aboard; train schedules receive no away credit. The first line-2 service moves Q6's kit from the forge: 32 minted
 logs and 32 already-poured rails, aboard the train, then atomically onto Far Head's rack and shelf. Every unit
 stays in the existing conservation accounts. The bot reads those counts from state, independently of rack artwork.
@@ -644,13 +663,19 @@ plume and whistle. **Take the breaker** is once for the room. **Strike the seam*
 turntable opens the old Roundhouse stall (two empty sockets, a tarped shunter and wagon); at the quarry halt the same
 strike topples the split rock's throat and opens the haul cut. **Fill the kiln** at the cut takes 16 logs and 16
 stone (the bowl's two limestone rocks give 8 each); once lit it casts a footing every 8 s down the roller road onto
-the halt rack, at most six on the rack and exactly sixteen in all.
+the halt rack, at most six on the rack and exactly fourteen in all (sixteen until 10 November).
 
-A footing (**Shoulder a footing**) fills your back and slows you to the great beam's pace (a friend's **Help carry**
-speeds it). Four go home by hand, the deliberate "before": two raise the stall frame and pull its tarp off, two seat
-the wagon's cradle, and eight forge rails (**Fit the cradle**) turn it brass. **Turn the table** sends the shunter
-pushing the wagon out to wait on line 2; the table holds (in the rules, not only the view) until line 2 couples it, so
-no one can call a friend's wagon home. From then the wagon is line 2's fourth car: arriving at the quarry, up to six
+A footing (**Shoulder a footing**) fills your back and slows you to its own pace, 3 m/s alone (a sprint goes 1.3 times
+that) and 5.4 m/s with a friend's **Help carry** (no sprint), the `railway.footSoloSpeed` and `footHelpSpeed` room
+tunables (until 10 November it borrowed the great beam's 2.2 and 5 m/s). The plain jump works; the second jump, the
+glide and the hook are off while you carry one, so a work item opens no new travel edge. Two go home by hand, the
+deliberate "before": they raise the stall frame and pull its tarp off. The cradle takes only its eight forge rails
+(**Fit the cradle**), which turn it brass (it took two footings too until 10 November;
+[works-late-game](../plans/works-late-game.md), step 2). **Turn the table** is accepted only when ready (owner, 10
+November): once the cradle is fitted and before the wagon rolls out, so the one turn there is sends the shunter
+pushing the wagon out to wait on line 2. Earlier, while it rolls out, and after line 2 couples it, a turn is refused
+and the prompt isn't offered (until 10 November a turn before the fit was accepted and did nothing, and after
+coupling the table was a toy). From then the wagon is line 2's fourth car: arriving at the quarry, up to six
 footings hop from the Works rack onto its cradle; arriving at the new **Pier** halt (open once Q6 is laid), they hop
 onto the pier rack. Line 2 stands there 3.5 m short of the halt's middle, so its engine stops clear of the
 track layer parked at the rails' end (engine A, 10 November: 1.0 m nearer than the old loco, and at least the 1 m wanted
@@ -1657,14 +1682,15 @@ land with a thump and dust, sink, and leave rubble, and whoever struck gets the 
 the kiln** at the open cut stacks logs across the frame and stone in the hopper. When it lights there are chuffs,
 sparks, a rush up the chimney and a glowing mouth; each cast rolls a footing 4 s down the roller road onto the rack.
 A footing (**Shoulder a footing**) is a pale block with an iron band, carried high on your back with a stoop. You
-walk at the beam's solo speed, or the beam's help speed when a friend uses **Help carry** (presence; **Let go** ends
-it). Your drop control puts it down as a block on the ground. At the stall, **Set the footing** lowers each one into
-its socket; the second raises the frame in 3 s of pieces and slides the tarp off. **Fit the cradle** bolts seats and
-rail arms onto the wagon until they turn brass. **Turn the table** sends one choreography from the accepted roll-out
+walk at a footing's own pace (3 m/s, sprint 1.3 times that), or 5.4 m/s when a friend uses **Help carry** (presence;
+**Let go** ends it). Your drop control puts it down as a block on the ground. At the stall, **Set the footing** lowers
+each one into its socket; the second raises the frame in 3 s of pieces and slides the tarp off. **Fit the cradle**
+bolts the rail arms onto the wagon until they turn brass. **Turn the table** sends one choreography from the accepted roll-out
 (works-late-game step 5, Local): the shunter pushes the wagon onto the disc, the disc turns 2 s with both on it, the
 wagon rolls off onto line 2 to wait, and the shunter backs on alone, turns back and returns to the stall. Each vehicle
-sits between its two bogies, so headings ease through every corner. The table no longer turns on the press; it isn't
-offered while a turn is pending or once the wagon is commissioned (owner, 10 November: not a toy after the wagon
-leaves). The stall's finished roof pitches up to its ridge from eaves on the ruin's posts, its walls closed to the
-eaves. The bowl's trees are cleared locally, and its two limestone rocks
+sits between its two bogies, so headings ease through every corner. The table no longer turns on the press; it is
+offered only once the cradle is fitted (the sim refuses a turn before), and never while a turn is pending or once the
+wagon is commissioned (owner, 10 November: only when ready, and not a toy after the wagon leaves). The stall's finished
+roof pitches up to its ridge from eaves on the ruin's posts, its walls closed to the eaves. The bowl's trees are
+cleared locally, and its two limestone rocks
 are chopped like line 1's. Serves DESIGN.md **7. Telegraph everything** and **8. Enjoyable alone and together**. Not tested on a device.
