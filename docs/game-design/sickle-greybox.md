@@ -20,8 +20,10 @@ greybox, since the live trains are server-owned.
 
 Every future line is a train service in `src/sickle/world-lines.ts` (generated with the
 [world-blockout page](../world/world-blockout.html) by `dev/level/world-blockout.ts`), in the sim's own shape: world-cm
-track vertices, stops along the line, halts and the train's speed. Each halt gets a 40 m platform beside its stop in both
-blockouts. The greybox panel's **full loop** rides line 2's real rails from the Village halt, the crossing's bow, the
+track vertices, stops along the line, halts and the train's speed. Every corridor is double track (owner, 10 November):
+two tracks on 4 m centres on a 7.6 m deck, a 40 m platform outside each track at every halt, and a crossover or a 40 m
+turning loop at every terminus. Lines 1 and 2 stay single track; both blockouts draw a pale, non-solid second-track bed
+4 m off them, with an orange post where it would meet a platform, the turntable or works. The greybox panel's **full loop** rides line 2's real rails from the Village halt, the crossing's bow, the
 stack line, the White Wall line, the crane lift, the breakwater and the sea cave to the West landing: 8.7 km.
 
 The map page's `#map-data` owns route points and optional per-point `heights` (metres above sea; null uses the station or terrain deck). Sea decks sit at 4 m except clearance approaches; the first crossing bows from the pier's 24.3 m to 6 m at the railhead (Ring Island brief); stations, places and land scale stay fixed. The bay shortcut, bay trestle, first crossing, Bell–Canopy and lantern causeway have a roughly 20° heading change at the last third. The south White Wall route follows the bay side at the chalk's foot. Other links retain their necessary coast and clearance turns.

@@ -25,7 +25,8 @@ client: `?blockout=world` (walkable massing, visual track).
 ## Headline numbers
 
 - **9 areas**, Home to the ending, every one visited in one playthrough (no optional areas).
-- **8 future lines, 21 halt stops**, over **14.6 km** of future track (13 map links), on top of line 2's 0.74 km built.
+- **8 future lines, 21 halt stops**, over **14.6 km** of future corridor (13 map links), on top of line 2's 0.74 km
+  built. Every corridor is **double track**, so that is **29.2 km of track**, plus 11 crossovers and 4 turning loops.
 - **The full loop**, Home, Ring Island, High Gorge, the White Wall, High Port and the sea cave home, is **8.7 km**: 7:15
   at 20 m/s cruising, 5:48 at 25 m/s, before stops.
 - **6.1 hours** to the ending solo (5.8 two, 5.5 three), the model's figure, unchanged; the end-game tier after it.
@@ -171,11 +172,50 @@ is the second choice (ring-and-economy, open question 1).
    3.5 km, so once an area's shore is real it needs its own texture (or a coarser far cell). Ring Island alone already
    stretches it to about 2 km (the brief's own risk).
 10. **The bay trestle's hump.** As drawn it climbs to 84 m mid-bay; nothing there needs clearing. Lower it if it stays.
+11. **The crossing's built bents carry one track.** The six bents (Split-rock J5) are one 3.6 m deck wide; double track
+    needs a 7.6 m deck, so Ring Island build 1's bow redraw should widen them (or stand a second row 4 m east), and line
+    2's single track meets the double crossing at the pier head with a turnout.
+
+## Double track
+
+Owner direction, 10 November: every rail corridor is double track, existing and future.
+
+- **Formation.** Two tracks on **4 m centres**. The gauge is Place's own (rails 0.5 m either side of a track's centre,
+  `src/proto/place/rail.ts`, on a 3.6 m deck; `src/sim/railway-line-layout.ts` has no gauge, only centimetres along the
+  line), so the double formation is **7.6 m** wide, on bridges, trestles, cuttings, tunnels and the pier crossing alike.
+  4 m is generous for a 1 m gauge; it leaves room for a person between passing trains.
+- **Stations.** A 40 m platform outside each track (centres 5.8 m off the corridor's middle), so the track centres stay
+  4 m through every halt. An island platform would need the tracks spread to about 9 m at each station.
+- **Turnbacks.** Every terminus turns a train back without reversing it. Where the line ends on a small skerry, a
+  slope or a junction, a **scissors crossover** 35 m inside the terminus halt: Ring top (both lines), High Gorge, Bell
+  Rock (three lines), the West landing (both lines), High Port (the White Wall line). Where the island has room, a
+  **40 m-radius turning loop** past the end: Canopy Town (bay line), High Port (cave line), Lantern Notch and the
+  Original Island. In the data: `FORMATION` and each line's `ends`.
+- **Today's lines stay single track.** Lines 1 and 2 are not moved. The blockout draws a pale, non-solid second-track
+  bed 4 m off each on the side with fewer clashes (line 1 and line 2 both on the left of their drawn direction), with an
+  orange post wherever it meets something. The spots, from `LIVE_SECOND_TRACK` (sampled every 2 m):
+
+  | Line | Along the line | Meets | Other side free? |
+  | --- | --- | --- | --- |
+  | Line 1 | 0–4 m | The turntable (both lines start on it) | No: the table takes one track; the second track ends at a turnout before it |
+  | Line 1 | 6–32 m | The Village platform | No: line 2's Q1 frame stands 4 m off the other side at 6–8 m. The second track needs the platform moved out 4 m, or an island platform |
+  | Line 1 | 112–114 m | A drop over 6 m and a bank (the ridge climb) | Yes: the right side has room there |
+  | Line 2 | 0–4 m | The turntable | No, as line 1 |
+  | Line 2 | 732–734 m | The pier rack | Yes there, but the pier frame stands as close on the other side 8 m on: the pier head needs its rack or frame moved either way |
+
+  The other sides, for comparison: line 1's right meets the Q1 frame, the old train at the camp and the Camp platform;
+  line 2's right meets all four of its platforms (Village, Quarry, Far Head) and the pier frame, which is why both go
+  left.
+
+  Everywhere else a second track fits beside today's lines, the sea trestle and the pier included (they only need the
+  deck widened). This is a note for the plan, not a change to the live lines.
 
 ## Phase 2: the 3D blockout
 
-- **The dev greybox** (`?greybox=sickle`, dev server only, out of the production bundle as before) now has a 40 m
-  platform beside every halt in the line catalog, lines that can be ridden against their drawn direction, and **the full
+- **The dev greybox** (`?greybox=sickle`, dev server only, out of the production bundle as before) now draws every
+  future corridor double track (a 7.6 m deck with two track beds), a 40 m platform outside each track at every halt in
+  the line catalog, the crossovers and turning loops, a pale second-track survey bed beside lines 1 and 2, rides on the
+  left-hand track that can run a line against its drawn direction, and **the full
   loop** as one ride: line 2's real rails from the Village halt, the crossing over the bow, the stack line, both halves
   of the White Wall line backwards, the crane lift, the breakwater and the sea cave to the West landing.
 - **The live client** (`?blockout=world`, any build, a lazy chunk the bare game never loads): the same islands,
@@ -202,7 +242,10 @@ script above and checked current by `test/world-lines.test.ts`. Its shape follow
   rail end (`fromCm` 74300), so its stops append to line 2's;
 - `halts`: `{ name, stop, x, z, y, reach }`, like `LINE_HALTS`;
 - `speed` and `accel`: `TRAIN.speed` (200 cm a tick, 20 m/s) and `TRAIN.accel`;
-- `legs`: which map link each stretch runs over and the stage it is built at, for each branch order.
+- `legs`: which map link each stretch runs over and the stage it is built at, for each branch order;
+- `ends`: each terminus's turnback, a crossover at `sCm` or a loop centred at `(x, z)`; `FORMATION` holds the double
+  track's centres, gauge, deck, platform offset and loop radius;
+- `LIVE_SECOND_TRACK`: the side and the clashes of a second track beside lines 1 and 2, in centimetres along them.
 
 It is pure integers with no imports, written to src/sim's rules, so the follow-up moves it into `src/sim/` unchanged
 (`git mv`). Today only the client's blockout reads it, and the rails it describes are visual, not sim state.
@@ -224,7 +267,10 @@ The follow-up comes after the v25 rules land, because it touches the same files 
    (a mask per line), the halts' request levers and aboard requests addressed by `(line, stop)`.
 5. **Speed per line.** The speed ladder (20 → 25 → 30 → 40 m/s) per train or per network, with `trainLegTicks` taking
    the line's speed and acceleration instead of the one `TRAIN`.
-6. **Junctions.** Walk-between platforms first: no through-running, no shared track between lines, so no signalling.
+6. **Junctions and double track.** Walk-between platforms first: no through-running and no shared track between
+   lines. With two tracks a line can run one train each way, each on its own track, meeting only at the crossovers and
+   loops at its ends, so a line needs at most a reservation of its terminus turnback (one bit), not signalling. Line 1
+   and line 2 stay single track (one train each) until their second tracks are laid.
 7. **Views.** The client's train view follows a line's `pts` rather than Place's `LINES` (it already does for line 2 via
    the layout); the halt boards' island map gains the new lines.
 8. **WORLD_NS.** New state rows and a changed stop catalog are a clean break: **one `WORLD_NS` bump**, owner-called and

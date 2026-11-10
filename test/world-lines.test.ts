@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { WORLD_LINES } from '../src/sickle/world-lines.ts';
+import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../src/sickle/world-lines.ts';
 import { TRAIN, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { LINES, ORIGIN } from '../src/proto/place/layout.ts';
 
@@ -41,6 +41,31 @@ test('every future line is integer centimetres, with stops on the line and a hal
       for (const v of [h.x, h.z, h.y, h.reach]) assert.ok(Number.isInteger(v));
     });
   }
+});
+
+test('every corridor is double track, and every terminus turns a train back', () => {
+  assert.equal(FORMATION.tracks, 2);
+  assert.ok(FORMATION.centresCm >= 400, 'track centres about 4 m apart');
+  // a 4 m platform's inner edge clears its track's 3.6 m deck
+  assert.ok(FORMATION.platformCm - 200 >= FORMATION.centresCm / 2 + 180);
+  for (const l of WORLD_LINES) {
+    const want = l.extends === null ? ['start', 'end'] : ['end'];
+    assert.deepEqual(
+      l.ends.map((e) => e.at),
+      want,
+      `${l.id} turns back at each terminus`,
+    );
+    for (const e of l.ends) {
+      assert.ok(e.sCm >= l.fromCm && e.sCm <= l.fromCm + l.lengthCm, `${l.id} ${e.at} on the line`);
+      if (e.kind === 'crossover')
+        for (const s of l.stops)
+          assert.ok(Math.abs(e.sCm - s) >= 2000 + 1200, `${l.id}'s crossover clears its platforms and their approach`);
+    }
+  }
+  assert.deepEqual(
+    LIVE_SECOND_TRACK.map((t) => t.line),
+    [0, 1],
+  );
 });
 
 test("line 2's extension starts at line 2's rail end and counts on from it", () => {

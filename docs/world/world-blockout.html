@@ -163,6 +163,16 @@
         stroke: var(--ink);
         stroke-width: 8;
       }
+      svg .loop {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 7;
+      }
+      svg .cross {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 9;
+      }
       svg text {
         fill: var(--ink);
         font:
@@ -515,6 +525,35 @@
           <circle class="halt" cx="-2605" cy="-987" r="26"><title>Lantern Notch (Notch line)</title></circle>
           <circle class="halt" cx="-1051" cy="-830" r="26"><title>Bell Rock (Lantern causeway)</title></circle>
           <circle class="halt" cx="-1006" cy="-135" r="26"><title>Original Island (Lantern causeway)</title></circle>
+          <path class="cross" d="M325,-1090L369,-1046M325,-1046L369,-1090">
+            <title>Line 2 to Ring Island: crossover</title>
+          </path>
+          <path class="cross" d="M265,-1176L309,-1132M265,-1132L309,-1176"><title>Stack line: crossover</title></path>
+          <path class="cross" d="M-1068,-927L-1024,-883M-1068,-883L-1024,-927">
+            <title>Stack line: crossover</title>
+          </path>
+          <path class="cross" d="M-255,-55L-211,-11M-255,-11L-211,-55"><title>Bay line: crossover</title></path>
+          <circle class="loop" cx="-2127" cy="-330" r="40"><title>Bay line: turning loop</title></circle>
+          <path class="cross" d="M253,-1138L297,-1094M253,-1094L297,-1138"><title>Bay trestle: crossover</title></path>
+          <path class="cross" d="M-1022,-895L-978,-851M-1022,-851L-978,-895">
+            <title>Bay trestle: crossover</title>
+          </path>
+          <path class="cross" d="M-237,96L-193,140M-237,140L-193,96"><title>Cave line: crossover</title></path>
+          <circle class="loop" cx="-1326" cy="1150" r="40"><title>Cave line: turning loop</title></circle>
+          <path class="cross" d="M-1359,1117L-1315,1161M-1359,1161L-1315,1117">
+            <title>White Wall line: crossover</title>
+          </path>
+          <path class="cross" d="M-1149,-1961L-1105,-1917M-1149,-1917L-1105,-1961">
+            <title>White Wall line: crossover</title>
+          </path>
+          <path class="cross" d="M-2149,-370L-2105,-326M-2149,-326L-2105,-370">
+            <title>Notch line: crossover</title>
+          </path>
+          <circle class="loop" cx="-2595" cy="-1031" r="40"><title>Notch line: turning loop</title></circle>
+          <path class="cross" d="M-1075,-817L-1031,-773M-1075,-773L-1031,-817">
+            <title>Lantern causeway: crossover</title>
+          </path>
+          <circle class="loop" cx="-1038" cy="-104" r="40"><title>Lantern causeway: turning loop</title></circle>
           <text class="place" x="-55" y="-26">Home</text>
           <text class="place" x="143" y="12">Split-rock Works</text>
           <text class="stop" x="447" y="-412">Pier</text>
@@ -846,6 +885,111 @@
               <td>0.75</td>
               <td>0:48</td>
               <td>0:39</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Double track</h2>
+      <p class="muted">
+        Every corridor is two tracks on 4 m centres (the gauge is Place's 1 m, on a 3.6 m deck: a 7.6 m formation),
+        bridges, cuttings, tunnels and the pier crossing included. Every halt has a platform outside each track. Each
+        terminus turns a train back without reversing: a crossover (✕) inside the platforms, or a 40 m-radius turning
+        loop (○) where the island has room.
+      </p>
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th>Line</th>
+              <th>Turnbacks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Line 2 to Ring Island</td>
+              <td>Ring top: crossover</td>
+            </tr>
+            <tr>
+              <td>Stack line</td>
+              <td>Ring top: crossover; Bell Rock: crossover</td>
+            </tr>
+            <tr>
+              <td>Bay line</td>
+              <td>West landing (bay): crossover; Canopy Town: turning loop</td>
+            </tr>
+            <tr>
+              <td>Bay trestle</td>
+              <td>Ring top: crossover; Bell Rock: crossover</td>
+            </tr>
+            <tr>
+              <td>Cave line</td>
+              <td>West landing (cave): crossover; High Port: turning loop</td>
+            </tr>
+            <tr>
+              <td>White Wall line</td>
+              <td>High Port: crossover; High Gorge: crossover</td>
+            </tr>
+            <tr>
+              <td>Notch line</td>
+              <td>Canopy Town: crossover; Lantern Notch: turning loop</td>
+            </tr>
+            <tr>
+              <td>Lantern causeway</td>
+              <td>Bell Rock: crossover; Original Island: turning loop</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">
+        Today's single-track line 1 and line 2 stay where they are. A second track 4 m off them meets these:
+      </p>
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th>Where</th>
+              <th>Along the line</th>
+              <th>Meets</th>
+              <th>Other side free</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Line 1, left side</td>
+              <td>0–4 m</td>
+              <td>the turntable</td>
+              <td>no</td>
+            </tr>
+            <tr>
+              <td>Line 1, left side</td>
+              <td>6–32 m</td>
+              <td>the Village platform</td>
+              <td>no</td>
+            </tr>
+            <tr>
+              <td>Line 1, left side</td>
+              <td>112–112 m</td>
+              <td>a drop over 6 m</td>
+              <td>yes</td>
+            </tr>
+            <tr>
+              <td>Line 1, left side</td>
+              <td>114–114 m</td>
+              <td>a bank</td>
+              <td>yes</td>
+            </tr>
+            <tr>
+              <td>Line 2, left side</td>
+              <td>0–4 m</td>
+              <td>the turntable</td>
+              <td>no</td>
+            </tr>
+            <tr>
+              <td>Line 2, left side</td>
+              <td>732–734 m</td>
+              <td>the Pier rack</td>
+              <td>yes</td>
             </tr>
           </tbody>
         </table>

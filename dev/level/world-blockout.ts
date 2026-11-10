@@ -6,7 +6,19 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as prettier from 'prettier';
-import { LINES } from '../../src/proto/place/layout.ts';
+import {
+  HALTS,
+  LINES,
+  ORIGIN,
+  ROOM_PLOTS,
+  SPIRE,
+  TOWN,
+  TURNTABLE,
+  FORGE,
+  lineAt,
+  railY,
+} from '../../src/proto/place/layout.ts';
+import { H } from '../../src/proto/place/terrain.ts';
 import { layout, parseMapPage, polyLen, smoothRing, type XZ } from '../../src/sickle/map-data.ts';
 import { createGround } from '../../src/proto/greybox/ground.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
@@ -20,6 +32,24 @@ const STILLS = 'docs/world/world-blockout';
 type Leg = { id: string; reverse?: boolean };
 type HaltSpec = { name: string; place?: string; at?: 'end' | 'start'; nearPt?: XZ };
 type Service = { id: string; name: string; extends?: 1; legs: Leg[]; halts: HaltSpec[]; note: string };
+type Turn = 'crossover' | 'loop' | null;
+
+/** Every corridor is double track (owner, 10 November): two tracks on 4 m centres. The gauge is Place's: rails 0.5 m
+ * either side of the centre (src/proto/place/rail.ts), on a 3.6 m deck, so the formation is 7.6 m wide. Halts get a
+ * platform outside each track. */
+export const FORMATION = { tracks: 2, centresCm: 400, gaugeCm: 100, deckCm: 760, platformCm: 580, loopCm: 4000 };
+/** How each line's ends turn a train back without reversing it: a scissors crossover just short of the terminus
+ * platform, or a single-track balloon loop past it where the island has room. Null: the line runs on (line 2's end). */
+const TURNBACKS: Record<string, [start: Turn, end: Turn]> = {
+  ring: [null, 'crossover'],
+  stack: ['crossover', 'crossover'],
+  bay: ['crossover', 'loop'],
+  'bay-trestle': ['crossover', 'crossover'],
+  cave: ['crossover', 'loop'],
+  wall: ['crossover', 'crossover'],
+  notch: ['crossover', 'loop'],
+  causeway: ['crossover', 'loop'],
+};
 
 /** The future lines as train services: which map links each runs over, in order, and where it stops. */
 export const SERVICES: Service[] = [
@@ -153,6 +183,7 @@ type Built = {
   legs: { id: string; reverse: boolean; fromCm: number; toCm: number; stage: [number | null, number | null] }[];
   stops: number[];
   halts: { name: string; stop: number; x: number; z: number; y: number; reach: number }[];
+  ends: { at: 'start' | 'end'; kind: 'crossover' | 'loop'; sCm: number; x: number; z: number; y: number }[];
   note: string;
 };
 
@@ -217,6 +248,33 @@ function build(svc: Service): Built {
     const [x, z, y] = at(stops[stop]!);
     return { name: h.name, stop, x, z, y, reach: 1260 };
   });
+  // The crossover's middle stands 35 m inside the terminus halt (clear of its 40 m platforms); a loop's centre stands
+  // one radius to the side of the line's end, so the circle touches the line there and a train runs round it and back.
+  const ends: Built['ends'] = [];
+  (['start', 'end'] as const).forEach((side, k) => {
+    const kind = TURNBACKS[svc.id]![k];
+    if (!kind) return;
+    const tip = side === 'start' ? fromCm : s;
+    const stop = stops[side === 'start' ? 0 : stops.length - 1]!;
+    if (kind === 'crossover') {
+      const sCm = side === 'start' ? stop + 3500 : stop - 3500;
+      const [x, z, y] = at(sCm);
+      ends.push({ at: side, kind, sCm, x, z, y });
+    } else {
+      const [x0, z0, y] = at(tip),
+        [x1, z1] = at(side === 'start' ? tip + 500 : tip - 500);
+      const len = Math.hypot(x0 - x1, z0 - z1) || 1;
+      const r = FORMATION.loopCm;
+      ends.push({
+        at: side,
+        kind,
+        sCm: tip,
+        x: Math.round(x0 - ((z0 - z1) / len) * r),
+        z: Math.round(z0 + ((x0 - x1) / len) * r),
+        y,
+      });
+    }
+  });
   return {
     id: svc.id,
     name: svc.name,
@@ -227,10 +285,73 @@ function build(svc: Service): Built {
     legs,
     stops,
     halts,
+    ends,
     note: svc.note,
   };
 }
 export const BUILT = SERVICES.map(build);
+
+// ---------------------------------------------------------------- the second track beside today's line 1 and line 2
+// The live lines stay put: for each, which side a second track 4 m off would go, and where it meets something. Sampled
+// every 2 m: a halt's platform on that side, a building, the turntable, the forge or the Needle Bell within reach, or
+// ground beside that is far off the rail (a cutting or bank over 2.5 m; a cliff or gorge over 6 m).
+type Clash = { fromCm: number; toCm: number; reason: string };
+function secondTrack(lineIndex: 0 | 1) {
+  const line = lineIndex === 0 ? LINES.north : LINES.east;
+  const p = { x: 0, z: 0, ux: 0, uz: 0 };
+  const off = FORMATION.centresCm / 100;
+  const plots = [...TOWN.start, ...TOWN.wood.flat(), ...TOWN.stone.flat(), ...TOWN.camps.flatMap((c) => c.awake)];
+  const things = [
+    ...plots.map((b) => ({ x: b.x, z: b.z, r: Math.max(b.w ?? 5, b.d ?? 5) / 2 + 1.5, what: 'a building' })),
+    ...Object.values(ROOM_PLOTS).map((b) => ({ x: b.x, z: b.z, r: Math.max(b.w, b.d) / 2 + 1.5, what: 'a building' })),
+    { x: FORGE.x, z: FORGE.z, r: Math.max(FORGE.w, FORGE.d) / 2 + 1.5, what: 'the forge' },
+    { x: TURNTABLE.x, z: TURNTABLE.z, r: TURNTABLE.r + 2, what: 'the turntable' },
+    { x: SPIRE.x, z: SPIRE.z, r: 14, what: 'the Needle Bell' },
+    // line 2's works beside the track (frames, racks, levers), pinned in the map JSON from the railway catalog
+    ...A.works
+      .filter((w) => w.kind !== 'halt' && w.id !== 'bents' && w.id !== 'turntable')
+      .map((w) => ({ x: w.at[0], z: w.at[1], r: 2.5, what: `the ${w.name.replace(/ \(.*\)$/, '')}` })),
+  ];
+  const sides = ([-1, 1] as const).map((side) => {
+    const clashes: Clash[] = [];
+    for (let s = 0; s <= line.len; s += 2) {
+      lineAt(line, s, p);
+      // the side normal: -1 is left of the line's drawn direction, +1 right
+      const x = p.x - p.uz * off * side,
+        z = p.z + p.ux * off * side;
+      const y = railY(line, s);
+      const centre = H(p.x + ORIGIN.x, p.z + ORIGIN.z),
+        beside = H(x + ORIGIN.x, z + ORIGIN.z);
+      const onGround = Math.abs(y - centre) < 1.5;
+      let reason = '';
+      const halt = HALTS.find(
+        (h) => h.line === lineIndex && s >= h.s0 - 2 && s <= h.s1 + 2 && Math.sign(h.lat) === side,
+      );
+      if (halt) reason = `the ${halt.name} platform`;
+      const thing = things.find((t) => Math.hypot(t.x - x, t.z - z) < t.r);
+      if (!reason && thing) reason = thing.what;
+      if (!reason && onGround && Math.abs(beside - y) > 6)
+        reason = beside > y ? 'a rock face over 6 m' : 'a drop over 6 m';
+      if (!reason && onGround && Math.abs(beside - y) > 2.5) reason = beside > y ? 'a cutting' : 'a bank';
+      if (!reason) continue;
+      const last = clashes.at(-1);
+      const cmAt = Math.round(s * 100);
+      if (last && last.reason === reason && cmAt - last.toCm <= 400) last.toCm = cmAt;
+      else clashes.push({ fromCm: cmAt, toCm: cmAt, reason });
+    }
+    const metres = clashes.reduce((n, c) => n + (c.toCm - c.fromCm) / 100 + 2, 0);
+    return { side, clashes, metres };
+  });
+  const best = sides[0]!.metres <= sides[1]!.metres ? sides[0]! : sides[1]!;
+  const other = best === sides[0] ? sides[1]! : sides[0]!;
+  // Where the chosen side is blocked, is the other side free there?
+  const clashes = best.clashes.map((c) => ({
+    ...c,
+    otherFree: !other.clashes.some((o) => o.fromCm <= c.toCm + 200 && o.toCm >= c.fromCm - 200),
+  }));
+  return { line: lineIndex, side: best.side, metres: Math.round(best.metres), clashes, other: other.clashes };
+}
+export const LIVE_SECOND = [secondTrack(0), secondTrack(1)];
 
 // ---------------------------------------------------------------- the catalog file
 function catalog() {
@@ -260,6 +381,7 @@ function catalog() {
     halts: [
       ${halts},
     ],
+    ends: [${l.ends.map((e) => `{ at: '${e.at}', kind: '${e.kind}', sCm: ${e.sCm}, x: ${e.x}, z: ${e.z}, y: ${e.y} }`).join(', ')}],
     legs: [
       ${legs},
     ],
@@ -274,7 +396,14 @@ function catalog() {
 // no imports, so src/sim can take this file unchanged (git mv) when the server runs these lines. Today only the
 // client's blockout reads it: the rails it describes are visual, not sim state.
 
+/** Every corridor is double track: two tracks on \`centresCm\` centres either side of the line's points, each of
+ * \`gaugeCm\` gauge, on a \`deckCm\` formation. A halt has a platform at \`platformCm\` either side of the centre; a loop
+ * has radius \`loopCm\`. */
+export const FORMATION = ${JSON.stringify(FORMATION)} as const;
+
 export type WorldHalt = { name: string; stop: number; x: number; z: number; y: number; reach: number };
+/** A line end's turnback: a scissors crossover centred at \`sCm\`, or a balloon loop centred at (x, z) leaving at \`sCm\`. */
+export type WorldEnd = { at: 'start' | 'end'; kind: 'crossover' | 'loop'; sCm: number; x: number; z: number; y: number };
 export type WorldLeg = {
   /** The map link (docs/world/map-prototypes.html) this stretch runs over, and whether against its drawn direction. */
   id: string;
@@ -295,6 +424,7 @@ export type WorldLine = {
   accel: number;
   stops: readonly number[];
   halts: readonly WorldHalt[];
+  ends: readonly WorldEnd[];
   legs: readonly WorldLeg[];
   /** Track vertices, [x, z, y] world cm; each consecutive pair is one straight span. */
   pts: readonly (readonly [number, number, number])[];
@@ -303,6 +433,16 @@ export type WorldLine = {
 export const WORLD_LINES: readonly WorldLine[] = [
 ${rows.join('\n')}
 ];
+
+/** Today's single-track line 1 (0) and line 2 (1), left where they are: the side (-1 left of the drawn direction, +1
+ * right) a second track would take, and the stretches where it meets something (cm along the line). \`otherFree\`: the
+ * other side is clear there. The plan's notes, not a change to the live lines. */
+export type SecondTrack = {
+  line: 0 | 1;
+  side: -1 | 1;
+  clashes: readonly { fromCm: number; toCm: number; reason: string; otherFree: boolean }[];
+};
+export const LIVE_SECOND_TRACK: readonly SecondTrack[] = ${JSON.stringify(LIVE_SECOND.map(({ line, side, clashes }) => ({ line, side, clashes })))};
 `;
 }
 
@@ -546,6 +686,17 @@ function svg() {
       out.push(
         `<circle class="halt" cx="${(h.x / 100 - 1000).toFixed(0)}" cy="${(h.z / 100).toFixed(0)}" r="26"><title>${esc(h.name)} (${esc(l.name)})</title></circle>`,
       );
+  // turnbacks: a loop is its circle, a crossover a small X
+  for (const l of BUILT)
+    for (const e of l.ends) {
+      const x = e.x / 100 - 1000,
+        z = e.z / 100;
+      out.push(
+        e.kind === 'loop'
+          ? `<circle class="loop" cx="${x.toFixed(0)}" cy="${z.toFixed(0)}" r="${FORMATION.loopCm / 100}"><title>${esc(l.name)}: turning loop</title></circle>`
+          : `<path class="cross" d="M${(x - 22).toFixed(0)},${(z - 22).toFixed(0)}L${(x + 22).toFixed(0)},${(z + 22).toFixed(0)}M${(x - 22).toFixed(0)},${(z + 22).toFixed(0)}L${(x + 22).toFixed(0)},${(z - 22).toFixed(0)}"><title>${esc(l.name)}: crossover</title></path>`,
+      );
+    }
   for (const p of A.places) {
     if (p.id === 'camp') continue;
     const big = p.kind === 'main' || p.kind === 'branch' || p.kind === 'ending' || p.id === 'home';
@@ -578,6 +729,17 @@ function page() {
   const sightTable = SIGHTS.map((s) => `<tr><td>${esc(s[0])}</td><td>${esc(s[1])}</td><td>${esc(s[3])}</td></tr>`).join(
     '\n',
   );
+  const turnTable = BUILT.map(
+    (l) =>
+      `<tr><td>${esc(l.name)}</td><td>${l.ends.map((e) => `${e.at === 'start' ? esc(l.halts[0]!.name) : esc(l.halts.at(-1)!.name)}: ${e.kind === 'loop' ? 'turning loop' : 'crossover'}`).join('; ')}</td></tr>`,
+  ).join('\n');
+  const liveName = ['Line 1', 'Line 2'];
+  const secondTable = LIVE_SECOND.flatMap((t) =>
+    t.clashes.map(
+      (c) =>
+        `<tr><td>${liveName[t.line]}, ${t.side < 0 ? 'left' : 'right'} side</td><td>${(c.fromCm / 100).toFixed(0)}–${(c.toCm / 100).toFixed(0)} m</td><td>${esc(c.reason)}</td><td>${c.otherFree ? 'yes' : 'no'}</td></tr>`,
+    ),
+  ).join('\n');
   const dbTable = DOUBLE_BACKS.map(
     (d) => `<tr><td>${esc(d[0])}</td><td>${esc(d[1])}</td><td>${d[2]}</td><td>${esc(d[3])}</td></tr>`,
   ).join('\n');
@@ -635,6 +797,8 @@ function page() {
   svg .sight { stroke: var(--sight); stroke-width: 5; stroke-dasharray: 12 22; opacity: 0.8; }
   svg .gate { fill: var(--gate); }
   svg .halt { fill: var(--panel); stroke: var(--ink); stroke-width: 8; }
+  svg .loop { fill: none; stroke: var(--ink); stroke-width: 7; }
+  svg .cross { fill: none; stroke: var(--ink); stroke-width: 9; }
   svg text { fill: var(--ink); font: 600 64px system-ui, sans-serif; paint-order: stroke; stroke: var(--panel); stroke-width: 12px; }
   svg text.stop { font-size: 48px; font-weight: 500; }
   svg text.note { font-size: 42px; fill: var(--gate); }
@@ -689,6 +853,15 @@ ${svg()}
 <div class="table"><table><thead><tr><th>Leg</th><th>From → to</th><th>Line</th><th>Stage (Gorge first / Canopy first)</th><th>km</th><th>20 m/s</th><th>25 m/s</th></tr></thead>
 <tbody>${legTable}</tbody></table></div>
 
+<h2>Double track</h2>
+<p class="muted">Every corridor is two tracks on ${FORMATION.centresCm / 100} m centres (the gauge is Place's 1 m, on a 3.6 m deck: a
+${FORMATION.deckCm / 100} m formation), bridges, cuttings, tunnels and the pier crossing included. Every halt has a platform outside
+each track. Each terminus turns a train back without reversing: a crossover (✕) inside the platforms, or a
+${FORMATION.loopCm / 100} m-radius turning loop (○) where the island has room.</p>
+<div class="table"><table><thead><tr><th>Line</th><th>Turnbacks</th></tr></thead><tbody>${turnTable}</tbody></table></div>
+<p class="muted">Today's single-track line 1 and line 2 stay where they are. A second track 4 m off them meets these:</p>
+<div class="table"><table><thead><tr><th>Where</th><th>Along the line</th><th>Meets</th><th>Other side free</th></tr></thead><tbody>${secondTable}</tbody></table></div>
+
 <h2>Seen before it's reached</h2>
 <div class="table"><table><thead><tr><th>From</th><th>What</th><th>When</th></tr></thead><tbody>${sightTable}</tbody></table></div>
 
@@ -723,6 +896,8 @@ for (const [file, text] of outputs) {
   else fs.writeFileSync(ROOT + file, text);
 }
 if (process.argv.includes('--numbers')) {
+  for (const t of LIVE_SECOND)
+    console.log('second track', t.line, t.side, JSON.stringify(t.clashes), 'other side:', JSON.stringify(t.other));
   console.log('loop km', km(LOOP_M), 'future km', km(ALL_FUTURE), 'built l2 km', km(BUILT_M));
   for (const r of legRows())
     console.log([r.id, r.name, r.from, r.to, r.svc, r.st, km(r.m), mmss(r.t20), mmss(r.t25)].join(' | '));

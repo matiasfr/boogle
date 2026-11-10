@@ -6,7 +6,28 @@
 // no imports, so src/sim can take this file unchanged (git mv) when the server runs these lines. Today only the
 // client's blockout reads it: the rails it describes are visual, not sim state.
 
+/** Every corridor is double track: two tracks on `centresCm` centres either side of the line's points, each of
+ * `gaugeCm` gauge, on a `deckCm` formation. A halt has a platform at `platformCm` either side of the centre; a loop
+ * has radius `loopCm`. */
+export const FORMATION = {
+  tracks: 2,
+  centresCm: 400,
+  gaugeCm: 100,
+  deckCm: 760,
+  platformCm: 580,
+  loopCm: 4000,
+} as const;
+
 export type WorldHalt = { name: string; stop: number; x: number; z: number; y: number; reach: number };
+/** A line end's turnback: a scissors crossover centred at `sCm`, or a balloon loop centred at (x, z) leaving at `sCm`. */
+export type WorldEnd = {
+  at: 'start' | 'end';
+  kind: 'crossover' | 'loop';
+  sCm: number;
+  x: number;
+  z: number;
+  y: number;
+};
 export type WorldLeg = {
   /** The map link (docs/world/map-prototypes.html) this stretch runs over, and whether against its drawn direction. */
   id: string;
@@ -27,6 +48,7 @@ export type WorldLine = {
   accel: number;
   stops: readonly number[];
   halts: readonly WorldHalt[];
+  ends: readonly WorldEnd[];
   legs: readonly WorldLeg[];
   /** Track vertices, [x, z, y] world cm; each consecutive pair is one straight span. */
   pts: readonly (readonly [number, number, number])[];
@@ -46,6 +68,7 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'Ring Island halt', stop: 0, x: 141418, z: -81983, y: 624, reach: 1260 },
       { name: 'Ring top', stop: 1, x: 133601, z: -110092, y: 6288, reach: 1260 },
     ],
+    ends: [{ at: 'end', kind: 'crossover', sCm: 144925, x: 134652, z: -106754, y: 5567 }],
     legs: [{ id: 'ringx', reverse: false, fromCm: 74300, toCm: 150425, stage: [2, 2] }],
     pts: [
       [140200, -37200, 2430],
@@ -71,6 +94,10 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'Ring top', stop: 0, x: 131423, z: -113230, y: 6288, reach: 1260 },
       { name: 'High Gorge', stop: 1, x: -10294, z: -198779, y: 346, reach: 1260 },
       { name: 'Bell Rock', stop: 2, x: -4859, z: -86995, y: 1500, reach: 1260 },
+    ],
+    ends: [
+      { at: 'start', kind: 'crossover', sCm: 5500, x: 128662, z: -115380, y: 5568 },
+      { at: 'end', kind: 'crossover', sCm: 280057, x: -4612, z: -90486, y: 1500 },
     ],
     legs: [
       { id: 'ledge', reverse: false, fromCm: 0, toCm: 169978, stage: [3, 5] },
@@ -110,6 +137,10 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'Bell Rock', stop: 1, x: -4959, z: -84975, y: 1402, reach: 1260 },
       { name: 'Canopy Town', stop: 2, x: -108506, z: -31330, y: 1300, reach: 1260 },
     ],
+    ends: [
+      { at: 'start', kind: 'crossover', sCm: 5500, x: 76715, z: -3335, y: 400 },
+      { at: 'end', kind: 'loop', sCm: 243005, x: -112659, z: -32988, y: 1200 },
+    ],
     legs: [
       { id: 'bay-cut', reverse: false, fromCm: 0, toCm: 122748, stage: [4, 4] },
       { id: 'bell-canopy', reverse: false, fromCm: 122748, toCm: 243005, stage: [5, 3] },
@@ -144,6 +175,10 @@ export const WORLD_LINES: readonly WorldLine[] = [
     halts: [
       { name: 'Ring top', stop: 0, x: 131006, z: -111848, y: 6289, reach: 1260 },
       { name: 'Bell Rock', stop: 1, x: -3189, z: -85849, y: 1500, reach: 1260 },
+    ],
+    ends: [
+      { at: 'start', kind: 'crossover', sCm: 5500, x: 127516, z: -111583, y: 5568 },
+      { at: 'end', kind: 'crossover', sCm: 137173, x: -21, z: -87336, y: 1500 },
     ],
     legs: [{ id: 'ring-bell', reverse: false, fromCm: 0, toCm: 142673, stage: [null, 3] }],
     pts: [
@@ -185,6 +220,10 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'Port Quay', stop: 2, x: 11971, z: 96010, y: 306, reach: 1260 },
       { name: 'High Port', stop: 3, x: -28489, z: 116690, y: 5500, reach: 1260 },
     ],
+    ends: [
+      { at: 'start', kind: 'crossover', sCm: 5500, x: 78548, z: 11841, y: 494 },
+      { at: 'end', kind: 'loop', sCm: 168078, x: -32617, z: 114975, y: 5500 },
+    ],
     legs: [
       { id: 'seacave', reverse: false, fromCm: 0, toCm: 68781, stage: [6, 6] },
       { id: 'salt-quay', reverse: false, fromCm: 68781, toCm: 119769, stage: [6, 6] },
@@ -215,6 +254,10 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'High Port', stop: 0, x: -31338, z: 116513, y: 5600, reach: 1260 },
       { name: 'Canopy Town', stop: 1, x: -109999, z: -30000, y: 1200, reach: 1260 },
       { name: 'High Gorge', stop: 2, x: -11174, z: -197000, y: 5931, reach: 1260 },
+    ],
+    ends: [
+      { at: 'start', kind: 'crossover', sCm: 5500, x: -33680, z: 113911, y: 5600 },
+      { at: 'end', kind: 'crossover', sCm: 376454, x: -12703, z: -193852, y: 8382 },
     ],
     legs: [
       { id: 'wall-s', reverse: false, fromCm: 0, toCm: 184901, stage: [7, 7] },
@@ -267,6 +310,10 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'Canopy Town', stop: 0, x: -110997, z: -31734, y: 1300, reach: 1260 },
       { name: 'Lantern Notch', stop: 1, x: -160453, z: -98732, y: 700, reach: 1260 },
     ],
+    ends: [
+      { at: 'start', kind: 'crossover', sCm: 5500, x: -112742, z: -34768, y: 1300 },
+      { at: 'end', kind: 'loop', sCm: 88468, x: -159465, z: -103094, y: 600 },
+    ],
     legs: [{ id: 'notch-tunnel', reverse: false, fromCm: 0, toCm: 88468, stage: [8, 8] }],
     pts: [
       [-110000, -30000, 1200],
@@ -293,6 +340,10 @@ export const WORLD_LINES: readonly WorldLine[] = [
       { name: 'Bell Rock', stop: 0, x: -5099, z: -83002, y: 1500, reach: 1260 },
       { name: 'Original Island', stop: 1, x: -618, z: -13503, y: 400, reach: 1260 },
     ],
+    ends: [
+      { at: 'start', kind: 'crossover', sCm: 5500, x: -5273, z: -79506, y: 1500 },
+      { at: 'end', kind: 'loop', sCm: 74648, x: -3806, z: -10369, y: 300 },
+    ],
     legs: [{ id: 'final', reverse: false, fromCm: 0, toCm: 74648, stage: [8, 8] }],
     pts: [
       [-5000, -85000, 1400],
@@ -302,6 +353,35 @@ export const WORLD_LINES: readonly WorldLine[] = [
       [-7500, -34700, 400],
       [-577, -13377, 400],
       [0, -11600, 300],
+    ],
+  },
+];
+
+/** Today's single-track line 1 (0) and line 2 (1), left where they are: the side (-1 left of the drawn direction, +1
+ * right) a second track would take, and the stretches where it meets something (cm along the line). `otherFree`: the
+ * other side is clear there. The plan's notes, not a change to the live lines. */
+export type SecondTrack = {
+  line: 0 | 1;
+  side: -1 | 1;
+  clashes: readonly { fromCm: number; toCm: number; reason: string; otherFree: boolean }[];
+};
+export const LIVE_SECOND_TRACK: readonly SecondTrack[] = [
+  {
+    line: 0,
+    side: -1,
+    clashes: [
+      { fromCm: 0, toCm: 400, reason: 'the turntable', otherFree: false },
+      { fromCm: 600, toCm: 3200, reason: 'the Village platform', otherFree: false },
+      { fromCm: 11200, toCm: 11200, reason: 'a drop over 6 m', otherFree: true },
+      { fromCm: 11400, toCm: 11400, reason: 'a bank', otherFree: true },
+    ],
+  },
+  {
+    line: 1,
+    side: -1,
+    clashes: [
+      { fromCm: 0, toCm: 400, reason: 'the turntable', otherFree: false },
+      { fromCm: 73200, toCm: 73400, reason: 'the Pier rack', otherFree: true },
     ],
   },
 ];
