@@ -128,6 +128,7 @@ export const Train = defineComponent(
     from: 'int',
     v0: 'int',
     dest: 'int',
+    turn: 'bool',
     logs: 'int',
     rails: 'int',
     wagon: 'bool',

@@ -4,14 +4,14 @@
 // same rules; railway-systems.ts supplies the world's side (cargo, the wagon, the cart) through `TrainIO`.
 //
 //   circuitCm, circuitLen         (./railway-lines.ts) one number round a line, for ordering and spacing only
-//   endBlocks(line, stops)        the two open ends' blocks (merge to end stop, both tracks) and their signals
+//   endBlocks(line, stops)        the two open ends' blocks (turnout to end stop, both tracks) and their signals
 //   cycleTicks, headTicks         the non-stop round trip; the least gap between two departures from an end
 //   blockFree(...)                whether a train may plan a leg to `dest` now: the block rule and the end blocks
 //   trainServes(...)              the train a lever ask (halt, way) is for: the nearest that way that can still brake
 //   planLeg(...)                  the leg a train plans from a pose: its next reason, or the farthest hold short of it
 //   trainStepLine(io, line, tick) one line's trains for a tick: arrivals, turn-backs, holds, departures and replans
 //   trainSpacing(rows, ...)       the spacing invariants at a tick (tests sample it)
-import { LINE2, RAIL_LINES, RAIL_TRAINS, circuitAhead, circuitCm, circuitLen } from './railway-lines.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT, circuitAhead, circuitCm, circuitLen } from './railway-lines.ts';
 import type { Railway } from './railway.ts';
 import {
   TRAIN,
@@ -43,9 +43,10 @@ export const LINE_SLOTS: readonly (readonly number[])[] = RAIL_LINES.map((_l, li
 );
 
 // ---------------------------------------------------------------- the ends
-/** One open end's block, both tracks from `from` to `to` (cm along the line), the halt it ends at (its index in the open
- * stops), the way into it, and where a train that can't enter waits: its signal, a stop with no halt on the inbound
- * track, `TRAIN.signalCm` outside the merge and never nearer the end stop than `TRAIN.sepCm`. */
+/** One open end's block, both tracks from `from` to `to` (cm along the line: from a stub's turnout's far side, or a
+ * crossover's start, to the end stop), the halt it ends at (its index in the open stops), the way into it, and where a
+ * train that can't enter waits: its signal (`RailEnd.signalCm`), a stop with no halt on the inbound track, never
+ * nearer the end stop than `TRAIN.sepCm`. A train is in it while any of it is (`TRAIN_EXTENT`). */
 export type EndBlock = { from: number; to: number; stop: number; dir: number; signal: number };
 export function endBlocks(line: number, stops: readonly number[]): readonly [EndBlock, EndBlock] {
   const halts = RAIL_LINES[line]!.halts,
@@ -56,11 +57,12 @@ export function endBlocks(line: number, stops: readonly number[]): readonly [End
   const s0 = stops[0]!,
     s1 = stops[last]!;
   return [
-    { from: s0, to: a.mergeCm, stop: 0, dir: -1, signal: Math.max(a.mergeCm + TRAIN.signalCm, s0 + TRAIN.sepCm) },
-    { from: b.mergeCm, to: s1, stop: last, dir: 1, signal: Math.min(b.mergeCm - TRAIN.signalCm, s1 - TRAIN.sepCm) },
+    { from: s0, to: a.edgeCm, stop: 0, dir: -1, signal: Math.max(a.signalCm, s0 + TRAIN.sepCm) },
+    { from: b.edgeCm, to: s1, stop: last, dir: 1, signal: Math.min(b.signalCm, s1 - TRAIN.sepCm) },
   ];
 }
-const within = (b: EndBlock, s: number) => s >= b.from && s <= b.to;
+/** Whether a train with its along at `s` reaches into block `b`. */
+const within = (b: EndBlock, s: number) => s - TRAIN_EXTENT.behindCm < b.to && s + TRAIN_EXTENT.aheadCm > b.from;
 /** Whether a halt is one of the open ends (its track turns there). */
 export const atEnd = (stop: number, stops: readonly number[]) => stop === 0 || stop === stops.length - 1;
 
@@ -209,6 +211,7 @@ export type TrainIO = {
 /** A running train's leg, judged again from its pose now: shortened for a reason it can still brake for, or
  * lengthened past a hold the train ahead has moved off. The pose stays continuous (`from` is where it is now). */
 function replan(io: TrainIO, line: number, slot: number, tick: number) {
+  if (io.row(slot).turn) return; // on a crossover, committed to the halt it turns back at
   const r = io.row(slot),
     stops = io.stops(line),
     dir = r.track ? -1 : 1;
@@ -233,10 +236,12 @@ export function trainStepLine(io: TrainIO, line: number, tick: number) {
           replan(io, line, slot, tick);
           break;
         }
-        io.set(slot, { phase: TRAIN_PHASE.STAND, at: r.to, from: r.dest, v0: 0, depart: arrival });
+        const turn = r.turn; // the row may be live: read it before the set clears it
+        io.set(slot, { phase: TRAIN_PHASE.STAND, at: r.to, from: r.dest, v0: 0, depart: arrival, turn: false });
         if (r.to >= 0) io.arrive(slot);
-        // At an end it turns back onto the other track; its riders' asks the old way are past serving.
-        if ((r.to === 0 && r.track === 1) || (r.to === n - 1 && r.track === 0)) {
+        // At an end (or the one it had crossed over at: `turn`) it turns back onto the other track; its riders' asks
+        // the old way are past serving.
+        if ((r.to === 0 && r.track === 1) || (r.to === n - 1 && r.track === 0) || turn) {
           const track = 1 - r.track;
           io.set(slot, { track, req: reqOnly(io.row(slot).req, n, track ? -1 : 1) });
         }
@@ -317,6 +322,14 @@ export function validateRailTrains(s: Railway, stops: (line: number) => readonly
       // positive, its way the track's.
       (r.phase === TRAIN_PHASE.RUN &&
         ((r.at >= 0 && r.at === r.to) || r.from === r.dest || (r.dest - r.from) * dir < 0)) ||
+      // Turning back at a halt that was an end: running up to it, a halt with an end that is no longer open.
+      (r.turn &&
+        (r.phase !== TRAIN_PHASE.RUN ||
+          r.track !== 0 ||
+          r.to < 0 ||
+          atEnd(r.to, st) ||
+          !RAIL_LINES[line]!.halts[r.to]!.end ||
+          r.dest !== st[r.to])) ||
       (r.at >= 0 && r.phase === TRAIN_PHASE.STAND && r.from !== st[r.at]) ||
       (r.to >= 0 && r.dest !== st[r.to]) ||
       (!awake &&

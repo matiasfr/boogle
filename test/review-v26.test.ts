@@ -1,5 +1,7 @@
 // The independent review of WORLD_NS v26 (generic lines step 4: two trains on line 2, block signals, headway, request
-// stops). Scratch probes; the ones that fail are the review's findings.
+// stops), 10 November: its probes, kept as regression tests once its two findings (P2-1, the stub signals; P2-2, the
+// Far Head crossover at the pier's opening) were fixed. SAVE_TICKS lengthens the every-tick save check (the review ran
+// 2,500 ticks a seed; `npm run check` runs 500 to stay inside its 5 s a test).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32 } from '../src/sim/rng.ts';
@@ -31,6 +33,8 @@ function fundQ6(w: Fixture) {
 }
 
 // Every tick's save must load: the snapshot through railwayCheck, every tick, under heavy asks, at the hold's extremes.
+const SAVE_TICKS = Number(process.env.SAVE_TICKS ?? 500);
+railwayAtTrains('boiler'); // the shared base, built outside every test's 5 s
 for (const [seed, pct] of [
   [0x51, 75],
   [0x52, 0],
@@ -39,8 +43,8 @@ for (const [seed, pct] of [
   test(`review: every tick's save loads (seed ${seed}, ${pct}%)`, () => {
     const w = unaudited(railwayAtTrains('q6-stocked'));
     const rand = mulberry32(seed);
-    const packAt = 200 + Math.floor(rand() * 1500);
-    for (let k = 0; k < 2500; k++) {
+    const packAt = 100 + Math.floor(rand() * (SAVE_TICKS - 400)); // Q6 lays in 279 ticks
+    for (let k = 0; k < SAVE_TICKS; k++) {
       if (k === packAt) fundQ6(w);
       if (rand() < 0.08) {
         const id = Math.floor(rand() * RAIL_HALTS.length);
@@ -67,10 +71,10 @@ for (const [seed, pct] of [
     assert.ok(line2Completed(w.s) >= 6);
   });
 
-// A train whose engine is past the start of Far Head's crossover (s 490 m) on the up track when Q6 opens the pier has
-// already taken the crossover onto the down track (train-view.ts latches `cross`, drawing it there). The sim keeps it
-// on the up track (track 0) and runs it on to the pier, so the drawn train and the sim's disagree from Far Head to the
-// pier's merge (s 512-556), where a train coming down from the pier on the down track is drawn on the same rails.
+// P2-2: a train whose engine is past the start of Far Head's crossover (s 490 m) on the up track when Q6 opens the
+// pier has already taken the crossover onto the down track; it used to stay on the up track (track 0) and run on to the
+// pier, drawn crossed over by a latch a restore lost. Now it turns back at Far Head (`turn`), and the view draws it
+// crossing from that alone.
 test('review: a train already on the Far Head crossover when the pier opens turns back there (it has crossed)', () => {
   const base = railwayAtTrains('q6-finishing');
   const probe = unaudited(base);
@@ -154,11 +158,11 @@ test('review: the amber lamp is dark for a rider ask too late to stop for, lit f
   assert.equal(run(true), false, 'too late: dark');
 });
 
-// The end blocks start at the merge (RailHalt.end.mergeCm), and a train that can't enter waits at its signal
-// TRAIN.signalCm (10 m) outside it. But the drawn tracks only part over a 20 m turnout beyond the merge
-// (src/proto/place/layout.ts TURNOUT, upLat), and a train stretches about 9 m behind its reference point (the wagon at
-// -7.4 m, src/proto/wagon/cars.ts): so a train held at a stub end's signal stands on the turnout, and the train leaving
-// the end block passes through it. Checked on the drawn footprint: each car's box at its pose and its track's offset.
+// P2-1: the end blocks started at the merge (RailHalt.end.mergeCm) and a train that couldn't enter waited 10 m outside
+// it, but the drawn tracks only part over a 20 m turnout beyond the merge (src/proto/place/layout.ts TURNOUT, upLat),
+// and a train stretches 9 m behind its reference point (the wagon at -7.4 m, src/proto/wagon/cars.ts): a train held at
+// a stub end's signal stood on the turnout, and the train leaving the end block passed through it. Checked on the
+// drawn footprint: each car's box at its pose and its track's offset.
 test('review: no two drawn trains overlap (a train held at a stub signal stands clear of the one leaving)', async () => {
   const { FORMATION, LINKS, upLat, crossLat } = await import('../src/proto/place/layout.ts');
   const { TRAIN_CARS, TRAIN_OFFSETS } = await import('../src/proto/wagon/cars.ts');
@@ -218,4 +222,5 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
           first = `tick ${w.t}: A car s ${p.s.toFixed(1)} m lat ${p.lat.toFixed(2)}, B car s ${q.s.toFixed(1)} m lat ${q.lat.toFixed(2)}; ${JSON.stringify([w.s.trains[A], w.s.trains[B]])}`;
   }
   assert.equal(first, null, `held at the signal: ${held}`);
+  assert.ok(held, 'B was held at the village signal (the case under test)');
 });

@@ -8,7 +8,15 @@ import { PIER_STOP_CM } from './railway-works-layout.ts';
 export type RailEndKind = 'stub' | 'crossover' | 'loop';
 /** Where a line turns back: a stub (the two tracks merge into one terminal track at `mergeCm`), a crossover (a facing
  * crossover at `mergeCm`, used while this halt is the open end), or (v27+) a balloon loop of `loopCm`. */
-export type RailEnd = { kind: RailEndKind; mergeCm: number; loopCm?: number };
+export type RailEnd = {
+  kind: RailEndKind;
+  mergeCm: number;
+  /** Where its block meets the line (cm): the merge, past a stub's turnout. */
+  edgeCm: number;
+  /** Where a train that can't enter waits, on the inbound track (cm). */
+  signalCm: number;
+  loopCm?: number;
+};
 /** Where a player stands to use a halt: world cm, and the reach of its lever. */
 export type RailPlatform = { x: number; z: number; y: number; reach: number };
 export type RailHalt = {
@@ -40,6 +48,21 @@ export type RailLineDef = {
 };
 
 const both = (p: RailPlatform) => [p, p] as const;
+/** A stub's turnout: past its merge the two tracks part over this length (src/proto/place/layout.ts draws it). */
+export const TURNOUT_CM = 2000;
+/** How far a train reaches from its along (cm), with the footing wagon: the engine's nose ahead (+s), the wagon's tail
+ * behind. The cars are src/proto/wagon/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
+ * in step), so a longer train moves every signal with it. */
+export const TRAIN_EXTENT = { aheadCm: 620, behindCm: 900 } as const;
+/** A line end at `mergeCm`, at its line's low end (`side` -1, the first halt) or high end (+1). Its block reaches the
+ * merge plus a stub's turnout (`edgeCm`: past it the tracks are apart; a crossover's block starts at the crossover);
+ * its signal stands outside that by the reach of an inbound train's leading end, so a train held there is clear of the
+ * block and of a train leaving it. */
+const end = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailEnd => {
+  const edgeCm = mergeCm - side * (kind === 'stub' ? TURNOUT_CM : 0),
+    lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
+  return { kind, mergeCm, edgeCm, signalCm: edgeCm - side * lead };
+};
 // Step 2's up platforms (src/proto/place/layout.ts UP_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
 // s 513-535. Today's platforms serve the down track.
 const QUARRY_UP: RailPlatform = { x: 106912, z: 3135, y: 2502, reach: 1160 };
@@ -61,14 +84,14 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: 1400,
         opens: -1,
         platforms: both({ x: 92819, z: -434, y: 1902, reach: 1260 }),
-        end: { kind: 'stub', mergeCm: 3600 },
+        end: end('stub', 3600, -1),
       },
       {
         name: 'Camp',
         s: 20700,
         opens: -1,
         platforms: both({ x: 100964, z: -14610, y: 3102, reach: 1360 }),
-        end: { kind: 'stub', mergeCm: 18200 },
+        end: end('stub', 18200, 1),
       },
     ],
     home: 1,
@@ -98,7 +121,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: 1700,
         opens: -1,
         platforms: both({ x: 92779, z: 2617, y: 1902, reach: 1260 }),
-        end: { kind: 'stub', mergeCm: 3400 },
+        end: end('stub', 3400, -1),
       },
       {
         name: 'Quarry',
@@ -112,7 +135,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: 52400,
         opens: -1,
         platforms: [FAR_HEAD_UP, { x: 136361, z: -16353, y: 2502, reach: 1260 }],
-        end: { kind: 'crossover', mergeCm: 49000 },
+        end: end('crossover', 49000, 1),
       },
       // Place's halt maths at s 719-741 m, lat -2.9 (the side of the pier rack); open once Q6 (slot 5) is laid. The
       // far tracks merge at s 556 m, the pier's root, so the pier stays one terminal track.
@@ -121,7 +144,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: PIER_STOP_CM,
         opens: 5,
         platforms: both({ x: 139969, z: -35833, y: 2502, reach: 1260 }),
-        end: { kind: 'stub', mergeCm: 55600 },
+        end: end('stub', 55600, 1),
       },
     ],
     home: 0,

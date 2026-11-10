@@ -4,6 +4,7 @@
 // the walls hide the seam. Foot paths are polylines with explicit heights; rail lines are curves with explicit ends.
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
+import { TURNOUT_CM } from '../../sim/railway-lines.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 import {
@@ -411,7 +412,7 @@ export const HALTS: Halt[] = [
  * in and out over a 20 m stub turnout at each end; line 2 also has Far Head's facing crossover, up track to down,
  * while Far Head is its end. Metres along each line. Step 4a moves the merges into the sim catalog's `RailHalt.end`. */
 export const UP_LAT = -4;
-export const TURNOUT = 20;
+export const TURNOUT = TURNOUT_CM / 100; // the sim's: its end blocks and signals reach past it
 export type Formation = { from: number; to: number; crossover?: readonly [number, number] };
 export const FORMATION: Record<LineSpec['id'], Formation> = {
   timber: { from: 36, to: 182 },

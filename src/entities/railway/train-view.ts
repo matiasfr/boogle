@@ -243,9 +243,6 @@ export async function createRailwayTrains(
       boiler,
       lamp: { mesh: stopLamp, material: lampMaterial, on: false },
       hold: { mesh: holdLamp, material: holdMaterial, on: false },
-      /** Latched as the engine reaches Far Head's crossover on the up track: true while the pier is shut, so this
-       * train crosses to the down track; held until it is past, so Q6 opening mid-crossing doesn't jump it. */
-      cross: false,
       fit,
       fitted: () => fitted,
       doors: ((model as { doors?: THREE.Object3D[] }).doors ?? []).map((mesh) => ({ mesh, angle: 0, held: 0 })),
@@ -279,10 +276,14 @@ export async function createRailwayTrains(
     if (row.track) return 0;
     const f = formations[tr.line]!,
       c = f.crossover;
-    if (tr.cross && c && s >= c[0]) return layout.crossLat(f, s) ?? 0;
+    if (crossing(tr, row) && c && s >= c[0]) return layout.crossLat(f, s) ?? 0;
     return layout.upLat(f, s) ?? 0;
   }
   const pierOpen = () => adapter.inspect().line2.completed >= LINE2_STATIONS.length;
+  /** Whether a train on the up track takes Far Head's crossover, from the room's rows alone (a restore or a joining
+   * tab draws it the same): every one while the pier is shut, and one the pier's opening caught on it (`turn`). */
+  const crossing = (tr: (typeof trains)[number], row: Readonly<RailTrain>) =>
+    row.track === 0 && formations[tr.line]!.crossover !== undefined && (row.turn || !pierOpen());
   const seatMatrix = new THREE.Matrix4();
   const askAt = new THREE.Vector3(),
     riderAt = new THREE.Vector3();
@@ -331,16 +332,13 @@ export async function createRailwayTrains(
       target = adapter.tickNow();
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
-    const open = pierOpen(),
-      coupled = wagonTrain();
+    const coupled = wagonTrain();
     trains.forEach((tr) => {
       const row = s.trains[tr.slot]!,
         line = layout.LINKS[tr.line]!.line;
       // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
       const along = trainAlong(row, tr.line, clock) / 100;
       tr.speed = s.line2.trains ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
-      const c0 = formations[tr.line]!.crossover?.[0];
-      if (row.track === 0 && c0 !== undefined && along + offsets[0]! < c0) tr.cross = !open;
       const lat = (x: number) => latOf(tr, row, x);
       const hidden = !s.ready || (tr.line !== 0 && !secondVisible);
       tr.cars.forEach((c, n) => {
@@ -468,7 +466,6 @@ export async function createRailwayTrains(
     trains.forEach((tr) => {
       const last = { ...s.trains[tr.slot]! };
       tr.last = last;
-      tr.cross = !pierOpen();
       tr.count = -1;
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
@@ -633,10 +630,10 @@ export async function createRailwayTrains(
       first.boiler.updateWorldMatrix(true, false);
       return seatMatrix.copy(first.boiler.matrixWorld);
     },
-    /** The little guy's stool on line `k`'s engine (folk.ts), once it runs: his feet on the footrest, facing forward.
-     * Folk has one driver a line: he drives the line's first train. */
-    driverSeat(k: number) {
-      const tr = trains.find((t) => t.line === k);
+    /** The little guy's stool on the engine of line `k`'s `n`th train (folk.ts), once it runs: his feet on the
+     * footrest, facing forward. Folk has a driver a train. */
+    driverSeat(k: number, n: number) {
+      const tr = trains.filter((t) => t.line === k)[n];
       if (!tr || !tr.boiler.visible || tr.cars[0]!.y < -30) return null;
       const st = shape.ENGINE_STOOL;
       return { mesh: tr.model.cars[0]!, top: st.footrest, up: st.seat - st.footrest - 0.035, x: st.x, z: st.z, yaw: 0 };
@@ -772,7 +769,7 @@ export async function createRailwayTrains(
         lashed: tr.boiler.visible,
         stopLamp: tr.lamp.on,
         holdLamp: tr.hold.on,
-        crossing: tr.cross,
+        crossing: crossing(tr, adapter.inspect().trains[tr.slot]!),
         doors: tr.doors.map((d) => +((d.angle * 180) / Math.PI).toFixed(0)),
         cut: Object.fromEntries(Object.entries(tr.cut).map(([f, t]) => [f, +t.toFixed(2)])),
         ...(tr === wagonTrain()

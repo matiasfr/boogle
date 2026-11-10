@@ -127,13 +127,14 @@ test("line 2's cycle and headway: 92.4 s to the pier (34.6 s apart), 72 s before
     { stop: 2, track: 1 },
   ]);
   assert.deepEqual(trainPlaces(0, TRAIN_STOPS[0]!), [{ stop: 1, track: 1 }], "line 1's one at Camp, as v25");
-  // Every signal stands on the inbound track outside its merge, at least a train's gap from the end stop.
+  // Every block reaches past its stub's turnout (a crossover's starts at it), and every signal stands on the inbound
+  // track outside it by a train's lead, at least a train's gap from the end stop (review of v26, P2-1).
   const [village, farHead] = endBlocks(LINE2, before);
-  assert.deepEqual([village.from, village.to, village.signal], [1700, 3400, 4440]);
-  assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48000]);
+  assert.deepEqual([village.from, village.to, village.signal], [1700, 5400, 6300]);
+  assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48380]);
   assert.deepEqual(
     endBlocks(LINE2, all).map((b) => b.signal),
-    [4440, 54600],
+    [6300, 52980],
     "the far end's block moves to the pier's stub",
   );
 });
@@ -397,7 +398,7 @@ function blocked(delay: number) {
   ]);
   step(w);
   assert.equal(row(w, B).phase, TRAIN_PHASE.RUN);
-  assert.deepEqual([row(w, B).to, row(w, B).dest], [-1, 4440], "B's leg ends at the village block's signal");
+  assert.deepEqual([row(w, B).to, row(w, B).dest], [-1, 6300], "B's leg ends at the village block's signal");
   return w;
 }
 test('a train held at a signal leaves the tick the block clears; the end block holds one train', () => {
@@ -436,7 +437,7 @@ for (const pct of [100, TRAIN_HEAD_PCT])
     const w = awake('q6-done', false);
     place(w, [
       { k: A, stop: 0, track: 0, depart: w.t - TRAIN.dwellTicks },
-      { k: B, stop: -1, track: 1, depart: w.t, s: 4440 },
+      { k: B, stop: -1, track: 1, depart: w.t, s: 6300 },
     ]);
     const st = trainStops(w.s, LINE2),
       half = cycleTicks(LINE2, st) / 2,
@@ -505,7 +506,8 @@ test('a train bound for Far Head as its end when the pier opens still stops ther
   while (line2Completed(probe.s) < 6) railTick(probe.s, ++probe.t);
   const w = unaudited(base);
   while (w.t < probe.t - 5) step(w);
-  // Train A runs up into Far Head's crossover block, bound for it as the line's end; B stands at the village.
+  // Train A runs up toward Far Head's crossover, short of it, bound for Far Head as the line's end; B stands at the
+  // village. (One already on the crossover turns back there: review-v26.test.ts.)
   edit(w.s, (e) => {
     Object.assign(e.mut(Train, e.lookup(Train, A)!)!, {
       phase: TRAIN_PHASE.RUN,
@@ -514,7 +516,7 @@ test('a train bound for Far Head as its end when the pier opens still stops ther
       track: 0,
       depart: w.t,
       req: 0,
-      from: 50000,
+      from: 44000,
       v0: 0,
       dest: TRAIN_STOPS[LINE2]![2]!,
     });

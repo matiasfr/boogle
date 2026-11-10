@@ -15,8 +15,6 @@ export const TRAIN = {
   kitWaitTicks: 60,
   /** The block rule's gap round the circuit: a train's length (RIDER_SPAN, the footing wagon's tail) plus 20 m. */
   sepCm: 2740,
-  /** A signal stands this far outside an end block's merge, on the inbound track. */
-  signalCm: 1000,
 } as const;
 /** A line's cruise (cm a tick) and acceleration (cm a tick²); TRAIN's by default. */
 export type TrainKin = { readonly speed: number; readonly accel: number };
@@ -64,6 +62,9 @@ export type RailTrain = {
   /** Where this leg ends, in cm along the line (standing: `from`). The pose reads only the row, never a stop table,
    * so a stop that moves (Ring Island's railhead, v26) never makes a running train jump. */
   dest: number;
+  /** Running on track 0 to `to`, it turns back there though that halt is no longer an open end: it was on the end's
+   * crossover when the line was extended past it (Far Head's, as Q6 opens the pier), so it has already crossed. */
+  turn: boolean;
   logs: number;
   rails: number;
   /** Line 2 only, one train at most: the footing wagon is coupled, and the footings aboard it. */
@@ -84,6 +85,7 @@ export function trainIdle(slot: number): RailTrain {
     from: here,
     v0: 0,
     dest: here,
+    turn: false,
     logs: 0,
     rails: 0,
     wagon: false,

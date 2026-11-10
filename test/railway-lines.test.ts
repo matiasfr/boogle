@@ -2,7 +2,9 @@
 // value. The literals below are v25's (#1409), copied before the move; a change here is a WORLD_NS break.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT, TURNOUT_CM } from '../src/sim/railway-lines.ts';
+import { TRAIN_CARS, TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
+import { FORMATION, TURNOUT } from '../src/proto/place/layout.ts';
 import { LINE_HALTS, TRAIN, TRAIN_HOME, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { PIER_STOP_CM } from '../src/sim/railway-works-layout.ts';
@@ -114,4 +116,33 @@ test("every halt that can be its line's open end says how it turns trains back, 
         assert.ok(inward && h.end.mergeCm > l.halts[k === 0 ? 0 : k - 1]!.s - (k === 0 ? 1 : 0), `${h.name}'s merge`);
       }
     });
+});
+
+// Review of v26, P2-1: a train held at a stub's signal stood on the drawn turnout. The signals are derived from the
+// turnout and the train's reach, so these must be the drawn ones.
+test("the sim's train reach and turnout are the drawn ones, and every signal stands clear of its block", () => {
+  const ahead = Math.max(...TRAIN_CARS.map((c, n) => TRAIN_OFFSETS[n]! + c.hz)),
+    behind = Math.max(...TRAIN_CARS.map((c, n) => c.hz - TRAIN_OFFSETS[n]!));
+  assert.deepEqual(TRAIN_EXTENT, { aheadCm: Math.round(ahead * 100), behindCm: Math.round(behind * 100) });
+  assert.equal(TURNOUT * 100, TURNOUT_CM);
+  const drawn = [FORMATION.timber, FORMATION.quarry];
+  RAIL_LINES.forEach((l, line) =>
+    l.halts.forEach((h, k) => {
+      if (!h.end) return;
+      const side = k === 0 ? -1 : 1,
+        lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
+      if (h.end.kind === 'stub') {
+        assert.equal(
+          h.end.mergeCm,
+          (side < 0 ? drawn[line]!.from : drawn[line]!.to) * 100,
+          `${h.name}: the drawn merge`,
+        );
+        assert.equal(h.end.edgeCm, h.end.mergeCm - side * TURNOUT_CM, `${h.name}: past the turnout`);
+      } else assert.equal(h.end.mergeCm, drawn[line]!.crossover![0] * 100, `${h.name}: the drawn crossover`);
+      assert.equal(h.end.signalCm, h.end.edgeCm - side * lead, `${h.name}: a held train's lead stops at the block`);
+    }),
+  );
+  // The reviewer's numbers: the village's signal about 63 m, the pier's about 530 m.
+  assert.equal(RAIL_LINES[1]!.halts[0]!.end!.signalCm, 6300);
+  assert.equal(RAIL_LINES[1]!.halts[3]!.end!.signalCm, 52980);
 });
