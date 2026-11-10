@@ -428,7 +428,7 @@ Step 2 is the guard only and can ship with step 3.
 
 ### Stage C: the fit
 
-- [ ] **8. The press, the bolting and the mark.**
+- [x] **8. The press, the bolting and the mark.**
   - `src/entities/railway/boiler-view.ts`: the fit target's `run` records `fitting = performance.now()` only when
     `adapter.fitBoiler(b.revision)` returns true, hides that holder's drag and rope, and starts the 0.45 s arc of the
     hauled boiler group from where it was drawn to `saddle` (`thump` at the start; `clank` and `pieces.dustRing` on

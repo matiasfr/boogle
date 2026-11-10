@@ -95,6 +95,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     shelf.railSlot,
   );
   const trains = await createRailwayTrains(adapter, owner, seats, line2.depotPlace);
+  line2.boilerSeat(trains.boilerSeat);
+  trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);
   // `?home=b`: Home drawn as one terminus station (docs/plans/home-station.md, step 3). Look only.
   const homeStation = (await import('../../proto/place/home-station.ts')).homeLayout()

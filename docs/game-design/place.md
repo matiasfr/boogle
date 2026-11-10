@@ -577,6 +577,17 @@ server's answer. Drop puts it down where it is drawn, on the heading it was haul
 to the pedestal. While the boiler is hauled, the old train's empty saddle shows a dashed gold outline of it (the rope's
 gold, the station 6 sign's dashes) with a few of the pedestal's motes; it goes once the boiler is down or fitted.
 
+**The fit** (boiler-first-choice plan, step 8). On the frame the hauler presses **Fit the boiler** the boiler leaves the
+rope and arcs into the old loco's empty saddle in 0.45 s (0.8 m apex), with a thump at the hauler and a clank and a
+dust ring as it lands exactly where the loco's own boiler sits; it waits there for the answer. Accepted, the loco's own
+boiler takes its place (a fast answer lets the flight finish first), two of the camp's little guys run to the loco's
+side and hammer at it for about five seconds (never less than two after they arrive), and the wake plays. Refused, or
+1.5 s with no answer, it hops back onto the rope in 0.3 s with the deny sound. Everyone else hears the clank when the
+fit is accepted and gets the boiler flourish. **The mark:** the gold rope stays lashed round both locos' boilers
+whenever trains run, two rings a few centimetres clear of the bands and a knot, so it is there after a reload and for
+every later visitor. The fitter's "You got" card ("Steam", "Trains run both lines.") is built but off until the owner
+approves the copy (`BOILER_CARD`).
+
 Standing on a halt calls its train from the player's accepted position. A running train finishes its current leg
 before acting on the call; there is no mid-leg reversal or rider express. The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head, including the quarry dwell. Owner platform carry keeps a rider
