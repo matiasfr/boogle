@@ -60,7 +60,8 @@ are held (up to 64, 5 s) and released one per 210 ms.
 
 Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms behind (`INTERP_MS`).
 
-Remote riders use the existing Owner `riding` platform ID and local pose. While that advertisement is fresh and
+Remote riders use the existing Owner `riding` platform ID and local pose. A rider seated on one of a deck's stools
+sends it too, at chair height (owner, 9 November: seated riders count as aboard). While that advertisement is fresh and
 the platform exists here, the avatar follows our drawn deck regardless of the world-space gap between train
 copies. Leaving, an unknown platform, or a riding sample older than 1 second blends back to world presence.
 New boarding blends current world presence onto the deck over 0.2 seconds, so a completed approach does not

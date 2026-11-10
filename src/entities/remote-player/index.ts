@@ -9,7 +9,7 @@ import { INTERP_MS } from '../../constants.ts';
 import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';
 import { setMask, teleport } from '../../physics/engine.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
-import { carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
+import { aboard, carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
 import { makeAvatar, animateAvatar, paintAvatar } from '../../player/avatars.ts';
 import { createNameLabel } from '../../components/name-label/view.ts';
 import { chaseKinematic, makePlayerBody, NOT_SCENERY } from '../../physics/physics.ts';
@@ -78,7 +78,8 @@ onPeerRemoved(leave);
 // ---------------------------------------------------------------- riding a shared platform (Owner)
 // World presence trails a moving deck by the interpolation delay (0.3 m at the wagon's 3 m/s, more on a stop or a
 // corner), so a rider on another tab would slide about on it. While you stand on a shared platform
-// (src/physics/platforms.ts) you also send `riding`: [platform id, x, y, z, yaw] in its frame; other tabs smooth that
+// (src/physics/platforms.ts), or sit in one of its chairs, you also send `riding`: [platform id, x, y, z, yaw] in its
+// frame; other tabs smooth that
 // and draw you on their own copy of the platform. Missing key: not riding. Old tabs ignore it. Serves DESIGN.md 4.
 // Presentation follows fresh riding intent even when local train copies disagree. Missing/expired state blends
 // back to world presence. The collision proxy retains its prior distance guard; this is not a physics correction.
@@ -87,7 +88,7 @@ const RIDE_BLEND_S = 0.2;
 const RIDE_MAX_AGE_MS = 1000;
 const mine: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 addPresenceField('riding', () => {
-  const p = carry.on,
+  const p = aboard(),
     me = localPresence();
   if (!p?.shared || !p.id || !me?.entered || !me.body) return null;
   const l = toPlatform(p, me.body.position, me.yaw, mine);

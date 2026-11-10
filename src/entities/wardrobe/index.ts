@@ -10,7 +10,7 @@ import { identity } from '../../player/identity.ts';
 import { getRoomId } from '../../netplay/net.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { COSMETICS, wearableIn } from '../../render/cosmetic-parts.ts';
-import { carry } from '../../physics/platforms.ts';
+import { aboard } from '../../physics/platforms.ts';
 import { WARDROBE_PREFIX, startWardrobe } from './state.ts';
 import { createWardrobeView } from './view.ts';
 
@@ -18,8 +18,8 @@ defineKind('wardrobe', { lateUpdate: 5 });
 
 if (productionRailway) {
   const key = `${WARDROBE_PREFIX}${railwayRoomId(getRoomId())}:${identity.pid}`;
-  // On a moving deck (a train), your stowaway rides on your shoulder (Place's rule).
-  const onDeck = () => carry.on !== null;
+  // On a moving deck (a train), standing or in one of its chairs, your stowaway rides on your shoulder (Place's rule).
+  const onDeck = () => aboard() !== null;
   const wardrobe = startWardrobe(
     { items: COSMETICS, wearable: wearableIn },
     {

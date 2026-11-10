@@ -15,6 +15,9 @@
 //               the deck point under you while you stand on it, kept through the air when you jump or walk off, and
 //               bled away once you land on plain ground or water (a short skid; landing fast counts a tumble)
 //   carry.spin  yaw (radians) the deck turned under you since the last frame; src/entities/player/ turns you and the camera by it
+//   carry.seat  the platform whose chair you sit in (src/proto/place/seat.ts sets it). A seated rider is held at chair
+//               height, off the deck, so carry.on stays null; aboard() is either, for "on the train" readers that
+//               aren't physics (the `riding` presence, your stowaway's shoulder)
 //
 // Riding works in the deck's frame: the player's velocity is the deck point's velocity plus the steered part, so
 // Rapier moves body and deck together (zero friction, no sliding) and jumping off keeps the deck's speed for free.
@@ -54,6 +57,7 @@ export const carry = {
   z: 0,
   spin: 0,
   on: null as Platform | null,
+  seat: null as Platform | null,
   tumbles: 0, // counts landings at speed off a deck (src/features/feel.ts flops on a change)
 };
 let boardT = 0,
@@ -71,8 +75,11 @@ export function registerPlatform(p: Platform) {
     if (k >= 0) platforms.splice(k, 1);
     prevYaw.delete(p);
     if (carry.on === p) carry.on = null;
+    if (carry.seat === p) carry.seat = null;
   };
 }
+/** The deck you stand on, or the one whose chair you sit in. */
+export const aboard = () => carry.on ?? carry.seat;
 export const platformById = (id: string) => platforms.find((p) => p.id === id) ?? null;
 
 // Attached riders still carry the previous step's vertical motion until carryStep applies the new deck speed.

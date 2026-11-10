@@ -36,6 +36,11 @@ const follow = (p: { x: number; y: number; z: number }): Follow => ({
   t: 0,
   riding: false,
 });
+// src/proto/place/seat.ts draws a seated Buddy this much lower than its body (held at chair height) and stamps
+// `seatedAt` on the avatar each frame it does: the shoulder comes down with them.
+const SEAT_DROP = 0.55;
+const seatDrop = (avatar: THREE.Object3D | null | undefined) =>
+  performance.now() - ((avatar?.userData.seatedAt as number | undefined) ?? -1e9) < 200 ? SEAT_DROP : 0;
 
 /** One frame of Place's follower, behind and beside `p` (facing `yaw`); on a deck it hops up to the shoulder. */
 function stepPet(
@@ -45,12 +50,14 @@ function stepPet(
   p: { x: number; y: number; z: number },
   yaw: number,
   riding: boolean,
+  drop = 0,
 ) {
-  // On a train it hops up onto your shoulder and stays small: no chasing a train along the ground and through its wheels.
+  // On a train (standing or seated) it hops up onto your shoulder and stays small: no chasing a train along the ground
+  // and through its wheels.
   if (riding) {
     const sx = p.x + Math.cos(yaw) * CRIT.side,
       sz = p.z - Math.sin(yaw) * CRIT.side,
-      sy = p.y + CRIT.up;
+      sy = p.y + CRIT.up - drop;
     if (!c.riding) c.t = 0;
     c.riding = true;
     c.t = Math.min(1, c.t + dt / 0.28); // the hop up
@@ -199,8 +206,10 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
   function walkPets(dt: number, riding: boolean) {
     const body = me.body;
     if (wardrobe.pet() === PET && body) {
-      const p = body.interpolatedPosition;
-      stepPet(dt, petOf('self', p).at, pets.get('self')!.mesh, p, me.yaw, riding);
+      const drop = seatDrop(me.avatar);
+      // Seated, the chair draws you on the moving deck's frame (seat.ts drawAtSeat): sit by that, not the body.
+      const p = drop && me.avatar ? me.avatar.position : body.interpolatedPosition;
+      stepPet(dt, petOf('self', p).at, pets.get('self')!.mesh, p, me.yaw, riding, drop);
     } else dropPet('self');
     for (const remote of remotes.values()) {
       const pet = partnerStowaway(remote.peer);
@@ -211,7 +220,7 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
       }
       const view = petOf(remote.peer, avatar.position);
       view.mesh.visible = avatar.visible;
-      stepPet(dt, view.at, view.mesh, avatar.position, avatar.rotation.y, pet.riding);
+      stepPet(dt, view.at, view.mesh, avatar.position, avatar.rotation.y, pet.riding, seatDrop(avatar));
     }
     // Sweep partners who left, and anyone whose stowaway went back.
     for (const key of [...pets.keys()]) if (key !== 'self' && !partnerStowaway(key)) dropPet(key);
