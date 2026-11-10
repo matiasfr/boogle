@@ -2,7 +2,7 @@
 
 > **Verdict:** Three cheap `?toon=` candidates against today's look; at play distance the step barely shows, the cool shade (B) and the ink line (C) do.
 > **Top recommendations:** 1. Pair B without its rim (`?toon=b&toonRim=0`) with the Odyssey-ish sea: a soft step and coloured shade, no draws, no pass. 2. Try C's line only if characters should pop at play distance; it is the one change you see at once, for about one draw per character mesh. 3. Keep the softness: the stronger bracket brings back the flattened dome turned down on 4 November.
-> **Status:** open. The owner picks; no default changed.
+> **Status:** decided 10 November: B without its rim is the default lighting ([decision](../decisions.md#look), [src/render/toon.ts](../../src/render/toon.ts)). A, C, the `?toon=a|b|c` flag and its `toonEdge=`-style query knobs are removed; the knobs are now `toon.*` tunables and `?toon=off` shows the old lighting. The sections below record the comparison as it was run; the outcome and the after-numbers are at the end.
 
 2026-11-10. The owner's 9 November note ("we will also revisit toon shading on characters and env", recorded with the
 Sunshine water call in [decisions](../decisions.md#decided)) asks for research and side-by-side boards first. It is one
@@ -169,14 +169,46 @@ Compare the archived screen-space ink: about 6 ms on the M1 Max ([round two](pos
   baked once per geometry would close them.
 - Lambert and Physical materials (clouds, the fall stage's letters) are not patched; neither appears in these poses.
 - The rim in B and C goes against the 2 November call ("no rim light" on Buddy); `toonRim=0` removes it.
-- The `toon` flag is read once at load. The boards' tool is `dev/look/toon-board.ts`.
+- The `toon=off` flag is read once at load. The boards' tool is `dev/look/toon-board.ts` (before/after).
+
+The candidates were made with `dev/look/toon-board.ts --modes base,a,b,c` and `npm run bench -- ... --query
+'intro=0&toon=c'` on main at #1423; the A/B/C code is in history there.
+
+## Outcome (10 November)
+
+The owner: "Let's go with shading style B and clean up". B is the default on every Standard material with the rim at 0
+(the [decision](../decisions.md#look) states that reading). It moved from a lazily loaded debug chunk, which rebuilt
+already compiled materials, to a patch `scene.ts` installs before the renderer initialises, so nothing compiles twice.
+The knobs keep their values as `toon.*` tunables; the hemisphere and key light are read from whichever scene renders,
+so the item icons keep their own lights.
+
+After, same seed, `?toon=off` against the default (boards `node dev/look/toon-board.ts`): Buddy at Home carries the
+soft step and ochre shade, no rim; the square barely moves; the pier and sea are unchanged apart from a slightly
+duller deck top; the bowl's shaded walls go cool blue-grey. A real-time walk with turns at Home showed the step's edge
+following Buddy's form without crawling or shimmering in consecutive frames (encoded video, loaded Mac).
+
+`npm run bench -- --no-load --rail-seed crossing-done --poses town,pier [--query toon=off]`, 2560×1600, M1 Max,
+load 7–14 throughout (other agents' runs), so the times are not evidence:
+
+| Mode | Pose | Draw calls | Shadow calls | Programs |
+| --- | --- | ---: | ---: | ---: |
+| `toon=off` | town | 398 | 109 | 220 |
+| `toon=off` | pier | 175 | 88 | 253 |
+| default | town | 398 | 109 | 220 |
+| default | pier | 175 | 88 | 251 |
+
+Two of three default runs missed the town timing sample after the bench's shadow toggle (one "No game frame in 30 s",
+the A/B failure above; one zero-frame sample); both `toon=off` runs passed. A shadow on/off probe at the town and
+overview cameras, logging new shader modules, found the WGSL identical on every rebuild (all repeats on the second
+toggle) and 3–21 s toggle stalls in both modes (default 3 of 5 runs, `toon=off` 1 of 4) on this loaded machine. Not
+proven either way: rerun the bench and a shadow toggle on a quiet Mac and on a phone, where the detail ladder turns
+shadows off.
 
 Reproduce:
 
 ```sh
-node dev/look/toon-board.ts --modes base,a,b,c --poses home,square,pier,bowl --name toon
-node dev/look/toon-board.ts --modes base,a,b,c --poses home,square,bowl --name toon-strong \
-  --query 'toonShade=0.55&toonSoft=0.035&toonKeep=0.1&toonFlat=0.75'
-npm run bench -- --no-load --rail-seed crossing-done --poses town,forge,pier --query 'intro=0&toon=c'
+node dev/look/toon-board.ts --modes off,on --poses home,square,pier,bowl --name toon-default
+npm run bench -- --no-load --rail-seed crossing-done --poses town,pier --query toon=off
+npm run bench -- --no-load --rail-seed crossing-done --poses town,pier
 ```
 

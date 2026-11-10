@@ -31,6 +31,14 @@ Read [cost](reference/cost.md) when changing render cost or choosing GPU checks.
 
 Read [direction](reference/direction.md) when changing render architecture.
 
+## Toon lighting
+
+[`toon.ts`](toon.ts) wraps `MeshStandardNodeMaterial`'s lighting model from `scene.ts` before anything compiles, so
+every Standard material gets a soft sun step, a flattened sky fill and a cool shade side (owner, 10 November: style B,
+no rim). Water, sky, unlit ink, particles and Physical/Lambert keep their own shading. Knobs: `toon.*` tunables
+([`toon-tuning.ts`](toon-tuning.ts)), literals off the tuning route (mind the Firefox rule in [tsl](reference/tsl.md)).
+`?toon=off` skips the patch for before/after looks.
+
 ## Cosmetic particles
 
 The shared particle pool defaults to its original soft round dot. `shape` also accepts `quad`,

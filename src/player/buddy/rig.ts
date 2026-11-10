@@ -226,7 +226,7 @@ export function createBuddySkin(
     holder.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
-      m.userData.toonCharacter = true; // read only by the ?toon= look candidates (src/debug/toon-shading.ts)
+      m.userData.toonCharacter = true; // read only by the toon rim, off by default (src/render/toon.ts)
       if ((m as THREE.SkinnedMesh).isSkinnedMesh) (m as THREE.SkinnedMesh).boundingSphere = bounds;
       if (m.name.startsWith('wear_')) m.visible = m.name.startsWith(options.hat);
       const shared = m.material as THREE.MeshStandardNodeMaterial;

@@ -1,8 +1,9 @@
-// Toon-shading boards (docs/research/toon-shading.md): the same four poses under today's look and each ?toon= candidate,
-// stitched into one board per pose and one overview. One local stack, one seeded room, one page per candidate.
-//   node dev/look/toon-board.ts [--seed crossing-done] [--modes base,a,b,c] [--poses home,square,pier,works]
-//     [--size 800x500] [--name toon] [--query 'toonEdge=0.3'] [--have base,a]
-// Stills are live frames, not frozen: trains, residents and the sea move between candidates. Cells are native pixels.
+// Toon before/after boards (docs/research/toon-shading.md): the same poses with the toon lighting off (`?toon=off`, three's
+// plain lighting) and on (the default, src/render/toon.ts), stitched into one board per pose and one overview. One
+// local stack, one seeded room, one page per mode. --query brackets the knobs (toon.* tunables need tune=1).
+//   node dev/look/toon-board.ts [--seed crossing-done] [--modes off,on] [--poses home,square,pier,bowl]
+//     [--size 800x500] [--name toon] [--query 'tune=1'] [--have off]
+// Stills are live frames, not frozen: trains, residents and the sea move between modes. Cells are native pixels.
 import fs from 'node:fs';
 import path from 'node:path';
 import { startStack, launch, Game, reportGfxErrors, sleep, type Stack } from './lib.ts';
@@ -12,17 +13,15 @@ import type { Browser } from 'playwright';
 const argv = process.argv.slice(2);
 const opt = (name: string, fallback: string) => (argv.includes(name) ? argv[argv.indexOf(name) + 1]! : fallback);
 const seed = opt('--seed', 'crossing-done');
-const modes = opt('--modes', 'base,a,b,c').split(',');
-const poseNames = opt('--poses', 'home,square,pier,works').split(',');
+const modes = opt('--modes', 'off,on').split(',');
+const poseNames = opt('--poses', 'home,square,pier,bowl').split(',');
 const size = opt('--size', '800x500').split('x').map(Number) as [number, number];
 const name = opt('--name', 'toon');
 const extra = opt('--query', '');
 const out = path.resolve('.look', name);
 const LABELS: Record<string, string> = {
-  base: 'Today (baseline)',
-  a: 'A · ramp on characters',
-  b: 'B · ramp on characters + world, soft rim',
-  c: 'C · B + ink hull on characters',
+  off: 'Before · toon=off',
+  on: 'After · toon (default)',
 };
 
 // Page code: stand Buddy, frame the debug camera. `sun` cameras sit across the sun so the terminator shows.
@@ -93,7 +92,7 @@ return { pose, body, eye, look };
 `;
 
 async function capture(browser: Browser, stack: Stack, mode: string) {
-  const query = [mode === 'base' ? '' : `toon=${mode}`, extra].filter(Boolean).join('&');
+  const query = [mode === 'off' ? 'toon=off' : '', extra].filter(Boolean).join('&');
   const g = await Game.open(browser, stack, {
     room: 'look-rail',
     query,
@@ -114,18 +113,8 @@ async function capture(browser: Browser, stack: Stack, mode: string) {
       if (g.errors.length) throw new Error(g.healthErrors().join('\n'));
       shots[pose] = await g.still(`${mode}-${pose}`);
     }
-    if (mode !== 'base') {
-      const state = await g.eval(`const m = await import('/src/debug/toon-shading.ts');
-        const { scene } = await import('/src/render/scene.ts');
-        let characters = 0, inks = 0, skinned = 0;
-        scene.traverse((o) => {
-          if (o.userData.toonCharacter) characters++;
-          if (o.userData.toonInk) { inks++; if (o.isSkinnedMesh) skinned++; }
-        });
-        return { mode: m.toonInstalled(), characters, inks, skinned };`);
-      console.log(`TOON ${JSON.stringify(state)}`);
-      if (state.mode !== mode) throw new Error(`toon ${mode} did not install (${state.mode})`);
-    }
+    const on = await g.eval(`return (await import('/src/render/toon.ts')).toonInstalled();`);
+    if (on !== (mode !== 'off')) throw new Error(`toon ${mode}: installed=${on}`);
   } finally {
     reportGfxErrors([g]);
     await g.close();
@@ -187,7 +176,7 @@ try {
   await writeRailSeed(stack.dataDir!, 'look-rail', seed);
   browser = await launch();
   const results: Record<string, Record<string, string>> = {};
-  // --have base,a: reuse those modes' stills already in this --name's folder (a rerun after one page failed to load).
+  // --have off: reuse those modes' stills already in this --name's folder (a rerun after one page failed to load).
   const have = opt('--have', '').split(',').filter(Boolean);
   for (const mode of modes)
     results[mode] = have.includes(mode)
@@ -199,7 +188,7 @@ try {
       await board(
         browser,
         path.join(out, `board-${pose}.png`),
-        `Toon candidates · ${pose} · seed ${seed}${extra ? ' · ' + extra : ''}`,
+        `Toon before/after · ${pose} · seed ${seed}${extra ? ' · ' + extra : ''}`,
         modes.map((m) => ({ label: LABELS[m] ?? m, image: results[m]![pose]! })),
         2,
       ),
@@ -208,7 +197,7 @@ try {
     await board(
       browser,
       path.join(out, 'board-all.png'),
-      `Toon candidates · rows: ${poseNames.join(', ')} · columns: ${modes.map((m) => LABELS[m] ?? m).join(' | ')}`,
+      `Toon before/after · rows: ${poseNames.join(', ')} · columns: ${modes.map((m) => LABELS[m] ?? m).join(' | ')}`,
       poseNames.flatMap((pose) => modes.map((m) => ({ label: `${m} · ${pose}`, image: results[m]![pose]! }))),
       modes.length,
     ),

@@ -7,6 +7,7 @@ import { graphicsInitial, registerGraphics } from '../graphics-settings.ts';
 import { playMark } from '../proto/mark.ts';
 import { bootMark } from '../boot/timeline.ts';
 import { splashDone } from '../boot/splash.ts';
+import { installToon } from './toon.ts';
 
 export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
@@ -14,6 +15,8 @@ export const canvas = document.getElementById('view') as HTMLCanvasElement; // i
 // second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
 // render() throws until init() resolves, so main.ts starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
+// The toon lighting model (owner, 10 November) is patched in before any material can compile.
+installToon();
 const msaaDefault = !isTouch; // Owner call, 4 November: touch devices skip scene MSAA; desktop keeps 4x.
 const msaa = graphicsInitial('msaa', [true, false], msaaDefault) === true;
 export const renderer = new THREE.WebGPURenderer({

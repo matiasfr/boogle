@@ -136,11 +136,15 @@
   view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every tile
   border so there are no cracks ([far-ground.ts](../../src/proto/place/far-ground.ts)). Both wait for the
   owner's stills before becoming defaults; `?dev=1&graphics=farSea:true,farGround:true` turns them on.
-- **Toon-shading candidates (Local, off, 10 November).** `?toon=a` steps the sun's diffuse softly and flattens the
-  sky fill on characters (Buddy, remote Buddies, the folk); `toon=b` does that on every Standard-lit surface with a
-  cool shade side and a soft sun-side rim on characters; `toon=c` adds an inverted-hull ink line on characters. One
-  wrapped lighting model, no clones, no pass; the sea keeps its own shading. Knobs and boards:
-  [toon-shading](../research/toon-shading.md). No default change; the owner picks with the water.
+- **Toon lighting (default, 10 November owner call: style B without its rim).** Every Standard-lit surface,
+  characters and environment alike, takes a soft step on the sun's diffuse (edge N·L .22 ± .07, lit plateau .8
+  with 30% of the cosine kept so heads stay round), a sky fill with 55% of its up/down gradient removed, and a cool
+  shade side keeping 72% of the fill. One wrapped lighting model patched in before anything compiles
+  ([src/render/toon.ts](../../src/render/toon.ts)): no clones, no draws, no pass. The sea, sky, unlit ink, particles
+  and Physical/Lambert materials keep their own shading. No rim (the 2 November call on Buddy); `toon.rim` is a
+  tunable at 0. Knobs `toon.edge|soft|lit|keep|flat|shade|rim` are Local tunables (live with Dev or `tune=1`);
+  `?toon=off` shows three's plain lighting for comparison, and `node dev/look/toon-board.ts` makes the before/after
+  boards. Research and the removed candidates: [toon-shading](../research/toon-shading.md).
 - **Production-water Looks.** Place or crossing with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
   Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
   the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
