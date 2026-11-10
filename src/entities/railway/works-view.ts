@@ -15,6 +15,7 @@ import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
+import { playSharedMoment } from './shared-moment.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { reducedMotion } from '../../constants.ts';
 import { goldMote } from './breaker-view.ts';
@@ -641,6 +642,7 @@ export async function createRailwayWorks(
       4.8,
       3.4,
     );
+    return throatCamera.active();
   }
   const fromBack = new THREE.Vector3();
   function avatarBack(pid: string, out: THREE.Vector3) {
@@ -735,7 +737,7 @@ export async function createRailwayWorks(
         solid(false);
         startTopple(delay + 0.07);
         open = true;
-        if (e.pid === state.pid) throatShow();
+        playSharedMoment('works throat', e, state.pid, throatShow);
         const c = new THREE.Vector3(throat.x, 24, throat.z);
         later.after(delay + 0.07, () => {
           clank(c.x, c.z);
