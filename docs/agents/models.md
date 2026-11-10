@@ -10,17 +10,18 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
 - **Enforcement:** in normal mode `dev/codex/run.ts` and `npm run queue` refuse Codex jobs except previz, which is
   still tried because only Codex paints; at a limit, images wait and the owner is told. The `planner`, `implementer` and `designer`
   frontmatter must match `agents` in `dev/models.ts` (`test/models.test.ts`).
-- **Effort at spawn:** where a route names an effort different from the agent's frontmatter (high-risk implementation),
-  pass it as the Agent tool's `effort`. Opus `max` only when the owner asks.
+- **Opus at medium** (owner, 9 November: "use opus medium instead of opus high, unless we encounter bugs or opus
+  medium is not sufficient to solve the problem"): every Opus route runs at medium. Raise a single task to high, as
+  the Agent tool's `effort`, only when it hits bugs medium couldn't fix or medium's result falls short, and say so in
+  the report. Opus `max` only when the owner asks.
+- **Orchestrator** runs Opus medium, Opus high or Fable medium (owner, 9 November: "orchestrator can use opus
+  medium, high, or fable medium").
 - **Fable only for the orchestrator** (owner, 9 November, after measuring that Fable 5.2 uses the weekly limit about
   2.9x as fast as Opus 5.5 per million output tokens, and fills its own Fable limit too): the main session is the only
-  steady Fable user. The independent review stays on Fable at medium because it runs rarely and the reviewer can't be
-  the Opus that wrote the code. Planning, the hardest design, research and second-opinion work, and every
+  steady Fable user. The independent review runs at medium on Fable or Opus (owner, 9 November: "so can the independent review"). Planning, the hardest design, research and second-opinion work, and every
   `/code-review` run on Opus. Per-task savings at API prices (the Fable 5.2 system card) don't carry over to a
   subscription, where the limit is what runs out.
-- **Code review** runs in an Opus high general-purpose subagent with `/code-review high`, never in the main session,
-  which runs on Fable. Opus reviewing Opus-written code is fine for this check; the independent review below is the
-  different-model one.
+- **Code review** runs in an Opus medium general-purpose subagent with `/code-review medium`, never in the main session.
 - **Fable tops out at high** (owner, 10 November: "don't use fable xHigh, fable high should be the absolute top
   used"). No route, spawn or review runs Fable at xhigh or max (`fableTopEffort`, `test/models.test.ts`), and it
   doesn't run at low either: the Fable 5.2 system card shows low saving about 15% of medium's cost for a clear drop
@@ -29,10 +30,10 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   in one pass; `--panel` runs three, one per role, for a new area or big mechanic (owner, 9 November).
 - **Design review:** every plan or brief with gameplay calls gets the `designer` agent before it is built (owner,
   9 November).
-- **Independent review** (owner, 9 November): the reviewer of a lockstep, net, world or server change is never the
-  model that wrote it in the same session, and in withCodex mode it is the other vendor (Codex reviews Claude's code,
-  Claude reviews Codex's), because an author and a reviewer on the same model share blind spots. Where a suspected
-  defect can be shown by a test, the reviewer writes the failing test instead of only describing it.
+- **Independent review** (owner, 9 November): the reviewer of a lockstep, net, world or server change is a fresh
+  agent with none of the author's context; any model on the route will do, including the author's (owner: "i dont
+  think that blind spot is too real, the context matters more"). Where a suspected defect can be shown by a test, the
+  reviewer writes the failing test instead of only describing it.
 - **Runner** (owner, 9 November): a built branch that only owes proofs (a rebase, bot runs, stills, tick marks) goes
   to the runner route, not an implementer. A runner that hits a failure reports it; it doesn't change design or game
   code.
