@@ -56,10 +56,18 @@ import {
   line2Served,
   railCarryMax,
 } from '../sim/railway-line2.ts';
-import { LINE_HALTS, TRAIN, TRAIN_PHASE, reqHas, trainStopsOf, type RailTrain } from '../sim/railway-train.ts';
+import {
+  LINE_HALTS,
+  TRAIN,
+  TRAIN_PHASE,
+  reqHas,
+  trainCanBrake,
+  trainStopsOf,
+  type RailTrain,
+} from '../sim/railway-train.ts';
 import { trainStops } from '../sim/railway-line2.ts';
-import { RAIL_TRAINS } from '../sim/railway-lines.ts';
-import { LINE_SLOTS, atEnd, trainServes, type RailLineRow } from '../sim/railway-trains.ts';
+import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { LINE_SLOTS, atEnd, trainPose, trainServes, type RailLineRow } from '../sim/railway-trains.ts';
 import { RAIL_ROCKS, WORKS_ROCKS } from '../sim/railway-works-layout.ts';
 import { pierNeed, worksStage } from '../sim/railway-works.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
@@ -189,8 +197,10 @@ export const railStopsNow = (s: Pick<RailTrainsRead, 'line2'>, line: number) =>
 export function railServing(s: RailTrainsRead, line: number, stop: number, dir: number, tick: number) {
   return trainServes((k) => s.trains[k]!, line, railStopsNow(s, line), stop, dir, Math.floor(tick));
 }
-/** Whether train `slot` is on its way to a request stop it will make: its riders' ask, or a lever ask at a middle halt
- * it is the serving train for (its amber stop lamp; design review, finding 2). Off while it stands at a halt. */
+/** Whether train `slot` is on its way to a request stop it will make: its riders' ask at a halt it can still brake for
+ * (one asked too late, which it runs through and drops at its turnback, leaves the lamp dark), or a lever ask at a
+ * middle halt it is the serving train for (its amber stop lamp; design review, finding 2). Off while it stands at a
+ * halt. */
 export function railTrainAsked(s: RailTrainsRead, slot: number, tick: number) {
   const r = s.trains[slot]!,
     line = railLineOf(slot),
@@ -198,9 +208,11 @@ export function railTrainAsked(s: RailTrainsRead, slot: number, tick: number) {
     n = stops.length,
     dir = r.track ? -1 : 1;
   if (!s.line2.trains || (r.phase === TRAIN_PHASE.STAND && r.at >= 0)) return false;
-  const lineReq = s.lines[line]!.req;
+  const lineReq = s.lines[line]!.req,
+    pose = trainPose(r, line, stops, Math.floor(tick));
   for (let k = 1; k < n - 1; k++) {
-    if (reqHas(r.req, k, dir, n)) return true;
+    if (reqHas(r.req, k, dir, n) && (r.to === k || trainCanBrake(pose.s, pose.v, dir, stops[k]!, RAIL_LINES[line]!)))
+      return true;
     if (reqHas(lineReq, k, dir, n) && railServing(s, line, k, dir, tick) === slot) return true;
   }
   return false;
