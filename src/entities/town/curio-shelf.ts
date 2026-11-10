@@ -37,7 +37,7 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
   ]);
   const SX = toWorld(SHELF.x),
     SZ = SHELF.z,
-    SY = H(SX, SZ);
+    SY = SHELF.y ?? H(SX, SZ);
   const shelf = new THREE.Group();
   shelf.position.set(SX, SY, SZ);
   shelf.rotation.y = SHELF.yaw;
