@@ -387,7 +387,7 @@ function startWorld(room: Room) {
         case 'rail.pack':
           return adapter.openPack();
         case 'rail.boilerTake':
-          return adapter.shoulderBoiler(intent.revision);
+          return adapter.takeBoiler(intent.revision);
         case 'rail.boilerDrop':
           return adapter.dropBoiler(intent.x, intent.y, intent.z, intent.revision);
         case 'rail.boilerFit':

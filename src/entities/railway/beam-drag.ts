@@ -40,11 +40,12 @@ const a = new THREE.Vector3(),
   d = new THREE.Vector3();
 
 export type BeamDrag = ReturnType<typeof createBeamDrag>;
-/** One carried load's drag. `beam` is the worn model's trunk mesh; it is moved into world space under `world`.
- * `shape` is the load's size and sounds; the great beam's by default. */
+/** One carried load's drag. `beam` is the load's model (the worn trunk mesh, or a group whose +Z is the load's long
+ * axis, centred on it); it is moved into world space under `world`. `shape` is the load's size and sounds; the great
+ * beam's by default. */
 export function createBeamDrag(
   world: THREE.Object3D,
-  beam: THREE.Mesh,
+  beam: THREE.Object3D,
   ground: (x: number, z: number) => number,
   ropeMaterial: THREE.Material,
   shape: DragShape = BEAM_SHAPE,
@@ -137,6 +138,10 @@ export function createBeamDrag(
   return {
     /** Where a friend reaches for the dragging end (the Help carry prompt). */
     grip,
+    /** The far end's axis point as last drawn, on the ground unless lifted (read only). */
+    tail: far as Readonly<THREE.Vector3>,
+    /** Whether it has been drawn since the last hide or reset. */
+    shown: () => started,
     reset() {
       started = false;
       springReady = false;

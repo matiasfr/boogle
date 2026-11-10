@@ -436,7 +436,7 @@ export async function createRailwayLine2(
       switchCamera.play(from, to, at, seconds);
     },
   });
-  const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces }, chimneyTop);
+  const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces, flat }, chimneyTop);
   const pier = createRailwayPier(owner, { layout, rail, sounds });
 
   // ---------------------------------------------------------------- the machine on line two
@@ -815,6 +815,9 @@ export async function createRailwayLine2(
   const api = {
     /** Line two owns the machine once the forge is lit and the turn has played. */
     working,
+    /** The boiler's haul pace (before the controller) and its rope (after Buddy's final pose). */
+    prePhysics: () => boiler.prePhysics(),
+    lateUpdate: () => boiler.lateUpdate(),
     step,
     panelFrame: (dt: number) => panels.frame(dt),
     snapshot() {

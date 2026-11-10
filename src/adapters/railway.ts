@@ -43,7 +43,13 @@ import {
   type LineStationId,
 } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
-import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import {
+  LINE2_BOILER_HAUL,
+  LINE2_PACK,
+  LINE2_STATIONS,
+  line2Routes,
+  type Line2StationId,
+} from '../sim/railway-line2-layout.ts';
 import {
   line2Active,
   line2Trains,
@@ -150,6 +156,8 @@ export type RailwayCorrection = Readonly<{
 export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   beamSoloSpeed: tune.get('railBeamSoloSpeed') / 100,
   beamHelpSpeed: tune.get('railBeamHelpSpeed') / 100,
+  boilerSoloSpeed: LINE2_BOILER_HAUL.solo / 100,
+  boilerHelpSpeed: LINE2_BOILER_HAUL.help / 100,
   jumpImpulse: tune.get('railJumpImpulse') / 100,
   jumpTurn: tune.get('railJumpTurn') / 100,
   jumpSteer: tune.get('railJumpSteer') / 100,
@@ -167,6 +175,8 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
 export type RailwayMovement = {
   beamSoloSpeed: number;
   beamHelpSpeed: number;
+  boilerSoloSpeed: number;
+  boilerHelpSpeed: number;
   jumpImpulse: number;
   jumpTurn: number;
   jumpSteer: number;
@@ -778,6 +788,8 @@ export function createRailwayAdapter({
     !!b &&
     a.beamSoloSpeed === b.beamSoloSpeed &&
     a.beamHelpSpeed === b.beamHelpSpeed &&
+    a.boilerSoloSpeed === b.boilerSoloSpeed &&
+    a.boilerHelpSpeed === b.boilerHelpSpeed &&
     a.jumpImpulse === b.jumpImpulse &&
     a.jumpTurn === b.jumpTurn &&
     a.jumpSteer === b.jumpSteer &&
@@ -1118,7 +1130,7 @@ export function createRailwayAdapter({
     depotTake: () => submit({ op: 'rail.depotTake' }),
     depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
     openPack: () => submit({ op: 'rail.pack' }),
-    shoulderBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
+    takeBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
     dropBoiler: (x: number, y: number, z: number, revision: number) =>
       railInt(revision) &&
       railInt(x, 200000, -200000) &&

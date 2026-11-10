@@ -805,7 +805,7 @@ test('no breaker and no strike sent while you haul the boiler', () => {
   const a = w.join('a', 'a'),
     b = w.join('b', 'b');
   w.ready();
-  assert.equal(a.adapter.shoulderBoiler(w.api.boiler().revision), true);
+  assert.equal(a.adapter.takeBoiler(w.api.boiler().revision), true);
   w.quiet();
   assert.equal(w.api.boiler().state, 'held');
   assert.equal(a.adapter.takeBreaker(), false);

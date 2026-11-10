@@ -373,6 +373,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     owner,
     prePhysics: () => {
       sources.prePhysics();
+      line2.prePhysics();
       works?.prePhysics();
       hook.prePhysics();
     },
@@ -538,6 +539,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     },
     lateUpdate: () => {
       sources.lateUpdate();
+      line2.lateUpdate();
       works?.lateUpdate();
     },
     targets(): Interactable[] {

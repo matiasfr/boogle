@@ -150,6 +150,9 @@ export function line2Panels(station: Line2Station) {
 /** Boiler pickup and camp fit anchors, world cm, pinned from Place. */
 export const LINE2_BOILER = { x: 91900, z: 540, y: 1815, reach: 420 } as const;
 export const LINE2_OLD_TRAIN = { x: 100964, z: -14900, reach: 800 } as const;
+/** The boiler's haul pace on its rope, cm/s, solo and with a friend's help (docs/plans/boiler-first-choice.md, Part 3;
+ * designer, 9 November). Free walking is 560, the great beam 220 and 500. Read by the view only. */
+export const LINE2_BOILER_HAUL = { solo: 300, help: 540 } as const;
 export const LINE2_BOILER_AREA = { x0: 88000, x1: 104000, z0: -17200, z1: 3500, y0: 1000, y1: 4500 } as const;
 export function line2BoilerGround(x: number, y: number, z: number) {
   const a = LINE2_BOILER_AREA;

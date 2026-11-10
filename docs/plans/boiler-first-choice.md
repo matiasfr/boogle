@@ -373,7 +373,7 @@ Step 2 is the guard only and can ship with step 3.
     supplies), and a second case with presence outside the area ends `pedestal`; a holder back within the grace still
     holds it.
   - Verify: `npm run check`; `npm --prefix server test`; `npm run test:net`.
-- [ ] **6. The boiler on the rope.**
+- [x] **6. The boiler on the rope.**
   - `src/sim/railway-line2-layout.ts`: `export const LINE2_BOILER_HAUL = { solo: 300, help: 540 } as const` (cm/s).
     This is the step's only `src/sim` line: a constant, read by the view.
   - `src/adapters/railway.ts`: `railMovement` and `RailwayMovement` gain `boilerSoloSpeed` and `boilerHelpSpeed`
