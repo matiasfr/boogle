@@ -16,6 +16,7 @@ import {
   railwayCheck,
 } from '../src/sim/railway-world.ts';
 import { railAccount } from '../src/sim/railway.ts';
+import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { line2Active, line2KitOwed, line2Rails, line2Schedule, line2Trains } from '../src/sim/railway-line2.ts';
 import { trainOwed } from '../src/entities/railway/forge-offer.ts';
@@ -49,6 +50,14 @@ test('a held boiler blocks the back', () => {
   assert.equal(act(w, 'b', 'rail.boilerTake', { revision: w.s.line2!.boiler.revision }), 1);
   for (const op of ['rail.forgeTake', 'rail.depotTake', 'rail.depotRailTake', 'rail.rackTake', 'rail.beamTake'])
     assert.equal(act(w, 'b', op, { revision: w.s.line!.beam.revision }), 0);
+  // The five above give nothing here to an empty back either; a chop and a pile do, and the boiler refuses both.
+  const tree = RAILWAY_SOURCES[w.s.sources.findIndex((left) => left > 0)]![0];
+  const pile = w.s.piles.find((p) => (p.kind ?? 0) === 0 && p.n > 0)!;
+  assert.ok(pile, "the apron keeps Q5's leftover log piles");
+  assert.equal(act(w, 'b', 'rail.chop', { id: tree, yaw: 0, collapsed: false }), 0, 'no chop onto a boiler back');
+  assert.equal(act(w, 'b', 'rail.take', { id: pile.id, kind: 0 }), 0, 'no pile onto a boiler back');
+  assert.ok(act(w, 'a', 'rail.chop', { id: tree, yaw: 0, collapsed: false }) > 0, 'a free back chops');
+  assert.ok(act(w, 'a', 'rail.take', { id: pile.id, kind: 0 }) > 0, 'a free back takes the pile');
 });
 test('dropped where released, on Home only', () => {
   const w = railwayAtTrains('boiler-camp'),
