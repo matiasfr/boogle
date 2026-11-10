@@ -257,12 +257,17 @@ export const PROPS = {
   dock: { x: -76.15, z: -1.73 },
   yard: { x: -46, z: 22 },
 };
-/** The curio shelf, against the inside of the hall's north end wall, facing in, standing on the hall's floor. Its finds
- * board makes it 7.05 m long against the 6 m wall, so it is centred on the hall's depth: it stands 0.5 m proud at each
- * end (0.85 m at the board's end if the board grows to 2.2 m). */
+/** The curio shelf's footprint in its own frame (`curio-shelf.ts`): the crown's half-width, the finds board's far edge
+ * on +x, how far the crown reaches in front and the back panel behind, and the crown's top over its floor. */
+export const SHELF_SIZE = { crown: 2.95, board: 4.35, front: 0.59, back: 0.35, top: 3.47 };
+/** The curio shelf (owner, 9 November: "move shelf off north wall"): in the hall's front, south of the way in, just
+ * behind the front posts and facing the square, its finds board toward the south wall. North of it the way from the
+ * square to the trains and spawn's view of the forge stay open; it keeps off the back span (the line map, step 12) and
+ * leaves the south wall 0.15 m clear for the works board (call 29). */
 export const SHELF_B = (() => {
-  const p = axisPoint(HALL.a - 0.825, HALL.c - HALL.w / 2 + 0.3 + 0.35);
-  return { ...p, yaw: Math.atan2(AXIS.n.x, AXIS.n.z), y: HALL.floor };
+  const a = HALL.a - HALL.d / 2 + 0.2 + 0.175 + 0.05 + SHELF_SIZE.front,
+    c = HALL.c + HALL.w / 2 - 0.3 - 0.15 - SHELF_SIZE.board;
+  return { ...axisPoint(a, c), yaw: Math.atan2(-AXIS.d.x, -AXIS.d.z), y: HALL.floor };
 })();
 /** The two village halts become one island: each line's platform edge, by its own `s`. */
 export const ISLAND_HALTS = [

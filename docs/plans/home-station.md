@@ -89,8 +89,9 @@ Axis: bearing 70°, unit d = (0.9397, −0.3420); its right-hand normal n = (0.3
   line 1 s 2.8 to 20.8 and line 2 s 5.7 to 23.7. No ramp off the back (it would cross a track).
 - **Concourse**, 13 × 6 m (the page had 13 × 7), centre (−90.16, 11.03), long side across the axis, 1.0 m behind the
   buffers. Corners (−95.21, 5.95), (−89.57, 3.90), (−85.12, 16.12), (−90.76, 18.17). An open hall on posts with end
-  walls: the square sees through it to the buffers and trains. The curio shelf moves inside, on the north end wall at
-  (−91.70, 6.80) facing into the hall. The south end wall at (−88.62, 15.26) is reserved for the works board.
+  walls: the square sees through it to the buffers and trains. The curio shelf moves inside, to the hall's front south
+  of the way in, behind the front posts at (−91.45, 13.31) facing the square (owner, 9 November: "move shelf off north
+  wall"). The south end wall at (−88.62, 15.26) is reserved for the works board.
 - **Engine spur.** Leaves road 2 at s 5.5 (−77.49, 10.47) to the right, R 15 through 60° (15.71 m) to bearing 130°, then
   1.5 m straight to the rim. **Table** centre (−57.90, 17.12), r 4.8 (9.6 m), 24.6 m from today's (the page said about
   21 m; the larger spur radius moved it). Ground 18.0 m, flat.
@@ -351,9 +352,17 @@ change; the full loop once a day").
   - Spawn's sightline (owner, 9 November: "Lower end walls"): the hall's end walls stop at 2.4 m with a coping, the
     roof stays at 4.6 m on posts (corner posts added), and spawn keeps facing 14°. The curio shelf stands on the hall's
     floor (`HALL.floor`, 18.34 m) against the north wall's inside face, with room for a finds board up to 2.2 m wide.
-    Found in the stills: the shelf (about 3.5 m tall) now does the hiding. From spawn it spans bearings −3° to 36°,
-    the forge frame is at 19°, and the forge shows about 40% of its face, as before, plus its frame's top beams over
-    the shelf. Open owner call: move the shelf off the north wall, or cut it under 2.4 m.
+    Found in the stills: the shelf (about 3.5 m tall) then did the hiding: from spawn it spanned bearings −3° to 36°,
+    the forge frame is at 19°, and the forge showed about 40% of its face.
+  - **Decided 9 November (owner): "move shelf off north wall".** `SHELF_B` stands in the hall's front, south of the way
+    in: just behind the front posts (5 cm clear), facing the square, its finds board toward the south wall, which keeps
+    0.15 m for the works board. From spawn its corners sit 51° to 119° right of north, clear of the forge (13° to 49°);
+    it is off the back span (the line map), and the way from the square to the trains (the hall's north half) stays
+    open. Entering from the square it stands on your right, gifts facing you. Full height and the finds board are kept.
+    The finders' bay (F2) is 10 m away at (−104, 7) and does not move. Stills (spawn pose 903, 19.8, 14): the forge
+    shows about half its face, up from about 40%; its top half reads over the coping and its south end through the
+    hall, and the wall itself hides its lower north third, as the coping (20.86 m) stands about 1 m over that eye.
+    Open owner call if "most of it" is wanted: the north end wall at about 1.1 m, or spawn's camera higher.
 - [ ] **4. The owner sees it.** Send the full link `https://boogle.club/?home=b` and the three stills. Designer rules on
   the Level findings and questions 1 to 7. Adjust step 1's numbers if he moves anything, and rerun steps 1 to 3's checks.
 - [ ] **5. Make tools follow the anchors.** No behaviour change.
@@ -406,10 +415,11 @@ change; the full loop once a day").
   line map stands at the Home station"). Port the line map of the archived departures board (`?proto=board`, in
   26270adb) as the one big board: both lines, laid track solid and the rest dashed, this station ringed, trains at
   their live positions. No fast travel or picker.
-  - **Where:** across the hall's back, the island side, hung under the roof between the two middle back posts (about
-    6 m wide by 1.8 m, its bottom at 2.4 m), facing the square. Everyone walking from the square to the trains faces it,
-    the square sees it straight through the open front, and it takes neither end wall: the north one holds the curio
-    shelf and stays low for the forge, the south one is the works board's (call 29).
+  - **Where:** across the hall's back, the island side, hung under the roof from the back post at c 0.55 to c 5.55
+    (about 5 m wide by 1.8 m, its bottom at 2.4 m), facing the square. Everyone walking from the square to the trains
+    faces it, the square sees it straight through the open front, and it takes neither end wall: the north one stays
+    low for the forge, the south one is the works board's (call 29). 5 m, not 6: from the square the moved curio shelf
+    hides the back span south of c 5.55.
   - Verify: stills from the square and from spawn; a short video of a train moving on it; `npm run perf`.
 
 ## Level findings
@@ -545,7 +555,9 @@ are where these get checked (listed under "Smallest version", below).
    shelf, which is good) and lose most of the forge behind it. Keep end walls below eye height above the shelf (about
    2.4 m, open above to the roof) or turn spawn to about 40° so the forge and the hall's front share the frame. Decide
    from step 3's spawn still. Spawn is where a returning player starts; a newcomer lands on the shore (below).
-   **Decided 9 November (owner): "Lower end walls"**: 2.4 m, the roof on posts, spawn still facing 14°.
+   **Decided 9 November (owner): "Lower end walls"**: 2.4 m, the roof on posts, spawn still facing 14°. Then, as the
+   shelf stood in the line, **"move shelf off north wall"** (9 November): it stands in the hall's front, south of the
+   way in (step 3).
 10. **`WORKS.rollTicks` 60 to 110: yes.** 11 s once per world, while the wagon visibly comes out; same 4.3 m/s.
 
 ### My view on the owner's questions
@@ -577,7 +589,7 @@ are where these get checked (listed under "Smallest version", below).
 | 11 | Island 4.3 m; deck 18 m at rail + 0.72; head ramp 5 m, end ramp 4 m, no back ramp; 3.3 m ground apron | Default | Research recommendation 5 |
 | 12 | Track centres 7.6 m; canopy at least 4.6 m above the rail; curves 18 m (lines) and 15 m (leg, spur) | Default | Plan's clearance table |
 | 13 | Hall 13 × 6 m, open front, end walls, 3.7 m from the path's end | Default | Ruling 7, with the spawn amendment (call 37) |
-| 14 | Curio shelf inside, on the north end wall, facing in | Default | Visible from spawn through the front; check in step 3 |
+| 14 | Curio shelf inside, in the hall's front south of the way in, facing the square | Decided | Owner, 9 November: "move shelf off north wall" |
 | 15 | Spur R 15 through 60°; table at (−57.90, 17.12), 24.6 m from today's | Default | Plan |
 | 16 | Stall doors 8.5 m out, 9 m deep, 3.6 m clear by 4.0 m high | Default | Research ratios |
 | 17 | The cart's forge stop is road 2 s 0 at the buffers | Default | Ruling 3 |
@@ -592,7 +604,7 @@ are where these get checked (listed under "Smallest version", below).
 | 26 | The shunt reverses on road 2's buffer stub | Default | Finding 8 |
 | 27 | Footings walk 19 to 36 m against 11 m | Default | Ruling 4 |
 | 28 | Pedestal to stall seam 32 m (14 today); forge rack to stall 32 m (15 today) for the cradle's 8 rails | Default | Once each per world; finding 7 |
-| 29 | The works board on the hall's south end wall | New | Recommend the wall's inside face, mirroring the shelf on the north wall, so the hall is where the room's record lives and both are seen from the square through the front. Overlaps the logged upgrade-choices call |
+| 29 | The works board on the hall's south end wall | New | Recommend the wall's inside face, so the hall is where the room's record lives and it is seen from the square through the front; the shelf leaves it 0.15 m. Overlaps the logged upgrade-choices call |
 | 30 | Engine 1.25×, engine only | New | Owner's question 8; my view above |
 | 31 | Stalls at 160°, 190°, 220° instead of the approved 130°, 160°, 190° | New | Owner's question 1; my view above |
 | 32 | v24 carries this, the cart-call removal, the boiler pace tunables and the Pier fix if ready | Default | Owner's question 9 (timing); one bump |
