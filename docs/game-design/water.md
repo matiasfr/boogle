@@ -243,10 +243,16 @@ arithmetic per sea pixel (two exponentials, one sine and a few mixes; the same f
 tuning off the value is a constant. Sunshine-ish is one constant away: `SUN.look` in `surface.ts`. No refraction,
 colour copy, real reflections, FFT or Nintendo assets.
 
-**The sky** (owner, 10 November: "do we still use sky? we can remove otherwise"). The sea no longer reads the sky
-cube. The cube stays because it is the visible summer sky the owner chose on 6 November (clouds, sun lane and haze
-drawn as the background) and it also feeds the distance fog's colour, the PBR environment and the hemisphere fill
-read at load; a flat gradient would change all four. It stays the 512 cube; the code is still under `water/`.
+**The sky** (owner, 10 November: "do we still use sky? we can remove otherwise", then "Can we remove any of the fog
+or lighing source if its not being used?"). The sea's reflection and haze and the scene's distance fog read two
+colours taken once from a healthy summer bake (`skyGradient` in `sky-art.ts`; below the horizon, the horizon colour),
+and the hemisphere fill is two constants from the same bake (`FILL` in `frozen-sky.ts`), so none of them reads the
+cube. Matched stills at the cove, Far Head toward the sun, Far Head, the summit, Home and the museum look the same. The
+cube remains the visible summer sky the owner chose on 6 November (the background: clouds, sun lane and haze) and
+the PBR environment; the load still reads four of its texels to catch a black bake (9 November, iPhone) and fall back
+to the flat sky, and the opt-in evening proof still reads its own fill. It is the 512 cube, about 16 MiB with mips,
+baked once behind loading (atmosphere tables on the CPU, six face draws, a mip chain). Dev rebakes of the sky no
+longer move the fill, fog or sea colours.
 
 **Cost, Ultra (main at `f4481457`) against now**, same session, same five poses (cove, pier head, Far Head, summit,
 telescope), 1180×820 on the Mac; counts, not timings (the machine was loaded, so no GPU times are claimed): render

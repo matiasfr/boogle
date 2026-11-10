@@ -4,6 +4,13 @@ import { TSL, type N } from './tsl.ts';
 
 const { Fn, abs, float, length, max, min, mix, normalize, pow, smoothstep, vec3, vec4 } = TSL;
 
+/** The summer sky as two colours, read once (9 November, linear) from a healthy bake at the blur the sea and fog used:
+ *  the horizon averaged round the compass and the clear sky above 45°. The sea's reflection and haze and the scene fog
+ *  use these; only the visible background and the PBR environment read the cube. `y` is the direction's height, 0..1. */
+const HORIZON = vec3(3.6, 5.25, 7.15),
+  ZENITH = vec3(0.45, 1.96, 5.21);
+export const skyGradient = (y: N) => mix(HORIZON, ZENITH, smoothstep(0, 0.75, y).sqrt());
+
 // Irregular azimuth, elevation, size and aspect: distant banks, medium clusters and a few high crowns.
 // These are authored Local coordinates, never simulation state.
 const clusters = [
