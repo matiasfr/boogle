@@ -174,7 +174,9 @@ Keep it on a single machine: the volume is per-machine and the hosted rooms live
 
 ## Continuous deploy
 
-`.github/workflows/deploy-server.yml` runs the server tests, builds the image and then `flyctl deploy` (one machine) from the repo root on every push to `main` that touches `server/` or what the image carries (`src/world/`, `src/sim/`, `src/net/ids.ts`, `src/net/ws-wire.ts`), on merged PRs that touch them (dispatched by `automerge.yml`), and by hand from the Actions tab. It then polls `https://<app>.fly.dev/healthz` for up to two minutes. Without a `FLY_API_TOKEN` secret the deploy job is skipped (grey, not red), so forks stay green.
+`.github/workflows/deploy-server.yml` runs the server tests, builds the image and then `flyctl deploy` (one machine) from the repo root on every push to `main` that touches `server/` or what the image carries (`src/world/`, `src/sim/`, `src/net/ids.ts`, `src/net/ws-wire.ts`), on merged PRs that touch them (dispatched by `automerge.yml`), and by hand from the Actions tab. Before deploying, it boots the built image with an empty data dir and requires `/version` to answer (`scripts/server-boot-check.sh`, also in CI). It then polls `https://<app>.fly.dev/healthz` for up to two minutes. Without a `FLY_API_TOKEN` secret the deploy job is skipped (grey, not red), so forks stay green.
+
+**A new shared file the server imports** (anything outside `server/` not already under a copied folder) goes in three places: a COPY line in `server/Dockerfile`, the path list in `dev/server-build.ts` (the build identity) and the `paths:` filter above. `test/server-image.test.ts` (in `npm run check`) walks the imports from `server/src/index.ts` and the seed prebuild and fails until all three list it; a missing one crash-looped the deployed server on 10 November.
 
 Human checklist, once:
 
