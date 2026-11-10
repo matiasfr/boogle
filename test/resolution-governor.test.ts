@@ -86,6 +86,24 @@ test('a device on the edge of a step probes it at most once per 40 s after the f
   assert.ok(fitting / 240 >= 0.85, `${((fitting / 240) * 100).toFixed(0)} % of the time at the ratio that fits`);
 });
 
+// Chromium on a 120 Hz Mac (bench --scaler, 9 November): every frame on time, but rAF stamps jitter by about a
+// millisecond, so the median sat 1.11–1.19 x the 10th percentile and the calm reset; after a load it took 37 s to
+// climb one step and never reached full resolution in a minute.
+test('climbs back at 120 Hz when the frame stamps jitter', () => {
+  const g = createGovernor(0.6);
+  let rng = 3,
+    t = 0,
+    full: number | null = null;
+  const rand = () => (rng = (rng * 1103515245 + 12345) % 2147483648) / 2147483648;
+  while (t < 60 && full === null) {
+    const ms = 1000 / 120 + (rand() - 0.5) * 2.8; // on every vsync, stamped up to 1.4 ms early or late
+    t += ms / 1000;
+    g.frame(ms, { canShed: false, rungShed: false });
+    if (g.ratio === 1) full = t;
+  }
+  assert.ok(full !== null && full <= 30, `full resolution after ${full?.toFixed(1) ?? 'more than 60'} s`);
+});
+
 test('a steady 30 Hz cap reads as the cap, not as slow', () => {
   const g = createGovernor(1);
   for (let i = 0; i < 30 * 60; i++) assert.equal(g.frame(33 + (i % 2), { canShed: false, rungShed: false }), null);

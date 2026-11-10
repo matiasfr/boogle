@@ -13,7 +13,11 @@
 // frames are late. A hitch does not reset the calm (it moves the average, not the share), a sustained slowdown does. After 5 s calm it steps up; a step that is slow again
 // within 10 s doubles the wait (up to 40 s), and a step that holds for 10 s puts the wait back to 5 s. The 9 November
 // 2026 playtest had a Mac at a steady 17 ms sit at the floor for four minutes: the old rule needed every frame's
-// average under 1.06 x a 10th percentile that Safari's 1 ms timer resolution rounds down to 16 ms.
+// average under 1.06 x a 10th percentile that Safari's 1 ms timer resolution rounds down to 16 ms. "On the cadence"
+// allows 1.15 cadences or 2 ms over it, whichever is more: at 120 Hz Chromium's frame stamps jitter by about a
+// millisecond, which put the median 1.11–1.19 x the 10th percentile with every frame on time, so the calm kept
+// resetting (bench --scaler, 9 November: 37 s to climb one step after a load, never back to full in a minute). Two
+// frames a vsync apart are still 8 ms apart, so half rate still reads as not calm.
 //
 // Measured on the simulated series in the test: 3 s from heavy load to the first step down, the floor within 10 s;
 // back to full resolution within 25 s of the load ending (75 s after repeated failed probes); a device on the edge
@@ -33,7 +37,8 @@ const SLOW_K = 1.08; // of the cadence
 const LATE_K = 1.5; // an interval this many cadences long missed a vsync
 const LATE_CALM = 0.05; // the share of late frames a calm stretch allows
 const LATE_SLOW = 0.1; // more late frames than this is slow, whatever the average says
-const MEDIAN_K = 1.15; // the median interval stays within this many cadences while calm
+const MEDIAN_K = 1.15; // the median interval stays within this many cadences while calm...
+const MEDIAN_SLACK = 2; // ...or this many ms over it: rAF stamp jitter at 120 Hz
 const CADENCE_MAX = 34; // ms: Low Power Mode's 30 Hz, the slowest cap a browser sets
 const LONGEST = 250; // ms: one frame's weight, so a single hitch can't fill the window
 const DOWN_AFTER = 2,
@@ -120,7 +125,7 @@ export function createGovernor(start: number) {
       if (head % 30 === 0) measure();
       const late = lateShare > LATE_SLOW;
       slow = late || ema > Math.max(SLOW_MS, cadence * SLOW_K) ? slow + dt : 0;
-      calm = lateShare <= LATE_CALM && median <= cadence * MEDIAN_K ? calm + dt : 0;
+      calm = lateShare <= LATE_CALM && median <= Math.max(cadence * MEDIAN_K, cadence + MEDIAN_SLACK) ? calm + dt : 0;
       if (probing && sinceUp >= RETRY_WINDOW) {
         probing = false; // that step held: the load it was waiting out has gone
         upAfter = UP_AFTER;
