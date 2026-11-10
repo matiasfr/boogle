@@ -56,8 +56,10 @@ import {
   line2Served,
   railCarryMax,
 } from '../sim/railway-line2.ts';
-import { LINE_HALTS, reqHas } from '../sim/railway-train.ts';
+import { LINE_HALTS, TRAIN, TRAIN_PHASE, reqHas, trainStopsOf, type RailTrain } from '../sim/railway-train.ts';
 import { trainStops } from '../sim/railway-line2.ts';
+import { RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { LINE_SLOTS, atEnd, trainServes, type RailLineRow } from '../sim/railway-trains.ts';
 import { RAIL_ROCKS, WORKS_ROCKS } from '../sim/railway-works-layout.ts';
 import { pierNeed, worksStage } from '../sim/railway-works.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
@@ -97,7 +99,7 @@ export type RailwayIntent =
         | 'rail.kiln'
         | 'rail.cradle';
     }
-  | { op: 'rail.call'; id: number; dir: -1 | 1 }
+  | { op: 'rail.call'; id: number; dir: -1 | 1; train?: number }
   | { op: 'rail.strike'; id: number }
   | { op: 'rail.footTake'; rack: 0 | 1 }
   | { op: 'rail.footSet'; site: 0 | 1 | 2 }
@@ -168,6 +170,51 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   glideTurnMax: (tune.get('railGlideTurnMax') * Math.PI) / 180,
   glideDeploy: tune.get('railGlideDeploy') / 1000,
 });
+/** What the per-train reads need of an inspected state (docs/plans/generic-lines.md, v26). */
+export type RailTrainsRead = {
+  readonly trains: readonly Readonly<RailTrain>[];
+  readonly lines: readonly Readonly<RailLineRow>[];
+  readonly line2: { readonly trains: boolean; readonly trainsAt: number; readonly completed: number };
+};
+/** Line `line`'s trains, in slot order, with their slots (replaces v25's `line2.train[k]`). */
+export const railTrainsOf = (s: Pick<RailTrainsRead, 'trains'>, line: number) =>
+  LINE_SLOTS[line]!.map((slot) => ({ slot, row: s.trains[slot]! }));
+/** The line train `slot` runs on. */
+export const railLineOf = (slot: number) => RAIL_TRAINS[slot]!.line;
+/** The stops line `line` serves now (line 2's pier once Q6 is laid). */
+export const railStopsNow = (s: Pick<RailTrainsRead, 'line2'>, line: number) =>
+  trainStopsOf(line, s.line2.completed >= LINE2_STATIONS.length);
+/** The train a lever ask at (`line`, `stop`) heading `dir` is for at `tick`: the sim's trainServes over the mirrored
+ * rows, -1 for none. */
+export function railServing(s: RailTrainsRead, line: number, stop: number, dir: number, tick: number) {
+  return trainServes((k) => s.trains[k]!, line, railStopsNow(s, line), stop, dir, Math.floor(tick));
+}
+/** Whether train `slot` is on its way to a request stop it will make: its riders' ask, or a lever ask at a middle halt
+ * it is the serving train for (its amber stop lamp; design review, finding 2). Off while it stands at a halt. */
+export function railTrainAsked(s: RailTrainsRead, slot: number, tick: number) {
+  const r = s.trains[slot]!,
+    line = railLineOf(slot),
+    stops = railStopsNow(s, line),
+    n = stops.length,
+    dir = r.track ? -1 : 1;
+  if (!s.line2.trains || (r.phase === TRAIN_PHASE.STAND && r.at >= 0)) return false;
+  const lineReq = s.lines[line]!.req;
+  for (let k = 1; k < n - 1; k++) {
+    if (reqHas(r.req, k, dir, n)) return true;
+    if (reqHas(lineReq, k, dir, n) && railServing(s, line, k, dir, tick) === slot) return true;
+  }
+  return false;
+}
+/** Whether train `slot` is held (its hold lamp; the boards' held departure): awake and standing at a signal, or at a
+ * halt a second past its dwell, waiting on the block ahead or the headway at an end. */
+export function railTrainHeld(s: RailTrainsRead, slot: number, tick: number) {
+  const r = s.trains[slot]!;
+  if (!s.line2.trains || r.phase !== TRAIN_PHASE.STAND || tick < s.line2.trainsAt + TRAIN.wakeTicks) return false;
+  return r.at < 0 || tick >= r.depart + TRAIN.dwellTicks + 10;
+}
+/** Whether halt `stop` of `line` is one of its open ends now. */
+export const railOpenEnd = (s: Pick<RailTrainsRead, 'line2'>, line: number, stop: number) =>
+  atEnd(stop, railStopsNow(s, line));
 export type RailwayMovement = {
   beamSoloSpeed: number;
   beamHelpSpeed: number;
@@ -227,7 +274,9 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   )
     return { op: e.op };
   if (e.op === 'rail.call' && railInt(e.id, LINE_HALTS.length - 1) && (e.dir === -1 || e.dir === 1))
-    return { op: e.op, id: e.id, dir: e.dir };
+    return railInt(e.train, RAIL_TRAINS.length - 1)
+      ? { op: e.op, id: e.id, dir: e.dir, train: e.train }
+      : { op: e.op, id: e.id, dir: e.dir };
   if ((e.op === 'rail.boilerTake' || e.op === 'rail.boilerFit') && railInt(e.revision))
     return { op: e.op, revision: e.revision };
   if (e.op === 'rail.mine' && railInt(e.id, RAIL_ROCKS.length - 1)) return { op: e.op, id: e.id };
@@ -306,9 +355,10 @@ const holds = (s: Railway, op: string, event?: RailwayIntent) =>
     ? line2Trains(s)
     : op === 'rail.call' && event?.op === 'rail.call'
       ? (() => {
+          // A lever ask is the line's (`Line.req`), a rider's its own train's.
           const h = LINE_HALTS[event.id];
-          const r = h && s.line2?.train[h.line];
-          return !!r && reqHas(r.req, h!.stop, event.dir, trainStops(s, h!.line).length);
+          const req = !h ? undefined : event.train === undefined ? s.lines[h.line]?.req : s.trains[event.train]?.req;
+          return req !== undefined && reqHas(req, h!.stop, event.dir, trainStops(s, h!.line).length);
         })()
       : op === 'rail.wake'
         ? s.awake >= 0
@@ -899,9 +949,6 @@ export function createRailwayAdapter({
       boiler: Object.freeze({ ...l2.boiler }),
       trains: line2Trains(s),
       trainsAt: l2.trains,
-      train: Object.freeze(l2.train.map((r) => Object.freeze({ ...r }))),
-      /** Each line's lever asks (`Line` rows, by line index); 4b moves the reads onto them. */
-      lines: Object.freeze(s.lines.map((r) => Object.freeze({ ...r }))),
       kitOwed: Object.freeze(line2KitOwed(s)),
       cart: Object.freeze({ ...l2.cart }),
       /** The rack's tag: Loading, On the way, Unloading, Waiting for forge, or nothing. */
@@ -931,6 +978,10 @@ export function createRailwayAdapter({
       /** What a back carries now: 8, or 16 with the pack (shared). */
       carryMax: railCarryMax(s),
       line2,
+      /** Every train by slot (RAIL_TRAINS; railTrainsOf for one line's), and each line's row: its halts' lever asks
+       * and the ends' last departures (docs/plans/generic-lines.md, v26). */
+      trains: Object.freeze(s.trains.map((r) => Object.freeze({ ...r }))),
+      lines: Object.freeze(s.lines.map((r) => Object.freeze({ ...r }))),
       activeStation,
       stations: Object.freeze(stations),
       axe: s.line!.axe,
@@ -1146,10 +1197,14 @@ export function createRailwayAdapter({
       railInt(z, 200000, -200000) &&
       submit({ op: 'rail.boilerDrop', revision, x, y, z }),
     fitBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerFit', revision }),
-    /** A stop request (docs/plans/works-late-game.md, step 1): halt `id`, for the next train heading `dir` (-1 toward
-     * its line's stop 0, +1 away; an end halt's is its way out). From its lever, or aboard. */
-    callTrain: (id: number, dir: -1 | 1) =>
-      railInt(id, LINE_HALTS.length - 1) && (dir === -1 || dir === 1) && submit({ op: 'rail.call', id, dir }),
+    /** A stop request (docs/plans/generic-lines.md, 7): halt `id`, heading `dir` (-1 toward its line's stop 0, +1
+     * away). From the lever on that way's platform (no `train`: the next train that can brake for it), or aboard train
+     * `train` (its slot: only that train serves it). */
+    callTrain: (id: number, dir: -1 | 1, train?: number) =>
+      railInt(id, LINE_HALTS.length - 1) &&
+      (dir === -1 || dir === 1) &&
+      (train === undefined || railInt(train, RAIL_TRAINS.length - 1)) &&
+      submit(train === undefined ? { op: 'rail.call', id, dir } : { op: 'rail.call', id, dir, train }),
     /** The Works and the Roundhouse (docs/plans/split-rock-roundhouse.md). */
     takeBreaker: () => submit({ op: 'rail.breaker' }),
     /** Strike a seam: 0 the stall slab at Home, 1 the throat at the quarry. */

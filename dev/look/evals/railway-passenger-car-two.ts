@@ -24,7 +24,16 @@ type Halt = { x: number; z: number; up: boolean; lever: { dir: number; on: boole
 type View = { halts: Halt[]; trains: { cars: { x: number; z: number; riding: boolean }[] }[] };
 const read = () => inspectRailway()!;
 const view = () => read().line2View as unknown as View;
-const row = () => read().line2.train[1]!;
+// The ridden train's slot: whichever of line 2's two stops at the village toward Far Head (v26).
+let slot = 1;
+const standsUp = () => {
+  const k = [1, 2].find((k) => {
+    const r = read().trains[k]!;
+    return r.phase === 0 && r.at === 0 && r.track === 0;
+  });
+  if (k !== undefined) slot = k;
+  return k !== undefined;
+};
 const player = new URLSearchParams(location.search).get('player');
 const shot = window as Window & { __placeDone?: boolean };
 const bot = makeBot({
@@ -48,12 +57,12 @@ background(
       check(await bot.use(handle!.x, handle!.z, 'the lever', /^Request stop/), 'lever offered');
     }
     check(await bot.walk(village.x, village.z, player === '1' ? 0.5 : 1.2), 'walked onto the village platform');
-    await until(() => row().phase === 0 && row().at === 0 && row().track === 0, 'a train toward Far Head stands');
-    const aboard = () => view().trains[1]!.cars.some((car) => car.riding);
+    await until(standsUp, 'a train toward Far Head stands');
+    const aboard = () => view().trains[slot]!.cars.some((car) => car.riding);
     const end = performance.now() + 20000;
     try {
       while (!aboard() && performance.now() < end) {
-        const car = view().trains[1]!.cars[1]!;
+        const car = view().trains[slot]!.cars[1]!;
         const p = me.body!.position;
         cam.yaw = me.yaw = Math.atan2(-(car.x - p.x), -(car.z - p.z));
         input.keys.add('KeyW');

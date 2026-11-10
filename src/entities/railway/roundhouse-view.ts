@@ -432,7 +432,7 @@ export async function createRailwayRoundhouse(
    */
   function shuntTargets(tick: number): { wagon: number; shunter: number; k: number | null; hidden: boolean } {
     const sh = state.shed,
-      hidden = !!state.line2.train[1]?.wagon;
+      hidden = state.trains.some((r) => r.wagon);
     const home = PARKED_A - PARK.gap,
       seated = TABLE_A + PARK.gap / 2; // the wagon's centre on the deck, the shunter's as far behind the middle
     if (sh.ready < 0) return { wagon: PARKED_A, shunter: home, k: hidden ? 0 : null, hidden };
@@ -734,7 +734,7 @@ export async function createRailwayRoundhouse(
             at: new THREE.Vector3(sp.x, FLOOR + 1.6, sp.z),
             run: () => void adapter.setFooting(0),
           });
-        } else if (sh.cradle < WORKS.cradle && !state.line2.train[1]?.wagon) {
+        } else if (sh.cradle < WORKS.cradle && !state.trains.some((r) => r.wagon)) {
           const c = stallPoint(0, PARK.wagon);
           out.push({
             id: 'railway-foot-set-1',

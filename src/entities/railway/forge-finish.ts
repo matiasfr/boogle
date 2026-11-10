@@ -110,7 +110,7 @@ export async function createForgeFinish(
   /** The last car's beam stack pose: centre on the deck and heading. */
   function carPose(out: { x: number; y: number; z: number; yaw: number }) {
     const s = adapter.inspect();
-    const along = trainAlong(s.line2.train[0]!, 0, clock) / 100 + CAR;
+    const along = trainAlong(s.trains[0]!, 0, clock) / 100 + CAR;
     layout.lineAt(line1, along + 1.1, a);
     layout.lineAt(line1, along - 1.1, b);
     out.x = (a.x + b.x) / 2 + layout.ORIGIN.x;
@@ -217,7 +217,7 @@ export async function createForgeFinish(
   /** Line 1's train stands at the village halt. */
   function home() {
     const s = adapter.inspect(),
-      row = s.line2.train[0];
+      row = s.trains[0];
     return !!s.line2.trains && !!row && row.phase === 0 && row.at === 0;
   }
   restore();

@@ -1,7 +1,8 @@
 // The up track's platforms and the plank crossings (docs/plans/generic-lines.md, step 2): a platform outside the second
 // track at Quarry and Far Head, beside today's halt there, and planks across both tracks at the pair's end, the walk
-// from one to the other. They drop in with today's halt beside them. No lever, signal or board yet (step 4b): trains
-// still run on today's track. Local: the shapes come from layout.ts's UP_HALTS, as dev/level/timber-track.ts checks them.
+// from one to the other. They drop in with today's halt beside them; the up track's trains stand here (v26), and each
+// one's request lever is halts-view.ts's (no signal or board of its own). Local: the shapes come from layout.ts's
+// UP_HALTS, as dev/level/timber-track.ts checks them.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';

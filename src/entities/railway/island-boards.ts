@@ -3,7 +3,10 @@
 // display at the station"). Every face is a cell of one shared canvas atlas that is drawn once and again only when the
 // pier is laid; the trains are small instanced quads gliding over the faces and the arrival blink is a red ring quad
 // per "you are here" stop, so a moving train never redraws a texture; the Works' gold marks and the waiting glider's
-// teal canopy are quads too. Five draws for every marker, ring and mark on every display, plus one per display. Reduced motion: the markers step once a second and the ring stays lit. Local.
+// teal canopy are quads too. A marker a train (v26: line 2 runs two), in its line's colour, with a red hold badge over
+// a train held for the block ahead or the headway (the held departure; docs/plans/generic-lines.md, 4). Six draws for
+// every marker, badge, ring and mark on every display, plus one per display. Reduced motion: the markers step once a
+// second and the ring stays lit. Local.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
 import {
@@ -34,8 +37,17 @@ const HERES = 2;
 /** The Works' seams a display can mark. */
 const SEAMS = 2;
 
-/** Displays `w` × `h` m, up to `count` of them, over `lines` (whose `laid` the caller changes, then `redraw`s). */
-export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: number, w: number, h: number) {
+/** Displays `w` × `h` m, up to `count` of them, over `lines` (whose `laid` the caller changes, then `redraw`s), with
+ * a marker for each train, `trainLines[i]` the line train i runs on. */
+export function createIslandBoards(
+  owner: OwnedView,
+  lines: MapLine[],
+  count: number,
+  w: number,
+  h: number,
+  trainLines: readonly number[],
+) {
+  const T = trainLines.length;
   const rows = Math.ceil(count / COLS);
   const canvas = document.createElement('canvas');
   canvas.width = CW * COLS;
@@ -65,8 +77,37 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
     return t;
   })();
   const markMat = new THREE.MeshStandardNodeMaterial({ map: markTex, alphaTest: 0.5, roughness: 0.6 });
-  const marks = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), markMat, count * lines.length);
+  const marks = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), markMat, count * T);
   marks.frustumCulled = false;
+  // The hold badge: a red disc with a white bar, over a held train's marker.
+  const holdTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    g.fillStyle = MAP_FACE;
+    g.beginPath();
+    g.arc(32, 32, 30, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#e8392a';
+    g.beginPath();
+    g.arc(32, 32, 24, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#ffffff';
+    g.fillRect(14, 27, 36, 10);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  })();
+  const holdMat = new THREE.MeshStandardNodeMaterial({ map: holdTex, alphaTest: 0.5, roughness: 0.6 });
+  const holdPx = S.markH * 1.1;
+  const holds = new THREE.InstancedMesh(new THREE.PlaneGeometry(holdPx * toM, holdPx * toM), holdMat, count * T);
+  holds.frustumCulled = false;
+  owner.add(holds);
+  owner.cleanup(() => {
+    holdTex.dispose();
+    holdMat.dispose();
+    holds.geometry.dispose();
+  });
   const ringMat = new THREE.MeshStandardNodeMaterial({ color: MAP_RING, roughness: 0.6 });
   const rings = new THREE.InstancedMesh(
     new THREE.RingGeometry(S.dot * 1.25 * toM, S.ring * toM, 24),
@@ -187,14 +228,15 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
   };
   const hide = new THREE.Matrix4().makeScale(0, 0, 0);
   for (let k = 0; k < marks.count; k++) marks.setMatrixAt(k, hide);
+  for (let k = 0; k < holds.count; k++) holds.setMatrixAt(k, hide);
   for (let k = 0; k < rings.count; k++) rings.setMatrixAt(k, hide);
   for (let k = 0; k < zigs.count; k++) zigs.setMatrixAt(k, hide);
   for (let k = 0; k < squares.count; k++) squares.setMatrixAt(k, hide);
   for (let k = 0; k < gliders.count; k++) gliders.setMatrixAt(k, hide);
   const color = new THREE.Color();
-  lines.forEach((l, li) => {
-    color.set(l.color);
-    for (let b = 0; b < count; b++) marks.setColorAt(b * lines.length + li, color);
+  trainLines.forEach((li, t) => {
+    color.set(lines[li]!.color);
+    for (let b = 0; b < count; b++) marks.setColorAt(b * T + t, color);
   });
 
   const cellOf = (b: number) => ({ x: (b % COLS) * CW, y: Math.floor(b / COLS) * CH });
@@ -205,9 +247,10 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
 
   let clock = 0,
     stepped = -1e9;
-  const along: (number | null)[] = lines.map(() => null);
-  /** The stop each line's train is on its way to (null: standing, or none). */
-  const heading: (number | null)[] = lines.map(() => null);
+  const along: (number | null)[] = trainLines.map(() => null);
+  /** The stop each train is on its way to (null: standing, or none), and whether it is held. */
+  const heading: (number | null)[] = trainLines.map(() => null);
+  const held: boolean[] = trainLines.map(() => false);
   const m4 = new THREE.Matrix4(),
     q = new THREE.Quaternion(),
     p = new THREE.Vector3(),
@@ -259,10 +302,11 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
       bd.on = on;
       bd.mesh.visible = on;
     },
-    /** Each line's train, metres along its path (null: none), and the stop it is on its way to (null: standing),
-     * whose ring blinks on every display that stop is "here" on. */
-    trains(at: readonly (number | null)[], to: readonly (number | null)[]) {
+    /** Each train, metres along its line's path (null: none), the stop it is on its way to (null: standing), whose
+     * ring blinks on every display that stop is "here" on, and whether it is held (its badge). */
+    trains(at: readonly (number | null)[], to: readonly (number | null)[], hold: readonly boolean[]) {
       to.forEach((s, k) => (heading[k] = s));
+      hold.forEach((v, k) => (held[k] = v));
       // Reduced motion: the markers step once a second instead of gliding.
       if (reducedMotion && clock - stepped < 1 && along.every((a) => a !== null)) return;
       stepped = clock;
@@ -279,6 +323,8 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
     glider(at: { x: number; z: number } | null) {
       glider = at;
     },
+    /** How many trains show a hold badge on the shown displays. */
+    heldMarks: () => (boards.some((bd) => bd.on) ? held.filter(Boolean).length : 0),
     /** Whether shown displays carry the glider's mark now. */
     gliderMark: () => !!glider,
     /** Each display's face centre and its normal toward its reader, for evals to frame. */
@@ -294,19 +340,25 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
       boards.forEach((bd, b) => {
         const face = bd.face;
         q.setFromAxisAngle(UP, face.yaw);
-        lines.forEach((l, li) => {
-          const k = b * lines.length + li,
-            a = along[li];
-          if (!bd.on || a === null || a === undefined) return marks.setMatrixAt(k, hide);
-          const at = pathAt(l, a);
+        trainLines.forEach((li, t) => {
+          const k = b * T + t,
+            a = along[t];
+          if (!bd.on || a === null || a === undefined) {
+            holds.setMatrixAt(k, hide);
+            return marks.setMatrixAt(k, hide);
+          }
+          const at = pathAt(lines[li]!, a);
           const [px, py] = mapPx(face.view, at.x, at.z);
           onFace(face, px, py, 0.012);
           marks.setMatrixAt(k, m4.compose(p, q, sc.set(S.markW * toM, S.markH * toM, 1)));
+          if (!held[t]) return holds.setMatrixAt(k, hide);
+          onFace(face, px, py - S.markH * 1.05, 0.014);
+          holds.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
         });
         for (let i = 0; i < HERES; i++) {
           const k = b * HERES + i,
             hr = bd.here[i];
-          if (!hr || !bd.on || !lit || heading[hr.line] !== hr.stop) {
+          if (!hr || !bd.on || !lit || !trainLines.some((li, t) => li === hr.line && heading[t] === hr.stop)) {
             rings.setMatrixAt(k, hide);
             continue;
           }
@@ -335,6 +387,7 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
       });
       gliders.instanceMatrix.needsUpdate = true;
       marks.instanceMatrix.needsUpdate = true;
+      holds.instanceMatrix.needsUpdate = true;
       rings.instanceMatrix.needsUpdate = true;
       zigs.instanceMatrix.needsUpdate = true;
       squares.instanceMatrix.needsUpdate = true;

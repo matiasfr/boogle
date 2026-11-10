@@ -1,7 +1,8 @@
-// A halt's request lever (docs/plans/works-late-game.md, step 1): a cast frame at the foot of the signal mast with one
-// handle at an end halt and two at a middle one (one each way, each on an enamel plaque naming the end it goes to), and
-// a lamp on the frame. A pulled handle stays over while its request stands and springs back when a train stops for it.
-// Local: it draws the request state the server holds; the press itself is the halt view's.
+// A platform's request lever (docs/plans/works-late-game.md, step 1; generic-lines, v26): a cast frame with one handle
+// for that platform's way, on an enamel plaque naming the end it goes to, and a lamp on the frame. A pulled handle
+// stays over while its request stands and springs back when a train stops for it. A lever whose platform no train
+// stands at yet (Far Head's up one, until the pier is laid) hangs chained and padlocked at rest. Local: it draws the
+// request state the server holds; the press itself is the halt view's.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 
@@ -79,8 +80,31 @@ export function createRequestLever(owner: OwnedView, handles: number, side: numb
     plaques.push({ mesh: plaque, map: null, text: '' });
     return { pivot, angle: REST };
   });
+  // The chain: links from the first handle's rod down to the plinth, and a padlock on it. Hidden unless chained.
+  const chain = new THREE.Group();
+  const linkMat = new THREE.MeshStandardNodeMaterial({ color: '#8b8f96', roughness: 0.45, metalness: 0.7 });
+  const brass = new THREE.MeshStandardNodeMaterial({ color: '#c79a3e', roughness: 0.4, metalness: 0.6 });
+  {
+    const z0 = arms.length ? -((handles - 1) / 2) * HANDLE_GAP : 0;
+    const top = new THREE.Vector3(-side * 0.05, 1.0, z0),
+      foot = new THREE.Vector3(-side * 0.2, 0.12, z0 + 0.12);
+    const LINKS = 7;
+    for (let i = 0; i < LINKS; i++) {
+      const link = box(0.035, 0.1, i % 2 ? 0.06 : 0.02, linkMat);
+      link.position.lerpVectors(top, foot, (i + 0.5) / LINKS);
+      link.rotation.z = side * 0.18;
+      chain.add(link);
+    }
+    const lock = box(0.08, 0.1, 0.05, brass);
+    lock.position.lerpVectors(top, foot, 0.55).add(new THREE.Vector3(-side * 0.04, 0, 0));
+    chain.add(lock);
+  }
+  chain.visible = false;
+  group.add(chain);
   owner.add(group);
   owner.cleanup(() => {
+    linkMat.dispose();
+    brass.dispose();
     iron.dispose();
     red.dispose();
     lampMat.dispose();
@@ -111,10 +135,14 @@ export function createRequestLever(owner: OwnedView, handles: number, side: numb
       const p = plaques[i];
       if (p) p.mesh.visible = on && !!p.text;
     },
-    /** Each handle over or back, and the lamp lit while any is over; eased unless `snap`. */
+    /** Chained and padlocked at rest: no train stands at this platform yet. */
+    chained(on: boolean) {
+      chain.visible = on;
+    },
+    /** Each handle over or back, and the lamp lit while any is over; eased unless `snap`. A chained lever stays back. */
     update(dt: number, over: readonly boolean[], snap = false) {
       arms.forEach((a, i) => {
-        const want = over[i] ? OVER : REST;
+        const want = over[i] && !chain.visible ? OVER : REST;
         a.angle = snap
           ? want
           : a.angle + Math.sign(want - a.angle) * Math.min(Math.abs(want - a.angle), (dt / SWING_S) * (OVER - REST));

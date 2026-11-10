@@ -79,16 +79,24 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     if (!handle!.over) await use(handle!, /^Request stop/, `request a train at ${halt.name}`);
     await until(() => view().halts[haltId]!.calling, `${halt.name} signal drops for the request`);
     await walk(halt.x, halt.z, 0.5);
-    const row = () => l2().train[1]!;
-    await until(
-      () => row().phase === 0 && row().at === halt.stop && (row().track ? -1 : 1) === dir,
-      `a train toward stop ${destination} stands at ${halt.name}`,
-    );
-    const aboard = () => view().trains[1]!.cars.some((car) => car.riding);
+    // Whichever of line 2's trains stops for the lever is the ride (v26).
+    const standing = () =>
+      view()
+        .trains.filter((t) => t.line === 1)
+        .find((t) => {
+          const r = read().trains[t.slot]!;
+          return r.phase === 0 && r.at === halt.stop && (r.track ? -1 : 1) === dir;
+        })?.slot;
+    await until(() => standing() !== undefined, `a train toward stop ${destination} stands at ${halt.name}`);
+    const slot = standing()!;
+    const row = () => read().trains[slot]!;
+    const train = () => view().trains.find((t) => t.slot === slot)!;
+    // Its cars, the wagon's too while coupled (train-view.ts inspect).
+    const aboard = () => train().cars.some((car) => car.riding);
     const end = performance.now() + 20000;
     try {
       while (!aboard() && performance.now() < end) {
-        const car = view().trains[1]!.cars[1]!;
+        const car = train().cars[1]!;
         face(car.x, car.z);
         input.keys.add('KeyW');
         if (me.coyote > 0) pressJump();
@@ -117,10 +125,10 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     let sample: Promise<void> | undefined;
     await until(() => {
       check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
-      const row = l2().train[1]!;
-      ran ||= row.phase === 1;
+      const r = row();
+      ran ||= r.phase === 1;
       // `railPerf`: one real-frame sample aboard a moving train (with the wagon once it is coupled).
-      if (row.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf'))
+      if (r.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf'))
         sample = (async () => {
           // Needs `prof=1` (hardware timing). The counts are read just after a game frame, when renderer.info
           // still holds that frame's scene pass (as dev/look/perf.ts does).
@@ -131,12 +139,22 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
           const calls = renderer.info.render.drawCalls,
             tris = renderer.info.render.triangles;
           const gpu = timing.gpu.render.stats;
-          console.log(`RAILWAY MOVING PERF ${JSON.stringify({ wagon: row.wagon, calls, tris, gpu, cpu: timing.cpu })}`);
+          console.log(`RAILWAY MOVING PERF ${JSON.stringify({ wagon: r.wagon, calls, tris, gpu, cpu: timing.cpu })}`);
         })();
-      return ran && row.phase === 0 && row.at === destination;
+      return ran && r.phase === 0 && r.at === destination;
     }, `line 2 arrives at stop ${destination} with its rider`);
     await sample;
-    const arrival = view().halts.find((h) => h.line === 1 && h.stop === destination)!;
+    const arrivalId = view().halts.findIndex((h) => h.line === 1 && h.stop === destination);
+    const arrival = view().halts[arrivalId]!;
+    // Come in going up at a middle halt, the train stands at the up platform: step off onto it, then walk to today's
+    // side over the plank crossing (generic-lines, finding 5), never across the running tracks.
+    const up = view().upPlatforms.find((u) => u.pair === arrivalId);
+    if (up && row().track === 0) {
+      check(await bot.straight(up.x, up.z, 0.5, 12000), `stepped off onto the ${arrival.name} up platform`);
+      await until(() => !aboard() && me.coyote > 0, 'off the train, on the up platform', 10000);
+      for (const [i, p] of up.path.entries())
+        check(await bot.straight(p.x, p.z, 0.5, 12000), `${arrival.name} plank crossing, step ${i + 1}`);
+    }
     check(await bot.straight(arrival.x, arrival.z, 0.5, 12000), `stepped across to the ${arrival.name} halt`);
     await until(() => !aboard() && me.coyote > 0, 'stepped off the train onto the halt', 10000);
   };
@@ -264,7 +282,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await use(table, /^Turn the table$/, 'turn the table');
     await until(() => shed().table === 1 && shed().ready >= 0, 'table turned for line 2', 30000);
     await checkpoint('table turned');
-    await until(() => l2().train[1]!.wagon, 'line 2 couples the footing wagon');
+    await until(() => read().trains.some((r) => r.wagon), 'line 2 couples the footing wagon');
     await checkpoint('wagon coupled');
   }
   // 8. Ride the wagon's train to the pier; set twelve footings from the pier rack into the sea.
@@ -279,7 +297,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     return { x: p.x - p.uz * lat + ORIGIN.x, z: p.z + p.ux * lat + ORIGIN.z };
   };
   // A train standing at the pier fills the track there (s 721-736): cross only while it is away.
-  const trackClear = () => until(() => l2().train[1]!.phase === 1 || l2().train[1]!.at !== 3, 'no train at the pier');
+  const trackClear = () => until(() => read().trains.every((r) => r.phase === 1 || r.at !== 3), 'no train at the pier');
   const step = async (along: number, lat: number, beat: string) => {
     if (Math.abs(lat) < 1.9) await trackClear();
     const p = beside(along, lat);

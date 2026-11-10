@@ -554,8 +554,9 @@ export async function boilerToPier(
     check(await bot.work(() => l2().trains, 30000, 380), 'boiler fitted at the old train');
     await checkpoint('TRAINS');
   }
-  // Trains stop on request (works-late-game step 1): the lever's handle the way to `destination`; every ride here ends
-  // at its line's end, so nothing is asked aboard.
+  // Trains stop on request (works-late-game step 1): the lever on the platform the way to `destination`; every ride
+  // here ends at its line's end, so nothing is asked aboard. Whichever of the line's trains stops for it is the ride
+  // (v26: line 2 runs two).
   const ride = async (line: number, haltId: number, destination: number, called: boolean) => {
     const halt = view().halts[haltId]!;
     await until(() => view().halts[haltId]!.up, 'halt drops into place');
@@ -567,18 +568,21 @@ export async function boilerToPier(
     await until(() => view().halts[haltId]!.calling, `${halt.name} halt calls a train`);
     if (called) await checkpoint('train called');
     await walk(halt.x, halt.z, 0.5);
-    await until(
-      () =>
-        l2().train[line]!.phase === 0 &&
-        l2().train[line]!.at === halt.stop &&
-        (l2().train[line]!.track ? -1 : 1) === dir,
-      'called train arrives',
-    );
-    const aboard = () => view().trains[line]!.cars.some((car) => car.riding);
+    const standing = () =>
+      view()
+        .trains.filter((t) => t.line === line)
+        .find((t) => {
+          const r = read().trains[t.slot]!;
+          return r.phase === 0 && r.at === halt.stop && (r.track ? -1 : 1) === dir;
+        })?.slot;
+    await until(() => standing() !== undefined, 'called train arrives');
+    const slot = standing()!;
+    const train = () => view().trains.find((t) => t.slot === slot)!;
+    const aboard = () => train().cars.some((car) => car.riding);
     const end = performance.now() + 20000;
     try {
       while (!aboard() && performance.now() < end) {
-        const car = view().trains[line]!.cars[1]!;
+        const car = train().cars[1]!;
         const p = me.body!.position;
         cam.yaw = me.yaw = Math.atan2(-(car.x - p.x), -(car.z - p.z));
         input.keys.add('KeyW');
@@ -605,19 +609,19 @@ export async function boilerToPier(
           offAt = performance.now();
           const b = me.body!;
           console.log(
-            `RIDE BLIP ${JSON.stringify({ line, row: l2().train[line], along: view().trains[line]!.along, on: carry.on?.id ?? null, at: b.position, v: b.velocity, swimming: me.swimming })}`,
+            `RIDE BLIP ${JSON.stringify({ line, slot, row: read().trains[slot], along: train().along, on: carry.on?.id ?? null, at: b.position, v: b.velocity, swimming: me.swimming })}`,
           );
         }
         if (on) offAt = -1;
         check(on || performance.now() - offAt < 1500, 'rider stays aboard throughout the train journey');
-        const row = l2().train[line]!;
+        const row = read().trains[slot]!;
         ran ||= row.phase === 1;
         if (row.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf')) {
           sample = (async () => {
             const { hardwareTiming } = await import('../../../src/debug/prof-overlay.ts');
             const timing = await hardwareTiming(3);
             console.log(
-              `RAILWAY MOVING PERF ${JSON.stringify({ line, timing, riding: aboard(), phase: l2().train[line]!.phase })}`,
+              `RAILWAY MOVING PERF ${JSON.stringify({ line, timing, riding: aboard(), phase: read().trains[slot]!.phase })}`,
             );
           })();
           background(sample, 'moving train performance sample');

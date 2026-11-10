@@ -432,7 +432,7 @@ export function crossLat(f: Formation, s: number): number | null {
   if (!c || s < c[0] || s > c[1]) return null;
   return UP_LAT * (1 - ease((s - c[0]) / (c[1] - c[0])));
 }
-/** The up track's platforms, outside it (no lever, board or signal until step 4b), and the plank crossing over both
+/** The up track's platforms, outside it (a lever each, halts-view.ts; no board or signal), and the plank crossing over both
  * tracks at each pair's end (`crossS`), from today's platform to the up one. Quarry's stands clear of the Q4 frame
  * (s 175-178, 6.5-8.5 m left; orchestrator, 10 November), so it has no ramp off that end (`endRamp` false). Each
  * crossing lies outside where a train stands: Far Head's by the foot of today's platform's end ramp; Quarry's, whose

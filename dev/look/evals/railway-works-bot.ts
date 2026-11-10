@@ -45,7 +45,7 @@ background(
               hash: state.hash,
               works: state.works,
               shed: state.shed,
-              train: state.line2.train[1],
+              trains: state.trains,
               crossingView: view.crossingView,
               wall: Date.now(),
               seconds: Math.round((Date.now() - started) / 100) / 10,

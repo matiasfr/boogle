@@ -31,7 +31,17 @@ type Car = { x: number; z: number; riding: boolean };
 type View = { halts: Halt[]; trains: { cars: Car[]; stopLamp: boolean }[] };
 const read = () => inspectRailway()!;
 const view = () => read().line2View as unknown as View;
-const row = () => read().line2.train[1]!;
+// The ridden train's slot: whichever of line 2's two stops at the village toward Far Head (v26).
+let slot = 1;
+const row = () => read().trains[slot]!;
+const standsUp = () => {
+  const k = [1, 2].find((k) => {
+    const r = read().trains[k]!;
+    return r.phase === 0 && r.at === 0 && r.track === 0;
+  });
+  if (k !== undefined) slot = k;
+  return k !== undefined;
+};
 const shot = window as Window & { __car?: string };
 const bot = makeBot({
   recover: () => {
@@ -56,14 +66,14 @@ await (async () => {
   check(handle, 'the village has a handle toward Far Head');
   check(await bot.use(handle!.x, handle!.z, 'the lever', /^Request stop/), 'lever offered');
   check(await bot.walk(village.x, village.z, 0.5), 'walked onto the village platform');
-  await until(() => row().phase === 0 && row().at === 0 && row().track === 0, 'a train toward Far Head stands');
+  await until(standsUp, 'a train toward Far Head stands');
   mark('halt');
   await bot.wait(1500);
-  const aboard = () => view().trains[1]!.cars.some((car) => car.riding);
+  const aboard = () => view().trains[slot]!.cars.some((car) => car.riding);
   const end = performance.now() + 20000;
   try {
     while (!aboard() && performance.now() < end) {
-      const car = view().trains[1]!.cars[1]!;
+      const car = view().trains[slot]!.cars[1]!;
       const p = me.body!.position;
       cam.yaw = me.yaw = Math.atan2(-(car.x - p.x), -(car.z - p.z));
       input.keys.add('KeyW');
@@ -80,7 +90,7 @@ await (async () => {
   mark('boarded');
   await until(() => interactTarget()?.id === 'railway-request-aboard', 'Request stop offered aboard', 60000);
   bot.press();
-  await until(() => view().trains[1]!.stopLamp, 'the engine lamp lights', 30000);
+  await until(() => view().trains[slot]!.stopLamp, 'the engine lamp lights', 30000);
   mark('requested');
   // Sit by Interact: the nearest free seat of the knifeboard.
   await until(() => interactTarget()?.id === 'place-sit', 'Sit offered', 30000);

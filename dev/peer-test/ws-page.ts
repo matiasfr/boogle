@@ -26,6 +26,7 @@ import {
   type RailwayIntent,
 } from '../../src/adapters/railway.ts';
 import { trainAlong } from '../../src/sim/railway-train.ts';
+import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
 import home from '../../src/world/home-land.json';
 
@@ -327,11 +328,12 @@ function startWorld(room: Room) {
     });
     adapter.onReset(() => resets++);
     T.railTrain = (k) => {
-      const row = adapter.inspect().line2.train[k];
+      // Train slot k (RAIL_TRAINS), on its own line.
+      const row = adapter.inspect().trains[k];
       if (!row) return null;
       const tick = adapter.tickNow();
       return {
-        along: trainAlong(row, k, tick),
+        along: trainAlong(row, RAIL_TRAINS[k]!.line, tick),
         phase: row.phase,
         depart: row.depart,
         tick,

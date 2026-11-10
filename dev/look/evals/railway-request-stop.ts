@@ -1,6 +1,9 @@
-// Request stops (docs/plans/works-late-game.md, step 1), two players on line 2 from `--rail-seed trains-on`: player 1
-// pulls the quarry lever's village handle and stands by it; player 2 asks at the village, boards and asks for the quarry
-// aboard ("Request stop: Quarry"). Both stills are taken once line 2's engine lamp is lit for player 2's request.
+// Request stops with two trains on line 2 (docs/plans/generic-lines.md, 7; v26), two players from `--rail-seed
+// trains-on`: player 1 crosses the Quarry's plank crossing to its up platform and pulls its lever (toward Far Head); the
+// next up train that can brake for it lights its amber lamp and stands at the up platform, while line 2's other train
+// runs home past the down platform dark. Player 2 asks at the village, boards whichever train stops and asks for the
+// quarry aboard ("Request stop: Quarry"), so the cord names its own train. Player 1's still is taken with the served
+// train standing at the up platform; player 2's once its engine lamp is lit.
 // BOOGLE_BOT_RANK=1 npm run look -- --players 2 --rail-seed trains-on --query shot=play \
 //   --eval dev/look/evals/railway-request-stop.ts --until window.__placeDone --hud --name request-stop
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -17,13 +20,25 @@ const { pressJump, releaseJump } = (await import(
 )) as typeof import('../../../src/entities/player/state.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 
-type Handle = { dir: number; label: string; on: boolean; over: boolean; x: number; y: number; z: number };
+type Handle = {
+  dir: number;
+  platform: 'up' | 'down';
+  label: string;
+  on: boolean;
+  chained: boolean;
+  over: boolean;
+  x: number;
+  y: number;
+  z: number;
+};
 type Halt = { name: string; line: number; stop: number; x: number; z: number; up: boolean; lever: Handle[] };
-type Car = { x: number; z: number; riding: boolean };
-type View = { halts: Halt[]; trains: { cars: Car[]; stopLamp: boolean }[] };
+type Car = { x: number; y: number; z: number; riding: boolean };
+type Train = { slot: number; line: number; along: number; cars: Car[]; stopLamp: boolean; holdLamp: boolean };
+type Up = { pair: number; up: boolean; x: number; y: number; z: number; path: { x: number; z: number }[] };
+type View = { halts: Halt[]; trains: Train[]; upPlatforms: Up[] };
 const read = () => inspectRailway()!;
 const view = () => read().line2View as unknown as View;
-const row = () => read().line2.train[1]!;
+const LINE2_SLOTS = [1, 2];
 const player = new URLSearchParams(location.search).get('player');
 const shot = window as Window & { __placeDone?: boolean };
 const bot = makeBot({
@@ -35,45 +50,91 @@ const check = (ok: unknown, beat: string) => {
   if (!ok) throw new Error(beat);
 };
 const until = async (fn: () => unknown, beat: string, ms = 2400000) => check(await bot.until(fn, ms, beat), beat);
+const lever = (haltId: number, dir: number) => view().halts[haltId]!.lever.find((h) => h.on && h.dir === dir);
 const pull = async (haltId: number, dir: number) => {
-  const handle = view().halts[haltId]!.lever.find((h) => h.on && h.dir === dir);
-  check(handle, `${view().halts[haltId]!.name} has a handle ${dir}`);
+  const handle = lever(haltId, dir);
+  check(handle, `${view().halts[haltId]!.name} has a lever ${dir}`);
   check(await bot.use(handle!.x, handle!.z, 'the lever', /^Request stop/), 'lever offered');
-  await until(() => view().halts[haltId]!.lever.find((h) => h.dir === dir)!.over, 'the handle stays over', 30000);
+  await until(() => view().halts[haltId]!.lever.find((h) => h.dir === dir)!.over, 'the lever stays over', 30000);
   return handle!;
 };
+const QUARRY = 3;
 setTimeout(() => window.__debugCam?.clear(), 100);
 background(
   (async () => {
     await until(() => read()?.ready && me.body && me.coyote > 0, 'seed arrived', 300000);
-    await until(() => view().halts[3]?.up && view().halts[2]?.up, 'line 2 halts stand', 60000);
+    await until(() => view().halts[QUARRY]?.up && view().halts[2]?.up, 'line 2 halts stand', 60000);
     if (player === '1') {
-      // The quarry's handle toward the village, then stand back so the lever, its lamp and the arm are in frame.
-      const h = await pull(3, -1);
-      const halt = view().halts[3]!;
-      await bot.walk(h.x + (halt.x - h.x) * 1.6, h.z + (halt.z - h.z) * 1.6, 0.8);
+      // Over the plank crossing to the up platform (the walk from it, reversed), then its lever toward Far Head.
+      const up = view().upPlatforms.find((u) => u.pair === QUARRY)!;
+      const halt = view().halts[QUARRY]!;
+      check(await bot.walk(halt.x, halt.z, 1), 'walked to the quarry halt');
+      for (const [i, p] of [...up.path].reverse().entries())
+        check(await bot.straight(p.x, p.z, 0.5, 15000), `over the plank crossing, step ${i + 1}`);
+      check(await bot.straight(up.x, up.z, 0.5, 15000), 'onto the up platform');
+      const h = await pull(QUARRY, 1);
+      check(h.platform === 'up', "the quarry's up lever is on the up platform");
+      check(h.label === 'Far Head', `its plaque names Far Head (${h.label})`);
+      // Stand back along the deck so the lever and the incoming train are both in frame.
+      await bot.straight(up.x + (h.x - up.x) * 0.2, up.z + (h.z - up.z) * 0.2, 0.6, 8000);
       const p = me.body!.position;
       cam.yaw = me.yaw = Math.atan2(-(h.x - p.x), -(h.z - p.z));
-      // Player 2's request aboard: an outbound train bound for the quarry with its lamp lit (this lever's own request
-      // lights it too, on a train coming home).
-      await until(
-        () => view().trains[1]!.stopLamp && row().track === 0 && row().to === 1 && row().phase === 1,
-        "line 2's engine lamp lights for the request aboard",
+      // The serving train: the up train whose amber lamp is lit for this lever; the other must not stop down.
+      let served = -1;
+      const passedDown: number[] = [];
+      await until(() => {
+        for (const k of LINE2_SLOTS) {
+          const r = read().trains[k]!,
+            t = view().trains[k]!;
+          if (r.track === 0 && t.stopLamp && r.to === 1) served = k;
+          if (r.track === 1 && r.phase === 1 && Math.abs(t.along - 17400) < 600 && !passedDown.includes(k))
+            passedDown.push(k);
+        }
+        return served >= 0;
+      }, 'an up train lights its lamp for the up lever');
+      console.log(`SERVED ${JSON.stringify({ served, row: read().trains[served], lines: read().lines })}`);
+      await until(() => {
+        const r = read().trains[served]!;
+        for (const k of LINE2_SLOTS) {
+          const o = read().trains[k]!,
+            t = view().trains[k]!;
+          if (
+            k !== served &&
+            o.track === 1 &&
+            o.phase === 1 &&
+            Math.abs(t.along - 17400) < 600 &&
+            !passedDown.includes(k)
+          )
+            passedDown.push(k);
+          check(!(o.track === 1 && o.phase === 0 && o.at === 1), 'no down train stands at the quarry for an up ask');
+        }
+        return r.phase === 0 && r.at === 1 && r.track === 0;
+      }, 'the served train stands at the up platform');
+      console.log(
+        `REQUEST STOP ${JSON.stringify({ served, passedDown, trains: read().trains, lever: view().halts[QUARRY]!.lever })}`,
       );
-      console.log(`REQUEST STOP ${JSON.stringify({ row: row(), lever: view().halts[3]!.lever })}`);
       shot.__placeDone = true;
       return;
     }
-    // Player 2: ask at the village, toward Far Head, board by a real jump and ask for the quarry aboard.
+    // Player 2: ask at the village, toward Far Head, board whichever train stops, and ask for the quarry aboard.
     await pull(2, 1);
     const village = view().halts[2]!;
     check(await bot.walk(village.x, village.z, 0.5), 'walked onto the village platform');
-    await until(() => row().phase === 0 && row().at === 0 && row().track === 0, 'a train toward Far Head stands');
-    const aboard = () => view().trains[1]!.cars.some((car) => car.riding);
+    let slot = -1;
+    await until(() => {
+      slot =
+        LINE2_SLOTS.find((k) => {
+          const r = read().trains[k]!;
+          return r.phase === 0 && r.at === 0 && r.track === 0;
+        }) ?? -1;
+      return slot >= 0;
+    }, 'a train toward Far Head stands');
+    const train = () => view().trains[slot]!;
+    const aboard = () => train().cars.some((car) => car.riding);
     const end = performance.now() + 20000;
     try {
       while (!aboard() && performance.now() < end) {
-        const car = view().trains[1]!.cars[1]!;
+        const car = train().cars[1]!;
         const p = me.body!.position;
         cam.yaw = me.yaw = Math.atan2(-(car.x - p.x), -(car.z - p.z));
         input.keys.add('KeyW');
@@ -88,11 +149,12 @@ background(
     }
     check(aboard(), 'boarded line 2 by a real jump');
     await until(() => interactTarget()?.id === 'railway-request-aboard', 'Request stop offered aboard', 60000);
-    console.log(`ABOARD PROMPT ${interactTarget()?.verb}`);
+    console.log(`ABOARD PROMPT ${interactTarget()?.verb} ${interactTarget()?.blocked ?? ''}`);
     check(interactTarget()?.verb === 'Request stop: Quarry', 'the prompt names the quarry');
-    bot.press();
-    await until(() => view().trains[1]!.stopLamp, 'the engine lamp lights', 30000);
-    console.log(`ABOARD REQUESTED ${JSON.stringify(row())}`);
+    if (interactTarget()?.run) bot.press();
+    await until(() => train().stopLamp, 'the engine lamp lights', 30000);
+    console.log(`ABOARD REQUESTED ${JSON.stringify({ slot, row: read().trains[slot] })}`);
+    shot.__placeDone = true;
   })(),
   'request-stop look',
 );
