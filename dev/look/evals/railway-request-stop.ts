@@ -110,6 +110,19 @@ background(
         }
         return r.phase === 0 && r.at === 1 && r.track === 0;
       }, 'the served train stands at the up platform');
+      // Frame the standing train across both tracks, from beyond the down track: the train at the up platform, the
+      // asker and the lever behind it.
+      const car = view().trains[served]!.cars[1]!,
+        me0 = me.body!.position;
+      const dx = me0.x - car.x,
+        dz = me0.z - car.z,
+        d = Math.hypot(dx, dz) || 1;
+      const eye: [number, number, number] = [car.x - (dx / d) * 11, car.y + 4.5, car.z - (dz / d) * 11];
+      setInterval(() => {
+        const c = view().trains[served]!.cars[1]!;
+        window.__debugCam?.set(eye, [(c.x + me0.x) / 2, c.y + 0.6, (c.z + me0.z) / 2]);
+      }, 16);
+      await bot.wait(400);
       console.log(
         `REQUEST STOP ${JSON.stringify({ served, passedDown, trains: read().trains, lever: view().halts[QUARRY]!.lever })}`,
       );
