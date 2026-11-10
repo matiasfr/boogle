@@ -421,8 +421,8 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   Camp on the down track, line 2 at the Village up, line 2 at Far Head down], from `trainPlaces` (train k at the open
   halt nearest `home + k·C/n`; ends only on their way out). `circuitCm` and `trainPlaces` live in `railway-lines.ts`
   beside `RAIL_TRAINS`, which derives from them; `trainStepLine` takes a `TrainIO` (arrive, standing holds, headway
-  exemption) from `railway-systems.ts`, so the trains module imports no systems. Numbers: line 2's cycle is 924 s
-  with the pier open, 722 s before (the plan's 928/348 were estimates); line 2's Village start signal is 4440 cm, not
+  exemption) from `railway-systems.ts`, so the trains module imports no systems. Numbers: line 2's cycle is 924 ticks (92.4 s)
+  with the pier open, 722 ticks (72.2 s) before (the plan's 928/348 were estimates); line 2's Village start signal is 4440 cm, not
   4400, so the signal stands `sepCm` past the stub's stop. Lever asks are `Line.req`, rider asks `Train.req` with
   `train`; a rider's ask to an end halt and an open end's way-in lever are refused; the turnback keeps only riders'
   asks for the new way (`reqOnly`); commissioning no longer asks the Village. `trainServes` keeps a stop for a train
@@ -444,6 +444,19 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   `npm run loop -- run`: every player count finishes; the crossing (table turned to the twelfth pier footing) takes
   3:20 alone, 2:59 for two, 2:52 for three or four, against the 10 November pair's 1:45 observed (the loop does not
   ride and walks every footing; its 2:59 for two is the number to watch when 4b's bot runs it).
+  *Amended (2026-11-10, after the independent review of 4a; orchestrator's call in
+  [agent-calls](../agent-calls.md)):* **the one-minute design bound is not met by two trains under heavy random
+  asks.** The review's long fuzz (lever and rider asks, the pier opening at a random tick, save/restore round trips)
+  found line 2's worst wait per halt and direction at 91–97 s at the default 75% hold over 5 seeds × 40,000 ticks
+  (81–95 s at 100%, 70–84 s at 50%, 85–93 s at 0%), so the headway percent is not the lever; 4b's rerun of the folded
+  fuzz: 92–96 s at 75%, 74–81 s at 0%, mean 43–46 s over about 320 served asks. The 600 + 110-a-stop bound passed
+  almost anything, so the test is now a flat regression bound of 1,050 ticks on line 2 that prints the table (3,000
+  ticks a seed in `npm run check`; `FUZZ_TICKS=40000` for the long run). At a playtest-like rate (one lever ask every
+  60–90 s, `FUZZ_LIGHT=1`) the worst is 59–70 s and the mean 27–29 s over 31 asks a seed. Meeting a minute is v27's,
+  with its third train or an even-spacing hold. Also fixed after the review: a train held at Far Head's old signal when
+  Q6 opens the pier runs signal to signal (at = to = −1), which the validator had refused (P1; it now refuses only a
+  halt-to-same-halt leg, and still any leg of no length); a train bound for Far Head as its end when the pier opens
+  still makes that stop once (P3a).
 - [ ] **4b. The trains (client and bot; v26, with 4a).** `src/adapters/railway.ts`: `railTrainsOf`, the mirrored
   `lines`, every `line2.train[k]` read moved to per-train reads. `train-view.ts`: one train mesh per `RAIL_TRAINS`
   slot, posed on its line at `trainAlong`, offset 4 m left on track 0, easing across each turnout and crossover over
