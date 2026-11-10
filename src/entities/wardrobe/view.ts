@@ -3,8 +3,8 @@
 // Fits are Place's (gifts.ts updateWorn): the conductor's hat follows Head rigidly; other hats sit on the head's centre;
 // the rest hang from their bone, upright.
 // The stowaway (C2) is Place's follower too (gifts.ts updateCritter, updatePartnerPets): it hops along behind you and,
-// on a moving deck, up onto your shoulder. Each tab animates its own copy of a partner's, from their `stowaway` flag and
-// their already interpolated avatar.
+// on a moving deck, sits on the deck right beside you (beside your stool when you sit). Each tab animates its own copy
+// of a partner's, from their `stowaway` flag and their already interpolated avatar.
 import * as THREE from 'three/webgpu';
 import type { FrameCtx } from '../../loop.ts';
 import { me } from '../../player/player.ts';
@@ -22,11 +22,23 @@ import {
 } from './state.ts';
 
 type Dressed = { avatar: THREE.Object3D | null; items: Map<ClothesSlot, { id: GiftId; mesh: THREE.Mesh }> };
-type Follow = { x: number; y: number; z: number; yaw: number; hop: number; t: number; riding: boolean };
+// rx, rz: riding, where it is from you; it moves in your frame, so the deck's motion carries it exactly.
+type Follow = {
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  hop: number;
+  t: number;
+  riding: boolean;
+  rx: number;
+  rz: number;
+};
 type Pet = { mesh: THREE.Mesh; at: Follow };
 const PET: GiftId = 'critter';
-// Place's: small; and smaller up on your shoulder, riding.
-const CRIT = { scale: 0.55, shoulderScale: 0.42, side: 0.3, up: 0.78 };
+// Place's size. Riding, it sits `side` m to your right on the deck: Buddy's head is wider than his shoulders, so a
+// shoulder perch read as a pet on his head (owner, 10 November); out here it clears his body and a stool's top.
+const CRIT = { scale: 0.55, side: 0.62 };
 const follow = (p: { x: number; y: number; z: number }): Follow => ({
   x: p.x,
   y: p.y - 0.5,
@@ -35,14 +47,17 @@ const follow = (p: { x: number; y: number; z: number }): Follow => ({
   hop: 0,
   t: 0,
   riding: false,
+  rx: 0,
+  rz: 0,
 });
-// src/proto/place/seat.ts draws a seated Buddy this much lower than its body (held at chair height) and stamps
-// `seatedAt` on the avatar each frame it does: the shoulder comes down with them.
-const SEAT_DROP = 0.55;
-const seatDrop = (avatar: THREE.Object3D | null | undefined) =>
-  performance.now() - ((avatar?.userData.seatedAt as number | undefined) ?? -1e9) < 200 ? SEAT_DROP : 0;
+// src/proto/place/seat.ts stamps `seatedAt` and `seatRise` on a seated avatar each frame: its body is held seatRise m
+// above where it would stand on that deck, so the deck under a sitter is that much further down.
+const seatRise = (avatar: THREE.Object3D | null | undefined) =>
+  performance.now() - ((avatar?.userData.seatedAt as number | undefined) ?? -1e9) < 200
+    ? ((avatar?.userData.seatRise as number | undefined) ?? 0)
+    : 0;
 
-/** One frame of Place's follower, behind and beside `p` (facing `yaw`); on a deck it hops up to the shoulder. */
+/** One frame of Place's follower, behind and beside `p` (facing `yaw`); on a deck it sits beside you on the deck. */
 function stepPet(
   dt: number,
   c: Follow,
@@ -50,25 +65,42 @@ function stepPet(
   p: { x: number; y: number; z: number },
   yaw: number,
   riding: boolean,
-  drop = 0,
+  rise = 0,
 ) {
-  // On a train (standing or seated) it hops up onto your shoulder and stays small: no chasing a train along the ground
-  // and through its wheels.
+  // On a train (standing or seated) it sits on the deck at your right side, hopping after you as you walk about the
+  // deck: no chasing a train along the ground and through its wheels. It moves in your frame, so the train carries it.
   if (riding) {
-    const sx = p.x + Math.cos(yaw) * CRIT.side,
-      sz = p.z - Math.sin(yaw) * CRIT.side,
-      sy = p.y + CRIT.up - drop;
-    if (!c.riding) c.t = 0;
+    const tx = Math.cos(yaw) * CRIT.side,
+      tz = -Math.sin(yaw) * CRIT.side;
+    if (!c.riding) {
+      c.rx = c.x - p.x;
+      c.rz = c.z - p.z;
+      // Boarding a moving train leaves it far behind: it hops straight in beside you.
+      if (Math.hypot(c.rx - tx, c.rz - tz) > 3) {
+        c.rx = tx;
+        c.rz = tz;
+      }
+    }
     c.riding = true;
-    c.t = Math.min(1, c.t + dt / 0.28); // the hop up
-    const u = c.t;
-    c.x += (sx - c.x) * u;
-    c.z += (sz - c.z) * u;
-    c.y += (sy - c.y) * u;
+    const dx = tx - c.rx,
+      dz = tz - c.rz,
+      d = Math.hypot(dx, dz);
+    const moving = d > 0.12;
+    if (moving) {
+      const sp = Math.min(d * 6, 8) * dt;
+      c.rx += (dx / d) * Math.min(sp, d);
+      c.rz += (dz / d) * Math.min(sp, d);
+    }
+    c.t += dt * (moving ? 11 : 2.4);
+    c.hop = moving ? Math.abs(Math.sin(c.t)) * 0.25 : Math.max(0, Math.sin(c.t) * 0.02);
+    c.x = p.x + c.rx;
+    c.z = p.z + c.rz;
+    c.y = p.y - 0.5 - rise; // the deck: where your feet would be standing
     c.yaw = yaw + Math.PI;
-    mesh.position.set(c.x, c.y + (u < 1 ? Math.sin(u * Math.PI) * 0.7 : 0), c.z);
+    mesh.position.set(c.x, c.y + c.hop, c.z);
     mesh.rotation.y = c.yaw;
-    mesh.scale.setScalar(CRIT.shoulderScale);
+    const sq = 1 + (moving ? 0.1 * Math.cos(c.t * 2) : 0.03 * Math.sin(c.t));
+    mesh.scale.set(CRIT.scale / sq, CRIT.scale * sq, CRIT.scale / sq);
     return;
   }
   c.riding = false;
@@ -206,10 +238,10 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
   function walkPets(dt: number, riding: boolean) {
     const body = me.body;
     if (wardrobe.pet() === PET && body) {
-      const drop = seatDrop(me.avatar);
+      const seated = me.avatar && performance.now() - (me.avatar.userData.seatedAt ?? -1e9) < 200;
       // Seated, the chair draws you on the moving deck's frame (seat.ts drawAtSeat): sit by that, not the body.
-      const p = drop && me.avatar ? me.avatar.position : body.interpolatedPosition;
-      stepPet(dt, petOf('self', p).at, pets.get('self')!.mesh, p, me.yaw, riding, drop);
+      const p = seated ? me.avatar!.position : body.interpolatedPosition;
+      stepPet(dt, petOf('self', p).at, pets.get('self')!.mesh, p, me.yaw, riding, seatRise(me.avatar));
     } else dropPet('self');
     for (const remote of remotes.values()) {
       const pet = partnerStowaway(remote.peer);
@@ -220,7 +252,7 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
       }
       const view = petOf(remote.peer, avatar.position);
       view.mesh.visible = avatar.visible;
-      stepPet(dt, view.at, view.mesh, avatar.position, avatar.rotation.y, pet.riding, seatDrop(avatar));
+      stepPet(dt, view.at, view.mesh, avatar.position, avatar.rotation.y, pet.riding, seatRise(avatar));
     }
     // Sweep partners who left, and anyone whose stowaway went back.
     for (const key of [...pets.keys()]) if (key !== 'self' && !partnerStowaway(key)) dropPet(key);
@@ -228,7 +260,7 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
 
   return {
     root,
-    /** `riding`: you're on a moving deck (your stowaway rides on your shoulder). */
+    /** `riding`: you're on a moving deck (your stowaway sits beside you on the deck). */
     lateUpdate(ctx: FrameCtx, riding: boolean) {
       dress('self', me.avatar, wardrobe.wearing());
       for (const remote of remotes.values())

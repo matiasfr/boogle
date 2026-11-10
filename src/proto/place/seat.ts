@@ -89,6 +89,13 @@ const world = (s: Seat, exit = false, interpolated = false) => {
   surfacePose.y = Math.max(local.y, (s.platform.topAt?.(local.x, local.z) ?? s.platform.top) + PLAYER_R);
   return fromPlatform(s.platform, surfacePose, interpolated, pose);
 };
+/** How far a seated Buddy's drawn body comes down from its capsule (the seated pose's frame; every chair's anchor
+ * height assumes it, e.g. the track layer's hips 0.63 m under the capsule centre). */
+const SEATED_DROP = 0.55;
+/** How far this chair holds its sitter's capsule above where they'd stand on that deck: the stowaway sits beside you on
+ * the deck by it (src/entities/wardrobe/view.ts reads it from the avatar's seatRise). */
+const seatRise = (s: Seat) =>
+  s.platform ? Math.max(0, s.at.y - ((s.platform.topAt?.(s.at.x, s.at.z) ?? s.platform.top) + PLAYER_R)) : 0;
 const reachable = (s: Seat) => {
   const b = me.body;
   const p = world(s);
@@ -180,6 +187,7 @@ onRemotePresence((r, pr) => {
   const seated = find(pr.placeSeatPose);
   if (seated && grants[seated.id]?.peer === r.peer && r.avatar) {
     r.avatar.userData.seatedAt = performance.now();
+    r.avatar.userData.seatRise = seatRise(seated);
     remoteSeats.set(r.peer, seated);
   } else remoteSeats.delete(r.peer);
 });
@@ -264,19 +272,22 @@ onFrame(
 );
 onFrame(
   () => {
-    if (sitting && me.avatar) me.avatar.userData.seatedAt = performance.now();
+    if (sitting && me.avatar) {
+      me.avatar.userData.seatedAt = performance.now();
+      me.avatar.userData.seatRise = seatRise(sitting);
+    }
     for (const r of remotes.values()) {
       if (!r.avatar) continue;
       const seat = remoteSeats.get(r.peer);
       if (seat?.anchorView && grants[seat.id]?.peer === r.peer) drawAtSeat(r.avatar, seat);
       if (performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 200) {
         const inner = r.avatar.userData.inner as THREE.Object3D | undefined;
-        if (inner) inner.position.y -= 0.55;
+        if (inner) inner.position.y -= SEATED_DROP;
       }
     }
     if (sitting && me.avatar) {
       if (sitting.anchorView) drawAtSeat(me.avatar, sitting);
-      if (me.avatar.userData.inner) (me.avatar.userData.inner as THREE.Object3D).position.y -= 0.55;
+      if (me.avatar.userData.inner) (me.avatar.userData.inner as THREE.Object3D).position.y -= SEATED_DROP;
     }
   },
   { phase: 'update', order: 20 },
