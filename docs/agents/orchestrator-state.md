@@ -57,6 +57,13 @@ Done on the owner's word, 9 November: the nightly jobs were reinstalled from mai
 
 ## Leftovers
 
+- **Owner playtest notes, 10 November about 02:40 UTC (live build, desktop):**
+  - P3: "due to proximity of e to open, i was able to open the mossy scarf chest from the ground instead of on the platform". The chest's open reach ignores height; it should need you on its platform (vertical limit or a reach test from the platform). Not started.
+  - P3: "the water splash particles are extremely dark/gray" after the water rebuild (#1354). With the water agent.
+  - Stutter during the arrival fall through the clouds "until it jump in", again on a fresh reload. An implementer is diagnosing (what compiles, bakes or uploads during the fall).
+  - The pet sits on the seated rider's head: wants the shoulder, or beside the rider on the deck. Train stools: "in the middle and be a low stool like the track layer", rider properly seated. Both with the seated-rider agent.
+  - Curio shelves "weirdly at angles and not spaced intentionally with everything else in the town". The designer is proposing a layout; show the owner before building.
+
 - **Ball throw:** extremely low priority (owner, 10 November); it comes back with the old island.
 - **Outage, 10 November 01:18 to 01:40 UTC:** voice chat (#1334) made the server import `src/net/rtc-wire.ts`, which the image did not copy; the server crash-looped. Fixed by #1346, merged directly on the owner's word. Tests, two reviews and CI all ran from the full checkout. A review of any server change must now check new shared imports against `server/Dockerfile`.
 - **Pages deploys hang in `actions/deploy-pages`** (four times on 9 and 10 November, twice in a row at 01:36 and 01:44 UTC). Cancel after five minutes and rerun; the site stays on the previous build meanwhile, which also makes the smoke test fail on a server identity mismatch. After the playtest: rerun `deploy.yml` on main.
