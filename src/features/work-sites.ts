@@ -6,15 +6,12 @@
 // personal rewards: the section is everyone's, the plaque line and your tier are yours). Lockstep sites, Local view.
 // A credited pour turns the plaque's changed rows over like a departures board, with a little puff and a soft clack you
 // hear near it, at most once every FLIP_GAP_MS while you keep pouring (docs/research/ui-patterns.md, rec 5: shared news
-// in the world first). Signs and
-// plaques shrink and fade as the camera comes within a few metres (src/render/near-fade.ts), so standing at a site or
-// riding the machine past one keeps the view clear. One entity: every section's rings, signs,
-// plaque and stacked sleepers, in one group.
+// in the world first). The rings' signs and the plaque are painted boards on posts standing at the site
+// (src/render/sign-board.ts; owner, 9 November: signs in the world before hovering text), not labels in the air. One
+// entity: every section's rings, signs, plaque and stacked sleepers, in one group.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { defineKind, spawn } from '../entity/entity.ts';
-import { camera } from '../render/scene.ts';
-import { fadeNear } from '../render/near-fade.ts';
 import { onApplied, submitEdit, world } from '../world/sync.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
 import { groundHeight } from '../island/terrain.ts';
@@ -30,6 +27,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { uiSound } from '../ui/ui-sound.ts';
 import { emit } from '../render/particles.ts';
 import { readableUnlit } from '../render/readable-unlit.ts';
+import { signBoard, type SignBoard } from '../render/sign-board.ts';
 
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
@@ -64,43 +62,23 @@ const doneMat = readableUnlit(
   }),
 );
 const sleepers = pieceMesh(ROUTE.length * SLEEPERS);
-const postMat = new THREE.MeshStandardNodeMaterial({ color: '#6b4a2b', roughness: 0.9 });
 
-type Label = {
-  c: HTMLCanvasElement;
-  g: CanvasRenderingContext2D;
-  tex: THREE.CanvasTexture;
-  sprite: THREE.Sprite;
-  text: string;
-};
-function label(w = 512, h = 128): Label {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(
-    readableUnlit(new THREE.SpriteNodeMaterial({ map: tex, transparent: true, depthWrite: false })),
-  );
-  sprite.renderOrder = 10;
-  const g = c.getContext('2d')!;
-  if (!g) throw new Error('work-sites: no 2D canvas');
-  return { c, g, tex, sprite, text: '' };
+type Label = SignBoard & { text: string };
+/** A board `w` m wide on its post (`foot` m to its bottom), its canvas 512 px wide; the caller places it. */
+function label(w: number, h: number, foot: number): Label {
+  return { ...signBoard(undefined, { w, h, px: 512, foot, posts: 'one', wood: '#6b4a2b' }), text: '' };
 }
 // A plaque row turning over: what it said before, and when it starts (staggered down the plaque).
 type Flap = { old: string; at: number };
 export const flapFeel = { ms: 320 }; // one row's flip (dev/scenarios/ui-kit.ts slows it for a still)
-function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)', flaps?: Map<number, Flap>, now = 0): void {
+function paint(l: Label, lines: string[], bg = '#3a2816', flaps?: Map<number, Flap>, now = 0): void {
   const text = lines.join('\n');
   if (text === l.text && !flaps?.size) return;
   l.text = text;
-  const { g, c } = l;
-  g.clearRect(0, 0, c.width, c.height);
+  const { g, cw, ch } = l;
+  const c = { width: cw, height: ch };
   g.fillStyle = bg;
-  g.beginPath();
-  if (g.roundRect) g.roundRect(4, 4, c.width - 8, c.height - 8, 18);
-  else g.rect(4, 4, c.width - 8, c.height - 8);
-  g.fill();
+  g.fillRect(0, 0, c.width, c.height);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   const lh = (c.height - 16) / lines.length;
@@ -126,7 +104,7 @@ function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)', flaps?:
     g.fillText(f && p < 0.5 ? f.old : t, 0, 0, c.width - 24);
     g.restore();
   });
-  l.tex.needsUpdate = true;
+  l.painted();
 }
 
 const site = new THREE.Group();
@@ -136,7 +114,7 @@ const views = ROUTE.map((sec, s) => {
   const v = {
     rings: [] as THREE.Mesh[],
     ringLabels: [] as Label[],
-    plaque: label(512, 256),
+    plaque: label(2.2, 1.1, 1.3),
   };
   for (const ring of [TRACK, HELPER]) {
     const p = ringAt(s, ring);
@@ -145,35 +123,30 @@ const views = ROUTE.map((sec, s) => {
     mesh.position.set(p.x, y, p.z);
     site.add(mesh);
     v.rings.push(mesh);
-    const l = label();
-    l.sprite.scale.set(2.4, 0.6, 1);
-    l.sprite.position.set(p.x, y + 1.6, p.z);
-    site.add(l.sprite);
+    // The ring's sign: a low board on a stake at the ring's rim, on the side away from the plaque.
+    const l = label(1.6, 0.4, 0.7);
+    const sz = p.z + RING_R + 0.3;
+    l.mesh.position.set(p.x, groundHeight(p.x, sz), sz);
+    site.add(l.mesh);
     v.ringLabels.push(l);
-    if (NO_HELPER && ring === HELPER) mesh.visible = l.sprite.visible = false;
+    if (NO_HELPER && ring === HELPER) mesh.visible = l.mesh.visible = false;
   }
   // The plaque stands off the line (beside the Helper ring, just past it), so the wagon runs clear of it.
   const px = sec.x + 2.6,
     pz = sec.z - 2.4;
-  const y = groundHeight(px, pz);
-  const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.6, 0.14), postMat);
-  post.position.set(px, y + 0.8, pz);
-  site.add(post);
-  v.plaque.sprite.scale.set(2.6, 1.3, 1);
-  v.plaque.sprite.position.set(px, y + 2.2, pz);
-  site.add(v.plaque.sprite);
+  v.plaque.mesh.position.set(px, groundHeight(px, pz), pz);
+  site.add(v.plaque.mesh);
   return v;
 });
 
 let names = 0; // bumped by who.set: the plaques print roster names
 onApplied((e: { op: string }) => e.op === 'who.set' && names++);
 
-// Sites whose plaque just gained points (a credited pour), each plaque's rows mid-flip, how much each plaque swells
-// while they turn, and when each last flipped. A pour lands every haulFeel.pourMs (300 ms), so flipping on every one
-// would clatter: pours in between just repaint the numbers.
+// Sites whose plaque just gained points (a credited pour), each plaque's rows mid-flip, and when each last flipped. A
+// pour lands every haulFeel.pourMs (300 ms), so flipping on every one would clatter: pours in between just repaint the
+// numbers.
 const FLIP_GAP_MS = 1200;
 const credited = new Set<number>();
-const swell = views.map(() => 1);
 const flaps = views.map(() => new Map<number, Flap>());
 const lastFlip = views.map(() => -1e9);
 const plaqueLines: string[][] = views.map(() => []);
@@ -191,12 +164,12 @@ function flipPlaque(s: number, before: string[], after: string[], now: number): 
   }
   if (!n) return;
   lastFlip[s] = now;
-  const sp = views[s]!.plaque.sprite.position;
+  const sp = views[s]!.plaque.mesh.position;
   for (let q = 0; q < 8; q++) {
     const a = (q / 8) * Math.PI * 2 + Math.random() * 0.5;
     emit({
       x: sp.x + Math.cos(a) * 0.9,
-      y: sp.y + 0.55,
+      y: sp.y + 2.45, // over the board's top
       z: sp.z + Math.sin(a) * 0.3,
       vx: Math.cos(a) * 0.5,
       vy: 0.6 + Math.random() * 0.5,
@@ -298,7 +271,7 @@ let drawnRev = -1,
   drawnNames = -1,
   drawnTune = -1,
   drawnRun: number | null = null;
-defineKind('work-sites', { update: 34, lateUpdate: 34 });
+defineKind('work-sites', { update: 34 });
 spawn({
   kind: 'work-sites',
   mesh: site,
@@ -313,24 +286,11 @@ spawn({
     drawnNames = names;
     drawnTune = tuneRev;
     drawnRun = run;
-    // plaque rows mid-flip, and the board's little swell while they turn
+    // plaque rows mid-flip
     for (let s = 0; s < flaps.length; s++) {
       const f = flaps[s]!;
-      if (!f.size && swell[s] === 1) continue;
-      paint(views[s]!.plaque, plaqueLines[s]!, undefined, f, now);
-      let k = 0;
-      for (const x of f.values())
-        k = Math.max(k, Math.sin(Math.PI * Math.min(1, Math.max(0, (now - x.at) / flapFeel.ms))));
-      swell[s] = 1 + 0.05 * k;
+      if (f.size) paint(views[s]!.plaque, plaqueLines[s]!, undefined, f, now);
     }
     pour(now);
-  },
-  // Signs and plaques make way for a close camera (placed by now this frame).
-  lateUpdate() {
-    for (let s = 0; s < views.length; s++) {
-      const v = views[s]!;
-      for (let k = 0; k < v.ringLabels.length; k++) fadeNear(v.ringLabels[k]!.sprite, camera, 2.4, 0.6);
-      fadeNear(v.plaque.sprite, camera, 2.6, 1.3, swell[s]);
-    }
   },
 });

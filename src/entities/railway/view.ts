@@ -86,7 +86,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   demo = hook.demo;
   const glide = await createRailwayGlide(adapter, owner, () => hook.inspect().pulling);
   const shelf = await createRailwayShelf(adapter, owner, sources.bundleOrigin);
-  const cart = await createRailwayCart(adapter, owner, line2.depotPlace, line2.depotSlot, shelf.railSlot);
+  const cart = await createRailwayCart(
+    adapter,
+    owner,
+    line2.depotPlace,
+    line2.depotYaw,
+    line2.depotSlot,
+    shelf.railSlot,
+  );
   const trains = await createRailwayTrains(adapter, owner, seats, line2.depotPlace);
   const halts = await createRailwayHalts(adapter, owner);
   // `?home=b`: Home drawn as one terminus station (docs/plans/home-station.md, step 3). Look only.

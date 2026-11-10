@@ -202,11 +202,11 @@ export async function createRailwayLine2(
     rackParts.push(['b', x, 0.08, 0, 0.2, 0.16, 1.6, '#8a6236']);
     for (const z of [-0.8, 0.8]) rackParts.push(['b', x, 0.65, z, 0.14, 1.3, 0.14, '#7f5630']);
   }
-  rackParts.push(['b', -1.2, 0.65, -1.3, 0.1, 1.3, 0.1, '#a98249']);
   const depotRack = mesh(shapes.merged(rackParts));
   depotRack.visible = false;
+  // The rack's board stands on its own post beside the rack, its face toward the rack's open ends and the approach.
   const depotSign = stockSign(owner, 'logs');
-  depotSign.sprite.visible = false;
+  depotSign.board.visible = false;
   const depotYaw = (k: number) => frames[k]!.yaw - Math.PI / 2;
   const depotAt = new THREE.Vector3();
   const depotPlace = (k: number, out: THREE.Vector3) => {
@@ -231,7 +231,7 @@ export async function createRailwayLine2(
     if (key === drawnDepot) return;
     drawnDepot = key;
     depotRack.visible = k >= 0 && LINE2_STATIONS[k]!.depot;
-    depotSign.sprite.visible = depotRack.visible;
+    depotSign.board.visible = depotRack.visible;
     if (k < 0 || !LINE2_STATIONS[k]!.depot) {
       commitPieces(depotLogs, 0);
       return;
@@ -239,10 +239,12 @@ export async function createRailwayLine2(
     depotPlace(k, depotAt);
     depotRack.position.copy(depotAt).y -= 0.16;
     depotRack.rotation.y = depotYaw(k);
-    depotSign.sprite.position
-      .set(-1.2, 1.7, -1.3)
+    depotSign.board.position
+      .set(-1.2, 0, -1.55)
       .applyAxisAngle(THREE.Object3D.DEFAULT_UP, depotYaw(k))
       .add(depotRack.position);
+    depotSign.board.position.y = land.H(depotSign.board.position.x, depotSign.board.position.z);
+    depotSign.board.rotation.y = depotYaw(k) + Math.PI / 2;
     depotSign.set(n);
     depotSign.show(train ? 'train' : 'logs');
     const shown = Math.min(32, n);
@@ -1028,6 +1030,8 @@ export async function createRailwayLine2(
     },
     /** Where the depot rack for stretch k stands (the rails shelf stands beside it: shelf-view.ts). */
     depotPlace,
+    /** Which way the depot rack for stretch k is turned (its local -z end carries its boards). */
+    depotYaw,
     depotSlot,
     /** Pieces the cart is heaving onto the rack (cart-view.ts): shown once they land. */
     holdDepot(fn: () => { logs: number }) {
@@ -1101,7 +1105,7 @@ export async function createRailwayLine2(
         ...boiler.inspect(),
         ...pier.inspect(),
         trainOwed: !!l && waitsForTrain(l),
-        q6Sign: { kind: depotSign.kind, visible: depotSign.sprite.visible, nudges },
+        q6Sign: { kind: depotSign.kind, visible: depotSign.board.visible, nudges },
         q6Rack: (() => {
           const p = depotPlace(5, new THREE.Vector3());
           return {

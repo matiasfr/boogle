@@ -11,12 +11,11 @@ import { GROUP } from '../../physics/physics.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { flat } from '../flat.ts';
 import { GOLD_ROPE, createRope } from '../../render/gold-rope.ts';
-import { label } from '../minis/common.ts';
+import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { H, addStatic } from './land.ts';
 import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from './look.ts';
 import { kitBatch, stationKit } from './look-kit.ts';
 import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from './layout.ts';
-import { HIGH } from './opening-plans.ts';
 import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot } from './pieces.ts';
 import { addFoot } from './sites.ts';
 import {
@@ -32,6 +31,8 @@ import {
 export { frameBesideLine, type FrameAt } from './spatial-station.ts';
 
 export type StationRun = ReturnType<typeof buildStation>;
+/** The bill's paint: ink on paper, like the village's boards (src/proto/place/signs.ts). */
+const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 /** The same deposit flight locally and on a partner's screen. Origins and landing effects belong to the caller. */
 export function flyToStock(
   st: StationRun,
@@ -249,27 +250,29 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
   // from the moment the station opens; the lashings tie round the beam when it lands. Local, from accepted state.
   const lashings = beam ? saddles(g) : null;
 
-  const tag = label(3.4, 1.7);
+  // The bill: a painted board on two posts at the frame's far end, facing along the line, so it reads over the low
+  // frame as you walk up beside the track past the depot rack (owner, 9 November: signs in the world before hovering
+  // text). Both faces carry it.
+  const bill = signBoard(owner, { w: 2.2, h: 1.1, px: 512, foot: 1.5, posts: 'two' });
+  const billEnd = FRAME_W / 2 + 0.8;
   // T3's full log pile hid the missing beam row. Keep the existing bill beside the pile,
   // on the source side, without moving the receiver, feeder or standing envelope.
   const billOut = spec0.id === 'T3' ? 4 : 0;
-  tag.sprite.position.set(x + lx * billOut, y + 2.9, z + lz * billOut);
-  // The sea-gate lamp post cuts through Q5's rail bill from the path. Keep the existing count above its cap.
-  if (spec0.id === 'Q5') tag.sprite.position.y += 1;
-  // The pack is on the working apron: put this existing bill on the building frontage,
-  // not between the follow camera and the receiver as the player collects it. It stands out past the scaffold and
-  // clear above the wall tops, so the second bill's walls rising around the old spot never hide it.
+  let bx = x + Math.sin(yaw) * billEnd + lx * billOut,
+    bz = z + Math.cos(yaw) * billEnd + lz * billOut,
+    byaw = yaw;
+  // The pack is on the working apron: put this existing bill before the building frontage, not between the follow
+  // camera and the receiver as the player collects it. It stands out past the scaffold, facing out from the front.
   if (spec0.id === 'F1') {
-    const fx = FORGE.x + ORIGIN.x,
-      fz = FORGE.z + ORIGIN.z;
-    tag.sprite.position.set(x, H(fx, fz) + HIGH + 1.25, fz - FORGE.d / 2 - 1.3);
+    const fz = FORGE.z + ORIGIN.z;
+    bz = fz - FORGE.d / 2 - 1.3;
+    bx = x;
+    byaw = 0;
   }
-  if (owner) owner.add(tag.sprite);
-  else scene.add(tag.sprite);
-  owner?.cleanup(() => {
-    tag.sprite.material.map?.dispose();
-    tag.sprite.material.dispose();
-  });
+  bill.mesh.position.set(bx, H(bx, bz), bz);
+  bill.mesh.rotation.y = byaw;
+  if (!owner) scene.add(bill.mesh);
+  let painted = '';
 
   const slot = new THREE.Vector3();
   const logSlot = (n: number, out = slot) => stackSlot(n, PER_ROW, at, yaw, out);
@@ -365,12 +368,17 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     },
     /** The sign over it; off when it's not its turn or it's done. */
     setTag(on: boolean, status?: string) {
-      tag.sprite.visible = on;
+      bill.mesh.visible = on;
       if (!on) return;
       const parts = GOODS.filter((g) => run.need(g) > 0).map(
         (g) => `${g === 'beam' ? 'great beam' : g} ${run.have[g]}/${run.need(g)}`,
       );
-      tag.set(status ?? run.spec.label.replace('Line 2, s', 'S'), parts.join('  '));
+      const big = status ?? run.spec.label.replace('Line 2, s', 'S'),
+        small = parts.join('  ');
+      if (big + '|' + small === painted) return;
+      painted = big + '|' + small;
+      paintTwoLines(bill, big, small, BILL_LOOK);
+      bill.painted();
     },
     need: (kind: Goods) => run.spec[kind] ?? 0,
     full: () => GOODS.every((g) => run.have[g] >= run.need(g)),

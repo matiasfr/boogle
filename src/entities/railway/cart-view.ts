@@ -13,6 +13,7 @@ import { carry, CARRY } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
+import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { CART, CART_PHASE, CART_ROAD, cartAlong } from '../../sim/railway-cart.ts';
 import { playMark } from '../../proto/mark.ts';
 
@@ -31,6 +32,7 @@ export async function createRailwayCart(
   owner: OwnedView,
   /** Where line2-view stands the depot's log bed for stretch k (world metres). */
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
+  depotYaw: (k: number) => number,
   depotSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
   shelfSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
@@ -148,9 +150,11 @@ export async function createRailwayCart(
   }
 
   // ---------------------------------------------------------------- the rack's tag
-  const tag = common.label(6, 2);
-  owner.add(tag.sprite);
-  tag.sprite.visible = false;
+  // A painted board on its own post at the rack's other near corner, beside its stock board (stock-sign.ts), facing
+  // the same way (owner, 9 November: signs in the world before hovering text).
+  const tag = signBoard(owner, { w: 1.6, h: 0.7, px: 512, foot: 1.05, posts: 'one' });
+  tag.mesh.visible = false;
+  let tagText = '';
   const rackAt = new THREE.Vector3();
 
   // ---------------------------------------------------------------- unloads and the cart's sounds, from state
@@ -169,7 +173,6 @@ export async function createRailwayCart(
   owner.cleanup(() => {
     for (const g of geometries) g.dispose();
     for (const m of materials) m.dispose();
-    tag.sprite.removeFromParent();
   });
 
   let riding = false;
@@ -184,7 +187,7 @@ export async function createRailwayCart(
       if (aboard && !riding) playMark('cart ride', { authority: 'local' });
       riding = aboard;
       if (!on || !l2) {
-        tag.sprite.visible = false;
+        tag.mesh.visible = false;
         return;
       }
       const c = l2.cart;
@@ -284,11 +287,18 @@ export async function createRailwayCart(
       moving = going;
       // The rack's tag.
       const [title, color] = SERVICE[l2.cartStatus];
-      tag.sprite.visible = l2.cartStatus !== 'off' && l2.served >= 0;
-      if (tag.sprite.visible) {
+      tag.mesh.visible = l2.cartStatus !== 'off' && l2.served >= 0;
+      if (tag.mesh.visible) {
+        const yaw = depotYaw(l2.served);
         depotPlace(l2.served, rackAt);
-        tag.sprite.position.set(rackAt.x, rackAt.y + 4.8, rackAt.z); // above the frame's own tag
-        tag.set(title, 'More coming', color);
+        tag.mesh.position.set(-1.2, 0, 1.65).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(rackAt);
+        tag.mesh.position.y = rackAt.y - 0.16;
+        tag.mesh.rotation.y = yaw + Math.PI / 2;
+        if (tagText !== title) {
+          tagText = title;
+          paintTwoLines(tag, title, 'More coming', { ground: '#493522', ink: '#fff5dc', color, rim: '#edcf8c' });
+          tag.painted();
+        }
       }
     },
     inspect: () => {
