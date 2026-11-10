@@ -52,9 +52,9 @@ const rows = (fs.existsSync(dir) ? fs.readdirSync(dir) : []).filter((n) => n.end
 }).sort((a, b) => b.held - a.held || a.number - b.number);
 for (const t of rows) console.log(`${t.held ? "running" : "waiting"}${t.long ? " long" : ""} ${t.since ? Math.round((Date.now() - t.since) / 60000) + "m " : ""}${t.job.replace(/\/\S*\//g, "").slice(0, 120)}`);
 if (!rows.length) console.log("empty");'
-say "Nightly jobs (last verdict; streak = consecutive runs that were not a pass)"
+say "Weekly jobs (last verdict; streak = consecutive runs that were not a pass)"
 daily=${BOOGLE_DAILY_DIR:-$HOME/.boogle/daily}
-echo "scheduled: scenarios, long. On demand: perf (npm run daily -- perf). Off: atlas, patch-video (owner, 10 November)."
+echo "scheduled: scenarios, long, Sundays only (owner, 10 November); any job on demand: npm run daily -- <job>. Off: atlas, patch-video."
 for job in scenarios long; do
   # Each verdict line names its evidence dir, <job>-<ISO time with dashes>-<pid>; the time is UTC.
   { grep "^Daily $job:" "$daily/$job.log" 2>/dev/null || true; } | awk -v job="$job" '

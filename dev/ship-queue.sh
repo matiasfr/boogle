@@ -5,7 +5,8 @@
 #   1. Refuses a branch that touches src/sim, src/net, src/world or server/ unless --reviewed starts with the review
 #      stamp of exactly those files' diff (npm run review-stamp -- <worktree>), recomputed here before any rebase, so a
 #      fix pushed after the review needs a new review (orchestrate skill, "Review").
-#   1b. Holds such a branch while the last nightly scenarios verdict is not a pass, unless --nightly-known says why.
+#   1b. Holds such a branch while the last scenarios verdict (the weekly job, or `npm run daily -- scenarios` by hand)
+#      is not a pass, unless --nightly-known says why.
 #      --dry-run stops after these checks.
 #   2. Takes a machine-wide lock for the local part only (rebase, gate, push), so the next ship can start while CI runs.
 #   3. Runs dev/codex/ship-branch.sh from the trusted checkout (../boogle-trusted, detached at origin/main), never from
@@ -61,7 +62,7 @@ if [ -n "$risky" ]; then
     echo "ship-queue: the last nightly scenarios run was not a pass:"
     echo "  $verdict"
     if [ -z "$known" ]; then
-      echo 'Risky ships wait for a green nightly. Look at the evidence; if it is unrelated or already tracked, pass'
+      echo 'Risky ships wait for a green scenarios run (weekly, or npm run daily -- scenarios). Look at the evidence; if it is unrelated or already tracked, pass'
       echo '--nightly-known "<why this failure is unrelated or already tracked>".'
       exit 6
     fi
