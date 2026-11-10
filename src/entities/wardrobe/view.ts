@@ -56,6 +56,21 @@ const seatRise = (avatar: THREE.Object3D | null | undefined) =>
   performance.now() - ((avatar?.userData.seatedAt as number | undefined) ?? -1e9) < 200
     ? ((avatar?.userData.seatRise as number | undefined) ?? 0)
     : 0;
+/** A seated avatar's seat: seat.ts draws a bench's rider `seatAhead` m forward of it, the way they face (yaw 0 faces
+ * -z), and the stowaway stays on the bench beside the seat. Anyone else: their position. */
+const bySeat = (avatar: THREE.Object3D, out: THREE.Vector3) => {
+  const ahead =
+    performance.now() - ((avatar.userData.seatedAt as number | undefined) ?? -1e9) < 200
+      ? ((avatar.userData.seatAhead as number | undefined) ?? 0)
+      : 0;
+  return out.set(
+    avatar.position.x + Math.sin(avatar.rotation.y) * ahead,
+    avatar.position.y,
+    avatar.position.z + Math.cos(avatar.rotation.y) * ahead,
+  );
+};
+const seatAt = new THREE.Vector3(),
+  partnerSeatAt = new THREE.Vector3();
 
 /** One frame of Place's follower, behind and beside `p` (facing `yaw`); on a deck it sits beside you on the deck. */
 function stepPet(
@@ -240,7 +255,7 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
     if (wardrobe.pet() === PET && body) {
       const seated = me.avatar && performance.now() - (me.avatar.userData.seatedAt ?? -1e9) < 200;
       // Seated, the chair draws you on the moving deck's frame (seat.ts drawAtSeat): sit by that, not the body.
-      const p = seated ? me.avatar!.position : body.interpolatedPosition;
+      const p = seated ? bySeat(me.avatar!, seatAt) : body.interpolatedPosition;
       stepPet(dt, petOf('self', p).at, pets.get('self')!.mesh, p, me.yaw, riding, seatRise(me.avatar));
     } else dropPet('self');
     for (const remote of remotes.values()) {
@@ -252,7 +267,7 @@ export async function createWardrobeView(wardrobe: WardrobeApi) {
       }
       const view = petOf(remote.peer, avatar.position);
       view.mesh.visible = avatar.visible;
-      stepPet(dt, view.at, view.mesh, avatar.position, avatar.rotation.y, pet.riding, seatRise(avatar));
+      stepPet(dt, view.at, view.mesh, bySeat(avatar, partnerSeatAt), avatar.rotation.y, pet.riding, seatRise(avatar));
     }
     // Sweep partners who left, and anyone whose stowaway went back.
     for (const key of [...pets.keys()]) if (key !== 'self' && !partnerStowaway(key)) dropPet(key);

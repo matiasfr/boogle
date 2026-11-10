@@ -31,11 +31,11 @@
   },
   "engine": {
     "source": "engine.py",
-    "sourceHash": "c602eb99280887b9",
-    "outHash": "af977a0c4f92820c",
-    "rawBytes": 235372,
-    "bytes": 58200,
-    "triangles": 7512,
+    "sourceHash": "fa12ee369ba11f1c",
+    "outHash": "6a4430ae9b8f546f",
+    "rawBytes": 266244,
+    "bytes": 64268,
+    "triangles": 8656,
     "animations": [],
     "textures": []
   },

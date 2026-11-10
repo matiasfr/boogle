@@ -14,8 +14,9 @@ kit.scene.updateMatrixWorld(true);
 /** The flatbed's deck top over the rail line (src/proto/wagon/cars.ts TRAILER.top): the recipe's origin is the rail line. */
 export const CAR_DECK = 0.7;
 /** The bench's seat top over the deck (the track layer's low stool's, seat.ts) and the bench's rider anchors: a rider's
- * capsule centre sits `SEAT_X` from the middle, facing out, at these z along the car. */
-export const BENCH = { seatTop: 0.32, seatX: 0.45, z: [-0.85, 0.45] as const };
+ * capsule centre sits `SEAT_X` from the middle, facing out, at these z along the car. `forward`: the drawn rider sits
+ * this much further out, so the head clears the backrest (owner, 10 November: "slightly forward on them"). */
+export const BENCH = { seatTop: 0.32, seatX: 0.45, forward: 0.16, z: [-0.85, 0.45] as const };
 
 type CarPart = 'car_fit' | 'car_upgrade';
 const baked = new Map<CarPart, THREE.BufferGeometry>();

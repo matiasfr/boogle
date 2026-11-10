@@ -2,7 +2,9 @@
 // trains. Waits for line `&engineLine=` (0 or 1) to stand at its stop `&engineStop=`, then by `&engineShot=`:
 //   halt    Buddy on the halt beside the engine, the camera side on
 //   board   the same, then (as the --action) Buddy walks into the cab through the near door
-//   cab     looking in through the open near door at the driver on his stool
+//   cab     looking in at the near door (shut since the 10 November park) and the driver on his stool
+//   glass   the driver through the open front window from the halt's front quarter; `ahead` from the track ahead
+//   door    the driver through the near door's open window, from the halt at the door (Buddy stands back)
 //   arrive  a wide still of the train at the halt, to see it clear the platform (and, at the Pier, the track layer)
 //   ride    Buddy boards before the capture and the game's own camera rides out with him (use --video --seconds 8)
 //   onboard Buddy on the halt on the follow camera; the --action walks him into the cab (the cutaway, train-view.ts)
@@ -21,7 +23,7 @@ const { teleport } = (await import(
 const { carry } = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
-const { ENGINE, ENGINE_CAB } = (await import(
+const { ENGINE, ENGINE_CAB, ENGINE_STOOL } = (await import(
   '/src/proto/wagon/engine.ts' as string
 )) as typeof import('../../../src/proto/wagon/engine.ts');
 const { LINE_HALTS } = (await import(
@@ -71,7 +73,7 @@ if (w.__engineFrame) {
       const ok = await bot.walk(ix, iz, 0.35, { limit: 6000 });
       const p = me.body!.position;
       console.log(
-        `ENGINE BOARD ${JSON.stringify({ ok, riding: carry.on?.id ?? null, feet: +(p.y - 0.45).toFixed(3) })}`,
+        `ENGINE BOARD ${JSON.stringify({ ok, riding: carry.on?.id ?? null, feet: +(p.y - 0.45).toFixed(3), doors: train().doors })}`,
       );
     })(),
     'walk into the cab',
@@ -139,13 +141,19 @@ if (w.__engineFrame) {
         clear();
         setTimeout(clear, 0);
       } else {
-        // `cab`: Buddy stands at the doorway's back post, so the door is open, and the camera looks in past him.
+        // `cab`: Buddy stands at the doorway's back post and the camera looks in past him.
         const [bx, by, bz] =
           shot === 'cab'
             ? at(f, f.side * 1.9, deck + 1.0, ENGINE_CAB.door.z[0] - 0.6)
-            : at(f, f.side * 2.6, deck + 1.0, doorZ + (shot === 'halt' ? 0.4 : 0));
+            : at(f, f.side * 2.6, deck + 1.0, doorZ + (shot === 'halt' ? 0.4 : shot === 'door' ? -2.5 : 0));
         teleport(me.body!, bx, by, bz);
+        const driver = at(f, ENGINE_STOOL.x, ENGINE_STOOL.seat + 0.55, ENGINE_STOOL.z);
         if (shot === 'arrive') cam(at(f, f.side * 7, 13, 3), at(f, f.side * 0.6, 1, 2.4), 60);
+        // The open cab windows (owner, 10 November): the driver through the front glass from the platform's front
+        // quarter and from the track ahead, and through the near door's window from the platform at the door.
+        else if (shot === 'glass') cam(at(f, f.side * 3.4, 2.7, ENGINE_CAB.zFront + 5.5), driver, 40);
+        else if (shot === 'ahead') cam(at(f, -0.4, 2.6, ENGINE_CAB.zFront + 9), driver, 30);
+        else if (shot === 'door') cam(at(f, f.side * 3.2, 2.75, doorZ - 0.3), driver, 45);
         else if (shot === 'cab') cam(at(f, f.side * 2.7, 3.0, doorZ + 0.9), at(f, -0.4, 2.0, -1.0), 55);
         else cam(at(f, f.side * 6.5, 2.3, 3.6), at(f, 0, 1.9, -1.1), 50);
         await wait(400);

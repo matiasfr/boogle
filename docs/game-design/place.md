@@ -329,8 +329,10 @@ natural wood and dark iron with boarded end panels, rails at hand height and a b
 `passenger-car` kit asset, `car_fit`, src/proto/place/car-kit.ts). The upgrade (red and brass, a canopy roof with a
 cream fringe, two lamps: `car_upgrade`) is built and switched off, as no upgrade rule exists yet; `PASSENGER_CAR_UPGRADED`
 in train-view.ts is its hook. Like the track layer's, the bench has no solid: walking and the bots' boarding pass through
-it. Stand up puts you 0.4 m out in front of your seat, on the deck by its edge. A rider's stowaway sits on the bench
-beside them, 0.62 m to their right (the seat's `perch`, a view-only height). The freight cart has no chair.
+it. Stand up puts you 0.4 m out in front of your seat, on the deck by its edge. A seated rider is drawn 0.16 m
+further out than the seat (`BENCH.forward`, the seat's view-only `forward`; owner, 10 November: "slightly forward"), so
+no part of Buddy reaches into the backrest or its cap rail; the seat, capsule and wire keep the anchor. A rider's
+stowaway sits on the bench beside the seat, 0.62 m to their right (the seat's `perch`, a view-only height). The freight cart has no chair.
 
 **The track layer's chairs work in the production railway (owner's 6 November order, item 4).** Aboard the machine with nothing nearer to press for, Interact reads **Sit**; seated, it reads only **Stand up** (Jump also stands). The press sits you at once with a soft pop, in a live room too: the lead's existing `placeSeatGrants` then confirm the chair, slide the loser of a race for one chair into the free neighbour, or step them off onto their rear-step exit when both are taken or the lead says nothing for 2 s. A confirmed sitter whose chair the lead gives to someone else also steps off. The sitter rides the deck through the whole laying, and a deck that snaps to its accepted place (a restore or catch-up) carries them along instead of dropping them where the chair was. Network loss, a lead change and standing all release onto the exit, as before. Friends see you seated through the existing presence pose. The two station hands who ride the chairs while it lays give a chair up to a player: that hand waits at the station frame (or beside the deck, with no frame) instead. No new presence key, message, saved or simulated state; claims stay Host kind. Not tested on a device.
 
@@ -606,8 +608,10 @@ approves the copy (`BOILER_CARD`).
 that fits Buddy). Both lines lead with engine A at 1.25×: a 4.0 m frame (4.68 m over the buffers), two 0.95 m drivers
 on the kit's wheel batch, and a walk-in cab 1.79 m wide inside, its floor 1.29 m and its roof's underside 3.2 m over
 the rail. Each side has a doorway at the back of the cab, 1.0 m wide and 1.78 m high, with a step halfway up from the
-halt deck; its door is drawn shut and swings out on its back post when anyone comes within 1.2 m, closing 0.6 s after
-they go (Local; never solid). Inside, the boiler's back end is the backhead (regulator, gauges, firebox door) and a
+halt deck; its door is drawn shut and stays shut (owner, 10 November: "park that functionality"; the swing on
+approach is kept behind `DOORS_SWING`, off, in train-view.ts). The door was never solid, so you walk in through it as
+before. The cab's two front windows, either side of the boiler, and each door's window are open, each with a thin dark
+frame (no glass pane), so the driver on his stool shows from the platform, from the track ahead and through the door. Inside, the boiler's back end is the backhead (regulator, gauges, firebox door) and a
 little guy drives from a tall stool beside where Buddy stands. Before the fit the body is rusted and the saddles
 empty; the fitted boiler (the same part as on the pedestal and the rope, `assets/src/engine.py`) and its lashing come
 with the fit. The engine is a compound of client platform colliders: the deck to the cab floor, the cab's walls either

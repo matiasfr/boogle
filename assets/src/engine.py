@@ -9,7 +9,8 @@ frame runs +-hz either side. One node per thing an upgrade swaps, each one mesh 
 
   engine_body          frame, footplate, buffer beams and buffers, the walk-in cab, the empty saddles, the steps
   engine_rods          the two side rods, at rest (the game lifts them round the crank)
-  engine_door          one cab door drawn shut on the +x side; the game hinges it at its back edge, two instances
+  engine_door          one cab door drawn shut on the +x side, its window open; the game hinges it at its back edge,
+                       two instances (the cab's front windows are open too: see holed())
   engine_boiler        barrel, smokebox and door, chimney, dome, and the backhead's controls inside the cab
   engine_lashing       the gold rope rings and knot, 3 cm clear of the boiler (boiler-first-choice's mark)
   engine_stool         the driver's tall stool
@@ -186,6 +187,31 @@ def stretched_back(parts, cut, d):
     return res
 
 
+def holed(p, m, c, thin, across, y, holes, hy, frame=0.03, proud=0.005):
+    """A wall panel with open windows (owner, 10 November: "the window on the front of the engine would be clear or
+    glass so that you can see the conductor inside"): the panel is `thin` thick along x ('x') or z ('z'), spans `across`
+    (the other of z or x) and `y`; `holes` are its windows' ranges across, all `hy` high. Each window is an opening with a
+    thin DARK frame `proud` either side of the panel. No glass to sort; just boxes, so no draw call of its own.
+    Pieces meet edge to edge, never face to face the same way (the coplanar rule)."""
+    def put(c_, a, y_, t):
+        if thin[0] == 'x':
+            box(p, m, c_, t, y_, a)
+        else:
+            box(p, m, c_, a, y_, t)
+    t = thin[1]
+    put(c, across, [y[0], hy[0]], t)  # under the windows
+    put(c, across, [hy[1], y[1]], t)  # over them
+    edges = [across[0]] + [e for h in holes for e in h] + [across[1]]
+    for a in range(0, len(edges), 2):  # the uprights between them
+        put(c, [edges[a], edges[a + 1]], hy, t)
+    ft = [t[0] - proud, t[1] + proud]
+    for h in holes:
+        put(DARK, h, [hy[0], hy[0] + frame], ft)  # sill
+        put(DARK, h, [hy[1] - frame, hy[1]], ft)  # head
+        for a in ([h[0], h[0] + frame], [h[1] - frame, h[1]]):
+            put(DARK, a, [hy[0] + frame, hy[1] - frame], ft)  # jambs
+
+
 # ---------------------------------------------------------------- the cab, fitted to Buddy (fitBuddy, walkInCab)
 Z_FRONT = CAB['zFront'] * S
 OLD_LENGTH = (CAB['zFront'] - CAB['zBack']) * S  # the unit cab, scaled: the frame lengthens behind it until Buddy fits
@@ -221,13 +247,17 @@ def walk_in_cab(p):
         box(p, 'body', DARK, sx, [step - 0.04, step + 0.03], [DOOR_Z[0] + 0.1, DOOR_Z[1] - 0.1])
     # The door, drawn shut (owner, 10 November: "side door closed so it's not visibly open from the side"): a panel set
     # 1 cm into the doorway, a small high window and a brass handle. The +x one; the game mirrors it for the other side.
-    box(p, 'door', RED, [HX - 0.05, HX - 0.01], [base + 0.02, DOOR_TOP - 0.01], [DOOR_Z[0] + 0.005, DOOR_Z[1] - 0.005])
-    box(p, 'door', GLASS, [HX - 0.02, HX + 0.005], [DOOR_TOP - 0.5, DOOR_TOP - 0.2], [DOOR_Z[0] + 0.3, DOOR_Z[1] - 0.3])
+    # Its window is open, so the driver shows from the side (owner, 10 November: "maybe the side window as well").
+    holed(p, 'door', RED, ('x', [HX - 0.05, HX - 0.01]), [DOOR_Z[0] + 0.005, DOOR_Z[1] - 0.005],
+          [base + 0.02, DOOR_TOP - 0.01], [[DOOR_Z[0] + 0.3, DOOR_Z[1] - 0.3]], [DOOR_TOP - 0.5, DOOR_TOP - 0.2])
     box(p, 'door', BRASS, [HX - 0.02, HX + 0.04], [FLOOR + 1.0, FLOOR + 1.06], [DOOR_Z[1] - 0.2, DOOR_Z[1] - 0.1])
     inner = [-(HX - 0.03), HX - 0.03]
-    box(p, 'body', RED, inner, [base + 0.01, ROOF_UNDER - 0.005], [Z_FRONT - W, Z_FRONT - 0.01])  # front wall
     wy = [ROOF_UNDER - 0.55, ROOF_UNDER - 0.18]
-    pair(p, 'body', GLASS, [0.2, min(0.62, HX - 0.2)], wy, [Z_FRONT - 0.025, Z_FRONT + 0.005])
+    wx = [0.2, min(0.62, HX - 0.2)]
+    # The front wall, its two windows open either side of the boiler: the driver on his stool shows through the left.
+    # Their sills come down to just over the barrel's shoulder (17 cm under the back window's), so his face shows.
+    holed(p, 'body', RED, ('z', [Z_FRONT - W, Z_FRONT - 0.01]), inner, [base + 0.01, ROOF_UNDER - 0.005],
+          [[-wx[1], -wx[0]], wx], [ROOF_UNDER - 0.72, wy[1]])
     box(p, 'body', RED, inner, [base + 0.01, ROOF_UNDER - 0.005], [Z_BACK + 0.01, Z_BACK + W])  # back wall
     box(p, 'body', GLASS, [-0.35, 0.35], wy, [Z_BACK - 0.005, Z_BACK + 0.025])
     box(p, 'body', DARK, [-(HX + 0.1), HX + 0.1], [ROOF_UNDER - 0.01, ROOF_UNDER + 0.1], [Z_BACK - 0.12, Z_FRONT + 0.12])

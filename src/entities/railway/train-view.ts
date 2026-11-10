@@ -42,6 +42,9 @@ const FOOT_HOP_S = 0.9;
  * player is within 1.2 m of its doorway, and shuts 0.6 s after the last one leaves. A local view of positions every
  * tab already has: no state, op or presence of its own, and never solid. */
 const DOOR = { open: (100 * Math.PI) / 180, swingS: 0.25, near: 1.2, holdS: 0.6 } as const;
+/** Parked (owner, 10 November: "I don't think the engine needs to open its doors when we walk in yet"): the doors
+ * stay shut as drawn; true brings the swing back. They were never solid, so walking in doesn't wait on them. */
+const DOORS_SWING = false;
 /** The cab's cutaway (owner, 11 November: with Buddy in the cab the follow camera saw its back wall), the rooms' recipe
  * (src/proto/place/rooms.ts): while you're in a cab or in its doorway, its roof lifts off and each wall on the camera's
  * side sinks to a kerb, on your tab alone. Colliders stay; a shadow-only shell keeps the cab's shade. Someone watching
@@ -167,6 +170,7 @@ export async function createRailwayTrains(
               anchorView: true,
               // The drawn rider leans with the bench on a grade; the seat, capsule and wire stay level.
               frame: car.rock,
+              forward: carKit.BENCH.forward,
               // The stowaway sits on the bench beside you (0.62 m to your right), not on the deck under it.
               perch: carKit.BENCH.seatTop,
               at: { x: side * carKit.BENCH.seatX, y: car.hy + seats.lowStoolAnchor, z, yaw },
@@ -413,6 +417,7 @@ export async function createRailwayTrains(
     toCar = new THREE.Matrix4();
   const people: THREE.Vector3[] = [];
   function swingDoors(dt: number) {
+    if (!DOORS_SWING) return;
     people.length = 0;
     if (me.body) people.push(near.set(me.body.position.x, me.body.position.y - PLAYER_R, me.body.position.z).clone());
     for (const r of remotes.values()) if (r.entered && r.avatar) people.push(r.avatar.position.clone());
