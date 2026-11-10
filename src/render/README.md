@@ -33,14 +33,11 @@ Read [direction](reference/direction.md) when changing render architecture.
 
 ## Toon lighting
 
-[`toon.ts`](toon.ts) wraps `MeshStandardNodeMaterial`'s lighting model once, from `scene.ts` before the renderer
-initialises, so every Standard material (and every built-in `MeshStandardMaterial` the renderer converts) compiles with
-it: a soft step on the sun's diffuse, a flattened hemisphere fill and a cool shade side (owner, 10 November, style B
-without its rim). three's BRDF, specular, shadows and environment stay. Water, sky, unlit ink, particles and
-Physical/Lambert materials are other types and keep their own shading. Knobs are `toon.*` tunables
-([`toon-tuning.ts`](toon-tuning.ts)); off the tuning route they are literals, so keep each `mix`/`smoothstep` with one
-varying argument (the Firefox rule in [tsl](reference/tsl.md)). `?toon=off` skips the patch for before/after looks. The
-rim is built only when `toon.rim` is above 0 or tuning is on; it reads `userData.toonCharacter` (the Buddy rig, the folk).
+[`toon.ts`](toon.ts) wraps `MeshStandardNodeMaterial`'s lighting model from `scene.ts` before anything compiles, so
+every Standard material gets a soft sun step, a flattened sky fill and a cool shade side (owner, 10 November: style B,
+no rim). Water, sky, unlit ink, particles and Physical/Lambert keep their own shading. Knobs: `toon.*` tunables
+([`toon-tuning.ts`](toon-tuning.ts)), literals off the tuning route (mind the Firefox rule in [tsl](reference/tsl.md)).
+`?toon=off` skips the patch for before/after looks.
 
 ## Cosmetic particles
 
