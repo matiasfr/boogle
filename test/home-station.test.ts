@@ -37,6 +37,7 @@ import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/
 import { LOCO, TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/proto/wagon/cars.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
+import { H } from '../src/proto/place/terrain.ts';
 
 const bearingOf = (ux: number, uz: number) => ((((Math.atan2(ux, -uz) * 180) / Math.PI) % 360) + 360) % 360;
 const angleGap = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
@@ -288,4 +289,17 @@ test('the hall and shelf: 1 m behind the buffers, centred on the island; the she
   const shelf = toAxis(SHELF_B);
   assert.ok(shelf.c < HALL.c - HALL.w / 2 + 1 && shelf.c > HALL.c - HALL.w / 2, 'on the north end wall');
   assert.ok(Math.abs(shelf.a - HALL.a) < HALL.d / 2, 'inside the hall');
+  // Seated on the floor and backed onto the wall's inside face (the frame's back is 0.35 m behind its centre).
+  assert.equal(SHELF_B.y, HALL.floor);
+  assert.ok(Math.abs(shelf.c - 0.35 - (HALL.c - HALL.w / 2 + 0.3)) < 1e-9, 'against the north end wall');
+  // The floor is a slab 0.1 to 0.2 m over the highest ground under the hall, so nothing stands in it.
+  const ground = [-1, 0, 1].flatMap((i) =>
+    [-1, 0, 1].map((j) => {
+      const p = axisPoint(HALL.a + (i * HALL.d) / 2, HALL.c + (j * HALL.w) / 2);
+      return H(p.x + 1000, p.z);
+    }),
+  );
+  const top = Math.max(...ground);
+  assert.ok(HALL.floor - top > 0.1 && HALL.floor - top < 0.2, `floor ${HALL.floor} over ground up to ${top}`);
+  assert.ok(HALL.endWall < 2.5 && HALL.endWall < HALL.height, 'low end walls, the roof on posts');
 });
