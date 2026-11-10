@@ -214,3 +214,190 @@ All decided; the owner may overrule.
 - The orange pilot and lamp on engine A, and an orange truss at Home, as later steel.
 - Island progress visible from Home: plumes per producer level, a lit row of windows, one more looker on the rota.
 - Machine sound only at the works for now; the owner's own music there later.
+
+## Design review (designer, 2026-11-10)
+
+Scope: build 1 ("the line reaches the island", v26). Build 2's calls (the steel works, the longer boiler, the saddle,
+the shard's reaction) come in only where build 1 has to set them up.
+
+Read: [DESIGN](../../DESIGN.md) (7, 8, 10, 11); [owner calls](../agents/owner-calls.md), including "The orchestrator
+makes design calls too" (#1396), "Signs in the world", "Nothing waits on a world bump" and "Port from Place only what
+still fits"; the [decision index](../decisions.md#current-decision-index) and the entries it routes here. Those are,
+from 10 November: Ring Island, trains stop on request, Turn the table only when ready, and shared moments play for
+everyone. From 9 November: a cinematic can't be interrupted by accident, words and beacons sparingly, and station 6 by
+train. From 8 November, the Split-rock answers. From 6 November: ring-and-economy, roughly six hours, Split-rock then
+Ring Island, and the gate-puzzles answers. Also [direction](../direction.md), the [round 4 notes](../plans/round-4-notes.md)
+(the 9 and 10 November sessions), [find-the-fun](../plans/find-the-fun.md) 7–10, [glider placement](glider-placement.md)
+and [gate puzzles](gate-puzzles.md). Research tops: [route-contract](../research/route-contract.md),
+[progression-flow-layout](../research/progression-flow-layout.md), [level-design](../research/level-design.md),
+[shared-moments-and-events](../research/shared-moments-and-events.md), [botw-glide-target](../research/botw-glide-target.md),
+[friction-without-failure](../research/friction-without-failure.md) and [comedy-in-games](../research/comedy-in-games.md).
+Code read: `src/sim/railway-works-layout.ts` (`WORKS`, `CROSSING_BENTS`, `PIER_*`), `src/proto/place/land.ts`
+(`buildFar`), `src/proto/place/layout.ts` (`FAR`, `railY`), `src/proto/place/tech-layout.ts` (`MOVE`),
+`src/constants.ts` (`GRAVITY`, `JUMP_SPEED`, `SWIM_JUMP_SPEED`), `src/entities/lookout/view.ts` (the buoys and the
+telescope) and the kiln and wagon systems in `src/sim/railway-systems.ts`. Tools: `npm run loop` and
+`npm run loop -- node crossing` ran. `node dev/playtest/cli.ts` lists the 10 November sessions; the round 4 notes
+already carry their numbers.
+
+**Not seen:** `npm run look` fails in this checkout (`express` isn't installed), so there are no stills, and the
+island's near view doesn't exist yet anyway. Every distance below comes from the map data, not from a picture.
+
+### The space, measured
+
+- The last built bent, bent 6, stands at (1405, −492) with its deck at 24 m today. Ring Island's main cone is centred
+  on (1330, −1120) and its waterline is about 320 m across from the centre. On the line's heading (x +0.027 per metre of
+  −z) the line meets the shore near (1414, −810), so **about 318 m of open sea lies past bent 6.**
+- Seven more bents at the 20 m pitch put the railhead near z −632, 140 m on. The folk's stub runs about 160 m from the
+  shore out to the leaf's hinge, less the gap.
+- The raised leaf is about 610 m from the telescope at (985, −207) and 9° right of where the scope aims, so it is in
+  view at both zooms. From the pier head it is about 280 m.
+- How players move today: walking is 5.6 m/s. A jump peaks at 1.6 m and the air jump adds 1.3 m, 2.9 m in all. The
+  glide goes 10 m/s forward and sinks 3.2 m/s. The hook reaches 24 m inside a 25° cone. A swimmer's jump is 4.5 m/s,
+  which lifts 0.56 m: not enough to climb out of the water.
+
+**Legs, beat to beat** (rides at 20 m/s):
+
+| Leg | From → to | Length | Time |
+| --- | --- | --- | --- |
+| 1 | Home or the Works → the pier halt | about 700–900 m | 35–45 s ride |
+| 2 | Pier halt → bent 6 | 137 m | 7 s ride, 25 s walk |
+| 3 | Bent 6 → the railhead at the gap | 140 m | 7 s ride, 25 s walk |
+| 4 | Across the gap | the gap's width (unset) | 2–3 s glide |
+| 5 | Leaf heel → island shore along their stub | about 160 m | 29 s walk |
+| 6 | Railhead → island halt, after the Meet | about 180 m | 9 s ride |
+
+Leg 3 is a bare walk along the trestle, but you walk it once at most: after Q7 the train covers it, and the buoys lift
+along it, so there is something to notice. No leg breaks the walk-seconds guide.
+
+### Calls in build 1
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | The arrival is the Meet: their half-crossing, with laid track and an island halt, ends in a raised counterweighted leaf | Decided | decisions.md 2026-11-10, Ring Island (orchestrator, #1396) |
+| 2 | About 7 more bents (14 footings) and no second laying job: Q7 only, with Q8 gone | Decided | same entry |
+| 3 | One player crosses the gap on the glider already earned | Decided | same entry. Matches [glider placement](glider-placement.md) Q3: "one main-line use at Ring Island" |
+| 4 | A hook ring on the last bent pulls you back; the island shore is swimmable | Decided | same entry. Holds only if the gap is under 24 m (finding 1) |
+| 5 | The island-side job is "brace the raised leaf" | Decided | same entry, and gate-puzzles' approved verb ("Ring braces", 6 November). What the brace physically does needs one line (finding 2) |
+| 6 | The wagon brings the counterweight footings to the railhead and the jib hangs them; the only hand move is rack to jib | Decided | same entry |
+| 7 | The counterweight takes 2–4 footings | Default | Recommend **4**, with the leaf dipping a quarter per footing once it is free to move ("Machines show their work physically") |
+| 8 | Anyone strikes the gold rivet with the breaker; it latches the leaf and opens the island halt | Decided | same entry. It is the seam verb players already know from the Works (round 4 notes, 10 November: the seams were found in 13 s and 49 s) |
+| 9 | The rivet needs the leaf down (all the counterweight hung, and the brace in), not only `brace === 2` | Default | Recommendation. As written, the rivet could glint while the leaf is still raised |
+| 10 | The room gets one shot when the rivet is struck, merged with the first ride: about 6 s, uninterruptible, with one highlighted skip | Decided | decisions.md 2026-11-10, shared moments play for everyone; 2026-11-09, a cinematic can't be interrupted by accident. Merging it with a train is a risk (finding 3) |
+| 11 | A friend who missed the shot gets it once, on their own first crossing (local memory) | Decided | same entries. [shared-moments](../research/shared-moments-and-events.md): in Roblox, late joiners get the beats they missed when they arrive |
+| 12 | The raised leaf shows from Home, in the Split-rock finale's last frame and in the telescope | Decided | same entry; DESIGN 7 |
+| 13 | The six built bents are redrawn so the line bows from 24 m down to about 6 m | Decided | same entry. This sets the height the glide starts from (finding 1) |
+| 14 | The railhead halt moves, with its request lever, and the wagon delivers to wherever the line ends | Decided | brief. Fits decisions.md 2026-11-10, trains stop on request (the wagon's stops need no request) |
+| 15 | The `Aperture` stays solved if anyone leaves | Decided | brief; route-contract rule 3 (keys can't be lost) |
+| 16 | The island is solid early, but nothing on it works before the line arrives, and swimming never supplies a footing | Decided | brief; [route-contract](../research/route-contract.md) (travel edges never supply work edges) |
+| 17 | Grind budget: nothing is carried by hand more than twice, no hand carry is over 60 m, and no train wait is longer than one leg | Decided | brief; the owner is "wary of material grinds" |
+| 18 | The kiln: `WORKS.total` rises to about 31 from the one fill of 16 logs and 16 stone, with no second bill | Default | The brief implies it; recommend saying so. The sum is off: 16 + 14 + 2 = 32, and 16 + 14 + 4 = 34, not 31 |
+| 19 | Where the 14 new bent footings are set, and where their rack stands | New | Not stated. Recommend the pier's pattern: one site to set them at, with the wagon's rack within 15 m of it at the railhead. The pier's carries are 11 m (`npm run loop -- node crossing`), which keeps well inside the budget's 60 m |
+| 20 | The gap's width, and the heights you glide from and land on | New | Not stated; recommend finding 1's numbers |
+| 21 | The brace and the counterweight can be done in either order | New | Recommended (finding 2) |
+| 22 | The leaf's painted outline and empty bracket, and a gold cue on the island side | Default | The brief has the outline. Recommend the island-side brace in gold, facing the railhead (finding 4) |
+| 23 | Buoys: each marks the end of a stretch and is lifted, with a splash and a bow, when that stretch is laid | Decided | brief. Which buoy marks what is Default: buoys 1–2 (37 m and 99 m out) already stand under laid bents, so they should start lifted; the buoys past the gap are the folk's own and lift on `joined` |
+| 24 | The island's near view loads within about 500 m, or once Q7 is laid | Default | brief. 500 m covers the pier head (280 m) but not the telescope (610 m), which still sees the far view, so the leaf has to be added to `buildFar` too |
+| 25 | Where players are put back on the island after a fall | Default | brief. Recommend dry spots, off the track and never in the water (round 4 notes, 9 November: nine recoveries in a row put him back in the sea) |
+| 26 | The shard is a perfect octahedron with a slow bob and turn, never explained | Decided | same entry. It is already in `buildFar` (a 38 m octahedron at 140 m up) |
+| 27 | The staring rota: 3–5 lookers, Hooter's whistle swaps them, and a player who stands still and looks up gets a nod | Decided | same entry. The count and the whistle's interval are Default: recommend 4 lookers and a swap every 45 s |
+| 28 | Hard hats, crooked rivets, the no-pointing sign, the hammer that never stops, missed rivets as offerings, the mural | Decided | same entry. It fits the live rumour "My cousin says he's never once blinked." (`town-lines.ts`), which round 4 liked |
+| 29 | Rivet, Squint and Hooter's lines, each said once per player; no Boogler lines | Decided | same entry; owner calls "Keep The Boogler's copy" and "Collaborators may write the narrative" (they are drafts) |
+| 30 | The island halt opens on `joined` | Decided | brief |
+| 31 | Build 1 shows build 2's payoff waiting at the island: steel stacked, the hammer going | New | Recommended (finding 5) |
+
+Count: **20 decided, 7 default, 4 new.**
+
+### Findings, ranked
+
+1. **The bow and the glide work against each other, and the gap has no size. Change this before building.** The bow
+   puts the last bent at about 6 m, and their stub has to meet your deck at the same height for the leaf to join the
+   two. Across a level gap, a jump, the air jump and a glide carry you about 15 m, while a sprint with the double jump
+   and no glide carries about 11 m. So a gap that needs the glider but can still be glided is a 12–15 m window. That
+   asks for precision (DESIGN 10) and makes the glider's one main-line use barely different from a jump. A missed glide
+   drops you in the sea about 160 m from the shore with no way to climb out (a swimmer's jump lifts 0.56 m), and the
+   hook back only works within 24 m. The leaf is as long as the gap, so a 12 m leaf is also only about 11 px tall in
+   the telescope at 610 m, which is marginal for call 12.
+   **Fix:** stand the leaf's heel on a hinge pier with a low **brace platform about 4 m below the deck** on the island
+   side, where the brace is. Make the gap, and so the leaf, **16–18 m**. You glide down onto the platform in about
+   2.5 s, which reaches about 25 m, so there are about 7 m to spare, while a sprint with the double jump falls about 3 m
+   short. The hook ring on the last bent stands within 20 m of the platform and in view from it. Put **a ladder up from
+   the sea** on the hinge pier and on the last bent, so a missed glide costs a few seconds' swim, not 160 m. Steps lead
+   up from the platform to their deck. Prove it with the `ring-glide` eval: a sprint with the double jump misses, a
+   glide clears, the hook connects from the platform, and both ladders climb out.
+2. **The steps' order contradicts itself. Change this before building.** The pitch and suggestion 1 put the brace before
+   the counterweight. The early-access risk says "the brace needs the leaf counterweighted". The rivet needs only
+   `brace === 2`. Gate-puzzles' approved verb was "raise it, the pawl holds it, install the brace", which is for
+   something held up, and the Meet's leaf comes down.
+   **Fix:** give the brace one physical job. On the island side you **knock out the pawl and drive the brace under the
+   heel**, which is what lets the leaf carry a train. Accept it only once the gap is footed, so a player who swam over
+   early can't do it. Then let **the brace and the counterweight go in either order**: weights hung on a leaf still held
+   by its pawl make it creak and strain, and once both are done the last weight swings it down. In co-op the two halves
+   happen at once, one player gliding over while the other hangs weights, and a solo player can do them in either order,
+   since everything latches. The rivet needs the leaf down. Under the 10 November "only when ready" rule (Turn the
+   table), the rivet's gold shows only once the leaf is down, and the jib shows no prompt until a counterweight footing
+   is on the rack.
+3. **The shared shot depends on where a train happens to be. Change this before building.** "Merged with the first
+   ride's start" needs a train at the railhead when the rivet is struck. Line 2 grows to about 1.2 km, so the train can
+   be a minute away, and the players are on either side of the gap, not aboard. Either the shot waits, which is a long
+   wait inside a cinematic, or it shows an empty line.
+   **Fix:** keep one shot of about 6 s for the whole room: the leaf settling, the rivet's glint, then the camera running
+   along the joined line to the island halt and the RINGWORKS sign. The first train over their steel becomes each
+   player's own first-crossing pull-out, which is the beat the late friend already gets (call 11), so one rule covers
+   everyone. The joint is also where the room meets: once the leaf is down, the island player can walk straight back
+   across to whoever struck it ([shared moments](../research/shared-moments-and-events.md), rec 3: waiting at the spot
+   should itself be rewarded).
+4. **Two of build 1's five steps are new verbs, at the point in the game where players got lost yesterday.** The round 4
+   notes (10 November, P1: "places like the fittings later in the game where I really didn't know what to do") and
+   `npm run loop` (the kiln, stall, cradle and table all show "NO CUE (prompt-only)") both point at the late game's weak
+   spot. The gap and the brace are new; footings, the jib and the seam are known.
+   **Fix:** before it ships, give every new node in the loop graph a cue. The brace is gold, on the platform, facing the
+   railhead and visible from it at 16–18 m. One of the folk stands on the platform waving with an elbow, which says "come
+   over here" without words (DESIGN 11). The counterweight bracket's painted outline lights once a footing is on the
+   rack. Add `gap`, `brace`, `counterweight` and `rivet` nodes with their cues to the loop graph, and check order and
+   softlocks with `npm run loop -- run`.
+5. **In build 1 the island has nothing to connect for.** Find-the-fun 8 (2 November) found "it wasn't clear what
+   connecting would do", and DESIGN 7 asks for the next connection's payoff to be visible in the world. Build 1 has no
+   steel.
+   **Fix:** at the island halt, a stack of orange steel waits under a tarp, the drop hammer is going, and the prophecy
+   mural is on the works wall. It is only static geometry, and build 2 pays it off.
+6. **Riders standing over the bow, and players at the railhead.** On 10 November both players came off moving trains
+   while standing (a P1 that is still open), and the bow adds a 7–10% grade at 20 m/s on a 6 m trestle over the sea.
+   Add a segment to R5 with a rider standing over the bow. Keep the railhead's rack, jib and lever on a platform at
+   least 4 m wide beside the track, with room for three players and a parked wagon, and never on the track, so a train
+   arriving at the end stop can't push a player off.
+7. **The Split-rock finale this builds on is broken today.** Call 12 uses the finale's last frame, and the 10 November
+   P1 about the pier's whistle and rockets ("never got the twelve rockets") is still being fixed. Re-shoot the finale
+   after that fix lands, not before.
+
+The lenses: the key is in sight of the lock (the leaf faces you from 280 m). There is one main line. The world
+shortens behind you (after Q7 the train covers legs 2–3). The beat ends facing the next one only if finding 5 lands.
+The joint is the place to meet in co-op (finding 3). The three rules: the next goal can be found, given finding 4's
+cues. The gate keeps its meaning, since the brace is accepted only after the gap is footed and the weights come from
+the railhead. Nobody is stranded only with finding 1's ladders and hook distance.
+
+**Ported from Place**, piece by piece. The buoys: keep, since they gain a job (lifted per stretch). `buildFar`: keep as
+the far view, but the leaf has to be added to it (call 24). The telescope: keep, since call 12 uses it. The glide is
+already ported, and this is its main-line use. Nothing comes over only because Place had it.
+
+**Pacing.** Build 1 adds about 10–15 minutes against the six-hour target: 14 footings at the pier's pace of about 8 s
+each, three wagon trips of about 90 s, the gap, the brace and the first ride. That's fine for build 1; build 2's steel
+has to carry the hour.
+
+**Suspect lines** (the folk's drafts, not The Boogler's; for the owner). Squint's "You fell out of the sky" and Rivet's
+"Your railway bowed on the way in. Good manners." assume you glided in and that the line has arrived. A player who swam
+over early would hear them before either is true. Tie each to its fact (glided, `joined`) and give the early swimmer a
+line of their own. The religion's best jokes are in Talk, and round 4 found Talk never pressed in the town; the rota,
+the hats and the rivet toss carry the religion without it, so keep those visual.
+
+### Owner questions
+
+1. **Does the glide land on a low brace platform 4 m below the deck, across a 16–18 m gap, with ladders up from the
+   sea?** Recommended: yes. The alternative is ending the bow at about 10 m instead of 6 m: the gap stays level, but the
+   glide window stays narrow.
+2. **Can the brace and the counterweight be done in either order?** Recommended: yes. The leaf drops when both are done,
+   so two players can work at once and a solo player can go either way.
+3. **Does the shared shot end at the island halt, with the first train as each player's own first crossing?**
+   Recommended: yes, so the shot never waits on a train and the late-friend rule covers everyone.
+4. **Does build 1 show steel waiting at the island halt?** Recommended: yes: static steel under a tarp, the hammer
+   going, and the mural.
+5. **Four counterweight footings, with the leaf dipping a quarter per footing?** Recommended: yes.
