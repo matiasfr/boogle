@@ -15,6 +15,7 @@ import { PLAYER_R } from '../../constants.ts';
 /** A sprint with a footing on your back, over its carry pace. */
 const FOOT_SPRINT = 1.3;
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
+import { onlyALoad, setDownThen } from './back-down.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 
 type Account = ReturnType<RailwayAdapter['inspect']>['accounts'][number];
@@ -231,7 +232,14 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
                 at,
                 run: () => void adapter.take(pile.id),
               }
-            : { id: `railway-foot-pile${pile.id}`, verb: 'Shoulder a footing', at, blocked: 'Empty your back first' },
+            : onlyALoad(state)
+              ? {
+                  id: `railway-foot-pile${pile.id}`,
+                  verb: 'Shoulder a footing',
+                  at,
+                  run: () => void setDownThen(adapter, () => adapter.take(pile.id), { x: pile.x / 100, z: pile.z / 100 }),
+                }
+              : { id: `railway-foot-pile${pile.id}`, verb: 'Shoulder a footing', at, blocked: 'Empty your back first' },
         );
       }
       if (mineHelp.helping())

@@ -23,6 +23,7 @@ import { WORKS, WORKS_KILN, WORKS_RACK, WORKS_SEAMS } from '../../sim/railway-wo
 import { SEAM_THROAT } from '../../sim/railway-works.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { LINE_HALTS } from '../../sim/railway-train.ts';
+import { onlyALoad, setDownThen } from './back-down.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
@@ -830,7 +831,14 @@ export async function createRailwayWorks(
                 at: top,
                 run: () => void adapter.shoulderFooting(0),
               }
-            : { id: 'railway-foot-take-0', verb: 'Shoulder a footing', at: top, blocked: 'Empty your back first' },
+            : onlyALoad(state)
+              ? {
+                  id: 'railway-foot-take-0',
+                  verb: 'Shoulder a footing',
+                  at: top,
+                  run: () => void setDownThen(adapter, () => adapter.shoulderFooting(0), rack),
+                }
+              : { id: 'railway-foot-take-0', verb: 'Shoulder a footing', at: top, blocked: 'Empty your back first' },
         );
       }
       return out;

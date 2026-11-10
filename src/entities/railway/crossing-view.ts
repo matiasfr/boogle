@@ -32,6 +32,7 @@ import {
   CROSSING_FOOT_OFF,
 } from '../../sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { onlyALoad, setDownThen } from './back-down.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 
 /** The rockets' launch height over the sea, and the pieces' timings in seconds. */
@@ -549,7 +550,14 @@ export async function createRailwayCrossing(
                 at: top,
                 run: () => void adapter.shoulderFooting(1),
               }
-            : { id: 'railway-foot-take-1', verb: 'Shoulder a footing', at: top, blocked: 'Empty your back first' },
+            : onlyALoad(state, false)
+              ? {
+                  id: 'railway-foot-take-1',
+                  verb: 'Shoulder a footing',
+                  at: top,
+                  run: () => void setDownThen(adapter, () => adapter.shoulderFooting(1), rack),
+                }
+              : { id: 'railway-foot-take-1', verb: 'Shoulder a footing', at: top, blocked: 'Empty your back first' },
         );
       }
       const aboard = state.line2.train[1]?.foot ?? 0;

@@ -4,6 +4,7 @@ import { me } from './state.ts';
 import { enterIsland } from './player.ts';
 import { dom } from './dom.ts';
 import { chargeOf } from './throw-curve.ts';
+import { dropHoldProgress } from './cargo-drop.ts';
 import { net, remotes, onNetState, onPeopleChanged } from '../netplay/net.ts';
 import { inputState } from './input-state.ts';
 import { requestLock } from './input.ts';
@@ -17,8 +18,11 @@ export { dom } from './dom.ts';
 
 let lastHint: string | null = null;
 function updateHud() {
-  dom.chargeEl.style.display = me.charging ? 'block' : 'none';
-  if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeOf(performance.now() - me.chargeStart) * 100)}%`;
+  // The throw's bar, and the same bar filling toward putting your whole back down while Drop is held.
+  const dropping = dropHoldProgress();
+  dom.chargeEl.style.display = me.charging || dropping > 0 ? 'block' : 'none';
+  if (me.charging || dropping > 0)
+    dom.chargeFill.style.width = `${Math.round((me.charging ? chargeOf(performance.now() - me.chargeStart) : dropping) * 100)}%`;
   // Touch guidance follows the active input, and retires once a touch drag has turned the camera.
   const { canLock } = inputState;
   const kind = inputKind();
