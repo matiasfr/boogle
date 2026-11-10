@@ -262,7 +262,7 @@ function quarryStation(id: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6', requires: Ed
     reached: { mark: `stretch laid ${id}` },
     stops: [id],
     requires,
-    cue: [frameSign('src/entities/railway/line2-view.ts:929-947 frame.setTag')],
+    cue: [frameSign('src/entities/railway/line2-view.ts:946-965 frame.setTag')],
     ...extra,
   };
   return node;
@@ -538,14 +538,18 @@ export const NODES: readonly LoopNode[] = [
       dec('Q5', 'rules', `${RULES} qActive()`),
       dec(
         'trains',
-        'none',
-        'decisions.md 9 Nov station 6 takes nothing by hand until trains run; boiler-first-choice step 3 (not on main)',
+        'rules',
+        `decisions.md 9 Nov station 6 takes nothing by hand until trains run; ${RULES} deposit2 and forgeTake (trainOwed)`,
       ),
     ],
     {
       cue: [
-        frameSign('src/entities/railway/line2-view.ts:929-947 frame.setTag'),
-        unbuilt('the frame shows a train instead of a bill', 'decisions.md 9 Nov station 6'),
+        frameSign('src/entities/railway/line2-view.ts:946-965 frame.setTag'),
+        onMain(
+          'world',
+          'until trains run, no bill: the rack sign shows the old train hauling the kit',
+          'src/entities/railway/line2-view.ts:40-46 waitsForTrain; src/entities/railway/stock-sign.ts',
+        ),
       ],
     },
   ),
