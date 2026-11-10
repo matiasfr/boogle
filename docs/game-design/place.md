@@ -144,7 +144,9 @@ this static support audit.
 An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-shaped gorge, with walls about 16-30 m high
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the
 quarry (east table, 24 m). Needle Bell, a leaning 105 m spire, stands where the gorge forks. Two low footbridges cross the
-river. Past the quarry, across about 170 m of sea, is **Far Head**, a low headland you can't walk to until the line gets there. Across the sea to the north, about a kilometre out and out of reach, stands a dark island with a broken ring on it
+river, each just spanning the water: a 3.4 m deck with a low arch, landing on the sand a metre or two past each
+waterline (further where the bank slants across it), with rails on stout capped posts that stop short of both ends so
+you can step off sideways (owner, 10 November). Past the quarry, across about 170 m of sea, is **Far Head**, a low headland you can't walk to until the line gets there. Across the sea to the north, about a kilometre out and out of reach, stands a dark island with a broken ring on it
 and a bright shard in the ring's middle. Two physical things point at it: a line of orange buoys straight out from the end of the pier, and an old brass telescope on the ridge's top, aimed at it; **Look through it** (Interact).
 
 **The lookout in the live game (job F3, 9 November; `src/entities/lookout/`).** Both stand in production with no flag.

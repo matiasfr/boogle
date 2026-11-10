@@ -407,40 +407,147 @@ function buildSpire(owner?: OwnedView) {
 }
 
 // ---------------------------------------------------------------- footbridges, trees, a few places to stop at
+// The path's bridge segment runs bank top to bank top; the deck only spans the water, from a short landing on the sand
+// each side, with a low arch and open ends you can step off sideways. The path's points (and so the terrain) are unchanged.
+const BRIDGE = { landing: 1.25, level: 0.3, width: 3.4, crown: 0.3, railIn: 1.7, railH: 1, ramp: 0.25 };
 function buildBridges(owner?: OwnedView) {
+  const add = (...m: THREE.Object3D[]) => (owner ? owner.add(...m) : scene.add(...m));
+  const post = TIMBER('#7f5630', 'y'),
+    rail = TIMBER('#7f5630', 'z'),
+    edge = TIMBER('#8d5e33', 'z');
   for (const p of PATHS) {
     const a = p.pts[p.bridgeAt]!,
       b = p.pts[p.bridgeAt + 1]!;
     const ax = a[0] + ORIGIN.x,
-      az = a[1] + ORIGIN.z,
-      bx = b[0] + ORIGIN.x,
-      bz = b[1] + ORIGIN.z;
-    plank(ax, az, bx, bz, a[2] + 0.12, b[2] + 0.12, 3, '#c08a4c', 0.35, owner);
-    const len = Math.hypot(bx - ax, bz - az),
-      ux = (bx - ax) / len,
-      uz = (bz - az) / len;
-    for (const side of [-1, 1]) {
-      for (let s = 0; s <= len; s += 3.6) {
-        const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.1, 0.16), TIMBER('#7f5630', 'y'));
-        post.position.set(ax + ux * s - uz * side * 1.45, a[2] + 0.65, az + uz * s + ux * side * 1.45);
-        if (owner) owner.add(post);
-        else scene.add(post);
+      az = a[1] + ORIGIN.z;
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]),
+      ux = (b[0] - a[0]) / len,
+      uz = (b[1] - a[1]) / len;
+    const X = (s: number, side = 0) => ax + ux * s - uz * side,
+      Z = (s: number, side = 0) => az + uz * s + ux * side;
+    // Measure the water along the segment: the deck starts and ends a landing's length past each waterline.
+    let wet0 = len,
+      wet1 = 0;
+    for (let s = 0; s <= len; s += 0.1)
+      if (H(X(s), Z(s)) < SEA) {
+        wet0 = Math.min(wet0, s);
+        wet1 = s;
       }
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, len), TIMBER('#7f5630', 'z'));
-      rail.position.set((ax + bx) / 2 - uz * side * 1.45, a[2] + 1.15, (az + bz) / 2 + ux * side * 1.45);
-      rail.rotation.y = Math.atan2(ux, uz);
-      if (owner) owner.add(rail);
-      else scene.add(rail);
-      // The rail holds you in: what looks solid is solid.
-      addStatic(
-        { kind: 'box', hx: 0.08, hy: 0.6, hz: len / 2 },
-        { x: rail.position.x, y: a[2] + 0.65, z: rail.position.z },
-        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rail.rotation.y),
-        GROUP.SCENERY,
-        owner,
-      );
+    // Each end bears on the sand under its full width: where the bank runs down across the deck at a slant, the end moves
+    // back until the sand under it is level enough to sit on.
+    const yaw = Math.atan2(ux, uz),
+      sand = (s: number) => sampleFootprint(boxFootprint(X(s), Z(s), BRIDGE.width, 0.25, yaw));
+    const settle = (s: number, step: number, stop: number) => {
+      while ((stop - s) * step > 0) {
+        const g = sand(s);
+        if (g.high - g.low <= BRIDGE.level) break;
+        s += step;
+      }
+      return s;
+    };
+    const s0 = settle(Math.max(0, wet0 - BRIDGE.landing), -0.1, 0),
+      s1 = settle(Math.min(len, wet1 + BRIDGE.landing), 0.1, len),
+      span = s1 - s0;
+    // The ends sit on the sand; the middle rises a little over the line between the path's ends.
+    const end0 = sand(s0).high + 0.03,
+      end1 = sand(s1).high + 0.03;
+    const top = (s: number) => {
+      const t = (s - s0) / span,
+        bank = a[2] + (b[2] - a[2]) * t + 0.12,
+        ramp = Math.min(1, t / BRIDGE.ramp, (1 - t) / BRIDGE.ramp);
+      const ends = end0 + (end1 - end0) * t;
+      return ends + (bank - ends) * ramp + BRIDGE.crown * Math.sin(Math.PI * t);
+    };
+    const knots = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1].map((t) => s0 + span * t);
+    for (let k = 0; k < knots.length - 1; k++) {
+      const sa = knots[k]!,
+        sb = knots[k + 1]!;
+      plank(X(sa), Z(sa), X(sb), Z(sb), top(sa), top(sb), BRIDGE.width, '#c08a4c', 0.35, owner);
+      // A thicker edge beam under each side of the deck, so it reads as built and not a board on the water.
+      for (const side of [-1, 1])
+        add(
+          beam(
+            X(sa, side * (BRIDGE.width / 2 - 0.05)),
+            top(sa) - 0.3,
+            Z(sa, side * (BRIDGE.width / 2 - 0.05)),
+            X(sb, side * (BRIDGE.width / 2 - 0.05)),
+            top(sb) - 0.3,
+            Z(sb, side * (BRIDGE.width / 2 - 0.05)),
+            0.16,
+            0.42,
+            edge,
+          ),
+        );
+    }
+    // Rails over the water only: they stop short of the ends, each on a stout post with a cap.
+    const r0 = s0 + BRIDGE.railIn,
+      r1 = s1 - BRIDGE.railIn,
+      railKnots = [r0, ...knots.filter((s) => s > r0 + 0.5 && s < r1 - 0.5), r1];
+    const half = BRIDGE.width / 2 - 0.1;
+    for (const side of [-1, 1]) {
+      for (const s of railKnots) {
+        const stout = s === r0 || s === r1,
+          w = stout ? 0.26 : 0.16,
+          h = BRIDGE.railH + (stout ? 0.25 : 0);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), post);
+        m.position.set(X(s, side * half), top(s) + h / 2, Z(s, side * half));
+        m.castShadow = true;
+        add(m);
+        if (stout) {
+          const cap = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, 0.08, w + 0.08), rail);
+          cap.position.set(m.position.x, top(s) + h + 0.04, m.position.z);
+          add(cap);
+        }
+      }
+      for (let k = 0; k < railKnots.length - 1; k++) {
+        const sa = railKnots[k]!,
+          sb = railKnots[k + 1]!;
+        const m = beam(
+          X(sa, side * half),
+          top(sa) + BRIDGE.railH,
+          Z(sa, side * half),
+          X(sb, side * half),
+          top(sb) + BRIDGE.railH,
+          Z(sb, side * half),
+          0.1,
+          0.1,
+          rail,
+        );
+        add(m);
+        // The rail holds you in: what looks solid is solid, posts included.
+        const full = Math.hypot(sb - sa, top(sb) - top(sa));
+        addStatic(
+          { kind: 'box', hx: 0.13, hy: BRIDGE.railH / 2 + 0.05, hz: full / 2 + 0.13 },
+          { x: m.position.x, y: m.position.y - BRIDGE.railH / 2, z: m.position.z },
+          m.quaternion,
+          GROUP.SCENERY,
+          owner,
+        );
+      }
     }
   }
+}
+
+/** A drawn timber of w × h section between two points, pitched to follow them. */
+function beam(
+  ax: number,
+  ay: number,
+  az: number,
+  bx: number,
+  by: number,
+  bz: number,
+  w: number,
+  h: number,
+  material: THREE.Material,
+) {
+  const dx = bx - ax,
+    dz = bz - az,
+    len = Math.hypot(dx, dz);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, Math.hypot(len, by - ay)), material);
+  m.position.set((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2);
+  m.quaternion.setFromEuler(new THREE.Euler(-Math.atan2(by - ay, len), Math.atan2(dx, dz), 0, 'YXZ'));
+  m.castShadow = m.receiveShadow = true;
+  return m;
 }
 
 // ---------------------------------------------------------------- what stands across the sea
