@@ -69,7 +69,7 @@ Give every brief, Claude or Codex, the binding rules: stay on its branch, no pus
 ## 5. Playtest cycle
 
 - Before: refresh the replay guide artifact: what to try, what changed, a few tap questions, and how to flag moments. Work and merges carry on; the owner plays whatever is live.
-- After: read the Granola call (`get_meetings`, then the transcript), `npm run playtest` for each session, and the guide's saved answers. Triage notes into [the tracker](../../../docs/plans/round-4-notes.md) and [playtests](../../../docs/playtests.md) (the [playtest-notes skill](../playtest-notes/SKILL.md)). Ask at most five tap questions on one page, each with a recommended answer and an optional free field, then record the answers.
+- After: read the Granola call (`get_meetings`, then the transcript), `npm run loop -- trace --since <date>` for one ranked table across the day's sessions (then `npm run playtest -- <id>` only for a session that needs a closer read), and the guide's saved answers. Triage notes into [the tracker](../../../docs/plans/round-4-notes.md) and [playtests](../../../docs/playtests.md) (the [playtest-notes skill](../playtest-notes/SKILL.md)). Ask at most five tap questions on one page, each with a recommended answer and an optional free field, then record the answers.
 
 ## 6. Turn the owner's words into rules
 
