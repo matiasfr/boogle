@@ -17,6 +17,7 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit, readableIntensity } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
+import { airJumpApexForce } from '../player/apex-float.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
 import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
 
@@ -357,7 +358,8 @@ export async function createRailwayTools(
         second = false;
         return;
       }
-      if (b.velocity.y < movement.jumpApexSpeed) b.force.y += PLAYER_MASS * GRAVITY * 0.5;
+      // Never on top of the controller's float for a still-rising first jump: that one's weightless (apex-float.ts).
+      if (b.velocity.y < movement.jumpApexSpeed) b.force.y = airJumpApexForce(b.force.y, PLAYER_MASS * GRAVITY);
       const dx = me.wish.x * (me.sprint ? 9.5 : 5.6) - b.velocity.x;
       const dz = me.wish.z * (me.sprint ? 9.5 : 5.6) - b.velocity.z;
       const length = Math.hypot(dx, dz);
