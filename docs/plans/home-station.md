@@ -420,6 +420,12 @@ change; the full loop once a day").
     faces it, the square sees it straight through the open front, and it takes neither end wall: the north one stays
     low for the forge, the south one is the works board's (call 29). 5 m, not 6: from the square the moved curio shelf
     hides the back span south of c 5.55.
+  - **Same map as the halts** (owner, 9 November: "Island map"): the hall board draws the halts' island map larger,
+    with no ring (`drawMapBase(..., here: null)` from `src/render/island-map.ts`, fitted with `fitMap` facing the
+    board from the square), and the trains as the same instanced quads (`src/entities/railway/island-boards.ts`'s
+    markers, one per line). At 5 × 1.8 m it wants a wider cell, about 1024 × 368, in its own canvas; it hangs from the
+    roof on two rods between the back posts. If the island side sees its back, that face gets its own cell fitted for
+    a viewer on the island (as the halt boards' back faces are), otherwise the back stays blank.
   - Verify: stills from the square and from spawn; a short video of a train moving on it; `npm run perf`.
 
 ## Level findings
