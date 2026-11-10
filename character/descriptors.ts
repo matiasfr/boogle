@@ -79,6 +79,14 @@ export const descriptors: Record<string, AssetDescriptor> = {
       source: 'assets/src/engine.py; rods follow the wheel angle and doors swing in src/entities/railway/train-view.ts',
     },
   },
+  'passenger-car': {
+    label: 'Passenger car (knifeboard)',
+    category: 'kit',
+    defaultNode: 'car_fit',
+    rootNote:
+      'Flatbed origin: rail line, deck middle (deck top 0.7 m). car_upgrade (roof, lamps) is built but switched off. Seats are registered by train-view.ts.',
+    motion: { kind: 'none', source: 'assets/src/passenger-car.py; rigid fittings on the flatbed, no motion' },
+  },
   'recovery-rack': {
     label: 'Recovery rack',
     category: 'props',

@@ -31,6 +31,9 @@ import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 
 const BRASS = '#c79a3e';
+/** The passenger car's upgrade (roof, lamps; assets/src/passenger-car.py `car_upgrade`) is built and switched off: no
+ * upgrade rule exists yet. The hook is here: pass what the room says about the car's upgrade in its place. */
+const PASSENGER_CAR_UPGRADED = false;
 const LAMP = { on: '#ffa31a', off: '#4b3a22' } as const;
 /** Footings aboard stand in two stacks on the cradle's seats: slot k's centre in the wagon's rail frame. */
 const aboardAt = (k: number) => ({ y: 0.63 + Math.floor(k / 2) * (0.9 + 0.02), z: k % 2 ? 0.8 : -0.8 });
@@ -63,7 +66,7 @@ export async function createRailwayTrains(
   seats: typeof import('../../proto/place/seat.ts'),
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
-  const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, shape, folk, land, { flat }] =
+  const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
     await Promise.all([
       import('../../proto/place/layout.ts'),
       import('../../proto/place/rail.ts'),
@@ -75,6 +78,7 @@ export async function createRailwayTrains(
       import('../../proto/place/pieces.ts'),
       import('../../proto/minis/common.ts'),
       import('../../proto/place/engine-kit.ts'),
+      import('../../proto/place/car-kit.ts'),
       import('../../proto/wagon/engine.ts'),
       import('../../proto/place/folk.ts'),
       import('../../proto/place/land.ts'),
@@ -131,7 +135,7 @@ export async function createRailwayTrains(
       shape.engineDeckAt(x, z, feet === undefined ? -Infinity : feet + centre, fitted) - centre;
     const crateDeck = crates.deck(model.cars[2]!, () => {});
     // Car 2 carries the cargo (the deck above): a freight car, loaded or empty, with stakes and boards and no seats
-    // (owner, 10 November: "if there's cargo then it shouldnt have seats"). Car 1 is the passenger car, two stools.
+    // (owner, 10 November: "if there's cargo then it shouldnt have seats"). Car 1 is the passenger car, a knifeboard of four seats.
     const fittings = wagon.cargoFittings(owner);
     fittings.position.y = cars[2]!.hy;
     owner.add(fittings);
@@ -139,27 +143,34 @@ export async function createRailwayTrains(
     {
       const n = 1,
         car = cars[n]!;
-      for (const [i, z] of [-0.8, 0.8].entries()) {
-        // The track layer's low stool, down the middle of the deck (owner, 10 November); no solid, so the aisle and
-        // a walk along the deck stay open. Riders face across the car, as before.
-        const stool = seats.lowStoolMesh();
-        stool.position.set(0, car.hy, z);
-        stool.rotation.y = Math.PI / 2 + Math.PI;
-        owner.add(stool);
-        car.mesh.add(stool);
-        owner.cleanup(
-          seats.registerSeat({
-            id: `railway:train${k}-${n}-seat${i}`,
-            group: `railway:train${k}-${n}`,
-            platform: car.platform,
-            anchorView: true,
-            at: { x: 0, y: car.hy + seats.lowStoolAnchor, z, yaw: Math.PI / 2 },
-            // Standing up steps you back off the stool, onto the deck behind it.
-            exit: { x: 0.6, y: car.hy + PLAYER_R, z, yaw: Math.PI / 2 },
-            available: () => car.y > -30,
-          }),
-        );
-      }
+      // The knifeboard (docs/plans/passenger-car-previz.md, Four): one back-to-back bench down the middle, two seats a
+      // side, riders facing out over the halt decks. The fittings are the kit's (car-kit.ts); the bench has no solid,
+      // so the aisle and a walk along the deck stay open, and Sit snaps you on, as the stools did.
+      const fit = carKit.passengerCar(PASSENGER_CAR_UPGRADED);
+      fit.position.y = car.hy - carKit.CAR_DECK;
+      owner.add(fit);
+      car.mesh.add(fit);
+      let i = 0;
+      for (const side of [1, -1])
+        for (const bz of carKit.BENCH.z) {
+          const z = side * bz;
+          // Facing out (+x on the +x side) is yaw -side * pi/2: the game's yaw 0 faces -z, and turns toward -x.
+          const yaw = -side * (Math.PI / 2);
+          owner.cleanup(
+            seats.registerSeat({
+              id: `railway:train${k}-${n}-seat${i++}`,
+              group: `railway:train${k}-${n}`,
+              platform: car.platform,
+              anchorView: true,
+              // The stowaway sits on the bench beside you (0.62 m to your right), not on the deck under it.
+              perch: carKit.BENCH.seatTop,
+              at: { x: side * carKit.BENCH.seatX, y: car.hy + seats.lowStoolAnchor, z, yaw },
+              // Standing up puts you 0.4 m out in front of your seat, on the deck by its edge.
+              exit: { x: side * 0.85, y: car.hy + PLAYER_R, z, yaw },
+              available: () => car.y > -30,
+            }),
+          );
+        }
     }
     // The fitted boiler: the same part that waits on its pedestal and is hauled on the rope (boiler-view.ts), set in
     // the engine's saddles with its back end in the cab as the backhead, and the gold rope lashed round it.

@@ -31,6 +31,8 @@ export type Seat = {
   platform?: Platform;
   /** Nonblocking chairs have no standing support: draw the granted rider in the platform frame. */
   anchorView?: boolean;
+  /** How far over the deck the sitter's stowaway sits (a bench it can sit on): view only, 0 sits it on the deck. */
+  perch?: number;
   at: Local;
   exit: Local;
   available: () => boolean;
@@ -94,10 +96,12 @@ const world = (s: Seat, exit = false, interpolated = false) => {
 /** How far a seated Buddy's drawn body comes down from its capsule (the seated pose's frame; every chair's anchor
  * height assumes it, e.g. the track layer's hips 0.63 m under the capsule centre). */
 const SEATED_DROP = 0.55;
-/** How far this chair holds its sitter's capsule above where they'd stand on that deck: the stowaway sits beside you on
- * the deck by it (src/entities/wardrobe/view.ts reads it from the avatar's seatRise). */
+/** How far this chair holds its sitter's capsule above where the stowaway beside them sits: the deck under them, or
+ * the bench (`perch` over it) where there is one (src/entities/wardrobe/view.ts reads it from the avatar's seatRise). */
 const seatRise = (s: Seat) =>
-  s.platform ? Math.max(0, s.at.y - ((s.platform.topAt?.(s.at.x, s.at.z) ?? s.platform.top) + PLAYER_R)) : 0;
+  s.platform
+    ? Math.max(0, s.at.y - ((s.platform.topAt?.(s.at.x, s.at.z) ?? s.platform.top) + PLAYER_R) - (s.perch ?? 0))
+    : 0;
 const reachable = (s: Seat) => {
   const b = me.body;
   const p = world(s);
