@@ -3,7 +3,7 @@
 // (the game's car origin; rail tops are at 0.16 m and the halt deck at 0.72 m).
 export type V = readonly [number, number, number];
 /** What a part belongs to. `body` is always drawn; the others are the upgrade states' separate meshes. */
-export type Module = 'body' | 'boiler' | 'lashing' | 'speed' | 'steam' | 'wheels';
+export type Module = 'body' | 'cabNear' | 'boiler' | 'lashing' | 'speed' | 'steam' | 'wheels';
 export type Part =
   | { kind: 'box'; m: Module; c: string; min: V; max: V; tilt?: number }
   | {
@@ -21,7 +21,52 @@ export type Part =
   | { kind: 'torus'; m: Module; c: string; axis: 'y' | 'z'; at: V; r: number; tube: number; seg: number }
   | { kind: 'wheel'; m: 'wheels'; at: V; r: number };
 export type EngineId = 'a' | 'b' | 'c';
-export type Candidate = { id: EngineId; name: string; hx: number; hz: number; parts: Part[] };
+/** The walk-in cab, in metres over the rail line: floor top, inner half width, its back and front, the roof's underside,
+ * the doorway (both sides) and where Buddy and the driver stand. */
+export type Cab = {
+  floor: number;
+  hxIn: number;
+  hx: number;
+  zBack: number;
+  zFront: number;
+  roofUnder: number;
+  door: { z: [number, number]; top: number };
+  buddy: V;
+  driver: V;
+};
+/** `rear` and `front`: the frame's ends along z (buffers stand beyond them); `hx`, `hz` the body's half sizes. */
+export type Candidate = {
+  id: EngineId;
+  name: string;
+  scale: number;
+  hx: number;
+  hz: number;
+  rear: number;
+  front: number;
+  parts: Part[];
+  cab: Cab;
+};
+/** What a builder returns before the cab is fitted: its parts at the first previz's size and its old cab's place. */
+type Unit = {
+  id: EngineId;
+  name: string;
+  parts: Part[];
+  hx: number;
+  hz: number;
+  cab: { hx: number; zBack: number; zFront: number; floor: number };
+};
+
+/** Buddy, measured in the asset stage from the game's body in its idle pose (its skinned vertices, hat and gear off): 1.59 m
+ * tall, 0.91 m across the arms, 0.71 m front to back. `shoulders` is the full width, arms included. */
+export const BUDDY = { height: 1.59, shoulders: 0.91 };
+/** The player's collider (src/constants.ts: PLAYER_R 0.45, HEAD_OFFSET 0.8): 0.9 m across, 1.7 m tall. */
+export const COLLIDER = { width: 0.9, height: 1.7 };
+/** The little guy at the controls (docs/plans/home-station.md, from folk.ts): 0.99 m standing, his hat 0.58 m wide. */
+export const DRIVER = { height: 0.99, hat: 0.58 };
+/** The owner's call (10 November): Buddy fits in the cab. Headroom over the taller of him and his collider, room beside the driver, a doorway. */
+export const CAB_FIT = { headroom: 0.2, between: 0.1, door: 1.0, doorHead: 0.15, wall: 0.06 };
+/** All three are scaled by the same factor, the size Home station's layout recommends and is sized beyond (1.5). */
+export const SCALE = 1.25;
 
 // The game's flat palette (src/proto/place/look-kit.ts, halts-view.ts, gold-rope.ts).
 export const RED = '#e8392a',
@@ -77,24 +122,101 @@ const steam = (p: Parts, x: number, top: number, z: number) => {
   sphere(p, 'steam', STEAM, [x, top + 0.5, z - 0.3], 0.19);
   sphere(p, 'steam', STEAM, [x, top + 0.82, z - 0.65], 0.25);
 };
-/** A cab: walls, roof, two front windows and one each side. */
-const cab = (
-  p: Parts,
-  hx: number,
-  y: [number, number],
-  z: [number, number],
-  roof: { hx: number; z: [number, number] },
-) => {
-  box(p, 'body', RED, [-hx, hx], y, z);
-  box(p, 'body', DARK, [-roof.hx, roof.hx], [y[1] - 0.03, y[1] + 0.09], roof.z);
-  const front = z[1],
-    wy: [number, number] = [y[1] - 0.5, y[1] - 0.17];
-  pair(p, 'body', GLASS, [0.18, Math.min(0.58, hx - 0.15)], wy, [front - 0.015, front + 0.015]);
-  pair(p, 'body', GLASS, [hx - 0.015, hx + 0.015], [wy[0] - 0.08, wy[1] - 0.04], [z[0] + 0.25, z[0] + 0.7]);
-};
+/** Every part scaled by `s` about the rail line's origin, except the gauge: wheels stay on the rails at ±0.5 m (their
+ * radius scales, so they still touch the rail tops) and the side rods stay just outside them. */
+function scaled(parts: readonly Part[], s: number): Part[] {
+  const v = (a: V): V => [a[0] * s, a[1] * s, a[2] * s];
+  const rodY = (y: number) => y * s - 0.15 * (s - 1); // follows the wheel centres, r·s + 0.15
+  return parts.map((p): Part => {
+    if (p.kind === 'wheel') return { ...p, at: [p.at[0], p.r * s + 0.15, p.at[2] * s], r: p.r * s };
+    if (p.kind === 'box' && p.m === 'wheels')
+      return { ...p, min: [p.min[0], rodY(p.min[1]), p.min[2] * s], max: [p.max[0], rodY(p.max[1]), p.max[2] * s] };
+    if (p.kind === 'box') return { ...p, min: v(p.min), max: v(p.max) };
+    if (p.kind === 'cyl') return { ...p, at: v(p.at), len: p.len * s, r0: p.r0 * s, r1: p.r1 * s };
+    if (p.kind === 'sphere') return { ...p, at: v(p.at), r: p.r * s };
+    return { ...p, at: v(p.at), r: p.r * s, tube: p.tube * s };
+  });
+}
+/** Lengthen the engine behind z = `cut` by `d`: what lies behind moves back, what spans the cut (frame, footplate,
+ * rods) grows back, and what is ahead (the boiler, whose back end becomes the backhead inside the cab) stays. */
+function stretchedBack(parts: readonly Part[], cut: number, d: number): Part[] {
+  if (d <= 0) return [...parts];
+  return parts.map((p): Part => {
+    if (p.kind === 'box') {
+      if (p.max[2] <= cut + 1e-6)
+        return { ...p, min: [p.min[0], p.min[1], p.min[2] - d], max: [p.max[0], p.max[1], p.max[2] - d] };
+      if (p.min[2] < cut) return { ...p, min: [p.min[0], p.min[1], p.min[2] - d] };
+      return p;
+    }
+    const back = p.kind === 'cyl' && p.axis === 'z' ? p.at[2] + p.len / 2 : p.at[2];
+    return back <= cut ? { ...p, at: [p.at[0], p.at[1], p.at[2] - d] } : p;
+  });
+}
+/** The walk-in cab: a floor on the footplate, side walls with a doorway at the back of each, a front wall with two
+ * windows over the backhead, a back wall with one, a roof. The platform side's wall is `cabNear`, so a side view can
+ * leave it out and look in. Walls are inset from each other's faces so no two faces share a plane. */
+function walkInCab(p: Parts, c: Cab) {
+  const { floor, hx, zBack, zFront, roofUnder, door } = c,
+    w = CAB_FIT.wall,
+    base = floor - 0.04;
+  box(p, 'body', DARK, [-(hx - 0.04), hx - 0.04], [floor - 0.05, floor], [zBack + 0.02, zFront - 0.02]); // floor
+  for (const side of [-1, 1]) {
+    const m: Module = side > 0 ? 'cabNear' : 'body';
+    const x: [number, number] = side > 0 ? [hx - w, hx] : [-hx, -(hx - w)];
+    box(p, m, RED, x, [base, roofUnder], [zBack, door.z[0]]); // the post behind the doorway
+    box(p, m, RED, x, [door.top, roofUnder], door.z); // over the doorway
+    box(p, m, RED, x, [base, roofUnder], [door.z[1], zFront]); // ahead of it, with a window
+    const gx: [number, number] = side > 0 ? [hx - 0.015, hx + 0.015] : [-hx - 0.015, -hx + 0.015];
+    if (zFront - door.z[1] > 0.4)
+      box(p, m, GLASS, gx, [roofUnder - 0.55, roofUnder - 0.18], [door.z[1] + 0.08, zFront - 0.1]);
+    // A step under the doorway, halfway up from the halt deck (0.72 m).
+    const step = (0.72 + floor) / 2;
+    const sx: [number, number] = side > 0 ? [hx - 0.1, hx + 0.2] : [-hx - 0.2, -hx + 0.1];
+    box(p, m, DARK, sx, [step - 0.04, step + 0.03], [door.z[0] + 0.1, door.z[1] - 0.1]);
+  }
+  const inner: [number, number] = [-(hx - 0.03), hx - 0.03];
+  box(p, 'body', RED, inner, [base + 0.01, roofUnder - 0.005], [zFront - w, zFront - 0.01]); // front wall
+  const wy: [number, number] = [roofUnder - 0.55, roofUnder - 0.18];
+  pair(p, 'body', GLASS, [0.2, Math.min(0.62, hx - 0.2)], wy, [zFront - 0.025, zFront + 0.005]);
+  box(p, 'body', RED, inner, [base + 0.01, roofUnder - 0.005], [zBack + 0.01, zBack + w]); // back wall
+  box(p, 'body', GLASS, [-0.35, 0.35], wy, [zBack - 0.005, zBack + 0.025]);
+  box(p, 'body', DARK, [-(hx + 0.1), hx + 0.1], [roofUnder - 0.01, roofUnder + 0.1], [zBack - 0.12, zFront + 0.12]);
+}
+/** Scale a builder's engine, lengthen it behind the cab until the cab holds Buddy, and fit the walk-in cab. */
+function fitBuddy(u: Unit, s = SCALE): Candidate {
+  const f = CAB_FIT;
+  const hxIn = Math.max(u.cab.hx * s - f.wall, (BUDDY.shoulders + DRIVER.hat + 3 * f.between) / 2);
+  const hx = hxIn + f.wall;
+  const zFront = u.cab.zFront * s;
+  // A 0.15 m post, the doorway, and 0.3 m of wall ahead of it (the backhead stands between the doorways).
+  const old = (u.cab.zFront - u.cab.zBack) * s;
+  const length = Math.max(old, 0.15 + f.door + 0.3);
+  const d = length - old;
+  const parts = stretchedBack(scaled(u.parts, s), zFront, d);
+  const zBack = zFront - length;
+  const floor = u.cab.floor * s + 0.02;
+  // Over the taller of Buddy and his collider, so the physics fits too: 0.31 m over his head.
+  const roofUnder = floor + Math.max(BUDDY.height, COLLIDER.height) + f.headroom;
+  const doorZ: [number, number] = [zBack + 0.15, zBack + 0.15 + f.door];
+  const cab: Cab = {
+    floor,
+    hxIn,
+    hx,
+    zBack,
+    zFront,
+    roofUnder,
+    door: { z: doorZ, top: Math.min(roofUnder - 0.12, floor + Math.max(BUDDY.height, COLLIDER.height) + f.doorHead) },
+    buddy: [hxIn - BUDDY.shoulders / 2 - f.between, floor, doorZ[0] + 0.4],
+    driver: [-(hxIn - DRIVER.hat / 2 - f.between), floor, zFront - 0.6],
+  };
+  walkInCab(parts, cab);
+  const front = u.hz * s,
+    rear = -(u.hz * s + d);
+  return { id: u.id, name: u.name, scale: s, hx: Math.max(u.hx * s, hx), hz: (front - rear) / 2, rear, front, parts, cab };
+}
 
 /** A: the stubby toy at today's footprint (LOCO 1.6 × 3.0 m): two big drivers, a short fat boiler, a tall chimney. */
-function stubby(): Candidate {
+function stubby(): Unit {
   const p: Parts = [];
   wheels(p, [-0.75, 0.75], 0.38);
   pair(p, 'wheels', DARK, [0.63, 0.66], [0.48, 0.58], [-0.8, 0.8]); // the side rods
@@ -104,7 +226,7 @@ function stubby(): Candidate {
   box(p, 'body', RED, [-0.8, 0.8], [0.45, 0.8], [-1.58, -1.38]);
   buffers(p, 1.77);
   buffers(p, -1.77);
-  cab(p, 0.75, [1.0, 2.0], [-1.46, -0.5], { hx: 0.86, z: [-1.6, -0.38] });
+
   pair(p, 'body', BRASS, [0.06, 0.42], [1.0, 1.12], [-0.2, -0.06]); // the empty saddles, as today's shell has
   pair(p, 'body', BRASS, [0.06, 0.42], [1.0, 1.12], [0.8, 0.94]);
   // The boiler: the fitted part, one mesh with its smokebox, chimney and dome.
@@ -121,11 +243,18 @@ function stubby(): Candidate {
   sphere(p, 'speed', BRASS, [0, 1.95, -0.3], 0.18, 0.85);
   ring(p, 'speed', BRASS, 'y', [0, 2.46, 1.2], 0.25, 0.03);
   steam(p, 0, 2.46, 1.2);
-  return { id: 'a', name: 'Stubby toy', hx: 0.8, hz: 1.5, parts: p };
+  return {
+    id: 'a',
+    name: 'Stubby toy',
+    hx: 0.8,
+    hz: 1.5,
+    parts: p,
+    cab: { hx: 0.75, zBack: -1.46, zFront: -0.5, floor: 1.02 },
+  };
 }
 
 /** B: a bit longer (1.7 × 4.2 m), a proper long boiler with a steam dome, three drivers and a pony truck. */
-function longer(): Candidate {
+function longer(): Unit {
   const p: Parts = [];
   wheels(p, [-1.15, -0.25, 0.65], 0.36);
   wheels(p, [1.55], 0.24);
@@ -137,7 +266,7 @@ function longer(): Candidate {
   box(p, 'body', RED, [-0.85, 0.85], [0.45, 0.82], [-2.18, -1.98]);
   buffers(p, 2.37);
   buffers(p, -2.37);
-  cab(p, 0.8, [1.0, 2.1], [-2.06, -0.95], { hx: 0.9, z: [-2.2, -0.82] });
+
   pair(p, 'body', BRASS, [0.06, 0.44], [1.0, 1.14], [-0.6, -0.46]);
   pair(p, 'body', BRASS, [0.06, 0.44], [1.0, 1.14], [0.9, 1.04]);
   cz(p, 'boiler', RED, 1.55, [-1.1, 1.55], 0.55, 24);
@@ -154,12 +283,19 @@ function longer(): Candidate {
   ring(p, 'speed', BRASS, 'y', [0, 2.6, 1.65], 0.235, 0.03);
   for (const x of [-0.6, 0.6]) cz(p, 'speed', BRASS, 1.75, [-0.9, 1.35], 0.025, 8, x); // handrails
   steam(p, 0, 2.6, 1.65);
-  return { id: 'b', name: 'Longer, proper boiler', hx: 0.85, hz: 2.1, parts: p };
+  return {
+    id: 'b',
+    name: 'Longer, proper boiler',
+    hx: 0.85,
+    hz: 2.1,
+    parts: p,
+    cab: { hx: 0.8, zBack: -2.06, zFront: -0.95, floor: 1.02 },
+  };
 }
 
 /** C: a tank engine (1.7 × 3.6 m): side tanks either side of a slimmer boiler, a coal bunker, a cowcatcher. The
  * empty slot between the tanks is where the boiler is fitted. */
-function tank(): Candidate {
+function tank(): Unit {
   const p: Parts = [];
   wheels(p, [-0.9, 0, 0.9], 0.32);
   pair(p, 'wheels', DARK, [0.63, 0.66], [0.42, 0.52], [-0.95, 0.95]);
@@ -176,7 +312,7 @@ function tank(): Candidate {
   for (const x of [-0.63, 0.63]) cy(p, 'body', BRASS, 0.9, [1.68, 1.76], 0.1, 0.1, 12, x); // filler caps
   box(p, 'body', RED, [-0.74, 0.74], [0.88, 1.5], [-1.78, -1.4]); // bunker
   box(p, 'body', DARK, [-0.66, 0.66], [1.45, 1.6], [-1.74, -1.44]); // coal
-  cab(p, 0.78, [0.87, 2.0], [-1.42, -0.5], { hx: 0.88, z: [-1.88, -0.38] });
+
   pair(p, 'body', BRASS, [0.06, 0.4], [0.9, 1.02], [-0.2, -0.06]);
   pair(p, 'body', BRASS, [0.06, 0.4], [0.9, 1.02], [0.9, 1.04]);
   cz(p, 'boiler', RED, 1.4, [-0.6, 1.25], 0.42, 24);
@@ -192,10 +328,21 @@ function tank(): Candidate {
   ring(p, 'speed', BRASS, 'y', [0, 2.36, 1.38], 0.21, 0.025);
   pair(p, 'speed', BRASS, [0.83, 0.86], [1.3, 1.36], [-0.5, 1.15]); // brass tank bands
   steam(p, 0, 2.36, 1.38);
-  return { id: 'c', name: 'Tank engine', hx: 0.85, hz: 1.8, parts: p };
+  return {
+    id: 'c',
+    name: 'Tank engine',
+    hx: 0.85,
+    hz: 1.8,
+    parts: p,
+    cab: { hx: 0.78, zBack: -1.42, zFront: -0.5, floor: 0.92 },
+  };
 }
 
-export const CANDIDATES: Record<EngineId, Candidate> = { a: stubby(), b: longer(), c: tank() };
+export const CANDIDATES: Record<EngineId, Candidate> = {
+  a: fitBuddy(stubby()),
+  b: fitBuddy(longer()),
+  c: fitBuddy(tank()),
+};
 
 /** The upgrade states the plans name, and the modules each one draws. `twin` is two boiler-state engines coupled. */
 export const STATES = [
