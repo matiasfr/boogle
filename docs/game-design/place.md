@@ -529,8 +529,16 @@ and a short mast carrying a furled vane in dark cloth, pointing west at the forg
 and no prompt, so on the first climb it reads as a thing that isn't on yet.
 
 Q5's completion wakes it, on the same edge that casts the boiler (no summit cinematic). The vane takes the worn roll's
-teal and cream, Place's two rings and core light up and turn, and a faint locator shaft rises 50 m (radius 0.1,
-opacity 0.1). On the live edge only the vane unfurls once over 0.6 s; a reload or a late join snaps it to woken.
+teal and cream, Place's two rings and core light up and turn, and a teal locator shaft rises 70 m (radius 0.45,
+breathing between opacity 0.2 and 0.32, held at 0.26 under reduced motion), a few pixels wide from the village and
+line 2. It used to be as faint as the jump device's (0.1 m, 0.1), and in the owner's 10 November co-op playtest the
+glider woke about ten minutes in and nobody in the room noticed it. On the live edge only the vane unfurls once over
+0.6 s, the shaft flares (opacity 0.85, 2.5 times as wide, easing back over 4 s) and every client in the room shows
+the moment banner "The glider is awake" / "Up on Needle Bell's summit" (draft copy for the owner; not a Boogler
+line), each from its own accepted edge; a reload or a late join snaps it to woken with no flare or banner. While it
+waits, every halt's map display marks the summit with a small teal canopy in the device's teal and cream (displays
+stand once trains run, so a group that left it behind sees it there). The route up stays the hook rings and teal
+undersides of the first climb, which read from the foot without a sign.
 The hook brings you back up. **Take it** (Place's verb) is one shared take, `rail.glide`, a Server op on the railway
 world, heard within 3.2 m across and 2.6 m of the summit's height and only after Q5: whoever takes it takes it for
 the room. It is predicted, so the finder gets Place's card ("The glider" / "Open it in the air."), the

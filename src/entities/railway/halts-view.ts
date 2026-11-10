@@ -7,7 +7,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { trainAlong, trainStopsOf, TRAIN_PHASE } from '../../sim/railway-train.ts';
-import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { LINE2_GLIDE, LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { WORKS_KILN, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
@@ -451,6 +451,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       ),
       w.seams & SEAM_THROAT && w.kiln.lit < 0 ? { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 } : null,
     );
+    // The glider waiting on Needle Bell's summit: woken (Q5 laid) and not yet taken by the room.
+    boards.glider(s.line2.completed >= 5 && !s.glide ? { x: LINE2_GLIDE.x / 100, z: LINE2_GLIDE.z / 100 } : null);
     boards.update(dt);
   }
   const tick = (dt: number) => {
@@ -509,6 +511,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       boardBytes: boards.bytes(),
       /** The Works' gold marks every shown display carries (seams still to strike, the cold kiln). */
       boardGold: boards.goldMarks(),
+      /** Whether every shown display marks the waiting glider on Needle Bell's summit. */
+      boardGlider: boards.gliderMark(),
       boardFaces: boards.faces(),
     }),
   };
