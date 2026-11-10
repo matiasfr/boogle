@@ -178,6 +178,51 @@ archived and removed; the [skybox research](../research/skybox.md) and
 Evening is decided later: `evening=1|preview` still prepares the procedural evening atmosphere beside the summer day.
 GOBI remains pending the actual pack and source-page licence verification.
 
+## Sunshine water candidates (9 November 2026)
+
+The owner's target: Super Mario Sunshine's water and grading, "really efficient for mobile without issue"
+([plan](../plans/water-sunshine.md), [research](../research/water-sunshine.md)). Ultra stays the default.
+Two candidates sit behind a Dev, Local, reload-only **Water** setting; `?water=sun` and `?water=sun-depth` are
+shorthand for it and, unlike other `?graphics=` overrides, work without Dev so the owner can try them on a friend's
+phone (an [open call](../agent-calls.md)). Their code (`src/render/water/sun/`, about 15 kB) loads only when chosen.
+
+- **A, `sun`.** One blended plane drawn after the opaques with no screen read: a polar grid of about 9,300 vertices
+  around the camera (scaled with height, then one flat skirt to the far plane), lifted by four slow vertical sines
+  (`sun/swell.ts`, 0.05–0.12 m, still in the first 6 m of depth). Colour comes from the bed depth in a baked coast
+  texture (`sun/coast.ts`: bed, distance to baked contacts and signed waterline distance, one RGBA16F texel per metre,
+  12.6 MB at Place), in three stops (#6fe0d0 shallow, #19b5cf, #1667b8 deep) lit by the same sun and fill as the sand.
+  Two scrolling samples of our own 128² wave cell (Worley lines, `sun/art.ts`; the second at twice the weight) make
+  the pattern; a sparkle band where one pixel covers a few texels makes Sunshine's mid-distance glitter, with the sun
+  lane in it. The sand shows through the first 2.5 m, a foam lip rides the waterline, rings sit around baked
+  contacts and the sky is one blurry Fresnel reflection. From below: the water's colour and a Snell window to the
+  sky. The seabed's caustics are a scrolling texture tile (`sun/caustics.ts`, the same Caustics setting).
+- **B, `sun-depth`.** A plus one opaque-depth copy: white foam where anything meets the water (rocks, legs, swimmers,
+  floating things) and a soft waterline against rock.
+
+Swimming, plunges, floating things, the telescope, ripples, impact crowns, underwater tint, exposure, droplets and
+marine snow run unchanged on both: the water field reads the same swell and coast on the CPU (no GPU readback); the
+swell's TSL twin agrees with it to 5 µm on the GPU at three clocks.
+
+**Cost at five poses on this Mac** (1180×820, the session's counts; the sea's own share is shown minus hidden):
+
+| | Ultra | A `sun` | B `sun-depth` |
+| --- | --- | --- | --- |
+| Render passes (cove / elsewhere) | 6 / 5 | 4 / 3 | 4 / 3 |
+| Compute dispatches | 12–14 | 2–3 | 2–3 |
+| Framebuffer copies (pass splits) | 2 | 0 | 1 |
+| Sea triangles | ~387,000 | 18,500–20,000 | 18,500–20,000 |
+| GPU memory (textures + storage) | 312.3 MB | 211.6 MB | 215.3 MB |
+
+Hiding Ultra's surface draw saves one draw, 387,000 triangles and both copies but none of the FFT, caustics, queries
+or memory, which keep running; A drops all of them. No hardware frame timings yet (the plan's [build notes](../plans/water-sunshine.md#build-notes-9-november) say why).
+
+**What A and B lose against Ultra:** refraction (the shore and legs are not bent through the surface); the shore atlas's
+travelling swash, breakers and breaker spray (only impact crowns remain); the FFT's chop and Poisson glitter (A's
+sparkle is a texture band, not per-wave); the moving caustic net (now a scrolling tile, plainer up close); terrain seen
+through Snell's window from below (only the sky shows there); contact rings for things that move (A bakes contacts
+into 1 m texels, so they read as soft blobs; B's depth foam covers moving things). Contacts more than 120 m past the
+shores get no ring.
+
 ## Production water tuning
 
 Open `?proto=place&tune=1` to tune the real sea on the place page, or append `&tune=1` to another

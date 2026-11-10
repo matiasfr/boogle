@@ -56,7 +56,8 @@ Reward celebrations (box sparkles, confetti, the opening dust ring, the reveal's
 ## Water ownership
 
 `water-render.ts` owns the one sea every route uses, its FFT, shore atlas, queries, underwater HDR and
-once-baked late-morning sky. Neutral stays the output. [Water design](../../docs/game-design/water.md) records
+once-baked late-morning sky. Its surface sits behind a seam (`water/sea-surface.ts`): Ultra by default, or the lazy
+Sunshine candidates in `water/sun/` under `?water=sun|sun-depth` ([water design](../../docs/game-design/water.md#sunshine-water-candidates-9-november-2026)). Neutral stays the output. [Water design](../../docs/game-design/water.md) records
 the fixed-exposure calibration. `exposure.ts` owns the Local surface gain
 and signed-depth underwater adjustment: 0.12, +0.81 EV through 0–1.5 m. The existing frozen-sky scene lights
 use key gain 1.12 and fill gain 3.2; the sky bake and water optics retain their values. `water/post.ts` uses the width-zero
