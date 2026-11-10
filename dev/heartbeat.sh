@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# npm run heartbeat [-- --all]: everything an orchestrator checks each round, in one read-only report: model mode, main,
+# npm run heartbeat [-- --all]: everything an orchestrator checks each round, in one read-only report: main's CI
+# verdict first (RED MAIN with its fix PR and issue), model mode, main,
 # open pull requests, the last CI, deploy and smoke runs, recent play sessions, the bot queue, the nightly jobs and their
 # open issues, the ship lock, machine load and the worktrees holding unmerged or uncommitted work (those active in the
 # last 48 hours and a count of the rest; --all lists every one).
@@ -13,6 +14,22 @@ for d in "$HOME"/.nvm/versions/node/v26*/bin; do [ -d "$d" ] && PATH="$d:$PATH";
 main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 say() { printf '\n## %s\n' "$1"; }
 git fetch -q origin
+# First, because one green run merges (owner call "Fast ships"): main's own CI is the check on combinations.
+say "Main CI"
+# Cancelled runs are superseded ones (a newer merge queued behind them), not a verdict.
+ci=$(gh run list --workflow ci.yml --branch main --status completed -L 20 --json conclusion,headSha,url \
+  -q '[.[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0] // empty
+      | "\(.conclusion) \(.headSha[0:8]) \(.url)"' 2>/dev/null)
+case "$ci" in
+  success*) echo "green at ${ci#success }" ;;
+  '') echo "unknown (gh run list failed)" ;;
+  *)
+    echo "RED MAIN: ${ci%% *} at ${ci#* }. Fixing main beats starting something new."
+    gh pr list --state open --json number,headRefName,title \
+      -q '.[] | select(.headRefName | startswith("claude/fix-main")) | "fix PR #\(.number): \(.title)"' 2>/dev/null
+    gh issue list --label red-main --state open --json number,url -q '.[] | "issue #\(.number) \(.url)"' 2>/dev/null
+    ;;
+esac
 say "Mode"; node dev/models.ts 2>/dev/null | head -3
 say "Main"
 git log origin/main -3 --format='%h %s (%cr)'

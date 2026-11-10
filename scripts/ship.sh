@@ -2,7 +2,8 @@
 # npm run ship: rebase your commits onto the latest main, run the checks, push them to a ship/<you>-<sha> branch.
 # CI runs on that branch. Green: automerge.yml opens a PR, merges it into main and deploys. Red: ci-autofix.yml has
 # Claude push a fix to the branch. main itself only takes PRs.
-# The pre-push hook runs changed-file lint, typecheck and affected unit tests; --full also runs check locally.
+# The pre-push hook runs changed-file lint, typecheck and affected unit tests (docs only: registry and agent checks);
+# --full also runs check locally, except on a docs-only diff.
 # CI owns the full gate; smoke.yml probes the live assets/version/room without a browser after deploys and nightly.
 # `npm run ship -- --gpu` also runs smoke on this Mac's GPU first (check:gpu): worth it for networking or render
 # pipeline changes, not for every ship (several agents share one GPU). `-- --wait` waits until your commits are on main.
@@ -74,7 +75,14 @@ EOF
     exit 0
   fi
 
-  if [ "$full" = 1 ]; then npm run --silent check; fi
+  # Docs-only (dev/ci/change-class.ts): the pre-push hook runs the docs checks, so --full adds nothing to run.
+  if [ "$full" = 1 ]; then
+    if [ "$(git diff --no-renames --name-only -z origin/main...HEAD | node dev/ci/change-class.ts)" = docs ]; then
+      echo 'ship: docs only; skipping the full check (the pre-push hook runs the docs checks).'
+    else
+      npm run --silent check
+    fi
+  fi
   if [ "$gpu" = 1 ]; then
     if [ "$(uname)" != Darwin ]; then
       echo "ship: --gpu needs a Mac's GPU; smoke still runs against the live site after the deploy." >&2
