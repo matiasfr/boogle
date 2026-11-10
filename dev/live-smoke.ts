@@ -17,10 +17,12 @@ const site = new URL(option('--url') || 'https://boogle.club/');
 const expected = option('--build');
 const start = performance.now();
 const sockets: import('ws').WebSocket[] = [];
+// The server deploy (tests, image build, Fly) can finish minutes after Pages, so the identity wait gets five minutes.
+const SERVER_WAIT_MS = 300000;
 const deadline = setTimeout(() => {
-  console.error('FAIL live smoke exceeded 60 seconds');
+  console.error('FAIL live smoke exceeded 7 minutes');
   process.exit(1);
-}, 60000);
+}, 420000);
 async function get(url: URL, contentType: RegExp) {
   const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
   assert.equal(res.status, 200, `${url}: HTTP ${res.status}`);
@@ -52,6 +54,7 @@ async function connect(server: string, room: string, build: string) {
     const until = performance.now() + 5000;
     while (performance.now() < until) {
       if (failure) throw new Error(failure);
+      if (messages.some((m) => m.t === 'bye')) throw new Error(`server refused the room: ${JSON.stringify(messages)}`);
       const found = messages.find(predicate);
       if (found) return found;
       await new Promise((resolve) => setTimeout(resolve, 20));
@@ -86,10 +89,13 @@ try {
   const server = option('--server') || version.server;
   assert.ok(server, 'version.json names the deployed WebSocket server');
   assert.ok(version.serverBuild, 'version.json names the expected server source commit');
-  // Server and Pages deploy concurrently. Allow their identities to converge within the minute budget.
+  // Server and Pages deploy independently, and the server usually lands last. serverBuild is the last commit that
+  // touched the server, so a Pages-only push expects the build already live and passes on the first poll; a server
+  // push waits here for deploy-server. A server that never reaches serverBuild still fails below.
   let actual = '';
   let versionError = '';
-  while (performance.now() - start < 45000) {
+  const waitUntil = performance.now() + SERVER_WAIT_MS;
+  while (performance.now() < waitUntil) {
     try {
       const data = (await (await get(new URL('/version', server), /application\/json/)).json()) as { build?: string };
       actual = data.build || '';
@@ -102,16 +108,28 @@ try {
   assert.equal(actual, version.serverBuild, `server deployed source commit (${versionError})`);
   // Seven isolated rooms bound stored-room growth and never touch boogle or a friend's room.
   const room = `smoke-node-${new Date().getUTCDay()}`;
-  const a = await connect(server, room, version.build);
-  const b = await connect(server, room, version.build);
-  // A cosmetic action traverses the real room relay, then B acknowledges through that same relay.
-  const send = (ws: import('ws').WebSocket) => ws.send(encode({ t: 'm', d: { t: 'honk', v: 0 } }));
-  const honkFrom = (id: string) => (m: WireMsg) =>
-    m.t === 'm' && m.from === id && (m.d as { t?: string } | null)?.t === 'honk';
-  send(a.ws);
-  await b.wait(honkFrom(a.id));
-  send(b.ws);
-  await a.wait(honkFrom(b.id));
+  // A server restart (a deploy landing just after the identity check) drops sockets or stalls the relay. One retry on
+  // fresh sockets covers that; a second failure is real and throws.
+  async function roundTrip() {
+    const a = await connect(server, room, version.build);
+    const b = await connect(server, room, version.build);
+    // A cosmetic action traverses the real room relay, then B acknowledges through that same relay.
+    const send = (ws: import('ws').WebSocket) => ws.send(encode({ t: 'm', d: { t: 'honk', v: 0 } }));
+    const honkFrom = (id: string) => (m: WireMsg) =>
+      m.t === 'm' && m.from === id && (m.d as { t?: string } | null)?.t === 'honk';
+    send(a.ws);
+    await b.wait(honkFrom(a.id));
+    send(b.ws);
+    await a.wait(honkFrom(b.id));
+  }
+  try {
+    await roundTrip();
+  } catch (error) {
+    console.warn('WARN room round-trip failed once, retrying after a restart pause:', String(error));
+    for (const ws of sockets.splice(0)) ws.terminate();
+    await new Promise((resolve) => setTimeout(resolve, 8000));
+    await roundTrip();
+  }
   console.log(
     `PASS live smoke: Pages ${version.build}; server ${actual}; ${assets.length} entry assets; ${room} action round-trip; ${((performance.now() - start) / 1000).toFixed(2)}s`,
   );
