@@ -185,7 +185,7 @@ const DOORS = TOWN.start.map((p) => {
 });
 const door = (k: number) => DOORS[k % DOORS.length]!;
 const WANDER = [
-  [-104, 16],
+  [-103, 24],
   [-103, 2],
   [-92, 17],
   [-115, 4],

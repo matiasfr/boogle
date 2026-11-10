@@ -88,7 +88,8 @@ function frameShelf(whole = false) {
 }
 function frameBay() {
   const s = inspectTown()!.shelf!.bay;
-  // The bay faces +z in its own space; missed boxes wait 2.8–5 m in front of it, three by three past the trophy plinth.
+  // The bay faces +z in its own space; missed boxes wait 1.5–3.7 m in front of it, three by three, and the trophy
+  // plinth 5.3 m out on its centreline (home-station.ts, bayBoxPoint). All of this framing is in the bay's frame.
   const fx = Math.sin(s.yaw),
     fz = Math.cos(s.yaw);
   stand = ground(s.x + fx * 4.2 + fz * 4.6, s.z + fz * 4.2 - fx * 4.6);

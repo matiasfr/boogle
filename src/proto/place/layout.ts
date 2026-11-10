@@ -445,11 +445,12 @@ export const DOCK = HOME_B ? PROPS.dock : { x: -78.6, z: -1.5 }; // where crates
 export const HEAP = { x: -78, z: -9.5 }; // the village's timber heap, once the forge has what it needs
 export const RACK = HOME_B ? PROPS.rack : { x: -85.5, z: 5.4 }; // where the forge's rails stack
 export const YARD = HOME_B ? PROPS.yard : { x: -62, z: 20 }; // where the stone lands
-/** The curio shelf at the station, between where you start and the turntable. */
-/** `y`, when set, is the floor it stands on (`?home=b`: the hall's); otherwise the ground. */
+/** The curio shelf at the station. In A (until v24), on the forge's west wall line, square to the street and facing
+ * west across it (curio placement plan, 10 November). `y`, when set, is the floor it stands on (`?home=b`: the hall's);
+ * otherwise the ground. */
 export const SHELF: { x: number; z: number; yaw: number; y?: number } = HOME_B
   ? SHELF_B
-  : { x: -90.5, z: 8.5, yaw: -0.87 };
+  : { x: -91.6, z: 8.5, yaw: -Math.PI / 2 };
 /** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. */
 export const SPAWN = { x: -97, z: 14, yaw: -0.25 };
 export const LANDING = SHORE_COAST ? SHORE_LANDING : SPAWN;

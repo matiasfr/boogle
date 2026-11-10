@@ -25,17 +25,18 @@ export async function createTrophyPlinth(
   seen: AbilitySeen,
   busy: () => boolean,
 ) {
-  const [layout, land, tech, shapes, flat, folk] = await Promise.all([
+  const [layout, land, home, shapes, flat, folk] = await Promise.all([
     import('../../proto/place/layout.ts'),
     import('../../proto/place/land.ts'),
-    import('../../proto/place/tech-layout.ts'),
+    import('../../proto/place/home-station.ts'),
     import('../../proto/place/part-geometry.ts'),
     import('../../proto/flat.ts'),
     import('../../proto/place/folk.ts'),
   ]);
-  // On the village's side of the finders' bay, where missed prizes turn up in Place.
-  const x = layout.toWorld(tech.FINDERS.x + 1.5),
-    z = tech.FINDERS.z;
+  // Out on the finders' bay's centreline, past its missed boxes, on the street's edge where people pass.
+  const spot = home.bayPoint(0, home.PLINTH_OUT),
+    x = layout.toWorld(spot.x),
+    z = spot.z;
   const ground = land.H(x, z);
   const root = new THREE.Group();
   root.visible = false;

@@ -226,8 +226,8 @@ as a plan of ways and places, as built in step 3 (2.4 m end walls, the shelf in 
   back bays to the island's apron, 1 m past the hall, and the head ramp 3.3 m beyond. The shelf frames that doorway: on
   your right as you enter, gifts toward the square, used from the ground in front of it, off the walking line.
 - **The south half** behind the shelf is a quiet bay 4.5 m deep. Its back opens onto road 2's buffer end, which leads
-  nowhere, so it suits reading: the works board belongs on the south wall's back 4.3 m (a −11.0 to −6.7), where the
-  shelf's finds board does not crowd it at the front corner.
+  nowhere, so it suits reading: the works board belongs on the south wall's back 4.3 m (a −11.0 to −6.7), reached by
+  the shelf's 1.4 m side way at the front corner.
 - **The line map** goes back to 6 m, centred on the island (c 0.8 to 6.8; step 12): it hangs over the way out to the
   platform, which everyone walks under. The 5 m cut only kept its south end in view from one spot in the square.
 - **Scale.** 13 × 6 m under a 4.6 m roof holds four small players and a 7.3 m shelf: the shelf fills just over half the
@@ -393,10 +393,12 @@ change; the full loop once a day").
     stays at 4.6 m on posts (corner posts added), and spawn keeps facing 14°. The curio shelf stood against the north
     wall's inside face; the stills showed it, at about 3.5 m, the tallest thing in the hall's north half.
   - **Decided 9 November (owner): "move shelf off north wall".** `SHELF_B` stands in the hall's front, south of the way
-    in: just behind the front posts (5 cm clear), facing the square, its finds board toward the south wall, which keeps
-    0.15 m for the works board. It is off the back span (the line map), and the way in from the square to the trains
-    (the hall's north half, 4.95 m wide) stays open. Entering from the square it stands on your right, gifts facing
-    you. Full height and the finds board are kept. The finders' bay (F2) is 10 m away at (−104, 7) and does not move.
+    in: just behind the front posts (5 cm clear), facing the square, a 1.4 m side way between it and the south wall,
+    which keeps 0.15 m for the works board. It is off the back span (the line map), and the way in from the square to
+    the trains (the hall's north half, 4.95 m wide) stays open. Entering from the square it stands on your right, gifts
+    facing you. Full height is kept (the finds board beside it was cut with the gold finds, 9 November). The finders'
+    bay (F2) moved on 10 November (owner, "for now"): it faces the shelf across the square on the shelf's centreline,
+    16.3 m out at (−106.76, 18.88) ([curio placement](curio-shelves-placement.md)).
   - **Not pursued: the view from spawn as a measure** (owner, 9 November: "im not sure why we're evaluating the view
     from spawn as the right metric. not everything has to be visible, it just has to be a well designed town
     spatially"). The open call on a 1.1 m north wall or a higher spawn camera is closed; the 2.4 m walls and the

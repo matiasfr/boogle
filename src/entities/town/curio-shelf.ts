@@ -6,7 +6,7 @@
 // gold finds (9 November).
 // Each gift stands on its board (its lowest point on the board's top), and the top board sits higher than Place's so the
 // tall sheeted outfits fit under it: in Place they hung below the middle board, over the crystals' row.
-// The finders' bay (F2), across the path: the secrets' gifts, under sheets until they're yours (Place's gifts.ts). It
+// The finders' bay (F2), across the square on the shelf's centreline (FINDERS_B): the secrets' gifts, under sheets until they're yours (Place's gifts.ts). It
 // stands on its own but is drawn with the shelf: its frame is part of the shelf's frame, and what's on it is part of the
 // shelf's two meshes, so it costs no draws. Where `bayPeg` says, missed secrets' boxes wait in front of it
 // (../finds/view.ts).
@@ -34,13 +34,14 @@ const ON_BAY = GIFTS.filter((g) => !!g.area);
 const BAY_ROWS_Y = [1.31, 2.19];
 
 export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, offVerb: string) {
-  const [{ merged }, { H, addStatic }, { SHELF, toWorld }, { addFoot }, { FINDERS }] = await Promise.all([
-    import('../../proto/place/part-geometry.ts'),
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/sites.ts'),
-    import('../../proto/place/tech-layout.ts'),
-  ]);
+  const [{ merged }, { H, addStatic }, { SHELF, toWorld }, { addFoot }, { FINDERS_B: FINDERS, bayBoxPoint }] =
+    await Promise.all([
+      import('../../proto/place/part-geometry.ts'),
+      import('../../proto/place/land.ts'),
+      import('../../proto/place/layout.ts'),
+      import('../../proto/place/sites.ts'),
+      import('../../proto/place/home-station.ts'),
+    ]);
   const SX = toWorld(SHELF.x),
     SZ = SHELF.z,
     SY = SHELF.y ?? H(SX, SZ);
@@ -246,14 +247,13 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
     crystalPeg: (k: number, n: number, out: THREE.Vector3) =>
       out.set(((k + 0.5) / n - 0.5) * (WIDE - 0.4), CRYSTAL_Y, 0.08),
     /** Where missed secret k (0–8, its index among the nine ported secrets) waits in front of the finders' bay, in the
-     * world, on the ground: three columns of three 1.1 m apart, running out from the far side of the jump trophy's
-     * plinth (which stands where Place's first boxes did), within ±1.1 m sideways so the bay fits the Home station
-     * hall's 6 m end wall (orchestrator default, 9 November). Filled in order, the column nearest the plinth first,
-     * middle row first. */
+     * world, on the ground: three by three in the bay's own frame, 1.5 to 3.7 m out and within ±1.1 m across, between
+     * the bay and the jump trophy's plinth (`bayBoxPoint`). Filled in order, the row nearest the bay first, middle
+     * first. */
     bayPeg(k: number, out: THREE.Vector3) {
-      const x = FX + 1.5 + 1.3 + Math.floor(k / 3) * 1.1,
-        z = FZ + [0, -1.1, 1.1][k % 3]!;
-      return out.set(x, H(x, z), z);
+      const p = bayBoxPoint(k),
+        x = toWorld(p.x);
+      return out.set(x, H(x, p.z), p.z);
     },
     /** Swap a slot you own something in, within reach of the shelf (Place's ids). */
     targets(): Interactable[] {

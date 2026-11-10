@@ -257,18 +257,39 @@ export const PROPS = {
   dock: { x: -76.15, z: -1.73 },
   yard: { x: -46, z: 22 },
 };
-/** The curio shelf's footprint in its own frame (`curio-shelf.ts`): the crown's half-width, the finds board's far edge
- * on +x, how far the crown reaches in front and the back panel behind, and the crown's top over its floor. */
-export const SHELF_SIZE = { crown: 2.95, board: 4.35, front: 0.59, back: 0.35, top: 3.47 };
+/** The curio shelf's footprint in its own frame (`curio-shelf.ts`): the crown's half-width, how far the crown reaches in
+ * front and the back panel behind, and the crown's top over its floor. `sideWay` is the gap kept on its +x side, toward
+ * the south wall: the side way into the works board's bay (it was the finds board's room until that was cut, 9
+ * November; curio placement plan, 10 November). */
+export const SHELF_SIZE = { crown: 2.95, sideWay: 1.4, front: 0.59, back: 0.35, top: 3.47 };
 /** The curio shelf (owner, 9 November: "move shelf off north wall"): in the hall's front, south of the way in, just
- * behind the front posts and facing the square, its finds board toward the south wall. North of it the way in from the
+ * behind the front posts and facing the square, its side way toward the south wall. North of it the way in from the
  * square to the trains stays open, nearly 5 m wide; it keeps off the back span (the line map, step 12) and leaves the
  * south wall 0.15 m clear for the works board (call 29). */
 export const SHELF_B = (() => {
   const a = HALL.a - HALL.d / 2 + 0.2 + 0.175 + 0.05 + SHELF_SIZE.front,
-    c = HALL.c + HALL.w / 2 - 0.3 - 0.15 - SHELF_SIZE.board;
+    c = HALL.c + HALL.w / 2 - 0.3 - 0.15 - SHELF_SIZE.sideWay - SHELF_SIZE.crown;
   return { ...axisPoint(a, c), yaw: Math.atan2(-AXIS.d.x, -AXIS.d.z), y: HALL.floor };
 })();
+/** The finders' bay, in both layouts (owner, 10 November: layout A of docs/plans/curio-shelves-placement.md, "for
+ * now"): on the shelf's centreline 16.3 m out across the square, facing back up the station's axis at the hall, so
+ * the south street passes between them. On the ground. */
+export const FINDERS_B = (() => {
+  const s = toAxis(SHELF_B);
+  return { ...axisPoint(s.a - 16.3, s.c), yaw: HALL.yaw };
+})();
+/** A Place-local point in the bay's own frame: `across` metres along its front (its +x), `out` metres in front of it. */
+export function bayPoint(across: number, out: number): XZ {
+  const c = Math.cos(FINDERS_B.yaw),
+    s = Math.sin(FINDERS_B.yaw);
+  return { x: FINDERS_B.x + across * c + out * s, z: FINDERS_B.z - across * s + out * c };
+}
+/** Missed secrets' boxes wait 3 by 3 in front of the bay, in its frame: filled middle first, nearest the bay first. */
+export const BAY_BOXES = { across: [0, -1.1, 1.1], out: [1.5, 2.6, 3.7] } as const;
+/** The bay box for missed secret k (0–8), Place-local. */
+export const bayBoxPoint = (k: number) => bayPoint(BAY_BOXES.across[k % 3]!, BAY_BOXES.out[Math.floor(k / 3)]!);
+/** The jump trophy's plinth: outermost on the bay's centreline, on the street's edge where people pass. */
+export const PLINTH_OUT = 5.3;
 /** The two village halts become one island: each line's platform edge, by its own `s`. */
 export const ISLAND_HALTS = [
   { s0: ISLAND_A.deck0, s1: ISLAND_A.deck1, lat: ISLAND_C },
