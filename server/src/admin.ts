@@ -48,8 +48,9 @@ export function addAdmin(
         if (move) await fs.rename(saveFile(id), path.join(dir, name));
         else await fs.copyFile(saveFile(id), path.join(dir, name));
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
-        throw error;
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        if (move) store.forget(id); // a world that never saved starts over too
+        return null;
       }
       if (move) store.forget(id);
       return name;

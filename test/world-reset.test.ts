@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WORLD_SEEN_KEY, staleKeys, pruneClaims, resetForWorld, pruneProfiles } from '../src/player/world-reset.ts';
+import {
+  WORLD_SEEN_KEY,
+  staleKeys,
+  pruneClaims,
+  resetForWorld,
+  pruneProfiles,
+  roomReborn,
+  resetForRoom,
+} from '../src/player/world-reset.ts';
 
 function storage(seed: Record<string, string> = {}): Storage {
   const values = new Map(Object.entries(seed));
@@ -180,4 +188,40 @@ test('profiles require a lock, re-read inside it and tolerate rejected locks', a
   s.setItem(key, profile('rail-v18-a'));
   await pruneProfiles(s, immediate, ns.rail);
   assert.equal(s.getItem(key), null);
+});
+
+test('a room is reborn only when its world changed since this browser last joined', () => {
+  const s = storage();
+  assert.equal(roomReborn(s, 'rail-v19-a', 'aaa'), false, 'first sight is not a reset');
+  assert.equal(roomReborn(s, 'rail-v19-a', 'aaa'), false);
+  assert.equal(roomReborn(s, 'rail-v19-b', 'bbb'), false, 'another room has its own world');
+  assert.equal(roomReborn(s, 'rail-v19-a', 'ccc'), true);
+  assert.equal(roomReborn(s, 'rail-v19-a', 'ccc'), false, 'only once');
+  assert.deepEqual(resetForWorld(s, { world: 'v20', rail: 'rail-v20' }).removed.sort(), [
+    'boogle.room-born.v0:rail-v19-a',
+    'boogle.room-born.v0:rail-v19-b',
+  ]);
+});
+
+test('a room reset forgets that room only, and its reward claims', () => {
+  const s = storage({
+    'boogle.name': 'Ana',
+    'boogle.boogler': 'gone',
+    'boogle.visit.a': 'gone',
+    'boogle.visit.ab': 'keep',
+    'boogle.room-born.v0:rail-v19-a': 'keep',
+    'boogle.railway-pose.v0:rail-v19-a:p': 'gone',
+    'boogle.railway-wardrobe.v0:rail-v19-a:p': 'gone',
+    'boogle.jump.seen.v1:rail-v19-a': 'gone',
+    'boogle.railway-pose.v0:rail-v19-ab:p': 'keep',
+  });
+  assert.deepEqual(resetForRoom(s, 'rail-v19-a', 'a').sort(), [
+    'boogle.boogler',
+    'boogle.jump.seen.v1:rail-v19-a',
+    'boogle.railway-pose.v0:rail-v19-a:p',
+    'boogle.railway-wardrobe.v0:rail-v19-a:p',
+    'boogle.visit.a',
+  ]);
+  assert.equal(pruneClaims(profile('rail-v19-a', 'rail-v19-ab'), 'rail-v19', 'rail-v19-a'), profile('rail-v19-ab'));
+  assert.equal(pruneClaims(profile('rail-v19-a'), 'rail-v19', 'rail-v19-a'), null);
 });

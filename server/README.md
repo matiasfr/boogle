@@ -133,6 +133,11 @@ npm run server -- restore <room> [backup]  # put a backup back (default: that ro
 `<room>` is the name in the URL (`?room=`), matching its classic and its railway room, or a full id from `rooms`.
 `BOOGLE_SERVER` picks the server (default production); the token comes from `REPORT_TOKEN` or `.env.local`.
 
+Each room's save carries `born`, the id of its world, sent to every joiner in `welcome`. A reset gives the room a new
+one and a restore brings the backup's back; a client that last joined a different world there starts the player over
+(the fall and the card, that room's local progress and The Boogler's memory forgotten: `src/features/room-reset.ts`). Saves from before `born`
+read as `0`.
+
 | Endpoint | Does |
 | --- | --- |
 | `GET /admin/rooms` | `{ ns, rail, rooms: [{ id, bytes, savedAt, loaded, players, tick? }], backups: [{ name, room, bytes }] }`: current-namespace saves and the backups, newest first. |
