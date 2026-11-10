@@ -600,7 +600,11 @@ with the fit. The engine is a compound of client platform colliders: the deck to
 side of each doorway, the roof and steps, and the boiler once fitted; you ride whichever top your feet are on (cab
 floor, boiler top or roof). The front of each train stands 1.0 m further on than before at every stop; the stops are
 unchanged (`TRAIN_OFFSETS`, client constants). The longer-boiler upgrade's meshes are built (`engine_*_long`) but not
-in the game. With Buddy in the cab, the follow camera sees the cab's back wall, not him. Not tested on a device.
+in the game. While you're in a cab or its doorway, the cab is cut away on your screen alone, as the town's rooms are:
+its roof lifts off and each wall within 0.8 m of the camera's side (or past it) sinks to a kerb a tenth of its height in
+0.24 s (at once with reduced motion), a door with its wall, and comes back once the camera is 1.5 m inside it or you're
+out. Colliders stay and a shadow-only shell keeps the cab's shade. A friend outside sees the cab whole. Local, no state.
+Not tested on a device.
 
 Standing on a halt calls its train from the player's accepted position. A running train finishes its current leg
 before acting on the call; there is no mid-leg reversal or rider express. The two Server-owned lines run at

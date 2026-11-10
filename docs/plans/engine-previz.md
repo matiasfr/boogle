@@ -273,7 +273,9 @@ makes live already pass at 4.5 m. A longer boiler than that needs a layout chang
   now gets the rider's feet height, so a stacked deck (floor, boiler top, roof) picks the one under them.
 - The pedestal's and the rope's boiler is the engine's own at 1.25×, so the fit lands the same part.
 - Evidence: `npm run look` with `dev/look/evals/railway-engine.ts` (halt, boarding, the cab, Home and the Pier, riding)
-  and `railway-boiler-fit.ts` (the fit), BOOGLE_BOT_RANK=2. With Buddy in the cab, the game's follow camera sees the
-  cab's back wall and not him: a question for the owner.
+  and `railway-boiler-fit.ts` (the fit), BOOGLE_BOT_RANK=2. With Buddy in the cab, the game's follow camera saw the
+  cab's back wall and not him; the owner asked for a fix, and the cab now cuts away on the rider's screen (the rooms'
+  recipe: roof lifted, walls on the camera's side sunk to a kerb; `CUT` in train-view.ts, `engineBodyWithCab` in
+  engine-kit.ts). The eval's `onboard`, `alight` and `watch` (two players) shots show it.
 
 Not tested on a device.

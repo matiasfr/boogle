@@ -59,6 +59,91 @@ export function enginePart(part: EnginePart, rust = true) {
   return m;
 }
 
+/** The cab's shell, in the parts the cutaway moves on their own: the roof and each wall (the side walls with their
+ * glass). */
+export const CAB_FACES = ['roof', 'back', 'front', 'left', 'right'] as const;
+export type CabFace = (typeof CAB_FACES)[number];
+type Split = { rest: THREE.BufferGeometry; faces: Record<CabFace, THREE.BufferGeometry>; shell: THREE.BufferGeometry };
+let split: Split | null = null;
+/** The body cut in two: the cab's walls and roof by face, and everything else. Each box the recipe makes is its own
+ * closed piece of the mesh, so the pieces are the connected triangles, sorted by where their middle is. */
+function splitBody(): Split {
+  if (split) return split;
+  const g = geometry('engine_body'),
+    pos = g.getAttribute('position'),
+    index = g.index!;
+  const root = Array.from({ length: pos.count }, (_, i) => i);
+  const find = (i: number): number => {
+    while (root[i] !== i) i = root[i] = root[root[i]!]!;
+    return i;
+  };
+  for (let i = 0; i < index.count; i += 3) {
+    const a = find(index.getX(i));
+    for (const k of [1, 2]) root[find(index.getX(i + k))] = a;
+  }
+  const boxes = new Map<number, THREE.Box3>();
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    const r = find(i);
+    let b = boxes.get(r);
+    if (!b) boxes.set(r, (b = new THREE.Box3()));
+    b.expandByPoint(v.fromBufferAttribute(pos, i));
+  }
+  const c = ENGINE_CAB,
+    mid = new THREE.Vector3();
+  const faceOf = new Map<number, CabFace | null>();
+  for (const [r, b] of boxes) {
+    b.getCenter(mid);
+    let face: CabFace | null = null;
+    const inCab = mid.z > c.zBack - 0.15 && mid.z < c.zFront + 0.15 && mid.y > c.floor;
+    if (inCab && mid.y > c.roofUnder - 0.02) face = 'roof';
+    else if (inCab && Math.abs(mid.x) > c.hx - c.wall - 0.03) face = mid.x > 0 ? 'right' : 'left';
+    else if (inCab && mid.z < c.zBack + c.wall + 0.03) face = 'back';
+    else if (inCab && mid.z > c.zFront - c.wall - 0.03) face = 'front';
+    faceOf.set(r, face);
+  }
+  const lists = { rest: [] as number[], shell: [] as number[] } as Record<CabFace | 'rest' | 'shell', number[]>;
+  for (const f of CAB_FACES) lists[f] = [];
+  for (let i = 0; i < index.count; i += 3) {
+    const face = faceOf.get(find(index.getX(i))) ?? null;
+    const tri = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+    lists[face ?? 'rest'].push(...tri);
+    if (face) lists.shell.push(...tri);
+  }
+  const part = (list: number[]) => {
+    const out = new THREE.BufferGeometry();
+    for (const name of ['position', 'normal', 'color']) out.setAttribute(name, g.getAttribute(name));
+    out.setIndex(list);
+    return out;
+  };
+  const faces = Object.fromEntries(CAB_FACES.map((f) => [f, part(lists[f])])) as Record<CabFace, THREE.BufferGeometry>;
+  split = { rest: part(lists.rest), faces, shell: part(lists.shell) };
+  return split;
+}
+const shadowOnly = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
+/** The body with its cab in parts the train view can move out of a rider's way (train-view.ts, the cutaway): the rest
+ * of the body, each face of the cab, and a shadow-only copy of the whole shell, so the cab keeps its shade with a
+ * face out of the way. The geometry and paint are the kit's (never dispose them). */
+export function engineBodyWithCab() {
+  const s = splitBody(),
+    mat = paint(RUSTED);
+  const mesh = (g: THREE.BufferGeometry, name: string): THREE.Mesh => {
+    const m = new THREE.Mesh(g, mat);
+    m.name = name;
+    m.castShadow = m.receiveShadow = true;
+    return m;
+  };
+  const faces = Object.fromEntries(CAB_FACES.map((f) => [f, mesh(s.faces[f], `engine_cab_${f}`)])) as Record<
+    CabFace,
+    THREE.Mesh
+  >;
+  const shadow = new THREE.Mesh(s.shell, shadowOnly);
+  shadow.name = 'engine_cab_shadow';
+  shadow.castShadow = true;
+  shadow.visible = false;
+  return { body: mesh(s.rest, 'engine_body'), faces, shadow };
+}
+
 /** The door's hinge: its back edge, inside the +x doorway. */
 export const DOOR_HINGE = { x: ENGINE_CAB.hx - 0.03, z: ENGINE_CAB.door.z[0] + 0.005 };
 const hingedDoor = new Map<number, THREE.BufferGeometry>();

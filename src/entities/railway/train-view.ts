@@ -4,7 +4,9 @@ import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts'
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
-import { FIXED, PLAYER_R } from '../../constants.ts';
+import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
+import { camera } from '../../render/scene.ts';
+type CabFace = import('../../proto/place/engine-kit.ts').CabFace;
 import { setShapes, stepAlpha, type Shape } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
@@ -24,6 +26,18 @@ const FOOT_HOP_S = 0.9;
  * player is within 1.2 m of its doorway, and shuts 0.6 s after the last one leaves. A local view of positions every
  * tab already has: no state, op or presence of its own, and never solid. */
 const DOOR = { open: (100 * Math.PI) / 180, swingS: 0.25, near: 1.2, holdS: 0.6 } as const;
+/** The cab's cutaway (owner, 11 November: with Buddy in the cab the follow camera saw its back wall), the rooms' recipe
+ * (src/proto/place/rooms.ts): while you're in a cab or in its doorway, its roof lifts off and each wall on the camera's
+ * side sinks to a kerb, on your tab alone. Colliders stay; a shadow-only shell keeps the cab's shade. Someone watching
+ * from outside sees the cab whole, on theirs. Local: positions every tab already has, no state, op or presence. */
+const CUT = {
+  reveal: 0.24, // s for a wall or the roof to get out of the way (instant with reduced motion)
+  nearWall: 0.8, // m inside a wall: a camera this close to it, or past it, has it cut away
+  farWall: 1.5, // and it comes back only this far inside: no flicker at the line
+  kerb: 0.1, // of a wall's height left standing, so the cab's outline still reads
+  lift: 3, // m the roof rises as it goes
+  door: 0.7, // m out from a doorway that counts as getting on or off
+} as const;
 type FootPlace = (k: number, out: THREE.Vector3) => THREE.Vector3;
 
 // Place's kit owns one page-lifetime wheel batch and animation hook. Reuse its two models across view lifetimes
@@ -167,6 +181,8 @@ export async function createRailwayTrains(
       fit,
       fitted: () => fitted,
       doors: ((model as { doors?: THREE.Object3D[] }).doors ?? []).map((mesh) => ({ mesh, angle: 0, held: 0 })),
+      cab: (model as { cab?: ReturnType<typeof engineKit.engineBodyWithCab> }).cab ?? null,
+      cut: { roof: 0, back: 0, front: 0, left: 0, right: 0 } as Record<CabFace, number>,
       last: null as RailTrain | null,
       count: -1,
       puffs: 0,
@@ -371,9 +387,88 @@ export async function createRailwayTrains(
       });
     }
   }
+  // ---------------------------------------------------------------- the cab cutaway
+  const cabLocal = new THREE.Vector3(),
+    camLocal = new THREE.Vector3();
+  let cutTrain: (typeof trains)[number] | null = null;
+  /** Your feet in `tr`'s cab, or in its doorway; `keep` widens it, so a step back out doesn't flicker it. */
+  function inCab(tr: (typeof trains)[number], keep: boolean) {
+    const c = shape.ENGINE_CAB,
+      p = cabLocal,
+      m = keep ? 0.25 : 0;
+    const inside =
+      Math.abs(p.x) < c.hx + m &&
+      p.z > c.zBack - m &&
+      p.z < c.zFront + m &&
+      p.y > c.floor - 0.3 &&
+      p.y < c.roofUnder - 0.6 + m;
+    const doorway =
+      Math.abs(p.x) < c.hx + CUT.door + m &&
+      p.z > c.door.z[0] - 0.15 - m &&
+      p.z < c.door.z[1] + 0.15 + m &&
+      p.y > c.step - 0.35 &&
+      p.y < c.floor + 0.5;
+    return tr.cars[0]!.mesh.visible && (inside || doorway);
+  }
+  function cutCab(dt: number) {
+    const b = me.body;
+    const step = reducedMotion ? 1 : dt / CUT.reveal;
+    // Which cab you're in: the one you were in, while you still are, else any you've stepped into.
+    let found: typeof cutTrain = null;
+    if (b) {
+      const p = b.interpolatedPosition;
+      for (const tr of trains) {
+        if (!tr.cab) continue;
+        const loco = tr.model.cars[0]!;
+        toCar.copy(loco.matrixWorld).invert();
+        cabLocal.set(p.x, p.y - PLAYER_R, p.z).applyMatrix4(toCar);
+        if (inCab(tr, tr === cutTrain)) {
+          found = tr;
+          camLocal.copy(camera.position).applyMatrix4(toCar);
+          break;
+        }
+      }
+    }
+    cutTrain = found;
+    const c = shape.ENGINE_CAB;
+    for (const tr of trains) {
+      if (!tr.cab) continue;
+      const on = tr === found;
+      let any = false;
+      for (const f of engineKit.CAB_FACES) {
+        let hide = on;
+        if (on && f !== 'roof') {
+          const gap = tr.cut[f] > 0 ? CUT.farWall : CUT.nearWall,
+            q = camLocal;
+          const toWall =
+            f === 'back' ? q.z - c.zBack : f === 'front' ? c.zFront - q.z : f === 'right' ? c.hx - q.x : q.x + c.hx;
+          hide = toWall < gap;
+        }
+        const t = (tr.cut[f] = hide ? Math.min(1, tr.cut[f] + step) : Math.max(0, tr.cut[f] - step));
+        if (t > 0) any = true;
+        const mesh = tr.cab.faces[f],
+          e = t * t * (3 - 2 * t);
+        mesh.visible = f !== 'roof' || t < 1;
+        if (f === 'roof') mesh.position.y = e * CUT.lift;
+        else sink(mesh, 1 - (1 - CUT.kerb) * e);
+      }
+      // A door sinks with its wall.
+      tr.doors.forEach((d, i) => {
+        const t = tr.cut[i === 0 ? 'right' : 'left'];
+        sink(d.mesh, 1 - (1 - CUT.kerb) * t * t * (3 - 2 * t));
+      });
+      tr.cab.shadow.visible = any;
+    }
+  }
+  /** Squash `mesh` (its geometry in the car's frame, its origin on the car's) down onto the cab floor. */
+  function sink(mesh: THREE.Object3D, s: number) {
+    mesh.scale.y = s;
+    mesh.position.y = shape.ENGINE_CAB.floor * (1 - s);
+  }
   owner.animate(({ now, dt }) => {
     trains.forEach((tr) => tr.cars.forEach((c) => rail.drawCar(c, stepAlpha())));
     swingDoors(dt);
+    cutCab(dt);
     drawWagon();
     if (shudder)
       first.cars.forEach((c, n) => {
@@ -496,6 +591,7 @@ export async function createRailwayTrains(
         crates: crates.deckCount(tr.deck),
         lashed: tr.boiler.visible,
         doors: tr.doors.map((d) => +((d.angle * 180) / Math.PI).toFixed(0)),
+        cut: Object.fromEntries(Object.entries(tr.cut).map(([f, t]) => [f, +t.toFixed(2)])),
         ...(k === 1
           ? {
               wagon: {
