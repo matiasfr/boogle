@@ -7,6 +7,8 @@ For anything a player can see or feel, close the loop yourself before shipping; 
 3. Fix what's off and look again, up to three rounds. Still unsure after that: ship it behind its flag and say what you're unsure of in your report.
 4. Ship it yourself (`npm run ship`) with a still in the commit body.
 
+**One proof look per change** (owner call "Fast ships"): one still (a real-time clip for motion) of the changed thing in action. Phone-width, second-player, far-distance or before/after shots only when the change is about that or a reviewer asks. Risky paths keep their independent review; the long playthrough stays nightly.
+
 Sandboxed and can't do this (`npm run look` needs a local port, `npm run inflight` and commits need to write `.git`, `ship` needs the network)? Ask for the access if your tool can. Otherwise don't ship a change a player can see without having seen it: commit it, say what you couldn't check, and leave it for whoever gave you the job.
 
 Unresolved visual quality stays behind its flag.

@@ -7,7 +7,7 @@ description: Inspect a feature in the running game with targeted stills and real
 
 Use `dev/look/` for visual evidence and `dev/scenarios/` for assertions on sync contracts. The harness starts Vite and a local game server, drives Chromium and cleans up after itself. Output goes to `.look/` (gitignored). Open the generated images and watch real-time recordings when judging motion. A visible change puts an inspected still on its PR (`scripts/pr-shot.sh <png>...`; docs/agents/shipping.md, "Shipping", required by AGENTS.md). Evidence and measurement rationale: `docs/research/visual-validation.md`.
 
-Before capturing, name one question, the action that reveals it, the camera/device that frames it, and the expected visible result. A generic island capture only checks startup. Report the observation separately from the command's exit status; never call a low pixel-change score a visual pass.
+Before capturing, name one question, the action that reveals it, the camera/device that frames it, and the expected visible result. A generic island capture only checks startup. Report the observation separately from the command's exit status; never call a low pixel-change score a visual pass. Default: one proof look per change; extra views only when the change is about them (verification.md).
 
 ## Read the relevant reference
 

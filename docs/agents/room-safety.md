@@ -7,3 +7,4 @@ Before changing rules, adapters, presence, room transport or persistence, read t
 - **Leave a presence field set.** The getter returns `null` when the thing stops (deletes the key); receivers treat a missing key as "off".
 - **Patch another module's action by string id** (`actionById(id).down = ...`): use `wrapAction`.
 - **`Math.random`, wall clock or per-peer counters in apply or ticks.** The replay test catches these; don't silence it.
+- **Import a new shared file into the server without listing it for the image.** Add it to `server/Dockerfile`, `dev/server-build.ts` and deploy-server.yml's `paths:`; `test/server-image.test.ts` fails until all three have it.

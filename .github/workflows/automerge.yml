@@ -8,6 +8,9 @@ name: Auto-merge
 #   on it is green.
 # Opt out per PR with the `no-automerge` label, or by leaving it as a draft.
 # A PR that conflicts with main is handed to ci-autofix.yml, which merges main into the branch.
+# The first green run merges, even when main has moved since (owner call "Fast ships", 10 November); CI on main after
+# every merge catches a bad combination (ci.yml's red-main issue, ci-autofix.yml). Only a PR whose code files main
+# also changed since its CI waits for main to be merged in and CI to pass again.
 # Merges made with GITHUB_TOKEN don't trigger push workflows, so this also starts the deploys and CI on main.
 # Opening PRs needs Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests".
 
@@ -87,24 +90,45 @@ jobs:
           fi
           echo "number=$pr" >> "$GITHUB_OUTPUT"
 
+      # Main's own classifier (dev/ci/change-class.ts) for the shared-files check below; never the PR's code.
+      - uses: actions/checkout@v7
+        if: steps.pr.outputs.number != '' && env.GREEN == 'true'
+        with:
+          ref: main
+      - uses: actions/setup-node@v7
+        if: steps.pr.outputs.number != '' && env.GREEN == 'true'
+        with:
+          node-version-file: .nvmrc
+
       - name: Merge
         id: merge
         if: steps.pr.outputs.number != '' && env.GREEN == 'true'
         env:
           PR: ${{ steps.pr.outputs.number }}
         run: |
-          # Optional hardening only: 404 (no protection) and 403 (unreadable) must not stop ships.
+          # Strict up-to-date protection would refuse a behind branch, so then every behind PR takes the serial path.
+          # 404 (no protection, today) and 403 (unreadable) must not stop ships.
+          strict=false
           if protection=$(gh api "repos/$GH_REPO/branches/main/protection" 2>/dev/null) &&
              jq -e '.required_status_checks.strict == true' <<<"$protection" >/dev/null; then
-            echo 'Strict up-to-date checks are enabled; GitHub also guards the final merge race.'
-          else
-            echo '::notice::Strict branch protection is absent or unreadable. A seconds-wide race remains between the ancestry check and merge; CI runs on main after every merge to detect a bad combination.'
+            strict=true
           fi
+          # Code files (not docs) changed both by this PR and on main since this PR's merge base. Renames count both
+          # paths; a compare that may be truncated (300 files) or fails counts as shared.
+          shared() {
+            local main=$1 mine theirs
+            local jq='(.files // []) | if length >= 300 then "(300 or more files)" else .[] | .filename, (.previous_filename // empty) end'
+            mine=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq "$jq" | node dev/ci/change-class.ts --code | sort -u) &&
+              theirs=$(gh api "repos/$GH_REPO/compare/$SHA...$main" --jq "$jq" | node dev/ci/change-class.ts --code | sort -u) ||
+              { echo '(compare failed)'; return 0; }
+            comm -12 <(printf '%s\n' "$mine") <(printf '%s\n' "$theirs") | grep . || true
+          }
           refresh() {
             gh api -X PUT "repos/$GH_REPO/pulls/$PR/update-branch" -f expected_head_sha="$SHA"
-            # update-branch is asynchronous (202); dispatch only after its new ref exists.
-            for _ in $(seq 1 12); do
-              tip=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
+            # update-branch is asynchronous (202); dispatch only after its new ref exists. 24 s was once too short
+            # ("Branch update did not become visible"), so wait up to 3 minutes, reading the ref itself.
+            for _ in $(seq 1 60); do
+              tip=$(gh api "repos/$GH_REPO/git/ref/heads/$BRANCH" --jq .object.sha)
               if [ "$tip" != "$SHA" ]; then
                 before=$(gh run list --workflow ci.yml --branch "$BRANCH" --commit "$tip" --event workflow_dispatch \
                   --json databaseId --jq 'map(.databaseId) | max // 0')
@@ -128,7 +152,7 @@ jobs:
                 echo '::error::Timed out waiting for refreshed CI; inspect the PR and rerun CI.'
                 return 1
               fi
-              sleep 2
+              sleep 3
             done
             echo '::error::Branch update did not become visible; rerun CI after inspecting the PR.'
             return 1
@@ -164,30 +188,27 @@ jobs:
             main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
             relation=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq .status)
             if [ "$relation" != ahead ] && [ "$relation" != identical ]; then
-              # Merge latest main into this branch, preserving ship commit ancestry. The token's
-              # update does not trigger push CI, so dispatch and await CI on the NEW head.
-              refresh
-              echo 'Main moved: refreshed CI passed; rechecking current PR and main.'
-              continue
+              both=$(shared "$main")
+              if [ "$strict" = true ] || [ -n "$both" ]; then
+                # The serial path: merge latest main into this branch (keeping ship commit ancestry). The token's
+                # update does not trigger push CI, so dispatch and await CI on the NEW head, then recheck everything.
+                echo "Main moved and also changed: ${both:-(strict protection)}. Merging main in and rerunning CI."
+                refresh || exit 1
+                echo 'Refreshed CI passed; rechecking current PR and main.'
+                continue
+              fi
+              echo 'Main moved since this CI run, in no code file this PR changes: merging on this green run.'
             fi
-            # Two merges landing together fail one with "Base branch was modified".
+            # Two merges landing together fail one with "Base branch was modified": retry, rechecking every guard.
             if [[ "$BRANCH" == ship/* ]]; then
               gh pr merge "$PR" --merge --subject "$(jq -r .title <<<"$info") (#$PR)" --delete-branch --match-head-commit "$SHA" && break
             else
               gh pr merge "$PR" --squash --delete-branch --match-head-commit "$SHA" && break
             fi
-            # Main may have moved during merge. Never retry with stale green evidence;
-            # update the branch, await its CI, then re-enter every guard in this job.
-            main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
-            relation=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq .status)
-            if [ "$relation" != ahead ] && [ "$relation" != identical ]; then
-              refresh
-              continue
-            fi
             [ "$try" != 5 ] || exit 1
             sleep $((try * 10))
           done
-          # Exhausting the refresh budget is not a successful merge.
+          # Exhausting the retry budget is not a successful merge.
           [ "$(gh pr view "$PR" --json state --jq .state)" = MERGED ] || exit 1
           echo "merged=true" >> "$GITHUB_OUTPUT"
 
@@ -207,9 +228,9 @@ jobs:
             gh workflow run atlas.yml --ref main
           fi
 
-      # Opening a ship PR starts a pull_request CI run, and merging it seconds later deletes the ref that run needs, so
-      # it fails with "workflow file issue" and leaves a red X on a change that merged. The push run already covered
-      # this commit; delete the leftover.
+      # Opening a ship PR starts a pull_request CI run that does nothing: GitHub holds it for approval
+      # ("action_required", the bot opened the PR), or merging seconds later deletes the ref it needs ("workflow file
+      # issue"), or ci.yml's changes job skips it. The push run already covered this commit; delete the leftover.
       - name: Delete the ship PR's leftover CI run
         if: steps.merge.outputs.merged == 'true' && startsWith(env.BRANCH, 'ship/')
         run: |
