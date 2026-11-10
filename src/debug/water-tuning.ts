@@ -49,6 +49,7 @@ const groups: Group[] = [
       spec('sun.foamDepth', 'foam lip m', 0, 1),
       spec('sun.edgeFoam', 'edge foam m', 0, 1.5),
       spec('sun.macro', 'macro variation', 0, 0.5),
+      spec('sun.look', 'look: 0 Sunshine, 1 Odyssey', 0, 1),
       spec('sun.caustics', 'seabed caustics', 0, 8),
       spec('sun.causticLines', 'caustic lines', 0, 3),
       spec('water.caustics', 'caustics on the ground', 0, 2),

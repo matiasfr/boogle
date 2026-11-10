@@ -232,6 +232,17 @@ The receivers' cost is per terrain pixel under or at the water: two tile reads a
 camera is under; if so, the scene's depth fogs toward the sea's deep colour (a cave pond's is near black). Dry
 frames pay one uniform branch. From below there is no surface (the sea is front-face only), so looking up shows fog.
 
+**Between Sunshine and Odyssey** (owner, 10 November: "the water should look somewhere in the range of Mario odyssey
+and Mario sunshine"). One shader, two presets on one Dev-only value (`sun.look`, Water group on tuning visits; not a
+player setting). 0, Sunshine-ish: flat readable colour in two smoothstep bands, crisp cells, a broken foam lip.
+1, Odyssey-ish, **the default**: the same three colours along exponential falloffs (no band edge), sand clear for
+longer (opacity 0.12 at the waterline, clear to 3.5 m), a soft rounded lip, mostly whole, 1.5 times wider and
+breathing ±35% on a slow wave, a soft sun glint band on the swell itself, and cells 1.6 times larger with gentler
+sparkle and softer lines. Both keep the cyan shallows, the sparkle and the foam lip. The difference costs only
+arithmetic per sea pixel (two exponentials, one sine and a few mixes; the same five texture reads, one draw), and with
+tuning off the value is a constant. Sunshine-ish is one constant away: `SUN.look` in `surface.ts`. No refraction,
+colour copy, real reflections, FFT or Nintendo assets.
+
 **The sky** (owner, 10 November: "do we still use sky? we can remove otherwise"). The sea no longer reads the sky
 cube. The cube stays because it is the visible summer sky the owner chose on 6 November (clouds, sun lane and haze
 drawn as the background) and it also feeds the distance fog's colour, the PBR environment and the hemisphere fill

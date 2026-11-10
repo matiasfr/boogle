@@ -104,10 +104,14 @@ const SUN = {
 
   edgeFoam: 0.35, // m: intersection foam thickness, from the opaque depth
   macro: 0.08, // brightness variation from the large blotch
+  // Owner, 10 November: "somewhere in the range of Mario odyssey and Mario sunshine". 0 is the Sunshine-ish preset
+  // (flat readable colour bands, crisp cells, a broken foam lip); 1 the Odyssey-ish one, where it costs only arithmetic:
+  // a smoother depth gradient, sand clear for longer, a soft rounded lip that breathes, a gentle sun glint band, and
+  // larger, softer cells. Dev-only between the two (Water, tuning visits); not a player setting.
+  look: 1, // shipped: Odyssey-ish (10 November); 0 brings back the Sunshine-ish preset
 };
 
 export type OceanOptions = {
-
   coast: Coast;
   waveTex: THREE.Texture;
   fog: (distance: N) => N;
@@ -170,9 +174,10 @@ export function createOcean(options: OceanOptions): Ocean {
     laneGain = float(scalar('sun.laneGain', SUN, 'laneGain')),
     reflectGain = float(scalar('sun.reflect', SUN, 'reflect')),
     foamDepth = float(scalar('sun.foamDepth', SUN, 'foamDepth')),
-
     edgeFoam = float(scalar('sun.edgeFoam', SUN, 'edgeFoam')),
-    macro = float(scalar('sun.macro', SUN, 'macro'));
+    macro = float(scalar('sun.macro', SUN, 'macro')),
+    ody = float(scalar('sun.look', SUN, 'look'));
+  const cellScale = mix(1, 0.62, ody); // Odyssey's larger, softer shapes
 
   const uPhases = uniform(new THREE.Vector4());
   const uGridScale = uniform(1);
@@ -227,8 +232,8 @@ export function createOcean(options: OceanOptions): Ocean {
       .add(abs(dFdy(xz)))
       .toVar();
     const footprint = max(max(fw.x, fw.y), 1e-5).toVar();
-    const w1 = texture(waveTex, xz.mul(scale1).add(speed1.xy.mul(time))).toVar();
-    const w2 = texture(waveTex, xz.mul(scale2).add(speed2.xy.mul(time))).toVar();
+    const w1 = texture(waveTex, xz.mul(cellScale.mul(scale1)).add(speed1.xy.mul(time))).toVar();
+    const w2 = texture(waveTex, xz.mul(cellScale.mul(scale2)).add(speed2.xy.mul(time))).toVar();
     const blotch = texture(waveTex, xz.div(420)).b;
     const c = coast.at(xz).toVar();
     const depthBelow = max(world.y.sub(c.g), 0).toVar(); // to the real bed: the clear shallows, the lip, the glints
@@ -248,62 +253,92 @@ export function createOcean(options: OceanOptions): Ocean {
     // The pattern: two layers of the same cell drifting through each other, the second at double weight, so overlaps
     // bloom (Sunshine's two TEV stages, in our own art). The band is where one pixel covers a few texels.
     const pattern = w1.r.add(w2.r.mul(2)).toVar();
-    const lod = log2(footprint.mul(scale1).mul(WAVE_SIZE)).toVar();
+    const lod = log2(footprint.mul(cellScale.mul(scale1)).mul(WAVE_SIZE)).toVar();
     const band = smoothstep(bandNear, bandPeak, lod)
       .mul(smoothstep(bandPeak, bandFar, lod).oneMinus())
       .toVar();
 
-      // Body colour by bed depth, three stops, lit by the same sun and fill as the sand beside it.
-      const ramp = mix(
-        mix(shallow, middle, smoothstep(0.3, middleDepth, shadeDepth)),
-        deep,
+    // Body colour by bed depth, three stops, lit by the same sun and fill as the sand beside it.
+    // Sunshine: two smoothstep bands. Odyssey: the same stops along exponential falloffs, so the shallows fade on
+    // without a visible band edge.
+    const toMiddle = mix(
+        smoothstep(0.3, middleDepth, shadeDepth),
+        exp(shadeDepth.negate().div(middleDepth.mul(0.6))).oneMinus(),
+        ody,
+      ),
+      toDeep = mix(
         smoothstep(middleDepth, deepDepth, shadeDepth),
-      ).toVar();
-      ramp.mulAssign(blotch.sub(0.5).mul(macro).add(1));
-      const sunY = max(dot(Nrm, seaU.uSun), 0);
-      const light = uSunE.mul(sunY.mul(0.8).add(0.2)).add(uFill);
-      const body = ramp.mul(light).toVar();
+        exp(
+          max(shadeDepth.sub(middleDepth), 0)
+            .negate()
+            .div(deepDepth.mul(0.5)),
+        ).oneMinus(),
+        ody,
+      );
+    const ramp = mix(mix(shallow, middle, toMiddle), deep, toDeep).toVar();
+    ramp.mulAssign(blotch.sub(0.5).mul(macro).add(1));
+    const sunY = max(dot(Nrm, seaU.uSun), 0);
+    const light = uSunE.mul(sunY.mul(0.8).add(0.2)).add(uFill);
+    const body = ramp.mul(light).toVar();
 
-      // The sky: one blurry reflection with a Schlick Fresnel, and the sun lane, which colours the sparkle.
-      const R = reflect(V.negate(), Nrm).toVar();
-      const NoV = max(dot(Nrm, V), 0);
-      const F = pow(NoV.oneMinus(), 5).mul(0.98).add(0.02).mul(reflectGain);
-      const skyR = skyGradient(R).toVar();
-      const col = mix(body, skyR, F).toVar();
-      const inLane = smoothstep(lane, 1, dot(R, seaU.uSun)).toVar();
-      const glint = smoothstep(threshold, threshold.add(0.5), pattern);
-      const add = skyR
-        .mul(sparkle)
-        .add(seaU.uSpecCol.mul(inLane).mul(laneGain))
-        .mul(glint)
-        .mul(band)
-        .add(skyR.mul(cling).mul(pattern).mul(band.oneMinus()))
-        .mul(smoothstep(0.02, 0.2, depthBelow))
-        .toVar();
+    // The sky: one blurry reflection with a Schlick Fresnel, and the sun lane, which colours the sparkle.
+    const R = reflect(V.negate(), Nrm).toVar();
+    const NoV = max(dot(Nrm, V), 0);
+    const F = pow(NoV.oneMinus(), 5).mul(0.98).add(0.02).mul(reflectGain);
+    const skyR = skyGradient(R).toVar();
+    const col = mix(body, skyR, F).toVar();
+    const inLane = smoothstep(lane, 1, dot(R, seaU.uSun)).toVar();
+    const glint = smoothstep(threshold, threshold.add(0.5), pattern);
+    // Odyssey: a soft lane of sun on the swell itself, not only on the sparkling cells, and gentler cells.
+    const softLane = smoothstep(lane.sub(0.06), 1, dot(R, seaU.uSun));
+    const add = skyR
+      .mul(sparkle.mul(mix(1, 0.6, ody)))
+      .add(seaU.uSpecCol.mul(inLane).mul(laneGain))
+      .mul(glint)
+      .mul(band)
+      .add(
+        skyR
+          .mul(cling.mul(mix(1, 1.6, ody)))
+          .mul(pattern)
+          .mul(band.oneMinus()),
+      )
+      .add(seaU.uSpecCol.mul(softLane.mul(softLane)).mul(ody.mul(0.12)))
+      .mul(smoothstep(0.02, 0.2, depthBelow))
+      .toVar();
 
-      // Foam: a lip where the water is very shallow and an edge where it meets anything standing in it, broken by the
-      // cells.
-      const broken = smoothstep(0.6, 1.6, pattern.add(w1.g));
-      const lip = smoothstep(0.05, foamDepth, depthBelow)
-        .oneMinus()
-        .mul(smoothstep(0, 0.04, depthBelow));
-      const edge = smoothstep(0, edgeFoam, sceneThick).oneMinus();
-      const foam = max(lip, edge).mul(broken).toVar();
-      const foamLit = foamColor.mul(light);
-      col.assign(mix(col, foamLit, foam));
+    // Foam: a lip where the water is very shallow and an edge where it meets anything standing in it, broken by the
+    // cells.
+    // Odyssey: the lip is a soft rounded band, mostly whole, whose width breathes on a slow swell-length wave.
+    const broken = mix(
+      smoothstep(0.6, 1.6, pattern.add(w1.g)),
+      smoothstep(0.2, 1.4, pattern.add(w1.g)).mul(0.35).add(0.65),
+      ody,
+    );
+    const breathe = sin(time.mul(0.9).add(xz.x.add(xz.y.mul(0.6)).mul(0.07)))
+      .mul(0.35)
+      .mul(ody)
+      .add(1);
+    const lipWidth = foamDepth.mul(mix(1, 1.5, ody)).mul(breathe);
+    const lipOuter = smoothstep(mix(0.05, 0, ody), lipWidth, depthBelow).oneMinus();
+    const lip = mix(lipOuter, lipOuter.mul(lipOuter.mul(-2).add(3)).mul(lipOuter), ody) // rounder shoulder
+      .mul(smoothstep(0, 0.04, depthBelow));
+    const edge = smoothstep(0, edgeFoam, sceneThick).oneMinus();
+    const foam = max(lip, edge).mul(broken).toVar();
+    const foamLit = foamColor.mul(light);
+    col.assign(mix(col, foamLit, foam));
 
-      // Clear shallows over the sand, solid colour beyond, melting where water meets rock.
-      const alpha = mix(clearMin, 1, smoothstep(0, clearDepth, depthBelow))
-        .mul(smoothstep(0, 0.05, depthBelow))
-        .mul(smoothstep(0, 0.12, sceneThick))
-        .toVar();
-      alpha.assign(max(alpha, foam.mul(0.9)));
+    // Clear shallows over the sand, solid colour beyond, melting where water meets rock.
+    const alpha = mix(mix(clearMin, 0.12, ody), 1, smoothstep(0, clearDepth.mul(mix(1, 1.4, ody)), depthBelow))
+      .mul(smoothstep(0, 0.05, depthBelow))
+      .mul(smoothstep(0, 0.12, sceneThick))
+      .toVar();
+    alpha.assign(max(alpha, foam.mul(0.9)));
 
-      // Haze to the summer horizon.
-      const fog = options.fog(dist);
-      const haze = skyGradient(V);
-      const outCol = mix(col.mul(alpha).add(add), haze, fog);
-      return vec4(outCol, mix(alpha, 1, fog));
+    // Haze to the summer horizon.
+    const fog = options.fog(dist);
+    const haze = skyGradient(V);
+    const outCol = mix(col.mul(alpha).add(add), haze, fog);
+    return vec4(outCol, mix(alpha, 1, fog));
   })();
 
   let angular = 96,
