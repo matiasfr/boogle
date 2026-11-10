@@ -41,6 +41,7 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 - `startStack` (`look`, `playthrough`, `session`, `scenario` and the rest) stops if `node_modules` doesn't match `package-lock.json`, and says to run `npm ci`. It never reinstalls by itself. A symlinked `node_modules` is skipped, since `before-after` plays an old commit on current packages on purpose.
 - One Mac GPU is shared: browser harnesses use the machine-wide bot queue (default one run; short looks go ahead of waiting `--long` playthroughs until one has waited 20 minutes). `perf` and `hitches`
   numbers still need a quiet machine; the queue cannot exclude unrelated apps or older launchers. See [checks and segments](test-details/bot-segments.md).
+- `look` has a hard wall: `--wall <seconds>` (default 1200, 20 minutes) limits the whole run once it holds the bot slot, warm-up, `--until` wait and capture, for one player or two. When it fires the verdict is `timeout` (never a pass) naming the phase and the pages that never met `--until`, the browsers close, it exits 4 and the queue slot is released. A long `--until` run needs a longer `--wall`. In a two-player look every page must meet `--until`, so every page's eval sets the flag (see `railway-boiler-haul.ts`). `dev/look/wall.ts`, `test/look-wall.test.ts`.
 
 ### First look-development loop
 
