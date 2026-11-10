@@ -38,6 +38,7 @@ import { coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
 import { buildCove } from './cove-view.ts';
 import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
+import { applyTerrainPass } from '../terrain-pass/index.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -249,6 +250,7 @@ function buildMesh(owner?: OwnedView) {
   const inCove = (i: number, j: number) =>
     cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
   addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
+  applyTerrainPass(mesh, owner); // ?terrain=a|b|ab look experiment; off by default (docs/plans/terrain-pass.md)
 
   for (const tile of terrainCollisionTiles()) {
     const groundBody = addStatic(
