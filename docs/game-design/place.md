@@ -320,13 +320,17 @@ the platform, blocks a player walking into it on the deck and carries one standi
 (src/proto/place/train-load.ts, `solidTrainLoad`). A crate in flight never collides. When a crate lands under a
 standing rider they are lifted onto its top, and when one leaves from under them they are lowered to what is beneath,
 both by the height change only, never by a launch. The stakes and boards stay without a collider: the car's deck edge
-is where the old rides already end, and a 0.2 m board would only catch feet. A train therefore seats two. The passenger car carries two of the track layer's low
-stools down the middle of the deck, at Z ±0.8 m, riders facing across the car (owner, 10 November: "It
-should likely go in the middle and be a low stool like the track layer"). They reuse its dimensions and its seat
-relationship (`lowStoolMesh` and `lowStoolAnchor`, seat top 0.32 m plus the seated hips' 0.63 m, in
-src/proto/place/seat.ts), so hips rest on the slab and feet on the deck. Like the track layer's, they have no solid:
-walking and the bots' boarding pass through them. Stand up puts you 0.6 m behind the stool, still on the deck. The
-freight cart has no chair.
+is where the old rides already end, and a 0.2 m board would only catch feet. A train therefore seats four. The passenger car is a knifeboard (owner's pick pending between candidates Four and Six
+in the [previz](../plans/passenger-car-previz.md); Four is built as the default): one back-to-back bench down the middle of
+the deck, two seats a side, riders facing out over the halt decks, at Z -0.85 and 0.45 m either side. The seat keeps the
+low stool's numbers (seat top 0.32 m over the deck, rider anchor `lowStoolAnchor`, 0.45 m from the middle, hips on the seat,
+feet on the deck), so Buddy sits as at the track layer. The car is still the flatbed's 3.2 m by 2.2 m: the first car is
+natural wood and dark iron with boarded end panels, rails at hand height and a board under each side of the deck (the
+`passenger-car` kit asset, `car_fit`, src/proto/place/car-kit.ts). The upgrade (red and brass, a canopy roof with a
+cream fringe, two lamps: `car_upgrade`) is built and switched off, as no upgrade rule exists yet; `PASSENGER_CAR_UPGRADED`
+in train-view.ts is its hook. Like the track layer's, the bench has no solid: walking and the bots' boarding pass through
+it. Stand up puts you 0.4 m out in front of your seat, on the deck by its edge. A rider's stowaway sits on the bench
+beside them, 0.62 m to their right (the seat's `perch`, a view-only height). The freight cart has no chair.
 
 **The track layer's chairs work in the production railway (owner's 6 November order, item 4).** Aboard the machine with nothing nearer to press for, Interact reads **Sit**; seated, it reads only **Stand up** (Jump also stands). The press sits you at once with a soft pop, in a live room too: the lead's existing `placeSeatGrants` then confirm the chair, slide the loser of a race for one chair into the free neighbour, or step them off onto their rear-step exit when both are taken or the lead says nothing for 2 s. A confirmed sitter whose chair the lead gives to someone else also steps off. The sitter rides the deck through the whole laying, and a deck that snaps to its accepted place (a restore or catch-up) carries them along instead of dropping them where the chair was. Network loss, a lead change and standing all release onto the exit, as before. Friends see you seated through the existing presence pose. The two station hands who ride the chairs while it lays give a chair up to a player: that hand waits at the station frame (or beside the deck, with no frame) instead. No new presence key, message, saved or simulated state; claims stay Host kind. Not tested on a device.
 

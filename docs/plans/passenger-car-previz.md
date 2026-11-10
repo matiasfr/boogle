@@ -1,5 +1,5 @@
-> **Status: previz, waiting for the owner's pick (10 November 2026).** Viewer and docs only: nothing in the game
-> changes until he picks. Decision: "2026-11-10, the passenger car is redesigned with benches" in the
+> **Status: Four (the knifeboard) built as the default, 10 November 2026; the owner has not picked.** If he picks Six,
+> the recipe, seats and exits change; the car's size, the stowaway's rule and the layout tests do not. Decision: "2026-11-10, the passenger car is redesigned with benches" in the
 > [decision log](../decisions.md).
 
 # Passenger car previz
@@ -130,3 +130,11 @@ toast rack as shown is the one that fits.
   seat until the game's `SEATED_DROP` was applied, and on the toast rack a stowaway in its owner's lap hid his chest
   and face, so it moved to his feet. Not stills: walking on and off (a real-time look belongs to the build), a
   second player's view, any device.
+
+## Build (Four, the default)
+
+- [x] The car's mesh: `assets/src/passenger-car.py` and `.json` (nodes `car_fit` and `car_upgrade`), built to `assets/built/passenger-car.glb`; loaded by `src/proto/place/car-kit.ts`; catalogued in `character/descriptors.ts`.
+- [x] Seats: four, registered in `src/entities/railway/train-view.ts` (`railway:train{k}-1-seat0` to `seat3`), the stowaway on the bench via the seat's view-only `perch` (`src/proto/place/seat.ts`).
+- [x] Size: still 3.2 m; `TRAIN_OFFSETS`, `TRAILER` and the layout tests unchanged.
+- [x] The upgrade is built and switched off (`PASSENGER_CAR_UPGRADED` in `train-view.ts`).
+- Look: `dev/look/evals/railway-passenger-car.ts`, real time, board at a halt, sit, ride, stand, walk off.
