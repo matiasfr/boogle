@@ -123,3 +123,69 @@ test('review: line 1 still shuttles end to end', () => {
   assert.equal(RAIL_TRAINS[0]!.line, 0);
   assert.ok(TRAIN.sepCm > 0);
 });
+
+// The end blocks start at the merge (RailHalt.end.mergeCm), and a train that can't enter waits at its signal
+// TRAIN.signalCm (10 m) outside it. But the drawn tracks only part over a 20 m turnout beyond the merge
+// (src/proto/place/layout.ts TURNOUT, upLat), and a train stretches about 9 m behind its reference point (the wagon at
+// -7.4 m, src/proto/wagon/cars.ts): so a train held at a stub end's signal stands on the turnout, and the train leaving
+// the end block passes through it. Checked on the drawn footprint: each car's box at its pose and its track's offset.
+test('review: no two drawn trains overlap (a train held at a stub signal stands clear of the one leaving)', async () => {
+  const { FORMATION, LINKS, upLat, crossLat } = await import('../src/proto/place/layout.ts');
+  const { TRAIN_CARS, TRAIN_OFFSETS } = await import('../src/proto/wagon/cars.ts');
+  const { trainAlong } = await import('../src/sim/railway-train.ts');
+  const w = unaudited(railwayAtTrains('q6-stocked'));
+  const rand = mulberry32(0x5a);
+  const boxes = (slot: number) => {
+    const r = w.s.trains[slot]!,
+      line = RAIL_TRAINS[slot]!.line,
+      f = FORMATION[LINKS[line]!.id],
+      open = line2Completed(w.s) >= 6;
+    const along = trainAlong(r, line, w.t) / 100;
+    return TRAIN_OFFSETS.slice(0, r.wagon ? 4 : 3).map((off, n) => {
+      const s = along + off;
+      const lat = r.track
+        ? 0
+        : !open && f.crossover && s >= f.crossover[0]
+          ? (crossLat(f, s) ?? 0)
+          : (upLat(f, s) ?? 0);
+      return { s, lat, hx: TRAIN_CARS[n]!.hx, hz: TRAIN_CARS[n]!.hz };
+    });
+  };
+  // The held-at-a-signal case first: A at the village (in its block) leaving in 200 ticks, B leaving the quarry down
+  // now, so B comes to the village signal and waits there while A leaves past it on the up track.
+  for (let k = 0; k < TRAIN.wakeTicks; k++) railTick(w.s, ++w.t);
+  edit(w.s, (e) => {
+    for (const [k, stop, track, depart] of [
+      [A, 0, 0, w.t + 200 - TRAIN.dwellTicks],
+      [B, 1, 1, w.t - TRAIN.dwellTicks],
+    ] as const) {
+      const s = TRAIN_STOPS[LINE2]![stop]!;
+      Object.assign(e.mut(Train, e.lookup(Train, k)!)!, {
+        phase: TRAIN_PHASE.STAND,
+        at: stop,
+        to: stop,
+        track,
+        depart,
+        req: 0,
+        from: s,
+        v0: 0,
+        dest: s,
+      });
+    }
+    for (const id of e.ids(Line)) Object.assign(e.mut(Line, id)!, { req: 0, left0: -1, left1: -1 });
+  });
+  let first: string | null = null,
+    held = false;
+  for (let k = 0; k < 4000 && !first; k++) {
+    if (k === 1500) fundQ6(w);
+    if (w.s.trains[B]!.phase === TRAIN_PHASE.STAND && w.s.trains[B]!.at === -1) held = true;
+    if (rand() < 0.05)
+      act(w, 'a', 'rail.call', { id: Math.floor(rand() * RAIL_HALTS.length), dir: rand() < 0.5 ? -1 : 1 });
+    railTick(w.s, ++w.t);
+    for (const p of boxes(A))
+      for (const q of boxes(B))
+        if (!first && Math.abs(p.s - q.s) < p.hz + q.hz && Math.abs(p.lat - q.lat) < p.hx + q.hx)
+          first = `tick ${w.t}: A car s ${p.s.toFixed(1)} m lat ${p.lat.toFixed(2)}, B car s ${q.s.toFixed(1)} m lat ${q.lat.toFixed(2)}; ${JSON.stringify([w.s.trains[A], w.s.trains[B]])}`;
+  }
+  assert.equal(first, null, `held at the signal: ${held}`);
+});
