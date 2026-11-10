@@ -852,7 +852,8 @@ ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwaySc
   shelf. Mark `crate opened`.
 - **Late joiners and reloads** find an unopened box for every stretch already laid; an opened one is gone for you and
   still there for a partner who hasn't opened theirs.
-- **The curio shelf** stands at Place's spot in the village, by the forge: what you own of the boxes' gifts stands on
+- **The curio shelf** stands in the village by the forge, on its west wall line at (−91.6, 8.5), square to the street
+  and facing west across it (10 November; `?home=b`: in the hall's front, facing the square): what you own of the boxes' gifts stands on
   it, the rest under dust sheets (and the two shapes that never come out of this run's boxes). A sheet comes off with a
   puff of cloth when a box's card is put away within 40 m. Within 4.4 m, "Swap hat / accessory / outfit" cycles what
   you own, as the shop's rail does. The stowaway's slot came with C2 (below); the finders' bay comes with F2.
@@ -917,12 +918,16 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
   the room has it (glider B, Needle Bell's summit). Two early ways in are accepted sequence breaks (designer,
   9 November): a drop from the plateau east of the alcove, and a double jump down from the stack-return slab onto the
   sea stack, whose crate therefore stands without the glider.
-- **The finders' bay** stands across the path from the curio shelf, drawn with it (no draws of its own): the secrets'
+- **The finders' bay** stands across the square from the curio shelf, drawn with it (no draws of its own): on the
+  shelf's centreline 16.3 m out at (−106.76, 18.88), facing 70° back at the hall, off the shore arrival and the street
+  (owner, 10 November, "for now"; [curio placement](../plans/curio-shelves-placement.md)), in both layouts. The secrets'
   gifts under sheets until they're yours. A secret you went on past without turns up there as a second crate, in the
   order the abilities come: yard and bell with the hook; alcove and firstpull with the glider; nook and loft with the
   trains; the lookout once the double jump is yours and line 2 is complete; the balcony and the stack at the end of
   the run (line 2 complete). Open either crate and the other goes. Mark `secret at the hub`. The crates wait three by
-  three past the trophy plinth, within ±1.1 m sideways, so the bay fits the Home station hall's 6 m end wall.
+  three in the bay's own frame, 1.5 to 3.7 m out and within ±1.1 m across, middle first; the jump trophy's plinth
+  stands outermost, 5.3 m out on the bay's centreline at the street's edge. `test/curio-layout.test.ts` keeps the
+  shelf, bay and plinth 2.5 m and the box block 3 m off every path centreline in both layouts.
 - **Reach** (`npm run level-check`, Place's model): each secret is out of reach before its ability, except the two
   accepted sequence breaks above (the alcove from the plateau, the stack from stack-return), printed as facts.
 

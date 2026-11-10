@@ -1,6 +1,8 @@
 # Curio shelf and finders' bay: placement in the Home town
 
-**Status:** proposal (designer, 10 November 2026). Nothing built. Owner, playing the live build on 10 November: "the
+**Status:** building (10 November 2026): the Recommendation is approved and built on a branch, not yet shipped. Owner,
+after a plan-view comparison: "Ok let's commit to A for now. no need for in game stills"
+([decision](../decisions.md#decided)). Findings 1 to 4 are fixed with it. Proposal by the designer, 10 November. Owner, playing the live build on 10 November: "the
 curio shelves could be positiioned much better in the town, they seem weirdly at angles and not spaced intentionally
 with everything else in the town". Judged as a space, per the owner call "A well-designed town, not a view from spawn"
 ([owner-calls](../agents/owner-calls.md)).
