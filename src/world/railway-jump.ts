@@ -80,6 +80,12 @@ export const JUMPS: readonly Jump[] = [
     land: near(WORKS_KILN, -6, 0, 24, WORKS_KILN), // in front of the kiln, clear of its walls
   },
   {
+    stage: 'crossing-finishing',
+    label: 'Crossing almost finished',
+    line: 'Ten pier footings set; the last two wait on the pier rack',
+    land: near(PIER_STOP, 3, -4, 24.3, CROSSING_BENTS[0]!), // crossing-done's spot on the halt's deck, by the rack
+  },
+  {
     stage: 'crossing-done',
     label: 'Crossing built',
     line: 'The Split-rock crossing is complete',
