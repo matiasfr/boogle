@@ -553,6 +553,11 @@ the v26/v27 block rules. Nothing here reorders the Ring Island work or waits for
    16:9 garage frame: a real render of engine A on the table filling it (the long-boiler nodes are built, so two
    `look` stills give Before and After), a thin rail on one edge, the parts as a strip, the readouts and the line
    strip on the picture.
+   **Restaged (10 November):** the mock is now that frame, built on renders of the game's own train parts staged as a
+   showroom on the table (`dev/look/garage-showroom.ts`, embedded by `dev/look/garage-mock-images.ts`): a camera per
+   category with a crossfade, the previewed part as a yellow ghost (the real `engine_*_long` and `car_upgrade` nodes),
+   Before / After, the rail, the parts strip and a stats column with the line strip. Stills only: the turning table,
+   the wheels and chuff of section (d), the ghost's sound and the stall interior are not in it.
 6. **Scale: the footprint is now stated, with two things unproved.** Section (a) gives the keep-clear numbers. Engine A
    on the 9.6 m deck is half the deck; with its first car coupled (8.5 m) the table is full, so always show the car.
    Unproved: level ground out to 30 m on the stall side, and which Roundhouse the garage targets (the brief measures
