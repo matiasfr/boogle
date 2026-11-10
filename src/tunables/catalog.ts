@@ -8,6 +8,7 @@ import { MATERIAL_PALETTE_SPECS } from '../render/material-palette-tuning.ts';
 import { AUDIO_SPECS } from '../render/audio-tuning.ts';
 import { COVE_SPECS } from './terrain.ts';
 import { WOOD_SPECS } from './surfaces.ts';
+import { TOON_SPECS } from '../render/toon-tuning.ts';
 import { BEAM_CARRY_SPECS } from '../player/beam-carry-tuning.ts';
 
 export type NumberSpec = {
@@ -217,6 +218,7 @@ export const CATALOG: readonly NumberSpec[] = [
   ...AUDIO_SPECS,
   ...COVE_SPECS,
   ...WOOD_SPECS,
+  ...TOON_SPECS,
   ...BEAM_CARRY_SPECS,
   FEEL_SPRING_SPEC,
 ];
