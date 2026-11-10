@@ -40,7 +40,7 @@ export async function createRailwayShelf(
   owner.add(shelf);
   shelf.visible = false;
   const sign = stockSign(owner, 'rails');
-  sign.sprite.visible = false;
+  sign.board.visible = false;
   const plankGeo = new THREE.BoxGeometry(2.6, 0.12, 3.4),
     legGeo = new THREE.BoxGeometry(0.16, 0.5, 0.16);
   geometries.push(plankGeo, legGeo);
@@ -100,10 +100,13 @@ export async function createRailwayShelf(
     drawn = key;
     const spec = LINE2_STATIONS[k];
     shelf.visible = !!spec?.shelf;
-    sign.sprite.visible = shelf.visible && !owed;
+    sign.board.visible = shelf.visible && !owed;
     if (!spec?.shelf) return;
     place(k);
-    sign.sprite.position.copy(at).y += 1.5;
+    // On its own post beside the shelf's end, facing along the line toward the approach.
+    sign.board.position.set(1.45, 0, 2.05).applyAxisAngle(THREE.Object3D.DEFAULT_UP, shelf.rotation.y).add(at);
+    sign.board.position.y = land.H(sign.board.position.x, sign.board.position.z);
+    sign.board.rotation.y = shelf.rotation.y + Math.PI / 2;
     sign.set(n);
     rails.count = Math.min(MAX_RAILS, n);
     for (let i = 0; i < rails.count; i++) rails.setMatrixAt(i, m4.makeTranslation(slot(i, tmp)));

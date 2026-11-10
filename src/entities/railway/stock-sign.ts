@@ -1,10 +1,11 @@
-// Local stock badge: the same small physical-source cue on timber and steel racks. A train-fed stretch's rack shows the
+// Local stock board: the same small physical-source cue on timber and steel racks, a painted board on its own post at
+// the rack (src/render/sign-board.ts; owner, 9 November: signs in the world before hovering text). A train-fed
+// stretch's rack shows the
 // `'train'` drawing until trains run (docs/plans/boiler-first-choice.md, step 1): the old train's own loco side-on, its
 // boiler a dashed gold outline (the rope's gold), pulling one wagon heaped with the log and rail icons, no number.
-import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
-import { readableUnlit } from '../../render/readable-unlit.ts';
+import { signBoard } from '../../render/sign-board.ts';
 import { reducedMotion } from '../../constants.ts';
 
 export type StockSignKind = 'logs' | 'rails' | 'train';
@@ -12,21 +13,11 @@ const LINE = '#edcf8c';
 const PUFF_S = 0.9;
 const BOB_S = 0.5;
 
+/** The board's origin is the foot of its post; the caller places and turns it (its face along local ±z). */
 export function stockSign(owner: OwnedView, start: StockSignKind) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 128;
-  const g = canvas.getContext('2d')!;
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  const material = readableUnlit(new THREE.SpriteNodeMaterial({ map, transparent: true, depthWrite: false }));
-  const sprite = new THREE.Sprite(material);
-  sprite.scale.set(1.6, 0.8, 1);
-  owner.add(sprite);
-  owner.cleanup(() => {
-    map.dispose();
-    material.dispose();
-  });
+  const sign = signBoard(owner, { w: 1.3, h: 0.65, px: 256, foot: 1.15, posts: 'one' });
+  const { g } = sign;
+  const board = sign.mesh;
   const logs = (x: number, y: number, r: number) => {
     for (const [dx, dy] of [
       [-1, -0.83],
@@ -134,13 +125,12 @@ export function stockSign(owner: OwnedView, start: StockSignKind) {
     const key = kind === 'train' ? `train:${puff < 0 || puff >= 1 ? -1 : puff}` : `${kind}:${n}`;
     if (key === drawn) return;
     drawn = key;
-    g.clearRect(0, 0, 256, 128);
     g.fillStyle = '#493522';
+    g.fillRect(0, 0, 256, 128);
     g.strokeStyle = LINE;
     g.lineWidth = 6;
     g.beginPath();
-    g.roundRect(4, 4, 248, 120, 14);
-    g.fill();
+    g.roundRect(6, 6, 244, 116, 12);
     g.stroke();
     if (kind === 'train') train(puff);
     else {
@@ -152,10 +142,10 @@ export function stockSign(owner: OwnedView, start: StockSignKind) {
       g.fillStyle = '#fff5dc';
       g.fillText(String(n), 174, 68, 126);
     }
-    map.needsUpdate = true;
+    sign.painted();
   };
   return {
-    sprite,
+    board,
     get kind() {
       return kind;
     },
@@ -168,20 +158,20 @@ export function stockSign(owner: OwnedView, start: StockSignKind) {
       kind = next;
       draw(-1);
     },
-    /** One bob and one steam puff from the drawn chimney (under reduced motion, the puff only). */
+    /** One rock of the post and one steam puff from the drawn chimney (under reduced motion, the puff only). */
     nudge() {
       nudged = 0;
     },
     update(dt: number) {
       if (nudged < 0) return;
       nudged += dt;
-      // Lift the sprite on its own anchor (lower centre, higher sprite), so the caller's position stays the rack's.
-      const lift = reducedMotion ? 0 : Math.sin(Math.PI * Math.min(1, nudged / BOB_S));
-      sprite.center.y = 0.5 - 0.2 * lift;
+      // Rock the post in the board's own plane about its foot, so the caller's position and turn stay the rack's.
+      const k = Math.min(1, nudged / BOB_S);
+      board.rotation.z = reducedMotion ? 0 : 0.09 * Math.sin(2 * Math.PI * k) * (1 - k);
       if (kind === 'train') draw(Math.round((nudged / PUFF_S) * 30) / 30);
       if (nudged >= Math.max(PUFF_S, BOB_S)) {
         nudged = -1;
-        sprite.center.y = 0.5;
+        board.rotation.z = 0;
         draw(-1);
       }
     },
