@@ -28,6 +28,7 @@ export type RoomHostCfg = HostCfg & {
   serverRooms: string[];
   roomIdleMs: number;
   maxHostedRooms: number;
+  roomCloseMs?: number; // a room's close (its last save) gets this long before its writer is fenced; default 5 s
   upgradesPerMin: number; // per IP
   allowedOrigins: string[];
   trustProxy: unknown;
@@ -41,35 +42,65 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const ns = roomNamespaces(cfg.serverRooms);
   const listed = new Set(ns.currentRooms);
   const hosts = (id: string) => currentRoomId(id, ns) && (all || listed.has(id));
+  const closeMs = cfg.roomCloseMs ?? 5000;
+  // Each authority writes through its own fence: once its close fails or overruns, it can never write again.
+  const fences = new WeakMap<HostedRoom, { up: boolean }>();
   const load = (id: string) => {
-    const room = createHostedRoom({ roomId: id, store, cfg, boot, log: cfg.log });
+    const fence = { up: false };
+    const refused = () => Promise.reject(new Error(`room ${id}: this authority's close failed; its writes are fenced`));
+    const own: Store = {
+      ...store,
+      write: (...a) => (fence.up ? refused() : store.write(...a)),
+      create: (...a) => (fence.up ? refused() : store.create(...a)),
+    };
+    const room = createHostedRoom({ roomId: id, store: own, cfg, boot, log: cfg.log });
+    fences.set(room, fence);
+    failed.delete(id);
     rooms.set(id, room);
     return room;
   };
-  for (const id of listed) load(id);
   const unloading = new Set<Promise<unknown>>();
   const closing = new Set<string>();
-  const blocked = new Map<string, unknown>();
+  const failed = new Map<string, unknown>(); // rooms whose last close failed, until they load again (shutdown reports them)
   let stopping = false;
+  for (const id of listed) load(id);
+  // A room's close, bounded by closeMs. A close that fails (a refused or failed save, a save that did not load cleanly)
+  // or never settles has its writer fenced, so its last good file stays; nothing of it writes after this returns.
+  // Writes it already started finish in the store's per-room order, ahead of any later authority's.
+  async function closeBounded(id: string, room: HostedRoom, save: boolean) {
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        room.close({ save }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`close timed out after ${closeMs} ms`)), closeMs);
+        }),
+      ]);
+    } catch (error) {
+      fences.get(room)!.up = true;
+      failed.set(id, error);
+      cfg.log(
+        `room ${id}: close failed; its writer is fenced and the next join loads its last good save`,
+        String(error),
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  // The slot is held while the close drains and always freed after, failed or not: a join meanwhile is refused with
+  // `bye restart`, and one after loads the room from its file.
   function closeRoom(id: string, room: HostedRoom, save: boolean) {
     if (closing.has(id)) return;
     closing.add(id);
-    const p = Promise.resolve()
-      .then(() => room.close({ save }))
-      .then(() => {
-        if (rooms.get(id) === room) rooms.delete(id);
-        closing.delete(id);
-      })
-      .catch((error: unknown) => {
-        // Keep the failed authority fenced until process restart/recovery, preserving its last good file.
-        blocked.set(id, error);
-        cfg.log(`room ${id}: close blocked`, String(error));
-      })
-      .finally(() => unloading.delete(p));
+    const p = closeBounded(id, room, save).finally(() => {
+      if (rooms.get(id) === room) rooms.delete(id);
+      closing.delete(id);
+      unloading.delete(p);
+    });
     unloading.add(p);
   }
-  // Keep the authority's map slot until its close has durably drained. A reconnect must never load an older
-  // checkpoint while the previous writer still owns a pending write to the same room file.
+  // Keep the authority's map slot until its close has durably drained (or failed and been fenced). A reconnect must
+  // never load an older checkpoint while the previous writer can still write to the same room file.
   const idle = setInterval(() => {
     for (const [id, room] of rooms)
       if (!listed.has(id) && !closing.has(id) && room.idleMs() > cfg.roomIdleMs) {
@@ -110,7 +141,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         tick,
         players,
         max,
-        noSave: noSave || blocked.has(id),
+        noSave,
         replication,
         railway,
         steps,
@@ -159,17 +190,16 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         room.join(ws, self, pid, key);
       });
     },
-    // The operator replacing a room's save (../admin.ts). The room's state is being discarded, so a failed last
-    // write does not fence it; the slot stays `closing` until fn has settled, so no join loads the old file.
+    // The operator replacing a room's save (../admin.ts). The room's state is being discarded; the slot stays
+    // `closing` until fn has settled, so no join loads the old file.
     async offline<T>(id: string, fn: () => Promise<T>): Promise<T | 'busy'> {
       if (stopping || closing.has(id)) return 'busy';
       closing.add(id);
       try {
         const room = rooms.get(id);
         if (room) {
-          await room
-            .close({ save: false })
-            .catch((error: unknown) => cfg.log(`room ${id}: offline close`, String(error)));
+          await closeBounded(id, room, false);
+          failed.delete(id); // its state is being replaced: nothing is lost
           rooms.delete(id);
         }
         return await fn();
@@ -186,7 +216,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         for (const [id, room] of rooms) closeRoom(id, room, save);
         // Drain every writer before reporting any failure: another room may still have accepted edits.
         await Promise.all(unloading);
-        if (save && blocked.size) throw new AggregateError([...blocked.values()], 'one or more rooms failed to close');
+        if (save && failed.size) throw new AggregateError([...failed.values()], 'one or more rooms failed to close');
       } finally {
         wss.close();
       }

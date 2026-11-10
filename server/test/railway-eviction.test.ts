@@ -270,7 +270,7 @@ for (const [id, failure] of [
   [`${WORLD_NS}-boogle`, 'refused'],
   [railwayRoomId('eviction'), 'io'],
 ] as const) {
-  test(`failed close keeps one blocked authority and its last good file: ${id}`, async (t) => {
+  test(`failed close fences its writer, keeps its last good file and frees the room: ${id}`, async (t) => {
     const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-manager-refusal-'));
     const base = createStore({ dataDir, maxRooms: 8 });
     await base.init();
@@ -329,28 +329,25 @@ for (const [id, failure] of [
     fail = true;
     client.ws.close();
     await client.closed;
-    await until(() => app.logs.some((args) => String(args[0]).includes('close blocked')), 'close failure reported');
-    assert.equal(app.rooms.room(id), room, 'failure retains the authority slot');
-    assert.equal(app.rooms.status(id).noSave, true);
-    const retry = connect(app.base, id, 'retry');
-    clients.push(retry);
-    assert.equal((await retry.first()).t, 'bye');
-    assert.equal(await retry.closed, CLOSE.RESTART);
+    await until(() => app.logs.some((args) => String(args[0]).includes('close failed')), 'close failure reported');
+    // The failed authority is fenced (it writes nothing more) and frees its slot: no lockout until a restart.
+    await until(() => app.rooms.room(id) !== room, 'failure frees the authority slot');
     assert.equal(await fs.readFile(file, 'utf8'), before, 'failed close never overwrites the last good file');
     fail = false;
-    const retryAgain = connect(app.base, id, 'again');
-    clients.push(retryAgain);
-    assert.equal((await retryAgain.first()).t, 'bye');
-    assert.equal(await retryAgain.closed, CLOSE.RESTART);
-    assert.equal(app.rooms.room(id), room, 'recovery needs a controlled restart, not a fresh writer in this process');
+    const retry = connect(app.base, id, 'retry');
+    clients.push(retry);
+    assert.equal((await retry.first()).t, 'welcome', 'the next join loads the room again');
+    const next = app.rooms.room(id)!;
+    assert.notEqual(next, room, 'from a new authority');
+    if (railway) await railwayHost(next).whenReady();
+    assert.equal(material(next), railway ? 2 : 1, 'which loads the last good save');
     await evidence(`manager-close-${id}.json`, {
       room: id,
       failure,
-      blocked: true,
-      noSave: true,
+      fenced: true,
       expectedMaterial: railway ? 2 : 1,
       lastGoodUnchanged: true,
-      reconnectCodes: [CLOSE.RESTART, CLOSE.RESTART],
+      rejoin: 'welcome',
     });
   });
 }
@@ -396,7 +393,7 @@ test('shutdown fences new upgrades and drains other writes before reporting a re
     },
   );
   await until(
-    () => app.logs.some((line) => String(line[0]).includes(`${WORLD_NS}-boogle: close blocked`)),
+    () => app.logs.some((line) => String(line[0]).includes(`${WORLD_NS}-boogle: close failed`)),
     'refused shutdown close',
   );
   assert.equal(settled, false, 'failure in one room must not return while another writer is blocked');
