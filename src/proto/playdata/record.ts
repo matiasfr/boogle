@@ -5,7 +5,8 @@
 //   Once a second: position to the metre, activity, and the place if the prototype names one (`playWhere`).
 //   Marks: `playMark` (src/proto/mark.ts), which `protoMark`, `protoCount` and the objective line (`playObjective`) reach.
 //   Inputs in summary: presses per action, which device, interact presses with their verbs, prompts shown.
-//   Stuck: standing still, walking into something, falling in the water, being moved far (a respawn).
+//   Stuck: standing still, walking into something, falling in the water and getting out (./water-episode.ts), being
+//   moved far (a respawn).
 //   Performance: frame times per few seconds, resolution steps, errors once each.
 // No audio, no typed text but the player's name.
 //
@@ -36,6 +37,7 @@ import { tuningVisit } from '../../dev-preferences.ts';
 import { background } from '../../async.ts';
 import { bootMarks } from '../../boot/timeline.ts';
 import { roomSeed } from '../../netplay/room-seed.ts';
+import { stepWaterEpisode, waterEpisode } from './water-episode.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const SEND_MS = 5000;
@@ -348,7 +350,7 @@ let stillS = 0;
 let intoS = 0;
 let spotX = 0;
 let spotZ = 0;
-let swimSince = -1;
+const swim = waterEpisode();
 let lastX = NaN;
 let lastZ = NaN;
 let wasCarried = false;
@@ -452,13 +454,9 @@ onFrame(
       stillS += frameS;
     }
 
-    if (me.swimming && swimSince < 0) {
-      swimSince = ms;
-      push('m', { n: 'fell in water', ...here() });
-    } else if (!me.swimming && swimSince >= 0) {
-      push('m', { n: 'recovered', s: round((ms - swimSince) / 1000), ...here() });
-      swimSince = -1;
-    }
+    const water = stepWaterEpisode(swim, me.swimming, me.coyote > 0 && !me.swimming, ms);
+    if (water?.kind === 'fell') push('m', { n: 'fell in water', ...here() });
+    else if (water) push('m', { n: 'recovered', s: round(water.seconds), ...here() }, water.at);
 
     const target = interactTarget();
     const prompt = target?.id ?? '';
