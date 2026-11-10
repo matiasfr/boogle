@@ -220,6 +220,12 @@ async function runChecks() {
     failed += ring.failures;
     report.push(ring);
     if (!json) printRing(ring);
+    // Track continuity: kinks, curves, grades and joins over every line as the game draws it (docs/plans/rail-map.md).
+    const { checkContinuity, printContinuity } = await import('./track-continuity.ts');
+    const continuity = checkContinuity();
+    failed += continuity.failures;
+    report.push({ ...continuity, findings: continuity.findings.length });
+    if (!json) printContinuity(continuity);
   }
 
   const timingMs = Math.round(performance.now() - t0);
