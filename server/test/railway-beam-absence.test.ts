@@ -88,3 +88,37 @@ test('a carrier back after 4 s still carries the beam; after 5 min it lies where
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test("the carrier's stood point is checked: never -0, never out of range, and the room still saves", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-beam-stood-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  const host = createRailwayWorldHost({ roomId: railwayRoomId('beam-stood'), store, tick: false });
+  try {
+    await host.whenReady();
+    const rail = host.rules.railway;
+    const w = rail.world();
+    const id = w.single(Beam);
+    Object.assign(w.mut(Beam, id)!, { state: 'held', holder: 'alice', revision: w.get(Beam, id)!.revision + 1 });
+    // Straight to the rule, past the host's cm(): what a modified holder's presence could carry.
+    rail.beamStood('alice', 98000, 3000, -13000);
+    for (const [x, y, z] of [
+      [98000, 3000, -0],
+      [-0, 3000, -13000],
+      [98000, 1e300, -13000],
+      [200001, 3000, -13000],
+      [98000, 3000, 0.5],
+      [NaN, 3000, -13000],
+    ])
+      rail.beamStood('alice', x!, y!, z!);
+    const beam = () => rail.beam();
+    assert.deepEqual([beam().x, beam().y, beam().z], [98000, 3000, -13000], 'none of them moved it');
+    assert.doesNotThrow(() => rail.world().snapshot(), 'held');
+    assert.equal(rail.beamPutDown('alice'), 1);
+    assert.equal(beam().state, 'ground');
+    assert.doesNotThrow(() => rail.world().snapshot(), 'put down');
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

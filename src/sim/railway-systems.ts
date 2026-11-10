@@ -1502,6 +1502,9 @@ const beamStood = defineSystem(
   { writes: [Beam], phase: 'beam', order: 1 },
   (w, q: { pid: string; x: number; y: number; z: number }) => {
     const b = w.get(Beam, beamId(w))!;
+    // The point comes from presence: the boiler's stood bounds (rail.beamDrop has none of its own), and never -0.
+    if (!railInt(q.x, 200000, -200000) || !railInt(q.y, 200000, -200000) || !railInt(q.z, 200000, -200000))
+      return false;
     if (b.state !== 'held' || b.holder !== q.pid || (b.x === q.x && b.y === q.y && b.z === q.z)) return false;
     Object.assign(w.mut(Beam, beamId(w))!, { x: q.x, y: q.y, z: q.z });
     return true;
