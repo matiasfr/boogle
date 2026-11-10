@@ -622,16 +622,20 @@ service stop the sim decides; otherwise it runs straight through at cruise. A re
 direction on the train's row (`req`, a safe integer with room for 26 stops); an end halt has one, its way out. The
 lever's handle and a passenger's press set the same digit, so a repeat or a friend's same ask moves nothing, and a
 later request never replaces an earlier one (until 10 November each line held one call and a later call replaced it).
-The server takes `rail.call {id, dir}` from the halt's platform or from within 10 m of the train's pose (a coarse
-line path in `src/sim/railway-line-path.ts`), and the train's own tick clears the digit as it leaves the halt that way.
+The server takes `rail.call {id, dir}` from the halt's platform or aboard: within 10 m of the train's pose now, plus
+its length (7.4 m) and what it travels in a 10-tick lag window (a coarse line path in `src/sim/railway-line-path.ts`),
+and the train's own tick clears the digit as it leaves the halt that way.
 A request made mid-run replaces the leg from the train's pose that tick, at its speed, when it can still brake for the
 halt (about 57 m at cruise); inside that it waits for the next train that way, and the passenger's prompt already
 names the following halt. A leg row holds its start, entry speed and destination in cm (`from`, `v0`, `dest`), and the
 pose reads only the row, so a stop that moves never makes a running train jump. With requests only behind it a train
 turns back early at the next halt it can stop at (LOOK, as lifts do); with nothing asked anywhere it sweeps end to end.
-The service stops need no request: Far Head while the Q6 kit is aboard, the quarry going out while the footing wagon
-has room, the Works rack a footing and the pier a need, and the pier while the wagon carries footings; the wagon's
-roll-out counts as a request at line 2's village end. Dwell is 5 s at every stop (the 1.5 s call dwell is gone), and a
+The service stops need no request: the village going home while the Q6 kit is owed and none is aboard, Far Head while
+it is aboard, the quarry going out while the footing wagon has room and the pier still needs footings, and the pier
+while the wagon carries footings; the wagon's roll-out counts as a request at line 2's village end. While anything is
+asked, a service stop ahead that wants the other way is where the train turns, so an ask never turns it back short of
+an errand it still owes (the independent review found a Far Head lever pressed again and again starving the kit, and
+the wagon the same way). Dwell is 5 s at every stop (the 1.5 s call dwell is gone), and a
 request at the halt a train stands at, leaving that way, restarts its dwell. Owner calls behind it: "Stop on request"
 and the passenger request (decisions, 10 November); the two handles, LOOK turn-backs and replanning are recommended
 details logged in the plan. Not tested on a device.
