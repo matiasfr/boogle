@@ -514,7 +514,8 @@ export async function boilerToPier(
   };
   check(l2().stations[4]?.completion === 1, 'B8 starts after Q5');
   check(view().boiler && view().trains && view().halts, 'B8 requires merged boiler, train and halt inspections');
-  if (from === 'q6' && !l2().pack) {
+  // The accepted q5-done and trains-on seeds stop short of the pack chest; the full route opened it at Q4.
+  if (from !== 'far-head' && !l2().pack) {
     const chest = read().reward.tools.packChest;
     check(await bot.use(chest.x, chest.z, 'open the pack chest', /^Open/), 'seeded pack chest offered');
     check(await bot.work(() => l2().pack, 30000, 380), 'seeded pack accepted');
@@ -580,9 +581,22 @@ export async function boilerToPier(
     check(aboard(), 'boarded passenger car by real jump');
     let ran = false;
     let sample: Promise<void> | undefined;
+    // Warped, the page outruns the real-time room clock, so the drawn train snaps back tens of metres whenever its
+    // clock re-anchors (train-view.ts, step()). A rider's support can drop for that one snap and come straight back.
+    // Real time has no such snaps (0 in a 43 s line-2 ride at 60 fps), so only a rider who stays off fails.
+    let offAt = -1;
     await until(
       () => {
-        check(aboard() && !me.swimming, 'rider stays aboard throughout the train journey');
+        const on = aboard() && !me.swimming;
+        if (!on && offAt < 0) {
+          offAt = performance.now();
+          const b = me.body!;
+          console.log(
+            `RIDE BLIP ${JSON.stringify({ line, row: l2().train[line], along: view().trains[line]!.along, on: carry.on?.id ?? null, at: b.position, v: b.velocity, swimming: me.swimming })}`,
+          );
+        }
+        if (on) offAt = -1;
+        check(on || performance.now() - offAt < 1500, 'rider stays aboard throughout the train journey');
         const row = l2().train[line]!;
         ran ||= row.phase === 1;
         if (row.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf')) {
@@ -595,7 +609,7 @@ export async function boilerToPier(
           })();
           background(sample, 'moving train performance sample');
         }
-        return ran && row.phase === 0 && row.at === destination;
+        return on && ran && row.phase === 0 && row.at === destination;
       },
       `line ${line + 1} arrives with rider`,
     );
