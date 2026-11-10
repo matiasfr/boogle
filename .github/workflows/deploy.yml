@@ -60,8 +60,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # The action's own wait defaults to ten minutes; on 9 and 10 November it hung that long six times while every
+      # later merge queued behind it. A healthy deploy takes under a minute, so fail at three and let `recover` retry.
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          timeout: 180000
 
   # A build failure skips deploy, so it never enters this retry chain. Dispatch (unlike a push by GITHUB_TOKEN)
   # starts another workflow; carry the counter because each dispatch resets github.run_attempt to 1.
