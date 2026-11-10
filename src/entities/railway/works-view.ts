@@ -20,6 +20,7 @@ import { reducedMotion } from '../../constants.ts';
 import { goldMote } from './breaker-view.ts';
 import { WORKS, WORKS_KILN, WORKS_RACK, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
 import { SEAM_THROAT } from '../../sim/railway-works.ts';
+import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { LINE_HALTS } from '../../sim/railway-train.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
@@ -31,6 +32,8 @@ const ROLL_S = 4,
   HOP_S = 0.45;
 /** The throat slabs: tipping into the bowl, then sinking into rubble. */
 const TOPPLE = { stagger: [0.08, 0, 0.14], fall: 0.95, sink: 1.2, rest: 0.9 } as const;
+/** The stations' bill look (src/proto/place/stations.ts). */
+const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 
 export async function createRailwayWorks(
   adapter: RailwayAdapter,
@@ -151,11 +154,14 @@ export async function createRailwayWorks(
 
   // The trodden path and its fingerpost (designer, 9 November: the halt can't show the kiln, so send you 21 m up the
   // roller road, where the cut frames it). From the quarry halt's platform end by the rack, beside the road, to the
-  // throat floor; shown once the throat is struck. Paler than the track's dirt, no collider: no route changes.
+  // throat floor; shown once the breaker is taken (part 2: so a player who strikes the stall first is sent up the road
+  // to the throat too). Paler than the track's dirt, no collider: no route changes.
   const halt = LINE_HALTS.find((h) => h.name === 'Quarry')!,
     haltAt = { x: halt.x / 100, z: halt.z / 100 };
   const pathSegments: { x: number; y: number; z: number; length: number; yaw: number; pitch: number }[] = [];
   const post = { x: 0, z: 0, yaw: 0 };
+  /** The path's last leg (its last two points) and the side of the rollers it runs on. */
+  const tail = { end: { x: 0, z: 0 }, before: { x: 0, z: 0 }, side: 1 };
   {
     const line = [...ROLLER_ROAD].reverse(); // rack, …, throat
     const normal = (a: { x: number; z: number }, b: { x: number; z: number }) => {
@@ -203,6 +209,9 @@ export async function createRailwayWorks(
         });
       }
     }
+    tail.end = offset[offset.length - 1]!;
+    tail.before = offset[offset.length - 2]!;
+    tail.side = Math.sign(side);
     // The post stands just off the path where it leaves the platform, its arm pointing up the road.
     const out = normal(start, offset[0]!);
     post.x = offset[0]!.x + out.x * Math.sign(side) * 1.3;
@@ -228,6 +237,34 @@ export async function createRailwayWorks(
     signMat.map?.dispose();
     signMat.dispose();
   });
+  // The kiln's bill (part 2, beat 8): the stations' own format, from the throat strike until the kiln lights, at the
+  // throat's halt-side mouth beside the path's last leg (never on it), facing down the path. No collider or shadow.
+  const bill = signBoard(owner, { w: 1.6, h: 0.8, px: 384, foot: 1.5, posts: 'two' });
+  {
+    const { end, before } = tail;
+    const dir = { x: end.x - before.x, z: end.z - before.z },
+      n = Math.hypot(dir.x, dir.z) || 1;
+    dir.x /= n;
+    dir.z /= n;
+    // Back from the path's end toward the halt, then out to the side away from the rollers.
+    const side = { x: -dir.z * tail.side, z: dir.x * tail.side };
+    const x = end.x - dir.x * 4 + side.x * 2.4,
+      z = end.z - dir.z * 4 + side.z * 2.4;
+    bill.mesh.position.set(x, H(x, z) - 0.05, z);
+    bill.mesh.rotation.y = Math.atan2(-dir.x, -dir.z);
+  }
+  bill.mesh.visible = false;
+  let billPainted = '';
+  function drawBill(on: boolean) {
+    bill.mesh.visible = on;
+    if (!on) return;
+    const k = state.works.kiln;
+    const small = `logs ${Math.min(k.logs, WORKS.kilnLogs)}/${WORKS.kilnLogs}  stone ${Math.min(k.stone, WORKS.kilnStone)}/${WORKS.kilnStone}`;
+    if (small === billPainted) return;
+    billPainted = small;
+    paintTwoLines(bill, 'Kiln', small, BILL_LOOK);
+    bill.painted();
+  }
   function drawPath() {
     for (const s of pathSegments) batch.box(s.x, s.y, s.z, 1.6, 0.04, s.length, '#efdcb0', s.yaw, s.pitch);
     batch.box(post.x, postY + 1.2, post.z, 0.14, 2.6, 0.14, '#7f5630');
@@ -643,6 +680,7 @@ export async function createRailwayWorks(
     throatCamera.reset();
     solid(!open);
     ghostKey = '';
+    billPainted = '';
   }
   snap();
   return {
@@ -678,8 +716,10 @@ export async function createRailwayWorks(
       mouth.scale.setScalar(1 + flare * 0.35);
       batch.begin();
       drawSlabs(dt);
-      if (open) drawPath();
-      sign.visible = open;
+      const marked = w.breaker === 2;
+      if (marked) drawPath();
+      sign.visible = marked;
+      drawBill(open && w.kiln.lit < 0);
       drawKiln();
       drawKilnFlights(dt);
       drawRack(dt);
@@ -756,16 +796,27 @@ export async function createRailwayWorks(
         w.seams & SEAM_THROAT &&
         w.kiln.lit < 0 &&
         Math.hypot(p.x - kiln.x, p.z - kiln.z) <= WORKS_KILN.reach / 100 - 0.4 &&
-        Math.abs(p.y - WORKS_KILN.y / 100) <= 2.6 &&
-        ((state.carry > 0 && w.kiln.logs < WORKS.kilnLogs) || (state.stoneCarry > 0 && w.kiln.stone < WORKS.kilnStone))
+        Math.abs(p.y - WORKS_KILN.y / 100) <= 2.6
       ) {
         const c = at(3.2, 0);
-        out.push({
-          id: 'railway-kiln',
-          verb: 'Fill the kiln',
-          at: new THREE.Vector3(c.x, kilnGround + 2.2, c.z),
-          run: () => void adapter.fillKiln(),
-        });
+        const fills =
+          (state.carry > 0 && w.kiln.logs < WORKS.kilnLogs) || (state.stoneCarry > 0 && w.kiln.stone < WORKS.kilnStone);
+        // Part 2, beat 9: an empty or wrong back meets the prompt with its reason, never silence.
+        out.push(
+          fills
+            ? {
+                id: 'railway-kiln',
+                verb: 'Fill the kiln',
+                at: new THREE.Vector3(c.x, kilnGround + 2.2, c.z),
+                run: () => void adapter.fillKiln(),
+              }
+            : {
+                id: 'railway-kiln',
+                verb: 'Fill the kiln',
+                at: new THREE.Vector3(c.x, kilnGround + 2.2, c.z),
+                blocked: 'Bring logs or stone',
+              },
+        );
       }
       if (w.rack > 0 && Math.hypot(p.x - rack.x, p.z - rack.z) <= WORKS_RACK.reach / 100 - 0.4) {
         const top = slotAt(Math.max(0, w.rack - 1), new THREE.Vector3()).add(new THREE.Vector3(0, 1.6, 0));
@@ -789,6 +840,8 @@ export async function createRailwayWorks(
       shot: throatCamera.inspect(),
       kiln: { ...state.works.kiln, glow: mouth.visible },
       ghosts: { logs: ghostLogs, stone: ghostStone, dashes: ghosts.count },
+      path: sign.visible,
+      bill: bill.mesh.visible ? billPainted : null,
       rack: Math.max(0, state.works.rack - flights.length),
       rollers: flights.length,
     }),
