@@ -935,13 +935,13 @@ export function runLoop(args: string[]) {
 const VEHICLE_FED = NODES.filter((n) => Object.values(n.supply).some((s) => s.by !== 'hand')).map((n) => n.id);
 /** How each is played on foot. A cart station: its depot and shelf flags are off in this process only (the catalog
  * object, as --break does), so the cart never serves it; every action still goes through the host's rules. The kit
- * train and the wagon have no such flag (src/sim hard-codes Q6's kit and the wagon's footings), so their node is
- * played before the vehicle exists: Q6 before the boiler (the known defect: the rules accept Q6 before trains),
- * the crossing before the table turn, its footings carried from the Works rack. */
+ * train and the wagon have no such flag (src/sim hard-codes Q6's kit and the wagon's footings). Q6 stays in its place
+ * after the boiler, since station 6 takes nothing by hand before trains run (decisions.md, 9 November), and is fed on
+ * foot alongside the kit train; the crossing is played before the table turn, its footings carried from the Works rack. */
 function byHandPlan(id: NodeId) {
   const s = LINE2_STATIONS.find((x) => x.id === id);
   if (s && !s.feed) return { flags: s, before: null };
-  if (id === 'Q6') return { flags: null, before: 'boiler' as NodeId };
+  if (id === 'Q6') return { flags: null, before: null };
   if (id === 'crossing') return { flags: null, before: 'table' as NodeId };
   throw new Error(`--by-hand: no vehicle feeds ${id}`);
 }
@@ -977,8 +977,9 @@ function runByHand(arg: string, counts: number[], args: string[]) {
   if (args.includes('--json')) return console.log(JSON.stringify({ ms, rows }, null, 2));
   const out = [
     `By hand: ${ids.join(', ')} fed on foot through the real rules, against the canonical run. ${ms} ms.`,
-    `Cart stations play with their depot and shelf off (this process only); Q6 plays before the boiler and the crossing`,
-    `before the table, so the kit train and the wagon don't exist yet. Straight-line walking, as \`loop -- run\`.`,
+    `Cart stations play with their depot and shelf off (this process only); Q6 plays after the boiler, on foot beside`,
+    `the kit train (it takes nothing by hand before trains), and the crossing before the table, so the wagon doesn't`,
+    `exist yet. Straight-line walking, as \`loop -- run\`.`,
   ];
   for (const { players, base, hand } of rows) {
     out.push('', `${players} player${players > 1 ? 's' : ''}: canonical ${verdict(base)}; by hand ${verdict(hand)}`);
