@@ -2,6 +2,7 @@
 // docs/plans/ring-island-build1.md step 0, by real input (keys, Jump, the Hook key, the Glide action). Staging
 // teleports only; every measured move is the controller's. Writes `__ringResult` and prints `RING ...` lines.
 //   npm run look -- --query ring=greybox --rail-seed crossing-done --eval dev/look/evals/ring-greybox.ts
+// One item alone (here the double jumps): --query 'ring=greybox&ringonly=f'
 // Stills (the harness takes them after the eval): the run ends on the `gap` view; `ringview=<name>` skips the items and
 // stages that view alone (bentRamp, hingeRamp, gap, hook):
 //   npm run look -- --query 'ring=greybox&ringview=bentRamp' --rail-seed crossing-done --eval dev/look/evals/ring-greybox.ts
@@ -208,7 +209,10 @@ async function run() {
   result.owned = owned();
   say(`owned ${JSON.stringify(result.owned)}`);
 
+  // `ringonly=f,g` runs only those items (a re-measure), the rest are skipped.
+  const only = query.get('ringonly')?.split(',');
   const item = async (id: string, fn: () => Promise<unknown>) => {
+    if (only && !only.includes(id)) return;
     try {
       result[id] = await fn();
     } catch (e) {
@@ -482,11 +486,31 @@ async function run() {
         break;
       }
     }
+    // The landing: the first ground contact after the body has been airborne (the controller's coyote set again), the
+    // midpoint of the two samples around it. Crossing the standing height comes 0.2-0.45 s after touchdown on a deck,
+    // with the body still sprinting (R1 review), so it is kept only for a splash, where there is no contact to read.
+    let contact: number | null = null,
+      splash = false;
+    for (let k = 1, aired = false; k < trace.length; k++) {
+      const a = trace[k - 1]!,
+        c = trace[k]!;
+      if (c.c <= 0) aired = true;
+      if (aired && c.sw) {
+        splash = true;
+        break;
+      }
+      if (aired && a.c <= 0 && c.c > 0) {
+        contact = (a.u + c.u) / 2;
+        break;
+      }
+    }
     const peak = trace.reduce((m, s) => (s.y > m.y ? s : m), trace[0]!);
     return {
       takeoffU: f2(first.u),
       apexAtMs: Math.round(peak.t),
       apexY: f2(peak.y),
+      firstContactU: contact === null ? null : f2(contact),
+      landU: contact !== null ? f2(contact) : splash && cross !== null ? f2(cross) : null,
       uAtPlatformLevel: cross === null ? null : f2(cross),
       end: { u: f2(last.u), lat: f2(last.lat), y: f2(last.y), swimming: last.sw },
       landedOn: last.sw ? 'sea' : last.y > R.braceY + 0.2 ? 'a deck' : 'low ground',
@@ -529,7 +553,7 @@ async function run() {
       });
       const span = spanOf(trace);
       const takeoff = span.takeoffU;
-      const lands = span.uAtPlatformLevel;
+      const lands = span.landU;
       out[String(mode)] = {
         ...span,
         secondPressedAtMs: Math.round(secondAt),
@@ -542,8 +566,8 @@ async function run() {
         landUOn260: lands === null ? null : f2(lands - (takeoff - L.railhead)),
       };
     }
-    const apex = out.apex as { landUOn260: number | null; uAtPlatformLevel: number | null };
-    const late = out.late as { landUOn260: number | null; uAtPlatformLevel: number | null };
+    const apex = out.apex as { landUOn260: number | null };
+    const late = out.late as { landUOn260: number | null };
     out.predicted = { apex: 276.4, late: 279.3, plusCoyoteMax: 0.9 };
     out.apexVsPrediction = apex.landUOn260 === null ? null : f2(apex.landUOn260 - 276.4);
     out.lateVsPrediction = late.landUOn260 === null ? null : f2(late.landUOn260 - 279.3);
