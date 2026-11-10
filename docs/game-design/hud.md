@@ -31,8 +31,8 @@ answers"); the owner kept it (2026-11-01). Local and cosmetic: nothing here is s
   ([telemetry-and-updates.md](telemetry-and-updates.md)) that waits under anything newer. The name tag gives way while
   a notice shows.
 - **World first**: shared news stays in the world, never in the lane. When a pour earns points the site's plaque turns
-  the changed rows over like a departures board (staggered, a sun glow fading as each settles), swells a little with a
-  puff of motes and plays the flap. While you keep pouring (one pour every 300 ms) it flips at most once every 1.2 s;
+  the changed rows over like a departures board (staggered, a sun glow fading as each settles), with a puff of motes
+  over the board, and plays the flap. While you keep pouring (one pour every 300 ms) it flips at most once every 1.2 s;
   the pours in between just change the numbers ([haul.md](haul.md)).
 - **Files.** [src/ui/](../../src/ui/), [src/features/held.ts](../../src/features/held.ts),
   [src/features/prompt.ts](../../src/features/prompt.ts), [src/features/haul-stack.ts](../../src/features/haul-stack.ts),

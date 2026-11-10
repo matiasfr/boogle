@@ -47,15 +47,16 @@ Code: [src/sim/sources.ts](../../src/sim/sources.ts), [src/world/rules/sources.t
 ## Work sites, plaques and tiers
 
 The railway is preset ([src/sim/route.ts](../../src/sim/route.ts)). The 0.1 testbed has three wood sections from the
-court toward the lighthouse, at (11, 6), (10, -12) and (8, -30), each with a work site: a sign with the section's
+court toward the lighthouse, at (11, 6), (10, -12) and (8, -30), each with a work site: a board on a post with the section's
 plaque (beside the Helper ring, off the line) and two rings on the ground, Track (left, gold, dashed like sleepers) and Helper
 hut (right, green, a double line). Only the open site (the first section
 not yet laid) takes material; the others are grey and say "later". Stand in a ring carrying the age's material and
 your stack pours in, 2 pieces every 0.3 s. A wood section costs 60 logs; a helper hut 36 (brief 7: about 0.6 of a
 section). Sleepers pile up in the Track ring as it fills; the helper hut goes up piece by piece as the Helper ring fills (Building, below) and the ring closes once it is full.
-The rings' signs and the plaque shrink and fade as the camera comes within about 14 m (to about half size and a third
-opacity at 4 m; src/render/near-fade.ts), so standing at a site or riding the machine past one keeps the view clear,
-while signs further off read at full size.
+Since 9 November (owner: signs in the world before hovering text) the rings' signs and the plaque are painted boards
+on posts (`src/render/sign-board.ts`), not labels in the air: the plaque a dark 2.2 × 1.1 m board on its post, each
+ring's sign a low 1.6 × 0.4 m board on a stake at the ring's rim, all facing along z and painted on both faces, same
+words. Being low and beside the rings, they no longer shrink and fade near the camera.
 
 Every pour is credited on that site's plaque: 1 point per 1% of the age's section cost (a log is 1.67 points), with
 the remainder kept per player so rounding never loses anything. The plaque lists the top four by points, names from

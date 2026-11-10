@@ -64,7 +64,7 @@ The same finite ordinary trees, eight-log back, 24-log first frame, wake animati
 
 The original opening terrain, village/camps, forge scaffold, signs and locals share their render constructors. Interiors, discoveries, later town growth and forge work are not promoted. The telescope and the buoys are (below, after Far Head). The former local/co-op save descriptions below do not describe production T1: production never imports their saves. Personal return poses use the original ground/footprint safety policy and cadence under a separate namespace/room/pid key. Solo and two-player T1, one personal claim each, standing on track and a solo layer ride passed real-input broker runs. Browser reload and complete opening parity remain unverified. See the [slice record](../plans/production-core.md#slice-2-branch-record-5-november-2026-technical-proofs-in-progress) for technical evidence and departures; no pacing retune is implied.
 
-**The production forge reads finished (6 November evening playtest).** Its bill stands on the frontage clear above the wall tops and out past the scaffold poles, so the second bill's walls never hide the count. Lit, it keeps the prototype's furnace opening in the front boards, so the glowing mouth shows; the chimney smokes; and each rail the server pours flies out of the mouth onto the rack, where the rails stay visible until taken. The roof still waits for trains, as designed. Every receiver's feeder bed is fitted to its 0.7 m span and collider, so it no longer runs back through the receiver's side. Local presentation over the mirrored forge; serves DESIGN.md 7 (Telegraph everything) and "Machines show their work physically".
+**The production forge reads finished (6 November evening playtest).** Its bill stands before the frontage, out past the scaffold poles, so the second bill's walls never hide the count (a board on posts since 9 November: Signs at the stations and racks, below). Lit, it keeps the prototype's furnace opening in the front boards, so the glowing mouth shows; the chimney smokes; and each rail the server pours flies out of the mouth onto the rack, where the rails stay visible until taken. The roof still waits for trains, as designed. Every receiver's feeder bed is fitted to its 0.7 m span and collider, so it no longer runs back through the receiver's side. Local presentation over the mirrored forge; serves DESIGN.md 7 (Telegraph everything) and "Machines show their work physically".
 
 **Town greeter (8 November playtest note).** Sleeves, the yellow shore worker, stands beside the dock-to-town path at the town entrance. Within 8 m he faces and waves at this player; within 3.3 m Interact offers Talk through the existing townsfolk conversation card. Repeated conversations rotate three short lines per stage: asleep/waking, awake before the forge lights, forge lit before Q2, Q2 onward (Needle Bell), and the sea gate open. Each new stage starts with its current direction. Entirely Local, reading the railway mirror; no progression, saved state or Boogler copy changes. Serves DESIGN.md 7 (Telegraph everything).
 
@@ -362,7 +362,8 @@ boarding approach, exposing the locomotive and platform. These are Local placeme
 existing objects, materials and colliders, with no new copy, markers, rules, bills, unlocks or timing.
 The depot rack sits 3.4 m behind its frame along the approach tangent, with its log ends facing the path.
 This keeps its entire pickup zone inside the existing server reach. A small log glyph and stock count distinguish
-the source from the frame's own bill; the rails shelf has the matching steel badge. Q5's bill stands above the sea-gate lamp cap.
+the source from the frame's own bill; the rails shelf has the matching steel badge. Both are boards on posts, as is
+the bill (Signs at the stations and racks, below).
 The cart retains each waiting
 piece until its unload flight launches, and the receiving stock appears as those flights land. Taking flies logs
 from the pile to the carrier. Cart stops, route, pushers and arrival sounds stay unchanged; a restored still
@@ -495,7 +496,7 @@ The production railway shows eight rings from the start: p2, t0–t5 and the sum
 Job A supplies Q5's Server state: the summit switch opens the sea gate whenever reached; Q5's
 24-log/24-rail bill still waits for Q4 to complete and Q5 to become active. The active Q4/Q5 frame accepts logs and rails before its gate is down (owner playtest call, 8 November).
 Hand-carried and depot-cart materials stock the bill; a full gated frame keeps its physical stock and counters,
-with “Pull the lever / switch to start”. The cart's “More coming” tag hides when the bill is full.
+with “Pull the lever / switch to start”. The cart's “More coming” board hides when the bill is full.
 Pulling funds a full bill; otherwise the last deposit after the pull funds it.
 Automatic unloading retries in reach at the ordinary cadence, logs then rails, without a drop/pickup cycle.
 The Server rule and client prediction share this acceptance rule; funding stays authoritative. Existing partly
@@ -663,6 +664,27 @@ Home hall's board) in `src/entities/railway/island-boards.ts`: every face is a 3
 rings are two instanced quad meshes over the faces, so a moving train never redraws a texture. One draw per display
 in view plus two for all the markers and rings. Local over accepted train state. Not tested on a device.
 
+**Signs at the stations and racks** (owner, 9 November: signs in the world before hovering text; the second pass after
+the halts). The station bills, the depot rack's stock count, the rails shelf's count and the cart's service tag were
+labels hanging in the air, turned to the camera. Each is now a painted board in a timber frame on its own post or
+posts, fixed in place (`src/render/sign-board.ts`): face, frame and posts are one mesh in one material, so each sign is
+one draw, as each label was, and casts no shadow, like the village's stake boards. Both faces carry the paint. Their
+words are unchanged.
+- **A station's bill** ("Station 2", "logs 0/24  rails 0/12"; "Pull the lever / switch to start" when a gated frame is
+  full) is ink on a cream 2.2 × 1.1 m board on two posts, its bottom 1.5 m up, at the frame's far end, facing along
+  the line, so it reads over the low frame as you walk up past the depot rack. T3's still stands 4 m out beside its
+  pile. The forge's first bill (F1) stands on its posts 1.3 m in front of the frontage, facing out, instead of above
+  the wall tops (not yet looked at in game). Q5's bill is no longer lifted over the sea-gate lamp cap: it no longer
+  sits where the lamp post crossed it.
+- **The depot rack's board** (log glyph and count; the train drawing on a train-fed stretch) is a dark 1.3 × 0.65 m
+  board on one post beside the rack, facing its open log ends and the approach; it replaces the rack's old bare sign
+  post. A nudge rocks the post once in the board's plane instead of bobbing the label; the steam puff is unchanged.
+- **The rails shelf's board** is the same board beside the shelf's end, facing along the line.
+- **The cart's service tag** ("Loading", "On the way", "Unloading" or "Waiting for forge" in its colour, "More coming"
+  under it) is a dark 1.6 × 0.7 m board on a post at the rack's other side, facing the same way as the rack's board,
+  instead of a 6 m label 4.8 m above the rack. It is read at the rack, not from afar.
+Not tested on a device.
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
@@ -720,7 +742,7 @@ Projection runs after the current camera/avatar update, anchored to a stable bod
 
 ## Readable ink and rewards
 
-Camera-facing station and halt names and work-site plaques divide linear RGB by the shared
+Camera-facing labels divide linear RGB by the shared
 **surfaceExposure** in `render/exposure.ts`. There is no separate 10.9195 multiplier. Crystal and gold pickup glints,
 chest/box sparkles, reward-show sparkles, confetti and celebration fireworks use the same policy in the existing
 particle pool, and since 10 November so do the sea's splash droplets (`src/render/splash.ts`; at intensity one they
