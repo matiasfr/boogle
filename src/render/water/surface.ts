@@ -295,7 +295,7 @@ function shoreWaves(
 // stationary phase a point impulse gives local wavenumber k = g t² / (4 r²) at radius r and phase k r, so long waves race
 // ahead and short ones trail inside. Returns (height, dh/dx, dh/dz).
 const uRip = uniformArray(seaRipples, 'vec4');
-function impactWaves(xz: N, kMax: N) {
+export function impactWaves(xz: N, kMax: N) {
   const o = vec3(0).toVar();
   for (let i = 0; i < seaRipples.length; i++) {
     const e = uRip.element(i);

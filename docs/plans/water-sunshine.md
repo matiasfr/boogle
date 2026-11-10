@@ -2,7 +2,7 @@
 
 Owner's direction, 9 November 2026: a water "a lot more inexpensive instead of ultra water, that also fits the style of the game better", with Super Mario Sunshine as the visual target, liking "the lighting/grading there too", and "really efficient for mobile without issue". Research: [water-sunshine](../research/water-sunshine.md); reference board: [water-sunshine.html](../research/water-sunshine.html).
 
-Serves DESIGN.md's look principles through [bang-for-buck aesthetics](../research/bang-for-buck-aesthetics.md) (spend on light, air and colour, not surfaces) and the principles **Small and readable — measure before optimizing** and **Clear authority**. Status: **plan, not started.** No code changed by this document.
+Serves DESIGN.md's look principles through [bang-for-buck aesthetics](../research/bang-for-buck-aesthetics.md) (spend on light, air and colour, not surfaces) and the principles **Small and readable — measure before optimizing** and **Clear authority**. Status: **A and B built behind `?water=` (9 November); C not built; awaiting the owner's pick.** Results: [water design](../game-design/water.md#sunshine-water-candidates-9-november-2026) and "Build notes" below.
 
 ## Goal
 
@@ -89,14 +89,14 @@ All original and generated in code, as [texturing](../research/texturing.md) ado
 
 Each step is small, passes its tight checks and ships on its own; nothing waits for a playtest. Candidate code lives under `src/render/water/sun/` and is lazy-loaded only when chosen, so Ultra's bundle and load stay as they are.
 
-1. **The seam.** Split `createRealSea` in [water-render.ts](../../src/render/water-render.ts) into a shared core (frozen sky, quality, underwater, snow, post, ripples, spray, the `waterField` install) and a surface factory returning `{ocean, provider, receiversField, causticSample, dispose}`. Register a `water` graphics setting (choices `ultra`, `sun`, `sun-depth`, `lite`; default `ultra`; `applyMode: 'reload'`; scope Local; Dev audience) and accept `?water=<id>` as shorthand for `?graphics=water:<id>`, added to the Dev flags in [dev-preferences.ts](../../src/dev-preferences.ts). Ultra is the only factory. **Check:** `npm run check` and the water tests; an Ultra still at the shore matches before and after.
-2. **The swell.** `water/sun/swell.ts`: three or four Gerstner waves, one function in TypeScript and TSL, with a unit test that the two agree to 1 mm on a grid and that the mean height is `SEA`. A `waterField` provider from it (synchronous, `moving: true`). **Check:** player swim and plunge tests; the ball and gift float tests.
-3. **The coast texture and baked contacts.** `water/sun/coast.ts` builds the RG16F texture from the providers and `waterContacts()`. **Check:** a unit test on a synthetic shore (depth monotonic off a slope; contact distance zero at a leg); load time at the cove measured with `npm run perf` (should fall by the eikonal solve).
-4. **Candidate A.** The wave-cell baker, the near patch plus far disc, the surface material and its underside, receivers fed by the coast texture and the static caustic tile. `?tune` sliders for the ramp, band levels, scroll speeds and foam. **Check:** stills and clips at the four places; perf rows; the underwater dip still at the cove.
-5. **Candidate B.** One `viewportDepthTexture` read in A's material behind the `sun-depth` choice; intersection foam and the soft edge; the half-size shimmer copy as a separate tunable, off. **Check:** as step 4, plus a still of a swimmer under the pier.
-6. **Candidate C.** Ultra's factory with a `lite` option set: one 128² cascade, no glitter, one retreat tap, static caustics, baked contacts, 51k grid, touch-only shafts and snow off and 512 cube. **Check:** as step 4.
-7. **The comparison.** Four named poses in [dev/look/lib.ts](../../dev/look/lib.ts) and a `water` sheet that renders each pose under each `?water=` choice with the same seed and time (frozen clock), side by side; a Dev dock button to reload into each. **Check:** the sheet renders; perf rows for every pose and choice.
-8. **The owner's pick, then cleanup** (a separate change after he chooses): the pick becomes the default; the others stay one release behind the flag, then Ultra is archived on a tag if he agrees (question 5), and the decision is logged in [decisions](../decisions.md#look).
+1. [x] **The seam.** Split `createRealSea` in [water-render.ts](../../src/render/water-render.ts) into a shared core (frozen sky, quality, underwater, snow, post, ripples, spray, the `waterField` install) and a surface factory returning `{ocean, provider, receiversField, causticSample, dispose}`. Register a `water` graphics setting (choices `ultra`, `sun`, `sun-depth`, `lite`; default `ultra`; `applyMode: 'reload'`; scope Local; Dev audience) and accept `?water=<id>` as shorthand for `?graphics=water:<id>`, added to the Dev flags in [dev-preferences.ts](../../src/dev-preferences.ts). Ultra is the only factory. **Check:** `npm run check` and the water tests; an Ultra still at the shore matches before and after.
+2. [x] **The swell.** `water/sun/swell.ts`: three or four Gerstner waves, one function in TypeScript and TSL, with a unit test that the two agree to 1 mm on a grid and that the mean height is `SEA`. A `waterField` provider from it (synchronous, `moving: true`). **Check:** player swim and plunge tests; the ball and gift float tests.
+3. [x] **The coast texture and baked contacts.** `water/sun/coast.ts` builds the RG16F texture from the providers and `waterContacts()`. **Check:** a unit test on a synthetic shore (depth monotonic off a slope; contact distance zero at a leg); load time at the cove measured with `npm run perf` (should fall by the eikonal solve).
+4. [x] **Candidate A.** The wave-cell baker, the near patch plus far disc, the surface material and its underside, receivers fed by the coast texture and the static caustic tile. `?tune` sliders for the ramp, band levels, scroll speeds and foam. **Check:** stills and clips at the four places; perf rows; the underwater dip still at the cove.
+5. [x] **Candidate B.** One `viewportDepthTexture` read in A's material behind the `sun-depth` choice; intersection foam and the soft edge; the half-size shimmer copy as a separate tunable, off. **Check:** as step 4, plus a still of a swimmer under the pier.
+6. [ ] **Candidate C.** Ultra's factory with a `lite` option set: one 128² cascade, no glitter, one retreat tap, static caustics, baked contacts, 51k grid, touch-only shafts and snow off and 512 cube. **Check:** as step 4.
+7. [ ] **The comparison.** (partly: poses done) Four named poses in [dev/look/lib.ts](../../dev/look/lib.ts) and a `water` sheet that renders each pose under each `?water=` choice with the same seed and time (frozen clock), side by side; a Dev dock button to reload into each. **Check:** the sheet renders; perf rows for every pose and choice.
+8. [ ] **The owner's pick, then cleanup** (a separate change after he chooses): the pick becomes the default; the others stay one release behind the flag, then Ultra is archived on a tag if he agrees (question 5), and the decision is logged in [decisions](../decisions.md#look).
 
 ## Verification
 
@@ -127,6 +127,36 @@ Plus one clip riding a train across the trestle at 20 m/s (sparkle must not craw
 5. Stand at the pier head facing the sea for 30 s with `?prof` on: note p95.
 6. Lock the phone, unlock, return to the game: the sky and water are intact.
 7. Report the p95, any hitch and a screenshot at the pier head.
+
+## Build notes (9 November)
+
+A and B are built; the look, costs and losses are in [water design](../game-design/water.md#sunshine-water-candidates-9-november-2026). The owner questions were taken on their recommended answers and logged as open calls in [agent-calls](../agent-calls.md).
+
+**The missing number** (sea hidden vs shown, `?viewWater=off` through the `view.water` binding, rail seed `q6-done`, 1180×820, Dev, the tree before the seam). Hiding Ultra's surface removes one draw, about 387,000 triangles and both framebuffer copies at every pose (cove: 307 → 306 draws, 1.43 M → 1.05 M triangles, 6 render passes either way; pier head, Far Head, summit and telescope alike). The FFT, caustics producer, queries and their 312 MB of GPU memory keep running when only the draw is hidden, so the hidden number is a floor for Ultra, not a sea-free scene; A's own row (3–4 passes, 2–3 dispatches, no copies, 212 MB) is the better "sea gone" reference. After the seam, `water=ultra` measured the same counts and memory as before it.
+
+**GPU times: none.** `npm run perf -- --hardware --view cove --query water=ultra --size 2712x2110` returned "unavailable: no completed frames" in its 5 s window and failed on two resource 404s (load 24.5 → 25.4 on ten cores, not flagged as under load); the remaining fourteen runs were stopped rather than spend the shared bot queue on the same result. Frame timings are owed, on an idle machine or the phone.
+
+**Coast bake:** about 200 ms on the main thread in Node for Place's shore alone (1,020 × 780 texels, machine load 13); in the game the home island's provider widens the texture to 2,015 × 780, so expect roughly twice that once at load, and again only when a shore provider's revision changes.
+
+**Deviations from the steps:**
+
+- The swell is four vertical-only sines, not Gerstner waves: sideways motion would make every CPU height a root-find for swimmers and floaters, and at 0.05–0.12 m it doesn't show (logged).
+- `?water=` works without Dev (logged), and is a separate flag, not added to `dev-preferences.ts`.
+- The coast texture is RGBA16F (bed, contact distance, signed waterline distance), 12.6 MB at Place, not RG16F; contacts bake into 1 m texels and read as soft blobs; the swash on the sand is driven by the coast's normal with no travel field.
+- The vertex reads the coast once per vertex for the swell's depth fade.
+- Spray keeps only the impact crowns (no shore atlas, so no breaker or rock spray).
+- The far sea is a single skirt ring, not a separate far disc; `setFarSea` and the half-size shimmer copy (B) are not built.
+- Step 7 has its poses (`cove`, `pier-head`, `far-head`, `summit`, `telescope` in `dev/look/lib.ts`) but no `water` sheet or Dev dock button; the comparison stills were taken with `npm run look`'s session (`session reload water=<id>`) and stitched by hand.
+
+**Phone check:** not tested on a device. All seven items are owed for `?water=sun` and `?water=sun-depth`:
+
+1. Time to the first playable frame: not tested on a device.
+2. Cove shore, 15 s, steady: not tested on a device.
+3. Swim, plunge from the pier, surface; tint and droplets: not tested on a device.
+4. Train over the trestle to Far Head, no freeze, sky stays: not tested on a device.
+5. Pier head, 30 s with `?prof`, p95: not tested on a device.
+6. Lock, unlock, return; sky and water intact: not tested on a device.
+7. Report p95, hitches and a pier-head screenshot: not tested on a device.
 
 ## Recommendation
 
