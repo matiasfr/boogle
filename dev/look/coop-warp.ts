@@ -33,7 +33,8 @@ const read = (g: Game) =>
   const p = window.__place;
   return {
     ...(w?.read() ?? { game: performance.now()/1000, wall: Date.now()/1000, lag: 0 }),
-    tick: window.boogle.sync.world.tick, peers: window.boogle.remotes.size,
+    // A page between a reload and its features' onStart has no sync handle yet: sample it as tick -1.
+    tick: window.boogle?.sync?.world.tick ?? -1, peers: window.boogle?.remotes?.size ?? 0,
     place: p ? { authority: p.coop.debug().amAuthority, mode: p.run.mode, head: p.run.head,
       logs: p.stationOf(p.lines[0])?.have.logs, trains: p.lines.map(l => ({ s: l.train.tr.s, target: l.train.tr.target, running: l.train.clockRunning() })) } : null
   };

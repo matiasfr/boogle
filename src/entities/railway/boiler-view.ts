@@ -22,7 +22,7 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { PLAYER_R, reducedMotion } from '../../constants.ts';
 import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
 import { createForgeCall } from './forge-call.ts';
-import { createBeamDrag, type DragShape } from './beam-drag.ts';
+import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 
 // One Owner value per tab: the holder's pid while you help haul the boiler (null otherwise, so the key is left out).
@@ -266,10 +266,16 @@ export function createRailwayBoiler(
     );
   };
   const holds = (pid: string) => state.line2?.boiler.state === 'held' && state.line2.boiler.holder === pid;
+  const side0 = Math.sign(carry.BEAM_CARRY_POSITION[0]) || 1;
+  const gripAt = new THREE.Vector3();
   const mine = createHelpCarry({
     holds,
     free: backFree,
     avatarOf,
+    gripOf: (holder) => {
+      const avatar = avatarOf(holder);
+      return avatar ? restGrip(avatar, BOILER_SHAPE.length, side0, gripAt) : null;
+    },
     self: () => state.pid,
     pidOf: (peer) => {
       const r = remotes.get(peer);
@@ -279,7 +285,6 @@ export function createRailwayBoiler(
   });
   help = mine;
   const posing = new Set<Avatar>();
-  const side0 = Math.sign(carry.BEAM_CARRY_POSITION[0]) || 1;
   const hip = new THREE.Vector3(),
     from = new THREE.Vector3(),
     trail = new THREE.Vector3(),
@@ -521,7 +526,10 @@ export function createRailwayBoiler(
       if (holds(state.pid)) {
         input.sprint = me.sprint = false;
         me.wish.multiplyScalar((mine.helperOf(state.pid) ? state.boilerHelpSpeed : state.boilerSoloSpeed) / 5.6);
-      } else if (mine.helping()) input.sprint = me.sprint = false;
+      } else if (mine.helping()) {
+        input.sprint = me.sprint = false;
+        mine.ease(me.wish);
+      }
     },
     accepted(e: RailwayAccepted) {
       if (e.op === 'rail.boilerTake') {
@@ -586,13 +594,7 @@ export function createRailwayBoiler(
       if (mine.helping() === b.holder)
         return [{ id: 'railway-boiler-help-release', verb: 'Let go', at: drag.grip, run: () => mine.stop() }];
       const other = avatarOf(b.holder);
-      if (
-        other &&
-        me.avatar &&
-        backFree(s.pid) &&
-        Math.hypot(me.avatar.position.x - other.position.x, me.avatar.position.z - other.position.z) <= 5 &&
-        Math.abs(me.avatar.position.y - other.position.y) <= 2
-      )
+      if (other && mine.canStart(b.holder))
         return [
           {
             id: 'railway-boiler-help',

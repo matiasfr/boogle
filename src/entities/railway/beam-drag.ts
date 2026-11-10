@@ -39,6 +39,25 @@ const a = new THREE.Vector3(),
   b = new THREE.Vector3(),
   d = new THREE.Vector3();
 
+/**
+ * Where a helper takes hold of a dragged load of length `span`, from the hauler's pose alone: the rest point of the
+ * drag's own grip (the hip a short rope behind, then 0.7 of the load along the trail 35° off the `side` shoulder).
+ * Help carry measures and eases to it; it never follows the helper, so lifting the load can't move it.
+ */
+export function restGrip(avatar: THREE.Object3D, span: number, side: number, out: THREE.Vector3) {
+  const yaw = avatar.rotation.y,
+    bx = Math.sin(yaw),
+    bz = Math.cos(yaw),
+    px = Math.cos(yaw) * side,
+    pz = -Math.sin(yaw) * side,
+    reach = span * 0.7;
+  return out.set(
+    avatar.position.x + bx * 1.05 + px * 0.4 + (bx * 0.82 + px * 0.57) * reach,
+    avatar.position.y,
+    avatar.position.z + bz * 1.05 + pz * 0.4 + (bz * 0.82 + pz * 0.57) * reach,
+  );
+}
+
 export type BeamDrag = ReturnType<typeof createBeamDrag>;
 /** One carried load's drag. `beam` is the load's model (the worn trunk mesh, or a group whose +Z is the load's long
  * axis, centred on it); it is moved into world space under `world`. `shape` is the load's size and sounds; the great
