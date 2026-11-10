@@ -43,7 +43,8 @@ export function previzView(): PrevizView {
   return v === 'long' || v === 'cab' || v === 'halt' || v === 'states' ? v : 'turn';
 }
 
-function partGeometry(p: Exclude<Part, { kind: 'wheel' }>) {
+/** One part's geometry and where it goes (shared with the passenger-car previz, character/car-previz.ts). */
+export function partGeometry(p: Exclude<Part<string>, { kind: 'wheel' }>) {
   const m = new THREE.Matrix4();
   let g: THREE.BufferGeometry;
   if (p.kind === 'box') {

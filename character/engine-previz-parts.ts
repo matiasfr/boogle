@@ -4,11 +4,12 @@
 export type V = readonly [number, number, number];
 /** What a part belongs to. `body` is always drawn; the others are the upgrade states' separate meshes. */
 export type Module = 'body' | 'cabNear' | 'boiler' | 'lashing' | 'speed' | 'steam' | 'wheels';
-export type Part =
-  | { kind: 'box'; m: Module; c: string; min: V; max: V; tilt?: number }
+/** `M`: what the part belongs to (the passenger-car previz, character/car-previz-parts.ts, has its own modules). */
+export type Part<M extends string = Module> =
+  | { kind: 'box'; m: M; c: string; min: V; max: V; tilt?: number }
   | {
       kind: 'cyl';
-      m: Module;
+      m: M;
       c: string;
       axis: 'x' | 'y' | 'z';
       at: V;
@@ -17,8 +18,8 @@ export type Part =
       r1: number;
       seg: number;
     }
-  | { kind: 'sphere'; m: Module; c: string; at: V; r: number; sy: number; seg: number }
-  | { kind: 'torus'; m: Module; c: string; axis: 'y' | 'z'; at: V; r: number; tube: number; seg: number }
+  | { kind: 'sphere'; m: M; c: string; at: V; r: number; sy: number; seg: number }
+  | { kind: 'torus'; m: M; c: string; axis: 'y' | 'z'; at: V; r: number; tube: number; seg: number }
   | { kind: 'wheel'; m: 'wheels'; at: V; r: number };
 export type EngineId = 'a' | 'b' | 'c';
 /** The walk-in cab, in metres over the rail line: floor top, inner half width, its back and front, the roof's underside,
@@ -421,7 +422,7 @@ export type StateId = (typeof STATES)[number]['id'];
 
 /** Triangles three.js builds for one part (Box 12, Cylinder 4·seg, Sphere seg·(2·seg/2 − 2), Torus 2·6·seg). */
 export const TORUS_RADIAL = 6;
-export function triangles(part: Part, wheelTriangles = 0) {
+export function triangles(part: Part<string>, wheelTriangles = 0) {
   if (part.kind === 'box') return 12;
   if (part.kind === 'cyl') return 4 * part.seg;
   if (part.kind === 'sphere') return part.seg * (part.seg - 2);
@@ -432,7 +433,7 @@ export function triangles(part: Part, wheelTriangles = 0) {
 /** Axis-aligned faces facing the same way, in the same plane, overlapping: the z-fighting the owner saw where the red
  * cab met its dark base (both boxes ended at z −1.5 and −0.5 in today's shell). Boxes and cylinder end caps only;
  * tilted boxes, spheres and rings can't share a plane with an axis-aligned face. */
-export function coplanarFaces(parts: readonly Part[], eps = 0.002) {
+export function coplanarFaces(parts: readonly Part<string>[], eps = 0.002) {
   type Face = { i: number; axis: 0 | 1 | 2; sign: 1 | -1; at: number; lo: [number, number]; hi: [number, number] };
   const faces: Face[] = [];
   const other = (axis: 0 | 1 | 2) => [0, 1, 2].filter((a) => a !== axis) as [number, number];
