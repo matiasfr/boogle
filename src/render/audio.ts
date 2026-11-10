@@ -47,9 +47,17 @@ const duckDb = (bus: Bus) => {
 const w = window as Window & { webkitAudioContext?: typeof AudioContext };
 const nav = navigator as Navigator & { audioSession?: { type: string } };
 
+/** Stops `param`'s automation at `now`, holding the value it has reached. Firefox has no cancelAndHoldAtTime (it threw
+ * once a session on Daniel's Firefox 159, 10 November), so there it cancels and pins the current value instead. */
+function holdParam(param: AudioParam, now: number) {
+  if (typeof param.cancelAndHoldAtTime === 'function') return void param.cancelAndHoldAtTime(now);
+  const value = param.value;
+  param.cancelScheduledValues(now);
+  param.setValueAtTime(value, now);
+}
 /** A click-free 30 ms move to `value`, for live level edits. */
 export function rampParam(param: AudioParam, value: number, now: number) {
-  param.cancelAndHoldAtTime(now);
+  holdParam(param, now);
   param.linearRampToValueAtTime(value, now + 0.03);
 }
 function smooth(param: AudioParam, value: number) {
@@ -59,7 +67,7 @@ function applyDuck() {
   if (!ctx) return;
   const seconds = (voiceDucking ? audioSettings.duckAttackMs : audioSettings.duckReleaseMs) / 1000;
   for (const [bus, nodes] of buses) {
-    nodes.duck.gain.cancelAndHoldAtTime(ctx.currentTime);
+    holdParam(nodes.duck.gain, ctx.currentTime);
     nodes.duck.gain.setTargetAtTime(dbToGain(duckDb(bus)), ctx.currentTime, seconds);
   }
 }
