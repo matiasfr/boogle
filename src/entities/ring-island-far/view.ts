@@ -4,7 +4,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { camera } from '../../render/scene.ts';
-import { RING_GAP, RING_FORMATION, RING_HALT, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
+import { RING_GAP, RING_FORMATION, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
 
 /** Call 20: a cream pennant on the leaf's toe, drawn only if the proof look of the leaf alone fails at Home. Off until
  * the designer and owner pick (the step 0 measure: the raised leaf is 8 px from Home's summit at phone size). */
@@ -18,8 +18,6 @@ const PENNANT = '#fff0c9';
 /** The glow is off by FADE.from (the near view's mount distance, m) and full by FADE.to. At the near view's unmount
  * distance (650 m) the leaf is therefore partly glowing: a small colour step when the far leaf takes over again. */
 const FADE = { from: 500, to: 900, glow: 0.9 } as const;
-/** Plan: the near view mounts within 500 m of the hinge or the halt and unmounts past 650 m. */
-const NEAR = { mount: 500, unmount: 650 } as const;
 /** The raised leaf's angle, degrees up. R2b's `ringIslandPose.leaf` replaces this when it lands (it is not on main). */
 const LEAF_UP_DEG = 78;
 
@@ -28,14 +26,14 @@ const PIER = { width: 8.6, length: 5, bottom: -6 };
 
 const m = (cm: number) => cm / 100;
 const hinge = ringAt(RING_GAP.hinge, RING_FORMATION.mid);
-const halt = ringAt((RING_HALT.u0 + RING_HALT.u1) / 2, RING_FORMATION.mid);
 const deckTop = m(ringDeckY(RING_GAP.hinge));
 
-/** The one place the near view's presence is decided. R2b's near-view entity replaces this body with "is mounted"; until
- * then it is the plan's distance rule with its hysteresis, `was` being the answer last frame. */
-export function nearViewMounted(was: boolean, x: number, z: number) {
-  const d = Math.min(Math.hypot(x - m(hinge.x), z - m(hinge.z)), Math.hypot(x - m(halt.x), z - m(halt.z)));
-  return was ? d <= NEAR.unmount : d < NEAR.mount;
+/** The seam to the near view (R2b's `src/entities/ring-island/`): until it registers, the near view is never mounted and
+ * the far leaf is always drawn. The near view calls `setNearViewMounted(() => <its meshes are mounted>)` once (and
+ * `setNearViewMounted(null)` on dispose); it owns the mount distances (500 m in, 650 m out) and their hysteresis. */
+let nearViewMounted: () => boolean = () => false;
+export function setNearViewMounted(isMounted: (() => boolean) | null) {
+  nearViewMounted = isMounted ?? (() => false);
 }
 
 const smooth = (a: number, b: number, v: number) => {
@@ -117,7 +115,7 @@ export function createRingIslandFarView() {
     root: owner.root,
     update() {
       const { x, z } = camera.position;
-      mounted = nearViewMounted(mounted, x, z);
+      mounted = nearViewMounted();
       root.visible = !mounted;
       if (mounted) return;
       const g = smooth(FADE.from, FADE.to, Math.hypot(x - m(hinge.x), z - m(hinge.z)));
