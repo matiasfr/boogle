@@ -14,14 +14,15 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   medium is not sufficient to solve the problem"): every Opus route runs at medium. Raise a single task to high, as
   the Agent tool's `effort`, only when it hits bugs medium couldn't fix or medium's result falls short, and say so in
   the report. Opus `max` only when the owner asks.
-- **Orchestrator on Fable or Opus medium** (owner, 9 November: "orchestrator can also use opus medium").
+- **Orchestrator** runs Opus medium, Opus high or Fable medium (owner, 9 November: "orchestrator can use opus
+  medium, high, or fable medium").
 - **Fable only for the orchestrator** (owner, 9 November, after measuring that Fable 5.2 uses the weekly limit about
   2.9x as fast as Opus 5.5 per million output tokens, and fills its own Fable limit too): the main session is the only
-  steady Fable user. The independent review stays on Fable at medium because it runs rarely and the reviewer can't be
-  the Opus that wrote the code. Planning, the hardest design, research and second-opinion work, and every
+  steady Fable user. The independent review runs at medium on Fable or Opus (owner, 9 November: "so can the independent review"); an
+  Opus reviewer is a fresh subagent with none of the author's context. Planning, the hardest design, research and second-opinion work, and every
   `/code-review` run on Opus. Per-task savings at API prices (the Fable 5.2 system card) don't carry over to a
   subscription, where the limit is what runs out.
-- **Code review** runs in an Opus medium general-purpose subagent with `/code-review high`, never in the main session. Opus reviewing Opus-written code is fine for this check; the independent review below is the
+- **Code review** runs in an Opus medium general-purpose subagent with `/code-review medium`, never in the main session. Opus reviewing Opus-written code is fine for this check; the independent review below is the
   different-model one.
 - **Fable tops out at high** (owner, 10 November: "don't use fable xHigh, fable high should be the absolute top
   used"). No route, spawn or review runs Fable at xhigh or max (`fableTopEffort`, `test/models.test.ts`), and it
