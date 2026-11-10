@@ -308,8 +308,11 @@ function* device(g: Game, pl: Player, at: Point, op: string, ready: () => boolea
   yield* walk(at);
   yield* press(op);
 }
-function quarry(g: Game, pl: Player, k: number): Policy {
+/** `byHand`: the vehicle isn't there, so logs come from the trees and rails from the forge rack, on foot. */
+function quarry(g: Game, pl: Player, k: number, byHand = false): Policy {
   const spec = L2(k);
+  const depot = spec.depot && !byHand,
+    shelf = spec.shelf && !byHand;
   const j = () => g.s.line2!.jobs[k]!;
   return (function* () {
     yield* waitFor(g, () => line2Active(g.s) === k && g.h.tick() >= g.s.line2!.forge.lit + LINE2_FORGE.turnTicks);
@@ -322,7 +325,7 @@ function quarry(g: Game, pl: Player, k: number): Policy {
       g,
       pl,
       logs,
-      spec.depot
+      depot
         ? (want) => fromRack(g, pl, spec, 'rail.depotTake', () => g.s.line2!.depot, want, 'carry')
         : (want) => chopTo(g, pl, want),
       () => g.acct(pl.pid).carry,
@@ -333,7 +336,7 @@ function quarry(g: Game, pl: Player, k: number): Policy {
       g,
       pl,
       rails,
-      spec.shelf
+      shelf
         ? (want) => fromRack(g, pl, spec, 'rail.depotRailTake', () => g.s.line2!.depotRails, want, 'rails')
         : (want) => forgeRails(g, pl, want),
       () => g.acct(pl.pid).rails ?? 0,
@@ -462,8 +465,10 @@ type Run = {
   g: Game;
   done: Record<NodeId, () => boolean>;
   policy: Record<NodeId, (pl: Player) => Policy>;
+  /** World facts the sim doesn't hold (the pier is reached by walking there). */
+  flags: { atPier: boolean };
 };
-function setup(h: Host, n: number): Run {
+function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run {
   const players: Player[] = Array.from({ length: n }, (_v, i) => ({
     pid: `p${i + 1}`,
     i,
@@ -473,7 +478,7 @@ function setup(h: Host, n: number): Run {
     gen: null,
   }));
   const g = new Game(h, players);
-  let atPier = false;
+  const flags = { atPier: false };
   const s = () => g.s;
   const q = (k: number) => !!s().line2?.jobs[k]?.completion;
   const done: Record<NodeId, () => boolean> = {
@@ -498,7 +503,7 @@ function setup(h: Host, n: number): Run {
     boiler: () => ['held', 'fitted'].includes(s().line2?.boiler.state ?? ''),
     trains: () => (s().line2?.trains ?? -1) >= 0,
     Q6: () => q(5),
-    pier: () => atPier,
+    pier: () => flags.atPier,
     breaker: () => (s().works?.breaker ?? 0) === 2,
     slab: () => !!((s().works?.seams ?? 0) & 1),
     throat: () => !!((s().works?.seams ?? 0) & 2),
@@ -520,18 +525,18 @@ function setup(h: Host, n: number): Run {
     axe: (pl) => device(g, pl, LINE1_AXE_STAND, 'rail.axe', ready('axe')),
     pack: (pl) => device(g, pl, LINE2_PACK, 'rail.pack', () => (s().line2?.forge.used ?? 0) >= LINE2_FORGE.bills[0]),
     Q1: (pl) => quarry(g, pl, 0),
-    Q2: (pl) => quarry(g, pl, 1),
+    Q2: (pl) => quarry(g, pl, 1, byHand.has('Q2')),
     hook: (pl) => device(g, pl, LINE2_HOOK, 'rail.hook', ready('hook')),
-    Q3: (pl) => quarry(g, pl, 2),
+    Q3: (pl) => quarry(g, pl, 2, byHand.has('Q3')),
     lever: (pl) => device(g, pl, LINE2_LEVER, 'rail.lever', ready('lever')),
-    Q4: (pl) => quarry(g, pl, 3),
+    Q4: (pl) => quarry(g, pl, 3, byHand.has('Q4')),
     sea: (pl) => device(g, pl, LINE2_SEA, 'rail.seaSwitch', () => true),
-    Q5: (pl) => quarry(g, pl, 4),
+    Q5: (pl) => quarry(g, pl, 4, byHand.has('Q5')),
     glider: (pl) => device(g, pl, LINE2_GLIDE, 'rail.glide', ready('glider')),
     boiler: (pl) => boiler(g, pl),
     trains: (pl) => fit(g, pl),
-    Q6: (pl) => quarry(g, pl, 5),
-    pier: (pl) => pier(g, pl, () => void (atPier = true)),
+    Q6: (pl) => quarry(g, pl, 5, byHand.has('Q6')),
+    pier: (pl) => pier(g, pl, () => void (flags.atPier = true)),
     breaker: (pl) => device(g, pl, WORKS_BREAKER, 'rail.breaker', () => s().works!.breaker === 1),
     slab: (pl) => strike(g, pl, 0),
     throat: (pl) => strike(g, pl, 1),
@@ -547,17 +552,27 @@ function setup(h: Host, n: number): Run {
       ),
     cradle: (pl) => cradle(g, pl),
     table: (pl) => device(g, pl, SHED_TABLE, 'rail.turn', () => s().shed!.stall >= WORKS.stall) as Policy,
+    // By hand, the pier's footings come off the Works rack the kiln casts to, not off the wagon at the pier rack.
     crossing: (pl) =>
-      footings(
-        g,
-        pl,
-        1,
-        2,
-        () => WORKS.pier - s().works!.pierSet,
-        () => s().works!.pierRack,
-      ),
+      byHand.has('crossing')
+        ? footings(
+            g,
+            pl,
+            0,
+            2,
+            () => WORKS.pier - s().works!.pierSet,
+            () => s().works!.rack,
+          )
+        : footings(
+            g,
+            pl,
+            1,
+            2,
+            () => WORKS.pier - s().works!.pierSet,
+            () => s().works!.pierRack,
+          ),
   };
-  return { g, done, policy };
+  return { g, done, policy, flags };
 }
 
 /** Steps one player's generator until it asks for time. */
@@ -654,21 +669,67 @@ function probe(h: Host, players: Player[], id: NodeId, before: NodeId): Probe | 
 /** Ticks a probe may take (10 minutes: a chop and a walk across the map). */
 const PROBE = 6000;
 
+/** Everything a run holds at the start of a node, between nodes (no player has a policy running then): enough to go
+ * on from there in a fresh host made from the world's own snapshot. */
+export type Checkpoint = {
+  index: number;
+  snapshot: unknown;
+  tick: number;
+  players: Pick<Player, 'at' | 'busy' | 'walked'>[];
+  bringing: [string, number][];
+  flags: Run['flags'];
+  nodes: NodeTime[];
+  parked: number[];
+  lastProgress: number;
+};
+
 export function playOrder(
   order: readonly NodeId[],
   name: string,
   players: number,
-  opts: { verbose?: boolean; probes?: boolean; mutate?: (h: Host) => void } = {},
+  opts: {
+    verbose?: boolean;
+    probes?: boolean;
+    mutate?: (h: Host) => void;
+    byHand?: ReadonlySet<NodeId>;
+    /** Go on from this checkpoint (an earlier run of an order that shares `order`'s first `index` nodes). */
+    from?: Checkpoint;
+    /** Keep a checkpoint at the start of each node, for orders that share this one's prefix. */
+    checkpoints?: Checkpoint[];
+  } = {},
 ): RunResult {
-  const h = createHost(Array.from({ length: players }, (_v, i) => `p${i + 1}`));
+  const pids = Array.from({ length: players }, (_v, i) => `p${i + 1}`);
+  const h = opts.from ? createHost(pids, { snapshot: opts.from.snapshot, tick: opts.from.tick }) : createHost(pids);
   opts.mutate?.(h);
-  const r = setup(h, players);
+  const r = setup(h, players, opts.byHand);
   const { g, done } = r;
   const result: RunResult = { order: name, players, nodes: [], ticks: 0 };
   const log: string[] = [];
   const parked: { id: NodeId; t: NodeTime }[] = [];
   let lastProgress = 0;
   const probes: Probe[] = [];
+  let start = 0;
+  if (opts.from) {
+    const cp = opts.from;
+    start = cp.index;
+    cp.players.forEach((p, i) => Object.assign(g.players[i]!, { at: { ...p.at }, busy: p.busy, walked: p.walked }));
+    g.bringing = new Map(cp.bringing);
+    Object.assign(r.flags, cp.flags);
+    result.nodes = cp.nodes.map((t) => ({ ...t }));
+    for (const k of cp.parked) parked.push({ id: result.nodes[k]!.id, t: result.nodes[k]! });
+    lastProgress = cp.lastProgress;
+  }
+  const capture = (index: number): Checkpoint => ({
+    index,
+    snapshot: h.snapshot(),
+    tick: h.tick(),
+    players: g.players.map((p) => ({ at: { ...p.at }, busy: p.busy, walked: p.walked })),
+    bringing: [...g.bringing],
+    flags: { ...r.flags },
+    nodes: result.nodes.map((t) => ({ ...t })),
+    parked: parked.map((p) => result.nodes.indexOf(p.t)),
+    lastProgress,
+  });
   /** Before `id` starts: every node that a decided edge holds behind it, whose other prerequisites are met. */
   const probeBefore = (id: NodeId) => {
     for (const b of NODES)
@@ -688,7 +749,9 @@ export function playOrder(
         lastProgress = h.tick();
       }
   };
-  for (const id of order) {
+  for (let index = start; index < order.length; index++) {
+    const id = order[index]!;
+    if (opts.checkpoints) opts.checkpoints[index] = capture(index);
     const t: NodeTime = {
       id,
       tick: -1,
@@ -772,17 +835,33 @@ export function runLoop(args: string[]) {
   const only = value('--order');
   const broken = value('--break');
   if (broken) breakBill(broken);
+  const handArg = value('--by-hand');
+  if (handArg) return runByHand(handArg, counts, args);
   const orders = proposeOrders().filter((o) => (broken ? o.name === 'canonical' : !only || o.name === only));
+  const share = !args.includes('--no-share');
   const started = performance.now();
   const results: RunResult[] = [];
-  for (const players of counts)
+  for (const players of counts) {
+    // Each order replays only from where it leaves the canonical order: the canonical run keeps a checkpoint at the
+    // start of every node, and an order whose first k nodes are the canonical's goes on from checkpoint k.
+    const canonical = proposeOrders()[0]!.order;
+    const checkpoints: Checkpoint[] = [];
     for (const o of orders) {
       const probes = o.name === 'canonical' && players === counts[0] && !args.includes('--no-probes');
-      const res = playOrder(o.order, o.name, players, { verbose: args.includes('--verbose'), probes });
+      let k = 0;
+      while (k < o.order.length && o.order[k] === canonical[k]) k++;
+      const from = share && o.name !== 'canonical' ? checkpoints[k] : undefined;
+      const res = playOrder(o.order, o.name, players, {
+        verbose: args.includes('--verbose'),
+        probes,
+        ...(from ? { from } : {}),
+        ...(share && o.name === 'canonical' ? { checkpoints } : {}),
+      });
       if (res.softlock && o.name !== 'canonical')
         res.graphBug = [`the graph allows "${o.name}" but the rules never finished ${res.softlock.node}`];
       results.push(res);
     }
+  }
   const ms = Math.round(performance.now() - started);
   if (args.includes('--json')) return console.log(JSON.stringify({ ms, results }, null, 2));
   const out: string[] = [
@@ -828,6 +907,78 @@ export function runLoop(args: string[]) {
   }
   console.log(out.join('\n'));
 }
+// ---------------------------------------------------------------- by hand: the vehicle isn't there
+/** The nodes a vehicle feeds today (dev/loop/graph.ts `supply`). */
+const VEHICLE_FED = NODES.filter((n) => Object.values(n.supply).some((s) => s.by !== 'hand')).map((n) => n.id);
+/** How each is played on foot. A cart station: its depot and shelf flags are off in this process only (the catalog
+ * object, as --break does), so the cart never serves it; every action still goes through the host's rules. The kit
+ * train and the wagon have no such flag (src/sim hard-codes Q6's kit and the wagon's footings), so their node is
+ * played before the vehicle exists: Q6 before the boiler (the known defect: the rules accept Q6 before trains),
+ * the crossing before the table turn, its footings carried from the Works rack. */
+function byHandPlan(id: NodeId) {
+  const s = LINE2_STATIONS.find((x) => x.id === id);
+  if (s && !s.feed) return { flags: s, before: null };
+  if (id === 'Q6') return { flags: null, before: 'boiler' as NodeId };
+  if (id === 'crossing') return { flags: null, before: 'table' as NodeId };
+  throw new Error(`--by-hand: no vehicle feeds ${id}`);
+}
+function handOrder(ids: readonly NodeId[]) {
+  const order = [...proposeOrders()[0]!.order];
+  for (const id of ids) {
+    const { before } = byHandPlan(id);
+    if (!before) continue;
+    order.splice(order.indexOf(id), 1);
+    order.splice(order.indexOf(before), 0, id);
+  }
+  return order;
+}
+function runByHand(arg: string, counts: number[], args: string[]) {
+  const ids: NodeId[] = arg === 'all' ? VEHICLE_FED : [arg as NodeId];
+  if (!ids.every((id) => VEHICLE_FED.includes(id)))
+    throw new Error(`--by-hand: one of ${VEHICLE_FED.join(', ')}, or all`);
+  const started = performance.now();
+  const rows: { players: number; base: RunResult; hand: RunResult }[] = [];
+  for (const players of counts) {
+    const base = playOrder(proposeOrders()[0]!.order, 'canonical', players);
+    const saved = ids.map((id) => byHandPlan(id).flags).map((s) => (s ? { s, depot: s.depot, shelf: s.shelf } : null));
+    for (const x of saved) if (x) Object.assign(x.s, { depot: false, shelf: false });
+    let hand: RunResult;
+    try {
+      hand = playOrder(handOrder(ids), `by hand: ${ids.join(', ')}`, players, { byHand: new Set(ids) });
+    } finally {
+      for (const x of saved) if (x) Object.assign(x.s, { depot: x.depot, shelf: x.shelf });
+    }
+    rows.push({ players, base, hand });
+  }
+  const ms = Math.round(performance.now() - started);
+  if (args.includes('--json')) return console.log(JSON.stringify({ ms, rows }, null, 2));
+  const out = [
+    `By hand: ${ids.join(', ')} fed on foot through the real rules, against the canonical run. ${ms} ms.`,
+    `Cart stations play with their depot and shelf off (this process only); Q6 plays before the boiler and the crossing`,
+    `before the table, so the kit train and the wagon don't exist yet. Straight-line walking, as \`loop -- run\`.`,
+  ];
+  for (const { players, base, hand } of rows) {
+    out.push('', `${players} player${players > 1 ? 's' : ''}: canonical ${verdict(base)}; by hand ${verdict(hand)}`);
+    out.push('  node      took (vehicle)   took (by hand)   difference   carries by hand   walked m by hand');
+    for (const id of ids) {
+      const b = base.nodes.find((t) => t.id === id),
+        hd = hand.nodes.find((t) => t.id === id);
+      const took = (t?: NodeTime) => (t && t.tick >= 0 ? t.tick - t.startTick : undefined);
+      const tb = took(b),
+        th = took(hd);
+      const diff = tb !== undefined && th !== undefined ? `${th >= tb ? '+' : '-'}${clock(Math.abs(th - tb))}` : '-';
+      out.push(
+        `  ${id.padEnd(9)} ${(tb === undefined ? 'never' : clock(tb)).padStart(14)} ${(th === undefined ? 'never' : clock(th)).padStart(16)} ${diff.padStart(12)} ${String(hd?.carries ?? 0).padStart(17)} ${String(Math.round(hd?.walked ?? 0)).padStart(18)}`,
+      );
+    }
+    if (!hand.softlock && !base.softlock) {
+      const d = hand.ticks - base.ticks;
+      out.push(`  whole loop: ${d >= 0 ? '+' : '-'}${clock(Math.abs(d))} by hand`);
+    }
+  }
+  console.log(out.join('\n'));
+}
+
 /** In this process only: a station's log bill a hundred times over, so the run must report a softlock. */
 function breakBill(id: string) {
   const s = [...LINE1_STATIONS, ...LINE2_STATIONS].find((x) => x.id === id);

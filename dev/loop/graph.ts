@@ -95,10 +95,10 @@ export type Cue = {
 };
 export type Material = 'logs' | 'stone' | 'rails' | 'beam' | 'boiler' | 'footings';
 /** Where a bill's material comes from: by hand from a point, or brought by the cart, the kit train or the wagon to a
- * rack beside the frame (the last carry is then rack to frame). */
-export type Supply =
-  | { by: 'hand'; from: readonly Point[]; per: number; label: string }
-  | { by: 'cart' | 'train' | 'wagon'; rack: Point; label: string };
+ * rack beside the frame (the last carry is then rack to frame). A vehicle supply names `foot`: where a player would
+ * fetch it on foot if the vehicle isn't there (the nearest trees, the forge rack, the Works rack). */
+export type HandSupply = { by: 'hand'; from: readonly Point[]; per: number; label: string };
+export type Supply = HandSupply | { by: 'cart' | 'train' | 'wagon'; rack: Point; label: string; foot: HandSupply };
 /** A mark (src/adapters/railway-marks.ts) that says the node was reached: the `nth` match, or the last one. */
 export type Reached = {
   mark: string;
@@ -162,19 +162,20 @@ const station2 = (id: string) => LINE2_STATIONS.find((s) => s.id === id)!;
 const p = (q: { x: number; z: number; y?: number }): Point => (q.y === undefined ? { x: q.x, z: q.z } : q);
 const TREES: readonly Point[] = RAILWAY_SOURCES.map(([, x, z]) => ({ x, z }));
 const FORGE_RACK: Point = { x: LINE2_FORGE.rackX, z: LINE2_FORGE.rackZ };
-const trees: Supply = { by: 'hand', from: TREES, per: T1.sourceYield, label: 'standing trees' };
-const forgeRails: Supply = { by: 'hand', from: [FORGE_RACK], per: LINE2_FORGE.rackMax, label: 'forge rack' };
-const rocks = (list: readonly { x: number; z: number; initial: number }[], label: string): Supply => ({
+const trees: HandSupply = { by: 'hand', from: TREES, per: T1.sourceYield, label: 'standing trees' };
+const forgeRails: HandSupply = { by: 'hand', from: [FORGE_RACK], per: LINE2_FORGE.rackMax, label: 'forge rack' };
+const rocks = (list: readonly { x: number; z: number; initial: number }[], label: string): HandSupply => ({
   by: 'hand',
   from: list.map(p),
   per: Math.min(...list.map((r) => r.initial)),
   label,
 });
-const one = (q: Point, label: string): Supply => ({ by: 'hand', from: [q], per: 1, label });
-const depotRack = (s: { x: number; z: number }, by: 'cart' | 'train'): Supply => ({
+const one = (q: Point, label: string): HandSupply => ({ by: 'hand', from: [q], per: 1, label });
+const depotRack = (s: { x: number; z: number }, by: 'cart' | 'train', foot: HandSupply): Supply => ({
   by,
   rack: { x: s.x + LINE2_DEPOT.reach, z: s.z },
   label: `${by} to the rack (reach ${LINE2_DEPOT.reach / 100} m)`,
+  foot,
 });
 const dec = (on: NodeId, by: EnforcedBy, source: string, scope?: 'finish'): Edge => ({
   on,
@@ -225,8 +226,8 @@ function quarryStation(id: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6', requires: Ed
     at: p(s),
     bill: { logs: s.bill[0], rails: s.bill[1] },
     supply: {
-      logs: feed ? depotRack(s, 'train') : s.depot ? depotRack(s, 'cart') : trees,
-      rails: feed ? depotRack(s, 'train') : s.shelf ? depotRack(s, 'cart') : forgeRails,
+      logs: feed ? depotRack(s, 'train', trees) : s.depot ? depotRack(s, 'cart', trees) : trees,
+      rails: feed ? depotRack(s, 'train', forgeRails) : s.shelf ? depotRack(s, 'cart', forgeRails) : forgeRails,
     },
     ops: [],
     reached: { mark: `stretch laid ${id}` },
@@ -665,7 +666,14 @@ export const NODES: readonly LoopNode[] = [
     area: 'works',
     at: p(PIER_FRAME),
     bill: { footings: WORKS.pier },
-    supply: { footings: { by: 'wagon', rack: p(PIER_RACK), label: 'wagon to the pier rack' } },
+    supply: {
+      footings: {
+        by: 'wagon',
+        rack: p(PIER_RACK),
+        label: 'wagon to the pier rack',
+        foot: one(p(WORKS_RACK), 'the Works rack'),
+      },
+    },
     ops: [],
     reached: { mark: 'footing set', data: { site: 2 }, nth: WORKS.pier },
     stops: ['crossing'],
@@ -699,27 +707,48 @@ export function carryOf(material: Material, packed: boolean) {
 }
 /** Straight-line one-way metres a carry of `material` walks to the node: from the nearest sources that hold its
  * bill (trees yield `sourceYield` each, rocks their initial stone), or from the rack beside the frame. */
-function carryMetres(n: LoopNode, material: Material) {
-  const s = n.supply[material];
+function carryMetres(n: LoopNode, material: Material, byHand = false) {
+  const supplied = n.supply[material];
   const bill = n.bill[material] ?? 0;
-  if (!s || !bill) return 0;
+  if (!supplied || !bill) return 0;
+  const s = byHand && supplied.by !== 'hand' ? supplied.foot : supplied;
   if (s.by !== 'hand') return cm(s.rack, n.at) / 100;
   const k = Math.min(s.from.length, Math.max(1, Math.ceil(bill / s.per)));
   const near = [...s.from].map((q) => cm(q, n.at)).sort((a, b) => a - b);
   return near.slice(0, k).reduce((a, b) => a + b, 0) / k / 100;
 }
-export type Grind = { material: Material; carries: number; metres: number; by: Supply['by'] };
+/** One material's carries: `metres` as supplied today (from the rack when a vehicle brings it), `handMetres` if it is
+ * fetched on foot (`foot` names from where; the same as `metres` for a hand supply). */
+export type Grind = {
+  material: Material;
+  carries: number;
+  metres: number;
+  handMetres: number;
+  by: Supply['by'];
+  foot?: string;
+};
 export function grindOf(n: LoopNode, packed: boolean): Grind[] {
-  return (Object.keys(n.supply) as Material[]).map((material) => ({
-    material,
-    carries: Math.ceil((n.bill[material] ?? 0) / carryOf(material, packed)),
-    metres: carryMetres(n, material),
-    by: n.supply[material]?.by ?? 'hand',
-  }));
+  return (Object.keys(n.supply) as Material[]).map((material) => {
+    const s = n.supply[material]!;
+    return {
+      material,
+      carries: Math.ceil((n.bill[material] ?? 0) / carryOf(material, packed)),
+      metres: carryMetres(n, material),
+      handMetres: carryMetres(n, material, true),
+      by: s.by,
+      ...(s.by === 'hand' ? {} : { foot: s.foot.label }),
+    };
+  });
 }
-/** Carry-metres one player walks loaded for a node when `players` share the carries evenly (one way). */
-export const grindFor = (g: Grind[], players: number) =>
-  g.reduce((total, r) => total + Math.ceil(r.carries / players) * r.metres, 0);
+/** Carry-metres one player walks loaded for a node when `players` share the carries evenly (one way); `byHand`: with
+ * every vehicle away, each material fetched from its `foot` source. */
+export const grindFor = (g: Grind[], players: number, byHand = false) =>
+  g.reduce((total, r) => total + Math.ceil(r.carries / players) * (byHand ? r.handMetres : r.metres), 0);
+/** Every material on the bill comes by a vehicle: without it the node is all on foot. */
+export const vehicleOnly = (n: LoopNode) =>
+  Object.keys(n.supply).length > 0 && Object.values(n.supply).every((s) => s.by !== 'hand');
+/** Some material on the bill comes by a vehicle. */
+export const vehicleFed = (n: LoopNode) => Object.values(n.supply).some((s) => s.by !== 'hand');
 
 // ---------------------------------------------------------------- orders
 const startEdges = (n: LoopNode) => n.requires.filter((e) => (e.scope ?? 'start') === 'start');
