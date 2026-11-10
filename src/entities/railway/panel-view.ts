@@ -23,9 +23,11 @@ export function createRailwayPanelView(
       index = track.cursor,
       panel = track.panels[index];
     const active = current.phase === 'laying' && panel?.stage === current.activeStation && current.panelStock > 0;
+    const rest = track.panels.slice(index);
     machine.panelRack(
-      track.panels.slice(index).map((p) => p.to - p.from),
+      rest.map((p) => p.to - p.from),
       active,
+      rest.map((_, k) => track.pairs(index + k)),
     );
     if (active) {
       returning = 0;

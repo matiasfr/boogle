@@ -8,8 +8,8 @@ import { readableGlow } from '../../render/readable-unlit.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { flat } from '../flat.ts';
-import { FAR, LINES, lineAt, railY } from '../place/layout.ts';
-import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../../sickle/world-lines.ts';
+import { FAR } from '../place/layout.ts';
+import { FORMATION, WORLD_LINES } from '../../sickle/world-lines.ts';
 import { RING_CONES, SEA_BED, wx, wz, type Ground } from './ground.ts';
 import {
   blobPts,
@@ -527,37 +527,8 @@ export function buildGreybox(map: Layout, ground: Ground, { review = true } = {}
     if (loops.length) boxes(loops, flat(UNBUILT, 0.7), root);
   }
 
-  // ---- the second track beside today's lines 1 and 2: a pale, non-solid bed 4 m off on the side the plan picks, with
-  // an orange post at each stretch where it meets something (the plan's notes). Never solid: the live railway is there.
-  {
-    const ghost: THREE.BufferGeometry[] = [],
-      posts: Box[] = [];
-    const p = { x: 0, z: 0, ux: 0, uz: 0 };
-    for (const t of LIVE_SECOND_TRACK) {
-      const line = t.line === 0 ? LINES.north : LINES.east;
-      const off = t.side * HALF * 2;
-      const at = (s: number) => {
-        lineAt(line, s, p);
-        return new THREE.Vector3(wx(p.x - p.uz * off), railY(line, s), wz(p.z + p.ux * off));
-      };
-      for (let s = 0; s < line.len - 4; s += 4) {
-        const a = at(s),
-          b = at(Math.min(line.len, s + 4));
-        pivot.position.copy(a).add(b).multiplyScalar(0.5);
-        pivot.lookAt(b);
-        pivot.updateMatrix();
-        ghost.push(new THREE.BoxGeometry(2.6, 0.14, a.distanceTo(b) + 0.2).applyMatrix4(pivot.matrix));
-      }
-      for (const c of t.clashes) {
-        const q = at((c.fromCm + c.toCm) / 200);
-        posts.push({ w: 0.5, h: 8, d: 0.5, x: q.x, y: q.y + 4, z: q.z });
-      }
-    }
-    const mesh = new THREE.Mesh(mergeGeometries(ghost), flat('#e9e4d6', 0.5));
-    mesh.name = 'second-track-survey';
-    root.add(mesh);
-    if (posts.length) boxes(posts, GATE, root, false);
-  }
+  // Lines 1 and 2's second track is built now (generic-lines step 2, src/proto/place/rail.ts): the live railway draws it,
+  // so the greybox no longer draws a survey bed beside them. LIVE_SECOND_TRACK stays the blockout page's record.
   {
     const mesh = new THREE.Mesh(mergeGeometries(beds), flat('#4a4038', 0.9));
     mesh.name = 'track-beds';

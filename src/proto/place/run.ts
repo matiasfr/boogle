@@ -323,12 +323,14 @@ machine.onPanelFrame = (dt) => {
     index = track.cursor,
     panel = track.panels[index];
   const active = run.mode === 'laying' && panel?.stage === l.stage && run.rack > 0;
+  const rest = track.panels
+    .map((p, k) => ({ p, k }))
+    .slice(index)
+    .filter(({ p }) => l === L1 || p.stage === l.stage);
   machine.panelRack(
-    track.panels
-      .slice(index)
-      .filter((p) => l === L1 || p.stage === l.stage)
-      .map((p) => p.to - p.from),
+    rest.map(({ p }) => p.to - p.from),
     active,
+    rest.map(({ k }) => track.pairs(k)),
   );
   if (active) {
     panelReturn = 0;

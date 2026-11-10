@@ -28,23 +28,23 @@ export function approachPlanks(
 }
 
 export async function createRailwayPath(owner: OwnedView) {
-  const [{ LINKS, railY }, { besideLine }, { addStatic, plank, H }, { flat }, { pop }] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/rail.ts'),
-    import('../../proto/place/land.ts'),
-    import('../../proto/flat.ts'),
-    import('../../proto/minis/common.ts'),
-  ]);
+  const [{ LINKS, FORMATION, railY, upLat, pathLamps }, { besideLine }, { addStatic, plank, H }, { flat }, { pop }] =
+    await Promise.all([
+      import('../../proto/place/layout.ts'),
+      import('../../proto/place/rail.ts'),
+      import('../../proto/place/land.ts'),
+      import('../../proto/flat.ts'),
+      import('../../proto/minis/common.ts'),
+    ]);
   const row = new THREE.Group();
   row.visible = false;
   const glow = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3, 2.1, 0.9) }));
   const line = LINKS[0]!.line;
   const slots: { x: number; y: number; z: number }[] = [];
-  for (let s = 116; s >= 60; s -= 7)
-    for (const side of [-1, 1]) {
-      const p = besideLine(line, s, side * 1.72);
-      slots.push({ x: p.x, y: railY(line, s) + 0.75, z: p.z });
-    }
+  for (const { s, l } of pathLamps((s) => upLat(FORMATION.timber, s) ?? 0)) {
+    const p = besideLine(line, s, l);
+    slots.push({ x: p.x, y: railY(line, s) + 0.75, z: p.z });
+  }
   // One instanced batch each for the posts and the lights: 36 draws as separate meshes, seen from every far view of
   // the island (the iPhone pass, 9 November).
   const postGeo = new THREE.BoxGeometry(0.12, 1.5, 0.12),
