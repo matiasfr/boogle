@@ -29,6 +29,11 @@ if (mode === 'apron') {
   const f = state.line2View.frames[5]!;
   p = { x: f.x - 3, y: f.y + 0.85, z: f.z + 4 };
   target = { x: f.x, y: f.y + 1.5, z: f.z };
+} else if (mode === 'q6rack') {
+  // Close on station 6's depot rack and its sign, from the Far Head side (boiler-first-choice step 1).
+  const d = state.line2View.depot!;
+  p = { x: d[0]! - 4, y: d[1]! + 0.85, z: d[2]! + 6 };
+  target = { x: d[0]!, y: d[1]! + 1.4, z: d[2]! };
 } else if (mode === 'village' || mode === 'quarry' || mode === 'head') {
   const h = { village: [927.79, 19.02, 26.17], quarry: [1081.32, 25.02, 41.14], head: [1363.61, 25.02, -163.53] }[
     mode
@@ -41,12 +46,17 @@ if (mode === 'apron') {
     q = rail.besideLine(line, 739, 0);
   p = { x: q.x, y: layout.railY(line, 739) + 0.85, z: q.z };
   target = { x: q.x, y: p.y, z: q.z - 751 };
-} else throw new Error('Choose b58at=apron|camp|village|quarry|head|q6|pier');
+} else throw new Error('Choose b58at=apron|camp|village|quarry|head|q6|q6rack|pier');
 teleport(me.body, p.x, p.y, p.z);
 me.body.velocity.set(0, 0, 0);
 cam.yaw = me.yaw = Math.atan2(-(target.x - p.x), -(target.z - p.z));
 cam.pitch = -0.12;
-const camera: [number, number, number] = mode === 'pier' ? [p.x + 5, p.y + 5, p.z + 12] : [p.x - 12, p.y + 9, p.z + 16];
+const camera: [number, number, number] =
+  mode === 'pier'
+    ? [p.x + 5, p.y + 5, p.z + 12]
+    : mode === 'q6rack'
+      ? [p.x - 1.5, p.y + 1.6, p.z + 3]
+      : [p.x - 12, p.y + 9, p.z + 16];
 const aim: [number, number, number] = [target.x, target.y, target.z];
 window.__debugCam!.set(camera, aim, 65);
 setTimeout(() => window.__debugCam!.set(camera, aim, 65), 100);
