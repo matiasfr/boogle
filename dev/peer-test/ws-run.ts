@@ -22,7 +22,8 @@ useWorkerSource(root);
 const { startWeb, waitFor, ev, snap, seesAll, sleep } = await import('./harness.ts');
 const { freePort } = await import('../look/lib.ts');
 const { createService, loadConfig } = await import('../../server/src/server.ts');
-const { railwayChecks, railwayLoad, railwayCartRide, railwayTrainRide } = await import('./ws-railway.ts');
+const { railwayChecks, railwayJumpIn, railwayLoad, railwayCartRide, railwayTrainRide } =
+  await import('./ws-railway.ts');
 const { worldRoomId } = await import('../../src/world/namespace.ts');
 // Namespaced like the real game's rooms, so boot cleanup keeps it across the restart check.
 const room = worldRoomId('ws' + Math.random().toString(36).slice(2, 8));
@@ -253,6 +254,7 @@ try {
     dataDir,
   };
   await railwayChecks(ctx);
+  await railwayJumpIn(ctx); // a seeded playtest room, two players, through a restart
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
   // churn). WS_LOAD_PLAYERS=6 / WS_LOAD_LAT=200 / WS_LOAD_CHURN=5x pick rows.

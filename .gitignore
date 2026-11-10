@@ -36,3 +36,6 @@ CLAUDE.local.md
 
 # The dev server's own game server saves (vite.config.ts, boogle-local-server)
 .boogle-data/
+
+# Jump-in seeds prebuilt for the server image (server/src/seeds/prebuild.ts); the image builds its own
+server/seeds/

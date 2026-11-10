@@ -73,6 +73,17 @@ test('found crystals and finds from an old rail namespace are removed', () => {
   );
 });
 
+test("a jump room's seen arrival line from an old rail namespace is removed", () => {
+  assert.deepEqual(
+    staleKeys(
+      ['boogle.jump.seen.v1:rail-v18-q1-done-a1b2c3', 'boogle.jump.seen.v1:rail-v19-q1-done-a1b2c3'],
+      'v19',
+      ns,
+    ),
+    ['boogle.jump.seen.v1:rail-v18-q1-done-a1b2c3'],
+  );
+});
+
 test('several missed wipes reset all old-world progress, keeping identity, preferences and unrelated data', () => {
   const keep = [
     'boogle.name',

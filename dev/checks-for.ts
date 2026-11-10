@@ -46,6 +46,9 @@ const render = matches(/^(src\/(render|materials|shaders|lighting)\/|assets\/)|\
 const harness = matches(/^dev\/(look|scenarios|codex)\//);
 const gameplay = matches(/^src\//);
 if (files.length) add('Static validation', 'npm', 'run', 'check');
+// The seed builders and jump-ins (docs/plans/playtest-jump-in.md): every routed and offered stage still builds.
+if (matches(/^(src\/sim\/railway-(seed|live)[^/]*\.ts|src\/world\/railway-jump\.ts|server\/src\/seeds\/)/))
+  add('Railway seeds or jump-ins', 'npm', 'run', 'checkpoints');
 if (matches(/^(src\/net[^/]*\/|src\/world\/(sync|game-world)\.ts$|server\/)/)) {
   add('Room/network changes', 'npm', '--prefix', 'server', 'test');
   add('Room/network changes', 'npm', 'run', 'test:net');

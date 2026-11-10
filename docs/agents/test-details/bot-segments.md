@@ -16,6 +16,11 @@ Every route is the production railway bot (`dev/look/bots/railway.ts`) on the pr
 The railway is shared server state, so production checkpoints are accepted server saves, not client fixtures:
 `dev/look/rail-seed.ts` builds each `--rail-seed` stage from the lockstep sim and writes it through the real host's save
 path into the run's fresh data directory. Nothing is kept between runs and there is nothing to migrate.
+The stages live in `src/sim/railway-seeds.ts` (`SEED_STAGES`, `buildSeedWorld`; the route builders are in
+`railway-seed-route.ts` and `railway-seed-works.ts`), shared by `--rail-seed`, the tests' `test/helpers/railway-*.ts`
+re-exports and the server's playtest jump-ins (`server/src/seeds/`, prebuilt into the image). To add a stage, follow the
+"Adding a stage" steps at the top of `src/sim/railway-seeds.ts`; to offer it as a jump-in, add a row to
+`src/world/railway-jump.ts` with a `land` you have checked in a still.
 `npm run checkpoints` checks that the stages the routes use (`awake`, `q5-done`, `trains-on`) still build after a world or
 route change; `npm run checkpoints -- <stage> ...` checks others.
 

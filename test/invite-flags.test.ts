@@ -41,3 +41,11 @@ test('the bare address and headless tools open the current game; retired classic
   assert.equal(pageQuery('?classic=1').get('room'), 'boogle');
   assert.equal(pageQuery().get('room'), 'boogle'); // Node has no location
 });
+
+test("a jump room's invite carries the room only, never a jump-in", () => {
+  assert.equal(roomInviteQuery('hook-earned-k3x9qa', '?room=hook-earned-k3x9qa&dev=1'), '?room=hook-earned-k3x9qa');
+  assert.equal(
+    roomInviteQuery('hook-earned-k3x9qa', '?room=hook-earned-k3x9qa&from=q3-done'),
+    '?room=hook-earned-k3x9qa',
+  );
+});

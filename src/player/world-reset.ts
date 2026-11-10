@@ -5,13 +5,14 @@ export const WORLD_SEEN_KEY = 'boogle.worldSeen';
 type Namespace = { world: string; rail: string };
 const PROFILE_PREFIX = 'boogle.railway-profile.v0.';
 // The wardrobe's prefix is WARDROBE_PREFIX in src/entities/wardrobe/state.ts; the finds' is FINDS_PREFIX in
-// src/entities/finds/state.ts.
+// src/entities/finds/state.ts; the jump-in arrival line's is SEEN in src/features/jump-in.ts.
 const ROOM_PREFIXES = [
   'boogle.railway-seen.v0:',
   'boogle.railway-pose.v0:',
   'boogle.railway-wardrobe.v0:',
   'boogle.railway-town.v0:',
   'boogle.railway-finds.v0:',
+  'boogle.jump.seen.v1:', // src/features/jump-in.ts: a jump room's arrival line, shown once
 ];
 
 export function staleKeys(keys: string[], marker: string | null, ns: Namespace): string[] {

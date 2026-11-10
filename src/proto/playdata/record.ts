@@ -35,6 +35,7 @@ import { onTuneRecord } from '../../tunables/events.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
 import { background } from '../../async.ts';
 import { bootMarks } from '../../boot/timeline.ts';
+import { roomSeed } from '../../netplay/room-seed.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const SEND_MS = 5000;
@@ -177,9 +178,11 @@ function resolution() {
   return { dpr: Math.round(dpr * 100) / 100, w: round(innerWidth * dpr), h: round(innerHeight * dpr) };
 }
 let lastSession = '';
+let seed = ''; // the stage a playtest jump room was seeded at (docs/plans/playtest-jump-in.md), from the room
 function sayWho() {
   const fields = {
     name: me.name || '',
+    seed,
     railway: productionRailway,
     room: getRoomId(),
     card,
@@ -204,6 +207,13 @@ function sayWho() {
 }
 sayWho();
 console.info(`[playdata] session ${session}`);
+background(
+  roomSeed().then((s) => {
+    seed = s?.stage ?? '';
+    sayWho();
+  }),
+  'playdata seed',
+);
 
 void rendererReady.then(() => {
   const info = (
