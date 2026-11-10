@@ -1,0 +1,110 @@
+/* Voice chat (src/features/voice.ts): a row in Pause and a small pill in the HUD corner while you are in voice. */
+.voice-audio {
+  display: none;
+}
+.voice-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.voice-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.voice-label {
+  flex: 1 0 auto;
+  font: 700 16px var(--font-body);
+  color: var(--ink);
+}
+.pause-btn.voice-btn {
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: 18px;
+}
+.voice-btn[hidden] {
+  display: none;
+}
+.voice-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.voice-who:empty {
+  display: none;
+}
+.voice-name,
+.voice-problem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px 2px 7px;
+  font: 600 14px var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+}
+.voice-name::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #5ee08a;
+}
+.voice-name[data-state='talking']::before {
+  background: #5ee08a;
+  box-shadow: 0 0 0 3px rgba(94, 224, 138, 0.45);
+}
+.voice-name[data-state='connecting']::before,
+.voice-name[data-state='muted']::before {
+  background: #c6cbd4;
+}
+.voice-name[data-state='failed'],
+.voice-problem {
+  background: #ffd9cf;
+}
+.voice-name[data-state='failed']::before {
+  background: #ff8a6b;
+}
+
+.voice-pill {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-height: 36px;
+  max-width: 46vw;
+  padding: 0 12px 0 9px;
+  font: 700 14px var(--font-body);
+  color: var(--on-glass);
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.voice-pill[hidden] {
+  display: none;
+}
+.voice-pill svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.voice-pill[data-muted='1'] svg {
+  opacity: 0.45;
+}
+.voice-pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
