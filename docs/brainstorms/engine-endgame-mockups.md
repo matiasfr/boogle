@@ -2,7 +2,7 @@
 
 > **Status: mock-up, not decided (10 November 2026).** These are greybox renders for the owner's question "Can we also mock up what the largest engine size will be? and maybe a simple blocked out end game look?". Nothing here is built or chosen.
 
-**How they were made.** There was no OpenAI key in the environment and Codex usage was out, so the painted concepts (`npm run concepts`) were not generated. Instead, a scratch Blender script (`.look/endgame/lineup.py`, gitignored) loads the real built `assets/built/engine.glb` and `buddy.glb` and adds box blockouts on a 1.0 m gauge track, with a Home-style halt deck (top 0.72 m, near edge 1.65 m from the track centre). The renders are in `.look/endgame/` and are not committed. Buddy shows in his bind pose (arms out).
+**How they were made.** There was no OpenAI key in the environment and Codex usage was out, so the painted concepts (`npm run concepts`) were not generated. Instead, a Blender script ([engine-endgame/lineup.py](engine-endgame/lineup.py)) loads the real built `assets/built/engine.glb` and `buddy.glb` and adds box blockouts on a 1.0 m gauge track, with a Home-style halt deck (top 0.72 m, near edge 1.65 m from the track centre). Compressed renders are in [engine-endgame/](engine-endgame/): `q_lineup_all.jpg` (all five), `lineup_side_all.jpg`, `q_current_era.jpg`, `q_hauler.jpg` (freight), `q_dart.jpg` (high speed), `q_warden.jpg` (dystopian). Buddy shows in his bind pose (arms out).
 
 ## Dimensions assumed (metres, rail top = 0)
 

@@ -139,7 +139,7 @@ From 5–6 November; drop each when answered.
 4. **Suspect copy:** `SHOP.kept[0]` says "the hat" for any item; "Chops trees, breaks rocks, and more" appears before rocks exist in T1; the Works verbs under Leftovers.
 5. **Museum:** inspect the miniature, the crystal specimen, or both.
 6. **Worktrees left after the 9 November cleanup** (30 archived as local `archive/worktree/<branch>` tags, 39 merged ones removed): three with uncommitted changes (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`) and four recent ones (`claude/godot-assumptions`, `claude/glider-b-plan`, `claude/idea-land-ack`, `claude/playtest-jump-in-plan`). Commit-and-archive, or keep?
-7. **From 10 November:** one lever per platform side (call 19) or keep the two handles; passenger car Four (built) or Six; the glider banner wording; whether toon B gets its soft character rim (built off).
+7. **From 10 November:** one lever per platform side (call 19) or keep the two handles; passenger car Four (built) or Six; the glider banner wording; whether toon B gets its soft character rim (built off). End-game train direction ([mock-ups](../brainstorms/engine-endgame-mockups.md)): steam to modern (freight or high speed) or the dark plated sci-fi train, or that one as a rival; lengthen halts and gates past 6 m or articulate short cars; a tender on the largest current-era engine or not.
 
 - **Tidy:** last code pass `ca3212d0` (render/audio, #1248, 9 November). Next: the other areas since `1af61213`, then architecture, docs, memory.
 
