@@ -21,6 +21,8 @@ export {
 import type { RailSupply } from './railway-supply.ts';
 import { line2Logs, line2Rails, type RailLine2 } from './railway-line2.ts';
 import type { RailShed, RailWorks } from './railway-works.ts';
+import type { RailTrain } from './railway-train.ts';
+import type { RailLineRow } from './railway-trains.ts';
 
 export const RAILWAY_OUTCOMES = 64;
 export const RAILWAY_WINDOW = 8;
@@ -72,6 +74,10 @@ export type Railway = {
   line?: RailLine;
   /** Line two (forge, Q1-Q5, the pack and gates); present with line one. */
   line2?: RailLine2;
+  /** Every train by slot (RAIL_TRAINS), each on its line (docs/plans/generic-lines.md, v26). */
+  trains: RailTrain[];
+  /** Each line's shared row by line index: its halts' lever asks and the ends' last departures. */
+  lines: RailLineRow[];
   /** Split-rock Works and the Roundhouse stall (./railway-works.ts); present with line two. */
   works?: RailWorks;
   shed?: RailShed;
@@ -98,9 +104,11 @@ export type RailAction = RailRequest & {
   site?: number;
   /** rail.turn: the road the table turns to (0 the stall road, 1 line 2's). */
   to?: number;
-  /** rail.call: the way the train is asked to be going, -1 to stop 0's end, +1 to the far end (an end halt's is its
-   * way out, whatever is sent). */
+  /** rail.call: the way the train is asked to be going, -1 to stop 0's end, +1 to the far end (never an open end's
+   * way in). */
   dir?: number;
+  /** rail.call aboard: the slot of the rider's train (absent: the halt's lever, from its platform for `dir`). */
+  train?: number;
   /** rail.wake: the rule tick its actor pressed at (the client's estimate); the server bounds it (railWakeTick). */
   tk?: number;
 };
@@ -116,7 +124,7 @@ export function railCounts(s: Railway) {
   const source = s.sources.reduce((a, b) => a + b, 0) + (s.line?.hardwood.reduce((a, b) => a + b, 0) ?? 0);
   const carry = s.accounts.reduce((a, b) => a + b.carry, 0);
   const loose = s.piles.reduce((a, b) => a + (b.kind ? 0 : b.n), 0);
-  const line2 = s.line2 ? line2Logs(s.line2) + (s.works?.logs ?? 0) : 0;
+  const line2 = s.line2 ? line2Logs(s) + (s.works?.logs ?? 0) : 0;
   const jobs = railJobs(s);
   const stock = jobs.reduce((n, j) => n + j.stock, 0),
     allocation = jobs.reduce((n, j) => n + j.allocation, 0);

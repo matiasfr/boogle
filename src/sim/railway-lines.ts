@@ -40,6 +40,10 @@ export type RailLineDef = {
 };
 
 const both = (p: RailPlatform) => [p, p] as const;
+// Step 2's up platforms (src/proto/place/layout.ts UP_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
+// s 513-535. Today's platforms serve the down track.
+const QUARRY_UP: RailPlatform = { x: 106912, z: 3135, y: 2502, reach: 1160 };
+const FAR_HEAD_UP: RailPlatform = { x: 135850, z: -17195, y: 2502, reach: 1260 };
 
 export const RAIL_LINES: readonly RailLineDef[] = [
   {
@@ -51,8 +55,21 @@ export const RAIL_LINES: readonly RailLineDef[] = [
       -13188, 97478, -14143, 98294, -14683, 99267, -14911, 100264, -14922, 101264, -14900, 102264, -14900,
     ],
     halts: [
-      { name: 'Village', s: 1400, opens: -1, platforms: both({ x: 92819, z: -434, y: 1902, reach: 1260 }) },
-      { name: 'Camp', s: 20700, opens: -1, platforms: both({ x: 100964, z: -14610, y: 3102, reach: 1360 }) },
+      // Terminal stubs: the two tracks merge at s 36 and 182 m (generic-lines, "Migrating lines 1 and 2").
+      {
+        name: 'Village',
+        s: 1400,
+        opens: -1,
+        platforms: both({ x: 92819, z: -434, y: 1902, reach: 1260 }),
+        end: { kind: 'stub', mergeCm: 3600 },
+      },
+      {
+        name: 'Camp',
+        s: 20700,
+        opens: -1,
+        platforms: both({ x: 100964, z: -14610, y: 3102, reach: 1360 }),
+        end: { kind: 'stub', mergeCm: 18200 },
+      },
     ],
     home: 1,
     trains: 1,
@@ -76,27 +93,86 @@ export const RAIL_LINES: readonly RailLineDef[] = [
       -36845,
     ],
     halts: [
-      { name: 'Village, line 2', s: 1700, opens: -1, platforms: both({ x: 92779, z: 2617, y: 1902, reach: 1260 }) },
-      { name: 'Quarry', s: 17400, opens: -1, platforms: both({ x: 108132, z: 4114, y: 2502, reach: 1160 }) },
-      { name: 'Far Head', s: 52400, opens: -1, platforms: both({ x: 136361, z: -16353, y: 2502, reach: 1260 }) },
-      // Place's halt maths at s 719-741 m, lat -2.9 (the side of the pier rack); open once Q6 (slot 5) is laid.
+      {
+        name: 'Village, line 2',
+        s: 1700,
+        opens: -1,
+        platforms: both({ x: 92779, z: 2617, y: 1902, reach: 1260 }),
+        end: { kind: 'stub', mergeCm: 3400 },
+      },
+      {
+        name: 'Quarry',
+        s: 17400,
+        opens: -1,
+        platforms: [QUARRY_UP, { x: 108132, z: 4114, y: 2502, reach: 1160 }],
+      },
+      // The end until Q6 opens the pier: a facing crossover at s 490-512 m turns trains onto the down track.
+      {
+        name: 'Far Head',
+        s: 52400,
+        opens: -1,
+        platforms: [FAR_HEAD_UP, { x: 136361, z: -16353, y: 2502, reach: 1260 }],
+        end: { kind: 'crossover', mergeCm: 49000 },
+      },
+      // Place's halt maths at s 719-741 m, lat -2.9 (the side of the pier rack); open once Q6 (slot 5) is laid. The
+      // far tracks merge at s 556 m, the pier's root, so the pier stays one terminal track.
       {
         name: 'Pier',
         s: PIER_STOP_CM,
         opens: 5,
         platforms: both({ x: 139969, z: -35833, y: 2502, reach: 1260 }),
+        end: { kind: 'stub', mergeCm: 55600 },
       },
     ],
     home: 0,
-    trains: 1,
+    trains: 2,
     speed: 200,
     accel: 3.5,
   },
 ];
 
-/** One entry per train, in line order: its line and the halt it stands at before it wakes. */
-export const RAIL_TRAINS: readonly { line: number; home: number }[] = RAIL_LINES.flatMap((l, line) =>
-  Array.from({ length: l.trains }, () => ({ line, home: l.home })),
+/** Line 2's index: the line that carries cargo (the Q6 kit, the footing wagon). */
+export const LINE2 = RAIL_LINES.findIndex((l) => l.id === 'line2');
+
+// ---------------------------------------------------------------- the circuit (generic-lines, "The state shape" 2)
+/** One number round a line for ordering and spacing only (never stored): the up track (0) runs `s - s0` from the start
+ * end, the down track (1) on round to `C = 2 (sEnd - s0)`. `stops` are the line's open stops, so its ends are
+ * `stops[0]` and the last; a stub or crossover turns in place and adds no length. */
+export function circuitCm(stops: readonly number[], track: number, s: number) {
+  const s0 = stops[0]!,
+    len = stops[stops.length - 1]! - s0;
+  return track ? 2 * len - (s - s0) : s - s0;
+}
+/** The circuit's length for these open stops. */
+export const circuitLen = (stops: readonly number[]) => 2 * (stops[stops.length - 1]! - stops[0]!);
+/** How far `to` lies ahead of `from` going round a circuit of `c` (0 to c - 1). */
+export const circuitAhead = (from: number, to: number, c: number) => (((to - from) % c) + c) % c;
+/** Where a line's `n` trains stand before they wake, and again when they wake (rail.boilerFit), over its open stops:
+ * train k at the open halt nearest `c = home + k·C/n` round the circuit (its first at `home`), standing on the track
+ * whose way out is inward (an end's way out; a middle halt's track by the half of the circuit it is nearest on). */
+export function trainPlaces(line: number, stops: readonly number[]) {
+  const l = RAIL_LINES[line]!,
+    c = circuitLen(stops),
+    last = stops.length - 1;
+  const at = (k: number, track: number) => circuitCm(stops, track, stops[k]!);
+  const home = at(l.home, l.home === last ? 1 : 0);
+  return Array.from({ length: l.trains }, (_v, k) => {
+    const want = (home + Math.floor((k * c) / l.trains)) % c;
+    let best = { stop: 0, track: 0, d: c };
+    for (let stop = 0; stop <= last; stop++)
+      for (const track of stop === 0 ? [0] : stop === last ? [1] : [0, 1]) {
+        const p = at(stop, track) % c,
+          d = Math.min(circuitAhead(p, want, c), circuitAhead(want, p, c));
+        if (d < best.d) best = { stop, track, d };
+      }
+    return { stop: best.stop, track: best.track };
+  });
+}
+/** The stops open before any QJob is complete (the pier is the last halt and opens last). */
+const FIRST_STOPS = RAIL_LINES.map((l) => l.halts.filter((h) => h.opens < 0).map((h) => h.s));
+/** One entry per train (its slot), in line order: its line, and the halt and track it stands at before it wakes. */
+export const RAIL_TRAINS: readonly { line: number; home: number; track: number }[] = RAIL_LINES.flatMap((_l, line) =>
+  trainPlaces(line, FIRST_STOPS[line]!).map((p) => ({ line, home: p.stop, track: p.track })),
 );
 /** Every halt, line by line in s order; its index is the halt id. */
 export const RAIL_HALTS: readonly (RailHalt & { line: number; stop: number })[] = RAIL_LINES.flatMap((l, line) =>

@@ -6,6 +6,7 @@ import { Rail } from '../src/sim/railway-world.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { RIDER_REACH, RIDER_SPAN, railValid } from '../src/world/railway-server.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
+import { RAIL_HALTS } from '../src/sim/railway-lines.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { createRailway, edit, hash, invariant, railApply, railSession, restore, worldOf } from './railway-live.ts';
 
@@ -105,15 +106,25 @@ test("a stop request is judged from the halt's lever or aboard its line's train"
     height: () => true,
     cadence: () => true,
   });
-  const quarry = LINE_HALTS[3]!;
-  const e = { op: 'rail.call', epoch: 1, request: 1, id: 3, dir: 1 };
+  // Since v26 each platform's lever asks for its own way: today's (down, towards the village), the new up one.
+  const quarry = LINE_HALTS[3]!,
+    [up] = RAIL_HALTS[3]!.platforms;
+  const e = { op: 'rail.call', epoch: 1, request: 1, id: 3, dir: -1 };
   assert.equal(railValid(w, e, at(quarry.x + 200, quarry.z), 50), true, 'at the lever, on the platform');
-  // Line 2's train stands at its village stop (17 m along): a passenger on its rear car asks for the quarry. Standing,
-  // the reach is the rider's own plus the train's length (no travel in the lag window).
+  assert.equal(railValid(w, { ...e, dir: 1 }, at(quarry.x + 200, quarry.z), 50), false, 'the other way: across');
+  assert.equal(railValid(w, { ...e, dir: 1 }, at(up.x + 200, up.z), 50), true, 'the up platform asks up');
+  // Line 2's first train (slot 1) stands at its village stop (17 m along): a passenger on its rear car asks for the
+  // quarry, naming the train. Standing, the reach is the rider's own plus the train's length (no travel in the lag
+  // window).
+  const ride = { ...e, dir: 1, train: 1 };
   const train = railLinePoint(1, TRAIN_STOPS[1]![0]!);
   const reach = RIDER_REACH + RIDER_SPAN;
-  assert.equal(railValid(w, e, at(train.x + reach - 100, train.z), 50), true, 'aboard');
-  assert.equal(railValid(w, e, at(train.x + reach + 300, train.z), 50), false, 'beside neither');
+  assert.equal(railValid(w, ride, at(train.x + reach - 100, train.z), 50), true, 'aboard');
+  assert.equal(railValid(w, ride, at(train.x + reach + 300, train.z), 50), false, 'beside neither');
+  assert.equal(railValid(w, { ...ride, train: 0 }, at(train.x, train.z), 50), false, "line 1's train");
+  assert.equal(railValid(w, { ...ride, train: 3 }, at(train.x, train.z), 50), false, 'no such train');
+  assert.equal(railValid(w, { ...ride, train: 0.5 }, at(train.x, train.z), 50), false, 'malformed train');
+  assert.equal(railValid(w, { ...e, dir: 1 }, at(train.x, train.z), 50), false, 'aboard, no train named');
   assert.equal(railValid(w, { ...e, id: 0 }, at(train.x, train.z + 2000), 50), false, "line 1's halt, far from it");
   for (const dir of [undefined, 0, 2, -2])
     assert.equal(railValid(w, { ...e, dir }, at(quarry.x, quarry.z), 50), false, `dir ${dir}`);

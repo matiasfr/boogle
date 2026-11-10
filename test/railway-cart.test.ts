@@ -170,7 +170,7 @@ test('a save still carrying the cart recall column is refused whole, and older s
   const snap = JSON.parse(JSON.stringify(worldOf(atQ2().s).snapshot()));
   snap.c.cart.push(snap.c.cart[0].map(() => 0));
   assert.throws(() => createRailwayWorld().load(snap, railwayCheck), /load: cart columns/);
-  assert.match(railwayRoomId('boogle'), /^rail-v25-/);
+  assert.match(railwayRoomId('boogle'), /^rail-v26-/);
 });
 
 test('the away credit counts the cart: the load under way lands, whole trips bring the rest, the cart is home', () => {

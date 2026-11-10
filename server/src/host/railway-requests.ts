@@ -51,6 +51,8 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
   if (e.op === 'rail.footSet') clean.site = e.site;
   if (e.op === 'rail.turn') clean.to = e.to;
   if (e.op === 'rail.call') clean.dir = e.dir;
+  // A rider's ask names their train (docs/plans/generic-lines.md, 7); the rules validate it.
+  if (e.op === 'rail.call' && e.train !== undefined) clean.train = e.train;
   if (e.op === 'rail.chop') {
     clean.yaw = e.yaw;
     clean.collapsed = e.collapsed;

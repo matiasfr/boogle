@@ -275,7 +275,7 @@ test('the railway state is a server state: saved by the host, never hashed or se
   const again = room();
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
-  assert.equal(RAIL_SCHEMAS.length, 15); // the depot cart, boiler and trains; the Works and the shed
+  assert.equal(RAIL_SCHEMAS.length, 16); // the depot cart, boiler and trains; the Works and the shed; the lines
 });
 
 test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
@@ -568,6 +568,35 @@ test('boiler and train packets patch the mirror; boiler blocks predicted materia
   assert.equal(r.mirrors.get('a')!.railway.line2!.train[1]!.logs, 32);
 });
 
+test("every train and line row round-trips through railwayView and the replicated components (v26's three trains)", () => {
+  const seed = railwayAtTrains('q6-done'),
+    r = room();
+  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
+  r.api.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())));
+  r.api.touchAll();
+  r.join('a');
+  r.pump();
+  agree(r, 'a');
+  const a = r.api.account('a')!;
+  // A lever ask (the line's row) and a rider's ask (the train's own) both reach the mirror.
+  const call = (request: number, e: object) =>
+    r.api.act('a', { op: 'rail.call', epoch: a.epoch, request, ...e }, anywhere).status;
+  assert.equal(call(a.request + 1, { id: 3, dir: -1 }), 'accepted');
+  const dir = r.api.railway.trains[1]!.track ? -1 : 1;
+  assert.equal(call(a.request + 2, { id: 4, dir, train: 1 }), 'accepted');
+  for (let k = 0; k < 12; k++) {
+    r.sync.stepWorld(1000);
+    r.pump();
+    agree(r, 'a');
+    const server = r.api.railway,
+      mirror = r.mirrors.get('a')!.railway;
+    assert.equal(mirror.trains.length, 3);
+    assert.deepEqual(mirror.trains, server.trains);
+    assert.deepEqual(mirror.lines, server.lines);
+    assert.equal(mirror.line2!.train, mirror.trains, "the client's v25 alias is the same rows");
+  }
+  assert.equal(railwayInvariant(r.api.railway), null);
+});
 test('Q6 prediction keeps train rails aboard until funding is confirmed', () => {
   const w = railwayAtTrains('trains-on');
   seedAdvance(w, 100);

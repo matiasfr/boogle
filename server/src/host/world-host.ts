@@ -650,4 +650,5 @@ const RAIL_TUNE_KEYS = new Set([
   'railBoilerHelpSpeed',
   'railFootSoloSpeed',
   'railFootHelpSpeed',
+  'railTrainHeadPct',
 ]);

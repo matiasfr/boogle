@@ -26,6 +26,8 @@ import { RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import { LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
 import { LINE_TIMING } from '../sim/railway-line.ts';
 import { railApply } from '../sim/railway-systems.ts';
+import { LINE2 } from '../sim/railway-lines.ts';
+import { LINE_SLOTS } from '../sim/railway-trains.ts';
 import {
   Account,
   Cart,
@@ -194,8 +196,9 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   const rail0 = w.get(Rail, w.single(Rail))!;
   const cartId = w.single(Cart);
   const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut, w.get(Cart, cartId)!.rails] as const;
-  const kitId = w.lookup(Train, 1)!;
-  const kitRails = w.get(Train, kitId)!.rails;
+  // The Q6 kit's rails aboard line 2's trains (any of them may carry it).
+  const kitIds = LINE_SLOTS[LINE2]!.map((k) => w.lookup(Train, k)!);
+  const kitRails = kitIds.map((id) => w.get(Train, id)!.rails);
   // The Works' thresholds, held for the server like the forge's.
   const wid = w.single(Works),
     sid = w.single(Shed);
@@ -229,7 +232,9 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     Object.assign(w.mut(Rail, w.single(Rail))!, { depotRails: shelf[0], shelfOut: shelf[2] });
     w.mut(Forge, fid)!.rack = shelf[1];
     w.mut(Cart, cartId)!.rails = shelf[3];
-    w.mut(Train, kitId)!.rails = kitRails;
+    kitIds.forEach((id, k) => {
+      if (w.get(Train, id)!.rails !== kitRails[k]) w.mut(Train, id)!.rails = kitRails[k]!;
+    });
   }
   if (lit[0] < 0 && w.get(Forge, fid)!.lit >= 0) {
     w.mut(Forge, fid)!.lit = lit[0];
