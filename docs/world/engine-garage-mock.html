@@ -1,0 +1,1117 @@
+<title>Engine Garage Mock</title>
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800&family=Lilita+One&display=swap"
+/>
+<style>
+  :root {
+    --ink: #13243f;
+    --ink-soft: #4b5d7a;
+    --line: #13243f;
+    --paper: #ffffff;
+    --page: #bfe6f5;
+    --stage: #e9f6fb;
+    --sun: #ffc93d;
+    --sea: #0f9fc0;
+    --leaf: #2f9a52;
+    --coral: #d8432f;
+    --stone: #8d8576;
+    --stone-dark: #6f685c;
+    --metal: #2b2f36;
+    --brass: #c79a3e;
+    --wood: #8a5a2f;
+    --ghost: #ffb000;
+    --chip: #f2f6fa;
+    --deck: #c9c0ae;
+    --preview: #0b7ea0;
+    --font-display: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;
+    --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --ink: #eef4ff;
+      --ink-soft: #a9b8d0;
+      --line: #7d93bb;
+      --paper: #1b2a44;
+      --page: #0e1a2e;
+      --stage: #142238;
+      --chip: #24365a;
+      --deck: #5d574c;
+      --stone: #6c665b;
+      --stone-dark: #4f4a41;
+      --metal: #0d1118;
+      --preview: #5fd0f0;
+      --leaf: #5cc77d;
+    }
+  }
+  :root[data-theme='dark'] {
+    --ink: #eef4ff;
+    --ink-soft: #a9b8d0;
+    --line: #7d93bb;
+    --paper: #1b2a44;
+    --page: #0e1a2e;
+    --stage: #142238;
+    --chip: #24365a;
+    --deck: #5d574c;
+    --stone: #6c665b;
+    --stone-dark: #4f4a41;
+    --metal: #0d1118;
+    --preview: #5fd0f0;
+    --leaf: #5cc77d;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 600 16px/1.35 var(--font-body);
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px));
+    overflow-x: hidden;
+  }
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    gap: 16px;
+  }
+  .card {
+    background: var(--paper);
+    border: 3px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 6px 0 var(--line);
+    padding: 16px;
+    min-width: 0;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.4px;
+    margin: 0;
+  }
+  h1 {
+    font-size: clamp(28px, 6vw, 40px);
+    line-height: 1;
+  }
+  h2 {
+    font-size: 24px;
+  }
+  h3 {
+    font-size: 20px;
+  }
+  .sketch {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--sun);
+    color: #13243f;
+    border: 2px solid var(--line);
+    font: 800 13px var(--font-body);
+  }
+  .sub {
+    color: var(--ink-soft);
+    font-weight: 500;
+    margin: 8px 0 0;
+  }
+  .garage {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 860px) {
+    .garage {
+      grid-template-columns: 150px minmax(0, 1fr) 320px;
+      align-items: start;
+    }
+  }
+  .rail {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+  }
+  @media (min-width: 860px) {
+    .rail {
+      flex-direction: column;
+      overflow: visible;
+    }
+  }
+  .btn {
+    font: 400 19px/1.1 var(--font-display);
+    letter-spacing: 0.4px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 3px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 4px 0 var(--line);
+    padding: 9px 14px;
+    min-height: 44px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--line);
+  }
+  .btn.primary {
+    background: var(--sun);
+    color: #13243f;
+  }
+  .btn.small {
+    font-size: 16px;
+    padding: 6px 10px;
+    min-height: 40px;
+  }
+  .btn[aria-pressed='true'],
+  .btn[aria-selected='true'] {
+    background: var(--sun);
+    color: #13243f;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    outline: 4px solid var(--sea);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+  .stage {
+    background: var(--stage);
+    border-radius: 16px;
+    border: 3px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .stage svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .stage.wide {
+    overflow-x: auto;
+  }
+  .stage.wide svg {
+    min-width: 600px;
+  }
+  .stagebar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .toggle {
+    display: inline-flex;
+    border: 3px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .toggle button {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 40px;
+  }
+  .toggle button + button {
+    border-left: 3px solid var(--line);
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--chip);
+    font-size: 14px;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--leaf);
+    display: inline-block;
+  }
+  .items {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 10px;
+    align-items: center;
+    text-align: left;
+    width: 100%;
+    padding: 10px 12px;
+    border: 3px solid var(--line);
+    border-radius: 14px;
+    background: var(--paper);
+    color: var(--ink);
+    font: 700 16px var(--font-body);
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--line);
+  }
+  .item[aria-selected='true'] {
+    background: var(--chip);
+    outline: 3px solid var(--sun);
+    outline-offset: -6px;
+  }
+  .item small {
+    grid-column: 1 / -1;
+    color: var(--ink-soft);
+    font-weight: 500;
+    font-size: 13px;
+  }
+  .pill {
+    font: 800 12px var(--font-body);
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 2px solid var(--line);
+    white-space: nowrap;
+  }
+  .pill.owned {
+    background: var(--leaf);
+    color: #fff;
+  }
+  .pill.ready {
+    background: var(--sun);
+    color: #13243f;
+  }
+  .pill.locked {
+    background: var(--chip);
+    color: var(--ink-soft);
+  }
+  .pill.free {
+    background: var(--sea);
+    color: #fff;
+  }
+  .stats {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .stat {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--chip);
+    border-radius: 12px;
+    font-size: 15px;
+  }
+  .stat b {
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .stat .to {
+    color: var(--preview);
+  }
+  .store {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .confirm {
+    margin-top: 10px;
+    padding: 12px;
+    border: 3px dashed var(--line);
+    border-radius: 14px;
+    display: none;
+  }
+  .confirm.on {
+    display: block;
+  }
+  .confirm p {
+    margin: 0 0 10px;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .why {
+    color: var(--coral);
+    font-size: 14px;
+    margin: 8px 0 0;
+    min-height: 1em;
+  }
+  .toast {
+    position: absolute;
+    left: 50%;
+    top: 12px;
+    transform: translateX(-50%);
+    background: var(--sun);
+    color: #13243f;
+    border: 3px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: 400 18px var(--font-display);
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    max-width: 92%;
+    text-align: center;
+  }
+  .toast.on {
+    opacity: 1;
+  }
+  .ghost {
+    fill: var(--ghost);
+    fill-opacity: 0.35;
+    stroke: var(--ghost);
+    stroke-width: 3;
+    stroke-dasharray: 6 4;
+  }
+  .checks {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+    display: grid;
+    gap: 4px;
+    font-size: 14px;
+  }
+  .checks li::before {
+    content: '✓ ';
+    color: var(--leaf);
+    font-weight: 800;
+  }
+  .checks li.bad::before {
+    content: '✗ ';
+    color: var(--coral);
+  }
+  .sketchctl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  fieldset {
+    border: 3px solid var(--line);
+    border-radius: 16px;
+    margin: 0 0 12px;
+    padding: 10px 14px 12px;
+    min-width: 0;
+  }
+  legend {
+    font: 400 19px var(--font-display);
+    padding: 0 6px;
+  }
+  label.opt {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 6px 0;
+    cursor: pointer;
+  }
+  label.opt input {
+    margin-top: 4px;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--sea);
+    flex: none;
+  }
+  .rec {
+    background: var(--sun);
+    color: #13243f;
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    font: 800 11px var(--font-body);
+    padding: 1px 7px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  textarea {
+    width: 100%;
+    min-height: 90px;
+    border: 3px solid var(--line);
+    border-radius: 12px;
+    padding: 10px;
+    font: 500 15px var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  #copyOut {
+    display: none;
+    margin-top: 10px;
+  }
+  #copyOut.on {
+    display: block;
+  }
+  .note {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+</style>
+
+<div class="wrap">
+  <header class="card">
+    <h1>Engine garage</h1>
+    <span class="sketch">Sketch: stand-in names, prices and art</span>
+    <p class="sub">
+      The Roundhouse turntable at Home, framed as the train's garage. You walk up to the post by the table and press
+      Interact; there is no menu for this anywhere else. The engine on the table is the works copy, wearing the room's
+      fits. Brief: docs/brainstorms/engine-garage.md.
+    </p>
+    <div class="sketchctl" style="margin-top: 10px">
+      <span>Sketch controls:</span>
+      <button class="btn small" id="steelBtn" type="button">Steel in the bay: 0</button>
+      <button class="btn small" id="copperBtn" type="button">Copper: 0</button>
+      <button class="btn small" id="pipBtn" type="button" aria-pressed="false">Pip at the table</button>
+      <button class="btn small" id="themeBtn" type="button">Theme: auto</button>
+      <button class="btn small" id="resetBtn" type="button">Reset</button>
+    </div>
+  </header>
+
+  <section class="card garage" aria-label="Garage">
+    <nav class="rail" role="tablist" aria-label="Categories" id="rail"></nav>
+
+    <div>
+      <div class="stage">
+        <svg id="scene" viewBox="0 0 640 300" role="img" aria-label="The engine on the turntable"></svg>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </div>
+      <div class="stagebar">
+        <div class="toggle" role="group" aria-label="Before or after">
+          <button class="btn small" id="beforeBtn" type="button" aria-pressed="false">Before</button>
+          <button class="btn small" id="afterBtn" type="button" aria-pressed="true">After</button>
+        </div>
+        <span class="tag" id="pipTag" hidden><span class="dot"></span><span id="pipText">Pip is looking</span></span>
+      </div>
+      <div class="legend">
+        <span>Yellow dashed: the previewed part, not fitted yet.</span><span id="legend2"></span>
+      </div>
+    </div>
+
+    <aside>
+      <h2 id="catTitle">Engine</h2>
+      <div class="items" id="items" role="listbox" aria-label="Items"></div>
+    </aside>
+  </section>
+
+  <section class="card" aria-label="Selected item">
+    <h3 id="selName">Item</h3>
+    <p class="sub" id="selDesc"></p>
+    <div class="stats" id="stats"></div>
+    <div><b>Room's store</b> <span class="note">(shared: anyone may spend it; everyone sees the fit)</span></div>
+    <div class="store" id="store"></div>
+    <div class="row" style="margin-top: 12px">
+      <button class="btn primary" id="fitBtn" type="button">Fit</button>
+    </div>
+    <p class="why" id="why"></p>
+    <div class="confirm" id="confirm" role="group" aria-label="Confirm fit">
+      <p id="confirmText">Fit it for everyone?</p>
+      <div class="row">
+        <button class="btn primary" id="yesBtn" type="button">Yes, fit it</button>
+        <button class="btn" id="noBtn" type="button">Not yet</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Open questions">
+    <h2>Open questions</h2>
+    <p class="sub">
+      From the brief. The recommended answer is marked; the build goes ahead on it unless you pick otherwise.
+    </p>
+    <form id="qs" style="margin-top: 12px"></form>
+    <label for="notes"><b>Notes</b></label>
+    <textarea id="notes" placeholder="Anything else"></textarea>
+    <div class="row" style="margin-top: 12px">
+      <button class="btn primary" id="copyBtn" type="button">Copy answers as text</button>
+      <span class="note" id="copyMsg" role="status" aria-live="polite"></span>
+    </div>
+    <textarea id="copyOut" readonly aria-label="Answers as text"></textarea>
+  </section>
+</div>
+
+<script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const CATS = [
+      { id: 'engine', name: 'Engine' },
+      { id: 'cars', name: 'Cars' },
+      { id: 'cargo', name: 'Cargo' },
+      { id: 'looks', name: 'Looks' },
+      { id: 'whistle', name: 'Whistle' },
+    ];
+    // status: owned (fitted), or bought with cost; free = came with an unlock. part: what it changes on the model.
+    const ITEMS = [
+      {
+        id: 'boiler',
+        cat: 'engine',
+        name: 'Boiler',
+        desc: 'The first fit. It woke the trains ("Steam").',
+        owned: true,
+        part: {},
+      },
+      {
+        id: 'long',
+        cat: 'engine',
+        name: 'Longer boiler',
+        desc: 'Steel boiler, 0.5 m longer, taller chimney. Line 2 runs at 25 m/s and pulls one more car.',
+        cost: { steel: 6 },
+        part: { long: true },
+      },
+      {
+        id: 'plough',
+        cat: 'engine',
+        name: 'Plough and headlamp',
+        desc: 'Placeholder: the largest current-era look.',
+        cost: { steel: 10 },
+        needs: 'long',
+        part: { plough: true },
+      },
+      {
+        id: 'four',
+        cat: 'cars',
+        name: 'Four seats',
+        desc: 'The knifeboard passenger car: four riders and four pets.',
+        owned: true,
+        part: {},
+      },
+      {
+        id: 'roof',
+        cat: 'cars',
+        name: 'Roof and lamps',
+        desc: 'Built in the game and switched off; no rule yet. Stand-in price.',
+        cost: { copper: 3 },
+        part: { roof: true },
+      },
+      {
+        id: 'six',
+        cat: 'cars',
+        name: 'Six seats',
+        desc: 'Placeholder: the six-seat car is the owner’s open pick.',
+        cost: { copper: 5 },
+        part: { six: true },
+      },
+      {
+        id: 'kitcar',
+        cat: 'cargo',
+        name: 'Rail and kit car',
+        desc: 'Stakes and boards. The forge’s loader fills it at Home: 32 rails and 32 logs a trip.',
+        owned: true,
+        part: {},
+      },
+      {
+        id: 'wagon',
+        cat: 'cargo',
+        name: 'Footing wagon',
+        desc: 'Came free when the kiln lit: it rolled out of the stall. 6 footings a trip, Quarry to Pier.',
+        owned: true,
+        free: true,
+        part: {},
+      },
+      {
+        id: 'wagon2',
+        cat: 'cargo',
+        name: 'Second footing wagon',
+        desc: 'A second wagon on every line-2 train: 12 footings a trip. The train runs past the platform; the passenger car still stops on it. Needs an engine that pulls 4 cars.',
+        cost: { steel: 4 },
+        part: { wagon2: true },
+      },
+      {
+        id: 'cradle',
+        cat: 'cargo',
+        name: 'Bigger cradle',
+        desc: 'The second steel pick: more footings a trip.',
+        cost: { steel: 4 },
+        part: { cradle: true },
+      },
+      {
+        id: 'teal',
+        cat: 'looks',
+        name: 'Teal paint',
+        desc: 'Shared cosmetic, bought from the wallet once it exists.',
+        coins: true,
+        part: { paint: 'teal' },
+      },
+      { id: 'gold', cat: 'looks', name: 'Brass bands', desc: 'Placeholder.', coins: true, part: { bands: true } },
+      { id: 'toot', cat: 'whistle', name: 'Toot', desc: 'Today’s whistle.', owned: true, part: {} },
+      {
+        id: 'two',
+        cat: 'whistle',
+        name: 'Two-tone',
+        desc: 'Placeholder. Its readout is a sound, not a number.',
+        coins: true,
+        part: {},
+      },
+    ];
+    const init = () => ({
+      cat: 'engine',
+      sel: 'long',
+      view: 'after',
+      steel: 0,
+      copper: 0,
+      pip: false,
+      owned: new Set(ITEMS.filter((i) => i.owned).map((i) => i.id)),
+      confirming: false,
+    });
+    let S = init();
+    const item = (id) => ITEMS.find((i) => i.id === id);
+
+    function look(owned) {
+      const L = {
+        long: false,
+        plough: false,
+        roof: false,
+        six: false,
+        cradle: false,
+        wagon2: false,
+        paint: 'red',
+        bands: false,
+      };
+      for (const id of owned) Object.assign(L, item(id).part);
+      return L;
+    }
+    function pulls(L) {
+      return L.long ? 4 : 3;
+    }
+    function cars(L) {
+      return 3 + (L.wagon2 ? 1 : 0);
+    }
+    function trip(sec) {
+      return `${sec} s`;
+    }
+
+    function state(it) {
+      if (S.owned.has(it.id)) return it.free ? ['free', 'Free with the kiln'] : ['owned', 'Fitted'];
+      if (it.coins) return ['locked', 'Coins: not built'];
+      if (it.needs && !S.owned.has(it.needs)) return ['locked', 'Needs ' + item(it.needs).name.toLowerCase()];
+      const c = it.cost || {};
+      if (c.steel && S.steel < c.steel) return ['locked', `Needs ${c.steel} steel`];
+      if (c.copper && S.copper < c.copper) return ['locked', `Needs ${c.copper} copper`];
+      return ['ready', 'Ready to fit'];
+    }
+    function blockReason(it) {
+      if (it.id === 'wagon2') {
+        const L = look(new Set([...S.owned, 'wagon2']));
+        if (cars(L) > pulls(L)) return 'Too many cars: this engine pulls 3. The longer boiler pulls 4.';
+      }
+      return '';
+    }
+
+    // ---- drawing
+    const P = { red: ['#d8432f', '#a8301f'], teal: ['#1e9f95', '#167a72'] };
+    function engineSVG(L, ghostOf) {
+      const g = (k) => (ghostOf && ghostOf[k] ? ' class="ghost"' : '');
+      const [paint, dark] = P[L.paint];
+      const x0 = 250,
+        len = L.long || (ghostOf && ghostOf.long) ? 208 : 187;
+      const useLong = L.long || (ghostOf && ghostOf.long);
+      let s = '';
+      // frame and buffers
+      s += `<rect x="${x0}" y="206" width="${len}" height="18" rx="3" fill="var(--metal)"/>`;
+      s += `<rect x="${x0 - 8}" y="208" width="8" height="10" fill="var(--metal)"/><rect x="${x0 + len}" y="208" width="8" height="10" fill="var(--metal)"/>`;
+      // cab (rear, left)
+      s += `<rect x="${x0 + 4}" y="112" width="66" height="94" rx="4" fill="${paint}" stroke="var(--line)" stroke-width="3"/>`;
+      s += `<rect x="${x0 + 16}" y="126" width="22" height="22" rx="3" fill="#bfe6f5" stroke="var(--line)" stroke-width="2"/>`;
+      s += `<rect x="${x0 - 2}" y="102" width="78" height="12" rx="3" fill="var(--metal)"/>`;
+      // boiler
+      const bx = x0 + 70,
+        bl = useLong ? 128 : 108;
+      s += `<rect${g('long')} x="${bx}" y="150" width="${bl}" height="56" rx="12" fill="${dark}" stroke="var(--line)" stroke-width="3"/>`;
+      if (L.bands)
+        for (let k = 1; k < 4; k++)
+          s += `<rect x="${bx + (bl * k) / 4 - 3}" y="150" width="6" height="56" fill="var(--brass)"/>`;
+      s += `<rect${g('long')} x="${bx + bl - 14}" y="146" width="16" height="64" rx="4" fill="var(--metal)"/>`;
+      // chimney and dome
+      const ch = useLong ? 60 : 44;
+      s += `<rect${g('long')} x="${bx + bl - 40}" y="${150 - ch}" width="18" height="${ch + 4}" rx="3" fill="var(--metal)"/>`;
+      s += `<ellipse cx="${bx + 34}" cy="150" rx="16" ry="11" fill="var(--brass)" stroke="var(--line)" stroke-width="2"/>`;
+      if (useLong) s += `<ellipse${g('long')} cx="${bx + 66}" cy="150" rx="12" ry="9" fill="var(--brass)"/>`;
+      // wheels
+      for (const wx of [x0 + 52, x0 + 116])
+        s += `<circle cx="${wx}" cy="226" r="20" fill="var(--metal)" stroke="var(--line)" stroke-width="3"/><circle cx="${wx}" cy="226" r="6" fill="var(--brass)"/>`;
+      if (useLong) s += `<circle${g('long')} cx="${x0 + len - 22}" cy="232" r="13" fill="var(--metal)"/>`;
+      if (L.plough || (ghostOf && ghostOf.plough)) {
+        s += `<path${g('plough')} d="M${x0 + len + 8} 204 l22 30 h-22 z" fill="var(--stone-dark)"/>`;
+        s += `<circle${g('plough')} cx="${bx + bl - 6}" cy="166" r="8" fill="#fff3b0" stroke="var(--line)" stroke-width="2"/>`;
+      }
+      // smoke
+      s += `<circle cx="${bx + bl - 31}" cy="${132 - ch}" r="10" fill="#fff" opacity="0.8"/><circle cx="${bx + bl - 18}" cy="${116 - ch}" r="14" fill="#fff" opacity="0.6"/>`;
+      return s;
+    }
+    function carSVG(L, ghostOf) {
+      const g = (k) => (ghostOf && ghostOf[k] ? ' class="ghost"' : '');
+      const x0 = 92,
+        w = 140;
+      let s = `<rect x="${x0}" y="196" width="${w}" height="14" rx="3" fill="var(--wood)" stroke="var(--line)" stroke-width="3"/>`;
+      s += `<rect x="${x0 + 4}" y="210" width="${w - 8}" height="10" fill="var(--metal)"/>`;
+      const seats = L.six || (ghostOf && ghostOf.six) ? 3 : 2;
+      for (let k = 0; k < seats; k++) {
+        const sx = x0 + 18 + (k * (w - 50)) / Math.max(1, seats - 1);
+        s += `<rect${k === 2 ? g('six') : ''} x="${sx}" y="170" width="14" height="26" fill="#a87443" stroke="var(--line)" stroke-width="2"/>`;
+      }
+      s += `<rect x="${x0 + 10}" y="182" width="${w - 20}" height="8" fill="#c08a52"/>`;
+      if (L.roof || (ghostOf && ghostOf.roof)) {
+        s += `<rect${g('roof')} x="${x0 + 8}" y="128" width="6" height="68" fill="var(--wood)"/><rect${g('roof')} x="${x0 + w - 14}" y="128" width="6" height="68" fill="var(--wood)"/>`;
+        s += `<rect${g('roof')} x="${x0 - 6}" y="118" width="${w + 12}" height="12" rx="5" fill="var(--sea)" stroke="var(--line)" stroke-width="3"/>`;
+        s += `<circle${g('roof')} cx="${x0 + 11}" cy="142" r="6" fill="#fff3b0"/><circle${g('roof')} cx="${x0 + w - 11}" cy="142" r="6" fill="#fff3b0"/>`;
+      }
+      for (const wx of [x0 + 30, x0 + w - 30])
+        s += `<circle cx="${wx}" cy="228" r="12" fill="var(--metal)" stroke="var(--line)" stroke-width="2"/>`;
+      return s;
+    }
+    function tableScene(L, ghostOf) {
+      let s = `<rect width="640" height="300" fill="var(--stage)"/>`;
+      // stall behind
+      s += `<rect x="40" y="40" width="560" height="10" fill="var(--wood)" opacity="0.6"/><rect x="40" y="40" width="10" height="170" fill="var(--wood)" opacity="0.6"/><rect x="590" y="40" width="10" height="170" fill="var(--wood)" opacity="0.6"/>`;
+      // turntable disc (9.6 m) and rails
+      s += `<ellipse cx="320" cy="244" rx="300" ry="38" fill="var(--stone)" stroke="var(--line)" stroke-width="3"/>`;
+      s += `<ellipse cx="320" cy="250" rx="300" ry="38" fill="var(--stone-dark)" opacity="0.5"/>`;
+      s += `<ellipse cx="320" cy="244" rx="300" ry="38" fill="var(--stone)"/>`;
+      s += `<rect x="30" y="242" width="580" height="6" fill="var(--metal)"/>`;
+      s += carSVG(L, ghostOf) + engineSVG(L, ghostOf);
+      s += `<text x="320" y="292" text-anchor="middle" font-family="Figtree, sans-serif" font-size="12" font-weight="700" fill="var(--ink-soft)">Turntable 9.6 m · engine A 4.7 m (longer boiler 5.2 m)</text>`;
+      return s;
+    }
+    // Consist strip at Home's line-2 stub: track s 0..36 m, 1 m = 16 px, from x 32.
+    function consistScene(L, ghostOf) {
+      const X = (sm) => 32 + sm * 16;
+      const two = L.wagon2 || (ghostOf && ghostOf.wagon2);
+      const stop = two ? 20.7 : 17.0;
+      let s = `<rect width="640" height="300" fill="var(--stage)"/>`;
+      s += `<text x="16" y="26" font-family="Lilita One, sans-serif" font-size="18" fill="var(--ink)">Line 2 at Home (the Village stop)</text>`;
+      // platform deck 5.7..23.7
+      s += `<rect x="${X(5.7)}" y="196" width="${18 * 16}" height="20" fill="var(--deck)" stroke="var(--line)" stroke-width="3"/>`;
+      s += `<text x="${X(14.7)}" y="236" text-anchor="middle" font-family="Figtree, sans-serif" font-size="14" font-weight="700" fill="var(--ink-soft)">Platform 18 m</text>`;
+      // track
+      s += `<rect x="${X(0)}" y="182" width="${36 * 16}" height="5" fill="var(--metal)"/>`;
+      // buffers, points, merge
+      s += `<rect x="${X(-1)}" y="166" width="8" height="22" fill="var(--coral)"/>`;
+      s += `<path d="M${X(5.5)} 184 l-30 30" stroke="var(--metal)" stroke-width="4"/><text x="${X(5.5) - 20}" y="258" text-anchor="middle" font-family="Figtree, sans-serif" font-size="13" fill="var(--ink-soft)">spur points</text>`;
+      s += `<path d="M${X(34)} 184 l14 -30" stroke="var(--metal)" stroke-width="4"/><text x="${X(34)}" y="146" text-anchor="middle" font-family="Figtree, sans-serif" font-size="13" fill="var(--ink-soft)">merge</text>`;
+      // cars: engine front stop+6.54 .. stop+1.86 ; car k centre stop - 3.7k
+      const list = [
+        ['Engine', stop + 4.2, L.long ? 5.18 : 4.68, 'eng'],
+        ['Seats', stop, 3.2, 'pass'],
+        ['Kit', stop - 3.7, 3.2, 'kit'],
+        ['Footings', stop - 7.4, 3.2, 'foot'],
+      ];
+      if (two) list.push(['Footings 2', stop - 11.1, 3.2, 'foot2']);
+      for (const [name, c, len, k] of list) {
+        const x = X(c - len / 2),
+          w = len * 16 - 4;
+        const fill =
+          k === 'eng' ? '#d8432f' : k === 'pass' ? 'var(--sea)' : k === 'kit' ? '#a87443' : 'var(--stone-dark)';
+        const cls = k === 'foot2' && ghostOf && ghostOf.wagon2 ? ' class="ghost"' : '';
+        s += `<rect${cls} x="${x}" y="150" width="${w}" height="30" rx="5" fill="${fill}" stroke="var(--line)" stroke-width="3"/>`;
+        s += `<text x="${x + w / 2}" y="170" text-anchor="middle" font-family="Figtree, sans-serif" font-size="11" font-weight="800" fill="#fff">${name}</text>`;
+      }
+      // passenger mark
+      s += `<path d="M${X(stop)} 130 v18" stroke="var(--leaf)" stroke-width="4"/><text x="${X(stop)}" y="124" text-anchor="middle" font-family="Figtree, sans-serif" font-size="13" font-weight="800" fill="var(--leaf)">Passenger cars stop here</text>`;
+      // loader gantry over the kit car (the forge's rails)
+      const kx = X(stop - 3.7);
+      s += `<rect x="${kx - 70}" y="70" width="140" height="6" fill="var(--brass)"/><rect x="${kx - 70}" y="70" width="6" height="80" fill="var(--brass)"/><rect x="${kx + 64}" y="70" width="6" height="80" fill="var(--brass)"/>`;
+      s += `<rect x="${kx - 14}" y="76" width="28" height="22" fill="var(--sun)" stroke="var(--line)" stroke-width="2"/><path d="M${kx} 98 v40" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 3"/>`;
+      s += `<text x="${kx}" y="62" text-anchor="middle" font-family="Figtree, sans-serif" font-size="13" font-weight="800" fill="var(--ink)">Forge loader (runs along its gantry)</text>`;
+      const len = stop + 6.54 - (stop - (two ? 11.1 : 7.4) - 1.6);
+      s += `<text x="16" y="284" font-family="Figtree, sans-serif" font-size="14" font-weight="700" fill="var(--ink-soft)">Train ${len.toFixed(1)} m, platform 18 m: cars may run past it, the seats may not.</text>`;
+      return s;
+    }
+
+    function preview() {
+      const it = item(S.sel);
+      const owned = new Set(S.owned);
+      const L0 = look(owned);
+      if (S.view === 'before' || S.owned.has(it.id)) return { L: L0, ghost: null };
+      const L1 = look(new Set([...owned, it.id]));
+      const ghost = {};
+      for (const k of Object.keys(it.part)) if (L1[k] !== L0[k]) ghost[k] = true;
+      // paint and bands show directly (no ghost shape)
+      if (it.part.paint || it.part.bands || it.part.cradle) return { L: L1, ghost: null };
+      return { L: L0, ghost };
+    }
+
+    function stats() {
+      const it = item(S.sel);
+      const L0 = look(S.owned);
+      const L1 = S.owned.has(it.id) ? L0 : look(new Set([...S.owned, it.id]));
+      const rows = [];
+      const row = (label, a, b) =>
+        rows.push(
+          `<div class="stat"><span>${label}</span><b>${a === b ? a : `${a} <span class="to">→ ${b}</span>`}</b></div>`,
+        );
+      if (it.cat === 'engine' || it.cat === 'looks') {
+        row('Village to the island', trip(L0.long ? 54 : 65), trip(L1.long ? 54 : 65));
+        row('Cars it pulls', pulls(L0), pulls(L1));
+        row('Village to the Quarry', trip(L0.long ? 13.4 : 13.6), trip(L1.long ? 13.4 : 13.6));
+      } else if (it.cat === 'cars') {
+        const seats = (L) => (L.six ? 6 : 4);
+        row('Seats', seats(L0), seats(L1));
+        row('Riders under a roof', L0.roof ? 'yes' : 'no', L1.roof ? 'yes' : 'no');
+      } else if (it.cat === 'cargo') {
+        const foot = (L) => (L.cradle ? 9 : 6) * (L.wagon2 ? 2 : 1);
+        row('Footings a trip', foot(L0), foot(L1));
+        row('Rails a trip', 32, 32);
+        row('Cars / it pulls', `${cars(L0)} of ${pulls(L0)}`, `${cars(L1)} of ${pulls(L1)}`);
+      } else {
+        rows.push(
+          `<div class="stat"><span>Its sound</span><b><button class="btn small" type="button" id="hear">Hear it</button></b></div>`,
+        );
+      }
+      $('stats').innerHTML = rows.join('');
+      const h = $('hear');
+      if (h) h.addEventListener('click', () => toast('Toooot (a sketch has no sound)'));
+    }
+
+    function checks() {
+      if (S.cat !== 'cargo') return '';
+      const it = item(S.sel);
+      const L1 = S.owned.has(it.id) ? look(S.owned) : look(new Set([...S.owned, it.id]));
+      const ok1 = true,
+        ok2 = true,
+        ok3 = cars(L1) <= pulls(L1);
+      return `<ul class="checks"><li class="${ok1 ? '' : 'bad'}">The passenger car stands on every platform</li><li class="${ok2 ? '' : 'bad'}">Every works has a car and a loader that reaches it</li><li class="${ok3 ? '' : 'bad'}">The engine pulls it (${cars(L1)} of ${pulls(L1)} cars) and the line's ends hold it</li></ul>`;
+    }
+
+    let toastT = 0;
+    function toast(t) {
+      const el = $('toast');
+      el.textContent = t;
+      el.classList.add('on');
+      clearTimeout(toastT);
+      toastT = setTimeout(() => el.classList.remove('on'), 2400);
+    }
+
+    function render() {
+      $('rail').innerHTML = CATS.map(
+        (c) =>
+          `<button class="btn" role="tab" type="button" data-cat="${c.id}" aria-selected="${S.cat === c.id}">${c.name}</button>`,
+      ).join('');
+      const cat = CATS.find((c) => c.id === S.cat);
+      $('catTitle').textContent = cat.name;
+      const list = ITEMS.filter((i) => i.cat === S.cat);
+      $('items').innerHTML = list
+        .map((i) => {
+          const [k, label] = state(i);
+          return `<button class="item" role="option" type="button" data-id="${i.id}" aria-selected="${S.sel === i.id}"><span>${i.name}</span><span class="pill ${k}">${label}</span><small>${
+            i.cost
+              ? Object.entries(i.cost)
+                  .map(([m, n]) => `${n} ${m}`)
+                  .join(', ')
+              : i.coins
+                ? 'coins'
+                : 'no cost'
+          }</small></button>`;
+        })
+        .join('');
+      const it = item(S.sel);
+      const { L, ghost } = preview();
+      $('scene').innerHTML = S.cat === 'cargo' ? consistScene(L, ghost) : tableScene(L, ghost);
+      $('scene').setAttribute('viewBox', S.cat === 'cargo' ? '0 0 640 300' : '50 50 540 250');
+      $('scene').parentElement.classList.toggle('wide', S.cat === 'cargo');
+      $('scene').setAttribute(
+        'aria-label',
+        S.cat === 'cargo' ? 'Line 2 standing at Home with its cars and the platform' : 'The engine on the turntable',
+      );
+      $('legend2').textContent =
+        S.cat === 'cargo' ? 'Cargo shows the line’s whole train: it does not fit on the table.' : '';
+      $('beforeBtn').setAttribute('aria-pressed', S.view === 'before');
+      $('afterBtn').setAttribute('aria-pressed', S.view === 'after');
+      $('selName').textContent = it.name;
+      $('selDesc').innerHTML = it.desc + checks();
+      stats();
+      $('store').innerHTML =
+        `<span class="tag">Steel ${S.steel}</span><span class="tag">Copper ${S.copper}</span><span class="tag">Coins: wallet not built</span>`;
+      const [k] = state(it);
+      const block = blockReason(it);
+      $('fitBtn').disabled = k !== 'ready' || !!block;
+      $('fitBtn').textContent = S.owned.has(it.id) ? 'Fitted' : 'Fit';
+      $('why').textContent = k === 'ready' && block ? block : '';
+      $('confirm').classList.toggle('on', S.confirming);
+      const cost = it.cost
+        ? Object.entries(it.cost)
+            .map(([m, n]) => `${n} ${m}`)
+            .join(', ')
+        : '';
+      $('confirmText').textContent =
+        `Fit the ${it.name.toLowerCase()} for everyone? It uses ${cost} from the room's store.`;
+      $('steelBtn').textContent = `Steel in the bay: ${S.steel}`;
+      $('copperBtn').textContent = `Copper: ${S.copper}`;
+      $('pipBtn').setAttribute('aria-pressed', S.pip);
+      $('pipTag').hidden = !S.pip;
+    }
+
+    $('rail').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cat]');
+      if (!b) return;
+      S.cat = b.dataset.cat;
+      S.sel = (ITEMS.find((i) => i.cat === S.cat && !S.owned.has(i.id)) || ITEMS.find((i) => i.cat === S.cat)).id;
+      S.confirming = false;
+      S.view = 'after';
+      render();
+      const nb = document.querySelector(`[data-cat="${S.cat}"]`);
+      if (nb) nb.focus();
+    });
+    $('items').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-id]');
+      if (!b) return;
+      S.sel = b.dataset.id;
+      S.confirming = false;
+      S.view = 'after';
+      render();
+      const nb = document.querySelector(`[data-id="${S.sel}"]`);
+      if (nb) nb.focus();
+    });
+    $('beforeBtn').addEventListener('click', () => {
+      S.view = 'before';
+      render();
+    });
+    $('afterBtn').addEventListener('click', () => {
+      S.view = 'after';
+      render();
+    });
+    $('fitBtn').addEventListener('click', () => {
+      S.confirming = true;
+      render();
+      $('yesBtn').focus();
+    });
+    $('noBtn').addEventListener('click', () => {
+      S.confirming = false;
+      render();
+      $('fitBtn').focus();
+    });
+    $('yesBtn').addEventListener('click', () => {
+      const it = item(S.sel);
+      if (it.cost && it.cost.steel) S.steel -= it.cost.steel;
+      if (it.cost && it.cost.copper) S.copper -= it.cost.copper;
+      S.owned.add(it.id);
+      S.confirming = false;
+      render();
+      toast(
+        S.pip
+          ? 'Fitted for everyone. Pip saw it too.'
+          : 'Fitted for everyone. The trains wear it from their next Home stop.',
+      );
+      $('fitBtn').focus();
+    });
+    $('steelBtn').addEventListener('click', () => {
+      S.steel = S.steel >= 12 ? 0 : S.steel + 6;
+      render();
+    });
+    $('copperBtn').addEventListener('click', () => {
+      S.copper = S.copper >= 6 ? 0 : S.copper + 3;
+      render();
+    });
+    $('pipBtn').addEventListener('click', () => {
+      S.pip = !S.pip;
+      $('pipText').textContent = 'Pip is looking at Paint';
+      render();
+    });
+    const themes = ['auto', 'light', 'dark'];
+    let th = 0;
+    $('themeBtn').addEventListener('click', () => {
+      th = (th + 1) % 3;
+      if (themes[th] === 'auto') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', themes[th]);
+      $('themeBtn').textContent = `Theme: ${themes[th]}`;
+    });
+    $('resetBtn').addEventListener('click', () => {
+      S = init();
+      render();
+    });
+
+    // ---- open questions
+    const QS = [
+      {
+        q: 'Where does the engine on the table come from?',
+        o: [
+          'A works copy the Roundhouse keeps, wearing every fit the room has; real trains take a fit at their next Home stop',
+          'Call a real line-2 train onto the table (it leaves service while someone looks)',
+          'No table: frame the real train at its Home stop',
+        ],
+      },
+      {
+        q: 'A new resource’s first car: free at its unlock, or bought here?',
+        o: [
+          'Free at the unlock (the kiln lights, the wagon rolls out); the screen shows it owned and sells better ones',
+          'Bought here',
+        ],
+      },
+      {
+        q: 'How does the Roundhouse grow for later engines?',
+        o: [
+          'Keep 9.6 m now; growing the table and stall is itself an upgrade, planned with the end-game engine',
+          'Build it to the end-game size now (about a 16 m table and 16 m stalls)',
+          'Keep 9.6 m for good; big engines never come to the table',
+        ],
+      },
+      {
+        q: 'Where do the map and the logistics view live?',
+        o: [
+          'The Roundhouse holds the garage only; the Home hall’s live line map and the halt boards grow into the map and a small logistics readout',
+          'The Roundhouse is the one rail-management building for all three',
+          'A new signal box beside Home',
+        ],
+      },
+      {
+        q: 'Are cars bought per line or per train?',
+        o: ['Per line: every train on a line runs the same cars, bought once', 'Per train'],
+      },
+    ];
+    $('qs').innerHTML = QS.map(
+      (q, i) =>
+        `<fieldset><legend>${i + 1}. ${q.q}</legend>${q.o.map((o, j) => `<label class="opt"><input type="radio" name="q${i}" value="${j}"${j === 0 ? ' checked' : ''}><span>${o}${j === 0 ? '<span class="rec">Recommended</span>' : ''}</span></label>`).join('')}</fieldset>`,
+    ).join('');
+    function answers() {
+      const lines = ['Engine garage: answers'];
+      QS.forEach((q, i) => {
+        const v = document.querySelector(`input[name="q${i}"]:checked`);
+        const j = v ? Number(v.value) : 0;
+        lines.push(`${i + 1}. ${q.q} ${q.o[j]}${j === 0 ? ' (recommended)' : ''}`);
+      });
+      const n = $('notes').value.trim();
+      if (n) lines.push('Notes: ' + n);
+      return lines.join('\n');
+    }
+    $('copyBtn').addEventListener('click', () => {
+      const text = answers();
+      const out = $('copyOut');
+      out.value = text;
+      const fallback = () => {
+        out.classList.add('on');
+        out.focus();
+        out.select();
+        $('copyMsg').textContent = 'Copy from the box below.';
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            $('copyMsg').textContent = 'Copied.';
+            out.classList.add('on');
+          }, fallback);
+        } else fallback();
+      } catch (e) {
+        fallback();
+      }
+    });
+
+    render();
+  })();
+</script>

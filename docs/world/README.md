@@ -164,6 +164,15 @@ Each option shows the finder, a hauler far away and an away friend across three 
 far, mid-haul, mid-air, offline and late friends. The `#story-data` block is hand-edited JSON (named spots, then
 per-frame players, states and effects); the map is schematic, not `layout.ts` geometry. Local document UI only.
 
+## Engine garage mock
+
+[Engine garage mock](engine-garage-mock.html) is a clickable sketch of the train garage at the Roundhouse turntable
+(the [engine-garage brief](../brainstorms/engine-garage.md)): a parts-built SVG engine that changes as you pick an
+upgrade, the category rail, owned / ready / locked items, three felt readouts with the previewed change, the room's
+store, Fit with a built-in confirm, Before / After, the cargo consist strip with the platform's passenger mark and a
+loader over its car, and the brief's open questions with a copyable summary. Names and prices are stand-ins. Body-only
+HTML (published as an artifact); local document UI only.
+
 ## Economy prototype
 
 [Economy prototype](economy-prototype.html) is the playable 2D economy (owner, 6 November: "simulate the entire economy

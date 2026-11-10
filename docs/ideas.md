@@ -17,6 +17,8 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 ## Trains
 - A side-on camera while seated on the train, the island sliding by; sitting itself is now decided (decisions.md), but the bench variant's camera was cut (owner, 2026-11-02)
 - Train-riding UX pass once there are trains beyond the default cargo ones: a way to board that looks natural (a passenger car or seats, not sitting on a flat deck), and a ride that feels really satisfying over the long stretches; builds on [train-riding](research/train-riding.md) (owner, 2026-11-06)
+- A world / rail map view: the Home hall's live line map and the halt boards grown to show every line, its trains and their loads, a wall you stand at rather than a screen; parked in [engine-garage](brainstorms/engine-garage.md#parked) (owner, 2026-11-10)
+- A train logistics readout: each departure board shows the next train's cargo as icons and counts, the hall's line map a dot and load pip per train, no routing or timetables; parked in [engine-garage](brainstorms/engine-garage.md#parked) (owner, 2026-11-10)
 
 ## Multiplayer
 - Races with the RC carts, since the soapbox turned out fun to drive (owner, 2026-11-01)
