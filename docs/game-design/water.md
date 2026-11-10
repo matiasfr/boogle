@@ -213,6 +213,8 @@ swell's TSL twin agrees with it to 5 µm on the GPU at three clocks.
 | Sea triangles | ~387,000 | 18,500–20,000 | 18,500–20,000 |
 | GPU memory (textures + storage) | 312.3 MB | 211.6 MB | 215.3 MB |
 
+Measured before main halved the sky cube (which lowers all three columns' memory alike) and before Ultra's contact
+loop was limited to the nearest 64 (which changes Ultra's shading cost at Far Head, not these counts).
 Hiding Ultra's surface draw saves one draw, 387,000 triangles and both copies but none of the FFT, caustics, queries
 or memory, which keep running; A drops all of them. No hardware frame timings yet (the plan's [build notes](../plans/water-sunshine.md#build-notes-9-november) say why).
 
