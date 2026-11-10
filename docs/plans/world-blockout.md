@@ -176,6 +176,158 @@ is the second choice (ring-and-economy, open question 1).
     needs a 7.6 m deck, so Ring Island build 1's bow redraw should widen them (or stand a second row 4 m east), and line
     2's single track meets the double crossing at the pier head with a turnout.
 
+## Rulings (10 November)
+
+The orchestrator's calls on the eleven conflicts, under the owner call "The orchestrator makes design calls too"
+([owner calls](../agents/owner-calls.md), #1396), made on the designer's recommendation. Each is logged in
+[agent-calls](../agent-calls.md) for the owner to overrule. Nothing here changes code or map data yet; the "Changes"
+line says what has to, and when. Conflicts 1, 3 and 5 (and 11, which rides the same build) are settled before Ring
+Island build 1.
+
+**Read for this:** the conflicts above; [ring-island](../brainstorms/ring-island.md) and its design review;
+[ring-and-economy](../brainstorms/ring-and-economy.md); the 10 November decisions (double track, Ring Island, stop on
+request); [DESIGN](../../DESIGN.md) 7, 8, 10 and 11; [route-contract](../research/route-contract.md) and
+[progression-flow-layout](../research/progression-flow-layout.md) for the three firm rules. **Measured:** every future
+line's grade profile, from `src/sickle/world-lines.ts`; the live lines' climbs, from `railY` and `LINES` in
+`src/proto/place/layout.ts`. **Seen:** the blockout's stills 02 (aerial from the north) and 04 (the bow to Ring
+Island). **Not seen:** no new stills; Ring Island's near view, the Gorge's split and the island halt's sightlines don't
+exist in 3D yet, so every sightline claim below is from the map data and needs a still when the place is built.
+
+### The ruling grade (behind conflicts 2, 3, 5 and 10)
+
+The grade problem is the whole network's, not only Ring top's. Every future line drops to a 4 m sea deck and then
+jumps onto each island at 45–70% (Bell Rock 55%, Canopy 46%, the causeway 57%, the stack incline 209% at the split, the
+White Wall line 342% where it meets the chalk at Canopy's cleft). The plan's "no train in the game climbs" isn't quite
+right either: live line 1 climbs 12 m in 68 m (smoothstep, steepest about 26%) and line 2 6 m in 40 m (about 22%). Those
+are short, slow, in-town ramps, and they stay as built.
+
+**Ruling: future corridors keep to a 4% ruling grade.** No exceptions, the bow included (below). Why 4%: it's the
+gentlest that fits the bow into the crossing (3% would need 600 m to lose the bow's 18 m, and the crossing is about
+440 m), it reads as a railway rather than a coaster at 20–40 m/s, and it is kind to standing riders (two came off
+moving trains on 10 November, still a P1). It follows from three rules, which the map data then obeys:
+
+1. **Trains run low; lifts climb cliffs.** Corridors run at the height of the islands they join, a sea deck of about
+   4–15 m, easing between heights at 4% or less. A town on a high top (High Gorge at 85 m, High Port at 55 m) is
+   reached by a lift from a low station, never by track up the cliff. Two lifts in the game, both the place's own
+   landmark: the Port's crane (already "ride the crane lift") and the Gorge's split (conflict 5).
+2. **A deck meets an island at its height.** A trestle to Bell Rock (15 m) or Canopy (13 m) is built at that height
+   for its last stretch, not dropped to 4 m and ramped up.
+3. **A line that needs more height than 4% gives goes round or through.** A part-spiral round a flank, or a cut or
+   tunnel, measured when the area is built; never a ramp steeper than 4%.
+
+### The three before Ring Island build 1
+
+**1. Ring Island's size against its map position. Ruling: keep both the live position and the live size; redraw the
+map.** The island stays centred where the live cones are, 751 m from the pier head, and its outline in the map JSON
+(`ring-land`, 480 × 400 m) is redrawn to the live cones' waterline, about 640–680 m across. Why: the far view players
+have seen since minute one is the live cones, and the Meet's numbers (the shore about 320 m from the centre, about
+440 m of crossing from the pier head, 318 m of open sea past bent 6) are all measured on them; shrinking the island
+would change a finished horizon for no play gain. **Changes:** map data now (the outline, and the stack line and bay
+trestle's island ends, which move about 100–140 m nearer their destinations on the island's west side); the 2D pages
+regenerate. Knock-on: a bigger island stretches the coast texture further (conflict 9).
+
+**3. The Ring top junction at 63 m. Ruling: the junction is the island halt at the shore; there is no Ring top halt.**
+The stack line and the bay trestle start at the Ring Island halt (about 8 m, below) and run out along the island's
+west shore at sea-deck height. The cone's summit stays a place you walk up: the aperture lookout, where the branch
+choice can be seen (the Gorge's split end-on, Canopy's trees over the Wall), reached by a path from the town. Rejected:
+a spiral (57 m at 4% is 1.4 km, two-thirds of a lap of the cone, for a junction that needs no height) and a tunnel
+(costly, and it spends build 2's "thread the ring" on a junction). Why: a junction is two platforms you walk between,
+so it belongs where the line already arrives, and the Meet makes the island halt the island's front door anyway. Build
+2's threading is its own question: the saddle is lowered to whatever a 4% spur from the island halt reaches in a
+part-lap of the cone (about 30 m in 750 m), decided at build 2's still. **Changes:** map data now (line 2 to Ring
+Island ends at the island halt: about 0.44 km and 30 s, not 0.76 km and 49 s; Ring top comes out of the stack line,
+the bay trestle and the halts table; the telegraph row "Ring top (the aperture)" becomes the walked-up lookout). The
+branch choice also has to read from the island halt itself: each line's platform faces its destination's landmark,
+checked with a still in the branch-junction build.
+
+**The bow at 4%.** The crossing (conflict 2) is the first stretch the ruling grade touches. Ruling: the bow descends at
+4% from the first bent all the way to the island halt, instead of 7.6% to the railhead and level after it. In numbers:
+24.3 m at the pier head and the first bent, about 19.6 m at bent 6 (137 m out), about 14.7 m at the railhead (260 m),
+and about 7.5 m at the island halt (about 440 m, on the shore). Why: it is still a bow and the ring still climbs the sky
+as you descend, but the built bents change less (bent 6 comes down about 5 m, not about 9), the raised leaf stands
+higher and reads better from Home and the telescope, and standing riders get the gentle grade. The Meet's approved
+glide geometry is relative and holds: the leaf at the railhead deck (about 14.7 m), the brace platform about 4 m below
+it, the 16–18 m gap, the hook ring within 20 m; the ladders out of the sea are longer (about 10 m). The folk's stub
+carries the same 4% down to their halt. **Changes:** ring-island build 1 (R1's `railY` profile, the bent heights, the
+stub, the glide eval's heights); the brief's "about 6 m" reads "about 15 m at the railhead, 7.5 m at the halt". This
+amends an orchestrator call (the 24 → 6 m bow), not an owner decision.
+
+**5. The Gorge halt at 3 m and its town at 85 m. Ruling: keep the station low in the split; a stair always climbs it,
+and a lift becomes the Gorge's shortcut.** It is a feature. Every line arrives at one station at water level in the
+90 m split (the stack line from Ring Island, the incline from Bell Rock and the White Wall line's north end, which comes
+down to the sea deck before the stacks rather than staying on the chalk). The split points at Ring Island, so the
+stack line's last kilometre runs straight down it end-on, the view the Ring Island lookout promised, and you step off
+into a canyon with the town's bridge 82 m overhead. From the platform, a switchback stair cut into the split's falls
+side climbs to the bridge: about 165 m of steps, about 30–40 s, past the falls and the double-jump ledge with the first
+crystal seed (map note) and in sight of the falls cave, which is the 4.6 h double-back. A lift in the split (a cage on
+a copper winch, recommended as the first thing the Gorge's copper does) then carries everyone, so the place shortens
+behind you. Rules held: the next goal can be found (the bridge is overhead from the platform; the stair starts at the
+platform's end); nobody is stranded (the stair is always there, solo or in a group, and the hook isn't needed); and
+the lift is a travel edge only: it skips the stair, never a job. Rejected: the station on the bridge, which needs 82 m
+of climb (2 km at 4%, the whole stack line as a ramp) and loses the arrival down the split. **Changes:** map data now
+(the White Wall line's Gorge halt comes down from 59 m to the split's 3 m; the stack incline and the White Wall line
+reach the split at sea-deck height); the stair, the lift and what opens it are the Gorge's build, in its own brief.
+
+### The other eight
+
+**2. The crossing's deck: 4 m, 24 m or about 6 m. Ruling: the bow, at 4% (above).** The plan's redraw of `ringx`
+stands, re-profiled to 4%: 24.3 m at the pier head, about 14.7 m at the railhead, about 7.5 m at the island halt.
+**Changes:** map data now; the bents in build 1.
+
+**4. The island halt isn't a map place. Ruling: add it.** "Ring Island halt" becomes a map place at the shore, about
+(1414, −820), the island's rail place and its junction (conflict 3); the island's label stays on the cone. **Changes:**
+map data now.
+
+**6. Home's seam. Ruling: one West landing station, and the walk across the village is the hub.** The bay and cave lines
+share one West landing station (63 m apart today), one platform per track for each line side by side. Lines 1 and 2
+don't run on to it: the walk from the Village halts is 100–130 m, about 20–25 s, through the village the trains have
+been growing (DESIGN's core loop: towns grow from what arrives), with spawn's shore at its end. That's the Firelink
+reading: Home is where every line meets, on foot. A trodden path and the halt boards' island map show the way.
+**Changes:** map data now (one West landing halt in both lines); the path and boards in the build that lays the bay
+shortcut; check `?home=b`'s moved turntable then.
+
+**7. The order. Ruling: Sickle's order, High Port after both branches.** It's the chosen map, the sea cave seen on day
+one waits on the powered pick from the Gorge, and High Port taking all four materials makes it the place where both
+branches pay off. This answers map-prototypes open question 2 as an orchestrator call. The hours stand (the
+model's 6.1 h, laid over this order). **Changes:** the brief ([ring-and-economy](../brainstorms/ring-and-economy.md))
+gets a note that Sickle's order supersedes its High Port placement; no data.
+
+**8. Bell Terraces is Bell Rock. Ruling: one place, named Bell Rock.** The terraces are its dressing: the hand-picked
+crystal seeds on terraced ledges round the pinnacle. **Changes:** the brief's name; no data.
+
+**9. The coast texture. Ruling: every island a player lands on keeps the foam lip and cyan shallows; how is the sea
+owner's call, before build 1's R2.** The 10 November water decision keeps the shallows and foam "near shore", so a
+coarser far cell that drops them on a landed island isn't acceptable; a small texture per area (or per far cell) that
+keeps them is. Islands only ever seen from afar may go coarser. **Changes:** later build (ring-island R2's risk, with
+the sea owner).
+
+**10. The bay trestle's hump. Ruling: no hump.** Under the ruling grade it leaves the Ring Island halt at about 8 m, runs
+at the sea deck, and rises at 4% to Bell Rock's 15 m for its last stretch. **Changes:** map data now.
+
+**11. The crossing's six bents carry one track. Ruling: widen them in v26; no single-track exception.** Build 1 redraws
+the bents for the bow anyway, so it builds them, the seven new bents, the folk's stub and the leaf at the 7.6 m
+double-track deck, with one track laid on the side that continues line 2's alignment and the second track's bed left
+empty beside it (the owner's own "the width of two tracks, but it only lays one"). The second track is laid with line
+2's widening in its planned `WORLD_NS` bump, so no turnout is needed at the pier head until then. Why: the double-track
+decision names "the pier crossing" explicitly, and widening later would mean rebuilding the bents a second time. The
+effort stays the same: two footings a bent, 14 for the seven (the decision's "the laying effort stays the same").
+**Changes:** ring-island build 1 (R1's deck width, R2's stub and leaf, the leaf's glide landing now 7.6 m wide).
+
+### Knock-ons for the map data
+
+- **Every line's profile follows the three grade rules**: the sea-deck heights, decks meeting islands at their height,
+  no ramp over 4%. The regenerated `world-lines.ts` should prove it: a test that no span of a future line is steeper
+  than 4%.
+- **High Port is a lift, not a rail leg.** The cave line ends at Port Quay (3 m); the crane carries players (whether it
+  lifts a whole car, which would be very Boogle, is the Port's brief) to High Port; the White Wall line's south end
+  starts from the quay, not the 55 m top.
+- **The White Wall line runs at the chalk's foot**, through Canopy's cleft in a cut rather than over the 120 m tops.
+  "Collar the deep gap" still works at sea-deck height: the collars carry the span over deep water, not over height.
+- **Bell Rock's station plan** (the stills' finding: four lines' platforms cross on the skerry) is the next thing the
+  hub needs; the 15 m deck rule keeps all four at one level.
+- **The legs and hours tables** change where a line shortens (line 2 to Ring Island) or moves its end (the stack line,
+  the bay trestle, the cave line); regenerate them with the data rather than editing by hand.
+
 ## Double track
 
 Owner direction, 10 November: every rail corridor is double track, existing and future (decided in
