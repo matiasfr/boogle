@@ -616,20 +616,26 @@ route and the route contract are unchanged. Path, post and arm board ride the Wo
 face is a draw of its own.
 
 **Departure boards at the halts** (owner, 9 November: "a real sign rather than a big floating text countdown"). The
-big hovering countdown over each halt's centre is gone. Every standing halt has a departure board fixed to its
-signal mast below the arm, inboard of the rails at the end the train comes in (on a Home island edge, above its
-destination plaque): a dark backing and a red cap. It shipped first as a split-flap countdown; the owner then asked
-for the old prototype's minimal map instead (9 November: "instead of a strict timer, I liked the old signage that
-showed a minimal and you could see the train representation there moving"). So each face shows **this halt's line
-as a strip**: its stops as dots spaced by their real distance, laid track solid and unlaid track dashed (line 2's
-pier stretch until Q6 is laid), this halt ringed in red, and the line's train as a small marker gliding at its live
-position (line 1 gold, line 2 teal). No digits, no words. While the train's next stop is this halt the ring blinks;
-under reduced motion the ring stays lit and the marker steps once a second. Line 2's wagon rides as part of its
-train, so it has no marker of its own, and the shunter on Home's turntable isn't shown. Lines have two and four stops,
-so every board shows its whole line. Halts only stand once trains run, so there is no "before trains" board. The
-drawing is shared (`src/render/line-strip.ts`) for the Home station's big map, one strip per line. Each face is one
-canvas texture redrawn only when the marker moves a pixel or the ring blinks; one draw per standing halt, as the
-flaps were. Local over accepted train state. Not tested on a device.
+big hovering countdown over each halt's centre is gone. It shipped first as a split-flap countdown, then as a bare
+strip of the halt's own line; the owner preferred a map ("The line strip board looks less nice than the old
+prototype one, where you could see the other stations like a map") and picked **"Island map"** from four 2D boards
+([decisions](../decisions.md)). Every standing halt's board is a 1.5 × 1.2 m dark face with a red cap, hung on its
+signal mast below the arm, inboard of the mast at the end the train comes in, its bottom at 1.9 m (over a player's
+head). On a Home island edge (`?home=b`) it hangs above the destination plaque at 3.3 m under the canopy, the canopy
+its cap, so the island's two edges show two maps side by side. Each face draws **the island's railway as a map**:
+both lines along their real track (simplified to 1.5 m, so the curves read), line 1 gold and line 2 teal, every
+station dotted and named (Village, Camp, Quarry, Far Head, Pier), unlaid track dashed and its station dim (line 2's
+pier stretch until Q6 is laid), this halt ringed in red, and both trains as small markers gliding at their live
+positions. Each face is turned for whoever stands in front of it: what lies beyond the board is up the map and
+their right is its right, so geography stays true from either side and the names stay upright. While this halt's
+line has its train heading here the ring blinks; under reduced motion the ring stays lit and the markers step once
+a second. Line 2's wagon rides with its train (no marker of its own); the shunter isn't shown. Halts only stand once
+trains run, so there is no "before trains" board. From the platform and on a phone the names read; from 25 m only
+the lines, ring and trains do, and it is no beacon. Built from `src/render/island-map.ts` (shared with the Home hall's
+board) in `src/entities/railway/island-boards.ts`: every face is a 320 × 256 cell of one canvas atlas (1280 × 768,
+about 5 MB with mipmaps) drawn once and again only when the pier is laid; the trains and the blinking ring are two
+instanced quad meshes over the faces, so a moving train never redraws a texture. One draw per board in view plus two
+for all the markers and rings. Local over accepted train state. Not tested on a device.
 
 ## Ancient technology (round 4, exploring)
 
