@@ -178,7 +178,9 @@ is the second choice (ring-and-economy, open question 1).
 
 ## Double track
 
-Owner direction, 10 November: every rail corridor is double track, existing and future.
+Owner direction, 10 November: every rail corridor is double track, existing and future (decided in
+[docs/decisions.md](../decisions.md), "2026-11-10, the railway is double track": one direction per track, both tracks
+laid together, today's lines widened in one planned `WORLD_NS` bump after v25).
 
 - **Formation.** Two tracks on **4 m centres**. The gauge is Place's own (rails 0.5 m either side of a track's centre,
   `src/proto/place/rail.ts`, on a 3.6 m deck; `src/sim/railway-line-layout.ts` has no gauge, only centimetres along the
