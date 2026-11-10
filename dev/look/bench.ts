@@ -36,7 +36,8 @@ const extraQuery = opt('--query');
 // --size 375x812 with --query 'q=mobile&dev=1&graphics=msaa:false' is the phone profile: a phone's viewport, its
 // water quality and its MSAA default, on the Mac's GPU (no touch emulation, so the ladder's numbers, not a device's).
 const size = opt('--size')?.split('x').map(Number) ?? [1280, 800];
-if (size.length !== 2 || size.some((n) => !Number.isInteger(n) || n <= 0)) throw new Error('--size is WxH, e.g. 375x812');
+if (size.length !== 2 || size.some((n) => !Number.isInteger(n) || n <= 0))
+  throw new Error('--size is WxH, e.g. 375x812');
 // The Mac's Retina DPR (the game caps it at 2): what the owner sees. --dpr 1 for a cheaper, CPU-bound sample.
 const dpr = Number(opt('--dpr') ?? 2);
 
@@ -49,9 +50,25 @@ export const POSES = {
   island: { cam: [-40, 40, 40], look: [-5, 0, 0] }, // the classic island close (dev/look/lib.ts VIEWS.overview)
   bay: { cam: [780, 9, 0], look: [-700, 40, -500] }, // from the West landing over the bay: the long view (?greybox=sickle extends the fog here)
   play: null, // mid-play: a second player beside you, walking, dust particles, the player camera
+  // The player stood there (x, y, z, yaw; forward is (-sin yaw, -cos yaw)) with the player camera: the owner's 9 November
+  // slow spots past the pier. Opt-in (--poses), and built only from `--rail-seed q6-done` on: before Q6 there is no pier.
+  pier: { put: [1406.75, 24.3, -356.96, 0] }, // the pier deck ("Pier reached" jump-in), facing north over open sea
+  head: { put: [1392, 24, -170, 2.356] }, // Far Head's top, facing back south-west along the trestle to the mainland
 } as const;
 type PoseName = keyof typeof POSES;
-const poses = (opt('--poses')?.split(',') ?? Object.keys(POSES)) as PoseName[];
+const OPT_IN: PoseName[] = ['pier', 'head'];
+const poses = (opt('--poses')?.split(',') ??
+  Object.keys(POSES).filter((p) => !OPT_IN.includes(p as PoseName))) as PoseName[];
+// --rail-seed <stage>: the bench room starts from an accepted railway server save, as look's (dev/look/rail-seed.ts).
+const railSeed = opt('--rail-seed');
+// --scaler [load,after]: instead of the poses, watch the resolution scaler (adaptive, no ?dpr=fixed) through `load`
+// seconds of a frame cost that scales with the pixels (K x ratio² ms of main-thread work a frame, --scaler-k, default
+// 14: a frame misses a 120 Hz vsync above 0.8x) and `after` seconds without it. Reports when it first stepped down,
+// where it settled and how long it took back to full resolution and full detail. Default 40,60.
+const scaler = argv.includes('--scaler')
+  ? (/^\d+,\d+$/.test(opt('--scaler') ?? '') ? opt('--scaler')! : '40,60').split(',').map(Number)
+  : null;
+const scalerK = Number(opt('--scaler-k') ?? 14);
 for (const p of poses) if (!(p in POSES)) throw new Error(`Unknown pose ${p}; use ${Object.keys(POSES).join(', ')}`);
 
 // Section names from src/loop.ts (hook module paths or names) grouped into subsystems. Order matters: first match.
@@ -93,6 +110,7 @@ async function targetServer() {
   const port = await service.listen(0);
   return {
     url: `http://127.0.0.1:${port}`,
+    dataDir,
     async close() {
       await service.close({ save: false });
       fs.rmSync(dataDir, { recursive: true, force: true });
@@ -183,6 +201,7 @@ const TIMING = (s: number) => `
     frames: t.completedFrames,
     cpu: stat(t.cpu.stats), gpu: stat(t.gpu.span.stats), interval: stat(t.presentedFrameIntervals.stats),
     gpuStatus: t.gpu.span.status,
+    passes: t.passes,
     renderPasses: t.end.renderPasses, computeDispatches: t.end.computeDispatches,
     heapMB: +(heap() / 2 ** 20).toFixed(1), heapGrowthMB: +((heap() - h0) / 2 ** 20).toFixed(2),
     heapDrops: gcs,
@@ -223,8 +242,101 @@ const DUST = `
   }, 120);
   return true;`;
 
-async function measure(browser: Browser, stack: Stack) {
+// The measured checkout's own seed writer: its server reads its own save format.
+async function seed(dataDir: string, room: string) {
+  if (railSeed)
+    await (
+      await import(pathToFileURL(path.join(root, 'dev/look/rail-seed.ts')).href)
+    ).writeRailSeed(dataDir, room, railSeed);
+}
+
+// In the page: every 250 ms the scaler's ratio (of the maximum) and the detail rung it shed, while a rAF of our own
+// burns K x ratio² ms for `load` seconds, then nothing for `after` seconds.
+const SCALER = (load: number, after: number, k: number) => `
+  const { renderer } = await import('/src/render/scene.ts');
+  const rung = await import('/src/graphics-settings.ts').then((m) => m.autoRung ?? (() => 0), () => () => 0);
+  const max = Math.min(devicePixelRatio, 2);
+  const ratio = () => +(renderer.getPixelRatio() / max).toFixed(2);
+  let burning = true;
+  const burn = () => {
+    if (!burning) return;
+    const until = performance.now() + ${k} * ratio() ** 2;
+    while (performance.now() < until);
+    requestAnimationFrame(burn);
+  };
+  requestAnimationFrame(burn);
+  // The last 120 frame intervals as the governor sees them: the share over 1.5 x their 10th percentile (late) and the
+  // median over that percentile.
+  const ring = [];
+  let prev = 0, watching = true;
+  const watch = (now) => {
+    if (prev) ring.push(now - prev);
+    if (ring.length > 120) ring.shift();
+    prev = now;
+    if (watching) requestAnimationFrame(watch);
+  };
+  requestAnimationFrame(watch);
+  const frames = () => {
+    const s = ring.slice().sort((a, b) => a - b);
+    if (!s.length) return [0, 0];
+    const p10 = s[Math.floor(s.length * 0.1)];
+    return [+(s.filter((v) => v > p10 * 1.5).length / s.length).toFixed(2), +(s[Math.floor(s.length / 2)] / p10).toFixed(2)];
+  };
+  const t0 = performance.now(), samples = [];
+  setTimeout(() => (burning = false), ${load * 1000});
+  while (performance.now() - t0 < ${(load + after) * 1000}) {
+    samples.push([+((performance.now() - t0) / 1000).toFixed(2), ratio(), rung(), ...frames()]);
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  watching = false;
+  return samples;`;
+
+async function watchScaler(browser: Browser, stack: Stack, dataDir: string, [load, after]: number[]) {
   const room = 'bench' + Math.random().toString(36).slice(2, 7);
+  await seed(dataDir, room);
+  const g = await Game.open(browser, stack, { name: 'Alice', room, size, scale: dpr, adaptive: true, isolated: true });
+  try {
+    await sleep(8000);
+    const pose = poses.length === 1 ? POSES[poses[0]!] : null;
+    if (pose && 'put' in pose) {
+      const [x, y, z, yaw] = pose.put;
+      await g.eval(
+        PUT(x, y + 1, z) +
+          `const { cam } = await import('/src/player/state.ts'); me.yaw = cam.yaw = ${yaw}; return true;`,
+      );
+      await sleep(3000);
+    }
+    const samples = (await g.eval(SCALER(load!, after!, scalerK))) as [number, number, number][];
+    const at = (pred: (s: [number, number, number]) => boolean, from = 0) =>
+      samples.find((s) => s[0] >= from && pred(s))?.[0] ?? null;
+    const firstDown = at((s) => s[1] < 1);
+    const loaded = samples.filter((s) => s[0] > load! - 10 && s[0] <= load!).map((s) => s[1]);
+    const back = at((s) => s[1] === 1 && s[2] === 0, load!);
+    const changes = samples.filter((s, i) => i === 0 || s[1] !== samples[i - 1]![1] || s[2] !== samples[i - 1]![2]);
+    const row = {
+      loadS: load,
+      afterS: after,
+      k: scalerK,
+      firstDownS: firstDown,
+      lowest: Math.min(...samples.map((s) => s[1])),
+      lastTenSecondsOfLoad: loaded.length ? [Math.min(...loaded), Math.max(...loaded)] : null,
+      maxRung: Math.max(...samples.map((s) => s[2])),
+      backToFullS: back === null ? null : +(back - load!).toFixed(2),
+      changes,
+      samples, // [s, ratio, rung, late share, median / p10] every 250 ms
+    };
+    console.log(
+      `scaler: first step down ${firstDown ?? '-'} s into the load, lowest ${row.lowest}, rung ${row.maxRung}; full resolution and detail ${row.backToFullS ?? 'not'} s after it ended`,
+    );
+    return row;
+  } finally {
+    await g.close().catch(() => {});
+  }
+}
+
+async function measure(browser: Browser, stack: Stack, dataDir: string) {
+  const room = 'bench' + Math.random().toString(36).slice(2, 7);
+  await seed(dataDir, room);
   const g = await Game.open(browser, stack, {
     name: 'Alice',
     room,
@@ -239,8 +351,15 @@ async function measure(browser: Browser, stack: Stack) {
     await sleep(8000); // lazy props, streaming and the first shader builds near spawn
     for (const pose of poses) {
       const p = POSES[pose];
-      if (p) await g.eval(`window.__debugCam.set(${JSON.stringify(p.cam)}, ${JSON.stringify(p.look)});`);
+      if (p && 'cam' in p) await g.eval(`window.__debugCam.set(${JSON.stringify(p.cam)}, ${JSON.stringify(p.look)});`);
       else await g.eval(`window.__debugCam.clear();`);
+      if (p && 'put' in p) {
+        const [x, y, z, yaw] = p.put;
+        await g.eval(
+          PUT(x, y + 1, z) +
+            `const { cam } = await import('/src/player/state.ts'); me.yaw = cam.yaw = ${yaw}; return true;`,
+        );
+      }
       if (pose === 'play') {
         bob = await Game.open(browser, stack, { name: 'Bob', room, size: [480, 300] });
         const [x, y, z, yaw] = (await g.eval(NEAR_ME)) as number[];
@@ -266,9 +385,19 @@ async function measure(browser: Browser, stack: Stack) {
         await bob?.page.keyboard.up('KeyW');
         await g.eval(`clearInterval(window.__benchDust); return true;`);
       }
-      const r = rows[pose] as { calls: number; tris: number; cpu: { avg: number } | null; gpu: { avg: number } | null };
+      const r = rows[pose] as {
+        calls: number;
+        tris: number;
+        cpu: { avg: number } | null;
+        gpu: { avg: number; p95: number } | null;
+        passes?: { name: string; msPerFrame: number }[];
+      };
+      const passes = (r.passes ?? [])
+        .slice(0, 4)
+        .map((s) => `${s.name} ${s.msPerFrame}`)
+        .join(', ');
       console.log(
-        `${pose.padEnd(7)} calls ${r.calls} tris ${r.tris} cpu ${r.cpu?.avg ?? '-'} ms gpu ${r.gpu?.avg ?? '-'} ms`,
+        `${pose.padEnd(7)} calls ${r.calls} tris ${r.tris} cpu ${r.cpu?.avg ?? '-'} ms gpu ${r.gpu?.avg ?? '-'} ms (p95 ${r.gpu?.p95 ?? '-'}) passes: ${passes}`,
       );
     }
     const errors = [...g.healthErrors(), ...(bob?.healthErrors() ?? [])];
@@ -415,6 +544,7 @@ try {
     size,
     dpr,
     seconds,
+    railSeed: railSeed ?? null,
   };
   if (!noLoad) {
     const t = Date.now();
@@ -442,7 +572,10 @@ try {
   }
   stack = await devStack(server.url);
   browser = await launch({ hardware: true });
-  result.poses = await measure(browser, stack);
+  result.loadBefore = os.loadavg().map((l) => +l.toFixed(2)); // 1, 5 and 15 min: above ~6 the times aren't evidence
+  if (scaler) result.scaler = await watchScaler(browser, stack, server.dataDir, scaler);
+  else result.poses = await measure(browser, stack, server.dataDir);
+  result.loadAfter = os.loadavg().map((l) => +l.toFixed(2));
   if (!noLoad) {
     const port = await freePort();
     preview = vite(['preview', '--outDir', dist, '--port', String(port), '--strictPort', '--host', '127.0.0.1'], {});

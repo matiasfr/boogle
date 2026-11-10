@@ -228,6 +228,8 @@ export type GameOpts = {
   clock?: boolean;
   init?: string | (() => void);
   isolated?: boolean;
+  /** Leave adaptive resolution on (no `?dpr=fixed`). */
+  adaptive?: boolean;
   touch?: boolean;
   trace?: boolean;
   warp?: boolean;
@@ -261,7 +263,8 @@ export class Game {
   // init (a function or script run before the page's own code, e.g. to seed localStorage),
   // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps; a
   // checkout whose dev server predates `coi=1` serves it unisolated),
-  // Every page gets `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
+  // Every page gets `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable, unless adaptive
+  // (bench's --scaler, which watches the resolution scaler itself),
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
   // layout viewport, and the game only needs the coarse pointer),
@@ -327,7 +330,8 @@ export class Game {
       [opts.query, EXTRA_QUERY, opts.isolated ? 'coi=1' : ''].filter(Boolean).join('&'),
     );
     // No selector opens the current game, as the bare address does; ?proto= (including BOOGLE_QUERY) selects a prototype.
-    await g.page.goto(`${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}&${query}`, {
+    const dpr = opts.adaptive ? '' : 'dpr=fixed&';
+    await g.page.goto(`${stack.base}${sep}${dpr}debugcam=1&room=${room}&${query}`, {
       timeout: 90000,
     });
     // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds

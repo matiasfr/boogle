@@ -10,7 +10,24 @@ import type { RenderTarget, Texture } from 'three/webgpu';
 // r187's backend observation surface (not in @types/three). Keep it here, out of the renderer. Wrappers forward
 // every argument and preserve receivers; no targets, queries or command buffers are created by the observer.
 type GpuTexture = { width: number; height: number; depthOrArrayLayers: number; format: string; sampleCount: number };
-type Context = { renderTarget: RenderTarget | null; textures: Texture[] | null; depthTexture: Texture | null };
+type Context = {
+  id: number;
+  renderTarget: RenderTarget | null;
+  textures: Texture[] | null;
+  depthTexture: Texture | null;
+};
+// What each render context draws into, by its id (timestamp uids are `r:<call>:<context id>:f<frame>`): per-pass GPU
+// time in hardwareTiming. A target's texture name, the scene pass, or its size and whether it has colour.
+const contextNames = new Map<number, string>();
+function contextName(context: Context) {
+  const target = context.renderTarget;
+  if (!target) return 'canvas';
+  if (target === scenePass.renderTarget) return 'scenePass';
+  const kind = context.textures?.length ? 'colour' : 'depth';
+  return (
+    target.texture.name || `${target.width}x${target.height} ${kind}${target.depth > 1 ? ` x${target.depth}` : ''}`
+  );
+}
 type QueryPool = {
   currentQueryIndex: number;
   pendingResolve: unknown;
@@ -83,6 +100,7 @@ export async function observeGpu() {
     begin.call(backend, context);
     touch();
     renderPasses++;
+    if (!contextNames.has(context.id)) contextNames.set(context.id, contextName(context));
     if (context.renderTarget) {
       if (!targets.has(context.renderTarget)) context.renderTarget.addEventListener('dispose', disposed);
       targets.set(context.renderTarget, context);
@@ -165,8 +183,10 @@ type FrameSample = {
   computePasses: number;
 };
 type GpuSample = { frame: number; ms: number; contexts: number; startMs: number; endMs: number; stale?: boolean };
-type Timing = { frames: FrameSample[]; render: GpuSample[]; compute: GpuSample[] };
-const emptyTiming = (): Timing => ({ frames: [], render: [], compute: [] });
+/** One timed pass: what it drew into (contextNames) and its own begin-to-end GPU time. */
+type PassSample = { frame: number; name: string; ms: number };
+type Timing = { frames: FrameSample[]; render: GpuSample[]; compute: GpuSample[]; passes: PassSample[] };
+const emptyTiming = (): Timing => ({ frames: [], render: [], compute: [], passes: [] });
 let recent = emptyTiming();
 let session: Timing | null = null;
 let collecting = false;
@@ -209,6 +229,11 @@ function watchSpans(pool: QueryPool, type: 'render' | 'compute') {
       row.ms = row.endMs - row.startMs;
       row.contexts++;
       frames.set(frame, row);
+      if (session) {
+        const id = /^[rc]:\d+:(\d+):f/.exec(uid)?.[1];
+        const name = type === 'compute' ? 'compute' : (contextNames.get(Number(id)) ?? `context ${id}`);
+        session.passes.push({ frame, name, ms: endMs - startMs });
+      }
     }
     for (const row of [...frames.values()].sort((a, b) => a.frame - b.frame)) {
       // A freshly allocated query index can still contain an old GPU value if that slot was not written.
@@ -263,6 +288,30 @@ async function resolveGpu(type: 'render' | 'compute') {
     }
   })();
   return pending[type];
+}
+
+/** Each pass's GPU ms per frame over the frames with a complete span, slowest first. Passes overlap and leave gaps, so
+ *  they need not add up to the span. */
+function passTable(timing: Timing, spans: { frame: number }[]) {
+  const ids = new Set(spans.map((s) => s.frame));
+  const by = new Map<string, { ms: number; n: number; max: number }>();
+  for (const p of timing.passes) {
+    if (!ids.has(p.frame)) continue;
+    const row = by.get(p.name) ?? { ms: 0, n: 0, max: 0 };
+    row.ms += p.ms;
+    row.n++;
+    row.max = Math.max(row.max, p.ms);
+    by.set(p.name, row);
+  }
+  const frames = ids.size || 1;
+  return [...by]
+    .map(([name, r]) => ({
+      name,
+      msPerFrame: +(r.ms / frames).toFixed(3),
+      perFrame: +(r.n / frames).toFixed(2),
+      maxMs: +r.max.toFixed(3),
+    }))
+    .sort((a, b) => b.msPerFrame - a.msPerFrame);
 }
 
 function summarize(timing: Timing) {
@@ -332,6 +381,7 @@ function summarize(timing: Timing) {
       stats: stats(timing.frames.flatMap((f) => (f.intervalMs === null ? [] : [f.intervalMs]))),
       actualPresentationTimestamps: 'unavailable',
     },
+    passes: passTable(timing, spans),
     completedFrames: timing.frames.length,
   };
 }
