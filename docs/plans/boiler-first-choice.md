@@ -316,7 +316,7 @@ Step 2 is the guard only and can ship with step 3.
     stills. A second still from the normal approach along the deck: `--query 'b58at=head'`. **And a look the designer
     could not take:** from Far Head (`b58at=head`), aim at the forge apron (919, 18, 5) just after Q5 is laid: is the
     forge's call plume visible against the tree line? Say plainly if it is not (progression-flow-layout rule 1).
-- [ ] **2. No breaker and no strike while hauling the boiler (the guard; no stand). Review (`src/sim`).**
+- [x] **2. No breaker and no strike while hauling the boiler (the guard; no stand). Review (`src/sim`).**
   - The stand is not built: under option B a cast breaker means the boiler is fitted, so the two never share the
     pedestal in a world started after step 3 (Part 2). It comes back only if option A replaces B or a fork lets trains
     be skipped, sited by the Home station layout. `WORKS_BREAKER` and `test/railway-works-layout.test.ts` stay as they
@@ -357,7 +357,7 @@ Step 2 is the guard only and can ship with step 3.
     two `placeSound` cues with `shape.scrape` and `shape.drop`. Keep `export const BEAM_LENGTH = BEAM_SHAPE.length`.
   - Verify: `npm run check`; the beam looks as before in `npm run playthrough -- --to T3` (open the beam checkpoint
     stills).
-- [ ] **5. The server follows the hauled boiler and puts it down where the hauler stood. Review (`src/sim`,
+- [x] **5. The server follows the hauled boiler and puts it down where the hauler stood. Review (`src/sim`,
   `src/world`, `server/`).**
   - `src/sim/railway-systems.ts`: add `boilerStood` and `boilerPutDown` and export `railBoilerStood`,
     `railBoilerPutDown` as in Design; delete `boilerRelease` and `railBoilerRelease`; update the header comment.
@@ -373,7 +373,7 @@ Step 2 is the guard only and can ship with step 3.
     supplies), and a second case with presence outside the area ends `pedestal`; a holder back within the grace still
     holds it.
   - Verify: `npm run check`; `npm --prefix server test`; `npm run test:net`.
-- [ ] **6. The boiler on the rope.**
+- [x] **6. The boiler on the rope.**
   - `src/sim/railway-line2-layout.ts`: `export const LINE2_BOILER_HAUL = { solo: 300, help: 540 } as const` (cm/s).
     This is the step's only `src/sim` line: a constant, read by the view.
   - `src/adapters/railway.ts`: `railMovement` and `RailwayMovement` gain `boilerSoloSpeed` and `boilerHelpSpeed`
@@ -413,7 +413,7 @@ Step 2 is the guard only and can ship with step 3.
     pedestal at eye height (`b58at=apron`, aimed at the old train's saddle, about 179 m away and 12 m up) with the
     boiler held: can the old train, or the saddle echo, be seen from where the haul starts (lens 4, key in sight of the
     lock)? Say plainly if not.
-- [ ] **7. The pace as room tunables. Review (`src/sim`, `server/`). Needs the shared `WORLD_NS` bump.**
+- [x] **7. The pace as room tunables. Review (`src/sim`, `server/`). Needs the shared `WORLD_NS` bump.**
   - `src/sim/tune.ts`: append `{ key: 'railBoilerSoloSpeed', def: 300, min: 10, max: 1000, label: 'Railway solo boiler
     speed (centimetres per second)' }` and `{ key: 'railBoilerHelpSpeed', def: 540, min: 10, max: 2000, label: 'Railway
     helped boiler speed (centimetres per second)' }` after the last key on main at that time (the order is hashed).
@@ -428,7 +428,7 @@ Step 2 is the guard only and can ship with step 3.
 
 ### Stage C: the fit
 
-- [ ] **8. The press, the bolting and the mark.**
+- [x] **8. The press, the bolting and the mark.**
   - `src/entities/railway/boiler-view.ts`: the fit target's `run` records `fitting = performance.now()` only when
     `adapter.fitBoiler(b.revision)` returns true, hides that holder's drag and rope, and starts the 0.45 s arc of the
     hauled boiler group from where it was drawn to `saddle` (`thump` at the start; `clank` and `pieces.dustRing` on

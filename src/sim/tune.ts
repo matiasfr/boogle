@@ -81,6 +81,21 @@ export const TUNABLES = [
   { key: 'railGlideTurnTau', def: 120, min: 20, max: 1000, label: 'Railway glide turn time constant (milliseconds)' },
   { key: 'railGlideTurnMax', def: 360, min: 45, max: 1080, label: 'Railway glide turn rate cap (degrees per second)' },
   { key: 'railGlideDeploy', def: 100, min: 10, max: 1000, label: 'Railway glide deploy (milliseconds)' },
+  // The boiler's haul pace on its rope (docs/plans/boiler-first-choice.md, step 7; designer, 9 November).
+  {
+    key: 'railBoilerSoloSpeed',
+    def: 300,
+    min: 10,
+    max: 1000,
+    label: 'Railway solo boiler speed (centimetres per second)',
+  },
+  {
+    key: 'railBoilerHelpSpeed',
+    def: 540,
+    min: 10,
+    max: 2000,
+    label: 'Railway helped boiler speed (centimetres per second)',
+  },
 ] as const;
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];

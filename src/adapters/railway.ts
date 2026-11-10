@@ -150,6 +150,8 @@ export type RailwayCorrection = Readonly<{
 export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   beamSoloSpeed: tune.get('railBeamSoloSpeed') / 100,
   beamHelpSpeed: tune.get('railBeamHelpSpeed') / 100,
+  boilerSoloSpeed: tune.get('railBoilerSoloSpeed') / 100,
+  boilerHelpSpeed: tune.get('railBoilerHelpSpeed') / 100,
   jumpImpulse: tune.get('railJumpImpulse') / 100,
   jumpTurn: tune.get('railJumpTurn') / 100,
   jumpSteer: tune.get('railJumpSteer') / 100,
@@ -167,6 +169,8 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
 export type RailwayMovement = {
   beamSoloSpeed: number;
   beamHelpSpeed: number;
+  boilerSoloSpeed: number;
+  boilerHelpSpeed: number;
   jumpImpulse: number;
   jumpTurn: number;
   jumpSteer: number;
@@ -362,6 +366,8 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.strike',
   'rail.turn',
 ]);
+/** Refused only while you haul the boiler, as the sim refuses them (one thing on your back at a time). */
+const NOT_WHILE_HAULING: ReadonlySet<string> = new Set(['rail.breaker', 'rail.strike']);
 /** Corrections kept for measurement. */
 const LOG_MAX = 256;
 
@@ -702,7 +708,12 @@ export function createRailwayAdapter({
     const beam = v.line?.beam;
     if (beam?.state === 'held' && beam.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
     const boiler = v.line2?.boiler;
-    if (boiler?.state === 'held' && boiler.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
+    if (
+      boiler?.state === 'held' &&
+      boiler.holder === pid &&
+      (!NOT_MATERIAL.has(intent.op) || NOT_WHILE_HAULING.has(intent.op))
+    )
+      return false;
     // A footing fills your back: only setting it or putting it down moves anything.
     const foot = account?.foot ?? 0;
     if (
@@ -780,6 +791,8 @@ export function createRailwayAdapter({
     !!b &&
     a.beamSoloSpeed === b.beamSoloSpeed &&
     a.beamHelpSpeed === b.beamHelpSpeed &&
+    a.boilerSoloSpeed === b.boilerSoloSpeed &&
+    a.boilerHelpSpeed === b.boilerHelpSpeed &&
     a.jumpImpulse === b.jumpImpulse &&
     a.jumpTurn === b.jumpTurn &&
     a.jumpSteer === b.jumpSteer &&
@@ -1120,7 +1133,7 @@ export function createRailwayAdapter({
     depotTake: () => submit({ op: 'rail.depotTake' }),
     depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
     openPack: () => submit({ op: 'rail.pack' }),
-    shoulderBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
+    takeBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
     dropBoiler: (x: number, y: number, z: number, revision: number) =>
       railInt(revision) &&
       railInt(x, 200000, -200000) &&

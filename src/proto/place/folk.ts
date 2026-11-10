@@ -627,10 +627,28 @@ function brain(g: Guy, dt: number) {
       if (g.mood === 'wave') g.yaw = Math.atan2(you.x - g.x, you.z - g.z);
       return;
     }
-    case 'camp':
+    case 'camp': {
+      const at = bolt?.guys.indexOf(g) ?? -1;
+      if (bolt && at >= 0) {
+        // Bolting the boiler on: run to your side of the saddle, then face it and hammer.
+        g.tx = bolt.x + (at ? 0.9 : -0.9);
+        g.tz = bolt.z;
+        if (!bolt.here[at] && !steer(g, dt, SPEED.run)) {
+          g.mood = 'run';
+          return;
+        }
+        if (!bolt.here[at]) {
+          bolt.here[at] = true;
+          bolt.left = Math.max(bolt.left, 2);
+        }
+        g.yaw = Math.atan2(bolt.x - g.x, bolt.z - g.z);
+        hammerAt(g, dt);
+        return;
+      }
       if (campBusy[g.camp]) shuttle(g, dt);
       else g.mood = 'sit';
       return;
+    }
     case 'station': {
       const st = e?.station();
       if (!e) return;
@@ -977,6 +995,25 @@ export function cheerAround(x: number, z: number, r: number, seconds = 5) {
 export function setCamp(k: number, busy: boolean) {
   campBusy[k] = busy;
 }
+// Two of the camp's little guys bolting the boiler on (docs/plans/boiler-first-choice.md, step 8). Local, a few seconds.
+let bolt: { x: number; z: number; y: number; left: number; guys: Guy[]; here: boolean[] } | null = null;
+/** The two camp-0 little guys nearest (x, z) run to 0.9 m either side of it and hammer there for `seconds` (never less
+ * than 2 s after they arrive), then go back to their work. Fewer than two about: whoever there is. */
+export function boltAt(x: number, z: number, y: number, seconds = 5) {
+  const near = campGuys
+    .filter((g) => g.on && g.camp === 0)
+    .sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z))
+    .slice(0, 2)
+    .sort((a, b) => a.x - b.x);
+  bolt = near.length ? { x, z, y, left: seconds, guys: near, here: near.map(() => false) } : null;
+  for (const g of near) {
+    g.cheer = 0;
+    g.gather = false;
+    g.route.left = -1;
+  }
+}
+/** Who is bolting now (for the evals). */
+export const bolting = () => (bolt ? { left: bolt.left, guys: bolt.guys.length, here: bolt.here.filter(Boolean).length } : null);
 export function setRiders(line: number, on: boolean) {
   for (const g of riders) if (g.camp === line) g.on = on;
 }
@@ -1019,6 +1056,7 @@ export function resetFolk() {
   setCommuters(false);
   setPushers(false);
   campBusy[0] = campBusy[1] = false;
+  bolt = null;
 }
 
 // ---------------------------------------------------------------- chatter (docs/research/little-guys.md: rare, nearby, one at a time)
@@ -1142,6 +1180,7 @@ function updateTalk(dt: number) {
 
 export function updateFolk(dt: number) {
   commuteRun = Math.max(0, commuteRun - dt);
+  if (bolt && (bolt.left -= dt) <= 0) bolt = null;
   const b = me.body;
   you.ok = !!b;
   if (b) {
@@ -1242,6 +1281,7 @@ export const folk = {
   stationGuys,
   campGuys,
   riders,
+  bolting,
   chats: 0, // exchanges and lines so far, for the evals
   lines: 0,
   talking: () => (ex ? [ex.a, ex.b] : null),

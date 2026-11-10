@@ -533,8 +533,8 @@ export async function boilerToPier(
       await walk(view().forgeRack.x, view().forgeRack.z, 3);
     }
     const b = view().boiler;
-    check(await bot.use(b.x, b.z, 'shoulder the boiler', /^Shoulder the boiler$/), 'boiler pickup offered');
-    check(await bot.work(() => view().boiler.mine, 30000, 380), 'boiler accepted onto the back');
+    check(await bot.use(b.x, b.z, 'pick up the boiler', /^Pick up$/), 'boiler pickup offered');
+    check(await bot.work(() => view().boiler.mine, 30000, 380), 'boiler on its rope');
     await checkpoint('boiler');
     // Reverse the production path-home bypass, then follow line one's laid deck to camp.
     const village = point(0, 14),

@@ -563,11 +563,47 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     const drop = { op: 'rail.drop', n: carry, kind: 0, x: q6[0], y: q6[1], z: q6[2] };
     assert.equal((await action(drop, q6)).status, 'accepted');
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, camp)).status, 'rejected');
+    // The server follows the hauled boiler from presence (body centre, metres) and a leaver past the grace has it put
+    // down where they last stood (docs/plans/boiler-first-choice.md, step 5): on the apron, inside the haul area.
+    const grace = host.rules.tune.get('railBeamGraceS') * 1000;
+    const stand = (x: number, z: number) =>
+      (people = [{ pid: 'a', x: x / 100, y: (apron[1] + 45) / 100, z: z / 100, at: now }]);
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
+    stand(apron[0] + 200, apron[2]);
+    await ticks(2);
+    assert.deepEqual([boiler().x, boiler().y, boiler().z], [apron[0] + 200, apron[1], apron[2]]);
+    people = [];
     host.depart('s');
     await ticks(2);
     assert.equal(boiler().state, 'held');
-    now += host.rules.tune.get('railBeamGraceS') * 1000;
+    now += grace;
+    await ticks(2);
+    assert.equal(boiler().state, 'ground');
+    assert.equal(boiler().holder, '');
+    assert.deepEqual([boiler().x, boiler().y, boiler().z], [apron[0] + 200, apron[1], apron[2]]);
+    // A holder back within the grace still holds it.
+    await open();
+    assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
+    host.depart('s');
+    now += grace / 2;
+    await ticks(2);
+    await open();
+    now += grace;
+    await ticks(2);
+    assert.equal(boiler().state, 'held');
+    // Stood outside the haul area (off Home's apron), a leaver's boiler goes back to the pedestal.
+    stand(120000, -20000);
+    await ticks(12);
+    assert.equal(boiler().x, 120000);
+    // A few millimetres south of z = 0 rounds to -0, which the ECS int schema refuses: the host keeps it +0, and the
+    // room still saves while the boiler is held there (the beam's carrier goes through the same rounding).
+    people = [{ pid: 'a', x: 1200, y: (apron[1] + 45) / 100, z: -0.003, at: now }];
+    await ticks(12);
+    assert.ok(Object.is(boiler().z, 0));
+    assert.doesNotThrow(() => host.rules.railway.world().snapshot());
+    people = [];
+    host.depart('s');
+    now += grace;
     await ticks(2);
     assert.equal(boiler().state, 'pedestal');
     await open();

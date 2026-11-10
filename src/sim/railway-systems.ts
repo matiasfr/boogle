@@ -11,7 +11,7 @@
 //   the Works block                      rail.breaker, rail.strike, rail.kiln, rail.footTake, rail.footSet,
 //                                        rail.cradle, rail.turn and the shed's commissioning (the wagon's roll-out)
 //   rail.glide                           the glider's one shared take on Needle Bell's summit, once Q5 is laid
-//   railBoilerRelease                   return an absent carrier's boiler to the apron
+//   railBoilerStood / railBoilerPutDown  follow the hauled boiler; put an absent hauler's down where they stood
 //   railFootRelease / railFootHolders   return an absent carrier's footing to the Works rack
 //   railResume / railSession / railSupplyPulse / railBeamRelease / railBeamStood / railBeamPutDown
 import { defineSystem, type System, type World } from '../ecs/index.ts';
@@ -741,21 +741,31 @@ const cartCall = defineSystem(
 
 // ---------------------------------------------------------------- the Works and the Roundhouse (./railway-works.ts)
 // Server kind: every op is judged from the actor's own position by railValid; each transfer is one apply.
-/** The breaker on the boiler's old pedestal: the forge's third made thing, cast when Q6 is laid. A room-wide rung. */
-const breaker = defineSystem('rail.breaker', { writes: [Works], phase: 'act', order: 33 }, (w) => {
-  if (w.get(Works, worksId(w))!.breaker !== 1) return 0;
-  w.mut(Works, worksId(w))!.breaker = 2;
-  return 1;
-});
-/** One generous strike opens a seam (0 the stall slab, 1 the throat); a repeat strike moves nothing. */
-const strike = defineSystem('rail.strike', { writes: [Works], phase: 'act', order: 34 }, (w, { e }: Act) => {
-  const works = w.get(Works, worksId(w))!;
-  if (!railInt(e.id, 1) || works.breaker !== 2) return 0;
-  const bit = e.id ? SEAM_THROAT : SEAM_STALL;
-  if (works.seams & bit) return 0;
-  w.mut(Works, worksId(w))!.seams = works.seams | bit;
-  return 1;
-});
+/** The breaker on the boiler's old pedestal: the forge's third made thing, cast when Q6 is laid. A room-wide rung.
+ * Not while you haul the boiler (docs/plans/boiler-first-choice.md, Part 2): a guard for worlds where the two met. */
+const breaker = defineSystem(
+  'rail.breaker',
+  { reads: [Account, Boiler], writes: [Works], phase: 'act', order: 33 },
+  (w, { a: aid }: Act) => {
+    if (w.get(Works, worksId(w))!.breaker !== 1 || boilerHeld(w, w.get(Account, aid)!.pid)) return 0;
+    w.mut(Works, worksId(w))!.breaker = 2;
+    return 1;
+  },
+);
+/** One generous strike opens a seam (0 the stall slab, 1 the throat); a repeat strike moves nothing. Not while you
+ * haul the boiler. */
+const strike = defineSystem(
+  'rail.strike',
+  { reads: [Account, Boiler], writes: [Works], phase: 'act', order: 34 },
+  (w, { a: aid, e }: Act) => {
+    const works = w.get(Works, worksId(w))!;
+    if (!railInt(e.id, 1) || works.breaker !== 2 || boilerHeld(w, w.get(Account, aid)!.pid)) return 0;
+    const bit = e.id ? SEAM_THROAT : SEAM_STALL;
+    if (works.seams & bit) return 0;
+    w.mut(Works, worksId(w))!.seams = works.seams | bit;
+    return 1;
+  },
+);
 /** Logs and stone off your back into the kiln's bills; it lights the moment both are full. */
 const kiln = defineSystem(
   'rail.kiln',
@@ -1514,17 +1524,43 @@ const beamPutDown = defineSystem('rail.beamPutDown', { writes: [Beam], phase: 'b
  * the tree. Never while they hold it in a live session. */
 export const railBeamPutDown = (w: World, pid: string): number => w.run(beamPutDown, pid);
 
-const boilerRelease = defineSystem(
-  'rail.boilerRelease',
-  { writes: [Boiler], phase: 'boiler', order: 0 },
-  (w, q: { pid: string; epoch: number; revision: number }) => {
-    if (!boilerReleasable(w, q.pid, q.epoch, q.revision)) return 0;
+const boilerStood = defineSystem(
+  'rail.boilerStood',
+  { writes: [Boiler], phase: 'boiler', order: 1 },
+  (w, q: { pid: string; x: number; y: number; z: number }) => {
+    const b = w.get(Boiler, boilerId(w))!;
+    // The point comes from presence: the same bounds as rail.boilerDrop, and never -0 (off the int schema).
+    if (!railInt(q.x, 200000, -200000) || !railInt(q.y, 200000, -200000) || !railInt(q.z, 200000, -200000))
+      return false;
+    if (b.state !== 'held' || b.holder !== q.pid || (b.x === q.x && b.y === q.y && b.z === q.z)) return false;
+    Object.assign(w.mut(Boiler, boilerId(w))!, { x: q.x, y: q.y, z: q.z });
+    return true;
+  },
+);
+/** Where the boiler's hauler stands (cm, at their feet), kept on the held boiler as the beam's is
+ * (docs/plans/boiler-first-choice.md, Part 3), so an absence past its grace puts it down there. Returns whether it
+ * moved. */
+export const railBoilerStood = (w: World, pid: string, x: number, y: number, z: number): boolean =>
+  w.run(boilerStood, { pid, x, y, z });
+const boilerPutDown = defineSystem(
+  'rail.boilerPutDown',
+  { writes: [Boiler], phase: 'boiler', order: 2 },
+  (w, pid: string) => {
+    const b = w.get(Boiler, boilerId(w))!;
+    const { x, y, z } = b;
+    if (!boilerReleasable(w, pid, b.epoch, b.revision)) return 0;
+    // Never stood (no presence reached the server since the take): it is still where it was taken from, and one taken
+    // off the pedestal goes back onto it rather than lying at its foot.
+    const unmoved = x === LINE2_BOILER.x && y === LINE2_BOILER.y && z === LINE2_BOILER.z;
     boilerPedestal(w);
+    if (!unmoved && line2BoilerGround(x, y, z))
+      Object.assign(w.mut(Boiler, boilerId(w))!, { state: 'ground', x, y, z });
     return 1;
   },
 );
-export const railBoilerRelease = (w: World, pid: string, epoch: number, revision: number): number =>
-  w.run(boilerRelease, { pid, epoch, revision });
+/** The hauler stayed away past the grace: the boiler goes down where they last stood, or, off the haul area, back to
+ * the pedestal (the beam's rule; owner, 6 November). Never while they hold it in a live session. */
+export const railBoilerPutDown = (w: World, pid: string): number => w.run(boilerPutDown, pid);
 
 const footRelease = defineSystem(
   'rail.footRelease',

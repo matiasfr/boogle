@@ -7,6 +7,10 @@
 //   --until "window.__boilerShot || location.search.includes('player=2')" --seconds 10 --video
 //   --question "Does the friend get one boiler flourish where they stand, and keep walking through it?"
 // BOILER lines: the friend's `reward.arrival` before the fit, after it and as a trace every 100 ms; PASS/FAIL checks.
+// Solo (no `--players`, step 8's press as an `--action`): take it, walk to the saddle and fit it, watched side-on;
+// BOILER PRESS logs the view frame of the press, the frame the boiler first moved and the frame trains were accepted.
+// npm run look -- --rail-seed boiler-camp --action dev/look/evals/railway-boiler-fit.ts --video --seconds 14
+//   --question "Does the boiler leave the rope on the press frame, and do two little guys hammer at the saddle?"
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
@@ -22,8 +26,17 @@ const { teleport } = (await import(
 const { INTERP_MS } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 
-type BoilerView = { x: number; y: number; z: number; mine: boolean; saddle: { x: number; y: number; z: number } };
-const fitter = new URLSearchParams(location.search).get('player') === '2';
+type P = { x: number; y: number; z: number };
+type BoilerView = P & {
+  mine: boolean;
+  saddle: P;
+  seat: P;
+  frame: number;
+  fitting: { phase: string; pressFrame: number; movedFrame: number } | null;
+  lastFit: { pressFrame: number; movedFrame: number; refused: boolean } | null;
+};
+const solo = !new URLSearchParams(location.search).has('player');
+const fitter = solo || new URLSearchParams(location.search).get('player') === '2';
 const w = window as Window & { __boilerShot?: boolean };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const read = () => inspectRailway()!;
@@ -62,14 +75,49 @@ async function fit() {
   check(await bot.use(b.x, b.z, 'take the boiler', /^(Shoulder the boiler|Pick up)$/), 'boiler take offered');
   check(await bot.work(() => boiler().mine, 30000, 380), 'boiler accepted');
   const saddle = boiler().saddle;
+  if (solo) {
+    // Side-on to the old loco, the saddle in the middle of the frame and the camp's little guys in reach of it.
+    const s = boiler().seat;
+    window.__debugCam?.set([s.x + 1.5, s.y + 2.8, s.z - 8], [s.x, s.y - 0.5, s.z], 55);
+  }
   await bot.walk(saddle.x, saddle.z, 4, { limit: 30000 });
-  // Wait for the friend's capture: they start walking as it starts.
-  await until(() => other(), 'fitter sees the friend');
-  const from = other()!;
-  await until(() => !near(other(), from, 2), 'the friend is walking (their capture is on)', 1200000);
+  if (!solo) {
+    // Wait for the friend's capture: they start walking as it starts.
+    await until(() => other(), 'fitter sees the friend');
+    const from = other()!;
+    await until(() => !near(other(), from, 2), 'the friend is walking (their capture is on)', 1200000);
+  }
   await wait(1500);
+  let acceptedFrame = -1;
+  const watch = setInterval(() => {
+    if (acceptedFrame < 0 && read().line2.trains) acceptedFrame = boiler().frame;
+  }, 0);
   check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
+  // Read synchronously after the press, before any server message can be handled.
+  const flying = boiler().fitting,
+    atPress = { phase: flying?.phase ?? null, trains: read().line2.trains };
   check(await bot.work(() => read().line2.trains, 30000, 380), 'boiler fitted');
+  clearInterval(watch);
+  await bot.until(() => !boiler().fitting, 3000, 'landed');
+  const f = boiler().lastFit;
+  console.log(
+    `BOILER PRESS ${JSON.stringify({ press: f?.pressFrame, moved: f?.movedFrame, accepted: acceptedFrame, refused: boiler().lastFit?.refused ?? null, atPress })}`,
+  );
+  check(atPress.phase === 'fly' && !atPress.trains, 'the flight starts on the press, before any answer');
+  check(f && f.movedFrame === f.pressFrame, 'the boiler leaves the rope on the press frame');
+  const guys = () => (read().line2View as unknown as { bolting: { guys: number; here: number } | null }).bolting;
+  check(
+    await bot.until(() => (guys()?.here ?? 0) >= 2, 3100, 'bolting'),
+    'two little guys at the saddle before the wake ends',
+  );
+  console.log(`BOILER BOLTING ${JSON.stringify(guys())}`);
+  if (solo) {
+    await wait(4000);
+    const lashed = (read().line2View as unknown as { trains: { lashed: boolean }[] }).trains.map((t) => t.lashed);
+    check(lashed.every(Boolean), 'both locos lashed');
+    bot.finish('boiler fit');
+    return;
+  }
   await wait(3000);
   const a = arrival();
   console.log(

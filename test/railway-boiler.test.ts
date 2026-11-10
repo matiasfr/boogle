@@ -4,7 +4,7 @@ import { railwayAtTrains, TRAIN_STAGES } from './helpers/railway-trains.ts';
 import { chopTo } from './helpers/railway-works.ts';
 import { railwayAtQ5, act, advance } from './helpers/railway-q2.ts';
 import { restore, worldOf, edit, invariant, railResume, railSession, railSupplyPulse } from './railway-live.ts';
-import { railBoilerRelease } from '../src/sim/railway-systems.ts';
+import { railBoilerPutDown, railBoilerStood } from '../src/sim/railway-systems.ts';
 import {
   Account,
   Boiler,
@@ -69,19 +69,69 @@ test('dropped where released, on Home only', () => {
   assert.equal(b.state, 'pedestal');
   assert.equal(b.x, LINE2_BOILER.x);
 });
-test('the holder leaves: back on the pedestal', () => {
+test('the hauled boiler follows its holder; a leaver past the grace puts it down where they stood', () => {
+  // docs/plans/boiler-first-choice.md, Part 3: the beam's rule.
+  for (const [where, at, ends] of [
+    ['inside the haul area', [100700, 3030, -14400], 'ground'],
+    ['outside it', [120000, 0, -20000], 'pedestal'],
+  ] as const) {
+    const w = railwayAtTrains('boiler'),
+      b = w.s.line2!.boiler;
+    act(w, 'a', 'rail.boilerTake', { revision: b.revision });
+    const revision = b.revision;
+    railSession(w.s, 'a', 2);
+    edit(w.s, (e) => {
+      assert.equal(railBoilerStood(e, 'b', at[0], at[1], at[2]), false, `${where}: not for a non-holder`);
+      assert.equal(railBoilerPutDown(e, 'b'), 0, `${where}: not for a non-holder`);
+    });
+    assert.deepEqual([b.x, b.y, b.z], [LINE2_BOILER.x, LINE2_BOILER.y, LINE2_BOILER.z]);
+    edit(w.s, (e) => {
+      assert.equal(railBoilerStood(e, 'a', at[0], at[1], at[2]), true);
+      assert.equal(railBoilerStood(e, 'a', at[0], at[1], at[2]), false, 'unchanged');
+    });
+    assert.equal(b.state, 'held');
+    assert.deepEqual([b.x, b.y, b.z], at);
+    assert.equal(b.revision, revision, 'standing moves no revision');
+    assert.equal(invariant(w.s), null);
+    edit(w.s, (e) => assert.equal(railBoilerPutDown(e, 'a'), 1));
+    assert.equal(b.state, ends, where);
+    assert.equal(b.holder, '');
+    assert.deepEqual([b.x, b.y, b.z], ends === 'ground' ? at : [LINE2_BOILER.x, LINE2_BOILER.y, LINE2_BOILER.z]);
+    assert.equal(b.revision, revision + 1);
+    assert.equal(invariant(w.s), null);
+    edit(w.s, (e) => {
+      assert.equal(railBoilerPutDown(e, 'a'), 0, 'once');
+      assert.equal(railBoilerStood(e, 'a', 0, 0, 0), false, 'no longer held');
+    });
+    assert.equal(invariant(w.s), null);
+  }
+  // Never stood since the take off the pedestal: back onto the pedestal, not lying at its foot.
   const w = railwayAtTrains('boiler'),
     b = w.s.line2!.boiler;
   act(w, 'a', 'rail.boilerTake', { revision: b.revision });
-  const revision = b.revision;
-  railSession(w.s, 'a', 2);
-  edit(w.s, (e) => {
-    assert.equal(railBoilerRelease(e, 'a', 1, revision), 0);
-    assert.equal(railBoilerRelease(e, 'a', 2, revision - 1), 0);
-    assert.equal(railBoilerRelease(e, 'a', 2, revision), 1);
-  });
+  edit(w.s, (e) => assert.equal(railBoilerPutDown(e, 'a'), 1));
   assert.equal(b.state, 'pedestal');
-  assert.equal(b.holder, '');
+  assert.equal(invariant(w.s), null);
+});
+test("the hauler's stood point is checked: never -0, never out of range, and the room still saves", () => {
+  const w = railwayAtTrains('boiler'),
+    b = w.s.line2!.boiler;
+  act(w, 'a', 'rail.boilerTake', { revision: b.revision });
+  edit(w.s, (e) => assert.equal(railBoilerStood(e, 'a', 100700, 3030, -14400), true));
+  for (const [x, y, z] of [
+    [100700, 3030, -0],
+    [-0, 3030, -14400],
+    [100700, 1e300, -14400],
+    [200001, 3030, -14400],
+    [100700, 3030, 0.5],
+    [NaN, 3030, -14400],
+  ])
+    edit(w.s, (e) => assert.equal(railBoilerStood(e, 'a', x!, y!, z!), false, `${x}, ${y}, ${z}`));
+  assert.deepEqual([b.x, b.y, b.z], [100700, 3030, -14400]);
+  assert.doesNotThrow(() => worldOf(w.s).snapshot(), 'held');
+  edit(w.s, (e) => assert.equal(railBoilerPutDown(e, 'a'), 1));
+  assert.equal(b.state, 'ground');
+  assert.doesNotThrow(() => worldOf(w.s).snapshot(), 'put down');
   assert.equal(invariant(w.s), null);
 });
 test('a ground boiler recovers after its minutes', () => {

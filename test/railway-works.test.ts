@@ -27,11 +27,12 @@ import {
 } from '../src/sim/railway-line2.ts';
 import { forgeRailsOffered, trainOwed } from '../src/entities/railway/forge-offer.ts';
 import { CART_PHASE, cartAlong } from '../src/sim/railway-cart.ts';
+import { TRAIN_HOME } from '../src/sim/railway-train.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal, pierNeed, worksStage } from '../src/sim/railway-works.ts';
-import { Account, Train, Works, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { Account, Boiler, Rail, Train, Works, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
 import type { World as Fixture } from './helpers/railway-q2.ts';
 
 const chop = (w: Fixture, pid: string, n: number) => {
@@ -126,6 +127,37 @@ test('a strike needs the breaker and is idempotent', () => {
   assert.equal(act(w, 'b', 'rail.strike', { id: 1 }), 1);
   assert.equal(works.seams, 3);
   assert.equal(worksStage(w.s), 'open');
+});
+test('no breaker and no strike while hauling the boiler', () => {
+  // A world from before step 3 (docs/plans/boiler-first-choice.md, Part 2): Q6 laid by hand, the breaker cast on the
+  // pedestal, and the boiler still waiting there, now on a's rope.
+  const w = railwayAtTrains('q6-done'),
+    l = w.s.line2!;
+  for (const pid of ['a', 'b']) {
+    const back = railAccount(w.s, pid)!;
+    for (const kind of [0, 2] as const) {
+      const n = kind ? (back.rails ?? 0) : back.carry;
+      if (n) assert.equal(act(w, pid, 'rail.drop', { x: 91900, y: 1815, z: 560, n, kind }), n);
+    }
+  }
+  const epoch = railAccount(w.s, 'a')!.epoch;
+  edit(w.s, (e) => {
+    e.mut(Rail, e.single(Rail))!.trains = -1;
+    Object.assign(e.mut(Boiler, e.single(Boiler))!, { state: 'held', holder: 'a', epoch, age: 0 });
+    // Cold trains stand at home, empty (the kit was hand-carried in that world).
+    TRAIN_HOME.forEach((at, slot) =>
+      Object.assign(e.mut(Train, e.lookup(Train, slot)!)!, { phase: 0, at, to: at, depart: 0, call: -1 }),
+    );
+  });
+  assert.equal(l.boiler.state, 'held');
+  assert.equal(invariant(w.s), null);
+  assert.equal(w.s.works!.breaker, 1);
+  assert.equal(act(w, 'a', 'rail.breaker'), 0, 'not for the hauler');
+  assert.equal(act(w, 'b', 'rail.breaker'), 1, 'another player takes it');
+  assert.equal(act(w, 'a', 'rail.strike', { id: 0 }), 0, 'the hauler strikes nothing');
+  assert.equal(w.s.works!.seams, 0);
+  assert.equal(act(w, 'b', 'rail.strike', { id: 0 }), 1);
+  assert.equal(invariant(w.s), null);
 });
 test('the kiln waits for the throat; lights once when both bills are full', () => {
   const w = railwayAtWorks('works-arrive'),

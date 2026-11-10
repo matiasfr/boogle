@@ -10,6 +10,7 @@ import { createWakePresentation } from '../../render/wake-presentation.ts';
 import { emit } from '../../render/particles.ts';
 import { whistle, thump } from '../../render/machine-sfx.ts';
 import { dustRing } from '../../render/particle-effects.ts';
+import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { TRAIN_PHASE, TRAIN_HOME, trainAlong, type RailTrain } from '../../sim/railway-train.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 
@@ -29,18 +30,27 @@ export async function createRailwayTrains(
   seats: typeof import('../../proto/place/seat.ts'),
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
-  const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, props] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/rail.ts'),
-    import('../../proto/place/look.ts'),
-    import('../../proto/place/look-kit.ts'),
-    import('../../proto/wagon/look.ts'),
-    import('../../proto/net/crates.ts'),
-    import('../../proto/place/train-load.ts'),
-    import('../../proto/place/pieces.ts'),
-    import('../../proto/minis/common.ts'),
-    import('../../proto/place/carry-models.ts'),
-  ]);
+  const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, props, folk, land, { flat }] = await Promise.all(
+    [
+      import('../../proto/place/layout.ts'),
+      import('../../proto/place/rail.ts'),
+      import('../../proto/place/look.ts'),
+      import('../../proto/place/look-kit.ts'),
+      import('../../proto/wagon/look.ts'),
+      import('../../proto/net/crates.ts'),
+      import('../../proto/place/train-load.ts'),
+      import('../../proto/place/pieces.ts'),
+      import('../../proto/minis/common.ts'),
+      import('../../proto/place/carry-models.ts'),
+      import('../../proto/place/folk.ts'),
+      import('../../proto/place/land.ts'),
+      import('../../proto/flat.ts'),
+    ],
+  );
+  // The mark (boiler-first-choice plan, step 8): the gold rope it was hauled on stays lashed round each fitted boiler,
+  // two rings and a knot in the rope's own material (shared with the rope; never disposed here).
+  const lashMaterial = flat(GOLD_ROPE, 0.7);
+  const lashGeometries: THREE.BufferGeometry[] = [];
   let clock = -1,
     shudder = 0,
     secondVisible = false;
@@ -100,10 +110,34 @@ export async function createRailwayTrains(
     }
     // The kit shell already has the two open brass receivers; its boiler is hidden in Place's saved state.
     const boiler = props.makeBoiler();
+    {
+      // Sized from the boiler's own box (its barrel runs along its z, its bands the widest round it): the rings'
+      // inner edge 3 cm clear of the bands so they never z-fight, set between the chimney's foot and the rear band.
+      const box = new THREE.Box3().setFromObject(boiler),
+        size = box.getSize(new THREE.Vector3()),
+        centre = box.getCenter(new THREE.Vector3());
+      const tube = 0.03,
+        round = size.x / 2 + 0.03 + tube,
+        axisY = box.min.y + size.x / 2;
+      const ring = new THREE.TorusGeometry(round, tube, 6, 28),
+        knot = new THREE.BoxGeometry(0.14, 0.1, 0.16);
+      lashGeometries.push(ring, knot);
+      for (const z of [-0.08, 0.3]) {
+        const r = new THREE.Mesh(ring, lashMaterial);
+        r.name = 'boiler_lashing';
+        r.position.set(centre.x, axisY, centre.z + z * size.z);
+        boiler.add(r);
+      }
+      const k = new THREE.Mesh(knot, lashMaterial);
+      k.name = 'boiler_lashing_knot';
+      k.position.set(centre.x + round * 0.72, axisY + round * 0.72, centre.z + 0.3 * size.z);
+      k.rotation.z = -Math.PI / 4;
+      boiler.add(k);
+    }
     const boilerGeometries = new Set<THREE.BufferGeometry>();
     const boilerMaterials = new Set<THREE.Material>();
     boiler.traverse((part) => {
-      if (!(part instanceof THREE.Mesh)) return;
+      if (!(part instanceof THREE.Mesh) || part.material === lashMaterial) return;
       boilerGeometries.add(part.geometry);
       for (const mat of Array.isArray(part.material) ? part.material : [part.material]) boilerMaterials.add(mat);
     });
@@ -123,7 +157,12 @@ export async function createRailwayTrains(
     const solid = load.solidTrainLoad(cars[2]!, deck);
     return { model, cars, deck, solid, boiler, last: null as RailTrain | null, count: -1, puffs: 0, speed: 0 };
   });
+  owner.cleanup(() => {
+    for (const g of lashGeometries) g.dispose();
+  });
   const first = trains[0]!;
+  const seatMatrix = new THREE.Matrix4();
+  let boilerFlying = () => false;
   const wake = createWakePresentation(
     {
       flatbed: first.cars[1]!,
@@ -302,10 +341,25 @@ export async function createRailwayTrains(
   return {
     restore,
     accepted(e: RailwayAccepted) {
-      if (e.op === 'rail.boilerFit')
-        wake.start(() => {
-          secondVisible = true;
-        });
+      if (e.op !== 'rail.boilerFit') return;
+      wake.start(() => {
+        secondVisible = true;
+      });
+      // Two of the camp's little guys run to the loco's side and bolt the boiler on (step 8).
+      const loco = first.cars[0]!,
+        out = wagon.TRAIN_CARS[0]!.hx + 0.5;
+      const x = loco.x + Math.cos(loco.yaw) * out,
+        z = loco.z - Math.sin(loco.yaw) * out;
+      folk.boltAt(x, z, land.H(x, z));
+    },
+    /** The hauled boiler is still flying to this loco's saddle (boiler-view.ts). */
+    holdBoiler(fn: () => boolean) {
+      boilerFlying = fn;
+    },
+    /** Where the old loco's boiler sits, as a world matrix (the hauled boiler flies to it; boiler-view.ts). */
+    boilerSeat(): THREE.Matrix4 {
+      first.boiler.updateWorldMatrix(true, false);
+      return seatMatrix.copy(first.boiler.matrixWorld);
     },
     isTrain: (platform: Platform | null) => trains.some((tr) => tr.cars.some((c) => c.platform === platform)),
     trainFlying: () => ({ logs: flyingLogs, rails: flyingRails }),
@@ -314,7 +368,7 @@ export async function createRailwayTrains(
       const s = adapter.inspect();
       trains.forEach((tr, k) => {
         const row = s.line2.train[k]!;
-        tr.boiler.visible = s.line2.trains;
+        tr.boiler.visible = s.line2.trains && !(k === 0 && boilerFlying());
         if (tr.last && s.line2.trains && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
           whistle(tr.cars[0]!.x, tr.cars[0]!.z);
         if (
@@ -388,6 +442,7 @@ export async function createRailwayTrains(
         along: trainAlong(adapter.inspect().line2.train[k]!, k, clock),
         cars: tr.cars.map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
+        lashed: tr.boiler.visible,
         ...(k === 1
           ? {
               wagon: {
@@ -401,6 +456,7 @@ export async function createRailwayTrains(
           : {}),
       })),
       oldTrain: { shown: !adapter.inspect().line2.trains, rust: look.rustTrainU.value, stop: TRAIN_HOME[0] },
+      bolting: folk.bolting(),
     }),
   };
 }

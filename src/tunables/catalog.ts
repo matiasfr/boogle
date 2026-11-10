@@ -157,6 +157,18 @@ const supply = {
     meaning: 'Time from the fall speed to the glide sink once the canopy holds you, with no overshoot.',
     owner: GLIDE_OWNER,
   },
+  railBoilerSoloSpeed: {
+    id: 'railway.boilerSoloSpeed',
+    units: 'centimetres per second',
+    at: 'next owner movement update',
+    meaning: 'Movement speed while hauling the boiler on its rope alone; the shared room value drives Owner movement.',
+  },
+  railBoilerHelpSpeed: {
+    id: 'railway.boilerHelpSpeed',
+    units: 'centimetres per second',
+    at: 'next owner movement update',
+    meaning: "Movement speed while a friend's Help carry lifts the hauled boiler; no second inventory claim.",
+  },
 } as const;
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;

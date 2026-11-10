@@ -372,6 +372,8 @@ export function createRailwayWorldHost({
   // put down where they last stood (owner, 6 November: you keep your load, or it goes down where you stood).
   let beamAway: number | null = null;
   let stoodAt = -Infinity;
+  /** Metres to whole centimetres, never -0 (Math.round gives -0 just south of zero, and the ECS int schema refuses it). */
+  const cm = (m: number) => Math.round(m * 100) || 0;
   const maintainBeam = () => {
     const beam = api.beam();
     if (beam.state !== 'held') return void (beamAway = null);
@@ -382,7 +384,7 @@ export function createRailwayWorldHost({
       stoodAt = t;
       const p = positions().find((row) => row?.pid === beam.holder && row.y !== undefined && t - row.at <= 2000);
       // Presence is the body's centre in metres; the beam lies at the feet.
-      if (p) api.beamStood(beam.holder, Math.round(p.x * 100), Math.round(p.y! * 100) - 45, Math.round(p.z * 100));
+      if (p) api.beamStood(beam.holder, cm(p.x), cm(p.y!) - 45, cm(p.z));
       return;
     }
     beamAway ??= t;
@@ -391,16 +393,25 @@ export function createRailwayWorldHost({
       beamAway = null;
     }
   };
+  // The hauled boiler follows the same rule on its own clock (docs/plans/boiler-first-choice.md, Part 3).
   let boilerAway: number | null = null;
+  let boilerStoodAt = -Infinity;
   const maintainBoiler = () => {
     const b = api.boiler();
-    if (b.state !== 'held' || requests.active(b.holder)) {
+    if (b.state !== 'held') return void (boilerAway = null);
+    const t = now();
+    if (requests.active(b.holder)) {
       boilerAway = null;
+      if (t - boilerStoodAt < 1000) return;
+      boilerStoodAt = t;
+      const p = positions().find((row) => row?.pid === b.holder && row.y !== undefined && t - row.at <= 2000);
+      // Presence is the body's centre in metres; the boiler is put down at the feet.
+      if (p) api.boilerStood(b.holder, cm(p.x), cm(p.y!) - 45, cm(p.z));
       return;
     }
-    boilerAway ??= now();
-    if (now() - boilerAway >= rules.tune.get('railBeamGraceS') * 1000) {
-      api.boilerRelease(b.holder, b.epoch, b.revision);
+    boilerAway ??= t;
+    if (t - boilerAway >= rules.tune.get('railBeamGraceS') * 1000) {
+      api.boilerPutDown(b.holder);
       boilerAway = null;
     }
   };
@@ -635,4 +646,6 @@ const RAIL_TUNE_KEYS = new Set([
   'railGlideTurnTau',
   'railGlideTurnMax',
   'railGlideDeploy',
+  'railBoilerSoloSpeed',
+  'railBoilerHelpSpeed',
 ]);

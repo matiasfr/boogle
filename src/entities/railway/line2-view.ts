@@ -436,7 +436,7 @@ export async function createRailwayLine2(
       switchCamera.play(from, to, at, seconds);
     },
   });
-  const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces }, chimneyTop);
+  const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces, flat, youGot }, chimneyTop);
   const pier = createRailwayPier(owner, { layout, rail, sounds });
 
   // ---------------------------------------------------------------- the machine on line two
@@ -694,7 +694,7 @@ export async function createRailwayLine2(
     const e = c.event;
     if (!l) return;
     seaGate.corrected(c);
-    boiler.corrected();
+    boiler.corrected(c);
     if ((e.op === 'rail.seaSwitch' && !l.sea) || (e.op === 'rail.lever' && !l.lever)) switchCamera.cancel();
     if (e.op === 'rail.lever') {
       clank(lever.x + ox, lever.z);
@@ -815,6 +815,12 @@ export async function createRailwayLine2(
   const api = {
     /** Line two owns the machine once the forge is lit and the turn has played. */
     working,
+    /** The boiler's haul pace (before the controller) and its rope (after Buddy's final pose). */
+    prePhysics: () => boiler.prePhysics(),
+    /** The old loco's boiler (train-view.ts), where a fit lands. */
+    boilerSeat: (fn: () => THREE.Matrix4) => boiler.seatFrom(fn),
+    boilerFlying: () => boiler.flying(),
+    lateUpdate: () => boiler.lateUpdate(),
     step,
     panelFrame: (dt: number) => panels.frame(dt),
     snapshot() {
