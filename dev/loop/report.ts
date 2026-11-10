@@ -85,6 +85,32 @@ function loopReport() {
   };
 }
 
+/** `npm run loop -- node <id>`: one node in a dozen lines, for an agent touching that beat. */
+export function printNode(id: string, json: boolean) {
+  const r = loopReport();
+  const n = r.nodes.find((x) => x.id === id);
+  if (!n) throw new Error(`no node "${id}". Nodes: ${r.nodes.map((x) => x.id).join(', ')}`);
+  const edges = [...r.defects, ...r.free, ...r.unruled, ...r.worldOnly].filter((e) => e.node === id || e.on === id);
+  const requires = NODES.find((x) => x.id === id)!.requires;
+  const g = r.grindRank.find((x) => x.id === id);
+  if (json) return console.log(JSON.stringify({ ...n, requires, grind: g ?? null }, null, 2));
+  const out = [
+    `${n.id}${n.optional ? ' (optional)' : ''}: ${n.label} [${n.area}]`,
+    `  bill: ${billText(n.bill)}`,
+    `  carries x straight-line m: ${n.grind.map((x) => `${x.carries}x${x.metres}${x.by === 'hand' ? '' : ` (${x.by})`}`).join(', ') || '-'}`,
+    ...(n.vehicleFed
+      ? [`  by hand if the vehicle is away: ${n.grind.map((x) => `${x.carries}x${x.handMetres}`).join(', ')}`]
+      : []),
+    `  grind 1-4 players: ${n.perPlayer.join(' / ')}${n.vehicleFed ? `; by hand ${n.byHand.join(' / ')}` : ''}${g?.detour ? `; humans walk x${g.detour.median.toFixed(2)} the prediction (n ${g.detour.n})` : ''}`,
+    `  cue: ${n.cueText}`,
+    `  requires: ${requires.map((e) => `${e.on} (${e.status}, held by ${e.by})`).join(', ') || 'nothing'}`,
+    ...edges
+      .filter((e) => e.status !== 'decided' || e.by !== 'rules')
+      .map((e) => `  order note: ${e.node} / ${e.on}: ${e.status}, ${e.source}`),
+  ];
+  console.log(out.join('\n'));
+}
+
 export function printReport(json: boolean) {
   const r = loopReport();
   if (json) return console.log(JSON.stringify(r, null, 2));
