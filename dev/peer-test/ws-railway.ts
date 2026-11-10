@@ -784,6 +784,8 @@ export async function railwayRequestStop(c: Ctx) {
   const { railwayCheck } = await import('../../src/sim/railway-world.ts');
   const { LINE_HALTS, TRAIN_PHASE, reqHas } = await import('../../src/sim/railway-train.ts');
   const { trainStops } = await import('../../src/sim/railway-line2.ts');
+  const { LINE2 } = await import('../../src/sim/railway-lines.ts');
+  const { LINE_SLOTS } = await import('../../src/sim/railway-trains.ts');
   const seed = railwayAtTrains('trains-on');
   const roomId = railwayRoomId(`${c.room}-request`);
   // A plain mirror (no session) brings the room up; the seed loads before any player opens a session, since a load
@@ -802,6 +804,8 @@ export async function railwayRequestStop(c: Ctx) {
   await host.page.close();
   await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
   const line2 = () => world.rules.railway.railway.line2!;
+  // A lever ask is the line's (`Line.req`), served by whichever of line 2's trains can brake for it.
+  const leverReq = () => world.rules.railway.railway.lines[LINE2]!.req;
   const n = trainStops(world.rules.railway.railway, 1).length;
   const quarry = LINE_HALTS.findIndex((h) => h.name === 'Quarry');
   const h = LINE_HALTS[quarry]!;
@@ -820,19 +824,19 @@ export async function railwayRequestStop(c: Ctx) {
     );
   await waitFor(
     async () =>
-      (await Promise.all(pages.map(adapter))).every((p) => p.state.line2.train[1]!.req === line2().train[1]!.req),
+      (await Promise.all(pages.map(adapter))).every((p) => p.state.line2.lines[LINE2]!.req === leverReq()),
     10000,
   );
-  c.check('request stop: the seed starts with nothing asked at the quarry', !asked(line2().train[1]!.req));
+  c.check('request stop: the seed starts with nothing asked at the quarry', !asked(leverReq()));
   // From off the platform: refused, nothing set.
   await ask(pages[2]!, [h.x + h.reach + 3000, h.y, h.z]);
   await sleep(600);
-  c.check('request stop: a press from off the platform sets nothing', !asked(line2().train[1]!.req));
+  c.check('request stop: a press from off the platform sets nothing', !asked(leverReq()));
   await ask(pages[0]!, [h.x, h.y, h.z]);
-  const set = await waitFor(async () => asked(line2().train[1]!.req), 5000);
+  const set = await waitFor(async () => asked(leverReq()), 5000);
   c.check('request stop: the lever request is accepted by the server', set >= 0);
   const mirrored = await waitFor(
-    async () => (await Promise.all(pages.map(adapter))).every((p) => asked(p.state.line2.train[1]!.req)),
+    async () => (await Promise.all(pages.map(adapter))).every((p) => asked(p.state.line2.lines[LINE2]!.req)),
     5000,
   );
   c.check('request stop: every tab mirrors the request', mirrored >= 0);
@@ -840,28 +844,32 @@ export async function railwayRequestStop(c: Ctx) {
     'request stop: the asker hears it accepted',
     (await waitFor(async () => (await accepted(pages[0]!, 'req0')) > 0, 5000)) >= 0,
   );
-  const before = line2().train[1]!.req;
+  const before = leverReq();
   await ask(pages[1]!, [h.x, h.y, h.z]);
   await sleep(800);
   c.check(
     "request stop: a friend's same request moves nothing",
-    line2().train[1]!.req === before && (await accepted(pages[1]!, 'req1')) === 0,
-    `req ${before} -> ${line2().train[1]!.req}`,
+    leverReq() === before && (await accepted(pages[1]!, 'req1')) === 0,
+    `req ${before} -> ${leverReq()}`,
   );
-  // Step the server ahead until its train stands at the quarry; it may pass outbound first and turn at Far Head.
-  let stood = false;
-  for (let k = 0; k < 6000 && !stood; k++) {
+  // Step the server ahead until one of line 2's trains stands at the quarry on the down track.
+  let slot = -1;
+  for (let k = 0; k < 6000 && slot < 0; k++) {
     world.step(0.1);
-    const r = line2().train[1]!;
-    stood = r.phase === TRAIN_PHASE.STAND && r.at === h.stop && r.sweep === -1;
+    slot =
+      LINE_SLOTS[LINE2]!.find((i) => {
+        const r = line2().train[i]!;
+        return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && r.track === 1;
+      }) ?? -1;
   }
-  const row = line2().train[1]!;
+  const stood = slot >= 0;
+  const row = line2().train[Math.max(slot, LINE_SLOTS[LINE2]![0]!)]!;
   c.check('request stop: the train stands at the quarry, leaving toward the village', stood, JSON.stringify(row));
   const agreed = await waitFor(async () => {
     const all = await Promise.all(pages.map(adapter));
     return all.every((p) => {
-      const t = p.state.line2.train[1]!;
-      return t.phase === row.phase && t.at === row.at && t.sweep === row.sweep && t.dest === row.dest;
+      const t = p.state.line2.train[Math.max(slot, LINE_SLOTS[LINE2]![0]!)]!;
+      return t.phase === row.phase && t.at === row.at && t.track === row.track && t.dest === row.dest;
     });
   }, 10000);
   c.check('request stop: every tab agrees on the standing train', agreed >= 0);

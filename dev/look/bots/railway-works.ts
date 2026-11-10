@@ -81,7 +81,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await walk(halt.x, halt.z, 0.5);
     const row = () => l2().train[1]!;
     await until(
-      () => row().phase === 0 && row().at === halt.stop && row().sweep === dir,
+      () => row().phase === 0 && row().at === halt.stop && (row().track ? -1 : 1) === dir,
       `a train toward stop ${destination} stands at ${halt.name}`,
     );
     const aboard = () => view().trains[1]!.cars.some((car) => car.riding);

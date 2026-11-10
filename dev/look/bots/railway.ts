@@ -568,7 +568,10 @@ export async function boilerToPier(
     if (called) await checkpoint('train called');
     await walk(halt.x, halt.z, 0.5);
     await until(
-      () => l2().train[line]!.phase === 0 && l2().train[line]!.at === halt.stop && l2().train[line]!.sweep === dir,
+      () =>
+        l2().train[line]!.phase === 0 &&
+        l2().train[line]!.at === halt.stop &&
+        (l2().train[line]!.track ? -1 : 1) === dir,
       'called train arrives',
     );
     const aboard = () => view().trains[line]!.cars.some((car) => car.riding);

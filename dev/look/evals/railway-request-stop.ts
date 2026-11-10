@@ -57,7 +57,7 @@ background(
       // Player 2's request aboard: an outbound train bound for the quarry with its lamp lit (this lever's own request
       // lights it too, on a train coming home).
       await until(
-        () => view().trains[1]!.stopLamp && row().sweep === 1 && row().to === 1 && row().phase === 1,
+        () => view().trains[1]!.stopLamp && row().track === 0 && row().to === 1 && row().phase === 1,
         "line 2's engine lamp lights for the request aboard",
       );
       console.log(`REQUEST STOP ${JSON.stringify({ row: row(), lever: view().halts[3]!.lever })}`);
@@ -68,7 +68,7 @@ background(
     await pull(2, 1);
     const village = view().halts[2]!;
     check(await bot.walk(village.x, village.z, 0.5), 'walked onto the village platform');
-    await until(() => row().phase === 0 && row().at === 0 && row().sweep === 1, 'a train toward Far Head stands');
+    await until(() => row().phase === 0 && row().at === 0 && row().track === 0, 'a train toward Far Head stands');
     const aboard = () => view().trains[1]!.cars.some((car) => car.riding);
     const end = performance.now() + 20000;
     try {

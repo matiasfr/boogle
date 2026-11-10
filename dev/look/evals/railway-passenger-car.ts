@@ -56,7 +56,7 @@ await (async () => {
   check(handle, 'the village has a handle toward Far Head');
   check(await bot.use(handle!.x, handle!.z, 'the lever', /^Request stop/), 'lever offered');
   check(await bot.walk(village.x, village.z, 0.5), 'walked onto the village platform');
-  await until(() => row().phase === 0 && row().at === 0 && row().sweep === 1, 'a train toward Far Head stands');
+  await until(() => row().phase === 0 && row().at === 0 && row().track === 0, 'a train toward Far Head stands');
   mark('halt');
   await bot.wait(1500);
   const aboard = () => view().trains[1]!.cars.some((car) => car.riding);

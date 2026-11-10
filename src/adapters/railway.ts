@@ -900,6 +900,8 @@ export function createRailwayAdapter({
       trains: line2Trains(s),
       trainsAt: l2.trains,
       train: Object.freeze(l2.train.map((r) => Object.freeze({ ...r }))),
+      /** Each line's lever asks (`Line` rows, by line index); 4b moves the reads onto them. */
+      lines: Object.freeze(s.lines.map((r) => Object.freeze({ ...r }))),
       kitOwed: Object.freeze(line2KitOwed(s)),
       cart: Object.freeze({ ...l2.cart }),
       /** The rack's tag: Loading, On the way, Unloading, Waiting for forge, or nothing. */

@@ -466,7 +466,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     return !(
       r.phase === TRAIN_PHASE.STAND &&
       r.at === h.stop &&
-      reqIndex(r.at, r.sweep, n) === reqIndex(h.stop, dir, n)
+      reqIndex(r.at, r.track ? -1 : 1, n) === reqIndex(h.stop, dir, n)
     );
   }
   function levers(dt: number, snap = false) {
