@@ -214,8 +214,10 @@ ripples ring out from splashes in the same draw. One opaque-depth copy gives whi
 water (rocks, legs, swimmers, floating things) and a soft waterline against rock. The light cyan shallows and the
 foam lip are the owner's must-keeps: per sea pixel they cost one coast-texture read and a few multiply-adds.
 
-**The coast texture** (`coast.ts`, RG16F, about 1 m a texel over every registered shore plus 120 m of sea, 6.3 MB
-at Place) is baked once per shore revision from the providers' own bed functions: G is the real bed (continued past
+**The coast texture** (`coast.ts`, RG16F, about 1 m a texel over every registered shore plus 120 m of sea, packed
+as one row per region: Home and Place 2015 × 780, Ring Island's shore (`src/entities/ring-island/shore.ts`, since
+R2b) 990 × 960, so 2015 × 1740 texels and **14.0 MB** (14,024,400 bytes, measured 10 November; 6.3 MB before the
+island), baked in about 0.54 s at load on a loaded machine) is baked once per shore revision from the providers' own bed functions: G is the real bed (continued past
 a grid's edge by the terrain's own offshore apron), which the swell's fade, the clear shallows and the foam lip read;
 R is the bed the colour reads. In the shallows (to 4.5 m) R is the real bed; past them it is a shelf that falls away
 from the shaped coast, gently off beaches (0.1 m per m) and fast under cliffs (0.7 m per m, by how high the land

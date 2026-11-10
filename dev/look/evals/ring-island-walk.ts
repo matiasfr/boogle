@@ -101,13 +101,17 @@ if (view || reloaded || first) {
     await stage(h.x, h.y, h.z);
     await until(() => ring.ringIslandNear.mounted, 'near view mounted');
     setView('pier');
+    // As dev/look/perf.ts reads them: renderer.info right after a completed game frame (three resets it at each start).
+    const frames = () =>
+      (window as unknown as { boogle: { prof: { last: { frames: number } } } }).boogle.prof.last.frames;
     const calls = async () => {
-      let sum = 0;
-      for (let k = 0; k < 20; k++) {
-        await new Promise((r) => requestAnimationFrame(r));
-        sum += renderer.info.render.drawCalls;
+      const seen: number[] = [];
+      for (let k = 0; k < 10; k++) {
+        const at = frames();
+        await until(() => frames() > at, 'a completed frame', 30000);
+        seen.push(renderer.info.render.drawCalls);
       }
-      return f2(sum / 20);
+      return { min: Math.min(...seen), max: Math.max(...seen) };
     };
     await wait(3000);
     const near = entityKinds().find((k) => k.kind === 'ring-island-near')?.entities[0];
@@ -119,7 +123,7 @@ if (view || reloaded || first) {
     const rows = prof.table(400).filter((r) => r.name.startsWith('ring-island'));
     const coast = (waterRuntime.inspect() as { coast?: unknown }).coast;
     say(
-      `perf ${JSON.stringify({ size: [innerWidth, innerHeight], withNear, without, added: f2(withNear - without), rows, coast })}`,
+      `perf ${JSON.stringify({ size: [innerWidth, innerHeight], withNear, without, added: withNear.max - without.min, rows, coast })}`,
     );
   } else if (view === 'halt' || view === 'pier') {
     const v = VIEWS[view];
