@@ -393,6 +393,8 @@ export type MachineLook = {
   slip: { rate: number };
   /** The engine's cab doors, hinged on their back posts (+x, then −x), when the loco is the railway's engine. */
   doors?: THREE.Object3D[];
+  /** And its cab's walls and roof, which the train view moves out of a rider's view (engine-kit.ts). */
+  cab?: ReturnType<EngineKit['engineBodyWithCab']>;
 };
 /** The railway's engine (./engine-kit.ts), loaded: trainLook draws its loco with it. */
 type EngineKit = typeof import('./engine-kit.ts');
@@ -444,10 +446,12 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView, engine?:
   const loco = new THREE.Group();
   const boiler = working || engine ? null : makeBoiler();
   let doors: THREE.Object3D[] | undefined;
+  let cab: MachineLook['cab'];
   if (engine) {
     // The body, stool and doors; the fitted boiler and its lashing are the train view's (they come with the fit).
     doors = [engine.engineDoor(1), engine.engineDoor(-1)];
-    loco.add(engine.enginePart('engine_body'), engine.enginePart('engine_stool'), ...doors);
+    cab = engine.engineBodyWithCab();
+    loco.add(cab.body, ...Object.values(cab.faces), cab.shadow, engine.enginePart('engine_stool'), ...doors);
   } else if (working) {
     add(loco, 'loco_body', RED);
     add(loco, 'loco_brass', BRASS);
@@ -548,7 +552,7 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView, engine?:
   };
   if (owner) owner.animate(animate, 8);
   else onFrame(animate, { phase: 'update', order: 8 });
-  return { cars, chimneyTop, heldRail, slip, ...(doors ? { doors } : {}) };
+  return { cars, chimneyTop, heldRail, slip, ...(doors ? { doors } : {}), ...(cab ? { cab } : {}) };
 }
 
 // ---------------------------------------------------------------- what sits on the ground and moves

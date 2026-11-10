@@ -5,6 +5,9 @@
 //   cab     looking in through the open near door at the driver on his stool
 //   arrive  a wide still of the train at the halt, to see it clear the platform (and, at the Pier, the track layer)
 //   ride    Buddy boards before the capture and the game's own camera rides out with him (use --video --seconds 8)
+//   onboard Buddy on the halt on the follow camera; the --action walks him into the cab (the cutaway, train-view.ts)
+//   alight  Buddy in the cab on the follow camera; the --action walks him out onto the halt
+//   watch   --players 2: the first in the cab, the second on the halt, whose view keeps the cab whole
 // npm run look -- --rail-seed trains-on --query 'engineShot=halt&engineLine=0&engineStop=0' \
 //   --eval dev/look/evals/railway-engine.ts --until window.__placeDone --question "..."
 // Board: add --action dev/look/evals/railway-engine.ts --video. Arrive at the Pier: --rail-seed q6-done, line 1, stop 3.
@@ -28,7 +31,7 @@ const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof impor
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 
 type Car = { x: number; y: number; z: number };
-type Train = { line: number; phase: number; at: number; cars: Car[]; doors: number[] };
+type Train = { line: number; phase: number; at: number; cars: Car[]; doors: number[]; cut: Record<string, number> };
 const q = new URLSearchParams(location.search);
 const shot = q.get('engineShot') ?? 'halt',
   line = Number(q.get('engineLine') ?? 0),
@@ -60,9 +63,11 @@ if (w.__engineFrame) {
   // The --action: Buddy walks from the halt through the near doorway to the middle of the cab.
   const f = w.__engineFrame;
   const bot = makeBot();
-  const [ix, , iz] = at(f, f.side * 0.2, ENGINE_CAB.floor, doorZ);
+  // `alight` walks the other way: out of the cab onto the halt.
+  const [ix, , iz] = at(f, f.side * (shot === 'alight' ? 2.6 : 0.2), ENGINE_CAB.floor, doorZ);
   background(
     (async () => {
+      if (shot === 'alight') await wait(1200);
       const ok = await bot.walk(ix, iz, 0.35, { limit: 6000 });
       const p = me.body!.position;
       console.log(
@@ -83,7 +88,36 @@ if (w.__engineFrame) {
       const cam = (p: [number, number, number], t: [number, number, number], fov = 50) =>
         window.__debugCam?.set(p, t, fov);
       const deck = 0.72;
-      if (shot === 'ride') {
+      if (shot === 'onboard' || shot === 'alight') {
+        // The game's own follow camera: Buddy on the halt by the near door (onboard) or in the cab (alight), and the
+        // --action walks him in (or out) as the train stands.
+        const [x, y, z] =
+          shot === 'onboard'
+            ? at(f, f.side * 2.6, deck + 1.0, doorZ)
+            : at(f, f.side * 0.25, ENGINE_CAB.floor + 0.6, doorZ);
+        teleport(me.body!, x, y, z);
+        const clear = () => window.__debugCam?.clear();
+        clear();
+        setTimeout(clear, 0);
+        setInterval(
+          () => console.log(`ENGINE CUT ${JSON.stringify({ t: +performance.now().toFixed(0), cut: train().cut })}`),
+          500,
+        );
+      } else if (shot === 'watch') {
+        // Two players (--players 2): the first in the cab on the follow camera, the second on the halt looking at it,
+        // whose cab must stay whole on their screen.
+        if (q.get('player') === '2') {
+          teleport(me.body!, ...at(f, f.side * 3.4, deck + 1.0, doorZ - 1.2));
+          cam(at(f, f.side * 4.6, 2.6, doorZ - 3.2), at(f, 0, 1.9, doorZ), 50);
+        } else {
+          teleport(me.body!, ...at(f, f.side * 0.25, ENGINE_CAB.floor + 0.6, doorZ + 0.4));
+          const clear = () => window.__debugCam?.clear();
+          clear();
+          setTimeout(clear, 0);
+        }
+        await wait(800);
+        console.log(`ENGINE WATCH ${JSON.stringify({ player: q.get('player'), cut: train().cut })}`);
+      } else if (shot === 'ride') {
         const [x, y, z] = at(f, f.side * 0.25, ENGINE_CAB.floor + 0.6, doorZ);
         teleport(me.body!, x, y, z);
         while (train().phase === 0) await wait(50);
@@ -96,7 +130,9 @@ if (w.__engineFrame) {
             dx = p.x - g.x,
             dz = p.z - g.z;
           const local = [g.fz * dx - g.fx * dz, p.y - 0.45 - g.y, g.fx * dx + g.fz * dz].map((v) => +v.toFixed(2));
-          console.log(`ENGINE CAB ${JSON.stringify({ local, riding: carry.on?.id ?? null, doors: train().doors })}`);
+          console.log(
+            `ENGINE CAB ${JSON.stringify({ local, riding: carry.on?.id ?? null, doors: train().doors, cut: train().cut })}`,
+          );
         }, 500);
         // The game's own follow camera rides with him (the harness froze a view before the warm-up).
         const clear = () => window.__debugCam?.clear();
