@@ -48,7 +48,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 import { machineModel, MACHINE_CHAIR_SEAT, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
 import { solidTrainLoad } from './train-load.ts';
-import { registerSeat } from './seat.ts';
+import { registerSeat, SEATED_HIPS } from './seat.ts';
 import { MAX_PANEL_LENGTH, carriedPiece, trackPanels, type TrackPanel } from './track-panels.ts';
 import { STACK_PAIRS } from './machine-panels.ts';
 
@@ -549,7 +549,6 @@ function growSolids(t: Track, to: number) {
   }
 }
 function removeBodies(so: Solid, owner?: OwnedView) {
-
   for (const b of [so.on].flat())
     if (b) {
       if (owner) owner.removeBody(b);
@@ -827,7 +826,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
         // Avatars face -Z at zero yaw; the gantry and travel direction are local +Z.
         // Driving_Loop puts his hips 0.63 m under the capsule centre (measured on the bones), his feet 0.92 m: the seat top
         // sits under his hips and his feet reach the deck. Hips over the seat centre.
-        at: { x, y: flatbed.hy + MACHINE_CHAIR_SEAT + 0.63, z: -1.15, yaw: Math.PI },
+        at: { x, y: flatbed.hy + MACHINE_CHAIR_SEAT + SEATED_HIPS, z: -1.15, yaw: Math.PI },
         exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
         available: () => flatbed.y > -30,
       });

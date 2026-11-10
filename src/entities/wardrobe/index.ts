@@ -18,7 +18,7 @@ defineKind('wardrobe', { lateUpdate: 5 });
 
 if (productionRailway) {
   const key = `${WARDROBE_PREFIX}${railwayRoomId(getRoomId())}:${identity.pid}`;
-  // On a moving deck (a train), standing or in one of its chairs, your stowaway rides on your shoulder (Place's rule).
+  // On a moving deck (a train), standing or in one of its chairs, your stowaway rides beside you on the deck.
   const onDeck = () => aboard() !== null;
   const wardrobe = startWardrobe(
     { items: COSMETICS, wearable: wearableIn },

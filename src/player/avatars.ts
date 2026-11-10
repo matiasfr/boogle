@@ -33,6 +33,7 @@ export type AvatarData = {
   holdKind?: 'item' | 'hang' | 'ball' | null;
   flopAmt?: number;
   seatedAt?: number;
+  seatRise?: number; // m a seated body is held above where it would stand on that deck (src/proto/place/seat.ts)
   audioRole?: 'local' | 'remote' | 'preview';
   riding?: boolean;
   jumpSequence?: number; // Local accepted launches, never a presence field

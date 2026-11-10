@@ -22,7 +22,7 @@ export type WardrobeCatalog = {
   wearable(id: unknown, slot: ClothesSlot): id is CosmeticId;
 };
 export type Worn = Partial<Record<WornSlot, CosmeticId>>;
-/** A partner's `stowaway` presence: their stowaway is out, and whether it's up on their shoulder (on a moving deck). */
+/** A partner's `stowaway` presence: their stowaway is out, and whether it rides beside them on a moving deck. */
 export type Stowaway = { riding: boolean };
 /** The saved shape. `dry` (boxes in a row with no Wonder) and `opened` (station boxes opened) are C1's. */
 export type WardrobeSave = { got: CosmeticId[]; bought: CosmeticId[]; worn: Worn; dry: number; opened: string[] };
@@ -301,7 +301,7 @@ const theirs = new Map<string, Worn>();
 const pets = new Map<string, Stowaway>();
 
 /** The production entry starts it (./index.ts). Place never does, so its own `placeClothes` stays the only one there.
- * `onDeck` says whether you're on a moving deck, where your stowaway rides on your shoulder. */
+ * `onDeck` says whether you're on a moving deck, where your stowaway sits beside you on the deck. */
 export function startWardrobe(catalog: WardrobeCatalog, storage: WardrobeStorage, onDeck: () => boolean) {
   known = catalog;
   riding = onDeck;
