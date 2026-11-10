@@ -235,7 +235,7 @@ frames pay one uniform branch. From below there is no surface (the sea is front-
 **Between Sunshine and Odyssey** (owner, 10 November: "the water should look somewhere in the range of Mario odyssey
 and Mario sunshine"). One shader, two presets on one Dev-only value (`sun.look`, Water group on tuning visits; not a
 player setting). 0, Sunshine-ish: flat readable colour in two smoothstep bands, crisp cells, a broken foam lip.
-1, Odyssey-ish, **the default**: the same three colours along exponential falloffs (no band edge), sand clear for
+1, Odyssey-ish, **the default** (owner, 10 November, on seeing both: "Yeah ship the odyssey one if not already"): the same three colours along exponential falloffs (no band edge), sand clear for
 longer (opacity 0.12 at the waterline, clear to 3.5 m), a soft rounded lip, mostly whole, 1.5 times wider and
 breathing ±35% on a slow wave, a soft sun glint band on the swell itself, and cells 1.6 times larger with gentler
 sparkle and softer lines. Both keep the cyan shallows, the sparkle and the foam lip. The difference costs only
