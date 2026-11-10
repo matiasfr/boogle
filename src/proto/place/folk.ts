@@ -7,6 +7,7 @@
 // (`feet`, ./sites.ts). The hop of the last round's villagers is their cheer. Local.
 import * as THREE from 'three/webgpu';
 import { mulberry32 } from '../../sim/rng.ts';
+import { RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { emit } from '../../render/particles.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { getAudio } from '../../render/audio.ts';
@@ -25,11 +26,12 @@ const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   CAMP = 3,
   STATION = 2,
   RIDERS = 2,
-  DRIVERS = 1, // per line: the little guy at the engine's controls, on his tall stool (docs/plans/engine-previz.md)
   COMMUTERS = 5,
   PUSHERS = 2,
   RESIDENTS = 6;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS * 2 + COMMUTERS + PUSHERS + RESIDENTS;
+// A driver a train: the little guy at the engine's controls, on his tall stool (docs/plans/engine-previz.md).
+const DRIVERS = RAIL_TRAINS.length;
+const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS + COMMUTERS + PUSHERS + RESIDENTS;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -238,8 +240,11 @@ const stationGuys = Array.from({ length: STATION }, (_, k) => make('station', X(
 const riders = Array.from({ length: RIDERS * 2 }, (_, k) =>
   make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: k < RIDERS ? 0 : 1 }),
 );
-// One driver per line, on whenever there's an engine's stool to sit on (FolkEnv.driver).
-for (let k = 0; k < DRIVERS * 2; k++) make('driver', 0, 0, { seat: 0, camp: k < DRIVERS ? 0 : 1 });
+// One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
+// on (FolkEnv.driver).
+RAIL_LINES.forEach((l, line) => {
+  for (let k = 0; k < l.trains; k++) make('driver', 0, 0, { seat: k, camp: line });
+});
 
 // Once a path's open they use it: a few of them walk the new track, there and back, all day. The first time they run.
 const commuters = Array.from({ length: COMMUTERS }, (_, k) =>
@@ -267,10 +272,11 @@ export type FolkEnv = {
   chairTaken?: (seat: number) => boolean;
   machine: () => { mesh: THREE.Object3D; top: number };
   trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
-  /** The engine's driving stool on a line, in its car's frame: `top` is his footrest (his feet rest on it), `up` the seat
-   * over it, `x`, `z` and `yaw` where he sits and faces; null while that line's engine has no driver. */
+  /** The engine's driving stool on a line's `k`th train, in its car's frame: `top` is his footrest (his feet rest on
+   * it), `up` the seat over it, `x`, `z` and `yaw` where he sits and faces; null while that engine has no driver. */
   driver?: (
     line: number,
+    k: number,
   ) => { mesh: THREE.Object3D; top: number; up: number; x: number; z: number; yaw: number } | null;
   /** Local drawn car envelopes; walkers give way without changing the train or its physics. */
   traffic: readonly { mesh: THREE.Object3D; spec: { hx: number; hz: number }; hy: number }[];
@@ -1329,7 +1335,7 @@ export function updateFolk(dt: number) {
       if (!car) continue;
       ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? 0.9 : -0.9);
     } else if (g.job === 'driver') {
-      const seat = e_?.driver?.(g.camp);
+      const seat = e_?.driver?.(g.camp, g.seat);
       if (!seat) continue;
       ride(g, seat, seat.x, seat.z, seat.yaw, seat.up);
     } else if (e_ && g.job === 'pusher') {
