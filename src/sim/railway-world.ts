@@ -19,7 +19,7 @@ import { validateRailWorks, type RailShed, type RailWorks } from './railway-work
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { LINE_TIMING, validateRailLine, type RailBeam, type RailJob } from './railway-line.ts';
 import { railCarryMax, validateRailLine2, type RailQJob } from './railway-line2.ts';
-import { TRAIN_HOME, type RailTrain } from './railway-train.ts';
+import { TRAIN_HOME, TRAIN_STOPS, type RailTrain } from './railway-train.ts';
 import type { RailBoiler } from './railway-line2.ts';
 import type { RailCart } from './railway-cart.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
@@ -122,13 +122,16 @@ export const Train = defineComponent(
     to: 'int',
     sweep: 'int',
     depart: 'int',
-    call: 'int',
+    req: 'int',
+    from: 'int',
+    v0: 'int',
+    dest: 'int',
     logs: 'int',
     rails: 'int',
     wagon: 'bool',
     foot: 'int',
   },
-  { key: 'slot', defaults: { call: -1, sweep: 1 } },
+  { key: 'slot', defaults: { sweep: 1 } },
 );
 /** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
 export const WorksClock = defineComponent('worksClock', { lastCast: 'int' }, { replicate: false });
@@ -250,7 +253,9 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   RAIL_ROCKS.forEach((r, slot) => w.spawn([Rock, { slot, left: r.initial }]));
   w.spawn([Cart, {}]);
   w.spawn([Boiler, {}]);
-  TRAIN_HOME.forEach((at, slot) => w.spawn([Train, { slot, at, to: at }]));
+  TRAIN_HOME.forEach((at, slot) =>
+    w.spawn([Train, { slot, at, to: at, from: TRAIN_STOPS[slot]![at]!, dest: TRAIN_STOPS[slot]![at]! }]),
+  );
   w.spawn([Works, {}], [WorksClock, {}]);
   w.spawn([Shed, {}]);
   return w;

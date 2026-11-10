@@ -96,6 +96,21 @@ export const TUNABLES = [
     max: 2000,
     label: 'Railway helped boiler speed (centimetres per second)',
   },
+  // A footing's own pace, no longer the great beam's (docs/plans/works-late-game.md, step 2b). Appended: hashed order.
+  {
+    key: 'railFootSoloSpeed',
+    def: 300,
+    min: 10,
+    max: 1000,
+    label: 'Railway solo footing speed (centimetres per second)',
+  },
+  {
+    key: 'railFootHelpSpeed',
+    def: 540,
+    min: 10,
+    max: 2000,
+    label: 'Railway helped footing speed (centimetres per second)',
+  },
 ] as const;
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];

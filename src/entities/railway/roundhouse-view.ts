@@ -753,12 +753,14 @@ export async function createRailwayRoundhouse(
           run: () => void adapter.fitCradle(),
         });
       }
-      // The table: offered once the stall stands, while it is still, and never once the wagon is commissioned: the
-      // shunter's choreography owns the deck from then on (owner, 10 November: not a toy after the wagon leaves).
+      // The table: offered once the stall stands and the cradle is fitted (the sim refuses a turn before; owner,
+      // 10 November: only when ready), while it is still, and never once the wagon is commissioned: the shunter's
+      // choreography owns the deck from then on (not a toy after the wagon leaves).
       // A press waits for the server's answer (`asked`); the deck turns only with the accepted roll-out.
       if (asked && (sh.table === asked.to || performance.now() >= asked.until)) asked = null;
       if (
         sh.stall >= WORKS.stall &&
+        sh.fitted >= 0 &&
         sh.ready < 0 &&
         !tableTurning &&
         !asked &&

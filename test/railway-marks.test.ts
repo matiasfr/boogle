@@ -18,14 +18,14 @@ test('accepted railway actions map amounts and material without identifying the 
   for (const intent of [
     { op: 'rail.boilerTake', revision: 1 },
     { op: 'rail.boilerFit', revision: 2 },
-    { op: 'rail.call', id: 4 },
+    { op: 'rail.call', id: 4, dir: 1 },
   ] as const) {
     const marks = railwayActionMarks(intent, 1, true);
     assert.equal(marks.length, 1);
     assert.ok(beatsOf('place', true).some(([, pattern]) => pattern.test(marks[0]![0])));
     assert.deepEqual(railwayActionMarks(intent, 0, true), []);
   }
-  assert.equal(railwayActionMarks({ op: 'rail.call', id: 4 }, 1, false)[0]![1].halt, 4);
+  assert.equal(railwayActionMarks({ op: 'rail.call', id: 4, dir: 1 }, 1, false)[0]![1].halt, 4);
   const ops = [
     'wake',
     'chop',

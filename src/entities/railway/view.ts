@@ -381,7 +381,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       hook.prePhysics();
     },
     fixedPre: () => {
-      halts.fixedPre(trains.isTrain);
       stepMoves(hook, reward, glide);
     },
     /** Railway-glide fixedPre (23), before the controller. */
@@ -553,6 +552,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...line2.targets(),
         ...shelf.targets(),
         ...(works?.targets() ?? []),
+        ...halts.targets(),
+        ...trains.targets(),
       ];
       const p = me.body?.position;
       if (

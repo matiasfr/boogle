@@ -56,7 +56,8 @@ import {
   line2Served,
   railCarryMax,
 } from '../sim/railway-line2.ts';
-import { LINE_HALTS } from '../sim/railway-train.ts';
+import { LINE_HALTS, reqHas } from '../sim/railway-train.ts';
+import { trainStops } from '../sim/railway-line2.ts';
 import { RAIL_ROCKS, WORKS_ROCKS } from '../sim/railway-works-layout.ts';
 import { pierNeed, worksStage } from '../sim/railway-works.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
@@ -97,7 +98,7 @@ export type RailwayIntent =
         | 'rail.kiln'
         | 'rail.cradle';
     }
-  | { op: 'rail.call'; id: number }
+  | { op: 'rail.call'; id: number; dir: -1 | 1 }
   | { op: 'rail.strike'; id: number }
   | { op: 'rail.footTake'; rack: 0 | 1 }
   | { op: 'rail.footSet'; site: 0 | 1 | 2 }
@@ -152,6 +153,8 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   beamHelpSpeed: tune.get('railBeamHelpSpeed') / 100,
   boilerSoloSpeed: tune.get('railBoilerSoloSpeed') / 100,
   boilerHelpSpeed: tune.get('railBoilerHelpSpeed') / 100,
+  footSoloSpeed: tune.get('railFootSoloSpeed') / 100,
+  footHelpSpeed: tune.get('railFootHelpSpeed') / 100,
   jumpImpulse: tune.get('railJumpImpulse') / 100,
   jumpTurn: tune.get('railJumpTurn') / 100,
   jumpSteer: tune.get('railJumpSteer') / 100,
@@ -171,6 +174,8 @@ export type RailwayMovement = {
   beamHelpSpeed: number;
   boilerSoloSpeed: number;
   boilerHelpSpeed: number;
+  footSoloSpeed: number;
+  footHelpSpeed: number;
   jumpImpulse: number;
   jumpTurn: number;
   jumpSteer: number;
@@ -223,7 +228,8 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.cartCall'
   )
     return { op: e.op };
-  if (e.op === 'rail.call' && railInt(e.id, LINE_HALTS.length - 1)) return { op: e.op, id: e.id };
+  if (e.op === 'rail.call' && railInt(e.id, LINE_HALTS.length - 1) && (e.dir === -1 || e.dir === 1))
+    return { op: e.op, id: e.id, dir: e.dir };
   if ((e.op === 'rail.boilerTake' || e.op === 'rail.boilerFit') && railInt(e.revision))
     return { op: e.op, revision: e.revision };
   if (e.op === 'rail.mine' && railInt(e.id, RAIL_ROCKS.length - 1)) return { op: e.op, id: e.id };
@@ -304,7 +310,7 @@ const holds = (s: Railway, op: string, event?: RailwayIntent) =>
       ? (() => {
           const h = LINE_HALTS[event.id];
           const r = h && s.line2?.train[h.line];
-          return !!r && (r.call === h!.stop || (r.phase === 0 && r.at === h!.stop));
+          return !!r && reqHas(r.req, h!.stop, event.dir, trainStops(s, h!.line).length);
         })()
       : op === 'rail.wake'
         ? s.awake >= 0
@@ -793,6 +799,8 @@ export function createRailwayAdapter({
     a.beamHelpSpeed === b.beamHelpSpeed &&
     a.boilerSoloSpeed === b.boilerSoloSpeed &&
     a.boilerHelpSpeed === b.boilerHelpSpeed &&
+    a.footSoloSpeed === b.footSoloSpeed &&
+    a.footHelpSpeed === b.footHelpSpeed &&
     a.jumpImpulse === b.jumpImpulse &&
     a.jumpTurn === b.jumpTurn &&
     a.jumpSteer === b.jumpSteer &&
@@ -1141,7 +1149,10 @@ export function createRailwayAdapter({
       railInt(z, 200000, -200000) &&
       submit({ op: 'rail.boilerDrop', revision, x, y, z }),
     fitBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerFit', revision }),
-    callTrain: (id: number) => railInt(id, LINE_HALTS.length - 1) && submit({ op: 'rail.call', id }),
+    /** A stop request (docs/plans/works-late-game.md, step 1): halt `id`, for the next train heading `dir` (-1 toward
+     * its line's stop 0, +1 away; an end halt's is its way out). From its lever, or aboard. */
+    callTrain: (id: number, dir: -1 | 1) =>
+      railInt(id, LINE_HALTS.length - 1) && (dir === -1 || dir === 1) && submit({ op: 'rail.call', id, dir }),
     /** The Works and the Roundhouse (docs/plans/split-rock-roundhouse.md). */
     takeBreaker: () => submit({ op: 'rail.breaker' }),
     /** Strike a seam: 0 the stall slab at Home, 1 the throat at the quarry. */

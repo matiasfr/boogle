@@ -1,3 +1,4 @@
+// The server trains: legs, poses and stop on request (docs/plans/works-late-game.md, step 1).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -5,13 +6,20 @@ import {
   TRAIN_PHASE,
   TRAIN_STOPS,
   LINE_HALTS,
+  REQ_MAX_STOPS,
+  reqAdd,
+  reqHas,
+  reqValid,
   trainLegTicks,
   trainLegAlong,
+  trainLegSpeed,
   trainAlong,
   trainArrives,
-  trainEtaTicks,
   trainIdle,
+  trainRequestable,
+  trainSpeed,
 } from '../src/sim/railway-train.ts';
+import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { railwayAtTrains, TRAIN_STAGES } from './helpers/railway-trains.ts';
 import { act, advance } from './helpers/railway-q2.ts';
 import { restore, invariant, edit, worldOf, railResume } from './railway-live.ts';
@@ -23,21 +31,101 @@ import { HALTS, LINKS, ORIGIN, lineAt, railY } from '../src/proto/place/layout.t
 import { PIER_STOP_CM, WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal, pierNeed } from '../src/sim/railway-works.ts';
 import { advanceWorks, railwayAtWorks, WORKS_STAGES } from './helpers/railway-works.ts';
+import type { World as Fixture } from './helpers/railway-q2.ts';
 
-test('train legs: eased, whole cm, eta = arrival', () => {
-  assert.equal(trainLegTicks(15700), 136);
-  for (const dist of [0, 20, 15700, 19300, 35000]) {
-    let prev = 0;
-    assert.equal(trainLegAlong(dist, -10), 0);
-    for (let t = 0; t <= trainLegTicks(dist); t++) {
-      const s = trainLegAlong(dist, t);
-      assert.ok(Number.isInteger(s) && s >= prev && s <= dist);
-      prev = s;
-    }
-    assert.equal(prev, dist);
+/** Halt ids (LINE_HALTS) on line 2. */
+const H = { village: 2, quarry: 3, farHead: 4, pier: 5 } as const;
+const STOPS = TRAIN_STOPS[1]!;
+const BRAKE = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
+const line2 = (w: Fixture) => w.s.line2!.train[1]!;
+const ask = (w: Fixture, id: number, dir: -1 | 1) => act(w, 'a', 'rail.call', { id, dir });
+/** Advance until `ok`, at most `max` ticks, checking line 2's pose never jumps. */
+function until(w: Fixture, ok: () => boolean, max = 6000, works = false) {
+  let prev = trainAlong(line2(w), 1, w.t);
+  for (let t = 0; !ok(); t++) {
+    assert.ok(t < max, 'in time');
+    if (works) advanceWorks(w, 1);
+    else advance(w, 1);
+    const at = trainAlong(line2(w), 1, w.t);
+    assert.ok(Math.abs(at - prev) <= TRAIN.speed + 1, `continuous at tick ${w.t}`);
+    prev = at;
   }
-  const row = { ...trainIdle(1), phase: TRAIN_PHASE.RUN, at: 0, to: 1, depart: 100 };
-  for (let t = 100; t <= trainArrives(row, 1); t++) assert.equal(trainEtaTicks(row, 1, 1, t), trainArrives(row, 1) - t);
+}
+const standing = (w: Fixture, stop: number) => () => line2(w).phase === TRAIN_PHASE.STAND && line2(w).at === stop;
+/** Line 2's arrivals over `ticks`: [stop, the way it came] each. */
+function arrivals(w: Fixture, ticks: number, works = false) {
+  const out: [number, number][] = [];
+  for (let t = 0; t < ticks; t++) {
+    const r = line2(w),
+      was = r.phase,
+      came = r.dest >= r.from ? 1 : -1;
+    if (works) advanceWorks(w, 1);
+    else advance(w, 1);
+    if (was === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND) out.push([r.at, came]);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- legs and poses
+test('train legs: eased, whole cm, from a standstill or under way', () => {
+  assert.equal(trainLegTicks(15700), 136, "a standstill's leg is the old one exactly");
+  for (const v0 of [0, 60, 199, 200])
+    for (const dist of [0, 20, 15700, 19300, 35000, 60000]) {
+      if (v0 && dist * 2 * TRAIN.accel < v0 * v0) continue; // no request asks for a leg it can't brake for
+      let prev = 0;
+      assert.equal(trainLegAlong(dist, -10, v0), 0);
+      if (dist) assert.equal(trainLegSpeed(dist, 0, v0), v0);
+      for (let t = 0; t <= trainLegTicks(dist, v0); t++) {
+        const s = trainLegAlong(dist, t, v0);
+        assert.ok(Number.isInteger(s) && s >= prev && s <= dist, `${v0} ${dist} ${t}`);
+        assert.ok(s - prev <= TRAIN.speed + 1);
+        assert.ok(trainLegSpeed(dist, t, v0) <= TRAIN.speed + 1e-9);
+        prev = s;
+      }
+      assert.equal(prev, dist);
+      assert.equal(trainLegSpeed(dist, trainLegTicks(dist, v0), v0), 0);
+    }
+});
+test('a leg keeps its destination in cm when a stop moves (Ring Island moves the railhead in v26)', () => {
+  const row = {
+    ...trainIdle(1),
+    phase: TRAIN_PHASE.RUN,
+    at: 1,
+    to: 2,
+    sweep: 1,
+    depart: 100,
+    from: 30000,
+    v0: 150,
+    dest: STOPS[2]!,
+  };
+  const poses = () => [0, 40, 90, 160].map((t) => trainAlong(row, 1, 100 + t));
+  const before = { poses: poses(), arrives: trainArrives(row), speed: trainSpeed(row, 1, 140) };
+  const stops = TRAIN_STOPS[1] as number[];
+  const was = stops[2]!;
+  try {
+    stops[2] = was + 5000; // the table changes under a running leg
+    assert.deepEqual(poses(), before.poses, 'the pose reads the row, not the table');
+    assert.equal(trainArrives(row), before.arrives);
+    assert.equal(trainSpeed(row, 1, 140), before.speed);
+  } finally {
+    stops[2] = was;
+  }
+  assert.equal(trainAlong({ ...row, to: 3 }, 1, 190), trainAlong(row, 1, 190));
+  assert.equal(trainAlong(row, 1, trainArrives(row)), row.dest);
+});
+test('request sets: two digits a stop, safe integers with room for 26 stops', () => {
+  assert.ok(REQ_MAX_STOPS >= 16);
+  let req = 0;
+  const n = 20;
+  for (let k = 1; k < n - 1; k++) req = reqAdd(reqAdd(req, k, -1, n), k, 1, n);
+  req = reqAdd(reqAdd(req, 0, -1, n), n - 1, 1, n); // an end's one digit is its way out, whichever way is sent
+  assert.ok(reqValid(req, n), 'valid');
+  assert.ok(Number.isSafeInteger(req) && req > 2 ** 32, 'past 32-bit operators');
+  for (let k = 1; k < n - 1; k++) assert.ok(reqHas(req, k, -1, n) && reqHas(req, k, 1, n));
+  assert.ok(reqHas(req, 0, 1, n) && reqHas(req, n - 1, -1, n));
+  assert.equal(reqAdd(req, 5, 1, n), req, 'a repeat changes nothing');
+  assert.equal(reqValid(1, n), false, "stop 0's way in");
+  assert.equal(reqValid(-1, n) || reqValid(0.5, n) || reqValid(2 ** 40, 4), false);
 });
 test('halts and stops match the pinned Place layout', () => {
   // Place's stops, plus line 2's pier stop (the Works catalog), which Place does not have.
@@ -57,47 +145,177 @@ test('halts and stops match the pinned Place layout', () => {
     assert.ok(Math.abs(h.y - (Math.min(railY(line, spec.s0), railY(line, spec.s1)) + 0.72) * 100) <= 5, h.name);
   });
 });
-test('pose is continuous across arrivals, departures and calls', () => {
+test("the server's coarse line path follows Place's rails within a metre", () => {
+  const q = { x: 0, z: 0, ux: 0, uz: 0 };
+  for (const k of [0, 1])
+    for (let cm = 0; cm <= TRAIN_STOPS[k]!.at(-1)!; cm += 50) {
+      lineAt(LINKS[k]!.line, cm / 100, q);
+      const p = railLinePoint(k, cm);
+      const off = Math.hypot(p.x - (q.x + ORIGIN.x) * 100, p.z - (q.z + ORIGIN.z) * 100);
+      assert.ok(off < 100, `line ${k + 1} at ${cm} cm: ${off.toFixed(0)} cm off`);
+    }
+});
+test('pose is continuous across arrivals, departures, requests and replans', () => {
   const w = railwayAtTrains('trains-on');
   const raw = worldOf(w.s);
   const rows = () => raw.ids(Train).map((id) => raw.get(Train, id)!);
   const prev = rows().map((r, k) => trainAlong(r, k, w.t));
-  const arrivals = [0, 0];
+  const arrived = [0, 0];
   for (let t = 0; t < 2600; t++) {
-    if (t === 160) act(w, 'a', 'rail.call', { id: 2 });
-    if (t === 500) act(w, 'a', 'rail.call', { id: 4 });
+    if (t === 160) ask(w, H.quarry, 1);
+    if (t === 500) ask(w, H.quarry, -1);
+    if (t === 900) ask(w, 1, -1);
+    if (t % 97 === 0) ask(w, H.village, 1);
     const phases = rows().map((r) => r.phase);
     advance(w, 1);
     rows().forEach((r, k) => {
       const at = trainAlong(r, k, w.t);
       assert.ok(Math.abs(at - prev[k]!) <= TRAIN.speed + 1, `line ${k} tick ${w.t}`);
-      if (phases[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND) arrivals[k]!++;
+      if (phases[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND) arrived[k]!++;
       prev[k] = at;
     });
   }
-  assert.ok(arrivals.every((n) => n >= 6));
+  assert.ok(
+    arrived.every((n) => n >= 4),
+    JSON.stringify(arrived),
+  );
   assert.equal(invariant(w.s), null);
 });
-test('a call: next decision, idempotent, holds a standing train', () => {
-  const w = railwayAtTrains('trains-on'),
-    l = w.s.line2!;
-  assert.equal(act(w, 'a', 'rail.call', { id: 4 }), 1);
-  assert.equal(act(w, 'a', 'rail.call', { id: 4 }), 0);
-  while (l.train[1]!.phase === 0) advance(w, 1);
-  assert.equal(l.train[1]!.to, 2, 'called directly past the quarry');
-  assert.equal(act(w, 'a', 'rail.call', { id: 2 }), 1);
-  assert.equal(l.train[1]!.to, 2, 'running leg finishes before call changes its destination');
-  while (l.train[1]!.phase === 1) advance(w, 1);
-  advance(w, TRAIN.callDwellTicks);
-  assert.equal(l.train[1]!.to, 0);
-  while (l.train[1]!.phase === 1) advance(w, 1);
-  advance(w, 1);
-  assert.equal(act(w, 'a', 'rail.call', { id: 2 }), 1);
-  const depart = l.train[1]!.depart;
-  assert.equal(depart, w.t);
-  advance(w, TRAIN.dwellTicks - 1);
-  assert.equal(l.train[1]!.phase, 0);
+
+// ---------------------------------------------------------------- requests
+test('a request is one digit per halt per way: repeats move nothing, and a later one never replaces an earlier one', () => {
+  const w = railwayAtTrains('q6-stocked'),
+    r = line2(w);
+  assert.equal(trainStops(w.s, 1).length, 3, 'Far Head is the end until Q6');
+  assert.equal(ask(w, H.quarry, -1), 1);
+  assert.equal(ask(w, H.quarry, -1), 0, 'the same ask again');
+  assert.equal(ask(w, H.quarry, 1), 1, 'the other way is its own');
+  assert.equal(ask(w, H.farHead, 1), 1, 'an end takes either way');
+  assert.equal(ask(w, H.farHead, -1), 0, '...as one');
+  assert.ok(reqHas(r.req, 1, -1, 3) && reqHas(r.req, 1, 1, 3) && reqHas(r.req, 2, -1, 3), 'all three stand');
+  assert.equal(ask(w, H.pier, -1), 0, 'no pier halt before Q6');
+  assert.equal(act(w, 'a', 'rail.call', { id: H.quarry }), 0, 'a way is needed');
+  assert.equal(act(w, 'a', 'rail.call', { id: H.quarry, dir: 0 }), 0);
+  assert.equal(act(w, 'a', 'rail.call', { id: 9, dir: 1 }), 0);
+  assert.equal(invariant(w.s), null);
 });
+test('with nothing asked, trains run end to end, straight through the middle halts', () => {
+  for (const stage of ['q6-stocked', 'q6-done'] as const) {
+    const w = railwayAtTrains(stage),
+      n = trainStops(w.s, 1).length;
+    const made = arrivals(w, 4000);
+    assert.ok(made.length >= 4, stage);
+    for (const [at] of made) assert.ok(at === 0 || at === n - 1, `${stage}: stopped at ${at}`);
+    for (let t = 0; t < 3000; t++) {
+      advance(w, 1);
+      const l1 = w.s.line2!.train[0]!;
+      assert.ok(l1.at === 0 || l1.at === 1);
+    }
+  }
+});
+test('the next train heading the asked way stops; one heading the other way runs through, then turns for it', () => {
+  // Asked toward Far Head at the quarry: the train out from the village stops there, then goes on out.
+  const w = railwayAtTrains('q6-stocked');
+  until(w, standing(w, 0));
+  assert.equal(ask(w, H.quarry, 1), 1);
+  until(w, () => line2(w).phase === TRAIN_PHASE.RUN);
+  assert.equal(line2(w).to, 1, 'its leg ends at the quarry');
+  assert.equal(reqHas(line2(w).req, 1, 1, 3), true, 'the ask stands until the train leaves with it');
+  until(w, standing(w, 1));
+  until(w, () => line2(w).phase === TRAIN_PHASE.RUN);
+  assert.deepEqual([line2(w).sweep, line2(w).to, reqHas(line2(w).req, 1, 1, 3)], [1, 2, false], 'served, on out');
+  // Asked toward the village at the quarry and at Far Head's end: out past the quarry, then it stops on the way home.
+  const v = railwayAtTrains('q6-stocked');
+  until(v, standing(v, 0));
+  assert.equal(ask(v, H.quarry, -1), 1);
+  assert.equal(ask(v, H.farHead, -1), 1);
+  const made = arrivals(v, 1200);
+  assert.deepEqual(made.slice(0, 2), [
+    [2, 1],
+    [1, -1],
+  ]);
+  assert.equal(invariant(v.s), null);
+});
+test('a request made mid-run shortens the trip if the train can still brake; inside braking reach it waits', () => {
+  // In reach: cruising out from the village, more than its braking distance short of the quarry.
+  const w = railwayAtTrains('q6-stocked');
+  until(w, standing(w, 0));
+  until(w, () => line2(w).phase === TRAIN_PHASE.RUN && trainSpeed(line2(w), 1, w.t) === TRAIN.speed);
+  assert.equal(line2(w).to, 2, 'nothing asked: a leg to the end');
+  assert.ok(STOPS[1]! - trainAlong(line2(w), 1, w.t) > BRAKE + 400);
+  assert.equal(ask(w, H.quarry, 1), 1);
+  advance(w, 1);
+  const r = line2(w);
+  assert.deepEqual([r.to, r.dest, r.depart], [1, STOPS[1], w.t], 'replanned from where it is, to the quarry');
+  assert.ok(r.v0 > 0 && r.from > STOPS[0]!);
+  until(w, standing(w, 1));
+  // Out of reach: the same ask inside the braking distance; it runs through, and the ask waits for a train that way.
+  const late = railwayAtTrains('q6-stocked');
+  until(late, standing(late, 0));
+  until(
+    late,
+    () => line2(late).phase === TRAIN_PHASE.RUN && STOPS[1]! - trainAlong(line2(late), 1, late.t) < BRAKE - 600,
+  );
+  assert.equal(ask(late, H.quarry, 1), 1);
+  const made = arrivals(late, 560);
+  assert.deepEqual(
+    made,
+    [
+      [2, 1],
+      [1, -1],
+    ],
+    'through the quarry to Far Head; coming home it stops at the quarry and turns: the ask was the next train out',
+  );
+  assert.equal(line2(late).sweep, 1);
+  until(late, () => line2(late).phase === TRAIN_PHASE.RUN);
+  assert.deepEqual([line2(late).sweep, reqHas(line2(late).req, 1, 1, 3)], [1, false]);
+  assert.equal(invariant(late.s), null);
+});
+test('a train turns back early when the only requests are behind it', () => {
+  // Q6 laid: out from the village toward the pier, past the quarry, with someone asking at the village.
+  const w = railwayAtTrains('q6-done');
+  assert.equal(trainStops(w.s, 1).length, 4);
+  until(w, standing(w, 0));
+  until(w, () => line2(w).phase === TRAIN_PHASE.RUN && trainAlong(line2(w), 1, w.t) > STOPS[1]! + 2000);
+  assert.equal(line2(w).to, 3, 'bound for the pier');
+  assert.ok(STOPS[2]! - trainAlong(line2(w), 1, w.t) > BRAKE);
+  assert.equal(ask(w, H.village, 1), 1);
+  advance(w, 1);
+  assert.equal(line2(w).to, 2, 'it stops at the next halt it can, Far Head');
+  const made = arrivals(w, 900);
+  assert.deepEqual(made.slice(0, 2), [
+    [2, 1],
+    [0, -1],
+  ]);
+  assert.equal(invariant(w.s), null);
+});
+test('a train standing at the halt, leaving the asked way, waits a full dwell from the ask', () => {
+  const w = railwayAtTrains('q6-stocked');
+  until(w, standing(w, 0));
+  advance(w, 10);
+  assert.equal(ask(w, H.village, 1), 1);
+  assert.equal(line2(w).depart, w.t);
+  advance(w, TRAIN.dwellTicks - 1);
+  assert.equal(line2(w).phase, TRAIN_PHASE.STAND);
+  advance(w, 1);
+  assert.equal(line2(w).phase, TRAIN_PHASE.RUN);
+  assert.equal(reqHas(line2(w).req, 0, 1, 3), false, 'served as it left');
+});
+test("a passenger's ask names the next halt the train can still stop at; not the end; greyed once it stops there", () => {
+  const w = railwayAtTrains('q6-done');
+  until(w, standing(w, 0));
+  assert.deepEqual(trainRequestable(line2(w), 1, 4, w.t), { stop: 1, dir: 1, requested: false });
+  ask(w, H.quarry, 1);
+  assert.deepEqual(trainRequestable(line2(w), 1, 4, w.t), { stop: 1, dir: 1, requested: true });
+  const v = railwayAtTrains('q6-done');
+  until(v, standing(v, 0));
+  until(v, () => line2(v).phase === TRAIN_PHASE.RUN && STOPS[1]! - trainAlong(line2(v), 1, v.t) < BRAKE - 600);
+  assert.equal(trainRequestable(line2(v), 1, 4, v.t)?.stop, 2, 'too late for the quarry: Far Head is named');
+  until(v, () => line2(v).phase === TRAIN_PHASE.RUN && STOPS[2]! - trainAlong(line2(v), 1, v.t) < BRAKE - 600);
+  assert.equal(trainRequestable(line2(v), 1, 4, v.t), null, 'next is the pier, the end: not offered');
+});
+
+// ---------------------------------------------------------------- holds, cargo and the snapshot
 test('line 1 waits for the cart to rest', () => {
   const w = railwayAtTrains('trains-on');
   edit(w.s, (e) => Object.assign(e.mut(Cart, e.single(Cart))!, { phase: CART_PHASE.LOAD, depart: w.t + 500 }));
@@ -107,7 +325,7 @@ test('line 1 waits for the cart to rest', () => {
   advance(w, 1);
   assert.equal(w.s.line2!.train[0]!.phase, 1);
 });
-test('the kit: every unit has one home; snapshot mid-trip', () => {
+test('the kit needs no request: every unit has one home; snapshot mid-trip', () => {
   const w = railwayAtTrains('trains-on'),
     l = w.s.line2!;
   let snapshot = false;
@@ -129,18 +347,10 @@ test('the kit: every unit has one home; snapshot mid-trip', () => {
   }
   assert.ok(snapshot);
   assert.equal(l.train[1]!.logs + l.train[1]!.rails, 0);
+  assert.equal(l.train[1]!.req, 0, 'nobody asked');
   const rows = JSON.stringify(l.train);
   railResume(w.s, 0, w.t + 1, w.t, 50000);
   assert.equal(JSON.stringify(l.train), rows, 'away credit never advances trains');
-});
-test('eta equals the arrival tick', () => {
-  const w = railwayAtTrains('trains-on');
-  act(w, 'a', 'rail.call', { id: 4 });
-  while (w.s.line2!.train[1]!.phase !== 1) advance(w, 1);
-  const eta = trainEtaTicks(w.s.line2!.train[1]!, 1, 2, w.t);
-  advance(w, eta);
-  assert.equal(w.s.line2!.train[1]!.at, 2);
-  assert.equal(trainEtaTicks(w.s.line2!.train[1]!, 1, 2, w.t), 0);
 });
 test('Q6 funds from the rack and lays to the pier; every new seed loads', () => {
   for (const stage of TRAIN_STAGES) {
@@ -154,12 +364,26 @@ test('Q6 funds from the rack and lays to the pier; every new seed loads', () => 
 });
 test('malformed train rows fail atomically', () => {
   const w = railwayAtTrains('trains-on');
-  for (const patch of [{ at: 9 }, { sweep: 0 }, { logs: 33 }, { call: -2 }, { phase: 2 }]) {
+  for (const patch of [
+    { at: 9 },
+    { sweep: 0 },
+    { logs: 33 },
+    { req: -2 },
+    { req: 1 }, // stop 0's way in
+    { req: 0.5 },
+    { v0: TRAIN.speed + 1 },
+    { dest: -10 },
+    { phase: 2 },
+  ]) {
     const copy = restore(w.s);
     edit(copy, (e) => Object.assign(e.mut(Train, e.lookup(Train, 1)!)!, patch));
     const target = createRailwayWorld(),
       hash = target.hash();
-    assert.throws(() => target.load(JSON.parse(JSON.stringify(worldOf(copy).snapshot())), railwayCheck), /railway:/);
+    assert.throws(
+      () => target.load(JSON.parse(JSON.stringify(worldOf(copy).snapshot())), railwayCheck),
+      /railway:|off schema/,
+      JSON.stringify(patch),
+    );
     assert.equal(target.hash(), hash);
   }
 });
@@ -169,14 +393,14 @@ test('the pier stop opens with Q6', () => {
   const w = railwayAtTrains('q6-finishing'),
     l = w.s.line2!;
   assert.equal(trainStops(w.s, 1).length, 3);
-  assert.equal(act(w, 'a', 'rail.call', { id: 5 }), 0, 'no pier halt before Q6');
+  assert.equal(ask(w, H.pier, -1), 0, 'no pier halt before Q6');
   while (line2Completed(w.s) < 6) {
     advance(w, 1);
     assert.ok(l.train[1]!.at <= 2 && l.train[1]!.to <= 2);
   }
   assert.equal(trainStops(w.s, 1).length, 4);
   assert.equal(trainStops(w.s, 0).length, 2);
-  assert.equal(act(w, 'a', 'rail.call', { id: 5 }), 1);
+  assert.equal(ask(w, H.pier, -1), 1);
   let reached = false;
   for (let t = 0; t < 3000 && !reached; t++) {
     advance(w, 1);
@@ -213,22 +437,46 @@ test('the wagon couples at the village, only when ready', () => {
   assert.ok(r.depart - arrived <= TRAIN.dwellTicks + WORKS.rollTicks, 'held at most the roll');
   assert.equal(invariant(w.s), null);
 });
-test('loads at the quarry, unloads at the pier', () => {
+test('coupling needs no request: the roll-out calls a train out on the line back to the village', () => {
+  const w = railwayAtWorks('cradle-fitted'),
+    r = line2(w);
+  const along = () => trainAlong(r, 1, w.t);
+  const out = () => r.phase === TRAIN_PHASE.RUN && r.dest > r.from;
+  until(w, () => out() && along() > STOPS[1]! + 2000 && along() < STOPS[2]! - BRAKE - 1000, 6000, true);
+  assert.equal(r.to, 3, 'out to the pier');
+  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: w.s.shed!.tableRev }), 1);
+  const made: number[] = [];
+  for (let t = 0; t < 3000 && !r.wagon; t++) {
+    const was = r.phase;
+    advanceWorks(w, 1);
+    if (was === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND) made.push(r.at);
+  }
+  assert.ok(r.wagon, 'coupled');
+  assert.deepEqual(made, [2, 0], 'it turned at Far Head, not the pier, and came home for the wagon');
+  assert.equal(invariant(w.s), null);
+});
+test('the wagon needs no request: loads at the quarry going out, unloads at the pier', () => {
   const w = railwayAtWorks('wagon-on'),
     r = w.s.line2!.train[1]!,
     works = w.s.works!;
   let loaded = 0,
-    unloaded = 0;
+    unloaded = 0,
+    farHead = 0;
   for (let t = 0; t < 6000 && unloaded < 2; t++) {
     const [phase, foot, pierRack] = [r.phase, r.foot, works.pierRack];
     const need = pierNeed(w.s),
-      rack = works.rack;
+      rack = works.rack,
+      out = r.dest >= r.from;
     advanceWorks(w, 1);
+    // Nobody asks: at most the roll-out's ask at the village end, until the coupled train leaves it.
+    assert.ok(r.req === 0 || r.req === 2, `nobody asks (${r.req})`);
     if (phase !== TRAIN_PHASE.RUN || r.phase !== TRAIN_PHASE.STAND) {
       assert.equal(r.foot, foot, 'the wagon only changes on arrival');
       continue;
     }
+    if (r.at === 2) farHead++;
     if (r.at === 1) {
+      assert.ok(out, 'the quarry going out only');
       const n = Math.min(WORKS.wagonCap - foot, rack, need);
       assert.equal(r.foot, foot + n);
       if (n) loaded++;
@@ -240,15 +488,19 @@ test('loads at the quarry, unloads at the pier', () => {
     }
   }
   assert.ok(loaded >= 2 && unloaded >= 2);
+  assert.equal(farHead, 0, 'Far Head is a request stop: nobody asked');
   assert.ok(works.pierRack + works.pierSet <= WORKS.pier);
   assert.equal(invariant(w.s), null);
 });
-test('every footing has one home every tick', () => {
+test('every footing has one home every tick; fourteen in all', () => {
   // The fixtures check footingTotal === poured after every rule tick (advanceWorks); here every stage and a long run.
   for (const stage of WORKS_STAGES.slice(WORKS_STAGES.indexOf('works-lit'))) {
     const s = railwayAtWorks(stage).s;
     assert.equal(footingTotal(s), s.works!.poured, stage);
+    assert.ok(s.works!.poured <= WORKS.total);
   }
+  const done = railwayAtWorks('crossing-done').s;
+  assert.equal(done.works!.poured, 14, 'the stall two and the pier twelve');
   const w = railwayAtWorks('wagon-on');
   for (let t = 0; t < 3000; t++) {
     const before = railCounts(w.s);
@@ -264,31 +516,20 @@ test('pose is continuous with four stops', () => {
   const raw = worldOf(w.s);
   const rows = () => raw.ids(Train).map((id) => raw.get(Train, id)!);
   const prev = rows().map((r, k) => trainAlong(r, k, w.t));
-  const arrivals = [0, 0, 0, 0];
+  const made = [0, 0, 0, 0];
   for (let t = 0; t < 2400; t++) {
-    if (t === 100) act(w, 'a', 'rail.call', { id: 5 });
-    if (t === 900) act(w, 'a', 'rail.call', { id: 3 });
+    if (t === 100) ask(w, H.pier, -1);
+    if (t === 900) ask(w, H.farHead, -1);
+    if (t === 1300) ask(w, H.quarry, 1);
     const before = rows().map((r) => r.phase);
     advance(w, 1);
     rows().forEach((r, k) => {
       const at = trainAlong(r, k, w.t);
       assert.ok(Math.abs(at - prev[k]!) <= TRAIN.speed + 1, `line ${k} tick ${w.t}`);
-      if (k === 1 && before[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND) arrivals[r.at]!++;
+      if (k === 1 && before[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND) made[r.at]!++;
       prev[k] = at;
     });
   }
-  assert.ok(arrivals[3]! >= 1, 'the pier was reached');
+  assert.ok(made[3]! >= 1, 'the pier was reached');
   assert.equal(invariant(w.s), null);
-});
-test('eta with four stops', () => {
-  const w = railwayAtWorks('wagon-on');
-  act(w, 'a', 'rail.call', { id: 5 });
-  const r = w.s.line2!.train[1]!;
-  while (!(r.phase === TRAIN_PHASE.RUN && r.to === 3)) advance(w, 1);
-  const eta = trainEtaTicks(r, 1, 3, w.t);
-  assert.ok(eta > 0);
-  advance(w, eta);
-  assert.equal(r.at, 3);
-  assert.equal(r.phase, TRAIN_PHASE.STAND);
-  assert.equal(trainEtaTicks(r, 1, 3, w.t), 0);
 });

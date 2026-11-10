@@ -118,6 +118,8 @@ export function validateRailWorks(s: Railway) {
     throw new Error('railway: cradle before the stall');
   if (h.fitted >= 0 !== (h.cradle === WORKS.cradle && h.cradleRails === WORKS.cradleRails))
     throw new Error('railway: fitted');
+  // The table turns once, only when ready: after the fit, to line 2's road, sending the wagon out.
+  if (h.tableRev !== h.table || (h.table === 1 && h.fitted < 0)) throw new Error('railway: table turned early');
   const t0 = l2.train[0]!,
     t1 = l2.train[1]!;
   if (typeof t0.wagon !== 'boolean' || typeof t1.wagon !== 'boolean' || !int(t0.foot) || !int(t1.foot))

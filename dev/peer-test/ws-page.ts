@@ -393,7 +393,7 @@ function startWorld(room: Room) {
         case 'rail.boilerFit':
           return adapter.fitBoiler(intent.revision);
         case 'rail.call':
-          return adapter.callTrain(intent.id);
+          return adapter.callTrain(intent.id, intent.dir);
         case 'rail.cartCall':
           return false; // the call handle is cut (9 November); the op itself goes with the next WORLD_NS bump
         case 'rail.lever':

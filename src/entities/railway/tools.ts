@@ -327,7 +327,8 @@ export async function createRailwayTools(
       const unlocked = adapter.inspect().jump;
       if (unlocked && !knew && me.coyote <= 0) charge = false;
       knew = unlocked;
-      if (!b || fallArrival.active || me.swimming || inputState.seated || inputState.held || me.down) {
+      // Not with a footing on your back (docs/plans/works-late-game.md, step 2b): the plain jump only.
+      if (!b || fallArrival.active || me.swimming || inputState.seated || inputState.held || me.down || adapter.inspect().foot) {
         second = false;
         return;
       }

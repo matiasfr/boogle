@@ -1,6 +1,6 @@
 // Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-systems.ts.
-import { TRAIN_HOME, TRAIN_PHASE, trainStopsOf, type RailTrain } from './railway-train.ts';
+import { TRAIN, TRAIN_HOME, TRAIN_PHASE, reqValid, trainStopsOf, type RailTrain } from './railway-train.ts';
 import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
@@ -267,20 +267,25 @@ export function validateRailLine2(s: Railway) {
     throw new Error('railway: boiler');
   if (l.train.length !== 2) throw new Error('railway: trains');
   l.train.forEach((r, k) => {
-    const last = trainStops(s, k).length - 1;
+    const stops = trainStops(s, k),
+      last = stops.length - 1;
     if (
       !int(r.phase, 1) ||
       !int(r.at, last) ||
       !int(r.to, last) ||
       (r.sweep !== -1 && r.sweep !== 1) ||
       !int(r.depart) ||
-      !int(r.call, last, -1) ||
+      // Two digits a stop, one each way; an end stop has only its way out.
+      !reqValid(r.req, stops.length) ||
+      !int(r.from, stops[last]!, stops[0]!) ||
+      !int(r.dest, stops[last]!, stops[0]!) ||
+      !int(r.v0, TRAIN.speed) ||
       !int(r.logs, k ? 32 : 0) ||
       !int(r.rails, k ? 32 : 0) ||
-      (r.phase === TRAIN_PHASE.STAND && r.at !== r.to) ||
-      (r.phase === TRAIN_PHASE.RUN && r.at === r.to) ||
+      (r.phase === TRAIN_PHASE.STAND && (r.at !== r.to || r.from !== r.dest || r.v0 !== 0)) ||
+      (r.phase === TRAIN_PHASE.RUN && (r.at === r.to || r.from === r.dest)) ||
       (l.trains < 0 &&
-        (r.phase || r.at !== TRAIN_HOME[k] || r.to !== TRAIN_HOME[k] || r.depart || r.call !== -1 || r.logs || r.rails))
+        (r.phase || r.at !== TRAIN_HOME[k] || r.to !== TRAIN_HOME[k] || r.depart || r.req || r.logs || r.rails))
     )
       throw new Error('railway: train');
   });

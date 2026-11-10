@@ -35,7 +35,11 @@
 // v23 (2026-11-09): the glider's rules (piece B): rail.glide, a glide field on rail, eight railGlide* tunables; the
 // depot cart holds 24 rails.
 // v24 (2026-11-10): two railBoiler* tunables (the boiler's haul pace on its rope, boiler-first-choice step 7).
-export const WORLD_NS = 'v24';
+// v25 (2026-11-10): trains stop on request (docs/plans/works-late-game.md, steps 1-3): `train.call` becomes `req` (two
+// digits a stop, a safe integer with room for 26 stops), each leg gains its start, entry speed and destination in cm
+// (`from`, `v0`, `dest`); `rail.call` carries `dir`. The cradle takes no footings (`WORKS.total` 14); two appended
+// railFoot* tunables; `rail.turn` only once the cradle is fitted and before the wagon rolls out.
+export const WORLD_NS = 'v25';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

@@ -58,8 +58,16 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     from = new THREE.Vector3(),
     end = new THREE.Vector3();
   const hit = rayHit();
+  // Not with a footing on your back (docs/plans/works-late-game.md, step 2b): carrying one opens no new travel edge.
   const canPress = () =>
-    owned && !!me.body && !fallArrival.active && !me.swimming && !inputState.seated && !inputState.held && !me.down;
+    owned &&
+    !!me.body &&
+    !fallArrival.active &&
+    !me.swimming &&
+    !inputState.seated &&
+    !inputState.held &&
+    !me.down &&
+    !adapter.inspect().foot;
   function score(r: HookRing) {
     const b = me.body!;
     // The player's aim, never a cinematic's camera: a switch shot must not steer or blank the pick.

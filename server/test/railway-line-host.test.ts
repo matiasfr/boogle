@@ -633,11 +633,17 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     await open();
     assert.equal((await action({ op: 'rail.boilerTake', revision: boiler().revision }, apron)).status, 'accepted');
     assert.equal((await action({ op: 'rail.boilerFit', revision: boiler().revision }, camp)).status, 'accepted');
+    // A stop request: from the halt's lever (on its platform) or aboard the line's train (works-late-game step 1).
     const h = LINE_HALTS[4];
-    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x + h.reach + 2000, h.y, h.z])).status, 'rejected');
-    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x, h.y + 3000, h.z])).status, 'rejected');
-    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x, h.y, h.z])).status, 'accepted');
-    assert.equal((await action({ op: 'rail.call', id: 4 }, [h.x, h.y, h.z])).status, 'noop');
+    const call = (id: number, dir: number, at: [number, number, number]) => action({ op: 'rail.call', id, dir }, at);
+    assert.equal((await call(4, -1, [h.x + h.reach + 2000, h.y, h.z])).status, 'rejected');
+    assert.equal((await call(4, -1, [h.x, h.y + 3000, h.z])).status, 'rejected');
+    assert.equal((await call(4, 0, [h.x, h.y, h.z])).status, 'rejected', 'a way is needed');
+    assert.equal((await call(4, -1, [h.x, h.y, h.z])).status, 'accepted');
+    assert.equal((await call(4, -1, [h.x, h.y, h.z])).status, 'noop', 'already asked');
+    const { railLinePoint } = await import('../../src/sim/railway-line-path.ts');
+    const p = railLinePoint(1, trainAlong(host.rules.railway.train(1)!, 1, host.sync.world.tick));
+    assert.equal((await call(3, 1, [Math.round(p.x), 2200, Math.round(p.z)])).status, 'accepted', 'aboard');
     for (let t = 0; host.rules.railway.train(1)!.phase !== 1 && t < 200; t++) await ticks(1);
     assert.equal(host.rules.railway.train(1)!.phase, 1);
     const tick = host.sync.world.tick,

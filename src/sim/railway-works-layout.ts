@@ -8,10 +8,12 @@ export const WORKS = {
   castTicks: 80,
   rackCap: 6,
   stall: 2,
-  cradle: 2,
+  // The cradle takes its eight rails and no footings (docs/plans/works-late-game.md, step 2): two footings go home by
+  // hand, for the stall, and the kiln casts the stall's two and the pier's twelve.
+  cradle: 0,
   cradleRails: 8,
   pier: 12,
-  total: 16,
+  total: 14,
   wagonCap: 6,
   rollTicks: 60,
 } as const;

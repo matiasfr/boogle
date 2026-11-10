@@ -41,7 +41,8 @@ import {
   LINE2_OLD_TRAIN,
 } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
-import { LINE_HALTS } from '../sim/railway-train.ts';
+import { LINE_HALTS, trainAlong } from '../sim/railway-train.ts';
+import { railLinePoint } from '../sim/railway-line-path.ts';
 import {
   PIER_FRAME,
   PIER_RACK,
@@ -145,8 +146,23 @@ export const RAIL_ACTIONS = new Set([
   'rail.turn',
 ]);
 
-/** Whether a well-formed action is in range of its target. Readiness and balances are the rule's, not this. */
-export function railValid(w: World, e: RailAction, actor: Actor): boolean {
+/** A passenger's reach of its train: 10 m of the train's pose (its cars run 7.4 m behind it), at the tick or in the
+ * second before it (the rider's own view of the train lags the room clock). */
+export const RIDER_REACH = 1000;
+const RIDER_LAG_TICKS = 10;
+function nearTrain(w: World, line: number, tick: number, actor: Actor) {
+  const id = w.lookup(Train, line);
+  if (id === undefined) return false;
+  const row = w.get(Train, id)!;
+  for (let t = tick; t >= tick - RIDER_LAG_TICKS; t--) {
+    const p = railLinePoint(line, trainAlong(row, line, t));
+    if (actor.reach(p.x, p.z, RIDER_REACH)) return true;
+  }
+  return false;
+}
+/** Whether a well-formed action is in range of its target. Readiness and balances are the rule's, not this. `tick` is
+ * the rule tick it applies at (a passenger's stop request is judged against the train's pose then). */
+export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): boolean {
   const near = (x: number, z: number, r: number) => actor.reach(x, z, r) && actor.cadence(e.op);
   const kind = e.kind === undefined || railInt(e.kind, 2);
   // Drops and takes also move a footing (pile kind 3); nothing else takes kind 3.
@@ -204,8 +220,10 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
     case 'rail.boilerFit':
       return railInt(e.revision) && near(LINE2_OLD_TRAIN.x, LINE2_OLD_TRAIN.z, LINE2_OLD_TRAIN.reach);
     case 'rail.call': {
+      // From the halt's request lever (on its platform), or aboard that halt's line's train.
       const h = railInt(e.id, LINE_HALTS.length - 1) ? LINE_HALTS[e.id] : undefined;
-      return !!h && height(h.y) && near(h.x, h.z, h.reach);
+      if (!h || (e.dir !== -1 && e.dir !== 1)) return false;
+      return (height(h.y) && near(h.x, h.z, h.reach)) || (nearTrain(w, h.line, tick, actor) && actor.cadence(e.op));
     }
     case 'rail.beamTake': {
       const beam = w.get(Beam, w.single(Beam))!;
@@ -329,7 +347,7 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     act(pid: string, e: RailAction, actor: Actor | null): RailResult & { effect?: RailEffect } {
       const tick = sync.world.tick;
       const before = pilesOf(world);
-      const valid = !!actor && RAIL_ACTIONS.has(e.op) && railValid(world, e, actor);
+      const valid = !!actor && RAIL_ACTIONS.has(e.op) && railValid(world, e, actor, tick);
       // A wake starts at the tick its actor pressed (bounded; R1b), so the actor's predicted wake and this one agree.
       const result = railApply(
         world,

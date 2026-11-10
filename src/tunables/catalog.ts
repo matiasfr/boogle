@@ -169,6 +169,18 @@ const supply = {
     at: 'next owner movement update',
     meaning: "Movement speed while a friend's Help carry lifts the hauled boiler; no second inventory claim.",
   },
+  railFootSoloSpeed: {
+    id: 'railway.footSoloSpeed',
+    units: 'centimetres per second',
+    at: 'next owner movement update',
+    meaning: 'Movement speed with a footing on your back alone; sprinting goes 1.3 times this.',
+  },
+  railFootHelpSpeed: {
+    id: 'railway.footHelpSpeed',
+    units: 'centimetres per second',
+    at: 'next owner movement update',
+    meaning: "Movement speed while a friend's Help carry lifts your footing (no sprint while helped).",
+  },
 } as const;
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;

@@ -50,6 +50,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
   if (e.op === 'rail.footTake') clean.rack = e.rack;
   if (e.op === 'rail.footSet') clean.site = e.site;
   if (e.op === 'rail.turn') clean.to = e.to;
+  if (e.op === 'rail.call') clean.dir = e.dir;
   if (e.op === 'rail.chop') {
     clean.yaw = e.yaw;
     clean.collapsed = e.collapsed;
@@ -85,7 +86,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
 
 /** The fields an accepted action's effect event carries (the intent and the actor; the count moved is `accepted`, a
  * felled tree's fall is in the state, and a kind of 0 is left out). */
-const EVENT_FIELDS = ['id', 'station', 'kind', 'revision', 'x', 'y', 'z', 'rack', 'site', 'to'] as const;
+const EVENT_FIELDS = ['id', 'station', 'kind', 'revision', 'x', 'y', 'z', 'rack', 'site', 'to', 'dir'] as const;
 /** What the result adds for effects (src/world/railway-predict.ts RailEffect), without what the intent already says:
  * a drop's pile stands at its x/y/z, and a take's pile is its id (its position still comes from here: it may be gone). */
 const EFFECT_FIELDS = ['carried', 'level', 'pile', 'px', 'py', 'pz'] as const;
