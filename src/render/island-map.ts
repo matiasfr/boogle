@@ -125,7 +125,7 @@ export function mapSizes(h: number) {
   return { track: h * 0.032, dot: r, ring: r * 2.1, label: h * 0.085 };
 }
 
-/** The map's base: face, track, stops, names and the "you are here" ring outline (`here`: a line and stop index), in
+/** The map's base: face, track, stops, names and the "you are here" ring outline (`here`: lines and stop indices), in
  * the `w` × `h` box at (`at.x`, `at.y`); `v` is fitted to the box as if it sat at (0, 0). Stops of different lines at
  * the same name share one label at their middle. */
 export function drawMapBase(
@@ -135,7 +135,7 @@ export function drawMapBase(
   h: number,
   lines: readonly MapLine[],
   v: MapView,
-  here: { line: number; stop: number } | null,
+  here: readonly { line: number; stop: number }[],
 ) {
   const S = mapSizes(h),
     x0 = 0,
@@ -176,7 +176,7 @@ export function drawMapBase(
     l.stops.forEach((st, si) => {
       const [x, y] = mapPx(v, st.x, st.z);
       const laid = st.s <= l.laid + 0.01,
-        me = !!here && here.line === li && here.stop === si;
+        me = here.some((h) => h.line === li && h.stop === si);
       if (me) {
         g.fillStyle = MAP_FACE;
         g.beginPath();

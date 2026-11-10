@@ -619,23 +619,29 @@ face is a draw of its own.
 big hovering countdown over each halt's centre is gone. It shipped first as a split-flap countdown, then as a bare
 strip of the halt's own line; the owner preferred a map ("The line strip board looks less nice than the old
 prototype one, where you could see the other stations like a map") and picked **"Island map"** from four 2D boards
-([decisions](../decisions.md)). Every standing halt's board is a 1.5 × 1.2 m dark face with a red cap, hung on its
-signal mast below the arm, inboard of the mast at the end the train comes in, its bottom at 1.9 m (over a player's
-head). On a Home island edge (`?home=b`) it hangs above the destination plaque at 3.3 m under the canopy, the canopy
-its cap, so the island's two edges show two maps side by side. Each face draws **the island's railway as a map**:
+([decisions](../decisions.md)), then asked for it "on a little display at the station" instead of up the signal
+mast (10 November). Every standing halt has a **map display**: a free-standing stand at reading height, two short
+legs, a dark frame whose back is a plain panel, and a roof-red cap, its 1.0 × 0.8 m face centred 1.35 m above the
+deck. It stands at the platform's back edge under the shelter roof, between the bench and the shelter post nearer
+the rear ramp, facing the rails: you read it where you wait, and it is out of the aisle and the train's clearance.
+It has no collider, so it can't trap anyone or block the railway bot. The Home island (`?home=b`) has one display
+for both edges, in the middle of the deck between the canopy posts, facing the head ramp you come up, with both its
+stops ringed. The mast carries only the signal arm (and, on an island edge, its destination plaque). Each face draws
+**the island's railway as a map**:
 both lines along their real track (simplified to 1.5 m, so the curves read), line 1 gold and line 2 teal, every
 station dotted and named (Village, Camp, Quarry, Far Head, Pier), unlaid track dashed and its station dim (line 2's
 pier stretch until Q6 is laid), this halt ringed in red, and both trains as small markers gliding at their live
-positions. Each face is turned for whoever stands in front of it: what lies beyond the board is up the map and
-their right is its right, so geography stays true from either side and the names stay upright. While this halt's
-line has its train heading here the ring blinks; under reduced motion the ring stays lit and the markers step once
+positions. The face is turned for whoever stands in front of it: what lies beyond the display is up the map and
+their right is its right, so geography stays true and the names stay upright. While a train is heading to a ringed
+stop that ring blinks; under reduced motion the ring stays lit and the markers step once
 a second. Line 2's wagon rides with its train (no marker of its own); the shunter isn't shown. Halts only stand once
-trains run, so there is no "before trains" board. From the platform and on a phone the names read; from 25 m only
-the lines, ring and trains do, and it is no beacon. Built from `src/render/island-map.ts` (shared with the Home hall's
-board) in `src/entities/railway/island-boards.ts`: every face is a 320 × 256 cell of one canvas atlas (1280 × 768,
-about 5 MB with mipmaps) drawn once and again only when the pier is laid; the trains and the blinking ring are two
-instanced quad meshes over the faces, so a moving train never redraws a texture. One draw per board in view plus two
-for all the markers and rings. Local over accepted train state. Not tested on a device.
+trains run, so there is no "before trains" board. Standing in front of it the names read, on a phone too (in
+portrait at 1.5 m the face is wider than the screen; a step back shows it whole). At a halt the display is not seen
+from far off, so the signal arm is the cue from a distance. Built from `src/render/island-map.ts` (shared with the
+Home hall's board) in `src/entities/railway/island-boards.ts`: every face is a 320 × 256 cell of one canvas atlas
+(1280 × 512, about 3.5 MB with mipmaps) drawn once and again only when the pier is laid; the trains and the blinking
+rings are two instanced quad meshes over the faces, so a moving train never redraws a texture. One draw per display
+in view plus two for all the markers and rings. Local over accepted train state. Not tested on a device.
 
 ## Ancient technology (round 4, exploring)
 
