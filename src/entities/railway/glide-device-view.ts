@@ -2,8 +2,9 @@
 // until Q5 is laid: a dark drum and a folded vane on a short mast, its long axis pointing at the forge, no ring, no
 // light and no prompt. Woken: the vane unfurls teal and cream, Place's rings and core turn, a teal locator rises
 // (flaring on the live edge, with the room's wake banner) and the halts' maps mark the spot (halts-view.ts).
-// Taken (the room's `glide`): the drum stays, the rest goes. The finder's card plays on their own accepted (predicted)
-// take; everyone else's flourish is ability-arrival.ts. Nothing here grants anything.
+// Taken (the room's `glide`): the drum stays, the rest goes. The take is a shared moment (./shared-moment.ts): the
+// finder's card plays on their own accepted (predicted) take; everyone else's flourish is ability-arrival.ts. Nothing
+// here grants anything.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -18,6 +19,7 @@ import { playMark } from '../../proto/mark.ts';
 import { reducedMotion } from '../../constants.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { GLIDE_REWARD } from './reward-data.ts';
+import { playSharedMoment } from './shared-moment.ts';
 
 type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
@@ -145,15 +147,20 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   }
   return {
     accepted(e: RailwayAccepted) {
-      // Only the finder gets the card; everyone else's flourish is ability-arrival.ts (co-op abilities, option E).
-      if (e.op !== 'rail.glide' || e.accepted <= 0 || e.pid !== adapter.inspect().pid) return;
-      placeSound('pickupGlider', at.x, at.z);
-      youGot({
-        key: 'glide',
-        name: GLIDE_REWARD.name,
-        line: GLIDE_REWARD.line,
-        model: new THREE.Mesh(prize, partMat),
-        from: ringFrom(),
+      // A shared moment whose card stays with the finder; everyone else's flourish is ability-arrival.ts (co-op
+      // abilities, option E). No camera shot either way.
+      if (e.op !== 'rail.glide' || e.accepted <= 0) return;
+      playSharedMoment('glider', e, adapter.inspect().pid, (mine) => {
+        if (!mine) return false;
+        placeSound('pickupGlider', at.x, at.z);
+        youGot({
+          key: 'glide',
+          name: GLIDE_REWARD.name,
+          line: GLIDE_REWARD.line,
+          model: new THREE.Mesh(prize, partMat),
+          from: ringFrom(),
+        });
+        return false;
       });
     },
     /** A restore (load, rejoin, resync) snaps to state: no wake show. */

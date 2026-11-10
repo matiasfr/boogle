@@ -27,6 +27,7 @@ import { createRailwayPier } from './pier-view.ts';
 import { createForgeFinish } from './forge-finish.ts';
 import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
+import { playSharedMoment } from './shared-moment.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
@@ -90,6 +91,7 @@ export async function createRailwayLine2(
     );
     const focus = new THREE.Vector3(gate.x + ox, gate.y + 2.5, gate.z);
     switchCamera.play(from, to, focus, 3.2, kind === 'sea' ? 1.2 : 3.2);
+    return switchCamera.active();
   }
   const quarry = layout.LINKS[1]!;
   const geometries: THREE.BufferGeometry[] = [];
@@ -606,7 +608,7 @@ export async function createRailwayLine2(
     seaGate.accepted(event);
     glideDevice.accepted(event);
     boiler.accepted(event);
-    if (event.op === 'rail.seaSwitch' && event.pid === state.pid) showSwitch('sea');
+    if (event.op === 'rail.seaSwitch') playSharedMoment('sea gate', event, state.pid, () => showSwitch('sea'));
     if (event.op === 'rail.forgeTake') {
       for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
         deposits.push({
@@ -643,7 +645,7 @@ export async function createRailwayLine2(
       return;
     }
     if (event.op === 'rail.lever') {
-      if (event.pid === state.pid) showSwitch('quarry');
+      playSharedMoment('quarry gate', event, state.pid, () => showSwitch('quarry'));
       slabT = 0;
       whistle(G.x + ox, G.z);
       clank(lever.x + ox, lever.z);
