@@ -105,8 +105,9 @@ function railheadRamp(uh: number): RingRamp {
 }
 
 /** Each row is a railhead: k = bents footed past bent 6 (0..7), at u 120 + 20 k m. `s` is where a train stands at the
- * end stop: its consist's reference 10 m short of the railhead, so the engine's nose stops about 1 m short of the
- * buffer (u - 1.8) and the wagon stands by the rack (u - 17.4 against u - 18); its stub merges 20 m short of it. */
+ * end stop: its consist's reference 10 m short of the railhead, so the engine's nose (reference + 6.2 m) stops at
+ * about u - 3.8, 2 m short of the buffer's face (u - 1.8), and the wagon stands by the rack (u - 17.4 against
+ * u - 18); its stub merges 20 m short of it. */
 export const RING_HEAD: readonly {
   u: number;
   s: number;
@@ -136,6 +137,13 @@ export const RING_HEAD: readonly {
     ramp: railheadRamp(u),
   };
 });
+/** How a train eases into the railhead's end stop over the gap (review of R1, P1; orchestrator, 10 November): it brakes
+ * at no more than RING_END_BRAKE_CMS2 (cm/s²) and runs no faster than RING_END_APPROACH (cm/s) while that braking is
+ * under way. Leaving a moving deck keeps its speed through the air, so at the line's own 3.5 m/s² a late double jump
+ * off the engine reaches the brace platform; at these the worst standable top stays 1.5 m short (dev/level/ring.ts).
+ * R3a must make the catalog's end-stop leg into an open railhead use them. */
+export const RING_END_BRAKE_CMS2 = 200;
+export const RING_END_APPROACH = 2000;
 /** The railhead platform's fixed kit, cm above the platform (the greybox's): the rack's top, the request lever, the
  * buffer stop (deck + 140), the jib's mast top and its arm, high end over the platform and low end out over the gap. */
 export const RING_RAILHEAD_KIT = { rack: 160, lever: 130, buffer: 50, mast: 900, arm: [850, 750] } as const;
@@ -156,14 +164,13 @@ export const RING_BRACE_PLATFORM = { u0: 28400, u1: 29400, lat0: 220, lat1: 1020
 /** The gold strut's foot on the brace platform: rail.brace's site. */
 export const RING_BRACE: RingSite = { ...ringAt(28450, 340), y: 800, reach: 400 };
 /** The hook ring on its sea pile (ruling 1, moved to u 276 m by finding 1) and its gold land pad on bent 13's railhead
- * platform. The pile is solid to 3 m over the sea. */
+ * platform. The pile is solid to 3 m over the sea. One source: (u, lat) is the position, x and z are ringAt's of it. */
+const ringPoint = <U extends number, L extends number>(u: U, lat: L) => ({ u, lat, ...ringAt(u, lat) });
 export const RING_HOOK = {
-  u: 27600,
-  lat: 1200,
+  ...ringPoint(27600, 1200),
   y: 1750,
-  ...ringAt(27600, 1200),
   pileTop: 300,
-  pad: { u: 25820, lat: 500, ...ringAt(25820, 500), y: ringDeckY(25820) + 90 },
+  pad: { ...ringPoint(25820, 500), y: ringDeckY(25820) + 90 },
 } as const;
 /** The rivet: the joint at the toe, just over the deck (rail.strike id 2). */
 export const RING_RIVET: RingSite = { ...ringAt(25950, RING_FORMATION.mid), y: 1500, reach: 500 };

@@ -5,6 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CROSSING_BENTS, CROSSING_DECK_Y } from '../src/sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../src/sim/railway-lines.ts';
+import { ringHeight } from '../src/proto/greybox/ring-cones.ts';
+import { ORIGIN } from '../src/proto/place/layout.ts';
 
 import {
   RING_BENTS,
@@ -22,22 +24,6 @@ import {
   ringDeckY,
 } from '../src/sim/railway-ring-layout.ts';
 
-/** Ring Island's cones (src/proto/greybox/ground.ts RING_CONES and ringHeight, whose module needs Vite's glob): dx, dz,
- * radius, height about the island's centre, world metres (1330, -1120); dev/level/ring.ts reads the real one. */
-const CONES = [
-  [0, 0, 340, 70],
-  [-170, 60, 170, 120],
-  [190, 30, 190, 95],
-  [40, -90, 130, 150],
-] as const;
-function ringHeight(x: number, z: number) {
-  let best = -Infinity;
-  for (const [dx, dz, r, h] of CONES) {
-    const d = Math.sqrt((x - 1330 - dx) * (x - 1330 - dx) + (z + 1120 - dz) * (z + 1120 - dz));
-    if (d < r) best = Math.max(best, h - 4 - (h * d) / r);
-  }
-  return best;
-}
 const dist = (ax: number, az: number, bx: number, bz: number) =>
   Math.sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 const line2 = RAIL_LINES[1]!.path;
@@ -123,7 +109,7 @@ test('every recovery point stands on a planned deck or on island ground over 50 
   for (const p of RING_RECOVERY) {
     const { u, lat } = inv(p.x, p.z);
     const deck = decks.find((d) => u >= d.u0 && u <= d.u1 && lat >= d.lat0 && lat <= d.lat1 && d.y === p.y);
-    const ground = ringHeight(p.x / 100, p.z / 100) * 100;
+    const ground = ringHeight(p.x / 100 - ORIGIN.x, p.z / 100 - ORIGIN.z) * 100;
     const onGround = ground > 50 && p.y >= ground - 10 && p.y <= ground + 50;
     assert.ok(deck || onGround, `(${p.x}, ${p.y}, ${p.z}): ground ${ground.toFixed(0)} cm`);
   }

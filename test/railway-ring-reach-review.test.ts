@@ -10,9 +10,10 @@ import { FIXED, GRAVITY, JUMP_SPEED, PLAYER_R, WALKABLE_NY } from '../src/consta
 import { APEX_GRAVITY } from '../src/entities/player/apex-float.ts';
 import { ENGINE_CAB } from '../src/proto/wagon/engine.ts';
 import { TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
-import { RAIL_LINES } from '../src/sim/railway-lines.ts';
 import {
   RING_BRACE_PLATFORM,
+  RING_END_APPROACH,
+  RING_END_BRAKE_CMS2,
   RING_FORMATION,
   RING_GAP,
   RING_HEAD,
@@ -87,13 +88,15 @@ test('review: the late double jump off the railhead platform end falls at least 
 });
 
 test("review: a late double jump off a braking train's cab roof falls at least 1.5 m short of the brace platform", () => {
-  const accel = (RAIL_LINES[1]!.accel * 10 * 10) / 100; // cm a tick^2 at 10 ticks a second, in m/s^2 (3.5)
+  // The railhead's end stop eases in (src/sim/railway-ring-layout.ts; R3a's end-stop leg), not the line's 3.5 m/s^2.
+  const accel = m(RING_END_BRAKE_CMS2),
+    vMax = Math.min(20, m(RING_END_APPROACH));
   const stopU = m(head.s - RING_S_HEAD) + TRAIN_OFFSETS[0]! + ENGINE_CAB.roofZ[1];
   // The raised leaf (78 degrees, as dev/level/ring.ts) stands over the formation: pass east of it by its toe.
   const toe = m(RING_GAP.hinge) - m(RING_GAP.leaf) * Math.cos((78 * Math.PI) / 180) - 0.4,
     clearLat = m(RING_FORMATION.right) + PLAYER_R;
   let worst = { spare: -Infinity, v: 0, u: 0, reach: 0, need: 0 };
-  for (let v = 0; v <= 20; v += 0.25) {
+  for (let v = 0; v <= vMax; v += 0.25) {
     const d = (v * v) / (2 * accel),
       u = stopU - d,
       roofY = m(ringDeckY(Math.round(u * 100))) + RAIL_TOP + ENGINE_CAB.roofTop;

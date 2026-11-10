@@ -9,11 +9,17 @@ import { FIXED, GRAVITY, JUMP_SPEED, PLAYER_R, WALKABLE_NY } from '../../src/con
 import { JUMP } from '../../src/entities/player/state.ts';
 import { APEX_GRAVITY } from '../../src/entities/player/apex-float.ts';
 import { MOVE } from '../../src/proto/place/tech-layout.ts';
-import { ENGINE_CAB } from '../../src/proto/wagon/engine.ts';
-import { TRAIN_OFFSETS } from '../../src/proto/wagon/cars.ts';
-import { ringHeight } from '../../src/proto/greybox/ground.ts';
+import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/proto/wagon/engine.ts';
+import { TRAIN_CARS, TRAIN_OFFSETS } from '../../src/proto/wagon/cars.ts';
+import { CARRY } from '../../src/physics/platforms.ts';
+import { TUNABLES } from '../../src/sim/tune.ts';
+import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
+import { ringHeight } from '../../src/proto/greybox/ring-cones.ts';
+import { ORIGIN } from '../../src/proto/place/layout.ts';
 import {
   RING_BRACE_PLATFORM,
+  RING_END_APPROACH,
+  RING_END_BRAKE_CMS2,
   RING_FORMATION,
   RING_GAP,
   RING_HEAD,
@@ -25,23 +31,30 @@ import {
   RING_RECOVERY,
   RING_S_HEAD,
   RING_STEPS,
+  ringAt,
   ringDeckY,
   type RingFlight,
 } from '../../src/sim/railway-ring-layout.ts';
 
-/** The controller's numbers not exported where they live (src/entities/player/state.ts): sprint speed, the coyote
- * grace, the fall-speed cap; the eye height the hook aims from. */
+/** Literals inside src/entities/player/state.ts, not exported there: sprint speed, the coyote grace, the fall-speed
+ * cap. And the eye height the hook aims from. */
 const SPRINT = 9.5,
   COYOTE = 0.1,
   MAX_FALL = 20,
   EYE = 1.7;
+/** The railway's air jump and glider, from their tunables' defaults (src/sim/tune.ts, cm/s). */
+const tuned = (key: string) => TUNABLES.find((t) => t.key === key)!.def / 100;
+const AIR_JUMP = tuned('railJumpImpulse'),
+  AIR_APEX = tuned('railJumpApexSpeed'),
+  GLIDE_SPEED = tuned('railGlideSpeed'),
+  GLIDE_SINK = tuned('railGlideSink');
 /** The raised leaf (the greybox's 78 degrees; R2's ringIslandPose), and the rail top over the deck. */
 const LEAF_UP_DEG = 78,
   RAIL_TOP = 0.22;
 const DT = 1 / 240;
 /** dev/economy/place-level.ts's conservative glide budget for a drop: less 2 m of drop, 0.8 of the ratio, 2.8 m entry. */
-const GLIDE = (drop: number) => Math.max(0, (drop - 2) * (MOVE.glideSpeed / MOVE.glideSink) * 0.8 - 2.8);
-const GLIDE_RAW = (drop: number) => Math.max(0, drop * (MOVE.glideSpeed / MOVE.glideSink));
+const GLIDE = (drop: number) => Math.max(0, (drop - 2) * (GLIDE_SPEED / GLIDE_SINK) * 0.8 - 2.8);
+const GLIDE_RAW = (drop: number) => Math.max(0, drop * (GLIDE_SPEED / GLIDE_SINK));
 
 /** One sprint jump, held, the air jump pressed at `press` s after take-off (null: never): the time until the feet come
  * down `drop` m below the take-off, and the first apex's time. */
@@ -52,10 +65,11 @@ function jumpFlight(drop: number, press: number | null) {
     pressed = press === null;
   for (; t < 10; t += DT) {
     if (!pressed && t >= press!) {
-      vy = Math.max(vy, MOVE.second);
+      vy = Math.max(vy, AIR_JUMP);
       pressed = true;
     }
-    const g = vy < 0 ? JUMP.fallGravity : vy < JUMP.apexSpeed ? APEX_GRAVITY : 1;
+    const apex = press !== null && pressed ? AIR_APEX : JUMP.apexSpeed;
+    const g = vy < 0 ? JUMP.fallGravity : vy < apex ? APEX_GRAVITY : 1;
     const vy1 = Math.max(-MAX_FALL, vy - GRAVITY * g * DT),
       y1 = y + vy1 * DT;
     if (y1 <= -drop && vy1 < 0) return t + (DT * (y + drop)) / (y - y1);
@@ -70,10 +84,13 @@ function apexes() {
     vy = JUMP_SPEED,
     t = 0;
   const out: { t: number; h: number }[] = [];
-  for (const v0 of [JUMP_SPEED, MOVE.second]) {
+  for (const [v0, apex] of [
+    [JUMP_SPEED, JUMP.apexSpeed],
+    [AIR_JUMP, AIR_APEX],
+  ] as const) {
     vy = Math.max(vy, v0);
     while (vy > 0) {
-      const g = vy < JUMP.apexSpeed ? APEX_GRAVITY : 1;
+      const g = vy < apex ? APEX_GRAVITY : 1;
       vy -= GRAVITY * g * DT;
       y += vy * DT;
       t += DT;
@@ -100,6 +117,96 @@ export function lateDouble(drop: number) {
     reach: SPRINT * best.t + extra,
     apexReach: SPRINT * jumpFlight(drop, top) + extra,
   };
+}
+
+const flights = new Map<number, number>();
+/** The longest late-double-jump flight (s) over a drop, to the nearest 2.5 cm of drop (about 1 ms of flight). */
+function longestFlight(drop: number) {
+  const key = Math.round(drop * 40);
+  let t = flights.get(key);
+  if (t === undefined) flights.set(key, (t = lateDouble(key / 40).late / SPRINT));
+  return t;
+}
+/** Every standable top of line 2's train, by its front edge (car-local +z is along +s): car offset, z, height over
+ * the rail, half width. */
+const STANDABLE = [
+  { name: 'cab roof', off: TRAIN_OFFSETS[0]!, z: ENGINE_CAB.roofZ[1], y: ENGINE_CAB.roofTop, hx: ENGINE_CAB.roofHx },
+  { name: 'chimney', off: TRAIN_OFFSETS[0]!, z: ENGINE_BOILER.chimney.z, y: ENGINE_BOILER.chimney.y, hx: 0 },
+  { name: 'boiler top to its front', off: TRAIN_OFFSETS[0]!, z: ENGINE_BOILER.zFront, y: ENGINE_BOILER.top, hx: 0 },
+  { name: 'running board', off: TRAIN_OFFSETS[0]!, z: ENGINE.hz, y: ENGINE.top, hx: ENGINE.hx },
+  ...TRAIN_CARS.slice(1).map((c, n) => ({
+    name: n === TRAIN_CARS.length - 2 ? "wagon's deck" : `flatbed ${n + 1}`,
+    off: TRAIN_OFFSETS[n + 1]!,
+    z: c.hz,
+    y: c.top,
+    hx: c.hx,
+  })),
+];
+type P2 = { u: number; lat: number };
+/** Distance from q to the convex polygon `poly` (counter-clockwise in (u, lat)), 0 inside. */
+function polyDist(q: P2, poly: readonly P2[]) {
+  let inside = true,
+    best = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i]!,
+      b = poly[(i + 1) % poly.length]!;
+    const eu = b.u - a.u,
+      el = b.lat - a.lat;
+    if (eu * (q.lat - a.lat) - el * (q.u - a.u) < 0) inside = false;
+    const t = Math.max(0, Math.min(1, ((q.u - a.u) * eu + (q.lat - a.lat) * el) / (eu * eu + el * el || 1)));
+    best = Math.min(best, Math.hypot(q.u - a.u - eu * t, q.lat - a.lat - el * t));
+  }
+  return inside ? 0 : best;
+}
+/** The polygon cut to the side of the line from l through c that holds the higher lat (east of the leaf's toe). */
+function clip(poly: readonly P2[], l: P2, c: P2) {
+  const side = (p: P2) => (c.u - l.u) * (p.lat - l.lat) - (c.lat - l.lat) * (p.u - l.u);
+  const out: P2[] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i]!,
+      b = poly[(i + 1) % poly.length]!,
+      sa = side(a),
+      sb = side(b);
+    if (sa >= 0) out.push(a);
+    if (sa * sb < 0)
+      out.push({ u: a.u + ((b.u - a.u) * sa) / (sa - sb), lat: a.lat + ((b.lat - a.lat) * sa) / (sa - sb) });
+  }
+  return out;
+}
+/** A train easing into bent 13's end stop at `brake` m/s², no faster than `approach` m/s: the late double jump with the
+ * kept carry (src/physics/platforms.ts: the deck's speed less CARRY.skid for CARRY.departureSkidS, kept to the
+ * landing) from every standable top at every 10 cm before the stop, each landing on the brace platform by the least
+ * own motion whose straight world path passes east of the raised leaf's toe. One row per top, worst first. */
+export function brakingCarry(brake: number, approach: number) {
+  const head = RING_HEAD[7]!,
+    B = RING_BRACE_PLATFORM,
+    lineSpeed = (RAIL_LINES[1]!.speed * 10) / 100;
+  const toe = m(RING_GAP.hinge) - m(RING_GAP.leaf) * Math.cos((LEAF_UP_DEG * Math.PI) / 180) - 0.4;
+  const corner = { u: toe - PLAYER_R, lat: m(RING_FORMATION.right) + PLAYER_R };
+  const rect = [
+    { u: m(B.u0), lat: m(B.lat1) },
+    { u: m(B.u0), lat: m(B.lat0) },
+    { u: m(B.u1), lat: m(B.lat0) },
+    { u: m(B.u1), lat: m(B.lat1) },
+  ];
+  const vMax = Math.min(lineSpeed, approach);
+  const rows = STANDABLE.map((p) => {
+    const stop = m(head.s - RING_S_HEAD) + p.off + p.z;
+    let worst = { spare: -Infinity, d: 0, v: 0, reach: 0, need: 0, u: 0, y: 0 };
+    for (let d = 0; d <= (vMax * vMax) / (2 * brake) + 5; d += 0.1) {
+      const v = Math.min(vMax, Math.sqrt(2 * brake * d)),
+        u = stop - d,
+        y = m(ringDeckY(Math.round(u * 100))) + RAIL_TOP + p.y;
+      const t = longestFlight(y - m(B.y)) + COYOTE,
+        kept = Math.max(0, v - CARRY.skid * CARRY.departureSkidS);
+      const poly = clip(rect, { u, lat: p.hx }, corner),
+        need = poly.length ? polyDist({ u: u + kept * t, lat: p.hx }, poly) : Infinity,
+        reach = SPRINT * t + PLAYER_R;
+      if (reach - need > worst.spare) worst = { spare: reach - need, d, v, reach, need, u, y };
+    }
+    return { part: p.name, ...worst };
+  });
+  return rows.sort((a, b) => b.spare - a.spare);
 }
 
 type Entry = { kind: 'section' | 'fact'; message: string } | { kind: 'assertion'; passed: boolean; message: string };
@@ -130,24 +237,25 @@ export function checkRing() {
     dj.reach <= near - 1.5,
     `late double jump off the platform's end falls short: ${f1(dj.reach)} m against ${f1(near)} m (${f1(near - dj.reach)} m short, needs 1.5)`,
   );
-  // A stopped train's cab roof at the end stop: the train's reference stands at s, its cab roof's front edge
-  // TRAIN_OFFSETS[0] + roofZ[1] ahead, on the terminal track (lat 0) with the raised leaf straight ahead.
-  const roofU = m(head.s - RING_S_HEAD) + TRAIN_OFFSETS[0]! + ENGINE_CAB.roofZ[1],
-    roofY = m(ringDeckY(Math.round(roofU * 100))) + RAIL_TOP + ENGINE_CAB.roofTop;
-  const toe = m(RING_GAP.hinge) - m(RING_GAP.leaf) * Math.cos((LEAF_UP_DEG * Math.PI) / 180) - 0.4;
-  const corner = { u: toe - PLAYER_R, lat: m(RING_FORMATION.right) + PLAYER_R };
-  const straightLat = (m(B.lat0) * (corner.u - roofU)) / (m(B.u0) - roofU);
-  const diag =
-    straightLat >= corner.lat
-      ? Math.hypot(m(B.u0) - roofU, m(B.lat0))
-      : Math.hypot(corner.u - roofU, corner.lat) + Math.hypot(m(B.u0) - corner.u, Math.max(0, m(B.lat0) - corner.lat));
-  const roof = lateDouble(roofY - m(B.y));
+  // A train easing into the end stop (review of R1, P1): leaving a moving deck keeps its speed through the air
+  // (src/physics/platforms.ts carryStep), so every standable top of the train is a launch at every speed it brakes
+  // through. R3a's end-stop leg brakes at RING_END_BRAKE_CMS2, no faster than RING_END_APPROACH.
+  const brake = m(RING_END_BRAKE_CMS2),
+    approach = m(RING_END_APPROACH);
   fact(
-    `  cab roof at the end stop: u ${f1(roofU)} m, ${f1(roofY)} m (${f1(roofY - m(ringDeckY(Math.round(roofU * 100))))} m over the deck); the raised leaf's toe at u ${f1(toe)} m, so the way round its east side is ${f1(diag)} m`,
+    `  a train eases into the end stop at ${f1(brake)} m/s² from at most ${f1(approach)} m/s; from each standable top:`,
   );
-  assertion(
-    roof.reach <= diag - 1.5,
-    `late double jump off a stopped train's cab roof falls short: ${f1(roof.reach)} m against ${f1(diag)} m on the diagonal (${f1(diag - roof.reach)} m short)`,
+  for (const r of brakingCarry(brake, approach))
+    assertion(
+      r.spare <= -1.5,
+      `${r.part}: worst at ${f1(r.v)} m/s, ${f1(r.d)} m before the stop (u ${f1(r.u)}, ${f1(r.y)} m): own reach ${f1(r.reach)} m against ${f1(r.need)} m after the carry, ${f1(-r.spare)} m short`,
+    );
+  const lineBrake = RAIL_LINES[1]!.accel,
+    free = brakingCarry(lineBrake, 20)[0]!;
+  let largest = 0;
+  for (let a = 3.5; a >= 1 - 1e-9 && !largest; a -= 0.05) if (brakingCarry(a, approach)[0]!.spare <= -1.5) largest = a;
+  fact(
+    `  at the line's own ${f1(lineBrake)} m/s² and 20 m/s the ${free.part} would land with ${f1(free.spare)} m to spare; the largest braking that keeps 1.5 m from a ${f1(approach)} m/s approach is ${largest ? largest.toFixed(2) : 'none at or above 1'} m/s²`,
   );
   const both = SPRINT * a2.t,
     one = SPRINT * a1.t;
@@ -223,7 +331,9 @@ export function checkRing() {
     [B.u1, B.lat0],
     [B.u1, B.lat1],
   ] as const) {
-    const d = Math.hypot(m(u - RING_HOOK.u), m(lat - RING_HOOK.lat), m(RING_HOOK.y - B.y) - EYE);
+    // In world cm, as test/railway-ring-layout.test.ts measures it.
+    const c = ringAt(u, lat),
+      d = Math.hypot(m(c.x - RING_HOOK.x), m(c.z - RING_HOOK.z), m(RING_HOOK.y - B.y) - EYE);
     assertion(d <= MOVE.hookRange, `corner u ${m(u)}, lat ${m(lat)}: ${f1(d)} m (hook ${MOVE.hookRange} m)`);
   }
   const rings = [RING_HOOK];
@@ -264,7 +374,7 @@ export function checkRing() {
 
   section('Recovery points');
   for (const p of RING_RECOVERY) {
-    const ground = ringHeight(p.x / 100 - 1000, p.z / 100);
+    const ground = ringHeight(p.x / 100 - ORIGIN.x, p.z / 100 - ORIGIN.z);
     assertion(
       m(p.y) > 0.5 && m(p.y) >= ground - 0.1,
       `(${f1(m(p.x))}, ${f1(m(p.y))}, ${f1(m(p.z))}): ${f1(m(p.y))} m, ground ${ground > -1e9 ? f1(ground) : 'sea'}: dry`,
