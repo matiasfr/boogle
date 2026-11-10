@@ -11,6 +11,7 @@ import { CRANE, RACK, ORIGIN, LINKS, PATHS, lineAt, railY } from '../../src/prot
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from '../../src/proto/place/shore-layout.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN, OUT } from '../../src/proto/place/spatial-station.ts';
 import { H } from '../../src/proto/place/terrain.ts';
+import { SEA } from '../../src/constants.ts';
 import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import { boxFootprint, sampleFootprint, type Footprint } from '../../src/proto/place/support.ts';
@@ -271,12 +272,20 @@ export async function checkPropGrounding() {
         });
       }
     }
-  // The river span is deliberately unsupported; each bank must support the full-width end strip.
-  let bridge = 0;
+  // The river span is deliberately unsupported; each bank must support the full-width end strip. The deck is a chain of
+  // planks: only the chain's two outer ends bear on the sand.
+  type Strip = { footprint: Footprint; base: number; top: number };
+  const chains: { a: Strip; b: Strip; bx: number; bz: number }[][] = [];
   const buildBridges = sourceFunction<() => void>('src/proto/place/land.ts', 'buildBridges', {
     THREE,
     PATHS,
     ORIGIN,
+    H,
+    SEA,
+    BRIDGE: sourceFunction('src/proto/place/land.ts', 'BRIDGE', {}),
+    boxFootprint,
+    sampleFootprint,
+    beam: () => new THREE.Object3D(),
     FLAT: () => mat,
     TIMBER: () => mat,
     GROUP: { SCENERY: 2 },
@@ -294,18 +303,28 @@ export async function checkPropGrounding() {
       thick: number,
     ) => {
       const yaw = Math.atan2(bx - ax, bz - az);
-      for (const [end, x, z, top] of [
-        ['a', ax, az, topA],
-        ['b', bx, bz, topB],
-      ] as const)
-        rows.push({
-          ...measure(`bridge/${bridge}/${end}`, boxFootprint(x, z, width, 0.25, yaw), top - thick, top),
-          supports: ['terrain (bank bearing)'],
-        });
-      bridge++;
+      const strip = (x: number, z: number, top: number) => ({
+        footprint: boxFootprint(x, z, width, 0.25, yaw),
+        base: top - thick,
+        top,
+      });
+      const plank = { a: strip(ax, az, topA), b: strip(bx, bz, topB), bx, bz };
+      const prev = chains.at(-1)?.at(-1);
+      if (prev && Math.hypot(prev.bx - ax, prev.bz - az) < 1e-6) chains.at(-1)!.push(plank);
+      else chains.push([plank]);
     },
   });
   buildBridges();
+  chains.forEach((chain, bridge) => {
+    for (const [end, s] of [
+      ['a', chain[0]!.a],
+      ['b', chain.at(-1)!.b],
+    ] as const)
+      rows.push({
+        ...measure(`bridge/${bridge}/${end}`, s.footprint, s.base, s.top),
+        supports: ['terrain (bank bearing)'],
+      });
+  });
   // The settled reward is also a placed prop. Execute its real seat and mesh builders.
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
   const lateral = sourceFunction('src/proto/place/rail.ts', 'lateral', { P, ORIGIN });
