@@ -292,7 +292,7 @@ leaves `npm run check` green.
 | R5 | `dev/look/bots/railway-ring.ts`, `dev/look/evals/ring-glide.ts` | `dev/look/bots/railway.ts`, `dev/look/segments.ts` (or wherever `RAIL_STOPS` lives), `dev/loop/graph.ts` |
 | R6 | `docs/game-design/ring-island.md` | `docs/game-design.md` (index line), `docs/brainstorms/ring-island.md` (status), `docs/atlas/stories/railway.json`, this plan's status |
 
-- [ ] **0. The greybox's owed and untested items (no game code, no bump).** New eval `dev/look/evals/ring-greybox.ts`,
+- [x] **0. The greybox's owed and untested items (no game code, no bump).** New eval `dev/look/evals/ring-greybox.ts`,
   run as `npm run look -- --query ring=greybox --rail-seed crossing-done --eval dev/look/evals/ring-greybox.ts`. It
   does, by real input, writing `__ringResult`: (a) **walk the last bent's ramp**: teleport swimming at its slipway foot
   (u 232, lat 14), walk up the three flights to the railhead platform, assert no jump was pressed and it arrives
@@ -313,6 +313,24 @@ leaves `npm run check` green.
   dev/look/evals/lookout.ts` at zoom 1 and 2, at phone size (`--size 844x390`). Done: results and
   stills logged in the ring-island brief's greybox section by R6; (f) confirms the design review's ruling on Level
   finding 1 (R1 need not wait for it). Checks: `npm run check`. Proof look: the eval's `gap` still.
+  *Built 10 November 2026* (`dev/look/evals/ring-greybox.ts`, no game code; loads 8–26 on the 1-minute average, all under 30;
+  not tested on a device). The crossing-done seed has neither the double jump nor the glider, so the eval takes each at its
+  device with a real Interact first (staging teleports only). Results, by real input: (a) bent ramp walked in 11.2 s over
+  52.6 m of walking at 5.6 m/s (no jump pressed; **over the 10 s bound by walking**); (b) hinge ramp
+  7.2 s, 36.5 m, on the brace platform; (c) both swimmers walk out onto the slipway and up the first flight; (d) Hook
+  from the water is refused (`pulls` 0, no pick), as the plan expects; (e) **cannot be tested: the greybox ring is
+  scenery, not a `HookRing` (hook rings are Place's fixed pads), so Hook from all four corners connects to nothing**
+  (eye distances to the greybox ring 12.7, 9.9, 20.9, 19.1 m): R4b's real ring is where (e) gets measured. (f) take-off
+  at u 259.7, 9.5 m/s: apex press lands at **u 276.4** (prediction 276.4; the near edge is 276.5, so it falls through
+  the platform's level on the edge, a splash in one run and a landing in another); late press (1.0 s, vy -15.4)
+  **lands at u 281.3 against 279.3: 2.0 m past the prediction, more than 0.3 m**, so R1 moves the platform and the
+  ring out by 2.0 m (presses at 0.85 and 1.15 s land at 279.4 and 281.3: the plateau is about 281.3). (g) After a sprint
+  jump and air jump the canopy opens by Jump; full stick carries to u 303 (past the 12.5 m platform) and a splash at
+  u 310; let go at u 280 it lands on the platform at u 284.1. (g2) Off the edge with no jump: full stick lands on the
+  platform at u 277.35; the stick let go at u 270 falls short at u 274.2 (a splash). Stills in `.look/`: `ring-main`
+  (the `gap` view), `ring-bentRamp`, `ring-hingeRamp`, `ring-hook`, `ring-home` (Home's summit: the leaf is not told
+  from the Way at 8 px, and the lookout tower hides part of the line), `ring-scope1` and `ring-scope2` (at
+  844x390 the orange leaf reads as an upright orange slab, about 13 px at zoom 1 and about 26 px at zoom 2).
 - [ ] **1. R1, the layout (no sim rule, no bump).** Create `src/sim/railway-ring-layout.ts` with everything under
   "R1" above, integer cm, importing only `./railway-works-layout.ts` and the `RailPlatform` type from
   `./railway-lines.ts`. Numbers: the greybox's `RING_LAYOUT` with ruling 5's datum and the design review's ruling on
