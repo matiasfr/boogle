@@ -12,6 +12,12 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   frontmatter must match `agents` in `dev/models.ts` (`test/models.test.ts`).
 - **Effort at spawn:** where a route names an effort different from the agent's frontmatter (high-risk implementation),
   pass it as the Agent tool's `effort`. Opus `max` only when the owner asks.
+- **Fable tops out at high** (owner, 10 November: "don't use fable xHigh, fable high should be the absolute top
+  used"). No route, spawn or review runs Fable at xhigh or max (`fableTopEffort`, `test/models.test.ts`), and it
+  doesn't run at low either: the Fable 5.2 system card shows low saving about 15% of medium's cost for a clear drop
+  in score and fewer test runs. The independent review and the hardest design, research and second-opinion work
+  both run on Fable at high; the card puts that level with Opus 5.5 at its best for about half the cost per task
+  ([owner-calls](owner-calls.md#owners-standing-calls), "Models and effort").
 - **Brainstorm:** light by default, one subagent covering the three role files in `.claude/skills/brainstorm/roles/`
   in one pass; `--panel` runs three, one per role, for a new area or big mechanic (owner, 9 November).
 - **Design review:** every plan or brief with gameplay calls gets the `designer` agent before it is built (owner,

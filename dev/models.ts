@@ -49,9 +49,9 @@ export const routes: Route[] = [
     withCodex: {
       who: "the other vendor from the author: Codex review job for Claude's code, a fresh Claude general-purpose subagent for Codex's",
       model: 'gpt-6-astra, or fable',
-      effort: 'xhigh',
+      effort: 'xhigh for astra, high for fable',
     },
-    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'xhigh'),
+    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'high'),
   },
   {
     work: 'Runner: owed proofs on a built branch (rebase, bot runs, stills, tick marks); reports failures, changes no design or game code',
@@ -61,7 +61,7 @@ export const routes: Route[] = [
   {
     work: 'Hardest design, research or second-opinion review',
     withCodex: codex('gpt-6-astra', 'xhigh'),
-    normal: claude('general-purpose subagent, or /code-review high', 'opus', 'xhigh'),
+    normal: claude('general-purpose subagent, or /code-review high', 'fable', 'high'),
   },
   {
     work: 'Quick, easy, mechanical jobs',
@@ -83,6 +83,9 @@ export const routes: Route[] = [
     },
   },
 ];
+
+/** Fable never runs above this effort, on any route or at spawn (owner, 10 November; docs/agents/models.md). */
+export const fableTopEffort = 'high';
 
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
