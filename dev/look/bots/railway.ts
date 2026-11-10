@@ -507,7 +507,7 @@ export async function boilerToPier(
     check(await bot.walk(x, z, radius), `B8 walked to ${x.toFixed(1)}, ${z.toFixed(1)} without recovery`);
   const straight = async (x: number, z: number) =>
     check(await bot.straight(x, z, 0.5, 12000), 'B8 walked a supported track waypoint');
-  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  const { LINKS, ORIGIN, lineAt, FORMATION } = await import('../../../src/proto/place/layout.ts');
   const point = (line: number, s: number) => {
     const p = lineAt(LINKS[line]!.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
     return { ...p, x: p.x + ORIGIN.x };
@@ -568,8 +568,7 @@ export async function boilerToPier(
     if (called) await checkpoint('train called');
     await walk(halt.x, halt.z, 0.5);
     await until(
-      () =>
-        l2().train[line]!.phase === 0 && l2().train[line]!.at === halt.stop && l2().train[line]!.sweep === dir,
+      () => l2().train[line]!.phase === 0 && l2().train[line]!.at === halt.stop && l2().train[line]!.sweep === dir,
       'called train arrives',
     );
     const aboard = () => view().trains[line]!.cars.some((car) => car.riding);
@@ -666,6 +665,22 @@ export async function boilerToPier(
   await checkpoint('Q6 funded');
   await until(() => job().completion === 1, 'Q6 laid once');
   await checkpoint('Q6 laid');
+  // From the Q6 frame (on the up track's side) onto line 2 just past the formation's merge at the pier root, where one
+  // bed on banked ground steps up from the side (generic-lines step 2). Beside the turnout the up track's bed stands
+  // about 0.36 m over the unbanked ground, too high to walk up, so the old straight line from the frame to s 546
+  // stalled against it; Far Head's plank crossing (s 538.5) is the other way on, but the frame stands in that line.
+  const merge = FORMATION.quarry.to + 1;
+  const beside = (s: number, lat: number) => {
+    const p = point(1, s);
+    return { x: p.x - p.uz * lat, z: p.z + p.ux * lat };
+  };
+  for (const [s, lat] of [
+    [merge, -3.5], // along the frame's side of the turnout, on the ground, clear of the frame
+    [merge, 0], // up onto the single track
+  ] as const) {
+    const p = beside(s, lat);
+    await straight(p.x, p.z);
+  }
   const start = point(1, 546);
   await straight(start.x, start.z);
   await walkQuarry(546, 739);

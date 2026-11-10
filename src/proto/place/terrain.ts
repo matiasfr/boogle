@@ -11,6 +11,7 @@ import {
   GORGE,
   GRID,
   HEAD,
+  FORMATION,
   LINES,
   LINKS,
   LOBE,
@@ -22,6 +23,7 @@ import {
   VILLAGE,
   lineAt,
   railY,
+  upLat,
   YARD,
   type LinePoint,
   type Pt,
@@ -148,7 +150,11 @@ function strip(
   inner: number,
   outer: number,
   painted: boolean,
-  skip?: (x: number, z: number) => boolean,
+  /** Leave this cell as it is; `y` is the strip's height there and `k` the cell. */
+  skip?: (x: number, z: number, y: number, k: number) => boolean,
+  /** false: leave `clearMask` as it was. The tree catalog reads it, and `heights` too (its h < 4 filter), so a strip
+   * that must keep the catalog also has to skip every cell whose height could cross that filter. */
+  clears = true,
 ) {
   const best = new Map<number, [number, number]>();
   const cells = Math.ceil(outer / CELL) + 1;
@@ -167,10 +173,10 @@ function strip(
   for (const [k, [d, y]] of best) {
     const i = k % NX,
       j = Math.floor(k / NX);
-    if (skip?.(cellX(i), cellZ(j))) continue;
+    if (skip?.(cellX(i), cellZ(j), y, k)) continue;
     const t = smoothstep(outer, inner, d);
     heights[k] = heights[k]! + (y - heights[k]!) * t;
-    clearMask[k] = Math.max(clearMask[k]!, t);
+    if (clears) clearMask[k] = Math.max(clearMask[k]!, t);
     if (painted) pathMask[k] = Math.max(pathMask[k]!, smoothstep(inner + 1, inner - 0.5, d));
   }
   return best;
@@ -227,6 +233,44 @@ function bake() {
     // Include skipped cliff cells: a prop pad must not fill up through the trestle either.
     for (const [k, [distance, height]] of bed)
       if (distance <= 4) railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
+  }
+  // The up track (generic-lines step 2) gets the same cutting or bank along its own centre, so its bed meets the ground
+  // as today's does and nobody has to jump onto it from the side (orchestrator, 10 November: it stood about 0.36 m
+  // over the unbanked ground). Where it runs within 0.6 m of today's track (the turnouts' ends) today's strip covers it.
+  // The starter trees are a shared catalog (test/railway.test.ts pins them) planted on this grid before the snapshot
+  // below, and they read both `clearMask` and the heights (tree-catalog.ts drops cells under 4 m). So this strip clears
+  // nothing and leaves every cell under 4.5 m alone; since it blends toward the rail (never under 4.5 m), a cell it
+  // touches can't cross the 4 m line. It also never fills more than 3 m under the rail: beside a trestle's abutment
+  // that would raise single cells into thin pillars, and there the deck is on legs anyway.
+  const upSkip = (x: number, z: number, y: number, k: number) =>
+    gorgeD(x, z) < GORGE.bank + GORGE.wall + 2 || heights[k]! < 4.5 || heights[k]! < y - 3;
+  for (const link of LINKS) {
+    const formation = FORMATION[link.id],
+      line = link.line;
+    const samples: [number, number, number][] = [];
+    for (let s = formation.from; s <= formation.to; s += 1) {
+      const lat = upLat(formation, s);
+      if (lat === null || lat > -0.6) continue;
+      lineAt(line, s, P);
+      samples.push([P.x - P.uz * lat, P.z + P.ux * lat, railY(line, s) - 0.08]);
+    }
+    const graded = new Set<number>();
+    const bed = strip(
+      samples,
+      4,
+      8,
+      false,
+      (x, z, y, k) => {
+        const skipped = upSkip(x, z, y, k);
+        if (!skipped) graded.add(k);
+        return skipped;
+      },
+      false,
+    );
+    // Ceilings only where this strip graded: a skipped cell keeps whatever later pads give it, as before step 2.
+    for (const [k, [distance, height]] of bed)
+      if (distance <= 4 && graded.has(k))
+        railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
   }
   // Paths last: they cut their ramps into the walls and fill across whatever they meet.
   PATHS.forEach((p) => {

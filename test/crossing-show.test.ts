@@ -15,7 +15,7 @@ import {
   onCrossing,
   towardRing,
 } from '../src/entities/railway/crossing-show.ts';
-import { CROSSING_BENTS, PIER_FRAME, PIER_RACK, PIER_STOP } from '../src/sim/railway-works-layout.ts';
+import { CROSSING_BENTS, CROSSING_DECK_Y, PIER_FRAME, PIER_RACK, PIER_STOP } from '../src/sim/railway-works-layout.ts';
 
 const from = (p: { x: number; z: number }) => Math.hypot(SHOW_AT.x - p.x / 100, SHOW_AT.z - p.z / 100);
 const along = { x: onCrossing(1, 0, 0).x - onCrossing(0, 0, 0).x, z: onCrossing(1, 0, 0).z - onCrossing(0, 0, 0).z };
@@ -47,7 +47,10 @@ test('the finale shot travels the bents and ends on Ring Island, with the far en
   const pitch = (p: { x: number; y: number; z: number }) =>
     (Math.atan2(p.y - to.y, Math.hypot(p.x - to.x, p.z - to.z)) * 180) / Math.PI;
   const aim = pitch(at);
-  for (const p of [RING_SHARD, onCrossing(CROSSING_SPAN, 0, 4)])
+  // The last bent's deck is 20.3 m up, on the bow (CROSSING_DECK_Y); the shot ends above it, looking out over it.
+  const deck = CROSSING_DECK_Y.at(-1)! / 100;
+  assert.ok(to.y > deck + 3, `the shot ends ${(to.y - deck).toFixed(1)} m over the last deck`);
+  for (const p of [RING_SHARD, onCrossing(CROSSING_SPAN, 0, deck)])
     assert.ok(Math.abs(pitch(p) - aim) < 28, `${pitch(p).toFixed(1)}° against ${aim.toFixed(1)}°`);
 });
 

@@ -359,12 +359,35 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   by today's platform's end ramp; the ridge trestle's left
   lamps moved to the formation's edge. Level-check covers track 0's rails, the up platforms, the crossings and the
   gates' jambs.
-- [ ] **3. The six bents, wide and on the bow (positions and view, no bump).** `CROSSING_BENTS` 200 cm west,
+- [x] **3. The six bents, wide and on the bow (positions and view, no bump).** `CROSSING_BENTS` 200 cm west,
   `CROSSING_FOOT_OFF` 330, the bent caps at the 4% heights in `crossing-view.ts` (bent k's deck at
   `2430 − 4·(distance from bent 1)`/100, bent 6 about 1960 cm). Test: `test/railway-works-layout.test.ts` gains the
   socket spacing and the 4% check. Looks before and after: `--rail-seed crossing-done` from Home's hilltop, the
   telescope and the Split-rock finale's last frame; `npm run loop -- node crossing` unchanged (same 12 footings);
   `npm run checkpoints -- crossing-done`.
+  *Built (2026-11-10):* bent 6 is 2030 cm, not about 1960: ring-island ruling 5 measures the bow from the pier head
+  (24.3 m at bent 1, 4% after it), which supersedes world-blockout's "about 19.6 m". The heights are an integer table,
+  `CROSSING_DECK_Y` in `railway-works-layout.ts` (view-only layout, like the bents), and the centres are 2 m west on
+  the crossing's perpendicular (the greybox's `lat −2`), rounded to the cm grid, not a flat 200 cm in x. No sim value
+  moved: the sim sets pier footings at `PIER_FRAME` and counts them (`Works.pierSet`); no system, op or save reads
+  `CROSSING_BENTS` or `CROSSING_FOOT_OFF` (only the crossing view, the finale's constants and the jump-ins' facing).
+  The bents carry no deck or rails yet, so nothing is laid on them (ruling 11's one laid track arrives with Ring
+  Island's deck). The finale's pull-out rises with the decks (34 m to 27 m, from 28 m to 13 m), and the greybox's
+  `bents` mark moved with bent 1. Checks: the stills from the pier head and the side, the finale's late frame from
+  `crossing-finishing` (the last bents at the frame's foot, ring, shard and rockets above), `npm run checkpoints --
+  crossing-done` ok. `playthrough --from trains-on --to pier` passes (no recovery). It first stopped after Q6 laid,
+  on main too: since step 2 the up track's bed stands about 0.36 m over the unbanked ground beside Far Head's
+  turnout (s 536–556), too high to walk up, and the B8 bot's straight line from the Q6 frame to s 546 crossed it. The
+  bot now walks the frame's side to s 557, past the merge, and steps up there. *Resolved (orchestrator, 10
+  November: nobody should have to jump onto the bed):* `terrain.ts` banks the ground along the up track's centre with
+  the same strip as today's track (4 m, fading to 8) wherever it runs 0.6 m or more out. It grades heights only, and
+  skips cells under 4.5 m and cells more than 3 m under the rail (after review: it had raised single cells by up to
+  7.3 m beside the quarry trestle's abutments), so the starter tree catalog is unchanged. Ground just outside the up
+  bed that sat 0.25–0.9 m under its top went from 59 m to 1 m of line 1's formation and from 210 m to 10 m of line
+  2's; what remains is at trestle and ramp ends, where today's side is as high or higher (one exception, line 2 s
+  307: 0.89 m against 0.54 m, at the deck's end), and by the Village merge (0.25–0.29 m, today's side 0.18 m).
+  Level-check: 0 problems, progression and the walking flood unchanged. The straight walk from the Q6 frame onto s
+  546 now arrives; the segment passes with the bot's route kept.
 - [ ] **4a. The trains (sim and server; v26, with 4b).** New `src/sim/railway-trains.ts`: `circuitCm`, `cycleTicks`,
   `headTicks`, `blockFree`, `trainServes`, `trainStepLine(w, line, tick)`. In `railway-train.ts` delete `trainWayOut`
   and LOOK's branches of `trainNextStop`; it takes `track` and a `reasons(stop, dir)` callback. In `railway-world.ts`:
