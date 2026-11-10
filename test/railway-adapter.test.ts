@@ -840,3 +840,31 @@ test("a tune edit changes the boiler's haul pace the views read", () => {
   solo = 340;
   assert.equal(adapter.inspect().boilerSoloSpeed, 3.4);
 });
+
+test('a back set down as two drops 100 ms apart: both predicted, both accepted by the host, nothing left on the back', () => {
+  // The client half of build 0 (docs/brainstorms/station-deposit.md): src/entities/railway/back-down.ts sends one drop a pile.
+  const w = world();
+  const a = w.join('a', 'alice');
+  w.ready();
+  w.awake(a);
+  for (let k = 0; k < 4; k++) {
+    assert.equal(a.adapter.chop(TREE, 0, false), true);
+    w.run(15);
+  }
+  const held = a.adapter.inspect().carry;
+  assert.ok(held >= 2);
+  const first = Math.floor(held / 2);
+  assert.equal(a.adapter.drop(T1.x, 3000, T1.z, first), true);
+  assert.equal(a.adapter.drop(T1.x + 100, 3000, T1.z, held - first), false, 'a second drop inside unloadMs is "not yet"');
+  w.run(6); // back-down.ts sends the next one 100 ms later (frames of 17 ms)
+  assert.equal(a.adapter.drop(T1.x + 100, 3000, T1.z, held - first), true, 'the second sees the first already spent');
+  assert.equal(a.adapter.inspect().carry, 0, 'predicted straight away');
+  assert.equal(a.adapter.drop(T1.x + 200, 3000, T1.z, 1), false, 'and nothing is left to drop');
+  w.run(20);
+  assert.equal(a.adapter.inspect().carry, 0);
+  assert.equal(
+    w.api.railway.piles.reduce((n, p) => n + p.n, 0),
+    held,
+  );
+  agrees(w, a.adapter.inspect());
+});

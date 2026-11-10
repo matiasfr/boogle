@@ -24,6 +24,7 @@ import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts
 import { createForgeCall } from './forge-call.ts';
 import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
+import { onlyALoad, setDownThen } from './back-down.ts';
 
 // One Owner value per tab: the holder's pid while you help haul the boiler (null otherwise, so the key is left out).
 let help: HelpCarry | null = null;
@@ -573,7 +574,20 @@ export function createRailwayBoiler(
                   if (adapter.takeBoiler(b.revision)) grabbing = performance.now();
                 },
               }
-            : { ...target, blocked: 'Empty your back first' },
+            : onlyALoad(s)
+              ? {
+                  // A loaded back: the load goes down beside you, away from the pedestal, then the boiler is taken.
+                  ...target,
+                  run: () => {
+                    const take = () => {
+                      const ok = adapter.takeBoiler(adapter.inspect().line2.boiler.revision);
+                      if (ok) grabbing = performance.now();
+                      return ok;
+                    };
+                    setDownThen(adapter, take, { x: b.x / 100, z: b.z / 100 }, true);
+                  },
+                }
+              : { ...target, blocked: 'Empty your back first' },
         ];
       }
       if (b.state !== 'held') return [];

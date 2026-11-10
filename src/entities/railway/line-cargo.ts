@@ -13,6 +13,7 @@ import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { reducedMotion } from '../../constants.ts';
 import { createBeamDrag, restGrip, BEAM_LENGTH, type BeamDrag } from './beam-drag.ts';
+import { onlyALoad, setDownThen } from './back-down.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 
 // One Owner value per tab: the holder's pid while you help haul the beam (null otherwise, so the key is left out).
@@ -305,7 +306,21 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
                 if (adapter.beamTake(beam.revision)) grabbing = performance.now();
               },
             }
-          : { id: 'railway-beam-take', verb: 'Pick up', at: beamAt, blocked: 'Empty your back first' },
+          : onlyALoad(state)
+            ? {
+                id: 'railway-beam-take',
+                verb: 'Pick up',
+                at: beamAt,
+                run: () => {
+                  const take = () => {
+                    const ok = adapter.beamTake(adapter.inspect().beam?.revision ?? beam.revision);
+                    if (ok) grabbing = performance.now();
+                    return ok;
+                  };
+                  setDownThen(adapter, take, beamAt, true);
+                },
+              }
+            : { id: 'railway-beam-take', verb: 'Pick up', at: beamAt, blocked: 'Empty your back first' },
       );
     if (mineHelp.helping())
       result.push({ id: 'railway-beam-help-release', verb: 'Let go', at: beamAt, run: () => mineHelp.stop() });

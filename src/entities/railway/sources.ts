@@ -25,6 +25,7 @@ import { frameOf, fitOf, slotAt, shownOf, SHOWN } from '../../render/haul-bundle
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { createRecoveryRack } from './supply-view.ts';
 import { createLineCargo } from './line-cargo.ts';
+import { loadOf, setDown, useGround } from './back-down.ts';
 import { createGreatTreeDress } from './great-tree-view.ts';
 import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
 import { worksPreview } from './works-flag.ts';
@@ -656,7 +657,15 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     }
     return adapter.drop(Math.round(x * 100) || 0, Math.round(y * 100) || 0, Math.round(z * 100) || 0, 1, kind);
   }
-  const offDrop = bindCargoDrop(dropOne);
+  useGround(H);
+  // Hold Drop puts the whole back down as piles by your feet (back-down.ts); a tap is dropOne's single piece.
+  const offDrop = bindCargoDrop(dropOne, {
+    all: () => setDown(adapter),
+    more: () => {
+      const s = adapter.inspect();
+      return !s.foot && loadOf(s).reduce((a, b) => a + b, 0) > 1;
+    },
+  });
 
   /** A stroke the rule would not take yet answers "not yet" you can see with the sound off: the axe kicks back (the
    * rebound pose), pale grit sparks off the bark toward you with a small puff, and the trunk gives a slight shudder.
