@@ -49,6 +49,9 @@ if (files.length) add('Static validation', 'npm', 'run', 'check');
 // The seed builders and jump-ins (docs/plans/playtest-jump-in.md): every routed and offered stage still builds.
 if (matches(/^(src\/sim\/railway-(seed|live)[^/]*\.ts|src\/world\/railway-jump\.ts|server\/src\/seeds\/)/))
   add('Railway seeds or jump-ins', 'npm', 'run', 'checkpoints');
+// The rail loop through the real host rules, in Node: every order, softlocks and decided orders the rules don't hold.
+if (matches(/^(src\/sim\/railway[^/]*\.ts|src\/world\/railway-server\.ts|dev\/loop\/)/))
+  add('Rail rules or layout: the loop still completes in every order (no browser)', 'npm', 'run', 'loop', '--', 'run');
 if (matches(/^(src\/net[^/]*\/|src\/world\/(sync|game-world)\.ts$|server\/)/)) {
   add('Room/network changes', 'npm', '--prefix', 'server', 'test');
   add('Room/network changes', 'npm', 'run', 'test:net');

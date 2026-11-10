@@ -40,6 +40,11 @@ const design = {
     'docs/decisions.md#current-decision-index',
   ],
 };
+/** The rail loop's own reads: one command instead of the layout files, the plans and the bot. */
+const rail = {
+  when: 'Touching the rail loop (a bill, gate, order, cue or pacing)',
+  refs: ['`npm run loop -- node <id>` before; `npm run loop -- run` after (no browser)'],
+};
 const visible = {
   when: 'Changing what a player sees or feels (update the owning game-design section)',
   refs: ['docs/agents/verification.md#see-it-before-you-ship', '.claude/skills/look/SKILL.md'],
@@ -88,7 +93,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       example: 'src/features/held.ts',
       copy: 'Keep the owning feature and its established lifecycle',
       mustRead: [...core, 'src/features/AGENTS.md'],
-      readIf: [{ when: 'Changing feature lifecycle, DOM or loading', refs: [plugins] }],
+      readIf: [rail, { when: 'Changing feature lifecycle, DOM or loading', refs: [plugins] }],
       sync: 'Preserve the existing state ownership; ownership changes take the sync route',
       checks: look,
       lookalikes: ['index.html'],
@@ -210,6 +215,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       copy: 'pile.drop validation/apply, edits generator and typed fields',
       mustRead: [...core, ...rulesDocs],
       readIf: [
+        rail,
         { when: 'Changing the piles system described here', refs: ['docs/game-design/haul.md#ground-piles'] },
         { when: 'Changing tick/acceptance semantics', refs: ['src/world/README.md#contract-syncts'] },
         { when: 'Changing replay generators', refs: ['src/world/rules/README.md#edit-generators-and-invariants'] },
@@ -236,6 +242,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         'docs/agents/test-details/atlas.md',
       ],
       readIf: [
+        rail,
         { when: 'Implementing the example piles system', refs: ['docs/game-design/haul.md#ground-piles'] },
         { when: 'Adding a game-design chapter', refs: ['docs/game-design.md'] },
       ],
@@ -315,6 +322,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       copy: 'registerInteractable returns targets in reach; run queues an edit',
       mustRead: [...core, registers, '.claude/rules/state-consumers.md', safety],
       readIf: [
+        rail,
         { when: 'Changing documented controls', refs: ['docs/game-design/controls.md'] },
         { when: 'Changing log-source interaction', refs: ['docs/game-design/haul.md#sources-log-bundles'] },
       ],
@@ -333,6 +341,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       copy: 'Long-lived state/view/sync split; ping is the short-lived example',
       mustRead: [...core, 'src/entities/AGENTS.md', plugins],
       readIf: [
+        rail,
         { when: 'Changing the example ball', refs: ['docs/game-design/ball.md'] },
         { when: 'Choosing/changing state ownership', refs: ['docs/agents/sync.md'] },
       ],
