@@ -4,7 +4,10 @@
   modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: the network and lobby start at once, and
   `main.ts` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
   screen). Behind it, [`precompile.ts`](../precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
-  `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. A lazy part calls
+  `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. Its warm-up frame draws
+  every visible shadow caster into the sun's shadow map whatever the shadow camera sees, since compileAsync builds
+  only the camera pass (the arrival's cove casters otherwise built theirs mid-fall). The audio context is built there
+  too, suspended, and the first gesture only resumes it (`src/features/audio-prepare.ts`). A lazy part calls
   `precompile(object)` as it builds its meshes. On iOS 27 Safari a `compileAsync` after the first frames can throw
   "Texture already initialized" for the shadow map (three.js #35069, a WebKit bug); `precompile.ts` skips the second
   create and warns once (`[precompile] three.js #35069`), so look for that line in Web Inspector on an iPad. `main.ts` hands the frame to `renderer.setAnimationLoop`, so three

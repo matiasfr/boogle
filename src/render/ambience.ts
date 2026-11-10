@@ -128,7 +128,7 @@ function setup(): Bed | null {
   if (!a) return null;
   const { ctx } = a;
   const t = ctx.currentTime;
-  bakeFields(land!);
+  if (!seaField) bakeFields(land!);
   const out = ctx.createGain();
   out.gain.value = 0;
   out.gain.setTargetAtTime(bedGain(), t, 1.5); // eases in, so the first press doesn't switch the sea on
@@ -346,6 +346,8 @@ export async function startAmbience(): Promise<void> {
     import('../proto/place/layout.ts'),
   ]);
   land = { H, ORIGIN, SPIRE };
+  // Baked now, while the page loads, not in the first frame after Jump in: the arrival's roll began with it (10 November).
+  bakeFields(land);
   spawn({ kind: 'ambience', update });
   // A hidden tab stops frames, so nothing new is scheduled: the bed fades instead of holding one note of sea.
   document.addEventListener('visibilitychange', () => {
