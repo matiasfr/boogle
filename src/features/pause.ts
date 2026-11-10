@@ -4,7 +4,7 @@
 // The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop); it only takes this
 // player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button.
-// The main page has mute and fullscreen icons; the volume slider lives on More.
+// Options (the main list) has mute and fullscreen icons unless a start page has mute; the volume slider lives on More.
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
@@ -36,7 +36,7 @@ import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
-import { pausePages, pauseNavigation, pauseSections } from '../player/pause-pages.ts';
+import { pausePages, pauseNavigation, pauseSections, startPage } from '../player/pause-pages.ts';
 import { devCursorFree } from '../player/dev-input.ts';
 import { tuningVisit } from '../dev-preferences.ts';
 
@@ -55,7 +55,11 @@ let card!: HTMLElement;
 let menuBtn!: HTMLButtonElement;
 let open = false;
 type Page = string;
-let page: Page = 'main';
+const OPTIONS = 'options';
+let page: Page = OPTIONS;
+// The page Pause opens on instead of Options (the wardrobe's You, once you own something to wear), or null. It carries
+// the roster, the connection pill and mute; Options carries the rest. Esc and RB cross between the two.
+let startId: string | null = null;
 let disposePage = () => {};
 let tab: GuideKind = 'kbm';
 // The Gamepad tab: the drawn controller (src/player/pad-diagram.ts) for one situation, or the list.
@@ -236,7 +240,7 @@ function nudgeVolume(dir: number) {
   return true;
 }
 
-function renderMain() {
+function renderOptions() {
   const leave = button(
     'Leave',
     () => {
@@ -261,12 +265,18 @@ function renderMain() {
   const more = button('More', () => show('more'));
   more.dataset.act = 'more';
   const list = el('div', 'pause-list');
-  const identity = el('div', 'pause-identity');
-  identity.append(dom.rosterEl, dom.netEl);
+  if (!startId) {
+    const identity = el('div', 'pause-identity');
+    identity.append(dom.rosterEl, dom.netEl);
+    list.append(identity);
+  }
+  list.append(...pauseSections, resume);
+  if (startId) {
+    const back = button('Back', () => show(startId!), 'pause-back');
+    back.dataset.act = 'back';
+    list.append(back);
+  }
   list.append(
-    identity,
-    ...pauseSections,
-    resume,
     controls,
     button('Graphics', () => show('graphics')),
     room,
@@ -298,8 +308,9 @@ function renderMore() {
   sound.append(el('span', '', 'Volume'), volumeSlider());
   list.append(...freshButton(), sound);
   for (const extra of pausePages)
-    if (extra.id !== 'graphics') list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
-  const back = button('Back', () => show('main'), 'pause-back');
+    if (extra.id !== 'graphics' && !extra.start)
+      list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
+  const back = button('Back', () => show(OPTIONS), 'pause-back');
   back.dataset.act = 'back';
   list.append(back);
   return list;
@@ -319,7 +330,7 @@ function renderControls() {
   const body = el('div', 'pause-guide');
   const diagram = tab === 'pad' && padView === 'diagram';
   body.append(diagram ? renderPadDiagram(padCtx) : renderGuide(tab));
-  const back = button('Back', () => show('main'), 'pause-back');
+  const back = button('Back', () => show(OPTIONS), 'pause-back');
   back.dataset.act = 'back';
   const bar = el('div', 'pause-bar');
   bar.append(back, tabs);
@@ -391,10 +402,17 @@ function renderRoom() {
     }
   });
   copy.dataset.act = 'copy';
-  const back = button('Back', () => show('main'), 'pause-back');
+  const back = button('Back', () => show(OPTIONS), 'pause-back');
   back.dataset.act = 'back';
   link.append(copy);
-  wrap.append(el('h2', 'pause-h', 'On the island'), list, link, ...roomExtras.map((part) => part()), youEditor(), back);
+  wrap.append(
+    el('h2', 'pause-h', 'On the island'),
+    list,
+    link,
+    ...roomExtras.map((part) => part()),
+    youEditor({ colour: !startId }),
+    back,
+  );
   fillPeople(list);
   return wrap;
 }
@@ -412,35 +430,43 @@ function show(next: Page) {
   page = next;
   clearTimeout(leaveTimer);
   leaveTimer = 0;
-  card.dataset.page = page;
+  card.dataset.page = dlg.dataset.page = page;
   const head = card.querySelector<HTMLElement>('.pause-head')!;
   head.querySelector('.pause-actions')?.remove();
   head.querySelector('.pause-note')?.remove();
-  head.classList.toggle('has-actions', page === 'main');
-  if (page === 'main') {
+  head.querySelector(':scope > .pause-identity')?.remove();
+  const onStart = page === startId;
+  const mute = onStart || (page === OPTIONS && !startId);
+  const fullscreen = page === OPTIONS && canFullscreen();
+  head.classList.toggle('has-actions', mute || fullscreen);
+  if (onStart) {
+    // The roster and the connection pill: Pause's first page keeps them (5 November), in a compact row.
+    const identity = el('div', 'pause-identity');
+    identity.append(dom.rosterEl, dom.netEl);
+    head.append(identity);
+  }
+  if (mute || fullscreen) {
     const actions = el('div', 'pause-actions');
-    actions.append(muteButton());
-    if (canFullscreen()) actions.append(fullscreenButton());
+    if (mute) actions.append(muteButton());
+    if (fullscreen) actions.append(fullscreenButton());
     head.append(actions);
   }
-  card
-    .querySelector('.pause-body')!
-    .replaceChildren(
+  const body = card.querySelector<HTMLElement>('.pause-body')!;
+  const extra = pausePages.find((entry) => entry.id === page);
+  if (extra) {
+    body.replaceChildren();
+    disposePage = extra.mount(body, closePause);
+  } else
+    body.replaceChildren(
       page === 'controls'
         ? renderControls()
         : page === 'room'
           ? renderRoom()
           : page === 'more'
             ? renderMore()
-            : renderMain(),
+            : renderOptions(),
     );
-  const extra = pausePages.find((entry) => entry.id === page);
-  if (extra) {
-    const body = card.querySelector<HTMLElement>('.pause-body')!;
-    body.replaceChildren();
-    disposePage = extra.mount(body, closePause);
-  }
-  card.querySelector('.pause-body')!.scrollTop = 0;
+  body.scrollTop = 0;
   focusFirst();
 }
 
@@ -461,7 +487,8 @@ const stops = () => {
     for (let details = target.closest('details'); details; details = details.parentElement?.closest('details') ?? null)
       if (!details.open && details.querySelector(':scope > summary') !== target) return false;
     return (
-      !target.matches(':disabled') && [...target.getClientRects()].some((rect) => rect.width > 0 && rect.height > 0)
+      !target.matches(':disabled, [data-nostop]') &&
+      [...target.getClientRects()].some((rect) => rect.width > 0 && rect.height > 0)
     );
   });
   // The tabs are one stop (left and right pick one; LB and RB the situation), so up and down go to Back.
@@ -470,7 +497,11 @@ const stops = () => {
     : all;
 };
 function focusFirst() {
+  // Resume first with a keyboard and mouse (only a Resume click takes the pointer lock back); with a pad or a touch
+  // there is nothing to relock, so the start page's first row is where the hand is.
+  const row = page === startId && inputKind() !== 'kbm' ? stops().find((b) => b.closest('[data-cycle]')) : undefined;
   const target =
+    row ??
     card.querySelector<HTMLElement>('[data-act="resume"]') ??
     (page === 'place-debug' ? card.querySelector<HTMLElement>('.pause-back') : null) ??
     card.querySelector<HTMLElement>('[aria-selected="true"]') ??
@@ -491,12 +522,24 @@ function moveTab(dir: number) {
   setTab(TABS[(k + dir + TABS.length) % TABS.length]![0]);
 }
 
+// Where back goes: More from Place's debug page, the start page from Options (when there is one), else Options.
+const parentPage = () => (page === 'place-debug' ? 'more' : page === OPTIONS && startId ? startId : OPTIONS);
+// Left and right on a focused row (a slot, the colours) step it; the page owns what that means.
+function cycleRow(dir: number) {
+  const row = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.pause-body [data-cycle]');
+  if (!row) return false;
+  row.dispatchEvent(new CustomEvent('cycle', { detail: dir }));
+  return true;
+}
+
 function onKey(e: MenuPress) {
   const onSlider = (e.target as Element | null)?.matches?.('input[type="range"]');
   if (e.key !== 'back' && e.typing && !onSlider) return; // the Room page's name box
   if (e.key === 'back') {
     e.preventDefault();
-    if (page !== 'main') show(page === 'place-debug' ? 'more' : 'main');
+    // Esc can't relock, so on the start page it is free to open Options; Options goes back to it.
+    if (page === startId) show(OPTIONS);
+    else if (page !== OPTIONS || startId) show(parentPage());
   } else if (e.key === 'help') {
     e.preventDefault();
     if (!e.repeat) closePause();
@@ -507,7 +550,8 @@ function onKey(e: MenuPress) {
     e.preventDefault();
     move(1);
   } else if (e.key === 'left' || e.key === 'right') {
-    if (page === 'controls') {
+    if (cycleRow(e.key === 'left' ? -1 : 1)) e.preventDefault();
+    else if (page === 'controls') {
       e.preventDefault();
       moveTab(e.key === 'left' ? -1 : 1);
     }
@@ -519,12 +563,13 @@ function onPad(slot: string) {
   else if (slot === 'down') move(1);
   else if (slot === 'left' || slot === 'right') {
     const dir = slot === 'left' ? -1 : 1;
-    if (!nudgeVolume(dir)) moveTab(dir);
-  } else if (slot === 'lb' || slot === 'rb') cycleCtx(slot === 'lb' ? -1 : 1);
+    if (!cycleRow(dir) && !nudgeVolume(dir)) moveTab(dir);
+  } else if (slot === 'rb' && page === startId) show(OPTIONS);
+  else if (slot === 'lb' || slot === 'rb') cycleCtx(slot === 'lb' ? -1 : 1);
   else if (slot === menuSlot('confirm')) document.activeElement?.closest<HTMLElement>('.pause button')?.click();
   else if (slot === menuSlot('back')) {
-    if (page === 'main') closePause();
-    else show(page === 'place-debug' ? 'more' : 'main');
+    if (page === startId || (page === OPTIONS && !startId)) closePause();
+    else show(parentPage());
   } else if (slot === 'menu') closePause();
 }
 
@@ -553,7 +598,7 @@ function build() {
   });
 }
 
-export function openPause(start: Page = 'main') {
+export function openPause(start?: Page) {
   if (!me.entered || open) return false;
   if (!dlg) build();
   if (!openModal({ onKey, onPad })) return false;
@@ -562,7 +607,8 @@ export function openPause(start: Page = 'main') {
   padCtx = 'foot';
   card.querySelector('.pause-title')!.textContent = getRoomId();
   dlg.showModal(); // after openModal: its setPadModal keeps gamepad.ts from pulling focus off the buttons
-  show(start);
+  startId = startPage()?.id ?? null;
+  show(start ?? startId ?? OPTIONS);
   return true;
 }
 
@@ -602,7 +648,7 @@ onMenuKey((e) => {
   if ((e.key !== 'help' && e.key !== 'back') || e.repeat || modalOpen() || !me.entered) return;
   if (e.key === 'back' && conversation.open) return; // Esc walks away from the talk; H opens this over it (and ends it)
   if (e.modified || e.typing) return;
-  if (openPause(e.key === 'help' ? 'controls' : 'main')) {
+  if (openPause(e.key === 'help' ? 'controls' : undefined)) {
     e.preventDefault();
     e.stop();
   }

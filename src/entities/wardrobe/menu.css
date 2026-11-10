@@ -1,0 +1,196 @@
+/* The You page of the pause view (./menu.ts): a side panel on a desktop, a bottom sheet on a phone held upright, a right-hand
+   column on a phone held sideways. Buddy shows in the room the panel leaves (./mirror.ts measures the card). */
+.pause-card[data-page='you'] .pause-sub {
+  display: none;
+}
+dialog.pause[data-page='you'] .pause-dim {
+  background: color-mix(in srgb, var(--glass) 35%, transparent);
+}
+dialog.pause[data-page='you'][open] {
+  place-items: center start;
+}
+.pause-card[data-page='you'] {
+  gap: 10px;
+}
+.pause-head > .pause-identity {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 6px;
+}
+.you {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.you-row {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: 5.6em 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  order: 1;
+}
+.you-label {
+  font: 400 19px/1 var(--font-display);
+  color: var(--ink-soft);
+}
+.pause .you-step {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font: 400 28px/1 var(--font-display);
+  box-shadow: none;
+  border-radius: 12px;
+}
+.pause .you-val {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 6px 8px;
+  box-shadow: none;
+  border-radius: 12px;
+  font: 700 15px/1.15 var(--font-body);
+  letter-spacing: 0;
+  text-align: center;
+}
+.you-name {
+  overflow-wrap: anywhere;
+}
+.you-pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+.you-pip {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.you-pip.on {
+  background: var(--ink);
+}
+.you-pip.worn {
+  width: 10px;
+  height: 10px;
+  background: var(--sun);
+  border: 2px solid var(--ink);
+}
+.you-pip.off {
+  border: 1.5px solid var(--ink-soft);
+}
+.you-pip.gap {
+  margin-left: 6px;
+}
+.you-colour {
+  grid-template-columns: 5.6em minmax(0, 1fr);
+}
+.you-colour .pause-swatches {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+/* Eight in a row: each is a 44 px tall squircle that gives up width before it gives up height. */
+.pause .you-colour .pause-swatch {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border-width: 4px;
+}
+.you-resume {
+  order: 0;
+  flex: 1 1 40%;
+}
+.you-options {
+  order: 2;
+  flex: 1 1 40%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.you-glyph {
+  --gu: 0.8px;
+  display: inline-flex;
+}
+
+/* A phone held upright: the page is a sheet at the foot, Resume and Options side by side in thumb reach. */
+@media (max-width: 600px) {
+  dialog.pause[data-page='you'][open] {
+    place-items: end center;
+  }
+  .pause-card[data-page='you'] {
+    width: 100%;
+    gap: 8px;
+  }
+  .you {
+    gap: 8px;
+  }
+  .you-resume {
+    order: 3;
+  }
+  .you-options {
+    order: 4;
+  }
+  .you-row {
+    grid-template-columns: 5.4em 44px minmax(0, 1fr) 44px;
+  }
+  .you-colour {
+    grid-template-columns: 5.4em minmax(0, 1fr);
+  }
+}
+
+/* A phone held sideways: a column on the right, under the thumb that tapped the corner button. */
+@media (max-height: 480px) and (orientation: landscape) {
+  dialog.pause[data-page='you'][open] {
+    place-items: center end;
+  }
+  .pause-card[data-page='you'] {
+    width: min(430px, 56vw);
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .pause-card[data-page='you'] .pause-title {
+    font-size: 22px;
+  }
+  .pause-head > .pause-identity {
+    margin-top: 2px;
+  }
+  .you {
+    gap: 6px;
+  }
+  .you-resume {
+    order: 3;
+  }
+  .you-options {
+    order: 4;
+  }
+  .you-row {
+    grid-template-columns: 5.4em 44px minmax(0, 1fr) 44px;
+    gap: 4px;
+  }
+  .you-colour {
+    grid-template-columns: 5.4em minmax(0, 1fr);
+  }
+  .pause .you-val {
+    gap: 3px;
+    padding: 3px 6px;
+  }
+  .pause .you-resume,
+  .pause .you-options {
+    min-height: 44px;
+    padding: 4px 12px;
+  }
+}

@@ -1000,6 +1000,8 @@ verbatim to `src/render/cosmetic-parts.ts`; Place's `gifts.ts` reads the same on
 - **Try on, keep, wear, take off and swap** behave as in Place (`src/entities/wardrobe/state.ts`). Fine Prices (T5)
   uses them; the curio shelf (C1) brings the rest.
 
+**Dressing from Pause (10 November).** Pause's You page (`src/entities/wardrobe/menu.ts`, [pause.md](pause.md)) steps each slot with `cycleSlot(slot, dir)`: what you own in catalog order with Nothing at the left end, wrapping both ways, applied at once. The curio shelf's Swap prompts are unchanged until step 2.
+
 Sync: ownership is Personal Local; what you wear is Owner presence `wardrobe` (`{ hat?, accessory?, outfit? }`, catalog
 ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwayScarf`. No `WORLD_NS` change.
 

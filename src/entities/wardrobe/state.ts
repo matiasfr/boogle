@@ -210,6 +210,21 @@ export function createWardrobe(catalog: WardrobeCatalog, storage: WardrobeStorag
     },
     /** Previews the very same cycle as swapSlot. `offVerb` is the shop's word for nothing (town-lines.ts, SHOP). */
     swapLabel: (slot: WornSlot, offVerb: string) => `Swap ${slot}: ${nextInSlot(slot)?.name ?? offVerb}`,
+    /** What's on you in this slot, a try-on included, or null. */
+    current: (slot: WornSlot): CosmeticId | null => on[slot] ?? null,
+    /** Whether you own anything you can wear (the pause view opens on its You page from then on). */
+    ownsWearable: () => WORN_SLOTS.some((slot) => owned(slot).length > 0),
+    /** The pause view's left and right: one step through what you own in this slot, nothing at the left end, wrapping
+     * both ways. Drops a shop try-on in the slot first. Owning nothing there leaves it as it is. */
+    cycleSlot(slot: WornSlot, dir: 1 | -1) {
+      untry();
+      const cycle = [null, ...owned(slot).map((g) => g.id)];
+      if (cycle.length < 2) return;
+      const here = Math.max(0, cycle.indexOf(on[slot] ?? null));
+      const next = cycle[(here + dir + cycle.length) % cycle.length] ?? null;
+      putOn(next, slot);
+      changed('swap', next);
+    },
     swapSlot(slot: WornSlot) {
       untry();
       const next = nextInSlot(slot);
