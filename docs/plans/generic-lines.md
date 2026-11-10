@@ -375,9 +375,12 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   Island's deck). The finale's pull-out rises with the decks (34 m to 27 m, from 28 m to 13 m), and the greybox's
   `bents` mark moved with bent 1. Checks: the stills from the pier head and the side, the finale's late frame from
   `crossing-finishing` (the last bents at the frame's foot, ring, shard and rockets above), `npm run checkpoints --
-  crossing-done` ok. `playthrough --from trains-on --to pier` stopped before the crossing, at Far Head's s 546
-  waypoint after Q6 laid ("B8 walked a supported track waypoint"), on step 2's double track about 200 m short of the
-  bents, which have no colliders; not rerun on main, so whether main stops there too is unverified.
+  crossing-done` ok. `playthrough --from trains-on --to pier` passes (no recovery). It first stopped after Q6 laid,
+  on main too: since step 2 the up track's bed stands about 0.36 m over the unbanked ground beside Far Head's
+  turnout (s 536–556), too high to walk up, and the B8 bot's straight line from the Q6 frame to s 546 crossed it. The
+  bot now walks the frame's side to s 557, past the merge, and steps up there. **Open for the level:** a player at
+  the Q6 frame meets the same 0.36 m edge (a jump gets over it); the terrain's rail bed banks only today's track
+  (`terrain.ts`, `strip(…, 4, 8)` along `LINES`), not the up track.
 - [ ] **4a. The trains (sim and server; v26, with 4b).** New `src/sim/railway-trains.ts`: `circuitCm`, `cycleTicks`,
   `headTicks`, `blockFree`, `trainServes`, `trainStepLine(w, line, tick)`. In `railway-train.ts` delete `trainWayOut`
   and LOOK's branches of `trainNextStop`; it takes `track` and a `reasons(stop, dir)` callback. In `railway-world.ts`:
