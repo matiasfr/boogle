@@ -710,14 +710,17 @@ with the longer boiler; `test/railway-works-layout.test.ts`) and the wagon stand
 landward end. The pier rack is a timber row of six (two high)
 along the halt deck's seaward edge, leaving the track side free to walk and board; it stands once the kiln has cast
 its first footing. At the pier head a jib swings each set footing out over the stakes and lowers it on a rope into
-its socket on the sea floor; each pair raises a trestle bent to deck height, 4 m over the sea, and the twelfth set
-gives the crossing's finale once the last bent stands. The last bent is 121 m from the pier head, so the whistle's
+its socket on the sea floor; each pair raises a trestle bent to its deck height, and the twelfth set
+gives the crossing's finale once the last bent stands. The bents are built for the double track ([generic-lines](../plans/generic-lines.md),
+step 3): each carries a 7.6 m deck whose middle is 2 m west of line 2's track, its two footings 3.3 m either side, and
+their decks bow down from the pier head at the 4% ruling grade, 24.3 m at the first bent to 20.3 m at the sixth
+(nothing is laid on them until Ring Island). The last bent is 121 m from the pier head, so the whistle's
 range is sized from that distance (about half its gain at the jib and on the halt); until 10 November it had the
 machine sounds' 45 m and was silent for everyone on the pier (in the owner's playtest he heard and saw no finale).
 The finale is a promise, not an ending (10 November: the owner thought the run had stalled; Ring Island is next, and
 the Split-rock plan's gut question is whether it made you want to set off): after the whistle, every player who sees
-the twelfth footing live gets a 7 s camera pull-out, from 28 m over the pier head's seaward end 20 m east of the line,
-low along the six bents to 13 m up just short of the last, looking out over their far end to Ring Island's broken
+the twelfth footing live gets a 7 s camera pull-out, from 34 m over the pier head's seaward end 20 m east of the line,
+along the six bents just over their decks to 27 m up just short of the last, looking out over their far end to Ring Island's broken
 ring the whole way. Ten rockets go up from the sea past the last bent, each leaning about 14 m out toward the island
 (a little bigger than Far Head's, as they're seen from further), and the fanfare plays with a banner,
 **Next stop: Ring Island** over *The crossing has begun* (UI copy, flagged for the owner). It plays to the end like
