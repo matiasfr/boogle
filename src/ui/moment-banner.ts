@@ -21,4 +21,5 @@ export function showMomentBanner(title: string, line = '', seconds = 3.4) {
   timer = window.setTimeout(() => banner?.classList.remove('on'), seconds * 1000);
 }
 /** The banner's text while it shows, else null (for inspect). */
-export const momentBanner = () => (banner?.classList.contains('on') ? banner.textContent : null);
+export const momentBanner = () =>
+  banner?.classList.contains('on') ? [...banner.children].map((c) => c.textContent).join(' — ') : null;
