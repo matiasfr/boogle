@@ -1,6 +1,9 @@
-> **Status: plan for review (2026-11-10).** Nothing built. Written on top of v25 (request stops,
+> **Status: plan, design-reviewed (2026-11-10).** Nothing built. Written on top of v25 (request stops,
 > `ship/matias-franco-15a4214`, shipping now); every line number and shape below is v25's. Recommended sequencing:
-> **generic lines and the second tracks ship as `WORLD_NS` v26; Ring Island build 1 follows as v27, on top.**
+> **generic lines and the second tracks ship as `WORLD_NS` v26; Ring Island build 1 follows as v27, on top.** The
+> designer's review (last section) is folded into the design and steps: the corrected waits and a wait bound
+> (findings 1 and 9), the serving train's lamp (2), the platform plaques and Far Head's chained lever (3, 4), the
+> plank crossings (5), the laying machine laying pairs (8) and the records to amend (7).
 
 # Generic lines: data-driven lines, double track, many trains
 
@@ -9,7 +12,7 @@ two tracks, one per direction, trains turn back at the ends, and a spacing rule 
 get their second tracks in the same `WORLD_NS` bump, and line 2 gets a second train. Serves DESIGN.md's core loop ("the
 rail builds the world": every later area becomes one more catalog row, built from line 1 and line 2's components) and
 **7. Telegraph everything** / **11. Show, don't tell** (a train you can see coming on your side, a second one already
-on its way). It bends nothing; one decision's wording (two handles a lever) is superseded, see open question 3.
+on its way). It bends nothing; one decision's wording (two handles a lever) is superseded, see open question 2.
 
 **Read for this.** [decisions](../decisions.md#decided), 10 November: "the railway is double track", "block out the
 whole map", Ring Island, "trains stop on request", the late game's five answers (two-handled levers);
@@ -85,7 +88,7 @@ export const RAIL_HALTS: readonly (RailHalt & { line: number; stop: number })[];
   (Ring Island build 2) changes line 2's `speed` only.
 - **Future lines.** `src/sickle/world-lines.ts` keeps the eight future lines as client data. Each area's build moves
   its row into `RAIL_LINES` in its own bump (Ring Island v27 appends the `ring` halts to line 2's row, which is what
-  `extends: 1` means). Not installing them now is open question 2.
+  `extends: 1` means). Not installing them now is a logged New call (design review, call 29).
 
 ### 2. Two tracks per line, one direction each
 
@@ -153,13 +156,25 @@ Two rules, both checked whenever a train plans a leg (leaving a stop, or `replan
   open halt, so line 2's moves from Far Head's crossover to the pier's stub when Q6 opens the pier.
 - **The headway hold (spreading, so trains don't bunch).** A train standing at an end leaves no earlier than
   `left + headTicks`, where `left` is that end's `Line.left0/left1` and
-  `headTicks = floor(cycleTicks · TRAIN.headPct / (100 · trains))`, `cycleTicks` the non-stop round trip from the
-  catalog (two `trainLegTicks` end to end plus two `dwellTicks`) and `TRAIN.headPct = 75`. A line with one train has no
-  hold. Line 2: about 92 s a cycle to the pier, so a train leaves an end at most every 35 s (before the pier: 72 s and
-  27 s).
+  `headTicks = floor(cycleTicks · headPct / (100 · trains))`, `cycleTicks` the non-stop round trip from the catalog
+  (two `trainLegTicks` end to end plus two `dwellTicks`) and `headPct` a room tunable, `railTrainHeadPct`, default 75
+  (appended to `src/tunables/catalog.ts` and `src/sim/tune.ts` as v25's `railFoot*` were; owner call "Anything playtests
+  could tune is tunable"). A line with one train has no hold, and the train carrying the footing wagon is never held
+  while the pier still owes footings (design review, finding 9). Line 2: a 92.8 s cycle to the pier, so two trains
+  leave an end no closer than about 35 s apart (before the pier: 72 s and 27 s); evenly spread they pass each platform
+  each way every 46 s.
 
-A train held by any of these stands at a stop with its doors open (anyone can board), shows the hold on its lamp
-(view), and leaves the tick the block clears. No player action affects spacing.
+A train held by any of these stands at a stop with its doors open (anyone can board), shows the hold on its lamp,
+the halt's departure board shows the held departure (view), and it leaves the tick the block clears. No player action
+affects spacing.
+
+**The wait bound.** Spacing decides how long a player waits for a train their way, and that is what the train count
+is sized by (design review, finding 1): no wait for a train your way over about a minute. Two trains on line 2 give
+about 23 s on average and about 58 s at worst (bunched to the hold limit), plus about 11 s for each request stop the
+train ahead makes; v25's early turn-back gave about 14–23 s typical and about 50 s worst. Step 4a's random-ask test
+measures the worst wait per (halt, direction) and fails over 60 s on line 2. Ring Island's extension takes line 2's
+cycle to roughly 170 s, where two trains would leave waits up to about 100 s, so v27 sets line 2's `trains` from this
+bound (probably 3; open question 5).
 
 ### 5. Turnbacks: crossovers and loops at line ends
 
@@ -198,7 +213,15 @@ Two kinds of ask, kept apart so neither can be stolen:
   `(stop, dir) => reqHas(line.req, …) && trainServes(…) === slot`), so a train already too close runs through and the
   one behind stops. Recomputed at every decision, so if the first train can't brake by the time the ask lands, the
   next one takes it. Served (the train stands there, leaving that way): the digit clears from `Line.req`. A train
-  already standing at that platform, leaving that way, waits a full dwell from now (v25's rule, unchanged).
+  already standing at that platform, leaving that way, waits a full dwell from now (v25's rule, unchanged). **The
+  serving train shows it** (design review, finding 2): the adapter computes `trainServes` from the mirrored rows and
+  lights v25's amber stop lamp on that train as soon as it is named, for lever asks as well as cord asks, so a train
+  that runs through is visibly dark and the lit one behind it is yours. The assignment only moves back (when a train
+  passes the point it could brake for), so the lamp doesn't flicker between trains.
+- **No ask for a platform no train will stand at.** v25's `reqIndex` maps any ask at an end halt to its way out. With
+  a platform for each direction that would let Far Head's up lever (before the pier opens, when trains cross over
+  short of it) call a down train to the other platform, so `rail.call` refuses a lever ask whose `dir` is an open
+  end's way in, and the view chains that lever with its plaque until the pier opens (finding 4).
 - **A rider's ask** (`rail.call { id, dir, train }`, aboard): the new `train` field names the slot. The server checks
   the actor is aboard that train (`nearTrain(w, slot, tick, actor)`, v25's rule per train), that the halt is on its
   line and that `dir` is its direction; the digit goes in that `Train.req`. Only that train serves it, so the train
@@ -217,8 +240,9 @@ Village after `Shed.ready` and stays on it (`wagon` per row already). Line 1 car
 ### Controls
 
 No new action. The halt lever keeps its action and prompt (`request-lever.ts`); each platform's lever has one handle
-for its own direction (open question 3). The aboard cord keeps its prompt and adds `train` to what it sends. No pad
-slot, key or guide row changes.
+for its own direction (open question 2), keeping v25's enamel plaque naming the end it goes to (**Village**, **Pier**,
+**Far Head**; draft words, the owner's to change). The aboard cord keeps its prompt and adds `train` to what it sends.
+No pad slot, key or guide row changes.
 
 ## Migrating lines 1 and 2
 
@@ -226,14 +250,15 @@ All of it is one `WORLD_NS` bump, v26 (step 4); steps 2 and 3 before it are view
 
 - **The second track bed.** 4 m left of today's track, from merge to merge: line 1 s 36–182 m, line 2 s 34–556 m.
   Track 0 (up) runs on it. The laying machine lays a pair per panel (decision: "the laying effort stays the same"), so
-  every bill and panel count is unchanged; only the view draws two rails a panel. Line 1's ridge trestle (s 50–114) and
-  line 2's sea trestle widen to the 7.6 m formation.
+  every bill and panel count is unchanged; the gantry visibly sets both tracks of each panel (owner call "Machines
+  show their work physically"; design review, finding 8), a view change with no count behind it. Line 1's ridge
+  trestle (s 50–114) and line 2's sea trestle widen to the 7.6 m formation.
 - **The turntable (both lines, s 0–4 m).** Untouched. Each line's two tracks merge at a stub turnout past its Village
   platform (line 1 s 36, line 2 s 34); from there one terminal track runs to the platform and on to the table, as
   today. The table keeps one track, as the blockout found it must.
 - **The Village platform (line 1, s 6–32, on the left).** Untouched, for the same reason: the second track starts past
   it at the merge, so the Q1 frame's side never has to give room. Both Village halts stay one platform each (terminal
-  tracks), the stub's one bend of "stations get two platforms" (open question 4).
+  tracks), the stubs bend "stations get two platforms" at the ends only (a logged New call, design review, call 20).
 - **The pier rack (line 2, s 732–734, left).** Untouched in v26: line 2's far tracks merge at s 556, at the pier's
   root on Far Head, so the pier (556–742) stays one terminal track and the rack, halt, frame and track layer stand
   where they are. Ring Island build 1 (v27), which continues line 2 double over the bents, widens the pier and moves
@@ -265,7 +290,8 @@ in parallel with this plan; only its R3 and R5 wait for v26.
 The risk: **two resets instead of one** (the 10 November decision allowed sharing a bump "if they are ready
 together"). Each costs every room its progress; the `crossing-done` and `trains-on` jump-ins keep it to a click, and
 v26 needs re-proving only the train beats. If v26 slips, Ring Island's R3 slips with it; the fallback is to bundle the
-two in one branch and one bump, at the price of one very large review.
+two in one branch and one bump, at the price of one very large review. v27 also sets line 2's train count from the
+wait bound (probably a third train) and turns the island halt's end into the first loop.
 
 ## Mixed builds, room safety and lockstep
 
@@ -302,8 +328,9 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
 - [ ] **2. The double formation, drawn (view only, no bump).** In the line views (`src/proto/place/rail.ts`'s deck and
   rails, `line2-view.ts`'s panels, the line 1 view) draw the up track 4 m left from merge to merge, the stub turnouts
   at line 1 s 36 and 182 and line 2 s 34 and 556, Far Head's crossover at s 490–512, and the 7.6 m deck on both
-  trestles; a laid panel shows two tracks. Add the up platforms at Quarry and Far Head (Level findings), with no lever
-  yet. Trains stay on today's track. Remove lines 1 and 2's survey beds from the greybox and regenerate
+  trestles; the laying gantry sets both tracks of each panel as it goes. Add the up platforms at Quarry and Far Head
+  (Level findings), with no lever yet, and a plank crossing over both tracks at each platform pair's halt end (the
+  walk from today's platform to the up one). Trains stay on today's track. Remove lines 1 and 2's survey beds from the greybox and regenerate
   `world-blockout` (`LIVE_SECOND_TRACK` becomes the built bed: the generator reads it from `RAIL_LINES`). Checks:
   `npm run level-check` (dev/level/timber-track.ts must accept the new platforms against both tracks; extend it to
   check track 0's rails), `npm run perf` before and after (doubled rails and sleepers), looks at phone width:
@@ -322,7 +349,8 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   `railwayCheck` counts and the new invariants (below). In `railway-systems.ts`: `boilerFit` places trains by circuit,
   `rail.call` splits lever and rider asks, `trainStep` loops `RAIL_TRAINS`, kit and wagon sums over line 2's trains;
   `railway-line2.ts` the same. Catalog: line 2 `trains: 2`; halts' up and down platforms and `end`s from Level
-  findings. `railway-server.ts`: `rail.call` validates `train` and the platform for `dir`; `nearTrain` per slot.
+  findings. Tunable `railTrainHeadPct` (default 75). `railway-server.ts`: `rail.call` validates `train` and the
+  platform for `dir`, and refuses a lever ask for an open end's way in; `nearTrain` per slot.
   `railway-predict.ts`: the kit sum. `namespace.ts`: `WORLD_NS = 'v26'` with the dated line. Seeds
   (`railway-seeds.ts`, `railway-seed-route.ts`, `railway-seed-works.ts`) rebuilt for three trains.
   **Invariants** (in `validateRailway`): every train's `track` is 0 or 1; trains of a line are at least `sepCm` apart
@@ -333,19 +361,25 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   (seeded `mulberry32`); a lever ask goes to the next train that can brake and the one too close runs through; a
   rider's ask is never served by the train ahead; a train held at a signal leaves the tick the block clears and a held
   leg lengthens without a pose jump (`trainAlong` continuous across the replan); the headway hold spaces two trains
-  that started together to within one dwell of half a cycle after three laps; opening the pier mid-run moves no
-  train's pose; the end block holds one train; round-trip through `railwayView` and the replicated components
-  (`test/railway-replicate.test.ts`). Server: `server/test/railway-line-host.test.ts` gains a refused malformed
-  `train` and a rider's ask from the wrong train. `npm run loop -- run` (supply by train changed); `npm run check`;
-  `npm run check:full` (server and `src/world`).
+  that started together to within one dwell of half a cycle after three laps; the wagon train is never held while the
+  pier owes footings; opening the pier mid-run moves no train's pose; the end block holds one train; the same random
+  run reports the **worst wait for a train each way at every halt** and fails over 600 ticks on line 2; round-trip
+  through `railwayView` and the replicated components (`test/railway-replicate.test.ts`). Server:
+  `server/test/railway-line-host.test.ts` gains a refused malformed `train`, a rider's ask from the wrong train and
+  Far Head's up lever refused before the pier opens. `npm run loop -- run` (supply by train changed; report the
+  footing laps' time against the 10 November pair's 1:45); `npm run check`; `npm run check:full` (server and
+  `src/world`).
 - [ ] **4b. The trains (client and bot; v26, with 4a).** `src/adapters/railway.ts`: `railTrainsOf`, the mirrored
   `lines`, every `line2.train[k]` read moved to per-train reads. `train-view.ts`: one train mesh per `RAIL_TRAINS`
   slot, posed on its line at `trainAlong`, offset 4 m left on track 0, easing across each turnout and crossover over
-  its 20 m (Local); the hold lamp on a held train; the cord prompt and `rail.call` with `train`. `halts-view.ts`,
-  `halt-map.ts`, `request-lever.ts`: a lever per platform, one handle each, its lamp per `(halt, dir)` from `Line.req`;
-  the island map draws all three trains. `footing-view.ts`, `roundhouse-view.ts`, `hook-shot.ts`, `glide.ts`,
+  its 20 m (Local); the amber stop lamp on the train `trainServes` names (and on a train whose rider asked), the hold
+  lamp on a held train; the cord prompt and `rail.call` with `train`. `halts-view.ts`, `halt-map.ts`,
+  `request-lever.ts`: a lever per platform, one handle each, plaqued with its end, its lamp per `(halt, dir)` from
+  `Line.req`; Far Head's up lever chained until the pier opens; the departure board shows a held departure; the island
+  map draws all three trains. `footing-view.ts`, `roundhouse-view.ts`, `hook-shot.ts`, `glide.ts`,
   `tools.ts`, `railway-marks.ts`: the per-train reads. Bot (`dev/look/bots/railway.ts`, `railway-works.ts`) and loop
-  graph (`dev/loop/graph.ts`): board and request against the platform for the direction it wants. Peer test
+  graph (`dev/loop/graph.ts`): board and request against the platform for the direction it wants, crossing at the
+  plank crossing. Peer test
   (`dev/peer-test/ws-railway.ts`): two line-2 trains mirrored on three tabs, a lever ask served by the nearer train
   only. Checks: `npm run test:net`; `npm run checkpoints`; `npm run playthrough -- --from trains-on --to pier`, then
   `--players 2 --to Q6` (hashes agree); looks: `--players 2 --rail-seed trains-on` with one player at Quarry's up
@@ -353,9 +387,13 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   `--eval dev/look/evals/railway-request-stop.ts` updated for two trains; a still of the two trains passing on the sea
   trestle. Ship 4a + 4b together with `npm run ship`, not mid-session.
 - [ ] **5. Docs.** The trains section of `docs/game-design/place.md` (two trains on line 2, both tracks, holds, who
-  serves a request, no early turn-back), the atlas railway story (`docs/atlas/stories/railway.json`: a lever ask
-  through `Line.req` to the serving train), `world-blockout.md`'s "Double track" ("today's lines stay single track"
-  becomes history) and this plan's status. Every call the designer logged stays in `docs/agent-calls.md`.
+  serves a request and its lamp, no early turn-back), the atlas railway story (`docs/atlas/stories/railway.json`: a
+  lever ask through `Line.req` to the serving train), `world-blockout.md`'s "Double track" ("today's lines stay single
+  track" becomes history; its "every terminus turns a train back without reversing" and 35 m scissors describe future
+  lines, not lines 1 and 2's stubs) and this plan's status. Dated amendment notes, not rewrites (design review,
+  finding 7), once the owner or orchestrator confirms open questions 2 and 4: the Ring Island decision's build numbers
+  (v26/v27 become v27/v28), ruling 11's one-track-first stage (both tracks are laid together on the new bents) and the
+  late game's answer 2 (two handles). Every call the designer logged stays in `docs/agent-calls.md`.
 
 ## What players see
 
@@ -364,14 +402,17 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
 - **A second train on line 2.** It wakes with the first when the boiler is fitted, at Far Head while the first is at
   the Village, and they pass each other mid-line on the sea trestle, each on its own track. A train that comes up
   behind another waits at the platform or at the signal before the end with its lamp lit, and goes the moment the line
-  clears. At a halt the wait for a train your way is at most about 35 s on line 2, about half of one train's.
+  clears. At a halt on line 2 a train your way comes every 46 s or so when the two are spread (about 23 s on
+  average, about a minute at worst when they bunch), against about 93 s with one train and no turn-back.
 - **Trains turn back at the ends instead of shuttling on one track:** they run into the terminal track at the Village
   and the pier, stand, and leave on the other track; at Far Head before the pier opens they cross over in front of
   you. They never turn round mid-line any more. **No train turns on a loop in v26**: none of lines 1 and 2's ends has
   the room (Level findings). The first loop is Ring Island's halt in v27, where the train swings round the island's
   shore and comes back facing home.
-- **Your stop is your stop.** Pull the lever and the next train your way that can still stop for you does; ring the
-  cord aboard and your own train stops, not the one ahead.
+- **Your stop is your stop.** Pull the lever on the platform plaqued with where you're going, and the next train
+  your way that can still stop for you lights its amber lamp and stops; a train too close to stop runs through dark.
+  Ring the cord aboard and your own train stops, not the one ahead. To ride the other way, cross on the planks at the
+  platform end. Far Head's up lever hangs chained, plaqued "Pier", until the pier is laid.
 
 ## Level findings
 
@@ -406,9 +447,12 @@ the same heights, and add no ledge or shortcut (the up platforms are at deck hei
   one leg is a finding (Ring Island's grind rule: "no train wait longer than one leg").
 - **Riders standing on a held train** see it stop between halts only at a signal before an end; the brake is the
   normal 3.5 cm/tick², gentler than v25's replans, which matters while "two came off moving trains" is open (P1).
-- **Frames beside the up track** (Level findings): players feed Q6's frame from the train-fed rack while trains run,
-  so they stand 3.5 m from a running track; a train is solid and can bump them (slapstick, DESIGN 10, but not a hazard
-  the frame should invite). Step 2's look decides whether Q6's frame steps out.
+- **Frames beside the up track** (Level findings): Q2–Q6's frames stand 3.5 m from it. No train runs there while
+  anyone feeds one (Q2–Q5 finish before the boiler fit, and no train passes Far Head's crossover on the up track until
+  Q6 opens the pier; design review, finding 6), so this is clearance, not traffic: step 2's look checks each frame's
+  near face, and one that is too wide steps out 1 m.
+- **Crossing two running tracks** to reach the up platform: the plank crossing gives the walk a place; being bumped
+  by a train there is slapstick (DESIGN 10), and the bot proves the crossing in 4b.
 - **Performance:** doubled rails, sleepers and decks on both lines and a third train mesh; `npm run perf` in steps 2
   and 4b, phone tier included. The trains add no tick work worth measuring (three rows, a few comparisons each).
 - **Mixed builds:** none in development; a v25 tab after v26 ships gets the update notice.
@@ -417,18 +461,169 @@ the same heights, and add no ledge or shortcut (the up platforms are at deck hei
 
 ## Open questions
 
-1. **Drop the early turn-back (LOOK)?** Recommended: **yes**. With a track a direction and turnouts only at the ends a
-   train can't turn mid-line; two trains on line 2 halve the wait instead, and line 1's two halts are both ends.
-2. **Install the future lines' rows now, parked and unlaid (the blockout's point 8), or each with its area?**
-   Recommended: **each with its area.** Every area bumps `WORLD_NS` for its own jobs anyway, the future lines' data
-   is still moving (the 10 November rulings changed three of them), and dormant rows cost replication and invariants
-   for nothing.
-3. **One lever per platform, one handle each, instead of one two-handled lever at a middle halt** (supersedes the
-   late game's answer 2, 10 November)? Recommended: **yes**: with a platform for each direction 10 m apart across
-   both tracks, a handle for the other direction would send you across the tracks to catch the train you called.
-4. **Terminal stubs at the Village and the pier, one platform each, rather than two platforms and a crossover at every
-   end?** Recommended: **yes for v26**: it leaves the turntable, the Village platform and the pier rack exactly where
-   they are; the pier gets its second platform when Ring Island makes it a middle halt.
-5. **When does line 2's second train appear?** Recommended: **with the first, when the boiler is fitted**, so the
-   wait halves from the moment trains run; the alternative is a reward when Q6 opens the pier (the line doubles its
-   length and its service), at the cost of a second gate and a parked train to explain.
+The designer's five owner questions, which cover this plan's own; every other New call (terminal stubs, no loop until
+v27, future rows with their areas) is logged in [agent-calls](../agent-calls.md) and builds on its recommendation.
+
+1. **Drop the early turn-back (LOOK) now that each track runs one way?** Recommended: **yes**. Two trains give about
+   a 23 s average wait (about 58 s worst) against LOOK's 14–23 s (about 50 s worst); a mid-line turn would need
+   crossovers and two-way signalling everywhere.
+2. **One lever per platform, for that platform's direction, instead of the two-handled lever (the late game's answer
+   2, 10 November)?** Recommended: **yes**, each plaqued with the end it goes to: it still means "the next train my
+   way", without sending you across both tracks to catch it.
+3. **Line 2's second train: from the boiler fit, with the first?** Recommended: **yes**; they pass on the sea trestle
+   about 20 s after the wake. The alternative, a reward when Q6 opens the pier, adds a gate and a parked train to
+   explain.
+4. **Ship double track and the trains as v26 on their own, with Ring Island build 1 as v27?** Recommended: **yes**:
+   two resets instead of one, but Ring Island is written once, on two tracks, and each reset stays reviewable.
+5. **Size each line's trains by a wait target, no wait for a train your way over about a minute?** Recommended:
+   **yes**, which keeps line 2 at two trains in v26 and gives it a third when Ring Island extends it in v27.
+
+## Design review (designer, 2026-11-10)
+
+**Read:** DESIGN.md; owner-calls; decisions.md's index and the 10 November entries (double track, block out the whole
+map, Ring Island, the late game's five answers, stop on request) and 9 November "Home gets one coherent station";
+direction.md; playtests.md's 9 and 10 November entries; find-the-fun step 2; the game-direction skill; world-blockout
+("The rail network", "Double track", "What a generic data-driven line needs from the sim"); ring-island ("Shape",
+build 1, the grind budget); agent-calls' 10 November rulings; v25's `railway-train.ts`, `railway-systems.ts`
+(`boilerFit`, `serviceOf`, `replan`, `trainStep`) and works-late-game step 1, from the v25 copies; research
+rail-network-depth, train-riding, train-ride-feel (top blocks), route-contract and progression-flow-layout (the rules
+as lenses). **Ported from Place:** nothing gameplay-side (the gauge and deck drawing in `src/proto/place/rail.ts` are a
+view), so no port check applies.
+
+**Couldn't see or run** (this run's permissions): no stills (the Village merges, Quarry's two platforms, Far Head's
+crossover, the widened trestles and pier root are unseen), no `npm run loop`, `node dev/playtest/cli.ts`,
+`npm run level-check` or bot run. The level numbers below are the plan's own measurements and my arithmetic from v25's
+`TRAIN` and stop table (3.5 cm/tick², 200 cm/tick, 5 s dwell; stops 17, 174, 524 and 730 m). Every reach and order
+claim stays unproven until step 2's level-check and 4a's `npm run loop -- run` run.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Every corridor double track, 4 m centres, one direction a track; lines 1 and 2 widened in one bump | Decided | decisions.md 2026-11-10, "the railway is double track" |
+| 2 | The laying machine lays a pair a panel; every bill and panel count unchanged | Decided | same entry ("the laying effort stays the same") |
+| 3 | Trains stop only on request (lever at the halt, cord aboard); cargo and wagon stops need none | Decided | decisions.md 2026-11-10, "trains stop on request" |
+| 4 | The turntable keeps one track; line trains never turn on it | Decided | decisions.md 9 November, "Home gets one coherent station" |
+| 5 | Junctions are walk-between platforms; no through-running, shared track or transfer rule | Decided | blockout ruling 6 (orchestrator, 10 November, agent-calls `open`) |
+| 6 | No player-operated signals, switches or dispatch; spacing is automatic | Decided | DESIGN core loop ("no routing or quotas"); rail-network-depth rec 2 agrees |
+| 7 | Cruise stays 20 m/s, 3.5 cm/tick², per line in the catalog | Decided | train-ride-feel; Ring Island's longer boiler (decisions 10 November) is the first change |
+| 8 | The six bents widen to the 7.6 m deck and redraw to the 4% bow before v26 | Decided | rulings 2 and 11 (orchestrator, 10 November). **Supersedes ruling 11's "one track laid, the second bed empty until line 2's widening bump"**: log it (finding 7) |
+| 9 | No v26 ship while the owner is mid-session | Decided | owner-calls, "Nothing waits on a world bump" |
+| 10 | Line 1 keeps one train; line 2 runs two | New (line 2) / Default (line 1) | Recommended. Line 1 is 193 m, both halts ends, 41 s a cycle: one train is enough. Line 2: owner question 3 |
+| 11 | Line 2's second train wakes with the first at the boiler fit, spread round the circuit (Village up, Far Head down) | New | Recommended: the wait halves from the first ride, and the two passing on the sea trestle about 20 s after the wake is the "life happening" moment of round 4. A pier-opening reward adds a gate nobody asked for |
+| 12 | Block rule: `sepCm` 2740 (train plus 20 m), checked at planning; a hold ends at a halt and lengthens when the leader moves on | Default | Engineering-safe; players see it only as an occasional unrequested stop at a middle halt with the hold lamp. Tunable |
+| 13 | End blocks: one train in each end's turnout-to-stop block; the follower waits at a signal 10 m outside the merge, doors open | Default | Every signal position lands on land (line 2 s 44 and 480, after Q6 546; line 1 never needs one): nobody stepping off is stranded |
+| 14 | Headway hold at the ends: `headPct` 75 of an even split (line 2: 35 s, 27 s before the pier); none with one train | Default | Spreads trains without a timetable. Make `headPct` a room tunable (owner call "Anything playtests could tune is tunable") |
+| 15 | A held train stands doors open, the hold shown on its lamp | Default | Telegraph (7). Add the held departure to the halt's departure board (owner call "Signs in the world"): Default, mine |
+| 16 | A lever ask is served by the nearest train that way that can still brake; a train too close runs through | Default | Matches v25's "too late" rule. **The serving train must light its stop lamp** (finding 2) |
+| 17 | A rider's ask belongs to their own train only | Default | Fixes "the train ahead takes your stop"; cheap |
+| 18 | Drop v25's early turn-back (LOOK); a train always runs end to end on its track | New | Recommended, with the corrected waits (finding 1). Owner question 1 |
+| 19 | One lever per platform, one handle, for that platform's direction | New | Recommended: the platform is the direction, which keeps the owner's two-handle intent ("the next train heading my way") without sending you across the tracks. Supersedes his answer 2 of 10 November: owner question 2 |
+| 20 | Terminal stubs, one platform, at the Village (both lines), Camp and the pier; no second platform or crossover there | New | Recommended. Bends "stations get two platforms" at the ends only; "turn back instead of reversing" is met in the decision's sense (no shuttling on one line), since a crossover terminus also reverses. One train per end block makes one platform enough |
+| 21 | Far Head crossover at s 490–512 while it is the end; a middle halt with two platforms once the pier opens | Default | The only ground that fits |
+| 22 | Left-hand running: the new track 4 m left, today's becomes down; up platforms at Quarry s 166–186 and Far Head 513–535, lat −5.7 to −8.2 | Default | The blockout's side with fewer clashes. Today's platforms (rack and town side at the Quarry) serve the homeward carry, so the footing ride home never crosses a track |
+| 23 | Merges at line 1 s 36 and 182, line 2 s 34 and 556 | Default | Leaves the Village platform, Q1 frame and pier rack untouched |
+| 24 | No loop on lines 1 or 2; the first is Ring Island's halt (v27), replacing the brief's "reverse pull-out" | New | Recommended. Measured: no end has room except Far Head, which stops being an end. Ring Island's brief changes; v27's plan owns that |
+| 25 | Q6's kit loads onto whichever line-2 train stands at the Village first; the wagon couples to the first after `Shed.ready` and stays | Default | Keeps v25's service rules; a split kit only speeds Q6 |
+| 26 | Frames found too close to the up track step out 1 m, decided at step 2's look | Default | Moot for trains in practice (finding 6) |
+| 27 | The island map draws every train | Default | Telegraph; costs nothing |
+| 28 | Sequencing: v26 alone, Ring Island build 1 renumbered v27 (build 2 v28) | New | Recommended. Ring Island R3 written against a one-train line is rewritten weeks later otherwise; "nothing waits on a world bump" makes two resets cheap. Renumbers the Ring Island decision: owner question 4 |
+| 29 | Future lines' rows arrive with their areas, not installed parked now | New | Recommended. Departs the blockout's point 8 (a recommendation, not a decision): every area bumps anyway since 10 November |
+| 30 | Each platform's lever keeps v25's enamel plaque naming the end it goes to (**Village**, **Pier**, **Far Head**) | Default, mine | Rule 1 (finding 3) |
+| 31 | Far Head's up-platform lever is present but chained, its plaque "Pier", until Q6 opens the pier | Default, mine | Rule 1/3 (finding 4); doubles as the pier's telegraph |
+| 32 | A plank crossing at the halt end of the Quarry and Far Head platforms | Default, mine | Finding 5 |
+| 33 | The laying machine visibly lays both rails of each panel | Default, mine | Owner call "Machines show their work physically" (finding 8) |
+| 34 | 4a's random-ask test also reports the worst wait per (halt, direction), bounded at about 60 s on line 2 | Default, mine | Finding 1; the number v27 sizes line 2's trains from |
+
+**Counts:** 9 Decided, 18 Default (call 10's line 1 half and five rows this review adds, 30–34), 8 New (call 10's
+line 2 half among them).
+
+### Findings
+
+1. **The wait numbers are wrong, and that matters for v27 (change before building).** "What players see" says the
+   wait for a train your way is "at most about 35 s on line 2, about half of one train's". 35 s is the *minimum* gap
+   the hold enforces at the ends, not a maximum. Line 2's cycle to the pier is 92.8 s (legs 13.6 + 23.2 + 16.0 s each
+   way, 41.4 s end to end non-stop, two 5 s dwells), so two evenly spread trains pass a platform each way every
+   ~46 s (average wait ~23 s); bunched to the hold limit, the gaps are 35 s and **58 s**, plus about 11 s per request
+   stop the leader makes. v25's LOOK, for comparison, gave about 14–23 s typical and about 50 s worst (just missed
+   outbound, turn at Far Head, back). So v26 is better on average and about level at worst, which still justifies
+   dropping LOOK. But 58 s breaks Ring Island's grind budget ("no train wait longer than one leg", ring-island
+   "Risks"; the longest line 2 leg is 23 s), and Ring Island's 0.76 km extension takes the cycle to roughly 170 s,
+   where two trains give up to ~100 s. **Fix the text, add the worst-wait measurement to 4a's 2,000-tick test
+   (call 34), and state in the plan that v27 sets line 2's `trains` from that bound** (likely 3). The idle evidence
+   agrees this is the wait players feel: 21 s and 10 s idles at the quarry halt on 10 November, all waiting for
+   line 2 (works-late-game, beat 3). Train-riding rec 6 ("easy to catch again") is the research behind the bound.
+2. **The lever's serving train needs a visible sign (change before building).** "Your stop is your stop" is true in
+   the sim, but on the platform a first train running through at 20 m/s while you hold a lit lever is exactly the
+   owner's "it didn't stop for me" (10 November). The assignment is stable once made (a train that can brake keeps
+   braking; one that can't passes and goes to the back of the circuit), so light v25's amber stop lamp on the serving
+   train as soon as `trainServes` names it, for lever asks as well as cord asks. Then the train that runs through is
+   visibly dark and the one behind is lit. Principle 7.
+3. **Which platform goes which way must be readable (rule 1).** The plan drops the handle plaques with the second
+   handle and adds nothing in their place. A player at the Quarry needs to know the far platform goes to the pier
+   without trying it. Keep v25's enamel plaque on each platform's lever naming its end (call 30), and the engine's
+   destination plate.
+4. **Far Head's up platform is dead until Q6 (rule 1, rule 3).** Before the pier opens trains cross over at
+   s 490–512, short of both Far Head platforms, so nothing ever runs past the new up platform. A player who pulls a
+   live-looking lever there waits for a train that never comes. Chain its lever with a "Pier" plaque until Q6
+   (call 31), and have the server refuse it until then (the plan's "the platform for `dir`" check should cover it;
+   say so in 4a's server tests).
+5. **Crossing between platforms.** The Quarry's up platform (centre about (1081.0, 31.3)) is about 10 m across both
+   tracks from today's (1081.3, 41.1) and the rack (1088, 50). The homeward carry never crosses, but anyone riding out
+   does, on foot over two running tracks at 20 m/s each way. Slapstick is fine (DESIGN 10), being hit while walking to
+   the only way out is not. A plank crossing at the platforms' halt end (call 32) gives the walk a place; the bot
+   should use it.
+6. **The Q6-frame risk is smaller than stated.** No train runs on the up track past s 512 until the pier opens, which
+   is Q6's completion, so nobody is feeding Q6's frame (s 544.5, 3.5 m from the up track) while a train passes it.
+   Q2–Q5 are finished before the boiler fit. Keep the step 2 look for clearance, but the hazard in "Risks" can go.
+7. **Decision text to update with the plan:** the Ring Island entry's "build 1 … v26 … build 2 (v27)" becomes v27
+   and v28; ruling 11's single-laid stage is superseded by both tracks being laid together on the new bents;
+   world-blockout's "Every terminus turns a train back without reversing it" and its scissors crossovers 35 m inside
+   the terminus describe future lines, not lines 1 and 2's stubs; and the late game's answer 2 (two handles) if the
+   owner takes question 2. None of this blocks the build; step 5 should list them.
+8. **The laying machine must show both rails.** "Only the view draws two rails a panel" risks the second rail simply
+   appearing. Owner call "Machines show their work physically": the gantry lays the pair (or two rails in sequence),
+   and the magazine empties by two. Any future line's laying uses this, so it is step 2's job, not a later polish.
+9. **The wagon service may slow slightly.** With `wagonCap` 6, the twelve pier footings take two laps, each through
+   the Village end, where the second lap can now meet a headway hold of up to 35 s. The 10 November pair did the sets
+   in 1:45; 4a's `npm run loop -- run` and the bot should report it, and a hold on a wagon-carrying train while the
+   pier still owes footings is a reasonable exception to the hold if it costs more than one leg.
+
+**Flow, beat by beat** (the stretch this plan changes most, the footing carry and the wagon; 5.6 m/s walk, 3.0 m/s
+loaded):
+
+| # | Leg | Positions (world m) | Time | Rule or lens |
+| --- | --- | --- | --- | --- |
+| 1 | Works rack → Quarry down platform | (1088, 50) → (1081, 41), 11 m | ~4 s loaded | Rule 1 needs the "Village" plaque (finding 3); no track crossed |
+| 2 | Wait for a down train | | ~23 s average, ≤ 58 s (v25 LOOK ~14–23, ≤ ~50) | Train-riding rec 6; finding 1 |
+| 3 | Ride Quarry → Village line 2 | 157 m of track | 13.6 s | One main line |
+| 4 | Village halt → stall sockets | (928, 26) → (913, 19), 16 m | ~5.5 s loaded | Key in sight of lock (built) |
+| 5 | Wagon: Village → Quarry → Far Head → pier, two laps | 713 m each way | ~105 s a lap plus a possible ≤ 35 s hold | Finding 9 |
+| 6 | Pier rack → sockets, now 2 m west and 0.8 m further out | a few metres | unchanged within a second | Meeting place: the pier head |
+
+The three rules hold once findings 3 and 4 are taken: the next goal is findable, no gate changes meaning (nothing is
+carried less; the train still only skips distance), and nobody is stranded (every signal is on land, the stubs and the
+crossover are two-way, gates are unchanged solo). Lenses: one main line per line and the Village as the meeting
+place both hold. **Reach:** the up track and platforms sit at deck height beside today's, on flat ground; the wider
+trestle decks give a walking strip beside the track over the sea that already existed as the track itself, so no new
+travel edge. Proof is step 2's extended level-check and the bot through T1; until then it is the plan's measurement.
+**Co-op:** two players asking opposite ways at one halt are now served by different trains on different platforms,
+and a rider's ask can't be stolen; three players splitting Village / Quarry / pier each get a train within a minute.
+**Solo:** the biggest gain, since the solo player has nobody to fetch a train for them.
+
+**Suspect lines (copy):** none of The Boogler's. The plan adds no new copy; the plaques in calls 30–31 reuse v25's
+draft words ("Village", "Pier", "Far Head"), still the owner's to reword.
+
+### Owner questions
+
+1. **Drop the early turn-back now that each track runs one way?** Recommended: **yes**. Two trains give about a 23 s
+   average wait (58 s worst) against LOOK's 14–23 s (about 50 s worst); a mid-line turn would need crossovers and
+   two-way signalling everywhere.
+2. **One lever per platform, for that platform's direction, instead of your two-handled lever?** Recommended: **yes**,
+   each plaqued with the end it goes to: it still means "the next train my way", without crossing the tracks.
+3. **Line 2's second train: from the boiler fit, with the first?** Recommended: **yes**; they pass on the sea trestle
+   about 20 s after the wake.
+4. **Ship double track and the trains as v26 on their own, with Ring Island build 1 as v27?** Recommended: **yes**:
+   two resets instead of one, but Ring Island is then written once, on two tracks.
+5. **Size each line's trains by a wait target (no wait for a train your way over about a minute)?** Recommended:
+   **yes**, which gives line 2 a third train when Ring Island extends it in v27.
