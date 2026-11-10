@@ -100,8 +100,23 @@
   stroke-width: 2;
   stroke-linecap: round;
 }
-.voice-pill[data-muted='1'] svg {
-  opacity: 0.45;
+.voice-pill[data-muted='1'] {
+  color: #c6cbd4;
+}
+.voice-pill .voice-strike {
+  stroke: #ff8a6b;
+  stroke-width: 2.6;
+}
+.voice-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: 600 14px var(--font-body);
+  color: var(--ink-soft);
+}
+.voice-hint[hidden] {
+  display: none;
 }
 .voice-pill-text {
   overflow: hidden;

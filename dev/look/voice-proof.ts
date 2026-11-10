@@ -23,6 +23,7 @@ type Probe = {
   joined: boolean;
   self: string | null;
   members: string[];
+  vc: Record<string, number>;
   peers: { peer: string; state: string; pc: string; audioLevel: number; bytes: number }[];
 };
 // Counts every mic request and peer connection the page makes, from before the game's first line.
@@ -166,6 +167,31 @@ try {
     pa4.ok && pa4.last!.peers.length === 2 && (await a.evaluate(() => window.boogle!.net.state)) === 'live',
     `A kept both calls through a room reconnect ${line(pa4.last)}`,
   );
+
+  // V mutes during play: the other tabs see A's presence flip vc 1 -> 2 -> 1. Stills of the pill both ways.
+  async function seesVc(p: Page, id: string, want: number) {
+    const end = Date.now() + 5000;
+    while (Date.now() < end) {
+      if ((await probe(p)).vc[id] === want) return true;
+      await sleep(200);
+    }
+    return false;
+  }
+  const corner = { x: 840, y: 0, width: 440, height: 90 };
+  await a.keyboard.press('KeyV');
+  check((await seesVc(c, ida, 2)) && (await probe(a)).joined, 'V muted A: C sees vc 2');
+  await sleep(400);
+  await a.screenshot({ path: path.join(out, 'pill-muted.png'), clip: corner });
+  await a.keyboard.press('KeyV');
+  check(await seesVc(c, ida, 1), 'V again unmuted A: C sees vc 1');
+  await sleep(400);
+  await a.screenshot({ path: path.join(out, 'pill-unmuted.png'), clip: corner });
+  await a.evaluate(async () =>
+    ((await import('/src/features/pause.ts' as string)) as { openPause(): boolean }).openPause(),
+  );
+  await sleep(600);
+  await a.screenshot({ path: path.join(out, 'desktop-pause-hint.png') });
+  await closePause(a);
 
   const pd = await probe(d);
   const dc = await calls(d);

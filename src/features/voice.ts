@@ -17,6 +17,8 @@ import type { Room } from '../net/ws-room.ts';
 import { pauseSections } from '../player/pause-pages.ts';
 import { meterContext, micSession } from '../render/audio.ts';
 import { onStart } from '../loop.ts';
+import { registerAction } from '../player/controls.ts';
+import { glyph, inputKind } from '../player/glyphs.ts';
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
@@ -279,7 +281,9 @@ const leaveBtn = btn('Leave voice', leave);
 head.append(label, joinBtn, muteBtn, leaveBtn);
 const who = document.createElement('div');
 who.className = 'voice-who';
-row.append(head, who);
+const hint = document.createElement('p'); // "V mutes" (D-pad ↓ on a pad): the key works during play; touch has the pill
+hint.className = 'voice-hint';
+row.append(head, who, hint);
 
 const pill = document.createElement('button');
 pill.type = 'button';
@@ -295,9 +299,11 @@ function btn(text: string, fn: () => void) {
   b.addEventListener('click', () => (replayAll(), fn()));
   return b;
 }
-const MIC_SVG =
+const micSvg = (struck: boolean) =>
   '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/>' +
-  '<path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none"/></svg>';
+  '<path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none"/>' +
+  (struck ? '<path class="voice-strike" d="M4 3 20 21" fill="none"/>' : '') +
+  '</svg>';
 let key = '';
 function refresh() {
   const links = mesh?.links();
@@ -321,7 +327,8 @@ function refresh() {
               : 'on';
     list.push({ name: r?.name || 'Someone', state });
   }
-  const next = JSON.stringify([joined, joining, muted, problem, list]);
+  const kind = inputKind();
+  const next = JSON.stringify([joined, joining, muted, problem, list, kind]);
   if (next === key) return;
   key = next;
   joinBtn.hidden = joined;
@@ -342,10 +349,13 @@ function refresh() {
       return s;
     }),
   );
+  const keyGlyph = joined && kind !== 'touch' ? glyph('voice-mute') : '';
+  hint.innerHTML = keyGlyph ? `${keyGlyph} mutes` : '';
+  hint.hidden = !keyGlyph;
   pill.hidden = !joined;
   pill.dataset.muted = muted ? '1' : '';
   const talking = list.filter((w) => w.state === 'talking').map((w) => w.name);
-  pill.innerHTML = MIC_SVG;
+  pill.innerHTML = micSvg(muted);
   const text = document.createElement('span');
   text.className = 'voice-pill-text';
   const bad = list.some((w) => w.state === 'failed');
@@ -354,6 +364,16 @@ function refresh() {
 }
 
 onStart(() => {
+  // During play the pointer is locked, so Pause was the only way to mute: V (D-pad ↓ on a pad, free in play) flips it.
+  // Off the guide: it does nothing until you join voice, and the Pause voice row names it while you are in.
+  registerAction('voice-mute', {
+    pad: 'down',
+    key: 'KeyV',
+    label: 'Mute voice',
+    group: 'friends',
+    guide: false,
+    down: () => joined && setMute(!muted),
+  });
   pauseSections.push(row);
   (document.querySelector('.hud-tr') ?? document.body).prepend(pill);
   bindRoom();
@@ -379,7 +399,8 @@ export async function voiceProbe() {
     }
     peers.push({ peer, state: mesh?.links().get(peer)?.state ?? 'gone', pc: v.pc.connectionState, audioLevel, bytes });
   }
-  return { joined, muted, problem, self: net.room?.selfId ?? null, members: members(), peers };
+  const vc = Object.fromEntries(inVoice); // peer -> their presence vc (1 in voice, 2 muted)
+  return { joined, muted, problem, self: net.room?.selfId ?? null, members: members(), vc, peers };
 }
 export const voiceJoin = join;
 export const voiceLeave = leave;

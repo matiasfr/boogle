@@ -28,9 +28,11 @@ Added for the 9 November playtest. Voice is room-wide, not by distance, and off 
 Pause main page. That press opens the mic prompt; on iOS, media is also allowed to play while the mic is open. After
 that you hear everyone else in voice and they hear you. Pause shows **Mute** / **Unmute** and **Leave voice**, plus a
 chip for each person in voice: a green dot glows while they talk, grey means connecting or muted, and coral reads
-"Can't connect". While you are in voice a small pill sits beside the corner menu: a mic icon (dimmed when muted) and
-the names of whoever is talking, or the count of people in voice. Tapping the pill mutes or unmutes. Desktop players
-use Pause, because the pointer is locked during play.
+"Can't connect". While you are in voice a small pill sits beside the corner menu: a mic icon and the names of whoever
+is talking, or the count of people in voice. When you are muted the pill greys and the mic is struck through in coral.
+Tapping the pill mutes or unmutes. During play, **V** (D-pad ↓ on a pad, which play leaves free) mutes or unmutes;
+it does nothing outside voice. It is kept off the controls guide, and while you are in voice the Pause row says
+"[V] mutes" with the key for your input.
 
 - **How.** Audio-only WebRTC between every pair of tabs in voice (a mesh: fine for 2 to 4). Echo cancellation, noise
   suppression and auto gain are on. Public STUN only (Google, Cloudflare), with no TURN relay, so strict NATs and some
