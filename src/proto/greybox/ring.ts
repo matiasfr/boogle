@@ -1,7 +1,7 @@
 // ?ring=greybox, in any build: Ring Island's near view as a walkable greybox, the Meet laid out at the 10 November
 // rulings (docs/brainstorms/ring-island.md, docs/plans/world-blockout.md "Rulings"). Our bow at 4% out to the railhead,
-// the gap, the folk's orange half-crossing (the Pilgrims' Way) with its raised leaf, the brace platform, the hook ring,
-// ladders out of the sea, the island halt with its turning loop, the shore and the path up to the summit lookout under
+// the gap, the folk's orange half-crossing (the Pilgrims' Way) with its raised leaf, the brace platform, the hook ring on
+// its own sea post, ramps out of the sea, the island halt with its fingerpost, map and turning loop, the shore and the path up to the summit lookout under
 // the shard. Local static colliders for your own body (the live cones become solid too), nothing else: no ops, state,
 // saves, sim or world change. Positions are a layout proposal for build 1's R1, not a catalog.
 import * as THREE from 'three/webgpu';
@@ -22,8 +22,9 @@ const HEAD = { x: 1402.0, z: -372 };
 const HX = 0.0272;
 /** Where along u, and how far right (east) of line 2's track, in world x/z. */
 const at = (u: number, lat = 0) => ({ x: HEAD.x + HX * u + lat, z: HEAD.z - u + HX * lat });
-/** The ruling grade's bow: level to the first bent, then 4% down to the island halt, level after (ruling 2). */
-const deckY = (u: number) => (u <= 20 ? 24.3 : Math.max(7.5, 24.3 - 0.04 * (u - 20)));
+/** The ruling grade's bow, u from the pier head (ruling 5): 24.3 m to bent 1, 4% down to the island halt's south end
+ * (u 428), 8.0 m level through the halt and the loop. Bent 6 is 20.3 m, the railhead 14.7 m, the hinge 14.0 m. */
+const deckY = (u: number) => (u <= 20 ? 24.3 : Math.max(8, 24.3 - 0.04 * (u - 20)));
 /** The double formation (ruling 11): 7.6 m, its middle 2 m west of line 2's track; the second track 4 m west. */
 const FORM = { left: -5.8, right: 1.8, mid: -2 };
 const TRACKS = [0, -4];
@@ -31,14 +32,16 @@ export const RING_LAYOUT = {
   railhead: 260, // bent 13, the last bent: the leaf's toe lands here
   gap: 17, // the leaf's length, 16-18 m (design review finding 1)
   hinge: 277,
-  brace: 4, // the brace platform, metres under the hinge's deck
+  braceY: 10.0, // the brace platform's deck (ruling 5)
+  hookPile: { u: 270, lat: 12, y: 17.5 }, // the hook ring on its own sea post, 10 m into the gap (ruling 1)
+  landPad: { lat: 5 }, // the hook's landing spot on the railhead platform, 5 m east of the track (ruling 6)
   halt: [428, 468] as const, // the island halt's platforms, centred on about (1414, -820)
   loop: { x: 1462, z: -822, r: 40 }, // the turning loop, over the shallows east of the halt
   lookout: { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z }, // the main cone's summit, under the shard
 };
 const L = RING_LAYOUT;
 const hingeY = deckY(L.hinge);
-const braceY = hingeY - L.brace;
+const braceY = L.braceY;
 
 // ---------------------------------------------------------------- colours
 const TIMBER = '#8a6a48',
@@ -133,38 +136,66 @@ function track(u0: number, u1: number, y: (u: number) => number, which = TRACKS,
       for (const r of [-0.5, 0.5]) beam(RAIL, p3(u, t + r, y(u) + 0.22), p3(v, t + r, y(v) + 0.22), 0.12, 0.14, false);
     }
 }
-/** A ladder's look: two stiles and rungs from (x, z) at `bottom` to `top`, on a face turned by `yaw`. */
-function ladder(x: number, z: number, bottom: number, top: number, yaw: number) {
-  const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-  for (const s of [-0.4, 0.4]) {
-    const o = new THREE.Vector3(s, 0, 0).applyQuaternion(q);
-    add(
-      GOLD,
-      new THREE.BoxGeometry(0.1, top - bottom + 1, 0.1),
-      tmp.compose(new THREE.Vector3(x + o.x, (bottom + top + 1) / 2, z + o.z), q, new THREE.Vector3(1, 1, 1)),
-    );
-  }
-  for (let y = bottom + 0.3; y < top; y += 0.4)
-    add(
-      GOLD,
-      new THREE.BoxGeometry(0.8, 0.06, 0.06),
-      tmp.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(1, 1, 1)),
-    );
-}
-/** The walkable stand-in for a ladder: a 50 degree stair-ramp (WALKABLE_NY allows 56), from the sea up to `top`,
- * running `dir` (a unit x/z) away from (x, z), its foot under water. The game has no climb verb. */
-function seaStair(x: number, z: number, top: number, dir: { x: number; z: number }) {
-  const run = (top + 1.5) / Math.tan((50 * Math.PI) / 180);
-  beam(CONCRETE, { x, y: top, z }, { x: x + dir.x * run, y: -1.5, z: z + dir.z * run }, 1.6, 0.4);
-  const yaw = Math.atan2(dir.x, dir.z);
-  // the drawn ladder stands at the stair's foot, up the face it climbs
-  ladder(x + dir.x * 0.3, z + dir.z * 0.3, -1, top, yaw);
-}
 /** A little folk figure: a body, a head and an orange hard hat. */
 function folk(x: number, y: number, z: number) {
   add(FOLK, new THREE.CylinderGeometry(0.32, 0.38, 1.0, 8), tmp.makeTranslation(x, y + 0.5, z));
   add(SAND, new THREE.SphereGeometry(0.3, 10, 8), tmp.makeTranslation(x, y + 1.3, z));
   add(HAT, new THREE.CylinderGeometry(0.34, 0.38, 0.16, 10), tmp.makeTranslation(x, y + 1.55, z));
+}
+
+// Sea ramps (ruling 2): a slipway into the water, then switchback flights of no more than 30 degrees, 1.6 m wide with a
+// kerb. The collider is a smooth ramp; the look is steps and a handrail. The game has no climb verb.
+const RAMP_W = 1.6;
+const rampGrades: number[] = [];
+/** A waist-high handrail with posts, from (u0, lat0) to (u1, lat1) with its foot at y0..y1. Visual only. */
+function handrail(u0: number, lat0: number, u1: number, lat1: number, y0: number, y1: number) {
+  beam(STEEL, p3(u0, lat0, y0 + 1.05), p3(u1, lat1, y1 + 1.05), 0.07, 0.07, false);
+  const n = Math.max(1, Math.round(Math.hypot(u1 - u0, lat1 - lat0) / 3));
+  for (let k = 0; k <= n; k++) {
+    const t = k / n,
+      c = at(u0 + (u1 - u0) * t, lat0 + (lat1 - lat0) * t),
+      y = y0 + (y1 - y0) * t;
+    post(STEEL, c.x, c.z, y, y + 1.05, 0.08, 0.08, false);
+  }
+}
+/** One flight along u at `lat`, rising from y0 at u0 to y1 at u1; `slip` is the beach-like slipway (no treads or rails). */
+function flight(u0: number, u1: number, lat: number, y0: number, y1: number, slip = false) {
+  beam(slip ? SAND : CONCRETE, p3(u0, lat, y0), p3(u1, lat, y1), RAMP_W, 0.4);
+  rampGrades.push(+((Math.atan2(Math.abs(y1 - y0), Math.abs(u1 - u0)) * 180) / Math.PI).toFixed(1));
+  if (slip) return;
+  const len = Math.abs(u1 - u0),
+    y = (t: number) => y0 + (y1 - y0) * t;
+  for (let k = 0; k * 0.4 < len - 0.2; k++) {
+    const t0 = (k * 0.4) / len,
+      t1 = (k * 0.4 + 0.22) / len;
+    beam(
+      TIMBER,
+      p3(u0 + (u1 - u0) * t0, lat, y(t0) + 0.05),
+      p3(u0 + (u1 - u0) * t1, lat, y(t1) + 0.05),
+      RAMP_W - 0.3,
+      0.05,
+      false,
+    );
+  }
+  for (const s of [-1, 1]) {
+    const e = lat + s * (RAMP_W / 2 - 0.06);
+    beam(CONCRETE, p3(u0, e, y0 + 0.25), p3(u1, e, y1 + 0.25), 0.12, 0.25, false); // the kerb
+    handrail(u0, lat + s * 0.85, u1, lat + s * 0.85, y0, y1);
+  }
+  for (const t of [0.5]) {
+    const c = at(u0 + (u1 - u0) * t, lat);
+    post(TIMBER_DARK, c.x, c.z, -6, y(t) - 0.45, 0.4, 0.4, false);
+  }
+}
+/** A flat landing, solid, with a pile under its middle and a rail along the named sea-facing edges. */
+function landing(u0: number, u1: number, l0: number, l1: number, y: number, rails: ('l0' | 'l1' | 'u0' | 'u1')[]) {
+  deck(CONCRETE, u0, u1, l0, l1, () => y, 50);
+  const c = at((u0 + u1) / 2, (l0 + l1) / 2);
+  post(TIMBER_DARK, c.x, c.z, -6, y - 0.5, 0.6, 0.6, false);
+  if (rails.includes('l0')) handrail(u0, l0 + 0.05, u1, l0 + 0.05, y, y);
+  if (rails.includes('l1')) handrail(u0, l1 - 0.05, u1, l1 - 0.05, y, y);
+  if (rails.includes('u0')) handrail(u0, l0, u0, l1, y, y);
+  if (rails.includes('u1')) handrail(u1, l0, u1, l1, y, y);
 }
 
 // ---------------------------------------------------------------- our side: the bow, the bents, the railhead
@@ -208,22 +239,49 @@ for (const u of [rh - 22, rh - 12, rh - 1]) {
     0.4,
   );
 }
-// The hook ring on the last bent, beside the platform's end, facing the island (within 20 m of the brace platform).
-const ringAt = { ...at(rh + 0.2, FORM.right + 6.2), y: platTop(rh) + 3.2 };
-post(TIMBER_DARK, ringAt.x, ringAt.z, -6, ringAt.y - 0.9, 0.5);
-add(
-  RING,
-  new THREE.TorusGeometry(0.9, 0.12, 8, 20),
-  tmp.compose(
-    new THREE.Vector3(ringAt.x, ringAt.y, ringAt.z),
-    new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, YAW),
-    new THREE.Vector3(1, 1, 1),
-  ),
-);
-// The last bent's ladder: up out of the sea to the platform's end, on its east side.
+// The hook ring on its own sea post (ruling 1): 10 m into the gap, 12 m east of line 2's track, the ring 17.5 m up.
+// The pile is solid only to 3 m above the sea; above that a thin spar, nothing to stand on.
 {
-  const foot = at(rh - 2, FORM.right + 4.7);
-  seaStair(foot.x, foot.z, platTop(rh - 2), { x: 1, z: HX });
+  const h = L.hookPile,
+    c = at(h.u, h.lat);
+  post(TIMBER_DARK, c.x, c.z, -6, 3, 1.1);
+  post(TIMBER_DARK, c.x, c.z, 3, h.y - 0.9, 0.3, 0.3, false);
+  add(
+    RING,
+    new THREE.TorusGeometry(0.9, 0.12, 8, 20),
+    tmp.compose(
+      new THREE.Vector3(c.x, h.y, c.z),
+      new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, YAW),
+      new THREE.Vector3(1, 1, 1),
+    ),
+  );
+  // the hook's landing spot: a gold pad on the railhead platform's end, 5 m east of the track
+  const pad = at(rh - 1.8, L.landPad.lat);
+  add(
+    GOLD,
+    new THREE.CylinderGeometry(1.1, 1.1, 0.06, 18),
+    tmp.makeTranslation(pad.x, platTop(rh - 1.8) + 0.03, pad.z),
+  );
+  // a waist-high rail along the track side of the platform's last 5 m, keeping the glide lane clear of the leaf
+  beam(
+    RAIL,
+    p3(rh - 5, FORM.right + 0.15, platTop(rh - 5) + 1.1),
+    p3(rh, FORM.right + 0.15, platTop(rh) + 1.1),
+    0.12,
+    1.1,
+  );
+}
+// The last bent's ramp (ruling 2): a slipway at lat 14, then three switchback flights up the platform's east side,
+// 15.6 m to its deck, about 27 m of slope.
+{
+  const top = platTop(250); // the platform follows the 4% grade: 16.0 m here, 15.6 m at its end
+  flight(232, 238, 14, -1.2, 0.4, true);
+  flight(238, 248, 14, 0.4, 5.6);
+  landing(248, 251, 10.8, 14.8, 5.6, ['l1', 'u1']);
+  flight(248, 238, 11.8, 5.6, 10.6);
+  landing(235, 238, 8.7, 12.7, 10.6, ['l1', 'u0']);
+  flight(238, 248, 9.6, 10.6, top);
+  landing(248, 252, FORM.right + 4.4, 10.4, top, ['l1', 'u1']);
 }
 
 // ---------------------------------------------------------------- their side: the hinge pier, the brace platform, the leaf
@@ -264,9 +322,12 @@ add(
     2.8,
     0.4,
   );
-  // the hinge pier's ladder: up from the sea onto the brace platform's far edge
-  const foot = at(L.hinge + 8, w1);
-  seaStair(foot.x, foot.z, braceY, { x: 1, z: HX });
+  // the hinge pier's ramp (ruling 2): foot on the far, east side, two flights up round the platform's east end
+  flight(280, 286, 16, -1.2, 0.4, true);
+  flight(286, 296, 16, 0.4, 5.4);
+  landing(296, 299, 12.9, 16.9, 5.4, ['l1', 'u1', 'l0']);
+  flight(296, 287, 13.8, 5.4, braceY);
+  landing(283.5, 287, w1 - 0.2, 14.7, braceY, ['l1', 'u0']);
 }
 // The raised leaf: 17 m of orange steel, hinged at the heel, toe up toward Home (78 degrees), the empty counterweight
 // bracket painted on its Home face.
@@ -337,6 +398,116 @@ const haltY = deckY(L.halt[0]);
   const stack = at(L.halt[0] + 8, FORM.right + 9);
   post(STEEL, stack.x, stack.z, -1, haltY + 0.9, 8, 14);
   post(TARP, stack.x, stack.z, haltY + 0.9, haltY + 2.6, 6, 10);
+}
+// The branch read (ruling 4), beside the west platform: a two-armed fingerpost, each arm along its line with a painted
+// emblem (the Gorge's split, Canopy's tree; the place names are left for the owner's copy), and the low map display
+// with the branch lines drawn on it, dashed and their stations dim until laid.
+{
+  const halt = at((L.halt[0] + L.halt[1]) / 2, FORM.mid),
+    deckTop = haltY + 0.9;
+  const toward = (x: number, z: number) => {
+    const dx = x - halt.x,
+      dz = z - halt.z,
+      n = Math.hypot(dx, dz);
+    return { x: dx / n, z: dz / n };
+  };
+  const GORGE = toward(-103, -1988), // High Gorge: the stack line
+    CANOPY = toward(-1085, -313); // Canopy Town: the bay trestle
+  const fp = at(L.halt[0] + 8, FORM.left - 1.7);
+  post(TIMBER_DARK, fp.x, fp.z, deckTop, deckTop + 3.7, 0.28, 0.28, false);
+  for (const [dir, y, emblem] of [
+    [GORGE, 3.2, 'gorge'],
+    [CANOPY, 2.45, 'canopy'],
+  ] as const) {
+    // built along local +x, then turned so +x runs along the line
+    const M = new THREE.Matrix4().compose(
+      new THREE.Vector3(fp.x, deckTop + y, fp.z),
+      new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.atan2(-dir.z, dir.x)),
+      new THREE.Vector3(1, 1, 1),
+    );
+    const piece = (color: string, geo: THREE.BufferGeometry, x: number, py: number, z: number, rx = 0, rz = 0) =>
+      add(
+        color,
+        geo,
+        new THREE.Matrix4().multiplyMatrices(
+          M,
+          new THREE.Matrix4().compose(
+            new THREE.Vector3(x, py, z),
+            new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, 0, rz)),
+            new THREE.Vector3(1, 1, 1),
+          ),
+        ),
+      );
+    piece(TIMBER, new THREE.BoxGeometry(2.3, 0.52, 0.08), 1.25, 0, 0);
+    piece(TIMBER, new THREE.ConeGeometry(0.37, 0.55, 4), 2.65, 0, 0, 0, -Math.PI / 2);
+    for (const s of [-1, 1]) {
+      const z = s * 0.06;
+      if (emblem === 'gorge') {
+        // a forked "Y" in gold
+        piece(GOLD, new THREE.BoxGeometry(0.06, 0.2, 0.02), 0.95, -0.1, z);
+        piece(GOLD, new THREE.BoxGeometry(0.06, 0.24, 0.02), 0.88, 0.1, z, 0, 0.5);
+        piece(GOLD, new THREE.BoxGeometry(0.06, 0.24, 0.02), 1.02, 0.1, z, 0, -0.5);
+      } else {
+        // a round green tree on a trunk
+        piece(TIMBER_DARK, new THREE.BoxGeometry(0.06, 0.2, 0.02), 0.95, -0.12, z);
+        piece(FOLK, new THREE.CylinderGeometry(0.17, 0.17, 0.02, 12), 0.95, 0.06, z, Math.PI / 2);
+      }
+    }
+  }
+  // the map: a low table 0.95 m up, north (-z) at the top, the halt at its south-east corner
+  const mc = at(L.halt[0] + 14, FORM.left - 1.75),
+    top = deckTop + 0.95;
+  const flat2 = (color: string, w: number, d: number, x: number, z: number, h = 0.03, rotY = 0) =>
+    add(
+      color,
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.Matrix4().compose(
+        new THREE.Vector3(mc.x + x, top + h / 2, mc.z + z),
+        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rotY),
+        new THREE.Vector3(1, 1, 1),
+      ),
+    );
+  flat2(TARP, 2.4, 2.0, 0, 0, 0.08);
+  for (const [x = 0, z = 0] of [
+    [-1.0, -0.8],
+    [1.0, -0.8],
+    [-1.0, 0.8],
+    [1.0, 0.8],
+  ])
+    post(TIMBER_DARK, mc.x + x, mc.z + z, deckTop, top, 0.12, 0.12, false);
+  const hx = 1.0,
+    hz = 0.35,
+    lay = 0.08 + 0.005;
+  const line = (color: string, dx: number, dz: number, len: number, dashed: boolean) => {
+    const rot = Math.atan2(-dz, dx);
+    const seg = dashed ? 0.12 : len;
+    for (let d = 0; d < len - 1e-6; d += dashed ? 0.2 : len) {
+      const l = Math.min(seg, len - d),
+        c = d + l / 2;
+      add(
+        color,
+        new THREE.BoxGeometry(l, 0.02, 0.06),
+        new THREE.Matrix4().compose(
+          new THREE.Vector3(mc.x + hx + dx * c, top + lay + 0.01, mc.z + hz + dz * c),
+          new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rot),
+          new THREE.Vector3(1, 1, 1),
+        ),
+      );
+    }
+  };
+  const station = (color: string, dx: number, dz: number, len: number) =>
+    add(
+      color,
+      new THREE.CylinderGeometry(0.1, 0.1, 0.03, 12),
+      tmp.makeTranslation(mc.x + hx + dx * len, top + lay + 0.015, mc.z + hz + dz * len),
+    );
+  line(RING, 0, -1, 1.2, false); // the laid line north, to Home
+  station(RING, 0, -1, 1.2);
+  line(STEEL, GORGE.x, GORGE.z, 1.4, true); // the stack line, to the Gorge
+  station(BED, GORGE.x, GORGE.z, 1.4);
+  line(FOLK, CANOPY.x, CANOPY.z, 2.05, true); // the bay trestle, to Canopy
+  station(BED, CANOPY.x, CANOPY.z, 2.05);
+  station(GOLD, 0, 0, 0); // this halt
 }
 // The loop: line 2's track runs off the halt's end and swings round over the shallows, back onto the other track, so
 // the train turns for Home without reversing (generic lines, "Turnbacks").
@@ -499,8 +670,21 @@ const views = {
   },
   // toward the branch choice: High Gorge (-103, -1988) and Canopy Town (-1085, -313) both lie west
   halt: { cam: p3(L.halt[0] + 14, FORM.left - 4.5, haltY + 2.6), look: { x: 900, y: 20, z: -980 } },
+  hook: {
+    cam: p3(L.hinge + 4, FORM.right + 5, braceY + 1.7),
+    look: p3(L.hookPile.u, L.hookPile.lat, L.hookPile.y - 3),
+  },
+  hingeRamp: { cam: p3(322, 20, 1.2), look: p3(292, 15, 4.5) },
+  bentRamp: { cam: p3(222, 20, 1.2), look: p3(244, 12, 7) },
+  fingerpost: {
+    cam: p3(L.halt[0] + 22, FORM.left - 1.2, haltY + 2.6),
+    look: p3(L.halt[0] + 10, FORM.left - 1.7, haltY + 2.6),
+  },
   lookout: { cam: { x: CX + 4, y: coneY(CX, CZ) + 2, z: CZ + 3 }, look: { x: CX - 400, y: 50, z: CZ - 30 } },
 };
 const api = { root, views, layout: L, deckY, coneY, at, braceY, hingeY };
 (window as unknown as { __ring: typeof api }).__ring = api;
-console.log('RING GREYBOX', JSON.stringify({ meshes: root.children.length, solids: shapes.length, braceY, hingeY }));
+console.log(
+  'RING GREYBOX',
+  JSON.stringify({ meshes: root.children.length, solids: shapes.length, braceY, hingeY, rampGrades }),
+);
