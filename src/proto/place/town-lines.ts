@@ -5,7 +5,10 @@
 // story", and docs/decisions.md, "The shape of the game".
 
 /** Things anyone can see have happened to the town, oldest first (./growth.ts decides which are true). */
-export type Fact = 'path' | 'forge' | 'depot' | 'head' | 'trains' | 'town' | 'stone' | 'pier';
+export type Fact = 'path' | 'forge' | 'depot' | 'head' | 'trains' | 'town' | 'stone' | 'pier' | 'breaker';
+/** The Works' facts, newer than all of src/sim/town-facts.ts's: the breaker taken off its pedestal (after Q6). The
+ * town entity reads it from the railway's state; Place never raises it. */
+export const WORKS_FACTS = ['breaker'] as const;
 
 export type ResidentId = 'pip' | 'button' | 'nell' | 'moss' | 'wren';
 export type ResidentLines = {
@@ -165,6 +168,8 @@ export const STREET_NOTICE: Record<Fact, string> = {
   town: 'Look how many of us there are.',
   stone: 'Proper stone, that.',
   pier: "Where's that pier going?",
+  // Draft (docs/plans/works-signposting-2.md, beat 2): where the breaker's two seams are, said once.
+  breaker: "That big hammer's for cracks. One by the turntable, and a jealous one past the quarry.",
 };
 /** Now and then, passing in the street. */
 export const STREET_RUMOURS = [

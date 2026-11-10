@@ -19,7 +19,8 @@ import { uiSound } from '../../ui/ui-sound.ts';
 import { WORKS, SHED_STALL, SHED_TABLE, WAGON_S } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL } from '../../sim/railway-works.ts';
 import { STALL_TODAY, stallShape, beam, box, type WorksBox } from './works-shape.ts';
-import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
+import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
+import { createGhostOutlines } from '../../render/ghost-outline.ts';
 
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
 /** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
@@ -270,6 +271,24 @@ export async function createRailwayRoundhouse(
     const resting = state.shed.stall - lowering.filter((l) => l.site === 0).length;
     for (let k = 0; k < Math.min(2, resting); k++) footingParts(batch, socketFrame(k, m));
   }
+  // A dashed gold ghost footing in each empty socket once the slab has fallen (docs/plans/works-signposting-2.md,
+  // beat 4): "a block this shape goes here", the shape of the rack's sample and of every cast. Each goes as its
+  // footing is set. Standing on the floor, a little smaller than a footing and squared to the stall. One draw.
+  const socketGhosts = createGhostOutlines(owner, 200, 0.2, 0.12, 0.03);
+  let socketKey = '';
+  function drawSocketGhosts() {
+    const from = slabOpen ? Math.min(WORKS.stall, state.shed.stall) : WORKS.stall;
+    const key = `${from} ${homeB}`;
+    if (key === socketKey) return;
+    socketKey = key;
+    socketGhosts.begin();
+    const h = FOOTING.h - 0.08;
+    for (let k = from; k < Math.min(WORKS.stall, STALL_SOCKETS.length); k++) {
+      const sp = STALL_SOCKETS[k]!;
+      socketGhosts.box(sp.x, FLOOR + h / 2 + 0.02, sp.z, FOOTING.w - 0.1, h, FOOTING.w - 0.1, STALL_YAW);
+    }
+    socketGhosts.commit();
+  }
   /** The vehicles' local frame at path distance `a` (origin on the rail, +z the way out). */
   function vehicleFrame(a: number, out: THREE.Matrix4) {
     // Local +z points the way out: the shunter, behind, pushes the wagon ahead of it.
@@ -511,6 +530,7 @@ export async function createRailwayRoundhouse(
     want = null;
     lowering.length = 0;
     bolts.length = 0;
+    socketKey = '';
 
     lastCradle = state.shed.cradle;
     lastRails = state.shed.cradleRails;
@@ -591,6 +611,7 @@ export async function createRailwayRoundhouse(
           placeSound('beamScrape', c.x, c.z);
         }
       } else if (build <= 0) tarp = 0;
+      drawSocketGhosts();
       batch.begin();
       drawSlab(dt);
       drawSockets();
@@ -703,6 +724,7 @@ export async function createRailwayRoundhouse(
       return {
         slab: !slabOpen,
         slabSolid: !!slabBody,
+        socketGhosts: socketGhosts.count,
         stall: { set: state.shed.stall, frame: build, tarp },
         cradle: { seats: state.shed.cradle, rails: state.shed.cradleRails, fitted: state.shed.fitted >= 0 },
         table: { state: state.shed.table, yaw: tableYaw, turning: tableTurning, pending: want?.to ?? null },

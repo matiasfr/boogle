@@ -2,6 +2,8 @@
 // the town's own state is derived from the shared railway (src/sim/town-facts.ts) and Local presentation.
 import type { TownFact } from '../../sim/town-facts.ts';
 import type { CurioShelf } from './curio-shelf.ts';
+/** A town fact or the Works' (src/proto/place/town-lines.ts): what the residents can remember telling you. */
+type SaidFact = TownFact | 'breaker';
 
 export type TownRoomInspection = { up: boolean; ready: boolean };
 export type TownInspection = {
@@ -25,11 +27,11 @@ export type TownInspection = {
   /** What the residents have told this player (Personal Local; ./memory.ts). */
   memory: {
     met: Partial<Record<string, boolean>>;
-    noticed: Partial<Record<string, TownFact>>;
+    noticed: Partial<Record<string, SaidFact>>;
     said: Partial<Record<string, number>>;
     rumour: Partial<Record<string, number>>;
     hello: Partial<Record<string, boolean>>;
-    street: TownFact | null;
+    street: SaidFact | null;
     streetRumour: number;
   };
   /** The curio shelf in the village (and the finders' bay across the path): where each stands, what's uncovered and how

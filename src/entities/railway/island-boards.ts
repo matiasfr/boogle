@@ -2,8 +2,8 @@
 // faces it so what lies beyond the display is up the map (owner, 9 November: "Island map"; 10 November: on "a little
 // display at the station"). Every face is a cell of one shared canvas atlas that is drawn once and again only when the
 // pier is laid; the trains are small instanced quads gliding over the faces and the arrival blink is a red ring quad
-// per "you are here" stop, so a moving train never redraws a texture. Two draws for every marker and ring on every
-// display, plus one per display. Reduced motion: the markers step once a second and the ring stays lit. Local.
+// per "you are here" stop, so a moving train never redraws a texture; the Works' gold marks are quads too. Four draws
+// for every marker, ring and gold mark on every display, plus one per display. Reduced motion: the markers step once a second and the ring stays lit. Local.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
 import {
@@ -18,6 +18,7 @@ import {
   type MapView,
 } from '../../render/island-map.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { GOLD_ROPE } from '../../render/gold-rope.ts';
 
 const CW = 320,
   CH = 256,
@@ -29,6 +30,8 @@ type Here = { line: number; stop: number };
 type Board = { mesh: THREE.Mesh; face: Face; here: readonly Here[]; on: boolean };
 /** "You are here" stops one display can ring (the Home island's is on both lines). */
 const HERES = 2;
+/** The Works' seams a display can mark. */
+const SEAMS = 2;
 
 /** Displays `w` × `h` m, up to `count` of them, over `lines` (whose `laid` the caller changes, then `redraw`s). */
 export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: number, w: number, h: number) {
@@ -79,9 +82,64 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
     marks.geometry.dispose();
     rings.geometry.dispose();
   });
+  // The Works' gold marks (docs/plans/works-signposting-2.md): a zigzag at each seam still to strike and a dashed
+  // square at the cold kiln, in the breaker's gold, still under reduced motion and never blinking. One quad each.
+  const goldTex = (draw: (g: CanvasRenderingContext2D) => void) => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    g.strokeStyle = '#ffffff';
+    g.lineCap = g.lineJoin = 'round';
+    draw(g);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const zigTex = goldTex((g) => {
+    g.lineWidth = 11;
+    g.beginPath();
+    [
+      [10, 8],
+      [44, 20],
+      [20, 34],
+      [54, 56],
+    ].forEach(([x, y], i) => (i ? g.lineTo(x!, y!) : g.moveTo(x!, y!)));
+    g.stroke();
+  });
+  const squareTex = goldTex((g) => {
+    g.lineWidth = 9;
+    g.setLineDash([11, 7]);
+    g.lineDashOffset = 5;
+    g.strokeRect(8, 8, 48, 48);
+  });
+  const goldMats = [zigTex, squareTex].map(
+    (map) => new THREE.MeshStandardNodeMaterial({ map, color: GOLD_ROPE, alphaTest: 0.5, roughness: 0.6 }),
+  );
+  const goldPx = S.dot * 3.2,
+    goldSize = goldPx * toM;
+  const zigs = new THREE.InstancedMesh(new THREE.PlaneGeometry(goldSize, goldSize), goldMats[0]!, count * SEAMS);
+  const squares = new THREE.InstancedMesh(new THREE.PlaneGeometry(goldSize, goldSize), goldMats[1]!, count);
+  for (const m of [zigs, squares]) {
+    m.frustumCulled = false;
+    owner.add(m);
+  }
+  owner.cleanup(() => {
+    zigTex.dispose();
+    squareTex.dispose();
+    for (const m of goldMats) m.dispose();
+    zigs.geometry.dispose();
+    squares.geometry.dispose();
+  });
+  /** World x/z of each seam still to strike (null: struck, or the breaker not out), and the cold kiln's (null: none). */
+  const works: { seams: ({ x: number; z: number } | null)[]; kiln: { x: number; z: number } | null } = {
+    seams: [],
+    kiln: null,
+  };
   const hide = new THREE.Matrix4().makeScale(0, 0, 0);
   for (let k = 0; k < marks.count; k++) marks.setMatrixAt(k, hide);
   for (let k = 0; k < rings.count; k++) rings.setMatrixAt(k, hide);
+  for (let k = 0; k < zigs.count; k++) zigs.setMatrixAt(k, hide);
+  for (let k = 0; k < squares.count; k++) squares.setMatrixAt(k, hide);
   const color = new THREE.Color();
   lines.forEach((l, li) => {
     color.set(l.color);
@@ -159,6 +217,20 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
       stepped = clock;
       at.forEach((a, k) => (along[k] = a));
     },
+    /** The Works' gold marks: world x/z of each seam still to strike (null for none), and of the cold kiln. */
+    works(seams: readonly ({ x: number; z: number } | null)[], kiln: { x: number; z: number } | null) {
+      works.seams = seams.slice(0, SEAMS);
+      works.kiln = kiln;
+    },
+    /** How many gold marks each shown display carries now (seams, kiln). */
+    goldMarks: () => ({ seams: works.seams.filter(Boolean).length, kiln: !!works.kiln }),
+    /** Each display's face centre and its normal toward its reader, for evals to frame. */
+    faces: () =>
+      boards.map((bd) => ({
+        on: bd.on,
+        c: [bd.face.c.x, bd.face.c.y, bd.face.c.z],
+        out: [bd.face.out.x, bd.face.out.z],
+      })),
     update(dt: number) {
       clock += dt;
       const lit = reducedMotion || Math.floor(clock * BLINK_HZ) % 2 === 0;
@@ -186,9 +258,22 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
           onFace(face, px, py, 0.006);
           rings.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
         }
+        const gold = (mesh: THREE.InstancedMesh, k: number, at: { x: number; z: number } | null | undefined) => {
+          if (!bd.on || !at) return mesh.setMatrixAt(k, hide);
+          // Kept whole on the face: the kiln sits just past the map's edge on some faces.
+          const [px, py] = mapPx(face.view, at.x, at.z),
+            half = goldPx / 2 + 2;
+          // Over the train markers: a seam beside a stop must not hide under a standing train.
+          onFace(face, Math.min(CW - half, Math.max(half, px)), Math.min(CH - half, Math.max(half, py)), 0.016);
+          mesh.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
+        };
+        for (let i = 0; i < SEAMS; i++) gold(zigs, b * SEAMS + i, works.seams[i]);
+        gold(squares, b, works.kiln);
       });
       marks.instanceMatrix.needsUpdate = true;
       rings.instanceMatrix.needsUpdate = true;
+      zigs.instanceMatrix.needsUpdate = true;
+      squares.instanceMatrix.needsUpdate = true;
     },
     /** Texture memory of the atlas in bytes (RGBA with mipmaps). */
     bytes: () => Math.round(canvas.width * canvas.height * 4 * (4 / 3)),

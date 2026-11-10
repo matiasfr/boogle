@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
+import { insideSplitRock } from '../../src/entities/railway/works-shape.ts';
 import {
   LINE1_STATIONS,
   LINE1_ROCKS,
@@ -189,7 +190,11 @@ export function detourOf(id: NodeId): Detour | null {
 const station1 = (id: string) => LINE1_STATIONS.find((s) => s.id === id)!;
 const station2 = (id: string) => LINE2_STATIONS.find((s) => s.id === id)!;
 const p = (q: { x: number; z: number; y?: number }): Point => (q.y === undefined ? { x: q.x, z: q.z } : q);
-const TREES: readonly Point[] = RAILWAY_SOURCES.map(([, x, z]) => ({ x, z }));
+// The trees that grew through the split rock's bowl and walls are cleared locally while the Works stands
+// (src/entities/railway/sources.ts), so nobody can chop them: they are no one's log source.
+const TREES: readonly Point[] = RAILWAY_SOURCES.filter(([, x, z]) => !insideSplitRock({ x: x / 100, z: z / 100 })).map(
+  ([, x, z]) => ({ x, z }),
+);
 const FORGE_RACK: Point = { x: LINE2_FORGE.rackX, z: LINE2_FORGE.rackZ };
 const trees: HandSupply = { by: 'hand', from: TREES, per: T1.sourceYield, label: 'standing trees' };
 const forgeRails: HandSupply = { by: 'hand', from: [FORGE_RACK], per: LINE2_FORGE.rackMax, label: 'forge rack' };

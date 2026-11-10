@@ -1,5 +1,14 @@
-> **Status: proposed (2026-11-10).** Designer pass, no code. Next: build the "now" parts; the owner answers the three
-> questions at the end when he can (nothing waits on them).
+> **Status: "now" parts built (2026-11-10), on the three recommended answers (logged defaults; the owner may revise
+> them).** Next: the "after step 6" items; the owner's next session answers whether a first-timer reads the map.
+
+- [x] Map marks on the halt displays (zigzag per unstruck seam while the breaker is out, dashed square at the cold kiln)
+- [x] Socket ghost footings from the slab's fall, each gone as its footing is set
+- [x] Kiln bill "Kiln" / "logs 0/16  stone 0/16" from the throat strike until lit
+- [x] "Fill the kiln" shown blocked to an empty or wrong back: "Bring logs or stone"
+- [x] Path and Kiln fingerpost from the breaker taken
+- [x] Street notice on taking the breaker (a client-side `breaker` fact, a resident's line)
+- [x] Loop graph fix (finding 2): the kiln's logs read 34 m
+- [ ] Phone-profile still of a halt display; the Home hall board's marks (step 12); the B stills after step 6
 
 # Works signposting, part 2: from the first strike to a lit kiln
 

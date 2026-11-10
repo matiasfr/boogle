@@ -628,11 +628,26 @@ only the striker gets the shot. No words; motes are off under reduced motion, th
 instanced draw (`src/render/ghost-outline.ts`, shared with the boiler plan's saddle echo).
 
 **From the quarry halt to the kiln** (9 November, the designer's answer in the same brief; words and beacons are
-allowed sparingly, [decisions](../decisions.md)). Once the throat is struck a trodden path, paler sand 1.6 m wide,
+allowed sparingly, [decisions](../decisions.md)). Once the breaker is taken (part 2 moved it from the throat strike,
+so a player who strikes the stall first is sent up the road too) a trodden path, paler sand 1.6 m wide,
 runs beside the roller road from the platform end by the rack up to the throat floor, and a painted fingerpost
 reading **Kiln** stands where it leaves the platform, its arm pointing up the road. The path has no collider: the bot
 route and the route contract are unchanged. Path, post and arm board ride the Works box batch; only the painted arm
 face is a draw of its own.
+
+**Part 2: the second seam, the sockets and the kiln's ask** ([plan](../plans/works-signposting-2.md), built on its
+recommended answers; the owner may revise them). While the breaker is out every halt's map display carries a small
+gold zigzag at each seam not yet struck, at its real place and over the train markers; from the throat strike until
+the kiln lights a dashed gold square marks the kiln (kept whole on the face). Still, no blink, the same under reduced
+motion; two instanced quads on top of the displays' draws. When the stall slab falls, each empty socket shows a
+dashed gold ghost footing, a little smaller than a footing, each going as its footing is set. From the throat strike
+until the kiln lights a station-style bill stands 4 m back from the path's end beside its last leg, facing down it:
+**Kiln** / **logs 0/16  stone 0/16**, its counts rising as the kiln fills (no collider, no shadow). Pressing at the
+kiln with nothing it wants on your back shows **Fill the kiln** greyed, "Bring logs or stone". A resident in the
+street says once, after the breaker is taken: "That big hammer's for cracks. One by the turntable, and a jealous one
+past the quarry." (a town-side fact, `breaker`, newest after the pier, so the residents' own pier notices are then
+quiet). The kiln's logs come from the grove 30–46 m outside the throat; `npm run loop` no longer counts the trees the
+Works clears inside the rock. All Local over accepted state.
 
 **Departure boards at the halts** (owner, 9 November: "a real sign rather than a big floating text countdown"). The
 big hovering countdown over each halt's centre is gone. It shipped first as a split-flap countdown, then as a bare
