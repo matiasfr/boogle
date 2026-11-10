@@ -107,7 +107,7 @@ async function haul() {
       // Wait for the friend's grip, then start the capture (--until window.__haulShot).
       check(await bot.until(() => boiler().helper !== null, 180000, 'helped'), 'a friend helps carry');
       (window as Window & { __haulShot?: boolean }).__haulShot = true;
-      await bot.wait(1000);
+      await bot.wait(3000); // the capture starts at real speed first
     }
     const village = point(14),
       join = point(30),
@@ -145,9 +145,19 @@ async function helper() {
   await wait(600);
   const at = boiler().tail;
   check(await bot.use(at.x, at.z, 'help carry', /^Help carry$/), 'Help carry offered');
-  // Follow the hauler at a shoulder's distance.
+  // Two pages end the warm-up only when both say so: the helper's grip is the cue on this page too.
+  (window as Window & { __haulShot?: boolean }).__haulShot = true;
+  // Follow the hauler at a shoulder's distance; `&follow=ease` steers nothing and leaves it to Help carry's ease toward
+  // the grip (works-late-game step 4), logging any frame the claim drops.
   const stop = trace();
-  for (let k = 0; k < 80 && boiler().state === 'held'; k++) {
+  const ease = query.get('follow') === 'ease';
+  let dropped = 0;
+  for (let k = 0; k < (ease ? 400 : 80) && boiler().state === 'held'; k++) {
+    if (ease) {
+      if (!read().line2View || boiler().helper === null) dropped++;
+      await wait(150);
+      continue;
+    }
     for (const r of remotes.values()) {
       const s = r.avatar?.position;
       if (s && Math.hypot(s.x - me.body!.position.x, s.z - me.body!.position.z) > 2.2)
@@ -156,6 +166,7 @@ async function helper() {
     await wait(150);
   }
   stop();
+  if (ease) console.log(`HAUL HELPER ${JSON.stringify({ droppedSamples: dropped })}`);
   bot.finish('boiler helper');
 }
 

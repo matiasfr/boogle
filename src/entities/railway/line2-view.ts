@@ -24,6 +24,7 @@ import { createGateRig, gateEyes } from './gate-rig.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
 import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
+import { createForgeFinish } from './forge-finish.ts';
 import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
@@ -443,6 +444,16 @@ export async function createRailwayLine2(
     chimneyTop,
   );
   const pier = createRailwayPier(owner, { layout, rail, sounds });
+  // The forge's roof, chimney cap and workshop once the crossing is done (works-late-game step 6).
+  const finish = await createForgeFinish(adapter, owner, {
+    plan,
+    building,
+    unseal: () => {
+      if (!wallsBody) return;
+      owner.removeBody(wallsBody);
+      wallsBody = null;
+    },
+  });
 
   // ---------------------------------------------------------------- the machine on line two
   const TURN_HEAD = layout.STUB.east;
@@ -583,6 +594,7 @@ export async function createRailwayLine2(
     building.clear();
     forgePieces.forEach((_, k) => building.snap(k, false));
     for (let n = 0; n < shownPieces; n++) building.snap(ORDER[n]!, true);
+    finish.restore(); // after the pieces: it snaps the roof back on once the crossing is done
     drawnDepot = '';
   }
 
@@ -847,6 +859,7 @@ export async function createRailwayLine2(
       const wantPieces = piecesFor(l.forge.used);
       while (shownPieces < wantPieces) building.drop(ORDER[shownPieces++]!, 3.2, 0.3);
       building.update(dt);
+      finish.update(dt);
       mouth.visible = l.forge.lit >= 0;
       if (litShown < 0 && l.forge.lit >= 0) {
         sounds.fanfare(true);
@@ -899,7 +912,7 @@ export async function createRailwayLine2(
           owner,
         );
       }
-      const walls = l.forge.used > F1;
+      const walls = l.forge.used > F1 && !finish.open();
       if (walls && !wallsBody)
         wallsBody = land.addStatic(
           { kind: 'box', hx: plans.W / 2, hy: plans.HIGH / 2, hz: plans.D / 2 },
@@ -1133,6 +1146,7 @@ export async function createRailwayLine2(
         setback,
         panelCursor: track.cursor,
         forgePieces: shownPieces,
+        forgeFinish: finish.inspect(),
         forgeLit: mouth.visible,
         rackShown: racked.count,
         depotShown: depotLogs.count,

@@ -31,6 +31,11 @@ const FLOOR = 18.05,
   RAIL = 18.35;
 /** Rule ticks per second (the railway sim runs at 10 Hz, as cart-view.ts says). */
 const TICKS_PER_S = 10;
+/** The roll-out's turn, as fractions of its `rollTicks` (6 s): push on, the 2 s turn, push off. */
+const ROLL = { turn: [0.36, 0.69] } as const;
+/** The shunter's way home after the wagon waits on line 2 (ticks), and its turn back as fractions of it. */
+const BACK_TICKS = 100;
+const BACK = { turn: [0.3, 0.5] } as const;
 /** Along the stall's length (local z): the wagon parks at the door end, the shunter behind it, ready to push. */
 const PARK = { wagon: -0.9, gap: 3.6 } as const;
 const BRASS = '#c79a3e',
@@ -61,9 +66,20 @@ export async function createRailwayRoundhouse(
   };
   for (const p of STALL_SOCKETS) {
     boxes.push({ ...box(p.x, 18.05, p.z, 0.9, 0.1, 0.9, STALL_YAW), colour: '#373c3b', solid: false });
+    // The rim's four edge strips, squared to the stall (its local x and z turned by STALL_YAW).
+    const c = Math.cos(STALL_YAW),
+      sn = Math.sin(STALL_YAW);
     for (const offset of [-0.55, 0.55]) {
-      boxes.push({ ...box(p.x + offset, 18.17, p.z, 0.14, 0.24, 1.2), colour: '#a9a395', solid: false });
-      boxes.push({ ...box(p.x, 18.17, p.z + offset, 1.2, 0.24, 0.14), colour: '#a9a395', solid: false });
+      boxes.push({
+        ...box(p.x + c * offset, 18.17, p.z - sn * offset, 0.14, 0.24, 1.2, STALL_YAW),
+        colour: '#a9a395',
+        solid: false,
+      });
+      boxes.push({
+        ...box(p.x + sn * offset, 18.17, p.z + c * offset, 1.2, 0.24, 0.14, STALL_YAW),
+        colour: '#a9a395',
+        solid: false,
+      });
     }
   }
   for (let i = 1; i < STALL_ROAD.length; i++)
@@ -131,13 +147,33 @@ export async function createRailwayRoundhouse(
   const PARKED_A = cum[1]!; // the wagon's parked place along the path
   const OUT_A = cum.at(-1)!; // its wait on line 2
   const TABLE_A = cum[4]!;
+  /** The point at path distance `a`, carried straight on past either end (a bogie can stand beyond the last point). */
   function pathAt(a: number, out: THREE.Vector3) {
-    const d = Math.min(cum.at(-1)!, Math.max(0, a));
     let i = 1;
-    while (i < pathPts.length - 1 && cum[i]! < d) i++;
-    const u = (d - cum[i - 1]!) / (cum[i]! - cum[i - 1]! || 1);
-    out.lerpVectors(pathPts[i - 1]!, pathPts[i]!, Math.min(1, Math.max(0, u)));
-    return Math.atan2(pathPts[i]!.x - pathPts[i - 1]!.x, pathPts[i]!.z - pathPts[i - 1]!.z);
+    while (i < pathPts.length - 1 && cum[i]! < a) i++;
+    let u = (a - cum[i - 1]!) / (cum[i]! - cum[i - 1]! || 1);
+    if (i > 1) u = Math.max(0, u);
+    if (i < pathPts.length - 1) u = Math.min(1, u);
+    return out.lerpVectors(pathPts[i - 1]!, pathPts[i]!, u);
+  }
+  // The deck carries what stands on it (works-late-game step 5): drive on heading `hIn`, turn `turnBy` with the deck,
+  // drive off heading `hOut`. `deckK` is the turn done (0..1) while the choreography runs, null while the deck simply
+  // follows the accepted table.
+  const tableAt = new THREE.Vector3(table.x, tableY, table.z);
+  const headingOf = (from: THREE.Vector3, to: THREE.Vector3) => Math.atan2(to.x - from.x, to.z - from.z);
+  const hIn = headingOf(pathAt(TABLE_A - 2, new THREE.Vector3()), tableAt);
+  const hOut = headingOf(tableAt, pathAt(TABLE_A + 2.8, new THREE.Vector3()));
+  const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
+  const turnBy = wrap(hOut - hIn);
+  /** Half the bogie spacing of the wagon and the shunter (their wheels sit at z ±1). */
+  const BOGIE = 1;
+  let deckK: number | null = null;
+  /** A bogie at path distance `a`: on the deck while it turns it rides the deck round its centre, else the path. */
+  function bogieAt(a: number, out: THREE.Vector3) {
+    const d = a - TABLE_A;
+    if (deckK === null || Math.abs(d) >= R || (deckK <= 0 && d <= 0) || (deckK >= 1 && d >= 0)) return pathAt(a, out);
+    const h = hIn + turnBy * deckK;
+    return out.set(table.x + Math.sin(h) * d, tableY, table.z + Math.cos(h) * d);
   }
 
   // ---------------------------------------------------------------- moving parts
@@ -162,7 +198,7 @@ export async function createRailwayRoundhouse(
     fittedShown = false,
     tableYaw = 0,
     tableTurning = false,
-    want: { to: number; until: number } | null = null,
+    asked: { to: number; until: number } | null = null,
     wagonA = PARKED_A,
     shunterA = PARKED_A - PARK.gap;
   let lastCradle = 0,
@@ -177,17 +213,20 @@ export async function createRailwayRoundhouse(
     e = new THREE.Euler(0, 0, 0, 'YXZ');
   const gold = new THREE.Color('#ffdc7a');
 
-  /** Frame pieces in build order, stall-local: two portal posts on the set footings, then the walls and roof. */
+  /** Frame pieces in build order, stall-local: two portal posts on the set footings, then the walls and roof. The
+   * side walls stand on the ruin's low walls (top 19.4) up under its cross beams (22.33); the back wall rises to the
+   * same line. The two roof slopes rise inward (a positive roll lifts a slab's +x end in the batch's YXZ Euler), so
+   * their eaves land on the ruin's posts at about 22.4 and they meet under the ridge pole at 23.65. */
   const FRAME: [x: number, y: number, z: number, w: number, h: number, d: number, roll: number][] = [
     [-1.5, 20.45, -3.7, 0.42, 3.9, 0.42, 0],
     [1.5, 20.45, -3.7, 0.42, 3.9, 0.42, 0],
     [0, 22.55, -3.7, 3.8, 0.42, 0.42, 0],
-    [-2, 20.2, 0, 0.32, 1.6, 9, 0],
-    [2, 20.2, 0, 0.32, 1.6, 9, 0],
-    [0, 20.2, 4.5, 4.4, 3.2, 0.3, 0],
+    [-2, 20.865, 0, 0.32, 2.93, 9, 0],
+    [2, 20.865, 0, 0.32, 2.93, 9, 0],
+    [0, 20.465, 4.5, 4.4, 3.73, 0.3, 0],
     [0, 23.65, 0.3, 0.3, 0.3, 9.6, 0],
-    [-1.15, 23.05, 0.3, 2.6, 0.12, 9.6, -0.5],
-    [1.15, 23.05, 0.3, 2.6, 0.12, 9.6, 0.5],
+    [-1.15, 23.05, 0.3, 2.6, 0.12, 9.6, 0.5],
+    [1.15, 23.05, 0.3, 2.6, 0.12, 9.6, -0.5],
   ];
   const frameFrom = (k: number) => k / FRAME.length;
   function drawFrame(dt: number) {
@@ -290,9 +329,15 @@ export async function createRailwayRoundhouse(
     socketGhosts.commit();
   }
   /** The vehicles' local frame at path distance `a` (origin on the rail, +z the way out). */
+  const front = new THREE.Vector3(),
+    rear = new THREE.Vector3();
   function vehicleFrame(a: number, out: THREE.Matrix4) {
-    // Local +z points the way out: the shunter, behind, pushes the wagon ahead of it.
-    return out.compose(p, q.setFromEuler(e.set(0, pathAt(a, p), 0)), s.set(1, 1, 1));
+    // Local +z points the way out: the shunter, behind, pushes the wagon ahead of it. The body sits between its two
+    // bogies and faces along them, so its heading eases through every corner of the path and turns with the deck.
+    bogieAt(a + BOGIE, front);
+    bogieAt(a - BOGIE, rear);
+    p.addVectors(front, rear).multiplyScalar(0.5);
+    return out.compose(p, q.setFromEuler(e.set(0, headingOf(rear, front), 0)), s.set(1, 1, 1));
   }
   function drawWagon(frame: THREE.Matrix4) {
     batch.part(frame, 0, 0.3, 0, 2.2, 0.35, 3.2, '#77766b');
@@ -349,18 +394,18 @@ export async function createRailwayRoundhouse(
       batch.box(pt.x, y - slump, pt.z, w, h * (1 - tarp * 0.6), d, '#87968b', STALL_YAW, 0, tarp * 0.6);
     }
   }
+  /** The deck's yaw: the shunt's choreography while it runs (the deck carrying the wagon round), else the accepted
+   * table's stop, eased at a quarter turn per TURN_S. */
   function drawTable(dt: number) {
-    const target =
-      yaws[want && performance.now() < want.until && want.to !== state.shed.table ? want.to : state.shed.table]!;
-    if (want && (state.shed.table === want.to || performance.now() >= want.until)) want = null;
-    let d = target - tableYaw;
-    d = Math.atan2(Math.sin(d), Math.cos(d));
-    const step = (Math.PI / 2 / TURN_S) * dt;
+    const target = deckK === null ? yaws[state.shed.table]! : yaws[0]! + turnBy * deckK;
+    const d = wrap(target - tableYaw);
+    // Following the choreography it lands exactly; off it (a deck left turned before the cradle was fitted), it catches up.
+    const step = (deckK === null ? Math.PI / 2 / TURN_S : Math.PI) * dt;
     const was = tableTurning;
-    tableTurning = Math.abs(d) > 0.002;
+    // Within the choreography the turn is its own phase, so the clank and the landing thump play once each.
+    tableTurning = deckK === null ? Math.abs(d) > 0.002 : (deckK > 0 && deckK < 1) || Math.abs(d) > 0.05;
     if (tableTurning) {
-      const k = Math.min(Math.abs(d), step);
-      tableYaw += Math.sign(d) * k;
+      tableYaw += Math.abs(d) < 0.05 && deckK !== null ? d : Math.sign(d) * Math.min(Math.abs(d), step);
       if (!was) clank(table.x, table.z);
     } else if (was) {
       tableYaw = target;
@@ -378,21 +423,35 @@ export async function createRailwayRoundhouse(
       hz = table.z + Math.cos(tableYaw + Math.PI / 2) * (R - 0.4);
     batch.box(hx, tableY + 0.55, hz, 0.16, 1, 0.16, BRASS);
   }
-  /** Where the wagon and shunter stand now, from `ready` and the mover clock alone. */
-  function shuntTargets(tick: number) {
+  /**
+   * Where the wagon and shunter stand and how far the deck has turned, from `ready` and the mover clock alone (so a
+   * reload or a late joiner lands in the same pose). The roll-out, `rollTicks` up to `ready`: the shunter pushes the
+   * wagon onto the deck, the deck turns with both on it, and it pushes the wagon off to its wait on line 2. Then, over
+   * BACK_TICKS, the shunter backs onto the deck alone, the deck turns back to the stall road and it reverses home.
+   * k is null before the roll-out, when the deck follows the accepted table.
+   */
+  function shuntTargets(tick: number): { wagon: number; shunter: number; k: number | null; hidden: boolean } {
     const sh = state.shed,
-      coupled = !!state.line2.train[1]?.wagon;
-    if (coupled) {
-      const since = sh.ready >= 0 ? tick - sh.ready : Infinity;
-      const u = Math.min(1, Math.max(0, since / WORKS.rollTicks));
-      return { wagon: OUT_A, shunter: OUT_A - PARK.gap + (PARKED_A - OUT_A) * smooth(u), hidden: true };
+      hidden = !!state.line2.train[1]?.wagon;
+    const home = PARKED_A - PARK.gap,
+      seated = TABLE_A + PARK.gap / 2; // the wagon's centre on the deck, the shunter's as far behind the middle
+    if (sh.ready < 0) return { wagon: PARKED_A, shunter: home, k: hidden ? 0 : null, hidden };
+    const phase = (u: number, from: number, to: number) => smooth(Math.min(1, Math.max(0, (u - from) / (to - from))));
+    const u = (tick - (sh.ready - WORKS.rollTicks)) / WORKS.rollTicks;
+    if (u < 1) {
+      const a =
+        u < ROLL.turn[0]
+          ? PARKED_A + (seated - PARKED_A) * phase(u, 0, ROLL.turn[0])
+          : seated + (OUT_A - seated) * phase(u, ROLL.turn[1], 1);
+      return { wagon: a, shunter: a - PARK.gap, k: phase(u, ROLL.turn[0], ROLL.turn[1]), hidden };
     }
-    if (sh.ready < 0) return { wagon: PARKED_A, shunter: PARKED_A - PARK.gap, hidden: false };
-    const u = Math.min(1, Math.max(0, (tick - (sh.ready - WORKS.rollTicks)) / WORKS.rollTicks));
-    const a = PARKED_A + (OUT_A - PARKED_A) * smooth(u);
-    if (u < 1) return { wagon: a, shunter: a - PARK.gap, hidden: false };
-    const back = Math.min(1, Math.max(0, (tick - sh.ready) / WORKS.rollTicks));
-    return { wagon: OUT_A, shunter: OUT_A - PARK.gap + (PARKED_A - OUT_A) * smooth(back), hidden: false };
+    const v = (tick - sh.ready) / BACK_TICKS,
+      out = OUT_A - PARK.gap;
+    const shunter =
+      v < BACK.turn[0]
+        ? out + (TABLE_A - out) * phase(v, 0, BACK.turn[0])
+        : TABLE_A + (home - TABLE_A) * phase(v, BACK.turn[1], 1);
+    return { wagon: OUT_A, shunter, k: 1 - phase(v, BACK.turn[0], BACK.turn[1]), hidden };
   }
   const smooth = (u: number) => u * u * (3 - 2 * u);
   let hidden = false,
@@ -416,14 +475,16 @@ export async function createRailwayRoundhouse(
   }
   function drawShunt(dt: number, snapTo: boolean) {
     const t = shuntTargets(shuntClock(dt, snapTo));
+    deckK = t.k;
     if (snapTo) {
       wagonA = t.wagon;
       shunterA = t.shunter;
     } else {
-      // The clock drives the pose; a cancelled roll-out eases home at a walking pace rather than jumping.
+      // The clock drives the pose frame by frame (so the vehicles stay seated on the turning deck); a jump (a
+      // cancelled roll-out) eases home at a walking pace rather than snapping.
       const ease = (from: number, to: number) => {
         const d = to - from;
-        return Math.abs(d) < 0.02
+        return Math.abs(d) < 0.5
           ? to
           : from + Math.sign(d) * Math.min(Math.abs(d), Math.max(1.6 * dt, Math.abs(d) * dt * 6));
       };
@@ -525,9 +586,7 @@ export async function createRailwayRoundhouse(
     tarp = build;
     builtShown = build >= 1;
     fittedShown = state.shed.fitted >= 0;
-    tableYaw = yaws[state.shed.table]!;
     tableTurning = false;
-    want = null;
     lowering.length = 0;
     bolts.length = 0;
     socketKey = '';
@@ -537,6 +596,8 @@ export async function createRailwayRoundhouse(
     const t = shuntTargets(shuntClock(0, true));
     wagonA = t.wagon;
     shunterA = t.shunter;
+    deckK = t.k;
+    tableYaw = deckK === null ? yaws[state.shed.table]! : yaws[0]! + turnBy * deckK;
   }
   snap();
   const avatarBack = (pid: string, out: THREE.Vector3) => {
@@ -618,8 +679,8 @@ export async function createRailwayRoundhouse(
       drawLowering(dt);
       drawFrame(dt);
       drawTarp();
+      drawShunt(dt, false); // first: it sets the deck's turn
       drawTable(dt);
-      drawShunt(dt, false);
       batch.commit();
     },
     accepted(e: RailwayAccepted) {
@@ -654,7 +715,7 @@ export async function createRailwayRoundhouse(
     corrected(c: RailwayCorrection) {
       const e = c.event;
       if (e.op === 'rail.footSet') lowering.length = 0;
-      if (e.op === 'rail.turn') want = null;
+      if (e.op === 'rail.turn') asked = null;
     },
     targets(): Interactable[] {
       const pos = me.body?.position;
@@ -692,14 +753,15 @@ export async function createRailwayRoundhouse(
           run: () => void adapter.fitCradle(),
         });
       }
-      // The table: offered once the stall stands, while it is still, and never while the wagon is rolling out to
-      // wait for its train (the sim refuses a turn then too: no one can stall a friend's shunt).
-      const rolling = sh.ready >= 0 && !state.line2.train[1]?.wagon;
+      // The table: offered once the stall stands, while it is still, and never once the wagon is commissioned: the
+      // shunter's choreography owns the deck from then on (owner, 10 November: not a toy after the wagon leaves).
+      // A press waits for the server's answer (`asked`); the deck turns only with the accepted roll-out.
+      if (asked && (sh.table === asked.to || performance.now() >= asked.until)) asked = null;
       if (
         sh.stall >= WORKS.stall &&
-        !rolling &&
+        sh.ready < 0 &&
         !tableTurning &&
-        !want &&
+        !asked &&
         Math.hypot(pos.x - anchor.x, pos.z - anchor.z) <= SHED_TABLE.reach / 100 - 0.6 &&
         Math.abs(pos.y - SHED_TABLE.y / 100) <= 2.6
       ) {
@@ -711,8 +773,10 @@ export async function createRailwayRoundhouse(
           verb: 'Turn the table',
           at: new THREE.Vector3(hx, tableY + 1.4, hz),
           run: () => {
-            if (adapter.turnTable(to, sh.tableRev)) want = { to, until: performance.now() + 4000 };
-            else uiSound('deny');
+            if (adapter.turnTable(to, sh.tableRev)) {
+              asked = { to, until: performance.now() + 4000 };
+              clank(hx, hz); // the handle's throw, on the press
+            } else uiSound('deny');
           },
         });
       }
@@ -727,7 +791,7 @@ export async function createRailwayRoundhouse(
         socketGhosts: socketGhosts.count,
         stall: { set: state.shed.stall, frame: build, tarp },
         cradle: { seats: state.shed.cradle, rails: state.shed.cradleRails, fitted: state.shed.fitted >= 0 },
-        table: { state: state.shed.table, yaw: tableYaw, turning: tableTurning, pending: want?.to ?? null },
+        table: { state: state.shed.table, yaw: tableYaw, turning: tableTurning, pending: asked?.to ?? null, k: deckK },
         wagon: {
           x: w.x,
           y: w.y,

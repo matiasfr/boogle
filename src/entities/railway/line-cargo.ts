@@ -12,17 +12,13 @@ import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { reducedMotion } from '../../constants.ts';
-import { createBeamDrag, BEAM_LENGTH, type BeamDrag } from './beam-drag.ts';
+import { createBeamDrag, restGrip, BEAM_LENGTH, type BeamDrag } from './beam-drag.ts';
+import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 
-let localHelp: (() => string | null) | null = null;
-const helpers = new Map<string, { holder: string; at: number }>();
-addPresenceField('railwayBeamHelp', () => localHelp?.() ?? null);
-onRemotePresence((remote, presence) => {
-  const value = presence.railwayBeamHelp;
-  if (typeof value === 'string' && value.length <= 64 && value.length > 0)
-    helpers.set(remote.peer, { holder: value, at: performance.now() });
-  else helpers.delete(remote.peer);
-});
+// One Owner value per tab: the holder's pid while you help haul the beam (null otherwise, so the key is left out).
+let help: HelpCarry | null = null;
+addPresenceField('railwayBeamHelp', () => help?.presence() ?? null);
+onRemotePresence((remote, presence) => help?.hear(remote.peer, presence.railwayBeamHelp));
 const frameOf = (avatar: THREE.Object3D | null) => {
   const data = avatar?.userData as { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D } } | undefined;
   return data?.loadFit?.frame ?? data?.inner ?? null;
@@ -39,9 +35,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     ]);
   // `&beamcarry=float` shows the floating carry (K1) beside the rope drag, for one comparison (7 November).
   const floatCarry = new URLSearchParams(location.search).get('beamcarry') === 'float';
-  let state = adapter.inspect(),
-    helping: string | null = null,
-    alive = true;
+  let state = adapter.inspect();
   // Line 1's three rocks and the Works bowl's two limestone ones (slots 3 and 4, J4: they replace J2's boulders).
   const rocks = RAIL_ROCKS.map((source, i) => {
     const radius = ROCKS[i]?.r ?? 1.3,
@@ -118,41 +112,24 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   };
   const avatarOf = (pid: string) =>
     pid === state.pid ? me.avatar : ([...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar ?? null);
-  const near = (a: THREE.Object3D, b: THREE.Object3D) =>
-    Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) <= 5 &&
-    Math.abs(a.position.y - b.position.y) <= 2;
-  const validHelp = () => {
-    const beam = state.beam;
-    if (!helping || !beam || beam.state !== 'held' || beam.holder !== helping || !accountEmpty(state.pid) || heldId())
-      return false;
-    const a = me.avatar,
-      b = avatarOf(helping);
-    return !!a && !!b && near(a, b);
-  };
-  const provider = () => (alive && validHelp() ? helping : null);
-  localHelp = provider;
-  function helperFor(holder: string) {
-    const carrier = avatarOf(holder);
-    if (!carrier) return null;
-    if (helping === holder && validHelp()) return me.avatar;
-    for (const [peer, help] of helpers) {
-      const other = remotes.get(peer);
-      if (!other || performance.now() - help.at > 1500) {
-        helpers.delete(peer);
-        continue;
-      }
-      if (
-        help.holder === holder &&
-        other.entered &&
-        other.avatar &&
-        !!other.pid &&
-        accountEmpty(other.pid) &&
-        near(carrier, other.avatar)
-      )
-        return other.avatar;
-    }
-    return null;
-  }
+  const gripAt = new THREE.Vector3();
+  const mineHelp = createHelpCarry({
+    holds: (pid) => state.beam?.state === 'held' && state.beam.holder === pid,
+    free: (pid) => accountEmpty(pid) && (pid !== state.pid || !heldId()),
+    avatarOf,
+    gripOf: (holder) => {
+      const avatar = avatarOf(holder);
+      return avatar ? restGrip(avatar, BEAM_LENGTH, side, gripAt) : null;
+    },
+    self: () => state.pid,
+    pidOf: (peer) => {
+      const r = remotes.get(peer);
+      return r?.entered && r.pid ? r.pid : null;
+    },
+    now: () => performance.now(),
+  });
+  help = mineHelp;
+  const helperFor = (holder: string) => mineHelp.helperOf(holder) as typeof me.avatar | null;
   function update() {
     for (const avatar of posing) avatar.userData.beamGrip = null;
     posing.clear();
@@ -160,7 +137,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     const now = performance.now(),
       dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
     last = now;
-    if (!validHelp()) helping = null;
+    mineHelp.helping();
     for (const rock of rocks) {
       const current =
         state.rocks.find((row) => row.id === rock.id) ?? state.works?.rocks.find((row) => row.id === rock.id);
@@ -330,26 +307,17 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
             }
           : { id: 'railway-beam-take', verb: 'Pick up', at: beamAt, blocked: 'Empty your back first' },
       );
-    if (helping && validHelp())
-      result.push({
-        id: 'railway-beam-help-release',
-        verb: 'Let go',
-        at: beamAt,
-        run: () => {
-          helping = null;
-        },
-      });
-    else if (beam?.state === 'held' && beam.holder !== state.pid && accountEmpty(state.pid) && !heldId()) {
+    if (mineHelp.helping())
+      result.push({ id: 'railway-beam-help-release', verb: 'Let go', at: beamAt, run: () => mineHelp.stop() });
+    else if (beam?.state === 'held' && mineHelp.canStart(beam.holder)) {
       const other = avatarOf(beam.holder);
-      if (other && me.avatar && near(me.avatar, other))
+      if (other)
         result.push({
           id: 'railway-beam-help',
           verb: 'Help carry',
           // The friend reaches for the dragging end.
           at: drags.get(beam.holder)?.grip ?? other.position,
-          run: () => {
-            helping = beam.holder;
-          },
+          run: () => mineHelp.start(beam.holder),
         });
     }
     return result;
@@ -365,8 +333,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   owner.cleanup(() => {
     for (const avatar of posing) avatar.userData.beamGrip = null;
     posing.clear();
-    alive = false;
-    if (localHelp === provider) localHelp = null;
+    mineHelp.dispose();
+    if (help === mineHelp) help = null;
     for (const model of worn.values()) model.root.removeFromParent();
     worn.clear();
     for (const drag of drags.values()) drag.dispose();
@@ -401,7 +369,10 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       if (state.beam?.state === 'held' && state.beam.holder === state.pid) {
         input.sprint = me.sprint = false;
         me.wish.multiplyScalar((helperFor(state.pid) ? state.beamHelpSpeed : state.beamSoloSpeed) / 5.6);
-      } else if (helping) input.sprint = me.sprint = false;
+      } else if (mineHelp.helping()) {
+        input.sprint = me.sprint = false;
+        mineHelp.ease(me.wish);
+      }
     },
   };
 }

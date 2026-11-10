@@ -13,30 +13,25 @@ import { thump } from '../../render/machine-sfx.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
+import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 
 type Account = ReturnType<RailwayAdapter['inspect']>['accounts'][number];
 type AvatarData = { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D }; load?: number; beamGrip?: unknown };
 
 // Help carry, one field: the pid of the footing holder you are helping, or nothing.
-let localHelp: (() => string | null) | null = null;
-const helpers = new Map<string, { holder: string; at: number }>();
-addPresenceField('railwayFootHelp', () => localHelp?.() ?? null);
-onRemotePresence((remote, presence) => {
-  const value = presence.railwayFootHelp;
-  if (typeof value === 'string' && value.length > 0 && value.length <= 64)
-    helpers.set(remote.peer, { holder: value, at: performance.now() });
-  else helpers.delete(remote.peer);
-});
+let help: HelpCarry | null = null;
+addPresenceField('railwayFootHelp', () => help?.presence() ?? null);
+onRemotePresence((remote, presence) => help?.hear(remote.peer, presence.railwayFootHelp));
 
 /** Back offset in the load frame (metres) and the worn scale: a block that dwarfs Buddy's back, as promised. */
 const WORN = { y: 0.42, z: 0.62, scale: 0.85 };
+/** Where a helper takes the footing: this far behind its holder, at the block on their back (metres). */
+const GRIP_BEHIND = 1.1;
 const PILE_HOP = 0.32;
 
 export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView) {
   const batch = createBoxBatch(owner, 24 * 7);
-  let state = adapter.inspect(),
-    helping: string | null = null,
-    alive = true;
+  let state = adapter.inspect();
   const lastFoot = new Map<string, number>();
   const squash = new Map<string, number>(); // pid -> seconds since the footing landed on that back
   const flights: { from: THREE.Vector3; to: THREE.Vector3; t: number; dur: number; pile: number }[] = [];
@@ -56,38 +51,34 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
   };
   const empty = (a: Account | undefined) => !!a && !a.carry && !(a.stone ?? 0) && !(a.rails ?? 0) && !(a.foot ?? 0);
   const mine = () => state.accounts.find((a) => a.pid === state.pid);
-  const holderNear = (pid: string, helper: THREE.Object3D | null) => {
-    const a = avatarOf(pid);
-    return (
-      !!a &&
-      !!helper &&
-      Math.hypot(a.position.x - helper.position.x, a.position.z - helper.position.z) <= 5 &&
-      Math.abs(a.position.y - helper.position.y) <= 2
-    );
-  };
-  const validHelp = () =>
-    !!helping &&
-    !heldId() &&
-    empty(mine()) &&
-    (state.accounts.find((a) => a.pid === helping)?.foot ?? 0) === 1 &&
-    holderNear(helping, me.avatar);
-  const provider = () => (alive && validHelp() ? helping : null);
-  localHelp = provider;
-  /** Whoever is helping `holder` now: you, or a friend whose presence names them and who stands beside them. */
-  function helperOf(holder: string) {
-    if (helping === holder && validHelp()) return me.avatar;
-    for (const [peer, help] of helpers) {
-      const other = remotes.get(peer);
-      if (!other || performance.now() - help.at > 1500) {
-        helpers.delete(peer);
-        continue;
-      }
-      const account = state.accounts.find((a) => a.pid === other.pid);
-      if (help.holder === holder && other.entered && other.avatar && empty(account) && holderNear(holder, other.avatar))
-        return other.avatar;
-    }
-    return null;
-  }
+  const grip = new THREE.Vector3();
+  const mineHelp = createHelpCarry({
+    holds: (pid) => (state.accounts.find((a) => a.pid === pid)?.foot ?? 0) === 1,
+    free: (pid) =>
+      empty(state.accounts.find((a) => a.pid === pid)) &&
+      state.beam?.holder !== pid &&
+      (pid !== state.pid || !heldId()),
+    avatarOf,
+    gripOf: (holder) => {
+      const avatar = avatarOf(holder);
+      if (!avatar) return null;
+      const yaw = avatar.rotation.y;
+      return grip.set(
+        avatar.position.x + Math.sin(yaw) * GRIP_BEHIND,
+        avatar.position.y,
+        avatar.position.z + Math.cos(yaw) * GRIP_BEHIND,
+      );
+    },
+    self: () => state.pid,
+    pidOf: (peer) => {
+      const r = remotes.get(peer);
+      return r?.entered && r.pid ? r.pid : null;
+    },
+    now: () => performance.now(),
+  });
+  help = mineHelp;
+  /** Whoever is helping `holder` now: you, or a friend whose presence names them and who stands at the grip. */
+  const helperOf = (holder: string) => mineHelp.helperOf(holder) as THREE.Object3D | null;
   const posing = new Set<THREE.Object3D>();
   function draw(dt: number) {
     batch.begin();
@@ -153,8 +144,8 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
     batch.commit();
   }
   owner.cleanup(() => {
-    alive = false;
-    if (localHelp === provider) localHelp = null;
+    mineHelp.dispose();
+    if (help === mineHelp) help = null;
     for (const avatar of posing) (avatar.userData as AvatarData).beamGrip = null;
     posing.clear();
   });
@@ -168,7 +159,7 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
     },
     update(dt: number) {
       state = adapter.inspect();
-      if (!validHelp()) helping = null;
+      mineHelp.helping();
       draw(dt);
     },
     /** After the haul bundle has written its count: a footing bends Buddy under it like a full back. */
@@ -185,7 +176,10 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
       if (state.foot) {
         input.sprint = me.sprint = false;
         me.wish.multiplyScalar((helperOf(state.pid) ? state.beamHelpSpeed : state.beamSoloSpeed) / 5.6);
-      } else if (helping) input.sprint = me.sprint = false;
+      } else if (mineHelp.helping()) {
+        input.sprint = me.sprint = false;
+        mineHelp.ease(me.wish);
+      }
     },
     accepted(e: RailwayAccepted) {
       state = adapter.inspect();
@@ -233,28 +227,23 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
             : { id: `railway-foot-pile${pile.id}`, verb: 'Shoulder a footing', at, blocked: 'Empty your back first' },
         );
       }
-      if (helping && validHelp())
+      if (mineHelp.helping())
         result.push({
           id: 'railway-foot-help-release',
           verb: 'Let go',
           at: new THREE.Vector3(p.x, p.y + 1.6, p.z),
-          run: () => {
-            helping = null;
-          },
+          run: () => mineHelp.stop(),
         });
-      else if (empty(back) && !heldId() && state.beam?.holder !== state.pid)
+      else
         for (const a of state.accounts) {
-          if (a.pid === state.pid || !(a.foot ?? 0) || !holderNear(a.pid, me.avatar)) continue;
-          const holder = a.pid;
+          const holder = a.pid,
+            avatar = avatarOf(holder);
+          if (!avatar || !mineHelp.canStart(holder)) continue;
           result.push({
             id: 'railway-foot-help',
             verb: 'Help carry',
-            at: avatarOf(holder)!
-              .position.clone()
-              .add(new THREE.Vector3(0, 1.8, 0)),
-            run: () => {
-              helping = holder;
-            },
+            at: avatar.position.clone().add(new THREE.Vector3(0, 1.8, 0)),
+            run: () => mineHelp.start(holder),
           });
           break;
         }
@@ -263,7 +252,7 @@ export function createRailwayFootings(adapter: RailwayAdapter, owner: OwnedView)
     inspect: () => ({
       worn: state.accounts.filter((a) => (a.foot ?? 0) > 0).map((a) => a.pid),
       piles: state.piles.filter((p) => p.kind === 3).length,
-      helping,
+      helping: mineHelp.helping(),
       helped: state.foot ? !!helperOf(state.pid) : false,
     }),
   };

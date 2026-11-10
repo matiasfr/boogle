@@ -64,7 +64,7 @@ The same finite ordinary trees, eight-log back, 24-log first frame, wake animati
 
 The original opening terrain, village/camps, forge scaffold, signs and locals share their render constructors. Interiors, discoveries, later town growth and forge work are not promoted. The telescope and the buoys are (below, after Far Head). The former local/co-op save descriptions below do not describe production T1: production never imports their saves. Personal return poses use the original ground/footprint safety policy and cadence under a separate namespace/room/pid key. Solo and two-player T1, one personal claim each, standing on track and a solo layer ride passed real-input broker runs. Browser reload and complete opening parity remain unverified. See the [slice record](../plans/production-core.md#slice-2-branch-record-5-november-2026-technical-proofs-in-progress) for technical evidence and departures; no pacing retune is implied.
 
-**The production forge reads finished (6 November evening playtest).** Its bill stands before the frontage, out past the scaffold poles, so the second bill's walls never hide the count (a board on posts since 9 November: Signs at the stations and racks, below). Lit, it keeps the prototype's furnace opening in the front boards, so the glowing mouth shows; the chimney smokes; and each rail the server pours flies out of the mouth onto the rack, where the rails stay visible until taken. The roof still waits for trains, as designed. Every receiver's feeder bed is fitted to its 0.7 m span and collider, so it no longer runs back through the receiver's side. Local presentation over the mirrored forge; serves DESIGN.md 7 (Telegraph everything) and "Machines show their work physically".
+**The production forge reads finished (6 November evening playtest).** Its bill stands before the frontage, out past the scaffold poles, so the second bill's walls never hide the count (a board on posts since 9 November: Signs at the stations and racks, below). Lit, it keeps the prototype's furnace opening in the front boards, so the glowing mouth shows; the chimney smokes; and each rail the server pours flies out of the mouth onto the rack, where the rails stay visible until taken. The roof still waits for trains, as designed: when the twelfth pier footing is set, line 1's next village arrival brings eight roof beams on its last car; they hop off beside the track, two village little guys carry them to the forge's ends in pairs and lift each pair on as a truss, a quarter of the roof's boards follows each, the scaffold poles come down, the chimney gets its cap and Place's walk-in workshop opens (owner, 10 November; Local, snapped finished on a reload or for a late joiner; Place's freight crates and doubled pour are not ported; [works-late-game](../plans/works-late-game.md), step 6). Every receiver's feeder bed is fitted to its 0.7 m span and collider, so it no longer runs back through the receiver's side. Local presentation over the mirrored forge; serves DESIGN.md 7 (Telegraph everything) and "Machines show their work physically".
 
 **Town greeter (8 November playtest note).** Sleeves, the yellow shore worker, stands beside the dock-to-town path at the town entrance. Within 8 m he faces and waves at this player; within 3.3 m Interact offers Talk through the existing townsfolk conversation card. Repeated conversations rotate three short lines per stage: asleep/waking, awake before the forge lights, forge lit before Q2, Q2 onward (Needle Bell), and the sea gate open. Each new stage starts with its current direction. Entirely Local, reading the railway mirror; no progression, saved state or Boogler copy changes. Serves DESIGN.md 7 (Telegraph everything).
 
@@ -570,9 +570,11 @@ little faster"). The held boiler is drawn as the great beam is: a short, fat rod
 the hauler's hip, the gold rope running from their hand to it, the tail resting on the ground and swinging wide on turns,
 with the beam's dust and scrape. On a deck, a bridge or a car the tail rides at the hauler's feet height rather than
 dropping to the terrain below. The hauler takes the beam's rope pose, has sprint off and walks at 300 cm/s
-(room tunable `railway.boilerSoloSpeed`; `railway.boilerHelpSpeed` is the helped pace). A friend with an empty back within 5 m presses **Help carry** at the dragging end and the boiler
+(room tunable `railway.boilerSoloSpeed`; `railway.boilerHelpSpeed` is the helped pace). A friend with an empty back within 5 m of the grip (where the dragging end rests, from the hauler's pose) presses **Help carry** there and the boiler
 lifts between the two shoulders; the hauler then walks at 540 cm/s and the helper has sprint off; **Let go** ends it (an
-Owner value, `railwayBoilerHelp`, the holder's pid; it goes stale after 1.5 s). The take shows on the press, before the
+Owner value, `railwayBoilerHelp`, the holder's pid; it goes stale after 1.5 s). Once helping, the claim holds out to 8 m
+from the grip with 3 m of height, and the helper is eased toward the grip so they follow without steering; the beam and
+the footings share the same helper (`help-carry.ts`; [works-late-game](../plans/works-late-game.md), step 4). The take shows on the press, before the
 server's answer. Drop puts it down where it is drawn, on the heading it was hauled on; outside the haul area it goes back
 to the pedestal. While the boiler is hauled, the old train's empty saddle shows a dashed gold outline of it (the rope's
 gold, the station 6 sign's dashes) with a few of the pedestal's motes; it goes once the boiler is down or fitted.
@@ -1650,7 +1652,11 @@ A footing (**Shoulder a footing**) is a pale block with an iron band, carried hi
 walk at the beam's solo speed, or the beam's help speed when a friend uses **Help carry** (presence; **Let go** ends
 it). Your drop control puts it down as a block on the ground. At the stall, **Set the footing** lowers each one into
 its socket; the second raises the frame in 3 s of pieces and slides the tarp off. **Fit the cradle** bolts seats and
-rail arms onto the wagon until they turn brass. **Turn the table** turns Split-rock's own disc 90° over 2 s, and the
-shunter pushes the wagon over it onto line 2. The turn isn't offered while a turn is pending or the wagon is rolling
-out, so no one can send a friend's wagon home. The bowl's trees are cleared locally, and its two limestone rocks
+rail arms onto the wagon until they turn brass. **Turn the table** sends one choreography from the accepted roll-out
+(works-late-game step 5, Local): the shunter pushes the wagon onto the disc, the disc turns 2 s with both on it, the
+wagon rolls off onto line 2 to wait, and the shunter backs on alone, turns back and returns to the stall. Each vehicle
+sits between its two bogies, so headings ease through every corner. The table no longer turns on the press; it isn't
+offered while a turn is pending or once the wagon is commissioned (owner, 10 November: not a toy after the wagon
+leaves). The stall's finished roof pitches up to its ridge from eaves on the ruin's posts, its walls closed to the
+eaves. The bowl's trees are cleared locally, and its two limestone rocks
 are chopped like line 1's. Serves DESIGN.md **7. Telegraph everything** and **8. Enjoyable alone and together**. Not tested on a device.
