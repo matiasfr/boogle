@@ -46,7 +46,7 @@ function createRealSea() {
   const waveTex = bakeWaveCell();
   const caustics = createCaustics();
   const ocean = createOcean({
-    sky: frozen.sky,
+
     coast,
     waveTex,
     fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),

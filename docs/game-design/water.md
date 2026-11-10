@@ -209,7 +209,7 @@ sea rung), lifted by four slow vertical sines (`swell.ts`, 0.05–0.12 m, still 
 from depth in three stops (#6fe0d0 shallow, #19b5cf, #1667b8 deep), lit by the same sun and fill as the sand. Two
 scrolling samples of our own 128² wave cell (Worley lines, `art.ts`; the second at twice the weight) make the pattern;
 a sparkle band where one pixel covers a few texels makes the mid-distance glitter, with the sun lane in it. The sand
-shows through the first 2.5 m; a foam lip rides the waterline; the sky is one blurry Fresnel reflection; impact
+shows through the first 2.5 m; a foam lip rides the waterline; the sky is a Fresnel reflection of a two-colour gradient (horizon and zenith read once from a healthy summer bake, so the sea reads no sky texture); impact
 ripples ring out from splashes in the same draw. One opaque-depth copy gives white foam wherever anything meets the
 water (rocks, legs, swimmers, floating things) and a soft waterline against rock. The light cyan shallows and the
 foam lip are the owner's must-keeps: per sea pixel they cost one coast-texture read and a few multiply-adds.
@@ -231,6 +231,11 @@ The receivers' cost is per terrain pixel under or at the water: two tile reads a
 **Underwater** is one flat fog in the existing output quad (`underwater.ts`): the CPU water field says whether the
 camera is under; if so, the scene's depth fogs toward the sea's deep colour (a cave pond's is near black). Dry
 frames pay one uniform branch. From below there is no surface (the sea is front-face only), so looking up shows fog.
+
+**The sky** (owner, 10 November: "do we still use sky? we can remove otherwise"). The sea no longer reads the sky
+cube. The cube stays because it is the visible summer sky the owner chose on 6 November (clouds, sun lane and haze
+drawn as the background) and it also feeds the distance fog's colour, the PBR environment and the hemisphere fill
+read at load; a flat gradient would change all four. It stays the 512 cube; the code is still under `water/`.
 
 **Kept for gameplay:** the CPU water field (swimming, plunges, floating things, the camera), splash ripples in the
 sea shader, splash droplets (`src/render/splash.ts`, the shared particle pool), and the telescope (no water code).
