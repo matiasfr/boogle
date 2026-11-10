@@ -7,12 +7,24 @@ Ring Island and the Original Island retain their existing live meshes. It adds n
 labels, flags, panels, shared state or per-frame work. The current line-2 production area is unchanged;
 Split-rock Works is a separate job. Existing outdoor fog (180–3600 m) fades the horizon.
 The low-detail silhouette is used on every quality tier: no shadows, textures or individual forest trees.
-The dev greybox replaces this horizon while reviewing, avoiding duplicate islands.
+The dev greybox and the walkable blockout replace this horizon while on, avoiding duplicate islands.
 
 `?greybox=sickle` loads the full planning blockout on the dev server. Its walkable geometry, review tools and rides
 remain excluded from production. It has no shared edits, saves or lockstep numbers. The live railway and its tuning are unchanged.
 
-The map page's `#map-data` owns route points and optional per-point `heights` (metres above sea; null uses the station or terrain deck). Sea decks sit at 4 m except clearance approaches; stations, places and land scale stay fixed. The bay shortcut, bay trestle, first crossing, Bell–Canopy and lantern causeway have a roughly 20° heading change at the last third. The south White Wall route follows the bay side at the chalk's foot. Other links retain their necessary coast and clearance turns.
+`?blockout=world` (any build, off by default; [world-blockout](../plans/world-blockout.md)) adds the same islands,
+landmarks, harbour, line decks and halt platforms to the live game as Local static colliders for your own body: you can
+walk out along a future line's deck and stand on every island. No panel, labels, rides, fog change, ops, state or saves;
+other players without the flag see none of it. Its chunk loads only behind the flag. Riding a future line stays in the
+greybox, since the live trains are server-owned.
+
+Every future line is a train service in `src/sickle/world-lines.ts` (generated with the
+[world-blockout page](../world/world-blockout.html) by `dev/level/world-blockout.ts`), in the sim's own shape: world-cm
+track vertices, stops along the line, halts and the train's speed. Each halt gets a 40 m platform beside its stop in both
+blockouts. The greybox panel's **full loop** rides line 2's real rails from the Village halt, the crossing's bow, the
+stack line, the White Wall line, the crane lift, the breakwater and the sea cave to the West landing: 8.7 km.
+
+The map page's `#map-data` owns route points and optional per-point `heights` (metres above sea; null uses the station or terrain deck). Sea decks sit at 4 m except clearance approaches; the first crossing bows from the pier's 24.3 m to 6 m at the railhead (Ring Island brief); stations, places and land scale stay fixed. The bay shortcut, bay trestle, first crossing, Bell–Canopy and lantern causeway have a roughly 20° heading change at the last third. The south White Wall route follows the bay side at the chalk's foot. Other links retain their necessary coast and clearance turns.
 
 Review rides default to a train with seated Buddy and a following camera at play height, with sleepers every 1.2 m and poles every 25 m measured continuously along the route. `&gbrider=0` restores the old overview camera; `bare` removes furniture for comparison. The existing camera lag and FOV experiment are unchanged. These are constant-cruise review rides, with no camera collision, running sound, acceleration or physical boarding; Buddy's physical body stays put.
 

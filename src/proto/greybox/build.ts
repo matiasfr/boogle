@@ -9,6 +9,7 @@ import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { flat } from '../flat.ts';
 import { FAR } from '../place/layout.ts';
+import { WORLD_LINES } from '../../sickle/world-lines.ts';
 import { RING_CONES, SEA_BED, wx, wz, type Ground } from './ground.ts';
 import {
   blobPts,
@@ -88,6 +89,21 @@ function solid(shapes: Shape[], position = { x: 0, y: 0, z: 0 }, rotation?: THRE
       shapes,
     }),
   );
+}
+/** Under the look harness (?debugcam=1&dpr=fixed), some meshes' first render objects never drew (the far islets, the
+ * mainland, the crowns: seen 6 and 7 November), while the same material cloned later drew at once. So once the blockout
+ * has been on screen for a moment, give every mesh fresh clones of its materials. Cheap: same programs. */
+export function refreshMaterials(root: THREE.Object3D) {
+  const made = new Map<THREE.Material, THREE.Material>();
+  const swap = (m: THREE.Material) => {
+    let c = made.get(m);
+    if (!c) made.set(m, (c = m.clone()));
+    return c;
+  };
+  root.traverse((o) => {
+    if (o instanceof THREE.Mesh)
+      o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material as THREE.Material);
+  });
 }
 const yawQ = (yaw: number) => new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
 const glow = (color: string, intensity: number) =>
@@ -255,7 +271,9 @@ function basinFloor(hb: Harbour) {
   return new THREE.Mesh(geo, mat);
 }
 
-export function buildGreybox(map: Layout, ground: Ground): Greybox {
+/** `review: false` (the live client's `?blockout=world`) leaves out the planning marks: line 2's work posts, the survey
+ * line and the station poles. */
+export function buildGreybox(map: Layout, ground: Ground, { review = true } = {}): Greybox {
   const root = new THREE.Group();
   root.name = 'greybox';
   const markers = new THREE.Group();
@@ -410,12 +428,45 @@ export function buildGreybox(map: Layout, ground: Ground): Greybox {
     spots[p.id] = { pos: new THREE.Vector3(x, y, z), label: p.name, kind: 'place', stage: firstStage(p.id) };
     if (p.id === 'home' || p.id === 'camp' || p.id === 'splitrock' || p.id === 'pier' || p.id === 'original') continue;
     boxes([{ w: 16, h: 1, d: 16, x, y: y - 0.5, z }], MARKER, root);
-    boxes([{ w: 1.4, h: 30, d: 1.4, x, y: y + 15, z }], MARKER, markers, false);
+    if (review) boxes([{ w: 1.4, h: 30, d: 1.4, x, y: y + 15, z }], MARKER, markers, false);
+  }
+
+  // ---- halts: a 40 m platform beside each future line's stop (src/sickle/world-lines.ts), top 0.9 m over the deck
+  {
+    const platforms: Box[] = [];
+    for (const line of WORLD_LINES) {
+      const along = [line.fromCm];
+      for (let i = 1; i < line.pts.length; i++)
+        along.push(
+          along[i - 1]! + Math.hypot(line.pts[i]![0] - line.pts[i - 1]![0], line.pts[i]![1] - line.pts[i - 1]![1]),
+        );
+      for (const h of line.halts) {
+        const s = line.stops[h.stop]!;
+        let i = 1;
+        while (i < along.length - 1 && along[i]! < s) i++;
+        const a = line.pts[i - 1]!,
+          b = line.pts[i]!;
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1,
+          ux = (b[0] - a[0]) / len,
+          uz = (b[1] - a[1]) / len;
+        const side = 4.6,
+          x = h.x / 100 - uz * side,
+          z = h.z / 100 + ux * side;
+        platforms.push({ w: 40, h: 1.2, d: 4, x, y: h.y / 100 + 0.3, z, yaw: alongYaw(ux, uz) });
+        spots[`halt-${line.id}-${h.stop}`] = {
+          pos: new THREE.Vector3(x, h.y / 100 + 1, z),
+          label: `${h.name} (${line.name})`,
+          kind: 'mark',
+          stage: null,
+        };
+      }
+    }
+    boxes(platforms, WHITE, root);
   }
 
   // ---- line-2 works: thin, non-solid posts with labels, and the unlaid stretch as a survey line (never solid)
   // The production railway is (or will be) laid there, so nothing here collides: a laid track must never meet a greybox solid.
-  {
+  if (review) {
     const deck = LINE2_DECK;
     const groups = new Map<Work['kind'], Box[]>();
     for (const w of map.works) {
