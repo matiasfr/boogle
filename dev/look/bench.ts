@@ -371,7 +371,9 @@ async function measure(browser: Browser, stack: Stack, dataDir: string) {
       }
       await sleep(p ? 6000 : 3000);
       const counts = await g.eval(COUNTS);
-      await sleep(500);
+      // COUNTS turns the sun's shadow off and on, which builds pipelines for whatever this pose shows that no pose
+      // showed before: on a seeded world's first pose that took seconds (4 frames in a 5 s sample, 9 November).
+      await sleep(3000);
       const timing = await g.eval(TIMING(seconds));
       const { sections, ...rest } = timing as { sections: Sections };
       rows[pose] = {
