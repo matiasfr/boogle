@@ -17,6 +17,7 @@ import { setViewGeometry, type OwnedView } from '../../render/owned-view.ts';
 import { makeBoiler } from './carry-models.ts';
 import { makeProp } from './prop-kit.ts';
 import { job } from './job.ts';
+import { ENGINE_BOILER, ENGINE_WHEELS } from '../wagon/engine.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -390,7 +391,11 @@ export type MachineLook = {
   heldRail: THREE.Object3D;
   /** Rad/s the wheels spin with no ground going by: the wake's slipping start. */
   slip: { rate: number };
+  /** The engine's cab doors, hinged on their back posts (+x, then −x), when the loco is the railway's engine. */
+  doors?: THREE.Object3D[];
 };
+/** The railway's engine (./engine-kit.ts), loaded: trainLook draws its loco with it. */
+type EngineKit = typeof import('./engine-kit.ts');
 /** The track layer's look, the shape of wagonLook's: a red toy loco and a flatbed with its cradle, guard, arm and fork. */
 type Wheel = { x: number; y: number; z: number; at: number };
 const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),
@@ -414,9 +419,11 @@ const wheelSet = (p: Paint, n: number, owner?: OwnedView) => {
 const machineWheels = wheelSet({ ...IRON, rust: true }, 8),
   trainWheels = wheelSet({ ...IRON, rust: 'train' }, 24); // two lines: three cars each, four wheels each
 export const machineLook = (owner?: OwnedView): MachineLook => kitCars(1, true, owner);
-/** A train's look: the same loco, the same livery, and plain flatbeds. */
-export const trainLook = (trailers: number): MachineLook => kitCars(trailers, false);
-function kitCars(trailers: number, working: boolean, owner?: OwnedView): MachineLook {
+/** A train's look: the same loco, the same livery, and plain flatbeds; the railway's trains lead with `engine` (A with
+ * its walk-in cab, docs/plans/engine-previz.md) in place of Place's shell. */
+export const trainLook = (trailers: number, engine?: EngineKit): MachineLook =>
+  kitCars(trailers, false, undefined, engine);
+function kitCars(trailers: number, working: boolean, owner?: OwnedView, engine?: EngineKit): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
     // The timber keeps its grain; only painted and bare metal age with the engine.
     const m = piece(name, { ...p, rust: p.grain ? false : working ? true : 'train' }, owner);
@@ -435,8 +442,13 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView): Machine
     return list;
   };
   const loco = new THREE.Group();
-  const boiler = working ? null : makeBoiler();
-  if (working) {
+  const boiler = working || engine ? null : makeBoiler();
+  let doors: THREE.Object3D[] | undefined;
+  if (engine) {
+    // The body, stool and doors; the fitted boiler and its lashing are the train view's (they come with the fit).
+    doors = [engine.engineDoor(1), engine.engineDoor(-1)];
+    loco.add(engine.enginePart('engine_body'), engine.enginePart('engine_stool'), ...doors);
+  } else if (working) {
     add(loco, 'loco_body', RED);
     add(loco, 'loco_brass', BRASS);
     add(loco, 'loco_black', BLACK);
@@ -448,16 +460,21 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView): Machine
     boiler!.visible = job.boiler >= 3 || job.rung.trains;
     loco.add(boiler!);
   }
-  const locoWheels = wheels(LOCO.hz, 0.36);
+  const locoR = engine ? ENGINE_WHEELS.r : 0.36;
+  const locoWheels = engine ? wheels(ENGINE_WHEELS.z + 0.5, locoR) : wheels(LOCO.hz, locoR);
   const chimneyTop = new THREE.Object3D();
-  chimneyTop.position.set(0, working ? 2.5 : 2.07, working ? 1.05 : 0.9);
+  if (engine) chimneyTop.position.set(0, ENGINE_BOILER.chimney.y, ENGINE_BOILER.chimney.z);
+  else chimneyTop.position.set(0, working ? 2.5 : 2.07, working ? 1.05 : 0.9);
   loco.add(chimneyTop);
-  // The side rods, so the drive reads: they ride the front and back wheels' crank pins.
-  const rods = [-1, 1].map((side) => {
-    const m = add(loco, 'beam_long', ARM, side * 0.62, 0, 0);
-    m.scale.set(0.3, 0.2, 0.85);
-    return { m, side };
-  });
+  // The side rods, so the drive reads: they ride the front and back wheels' crank pins. The engine's are one mesh,
+  // both sides, drawn at rest round the axles' line.
+  const rods = engine
+    ? [{ m: loco.add(engine.enginePart('engine_rods')).children.at(-1)!, side: 0 }]
+    : [-1, 1].map((side) => {
+        const m = add(loco, 'beam_long', ARM, side * 0.62, 0, 0);
+        m.scale.set(0.3, 0.2, 0.85);
+        return { m, side };
+      });
 
   const beds = Array.from({ length: trailers }, () => {
     const flatbed = new THREE.Group();
@@ -488,7 +505,7 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView): Machine
     outer.add(inner);
     return outer;
   });
-  const sets = [{ wheels: locoWheels, r: 0.36 }, ...beds.map((b) => ({ wheels: b.wheels, r: 0.22 }))];
+  const sets = [{ wheels: locoWheels, r: locoR }, ...beds.map((b) => ({ wheels: b.wheels, r: 0.22 }))];
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
   const angle = cars.map(() => 0);
   let travel = 0;
@@ -522,15 +539,16 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView): Machine
       wheelBatch.instanceMatrix.needsUpdate = true;
       if (n === 1) travel += Math.abs(ds);
     });
+    const crank = engine ? ENGINE_WHEELS.throw : 0.12;
     for (const { m } of rods) {
-      m.position.y = 0.51 + 0.12 * Math.cos(angle[0]!);
-      m.position.z = 0.12 * Math.sin(angle[0]!);
+      m.position.y = (engine ? 0 : 0.51) + crank * Math.cos(angle[0]!);
+      m.position.z = crank * Math.sin(angle[0]!);
     }
     if (working) fork.position.y = 0.2 + 0.3 * Math.abs(Math.cos((travel / 1.2) * Math.PI));
   };
   if (owner) owner.animate(animate, 8);
   else onFrame(animate, { phase: 'update', order: 8 });
-  return { cars, chimneyTop, heldRail, slip };
+  return { cars, chimneyTop, heldRail, slip, ...(doors ? { doors } : {}) };
 }
 
 // ---------------------------------------------------------------- what sits on the ground and moves

@@ -588,6 +588,20 @@ whenever trains run, two rings a few centimetres clear of the bands and a knot, 
 every later visitor. The fitter's "You got" card ("Steam", "Trains run both lines.") is built but off until the owner
 approves the copy (`BOILER_CARD`).
 
+**The engine** (10 November; [engine previz](../plans/engine-previz.md), owner's pick: A, the stubby toy, with a cab
+that fits Buddy). Both lines lead with engine A at 1.25×: a 4.0 m frame (4.68 m over the buffers), two 0.95 m drivers
+on the kit's wheel batch, and a walk-in cab 1.79 m wide inside, its floor 1.29 m and its roof's underside 3.2 m over
+the rail. Each side has a doorway at the back of the cab, 1.0 m wide and 1.78 m high, with a step halfway up from the
+halt deck; its door is drawn shut and swings out on its back post when anyone comes within 1.2 m, closing 0.6 s after
+they go (Local; never solid). Inside, the boiler's back end is the backhead (regulator, gauges, firebox door) and a
+little guy drives from a tall stool beside where Buddy stands. Before the fit the body is rusted and the saddles
+empty; the fitted boiler (the same part as on the pedestal and the rope, `assets/src/engine.py`) and its lashing come
+with the fit. The engine is a compound of client platform colliders: the deck to the cab floor, the cab's walls either
+side of each doorway, the roof and steps, and the boiler once fitted; you ride whichever top your feet are on (cab
+floor, boiler top or roof). The front of each train stands 1.0 m further on than before at every stop; the stops are
+unchanged (`TRAIN_OFFSETS`, client constants). The longer-boiler upgrade's meshes are built (`engine_*_long`) but not
+in the game. With Buddy in the cab, the follow camera sees the cab's back wall, not him. Not tested on a device.
+
 Standing on a halt calls its train from the player's accepted position. A running train finishes its current leg
 before acting on the call; there is no mid-leg reversal or rider express. The two Server-owned lines run at
 20 m/s: camp–village, and village–quarry–Far Head, including the quarry dwell. Owner platform carry keeps a rider
@@ -624,8 +638,9 @@ the wagon's cradle, and eight forge rails (**Fit the cradle**) turn it brass. **
 pushing the wagon out to wait on line 2; the table holds (in the rules, not only the view) until line 2 couples it, so
 no one can call a friend's wagon home. From then the wagon is line 2's fourth car: arriving at the quarry, up to six
 footings hop from the Works rack onto its cradle; arriving at the new **Pier** halt (open once Q6 is laid), they hop
-onto the pier rack. Line 2 stands there 3.5 m short of the halt's middle, so its engine stops 2.7 m clear of the
-track layer parked at the rails' end (1.2 m with an engine half as long again) and the wagon stands at the halt's
+onto the pier rack. Line 2 stands there 3.5 m short of the halt's middle, so its engine stops clear of the
+track layer parked at the rails' end (engine A, 10 November: 1.0 m nearer than the old loco, and at least the 1 m wanted
+with the longer boiler; `test/railway-works-layout.test.ts`) and the wagon stands at the halt's
 landward end. The pier rack is a timber row of six (two high)
 along the halt deck's seaward edge, leaving the track side free to walk and board; it stands once the kiln has cast
 its first footing. At the pier head a jib swings each set footing out over the stakes and lowers it on a rope into

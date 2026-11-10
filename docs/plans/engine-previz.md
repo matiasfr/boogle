@@ -1,7 +1,8 @@
-> **Status: picked (10 November 2026): A to start, the longer boiler as an upgrade** ("2026-11-10, the starting
-> engine is A; the longer boiler is an upgrade" in the [decision log](../decisions.md)). Nothing in the game changes
-> yet: the [build plan](#build-plan-the-picked-engine) below is for the asset-author step, and the in-game build waits
-> for the boiler-fit branch (`train-view.ts` and the fit) to land.
+> **Status: built, base engine (10 November 2026).** Picked: A to start, the longer boiler as an upgrade ("2026-11-10,
+> the starting engine is A; the longer boiler is an upgrade" in the [decision log](../decisions.md)). Steps 2 and 3 of
+> the [build plan](#build-plan-the-picked-engine) are built for engine A (the recipe, the train view, the compound
+> collider, the doors, the driver); the longer boiler's meshes are built and unwired (step 4 waits for its upgrade's
+> plan); step 1's reference sheets wait for Codex. In the game: [place](../game-design/place.md), "The engine".
 
 # Train engine previz
 
@@ -246,16 +247,33 @@ makes live already pass at 4.5 m. A longer boiler than that needs a layout chang
 
 **Steps** (each leaves `npm run check` green; one proof look each, per verification.md):
 
-1. Reference sheets: front, side, back and close-ups (cab door and hinge, the stool, the backhead, the lashing knot)
+1. [ ] Reference sheets: front, side, back and close-ups (cab door and hinge, the stool, the backhead, the lashing knot)
    from the viewer's stills, per "Previz before modelling" (Codex is back 12 November).
-2. `assets/src/engine.py` and `engine.json`: the nodes above. `npm run assets -- engine`; inspect with
+2. [x] `assets/src/engine.py` and `engine.json`: the nodes above. `npm run assets -- engine`; inspect with
    `dev/assets/inspect.ts`; stage it in `/character/` against Buddy, the seated driver and the flatbed; motion review
    of the wheels, rods and a door swing (`dev/look/asset-motion.ts`).
-3. After the boiler-fit branch lands: `train-view.ts` swaps today's shell for the engine's nodes, the boiler fit
+3. [x] After the boiler-fit branch lands: `train-view.ts` swaps today's shell for the engine's nodes, the boiler fit
    flies the new boiler into its saddles, and the lashing is the engine's; the new car spec and compound collider in
    `cars.ts` and `rail.ts`; the `TRAIN_OFFSETS` engine entry moves forward to keep the 0.6 m gap; the layout tests
    switch from `LOCO` to the new spec; the doors as above. Real-time looks: boarding at a halt, one and two players,
    and standing in the cab on a moving train.
-4. The longer boiler, when its upgrade is planned: the long nodes, the rebuilt car, the upgrade's own fact and fit.
+4. [ ] The longer boiler, when its upgrade is planned (its meshes are built, `engine_*_long`, unwired): the long nodes, the rebuilt car, the upgrade's own fact and fit.
+
+**Built (10 November).** What differs from the plan above:
+
+- The recipe also asserts the coplanar rule across every node shown together (old train, boiler fitted, longer
+  boiler) and fails the build on a hit. Colours are vertex colours in the kit's own paint (`engine-kit.ts`), so the old
+  train rusts with `rustTrainU`. The doors are one node mirrored in code; the stool and the backhead's controls
+  (regulator, gauges, firebox door) are new. About 2,400 triangles for the old train and 4,400 with the boiler
+  (bevels, tori and the domes), 7,512 in the GLB with the long nodes.
+- The engine's numbers for code and tests come from the same sidecar (`src/proto/wagon/engine.ts`); both lines' trains
+  lead with `ENGINE` (4.0 m frame, its deck top the cab floor) and the wagon prototype keeps `LOCO`. The layout tests
+  run at A and at the longer boiler's 4.5 m.
+- The roof is a deck you ride (the plan proposed none): see [agent calls](../agent-calls.md). The platform's `topAt`
+  now gets the rider's feet height, so a stacked deck (floor, boiler top, roof) picks the one under them.
+- The pedestal's and the rope's boiler is the engine's own at 1.25×, so the fit lands the same part.
+- Evidence: `npm run look` with `dev/look/evals/railway-engine.ts` (halt, boarding, the cab, Home and the Pier, riding)
+  and `railway-boiler-fit.ts` (the fit), BOOGLE_BOT_RANK=2. With Buddy in the cab, the game's follow camera sees the
+  cab's back wall and not him: a question for the owner.
 
 Not tested on a device.

@@ -29,6 +29,16 @@
     "animations": [],
     "textures": []
   },
+  "engine": {
+    "source": "engine.py",
+    "sourceHash": "c602eb99280887b9",
+    "outHash": "af977a0c4f92820c",
+    "rawBytes": 235372,
+    "bytes": 58200,
+    "triangles": 7512,
+    "animations": [],
+    "textures": []
+  },
   "feeder-roller": {
     "source": "feeder-roller.py",
     "sourceHash": "33c90b849d25aa5b",
@@ -87,7 +97,9 @@
     "rawBytes": 12320,
     "bytes": 8828,
     "triangles": 152,
-    "animations": ["drop"],
+    "animations": [
+      "drop"
+    ],
     "textures": []
   },
   "track-layer": {

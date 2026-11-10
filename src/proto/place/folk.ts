@@ -25,10 +25,11 @@ const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   CAMP = 3,
   STATION = 2,
   RIDERS = 2,
+  DRIVERS = 1, // per line: the little guy at the engine's controls, on his tall stool (docs/plans/engine-previz.md)
   COMMUTERS = 5,
   PUSHERS = 2,
   RESIDENTS = 6;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + COMMUTERS + PUSHERS + RESIDENTS;
+const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS * 2 + COMMUTERS + PUSHERS + RESIDENTS;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -71,6 +72,7 @@ type Job =
   | 'camp'
   | 'station'
   | 'rider'
+  | 'driver'
   | 'commuter'
   | 'pusher'
   | 'resident'
@@ -236,6 +238,8 @@ const stationGuys = Array.from({ length: STATION }, (_, k) => make('station', X(
 const riders = Array.from({ length: RIDERS * 2 }, (_, k) =>
   make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: k < RIDERS ? 0 : 1 }),
 );
+// One driver per line, on whenever there's an engine's stool to sit on (FolkEnv.driver).
+for (let k = 0; k < DRIVERS * 2; k++) make('driver', 0, 0, { seat: 0, camp: k < DRIVERS ? 0 : 1 });
 
 // Once a path's open they use it: a few of them walk the new track, there and back, all day. The first time they run.
 const commuters = Array.from({ length: COMMUTERS }, (_, k) =>
@@ -263,6 +267,9 @@ export type FolkEnv = {
   chairTaken?: (seat: number) => boolean;
   machine: () => { mesh: THREE.Object3D; top: number };
   trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
+  /** The engine's driving stool on a line, in its car's frame: `top` is his footrest (his feet rest on it), `up` the seat
+   * over it, `x`, `z` and `yaw` where he sits and faces; null while that line's engine has no driver. */
+  driver?: (line: number) => { mesh: THREE.Object3D; top: number; up: number; x: number; z: number; yaw: number } | null;
   /** Local drawn car envelopes; walkers give way without changing the train or its physics. */
   traffic: readonly { mesh: THREE.Object3D; spec: { hx: number; hz: number }; hy: number }[];
   /** The platform and where people gather when a line opens. */
@@ -685,6 +692,7 @@ function brain(g: Guy, dt: number) {
       return;
     }
     case 'rider':
+    case 'driver':
       g.mood = 'ride';
       return;
     case 'commuter': {
@@ -1217,7 +1225,7 @@ export function updateFolk(dt: number) {
     // Past what the camera can pick out they sleep: no brain, no matrices, frozen where they stood (nothing shared reads
     // them: folk are local to each client, drawn only here). They are drawn from the same distance, so waking is unseen.
     // Riders and pushers follow a vehicle, so they keep their place there but aren't posed.
-    if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'pusher') {
+    if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'driver' && g.job !== 'pusher') {
       g.px = g.x;
       g.pz = g.z;
       continue;
@@ -1229,7 +1237,14 @@ export function updateFolk(dt: number) {
     } else g.t += dt * (g.mood === 'hammer' ? 0 : 3);
     g.px = g.x;
     g.pz = g.z;
-    if (g.chat && g.job !== 'station' && g.job !== 'rider' && g.job !== 'resident' && g.job !== 'greeter')
+    if (
+      g.chat &&
+      g.job !== 'station' &&
+      g.job !== 'rider' &&
+      g.job !== 'driver' &&
+      g.job !== 'resident' &&
+      g.job !== 'greeter'
+    )
       chatBrain(g, dt);
     else brain(g, dt);
     if (e_ && g.job === 'station' && g.mood === 'ride') {
@@ -1240,6 +1255,10 @@ export function updateFolk(dt: number) {
       const car = e_.trainCar(g.camp);
       if (!car) continue;
       ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? 0.9 : -0.9);
+    } else if (g.job === 'driver') {
+      const seat = e_?.driver?.(g.camp);
+      if (!seat) continue;
+      ride(g, seat, seat.x, seat.z, seat.yaw, seat.up);
     } else if (e_ && g.job === 'pusher') {
       const car = e_.cart();
       if (!car) continue;
