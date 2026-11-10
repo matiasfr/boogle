@@ -83,4 +83,16 @@ Heights it can't find come from today's ground: Home's terrain, the classic isla
 
 `index.ts` the entry (flags, views, rides, panel, labels, the one late hook) · `build.ts` meshes and solids · `rides.ts` the line-2 rides ·
 `ground.ts` heights, decks and line profiles · `map-data.ts` the JSON's types and the page's geometry · `page.ts`
-the raw import · `greybox.css`.
+the raw import · `greybox.css` · `blockout.ts` the live client's `?blockout=world` (any build, through
+`src/features/world-blockout.ts`): the same meshes and solids with `review: false`, no panel, labels, rides or fog.
+
+## The whole map ([world-blockout](../../../docs/plans/world-blockout.md))
+
+- **Halts.** Every stop in `src/sickle/world-lines.ts` (the future lines as train services, generated from the JSON by
+  `dev/level/world-blockout.ts`) gets a solid 40 m platform outside each of its two tracks, top 0.9 m over the deck.
+- **Double track.** Future decks are the 7.6 m `FORMATION` with two track beds (one merged `track-beds` mesh), each line
+  end a crossover (an X of beds) or a solid 40 m turning loop. Rides and the rider's sleepers use the left-hand track.
+  Lines 1 and 2 get a non-solid `second-track-survey` bed on the side `LIVE_SECOND_TRACK` picks, with orange posts at
+  its clashes.
+- **The full loop** (panel ride `loop`, `__greybox.ride('loop', 4)`): line 2's real rails from the Village halt (`=l2`),
+  then `ringx`, `ledge`, and `wall-n`, `wall-s`, `lift`, `salt-quay`, `seacave` backwards (`~id`), 8.7 km.

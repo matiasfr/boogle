@@ -14,12 +14,12 @@ import { waterField } from '../../physics/water-field.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { background } from '../../async.ts';
 import { precompile } from '../../render/precompile.ts';
-import { FAR } from '../place/layout.ts';
+import { FAR, LINES } from '../place/layout.ts';
 import { MAP } from './page.ts';
 import { layout, polyLen, rideSeconds, type Pick, type XZ } from './map-data.ts';
-import { rideModelSeconds, ridePoints, workRides } from './rides.ts';
+import { rideModelSeconds, ridePoints, workRides, type WorkRide } from './rides.ts';
 import { createGround, wx, wz } from './ground.ts';
-import { buildGreybox, STAGE_COLOURS } from './build.ts';
+import { buildGreybox, refreshMaterials as refreshAll, STAGE_COLOURS } from './build.ts';
 import { RIDER, createRider } from './rider.ts';
 
 const q = new URLSearchParams(location.search);
@@ -181,8 +181,14 @@ function pointAt(r: Ride, s: number, out: THREE.Vector3) {
   const t = (s - r.along[i - 1]!) / Math.max(1e-6, r.along[i]! - r.along[i - 1]!);
   return out.copy(r.path[i - 1]!).lerp(r.path[i]!, t);
 }
-/** Review rides: named runs of lines (when the option has them), then every line on its own. */
+/** Review rides: named runs of lines (when the option has them), then every line on its own. A leg `~id` runs that line
+ * against its drawn direction; `=l2` is line 2's real rails from the Village halt to the pier, at their real height. */
 const NAMED_ROUTES: { id: string; name: string; legs: string[] }[] = [
+  {
+    id: 'loop',
+    name: 'The full loop: line 2, Ring Island, High Gorge, the White Wall, High Port, the sea cave home',
+    legs: ['=l2', 'ringx', 'ledge', '~wall-n', '~wall-s', '~lift', '~salt-quay', '~seacave'],
+  },
   {
     id: 'bell-before',
     name: 'Home to Bell Rock the long way (Line 2, pier, Ring Island, bay trestle)',
@@ -196,8 +202,17 @@ const NAMED_ROUTES: { id: string; name: string; legs: string[] }[] = [
 ];
 /** The line-2 rides (rides.ts): the depot cart, the line 2 train and the boiler walk, on the real rails. */
 const WORK_RIDES = workRides(map.ride);
+const legId = (leg: string) => leg.replace(/^[~=]/, '');
+/** Line 2 from the Village halt to the rails' end, on Place's real track (the pier's end is where `ringx` starts). */
+const LINE2_RIDE: WorkRide = {
+  id: 'l2',
+  name: 'Line 2',
+  mps: RIDE_SPEED,
+  startS: 0,
+  legs: [{ line: 'east', from: 17, to: LINES.east.len, stop: 'Rails end', dwellS: 0 }],
+};
 const ROUTES = [
-  ...NAMED_ROUTES.filter((r) => r.legs.every((id) => box.lines.some((l) => l.id === id))),
+  ...NAMED_ROUTES.filter((r) => r.legs.every((id) => id === '=l2' || box.lines.some((l) => l.id === legId(id)))),
   ...box.lines.filter((l) => l.stage !== 0).map((l) => ({ id: l.id, name: l.name, legs: [l.id] })),
   ...WORK_RIDES.map((r) => ({ id: r.id, name: r.name, legs: [] as string[] })),
 ];
@@ -208,11 +223,19 @@ function startRide(id: string, speed = 1) {
   const path: THREE.Vector3[] = [];
   if (work) for (const [x, y, z] of ridePoints(work)) path.push(new THREE.Vector3(wx(x), y, wz(z)));
   else
-    for (const leg of route.legs)
-      for (const p of box.lines.find((l) => l.id === leg)!.path) if (!path.at(-1)?.equals(p)) path.push(p);
+    for (const leg of route.legs) {
+      const pts =
+        leg === '=l2'
+          ? ridePoints(LINE2_RIDE).map(([x, y, z]) => new THREE.Vector3(wx(x), y, wz(z)))
+          : box.lines.find((l) => l.id === legId(leg))!.path.slice();
+      if (leg.startsWith('~')) pts.reverse();
+      for (const p of pts) if (!path.at(-1) || path.at(-1)!.distanceToSquared(p) > 0.01) path.push(p);
+    }
   const along = [0];
   for (let i = 1; i < path.length; i++) along.push(along[i - 1]! + path[i]!.distanceTo(path[i - 1]!));
-  const lens = route.legs.map((leg) => polyLen(map.lines.find((l) => l.id === leg)!.pts));
+  const lens = route.legs.map((leg) =>
+    leg === '=l2' ? LINES.east.len - 17 : polyLen(map.lines.find((l) => l.id === legId(leg))!.pts),
+  );
   const mps = work?.mps ?? RIDE_SPEED;
   const model = work ? rideModelSeconds(work) : rideSeconds(map.ride, lens);
   ride = { name: route.name, path, along, total: along.at(-1)!, s: 0, speed, mps, model };
@@ -395,21 +418,7 @@ function drawReadout(dt: number) {
 }
 
 // ---------------------------------------------------------------- one late hook: fog, camera, motion, labels
-// Under the look harness (?debugcam=1&dpr=fixed), some meshes' first render objects never drew (the far islets, the
-// mainland, the crowns: seen 6 and 7 November), while the same material cloned later drew at once. So once the
-// blockout has been on screen for a moment, give every mesh fresh clones of its materials. Cheap: same programs.
-function refreshMaterials() {
-  const made = new Map<THREE.Material, THREE.Material>();
-  const swap = (m: THREE.Material) => {
-    let c = made.get(m);
-    if (!c) made.set(m, (c = m.clone()));
-    return c;
-  };
-  box.root.traverse((o) => {
-    if (o instanceof THREE.Mesh)
-      o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material as THREE.Material);
-  });
-}
+const refreshMaterials = () => refreshAll(box.root);
 
 defineKind('greybox', { lateUpdate: 1002 });
 let clock = 0,

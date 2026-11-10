@@ -8,7 +8,8 @@ import { readableGlow } from '../../render/readable-unlit.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { flat } from '../flat.ts';
-import { FAR } from '../place/layout.ts';
+import { FAR, LINES, lineAt, railY } from '../place/layout.ts';
+import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../../sickle/world-lines.ts';
 import { RING_CONES, SEA_BED, wx, wz, type Ground } from './ground.ts';
 import {
   blobPts,
@@ -88,6 +89,21 @@ function solid(shapes: Shape[], position = { x: 0, y: 0, z: 0 }, rotation?: THRE
       shapes,
     }),
   );
+}
+/** Under the look harness (?debugcam=1&dpr=fixed), some meshes' first render objects never drew (the far islets, the
+ * mainland, the crowns: seen 6 and 7 November), while the same material cloned later drew at once. So once the blockout
+ * has been on screen for a moment, give every mesh fresh clones of its materials. Cheap: same programs. */
+export function refreshMaterials(root: THREE.Object3D) {
+  const made = new Map<THREE.Material, THREE.Material>();
+  const swap = (m: THREE.Material) => {
+    let c = made.get(m);
+    if (!c) made.set(m, (c = m.clone()));
+    return c;
+  };
+  root.traverse((o) => {
+    if (o instanceof THREE.Mesh)
+      o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material as THREE.Material);
+  });
 }
 const yawQ = (yaw: number) => new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
 const glow = (color: string, intensity: number) =>
@@ -255,7 +271,9 @@ function basinFloor(hb: Harbour) {
   return new THREE.Mesh(geo, mat);
 }
 
-export function buildGreybox(map: Layout, ground: Ground): Greybox {
+/** `review: false` (the live client's `?blockout=world`) leaves out the planning marks: line 2's work posts, the survey
+ * line and the station poles. */
+export function buildGreybox(map: Layout, ground: Ground, { review = true } = {}): Greybox {
   const root = new THREE.Group();
   root.name = 'greybox';
   const markers = new THREE.Group();
@@ -353,16 +371,31 @@ export function buildGreybox(map: Layout, ground: Ground): Greybox {
     root.add(new THREE.Mesh(mergeGeometries(crowns), BACKDROP));
   }
 
-  // ---- lines: deck boxes on trestle blocks, coloured by stage for this pick
+  // ---- lines: double-track deck boxes on trestle blocks, coloured by stage for this pick, with the two tracks' beds
+  // on top (one merged mesh for every line's beds)
   const lines: BuiltLine[] = [];
   const pivot = new THREE.Object3D();
+  const beds: THREE.BufferGeometry[] = [];
+  const HALF = FORMATION.centresCm / 200;
+  const bed = (len: number, lat: number, matrix: THREE.Matrix4) =>
+    beds.push(new THREE.BoxGeometry(2.6, 0.14, len).translate(lat, 0.07, 0).applyMatrix4(matrix));
   for (const line of map.lines) {
     const built = line.kind === 'built';
     const path = ground.linePath(line, built).map(([x, y, z]) => new THREE.Vector3(x, y, z));
     const stage = stageOf(line.stage, map.pick);
-    lines.push({ id: line.id, name: line.name, stage, path });
-    if (built) continue; // the real railway is there
-    const W = 5,
+    if (built) {
+      lines.push({ id: line.id, name: line.name, stage, path });
+      continue; // the real railway is there
+    }
+    // Rides and the rider's sleepers run on the left-hand track, half the track centres off the corridor's middle.
+    const left = path.map((p, i) => {
+      const a = path[Math.max(0, i - 1)]!,
+        b = path[Math.min(path.length - 1, i + 1)]!;
+      const len = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+      return new THREE.Vector3(p.x + ((b.z - a.z) / len) * HALF, p.y, p.z - ((b.x - a.x) / len) * HALF);
+    });
+    lines.push({ id: line.id, name: line.name, stage, path: left });
+    const W = FORMATION.deckCm / 100,
       T = 1.2,
       parts: THREE.BufferGeometry[] = [];
     for (let i = 0; i < path.length - 1; i++) {
@@ -375,6 +408,9 @@ export function buildGreybox(map: Layout, ground: Ground): Greybox {
       pivot.updateMatrix();
       parts.push(new THREE.BoxGeometry(W, T, len).applyMatrix4(pivot.matrix));
       solid([{ kind: 'box', hx: W / 2, hy: T / 2, hz: len / 2 }], pivot.position, pivot.quaternion);
+      pivot.position.y += T / 2;
+      pivot.updateMatrix();
+      for (const lat of [-HALF, HALF]) bed(len, lat, pivot.matrix);
       const n = Math.floor(len / 30);
       for (let k = 1; k <= n; k++) {
         const t = k / (n + 1);
@@ -410,12 +446,127 @@ export function buildGreybox(map: Layout, ground: Ground): Greybox {
     spots[p.id] = { pos: new THREE.Vector3(x, y, z), label: p.name, kind: 'place', stage: firstStage(p.id) };
     if (p.id === 'home' || p.id === 'camp' || p.id === 'splitrock' || p.id === 'pier' || p.id === 'original') continue;
     boxes([{ w: 16, h: 1, d: 16, x, y: y - 0.5, z }], MARKER, root);
-    boxes([{ w: 1.4, h: 30, d: 1.4, x, y: y + 15, z }], MARKER, markers, false);
+    if (review) boxes([{ w: 1.4, h: 30, d: 1.4, x, y: y + 15, z }], MARKER, markers, false);
+  }
+
+  // ---- halts and turnbacks (src/sickle/world-lines.ts): a 40 m platform outside each track at every stop, top 0.9 m
+  // over the deck; a scissors crossover inside each terminus; a single-track balloon loop where the line ends on land
+  {
+    const platforms: Box[] = [],
+      loops: Box[] = [];
+    for (const line of WORLD_LINES) {
+      const along = [line.fromCm];
+      for (let i = 1; i < line.pts.length; i++)
+        along.push(
+          along[i - 1]! + Math.hypot(line.pts[i]![0] - line.pts[i - 1]![0], line.pts[i]![1] - line.pts[i - 1]![1]),
+        );
+      for (const h of line.halts) {
+        const s = line.stops[h.stop]!;
+        let i = 1;
+        while (i < along.length - 1 && along[i]! < s) i++;
+        const a = line.pts[i - 1]!,
+          b = line.pts[i]!;
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1,
+          ux = (b[0] - a[0]) / len,
+          uz = (b[1] - a[1]) / len;
+        for (const side of [-1, 1]) {
+          const off = (side * FORMATION.platformCm) / 100,
+            x = h.x / 100 - uz * off,
+            z = h.z / 100 + ux * off;
+          platforms.push({ w: 40, h: 1.2, d: 4, x, y: h.y / 100 + 0.3, z, yaw: alongYaw(ux, uz) });
+        }
+        spots[`halt-${line.id}-${h.stop}`] = {
+          pos: new THREE.Vector3(h.x / 100, h.y / 100 + 1, h.z / 100),
+          label: `${h.name} (${line.name})`,
+          kind: 'mark',
+          stage: null,
+        };
+      }
+      for (const e of line.ends) {
+        let i = 1;
+        while (i < along.length - 1 && along[i]! < e.sCm) i++;
+        const a = line.pts[i - 1]!,
+          b = line.pts[i]!;
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1,
+          ux = (b[0] - a[0]) / len,
+          uz = (b[1] - a[1]) / len;
+        const y = e.y / 100;
+        if (e.kind === 'crossover') {
+          // Two diagonals across the 4 m between the tracks, 24 m long: an X on the deck.
+          const span = 24,
+            diag = Math.hypot(span, 2 * HALF);
+          for (const k of [-1, 1]) {
+            pivot.position.set(e.x / 100, y + 0.02, e.z / 100);
+            pivot.rotation.set(0, Math.atan2(ux, uz) + k * Math.atan2(2 * HALF, span), 0);
+            pivot.updateMatrix();
+            bed(diag, 0, pivot.matrix);
+          }
+          continue;
+        }
+        // A loop: deck boxes round the circle the line's end touches, with the bed on top.
+        const r = FORMATION.loopCm / 100,
+          n = 28,
+          cx = e.x / 100,
+          cz = e.z / 100,
+          tip = e.at === 'start' ? line.pts[0]! : line.pts.at(-1)!;
+        const a0 = Math.atan2(tip[1] / 100 - cz, tip[0] / 100 - cx);
+        const chord = 2 * r * Math.sin(Math.PI / n) + 0.6;
+        for (let k = 0; k < n; k++) {
+          const t = a0 + ((k + 0.5) / n) * Math.PI * 2,
+            x = cx + Math.cos(t) * r,
+            z = cz + Math.sin(t) * r;
+          loops.push({ w: chord, h: 1.2, d: 3.6, x, y: y - 0.6, z, yaw: alongYaw(-Math.sin(t), Math.cos(t)) });
+          pivot.position.set(x, y, z);
+          pivot.rotation.set(0, Math.atan2(-Math.sin(t), Math.cos(t)), 0);
+          pivot.updateMatrix();
+          bed(chord, 0, pivot.matrix);
+        }
+      }
+    }
+    boxes(platforms, WHITE, root);
+    if (loops.length) boxes(loops, flat(UNBUILT, 0.7), root);
+  }
+
+  // ---- the second track beside today's lines 1 and 2: a pale, non-solid bed 4 m off on the side the plan picks, with
+  // an orange post at each stretch where it meets something (the plan's notes). Never solid: the live railway is there.
+  {
+    const ghost: THREE.BufferGeometry[] = [],
+      posts: Box[] = [];
+    const p = { x: 0, z: 0, ux: 0, uz: 0 };
+    for (const t of LIVE_SECOND_TRACK) {
+      const line = t.line === 0 ? LINES.north : LINES.east;
+      const off = t.side * HALF * 2;
+      const at = (s: number) => {
+        lineAt(line, s, p);
+        return new THREE.Vector3(wx(p.x - p.uz * off), railY(line, s), wz(p.z + p.ux * off));
+      };
+      for (let s = 0; s < line.len - 4; s += 4) {
+        const a = at(s),
+          b = at(Math.min(line.len, s + 4));
+        pivot.position.copy(a).add(b).multiplyScalar(0.5);
+        pivot.lookAt(b);
+        pivot.updateMatrix();
+        ghost.push(new THREE.BoxGeometry(2.6, 0.14, a.distanceTo(b) + 0.2).applyMatrix4(pivot.matrix));
+      }
+      for (const c of t.clashes) {
+        const q = at((c.fromCm + c.toCm) / 200);
+        posts.push({ w: 0.5, h: 8, d: 0.5, x: q.x, y: q.y + 4, z: q.z });
+      }
+    }
+    const mesh = new THREE.Mesh(mergeGeometries(ghost), flat('#e9e4d6', 0.5));
+    mesh.name = 'second-track-survey';
+    root.add(mesh);
+    if (posts.length) boxes(posts, GATE, root, false);
+  }
+  {
+    const mesh = new THREE.Mesh(mergeGeometries(beds), flat('#4a4038', 0.9));
+    mesh.name = 'track-beds';
+    root.add(mesh);
   }
 
   // ---- line-2 works: thin, non-solid posts with labels, and the unlaid stretch as a survey line (never solid)
   // The production railway is (or will be) laid there, so nothing here collides: a laid track must never meet a greybox solid.
-  {
+  if (review) {
     const deck = LINE2_DECK;
     const groups = new Map<Work['kind'], Box[]>();
     for (const w of map.works) {
