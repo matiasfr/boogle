@@ -1,5 +1,5 @@
 // Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 1), for `look --action` on `--rail-seed
-// q6-pile` after `--eval railway-b5b8-at.ts --query b58at=head`: pick up the seeded pile, stand at the depot rack
+// q5-done` after `--eval railway-b5b8-at.ts --query b58at=head`: chop a load from the nearest tree, stand at the depot rack
 // (whose leftover logs offer no "Pick up"), then walk into the frame's reach loaded. Logs what was offered, the sign
 // and the nudge count; the motion sheet films the one bob and puff.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -28,15 +28,19 @@ const report = (beat: string) => {
   );
 };
 report('start');
-if (!(await bot.use(1366, -176, 'the seeded pile', /^Pick up$/))) throw new Error('no pile');
-if (!(await bot.work(() => read().carry > 0, 20000))) throw new Error('the pile never came onto the back');
+// A load from the standing tree nearest the frame, chopped by hand.
+const frame = (read().line2View as { frames: { x: number; z: number }[] }).frames[5]!;
+const tree = read()
+  .trees.filter((t) => !t.cleared && t.remaining >= 8)
+  .sort((a, b) => Math.hypot(a.x - frame.x, a.z - frame.z) - Math.hypot(b.x - frame.x, b.z - frame.z))[0];
+if (!tree || !(await bot.use(tree.x, tree.z, 'a tree', /^Chop$/))) throw new Error('no tree');
+if (!(await bot.work(() => read().carry >= 8, 60000))) throw new Error('the logs never came onto the back');
 await bot.wait(600);
 report('loaded');
 const depot = (read().line2View as { depot: number[] | null }).depot!;
 await bot.walk(depot[0]!, depot[2]!, 1.2);
 await bot.wait(500);
 report('at the rack');
-const frame = (read().line2View as { frames: { x: number; z: number }[] }).frames[5]!;
 // `q6cam=frame`: the debug camera on the frame and its rack, so the sheet catches the sign's bob.
 if (new URLSearchParams(location.search).get('q6cam') === 'frame') {
   const [x, y, z] = depot;
