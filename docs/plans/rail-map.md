@@ -411,3 +411,296 @@ placeholders for the owner, as v25's plaques are.
 5. **The live lines' tight curves (11.8 m on line 1, 16.7 m on line 2)?** (a) A 10 m/s limit through curves under
    40 m, in v26's sim; (b) ease the curves, moving Place's rails and every stop after them; (c) leave them.
    **Recommended: (a)**: the loop already runs at 10 m/s for the same reason, and riders spin less.
+
+## Design review (designer, 2026-11-10)
+
+**Verdict: the audit, the map and the continuity report are sound and worth keeping. Three things change before the
+owner answers, and one thing is settled before Ring Island R3a starts.** The plan's own questions 2 and 5 don't need
+the owner (below); two it doesn't ask do.
+
+**Read:** DESIGN.md; owner-calls; decisions (10 November: terminals and kinks, double track, block out the map, stop
+on request, buildings and Ring Island's land; 9 November: "Home gets one coherent station"; 1 November: the
+stepping-stone chain); direction.md; playtests 9 and 10 November and the tracker's P1 "came off moving trains";
+[world-blockout](world-blockout.md) (lines, legs, rulings, double track); [generic-lines](generic-lines.md) §2–8, its
+sequencing and review; [ring-island-build1](ring-island-build1.md) (R1, R3, steps, level findings) and the
+[brief](../brainstorms/ring-island.md)'s greybox findings; [home-station](home-station.md) and
+`src/proto/place/home-station.ts`; `src/sim/railway-ring-layout.ts`; the station-deposit and engine-garage briefs
+(both on main since, with their reviews). **Research:** [train-ride-feel](../research/train-ride-feel.md) (20 m/s and 1–1.2 km links are
+right), [vast-world-scale](../research/vast-world-scale.md) (rec 3: 20–30 s headways),
+[rail-network-depth](../research/rail-network-depth.md) (recs 2 and 3: the railway runs itself, every connection gets
+automatic service), [roundhouse-management](../research/roundhouse-management.md) (one small choice per line),
+[train-riding](../research/train-riding.md) (recs 6 and 7: leavable, the ends of a ride are events),
+[home-station-layout](../research/home-station-layout.md) (**ignored by the plan: finding 1**),
+[progression-flow-layout](../research/progression-flow-layout.md), [route-contract](../research/route-contract.md),
+[level-design](../research/level-design.md).
+
+**Ran:** `npm run level-check` (track continuity: ok, 23 tracks, 10 joins; the loop's 165.3° reversal and 12.4° kink
+confirmed; the proposed balloon is not in it). **Seen** (`npm run look`, desktop, not tested on a device): the
+Quarry bend from the plan's own camera (`--rail-seed trains-on --cam 1068,34,62 --look 1083,25,38`: a tight toy bend
+through the gate, nothing that reads as broken); the Village as live and as `--query home=b` (`--cam 915,55,60 --look
+932,18,10`); Ring Island's south-east shore at the halt and north of it (`--rail-seed crossing-done --cam 1385,60,-760
+--look 1455,8,-870`, and from `1500,30,-960`). **Not seen:** the island's near view (halt, loop deck, works yard) did
+not mount for a free camera, so the loop site was judged from the bare cone, `ringHeight`'s numbers and R2b's
+record; the rail-map page itself was read as data, not rendered; Bell Rock, the Gorge and every later halt exist
+only as blockout massing. `npm run loop -- run` not run: the plan changes no rule or route.
+
+### Flow: line 2 after v27, leg by leg
+
+Stops from `HALTS` and R1; rest to rest at 20 m/s and 3.5 m/s² (generic-lines' figures), walk at 5.6 m/s.
+
+| Leg | Distance | Ride | What the halt is for once its build beat is over |
+| --- | --- | --- | --- |
+| Village → Quarry | 157 m | 13.6 s | The Works, the kiln, the depot |
+| Quarry → Far Head | 350 m | 23.2 s | The glide pad, the pier's root |
+| Far Head → Pier | 202 m | 15.8 s | **Nothing** after Q7 is laid (the rack's twelve footings are long set; the ring's go to the railhead) |
+| Pier → Railhead | 266 m | 19.0 s | **Nothing** after the Meet, unless it becomes the Meet's own halt |
+| Railhead → Ring Island | 198 m | 15.6 s | The island: town, steel, the lookout, the branch |
+| Village → Ring Island, no stops | 1,173 m | 64 s | |
+
+On foot at the junctions: the two Village platforms 35 m (6 s); Village to West landing 100–130 m (18–23 s);
+the Gorge's stair about 165 m (30–40 s); Bell Rock's stair, if two levels, about 11 m of rise (under 10 s).
+
+The three firm rules hold for everything proposed: the next goal can be found (buffers, end boards and chained
+levers all point along the line); no gate loses its meaning (buffers, boards, loaders and marks are views or stop
+positions; no travel edge supplies work); nobody is stranded (every terminal has a platform and a lever; the
+Gorge and Bell Rock stairs are always there). Lens 8 (a place to meet): Home stays the one place every line ends, on
+foot, which is the meeting place. Lens 6 (the world shortens behind you): the bay shortcut still does that job
+under the ring proposal (Home to Canopy is 2.4 km by the bay line against 4.9 km east round the ring).
+
+### Rulings on the nine items
+
+1. **The ring as one line: yes as the working map, with three conditions; it waits for nothing.** It fits the
+   1 November decision (a chain with cross-links, "not a pure corridor"; the owner "liked the ring line" and the
+   bay line and the north–south line fill its middle), it matches area 8's "the ring closes", and it is the one shape
+   where DESIGN's "goods on the line automatically, no routing" needs no transfer rule at a junction
+   (rail-network-depth rec 3). Nothing built before stage 3 depends on it. Conditions: findings 4, 5 and 6.
+2. **Ring Island's end: don't redraw the loop; end the line in buffers past the halt, with a crossover on the Way.**
+   Recommended over the balloon (finding 2). If the loop is kept, it needs a planner pass and a re-review of the
+   layout, and R3a waits for that R1 amendment to merge. Either way **R3a does not start until this one call is
+   made**, because it decides whether R3a writes the loop leg at all.
+3. **Stop marks: nothing goes into v26's shape.** Drop the per-platform stop field (one shared mark per halt does
+   it, finding 3). The only v26 change is the one its review already asks for, with one number from here: the
+   stub-end signals go 20 m outside each merge, not 10, so a 30 m turnout can be drawn later without fouling them.
+4. **Short lines: don't sell them speed.** A part is offered on a line only where its readout changes by something
+   felt; line 1 gets looks, a whistle and a second coach, never the boiler. "At least 1.2 km" becomes a guideline for
+   where a speed part is offered, not a rule that forces lines to join (finding 8).
+5. **Tight curves: leave the geometry; no limit in v26; reproduce the P1 first.** Both players came off trains
+   "just east of the quarry halt" on 10 November, which is the 16.7 m bend, and they were leaving a stop at about
+   6 m/s, so a 10 m/s limit may not be the fix (finding 7). The turnouts' 30 m ease is fine as a view change once
+   the signals clear it.
+6. **The keep-clear circle is drawn on the wrong Home.** The owner picked layout B on 9 November; its table stands on
+   its own spur at (942, 17), not at (918, 12). Nothing in town moves: the forge and the hall stay, and the grown
+   Roundhouse is only ever built on layout B, as a sector south of the spur (finding 1).
+7. **Halts: two have nothing to do** (the Pier after Q7, the Railhead after the Meet), and one service forces a
+   change of train on the way to a first town (finding 6). Every later halt has a reason in the blockout's areas
+   table; Saltpan's ("slide the salt flats") should be written into this plan's halt list.
+8. **Bell Rock on two levels: yes, but the other way up.** The bay line on the skerry, the north–south line at the
+   water (finding 9).
+9. **Loaders and the yard agree on the side of the track, not along it, and they disagree about the train.** The
+   yard's review (on main since) put yards at the foot of the down platform's back ramp, mid-platform, on purpose not
+   at a cargo end, because it took the cargo cars to trail at opposite ends in each direction. This plan has them on
+   the Home side in both directions. One of the two premises has to go (finding 10).
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Every end has buffers and a terminal marking, or runs through, or loops | Decided | Owner, 10 November |
+| 2 | No visible kinks; reasonable curves | Decided | Owner, 10 November |
+| 3 | Cars may overhang the platform; the passenger car is on it; loaders at the cargo cars | Decided | Owner, 10 November |
+| 4 | Junctions are walk-between platforms | Decided | Ruling 6 and generic-lines §6 (orchestrator rulings, open in agent-calls) |
+| 5 | Ring Island's junction is the island halt; no Ring top | Decided | Ruling 3 (orchestrator) |
+| 6 | The cave line ends at Port Quay; High Port is the crane's top | Decided | Rulings' knock-ons (orchestrator) |
+| 7 | One West landing station; the walk across the village is the hub | Decided | Ruling 6 (orchestrator) |
+| 16 | Home's two ring ends stay terminals; no rail across the village | **Decided** (the plan had New) | Owner, 9 November, layout B: "both lines ending at buffer stops"; ruling 6. The plan's question 2 is answered |
+| 8 | Buffers and boards at Camp, the stall, the pier head and the frontier | Default | Agreed. The Village's two come with layout B (home-station step 9), not on today's table rim |
+| 9 | The turntable shows stop blocks on the roads it isn't turned to | Default | Agreed, for layout B's table (its spur and stall roads); moot on today's, where no line train belongs |
+| 10 | Far Head's crossover stays while it is the end | Default | Generic-lines call 21 |
+| 11 | Stop marks: one shared mark per halt; Quarry 174 → **170** for both tracks; Far Head 524 → 526; the pier 726.5 → 725 once the layer's position is measured | Default (the plan had New, per platform) | Finding 3. They ship with the longer consist's bump or v27, whichever is first; not v26 |
+| 26 | Village stops at s 23.5 | **Withdrawn** | Layout B's platforms end at s 20.8 and 23.7; redo on B's buffers (s −5.5 and −2.6) |
+| 12 | Terminal marks: the passenger car 14.7 m from any buffers, whichever end faces them | Default (the plan had 10.2 / 14.7) | One number is safe for either way round; tunable |
+| 13 | Cargo stands on the −s (Home) side of the passenger mark at every halt, in both directions; a source's loader stands there, on the side the goods come from. Yards stay where station-deposit's review put them | New | Recommended; true only while no line turns its trains on a loop (finding 10) |
+| 14 | Ring Island ends in buffers 15 m past the halt, a crossover on the Way before it; trains stand at the east platform; the west lever is chained, plaqued with the branch | New | Recommended instead of the redrawn balloon (finding 2) |
+| 17 | The loop is lifted when line 2 runs on | Moot if 14 stands | If the loop is kept: it lifts when **line 2 itself** is extended (stage 3 Gorge first, stage 5 Canopy first), not "when the first branch opens" |
+| 15 | The ring is one line, built from both ends | New | Recommended as the working map; owner question 1. Conditions in findings 4–6 |
+| 18 | The incline and the causeway are one north–south line; buffers face the causeway until stage 8 | New | Recommended; map data only |
+| 19 | Bell Rock on two levels, **the bay line on the skerry at 15 m, the north–south line at the water** | New | Recommended, amended (finding 9); owner question 3 |
+| 20 | Canopy keeps its loop until stage 8 | Default | Far off; revisit with finding 10's consist rule |
+| 21 | The bay trestle is a two-terminal shuttle | New | **Not as written**: Canopy first, it runs through Bell Rock to Canopy as one line (finding 6) |
+| 22 | Turnouts eased over 30 m (view) | Default | Agreed, after the signals move (ruling 3); the two Village turnouts are redrawn by layout B anyway |
+| 23 | A 10 m/s limit in curves under 40 m | Default, a tunable; not in v26 | After the P1 is reproduced (finding 7). The plan's question 5 is not an owner question |
+| 24 | The continuity report fails only gross errors on run track | Default | Agreed |
+| 25 | Keep clear for the grown Roundhouse | Default | Redrawn on layout B as a sector south of the spur table; nothing moves (finding 1) |
+| 27 | A speed part is offered only on a line where it saves about 10 s a trip (about 1.2 km); short lines get seats, looks and a whistle | Default (the plan had New, as a rule on line length) | Finding 8 |
+| 28 | On a line whose two ends are both at Home, a platform's plaque names the next big place that way, not the terminus | Default, mine | Finding 4 |
+| 29 | The Pier halt after Q7 is a homeward request stop only; its up platform isn't built | New, mine | Recommended (finding 6); owner question 4 |
+| 30 | The stub-end signals stand 20 m outside each merge | Default, mine | Ruling 3; a 30 m ease fouls to 16.5 m past the merge |
+| 31 | The ring's train count is sized by an even headway of about a minute, not v26's worst-wait bound | Default, mine | Finding 5 |
+
+**Counts:** 8 Decided, 14 Default, 7 New, 1 withdrawn, 1 moot.
+
+### Findings, ranked
+
+1. **Home is audited on the layout the owner has replaced (change the plan before he answers).** "Home gets one
+   coherent station" (owner, 9 November): he picked layout B, "both lines ending at buffer stops, and the turntable
+   on its own engine spur; line trains never turn on the table". It is data on main
+   (`src/proto/place/home-station.ts`, `?home=b`), waiting on its flip. The plan mentions it once, as "unresolved".
+   So ends 1–3, call 9, the Village stop marks, the Village loader and the whole keep-clear section describe a
+   Home that is going away:
+   - B's buffers are at s −5.5 (line 1) and −2.6 (line 2) and its island platforms run s 2.8–20.8 and 5.7–23.7. A
+     stop at 23.5 puts line 1's passenger car off the platform's end. By the plan's own 14.7 m rule the marks are
+     about s 9.2 and 12.1, on the platform, tail at the buffers.
+   - B's table is at world (942, 17) with stalls at 160°, 190° and 220°. Seen in the `?home=b` still: open grass to
+     the south and south-east, line 2's road about 12 m north. A full 26 m circle there would cross line 2 and the
+     island's east end, so keep clear a **sector** (about 130°–250°, to 26 m) plus the 8 m table. The forge, the
+     hall and the square are all on the other side of the station.
+   - The generator's list also misses things that are in the data today: the recovery rack at (905, 1), 17 m from
+     today's table and the station-deposit brief's Village yard, the Q1 frame and the forge crane.
+   - Ruling on "what moves and when": **nothing moves now.** The grown Roundhouse is an upgrade on layout B, so B's
+     flip comes first; no work on today's table rim (buffers at s 5, stop blocks, 23.5) is worth building.
+   Regenerate the Home parts of the map with `BOOGLE_HOME=b` as "as proposed", and keep today's as "today". The
+   engine-garage brief logged its own keep-clear the same day ("30 m on the stall side"); the two should become one
+   footprint, on layout B.
+2. **Ring Island: buffers, not a redrawn balloon (settle before R3a).** The finding is right and confirmed: R1's
+   neck turns back 165° because the greybox found "a 40 m loop doesn't fit on land north of the halt: the main cone
+   rises about 21% there" and swung it over the shallows beside the halt. The proposed balloon has the same problem
+   from the other side:
+   - **It isn't drawn.** "A turnout, a 20 m easing, r 40, centre u 520 lat +45" is one sentence and a ground sample.
+     A circle wholly east of both tracks can't take the up (west) track without crossing the down track, so it needs
+     either a merge to one track first or a teardrop about 80 m wide astride the line. Neither is in the continuity
+     report. A reach claim with no proof.
+   - **It cuts up to 12 m into the cone** on an island where the owner wants the land "more detailed and organic …
+     especially if people live there", and the terrain pass is working on the premise that the reviewed loop doesn't
+     move. From the still north of the halt, that flank is the first ground a visitor walks onto.
+   - **It turns every train round, and nothing else on the line does.** Trains are posed engine at +s
+     (`train-view.ts`, sign 1). A loop at one end and a stub at the other flips the consist every round trip, so the
+     cargo cars alternate sides of the passenger mark at every halt. The plan's own table says "after the loop the
+     consist faces home" at the island and then assumes the old way round at the Village. Loaders, yards and the
+     10.2 / 14.7 m marks all depend on which way round the train is.
+   - **Two platforms, both going home.** With the loop, the west platform's train goes home by way of a 30 s lap at
+     10 m/s and the east one directly, on request. Both plaques read "Village".
+   - **It is temporary.** The plan lifts it when the line runs on, and every other temporary end in the plan
+     (Far Head, the pier, the Gorge's ledge, Port Quay, Bell Rock's south end) gets buffers.
+   - **It lengthens the cycle** by about 35 s, where v26 already measured worst waits of 91–97 s and moved the
+     one-minute goal to v27.
+   **Recommended (call 14):** both tracks run about 15 m past the platforms to buffers and an end board, facing the
+   way the line will one day go on; a facing crossover on the Way before the halt, as Far Head's; trains stand at
+   the east platform (the works yard's side, where R2b put the steel and the mural); the west platform's lever is
+   chained and plaqued with the branch, as Far Head's was for the pier (generic-lines call 31), which telegraphs
+   the next line from the day you arrive. v27 then needs no loop leg, no `railLoopSpeed` and no orientation state;
+   the loop's sim arrives with the first loop that stays (stage 8). The first crossing's finale ends with the train
+   standing under the shard instead of circling. Cost: R1 gains a crossover and buffer positions and loses
+   `RING_LOOP` from line 2's row; R2b drops the loop deck and its ground cap.
+   **If the loop is kept instead:** a planner pass draws the track and puts it through the continuity report; the
+   redraw may change only `RING_LOOP`, R2b's loop deck and ground, and what is derived from the cycle (the train
+   count); it may not move `RING_PATH` up to u 468, `ringDeckY`, `RING_HALT`, `RING_GAP`, the brace platform
+   (u 284–294 at 8.0 m), the hook ring (u 276), `RING_HEAD` or `RING_END_BRAKE_CMS2` (200), and it must stay east
+   and north so the west side keeps room for the branch platforms (the brief: "build 1 only leaves room for the two
+   branch platforms west of the halt"). It also needs an answer
+   for the flipped consist. Then I re-review the layout with a still, and R3a waits for that R1 amendment to merge.
+3. **One shared stop mark per halt is enough; nothing here belongs in v26.** The only halt where one mark fails is
+   the Quarry, whose platforms are staggered (down s 166–186, up 154–174.5). A shared mark at s 170 puts the
+   passenger car on both (4.5 m to spare on the up side), keeps the long train clear of the plank crossing by
+   10.5 m and stands less of the train on the bend. Far Head's and the pier's moves are single numbers too. The long
+   train they are for doesn't exist until cargo cars ship, so none of it is a correctness fix today; the up car's
+   1.1 m overhang at the Quarry is a look, not a fault (boarding reaches). The pier's 1.5 m disagreement with
+   `PIER_STOP_CM`'s note has to be measured before that number moves. Also for v27: v26's block spacing (`sepCm`,
+   train plus 20 m) must read the consist's length.
+4. **A ring with both ends at Home breaks the plaques.** Generic-lines 4b plaques each lever with "the end it goes
+   to". On the ring both ends are Home (the Village and West landing), so at Canopy Town both platforms would name
+   a place in the same town. Name the next big place that way (call 28). The halt boards' island map already
+   shows the whole line.
+5. **"No extra cost" isn't right for the ring's second half, and "a dozen trains" is low.** The cave line is built
+   from West landing at stage 6 with nothing joining it to line 2 until stage 7, so it can't "append to the ring's
+   row": it is its own row with its own trains for a stage, then the two rows merge, with the cave half's `s`
+   running the other way. That is a real step for stage 7's plan, not a blocker now. And v26 measured worst waits at
+   about twice the even headway; a 17.4 km circuit at a one-minute worst wait is 25 or more trains. Size the ring by
+   even headway (about a dozen at 70 s, call 31), and say so.
+6. **Stations left where a line happened to stop** (the owner's own test). On line 2 after the Meet, the Pier
+   (202 m past Far Head) and the Railhead (266 m further) have no job: the pier rack is done, Q7's frame is
+   train-fed and the ring's footings go to the railhead. Recommended: the Railhead stays as the Meet's own halt
+   (the rivet, the leaf, the hook ring below are something to see; its name is already the owner's to give); the
+   Pier becomes a homeward request stop only, and v27 doesn't build its up platform or widen the pier 6 m west for
+   it (call 29). And **Canopy first**, stage 3 is the trestle to Bell Rock plus Bell Rock to Canopy: as two
+   services that is a change of train on an empty skerry on the first trip to the new town. By the plan's own rule
+   it is one line, Ring Island → Bell Rock → Canopy; the bay shortcut then arrives at stage 4 as the second line
+   into Bell Rock. The services table should be drawn for both orders.
+7. **The curve limit is aimed at the wrong evidence.** The plan says riders "are carried in the deck's frame, so
+   nobody is thrown". The 10 November session says both players came off trains just east of the Quarry halt,
+   standing, one with a footing, on v24, where every train had just stopped there. That is the 16.7 m bend at low
+   speed. Since v25 trains run through it at 20 m/s unless asked. So: a focused eval first (a standing rider through
+   s 150–200, from a stop and at line speed, two clients). If speed is the cause, the limit ships as a `railCurveSpeed`
+   tunable as soon as it is ready; if it isn't, the limit is only a comfort change and the P1 needs its own fix.
+   Easing the bend itself moves Place's rails and isn't worth it for the look: in the still it reads as a toy
+   railway's bend, like the in-town ramps that were ruled to stay.
+8. **A rule on line length would bend the map to fit a shop.** The 1.2 km figure is good (it matches the
+   decided crossing baseline and train-ride-feel's links), but its use is in the garage: don't show a speed part
+   where its readout barely moves (line 1's "15 s → 15 s" would read as a dud, and the engine-garage brief already
+   found speed alone weak and added "pulls one more car"). With the ring, the lines worth a speed part are the
+   ring, the bay line and the north–south line: three purchases, which is about what roundhouse-management's "one
+   small choice per line" wants. Line 1 and line 2 before Ring Island offer seats, looks and a whistle. The
+   engine-garage brief already logged the same default ("a speed fit is offered only where it saves 10 s") with
+   "new main lines at least 1 km"; keep one figure in one place, the garage's.
+9. **Bell Rock: two levels, bay line on top.** Two double-track lines crossing on one level would need a shared
+   block, which the junction ruling excludes, so two levels is right. But the north–south line comes from the
+   Gorge's station at 3 m and goes on to a causeway "sunken in the shallows": it never needs height. The bay line
+   comes from the skerry-high trestle (ruling 10's 15 m) and goes on to Canopy at 13 m: it never needs to come
+   down. Putting the bay line on the skerry and the north–south line at the water obeys the ruling grade's rule 2 ("a deck meets
+   an island at its height") with a bridge instead of an 11 m granite cut, keeps the telegraph row "from the bay line
+   train, the sunken causeway", and the low terminal's buffers face the causeway at its own level. To check with a
+   profile when the hub is built; map data only now.
+10. **Loaders and yards rest on two different trains.** [Station-deposit](../brainstorms/station-deposit.md)'s
+    review, on main since this plan was written, puts each yard on the ground at the foot of the original (down)
+    platform's back ramp, mid-platform, and says it is "not anchored to a cargo end: on double track each
+    direction's train ends at opposite ends". This plan says the engine is always at the +s end (push-pull, as
+    `train-view.ts` poses it today), so the cargo cars are on the Home side of the mark in both directions, and it
+    puts loaders there.
+    - They agree on the side of the track: the down platform's side, the Works side at the Quarry.
+    - They differ along the line by 4–11 m, and on which way round a train is. This plan is right about today's
+      trains. The yard's premise becomes true only where a train is turned on a loop.
+    - So fix the train first: with every end a stub or a crossover (call 14), no train is ever turned, and call 13
+      holds everywhere until stage 8's two loops.
+    - Build 1's yards don't depend on it and stay where they are. Build 2's gantry then has to reach from the back
+      ramp's foot to the cargo cars at the platform's Home end, across the deck's end ramp, which neither brief has
+      drawn. No yard stands at the Pier, which fits call 29.
+    - The Village yard is the recovery rack at (905, 1); layout B moves the rack to (915, 9), by the buffers, which is
+      the cargo end there.
+    - By stage 8, a line with one loop and one stub (the bay line to the Notch, the north–south line to the Original
+      Island) flips its consists every round trip: either loaders ride a gantry that covers both sides of the mark
+      (the engine-garage brief's suggestion 6) or those ends get buffers too.
+11. **Small.** The plan's "one stale input" (the catalog still has Ring top and High Port's rail leg) should be
+    regenerated before the owner reads the map, or the counts he sees (24 ends, 12 crossovers) include ends two
+    rulings already removed. The Saltpan and Port Quay entries say what is seen first but not what you come for.
+
+### Port from Place
+
+Lines 1 and 2's rails are Place's. Verdicts: the in-town ramps keep (ruled); line 1's 11.8 m bend keeps (every train
+is braking for the Camp there); the Quarry bend keeps pending finding 7; today's turntable-as-terminus is cut by
+layout B (owner, 9 November), which this plan should follow.
+
+### Before the owner answers
+
+1. Redo Home on layout B (finding 1) and withdraw the 23.5 marks.
+2. Replace question 3 (the loop's fate) with the buffers-or-balloon question, and say the balloon is undrawn.
+3. Regenerate the catalog (finding 11) and draw the services for both branch orders (finding 6).
+
+### Before Ring Island R3a starts
+
+The call in finding 2. With buffers: a small R1 amendment (crossover and buffer positions, `RING_LOOP` out of line
+2's row) and R3a loses its loop leg. With the loop: the planner pass, the continuity report, my re-review, then
+R3a. R1's measured pieces (the gap, the brace platform, the hook ring, the 2 m/s² brake) are untouched either way.
+
+### Owner questions
+
+1. **Should line 2 grow into one ring line round the map?** **Recommended: yes, as the working map.** One train from
+   the Village round to West landing; the bay line and the north–south line cross its middle; Home keeps the walk
+   between its two ends. Nothing is built on it before the first branch.
+2. **Ring Island while it is the end of the line: buffers past the halt, or a turning loop?** **Recommended:
+   buffers.** The loop needs a cut of up to 12 m into the cone beside the town, turns every train round, and is
+   lifted when the line goes on. The loop's lap of the island is what is given up.
+3. **Bell Rock on two levels?** **Recommended: yes, with the bay line on top of the rock and the north–south line
+   down at the water**, stairs between.
+4. **Halts with nothing left to do: the Pier and the Railhead after the Meet.** **Recommended: the Railhead stays
+   as the Meet's halt (you name it); the Pier becomes a stop for homeward trains only.**
+5. **Short lines and the upgrade screen.** **Recommended: the screen offers a speed part only where it saves about
+   ten seconds a trip (about 1.2 km); line 1 and the early line 2 get seats, looks and a whistle instead.**
