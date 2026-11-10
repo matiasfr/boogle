@@ -69,6 +69,11 @@ export const routes: Route[] = [
     normal: claude('general-purpose subagent', 'opus', 'medium'),
   },
   {
+    work: 'Search, file finding, log reading and summaries (the Explore agent; mistakes are cheap to spot)',
+    withCodex: claude('Explore agent', 'haiku', 'medium'),
+    normal: claude('Explore agent', 'haiku', 'medium'),
+  },
+  {
     work: 'Quick, easy, mechanical jobs',
     withCodex: codex('gpt-6-luna', 'low'),
     normal: claude('general-purpose subagent', 'sonnet', 'medium'),
@@ -89,7 +94,10 @@ export const routes: Route[] = [
   },
 ];
 
-/** Opus runs at medium; raise one task to high only when it hits bugs medium can't fix or medium falls short (owner, 9 November). */
+/**
+ * Opus runs at medium; raise one task to high only when it hits bugs medium can't fix or medium falls short (owner,
+ * 9 November). Before raising, check the task can verify its own work (docs/agents/models.md, "Escalating").
+ */
 export const opusEscalation = 'high';
 
 /** Fable never runs above this effort, on any route or at spawn (owner, 10 November; docs/agents/models.md). */
@@ -100,6 +108,7 @@ export const agents: Record<string, { model: string; effort: string }> = {
   planner: { model: 'opus', effort: 'medium' },
   implementer: { model: 'opus', effort: 'medium' },
   designer: { model: 'opus', effort: 'medium' },
+  Explore: { model: 'haiku', effort: 'medium' },
 };
 
 /** Default Codex model for dev/codex/run.ts. */
