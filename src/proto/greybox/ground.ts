@@ -2,7 +2,8 @@
 // island, Ring Island's cones, and each new land's `top` from the map JSON. Local metres (x east, z south).
 import { groundHeight } from '../../island/heights.ts';
 import { HALF } from '../../constants.ts';
-import { FAR, ORIGIN } from '../place/layout.ts';
+import { ORIGIN } from '../place/layout.ts';
+import { RING_CONES, ringHeight } from './ring-cones.ts';
 import { H, insidePlace } from '../place/terrain.ts';
 import { inside, type Layout, type Line, type XZ } from './map-data.ts';
 
@@ -12,21 +13,8 @@ const DEFAULT_TOP = 10;
 export const wx = (x: number) => x + ORIGIN.x,
   wz = (z: number) => z + ORIGIN.z;
 
-/** Today's Ring Island cones (src/proto/place/land.ts, buildFar): dx, dz, radius, height. */
-export const RING_CONES: [number, number, number, number][] = [
-  [0, 0, 340, 70],
-  [-170, 60, 170, 120],
-  [190, 30, 190, 95],
-  [40, -90, 130, 150],
-];
-export function ringHeight(x: number, z: number) {
-  let best = -Infinity;
-  for (const [dx, dz, r, h] of RING_CONES) {
-    const d = Math.hypot(x - FAR.x - dx, z - FAR.z - dz);
-    if (d < r) best = Math.max(best, h - 4 - (h * d) / r);
-  }
-  return best;
-}
+/** Today's Ring Island cones and their surface (./ring-cones.ts, pure, so node tests read the same). */
+export { RING_CONES, ringHeight };
 
 export type Ground = ReturnType<typeof createGround>;
 export function createGround(map: Layout) {

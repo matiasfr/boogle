@@ -323,15 +323,21 @@ leaves `npm run check` green.
   (eye distances to the greybox ring 12.7, 9.9, 20.9, 19.1 m): R4b's real ring is where (e) gets measured. (f) take-off
   at u 259.7, 9.5 m/s: apex press lands at **u 276.4** (prediction 276.4; the near edge is 276.5, so it falls through
   the platform's level on the edge, a splash in one run and a landing in another); late press (1.0 s, vy -15.4)
-  **lands at u 281.3 against 279.3: 2.0 m past the prediction, more than 0.3 m**, so R1 moves the platform and the
-  ring out by 2.0 m (presses at 0.85 and 1.15 s land at 279.4 and 281.3: the plateau is about 281.3). (g) After a sprint
+  ~~lands at u 281.3 against 279.3~~. **Re-measured 10 November (R1 review):** the eval read "landing" as the body's
+  centre falling through the platform's standing height, which on a deck comes 0.2–0.45 s after touchdown with the
+  body still sprinting; it now reads the first ground contact (`landU`, `ringonly=f` runs the item alone; load 12.5,
+  one run, not tested on a device). On the u-260 basis: the apex press splashes at **u 276.4** (prediction 276.4); the
+  late press lands at **u 278.7 against 279.3**, 0.6 m short of the model, on the gold strut's 0.5 m block (u
+  277.8–279.2, lat 2.7–4.1, the lane's lat 4.0), which a landing 0.5 m higher reaches about that much sooner; presses
+  at 0.7, 0.85 and 1.15 s first touch at u 277.6, 278.3 and 278.1. Nothing lands past the prediction, so R1 moves
+  nothing (the 2.0 m was the measurement, not the jump), and the model stays an upper bound. (g) After a sprint
   jump and air jump the canopy opens by Jump; full stick carries to u 303 (past the 12.5 m platform) and a splash at
   u 310; let go at u 280 it lands on the platform at u 284.1. (g2) Off the edge with no jump: full stick lands on the
   platform at u 277.35; the stick let go at u 270 falls short at u 274.2 (a splash). Stills in `.look/`: `ring-main`
   (the `gap` view), `ring-bentRamp`, `ring-hingeRamp`, `ring-hook`, `ring-home` (Home's summit: the leaf is not told
   from the Way at 8 px, and the lookout tower hides part of the line), `ring-scope1` and `ring-scope2` (at
   844x390 the orange leaf reads as an upright orange slab, about 13 px at zoom 1 and about 26 px at zoom 2).
-- [ ] **1. R1, the layout (no sim rule, no bump).** Create `src/sim/railway-ring-layout.ts` with everything under
+- [x] **1. R1, the layout (no sim rule, no bump).** Create `src/sim/railway-ring-layout.ts` with everything under
   "R1" above, integer cm, importing only `./railway-works-layout.ts` and the `RailPlatform` type from
   `./railway-lines.ts`. Numbers: the greybox's `RING_LAYOUT` with ruling 5's datum and the design review's ruling on
   Level finding 1 (the brace platform at 8.0 m from u 284 to 294, its gold strut's foot at u 284.5, the hook ring at
@@ -357,6 +363,29 @@ leaves `npm run check` green.
   target on the folk's side within 24 m of our deck; nothing standable over the railhead platform's last 30 m stands
   more than 1.6 m above it (the jib's mast and arm are out of a double jump's 3.03 m reach); each recovery point is
   dry. Proof: `npm run level-check` prints the report (no player-visible change, no look).
+  *Built (2026-11-10):* every assertion passes on the reviewed numbers. The stepped envelope (the controller's own
+  numbers, which match the plan's) gives the late double jump 21.8 m with grace and body (best press 1.10 s), 2.2 m
+  short of the platform; the cab roof (u 253.8 m, 18.5 m) 23.3 m against 30.3 m round the leaf's east side; glides
+  after both jumps 28.0 m conservative, after one 33.8 m raw, straight off 23.8 m (a splash); head 6 reaches the brace
+  platform from the cab roof (55.3 against 50.2 m, reported); hook corners 14.9, 11.3, 21.9, 19.7 m. Departures, for
+  review: `ringAt` uses unit axes (true cm, as `CROSSING_BENTS` stand; the greybox's `at` drifts 4 cm by bent 6 and
+  17 cm by the halt); `RING_PATH` runs from u 8 m (s 750 m), not u 10, so a point's index stays s / 1000
+  (`railLinePoint`) and it ends exactly at u 468 m; its first chord from line 2's last point is 11.55 m, not 10 (line 2
+  ends at s 740 m, 3.55 m short of the pier head: the pier's datum offset), so the test holds that chord to 10–12 m and
+  every other to 1000 ± 5 cm; rack to jib is 1504.8 cm at the plan's lats (4.8 and 3.6; the greybox's mast stands at
+  5.4), held at 1510; `RING_WALK` starts at u 95 m, not 100, so the first railhead platform's back 5 m stays walkway;
+  railheads 0–6 get a fourth flight (at most 28.5°), bent 13 keeps the greybox's three; the train's end stop is 10 m
+  short of the railhead (nose about 1 m off the buffer, wagon by the rack). Added: `RING_RAILHEAD_KIT`,
+  `RING_PLATFORM_LAT`, `RING_STEPS`, `RING_FORMATION`. Found for R3a: the greybox's loop neck runs 12 m on from the
+  halt's north end and then 30 m back south to the loop's west point beside the halt (`neckCm` 4262).
+  *Review fixes (2026-11-10):* a braking train's kept carry crossed the gap (Level finding 14), so the end stop eases
+  in at `RING_END_BRAKE_CMS2` 200 (no approach cap needed: `RING_END_APPROACH` 2000, the line's speed) and the report
+  steps every standable top of the train through the braking (worst the chimney, 1.6 m short; cab roof 3.2, boiler
+  1.7, running board 2.3, wagon 14.5); the reviewer's `test/railway-ring-reach-review.test.ts` passes on it. The
+  hook ring's x, z derive from its u, lat and the report measures in world cm as the test does; the report's air jump
+  and glider read the railway tunables' defaults (sprint, coyote and the fall cap stay literals: they are unexported
+  literals in `state.ts`); the island's cones moved to `src/proto/greybox/ring-cones.ts`, read by the greybox, the
+  test and the report.
 - [x] **2a. R2a, the coast in regions (no bump).** `coast.ts`: providers group into regions (a provider whose bounds,
   grown by `MARGIN`, overlap another's joins its region; home and place are one region today). Each region bakes at
   `max(1, side / 1024)` m a texel with its own margin of open sea, and the regions pack as rows of one RG16F texture
@@ -397,7 +426,10 @@ leaves `npm run check` green.
   `railway-lines.ts`: line 2's row as under "R3" (path, halts, `trains: 3`, `RailOpen`, `at: 'ringHead'`); in
   `railway-train.ts`: `trainStopsOf(line, open)`; in `railway-trains.ts` (v26's file): the loop leg on pseudo-track 2
   with `railLoopSpeed`, the loop in `cycleTicks` and `circuitCm`, the moving end's block from `RING_HEAD[head]`.
-  Tunable `railLoopSpeed` (default 100) in `src/tunables/catalog.ts` and `src/sim/tune.ts`. Tests:
+  **The end stop eases in** (R1 review P1, Level finding 14): a leg ending at the open railhead's end stop (any
+  `RING_HEAD[head]` while not joined) brakes at no more than `RING_END_BRAKE_CMS2` (200 cm/s², 2 cm a tick²) and
+  runs no faster than `RING_END_APPROACH` while braking, both from `railway-ring-layout.ts`, never at the line's
+  `accel`; test: a leg into the railhead never decelerates harder than that, and the pose stays continuous. Tunable `railLoopSpeed` (default 100) in `src/tunables/catalog.ts` and `src/sim/tune.ts`. Tests:
   `test/railway-lines.test.ts`: halt ids 0–5 unchanged, the two new halts appended, every platform from R1;
   `test/railway-trains.test.ts`: v26's 2,000-tick random-ask run on line 2 with the island open reports the worst
   wait each way at every halt, **under 600 ticks with 3 trains** (if not, the test names the halt and the catalog goes
@@ -553,6 +585,7 @@ carry the review's numbers and rows 12–13 are new. The planner's original numb
 | 11 | Railhead platform (25 m × 4.5 m, beside the track) | Rack, jib and lever at u − 18, − 3 and − 22, lat +4.8, +3.6, +2.8: all off the track, room for three players and the wagon's unload (review finding 6) | None |
 | 12 | The railhead platform moving out 20 m with `head` (design review) | It stands beside the formation, over open sea (lat +1.8..+6.3). Moved as one piece, anyone on its back 20 m when a bent's second footing goes in drops about 15–20 m into the sea | It stays behind as the side walkway (`RING_WALK`) and only the rack, jib and lever slide on (call 28). The walkway also keeps walkers beside the track rather than on it once three trains run over the stub |
 | 13 | Other launch points at the gap (design review) | The jib's mast (9 m) and arm (8.5 m up) are out of a double jump's 3.03 m; the rack's 1.6 m top is 42 m back. A stopped train's cab roof (about 3.5 m over the rail) stands on the track with the raised leaf ahead, so a jump from it has to go diagonally, about 29 m to the platform's near edge, against about 23.6 m for a late double jump off a braking train | Nothing to change; R1's report checks the roof from the end stop's real position |
+| 14 | A braking train's kept carry (R1 review, P1) | Leaving a moving deck keeps its speed through the air (`platforms.ts` `carryStep`), and line 2 brakes at 3.5 m/s²: a late double jump from the cab roof at about 8 m/s some 10 m before the stop is 0.2 m short, from the chimney 2.9 m over, from the boiler's front 1.3 m over | **Ruled (orchestrator, 10 November, agent-calls): the platform stays; the end stop eases in at no more than 2 m/s²** (`RING_END_BRAKE_CMS2`, R3a). R1's report steps every standable top (cab roof, chimney, boiler top, running board, both flatbeds, the wagon's deck) at every 10 cm of the braking: worst the chimney, 1.6 m short at 5.1 m/s, 6.5 m before the stop; 2.0 m/s² is the largest that keeps 1.5 m |
 
 ## Risks
 
