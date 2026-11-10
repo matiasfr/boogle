@@ -78,10 +78,18 @@ function codex(work: string, report: string, brief: string) {
   const log = fs.openSync(report + '.log', 'w', 0o600);
   try {
     execFileSync('codex', argv, { cwd: work, env, input: brief, stdio: ['pipe', log, log] });
+  } catch (error) {
+    // Out of subscription usage (9-10 November) is a skipped night, not a failed job: name when it comes back.
+    const limit = /You.ve hit your usage limit\..*?(try again at [^.\n]*)?\.?$/m.exec(
+      fs.readFileSync(report + '.log', 'utf8'),
+    );
+    if (limit) throw new UsageLimit(`skipped: Codex usage limit${limit[1] ? `, ${limit[1]}` : ''}`);
+    throw error;
   } finally {
     fs.closeSync(log);
   }
 }
+class UsageLimit extends Error {}
 
 // GitHub calls run from the durable checkout with an explicit repository, never from the run's worktree: on 9 November
 // another session's worktree cleanup removed that worktree mid-run and the report then failed outside a git repository.
@@ -104,6 +112,16 @@ async function holding<T>(job: string, long: boolean, fn: (leased: NodeJS.Proces
 function harnessBrowsers() {
   const ps = spawnSync('ps', ['-Ao', 'command'], { encoding: 'utf8' }).stdout ?? '';
   return ps.split('\n').filter((l) => l.includes('/ms-playwright/') && !l.includes(' --type=')).length;
+}
+
+/** The busiest processes now, `<%cpu> <command>`: a loaded night's evidence names what shared the machine. */
+function busiest(n = 8) {
+  const ps = spawnSync('ps', ['-Arwwo', 'pcpu=,command='], { encoding: 'utf8' }).stdout ?? '';
+  return ps
+    .split('\n')
+    .map((l) => l.trim().slice(0, 160))
+    .filter(Boolean)
+    .slice(0, n);
 }
 
 /** Waits, bounded, for a quiet machine. Returns '' once quiet, or the reason it gave up. */
@@ -338,13 +356,18 @@ if (dry && job === 'perf') {
         const busy = await waitForQuiet();
         if (busy) return { busy };
         const before = os.loadavg()[0]!;
+        const busyBefore = busiest();
         // A visible browser: keep the display awake for the run (a sleeping display stops animation frames).
         const execution = spawnSync(
           'caffeinate',
           ['-dimu', process.execPath, 'dev/look/bench.ts', '--out', benchFile, '--commit', base],
           { cwd: work, env: leased, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 30 * 60 * 1000 },
         );
-        return { execution, load: [before, os.loadavg()[0]!] as [number, number] };
+        return {
+          execution,
+          load: [before, os.loadavg()[0]!] as [number, number],
+          busiest: { before: busyBefore, after: busiest() },
+        };
       });
       const file = path.join(dir, 'notification.md');
       if (!measured.execution) {
@@ -361,6 +384,7 @@ if (dry && job === 'perf') {
       } else {
         const { execution, load } = measured;
         result.load = load;
+        result.busiest = measured.busiest;
         fs.writeFileSync(path.join(dir, 'bench.log'), output(execution));
         if (execution.status !== 0 || !fs.existsSync(benchFile))
           throw new Error(
@@ -622,9 +646,16 @@ if (dry && job === 'perf') {
       succeeded = true;
     }
   } catch (error) {
-    result.status = 'failed';
-    result.error = error instanceof Error ? error.message : String(error);
-    console.error(result.error);
+    if (error instanceof UsageLimit) {
+      // The worktree is kept (not succeeded): the agent may have worked for a while before the limit.
+      result.status = 'skipped';
+      result.reason = error.message;
+      console.log(result.reason);
+    } else {
+      result.status = 'failed';
+      result.error = error instanceof Error ? error.message : String(error);
+      console.error(result.error);
+    }
   } finally {
     result.finished = new Date().toISOString();
     fs.writeFileSync(path.join(dir, 'evidence.json'), JSON.stringify(result, null, 2) + '\n');

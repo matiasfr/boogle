@@ -243,7 +243,9 @@ function loopOf(sf: Program): Loop | null {
   let fnName: string | null = null;
   walk(sf, (n) => {
     if (n.type !== 'CallExpression' || calleeName(n) !== 'setAnimationLoop') return;
-    const a0 = n.arguments[0];
+    // setAnimationLoop(frame), or a wrapper around it: setAnimationLoop(guardGraphicsFrame(frame)).
+    let a0 = n.arguments[0];
+    if (a0?.type === 'CallExpression' && a0.arguments[0]?.type === 'Identifier') a0 = a0.arguments[0];
     if (a0?.type === 'Identifier') fnName = a0.name;
   });
   const fn = sf.body
