@@ -31,8 +31,8 @@ export const routes: Route[] = [
   },
   {
     work: 'Planning complex work (docs/plans/<topic>.md)',
-    withCodex: claude('planner agent', 'fable', 'medium'),
-    normal: claude('planner agent', 'fable', 'medium'),
+    withCodex: claude('planner agent', 'opus', 'medium'),
+    normal: claude('planner agent', 'opus', 'medium'),
   },
   {
     work: 'Implementation, fixes, tooling, captures-driven tasks',
@@ -49,9 +49,14 @@ export const routes: Route[] = [
     withCodex: {
       who: "the other vendor from the author: Codex review job for Claude's code, a fresh Claude general-purpose subagent for Codex's",
       model: 'gpt-6-astra, or fable',
-      effort: 'xhigh for astra, high for fable',
+      effort: 'xhigh for astra, medium for fable',
     },
-    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'high'),
+    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'medium'),
+  },
+  {
+    work: 'Code review before shipping (/code-review, e.g. on src/net*, src/world/ or server/)',
+    withCodex: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'high'),
+    normal: claude('general-purpose subagent running /code-review high, not the main session', 'opus', 'high'),
   },
   {
     work: 'Runner: owed proofs on a built branch (rebase, bot runs, stills, tick marks); reports failures, changes no design or game code',
@@ -61,7 +66,7 @@ export const routes: Route[] = [
   {
     work: 'Hardest design, research or second-opinion review',
     withCodex: codex('gpt-6-astra', 'xhigh'),
-    normal: claude('general-purpose subagent, or /code-review high', 'fable', 'high'),
+    normal: claude('general-purpose subagent', 'opus', 'high'),
   },
   {
     work: 'Quick, easy, mechanical jobs',
@@ -89,7 +94,7 @@ export const fableTopEffort = 'high';
 
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
-  planner: { model: 'fable', effort: 'medium' },
+  planner: { model: 'opus', effort: 'medium' },
   implementer: { model: 'opus', effort: 'medium' },
   designer: { model: 'opus', effort: 'medium' },
 };
