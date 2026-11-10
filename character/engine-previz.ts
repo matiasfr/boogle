@@ -5,7 +5,9 @@
 import * as THREE from 'three/webgpu';
 import { addPart, mergeParts } from '../src/render/geometry-parts.ts';
 import {
+  A_LONG,
   CANDIDATES,
+  DRIVER,
   STATES,
   RED,
   RUST,
@@ -19,7 +21,7 @@ import {
 } from './engine-previz-parts.ts';
 
 export type KitPart = (asset: string, node: string) => Promise<THREE.Object3D>;
-export type PrevizView = 'turn' | 'cab' | 'halt' | 'states';
+export type PrevizView = 'turn' | 'long' | 'cab' | 'halt' | 'states';
 type Placement = { x: number; y: number; z: number; yaw: number };
 
 const DECK = '#9a7b55',
@@ -33,12 +35,12 @@ const DECK = '#9a7b55',
 const FLAT_HZ = 1.6,
   GAP = 0.6; // today's gap from the flatbed's deck to the engine's frame (cars.ts TRAIN_OFFSETS)
 
-/** `?engineView=turn|cab|halt|states`, or `window.enginePrevizView` set before a stage `select` (one page, many views). */
+/** `?engineView=turn|long|cab|halt|states`, or `window.enginePrevizView` set before a stage `select` (one page, many views). */
 export function previzView(): PrevizView {
   const v =
     (window as { enginePrevizView?: string }).enginePrevizView ??
     new URLSearchParams(location.search).get('engineView');
-  return v === 'cab' || v === 'halt' || v === 'states' ? v : 'turn';
+  return v === 'long' || v === 'cab' || v === 'halt' || v === 'states' ? v : 'turn';
 }
 
 function partGeometry(p: Exclude<Part, { kind: 'wheel' }>) {
@@ -106,17 +108,28 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
   };
   /** A stand-in little guy at the controls, at the size docs/plans/home-station.md measured from folk.ts: 0.99 m
    * standing, body 0.46 m wide, hat 0.58 m. Not folk.ts's model, which needs the world to build. */
-  const littleGuy = (x: number, y: number, z: number, yaw: number) => {
+  /** Seated (the driver, owner 10 November): on a tall stool, DRIVER.stool high, squashed to his seated 0.9 m. */
+  const littleGuy = (x: number, y: number, z: number, yaw: number, seated = true) => {
     const guy = new THREE.Group();
-    const part = (geo: THREE.BufferGeometry, color: string, py: number) => {
+    const part = (geo: THREE.BufferGeometry, color: string, py: number, pz = 0) => {
       const mesh = own(new THREE.Mesh(geo, flat(color)));
-      mesh.position.y = py;
+      mesh.position.set(0, py, pz);
       guy.add(mesh);
     };
-    part(new THREE.CylinderGeometry(0.2, 0.23, 0.55, 14), '#4f6f8f', 0.3); // body
-    part(new THREE.SphereGeometry(0.19, 14, 8), '#e9c39b', 0.73); // head
-    part(new THREE.CylinderGeometry(0.29, 0.29, 0.05, 16), '#5a3b26', 0.86); // hat brim
-    part(new THREE.CylinderGeometry(0.17, 0.19, 0.12, 14), '#5a3b26', 0.93); // crown, top at 0.99 m
+    const seat = seated ? DRIVER.stool : 0;
+    if (seated) {
+      part(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), '#7f5630', seat - 0.025); // the stool's seat
+      part(new THREE.CylinderGeometry(0.04, 0.05, seat - 0.05, 8), '#2c2e34', (seat - 0.05) / 2); // its post
+      part(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 12), '#2c2e34', 0.015); // its foot
+      part(new THREE.BoxGeometry(0.34, 0.12, 0.3), '#4f6f8f', seat + 0.06, 0.12); // thighs, forward
+      part(new THREE.BoxGeometry(0.3, 0.35, 0.1), '#4f6f8f', seat - 0.17, 0.25); // shins, hanging
+    }
+    // Standing: body 0.3 m up, head 0.73, hat top 0.99. Seated he squashes to 0.9 over the seat (head 0.39–0.84).
+    const k = seated ? 0.9 / 0.99 : 1;
+    part(new THREE.CylinderGeometry(0.2, 0.23, 0.55 * k, 14), '#4f6f8f', seat + (seated ? 0.28 : 0.3)); // body
+    part(new THREE.SphereGeometry(0.19, 14, 8), '#e9c39b', seat + 0.73 * k); // head
+    part(new THREE.CylinderGeometry(0.29, 0.29, 0.05, 16), '#5a3b26', seat + 0.86 * k); // hat brim
+    part(new THREE.CylinderGeometry(0.17, 0.19, 0.12, 14), '#5a3b26', seat + 0.93 * k); // crown, top at 0.99 m
     guy.position.set(x, y, z);
     guy.rotation.y = yaw;
     group.add(guy);
@@ -188,7 +201,7 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
       holder.position.set(x, 0, back + 1.5);
       return back + 3.16;
     }
-    const c = CANDIDATES[id];
+    const c = state === 'long' && id === 'a' ? A_LONG : CANDIDATES[id];
     const modules = STATES.find((s) => s.id === state)!.modules as readonly Module[];
     for (const module of [...modules, ...(open ? [] : (['cabNear'] as const))]) {
       if (module === 'wheels') continue;
@@ -213,15 +226,21 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
       b = c.cab.buddy;
     return { x: b[0], y: b[1], z: back - c.rear + b[2], yaw };
   };
+  /** Where Buddy stands on the halt deck beside a candidate's cab door, its frame's back end at `back`. */
+  const atDoor = (back: number, yaw: number): Placement => {
+    const c = CANDIDATES[id as EngineId];
+    return { x: 2.2, y: 0.72, z: back - c.rear + (c.cab.door.z[0] + c.cab.door.z[1]) / 2 - 0.9, yaw };
+  };
   const coupler = (x: number, z0: number, z1: number) => boxAt(BLACK, [x - 0.06, x + 0.06], [0.55, 0.66], [z0, z1]);
   const length = id === 'today' ? 3 : CANDIDATES[id].front - CANDIDATES[id].rear;
 
   const view = previzView();
   let buddy: Placement;
-  if (view === 'turn') {
-    track(0, [-length / 2 - 2.5, length / 2 + 2.5]);
-    platform([-length / 2 - 1.5, length / 2 + 1.5]);
-    await engine('boiler', 0, -length / 2);
+  if (view === 'turn' || view === 'long') {
+    // `long`: A with the longer boiler (the frame 0.5 m longer ahead, so the same back end).
+    track(0, [-length / 2 - 2.5, length / 2 + 3]);
+    platform([-length / 2 - 1.5, length / 2 + 2]);
+    await engine(view === 'long' && id === 'a' ? 'long' : 'boiler', 0, -length / 2);
     buddy = { x: 2.35, y: 0.72, z: -length / 2 + 0.6, yaw: -0.5 };
   } else if (view === 'cab') {
     // The platform side's cab wall left out: Buddy standing in the cab, the driver at the controls beside him.
@@ -230,17 +249,22 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
     await engine('boiler', 0, -length / 2, true, true);
     buddy = id === 'today' ? { x: 2.35, y: 0.72, z: -0.9, yaw: 1.2 } : inCab(-length / 2, 1.2);
   } else if (view === 'halt') {
-    // A real flatbed at z 0, the engine coupled ahead of it with today's gap; Buddy in the cab (today: on the deck).
+    // A real flatbed at z 0, the engine coupled ahead of it with today's gap; Buddy on the deck by the closed cab door (today: by the cab).
     track(0, [-6, 2 * length + 6]);
     platform([-5, 2 * length + 4]);
     await flatbed(0);
     const back = FLAT_HZ + GAP;
     coupler(0, FLAT_HZ - 0.1, back + 0.15);
     await engine('boiler', 0, back, false, true);
-    buddy = id === 'today' ? { x: 2.35, y: 0.72, z: back + 0.5, yaw: Math.PI - 0.7 } : inCab(back, Math.PI - 0.9);
+    buddy = id === 'today' ? { x: 2.35, y: 0.72, z: back + 0.5, yaw: Math.PI - 0.7 } : atDoor(back, Math.PI + 0.8);
   } else {
     // The upgrade states side by side, 5 m apart, all facing +z; the second engine leads the first.
-    const states: StateId[] = id === 'today' ? ['base', 'boiler'] : ['base', 'boiler', 'speed', 'twin'];
+    const states: StateId[] =
+      id === 'today'
+        ? ['base', 'boiler']
+        : id === 'a'
+          ? ['base', 'boiler', 'long', 'twin']
+          : ['base', 'boiler', 'speed', 'twin'];
     for (const [k, state] of states.entries()) {
       const x = k * 5;
       const extra = state === 'twin' ? length + GAP : 0;

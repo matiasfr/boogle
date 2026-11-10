@@ -54,6 +54,8 @@ type Unit = {
   hx: number;
   hz: number;
   cab: { hx: number; zBack: number; zFront: number; floor: number };
+  /** How much longer than `hz` the frame runs ahead of the middle (the longer-boiler upgrade), in the unit's metres. */
+  ahead?: number;
 };
 
 /** Buddy, measured in the asset stage from the game's body in its idle pose (its skinned vertices, hat and gear off): 1.59 m
@@ -61,8 +63,11 @@ type Unit = {
 export const BUDDY = { height: 1.59, shoulders: 0.91 };
 /** The player's collider (src/constants.ts: PLAYER_R 0.45, HEAD_OFFSET 0.8): 0.9 m across, 1.7 m tall. */
 export const COLLIDER = { width: 0.9, height: 1.7 };
-/** The little guy at the controls (docs/plans/home-station.md, from folk.ts): 0.99 m standing, his hat 0.58 m wide. */
-export const DRIVER = { height: 0.99, hat: 0.58 };
+/** The little guy at the controls (docs/plans/home-station.md, from folk.ts): 0.99 m standing, his hat 0.58 m wide;
+ * seated he is 0.9 m from seat to hat top, his head 0.39–0.84 m over the seat. He drives from a tall stool (owner,
+ * 10 November: "the little guys can sit on stools to be higher"): 0.8 m puts his eyes about 1.4 m over the floor, in
+ * the front windows (1.35–1.72 m) and over the boiler's back where it passes him. */
+export const DRIVER = { height: 0.99, hat: 0.58, seated: 0.9, stool: 0.8 };
 /** The owner's call (10 November): Buddy fits in the cab. Headroom over the taller of him and his collider, room beside the driver, a doorway. */
 export const CAB_FIT = { headroom: 0.2, between: 0.1, door: 1.0, doorHead: 0.15, wall: 0.06 };
 /** All three are scaled by the same factor, the size Home station's layout recommends and is sized beyond (1.5). */
@@ -165,6 +170,14 @@ function walkInCab(p: Parts, c: Cab) {
     const x: [number, number] = side > 0 ? [hx - w, hx] : [-hx, -(hx - w)];
     box(p, m, RED, x, [base, roofUnder], [zBack, door.z[0]]); // the post behind the doorway
     box(p, m, RED, x, [door.top, roofUnder], door.z); // over the doorway
+    // The door, drawn shut (owner, 10 November: "side door closed so it's not visibly open from the side"): a panel
+    // set 1 cm into the doorway, a small high window and a brass handle. Hinged on the post behind it.
+    const dx: [number, number] = side > 0 ? [hx - 0.05, hx - 0.01] : [-(hx - 0.01), -(hx - 0.05)];
+    box(p, m, RED, dx, [base + 0.02, door.top - 0.01], [door.z[0] + 0.005, door.z[1] - 0.005]);
+    const dg: [number, number] = side > 0 ? [hx - 0.02, hx + 0.005] : [-(hx + 0.005), -(hx - 0.02)];
+    box(p, m, GLASS, dg, [door.top - 0.5, door.top - 0.2], [door.z[0] + 0.3, door.z[1] - 0.3]);
+    const dh: [number, number] = side > 0 ? [hx - 0.02, hx + 0.04] : [-(hx + 0.04), -(hx - 0.02)];
+    box(p, m, BRASS, dh, [floor + 1.0, floor + 1.06], [door.z[1] - 0.2, door.z[1] - 0.1]);
     box(p, m, RED, x, [base, roofUnder], [door.z[1], zFront]); // ahead of it, with a window
     const gx: [number, number] = side > 0 ? [hx - 0.015, hx + 0.015] : [-hx - 0.015, -hx + 0.015];
     if (zFront - door.z[1] > 0.4)
@@ -210,7 +223,7 @@ function fitBuddy(u: Unit, s = SCALE): Candidate {
     driver: [-(hxIn - DRIVER.hat / 2 - f.between), floor, zFront - 0.6],
   };
   walkInCab(parts, cab);
-  const front = u.hz * s,
+  const front = (u.hz + (u.ahead ?? 0)) * s,
     rear = -(u.hz * s + d);
   return { id: u.id, name: u.name, scale: s, hx: Math.max(u.hx * s, hx), hz: (front - rear) / 2, rear, front, parts, cab };
 }
@@ -344,12 +357,53 @@ export const CANDIDATES: Record<EngineId, Candidate> = {
   c: fitBuddy(tank()),
 };
 
+/** How much the longer-boiler upgrade lengthens A's frame, in A's unit metres: 0.4 (0.5 m built) takes the frame to
+ * 4.5 m, the longest the layout tests allow (Home's island deck and the Pier's track layer, 1.5× today's engine). */
+export const LONG_AHEAD = 0.4;
+/** The longer-boiler upgrade (owner, 10 November: "longer boiler is an upgrade along the upgrade path"): A's cab, chassis
+ * and drivers, its frame lengthened ahead of the drivers, B's fatter boiler with its steam dome and safety valve, and
+ * B's pony truck in the new length. Only the boiler, its lashing and the frame change. */
+function longBoilerA(): Unit {
+  const a = stubby(),
+    d = LONG_AHEAD,
+    cut = 1.2; // ahead of the front drivers, behind the buffer beam
+  const p: Parts = a.parts
+    .filter((q) => !['boiler', 'lashing', 'speed', 'steam'].includes(q.m))
+    .map((q): Part => {
+      if (q.kind === 'box') {
+        if (q.min[2] >= cut) return { ...q, min: [q.min[0], q.min[1], q.min[2] + d], max: [q.max[0], q.max[1], q.max[2] + d] };
+        if (q.max[2] > cut) return { ...q, max: [q.max[0], q.max[1], q.max[2] + d] };
+        return q;
+      }
+      const front = q.kind === 'cyl' && q.axis === 'z' ? q.at[2] - q.len / 2 : q.at[2];
+      return front >= cut ? { ...q, at: [q.at[0], q.at[1], q.at[2] + d] } : q;
+    });
+  wheels(p, [1.5], 0.24); // the pony truck
+  cz(p, 'boiler', RED, 1.55, [-0.7, 1.55], 0.55, 24);
+  cz(p, 'boiler', DARK, 1.55, [1.4, 1.82], 0.58, 24);
+  cz(p, 'boiler', DOOR, 1.55, [1.81, 1.85], 0.34, 20);
+  cy(p, 'boiler', DARK, 1.6, [2.0, 2.55], 0.15, 0.19);
+  cy(p, 'boiler', DARK, 1.6, [2.5, 2.6], 0.23, 0.23);
+  sphere(p, 'boiler', BRASS, [0, 2.07, 0.6], 0.27, 0.85); // steam dome
+  sphere(p, 'boiler', BRASS, [0, 2.02, -0.15], 0.18, 0.85); // sand dome
+  lashing(p, 1.55, 0.55, [0.2, 1.05]);
+  steam(p, 0, 2.6, 1.6);
+  return { ...a, name: 'Stubby toy, longer boiler', parts: p, ahead: d };
+}
+/** A with the longer boiler fitted: the same cab, scaled and fitted to Buddy as A is. */
+export const A_LONG = fitBuddy(longBoilerA());
+
 /** The upgrade states the plans name, and the modules each one draws. `twin` is two boiler-state engines coupled. */
 export const STATES = [
   { id: 'base', label: 'Old train: no boiler, empty saddles, rust', modules: ['body', 'wheels'] },
   {
     id: 'boiler',
     label: 'Boiler fitted: boiler, gold lashing, steam',
+    modules: ['body', 'wheels', 'boiler', 'lashing', 'steam'],
+  },
+  {
+    id: 'long',
+    label: 'Longer boiler (A_LONG): the frame 0.5 m longer, B’s boiler, a pony truck',
     modules: ['body', 'wheels', 'boiler', 'lashing', 'steam'],
   },
   {
