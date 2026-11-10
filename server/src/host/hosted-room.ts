@@ -99,7 +99,7 @@ export function createHostedRoom({
   log?: (...a: unknown[]) => void;
 }) {
   const graceMs = cfg.reconnectGraceMs ?? 1500;
-  const born = store.born(roomId); // this world's birth id: a reset or restore loads a new room, with a new one
+  const born = store.born(roomId); // this world's id (null: unreadable save); a reset or restore loads a new room
   // A tab sends nothing while its own main thread is stalled (a long frame, a software-rendered runner at a frame every few
   // seconds), so a short limit drops healthy sockets and every peer re-lists them. A closed tab or a lost link still ends the
   // socket at once (close/reset); this only bounds a connection that went silent without either.
@@ -397,7 +397,7 @@ export function createHostedRoom({
     ws.on('close', () => leave(c));
     ws.on('error', () => {});
     if (!lead) lead = id;
-    ws.send(encode({ t: 'welcome', v: 1, boot, born, lead, max: cfg.maxPlayers }));
+    ws.send(encode({ t: 'welcome', v: 1, boot, ...(born === null ? {} : { born }), lead, max: cfg.maxPlayers }));
     let peers: { id: string; s: number; d: unknown }[] = [];
     let chars = 0;
     const sendList = (last: boolean) => {

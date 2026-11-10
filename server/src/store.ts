@@ -10,8 +10,9 @@
 //   await store.create(id, doc)           a new room's first save only: 409 if it has a file, 507 past maxRooms
 //   store.known(id), store.count()        rooms with a file
 //   store.forget(id)                      after boot cleanup or a reset moved its file, under withLock(id)
-//   store.born(id)                        the id of this room's world, new whenever it starts over (a reset, a restore):
-//                                         the client starts the player over when it changes (src/player/world-reset.ts)
+//   store.born(id)                        the id of this room's world, new when it starts over (a reset; a restore
+//                                         brings the backup's back); null if the save is unreadable. The client starts
+//                                         the player over when it changes (src/player/world-reset.ts)
 //   store.withLock(key, fn)               run fn after every earlier call with the same key has settled
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -124,8 +125,15 @@ export function createStore(cfg: { dataDir: string; maxRooms: number; serverRoom
         return { status: 200, body: { ok: true, tick: doc.tick } };
       });
     },
-    born(id: string): string {
-      const doc = this.readSync(id);
+    /** Null for a save that cannot be read: it loads as a fresh fallback that is never saved (noSave), and naming
+     * that world would start its players over now and again once the file is repaired. */
+    born(id: string): string | null {
+      let doc: RoomDoc | null;
+      try {
+        doc = this.readSync(id);
+      } catch {
+        return null;
+      }
       return doc ? (okBorn(doc.born) ? doc.born : BORN_LEGACY) : newBorn(id);
     },
     known: (id: string) => knownRooms.has(id),
