@@ -32,6 +32,10 @@ import {
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
 import { ringIslandPose } from './state.ts';
+import { LEAF_ORANGE, TOE_PENNANT } from '../ring-island-far/view.ts';
+
+/** The far leaf's pennant cream (src/entities/ring-island-far/view.ts keeps its own copy private). */
+const PENNANT = '#fff0c9';
 
 // ---------------------------------------------------------------- the layout, in metres
 const FORM = {
@@ -275,7 +279,7 @@ function buildLeaf(group: THREE.Group) {
   const W = FORM.right - FORM.left;
   const box = (color: string, w: number, h: number, d: number, x: number, y: number, z: number) =>
     parts.add(color, new THREE.BoxGeometry(w, h, d), new THREE.Matrix4().makeTranslation(x, y, z));
-  box(STEEL, W, 0.8, GAP, 0, -0.4, GAP / 2); // the deck plate
+  box(LEAF_ORANGE, W, 0.8, GAP, 0, -0.4, GAP / 2); // the deck plate, the far leaf's own orange (no pop at the swap)
   for (const s of [-W / 2 + 0.2, W / 2 - 0.2]) box(STEEL_DARK, 0.4, 1.4, GAP, s, 0.3, GAP / 2); // the side girders
   for (const t of TRACKS)
     for (const r of [-0.5, 0.5]) box(RAIL, 0.12, 0.14, GAP - 0.4, t - FORM.mid + r, 0.15, GAP / 2);
@@ -296,7 +300,32 @@ function buildLeaf(group: THREE.Group) {
   [-1.5, -0.5, 0.5, 1.5].forEach((x, k) => footings.setMatrixAt(k, m.makeTranslation(x * 1.6, 0.6, bz)));
   footings.count = 0;
   group.add(footings);
-  return { mesh, footings, W };
+  // The toe pennant (call 20; on since the owner's 10 November "pennant can be on"), the far leaf's own: a 12 m mast on
+  // past the toe and a cream flag broadside to Home, so the handover at the mount distance matches. Visual only.
+  let pennant: THREE.Mesh | null = null;
+  if (TOE_PENNANT) {
+    const mast = new THREE.BoxGeometry(0.4, 0.4, 12).translate(0, 0, GAP + 6);
+    const flag = new THREE.ShapeGeometry(
+      new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(10, 2.5), new THREE.Vector2(0, 5)]),
+    )
+      .rotateX(Math.PI / 2)
+      .translate(0, 0, GAP + 7);
+    mast.deleteAttribute('uv');
+    flag.deleteAttribute('uv');
+    pennant = new THREE.Mesh(
+      mergeGeometries([mast.toNonIndexed(), flag.toNonIndexed()]),
+      new THREE.MeshStandardNodeMaterial({
+        color: PENNANT,
+        emissive: PENNANT,
+        emissiveIntensity: 0.8,
+        side: THREE.DoubleSide,
+      }),
+    );
+    mast.dispose();
+    flag.dispose();
+    group.add(pennant);
+  }
+  return { mesh, footings, pennant, W };
 }
 
 /** The RINGWORKS board's face (the brief's word; copy for the owner, not The Boogler's). */
@@ -859,6 +888,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       (board.material as THREE.Material).dispose();
       boardTex.dispose();
       leafParts.footings.dispose();
+      (leafParts.pennant?.material as THREE.Material | undefined)?.dispose();
     },
   };
 }

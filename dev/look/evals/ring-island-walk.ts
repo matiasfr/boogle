@@ -125,6 +125,52 @@ if (view || reloaded || first) {
     say(
       `perf ${JSON.stringify({ size: [innerWidth, innerHeight], withNear, without, added: withNear.max - without.min, rows, coast })}`,
     );
+  } else if (view === 'handout' || view === 'handin') {
+    // The handover: walk out along line 2's track toward the pier, by real keys, and stop just outside (about 512 m from
+    // the hinge) or just inside (about 492 m) the near view's 500 m mount distance. The still is a narrow lens from
+    // just behind you onto the leaf: the far leaf outside, the near leaf inside, never both.
+    const { RAIL_LINES } = (await import(
+      '/src/sim/railway-lines.ts' as string
+    )) as typeof import('../../../src/sim/railway-lines.ts');
+    const { raycastClosest, rayHit } = (await import(
+      '/src/physics/engine.ts' as string
+    )) as typeof import('../../../src/physics/engine.ts');
+    const { entityKinds } = (await import(
+      '/src/entity/entity.ts' as string
+    )) as typeof import('../../../src/entity/entity.ts');
+    const path = RAIL_LINES[1]!.path;
+    const point = (k: number) => ({ x: path[k * 2]! / 100, z: path[k * 2 + 1]! / 100 });
+    const hit = rayHit();
+    const top = (p: { x: number; z: number }) =>
+      raycastClosest({ x: p.x, y: 80, z: p.z }, { x: p.x, y: -20, z: p.z }, {}, hit) ? hit.hitPointWorld.y : 30;
+    const hingeAt = at(layout.RING_GAP.hinge / 100, layout.RING_FORMATION.mid / 100);
+    const toHinge = () => Math.hypot(b.position.x - hingeAt.x, b.position.z - hingeAt.z);
+    const startP = point(44);
+    await stage(startP.x, top(startP), startP.z);
+    const stop = view === 'handout' ? 512 : 492;
+    input.keys.add('KeyW');
+    let k = 45;
+    const end = performance.now() + 30000;
+    while (toHinge() > stop && performance.now() < end) {
+      const p = point(k);
+      if (Math.hypot(p.x - b.position.x, p.z - b.position.z) < 2) k++;
+      faceTo(p.x - b.position.x, p.z - b.position.z);
+      await wait(16);
+    }
+    input.keys.delete('KeyW');
+    await wait(1500);
+    const ux = (hingeAt.x - b.position.x) / toHinge(),
+      uz = (hingeAt.z - b.position.z) / toHinge();
+    const eye = [b.position.x - ux * 3, b.position.y + 1.6, b.position.z - uz * 3];
+    window.__debugCam!.set(eye, [hingeAt.x, 22, hingeAt.z], 7);
+    window.__debugCam!.set = () => {};
+    await wait(1500);
+    const far = entityKinds()
+      .find((e) => e.kind === 'ring-island-far')
+      ?.entities[0]?.describe?.();
+    say(
+      `${view} ${JSON.stringify({ toHinge: f2(toHinge()), at: where(), nearMounted: ring.ringIslandNear.mounted, far })}`,
+    );
   } else if (view === 'halt' || view === 'pier') {
     const v = VIEWS[view];
     // At the pier you stand on the halt's deck behind the camera (crossing-done's landing), out of the frame.

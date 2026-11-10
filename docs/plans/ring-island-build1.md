@@ -406,7 +406,7 @@ leaves `npm run check` green.
   with a stand-in 700 m island the old union went to 1.46 m a texel (1509 × 2048, 12.4 MB, 1.2–1.5 s), the regions keep
   both at 1 m (2015 × 1720, 13.9 MB, 0.84–1.1 s). Rows cost the full width, so the island adds 7.6 MB, not the 3.4 MB
   estimated under Risks. Proof look identical; `npm run perf` not run (load over 6).
-- [ ] **2b. R2b, the island near view, default on (no bump).** Create `src/entities/ring-island/` as under "R2" above,
+- [x] **2b. R2b, the island near view, default on (no bump).** Create `src/entities/ring-island/` as under "R2" above,
   reading R1's layout; arrival.ts's one hunk for recovery and the saved pose. Before and after, `npm run perf` at the
   pier head and at the island halt (desktop and phone tier), budget: no more than 14 draws and 1 ms CPU added at the
   pier head with the near view mounted. Test (node): `ground.ts`'s heights equal `ringHeight` within 5 cm off the fills
@@ -417,6 +417,32 @@ leaves `npm run check` green.
   call 31), and Get unstuck from the sea beside the island's shore lands dry. Checks: `npm run check`, `npm run
   level-check`. Proof look: from the island halt's west platform toward the shard and the ring
   (`--rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts`, its halt still).
+  *Built 10 November 2026* (`src/entities/ring-island/`, arrival.ts, `test/ring-island-ground.test.ts`, the eval; loads
+  10–27 on the 1-minute average, all under 30; **not tested on a device**). The ground is a 376 × 361 grid at 2 m
+  (x 970–1720, z −1480 to −760), the cones carried on below their −4 m base to the −7.5 m bed; the halt's fill is
+  7.4 m (u 427–469, lat −10.3..+6.3, a 1 in 1.5 embankment) and the loop and its neck are capped at 6.5 m within 3.5 m
+  of their centrelines. Test: off the fills every node equals `ringHeight` and the triangles between stay within 5 cm
+  (away from apexes and ridges, where a 2 m triangle can't follow the max of two cones); every deck sampled (the Way,
+  both platforms, the brace platform, the loop and neck) has 60 cm or more under it. Eval (`--until` re-imports it
+  after a real reload): shore to the west platform by its ramp in 8.5 s, then 378 m of path to the summit lookout in
+  70 s, never swimming, longest airborne 0.05 s; the pose saved beside the lookout restores there on the island after
+  the reload; Get unstuck from the brace platform's edge, the island halt and the sea off the shore all land dry and
+  standing on our side. Draws at the pier head with the near view mounted: +6 (5 and the toe pennant), desktop and
+  844x390 alike (the far leaf's 3 hide meanwhile); the near view's walkers read 0.002–0.005 ms a frame, CPU timing
+  under load, not evidence; `npm run perf` not run (load over 6). Coast: 2015 × 1740, 14,024,400 bytes, bakeMs 540
+  at both sizes. **Departures:** (1) **Get unstuck lands on the Pier halt's deck, not bent 6's**: before Q7 no collider
+  stands on bents 1–6 (crossing-view draws their caps only), so "bent 6's deck" would drop you in the sea; the target
+  is crossing-done's jump-in landing (`ringUnstuckHome` in `state.ts`, which R4b points at the land pad). (2) The near
+  view mounts by the body's distance too (a restored pose lands before the camera follows) and is built while the game
+  loads, so its colliders exist the frame you arrive. (3) Saved poses stand on ground, never decks (Place's policy), so
+  the reload is beside the lookout, not on it. (4) The test file is new (the step names a test, the files table none).
+  (5) Additions beyond R2's list: a works yard deck east of the halt carrying the steel, hammer and the mural wall,
+  and a short ramp up onto the summit lookout (its rim is 1.5 m over the slope). (6) The far leaf (R2c) reads
+  `ringIslandNear.mounted` through its `setNearViewMounted` seam; `TOE_PENNANT` is on (owner, 10 November, P3) and
+  the near leaf carries the same pennant in `LEAF_ORANGE`. Not built: the leaf's `braced` read (R4c's), any hook ring,
+  any prompt. Stills in `.look/`: `ring-island-walk-still` (halt), `ring-island-pier-still` (the foam lip and
+  shallows round the island), `ring-island-handout-still` and `ring-island-handin-still` (512 and 492 m: the far leaf,
+  then the near one, never both).
 - [x] **2c. R2c, the far leaf (no bump).** `src/entities/ring-island-far/` as under "R2"; it is drawn whenever the near
   view is not mounted. Checks: `npm run check`, `npm run perf` (two draws). Proof look: through the telescope at zoom 2,
   phone size (`--size 844x390`), `--rail-seed crossing-done --query shot=play --eval dev/look/evals/lookout.ts`: the orange leaf reads

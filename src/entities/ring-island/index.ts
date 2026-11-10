@@ -13,6 +13,7 @@ import { RING_FORMATION, RING_GAP, RING_HALT, ringAt } from '../../sim/railway-r
 import { registerRingShore } from './shore.ts';
 import { islandGround, ringIslandNear } from './state.ts';
 import type { RingIslandView } from './view.ts';
+import { setNearViewMounted } from '../ring-island-far/view.ts';
 
 /** Mount and unmount distances (m, horizontal, from the camera; design review call 13). */
 const MOUNT = { near: 500, far: 650 };
@@ -36,6 +37,8 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
     if (!gone) unregister = registerRingShore(g);
   });
   warmUp(() => shore, { beforeScene: true });
+  // The far leaf (R2c) draws whenever the near view's meshes are not in the scene, so the two never draw at once.
+  setNearViewMounted(() => ringIslandNear.mounted);
 
   const build = () =>
     (building ??= Promise.all([
@@ -88,6 +91,7 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
     describe: () => ({ mounted: ringIslandNear.mounted, keep: ringIslandNear.keep, ...(view?.inspect() ?? {}) }),
     dispose() {
       gone = true;
+      setNearViewMounted(null);
       unmount();
       unregister?.();
       view?.dispose();
