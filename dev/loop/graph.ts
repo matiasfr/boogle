@@ -661,25 +661,17 @@ export const NODES: readonly LoopNode[] = [
   },
   {
     id: 'cradle',
-    label: 'Fit the cradle (two footings, rails)',
+    label: 'Fit the cradle (eight rails)',
     area: 'works',
     at: p(SHED_STALL),
-    bill: { footings: WORKS.cradle, rails: WORKS.cradleRails },
-    supply: {
-      footings: one(p(WORKS_RACK), 'the Works rack'),
-      rails: forgeRails,
-    },
+    // The cradle takes rails only since works-late-game step 2a (WORKS.cradle 0).
+    bill: { rails: WORKS.cradleRails },
+    supply: { rails: forgeRails },
     ops: ['rail.cradle'],
     reached: { mark: 'cradle rails', nth: 'last' },
     stops: [],
-    requires: [dec('stall', 'rules', `${RULES} footSet site 1 / cradle: the stall stands`)],
-    cue: [
-      onMain(
-        'prompt-only',
-        '"Set the footing" / "Fit the cradle" at the stall',
-        'src/entities/railway/roundhouse-view.ts:654-675',
-      ),
-    ],
+    requires: [dec('stall', 'rules', `${RULES} cradle: the stall stands`)],
+    cue: [onMain('prompt-only', '"Fit the cradle" at the stall', 'src/entities/railway/roundhouse-view.ts:654-675')],
   },
   {
     id: 'table',
@@ -693,12 +685,8 @@ export const NODES: readonly LoopNode[] = [
     stops: [],
     requires: [
       dec('stall', 'rules', `${RULES} turn: the stall stands`),
-      {
-        on: 'cradle',
-        status: 'unruled',
-        by: 'none',
-        source: 'commission() runs on either order; waits for the owner to play it (9 November)',
-      },
+      // Owner, 10 November ("Only when ready"): the turn is refused until the cradle is fitted, and after the wagon goes.
+      dec('cradle', 'rules', `${RULES} turn: only once the cradle is fitted, before the wagon rolls out`),
       dec('cradle', 'rules', `${RULES} commission(): fitted and table at line 2`, 'finish'),
       dec('trains', 'rules', `${RULES} wagonArrives: the wagon couples at line 2's train`, 'finish'),
     ],
