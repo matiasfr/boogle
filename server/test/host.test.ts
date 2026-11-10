@@ -442,6 +442,8 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     assert.equal((await admin(`/${room}/reset`, 'POST', 'wrong')).status, 401);
     assert.equal((await admin('/v01-old/reset')).status, 400);
     const a = connect(base, room, 'aaa');
+    const born = (await a.next(is('welcome'))).born;
+    assert.match(born, /^[a-z0-9]{1,16}$/);
     await a.next(isWorld('w:snap'));
     a.send({ t: 'm', d: { t: 'w:edit', e: toss } });
     await a.next((m) => isWorld('w:edits')(m) && m.d.list.some((x: Msg) => x.e.op === 'gift.toss'));
@@ -473,6 +475,8 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     assert.deepEqual(await fs.readdir(path.join(dataDir, '.backups')), [reset.backup]);
     assert.ok(!(await fs.readdir(dataDir)).includes(`${room}.json`));
     const b = connect(base, room, 'bbb');
+    const reborn = (await b.next(is('welcome'))).born;
+    assert.notEqual(reborn, born, 'a reset room is a new world to its players');
     await b.next(isWorld('w:snap'));
     assert.ok(!tossed(), 'the reset room is a fresh world');
     b.ws.close();
@@ -482,6 +486,7 @@ test('admin: reset backs the save up and starts the room fresh; restore brings t
     const restored = await (await admin(`/${room}/restore?backup=${reset.backup}`)).json();
     assert.equal(restored.restored, reset.backup);
     const c = connect(base, room, 'ccc');
+    assert.equal((await c.next(is('welcome'))).born, born, 'the restored world is the one that was backed up');
     await c.next(isWorld('w:snap'));
     assert.ok(tossed(), 'the restored room has the frisbee again');
     assert.equal((await (await admin('', 'GET')).json()).backups.length, 2);

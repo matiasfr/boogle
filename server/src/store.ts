@@ -9,7 +9,10 @@
 //                                         higher, 507 when a new room would pass maxRooms
 //   await store.create(id, doc)           a new room's first save only: 409 if it has a file, 507 past maxRooms
 //   store.known(id), store.count()        rooms with a file
-//   store.forget(id)                      after boot cleanup moved its file, under withLock(id)
+//   store.forget(id)                      after boot cleanup or a reset moved its file, under withLock(id)
+//   store.born(id)                        the id of this room's world, new when it starts over (a reset; a restore
+//                                         brings the backup's back); null if the save is unreadable. The client starts
+//                                         the player over when it changes (src/player/world-reset.ts)
 //   store.withLock(key, fn)               run fn after every earlier call with the same key has settled
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -17,7 +20,10 @@ import fsSync from 'node:fs';
 import path from 'node:path';
 import { currentRoomId, roomNamespaces } from './room-ids.ts';
 
-export type RoomDoc = { tick: number; writerId: string; data: unknown; updatedAt: string };
+export type RoomDoc = { tick: number; writerId: string; data: unknown; updatedAt: string; born?: string };
+/** A save from before worlds had a birth id: the same for every reader until the room is reset. */
+const BORN_LEGACY = '0';
+const okBorn = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v);
 export type WriteResult = { status: 200 | 409 | 507; body: Record<string, unknown> };
 
 export function createStore(cfg: { dataDir: string; maxRooms: number; serverRooms?: readonly string[] }) {
@@ -25,6 +31,19 @@ export function createStore(cfg: { dataDir: string; maxRooms: number; serverRoom
   const knownRooms = new Set<string>();
   const locks = new Map<string, Promise<unknown>>(); // key -> promise chain
   const fileFor = (id: string) => path.join(cfg.dataDir, `${id}.json`);
+  // A world with no save yet keeps one birth id until its first write records it (or a reset forgets it).
+  const unborn = new Map<string, string>();
+  const newBorn = (id: string) => {
+    let born = unborn.get(id);
+    if (!born) unborn.set(id, (born = crypto.randomBytes(6).toString('hex')));
+    return born;
+  };
+  // The file's birth id stays; a first save (a fresh world, or a backup put back) takes its own or a new one.
+  const stamp = (id: string, doc: RoomDoc, current: RoomDoc | null): RoomDoc => {
+    const born = current ? current.born : okBorn(doc.born) ? doc.born : newBorn(id);
+    const { born: _, ...rest } = doc;
+    return okBorn(born) ? { ...rest, born } : rest;
+  };
 
   // A file's text, or null if it does not exist.
   async function readIfExists(file: string) {
@@ -77,9 +96,10 @@ export function createStore(cfg: { dataDir: string; maxRooms: number; serverRoom
         if (!current && !knownRooms.has(id) && knownRooms.size >= cfg.maxRooms)
           return { status: 507, body: { error: 'room limit reached' } };
         const tmp = `${fileFor(id)}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
-        await fs.writeFile(tmp, JSON.stringify(doc));
+        await fs.writeFile(tmp, JSON.stringify(stamp(id, doc, current)));
         await fs.rename(tmp, fileFor(id));
         knownRooms.add(id);
+        unborn.delete(id);
         return { status: 200, body: { ok: true, tick: doc.tick } };
       });
     },
@@ -91,7 +111,7 @@ export function createStore(cfg: { dataDir: string; maxRooms: number; serverRoom
         if (knownRooms.has(id)) return { status: 409, body: { error: 'room exists' } };
         if (knownRooms.size >= cfg.maxRooms) return { status: 507, body: { error: 'room limit reached' } };
         const tmp = `${fileFor(id)}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
-        await fs.writeFile(tmp, JSON.stringify(doc));
+        await fs.writeFile(tmp, JSON.stringify(stamp(id, doc, null)));
         try {
           await fs.link(tmp, fileFor(id));
         } catch (e) {
@@ -101,12 +121,24 @@ export function createStore(cfg: { dataDir: string; maxRooms: number; serverRoom
           await fs.rm(tmp, { force: true });
         }
         knownRooms.add(id);
+        unborn.delete(id);
         return { status: 200, body: { ok: true, tick: doc.tick } };
       });
     },
+    /** Null for a save that cannot be read: it loads as a fresh fallback that is never saved (noSave), and naming
+     * that world would start its players over now and again once the file is repaired. */
+    born(id: string): string | null {
+      let doc: RoomDoc | null;
+      try {
+        doc = this.readSync(id);
+      } catch {
+        return null;
+      }
+      return doc ? (okBorn(doc.born) ? doc.born : BORN_LEGACY) : newBorn(id);
+    },
     known: (id: string) => knownRooms.has(id),
     count: () => knownRooms.size,
-    forget: (id: string) => knownRooms.delete(id),
+    forget: (id: string) => (unborn.delete(id), knownRooms.delete(id)),
   };
 }
 export type Store = ReturnType<typeof createStore>;

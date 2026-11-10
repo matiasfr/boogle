@@ -63,6 +63,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
     pausedUntil = 0, // pause(): no reconnect before this
     openedAt = 0,
     lead: string | null = null,
+    born: string | null = null, // the id of the room's world: new when the room was reset (server/src/store.ts)
     mine: Msg = {}, // my presence, patched in place (no copy per send)
     mineJson = '{}', // JSON.stringify(mine), made once per presence() and reused by every push of it
     mySeq = 0,
@@ -117,6 +118,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
       switch (m.t) {
         case 'welcome':
           setLead(typeof m.lead === 'string' ? m.lead : null);
+          if (typeof m.born === 'string' && m.born.length <= 16) born = m.born;
           if (!first) table.expectBack(GRACE_MS); // before the list: what it names is back
           return;
         case 'list':
@@ -306,6 +308,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
       return () => msgHandlers.delete(h);
     },
     isLead: () => lead === SELF_ID,
+    /** The room's world as of the last welcome (before onConnection(true)); null from a server that sends none. */
+    born: () => born,
     onLeadChange(h: (isLead: boolean) => void) {
       leadHandlers.add(h);
       return () => leadHandlers.delete(h);

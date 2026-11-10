@@ -43,7 +43,12 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   world; [src/player/world-reset.ts](../../src/player/world-reset.ts)) is a first visit too: the fall, then the card,
   pre-filled with the saved name and colour, landing on the shore. The reset forgets what it always has (room progress,
   wardrobe, reward claims, The Boogler) and keeps identity and preferences. A reload after that is a returning visit
-  ([decisions](../decisions.md#controls), 9 November).
+  ([decisions](../decisions.md#controls), 9 November). An operator's reset of one room
+  (`npm run server -- reset <room>`) does the same for that room only: the server names each room's world (`born` in
+  `welcome`), and a browser that last joined a different one reloads into a first visit, forgetting that room's
+  progress, wardrobe and reward claims, and The Boogler's memory
+  ([src/features/room-reset.ts](../../src/features/room-reset.ts)). A restore brings the backup's world back under its own id, so it starts over only
+  browsers that joined a different world in between.
 - **Returning visit.** With a name saved (and no world reset since the last load), there is no card and no fall: the game goes in on its own as soon as the island
   can be drawn, with the saved name and colour, where you last stood in this room and facing the same way (the pause view's Get unstuck forgets that spot)
   ([src/features/return-spot.ts](../../src/features/return-spot.ts)). Only a place you were standing counts, not a deck, a

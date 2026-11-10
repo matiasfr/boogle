@@ -13,7 +13,11 @@ const ROOM_PREFIXES = [
   'boogle.railway-town.v0:',
   'boogle.railway-finds.v0:',
   'boogle.jump.seen.v1:', // src/features/jump-in.ts: a jump room's arrival line, shown once
+  'boogle.room-born.v0:', // roomReborn below: the world this browser last joined in a room
 ];
+const ROOM_BORN = 'boogle.room-born.v0:';
+/** sessionStorage, `<room id> <room name>`: this room's world started over, so the next load starts the player over. */
+export const ROOM_RESET_KEY = 'boogle.roomReset';
 
 export function staleKeys(keys: string[], marker: string | null, ns: Namespace): string[] {
   const changed = marker !== null && marker !== ns.world;
@@ -25,7 +29,7 @@ export function staleKeys(keys: string[], marker: string | null, ns: Namespace):
 }
 
 // Preserve unreadable profiles so the normal reward reader can report them, rather than hiding a broken save.
-export function pruneClaims(text: string, rail: string): string | null | undefined {
+export function pruneClaims(text: string, rail: string, resetRoom?: string): string | null | undefined {
   try {
     if (new TextEncoder().encode(text).byteLength > MAX_RAILWAY_PROFILE_BYTES) return;
     const value: unknown = JSON.parse(text);
@@ -49,7 +53,9 @@ export function pruneClaims(text: string, rail: string): string | null | undefin
       if (seen.has(id)) return;
       seen.add(id);
     }
-    const claims = value.claims.filter((claim: { world: string }) => claim.world.startsWith(`${rail}-`));
+    const claims = value.claims.filter(
+      (claim: { world: string }) => claim.world.startsWith(`${rail}-`) && claim.world !== resetRoom,
+    );
     if (!claims.length) return null;
     if (claims.length === value.claims.length) return;
     return JSON.stringify({ version: 0, claims });
@@ -106,14 +112,49 @@ export function resetForWorld(storage: Storage, ns: Namespace): { removed: strin
   return { removed, newWorld: marker !== null && marker !== ns.world };
 }
 
-export async function pruneProfiles(storage: Storage, locks: LockManager | undefined, rail: string): Promise<void> {
+/** True when the room's world (the server's `born`, server/src/store.ts) is not the one this browser last joined
+ * there: an operator reset or restored it (docs/decisions.md, 2026-11-09). Remembers `born` either way; a room seen
+ * for the first time is not a reset. */
+export function roomReborn(storage: Storage, id: string, born: string): boolean {
+  const last = storage.getItem(ROOM_BORN + id);
+  storage.setItem(ROOM_BORN + id, born);
+  return last !== null && last !== born;
+}
+
+/** Forgets this browser's progress in one room (`id`, with `name` as the URL has it): what a world reset forgets, for
+ * that room only, plus The Boogler's memory (global, but he is just another NPC: docs/decisions.md, 2026-11-09).
+ * Reward claims go with pruneProfiles(..., id). */
+export function resetForRoom(storage: Storage, id: string, name: string): string[] {
+  const removed: string[] = [];
+  for (const key of storageKeys(storage)) {
+    const prefix = ROOM_PREFIXES.find((p) => p !== ROOM_BORN && key.startsWith(p));
+    const mine = prefix
+      ? key.slice(prefix.length).split(':')[0] === id
+      : key === `boogle.visit.${name}` || key === 'boogle.boogler';
+    if (!mine) continue;
+    try {
+      storage.removeItem(key);
+      removed.push(key);
+    } catch {
+      // Keep going if one key cannot be removed.
+    }
+  }
+  return removed;
+}
+
+export async function pruneProfiles(
+  storage: Storage,
+  locks: LockManager | undefined,
+  rail: string,
+  resetRoom?: string,
+): Promise<void> {
   if (!locks) return; // Never rewrite a profile without the same cross-tab lock as claims.
   for (const key of storageKeys(storage).filter((key) => key.startsWith(PROFILE_PREFIX))) {
     try {
       await locks.request(key, { mode: 'exclusive' }, () => {
         const text = storage.getItem(key);
         if (text === null) return;
-        const next = pruneClaims(text, rail);
+        const next = pruneClaims(text, rail, resetRoom);
         if (next === null) storage.removeItem(key);
         else if (next !== undefined) storage.setItem(key, next);
       });
