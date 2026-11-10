@@ -47,6 +47,7 @@ import {
   ringDeckY,
 } from '../../src/sim/railway-ring-layout.ts';
 import { ENGINE } from '../../src/proto/wagon/engine.ts';
+import { BUFFERS, LEG, SPUR, homeLayout } from '../../src/proto/place/home-station.ts';
 import { TRAILER, TRAIN_OFFSETS } from '../../src/proto/wagon/cars.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };
@@ -311,22 +312,24 @@ export const wrap = (r: number) => Math.atan2(Math.sin(r), Math.cos(r));
 export function joins(): Join[] {
   const out: Join[] = [];
   const E = LINES.east;
-  // Turntable: both lines start at the table, which turns only between the stall road and line 2's road.
+  // Turntable: both lines start at the table, which turns only between the stall road and line 2's road. Layout B
+  // (`?home=b`, BOOGLE_HOME=b): the lines start at their buffers and the table is on its own spur, so there is no join.
   const t = { x: TURNTABLE.x + ORIGIN.x, z: TURNTABLE.z + ORIGIN.z };
   const a1 = beside(LINES.north, 0, 0),
     b1 = beside(LINES.north, 2, 0);
   const a2 = beside(E, 0, 0),
     b2 = beside(E, 2, 0);
-  out.push({
-    name: 'Turntable: line 1 and line 2 at s 0',
-    severity: 0,
-    status: 'live',
-    x: t.x,
-    z: t.z,
-    gap: Math.hypot(a1.x - t.x, a1.z - t.z),
-    heading: deg(Math.abs(wrap(head(a1, b1) - head(a2, b2)))),
-    note: `both lines start ${Math.hypot(a1.x - t.x, a1.z - t.z).toFixed(1)} m from the table's centre (r ${TURNTABLE.r} m); heading between them at the table`,
-  });
+  if (!homeLayout())
+    out.push({
+      name: 'Turntable: line 1 and line 2 at s 0',
+      severity: 0,
+      status: 'live',
+      x: t.x,
+      z: t.z,
+      gap: Math.hypot(a1.x - t.x, a1.z - t.z),
+      heading: deg(Math.abs(wrap(head(a1, b1) - head(a2, b2)))),
+      note: `both lines start ${Math.hypot(a1.x - t.x, a1.z - t.z).toFixed(1)} m from the table's centre (r ${TURNTABLE.r} m); heading between them at the table`,
+    });
   // The view: Place's spline end (s 743) against ringAt's line.
   const end = beside(E, E.len, 0),
     pre = beside(E, E.len - 2, 0);
@@ -505,8 +508,34 @@ export function obstacles(line: 'line1' | 'line2'): Obstacle[] {
   const L = line === 'line1' ? LIVE[0] : LIVE[1];
   const f = L.f;
   const table = TURNTABLE.r;
+  const home: Obstacle[] = homeLayout()
+    ? [
+        {
+          s0: BUFFERS[L.index]! - 10,
+          s1: BUFFERS[L.index]!,
+          what: `the buffer stops (s ${BUFFERS[L.index]})`,
+          tracks: 'both',
+        },
+        ...(L.index === 1
+          ? [
+              {
+                s0: SPUR.s - 1,
+                s1: SPUR.s + 3,
+                what: `the engine spur's points (s ${SPUR.s})`,
+                tracks: 'both' as const,
+              },
+            ]
+          : []),
+        {
+          s0: (L.index ? LEG.to : LEG.from) - 2,
+          s1: (L.index ? LEG.to : LEG.from) + 2,
+          what: `the cart's leg (s ${L.index ? LEG.to : LEG.from})`,
+          tracks: 'both',
+        },
+      ]
+    : [{ s0: -1, s1: table, what: `the turntable (r ${table} m)`, tracks: 'both' }];
   const out: Obstacle[] = [
-    { s0: -1, s1: table, what: `the turntable (r ${table} m)`, tracks: 'both' },
+    ...home,
     { s0: f.from, s1: f.from + 20, what: `the stub turnout at s ${f.from}`, tracks: 'both' },
     { s0: f.to - 20, s1: f.to, what: `the stub turnout at s ${f.to}`, tracks: 'both' },
     { s0: L.line.len, s1: L.line.len + 50, what: `the rail end (s ${L.line.len})`, tracks: 'both' },
@@ -535,7 +564,7 @@ export function obstacles(line: 'line1' | 'line2'): Obstacle[] {
 /** Where a point stands along a live line: nearest s (1 m) and lateral offset (+ right). */
 export function alongLive(line: Line, x: number, z: number) {
   let best = { s: 0, d: Infinity, lat: 0 };
-  for (let s = 0; s <= line.len; s += 0.5) {
+  for (let s = homeLayout() ? -6 : 0; s <= line.len; s += 0.5) {
     lineAt(line, s, P);
     const px = P.x + ORIGIN.x,
       pz = P.z + ORIGIN.z;

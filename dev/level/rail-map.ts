@@ -9,6 +9,9 @@
 // The page follows the artifact contract: body content only, a <title> first, inline CSS and JS, colours as custom
 // properties with dark values, an explicit body background. The SVG is drawn by the page's script from the JSON
 // embedded below, so the two tracks can be spread to stay visible at any zoom (true 4 m centres when zoomed in).
+// Home is drawn as layout B (the owner's pick, 9 November; docs/plans/home-station.md): this must evaluate before
+// Place's layout reads BOOGLE_HOME. The live game draws the turntable terminus until home-station's flip (step 6).
+import './home-b.ts';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
@@ -24,7 +27,6 @@ import {
   ROOM_PLOTS,
   FORGE_FRAME,
   AXE_STAND,
-  HALTS,
 } from '../../src/proto/place/layout.ts';
 import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ground.ts';
@@ -39,7 +41,24 @@ import {
   RING_PIER_UP,
   ringAt,
 } from '../../src/sim/railway-ring-layout.ts';
-import { SHED_STALL } from '../../src/sim/railway-works-layout.ts';
+import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
+import {
+  BUFFERS,
+  HALL,
+  ISLAND,
+  ISLAND_A,
+  ROAD_GAP,
+  axisPoint,
+  LEG,
+  PROPS,
+  SPUR,
+  STALLS,
+  TABLE,
+  legPoints,
+  spurPoints,
+  stallFrame,
+} from '../../src/proto/place/home-station.ts';
+import { frameBesideLine } from '../../src/proto/place/spatial-station.ts';
 import {
   CONSIST,
   LIVE,
@@ -56,6 +75,44 @@ import { checkContinuity, type Finding } from './track-continuity.ts';
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PAGE = 'docs/world/rail-map.html';
 const r1 = (n: number) => Math.round(n * 10) / 10;
+/** A Place-local point in world metres. */
+const W = (p: { x: number; z: number }) => ({ x: r1(p.x + ORIGIN.x), z: r1(p.z + ORIGIN.z) });
+
+/** The passenger car's distance from buffers at a terminal, either way round (the design review's call 12): the long
+ * train's tail behind it plus 2 m. */
+const TERMINAL_GAP = r1(-CONSIST.tail + 2);
+/** Layout B's buffer stops, by each Village road's s. */
+const [BUF1, BUF2] = BUFFERS;
+/** One shared stop mark per halt (the design review's call 11): today's TRAIN_STOPS unless a reason moves it. Village:
+ * layout B keeps s 14 and 17 abeam (home-station call 10), already more than TERMINAL_GAP from its buffers. */
+const MARKS: Record<string, { s: number; why: string }> = {
+  Village: {
+    s: 14,
+    why: `kept (layout B's stops stand abeam, home-station call 10): ${r1(14 - BUF1)} m from the buffers at s ${BUF1}; the ${TERMINAL_GAP} m rule allows down to s ${r1(BUF1 + TERMINAL_GAP)}`,
+  },
+  'Village, line 2': {
+    s: 17,
+    why: `kept (abeam with line 1's): ${r1(17 - BUF2)} m from the buffers at s ${BUF2}; the rule allows down to s ${r1(BUF2 + TERMINAL_GAP)}`,
+  },
+  Camp: { s: r1(220 - TERMINAL_GAP), why: `${TERMINAL_GAP} m from the proposed buffers at s 220 (call 12)` },
+  Quarry: {
+    s: 170,
+    why: 'one mark on both staggered platforms (down s 166-186, up 154-174.5): the passenger car on both, the plank crossing 10.5 m clear',
+  },
+  'Far Head': { s: 526, why: "the long train's tail clear of the crossover (s 490-512)" },
+  Pier: {
+    s: 725,
+    why: "the longer engine's nose clear of the parked track layer; measure the layer's position first (PIER_STOP_CM's note differs by 1.5 m)",
+  },
+};
+
+/** Ring Island while it is the end (the design review's call 14): buffers 15 m past the halt's north end (u m along
+ * the crossing), and the facing crossover on the Way before the halt, 22 m long as Far Head's. Map proposal only:
+ * R1 (src/sim/railway-ring-layout.ts) still has the loop until its amendment. */
+const RING_END_U = RING_HALT.u1 / 100 + 15;
+const RING_X = [RING_HALT.u0 / 100 - 33, RING_HALT.u0 / 100 - 11] as const;
+/** The balloon the plan proposed before the review: centre u 520, lat +45 (east). Undrawn: shown as an alternative. */
+const RING_ALT = { u: 520, lat: 45, r: 40 };
 
 // ---------------------------------------------------------------- lines (services)
 type LineRow = {
@@ -130,8 +187,8 @@ function lineRows(): LineRow[] {
       halts: ['Village', 'Camp'],
       trains: '1 (v26 keeps 1)',
       trip: trip(TRAIN_STOPS_M[0]!),
-      ends: ['Village: stub into the turntable well, no buffers', 'Camp: stub, bare rail end'],
-      after: ['Village: terminal, buffers at the table rim', 'Camp: terminal, buffers'],
+      ends: [`Village (layout B): buffer stops at s ${BUF1}, the forge's goods dock`, 'Camp: stub, bare rail end'],
+      after: ['Village: terminal, buffers and an end board (home-station step 9)', 'Camp: terminal, buffers at s 220'],
     },
     {
       id: 'line2',
@@ -144,12 +201,12 @@ function lineRows(): LineRow[] {
       trains: `1 today, 2 in v26, ${trainsFor(170)} for the v27 wait bound (plan: 3)`,
       trip: trip(TRAIN_STOPS_M[1]!),
       ends: [
-        "Village: stub onto the turntable's line-2 road",
-        'Far end: Far Head crossover (before Q6), pier head stub (bare), v27 moving railhead (buffers), Ring Island loop',
+        `Village (layout B): buffer stops at s ${BUF2}; the engine spur to the table leaves at s ${SPUR.s}`,
+        'Far end: Far Head crossover (before Q6), pier head stub (bare), v27 moving railhead (buffers), Ring Island loop (R1)',
       ],
       after: [
-        'Village: terminal on the table road, the table shows stop blocks',
-        'Ring Island loop (redrawn), then through to the first branch',
+        'Village: terminal, buffers and an end board (home-station step 9)',
+        'Ring Island: buffers 15 m past the halt and a crossover on the Way (recommended; the balloon is the undrawn alternative), then through when line 2 runs on',
       ],
     },
   ];
@@ -237,50 +294,47 @@ function ends(): End[] {
   const out: End[] = [
     {
       id: 'l1-village',
-      where: 'Line 1, Village (s 0, the turntable)',
+      where: `Line 1, Village (layout B: road 1's buffers, s ${BUF1})`,
       line: 'line1',
       status: 'live',
-      ...at(beside(N, 0, 0)),
-      dir: dirAt(N, 0, -2),
-      before: 'stub',
-      beforeText:
-        "One terminal track from the s 36 stub turnout past the Village platform (s 8-30) into the turntable well; the table turns only between the stall road and line 2's road, so line 1's rails stop at an open pit edge. No buffers.",
-      complies: 'no',
+      ...at(beside(N, BUF1, 0)),
+      dir: dirAt(N, BUF1, -2),
+      before: 'buffers',
+      beforeText: `Layout B (the owner's pick, 9 November): road 1 runs straight at bearing 70° along the island (deck s 2.8-20.8) to buffer stops at s ${BUF1}, abeam of road 2's; its last 2.9 m beside the forge's south wall is the forge's goods dock. Today's live game still ends line 1 in the turntable well (no buffers) until home-station's flip.`,
+      complies: 'yes',
       after: 'terminal',
       afterText:
-        'Buffers at s 5, on the table rim, with the Village end board; Home is the terminus of both lines. Behind the buffers: the table well and the forge yard.',
-      cost: "View (buffer, board). Long trains need the stop moved from s 14 to s 23.5 (the tail clear of today's rim and of the grown 16 m table): a stop-table change for v26's catalog.",
+        "Buffers, the Village end board and the concourse 1 m behind them: Home is both lines' terminus. Line trains never reach the table (it is on the engine spur).",
+      cost: "Home-station step 9 (buffer stops and dressing, look only), after the flip (step 6). Nothing on today's table rim is worth building.",
     },
     {
       id: 'l2-village',
-      where: "Line 2, Village (s 0, the table's line-2 road)",
+      where: `Line 2, Village (layout B: road 2's buffers, s ${BUF2})`,
       line: 'line2',
       status: 'live',
-      ...at(beside(E, 0, 0)),
-      dir: dirAt(E, 0, -2),
-      before: 'stub',
-      beforeText:
-        'The terminal track past the Village platform (s 6-28) runs onto the table, which the wagon uses to reach the stall road. Trains stop at s 17. No buffers; the table is unmarked as an end.',
-      complies: 'partly',
+      ...at(beside(E, BUF2, 0)),
+      dir: dirAt(E, BUF2, -2),
+      before: 'buffers',
+      beforeText: `Layout B: road 2 runs along the island's other edge (deck s 5.7-23.7) to buffer stops at s ${BUF2}. The engine spur leaves it at s ${SPUR.s} to the right for the 9.6 m table; the cart's leg joins it at s ${LEG.to}. Today's live game still ends line 2 on the table's line-2 road.`,
+      complies: 'yes',
       after: 'terminal',
       afterText:
-        "A terminal for trains, a connection for the wagon: the table's rim shows stop blocks on every road it isn't aligned to (driven by Shed.table), and a stop board at s 5. Behind: the table, then the stall road.",
-      cost: 'View only (stop blocks from accepted Shed.table). Long trains: the stop from s 17 to s 23.5, clear of the grown table too (v26 catalog).',
+        "Buffers and an end board, as line 1's. The cart stops at these buffers beside the forge rack (home-station's ruling 3).",
+      cost: 'Home-station step 9 (look only), after the flip.',
     },
     {
       id: 'stall',
-      where: 'The Roundhouse stall road (table road 0)',
+      where: `The Roundhouse's open stall (layout B: the table's ${STALLS.open}° road)`,
       line: 'line2',
       status: 'live',
-      x: r1(SHED_STALL.x / 100),
-      z: r1(SHED_STALL.z / 100),
-      dir: Math.atan2(SHED_STALL.x / 100 - (TURNTABLE.x + ORIGIN.x), SHED_STALL.z / 100 - (TURNTABLE.z + ORIGIN.z)),
+      ...W(stallFrame(STALLS.open).back),
+      dir: Math.atan2(stallFrame(STALLS.open).u.x, stallFrame(STALLS.open).u.z),
       before: 'stub',
-      beforeText:
-        'A short siding from the table into the stall, where the shunter and wagon stand. No buffer stop drawn.',
+      beforeText: `Layout B: the engine spur (R 15, 60°) to the table, and three radial stall roads at ${STALLS.bearings.join('°, ')}° (the ${STALLS.open}° one open, the others ruin outlines), each ${STALLS.depth} m deep. No buffer stop at the stall's back.`,
       complies: 'no',
       after: 'buffers',
-      afterText: "Buffers at the stall's back wall; the shed is the terminal marking.",
+      afterText:
+        "Buffers at the open stall's back wall; the shed is the terminal marking. The table shows stop blocks on the roads it isn't turned to (the spur and the stall roads).",
       cost: 'View only.',
     },
     {
@@ -363,20 +417,18 @@ function ends(): End[] {
     },
     {
       id: 'ring-loop',
-      where: 'Ring Island halt (v27)',
+      where: 'Ring Island halt while it is the end (v27)',
       line: 'line2',
       status: 'v27',
-      x: r1(RING_LOOP.x / 100),
-      z: r1(RING_LOOP.z / 100),
+      ...at(ra(RING_END_U * 100)),
       dir: Math.atan2(0.0272, -1),
       before: 'loop',
       beforeText:
-        "A balloon loop, r 40 m, centred 48 m east of the halt; as laid out its neck runs 12 m on and then 30.6 m back south to the circle (a 165° reversal, then a 12° kink onto the circle): it can't be run as drawn.",
+        "R1's balloon loop, r 40 m, centred 48 m east of the halt; as laid out its neck runs 12 m on and then 30.6 m back south to the circle (a 165° reversal, then a 12° kink onto the circle): it can't be run as drawn.",
       complies: 'partly',
-      after: 'loop',
-      afterText:
-        'Keep a loop (the right turnback while the island is the end, 1.2-1.8 h), redrawn as a true balloon: a turnout off the line beyond the halt, the circle beyond it, tangent entry. Then, when the first branch opens, the line runs on through the halt.',
-      cost: "v27 layout (RING_LOOP, R2's deck, R3a's loop leg); then the branch's own bump.",
+      after: 'buffers',
+      afterText: `Recommended (owner question 2): both tracks run on ${RING_END_U - RING_HALT.u1 / 100} m past the platforms to buffers and an end board at u ${RING_END_U}, facing the way the line will go on; a facing crossover on the Way before the halt (about u ${RING_X[0]}-${RING_X[1]}), as Far Head's; trains stand at the east platform (the works side); the west lever is chained and plaqued with the branch. No train is ever turned. The alternative, a turning loop, is undrawn: a circle wholly east of both tracks can't take the up (west) track without crossing the down track, so it needs a merge to one track first or a teardrop about 80 m wide astride the line, and it cuts up to 12 m into the cone.`,
+      cost: "A small R1 amendment (the crossover and buffer positions; RING_LOOP out of line 2's row); R2b drops the loop deck; R3a loses its loop leg. Then through when line 2 itself runs on.",
     },
   ];
   for (const l of WORLD_LINES)
@@ -418,8 +470,8 @@ const FUTURE_AFTER: Record<string, Pick<End, 'after' | 'afterText' | 'cost'>> = 
   'stack-end': {
     after: 'through',
     afterText:
-      "The incline and the causeway are one north-south line through Bell Rock (they are collinear). Stages 4-8: a terminal with buffers at the skerry's south end, facing the sunken causeway it will become.",
-    cost: "Map data and the hub's station plan; a two-level interchange with the bay line (below).",
+      "The incline and the causeway are one north-south line through Bell Rock (they are collinear), at the water: it comes from the Gorge's low station and goes on to a sunken causeway, so it never needs height. Stages 4-8: a terminal with buffers at the skerry's foot, facing the causeway at its own level.",
+    cost: "Map data and the hub's station plan; Bell Rock on two levels, the bay line on the skerry at 15 m above it (owner question 3).",
   },
   'bay-start': {
     after: 'terminal',
@@ -435,10 +487,16 @@ const FUTURE_AFTER: Record<string, Pick<End, 'after' | 'afterText' | 'cost'>> = 
   },
   'bay-trestle-start': {
     after: 'terminal',
-    afterText: 'Canopy-first only: a bay platform at the island halt with buffers.',
+    afterText:
+      "Canopy-first only: a terminal with buffers at the island halt's west side. Not a shuttle: it runs on through Bell Rock to Canopy Town as one line (the review's finding 6), so the first trip to the new town needs no change of train.",
     cost: 'Map data.',
   },
-  'bay-trestle-end': { after: 'terminal', afterText: 'A bay platform at Bell Rock with buffers.', cost: 'Map data.' },
+  'bay-trestle-end': {
+    after: 'through',
+    afterText:
+      "Canopy first: through Bell Rock (on the skerry, at 15 m, the bay line's level) onto the cleft to Canopy Town. The bay shortcut arrives at stage 4 as the second line into Bell Rock, a terminal there.",
+    cost: 'Map data.',
+  },
   'cave-start': {
     after: 'terminal',
     afterText:
@@ -488,13 +546,15 @@ type HaltRow = {
 };
 const FOR: Record<string, string> = {
   Village:
-    "Home: the town, the forge, the turntable and Roundhouse; deliveries arrive here. Spawn's shore is 100-130 m west.",
+    "Home: one terminus (layout B), the concourse, the forge's goods dock, the turntable and Roundhouse on the engine spur; deliveries arrive here. Spawn's shore is 100-130 m west.",
   Camp: "Line 1's timber camp: logs.",
-  'Village, line 2': 'Home, line 2: the same town; the wagon leaves from the table here.',
+  'Village, line 2':
+    "Home, line 2: the island's other edge; the wagon comes from the stall over the table and up the spur.",
   Quarry: 'Split-rock Works: the breaker, the kiln, footings; the depot cart.',
   'Far Head': 'The headland: the glide pad, the pier root, Q6.',
-  Pier: 'The pier rack: footings for the bents; Ring Island across the sea.',
-  Railhead: 'The Meet (v27): the rack, the jib, the gap.',
+  Pier: 'The pier rack: footings for the bents (done once Q7 is laid); Ring Island across the sea.',
+  Railhead:
+    "The Meet (v27): the rack, the jib, the gap; after the Meet, the Meet's own halt (the rivet, the leaf, the hook ring below; the owner names it).",
   'Ring Island halt': 'The Meet, the shard folk, steel (the longer boiler); the branch junction.',
   'Ring top': 'Superseded (ruling 3): the summit is a walked-up lookout.',
   'High Gorge': 'Copper, the powered pick and hook reel; the stair and lift; the falls cave.',
@@ -502,8 +562,8 @@ const FOR: Record<string, string> = {
   'West landing (bay)': "Spawn's shore and the sea cave plug: the bay shortcut.",
   'West landing (cave)': "Spawn's shore: the cave line through the plug.",
   'Canopy Town': 'Fibre, the sling and glider cloth; the Notch ledge.',
-  'Saltpan Halt': 'The salt flats slide.',
-  'Port Quay': 'The harbour and the crane lift up to High Port.',
+  'Saltpan Halt': 'Sliding the salt flats.',
+  'Port Quay': 'The harbour, and the crane lift up to High Port (town services, the faster engine, the seed cradle).',
   'High Port': 'Town services, the faster engine, the seed cradle (by the crane).',
   'Lantern Notch': 'The sea arch and its lantern.',
   'Original Island': "The Boogler's island: the ending.",
@@ -514,11 +574,11 @@ const ROLE: Record<string, string> = {
   'Village, line 2': 'terminus (line 2); walk-between junction with line 1',
   Quarry: 'through halt (request)',
   'Far Head': 'terminus before Q6, then through halt (request)',
-  Pier: 'terminus Q6 to v27, then through halt (request)',
-  Railhead: 'moving terminus (v27), then a through halt (call 14)',
-  'Ring Island halt': 'loop terminus (v27), then through halt and junction',
+  Pier: 'terminus Q6 to v27, then a homeward request stop only (the up platform is not built)',
+  Railhead: "moving terminus (v27), then the Meet's halt (through)",
+  'Ring Island halt': 'terminus with buffers (v27), then through halt and junction',
   'High Gorge': "junction: the ring through, the N-S line's terminus",
-  'Bell Rock': 'junction: the N-S line through, the bay line through (two levels)',
+  'Bell Rock': 'junction on two levels: the bay line on the skerry at 15 m, the N-S line at the water',
   'West landing (bay)': "terminus (bay line), one station with the ring's end",
   'West landing (cave)': "terminus (the ring's Home end)",
   'Canopy Town': 'junction: the ring through, the bay line loop terminus then through',
@@ -564,7 +624,8 @@ function liveHaltRows(): HaltRow[] {
   const { pass, engineNose, bigNose, tail, todayTail } = CONSIST;
   for (const h of liveHalts()) {
     const L = LIVE.find((l) => l.id === h.line)!;
-    const p = beside(L.line, h.stop, 0);
+    const stop = MARKS[h.name]?.s ?? h.stop;
+    const p = beside(L.line, stop, 0);
     const obs = obstacles(h.line);
     const overhang: string[] = [];
     const flags: string[] = [];
@@ -579,20 +640,19 @@ function liveHaltRows(): HaltRow[] {
         continue;
       }
       // Engine always at +s today (train-view poses every car with sign 1; push-pull).
-      const span = (nose: number) => [h.stop + tail, h.stop + nose] as const;
+      const span = (nose: number) => [stop + tail, stop + nose] as const;
       const [a, b] = span(engineNose),
         [, bb] = span(bigNose);
-      const onPlat = h.stop - pass >= plat.s0 - 0.01 && h.stop + pass <= plat.s1 + 0.01;
-      const mark = (plat.s0 + plat.s1) / 2;
+      const onPlat = stop - pass >= plat.s0 - 0.01 && stop + pass <= plat.s1 + 0.01;
       overhang.push(
-        `${dir}: platform s ${plat.s0}-${plat.s1} (${r1(plat.s1 - plat.s0)} m, lat ${plat.lat}); stop s ${h.stop}: passenger car ${onPlat ? 'on it' : `OFF it (${r1(Math.max(plat.s0 - (h.stop - pass), h.stop + pass - plat.s1))} m over)`}; long train s ${r1(a)}-${r1(b)} (${r1(bb)} with the longer engine): ${r1(Math.max(0, plat.s0 - a))} m behind, ${r1(Math.max(0, bb - plat.s1))} m ahead of the platform`,
+        `${dir}: platform s ${r1(plat.s0)}-${r1(plat.s1)} (${r1(plat.s1 - plat.s0)} m, lat ${r1(plat.lat)}); stop s ${stop}: passenger car ${onPlat ? 'on it' : `OFF it (${r1(Math.max(plat.s0 - (stop - pass), stop + pass - plat.s1))} m over)`}; long train s ${r1(a)}-${r1(b)} (${r1(bb)} with the longer engine): ${r1(Math.max(0, plat.s0 - a))} m behind, ${r1(Math.max(0, bb - plat.s1))} m ahead of the platform`,
       );
-      if (!onPlat) flags.push(`${dir}: passenger car off the platform at the shared stop; stopping mark s ${r1(mark)}`);
+      if (!onPlat) flags.push(`${dir}: passenger car off the platform at the shared mark s ${stop}`);
       const tracks = dir.startsWith('up') ? ['both', 'up'] : ['both', 'down'];
       for (const o of obs) {
         if (!tracks.includes(o.tracks)) continue;
         const foulLong = a < o.s1 && bb > o.s0;
-        const foulToday = h.stop + todayTail < o.s1 && h.stop + engineNose > o.s0;
+        const foulToday = stop + todayTail < o.s1 && stop + engineNose > o.s0;
         if (foulLong)
           flags.push(
             `${dir}: the long train (s ${r1(a)}-${r1(bb)}) fouls ${o.what}${foulToday ? ", and so does today's" : ''}`,
@@ -609,19 +669,22 @@ function liveHaltRows(): HaltRow[] {
       platforms: [h.up, h.down]
         .map((q, k) => (q ? `${k ? 'down' : 'up'} ${r1(q.s1 - q.s0)} m at lat ${q.lat}` : `${k ? 'down' : 'up'}: none`))
         .join('; '),
-      stops: `s ${h.stop} (both tracks)`,
+      stops: `one mark for both tracks: s ${h.stop}${stop !== h.stop ? ` → ${stop}` : ' (kept)'}; ${MARKS[h.name]?.why ?? ''}`,
       turns: TURNS[h.name] ?? '',
       turnsAfter: TURNS_AFTER[h.name] ?? '',
       forWhat: FOR[h.name] ?? '',
       role: ROLE[h.name] ?? '',
       overhang,
       flags,
-      plats: [
-        ...(h.up ? [{ pts: liveSpan(L.line, h.up.s0, h.up.s1), lat: h.up.lat, label: 'up' }] : []),
-        ...(h.down && h.down !== h.up
-          ? [{ pts: liveSpan(L.line, h.down.s0, h.down.s1), lat: h.down.lat, label: 'down' }]
-          : []),
-      ],
+      // Layout B's Village halts are one island, drawn with the station (homeB).
+      plats: h.name.startsWith('Village')
+        ? []
+        : [
+            ...(h.up ? [{ pts: liveSpan(L.line, h.up.s0, h.up.s1), lat: h.up.lat, label: 'up' }] : []),
+            ...(h.down && h.down !== h.up
+              ? [{ pts: liveSpan(L.line, h.down.s0, h.down.s1), lat: h.down.lat, label: 'down' }]
+              : []),
+          ],
     });
   }
   // v27: the railhead (bent 13) and the island halt.
@@ -654,14 +717,14 @@ function liveHaltRows(): HaltRow[] {
     x: r1(ringAt(mid * 100).x / 100),
     z: r1(ringAt(mid * 100).z / 100),
     platforms: `up (west, lat ${halt.upLat.join(' to ')} cm) and down (east, lat ${halt.downLat.join(' to ')} cm), each ${(halt.u1 - halt.u0) / 100} m`,
-    stops: `u ${mid} m on both tracks (call 15: up always, down on request after the loop)`,
-    turns: 'balloon loop',
-    turnsAfter: 'loop (redrawn), then through to the first branch',
+    stops: `u ${mid} m, one mark; while the island is the end trains stand at the east (down) platform, the west lever chained and plaqued with the branch`,
+    turns: "balloon loop (R1, can't be run as drawn)",
+    turnsAfter: `buffers at u ${RING_END_U} on both tracks and a crossover on the Way (u ${RING_X[0]}-${RING_X[1]}); recommended over a turning loop (undrawn); through when line 2 runs on`,
     forWhat: FOR['Ring Island halt']!,
     role: ROLE['Ring Island halt']!,
     overhang: [
-      `up: engine leading towards the loop: long train u ${r1(mid + tail)} to u ${r1(mid + bigNose)}, inside the 40 m platform (u ${halt.u0 / 100}-${halt.u1 / 100}) with ${r1(mid + tail - halt.u0 / 100)} m and ${r1(halt.u1 / 100 - (mid + bigNose))} m to spare`,
-      `down (after the loop the consist faces home, engine at −s): u ${r1(mid - bigNose)} to u ${r1(mid - tail)}, inside the platform`,
+      `down (east), with buffers: never turned, the engine stays at +s: long train u ${r1(mid + tail)} to u ${r1(mid + bigNose)}, inside the 40 m platform (u ${halt.u0 / 100}-${halt.u1 / 100}) with ${r1(mid + tail - halt.u0 / 100)} m and ${r1(halt.u1 / 100 - (mid + bigNose))} m to spare; the passenger car ${r1(RING_END_U - mid)} m from the buffers (at least ${TERMINAL_GAP})`,
+      `with R1's loop instead, every train would come back turned (engine at −s): u ${r1(mid - bigNose)} to u ${r1(mid - tail)}, and the cargo cars would swap sides of the mark at every halt`,
     ],
     flags: [],
     plats: [
@@ -672,20 +735,20 @@ function liveHaltRows(): HaltRow[] {
   return rows;
 }
 const TURNS: Record<string, string> = {
-  Village: 'stub (one terminal track into the table well)',
+  Village: `layout B: buffers at s ${BUF1} (today's game: a stub into the table well)`,
   Camp: 'stub (bare rail end)',
-  'Village, line 2': 'stub onto the table road',
+  'Village, line 2': `layout B: buffers at s ${BUF2} (today's game: onto the table road)`,
   Quarry: 'nothing',
   'Far Head': 'crossover s 490-512 (before Q6)',
   Pier: 'stub (bare end, Q6 to v27)',
 };
 const TURNS_AFTER: Record<string, string> = {
-  Village: 'buffers at the table rim',
-  Camp: 'buffers',
-  'Village, line 2': 'stop blocks on the table',
+  Village: 'buffers and an end board (home-station step 9)',
+  Camp: 'buffers at s 220',
+  'Village, line 2': 'buffers and an end board; the table, on its spur, shows stop blocks',
   Quarry: 'nothing',
   'Far Head': 'crossover (temporary), then nothing',
-  Pier: 'buffers (temporary), then nothing',
+  Pier: 'buffers (temporary), then a homeward request stop only (no up platform)',
 };
 function futureHaltRows(): HaltRow[] {
   const by = new Map<string, { lines: string[]; x: number; z: number; ends: string[]; plats: HaltRow['plats'] }>();
@@ -720,7 +783,9 @@ function futureHaltRows(): HaltRow[] {
     ],
     flags:
       name === 'Bell Rock'
-        ? ["four lines' platforms cross on the skerry today (stills): the hub needs its two-level plan"]
+        ? [
+            "four lines' platforms cross on the skerry in the blockout (stills): two levels, the bay line on top at 15 m, the north-south line at the water, stairs between (to check with a profile when the hub is built)",
+          ]
         : [],
     plats: r.plats,
   }));
@@ -728,7 +793,8 @@ function futureHaltRows(): HaltRow[] {
 const FUTURE_TURNS_AFTER: Record<string, string> = {
   'Ring top': 'removed',
   'High Gorge': "buffers for the N-S line's start; the ring passes through",
-  'Bell Rock': 'nothing (buffers stages 4-8)',
+  'Bell Rock':
+    "nothing on the bay line (skerry, 15 m); the N-S line's buffers at the water facing the causeway, stages 4-8",
   'West landing': "buffers × 2 (bay platform, the ring's end)",
   'Canopy Town': 'loop until stage 8, then nothing',
   'Saltpan Halt': 'nothing',
@@ -743,10 +809,18 @@ function loaders() {
   const E = LINES.east,
     N = LINES.north;
   const rows: { name: string; x: number; z: number; text: string }[] = [];
-  const stop = (name: string) => liveHalts().find((h) => h.name === name)!.stop;
-  const src = [
-    ...SOURCES.map((s) => ({ ...s, ln: E })),
-    { id: 'forge', name: 'The forge (rails)', x: FORGE.x + ORIGIN.x, z: FORGE.z + ORIGIN.z, line: 'line2', ln: E },
+  const rack = W(PROPS.rack),
+    stall = W(stallFrame(STALLS.open).back);
+  const src: { id: string; name: string; x: number; z: number; line: string; ln: typeof E }[] = [
+    ...SOURCES.filter((s) => s.id !== 'stall').map((s) => ({ ...s, ln: E })),
+    {
+      id: 'forge',
+      name: "The forge rack (rails; layout B, on the island's apron by the buffers)",
+      ...rack,
+      line: 'line2',
+      ln: E,
+    },
+    { id: 'stall', name: "The Roundhouse's open stall (layout B)", ...stall, line: 'line2', ln: E },
     {
       id: 'depot',
       name: "The depot (line 2's camp, the cart)",
@@ -766,80 +840,197 @@ function loaders() {
   ];
   for (const s of src) {
     const a = alongLive(s.ln, s.x, s.z);
-    const halts = liveHalts().filter((h) => h.line === s.line);
+    const halts = liveHalts()
+      .filter((h) => h.line === s.line)
+      .map((h) => ({ ...h, stop: MARKS[h.name]?.s ?? h.stop }));
     const near = halts.reduce((b, h) => (Math.abs(h.stop - a.s) < Math.abs(b.stop - a.s) ? h : b));
     const off = a.s - near.stop;
-    rows.push({
-      name: s.name,
-      x: r1(s.x),
-      z: r1(s.z),
-      text: `s ${r1(a.s)}, ${r1(Math.abs(a.lat))} m ${a.lat > 0 ? 'right' : 'left'} of today's track, ${r1(Math.abs(off))} m ${off < 0 ? 'Home-side' : 'pier-side'} of ${near.name}'s stop (s ${near.stop}). A loader serving a standing train sits at the cargo cars: s ${r1(near.stop - 3.7)} to ${r1(near.stop - 11.1)} (cars 2-4, Home-side of the passenger car), on the ${a.lat > 0 ? 'down (right)' : 'up (left)'} side.`,
-    });
+    const where = `s ${r1(a.s)}, ${r1(Math.abs(a.lat))} m ${a.lat > 0 ? 'right' : 'left'} of ${s.line === 'line1' ? 'line 1' : 'line 2'}'s track, ${r1(Math.abs(off))} m ${off < 0 ? 'Home-side' : 'pier-side'} of ${near.name}'s mark (s ${near.stop}).`;
+    const loader = ` A loader serving a standing train sits at the cargo cars: s ${r1(near.stop - 3.7)} to ${r1(near.stop - 11.1)} (cars 2-4, Home-side of the passenger car in both directions: push-pull, never turned), on the ${a.lat > 0 ? 'down (right)' : 'up (left)'} side.`;
+    const text =
+      s.id === 'stall'
+        ? `${where} Not a loader: the shunter brings stock from the stall over the table and up the spur, which leaves road 2 at s ${SPUR.s}.`
+        : s.id === 'forge'
+          ? `${where}${loader} The rack stands on the island's apron between the buffers and the deck's head ramp, ${r1(near.stop + CONSIST.tail - a.s)} m behind the last cargo car: the cargo end, on the island, so rails go from rack to car without crossing a track. The recovery rack (the Village yard, today at ${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100}) moves beside it in layout B.`
+          : where + loader;
+    rows.push({ name: s.name, x: r1(s.x), z: r1(s.z), text });
   }
-  void stop;
   const ringMid = (RING_HALT.u0 + RING_HALT.u1) / 2;
-  const sw = ringAt(ringMid - 2000, 900);
+  const sw = ringAt(ringMid - 700, 900);
   rows.push({
     name: "Ring Island's steel works (build 2)",
     x: r1(sw.x / 100),
     z: r1(sw.z / 100),
-    text: `On the down (east, homeward) side of the island halt: the steel goes home on the down track. After the loop the engine leads home, so the cargo cars trail on the +s side: the loader at u ${r1((ringMid + 370) / 100)} to ${r1((ringMid + 1110) / 100)} m, east of the platform's north half.`,
+    text: `On the down (east, homeward) side of the island halt, where trains stand while it is the end. With buffers the train is never turned, so the cargo cars are Home-side of the mark as everywhere else: the loader at u ${r1((ringMid - 1110) / 100)} to ${r1((ringMid - 370) / 100)} m, east of the platform's south half.`,
   });
   const g = WORLD_LINES.find((l) => l.id === 'stack')!.halts.find((h) => h.name === 'High Gorge')!;
   rows.push({
     name: 'High Gorge copper works (later)',
     x: r1(g.x / 100),
     z: r1(g.z / 100),
-    text: "In the split beside the ring's homeward track, at the cargo cars of a train standing at the low station: 4-11 m behind the passenger car's mark; the lift carries the copper down to it.",
+    text: "In the split beside the ring's homeward track, at the cargo cars of a train standing at the low station: 4-11 m Home-side of the passenger car's mark; the lift carries the copper down to it.",
   });
   return rows;
 }
+/** Where this plan and station-deposit's review disagree (the design review's finding 10). */
+const LOADER_NOTE =
+  "Loaders stand Home-side of the passenger car's mark in both directions: today's trains are push-pull (train-view.ts poses the engine at +s), and with buffers at Ring Island no train is ever turned. docs/brainstorms/station-deposit.md's review puts each yard at the foot of the down platform's back ramp, mid-platform, on the premise that each direction's cargo cars trail at opposite ends. The two agree on the side of the track (the down platform's, the Works side at the Quarry) and differ along it by 4-11 m; the yard's premise holds only where a line turns its trains on a loop (stage 8's two loops). Build 1's yards stay where they are; build 2's gantry has to reach from the back ramp's foot to the cargo cars, across the deck's end ramp, which neither brief has drawn.";
 
 // ---------------------------------------------------------------- keep-clear for the grown Roundhouse
 /** The Roundhouse grows as an upgrade (the engine-garage brief: today's 9.6 m table to about a 16 m table and 16 m
- * stalls for end-game engines). Kept clear at Home: the grown table (r 8 m), a ring of 16 m stalls and their walls
- * round it (r 26 m), and the first 10 m of each approach. What already stands or is planned inside is listed. */
-export const GROWN = { table: 8, stalls: 16, wall: 2 } as const;
+ * stalls for end-game engines), and only ever on layout B (the design review's finding 1): a sector south of B's table
+ * on its spur, to `r`, plus the grown table. Nothing in town moves. What stands within `r` of the table is listed with
+ * its bearing (degrees clockwise from north), and whether it is inside the sector. */
+export const GROWN = { table: 8, stalls: 16, wall: 2, from: 130, to: 250 } as const;
 function keepClear() {
-  const cx = TURNTABLE.x + ORIGIN.x,
-    cz = TURNTABLE.z + ORIGIN.z;
+  const c = W(TABLE);
   const R = GROWN.table + GROWN.stalls + GROWN.wall;
   const items: string[] = [];
-  const at = (x: number, z: number) => Math.hypot(x - cx, z - cz);
+  const bearing = (x: number, z: number) => ((Math.atan2(x - c.x, -(z - c.z)) * 180) / Math.PI + 360) % 360;
+  const inSector = (b: number) => b >= GROWN.from && b <= GROWN.to;
   const near = (what: string, x: number, z: number, r = 0) => {
-    const d = at(x, z) - r;
-    if (d < R)
-      items.push(
-        `${what}: ${r1(Math.max(0, d))} m from the table's centre${d < GROWN.table ? ' (inside the grown table)' : ''}`,
-      );
+    const d = Math.hypot(x - c.x, z - c.z) - r;
+    if (d >= R) return;
+    const b = bearing(x, z);
+    const where =
+      d < GROWN.table ? 'inside the grown table' : inSector(b) ? '**inside the sector**' : 'outside the sector';
+    items.push(`${what}: ${r1(Math.max(0, d))} m at ${Math.round(b)}° (${where})`);
   };
-  const plots = [...TOWN.start, ...TOWN.wood.flat(), ...TOWN.stone.flat(), ...TOWN.camps.flatMap((c) => c.awake)];
+  const plots = [...TOWN.start, ...TOWN.wood.flat(), ...TOWN.stone.flat(), ...TOWN.camps.flatMap((t) => t.awake)];
   for (const b of plots) near(`a town ${b.type}`, b.x + ORIGIN.x, b.z + ORIGIN.z, Math.max(b.w ?? 5, b.d ?? 5) / 2);
   for (const [id, b] of Object.entries(ROOM_PLOTS))
     near(`the ${id} room`, b.x + ORIGIN.x, b.z + ORIGIN.z, Math.max(b.w, b.d) / 2);
   near('the forge', FORGE.x + ORIGIN.x, FORGE.z + ORIGIN.z, Math.max(FORGE.w, FORGE.d) / 2);
   near("the forge's frame", FORGE_FRAME.x + ORIGIN.x, FORGE_FRAME.z + ORIGIN.z);
   near('the axe stand', AXE_STAND.x + ORIGIN.x, AXE_STAND.z + ORIGIN.z);
-  near("today's stall", SHED_STALL.x / 100, SHED_STALL.z / 100);
-  for (const h of HALTS.filter((h) => h.stop === 0)) {
-    const L = LIVE[h.line]!;
-    const p = beside(L.line, h.s0, h.lat);
-    near(`the ${h.name} platform's Home end (s ${h.s0})`, p.x, p.z);
+  near('the forge crane (layout B)', W(PROPS.crane).x, W(PROPS.crane).z);
+  near('the forge rack (layout B)', W(PROPS.rack).x, W(PROPS.rack).z);
+  near(
+    `the recovery rack, the Village yard (today ${RECOVERY_RACK.x / 100}, ${RECOVERY_RACK.z / 100}; layout B by the buffers)`,
+    W(PROPS.rack).x,
+    W(PROPS.rack).z,
+  );
+  near('the concourse', W(HALL).x, W(HALL).z, HALL.w / 2);
+  const q1 = LINKS[1]!.stations.find((t) => t.id === 'Q1');
+  if (q1) {
+    const f = frameBesideLine(q1, LINKS[1]!.line, LINKS[1]!.dir);
+    near("Q1's frame (layout B: road 2's south side)", f.x, f.z);
   }
-  for (const L of LIVE) {
-    // where each line leaves the grown table's rim, and the long train's tail at today's stop
-    let s = 0;
-    while (at(beside(L.line, s, 0).x, beside(L.line, s, 0).z) < GROWN.table && s < 40) s += 0.5;
-    items.push(
-      `${L.name} leaves the grown table at s ${s}: a long train's tail (12.7 m behind its passenger car) needs its stop at s ${r1(s + 12.7 + 2)} or more`,
+  for (const b of STALLS.bearings) {
+    const f = stallFrame(b);
+    near(
+      `the ${b}° stall's back${b === STALLS.open ? ' (open; it is the thing that grows)' : ' (a ruin outline)'}`,
+      W(f.back).x,
+      W(f.back).z,
     );
   }
-  return { x: r1(cx), z: r1(cz), r: R, table: GROWN.table, items };
+  for (const [k, L] of LIVE.entries()) {
+    // the road's nearest approach to the table, and whether it crosses the sector
+    let best = { s: 0, d: Infinity, b: 0 };
+    let crosses = false;
+    for (let s = BUFFERS[k]!; s <= 80; s += 0.5) {
+      const p = beside(L.line, s, 0);
+      const d = Math.hypot(p.x - c.x, p.z - c.z);
+      const b = bearing(p.x, p.z);
+      if (d < R && inSector(b)) crosses = true;
+      if (d < best.d) best = { s, d, b };
+    }
+    items.push(
+      `${L.name}'s road: nearest ${r1(best.d)} m at s ${best.s} (${Math.round(best.b)}°); ${crosses ? '**crosses the sector**' : 'clear of the sector'}`,
+    );
+  }
+  const sp = spurPoints();
+  const spurB = bearing(W(sp[0]!).x, W(sp[0]!).z);
+  items.push(
+    `the engine spur arrives at the table from ${Math.round((TABLE.spur + 360) % 360)}° (it leaves road 2 at s ${SPUR.s}, ${Math.round(spurB)}° from the table): outside the sector`,
+  );
+  return {
+    x: c.x,
+    z: c.z,
+    r: R,
+    table: GROWN.table,
+    from: GROWN.from,
+    to: GROWN.to,
+    items,
+  };
 }
+
+// ---------------------------------------------------------------- services, for both branch orders
+/** The services the proposals give (docs/plans/rail-map.md, "The shape it gives the network"), for each branch order
+ * (the design review's finding 6), as the map links (catalog legs) each runs over. Legs no service uses in an order
+ * are drawn grey: not built in that order, or removed by a ruling. */
+type Order = 'gorge' | 'canopy';
+type Service = { id: string; name: string; colour: string; legs: string[]; text: string };
+const RING_LEGS = ['line2', 'ring-v27', 'ledge', 'wall-n', 'wall-s', 'salt-quay', 'seacave'];
+const SERVICES: Record<Order, Service[]> = {
+  gorge: [
+    { id: 'line1', name: 'Line 1', colour: COLOURS.line1!, legs: ['line1'], text: 'Village to Camp: two terminals.' },
+    {
+      id: 'ring',
+      name: 'The ring (line 2 grown)',
+      colour: COLOURS.ring!,
+      legs: RING_LEGS,
+      text: "Village, Quarry, Far Head, the pier (homeward only), the Meet's halt, Ring Island (v27), High Gorge (stage 3), Canopy Town and Port Quay (stage 7, the White Wall line), Saltpan, West landing (stage 6: the cave line, its own row with its own trains until stage 7 joins the halves). Both ends at Home, a walk apart.",
+    },
+    {
+      id: 'bay',
+      name: 'Bay line',
+      colour: COLOURS.bay!,
+      legs: ['bay-cut', 'bell-canopy', 'notch-tunnel'],
+      text: 'West landing, Bell Rock on the skerry (stage 4), Canopy Town (stage 5), on to Lantern Notch (stage 8).',
+    },
+    {
+      id: 'ns',
+      name: 'North-south line',
+      colour: COLOURS.causeway!,
+      legs: ['incline', 'final'],
+      text: "High Gorge's low station, Bell Rock at the water (stage 4), the Original Island (stage 8).",
+    },
+  ],
+  canopy: [
+    { id: 'line1', name: 'Line 1', colour: COLOURS.line1!, legs: ['line1'], text: 'Village to Camp: two terminals.' },
+    {
+      id: 'ring',
+      name: 'The ring (line 2 grown)',
+      colour: COLOURS.ring!,
+      legs: RING_LEGS,
+      text: 'As Gorge first, but line 2 runs on from Ring Island to High Gorge at stage 5.',
+    },
+    {
+      id: 'island-canopy',
+      name: 'Island to Canopy line',
+      colour: COLOURS.notch!,
+      legs: ['ring-bell', 'bell-canopy', 'notch-tunnel'],
+      text: "Stage 3: Ring Island (a terminal at the halt's west side), the bay trestle to Bell Rock (on the skerry), the cleft to Canopy Town: one line, so the first trip to the new town needs no change of train. On to Lantern Notch at stage 8.",
+    },
+    {
+      id: 'bay',
+      name: 'Bay line (the shortcut)',
+      colour: COLOURS.bay!,
+      legs: ['bay-cut'],
+      text: 'Stage 4: West landing to Bell Rock, the second line into Bell Rock, a terminal there (walk-between).',
+    },
+    {
+      id: 'ns',
+      name: 'North-south line',
+      colour: COLOURS.causeway!,
+      legs: ['incline', 'final'],
+      text: "Stage 5: High Gorge's low station, Bell Rock at the water; the Original Island at stage 8.",
+    },
+  ],
+};
+/** Legs a ruling removed from the rail catalog (still in src/sickle/world-lines.ts until it is regenerated). */
+const REMOVED: Record<string, string> = {
+  ringx:
+    "the blockout's draft of line 2 to Ring Island and its climb to Ring top: R1 lays the line; ruling 3 removed Ring top",
+  lift: "the cave line's climb to High Port: the crane lifts instead (the rulings' knock-on)",
+};
 
 // ---------------------------------------------------------------- the network for drawing
 type Corridor = {
   id: string;
+  /** The catalog leg (or live line) it is, for the services view. */
+  leg: string;
   line: string;
   status: Status;
   colour: string;
@@ -850,13 +1041,38 @@ type Corridor = {
   label: string;
 };
 const DASH: Record<Status, string> = { live: '', v26: '', v27: '10 5', later: '4 4' };
+/** A future line's vertices from `a` to `b` cm along it, the ends interpolated. */
+function legPts(l: (typeof WORLD_LINES)[number], a: number, b: number): [number, number][] {
+  const out: [number, number][] = [];
+  let acc = l.fromCm;
+  const lerp = (p: readonly number[], q: readonly number[], t: number): [number, number] => [
+    r1((p[0]! + (q[0]! - p[0]!) * t) / 100),
+    r1((p[1]! + (q[1]! - p[1]!) * t) / 100),
+  ];
+  for (let i = 1; i < l.pts.length; i++) {
+    const p = l.pts[i - 1]!,
+      q = l.pts[i]!;
+    const len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    const s0 = acc,
+      s1 = acc + len;
+    if (s1 >= a && s0 <= b) {
+      if (!out.length) out.push(lerp(p, q, Math.max(0, (a - s0) / (len || 1))));
+      if (s1 <= b) out.push(lerp(q, q, 0));
+      else out.push(lerp(p, q, (b - s0) / (len || 1)));
+    }
+    acc = s1;
+  }
+  return out;
+}
 function corridors(): Corridor[] {
   const out: Corridor[] = [];
   for (const L of LIVE) {
     const pts: [number, number][] = [],
       a: (number | null)[] = [],
       b: (number | null)[] = [];
-    for (let s = 0; s <= L.line.len; s += 2) {
+    // From layout B's buffers (behind s 0), then every 2 m.
+    const ss = [BUFFERS[L.index]!, ...Array.from({ length: Math.floor(L.line.len / 2) + 1 }, (_, k) => 2 * k)];
+    for (const s of ss) {
       const p = beside(L.line, s, 0);
       pts.push([r1(p.x), r1(p.z)]);
       // a: the up track's lateral offset (+ right of the drawn direction, Place's convention); b: today's track
@@ -864,20 +1080,37 @@ function corridors(): Corridor[] {
       a.push(u === null ? null : r1(u));
       b.push(0);
     }
-    out.push({ id: L.id, line: L.id, status: 'live', colour: COLOURS[L.id]!, dash: '', pts, a, b, label: L.name });
+    out.push({
+      id: L.id,
+      leg: L.id,
+      line: L.id,
+      status: 'live',
+      colour: COLOURS[L.id]!,
+      dash: '',
+      pts,
+      a,
+      b,
+      label: L.name,
+    });
   }
-  // v27 crossing: down at lat 0, up at -4 (ringAt's lat is east; the line heads north, so east is right: + right)
+  // v27 crossing: down at lat 0, up at -4 (ringAt's lat is east; the line heads north, so east is right: + right), on
+  // to the proposed buffers 15 m past the halt.
   const pts: [number, number][] = [],
     a: (number | null)[] = [],
     b: (number | null)[] = [];
-  for (let u = 0; u <= 46800; u += 1000) {
-    const p = ringAt(u);
+  for (let u = 0; u <= RING_END_U * 100; u += 1000) {
+    const p = ringAt(Math.min(u, RING_END_U * 100));
     pts.push([r1(p.x / 100), r1(p.z / 100)]);
     a.push(-4);
     b.push(0);
   }
+  const pe = ringAt(RING_END_U * 100);
+  pts.push([r1(pe.x / 100), r1(pe.z / 100)]);
+  a.push(-4);
+  b.push(0);
   out.push({
     id: 'ring-v27',
+    leg: 'ring-v27',
     line: 'line2',
     status: 'v27',
     colour: COLOURS.line2!,
@@ -885,36 +1118,54 @@ function corridors(): Corridor[] {
     pts,
     a,
     b,
-    label: 'Line 2 to Ring Island (v27, R1)',
+    label: `Line 2 to Ring Island (v27, R1; past the halt to u ${RING_END_U} as proposed)`,
   });
   for (const l of WORLD_LINES) {
     const st = l.id === 'ring' ? 'v27' : 'later';
-    out.push({
-      id: l.id,
-      line: l.id,
-      status: st,
-      colour: COLOURS[l.id] ?? '#888',
-      dash: l.id === 'ring' ? '2 6' : DASH.later,
-      pts: l.pts.map((p) => [r1(p[0] / 100), r1(p[1] / 100)]),
-      a: l.pts.map(() => -FORMATION.centresCm / 200),
-      b: l.pts.map(() => FORMATION.centresCm / 200),
-      label: l.name + (l.id === 'ring' ? ' (blockout draft, superseded by R1)' : ''),
-    });
+    for (const g of l.legs) {
+      const p = legPts(l, g.fromCm, g.toCm);
+      out.push({
+        id: `${l.id}-${g.id}`,
+        leg: g.id,
+        line: l.id,
+        status: st,
+        colour: COLOURS[l.id] ?? '#888',
+        dash: l.id === 'ring' ? '2 6' : DASH.later,
+        pts: p,
+        a: p.map(() => -FORMATION.centresCm / 200),
+        b: p.map(() => FORMATION.centresCm / 200),
+        label:
+          `${l.name}, leg ${g.id} (stage ${g.stage[0] ?? 'never'} Gorge first, ${g.stage[1] ?? 'never'} Canopy first)` +
+          (REMOVED[g.id] ? `: removed, ${REMOVED[g.id]}` : ''),
+      });
+    }
   }
   return out;
 }
 
+type Mode = 'both' | 'before' | 'after';
 function loopsAndCrossings() {
-  const loops: { x: number; z: number; r: number; status: Status; label: string }[] = [
+  const alt = ringAt(RING_ALT.u * 100, RING_ALT.lat * 100);
+  const loops: { x: number; z: number; r: number; status: Status; label: string; mode: Mode; alt?: boolean }[] = [
     {
       x: RING_LOOP.x / 100,
       z: RING_LOOP.z / 100,
       r: RING_LOOP.r / 100,
       status: 'v27',
-      label: 'Ring Island loop (v27, as R1 lays it out)',
+      mode: 'before',
+      label: "Ring Island loop (v27, as R1 lays it out): its neck reverses 165° and can't be run as drawn",
+    },
+    {
+      x: r1(alt.x / 100),
+      z: r1(alt.z / 100),
+      r: RING_ALT.r,
+      status: 'v27',
+      mode: 'after',
+      alt: true,
+      label: `The alternative, undrawn: a turning loop beyond the halt (centre u ${RING_ALT.u} lat +${RING_ALT.lat}, r ${RING_ALT.r}). A circle wholly east of both tracks can't take the up (west) track without crossing the down track: it needs a merge to one track first, or a teardrop about 80 m wide astride the line. It cuts up to 12 m into the cone, turns every train round, and is lifted when the line goes on. Not in the continuity report.`,
     },
   ];
-  const cross: { x: number; z: number; dir: number; status: Status; label: string }[] = [];
+  const cross: { x: number; z: number; dir: number; status: Status; label: string; mode: Mode }[] = [];
   for (const l of WORLD_LINES)
     for (const e of l.ends) {
       if (e.kind === 'loop')
@@ -923,6 +1174,7 @@ function loopsAndCrossings() {
           z: e.z / 100,
           r: FORMATION.loopCm / 100,
           status: 'later',
+          mode: 'both',
           label: `${l.name}: turning loop`,
         });
     }
@@ -933,7 +1185,17 @@ function loopsAndCrossings() {
     z: r1(fh.z),
     dir: Math.atan2(fh2.x - fh.x, fh2.z - fh.z),
     status: 'v26',
+    mode: 'both',
     label: "Far Head's crossover, s 490-512 (before Q6)",
+  });
+  const rx = ringAt(((RING_X[0] + RING_X[1]) / 2) * 100, -200);
+  cross.push({
+    x: r1(rx.x / 100),
+    z: r1(rx.z / 100),
+    dir: Math.atan2(0.0272, -1),
+    status: 'v27',
+    mode: 'after',
+    label: `Ring Island: a facing crossover on the Way, u ${RING_X[0]}-${RING_X[1]} (proposed with the buffers; the R1 amendment places it), so up trains reach the east platform`,
   });
   // Stub turnouts
   const stubs = LIVE.flatMap((L) =>
@@ -947,6 +1209,32 @@ function loopsAndCrossings() {
     return { x: r1(p.x), z: r1(p.z), label: `${h.name.split(',')[0]}: plank crossing at s ${h.crossS}` };
   });
   return { loops, cross, stubs, planks, crossoverZone: PLACE_FORMATION.quarry.crossover };
+}
+
+/** Layout B's station furniture, drawn at Home: the engine spur, the stall roads, the cart's leg, the concourse and
+ * the island. World metres. */
+function homeB() {
+  const pl = (ps: { x: number; z: number }[]) => ps.map((p) => [W(p).x, W(p).z] as [number, number]);
+  const stalls = STALLS.bearings.map((b) => {
+    const f = stallFrame(b);
+    return {
+      open: b === STALLS.open,
+      pts: pl([f.rim, f.back]),
+      label: `Stall road at ${b}°${b === STALLS.open ? ' (the open stall)' : ' (a ruin outline)'}`,
+    };
+  });
+  const box = (a0: number, a1: number, c0: number, c1: number) =>
+    pl([axisPoint(a0, c0), axisPoint(a1, c0), axisPoint(a1, c1), axisPoint(a0, c1)]);
+  const hall = box(HALL.a - HALL.d / 2, HALL.a + HALL.d / 2, HALL.c - HALL.w / 2, HALL.c + HALL.w / 2);
+  const island = box(ISLAND_A.buffers, ISLAND_A.foot, ISLAND.edge, ROAD_GAP - ISLAND.edge);
+  return {
+    spur: pl(spurPoints()),
+    leg: pl(legPoints()),
+    stalls,
+    hall,
+    island,
+    label: `Layout B (the owner's pick, 9 November; home-station.md): one terminus, both lines at buffer stops beside one island (deck line 1 s 2.8-20.8, line 2 s 5.7-23.7) and one concourse; the 9.6 m table on its own engine spur off road 2 at s ${SPUR.s}; line trains never turn on the table. The live game draws today's turntable terminus until the flip (step 6); ?home=b previews B.`,
+  };
 }
 
 function land() {
@@ -1002,6 +1290,9 @@ function page() {
     marks: marks(c),
     table: { x: TURNTABLE.x + ORIGIN.x, z: TURNTABLE.z + ORIGIN.z, r: TURNTABLE.r },
     keep: keepClear(),
+    home: homeB(),
+    services: SERVICES,
+    removed: REMOVED,
   };
   const lines = lineRows();
   const E = data.ends;
@@ -1012,7 +1303,7 @@ function page() {
   const lineTable = lines
     .map(
       (l) =>
-        `<tr><td><span class="key" style="background:${l.colour}"></span>${esc(l.name)}</td><td>${esc(l.build)}</td><td>${(l.length / 1000).toFixed(2)} km</td><td>${l.halts.map(esc).join(' · ')}</td><td>${l.trip.t20} s / ${l.trip.t25} s stopping everywhere (${l.trip.saved} s saved); ${l.trip.direct} s saved non-stop${l.trip.short ? ' <span class="flag">too short for the upgrade to be felt</span>' : ''}</td><td>${esc(l.trains)}</td><td>${esc(l.ends[0])}<br/><b>→</b> ${esc(l.after[0])}</td><td>${esc(l.ends[1])}<br/><b>→</b> ${esc(l.after[1])}</td></tr>`,
+        `<tr><td><span class="key" style="background:${l.colour}"></span>${esc(l.name)}</td><td>${esc(l.build)}</td><td>${(l.length / 1000).toFixed(2)} km</td><td>${l.halts.map(esc).join(' · ')}</td><td>${l.trip.t20} s / ${l.trip.t25} s stopping everywhere (${l.trip.saved} s saved); ${l.trip.direct} s saved non-stop${l.trip.short ? ' <span class="flag">under 10 s: no speed part offered here (seats, looks, a whistle)</span>' : ''}</td><td>${esc(l.trains)}</td><td>${esc(l.ends[0])}<br/><b>→</b> ${esc(l.after[0])}</td><td>${esc(l.ends[1])}<br/><b>→</b> ${esc(l.after[1])}</td></tr>`,
     )
     .join('\n');
   const haltTable = data.halts
@@ -1025,6 +1316,12 @@ function page() {
     (e) =>
       `<tr><td>${esc(e.where)}</td><td>${esc(e.status)}</td><td><span class="sym ${e.before}"></span>${esc(e.before)}: ${esc(e.beforeText)}</td><td class="c-${e.complies}">${e.complies}</td><td><span class="sym ${e.after}"></span>${esc(e.after)}: ${esc(e.afterText)}</td><td>${esc(e.cost)}</td></tr>`,
   ).join('\n');
+  const serviceList = (o: Order) =>
+    SERVICES[o]
+      .map(
+        (v) => `<li><span class="key" style="background:${v.colour}"></span><b>${esc(v.name)}</b>: ${esc(v.text)}</li>`,
+      )
+      .join('\n');
   const markList = data.marks.map((m) => `<li value="${m.n}">${esc(m.text)}</li>`).join('\n');
   const loaderList = data.loaders.map((l) => `<li><b>${esc(l.name)}</b>: ${esc(l.text)}</li>`).join('\n');
   return `<title>Boogle Rail Map</title>
@@ -1079,6 +1376,7 @@ svg text { font-family: system-ui, sans-serif; paint-order: stroke; stroke: var(
 <code>dev/level/rail-map.ts</code>). World metres, north up. Every corridor is double track on 4 m centres, left-hand
 running (the up track, away from Home, on the left); at this scale the two tracks are spread apart so both stay
 visible, and come back to their true 4 m when you zoom in. Plan: <code>docs/plans/rail-map.md</code>.</p>
+<p class="muted"><b>Home is drawn as layout B</b>, the owner's pick (9 November): one terminus, both lines at buffer stops beside one island, the table on its own engine spur. The live game still draws today's turntable terminus until home-station's flip; <code>?home=b</code> previews B.</p>
 <div class="stats">
   <div class="stat"><b>${lines.length}</b>services (2 live, 1 v27, ${lines.length - 3} tentative)</div>
   <div class="stat"><b>${E.length}</b>track ends, today and planned</div>
@@ -1102,6 +1400,11 @@ visible, and come back to their true 4 m when you zoom in. Plan: <code>docs/plan
   <button data-layer="marks" aria-pressed="true">Continuity marks</button>
   <button data-layer="loaders" aria-pressed="true">Cargo loaders</button>
 </div>
+<div class="bar" role="group" aria-label="Colour">
+  <button data-colour="lines" aria-pressed="true">Catalog lines</button>
+  <button data-colour="gorge" aria-pressed="false">Services, Gorge first</button>
+  <button data-colour="canopy" aria-pressed="false">Services, Canopy first</button>
+</div>
 <div class="mapbox" id="mapbox"><svg id="map" role="img" aria-label="Rail map of the whole Boogle network"></svg><div class="tip" id="tip" role="status"></div></div>
 <div class="legend">
   <span><svg width="34" height="12"><line x1="0" y1="3" x2="34" y2="3" stroke="var(--ink)" stroke-width="2"/><line x1="0" y1="9" x2="34" y2="9" stroke="var(--ink)" stroke-width="2"/></svg>Live: trains run today (solid; up track drawn, runs from v26)</span>
@@ -1118,7 +1421,9 @@ visible, and come back to their true 4 m when you zoom in. Plan: <code>docs/plan
   <span><svg width="20" height="14"><rect x="2" y="3" width="16" height="8" fill="var(--halt)" stroke="var(--ink)"/></svg>Platform, one per track (tap a halt)</span>
   <span><svg width="20" height="14"><circle cx="10" cy="7" r="6" fill="var(--mark)"/></svg>Continuity mark (numbered below)</span>
   <span><svg width="20" height="14"><rect x="4" y="2" width="10" height="10" fill="none" stroke="var(--good)" stroke-width="2"/></svg>Cargo loader (where it would stand)</span>
-  <span><svg width="20" height="14"><circle cx="10" cy="7" r="6" fill="var(--mark)" fill-opacity="0.15" stroke="var(--mark)" stroke-dasharray="3 2"/></svg>Keep clear: the grown Roundhouse (tap it)</span>
+  <span><svg width="20" height="14"><path d="M10 2v6l5 4z" fill="var(--mark)" fill-opacity="0.15" stroke="var(--mark)" stroke-dasharray="3 2"/></svg>Keep clear: the grown Roundhouse, a sector south of layout B's table (tap it)</span>
+  <span><svg width="20" height="14"><rect x="2" y="4" width="16" height="6" fill="var(--chalk)" stroke="var(--ink)"/></svg>Home, layout B: the island, the concourse, the spur and stall roads (tap)</span>
+  <span><svg width="20" height="14"><circle cx="10" cy="7" r="6" fill="none" stroke="var(--muted)" stroke-dasharray="1.5 3"/></svg>Undrawn alternative (Ring Island's loop, as proposed only)</span>
 </div>
 
 <h2>Lines</h2>
@@ -1145,19 +1450,38 @@ ${endTable}
 ${markList}
 </ol>
 
-<h2>Keep clear at Home: the grown Roundhouse</h2>
-<p class="muted">The table grows from 9.6 m to about 16 m, with 16 m stalls, as an upgrade (the engine-garage brief). Kept clear: r ${data.keep.r} m round the table's centre. Inside it today:</p>
+<h2>Services, for both branch orders</h2>
+<p class="muted">The proposals' services (the ring as one line, each line's ends as proposed), drawn on the map with the "Services" buttons. Grey legs aren't built in that order or were removed by a ruling: ${Object.entries(
+    REMOVED,
+  )
+    .map(([k, v]) => `${esc(k)}, ${esc(v)}`)
+    .join(
+      '; ',
+    )}. The blockout catalog (<code>src/sickle/world-lines.ts</code>) still has those two legs and the Ring top halt: it ships in the <code>?blockout=world</code> chunk, so it isn't regenerated by this map.</p>
+<h3>High Gorge first</h3>
 <ul>
-${data.keep.items.map((i) => `<li>${esc(i)}</li>`).join('\n')}
+${serviceList('gorge')}
+</ul>
+<h3>Canopy Town first</h3>
+<ul>
+${serviceList('canopy')}
+</ul>
+
+<h2>Keep clear at Home: the grown Roundhouse</h2>
+<p class="muted">The table grows from 9.6 m to about 16 m, with 16 m stalls, as an upgrade (the engine-garage brief), and only ever on layout B. Kept clear: a sector from ${data.keep.from}° to ${data.keep.to}° (clockwise from north), r ${data.keep.r} m, south of B's table on its spur, plus the grown table (r ${data.keep.table} m); nothing in town moves. The engine-garage brief's "30 m on the stall side" and this become one footprint. Within ${data.keep.r} m of the table:</p>
+<ul>
+${data.keep.items.map((i) => `<li>${esc(i).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</li>`).join('\n')}
 </ul>
 
 <h2>Cargo loaders</h2>
+<p class="muted">${esc(LOADER_NOTE)}</p>
 <ul>
 ${loaderList}
 </ul>
 </main>
 <script>
 const D = ${JSON.stringify(data)};
+const COL = ${JSON.stringify(COLOURS)};
 ${CLIENT}
 </script>
 `;
@@ -1167,8 +1491,11 @@ ${CLIENT}
 const CLIENT = String.raw`
 const svg = document.getElementById('map'), box = document.getElementById('mapbox'), tip = document.getElementById('tip');
 const NS = 'http://www.w3.org/2000/svg';
-const VIEWS = { all: [-1750, -2350, 3500, 3700], home: [850, -110, 320, 200], pier: [1320, -440, 160, 120], ring: [1250, -1220, 330, 420], bell: [-200, -1100, 400, 420], canopy: [-1300, -520, 420, 420], gorge: [-260, -2120, 420, 380], port: [-160, 780, 600, 500] };
-let view = VIEWS.all.slice(), endsMode = 'before';
+const VIEWS = { all: [-1750, -2350, 3500, 3700], home: [878, -32, 116, 84], pier: [1320, -440, 160, 120], ring: [1372, -938, 146, 190], bell: [-200, -1100, 400, 420], canopy: [-1300, -520, 420, 420], gorge: [-260, -2120, 420, 380], port: [-160, 780, 600, 500] };
+let view = VIEWS.all.slice(), endsMode = 'before', colourMode = 'lines';
+const SVC = {};
+for (const o in D.services) { SVC[o] = {}; for (const v of D.services[o]) for (const l of v.legs) SVC[o][l] = v; }
+const modeOn = (m) => m === 'both' || m === endsMode;
 const layers = { marks: true, loaders: true };
 function fit() {
   const r = box.getBoundingClientRect(), aspect = r.width / Math.max(1, r.height);
@@ -1206,15 +1533,29 @@ function draw() {
   for (const c of D.land.cones) el('circle', { cx: c.x, cy: c.z, r: c.r, fill: 'var(--land)', 'fill-opacity': 0.7, stroke: 'var(--edge)', 'stroke-width': px });
   el('circle', { cx: D.land.original.x, cy: D.land.original.z, r: D.land.original.r, fill: 'var(--land)', stroke: 'var(--edge)', 'stroke-width': px });
   el('circle', { cx: D.table.x, cy: D.table.z, r: Math.max(D.table.r, 3 * px), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.5 * px });
-  el('circle', { cx: D.keep.x, cy: D.keep.z, r: D.keep.r, fill: 'var(--mark)', 'fill-opacity': 0.08, stroke: 'var(--mark)', 'stroke-width': 1.4 * px, 'stroke-dasharray': 5 * px + ' ' + 3 * px }).addEventListener('click', () => show('<b>Keep clear: the grown Roundhouse</b> (a 16 m table, 16 m stalls round it, r ' + D.keep.r + ' m)<br>' + D.keep.items.join('<br>')));
+  const K = D.keep, bp = (b, r) => [K.x + r * Math.sin(b * Math.PI / 180), K.z - r * Math.cos(b * Math.PI / 180)];
+  const k0 = bp(K.from, K.r), k1 = bp(K.to, K.r);
+  el('path', { d: 'M' + K.x + ',' + K.z + 'L' + k0.join(',') + 'A' + K.r + ',' + K.r + ' 0 0 1 ' + k1.join(',') + 'Z', fill: 'var(--mark)', 'fill-opacity': 0.1, stroke: 'var(--mark)', 'stroke-width': 1.4 * px, 'stroke-dasharray': 5 * px + ' ' + 3 * px }).addEventListener('click', () => show('<b>Keep clear: the grown Roundhouse</b> (layout B: a sector ' + K.from + '°-' + K.to + '° to r ' + K.r + ' m south of the spur table, and the grown 16 m table)<br>' + K.items.map((i) => i.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')).join('<br>')));
+  // Layout B's station: the island, the concourse, the engine spur, the stall roads and the cart's leg
+  const H = D.home, poly = (pts) => pts.map((p) => p.join(',')).join(' ');
+  const hb = el('g', {});
+  el('polygon', { points: poly(H.island), fill: 'var(--halt)', stroke: 'var(--ink)', 'stroke-width': px }, hb);
+  el('polygon', { points: poly(H.hall), fill: 'var(--chalk)', stroke: 'var(--ink)', 'stroke-width': px }, hb);
+  el('polyline', { points: poly(H.spur), fill: 'none', stroke: COL.line2, 'stroke-width': 2 * px }, hb);
+  el('polyline', { points: poly(H.leg), fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1.4 * px, 'stroke-dasharray': 3 * px + ' ' + 2 * px }, hb);
+  for (const t of H.stalls) el('polyline', { points: poly(t.pts), fill: 'none', stroke: t.open ? COL.line2 : 'var(--muted)', 'stroke-width': (t.open ? 2 : 1.2) * px, 'stroke-dasharray': t.open ? '' : 2 * px + ' ' + 2 * px }, hb);
+  hb.addEventListener('click', () => show('<b>Home, layout B</b><br>' + H.label));
   el('circle', { cx: D.keep.x, cy: D.keep.z, r: D.keep.table, fill: 'none', stroke: 'var(--mark)', 'stroke-width': px, 'stroke-dasharray': 2 * px + ' ' + 2 * px });
   const W = 2.2 * px;
   for (const c of D.corridors) {
+    const svc = colourMode === 'lines' ? null : SVC[colourMode][c.leg];
+    const colour = colourMode === 'lines' ? c.colour : svc ? svc.colour : 'var(--edge)';
+    const faint = (colourMode !== 'lines' && !svc) || !!D.removed[c.leg];
     for (const [lats, dirSign] of [[c.a, 1], [c.b, -1]]) {
       const line = offsetLine(c.pts, lats, k);
       for (const run of runs(line)) {
-        const p = el('polyline', { points: run.map((q) => q.join(',')).join(' '), fill: 'none', stroke: c.colour, 'stroke-width': W, 'stroke-linejoin': 'round', 'stroke-dasharray': c.dash ? c.dash.split(' ').map((v) => v * px).join(' ') : '' });
-        p.addEventListener('click', () => show('<b>' + c.label + '</b><br>' + (dirSign > 0 ? 'Up track (+s, away from Home)' : 'Down track (towards Home)') + ' · ' + c.status));
+        const p = el('polyline', { points: run.map((q) => q.join(',')).join(' '), fill: 'none', stroke: colour, 'stroke-opacity': faint ? 0.55 : 1, 'stroke-width': faint ? W * 0.6 : W, 'stroke-linejoin': 'round', 'stroke-dasharray': c.dash ? c.dash.split(' ').map((v) => v * px).join(' ') : '' });
+        p.addEventListener('click', () => show('<b>' + c.label + '</b><br>' + (dirSign > 0 ? 'Up track (+s, away from Home)' : 'Down track (towards Home)') + ' · ' + c.status + (colourMode === 'lines' ? '' : '<br><b>Service (' + (colourMode === 'gorge' ? 'Gorge first' : 'Canopy first') + '):</b> ' + (svc ? svc.name + ': ' + svc.text : D.removed[c.leg] ? 'removed: ' + D.removed[c.leg] : 'not built in this order'))));
         // direction arrows every ~90 px
         let acc = 0;
         for (let i = 1; i < run.length; i++) {
@@ -1225,16 +1566,22 @@ function draw() {
           let ux = (b[0] - a[0]) / seg, uz = (b[1] - a[1]) / seg;
           if (dirSign < 0) { ux = -ux; uz = -uz; }
           const s = 4 * px, mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2;
-          el('path', { d: 'M' + (mx - ux * s - uz * s) + ',' + (mz - uz * s + ux * s) + 'L' + (mx + ux * s) + ',' + (mz + uz * s) + 'L' + (mx - ux * s + uz * s) + ',' + (mz - uz * s - ux * s), fill: 'none', stroke: c.colour, 'stroke-width': 1.4 * px });
+          if (!faint) el('path', { d: 'M' + (mx - ux * s - uz * s) + ',' + (mz - uz * s + ux * s) + 'L' + (mx + ux * s) + ',' + (mz + uz * s) + 'L' + (mx - ux * s + uz * s) + ',' + (mz - uz * s - ux * s), fill: 'none', stroke: colour, 'stroke-width': 1.4 * px });
         }
       }
     }
     // single (bidirectional) stretches of live lines: where the up track is absent, today's track carries both ways
   }
-  for (const L of D.extra.loops) el('circle', { cx: L.x, cy: L.z, r: Math.max(L.r, 5 * px), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.6 * px, 'stroke-dasharray': L.status === 'later' ? 4 * px + ' ' + 3 * px : '' }).addEventListener('click', () => show('<b>' + L.label + '</b>'));
+  for (const L of D.extra.loops) {
+    if (!modeOn(L.mode)) continue;
+    const g = el('g', {});
+    el('circle', { cx: L.x, cy: L.z, r: Math.max(L.r, 5 * px), fill: 'none', stroke: L.alt ? 'var(--muted)' : 'var(--ink)', 'stroke-opacity': L.alt ? 0.8 : 1, 'stroke-width': (L.alt ? 1.2 : 1.6) * px, 'stroke-dasharray': L.alt ? 1.5 * px + ' ' + 3 * px : L.status === 'later' ? 4 * px + ' ' + 3 * px : '' }, g);
+    if (L.alt) { const t = el('text', { x: L.x, y: L.z + 4 * px, 'font-size': 10 * px, 'text-anchor': 'middle', 'stroke-width': 3 * px, fill: 'var(--muted)', 'font-style': 'italic' }, g); t.textContent = 'loop: undrawn alternative'; }
+    g.addEventListener('click', () => show('<b>' + L.label + '</b>'));
+  }
   for (const s of D.extra.stubs) { const g = el('g', {}); el('path', { d: 'M' + (s.x - 5 * px) + ',' + s.z + 'h' + 10 * px + 'M' + s.x + ',' + s.z + 'l' + 5 * px + ',' + (-4 * px), stroke: 'var(--ink)', 'stroke-width': 1.4 * px, fill: 'none' }, g); g.addEventListener('click', () => show('<b>' + s.label + '</b>')); }
   for (const s of D.extra.planks) el('rect', { x: s.x - 2 * px, y: s.z - 2 * px, width: 4 * px, height: 4 * px, fill: '#a0703a' }).addEventListener('click', () => show('<b>' + s.label + '</b>'));
-  for (const c of D.extra.cross) el('path', { d: 'M' + (c.x - 5 * px) + ',' + (c.z - 5 * px) + 'l' + 10 * px + ',' + 10 * px + 'M' + (c.x - 5 * px) + ',' + (c.z + 5 * px) + 'l' + 10 * px + ',' + (-10 * px), stroke: 'var(--ink)', 'stroke-width': 1.6 * px }).addEventListener('click', () => show('<b>' + c.label + '</b>'));
+  for (const c of D.extra.cross) if (modeOn(c.mode)) el('path', { d: 'M' + (c.x - 5 * px) + ',' + (c.z - 5 * px) + 'l' + 10 * px + ',' + 10 * px + 'M' + (c.x - 5 * px) + ',' + (c.z + 5 * px) + 'l' + 10 * px + ',' + (-10 * px), stroke: 'var(--ink)', 'stroke-width': 1.6 * px }).addEventListener('click', () => show('<b>' + c.label + '</b>'));
   for (const e of D.ends) {
     const kind = endsMode === 'before' ? e.before : e.after;
     const g = el('g', { transform: 'translate(' + e.x + ',' + e.z + ') rotate(' + (-e.dir * 180 / Math.PI + 90) + ')' });
@@ -1289,6 +1636,7 @@ svg.addEventListener('pointermove', (e) => {
 document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { document.querySelectorAll('[data-go]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); setView(VIEWS[b.dataset.go]); }));
 document.querySelectorAll('[data-zoom]').forEach((b) => b.addEventListener('click', () => { const r = box.getBoundingClientRect(); zoomAt(Number(b.dataset.zoom), r.left + r.width / 2, r.top + r.height / 2); }));
 document.querySelectorAll('[data-ends]').forEach((b) => b.addEventListener('click', () => { endsMode = b.dataset.ends; document.querySelectorAll('[data-ends]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); draw(); }));
+document.querySelectorAll('[data-colour]').forEach((b) => b.addEventListener('click', () => { colourMode = b.dataset.colour; document.querySelectorAll('[data-colour]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); draw(); }));
 document.querySelectorAll('[data-layer]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.layer; layers[k] = !layers[k]; b.setAttribute('aria-pressed', String(layers[k])); draw(); }));
 tip.addEventListener('click', () => tip.classList.remove('on'));
 new ResizeObserver(() => setView(view)).observe(box);
