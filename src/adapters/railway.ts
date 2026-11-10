@@ -43,13 +43,7 @@ import {
   type LineStationId,
 } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
-import {
-  LINE2_BOILER_HAUL,
-  LINE2_PACK,
-  LINE2_STATIONS,
-  line2Routes,
-  type Line2StationId,
-} from '../sim/railway-line2-layout.ts';
+import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import {
   line2Active,
   line2Trains,
@@ -156,8 +150,8 @@ export type RailwayCorrection = Readonly<{
 export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   beamSoloSpeed: tune.get('railBeamSoloSpeed') / 100,
   beamHelpSpeed: tune.get('railBeamHelpSpeed') / 100,
-  boilerSoloSpeed: LINE2_BOILER_HAUL.solo / 100,
-  boilerHelpSpeed: LINE2_BOILER_HAUL.help / 100,
+  boilerSoloSpeed: tune.get('railBoilerSoloSpeed') / 100,
+  boilerHelpSpeed: tune.get('railBoilerHelpSpeed') / 100,
   jumpImpulse: tune.get('railJumpImpulse') / 100,
   jumpTurn: tune.get('railJumpTurn') / 100,
   jumpSteer: tune.get('railJumpSteer') / 100,

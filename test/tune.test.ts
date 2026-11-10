@@ -61,6 +61,32 @@ test('wood costs follow the tuning', () => {
   assert.equal(costIn(t)(2, HELPER), 10);
 });
 
+test("the boiler's haul pace: appended after the glider's keys, 300 cm/s solo and 540 helped", () => {
+  const keys = TUNABLES.map((t) => t.key as string);
+  const boiler = { railBoilerSoloSpeed: 300, railBoilerHelpSpeed: 540 };
+  const at = keys.indexOf('railGlideDeploy');
+  assert.deepEqual(keys.slice(at + 1, at + 3), Object.keys(boiler), 'appended in order, after railGlideDeploy');
+  for (const [key, def] of Object.entries(boiler)) {
+    const t = TUNABLES.find((s) => s.key === key)!;
+    assert.equal(t.def, def, key);
+    assert.ok(okTune(key, def), key);
+    assert.equal(okTune(key, t.min - 1), false, `${key} below its range`);
+    assert.equal(okTune(key, t.max + 1), false, `${key} above its range`);
+  }
+  // They load and hash like every other key: a save without them is refused.
+  const t = createTune(),
+    json = serializeTune(t);
+  const loaded = createTune();
+  loadTune(loaded, json);
+  assert.equal(hashTune(loaded), hashTune(t));
+  const edited = createTune();
+  loadTune(edited, { ...json, values: { ...json.values, railBoilerSoloSpeed: 340 } });
+  assert.notEqual(hashTune(edited), hashTune(t));
+  const old: Record<string, number> = { ...json.values };
+  delete old.railBoilerSoloSpeed;
+  assert.throws(() => loadTune(createTune(), { ...json, values: old }), /tune:/);
+});
+
 test('only proto- rooms tune', () => {
   assert.ok(isProtoRoom('v02-proto-haul') && isProtoRoom('proto-haul'));
   assert.ok(!isProtoRoom('v02-beach') && !isProtoRoom('v02-myproto-x') && !isProtoRoom(undefined));

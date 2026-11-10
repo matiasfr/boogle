@@ -812,3 +812,18 @@ test('no breaker and no strike sent while you haul the boiler', () => {
   assert.equal(a.adapter.strike(0), false);
   assert.equal(b.adapter.takeBreaker(), true, 'someone else may still ask');
 });
+
+test("a tune edit changes the boiler's haul pace the views read", () => {
+  let solo = 300;
+  const adapter = createRailwayAdapter({
+    mirror: createRailwayMirror(),
+    movement: () => railMovement({ get: (k) => (k === 'railBoilerSoloSpeed' ? solo : specOf(k)!.def) }),
+    pid: 'a',
+    pose: () => ({ x: 0, y: 0, z: 0 }),
+    now: () => 0,
+  });
+  assert.equal(adapter.inspect().boilerSoloSpeed, 3);
+  assert.equal(adapter.inspect().boilerHelpSpeed, 5.4);
+  solo = 340;
+  assert.equal(adapter.inspect().boilerSoloSpeed, 3.4);
+});

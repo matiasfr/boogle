@@ -34,7 +34,8 @@
 // and trains, the train's `wagon`, rock slots 3-4, pile kind 3, line 2's pier stop.
 // v23 (2026-11-09): the glider's rules (piece B): rail.glide, a glide field on rail, eight railGlide* tunables; the
 // depot cart holds 24 rails.
-export const WORLD_NS = 'v23';
+// v24 (2026-11-10): two railBoiler* tunables (the boiler's haul pace on its rope, boiler-first-choice step 7).
+export const WORLD_NS = 'v24';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

@@ -413,7 +413,7 @@ Step 2 is the guard only and can ship with step 3.
     pedestal at eye height (`b58at=apron`, aimed at the old train's saddle, about 179 m away and 12 m up) with the
     boiler held: can the old train, or the saddle echo, be seen from where the haul starts (lens 4, key in sight of the
     lock)? Say plainly if not.
-- [ ] **7. The pace as room tunables. Review (`src/sim`, `server/`). Needs the shared `WORLD_NS` bump.**
+- [x] **7. The pace as room tunables. Review (`src/sim`, `server/`). Needs the shared `WORLD_NS` bump.**
   - `src/sim/tune.ts`: append `{ key: 'railBoilerSoloSpeed', def: 300, min: 10, max: 1000, label: 'Railway solo boiler
     speed (centimetres per second)' }` and `{ key: 'railBoilerHelpSpeed', def: 540, min: 10, max: 2000, label: 'Railway
     helped boiler speed (centimetres per second)' }` after the last key on main at that time (the order is hashed).

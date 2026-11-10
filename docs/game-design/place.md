@@ -570,7 +570,7 @@ little faster"). The held boiler is drawn as the great beam is: a short, fat rod
 the hauler's hip, the gold rope running from their hand to it, the tail resting on the ground and swinging wide on turns,
 with the beam's dust and scrape. On a deck, a bridge or a car the tail rides at the hauler's feet height rather than
 dropping to the terrain below. The hauler takes the beam's rope pose, has sprint off and walks at 300 cm/s
-(`LINE2_BOILER_HAUL`). A friend with an empty back within 5 m presses **Help carry** at the dragging end and the boiler
+(room tunable `railway.boilerSoloSpeed`; `railway.boilerHelpSpeed` is the helped pace). A friend with an empty back within 5 m presses **Help carry** at the dragging end and the boiler
 lifts between the two shoulders; the hauler then walks at 540 cm/s and the helper has sprint off; **Let go** ends it (an
 Owner value, `railwayBoilerHelp`, the holder's pid; it goes stale after 1.5 s). The take shows on the press, before the
 server's answer. Drop puts it down where it is drawn, on the heading it was hauled on; outside the haul area it goes back

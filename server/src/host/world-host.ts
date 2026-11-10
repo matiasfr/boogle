@@ -644,4 +644,6 @@ const RAIL_TUNE_KEYS = new Set([
   'railGlideTurnTau',
   'railGlideTurnMax',
   'railGlideDeploy',
+  'railBoilerSoloSpeed',
+  'railBoilerHelpSpeed',
 ]);
