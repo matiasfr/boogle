@@ -380,12 +380,14 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   turnout (s 536–556), too high to walk up, and the B8 bot's straight line from the Q6 frame to s 546 crossed it. The
   bot now walks the frame's side to s 557, past the merge, and steps up there. *Resolved (orchestrator, 10
   November: nobody should have to jump onto the bed):* `terrain.ts` banks the ground along the up track's centre with
-  the same strip as today's track (4 m, fading to 8) wherever it runs 0.6 m or more out, grading heights only, so the
-  starter tree catalog is unchanged. Ground just outside the up bed that sat 0.25–0.9 m under its top went from 59 m
-  to 11 m of line 1's formation and from 210 m to 10 m of line 2's; what remains is at trestle and ramp ends, where
-  today's side is as high or higher, and by the Village merge (0.25–0.29 m, today's side 0.18 m). Level-check
-  output is unchanged; the straight walk from the Q6 frame onto s 546 now arrives; the segment passes with the bot's
-  route kept.
+  the same strip as today's track (4 m, fading to 8) wherever it runs 0.6 m or more out. It grades heights only, and
+  skips cells under 4.5 m and cells more than 3 m under the rail (after review: it had raised single cells by up to
+  7.3 m beside the quarry trestle's abutments), so the starter tree catalog is unchanged. Ground just outside the up
+  bed that sat 0.25–0.9 m under its top went from 59 m to 1 m of line 1's formation and from 210 m to 10 m of line
+  2's; what remains is at trestle and ramp ends, where today's side is as high or higher (one exception, line 2 s
+  307: 0.89 m against 0.54 m, at the deck's end), and by the Village merge (0.25–0.29 m, today's side 0.18 m).
+  Level-check: 0 problems, progression and the walking flood unchanged. The straight walk from the Q6 frame onto s
+  546 now arrives; the segment passes with the bot's route kept.
 - [ ] **4a. The trains (sim and server; v26, with 4b).** New `src/sim/railway-trains.ts`: `circuitCm`, `cycleTicks`,
   `headTicks`, `blockFree`, `trainServes`, `trainStepLine(w, line, tick)`. In `railway-train.ts` delete `trainWayOut`
   and LOOK's branches of `trainNextStop`; it takes `track` and a `reasons(stop, dir)` callback. In `railway-world.ts`:
