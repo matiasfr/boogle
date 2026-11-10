@@ -129,7 +129,14 @@ const load = async (id: string) => {
 };
 const [buddyAsset, clipAsset, capAsset] = await Promise.all([load('buddy'), load('hero-clips'), load('conductor-cap')]);
 /** One built kit part, for code previews staged beside real game models (the engine previz's flatbed and wheel). */
-const kitPart = async (asset: string, node: string) => (await load(asset)).instance(node);
+const kitPart = async (asset: string, node: string) => {
+  // Keep the node's own transform, as the game's kit and prop loaders do: it carries the mesh quantization's offset.
+  const source = (await load(asset)).gltf.scene.getObjectByName(node);
+  if (!source) throw new Error(`${asset} has no node ${node}`);
+  const holder = new THREE.Group();
+  holder.add(source.clone(true));
+  return holder;
+};
 // Deliberate preset opt-in for this trial only. The stage owns these clones; cached presets remain untouched.
 const capPaint = material('paintedToy').clone();
 capPaint.color.set('#31566d');

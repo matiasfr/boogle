@@ -194,7 +194,7 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
     track(0, [-length / 2 - 2.5, length / 2 + 2.5]);
     platform([-length / 2 - 1.5, length / 2 + 1.5]);
     await engine('boiler', 0, -length / 2);
-    buddy = { x: 2.35, y: 0.72, z: -length / 2 + 0.6, yaw: -Math.PI / 2 };
+    buddy = { x: 2.35, y: 0.72, z: -length / 2 + 0.6, yaw: -0.5 };
   } else if (view === 'halt') {
     // A real flatbed at z 0, the engine coupled ahead of it with today's gap, Buddy on the deck by the cab.
     track(0, [-6, 2 * length + 6]);
@@ -203,12 +203,12 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
     const back = FLAT_HZ + GAP;
     coupler(0, FLAT_HZ - 0.1, back + 0.15);
     await engine('boiler', 0, back);
-    buddy = { x: 2.35, y: 0.72, z: back + 0.5, yaw: -Math.PI / 2 };
+    buddy = { x: 2.35, y: 0.72, z: back + 0.5, yaw: Math.PI - 0.7 };
   } else {
-    // The upgrade states side by side, 4 m apart, all facing +z; the second engine leads the first.
+    // The upgrade states side by side, 5 m apart, all facing +z; the second engine leads the first.
     const states: StateId[] = id === 'today' ? ['base', 'boiler'] : ['base', 'boiler', 'speed', 'twin'];
     for (const [k, state] of states.entries()) {
-      const x = k * 4;
+      const x = k * 5;
       const extra = state === 'twin' ? length + GAP : 0;
       track(x, [-length / 2 - 1.5, length / 2 + extra + 1.5]);
       const front = await engine(state, x, -length / 2);
@@ -217,7 +217,7 @@ export async function enginePreviz(id: EngineId | 'today', kit?: KitPart) {
         await engine(state, x, front + GAP);
       }
     }
-    buddy = { x: -1.9, y: 0, z: 0, yaw: Math.PI / 2 };
+    buddy = { x: -1.8, y: 0, z: length / 2 + 0.4, yaw: 0.4 };
   }
 
   if (wheelAt.length) {

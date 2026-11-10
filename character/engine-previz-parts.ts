@@ -73,9 +73,9 @@ const lashing = (p: Parts, y: number, r: number, zs: [number, number]) => {
   box(p, 'lashing', GOLD_ROPE, [-0.08, 0.08], [y + rr - 0.04, y + rr + 0.08], [zs[1] - 0.07, zs[1] + 0.07]);
 };
 const steam = (p: Parts, x: number, top: number, z: number) => {
-  sphere(p, 'steam', STEAM, [x, top + 0.35, z - 0.1], 0.24);
-  sphere(p, 'steam', STEAM, [x, top + 0.75, z - 0.45], 0.34);
-  sphere(p, 'steam', STEAM, [x, top + 1.25, z - 0.95], 0.46);
+  sphere(p, 'steam', STEAM, [x, top + 0.25, z - 0.05], 0.14);
+  sphere(p, 'steam', STEAM, [x, top + 0.5, z - 0.3], 0.19);
+  sphere(p, 'steam', STEAM, [x, top + 0.82, z - 0.65], 0.25);
 };
 /** A cab: walls, roof, two front windows and one each side. */
 const cab = (
@@ -117,6 +117,7 @@ function stubby(): Candidate {
   lashing(p, 1.5, 0.5, [0.05, 0.75]);
   // Speed (parked): a brass band round the smokebox, a second dome and a brass chimney ring.
   ring(p, 'speed', BRASS, 'z', [0, 1.5, 1.08], 0.555, 0.03);
+  pair(p, 'speed', BRASS, [0.79, 0.82], [0.92, 1.04], [-1.45, 1.45]); // a brass stripe down the footplate
   sphere(p, 'speed', BRASS, [0, 1.95, -0.3], 0.18, 0.85);
   ring(p, 'speed', BRASS, 'y', [0, 2.46, 1.2], 0.25, 0.03);
   steam(p, 0, 2.46, 1.2);
@@ -148,6 +149,7 @@ function longer(): Candidate {
   cy(p, 'boiler', BRASS, -0.85, [2.0, 2.25], 0.06, 0.06, 10); // safety valve
   lashing(p, 1.55, 0.55, [-0.15, 1.05]);
   ring(p, 'speed', BRASS, 'z', [0, 1.55, 1.45], 0.605, 0.03);
+  pair(p, 'speed', BRASS, [0.86, 0.89], [0.93, 1.03], [-2.0, 2.0]);
   sphere(p, 'speed', BRASS, [0, 2.02, -0.4], 0.2, 0.85);
   ring(p, 'speed', BRASS, 'y', [0, 2.6, 1.65], 0.235, 0.03);
   for (const x of [-0.6, 0.6]) cz(p, 'speed', BRASS, 1.75, [-0.9, 1.35], 0.025, 8, x); // handrails
@@ -174,7 +176,7 @@ function tank(): Candidate {
   for (const x of [-0.63, 0.63]) cy(p, 'body', BRASS, 0.9, [1.68, 1.76], 0.1, 0.1, 12, x); // filler caps
   box(p, 'body', RED, [-0.74, 0.74], [0.88, 1.5], [-1.78, -1.4]); // bunker
   box(p, 'body', DARK, [-0.66, 0.66], [1.45, 1.6], [-1.74, -1.44]); // coal
-  cab(p, 0.78, [0.88, 2.0], [-1.42, -0.5], { hx: 0.88, z: [-1.88, -0.38] });
+  cab(p, 0.78, [0.87, 2.0], [-1.42, -0.5], { hx: 0.88, z: [-1.88, -0.38] });
   pair(p, 'body', BRASS, [0.06, 0.4], [0.9, 1.02], [-0.2, -0.06]);
   pair(p, 'body', BRASS, [0.06, 0.4], [0.9, 1.02], [0.9, 1.04]);
   cz(p, 'boiler', RED, 1.4, [-0.6, 1.25], 0.42, 24);
@@ -185,6 +187,7 @@ function tank(): Candidate {
   sphere(p, 'boiler', BRASS, [0, 1.8, 0.35], 0.22, 0.9);
   lashing(p, 1.4, 0.42, [0.0, 0.8]);
   ring(p, 'speed', BRASS, 'z', [0, 1.4, 1.2], 0.475, 0.025);
+  pair(p, 'speed', BRASS, [0.845, 0.875], [0.82, 0.94], [-1.75, 1.75]);
   sphere(p, 'speed', BRASS, [0, 1.75, -0.25], 0.16, 0.9);
   ring(p, 'speed', BRASS, 'y', [0, 2.36, 1.38], 0.21, 0.025);
   pair(p, 'speed', BRASS, [0.83, 0.86], [1.3, 1.36], [-0.5, 1.15]); // brass tank bands
