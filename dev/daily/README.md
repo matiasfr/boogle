@@ -1,6 +1,7 @@
 # Daily jobs on the owner's Mac
 
 `npm run daily -- atlas|patch-video|scenarios|perf|long [--dry-run] [--force] [--notes "..."]` replaces the two Opus CI agents with
+**Scheduled since 10 November (owner): only `scenarios` (03:30) and `long` (07:40)**, the `scheduled` list in `jobs.ts`; `npm run daily:install` installs just those. Perf runs by hand (`npm run daily -- perf`) when a change could cost frames (rendering, world size, draw calls, a `WORLD_NS` bump) or the owner asks; atlas and patch video are off because they spend Codex usage nobody needs now, and still run by hand. The sections below describe each job when it runs.
 subscription-authenticated Codex. Atlas uses GPT-6.1-Terra at low effort; patch video and its independent visual review
 use GPT-6-Astra at high effort. DESIGN.md: **Understandable at a glance**, **Show, don't tell**, **Small and readable**.
 A Codex run that stops on the subscription's usage limit is `skipped: Codex usage limit, try again at <time>`, not "failed"; its worktree is kept, since the agent may have worked before the limit (9 and 10 November).
