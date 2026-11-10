@@ -207,16 +207,50 @@ Touch: [voice][Live][hanger][menu]   <- a second 44 px corner button
   - The swatches from you-editor.ts, split out of the name box.
   - The reveal card's camera constraint and face-the-camera turn. Fold it into one small helper rather than copying it
     (owner-calls, "Fold copies into one helper").
-- **Smallest first build:**
-  - Pause opens on a You page registered by the wardrobe entity: four slot rows and a colour row, cycling left and
-    right with a new `cycleSlot(slot, dir)` beside `swapSlot` in state.ts (today's cycle goes forward only), applied at
-    once.
-  - Hollow and filled pips. Options holds today's main list unchanged: roster and pill, sections, Controls, Graphics,
-    Room, More and Leave.
-  - The camera swing when on foot.
-  - The "new" dot as its own small step after that.
+- **Smallest first build** (amended by the design review below; where the Tensions above differ, this wins):
+  - **Step 1.** Pause opens on a You page registered by the wardrobe entity: four slot rows and a colour row, cycling
+    left and right with a new `cycleSlot(slot, dir)` beside `swapSlot` in state.ts (today's cycle goes forward only),
+    applied at once. The cycle is the slot's owned items in catalog order with Nothing at the left end, wrapping both
+    ways. The rows redraw whenever the wardrobe changes while the page is open (a reveal finishing behind it).
+  - **Until you own your first wearable, Pause opens on Options** (today's main list), so a new player who pauses for
+    the controls finds them where they are today. From the first owned hat, accessory, outfit or pet, Pause opens on
+    You every time; it doesn't remember the last page. H still opens Controls directly.
+  - **The roster and connection pill stay on the page Pause opens on** (5 November: name chips and the Live count are
+    in Pause on every platform): a compact row in the You header, beside the mute icon. Options doesn't repeat them.
+  - The colour swatches move to You; Room keeps only the name box.
+  - Pips: one per item in the slot's catalog, owned ones first in cycle order with the worn one drawn larger (so the
+    row doubles as "where am I in the cycle"), then a gap, then a hollow pip for each item you don't own. No names
+    and no shapes for the hollow ones. In short landscape (`max-height: 480px`) the pips sit inside the row under the
+    value, so each row stays one 44 px target.
+  - Options holds today's main list unchanged otherwise: sections, Controls, Graphics, Room, More and Leave, plus the
+    World/build line. Get unstuck stays in More (one press deeper than today, accepted).
+  - **Options shortcuts:** RB on a pad and Esc on a keyboard go from You to Options (Esc does nothing there today, since
+    it can't relock). B and Esc on Options go back to You. The Options button shows the RB glyph on a pad.
+  - **The camera swing**, on foot only, with the conditions under "Camera" below, framed per layout.
   - Only the production railway gets it. Place, and any build without a wardrobe, opens on today's main list,
     unchanged.
+  - **Step 2.** The curio shelf's and finders' bay's four "Swap …" prompts go (curio-shelf.ts `targets()`); the
+    shelf keeps everything else: what you own on show, the dust sheets, the puff at a reveal nearby, the crystal row and
+    the missed secrets waiting at the bay. The shop's Try on, Take it, Wear it and Take it off stay: trying on what you
+    don't own is the shop's job. (Port-from-Place verdict: the shelf as display, keep; its swap prompts, cut.)
+  - **Step 3.** The "new" dot, with its own seen key, cleared by the same world and room resets that clear the
+    wardrobe key.
+- **Camera** (design review): Buddy turns to face the camera and the camera eases in over about 0.4 s (a cut with
+  reduced motion), reusing the reveal's constraint with a **screen-space framing offset**: Buddy sits in the right
+  half on desktop, the left half in phone landscape, and the top third in phone portrait. Today's reveal constraint
+  centres him, which would put him on the bottom sheet's top edge in portrait. The swing runs only when all of these
+  hold; otherwise the follow camera stays and nothing turns:
+  - standing on foot (on ground or a moving deck, as the reveal already allows): not seated (`inputState.seated`,
+    which covers the cab cutaway and every vehicle seat), swimming, gliding, falling, on a hook rope or knocked down
+    (`me.down`), and not playing as the guest character;
+  - no reward reveal or camera pull-out has weight: a shared cinematic (owner, 9 November: uninterruptible) plays
+    behind the pane and the swing starts when it ends, if the page is still open;
+  - the page wasn't opened by the window losing focus (alt-tab ends the pointer lock and opens Pause): then the swing
+    waits for your first change to a row.
+  - Closing hands the camera back over the reveal's return blend. Buddy stays turned until you move.
+- **Your body while the page is open** (the world never pauses): you stand where you were, with keys and pad released
+  as today. A moving deck or a seat carries you; the ball and other toys can still hit you; nothing new can pick you up
+  or move you. Partners see you turn to face your camera and every change you make, as they would in the world.
 - **Files:**
   - `src/entities/wardrobe/menu.ts` (new: the DOM page) and `src/entities/wardrobe/index.ts` (registers it).
   - `src/entities/wardrobe/state.ts` (`cycleSlot`) and `test/wardrobe.test.ts`.
@@ -226,9 +260,12 @@ Touch: [voice][Live][hanger][menu]   <- a second 44 px corner button
   - `src/player/you-editor.ts` (export the swatches) and a shared face-camera helper drawn out of
     `src/render/reward-reveal.ts`.
   - `docs/game-design/pause.md` and place.md's wardrobe section.
+  - Step 2: `src/entities/town/curio-shelf.ts` (`targets()` loses the swaps). Step 3: the seen key beside the wardrobe
+    key's reset in `src/player/world-reset.ts` and `src/features/room-reset.ts`.
 - **Proposed copy, all drafts for the owner, none of it The Boogler's:**
   - Slot labels: "Hat", "Accessory", "Outfit", "Pet", "Colour".
-  - Values: "Nothing" for an empty slot, "Out" or "Away" for the stowaway, and the button "Options".
+  - Values: "Nothing" for an empty slot, and the button "Options". The pet row reads like the others: the stowaway's
+    catalog name when it's out, "Nothing" when it isn't (design review; replaces "Out" or "Away").
   - Item names reuse the catalog's `name`s verbatim (for example "A brass diving helmet"). The page shows no `line`s.
 - **Input and a11y:**
   - Focus order is Resume, then Hat, Accessory, Outfit, Pet and Colour, then Options, then the header icons, as
@@ -236,13 +273,15 @@ Touch: [voice][Live][hanger][menu]   <- a second 44 px corner button
   - Up and down move between rows. Left and right (and A or Enter for next) cycle the focused row. Pad focus wraps.
   - Each row is one focus stop with `aria-live="polite"` on its value, and the `<` and `>` buttons stay clickable for
     touch and mouse.
-  - Esc on You does nothing (it can't relock); Esc and B on any Options page go back one level; B on You closes; Menu
-    and Resume close from anywhere. H still opens Controls, now under Options.
+  - Esc and RB on You open Options (Esc can't relock, so Resume is still the way back in on desktop); Esc and B on any
+    Options page go back one level, ending on You; B on You closes; Menu and Resume close from anywhere. H still opens
+    Controls, now under Options. Focus starts on Resume with keyboard and mouse, on Hat with a pad or touch.
   - The page keeps the dialog's `cancel` guard (pause.ts:540).
   - Respect reduced motion, and give `[data-focus]` the same outline as `:focus-visible`.
 - **Risks:**
   - The panel could cover Buddy on narrow portrait screens. Frame him in the top half, and test at 390 px.
-  - The swing could fight the camera while seated or on a moving deck. Keep it to standing on foot.
+  - The swing could fight the camera while seated, in a cinematic or after an alt-tab. Keep to the conditions under
+    Camera.
   - pause.ts is a hotspot. Keep cosmetics out of it.
   - A changed save shape could wipe owned cosmetics. Use a separate key for seen items.
   - Fewer trips to the shelf mean fewer people see the collection there. The shelf stays the trophy wall.
@@ -264,6 +303,17 @@ railway and calls `pauseNavigation.open()`.
 - **Pad navigation** (a scripted `--action` of d-pad presses): focus walks Resume, Hat ... Colour, Options. B on
   Options → Controls returns to Options, then to You, then closes.
 - **Seated on a train:** Pause opens on You with the follow camera, without a swing.
+- **(design review) A new player** (a fresh wardrobe, nothing granted): Pause opens on Options, as today; after
+  `grant('hat', { wear: true })` it opens on You. One still each.
+- **(design review) Framing:** in the portrait still, Buddy's head and hat are above the sheet's top edge; in the
+  landscape still, the pips sit inside each 44 px row and nothing scrolls.
+- **(design review) Roster:** the You page's header shows the name chips and the Live pill (a two-player scenario).
+- **(design review) Shortcuts:** RB (pad) and Esc (keyboard) on You show Options; B and Esc there return to You.
+- **(design review) A cinematic:** with the page open, a camera pull-out started by `--eval` plays without the swing,
+  and the swing starts after it ends. An alt-tab open (window blur, then lock loss) shows no swing until the first
+  change.
+- **(design review) Step 2:** at the curio shelf, no "Swap …" prompt shows within 4.4 m; the sheets still puff when a
+  card is put away there.
 
 ## Open questions
 
@@ -296,3 +346,141 @@ railway and calls `pauseNavigation.open()`.
 - An `away` pose or "zzz" over a player who has Pause open (from the pause research; the world keeps running).
 - A short emote when you close the menu in a new look (a twirl your friends see).
 - Moving the name box onto You if players look for it there.
+
+## Design review (designer, 2026-11-10)
+
+Read: DESIGN.md; owner-calls; the decision index and its Controls, Characters/cosmetics and Rewards entries
+(decisions.md:78, 84, 156, 175–176, 252, 386, 395–398 and the 9 November cinematic call); game-design/pause.md; the
+research tops of [controls-guide-and-pause-menu](../research/controls-guide-and-pause-menu.md) ("Four items: Resume
+first"), [cosmetic-rarity](../research/cosmetic-rarity.md) (catalogue, "4–6 voluntary equip decisions/hour", "a pause
+wardrobe previews swaps immediately and allows cancellation", "a discoverable hint for an unowned item") and
+[ui-patterns](../research/ui-patterns.md) (opaque paper over the dim; "the pause view as a toy … the character could
+pose, as Persona's menu does"). Code: pause.ts (focus, `onKey`, `onPad`, `openPause`, the lock-loss opener),
+modal.ts, pause.css (dialog, safe areas, phone and short-landscape rules, `.hud-tr`), reward-reveal.ts (the camera
+constraint and `me.yaw = cam.yaw + Math.PI`), camera-pull-out.ts, wardrobe/state.ts and view.ts (`swapSlot`,
+`nextInSlot`, the pop per swap), curio-shelf.ts `targets()`, knockdown.ts. Playtest data: the owner's iPad sessions of
+10 November (`mwa8zhlg`, 27 min, pad 45 / touch 17; `mwa9y7pw`, 20 min).
+
+**Not seen:** the page doesn't exist, so there are no stills of it. I didn't take a still of the reveal's framing on a
+phone; the framing finding below comes from the constraint's code (it centres Buddy) and the wireframe's proportions.
+No level-design pass: the brief places nothing in the world. Its only world change (step 2, the shelf's prompts) moves
+nothing, and the shelf keeps its route role (the bay where missed secrets wait).
+
+**Fit and order** (game-direction check). The owner seeded it, so the scope is approved. It doesn't touch the six-hour
+target, the main route or the 1–3 player tuning. It runs beside the Works and Ring Island without blocking them.
+Overlaps: the town port (place-retirement) owns curio-shelf.ts, so step 2 rebases on it; and pause.ts is a hotspot.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Pause opens on You; Options is one button (shape A) | New | Owner seed, 10 November. Recommend A, with the shortcuts in 7–8. B needs a new action, a second corner target on a crowded phone and new guide rows; C nests tabs over Controls' tabs and puts them out of thumb reach in portrait |
+| 2 | Options holds today's main list otherwise unchanged | Default | Cheapest; nothing moves twice |
+| 3 | Roster and Live pill sit on the page Pause opens on (You header), not under Options | Decided | 5 November (decisions.md:156, pause.md "Play HUD moved here"). The brief moved them under Options, contradicting it: finding 2 |
+| 4 | Focus starts on Resume with keyboard and mouse, on Hat with pad and touch | Default | Research "Resume first"; only a Resume click relocks (pause.ts:497–499). On a pad and on touch nothing needs relocking |
+| 5 | Always open on You; never remember the last page; H still opens Controls | Default | Owner: "by default it should just be your inventory". Remembering would turn the owner's default into the last chore's page |
+| 6 | Until you own a wearable, Pause opens on Options | New | Recommended: finding 1. The 3 November call made Pause the only place the controls are listed |
+| 7 | Esc on You opens Options; Esc on Options goes back to You | Default | Esc on the main page is dead today (pause.ts:497). "Esc twice for settings" costs nothing |
+| 8 | RB on You opens Options (glyph on the button); B on Options returns to You | Default | The owner plays on a pad most (45 pad presses against 17 touch); without this, Options is five d-pad presses from Hat |
+| 9 | B on You closes; Menu and Resume close from anywhere | Default | Matches today's B on main (pause.ts:526) |
+| 10 | Left and right cycle a slot, applied at once, no confirm, no revert button | New | Recommended. A deliberate departure from cosmetic-rarity's "allows cancellation": only owned items are in the cycle and cycling back is the undo. Partners see the steps in between, which is the fun of it (DESIGN 10) |
+| 11 | Cycle order: owned items in catalog order, Nothing at the left end, wrapping both ways | Default | `owned()` is catalog order (state.ts:155) |
+| 12 | A or Enter steps to the next item | Default | Brief |
+| 13 | Each change is live to partners on the next presence beat | Decided | Owner presence `wardrobe`/`stowaway`; DESIGN 6 ("personal things", shown on your body) |
+| 14 | The pop on every change, at once, on your screen | Decided | "Input gets instant feedback" (6 November); view.ts already pops on `swap` |
+| 15 | Buddy turns to face the camera and the camera swings in, on foot only | New | Recommended (ui-patterns: "the character could pose, as Persona's menu does"). It's the mirror that makes this a toy rather than a list |
+| 16 | No swing when seated (cab cutaway included), swimming, gliding, falling, on a rope, knocked down, as the guest, during a reveal or pull-out, or after an alt-tab until the first change | Default | Finding 4; the 9 November cinematic call |
+| 17 | Ease in about 0.4 s; a cut with reduced motion; the reveal's return blend on close; Buddy stays turned until you move | Default | Brief; ui-patterns motion timing |
+| 18 | Framing offset: Buddy right half on desktop, left half in phone landscape, top third in portrait | Default | Finding 3 |
+| 19 | A lighter dim on You; the rows stay on opaque paper | Default | ui-patterns and the pause research (text on paper holds contrast over a moving scene) |
+| 20 | Unowned items as hollow pips, no names or shapes; owned pips first, worn one larger | Default | 2 November "gifts hint at themselves"; cosmetic-rarity's "discoverable hint". Counts motivate (10 of 11 hats are secrets or boxes) and the pips grow honestly as the catalog does |
+| 21 | Cycling only; a grid once any slot owns more than about 8 | Default | At today's 11 hats the worst case is 11 presses; most players own 2–5 per slot mid-game. Research target 12 hats, so the grid stays parked until a slot actually crosses 8 |
+| 22 | Colour is the fifth row and leaves Room; Room keeps the name box | Default | One home per setting; the phone keyboard never opens on You |
+| 23 | Your look only: no carried items, crystals or upgrades on You | Decided | Hotbar cut, one thing in your hands (2 November); upgrades in the world, Pause read-only at most (9 November) |
+| 24 | Finding stays in the world: box, card, sheet puff, auto-wear into an empty slot only | Decided | 2 November "gifts hint"; Design Table boxes; cosmetic-rarity "auto-equip only into an empty slot" |
+| 25 | The shelf's and bay's four Swap prompts go (step 2); the shelf stays the display | New | Recommended: finding 6. Port-from-Place verdict: display keep, swap prompts cut |
+| 26 | The shop keeps Try on, Take it, Wear it, Take it off | Default | Trying on what you don't own is the shop's job; the menu shows only owned items |
+| 27 | Cycling a slot in the menu drops a shop try-on in that slot | Default | `swapSlot` already calls `untry()` |
+| 28 | The rows redraw when the wardrobe changes while open | Default | A reveal can finish behind the pane (a shared T1 hat) |
+| 29 | The "new" dot, its own seen key, step 3 | Default | Brief; the separate key protects the wardrobe save |
+| 30 | The seen key is cleared by the same world and room resets as the wardrobe | Default | Otherwise a re-found hat after a reset never gets its dot |
+| 31 | Production railway only; Place and builds without a wardrobe keep today's main list | Default | Brief |
+| 32 | Pet row reads the stowaway's name or "Nothing" | Default | Same grammar as the other rows; replaces "Out or Away" |
+| 33 | Slot labels and "Options" as drafted; catalog `name`s verbatim, no `line`s | Default | Brief; none of it The Boogler's |
+| 34 | Mute on You's header; fullscreen under Options | Default | Mute is the one setting people reach for in a hurry |
+| 35 | Get unstuck stays in More, one press deeper than today | Default | Rare; a stuck player has time. Revisit if a session shows a search for it |
+| 36 | The world doesn't pause: you stand, a seat or moving deck carries you, toys can hit you, partners see you turn | Decided | pause.md "local overlay (the island keeps running)", the pause research; the `away` pose stays parked |
+| 37 | Phone: portrait bottom sheet with Resume and Options at the foot; landscape right column; 44 px targets; pips inline in short landscape | Default | Finding 7 |
+
+**Counts:** 37 calls: 6 Decided, 5 New, 26 Default.
+
+### Findings, ranked
+
+1. **(Change before build) A new player's Pause lands on an empty dress-up page.** Before the T1 hat (3–5 minutes in)
+   the You page is five rows of "Nothing" and hollow pips, and the controls, which the 3 November call made Pause's
+   job, move one press deeper. The first pause is the one most likely to be "how do I…". Open on Options until the
+   first wearable is owned; from then on, You (call 6). The owner's default holds for everyone who has something to
+   wear, and the first time a player meets the page it has a hat on it.
+2. **(Change before build) The brief moves the roster and Live pill under Options**, against the 5 November call that
+   put them on Pause's first page on every platform. Keep a compact row of them in the You header (call 3).
+3. **(Change before build) The reveal's camera centres Buddy**, and the wireframes need him off-centre. In portrait
+   the sheet's top is about half the screen's height, so a centred Buddy sits on its edge. On desktop and in
+   landscape the panel covers one side. The shared face-camera helper needs a screen-space offset per layout (call 18),
+   and Done-means checks the portrait still.
+4. **(Change before build) When to swing.** "On foot" alone isn't enough. A shared camera pull-out can start while
+   your menu is open (the 9 November call makes it uninterruptible), and a reveal can finish behind it. Both push a
+   constraint onto the same `camConstraints`, so two lerps would fight. Alt-tab also opens Pause through lock loss,
+   which on You would swing your camera every time you come back to the window. Rule: the swing yields to any
+   reveal or pull-out, waits for the first change after a blur-caused open, and skips knockdown, ropes and the guest
+   (call 16). Seated covers the cab cutaway (`inputState.seated`).
+5. **(Change before build) "One press away" is five presses on a pad.** The owner's sessions are mostly pad on
+   iPad. RB from You and Esc on a keyboard go to Options (calls 7–8). That answers "maybe that's harder on mobile"
+   without B's second button. The cost of the extra step for someone pausing to change volume or Leave is one press,
+   or one Esc, which is acceptable: those are once or twice a session (2–3 pause presses per owner session on
+   10 November).
+6. **The shelf's swap prompts weaken the seed and clutter the town.** The owner said "instead of having to change at
+   a wardrobe or the curio shelf". In `mwa9y7pw` the shelf's Swap prompts showed seven times and were never pressed
+   ("Swap outfit: Take it off … kept showing, never pressed"). In `mwa8zhlg` he pressed a shelf swap 14 times, but
+   through a forward-only cycle that passes "Take it off" on the way: the menu does that job better. The shelf doesn't
+   lose its reason to be visited. It's still where your collection stands, its sheets puff off at a reveal, its crystal
+   row lights, and missed secrets wait at the bay. Cut the four prompts as step 2 (call 25), and keep the shop's,
+   which sell things rather than swap them. The unlock moment is untouched: nothing in the menu grants, reveals or
+   previews an unowned item.
+7. **Short landscape doesn't fit pip rows.** 844×390 minus the safe areas leaves about 350 px. Five rows plus the
+   Resume/Options row at 44 px, with gaps and padding, is about 330 px before any pip row under them. Put the pips
+   inside the row under the value (call 37). Portrait fits as drawn (about 400 px of sheet under a 420 px Buddy
+   half). The top-right menu button sits under the modal while Pause is open, so it doesn't collide with either
+   layout; the landscape column starts where your right thumb just tapped it.
+8. **Research departure, logged rather than fixed.** cosmetic-rarity says a pause wardrobe "previews swaps
+   immediately and allows cancellation". The brief applies at once with no cancel. That's right here, because the
+   cycle holds only what you own and cycling back is the undo, but it's a choice (call 10). The same doc's "source
+   stamp and discoverable hint for an unowned item" is lighter here (pips only), which is fine at 25 items. Revisit
+   with the grid.
+9. **The pet row's copy was undecided** ("Out" or "Away"). Use the stowaway's own name or "Nothing", like every
+   other row (call 32).
+10. **Missed as design, parked rather than added:** a twirl your friends see when you close in a new look (already
+    parked), and the co-op moment of two friends dressing side by side, which the swing already gives you (each
+    faces their own camera). No change.
+
+### The smallest first build I'd clear
+
+Step 1 as now written in Shape: the You page with four slot rows and colour, two-way `cycleSlot`, instant apply, the
+pips, the roster in its header, Options as a button plus the RB and Esc shortcuts, opening on Options until the first
+wearable, and the swing with its conditions and per-layout framing. Step 2 cuts the shelf's swap prompts. Step 3 adds
+the "new" dot. Each step ships alone. No wire, op, save-shape or `WORLD_NS` change in any of them.
+
+### Owner questions
+
+1. **The menu's shape?** (a) A: Pause opens on You, Options one button, with RB and Esc as shortcuts to it.
+   (b) B: a second way in (D-pad up and a second corner button). (c) C: You and Options as tabs across the top.
+   **Recommended: a.**
+2. **What does a new player see first, before owning anything?** (a) Options, until the first wearable; You from
+   then on. (b) You always, even empty. (c) Whichever page you used last. **Recommended: a.**
+3. **The curio shelf once the menu dresses you?** (a) Keep its four Swap prompts as a second way. (b) Remove them;
+   the shelf stays the display, the sheets and the bay. (c) Replace them with one prompt that opens the You page.
+   **Recommended: b.**
+4. **What shows for items you don't own?** (a) Hollow pips only, counting them. (b) Nothing; only what you own.
+   (c) Silhouettes or names. **Recommended: a.**
+5. **The camera when Pause opens?** (a) Buddy turns and the camera swings on open, on foot only, holding off for
+   cinematics and after an alt-tab. (b) Swing only on your first change. (c) Never swing; dress from behind.
+   **Recommended: a.**
