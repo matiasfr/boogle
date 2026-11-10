@@ -35,6 +35,9 @@ export type Seat = {
    * the platform's drawn frame, resting at its parent's x and z). The granted rider's drawn body leans with it; the seat,
    * capsule, claims and wire keep the platform's level frame. */
   frame?: THREE.Object3D;
+  /** View only, with `anchorView`: metres the granted rider is drawn ahead of `at`, the way they face (a bench with a
+   * back: clear of it). The seat, capsule, claims, wire and exit keep `at`. */
+  forward?: number;
   /** How far over the deck the sitter's stowaway sits (a bench it can sit on): view only, 0 sits it on the deck. */
   perch?: number;
   at: Local;
@@ -106,6 +109,8 @@ const seatRise = (s: Seat) =>
   s.platform
     ? Math.max(0, s.at.y - ((s.platform.topAt?.(s.at.x, s.at.z) ?? s.platform.top) + PLAYER_R) - (s.perch ?? 0))
     : 0;
+/** How far this chair draws its sitter ahead of the seat (`forward`); wardrobe/view.ts keeps the stowaway by the seat. */
+const seatAhead = (s: Seat) => (s.anchorView ? (s.forward ?? 0) : 0);
 const reachable = (s: Seat) => {
   const b = me.body;
   const p = world(s);
@@ -198,6 +203,7 @@ onRemotePresence((r, pr) => {
   if (seated && grants[seated.id]?.peer === r.peer && r.avatar) {
     r.avatar.userData.seatedAt = performance.now();
     r.avatar.userData.seatRise = seatRise(seated);
+    r.avatar.userData.seatAhead = seatAhead(seated);
     remoteSeats.set(r.peer, seated);
   } else remoteSeats.delete(r.peer);
 });
@@ -285,6 +291,7 @@ onFrame(
     if (sitting && me.avatar) {
       me.avatar.userData.seatedAt = performance.now();
       me.avatar.userData.seatRise = seatRise(sitting);
+      me.avatar.userData.seatAhead = seatAhead(sitting);
     }
     [leant, leaning] = [leaning, leant];
     leaning.clear();
@@ -308,8 +315,10 @@ onFrame(
 function drawAtSeat(avatar: THREE.Object3D, seat: Seat) {
   // A visual chair leaves carry.on empty, so ordinary world interpolation trails a moving deck.
   // The accepted seat already supplies the frame; keep this cosmetic and leave body/support/exits alone.
-  const p = world(seat, false, true);
-  avatar.position.set(p.x, p.y, p.z);
+  const p = world(seat, false, true),
+    ahead = seatAhead(seat);
+  // Yaw 0 faces -z and turns toward -x.
+  avatar.position.set(p.x - Math.sin(p.yaw) * ahead, p.y, p.z - Math.cos(p.yaw) * ahead);
   avatar.rotation.set(0, p.yaw, 0);
   const f = seat.frame;
   if (!f?.parent) return;
