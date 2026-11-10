@@ -13,12 +13,14 @@ import {
   createHookLatch,
 } from '../src/entities/railway/hook-path.ts';
 
-const rings = hookRings(PADS, ringAt, 1000);
+const all = hookRings(PADS, ringAt, 1000);
+// The climb; the secrets' side rings follow it (place-retirement F2).
+const rings = all.slice(0, 8);
 const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 test('hook rings and slabs match the authored climb one for one', () => {
   assert.deepEqual(
-    rings.map((r) => r.id),
-    ['p2', 't0', 't1', 't2', 't3', 't4', 't5', 'summit'],
+    all.map((r) => r.id),
+    ['p2', 't0', 't1', 't2', 't3', 't4', 't5', 'summit', 'alcove', 'nook', 'loft', 'stack-return'],
   );
   assert.deepEqual(
     rings.slice(1).map(({ pad: p }) => [p.x, p.z, p.top, p.hx, p.hz, p.look]),

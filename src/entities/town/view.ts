@@ -172,7 +172,7 @@ export async function createTownView(read: () => RailwayInspection | null) {
       );
       return parts.length === 0 ? NO_TARGETS : parts.length === 1 ? parts[0]! : parts.flat();
     },
-    /** The curio shelf, for K1's crystals and F1's finds board (`shelfGroup`, `crystalPeg`). */
+    /** The curio shelf, for K1's crystals (`shelfGroup`, `crystalPeg`). */
     shelf,
     update(ctx: FrameCtx) {
       refresh();
