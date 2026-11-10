@@ -1,0 +1,84 @@
+// The Sunshine sea's CPU halves (docs/plans/water-sunshine.md, steps 2 and 3): the swell the vertices and swimming share,
+// and the coast texture's bed, waterline distance and baked contacts. The TSL twin is checked in the browser.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { SEA } from '../src/constants.ts';
+import { swellAt, swellPhases, SWELL, SWELL_MAX, FADE } from '../src/render/water/sun/swell.ts';
+import { registerShoreProvider } from '../src/render/water/shore-providers.ts';
+import { registerWaterContact } from '../src/render/water/contacts.ts';
+import { createCoast, CONTACT_REACH } from '../src/render/water/sun/coast.ts';
+
+test('the swell averages to SEA, stays inside its budget and is still at the waterline', () => {
+  let sum = 0,
+    n = 0,
+    top = -Infinity,
+    bottom = Infinity;
+  for (let x = -400; x <= 400; x += 3.7)
+    for (let z = -400; z <= 400; z += 4.3) {
+      const h = swellAt(x, z, 12.5, 30).height;
+      sum += h;
+      n++;
+      top = Math.max(top, h);
+      bottom = Math.min(bottom, h);
+    }
+  assert.ok(Math.abs(sum / n - SEA) < 0.01, `mean ${sum / n}`);
+  assert.ok(top <= SEA + SWELL_MAX + 1e-9 && bottom >= SEA - SWELL_MAX - 1e-9);
+  assert.ok(top - bottom > SWELL_MAX, 'the swell moves');
+  assert.equal(swellAt(10, 10, 3, FADE.shallow).height, SEA);
+  assert.equal(swellAt(10, 10, 3, 0).rate, 0);
+});
+
+test('the wrapped phases give the same heights as the unwrapped clock, late in a session', () => {
+  const t = 7200.25;
+  const phases = swellPhases(t);
+  for (const [x, z] of [
+    [1400, -345],
+    [800, 60],
+    [-12, 3],
+  ] as const) {
+    let wrapped = 0;
+    SWELL.forEach((w, i) => (wrapped += w.amp * Math.sin(w.kx * x + w.kz * z - phases[i]!)));
+    assert.ok(Math.abs(SEA + wrapped - swellAt(x, z, t, 50).height) < 1e-6);
+  }
+});
+
+test('the rate is the time derivative of the height', () => {
+  const dt = 1e-4;
+  const a = swellAt(33, -71, 5, 20),
+    b = swellAt(33, -71, 5 + dt, 20);
+  assert.ok(Math.abs((b.height - a.height) / dt - a.rate) < 1e-3);
+});
+
+test('the coast texture: depth falls off a slope, the waterline normal points to sea, a leg reads as a contact', () => {
+  // A beach rising toward +x: bed = (x - 50) / 10, so the waterline sits at x = 50 and the sea lies at smaller x.
+  const remove = registerShoreProvider({
+    id: 'test-slope',
+    bounds: { minX: 0, maxX: 100, minZ: 0, maxZ: 100 },
+    seaLevel: SEA,
+    revision: 1,
+    extent: 128,
+    bedAt: (x) => ({ valid: true, height: (x - 50) / 10 }),
+  });
+  const removeLeg = registerWaterContact({ x: 30, z: 50, radius: 0.35, top: 3 });
+  const coast = createCoast();
+  try {
+    let last = Infinity;
+    for (let x = 60; x >= 5; x -= 5) {
+      const { bed } = coast.sampleAt(x, 50);
+      assert.ok(bed < last, `bed falls toward the sea at x=${x}`);
+      last = bed;
+    }
+    assert.ok(Math.abs(coast.sampleAt(40, 50).bed - -1) < 0.05);
+    const { normal } = coast.sampleAt(45, 50);
+    assert.ok(normal[0] < -0.9, `outward normal ${normal}`);
+    assert.ok(coast.sampleAt(30, 50).contact < 0.5, 'at the leg');
+    assert.equal(coast.sampleAt(30, 70).contact, CONTACT_REACH, 'far from it');
+    const info = coast.inspect().coast;
+    assert.ok(info.cell >= 1 && info.contacts >= 1);
+  } finally {
+    removeLeg();
+    remove();
+    coast.dispose();
+  }
+  assert.ok(CONTACT_REACH > 0);
+});

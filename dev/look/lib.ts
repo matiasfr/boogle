@@ -40,15 +40,21 @@ export const run = (cmd: string, args: string[]) =>
   );
 
 /** A camera pose: position and look-at target (world metres, y up). */
-export type Pose = { cam: number[]; look: number[] };
+export type Pose = { cam: number[]; look: number[]; fov?: number };
 
 // One table of named viewpoints: camera position, look-at target (world metres, y up).
+// The water comparison's places (docs/plans/water-sunshine.md, Verification) are the last five.
 export const VIEWS: Record<string, Pose> = {
   hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
   shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },
   meadow: { cam: [30, 7, 15], look: [30, 1, 2.5] },
   overview: { cam: [-40, 40, 40], look: [-5, 0, 0] },
+  cove: { cam: [809, 3, 49], look: [760, 0, 15] },
+  'pier-head': { cam: [1410, 28, -360], look: [1396, 2, -470] },
+  'far-head': { cam: [1452, 14, -170], look: [1650, 0, -190] },
+  summit: { cam: [1015, 110, -6], look: [850, 0, 60] },
+  telescope: { cam: [870, 72, 65], look: [1080, 0, -500], fov: 24 },
 };
 
 export const freePort = () =>
@@ -444,7 +450,7 @@ export class Game {
     await this.page.evaluate(([c, l, f]) => window.__debugCam!.set(c, l, f ?? undefined), [
       pose.cam,
       pose.look,
-      fov || null,
+      fov || pose.fov || null,
     ] as const);
   }
 
