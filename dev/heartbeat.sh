@@ -54,7 +54,8 @@ for (const t of rows) console.log(`${t.held ? "running" : "waiting"}${t.long ? "
 if (!rows.length) console.log("empty");'
 say "Nightly jobs (last verdict; streak = consecutive runs that were not a pass)"
 daily=${BOOGLE_DAILY_DIR:-$HOME/.boogle/daily}
-for job in scenarios perf atlas patch-video; do
+echo "scheduled: scenarios, long. On demand: perf (npm run daily -- perf). Off: atlas, patch-video (owner, 10 November)."
+for job in scenarios long; do
   # Each verdict line names its evidence dir, <job>-<ISO time with dashes>-<pid>; the time is UTC.
   { grep "^Daily $job:" "$daily/$job.log" 2>/dev/null || true; } | awk -v job="$job" '
     { line[NR] = $0 }

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { jobs, localTimes, stateDir, type Job } from './jobs.ts';
+import { jobs, localTimes, scheduled, stateDir, type Job } from './jobs.ts';
 
 const args = process.argv.slice(2);
 const uninstall = args.includes('--uninstall');
@@ -41,6 +41,10 @@ for (const [job, spec] of Object.entries(jobs)) {
       if (loaded) execFileSync('launchctl', ['bootout', `${domain}/${label}`]);
       fs.rmSync(file, { force: true });
     }
+    continue;
+  }
+  if (!scheduled.includes(job as Job)) {
+    console.log(`${job}: not scheduled; run it by hand with npm run daily -- ${job}`);
     continue;
   }
   const date = new Date();
