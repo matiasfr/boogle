@@ -843,15 +843,19 @@ unused, so existing saves keep their other fields. The notes below are history.
   first ones did. The town's `townShelf()` exposes it; the shelf's inspection gains `bay`.
 - **Level check** (`dev/economy/place-level.ts`): firstpull (t0), nook and loft are out of reach before the hook, and
   the balcony and stack before the glider (also with the line to Far Head). The designer's ruling on the three early
-  ones (9 November): the lookout is closed (top 19.3 → 20.4 m, approach (−137, −117); `mustNot` before the second
-  jump); the alcove (a drop from the 30 m plateau east of it) and the stack (a double jump down from stack-return)
-  are accepted and print as facts, and the stack's world crate stands without the glider (its bay crate still waits
-  for the end of the run). In the game (`.look/lookout.ts`, scratch): one sprinting jump from the highest ground
-  near it peaks at 18.2 m; two jumps from (−137, −117), whose ground reads 17.46 m (the model's 17.78), reach the top
-  with good timing (peak 20.44) and fall short with others (19.78–20.49, sliding off): a margin of about 0.05 m, not
-  the model's 0.41, back with the designer.
-- **The bay's repack** for the Home station's 6 m end wall (3 × 3 at about ±1.1 m, centred on the trophy plinth) is
-  held: the plinth fills the grid's centre cell (1.5 m block), so nine crates need another shape; asked the designer.
+  ones (9 November): the lookout is closed (`mustNot` before the second jump; approach (−137, −117)); the alcove (a
+  drop from the 30 m plateau east of it) and the stack (a double jump down from stack-return) are accepted and print
+  as facts, and the stack's world crate stands without the glider (its bay crate still waits for the end of the run).
+- **The lookout's height** (orchestrator default, after the ruling's 20.4 m): the ground at the approach reads 17.46 m
+  in the game, not the model's 17.78, and at 20.4 two jumps made it only with the best timing. Measured with
+  `.look/lookout.ts` (scratch; real sprint and Jump input, the jump device taken by Interact), five ordinary timings
+  (first press held 150–400 ms, second 50–150 ms later): at 20.15 m 3 of 5; at 20.0 m 3 of 5 taking off 0.9 m from
+  the face, 4 of 5 from 1.5 m, 3 of 5 from 2 m. Every miss peaked at or above the top and slid off its edge, so the
+  approach, not the height, decides them. Built at **20.0 m**. One sprinting jump from the highest ground near it
+  peaks at 18.53 m.
+- **The bay** (orchestrator default): nine crates in three columns of three, 1.1 m apart, running out from the trophy
+  plinth's far side, sideways within ±1.1 m (the Home station hall's end wall is 6 m), filled in order: the column
+  nearest the plinth first, middle row first. A 3 × 3 centred on the plinth would have put a crate in it.
 - **Eval:** `railway-finds.ts` `findsecret=<id>`, `findsecretbay=1`, `findsact=open|bay|spot`, `findsworldfrom=`.
 - **Bench, `town` pose** (fresh world, against the gold-find cut): 233 → 240 calls (+4 main, +3 shadow: the merged
   ground, the crate tiers in view and a side slab), 1.35 → 1.36 M triangles. The bay adds none.

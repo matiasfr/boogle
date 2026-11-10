@@ -877,7 +877,7 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
 - **Not ported:** the jump course and its lamplighter's cap ("block") move to job E with the double jump; Place's Far
   Head glide pad and ramp are cut (glider B's device is on Needle Bell).
 - **Abilities are production's:** the alcove, nook, loft and the way back up from the sea stack are hook rings after
-  the climb's (`hook-path.ts` `HOOK_SIDE`); the lookout needs the double jump (its shelf raised to 20.4 m: a stone
+  the climb's (`hook-path.ts` `HOOK_SIDE`); the lookout needs the double jump (its shelf raised to 20.0 m: a stone
   block you see from the first path and can't quite reach); the balcony needs the glider and its crate appears once
   the room has it (glider B, Needle Bell's summit). Two early ways in are accepted sequence breaks (designer,
   9 November): a drop from the plateau east of the alcove, and a double jump down from the stack-return slab onto the
@@ -886,11 +886,10 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
   gifts under sheets until they're yours. A secret you went on past without turns up there as a second crate, in the
   order the abilities come: yard and bell with the hook; alcove and firstpull with the glider; nook and loft with the
   trains; the lookout once the double jump is yours and line 2 is complete; the balcony and the stack at the end of
-  the run (line 2 complete). Open either crate and the other goes. Mark `secret at the hub`.
-- **Reach** (`npm run level-check`, Place's model): each hook and glide secret is out of reach before its ability,
-  except three the check prints as EARLY, kept where Place had them for a layout call: the lookout (one jump from the
-  hillside 2 m west), the alcove (a running jump from the bank 4 m south-east) and the sea stack (a double jump down
-  from the stack-return slab).
+  the run (line 2 complete). Open either crate and the other goes. Mark `secret at the hub`. The crates wait three by
+  three past the trophy plinth, within ±1.1 m sideways, so the bay fits the Home station hall's 6 m end wall.
+- **Reach** (`npm run level-check`, Place's model): each secret is out of reach before its ability, except the two
+  accepted sequence breaks above (the alcove from the plateau, the stack from stack-return), printed as facts.
 
 Sync: Personal Local, the finds store's `secrets` and `hubbed`, each written the moment it changes. No presence key,
 op or `WORLD_NS` change; a partner sees their own crates. Cost at the bench's `town` view: +7 draw calls (233 → 240).
