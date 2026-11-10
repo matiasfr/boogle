@@ -118,6 +118,34 @@ Folders with current/live files or unexpected entries, non-stamped folders and s
 Per-file cleanup failures are recorded and do not stop boot. A second boot with no new eligible files moves nothing
 and creates no new trash folder. See [the plan](../docs/plans/world-version-and-save-reset.md).
 
+## Operator tools
+
+Room saves are managed on the running server, with no deploy (`server/src/admin.ts`). Same guard as `/admin/saves`:
+`Authorization: Bearer <REPORT_TOKEN>`, 404 while the token is unset.
+
+```sh
+npm run server -- rooms                    # saved rooms, who is in them, and the backups kept
+npm run server -- reset <room> | --all     # back the save up, then start the room fresh
+npm run server -- backup <room> | --all    # keep a copy of the save as it is now
+npm run server -- restore <room> [backup]  # put a backup back (default: that room's newest)
+```
+
+`<room>` is the name in the URL (`?room=`), matching its classic and its railway room, or a full id from `rooms`.
+`BOOGLE_SERVER` picks the server (default production); the token comes from `REPORT_TOKEN` or `.env.local`.
+
+| Endpoint | Does |
+| --- | --- |
+| `GET /admin/rooms` | `{ ns, rail, rooms: [{ id, bytes, savedAt, loaded, players, tick? }], backups: [{ name, room, bytes }] }`: current-namespace saves and the backups, newest first. |
+| `POST /admin/rooms/:id/backup` | Copies the room's last checkpoint (up to `SERVER_SAVE_MS` old) to `DATA_DIR/.backups/<id>@<UTC stamp>.json`. 404 without a save. |
+| `POST /admin/rooms/:id/reset` | Closes the room without saving, moves its save into `.backups/`, and lets the next join start a fresh world. |
+| `POST /admin/rooms/:id/restore?backup=<name>` | Closes the room without saving, backs its save up, then writes the backup (default: that room's newest) as its save. 404 no such backup, 422 not a room save. |
+
+Reset and restore answer 409 while players are in the room unless `?force=1`; with it everyone gets `bye`, the socket
+closes with 1012 and their tab reconnects into the new world. Joins are refused until the files have changed, so a
+reconnect never loads the old save. Only current room ids are accepted (400 otherwise). The newest 30 backups are
+kept, across all rooms; boot cleanup measures `.backups/` and never moves it. A backup restores only into its own room
+id, so a `WORLD_NS` bump leaves older backups unusable.
+
 ## Run locally
 
 ```sh

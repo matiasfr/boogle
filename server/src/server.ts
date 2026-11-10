@@ -11,6 +11,7 @@ import { cleanupSaves, cleanupLine, type Cleanup } from './save-cleanup.ts';
 import { roomNamespaces } from './room-ids.ts';
 import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
+import { addAdmin } from './admin.ts';
 import { addJump, type JumpConfig } from './jump.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
@@ -339,6 +340,8 @@ export function createService(cfg: ServerConfig) {
       next(error);
     }
   });
+
+  addAdmin(app, cfg, { authed, store, roomHost: () => roomHost });
 
   const reviewReport = addReviews(app, cfg, {
     authed,
