@@ -617,13 +617,19 @@ face is a draw of its own.
 
 **Departure boards at the halts** (owner, 9 November: "a real sign rather than a big floating text countdown"). The
 big hovering countdown over each halt's centre is gone. Every standing halt has a departure board fixed to its
-signal mast below the arm, inboard of the rails at the end the train comes in: a dark backing and a red cap, and a
-five-flap split-flap face either side reading the seconds to the next train ("27 S"), blank when none is called. The
-face is ported from the 1 November departures board prototype (`src/entities/railway/flap-face.ts`): a ticking digit
-turns one flap, a changed letter riffles three, 70 ms apart; reduced motion swaps them plainly. It is lit like the
-scene, reads from the platform and small but legible from about 25 m, not across the map. Same information as
-before, Local over accepted train state. One draw per standing halt (the old sprite was one draw while calling).
-Not tested on a device.
+signal mast below the arm, inboard of the rails at the end the train comes in (on a Home island edge, above its
+destination plaque): a dark backing and a red cap. It shipped first as a split-flap countdown; the owner then asked
+for the old prototype's minimal map instead (9 November: "instead of a strict timer, I liked the old signage that
+showed a minimal and you could see the train representation there moving"). So each face shows **this halt's line
+as a strip**: its stops as dots spaced by their real distance, laid track solid and unlaid track dashed (line 2's
+pier stretch until Q6 is laid), this halt ringed in red, and the line's train as a small marker gliding at its live
+position (line 1 gold, line 2 teal). No digits, no words. While the train's next stop is this halt the ring blinks;
+under reduced motion the ring stays lit and the marker steps once a second. Line 2's wagon rides as part of its
+train, so it has no marker of its own, and the shunter on Home's turntable isn't shown. Lines have two and four stops,
+so every board shows its whole line. Halts only stand once trains run, so there is no "before trains" board. The
+drawing is shared (`src/render/line-strip.ts`) for the Home station's big map, one strip per line. Each face is one
+canvas texture redrawn only when the marker moves a pixel or the ring blinks; one draw per standing halt, as the
+flaps were. Local over accepted train state. Not tested on a device.
 
 ## Ancient technology (round 4, exploring)
 
