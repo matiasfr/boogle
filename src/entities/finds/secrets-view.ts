@@ -17,6 +17,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
+import { inReach } from '../../player/reach.ts';
 import { playMark } from '../../proto/mark.ts';
 import { getAudio } from '../../render/audio.ts';
 import { cosmetic, crateParts, type GiftId, type Part, type Tier } from '../../render/cosmetic-parts.ts';
@@ -31,9 +32,9 @@ import type { FindsApi, FindsViewInspection } from './state.ts';
 const STONE = '#917b5e',
   STONE2 = '#b6a080',
   BRASS = '#c79a3e';
+// Both only up at the box's level: one on a ledge isn't in reach from the ground under it (src/player/reach.ts).
 const BUMP = 1.25, // m: walking into a box opens it (Place's)
   REACH = 3.4, // m: Open the crate
-  STEP = 2.6, // m: one up on a ledge isn't in reach from under it
   SPARKLE_NEAR = 60;
 const TIERS: Tier[] = ['common', 'rare', 'wonder'];
 
@@ -407,7 +408,7 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       if (d < SPARKLE_NEAR && Math.random() < dt * 3) rewardSparkles(box.at.x, box.at.y + 1.2, box.at.z, 1, 1.2);
       // The bay's crates stand a metre apart, so walking among them would open whichever you brushed: Open only there
       // (builder default, F2; docs/agent-calls.md).
-      if (!box.bay && d < BUMP && Math.abs(p.y - box.at.y) <= STEP) open(box);
+      if (!box.bay && inReach(p, box.at, BUMP)) open(box);
     }
     for (const t of TIERS) {
       const mesh = meshes[t];
@@ -433,8 +434,7 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
       if (!p || show.busy()) return NO_TARGETS;
       let out: Interactable[] | null = null;
       for (const box of boxes) {
-        if (!box.waiting || Math.abs(p.y - box.at.y) > STEP) continue;
-        if (Math.hypot(p.x - box.at.x, p.z - box.at.z) >= REACH) continue;
+        if (!box.waiting || !inReach(p, box.at, REACH)) continue;
         let at = targetAt.get(box);
         if (!at) targetAt.set(box, (at = new THREE.Vector3()));
         at.copy(box.at).y += 1.5;

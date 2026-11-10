@@ -33,6 +33,7 @@ import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { me } from '../../player/player.ts';
+import { inReach } from '../../player/reach.ts';
 import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { carry } from '../../physics/platforms.ts';
 import { knock, pop } from '../minis/common.ts';
@@ -850,14 +851,15 @@ export function snapGifts(
   for (const c of waiting) makeCrate(c.x, c.y, c.z, null, c.content ?? 'gift');
 }
 const pendingWear = new Map<Slot, GiftId>();
-const bump = new THREE.Vector3();
+const bump = new THREE.Vector3(),
+  from = { x: 0, y: 0, z: 0 };
 export function nearestCrate(x: number, z: number, reach: number) {
   const y = me.body?.position.y;
   for (const c of crates) {
     if (c.t < 1) continue;
-    // One up on a ledge isn't in reach from under it.
-    if (y !== undefined && Math.abs(y - c.y) > 2.6) continue;
-    if (Math.hypot(c.x - x, c.z - z) < reach) return { c, at: bump.set(c.x, c.y + 1.5, c.z) };
+    // Up at its level: one on a ledge isn't in reach from the ground under it (src/player/reach.ts).
+    if (y === undefined ? Math.hypot(c.x - x, c.z - z) < reach : inReach(Object.assign(from, { x, y, z }), c, reach))
+      return { c, at: bump.set(c.x, c.y + 1.5, c.z) };
   }
   return null;
 }
