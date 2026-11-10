@@ -23,7 +23,7 @@ import type { World as Fixture } from './helpers/railway-q2.ts';
 const H = { quarry: 3, farHead: 4 } as const;
 const STOPS = TRAIN_STOPS[1]!;
 const BRAKE = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
-const line2 = (w: Fixture) => w.s.line2!.train[1]!;
+const line2 = (w: Fixture) => w.s.trains[1]!;
 const ask = (w: Fixture, id: number, dir: -1 | 1) => act(w, 'a', 'rail.call', { id, dir });
 const kitAboard = (w: Fixture) => line2(w).logs + line2(w).rails > 0;
 

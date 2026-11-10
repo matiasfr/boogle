@@ -550,13 +550,13 @@ test('someone waiting on the Pier halt never starves the wagon of the quarry sto
       assert.equal(act(w, 'a', 'rail.footTake', { rack: 1 }), 1);
       assert.equal(act(w, 'a', 'rail.footSet', { site: 2 }), 1);
     } else advanceWorks(w, 1);
-    if (ticks % 40 === 0 && !(w.s.line2!.train[1]!.phase === 0 && w.s.line2!.train[1]!.at === 3))
+    if (ticks % 40 === 0 && !(w.s.trains[1]!.phase === 0 && w.s.trains[1]!.at === 3))
       act(w, 'a', 'rail.call', { id: 5 });
   }
   assert.equal(
     works().pierSet,
     WORKS.pier,
-    `twelve set (stopped after ${ticks} ticks: ${JSON.stringify({ works: { ...works(), rocks: 0 }, train: w.s.line2!.train[1] })})`,
+    `twelve set (stopped after ${ticks} ticks: ${JSON.stringify({ works: { ...works(), rocks: 0 }, train: w.s.trains[1] })})`,
   );
   assert.ok(works().crossing >= 0);
 });

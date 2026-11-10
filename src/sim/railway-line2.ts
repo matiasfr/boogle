@@ -1,6 +1,6 @@
 // Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-systems.ts.
-import { trainStopsOf, type RailTrain } from './railway-train.ts';
+import { trainStopsOf } from './railway-train.ts';
 import { LINE2 } from './railway-lines.ts';
 import { railTrainsOf } from './railway-trains.ts';
 import type { Railway } from './railway.ts';
@@ -38,9 +38,6 @@ export type RailBoiler = {
 export type RailLine2 = {
   boiler: RailBoiler;
   trains: number;
-  /** Every train by slot, the same array as `Railway.trains`: kept for the client's v25 reads until step 4b moves
-   * them (docs/plans/generic-lines.md); the sim reads `Railway.trains`. */
-  train: RailTrain[];
   forge: RailForge;
   jobs: RailQJob[];
   depot: number;

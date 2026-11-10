@@ -565,7 +565,7 @@ test('boiler and train packets patch the mirror; boiler blocks predicted materia
   r.pump();
   agree(r, 'a');
   assert.equal(r.mirrors.get('a')!.railway.line2!.boiler.state, 'fitted');
-  assert.equal(r.mirrors.get('a')!.railway.line2!.train[1]!.logs, 32);
+  assert.equal(r.mirrors.get('a')!.railway.trains[1]!.logs, 32);
 });
 
 test("every train and line row round-trips through railwayView and the replicated components (v26's three trains)", () => {
@@ -593,14 +593,13 @@ test("every train and line row round-trips through railwayView and the replicate
     assert.equal(mirror.trains.length, 3);
     assert.deepEqual(mirror.trains, server.trains);
     assert.deepEqual(mirror.lines, server.lines);
-    assert.equal(mirror.line2!.train, mirror.trains, "the client's v25 alias is the same rows");
   }
   assert.equal(railwayInvariant(r.api.railway), null);
 });
 test('Q6 prediction keeps train rails aboard until funding is confirmed', () => {
   const w = railwayAtTrains('trains-on');
   seedAdvance(w, 100);
-  assert.equal(w.s.line2!.train[1]!.rails, 32);
+  assert.equal(w.s.trains[1]!.rails, 32);
   seedAct(w, 'a', 'rail.pack');
   seedLogs(w, 'a', 'Q6', 32);
   seedRails(w, 'b', 'Q6', 16);
@@ -608,17 +607,18 @@ test('Q6 prediction keeps train rails aboard until funding is confirmed', () => 
   assert.ok(seedAct(w, 'b', 'rail.forgeTake') > 0);
   assert.equal(w.s.accounts.find((a) => a.pid === 'b')!.rails, 16);
   const shown = cloneRailway(railwayOf(worldOf(w.s))),
-    before = structuredClone(shown.line2!);
+    before = structuredClone(shown.line2!),
+    beforeTrains = structuredClone(shown.trains);
   const a = w.s.accounts.find((a) => a.pid === 'b')!;
   const e = { op: 'rail.deposit', epoch: a.epoch, request: a.request + 1, station: 'Q6', kind: 2, n: 16 };
   assert.equal(railPredict(shown, 'b', e, w.t).n, 16);
   assert.equal(shown.line2!.jobs[5]!.start, -1);
-  assert.deepEqual(shown.line2!.train, before.train);
+  assert.deepEqual(shown.trains, beforeTrains);
   assert.equal(shown.line2!.forge.rack, before.forge.rack);
   assert.equal(railCounts(shown).rails!.total, railCounts(shown).rails!.poured);
   assert.equal(seedAct(w, 'b', 'rail.deposit', { station: 'Q6', kind: 2, n: 16 }), 16);
-  assert.equal(w.s.line2!.train[1]!.rails, 0);
-  assert.equal(w.s.line2!.train[1]!.logs, 32, 'logs already minted stay aboard');
+  assert.equal(w.s.trains[1]!.rails, 0);
+  assert.equal(w.s.trains[1]!.logs, 32, 'logs already minted stay aboard');
   seedAdvance(w, 500);
   assert.equal(railCounts(w.s).rails!.total, railCounts(w.s).rails!.poured);
 });
