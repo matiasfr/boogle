@@ -344,7 +344,11 @@ laid together, today's lines widened in one planned `WORLD_NS` bump after v25).
   slope or a junction, a **scissors crossover** 35 m inside the terminus halt: Ring top (both lines), High Gorge, Bell
   Rock (three lines), the West landing (both lines), High Port (the White Wall line). Where the island has room, a
   **40 m-radius turning loop** past the end: Canopy Town (bay line), High Port (cave line), Lantern Notch and the
-  Original Island. In the data: `FORMATION` and each line's `ends`.
+  Original Island. In the data: `FORMATION` and each line's `ends`. *Note (10 November, owner):* a crossover alone no
+  longer finishes a line: "If a track has a terminal point it should have buffers and be clearly marked, otherwise we
+  should make it continuous or loop" ([decisions](../decisions.md#decided)). Every end above is audited against that
+  rule, with a proposal for each (buffers, a loop, or running through into the next line), in
+  [rail-map](rail-map.md); the catalog's `ends` change only when its proposals are taken.
 - **Today's lines stay single track.** Lines 1 and 2 are not moved. The blockout draws a pale, non-solid second-track
   bed 4 m off each on the side with fewer clashes (line 1 and line 2 both on the left of their drawn direction), with an
   orange post wherever it meets something. The spots, from `LIVE_SECOND_TRACK` (sampled every 2 m):
