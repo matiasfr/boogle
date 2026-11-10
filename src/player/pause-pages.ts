@@ -3,8 +3,8 @@ export type PausePage = {
   id: string;
   label: string;
   compact?: boolean;
-  /** Pause opens on this page while it says yes (the wardrobe's You, once you own a wearable); Options is the other
-   * way in. A start page isn't listed under More. */
+  /** Pause opens on this page while it says yes (the wardrobe's You, always, on the production railway); Options is the
+   * other way in. A start page isn't listed under More. */
   start?(): boolean;
   mount(parent: HTMLElement, resume: () => void): () => void;
   open?(): void;

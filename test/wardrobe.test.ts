@@ -178,18 +178,13 @@ test('cycling drops a shop try-on in that slot', () => {
   assert.deepEqual(w.inspect().worn, {});
 });
 
-test('Pause opens on You only once you own something to wear', () => {
+test('Pause always opens on its start page, owned or not, and on Options where no page claims it', () => {
   const { io } = memory();
   const w = createWardrobe(catalog, io);
-  const pages = [{ id: 'graphics' }, { id: 'you', start: () => w.ownsWearable() }];
-  assert.equal(w.ownsWearable(), false);
-  assert.equal(startPage(pages), undefined); // a new player lands on Options
+  const pages = [{ id: 'graphics' }, { id: 'you', start: () => true }];
+  assert.equal(startPage(pages)?.id, 'you'); // a new player owning nothing too
   w.grant('hat', { wear: true });
   assert.equal(startPage(pages)?.id, 'you');
-  w.takeOff('hat'); // owning is what counts, not wearing
-  assert.equal(startPage(pages)?.id, 'you');
-  const pet = createWardrobe(catalog, memory().io);
-  pet.grant('critter', { wear: false });
-  assert.equal(pet.ownsWearable(), true);
-  assert.equal(startPage([{ id: 'x' }]), undefined);
+  assert.equal(startPage([{ id: 'graphics' }]), undefined); // Place and builds without a wardrobe: today's main list
+  assert.equal(startPage([]), undefined);
 });

@@ -27,8 +27,10 @@ const { partnerWearing, wardrobe } = (await import(
   '/src/entities/wardrobe/state.ts' as string
 )) as typeof import('../../../src/entities/wardrobe/state.ts');
 const { remotes } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
+const body = document.querySelector<HTMLElement>('.pause-body');
+const card = document.querySelector<HTMLElement>('.pause-card')?.getBoundingClientRect();
 const seen = [...remotes.keys()].map((peer) => partnerWearing(peer));
 console.log(
-  `PAUSE keys=${keys.join(',')} player=${query.get('player') ?? 1} mine=${JSON.stringify(wardrobe()?.wearing())} partners=${JSON.stringify(seen)} focus=${(document.activeElement as HTMLElement | null)?.className ?? ''}`,
+  `PAUSE keys=${keys.join(',')} player=${query.get('player') ?? 1} mine=${JSON.stringify(wardrobe()?.wearing())} partners=${JSON.stringify(seen)} scroll=${body ? body.scrollHeight - body.clientHeight : -1} card=${card ? `${Math.round(card.top)}-${Math.round(card.bottom)}` : ''} focus=${(document.activeElement as HTMLElement | null)?.className ?? ''}`,
 );
 export {};

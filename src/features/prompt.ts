@@ -1,7 +1,7 @@
 // The interact prompt: what E (pad X, the touch action button) would act on, marked where it is with the button and the
 // verb, "[E] Pick up" floating over the can, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
 // itself; see registerInteractable in src/player/hands.ts). A blocked target greys it and says so. Hidden while you wind up a
-// throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
+// throw, talk or have the pause view open. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 // It pops in with a sound and squashes when pressed (a head-shake and a deny when the press can't act);
 // docs/research/ui-patterns.md, recs 1-2.
 import '../ui/ui-kit.css';
@@ -12,6 +12,7 @@ import { me } from '../player/player.ts';
 import { interactTarget, onInteractPress, type Interactable } from '../player/hands.ts';
 import { uiSound, replay } from '../ui/ui-sound.ts';
 import { conversation } from '../player/conversation.ts';
+import { modalOpen } from '../player/modal.ts';
 import { glyph } from '../player/glyphs.ts';
 
 const onScreen = { x: 0, y: 0, behind: false };
@@ -42,7 +43,8 @@ spawn({
   kind: 'prompt',
   lateUpdate() {
     const root = ui.root ?? build();
-    const t = me.entered && !me.charging && !conversation.open ? interactTarget() : null;
+    // Nothing in the world is offered behind an open menu (Pause): its prompts would draw over the picture it frames.
+    const t = me.entered && !me.charging && !conversation.open && !modalOpen() ? interactTarget() : null;
     const html = t ? chip(t) : '';
     // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
     if (ui.show && (ui.showId !== t?.id || ui.show !== t.show)) ui.show('');

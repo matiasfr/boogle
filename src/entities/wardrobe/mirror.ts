@@ -36,6 +36,10 @@ export function freeCentre(panel: DOMRect, width: number, height: number): Scree
 export const onFoot = () =>
   me.entered && !!me.body && me.coyote > 0 && !me.swimming && !me.down && !inputState.seated && !guest.active;
 
+// What the swing is doing, for the look and scenario harness (page code imports this).
+const shown = { weight: 0, armed: false, turned: false, held: false };
+export const inspectMirror = () => ({ ...shown });
+
 let lastBlur = -1e9;
 addEventListener('blur', () => (lastBlur = performance.now()));
 
@@ -81,6 +85,10 @@ export function createMirror() {
       } else if (cameraHeld()) weight = 0; // a shot has it: don't fight
       if (reducedMotion) weight = want ? 1 : 0;
       else weight += ((want ? 1 : 0) - weight) * (1 - Math.exp(-dt * EASE));
+      shown.weight = weight;
+      shown.armed = armed;
+      shown.turned = turned;
+      shown.held = cameraHeld();
       if (weight < 0.001) {
         weight = 0;
         if (!want) top = 0;

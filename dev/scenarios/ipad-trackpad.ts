@@ -153,7 +153,7 @@ export default {
     t.check('a scroll switches to keyboard mode', (await g.waitFor(`!${touchMode}`, { timeout: 3000 })) >= 0);
 
     // Fullscreen on iPad explains first: no letter keys (WebKit's keyboard-less iPad fullscreen) and WebKit 311151 (rec 5).
-    const opened = await g.eval(`const P = await import('/src/features/pause.ts'); return P.openPause();`);
+    const opened = await g.eval(`const P = await import('/src/features/pause.ts'); return P.openPause('options');`);
     t.check(
       'the pause view opens',
       opened === true && (await g.waitFor(PAUSED, { timeout: 3000 })) >= 0,

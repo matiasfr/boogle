@@ -37,7 +37,7 @@ check(isTouch === query.has('phoneStartup'), 'pre-boot input profile');
 check(!shown(dom.rosterEl) && !shown(dom.netEl), 'identity and Live absent from play');
 check(shown(document.querySelector('.menu-btn')) === isTouch, 'menu button touch only');
 if (isTouch) document.querySelector<HTMLButtonElement>('.menu-btn')!.click();
-else openPause();
+else openPause('options');
 await wait();
 function identity() {
   const panel = document.querySelector('.pause-identity');
@@ -56,7 +56,7 @@ for (const page of ['room', 'controls']) {
 closePause();
 await wait();
 check(!shown(dom.rosterEl) && !shown(dom.netEl), 'identity hidden again on resume');
-openPause();
+openPause('options');
 await wait();
 identity();
 const stats = document.querySelector('.place-nums')!;
@@ -206,7 +206,7 @@ if (!query.has('uiTalk')) {
   dispatchEvent(new Event('gamepaddisconnected'));
   if (isTouch) dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch' }));
   await wait();
-  if (!query.has('uiPlay')) openPause();
+  if (!query.has('uiPlay')) openPause('options');
 }
 await wait();
 console.log(

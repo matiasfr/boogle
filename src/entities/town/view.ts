@@ -160,18 +160,16 @@ export async function createTownView(read: () => RailwayInspection | null) {
     people: env.people,
   });
   // Your wardrobe, stood up in the village: what you own on it, the rest under dust sheets (C1).
-  const shelf = clothes ? await createCurioShelf(owner, clothes, lines.SHOP.offVerb) : null;
+  const shelf = clothes ? await createCurioShelf(owner, clothes) : null;
   sites.buildSites(owner);
   rooms.snap();
   rooms.warm();
   const room = (id: 'house' | 'shop' | 'museum') => ({ up: rooms.rooms[id].up, ready: rooms.rooms[id].ready });
   return {
     root: owner.root,
-    /** The residents' Talk, the shop's stands and rail, and the curio shelf's swaps. Joined only when more than one has something in reach. */
+    /** The residents' Talk and the shop's stands and rail. Joined only when more than one has something in reach. */
     targets(): Interactable[] {
-      const parts = [residents.targets(), shop?.targets() ?? NO_TARGETS, shelf?.targets() ?? NO_TARGETS].filter(
-        (t) => t.length,
-      );
+      const parts = [residents.targets(), shop?.targets() ?? NO_TARGETS].filter((t) => t.length);
       return parts.length === 0 ? NO_TARGETS : parts.length === 1 ? parts[0]! : parts.flat();
     },
     /** The curio shelf, for K1's crystals (`shelfGroup`, `crystalPeg`). */

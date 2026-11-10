@@ -1,8 +1,9 @@
 // The You page of the pause view (src/features/pause.ts, through src/player/pause-pages.ts): dress Buddy from the menu.
 // One row for each slot (hat, accessory, outfit, pet) and your colour: left and right step through what you own, applied
 // at once and shown on you and to your partners (the wardrobe's own `wardrobe` and `stowaway` presence). The pips under a
-// value count the slot's catalog: filled for what you own (the worn one larger), hollow for what you don't: no names.
-// Pause opens here from your first wearable on. Local DOM over ./state.ts; no wire, op or save of its own.
+// value are the cycle you can step through: Nothing, then what you own, the current one larger. Nothing you don't own
+// shows, not even a count; with fewer than two things owned the cycle is too short for pips and the row shows none.
+// Pause always opens here (owner, 10 November), even before you own anything: every row then reads Nothing. Local DOM over ./state.ts; no wire, op or save of its own.
 import './menu.css';
 import type { PausePage } from '../../player/pause-pages.ts';
 import { pauseNavigation } from '../../player/pause-pages.ts';
@@ -32,7 +33,7 @@ export function createWardrobePage(
   return {
     id: 'you',
     label: 'You',
-    start: () => wardrobe.ownsWearable(),
+    start: () => true,
     mount(parent, resume) {
       const page = el('div', 'you');
       const paint: (() => void)[] = [];
@@ -80,13 +81,14 @@ export function createWardrobePage(
         paint.push(() => {
           const here = wardrobe.current(slot);
           name.textContent = nameOf(here);
-          const all = catalog.items.filter((g) => g.slot === slot);
-          const own = all.filter((g) => wardrobe.isOwned(g.id));
-          const pip = (cls: string) => el('i', `you-pip ${cls}`);
-          const marks = own.map((g) => pip(g.id === here ? 'on worn' : 'on'));
-          const hollow = Array.from({ length: all.length - own.length }, () => pip('off'));
-          hollow[0]?.classList.add('gap');
-          pips.replaceChildren(...marks, ...hollow);
+          const own = catalog.items.filter((g) => g.slot === slot && wardrobe.isOwned(g.id));
+          const pip = (cls: string, now: boolean) => el('i', `you-pip ${cls}${now ? ' worn' : ''}`);
+          row.classList.toggle('bare', own.length === 0);
+          for (const arrowBtn of row.querySelectorAll('.you-step'))
+            arrowBtn.setAttribute('aria-disabled', String(own.length === 0));
+          const marks = own.length < 2 ? [] : [pip('none', here === null), ...own.map((g) => pip('on', g.id === here))];
+          pips.replaceChildren(...marks);
+          pips.hidden = marks.length === 0;
         });
       }
 

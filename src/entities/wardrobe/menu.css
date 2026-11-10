@@ -63,6 +63,9 @@ dialog.pause[data-page='you'][open] {
 .you-name {
   overflow-wrap: anywhere;
 }
+.you-pips[hidden] {
+  display: none;
+}
 .you-pips {
   display: flex;
   flex-wrap: wrap;
@@ -86,11 +89,14 @@ dialog.pause[data-page='you'][open] {
   background: var(--sun);
   border: 2px solid var(--ink);
 }
-.you-pip.off {
+.you-pip.none {
   border: 1.5px solid var(--ink-soft);
 }
-.you-pip.gap {
-  margin-left: 6px;
+.you-pip.none.worn {
+  border: 2px solid var(--ink);
+}
+.you-row.bare .you-step {
+  opacity: 0.35;
 }
 .you-colour {
   grid-template-columns: 5.6em minmax(0, 1fr);
@@ -147,8 +153,10 @@ dialog.pause[data-page='you'][open] {
   .you-row {
     grid-template-columns: 5.4em 44px minmax(0, 1fr) 44px;
   }
+  /* The colours get the whole row, so each is about 38 px wide. */
   .you-colour {
-    grid-template-columns: 5.4em minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
   }
 }
 
@@ -162,11 +170,13 @@ dialog.pause[data-page='you'][open] {
     gap: 6px;
     padding: 8px 12px;
   }
+  /* The room id gives way: with a notch's inset the card has to fit in about 360 px without scrolling. */
   .pause-card[data-page='you'] .pause-title {
-    font-size: 22px;
+    display: none;
   }
   .pause-head > .pause-identity {
-    margin-top: 2px;
+    margin-top: 0;
+    padding-right: 96px;
   }
   .you {
     gap: 6px;

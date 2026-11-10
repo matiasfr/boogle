@@ -1,4 +1,6 @@
-> **Status: proposed (2026-11-10).**
+> **Status: answered by the owner (2026-11-10); step 1 built, step 2 built, step 3 (the "new" dot) not built.** The
+> [owner's answers](#owner-questions-answered-10-november) override the design review where they differ: Pause opens on You
+> even when empty (question 2b), and unowned items show nothing, no hollow pips (4b).
 
 # Pause wardrobe: dress Buddy from the menu
 
@@ -212,16 +214,16 @@ Touch: [voice][Live][hanger][menu]   <- a second 44 px corner button
     left and right with a new `cycleSlot(slot, dir)` beside `swapSlot` in state.ts (today's cycle goes forward only),
     applied at once. The cycle is the slot's owned items in catalog order with Nothing at the left end, wrapping both
     ways. The rows redraw whenever the wardrobe changes while the page is open (a reveal finishing behind it).
-  - **Until you own your first wearable, Pause opens on Options** (today's main list), so a new player who pauses for
-    the controls finds them where they are today. From the first owned hat, accessory, outfit or pet, Pause opens on
-    You every time; it doesn't remember the last page. H still opens Controls directly.
+  - **Pause always opens on You** on the production railway (owner, 10 November, question 2b, overruling the design
+    review's "Options until the first wearable"), even when you own nothing and every row reads Nothing. It never
+    remembers the last page. Options is one press away (the button, Esc, RB) and H still opens Controls directly.
   - **The roster and connection pill stay on the page Pause opens on** (5 November: name chips and the Live count are
     in Pause on every platform): a compact row in the You header, beside the mute icon. Options doesn't repeat them.
   - The colour swatches move to You; Room keeps only the name box.
-  - Pips: one per item in the slot's catalog, owned ones first in cycle order with the worn one drawn larger (so the
-    row doubles as "where am I in the cycle"), then a gap, then a hollow pip for each item you don't own. No names
-    and no shapes for the hollow ones. In short landscape (`max-height: 480px`) the pips sit inside the row under the
-    value, so each row stays one 44 px target.
+  - Pips (owner, 10 November, question 4b: nothing you don't own shows): one for Nothing, then one per item you own in
+    cycle order, the current one drawn larger, so the row doubles as "where am I in the cycle". Nothing reveals how many
+    items exist. With fewer than two things owned the cycle is too short to need them, so the pip row is hidden. The
+    pips sit inside the row under the value, so each row stays one 44 px target.
   - Options holds today's main list unchanged otherwise: sections, Controls, Graphics, Room, More and Leave, plus the
     World/build line. Get unstuck stays in More (one press deeper than today, accepted).
   - **Options shortcuts:** RB on a pad and Esc on a keyboard go from You to Options (Esc does nothing there today, since
@@ -229,7 +231,7 @@ Touch: [voice][Live][hanger][menu]   <- a second 44 px corner button
   - **The camera swing**, on foot only, with the conditions under "Camera" below, framed per layout.
   - Only the production railway gets it. Place, and any build without a wardrobe, opens on today's main list,
     unchanged.
-  - **Step 2.** The curio shelf's and finders' bay's four "Swap …" prompts go (curio-shelf.ts `targets()`); the
+  - **Step 2 (built; owner, 10 November, question 3b).** The curio shelf's and finders' bay's four "Swap …" prompts go (curio-shelf.ts `targets()`); the
     shelf keeps everything else: what you own on show, the dust sheets, the puff at a reveal nearby, the crystal row and
     the missed secrets waiting at the bay. The shop's Try on, Take it, Wear it and Take it off stay: trying on what you
     don't own is the shop's job. (Port-from-Place verdict: the shelf as display, keep; its swap prompts, cut.)
@@ -292,6 +294,9 @@ One proof look per player-visible change (owner-calls, "Fast ships"). Each look 
 grants the hat, scarf, glasses, raincoat and stowaway through `wardrobe().grant(id, { wear: false })` on the production
 railway and calls `pauseNavigation.open()`.
 
+- **(owner answers, 10 November) Empty You:** a new player's first pause lands on You with every row Nothing and no pip
+  rows; Options is one press, Esc or RB away. This replaces the design review's "new player lands on Options" look.
+  Pips show Nothing plus what is owned only.
 - **Desktop (1440×900), standing on the hill:** the You page is open, Buddy faces the camera and is unobscured, and the
   rows read Hat, Accessory, Outfit, Pet and Colour with pips. An `--action` presses right on Hat. In the same video
   second the hat on Buddy changes and the row's name updates.
@@ -303,8 +308,8 @@ railway and calls `pauseNavigation.open()`.
 - **Pad navigation** (a scripted `--action` of d-pad presses): focus walks Resume, Hat ... Colour, Options. B on
   Options → Controls returns to Options, then to You, then closes.
 - **Seated on a train:** Pause opens on You with the follow camera, without a swing.
-- **(design review) A new player** (a fresh wardrobe, nothing granted): Pause opens on Options, as today; after
-  `grant('hat', { wear: true })` it opens on You. One still each.
+- **(design review, superseded by question 2b) A new player** (a fresh wardrobe, nothing granted): the review had Pause
+  open on Options until a first wearable. Now it opens on You, empty.
 - **(design review) Framing:** in the portrait still, Buddy's head and hat are above the sheet's top edge; in the
   landscape still, the pips sit inside each 44 px row and nothing scrolls.
 - **(design review) Roster:** the You page's header shows the name chips and the Live pill (a two-player scenario).
@@ -314,6 +319,7 @@ railway and calls `pauseNavigation.open()`.
   change.
 - **(design review) Step 2:** at the curio shelf, no "Swap …" prompt shows within 4.4 m; the sheets still puff when a
   card is put away there.
+- **(owner answers) Prompts behind the menu:** the world's interaction prompts are hidden while Pause is open.
 
 ## Open questions
 
@@ -336,6 +342,23 @@ railway and calls `pauseNavigation.open()`.
    with no wire, op or save-shape change and no `WORLD_NS` bump. The seen list goes in its own localStorage key. The
    first build is the You page owned by the wardrobe entity plus `cycleSlot`, with the "new" dot as the next step,
    touching the files listed in Shape.** Answer: ___
+
+## Owner questions answered (10 November)
+
+The owner's words, as the coordinator relayed them (verbatim): "1. The menu's shape: (a) Pause opens on You; Options is
+one button. 2. What a new player sees first: (b) You always, even when empty. 3. The curio shelf: (b) Remove the
+prompts; keep it as the display. 4. Items you don't own yet: (b) Nothing shown. 5. The camera: (a) Buddy turns to face
+you when the page opens."
+
+| # | Question | Answer | Differs from the design review? |
+| --- | --- | --- | --- |
+| 1 | The menu's shape | A: Pause opens on You, Options is one button | No |
+| 2 | What a new player sees first | **You always, even when empty** | **Yes.** The review (call 6, finding 1) had Options until the first wearable. |
+| 3 | The curio shelf | Remove the prompts; keep it as the display | No (call 25); built as step 2 |
+| 4 | Items you don't own | **Nothing shown** | **Yes.** The review (call 20) had hollow pips. Now the pips are Nothing plus what you own, and hidden below two owned. |
+| 5 | The camera | A: Buddy turns to face you when the page opens | No |
+
+Recorded in [decisions.md](../decisions.md) and [agent-calls.md](../agent-calls.md).
 
 ## Parked
 

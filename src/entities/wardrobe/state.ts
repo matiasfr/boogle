@@ -212,8 +212,6 @@ export function createWardrobe(catalog: WardrobeCatalog, storage: WardrobeStorag
     swapLabel: (slot: WornSlot, offVerb: string) => `Swap ${slot}: ${nextInSlot(slot)?.name ?? offVerb}`,
     /** What's on you in this slot, a try-on included, or null. */
     current: (slot: WornSlot): CosmeticId | null => on[slot] ?? null,
-    /** Whether you own anything you can wear (the pause view opens on its You page from then on). */
-    ownsWearable: () => WORN_SLOTS.some((slot) => owned(slot).length > 0),
     /** The pause view's left and right: one step through what you own in this slot, nothing at the left end, wrapping
      * both ways. Drops a shop try-on in the slot first. Owning nothing there leaves it as it is. */
     cycleSlot(slot: WornSlot, dir: 1 | -1) {

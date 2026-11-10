@@ -2,7 +2,7 @@
 // on the console). `pagewant=none` asserts More has no Jump in.
 //   npm run look -- --query dev=1 --eval dev/look/evals/jump-in-page.ts --until window.__pageDone --hud --name jump-page
 const { openPause } = (await import('/src/features/pause.ts' as string)) as {
-  openPause: () => void;
+  openPause: (start?: string) => void;
 };
 const query = new URLSearchParams(location.search);
 const wait = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,7 +10,7 @@ const shot = window as Window & { __pageDone?: boolean };
 const until = performance.now() + 20000;
 while (!document.querySelector('canvas') && performance.now() < until) await wait(100);
 await wait(6000); // the room seed and the arrival line
-openPause();
+openPause('options');
 await wait();
 document.querySelector<HTMLButtonElement>('[data-act="more"]')!.click();
 await wait();
