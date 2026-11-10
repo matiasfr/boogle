@@ -312,7 +312,11 @@ export function validateRailTrains(s: Railway, stops: (line: number) => readonly
       !int(r.logs, cargo) ||
       !int(r.rails, cargo) ||
       (r.phase === TRAIN_PHASE.STAND && (r.at !== r.to || r.from !== r.dest || r.v0 !== 0)) ||
-      (r.phase === TRAIN_PHASE.RUN && (r.at === r.to || r.from === r.dest || (r.dest - r.from) * dir < 0)) ||
+      // A leg runs somewhere: a halt to another, or from a signal (-1) to a halt or to another signal (Q6 opening the
+      // pier moves the far signal out, so a train held at the old one runs signal to signal). Its length is always
+      // positive, its way the track's.
+      (r.phase === TRAIN_PHASE.RUN &&
+        ((r.at >= 0 && r.at === r.to) || r.from === r.dest || (r.dest - r.from) * dir < 0)) ||
       (r.at >= 0 && r.phase === TRAIN_PHASE.STAND && r.from !== st[r.at]) ||
       (r.to >= 0 && r.dest !== st[r.to]) ||
       (!awake &&

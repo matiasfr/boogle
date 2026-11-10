@@ -1257,11 +1257,22 @@ function layLine2(w: World, tick: number) {
     // The forge's third made thing: Q6 laid casts the breaker on the boiler's old pedestal.
     if (k === LINE2_STATIONS.length - 1 && w.get(Works, worksId(w))!.breaker === 0)
       w.mut(Works, worksId(w))!.breaker = 1;
+    // The pier opens: a train already bound for Far Head as its end still makes that stop once (its riders could not
+    // ask for an end), as if one of them had asked; then it runs on to the pier (review of 4a, P3a).
+    if (k === LINE2_STATIONS.length - 1) {
+      const far = TRAIN_STOPS[LINE2]!.length - 2,
+        n = TRAIN_STOPS[LINE2]!.length;
+      for (const slot of LINE2_SLOTS) {
+        const r = w.get(Train, trainId(w, slot))!;
+        if (r.phase === TRAIN_PHASE.RUN && r.track === 0 && r.to === far)
+          w.mut(Train, trainId(w, slot))!.req = reqAdd(r.req, far, 1, n);
+      }
+    }
   }
 }
 const line2Tick = defineSystem(
   'rail.line2Tick',
-  { writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works], phase: 'tick', order: 1 },
+  { writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
   (w, tick: number) => layLine2(w, tick),
 );
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */

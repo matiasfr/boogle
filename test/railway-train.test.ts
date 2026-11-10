@@ -64,6 +64,7 @@ const standing =
   () =>
     w.s.trains[k]!.phase === TRAIN_PHASE.STAND && w.s.trains[k]!.at === stop;
 /** Train k's arrivals over `ticks`: [stop, the way it came] each. */
+/** The halts train `k` comes to a stand at over `ticks`, with the way it came. */
 function arrivals(w: Fixture, ticks: number, works = false, k = A) {
   const out: [number, number][] = [];
   for (let t = 0; t < ticks; t++) {
@@ -72,7 +73,8 @@ function arrivals(w: Fixture, ticks: number, works = false, k = A) {
       came = trainDir(r);
     if (works) advanceWorks(w, 1);
     else advance(w, 1);
-    if (was === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND) out.push([r.at, came]);
+    // Halts only: a hold at an end block's signal (at -1) is spacing, not a stop.
+    if (was === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND && r.at >= 0) out.push([r.at, came]);
   }
   return out;
 }
