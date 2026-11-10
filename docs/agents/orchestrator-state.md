@@ -59,6 +59,7 @@ Done on the owner's word, 9 November: the nightly jobs were reinstalled from mai
 
 - **Owner playtest notes, 10 November about 02:40 UTC (live build, desktop):**
   - P3: "due to proximity of e to open, i was able to open the mossy scarf chest from the ground instead of on the platform". The chest's open reach ignores height; it should need you on its platform (vertical limit or a reach test from the platform). Not started.
+  - P3, with an iPad screenshot at the gorge: "the bridge is longer than it needs to be and it's narrow to walk around when i cross. it can be made nicer". The footbridge overshoots both banks; shorten it to the banks and give each end a proper landing with room to pass. Not started. (The same screenshot is the first real-device sight of the new water: shallows, foam lip and caustics render on iPad Safari.)
   - P3: "the water splash particles are extremely dark/gray" after the water rebuild (#1354). With the water agent.
   - Stutter during the arrival fall through the clouds "until it jump in", again on a fresh reload. An implementer is diagnosing (what compiles, bakes or uploads during the fall).
   - The pet sits on the seated rider's head: wants the shoulder, or beside the rider on the deck. Train stools: "in the middle and be a low stool like the track layer", rider properly seated. Both with the seated-rider agent.
