@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-10).** Light brainstorm (one agent, three lenses). Mock: [engine-garage-mock.html](../world/engine-garage-mock.html). Owner rulings folded in the same day: cargo cars are an explicit category; trains may be longer than platforms (the passenger cars align); sources load by cargo loaders ([decision log](../decisions.md#decided), 10 November).
+> **Status: answered (2026-11-10).** The owner answered the five questions, each as recommended, with four notes ([answers](#owner-questions-answered-10-november), [what the notes change](#acting-on-the-owners-notes-10-november)); [design review](#design-review-designer-2026-11-10) below. Light brainstorm (one agent, three lenses). Mock: [engine-garage-mock.html](../world/engine-garage-mock.html). Owner rulings folded in the same day: cargo cars are an explicit category; trains may be longer than platforms (the passenger cars align); sources load by cargo loaders ([decision log](../decisions.md#decided), 10 November).
 
 # The train garage (engine-garage)
 
@@ -136,7 +136,7 @@ are the gates: steel from Ring Island ([ring-island](ring-island.md), suggestion
 | Engine | Plough and headlamp, tender (largest current era, [mock-ups](engine-endgame-mockups.md)) | placeholder | steel |
 | Engine | End-game engine (Hauler, Dart, Warden: undecided) | placeholder, locked | later materials |
 | Cars | Passenger car, Four (knifeboard) | **built**, default; Six is the owner's open pick | free |
-| Cars | Passenger roof and lamps | **built, switched off**, no rule ([passenger-car-previz](../plans/passenger-car-previz.md)) | stand-in: copper |
+| Looks | Passenger roof and lamps | **built, switched off**, no rule ([passenger-car-previz](../plans/passenger-car-previz.md)); a look until it has one (owner's note, 10 November) | coins, once the wallet exists |
 | Cargo | Cargo car (stakes and boards; logs and rails) | **built** (`train-view.ts:140`) | free |
 | Cargo | Footing wagon (6 footings) | **built**; arrives free at the Works (below) | free at unlock |
 | Cargo | Bigger orange cradle (more footings a trip) | planned, the second steel pick (ring-island 4) | steel |
@@ -274,6 +274,101 @@ layout constants), `roundhouse-view.ts`'s own `R = 4.8` (fold it into `home.TABL
 the end-game engine's plan, not before the showroom; growing it could itself be an upgrade (question 3).
 `roundhouse-view.ts` is being edited on the v26 branch now, so any Roundhouse build waits for v26 to land.
 
+## Acting on the owner's notes (10 November)
+
+### (a) The ground the grown Roundhouse needs: keep it clear
+
+Measured on layout B (`home-station.ts`, run through `TABLE`, `stallFrame`, `roadAt` and `PROPS`). Today the Roundhouse
+reaches 17.5 m from the table's centre on the stall side. Grown for a 14 m engine it is a 16 m table (radius 8 m), doors
+12 m from the centre and stalls 16 m deep, so it reaches **28 m**.
+
+**Keep-clear constraint for the rail map and the station plan** (nothing built, planted or routed inside it):
+
+- **The table:** a circle of 10 m radius (the 8 m deck and a 2 m walk round it), centred 3.2 m beyond today's centre
+  along the spur's own line, so the spur's end stays where it is. Road 2 passes 13.0 m from today's centre; the grown
+  deck's rim must not come nearer than about 5 m to road 2's centreline, which is why the centre moves out and not the
+  rim in.
+- **The stalls:** a fan from that centre out to **30 m**, across the stall bearings 160°, 190° and 220° with 15° each
+  side (145° to 235°): about 700 m² of level ground at the table's height (y 18). At 12 m the 30° spacing leaves 6.2 m
+  between door centres, enough for a 4.8 m frame.
+- **The approach:** the ground between road 2 (s 0 to 35) and the table, kept free so the spur can be relaid on a wider
+  curve. Today's 15 m radius through 60° is tight for a 14 m engine; allow 25 m.
+- **Height:** 4.6 m clear over the spur, the deck and the stall doors (Warden's stacks are 4.1 m).
+
+What stands in it today: only the stone yard prop (`PROPS.yard`, 12.9 m from the centre), which moves when the table
+grows. The nearest track to the grown stalls' backs is 27 to 37 m away and the hall is 31 m or more, so neither is
+touched. Not measured: whether the terrain is level out to 30 m on the stall side, and what the whole-map blockout puts
+there. Today's production Roundhouse (`SHED_TABLE`, in the village between the platform, the forge wall and its stall)
+has no such room; the growth assumes Home has moved to layout B.
+
+### (b) Lines long enough to be worth an upgrade
+
+A speed fit's saving depends on the run. From `trainLegTicks`, nonstop from a stand, 20 → 25 m/s at 3.5 m/s²:
+
+| Run | Example | Now | With the longer boiler | Saved |
+| --- | --- | --- | --- | --- |
+| 157 m | Village to the Quarry | 13.6 s | 13.4 s | 0.2 s (1%) |
+| 193 m | line 1, Village to the Camp | 15.4 s | 14.9 s | 0.5 s (3%) |
+| 300 m | | 20.8 s | 19.2 s | 1.6 s (8%) |
+| 500 m | | 30.8 s | 27.2 s | 3.6 s (12%) |
+| 710 m | line 2 today, Village to the Pier | 41.2 s | 35.5 s | 5.7 s (14%) |
+| 1.0 km | | 55.8 s | 47.2 s | 8.6 s (15%) |
+| 1.2 km | line 2 to the island (v26) | 65.8 s | 55.2 s | 10.6 s (16%) |
+| 2.0 km | | 105.8 s | 87.2 s | 18.6 s (18%) |
+| 3.0 km | | 155.8 s | 127.2 s | 28.6 s (18%) |
+
+Three things follow.
+
+- **Under about 115 m a train never reaches 20 m/s**, so more top speed does nothing at all, and a stop on request
+  cuts a long line into short runs of exactly that kind.
+- **A 25% faster engine can never save more than 20% of a trip**, however long the line. To reach the 20 to 40% band
+  of [incremental-game-maths](../research/incremental-game-maths.md) by speed alone a fit must be a bigger step:
+  20 → 30 m/s saves 29% over 2 km. Or it must bring something besides speed, which is why the longer boiler also
+  pulls a car.
+- **Capacity is felt on any line**, short or long: a car, a bigger cradle or a faster loader changes what a trip
+  carries, and is worth offering wherever the job still needs three or more trips at the old size.
+
+**Rule of thumb** (a default, logged):
+
+1. A speed fit is offered on a line only when it saves **at least 10 s end to end**. At today's step that is a line
+   of about **1.1 km or more**. Line 2 qualifies once it reaches the island; line 1 (193 m) never does.
+2. A new main line in the rail map should be **at least 1 km end to end, and 1.5 to 3 km where the ground allows**,
+   so each engine fit on it is felt. A short branch gets capacity, loader or acceleration fits, never top speed.
+3. The screen shows the saving for the line being upgraded, so a fit that does nothing there is never offered there.
+
+Throughput on line 2 to the island, one train, a round trip of two runs and three 5 s stands (147 s now, 125 s with
+the longer boiler): footings 2.5 → 2.9 a minute at 6 a trip; a bigger cradle or a second wagon changes that in
+proportion; rails and logs 13.1 → 15.3 a minute at 32 a trip. Planned lines are not laid out yet (the rail map is being
+written), so their rows are the length rows above.
+
+### (c) Functional and cosmetic, kept apart
+
+The rail has two groups, visibly separated, each with a small heading:
+
+- **Upgrades** (they change what the train does, and may change its look too): **Engine, Cars, Cargo.** Priced in
+  material. Each shows readouts and the line preview.
+- **Looks and sounds** (they change nothing the train does): **Looks, Whistle.** Priced in coins once the wallet
+  exists. No readouts; the card says "The look only", and a whistle's is "Hear it".
+
+Rules: an entry is in one group only. Anything with no rule is a look until it gets one, so the passenger car's roof
+and lamps move from Cars to Looks. A look can never change a number. The Design Table's train slots (a flag, a side
+accessory, a chimney accessory) are the Looks entries, with paint beside them.
+
+### (d) The preview of what a functional fit does
+
+Beyond the readout numbers, three things show the effect:
+
+1. **On the engine:** in After, the works engine's wheels turn and it chuffs at the previewed speed where it stands.
+2. **The line strip:** under the picture, the line drawn as a strip with its halts named, and two small trains running
+   the same trip, "Now" above and "After" below, started together, so After pulls ahead and arrives first, labelled
+   "55 s, 11 s sooner". Both run from `trainLegAlong`, so the race is the real timetable sped up.
+3. **What reaches the far end a minute:** one line per load the fit changes ("Footings reaching the island a minute:
+   2.5 → 2.9"), from the trip's load and the round trip. For a car or a cradle the strip's After train carries the
+   larger load drawn on it.
+
+**The first build includes** the line strip and the per-minute lines for the longer boiler, and the wheels and chuff on
+the table. The loads drawn on the strip's trains come with the consist strip.
+
 ## Shape
 
 - **Sync:** the garage view is Local. Fits are lockstep facts: a per-line consist and engine fit on the existing `Shed`
@@ -282,9 +377,11 @@ the end-game engine's plan, not before the showroom; growing it could itself be 
   `trains` today.
 - **Reuses:** engine-kit nodes and `engine_*_long`, roundhouse-view's bolt-on, `trainLegTicks`, the pause card styles
   (`src/features/pause.css`), the shared-moment card, the action interface (Interact, Back).
-- **Smallest first build (view only):** the garage at the table, with the pattern engine, the five categories, the real
+- **Smallest first build (view only):** the garage at the table, with the pattern engine, the five categories in their two groups (Upgrades: Engine, Cars,
+  Cargo; Looks and sounds: Looks, Whistle), the real
   states (boiler fitted; longer boiler shown "Needs steel"; Four seats; cargo car; footing wagon once coupled), the
-  ghost and Before / After for the longer boiler, and its three readouts. No op, no wire, no save, no `WORLD_NS`. Files:
+  ghost and Before / After for the longer boiler, its readouts (only those the part changes), and the functional
+  preview: wheels and chuff at the previewed speed, the line strip and what reaches the island a minute. No op, no wire, no save, no `WORLD_NS`. Files:
   new `src/features/garage.ts` and `garage.css` (plugin DOM), new `src/entities/railway/garage-view.ts` (pattern engine,
   ghost, camera), a post and hook in `roundhouse-view.ts` (after v26), the engine kit, and a pure readout helper over
   `trainLegTicks`. Then **fit 1** rides Ring Island build 2: the steel in the bay, the op, the per-line fact (a saved
@@ -311,23 +408,32 @@ everyone?" · "Yes, fit it" · "Not yet" · "Before" · "After" · "Hear it" · 
 · "Passenger cars stop here" · "Too long for the line's end" · "Nothing can load this". The fit card reuses the boiler's
 pattern; its words for the longer boiler are not drafted (the owner's, as "Steam" was).
 
-## Open questions
+## Owner questions answered (10 November)
 
-1. **Where does the engine on the table come from?** Recommended: **a works copy the Roundhouse keeps, wearing every fit
-   the room has; real trains take a fit at their next Home stop.** Others: call a real line-2 train onto the table
-   (it leaves service while someone looks, and breaks "line trains never turn on the table"); no table, frame the real
-   train at its Home stop (it leaves after a 5 s dwell). Answer: ___
-2. **A new resource's first car: free at its unlock, or bought here?** Recommended: **free at the unlock** (the kiln
-   lights, the wagon rolls out); the screen shows it owned and sells better ones. Bought here risks a soft lock (no
-   wagon, no pier). Answer: ___
-3. **How does the Roundhouse grow for later engines?** Recommended: **keep 9.6 m now; growing the table and stall is
-   itself an upgrade, planned with the end-game engine.** Others: build it to the end-game size now (about a 16 m table
-   and 16 m stalls); keep 9.6 m for good and never bring big engines to the table. Answer: ___
-4. **Where do the map and the logistics view live?** Recommended: **the Roundhouse holds the garage only; the Home
-   hall's live line map and the halt boards grow into the map and a small logistics readout.** Others: the Roundhouse
-   as the one rail-management building for all three; a new signal box beside Home. Answer: ___
-5. **Are cars bought per line or per train?** Recommended: **per line: every train on a line runs the same cars, bought
-   once.** Other: per train. Answer: ___
+The owner's message, verbatim:
+
+> Engine garage: answers
+>
+> 1. Where does the engine on the table come from? A works copy the Roundhouse keeps, wearing every fit the room has;
+>    real trains take a fit at their next Home stop (recommended)
+> 2. A new resource's first car: free at its unlock, or bought here? Free at the unlock (the kiln lights, the wagon
+>    rolls out); the screen shows it owned and sells better ones (recommended)
+> 3. How does the Roundhouse grow for later engines? Keep 9.6 m now; growing the table and stall is itself an upgrade,
+>    planned with the end-game engine (recommended)
+> 4. Where do the map and the logistics view live? The Roundhouse holds the garage only; the Home hall's live line map
+>    and the halt boards grow into the map and a small logistics readout (recommended)
+> 5. Are cars bought per line or per train? Per line: every train on a line runs the same cars, bought once
+>    (recommended)
+>
+> Notes: For answer 3. we should make sure the map can accommodate the growing scale. If we're upgrading per train
+> line, then lines should be plenty long where it's worth the upgrade. Also maybe we should split purely cosmetic
+> upgrades from functional ones in the UI (can also have a visual change). And maybe we should have some preview of
+> what the functional change will do to speed/ resource gathering/moving etc.
+
+All five are decided ([decision log](../decisions.md#decided), 10 November). The other options considered were: a real
+train called onto the table, or the real train framed at its platform (1); bought here (2); built to the end-game size
+now, or kept small for good (3); the Roundhouse as the one rail-management building, or a new signal box (4); per train
+(5).
 
 ## Parked
 
@@ -345,3 +451,150 @@ pattern; its words for the longer boiler are not drafted (the owner's, as "Steam
 - A test run from the table (a ghost train round the line at the previewed speed).
 - Paint and whistles, once the wallet exists.
 - Loader upgrades as their own small garage at each source.
+
+## Design review (designer, 2026-11-10)
+
+Written across the owner's answers of the same day, so his five answers appear here as decided calls.
+
+Read for this: DESIGN.md, owner-calls, the decision index and its 2, 6, 9 and 10 November entries, the newest playtest
+(10 November), [incremental-game-maths](../research/incremental-game-maths.md),
+[upgrade-economy](../research/upgrade-economy.md), [ui-patterns](../research/ui-patterns.md),
+[route-contract](../research/route-contract.md) and
+[progression-flow-layout](../research/progression-flow-layout.md); the code at `home-station.ts:145`–`165`,
+`cars.ts:10`–`24`, `railway-train.ts`, `railway-systems.ts:800`–`900` and `railway-works-layout.ts:32`–`33`;
+`npm run loop`; the mock at 1280 and 400 px; and two stills of today's production Roundhouse (`--rail-seed wagon-on`,
+from the planned garage camera and from 30 m along line 2's platform). Not seen: layout B's Roundhouse in the game
+(`?home=b`), any motion, and a phone in the game.
+
+**Fit and order** (game-direction check). Outcome: the room picks its train's next part as a shared, visible moment (6,
+7, 11), at the place the 2 November Design Table gave the job. The view-only build is parallel work with one
+integration dependency (v26's edits to `roundhouse-view.ts`); fit 1 needs Ring Island build 2's steel; consists need
+the v26/v27 block rules. Nothing here reorders the Ring Island work or waits for the owner.
+
+### The calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | The train's upgrade screen lives at the Roundhouse | Decided | Design Table, 2 November ("the roundhouse is where you unlock, upgrade, customize and send out trains, with a light management feel"); owner seed, 10 November |
+| 2 | It opens only by Interact at the table; no menu from anywhere; the works board stays the tree and fits nothing | Decided | 9 November, upgrade choices are made in the world |
+| 3 | Anyone fits, for the whole room | Decided | 6 November; 9 November |
+| 4 | A part waits in the world beside its machine before it can be fitted | Decided | 9 November, boiler first |
+| 5 | The longer boiler is engine A's upgrade and the first steel pick, 20 → 25 m/s on line 2; the bigger cradle is second | Decided | 10 November |
+| 6 | Cargo cars are an explicit category | Decided | Owner seed, 10 November |
+| 7 | Trains may run past platforms; the passenger car aligns; each source has a loader | Decided | 10 November |
+| 8 | A works copy stands on the table wearing the room's fits; real trains take a fit at their next Home stop | Decided | Owner, 10 November, answer 1. Finding 2 |
+| 9 | A new resource's first car is free at its unlock; the screen shows it owned and sells better ones | Decided | Owner, 10 November, answer 2. Finding 1 |
+| 10 | The Roundhouse stays 9.6 m; growing table and stall is an upgrade planned with the end-game engine; the map keeps the ground | Decided | Owner, 10 November, answer 3 and note. Finding 6 |
+| 11 | The Roundhouse holds the garage only; the hall's line map and the halt boards grow into the map and a logistics readout | Decided | Owner, 10 November, answer 4 |
+| 12 | Cars are bought per line | Decided | Owner, 10 November, answer 5. Finding 8 |
+| 13 | Functional upgrades and cosmetic ones are split on the screen | Decided in kind ("maybe we should split"); the layout is a Default | Owner note, 10 November. Two headed groups on one rail: Upgrades (Engine, Cars, Cargo), Looks and sounds (Looks, Whistle); section (c) |
+| 14 | A functional fit previews what it does to speed and to what gets moved | Decided in kind; the form is a Default | Owner note, 10 November. Wheels and chuff, the line strip, per-minute lines; section (d) |
+| 15 | Passenger car Four by default; the depot cart stays 24 rails and is not a train car | Decided | 10 November; 9 November |
+| 16 | Train looks are shared, bought from the wallet, in three slots (flag, side accessory, chimney accessory) | Decided, and the entries here depart from it | 6 November; Design Table. Finding 7 |
+| 17 | The longer boiler also pulls one more car (3 → 4) | New | **Take it, with the fourth place filled in the same build by steel's own car.** Finding 3, question 1 |
+| 18 | An engine has a car limit at all ("Cars it pulls") | New | Take it: 4 is what Home's road 2 holds, so the rule and the yard agree |
+| 19 | Fits are priced in counted material from the room's store while the wallet is unbuilt | New | **Take it from the second steel pick on; the first steel fit is the part itself, uncounted.** Finding 4 |
+| 20 | The garage is a framed screen that takes your camera in a world that never pauses | New | Take it (it bends 11, in one place only). Finding 5 |
+| 21 | When the garage first opens | New (the brief is silent) | **When the footing wagon has gone out and the table has no other job.** Finding 9 |
+| 22 | Line 2's second train gets its own footing wagon free | New | It follows from per line (call 12), and it doubles footings to the ring. Finding 8 |
+| 23 | A second footing wagon as a purchase | New | Not in the first list until footings have a job after the Meet. Finding 8 |
+| 24 | Players can change a consist's order; the purchase check refuses a broken one with a reason | New | **Change it: no reordering; an entry that can't be fitted is shown locked with its reason, never offered and then refused.** Finding 10 |
+| 25 | A speed fit is offered on a line only when it saves 10 s end to end; new main lines are at least 1 km | Default | From the owner's note; section (b). Tunable |
+| 26 | Loaders ride a short gantry (about 8 m); their upgrades are fitted at the source and listed read-only here | Default | Follows 10 November and 9 November. Finding 11 |
+| 27 | Loaders replace only repeat carries past the second; rope hauls and help-carry stay | Default | Ring Island's grind budget |
+| 28 | Cars are added or upgraded, never removed | Default | Nothing can be un-bought into a soft lock |
+| 29 | The passenger car stands directly behind the engine; one stopping mark per halt | Default | Follows 10 November; the loop's second mark is flagged for v27 |
+| 30 | A real train takes the fit while standing at the Village during its 5 s dwell | Default | Keep the dwell: a quick swap with a puff on the real train; the full bolt-on is the table's |
+| 31 | Enter in 0.6 s, leave in 0.4 s; camera 7–8 m out, 1.6 m up, nudge ±30°, zoom 0.8–1.2× | Default | Tunables |
+| 32 | Leaving: Back, or any move input | Default, changed | **Back only.** Move input has to walk the list on a pad |
+| 33 | Your Buddy stays at the post; "Pip is looking" tag; a friend's ghost is not drawn | Default, amended | The tag names the part ("Pip is looking at the longer boiler") |
+| 34 | Fit is two steps: Fit, then "Fit it for everyone?" | Default, changed | **Hold to fit (about 0.8 s, the little guys lifting the part as the ring fills), no dialog.** Question 2 |
+| 35 | Two presses at once fit once; the second is refused silently | Default | The second presser sees the same bolt-on |
+| 36 | Everyone at the table gets the bolt-on; others get the card on first sight of a train wearing it | Default | Follows the Meet's rule |
+| 37 | Felt readouts, no bars; the change in a second colour | Default, amended | Show only readouts the selected part changes |
+| 38 | Coins shown as "—" until the wallet exists | Default, changed | Looks show no price until there is a wallet |
+| 39 | The passenger car's roof and lamps sit under Cars at a copper price | Default, changed | A look until it has a rule (section (c)). Question 3 |
+| 40 | Stand-in prices (6, 10, 4, 4 steel); the plough needs the longer boiler | Default | Stand-ins, tuned when the steel works has a rate |
+| 41 | The garage is closed while the shunt runs ("The table's busy") | Default | Moot under call 21; keep the line for any later shunt |
+| 42 | Strings | Default | Drafts for the owner; none are The Boogler's. Suspect: "Fit it for everyone?" and "Not yet" (call 34), "Nothing can load this" and "Too long for the line's end" (call 24) |
+| 43 | First build: the view only, no op, wire, save or `WORLD_NS` | Default | **Take it.** Finding 12 |
+
+### Findings
+
+1. **The free first car needs a pointer, not a price.** Decided: free at the unlock. One fact for whoever builds the
+   next resource: today's wagon does not roll out when the kiln lights. It goes out after someone puts eight rails on
+   the cradle and turns the table (`railway-systems.ts:860`–`899`), and `npm run loop` lists stall, cradle and table
+   as three of the route's five beats with no cue; the owner on 10 November "didn't know what to do at the stall and
+   cradle, or why to turn the table". So "the screen shows it owned" should also carry the moment the car joins: the
+   Cargo strip, and the works board, say that the wagon is on line 2 and what it carries. A later resource's first
+   car should arrive with its unlock and no errand of its own.
+2. **The works copy: two conditions.** The stills add a reason for it: from 30 m along the platform today's table is a
+   flat grey disc that nothing marks, and an engine standing on it is the landmark that says engines are worked on
+   here. Conditions: the copy wears exactly the room's state and a preview is only ever the ghost (11, "what's on
+   screen is true"); and since the far train lags by up to a round trip (about two and a half minutes), the fit card
+   and Home's departure board say which train comes in for it next.
+3. **Pulling a fourth car is right, but a number is not a payoff (question 1).** Section (b) shows a 25% faster engine
+   can never save more than 20% of a trip, and saves 16% to the island: under
+   [incremental-game-maths](../research/incremental-game-maths.md)'s band, which also asks for "at least two
+   opportunities to enjoy it". "Cars it pulls: 3 → 4" reads as power only if a fourth car is there to couple. Steel is
+   the new resource of that build, line 2 already runs three cars and Home's road 2 holds exactly one more, so steel's
+   own free first car is the fourth. Build them together.
+4. **The first steel fit is the part, not six steel.** The mock prices the longer boiler at "6 steel", but the Ring
+   Island decision is that steel comes home as the boiler, and the 9 November rule is a part waiting beside its
+   machine. Counting starts with the second pick. Two rules for the counted store: it is a physical stack in the bay
+   that shrinks when a fit is made, and nothing the main route needs is priced in a material that can run out (rule 3
+   of [progression-flow-layout](../research/progression-flow-layout.md#the-rules-as-lenses): keys can't be lost). Say
+   in the brief whether the steel works casts without end.
+5. **The mock still reads as a shop page, not a racing game's garage.** After today's edit it has the two groups, the
+   line strip and no dead readout. It is still paper cards on a page: a flat side-on drawing in about a quarter of the
+   frame that does not turn, a priced list beside it, and the selected item's card below.
+   [ui-patterns](../research/ui-patterns.md) (not cited by the brief) says to pick a side per piece of information,
+   the world or a bold overlay; this screen is the overlay and should commit to it. The next version should be one
+   16:9 garage frame: a real render of engine A on the table filling it (the long-boiler nodes are built, so two
+   `look` stills give Before and After), a thin rail on one edge, the parts as a strip, the readouts and the line
+   strip on the picture.
+6. **Scale: the footprint is now stated, with two things unproved.** Section (a) gives the keep-clear numbers. Engine A
+   on the 9.6 m deck is half the deck; with its first car coupled (8.5 m) the table is full, so always show the car.
+   Unproved: level ground out to 30 m on the stall side, and which Roundhouse the garage targets (the brief measures
+   layout B; production draws its own at `SHED_TABLE`, with no room to grow).
+7. **Looks should be the decided slots:** a flag, a side accessory and a chimney accessory, with paint beside them.
+   The mock's teal paint and brass bands are stand-ins.
+8. **Per line gives line 2 a second wagon, which changes Ring Island's pacing.** Two wagons double how often six
+   footings reach the railhead, against a build paced at "cap 6, three loads, about 12 minutes" (ring-island build 1,
+   call 5). Decide it with the consist build and re-run that pacing; until then one wagon stays. The purchasable
+   second wagon needs a use for footings after the Meet before it is listed.
+9. **The first meeting is missing, and the stall is taken until the wagon leaves.** The brief parks the works copy in
+   the stall while the shunt runs, but before the roll-out the stall holds the wagon and the shunter. After the wagon
+   couples the table has no job (10 November: it is not offered again). So the garage opens then: the works engine
+   comes out onto the empty table, and a familiar place becomes newly playable. The showroom turn is a Local display
+   spin and does not reopen "Turn the table". The arrival needs a storyboard and a real sign at the table (owner, 9
+   November: signs in the world).
+10. **Don't sell and then refuse.** A check that answers "Nothing can load this" after the press is a failure the
+    player couldn't foresee (7). Players do not reorder cars (the core loop: "no routing or quotas"); the game orders
+    them, passenger car first, and the gantry is the design's own tolerance.
+11. **Loaders.** A loader upgrade's readout is the same felt unit as the cars' (what reaches the far end a minute),
+    and the garage's read-only "Fitted at the Works" row is what joins the two kinds of upgrade point, so it belongs
+    in the first Cargo build.
+12. **What the first build must have to be the screen the owner asked for.** (a) The real engine on the real table,
+    turning, at least half the frame. (b) A staged frame: the stills show the backdrop from the planned camera is the
+    bright village, the forge wall and the sky, with the stall a small shed behind, so "the stall's interior is the
+    backdrop" is not what the camera sees. Face the open stall, darken and soften what is outside the table (a Local
+    vignette and focus), and let the world carry on behind. Prove it with a still before building the UI. (c) The
+    camera moves with the category. (d) The ghost arrives within 100–300 ms of the selection, with a sound ("input
+    gets instant feedback"). (e) Before / After. (f) The two groups, and readouts on the picture. (g) The functional
+    preview of section (d). (h) Phone: the picture on top, the parts as one strip under it; at 400 px the line strip's
+    labels need their own size, since scaled down they are about 8 px. Without (a), (b) and (g) it will be judged as
+    a menu.
+13. **Co-op, solo and the route contract.** Solo works unchanged. Together, the table at Home is a natural place to
+    meet (lens 8), and the named tag and the visible lift carry the shared moment. Nothing strands anyone: no train is
+    held, Back always leaves, the first car is free. The garage adds no travel edge and no ability; a faster train and
+    a fourth car skip distance and trips, never work, so no reach check is needed for the view-only build.
+
+### Owner questions
+
+1. **The longer boiler.** (a) **Recommended: faster (66 s → 55 s to the island) and pulls a fourth car, filled by
+   steel's own car.** (b) Faster only. (c) A bigger speed step and no extra car. Answer: ___
+2. **Committing a fit.** (a) **Recommended: hold for about a second while the little guys lift the part; no dialog.**
+   (b) Press Fit, then confirm. Answer: ___
+3. **Roof and lamps on the passenger car.** (a) **Recommended: a look, until it has a rule.** (b) An upgrade, with a
+   rule to be written. Answer: ___

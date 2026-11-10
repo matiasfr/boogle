@@ -204,6 +204,61 @@
   .stage.wide svg {
     min-width: 600px;
   }
+  .grp {
+    font: 800 12px/1.2 var(--font-body);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    align-self: center;
+    white-space: nowrap;
+  }
+  .grp.cos {
+    border-left: 3px solid var(--line);
+    padding-left: 10px;
+    margin-left: 4px;
+  }
+  @media (min-width: 860px) {
+    .grp {
+      align-self: flex-start;
+    }
+    .grp.cos {
+      border-left: 0;
+      border-top: 3px solid var(--line);
+      padding: 10px 0 0;
+      margin: 6px 0 0;
+      width: 100%;
+    }
+  }
+  .rail .btn.cos {
+    border-style: dashed;
+  }
+  .effect {
+    margin-top: 10px;
+    background: var(--chip);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+  .effect h4 {
+    margin: 0 0 4px;
+    font: 400 17px/1.2 var(--font-display);
+    letter-spacing: 0.3px;
+  }
+  .effect svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .effect .to {
+    color: var(--preview);
+    font-weight: 800;
+  }
+  .answered {
+    margin: 10px 0 0;
+    padding-left: 20px;
+  }
+  .answered li {
+    margin-bottom: 6px;
+  }
   .stagebar {
     display: flex;
     flex-wrap: wrap;
@@ -475,7 +530,8 @@
     <p class="sub">
       The Roundhouse turntable at Home, framed as the train's garage. You walk up to the post by the table and press
       Interact; there is no menu for this anywhere else. The engine on the table is the works copy, wearing the room's
-      fits. Brief: docs/brainstorms/engine-garage.md.
+      fits. Upgrades that change what the train does are grouped apart from looks and sounds, and each one previews its
+      effect on the line. Brief: docs/brainstorms/engine-garage.md.
     </p>
     <div class="sketchctl" style="margin-top: 10px">
       <span>Sketch controls:</span>
@@ -505,6 +561,7 @@
       <div class="legend">
         <span>Yellow dashed: the previewed part, not fitted yet.</span><span id="legend2"></span>
       </div>
+      <div class="effect" id="effect" aria-live="polite"></div>
     </div>
 
     <aside>
@@ -533,9 +590,26 @@
   </section>
 
   <section class="card" aria-label="Open questions">
-    <h2>Open questions</h2>
+    <h2>Answered, 10 November</h2>
+    <ol class="answered">
+      <li>
+        The engine on the table is a works copy the Roundhouse keeps, wearing every fit the room has; real trains take a
+        fit at their next Home stop.
+      </li>
+      <li>A new resource's first car is free at its unlock; the screen shows it owned and sells better ones.</li>
+      <li>
+        The Roundhouse stays 9.6 m now; growing the table and stall is itself an upgrade, planned with the end-game
+        engine. The map keeps the ground for it clear.
+      </li>
+      <li>
+        The Roundhouse holds the garage only; the Home hall's line map and the halt boards grow into the map and a small
+        logistics readout.
+      </li>
+      <li>Cars are bought per line: every train on a line runs the same cars, bought once.</li>
+    </ol>
+    <h2 style="margin-top: 16px">Open questions</h2>
     <p class="sub">
-      From the brief. The recommended answer is marked; the build goes ahead on it unless you pick otherwise.
+      From the design review. The recommended answer is marked; the build goes ahead on it unless you pick otherwise.
     </p>
     <form id="qs" style="margin-top: 12px"></form>
     <label for="notes"><b>Notes</b></label>
@@ -552,11 +626,11 @@
   (() => {
     const $ = (id) => document.getElementById(id);
     const CATS = [
-      { id: 'engine', name: 'Engine' },
-      { id: 'cars', name: 'Cars' },
-      { id: 'cargo', name: 'Cargo' },
-      { id: 'looks', name: 'Looks' },
-      { id: 'whistle', name: 'Whistle' },
+      { id: 'engine', name: 'Engine', group: 'fn' },
+      { id: 'cars', name: 'Cars', group: 'fn' },
+      { id: 'cargo', name: 'Cargo', group: 'fn' },
+      { id: 'looks', name: 'Looks', group: 'cos' },
+      { id: 'whistle', name: 'Whistle', group: 'cos' },
     ];
     // status: owned (fitted), or bought with cost; free = came with an unlock. part: what it changes on the model.
     const ITEMS = [
@@ -595,10 +669,10 @@
       },
       {
         id: 'roof',
-        cat: 'cars',
+        cat: 'looks',
         name: 'Roof and lamps',
-        desc: 'Built in the game and switched off; no rule yet. Stand-in price.',
-        cost: { copper: 3 },
+        desc: 'Built in the game and switched off. It has no rule, so it is a look until it gets one.',
+        coins: true,
         part: { roof: true },
       },
       {
@@ -857,14 +931,14 @@
         rows.push(
           `<div class="stat"><span>${label}</span><b>${a === b ? a : `${a} <span class="to">→ ${b}</span>`}</b></div>`,
         );
-      if (it.cat === 'engine' || it.cat === 'looks') {
+      if (it.cat === 'looks') {
+        rows.push(`<div class="stat"><span>What it changes</span><b>The look only</b></div>`);
+      } else if (it.cat === 'engine') {
         row('Village to the island', trip(L0.long ? 54 : 65), trip(L1.long ? 54 : 65));
         row('Cars it pulls', pulls(L0), pulls(L1));
-        row('Village to the Quarry', trip(L0.long ? 13.4 : 13.6), trip(L1.long ? 13.4 : 13.6));
       } else if (it.cat === 'cars') {
         const seats = (L) => (L.six ? 6 : 4);
         row('Seats', seats(L0), seats(L1));
-        row('Riders under a roof', L0.roof ? 'yes' : 'no', L1.roof ? 'yes' : 'no');
       } else if (it.cat === 'cargo') {
         const foot = (L) => (L.cradle ? 9 : 6) * (L.wagon2 ? 2 : 1);
         row('Footings a trip', foot(L0), foot(L1));
@@ -878,6 +952,64 @@
       $('stats').innerHTML = rows.join('');
       const h = $('hear');
       if (h) h.addEventListener('click', () => toast('Toooot (a sketch has no sound)'));
+    }
+
+    // ---- the effect on the line: the same trip before and after, and what reaches the far end a minute.
+    // Sketch numbers from the brief's table: Village to the island 65.8 s at 20 m/s, 55.2 s at 25 m/s; a round trip
+    // is two runs and three 5 s stands; one train.
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function effect() {
+      const el = $('effect');
+      const it = item(S.sel);
+      const cat = CATS.find((c) => c.id === it.cat);
+      if (cat.group === 'cos') {
+        el.innerHTML =
+          '<h4>On the line</h4><span class="note">Looks and sounds change nothing on the line: no speed, no load. An upgrade may change the look too; a look never changes what the train does.</span>';
+        return;
+      }
+      const L0 = look(S.owned);
+      const L1 = S.owned.has(it.id) ? L0 : look(new Set([...S.owned, it.id]));
+      const run = (L) => (L.long ? 55.2 : 65.8);
+      const round = (L) => 2 * run(L) + 15;
+      const foot = (L) => (L.cradle ? 9 : 6) * (L.wagon2 ? 2 : 1);
+      const perMin = (n, L) => ((n * 60) / round(L)).toFixed(1);
+      const x0 = 40,
+        x1 = 600;
+      const dot = (y, sec, fill, label) => {
+        const k = Math.min(1, sec / 80).toFixed(3);
+        const anim = still
+          ? ''
+          : `<animate attributeName="cx" values="${x0};${x1};${x1}" keyTimes="0;${k};1" dur="8s" repeatCount="indefinite"/>`;
+        return `<circle cx="${still ? x1 : x0}" cy="${y}" r="9" fill="${fill}" stroke="var(--line)" stroke-width="2">${anim}</circle><text x="${x0 - 30}" y="${y + 5}" font-family="Figtree, sans-serif" font-size="13" font-weight="800" fill="var(--ink-soft)">${label}</text>`;
+      };
+      const halts = [
+        ['Village', 0],
+        ['Quarry', 0.115],
+        ['Pier', 0.6],
+        ['Island', 1],
+      ];
+      let g = '';
+      for (const y of [34, 62]) g += `<rect x="${x0}" y="${y - 2}" width="${x1 - x0}" height="4" fill="var(--metal)"/>`;
+      for (const [n, f] of halts) {
+        const x = x0 + (x1 - x0) * f;
+        g += `<rect x="${x - 2}" y="24" width="4" height="48" fill="var(--line)" opacity="0.45"/><text x="${x}" y="16" text-anchor="${f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}" font-family="Figtree, sans-serif" font-size="13" font-weight="700" fill="var(--ink)">${n}</text>`;
+      }
+      g += dot(34, run(L0), 'var(--stone)', 'Now') + dot(62, run(L1), 'var(--preview)', 'After');
+      const saved = Math.round(run(L0)) - Math.round(run(L1));
+      const line = (label, a, b) =>
+        `<div class="stat"><span>${label}</span><b>${a === b ? a : `${a} <span class="to">→ ${b}</span>`}</b></div>`;
+      el.innerHTML =
+        `<h4>On line 2: the same trip, now and after</h4>` +
+        `<svg viewBox="0 0 640 84" role="img" aria-label="Two trains run Village to the island: now ${Math.round(run(L0))} seconds, after ${Math.round(run(L1))} seconds">${g}</svg>` +
+        `<div class="stats" style="margin: 8px 0 0">` +
+        line(
+          'Arrives',
+          `${Math.round(run(L0))} s`,
+          saved ? `${Math.round(run(L1))} s, ${saved} s sooner` : `${Math.round(run(L1))} s`,
+        ) +
+        line('Footings reaching the island a minute', perMin(foot(L0), L0), perMin(foot(L1), L1)) +
+        line('Rails and logs reaching the island a minute', perMin(32, L0), perMin(32, L1)) +
+        `</div><span class="note">One train, there and back with its stands. Sketch numbers; the game computes them from the line's own timetable.</span>`;
     }
 
     function checks() {
@@ -900,12 +1032,20 @@
     }
 
     function render() {
-      $('rail').innerHTML = CATS.map(
-        (c) =>
-          `<button class="btn" role="tab" type="button" data-cat="${c.id}" aria-selected="${S.cat === c.id}">${c.name}</button>`,
-      ).join('');
+      const tab = (c) =>
+        `<button class="btn${c.group === 'cos' ? ' cos' : ''}" role="tab" type="button" data-cat="${c.id}" aria-selected="${S.cat === c.id}">${c.name}</button>`;
+      $('rail').innerHTML =
+        `<span class="grp">Upgrades</span>` +
+        CATS.filter((c) => c.group === 'fn')
+          .map(tab)
+          .join('') +
+        `<span class="grp cos">Looks and sounds</span>` +
+        CATS.filter((c) => c.group === 'cos')
+          .map(tab)
+          .join('');
       const cat = CATS.find((c) => c.id === S.cat);
       $('catTitle').textContent = cat.name;
+      effect();
       const list = ITEMS.filter((i) => i.cat === S.cat);
       $('items').innerHTML = list
         .map((i) => {
@@ -1021,7 +1161,7 @@
     });
     $('pipBtn').addEventListener('click', () => {
       S.pip = !S.pip;
-      $('pipText').textContent = 'Pip is looking at Paint';
+      $('pipText').textContent = 'Pip is looking at the ' + item(S.sel).name.toLowerCase();
       render();
     });
     const themes = ['auto', 'light', 'dark'];
@@ -1040,39 +1180,23 @@
     // ---- open questions
     const QS = [
       {
-        q: 'Where does the engine on the table come from?',
+        q: 'The longer boiler: speed alone saves 11 s of 65 s to the island. Should it also pull a fourth car?',
         o: [
-          'A works copy the Roundhouse keeps, wearing every fit the room has; real trains take a fit at their next Home stop',
-          'Call a real line-2 train onto the table (it leaves service while someone looks)',
-          'No table: frame the real train at its Home stop',
+          'Yes: faster and pulls four; steel’s own car is what fills the fourth place',
+          'Faster only',
+          'Faster still (a bigger speed step), no extra car',
         ],
       },
       {
-        q: 'A new resource’s first car: free at its unlock, or bought here?',
+        q: 'How do you commit a fit?',
         o: [
-          'Free at the unlock (the kiln lights, the wagon rolls out); the screen shows it owned and sells better ones',
-          'Bought here',
+          'Hold the button for about a second while the little guys lift the part: one action, no dialog',
+          'Press Fit, then confirm "Fit it for everyone?" (this sketch)',
         ],
       },
       {
-        q: 'How does the Roundhouse grow for later engines?',
-        o: [
-          'Keep 9.6 m now; growing the table and stall is itself an upgrade, planned with the end-game engine',
-          'Build it to the end-game size now (about a 16 m table and 16 m stalls)',
-          'Keep 9.6 m for good; big engines never come to the table',
-        ],
-      },
-      {
-        q: 'Where do the map and the logistics view live?',
-        o: [
-          'The Roundhouse holds the garage only; the Home hall’s live line map and the halt boards grow into the map and a small logistics readout',
-          'The Roundhouse is the one rail-management building for all three',
-          'A new signal box beside Home',
-        ],
-      },
-      {
-        q: 'Are cars bought per line or per train?',
-        o: ['Per line: every train on a line runs the same cars, bought once', 'Per train'],
+        q: 'Roof and lamps on the passenger car: a look or an upgrade?',
+        o: ['A look, until it has a rule of its own', 'An upgrade (it needs a rule: what does a roof do?)'],
       },
     ];
     $('qs').innerHTML = QS.map(
@@ -1080,7 +1204,7 @@
         `<fieldset><legend>${i + 1}. ${q.q}</legend>${q.o.map((o, j) => `<label class="opt"><input type="radio" name="q${i}" value="${j}"${j === 0 ? ' checked' : ''}><span>${o}${j === 0 ? '<span class="rec">Recommended</span>' : ''}</span></label>`).join('')}</fieldset>`,
     ).join('');
     function answers() {
-      const lines = ['Engine garage: answers'];
+      const lines = ['Engine garage: round 2 answers'];
       QS.forEach((q, i) => {
         const v = document.querySelector(`input[name="q${i}"]:checked`);
         const j = v ? Number(v.value) : 0;
