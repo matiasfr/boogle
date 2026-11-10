@@ -8,6 +8,7 @@
 import type { Railway } from './railway.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { line2Completed } from './railway-line2.ts';
+import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 
 export type RailWorks = {
   /** 0 none, 1 on the pedestal, 2 taken. */
@@ -43,7 +44,7 @@ export type WorksStage = (typeof WORKS_STAGES)[number];
 export const SEAM_STALL = 1;
 export const SEAM_THROAT = 2;
 
-const wagonFoot = (s: Railway) => s.line2?.train[1]?.foot ?? 0;
+const wagonFoot = (s: Railway) => s.trains.reduce((n, r) => n + r.foot, 0);
 export function footingTotal(s: Railway) {
   const w = s.works,
     h = s.shed;
@@ -52,7 +53,7 @@ export function footingTotal(s: Railway) {
     (h ? h.stall + h.cradle : 0) +
     s.accounts.reduce((n, a) => n + (a.foot ?? 0), 0) +
     s.piles.reduce((n, p) => n + (p.kind === 3 ? p.n : 0), 0) +
-    (s.line2?.train.reduce((n, r) => n + (r.foot ?? 0), 0) ?? 0)
+    wagonFoot(s)
   );
 }
 export const pierNeed = (s: Railway) => WORKS.pier - (s.works?.pierSet ?? 0) - (s.works?.pierRack ?? 0) - wagonFoot(s);
@@ -61,7 +62,7 @@ export function worksStage(s: Railway): WorksStage {
     h = s.shed;
   if (!w || !h || w.breaker === 0) return 'dormant';
   if (w.crossing >= 0) return 'crossing';
-  if (s.line2?.train[1]?.wagon) return 'wagon';
+  if (s.trains.some((r) => r.wagon)) return 'wagon';
   if (h.fitted >= 0) return 'fitted';
   if (h.stall === WORKS.stall) return 'stall';
   if (w.lit >= 0) return 'lit';
@@ -120,16 +121,24 @@ export function validateRailWorks(s: Railway) {
     throw new Error('railway: fitted');
   // The table turns once, only when ready: after the fit, to line 2's road, sending the wagon out.
   if (h.tableRev !== h.table || (h.table === 1 && h.fitted < 0)) throw new Error('railway: table turned early');
-  const t0 = l2.train[0]!,
-    t1 = l2.train[1]!;
-  if (typeof t0.wagon !== 'boolean' || typeof t1.wagon !== 'boolean' || !int(t0.foot) || !int(t1.foot))
-    throw new Error('railway: wagon');
+  // The wagon couples to one line 2 train and stays on it (docs/plans/generic-lines.md, v26).
+  if (s.trains.some((r) => typeof r.wagon !== 'boolean' || !int(r.foot))) throw new Error('railway: wagon');
+  const coupled = s.trains.filter((r) => r.wagon);
+  if (coupled.length > 1) throw new Error('railway: two wagons');
   if (h.ready >= 0 && h.fitted < 0) throw new Error('railway: ready before fitted');
   // Before it couples the wagon is on its way out exactly while the cradle is fitted and the table points at line 2;
   // once coupled it stays, and the table is a toy.
-  if (t1.wagon ? h.ready < 0 : h.ready >= 0 !== (h.fitted >= 0 && h.table === 1))
+  if (coupled.length ? h.ready < 0 : h.ready >= 0 !== (h.fitted >= 0 && h.table === 1))
     throw new Error('railway: wagon rollout');
-  if (t0.foot || t0.wagon || t1.foot > WORKS.wagonCap || (t1.foot > 0 && !t1.wagon) || (t1.wagon && h.fitted < 0))
+  if (
+    s.trains.some(
+      (r, slot) =>
+        (r.wagon && RAIL_TRAINS[slot]!.line !== LINE2) ||
+        r.foot > WORKS.wagonCap ||
+        (r.foot > 0 && !r.wagon) ||
+        (r.wagon && h.fitted < 0),
+    )
+  )
     throw new Error('railway: wagon');
   // Footings: one fills a back, alone.
   for (const a of s.accounts) {

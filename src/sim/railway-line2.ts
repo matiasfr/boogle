@@ -1,6 +1,8 @@
 // Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-systems.ts.
-import { TRAIN, TRAIN_HOME, TRAIN_PHASE, reqValid, trainStopsOf, type RailTrain } from './railway-train.ts';
+import { trainStopsOf } from './railway-train.ts';
+import { LINE2 } from './railway-lines.ts';
+import { railTrainsOf } from './railway-trains.ts';
 import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
@@ -36,7 +38,6 @@ export type RailBoiler = {
 export type RailLine2 = {
   boiler: RailBoiler;
   trains: number;
-  train: RailTrain[];
   forge: RailForge;
   jobs: RailQJob[];
   depot: number;
@@ -118,23 +119,26 @@ export function line2CartStatus(s: Railway): 'off' | 'loading' | 'travelling' | 
   const spec = LINE2_STATIONS[k]!,
     j = l.jobs[k]!;
   const logs = Math.min(spec.bill[0] - j.stock - l.depot, spec.bill[0] - l.depotOut[k]!);
-  return logs > 0 || line2CartWants(s, k) > 0
-    ? c.phase === CART_PHASE.REST
-      ? 'loading'
-      : 'travelling'
-    : 'off';
+  return logs > 0 || line2CartWants(s, k) > 0 ? (c.phase === CART_PHASE.REST ? 'loading' : 'travelling') : 'off';
 }
-export const line2Logs = (l: RailLine2) =>
-  l.forge.used +
-  l.depot +
-  l.cart.logs +
-  l.train[1]!.logs +
-  l.jobs.reduce((n, j) => n + j.stock + j.allocation + j.used, 0);
+/** Line 2's trains' cargo: the Q6 kit aboard any of them. */
+export const line2Aboard = (s: Railway, key: 'logs' | 'rails' | 'foot') =>
+  railTrainsOf(s, LINE2).reduce((n, r) => n + r[key], 0);
+export const line2Logs = (s: Railway) => {
+  const l = s.line2!;
+  return (
+    l.forge.used +
+    l.depot +
+    l.cart.logs +
+    line2Aboard(s, 'logs') +
+    l.jobs.reduce((n, j) => n + j.stock + j.allocation + j.used, 0)
+  );
+};
 export const line2Rails = (s: Railway) =>
   (s.line2?.forge.rack ?? 0) +
   (s.line2?.depotRails ?? 0) +
   (s.line2?.cart.rails ?? 0) +
-  (s.line2?.train[1]?.rails ?? 0) +
+  (s.trains ? line2Aboard(s, 'rails') : 0) +
   s.accounts.reduce((n, a) => n + (a.rails ?? 0), 0) +
   s.piles.reduce((n, p) => n + (p.kind === RAILS ? p.n : 0), 0) +
   (s.line2?.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0) ?? 0) +
@@ -217,7 +221,7 @@ export function validateRailLine2(s: Railway) {
     l.depotOut.reduce((a, b) => a + b, 0) !== l.depotProduced
   )
     throw new Error('railway: depot output');
-  if (l.depot + l.cart.logs + l.train[1]!.logs > l.depotProduced) throw new Error('railway: depot stock');
+  if (l.depot + l.cart.logs + line2Aboard(s, 'logs') > l.depotProduced) throw new Error('railway: depot stock');
   const c = l.cart;
   const road = CART_ROAD.rackCm(LINE2_STATIONS.length - 1);
   if (
@@ -237,7 +241,11 @@ export function validateRailLine2(s: Railway) {
   if (l.pack && f.used < FORGE.bills[0]) throw new Error('railway: pack before the forge bill');
   // The shelf holds rails only for the active, unfunded `shelf` stretch (funding sends what is left back to the forge
   // rack), and never more than its rail bill.
-  if (!int(l.depotRails, 64) || !int(l.shelfOut, 64) || l.depotRails + l.cart.rails + l.train[1]!.rails > l.shelfOut)
+  if (
+    !int(l.depotRails, 64) ||
+    !int(l.shelfOut, 64) ||
+    l.depotRails + l.cart.rails + line2Aboard(s, 'rails') > l.shelfOut
+  )
     throw new Error('railway: shelf bounds');
   if (l.shelfOut) {
     const k = line2Active(s);
@@ -264,30 +272,6 @@ export function validateRailLine2(s: Railway) {
     !int(l.trains, 2147483647, -1)
   )
     throw new Error('railway: boiler');
-  if (l.train.length !== 2) throw new Error('railway: trains');
-  l.train.forEach((r, k) => {
-    const stops = trainStops(s, k),
-      last = stops.length - 1;
-    if (
-      !int(r.phase, 1) ||
-      !int(r.at, last) ||
-      !int(r.to, last) ||
-      (r.sweep !== -1 && r.sweep !== 1) ||
-      !int(r.depart) ||
-      // Two digits a stop, one each way; an end stop has only its way out.
-      !reqValid(r.req, stops.length) ||
-      !int(r.from, stops[last]!, stops[0]!) ||
-      !int(r.dest, stops[last]!, stops[0]!) ||
-      !int(r.v0, TRAIN.speed) ||
-      !int(r.logs, k ? 32 : 0) ||
-      !int(r.rails, k ? 32 : 0) ||
-      (r.phase === TRAIN_PHASE.STAND && (r.at !== r.to || r.from !== r.dest || r.v0 !== 0)) ||
-      (r.phase === TRAIN_PHASE.RUN && (r.at === r.to || r.from === r.dest)) ||
-      (l.trains < 0 &&
-        (r.phase || r.at !== TRAIN_HOME[k] || r.to !== TRAIN_HOME[k] || r.depart || r.req || r.logs || r.rails))
-    )
-      throw new Error('railway: train');
-  });
   if (line2Rails(s) !== f.poured) throw new Error('railway: rail conservation');
 }
 
@@ -298,7 +282,10 @@ export function line2KitOwed(s: Railway) {
     j = l.jobs[5]!;
   if (line2Active(s) !== 5 || j.start >= 0) return { logs: 0, rails: 0 };
   return {
-    logs: Math.max(0, Math.min(32 - j.stock - l.depot - l.cart.logs - l.train[1]!.logs, 32 - l.depotOut[5]!)),
-    rails: Math.max(0, Math.min(32 - j.railStock - l.depotRails - l.cart.rails - l.train[1]!.rails, 32 - l.shelfOut)),
+    logs: Math.max(0, Math.min(32 - j.stock - l.depot - l.cart.logs - line2Aboard(s, 'logs'), 32 - l.depotOut[5]!)),
+    rails: Math.max(
+      0,
+      Math.min(32 - j.railStock - l.depotRails - l.cart.rails - line2Aboard(s, 'rails'), 32 - l.shelfOut),
+    ),
   };
 }

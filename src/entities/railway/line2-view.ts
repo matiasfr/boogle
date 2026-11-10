@@ -2,7 +2,13 @@
 // Q1-Q6 frames, depot racks, route-v2 decks, both gates, the summit switch, Far Head, the boiler and the pier show.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import {
+  railTrainsOf,
+  type RailwayAdapter,
+  type RailwayAccepted,
+  type RailwayCorrection,
+} from '../../adapters/railway.ts';
+import { LINE2 } from '../../sim/railway-lines.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -38,12 +44,12 @@ type Inspection = ReturnType<RailwayAdapter['inspect']>;
 type Line2 = NonNullable<Inspection['line2']>;
 /** The rack's sign keeps the train until the first kit is off it: so the flip back to the count lands as the train
  * unloads at Far Head, not at the fit 500 m away. Trains run, and the kit is still to load or still aboard. */
-const kitComing = (l: Line2) =>
+const kitComing = (l: Line2, s: Inspection) =>
   l.trains &&
   l.active >= 0 &&
   LINE2_STATIONS[l.active]!.feed === 'train' &&
   l.stations[l.active]!.start < 0 &&
-  l.kitOwed.logs + l.kitOwed.rails + l.train[1]!.logs + l.train[1]!.rails > 0;
+  l.kitOwed.logs + l.kitOwed.rails + railTrainsOf(s, LINE2).reduce((n, { row }) => n + row.logs + row.rails, 0) > 0;
 
 export async function createRailwayLine2(
   adapter: RailwayAdapter,
@@ -1000,7 +1006,7 @@ export async function createRailwayLine2(
         targetHead = head();
         panels.update(dt);
       }
-      drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs), owed || kitComing(l));
+      drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs), owed || kitComing(l, state));
       depotSign.update(dt);
       syncSolids(l);
       seaGate.update(dt, l);

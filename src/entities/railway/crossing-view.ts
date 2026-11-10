@@ -560,7 +560,7 @@ export async function createRailwayCrossing(
               : { id: 'railway-foot-take-1', verb: 'Shoulder a footing', at: top, blocked: 'Empty your back first' },
         );
       }
-      const aboard = state.line2.train[1]?.foot ?? 0;
+      const aboard = state.trains.reduce((n, r) => n + r.foot, 0); // on the wagon, whichever train has it
       if (
         state.foot &&
         w.pierSet + w.pierRack + aboard < WORKS.pier &&

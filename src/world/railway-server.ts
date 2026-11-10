@@ -41,7 +41,8 @@ import {
   LINE2_OLD_TRAIN,
 } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
-import { LINE_HALTS, trainAlong, trainSpeed } from '../sim/railway-train.ts';
+import { trainAlong, trainSpeed } from '../sim/railway-train.ts';
+import { RAIL_HALTS, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { railLinePoint } from '../sim/railway-line-path.ts';
 import {
   PIER_FRAME,
@@ -154,10 +155,11 @@ export const RIDER_SPAN = 740;
 /** A passenger's ask is judged against the train's pose now, widened by what it can travel in the lag window (its
  * speed now × RIDER_LAG_TICKS) and by the train's length, all in integer cm. Not replayed from the row's past poses:
  * a replan rewrites the row, which would collapse those to the replan point and refuse a lagging rider. */
-function nearTrain(w: World, line: number, tick: number, actor: Actor) {
-  const id = w.lookup(Train, line);
+function nearTrain(w: World, slot: number, tick: number, actor: Actor) {
+  const id = w.lookup(Train, slot);
   if (id === undefined) return false;
-  const row = w.get(Train, id)!;
+  const row = w.get(Train, id)!,
+    line = RAIL_TRAINS[slot]!.line;
   const p = railLinePoint(line, trainAlong(row, line, tick));
   const travel = Math.ceil(trainSpeed(row, line, tick)) * RIDER_LAG_TICKS;
   return actor.reach(p.x, p.z, RIDER_REACH + travel + RIDER_SPAN);
@@ -222,10 +224,20 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.boilerFit':
       return railInt(e.revision) && near(LINE2_OLD_TRAIN.x, LINE2_OLD_TRAIN.z, LINE2_OLD_TRAIN.reach);
     case 'rail.call': {
-      // From the halt's request lever (on its platform), or aboard that halt's line's train.
-      const h = railInt(e.id, LINE_HALTS.length - 1) ? LINE_HALTS[e.id] : undefined;
+      // From the request lever on the halt's platform for that way (docs/plans/generic-lines.md, 7), or aboard the
+      // train `train` names, which must run on that halt's line. The rule refuses an open end's way in (no train
+      // stands at that platform: Far Head's up one until Q6 opens the pier) and a rider's ask the other way.
+      const h = railInt(e.id, RAIL_HALTS.length - 1) ? RAIL_HALTS[e.id] : undefined;
       if (!h || (e.dir !== -1 && e.dir !== 1)) return false;
-      return (height(h.y) && near(h.x, h.z, h.reach)) || (nearTrain(w, h.line, tick, actor) && actor.cadence(e.op));
+      if (e.train !== undefined)
+        return (
+          railInt(e.train, RAIL_TRAINS.length - 1) &&
+          RAIL_TRAINS[e.train]!.line === h.line &&
+          nearTrain(w, e.train, tick, actor) &&
+          actor.cadence(e.op)
+        );
+      const p = h.platforms[e.dir > 0 ? 0 : 1];
+      return height(p.y) && near(p.x, p.z, p.reach);
     }
     case 'rail.beamTake': {
       const beam = w.get(Beam, w.single(Beam))!;
@@ -328,7 +340,7 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     { server: true },
   );
   sync.onTick((tick) => {
-    railTick(world, tick);
+    railTick(world, tick, rules.tune.get('railTrainHeadPct'));
     commit();
   }, 'railway');
   const touchAll = () => {

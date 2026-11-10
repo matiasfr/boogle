@@ -181,6 +181,14 @@ const supply = {
     at: 'next owner movement update',
     meaning: "Movement speed while a friend's Help carry lifts your footing (no sprint while helped).",
   },
+  railTrainHeadPct: {
+    id: 'railway.trainHeadPct',
+    units: 'percent of an even split',
+    at: 'next train departure from a line end',
+    owner: 'src/sim/railway-trains.ts',
+    meaning:
+      "The headway hold: a train leaves a line's end no sooner than this share of the round trip split between its trains after the last one left it.",
+  },
 } as const;
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;

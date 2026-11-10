@@ -111,6 +111,14 @@ export const TUNABLES = [
     max: 2000,
     label: 'Railway helped footing speed (centimetres per second)',
   },
+  // The trains' headway hold at a line's ends (docs/plans/generic-lines.md, 4; railway-trains.ts TRAIN_HEAD_PCT).
+  {
+    key: 'railTrainHeadPct',
+    def: 75,
+    min: 0,
+    max: 100,
+    label: 'Railway train headway hold (percent of an even split)',
+  },
 ] as const;
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];

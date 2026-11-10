@@ -513,7 +513,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     kiln: () => (s().works?.lit ?? -1) >= 0,
     stall: () => (s().shed?.stall ?? 0) >= WORKS.stall,
     cradle: () => (s().shed?.fitted ?? -1) >= 0,
-    table: () => !!s().line2?.train[1]?.wagon,
+    table: () => !!s().trains?.some((r) => r.wagon), // any of line 2's trains (v26)
     crossing: () => (s().works?.pierSet ?? 0) >= WORKS.pier,
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());

@@ -87,10 +87,10 @@ test("the boiler's haul pace: appended after the glider's keys, 300 cm/s solo an
   assert.throws(() => loadTune(createTune(), { ...json, values: old }), /tune:/);
 });
 
-test("a footing's own pace: appended last, 300 cm/s solo and 540 helped (works-late-game step 2b)", () => {
+test("a footing's own pace, then the trains' headway hold: appended last (works-late-game 2b, generic-lines 4a)", () => {
   const keys = TUNABLES.map((t) => t.key as string);
-  const foot = { railFootSoloSpeed: 300, railFootHelpSpeed: 540 };
-  assert.deepEqual(keys.slice(-2), Object.keys(foot), 'appended in order, at the end');
+  const foot = { railFootSoloSpeed: 300, railFootHelpSpeed: 540, railTrainHeadPct: 75 };
+  assert.deepEqual(keys.slice(-3), Object.keys(foot), 'appended in order, at the end');
   for (const [key, def] of Object.entries(foot)) {
     const t = TUNABLES.find((s) => s.key === key)!;
     assert.equal(t.def, def, key);

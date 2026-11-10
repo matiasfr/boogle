@@ -57,12 +57,14 @@ if (mode === 'wagon') {
   // The coupled wagon shows behind line 2's train while it stands at the village.
   const end = performance.now() + 240000;
   const home = () => {
-    const row = inspectRailway()!.line2.train[1]!;
-    return row.phase === 0 && row.at === 0;
+    // The wagon's train (v26: whichever of line 2's two it coupled to).
+    const row = inspectRailway()!.trains.find((r) => r.wagon);
+    return !!row && row.phase === 0 && row.at === 0;
   };
   while (!home() && performance.now() < end) await wait(100);
-  const train = (inspectRailway() as unknown as { line2View: { trains: { wagon?: unknown; cars: unknown[] }[] } })
-    .line2View.trains[1];
+  const train = (
+    inspectRailway() as unknown as { line2View: { trains: { wagon?: unknown; cars: unknown[] }[] } }
+  ).line2View.trains.find((t) => t.wagon);
   console.log(
     `WORKS wagon pose: line 2 at the village ${home()} ${JSON.stringify({ wagon: train?.wagon, cars: train?.cars })}`,
   );

@@ -23,7 +23,7 @@ import type { World as Fixture } from './helpers/railway-q2.ts';
 const H = { quarry: 3, farHead: 4 } as const;
 const STOPS = TRAIN_STOPS[1]!;
 const BRAKE = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
-const line2 = (w: Fixture) => w.s.line2!.train[1]!;
+const line2 = (w: Fixture) => w.s.trains[1]!;
 const ask = (w: Fixture, id: number, dir: -1 | 1) => act(w, 'a', 'rail.call', { id, dir });
 const kitAboard = (w: Fixture) => line2(w).logs + line2(w).rails > 0;
 
@@ -61,7 +61,7 @@ test("review: a rider on the train's rear car keeps reach for the lag window aft
   for (let t = 0; ; t++) {
     assert.ok(t < 3000);
     const r = line2(w);
-    if (r.phase === TRAIN_PHASE.RUN && trainDir(r) > 0 && r.v0 === 0 && trainSpeed(r, 1, w.t) === TRAIN.speed) break;
+    if (r.phase === TRAIN_PHASE.RUN && trainDir(r) > 0 && trainSpeed(r, 1, w.t) === TRAIN.speed) break;
     advance(w, 1);
   }
   assert.ok(STOPS[1]! - trainAlong(line2(w), 1, w.t) > BRAKE + 1000, 'the quarry is still in braking reach');
@@ -77,7 +77,7 @@ test("review: a rider on the train's rear car keeps reach for the lag window aft
       cadence: () => true,
     };
   };
-  const bell = { op: 'rail.call', epoch: 1, request: 1, id: H.farHead, dir: 1 };
+  const bell = { op: 'rail.call', epoch: 1, request: 1, id: H.farHead, dir: 1, train: 1 };
   assert.equal(railValid(worldOf(w.s), bell, rider(w.t), w.t), true, 'aboard, before any replan');
   // Another passenger asks for the quarry: the leg is replanned from this tick.
   assert.equal(ask(w, H.quarry, 1), 1);

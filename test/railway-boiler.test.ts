@@ -156,7 +156,7 @@ test('fit once, at the old train', () => {
   assert.equal(l.trains, w.t);
   assert.equal(l.boiler.state, 'fitted');
   assert.deepEqual(
-    l.train.map((r) => r.at),
+    w.s.trains.map((r) => r.at),
     [...TRAIN_HOME],
   );
   assert.equal(act(w, 'a', 'rail.boilerFit', { revision: l.boiler.revision }), 0);

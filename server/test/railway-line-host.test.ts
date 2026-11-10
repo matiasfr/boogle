@@ -714,21 +714,45 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     assert.equal((await call(4, 0, [h.x, h.y, h.z])).status, 'rejected', 'a way is needed');
     assert.equal((await call(4, -1, [h.x, h.y, h.z])).status, 'accepted');
     assert.equal((await call(4, -1, [h.x, h.y, h.z])).status, 'noop', 'already asked');
+    // Far Head is line 2's end until Q6 opens the pier: its up platform's lever is refused (no train stands there).
+    const { RAIL_HALTS } = await import('../../src/sim/railway-lines.ts');
+    const up = RAIL_HALTS[4]!.platforms[0];
+    assert.equal((await call(4, 1, [up.x, up.y, up.z])).status, 'noop', "Far Head's up lever, before the pier");
+    // The two platforms stand about 10 m apart, inside each lever's reach: from the down platform's far edge only.
+    const off = Math.hypot(h.x - up.x, h.z - up.z),
+      edge: [number, number, number] = [
+        Math.round(h.x + ((h.x - up.x) * 400) / off),
+        h.y,
+        Math.round(h.z + ((h.z - up.z) * 400) / off),
+      ];
+    assert.equal((await call(4, 1, edge)).status, 'rejected', 'the up way from the down platform');
+    // Aboard: the ask names the rider's train (slot 1, line 2's first, standing at the village).
     const { railLinePoint } = await import('../../src/sim/railway-line-path.ts');
     const p = railLinePoint(1, trainAlong(host.rules.railway.train(1)!, 1, host.sync.world.tick));
-    assert.equal((await call(3, 1, [Math.round(p.x), 2200, Math.round(p.z)])).status, 'accepted', 'aboard');
+    const on: [number, number, number] = [Math.round(p.x), 2200, Math.round(p.z)];
+    const ride = (train: unknown) => action({ op: 'rail.call', id: 3, dir: 1, train }, on);
+    for (const bad of ['1', 1.5, -1, 3, null])
+      assert.equal((await ride(bad)).status, 'rejected', `malformed train ${JSON.stringify(bad)}`);
+    assert.equal((await ride(2)).status, 'rejected', 'from the wrong train: aboard 1, naming 2 (at Far Head)');
+    assert.equal((await ride(0)).status, 'rejected', "line 1's train for a line 2 halt");
+    assert.equal((await call(3, 1, on)).status, 'rejected', 'aboard without naming the train');
+    assert.equal((await ride(1)).status, 'accepted', 'aboard');
+    assert.equal(host.rules.railway.train(1)!.req > 0, true, "the rider's own train holds it");
     for (let t = 0; host.rules.railway.train(1)!.phase !== 1 && t < 200; t++) await ticks(1);
     assert.equal(host.rules.railway.train(1)!.phase, 1);
     const tick = host.sync.world.tick,
-      rows = [host.rules.railway.train(0)!, host.rules.railway.train(1)!];
-    const pose = rows.map((r, k) => trainAlong(r, k, tick));
+      rows = [0, 1, 2].map((k) => host.rules.railway.train(k)!);
+    const pose = rows.map((r, k) => trainAlong(r, k ? 1 : 0, tick));
     await host.close({ save: true });
     host = create();
     await host.whenReady();
     assert.equal(host.sync.world.tick, tick);
-    assert.deepEqual([host.rules.railway.train(0), host.rules.railway.train(1)], rows);
     assert.deepEqual(
-      rows.map((_r, k) => trainAlong(host.rules.railway.train(k)!, k, host.sync.world.tick)),
+      [0, 1, 2].map((k) => host.rules.railway.train(k)),
+      rows,
+    );
+    assert.deepEqual(
+      rows.map((_r, k) => trainAlong(host.rules.railway.train(k)!, k ? 1 : 0, host.sync.world.tick)),
       pose,
     );
     const l = host.rules.railway.railway.line2!;

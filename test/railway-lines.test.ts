@@ -2,7 +2,9 @@
 // value. The literals below are v25's (#1409), copied before the move; a change here is a WORLD_NS break.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT, TURNOUT_CM } from '../src/sim/railway-lines.ts';
+import { TRAIN_CARS, TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
+import { FORMATION, TURNOUT } from '../src/proto/place/layout.ts';
 import { LINE_HALTS, TRAIN, TRAIN_HOME, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { PIER_STOP_CM } from '../src/sim/railway-works-layout.ts';
@@ -13,6 +15,8 @@ const V25_STOPS = [
   [1700, 17400, 52400, PIER_STOP_CM],
 ];
 const V25_HOME = [1, 0];
+/** v26 (step 4a): line 2 runs two trains, the second at Far Head (down) before the wake. */
+const V26_HOME = [1, 0, 2];
 const V25_HALTS = [
   { name: 'Village', line: 0, stop: 0, x: 92819, z: -434, y: 1902, reach: 1260 },
   { name: 'Camp', line: 0, stop: 1, x: 100964, z: -14610, y: 3102, reach: 1360 },
@@ -43,17 +47,25 @@ const V25_PATHS = [
 
 test("v25's stop, home and halt tables are views of the catalog", () => {
   assert.deepEqual(TRAIN_STOPS, V25_STOPS);
-  assert.deepEqual([...TRAIN_HOME], V25_HOME);
+  assert.deepEqual([...TRAIN_HOME].slice(0, 2), V25_HOME, 'the first train of each line stands where v25s did');
+  assert.deepEqual([...TRAIN_HOME], V26_HOME);
   assert.deepEqual(LINE_HALTS, V25_HALTS);
   assert.deepEqual(
     RAIL_TRAINS.map((t) => t.line),
-    [0, 1],
-    'one train a line, slot = line',
+    [0, 1, 1],
+    'line 1 one train, line 2 two',
   );
   assert.equal(RAIL_HALTS.length, V25_HALTS.length);
   RAIL_HALTS.forEach((h, id) => {
     assert.equal(h.s, V25_STOPS[h.line]![h.stop], `halt ${id} stands at its stop`);
-    assert.deepEqual(h.platforms[0], h.platforms[1], `halt ${id}: both platforms are v25's one until double track`);
+    // Today's platform serves the down track; Quarry and Far Head have an up one (step 2), the stubs' ends one.
+    assert.deepEqual(h.platforms[1], {
+      x: V25_HALTS[id]!.x,
+      z: V25_HALTS[id]!.z,
+      y: V25_HALTS[id]!.y,
+      reach: V25_HALTS[id]!.reach,
+    });
+    assert.equal(h.platforms[0] === h.platforms[1], h.name !== 'Quarry' && h.name !== 'Far Head', h.name);
   });
 });
 
@@ -91,4 +103,46 @@ test("railLinePoint reads the catalog's path, v25's PATHS", () => {
     for (let k = 0; k < l.path.length / 2; k++)
       assert.deepEqual(railLinePoint(line, k * 1000), { x: V25_PATHS[line]![k * 2], z: V25_PATHS[line]![k * 2 + 1] });
   });
+});
+
+test("every halt that can be its line's open end says how it turns trains back, inside the line", () => {
+  for (const l of RAIL_LINES)
+    l.halts.forEach((h, k) => {
+      const last = k === 0 || k === l.halts.length - 1 || l.halts[k + 1]!.opens >= 0;
+      assert.equal(!!h.end, last, `${h.name}`);
+      if (h.end) {
+        assert.ok(h.end.kind !== 'loop', 'no loop before v27');
+        const inward = k === 0 ? h.end.mergeCm > h.s : h.end.mergeCm < h.s;
+        assert.ok(inward && h.end.mergeCm > l.halts[k === 0 ? 0 : k - 1]!.s - (k === 0 ? 1 : 0), `${h.name}'s merge`);
+      }
+    });
+});
+
+// Review of v26, P2-1: a train held at a stub's signal stood on the drawn turnout. The signals are derived from the
+// turnout and the train's reach, so these must be the drawn ones.
+test("the sim's train reach and turnout are the drawn ones, and every signal stands clear of its block", () => {
+  const ahead = Math.max(...TRAIN_CARS.map((c, n) => TRAIN_OFFSETS[n]! + c.hz)),
+    behind = Math.max(...TRAIN_CARS.map((c, n) => c.hz - TRAIN_OFFSETS[n]!));
+  assert.deepEqual(TRAIN_EXTENT, { aheadCm: Math.round(ahead * 100), behindCm: Math.round(behind * 100) });
+  assert.equal(TURNOUT * 100, TURNOUT_CM);
+  const drawn = [FORMATION.timber, FORMATION.quarry];
+  RAIL_LINES.forEach((l, line) =>
+    l.halts.forEach((h, k) => {
+      if (!h.end) return;
+      const side = k === 0 ? -1 : 1,
+        lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
+      if (h.end.kind === 'stub') {
+        assert.equal(
+          h.end.mergeCm,
+          (side < 0 ? drawn[line]!.from : drawn[line]!.to) * 100,
+          `${h.name}: the drawn merge`,
+        );
+        assert.equal(h.end.edgeCm, h.end.mergeCm - side * TURNOUT_CM, `${h.name}: past the turnout`);
+      } else assert.equal(h.end.mergeCm, drawn[line]!.crossover![0] * 100, `${h.name}: the drawn crossover`);
+      assert.equal(h.end.signalCm, h.end.edgeCm - side * lead, `${h.name}: a held train's lead stops at the block`);
+    }),
+  );
+  // The reviewer's numbers: the village's signal about 63 m, the pier's about 530 m.
+  assert.equal(RAIL_LINES[1]!.halts[0]!.end!.signalCm, 6300);
+  assert.equal(RAIL_LINES[1]!.halts[3]!.end!.signalCm, 52980);
 });

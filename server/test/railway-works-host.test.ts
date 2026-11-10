@@ -177,16 +177,19 @@ test('works host: a restart mid-cast keeps rack and poured; a restart with the w
     await r.done();
   }
   const wagon = fixture('wagon-on');
-  for (let guard = 0; wagon.s.line2!.train[1]!.foot === 0; guard++) {
+  // The wagon couples to whichever line-2 train reaches the Village first.
+  const slot = wagon.s.trains.findIndex((r) => r.wagon);
+  assert.ok(slot >= 0, 'the wagon is coupled');
+  for (let guard = 0; wagon.s.trains[slot]!.foot === 0; guard++) {
     assert.ok(guard < 4000, 'the wagon loads at the quarry');
     advanceWorks(wagon, 1);
   }
   const t = await host('wagon', wagon);
   try {
-    const row = t.h.rules.railway.train(1)!;
+    const row = t.h.rules.railway.train(slot)!;
     assert.ok(row.wagon && row.foot > 0);
     await t.restart();
-    assert.deepEqual(t.h.rules.railway.train(1), row);
+    assert.deepEqual(t.h.rules.railway.train(slot), row);
     assert.equal(footingTotal(t.h.rules.railway.railway), t.h.rules.railway.railway.works!.poured);
   } finally {
     await t.done();

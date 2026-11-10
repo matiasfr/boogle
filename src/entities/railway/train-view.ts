@@ -1,6 +1,12 @@
 // Local train presentation. Server rows and the shared mover clock alone choose the decks' poses.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import {
+  railStopsNow,
+  railTrainAsked,
+  railTrainHeld,
+  type RailwayAdapter,
+  type RailwayAccepted,
+} from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
@@ -19,13 +25,11 @@ import {
   LINE_HALTS,
   TRAIN_PHASE,
   TRAIN_HOME,
-  reqHas,
   trainAlong,
-  trainDir,
   trainRequestable,
-  trainStopsOf,
   type RailTrain,
 } from '../../sim/railway-train.ts';
+import { LINE2, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
@@ -35,6 +39,9 @@ const BRASS = '#c79a3e';
  * upgrade rule exists yet. The hook is here: pass what the room says about the car's upgrade in its place. */
 const PASSENGER_CAR_UPGRADED = false;
 const LAMP = { on: '#ffa31a', off: '#4b3a22' } as const;
+/** The hold lamp (docs/plans/generic-lines.md, 4): red beside the stop lamp while the train stands held by the block
+ * ahead or the headway at an end, doors open; out the moment it goes. */
+const HOLD = { on: '#ff3b2a', off: '#3e2420' } as const;
 /** Footings aboard stand in two stacks on the cradle's seats: slot k's centre in the wagon's rail frame. */
 const aboardAt = (k: number) => ({ y: 0.63 + Math.floor(k / 2) * (0.9 + 0.02), z: k % 2 ? 0.8 : -0.8 });
 const FOOT_HOP_S = 0.9;
@@ -59,8 +66,9 @@ const CUT = {
 } as const;
 type FootPlace = (k: number, out: THREE.Vector3) => THREE.Vector3;
 
-// Place's kit owns one page-lifetime wheel batch and animation hook. Reuse its two models across view lifetimes
-// rather than consuming another twelve slots on every remount. The view owns the drawn geometry copies.
+// Place's kit owns one page-lifetime wheel batch and animation hook. Reuse its models (one a train, three in v26)
+// across view lifetimes rather than consuming another twelve slots each on every remount. The view owns the drawn
+// geometry copies.
 let kitModels: ReturnType<typeof import('../../proto/place/look-kit.ts').trainLook>[] | null = null;
 
 export async function createRailwayTrains(
@@ -93,24 +101,26 @@ export async function createRailwayTrains(
   let clock = -1,
     shudder = 0,
     secondVisible = false;
-  // Line 2 has a fourth car, the footing wagon, behind its flatbeds; it waits under the land until it couples.
+  // The footing wagon, a fourth car behind whichever of line 2's trains it couples to (the sim's `wagon`, per row);
+  // it waits under the land until then.
   const offsets = wagon.TRAIN_OFFSETS;
   const WAGON = 3;
   const wagonRock = new THREE.Group();
-  const trains = [0, 1].map((k) => {
-    if (look.LOOK.kit) kitModels ??= [kit.trainLook(2, engineKit), kit.trainLook(2, engineKit)];
-    const model = look.LOOK.kit ? kitModels![k]! : wagon.wagonLook(2, false, owner);
-    const cars = offsets.slice(0, k ? 4 : 3).map((_, n) => {
+  // One train a RAIL_TRAINS slot (v26: line 1's, then line 2's two), each posed on its line from its own row.
+  const trains = RAIL_TRAINS.map(({ line }, slot) => {
+    if (look.LOOK.kit) kitModels ??= RAIL_TRAINS.map(() => kit.trainLook(2, engineKit));
+    const model = look.LOOK.kit ? kitModels![slot]! : wagon.wagonLook(2, false, owner);
+    const cars = offsets.slice(0, WAGON).map((_, n) => {
       const car = rail.makeCar(
         wagon.TRAIN_CARS[n]!,
-        n === WAGON ? wagonRock : model.cars[n]!,
+        model.cars[n]!,
         () => {
-          if (k === 0 && n === 0) step();
+          if (slot === 0 && n === 0) step();
         },
         {},
         owner,
       );
-      car.platform.id = `railway:train${k}-${n}`;
+      car.platform.id = `railway:train${slot}-${n}`;
       car.platform.shared = true;
       car.speedLimit = 30;
       return car;
@@ -164,8 +174,8 @@ export async function createRailwayTrains(
           const yaw = -side * (Math.PI / 2);
           owner.cleanup(
             seats.registerSeat({
-              id: `railway:train${k}-${n}-seat${i++}`,
-              group: `railway:train${k}-${n}`,
+              id: `railway:train${slot}-${n}-seat${i++}`,
+              group: `railway:train${slot}-${n}`,
               platform: car.platform,
               anchorView: true,
               // The drawn rider leans with the bench on a grade; the seat, capsule and wire stay level.
@@ -202,9 +212,17 @@ export async function createRailwayTrains(
     stopLamp.position.set(0, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
     owner.add(stopLamp);
     model.cars[0]!.add(stopLamp);
+    const holdMaterial = new THREE.MeshBasicNodeMaterial({ color: HOLD.off });
+    const holdLamp = new THREE.Mesh(stopLamp.geometry, holdMaterial);
+    holdLamp.position.set(0.32, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
+    owner.add(holdLamp);
+    model.cars[0]!.add(holdLamp);
     owner.cleanup(() => {
       stopLamp.removeFromParent();
+      holdLamp.removeFromParent();
+      stopLamp.geometry.dispose();
       lampMaterial.dispose();
+      holdMaterial.dispose();
     });
     owner.cleanup(() => {
       boiler.removeFromParent();
@@ -213,16 +231,18 @@ export async function createRailwayTrains(
       for (const c of cars) c.mesh.visible = false;
       // A cached kit model must not retain the retired physics/seat graph. Its wheel callback sees no parent.
       for (const c of model.cars) c.removeFromParent();
-      wagonRock.removeFromParent();
     });
     const solidLoad = load.solidTrainLoad(cars[2]!, crateDeck);
     return {
+      slot,
+      line,
       model,
       cars,
       deck: crateDeck,
       solid: solidLoad,
       boiler,
       lamp: { mesh: stopLamp, material: lampMaterial, on: false },
+      hold: { mesh: holdLamp, material: holdMaterial, on: false },
       fit,
       fitted: () => fitted,
       doors: ((model as { doors?: THREE.Object3D[] }).doors ?? []).map((mesh) => ({ mesh, angle: 0, held: 0 })),
@@ -235,16 +255,45 @@ export async function createRailwayTrains(
     };
   });
   const first = trains[0]!;
+  /** Line 2's trains: the ones that carry the kit and the footing wagon. */
+  const cargo = trains.filter((tr) => tr.line === LINE2);
+  const wagonCar = rail.makeCar(wagon.TRAIN_CARS[WAGON]!, wagonRock, () => {}, {}, owner);
+  wagonCar.platform.id = 'railway:wagon';
+  wagonCar.platform.shared = true;
+  wagonCar.speedLimit = 30;
+  owner.cleanup(() => {
+    wagonCar.mesh.visible = false;
+    wagonRock.removeFromParent();
+  });
+  /** The train the footing wagon is coupled to now, or null. */
+  const wagonTrain = () => cargo.find((tr) => adapter.inspect().trains[tr.slot]!.wagon) ?? null;
+  /** Every car of `tr`, the wagon behind it while it's coupled. */
+  const carsOf = (tr: (typeof trains)[number]) => (wagonTrain() === tr ? [...tr.cars, wagonCar] : tr.cars);
+  /** The up track's offset at s (m) for train `tr` on `row`'s track: 4 m left on track 0 between the turnouts, easing
+   * over each 20 m turnout, and over Far Head's crossover onto today's track while the train is crossing (Local). */
+  const formations = layout.LINKS.map((l) => layout.FORMATION[l.id]);
+  function latOf(tr: (typeof trains)[number], row: Readonly<RailTrain>, s: number) {
+    if (row.track) return 0;
+    const f = formations[tr.line]!,
+      c = f.crossover;
+    if (crossing(tr, row) && c && s >= c[0]) return layout.crossLat(f, s) ?? 0;
+    return layout.upLat(f, s) ?? 0;
+  }
+  const pierOpen = () => adapter.inspect().line2.completed >= LINE2_STATIONS.length;
+  /** Whether a train on the up track takes Far Head's crossover, from the room's rows alone (a restore or a joining
+   * tab draws it the same): every one while the pier is shut, and one the pier's opening caught on it (`turn`). */
+  const crossing = (tr: (typeof trains)[number], row: Readonly<RailTrain>) =>
+    row.track === 0 && formations[tr.line]!.crossover !== undefined && (row.turn || !pierOpen());
   const seatMatrix = new THREE.Matrix4();
   const askAt = new THREE.Vector3(),
     riderAt = new THREE.Vector3();
   /** Whether `pid` rides `tr` (your own feet on one of its cars; a friend's avatar within 6 m of one). */
   function riderOf(tr: (typeof trains)[number], pid: string) {
-    if (pid === adapter.inspect().pid) return tr.cars.some((c) => c.platform === carry.on);
+    if (pid === adapter.inspect().pid) return carsOf(tr).some((c) => c.platform === carry.on);
     const avatar = [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
     if (!avatar) return false;
     avatar.getWorldPosition(riderAt);
-    return tr.cars.some((c) => Math.hypot(c.x - riderAt.x, c.z - riderAt.z) < 6);
+    return carsOf(tr).some((c) => Math.hypot(c.x - riderAt.x, c.z - riderAt.z) < 6);
   }
   let boilerFlying = () => false;
   const wake = createWakePresentation(
@@ -283,16 +332,26 @@ export async function createRailwayTrains(
       target = adapter.tickNow();
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
-    trains.forEach((tr, k) => {
-      const row = s.line2.train[k]!;
-      const along = s.line2.trains ? trainAlong(row, k, clock) / 100 : k === 0 ? 207 : 17;
-      tr.speed = s.line2.trains ? Math.abs(trainAlong(row, k, clock + 0.1) - trainAlong(row, k, clock)) : 0;
+    const coupled = wagonTrain();
+    trains.forEach((tr) => {
+      const row = s.trains[tr.slot]!,
+        line = layout.LINKS[tr.line]!.line;
+      // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
+      const along = trainAlong(row, tr.line, clock) / 100;
+      tr.speed = s.line2.trains ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
+      const lat = (x: number) => latOf(tr, row, x);
+      const hidden = !s.ready || (tr.line !== 0 && !secondVisible);
       tr.cars.forEach((c, n) => {
-        rail.poseCarOnLine(c, layout.LINKS[k]!.line, along + offsets[n]!, 1);
-        if (!s.ready || (k === 1 && !secondVisible) || (n === WAGON && !row.wagon)) c.y = -60;
+        rail.poseCarOnLine(c, line, along + offsets[n]!, 1, lat);
+        if (hidden) c.y = -60;
       });
+      if (tr === coupled) {
+        rail.poseCarOnLine(wagonCar, line, along + offsets[WAGON]!, 1, lat);
+        if (hidden) wagonCar.y = -60;
+      }
       tr.solid();
     });
+    if (!coupled) wagonCar.y = -60;
   }
   function drawLoad(tr: typeof first, count: number) {
     if (tr.count === count) return;
@@ -304,7 +363,6 @@ export async function createRailwayTrains(
   }
   // ---------------------------------------------------------------- the footing wagon and its footings
   const batch = createBoxBatch(owner, 96);
-  const wagonCar = trains[1]!.cars[WAGON]!;
   const footFlights: { from: THREE.Vector3; slot: number; toPier: boolean; t: number }[] = [];
   let places: { works: FootPlace | null; pier: FootPlace | null } = { works: null, pier: null };
   const fm = new THREE.Matrix4(),
@@ -323,7 +381,8 @@ export async function createRailwayTrains(
   const toPier = () => footFlights.filter((f) => f.toPier).length;
   function drawWagon() {
     batch.begin();
-    const row = adapter.inspect().line2.train[1]!;
+    const coupled = wagonTrain();
+    const foot = coupled ? adapter.inspect().trains[coupled.slot]!.foot : 0;
     if (wagonCar.mesh.visible) {
       wagonCar.mesh.updateMatrixWorld(true);
       const frame = wagonRock.matrixWorld;
@@ -334,7 +393,7 @@ export async function createRailwayTrains(
       for (let r = 0; r < 8; r++)
         batch.part(frame, r % 2 ? 0.95 : -0.95, 1.05, [-1.35, -0.25, 0.25, 1.35][r >> 1]!, 0.1, 1.1, 0.1, BRASS);
       for (const x of [-0.95, 0.95]) batch.part(frame, x, 1.62, 0, 0.12, 0.12, 2.9, BRASS);
-      const aboard = Math.max(0, row.foot - inbound());
+      const aboard = Math.max(0, foot - inbound());
       for (let k = 0; k < aboard; k++) {
         const a = aboardAt(k);
         footingParts(batch, fm.multiplyMatrices(frame, lm.makeTranslation(0, a.y, a.z)));
@@ -402,15 +461,17 @@ export async function createRailwayTrains(
     flyingLogs = flyingRails = 0;
     unloading = false;
     footFlights.length = 0;
-    crates.clearCrates(trains[1]!.deck);
+    for (const tr of cargo) crates.clearCrates(tr.deck);
     wake.reset(s.line2.trains ? (clock - s.line2.trainsAt) / 10 : -1);
-    trains.forEach((tr, k) => {
-      tr.last = { ...s.line2.train[k]! };
+    trains.forEach((tr) => {
+      const last = { ...s.trains[tr.slot]! };
+      tr.last = last;
       tr.count = -1;
-      drawLoad(tr, Math.ceil((tr.last.logs + tr.last.rails) / 8));
+      drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
     step();
     trains.forEach((tr) => tr.cars.forEach(rail.snapCar));
+    rail.snapCar(wagonCar);
   }
   // ---------------------------------------------------------------- the cab doors
   const near = new THREE.Vector3(),
@@ -523,6 +584,7 @@ export async function createRailwayTrains(
   }
   owner.animate(({ now, dt }) => {
     trains.forEach((tr) => tr.cars.forEach((c) => rail.drawCar(c, stepAlpha())));
+    rail.drawCar(wagonCar, stepAlpha());
     swingDoors(dt);
     cutCab(dt);
     drawWagon();
@@ -532,16 +594,19 @@ export async function createRailwayTrains(
         c.rock.position.x = Math.sin(now * 0.097 + n * 1.3) * 0.035 * shudder;
       });
   }, 7);
-  owner.cleanup(() => crates.clearCrates(trains[1]!.deck));
+  owner.cleanup(() => {
+    for (const tr of cargo) crates.clearCrates(tr.deck);
+  });
   return {
     restore,
     accepted(e: RailwayAccepted) {
       if (e.op === 'rail.call') {
-        // A request from aboard rings the train's bell for everyone in earshot; a lever's sounds at its halt.
-        const k = LINE_HALTS[e.id]?.line,
-          tr = k === undefined ? undefined : trains[k];
+        // A request from aboard rings that train's bell for everyone in earshot; a lever's sounds at its halt. The
+        // event names the train when it's yours; a friend's is found by who rides which.
+        const line = LINE_HALTS[e.id]?.line;
+        const tr = e.train !== undefined ? trains[e.train] : trains.find((t) => t.line === line && riderOf(t, e.pid));
         const loco = tr?.cars[0];
-        if (!tr || !loco || !riderOf(tr, e.pid)) return;
+        if (!tr || tr.line !== line || !loco || !riderOf(tr, e.pid)) return;
         bell(loco.x, loco.z);
         return;
       }
@@ -565,24 +630,28 @@ export async function createRailwayTrains(
       first.boiler.updateWorldMatrix(true, false);
       return seatMatrix.copy(first.boiler.matrixWorld);
     },
-    /** The little guy's stool on line `k`'s engine (folk.ts), once it runs: his feet on the footrest, facing forward. */
-    driverSeat(k: number) {
-      const tr = trains[k];
+    /** The little guy's stool on the engine of line `k`'s `n`th train (folk.ts), once it runs: his feet on the
+     * footrest, facing forward. Folk has a driver a train. */
+    driverSeat(k: number, n: number) {
+      const tr = trains.filter((t) => t.line === k)[n];
       if (!tr || !tr.boiler.visible || tr.cars[0]!.y < -30) return null;
       const st = shape.ENGINE_STOOL;
       return { mesh: tr.model.cars[0]!, top: st.footrest, up: st.seat - st.footrest - 0.035, x: st.x, z: st.z, yaw: 0 };
     },
-    isTrain: (platform: Platform | null) => trains.some((tr) => tr.cars.some((c) => c.platform === platform)),
-    /** Aboard a running line: "Request stop: <halt>" for the next halt it would run through, from any car; greyed once
-     * it stops there anyway. The press pulls the bell cord on this tab; the bell rings when the server accepts it. */
+    isTrain: (platform: Platform | null) =>
+      platform === wagonCar.platform || trains.some((tr) => tr.cars.some((c) => c.platform === platform)),
+    /** Aboard a running line: "Request stop: <halt>" for the next halt your own train would run through, from any of
+     * its cars; greyed once it stops there anyway. The press pulls the bell cord on this tab and names the train
+     * (docs/plans/generic-lines.md, 7: only it serves the ask); the bell rings when the server accepts it. */
     targets(): Interactable[] {
       const s = adapter.inspect(),
         b = me.body;
       if (!s.line2.trains || !b) return [];
-      const k = trains.findIndex((tr) => tr.cars.some((c) => c.platform === carry.on));
-      if (k < 0) return [];
-      const n = trainStopsOf(k, s.line2.completed >= LINE2_STATIONS.length).length;
-      const ask = trainRequestable(s.line2.train[k]!, k, n, adapter.tickNow());
+      const tr = trains.find((t) => carsOf(t).some((c) => c.platform === carry.on));
+      if (!tr) return [];
+      const k = tr.line,
+        n = railStopsNow(s, k).length;
+      const ask = trainRequestable(s.trains[tr.slot]!, k, n, adapter.tickNow());
       if (!ask) return [];
       const id = LINE_HALTS.findIndex((h) => h.line === k && h.stop === ask.stop);
       const halt = LINE_HALTS[id];
@@ -597,7 +666,7 @@ export async function createRailwayTrains(
           at,
           run: () => {
             cordPull(at.x, at.z);
-            adapter.callTrain(id, ask.dir as -1 | 1);
+            adapter.callTrain(id, ask.dir as -1 | 1, tr.slot);
           },
         },
       ];
@@ -605,26 +674,28 @@ export async function createRailwayTrains(
     trainFlying: () => ({ logs: flyingLogs, rails: flyingRails }),
     update(dt: number) {
       wake.update(dt);
-      const s = adapter.inspect();
-      trains.forEach((tr, k) => {
-        const row = s.line2.train[k]!;
-        const n = trainStopsOf(k, s.line2.completed >= LINE2_STATIONS.length).length;
-        const lit =
-          s.line2.trains &&
-          row.phase === TRAIN_PHASE.RUN &&
-          row.to > 0 &&
-          row.to < n - 1 &&
-          reqHas(row.req, row.to, trainDir(row), n);
+      const s = adapter.inspect(),
+        tick = adapter.tickNow();
+      trains.forEach((tr) => {
+        const row = s.trains[tr.slot]!;
+        // Amber: on its way to a request stop it will make, its riders' or a lever's it serves (so a train running
+        // through a lit lever is dark, and the one behind it lit). Red: held, standing for the block or the headway.
+        const lit = railTrainAsked(s, tr.slot, tick);
         if (lit !== tr.lamp.on) {
           tr.lamp.on = lit;
           tr.lamp.material.color.set(lit ? LAMP.on : LAMP.off);
         }
-        tr.boiler.visible = s.line2.trains && !(k === 0 && boilerFlying());
+        const held = railTrainHeld(s, tr.slot, tick);
+        if (held !== tr.hold.on) {
+          tr.hold.on = held;
+          tr.hold.material.color.set(held ? HOLD.on : HOLD.off);
+        }
+        tr.boiler.visible = s.line2.trains && !(tr.slot === 0 && boilerFlying());
         if (tr.boiler.visible !== tr.fitted()) tr.fit(tr.boiler.visible);
         if (tr.last && s.line2.trains && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
           whistle(tr.cars[0]!.x, tr.cars[0]!.z);
         if (
-          k === 1 &&
+          tr.line === LINE2 &&
           tr.last &&
           row.phase === TRAIN_PHASE.STAND &&
           row.at === 2 &&
@@ -653,8 +724,8 @@ export async function createRailwayTrains(
             });
           }
         }
-        if (!unloading || k === 0) drawLoad(tr, Math.ceil((row.logs + row.rails) / 8));
-        if (k === 1 && tr.last) footArrivals(row, tr.last);
+        if (!unloading || tr.line !== LINE2) drawLoad(tr, Math.ceil((row.logs + row.rails) / 8));
+        if (tr.line === LINE2 && tr.last) footArrivals(row, tr.last);
         tr.last = { ...row };
         if (!s.line2.trains) return;
         tr.puffs += tr.speed * dt * 0.25 + (tr.speed < 0.1 ? dt / 2 : 0);
@@ -688,17 +759,20 @@ export async function createRailwayTrains(
     /** Footings in the air: onto the wagon from the Works rack, and off it to the pier rack. */
     footFlying: () => ({ toWagon: inbound(), toPier: toPier() }),
     inspect: () => ({
-      trains: trains.map((tr, k) => ({
-        line: k,
-        ...adapter.inspect().line2.train[k],
-        along: trainAlong(adapter.inspect().line2.train[k]!, k, clock),
-        cars: tr.cars.map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
+      trains: trains.map((tr) => ({
+        slot: tr.slot,
+        line: tr.line,
+        ...adapter.inspect().trains[tr.slot],
+        along: trainAlong(adapter.inspect().trains[tr.slot]!, tr.line, clock),
+        cars: carsOf(tr).map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
         lashed: tr.boiler.visible,
         stopLamp: tr.lamp.on,
+        holdLamp: tr.hold.on,
+        crossing: crossing(tr, adapter.inspect().trains[tr.slot]!),
         doors: tr.doors.map((d) => +((d.angle * 180) / Math.PI).toFixed(0)),
         cut: Object.fromEntries(Object.entries(tr.cut).map(([f, t]) => [f, +t.toFixed(2)])),
-        ...(k === 1
+        ...(tr === wagonTrain()
           ? {
               wagon: {
                 shown: wagonCar.mesh.visible,

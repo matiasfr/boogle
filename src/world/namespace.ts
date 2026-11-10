@@ -40,7 +40,10 @@
 // (`from`, `v0`, `dest`); `rail.call` carries `dir`. The cradle takes no footings (`WORKS.total` 14); two appended
 // railFoot* tunables; `rail.turn` only once the cradle is fitted and before the wagon rolls out. `rail.cartCall` and
 // `cart.recall` removed (the "Call cart to forge" handle was cut on 9 November).
-export const WORLD_NS = 'v25';
+// v26 (2026-11-10): generic lines and double track (docs/plans/generic-lines.md, step 4): `train.sweep` becomes
+// `track`, a third train row (line 2 runs two), a new `line` component (the halts' lever asks and the ends' last
+// departures), `rail.call` splits lever asks from riders' (`train`), the railTrainHeadPct tunable; LOOK's turn-back gone.
+export const WORLD_NS = 'v26';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

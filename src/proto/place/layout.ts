@@ -4,6 +4,7 @@
 // the walls hide the seam. Foot paths are polylines with explicit heights; rail lines are curves with explicit ends.
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
+import { TURNOUT_CM } from '../../sim/railway-lines.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 import {
@@ -411,7 +412,7 @@ export const HALTS: Halt[] = [
  * in and out over a 20 m stub turnout at each end; line 2 also has Far Head's facing crossover, up track to down,
  * while Far Head is its end. Metres along each line. Step 4a moves the merges into the sim catalog's `RailHalt.end`. */
 export const UP_LAT = -4;
-export const TURNOUT = 20;
+export const TURNOUT = TURNOUT_CM / 100; // the sim's: its end blocks and signals reach past it
 export type Formation = { from: number; to: number; crossover?: readonly [number, number] };
 export const FORMATION: Record<LineSpec['id'], Formation> = {
   timber: { from: 36, to: 182 },
@@ -432,7 +433,7 @@ export function crossLat(f: Formation, s: number): number | null {
   if (!c || s < c[0] || s > c[1]) return null;
   return UP_LAT * (1 - ease((s - c[0]) / (c[1] - c[0])));
 }
-/** The up track's platforms, outside it (no lever, board or signal until step 4b), and the plank crossing over both
+/** The up track's platforms, outside it (a lever each, halts-view.ts; no board or signal), and the plank crossing over both
  * tracks at each pair's end (`crossS`), from today's platform to the up one. Quarry's stands clear of the Q4 frame
  * (s 175-178, 6.5-8.5 m left; orchestrator, 10 November), so it has no ramp off that end (`endRamp` false). Each
  * crossing lies outside where a train stands: Far Head's by the foot of today's platform's end ramp; Quarry's, whose

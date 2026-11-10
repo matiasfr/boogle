@@ -2,6 +2,7 @@
 import type { RailwayIntent } from './railway.ts';
 import type { Railway } from '../sim/railway.ts';
 import type { PlayData } from '../proto/mark.ts';
+import { RAIL_TRAINS } from '../sim/railway-lines.ts';
 
 export type RailwayMark = [name: string, data: PlayData];
 
@@ -88,8 +89,9 @@ export function createRailwayJourneyMarks() {
     pierLaid: boolean,
     swimming: boolean,
   ): RailwayMark[] => {
-    const match = trains && !swimming && /^railway:train([01])(?:-[0-2])?$/.exec(platform ?? '');
-    const line = match ? Number(match[1]) : null;
+    // A train's car is `railway:train<slot>-<car>` (one a RAIL_TRAINS slot, v26); the mark names its line.
+    const match = trains && !swimming && /^railway:train(\d)(?:-[0-2])?$/.exec(platform ?? '');
+    const line = match ? (RAIL_TRAINS[Number(match[1])]?.line ?? null) : null;
     const marks: RailwayMark[] = [];
     if (line !== null && line !== riding) marks.push(['train ride', { line, authority: 'local' }]);
     riding = line;

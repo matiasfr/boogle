@@ -200,8 +200,8 @@ export function railwayAtTrains(stage: TrainStage): World {
       need(act(w, 'a', 'rail.boilerFit', { revision: l.boiler.revision }) === 1, 'the boiler fitted');
       advance(w, 20);
       need(
-        l.train.every((r) => r.phase === 0),
-        'both trains waiting',
+        w.s.trains.every((r) => r.phase === 0),
+        'every train waiting',
       );
     }
   }

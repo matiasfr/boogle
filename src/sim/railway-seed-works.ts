@@ -122,7 +122,7 @@ function build(w: World, stage: WorksStage): World {
     case 'wagon-on':
       need(act(w, 'a', 'rail.turn', { to: 1, revision: shed.tableRev }) === 1, 'the turntable turned');
       need(shed.ready >= 0, 'the wagon ready');
-      for (let guard = 0; !l2.train[1]!.wagon; guard++) {
+      for (let guard = 0; !w.s.trains.some((r) => r.wagon); guard++) {
         need(guard < 4000, 'the wagon couples');
         advanceWorks(w, 1);
       }

@@ -535,6 +535,12 @@ export const NODES: readonly LoopNode[] = [
         'src/entities/railway/boiler-view.ts:184-196',
       ),
       unbuilt('the "Steam" card for whoever fits it', 'decisions.md 9 Nov, four more answers (2)'),
+      // v26 (docs/plans/generic-lines.md): the ride that follows is boarded at the platform for its way.
+      onMain(
+        'world',
+        "a lever per platform, plaqued with its end; the Quarry's up platform over the plank crossing; Far Head's up lever chained until the pier",
+        'src/entities/railway/halts-view.ts spots, chained; up-platforms.ts',
+      ),
     ],
   },
   quarryStation(
