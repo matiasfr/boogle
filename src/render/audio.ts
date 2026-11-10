@@ -115,6 +115,15 @@ for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click',
   addEventListener(ev, unlock, { passive: true, capture: true });
 }
 
+/** Voice chat holds the mic (src/features/voice.ts): Safari's audio session must allow recording while it does, and
+ * opening the mic can interrupt this context on iOS, so it is resumed (a later gesture's unlock retries too). */
+export function micSession(on: boolean) {
+  if (nav.audioSession) nav.audioSession.type = on ? 'play-and-record' : 'playback';
+  if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+}
+/** The context for a level meter that never reaches the speakers (voice chat's talking dots); null before unlock. */
+export const meterContext = () => (ctx?.state === 'running' ? ctx : null);
+
 export function getAudio(bus: Bus = 'sfx'): { ctx: AudioContext; out: AudioNode } | null {
   const nodes = buses.get(bus);
   return ctx?.state === 'running' && nodes ? { ctx, out: nodes.authored } : null;

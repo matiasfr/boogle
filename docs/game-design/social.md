@@ -22,6 +22,35 @@
 - **Related ideas.** [research/communal-progression.md](../research/communal-progression.md) uses the honk chord as the
   template for together moments.
 
+## Voice chat
+
+Added for the 9 November playtest. Voice is room-wide, not by distance, and off until you press **Join voice** in the
+Pause main page. That press opens the mic prompt; on iOS, media is also allowed to play while the mic is open. After
+that you hear everyone else in voice and they hear you. Pause shows **Mute** / **Unmute** and **Leave voice**, plus a
+chip for each person in voice: a green dot glows while they talk, grey means connecting or muted, and coral reads
+"Can't connect". While you are in voice a small pill sits beside the corner menu: a mic icon (dimmed when muted) and
+the names of whoever is talking, or the count of people in voice. Tapping the pill mutes or unmutes. Desktop players
+use Pause, because the pointer is locked during play.
+
+- **How.** Audio-only WebRTC between every pair of tabs in voice (a mesh: fine for 2 to 4). Echo cancellation, noise
+  suppression and auto gain are on. Public STUN only (Google, Cloudflare), with no TURN relay, so strict NATs and some
+  cellular networks can't connect. That pair retries twice, then shows "Can't connect" instead of hanging.
+- **Sync kind.** Presence `vc` (1 in voice, 2 muted; missing means not in voice) says who to link to. Of each pair, the
+  smaller tab id offers. Offer, answer and ICE are room messages `{ t: 'rtc', to, k, n, ... }` addressed to one tab.
+  The server relays each one only to that tab ([src/net/rtc-wire.ts](../../src/net/rtc-wire.ts) shape and size caps,
+  its own 20/s bucket) and never into the world or a save. A tab that never presses the button opens no mic and no
+  connection, because nobody offers to a tab without `vc`.
+- **Lifecycle.** Voice stays on while the tab is hidden, if the browser keeps it alive. Leaving voice, closing the page,
+  or losing the room closes every link, and the player rejoins whoever is there when the room comes back. A reload is
+  a new tab: the old link closes about 5 s after its presence goes, and the new one is offered to at once.
+- **Sound.** Each voice plays from its own `<audio>` element. The game's WebAudio context only meters levels for the
+  talking dots. On Safari the audio session switches to play-and-record while the mic is open and back to playback
+  after. One volume point per peer (`peerVolume` in voice.ts) is the seam for a later proximity fade. Element volume is
+  read-only on iOS, so proximity there would route voices through WebAudio.
+- **Files.** [src/features/voice.ts](../../src/features/voice.ts), [voice.css](../../src/features/voice.css),
+  [src/netplay/voice-mesh.ts](../../src/netplay/voice-mesh.ts), [src/net/rtc-wire.ts](../../src/net/rtc-wire.ts), the
+  relay in [server/src/host/hosted-room.ts](../../server/src/host/hosted-room.ts). Proof: `node dev/look/voice-proof.ts`.
+
 ---
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

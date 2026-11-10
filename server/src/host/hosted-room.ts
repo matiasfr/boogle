@@ -23,6 +23,7 @@ import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { HOST_TYPES } from '../../../src/world/sync.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
+import { RTC_TYPE, validateRtc } from '../../../src/net/rtc-wire.ts';
 import { createReplicator } from '../../../src/world/replicate-server.ts';
 import { RAIL_AWAY } from '../../../src/sim/railway-away.ts';
 import type { Store } from '../store.ts';
@@ -46,6 +47,9 @@ const MSG_RATE = 50; // messages/s per client (burst MSG_BURST)
 const MSG_BURST = 100;
 const PRESENCE_RATE = 40; // presence packets/s per client
 const CLIENT_ONLY = new Set(['w:edit', 'w:need']); // for the server's sync alone
+// Voice signals (src/net/rtc-wire.ts): their own bucket, so a burst of ICE candidates never eats game messages.
+const RTC_RATE = 20;
+const RTC_BURST = 60;
 
 type Bucket = { tokens: number; at: number };
 type Client = {
@@ -63,6 +67,7 @@ type Client = {
   timer: NodeJS.Timeout | null;
   msgs: Bucket;
   pres: Bucket;
+  rtc: Bucket;
   dropped: number;
 };
 
@@ -256,6 +261,14 @@ export function createHostedRoom({
       return;
     }
     if (m.t !== 'm') return;
+    if ((m.d as WireMsg | null)?.t === RTC_TYPE) {
+      // Voice: a clean copy to the one tab it names, never to everyone and never into the world or a save.
+      if (!take(c.rtc, RTC_RATE, RTC_BURST, now)) return void c.dropped++;
+      const signal = validateRtc(m.d);
+      const to = signal && signal.to !== c.id ? clients.get(signal.to) : undefined;
+      if (!signal || !to) return void c.dropped++;
+      return write(to, encode({ t: 'm', from: c.id, d: signal }));
+    }
     if (!take(c.msgs, MSG_RATE, MSG_BURST, now)) return void c.dropped++;
     const t = (m.d as WireMsg | null)?.t;
     if (HOST_TYPES.has(t as string)) return void c.dropped++;
@@ -366,6 +379,7 @@ export function createHostedRoom({
       timer: null,
       msgs: { tokens: MSG_BURST, at: now },
       pres: { tokens: PRESENCE_RATE, at: now },
+      rtc: { tokens: RTC_BURST, at: now },
       dropped: 0,
     };
     if (old) drop(old, CLOSE.REPLACED);
