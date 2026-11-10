@@ -68,6 +68,17 @@ export const descriptors: Record<string, AssetDescriptor> = {
     rootNote: 'Rigid shells; game pivots and cargo positions unchanged. Train wheels/rods remain game-owned.',
     motion: { kind: 'none', source: 'assets/src/boiler-cart.py; rigid assembly motion belongs to Place' },
   },
+  engine: {
+    label: 'Train engine A',
+    category: 'kit',
+    defaultNode: 'engine_body',
+    rootNote:
+      'Car origin: rail line, frame middle. Wheels are the kit batch; rods, doors and the driver are posed by train-view.ts.',
+    motion: {
+      kind: 'none',
+      source: 'assets/src/engine.py; rods follow the wheel angle and doors swing in src/entities/railway/train-view.ts',
+    },
+  },
   'recovery-rack': {
     label: 'Recovery rack',
     category: 'props',

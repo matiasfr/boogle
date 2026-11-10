@@ -1,0 +1,24 @@
+{
+  "provenance": "Original Boogle recipe: engine A (the stubby toy) from docs/plans/engine-previz.md and character/engine-previz-parts.ts. No external assets.",
+  "budgetKB": 256,
+  "scale": 1.25,
+  "frame": { "hx": 0.8, "hz": 1.5 },
+  "wheels": { "r": 0.38, "z": [-0.75, 0.75] },
+  "cab": {
+    "floor": 1.02,
+    "zFront": -0.5,
+    "zBack": -1.46,
+    "hxIn": 0.895,
+    "wall": 0.06,
+    "fits": 1.7,
+    "headroom": 0.2,
+    "door": 1.0,
+    "doorHead": 0.15,
+    "post": 0.15,
+    "ahead": 0.3,
+    "haltDeck": 0.72
+  },
+  "boiler": { "y": 1.5, "r": 0.5, "z": [-0.7, 1.15], "smokebox": { "r": 0.53, "z": [1.0, 1.42] }, "chimneyZ": 1.2 },
+  "stool": { "seat": 0.8, "footrest": 0.42 },
+  "long": { "ahead": 0.4 }
+}
