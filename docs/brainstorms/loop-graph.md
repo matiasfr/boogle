@@ -62,6 +62,13 @@ No browser: this is tooling with no player-visible change.
 3. Should the trace reach you as a picture? **Recommended: a text table first; a strip chart on the Line Map board once the numbers are trusted.** Answer: ___
 4. Should a loop change have to pass `npm run loop -- run` before it ships? **Recommended: not yet; report it, and decide once it has caught something real.** Answer: ___
 
+## Queued
+
+Owner, 9 November: after the fallback supply, calibration and trace fetching.
+
+- The nightly long run's session feeds the trace's bot column, with a predicted-against-bot drift line in the heartbeat report.
+- The beat lists (`RAILWAY_BEATS`, `BEATS`, `RAIL_STOPS`) generate from the graph, verified by that nightly run.
+
 ## Parked
 
 - An arrival sheet: one still per node from the approach, asserting its cue is in frame.
