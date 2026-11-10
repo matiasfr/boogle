@@ -342,6 +342,18 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   check track 0's rails), `npm run perf` before and after (doubled rails and sleepers), looks at phone width:
   `--rail-seed trains-on` at the Village merges, Quarry, Far Head's crossover, the line 1 ridge trestle and the pier
   root; the bot through T1 (layout change).
+  *Blocked (2026-11-10, implementer):* the up track 4 m left meets things the Level findings and `LIVE_SECOND_TRACK`
+  don't list (the survey's obstacle list has no pillars, gates or frame footprints), and each needs a layout call
+  before the drawing goes in. (a) **The hook pillar p2** (`PILLARS`, line 2 s 92, 7 m left, r 3.6): its near edge is
+  3.4 m from today's track, so the up track's rails (3.5–4.5 m) run into it; its top sits against the gorge trestle's
+  left edge. That gorge trestle (about s 85–100) also needs the 7.6 m deck, which this step doesn't list. (b) **The
+  quarry and sea gates** (`GATES`, s 186 and 297): the jambs stand 3.2–4.3 m either side of today's track (`tech.ts`
+  `SLAB` w 6.4, pillar 1.1), so the up track runs through each left jamb. (c) **The Quarry up platform** (s 166–186,
+  lat −5.7 to −8.2) covers the Q4 frame (s 176.5, lat −6.5 to −8.5); a 1 m step-out doesn't clear it. (d) **Line 1's
+  p1 lip** (`lipTo` 1.8 m left at s 92, "ends at the trestle deck's edge") would cross the up track on the widened
+  ridge trestle. Suggested: move p2 out to about 9.5 m (a reach call: the level check's "p2 from the deck with two
+  jumps" must hold), widen both gate frames to span the formation (slab and jambs centred 2 m left), step Q4's frame
+  out about 3 m or shift the up platform clear of it, and end p1's lip at the new deck edge (5.8 m left).
 - [ ] **3. The six bents, wide and on the bow (positions and view, no bump).** `CROSSING_BENTS` 200 cm west,
   `CROSSING_FOOT_OFF` 330, the bent caps at the 4% heights in `crossing-view.ts` (bent k's deck at
   `2430 − 4·(distance from bent 1)`/100, bent 6 about 1960 cm). Test: `test/railway-works-layout.test.ts` gains the
@@ -354,6 +366,8 @@ Each step leaves `npm run check` green and ships on its own except 4a and 4b, wh
   `Train.track` for `sweep`, the `Line` component, `RAIL_TRAINS` rows spawned, `railwayView`'s `trains`/`lines`,
   `railwayCheck` counts and the new invariants (below). In `railway-systems.ts`: `boilerFit` places trains by circuit,
   `rail.call` splits lever and rider asks, `trainStep` loops `RAIL_TRAINS`, kit and wagon sums over line 2's trains;
+  `replan`'s calls to `trainAlong`, `trainSpeed` and `trainArrives` pass the slot as the line number (step 1 review)
+  and must pass `RAIL_TRAINS[slot].line` once a line has several trains;
   `railway-line2.ts` the same. Catalog: line 2 `trains: 2`; halts' up and down platforms and `end`s from Level
   findings. Tunable `railTrainHeadPct` (default 75). `railway-server.ts`: `rail.call` validates `train` and the
   platform for `dir`, and refuses a lever ask for an open end's way in; `nearTrain` per slot.
