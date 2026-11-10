@@ -1,12 +1,18 @@
-// Matched stills for the terrain pass (docs/plans/terrain-pass.md): today, A, B and A+B over one wedge of Place, four
-// framings, desktop and phone. `node dev/look/shots.ts dev/terrain-pass/shots.ts --name terrain-pass`.
+// Matched stills for the terrain pass (docs/plans/terrain-pass.md): today against round two over one wedge of Place,
+// four framings, desktop and phone. TP_ALL=1 adds the first round's A, B and A+B.
+// `node dev/look/shots.ts dev/terrain-pass/shots.ts --name terrain-pass`.
 import type { ShotList } from '../look/shot-types.ts';
 
 const variants = [
   { name: 'Today', query: '' },
-  { name: 'A: 0.5 m mesh + bands', query: 'terrain=a' },
-  { name: 'B: cove textured layers', query: 'terrain=b' },
-  { name: 'A+B', query: 'terrain=ab' },
+  { name: 'Round two', query: 'terrain=1' },
+  ...(process.env.TP_ALL
+    ? [
+        { name: 'A: 0.5 m mesh + bands', query: 'terrain=a' },
+        { name: 'B: cove textured layers', query: 'terrain=b' },
+        { name: 'A+B', query: 'terrain=ab' },
+      ]
+    : []),
 ];
 const sizes: [string, [number, number]][] = [
   ['desktop', [1280, 800]],

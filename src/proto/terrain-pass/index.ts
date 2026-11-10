@@ -1,7 +1,10 @@
-// The terrain pass, a look experiment on one wedge of Place (docs/plans/terrain-pass.md). `?terrain=a|b|ab`, off by
-// default; off, this returns before touching anything and the land is exactly today's. On, the wedge's cells leave
+// The terrain pass, a look experiment on one wedge of Place (docs/plans/terrain-pass.md). `?terrain=1` (or a bare
+// `?terrain`) is round two; without the parameter this returns before touching anything and the land is exactly today's. On, the wedge's cells leave
 // the main ground's index and a separate mesh draws them. The collider, H, the shore texture, the tree catalog and the
 // level check never see it: they keep terrain.ts's grid. Delete this folder and its one call in land.ts to remove it.
+//   1  — round two, on the owner's answers (10 November): today's 2 m triangles on walkable ground and 1 m strata ledges
+//        on unwalkable cells only; today's grass, sand and path colours with worn paths, a wet band at the sea, and the
+//        cove's textured sandstone, subtle beds, on unwalkable rock only.
 //   a  — a 0.5 m drawn mesh (strata ledges on rock, smooth-surface normals on grass) with colour bands from position
 //        and normal, no textures.
 //   b  — today's 2 m mesh with the west cove's textured layers.
@@ -14,15 +17,16 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { GRID, ORIGIN } from '../place/layout.ts';
 import { CELL, NX, NZ, at } from '../place/terrain.ts';
 import { groundMaterial } from '../place/look.ts';
-import { bandsMaterial, coveLayersMaterial } from './materials.ts';
-import { WEDGE, buildWedgeSurface, edgeFade, wedgeCell } from './surface.ts';
+import { bandsMaterial, coveLayersMaterial, roundTwoMaterial } from './materials.ts';
+import { buildSteepSurface, buildWedgeSurface, edgeFade, wedgeCell } from './surface.ts';
 
 const query = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
-const variant = query.get('terrain') ?? '';
+const asked = query.get('terrain');
+const variant = asked === '' ? '1' : (asked ?? '');
 
 /** Draw the wedge in place of `mesh`'s cells, when `?terrain=` asks for it. `mesh` is Place's ground (land.ts). */
 export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
-  if (variant !== 'a' && variant !== 'b' && variant !== 'ab') return;
+  if (variant !== '1' && variant !== 'a' && variant !== 'b' && variant !== 'ab') return;
   const fine = variant !== 'b';
   const sub = fine ? Math.max(1, Math.min(8, Math.round(Number(query.get('terrainSub') ?? 4)))) : 1;
   const ground = mesh.geometry;
@@ -44,8 +48,8 @@ export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
   ground.setIndex(kept);
 
   // 2. The wedge's own mesh, its border sharing the main ground's positions, colours and normals.
-  const s = buildWedgeSurface(sub, fine);
-  const count = s.nx * s.nz;
+  const s = variant === '1' ? buildSteepSurface() : buildWedgeSurface(sub, fine);
+  const count = s.position.length / 3;
   const mainColour = ground.getAttribute('color'),
     mainNormal = ground.getAttribute('normal');
   const colour = new Float32Array(count * 3),
@@ -68,23 +72,21 @@ export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
       out[axis] = ids.reduce((sum, id, n) => sum + attr.getComponent(id, axis) * w[n]!, 0);
   };
   const tmp = [0, 0, 0];
-  for (let j = 0; j < s.nz; j++)
-    for (let i = 0; i < s.nx; i++) {
-      const k = i + j * s.nx,
-        x = WEDGE.x0 + i * s.step,
-        z = WEDGE.z0 + j * s.step;
-      lerpGrid(mainColour, x, z, tmp);
-      colour.set(tmp, k * 3);
-      lerpGrid(mainNormal, x, z, tmp);
-      // Coarse: exactly today's normals. Fine: today's at the border, the pass's own 6 m in.
-      const w = fine ? edgeFade(x, z) : 0;
-      const n = new THREE.Vector3(
-        tmp[0]! + (s.normal[k * 3]! - tmp[0]!) * w,
-        tmp[1]! + (s.normal[k * 3 + 1]! - tmp[1]!) * w,
-        tmp[2]! + (s.normal[k * 3 + 2]! - tmp[2]!) * w,
-      ).normalize();
-      normal.set([n.x, n.y, n.z], k * 3);
-    }
+  for (let k = 0; k < count; k++) {
+    const x = s.position[k * 3]! - ORIGIN.x,
+      z = s.position[k * 3 + 2]! - ORIGIN.z;
+    lerpGrid(mainColour, x, z, tmp);
+    colour.set(tmp, k * 3);
+    lerpGrid(mainNormal, x, z, tmp);
+    // Coarse: exactly today's normals. Fine: today's at the border, the pass's own 6 m in.
+    const w = fine ? edgeFade(x, z) : 0;
+    const n = new THREE.Vector3(
+      tmp[0]! + (s.normal[k * 3]! - tmp[0]!) * w,
+      tmp[1]! + (s.normal[k * 3 + 1]! - tmp[1]!) * w,
+      tmp[2]! + (s.normal[k * 3 + 2]! - tmp[2]!) * w,
+    ).normalize();
+    normal.set([n.x, n.y, n.z], k * 3);
+  }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(s.position, 3));
   geo.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
@@ -96,8 +98,15 @@ export function applyTerrainPass(mesh: THREE.Mesh, owner?: OwnedView) {
   geo.setAttribute('tpGorge', new THREE.BufferAttribute(s.gorge, 1));
   geo.setAttribute('tpSoil', new THREE.BufferAttribute(s.soil, 1));
   geo.setIndex(new THREE.BufferAttribute(s.index, 1));
-  const pick = query.get('terrainMat') ?? (variant === 'a' ? 'bands' : 'cove');
-  const material = pick === 'base' ? groundMaterial() : pick === 'bands' ? bandsMaterial() : coveLayersMaterial();
+  const pick = query.get('terrainMat') ?? (variant === '1' ? 'round2' : variant === 'a' ? 'bands' : 'cove');
+  const material =
+    pick === 'base'
+      ? groundMaterial()
+      : pick === 'bands'
+        ? bandsMaterial()
+        : pick === 'round2'
+          ? roundTwoMaterial()
+          : coveLayersMaterial();
   const wedge = new THREE.Mesh(geo, material);
   wedge.name = `terrain-pass-${variant}`;
   wedge.receiveShadow = true;
