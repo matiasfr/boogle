@@ -97,7 +97,6 @@ export const Cart = defineComponent('cart', {
   to: 'int',
   logs: 'int',
   rails: 'int',
-  recall: 'bool',
 });
 export const Boiler = defineComponent(
   'boiler',

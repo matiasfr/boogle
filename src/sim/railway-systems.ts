@@ -752,18 +752,6 @@ const seaSwitch = defineSystem(
   },
 );
 
-/** "Call cart to forge": the cart stops at the forge on its next pass (or sets out from the camp now) and waits there
- * to be boarded. Only while it serves a stretch; one call stands until it is served, so a second is a noop. */
-const cartCall = defineSystem(
-  'rail.cartCall',
-  { reads: [Forge, QJob, Rail], writes: [Cart], phase: 'act', order: 27 },
-  (w) => {
-    if (cartServing(w) < 0 || w.get(Cart, cartId(w))!.recall) return 0;
-    w.mut(Cart, cartId(w))!.recall = true;
-    return 1;
-  },
-);
-
 // ---------------------------------------------------------------- the Works and the Roundhouse (./railway-works.ts)
 // Server kind: every op is judged from the actor's own position by railValid; each transfer is one apply.
 /** The breaker on the boiler's old pedestal: the forge's third made thing, cast when Q6 is laid. A room-wide rung.
@@ -933,7 +921,7 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.glide': [glide],
   'rail.depotRailTake': [depotRailTake],
   'rail.pack': [pack],
-  'rail.cartCall': [cartCall],
+
   'rail.boilerTake': [boilerTake],
   'rail.boilerDrop': [boilerDrop],
   'rail.boilerFit': [boilerFit],
@@ -1055,16 +1043,13 @@ function cartStep(w: World, tick: number) {
     const c = w.get(Cart, id)!;
     const k = cartServing(w);
     const end = cartEnd(c);
-    const next = (phase: number, depart: number, more: { from?: number; to?: number; recall?: boolean } = {}) =>
+    const next = (phase: number, depart: number, more: { from?: number; to?: number } = {}) =>
       Object.assign(w.mut(Cart, id)!, { phase, depart, ...more });
     switch (c.phase) {
       case P.REST: {
-        if (k < 0) {
-          if (c.recall) w.mut(Cart, id)!.recall = false; // nothing to serve: a stale call lapses
-          return;
-        }
+        if (k < 0) return;
         const need = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
-        if (!need.logs && !need.rails && !c.recall) return;
+        if (!need.logs && !need.rails) return;
         next(P.LOAD, tick, { from: 0, to: CART_ROAD.rackCm(k) });
         cartMint(w, k, Math.min(CART.load, need.logs));
         continue;
@@ -1077,10 +1062,10 @@ function cartStep(w: World, tick: number) {
         }
         if (cartWants(w, k) > 0) return; // waiting for the forge
         const now = w.get(Cart, id)!;
-        const dwell = now.recall ? CART.forgeTicks : now.rails > 0 ? CART.leaveTicks : 0;
+        const dwell = now.rails > 0 ? CART.leaveTicks : 0;
         if (tick < now.depart + dwell) return;
-        if (k < 0 && !now.logs && !now.rails) next(P.HOME, tick, { recall: false });
-        else next(P.RUN, tick, { recall: false, from: CART_ROAD.forgeCm, to: k >= 0 ? CART_ROAD.rackCm(k) : now.to });
+        if (k < 0 && !now.logs && !now.rails) next(P.HOME, tick);
+        else next(P.RUN, tick, { from: CART_ROAD.forgeCm, to: k >= 0 ? CART_ROAD.rackCm(k) : now.to });
         continue;
       }
       default:
@@ -1096,7 +1081,7 @@ function cartStep(w: World, tick: number) {
             cartUnload(w);
           }
         } else if (c.phase === P.DROP) next(P.BACK, end);
-        else if (c.phase === P.BACK) next(c.recall ? P.FORGE : P.HOME, end);
+        else if (c.phase === P.BACK) next(P.HOME, end);
         else next(P.REST, end);
     }
   }
@@ -1368,7 +1353,7 @@ function awayCredit(w: World, ticks: number, tick: number) {
     cartMint(w, k, n);
     cartTakeRails(w, Math.min(rails, trips * CART.rails, w.get(Forge, fid)!.rack));
     cartUnload(w);
-    Object.assign(w.mut(Cart, cartId(w))!, { phase: CART_PHASE.REST, depart: tick, from: 0, recall: false });
+    Object.assign(w.mut(Cart, cartId(w))!, { phase: CART_PHASE.REST, depart: tick, from: 0 });
     made += n;
   }
   return made;

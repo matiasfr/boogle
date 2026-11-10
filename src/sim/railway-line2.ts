@@ -118,7 +118,7 @@ export function line2CartStatus(s: Railway): 'off' | 'loading' | 'travelling' | 
   const spec = LINE2_STATIONS[k]!,
     j = l.jobs[k]!;
   const logs = Math.min(spec.bill[0] - j.stock - l.depot, spec.bill[0] - l.depotOut[k]!);
-  return logs > 0 || line2CartWants(s, k) > 0 || c.recall
+  return logs > 0 || line2CartWants(s, k) > 0
     ? c.phase === CART_PHASE.REST
       ? 'loading'
       : 'travelling'
@@ -227,7 +227,6 @@ export function validateRailLine2(s: Railway) {
     !int(c.from, c.to) ||
     !int(c.logs, CART.load) ||
     !int(c.rails, CART.rails) ||
-    typeof c.recall !== 'boolean' ||
     ((c.phase === CART_PHASE.RUN || c.phase === CART_PHASE.DROP || c.phase === CART_PHASE.BACK) &&
       (c.to < CART_ROAD.forgeCm || c.from < CART_ROAD.forgeCm))
   )

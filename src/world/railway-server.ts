@@ -54,7 +54,7 @@ import {
   WORKS_RACK,
   WORKS_SEAMS,
 } from '../sim/railway-works-layout.ts';
-import { CART_CALL } from '../sim/railway-cart.ts';
+
 import { SEAM_THROAT } from '../sim/railway-works.ts';
 import { RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
 import {
@@ -132,7 +132,6 @@ export const RAIL_ACTIONS = new Set([
   'rail.glide',
   'rail.depotRailTake',
   'rail.pack',
-  'rail.cartCall',
   'rail.boilerTake',
   'rail.boilerDrop',
   'rail.boilerFit',
@@ -254,8 +253,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     }
     case 'rail.pack':
       return near(LINE2_PACK.x, LINE2_PACK.z, 340);
-    case 'rail.cartCall':
-      return near(CART_CALL.x, CART_CALL.z, CART_CALL.reach);
+
     case 'rail.lever':
       return height(LINE2_LEVER.y) && near(LINE2_LEVER.x, LINE2_LEVER.z, 320);
     case 'rail.seaSwitch':

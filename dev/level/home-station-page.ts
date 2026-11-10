@@ -36,7 +36,7 @@ async function part(b: boolean) {
     await import('../../src/sim/railway-line2-layout.ts');
   const { LINE1_AXE_STAND } = await import('../../src/sim/railway-line-layout.ts');
   const { WAGON_S, SHED_STALL, SHED_TABLE, WORKS_SEAMS } = await import('../../src/sim/railway-works-layout.ts');
-  const { CART_CALL } = await import('../../src/sim/railway-cart.ts');
+
   if (home.homeLayout() !== b) throw new Error('BOOGLE_HOME did not reach this process');
   const { LINES, lineAt } = layout;
   const lines = [LINES.north, LINES.east] as const;
@@ -102,7 +102,7 @@ async function part(b: boolean) {
     axeStand: pt(cm(LINE1_AXE_STAND)),
     shelf: pt(layout.SHELF),
     cartStop: pt(layout.TURNTABLE),
-    cartCall: pt(cm(CART_CALL)),
+
     q1Frame: pt(cm(LINE2_STATIONS[0]!)),
     q2Rack: pt(along(1, q2s)),
     q2Frame: pt(cm(LINE2_STATIONS[1]!)),

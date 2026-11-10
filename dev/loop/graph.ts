@@ -139,7 +139,6 @@ export const GENERIC_OPS = [
   'rail.forgeTake',
   'rail.depotTake',
   'rail.depotRailTake',
-  'rail.cartCall',
   'rail.boilerDrop',
   'rail.call',
   'rail.footTake',

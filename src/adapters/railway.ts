@@ -93,7 +93,6 @@ export type RailwayIntent =
         | 'rail.hook'
         | 'rail.glide'
         | 'rail.pack'
-        | 'rail.cartCall'
         | 'rail.breaker'
         | 'rail.kiln'
         | 'rail.cradle';
@@ -224,8 +223,7 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.hook' ||
     e.op === 'rail.glide' ||
     e.op === 'rail.depotRailTake' ||
-    e.op === 'rail.pack' ||
-    e.op === 'rail.cartCall'
+    e.op === 'rail.pack'
   )
     return { op: e.op };
   if (e.op === 'rail.call' && railInt(e.id, LINE_HALTS.length - 1) && (e.dir === -1 || e.dir === 1))
@@ -322,13 +320,11 @@ const holds = (s: Railway, op: string, event?: RailwayIntent) =>
               ? !!s.line2?.pack
               : op === 'rail.glide'
                 ? !!s.line2?.glide
-                : op === 'rail.cartCall'
-                  ? !!s.line2?.cart.recall
-                  : op === 'rail.strike' && event?.op === 'rail.strike'
-                    ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
-                    : op === 'rail.turn' && event?.op === 'rail.turn'
-                      ? s.shed?.table === event.to
-                      : false;
+                : op === 'rail.strike' && event?.op === 'rail.strike'
+                  ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
+                  : op === 'rail.turn' && event?.op === 'rail.turn'
+                    ? s.shed?.table === event.to
+                    : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
@@ -359,7 +355,6 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.hook',
   'rail.glide',
   'rail.pack',
-  'rail.cartCall',
   'rail.boilerTake',
   'rail.boilerDrop',
   'rail.boilerFit',

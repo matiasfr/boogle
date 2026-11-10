@@ -15,7 +15,7 @@ import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
 import { railCounts } from '../../src/sim/railway.ts';
 import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { line2Active, line2SeaOpen } from '../../src/sim/railway-line2.ts';
-import { CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
+import { CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { worldOf } from '../../test/railway-live.ts';
 import { railwayAtQ4, railwayAtQ5 } from '../../test/helpers/railway-q2.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
@@ -454,19 +454,16 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(line2().pack, false);
     assert.equal((await edit('s1', { op: 'rail.pack' }, [LINE2_PACK.x, 0, LINE2_PACK.z])).status, 'accepted');
     assert.equal(line2().pack, true);
-    // "Call cart to forge" is heard only at the handle by the turntable; a second call while one stands is a noop.
-    assert.equal((await edit('s1', { op: 'rail.cartCall' }, [q4.x, 0, q4.z])).status, 'rejected');
-    const call = [CART_CALL.x, 0, CART_CALL.z] as [number, number, number];
-    assert.equal((await edit('s1', { op: 'rail.cartCall' }, call)).status, 'accepted');
-    assert.equal((await edit('s1', { op: 'rail.cartCall' }, call)).status, 'noop');
-    assert.equal(line2().cart.recall, true);
+    // "Call cart to forge" is gone (v25): its op is refused even where its handle stood.
+    const handle = [91520, 0, 1480] as [number, number, number];
+    assert.equal((await edit('s1', { op: 'rail.cartCall' }, handle)).status, 'rejected');
     // The cart's first trip to the Q4 rack; the shelf is taken from beside the frame, not from the forge.
     let waited = 0;
     // (A load under way from Q2, which the helper filled by hand, lands first; the trip after brings the rails.)
     while (!(line2().cart.phase === CART_PHASE.DROP && line2().depotRails > 0) && waited < 3 * cartCycleTicks(3))
       waited += (await ticks(10), 10);
     assert.equal(line2().cart.phase, CART_PHASE.DROP, 'the cart reached the rack');
-    assert.equal(line2().cart.recall, false, 'the call was served at the forge on the way');
+
     assert.equal(line2().depotRails, LINE2_STATIONS[3]!.bill[1]);
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');

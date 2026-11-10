@@ -38,7 +38,8 @@
 // v25 (2026-11-10): trains stop on request (docs/plans/works-late-game.md, steps 1-3): `train.call` becomes `req` (two
 // digits a stop, a safe integer with room for 26 stops), each leg gains its start, entry speed and destination in cm
 // (`from`, `v0`, `dest`); `rail.call` carries `dir`. The cradle takes no footings (`WORKS.total` 14); two appended
-// railFoot* tunables; `rail.turn` only once the cradle is fitted and before the wagon rolls out.
+// railFoot* tunables; `rail.turn` only once the cradle is fitted and before the wagon rolls out. `rail.cartCall` and
+// `cart.recall` removed (the "Call cart to forge" handle was cut on 9 November).
 export const WORLD_NS = 'v25';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
