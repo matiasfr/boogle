@@ -8,7 +8,7 @@ import { RING_GAP, RING_FORMATION, ringAt, ringDeckY } from '../../sim/railway-r
 
 /** Call 20: a cream pennant on the leaf's toe, drawn only if the proof look of the leaf alone fails at Home. Off until
  * the designer and owner pick (the step 0 measure: the raised leaf is 8 px from Home's summit at phone size). */
-export const TOE_PENNANT = false;
+export const TOE_PENNANT = true;
 
 /** The leaf's colours: the near view's own orange (R2b imports this one so the swap doesn't pop), and the readable-glow
  * orange it brightens to with distance. */

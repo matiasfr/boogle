@@ -22,7 +22,7 @@ import { jumpOf, type JumpLand } from '../../world/railway-jump.ts';
 type RecoveryPoint = { x: number; y: number; z: number };
 export async function createRailwayArrival(owner: OwnedView, laidPath: () => readonly RecoveryPoint[]) {
   const [
-    { H, insidePlace, PATH_SAMPLES },
+    { H: placeH, insidePlace: inPlace, PATH_SAMPLES },
     { SPAWN, toWorld, ORIGIN, VILLAGE },
     { registerPlaceShore },
     ,
@@ -38,6 +38,12 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     import('../../proto/place/sites.ts'),
     import('../../proto/place/pose.ts'),
   ]);
+  // Ring Island's ground (src/entities/ring-island/) counts as land for the camera, the saved pose and recovery: a pose
+  // on the island is kept and restored; past the gap, Get unstuck puts you on our side (ringUnstuck, call 31).
+  const ring = await import('../ring-island/state.ts');
+  const island = await ring.islandGround();
+  const insidePlace = (x: number, z: number) => inPlace(x, z) || island.onIsland(x, z);
+  const H = (x: number, z: number) => (inPlace(x, z) ? placeH(x, z) : island.islandH(x, z));
   owner.cleanup(registerPlaceShore());
   const old = { wall: softWall.at, near: camera.near, moved: haulHooks.moved };
   const wasFresh = document.body.classList.contains('place-fresh');
@@ -156,6 +162,13 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     if (!body || !scenery.ready()) return;
     carry.on = null;
     carry.x = carry.y = carry.z = carry.spin = 0;
+    const home = ring.ringUnstuck(island, body.position.x, body.position.z);
+    if (home) {
+      teleport(body, home.x, home.y + PLAYER_R + 0.4, home.z);
+      body.velocity.set(0, 0, 0);
+      if (home.yaw !== undefined) cam.yaw = me.yaw = home.yaw;
+      return;
+    }
     for (let radius = 2; radius <= 40; radius += 2) {
       const count = Math.ceil((2 * Math.PI * radius) / 2);
       for (let k = 0; k < count; k++) {
