@@ -907,7 +907,10 @@ As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
   a scarf on a dead branch over the lookout shelf, a bell under a bracket you hear from the footbridge, the catwalk
   under the trestle (alcove, its ring facing the bridge), the tower's first slab (its east edge, out of the way back down) and its side nook (on plinths), a
   yellow block on the quarry's low rock (loft, its ring facing the camp), a weather vane on the village column
-  (balcony) and an orange flag on Far Head's sea stack. Walk into a crate (1.25 m) or Open it (at the bay, Open only): the station boxes'
+  (balcony) and an orange flag on Far Head's sea stack. Walk into a crate (1.25 m) or Open it (3.4 m across; at the
+  bay, Open only), only up at its level: your feet no more than 0.6 m under its base, plus 0.3 m for each metre across,
+  and no more than 2.2 m over it, so a crate on a ledge isn't offered from the ground beside the ledge (owner,
+  10 November: the mossy scarf from the ground; `src/player/reach.ts`, Place's crates too). The station boxes'
   show and card play (one reveal queue, `src/render/crate-show.ts`), the gift is yours at once, and on you when you
   put the card away if its slot is empty. Cards are name-only: these gifts have no line. Mark `secret found`.
 - **Not ported:** the jump course and its lamplighter's cap ("block") move to job E with the double jump; Place's Far
