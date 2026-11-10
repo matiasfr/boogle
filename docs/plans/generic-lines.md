@@ -1,5 +1,6 @@
-> **Status: plan, design-reviewed (2026-11-10).** Nothing built. Written on top of v25 (request stops,
-> `ship/matias-franco-15a4214`, shipping now); every line number and shape below is v25's. Recommended sequencing:
+> **Status: plan, design-reviewed (2026-11-10).** Nothing built. Written on top of v25 (request stops, shipped as
+> #1409); every line number and shape below is v25's. Since then #1411 added the passenger car, built and switched off,
+> to `train-view.ts`: step 4b keeps it per train. Recommended sequencing:
 > **generic lines and the second tracks ship as `WORLD_NS` v26; Ring Island build 1 follows as v27, on top.** The
 > designer's review (last section) is folded into the design and steps: the corrected waits and a wait bound
 > (findings 1 and 9), the serving train's lamp (2), the platform plaques and Far Head's chained lever (3, 4), the
