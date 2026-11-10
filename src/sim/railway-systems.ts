@@ -421,10 +421,10 @@ const beamDrop = defineSystem(
     if (!releasable(w, a.pid, a.epoch, e.revision!)) return 0;
     release(w);
     if (
-      Number.isSafeInteger(e.x) &&
-      Number.isSafeInteger(e.y) &&
-      Number.isSafeInteger(e.z) &&
-      lineBeamGround(e.x!, e.y!, e.z!)
+      railInt(e.x, 200000, -200000) &&
+      railInt(e.y, 200000, -200000) &&
+      railInt(e.z, 200000, -200000) &&
+      lineBeamGround(e.x, e.y, e.z)
     )
       Object.assign(w.mut(Beam, beamId(w))!, { state: 'ground', x: e.x!, y: e.y!, z: e.z! });
     return 1;
