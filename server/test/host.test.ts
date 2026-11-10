@@ -287,6 +287,50 @@ test('production railway relays bounded social cues without opening material or 
   }
 });
 
+test('voice signals go only to the tab they name, bounded, and never into the world', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    const roomId = railwayRoomId('voice');
+    const a = connect(base, roomId, 'aaa');
+    const b = connect(base, roomId, 'bbb');
+    const c = connect(base, roomId, 'ccc');
+    await Promise.all([a.next(is('list')), b.next(is('list')), c.next(is('list'))]);
+    for (const s of [a, b, c]) s.send({ t: 'p', s: 1, d: { v: 1, t: 1, vc: 1 } }); // all three pressed Join voice
+    const heardFrom = (id: string) => (m: Msg) => m.t === 'p' && m.id === id;
+    await Promise.all([a.next(heardFrom('bbb')), a.next(heardFrom('ccc')), b.next(heardFrom('aaa'))]);
+    const isRtc = (m: Msg) => m.t === 'm' && m.d?.t === 'rtc';
+    a.send({ t: 'm', d: { t: 'rtc', to: 'nobody', k: 'bye', n: 1 } }); // no such tab
+    a.send({ t: 'm', d: { t: 'rtc', to: 'aaa', k: 'bye', n: 1 } }); // itself
+    a.send({ t: 'm', d: { t: 'rtc', to: 'bbb', k: 'offer', n: 1, sdp: 'x'.repeat(12001) } }); // oversized sdp
+    a.send({ t: 'm', d: { t: 'rtc', to: 'bbb', k: 'shout', n: 1 } }); // unknown kind
+    a.send({ t: 'm', d: { t: 'rtc', to: 'server', k: 'bye', n: 1 } });
+    a.send({ t: 'm', d: { t: 'rtc', to: 'bbb', k: 'offer', n: 2, sdp: 'v=0', w: { op: 'tune.set' } } });
+    assert.deepEqual(await b.next(isRtc), {
+      t: 'm',
+      from: 'aaa',
+      d: { t: 'rtc', to: 'bbb', k: 'offer', n: 2, sdp: 'v=0' },
+    });
+    // A flood is cut at the burst, and game messages still pass after it.
+    for (let i = 0; i < 200; i++)
+      a.send({
+        t: 'm',
+        d: { t: 'rtc', to: 'bbb', k: 'ice', n: 2, c: { candidate: 'c' + i, sdpMid: '0', sdpMLineIndex: 0 } },
+      });
+    a.send({ t: 'm', d: { t: 'honk', v: 1 } });
+    await b.next(isWorld('honk'));
+    await c.next(isWorld('honk'));
+    const got = b.msgs.filter(isRtc).length;
+    assert.ok(got > 40 && got <= 62, `relayed ${got}`);
+    assert.ok(!c.msgs.some(isRtc), 'the third tab heard none of it');
+    assert.ok(!a.msgs.some(isRtc), 'nothing echoes to the sender');
+    a.ws.close();
+    b.ws.close();
+    c.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
 for (const room of [worldRoomId('resume'), 'ws-current-test', 'v01-configured']) {
   test(`world: real saved item and tick survive cleanup-on restart: ${room}`, async () => {
     const env = { SERVER_SAVE_MS: '300', SERVER_ROOMS: room === 'v01-configured' ? room : '*', REPORT_TOKEN: 't' };
