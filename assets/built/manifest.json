@@ -70,6 +70,16 @@
     ],
     "textures": []
   },
+  "passenger-car": {
+    "source": "passenger-car.py",
+    "sourceHash": "a622da07697d4fd1",
+    "outHash": "04733fad941025f0",
+    "rawBytes": 69664,
+    "bytes": 16852,
+    "triangles": 2132,
+    "animations": [],
+    "textures": []
+  },
   "place-kit": {
     "source": "place-kit.py",
     "sourceHash": "2279ba0daff9b5df",

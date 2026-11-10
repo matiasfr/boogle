@@ -1,0 +1,7 @@
+{
+  "provenance": "Original Boogle recipe: the knifeboard passenger car (candidate Four) from docs/plans/passenger-car-previz.md and character/car-previz-parts.ts. No external assets.",
+  "budgetKB": 128,
+  "deck": { "top": 0.7, "hx": 1.1, "hz": 1.6 },
+  "bench": { "seatTop": 0.32, "halfWidth": 0.55, "halfLength": 1.37 },
+  "roof": { "headroom": 0.2, "fits": 1.7 }
+}
