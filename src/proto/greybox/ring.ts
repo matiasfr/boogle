@@ -281,7 +281,7 @@ for (const u of [rh - 22, rh - 12, rh - 1]) {
   flight(248, 238, 11.8, 5.6, 10.6);
   landing(235, 238, 8.7, 12.7, 10.6, ['l1', 'u0']);
   flight(238, 248, 9.6, 10.6, top);
-  landing(247, 252, FORM.right + 4.4, 10.4, top, ['l1', 'u1']);
+  landing(248, 252, FORM.right + 4.4, 10.4, top, ['l1', 'u1']);
 }
 
 // ---------------------------------------------------------------- their side: the hinge pier, the brace platform, the leaf
@@ -327,7 +327,7 @@ for (const u of [rh - 22, rh - 12, rh - 1]) {
   flight(286, 296, 16, 0.4, 5.4);
   landing(296, 299, 12.9, 16.9, 5.4, ['l1', 'u1', 'l0']);
   flight(296, 287, 13.8, 5.4, braceY);
-  landing(284.5, 288, w1 - 0.2, 14.7, braceY, ['l1', 'u1']);
+  landing(283.5, 287, w1 - 0.2, 14.7, braceY, ['l1', 'u0']);
 }
 // The raised leaf: 17 m of orange steel, hinged at the heel, toe up toward Home (78 degrees), the empty counterweight
 // bracket painted on its Home face.
