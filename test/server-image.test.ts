@@ -9,19 +9,42 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { builtinModules } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { parseSync, type Node } from 'oxc-parser';
+import { walk as walkAst } from '../dev/scan/parse.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ENTRIES = ['server/src/index.ts', 'server/src/seeds/prebuild.ts'];
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
-// Specifiers a module loads at runtime. Whole `import type` / `export type` statements are erased by type stripping.
+// A string literal or a backtick string without `${}`; anything else is not a path the walk can follow.
+function literal(node: Node | null | undefined): string | undefined {
+  if (node?.type === 'Literal' && typeof node.value === 'string') return node.value;
+  if (node?.type === 'TemplateLiteral' && node.expressions.length === 0)
+    return node.quasis[0]!.value.cooked ?? undefined;
+  return undefined;
+}
+
+// Specifiers a module loads at runtime, from the parsed module (comments and strings can't fake or hide one).
+// Whole `import type` / `export type` statements are erased by type stripping; `import { type A }` still loads.
 function specifiers(source: string): string[] {
-  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   const out: string[] = [];
-  const statement = /\b(import|export)\s+(type\s+)?(?:[^'";]*?\sfrom\s*)?['"]([^'"]+)['"]/g;
-  for (const m of code.matchAll(statement)) if (!m[2]) out.push(m[3]!);
-  for (const m of code.matchAll(/\bimport\(\s*['"]([^'"]+)['"]/g)) out.push(m[1]!);
-  for (const m of code.matchAll(/new URL\(\s*['"]([^'"]+)['"]\s*,\s*import\.meta\.url/g)) out.push(m[1]!);
+  walkAst(parseSync('module.ts', source, { lang: 'ts' }).program, (n) => {
+    if (n.type === 'ImportDeclaration' && n.importKind !== 'type') out.push(n.source.value);
+    else if ((n.type === 'ExportNamedDeclaration' || n.type === 'ExportAllDeclaration') && n.source) {
+      if (n.exportKind !== 'type') out.push(n.source.value);
+    } else if (n.type === 'ImportExpression') {
+      const spec = literal(n.source);
+      if (spec !== undefined) out.push(spec);
+    } else if (n.type === 'NewExpression' && n.callee.type === 'Identifier' && n.callee.name === 'URL') {
+      const [first, base] = n.arguments;
+      const spec = literal(first as Node | undefined);
+      const metaUrl =
+        base?.type === 'MemberExpression' && base.object.type === 'MetaProperty' && !base.computed
+          ? base.property.type === 'Identifier' && base.property.name === 'url'
+          : false;
+      if (spec !== undefined && metaUrl) out.push(spec);
+    }
+  });
   return out;
 }
 
@@ -113,7 +136,7 @@ test('every file the server image runs is copied, in the build identity and in t
   assert.deepEqual(missing, [], 'add these to all three lists (server/README.md, "Continuous deploy")');
 });
 
-// Review (scratch branch): parser cases the walk gets wrong. Each fails on the current specifiers().
+// Parser cases the old regex walk got wrong: a glob string swallowed the imports after it (a silent miss).
 test('a glob string containing /* does not hide the imports after it', () => {
   const src =
     "const SEEDS = 'seeds/*.json';\nimport { a } from './hidden.ts';\n/** a doc comment */\nexport const b = a;\n";
