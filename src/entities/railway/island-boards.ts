@@ -162,7 +162,6 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
     update(dt: number) {
       clock += dt;
       const lit = reducedMotion || Math.floor(clock * BLINK_HZ) % 2 === 0;
-      const r = S.dot * 1.15 * toM;
       boards.forEach((bd, b) => {
         const face = bd.face;
         q.setFromAxisAngle(UP, face.yaw);
@@ -173,7 +172,7 @@ export function createIslandBoards(owner: OwnedView, lines: MapLine[], count: nu
           const at = pathAt(l, a);
           const [px, py] = mapPx(face.view, at.x, at.z);
           onFace(face, px, py, 0.012);
-          marks.setMatrixAt(k, m4.compose(p, q, sc.set(r * 3.2, r * 2.27, 1)));
+          marks.setMatrixAt(k, m4.compose(p, q, sc.set(S.markW * toM, S.markH * toM, 1)));
         });
         for (let i = 0; i < HERES; i++) {
           const k = b * HERES + i,

@@ -638,7 +638,9 @@ both lines along their real track (simplified to 1.5 m, so the curves read), lin
 station dotted and named (Village, Camp, Quarry, Far Head, Pier), unlaid track dashed and its station dim (line 2's
 pier stretch until Q6 is laid), this halt ringed in red, and both trains as small markers gliding at their live
 positions. The face is turned for whoever stands in front of it: what lies beyond the display is up the map and
-their right is its right, so geography stays true and the names stay upright. While a train is heading to a ringed
+their right is its right, so geography stays true and the names stay upright. Each face places its own names: every
+name takes the side of its stop that keeps it off the other names, the face's edge, every ring and a train standing
+at a stop, and as far as it can off the track (a unit test checks every display, both layouts, pier laid or not). While a train is heading to a ringed
 stop that ring blinks; under reduced motion the ring stays lit and the markers step once
 a second. Line 2's wagon rides with its train (no marker of its own); the shunter isn't shown. Halts only stand once
 trains run, so there is no "before trains" board. Standing in front of it the names read, on a phone too (in
