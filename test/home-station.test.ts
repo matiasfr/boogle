@@ -289,7 +289,7 @@ test('the hall and shelf: 1 m behind the buffers, centred on the island; the she
   assert.ok(Math.abs(HALL.a + HALL.d / 2 - (BUFFERS[0] - 1)) < 1e-9);
   assert.ok(dist(HALL, { x: -90.16, z: 11.03 }) < 0.05, 'the plan put the hall at (-90.16, 11.03)');
   assert.equal(SHELF_B.y, HALL.floor, 'on the hall floor');
-  // Its footprint along the axis (front toward the square) and across (the finds board on +x, toward the south wall).
+  // Its footprint along the axis (front toward the square) and across (its side way on +x, toward the south wall).
   const s = toAxis(SHELF_B),
     S = SHELF_SIZE;
   const face = { x: Math.sin(SHELF_B.yaw), z: Math.cos(SHELF_B.yaw) };
@@ -297,7 +297,7 @@ test('the hall and shelf: 1 m behind the buffers, centred on the island; the she
   const a0 = s.a - S.front,
     a1 = s.a + S.back,
     c0 = s.c - S.crown,
-    c1 = s.c + S.board;
+    c1 = s.c + S.crown;
   // Backed onto the front posts' line, 5 cm clear of their inner face, and clear of every post.
   const front = HALL.a - HALL.d / 2 + 0.2;
   assert.ok(Math.abs(a0 - (front + 0.175 + 0.05)) < 1e-9, 'just behind the front posts');
@@ -309,7 +309,7 @@ test('the hall and shelf: 1 m behind the buffers, centred on the island; the she
       assert.ok(apart, `clear of the post at a ${pa.toFixed(2)}, c ${pc.toFixed(2)}`);
     }
   // The south wall's inside face keeps 0.15 m for the works board; the back span (the line map) keeps 3 m clear.
-  assert.ok(c1 <= HALL.c + HALL.w / 2 - 0.3 - 0.15 + 1e-9, 'the works board fits on the south wall');
+  assert.ok(c1 + S.sideWay <= HALL.c + HALL.w / 2 - 0.3 - 0.15 + 1e-9, 'the side way and the works board fit');
   assert.ok(HALL.a + HALL.d / 2 - 0.2 - a1 > 3, 'off the line map span at the back');
   // The way in from the square, between the north end wall's inside face and the shelf's end, stays wide open.
   assert.ok(c0 - (HALL.c - HALL.w / 2 + 0.3) > 4.5, 'the way in is over 4.5 m wide');
