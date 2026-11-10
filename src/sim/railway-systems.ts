@@ -49,6 +49,7 @@ import {
   trainWayOut,
   type ServiceStop,
 } from './railway-train.ts';
+import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_ROCKS, WORKS } from './railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { LINE_TIMING } from './railway-line.ts';
@@ -1128,14 +1129,17 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>): Serv
     (k === 1 && dir > 0 && r.wagon && r.foot < WORKS.wagonCap && pierOwed(w, r.foot) > 0) ||
     (k === 3 && r.wagon && r.foot > 0);
 }
+/** The line a train (by slot) runs on: its speed and acceleration. */
+const lineOf = (slot: number) => RAIL_LINES[RAIL_TRAINS[slot]!.line]!;
 /** A running train asked to stop at a halt nearer than its leg's end, which it can still brake for: the leg is
  * replaced from where it is now, at the speed it has now, so the pose stays continuous. Never a longer leg. */
 function replan(w: World, id: number, slot: number, stops: readonly number[], tick: number) {
   const r = w.get(Train, id)!,
     dir = trainDir(r),
     s = trainAlong(r, slot, tick);
-  const v = Math.min(TRAIN.speed, Math.round(trainSpeed(r, slot, tick)));
-  const to = trainNextStop(stops, s, v, dir, r.req, serviceOf(w, slot, r));
+  const kin = lineOf(slot);
+  const v = Math.min(kin.speed, Math.round(trainSpeed(r, slot, tick)));
+  const to = trainNextStop(stops, s, v, dir, r.req, serviceOf(w, slot, r), kin);
   if (to < 0 || to === r.to || (stops[to]! - s) * dir >= (r.dest - s) * dir) return;
   Object.assign(w.mut(Train, id)!, { to, from: s, v0: v, dest: stops[to]!, depart: tick });
 }
@@ -1150,7 +1154,7 @@ function trainStep(w: World, tick: number) {
     for (let guard = 0; guard < 16; guard++) {
       const r = w.get(Train, id)!;
       if (r.phase === TRAIN_PHASE.RUN) {
-        const arrival = trainArrives(r);
+        const arrival = trainArrives(r, slot);
         if (tick < arrival) {
           replan(w, id, slot, stops, tick);
           break;
@@ -1215,7 +1219,7 @@ function trainStep(w: World, tick: number) {
       const sweep = trainWayOut(n, r.at, r.sweep, r.req, service);
       const req = reqDrop(r.req, r.at, sweep, n);
       const from = r.from;
-      const to = trainNextStop(stops, from, 0, sweep, req, service);
+      const to = trainNextStop(stops, from, 0, sweep, req, service, lineOf(slot));
       if (to < 0) break; // nowhere ahead to go (never at a stop of the line: the way out points inward)
       const dest = stops[to]!;
       Object.assign(w.mut(Train, id)!, { phase: TRAIN_PHASE.RUN, to, sweep, depart: tick, req, from, v0: 0, dest });

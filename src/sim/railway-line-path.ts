@@ -1,29 +1,12 @@
-// Where each train line runs, coarse: world centimetres every 10 m along it, sampled from Place's rail curves
-// (src/proto/place/layout.ts, today's Home; test/railway-train.test.ts holds the two together). Only the server's check
-// of a passenger's stop request reads it (is the actor near the train?), so a metre of chord error is nothing. Pure.
+// Where each train line runs, coarse: world centimetres every 10 m along it (RAIL_LINES[line].path, sampled from
+// Place's rail curves in src/proto/place/layout.ts, today's Home; test/railway-train.test.ts holds the two together).
+// Only the server's check of a passenger's stop request reads it (is the actor near the train?), so a metre of chord
+// error is nothing. Pure.
+import { RAIL_LINES } from './railway-lines.ts';
 const STEP_CM = 1000;
-const PATHS: readonly (readonly number[])[] = [
-  [
-    91800, 1200, 92451, 441, 93103, -318, 93774, -1059, 94378, -1855, 94920, -2695, 95390, -3577, 95751, -4509, 96044,
-    -5465, 96322, -6426, 96578, -7392, 96828, -8361, 97099, -9323, 97442, -10263, 97592, -11243, 97320, -12203, 97213,
-    -13188, 97478, -14143, 98294, -14683, 99267, -14911, 100264, -14922, 101264, -14900, 102264, -14900,
-  ],
-  [
-    91800, 1200, 92507, 1907, 93204, 2624, 93863, 3375, 94762, 3785, 95758, 3828, 96728, 3600, 97662, 3242, 98624, 2980,
-    99620, 2900, 100617, 2976, 101600, 3153, 102571, 3391, 103543, 3627, 104527, 3803, 105525, 3865, 106525, 3850,
-    107523, 3799, 108509, 3738, 109387, 3260, 110221, 2710, 111042, 2138, 111857, 1559, 112662, 966, 113457, 359,
-    114252, -247, 115057, -841, 115881, -1407, 116715, -1959, 117541, -2522, 118349, -3112, 119138, -3725, 119919,
-    -4350, 120695, -4981, 121471, -5612, 122249, -6240, 123029, -6866, 123808, -7493, 124588, -8119, 125369, -8743,
-    126153, -9363, 126940, -9981, 127726, -10599, 128515, -11214, 129306, -11825, 130103, -12430, 130906, -13025,
-    131718, -13608, 132537, -14183, 133360, -14751, 134185, -15316, 135015, -15874, 135868, -16396, 136720, -16919,
-    137516, -17522, 138198, -18253, 138754, -19083, 139192, -19981, 139523, -20924, 139759, -21895, 139944, -22878,
-    140106, -23865, 140236, -24856, 140330, -25852, 140393, -26850, 140427, -27849, 140438, -28849, 140434, -29849,
-    140421, -30849, 140403, -31849, 140378, -32848, 140343, -33848, 140303, -34847, 140259, -35846, 140215, -36845,
-  ],
-];
 /** World (x, z) in cm of `cm` along line `line`, clamped to its sampled length. */
 export function railLinePoint(line: number, cm: number) {
-  const p = PATHS[line]!,
+  const p = RAIL_LINES[line]!.path,
     last = p.length / 2 - 1;
   const f = Math.max(0, Math.min(last, cm / STEP_CM)),
     k = Math.min(last - 1, Math.floor(f)),
