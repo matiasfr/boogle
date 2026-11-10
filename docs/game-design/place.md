@@ -560,8 +560,10 @@ tested on a device.
 
 Q5 completion casts one communal boiler on the forge apron. An empty-backed player shoulders it and walks
 line one's finished track to fit it at the old camp locomotive. Accepted fitting starts the wake (rust clearing,
-steam and whistle) and drops five Local halts into place. These effects do not replay on restore. Leaving while
-holding the boiler returns that same boiler to its pedestal after the host's grace period.
+steam and whistle) and drops five Local halts into place. These effects do not replay on restore. While the boiler is
+held the server follows where its holder stands, once a second, as it does for the great beam; a holder back within the
+grace (`railBeamGraceS`, 180 s) still holds it, and one away longer has it put down where they last stood, or back on
+its pedestal if that was outside the haul area (boiler-first-choice plan, step 5; the beam's rule, owner 6 November).
 
 Standing on a halt calls its train from the player's accepted position. A running train finishes its current leg
 before acting on the call; there is no mid-leg reversal or rider express. The two Server-owned lines run at

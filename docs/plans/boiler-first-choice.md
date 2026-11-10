@@ -357,7 +357,7 @@ Step 2 is the guard only and can ship with step 3.
     two `placeSound` cues with `shape.scrape` and `shape.drop`. Keep `export const BEAM_LENGTH = BEAM_SHAPE.length`.
   - Verify: `npm run check`; the beam looks as before in `npm run playthrough -- --to T3` (open the beam checkpoint
     stills).
-- [ ] **5. The server follows the hauled boiler and puts it down where the hauler stood. Review (`src/sim`,
+- [x] **5. The server follows the hauled boiler and puts it down where the hauler stood. Review (`src/sim`,
   `src/world`, `server/`).**
   - `src/sim/railway-systems.ts`: add `boilerStood` and `boilerPutDown` and export `railBoilerStood`,
     `railBoilerPutDown` as in Design; delete `boilerRelease` and `railBoilerRelease`; update the header comment.

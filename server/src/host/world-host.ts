@@ -391,16 +391,25 @@ export function createRailwayWorldHost({
       beamAway = null;
     }
   };
+  // The hauled boiler follows the same rule on its own clock (docs/plans/boiler-first-choice.md, Part 3).
   let boilerAway: number | null = null;
+  let boilerStoodAt = -Infinity;
   const maintainBoiler = () => {
     const b = api.boiler();
-    if (b.state !== 'held' || requests.active(b.holder)) {
+    if (b.state !== 'held') return void (boilerAway = null);
+    const t = now();
+    if (requests.active(b.holder)) {
       boilerAway = null;
+      if (t - boilerStoodAt < 1000) return;
+      boilerStoodAt = t;
+      const p = positions().find((row) => row?.pid === b.holder && row.y !== undefined && t - row.at <= 2000);
+      // Presence is the body's centre in metres; the boiler is put down at the feet.
+      if (p) api.boilerStood(b.holder, Math.round(p.x * 100), Math.round(p.y! * 100) - 45, Math.round(p.z * 100));
       return;
     }
-    boilerAway ??= now();
-    if (now() - boilerAway >= rules.tune.get('railBeamGraceS') * 1000) {
-      api.boilerRelease(b.holder, b.epoch, b.revision);
+    boilerAway ??= t;
+    if (t - boilerAway >= rules.tune.get('railBeamGraceS') * 1000) {
+      api.boilerPutDown(b.holder);
       boilerAway = null;
     }
   };

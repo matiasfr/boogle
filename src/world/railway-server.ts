@@ -73,7 +73,8 @@ import {
 } from '../sim/railway-world.ts';
 import {
   railApply,
-  railBoilerRelease,
+  railBoilerPutDown,
+  railBoilerStood,
   railFootHolders,
   railFootRelease,
   railBeamPutDown,
@@ -374,8 +375,13 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
       commit();
       return moved;
     },
-    boilerRelease(pid: string, epoch: number, revision: number) {
-      const n = railBoilerRelease(world, pid, epoch, revision);
+    /** Where the boiler's hauler stands (cm, feet): an absence past its grace puts it down there. */
+    boilerStood(pid: string, x: number, y: number, z: number) {
+      if (railBoilerStood(world, pid, x, y, z)) commit();
+    },
+    /** The hauler stayed away past the grace: down where they last stood, or on the pedestal. */
+    boilerPutDown(pid: string) {
+      const n = railBoilerPutDown(world, pid);
       commit();
       return n;
     },
