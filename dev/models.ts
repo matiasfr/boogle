@@ -26,13 +26,13 @@ export const routes: Route[] = [
   },
   {
     work: 'Design review of a plan or brief with gameplay calls, before it is built',
-    withCodex: claude('designer agent', 'opus', 'medium'),
-    normal: claude('designer agent', 'opus', 'medium'),
+    withCodex: claude('designer agent', 'fable', 'medium'),
+    normal: claude('designer agent', 'fable', 'medium'),
   },
   {
     work: 'Planning complex work (docs/plans/<topic>.md)',
-    withCodex: claude('planner agent', 'opus', 'medium'),
-    normal: claude('planner agent', 'opus', 'medium'),
+    withCodex: claude('planner agent', 'fable', 'medium'),
+    normal: claude('planner agent', 'fable', 'medium'),
   },
   {
     work: 'Implementation of an approved plan (docs/plans/ or a written brief)',
@@ -110,9 +110,9 @@ export const fableTopEffort = 'high';
 
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
-  planner: { model: 'opus', effort: 'medium' },
+  planner: { model: 'fable', effort: 'medium' },
   implementer: { model: 'sonnet', effort: 'medium' },
-  designer: { model: 'opus', effort: 'medium' },
+  designer: { model: 'fable', effort: 'medium' },
   Explore: { model: 'haiku', effort: 'medium' },
 };
 

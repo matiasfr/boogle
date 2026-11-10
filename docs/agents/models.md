@@ -24,18 +24,21 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   Work with no plan (fixes, tooling) goes to an Opus medium general-purpose subagent. High-risk implementation
   (server, sync, `src/world`, `src/net`) stays on Opus: spawn the implementer with `model: opus`, an orchestrator
   default logged in [agent-calls](../agent-calls.md). A Sonnet implementer that stalls on a plan step reports back;
-  the orchestrator reruns that step on Opus. Planning and deep research stay on Opus medium (owner: "we try planning
-  on and deep research on Opus Medium still").
+  the orchestrator reruns that step on Opus. Deep research stays on Opus medium (owner: "we try planning on and
+  deep research on Opus Medium still"); planning has since moved to Fable (below).
 - **Explore on Haiku** (same source): the built-in Explore agent otherwise runs on the session's model, Fable or Opus
   here. `.claude/agents/Explore.md` pins it to Haiku 5.5 for searching, finding files and reading logs, where a wrong
   answer is cheap to spot. Code edits and judgment calls stay on Opus or the main session.
 - **Orchestrator** runs Opus medium, Opus high or Fable medium (owner, 9 November: "orchestrator can use opus
   medium, high, or fable medium").
-- **Fable only for the orchestrator** (owner, 9 November, after measuring that Fable 5.2 uses the weekly limit about
-  2.9x as fast as Opus 5.5 per million output tokens, and fills its own Fable limit too): the main session is the only
-  steady Fable user. The independent review runs at medium on Fable or Opus (owner, 9 November: "so can the independent review"). Planning, the hardest design, research and second-opinion work, and every
-  `/code-review` run on Opus. Per-task savings at API prices (the Fable 5.2 system card) don't carry over to a
-  subscription, where the limit is what runs out.
+- **Fable for the orchestrator, the planner and the design review** (owner, 9 November, after measuring that Fable
+  5.2 uses the weekly limit about 2.9x as fast as Opus 5.5 per million output tokens, and fills its own Fable limit
+  too): Fable runs only where its work is short and steers the rest. The main session, and the independent review at
+  medium on Fable or Opus (owner, 9 November: "so can the independent review"). The `planner` and `designer` agents
+  run Fable medium (owner, 10 November: "Fable medium right now, since it's bounded and won't have back and forth to
+  generate the plan. Fable excels if it can finish the task quickly"). The hardest design, research and
+  second-opinion work, and every `/code-review`, run on Opus. Per-task savings at API prices (the Fable 5.2 system
+  card) don't carry over to a subscription, where the limit is what runs out.
 - **Code review** runs in an Opus medium general-purpose subagent with `/code-review medium`, never in the main session.
 - **Fable tops out at high** (owner, 10 November: "don't use fable xHigh, fable high should be the absolute top
   used"). No route, spawn or review runs Fable at xhigh or max (`fableTopEffort`, `test/models.test.ts`), and it
@@ -54,8 +57,8 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   code.
 - **Strongest model for the few calls that steer the rest** (9 November, the orchestrator's reading of the owner's
   "let's do 1-8"; logged in [agent-calls](../agent-calls.md)): the main session, the planner and the independent
-  review ran on Fable. Narrowed the same day to the main session and the independent review (see "Fable only for the
-  orchestrator" above).
+  review ran on Fable. Narrowed the same day to the main session and the independent review (see "Fable for the
+  orchestrator, the planner and the design review" above).
 - **Daily jobs** (`dev/daily/jobs.ts`) stay on Codex; at a limit they fail and report rather than spend Claude usage
   unattended.
 - **Changing a route:** edit `dev/models.ts` and record the owner's words in

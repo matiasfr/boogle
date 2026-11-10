@@ -2,7 +2,7 @@
 name: planner
 description: Plans a Boogle feature before any code is written. Reads the design docs and the code it touches, then writes a step-by-step plan to docs/plans/<name>.md. Use it at the start of a feature that touches more than a couple of files, or anything in src/sim, src/world, src/net or server/.
 tools: Read, Grep, Glob, Bash, Write
-model: opus
+model: fable
 effort: medium
 ---
 
