@@ -124,6 +124,36 @@ test('review: line 1 still shuttles end to end', () => {
   assert.ok(TRAIN.sepCm > 0);
 });
 
+// The 4a review's P3c, claimed fixed in 33d7c0a96 with no test: a rider's ask made too late for the train to brake
+// leaves its amber lamp dark; one in time lights it.
+test('review: the amber lamp is dark for a rider ask too late to stop for, lit for one in time', async () => {
+  const { railTrainAsked } = await import('../src/adapters/railway.ts');
+  const { trainAlong, trainSpeed } = await import('../src/sim/railway-train.ts');
+  const read = (w: Fixture) => ({
+    trains: w.s.trains,
+    lines: w.s.lines,
+    line2: { trains: w.s.line2!.trains >= 0, trainsAt: w.s.line2!.trains, completed: line2Completed(w.s) },
+  });
+  const brake = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
+  const quarry = TRAIN_STOPS[LINE2]![1]!;
+  const run = (late: boolean) => {
+    const w = unaudited(railwayAtTrains('trains-on'));
+    for (let k = 0; k < TRAIN.wakeTicks; k++) railTick(w.s, ++w.t);
+    // A out from the village up, at cruise; ask from aboard either well before its braking point or inside it.
+    for (let k = 0; k < 3000; k++) {
+      const r = w.s.trains[A]!;
+      const left = quarry - trainAlong(r, LINE2, w.t);
+      if (r.phase === TRAIN_PHASE.RUN && r.track === 0 && trainSpeed(r, LINE2, w.t) >= TRAIN.speed - 1)
+        if (late ? left < brake - 300 && left > 0 : left > brake + 600) break;
+      railTick(w.s, ++w.t);
+    }
+    assert.equal(act(w, 'a', 'rail.call', { id: haltId(LINE2, 1), dir: 1, train: A }), 1, 'the ask is taken');
+    return railTrainAsked(read(w), A, w.t);
+  };
+  assert.equal(run(false), true, 'in time: lit');
+  assert.equal(run(true), false, 'too late: dark');
+});
+
 // The end blocks start at the merge (RailHalt.end.mergeCm), and a train that can't enter waits at its signal
 // TRAIN.signalCm (10 m) outside it. But the drawn tracks only part over a 20 m turnout beyond the merge
 // (src/proto/place/layout.ts TURNOUT, upLat), and a train stretches about 9 m behind its reference point (the wagon at
