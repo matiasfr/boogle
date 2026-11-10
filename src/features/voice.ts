@@ -188,6 +188,15 @@ async function join() {
   joined = true;
   muted = false;
   myMeter = meter(mic);
+  // The mic can end under us (iOS backgrounding, a device unplugged): leave voice rather than look in voice while
+  // silent. Join voice again acquires a fresh mic.
+  for (const t of mic.getAudioTracks())
+    t.addEventListener('ended', () => {
+      if (!joined || mic?.getAudioTracks().some((x) => x.readyState === 'live')) return;
+      leave();
+      problem = 'Mic stopped';
+      refresh();
+    });
   bindRoom();
   mesh?.join();
   tickTimer ||= setInterval(tick, 200);

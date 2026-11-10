@@ -6,8 +6,11 @@
 //   mesh.join() / mesh.leave()   start; stop (closes every link and tells each peer 'bye')
 //   mesh.setMembers(ids)         the other tabs whose presence says they are in voice. Of each pair the smaller id
 //                                offers, so two tabs never offer each other. A link to a tab that stopped being a member
-//                                closes once it is MEMBER_GRACE_MS old (an offer can arrive before its sender's presence)
-//   mesh.hear(msg, from)         an incoming signal (validated already)
+//                                closes once it is MEMBER_GRACE_MS old
+//   mesh.hear(msg, from)         an incoming signal (validated already). Only a member is answered: a signal from a tab
+//                                whose presence doesn't say it is in voice is held HOLD_MS (its presence can arrive just
+//                                after its offer) and dropped if it never does, so nobody listens in unseen. A second
+//                                offer within REOFFER_MS of the link it would replace is ignored (an offer flood).
 //   mesh.tick()                  timeouts: a link not connected after connectMs fails; the offerer retries `retries` times
 //   mesh.links()                 peer -> { state: 'connecting' | 'connected' | 'failed', role }
 import type { RtcIce, RtcMsg } from '../net/rtc-wire.ts';
@@ -35,6 +38,8 @@ export type MeshOpts = {
 const MEMBER_GRACE_MS = 5000;
 const BYE_COOL_MS = 3000;
 const ICE_QUEUE_MAX = 64;
+const HOLD_MS = 3000;
+const REOFFER_MS = 1000;
 
 type Rec = {
   peer: string;
@@ -54,6 +59,7 @@ export function createVoiceMesh(o: MeshOpts) {
   const retries = o.retries ?? 2;
   const recs = new Map<string, Rec>();
   const cool = new Map<string, number>(); // peer -> no new offer before this (it just said bye)
+  const held = new Map<string, { at: number; msgs: RtcMsg[] }>(); // signals from tabs not (yet) members
   let members = new Set<string>();
   let active = false;
   let seq = 0;
@@ -103,6 +109,7 @@ export function createVoiceMesh(o: MeshOpts) {
         if (recs.get(peer) !== rec) return;
         if (s === 'failed') return fail(rec);
         rec.state = 'connected';
+        rec.tries = 0;
         changed();
       },
     );
@@ -134,13 +141,25 @@ export function createVoiceMesh(o: MeshOpts) {
     const now = o.now();
     for (const rec of [...recs.values()])
       if (!members.has(rec.peer) && now - rec.at > MEMBER_GRACE_MS) close(rec, rec.state !== 'failed');
+    for (const [peer, h] of [...held]) {
+      if (members.has(peer) || now - h.at > HOLD_MS) held.delete(peer);
+      if (members.has(peer) && now - h.at <= HOLD_MS) for (const m of h.msgs) hear(m, peer);
+    }
     for (const peer of members) if (!recs.has(peer) && o.self < peer && (cool.get(peer) ?? 0) <= now) offer(peer);
   }
 
   function hear(msg: RtcMsg, from: string) {
     if (!active || from === o.self || msg.to !== o.self) return;
     const rec = recs.get(from);
+    const now = o.now();
+    if (!members.has(from) && msg.k !== 'bye') {
+      const h = held.get(from);
+      if (!h || now - h.at > HOLD_MS) held.set(from, { at: now, msgs: [msg] });
+      else if (h.msgs.length < ICE_QUEUE_MAX) h.msgs.push(msg);
+      return;
+    }
     if (msg.k === 'offer') {
+      if (rec && now - rec.at < REOFFER_MS) return;
       if (rec) close(rec, false); // a new offer replaces whatever link we had (the peer restarted it)
       const next = make(from, 'answer', msg.n, 0);
       next.link.takeOffer(msg.sdp).then(
@@ -186,6 +205,7 @@ export function createVoiceMesh(o: MeshOpts) {
       active = false;
       for (const rec of [...recs.values()]) close(rec, true);
       cool.clear();
+      held.clear();
     },
     get active() {
       return active;

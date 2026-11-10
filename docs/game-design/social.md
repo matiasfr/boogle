@@ -38,8 +38,13 @@ use Pause, because the pointer is locked during play.
 - **Sync kind.** Presence `vc` (1 in voice, 2 muted; missing means not in voice) says who to link to. Of each pair, the
   smaller tab id offers. Offer, answer and ICE are room messages `{ t: 'rtc', to, k, n, ... }` addressed to one tab.
   The server relays each one only to that tab ([src/net/rtc-wire.ts](../../src/net/rtc-wire.ts) shape and size caps,
-  its own 20/s bucket) and never into the world or a save. A tab that never presses the button opens no mic and no
-  connection, because nobody offers to a tab without `vc`.
+  its own 20/s bucket) and never into the world or a save. The server relays only between two tabs whose presence both
+  carry `vc`, and nothing more to a socket with over 64 KB unsent. A joined tab answers only tabs whose presence says
+  they are in voice. It holds an early offer for 3 s while that presence arrives, and ignores a second offer within
+  1 s of the link it would replace. A tab that never presses the button opens no mic and no connection, and nobody can
+  listen in without showing as in voice.
+- **Mic lost.** If the mic track ends (iOS backgrounding, a headset unplugged), you leave voice and Pause says "Mic
+  stopped"; Join voice takes a fresh mic.
 - **Lifecycle.** Voice stays on while the tab is hidden, if the browser keeps it alive. Leaving voice, closing the page,
   or losing the room closes every link, and the player rejoins whoever is there when the room comes back. A reload is
   a new tab: the old link closes about 5 s after its presence goes, and the new one is offered to at once.

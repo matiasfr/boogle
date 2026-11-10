@@ -230,3 +230,122 @@ test('validateRtc keeps only its own fields and refuses bad or oversized signals
   ])
     assert.equal(validateRtc(bad), null, JSON.stringify(bad)?.slice(0, 80));
 });
+
+// From the independent review (9 November): one tab with counting fake links and a hand-driven clock.
+function lone(self: string) {
+  let clock = 0;
+  const sent: RtcMsg[] = [];
+  let opens = 0;
+  const mesh = createVoiceMesh({
+    self,
+    now: () => clock,
+    send: (m) => void sent.push(m),
+    open() {
+      opens++;
+      return {
+        makeOffer: async () => 'offer',
+        takeOffer: async () => 'answer',
+        takeAnswer: async () => {},
+        addIce: async () => {},
+        close() {},
+      };
+    },
+  });
+  const settle = async () => {
+    for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  };
+  return { mesh, sent, settle, advance: (ms: number) => (clock += ms), opens: () => opens };
+}
+
+test('PRIVACY: a tab whose presence never says vc is never answered (no hidden listener)', async () => {
+  const v = lone('mmm');
+  v.mesh.join();
+  v.mesh.setMembers([]); // nobody else is in voice, as far as presence says
+  for (let i = 0; i < 6; i++) {
+    v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: i + 1, sdp: 'x' }, 'stranger');
+    await v.settle();
+    v.advance(4900); // re-offer just inside the grace, forever
+    v.mesh.tick();
+  }
+  assert.equal(v.sent.filter((m) => m.k === 'answer' && m.to === 'stranger').length, 0);
+  assert.equal(v.opens(), 0);
+});
+
+test("an offer that arrives just before its sender's presence is answered once the presence lands", async () => {
+  const v = lone('mmm');
+  v.mesh.join();
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: 1, sdp: 'x' }, 'aaa');
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'ice', n: 1, c: { candidate: 'c', sdpMid: '0', sdpMLineIndex: 0 } }, 'aaa');
+  await v.settle();
+  assert.equal(v.opens(), 0);
+  v.advance(200);
+  v.mesh.setMembers(['aaa']);
+  await v.settle();
+  assert.equal(v.opens(), 1);
+  assert.equal(v.sent.filter((m) => m.k === 'answer' && m.to === 'aaa').length, 1);
+  // A held offer older than the hold is dropped.
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: 1, sdp: 'x' }, 'zzz');
+  v.advance(5000);
+  v.mesh.setMembers(['aaa', 'zzz']);
+  await v.settle();
+  assert.equal(v.sent.filter((m) => m.k === 'answer' && m.to === 'zzz').length, 0);
+});
+
+test('GRIEF: an offer flood from one peer does not open a peer connection per offer', async () => {
+  const v = lone('mmm');
+  v.mesh.join();
+  v.mesh.setMembers(['aaa']);
+  for (let i = 0; i < 60; i++) v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: i + 1, sdp: 'x' }, 'aaa');
+  await v.settle();
+  assert.equal(v.opens(), 1);
+  v.advance(1500); // a real restart, later, still replaces the link
+  v.mesh.hear({ t: 'rtc', to: 'mmm', k: 'offer', n: 99, sdp: 'x' }, 'aaa');
+  await v.settle();
+  assert.equal(v.opens(), 2);
+});
+
+test('a duplicate answer does not restart a good link', async () => {
+  const v = lone('aaa');
+  v.mesh.join();
+  v.mesh.setMembers(['bbb']);
+  await v.settle();
+  const n = v.sent.find((m) => m.k === 'offer')!.n;
+  v.mesh.hear({ t: 'rtc', to: 'aaa', k: 'answer', n, sdp: 'a' }, 'bbb');
+  v.mesh.hear({ t: 'rtc', to: 'aaa', k: 'answer', n, sdp: 'a' }, 'bbb');
+  await v.settle();
+  assert.equal(v.opens(), 1);
+});
+
+test('validateRtc: hostile shapes never throw and never pass extra fields', () => {
+  const deep: Record<string, unknown> = {};
+  let cur = deep;
+  for (let i = 0; i < 2000; i++) cur = cur.c = {};
+  const bad: unknown[] = [
+    null,
+    1,
+    'rtc',
+    [],
+    { t: 'rtc' },
+    { t: 'rtc', to: '__proto__', k: 'bye', n: 1.5 },
+    { t: 'rtc', to: 'b', k: 'ice', n: 1, c: deep },
+    { t: 'rtc', to: 'b', k: 'offer', n: 1, sdp: { length: 1 } },
+    { t: 'rtc', to: 'b', k: 'ice', n: -1, c: null },
+    { t: 'rtc', to: 'b', k: 'ice', n: NaN, c: null },
+    { t: 'rtc', to: ['b'], k: 'bye', n: 1 },
+    { t: 'rtc', to: 'b', k: 'toString', n: 1 },
+  ];
+  for (const b of bad) assert.equal(validateRtc(b), null, JSON.stringify(b)?.slice(0, 80));
+  const ok = validateRtc(
+    JSON.parse(
+      '{"t":"rtc","to":"__proto__","k":"ice","n":1,"c":{"candidate":"","__proto__":{"x":1},"extra":1},"__proto__":{"polluted":1}}',
+    ),
+  );
+  assert.deepEqual(ok, {
+    t: 'rtc',
+    to: '__proto__',
+    k: 'ice',
+    n: 1,
+    c: { candidate: '', sdpMid: null, sdpMLineIndex: null },
+  });
+  assert.equal(({} as Record<string, unknown>).polluted, undefined);
+});

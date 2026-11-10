@@ -295,6 +295,9 @@ test('voice signals go only to the tab they name, bounded, and never into the wo
     const b = connect(base, roomId, 'bbb');
     const c = connect(base, roomId, 'ccc');
     await Promise.all([a.next(is('list')), b.next(is('list')), c.next(is('list'))]);
+    for (const s of [a, b, c]) s.send({ t: 'p', s: 1, d: { v: 1, t: 1, vc: 1 } }); // all three pressed Join voice
+    const heardFrom = (id: string) => (m: Msg) => m.t === 'p' && m.id === id;
+    await Promise.all([a.next(heardFrom('bbb')), a.next(heardFrom('ccc')), b.next(heardFrom('aaa'))]);
     const isRtc = (m: Msg) => m.t === 'm' && m.d?.t === 'rtc';
     a.send({ t: 'm', d: { t: 'rtc', to: 'nobody', k: 'bye', n: 1 } }); // no such tab
     a.send({ t: 'm', d: { t: 'rtc', to: 'aaa', k: 'bye', n: 1 } }); // itself

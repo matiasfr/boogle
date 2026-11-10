@@ -79,6 +79,11 @@ function take(b: Bucket, rate: number, burst: number, now: number) {
   return true;
 }
 const visible = (c: Client) => (c.d as { v?: unknown } | null)?.v === 1;
+// Voice chat's presence field (src/features/voice.ts): 1 in voice, 2 muted; missing means not in voice.
+const inVoice = (c: Client) => {
+  const vc = (c.d as { vc?: unknown } | null)?.vc;
+  return vc === 1 || vc === 2;
+};
 
 export function createHostedRoom({
   roomId,
@@ -262,11 +267,13 @@ export function createHostedRoom({
     }
     if (m.t !== 'm') return;
     if ((m.d as WireMsg | null)?.t === RTC_TYPE) {
-      // Voice: a clean copy to the one tab it names, never to everyone and never into the world or a save.
+      // Voice: a clean copy to the one tab it names, never to everyone and never into the world or a save. Both tabs'
+      // presence must say they are in voice (nobody listens in unseen), and a backed-up socket gets nothing more.
       if (!take(c.rtc, RTC_RATE, RTC_BURST, now)) return void c.dropped++;
       const signal = validateRtc(m.d);
       const to = signal && signal.to !== c.id ? clients.get(signal.to) : undefined;
-      if (!signal || !to) return void c.dropped++;
+      if (!signal || !to || !inVoice(c) || !inVoice(to)) return void c.dropped++;
+      if (to.ws.bufferedAmount > HIGH_WATER) return void c.dropped++;
       return write(to, encode({ t: 'm', from: c.id, d: signal }));
     }
     if (!take(c.msgs, MSG_RATE, MSG_BURST, now)) return void c.dropped++;
