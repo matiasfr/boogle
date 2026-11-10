@@ -131,7 +131,7 @@ export const ISLAND_A = {
 export const ISLAND_C = ROAD_GAP / 2;
 
 /** The concourse: an open hall on posts with end walls, its long side across the axis, 1 m behind the buffers. Its
- * roof stands `height` up on posts; the end walls stop at `endWall`, so the forge reads over the north one from spawn
+ * roof stands `height` up on posts; the end walls stop at `endWall`, so the hall stays open to the forge yard beside it
  * (owner, 9 November: "Lower end walls"). `floor` is its slab's top: 0.12 m over the highest ground under it. */
 export const HALL = (() => {
   const w = 13,
@@ -261,9 +261,9 @@ export const PROPS = {
  * on +x, how far the crown reaches in front and the back panel behind, and the crown's top over its floor. */
 export const SHELF_SIZE = { crown: 2.95, board: 4.35, front: 0.59, back: 0.35, top: 3.47 };
 /** The curio shelf (owner, 9 November: "move shelf off north wall"): in the hall's front, south of the way in, just
- * behind the front posts and facing the square, its finds board toward the south wall. North of it the way from the
- * square to the trains and spawn's view of the forge stay open; it keeps off the back span (the line map, step 12) and
- * leaves the south wall 0.15 m clear for the works board (call 29). */
+ * behind the front posts and facing the square, its finds board toward the south wall. North of it the way in from the
+ * square to the trains stays open, nearly 5 m wide; it keeps off the back span (the line map, step 12) and leaves the
+ * south wall 0.15 m clear for the works board (call 29). */
 export const SHELF_B = (() => {
   const a = HALL.a - HALL.d / 2 + 0.2 + 0.175 + 0.05 + SHELF_SIZE.front,
     c = HALL.c + HALL.w / 2 - 0.3 - 0.15 - SHELF_SIZE.board;
