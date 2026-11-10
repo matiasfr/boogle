@@ -42,8 +42,8 @@ const design = {
 };
 /** The rail loop's own reads: one command instead of the layout files, the plans and the bot. */
 const rail = {
-  when: 'Touching the rail loop (a bill, gate, order, cue or pacing)',
-  refs: ['`npm run loop -- node <id>` before; `npm run loop -- run` after (no browser)'],
+  when: 'Touching the rail loop (a bill, gate, order, cue or pacing): `npm run loop -- node <id>` before, `npm run loop -- run` after, no browser; usage',
+  refs: ['dev/loop/cli.ts'],
 };
 const visible = {
   when: 'Changing what a player sees or feels (update the owning game-design section)',
