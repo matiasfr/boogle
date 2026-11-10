@@ -774,6 +774,13 @@ from line 2, a phone view, and co-op.
    Needle Bell, where the turning rings and core read at 100 m. If Proof 3 shows nothing from line 2 near Q3 either, add
    one Local bell note from the summit on the wake edge, about 2 s after the forge whistle so the two don't collide.
    It's Needle Bell's name paying off, and it was parked in the brainstorm. Logged as a Default.
+   **Superseded, 10 November** (the owner's co-op playtest, a P1: the glider woke about 10 minutes in, neither player
+   took it and the owner didn't know it existed; Ring Island's build needs every group to have it). The locator is
+   now radius 0.45 m, 70 m tall, breathing at opacity 0.2–0.32, so it reads as a few pixels from the village and
+   line 2 (about 110 m; Far Head is still out of reach). The wake edge flares it for 4 s and shows the room's moment
+   banner (draft copy, the owner's to reword), and the halts' map displays mark the summit with a teal canopy until
+   it is taken. The hook rings read from the foot, so no sign was added. The bell note stays parked.
+   [place](../game-design/place.md), the glider section.
 3. **If J5 has already shipped v23.** This is decided, not an owner question: "No old builds" lets agents reset without
    asking unless the owner is playing. Ship v24 once `npm run playtest` shows no live session.
 4. **The summit return goes live.** Recommended: proceed. It's the logged New call (glider-placement call 1), it's
