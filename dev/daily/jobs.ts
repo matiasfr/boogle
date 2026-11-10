@@ -32,8 +32,9 @@ export const localTimes: Partial<Record<Job, [number, number]>> = { scenarios: [
 export type Job = keyof typeof jobs;
 /** The jobs launchd runs, once a week on `weekday` (owner, 10 November: "we can change those to be weekly or on
  * command"). Every job also runs by hand, `npm run daily -- <job>`: perf when a change could cost frames or the owner
- * asks; atlas and patch video are off (owner, 10 November: they spend Codex usage nobody needs now). */
-export const scheduled: readonly Job[] = ['scenarios', 'long'];
+ * asks; long only when the owner asks or a change touches the whole route (owner, 10 November: "on command only for
+ * the long job"); atlas and patch video are off (owner, 10 November: they spend Codex usage nobody needs now). */
+export const scheduled: readonly Job[] = ['scenarios'];
 /** launchd's day for the scheduled jobs: 0 is Sunday. */
 export const weekday = 0;
 /** The long job's playthrough: `npm run playthrough -- --long --stall 6000`, about half an hour on the Mac. */
