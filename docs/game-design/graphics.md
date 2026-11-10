@@ -42,7 +42,8 @@
   pipeline labels identify observed work, while an unexplained callback gap remains unassigned rather than blamed on water.
   `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
-  with 4x MSAA on desktop, no MSAA on touch, and PCF sun shadows (2048 px, 1024 on touch). Smooth edges in Pause can override MSAA on either device.
+  with 4x MSAA on desktop, no MSAA on touch, PCF sun shadows (2048 px, 1024 on touch) and a 512 sky cube everywhere
+  (owner, 9 November; [the summer sky](water.md#the-summer-sky-6-november-2026)). Smooth edges in Pause can override MSAA on either device.
   The render resolution follows the frame rate: it starts where this
   device last settled (0.8x on a first touch visit), drops in 10 % steps to 0.6x after 2 s of slow frames and climbs back
   after 5 s at the display's cadence. Slow is over 18.5 ms, or over 1.08x the cadence the browser delivers frames at, a
