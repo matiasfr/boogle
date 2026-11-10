@@ -7,7 +7,7 @@ import { SEA } from '../../constants.ts';
 import { scene, sun } from '../scene.ts';
 import { seaRipples, seaU } from './state.ts';
 import { TSL, type N } from './tsl.ts';
-import { scalar, vector } from './live.ts';
+import { derived, scalar, vector } from './live.ts';
 import { swellNode, swellPhases } from './swell.ts';
 import type { Coast } from './coast.ts';
 import { WAVE_SIZE } from './art.ts';
@@ -152,8 +152,8 @@ export function createOcean(options: OceanOptions): Ocean {
     foamColor = vector('sun.foam', SUN, 'foam');
   const middleDepth = float(scalar('sun.middleDepth', SUN, 'middleDepth')),
     deepDepth = float(scalar('sun.deepDepth', SUN, 'deepDepth')),
-    clearDepth = float(scalar('sun.clearDepth', SUN, 'clearDepth')),
-    clearMin = float(scalar('sun.clearMin', SUN, 'clearMin'));
+    clearDepth = float(scalar('sun.clearDepth', SUN, 'clearDepth'));
+  scalar('sun.clearMin', SUN, 'clearMin'); // its Dev control; the shader reads it through shoreAlpha below
   const scale1 = scalar('sun.scale1', SUN, 'scale1'),
     scale2 = scalar('sun.scale2', SUN, 'scale2'),
     speed1 = vector('sun.speed1', SUN, 'speed1'),
@@ -171,7 +171,11 @@ export function createOcean(options: OceanOptions): Ocean {
     edgeFoam = float(scalar('sun.edgeFoam', SUN, 'edgeFoam')),
     macro = float(scalar('sun.macro', SUN, 'macro')),
     ody = float(scalar('sun.look', SUN, 'look'));
-  const cellScale = mix(1, 0.62, ody); // Odyssey's larger, softer shapes
+  // Blends between the two looks of plain numbers fold on the CPU: off the tuning route `ody` is a literal, and
+  // Firefox's WGSL compiler (naga) rejects `mix` of literals only (src/render/reference/tsl.md).
+  const byLook = (sunshine: number, odyssey: number) =>
+    float(derived(() => sunshine + (odyssey - sunshine) * SUN.look));
+  const cellScale = byLook(1, 0.62); // Odyssey's larger, softer shapes
 
   const uPhases = uniform(new THREE.Vector4());
   const uGridScale = uniform(1);
@@ -282,13 +286,13 @@ export function createOcean(options: OceanOptions): Ocean {
     // Odyssey: a soft lane of sun on the swell itself, not only on the sparkling cells, and gentler cells.
     const softLane = smoothstep(lane.sub(0.06), 1, dot(R, seaU.uSun));
     const add = skyR
-      .mul(sparkle.mul(mix(1, 0.6, ody)))
+      .mul(sparkle.mul(byLook(1, 0.6)))
       .add(seaU.uSpecCol.mul(inLane).mul(laneGain))
       .mul(glint)
       .mul(band)
       .add(
         skyR
-          .mul(cling.mul(mix(1, 1.6, ody)))
+          .mul(cling.mul(byLook(1, 1.6)))
           .mul(pattern)
           .mul(band.oneMinus()),
       )
@@ -308,8 +312,8 @@ export function createOcean(options: OceanOptions): Ocean {
       .mul(0.35)
       .mul(ody)
       .add(1);
-    const lipWidth = foamDepth.mul(mix(1, 1.5, ody)).mul(breathe);
-    const lipOuter = smoothstep(mix(0.05, 0, ody), lipWidth, depthBelow).oneMinus();
+    const lipWidth = foamDepth.mul(byLook(1, 1.5)).mul(breathe);
+    const lipOuter = smoothstep(byLook(0.05, 0), lipWidth, depthBelow).oneMinus();
     const lip = mix(lipOuter, lipOuter.mul(lipOuter.mul(-2).add(3)).mul(lipOuter), ody) // rounder shoulder
       .mul(smoothstep(0, 0.04, depthBelow));
     const edge = smoothstep(0, edgeFoam, sceneThick).oneMinus();
@@ -318,7 +322,8 @@ export function createOcean(options: OceanOptions): Ocean {
     col.assign(mix(col, foamLit, foam));
 
     // Clear shallows over the sand, solid colour beyond, melting where water meets rock.
-    const alpha = mix(mix(clearMin, 0.12, ody), 1, smoothstep(0, clearDepth.mul(mix(1, 1.4, ody)), depthBelow))
+    const shoreAlpha = float(derived(() => SUN.clearMin + (0.12 - SUN.clearMin) * SUN.look));
+    const alpha = mix(shoreAlpha, 1, smoothstep(0, clearDepth.mul(byLook(1, 1.4)), depthBelow))
       .mul(smoothstep(0, 0.05, depthBelow))
       .mul(smoothstep(0, 0.12, sceneThick))
       .toVar();

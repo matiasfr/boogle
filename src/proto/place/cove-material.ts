@@ -163,8 +163,10 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
     .mul(lip.mul(coveU('lipShade')).oneMinus());
   const result = mix(dry, pigment('path'), path);
   patchNode(material, 'colorNode', (previous) => mix(previous ?? result, result, region));
+  // A whole-cove material (region 1) takes the cove's roughness outright: off the tuning route all three would be
+  // literals, and Firefox's WGSL compiler rejects `mix` of literals only (src/render/reference/tsl.md).
   patchNode(material, 'roughnessNode', (previous) =>
-    mix(previous ?? float(material.roughness), coveU('roughness'), region),
+    region === 1 ? coveU('roughness') : mix(previous ?? float(material.roughness), coveU('roughness'), region),
   );
   const smooth = mix(normalFlat, normalViewGeometry, coveU('normalSmoothing')).normalize();
   const relief: N = bumpMap(detail.g.mul(grass).add(rockHeight.mul(rock)), coveU('detailStrength'));

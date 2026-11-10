@@ -14,6 +14,7 @@ import type { WarpHandle } from './warp.ts';
 import { startWarpServer } from './server-process.ts';
 import { checkInstall } from './install-check.ts';
 import { acquireBotSlot } from './bot-queue.ts';
+import { wgslPortabilityScript } from './wgsl-portability.ts';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -299,6 +300,8 @@ export class Game {
         window.matchMedia = (q: string) =>
           q === '(pointer: coarse)' ? ({ ...mm(q), matches: true, media: q } as MediaQueryList) : mm(q);
       });
+    // Chromium compiles WGSL that Firefox refuses (./wgsl-portability.ts): report it as a gfx error here.
+    await g.ctx.addInitScript({ content: wgslPortabilityScript });
     if (opts.warp) await g.ctx.addInitScript(installWarp);
     if (opts.init) await g.ctx.addInitScript(opts.init);
     g.page = await g.ctx.newPage();
