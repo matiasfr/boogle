@@ -330,7 +330,7 @@ for (const [id, failure] of [
     client.ws.close();
     await client.closed;
     await until(() => app.logs.some((args) => String(args[0]).includes('close failed')), 'close failure reported');
-    // The failed authority is fenced (it writes nothing more) and frees its slot: no lockout until a restart.
+    // The failed authority is fenced (its later writes are refused) and frees its slot: no lockout until a restart.
     await until(() => app.rooms.room(id) !== room, 'failure frees the authority slot');
     assert.equal(await fs.readFile(file, 'utf8'), before, 'failed close never overwrites the last good file');
     fail = false;

@@ -1,6 +1,6 @@
-// A room's close always ends (server/src/host/rooms.ts, closeRoom): a close that fails or never settles leaves its
-// room's `closing` slot, so the next join loads the room again from its last good file instead of being refused with
-// `bye restart` until the process restarts (the live `smoke-node-2` lockout, 10 November).
+// A room's close always ends (server/src/host/rooms.ts, closeRoom): a close that fails or overruns is fenced and leaves
+// `closing` once every write it queued has landed, so the next join loads the room again from its file instead of being
+// refused with `bye restart` until the process restarts (the live `smoke-node-2` lockout, 10 November).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -107,19 +107,20 @@ test('a room whose save did not load cleanly can be joined again after its idle 
   assert.equal(await fs.readFile(file, 'utf8'), original, 'the save is untouched');
 });
 
-test('a close whose save never settles times out, fences the old writer and lets the next join load', async (t) => {
+test('a close whose save stalls times out, fences the old writer and reopens once the save lands', async (t) => {
   const { base } = await tmpStore(t);
   await base.init();
-  // Writes wait here while `hang` is set: a filesystem that stops answering, until release().
+  // While `hang` is set, each write waits inside the store's per-room lock behind a gate, as a write mid-writeFile on
+  // a disk that stops answering would, until release().
   let hang = true;
   const held: (() => void)[] = [];
   let writes = 0;
   const store: Store = {
     ...base,
-    write(...args) {
+    write(rid, ...rest) {
       writes++;
-      if (!hang) return base.write(...args);
-      return new Promise((resolve, reject) => held.push(() => base.write(...args).then(resolve, reject)));
+      if (hang) void base.withLock(rid, () => new Promise<void>((go) => held.push(go)));
+      return base.write(rid, ...rest);
     },
   };
   const release = () => {
@@ -140,7 +141,7 @@ test('a close whose save never settles times out, fences the old writer and lets
     closeStarted = true;
     return close(o).finally(() => (closeSettled = true));
   };
-  await until(() => held.length > 0, 'the startup checkpoint is writing');
+  await until(() => writes > 0, 'the startup checkpoint is writing');
   a.ws.close();
   await a.closed;
   await until(() => closeStarted, 'the idle close is draining');
@@ -148,16 +149,69 @@ test('a close whose save never settles times out, fences the old writer and lets
   assert.equal((await during.first()).t, 'bye', 'a join racing the close is refused');
   assert.equal(await during.closed, CLOSE.RESTART);
   await until(() => app.logs.some((l) => l.includes(`room ${id}: close failed`) && l.includes('timed out')), 'timeout');
-  assert.notEqual(app.rooms.room(id), room, 'the timed-out authority leaves its slot');
-  // The filesystem answers again: the old close resumes, and its last save must not reach the store.
+  // Its stalled write is still queued: the room stays closing until that lands, or the next authority would load an
+  // older file and later save it back over the old authority's write.
+  const stalled = app.join(id, 'stalled');
+  assert.equal((await stalled.first()).t, 'bye', 'a join while its write is queued is refused');
+  assert.equal(await stalled.closed, CLOSE.RESTART);
+  assert.equal(app.rooms.room(id), room, 'the slot is held until the queued write lands');
+  // The filesystem answers again: the queued write lands, the old close resumes, and its next save is refused.
   const before = writes;
   release();
   await until(() => closeSettled, 'the old close ran on');
+  await until(() => app.rooms.room(id) !== room, 'the slot is freed once the queue has drained');
   assert.equal(writes, before, 'the fenced authority writes nothing more');
   assert.ok((room.world as RailwayWorldHost).status().recoveryError, 'its refused save stops it');
   const b = app.join(id, 'second');
   assert.equal((await b.first()).t, 'welcome', 'the next join loads the room again');
   assert.notEqual(app.rooms.room(id), room, 'from a new authority');
+});
+
+// From the independent review (10 November): a close that timed out with its last save stalled inside the store's
+// per-room lock freed the slot at once. The next authority loaded the older file (store.readSync does not wait on
+// the lock), the old save landed on top, and the new authority's next save wrote its older state back over it.
+test('a join after a timed-out close never loads a file the old authority is still writing', async (t) => {
+  const { base } = await tmpStore(t);
+  await base.init();
+  const id = 'stale-load';
+  let release = () => {};
+  let stall = false;
+  const store: Store = {
+    ...base,
+    write(rid, ...rest) {
+      if (stall) void base.withLock(rid, () => new Promise<void>((go) => (release = go)));
+      return base.write(rid, ...rest);
+    },
+  };
+  const app = await manager(store, t);
+  const a = app.join(id, 'first');
+  assert.equal((await a.first()).t, 'welcome');
+  const room = app.rooms.room(id)!;
+  room.world.sync.saveNow(true);
+  await until(() => base.readSync(id) !== null, 'a first good save');
+  await base.withLock(id, async () => {});
+  const t0 = base.readSync(id)!.tick;
+  room.world.step(60); // a minute of play on the old authority
+  const t1 = room.world.sync.world.tick;
+  assert.ok(t1 > t0, `${t1} > ${t0}`);
+  stall = true;
+  a.ws.close();
+  await a.closed;
+  await until(() => app.logs.some((l) => l.includes(`room ${id}: close failed`)), 'the close times out');
+  stall = false;
+  const early = app.join(id, 'early');
+  assert.equal((await early.first()).t, 'bye', 'refused while the old save is queued');
+  assert.equal(await early.closed, CLOSE.RESTART);
+  release(); // the disk answers: the old authority's queued last save lands
+  await until(() => app.rooms.room(id) !== room, 'the slot is freed once it has');
+  const b = app.join(id, 'second');
+  assert.equal((await b.first()).t, 'welcome');
+  const next = app.rooms.room(id)!;
+  const loaded = next.world.sync.world.tick;
+  next.world.sync.saveNow(true);
+  await base.withLock(id, async () => {});
+  const after = base.readSync(id)!.tick;
+  assert.ok(loaded >= t1 && after >= t1, `old play to tick ${t1}; loaded tick ${loaded}; saved back tick ${after}`);
 });
 
 test('shutdown with a save that never settles is bounded and reports the failure', async (t) => {

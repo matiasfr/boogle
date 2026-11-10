@@ -61,12 +61,13 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   };
   const unloading = new Set<Promise<unknown>>();
   const closing = new Set<string>();
-  const failed = new Map<string, unknown>(); // rooms whose last close failed, until they load again (shutdown reports them)
+  // Rooms whose last close failed, until they load again (after their drain); shutdown reports them.
+  const failed = new Map<string, unknown>();
   let stopping = false;
   for (const id of listed) load(id);
-  // A room's close, bounded by closeMs. A close that fails (a refused or failed save, a save that did not load cleanly)
-  // or never settles has its writer fenced, so its last good file stays; nothing of it writes after this returns.
-  // Writes it already started finish in the store's per-room order, ahead of any later authority's.
+  // A room's close, bounded by closeMs; false when it failed (a refused or failed save, a save that did not load
+  // cleanly) or overran. The authority is then fenced: every write it asks for from now on is refused. A write it asked
+  // for before (an overrunning last save) can still be queued in the store's per-room lock and land later: see drain.
   async function closeBounded(id: string, room: HostedRoom, save: boolean) {
     let timer: NodeJS.Timeout | undefined;
     try {
@@ -76,31 +77,41 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
           timer = setTimeout(() => reject(new Error(`close timed out after ${closeMs} ms`)), closeMs);
         }),
       ]);
+      return true;
     } catch (error) {
       fences.get(room)!.up = true;
       failed.set(id, error);
       cfg.log(
-        `room ${id}: close failed; its writer is fenced and the next join loads its last good save`,
+        `room ${id}: close failed; its writer is fenced; the room reopens once its queued writes land`,
         String(error),
       );
+      return false;
     } finally {
       clearTimeout(timer);
     }
   }
-  // The slot is held while the close drains and always freed after, failed or not: a join meanwhile is refused with
-  // `bye restart`, and one after loads the room from its file.
+  // Every write a failed authority queued, landed. The next authority loads the file with store.readSync, which does
+  // not wait on the store's lock: loaded before then, it would read an older tick and later save it back over the old
+  // authority's last save. A slow disk recovers on its own; one that never answers keeps the room closing, as a hung
+  // save always did.
+  const drain = (id: string) => store.withLock(id, async () => {});
+  // The slot is held until the close has drained, failed or not, then always freed: a join meanwhile is refused with
+  // `bye restart`, and one after loads the room from its file. Shutdown waits only for the bounded close.
   function closeRoom(id: string, room: HostedRoom, save: boolean) {
     if (closing.has(id)) return;
     closing.add(id);
-    const p = closeBounded(id, room, save).finally(() => {
-      if (rooms.get(id) === room) rooms.delete(id);
-      closing.delete(id);
-      unloading.delete(p);
-    });
+    const p = closeBounded(id, room, save);
     unloading.add(p);
+    void p
+      .finally(() => unloading.delete(p))
+      .then((ok) => (ok ? undefined : drain(id)))
+      .finally(() => {
+        if (rooms.get(id) === room) rooms.delete(id);
+        closing.delete(id);
+      });
   }
-  // Keep the authority's map slot until its close has durably drained (or failed and been fenced). A reconnect must
-  // never load an older checkpoint while the previous writer can still write to the same room file.
+  // Keep the authority's map slot until its close has durably drained (or failed, been fenced and had its queued writes
+  // land). A reconnect must never load an older checkpoint while a write of the previous writer is still pending.
   const idle = setInterval(() => {
     for (const [id, room] of rooms)
       if (!listed.has(id) && !closing.has(id) && room.idleMs() > cfg.roomIdleMs) {
@@ -198,7 +209,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       try {
         const room = rooms.get(id);
         if (room) {
-          await closeBounded(id, room, false);
+          if (!(await closeBounded(id, room, false))) await drain(id);
           failed.delete(id); // its state is being replaced: nothing is lost
           rooms.delete(id);
         }
