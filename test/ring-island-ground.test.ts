@@ -6,14 +6,15 @@ import { RING_CONES, ringHeight } from '../src/proto/greybox/ring-cones.ts';
 import { FAR, ORIGIN } from '../src/place/layout.ts';
 import {
   RING_BRACE_PLATFORM,
+  RING_END,
   RING_FORMATION,
   RING_GAP,
   RING_HALT,
-  RING_LOOP,
   ringAt,
   ringDeckY,
 } from '../src/sim/railway-ring-layout.ts';
-import { createIslandGround, ISLAND_BED, ringUL } from '../src/entities/ring-island/ground.ts';
+import { CONCOURSE } from '../src/proto/greybox/ring-house.ts';
+import { createIslandGround, ISLAND_BED, ISLAND_FILL, ringUL } from '../src/entities/ring-island/ground.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
 const g = createIslandGround(RING_CONES, centre);
@@ -23,8 +24,8 @@ const w = (u: number, lat: number) => {
   const p = ringAt(Math.round(u * 100), Math.round(lat * 100));
   return { x: p.x / 100, z: p.z / 100 };
 };
-/** Off the fills: well clear of the halt's fill and the loop's grade, and of their embankments' reach. */
-const offFills = (x: number, z: number) => g.fillOut(x, z) > 25 && g.loopOut(x, z) > 25;
+/** Off the fills: well clear of the halt's fill and the run-off bed's cutting, and of their embankments' reach. */
+const offFills = (x: number, z: number) => g.fillOut(x, z) > 25 && g.bedOut(x, z) > 25;
 
 test('ringUL inverts ringAt', () => {
   for (const [u, lat] of [
@@ -74,11 +75,11 @@ test('off the fills the ground is the cones within 5 cm, at every node and on th
 });
 
 test('the ground stays 50 cm under every planned deck on the folk side', () => {
-  const under = (x: number, z: number, deck: number, what: string) => {
+  const under = (x: number, z: number, deck: number, what: string, slack = 1e-4) => {
     const h = g.islandH(x, z);
     assert.ok(
-      h <= deck - 0.5 + 1e-6,
-      `${what} at (${x.toFixed(2)}, ${z.toFixed(2)}): ground ${h.toFixed(2)}, deck ${deck}`,
+      h <= deck - 0.5 + slack,
+      `${what} at (${x.toFixed(2)}, ${z.toFixed(2)}): ground ${h.toFixed(5)}, deck ${deck}`,
     );
   };
   const L = RING_FORMATION;
@@ -102,32 +103,63 @@ test('the ground stays 50 cm under every planned deck on the folk side', () => {
       const p = w(u, lat);
       under(p.x, p.z, B.y / 100, 'the brace platform');
     }
-  // The loop deck (5 m wide) and its neck (both tracks, 4.4 m wide) at the halt's 8.0 m.
-  const cx = RING_LOOP.x / 100,
-    cz = RING_LOOP.z / 100,
-    r = RING_LOOP.r / 100,
-    y = RING_HALT.y / 100;
-  for (let a = 0; a < Math.PI * 2; a += 0.005)
-    for (const dr of [-2.5, -1.25, 0, 1.25, 2.5])
-      under(cx + Math.cos(a) * (r + dr), cz + Math.sin(a) * (r + dr), y, 'the loop');
-  for (const [t, a] of [
-    [L.tracks[1] / 100, Math.PI - 0.22],
-    [L.tracks[0] / 100, Math.PI + 0.22],
-  ] as const) {
-    const from = w(RING_HALT.u1 / 100, t),
-      mid = w(RING_HALT.u1 / 100 + 12, t),
-      to = { x: cx + Math.cos(a) * r, z: cz + Math.sin(a) * r };
-    for (const [p, q] of [
-      [from, mid],
-      [mid, to],
-    ] as const)
-      for (let k = 0; k <= 40; k++)
-        for (const s of [-2.2, 0, 2.2]) {
-          const f = k / 40,
-            dx = q.z - p.z,
-            dz = p.x - q.x,
-            n = Math.hypot(dx, dz);
-          under(p.x + (q.x - p.x) * f + (dx / n) * s, p.z + (q.z - p.z) * f + (dz / n) * s, y, 'the neck');
-        }
-  }
+  // The run-off bed (R2d): both tracks level at the halt's 8.0 m from the halt's north end to the buffers, 50 cm over the
+  // cutting (RING_END.cut), on a sweep of its rect and on every grid node inside it.
+  const bed = RING_END.bed;
+  for (let u = bed.u0 / 100; u <= RING_END.bufferU / 100 + 1e-6; u += 0.5)
+    // to the faces: behind them the ground meets the end
+    for (let lat = bed.lat0 / 100; lat <= bed.lat1 / 100 + 1e-6; lat += 0.38) {
+      const p = w(u, lat);
+      // Within a cell of the bed's side or end edge a 2 m triangle spans the notch's bank and can rise into the 50 cm slab;
+      // it must stay under the slab's top (the ground never shows through the deck). Everywhere else the full 50 cm holds.
+      const edge = Math.min(lat - bed.lat0 / 100, bed.lat1 / 100 - lat, bed.u1 / 100 - u) < g.cell;
+      under(p.x, p.z, bed.y / 100, `the run-off bed, u ${u}`, edge ? 0.5 : 1e-4);
+    }
+  for (let j = 0; j < g.nz; j++)
+    for (let i = 0; i < g.nx; i++) {
+      const x = g.x0 + i * g.cell,
+        z = g.z0 + j * g.cell;
+      if (g.bedOut(x, z) === 0) under(x, z, bed.y / 100, 'a node under the bed');
+    }
+});
+
+test('the cutting is at most 2 m deep and its banks stop short of the station house terrace', () => {
+  // The terrace (the greybox's CONCOURSE, level with the platforms) grown by 1 m: its nodes are the uncapped ground
+  // (the cones and the halt's fill), so the cutting's cap never reaches the house's hillside (Level finding 20).
+  const t = CONCOURSE.terrace,
+    grow = 1;
+  let inside = 0;
+  for (let j = 0; j < g.nz; j++)
+    for (let i = 0; i < g.nx; i++) {
+      const x = g.x0 + i * g.cell,
+        z = g.z0 + j * g.cell,
+        { u, lat } = ringUL(x, z);
+      if (u < t.u0 - grow || u > t.u1 + grow || lat < t.lat0 - grow || lat > t.lat1 + grow) continue;
+      inside++;
+      const free = Math.max(g.cone(x, z), ISLAND_FILL.top - ISLAND_FILL.fall * g.fillOut(x, z));
+      assert.ok(
+        Math.abs(g.at(i, j) - free) < 1e-4,
+        `terrace node (${u.toFixed(1)}, ${lat.toFixed(1)}): ${g.at(i, j)} against ${free}`,
+      );
+    }
+  assert.ok(inside > 40, `${inside} nodes`);
+  // The cutting: under the bed, the cone is cut by at most 1.5 m, and the banks (which rise 1 in 1.5 from the bed's
+  // edge to the cone) never reach lat -8.5, the plan's bound.
+  let deepest = 0,
+    reach = 0;
+  const bed = RING_END.bed;
+  for (let j = 0; j < g.nz; j++)
+    for (let i = 0; i < g.nx; i++) {
+      const x = g.x0 + i * g.cell,
+        z = g.z0 + j * g.cell,
+        { u, lat } = ringUL(x, z);
+      if (u < bed.u0 / 100 || g.fillOut(x, z) === 0) continue;
+      const cut = g.cone(x, z) - g.at(i, j);
+      if (cut > 1e-3) {
+        deepest = Math.max(deepest, cut);
+        reach = Math.min(reach, lat);
+      }
+    }
+  assert.ok(deepest > 0.5 && deepest <= 2 + 0.05, `deepest cut ${deepest}`);
+  assert.ok(reach >= -8.5, `the cutting reaches lat ${reach}`);
 });
