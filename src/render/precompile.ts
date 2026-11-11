@@ -44,8 +44,26 @@ export function warmUp(make: Warmup, opts: { beforeScene?: boolean; frame?: bool
 }
 
 // three keeps one precompilation state per renderer, so two compileAsync calls must never overlap: one at a time.
-let queue: Promise<unknown> = Promise.resolve();
-const compile = (root: THREE.Object3D) => (queue = queue.then(() => compileNow(root)));
+// An object held out of a frame (below) goes to the front: it waits for the compile running now, not for the others.
+const tasks: { run: () => Promise<unknown>; done: () => void }[] = [];
+let running = false;
+function inTurn(run: () => Promise<unknown>, { first = false } = {}) {
+  return new Promise<void>((done) => {
+    if (first) tasks.unshift({ run, done });
+    else tasks.push({ run, done });
+    void pump();
+  });
+}
+async function pump() {
+  if (running) return;
+  running = true;
+  for (let t = tasks.shift(); t; t = tasks.shift()) {
+    await t.run().catch((e: unknown) => console.error('[precompile]', e));
+    t.done();
+  }
+  running = false;
+}
+const compile = (root: THREE.Object3D, first = false) => inTurn(() => compileNow(root), { first });
 
 async function compileNow(root: THREE.Object3D) {
   // compileAsync would await init itself, but the flags below must be undone without a gap
@@ -255,7 +273,7 @@ rendererReady.then(
           if (allDone) late.afterAll++;
           // Done: drawn from the next frame (an object-specific shader, which three never caches, generates then).
           track(
-            compile(object).finally(() => {
+            compile(object, true).finally(() => {
               holding.delete(object);
               drawn.add(object);
             }),
@@ -294,6 +312,20 @@ rendererReady.then(
             const ms = performance.now() - t;
             bootSpan('wgsl', ms);
             startupWork('WGSL generation', ms);
+            // A shader generated inside a frame after the warm-up: which object (cold-launch reads these).
+            if (deferring && ms > 20) {
+              const { object, material } = b as unknown as { object?: THREE.Object3D; material?: THREE.Material };
+              const path: string[] = [];
+              for (let p = object ?? null; p && path.length < 4; p = p.parent) path.push(p.name || `${p.type}#${p.id}`);
+              performance.mark(
+                'startup:frame-wgsl:' +
+                  JSON.stringify({
+                    ms: Math.round(ms),
+                    material: material?.name || material?.type,
+                    object: path.join(' / '),
+                  }),
+              );
+            }
           }
         };
         b.buildAsync = async (y) => {
@@ -401,7 +433,7 @@ export async function precompile(root: THREE.Object3D | null = null, onProgress:
   }
   // Pass 1: the lobby's frame. Everything else in the scene is pass 2's.
   const extra = framed.map((make) => make());
-  await (queue = queue.then(() => compileFrame(extra).catch((e) => console.error('[precompile frame]', e))));
+  await inTurn(() => compileFrame(extra).catch((e) => console.error('[precompile frame]', e)));
   onProgress((preparations.length + 1) / parts);
   for (let i = 0; i < warmups.length; i++) {
     const made = await warmups[i]!();
@@ -517,7 +549,7 @@ async function compileRest() {
     // A chunk at a time, so an object held in a frame (above) waits for one chunk, not for the whole ring.
     for (let k = 0; k < here.length; k += CHUNK) {
       const chunk = here.slice(k, k + CHUNK);
-      await (queue = queue.then(() => compileSome(chunk)));
+      await inTurn(() => compileSome(chunk));
     }
     if (i === 0) await builtLater(deferred.near); // what the player soon holds, wears or flops with
     const casters: THREE.Object3D[] = [];

@@ -448,7 +448,10 @@ async function run(profileName: string, n: number, mode: Mode) {
       .filter((m) => m.name.startsWith('startup:render-pipeline:'))
       .map((m) => ({ t: Math.round(m.startTime), ...JSON.parse(m.name.slice('startup:render-pipeline:'.length)) }));
     // After Jump in (--jump): the frames a player sees and the pipelines built under them.
-    const jumped = performance.getEntriesByName('cold:jump-in')[0]?.startTime;
+    // From the click or the loading screen lifting, whichever is later: frames behind the loading screen are not seen.
+    const clicked = performance.getEntriesByName('cold:jump-in')[0]?.startTime;
+    const lifted = performance.getEntriesByName('boot:interactive')[0]?.startTime ?? 0;
+    const jumped = clicked === undefined ? undefined : Math.max(clicked, lifted);
     const render = snap.pipelines.filter((p) => p.kind.startsWith('createRenderPipeline'));
     const afterJump =
       jumped === undefined
@@ -466,9 +469,15 @@ async function run(profileName: string, n: number, mode: Mode) {
     // Pass 2's end on a lobby-first build: how many pipelines and objects were built late (each a miss of the warm-up).
     const all = (performance.getEntriesByName('boot:shaders-all')[0] as PerformanceMark | undefined)?.detail as
       Record<string, number> | undefined;
+    // Shaders generated synchronously inside a frame after the warm-up (src/render/precompile.ts marks them).
+    const frameWgsl = performance
+      .getEntriesByType('mark')
+      .filter((m) => m.name.startsWith('startup:frame-wgsl:'))
+      .map((m) => ({ t: Math.round(m.startTime), ...JSON.parse(m.name.slice('startup:frame-wgsl:'.length)) }));
     return {
       marks,
       all,
+      frameWgsl,
       afterJump,
       allBuilt,
       shaders,
@@ -745,7 +754,7 @@ function attributeProfile(cpu: CpuProfile, t0: number, marks: Record<string, num
     byLib: round(byLib),
     byOwner: round(byOwner),
     byPhase: Object.fromEntries(Object.entries(byPhase).map(([p, o]) => [p, round(o, 6)])),
-    longTasks: long.map(([start, dur], j) => ({ start, dur, top: round(inLong[j]!, 4), fns: round(inLongFn[j]!, 24) })),
+    longTasks: long.map(([start, dur], j) => ({ start, dur, top: round(inLong[j]!, 4), fns: round(inLongFn[j]!, 60) })),
   };
 }
 
