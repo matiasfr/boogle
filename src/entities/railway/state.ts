@@ -1,5 +1,5 @@
 // Read-only observation of the mounted railway. Debug setup lives outside the production entry.
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 
 type RailwayRead = RailwayAdapter['read'];
 

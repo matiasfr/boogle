@@ -6,7 +6,7 @@
 // play on accepted events and live edges, so every page that sees the twelfth footing live plays the finale (the owner's
 // "shared moments play for everyone", 10 November); restore snaps them and never plays one.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';

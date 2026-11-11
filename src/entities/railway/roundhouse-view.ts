@@ -3,7 +3,7 @@
 // the wagon onto line 2. Local view: effects play on the press, accepted events and live edges, and restore snaps
 // them; the shunt's pose comes only from `shed.ready` and the adapter's mover clock.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';

@@ -2,7 +2,7 @@
 // through the existing place-drop, and carried faster with a friend's Help (presence `railwayFootHelp`, Owner
 // presentation like the beam's, never a second claim). Local view of accepted state; flights never move material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';

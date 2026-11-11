@@ -3,7 +3,7 @@
 // spur, the stall roads and, once line 2 has its first stretch, the cart's leg, and the two ruined stalls beside the
 // open one (./roundhouse-view.ts). Local: the rules keep today's anchors, so prompts stay where they were.
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { drawWorksBoxes } from './works-box-view.ts';
 import { beam, box, type WorksBox, type WorksPoint } from './works-shape.ts';

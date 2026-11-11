@@ -2,7 +2,7 @@
 // and swung at a seam. The swing is Local on the press; the seams open from accepted state (works-view.ts,
 // roundhouse-view.ts), timed to this swing's contact frame.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';

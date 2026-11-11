@@ -9,7 +9,7 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
+import { createRailwayAdapter, railMovement } from '../src/adapters/railway-session.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { homeLand } from './helpers/land.ts';

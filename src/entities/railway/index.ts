@@ -6,7 +6,7 @@ import { identity } from '../../player/identity.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
 import { net, onRoomReady, onNetState, localPresence } from '../../netplay/net.ts';
 import { warmUp } from '../../render/precompile.ts';
-import { createRailwayAdapter, railMovement } from '../../adapters/railway.ts';
+import { createRailwayAdapter, railMovement } from '../../adapters/railway-session.ts';
 import { delayedRoom } from '../../world/delayed-room.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
 import { setRailwayView, setRailwayWorldRead } from './state.ts';

@@ -3,7 +3,7 @@
 // what the town view draws: the score the shop's prices climb with, the Works' breaker, line one's phase and which
 // stretches are laid. Pure over a world and a tick. The look is worked out once per (world, tick): `railCounts` and
 // `railPhase` walk the rows, and the town asks every frame.
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { forge, jobs, qjobs, works, type ReadWorld } from '../../sim/railway-rows.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
 import { line2Completed, line2Trains, railCounts } from '../../sim/railway-queries-line2.ts';

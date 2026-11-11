@@ -5,7 +5,7 @@
 // none of it. The brace prompt ("Knock out the pawl") is here; the counterweight prompt ("Hang the weight") is the jib's,
 // in railhead-view.ts. The rivet's glint is R4d's.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { thump } from '../../render/machine-sfx.ts';

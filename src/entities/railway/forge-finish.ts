@@ -6,7 +6,7 @@
 // Local presentation over accepted state: the show plays on the live edge; a reload or a late joiner after the forge
 // lit sees it finished. No op, presence or shared state, and no train: the beams no longer wait for line 1.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { forge as forgeRow } from '../../sim/railway-rows.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';

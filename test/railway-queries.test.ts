@@ -14,7 +14,7 @@ import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { railPredict } from '../src/world/railway-predict.ts';
 import { railwayModelAt, railwayOf } from './helpers/railway-model.ts';
-import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
+import { createRailwayAdapter, railMovement } from '../src/adapters/railway-session.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { mulberry32 } from '../src/sim/rng.ts';

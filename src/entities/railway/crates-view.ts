@@ -5,7 +5,7 @@
 // before the reveal. Late joiners and reloads find a box for every completion already reached and not yet opened.
 // Walk into it (1.25 m, as Place) or press Open; the card goes through the railway's one reveal queue. Local only.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { playMark } from '../../proto/mark.ts';

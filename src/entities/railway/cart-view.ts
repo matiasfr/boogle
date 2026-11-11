@@ -5,7 +5,7 @@
 // (Loading, On the way, Unloading, Waiting for forge). Nothing here moves material: the transfers are the server's
 // ticks. The "Call cart to forge" handle is cut (owner, 9 November; docs/decisions.md).
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { FIXED } from '../../constants.ts';
 import { setShapes, stepAlpha, teleport } from '../../physics/engine.ts';

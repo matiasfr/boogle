@@ -10,7 +10,7 @@ import {
   railMovement,
   type RailwayAccepted,
   type RailwayCorrection,
-} from '../src/adapters/railway.ts';
+} from '../src/adapters/railway-session.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';

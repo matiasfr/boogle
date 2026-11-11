@@ -1,6 +1,6 @@
 // The shared hook fact grants an Owner pull. Local targeting/presentation never changes the railway ledger.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { account, rail } from '../../sim/railway-rows.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R } from '../../constants.ts';

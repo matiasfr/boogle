@@ -27,7 +27,7 @@ import {
   type RailwayAccepted,
   type RailwayCorrection,
   type RailwayIntent,
-} from '../../src/adapters/railway.ts';
+} from '../../src/adapters/railway-session.ts';
 import { trainAlong } from '../../src/sim/railway-train.ts';
 import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
