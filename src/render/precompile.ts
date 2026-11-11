@@ -51,7 +51,7 @@ function inTurn(run: () => Promise<unknown>, { first = false } = {}) {
   return new Promise<void>((done) => {
     if (first) tasks.unshift({ run, done });
     else tasks.push({ run, done });
-    void pump();
+    queueMicrotask(() => void pump()); // never inside the caller: a hold is found mid-render
   });
 }
 async function pump() {
@@ -63,7 +63,7 @@ async function pump() {
   }
   running = false;
 }
-const compile = (root: THREE.Object3D, first = false) => inTurn(() => compileNow(root), { first });
+const compile = (root: THREE.Object3D) => inTurn(() => compileNow(root));
 
 async function compileNow(root: THREE.Object3D) {
   // compileAsync would await init itself, but the flags below must be undone without a gap
@@ -188,6 +188,8 @@ rendererReady.then(
 // Other scenes keep three's synchronous build, since their one-off renders need the result at once: PMREM, the item
 // icons, the output pass (a skipped output quad would be a black frame). Mipmap pipelines are three's internal ones.
 let deferring = false;
+const heldMarks = typeof location !== 'undefined' && new URLSearchParams(location.search).get('startup') === '1';
+const HELD_STEP = 8; // held objects a compileAsync: the nearest show first
 const SHADOW_WGSL_MS = 8; // shadow-shader generation a frame may spend before more casters wait for the next
 const building = new Set<Promise<unknown>>();
 const track = (p: Promise<unknown>) => {
@@ -239,6 +241,7 @@ rendererReady.then(
     if (typeof direct !== 'function' || !r._nodes?.nodeBuilderCache) return;
     const drawn = new WeakSet<THREE.Object3D>();
     const holding = new WeakSet<THREE.Object3D>();
+    const held: THREE.Object3D[] = [];
     const shadowDrawn = new WeakSet<THREE.Object3D>();
     let budgetFrame = -1,
       wgslAtFrame = 0;
@@ -270,14 +273,42 @@ rendererReady.then(
         } else if (missing) {
           holding.add(object);
           late.held++;
+          if (heldMarks)
+            performance.mark(
+              'startup:held:' +
+                JSON.stringify({
+                  object: `${object.name || object.type}#${object.id}`,
+                  material: material.name || material.type,
+                }),
+            );
           if (allDone) late.afterAll++;
-          // Done: drawn from the next frame (an object-specific shader, which three never caches, generates then).
-          track(
-            compile(object, true).finally(() => {
-              holding.delete(object);
-              drawn.add(object);
-            }),
-          );
+          // The frame's held objects compile together, next in the queue (one compileAsync keeps 16 pipelines in
+          // flight; one each would wait for the GPU in turn). Done: drawn from the next frame (an object-specific
+          // shader, which three never caches, generates then).
+          held.push(object);
+          if (held.length === 1)
+            track(
+              inTurn(
+                async () => {
+                  // Nearest first, a few at a time, each few shown as soon as they are built.
+                  const at = camera.getWorldPosition(new THREE.Vector3());
+                  const batch = held.splice(0).sort((a, b) => reach(a, at) - reach(b, at));
+                  for (let k = 0; k < batch.length; k += HELD_STEP) {
+                    const step = batch.slice(k, k + HELD_STEP);
+                    try {
+                      await compileSome(step, [...batch.slice(k + HELD_STEP), ...held]);
+                    } finally {
+                      if (heldMarks) performance.mark('startup:held:' + JSON.stringify({ done: step.length }));
+                      for (const o of step) {
+                        holding.delete(o);
+                        drawn.add(o);
+                      }
+                    }
+                  }
+                },
+                { first: true },
+              ),
+            );
           return;
         }
         (shadow ? shadowDrawn : drawn).add(object);
@@ -431,7 +462,10 @@ export async function precompile(root: THREE.Object3D | null = null, onProgress:
     await preparations[i]!();
     onProgress((i + 1) / parts);
   }
-  // Pass 1: the lobby's frame. Everything else in the scene is pass 2's.
+  // Pass 1: the lobby's frame (the camera entity puts the camera in its lobby pose for it). What its first frames show
+  // that this frame did not draw (hidden until then: the haul pieces, the panel mechanism, a few labels; 15 objects on
+  // 10 November) is held in those frames and built before the loading screen lifts (main.ts awaits lateBuilt).
+  // Compiling everything hidden in the view here instead built 28 more pipelines. Everything else is pass 2's.
   const extra = framed.map((make) => make());
   await inTurn(() => compileFrame(extra).catch((e) => console.error('[precompile frame]', e)));
   onProgress((preparations.length + 1) / parts);
@@ -449,16 +483,17 @@ export async function precompile(root: THREE.Object3D | null = null, onProgress:
 }
 
 // ---- pass 2: the rest of the scene, nearest the camera first ------------------------------------------------------
-// Rings out from where the camera is when each starts (the lobby's view, then wherever the player has got to): the
-// spawn's surroundings and the arrival, the town, the railway, then far places. Each ring is one compileAsync of the
-// camera pass (three yields every 8 ms and keeps 16 pipelines in flight), then its shadow casters over a few frames.
+// Nearest the camera first, in rings (the lobby's view, then wherever the player has got to: the spawn's surroundings
+// and the arrival, the town, the railway, then far places): the camera pass a chunk per compileAsync (three yields every
+// 8 ms and keeps 16 pipelines in flight), then the ring's shadow casters over a few frames.
 const RINGS = [60, 150, 300, 600, Infinity]; // m
-const CHUNK = 48; // objects a compileAsync
+const CHUNK = 12; // objects a compileAsync: an object held in a frame waits for one of these (~0.7 s at 4x CPU)
 const drawable = (o: THREE.Object3D) =>
   (o as THREE.Mesh).isMesh || (o as THREE.Sprite).isSprite || (o as THREE.Line).isLine || (o as THREE.Points).isPoints;
 const sphere = new THREE.Sphere();
 /** m from p to the nearest point of the object's bounds (0 inside them). */
-function reach(o: THREE.Object3D, p: THREE.Vector3) {
+/** The object's bounds in world space (into the shared `sphere`). */
+function bounds(o: THREE.Object3D) {
   const im = o as THREE.InstancedMesh;
   const geometry = (o as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
   if (im.isInstancedMesh) {
@@ -468,14 +503,26 @@ function reach(o: THREE.Object3D, p: THREE.Vector3) {
     if (!geometry.boundingSphere) geometry.computeBoundingSphere();
     sphere.copy(geometry.boundingSphere!);
   } else sphere.set(sphere.center.set(0, 0, 0), 0);
-  sphere.applyMatrix4(o.matrixWorld);
-  return Number.isFinite(sphere.radius) ? Math.max(0, sphere.center.distanceTo(p) - sphere.radius) : 0;
+  return sphere.applyMatrix4(o.matrixWorld);
+}
+function reach(o: THREE.Object3D, p: THREE.Vector3) {
+  const s = bounds(o);
+  const d = Math.max(0, s.center.distanceTo(p) - s.radius);
+  return Number.isFinite(d) ? d : 0; // unbounded or broken bounds: treat as here
 }
 
 // The camera pass of these objects: each (and its parents) shown and unculled only while compileAsync takes its list.
-async function compileSome(list: THREE.Object3D[]) {
+// later: objects to leave out this time (the other held objects, which are in view and would all build in one call).
+async function compileSome(list: THREE.Object3D[], later: THREE.Object3D[] = []) {
   if (!list.length) return;
   const undo: (() => void)[] = [];
+  const wanted = new Set<THREE.Object3D>();
+  for (const o of list) for (let p: THREE.Object3D | null = o; p; p = p.parent) wanted.add(p);
+  for (const o of later)
+    if (o.visible && !wanted.has(o)) {
+      o.visible = false;
+      undo.push(() => (o.visible = true));
+    }
   const open = (o: THREE.Object3D) => {
     if (!o.visible) {
       o.visible = true;
@@ -541,24 +588,36 @@ async function compileRest() {
   const wgsl0 = bootSpanMs('wgsl');
   const left = new Set<THREE.Object3D>();
   scene.traverse((o) => void (drawable(o) && left.add(o)));
-  for (const [i, ring] of RINGS.entries()) {
-    scene.updateMatrixWorld();
+  // Each chunk is the nearest of what is left to the camera as it is then, so once the player jumps in, the arrival's
+  // surroundings come next wherever the lobby looked. A ring ends when the nearest left is past it: then its casters.
+  let ring = 0;
+  let inRing: THREE.Object3D[] = [];
+  const endRing = async () => {
+    if (ring === 0) await builtLater(deferred.near); // what the player soon holds, wears or flops with
     const at = camera.getWorldPosition(new THREE.Vector3());
-    const here = [...left].filter((o) => reach(o, at) <= ring).sort((a, b) => reach(a, at) - reach(b, at));
-    for (const o of here) left.delete(o);
-    // A chunk at a time, so an object held in a frame (above) waits for one chunk, not for the whole ring.
-    for (let k = 0; k < here.length; k += CHUNK) {
-      const chunk = here.slice(k, k + CHUNK);
-      await inTurn(() => compileSome(chunk));
-    }
-    if (i === 0) await builtLater(deferred.near); // what the player soon holds, wears or flops with
+    const mine = new Set(inRing);
     const casters: THREE.Object3D[] = [];
-    const inRing = new Set(here);
-    scene.traverseVisible((o) => void (o.castShadow && inRing.has(o) && casters.push(o)));
+    scene.traverseVisible((o) => void (o.castShadow && mine.has(o) && casters.push(o)));
     casters.sort((a, b) => reach(a, at) - reach(b, at));
     await castShadows(casters);
-    bootMark(`shaders-ring-${i}`, { objects: here.length, casters: casters.length });
+    bootMark(`shaders-ring-${ring}`, { objects: inRing.length, casters: casters.length });
+    inRing = [];
+    ring++;
+  };
+  while (left.size) {
+    scene.updateMatrixWorld();
+    const at = camera.getWorldPosition(new THREE.Vector3());
+    const near = [...left].map((o) => [reach(o, at), o] as const).sort((a, b) => a[0] - b[0]);
+    while (near[0]![0] > RINGS[ring]!) await endRing();
+    const chunk = near
+      .slice(0, CHUNK)
+      .filter(([d]) => d <= RINGS[ring]!)
+      .map(([, o]) => o);
+    for (const o of chunk) left.delete(o);
+    inRing.push(...chunk);
+    await inTurn(() => compileSome(chunk));
   }
+  while (ring < RINGS.length) await endRing();
   await builtLater(deferred.far);
   await lateBuilt();
   await gpuDone();

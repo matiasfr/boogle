@@ -356,7 +356,7 @@ async function run(profileName: string, n: number, mode: Mode) {
     await page.route(/\.wasm$/, (route) =>
       mode === 'fail-404' ? route.fulfill({ status: 404, body: 'blocked' }) : route.abort('blockedbyclient'),
     );
-  const extra = mode === 'detail' ? '&startup=1' : mode === 'play' ? '&debugcam=1' : '';
+  const extra = mode === 'detail' || mode === 'late' ? '&startup=1' : mode === 'play' ? '&debugcam=1' : '';
   const query = `?room=cold-${profileName}-${n}-${Date.now().toString(36)}&notrack=1${extra}`;
   const wall = Date.now();
   await page.goto(base + query, { waitUntil: 'commit', timeout: 180000 });
@@ -474,10 +474,15 @@ async function run(profileName: string, n: number, mode: Mode) {
       .getEntriesByType('mark')
       .filter((m) => m.name.startsWith('startup:frame-wgsl:'))
       .map((m) => ({ t: Math.round(m.startTime), ...JSON.parse(m.name.slice('startup:frame-wgsl:'.length)) }));
+    const held = performance
+      .getEntriesByType('mark')
+      .filter((m) => m.name.startsWith('startup:held:'))
+      .map((m) => ({ t: Math.round(m.startTime), ...JSON.parse(m.name.slice('startup:held:'.length)) }));
     return {
       marks,
       all,
       frameWgsl,
+      held,
       afterJump,
       allBuilt,
       shaders,
