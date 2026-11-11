@@ -748,6 +748,9 @@ footing, until four hang (the owner's two labels, 11 November). Either order; th
 braced, or the pull with four hung, brings it down. Anyone standing under the toe's landing (the last metre and a half of
 the railhead's deck) is walked back along the deck, away from the hinge, as the leaf comes down (its last swing, not a
 counterweight's dip), and is never pinned.
+**The pennant (11 November, owner: "it should maybe be on it's own pole").** The cream pennant that makes the raised leaf
+readable from Home is not on the leaf: it flies from its own fixed pole on a footing in the sea beside the hinge pier
+(island side, out past the Way's left edge), never moves, and stays up after the Meet. Local presentation, no collider.
 **Not built yet:** the splash, the creak on the pawl, the lit bracket, the rivet's glint, and a tumble for the one walked
 clear. Not tested on a device.
 

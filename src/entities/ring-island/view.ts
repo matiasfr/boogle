@@ -32,10 +32,14 @@ import {
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
 import { ringIslandPose } from './state.ts';
-import { LEAF_ORANGE, TOE_PENNANT } from '../ring-island-far/view.ts';
-
-/** The far leaf's pennant cream (src/entities/ring-island-far/view.ts keeps its own copy private). */
-const PENNANT = '#fff0c9';
+import {
+  LEAF_ORANGE,
+  PENNANT_CREAM,
+  PENNANT_POLE,
+  POLE_PENNANT,
+  pennantFooting,
+  pennantGeometry,
+} from '../ring-island-far/view.ts';
 
 // ---------------------------------------------------------------- the layout, in metres
 const FORM = {
@@ -300,32 +304,7 @@ function buildLeaf(group: THREE.Group) {
   [-1.5, -0.5, 0.5, 1.5].forEach((x, k) => footings.setMatrixAt(k, m.makeTranslation(x * 1.6, 0.6, bz)));
   footings.count = 0;
   group.add(footings);
-  // The toe pennant (call 20; on since the owner's 10 November "pennant can be on"), the far leaf's own: a 12 m mast on
-  // past the toe and a cream flag broadside to Home, so the handover at the mount distance matches. Visual only.
-  let pennant: THREE.Mesh | null = null;
-  if (TOE_PENNANT) {
-    const mast = new THREE.BoxGeometry(0.4, 0.4, 12).translate(0, 0, GAP + 6);
-    const flag = new THREE.ShapeGeometry(
-      new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(10, 2.5), new THREE.Vector2(0, 5)]),
-    )
-      .rotateX(Math.PI / 2)
-      .translate(0, 0, GAP + 7);
-    mast.deleteAttribute('uv');
-    flag.deleteAttribute('uv');
-    pennant = new THREE.Mesh(
-      mergeGeometries([mast.toNonIndexed(), flag.toNonIndexed()]),
-      new THREE.MeshStandardNodeMaterial({
-        color: PENNANT,
-        emissive: PENNANT,
-        emissiveIntensity: 0.8,
-        side: THREE.DoubleSide,
-      }),
-    );
-    mast.dispose();
-    flag.dispose();
-    group.add(pennant);
-  }
-  return { mesh, footings, pennant, W };
+  return { mesh, footings, W };
 }
 
 /** The RINGWORKS board's face (the brief's word; copy for the owner, not The Boogler's). */
@@ -361,6 +340,8 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     [HINGE + 3, HINGE + 20],
   ] as const)
     block(STEEL_DARK, u0, u1, FORM.left + 0.2, FORM.right - 0.2, -6, deckY(u1) - 0.5);
+  if (POLE_PENNANT)
+    for (const f of pennantFooting(deckY(PENNANT_POLE.u))) block(CONCRETE, f.u0, f.u1, f.lat0, f.lat1, f.y0, f.y1);
   deck(CONCRETE, BRACE.u0, BRACE.u1, BRACE.l0, BRACE.l1, () => BRACE.y, BRACE.u1 - BRACE.u0);
   block(STEEL_DARK, BRACE.u0 + 3, BRACE.u0 + 7, BRACE.l0 + 2, BRACE.l1 - 2, -6, BRACE.y - 0.5);
   handrail(BRACE.u0, BRACE.l1 - 0.05, BRACE.u1 - 3.5, BRACE.l1 - 0.05, BRACE.y, BRACE.y);
@@ -781,6 +762,26 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   }
   poseLeaf();
 
+  // The pennant on its own fixed pole beside the hinge pier (the owner, 11 November), the far leaf's own: one definition
+  // (PENNANT_POLE), so the handover at the mount distance matches. It does not turn with the leaf and stays up after the
+  // Meet. Visual only.
+  let pennant: THREE.Mesh | null = null;
+  if (POLE_PENNANT) {
+    const c = p3(PENNANT_POLE.u, PENNANT_POLE.lat, deckY(PENNANT_POLE.u));
+    pennant = new THREE.Mesh(
+      pennantGeometry(),
+      new THREE.MeshStandardNodeMaterial({
+        color: PENNANT_CREAM,
+        emissive: PENNANT_CREAM,
+        emissiveIntensity: 0.8,
+        side: THREE.DoubleSide,
+      }),
+    );
+    pennant.position.set(c.x, c.y, c.z);
+    pennant.rotation.y = YAW + Math.PI; // local +z toward Home, as the leaf's
+    root.add(pennant);
+  }
+
   // ---------------------------------------------------------------- the drop hammer's head and the board's face
   const hammerBase = p3(hammerAt.u, hammerAt.lat, PLATFORM_Y + 0.6);
   const head = new THREE.Mesh(
@@ -868,7 +869,8 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       (board.material as THREE.Material).dispose();
       boardTex.dispose();
       leafParts.footings.dispose();
-      (leafParts.pennant?.material as THREE.Material | undefined)?.dispose();
+      pennant?.geometry.dispose();
+      (pennant?.material as THREE.Material | undefined)?.dispose();
     },
   };
 }
