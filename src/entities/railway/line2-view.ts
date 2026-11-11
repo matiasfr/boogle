@@ -71,13 +71,13 @@ export async function createRailwayLine2(
       import('../../proto/place/land.ts'),
       import('../../proto/place/opening-plans.ts'),
       import('../../proto/place/tech-layout.ts'),
-      import('../../proto/place/part-geometry.ts'),
-      import('../../proto/flat.ts'),
-      import('../../proto/minis/common.ts'),
+      import('../../render/part-geometry.ts'),
+      import('../../render/flat.ts'),
+      import('../../render/fanfare.ts'),
       import('../../proto/place/look.ts'),
       import('../../proto/place/look-kit.ts'),
-      import('../../proto/place/prop-kit.ts'),
-      import('../../proto/place/carry-models.ts'),
+      import('../../render/prop-kit.ts'),
+      import('../../render/carry-models.ts'),
     ]);
   const { flat } = flatMod;
   const ox = layout.ORIGIN.x;

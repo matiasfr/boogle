@@ -42,9 +42,9 @@ export async function createStationBoxes(
 ) {
   const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }, { OUT }] =
     await Promise.all([
-      import('../../proto/place/part-geometry.ts'),
+      import('../../render/part-geometry.ts'),
       import('../../proto/place/look.ts'),
-      import('../../proto/minis/common.ts'),
+      import('../../render/fanfare.ts'),
       import('../../proto/place/layout.ts'),
       import('../../proto/place/land.ts'),
       import('../../proto/place/rail.ts'),

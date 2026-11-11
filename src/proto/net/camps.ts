@@ -11,7 +11,7 @@ import { groundHeight } from '../../island/terrain.ts';
 import { thump, clank } from '../../render/machine-sfx.ts';
 import { arc, ring } from '../../render/motion.ts';
 import { ROUTE } from '../../sim/route.ts';
-import { box, draw, makeSet, place, type Box, type BoxSet, type Smoke } from './boxes.ts';
+import { box, draw, makeSet, place, type Box, type BoxSet, type Smoke } from '../../render/boxes.ts';
 
 const dust = new THREE.Color('#d8c8a6'),
   white = new THREE.Color('#f4efe4'),

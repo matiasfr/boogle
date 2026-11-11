@@ -14,7 +14,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as engineKit from '../../src/proto/place/engine-kit.ts';
 import * as carKit from '../../src/proto/place/car-kit.ts';
 import * as look from '../../src/proto/place/look.ts';
-import * as wagonLook from '../../src/proto/wagon/look.ts';
+import * as wagonLook from '../../src/render/wagon-look.ts';
 import * as engineSpec from '../../src/proto/wagon/engine.ts';
 
 export async function showroom() {

@@ -10,8 +10,8 @@ import { carry } from '../../physics/platforms.ts';
 import { clank } from '../../render/machine-sfx.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
-import { knock, pop } from '../minis/common.ts';
-import { drawHeaps, topSlot } from '../net/crates.ts';
+import { knock, pop } from '../../render/fanfare.ts';
+import { drawHeaps, topSlot } from '../../render/crates.ts';
 import { wakeTrains } from './cargo.ts';
 import {
   ROCK_LIST,

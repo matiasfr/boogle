@@ -9,7 +9,7 @@ import { thump } from '../../render/machine-sfx.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { removeBody, teleport, type Body } from '../../physics/engine.ts';
-import type { Box } from '../net/boxes.ts';
+import type { Box } from '../../render/boxes.ts';
 import { H, ROOM_GROUP, addStatic } from './land.ts';
 import { paintSite } from './look.ts';
 import { dropSet, dustRing, type DropSet } from './pieces.ts';

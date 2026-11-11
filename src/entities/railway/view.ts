@@ -42,7 +42,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     import('../../proto/place/stations.ts'),
     import('../../proto/place/pieces.ts'),
     import('../../proto/place/layout.ts'),
-    import('../../proto/minis/common.ts'),
+    import('../../render/fanfare.ts'),
     import('../../proto/place/look-kit.ts'),
     import('../../proto/place/look.ts'),
     import('../../proto/place/seat.ts'),

@@ -30,9 +30,9 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     await Promise.all([
       import('../../proto/place/land.ts'),
       import('../../proto/place/layout.ts'),
-      import('../../proto/flat.ts'),
-      import('../../proto/place/carry-models.ts'),
-      import('../../proto/place/axe-sparkle.ts'),
+      import('../../render/flat.ts'),
+      import('../../render/carry-models.ts'),
+      import('../../render/axe-sparkle.ts'),
     ]);
   // `&beamcarry=float` shows the floating carry (K1) beside the rope drag, for one comparison (7 November).
   const floatCarry = new URLSearchParams(location.search).get('beamcarry') === 'float';

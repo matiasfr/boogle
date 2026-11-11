@@ -4,7 +4,7 @@ import { PLAYER_R } from '../../constants.ts';
 import { setShapes, teleport, type Shape } from '../../physics/engine.ts';
 import { CARRY, carry, toPlatform } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
-import { deckBox, type Deck } from '../net/crates.ts';
+import { deckBox, type Deck } from '../../render/crates.ts';
 import type { Car } from './rail.ts';
 
 export function solidTrainLoad(car: Car, load: Deck) {

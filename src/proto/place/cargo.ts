@@ -9,7 +9,7 @@ import { me } from '../../player/player.ts';
 import { thump, whistle } from '../../render/machine-sfx.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
-import { fanfare, knock } from '../minis/common.ts';
+import { fanfare, knock } from '../../render/fanfare.ts';
 import {
   clearCrates,
   deckFree,
@@ -21,7 +21,7 @@ import {
   putCrate,
   topSlot,
   type Kind,
-} from '../net/crates.ts';
+} from '../../render/crates.ts';
 import { shakeView, trainsShow, wakeShow, type Waker } from './celebrate.ts';
 import { coop } from './coop.ts';
 import { rack, rackAdd } from './depot.ts';

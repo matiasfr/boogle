@@ -15,10 +15,10 @@ import { emit } from '../../render/particles.ts';
 import { warmDraw } from '../../render/precompile.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
-import { sparkleBurst } from './axe-sparkle.ts';
+import { sparkleBurst } from '../../render/axe-sparkle.ts';
 import { glyph } from '../../player/glyphs.ts';
-import { pop } from '../minis/common.ts';
-import { makeCanopy, makeGear, wearGear, placeCanopy, armToRing, type Canopy } from './gear-models.ts';
+import { pop } from '../../render/fanfare.ts';
+import { makeCanopy, makeGear, wearGear, placeCanopy, armToRing, type Canopy } from '../../render/gear-models.ts';
 import { COOP, count, job } from './job.ts';
 import { RINGS, move } from './moves.ts';
 

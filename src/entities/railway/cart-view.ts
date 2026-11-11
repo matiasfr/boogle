@@ -40,11 +40,11 @@ export async function createRailwayCart(
     import('../../proto/place/layout.ts'),
     import('../../proto/place/rail.ts'),
     import('../../proto/place/pieces.ts'),
-    import('../../proto/flat.ts'),
+    import('../../render/flat.ts'),
     import('../../proto/place/look.ts'),
     import('../../proto/place/look-kit.ts'),
-    import('../../proto/place/prop-kit.ts'),
-    import('../../proto/minis/common.ts'),
+    import('../../render/prop-kit.ts'),
+    import('../../render/fanfare.ts'),
   ]);
   const { flat } = flatMod;
   const [north, east] = [layout.LINKS[0]!.line, layout.LINKS[1]!.line];

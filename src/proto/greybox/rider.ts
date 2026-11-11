@@ -8,7 +8,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { camera } from '../../render/scene.ts';
 import { me } from '../../player/state.ts';
 import { PLAYER_R } from '../../constants.ts';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 
 const q = new URLSearchParams(location.search);
 export const RIDER = q.get('gbrider') ?? '1';
@@ -23,7 +23,7 @@ export const RIDER_FEEL = {
   poleOff: 3.4, // m from the line's centre
   poleH: 5,
 };
-// Place's cars (src/proto/wagon/look.ts): loco 1.6 × 3.0, boiler top 1.75; flatbed 2.2 × 3.2, deck 0.7; 3.7 m apart.
+// Place's cars (src/render/wagon-look.ts): loco 1.6 × 3.0, boiler top 1.75; flatbed 2.2 × 3.2, deck 0.7; 3.7 m apart.
 const CARS = [
   { off: 3.7, hx: 0.8, hz: 1.5, top: 1.75, color: '#3d4a52' },
   { off: 0, hx: 1.1, hz: 1.6, top: 0.7, color: '#b07a44' },

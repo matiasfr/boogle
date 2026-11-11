@@ -11,7 +11,7 @@ import { background } from '../../async.ts';
 import { precompile } from '../../render/precompile.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 import { FAR, ORIGIN } from '../place/layout.ts';
 import { RING_CONES } from './ground.ts';
 import { at, CONCOURSE, HOUSE, HX, houseBoxes, houseYaw, slab } from './ring-house.ts';

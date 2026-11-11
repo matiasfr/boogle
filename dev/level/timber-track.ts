@@ -36,7 +36,7 @@ import {
 } from '../../src/proto/place/tech-layout.ts';
 import { forgePlan, openingBuildings } from '../../src/proto/place/opening-plans.ts';
 import { frameBesideLine, stationColliders, stationStockCollider } from '../../src/proto/place/spatial-station.ts';
-import type { Box } from '../../src/proto/net/box-plan.ts';
+import type { Box } from '../../src/render/box-plan.ts';
 import { H } from '../../src/proto/place/terrain.ts';
 
 export type Deck = { id: string; owner: string; center: THREE.Vector3; axes: THREE.Vector3[]; half: number[] };

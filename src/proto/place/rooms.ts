@@ -23,7 +23,7 @@ import { cam, camConstraints, me } from '../../player/player.ts';
 import { precompile } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { merged } from './part-geometry.ts';
+import { merged } from '../../render/part-geometry.ts';
 import { H, ROOM_GROUP, addStatic } from './land.ts';
 import { ROOM_PLOTS, toWorld, type RoomId } from './layout.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';

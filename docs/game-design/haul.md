@@ -272,7 +272,7 @@ jump onto the boiler, and you're carried; jump off and you keep its speed. It pu
 joints every 4.5 m, and bursts steam just before leaving a stop; it is silent for now (the whistle and rail clacks were
 cut in the sound audit, 2026-11-02, until better sounds come). Its wheels turn with the distance covered, the
 loco's side rods, connecting rods and pistons follow its wheels, and the cars shuffle on a little buffer slack as it
-starts and stops (src/proto/wagon/look.ts). `&v=lively` (rockier, bouncier, more smoke, a
+starts and stops (src/render/wagon-look.ts). `&v=lively` (rockier, bouncier, more smoke, a
 camera jolt per joint while riding) against the default `&v=calm`, render and feel only; `&v=fast` is lively at
 6.5 m/s, through two room tunables (`wagonCruise` cm per tick, `wagonAccel` ticks to reach it; default 30 and 30, so
 other rooms are unchanged) that the page sets for the whole proto- room on load (calm and lively put the defaults back).

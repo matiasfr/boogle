@@ -6,7 +6,7 @@ const { me } = (await import('/src/player/player.ts' as string)) as typeof impor
 const { seatMesh } = (await import(
   '/src/proto/place/seat.ts' as string
 )) as typeof import('../../../src/proto/place/seat.ts');
-const { flat } = (await import('/src/proto/flat.ts' as string)) as typeof import('../../../src/proto/flat.ts');
+const { flat } = (await import('/src/render/flat.ts' as string)) as typeof import('../../../src/render/flat.ts');
 const { bind } = (await import(
   '/src/render/water/live.ts' as string
 )) as typeof import('../../../src/render/water/live.ts');

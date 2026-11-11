@@ -7,10 +7,10 @@ import { material } from '../../render/materials.ts';
 export { chips, dustRing } from '../../render/particle-effects.ts';
 import { scene } from '../../render/scene.ts';
 import { PIECE, pieceColor, pieceMesh, commitPieces } from '../../render/haul-pieces.ts';
-import { makeSet, type Box, type BoxSet } from '../net/boxes.ts';
+import { makeSet, type Box, type BoxSet } from '../../render/boxes.ts';
 import { LOOK, STEEL, lookBackLogs } from './look.ts';
 import { kitBatch, kitLogs } from './look-kit.ts';
-import { RAIL_SIZE } from './carry-models.ts';
+import { RAIL_SIZE } from '../../render/carry-models.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 export { RAIL_SIZE };
 

@@ -5,7 +5,7 @@ import { pauseNavigation, pausePages } from '../../player/pause-pages.ts';
 import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
-import { drawHeaps } from '../net/crates.ts';
+import { drawHeaps } from '../../render/crates.ts';
 import { DAY } from './look.ts';
 import { ROCK_LIST, TREES, back, greatTree, shoulder, setTrunkTaken, standing } from './chop.ts';
 import { clearMoments, pullOn } from './celebrate.ts';

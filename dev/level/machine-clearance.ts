@@ -36,8 +36,8 @@ import {
 } from '../../src/proto/place/track-panels.ts';
 import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
-import { boxAt, place } from '../../src/proto/net/box-plan.ts';
-import { merged } from '../../src/proto/place/part-geometry.ts';
+import { boxAt, place } from '../../src/render/box-plan.ts';
+import { merged } from '../../src/render/part-geometry.ts';
 import { T1_CRATE_PARTS } from '../../src/render/t1-reward-parts.ts';
 import { PILLARS, PADS, DEVICES, p1LipClear } from '../../src/proto/place/tech-layout.ts';
 import { timberDecks } from './timber-track.ts';
@@ -448,7 +448,7 @@ export async function checkMachineClearance() {
       UP_LAT,
       upLat,
       crossLat,
-      box: sourceFunction('src/proto/net/boxes.ts', 'box', { boxAt, groundHeight: H }),
+      box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: () => ({}),
       lookTrack: () => ({}),
     },

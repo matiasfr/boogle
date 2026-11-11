@@ -19,7 +19,7 @@ import { groundHeight } from '../../island/terrain.ts';
 import { reducedMotion } from '../../constants.ts';
 import { ROUTE, TRACK, RING_R, ringAt } from '../../sim/route.ts';
 import { HELPER_EVERY } from '../../sim/sites.ts';
-import { CRATES, TRAILER } from './look.ts';
+import { CRATES, TRAILER } from '../../render/wagon-look.ts';
 
 const TPS = 1000 / TICK_MS;
 const HOP = {

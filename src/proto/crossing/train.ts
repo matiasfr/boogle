@@ -1,4 +1,4 @@
-// The crossing's train (?proto=crossing): the wagon's look (../wagon/look.ts) on kinematic cars registered as platforms,
+// The crossing's train (?proto=crossing): the wagon's look (../../render/wagon-look.ts) on kinematic cars registered as platforms,
 // running a Local timetable (./line.ts). Push-pull like the wagon: the loco stays at the far end of the train, so it
 // pulls going out and pushes coming home. Cars are level (platforms take yaw only); the climb shows as a drawn pitch.
 // Local: every tab runs its own, nothing is sent. Serves DESIGN.md 1 (Toys before chores).
@@ -10,7 +10,7 @@ import { angleLerp } from '../../math.ts';
 import { BODY, addBody, createBody, stepAlpha, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
 import { registerPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
-import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from '../wagon/look.ts';
+import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from '../../render/wagon-look.ts';
 import { lineAt, railY, trainAt, timeAtS, type LinePoint, type TrainState } from './line.ts';
 import { FEEL, TIMETABLE } from './tuning.ts';
 

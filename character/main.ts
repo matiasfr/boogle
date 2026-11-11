@@ -13,11 +13,11 @@ import { material } from '../src/render/materials.ts';
 import { createMotionCapture, bonePoses, endpointSeam } from './motion.ts';
 import { descriptors, gearAttachments } from './descriptors.ts';
 import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
-import { cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
+import { cargoCapacity, type CargoKind } from '../src/render/carry-models.ts';
 import { COLORS } from '../src/constants.ts';
 import { CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
 import { createParticlePool } from '../src/render/particle-pool.ts';
-import type { AxeTier } from '../src/proto/place/axe-models.ts';
+import type { AxeTier } from '../src/render/axe-models.ts';
 import {
   dressMachine,
   machineWheelPivots,

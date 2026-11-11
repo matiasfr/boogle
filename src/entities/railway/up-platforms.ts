@@ -9,10 +9,10 @@ import type { Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { thump } from '../../render/machine-sfx.ts';
 
-type Box = import('../../proto/net/boxes.ts').Box;
+type Box = import('../../render/boxes.ts').Box;
 type Deps = {
   layout: typeof import('../../proto/place/layout.ts');
-  boxes: typeof import('../../proto/net/boxes.ts');
+  boxes: typeof import('../../render/boxes.ts');
   land: typeof import('../../proto/place/land.ts');
   pieces: typeof import('../../proto/place/pieces.ts');
 };

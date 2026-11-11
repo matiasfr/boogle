@@ -9,13 +9,13 @@ import { guardInstances } from '../../render/draw-count.ts';
 import kitUrl from '../../../assets/built/place-kit.glb?url';
 import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
-import { LOCO, TRAILER } from '../wagon/look.ts';
+import { LOCO, TRAILER } from '../../render/wagon-look.ts';
 import { H } from './land.ts';
 import { LOOK, STEEL, addBlob, bakeContact, honeyOf, paint, setBlob, type Paint } from './look.ts';
 import type { DropSet } from './pieces.ts';
 import { setViewGeometry, type OwnedView } from '../../render/owned-view.ts';
-import { makeBoiler } from './carry-models.ts';
-import { makeProp } from './prop-kit.ts';
+import { makeBoiler } from '../../render/carry-models.ts';
+import { makeProp } from '../../render/prop-kit.ts';
 import { job } from './job.ts';
 import { ENGINE_BOILER, ENGINE_WHEELS } from '../wagon/engine.ts';
 

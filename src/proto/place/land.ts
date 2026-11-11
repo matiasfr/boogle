@@ -1,7 +1,7 @@
 // The land of ?proto=place, drawn from terrain.ts; the cove locally refines the shared render/collision surface, with the
 // spire, the footbridges and what stands across the sea. chop.ts owns every tree. Local.
 import * as THREE from 'three/webgpu';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 import { paletteMaterial } from '../../render/material-palette.ts';
 import { woodMaterial, type GrainAxis } from '../../render/wood.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';

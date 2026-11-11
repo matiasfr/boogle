@@ -57,7 +57,7 @@ export async function createRailwayCrossing(
   const [{ H, addStatic }, layout, sounds] = await Promise.all([
     import('../../proto/place/land.ts'),
     import('../../proto/place/layout.ts'),
-    import('../../proto/minis/common.ts'),
+    import('../../render/fanfare.ts'),
   ]);
   // The finale's shot: every pull-out's rules (plays to the end, the one highlighted Interact skip from 0.8 s; none for
   // reduced motion or a seated player, who still get the rockets).

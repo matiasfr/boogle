@@ -22,10 +22,10 @@ export async function createRailwayHookView(owner: OwnedView) {
     import('../../proto/place/tech-layout.ts'),
     import('../../proto/place/layout.ts'),
     import('../../proto/place/land.ts'),
-    import('../../proto/place/part-geometry.ts'),
-    import('../../proto/flat.ts'),
-    import('../../proto/place/gear-models.ts'),
-    import('../../proto/minis/common.ts'),
+    import('../../render/part-geometry.ts'),
+    import('../../render/flat.ts'),
+    import('../../render/gear-models.ts'),
+    import('../../render/fanfare.ts'),
   ]);
   const ox = layout.ORIGIN.x;
   const rings = hookRings(tech.PADS, tech.ringAt, ox);

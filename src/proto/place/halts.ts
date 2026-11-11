@@ -5,9 +5,9 @@
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
-import { flat } from '../flat.ts';
-import { box, place, type Box } from '../net/boxes.ts';
-import { label } from '../minis/common.ts';
+import { flat } from '../../render/flat.ts';
+import { box, place, type Box } from '../../render/boxes.ts';
+import { label } from './label.ts';
 import { forEachStatic, removeBody, teleport, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';

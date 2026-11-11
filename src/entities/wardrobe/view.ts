@@ -152,8 +152,8 @@ const SOUND: Partial<Record<string, [number, number]>> = {
 
 export async function createWardrobeView(wardrobe: WardrobeApi) {
   const [{ merged }, { pop }] = await Promise.all([
-    import('../../proto/place/part-geometry.ts'),
-    import('../../proto/minis/common.ts'),
+    import('../../render/part-geometry.ts'),
+    import('../../render/fanfare.ts'),
   ]);
   const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
   const clothMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });

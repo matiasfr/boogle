@@ -7,7 +7,7 @@ import { emit } from '../../render/particles.ts';
 import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { scene } from '../../render/scene.ts';
 import { me } from '../../player/player.ts';
-import { pop } from '../minis/common.ts';
+import { pop } from '../../render/fanfare.ts';
 import { H } from './land.ts';
 import { toWorld } from './layout.ts';
 import { crystalPeg, shelfGroup } from './gifts.ts';

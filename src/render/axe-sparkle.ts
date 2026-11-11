@@ -1,7 +1,7 @@
 // Local magic around the floating axe: a burst when it appears, a steady aura and blade trail while it exists,
 // and a smaller burst when it vanishes. Cosmetic only; reduced motion suppresses all of it.
 import * as THREE from 'three/webgpu';
-import type { Particle } from '../../render/particle-pool.ts';
+import type { Particle } from './particle-pool.ts';
 
 const ivory = new THREE.Color('#fff4bd');
 const gold = new THREE.Color('#ffd36b');

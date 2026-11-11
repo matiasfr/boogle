@@ -43,7 +43,7 @@ import {
   clearCrates,
   type Heap,
   type Kind,
-} from './crates.ts';
+} from '../../render/crates.ts';
 
 const { sites } = rules.sites;
 const { tune } = rules.tune;

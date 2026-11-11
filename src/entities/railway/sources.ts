@@ -56,13 +56,13 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     import('../../proto/place/tree-sources.ts'),
     import('../../proto/place/tree-catalog.ts'),
     import('../../proto/place/land.ts'),
-    import('../../proto/flat.ts'),
+    import('../../render/flat.ts'),
     import('../../proto/place/pieces.ts'),
     import('../../proto/place/layout.ts'),
-    import('../../proto/minis/common.ts'),
+    import('../../render/fanfare.ts'),
     import('../../proto/place/look.ts'),
     import('../../proto/place/chop-motion.ts'),
-    import('../../proto/place/axe-sparkle.ts'),
+    import('../../render/axe-sparkle.ts'),
   ]);
   if (!owner.alive) throw new Error('Railway sources mounted after disposal');
   const rackAt = new THREE.Vector3(

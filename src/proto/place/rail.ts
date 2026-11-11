@@ -35,9 +35,9 @@ import {
   type Platform,
 } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
-import { wagonLook, LOCO, TRAILER, type CarSpec } from '../wagon/look.ts';
-import { box, place } from '../net/boxes.ts';
-import { deck, type Deck } from '../net/crates.ts';
+import { wagonLook, LOCO, TRAILER, type CarSpec } from '../../render/wagon-look.ts';
+import { box, place } from '../../render/boxes.ts';
+import { deck, type Deck } from '../../render/crates.ts';
 import { H, addStatic, slab } from './land.ts';
 import {
   FORMATION,
@@ -54,9 +54,9 @@ import {
   type LineSpec,
 } from './layout.ts';
 import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
-import { merged } from './part-geometry.ts';
+import { merged } from '../../render/part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 import { machineModel, MACHINE_CHAIR_SEAT, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';

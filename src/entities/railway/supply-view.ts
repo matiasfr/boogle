@@ -83,7 +83,7 @@ export async function createRecoveryRack(
   owner.add(model); // Clones only geometry into the view lifetime; cached authored materials remain shared.
   for (const geometry of merged) geometry.dispose(); // owner.add owns the clones from here.
   addSolid(new Float32Array(vertices), new Uint32Array(indices), at);
-  const { flat } = await import('../../proto/flat.ts');
+  const { flat } = await import('../../render/flat.ts');
   const stoneAt = at.clone().add(new THREE.Vector3(1.3, 0.6, 0));
   const stone = Array.from({ length: 3 }, (_, i) => {
     const mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3), flat('#b0ab9d'));

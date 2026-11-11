@@ -9,7 +9,7 @@ import { whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
-import { fanfare } from '../minis/common.ts';
+import { fanfare } from '../../render/fanfare.ts';
 import { SHELLS } from '../net/town-fx.ts';
 import { dustRing } from './pieces.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';

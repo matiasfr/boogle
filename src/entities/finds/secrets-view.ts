@@ -43,7 +43,7 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
     import('../../proto/place/tech-layout.ts'),
     import('../../proto/place/layout.ts'),
     import('../../proto/place/land.ts'),
-    import('../../proto/place/part-geometry.ts'),
+    import('../../render/part-geometry.ts'),
     import('../../proto/place/look.ts'),
   ]);
   const { padById } = tech;

@@ -3,11 +3,11 @@
 // one instanced mesh; the load sits in slots on the rear flatbed and moves with it; between them a crate hops on an arc
 // and lands with a little dust. Written beside src/proto/wagon/freight.ts, which shows helper-hut freight. Local.
 import * as THREE from 'three/webgpu';
-import { scene } from '../../render/scene.ts';
-import { emit } from '../../render/particles.ts';
-import { groundHeight } from '../../island/terrain.ts';
-import { reducedMotion } from '../../constants.ts';
-import { TRAILER } from '../wagon/look.ts';
+import { scene } from './scene.ts';
+import { emit } from './particles.ts';
+import { groundHeight } from '../island/terrain.ts';
+import { reducedMotion } from '../constants.ts';
+import { TRAILER } from './wagon-look.ts';
 
 export type Kind = 'wood' | 'stone' | 'fill';
 // Brown for wood, grey for stone, a painted yellow for what the town sends back to the railhead.
@@ -30,6 +30,7 @@ const ground = new THREE.InstancedMesh(geo, new THREE.MeshStandardNodeMaterial({
 ground.count = 0;
 ground.castShadow = ground.receiveShadow = true;
 ground.frustumCulled = false;
+// boogle-disable-next-line boogle/use-an-entity -- module-level add kept as in proto; owner conversion is M13 (ecs-migration-railway)
 scene.add(ground);
 ground.setColorAt(0, new THREE.Color('#ffffff'));
 
@@ -175,6 +176,7 @@ function launch(
 ) {
   const mesh = take(kind);
   mesh.visible = false;
+  // boogle-disable-next-line boogle/use-an-entity -- module-level add kept as in proto; owner conversion is M13 (ecs-migration-railway)
   scene.add(mesh);
   hops.push({
     kind,

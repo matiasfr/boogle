@@ -6,7 +6,7 @@ import { surfaceHeight as ground } from '../../src/proto/place/terrain.ts';
 import { checkPropGrounding } from './grounding-props.ts';
 import { checkTrackGrounding } from './grounding-track.ts';
 import type { Plan } from '../../src/proto/place/building-plans.ts';
-import type { Box } from '../../src/proto/net/box-plan.ts';
+import type { Box } from '../../src/render/box-plan.ts';
 
 const TOLERANCE_CM = 5;
 const SAMPLE_METRES = 0.25;

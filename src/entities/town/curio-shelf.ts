@@ -34,7 +34,7 @@ const BAY_ROWS_Y = [1.31, 2.19];
 export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi) {
   const [{ merged }, { H, addStatic }, { SHELF, toWorld }, { addFoot }, { FINDERS_B: FINDERS, bayBoxPoint }] =
     await Promise.all([
-      import('../../proto/place/part-geometry.ts'),
+      import('../../render/part-geometry.ts'),
       import('../../proto/place/land.ts'),
       import('../../proto/place/layout.ts'),
       import('../../proto/place/sites.ts'),

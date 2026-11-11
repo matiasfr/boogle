@@ -18,10 +18,10 @@ import {
 } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
-import { pop } from '../minis/common.ts';
+import { pop } from '../../render/fanfare.ts';
 import { assignSeats, readGrants, seatVerdict, type Grants, type SeatRequest } from './seat-claims.ts';
-import { flat } from '../flat.ts';
-import { merged } from './part-geometry.ts';
+import { flat } from '../../render/flat.ts';
+import { merged } from '../../render/part-geometry.ts';
 import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
 import type { Part } from '../../render/cosmetic-parts.ts';
 

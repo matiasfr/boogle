@@ -24,7 +24,7 @@ import { playSharedMoment } from './shared-moment.ts';
 type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
   land: typeof import('../../proto/place/land.ts');
-  shapes: typeof import('../../proto/place/part-geometry.ts');
+  shapes: typeof import('../../render/part-geometry.ts');
   partMat: THREE.Material;
   glow: THREE.Material;
   youGot: (got: Got) => boolean;

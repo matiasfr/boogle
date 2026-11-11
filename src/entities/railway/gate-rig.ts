@@ -9,8 +9,8 @@ import type { Part } from '../../render/cosmetic-parts.ts';
 
 type Deps = {
   land: typeof import('../../proto/place/land.ts');
-  shapes: typeof import('../../proto/place/part-geometry.ts');
-  flat: (typeof import('../../proto/flat.ts'))['flat'];
+  shapes: typeof import('../../render/part-geometry.ts');
+  flat: (typeof import('../../render/flat.ts'))['flat'];
   partMat: THREE.Material;
 };
 export type GateSlab = { w: number; h: number; d: number; pillar: number };

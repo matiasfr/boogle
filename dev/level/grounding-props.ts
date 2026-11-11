@@ -15,7 +15,7 @@ import { SEA } from '../../src/constants.ts';
 import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import { boxFootprint, sampleFootprint, type Footprint } from '../../src/proto/place/support.ts';
-import { merged } from '../../src/proto/place/part-geometry.ts';
+import { merged } from '../../src/render/part-geometry.ts';
 import { T1_CRATE_PARTS } from '../../src/render/t1-reward-parts.ts';
 
 const TOLERANCE_CM = 5;
