@@ -8,7 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { WORLD_NS } from '../src/world/namespace.ts';
-import { RAIL_COMPONENTS, RAIL_REPLICATED } from '../src/sim/railway-world.ts';
+import { RAIL_COMPONENTS, RAIL_REPLICATED } from '../src/sim/railway-components.ts';
 
 const FILE = new URL('./fixtures/rail-schema.json', import.meta.url);
 type Entry = {

@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import type { World } from '../src/ecs/index.ts';
 import { buildSeedWorld, type SeedStage } from '../src/sim/railway-seeds.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
-import { createRailwayWorld } from '../src/sim/railway-world.ts';
+import { createRailwayWorld } from '../src/sim/railway-components.ts';
 import { worldOf } from './railway-live.ts';
 
 const FILE = new URL('./fixtures/railway-tick-order.json', import.meta.url);

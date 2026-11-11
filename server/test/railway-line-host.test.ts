@@ -11,7 +11,7 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_ROCKS, LINE1_GREAT_TREE } from '../../src/sim/railway-line-layout.ts';
 import { railMaxDuration } from '../../src/sim/railway-line.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-check.ts';
 import { railCounts } from '../../src/sim/railway.ts';
 import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { line2Active, line2SeaOpen } from '../../src/sim/railway-line2.ts';

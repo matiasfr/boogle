@@ -15,9 +15,9 @@ import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE1_GREAT_TREE } from '../src/sim/railway-line-layout.ts';
 import { RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { railGrowthMask } from '../src/sim/railway-supply.ts';
-import { Pile } from '../src/sim/railway-world.ts';
+import { Pile } from '../src/sim/railway-components.ts';
 import { act, advance, buildSeedWorld, logs, type SeedStage, type World } from '../src/sim/railway-seeds.ts';
-import { railBoilerPutDown, railBoilerStood } from '../src/sim/railway-systems.ts';
+import { railBoilerPutDown, railBoilerStood } from '../src/sim/railway-sys-line2.ts';
 import {
   createRailway,
   edit,

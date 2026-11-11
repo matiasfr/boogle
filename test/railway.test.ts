@@ -5,15 +5,9 @@ import assert from 'node:assert/strict';
 import { railPhase, RAILWAY_OUTCOMES, type RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import {
-  Account,
-  Outcome,
-  Tree,
-  createRailwayWorld,
-  railwayCheck,
-  railwayView,
-  RAIL_COMPONENTS,
-} from '../src/sim/railway-world.ts';
+import { Account, Outcome, Tree, createRailwayWorld, RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
+import { railwayView } from '../src/sim/railway-read-model.ts';
 import { createRailway, invariant, railApply, railOutcome, railSession, restore, worldOf } from './railway-live.ts';
 
 function awake(pids = ['p0']) {

@@ -17,7 +17,8 @@ import {
 } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { railGrowthMask, railGrowthAllowed } from '../src/sim/railway-supply.ts';
-import { Rail, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import {
   createRailway,
   edit,

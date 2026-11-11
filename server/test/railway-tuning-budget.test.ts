@@ -9,7 +9,7 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { MAX_RECOVERY_BYTES, type RecoveryEnvelope } from '../../src/world/sync.ts';
 import { MAX_PLAYERS, NAME_MAX } from '../../src/sim/roster.ts';
-import { railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayInvariant } from '../../src/sim/railway-check.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
 
 type Obj = Record<string, unknown>;

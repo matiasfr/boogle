@@ -21,7 +21,8 @@ import { LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
 import { lineSchedule } from '../sim/railway-line-schedule.ts';
 import type { RailJob } from '../sim/railway-line.ts';
 import type { RailQJob } from '../sim/railway-line2.ts';
-import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED, refreshRailway } from '../sim/railway-world.ts';
+import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED } from '../sim/railway-components.ts';
+import { refreshRailway } from '../sim/railway-read-model.ts';
 import { railwayOf } from './railway-predict.ts';
 
 export const RAIL_SCHEMAS = RAIL_REPLICATED;

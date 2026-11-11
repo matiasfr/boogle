@@ -5,7 +5,8 @@ import {
   createRailwayProgressMarks,
   createRailwayJourneyMarks,
 } from '../src/adapters/railway-marks.ts';
-import { createRailwayWorld, railwayView } from '../src/sim/railway-world.ts';
+import { createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayView } from '../src/sim/railway-read-model.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { parseSession } from '../dev/playtest/read.ts';
 import { summarize } from '../dev/playtest/summary.ts';

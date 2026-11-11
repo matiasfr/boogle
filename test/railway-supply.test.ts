@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { railCounts, railMaxDuration, type RailAction } from '../src/sim/railway.ts';
 import { railGrowthMask, railGrowthAllowed, RAILWAY_TRACK_CLEARINGS } from '../src/sim/railway-supply.ts';
 import { RAILWAY_SUPPLY, RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
-import { Account, Pile, Rail, RailClock, Tree, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { Account, Pile, Rail, RailClock, Tree, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import {
   createRailway,
   edit,

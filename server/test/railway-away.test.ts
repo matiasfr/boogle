@@ -11,7 +11,7 @@ import { createService, loadConfig } from '../src/server.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railCounts, type Railway } from '../../src/sim/railway.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-check.ts';
 import { createRailway, live, railApply, railSession, worldOf } from '../../test/railway-live.ts';
 import { line2Active } from '../../src/sim/railway-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';

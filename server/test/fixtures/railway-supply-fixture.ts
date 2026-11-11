@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createStore } from '../../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../../src/sim/railway-layout.ts';
-import { railwayInvariant } from '../../../src/sim/railway-world.ts';
+import { railwayInvariant } from '../../../src/sim/railway-check.ts';
 
 export const SUPPLY_SOURCE = 5;
 export async function supplyFixture(dataDir: string, roomId: string, recover = true) {

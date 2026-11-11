@@ -26,7 +26,7 @@ import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
 import { railwayAtTrains } from './helpers/railway-trains.ts';
 import { edit, worldOf } from './railway-live.ts';
-import { Account } from '../src/sim/railway-world.ts';
+import { Account } from '../src/sim/railway-components.ts';
 
 const MOVEMENT = {
   ...railMovement({ get: (k) => specOf(k)!.def }),

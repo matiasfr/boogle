@@ -9,7 +9,7 @@ import path from 'node:path';
 import { createStore } from '../store.ts';
 import { createRailwayWorldHost } from '../host/world-host.ts';
 import { railwayRoomId } from '../../../src/world/railway-namespace.ts';
-import { railwayCheck } from '../../../src/sim/railway-world.ts';
+import { railwayCheck } from '../../../src/sim/railway-check.ts';
 import { buildSeedWorld, type SeedStage } from '../../../src/sim/railway-seeds.ts';
 import { worldOf } from '../../../src/sim/railway-live.ts';
 

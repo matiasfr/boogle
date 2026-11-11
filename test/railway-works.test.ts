@@ -33,16 +33,8 @@ import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal, pierNeed, worksStage } from '../src/sim/railway-works.ts';
-import {
-  Account,
-  Boiler,
-  Line,
-  Rail,
-  Train,
-  Works,
-  createRailwayWorld,
-  railwayCheck,
-} from '../src/sim/railway-world.ts';
+import { Account, Boiler, Line, Rail, Train, Works, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import type { World as Fixture } from './helpers/railway-q2.ts';
 
 const chop = (w: Fixture, pid: string, n: number) => {

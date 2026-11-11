@@ -9,7 +9,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { Beam } from '../../src/sim/railway-world.ts';
+import { Beam } from '../../src/sim/railway-components.ts';
 
 type Obj = Record<string, unknown>;
 

@@ -602,7 +602,7 @@ export async function railwayLoad(
 export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
   const { railwayAtQ4 } = await import('../../test/helpers/railway-q2.ts');
   const { worldOf } = await import('../../test/railway-live.ts');
-  const { railwayCheck } = await import('../../src/sim/railway-world.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { CART, CART_PHASE } = await import('../../src/sim/railway-cart.ts');
   const q4 = railwayAtQ4(); // built before the room opens: it holds the event loop ~20 s
   const roomId = railwayRoomId(`${c.room}-cart`);
@@ -678,7 +678,7 @@ export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
 export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
   const { worldOf } = await import('../../test/railway-live.ts');
-  const { railwayCheck } = await import('../../src/sim/railway-world.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { TRAIN, TRAIN_PHASE, trainAlong } = await import('../../src/sim/railway-train.ts');
   // WS_LOAD_TRAIN_SEED=wagon-on rides the line-2 train with its footing wagon and four stops (Works J3).
   const seed =
@@ -783,7 +783,7 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
 export async function railwayRequestStop(c: Ctx) {
   const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
   const { worldOf } = await import('../../test/railway-live.ts');
-  const { railwayCheck } = await import('../../src/sim/railway-world.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { LINE_HALTS, TRAIN_PHASE, reqHas } = await import('../../src/sim/railway-train.ts');
   const { trainStops } = await import('../../src/sim/railway-line2.ts');
   const { LINE2 } = await import('../../src/sim/railway-lines.ts');

@@ -10,8 +10,8 @@ import { createReplicator } from '../src/world/replicate-server.ts';
 import { homeLand } from './helpers/land.ts';
 import { ensure } from '../src/sim/roster.ts';
 import { TUNABLES } from '../src/sim/tune.ts';
-import { railSession } from '../src/sim/railway-systems.ts';
-import { Account, Outcome, Pile, RAIL_COMPONENTS } from '../src/sim/railway-world.ts';
+import { railSession } from '../src/sim/railway-sys-core.ts';
+import { Account, Outcome, Pile, RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
 test('line recovery width bound retains sixty-four worst lockstep stamps and maximum roster', (t) => {
   // Deliberately combines mutually exclusive balances: a conservative byte bound, not a reachable state. The railway
   // saves its world's schema snapshot, so every row of every component is set to its widest value.
