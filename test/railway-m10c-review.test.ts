@@ -1,7 +1,7 @@
 // Review of M10 c (branch ecs/m10c-line2): line 2's views read rows and queries through the read facade. What stays of
 // the review, with the server's rows as the oracle (`serverWorld()`) now that `inspect()` is not one: a stale boiler
 // press is refused, forgeTake's bundle aim follows the back's rails, line 2's active stretch moves for a client on
-// the frame the server's row moves it (plus its lag), and waitsForTrainOn.
+// the frame the server's row moves it (plus its lag), and waitsForTrain.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeedWorld } from './helpers/rail.ts';
@@ -11,7 +11,7 @@ import { account, boiler, rail, type ReadWorld } from '../src/sim/railway-rows.t
 import { qjobId } from '../src/sim/railway-queries.ts';
 import { QJob } from '../src/sim/railway-components.ts';
 import { line2Active } from '../src/sim/railway-queries-line2.ts';
-import { waitsForTrainOn } from '../src/entities/railway/forge-offer.ts';
+import { waitsForTrain } from '../src/entities/railway/forge-offer.ts';
 import type { World } from '../src/ecs/index.ts';
 
 // ---------------------------------------------------------------- the press closures keep the revision seen
@@ -145,23 +145,23 @@ for (const delay of [0, 1, 2, 3, 4, 5])
     follows(server, seen, delay, `crossing lag ${delay}`);
   });
 
-// ---------------------------------------------------------------- waitsForTrainOn
-test('waitsForTrainOn: a train-fed active stretch with no bill waits for the train until the trains run or the bill starts', () => {
+// ---------------------------------------------------------------- waitsForTrain
+test('waitsForTrain: a train-fed active stretch with no bill waits for the train until the trains run or the bill starts', () => {
   const w = buildSeedWorld('glide-earned').w as World;
   const rw = w as unknown as ReadWorld;
   const active = line2Active(rw);
   assert.equal(active, 5, 'the Pier stretch is active');
   assert.equal(rail(rw).trains, -1, 'the trains are not running');
-  assert.equal(waitsForTrainOn(rw), true, 'its kit is the train');
-  assert.equal(waitsForTrainOn(rw, active), true, 'the caller may pass the active stretch it has');
-  assert.equal(waitsForTrainOn(rw, 0), false, 'a hand-fed stretch never waits');
+  assert.equal(waitsForTrain(rw), true, 'its kit is the train');
+  assert.equal(waitsForTrain(rw, active), true, 'the caller may pass the active stretch it has');
+  assert.equal(waitsForTrain(rw, 0), false, 'a hand-fed stretch never waits');
   w.mut(QJob, qjobId(w, active))!.start = 0;
-  assert.equal(waitsForTrainOn(rw), false, 'once funded (a start tick) it does not wait');
+  assert.equal(waitsForTrain(rw), false, 'once funded (a start tick) it does not wait');
 });
 
-test('waitsForTrainOn: the same stretch waits for no train once the trains run', () => {
+test('waitsForTrain: the same stretch waits for no train once the trains run', () => {
   const rw = buildSeedWorld('trains-on').w as unknown as ReadWorld;
   assert.ok(rail(rw).trains >= 0, 'the trains run');
   assert.equal(line2Active(rw), 5);
-  assert.equal(waitsForTrainOn(rw), false);
+  assert.equal(waitsForTrain(rw), false);
 });

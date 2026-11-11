@@ -14,15 +14,9 @@ export const trainOwed = (active: number, trains: boolean): boolean =>
 
 /** Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 1): the active stretch is train-fed,
  * unfunded, and trains don't run yet. No bill, no auto-unload, no rack or shelf take and no forge rails; the rack's
- * sign shows the train until the first kit unloads. One reading for line2-view.ts and shelf-view.ts. */
-export const waitsForTrain = (l: {
-  active: number;
-  trains: boolean;
-  stations: readonly { start: number }[];
-}): boolean => trainOwed(l.active, l.trains) && l.stations[l.active]!.start < 0;
-
-/** `waitsForTrain` on the rows (`active` is `line2Active(w)`; pass it when the caller has it already). */
-export const waitsForTrainOn = (w: ReadWorld, active = line2Active(w)): boolean =>
+ * sign shows the train until the first kit unloads. One reading for line2-view.ts and shelf-view.ts. `active` is
+ * `line2Active(w)`; pass it when the caller has it already. */
+export const waitsForTrain = (w: ReadWorld, active = line2Active(w)): boolean =>
   trainOwed(active, line2Trains(w)) && qjob(w, active).start < 0;
 
 /** `active`: line 2's Q station taking materials (-1 for none); `railsCarry`: the rails on your own back. */

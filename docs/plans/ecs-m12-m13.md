@@ -156,7 +156,7 @@ tick; no `WORLD_NS` bump (no step below changes a component, an op, a packet or 
   | the 18 movement fields | `r.movement().…` |
   | `carry`, `stoneCarry`, `railsCarry`, `foot`, `available*` | `me?.carry ?? 0`, `.stone`, `.rails`, `.foot` |
   | `carryMax`, `freeCarry`, `accounts`, `piles` | `carryMax(w)`, `freeCarryIgnoringBig(w, r.pid)`, `accounts(w)`, `piles(w)` |
-  | `phase`, `panelCount`, `panelStock`, `counts`, `activeStation` | `railPhase(w, at)`, `railPanelCount(w, at)`, `railPanelStock(w, at)`, `railCounts(w, at)`, `railActiveStation(w)` |
+  | `phase`, `panelCount`, `panelStock`, `counts`, `activeStation` | `railPhase(w, at, at)` (the wake judged at `at` too), `railPanelCount(w, at)`, `railPanelStock(w, at)`, `railCounts(w, at)`, `railActiveStation(w)` |
   | `stations[k].…`, and the flat `stock`, `allocation`, `used`, `delivered`, `start`, `elapsed`, `completion` | `railJobs(w, at)[k]` (`{ id, job, run }`); the flat ones are the active station's; `completion` is the sum over `jobs(w)` |
   | `awake`, `axe`, `jump`, `stoneRack`, `rack`, `beam`, `hardwood`, `rocks`, `sources`, `work`, `growth` | `rail(w).…`, `beam(w)`, `hardwoods(w)`, `rocks(w)`, `trees(w)`, `treeGrowth(w, slot)` |
   | `line2.forge`, `.cart`, `.boiler`, `.lever`, `.sea`, `.hook`, `.pack`, `.depot`, `.depotRails`, `glide` | `forge(w)`, `cart(w)`, `boiler(w)`, `rail(w).…` |
@@ -329,7 +329,19 @@ typecheck`, `npm run lint`.
     with a run on main (same seed, same numbers); `npm run scenario -- hud-glance` and `world-inputs`; `npm run
     test:net` for the peer-test files. An eval whose header command no longer runs on main is listed, not fixed.
   - **Done (each D):** its files are off `INSPECT_LEGACY_IMPORTERS` and name `inspectRailwayLegacy` nowhere.
-- [ ] **M12e. Delete `inspect()`.** _S, High (`src/world`). After X1 to X4, M12d, D1 to D4._ Delete from
+- [x] **M12e. Delete `inspect()`.** _S, High (`src/world`). After X1 to X4, M12d, D1 to D4._ (**As built:**
+      `railwayAt` went to `test/helpers/railway-model.ts` as `railwayModelAt` (three differential tests still read
+      the model; M12b-1 deletes them with it); the read counters went whole (`frames` had no reader). The export
+      rule is `boogle/retired-railway-names` (its own rule, so the `src/sim` block's `no-restricted-syntax` does not
+      replace it), with the read model's seven files exempt until M12b-2 deletes them. The latch is `read.whole()`,
+      latched in `update()` too. Also: `dev/look/rail-read.ts`'s timed queries (`railJobs`, `line2Jobs`,
+      `railCurrentJob`, `railPhase`, `railPanelCount`/`Stock`, `railCounts`, `line2Logs`, `line2Rails`) take the
+      world alone and supply the tick, so a page tool cannot call the tick-less form that throws on a client's world;
+      `railStation`, `line2Station` and `railBack` are the tools' one flat-job and back reader; `railwaySession` in
+      `state.ts` is the session's scalars for the view inspection and the peer-test probe;
+      `dev/look/bots/railway-checkpoint.ts` is the seeded routes' checkpoint. No query was added to `src/sim`: none
+      of the wished-for ones had two callers. The Done grep's remaining hits are the guards that ban the names.)
+      Delete from
       `src/adapters/railway.ts`: `readState`, `buildState`, `worksOf`, `samePile`, `inspection`, `inspect`, the
       frame memo's inspection half, `stats.reads`' inspect counters, `RailwayInspection`, and every import of an old
       fact or `Railway`; from `state.ts`, `view.ts`, `index.ts`: the legacy door; from

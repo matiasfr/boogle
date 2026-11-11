@@ -31,6 +31,7 @@ import { railwayCheck } from '../src/sim/railway-check.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { trainOwed, waitsForTrain } from '../src/entities/railway/forge-offer.ts';
+import type { ReadWorld } from '../src/sim/railway-rows.ts';
 import { TRAIN_HOME } from '../src/sim/railway-train.ts';
 
 /** The boiler's position, read fresh: rows are replaced when a rule writes. */
@@ -280,19 +281,13 @@ test('the rule never fires before station 6 or once trains run; every stage cons
   }
   assert.ok(seen.owed > 0 && seen.free > 0, JSON.stringify(seen));
 });
+// The single cases (hand-fed, funded, trains running) are test/railway-m10c-review.test.ts's, on worlds.
 test('one reading of "station 6 waits for the train" for the frame, the rack and the shelf', () => {
-  const at = (active: number, trains: boolean, start = -1) =>
-    waitsForTrain({ active, trains, stations: Array.from({ length: 6 }, () => ({ start })) });
-  assert.equal(at(-1, false), false, 'no active stretch');
-  assert.equal(at(4, false), false, 'Q5 is fed by the cart');
-  assert.equal(at(5, false), true, 'station 6 before trains');
-  assert.equal(at(5, true), false, 'trains run');
-  assert.equal(at(5, false, 0), false, 'funded');
   let waited = 0;
   for (const k of TRAIN_STAGES) {
     const s = railwayAtTrains(k).w,
       active = line2Active(s);
-    const waits = waitsForTrain({ active, trains: line2Trains(s), stations: qjobs(s) });
+    const waits = waitsForTrain(s as unknown as ReadWorld);
     // Exactly when the rule refuses hands (trainOwed in src/sim) and the stretch isn't funded yet.
     assert.equal(waits, trainOwed(active, line2Trains(s)) && qjobs(s)[active]!.start < 0, k);
     waited += Number(waits);

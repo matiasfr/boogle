@@ -11,7 +11,7 @@ import { rail, type ReadWorld } from '../src/sim/railway-rows.ts';
 import { apertureId, railId, trainId } from '../src/sim/railway-queries.ts';
 import { line2Trains } from '../src/sim/railway-queries-line2.ts';
 import { railOpenEnd, railTrainAsked, railTrainHeld, trainStops } from '../src/sim/railway-queries-trains.ts';
-import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { LINE_HALTS, TRAIN, TRAIN_PHASE } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
@@ -124,4 +124,10 @@ test('a full pending window keeps every train shown (train-view.ts step: hidden 
   assert.equal(a.adapter.read.ready(), false, 'ready() is false with the window full');
   assert.ok(a.mirror.synced() && line2Trains(a.adapter.read.world()), 'whole and running');
   assert.equal(shown(), true, 'the trains stay shown while the whole state is in and the window is full');
+});
+
+// train-view.ts (ISLAND_STOPS, its cargo filter) and halts-view.ts (the ring's halts) index line two as LINE2 among
+// two lines: a third line, or line two moved, must revisit them.
+test('the views index two lines, line two at 1', () => {
+  assert.deepEqual([RAIL_LINES.length, LINE2], [2, 1]);
 });
