@@ -44,6 +44,7 @@ import {
   Rail,
   Shed,
   Train,
+  Tree,
   Works,
   createRailwayWorld,
 } from '../src/sim/railway-components.ts';
@@ -149,6 +150,20 @@ const FACTS: Record<string, Fact> = {
   footingTotal: { args: none, old: (s) => oldWorks.footingTotal(s), now: (w) => qw.footingTotal(w) },
   pierNeed: { args: none, old: (s) => oldWorks.pierNeed(s), now: (w) => qw.pierNeed(w) },
   worksStage: { args: none, old: (s) => oldWorks.worksStage(s), now: (w) => qw.worksStage(w) },
+  // M10's two: no read-model function, so the old side is the adapter's arithmetic in buildState and inspection().
+  treeGrowth: {
+    args: RAILWAY_SOURCES.map((_s, k) => [k] as const),
+    old: (s, [k]) => Math.max(0, (s.supply!.ages[k as number] ?? 0) - 31),
+    now: (w, [k]) => q1.treeGrowth(w, k as number),
+  },
+  freeCarryIgnoringBig: {
+    args: pids.map((p) => [p]),
+    old: (s, [p]) => {
+      const a = old.railAccount(s, p as string);
+      return Math.max(0, oldLine2.railCarryMax(s) - (a?.carry ?? 0) - (a?.stone ?? 0) - (a?.rails ?? 0));
+    },
+    now: (w, [p]) => q1.freeCarryIgnoringBig(w, p as string),
+  },
 };
 // Section 2's table: 16 line2…, 13 rail…, footingTotal, pierNeed, trainStops, worksStage; plus railTrainsOf.
 const LISTED = [
@@ -165,6 +180,8 @@ const LISTED = [
   'trainStops',
   'worksStage',
 ];
+/** Queries M10's view groups asked for, whose old side is an inspect() field rather than a read-model function. */
+const INSPECTED = ['treeGrowth', 'freeCarryIgnoringBig'];
 let checked = 0;
 /** A fact's value, or the error it throws: a twin throws where the read model's did (line2CartStatus with cargo aboard,
  * no stretch served and the cart at or bound for home reads stretch -1; kept as it is, noted for the owner). */
@@ -188,14 +205,14 @@ function same(s: Railway, w: World, at: number | undefined, where: string) {
     }
 }
 
-test('the list holds the 33 facts and railTrainsOf, each exported on both sides under its name', () => {
+test('the list holds the 33 facts, railTrainsOf and the two M10 asked for, each exported on both sides under its name', () => {
   assert.equal(LISTED.length, 33);
-  assert.deepEqual(Object.keys(FACTS).sort(), [...LISTED, 'railTrainsOf'].sort());
+  assert.deepEqual(Object.keys(FACTS).sort(), [...LISTED, 'railTrainsOf', ...INSPECTED].sort());
   const now: Record<string, unknown> = { ...q, ...q1, ...q2, ...qt, ...qw };
   const was: Record<string, unknown> = { ...old, ...oldLine2, ...oldWorks, ...oldTrains };
   for (const name of Object.keys(FACTS)) {
     assert.equal(typeof now[name], 'function', `${name} on the world`);
-    assert.equal(typeof was[name], 'function', `${name} on the read model`);
+    if (!INSPECTED.includes(name)) assert.equal(typeof was[name], 'function', `${name} on the read model`);
   }
 });
 
@@ -450,6 +467,9 @@ test('on random rows every fact equals its twin (the stretches, the cart, the tr
     for (const pid of pids.slice(0, int(4)))
       w.spawn([Account, { pid, carry: int(8), stone: int(4), rails: int(4), foot: int(2), epoch: 1 }]);
     for (let k = int(5); k > 0; k--) w.spawn([Pile, { x: int(1000), z: int(1000), n: 1 + int(8), kind: int(4) }]);
+    // Drawn last, so the rows above are what they were before M10 added these: felled trees at every age, a big load.
+    RAILWAY_SOURCES.forEach((_s, slot) => set(Tree, w.lookup(Tree, slot)!, { left: coin() ? 0 : int(9), age: int(40) }));
+    if (coin()) set(Boiler, q.boilerId(w), { state: 'held', holder: pids[int(4)]! });
     same(railwayOf(w), w, undefined, `round ${round}`);
   }
 });

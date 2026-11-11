@@ -9,6 +9,7 @@ import {
   railGrows,
   railGrowthAllowed,
   RECOVERY_MINUTES,
+  REGROW_MINUTES,
   type SupplyIntervals,
   type SupplyPulse,
 } from './railway-supply.ts';
@@ -51,7 +52,6 @@ import { jobClock } from './railway-sys-core.ts';
 import { layLine1 } from './railway-sys-line1.ts';
 import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from './railway-sys-line2.ts';
 
-const REGROW_MINUTES = 31;
 // ---------------------------------------------------------------- offline catch-up, sessions, supply, the beam
 /** The away credit's yards (./railway-away.ts): `ticks` of production for the forge's rack and the depot cart, as the
  * rule tick would make them, never past the rack or the stretch's need. Counted like a tick: poured and the depot's
