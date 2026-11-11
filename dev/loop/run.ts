@@ -106,8 +106,9 @@ class Game {
     this.h = h;
     this.players = players;
   }
-  /** The host's world (ECS M11), read at each use. A system replaces the rows it writes, so a row held across a press
-   * keeps its value from before it, as the read model's copy did. */
+  /** The host's world (ECS M11), read at each use. `world.mut` writes a row in place, so a row held across a press is
+   * live: it shows what the press changed (the read model's copy kept the value from before). No policy here reads a held
+   * row after a press that writes it: the loop's output hashes as main's did. */
   get w(): World {
     return this.h.api.world();
   }

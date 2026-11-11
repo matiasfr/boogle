@@ -11,7 +11,12 @@ import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { RAIL_STONE } from '../../src/sim/railway-works-layout.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
-import { cart as cartRow, line as lineRow, train as trainRow, trains as trainRows } from '../../src/sim/railway-rows.ts';
+import {
+  cart as cartRow,
+  line as lineRow,
+  train as trainRow,
+  trains as trainRows,
+} from '../../src/sim/railway-rows.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import type { RailwayProbe, RailwayAdapterProbe } from './ws-page.ts';
 import type { RailwayWorldHost } from '../../server/src/host/world-host.ts';
@@ -802,7 +807,7 @@ export async function railwayRequestStop(c: Ctx) {
     );
   await host.page.close();
   await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
-  // The server's world, read again at each use (rows are replaced by the rules, ECS M11).
+  // The server's world, read again at each use (ECS M11): a load replaces the world, and the rules write rows in place.
   const live = () => world.rules.railway.world();
   const slots = LINE_SLOTS[LINE2]!;
   // A lever ask is the line's (`Line.req`), served by whichever of line 2's trains can brake for it.
