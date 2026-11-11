@@ -14,8 +14,8 @@ From the code ([machine-panels.ts](../../src/entities/railway/machine-panels.ts)
 [track.ts](../../src/entities/railway/track.ts) `seatUp`, [place.md](../game-design/place.md), "The second track,
 drawn"): both lines lay through the same `Machine.layPanel`. The loco and the 2.2 m flatbed run on today's (down)
 track. One slewing beam (7.0 m, up from 5.8 m for this) carries one trolley with one pair of jaws. On a double panel it
-lifts the top two pairs off the one stack, sweeps and seats the down pair, lets go, hops 0.35 m and crosses 4 m left to
-seat the up pair. The up pair's crossing is the last 17% of a cycle that lasts 0.39–0.62 s at cruise, so it takes
+lifts the top two pairs off the one stack, sweeps and seats the down pair, lets go, hops 0.35 m and crosses 4 m to the up track's side
+to seat the up pair. The up pair's crossing is the last 17% of a cycle that lasts 0.39–0.62 s at cruise, so it takes
 about 0.1 s. Line 1 is double from s 36 to 182, line 2 from s 34 to 556 (with Far Head's crossover); the turntable,
 Village platforms, Camp end and pier stay single.
 
@@ -27,7 +27,7 @@ tracks out of itself, with the second one just appearing. That is the owner's co
 
 ## Pitch
 
-Give the machine a **second hand where the second track is**. A wing folds out of the flatbed's left side, rides the
+Give the machine a **second hand where the second track is**. A wing folds out on the up track's side (the machine's right on line 1, which is laid toward Home, and its left on line 2), rides the
 new up rails on a little trailing truck, and carries its own small stack and its own trolley. Both trolleys pick,
 sweep and seat in the same beat, so every clank is two pairs going down, one under each hand, and the stacks on both
 sides shrink together. On single track the wing is folded against the side; at a turnout it telescopes out over 20 m
@@ -42,16 +42,13 @@ told?
 
 ## Best suggestions, ranked
 
-1. **The wing: one machine, two hands** (all three lenses). A telescoping outrigger off the flatbed's left with a
+1. **The wing: one machine, two hands** (all three lenses). A telescoping outrigger on the up track's side with a
    second trolley and jaws, a small up-track stack on it, and a two-wheel trailing truck on the up rails it has just
    laid (as the machine rides the rails it lays). Both mechanisms run the existing `panelPose` on the same phase,
    with no crossing. Costs: new parts (arm, sleeve, truck, second trolley and jaws, second stack), a second
-   `panelMechanism` instance, and the main beam goes back to 5.8 m. Laying time is unchanged, and each cycle now has
-   room to be read. From a distance it reads as a wider machine with its arms out. For a second player, the left
-   chair now faces a working hand. Bridges: the trestle decks are 7.6 m and span both tracks, so the truck rides deck.
+   `panelMechanism` instance, and the main beam goes back to 5.8 m. Laying time is unchanged. Each hand's cycle is still 0.39–0.62 s at cruise, so a single cycle is no easier to follow; what changes is that a hand and a stack stand over each track the whole time. From a distance it reads as a wider machine with its arms out. For a second player, the chair on the up track's side now has a working hand in view (the right chair on line 1, the left on line 2). Bridges: the trestle decks are 7.6 m and span both tracks, so the truck rides deck.
    Pier and Village: folded, so the parked machine is no longer or wider than today (line 2's engine still stops 1 m
-   clear). Curves: the arm follows the up seat's yaw (the up track is on the inside of left curves, the outside of
-   right ones), and the sleeve's length is `upLat` at the head. The footing wagon is unaffected. Later lines, and the
+   clear). Curves: the arm follows the up seat's yaw (on line 2 the up track is on the inside of left curves and the outside of right ones; on line 1, laid the other way, the reverse), and the sleeve's length is `upLat` at the head. The footing wagon is unaffected. Later lines, and the
    Ring Island laying over the pier bents, get the same wing. Opening it at the pier head for the crossing is a free
    moment.
 2. **Twin layers, yoked** (design + creative). A second slim layer on the up track, joined to the first by a
@@ -84,8 +81,7 @@ silhouette, one set of chairs and a folded state for single track at about a thi
   `seat` (and `second: null` on the main one); the main beam back at 5.8 m; and the stack split. No GLB or
   `track-layer.py` edit until a yes. Files: `track-machine.ts`, `machine-panels.ts` (export what the wing needs),
   `track.ts` (an up `panelStart`).
-- **Risks:** the crossover at Far Head (s 490–512), whose rails nobody carries today (decide in the build: the wing
-  lays the crossing rails as it folds in); the level check on the 7.0 m beam ([machine-panels.ts](../../src/entities/railway/machine-panels.ts)
+- **Risks:** the crossover at Far Head (s 490–512), whose rails nobody carries today (the wing does not fold there: the up track runs on to s 556 and the fold is at s 536–556; in the greybox the crossing rails drop under the arm, see the design review); the level check on the 7.0 m beam ([machine-panels.ts](../../src/entities/railway/machine-panels.ts)
   `PANEL_BEAM_LENGTH`) must follow the shorter beam; the hook pillar p2 (11 m out) and the gates (10.4 m) clear a 5 m
   wing, but the Quarry and Far Head up platforms stand just outside the up track, so the wing must stay inside its
   rails (truck on the rails, arm above platform height). Performance (guide, not gate): one more mechanism is about 4
@@ -98,8 +94,8 @@ Captured with `look` on `proto=place` and the track-layer evals (`dev/look/evals
 
 - `machineView=lay` mid double panel: two trolleys over two tracks, each pair seated under its own jaws, both stacks
   visibly lower than at the start.
-- `machineView=side` through line 1's turnout (s 36–56): the wing grows from folded to 4 m in step with the up track.
-- `machineView=normal` from the left chair, video at cruise: both seats land in the same beat, and the up hand is
+- `machineView=side` through a turnout: the wing grows from folded to 4 m in step with the up track (on line 1 the machine meets the s 182 end first and folds at s 56–36; on line 2 it opens at s 34–54 and folds at s 536–556).
+- `machineView=normal` from the chair on the up track's side, video at cruise: both seats land in the same beat, and the up hand is
   readable at real speed (no crossing hop).
 - Line 2 on the gorge trestle: the truck rides the 7.6 m deck.
 - Parked at the pier halt: folded, with the engine still clear by 1 m.
@@ -110,15 +106,58 @@ Captured with `look` on `proto=place` and the track-layer evals (`dev/look/evals
    single track, and costs about a third of the twin. Answer: \_\_\_
 2. **Do both hands lay in the same beat, or down then up a half-beat apart?** Recommended: the same beat. One clank,
    two pairs, is what makes "the same effort" visible. Answer: \_\_\_
-3. **Should the wing get a chair** (a third seat facing the up hand)? Recommended: not now. The two chairs stay, the
-   left one faces the wing, and a chair can come after a yes. Answer: \_\_\_
+3. **Should the wing get a chair** (a third seat facing the up hand)? Recommended: not now. The two chairs stay, the one on the up track's side has the wing in view, and a chair can come after a yes. Answer: \_\_\_
 4. **Does the wing go into the GLB and `track-layer.py` after a yes, with the parts sheet and storyboard the owner call
    asks for?** Recommended: yes, as a second step once the greybox reads. Answer: \_\_\_
 5. **Does the stack split into two (down on the gantry, up on the wing), with deliveries landing alternately?**
    Recommended: yes. Each hand empties its own stack, and the room sees both go down. Answer: \_\_\_
+
+## Owner questions (none blocking)
+
+From the design review below; the build proceeds on the recommendations.
+
+1. Wing or twin layers? Recommended: the wing, built as a second small gantry on a post.
+2. Is it fine that the wing works on the right on line 1 and the left on line 2? Recommended: yes, it follows the second track, and each chair gets a turn beside it.
+3. Should players be able to stand on the wing once it is real? Recommended: yes.
 
 ## Parked
 
 - The wing opening at the pier head as Ring Island's laying sets off over the bents: a clip moment, after a yes.
 - A gag where the wing knocks a lamp on a single stretch and folds in a hurry: after a yes, never on its first build.
 - A twin layer as a later upgrade ("a second layer for the network") if the garage ever sells machines.
+
+## Design review (designer, 11 November 2026)
+
+Calls: 9 decided, 9 default, 4 new; rows in [agent-calls](../agent-calls.md#rail-construction-levels-and-travel).
+Nothing waits for the owner. Answers: 1 the wing; 2 the same beat; 3 no chair; 4 yes, after a yes; 5 yes.
+
+Change before the greybox:
+
+1. **The side flips.** Line 1 is laid at dir −1, so its up track is on the machine's right; line 2's is on the left.
+   One machine serves both. Take the side from the up seat, and stow the wing along the header at the GLB step.
+   The Pitch's "left side" and "left chair" hold on line 2 only.
+2. **The hand needs its own pivot.** The up seat is 5.73 m ahead of the flatbed. The second mechanism is a small
+   gantry on a post over the up track, tied back by the arm; extended it is a portal. Draw the post in the greybox.
+   Add a parts table (part, pivot, range) and a six-beat storyboard here first (owner call, 5 November).
+3. **Leave `PANEL_BEAM_LENGTH` at 7.0 in the greybox.** `dev/level/machine-clearance.ts` compares the built GLB beam
+   with it to 0.02 m. The flag path keeps its own 5.8 m length and reach assertions for both hands.
+
+Corrections and gaps:
+
+4. The wing does not fold at the crossover (s 490–512); the up track runs to s 556. Crossing rails drop under the
+   arm in the greybox, judged from a Far Head still.
+5. Platform clearance is unproven: the clearance check samples line 1 only. Outboard of the up rail there is 0.95 m
+   to the platforms, so the up stack goes between the tracks. The machine stands with its head at s 178 through
+   Q4's haul, flatbed beside the Quarry up platform's range: capture it.
+6. For about the first 15 m of a turnout the truck has no rail clear of the flatbed: it sets down at a gap of about
+   1.8 m.
+7. "What looks solid is solid": after a yes the truck and stack platform are solid and standable.
+8. The cycle is still 0.39–0.62 s. What the wing adds is a hand and a stack over each track at all times; judge
+   that, not whether one cycle can be followed.
+
+Done means, added: the side follows the up track on line 1; one real-time motion sheet (eight frames over one double
+panel at cruise, eye height, 12–15 m off the front quarter on the down side, with a no-flag control) in which the up
+jaws hold a pair over the up track in at least three frames and no up pair lies under empty air; stills parked at
+s 178 and side-on from 50 m; a Far Head crossover panel.
+
+Not seen: the wing itself, the distance view, the chair view and line 2 at the platforms.
