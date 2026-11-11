@@ -52,7 +52,7 @@ function connect(base: string, room: string, sid: string) {
   };
   return { ws, closedWithin, first };
 }
-async function manager(store: Store, t: test.TestContext) {
+async function manager(store: Store, t: test.TestContext, tmp: Tmp) {
   const logs: string[] = [];
   const rooms = createRoomHost(
     {
@@ -89,6 +89,9 @@ async function manager(store: Store, t: test.TestContext) {
       'the test server to close',
       () => 'teardown',
     );
+    // Only now, with every authority closed: t.after hooks run in the order they were added, so a removal registered
+    // by tmpStore (before this hook) ran while the last authority was still open and writing checkpoints.
+    await tmp.remove();
   });
   const base = `ws://127.0.0.1:${address.port}`;
   return {
@@ -101,16 +104,31 @@ async function manager(store: Store, t: test.TestContext) {
     },
   };
 }
-async function tmpStore(t: test.TestContext) {
+type Tmp = Awaited<ReturnType<typeof tmpStore>>;
+// The removal is the manager's last teardown step (after rooms.close), and it first drains the store's lock of every
+// room written: a shutdown resolves while a fenced room's queued write is still pending (see the todo test below), and
+// that write's temp file landing as rm walked the directory was the ENOTEMPTY seen under load.
+async function tmpStore() {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-room-close-'));
-  // A closing room can still have a queued store write landing as its close resolves (the second test ended with
-  // ENOTEMPTY here under load), so retry the removal until that write has finished.
-  t.after(() => fs.rm(dataDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }));
-  return { dataDir, base: createStore({ dataDir, maxRooms: 8 }) };
+  const base = createStore({ dataDir, maxRooms: 8 });
+  const written = new Set<string>();
+  const { write, create } = base;
+  base.write = (id, ...rest) => (written.add(id), write.call(base, id, ...rest));
+  base.create = (id, ...rest) => (written.add(id), create.call(base, id, ...rest));
+  const remove = async () => {
+    await within(
+      Promise.all([...written].map((id) => base.withLock(id, async () => {}))),
+      'every queued store write to land',
+      () => [...written].join(', '),
+    );
+    await fs.rm(dataDir, { recursive: true, force: true });
+  };
+  return { dataDir, base, remove };
 }
 
 test('a room whose save did not load cleanly can be joined again after its idle close', async (t) => {
-  const { dataDir, base } = await tmpStore(t);
+  const tmp = await tmpStore();
+  const { dataDir, base } = tmp;
   // An unloadable save (a reshaped state, a corrupt file): the room loads a fresh fallback that is never saved, so its
   // close with save rejects. That rejection used to fence the room in `closing` for the life of the process.
   const id = 'smoke-node-2';
@@ -118,7 +136,7 @@ test('a room whose save did not load cleanly can be joined again after its idle 
   const original = JSON.stringify({ tick: 5, writerId: 'server', data: 'not a snapshot', updatedAt: 'fixture' });
   await fs.writeFile(file, original);
   await base.init();
-  const app = await manager(base, t);
+  const app = await manager(base, t, tmp);
   const a = app.join(id, 'first');
   assert.equal((await a.first()).t, 'welcome');
   const room = app.rooms.room(id)!;
@@ -134,7 +152,8 @@ test('a room whose save did not load cleanly can be joined again after its idle 
 });
 
 test('a close whose save stalls times out, fences the old writer and reopens once the save lands', async (t) => {
-  const { base } = await tmpStore(t);
+  const tmp = await tmpStore();
+  const { base } = tmp;
   await base.init();
   // While `hang` is set, each write waits inside the store's per-room lock behind a gate, as a write mid-writeFile on
   // a disk that stops answering would, until release().
@@ -153,7 +172,7 @@ test('a close whose save stalls times out, fences the old writer and reopens onc
     hang = false;
     for (const go of held.splice(0)) go();
   };
-  const app = await manager(store, t);
+  const app = await manager(store, t, tmp);
   // A railway room's close first awaits its startup checkpoint, then saves: a close that outlives its timeout could
   // still write afterwards, which is what the fence stops.
   const id = railwayRoomId('close-hang');
@@ -197,7 +216,8 @@ test('a close whose save stalls times out, fences the old writer and reopens onc
 // per-room lock freed the slot at once. The next authority loaded the older file (store.readSync does not wait on
 // the lock), the old save landed on top, and the new authority's next save wrote its older state back over it.
 test('a join after a timed-out close never loads a file the old authority is still writing', async (t) => {
-  const { base } = await tmpStore(t);
+  const tmp = await tmpStore();
+  const { base } = tmp;
   await base.init();
   const id = 'stale-load';
   let release = () => {};
@@ -209,7 +229,7 @@ test('a join after a timed-out close never loads a file the old authority is sti
       return base.write(rid, ...rest);
     },
   };
-  const app = await manager(store, t);
+  const app = await manager(store, t, tmp);
   const a = app.join(id, 'first');
   assert.equal((await a.first()).t, 'welcome');
   const room = app.rooms.room(id)!;
@@ -241,7 +261,8 @@ test('a join after a timed-out close never loads a file the old authority is sti
 });
 
 test('shutdown with a save that never settles is bounded and reports the failure', async (t) => {
-  const { base } = await tmpStore(t);
+  const tmp = await tmpStore();
+  const { base } = tmp;
   await base.init();
   let hang = false;
   const store: Store = {
@@ -250,7 +271,7 @@ test('shutdown with a save that never settles is bounded and reports the failure
       return hang ? new Promise(() => {}) : base.write(...args);
     },
   };
-  const app = await manager(store, t);
+  const app = await manager(store, t, tmp);
   const a = app.join('shutdown-hang', 'first');
   assert.equal((await a.first()).t, 'welcome');
   hang = true;
@@ -263,3 +284,52 @@ test('shutdown with a save that never settles is bounded and reports the failure
   ]);
   assert.equal(outcome, 'reported');
 });
+
+// Review (11 November, review/room-close-queued-write): rooms.close (shutdown) awaits only each room's bounded close,
+// never the drain an idle close or offline() waits for (rooms.ts closeRoom: "Shutdown waits only for the bounded
+// close"). A room whose close overruns is fenced, yet the write it queued before the fence stays in the store's per-room
+// lock and lands after the shutdown has settled; with save: false the shutdown even resolves as a success. No join can
+// load the room meanwhile (stopping refuses every upgrade) and index.ts exits right after, so in production that write
+// is cut off instead (the file stays the old one, renames being atomic; a .tmp can be left). todo until rooms.close
+// drains as well.
+for (const save of [false, true]) {
+  test(
+    `shutdown (save ${save}) settles only after every write its rooms queued has landed`,
+    { todo: true },
+    async (t) => {
+      const tmp = await tmpStore();
+      const { base } = tmp;
+      await base.init();
+      const id = `shutdown-queued-${save}`;
+      let release = () => {};
+      let stall = false;
+      const store: Store = {
+        ...base,
+        write(rid, ...rest) {
+          // The write waits inside the store's per-room lock behind a gate, as one mid-writeFile on a stalled disk would.
+          if (stall) void base.withLock(rid, () => new Promise<void>((go) => (release = go)));
+          return base.write(rid, ...rest);
+        },
+      };
+      t.after(() => release()); // runs before the manager's teardown drains the lock (hooks run in the order added)
+      const app = await manager(store, t, tmp);
+      const a = app.join(id, 'first');
+      assert.equal((await a.first()).t, 'welcome');
+      const room = app.rooms.room(id)!;
+      stall = true;
+      room.world.sync.saveNow(true); // the room's write, queued behind the gate before the shutdown begins
+      stall = false;
+      let landed = false;
+      void base.withLock(id, async () => void (landed = true)); // runs once every write queued before it has settled
+      const outcome = await app.rooms.close({ save }).then(
+        () => 'resolved',
+        (error: unknown) => (error instanceof AggregateError ? 'reported' : String(error)),
+      );
+      assert.ok(
+        app.logs.some((l) => l.includes(`room ${id}: close failed`)),
+        'the close overran and fenced its writer',
+      );
+      assert.equal(landed, true, `shutdown ${outcome} while the room's queued write had not landed`);
+    },
+  );
+}
