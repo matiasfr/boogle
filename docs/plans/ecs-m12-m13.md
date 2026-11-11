@@ -261,13 +261,22 @@ typecheck`, `npm run lint`.
 
 ### `inspect()` out of the client
 
-- [ ] **M12c. The ratchet.** _S, Medium._ `src/adapters/railway.ts` (add `read.debug()`),
+- [x] **M12c. The ratchet.** _S, Medium._ `src/adapters/railway.ts` (add `read.debug()`),
       `src/entities/railway/state.ts` (`RailwayViewInspection` is the session scalars and the view fields, no
       `RailwayInspection &`; add `inspectRailwayLegacy()` and `setRailwayLegacy()` with today's wide type),
       `view.ts` (`inspect()` spreads `{ pid, status: read.status(), ready: read.ready(), pending, stalled, tick,
       ...read.debug() }`; `inspectLegacy()` is today's body), `index.ts`, `dev/lint/policy.ts`
       (`INSPECT_LEGACY_IMPORTERS`), then the rename in every file typecheck flags (expected: the 30 of section 1,
       `src/proto/playdata/record.ts`, and by hand the page strings in `dev/scenarios/hud-glance.ts`).
+      **As built:** also `dev/lint/safety.ts` (the list is enforced by its own rule, `boogle/inspect-legacy`, which
+      matches the name as code and inside strings, so the string-built scenarios are held too) and the new
+      `dev/look/rail-read.ts`, which also re-exports `inspectRailway` so a tool imports one module. A relative import
+      of it resolves in the page (bots import `../bot.ts` the same way), so it stays under `dev/look`. The list landed
+      at **35 files**: typecheck's 31, the strings in `hud-glance.ts` and `world-inputs.ts` (it reads `accounts`),
+      `src/debug/dev/inspect.ts` and `room.ts` (the Dev menu's dump stays whole until M12d gives it rows), less
+      `jump-in.ts` (converted here, the proving eval). Section 1 missed three state readers, now given batches below:
+      `bots/coop-unlock.ts` and `bots/railway-reload.ts` (D2), `evals/railway-q6-forge.ts` (D4). The two peer-test
+      files call `adapter.inspect()`, not the door, so they are not on the list; D4 still converts them.
   - **Done:** typecheck green; the list in the commit body matches section 1's 30 or each difference is named.
   - **Checks:** `npm run check`; `npm run scenario -- hud-glance`; `npm run look -- --query from=q3-done --eval
     dev/look/evals/jump-in.ts --until window.__jumpDone` (a state reader on the legacy door) and one view-only eval
@@ -277,7 +286,7 @@ typecheck`, `npm run lint`.
       `src/features/playtest-flag.ts` (`account(w, pid)`), `src/proto/playdata/record.ts` (`line2Trains`,
       `line2Completed`, `qjob(w, 5).completion`, `read.ready()`), `src/debug/dev/inspect.ts` and `room.ts` (the view
       inspection and `rows: world.snapshot()`); delete `railwayRead` and `setRailwayRead` from `state.ts` and
-      `index.ts`.
+      `index.ts`. `record.ts`, `inspect.ts` and `room.ts` come off `INSPECT_LEGACY_IMPORTERS`.
   - **Checks:** `npm run check`; looks at `--rail-seed gap-footed` (buoys lifted where the railhead stands) and
     `deck-laid`; the M flag pressed with a full back (the mark's `logs`); the Dev menu's Inspect opened.
   - **Reviewer attacks:** the lookout before the railway mounts and after it unmounts (null read: buoys afloat, as
@@ -286,13 +295,15 @@ typecheck`, `npm run lint`.
       inspectRailway()!` closures become `rw()` closures). **Hold:** Ring Island R5 edits this file; check `npm run
       inflight` and land the day it is rebased. **Checks:** `npm run playthrough -- --to T2`, `--from q5-done --to
       trains`, `--players 2 --to t1-done`; the witness hashes in the two-player run still agree at every step.
-- [ ] **D2. The other bots.** _S._ `dev/look/bots/railway-glide.ts`, `railway-held-jump.ts`, `railway-works.ts`.
+- [ ] **D2. The other bots.** _S._ `dev/look/bots/railway-glide.ts`, `railway-held-jump.ts`, `railway-works.ts`,
+      `coop-unlock.ts`, `railway-reload.ts` (the last two found by M12c's typecheck).
       **Checks:** each bot's own eval once (`railway-works-bot.ts`, the glide and held-jump looks).
 - [ ] **D3. Line 2's evals.** _M._ `dev/look/evals/`: `railway-b4-at`, `railway-b4-bot`, `railway-b5b8-at`,
       `railway-b5b8-bot`, `railway-boiler-fit`, `railway-forge-lights`, `railway-head-forge`, `railway-gated-fill`,
-      `railway-glide-wake`, `railway-signal-hold`, `railway-trains-pass`, `jump-in`, `gpu-portability`.
+      `railway-glide-wake`, `railway-signal-hold`, `railway-trains-pass`, `gpu-portability` (`jump-in` was done in
+      M12c).
 - [ ] **D4. The rest.** _M._ `dev/look/evals/`: `railway-instant`, `railway-instant-act`, `railway-motion`,
-      `railway-q6-wait`, `railway-passenger-car`, `railway-passenger-car-two`, `railway-request-stop`,
+      `railway-q6-wait`, `railway-q6-forge` (found by M12c), `railway-passenger-car`, `railway-passenger-car-two`, `railway-request-stop`,
       `railway-works-act`, `railway-works-at`, `railway-works-bot`, `ring-greybox`; `dev/scenarios/hud-glance.ts`,
       `world-inputs.ts`; `dev/peer-test/ws-railway.ts` and `ws-page.ts` (`T.railAdapter().state` and `state:
       adapter.inspect()` become the facade and `debug()`).

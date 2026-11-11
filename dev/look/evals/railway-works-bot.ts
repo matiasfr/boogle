@@ -5,7 +5,7 @@ const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof impor
 const { splitRockToCrossing } = (await import(
   '/dev/look/bots/railway-works.ts' as string
 )) as typeof import('../bots/railway-works.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -25,18 +25,18 @@ setTimeout(() => window.__debugCam!.clear(), 100);
 background(
   (async () => {
     if (
-      !(await bot.until(() => inspectRailway()?.ready && me.body && me.coyote > 0, 300000, 'Split-rock seed arrived'))
+      !(await bot.until(() => inspectRailwayLegacy()?.ready && me.body && me.coyote > 0, 300000, 'Split-rock seed arrived'))
     )
       throw new Error('Split-rock seed did not arrive');
     const want = from === 'works' ? 'breaker' : 'wagon';
-    if (!(await bot.until(() => inspectRailway()?.works.stage === want, 30000, `seed at stage ${want}`)))
-      throw new Error(`Split-rock seed is at ${inspectRailway()?.works.stage}, not ${want}`);
+    if (!(await bot.until(() => inspectRailwayLegacy()?.works.stage === want, 30000, `seed at stage ${want}`)))
+      throw new Error(`Split-rock seed is at ${inspectRailwayLegacy()?.works.stage}, not ${want}`);
     await splitRockToCrossing(
       {
         bot,
         checkpoint: async (beat) => {
           bot.note(beat);
-          const state = inspectRailway()!;
+          const state = inspectRailwayLegacy()!;
           const view = state as typeof state & { worksView?: unknown; crossingView?: unknown };
           console.log(
             `RAILWAY CHECKPOINT ${JSON.stringify({

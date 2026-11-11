@@ -1,5 +1,5 @@
 // Disposable accepted B5-B8 seed framing; no route bot or browser-side shared-state fabrication.
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -12,9 +12,9 @@ const layout = (await import(
 const rail = (await import('/src/entities/railway/rail-kit.ts' as string)) as typeof import('../../../src/entities/railway/rail-kit.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const until = performance.now() + 15000;
-while ((!inspectRailway()?.ready || (inspectRailway()?.line2?.completed ?? 0) < 5) && performance.now() < until)
+while ((!inspectRailwayLegacy()?.ready || (inspectRailwayLegacy()?.line2?.completed ?? 0) < 5) && performance.now() < until)
   await wait(50);
-const state = inspectRailway();
+const state = inspectRailwayLegacy();
 if (!state?.ready || !state.line2 || state.line2.completed < 5 || !me.body)
   throw new Error('B5-B8 requires an accepted Q5-complete --rail-seed');
 const mode = new URLSearchParams(location.search).get('b58at') ?? 'q6';

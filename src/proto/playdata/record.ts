@@ -26,7 +26,7 @@ import { coarseUa, firstFrame, scrub } from '../../netplay/report-format.ts';
 import { BUILD } from '../../build-id.ts';
 import { IDLE_S } from '../../../protos/store.ts';
 import { PROTO, protoV, pageQuery, productionRailway } from '../flags.ts';
-import { inspectRailway } from '../../entities/railway/state.ts';
+import { inspectRailwayLegacy } from '../../entities/railway/state.ts';
 import { createRailwayJourneyMarks } from '../../adapters/railway-marks.ts';
 import { HEAD, ORIGIN } from '../../place/layout.ts';
 import { currentCard } from '../card.ts';
@@ -385,7 +385,7 @@ function sample(ms: number) {
   const x = round(b.x),
     z = round(b.z);
   const a = activity();
-  const state = productionRailway ? inspectRailway() : null;
+  const state = productionRailway ? inspectRailwayLegacy() : null;
   if (state?.ready)
     for (const [name, data] of journeyMarks(
       b,

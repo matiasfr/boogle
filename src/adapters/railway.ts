@@ -1205,6 +1205,20 @@ export function createRailwayAdapter({
     stalled: stalledNow,
     /** The movement tunables (railMovement), one frozen object while they are unchanged. */
     movement: moves,
+    /** The session scalars no view reads (tools, witnesses and the view's inspection do), built per call: the
+     * connection, the server step the confirmed mirror is current to and its hash (computed only when read; never the
+     * prediction's), the account epoch, the next action id and the prediction's counters. */
+    debug: () => ({
+      connected,
+      synced,
+      step: rail.step(),
+      get hash() {
+        return rail.hash();
+      },
+      epoch,
+      next,
+      prediction: stats,
+    }),
   };
   return {
     inspect,

@@ -13,7 +13,7 @@
 // npm run look -- --rail-seed boiler-camp --action dev/look/evals/railway-boiler-fit.ts --video --seconds 14
 //   --question "Does the boiler leave the rope on the press frame, and do two little guys hammer at the saddle?"
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -40,7 +40,7 @@ const solo = !new URLSearchParams(location.search).has('player');
 const fitter = solo || new URLSearchParams(location.search).get('player') === '2';
 const w = window as Window & { __boilerShot?: boolean };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 const boiler = () => (read().line2View as unknown as { boiler: BoilerView }).boiler;
 const arrival = () => read().reward.arrival;
 function check(ok: unknown, label: string) {
@@ -61,7 +61,7 @@ function other() {
   }
   return null;
 }
-const landed = () => !!me.body && me.coyote > 0 && !me.swimming && !!inspectRailway()?.ready;
+const landed = () => !!me.body && me.coyote > 0 && !me.swimming && !!inspectRailwayLegacy()?.ready;
 const near = (p: { x: number; z: number } | null, q: { x: number; z: number }, r: number) =>
   !!p && Math.hypot(p.x - q.x, p.z - q.z) < r;
 const bot = makeBot({ doneFlag: '__boilerDone' });

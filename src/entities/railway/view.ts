@@ -16,7 +16,7 @@ import type { FrameCtx } from '../../loop.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { createRailwaySources } from './sources.ts';
 import { createRailwayReward } from './reward.ts';
-import { registerRailwayYouGot } from './state.ts';
+import { registerRailwayYouGot, type RailwayScene, type RailwayViewInspection } from './state.ts';
 import { createRailwayArrival } from './arrival.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
@@ -612,8 +612,26 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       // The track layer's two chairs: Sit aboard with nothing else to press for; seated, Interact stands you up.
       return seats.withSeatTargets(targets);
     },
-    inspect: () => ({
-      ...adapter.inspect(), // the oracle's own spread; the adapter's fields go in M12
+    // The session's scalars and the scene walk; state is read as rows (docs/plans/ecs-m12-m13.md, section 2).
+    inspect: (): RailwayViewInspection => {
+      const read = adapter.read;
+      return {
+        pid: read.pid,
+        status: read.status(),
+        ready: read.ready(),
+        pending: read.pending(),
+        stalled: read.stalled(),
+        tick: read.tick(),
+        ...read.debug(),
+        ...scene(),
+      };
+    },
+    /** Temporary (M12c to M12e): the adapter's wide object under the scene walk, for INSPECT_LEGACY_IMPORTERS. */
+    inspectLegacy: () => ({ ...adapter.inspect(), ...scene() }),
+    dispose: () => owner.dispose(),
+  };
+  function scene() {
+    return {
       owned: owner.counts(),
       head: visualHead,
       targetHead,
@@ -635,8 +653,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       // The Works and Roundhouse views' own inspection; `works` and `shed` are the adapter's accepted state (J3).
       worksView: works?.inspect() ?? null,
       crossingView: works?.crossingInspect() ?? null,
-    }),
-    dispose: () => owner.dispose(),
-  };
+    } satisfies RailwayScene;
+  }
 }
 export type RailwayView = Awaited<ReturnType<typeof createRailwayView>>;

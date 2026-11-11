@@ -5,7 +5,7 @@
 //   --real --warm 5 --video --name passenger-car
 // Run as `--action`, so the journey is inside the real-time recording.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -29,7 +29,7 @@ type Halt = {
 };
 type Car = { x: number; z: number; riding: boolean };
 type View = { halts: Halt[]; trains: { cars: Car[]; stopLamp: boolean }[] };
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 const view = () => read().line2View as unknown as View;
 // The ridden train's slot: whichever of line 2's two stops at the village toward Far Head (v26).
 let slot = 1;

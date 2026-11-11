@@ -13,7 +13,7 @@
 //   --until "(import('/dev/look/bots/coop-unlock.ts').then((m) => m.start()), window.__coopShot || location.search.includes('player=2'))" --seconds 6 --video
 // (alone and together add &railStop=optional%20jump%20used, so the finder stops after its jump demonstration)
 import { background } from '../../../src/async.ts';
-import { inspectRailway } from '../../../src/entities/railway/state.ts';
+import { inspectRailwayLegacy } from '../../../src/entities/railway/state.ts';
 import { me } from '../../../src/player/player.ts';
 import { inputState } from '../../../src/player/input-state.ts';
 import { input } from '../../../src/player/input.ts';
@@ -35,7 +35,7 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 let started = false;
 
 function read() {
-  const state = inspectRailway();
+  const state = inspectRailwayLegacy();
   if (!state) throw new Error('Missing railway view');
   return state;
 }

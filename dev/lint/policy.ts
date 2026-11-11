@@ -113,6 +113,54 @@ const READ_MODEL_IMPORTERS = [
   'test/helpers/railway-model.ts',
   'test/railway.test.ts',
 ];
+/** The files that still read state through the legacy door, `inspectRailwayLegacy()` (docs/plans/ecs-m12-m13.md, M12c),
+ * one per line; the list may only lose lines. D1 to D4 and M12d take their files off it; M12e deletes it with the door.
+ * Checked by boogle/inspect-legacy (safety.ts), a rule of its own so no other block's no-restricted-syntax replaces it. */
+export const INSPECT_LEGACY_IMPORTERS = [
+  'dev/look/bots/coop-unlock.ts',
+  'dev/look/bots/railway-glide.ts',
+  'dev/look/bots/railway-held-jump.ts',
+  'dev/look/bots/railway-reload.ts',
+  'dev/look/bots/railway-works.ts',
+  'dev/look/bots/railway.ts',
+  'dev/look/evals/gpu-portability.ts',
+  'dev/look/evals/railway-b4-at.ts',
+  'dev/look/evals/railway-b4-bot.ts',
+  'dev/look/evals/railway-b5b8-at.ts',
+  'dev/look/evals/railway-b5b8-bot.ts',
+  'dev/look/evals/railway-boiler-fit.ts',
+  'dev/look/evals/railway-forge-lights.ts',
+  'dev/look/evals/railway-gated-fill.ts',
+  'dev/look/evals/railway-glide-wake.ts',
+  'dev/look/evals/railway-head-forge.ts',
+  'dev/look/evals/railway-instant-act.ts',
+  'dev/look/evals/railway-instant.ts',
+  'dev/look/evals/railway-motion.ts',
+  'dev/look/evals/railway-passenger-car-two.ts',
+  'dev/look/evals/railway-passenger-car.ts',
+  'dev/look/evals/railway-q6-forge.ts',
+  'dev/look/evals/railway-q6-wait.ts',
+  'dev/look/evals/railway-request-stop.ts',
+  'dev/look/evals/railway-signal-hold.ts',
+  'dev/look/evals/railway-trains-pass.ts',
+  'dev/look/evals/railway-works-act.ts',
+  'dev/look/evals/railway-works-at.ts',
+  'dev/look/evals/railway-works-bot.ts',
+  'dev/look/evals/ring-greybox.ts',
+  'dev/scenarios/hud-glance.ts',
+  'dev/scenarios/world-inputs.ts',
+  'src/debug/dev/inspect.ts',
+  'src/debug/dev/room.ts',
+  'src/proto/playdata/record.ts',
+];
+const LEGACY_NAME = 'inspectRailwayLegacy';
+export const INSPECT_LEGACY_MESSAGE = `${LEGACY_NAME}() is the temporary legacy door (docs/plans/ecs-m12-m13.md, M12c): read state as rows and queries through dev/look/rail-read.ts (or railwayWorldRead()), and inspectRailway() for the view's and the session's own fields. Only the files in INSPECT_LEGACY_IMPORTERS may name it, and that list only loses lines.`;
+// The name as code, or inside a string or template (the scenarios build their page code as strings).
+export const INSPECT_LEGACY_SELECTORS = [
+  `Identifier[name="${LEGACY_NAME}"]`,
+  `Literal[value=/${LEGACY_NAME}/]`,
+  `TemplateElement[value.raw=/${LEGACY_NAME}/]`,
+];
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
@@ -587,6 +635,12 @@ const policyBlocks: PolicyBlock[] = [
     files: ['test/**/*.ts', 'dev/**/*.ts'],
     ignores: READ_MODEL_IMPORTERS,
     rules: { 'no-restricted-imports': ['error', { patterns: [railReadModelBan] }] },
+  },
+  // The legacy door's callers are the closed list above; its owner, the railway entity, defines and mounts it.
+  {
+    files: ['src/**/*.ts', 'dev/**/*.ts', 'test/**/*.ts'],
+    ignores: [...INSPECT_LEGACY_IMPORTERS, 'src/entities/railway/**', 'dev/lint/**'],
+    rules: { 'boogle/inspect-legacy': 'error' },
   },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule
   // for these files would replace it).

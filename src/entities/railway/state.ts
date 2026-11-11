@@ -20,7 +20,17 @@ export function setRailwayWorldRead(r: RailwayRead | null) {
   worldRead = r;
 }
 
-export type RailwayViewInspection = RailwayInspection & {
+/** The session's scalars in the view inspection: the read facade's values, flat. */
+export type RailwaySession = {
+  pid: RailwayRead['pid'];
+  status: ReturnType<RailwayRead['status']>;
+  ready: boolean;
+  pending: number;
+  stalled: ReturnType<RailwayRead['stalled']>;
+  tick: number;
+} & ReturnType<RailwayRead['debug']>;
+/** What the railway's views hold and no component does: the scene walk. */
+export type RailwayScene = {
   owned: { meshes: number; bodies: number; geometries: number; animations: number };
   head: number;
   targetHead: number;
@@ -47,12 +57,29 @@ export type RailwayViewInspection = RailwayInspection & {
   reward: ReturnType<Awaited<ReturnType<typeof import('./reward.ts').createRailwayReward>>['inspect']>;
   hookShot: ReturnType<Awaited<ReturnType<typeof import('./hook-shot.ts').createRailwayHook>>['inspect']>;
   glider: ReturnType<Awaited<ReturnType<typeof import('./glide.ts').createRailwayGlide>>['inspect']>;
+  /** The Works and Roundhouse views' own inspection, and the crossing's; null with &works=0. */
+  worksView: ReturnType<WorksLive['inspect']> | null;
+  crossingView: ReturnType<WorksLive['crossingInspect']> | null;
 };
+type WorksLive = Awaited<ReturnType<typeof import('./works-live.ts').createRailwayWorksLive>>;
+/** The railway's inspection: the session's scalars and the view's scene walk, built per call. It holds no component
+ * field and no fact a query computes (docs/plans/ecs-m12-m13.md, section 2): read state as rows and queries, through
+ * railwayWorldRead(). */
+export type RailwayViewInspection = RailwaySession & RailwayScene;
 let current: (() => RailwayViewInspection) | null = null;
 export const inspectRailway = () => current?.() ?? null;
 /** Lifecycle owner only; observers receive detached scalar state from inspectRailway. */
 export function setRailwayView(view: (() => RailwayViewInspection) | null) {
   current = view;
+}
+/** Temporary (M12c to M12e): today's wide object, the adapter's read model under the scene walk. Only the files in
+ * INSPECT_LEGACY_IMPORTERS (dev/lint/policy.ts) may call it, and that list only loses lines; M12e deletes it. */
+export type RailwayLegacyInspection = RailwayInspection & RailwayScene;
+let legacy: (() => RailwayLegacyInspection) | null = null;
+export const inspectRailwayLegacy = () => legacy?.() ?? null;
+/** Lifecycle owner only. */
+export function setRailwayLegacy(view: (() => RailwayLegacyInspection) | null) {
+  legacy = view;
 }
 
 let recover: (() => void) | null = null;

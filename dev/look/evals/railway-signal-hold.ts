@@ -6,7 +6,7 @@
 // with two trains doesn't bunch them there (test/review-v26.test.ts holds a train at it headlessly).
 // npm run look -- --rail-seed q6-done --eval dev/look/evals/railway-signal-hold.ts --until window.__placeDone --real \
 //   --name signal-hold
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const layout = (await import(
@@ -15,12 +15,12 @@ const layout = (await import(
 
 type Car = { x: number; y: number; z: number };
 type Train = { slot: number; line: number; along: number; track: number; phase: number; at: number; cars: Car[] };
-const view = () => inspectRailway()?.line2View as unknown as { trains: Train[] } | undefined;
+const view = () => inspectRailwayLegacy()?.line2View as unknown as { trains: Train[] } | undefined;
 const shot = window as Window & { __placeDone?: boolean };
 const P = { x: 0, z: 0, ux: 0, uz: 1 };
 let aim: ReturnType<typeof setInterval> | null = null;
 const tick = setInterval(() => {
-  const s = inspectRailway();
+  const s = inspectRailwayLegacy();
   const v = view();
   if (!s?.ready || !s.line2.trains || !v) return;
   const line2 = v.trains.filter((t) => t.line === 1);
