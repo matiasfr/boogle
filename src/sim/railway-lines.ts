@@ -70,7 +70,7 @@ export const TRAIN_EXTENT = { aheadCm: 620, behindCm: 900 } as const;
  * merge plus a stub's turnout (`edgeCm`: past it the tracks are apart; a crossover's block starts at the crossover);
  * its signal stands outside that by the reach of an inbound train's leading end, so a train held there is clear of the
  * block and of a train leaving it. */
-const end = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailEnd => {
+export const railEnd = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailEnd => {
   const edgeCm = mergeCm - side * (kind === 'stub' ? TURNOUT_CM : 0),
     lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
   return { kind, mergeCm, edgeCm, signalCm: edgeCm - side * lead };
@@ -96,14 +96,14 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: 1400,
         opens: -1,
         platforms: both({ x: 92819, z: -434, y: 1902, reach: 1260 }),
-        end: end('stub', 3600, -1),
+        end: railEnd('stub', 3600, -1),
       },
       {
         name: 'Camp',
         s: 20700,
         opens: -1,
         platforms: both({ x: 100964, z: -14610, y: 3102, reach: 1360 }),
-        end: end('stub', 18200, 1),
+        end: railEnd('stub', 18200, 1),
       },
     ],
     home: 1,
@@ -133,7 +133,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: 1700,
         opens: -1,
         platforms: both({ x: 92779, z: 2617, y: 1902, reach: 1260 }),
-        end: end('stub', 3400, -1),
+        end: railEnd('stub', 3400, -1),
       },
       {
         name: 'Quarry',
@@ -147,7 +147,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: 52400,
         opens: -1,
         platforms: [FAR_HEAD_UP, { x: 136361, z: -16353, y: 2502, reach: 1260 }],
-        end: end('crossover', 49000, 1),
+        end: railEnd('crossover', 49000, 1),
       },
       // Place's halt maths at s 719-741 m, lat -2.9 (the side of the pier rack); open once Q6 (slot 5) is laid. The
       // far tracks merge at s 556 m, the pier's root, so the pier stays one terminal track.
@@ -156,7 +156,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         s: PIER_STOP_CM,
         opens: 5,
         platforms: both({ x: 139969, z: -35833, y: 2502, reach: 1260 }),
-        end: end('stub', 55600, 1),
+        end: railEnd('stub', 55600, 1),
       },
     ],
     home: 0,

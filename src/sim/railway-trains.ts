@@ -202,9 +202,15 @@ export function planLeg(
   const k = trainNextStop(stops, s, v, dir, reasons, at);
   if (k < 0) return null;
   const goal = stops[k]!;
+  // A hold never stands at a halt that refuses this way (no platform for it: the homeward-only Pier going up).
   const holds: { to: number; dest: number }[] = [];
   for (let j = 0; j < stops.length; j++)
-    if (j !== k && (goal - stops[j]!) * dir > 0 && trainCanBrake(s, v, dir, stops[j]!, at(j)))
+    if (
+      j !== k &&
+      (goal - stops[j]!) * dir > 0 &&
+      !trainPassesBy(line, j, dir, stops.length) &&
+      trainCanBrake(s, v, dir, stops[j]!, at(j))
+    )
       holds.push({ to: j, dest: stops[j]! });
   for (const b of endBlocks(line, stops))
     if (b.dir === dir && (goal - b.signal) * dir > 0 && trainCanBrake(s, v, dir, b.signal, kin))
