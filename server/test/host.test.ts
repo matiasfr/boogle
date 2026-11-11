@@ -8,6 +8,7 @@ import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { HALF } from '../../src/world/grid.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
@@ -280,6 +281,85 @@ test('production railway relays bounded social cues without opening material or 
       ['ping', 'honk'],
     );
     assert.ok(!a.msgs.some((m) => m.from === 'aaa'));
+    a.ws.close();
+    b.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('production railway relays a bag of mushrooms, clean and bounded', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    const roomId = railwayRoomId('mush');
+    const a = connect(base, roomId, 'aaa');
+    const b = connect(base, roomId, 'bbb');
+    await Promise.all([a.next(is('list')), b.next(is('list'))]);
+    const isMush = isWorld('mush');
+    for (const s of [
+      [], // nothing
+      [1, 2, 3], // odd
+      Array.from({ length: 12 }, () => 1), // more than a bag's five spots
+      [1, '2'],
+      [1, null],
+      [HALF, 0], // off the island
+      'x'.repeat(100),
+    ])
+      a.send({ t: 'm', d: { t: 'mush', s } });
+    a.send({ t: 'm', d: { t: 'mush' } });
+    a.send({ t: 'm', d: { t: 'mush', s: [1.23, -4.56, 7, 8], material: { n: 8 } } });
+    assert.deepEqual(await b.next(isMush), { t: 'm', from: 'aaa', d: { t: 'mush', s: [1.2, -4.6, 7, 8] } });
+    await sleep(100);
+    assert.equal(b.msgs.filter(isMush).length, 1, 'only the well-formed bag was relayed');
+    assert.ok(!a.msgs.some(isMush), 'nothing echoes to the sender');
+    // A flood is cut at the room's message burst, like any other game message.
+    for (let i = 0; i < 300; i++) a.send({ t: 'm', d: { t: 'mush', s: [i % 50, 0] } });
+    await sleep(300);
+    const relayed = b.msgs.filter(isMush).length - 1;
+    assert.ok(relayed >= 90 && relayed <= 130, `relayed ${relayed} of 300`);
+    a.ws.close();
+    b.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('review: hostile mush frames never crash the room and nothing relayed is off the island', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    const roomId = railwayRoomId('mush-hostile');
+    const a = connect(base, roomId, 'aaa');
+    const b = connect(base, roomId, 'bbb');
+    await Promise.all([a.next(is('list')), b.next(is('list'))]);
+    const isMush = isWorld('mush');
+    // Raw frames JSON.stringify could not produce: Infinity, -0, huge exponents, prototype keys, array-likes.
+    for (const raw of [
+      '{"t":"m","d":{"t":"mush","s":[1e999,0]}}',
+      '{"t":"m","d":{"t":"mush","s":[-1e999,0]}}',
+      '{"t":"m","d":{"t":"mush","s":{"length":2,"0":1,"1":2}}}',
+      '{"t":"m","d":{"t":"mush","s":[[1],[2]]}}',
+      '{"t":"m","d":{"t":"mush","s":["1","2"]}}',
+      '{"t":"m","d":{"t":"mush","s":[true,false]}}',
+      '{"t":"m","d":{"t":"mush","__proto__":{"s":[1,2]}}}',
+      '{"t":"m","d":{"t":"mush","s":"12"}}',
+      '{"t":"m","d":{"t":"mush","s":null}}',
+      '{"t":"m","d":null}',
+      '{"t":"m","d":"mush"}',
+      '{"t":"m","d":[{"t":"mush","s":[1,2]}]}',
+    ])
+      a.ws.send(raw);
+    a.ws.send('{"t":"m","d":{"t":"mush","s":[-0,3],"__proto__":{"evil":1},"constructor":{"x":1}}}');
+    const got = await b.next(isMush);
+    assert.deepEqual(JSON.parse(JSON.stringify(got.d)), { t: 'mush', s: [0, 3] }, 'only the clean copy is relayed');
+    // A value just under HALF passes the bound but rounds onto it: receivers (|v| < HALF) would reject the relay.
+    a.send({ t: 'm', d: { t: 'mush', s: [HALF - 0.04, 0] } });
+    a.send({ t: 'm', d: { t: 'mush', s: [-(HALF - 0.04), 0] } });
+    await sleep(150);
+    for (const m of b.msgs.filter(isMush))
+      for (const v of m.d.s) assert.ok(Math.abs(v) < HALF, `relayed ${v} is off the island after rounding`);
+    // The room is still up for everyone.
+    a.send({ t: 'm', d: { t: 'mush', s: [5, 5] } });
+    await b.next((m) => isMush(m) && m.d.s[0] === 5);
     a.ws.close();
     b.ws.close();
   } finally {

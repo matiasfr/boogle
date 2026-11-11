@@ -23,6 +23,7 @@ import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { HOST_TYPES } from '../../../src/world/sync.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
+import { HALF } from '../../../src/world/grid.ts';
 import { RTC_TYPE, validateRtc } from '../../../src/net/rtc-wire.ts';
 import { createReplicator } from '../../../src/world/replicate-server.ts';
 import { RAIL_AWAY } from '../../../src/sim/railway-away.ts';
@@ -77,6 +78,15 @@ function take(b: Bucket, rate: number, burst: number, now: number) {
   if (b.tokens < 1) return false;
   b.tokens -= 1;
   return true;
+}
+// A bag of seeds' mushrooms (src/adapters/mushrooms.ts sprout): { s: [x, z, ...] }, at most five spots on the island.
+// Returns a clean copy (positions to the decimetre, as the sender rounds them) or null; receivers validate again.
+const MUSH_SPOTS = 10;
+function mushShape(msg: unknown): { s: number[] } | null {
+  const s = (msg as { s?: unknown } | null)?.s;
+  if (!Array.isArray(s) || !s.length || s.length > MUSH_SPOTS || s.length % 2) return null;
+  const r = s.map((v: unknown) => (typeof v === 'number' ? Math.round(v * 10) / 10 : NaN));
+  return r.every((v) => Number.isFinite(v) && Math.abs(v) < HALF) ? { s: r } : null;
 }
 const visible = (c: Client) => (c.d as { v?: unknown } | null)?.v === 1;
 // Voice chat's presence field (src/features/voice.ts): 1 in voice, 2 muted; missing means not in voice.
@@ -282,8 +292,8 @@ export function createHostedRoom({
     if (HOST_TYPES.has(t as string)) return void c.dropped++;
     if (railway) {
       // Existing cosmetic one-offs remain peer messages. Strip unrelated fields; none enters the material host.
-      if (t === 'ping' || t === 'honk') {
-        const cosmetic = t === 'ping' ? validatePing(m.d) : { v: honkShape(m.d) };
+      if (t === 'ping' || t === 'honk' || t === 'mush') {
+        const cosmetic = t === 'ping' ? validatePing(m.d) : t === 'mush' ? mushShape(m.d) : { v: honkShape(m.d) };
         if (!cosmetic) return void c.dropped++;
         toAll(encode({ t: 'm', from: c.id, d: { t, ...cosmetic } }), c.id);
         return;
