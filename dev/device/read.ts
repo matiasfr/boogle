@@ -53,6 +53,8 @@ export type DeviceResult = {
   dlim: Raw;
   env: Raw;
   load: Raw;
+  /** The shader warm-up's pass 2 as Run found it (`dev.bg`): when it finished, how long Run waited; empty before it. */
+  bg: Raw;
   /** The first navigation's load (`dev.first`), taken before Run was tapped; null for a run that predates it. */
   first: Raw | null;
   /** Its boot marks, `m_<name>` in ms since that navigation began (every `dev.boot` event merged). */
@@ -129,6 +131,7 @@ export function readDevice(session: Session, minted = false): DeviceResult {
     dlim: {},
     env: {},
     load: {},
+    bg: {},
     first: null,
     boot: {},
     files: [],
@@ -163,6 +166,9 @@ export function readDevice(session: Session, minted = false): DeviceResult {
         break;
       case 'dev.load':
         out.load = raw;
+        break;
+      case 'dev.bg':
+        out.bg = raw;
         break;
       case 'dev.first':
         out.first = raw;

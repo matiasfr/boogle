@@ -3,7 +3,8 @@
 // in this private jump room and uploads each result as a playdata session with the card `device` (./upload.ts), so
 // `npm run device -- pull` can turn it into a report on the Mac. Nothing here sends anything to other players or
 // touches a save. Loaded by src/features/device-test.ts, only when the address has `device`. Sync kind: Local.
-import { bootInteractive } from '../../boot/timeline.ts';
+import { bootInteractive, bootMarks, onBootMark } from '../../boot/timeline.ts';
+import { shaderStats } from '../../render/precompile.ts';
 import { BUILD } from '../../build-id.ts';
 import { deviceFields, envDiagnostics, gpuDiagnostics, loadFields } from './diagnostics.ts';
 import { refreshInterval } from './frames.ts';
@@ -31,6 +32,33 @@ async function enterGame() {
     await sleep(100);
   }
   await sleep(1500); // the arrival
+}
+
+// The shader warm-up's pass 2 (src/render/precompile.ts) builds the rest of the world's pipelines after the loading
+// screen. The scenes start once it is done, so their settle columns measure what it missed (the test: 0 stalls over
+// 100 ms and +0 programs); dev.bg says when it finished and how long Run waited for it.
+async function backgroundShaders(limitMs: number) {
+  const t0 = performance.now();
+  const at = () => bootMarks().find((m) => m.name === 'shaders-all');
+  if (!at())
+    await new Promise<void>((resolve) => {
+      const off = onBootMark(() => at() && done());
+      const timer = setTimeout(() => done(), limitMs);
+      function done() {
+        off();
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+  const mark = at();
+  return {
+    all_ms: mark?.t ?? null,
+    wait_ms: Math.round(performance.now() - t0),
+    pipelines: mark?.detail?.pipelines ?? null,
+    late: mark?.detail?.late ?? null,
+    held: mark?.detail?.held ?? null,
+    building: shaderStats().building,
+  };
 }
 
 export function startDeviceTest() {
@@ -80,6 +108,7 @@ export function startDeviceTest() {
   async function run() {
     const refresh = (await refreshInterval()) ?? FALLBACK_REFRESH_MS;
     await enterGame();
+    const bg = await backgroundShaders(60_000);
     const t0 = performance.now();
     const load = loadFields();
     const launch = captureFirstLoad(runId, null, coldAsked);
@@ -88,6 +117,7 @@ export function startDeviceTest() {
       ...(await gpuDiagnostics()).map((d) => ev(d.k, d.f)),
       ev('dev.diag.env', await envDiagnostics(refresh)),
       ev('dev.load', load),
+      ev('dev.bg', bg),
       ...(launch
         ? [
             ev('dev.first', launch.fields),
@@ -122,6 +152,8 @@ export function startDeviceTest() {
         not_measured: count('not-measured'),
         drift_pct: drift,
         ms: Math.round(performance.now() - t0),
+        // built late during the scenes, after pass 2 had finished: each one a miss of the warm-up
+        bg_after: shaderStats().afterAll,
       }),
       session('done', { pass, total: rows.length }),
     ]);

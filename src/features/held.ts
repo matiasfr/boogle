@@ -155,11 +155,14 @@ function renderHud(now: number) {
 }
 
 // Every catalog model, built once behind the lobby so the first time one is held or thrown draws without a compile.
-warmUp(() => {
-  const g = new THREE.Group();
-  for (const it of GIFTS) if (carryable(it)) g.add(itemModel(it.id));
-  return g;
-});
+warmUp(
+  () => {
+    const g = new THREE.Group();
+    for (const it of GIFTS) if (carryable(it)) g.add(itemModel(it.id));
+    return g;
+  },
+  { defer: 'near' },
+); // after the loading screen, with the spawn's surroundings
 // And every item icon (The Boogler's gift answer shows one), drawn behind the lobby too: the first one drawn in play
 // built its pipelines mid-frame.
 warmUp(() => warmIcons(['ball', ...GIFTS.filter(carryable).map((it) => it.id)]));

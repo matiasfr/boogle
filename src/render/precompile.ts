@@ -1,29 +1,47 @@
 // Shader and pipeline compiles, moved from the first frame an object is seen to a moment nobody is playing (the lobby,
 // or a lazy part's load). WebGPU builds a pipeline the first time a material is drawn, and a frame that does it
-// stalls for tens of ms. compileAsync builds them ahead, but only for what the renderer would draw: it skips hidden
-// objects and anything outside the camera's frustum, so those are switched on for the length of the call.
+// stalls for tens of ms (a device's cold Safari: 84 ms a pipeline, 889 ms once on Far Head). compileAsync builds them
+// ahead, but only for what the renderer would draw: it skips hidden objects and anything outside the camera's frustum,
+// so those are switched on for the length of the call.
 //
-//   precompile(null, fn)  main.ts, behind the loading screen: the whole scene, then every warm-up object; fn(0..1) as
-//                         each part finishes
+// Lobby first (docs/research/cold-start.md, 5b; owner, 10 November 2026: "Yes, build it"). The loading screen waits
+// only for what the lobby view draws (pass 1); the rest builds after it lifts (pass 2), nearest the camera first, while
+// the player is in the lobby and arriving. Nothing draws with a pipeline still building: from the end of pass 1, a
+// main-scene pipeline first needed in a frame (camera or shadow pass) is created asynchronously and three skips that
+// object until it is ready, so it appears a moment late instead of stalling the frame.
+//
+//   precompile(null, fn)  main.ts, behind the loading screen: pass 1 (the preparations, the lobby's real frame with
+//                         `{ frame: true }` warm-ups in it, then the warm-ups); fn(0..1) as each part finishes. Pass 2
+//                         starts once the game is interactive and ends with the boot mark `shaders-all`
 //   precompile(object)    a lazy part, as it is built: that object (in the scene already or not)
 //   warmUp(make)          for things that only appear once someone plays (a new player's avatar, a held item): make()
-//                         returns a throwaway Object3D with the same materials; it is compiled at start, never drawn.
-//                         Work that draws off-screen itself (the item icons) does it in make() and returns a
-//                         promise of anything else; it is awaited in turn
+//                         returns a throwaway Object3D with the same materials; it is compiled, never shown. Work that
+//                         draws off-screen itself (the item icons) does it in make() and returns a promise of anything
+//                         else; it is awaited in turn. `{ frame: true }`: the object is in the lobby's warm-up frame,
+//                         so its shadow pipelines build too (Buddy). `{ defer: 'near' | 'far' }`: built in pass 2, after
+//                         the camera's surroundings or after everything else
+import * as THREE from 'three/webgpu';
 import { renderer, scene, camera, rendererReady, renderFrame } from './scene.ts';
-import { bootMark, bootSpan, bootSpanMs } from '../boot/timeline.ts';
+import { bootInteractive, bootMark, bootSpan, bootSpanMs } from '../boot/timeline.ts';
 import { startupWork } from '../boot/startup-frames.ts';
-
-import type * as THREE from 'three/webgpu';
+import { defineKind, despawn, spawn } from '../entity/entity.ts';
+import { background } from '../async.ts';
 
 type Warmup = () => THREE.Object3D | Promise<unknown> | unknown;
 const warmups: Warmup[] = [];
 const preparations: Warmup[] = [];
+const framed: (() => THREE.Object3D)[] = [];
+const deferred: Record<'near' | 'far', Warmup[]> = { near: [], far: [] };
 const draws: (() => void | (() => void))[] = [];
 /** First-use passes on their real targets. Optional cleanup runs immediately after submission, before any await. */
 export const warmDraw = (draw: () => void | (() => void)) => draws.push(draw);
-/** beforeScene prepares resources the scene's shaders read, within the same boot escape deadline. */
-export const warmUp = (make: Warmup, { beforeScene = false } = {}) => (beforeScene ? preparations : warmups).push(make);
+/** beforeScene prepares resources the scene's shaders read, within the same boot escape deadline. frame puts the
+ * object in the lobby's warm-up frame (its shadow pipelines too); defer builds it after the loading screen. */
+export function warmUp(make: Warmup, opts: { beforeScene?: boolean; frame?: boolean; defer?: 'near' | 'far' } = {}) {
+  if (opts.frame) framed.push(make as () => THREE.Object3D);
+  else if (opts.defer) deferred[opts.defer].push(make);
+  else (opts.beforeScene ? preparations : warmups).push(make);
+}
 
 // three keeps one precompilation state per renderer, so two compileAsync calls must never overlap: one at a time.
 let queue: Promise<unknown> = Promise.resolve();
@@ -140,6 +158,111 @@ rendererReady.then(
   () => {},
 );
 
+// Never a first-use stall in play. From the end of pass 1, in the game's scene (its camera and shadow passes):
+// - an object drawn for the first time whose shader (WGSL) is not generated yet is skipped in that frame and compiled
+//   with compileAsync, which yields to the frames; it is drawn once that is done. Shadow-pass shaders are small (under
+//   3 ms a frame in the cold-launch runs) and three cannot build them outside a frame, so those still generate there.
+//   An object drawn before keeps three's behaviour when its material changes (it would blink otherwise).
+// - a pipeline three would build synchronously is built with createRenderPipelineAsync instead: r187's draw path skips
+//   an object whose pipeline is not ready (Pipelines.isReady), so that object (or its shadow) is drawn a few frames
+//   late.
+// Other scenes keep three's synchronous build, since their one-off renders need the result at once: PMREM, the item
+// icons, the output pass (a skipped output quad would be a black frame). Mipmap pipelines are three's internal ones.
+let deferring = false;
+const building = new Set<Promise<unknown>>();
+const track = (p: Promise<unknown>) => {
+  building.add(p);
+  void p.finally(() => building.delete(p));
+};
+/** Built late this way, each a miss of the warm-up: pipelines and held objects, in all and after pass 2 finished. */
+const late = { pipelines: 0, held: 0, afterAll: 0 };
+let allDone = false;
+rendererReady.then(
+  () => {
+    type RenderObject = { scene: THREE.Object3D };
+    const backend = renderer.backend as unknown as {
+      createRenderPipeline(o: RenderObject, promises: Promise<unknown>[] | null): void;
+    };
+    const create = backend.createRenderPipeline.bind(backend);
+    backend.createRenderPipeline = (o, promises) => {
+      if (promises !== null || !deferring || o.scene !== scene) return create(o, promises);
+      const pending: Promise<unknown>[] = [];
+      create(o, pending);
+      late.pipelines++;
+      if (allDone) late.afterAll++;
+      pending.forEach(track);
+    };
+
+    // r187 private API: Renderer._renderObjectDirect (the per-object draw, looked up at every render() call),
+    // _objects.get, _nodes.get / nodeBuilderCache / getForRenderCacheKey. If they move, this stops holding and three
+    // generates the shader in the frame as before.
+    type Ro = object;
+    type Draw = (
+      this: R,
+      object: THREE.Object3D,
+      material: THREE.Material,
+      s: THREE.Object3D,
+      ...rest: unknown[]
+    ) => void;
+    type R = {
+      _renderObjectDirect: Draw;
+      _currentRenderContext: unknown;
+      _objects: { get(...a: unknown[]): Ro };
+      _nodes: {
+        get(o: Ro): { nodeBuilderState?: unknown };
+        nodeBuilderCache: Map<unknown, unknown>;
+        getForRenderCacheKey(o: Ro): unknown;
+      };
+    };
+    const r = renderer as unknown as R;
+    const direct = r._renderObjectDirect;
+    if (typeof direct !== 'function' || !r._nodes?.nodeBuilderCache) return;
+    const drawn = new WeakSet<THREE.Object3D>();
+    const holding = new WeakSet<THREE.Object3D>();
+    r._renderObjectDirect = function (object, material, s, camera_, lightsNode, group, clippingContext, passId) {
+      if (
+        deferring &&
+        s === scene &&
+        !drawn.has(object) &&
+        !(material as { isShadowPassMaterial?: boolean }).isShadowPassMaterial
+      ) {
+        if (holding.has(object)) return;
+        const o = this._objects.get(
+          object,
+          material,
+          s,
+          camera_,
+          lightsNode,
+          this._currentRenderContext,
+          clippingContext,
+          passId,
+        );
+        if (
+          this._nodes.get(o).nodeBuilderState === undefined &&
+          !this._nodes.nodeBuilderCache.has(this._nodes.getForRenderCacheKey(o))
+        ) {
+          holding.add(object);
+          late.held++;
+          if (allDone) late.afterAll++;
+          // Done: drawn from the next frame (an object-specific shader, which three never caches, generates then).
+          track(
+            compile(object).finally(() => {
+              holding.delete(object);
+              drawn.add(object);
+            }),
+          );
+          return;
+        }
+        drawn.add(object);
+      }
+      direct.call(this, object, material, s, camera_, lightsNode, group, clippingContext, passId);
+    };
+  },
+  () => {},
+);
+/** Resolves when everything started late so far is built (main.ts: before the loading screen lifts). */
+export const lateBuilt = () => Promise.all([...building]).then(() => {});
+
 // For the boot timeline (src/boot/timeline.ts): how long three spends generating WGSL from node materials (JS on the
 // main thread; a build that yields is timed only while it runs) and creating shader modules, against the warm-up's wall
 // time, most of which is the GPU compiling pipelines (createRenderPipelineAsync, off the main thread). Private three.js
@@ -222,25 +345,12 @@ export function gpuDone(): Promise<void> {
   return device.queue.onSubmittedWorkDone();
 }
 
-// compileAsync builds each object's pipeline for the camera's pass only. The sun's shadow pass needs one more per caster
-// geometry layout, built the first frame that caster enters the shadow camera: on the arrival (10 November 2026) the
-// cove's casters did that halfway down the fall, and each synchronous build held the GPU 120-240 ms on a cold Metal
-// cache. For the warm-up frame every caster is drawn whatever the shadow camera sees, so those build here, off-screen.
-function castAllShadows() {
-  const undo: THREE.Object3D[] = [];
-  scene.traverseVisible((o) => {
-    if (o.castShadow && o.frustumCulled) {
-      o.frustumCulled = false;
-      undo.push(o);
-    }
-  });
-  return () => undo.forEach((o) => (o.frustumCulled = true));
-}
-
 // r187 has no RenderPipeline.compileAsync. Visit its REAL draw path (QuadMesh installs its vertex node
 // temporarily; RTT/shadow/fullscreen passes choose their own target and MSAA), but compile asynchronously.
 // Never hold renderer target/material overrides across an await. This also retains #35069's guard.
-async function compileFrame() {
+// The frame is the lobby's own view: what its camera and its shadow camera see, the warmDraw looks, and the
+// `{ frame: true }` warm-ups, drawn wherever they are (unculled) so their shadow pipelines build as well.
+async function compileFrame(extra: THREE.Object3D[]) {
   type RenderObject = { pipeline: object };
   const backend = renderer.backend as unknown as {
     createRenderPipeline(o: RenderObject, promises: Promise<unknown>[] | null): void;
@@ -248,23 +358,28 @@ async function compileFrame() {
   const create = backend.createRenderPipeline;
   const promises: Promise<unknown>[] = [];
   const cleanups: (() => void)[] = [];
+  // In the scene for this one frame only: hidden right after it is submitted, gone at the first frame's teardown.
+  const held = extra.map((mesh) => spawn({ kind: 'warm-frame', mesh }));
+  for (const o of extra) o.traverse((c) => (c.frustumCulled = false));
   try {
     backend.createRenderPipeline = (o, pending) => create.call(backend, o, pending ?? promises);
     for (const prepare of draws) {
       const cleanup = prepare();
       if (cleanup) cleanups.push(cleanup);
     }
-    cleanups.push(castAllShadows());
     renderFrame();
   } finally {
     backend.createRenderPipeline = create;
     for (const cleanup of cleanups.reverse()) cleanup();
+    for (const o of extra) o.visible = false;
+    held.forEach(despawn);
   }
   // Unlike compute(), r187's render path checks _pipelines.isReady before drawing. Escape remains safe.
   await Promise.all(promises);
   await gpuDone();
   bootMark('frame-pipelines');
 }
+defineKind('warm-frame', {});
 
 // Compile exceptions are reported as errors so the look harness cannot accept an incomplete scene.
 export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
@@ -275,17 +390,155 @@ export async function precompile(root: THREE.Object3D | null = null, onProgress:
     await preparations[i]!();
     onProgress((i + 1) / parts);
   }
-  // Submit the real passes first, then build the whole scene while those native pipelines compile.
-  // compileFrame restores renderer state before its first await; only compileNow uses three's mutable
-  // compileAsync state. Await BOTH: scene compilation can reuse still-pending wrappers from the frame.
-  await (queue = queue.then(() =>
-    Promise.all([compileFrame().catch((e) => console.error('[precompile frame]', e)), compileNow(scene)]),
-  ));
+  // Pass 1: the lobby's frame. Everything else in the scene is pass 2's.
+  const extra = framed.map((make) => make());
+  await (queue = queue.then(() => compileFrame(extra).catch((e) => console.error('[precompile frame]', e))));
   onProgress((preparations.length + 1) / parts);
   for (let i = 0; i < warmups.length; i++) {
     const made = await warmups[i]!();
     if ((made as THREE.Object3D | null)?.isObject3D) await compile(made as THREE.Object3D);
     onProgress((preparations.length + i + 2) / parts);
   }
+  deferring = true; // from the first real frame on, nothing in the scene builds a pipeline synchronously
   bootMark('warmup-complete'); // unlike boot:shaders, never means the escape deadline won
+  background(
+    bootInteractive.then(() => compileRest()),
+    'background shaders',
+  );
 }
+
+// ---- pass 2: the rest of the scene, nearest the camera first ------------------------------------------------------
+// Rings out from where the camera is when each starts (the lobby's view, then wherever the player has got to): the
+// spawn's surroundings and the arrival, the town, the railway, then far places. Each ring is one compileAsync of the
+// camera pass (three yields every 8 ms and keeps 16 pipelines in flight), then its shadow casters over a few frames.
+const RINGS = [60, 150, 300, 600, Infinity]; // m
+const CHUNK = 48; // objects a compileAsync
+const drawable = (o: THREE.Object3D) =>
+  (o as THREE.Mesh).isMesh || (o as THREE.Sprite).isSprite || (o as THREE.Line).isLine || (o as THREE.Points).isPoints;
+const sphere = new THREE.Sphere();
+/** m from p to the nearest point of the object's bounds (0 inside them). */
+function reach(o: THREE.Object3D, p: THREE.Vector3) {
+  const im = o as THREE.InstancedMesh;
+  const geometry = (o as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+  if (im.isInstancedMesh) {
+    if (!im.boundingSphere) im.computeBoundingSphere();
+    sphere.copy(im.boundingSphere!);
+  } else if (geometry) {
+    if (!geometry.boundingSphere) geometry.computeBoundingSphere();
+    sphere.copy(geometry.boundingSphere!);
+  } else sphere.set(sphere.center.set(0, 0, 0), 0);
+  sphere.applyMatrix4(o.matrixWorld);
+  return Number.isFinite(sphere.radius) ? Math.max(0, sphere.center.distanceTo(p) - sphere.radius) : 0;
+}
+
+// The camera pass of these objects: each (and its parents) shown and unculled only while compileAsync takes its list.
+async function compileSome(list: THREE.Object3D[]) {
+  if (!list.length) return;
+  const undo: (() => void)[] = [];
+  const open = (o: THREE.Object3D) => {
+    if (!o.visible) {
+      o.visible = true;
+      undo.push(() => (o.visible = false));
+    }
+  };
+  for (const o of list) {
+    for (let p: THREE.Object3D | null = o; p; p = p.parent) open(p);
+    if (o.frustumCulled) {
+      o.frustumCulled = false;
+      undo.push(() => (o.frustumCulled = true));
+    }
+  }
+  const restore = () => undo.splice(0).forEach((f) => f());
+  try {
+    const done = renderer.compileAsync(scene, camera);
+    restore();
+    await done;
+  } catch (e) {
+    console.error('[precompile]', e);
+  } finally {
+    restore();
+  }
+}
+
+// The shadow pass has no compileAsync (three builds a caster's shadow pipeline the first frame the sun's camera draws
+// it), so casters are unculled in real frames, a batch a frame: off the shadow map's and the screen's edges the GPU
+// clips them, so nothing changes on screen, and their pipelines build asynchronously (the deferring path above). The
+// batch grows while a frame's WGSL generation stays small and halves when it does not.
+defineKind('shader-warm', { lateUpdate: 2400 });
+function castShadows(casters: THREE.Object3D[]) {
+  return new Promise<void>((resolve) => {
+    let next = 0,
+      size = 4,
+      wgsl = bootSpanMs('wgsl');
+    const unculled: THREE.Object3D[] = [];
+    const warm = spawn({
+      kind: 'shader-warm',
+      lateUpdate() {
+        for (const o of unculled) o.frustumCulled = true;
+        unculled.length = 0;
+        const spent = bootSpanMs('wgsl') - wgsl;
+        size = spent > 6 ? Math.max(1, size >> 1) : spent < 2 ? Math.min(256, size * 2) : size;
+        if (next >= casters.length) {
+          despawn(warm);
+          return resolve();
+        }
+        for (const end = Math.min(casters.length, next + size); next < end; next++) {
+          const o = casters[next]!;
+          if (o.parent && o.frustumCulled) {
+            o.frustumCulled = false;
+            unculled.push(o);
+          }
+        }
+        wgsl = bootSpanMs('wgsl');
+      },
+    });
+  });
+}
+
+async function compileRest() {
+  const start = performance.now();
+  const wgsl0 = bootSpanMs('wgsl');
+  const left = new Set<THREE.Object3D>();
+  scene.traverse((o) => void (drawable(o) && left.add(o)));
+  for (const [i, ring] of RINGS.entries()) {
+    scene.updateMatrixWorld();
+    const at = camera.getWorldPosition(new THREE.Vector3());
+    const here = [...left].filter((o) => reach(o, at) <= ring).sort((a, b) => reach(a, at) - reach(b, at));
+    for (const o of here) left.delete(o);
+    // A chunk at a time, so an object held in a frame (above) waits for one chunk, not for the whole ring.
+    for (let k = 0; k < here.length; k += CHUNK) {
+      const chunk = here.slice(k, k + CHUNK);
+      await (queue = queue.then(() => compileSome(chunk)));
+    }
+    if (i === 0) await builtLater(deferred.near); // what the player soon holds, wears or flops with
+    const casters: THREE.Object3D[] = [];
+    const inRing = new Set(here);
+    scene.traverseVisible((o) => void (o.castShadow && inRing.has(o) && casters.push(o)));
+    casters.sort((a, b) => reach(a, at) - reach(b, at));
+    await castShadows(casters);
+    bootMark(`shaders-ring-${i}`, { objects: here.length, casters: casters.length });
+  }
+  await builtLater(deferred.far);
+  await lateBuilt();
+  await gpuDone();
+  allDone = true;
+  const p = (renderer as unknown as { _pipelines?: { caches: Map<unknown, unknown> } })._pipelines;
+  bootMark('shaders-all', {
+    ms: Math.round(performance.now() - start),
+    pipelines: p ? p.caches.size : -1,
+    programs: renderer.info.memory.programs ?? -1,
+    wgsl: bootSpanMs('wgsl') - wgsl0,
+    late: late.pipelines,
+    held: late.held,
+  });
+}
+
+async function builtLater(list: Warmup[]) {
+  for (const make of list) {
+    const made = await make();
+    if ((made as THREE.Object3D | null)?.isObject3D) await compile(made as THREE.Object3D);
+  }
+}
+
+/** For the device report: pipelines still building, and those built late (in all, and after pass 2 finished). */
+export const shaderStats = () => ({ building: building.size, ...late, allDone });

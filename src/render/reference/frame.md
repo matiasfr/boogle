@@ -3,10 +3,14 @@
 - [`scene.ts`](../scene.ts) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
   modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: the network and lobby start at once, and
   `main.ts` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
-  screen). Behind it, [`precompile.ts`](../precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
-  `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. Its warm-up frame draws
-  every visible shadow caster into the sun's shadow map whatever the shadow camera sees, since compileAsync builds
-  only the camera pass (the arrival's cove casters otherwise built theirs mid-fall). The audio context is built there
+  screen). Behind it, [`precompile.ts`](../precompile.ts) builds what the lobby view draws (its real frame, with Buddy
+  in it so his shadow pipelines build too, plus the `warmUp()` objects that are not deferred); the rest of the scene
+  builds after the loading screen lifts, in rings out from the camera: compileAsync for the camera pass, then the
+  ring's shadow casters unculled a batch a frame (compileAsync builds only the camera pass). From the end of the first
+  pass nothing in the scene builds a shader or pipeline synchronously in a frame: an object first drawn without a
+  shader is held out of the frame and compiled, and a missing pipeline is built with createRenderPipelineAsync while
+  three skips the object, so a miss appears a moment late instead of stalling (docs/research/cold-start.md, 5b and 8).
+  The boot marks `shaders-ring-<n>` and `shaders-all` time it. The audio context is built there
   too, suspended, and the first gesture only resumes it (`src/features/audio-prepare.ts`). A lazy part calls
   `precompile(object)` as it builds its meshes. On iOS 27 Safari a `compileAsync` after the first frames can throw
   "Texture already initialized" for the shadow map (three.js #35069, a WebKit bug); `precompile.ts` skips the second
