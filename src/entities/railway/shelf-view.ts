@@ -8,7 +8,8 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
-import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { LINE2_STATIONS, Q7 } from '../../sim/railway-line2-layout.ts';
+import { q7Spot } from './q7-site.ts';
 import { stockSign } from './stock-sign.ts';
 import { waitsForTrain } from './forge-offer.ts';
 
@@ -82,7 +83,16 @@ export async function createRailwayShelf(
   const to = new THREE.Vector3();
   let drawn = '';
   /** Beside the frame's forward outer corner, clear of its posts and within the existing server pickup reach. */
+  const deck = { x: 0, y: 0, z: 0, yaw: 0 };
   function place(k: number) {
+    if (k === Q7) {
+      // Q7's shelf stands on the Pier's piled deck (q7-site.ts), not on the ground (the sea floor there).
+      q7Spot('shelf', deck);
+      at.set(deck.x, deck.y, deck.z);
+      shelf.position.copy(at);
+      shelf.rotation.y = deck.yaw + Math.PI / 2;
+      return;
+    }
     const spec = LINE2_STATIONS[k]!;
     const p = layout.lineAt(quarry.line, spec.fromCm / 100 - 1.5, { x: 0, z: 0, ux: 0, uz: 1 });
     const side = quarry.stations[k]!.side;
@@ -105,7 +115,7 @@ export async function createRailwayShelf(
     place(k);
     // On its own post beside the shelf's end, facing along the line toward the approach.
     sign.board.position.set(1.45, 0, 2.05).applyAxisAngle(THREE.Object3D.DEFAULT_UP, shelf.rotation.y).add(at);
-    sign.board.position.y = land.H(sign.board.position.x, sign.board.position.z);
+    sign.board.position.y = k === Q7 ? at.y : land.H(sign.board.position.x, sign.board.position.z);
     sign.board.rotation.y = shelf.rotation.y + Math.PI / 2;
     sign.set(n);
     rails.count = Math.min(MAX_RAILS, n);
@@ -134,6 +144,11 @@ export async function createRailwayShelf(
     stake.visible = !!spec?.shelf;
     if (!spec?.shelf || staked === k) return;
     staked = k;
+    if (k === Q7) {
+      q7Spot('stake', deck);
+      stake.position.set(deck.x, deck.y + 1.5, deck.z);
+      return;
+    }
     // A metre off the end of the stretch, on the frame's side, so the laying machine never runs into it.
     const p = layout.lineAt(quarry.line, spec.toCm / 100, { x: 0, z: 0, ux: 0, uz: 1 });
     const side = quarry.stations[k]?.side ?? -1;

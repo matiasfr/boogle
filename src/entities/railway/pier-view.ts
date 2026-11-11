@@ -1,6 +1,9 @@
-// The pier's Local payoff: pooled rockets only on the mounted Q6 completion edge.
+// The pier's Local payoff: pooled rockets only on the mounted Q6 completion edge. From v27 it also holds the pier's
+// second track and Q7's deck (./ring-deck.ts), laid from the room's rows once Q7 starts.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
+import type { RailwayAdapter } from '../../adapters/railway.ts';
+import { createRingDeck } from './ring-deck.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { whistle } from '../../render/machine-sfx.ts';
@@ -9,8 +12,12 @@ type Deps = {
   layout: typeof import('../../place/layout.ts');
   rail: typeof import('./rail-kit.ts');
   sounds: typeof import('../../render/fanfare.ts');
+  adapter: RailwayAdapter;
+  /** Line 2's track, whose old merge the relay retires. */
+  track: { retire(on: boolean): number };
 };
-export function createRailwayPier(owner: OwnedView, { layout, rail, sounds }: Deps) {
+export function createRailwayPier(owner: OwnedView, { layout, rail, sounds, adapter, track }: Deps) {
+  const deck = createRingDeck(adapter, owner, track);
   // besideLine already includes ORIGIN, as in the other production rail views.
   const end = rail.besideLine(layout.LINKS[1]!.line, 739, 0);
   const at = { x: end.x, y: layout.railY(layout.LINKS[1]!.line, 739), z: end.z };
@@ -39,12 +46,14 @@ export function createRailwayPier(owner: OwnedView, { layout, rail, sounds }: De
   });
   return {
     restore(done: boolean) {
+      deck.restore();
       completed = done;
       show = -1;
       secondWhistle = false;
       rockets.length = 0;
     },
     update(dt: number, done: boolean) {
+      deck.update(dt);
       if (done && !completed) {
         show = 0;
         secondWhistle = false;
@@ -118,6 +127,6 @@ export function createRailwayPier(owner: OwnedView, { layout, rail, sounds }: De
       }
       if (show > 6 && !rockets.length) show = -1;
     },
-    inspect: () => ({ pier: { ...at, completed, rockets: rockets.length, show, shows } }),
+    inspect: () => ({ pier: { ...at, completed, rockets: rockets.length, show, shows }, ...deck.inspect() }),
   };
 }

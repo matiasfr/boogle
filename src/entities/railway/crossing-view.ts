@@ -33,9 +33,11 @@ import {
 } from '../../sim/railway-works-layout.ts';
 import { pierLaid } from '../../sim/railway-line2-layout.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
-import { account, beam, boiler, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
+import { account, beam, boiler, qjob, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
+import { signBoard } from '../../render/sign-board.ts';
+import { Q7 } from '../../sim/railway-line2-layout.ts';
 
 /** The rockets' launch height over the sea, and the pieces' timings in seconds. */
 const LAUNCH = SEA + 4;
@@ -69,10 +71,13 @@ export async function createRailwayCrossing(
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
   // The rows, re-read at the head of each entry (update, snap, targets): a refill swaps the world.
   let wd: ReadWorld = adapter.read.world();
-  let opened = false;
+  let opened = false,
+    /** Q7 is under way or laid: the footway's board stands. */
+    started = false;
   const refresh = () => {
     wd = adapter.read.world();
     opened = adapter.read.ready() && line2Trains(wd) && pierLaid(line2Completed(wd));
+    started = opened && (!!qjob(wd, Q7).completion || qjob(wd, Q7).start >= 0);
   };
   refresh();
   const batch = createBoxBatch(owner, 360);
@@ -100,8 +105,9 @@ export async function createRailwayCrossing(
   );
 
   // ---------------------------------------------------------------- the pier rack, on the Pier halt's deck
-  // The halt's deck is 2.5 m wide (lat -1.65 to -4.15 m); PIER_RACK stands 3.5 m off the rails, so a single row of
-  // footings along its seaward edge (lat -2.9 to -4.1 m) leaves the track side clear to walk and board.
+  // The halt's deck is 2.5 m wide (lat +1.65 to +4.15 m, east of the down track from Q6: call 53); PIER_RACK stands 3.5
+  // m off the rails, so a single row of footings along its seaward edge (lat +2.9 to +4.1 m) leaves the track side clear
+  // to walk and board.
   const rack = { x: PIER_RACK.x / 100, z: PIER_RACK.z / 100 };
   layout.lineAt(line, 733, P);
   const rackYaw = Math.atan2(P.ux, P.uz);
@@ -130,28 +136,94 @@ export async function createRailwayCrossing(
     return out;
   })();
 
-  // ---------------------------------------------------------------- the pier head's side deck and its jib
-  // PIER_FRAME stands 3.5 m east of the rails' end, past the trestle's 3.6 m planks: a plank apron along the east side
-  // (s 729-746, out to 5.3 m) carries it, stepped onto from the track before Q6's parked machine.
-  layout.lineAt(line, 737.5, P);
-  const apronYaw = Math.atan2(P.ux, P.uz);
-  const apron = { x: P.x - P.uz * 3.55 + layout.ORIGIN.x, z: P.z + P.ux * 3.55 + layout.ORIGIN.z, hx: 1.75, hz: 8.5 };
-  const deckY = layout.railY(line, 737.5) + 0.04;
-  let apronBody: ReturnType<typeof addStatic> | null = null;
-  const solidApron = (on: boolean) => {
-    if (on && !apronBody)
-      apronBody = addStatic(
-        { kind: 'box', hx: apron.hx, hy: 0.1, hz: apron.hz },
-        { x: apron.x, y: deckY - 0.1, z: apron.z },
-        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, apronYaw),
-        undefined,
-        owner,
-      );
-    else if (!on && apronBody) {
-      owner.removeBody(apronBody);
-      apronBody = null;
-    }
+  // ---------------------------------------------------------------- the pier head's pad, Q7's piled deck and the jib
+  // The Pier platform stands east of the trestle from Q6 (s 719-741, lat +1.65 to +4.15, 0.68 m over the trestle's
+  // deck). Past its north end the pad (s 741-746, lat +1.8 to +5.3, at the trestle's deck height) carries the jib
+  // (PIER_FRAME, 3.5 m east of the rails' end); a drop going out, a plain jump coming back. South of the platform's
+  // ramp (s 713-719) a piled deck (s 703-713, lat +1.8 to +6.0) carries Q7's frame, its depot rack and shelf.
+  type Deck = { s: number; lat: number; hx: number; hz: number; legs: readonly (readonly [number, number])[] };
+  const DECKS: Deck[] = [
+    // The pad: legs at its seaward corners.
+    {
+      s: 743.5,
+      lat: 3.55,
+      hx: 1.75,
+      hz: 2.5,
+      legs: [
+        [1.4, -2],
+        [1.4, 2],
+      ],
+    },
+    // Q7's deck: legs along its seaward edge and its south-west corner.
+    {
+      s: 708,
+      lat: 3.9,
+      hx: 2.1,
+      hz: 5,
+      legs: [
+        [1.8, -4.5],
+        [1.8, 0],
+        [1.8, 4.5],
+        [-1.5, -4.5],
+      ],
+    },
+  ];
+  const decks = DECKS.map((d) => {
+    layout.lineAt(line, d.s, P);
+    return {
+      ...d,
+      yaw: Math.atan2(P.ux, P.uz),
+      x: P.x - P.uz * d.lat + layout.ORIGIN.x,
+      z: P.z + P.ux * d.lat + layout.ORIGIN.z,
+      y: layout.railY(line, d.s) + 0.04,
+      body: null as ReturnType<typeof addStatic> | null,
+    };
+  });
+  // The jib's pad is the first.
+  const deckY = decks[0]!.y;
+  const solidDecks = (on: boolean) => {
+    for (const d of decks)
+      if (on && !d.body)
+        d.body = addStatic(
+          { kind: 'box', hx: d.hx, hy: 0.1, hz: d.hz },
+          { x: d.x, y: d.y - 0.1, z: d.z },
+          new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, d.yaw),
+          undefined,
+          owner,
+        );
+      else if (!on && d.body) {
+        owner.removeBody(d.body);
+        d.body = null;
+      }
   };
+  // The finger board on a post at the pad's north-east corner, pointing out along Q7's footway: "Railhead" (the plan's
+  // placeholder word), with an arrow. It stands once Q7 is started, with the footway it points along.
+  const finger = signBoard(owner, { w: 1.5, h: 0.5, px: 384, foot: 1.6, posts: 'one' });
+  {
+    const { g, cw, ch } = finger;
+    g.fillStyle = '#fff3d6';
+    g.fillRect(0, 0, cw, ch);
+    g.strokeStyle = '#2a1c10';
+    g.lineWidth = ch * 0.05;
+    g.strokeRect(ch * 0.05, ch * 0.05, cw - ch * 0.1, ch - ch * 0.1);
+    g.fillStyle = '#2a1c10';
+    g.font = `900 ${ch * 0.5}px Figtree, system-ui, sans-serif`;
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    g.fillText('Railhead', cw * 0.06, ch / 2, cw * 0.64);
+    g.beginPath();
+    g.moveTo(cw * 0.76, ch * 0.3);
+    g.lineTo(cw * 0.9, ch * 0.5);
+    g.lineTo(cw * 0.76, ch * 0.7);
+    g.closePath();
+    g.fill();
+    finger.painted();
+    layout.lineAt(line, 745.4, P);
+    // Its face looks west, onto the pad, so the arrow (right of the face) points out along the line.
+    finger.mesh.position.set(P.x - P.uz * 5.0 + layout.ORIGIN.x, decks[0]!.y, P.z + P.ux * 5.0 + layout.ORIGIN.z);
+    finger.mesh.rotation.y = Math.atan2(P.uz, -P.ux);
+    finger.mesh.visible = false;
+  }
   const frame = { x: PIER_FRAME.x / 100, z: PIER_FRAME.z / 100 };
   const jibYaw = Math.atan2(first.x / 100 - frame.x, first.z / 100 - frame.z);
   const jibHead = new THREE.Vector3(frame.x + Math.sin(jibYaw) * 3.2, deckY + 4.6, frame.z + Math.cos(jibYaw) * 3.2);
@@ -213,7 +285,7 @@ export async function createRailwayCrossing(
     finaleWaiting = false;
     rockets = [];
     finaleCamera.reset();
-    solidApron(open());
+    solidDecks(open());
   }
   snap();
 
@@ -306,17 +378,15 @@ export async function createRailwayCrossing(
         rackSlot(k, p);
         footingParts(batch, footingFrame(m, p.x, p.y, p.z, rackYaw));
       }
-      // The apron's planks and its legs down to the sea floor.
-      batch.box(apron.x, deckY - 0.1, apron.z, apron.hx * 2, 0.2, apron.hz * 2, '#a97a45', apronYaw);
-      for (const [dl, ds] of [
-        [1.4, -7.5],
-        [1.4, 7.5],
-        [-1.2, 0],
-      ] as const) {
-        const lx = apron.x + Math.cos(apronYaw) * dl + Math.sin(apronYaw) * ds,
-          lz = apron.z - Math.sin(apronYaw) * dl + Math.cos(apronYaw) * ds,
-          foot = H(lx, lz);
-        batch.box(lx, (foot + deckY - 0.2) / 2, lz, 0.4, deckY - 0.2 - foot, 0.4, TIMBER);
+      // The pad's and Q7's deck's planks, and their legs down to the sea floor.
+      for (const d of decks) {
+        batch.box(d.x, d.y - 0.1, d.z, d.hx * 2, 0.2, d.hz * 2, '#a97a45', d.yaw);
+        for (const [dl, ds] of d.legs) {
+          const lx = d.x + Math.cos(d.yaw) * dl + Math.sin(d.yaw) * ds,
+            lz = d.z - Math.sin(d.yaw) * dl + Math.cos(d.yaw) * ds,
+            foot = H(lx, lz);
+          batch.box(lx, (foot + d.y - 0.2) / 2, lz, 0.4, d.y - 0.2 - foot, 0.4, TIMBER);
+        }
       }
       // The jib: a mast on the pier head and an arm reaching out over the sea toward the crossing.
       const mastH = jibHead.y - deckY;
@@ -508,7 +578,8 @@ export async function createRailwayCrossing(
     rackSlot,
     update(dt: number) {
       refresh();
-      solidApron(open());
+      solidDecks(open());
+      finger.mesh.visible = started;
       stepLowering(dt);
       // A bent whose pair arrived without a lowering here (a correction, a late accept) still rises.
       const pairs = Math.floor(inSea() / 2);

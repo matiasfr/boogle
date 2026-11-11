@@ -11,7 +11,15 @@ export const SPAN = OUT - FRAME_D / 2 - 5.8; // terminate outside the loaded mac
 export const RAIL_OUT = FRAME_D / 2 + 0.9; // m from the frame's middle to the rails' bearers
 
 /** Where a frame stands: `yaw` along the thing it feeds, (lx, lz) the way out from it. */
-export type FrameAt = { x: number; z: number; yaw: number; lx: number; lz: number };
+export type FrameAt = {
+  x: number;
+  z: number;
+  yaw: number;
+  lx: number;
+  lz: number;
+  /** The deck it stands on, where that is not the ground (Q7's frame on the pier's piled deck). */
+  y?: number;
+};
 export function frameBesideLine(spec: Station, line: Line, dir: number): FrameAt {
   lineAt(line, spec.s - dir * 1.5, P);
   const lx = -P.uz * spec.side,

@@ -968,7 +968,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     laps' time), `npm run checkpoints`, `npm run check`, `npm run check:full`, `npm run test:net` (the adapter),
     `test/server-image.test.ts` green with no list edits (both new files are under `src/sim/`). Proof: headless, no
     look.
-- [ ] **4a. R4a, the line goes out (views).**
+- [x] **4a. R4a, the line goes out (views).** (built 11 November 2026, branch `ring/r4a-views`; see the note under this step)
   > **Flag (R3a, 10 November 2026):** `src/entities/railway/halt-map.ts:39` takes the last `LINE_HALTS` entry as the
   > Pier (`LINE_HALTS[LINE_HALTS.length - 1]`); once R3b appends halts 6 and 7 that is Ring Island. Find the Pier by
   > name or id there, and check `halts-view.ts`'s `chained` (its `filter(...).length - 1`) and `train-view.ts`'s
@@ -1019,6 +1019,33 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   the far track while the camera stands on the platform; an eval there walks a footing from the rack to the jib without
   stepping on the track, and lands `crossing-done`'s jump-in standing on the platform, not in it; and `--rail-seed ring-joined` from the island's east platform as an up train comes over the
   crossover and stands short of the buffers.
+  > **Built (implementer, 11 November 2026): R4a, the views of v27, on `ring/r4a-views`; not shipped.** What stands:
+  > the Pier east (`halt-map.ts` row at lat +2.9, found by name; the apron shrunk to the pad, s 741-746; Q7's piled deck,
+  > s 703-713, with the frame, rack, shelf and box on it; the finger board "Railhead" once Q7 starts), Q7's double deck laid
+  > a panel at a time and the pier's up track dropped in from the old merge when Q7 is done (`ring-deck.ts`, held by
+  > `pier-view.ts`; `track.ts` gained `retire`), trains posed on line 2's ring path past the pier head
+  > (`line2-path.ts`) with their up-track lateral read from the room's rows (the Pier's stub, the railhead's stub sliding
+  > with `head`, Far Head's and the island's crossovers; the Q7-turned train no longer takes Far Head's crossover),
+  > the Q7 kit unloading at its own halt, `trainRequestable` given the open stops, the Railhead's and Ring Island's levers
+  > (`halts-view.ts`: chained until the rivet, a chained plaque naming the halt that opens next, no prompt while the
+  > railhead's slides), `PIER_LAND` standing on the platform (the pad is 0.7 m under it, no longer under it). New reads go
+  > through the facade (`test/railway-r4a-views.test.ts`: each read against the inspection it replaces at the five ring
+  > seeds over 300 frames, and the lateral's no-jump sweeps).
+  > **Deviations, for the owner or the designer:** (1) the laying machine does not travel out onto the deck: it stays
+  > parked at the pier head while Q7's deck drops in (the machine's track and panel view are Place's six stretches; a
+  > seventh needs `place/layout.ts`'s line past s 743, which the layout does not hold). (2) The up track's relay waits for
+  > Q7's completion, not its first panel (call 61): the trains' lateral is the sim's, and the sim's end moves only then.
+  > (3) The halt displays' map keeps v26's six stops: with the Railhead and Ring Island the 320 x 256 faces cannot place
+  > their names ("Pier" covers the Railhead's ring; "Village" covers Camp's), so `island-map-labels` goes red. It needs
+  > bigger cells, a second inset or a re-fit, a designer's call. (4) Files outside the list were touched for what v27 broke
+  > or needs: `shelf-view.ts` (read `quarry.stations[6].side`, which does not exist: the shelf view threw while Q7 was
+  > active), `crates-view.ts` (`rewardSeat` read `stations[6].s`: the boxes view threw at mount), `stations.ts` and
+  > `spatial-station.ts` (a frame on a deck: `FrameAt.y`), `look-kit.ts` (36 train wheels for four trains), `track.ts`.
+  > (5) The railhead rack's wagon hop is wired (`footPlaces({ ring })`, `footFlying().toRing`) but R4b mounts the place.
+  > **For the owner:** the jump-in labels "Deck laid" and "Ring joined" exist (`src/world/railway-jump.ts:103, 109`); the
+  > frame's board reads "Station 7" (a label the plan does not name); the island's west lever is plaqued "Ring Island",
+  > not a branch emblem. Unchecked: the eval that walks a footing from the rack to the jib (not written), `npm run perf` at the
+  > pier head, a train at the island's crossover.
 - [ ] **4b. R4b, the railhead and the gap.** `src/entities/ring-railhead/` as under "R4"; `lookout/view.ts` lifts buoys
   by `RING_BUOYS`; `hook-view.ts` adds the pile's ring once `set === 14`. Before and after stills of the finished bow
   from Home's summit and the telescope, logged (brief risk "the bow changes a finished view"). Checks: `npm run check`,

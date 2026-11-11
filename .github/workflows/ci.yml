@@ -205,7 +205,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
       - name: Install Chromium and system deps
-        run: npx playwright install --with-deps chromium
+        # The fallback: on 11 November the runners could not reach Ubuntu's package servers for over an hour, so
+        # --with-deps failed before any test ran and a fix for a live outage could not merge. The runner image already
+        # carries the libraries headless Chromium needs; if it ever does not, test:net fails loudly at launch.
+        run: npx playwright install --with-deps chromium || npx playwright install chromium
       - run: npm run test:net
 
   # A red main is loud (owner call "Fast ships": one green run merges, so main's own CI is the combination check).
