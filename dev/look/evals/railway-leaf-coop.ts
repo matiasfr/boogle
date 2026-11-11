@@ -9,9 +9,9 @@ const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof 
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { aperture, inspectRailway, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const layout = (await import(
   '/src/sim/railway-ring-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-ring-layout.ts');
@@ -19,11 +19,9 @@ const player = new URLSearchParams(location.search).get('player') ?? '1';
 const bot = makeBot();
 const head = layout.RING_HEAD[7]!;
 const say = (text: string) => console.log(`LEAF ${text}`);
-const ring = () => (inspectRailway() as unknown as { ring?: { cw: number; brace: number; rack: number } }).ring;
-const state = () => {
-  const view = inspectRailway() as unknown as { leafView?: { deg: number; moving: boolean } };
-  return JSON.stringify({ leaf: view.leafView, ring: ring() });
-};
+// The ring is rows (the aperture's cw, brace and rack); the leaf's swing is the Works view's.
+const ring = () => aperture(rw());
+const state = () => JSON.stringify({ leaf: inspectRailway()?.worksView?.leafView, ring: ring() });
 /** Set down at (u, lat) on a deck whose top is `y` m, facing toward u `faceU` along the line. */
 function stand(u: number, lat: number, y: number, faceU?: number) {
   const p = layout.ringAt(Math.round(u * 100), Math.round(lat * 100));
@@ -46,7 +44,8 @@ say(`player ${player} start ${state()}`);
 if (player === '2') {
   stand(288, 3.4, layout.RING_BRACE.y / 100);
   await bot.wait(400);
-  if (!(await bot.use(...site(layout.RING_BRACE), 'knock out the pawl', /Knock out the pawl/))) throw new Error('no brace offered');
+  if (!(await bot.use(...site(layout.RING_BRACE), 'knock out the pawl', /Knock out the pawl/)))
+    throw new Error('no brace offered');
   await until(() => ring()?.brace === 2, 8000, 'braced');
   say(`braced ${state()}`);
   // Under the toe once the other player has three hung, facing the hinge: the leaf comes down at you.
