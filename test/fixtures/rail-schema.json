@@ -356,7 +356,8 @@
         ["logs", "int"],
         ["rails", "int"],
         ["wagon", "bool"],
-        ["foot", "int"]
+        ["foot", "int"],
+        ["arrived", "int"]
       ]
     },
     {
