@@ -595,6 +595,8 @@ export async function createRailwayCrossing(
       draw();
     },
     accepted(e: RailwayAccepted) {
+      // A published world is never written (M12), so the one held from the last update is from before this packet.
+      wd = adapter.read.world();
       if (e.op === 'rail.footSet' && e.site === 2) {
         const from = new THREE.Vector3();
         if (!avatarBack(e.pid, from)) from.copy(jibHead);

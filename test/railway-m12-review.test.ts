@@ -357,6 +357,9 @@ for (const delay of [0, 3])
     a.adapter.onAccepted((e) => {
       if (e.pid !== 'b') return;
       const fresh = a.adapter.read.world();
+      // This copies crossing-view's accepted(): since the review's fix it re-reads the world first, as the roundhouse,
+      // works and footing views do. Without this line the copy shows the defect (slot 9, not 10), whatever the view does.
+      wd = fresh;
       if (e.op === 'rail.footSet' && e.site === 2)
         seen.push({ held: works(wd).pierSet - 1, now: works(fresh).pierSet - 1 });
       if (e.op === 'rail.footTake' && e.rack === 1)
