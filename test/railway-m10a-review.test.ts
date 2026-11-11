@@ -45,7 +45,7 @@ import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
 import { Aperture, Line, QJob, Rail, Train } from '../src/sim/railway-components.ts';
 import type { World } from '../src/ecs/index.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
-import { createTrainsShown } from '../src/entities/railway/trains-shown.ts';
+import { createFirstReady } from '../src/entities/railway/first-ready.ts';
 
 type Adapter = ReturnType<typeof createRailwayAdapter>;
 const MOVEMENT = railMovement({ get: (k) => specOf(k)!.def });
@@ -457,11 +457,11 @@ test('coverage: the sweeps saw held lamps, asked lamps and served asks', () => {
 // train-view.ts step() hid every car (y -60) while `!read.ready()`. ready() is false not only before the whole state is
 // in but also while RAILWAY_WINDOW actions are pending, so a player with a full window (a burst of presses on a slow
 // link) saw every train vanish until an answer came back. The view now hides them only until the first whole state is
-// in (trains-shown.ts, the latch step() calls each frame), and draws them from read.world() after that.
+// in (first-ready.ts, the latch step() calls each frame), and draws them from read.world() after that.
 test('a full pending window keeps every train shown (train-view.ts step: hidden = !trainsShown())', () => {
   const r = room(buildSeedWorld('trains-on'));
   const a = r.join('a', 'a', 30);
-  const shown = createTrainsShown(a.adapter.read.ready);
+  const shown = createFirstReady(a.adapter.read.ready);
   assert.equal(shown(), false, 'hidden before the whole state is in');
   r.ready();
   assert.equal(shown(), true, 'shown once it is');

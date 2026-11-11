@@ -349,6 +349,10 @@ typecheck`, `npm run lint`.
     (`ab52869e…`); `npm run counts` equal; one look at `--rail-seed trains-on` with a deposit showing on the press.
   - **Reviewer attacks:** `read.tick()`, `read.movement()` and `stalledNow` keep their once-a-frame behaviour now
     that the memo they shared with `inspect()` is gone; a tool or string that still calls the deleted name.
+  - **Also (11 November):** `src/entities/railway/first-ready.ts` (`createFirstReady`, was `trains-shown.ts`), the latch
+    of the first `read.ready()`, moves to a session read here (a `read.loaded()` or similar). It now has five users,
+    not one: `train-view.ts`, `leaf-view.ts`, `railhead-view.ts`, `crossing-view.ts` and `cart-view.ts`, each of which
+    hid, reset or un-decked on `!read.ready()` (also false with a full pending window or the link down).
 - [ ] **M12f. The adapter split.** _M, Medium by path; ask for the independent review (it moves the predictor's
       code). After M12e._ Section 3's three files; `git mv src/adapters/railway.ts
       src/adapters/railway-session.ts` first so the history follows, then cut the other two out; importers

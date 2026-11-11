@@ -32,7 +32,7 @@ import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
-import { createTrainsShown } from './trains-shown.ts';
+import { createFirstReady } from './first-ready.ts';
 
 const BRASS = '#c79a3e';
 /** Far Head's stop on line 2: its facing crossover is the line's end until the pier is laid. */
@@ -364,8 +364,8 @@ export async function createRailwayTrains(
   let flyingLogs = 0,
     flyingRails = 0,
     unloading = false;
-  // Hidden only until the first whole state is in, never for a full pending window (trains-shown.ts).
-  const trainsShown = createTrainsShown(adapter.read.ready);
+  // Hidden only until the first whole state is in, never for a full pending window (first-ready.ts).
+  const trainsShown = createFirstReady(adapter.read.ready);
   const chimney = new THREE.Vector3(),
     smoke = new THREE.Color('#ece8e0');
   function step() {

@@ -19,7 +19,7 @@ type Obj = Record<string, unknown>;
 type At = [number, number, number];
 
 /** A real host on a temp store, loaded with an accepted fixture; actions go through r:edit with their actor's spot. */
-async function host(name: string, fixture: Seed) {
+async function host(name: string, fixture: Seed, players: Record<string, string> = { s: 'a' }) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), `boogle-ring-${name}-`));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
@@ -30,7 +30,7 @@ async function host(name: string, fixture: Seed) {
     store,
     tick: false,
     now: () => now,
-    pidOf: () => 'a',
+    pidOf: (sid) => players[sid] ?? null,
     positions: () => [],
   });
   h.onSend((m) => sent.push(m));
@@ -45,21 +45,24 @@ async function host(name: string, fixture: Seed) {
   while (h.sync.world.tick <= fixture.t) await ticks(1);
   h.rules.railway.world().load(JSON.parse(JSON.stringify(fixture.w.snapshot())), railwayCheck);
   h.rules.railway.touchAll();
-  h.deliver({ t: 'r:open' }, 's');
-  await ticks(3);
-  const session = sent.findLast((m) => m.t === 'r:session' && m.to === 's')!;
-  const epoch = Number(session.epoch);
-  let request = Number(session.next) - 1;
+  const sessions: Record<string, { epoch: number; request: number }> = {};
+  for (const sid of Object.keys(players)) {
+    h.deliver({ t: 'r:open' }, sid);
+    await ticks(3);
+    const session = sent.findLast((m) => m.t === 'r:session' && m.to === sid)!;
+    sessions[sid] = { epoch: Number(session.epoch), request: Number(session.next) - 1 };
+  }
   return {
     get w() {
       return h.rules.railway.world();
     },
-    async action(e: Obj, at: At) {
+    async action(e: Obj, at: At, sid = 's') {
+      const x = sessions[sid]!;
       now += 1000;
-      h.deliver({ t: 'r:edit', e: { ...e, epoch, request: ++request, at, ms: now - 1800000000000 } }, 's');
+      h.deliver({ t: 'r:edit', e: { ...e, epoch: x.epoch, request: ++x.request, at, ms: now - 1800000000000 } }, sid);
       await h.sync.whenDurable();
       assert.equal(invariant(h.rules.railway.world()), null);
-      return h.rules.railway.outcome('a', epoch, request)?.status;
+      return h.rules.railway.outcome(players[sid]!, x.epoch, x.request)?.status;
     },
     async done() {
       await h.close({ save: false }).catch(() => {});
@@ -123,3 +126,31 @@ test('ring host: malformed rack, site, id and revision, and a stale brace, refus
     await r.done();
   }
 });
+
+// R4c with two players (the P1 of 11 November): the brace from one player at the gold strut and the counterweight from
+// another at the jib, each judged where its own actor stands; in either order the leaf is down on the last of them.
+for (const braceFirst of [true, false])
+  test(`ring host: one player braces, another hangs the counterweight, ${braceFirst ? 'brace' : 'weights'} first`, async () => {
+    const r = await host(`two-${braceFirst}`, fixture('leaf-raised'), { s: 'alice', t: 'bob' });
+    try {
+      const head = RING_HEAD[RING_HEAD.length - 1]!;
+      const brace = () => r.action({ op: 'rail.brace', revision: 1 }, spot(RING_BRACE), 's');
+      const hang = async (k: number) => {
+        assert.equal(await r.action({ op: 'rail.footTake', rack: 2 }, spot(head.rack), 't'), 'accepted', `take ${k}`);
+        assert.equal(await r.action({ op: 'rail.footSet', site: 3 }, spot(head.jib), 't'), 'accepted', `hang ${k}`);
+      };
+      // Each judged at its own actor's spot: bob's press at the strut from the jib is out of reach.
+      assert.equal(await r.action({ op: 'rail.brace', revision: 1 }, spot(head.jib), 't'), 'rejected', 'not at the strut');
+      if (braceFirst) assert.equal(await brace(), 'accepted');
+      for (let k = 1; k <= 4; k++) await hang(k);
+      if (!braceFirst) {
+        assert.deepEqual([aperture(r.w).cw, aperture(r.w).brace], [4, 1], 'four hung on the pawl');
+        assert.equal(await brace(), 'accepted');
+      }
+      const a = aperture(r.w);
+      assert.deepEqual([a.cw, a.brace, a.rack, a.joined], [4, 0, 0, -1], 'down, the rivet not struck');
+      assert.equal(await brace(), 'noop', 'a second pull moves nothing');
+    } finally {
+      await r.done();
+    }
+  });
