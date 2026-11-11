@@ -21,6 +21,8 @@ import { SEAM_STALL } from '../../sim/railway-works.ts';
 import { STALL_TODAY, stallShape, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
+import { createGarageView } from './garage-view.ts';
+import { roomFacts } from './garage-state.ts';
 
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
 /** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
@@ -127,6 +129,17 @@ export async function createRailwayRoundhouse(
     undefined,
     owner,
   );
+
+  // The train garage (docs/brainstorms/engine-garage.md, first build): a lever post at the table's rim opens a framed
+  // view of the works copy of the engine. Behind `?home=b` with the table; Local, nothing sent or saved.
+  const garagePost = {
+    x: table.x + Math.sin((60 * Math.PI) / 180) * 5.6,
+    z: table.z - Math.cos((60 * Math.PI) / 180) * 5.6,
+  };
+  const garageView = homeB
+    ? await createGarageView(owner, { table, y: tableY, post: garagePost, ground: tableY })
+    : null;
+  if (garageView) owner.cleanup(garageView.dispose);
 
   // ---------------------------------------------------------------- the shunt path: stall, door, table, line 2
   const pathPts: THREE.Vector3[] = [];
@@ -613,6 +626,7 @@ export async function createRailwayRoundhouse(
     update(dt: number) {
       later.update(dt);
       state = adapter.inspect();
+      garageView?.update(dt, roomFacts(state));
       const sh = state.shed;
       const open = !!(state.works.seams & SEAM_STALL);
       if (open && !slabOpen && pop < 0) solidSlab(false);
@@ -725,6 +739,16 @@ export async function createRailwayRoundhouse(
       const nearStall =
         Math.hypot(pos.x - stallAt.x, pos.z - stallAt.z) <= SHED_STALL.reach / 100 - 0.4 &&
         Math.abs(pos.y - SHED_STALL.y / 100) <= 2.6;
+      if (garageView && !garageView.isOpen() && Math.hypot(pos.x - garagePost.x, pos.z - garagePost.z) <= 2.6) {
+        const facts = roomFacts(state);
+        if (facts.boilerFitted)
+          out.push({
+            id: 'railway-garage',
+            verb: facts.tableBusy ? 'The table’s busy' : 'Look at the engine',
+            at: new THREE.Vector3(garagePost.x, tableY + 1.7, garagePost.z),
+            ...(facts.tableBusy ? { blocked: 'The table’s busy' } : { run: () => garageView.open() }),
+          });
+      }
       if (nearStall && state.foot && state.works.seams & SEAM_STALL) {
         if (sh.stall < WORKS.stall) {
           const sp = STALL_SOCKETS[sh.stall]!;
