@@ -11,11 +11,11 @@ Start a fresh orchestrator session each working day, from the state file. A sess
 
 ## 1. Decide
 
-- Ordering and what's next: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision index](../../../docs/decisions.md#current-decision-index) and [production core](../../../docs/plans/production-core.md).
+- Ordering and what's next: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision log](../../../docs/decisions.md#decided) (one topic's Current rules) and [production core](../../../docs/plans/production-core.md).
 - Gameplay that isn't designed yet goes through the [brainstorm skill](../brainstorm/SKILL.md) first ("Brainstorm new gameplay first"). Art, fixes, technical work and ports of accepted behaviour don't.
 - A port from Place gets the designer's fit check before it is planned or built (owner call "Port from Place only what still fits"). The check takes minutes; on 9 November the gold finds took an hour to build and were cut the same day because it ran afterwards.
 - A plan that places anything in the world carries its level-check findings (the planner runs `npm run level-check` on the planned positions), so the designer rules on reach and order with the plan. On 9 November F2's three secrets reachable before their ability reached the designer after the build.
-- Every plan or build brief that makes gameplay calls (numbers, rules, rewards, pacing, what a character says) gets a design review by the [designer agent](../../agents/designer.md) after it is written and before it is built (owner, 9 November). Default and New calls both proceed on the designer's recommendation and are logged in [agent-calls](../../../docs/agent-calls.md) for the owner to revisit (owner, 9 November); only direction, unapproved scope or an irreversible step waits. Nothing waits for a playtest.
+- Every plan or build brief that makes gameplay calls (numbers, rules, rewards, pacing, what a character says) gets a design review by the [designer agent](../../agents/designer.md) after it is written and before it is built (owner, 9 November). Default and New calls both proceed on the designer's recommendation and are logged in [agent-calls](../../../docs/agent-calls.md), in their topic's table, for the owner to revisit (owner, 9 November); only direction, unapproved scope or an irreversible step waits. Nothing waits for a playtest.
 - Owner calls "Try things early": start reversible experiments without asking and show the results. Ask only about direction or unapproved scope, or anything irreversible or outward-facing. Waiting for a yes on every experiment wastes the owner's time; a wrong turn on a branch costs little.
 
 ## 2. Dispatch
@@ -77,7 +77,7 @@ Give every brief, Claude or Codex, the binding rules: stay on its branch, no pus
 Every agent follows the repo, not this conversation ("Decisions live in the repo"). So record each one there:
 
 - A standing working preference ("try things early", "every model gets detail references") becomes an [owner call](../../../docs/agents/owner-calls.md).
-- A game decision ("regrowth only needs to be slow") becomes a dated entry in the decision log in [decisions.md](../../../docs/decisions.md), superseding older entries by name.
+- A game decision ("regrowth only needs to be slow") becomes a dated entry at the top of its topic file's "Decided" with a line in its "Current rules", as [decisions.md](../../../docs/decisions.md#recording-a-decision) says; an entry it supersedes in full moves verbatim to [the archive](../../../docs/decisions-archive.md). An answer to a logged call moves that row from [agent-calls](../../../docs/agent-calls.md) to its topic's archive section. `npm run decisions` checks it.
 - An answer about one feature updates its brief's status and text.
 - Ship these as docs right away.
 - If a remark is ambiguous, record your reading and say so; if it reverses a recorded decision, check with the owner first.

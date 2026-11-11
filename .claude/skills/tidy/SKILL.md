@@ -39,7 +39,7 @@ Report and fix:
 - plans whose jobs have all merged but still read as open (mark them done with the PRs), and briefs whose status lags;
 - `docs/direction.md`'s Now/Next older than the newest merges;
 - research docs missing from `docs/research/README.md` or without a top block;
-- `docs/agent-calls.md`: count the open calls and list any older than a week for the owner.
+- `docs/agent-calls.md`: count the open calls (one table per topic) and list any older than a week for the owner; `npm run decisions` must pass (no ruled row left in the live tables, every entry with its Current rules line).
 
 Keep each fix small and factual; don't rewrite decisions or The Boogler's copy.
 

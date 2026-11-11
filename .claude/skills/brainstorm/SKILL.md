@@ -31,7 +31,7 @@ You are the director: you write the brief and make no design decisions the owner
    - **Open questions**: at most five, each with a recommended answer first and a free field (`Answer: ___`).
    - **Parked**: good ideas for later, one line each.
 4. **Show the owner, then build.** Give the pitch, the top three suggestions and the open questions in chat, with the
-   file path. Don't wait: the brief builds on its recommended answers, each logged in `docs/agent-calls.md` (owner,
+   file path. Don't wait: the brief builds on its recommended answers, each logged in its topic's table in `docs/agent-calls.md` (owner,
    9 November); only direction, unapproved scope or something irreversible waits for the owner. Commit the brief ("Brainstorm: <name>"), have the designer agent review it, and hand it to the implementer
    (or a Codex `task` in withCodex mode) citing `docs/brainstorms/$0.md`. Record the owner's answers in the brief
    whenever they come, and adjust what was built. Parked items the owner wants kept go to `docs/ideas.md`. Remove any

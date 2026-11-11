@@ -13,8 +13,8 @@ of a direction consultation.
 ## Establish the current state
 
 Start with `npm run map -- --kind docs`, then the triggered guidance. Read DESIGN.md,
-docs/agents/owner-calls.md and the current-decision index in docs/decisions.md;
-open the entries routed for this question. Running as Codex also requires
+docs/agents/owner-calls.md and the routing table in docs/decisions.md; read the
+Current rules of the topics this question touches and open their entries as needed. Running as Codex also requires
 docs/agents/codex.md. Read nested instructions before reviewing high-risk code.
 
 Read docs/direction.md if present. Treat it as a derived view: compare its reviewed
@@ -49,8 +49,8 @@ Push back when the requested order would multiply unproved behavior or contradic
 a recorded decision. Explain the concrete rework or player failure, recommend one
 alternative, and identify what would let the deferred work start. Do not invent
 infrastructure prerequisites or reopen rejected ideas without their revisit trigger.
-An explicit owner exception controls its stated scope; record it in the existing
-decision log when authorized, then follow it.
+An explicit owner exception controls its stated scope; record it in its topic file of the
+decision log (docs/decisions.md routes them) when authorized, then follow it.
 
 Distinguish an enjoyable toy, an integrated loop, a visual quality target, a
 production slice and a finished campaign. Bots and stills support specific claims;

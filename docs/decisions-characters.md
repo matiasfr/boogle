@@ -1,0 +1,48 @@
+# Characters, cosmetics and story
+
+One topic of the owner's decision log: [decisions.md](decisions.md) routes every topic. Read **Current rules**, then open a dated entry only for its full words. Entries are verbatim, newest first; entries a later one superseded in full are in the [archive](decisions-archive.md) (history, not for current work). To record a decision, see [Recording a decision](decisions.md#recording-a-decision).
+
+## Current rules
+
+One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
+
+- 2026-11-10 · dress Buddy from Pause: You is Pause's first page; the curio shelf is display only ([entry](#d-2026-11-10-dress-buddy-from-pause-you-is))
+- 2026-11-04 · remove The Boogler's relationship progression now ([entry](#d-2026-11-04-remove-the-boogler-s-relationship-progression))
+- 2026-11-01 · nail the bare hero base before outfits. ([entry](#d-2026-11-01-nail-the-bare-hero-base-before))
+- 2026-11-02 · the controls and motion are right on the mannequin; only the animation polish and the look remain. ([entry](#d-2026-11-02-the-controls-and-motion-are-right))
+- 2026-11-01 · the hero starts as a bare base ([entry](#d-2026-11-01-the-hero-starts-as-a-bare))
+- 2026-11-02 · the Buddy is the default character ([entry](#d-2026-11-02-the-buddy-is-the-default-character))
+- 2026-11-02 · the hero camera is 5.2 m with 5° of sprint widening ([entry](#d-2026-11-02-the-hero-camera-is-5-2))
+- 2026-11-02 · the Buddy will be the default character: the owner wants it to replace the capsule in normal play, with carrying and other animations fitted to its body. ([entry](#d-2026-11-02-the-buddy-will-be-the-default))
+- 2026-11-02 · the Buddy is the one player figure: the owner had the Tracklayer, the cute, ears, stout and bib looks, the robot, the code-animated hero and its model, and the modern-Mario controller (`?ctl=odyssey`) removed; the Buddy is now… ([entry](#d-2026-11-02-the-buddy-is-the-one-player))
+- 2026-11-02 · the Buddy has no ears and no cheeks ([entry](#d-2026-11-02-the-buddy-has-no-ears-and))
+- 2026-11-02 · the Buddy's look, from the owner's review in the viewer: no rim light. ([entry](#d-2026-11-02-the-buddy-s-look-from-the))
+- 2026-11-02 · the player's direction is the Buddy ([entry](#d-2026-11-02-the-player-s-direction-is-the))
+- undated · The Boogler is the mayor ([entry](#d-undated-the-boogler-is-the-mayor))
+- undated · Opening days end each era ([entry](#d-undated-opening-days-end-each-era))
+- undated · Art: a painted concept per era, then a building kit and a vehicle kit per era. ([entry](#d-undated-art))
+
+## Decided
+
+- <a id="d-2026-11-10-dress-buddy-from-pause-you-is"></a>**2026-11-10, dress Buddy from Pause: You is Pause's first page; the curio shelf is display only** (owner, answering [pause-wardrobe](brainstorms/pause-wardrobe.md#owner-questions-answered-10-november)'s five questions). (1) Pause opens on a **You** page with Options one button (RB on a pad, Esc on a keyboard), not a second entry point or tabs. (2) A new player sees You first, **even when empty** (every row reads Nothing), overruling the design review's "Options until the first wearable"; it never remembers the last page, H still opens Controls and Place and builds without a wardrobe keep today's main list. (3) The curio shelf and the finders' bay lose their four Swap prompts and are display only (the shop rail keeps its own). (4) Items you don't own show **nothing**, no hollow pips: the pips are Nothing plus what you own. (5) Buddy turns to face you when the page opens. Left and right cycle each slot, applied at once; partners see each step through the usual presence. No wire, op, save or `WORLD_NS` change.
+
+### Characters and story
+
+- <a id="d-2026-11-04-remove-the-boogler-s-relationship-progression"></a>**2026-11-04, remove The Boogler's relationship progression now** (owner: "he stays in the game and story and his copy stays, but remove the progression mechanic now and clean up; lines that become inaccessible are kept, tidily. Narrative comes later."). This implements the Design Table call: "The JRPG-style relationship system gets refactored into plenty of fun dialogue that isn't gated on it". Every thread opens from the first talk, with chapters still ordered within it. Remove points, levels, hearts, trust gates and nosiness; keep conversation memories, presents and the short-lived comic grudge after riding. First-ever talk uses the intro; later greetings and farewells draw from the other former tiers, including his over-familiar "my best friend and future business partner". Preserve every line, parking inaccessible copy outside the player bundle for the later narrative pass.
+
+- <a id="d-2026-11-01-nail-the-bare-hero-base-before"></a>**2026-11-01, nail the bare hero base before outfits.** Clothes are separate swappable parts (`wear_<slot>_<item>`; slots head, body, hands, feet) and only need to prove the slots work until the base is right. On 2 November the owner chose a separate-head figure, proportioned closer to Ratchet or a Bricktron than lanky, and leans towards no mouth.
+- <a id="d-2026-11-02-the-controls-and-motion-are-right"></a>**2026-11-02, the controls and motion are right on the mannequin; only the animation polish and the look remain.** The owner "really, really" likes how `?proto=hero` controls: today's direct controller (the modern-Mario one's inertia felt less in control), the closer camera, and hand-made clips (Quaternius's CC0 library) on a humanoid skeleton. Code-built figures and agent-authored run cycles didn't satisfy, and the quick test figures on these clips (cute, ears, stout, bib) didn't land either. Next: previz of properly modelled characters that can play these clips.
+- <a id="d-2026-11-01-the-hero-starts-as-a-bare"></a>**2026-11-01, the hero starts as a bare base** (owner): settle the base body's shape and proportions first; outfits are swappable parts (head, body, hands, feet) built on it.
+- <a id="d-2026-11-02-the-buddy-is-the-default-character"></a>**2026-11-02, the Buddy is the default character** (owner: "Let's ship it"): every avatar in normal play, with its camera. The capsule's code stays behind `?body=capsule`, and is the fallback until the Buddy loads. The mannequin is gone from the clip asset. Shipped before measuring on a device. The owner then ran `?buddies=8` on a phone: 60 fps after about the first second.
+- <a id="d-2026-11-02-the-hero-camera-is-5-2"></a>**2026-11-02, the hero camera is 5.2 m with 5° of sprint widening** (owner, comparing 5.2, 5.8 and 6.5 m and 0°, 3° and 5° live, `docs/research/third-person-camera.md`). Horizontal follow stays locked to the body.
+- <a id="d-2026-11-02-the-buddy-will-be-the-default"></a>**2026-11-02, the Buddy will be the default character:** the owner wants it to replace the capsule in normal play, with carrying and other animations fitted to its body. The capsule's code stays. Fitted behind a flag first, then switched the same day.
+- <a id="d-2026-11-02-the-buddy-is-the-one-player"></a>**2026-11-02, the Buddy is the one player figure:** the owner had the Tracklayer, the cute, ears, stout and bib looks, the robot, the code-animated hero and its model, and the modern-Mario controller (`?ctl=odyssey`) removed; the Buddy is now `?proto=hero`'s default, the plain mannequin stays behind `&body=mannequin` for comparison, and git history has the rest. The Tracklayer entries below are history.
+- <a id="d-2026-11-02-the-buddy-has-no-ears-and"></a>**2026-11-02, the Buddy has no ears and no cheeks** (owner: "Take the ear bumps off. Rosy cheeks off."). The head is a plain ball with two eyes; this replaces the blush in the direction below.
+- <a id="d-2026-11-02-the-buddy-s-look-from-the"></a>**2026-11-02, the Buddy's look, from the owner's review in the viewer:** no rim light. In idle it looks straight ahead, not down, so check the gaze whenever the head, face or clips change. Shoulders stay soft and round, not sharp. Hats read as a railway conductor's rather than a police officer's: a straight stiff drum and brass trim, not a flared navy crown.
+- <a id="d-2026-11-02-the-player-s-direction-is-the"></a>**2026-11-02, the player's direction is the Buddy** (`assets/src/buddy.py`, `?proto=hero&body=buddy`, `/character/`): a simple, smooth, slightly plump figure on the mannequin's clips, in the player's colour, with bead eyes and blush and no mouth, hair or clothes yet. The owner is "liking this a lot". Stock character kits were too complex, and full Meshy models fuse hair and clothes into one mesh. The Tracklayer below stays one fixed design, with no customization; whether it's still the player or a separate character is open.
+- <a id="d-undated-the-boogler-is-the-mayor"></a>**The Boogler is the mayor** (from era 2; parked, see the audit picks). His dialogue has no relationship progression; the 4 November call preserves his copy for a later narrative pass.
+- <a id="d-undated-opening-days-end-each-era"></a>**Opening days end each era** (parked, see the audit picks):
+  - any player can start one (round 7);
+  - everyone sees the same scripted ceremony;
+  - physics props do the comedy.
+- <a id="d-undated-art"></a>**Art:** a painted concept per era, then a building kit and a vehicle kit per era.
