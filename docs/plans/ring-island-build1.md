@@ -1088,6 +1088,98 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stare straight up; the whistle swaps them; standing still and looking up
   gets a nod.
+
+### Design review: the halt map at eight stops (designer, 2026-11-11)
+
+For step 4a's "the two new halts on the map", which R4a left out (`ring/r4a-views`, deviation 3: `island-map-labels`
+goes red). A ruling for the builder; calls 66–70 are logged in [agent-calls](../agent-calls.md) and the build proceeds
+on them.
+
+**What was measured.** The game's own `fitMap` and `mapLabels`, run on eight stops built from `line2-path.ts`, for all
+six displays, both layouts and all eight railheads (scripts outside the repo; stills were mock-ups drawn from those
+boxes in a system font, not the game). Not done: an in-game look, a device.
+
+- The failing names are a symptom of scale, not of two more names. The sea line is 465 m of straight track north of the
+  Pier; with it the map spans 858 m, not 393, and every face's scale drops from 0.33–0.52 px/m to 0.21–0.31. At 0.21
+  Village, Camp and Quarry sit 32–37 px apart while each stop keeps a 21 px circle clear and a name is 22 px tall and
+  50–134 px wide.
+- The Pier is the island's northmost point, so it sits one pad (28 px) from the face's edge on every face, on whichever
+  side north falls. Nothing fits past it without shrinking the island.
+
+| Option | Result | Verdict |
+| --- | --- | --- |
+| Re-fit to true scale, today's sizes | 4 or 5 of 6 faces fail at the first and last railheads (33 failing faces over the eight) | No |
+| The same, one name dropped (no Railhead) | 3 faces still fail ("Village" covers Camp) | No: the count of names is not the cause |
+| The same, names allowed further out with leader strokes | Passes most faces, but the leaders cross at Village, Camp and Quarry and a name no longer sits by its stop | No |
+| Abbreviations | Not available: stop names stay as they are | No |
+| An inset for the sea leg, island unchanged | A two-name inset needs about 165 × 90 px; even 150 × 60 is free on only 9 of the 11 v26 faces, in a different corner each time | No: it costs island scale as well, and adds a frame and a second "Pier" |
+| A band along one edge for the sea leg | The six island names stop placing once the face loses 48 px (1 to 3 faces fail; 3 at 56 px) | No |
+| The sea leg drawn short, in line | Three stops in a row need about 86 px past the Pier; that returns to within a fifth of true scale, and needs a not-to-scale mark | No: little gained for a map that is no longer true |
+| **Re-fit to true scale, every mark at 0.7 of today's size** | Passes every face, both layouts, all eight railheads, seven names and eight, with today's label rules and no leaders | **Yes** |
+
+**Ruling.**
+
+1. **Until the Pier is laid the map is v26's, unchanged** (six stops, today's sizes, the pier stretch dashed and its
+   name dim). Most of the game is played on this map and it loses nothing.
+2. **From the Pier laid (Q6), every display re-fits to the whole of line 2 at true scale**, out to Ring Island: the sea
+   line dashed, Ring Island dim at its end. Track, dots, rings, names and train markers are drawn at 0.7 of today's
+   size (a name 0.06 of the face's height, was 0.085). The boards already redraw at that moment.
+3. **The Railhead is on the map only once it is a stop.** No dot and no name before Q7 is laid (seven names). From Q7
+   laid it is a lit, named stop at the end of the solid track, and it moves out with `head`: one redraw per bent
+   footed, no animation. The dashed line beyond it shortens toward the dim Ring Island, so every display in the game
+   shows how far the line has got. Until Q7 completes the solid track ends at the Pier.
+4. **On `joined`** the line is solid to Ring Island and its name lights. The Railhead stays where the last bent put it.
+5. Nothing else changes: face size and place, the turn of each face, the colours, the blink, the Works and glider
+   marks (they are placed by world position, which a true-scale map keeps right; an inset or a shortened leg would
+   not).
+
+**Why, against DESIGN.md and the decisions.** The owner's map decision (9 November) asks for both lines "where they
+really run" and every station named; this is the only option measured that keeps both. Show, don't tell ("what's on
+screen is true"): the crossing's real length and the railhead's real place are on the face, with no symbol to learn.
+Telegraph everything: the next connection is on every board from the moment it becomes the goal, and the solid line
+growing toward it is the build's progress (sea-crossings: keep the destination in view). The cost is type size, which
+is the phone question: with the whole face in view in portrait a name is about 19 CSS px (26 today), still above body
+text. That is an estimate and the look below must confirm it. Bigger cells are an engineering choice the builder may
+take if the stills show soft letters (sizes are fractions of the face, so the design does not change).
+
+**Calls.**
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| – | Both lines where they really run, every station named, unlaid track dashed and its station dim | Decided | Owner, 9 November ("Halt boards show the island map") |
+| – | The Railhead stays a stop after the Meet; stop names as they are | Decided | Owner, 10 November ("The Railhead stays as the Meet's halt") |
+| 66 | From the Pier laid, the displays re-fit to all of line 2 at true scale, sea line included; before that the map is v26's | New | Recommended: the island keeps the whole face for as long as there is nothing past the Pier to show |
+| 67 | On the re-fitted map every mark is 0.7 of today's size | Default | The largest size that passes both layouts at every railhead; 0.8 passes the live layout and fails one Home-island face at railheads 4–7. Raise it if a label fix clears that face |
+| 68 | No Railhead dot or name before Q7 is laid; from then a lit named stop that moves with `head` | New | Recommended: the name on the finger board and the levers is on the map when a train can take you there, and not before, when nothing stands there |
+| 69 | Ring Island shows dim from the Pier laid, not from the first board | Default | The ring is already on the horizon; the map names it when it is next |
+| 70 | Solid track ends at the Pier until Q7 completes, then at the railhead's stop; one redraw per railhead, no animation | Default | Follows the sim's end (R4a deviation 2) |
+
+**Acceptance.**
+
+- `test/island-map-labels.test.ts` and `test/island-map-labels-b.test.ts` (helper `test/helpers/island-labels.ts`)
+  pass with these cases, each for every display: the Pier unlaid (six names, today's sizes); the Pier laid and Q7 not
+  (seven names); Q7 laid at each of the eight railheads (eight names); joined. In each: every name placed once, on the
+  face, clear of every other name and of every stop's ring and standing train. Add: no two stops of different names
+  closer than a ring plus a dot. The counts stay 6 and 5 displays. The helper reads the sizes the boards use, not its
+  own copy.
+- A test that a train's marker on line 2 follows the path past the Pier: `pathAt` at the Railhead's and Ring Island's
+  `s` gives their stops' points, at railheads 0 and 7.
+- `npm run check`.
+- Proof look, `npm run look`, standing 1.5 m in front of the face at eye height, at the Camp, Village line 2 and Pier
+  displays, each at `--size 390x844` and at the default size: `--rail-seed trains-on` (v26's map, as today),
+  `q6-done` (seven names, dashed sea line), `deck-laid` (the Railhead lit at the first railhead), `ring-joined` (all
+  lit). Every name reads in the portrait stills without zooming; a train standing at the Pier and one at the Railhead
+  are two markers. Read the stills and say what could not be seen. If a name does not read in portrait, stop and
+  report: the fallback is a designer's call, not smaller type.
+- `docs/game-design/place.md`, "Departure boards at the halts", says what the map now shows and when it changes.
+
+**Owner questions.**
+
+1. Names on the map get 30% smaller once the line heads out to sea, so the whole crossing fits at true scale.
+   Recommended: yes; the other way to fit it is an inset that shrinks the island anyway.
+2. Should Ring Island be on the map from the first board, dim? Recommended: no, from the Pier laid, so the early map
+   keeps today's size.
+
 - [ ] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
   loop graph's `crossing` node are re-run with the rack on the east platform (call 54): the bot no longer crosses the
   track, and `npm run loop -- node crossing` reports the new carry (expected 5–9 m, was 11 m).
