@@ -1,0 +1,264 @@
+// The railway's components on E (docs/plans/ecs-e.md, section 4; docs/plans/ecs-migration-railway.md, section 2): the
+// replication schema, the save schema and the hash. Systems (./railway-systems.ts) are the only writers. Their order,
+// keys, fields and defaults, and the spawn order in createRailwayWorld, are the portable layer: any change is a
+// `WORLD_NS` bump (test/railway-schema.test.ts, test/railway-golden.test.ts).
+//
+//   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
+//                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
+//                                  outcome, line; RAIL_REPLICATED is the wire
+//   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
+import { createWorld, defineComponent, type AnyComponent } from '../ecs/index.ts';
+import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
+import { LINE1_GREAT_TREE, LINE1_STATIONS } from './railway-line-layout.ts';
+import { RAIL_ROCKS } from './railway-works-layout.ts';
+import { LINE2_STATIONS } from './railway-line2-layout.ts';
+import { LINE_TIMING } from './railway-line.ts';
+import { TRAIN_STOPS } from './railway-train.ts';
+import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import type { RailResult } from './railway.ts';
+
+/** A job's timing fields, in wire order (the read model copies them into its `timing`). */
+export const TIMING = {
+  depositMs: 'int',
+  feedIntervalMs: 'int',
+  logFlightMs: 'int',
+  stoneFlightMs: 'int',
+  beamFlightMs: 'int',
+  cruiseCmPerTick: 'int',
+  departureTicks: 'int',
+} as const;
+// The wire carries a funded job's start tick, `ahead` (offline catch-up past start: elapsed = tick - start + ahead)
+// and, once complete, its end tick; jobRun holds what the rule tick advances, which no client needs a packet for.
+const CLOCK = { start: 'int', ahead: 'int', end: 'int', completion: 'int' } as const;
+const clockDefaults = { start: -1, end: -1, ...LINE_TIMING };
+
+export const RailClock = defineComponent(
+  'railClock',
+  { resumeMarker: 'int', supplyMarker: 'int' },
+  { replicate: false },
+);
+export const Rail = defineComponent(
+  'rail',
+  {
+    awake: 'int',
+    axe: 'bool',
+    jump: 'bool',
+    stoneRack: 'int',
+    stoneProduced: 'int',
+    rack: 'int',
+    produced: 'int',
+    depot: 'int',
+    depotProduced: 'int',
+    lever: 'bool',
+    sea: 'bool',
+    hook: 'bool',
+    glide: 'bool',
+    out0: 'int',
+    out1: 'int',
+    out2: 'int',
+    out3: 'int',
+    out4: 'int',
+    out5: 'int',
+    trains: 'int',
+    pack: 'bool',
+    depotRails: 'int',
+    shelfOut: 'int',
+  },
+  { requires: [RailClock], defaults: { awake: -1, trains: -1 } },
+);
+export const Beam = defineComponent(
+  'beam',
+  {
+    state: 'str',
+    work: 'int',
+    holder: 'str',
+    epoch: 'int',
+    revision: 'int',
+    x: 'int',
+    y: 'int',
+    z: 'int',
+    age: 'int',
+  },
+  { defaults: { state: 'standing', x: LINE1_GREAT_TREE.x, y: 3000, z: LINE1_GREAT_TREE.z } },
+);
+/** The depot cart (./railway-cart.ts): sent only when its phase changes; its place on the road follows from the tick. */
+export const Cart = defineComponent('cart', {
+  phase: 'u8',
+  depart: 'int',
+  from: 'int',
+  to: 'int',
+  logs: 'int',
+  rails: 'int',
+});
+export const Boiler = defineComponent(
+  'boiler',
+  {
+    state: 'str',
+    holder: 'str',
+    epoch: 'int',
+    revision: 'int',
+    x: 'int',
+    y: 'int',
+    z: 'int',
+    age: 'int',
+  },
+  { defaults: { state: 'none', x: 91900, y: 1815, z: 540 } },
+);
+export const Train = defineComponent(
+  'train',
+  {
+    slot: 'int',
+    phase: 'u8',
+    at: 'int',
+    to: 'int',
+    track: 'u8',
+    depart: 'int',
+    req: 'int',
+    from: 'int',
+    v0: 'int',
+    dest: 'int',
+    turn: 'bool',
+    logs: 'int',
+    rails: 'int',
+    wagon: 'bool',
+    foot: 'int',
+  },
+  { key: 'slot' },
+);
+/** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
+ * and the tick a train last left its start end and its far end (-1 never), for the headway hold. */
+export const Line = defineComponent(
+  'line',
+  { slot: 'int', req: 'int', left0: 'int', left1: 'int' },
+  { key: 'slot', defaults: { left0: -1, left1: -1 } },
+);
+/** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
+export const WorksClock = defineComponent('worksClock', { lastCast: 'int' }, { replicate: false });
+export const Works = defineComponent(
+  'works',
+  {
+    breaker: 'u8',
+    seams: 'u8',
+    logs: 'int',
+    stone: 'int',
+    lit: 'int',
+    rack: 'int',
+    poured: 'int',
+    pierRack: 'int',
+    pierSet: 'int',
+    crossing: 'int',
+  },
+  { requires: [WorksClock], defaults: { lit: -1, crossing: -1 } },
+);
+/** The Roundhouse stall at Home's turntable: its footings, the wagon's cradle, the table and the wagon's roll-out. */
+export const Shed = defineComponent(
+  'shed',
+  {
+    stall: 'int',
+    cradle: 'int',
+    cradleRails: 'int',
+    fitted: 'int',
+    table: 'u8',
+    tableRev: 'int',
+    ready: 'int',
+  },
+  { defaults: { fitted: -1, ready: -1 } },
+);
+export const ForgeClock = defineComponent('forgeClock', { lastPour: 'int' }, { replicate: false });
+export const Forge = defineComponent(
+  'forge',
+  { used: 'int', lit: 'int', rack: 'int', poured: 'int' },
+  { requires: [ForgeClock], defaults: { lit: -1 } },
+);
+export const JobRun = defineComponent(
+  'jobRun',
+  { allocation: 'int', used: 'int', stoneAllocation: 'int', stoneUsed: 'int', elapsed: 'int', lastTick: 'int' },
+  { replicate: false },
+);
+export const Job = defineComponent(
+  'job',
+  { slot: 'int', stock: 'int', delivered: 'int', stoneStock: 'int', stoneDelivered: 'int', ...CLOCK, ...TIMING },
+  { key: 'slot', requires: [JobRun], defaults: clockDefaults },
+);
+export const QJobRun = defineComponent(
+  'qjobRun',
+  { allocation: 'int', railAllocation: 'int', used: 'int', railUsed: 'int', elapsed: 'int', lastTick: 'int' },
+  { replicate: false },
+);
+export const QJob = defineComponent(
+  'qjob',
+  { slot: 'int', stock: 'int', railStock: 'int', delivered: 'int', railDelivered: 'int', ...CLOCK, ...TIMING },
+  { key: 'slot', requires: [QJobRun], defaults: clockDefaults },
+);
+export const Tree = defineComponent(
+  'tree',
+  { slot: 'int', left: 'int', work: 'int', yaw: 'f64', fell: 'bool', age: 'int', big: 'bool' },
+  { key: 'slot' },
+);
+export const Hardwood = defineComponent('hardwood', { slot: 'int', left: 'int', work: 'int' }, { key: 'slot' });
+export const Rock = defineComponent('rock', { slot: 'int', left: 'int', work: 'int', age: 'int' }, { key: 'slot' });
+/** A pile's id is its entity id. */
+export const Pile = defineComponent('pile', { x: 'int', y: 'int', z: 'int', n: 'int', kind: 'int', age: 'int' });
+export const Account = defineComponent(
+  'account',
+  { pid: 'str', carry: 'int', stone: 'int', rails: 'int', foot: 'int', epoch: 'int', request: 'int' },
+  { key: 'pid' },
+);
+/** The bounded request history (RAILWAY_OUTCOMES, oldest despawned): the server's idempotency record. */
+export const Outcome = defineComponent(
+  'outcome',
+  { pid: 'str', epoch: 'int', request: 'int', status: 'u8', accepted: 'int' },
+  { replicate: false },
+);
+export const RAIL_COMPONENTS: readonly AnyComponent[] = [
+  Rail,
+  RailClock,
+  Beam,
+  Forge,
+  ForgeClock,
+  Job,
+  JobRun,
+  QJob,
+  QJobRun,
+  Tree,
+  Hardwood,
+  Rock,
+  Pile,
+  Account,
+  Outcome,
+  Cart,
+  Boiler,
+  Train,
+  Works,
+  WorksClock,
+  Shed,
+  Line,
+];
+/** What a client is sent: the replicated components (the wire schema, one source with the save). */
+export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
+export const RAIL_STATUS = ['accepted', 'noop', 'rejected'] as const satisfies readonly RailResult['status'][];
+export const DEPOT_OUT = ['out0', 'out1', 'out2', 'out3', 'out4', 'out5'] as const;
+if (LINE2_STATIONS.length !== DEPOT_OUT.length) throw new Error('railway: depot outputs');
+
+/** The fresh railway, catalog entities spawned in a fixed order (so a fresh world's ids match on every machine). */
+export function createRailwayWorld(opts: { audit?: boolean } = {}) {
+  const w = createWorld(RAIL_COMPONENTS, opts);
+  w.spawn([Rail, {}], [RailClock, {}]);
+  w.spawn([Beam, {}]);
+  w.spawn([Forge, {}], [ForgeClock, {}]);
+  LINE1_STATIONS.forEach((_s, slot) => w.spawn([Job, { slot }], [JobRun, {}]));
+  LINE2_STATIONS.forEach((_s, slot) => w.spawn([QJob, { slot }], [QJobRun, {}]));
+  RAILWAY_SOURCES.forEach((_s, slot) => w.spawn([Tree, { slot, left: T1.sourceYield }]));
+  for (let slot = 0; slot < 2; slot++) w.spawn([Hardwood, { slot, left: 15 }]);
+  RAIL_ROCKS.forEach((r, slot) => w.spawn([Rock, { slot, left: r.initial }]));
+  w.spawn([Cart, {}]);
+  w.spawn([Boiler, {}]);
+  RAIL_TRAINS.forEach(({ line, home, track }, slot) => {
+    const s = TRAIN_STOPS[line]![home]!;
+    w.spawn([Train, { slot, at: home, to: home, track, from: s, dest: s }]);
+  });
+  w.spawn([Works, {}], [WorksClock, {}]);
+  w.spawn([Shed, {}]);
+  RAIL_LINES.forEach((_l, slot) => w.spawn([Line, { slot }]));
+  return w;
+}
