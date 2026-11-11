@@ -860,14 +860,22 @@ pier stretch until Q6 is laid), this halt ringed in red, and both trains as smal
 positions. The face is turned for whoever stands in front of it: what lies beyond the display is up the map and
 their right is its right, so geography stays true and the names stay upright. Each face places its own names: every
 name takes the side of its stop that keeps it off the other names, the face's edge, every ring and a train standing
-at a stop, and as far as it can off the track (a unit test checks every display, both layouts, pier laid or not). While a train is heading to a ringed
+at a stop, and as far as it can off the track (a unit test checks every display, both layouts, at every stage below). While a train is heading to a ringed
 stop that ring blinks; under reduced motion the ring stays lit and the markers step once
-a second. Line 2's wagon rides with its train (no marker of its own); the shunter isn't shown. Halts only stand once
+a second. Line 2's wagon rides with its train (no marker of its own); the shunter isn't shown. **The map grows with line 2** (ring-island build 1, calls 66-70; owner, 11 November: names "Yes, smaller is fine" and Ring
+Island "From the Pier laid"). Until the Pier is laid it is as above, line 2 ending at the dim Pier. When Q6 lays the
+Pier every display refits to the whole of line 2 at true scale: the 465 m sea line runs on, dashed, to Ring Island
+(dim, named) and every mark (track, dots, rings, names, train markers) shrinks to 0.7 of the early map's, a name about
+18 px on the 256 px face, so the crossing fits and the island keeps its true shape. There is no Railhead dot or name
+until Q7 is laid; from then it is a lit, named stop at the end of the solid track, and it moves out one bent at a time
+(one redraw per bent footed, no animation) while the dashed line to Ring Island shortens, so every display shows how far
+the line has got. Until Q7 completes the solid track ends at the Pier. When the rivet is struck the line is solid to
+Ring Island and its name lights; the Railhead stays where the last bent put it. Halts only stand once
 trains run, so there is no "before trains" board. Standing in front of it the names read, on a phone too (in
 portrait at 1.5 m the face is wider than the screen; a step back shows it whole). At a halt the display is not seen
 from far off, so the signal arm is the cue from a distance. Built from `src/render/island-map.ts` (shared with the
 Home hall's board) in `src/entities/railway/island-boards.ts`: every face is a 320 × 256 cell of one canvas atlas
-(1280 × 512, about 3.5 MB with mipmaps) drawn once and again only when the pier is laid; the trains and the blinking
+(1280 × 512, about 3.5 MB with mipmaps) drawn once and again only when line 2's stage changes (the Pier laid, Q7, each bent, the rivet); the trains and the blinking
 rings are two instanced quad meshes over the faces, so a moving train never redraws a texture. One draw per display
 in view plus two for all the markers and rings. Local over accepted train state. Not tested on a device.
 

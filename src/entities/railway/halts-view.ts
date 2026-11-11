@@ -39,7 +39,7 @@ import { me } from '../../player/player.ts';
 import { roadPlaque } from './home-pictogram.ts';
 import { createIslandBoards } from './island-boards.ts';
 import { createUpPlatforms } from './up-platforms.ts';
-import { displayYaw, haltDisplays, haltMapLines, haltRows } from './halt-map.ts';
+import { displayYaw, haltDisplays, haltMap, haltRows } from './halt-map.ts';
 
 /** How near a request lever's knob its prompt is offered (m, flat). */
 const LEVER_REACH = 1.8;
@@ -63,7 +63,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const { ORIGIN, lineAt, railY } = layout;
   // The up track's platforms and plank crossings, standing with today's halt beside each (generic-lines step 2).
   const ups = createUpPlatforms(owner, { layout, boxes: boxModule, land: landModule, pieces: piecesModule });
-  const mapLines = haltMapLines(layout);
+  // The map's lines, replaced in place whenever line 2's stage changes (maps(), below).
+  const mapLines = haltMap(layout).lines;
+  let mapStage = '';
   const rows = haltRows(layout);
   // One display a halt, the Pier's too; the Home island's two edges share one.
   const boards = createIslandBoards(
@@ -655,16 +657,20 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       h.signal(shown && h.up && asked, quiet);
     });
   }
-  /** The boards: line 2's pier stretch laid or not, every train where it is and whether it is held, each halt's ring
+  /** The boards: how far line 2 has got, every train where it is and whether it is held, each halt's ring
    * cue (a train of its line on its way there). */
   function maps(dt: number) {
     const w = adapter.read.world(),
       tick = adapter.tickNow();
-    // The map ends at the Pier (halt-map.ts): the Railhead's stop moving out with `head` is not a redraw.
-    const laid = Math.min(stopsNow[1]!.at(-1)! / 100, mapLines[1]!.stops.at(-1)!.s);
-    if (mapLines[1]!.laid !== laid) {
-      mapLines[1]!.laid = laid;
-      boards.redraw();
+    // The map follows line 2's stops (halt-map.ts): a redraw when the Pier is laid, Q7 is, the railhead moves out a
+    // bent or the rivet is struck, and none in between.
+    const open = trainStops(w, 1).length,
+      head = open >= 5 ? ringHead(w) : 0;
+    if (mapStage !== `${open}:${head}`) {
+      mapStage = `${open}:${head}`;
+      const next = haltMap(layout, { open, head });
+      mapLines.splice(0, mapLines.length, ...next.lines);
+      boards.redraw(next.scale);
     }
     boards.trains(
       RAIL_TRAINS.map(({ line }, k) => (shown ? trainAlong(trainRow(w, k), line, clock) / 100 : null)),
