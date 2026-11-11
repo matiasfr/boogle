@@ -170,8 +170,10 @@ export function hostStages(stages: readonly Stage[]) {
       }
       hostAgrees(r, `${stage} loaded`);
       mirrorAgrees(r, `${stage} loaded`);
+      // Each pulse and credit past the stage's own markers, so each one applies.
       let accepted = 0,
-        marker = 1;
+        supplied = r.api.supplyMarker(),
+        resumed = r.api.resumeMarker();
       for (let k = 0; k < 160; k++) {
         const where = `${stage} step ${k}`;
         const roll = rng();
@@ -185,8 +187,9 @@ export function hostStages(stages: readonly Stage[]) {
           } as RailAction;
           if (r.api.act(pid, e, anywhere).status === 'accepted') accepted++;
         } else if (roll < 0.9) for (let t = 0, n = 1 + Math.floor(rng() * 40); t < n; t++) r.sync.stepWorld(100);
-        else if (roll < 0.95) r.api.supply({ marker: marker++, grow: '', recover: [], beam: 0, boiler: 0 } as never);
-        else r.api.resume(1 + Math.floor(rng() * 4000), marker++, Math.floor(rng() * 600));
+        else if (roll < 0.95)
+          r.api.supply({ marker: (supplied += 1 + Math.floor(rng() * 30)), grow: '', recover: [], beam: 0, boiler: 0 });
+        else r.api.resume(1 + Math.floor(rng() * 4000), ++resumed, Math.floor(rng() * 600));
         hostAgrees(r, where);
         if (k % 4 === 0) mirrorAgrees(r, where);
       }
