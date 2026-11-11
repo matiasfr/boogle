@@ -34,7 +34,7 @@ For every job, in either mode:
 ### Claude subagents (normal mode)
 
 - Start each with the Agent tool: `isolation: "worktree"`, in the background, the agent type by role (`planner`, `designer`, `implementer`, or `general-purpose` for research and reviews), and the model and effort from `npm run models`.
-- A brief names the plan file and the step, the files it may touch, what done looks like (the stills or numbers to bring back), which checks to run, and the binding rules below. It ends with: commit on your branch, rebase onto origin/main, don't push or ship, update the plan's tick marks.
+- A brief names the plan file and the step, the files it may touch, what done looks like (the stills or numbers to bring back), which checks to run (for a build step `node dev/ship-check.ts`, plus its one proof look if a player sees it: owner-calls.md, "Build more, test less", (1); you run `npm run check` or `ship --full` only at a checkpoint), and the binding rules below. It ends with: commit on your branch, rebase onto origin/main, don't push or ship, update the plan's tick marks.
 - A subagent that waits on a queued bot run ends its turn and shows as finished; it wakes when the run reports. Check `npm run heartbeat` for its queued jobs before treating it as done or sending it more work.
 - Send corrections to the same agent with SendMessage, so it keeps its context. Start a new agent only for new work.
 - Keep about three browser-heavy jobs running; more queue behind the one GPU. Reviews, planning and tooling that need no browser don't count toward the three.
