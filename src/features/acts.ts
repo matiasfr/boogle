@@ -22,9 +22,10 @@ import { railwayWorldRead } from '../entities/railway/state.ts';
 import { railwayKnown } from '../player/welcome-railway.ts';
 import { addWelcomeItem, showCard } from '../player/arrival.ts';
 import { fallArrival } from '../fall/arrival.ts';
+import { camera } from '../render/scene.ts';
 import { createCameraPullOut } from '../render/camera-pull-out.ts';
 import { momentBusy } from '../render/buddy-frame.ts';
-import { showActCard, momentBanner } from '../ui/moment-banner.ts';
+import { showActCard, actRising, momentBanner } from '../ui/moment-banner.ts';
 import { storyAct, type StoryAct } from '../sim/railway-queries-story.ts';
 
 /** Every string on a card. A title is the owner's to write: an act he has not titled shows its number only, and no line
@@ -38,9 +39,20 @@ const parts = (act: StoryAct) => ({
   title: TITLES[act] ?? `Act ${act}`,
 });
 
-const CARD_S = 4.5; // on screen, fade in and out included
+const CARD_S = 4.5; // a live card: on screen, fade in and out included
 const LEAD_S = CARD_S - 1; // a live card comes up when the shot in front of it has this long left
 const SETTLE_MS = 300; // a risen act is seen this long before it shows, so the show that marks it has queued its shot
+// The arrival's crane: 4.8 s from the follow camera up and back down to it, easing 1.8 s each way (about 35 degrees a
+// second at the steepest). The title fades in 0.6 s after it starts, once the view is steady, and is gone before the
+// hand-back completes.
+const CRANE_S = 4.8,
+  CRANE_BLEND_S = 1.8,
+  TITLE_DELAY_MS = 600,
+  ARRIVAL_CARD_S = 3.8;
+// How far it rises and goes back, and how far past Buddy it looks, in metres. At the apex the camera is about 39 m
+// (wide view) or 27 m (portrait) from Buddy, who stays on the centre line and, with the look-ahead, within the middle
+// third of the frame; portrait is closer and looks less far ahead because its frame is narrow and tall.
+const CRANE = { wide: { back: 14, up: 30, ahead: 5 }, tall: { back: 8, up: 20, ahead: 3 } };
 
 // The words the Welcome back card says when the act went up while you were away.
 addWelcomeItem({
@@ -62,34 +74,24 @@ const returning = !showCard(); // a returning visit has the Welcome back card
 let seen = 0; // the highest act this browser has shown (or, when returning, been told of)
 let arrived = false;
 let risenAt = 0;
+let landed = false,
+  cardAct: StoryAct | 0 = 0,
+  cardAt = 0;
 let lastX = 0,
   lastZ = 0;
-const aerial = createCameraPullOut(() => false, true);
-
-/** An aerial move over where you land, ending behind Buddy where the follow camera takes over: the card's title comes up
- * over it. Your own arrival only. Reduced motion and a seated player get the title over the plain view. */
-const f = new THREE.Vector3(),
-  r = new THREE.Vector3(),
-  from = new THREE.Vector3(),
-  to = new THREE.Vector3(),
-  at = new THREE.Vector3();
-function aerialMove() {
-  if (!me.body) return;
-  const { x, y, z } = me.body.position;
-  f.set(-Math.sin(cam.yaw), 0, -Math.cos(cam.yaw));
-  r.set(Math.cos(cam.yaw), 0, -Math.sin(cam.yaw));
-  from
-    .set(x, y + 42, z)
-    .addScaledVector(f, 34)
-    .addScaledVector(r, 20);
-  to.set(x, y + 11, z).addScaledVector(f, -9);
-  at.set(x, y + 2, z).addScaledVector(f, 8);
-  aerial.play(from, to, at, CARD_S);
+const aerial = createCameraPullOut(() => false);
+const lift = new THREE.Vector3();
+/** The arrival's crane over the follow camera, which the card's title comes up over. Your own arrival only (nobody
+ * else's camera is touched). Reduced motion and a seated player get the title over the plain view. */
+function craneMove() {
+  const c = camera.aspect < 1 ? CRANE.tall : CRANE.wide;
+  lift.set(Math.sin(cam.yaw) * c.back, c.up, Math.cos(cam.yaw) * c.back);
+  aerial.crane(lift, c.ahead, CRANE_S, CRANE_BLEND_S);
 }
 
 function show(act: StoryAct, how: 'arrival' | 'live', waitedMs = 0) {
-  seen = act;
-  showActCard({ ...parts(act), seconds: CARD_S });
+  seen = act; // written only now that the card has started showing (and what the visit memory saves)
+  showActCard({ ...parts(act), seconds: how === 'arrival' ? ARRIVAL_CARD_S : CARD_S });
   background(
     import('../render/fanfare.ts').then((m) => m.actSting()),
     'act sting',
@@ -124,14 +126,26 @@ spawn({
         // The Welcome back card carries it (the `since` above); this visit has been told.
         seen = act;
         arrived = true;
-      } else if (fallArrival.active ? me.down : true) {
-        // A first visit: at the landing, or at once where no fall plays. Automated browsers skip the title like the fall.
-        arrived = true;
-        if (navigator.webdriver && !fallArrival.active) seen = act;
-        else {
-          show(act, 'arrival');
-          aerialMove();
+      } else {
+        // A first visit: once Buddy is back up from the landing, or at once where no fall plays. Automated browsers
+        // skip the title like the fall.
+        if (fallArrival.active && me.down) landed = true;
+        if (fallArrival.active ? landed && !me.down : true) {
+          arrived = true;
+          if (navigator.webdriver && !fallArrival.active) seen = act;
+          else {
+            craneMove();
+            cardAct = act;
+            cardAt = now + (aerial.active() ? TITLE_DELAY_MS : 0);
+          }
         }
+      }
+      return;
+    }
+    if (cardAct) {
+      if (now >= cardAt) {
+        show(cardAct, 'arrival');
+        cardAct = 0;
       }
       return;
     }
@@ -139,7 +153,10 @@ spawn({
       risenAt = 0;
       return;
     }
-    risenAt ||= now;
+    if (!risenAt) {
+      risenAt = now;
+      actRising(); // a banner raised in the same moment waits behind the card
+    }
     // The card shares one element with the banners, so it also waits for a banner to run out whole.
     if (now - risenAt < SETTLE_MS || momentBusy(LEAD_S) || momentBanner()) return;
     show(act, 'live', now - risenAt);

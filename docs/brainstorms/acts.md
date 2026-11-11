@@ -3,7 +3,7 @@
 > review's rulings and the owner's answers set them (Act 1 an aerial move at the first landing, Act 2 over Far Head's
 > shared shot, no band, and no "Next stop" line: the owner overruled it); see [first-run](../game-design/first-run.md#acts). The sections below are the brief; where they
 > differ (band, 4 s card, "after you stand", drafts of titles) the review and the decision win. Owed: the checkpoint look,
-> `npm run look -- --players 2 --rail-seed q5` (page A lays Q5; read Far Head's show, the card once on each page over
+> `npm run look -- --players 2 --rail-seed q5-finishing` (page A lays Q5; read Far Head's show, the card once on each page over
 > the lit trestle, and a walk input during it; a first-visit page with `--query intro=1` for the Act 1 move).
 
 # Acts: chapter cards for the room's story
@@ -123,7 +123,7 @@ title. Recommendation: number and title only until the story has content to teas
 
 1. **First visit:** `npm run look -- --players 2 --query 'intro=1'`. After page A stands up, "Act 1 · The beginning"
    shows for 4 s. A walk input during it moves Buddy, so input stays live. Page B, already in the room, sees nothing.
-2. **The checkpoint proof (one look, two players):** `npm run look -- --players 2 --rail-seed q5`. Page A lays Q5.
+2. **The checkpoint proof (one look, two players):** `npm run look -- --players 2 --rail-seed q5-finishing`. Page A lays Q5.
    Both pages play Far Head's show and then "Act 2", each exactly once, with the card starting only after the pull-out
    ends. Page B is seated on a train or has pause open at the time; with pause open, its card comes when pause closes.
    The `act shown` marks list both pids.
@@ -256,6 +256,6 @@ on a card.
 5. **Past Ring Island:** how many acts, and is the whole ring one act? Recommended: leave it unnumbered until the
    Roundhouse and branches are designed; expect more than two, at one to two hours each. Answer: ___
 
-**The one checkpoint look the first build owes:** two players, `--rail-seed q5`, page A lays Q5. Read on both pages
+**The one checkpoint look the first build owes:** two players, `--rail-seed q5-finishing`, page A lays Q5. Read on both pages
 that Far Head's show plays, that "Act 2" comes up once each with Far Head's lit trestle in frame under it, and that a
 walk input during the card moves Buddy.
