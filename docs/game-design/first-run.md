@@ -114,13 +114,16 @@ banner (`src/ui/moment-banner.ts`): a quiet full-screen title, the number small 
 spaced, a thin rule, a slow fade with a slight drift, no panel, no input taken. Only "Act 1 · The beginning" is titled
 (the owner's words); an act he has not titled shows "Act N" alone, with no line under it ("keep it a bit mysterious").
 
-- **First visit:** at the landing (the fall's impact) a 4.5 s aerial move of your own camera, high ahead of where Buddy
-  lies, drifting in behind Buddy, with the card over it; it is the same slot for a late joiner, who sees the room's
-  current act. Nobody else in the room is held. Reduced motion or a seated player: no move, the title over the plain
-  view. Automated browsers skip it like the fall (`intro=1` asks for it).
+- **First visit:** once Buddy is back up from the landing (about 1.8 s after the impact) a 4.8 s crane of your own
+  camera: it starts and ends at the follow camera (no cut), rises and pulls back along a smooth arc to a high view of the
+  place with Buddy on the centre line, and comes back down; eased, about 35 degrees a second at most. The title fades in
+  0.6 s after it starts and is gone before the hand-back completes. The portrait view uses a closer, lower apex. It is the
+  same slot for a late joiner, who sees the room's current act. Nobody else in the room is held. Reduced motion or a
+  seated player: no move, the title over the plain view. Automated browsers skip it like the fall (`intro=1` asks for it).
 - **A live change** (the room lays Q5): every page's existing Far Head shot (5 s) carries the card from 1.5 s in.
-  No second camera move. The act waits for any other full-screen moment: a pull-out, a reward card, the crossing
-  finale's banner, the open pause view (`momentBusy`).
+  No second camera move. The act waits for any other full-screen moment (`momentBusy`: a playing pull-out, a reward
+  card, a banner more than half shown, the open pause view). A banner raised in the same moment (the glider's) waits
+  until the card has finished; world prompts stay down while the card shows.
 - **Returning player:** the act ("Act 2") is the first line of the Welcome back card, not a second full-screen card.
 - **Memory:** each browser keeps the highest act shown in the room's visit memory and shows the current act once when it
   goes up. One procedural sting (`actSting`), silent within 10 s of a fanfare (Far Head's show plays one).

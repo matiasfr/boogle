@@ -40,12 +40,48 @@ function present(el: HTMLElement, above: string, title: string, line: string, se
   holdCamera(bannerKey, true, seconds);
   clearTimeout(timer);
   timer = window.setTimeout(() => el.classList.remove('on'), fadeAt * 1000);
+  clearTimeout(pumpTimer);
+  pumpTimer = window.setTimeout(pump, seconds * 1000);
+}
+
+// ---------------------------------------------------------------- the queue
+// The act is the bigger beat: when one rises, its card goes first, and any ordinary banner raised meanwhile (or showing
+// with less than half its time gone) waits for the card to finish. A banner more than half shown finishes first, and the
+// card waits for it (src/features/acts.ts).
+type Plain = { title: string; line: string; seconds: number };
+const queued: Plain[] = [];
+let actWaiting = false; // an act has risen and its card is on its way
+let actUntil = 0; // performance.now() ms when the act card is over
+let plainAt = 0,
+  plainFor = 0; // when the plain banner on screen came up, and for how long
+let pumpTimer = 0;
+const actBusy = () => actWaiting || performance.now() < actUntil;
+function pump() {
+  if (actBusy()) return;
+  const next = queued.shift();
+  if (next) showMomentBanner(next.title, next.line, next.seconds);
 }
 
 export function showMomentBanner(title: string, line = '', seconds = 3.4) {
+  if (actBusy()) return void queued.push({ title, line, seconds });
   const el = element();
   el.classList.remove('act');
+  plainAt = performance.now();
+  plainFor = seconds;
   present(el, '', title, line, seconds, seconds);
+}
+
+/** An act has risen: a plain banner less than half shown steps aside until the card has finished. */
+export function actRising() {
+  actWaiting = true;
+  if (banner?.classList.contains('on') && !banner.classList.contains('act')) {
+    if (performance.now() - plainAt < plainFor * 500) {
+      queued.unshift({ title: big.textContent ?? '', line: small.textContent ?? '', seconds: plainFor });
+      banner.classList.remove('on');
+      clearTimeout(timer);
+      holdCamera(bannerKey, false);
+    }
+  }
 }
 
 export type ActCard = {
@@ -57,8 +93,12 @@ export type ActCard = {
 export function showActCard({ above, title, seconds }: ActCard) {
   const el = element();
   el.classList.add('act');
+  actWaiting = false;
+  actUntil = performance.now() + seconds * 1000;
   present(el, above, title, '', seconds, Math.max(0, seconds - FADE_S));
 }
+/** The act card is on screen: world prompts stay down while it shows, as behind a menu (src/features/prompt.ts). */
+export const actCardOn = () => !!banner?.classList.contains('act') && banner.classList.contains('on');
 /** The banner's text while it shows, else null (for inspect). */
 export const momentBanner = () =>
   banner?.classList.contains('on')
