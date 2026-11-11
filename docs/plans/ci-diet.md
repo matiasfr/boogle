@@ -154,7 +154,12 @@ ships wait (13).
 4. Tier 2's milestone checkpoint replaces per-branch `check:full` in tests.md for `src/net*` and `server/` work; CI's
    path-scoped `server` and `net` still run on those ships.
 
-## Batch 3: needs the owner's word
+## Batch 3: answered, not built
+
+**The owner, 11 November: "lockstep ships can keep the unit suite for now."** So ships that change lockstep code
+(`src/sim`, `src/world`, `src/ecs`) keep the full unit suite (all four shards, audit on), and deploys are not gated on
+main's CI. "For now": it can be asked again once the suite is cheaper. Batch 1 assumes none of it; Batch 2 stays the
+orchestrator's to schedule after Batch 1 lands. The proposal as it was put:
 
 **Lockstep ships run Tier 1 too: goldens plus the tests that import a changed file directly, not the whole suite.**
 This supersedes the line in "Fast ships" that deliberately kept "unit tests ... for every code change" in full. What he
