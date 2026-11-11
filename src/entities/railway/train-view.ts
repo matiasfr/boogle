@@ -108,7 +108,7 @@ export async function createRailwayTrains(
   const wagonRock = new THREE.Group();
   // One train a RAIL_TRAINS slot (v26: line 1's, then line 2's two), each posed on its line from its own row.
   const trains = RAIL_TRAINS.map(({ line }, slot) => {
-    if (look.LOOK.kit) kitModels ??= RAIL_TRAINS.map(() => kit.trainLook(2, engineKit));
+    if (look.LOOK.kit) kitModels ??= RAIL_TRAINS.map(() => kit.trainLook(2, () => false, engineKit));
     const model = look.LOOK.kit ? kitModels![slot]! : wagon.wagonLook(2, false, owner);
     const cars = offsets.slice(0, WAGON).map((_, n) => {
       const car = rail.makeCar(

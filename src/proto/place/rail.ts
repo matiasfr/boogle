@@ -4,6 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { drawCar, makeCar, poseCarOnLine, snapCar, type Car } from '../../entities/railway/car.ts';
 import { onFrame } from '../../loop.ts';
+import { job } from './job.ts';
 import { emit } from '../../render/particles.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
 import { stepAlpha } from '../../physics/engine.ts';
@@ -98,7 +99,9 @@ export function callTrain(tr: Train, stop: number) {
 /** One train on a line. It stands where it's told until `start`. */
 export function buildTrain(line: Line, stops: number[], id: string) {
   const clock = { running: false };
-  const look = LOOK.kit ? trainLook(CARS.length - 1) : wagonLook(CARS.length - 1, false);
+  const look = LOOK.kit
+    ? trainLook(CARS.length - 1, () => job.boiler >= 3 || job.rung.trains)
+    : wagonLook(CARS.length - 1, false);
   const tr: Train = {
     line,
     stops,
