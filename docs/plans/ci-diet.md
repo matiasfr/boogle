@@ -169,6 +169,33 @@ Built on `ci/diet-batch-1` (11 November); `.github/workflows` changes are unprov
 4. Tier 2's milestone checkpoint replaces per-branch `check:full` in tests.md for `src/net*` and `server/` work; CI's
    path-scoped `server` and `net` still run on those ships.
 
+**As built on `ci/diet-batch-2` (11 November).** The `ci.yml` changes are unproven until GitHub runs them. Scope under the
+owner's Batch 3 answer: ships that touch lockstep or a review path keep all four shards, audit on, every offset and seed.
+- [x] 1. `dev/ci/unit-select.ts` (run by CI's `changes` job beside `change-class.ts`) picks the unit run. Full (`--ci`,
+   four shards) when the diff is empty, deletes or renames a file, touches `src/sim`, `src/net`, `src/world`, `src/ecs`
+   or `server/src` (`REVIEW_PATHS`), changes a test that reaches them, or changes what every test shares
+   (`test/helpers/`, `test/fixtures/`, `dev/ci/`, `dev/test-env.ts`, `dev/test-unit.ts`, package and lock files,
+   `tsconfig`, `vite.config`, `ci.yml`). Main always. Otherwise one job, `test:unit -- --ship`: the tests whose import
+   closure holds a changed file plus `CORE_TESTS`. Measured locally: a tool-only diff selects 15 files, 151 tests, 4.2 s.
+   The matrix is `fromJSON(unit_shards)`; automerge reads the run's conclusion, so job names do not matter.
+- [x] 2. `ship` mode in `dev/test-env.ts`: audit on, `FUZZ_STRIDE=16`, `FUZZ_FIRST_SEED=1` (each fuzz's first own seed:
+   `fuzzSeeds` and the island fuzz's list in `railway-trains.test.ts`). Only non-review ships run it, so it rarely meets a
+   sweep; the saving is mostly item 1.
+- [ ] 3. Review tests not retired. Measured (local mode, one file at a time): `railway-r3b2-review` 65 s, 57 of it three
+   world-fuzz seeds of 19 s each; `-m11-review` 13 s; `-m12-review` 4.5 s; `review-v26` 4.4 s; `review-v25` 1.1 s. A ship
+   that changes them is on a review path and keeps the full suite whatever they cost. Deleting a pin on a past lockstep
+   bug loses coverage rather than moving it, and "the goldens and the rules' own tests still cover it" has not been
+   checked case by case. Left for the orchestrator to judge with these numbers.
+- [x] 4. `tests.md`: `check:full` for `src/net*` and `server/` work is a checkpoint's; CI's `server` and `net` still
+   run on those ships. `ship-pipeline.md` documents the ship mode and the selection.
+- Not built: the Batch 1 review leftovers (the plan assigns none to Batch 2); `ship-check`'s direct-importers-only walk
+  for lockstep diffs (Batch 3's local half).
+- Conservative picks: full suite for any deleted or renamed file, any changed test that reaches a review path (most
+  test-only ships), and `dev/ci/`, `ci.yml` and `vite.config`. `railway-tick-order` (39 s) is not in the core though the
+  plan lists it, nor are `railway-check`, `-ops` and `-m12` (16 to 94 s): the core stays under 2 s a file. A
+  `workflow_dispatch` on a branch is classed by its diff, not forced full (a `WORLD_NS` bump touches `src/world`, so it
+  is full).
+
 ## Batch 3: answered, not built
 
 **The owner, 11 November: "lockstep ships can keep the unit suite for now."** So ships that change lockstep code

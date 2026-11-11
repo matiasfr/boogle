@@ -6,6 +6,7 @@
 //                     offset) in CI's unit job and the nightly long run
 //   fuzzSeeds(own)    FUZZ_SEEDS=hex,hex,... replaces a fuzz's own seeds (the nightly long run: the R3a review's five)
 //   SAVE_TICKS        the every-tick save check's length: 500, or the review's 2,500 in the long run
+//   FUZZ_FIRST_SEED   1: each fuzz runs only the first of its own seeds (a non-review ship's CI); FUZZ_SEEDS still wins
 //   FUZZ_LIGHT        1: the trains fuzz asks at a playtest's rate, one lever ask every 60-90 s
 //   FUZZ_TRAINS       the island fuzz's train count (the line's own, or 4: call 47)
 //
@@ -19,8 +20,11 @@ function count(name: string, own: number): number {
 }
 export const fuzzTicks = (own: number) => count('FUZZ_TICKS', own);
 export const FUZZ_STRIDE = count('FUZZ_STRIDE', 16);
+/** A fuzz's own list of cases, cut to the first under FUZZ_FIRST_SEED=1 (for a fuzz that builds its list itself). */
+export const firstCases = <T>(own: readonly T[]): readonly T[] =>
+  process.env.FUZZ_FIRST_SEED === '1' ? own.slice(0, 1) : own;
 export const fuzzSeeds = (own: readonly number[]): readonly number[] =>
-  process.env.FUZZ_SEEDS ? process.env.FUZZ_SEEDS.split(',').map((h) => Number.parseInt(h, 16)) : own;
+  process.env.FUZZ_SEEDS ? process.env.FUZZ_SEEDS.split(',').map((h) => Number.parseInt(h, 16)) : firstCases(own);
 export const SAVE_TICKS = count('SAVE_TICKS', 500);
 export const FUZZ_LIGHT = process.env.FUZZ_LIGHT === '1';
 export const fuzzTrains = (own: number) => count('FUZZ_TRAINS', own);

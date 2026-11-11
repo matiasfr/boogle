@@ -34,6 +34,9 @@ jobs:
       server: ${{ steps.diff.outputs.server }}
       image: ${{ steps.diff.outputs.image }}
       net: ${{ steps.diff.outputs.net }}
+      unit_full: ${{ steps.diff.outputs.unit_full }}
+      unit_shards: ${{ steps.diff.outputs.unit_shards }}
+      unit_only: ${{ steps.diff.outputs.unit_only }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -55,14 +58,20 @@ jobs:
           # Empty/unknown diffs and main (dispatch or push) run every gate: an empty list to --jobs means everything.
           # Otherwise server and net run when their import closure changed, the image build and boot when its paths
           # did (dev/ci/change-class.ts).
+          # The unit run: the full suite in four shards, or (dev/ci/unit-select.ts) the affected tests plus the core in
+          # one job for a ship that touches neither lockstep nor a review path. Main and an empty diff are full.
           if [ "$REF" = main ] || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
             jobs=$(node dev/ci/change-class.ts --jobs < /dev/null)
+            unit=$(node dev/ci/unit-select.ts < /dev/null)
           else
             # Both sides of a rename: moving a file out of docs is a code change.
-            jobs=$(git diff --no-renames --name-only -z "$BASE" HEAD | node dev/ci/change-class.ts --jobs)
+            git diff --no-renames --name-only -z "$BASE" HEAD > "$RUNNER_TEMP/changed"
+            jobs=$(node dev/ci/change-class.ts --jobs < "$RUNNER_TEMP/changed")
+            unit=$(node dev/ci/unit-select.ts < "$RUNNER_TEMP/changed")
           fi
           echo "$jobs"
-          echo "$jobs" >> "$GITHUB_OUTPUT"
+          echo "$unit"
+          { echo "$jobs"; echo "$unit"; } >> "$GITHUB_OUTPUT"
 
   # Docs-only: the checks prose can break. Must-read and launch budgets, task routes and rules frontmatter (registry)
   # and the agent definitions' model frontmatter. Nothing a docs path holds is built, bundled or tested otherwise.
@@ -122,9 +131,11 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run build
 
-  # The unit tests in four parallel shards (node --test-shard: every fourth file), with the rail audit and every tick
-  # offset of the sweeps (`--ci`, dev/test-env.ts), which local runs skip or sample (docs/agents/ship-pipeline.md, "Unit
-  # test settings"). `needs: unit` waits for all four.
+  # The unit tests. The full suite (main, and any ship that touches lockstep code, a review path or something every
+  # test shares: dev/ci/unit-select.ts) runs in four parallel shards (node --test-shard: every fourth file), with the rail
+  # audit and every tick offset of the sweeps (`--ci`, dev/test-env.ts). Any other ship runs one job: the tests that
+  # import a changed file plus the core, the audit on, every 16th offset and one fuzz seed (`--ship`); main proves the
+  # rest minutes after the merge (docs/agents/ship-pipeline.md, "Unit test settings"; docs/plans/ci-diet.md, Batch 2).
   unit:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
@@ -132,7 +143,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: ${{ fromJSON(needs.changes.outputs.unit_shards) }}
     # The whole suite took 16 minutes in one job on 11 November (world v27's Ring Island fuzz tests took it past 10, so
     # main's run was cancelled twice). Cut the suite or add a shard before raising this.
     timeout-minutes: 10
@@ -145,7 +156,18 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - run: npm run test:unit -- --ci --test-shard=${{ matrix.shard }}/4
+      - name: Unit tests (the full suite in four shards, or the ship's selection in one)
+        env:
+          FULL: ${{ needs.changes.outputs.unit_full }}
+          UNIT_ONLY: ${{ needs.changes.outputs.unit_only }}
+          SHARD: ${{ matrix.shard }}
+          SHARDS: ${{ strategy.job-total }}
+        run: |
+          if [ "$FULL" = true ]; then
+            npm run test:unit -- --ci --test-shard="$SHARD/$SHARDS"
+          else
+            npm run test:unit -- --ship
+          fi
 
   registry:
     needs: changes
