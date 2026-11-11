@@ -191,7 +191,17 @@ action id, pad slot, key or guide row.
 Each step leaves `npm run check` green. Risk tier follows "Fast ships": `server/` needs an independent review and a
 review stamp for the ship queue; the rest ships on one green run.
 
-- [ ] **1. The quick suite on boogle.club, and the pull.** Tier: client debug chunk and tooling, no review gate.
+- [x] **1. The quick suite on boogle.club, and the pull.** Tier: client debug chunk and tooling, no review gate.
+  **Built (10 November), not yet run on a phone.** What differs from the text below: `LIMITS` moved to the pure
+  `src/debug/device/limits.ts` (with the short event field names; `gpu-info.ts` imports it); a scene is two events,
+  `dev.scene` and `dev.scene.cost`, because the endpoint keeps only 24 fields an event and dropped the verdict silently in
+  the first run; the run page adds `notrack=1` (without it the ordinary playdata recorder uploaded a second, unmarked
+  session named after a random player: the plan's P1 by another road) and `profui=0` (new, in `prof-overlay.ts`: the
+  timing hooks without the overlay and its 500 ms refresh); `?device=new` adds `mint=page` so the page can say the run
+  is self-minted; `--wait` and `baseline` are step 2. Runs on this Mac (headless Chromium through the look harness, a local
+  server, `q6-done` jump room): 7/7 scenes, about 52 s a run, `npm run playtest` lists nothing without `--all`, one session
+  per run. That proves the flow and the pull, not a device. Lazy chunk: 14.3 kB (6.4 kB gzip) JS, 1.4 kB CSS, 0.9 kB entry;
+  `sw.js` lists none of it.
   - `src/debug/perf-poses.ts` (new): move `POSES` and `OPT_IN` out of `dev/look/bench.ts` unchanged, and move the
     body of bench's `PUT` plus its yaw line into `putPlayer(x, y, z, yaw)` here; `bench.ts` imports both. Verify:
     `npm run bench -- --no-load --poses spawn --seconds 1` prints a row as before.
@@ -248,7 +258,9 @@ review stamp for the ship queue; the rest ships on one green run.
     `DATA_DIR/device/<id>/run.json` with `sha256(id)`, `made` and `expires` = 7 days);
     `POST /device/runs/:id/still/:scene` (the run id is the credential; `scene` matches `/^[a-z0-9-]{1,24}$/`; body
     `image/jpeg` raw, 400 kB at most, checked for the JPEG magic bytes and stored as opaque bytes, never decoded on
-    the server; 12 stills a run; refused after `expires` or for an unknown id with the same 404);
+    the server; 12 stills a run; refused after `expires`. An id the server has not seen is registered by its first valid
+    still (a self-minted `?device=new` run, owner answer to question 4), under the same hard caps below: expiry counts
+    from that still, and a malformed id or scene is 400 and writes nothing);
     `GET /device/runs/:id/stills` and `GET /device/runs/:id/still/:scene` (Bearer `REPORT_TOKEN`, served as
     `application/octet-stream`, `no-store`). Caps: 50 runs, 20 MB in all, 128 MiB free reserve as reviews keep;
     runs past 30 days are deleted on the first write of a day. Rate limit 30 a minute per IP. New config keys in
@@ -256,11 +268,13 @@ review stamp for the ship queue; the rest ships on one green run.
     `test/server-image.test.ts`.
   - `src/debug/device/still.ts`: in the frame the scene's sample ends, `drawImage` the game canvas into a 960 px wide
     2D canvas, `toBlob('image/jpeg', 0.7)`, upload; a blank or failed copy records `still: unavailable`. Stills
-    upload only for runs made by `new` (which now registers the run); a `?device=new` run keeps numbers only.
+    upload for every run, made by `new` (which now registers it) or self-minted (`?device=new`; the owner's answer to
+    question 4); steps 1 and 2 send numbers only.
   - `dev/device/cli.ts`: `new` registers the run (and says so plainly if the server refuses; the link still works
     for numbers); `pull` saves `<scene>.jpg` beside the report and links them.
   - Tests: `server/test/device.test.ts`: register needs the token (401, and 404 with no `REPORT_TOKEN`); a still for
-    an unknown, expired or malformed id is 404 or 400 and writes nothing; an oversized body is 413; a body that is
+    an expired id is 404 and a malformed id or scene is 400, both writing nothing; an unseen id registers on its first still and
+    the run, byte and rate caps still hold; an oversized body is 413; a body that is
     not a JPEG is 400; the thirteenth still is 507; the byte and run caps hold; path characters in `id` or `scene`
     never reach `fs`; a truncated body and a non-object JSON body answer 400 without a throw; the reads need the
     token.
@@ -330,17 +344,24 @@ room, at coordinates the bench already uses. `npm run level-check` was not run f
 1. **Branch previews inside boogle.club (step 5)?** Recommended: **not yet.** Ship steps 1 to 4, use `--query` flags
    for branch work for a week, and build step 5 only if a client change with no flag needed a device. It reopens the
    4 November "no dev site" call, shares main's origin (so its localStorage), and touches the deploy.
+   **Answer (owner, 10 November):** "If it keeps things cleaner?" Not a yes. The orchestrator's reply: it does not keep
+   things cleaner yet (it adds risk to the only deploy), so step 5 stays deferred and this question stays open.
 2. **May the report replace "not tested on a device" in agent reports (step 2's owner-calls edit)?** Recommended:
    **yes**, citing the run's short code, device and build, and only for the area the suite covers; a change outside
    the suite's scenes still says "not tested on a device".
+   **Answer (owner, 10 November):** "Yes".
 3. **Is the full user agent string acceptable in the stored diagnostics?** Recommended: **yes.** Play sessions keep
    only a coarse browser name, but the exact OS and browser version is the point of a device report, and the reads
    are token-gated.
+   **Answer (owner, 10 November):** "Yes". (Step 1 stores it in the session's `ua` field.)
 4. **Should a `?device=new` run (self-minted, no command first) be allowed to upload stills in step 3?**
    Recommended: **no.** Numbers only, so the public endpoint never accepts an image for a run the owner did not
    mint.
+   **Answer (owner, 10 November):** "Yes but not needed for initial version". Against the recommendation: step 3 lets a
+   self-minted run upload stills too, under the same hard caps and the independent review; step 1 stays numbers only.
 5. **Pass line: two refresh intervals at p95?** Recommended: **yes to start**, as a readable line on the card; it
    is one constant in `stats.ts`, and the first week of runs on the iPad and a phone should set the real one.
+   **Answer (owner, 10 November):** "Yes".
 
 ## Risks
 
