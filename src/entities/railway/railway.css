@@ -229,3 +229,37 @@ body .tbtn.ping-btn {
     animation: none;
   }
 }
+
+/* The connecting / saving-paused toast. Desktop: low and centred, as it always was. Touch: the bottom-right corner belongs
+   to the buttons, so it takes the notification lane's touch place (src/ui/notify.css): under the top tag, and in portrait
+   a row along the top at the same height. In landscape it also stops short of the Drop button (its left edge sits 252px
+   in from the right inset, top 238px up from the bottom), which a 320px-tall screen puts under a centred toast. */
+.railway-connecting {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #211e19e8;
+  color: #fff1d8;
+  font: 14px system-ui;
+  pointer-events: none;
+  z-index: 40;
+}
+body.touch .railway-connecting {
+  top: calc(66px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  max-width: calc(100vw - 264px - max(16px, env(safe-area-inset-left, 0px)) - env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+  transform: none;
+}
+@media (orientation: portrait) {
+  body.touch .railway-connecting {
+    top: calc(72px + env(safe-area-inset-top, 0px));
+    right: max(16px, env(safe-area-inset-right, 0px));
+    max-width: none;
+    text-align: center;
+  }
+}

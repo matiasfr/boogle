@@ -35,8 +35,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
   const connection = document.createElement('div');
   connection.setAttribute('role', 'status');
-  connection.style.cssText =
-    'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);padding:8px 14px;border-radius:12px;background:#211e19e8;color:#fff1d8;font:14px system-ui;pointer-events:none;z-index:40';
+  connection.className = 'railway-connecting';
   connection.hidden = true;
   document.body.append(connection);
   owner.cleanup(() => connection.remove());
