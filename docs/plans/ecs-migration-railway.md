@@ -720,8 +720,8 @@ later change with a bundle report. Place's remaining callers get one owner from 
   - **Verify:** `npm run check`; the bench at `town`; a look inside the museum and the shop.
   - **Reviewer attacks:** `git diff -M --stat` shows 100% similarity for `town-lines.ts`; a CSS rule dropped in the
     split.
-- [ ] **M9. Chunk and cull the committed track.** _Medium (render). After M6. `src/entities/railway/track.ts`,
-      `src/place/look-kit.ts`, `src/place/pieces.ts`._
+- [x] **M9. Chunk and cull the committed track.** _Medium (render). After M6. `src/entities/railway/track.ts`,
+      `src/place/look-kit.ts`, `src/place/pieces.ts`._ **Built 10 November, branch `ecs/m9-track-chunks`** (details after the checklist).
   - Today `lookTrack` makes one `InstancedMesh` per piece kind per line and turns `frustumCulled` on, but the batch's
     bounding sphere spans the line, so it is drawn whenever any of the line is in view; sleepers and rails already cast
     no shadow.
@@ -737,6 +737,27 @@ later change with a bundle report. Place's remaining callers get one owner from 
     (pieces falling into a chunk that was empty), and one pixel comparison of a sleeper's grain before and after.
   - **Reviewer attacks:** a piece on a chunk boundary drawn twice or not at all; a chunk culled while a tall leg in it
     is on screen; pop when a chunk's shadows switch; the laying animation crossing a boundary.
+  - **Built (10 November).** `track-chunks.ts` (pure: `chunkOf`, `chunkRuns`, `growBounds`, `castsShadow`, 50 m,
+    `TRACK_SHADOW_M` 120 with 20 m of hysteresis) and `lookTrack` in `look-kit.ts`, which gets each piece's chunk from
+    `track.ts`. A chunk is a run of consecutive same-kind pieces in one 50 m stretch of u (so a piece is in exactly one);
+    its bounds are the union of what has landed in it (falling pieces included, +0.3 m), it is hidden until something has,
+    and the kit's arrival cannot re-bound it. The grain seed is kept by `userData.grainBase` (the run's first index in its
+    kind) read through one shared object-update uniform in `paint()`, so no material gained a variant: boot-time and
+    after-visit counts are 242 programs / 164 to 165 pipelines on base and branch alike. The warm-up frame
+    (`warmDraw`) draws every chunk casting so no shadow pipeline waits for the camera. Planks keep their shadow (not on the
+    list). The level tools bind `chunkOf` by name (two lines each in `dev/level/{machine-clearance,grounding-track}.ts`).
+  - **Numbers** (bench, 1280x800 DPR 2, same poses, calls and triangles exact; times under a load of 5 to 15 are not
+    evidence and are left out). Base to branch, calls / triangles / shadow-pass triangles:
+    spawn 325 to 329 / 946,571 to 554,715 / 106,432 to 88,448; town 292 to 297 / 1,101,996 to 710,716 / 101,396 to 84,852;
+    forge 233 to 238 / 1,109,956 to 718,676 / 101,396 to 84,852; far 312 to 297 / 1,353,070 to 884,178 / 102,052 to 86,620
+    (the base drew every unlaid piece as a zero-size instance, which hiding empty chunks stops). With the Q6 seed: pier
+    181 to 185 / 948,763 to 667,271 / 124,074 to 91,514; **head 713 to 833 (+120)** / 1,393,154 to 1,296,086 /
+    138,396 to 95,716, the whole line in view. Tuning the chunk length at the head: 100 m gives 787 calls and 1,319,162
+    triangles, 150 m gives 758 and 1,324,002 (pier 182 / 668,855 and 181 / 704,411). 50 m stays as the checklist says; the
+    constant is `TRACK_CHUNK_M`. Looks: close on the trestle, across the bay and a walk across chunk boundaries are
+    pixel-identical to base on the track (what differs is the water's caustic lines). The laying was watched live
+    (`--eval` over the production route to T2): each chunk turns visible on its first piece and its sphere grows as the
+    machine lays through it, then the next chunk starts at the boundary. Not tested on a device.
 
 ### The conversion tail (runs beside the build-outs)
 
