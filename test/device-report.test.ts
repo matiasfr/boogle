@@ -5,7 +5,19 @@ import os from 'node:os';
 import path from 'node:path';
 import { loadBaseline, loadBenchHistory, refuseBaseline, saveBaseline } from '../dev/device/baseline.ts';
 import type { DeviceResult, SceneRow } from '../dev/device/read.ts';
-import { baselineSection, benchLine, diff, pasteLine, ratio, report } from '../dev/device/report.ts';
+import {
+  baselineSection,
+  benchLine,
+  diff,
+  frameLimitLines,
+  gpuLimit,
+  longTaskLimit,
+  pasteLine,
+  ratio,
+  readyHeadline,
+  report,
+} from '../dev/device/report.ts';
+import { readyLine, longTasksSupported } from '../src/debug/device/stats.ts';
 
 const row = (name: string, over: Partial<SceneRow> = {}): SceneRow => ({
   name,
@@ -35,6 +47,8 @@ const row = (name: string, over: Partial<SceneRow> = {}): SceneRow => ({
   stallMax: 20,
   progsNew: 0,
   heapMb: null,
+  renderFps: null,
+  frameCap: null,
   ...over,
 });
 const run = (id: string, scenes: SceneRow[], over: Partial<DeviceResult> = {}): DeviceResult => ({
@@ -52,6 +66,9 @@ const run = (id: string, scenes: SceneRow[], over: Partial<DeviceResult> = {}): 
   dlim: {},
   env: {},
   load: {},
+  first: null,
+  boot: {},
+  files: [],
   scenes,
   done: {},
   complete: true,
@@ -171,4 +188,61 @@ test('a baseline round-trips through its file; refused runs and bad files are no
     delete process.env.BOOGLE_DAILY_DIR;
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+const CHROME =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
+
+test('long tasks read n/a where the browser cannot report them, even when an older page sent a zero', () => {
+  assert.equal(longTasksSupported(CHROME), true);
+  assert.equal(longTasksSupported(run('x', []).ua), false); // Safari
+  assert.equal(longTasksSupported('Mozilla/5.0 (iPhone) AppleWebKit Chrome/1 CriOS/142 Mobile Safari'), false);
+  const safari = run('dv-s', [row('spawn', { longTasks: 0 })]);
+  assert.match(report(safari), /\| n\/a \|/);
+  assert.match(longTaskLimit(safari), /`n\/a` in this run/);
+  const chrome = run('dv-c', [row('spawn', { longTasks: 2 })], { ua: CHROME });
+  assert.match(longTaskLimit(chrome), /counted with the `longtask` API/);
+  assert.match(report(chrome), /\| 2 \|/);
+  assert.match(longTaskLimit(run('dv-c', [row('spawn', { longTasks: null })], { ua: CHROME })), /`n\/a` in this run/);
+});
+
+test('the GPU limit line follows what the run reported', () => {
+  assert.match(gpuLimit(run('dv-a', [row('spawn', { gpu: 7.8 })])), /came from timestamp queries/);
+  assert.doesNotMatch(gpuLimit(run('dv-a', [row('spawn', { gpu: 7.8 })])), /missing on Safari/);
+  assert.match(gpuLimit(run('dv-a', [row('spawn')])), /`unavailable` in this run/);
+});
+
+test('a frame limit is named, with the drawn rate, and the suite is said not to change it', () => {
+  const capped = run(
+    'dv-a',
+    [row('spawn', { renderFps: 30, frameCap: 30 }), row('town', { renderFps: 29.6, frameCap: 30 })],
+    { env: { refresh_ms: 17, gfx: 'resolution=0.6,frameLimit=30' } },
+  );
+  const note = frameLimitLines(capped).join('\n');
+  assert.match(note, /Frame limit 30\./);
+  assert.match(note, /the suite does not change it/);
+  assert.match(note, /drew 30 to 30 frames a second/);
+  assert.match(note, /display's rate \(17 ms\)/);
+  // An older run: only the graphics string says it.
+  const old = run('dv-a', [row('spawn')], { env: { gfx: 'resolution=0.6,frameLimit=30,msaa=false' } });
+  assert.match(frameLimitLines(old).join('\n'), /did not record how many frames drew/);
+  assert.deepEqual(frameLimitLines(run('dv-a', [row('spawn')], { env: { gfx: 'frameLimit=display' } })), []);
+  assert.deepEqual(frameLimitLines(run('dv-a', [row('spawn')])), []);
+  assert.match(report(capped), /Frame limit 30/);
+});
+
+test('the ready headline says warm or cold, and notes a cold run that came back warm', () => {
+  assert.equal(readyLine(2781, true), 'Ready in 2.8 s (warm load)');
+  assert.equal(readyLine(6400, false), 'Ready in 6.4 s (cold load)');
+  assert.equal(readyLine(2781, null), 'Ready in 2.8 s (load)');
+  assert.match(readyLine(2781, true, true), /a cold one was asked for, so open the link in a private tab/);
+  assert.equal(readyLine(2781, false, true), 'Ready in 2.8 s (cold load)');
+  assert.equal(readyLine(null, true), 'Ready: not measured');
+  assert.equal(readyLine(0, true), 'Ready: not measured');
+  assert.equal(readyHeadline(run('dv-a', [], { load: { ready: 2781, warm: true } })), 'Ready in 2.8 s (warm load)');
+  assert.equal(readyHeadline(run('dv-a', [], { load: {} })), 'Ready: not measured');
+  assert.match(
+    report(run('dv-a', [], { load: { ready: 2781, warm: true } })),
+    /Warm launch: unknown \(the load measured when Run was tapped: Ready in 2\.8 s \(warm load\)\)/,
+  );
 });

@@ -11,6 +11,8 @@ export type Summary = {
   pass: number;
   total: number;
   code: string;
+  /** `readyLine`: "Ready in 2.8 s (warm load)". */
+  ready: string;
   upload: UploadState;
   uploadNote: string;
 };
@@ -22,14 +24,25 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = '') {
   return node;
 }
 
-export function createPanel(info: { suite: string; build: string; label: string; code: string; self: boolean }) {
+export function createPanel(info: {
+  suite: string;
+  build: string;
+  label: string;
+  code: string;
+  self: boolean;
+  note: string;
+}) {
   const root = h('div', '', 'device-panel');
   root.setAttribute('role', 'region');
   root.setAttribute('aria-label', 'Device test');
   document.body.append(root);
   const head = () => {
     const parts = [`build ${info.build}`, info.label || 'no label', `run ${info.code}`];
-    return [h('h2', `Device test: ${info.suite}`), h('p', parts.join(' · '), 'dev-sub')];
+    return [
+      h('h2', `Device test: ${info.suite}`),
+      h('p', parts.join(' · '), 'dev-sub'),
+      ...(info.note ? [h('p', info.note, 'dev-sub')] : []),
+    ];
   };
   const set = (cls: string, ...nodes: HTMLElement[]) => {
     root.className = `device-panel ${cls}`.trim();
@@ -113,6 +126,7 @@ export function createPanel(info: { suite: string; build: string; label: string;
       const nodes: HTMLElement[] = [
         ...head(),
         h('p', `${s.pass} / ${s.total} scenes pass on ${s.device}`),
+        ...s.ready.split('\n').map((line) => h('p', line)),
         table,
         h(
           'p',

@@ -1,6 +1,7 @@
 // A DeviceResult (./read.ts) as the markdown an agent reads and cites. Pure. It leads with one line to paste, says what
 // the numbers are and are not, and never ranks devices or turns a missing figure into a zero.
-import { heatDrift } from '../../src/debug/device/stats.ts';
+import { launchHeadlines, launchKind } from '../../src/debug/device/launch.ts';
+import { heatDrift, longTasksSupported, readyLine } from '../../src/debug/device/stats.ts';
 import { LIMIT_KEYS } from '../../src/debug/device/limits.ts';
 import type { Baseline, BenchEntry } from './baseline.ts';
 import type { DeviceResult, Raw, SceneRow } from './read.ts';
@@ -56,7 +57,7 @@ function kv(rows: [string, unknown][]) {
   );
 }
 
-function sceneRowCells(s: SceneRow): string[] {
+function sceneRowCells(s: SceneRow, ltOk: boolean): string[] {
   const stall =
     s.stallN === null
       ? dash
@@ -65,13 +66,14 @@ function sceneRowCells(s: SceneRow): string[] {
     s.name,
     s.verdict === 'not-measured' ? 'not measured' : s.verdict,
     cell(s.n),
+    fmt(s.renderFps),
     fmt(s.p50),
     fmt(s.p95),
     fmt(s.p99),
     fmt(s.max),
     cell(s.over33),
     cell(s.over50),
-    s.longTasks === null ? 'n/a' : String(s.longTasks),
+    ltOk && s.longTasks !== null ? String(s.longTasks) : 'n/a',
     fmt(s.cpu, 2),
     s.gpu === null ? 'unavailable' : fmt(s.gpu, 2),
     cell(s.calls),
@@ -210,8 +212,121 @@ export function benchLine(r: DeviceResult, history: BenchEntry[] = []): string |
   return `Bench counts at this commit (${entry.base.slice(0, 8)}, the Mac's daily perf run of ${entry.date.slice(0, 10)}, \`?dpr=fixed\`): ${parts.join('; ')}. Exact counts match only at the same detail rung.`;
 }
 
+/** Whether this run's long task counts mean anything: the browser delivers them and the page said so. */
+const longTasksOk = (r: DeviceResult) => longTasksSupported(r.ua) && r.scenes.some((s) => s.longTasks !== null);
+
+/** The headlines of the run's first launch: cold and warm, never a warm number under the cold label. A run that
+ * predates the first-load record falls back to the load event, and says it cannot tell cold from warm. */
+export function launchLines(r: DeviceResult): string[] {
+  if (r.first) return launchHeadlines(r.first);
+  const old = typeof r.load.ready === 'number' ? r.load.ready : null;
+  return [
+    'Cold launch: unknown (this run did not record its first load; the load below is the one measured when Run was tapped)',
+    `Warm launch: unknown${old === null ? '' : ` (the load measured when Run was tapped: ${readyHeadline(r)})`}`,
+  ];
+}
+
+/** Where the launch went: the boot marks in order with the step from the one before, then bytes, the largest files and
+ * the shader warm-up. Empty when the run recorded no first load. */
+export function launchBreakdown(r: DeviceResult): string[] {
+  const f = r.first;
+  if (!f) return [];
+  const marks = Object.entries(r.boot)
+    .filter(([k, v]) => k.startsWith('m_') && typeof v === 'number')
+    .map(([k, v]) => [k.slice(2), v as number] as const)
+    .sort((a, b) => a[1] - b[1]);
+  const kind = launchKind(f);
+  let prev = 0;
+  const rows = marks.map(([name, t]) => {
+    const row = [name, String(t), `+${t - prev}`];
+    prev = t;
+    return row;
+  });
+  const out = [
+    `### Launch breakdown (${f.later === true ? 'a later navigation' : kind === 'unknown' ? 'first navigation' : `${kind} launch`})`,
+    '',
+    ...kv([
+      ['service worker controlled the page at the start', f.sw0],
+      ['HTML served from a cache', f.html_cached],
+      ['navigation type', f.nav],
+      ['time to first byte (ms)', f.ttfb],
+      ['dns and connect (ms)', f.conn],
+      ['HTML parsed (ms)', f.html],
+      ['game interactive (ms)', f.ready],
+      ['Run usable (ms)', f.usable],
+      ['requests', f.req],
+      ['transferred KB', f.net_kb],
+      ['decoded KB', f.body_kb],
+      ['requests served by the service worker', f.sw_req],
+      ['shader warm-up (ms)', f.shaders_ms],
+      [
+        'programs / pipelines',
+        f.programs === null || f.programs === undefined ? '' : `${cell(f.programs)} / ${cell(f.pipelines)}`,
+      ],
+      ['wgsl generation (ms)', f.wgsl_ms],
+      ['cold run asked for', f.cold_req === true ? `yes (${cell(f.cold_did)})` : ''],
+    ]),
+    '',
+  ];
+  if (rows.length) out.push(...table(['phase', 'at ms', 'step ms'], rows), '');
+  if (r.files.length) out.push('Largest files:', '', ...r.files.map((x) => `- ${x}`), '');
+  return out;
+}
+
+/** "Ready in 2.8 s (warm load)" from the load event (the load measured when Run was tapped). */
+export function readyHeadline(r: DeviceResult): string {
+  const ms = typeof r.load.ready === 'number' ? r.load.ready : null;
+  const warm = typeof r.load.warm === 'boolean' ? r.load.warm : null;
+  return readyLine(ms, warm, r.load.cold_req === true);
+}
+
+/** The GPU ms line of the limits, by what this run reported. */
+export function gpuLimit(r: DeviceResult): string {
+  return r.scenes.some((s) => s.gpu !== null)
+    ? '- GPU ms came from timestamp queries this browser reported (`gpu timestamps` above); one 5 s sample per scene. A scene whose queries failed says `unavailable`, never a number.'
+    : '- GPU ms is `unavailable` in this run: the browser reported no timestamp queries, so frame intervals stand in. `unavailable` is never a number.';
+}
+
+/** The long task line of the limits, by what this run reported. */
+export function longTaskLimit(r: DeviceResult): string {
+  return longTasksOk(r)
+    ? '- Long tasks are counted with the `longtask` API (Chromium); frames over 50 ms exist everywhere.'
+    : '- Long tasks are `n/a` in this run: this browser does not deliver `longtask` entries (Chromium only), so a zero would mean nothing. Frames over 50 ms exist everywhere.';
+}
+
+/** The frame limit the page ran with: the scenes' own record, else the graphics string. Null if unknown. */
+export function frameCapOf(r: DeviceResult): number | null {
+  const seen = r.scenes.find((s) => s.frameCap !== null)?.frameCap;
+  if (seen !== undefined && seen !== null) return seen;
+  const m = /frameLimit=(\w+)/.exec(String(r.env.gfx ?? ''));
+  if (!m) return null;
+  return m[1] === 'display' ? 0 : Number.isFinite(Number(m[1])) ? Number(m[1]) : null;
+}
+
+/** What frame limit the page ran at, whether the suite changed it (it never does) and what the frame columns time. */
+export function frameLimitLines(r: DeviceResult): string[] {
+  const cap = frameCapOf(r);
+  if (!cap) return [];
+  const rates = r.scenes.flatMap((s) => (s.renderFps === null ? [] : [s.renderFps]));
+  const drew = rates.length
+    ? `the scenes drew ${fmt(Math.min(...rates), 0)} to ${fmt(Math.max(...rates), 0)} frames a second`
+    : 'this run did not record how many frames drew';
+  const refresh = typeof r.env.refresh_ms === 'number' ? ` (${r.env.refresh_ms} ms)` : '';
+  return [
+    `> **Frame limit ${cap}.** The page ran with the device's own frame limit of ${cap} a second; the suite does not change it, so this is what a player on this setting gets. The frame columns time the game loop's callbacks, which keep the display's rate${refresh} when the limit skips renders: ${drew}. Read smoothness from the drawn rate and hitches from p95 and max.`,
+    '',
+  ];
+}
+
 export function report(r: DeviceResult, ctx: Context = {}): string {
-  const out: string[] = [`# Device run ${r.code}${r.label ? ` (${r.label})` : ''}`, '', pasteLine(r), ''];
+  const out: string[] = [
+    `# Device run ${r.code}${r.label ? ` (${r.label})` : ''}`,
+    '',
+    pasteLine(r),
+    '',
+    ...launchLines(r).map((l) => `**${l}**`),
+    '',
+  ];
   if (r.selfMinted)
     out.push(
       '> **Self-minted.** This run id was not made by `npm run device -- new` on this Mac (a `?device=new` link, or one made elsewhere). The endpoint is public: these are the numbers the page sent, nothing checked them.',
@@ -267,13 +382,16 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
     '',
     ...kv(loadRows(r.load)),
     '',
+    ...launchBreakdown(r),
     `## Scenes (${r.scenes.length})`,
     '',
+    ...frameLimitLines(r),
     ...table(
       [
         'scene',
         'verdict',
         'frames',
+        'drawn/s',
         'p50 ms',
         'p95 ms',
         'p99 ms',
@@ -288,7 +406,7 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
         'res ratio / rung',
         'settle (compile stalls)',
       ],
-      r.scenes.map(sceneRowCells),
+      r.scenes.map((s) => sceneRowCells(s, longTasksOk(r))),
     ),
     '',
   );
@@ -315,9 +433,9 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
     '- The device kept its own adaptive resolution and detail, as a player gets it, not `?dpr=fixed`: the last column names the resolution ratio and detail rung at the end of each sample, and draw calls and triangles differ from the Mac bench only when the rung does.',
     '- A scene passes when it drew at least 30 frames a second of sample, the page stayed visible and p95 is under two refresh intervals of this device. The Mac bench budgets are not applied. Never ranks devices.',
     '- No thermal reading exists on the web; the heat check is a proxy. Battery is Chromium only.',
-    '- GPU ms is missing on Safari and iOS (no timestamp queries there today); frame intervals stand in. `unavailable` is never a number.',
+    gpuLimit(r),
     '- Timers are coarse (cross-origin isolation headers are not available to a page on the live site): CPU ms are in 0.1 ms steps, 1 ms on Safari. Frame percentiles are unaffected.',
-    '- Long tasks are Chromium only (`n/a` elsewhere); frames over 50 ms exist everywhere.',
+    longTaskLimit(r),
     '- The railway bot cannot run on a device; this suite plays no route and sends no input. No stills: numbers only.',
     '- One 5 s sample per scene on a phone that may be warm, charging or backgrounded varies widely.',
     '',

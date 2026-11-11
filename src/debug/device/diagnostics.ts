@@ -117,8 +117,12 @@ export function loadFields(): Fields {
   let n = 0;
   for (const m of tl.marks) {
     const key = `m_${m.name.replace(/[^a-z0-9]+/gi, '_')}`.slice(0, 24);
-    if (!(key in f) && n++ < 14) f[key] = m.t;
+    if (!(key in f) && n++ < 12) f[key] = m.t;
   }
+  // The headline figure, always sent: the interactive mark, else the last one (the marks above are capped).
+  const ready = tl.marks.find((m) => m.name === 'interactive') ?? tl.marks.at(-1);
+  if (ready) f.ready = ready.t;
+  f.cold_req = new URLSearchParams(location.search).get('cold') === '1';
   let big: PerformanceResourceTiming | null = null;
   for (const r of performance.getEntriesByType('resource') as PerformanceResourceTiming[])
     if (!big || (r.transferSize || r.encodedBodySize) > (big.transferSize || big.encodedBodySize)) big = r;

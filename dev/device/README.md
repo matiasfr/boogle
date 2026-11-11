@@ -9,6 +9,7 @@ npm run device -- list                                                          
 npm run device -- pull <run id or last six characters>                              # -> .look/device/<id>/
 npm run device -- pull --new                                                        # every run not yet pulled
 npm run device -- new --label "iphone 15" --wait                                    # link, then block until it finishes
+npm run device -- new --cold                                                        # clears the service worker and caches first (or use a private tab)
 npm run device -- baseline <code>                                                   # a pulled run becomes the baseline
 npm run device -- waiting                                                           # one line for npm run heartbeat
 ```
@@ -20,6 +21,18 @@ Files: `src/debug/device/` is the lazy chunk on the device (`index.ts` runs, `sc
 `stats.ts`, `id.ts`, `wire.ts` are pure), `src/boot/device-entry.ts` prepares the address, `src/features/device-test.ts`
 loads the chunk only under `?device=`. Here: `read.ts` (session lines to `DeviceResult`), `report.ts` (to markdown),
 `cli.ts`.
+
+## Cold launch
+
+A launch is cold only when no service worker controlled the first page and its HTML was fetched (`dev.first`:
+`sw0` false, `html_cached` false). `navigator.serviceWorker.controller` read after the load says nothing: the
+worker installs during the first visit and claims the page. The report leads with `Cold launch: N s (first visit, no
+service worker)` and `Warm launch: N s`, says `unknown` when the first navigation was already cache- or
+worker-served, and breaks the launch down by boot mark with the step from the one before, bytes, the largest files
+and the shader warm-up. For a true first visit: open the link in a private tab, or use `new --cold` /
+`?device=new&cold=1`, which unregisters the service worker and clears Cache Storage for the origin, reloads once and
+measures that load; the card says what it cleared. A page cannot clear the browser's HTTP cache, so a private tab is
+the cleaner cold. (A run from before this record has only the load at Run time and says it cannot tell.)
 
 ## Baseline, waiting and pulling
 
@@ -51,8 +64,11 @@ most 24 characters.
 | `dev.diag.gpu` | `backend`, `webgpu`, `adapter`, `vendor`, `arch`, `gpu`, `desc`, `format`, `timestamps`, `features`, `transient` |
 | `dev.diag.alim`, `dev.diag.dlim` | the adapter's and the device's limits, by the short names in `src/debug/device/limits.ts` |
 | `dev.diag.env` | `dpr`, `sw`, `sh`, `vw`, `vh`, `cw`, `ch`, `mem`, `cores`, `touch`, `coarse`, `refresh_ms`, `net`, `battery`, `charging`, `rung`, `gfx`, `standalone` |
-| `dev.load` | `req`, `net_kb`, `body_kb`, `sw_req`, `warm`, `nav`, `m_<boot mark>` (ms), `big`, `big_kb` |
-| `dev.scene` | `name`, `idx`, `n`, `secs`, `p50`, `p95`, `p99`, `max`, `over33`, `over50`, `lt_n`, `lt_ms` (-1: unsupported), `cpu`, `cpu95`, `gpu`, `gpu_status`, `calls`, `tris`, `progs`, `geoms`, `texs`, `ratio`, `rung`, `settle_ms`, `stall_n`, `stall_max`, `progs_new`, `heap_mb`, `heap_d`, `hidden`, `verdict` (`pass`, `fail`, `not-measured`), `why` |
+| `dev.load` | `req`, `net_kb`, `body_kb`, `sw_req`, `warm`, `nav`, `ready` (ms to the interactive mark: the headline "Ready in N s (warm or cold load)"), `cold_req` (the link had `cold=1`), `m_<boot mark>` (ms), `big`, `big_kb` |
+| `dev.first` | the load of the run's FIRST navigation, taken when the game became usable and kept in sessionStorage so a later navigation cannot replace it: `sw0` (a service worker controlled that page at its start), `html_cached` (its HTML came from a cache), `nav`, `ttfb`, `conn` (dns + connect), `html`, `ready` (interactive, ms), `usable`, `req`, `net_kb`, `body_kb`, `sw_req`, `sw_now`, `later` (the first navigation never finished), `cold_req`, `cold_did`, `shaders_ms`, `programs`, `pipelines`, `wgsl_ms` |
+| `dev.boot` | that navigation's boot marks, every one (`m_<name>`, ms since it began), in events of 20 |
+| `dev.first.files` | `f1`..`f6`: its largest files, "path (KB, ms)" |
+| `dev.scene` | `name`, `idx`, `n`, `secs`, `p50`, `p95`, `p99`, `max`, `over33`, `over50`, `lt_n`, `lt_ms` (-1: unsupported), `rfps` (frames that drew a second), `fcap` (the frame limit: 30, 60, 0 for the display), `cpu`, `cpu95`, `gpu`, `gpu_status`, `calls`, `tris`, `progs`, `geoms`, `texs`, `ratio`, `rung`, `settle_ms`, `stall_n`, `stall_max`, `progs_new`, `heap_mb`, `heap_d`, `hidden`, `verdict` (`pass`, `fail`, `not-measured`), `why` |
 | `dev.done` | `scenes`, `pass`, `fail`, `not_measured`, `drift_pct`, `ms` |
 
 Reading is tolerant: a repeated batch is dropped, a repeated scene keeps the last, a run with no `dev.done` is

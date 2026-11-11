@@ -7,6 +7,7 @@
 //       the device runs on the server, newest first: code, label, device, build, state, pulled or not
 //   npm run device -- pull <run id or its last six characters>      one run -> .look/device/<id>/
 //   npm run device -- pull --new                                     every run not yet pulled
+//   npm run device -- new ... --cold      the page clears its service worker and caches, reloads once, then measures (a private tab is cleaner)
 //   npm run device -- new ... --wait      also blocks until that run finishes (up to 30 minutes), then pulls and prints it
 //   npm run device -- baseline <code>     marks a pulled run as the Mac's baseline for its suite (~/.boogle/device/baseline/)
 //   npm run device -- waiting             one line for npm run heartbeat: device runs on the server not yet pulled
@@ -72,11 +73,13 @@ function makeLink(): string {
   const label = cleanLabel(option('--label'));
   const query = (option('--query') ?? '').replace(/^[?&]/, '');
   const site = (option('--site') ?? SITE).replace(/\/$/, '');
+  const cold = flag('--cold');
   const id = makeRunId();
   const link = new URL(`${site}/`);
   link.searchParams.set('device', id);
   link.searchParams.set('suite', suite);
   if (label) link.searchParams.set('label', label);
+  if (cold) link.searchParams.set('cold', '1');
   const url = link.toString() + (query ? `&${query}` : '');
   fs.mkdirSync(dirOf(id), { recursive: true });
   fs.writeFileSync(
@@ -84,6 +87,10 @@ function makeLink(): string {
     JSON.stringify({ id, suite, label, query, made: new Date().toISOString() }, null, 2) + '\n',
   );
   console.log(url);
+  if (cold)
+    console.log(
+      "Cold run asked for: the page clears its service worker and caches and reloads once. The browser's HTTP cache stays, so for a true first visit open the link in a private tab instead; the report says Cold launch only if no worker or cache served the first page.",
+    );
   console.log(`run ${shortCode(id)}: open it on the device, tap Run; then: npm run device -- pull ${shortCode(id)}`);
   return id;
 }
@@ -242,7 +249,7 @@ try {
     else await pull(server);
   } else {
     console.error(
-      'npm run device -- new [--suite quick] [--label x] [--query a=b] [--wait] | list | pull <id|code> | pull --new | baseline <id|code> | waiting',
+      'npm run device -- new [--suite quick] [--label x] [--query a=b] [--wait] [--cold] | list | pull <id|code> | pull --new | baseline <id|code> | waiting',
     );
     process.exit(cmd ? 1 : 0);
   }

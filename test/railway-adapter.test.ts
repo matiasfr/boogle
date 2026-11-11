@@ -858,7 +858,11 @@ test('a back set down as two drops 100 ms apart: both predicted, both accepted b
   assert.ok(held >= 2);
   const first = Math.floor(held / 2);
   assert.equal(a.adapter.drop(T1.x, 3000, T1.z, first), true);
-  assert.equal(a.adapter.drop(T1.x + 100, 3000, T1.z, held - first), false, 'a second drop inside unloadMs is "not yet"');
+  assert.equal(
+    a.adapter.drop(T1.x + 100, 3000, T1.z, held - first),
+    false,
+    'a second drop inside unloadMs is "not yet"',
+  );
   w.run(6); // back-down.ts sends the next one 100 ms later (frames of 17 ms)
   assert.equal(a.adapter.drop(T1.x + 100, 3000, T1.z, held - first), true, 'the second sees the first already spent');
   assert.equal(a.adapter.inspect().carry, 0, 'predicted straight away');

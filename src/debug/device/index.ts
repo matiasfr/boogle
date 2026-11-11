@@ -8,9 +8,11 @@ import { BUILD } from '../../build-id.ts';
 import { deviceFields, envDiagnostics, gpuDiagnostics, loadFields } from './diagnostics.ts';
 import { refreshInterval } from './frames.ts';
 import { parseDeviceLink, shortCode } from './id.ts';
+import { captureFirstLoad, coldNote } from './first-load.ts';
+import { launchHeadlines, markEvents } from './launch.ts';
 import { createPanel } from './panel.ts';
 import { measureScene, readHome } from './scene.ts';
-import { heatDrift } from './stats.ts';
+import { heatDrift, readyLine } from './stats.ts';
 import { SUITES } from './suites.ts';
 import { createUploader } from './upload.ts';
 import { sceneEvents, sessionEvent, type Fields } from './wire.ts';
@@ -37,10 +39,18 @@ export function startDeviceTest() {
   if (link.kind === 'new') return; // the entry rewrites this before boot; never run with a made-up id
   const panel = createPanel(
     link.kind === 'run'
-      ? { suite: link.suite, build: BUILD, label: link.label, code: shortCode(link.id), self: link.self }
-      : { suite: '', build: BUILD, label: '', code: '', self: false },
+      ? {
+          suite: link.suite,
+          build: BUILD,
+          label: link.label,
+          code: shortCode(link.id),
+          self: link.self,
+          note: coldNote(link.id),
+        }
+      : { suite: '', build: BUILD, label: '', code: '', self: false, note: '' },
   );
   if (link.kind === 'damaged') return panel.damaged();
+  const runId = link.id;
 
   const suite = SUITES[link.suite];
   const code = shortCode(link.id);
@@ -60,17 +70,31 @@ export function startDeviceTest() {
   panel.ready(() => {
     run().catch((e: unknown) => panel.note(`Failed: ${e instanceof Error ? e.message : String(e)}`));
   });
-  void bootInteractive.then(() => panel.enable());
+  const coldAsked = new URLSearchParams(location.search).get('cold') === '1';
+  // The first navigation's load, taken the moment the page is usable (and refreshed at Run, when more marks exist).
+  void bootInteractive.then(() => {
+    panel.enable();
+    captureFirstLoad(runId, performance.now(), coldAsked);
+  });
 
   async function run() {
     const refresh = (await refreshInterval()) ?? FALLBACK_REFRESH_MS;
     await enterGame();
     const t0 = performance.now();
+    const load = loadFields();
+    const launch = captureFirstLoad(runId, null, coldAsked);
     uploader.send([
       session('started'),
       ...(await gpuDiagnostics()).map((d) => ev(d.k, d.f)),
       ev('dev.diag.env', await envDiagnostics(refresh)),
-      ev('dev.load', loadFields()),
+      ev('dev.load', load),
+      ...(launch
+        ? [
+            ev('dev.first', launch.fields),
+            ...markEvents(clock(), launch.marks),
+            ev('dev.first.files', Object.fromEntries(launch.files.map((f, i) => [`f${i + 1}`, f]))),
+          ]
+        : []),
     ]);
     const home = await readHome();
     const rows: Fields[] = [];
@@ -110,6 +134,9 @@ export function startDeviceTest() {
           pass,
           total: rows.length,
           code,
+          ready: launch
+            ? launchHeadlines(launch.fields).join('\n')
+            : readyLine(typeof load.ready === 'number' ? load.ready : null, null, coldAsked),
           upload: uploader.state(),
           uploadNote,
         },
