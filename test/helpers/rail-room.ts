@@ -1,7 +1,10 @@
 // A railway server room and its clients behind one-way delays in steps (6 steps ~ 100 ms), for the tests that read a
-// client's world next to the server's. One copy: the m10d/e/f reviews and the read-session test each carried their own.
+// client's world next to the server's: the server's rules and replicator, one client adapter per player, stepped by
+// hand. The one home of the harness the M10 view and review tests and the read-session test each carried a copy of.
 // State is read as rows: `serverWorld()` is the server's world now, `client.adapter.read.world()` the client's (take it
-// again at every read: a published world is never written, so a held one is the past).
+// again at every read: a published world is never written, so a held one is the past). With `{ served: true }` the room
+// also records the server's replicated rows at the end of each room step: `served(step)` is them as they stood then,
+// which is the step a client's mirror reports (`mirror.step()`) when it is current to it.
 import { createRailwayAdapter, railMovement, type RailwayAdapter } from '../../src/adapters/railway.ts';
 import { specOf, type TuneKey } from '../../src/sim/tune.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
@@ -9,10 +12,11 @@ import { createSync, type WorldRoom } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
 import { install as installRailway } from '../../src/world/railway-server.ts';
 import { createReplicator } from '../../src/world/replicate-server.ts';
-import { createRailwayMirror, type RailwayMirror } from '../../src/world/railway-replicate.ts';
+import { RAIL_SCHEMAS, createRailwayMirror, type RailwayMirror } from '../../src/world/railway-replicate.ts';
 import { createRailwayRequests } from '../../server/src/host/railway-requests.ts';
 import { RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import type { ReadWorld } from '../../src/sim/railway-rows.ts';
+import type { World } from '../../src/ecs/index.ts';
 import { homeLand } from './land.ts';
 import type { Seed } from './rail.ts';
 
@@ -31,7 +35,23 @@ export type RoomClient = {
   reconnect(): void;
 };
 
-export function railRoom(seed?: Seed) {
+/** Every replicated row of a world, as one string: two worlds with the same rows give the same string. */
+export function replicatedRows(w: World) {
+  return JSON.stringify(
+    RAIL_SCHEMAS.map((c) => [
+      c.kind,
+      [...w.ids(c)].sort((a, b) => Number(a) - Number(b)).map((id) => [id, w.get(c, id)]),
+    ]),
+  );
+}
+
+export type RailRoomOptions = {
+  /** Record the server's replicated rows at the end of every room step, for `served(step)`. Off by default: it
+   * serialises every replicated row each step. */
+  served?: boolean;
+};
+
+export function railRoom(seed?: Seed, options: RailRoomOptions = {}) {
   const sync = createSync();
   sync.setSelfId('server');
   const replication = createReplicator();
@@ -48,6 +68,7 @@ export function railRoom(seed?: Seed) {
   const clients = new Map<string, RoomClient>();
   const hidden = new Set<string>();
   const handlersOf = new Map<string, Set<(m: unknown, from: string) => void>>();
+  const history = new Map<number, string>();
   const requests = createRailwayRequests({
     api,
     pidOf: (sid) => clients.get(sid)?.pid ?? null,
@@ -120,6 +141,7 @@ export function railRoom(seed?: Seed) {
         if (clients.get(x.cid)?.live) requests.receive(x.m, x.cid);
       }
       sync.stepWorld(1000 / 60 + 1);
+      if (options.served) history.set(sync.roomStep(), replicatedRows(api.world()));
       clock.now += 17;
       replication.commit(sync.roomStep());
       replication.flush(
@@ -158,5 +180,10 @@ export function railRoom(seed?: Seed) {
     },
     /** The server's world now: the oracle for a client's rows. Take it again at every read. */
     serverWorld: () => api.world() as unknown as ReadWorld,
+    /** The server's replicated rows at the end of room step `at` (see `replicatedRows`); only with `{ served: true }`. */
+    served(at: number) {
+      if (!options.served) throw new Error('served() needs railRoom(seed, { served: true })');
+      return history.get(at);
+    },
   };
 }

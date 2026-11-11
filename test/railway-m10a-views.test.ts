@@ -6,12 +6,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { buildSeedWorld } from './helpers/rail.ts';
-import { railViewsRoom, replicatedRows } from './helpers/rail-views-room.ts';
+import { railRoom, replicatedRows } from './helpers/rail-room.ts';
 import { account, trains } from '../src/sim/railway-rows.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 
 test("a late joiner's rows are the server's, every frame from the whole state on, and its own account arrives after it", () => {
-  const r = railViewsRoom(buildSeedWorld('q6-done'));
+  const r = railRoom(buildSeedWorld('q6-done'), { served: true });
   r.join('a', 'a', 4);
   r.ready();
   r.run(10);
@@ -22,17 +22,19 @@ test("a late joiner's rows are the server's, every frame from the whole state on
   let compared = 0,
     noAccount = 0;
   for (let k = 0; k < 80; k++)
-    r.run(1, (c) => {
-      if (c !== late || !c.mirror.synced()) return;
-      const w = c.adapter.read.world();
-      if (!account(w, 'c')) noAccount++;
-      // Nothing pending, so the world the views read is the confirmed one: the server's rows at the step it is current to.
-      assert.equal(
-        replicatedRows(w),
-        r.served(c.mirror.step()),
-        `frame ${k}: the server's rows at step ${c.mirror.step()}`,
-      );
-      compared++;
+    r.run(1, {
+      each: (c) => {
+        if (c !== late || !c.mirror.synced()) return;
+        const w = c.adapter.read.world();
+        if (!account(w, 'c')) noAccount++;
+        // Nothing pending, so the world the views read is the confirmed one: the server's rows at the step it is current to.
+        assert.equal(
+          replicatedRows(w),
+          r.served(c.mirror.step()),
+          `frame ${k}: the server's rows at step ${c.mirror.step()}`,
+        );
+        compared++;
+      },
     });
   assert.ok(compared > 20, 'the late joiner was compared from its whole state on');
   assert.ok(noAccount > 0, 'a synced world with no account for this pid was read (its session had not arrived)');

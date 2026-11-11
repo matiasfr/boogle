@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeedWorld } from './helpers/rail.ts';
-import { railViewsRoom } from './helpers/rail-views-room.ts';
+import { railRoom } from './helpers/rail-room.ts';
 import { rail, type ReadWorld } from '../src/sim/railway-rows.ts';
 import { apertureId, railId, trainId } from '../src/sim/railway-queries.ts';
 import { line2Trains } from '../src/sim/railway-queries-line2.ts';
@@ -119,7 +119,7 @@ test('the open end moving: line 2 from Q6 to the ring joined, bent by bent', () 
 // hides them only until the first whole state is in (first-ready.ts, the latch step() calls each frame), and draws
 // them from read.world() after that.
 test('a full pending window keeps every train shown (train-view.ts step: hidden = !trainsShown())', () => {
-  const r = railViewsRoom(buildSeedWorld('trains-on'));
+  const r = railRoom(buildSeedWorld('trains-on'));
   const a = r.join('a', 'a', 30);
   const shown = createFirstReady(a.adapter.read.ready);
   assert.equal(shown(), false, 'hidden before the whole state is in');

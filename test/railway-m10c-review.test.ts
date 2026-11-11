@@ -1,11 +1,11 @@
 // Review of M10 c (branch ecs/m10c-line2): line 2's views read rows and queries through the read facade. What stays of
-// the review, with the server's rows as the oracle (`host.world()`) now that `inspect()` is not one: a stale boiler
+// the review, with the server's rows as the oracle (`serverWorld()`) now that `inspect()` is not one: a stale boiler
 // press is refused, forgeTake's bundle aim follows the back's rails, line 2's active stretch moves for a client on
 // the frame the server's row moves it (plus its lag), and waitsForTrainOn.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeedWorld } from './helpers/rail.ts';
-import { railViewsRoom } from './helpers/rail-views-room.ts';
+import { railRoom } from './helpers/rail-room.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { account, boiler, rail, type ReadWorld } from '../src/sim/railway-rows.ts';
 import { qjob as qjobId } from '../src/sim/railway-queries.ts';
@@ -18,7 +18,7 @@ import type { World } from '../src/ecs/index.ts';
 // boiler-view.ts targets(): `const { revision, holder } = b` when the prompt is built (the row is live). A stale
 // press is refused by the server's revision check: the prompt's revision is sent, and the boiler stays where it is.
 test("boiler-view's press closure sends the revision seen when its prompt was built, and a stale one changes nothing", () => {
-  const r = railViewsRoom(buildSeedWorld('boiler'));
+  const r = railRoom(buildSeedWorld('boiler'));
   const a = r.join('a', 'a', 2);
   const b = r.join('b', 'b', 2);
   r.ready();
@@ -26,14 +26,14 @@ test("boiler-view's press closure sends the revision seen when its prompt was bu
   const promptRevision = boiler(a.adapter.read.world()).revision;
   assert.ok(b.adapter.takeBoiler(boiler(b.adapter.read.world()).revision), 'b takes the boiler');
   r.run(30);
-  const served = { ...boiler(r.host.world() as ReadWorld) };
+  const served = { ...boiler(r.serverWorld()) };
   assert.equal(served.holder, 'b', 'the server has b holding it');
   assert.notEqual(served.revision, promptRevision, 'the boiler moved on while the prompt stood');
   assert.equal(boiler(a.adapter.read.world()).revision, served.revision, "a's rows follow the server's");
   // a presses the stale prompt: it sends `promptRevision`, and the server does not accept it.
   a.adapter.takeBoiler(promptRevision);
   r.run(30);
-  assert.deepEqual({ ...boiler(r.host.world() as ReadWorld) }, served, 'the stale press changed nothing');
+  assert.deepEqual({ ...boiler(r.serverWorld()) }, served, 'the stale press changed nothing');
   assert.equal(boiler(a.adapter.read.world()).holder, 'b');
 });
 
@@ -52,7 +52,7 @@ test("line2-view's forgeTake flight aims at the back's rails as they change duri
     'q5-carry',
     'works-lit',
   ] as const) {
-    const r = railViewsRoom(buildSeedWorld(stage));
+    const r = railRoom(buildSeedWorld(stage));
     const a = r.join('a', 'a', 4);
     r.ready();
     r.run(5);
@@ -72,7 +72,7 @@ test("line2-view's forgeTake flight aims at the back's rails as they change duri
     assert.ok(flights > 0, `${stage}: a forge take was accepted`);
     assert.equal(
       aim(),
-      account(r.host.world() as ReadWorld, a.pid)?.rails ?? 0,
+      account(r.serverWorld(), a.pid)?.rails ?? 0,
       `${stage}: the aim is the server's count`,
     );
     return;
@@ -100,7 +100,7 @@ function follows(server: number[], seen: number[], lag: number, label: string) {
 // Q5 laid by the server's rule (q5-finishing is 450 ticks short): the active stretch moves from 4 by a packet, on two
 // lags, while the passive clients press nothing.
 test("the active stretch as Q5 is laid by the rule: a client shows it the frame the server's row moves, plus its lag", () => {
-  const r = railViewsRoom(buildSeedWorld('q5-finishing'));
+  const r = railRoom(buildSeedWorld('q5-finishing'));
   const a = r.join('a', 'a', 3);
   const b = r.join('b', 'b', 0);
   r.ready();
@@ -110,11 +110,11 @@ test("the active stretch as Q5 is laid by the rule: a client shows it the frame 
       [b, [] as number[]],
     ]);
   const frame = (c: typeof a) => {
-    if (c === a) server.push(line2Active(r.host.world() as ReadWorld));
+    if (c === a) server.push(line2Active(r.serverWorld()));
     seen.get(c)!.push(line2Active(c.adapter.read.world()));
   };
-  for (let k = 0; k < 3300 && !(server.length && server[server.length - 1] !== 4); k++) r.run(1, frame);
-  r.run(60, frame);
+  for (let k = 0; k < 3300 && !(server.length && server[server.length - 1] !== 4); k++) r.run(1, { each: frame });
+  r.run(60, { each: frame });
   follows(server, seen.get(a)!, 3, 'a');
   follows(server, seen.get(b)!, 0, 'b');
 });
@@ -124,7 +124,7 @@ test("the active stretch as Q5 is laid by the rule: a client shows it the frame 
 // crossing) on a's confirmed mirror, written in place.
 for (const delay of [0, 1, 2, 3, 4, 5])
   test(`Q7 goes active the frame the server's row does when b completes the crossing by a press (a on lag ${delay})`, () => {
-    const r = railViewsRoom(buildSeedWorld('crossing-finishing'));
+    const r = railRoom(buildSeedWorld('crossing-finishing'));
     const a = r.join('a', 'a', delay);
     const b = r.join('b', 'b', 1);
     r.ready();
@@ -133,18 +133,18 @@ for (const delay of [0, 1, 2, 3, 4, 5])
       seen: number[] = [];
     const frame = (c: typeof a) => {
       if (c !== a) return;
-      server.push(line2Active(r.host.world() as ReadWorld));
+      server.push(line2Active(r.serverWorld()));
       seen.push(line2Active(a.adapter.read.world()));
     };
     // Step b's two carries apart so their packets land at different phases of a's tick.
     for (let set = 0; set < 2; set++) {
       assert.ok(b.adapter.shoulderFooting(1), `b shoulders footing ${set + 1}`);
-      r.run(4 + set, frame);
+      r.run(4 + set, { each: frame });
       assert.ok(b.adapter.setFooting(2), `b sets footing ${set + 1}`);
-      r.run(9, frame);
+      r.run(9, { each: frame });
     }
-    r.run(60, frame);
-    assert.equal(line2Active(r.host.world() as ReadWorld), 6, 'Q7 is the active stretch once the crossing is complete');
+    r.run(60, { each: frame });
+    assert.equal(line2Active(r.serverWorld()), 6, 'Q7 is the active stretch once the crossing is complete');
     assert.equal(line2Active(a.adapter.read.world()), 6, 'and a shows it');
     follows(server, seen, delay, `crossing lag ${delay}`);
   });
