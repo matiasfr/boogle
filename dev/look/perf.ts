@@ -167,6 +167,15 @@ try {
       row.hardwareTiming = await g.eval(`
         const { hardwareTiming } = await import('/src/debug/prof-overlay.ts');
         return await hardwareTiming(${seconds});`);
+      // Times from a software or fallback adapter (SwiftShader, WARP, llvmpipe) are not this device's GPU: refuse them.
+      const adapter = (row.hardwareTiming?.start?.adapter ?? row.measurement?.adapter) as Record<
+        string,
+        unknown
+      > | null;
+      const named = adapter ? `${adapter.vendor} ${adapter.architecture} ${adapter.description}` : '';
+      if (adapter?.isFallbackAdapter || /swiftshader|llvmpipe|basic render|warp/i.test(named))
+        throw new Error(`hardware timing refused: software/fallback adapter ${JSON.stringify(adapter)}`);
+      if (!adapter) console.log('hardware timing: adapter unknown (no adapterInfo); check it is the real GPU');
       console.log('hardware timing (visible browser; verify adapter and exclusive GPU use)');
       console.log(JSON.stringify(row.hardwareTiming, null, 2));
     }

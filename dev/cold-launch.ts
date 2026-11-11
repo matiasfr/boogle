@@ -35,7 +35,7 @@ import { createService, loadConfig } from '../server/src/server.ts';
 import { installStartupRecorder } from '../src/debug/startup-record.ts';
 import { acquireBotSlot } from './look/bot-queue.ts';
 import { prepareIdentity, clearExclusiveMetal } from './cold-start/identity.ts';
-import { freePort, root } from './look/lib.ts';
+import { browserChannel, freePort, gpuAngle, root } from './look/lib.ts';
 
 const argv = process.argv.slice(2);
 const opt = (name: string, def: string) => {
@@ -224,8 +224,8 @@ async function run(profileName: string, n: number, mode: Mode) {
   if (metal) clearExclusiveMetal(metal.cacheRoot, metal.id);
   const browser = await chromium.launch({
     headless: true,
-    ...(metal ? { executablePath: metal.executable } : {}),
-    args: ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--use-angle=metal', '--ignore-certificate-errors'],
+    ...(metal ? { executablePath: metal.executable } : browserChannel()),
+    args: ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', gpuAngle(), '--ignore-certificate-errors'],
   });
   const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();

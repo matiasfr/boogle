@@ -134,6 +134,15 @@ export async function startStack({
   };
 }
 
+// The real-GPU ANGLE backend for this OS: Metal on a Mac, D3D11 on Windows (where --use-angle=metal leaves WebGPU with
+// no adapter at all). Linux and the Mac keep exactly the flag they had.
+export const gpuAngle = () => (process.platform === 'win32' ? '--use-angle=d3d11' : '--use-angle=metal');
+
+// LOOK_CHANNEL=msedge runs the installed Microsoft Edge instead of Playwright's own Chromium. Off by default. For a
+// Windows machine whose Smart App Control blocks Playwright's unsigned chrome.exe (headed launches fail with "spawn
+// UNKNOWN"); Edge is signed. Any Playwright channel name works (chrome, msedge, ...).
+export const browserChannel = () => (process.env.LOOK_CHANNEL ? { channel: process.env.LOOK_CHANNEL } : {});
+
 // The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
 // on a Mac it runs on the real GPU (Metal), about 60 fps.
 // LOOK_SOFTWARE_GL=1 forces the CI path (SwiftShader) on a Mac too, to reproduce a GPU-less runner's speed locally.
@@ -146,7 +155,7 @@ export const launch = async ({
   // precise-memory-info: performance.memory in exact bytes, for the allocation counts in hitches.
   const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--enable-precise-memory-info'];
   const software = !!process.env.LOOK_SOFTWARE_GL && !hardware;
-  if (process.platform === 'darwin' && !software) args.push('--use-angle=metal');
+  if ((process.platform === 'darwin' || process.platform === 'win32') && !software) args.push(gpuAngle());
   // The ANGLE SwiftShader flags stay: without them CI's WebGPU throws "Instance dropped in popErrorScope" page errors.
   else if (!hardware)
     args.push(
@@ -156,7 +165,7 @@ export const launch = async ({
   // Hardware timing is explicitly headed and never forces SwiftShader. The normal harness stays unchanged.
   const lease = sharedLease ? { release() {} } : await acquireBotSlot();
   try {
-    const browser: Browser = await chromium.launch({ args, headless: !hardware });
+    const browser: Browser = await chromium.launch({ args, headless: !hardware, ...browserChannel() });
     browser.once('disconnected', lease.release);
     return browser;
   } catch (error) {
@@ -291,6 +300,9 @@ export class Game {
       ...(opts.scale ? { deviceScaleFactor: opts.scale } : {}),
     });
     if (opts.clock) await g.ctx.clock.install();
+    // Edge (LOOK_CHANNEL=msedge) asks for /favicon.ico, which the game does not serve; Playwright's own Chromium never
+    // does. Answer it empty so that 404 is not a console error. Only with a channel: the default path is unchanged.
+    if (process.env.LOOK_CHANNEL) await g.ctx.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
     g.tracing = !!opts.trace;
     if (g.tracing) await g.ctx.tracing.start({ title: g.name });
     // src/constants.ts reads isTouch once at load, so this must run before the page's code.

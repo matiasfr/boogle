@@ -1,6 +1,7 @@
 // `npm run sim -- <name> [args]`: runs dev/sim/<name>.ts headless, with no browser or GPU. See ./README.md.
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const here = import.meta.dirname;
 const NOT_RUNS = new Set(['hooks', 'run', 'world', 'inspect']);
@@ -19,4 +20,4 @@ if (!name || !runs.includes(name)) {
   );
   process.exit(2);
 }
-await import(path.join(here, `${name}.ts`));
+await import(pathToFileURL(path.join(here, `${name}.ts`)).href);

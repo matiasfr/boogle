@@ -4,7 +4,7 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { build } from 'esbuild';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import fs from 'node:fs';
 import os from 'node:os';
 
@@ -14,7 +14,7 @@ g.window = globalThis;
 g.location = { search };
 g.addEventListener = () => {};
 g.removeEventListener = () => {};
-const here = path.dirname(new URL(import.meta.url).pathname);
+const here = path.dirname(fileURLToPath(import.meta.url));
 const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-np-')), 'page.mjs');
 await build({
   entryPoints: [path.join(here, 'ws-page.ts')],

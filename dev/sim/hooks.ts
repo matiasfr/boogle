@@ -31,6 +31,7 @@ function expandGlobs(source: string, file: string) {
   const out = source.replace(GLOB, (_all, pattern: string, options = '') => {
     const keys = fs
       .globSync(pattern, { cwd: path.dirname(file) })
+      .map((key) => key.split(path.sep).join('/')) // globSync gives \ on Windows; Vite keys and specifiers use /
       .map((key) => (key.startsWith('.') ? key : `./${key}`))
       .sort();
     const eager = /eager:\s*true/.test(options);

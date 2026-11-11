@@ -6,12 +6,13 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { simulate } from './ring-sim.ts';
 import { playMap, type PlayMap } from './play-map.ts';
 import { runWhole, type RunSummary } from './play-sim.ts';
 import { BRANCHES } from './ring-data.ts';
 
-const ROOT = new URL('../../', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 export const PAGE = join(ROOT, 'docs/world/economy-prototype.html');
 /** Everything the bundle and the data come from: a change to any of them makes the page stale. */
 export const SOURCES = [
@@ -94,7 +95,7 @@ export function pageData(page = readFileSync(PAGE, 'utf8')) {
   return JSON.parse(m[1]!) as { sourceHash: string; reference: { runs: RunSummary[] } };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const page = readFileSync(PAGE, 'utf8');
   const next = await buildPage(page);
   if (process.argv.includes('--check')) {

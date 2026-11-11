@@ -82,7 +82,11 @@ test('nothing the code gates read is classed as docs', () => {
       /['"`]((?:\.{1,2}\/)*(?:docs\/|\.claude\/)[^'"`\s]*|[^'"`\s:]+\.md(?:\?\w+)?)['"`]/g,
     )) {
       let ref = m[1]!.replace(/\$\{[^}]*\}/g, 'x').replace(/\?\w+$/, '');
-      if (ref.startsWith('.')) ref = path.relative(ROOT, path.resolve(ROOT, path.dirname(file), ref));
+      if (ref.startsWith('.'))
+        ref = path
+          .relative(ROOT, path.resolve(ROOT, path.dirname(file), ref))
+          .split(path.sep)
+          .join('/');
       const covered = COVERED[file];
       if (isDocs(ref) && !(covered && ref.startsWith(covered))) bad.push(`${file}: ${m[1]}`);
     }

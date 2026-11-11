@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
+import { sep } from 'node:path';
 import {
   PAD,
   registerAction,
@@ -107,6 +108,10 @@ test('controls: a wrap waits for its action, and a missing id warns', async () =
   assert.equal(quiet(() => assert.equal(actionById('clash-test'), null)).length, 1);
 });
 
+// src/ files relative to src, with / separators on every OS so prefixes like 'proto/' match.
+const srcFiles = (src: URL) =>
+  readdirSync(src, { recursive: true, encoding: 'utf8' }).map((f) => f.split(sep).join('/'));
+
 // Production and prototypes bind on separate pages, matching registry's pads/protoPads split.
 // Every registerAction('id', { pad: 'slot' ... }) claims a real slot no other call in its group claims.
 // Slots picked at runtime (update-reload takes freeSlots()[0]) are skipped by design.
@@ -116,7 +121,7 @@ test('controls: no two actions in src/ claim the same pad slot', () => {
     prototypes = new Map(); // slot -> 'file:id', per page group
   let productionClaims = 0;
   let n = 0;
-  for (const f of readdirSync(src, { recursive: true, encoding: 'utf8' })) {
+  for (const f of srcFiles(src)) {
     if (!/\.[jt]s$/.test(f)) continue;
     const text = readFileSync(new URL(f, src), 'utf8');
     // pad: may sit anywhere in the options object, also after a nested { } such as a touch button spec
@@ -194,7 +199,7 @@ test('controls: no two bindings in src/ claim the same key', () => {
     prototypes = new Map(); // code -> 'file:id', per page group
   let productionClaims = 0;
   let n = 0;
-  for (const f of readdirSync(src, { recursive: true, encoding: 'utf8' })) {
+  for (const f of srcFiles(src)) {
     if (!/\.[jt]s$/.test(f) || f === 'player/controls.ts') continue;
     const text = readFileSync(new URL(f, src), 'utf8');
     const found = [

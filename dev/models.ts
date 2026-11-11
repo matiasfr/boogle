@@ -52,7 +52,7 @@ export const routes: Route[] = [
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     withCodex: {
-      who: 'a fresh reviewer with none of the author\'s context: a Codex review job or a Claude general-purpose subagent',
+      who: "a fresh reviewer with none of the author's context: a Codex review job or a Claude general-purpose subagent",
       model: 'gpt-6-astra, or fable or opus',
       effort: 'xhigh for astra, medium for fable or opus',
     },
@@ -137,7 +137,7 @@ export function table(mode: Mode): string {
   return ['| Work | Who: model effort |', '| --- | --- |', ...rows].join('\n');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fs.realpathSync(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fs.realpathSync(new URL(import.meta.url))) {
   const mode = activeMode();
   const note =
     mode === 'normal' ? ` (Claude only${codexFrom ? `; withCodex from ${codexFrom}: ${codexWhy}` : ''})` : '';

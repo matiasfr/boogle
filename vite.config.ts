@@ -160,7 +160,9 @@ export default defineConfig({
           // chunk rather than depending on how Rolldown groups the dynamic import edges this release.
           const contains = (c: Rolldown.OutputChunk, re: RegExp) =>
             Object.keys(c.modules).some((id) => re.test(id.replaceAll('\\', '/')));
-          const page = chunks.filter((c) => c.isEntry && c.facadeModuleId === resolve('index.html'));
+          // Module ids use / on Windows too; resolve() gives \ there, so compare both with /.
+          const indexHtml = resolve('index.html').replaceAll('\\', '/');
+          const page = chunks.filter((c) => c.isEntry && c.facadeModuleId?.replaceAll('\\', '/') === indexHtml);
           const game = chunks.filter((c) => contains(c, GAME_MODULE));
           const simd = chunks.filter((c) => contains(c, SIMD_MODULE));
           const first = new Set<string>();

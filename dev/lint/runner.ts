@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { nativeConfig } from './config.ts';
 import { ignored, ignorePatterns, lintSafety } from './safety.ts';
 import type { Diagnostic } from './safety.ts';
@@ -10,7 +10,34 @@ import type { Diagnostic } from './safety.ts';
 export type Budgets = Record<string, Record<string, { count: number }>>;
 export type Options = { typeAware?: boolean; relaxed?: boolean; prune?: boolean; fix?: boolean };
 const entityRule = 'boogle/use-an-entity';
-const binary = fileURLToPath(new URL('../../node_modules/.bin/oxlint', import.meta.url));
+// Run Oxlint's own bin script with this Node rather than the node_modules/.bin shim, which is a
+// shell script on macOS and Linux and a .cmd file on Windows: one spawn that is the same on every OS.
+const oxlintPackage = createRequire(import.meta.url).resolve('oxlint/package.json');
+// Repository paths use / on every OS: ignore patterns, budgets and diagnostics all compare them as text.
+const slash = (file: string) => file.split(path.sep).join('/');
+const binary = path.join(
+  path.dirname(oxlintPackage),
+  (JSON.parse(fs.readFileSync(oxlintPackage, 'utf8')) as { bin: { oxlint: string } }).bin.oxlint,
+);
+
+type OxlintDiagnostic = { filename: string; code?: string; message: string; labels?: { span: { line: number } }[] };
+
+// Windows caps a command line at 32,767 characters, and the whole repository's file list is longer than that, so there
+// the files go to Oxlint in batches. Everywhere else they go in one run, as before.
+const ARG_BUDGET = process.platform === 'win32' ? 30_000 : Infinity;
+function batches(files: string[]): string[][] {
+  const out: string[][] = [[]];
+  let length = 0;
+  for (const file of files) {
+    if (length + file.length + 1 > ARG_BUDGET && out.at(-1)!.length) {
+      out.push([]);
+      length = 0;
+    }
+    out.at(-1)!.push(file);
+    length += file.length + 1;
+  }
+  return out;
+}
 
 export function lintFiles(root: string, targets: string[], options: Options = {}): Diagnostic[] {
   // On macOS, /var and /private/var must not give Oxlint different bases for overrides and file paths.
@@ -18,7 +45,7 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
   const files = new Set<string>();
   for (const target of targets) {
     const absolute = path.resolve(root, target);
-    const relative = path.relative(root, absolute);
+    const relative = slash(path.relative(root, absolute));
     if (relative && ignored(relative)) continue;
     if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
       if (/\.(?:[cm]?js|ts)$/.test(relative)) files.add(relative);
@@ -26,7 +53,7 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
       const exists = fs.existsSync(absolute);
       const pattern = exists ? (relative ? relative + '/' : '') + '**/*.{js,mjs,cjs,ts}' : target;
       let matched = false;
-      for (const file of fs.globSync(pattern, { cwd: root, exclude: ignorePatterns }))
+      for (const file of fs.globSync(pattern, { cwd: root, exclude: ignorePatterns }).map(slash))
         if (!ignored(file)) {
           files.add(file);
           matched = true;
@@ -51,22 +78,21 @@ export function lintFiles(root: string, targets: string[], options: Options = {}
         'error',
         ...(options.typeAware === false ? [] : ['--type-aware']),
         ...(options.fix ? ['--fix'] : []),
-        ...selected,
       ];
-      const result = spawnSync(binary, args, { cwd: root, encoding: 'utf8', maxBuffer: 30_000_000 });
-      if (result.error) throw result.error;
-      if (result.status !== 0 && result.status !== 1)
-        throw new Error(result.stderr || result.stdout || 'Oxlint failed');
-      const output = JSON.parse(result.stdout) as {
-        diagnostics: {
-          filename: string;
-          code?: string;
-          message: string;
-          labels?: { span: { line: number } }[];
-        }[];
-      };
-      diagnostics = output.diagnostics.map((d) => ({
-        file: d.filename,
+      const found: OxlintDiagnostic[] = [];
+      for (const batch of batches(selected)) {
+        const result = spawnSync(process.execPath, [binary, ...args, ...batch], {
+          cwd: root,
+          encoding: 'utf8',
+          maxBuffer: 30_000_000,
+        });
+        if (result.error) throw result.error;
+        if (result.status !== 0 && result.status !== 1)
+          throw new Error(result.stderr || result.stdout || 'Oxlint failed');
+        found.push(...(JSON.parse(result.stdout) as { diagnostics: OxlintDiagnostic[] }).diagnostics);
+      }
+      diagnostics = found.map((d) => ({
+        file: slash(d.filename),
         line: d.labels?.[0]?.span.line ?? 1,
         rule:
           d.code?.replace(/^eslint\((.*)\)$/, '$1').replace(/^typescript\((.*)\)$/, '@typescript-eslint/$1') ??
