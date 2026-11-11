@@ -117,6 +117,11 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     feed: 'train',
   },
 ];
+/** Q6's slot: the job whose completion opens the pier (the Pier halt, the pier's footings, the breaker). Read this, not
+ * `LINE2_STATIONS.length`, wherever a rule means "Q6 is laid": v27 appends Q7 (ring-island-build1, R3b). */
+export const Q6 = 5;
+/** Whether the pier is open: `completed` QJob slots done, Q6's among them. */
+export const pierLaid = (completed: number) => completed > Q6;
 /** The depot's cart brings logs from the camp to a rack by the frame, never past the bill; from Q4 it stops at the
  * forge for rails too (24 a trip, one full rack: Place held 16). Its trip and what a load holds: ./railway-cart.ts. `reach`:
  * how near the frame a take from the rack or shelf is heard. */

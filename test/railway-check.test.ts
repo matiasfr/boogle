@@ -69,6 +69,8 @@ test("the world check's own throw sites hold the same messages as the old valida
     .map((f) => readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8'))
     .join('\n');
   const said = new Set([...text.matchAll(/bad\('([^']+)'\)/g)].map((m) => `railway: ${m[1]!}`));
+  // checkTrains throws whatever trainRowBroken returns (railway-check-trains.ts), so its message literals are said too.
+  for (const m of throwSites('src/sim/railway-trains.ts', 'trainRowBroken')) said.add(m);
   for (const e of BAD_WORLDS) assert.ok(said.has(e.message), e.message);
 });
 

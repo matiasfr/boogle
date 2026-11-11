@@ -5,7 +5,7 @@ import { LINE2_KIT } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
 import { TRAIN, TRAIN_PHASE, reqAdd, reqHas, trainDir, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
-import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO } from './railway-trains.ts';
+import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt } from './railway.ts';
 import { Cart, Forge, Line, QJob, Rail, Shed, Train, Works } from './railway-components.ts';
@@ -91,6 +91,15 @@ function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop 
     (k === 2 && r.logs + r.rails > 0) ||
     (k === 1 && dir > 0 && r.wagon && r.foot < WORKS.wagonCap && pierOwed(w, r.foot) > 0) ||
     (k === 3 && r.wagon && r.foot > 0);
+}
+/** The rows a moved end or stop rewrites (endMoved, stopMoved in ./railway-trains.ts), over the world's Train rows and
+ * open stops (read after the change that moved them). */
+export function trainMoveIO(w: World): TrainMoveIO {
+  return {
+    row: (slot) => w.get(Train, trainId(w, slot))!,
+    set: (slot, patch) => void Object.assign(w.mut(Train, trainId(w, slot))!, patch),
+    stops: (line) => stopsOf(w, line),
+  };
 }
 /** The world's side of the trains' step (./railway-trains.ts): rows, stops, and line 2's cargo, wagon and the cart's
  * hold on line 1. Transfers and phase changes are atomic inside this tick apply. */

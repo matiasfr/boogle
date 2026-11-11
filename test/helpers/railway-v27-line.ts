@@ -56,6 +56,8 @@ export const V27_LINE2: RailLineDef = {
   id: 'line2-v27-fixture',
   path: [...v26.path, ...RING_PATH],
   trains: 3,
+  // The balanced hold, capped 60 s past the dwell (R3b, call 47).
+  balance: 600,
   halts: [
     village,
     quarry,

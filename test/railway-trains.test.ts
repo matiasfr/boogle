@@ -29,6 +29,7 @@ import {
 import {
   LINE_SLOTS,
   TRAIN_HEAD_PCT,
+  balancedHold,
   blockFree,
   cycleTicks,
   endBlocks,
@@ -691,6 +692,41 @@ test("a second up train holds at the island's signal (113080) until the first is
   assert.ok(held, 'B was held at the signal');
 });
 
+test('the balanced hold: an end waits while the gap ahead is the shorter, never past its cap or a waiter at its signal', () => {
+  const stops = v27Stops(7, 7, true);
+  // Train 0 standing at the Village going up, its dwell done; train 1 at Far Head going up (507 m ahead round the
+  // circuit), train 2 at the island going down (1173 m behind): the gap ahead is the shorter.
+  const f = new FixtureLine(stops);
+  f.rows = [standingAt(stops, 0, 0), standingAt(stops, 2, 0), standingAt(stops, ISLAND, 1)];
+  const cap = V.balance!;
+  assert.equal(cap, 600);
+  assert.equal(balancedHold(f.io(), V, stops, 0, 0, 100), true, 'bunched behind train 1: it waits');
+  assert.equal(balancedHold(f.io(), V, stops, 0, 0, TRAIN.dwellTicks + cap - 1), true, 'the last tick of its cap');
+  assert.equal(balancedHold(f.io(), V, stops, 0, 0, TRAIN.dwellTicks + cap), false, 'the cap: 60 s past its dwell');
+  assert.equal(balancedHold(f.io(), { ...V, balance: undefined }, stops, 0, 0, 100), false, 'a line without it');
+  assert.equal(balancedHold({ ...f.io(), headExempt: () => true }, V, stops, 0, 0, 100), false, 'the wagon, exempt');
+  // The gap behind the shorter (train 2 just round the Far Head side of the island): it goes.
+  f.rows[1] = standingAt(stops, HEAD, 1);
+  assert.equal(balancedHold(f.io(), V, stops, 0, 0, 100), false, 'even or behind: no hold');
+  // A train waiting at the Village's signal on the down track is never kept out of the end block, even bunched.
+  const sig = endBlocks(V, stops)[0].signal;
+  f.rows = [
+    standingAt(stops, 0, 0),
+    { ...runRow(1700, -1, 1700 + 2800, 0), from: 1700 + 2800, phase: TRAIN_PHASE.STAND, v0: 0 },
+    { ...standingAt([sig], 0, 1), at: -1, to: -1 },
+  ];
+  assert.equal(balancedHold(f.io(), V, stops, 0, 0, 100), false, 'a waiter behind at the signal');
+  f.rows[2] = standingAt(stops, ISLAND, 1);
+  assert.equal(balancedHold(f.io(), V, stops, 0, 0, 100), true, 'the same gap ahead with no waiter: it waits');
+  // In the step: held while bunched, gone the tick its cap runs out.
+  const g = new FixtureLine(stops);
+  g.rows = [standingAt(stops, 0, 0), standingAt(stops, 2, 0, 1e6), standingAt(stops, ISLAND, 1, 1e6)];
+  trainStepLine(g.io(), V, 100);
+  assert.equal(g.rows[0]!.phase, TRAIN_PHASE.STAND);
+  trainStepLine(g.io(), { ...V, balance: undefined }, 100);
+  assert.equal(g.rows[0]!.phase, TRAIN_PHASE.RUN, 'without the hold it leaves');
+});
+
 test("endMoved at Far Head is v26's Q6 hunk, row for row, on the world", () => {
   const base = railwayAtTrains('q6-finishing');
   const probe = { w: restore(base.w), t: base.t };
@@ -895,8 +931,10 @@ const waitTable = (worst: Map<string, number>) =>
  * and at 0%) and train count (FUZZ_TRAINS: the fixture's 3, or 4, call 47). R3a's long runs (10 November;
  * FUZZ_TICKS=40000, seeds c0ffee,777,15a4d,5eed,bee at 75% and 0%, a legal start): three trains at today's hold do NOT
  * hold WAIT_BOUND (worst 130.5 s, 10 of 10 over), four do (98.4 s). The cause is the hold (sized off the non-stop
- * cycle, only a minimum): R3b keeps three trains and adds a balanced hold (the plan's R3b, call 47). The default runs
- * pass and print the waits. */
+ * cycle, only a minimum): R3b keeps three trains and adds a balanced hold (the plan's R3b, call 47; the fixture's
+ * `balance: 600`). With it (11 November, the same long runs): worst 87.7 s (Quarry up), 0 of 10 over, and the 75% and
+ * 0% runs give the same waits (the balanced hold binds before the headway hold does). The default runs pass and print
+ * the waits. */
 const ISLAND_SEEDS: readonly (readonly [number, number])[] = process.env.FUZZ_SEEDS
   ? process.env.FUZZ_SEEDS.split(',').flatMap((h) => [
       [Number.parseInt(h, 16), TRAIN_HEAD_PCT] as const,

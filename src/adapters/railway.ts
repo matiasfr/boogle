@@ -43,7 +43,7 @@ import {
   type LineStationId,
 } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
-import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import { LINE2_PACK, LINE2_STATIONS, line2Routes, pierLaid, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import {
   line2Active,
   line2Trains,
@@ -193,7 +193,7 @@ export const railTrainsOf = (s: Pick<RailTrainsRead, 'trains'>, line: number) =>
 export const railLineOf = (slot: number) => RAIL_TRAINS[slot]!.line;
 /** The stops line `line` serves now (line 2's pier once Q6 is laid). */
 export const railStopsNow = (s: Pick<RailTrainsRead, 'line2'>, line: number) =>
-  trainStopsOf(line, s.line2.completed >= LINE2_STATIONS.length);
+  trainStopsOf(line, pierLaid(s.line2.completed));
 /** The train a lever ask at (`line`, `stop`) heading `dir` is for at `tick`: the sim's trainServes over the mirrored
  * rows, -1 for none. */
 export function railServing(s: RailTrainsRead, line: number, stop: number, dir: number, tick: number) {

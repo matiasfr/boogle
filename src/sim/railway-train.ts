@@ -62,7 +62,10 @@ export function lineStages(line: LineRef): (readonly number[])[] {
   return out;
 }
 // The catalog is refused at load if any line's trains could not all be placed at a stage they wake at (trainPlaces
-// throws rather than stack two), so the wake (rail.boilerFit) never meets it in a room.
+// throws rather than stack two), so the wake (rail.boilerFit) never meets it in a room. Note: this runs when the module
+// is imported, so a bad catalog row throws at the first import of railway-train.ts (server start, page load, any
+// test), not inside a rule; a fixture line (a test's RailLineDef) is never checked here and is placed when its test
+// calls trainPlaces.
 RAIL_LINES.forEach((_l, line) => lineStages(line).forEach((stops) => trainPlaces(line, stops)));
 /** The stop each train (by slot) stands at before it wakes. */
 export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);

@@ -2,7 +2,7 @@
 // breaker, the seams, the kiln and its casting tick, the footings, the cradle and the turntable, and a footing's
 // absent-carrier path.
 import { defineSystem, type World } from '../ecs/index.ts';
-import { LINE2_STATIONS } from './railway-line2-layout.ts';
+import { pierLaid } from './railway-line2-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
@@ -100,8 +100,7 @@ export const footSet = defineSystem(
       w.mut(Shed, shedId(w))!.cradle++;
       fit(w, tick);
     } else {
-      if (qCompleted(w) < LINE2_STATIONS.length || works.pierSet + works.pierRack + aboard(w, 'foot') >= WORKS.pier)
-        return 0;
+      if (!pierLaid(qCompleted(w)) || works.pierSet + works.pierRack + aboard(w, 'foot') >= WORKS.pier) return 0;
       const wm = w.mut(Works, worksId(w))!;
       wm.pierSet++;
       if (wm.pierSet === WORKS.pier) wm.crossing = tick;
