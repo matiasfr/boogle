@@ -130,10 +130,14 @@ export default {
     // saying Throw), a wind-up at the stall and a dropped frisbee behind a log bundle come back with R3.
 
     // A bag of seeds where nothing can grow: the click says why. The search starts at the beach cell west of the court
-    // where the tossed frisbee used to land (lib/world.ts, toss).
+    // where the tossed frisbee used to land (lib/world.ts, toss). Anything in hand turns you to the camera every frame
+    // (src/entities/player/state.ts), so the camera faces the searched heading too, and the click comes in the same
+    // eval as the search: pressed a few frames later, a slow browser had turned to ground that grows and planted
+    // silently (Mac nightly 10 November, Edge on Windows 11 November).
     const spot = await g.eval(`${INV}
       const G = await import('/src/adapters/mushrooms.ts');
       const { CELL, HALF } = await import('/src/constants.ts');
+      const { cam } = await import('/src/player/player.ts');
       const { me } = window.boogle;
       const bx = 230 * CELL - HALF, bz = HALF - 205 * CELL;
       I.take('seeds');
@@ -141,12 +145,15 @@ export default {
         for (let a = 0; a < 12; a++) {
           const x = bx + r * Math.cos(a / 1.9), z = bz + r * Math.sin(a / 1.9);
           ${TP('x', 'z')}
-          me.yaw = 0;
-          if (!G.spotsAhead().length) return { x, z };
+          cam.yaw = me.yaw = 0;
+          if (!G.spotsAhead().length) {
+            H.useDown();
+            H.useUp();
+            return { x, z };
+          }
         }
       return null;`);
     if (spot) {
-      await g.eval(`${INV} H.useDown(); H.useUp();`);
       // The HUD shows the note on its next frame; a loaded nightly can take longer than a fixed wait (10 November).
       await g.waitFor(shown('.notify.shown[data-kind="deny"]'), { timeout: 5000 });
       // The notification lane (src/ui/notify.ts) has said it since the UI that answers replaced the hands' own note.
