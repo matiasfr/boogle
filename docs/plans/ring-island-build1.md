@@ -1168,10 +1168,32 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > offer, the race, the late-join framing, the crossing once, the prompt and glint windows, the shots' geometry).
   > **Not done:** the breaker's swing at the rivet (the prompt strikes at once; the Works' swing is `breaker-view.ts`'s),
   > the browser proof (two pages, strike, third page), `test:net`. Not tested on a device.
-- [ ] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
+- [x] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stare straight up; the whistle swaps them; standing still and looking up
   gets a nod.
+  > **Built (implementer, 11 November 2026): R4e, on `feature/ring-r4e` (sits on `feature/ring-r4d`); not shipped, browser proof
+  > not taken.** (1) `src/entities/ring-folk/`: `shape.ts` (pure: the rota, stations, lane and walk, the nod, the facts that
+  > pick a line), `lines.ts` (the Copy table verbatim), `view.ts` (the figures), mounted by `works-live.ts` beside the Meet
+  > (no `index.ts`, it needs the adapter). (2) Seven figures from the village folk kit (`place/folk.ts`: a `looker` job, a
+  > `lean` field and `addLooker`; capacity +8): six crew in orange hard hats and Hooter in blue. The island's square is the
+  > works yard east of the halt, between the tarped steel and the drop hammer (no layout constant named a square). Four
+  > crew stand at four posts leaning back about 54 degrees at the shard (the whole figure tips: the kit's hat sits on the
+  > body, so a head tipped alone would hide its face), two rest on the lane south of the tarp. `shiftAt(tick)` is
+  > `floor(tick / 450)` on `adapter.read.tick()`: at each whistle two post-holders hand over to the two who rested
+  > (everyone stands at most two shifts and every crew member gets turns; the rota repeats every 6). Hooter's whistle
+  > (`machine-sfx` `whistle`) sounds at the clock's edge only when the page saw the previous shift; a first read, a remount
+  > or a stall that skipped shifts snaps with no whistle and no walk. (3) The nod: the nearest post-holder within 8 m, when
+  > the player has been still (under 0.35 m/s) looking up past 50 degrees (`cam.pitch`; the controls cap it at 0.9 rad)
+  > for 1.5 s, brings its head down to the player, bobs and goes back; once per stand. (4) Talk with Rivet (gold hat), Squint
+  > and Hooter; lines from `linesFor(who, facts)`: "arrived wet" is a swim in the last 60 s (local clock), "glided the gap"
+  > and "swam over" are per-player per-room memory (`createSeen('boogle.ring-folk.v0')`, written from where the player
+  > swims or glides: `swamToIsland`, `glidingTheGap`), "first ride" reads the Meet's `crossing` memory, the co-op line counts
+  > `accounts(world)` and waits for `joined`. **Reads:** `Aperture.joined` and the accounts through `adapter.read.world()`
+  > (inside `facts()`, re-read per Talk), `adapter.read.tick()`, `createFirstReady`; no world kept. No sim rule, wire or
+  > `WORLD_NS` change. Tests: `test/railway-r4e-folk.test.ts` (16). Look: `dev/look/evals/ring-folk.ts`. **Not done:** the
+  > browser proof, `npm run perf` at the halt (owed at the checkpoint), "the rivet toss" (the plan gives it no trigger or
+  > copy), Hooter's line spoken as a bark at the whistle (it is a Talk line only). Not tested on a device.
 
 ### Design review: the halt map at eight stops (designer, 2026-11-11)
 

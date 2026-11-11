@@ -28,10 +28,11 @@ const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   RIDERS = 2,
   COMMUTERS = 5,
   PUSHERS = 2,
-  RESIDENTS = 6;
+  RESIDENTS = 6,
+  ISLAND_FOLK = 8; // Ring Island's square (src/entities/ring-folk): six crew and Hooter, one spare
 // A driver a train: the little guy at the engine's controls, on his tall stool (docs/plans/engine-previz.md).
 const DRIVERS = RAIL_TRAINS.length;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS + COMMUTERS + PUSHERS + RESIDENTS;
+const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS + COMMUTERS + PUSHERS + RESIDENTS + ISLAND_FOLK;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -78,7 +79,8 @@ type Job =
   | 'commuter'
   | 'pusher'
   | 'resident'
-  | 'greeter';
+  | 'greeter'
+  | 'looker';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
   k: number;
@@ -117,6 +119,7 @@ type Guy = {
   chat: 0 | 1 | 2; // in an exchange: 1 saying something, 2 listening
   route: Route;
   act: Mood; // a resident: what they're doing when you're not there
+  lean: number; // rad the whole figure leans back from its feet (a looker staring up); its owner sets it each frame
   tint: THREE.Color | null;
 };
 // Where steer() is taking it: the goal it was given (r), that goal clear of footprints (g), the corner it's rounding (w),
@@ -174,6 +177,7 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     chat: 0,
     route: { rx: 0, rz: 0, gx: 0, gz: 0, wx: 0, wz: 0, px: 0, pz: 0, way: false, left: -1 },
     act: 'idle',
+    lean: 0,
     tint: null,
     ...extra,
   };
@@ -260,6 +264,11 @@ export function addResident(x: number, y: number, z: number, yaw: number, act: M
 /** The shore worker uses the same meshes/poses, directed locally by residents.ts. */
 export function addGreeter(x: number, y: number, z: number) {
   return make('greeter', x, z, { fy: y, yaw: -Math.PI / 2, tint: new THREE.Color('#f0c030') });
+}
+/** One of Ring Island's square (src/entities/ring-folk/view.ts): placed, moved, leaned and talked to by its owner; the kit
+ * only draws it and, like the greeter, never steers it. */
+export function addLooker(x: number, y: number, z: number, yaw: number, color: string) {
+  return make('looker', x, z, { fy: y, yaw, tint: new THREE.Color(color) });
 }
 export type { Guy, Mood };
 
@@ -725,6 +734,7 @@ function brain(g: Guy, dt: number) {
       g.mood = 'walk';
       return;
     case 'greeter':
+    case 'looker':
       return;
     case 'resident': {
       // They look up when you come close, and go back to it when you've gone. Local: nobody else's copy has to agree.
@@ -891,6 +901,7 @@ function pose(g: Guy) {
     pitch += talk * 0.1;
     sq *= 1 + talk * 0.05;
   }
+  pitch -= g.lean;
   const gy = g.fy ?? H(g.x, g.z);
   q.setFromEuler(e.set(pitch, g.yaw, tilt, 'YXZ'));
   base.compose(p.set(g.x, gy + hop, g.z), q, s.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq)));
@@ -1322,7 +1333,8 @@ export function updateFolk(dt: number) {
       g.job !== 'rider' &&
       g.job !== 'driver' &&
       g.job !== 'resident' &&
-      g.job !== 'greeter'
+      g.job !== 'greeter' &&
+      g.job !== 'looker'
     )
       chatBrain(g, dt);
     else brain(g, dt);
