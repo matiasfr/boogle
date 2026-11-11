@@ -899,6 +899,17 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > keep six frames and read `pierLaid`, and so does `secrets-view.ts`'s "end of the run" (found on the rebase: with
   > Q7 it would have waited for Q7; R4a or the designer may move it). The P3 index checks: the kit hold already reads
   > the active job; `line2-view.ts`'s `stations[5]` is the Pier's own job (Q6), correct as written.
+  >
+  > **After review (11 November 2026): the hold's cap from arrival, in the same bump.** The reviewer's design: a new
+  > `Train.arrived` (int, set at the stand transition, at most `depart` in `trainRowBroken`) that `balancedHold` reads
+  > for its cap in place of `depart`. A lever ask restarts only the dwell, and the dwell check still runs before the
+  > hold, so the worst hold with one ask is dwell + cap + one asker's dwell (70 s on line 2), down from 130 s. The
+  > reviewer's tests (`test/railway-r3b2-review.test.ts`) are cherry-picked and the griefing tests follow. Goldens
+  > regenerated again in a fixtures-only commit (rail-schema 8f61ba5dd2c6, railway-golden 88e85b2a4f2a, ops
+  > f4d3d311c6dc, tick-order 965b6000fe5b, heads 8965a94360c8). The fuzz waits and the loop totals are unchanged to the
+  > tenth of a second (no run's worst wait was a restarted cap). The adapter's `ring` stays on the read model (review
+  > P3-3): `buildState` reads the predicted view, whose world can be absent, so rows there would mean choosing between
+  > predicted and confirmed, not a like-for-like swap; M12b's.
 
   New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,
