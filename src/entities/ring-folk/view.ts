@@ -7,7 +7,7 @@
 // `adapter.read.world()`, re-read at the head of every entry point; keeps nothing from a world.
 import * as THREE from 'three/webgpu';
 import { angleLerp } from '../../math.ts';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { conversation } from '../../player/conversation.ts';
@@ -15,7 +15,6 @@ import { me } from '../../player/player.ts';
 import { whistle } from '../../render/machine-sfx.ts';
 import { accounts, aperture } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
-import { createFirstReady } from '../railway/first-ready.ts';
 import { createSeen } from '../railway/ability-arrival.ts';
 import { railwayGlideOpen } from '../railway/glide.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
@@ -72,7 +71,8 @@ const VOICES: Record<Who, ReturnType<typeof voice>> = {
 };
 
 export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
-  const firstReady = createFirstReady(adapter.read.ready);
+  /** The first whole state is in (`read.whole()`, a latch): never `read.ready()`, which is also false with a full pending window. */
+  const firstReady = () => adapter.read.whole();
   const memory = createSeen('boogle.ring-folk.v0');
   let kit: Kit | null = null,
     talk: typeof import('../../place/talk.ts') | null = null,

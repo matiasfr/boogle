@@ -7,7 +7,8 @@
 // joins after the join, or reloads, is placed in the joined state with no shot and is owed the Meet's framing on its own
 // first crossing (call 11). The shot is `createCameraPullOut`'s: nothing ends it but the one highlighted skip.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
@@ -19,12 +20,11 @@ import { dustRing } from '../../render/particle-effects.ts';
 import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
-import { showMomentBanner } from '../../ui/moment-banner.ts';
+import { actShowing, showMomentBanner } from '../../ui/moment-banner.ts';
 import { RING_RIVET } from '../../sim/railway-ring-layout.ts';
 import { WORKS } from '../../sim/railway-works-layout.ts';
 import { aperture, boiler, works as worksRow } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
-import { createFirstReady } from '../railway/first-ready.ts';
 import { createSeen } from '../railway/ability-arrival.ts';
 import { playSharedMoment } from '../railway/shared-moment.ts';
 import {
@@ -61,9 +61,12 @@ export function createRingMeet(
   owner: OwnedView,
   deps: { seated: () => boolean; busy: () => boolean; landed: () => boolean },
 ) {
-  const shot = createCameraPullOut(deps.busy, true, deps.seated);
+  // A reward card or an act card has the screen: the shot waits for it (it joins the camera's one list while it plays or
+  // waits, buddy-frame.ts), and the banner queues behind an act card (moment-banner.ts).
+  const shot = createCameraPullOut(() => deps.busy() || actShowing(), true, deps.seated);
   const seen = createSeen('boogle.ring-meet.v0');
-  const firstReady = createFirstReady(adapter.read.ready);
+  /** The first whole state is in (`read.whole()`, a latch): never `read.ready()`, which is also false with a full pending window. */
+  const firstReady = () => adapter.read.whole();
   owner.cleanup(() => shot.dispose());
 
   // The stud: a raised gold bolt head in the joint at the toe (lit metal, so it reads gold, not cream). It stays dull until the plate has visibly landed

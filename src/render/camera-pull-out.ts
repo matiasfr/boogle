@@ -176,7 +176,14 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     showSkip(self, skipping());
   };
   return {
-    play(from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds = 3.2, drift = seconds, shape: ShotShape = {}) {
+    play(
+      from: THREE.Vector3,
+      to: THREE.Vector3,
+      at: THREE.Vector3,
+      seconds = 3.2,
+      drift = seconds,
+      shape: ShotShape = {},
+    ) {
       if (reducedMotion || inSeat()) return;
       pending = {
         from: from.clone(),

@@ -56,6 +56,8 @@ let plainAt = 0,
   plainFor = 0; // when the plain banner on screen came up, and for how long
 let pumpTimer = 0;
 const actBusy = () => actWaiting || performance.now() < actUntil;
+/** An act card is rising or showing: a shot that would play over it waits (the Meet's, ring-meet/view.ts). */
+export const actShowing = actBusy;
 function pump() {
   if (actBusy()) return;
   const next = queued.shift();
