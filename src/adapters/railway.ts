@@ -443,12 +443,16 @@ export type ActorPose = () => { x: number; y: number; z: number } | null;
 export function createRailwayAdapter({
   mirror: rail,
   movement,
+  movementRev,
   pid,
   pose = () => null,
   now = () => performance.now(),
 }: {
   mirror: RailwayMirror;
   movement: () => RailwayMovement;
+  /** A number that changes whenever `movement()`'s values may have (the tune state's `rev`, bumped by every edit and
+   * load), so a read checks it instead of reading the 18 tunables. Absent (tests, tools), they are read and compared. */
+  movementRev?: () => number;
   pid: string;
   /** The local body's position in metres, sent with each action. */
   pose?: ActorPose;
@@ -875,15 +879,42 @@ export function createRailwayAdapter({
     a.glideTurnTau === b.glideTurnTau &&
     a.glideTurnMax === b.glideTurnMax &&
     a.glideDeploy === b.glideDeploy;
+  // The movement tunables as one frozen object, shared by the read and read.movement(): the same object while the
+  // values are unchanged. With `movementRev` the 18 tunables are read only when it moved; in the loop the object is taken
+  // once a frame, at its first read, as the read's key is (the frame memo below).
+  let moved: Readonly<RailwayMovement> | null = null,
+    movedRev = NaN,
+    movedFrame = -1;
+  function moves() {
+    if (moved && frame && movedFrame === frame) return moved;
+    movedFrame = frame;
+    if (movementRev) {
+      const rev = movementRev();
+      if (moved && rev === movedRev) return moved;
+      movedRev = rev;
+    }
+    const m = movement();
+    if (!sameMovement(m, moved)) moved = Object.freeze({ ...m });
+    return moved!;
+  }
+  // The estimated tick the views read, shared by the read and read.tick(): in the loop it is taken once a frame, at its
+  // first read, so two reads in a frame never straddle a tick (an edge such as waking to idle is seen once). Actions
+  // are still stamped with the live tick (submit); outside the loop every call is live.
+  let tickFrame = -1,
+    frameTickValue = 0;
+  function frameTick() {
+    if (frame && tickFrame === frame) return frameTickValue;
+    tickFrame = frame;
+    return (frameTickValue = tick());
+  }
   function readState() {
     stats.reads.readStates++;
     stats.reads.keyEvals++;
-    const t = tick();
+    const t = frameTick();
     const v = view();
-    const m = movement();
+    const m = moves();
     const applied = rail.mirror.stats.applied;
-    if (read && v === readFor && t === readTick && applied === readApplied && sameMovement(m, readMovement))
-      return read;
+    if (read && v === readFor && t === readTick && applied === readApplied && m === readMovement) return read;
     stats.reads.stateBuilds++;
     readFor = v;
     readTick = t;
@@ -1069,6 +1100,19 @@ export function createRailwayAdapter({
   // Outside the loop (tests, tools) `frame` never moves and every call evaluates the whole key as before.
   let frame = 0;
   let inspectedFrame = -1;
+  // The stall cue, shared by inspect() and read.stalled(): in the loop it is taken once a frame while the pending list
+  // keeps its oldest action (actions are pushed in time order, so only the oldest can be the first stalled one).
+  let stallFrame = -1,
+    stallList: unknown = null,
+    stallHead: unknown = null,
+    stallOp: RailwayIntent['op'] | null = null;
+  function stalledNow() {
+    const list = predictor.pending();
+    if (frame && stallFrame === frame && list === stallList && list[0] === stallHead) return stallOp;
+    [stallFrame, stallList, stallHead] = [frame, list, list[0]];
+    // Only a pending action can be stalled.
+    return (stallOp = list.length ? (predictor.stalled(now())[0]?.action.intent.op ?? null) : null);
+  }
   function inspect() {
     stats.reads.inspects++;
     const i0 = inspected;
@@ -1089,8 +1133,7 @@ export function createRailwayAdapter({
       return i0.view;
     const state = readState();
     const pending = predictor.pending().length;
-    // Only a pending action can be stalled.
-    const stalled = pending ? (predictor.stalled(now())[0]?.action.intent.op ?? null) : null;
+    const stalled = stalledNow();
     const step = rail.step();
     const ready = available();
     const i = inspected;
@@ -1170,12 +1213,26 @@ export function createRailwayAdapter({
   // is typed read-only, so a view cannot write to it or drain its changes.
   const facade = {
     world: () => (worldOf(view()) ?? worldOf(confirmed)!) as unknown as ReadWorld,
-    /** The estimated server tick (whole, never going backwards): the job clocks' `at`. */
-    tick,
-    /** The same with its fraction, for movers (tickNow). */
+    /** The estimated server tick (whole, never going backwards): the job clocks' `at`. In the frame loop it holds one
+     * value for the whole frame, inspect().tick's, so it stays consistent with world() and with itself within a frame;
+     * outside the loop it is live. */
+    tick: frameTick,
+    /** The live tick with its fraction, for movers: unlike tick(), it moves within a frame. */
     tickNow,
     pid,
+    /** The session's state. 'ready' does not mean an action can be sent now: see ready(). */
     status: () => status,
+    // The session values that are not rows (M10, for the views leaving inspect()): each equals inspect()'s field of
+    // the same name at the same moment.
+    /** Whether an action can be sent now: connected, the whole state in, this session's account epoch matching and
+     * the pending window not full. Unlike `status() === 'ready'`, false while RAILWAY_WINDOW actions are pending. */
+    ready: available,
+    /** Your actions sent and not yet answered (already in the world the views see). */
+    pending: () => predictor.pending().length,
+    /** The oldest pending action still unanswered after STALL_MS (the wordless stall cue), or null. */
+    stalled: stalledNow,
+    /** The movement tunables (railMovement), one frozen object while they are unchanged. */
+    movement: moves,
   };
   return {
     inspect,

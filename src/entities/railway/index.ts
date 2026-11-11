@@ -22,6 +22,7 @@ if (productionRailway && railwayMirror) {
   const adapter = createRailwayAdapter({
     mirror: railwayMirror,
     movement: () => railMovement(rules.tune),
+    movementRev: () => rules.tune.tune.rev,
     pid: identity.pid,
     pose: () => {
       const local = localPresence();
