@@ -182,8 +182,11 @@ export function makeLabel(text: string) {
 }
 
 // A player (and a name label) appears the moment someone joins: build their pipelines behind the lobby instead.
-warmUp(() => {
-  const g = new THREE.Group();
-  g.add(makeAvatar(0), makeLabel('Boogle'));
-  return g;
-});
+warmUp(
+  () => {
+    const g = new THREE.Group();
+    g.add(makeAvatar(0), makeLabel('Boogle'));
+    return g;
+  },
+  { frame: true },
+); // in the lobby's warm-up frame, so Buddy's shadow pipelines (buddy_face's) build there too

@@ -12,7 +12,7 @@ import {
   guardGraphicsFrame,
 } from './render/scene.ts';
 import { shouldRender } from './render/quality.ts';
-import { precompile, gpuDone, shadersMark } from './render/precompile.ts';
+import { precompile, gpuDone, shadersMark, lateBuilt } from './render/precompile.ts';
 import { createTerrainMesh } from './island/terrain.ts';
 import { createWaterMesh, waterReady } from './render/water-render.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
@@ -109,7 +109,7 @@ async function play() {
   // three resets its info, ticks the TSL clock, then runs ours: one loop, one order
   background(renderer.setAnimationLoop(guardGraphicsFrame(frame)), 'game loop');
   await new Promise((r) => requestAnimationFrame(r)); // one frame drawn: the output and shadow pipelines exist too
-  await Promise.race([gpuDone(), giveUp]); // submitted is not finished: the screen lifts once the GPU has caught up
+  await Promise.race([gpuDone().then(lateBuilt), giveUp]); // the GPU caught up, and what the warm-up missed is built
   bootMark('first');
   splashDone();
   bootMark('interactive');

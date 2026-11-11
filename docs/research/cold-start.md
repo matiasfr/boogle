@@ -2,7 +2,7 @@
 
 > **Verdict:** On a slow link the load was a chain of round trips, then a wait for Rapier; on any link the shader warm-up builds every pipeline in the world, and only about 40 % are drawn in the first view. On the first true cold launch from a device (Safari 27 on an M5 Max, 18.8 s), pipeline creation is 81 % of the time.
 > **Top recommendations:** 1. Compile the lobby and arrival view's pipelines first and the rest after "Jump in" (P1, spec in 5b; ~8–9 s of that 18.8 s). 2. Build the warm-up's few misses in the warm-up (P1: Safari stalls on them). 3. Keep the boot's lazy chunks preloaded and precached, and the warm-up not waiting for Rapier (done here).
-> **Status:** open. Cheap wins on `perf/cold-start` (Slow 4G: 34.3 → 24.6 s locally; fonts self-hosted, owner's call); the rest are proposals. The branch itself is not tested on a device.
+> **Status:** open. Cheap wins on `perf/cold-start` (Slow 4G: 34.3 → 24.6 s locally; fonts self-hosted, owner's call). Recommendations 1 and 2 are built on `perf/lobby-first-warmup` (section 5c: Jump in enabled 0.7 s sooner fast, 4.5 s sooner on Slow 4G; Safari cold estimated 18.8 → ~13.5 s), not tested on a device.
 
 10 November 2026, on main a5999692. DESIGN.md: **Small and readable: measure before optimizing.**
 
@@ -246,6 +246,114 @@ pipelines before the first frame (expected ~62–70 of 153), and the stalls colu
 (ckn9ca's setup) for a less noisy number. Success: cold launch on ckn9ca's machine ~10 s (from 18.8 s), zero stalls
 over 100 ms.
 
+## 5c. Lobby first, built (`perf/lobby-first-warmup`, 10 November 2026)
+
+The owner approved option 1 on 10 November ("Yes, build it"), knowing that things not yet compiled may stay hidden or
+appear a moment late in the first seconds after Jump in. What the branch does (src/render/precompile.ts;
+src/render/reference/frame.md has the contract):
+
+- **Pass 1, behind the loading screen:** the preparations as before, then **the lobby's real frame**, now in the lobby's
+  own camera pose (the camera entity sets it for that frame: before, the warm-up frame drew from wherever the camera
+  was made, which main never noticed because it also compiled the whole scene), with Buddy and his name label in it
+  (`warmUp(..., { frame: true })`), so `buddy_face`'s shadow pipeline builds there. Then the warm-ups that are not
+  deferred (the item icons, Ring Island's view, the waits for lazy parts, audio). No `compileAsync(scene)` and no
+  "every caster" shadow frame any more. Jump in enables when this ends.
+- **From then on nothing in the game's scene builds a shader or a pipeline synchronously in a frame.** An object first
+  drawn without its shader is held out of the frame and compiled with `compileAsync` (nearest the camera first, eight at
+  a time, ahead of pass 2's queue); a pipeline three would create synchronously is created with
+  `createRenderPipelineAsync`, and r187's draw path skips the object until it is ready (`Pipelines.isReady`). Shadow-pass
+  shaders cannot be built outside a frame (three applies the caster's nodes to the shared shadow material only while
+  drawing), so a frame generates them up to 8 ms and the rest cast their shadow a frame or more later. What the first
+  frame holds (15 objects hidden until the first update: the haul pieces, the panel mechanism, a fork, a few labels) is
+  built before the loading screen lifts (main.ts awaits it). Other scenes (PMREM, the item icons, the output pass) keep
+  three's synchronous build, which their one-off renders need; mipmap pipelines are three's own and stay synchronous
+  (built at boot, behind the loading screen).
+- **Pass 2, from the moment the loading screen lifts:** the rest of the scene, nearest the camera as it is at each step
+  (the lobby's view, then wherever the player has got to), twelve objects a `compileAsync`, in rings of 60, 150, 300,
+  600 m and the rest; each ring's shadow casters are then unculled a batch a frame (the batch adapts to keep that
+  frame's shader generation under ~6 ms). The held item models, the carry meshes and the knockdown stars build after the
+  first ring. Boot marks `shaders-ring-0` … `shaders-ring-4` and `shaders-all` (with pipelines, programs and how many
+  were built late) time it.
+- **The device report:** the suite now waits for `shaders-all` (at most 60 s) before its scenes, so their "settle
+  (compile stalls)" column measures what the warm-up missed, and the report has a "Pipelines built after the loading
+  screen" block: when they were all built, how long Run waited, how many were built late, and how many were built late
+  during the scenes (each a miss). **The test stays the spec's: 0 stalls over 100 ms and +0 programs in every scene.**
+- **`npm run cold-launch`** gains `--jump` (click Jump in the moment it is enabled; frames over 100 ms once the loading
+  screen has lifted, render pipelines built after it, sync and async, and when the last was ready), `--late-stills`
+  (stills 0, 2, 5 and 10 s after that click), and, per long task in traced runs, the functions on its stack (file:line).
+
+### Numbers (headless Chromium on the M1 Max, local build, `--jump`, 3 clean runs, medians [min–max] ms)
+
+main is origin/main be8bf67d9, built and measured with the same harness. Its runs had a higher machine load (11–25)
+than the branch's final runs (5.5–12.8), so part of the fast profile's difference is load (a second main run at load
+18–26: fast `interactive` 4,533, slow 29,004).
+
+| | fast main | fast branch | slow main | slow branch |
+| --- | --- | --- | --- | --- |
+| Jump in enabled (`enter-enabled`) | 3,508 [3,404–3,892] | **2,825** [2,754–2,921] | 25,538 [24,186–26,424] | **21,064** [21,054–21,427] |
+| loading screen gone (`interactive`) | 4,174 [4,052–4,568] | **3,550** [3,468–3,641] | 28,625 [26,997–29,511] | **25,280** [25,155–25,611] |
+| every render pipeline built (the last one ready) | 4,279 [4,177–4,712] | 4,922 [4,812–5,019] | 29,420 [27,675–30,336] | 40,943 [40,063–41,014] |
+| frames over 100 ms after Jump in, loading screen gone | 0 | 0 | 2 [2–2] (133–183 ms) | 2 [2–2] (150–183 ms) |
+| render pipelines built synchronously after Jump in | 1 (`buddy_face`'s shadow) | **0** | 1 | **0** |
+| shaders generated inside a frame after the warm-up (> 20 ms) | not marked | 0 | not marked | 0 |
+| pipelines / programs before the loading screen lifts | 151 / 224 | **96 / 158** | 149 / 220 | **94 / 154** |
+| WGSL generation before it (ms) | 643 | 334 | 3,514 | 1,772 |
+| synchronous `createRenderPipeline` calls in all | 18 | 13 | 20 | 13 |
+
+- Pass 2 ends (`shaders-all`) at 4,999 [4,885–5,101] on fast, 1.4 s after the loading screen; on slow the first ring is
+  done 6.9 s after it and everything ~16 s after (41.5 s; one of three runs finished inside the 16 s hold, the others
+  later). It builds 64 more pipelines (160 in all); 16 were first needed by a frame (built late), and 145–147 objects
+  were held a frame or more (the arrival's surroundings: the spawn is 900 m from where the lobby looks).
+- **The two slow frames after Jump in are there on main too**: the join's first frames (audio start, the arrival's
+  first render objects, Rapier), not shader or pipeline builds (none in those frames; traced run `lf-branch3t`). The
+  fast profile has none.
+- `--detail` (Jump in after 2 s, then Far Head): **no pipeline built after `shaders-all`**, at the arrival or on Far
+  Head, where main built `buddy_face`'s shadow synchronously. `--play`: Rapier in before Jump in, the body lands and is
+  still (y 18.45 at x 903, z 14), walking 1.5 s moves 8.3 m (fast) and 8.7 m (slow), a jump rises 0.62–0.86 m, 0
+  errors on both profiles. `npm run scenario -- smoke`: all 8 checks pass. `npm run check` passes.
+- Not changed here: on slow, ~18 s after the loading screen lifts, the adaptive governor sheds sea detail and sun
+  shadows at its resolution floor (src/features/adaptive-res.ts) and every material's shader is generated again in one
+  frame: a 1.3–1.6 s stall on main and on the branch alike (the 4x-throttled CPU reaches the floor; ckn9ca's 60 fps does
+  not). The new `startup:frame-wgsl` marks name it (sea, wood kit, Sickle Isles horizon). Worth its own fix.
+
+### What can be missing, and for how long (slow profile: Slow 4G + 4x CPU, Jump in clicked the moment it is enabled)
+
+Framed stills, main on top and the branch below, at 0, 2, 5 and 10 s after the click took effect:
+`.look/cold-launch/lf-compare/slow-late-main-top-branch-bottom.png` (and `fast-late-main-top-branch-bottom.png`;
+singles in `.look/cold-launch/lf-final5/` and `lf-main-stills/`). The player lands at the spawn at once.
+
+- **The spawn's market stall** (its shelf and roof; its pots show) **and the small wooden sign beside it**: missing for
+  about 0.8 s after Jump in, there by 2 s. The rest of what is first seen at the spawn (145 objects in all) appears
+  within ~3.3 s, nearest first; most of it is behind or beside the camera.
+- **A caster's shadow** when it first enters the sun's shadow map: a frame or more late (8 ms of shadow shaders a frame).
+- **Held items, the carry meshes (rails, stone, beam, boiler) and the knockdown stars**: compiled after the first ring
+  (~7 s on slow); before that, the first time one appears it is held until compiled (under a second in these runs; the
+  stars at the landing's flop were not seen missing in the stills, but a still is not proof).
+- **Anything far** (the town past 150 m, the railway, other islands): built by ~16 s on slow; if seen sooner, held like
+  the stall.
+- Never missing: the avatar (Buddy and his shadow), the ground, the water and the sky, which are in pass 1, and the
+  output. On the fast profile no still shows anything missing (the 0 s still is under the loading screen's fade).
+
+### Safari (estimate, not measured)
+
+ckn9ca spent ~84 ms per pipeline, built one after another. Pass 1 now builds 94–96 of 151 (Chromium's count; Safari
+built 153), so ~57 fewer before Jump in: **~4.8 s**, plus about half of the 643 ms of WGSL: **18.8 → ~13.5 s**
+(estimate; range 12.5–15 s, since pipelines differ in cost and Safari's first frame also builds the 15 first-frame
+objects). Not the ~10 s the spec hoped for: pass 1 still holds the lobby frame's ~80 pipelines (18 of them shadow),
+PMREM and the sky bakes, the 4 item-icon pipelines and Ring Island's 2. Moving the icons and Ring Island's view after
+the loading screen is the next step (Ring Island's build is a 110 ms CPU task on fast, ~440 ms at 4x, so it needs
+splitting first). On Safari, pass 2's ~64 pipelines at ~84 ms would take ~5.5 s after the loading screen. The stalls
+ckn9ca saw (spawn +6 programs, Far Head's 889 ms) should be gone, since nothing in the scene builds a pipeline
+synchronously any more and the suite starts after pass 2; that is the claim the device run tests. **Safari's own
+misses were not reproduced**: Playwright's WebKit is not installed here (downloading it needs the owner's yes), and
+safaridriver needs "Allow remote automation" in Safari's Developer settings (`npm run cold-start -- --safari-probe`
+says so).
+
+**To check on a device**, once this branch ships: in a **new** private window on the Mac's Safari (and on the iPhone),
+`https://boogle.club/?device=new&cold=1`, then run the quick suite. The report's launch breakdown has `enter-enabled`,
+`shaders-ring-*` and `shaders-all`, its "Pipelines built after the loading screen" block the late counts, and each
+scene's settle column the stalls (pass: 0 over 100 ms and +0 programs everywhere).
+
 ## 6. Implemented on `perf/cold-start`, with numbers
 
 Each its own commit; same machine, 3 clean runs per profile, medians [min–max]:
@@ -349,6 +457,8 @@ Production builds served locally, headless Chromium, both profiles, against main
 
 ## 7. What could not be measured
 
+- **The lobby-first branch on any device or in Safari** (section 5c): the Safari number there is an estimate, and
+  what Safari builds after the warm-up was not reproduced.
 - **Any device, from here.** Two device runs from the owner inform sections 3 and 3b (hn4mei, ckn9ca); this branch
   has not run on one. Unknown: iOS's shader cache across visits, real cellular latency and bandwidth, a phone CPU (4x
   throttling of an M1 Max core is not a phone), and which programs Safari built after the warm-up in ckn9ca (+6 at

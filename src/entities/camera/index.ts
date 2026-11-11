@@ -11,6 +11,7 @@ import { waterField } from '../../physics/water-field.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { cam, camConstraints, camForward, followEye, me } from '../../player/player.ts';
 import { camera, sky, sun } from '../../render/scene.ts';
+import { warmDraw } from '../../render/precompile.ts';
 import { SUN_DIR } from '../../render/sun-dir.ts';
 
 // After every visual sync, before the clouds (props.ts, -190) and the features.
@@ -64,3 +65,6 @@ function updateCamera(elapsed: number) {
 }
 
 spawn({ kind: 'camera', update: ({ elapsed }) => updateCamera(elapsed) });
+// The shader warm-up's frame is the lobby's first view (src/render/precompile.ts builds only what it draws before the
+// loading screen lifts), so the camera takes that pose for it: before, it drew from wherever the camera was made.
+warmDraw(() => updateCamera(0));

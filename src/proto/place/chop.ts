@@ -118,14 +118,17 @@ const packFrame = new THREE.Group();
 packFrame.visible = false;
 
 // These meshes attach to the avatar after loading, so the scene warm-up cannot see them.
-warmUp(() => {
-  const g = new THREE.Group();
-  const rails = railsWorn.clone(),
-    stone = stoneWorn.clone();
-  rails.count = stone.count = 1;
-  g.add(rails, stone, beamWorn.clone(), boilerWorn.clone());
-  return g;
-});
+warmUp(
+  () => {
+    const g = new THREE.Group();
+    const rails = railsWorn.clone(),
+      stone = stoneWorn.clone();
+    rails.count = stone.count = 1;
+    g.add(rails, stone, beamWorn.clone(), boilerWorn.clone());
+    return g;
+  },
+  { defer: 'near' },
+);
 
 /** Owner cosmetic state; existing placeBack/placeBig keep their wire meanings. */
 export type PlaceLoad = { rails: number; stone: number; pack: boolean };

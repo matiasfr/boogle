@@ -66,6 +66,7 @@ const run = (id: string, scenes: SceneRow[], over: Partial<DeviceResult> = {}): 
   dlim: {},
   env: {},
   load: {},
+  bg: {},
   first: null,
   boot: {},
   files: [],

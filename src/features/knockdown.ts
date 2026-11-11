@@ -54,8 +54,9 @@ const starMat = material('feedback', {
   map: starTex,
   emissive: { linear: [1, 1, 1], gain: STAR_BRIGHTNESS },
 });
-// The stars are made at the first flop, the first visit's landing included: build their pipeline behind the loading screen.
-warmUp(() => new THREE.Sprite(starMat));
+// The stars are made at the first flop, the first visit's landing included: their pipeline builds just after the loading
+// screen, with the spawn's surroundings (src/render/precompile.ts).
+warmUp(() => new THREE.Sprite(starMat), { defer: 'near' });
 const ents = new WeakMap<THREE.Object3D, { amt: number; stars: THREE.Group }>(); // avatar -> its flop state
 function entOf(avatar: THREE.Object3D) {
   let e = ents.get(avatar);

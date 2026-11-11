@@ -15,6 +15,11 @@
 //   npm run cold-launch -- --fail                    Rapier's WASM answered 404, then aborted: what the player is left with
 //   npm run cold-launch -- --stills                  per profile: the loading screen before and after its title font lands
 //   npm run cold-launch -- --no-modulepreload        every run as a browser without rel=modulepreload
+//   npm run cold-launch -- --late-stills             per profile: Jump in the moment it is enabled, stills at 0, 2, 5, 10 s
+//                                                    (what a lobby-first build draws late)
+//   npm run cold-launch -- --jump                    clean and traced runs click Jump in the moment it is enabled, then
+//                                                    hold --jump-hold ms (12000): frames over 100 ms after it, pipelines
+//                                                    built after it (sync / async) and when the last one finished
 // (--detail also clicks Jump in, then puts the player on Far Head, the device suite's `head` scene.)
 //
 // Results: .look/cold-launch/<label>/summary.json (and runs/*.json). Takes the machine-wide bot slot for its browsers.
@@ -66,6 +71,8 @@ const PROFILES = opt('profiles', 'fast,slow').split(',');
 const LABEL = opt('label', `run-${Date.now().toString(36)}`);
 const OUT = path.join(root, '.look/cold-launch', LABEL);
 const HOLD_MS = Number(opt('hold', '4000')); // after "interactive": the room, the service worker, idle prefetch
+const JUMP = flag('jump');
+const JUMP_HOLD_MS = Number(opt('jump-hold', '12000'));
 const KEEP_FONTS = !flag('no-fonts');
 fs.mkdirSync(path.join(OUT, 'runs'), { recursive: true });
 const metal = flag('metal-cold') ? prepareIdentity(chromium.executablePath(), OUT) : null;
@@ -168,7 +175,7 @@ const base = `https://127.0.0.1:${port}/`;
 
 // ---- source maps: a profile's minified positions to source files ------------------------------------------------
 const maps = new Map<string, SourceMapConsumer | null>();
-function sourceOf(url: string, line: number, column: number): string {
+function sourceOf(url: string, line: number, column: number, withLine = false): string {
   const m = url.match(/\/assets\/[^?#]+\.js/);
   if (!m) return url ? url.replace(base, '/').slice(0, 60) : '(native)';
   const file = path.join(dist, m[0]);
@@ -179,7 +186,9 @@ function sourceOf(url: string, line: number, column: number): string {
   const consumer = maps.get(file);
   if (!consumer) return m[0];
   const pos = consumer.originalPositionFor({ line: line + 1, column });
-  return (pos.source ?? m[0]).replace(/^(\.\.\/)+/, '').replace(/^.*node_modules\//, '');
+  return (
+    (pos.source ?? m[0]).replace(/^(\.\.\/)+/, '').replace(/^.*node_modules\//, '') + (withLine ? `:${pos.line}` : '')
+  );
 }
 // The leaf's library; the owner is the nearest game file up the stack.
 const LIB: [RegExp, string][] = [
@@ -206,7 +215,7 @@ type Request = {
   fromSw: boolean;
   status: number;
 };
-type Mode = 'clean' | 'traced' | 'coverage' | 'detail' | 'play' | 'fail-404' | 'fail-abort' | 'stills';
+type Mode = 'clean' | 'traced' | 'coverage' | 'detail' | 'play' | 'fail-404' | 'fail-abort' | 'stills' | 'late';
 async function run(profileName: string, n: number, mode: Mode) {
   const profile = PROFILE[profileName]!;
   // --metal-cold: a copy of Chrome with its own bundle id (dev/cold-start/identity.ts), its Metal shader cache cleared
@@ -347,7 +356,7 @@ async function run(profileName: string, n: number, mode: Mode) {
     await page.route(/\.wasm$/, (route) =>
       mode === 'fail-404' ? route.fulfill({ status: 404, body: 'blocked' }) : route.abort('blockedbyclient'),
     );
-  const extra = mode === 'detail' ? '&startup=1' : mode === 'play' ? '&debugcam=1' : '';
+  const extra = mode === 'detail' || mode === 'late' ? '&startup=1' : mode === 'play' ? '&debugcam=1' : '';
   const query = `?room=cold-${profileName}-${n}-${Date.now().toString(36)}&notrack=1${extra}`;
   const wall = Date.now();
   await page.goto(base + query, { waitUntil: 'commit', timeout: 180000 });
@@ -365,7 +374,8 @@ async function run(profileName: string, n: number, mode: Mode) {
     return result as never;
   }
   // --play clicks Jump in the moment it is enabled, which can be before "interactive" (the room, the last frames).
-  const ready = mode === 'play' ? 'cold:enter-enabled' : 'boot:interactive';
+  const jump = (JUMP && (mode === 'clean' || mode === 'traced')) || mode === 'late';
+  const ready = mode === 'play' || jump ? 'cold:enter-enabled' : 'boot:interactive';
   await page.waitForFunction((m) => performance.getEntriesByName(m).length > 0, ready, {
     timeout: 180000,
     polling: 16,
@@ -404,7 +414,21 @@ async function run(profileName: string, n: number, mode: Mode) {
       me.yaw = yaw;
     });
   }
-  await page.waitForTimeout(HOLD_MS);
+  if (jump) {
+    // A player who clicks the moment it is enabled: whatever is still compiling compiles under them.
+    await page.evaluate(() => performance.mark('cold:jump-in'));
+    await page.locator('#enter').click();
+  }
+  if (mode === 'late') {
+    // The click lands when the page is free (the first frame drawn); the stills count from there, in the page's clock.
+    const clicked = await page.evaluate(() => performance.now());
+    for (const s of [0, 2, 5, 10]) {
+      const now = await page.evaluate(() => performance.now());
+      await page.waitForTimeout(Math.max(0, clicked + s * 1000 - now));
+      await page.screenshot({ path: path.join(OUT, `${profileName}-late-${String(s).padStart(2, '0')}s.png`) });
+    }
+  }
+  await page.waitForTimeout(mode === 'late' ? HOLD_MS : jump ? JUMP_HOLD_MS : HOLD_MS);
   if (mode === 'detail') await page.screenshot({ path: path.join(OUT, `${profileName}-detail-head.png`) });
   const page_ = await page.evaluate(() => {
     const n = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
@@ -423,8 +447,44 @@ async function run(profileName: string, n: number, mode: Mode) {
       .getEntriesByType('mark')
       .filter((m) => m.name.startsWith('startup:render-pipeline:'))
       .map((m) => ({ t: Math.round(m.startTime), ...JSON.parse(m.name.slice('startup:render-pipeline:'.length)) }));
+    // After Jump in (--jump): the frames a player sees and the pipelines built under them.
+    // From the click or the loading screen lifting, whichever is later: frames behind the loading screen are not seen.
+    const clicked = performance.getEntriesByName('cold:jump-in')[0]?.startTime;
+    const lifted = performance.getEntriesByName('boot:interactive')[0]?.startTime ?? 0;
+    const jumped = clicked === undefined ? undefined : Math.max(clicked, lifted);
+    const render = snap.pipelines.filter((p) => p.kind.startsWith('createRenderPipeline'));
+    const afterJump =
+      jumped === undefined
+        ? undefined
+        : {
+            stalls: snap.frames
+              .filter((f) => f.t > jumped && f.dt > 100)
+              .map((f) => [Math.round(f.t), Math.round(f.dt)]),
+            longest: Math.round(Math.max(0, ...snap.frames.filter((f) => f.t > jumped).map((f) => f.dt))),
+            sync: render.filter((p) => p.t > jumped && p.kind === 'createRenderPipeline').map((p) => p.label),
+            async: render.filter((p) => p.t > jumped && p.kind === 'createRenderPipelineAsync').length,
+          };
+    // When the last render pipeline the page asked for was ready (both builds alike: the warm-up's and any after).
+    const allBuilt = Math.round(Math.max(0, ...render.map((p) => p.t + p.ms)));
+    // Pass 2's end on a lobby-first build: how many pipelines and objects were built late (each a miss of the warm-up).
+    const all = (performance.getEntriesByName('boot:shaders-all')[0] as PerformanceMark | undefined)?.detail as
+      Record<string, number> | undefined;
+    // Shaders generated synchronously inside a frame after the warm-up (src/render/precompile.ts marks them).
+    const frameWgsl = performance
+      .getEntriesByType('mark')
+      .filter((m) => m.name.startsWith('startup:frame-wgsl:'))
+      .map((m) => ({ t: Math.round(m.startTime), ...JSON.parse(m.name.slice('startup:frame-wgsl:'.length)) }));
+    const held = performance
+      .getEntriesByType('mark')
+      .filter((m) => m.name.startsWith('startup:held:'))
+      .map((m) => ({ t: Math.round(m.startTime), ...JSON.parse(m.name.slice('startup:held:'.length)) }));
     return {
       marks,
+      all,
+      frameWgsl,
+      held,
+      afterJump,
+      allBuilt,
       shaders,
       pipelines: snap.pipelines,
       longtasks: snap.entries
@@ -646,12 +706,21 @@ function attributeProfile(cpu: CpuProfile, t0: number, marks: Record<string, num
   let t = cpu.startTime;
   const byLib: Record<string, number> = {};
   const byOwner: Record<string, number> = {};
-  const until = (marks.interactive ?? Infinity) * 1000;
+  // --jump: the hold after Jump in too (what the player plays through)
+  const until = (JUMP ? Infinity : (marks.interactive ?? Infinity)) * 1000;
   const order = Object.entries(marks)
     .filter(([k]) => k !== 'ttfb' && k !== 'html')
     .sort((a, b) => a[1] - b[1]);
   const byPhase: Record<string, Record<string, number>> = {};
   const inLong = long.map(() => ({}) as Record<string, number>);
+  // Inclusive time per named function on the stack inside each long task: what the owner was doing.
+  const inLongFn = long.map(() => ({}) as Record<string, number>);
+  const names = new Map(
+    cpu.nodes.map((n) => {
+      const f = n.callFrame;
+      return [n.id, f.url ? sourceOf(f.url, f.lineNumber, f.columnNumber, true) : f.functionName];
+    }),
+  );
   const add = (o: Record<string, number>, k: string, v: number) => (o[k] = (o[k] ?? 0) + v);
   for (let i = 0; i < (cpu.samples?.length ?? 0); i++) {
     t += cpu.timeDeltas![i]!;
@@ -666,7 +735,16 @@ function attributeProfile(cpu: CpuProfile, t0: number, marks: Record<string, num
     add(byOwner, owner, dt);
     add((byPhase[order.find(([, m]) => m * 1000 >= at)?.[0] ?? 'after'] ??= {}), owner, dt);
     long.forEach(([start, dur], j) => {
-      if (at >= start! * 1000 && at <= (start! + dur!) * 1000) add(inLong[j]!, owner, dt);
+      if (at < start! * 1000 || at > (start! + dur!) * 1000) return;
+      add(inLong[j]!, owner, dt);
+      const seen = new Set<string>();
+      for (let n: number | undefined = id; n !== undefined; n = parent.get(n)) {
+        const name = names.get(n);
+        if (name && !seen.has(name)) {
+          seen.add(name);
+          add(inLongFn[j]!, name, dt);
+        }
+      }
     });
   }
   const round = (o: Record<string, number>, n = 40) =>
@@ -681,7 +759,7 @@ function attributeProfile(cpu: CpuProfile, t0: number, marks: Record<string, num
     byLib: round(byLib),
     byOwner: round(byOwner),
     byPhase: Object.fromEntries(Object.entries(byPhase).map(([p, o]) => [p, round(o, 6)])),
-    longTasks: long.map(([start, dur], j) => ({ start, dur, top: round(inLong[j]!, 4) })),
+    longTasks: long.map(([start, dur], j) => ({ start, dur, top: round(inLong[j]!, 4), fns: round(inLongFn[j]!, 60) })),
   };
 }
 
@@ -723,7 +801,7 @@ function attributeTrace(file: string, marks: Record<string, number>) {
   if (!entry) return undefined;
   const { pid, tid } = entry;
   const origin = nav && nav.pid === pid ? nav.ts : entry.ts - marks.entry! * 1000;
-  const until = origin + marks.interactive! * 1000;
+  const until = origin + (JUMP ? Math.max(...Object.values(marks)) + JUMP_HOLD_MS : marks.interactive!) * 1000;
   const main = events
     .filter(
       (e) => e.pid === pid && e.tid === tid && e.ph === 'X' && e.dur !== undefined && e.ts >= origin && e.ts <= until,
@@ -807,6 +885,7 @@ try {
     if (flag('coverage')) all.push(await run(p, 0, 'coverage'));
     if (flag('play')) all.push(await run(p, 0, 'play'));
     if (flag('stills')) await run(p, 0, 'stills');
+    if (flag('late-stills')) all.push(await run(p, 0, 'late'));
   }
   if (flag('detail')) all.push(await run('fast', 0, 'detail'));
   if (flag('fail')) for (const m of ['fail-404', 'fail-abort'] as const) all.push(await run('fast', 0, m));
@@ -840,6 +919,16 @@ for (const p of PROFILES) {
   rows['h2 share %'] = stat(
     rs.map((r) => (100 * r.requests.filter((q) => q.protocol === 'h2').length) / r.requests.length),
   );
+  rows['all render pipelines built'] = stat(rs.map((r) => r.allBuilt ?? NaN));
+  rows['shaders-all: built late (pipelines)'] = stat(rs.map((r) => r.all?.late ?? NaN));
+  rows['shaders-all: held a frame or more (objects)'] = stat(rs.map((r) => r.all?.held ?? NaN));
+  rows['shaders-all: pipelines'] = stat(rs.map((r) => r.all?.pipelines ?? NaN));
+  if (JUMP) {
+    rows['after Jump in: frames over 100 ms n'] = stat(rs.map((r) => r.afterJump?.stalls.length ?? NaN));
+    rows['after Jump in: longest frame ms'] = stat(rs.map((r) => r.afterJump?.longest ?? NaN));
+    rows['after Jump in: sync render pipelines n'] = stat(rs.map((r) => r.afterJump?.sync.length ?? NaN));
+    rows['after Jump in: async render pipelines n'] = stat(rs.map((r) => r.afterJump?.async ?? NaN));
+  }
   rows['shader warm-up ms'] = stat(rs.map((r) => r.shaders?.ms ?? NaN));
   rows['programs'] = stat(rs.map((r) => r.shaders?.programs ?? NaN));
   rows['pipelines'] = stat(rs.map((r) => r.shaders?.pipelines ?? NaN));

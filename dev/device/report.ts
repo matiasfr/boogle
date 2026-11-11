@@ -228,6 +228,26 @@ export function launchLines(r: DeviceResult): string[] {
 
 /** Where the launch went: the boot marks in order with the step from the one before, then bytes, the largest files and
  * the shader warm-up. Empty when the run recorded no first load. */
+/** The shader warm-up's pass 2 (src/render/precompile.ts): after the loading screen, before the scenes. */
+function backgroundShaderRows(r: DeviceResult): string[] {
+  const b = r.bg;
+  if (!Object.keys(b).length) return [];
+  return [
+    '### Pipelines built after the loading screen',
+    '',
+    ...kv([
+      ['all built at (ms since the navigation)', b.all_ms ?? 'not finished when Run waited 60 s'],
+      ['Run waited for them (ms)', b.wait_ms],
+      ['pipelines in all', b.pipelines],
+      ['built late, first needed in a frame (pipelines)', b.late],
+      ['held out of a frame until compiled (objects)', b.held],
+      ['still building when the scenes started', b.building],
+      ['built late during the scenes (misses of the warm-up)', r.done?.bg_after],
+    ]),
+    '',
+  ];
+}
+
 export function launchBreakdown(r: DeviceResult): string[] {
   const f = r.first;
   if (!f) return [];
@@ -382,6 +402,7 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
     '',
     ...kv(loadRows(r.load)),
     '',
+    ...backgroundShaderRows(r),
     ...launchBreakdown(r),
     `## Scenes (${r.scenes.length})`,
     '',
