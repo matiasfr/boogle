@@ -80,9 +80,14 @@ const railQueriesBan = {
 };
 /** What code outside src/sim and src/world may not import of the railway's sim. */
 const railViewBans = [railCheckBan, railSystemsBan, railReadModelBan];
-// The same for an `import()`, which no-restricted-imports does not see (views load most of their code that way).
+// The same for an `import()`, which no-restricted-imports does not see (views load most of their code that way):
+// a quoted path, a template literal and a `'/src/…' as string` path alike. Attribute paths, not combinators: the
+// safety runner re-matches each reported node without its ancestors.
+const RAIL_DYNAMIC = '/(^|\\/)railway-(check|read-model|systems|sys-[\\w-]+)(-[\\w-]+)?\\.ts$/';
 const railDynamicBan = {
-  selector: 'ImportExpression[source.value=/(^|\\/)railway-(check|read-model|systems|sys-[\\w-]+)(-[\\w-]+)?\\.ts$/]',
+  selector: ['source.value', 'source.quasis.0.value.raw', 'source.expression.value']
+    .map((at) => `ImportExpression[${at}=${RAIL_DYNAMIC}]`)
+    .join(', '),
   message: `A view does not load the railway's systems, check or read model (${RAIL_PLAN}).`,
 };
 /** The tests and tools that import the read model today, file by file; the list may only lose lines (M12b deletes it). */
@@ -250,12 +255,22 @@ const policyBlocks: PolicyBlock[] = [
   // src/world may run the railway's systems; only the server install loads with the check, and only the server, the
   // mirror and the predictor build the read model.
   {
-    files: ['src/world/*.{js,ts}', 'src/net/**/*.{js,ts}'],
+    files: ['src/world/*.{js,ts}'],
     ignores: ['src/world/game-world.{js,ts}'],
     rules: {
       'no-restricted-imports': [
         'error',
         { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan, railReadModelBan] },
+      ],
+    },
+  },
+  // src/net is the room layer, not one of the places that run a rule (M3b rule 2): no railway system either.
+  {
+    files: ['src/net/**/*.{js,ts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, ...railViewBans] },
       ],
     },
   },
@@ -337,7 +352,8 @@ const policyBlocks: PolicyBlock[] = [
       [['src/sim/**/*.{js,ts}'], [railCheckBan, railReadModelBan]],
       [['src/sim/railway-seed*.ts', 'src/sim/railway-drive.ts'], [railReadModelBan]],
       [['src/sim/railway-live.ts'], []],
-      [['src/sim/railway-check*.ts'], []],
+      [['src/sim/railway-check.ts'], []],
+      [['src/sim/railway-check-*.ts'], [railReadModelBan]],
       [['src/sim/railway-components.ts'], [railLeafBan]],
       [['src/sim/railway-queries*.ts'], [railCheckBan, railReadModelBan, railQueriesBan]],
     ] as const
