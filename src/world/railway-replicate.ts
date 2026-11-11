@@ -23,6 +23,7 @@ import type { RailJob } from '../sim/railway-line.ts';
 import type { RailQJob } from '../sim/railway-line2.ts';
 import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED } from '../sim/railway-components.ts';
 import { refreshRailway } from '../sim/railway-read-model.ts';
+import { clockWorld } from '../sim/railway-queries.ts';
 import { railwayOf } from './railway-predict.ts';
 
 export const RAIL_SCHEMAS = RAIL_REPLICATED;
@@ -48,8 +49,8 @@ type Clock = {
  * helpers. Until a whole state has arrived the read model is a fresh railway (actions wait for it anyway). */
 export function createRailwayMirror() {
   const mirror = createMirror(RAIL_SCHEMAS);
-  let world = createWorld(RAIL_COMPONENTS);
-  const s = railwayOf(createRailwayWorld());
+  let world = clockWorld(createWorld(RAIL_COMPONENTS));
+  const s = railwayOf(clockWorld(createRailwayWorld()));
   const clocks: Clock[] = [...LINE1_STATIONS, ...LINE2_STATIONS].map(() => ({
     ahead: 0,
     end: -1,
@@ -174,9 +175,11 @@ export function createRailwayMirror() {
       mirror.refill();
       synced = false;
     },
+    /** Drop everything. The world the read model (and `adapter.read.world()`) is linked to is left whole: the despawns
+     * the reset notifies go to the fresh world, which the next whole state fills and relinks. */
     reset() {
+      world = clockWorld(createWorld(RAIL_COMPONENTS));
       mirror.reset();
-      world = createWorld(RAIL_COMPONENTS);
       filled = false;
       s.piles = [];
       s.accounts = [];

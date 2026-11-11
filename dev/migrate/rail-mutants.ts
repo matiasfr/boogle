@@ -143,10 +143,14 @@ function clean(file: string) {
   const r = spawnSync('git', ['status', '--porcelain', '--', file], { cwd: ROOT, encoding: 'utf8' });
   return r.status === 0 && r.stdout.trim() === '';
 }
+// The test runs never see GOLDEN: with it set the golden shards would rewrite their fixtures from the mutated rules
+// (M3c's review).
+const TEST_ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'GOLDEN'));
 /** The names of the tests that failed (TAP `not ok` lines), or the reason the run never got to report. */
 function failing(files: string[]): string[] {
   const r = spawnSync(process.execPath, ['--test', '--test-reporter=tap', ...files], {
     cwd: ROOT,
+    env: TEST_ENV,
     encoding: 'utf8',
     maxBuffer: 1 << 28,
   });

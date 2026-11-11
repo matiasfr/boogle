@@ -642,7 +642,7 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     the read model's arithmetic is the one ported, so the views keep what they show.
   - **Not done here, by the lane rule:** `layLine1` and `layLine2` (`railway-sys-line1.ts`, `railway-sys-line2.ts`,
     M3c's lane) still hold their own copy of the laying arithmetic; each can call `layProgress` in a one-line change,
-    which the stage and ops goldens would then guard.
+    which the stage and ops goldens would then guard. **Done in M8b**, goldens unchanged.
   - **Reviewer attacks, answered:** a prediction never writes `ahead` or `end` (`rail.jobClock` runs only on the
     server, `railSettle` after an applied action) and holds funding back, so a clone's Job rows carry the mirror's
     clock fields as copied; a clone can only complete a job the mirror already completed, with its `end`. Two reads
@@ -664,8 +664,8 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     but wall time; `npm run counts` 238 draws, 67 shadow draws, 209 programs before and after; the `trains-on` engine
     still identical but the chimney puff. Frame cost not measured (machine load 9 to 26): no view calls the facade
     or a query yet, so a frame does what it did after M1.
-- [ ] **M8b. The load check on the world.** _High (`src/sim`; what a save must satisfy to load). After M8 and
-      M3c._
+- [x] **M8b. The load check on the world.** _High (`src/sim`; what a save must satisfy to load). After M8 and
+      M3c._ **Built 11 November, branch `ecs/m8b-load-check`; not shipped.**
   - `src/sim/railway-check.ts` keeps `railwayCheck(w)` (archetypes, counts, row limits) and calls four new flat
     files instead of `validateRailway(railwayView(w))`: `railway-check-line1.ts`, `railway-check-line2.ts`,
     `railway-check-trains.ts`, `railway-check-works.ts`, with the account, pile, outcome and catalog conditions of
@@ -688,6 +688,38 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     on nothing; a condition dropped in the restating (count the `throw` sites: old and new must match, or the
     difference is named); two faults in one world reporting a different message than before (accepted, and noted);
     the client: confirm nothing in `src/world/railway-replicate.ts` or the adapter relied on the old check.
+  - **Built (11 November, branch `ecs/m8b-load-check`):** `railwayCheck` keeps its archetypes, counts and row limits,
+    then `checkRailway` in `railway-check.ts` (validateRailway's catalog, fall, account, pile, tick, clock, outcome,
+    supply, encoding, forge-bound and timing conditions on the rows) and the four flat files `railway-check-line1.ts`,
+    `-line2.ts`, `-trains.ts`, `-works.ts`, each its validator's conditions on the row readers and the world queries in
+    the same order with the same messages, then the log conservation on the world's `railCounts`. All three production
+    callers go through `railwayCheck`, so they switched together: the server's load, the seed build and the driver's
+    `check`/`invariant`. The old validators and `railwayInvariant` stay, unused by production, until M12b;
+    `railway-live.ts` still runs both. No field was added and no `WORLD_NS` bump: every condition has a row or a query.
+    The corpus: `test/fixtures/railway-bad-worlds.ts` holds 81 bad worlds (one edit each to `awake`, `q2-arriving` or
+    `crossing-done`) for the 86 throw sites; 4 are unreachable from a world (the read model's playable state and
+    timing, always there; the train and Works rows, which the count check refuses first) and 1 is dominated (the second
+    'unlit cast'), each listed with its reason; two sub-conditions true by construction are dropped and named
+    (`work.length === sources.length`, `depotOut.length === 6`). `test/railway-check.test.ts` requires each bad world
+    refused with its message by the world check and by `validateRailway` on the world's read model, counts the old
+    sites in their source, and holds the rail and footing conservation in the check the seeds run (M3c's review);
+    `test/railway-check-stages-0..3.test.ts` accept all 34 golden stages by both checks. Dropping either conservation
+    check or any of three other conditions fails it. The load check's time on `q6-done` as the server loads it (plain
+    world, median of 7 × 500): 245.8 µs on main, 244.0 µs here; `awake` 212.0 to 223.0 µs: not lower as expected (the
+    archetype walk dominates; the queries' repeated lookups cost what building the model did). Saves: no save is
+    refused that main accepts, nor the reverse (same conditions, same order). The client relied on nothing: no file in
+    `src/world` but the server install, and nothing in the adapter, calls the check.
+  - **Folded in:** M8's leftover (`layLine1`, `layLine2` call `layProgress`); M8's review P3s (a mirror `reset()` keeps
+    `read.world()` whole; a timed fact on a client's world without `at` throws, the client's worlds being marked;
+    `read.world()` is `ReadWorld`, its writers typed `never`); M3c's review P3s (the seeds and drivers banned as value
+    imports from views and `src/world`, the `import()` ban through casts, the census skipping skipped tests,
+    `rail-mutants` without `GOLDEN`). Tests: `test/railway-read-facade.test.ts`, `test/railway-lint-review.test.ts`.
+  - **Verified:** every stage, ops and tick-order golden unchanged with `GOLDEN` unset; unit tests 1116/1116 plain and
+    with the `rail-audit` preload (997 before the corpus); `npm --prefix server test` 150/150 both ways; `npm run
+    test:net` 131/131 both ways; typecheck, lint, registry, level-check and assets clean; `npm run loop -- run`
+    identical to main but its wall time; the build's 415 asset names identical to main's. The corpus adds about 22 s
+    to `test:unit`'s wall time (110 s to 132 s on 10 cores): the stage files rebuild every seed stage. Not run: a
+    device, `npm run checkpoints`, Node 24.
 
 ### Lane B: out of `src/proto`
 

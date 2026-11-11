@@ -1,5 +1,6 @@
 // The census for the railway test rewrite (docs/plans/ecs-migration-railway.md, M3c and T1 to T7): per test file, the
-// test() calls and the assert calls written in it, counted on the syntax tree (a call in a loop counts once). A batch
+// test() calls and the assert calls written in it, counted on the syntax tree (a call in a loop counts once; a skipped
+// or todo test and the asserts inside it are not counted). A batch
 // prints it before and after its conversion: equal, or each difference named in its commit body. Not part of
 // `npm run check`.
 //
@@ -19,6 +20,25 @@ const callee = (n: Node): string => {
   }
   return '';
 };
+const OFF = new Set(['skip', 'todo']);
+/** A test that never runs: `test.skip(…)`, `test.todo(…)`, or a `{ skip }` / `{ todo }` option set to a truthy literal
+ * (`true`, a reason). A computed one (`skip: process.getuid?.() === 0`) runs on most machines and still counts. */
+function skipped(n: Node) {
+  const c = n.callee as Node;
+  const member = c.type === 'MemberExpression' ? ((c.property as Node).name as string) : '';
+  if (OFF.has(member)) return true;
+  return (n.arguments as Node[]).some(
+    (a) =>
+      a.type === 'ObjectExpression' &&
+      (a.properties as Node[]).some(
+        (p) =>
+          p.type === 'Property' &&
+          OFF.has(((p.key as Node).name ?? (p.key as Node).value) as string) &&
+          (p.value as Node).type === 'Literal' &&
+          !!(p.value as Node).value,
+      ),
+  );
+}
 function count(file: string) {
   const { program, errors } = parseSync(file, fs.readFileSync(file, 'utf8'));
   if (errors.length) throw new Error(`${file}: ${errors[0]!.message}`);
@@ -30,8 +50,10 @@ function count(file: string) {
     const n = v as Node;
     if (n.type === 'CallExpression') {
       const name = callee(n);
-      if (name === 'test' || name === 'it' || name === 'test.' || name === 'it.') tests++;
-      else if (name === 'assert' || name === 'assert.') asserts++;
+      if (name === 'test' || name === 'it' || name === 'test.' || name === 'it.') {
+        if (skipped(n)) return; // neither it nor the asserts written in it run
+        tests++;
+      } else if (name === 'assert' || name === 'assert.') asserts++;
     }
     for (const [k, child] of Object.entries(n)) if (k !== 'parent') walk(child);
   };
