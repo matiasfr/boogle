@@ -2,7 +2,8 @@
 // runs twice: today's way (plain rows, a hand projection, the actions naming what they touched, structuredClone for
 // the predictor) and E's (a component, an action system, world.changes() feeding the replicator, world.clone()).
 // Measured per server step: actions + commit + flush to six mirrors, and the bytes allocated; per client: the
-// predictor's clone and a rebuild with 8 pending actions. ECS_BUDGET=1 prints the numbers; over a bound warns, never fails.
+// predictor's clone and a rebuild with 8 pending actions. ECS_BUDGET=1 prints the numbers; over a bound warns, over a
+// hard limit far above it fails.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createWorld, defineComponent, defineSystem, type World } from '../src/ecs/index.ts';
@@ -10,7 +11,7 @@ import { mulberry32 } from '../src/sim/rng.ts';
 import { cellOf, GLOBAL_CELL } from '../src/world/replicate.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createMirror } from '../src/world/replicate-client.ts';
-import { budgetWarning, measureWithinBudget } from './helpers/budget.ts';
+import { budgetWarning, hardLimitFailure, measureWithinBudget } from './helpers/budget.ts';
 import { touchChanges, worldProjections } from '../src/world/replicate-world.ts';
 
 const N = 3000;
@@ -171,15 +172,24 @@ const LIMITS = Object.fromEntries(
     [`${w}RebuildMs`, 20],
   ]),
 );
+// Hard limits that fail, 2x the warning limits (test/helpers/budget.ts). Measured 11 November on HOTBOX (i9-10900K,
+// Node 26; as slow as or slower than the M1 Max's 7 November numbers in docs/plans/ecs-e.md), best per copy, today / E:
+// idle step 0.13 / 0.13, churn5 0.33 / 0.30, clone 1.74 / 0.0016, rebuild 1.74 / 0.14 ms; worst with 20 budget-test
+// copies beside npm run check: step 0.33 / 0.33, churn5 1.4 / 0.93, clone 6.3 / 0.0045, rebuild 18 / 0.47 ms. So each
+// hard limit is 17x or more idle and 2.2x or more that worst loaded run.
+const HARD = Object.fromEntries(Object.entries(LIMITS).map(([k, v]) => [k, v * 2]));
 
 test(`E against today's replicated path: ${N} entities, ${CLIENTS} clients`, { timeout: 60_000 }, (t) => {
   let last!: ReturnType<typeof measureOnce>;
   const { best, limits, scale, runs } = measureWithinBudget(LIMITS, () => (last = measureOnce()).ms);
   t.diagnostic(JSON.stringify({ report: last.report, best, loadScale: +scale.toFixed(2), runs }));
   if (process.env.ECS_BUDGET) console.table(last.report);
-  // A timing target guides and never fails (owner, 10 November); the state checks above still fail.
+  // A timing target guides and never fails (owner, 10 November); the state checks above still fail, and so does a hard
+  // limit far above it (owner, 11 November).
   const warning = budgetWarning('ecs budget', best, limits, scale, runs);
   if (warning) t.diagnostic(warning);
+  const failure = hardLimitFailure('ecs budget', best, HARD, scale, runs);
+  assert.equal(failure, '', failure);
 });
 function time(fn: () => void) {
   const t = performance.now();

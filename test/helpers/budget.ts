@@ -1,8 +1,12 @@
 // Timing budgets that survive a busy machine. A budget test exists to catch an algorithmic regression (tens of times
 // slower), not a noisy neighbour (a few times slower), so: measure up to RUNS times and keep each metric's best,
 // stop at the first run that is within budget, and stretch the absolute limits by the machine's load (capped, so a
-// real regression still stands out). Over a limit is a printed warning with the numbers, never a failure. BUDGET_RUNS
-// and BUDGET_LOAD_SCALE=off override, for debugging.
+// real regression still stands out). Over a limit is a printed warning with the numbers, never a failure. Each test
+// also has hard limits, 2x its warning limits and far above today's numbers (17x or more today's idle best, and over 2x
+// the worst best seen with 20 copies running beside npm run check on HOTBOX), stretched by the same load scale: only a
+// real regression, tens of times slower, fails (owner, 11 November: "Add a limit far above today's numbers").
+// BUDGET_RUNS and BUDGET_LOAD_SCALE=off override, for debugging. os.loadavg() is all zeros on Windows, so the load
+// scale is always 1 on HOTBOX.
 import os from 'node:os';
 
 export const RUNS = Number(process.env.BUDGET_RUNS) || 5;
@@ -59,6 +63,18 @@ export function budgetWarning(
   const line = `warning: ${name} over its timing target (reported, not a failure): ${over}`;
   print(line);
   return line;
+}
+
+/**
+ * The tripwire under the warning: the metrics over their hard limits (stretched by the same load scale) as one failure
+ * message, or '' when all are within them. The test asserts it is ''. Hard limits sit above the warning limits, so a
+ * run over one keeps measuring up to RUNS times first and the best of those is what is judged.
+ */
+export function hardLimitFailure(name: string, best: Metrics, hard: Metrics, scale: number, runs: number): string {
+  const scaled: Metrics = {};
+  for (const k of Object.keys(hard)) scaled[k] = hard[k]! * scale;
+  const over = overBudget(best, scaled, scale, runs);
+  return over && `${name} over its hard limit (a real regression, tens of times slower than today): ${over}`;
 }
 
 /** The metrics over their limits as one message, or '' when all are within their limits. */
