@@ -23,6 +23,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 ## Multiplayer
 - Races with the RC carts, since the soapbox turned out fun to drive (owner, 2026-11-01)
 - Rooms have a host who can reset the room from the UI, like Palworld's servers: "A user can host its own server or in this case there's a dedicated server but maybe a user should be able to reset the server from UI like if they're an admin or if they're the host of a room. So maybe rooms should have hosts, but it should work in a way that accommodates for mobile, where a host may intermittently disconnect if they sign up, go to a different app, etc." So being host must survive a phone going to the background and coming back; for the future (owner, 2026-11-10)
+- The room is the save: "this game feels more like there's a coherent save progress that is really about the communal room and less about individual players. And so that's a very different model than compared to like a Counter-Strike server where anyone can just drop in or drop out." Clarifies the host idea above: a room is a shared world with an owner and its people, not an open server (owner, 2026-11-10)
 
 ## Controls
 - Camera distance as a setting in the pause menu, beside the volume slider, instead of a dedicated control (owner, 2026-11-02)
