@@ -6,9 +6,9 @@
 //
 // Lobby first (docs/research/cold-start.md, 5b; owner, 10 November 2026: "Yes, build it"). The loading screen waits
 // only for what the lobby view draws (pass 1); the rest builds after it lifts (pass 2), nearest the camera first, while
-// the player is in the lobby and arriving. Nothing draws with a pipeline still building: from the end of pass 1, a
-// main-scene pipeline first needed in a frame (camera or shadow pass) is created asynchronously and three skips that
-// object until it is ready, so it appears a moment late instead of stalling the frame.
+// the player is in the lobby and arriving. Nothing draws with a shader or pipeline still building: from the end of pass
+// 1, what an object in the scene first needs in a frame is built off that frame and the object waits for it, so it
+// appears a moment late instead of stalling the frame (details below, "Never a first-use stall").
 //
 //   precompile(null, fn)  main.ts, behind the loading screen: pass 1 (the preparations, the lobby's real frame with
 //                         `{ frame: true }` warm-ups in it, then the warm-ups); fn(0..1) as each part finishes. Pass 2
@@ -18,8 +18,8 @@
 //                         returns a throwaway Object3D with the same materials; it is compiled, never shown. Work that
 //                         draws off-screen itself (the item icons) does it in make() and returns a promise of anything
 //                         else; it is awaited in turn. `{ frame: true }`: the object is in the lobby's warm-up frame,
-//                         so its shadow pipelines build too (Buddy). `{ defer: 'near' | 'far' }`: built in pass 2, after
-//                         the camera's surroundings or after everything else
+//                         so its shadow pipelines build too (Buddy). `{ defer: 'near' }`: built in pass 2, after the
+//                         camera's surroundings
 import * as THREE from 'three/webgpu';
 import { renderer, scene, camera, rendererReady, renderFrame } from './scene.ts';
 import { bootInteractive, bootMark, bootSpan, bootSpanMs } from '../boot/timeline.ts';
@@ -31,15 +31,15 @@ type Warmup = () => THREE.Object3D | Promise<unknown> | unknown;
 const warmups: Warmup[] = [];
 const preparations: Warmup[] = [];
 const framed: (() => THREE.Object3D)[] = [];
-const deferred: Record<'near' | 'far', Warmup[]> = { near: [], far: [] };
+const deferred: Warmup[] = [];
 const draws: (() => void | (() => void))[] = [];
 /** First-use passes on their real targets. Optional cleanup runs immediately after submission, before any await. */
 export const warmDraw = (draw: () => void | (() => void)) => draws.push(draw);
 /** beforeScene prepares resources the scene's shaders read, within the same boot escape deadline. frame puts the
  * object in the lobby's warm-up frame (its shadow pipelines too); defer builds it after the loading screen. */
-export function warmUp(make: Warmup, opts: { beforeScene?: boolean; frame?: boolean; defer?: 'near' | 'far' } = {}) {
+export function warmUp(make: Warmup, opts: { beforeScene?: boolean; frame?: boolean; defer?: 'near' } = {}) {
   if (opts.frame) framed.push(make as () => THREE.Object3D);
-  else if (opts.defer) deferred[opts.defer].push(make);
+  else if (opts.defer) deferred.push(make);
   else (opts.beforeScene ? preparations : warmups).push(make);
 }
 
@@ -593,7 +593,7 @@ async function compileRest() {
   let ring = 0;
   let inRing: THREE.Object3D[] = [];
   const endRing = async () => {
-    if (ring === 0) await builtLater(deferred.near); // what the player soon holds, wears or flops with
+    if (ring === 0) await builtLater(deferred); // what the player soon holds, wears or flops with
     const at = camera.getWorldPosition(new THREE.Vector3());
     const mine = new Set(inRing);
     const casters: THREE.Object3D[] = [];
@@ -618,7 +618,6 @@ async function compileRest() {
     await inTurn(() => compileSome(chunk));
   }
   while (ring < RINGS.length) await endRing();
-  await builtLater(deferred.far);
   await lateBuilt();
   await gpuDone();
   allDone = true;

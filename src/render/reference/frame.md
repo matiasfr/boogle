@@ -9,7 +9,7 @@
   ring's shadow casters unculled a batch a frame (compileAsync builds only the camera pass). From the end of the first
   pass nothing in the scene builds a shader or pipeline synchronously in a frame: an object first drawn without a
   shader is held out of the frame and compiled, and a missing pipeline is built with createRenderPipelineAsync while
-  three skips the object, so a miss appears a moment late instead of stalling (docs/research/cold-start.md, 5b and 8).
+  three skips the object, so a miss appears a moment late instead of stalling (docs/research/cold-start.md, 5b and 5c).
   The boot marks `shaders-ring-<n>` and `shaders-all` time it. The audio context is built there
   too, suspended, and the first gesture only resumes it (`src/features/audio-prepare.ts`). A lazy part calls
   `precompile(object)` as it builds its meshes. On iOS 27 Safari a `compileAsync` after the first frames can throw
