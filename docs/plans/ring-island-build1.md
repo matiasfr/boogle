@@ -759,6 +759,11 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > (`lineIndex`). Also: a leg that ends at a halt refusing its way (held short of a busy railhead, never replanned
   > off the Pier) stands at no halt, as at a signal, and the load check refuses an up train standing at an `only`
   > halt, so the save gate refuses what the rules never produce.
+  > **On M8b's load check (rebased after #1532):** `checkTrains` (`src/sim/railway-check-trains.ts`) calls
+  > `lineReqOk`, `trainRowBroken` and `lineBlocksBroken`, one copy of the train conditions, so the world check refuses
+  > v27's too; the throw-site corpus counts `trainRowBroken`'s messages (87 sites), the refused-way rider ask is listed
+  > unreachable until R3b's row makes a halt `only` (R3b turns it, the up-at-`only` stand and the refused lever ask
+  > into bad worlds on the catalog), and all 34 seed stages pass both checks.
   - `railway-lines.ts`: `RailHalt`'s four optional fields; line 2's row (the path, `trains: 3`, the Pier's `only`
     and its platform moved to the east side, call 53: the row's comment becomes "s 719-741 m, lat +2.9, east of the
     down track; the pier rack stands on it", the Railhead and Ring Island rows); `haltPlatform`; `trainPlaces` takes the nearest place not already taken. The
