@@ -925,7 +925,9 @@ Passenger capacity is hauled for now, not bought with Boogles; the heading is ke
     This is today's model with the wallet ignored, so it is a check that nothing on the route gained a Boogle price.
   - **One that builds houses and hauls for seats as crowds appear.** It shows the income curve, the minutes waited for
     each buy, how long the box stands full, and the hauling its seats added. Seats are optional, so the route's own
-    hours must not move; proposed bound on the extra hauling: 5% of the route's.
+    hours must not move. The extra hauling for seats is reported as a number with no pass mark: the 5% bound is
+    removed (owner, 10 November, "yes to all" to dropping it as the 10% one was); he judges the figure. Before, the
+    bound was 5% of the route's hours.
   - **One that spends on source upgrades first.** How much shorter the route gets, reported as a number with no pass
     mark: the 10% bound is removed (owner, 10 November: "this doesn't Seem a restriction we need explicitly";
     [what it was](#the-10-limit-what-it-was)). He judges the figure on the 2D page.
@@ -950,8 +952,8 @@ Passenger capacity is hauled for now, not bought with Boogles; the heading is ke
   about 99,000 of income. The model closes it (dearer houses first) or question 4 puts seats back.
 - **Two games side by side:** the wallet now touches nothing on the train. The crowd on the platform is the one thing
   that ties them, and it is on the way to every train; the house's new character arriving by train is the other tie.
-- **The six hours:** houses move no freight. Seats are hauled for, which adds optional hauling beside the route (bound
-  proposed: 5%). Source upgrades shorten waits at a source; by how much is reported, not bounded (owner, 10
+- **The six hours:** houses move no freight. Seats are hauled for, which adds optional hauling beside the route (reported, not
+  bounded: the 5% bound is removed, owner, 10 November). Source upgrades shorten waits at a source; by how much is reported, not bounded (owner, 10
   November).
 - **Hauling made pointless, or trade made pointless:** neither currency buys the other's things.
 - **Too many small buys:** about one every ten minutes on the stand-in prices, each at a place you walk or ride to.
