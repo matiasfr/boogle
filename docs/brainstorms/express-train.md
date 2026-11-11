@@ -309,11 +309,15 @@ table carries the works copy, there is one open stall, and the decided "the Roun
 10 November) would need the owner's change.
 
 **Owner, 10 November: "No: the Roundhouse stays the upgrade screen only; find it a bay elsewhere".** The passenger set
-does not stand in the Roundhouse and does not come out by the engine spur. Home's bay for the passenger set is now an
+does not stand in the Roundhouse and does not come out by the engine spur. Home's bay for the passenger set was then an
 open design item ([decision](../decisions-rail.md#d-2026-11-10-the-passenger-set-does-not-stand)); the Roundhouse
-readings above, in question 1 and in the design review's finding 1 are history.
+readings above, in question 1 and in the design review's finding 1 are history. He picked the east bay the same day
+(below).
 
 ### Home's bay for the passenger set (options, 10 November)
+
+**Decided: A, the east bay** (owner, 10 November, after seeing the page: "Sound good on A";
+[decision](../decisions-rail.md#d-2026-11-10-home-s-bay-for-the-passenger)). Options B and C below are history.
 
 Drawn to scale on layout B, one tab per option: [home-passenger-bay.html](../world/home-passenger-bay.html). Numbers
 are measured from `src/place/home-station.ts`, `src/place/layout.ts` and the terrain at a5999692c; walks are at
@@ -349,7 +353,23 @@ for the Roundhouse. B is the fallback if the cart's link has to stay.
 Not confirmed: whether the cart's link stays as track after the cart retires; what becomes of Q2's frame; that
 outbound trains are posed on the left-hand track from s 54; every time marked as an estimate; West landing's layout.
 
-Answer: \_\_\_
+Answer: "Sound good on A" (owner, 10 November 2026)
+
+**Check before building** (none of these is confirmed; each can move or stop the bay):
+
+1. **The cart's rails are lifted.** The bay crosses the cart's link, and the plans say only that the cart stops
+   serving after Q6, not that its track goes. Confirm the link is lifted once the cart retires (and what is left at
+   line 1 s 54 and road 2 s 26), and that Q2's old delivery frame, 2.5 m from the bay's centre line, can move about
+   2 m or be cleared.
+2. **Outbound trains run on the left-hand track from s 54.** The bay joins that track and its trains never touch the
+   single track only if outbound trains are really posed there. The layout draws the formation (`FORMATION`, `upLat`);
+   how trains are posed on it was not read.
+3. **The fill under the buffer end.** The terrain data puts the ground up to 0.9 m under the rails at the bay's buffer
+   end (17.4 m against rails at 18.3 m). Look at it in the game and decide fill or a low bank; the platform's ramp
+   stands on the same ground.
+4. **The 30 m easing.** If the joining curve at line 2 s 34 is eased over 30 m instead of 20 (the rail map's
+   proposal), the bay's join moves from s 54 to s 64, leaving about 4 m of straight before the next curve. Measure
+   again where a standing 12.7 m set clears the next track (3.0 m between centres today).
 
 ## 8. When the player gets it
 
