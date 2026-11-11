@@ -1,4 +1,4 @@
-> **Status: greybox built behind `?layer=wing` (11 November 2026, branch `layer/wing-greybox`); GLB step awaits a yes.**
+> **Status: greybox built behind `?layer=wing` (11 November 2026, branch `layer/wing-greybox`); GLB step approved by the owner on 11 November ("Yes, build the model"; [decision](../decisions-rail.md#d-2026-11-11-track-layers-build-the-wing-model)), queued with an asset-viewer entry.**
 > Light brainstorm (one agent, three lenses). Look and read only: the rule that one action lays both tracks
 > ([decision](../decisions-rail.md#d-2026-11-10-the-railway-is-double-track)) stays as it is, with no bill, timing, wire,
 > save or `WORLD_NS` change. Built: [machine-wing.ts](../../src/entities/railway/machine-wing.ts), the flag path in
@@ -107,18 +107,20 @@ Captured with `look` on `proto=place` and the track-layer evals (`dev/look/evals
 ## Open questions
 
 1. **One machine with a wing, or two yoked layers?** Recommended: the wing. One machine reads as one action, folds for
-   single track, and costs about a third of the twin. Answer: \_\_\_
+   single track, and costs about a third of the twin. Answer: **Yes, build the model** (owner, 11 November; the orchestrator's reading: this takes the wing, as recommended).
 2. **Do both hands lay in the same beat, or down then up a half-beat apart?** Recommended: the same beat. One clank,
-   two pairs, is what makes "the same effort" visible. Answer: \_\_\_
-3. **Should the wing get a chair** (a third seat facing the up hand)? Recommended: not now. The two chairs stay, the one on the up track's side has the wing in view, and a chair can come after a yes. Answer: \_\_\_
+   two pairs, is what makes "the same effort" visible. Answer: not asked of him; the build keeps the recommendation.
+3. **Should the wing get a chair** (a third seat facing the up hand)? Recommended: not now. The two chairs stay, the one on the up track's side has the wing in view, and a chair can come after a yes. Answer: not asked of him; the build keeps the recommendation.
 4. **Does the wing go into the GLB and `track-layer.py` after a yes, with the parts sheet and storyboard the owner call
-   asks for?** Recommended: yes, as a second step once the greybox reads. Answer: \_\_\_
+   asks for?** Recommended: yes, as a second step once the greybox reads. Answer: **Yes, build the model** (owner, 11 November), with his note: "Show things like this in the asset viewer so I can evaluate easily in the future." The GLB gets an asset-viewer entry ([owner call](../agents/owner-calls.md)).
 5. **Does the stack split into two (down on the gantry, up on the wing), with deliveries landing alternately?**
-   Recommended: yes. Each hand empties its own stack, and the room sees both go down. Answer: \_\_\_
+   Recommended: yes. Each hand empties its own stack, and the room sees both go down. Answer: not asked of him; the build keeps the recommendation.
 
 ## Owner questions (none blocking)
 
 From the design review below; the build proceeds on the recommendations.
+
+**Owner, 11 November:** asked "go ahead with the wing machine?" he answered "Yes, build the model" (the wing, question 1 below, and the GLB step, open question 4 above). Questions 2 and 3 were not put to him; the build keeps the recommendations.
 
 1. Wing or twin layers? Recommended: the wing, built as a second small gantry on a post.
 2. Is it fine that the wing works on the right on line 1 and the left on line 2? Recommended: yes, it follows the second track, and each chair gets a turn beside it.
