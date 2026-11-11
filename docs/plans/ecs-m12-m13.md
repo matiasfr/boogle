@@ -390,7 +390,21 @@ typecheck`, `npm run lint`.
 
 ### M12b: the read model
 
-- [ ] **M12b-1. The last readers.** _M, High (`src/world`, `src/sim`). After M12e; beside M12f (no shared file)._
+- [x] **M12b-1. The last readers.** _M, High (`src/world`, `src/sim`). After M12e; beside M12f (no shared file)._
+      (**As built**, on `ecs/m12f`: `READ_MODEL_IMPORTERS` is empty, and nothing outside `src/sim` imports the read
+      model, `railway-live.ts` or `Railway`. `townRead(w)` takes the world (`townReadOf`, `TownReadable` and
+      `townReadOfWorld` are gone). The check corpus checks the world only. Its completeness test now reads the world
+      check's own messages, not the old validators' source, so M12b-2 deletes the validators without touching it. With
+      that change go the four UNREACHABLE entries that only the old validators threw, and `BY_CONSTRUCTION`. The golden
+      shards and `railway-ring.test.ts` drop `modelVerdict`. `test/railway-m11-host.test.ts` and its helper are deleted
+      (the plan named only the helper). The host's literals per stage (phase, panels, `line2()`, the resume cap, and
+      the counts' score, total, rails and stone) are in `railway-m11-review.test.ts`, recorded on 9e7dfcbde while the
+      model differential was still green. The phase walk is held to a literal list of runs. The late-join and refill
+      probes are held to a fresh railway, then to the server's world. `jobProgress` now has its own test on both lines
+      against the run rows the tick writes, in `railway-read-facade.test.ts`, next to the moved `read.world()` case. A
+      +1 mutant in `jobProgress` fails it. The three spikes are gone. Ring Island's check (`railway-check-ring.ts`) has
+      no bad worlds: logged. `src/sim/railway-live.ts` has no importer now; `test/helpers/rail-no-audit.ts` still
+      lists it for M12b-2.)
       `src/world/railway-server.ts` (delete the lazy `railway` getter, `view` and the `railwayView` import);
       `src/sim/town-facts.ts` (`townRead` takes a world: move `townReadOfWorld` in from
       `src/entities/town/town-read.ts`, delete `townReadOf`); `test/railway-check.test.ts`,

@@ -1,8 +1,7 @@
 // The authored opening scenery and local cast, with no legacy run, job or save owner.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { townPopulation } from '../../sim/town-facts.ts';
-import { townReadOfWorld } from '../town/town-read.ts';
+import { townPopulation, townRead } from '../../sim/town-facts.ts';
 import { createTownGreeter, type GreeterRead } from './greeter.ts';
 import { forgePoles } from './forge-finish.ts';
 
@@ -159,7 +158,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   const greeter = await createTownGreeter(owner, env.progress);
   let pathOpen = false;
   let population = -1;
-  const people = () => townPopulation(townReadOfWorld(env.progress.world()));
+  const people = () => townPopulation(townRead(env.progress.world()));
   return {
     targets: greeter.targets,
     numbers(score: { money: number; logs: number; metres: number }, snapshot = false) {

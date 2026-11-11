@@ -5,15 +5,7 @@
 //
 // The rules stay pure (state, action, tick): railApply and railTick are the same functions R1b's prediction runs.
 // Validation reads the facts the action carried (the actor's own position and action clock) through `Actor`.
-import {
-  railInt,
-  railYaw,
-  railSource,
-  RAILWAY_MAX_INT,
-  type RailAction,
-  type RailResult,
-  type Railway,
-} from '../sim/railway.ts';
+import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import {
   LINE1_STATIONS,
@@ -68,7 +60,6 @@ import {
   createRailwayWorld,
 } from '../sim/railway-components.ts';
 import { railwayCheck } from '../sim/railway-check.ts';
-import { railwayView } from '../sim/railway-read-model.ts';
 import { railApply, railOutcome, railTick } from '../sim/railway-systems.ts';
 import { railBoilerPutDown, railBoilerStood } from '../sim/railway-sys-line2.ts';
 import { railFootHolders, railFootRelease } from '../sim/railway-sys-works.ts';
@@ -306,13 +297,8 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     pile: (_id: number, f: Fields) => cellOf(f.x as number, f.z as number),
   };
   for (const p of worldProjections(() => world, cells, GLOBAL_CELL)) replication.define(p);
-  // Every write ends in a commit: what the systems marked goes to the replicator, and the read model is rebuilt on
-  // its next read.
-  let view: Railway | null = null;
-  const commit = () => {
-    touchChanges(world, touch);
-    view = null;
-  };
+  // Every write ends in a commit: what the systems marked goes to the replicator.
+  const commit = () => touchChanges(world, touch);
   const timing = () => ({
     ...LINE_TIMING,
     feedIntervalMs: rules.tune.get('railFeedMs'),
@@ -329,7 +315,6 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
         const next = createRailwayWorld();
         next.load(json, railwayCheck);
         world = next;
-        view = null;
       },
       hash: () => world.hash(),
     },
@@ -341,16 +326,9 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
   }, 'railway');
   const touchAll = () => {
     for (const c of world.components) if (c.replicate) replication.touchAll(c.kind);
-    view = null;
   };
   const railId = () => world.single(Rail);
   return {
-    /** The read model (today's `Railway` shape), rebuilt from the world after each change; read only. No host
-     * accessor or tool reads it (M11): only the read model's own tests do (test/railway-adapter, -replicate and
-     * -queries), and it goes with them in M12 and M12b. */
-    get railway() {
-      return (view ??= railwayView(world));
-    },
     /** Every entity, after a load (the replicator starts empty). */
     touchAll,
     /** A client action, applied now. A well-formed action that fails validation is a recorded rejection. */
