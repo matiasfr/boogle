@@ -197,3 +197,11 @@ and exports the timeline as CSV or JSON.
 - **Viewing.** Open the file directly, or with the dev server at
   `http://localhost:5173/@fs/<absolute path to the checkout>/docs/world/economy-prototype.html` (the plain `/docs/...`
   path falls through to the game).
+
+## Town layout
+
+[Town layout](town-layout.html) draws Home's town as it stands and three ways to lay it out (the Cross, the Round, the
+Fan), each at three moments: on arrival, mid-game and full. It is drawn to scale from `layout.ts`, `home-station.ts`
+and the terrain's 2 m height grid by a throwaway script; the positions, walks and findings are in the
+[town layout plan](../plans/town-layout.md), and the stills it cites are in [town-layout/](town-layout/). Local
+document UI only; nothing here is built.

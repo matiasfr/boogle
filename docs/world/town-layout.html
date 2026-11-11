@@ -1,0 +1,1236 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Home's town layout: today and three options</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f4ee;
+    --ink: #23211c;
+    --muted: #6a665c;
+    --line: #d8d3c6;
+    --card: #ffffff;
+    --sea: #a9d3e6;
+    --sand: #ead9a4;
+    --slope: #9cc47c;
+    --land: #b9d79a;
+    --street: #efe2bd;
+    --lane: #e2d6b0;
+    --green: #8fc56d;
+    --bld: #fbf7ec;
+    --fix: #c9bfa8;
+    --rail: #4a443a;
+    --bought: #f3b562;
+    --stake: #b5651d;
+    --accent: #1f6fb5;
+    --rider: #b0348a;
+    --flag: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a;
+      --ink: #ece8dd;
+      --muted: #a39f93;
+      --line: #3a3b3d;
+      --card: #202225;
+      --sea: #1d3a4a;
+      --sand: #6d6344;
+      --slope: #3b5a34;
+      --land: #46683c;
+      --street: #8a7f5c;
+      --lane: #746b4f;
+      --green: #5a8a45;
+      --bld: #d9d2c0;
+      --fix: #8e8572;
+      --rail: #15140f;
+      --bought: #e0a04a;
+      --stake: #ffc98a;
+      --accent: #8cc4f5;
+      --rider: #f0a3dc;
+      --flag: #ff8a80;
+    }
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      16px/1.5 system-ui,
+      sans-serif;
+  }
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+  h1 {
+    font-size: 28px;
+    line-height: 1.2;
+    margin: 0 0 8px;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 28px 0 8px;
+  }
+  h3 {
+    font-size: 16px;
+    margin: 18px 0 4px;
+  }
+  p,
+  li {
+    max-width: 70ch;
+  }
+  .muted {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  blockquote {
+    margin: 8px 0;
+    padding: 2px 12px;
+    border-left: 3px solid var(--line);
+    color: var(--muted);
+  }
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 6px;
+  }
+  .bar button {
+    font: inherit;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .bar button[aria-pressed='true'] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .bar.small button {
+    padding: 5px 10px;
+    font-size: 14px;
+  }
+  .mapwrap,
+  .sec {
+    display: none;
+  }
+  #page[data-tab='today'] .tab-today,
+  #page[data-tab='cross'] .tab-cross,
+  #page[data-tab='round'] .tab-round,
+  #page[data-tab='fan'] .tab-fan {
+    display: block;
+  }
+  #page[data-tab='today'] .stages {
+    display: none;
+  }
+  .map {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--sea);
+  }
+  .sea {
+    fill: var(--sea);
+  }
+  .g-sand {
+    fill: var(--sand);
+  }
+  .g-slope {
+    fill: var(--slope);
+  }
+  .g-top {
+    fill: var(--land);
+  }
+  .st,
+  .ln {
+    fill: none;
+    stroke: var(--street);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  circle.st {
+    fill: var(--street);
+    stroke: none;
+  }
+  .ln {
+    stroke: var(--lane);
+    stroke-linecap: butt;
+  }
+  .stfill {
+    fill: var(--street);
+  }
+  .green {
+    fill: var(--green);
+  }
+  .rail {
+    fill: none;
+    stroke: var(--rail);
+    stroke-width: 0.9;
+  }
+  .rail.up {
+    stroke-width: 0.45;
+  }
+  .rail.bay {
+    stroke-dasharray: 1.4 0.8;
+  }
+  .plat {
+    fill: var(--fix);
+    opacity: 0.55;
+  }
+  .plat.deck {
+    opacity: 1;
+  }
+  .table {
+    fill: var(--fix);
+    stroke: var(--rail);
+    stroke-width: 0.3;
+  }
+  .stall {
+    fill: none;
+    stroke: var(--rail);
+    stroke-width: 0.3;
+    stroke-dasharray: 0.8 0.6;
+  }
+  .stall.open {
+    fill: var(--fix);
+    stroke-dasharray: none;
+  }
+  .fix {
+    fill: var(--fix);
+    stroke: var(--rail);
+    stroke-width: 0.35;
+  }
+  .shelf {
+    fill: var(--rail);
+  }
+  .plinth {
+    fill: var(--rail);
+  }
+  .win {
+    fill: var(--bought);
+    stroke: var(--rail);
+    stroke-width: 0.25;
+  }
+  .pad {
+    fill: none;
+    stroke: var(--flag);
+    stroke-width: 0.3;
+    stroke-dasharray: 0.6 0.5;
+  }
+  .clock {
+    fill: var(--rail);
+  }
+  .b {
+    fill: var(--bld);
+    stroke: var(--rail);
+    stroke-width: 0.35;
+  }
+  .door {
+    stroke: var(--rail);
+    stroke-width: 0.5;
+    fill: none;
+  }
+  .k-forge {
+    fill: var(--fix);
+  }
+  /* bought plots: built */
+  .b[class*='k-p'] {
+    fill: var(--bought);
+  }
+  /* what is only a board, a frame or stakes at each moment */
+  #page[data-stage='arr'] .m-cross .k-t3,
+  #page[data-stage='arr'] .m-round .k-t3,
+  #page[data-stage='arr'] .m-fan .k-t3,
+  #page[data-stage='arr'] .m-cross .k-forge,
+  #page[data-stage='arr'] .m-round .k-forge,
+  #page[data-stage='arr'] .m-fan .k-forge {
+    fill: none;
+    stroke-dasharray: 1.2 0.8;
+  }
+  #page[data-stage='arr'] .b.k-p1,
+  #page[data-stage='arr'] .b.k-p2,
+  #page[data-stage='mid'] .b.k-p4,
+  #page[data-stage='mid'] .b.k-p5 {
+    fill: none;
+    stroke: var(--stake);
+    stroke-width: 0.45;
+    stroke-dasharray: 0.5 0.9;
+  }
+  #page[data-stage='arr'] .b.k-p3,
+  #page[data-stage='arr'] .b.k-p4,
+  #page[data-stage='arr'] .b.k-p5,
+  #page[data-stage='arr'] .b.k-p6,
+  #page[data-stage='arr'] .b.k-p7,
+  #page[data-stage='arr'] .b.k-p8,
+  #page[data-stage='mid'] .b.k-p6,
+  #page[data-stage='mid'] .b.k-p7,
+  #page[data-stage='mid'] .b.k-p8 {
+    fill: none;
+    stroke: var(--stake);
+    stroke-width: 0.15;
+    stroke-dasharray: 0.3 1.2;
+    opacity: 0.6;
+  }
+  #page[data-stage='arr'] .m-cross .clock,
+  #page[data-stage='arr'] .m-round .clock,
+  #page[data-stage='arr'] .m-fan .clock {
+    display: none;
+  }
+  .sight {
+    fill: var(--accent);
+    opacity: 0.1;
+  }
+  .walk {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 0.7;
+    stroke-dasharray: 0.2 1.4;
+    stroke-linecap: round;
+  }
+  .walk.w2 {
+    stroke: var(--rider);
+  }
+  .mv {
+    fill: none;
+    stroke: var(--flag);
+    stroke-width: 0.3;
+  }
+  .mvo {
+    fill: none;
+    stroke: var(--flag);
+    stroke-width: 0.3;
+  }
+  .rule {
+    stroke: var(--ink);
+    stroke-width: 0.3;
+    fill: none;
+  }
+  svg text {
+    font-family: system-ui, sans-serif;
+    fill: var(--ink);
+    paint-order: stroke;
+    stroke: var(--land);
+    stroke-width: 0.6px;
+    stroke-linejoin: round;
+  }
+  svg text.in {
+    stroke: none;
+    fill: #23211c;
+  }
+  .t {
+    font-size: 2.4px;
+    font-weight: 600;
+  }
+  .s {
+    font-size: 1.9px;
+  }
+  .n {
+    font-size: 2.6px;
+    font-weight: 700;
+    stroke: none;
+    fill: #23211c;
+  }
+  #page[data-stage='arr'] .n,
+  #page[data-stage='mid'] .n.k-p4,
+  #page[data-stage='mid'] .n.k-p5,
+  #page[data-stage='mid'] .n.k-p6,
+  #page[data-stage='mid'] .n.k-p7,
+  #page[data-stage='mid'] .n.k-p8 {
+    fill: var(--stake);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 8px 0 0;
+  }
+  .legend i {
+    display: inline-block;
+    width: 16px;
+    height: 10px;
+    margin-right: 5px;
+    vertical-align: -1px;
+    border: 1.5px solid var(--ink);
+    background: var(--bld);
+  }
+  .legend i.bought {
+    background: var(--bought);
+  }
+  .legend i.stake {
+    background: none;
+    border: 1.5px dotted var(--stake);
+  }
+  .legend i.board {
+    background: none;
+    border-style: dashed;
+  }
+  .legend i.fixd {
+    background: var(--fix);
+  }
+  .legend i.w {
+    border: 0;
+    height: 0;
+    border-top: 3px dotted var(--accent);
+    vertical-align: 3px;
+  }
+  .legend i.w2 {
+    border: 0;
+    height: 0;
+    border-top: 3px dotted var(--rider);
+    vertical-align: 3px;
+  }
+  .legend i.mvd {
+    border: 0;
+    height: 0;
+    border-top: 2px solid var(--flag);
+    vertical-align: 3px;
+  }
+  .legend i.sg {
+    border: 0;
+    background: var(--accent);
+    opacity: 0.25;
+  }
+  .legend i.pd {
+    background: none;
+    border: 1.5px dashed var(--flag);
+  }
+  .scroll {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+  }
+  th,
+  td {
+    text-align: left;
+    vertical-align: top;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .wide th,
+  .wide td {
+    min-width: 150px;
+  }
+  .wide th:first-child,
+  .wide td:first-child {
+    min-width: 120px;
+    font-weight: 600;
+  }
+  tr:last-child td {
+    border-bottom: 0;
+  }
+  .pick {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 4px 14px;
+  }
+  .q {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 2px 14px;
+    margin: 8px 0;
+  }
+  @media (max-width: 640px) {
+    h1 {
+      font-size: 23px;
+    }
+    .t {
+      font-size: 3.6px;
+    }
+    .s {
+      font-size: 3px;
+    }
+    .n {
+      font-size: 3.8px;
+    }
+    .x {
+      display: none;
+    }
+    .bar button {
+      padding: 8px 9px;
+      font-size: 15px;
+    }
+  }
+</style>
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <g id="ground">
+      <path class="g-sand" d="" />
+      <path
+        class="g-slope"
+        d="M-161 23h4v2h-4zM-161 25h6v2h-6zM-161 27h6v2h-6zM-161 29h6v2h-6zM-161 31h6v2h-6zM-161 33h6v2h-6zM-161 35h6v2h-6zM-161 37h6v2h-6zM-161 39h4v2h-4zM-161 41h2v2h-2zM-161 43h2v2h-2z"
+      />
+      <path
+        class="g-top"
+        d="M-161 -39h124v2h-124zM-161 -37h124v2h-124zM-161 -35h124v2h-124zM-161 -33h124v2h-124zM-161 -31h124v2h-124zM-161 -29h124v2h-124zM-161 -27h124v2h-124zM-161 -25h124v2h-124zM-161 -23h124v2h-124zM-161 -21h124v2h-124zM-161 -19h124v2h-124zM-161 -17h124v2h-124zM-161 -15h124v2h-124zM-161 -13h124v2h-124zM-161 -11h124v2h-124zM-161 -9h124v2h-124zM-161 -7h124v2h-124zM-161 -5h124v2h-124zM-161 -3h124v2h-124zM-161 -1h124v2h-124zM-161 1h124v2h-124zM-161 3h124v2h-124zM-161 5h124v2h-124zM-161 7h124v2h-124zM-161 9h124v2h-124zM-161 11h124v2h-124zM-161 13h124v2h-124zM-161 15h124v2h-124zM-161 17h124v2h-124zM-161 19h124v2h-124zM-161 21h124v2h-124zM-157 23h120v2h-120zM-155 25h118v2h-118zM-155 27h118v2h-118zM-155 29h118v2h-118zM-155 31h118v2h-118zM-155 33h118v2h-118zM-155 35h118v2h-118zM-155 37h118v2h-118zM-157 39h120v2h-120zM-159 41h122v2h-122zM-159 43h122v2h-122zM-161 45h124v2h-124zM-161 47h124v2h-124zM-161 49h124v2h-124zM-161 51h124v2h-124zM-161 53h124v2h-124zM-161 55h124v2h-124zM-161 57h124v2h-124zM-161 59h124v2h-124zM-161 61h124v2h-124zM-161 63h124v2h-124zM-161 65h124v2h-124z"
+      />
+    </g>
+    <g id="station">
+      <polygon class="plat" points="-87.1,7.6 -58.7,-2.7 -57.2,1.3 -85.7,11.7" />
+      <polygon class="plat deck" points="-79.3,4.8 -62.4,-1.4 -61,2.7 -77.9,8.8" />
+      <path
+        class="rail"
+        d="M-87.2 5.9L-86.3 5.6L-85.3 5.2L-84.4 4.9L-83.5 4.5L-82.5 4.2L-81.6 3.9L-80.6 3.5L-79.7 3.2L-78.8 2.8L-77.8 2.5L-76.9 2.1L-75.9 1.8L-75 1.5L-74 1.1L-73.1 0.8L-72.2 0.4L-71.2 0.1L-70.3 -0.2L-69.3 -0.6L-68.4 -0.9L-67.5 -1.3L-66.5 -1.6L-65.6 -1.9L-64.7 -2.3L-63.7 -2.6L-62.8 -3L-61.8 -3.3L-60.9 -3.7L-60 -4.1L-59.1 -4.6L-58.3 -5.1L-57.4 -5.7L-56.6 -6.3L-55.9 -6.9L-55.2 -7.6L-54.5 -8.3L-53.8 -9.1L-53.2 -9.9L-52.7 -10.8L-52.2 -11.6L-51.7 -12.5L-51.3 -13.4L-51 -14.3L-50.7 -15.3L-50.4 -16.3L-50.2 -17.3L-50 -18.2L-49.8 -19.2L-49.6 -20.2L-49.5 -21.2L-49.3 -22.2L-49.1 -23.1L-48.9 -24.1L-48.7 -25.1L-48.5 -26.1L-48.3 -27.1L-48.1 -28.1L-47.9 -29L-47.7 -30L-47.5 -31L-47.3 -32L-47.1 -33L-46.8 -33.9L-46.5 -34.9L-46.1 -35.8L-45.7 -36.7L-45.3 -37.6L-44.9 -38.5L-44.5 -39.5L-44.2 -40.4L-43.8 -41.3L-43.5 -42.3L-43.1 -43.2L-42.8 -44.1L-42.5 -45.1L-42.2 -46L-41.9 -47L-41.6 -48L-41.3 -48.9L-41 -49.9L-40.7 -50.8L-40.4 -51.8L-40.1 -52.7L-39.8 -53.7L-39.6 -54.6L-39.3 -55.6L-39 -56.6L-38.7 -57.5L-38.4 -58.5L-38.2 -59.5L-37.9 -60.4L-37.6 -61.4L-37.3 -62.3L-37 -63.3L-36.8 -64.3L-36.5 -65.2L-36.3 -66.2L-36 -67.2L-35.7 -68.1L-35.5 -69.1L-35.2 -70L-35 -71L-34.7 -72L-34.5 -73L-34.2 -73.9L-34 -74.9L-33.7 -75.9L-33.5 -76.8L-33.2 -77.8L-33 -78.8L-32.7 -79.7L-32.5 -80.7L-32.2 -81.7L-32 -82.6L-31.7 -83.6"
+      />
+      <path
+        class="rail"
+        d="M-84.5 13L-83.6 12.7L-82.7 12.3L-81.7 12L-80.8 11.7L-79.8 11.3L-78.9 11L-78 10.6L-77 10.3L-76.1 9.9L-75.2 9.6L-74.2 9.3L-73.3 8.9L-72.3 8.6L-71.4 8.2L-70.5 7.9L-69.5 7.6L-68.6 7.2L-67.6 6.9L-66.7 6.5L-65.8 6.2L-64.8 5.8L-63.9 5.5L-62.9 5.2L-62 4.8L-61 4.5L-60.1 4.1L-59.2 3.8L-58.2 3.5L-57.3 3.2L-56.3 3L-55.3 2.9L-54.3 2.8L-53.3 2.7L-52.3 2.7L-51.3 2.8L-50.3 2.9L-49.3 3.1L-48.4 3.3L-47.4 3.6L-46.5 4L-45.5 4.3L-44.6 4.8L-43.8 5.3L-42.9 5.8L-42.1 6.4L-41.3 7L-40.6 7.7L-39.9 8.4L-39.2 9.1L-38.5 9.8L-37.8 10.5L-37 11.2L-36.3 11.9L-35.6 12.6L-34.9 13.3L-34.2 14.1L-33.5 14.8L-32.8 15.5L-32.1 16.2L-31.4 16.9L-30.7 17.6L-30 18.3L-29.3 19L-28.6 19.7L-27.9 20.4L-27.1 21.1L-26.4 21.8L-25.7 22.5L-25 23.2L-24.3 23.9L-23.6 24.6L-22.8 25.3L-22.1 25.9L-21.2 26.5L-20.4 27L-19.5 27.5L-18.6 27.9L-17.7 28.3L-16.7 28.6L-15.8 28.8L-14.8 29.1L-13.8 29.2L-12.8 29.3L-11.8 29.4L-10.8 29.4L-9.8 29.3L-8.8 29.2L-7.8 29.1L-6.8 29.1L-5.8 29L-4.8 29L-3.8 29L-2.8 29L-1.8 29.1L-0.8 29.1L0.2 29.2L1.2 29.2L2.2 29.3L3.2 29.4L4.2 29.5L5.2 29.6L6.2 29.8L7.2 29.9L8.2 30L9.1 30.2L10.1 30.3L11.1 30.5L12.1 30.7L13.1 30.9L14.1 31.1L15 31.3L16 31.5L17 31.8L17.9 32L18.9 32.2L19.9 32.5L20.9 32.7L21.8 32.9L22.8 33.2L23.8 33.4L24.7 33.7L25.7 33.9L26.7 34.2L27.6 34.4L28.6 34.6L29.6 34.9L30.6 35.1L31.5 35.4L32.5 35.6L33.5 35.8L34.5 36L35.4 36.3"
+      />
+      <path
+        class="rail up"
+        d="M-51.7 -12.5L-51.4 -13.4L-51.1 -14.4L-50.9 -15.4L-50.8 -16.4L-50.8 -17.4L-50.9 -18.4L-51 -19.4L-51 -20.5L-51.1 -21.5L-51.2 -22.6L-51.3 -23.6L-51.4 -24.6L-51.5 -25.7L-51.6 -26.7L-51.6 -27.7L-51.6 -28.7L-51.6 -29.8L-51.5 -30.8L-51.4 -31.8L-51.2 -32.9L-50.9 -34.1L-50.6 -35.2L-50.2 -36.4L-49.8 -37.4L-49.4 -38.3L-49 -39.1L-48.6 -40L-48.3 -40.9L-47.9 -41.8L-47.6 -42.7L-47.2 -43.6L-46.9 -44.5L-46.6 -45.4L-46.3 -46.3L-46 -47.3L-45.7 -48.2L-45.4 -49.1L-45.1 -50.1L-44.8 -51L-44.5 -52L-44.2 -52.9L-44 -53.9L-43.7 -54.8L-43.4 -55.8L-43.1 -56.7L-42.8 -57.7L-42.6 -58.7L-42.3 -59.6L-42 -60.6L-41.7 -61.5L-41.4 -62.5L-41.2 -63.4L-40.9 -64.4L-40.6 -65.3L-40.4 -66.3L-40.1 -67.2L-39.9 -68.2L-39.6 -69.2L-39.4 -70.1L-39.1 -71.1L-38.8 -72L-38.6 -73L-38.3 -74L-38.1 -74.9L-37.8 -75.9L-37.6 -76.9L-37.3 -77.8L-37.1 -78.8L-36.8 -79.8L-36.6 -80.7L-36.3 -81.7L-36.1 -82.7L-35.8 -83.7L-35.6 -84.6"
+      />
+      <path
+        class="rail up"
+        d="M-50.3 2.9L-49.3 3.1L-48.3 3.2L-47.3 3.4L-46.3 3.6L-45.3 3.8L-44.2 4L-43.2 4.3L-42.1 4.7L-41 5.1L-40 5.5L-39 6.1L-38 6.6L-37.1 7.1L-36.2 7.6L-35.4 8.1L-34.5 8.7L-33.7 9.3L-32.9 9.9L-32.1 10.5L-31.4 11.2L-30.7 11.9L-30 12.6L-29.3 13.3L-28.6 14.1L-27.9 14.8L-27.1 15.5L-26.4 16.2L-25.7 16.9L-25 17.6L-24.3 18.3L-23.6 19L-22.9 19.7L-22.2 20.4L-21.5 21.1L-21 21.6L-20.4 22.1L-19.8 22.6L-19.1 23.1L-18.5 23.5L-17.8 23.8L-17.1 24.2L-16.4 24.5L-15.7 24.7L-14.9 24.9L-14.1 25.1L-13.4 25.2L-12.6 25.3L-11.8 25.4L-11.1 25.4L-10.2 25.3L-9.1 25.2L-8 25.1L-7 25.1L-5.9 25L-4.8 25L-3.7 25L-2.7 25L-1.6 25.1L-0.6 25.1L0.5 25.2L1.5 25.3L2.6 25.4L3.6 25.4L4.6 25.6L5.7 25.7L6.7 25.8L7.7 25.9L8.7 26.1L9.8 26.2L10.8 26.4L11.9 26.6L12.9 26.8L13.9 27L14.9 27.2L15.9 27.4L16.9 27.6L17.9 27.9L18.9 28.1L19.9 28.3L20.9 28.6L21.8 28.8L22.8 29.1L23.8 29.3L24.8 29.5L25.7 29.8L26.7 30L27.7 30.3L28.6 30.5L29.6 30.8L30.6 31L31.5 31.2L32.5 31.5L33.4 31.7L34.4 31.9L35.3 32.1L36.3 32.4"
+      />
+      <path
+        class="rail up"
+        d="M-77.5 10.5L-76.5 10.2L-75.6 9.9L-74.6 9.7L-73.6 9.6L-72.6 9.6L-71.6 9.6L-70.6 9.7L-69.6 9.8L-68.6 10L-67.7 10.3L-66.7 10.7L-65.8 11.1L-64.9 11.5L-64.1 12.1L-63.3 12.6L-62.5 13.3L-61.7 13.9L-61.6 14"
+      />
+      <path class="rail bay" d="M-49.8 -7.2L-31.4 11.2" />
+      <polygon class="plat" points="-50.7,-5.8 -42.5,2.5 -43.5,3.5 -47.1,1.5 -52.6,-4" />
+      <circle class="table" cx="-57.9" cy="17.1" r="4.8" />
+      <polygon class="stall" points="-57.1,25.9 -52.9,24.4 -49.8,32.8 -54,34.3" />
+      <polygon class="stall open" points="-61.5,25.1 -57.2,25.9 -58.8,34.7 -63.1,34" />
+      <polygon class="stall" points="-65,22.2 -61.7,25 -67.5,31.9 -70.8,29.1" />
+      <polygon class="fix" points="-90.8,18.2 -95.2,6 -89.6,3.9 -85.1,16.1" />
+      <polygon class="shelf" points="-91,16.3 -93,10.7 -91.9,10.3 -89.9,15.9" />
+      <circle class="win" cx="-92.1" cy="5.6" r="0.9" />
+    </g>
+  </defs>
+</svg>
+<main id="page" data-tab="round" data-stage="arr">
+  <h1>Home's town: today and three layouts to pick from</h1>
+  <p>
+    You asked for "a pass on the town layout so it's more like a proper town. Maybe there's like a radial part to it."
+    This page draws the town as it is and three ways to lay it out, to scale from the game's own numbers. Each option
+    starts small, as you said: "maybe only a couple buildings exist, so you get the satisfaction of building up." Pick a
+    tab, then step through the three moments.
+  </p>
+  <div class="bar" role="group" aria-label="Layout">
+    <button type="button" data-tab="today" aria-pressed="false">Today</button>
+    <button type="button" data-tab="cross" aria-pressed="false">1 · The Cross</button>
+    <button type="button" data-tab="round" aria-pressed="true">2 · The Round</button>
+    <button type="button" data-tab="fan" aria-pressed="false">3 · The Fan</button>
+  </div>
+  <div class="bar small stages" role="group" aria-label="Moment">
+    <button type="button" data-stage="arr" aria-pressed="true">On arrival</button>
+    <button type="button" data-stage="mid" aria-pressed="false">Mid-game</button>
+    <button type="button" data-stage="full" aria-pressed="false">Full town</button>
+  </div>
+  <div class="mapwrap tab-today">
+    <svg class="map m-today" viewBox="-158 -36 118 100" role="img" aria-label="Today: plan to scale, north up">
+      <rect x="-158" y="-36" width="118" height="100" class="sea" />
+      <use href="#ground" />
+      <path
+        class="st"
+        style="stroke-width: 5"
+        d="M-199 10L-187 10L-177 28L-165 32L-150 32L-143 20L-137 13L-121 3L-105 3L-98 9"
+      />
+      <path class="st" style="stroke-width: 6" d="M-98 9L-98 -6L-102 -14L-122 -30L-142 -70" />
+      <path class="st" style="stroke-width: 4.5" d="M-98 9L-100 62" />
+      <use href="#station" />
+      <polygon class="b k-forge" points="-82,1 -92,1 -92,-7 -82,-7" />
+      <path class="door" d="M-89.9 1L-89.9 2.8" />
+      <polygon class="sight" points="-150,32 -90.8,18.2 -95.2,6" />
+      <polygon class="b k-stand" points="-104.6,-3.4 -109.3,-0.8 -111.4,-4.6 -106.7,-7.2" />
+      <path class="door" d="M-106.9 -2.1L-106.2 -0.7" />
+      <polygon class="b k-stand" points="-120.9,16.2 -120.7,21.6 -125.1,21.8 -125.3,16.4" />
+      <path class="door" d="M-120.8 18.9L-119.2 18.9" />
+      <polygon class="b k-stand" points="-131.8,22.6 -134.3,27.4 -138.2,25.4 -135.7,20.6" />
+      <path class="door" d="M-133 25L-131.6 25.7" />
+      <polygon class="b k-stand" points="-136.6,2.5 -137,7.8 -141.4,7.5 -141,2.2" />
+      <path class="door" d="M-136.8 5.2L-135.2 5.3" />
+      <polygon class="b k-stand" points="-109.8,7.9 -110.9,15.2 -118.2,14.1 -117.1,6.8" />
+      <path class="door" d="M-110.3 11.6L-108.8 11.8" />
+      <polygon class="b k-t3" points="-114.8,24.7 -110.1,33.6 -117.2,37.3 -121.9,28.4" />
+      <path class="door" d="M-112.5 29.2L-111 28.4" />
+      <polygon class="b k-t3" points="-116.4,-10 -123.7,0.8 -133.6,-6 -126.3,-16.8" />
+      <path class="door" d="M-120.1 -4.6L-118.7 -3.7" />
+      <polygon class="shelf" points="-107.3,15.9 -105.2,21.5 -106.3,21.8 -108.3,16.3" />
+      <circle class="plinth" cx="-101.8" cy="17.1" r="0.75" />
+      <rect class="pad" x="-125" y="33" width="6" height="6" />
+      <path class="walk" d="M-199 10L-187 10L-177 28L-165 32L-150 32L-143 20L-137 13L-121 3L-105 3L-98 9" />
+      <path
+        class="walk w2"
+        d="M-135.8 5.2L-137 13L-121 3L-105 3L-98 9L-94.2 8.6L-92.1 5.6L-94.2 8.6L-87.3 10L-70.1 3.7"
+      />
+      <text class="t in" x="-90.2" y="11.9" text-anchor="middle">Hall</text>
+      <text class="t in" x="-87" y="-2.2" text-anchor="middle">Forge</text>
+      <text class="t" x="-57.9" y="40.5" text-anchor="middle">Roundhouse</text>
+      <text class="s x" x="-70" y="2.6" text-anchor="middle">platforms</text>
+      <text class="s x" x="-45" y="-9.5" text-anchor="middle">east bay</text>
+      <text class="s" x="-153.5" y="37.2" text-anchor="start">to the dock</text>
+      <text class="s" x="-134" y="-33" text-anchor="middle">to the camp</text>
+      <text class="s" x="-100" y="61.5" text-anchor="start">to the quarry</text>
+      <text class="s in" x="-114" y="11.6" text-anchor="middle">Pip</text>
+      <text class="s in" x="-116" y="31.6" text-anchor="middle">Shop</text>
+      <text class="s in" x="-125" y="-7.4" text-anchor="middle">Museum</text>
+      <g class="scale">
+        <path class="rule" d="M-154 59h10M-154 58.2v1.6M-144 58.2v1.6" />
+        <text class="s" x="-149" y="57.4" text-anchor="middle">10 m</text>
+        <path class="rule" d="M-139 59.8v-4.4m-1.2 1.6l1.2-1.6 1.2 1.6" fill="none" />
+        <text class="s" x="-137.2" y="57.6">N</text>
+      </g>
+    </svg>
+  </div>
+  <div class="mapwrap tab-cross">
+    <svg class="map m-cross" viewBox="-158 -36 118 100" role="img" aria-label="1 · The Cross: plan to scale, north up">
+      <rect x="-158" y="-36" width="118" height="100" class="sea" />
+      <use href="#ground" />
+      <polygon class="stfill" points="-97.4,0.1 -108.1,4 -99.2,28.4 -88.5,24.5" />
+      <path class="st" style="stroke-width: 5" d="M-199 10L-187 10L-177 28L-165 32" />
+      <path class="st" style="stroke-width: 8" d="M-150 32L-147 31.7L-118.8 21.5L-101.9 15.3" />
+      <path class="st" style="stroke-width: 6" d="M-126.6 0L-118.8 21.5L-113.2 36.9" />
+      <path class="st" style="stroke-width: 6" d="M-98 9L-98 -6L-102 -14L-122 -30L-142 -70" />
+      <path class="st" style="stroke-width: 4.5" d="M-98 9L-100 62" />
+      <path class="ln" style="stroke-width: 2.2" d="M-109.1 1.2L-124.2 6.7L-151.4 16.6L-146 31.4" />
+      <path class="ln" style="stroke-width: 2.2" d="M-99.8 31.2L-113.4 36.2L-140.7 46.1L-146 31.4" />
+      <polygon class="stfill" points="-122.7,29.8 -127.1,17.6 -114.9,13.1 -110.5,25.3" />
+      <use href="#station" />
+      <polygon class="b k-forge" points="-82,1 -92,1 -92,-7 -82,-7" />
+      <path class="door" d="M-92 -3L-93.8 -3" />
+      <polygon class="sight" points="-150,32 -90.8,18.2 -95.2,6" />
+      <path class="mv" d="M-114 11L-112.2 8.7" />
+      <circle class="mvo" cx="-114" cy="11" r="1.2" />
+      <path class="mv" d="M-139 5L-143.7 21.8" />
+      <circle class="mvo" cx="-139" cy="5" r="1.2" />
+      <path class="mv" d="M-125 -8L-129 -6.5" />
+      <circle class="mvo" cx="-125" cy="-8" r="1.2" />
+      <path class="mv" d="M-116 31L-111.5 41.6" />
+      <circle class="mvo" cx="-116" cy="31" r="1.2" />
+      <polygon class="b k-stand" points="-107.5,11 -114.5,13.5 -117,6.5 -110,4" />
+      <path class="door" d="M-111 12.2L-110.4 13.7" />
+      <polygon class="b k-stand" points="-140.4,22.9 -145.5,24.8 -147,20.6 -141.9,18.8" />
+      <path class="door" d="M-142.9 23.9L-142.4 25.4" />
+      <polygon class="b k-t3" points="-120.8,-3.1 -133,1.3 -137.1,-10 -124.9,-14.4" />
+      <path class="door" d="M-126.9 -0.9L-126.4 0.6" />
+      <polygon class="b k-t3" points="-117.5,39.5 -108.1,36.1 -105.4,43.6 -114.8,47" />
+      <path class="door" d="M-112.8 37.8L-113.4 36.3" />
+      <polygon class="b k-p1" points="-112,25.4 -105.1,22.9 -102.6,29.8 -109.5,32.3" />
+      <path class="door" d="M-108.6 24.1L-109.1 22.6" />
+      <polygon class="b k-p2" points="-124.6,17.2 -131.6,19.7 -134.1,12.8 -127.1,10.2" />
+      <path class="door" d="M-128.1 18.5L-127.5 20" />
+      <polygon class="b k-p3" points="-127.5,31 -120.5,28.5 -118,35.4 -124.9,37.9" />
+      <path class="door" d="M-124 29.7L-124.5 28.2" />
+      <polygon class="b k-p4" points="-141.4,36.1 -136.3,34.2 -134.8,38.3 -139.9,40.2" />
+      <path class="door" d="M-138.8 35.1L-139.4 33.6" />
+      <polygon class="b k-p5" points="-94.2,36.7 -94.2,29.3 -86.8,29.3 -86.8,36.7" />
+      <path class="door" d="M-94.2 33L-95.8 33" />
+      <polygon class="b k-p6" points="-133.4,20.4 -138.5,22.2 -140,18.1 -134.9,16.3" />
+      <path class="door" d="M-136 21.3L-135.4 22.8" />
+      <polygon class="b k-p7" points="-134.4,33.5 -129.3,31.7 -127.8,35.8 -132.9,37.7" />
+      <path class="door" d="M-131.9 32.6L-132.4 31.1" />
+      <polygon class="b k-p8" points="-94.2,46.7 -94.2,39.3 -86.8,39.3 -86.8,46.7" />
+      <path class="door" d="M-94.2 43L-95.8 43" />
+      <polygon class="shelf" points="-88.7,24.8 -90.7,19.2 -89.7,18.8 -87.7,24.4" />
+      <circle class="plinth" cx="-94.2" cy="23.6" r="0.75" />
+      <rect class="pad" x="-110.3" y="45.2" width="6" height="6" />
+      <rect class="clock" x="-120.4" y="19.9" width="3.2" height="3.2" />
+      <path class="walk" d="M-199 10L-187 10L-177 28L-165 32L-147 31.7L-118.8 21.5" />
+      <path class="walk w2" d="M-142.6 24.8L-140.9 29.5L-101.9 15.3L-94.2 8.6L-92.1 5.6L-94.2 8.6L-87.3 10L-70.1 3.7" />
+      <text class="t in" x="-90.2" y="11.9" text-anchor="middle">Hall</text>
+      <text class="t in" x="-87" y="-2.2" text-anchor="middle">Forge</text>
+      <text class="t" x="-57.9" y="40.5" text-anchor="middle">Roundhouse</text>
+      <text class="s x" x="-70" y="2.6" text-anchor="middle">platforms</text>
+      <text class="s x" x="-45" y="-9.5" text-anchor="middle">east bay</text>
+      <text class="s" x="-153.5" y="37.2" text-anchor="start">to the dock</text>
+      <text class="s" x="-134" y="-33" text-anchor="middle">to the camp</text>
+      <text class="s" x="-100" y="61.5" text-anchor="start">to the quarry</text>
+      <text class="s in" x="-112.2" y="9.3" text-anchor="middle">Pip</text>
+      <text class="s in" x="-129" y="-5.9" text-anchor="middle">Museum</text>
+      <text class="s in" x="-111.5" y="42.2" text-anchor="middle">Shop</text>
+      <text class="n k-p1" x="-107.3" y="28.6" text-anchor="middle">1</text>
+      <text class="n k-p2" x="-129.3" y="16" text-anchor="middle">2</text>
+      <text class="n k-p3" x="-122.7" y="34.2" text-anchor="middle">3</text>
+      <text class="n k-p4" x="-138.1" y="38.2" text-anchor="middle">4</text>
+      <text class="n k-p5" x="-90.5" y="34" text-anchor="middle">5</text>
+      <text class="n k-p6" x="-136.7" y="20.3" text-anchor="middle">6</text>
+      <text class="n k-p7" x="-131.1" y="35.7" text-anchor="middle">7</text>
+      <text class="n k-p8" x="-90.5" y="44" text-anchor="middle">8</text>
+      <text class="s x" x="-118.8" y="13.5" text-anchor="middle">the Cross</text>
+      <g class="scale">
+        <path class="rule" d="M-154 59h10M-154 58.2v1.6M-144 58.2v1.6" />
+        <text class="s" x="-149" y="57.4" text-anchor="middle">10 m</text>
+        <path class="rule" d="M-139 59.8v-4.4m-1.2 1.6l1.2-1.6 1.2 1.6" fill="none" />
+        <text class="s" x="-137.2" y="57.6">N</text>
+      </g>
+    </svg>
+  </div>
+  <div class="mapwrap tab-round">
+    <svg class="map m-round" viewBox="-158 -36 118 100" role="img" aria-label="2 · The Round: plan to scale, north up">
+      <rect x="-158" y="-36" width="118" height="100" class="sea" />
+      <use href="#ground" />
+      <circle class="st" cx="-115" cy="20.1" r="20" />
+      <path class="st" style="stroke-width: 5" d="M-199 10L-187 10L-177 28L-165 32" />
+      <path class="st" style="stroke-width: 8" d="M-150 32L-133.8 26.9" />
+      <path
+        class="st"
+        style="stroke-width: 6"
+        d="M-115 3.1L-113.2 3.2L-111.5 3.4L-109.7 3.9L-108.1 4.5L-106.5 5.3L-105 6.3L-103.6 7.4L-102.4 8.7L-101.2 10.1L-100.3 11.6L-99.5 13.2L-98.8 14.8L-98.4 16.5L-98.1 18.3L-98 20.1L-98.1 21.8L-98.4 23.6L-98.8 25.3L-99.5 27L-100.3 28.6L-101.2 30.1L-102.4 31.4L-103.6 32.7L-105 33.8L-106.5 34.8L-108.1 35.6L-109.7 36.2L-111.5 36.7L-113.2 37L-115 37.1L-116.8 37L-118.5 36.7L-120.3 36.2L-121.9 35.6L-123.5 34.8L-125 33.8L-126.4 32.7L-127.6 31.4L-128.8 30.1L-129.7 28.6L-130.5 27L-131.2 25.3L-131.6 23.6L-131.9 21.8L-132 20.1L-131.9 18.3L-131.6 16.5L-131.2 14.8L-130.5 13.2L-129.7 11.6L-128.8 10.1L-127.6 8.7L-126.4 7.4L-125 6.3L-123.5 5.3L-121.9 4.5L-120.3 3.9L-118.5 3.4L-116.8 3.2L-115 3.1"
+      />
+      <path class="st" style="stroke-width: 6" d="M-102.1 4.7L-98 -6L-102 -14L-122 -30L-142 -70" />
+      <path class="st" style="stroke-width: 4.5" d="M-99.7 32.9L-99.3 40L-100 62" />
+      <path class="st" style="stroke-width: 6" d="M-99 14.3L-94.2 8.6" />
+      <circle class="green" cx="-115" cy="20.1" r="14" />
+      <use href="#station" />
+      <polygon class="b k-forge" points="-82,1 -92,1 -92,-7 -82,-7" />
+      <path class="door" d="M-92 -3L-93.8 -3" />
+      <polygon class="sight" points="-150,32 -90.8,18.2 -95.2,6" />
+      <path class="mv" d="M-114 11L-110.5 -5.2" />
+      <circle class="mvo" cx="-114" cy="11" r="1.2" />
+      <path class="mv" d="M-135 24L-138.8 15.9" />
+      <circle class="mvo" cx="-135" cy="24" r="1.2" />
+      <path class="mv" d="M-116 31L-120.4 45.5" />
+      <circle class="mvo" cx="-116" cy="31" r="1.2" />
+      <polygon class="b k-stand" points="-107.5,-1 -114.8,-2.2 -113.5,-9.5 -106.3,-8.2" />
+      <path class="door" d="M-111.2 -1.6L-111.5 -0" />
+      <polygon class="b k-stand" points="-136.2,13.6 -137.1,18.9 -141.5,18.1 -140.5,12.8" />
+      <path class="door" d="M-136.7 16.2L-135.1 16.5" />
+      <polygon class="b k-t3" points="-117.1,-4.7 -129.3,-0.3 -133.4,-11.5 -121.2,-16" />
+      <path class="door" d="M-123.2 -2.5L-122.7 -1" />
+      <polygon class="b k-t3" points="-124.5,40.5 -114.7,42.6 -116.3,50.5 -126.1,48.4" />
+      <path class="door" d="M-119.6 41.6L-119.2 40" />
+      <polygon class="b k-p1" points="-132,34.5 -126.3,39.3 -131.1,45 -136.7,40.2" />
+      <path class="door" d="M-129.1 36.9L-128.1 35.7" />
+      <polygon class="b k-p2" points="-113.3,42.3 -106.1,40.5 -104.3,47.7 -111.5,49.5" />
+      <path class="door" d="M-109.7 41.4L-110.1 39.9" />
+      <polygon class="b k-p3" points="-94.2,36.7 -94.2,29.3 -86.8,29.3 -86.8,36.7" />
+      <path class="door" d="M-94.2 33L-95.8 33" />
+      <polygon class="b k-p4" points="-130.1,3.9 -133.6,8 -137,5.2 -133.5,1" />
+      <path class="door" d="M-131.9 5.9L-130.6 7" />
+      <polygon class="b k-p5" points="-93.7,44.9 -93.7,39.5 -89.3,39.5 -89.3,44.9" />
+      <path class="door" d="M-93.7 42.2L-95.3 42.2" />
+      <polygon class="b k-p6" points="-94.2,55.2 -94.2,47.8 -86.8,47.8 -86.8,55.2" />
+      <path class="door" d="M-94.2 51.5L-95.8 51.5" />
+      <polygon class="b k-p7" points="-98.4,-19.4 -102.6,-22.8 -99.8,-26.2 -95.6,-22.8" />
+      <path class="door" d="M-100.5 -21.1L-101.5 -19.8" />
+      <polygon class="b k-p8" points="-104.6,52.3 -104.6,59.7 -112,59.7 -112,52.3" />
+      <path class="door" d="M-104.6 56L-103 56" />
+      <polygon class="shelf" points="-88.7,24.8 -90.7,19.2 -89.7,18.8 -87.7,24.4" />
+      <circle class="plinth" cx="-94.2" cy="23.6" r="0.75" />
+      <rect class="pad" x="-123.4" y="50.3" width="6" height="6" />
+      <rect class="clock" x="-116.6" y="18.5" width="3.2" height="3.2" />
+      <path class="walk" d="M-199 10L-187 10L-177 28L-165 32L-128.2 24.9L-115 20.1" />
+      <path class="walk w2" d="M-135.7 16.4L-128.8 17.6L-101.8 15.3L-94.2 8.6L-92.1 5.6L-94.2 8.6L-87.3 10L-70.1 3.7" />
+      <text class="t in" x="-90.2" y="11.9" text-anchor="middle">Hall</text>
+      <text class="t in" x="-87" y="-2.2" text-anchor="middle">Forge</text>
+      <text class="t" x="-57.9" y="40.5" text-anchor="middle">Roundhouse</text>
+      <text class="s x" x="-70" y="2.6" text-anchor="middle">platforms</text>
+      <text class="s x" x="-45" y="-9.5" text-anchor="middle">east bay</text>
+      <text class="s" x="-153.5" y="37.2" text-anchor="start">to the dock</text>
+      <text class="s" x="-134" y="-33" text-anchor="middle">to the camp</text>
+      <text class="s" x="-100" y="61.5" text-anchor="start">to the quarry</text>
+      <text class="s in" x="-110.5" y="-4.6" text-anchor="middle">Pip</text>
+      <text class="s in" x="-125.3" y="-7.5" text-anchor="middle">Museum</text>
+      <text class="s in" x="-120.4" y="46.1" text-anchor="middle">Shop</text>
+      <text class="n k-p1" x="-131.5" y="40.8" text-anchor="middle">1</text>
+      <text class="n k-p2" x="-108.8" y="46" text-anchor="middle">2</text>
+      <text class="n k-p3" x="-90.5" y="34" text-anchor="middle">3</text>
+      <text class="n k-p4" x="-133.5" y="5.5" text-anchor="middle">4</text>
+      <text class="n k-p5" x="-91.5" y="43.2" text-anchor="middle">5</text>
+      <text class="n k-p6" x="-90.5" y="52.5" text-anchor="middle">6</text>
+      <text class="n k-p7" x="-99.1" y="-21.8" text-anchor="middle">7</text>
+      <text class="n k-p8" x="-108.3" y="57" text-anchor="middle">8</text>
+      <text class="s x" x="-115" y="29.6" text-anchor="middle">the green</text>
+      <g class="scale">
+        <path class="rule" d="M-154 59h10M-154 58.2v1.6M-144 58.2v1.6" />
+        <text class="s" x="-149" y="57.4" text-anchor="middle">10 m</text>
+        <path class="rule" d="M-139 59.8v-4.4m-1.2 1.6l1.2-1.6 1.2 1.6" fill="none" />
+        <text class="s" x="-137.2" y="57.6">N</text>
+      </g>
+    </svg>
+  </div>
+  <div class="mapwrap tab-fan">
+    <svg class="map m-fan" viewBox="-158 -36 118 100" role="img" aria-label="3 · The Fan: plan to scale, north up">
+      <rect x="-158" y="-36" width="118" height="100" class="sea" />
+      <use href="#ground" />
+      <polygon
+        class="stfill"
+        points="-93,12.1 -97.4,-0.2 -98.7,0.4 -99.9,1 -101,1.8 -102,2.7 -102.9,3.7 -103.8,4.8 -104.5,6 -105,7.2 -105.5,8.5 -105.8,9.8 -105.9,11.2 -106,12.5 -105.9,13.9 -105.6,15.2 -105.2,16.5 -104.7,17.8 -104,18.9 -103.2,20.1 -102.3,21.1 -101.3,22 -100.3,22.8 -99.1,23.5 -97.9,24.1 -96.6,24.6 -95.2,24.9 -93.9,25 -92.5,25.1 -91.2,24.9 -89.8,24.7 -88.5,24.3"
+      />
+      <path class="st" style="stroke-width: 5" d="M-199 10L-187 10L-177 28L-165 32" />
+      <path class="st" style="stroke-width: 6" d="M-150 32L-105.2 16.5" />
+      <path class="st" style="stroke-width: 6" d="M-128.3 -4.4L-104.8 6.6" />
+      <path class="st" style="stroke-width: 6" d="M-98 9L-98 -6L-102 -14L-122 -30L-142 -70" />
+      <path class="st" style="stroke-width: 4.5" d="M-98 9L-100 62" />
+      <path
+        class="ln"
+        style="stroke-width: 2.2"
+        d="M-127 -3.8L-128.2 -0.8L-129.2 2.4L-129.9 5.5L-130.3 8.8L-130.5 12.1L-130.3 15.3L-129.9 18.6L-129.2 21.8L-128.2 24.9"
+      />
+      <use href="#station" />
+      <polygon class="b k-forge" points="-82,1 -92,1 -92,-7 -82,-7" />
+      <path class="door" d="M-92 -3L-93.8 -3" />
+      <polygon class="sight" points="-150,32 -90.8,18.2 -95.2,6" />
+      <path class="mv" d="M-114 11L-116 10.9" />
+      <circle class="mvo" cx="-114" cy="11" r="1.2" />
+      <path class="mv" d="M-139 5L-138.4 20.4" />
+      <circle class="mvo" cx="-139" cy="5" r="1.2" />
+      <path class="mv" d="M-125 -8L-134.2 -7.2" />
+      <circle class="mvo" cx="-125" cy="-8" r="1.2" />
+      <polygon class="b k-stand" points="-111.2,13.1 -118.2,15.6 -120.7,8.7 -113.7,6.2" />
+      <path class="door" d="M-114.7 14.4L-114.1 15.9" />
+      <polygon class="b k-stand" points="-135.1,21.5 -140.2,23.4 -141.7,19.2 -136.6,17.4" />
+      <path class="door" d="M-137.6 22.5L-137.1 24" />
+      <polygon class="b k-t3" points="-126,-10.5 -131.5,1.3 -142.4,-3.8 -136.9,-15.6" />
+      <path class="door" d="M-128.8 -4.6L-127.3 -4" />
+      <polygon class="b k-t3" points="-116.1,24.6 -109.7,32.3 -115.9,37.4 -122.3,29.7" />
+      <path class="door" d="M-112.9 28.5L-111.7 27.4" />
+      <polygon class="b k-p1" points="-119.1,15.7 -126.1,18.2 -128.6,11.3 -121.6,8.8" />
+      <path class="door" d="M-122.6 17L-122 18.5" />
+      <polygon class="b k-p2" points="-138.3,34.4 -131.3,31.9 -128.8,38.8 -135.7,41.4" />
+      <path class="door" d="M-134.8 33.1L-135.3 31.6" />
+      <polygon class="b k-p3" points="-94.2,36.7 -94.2,29.3 -86.8,29.3 -86.8,36.7" />
+      <path class="door" d="M-94.2 33L-95.8 33" />
+      <polygon class="b k-p4" points="-110,-1.9 -114.9,-4.2 -113,-8.2 -108.1,-5.9" />
+      <path class="door" d="M-112.4 -3.1L-113.1 -1.6" />
+      <polygon class="b k-p5" points="-117.2,-5.3 -123.9,-8.4 -120.8,-15.1 -114.1,-12" />
+      <path class="door" d="M-120.6 -6.9L-121.2 -5.4" />
+      <polygon class="b k-p6" points="-137.6,7.4 -137.9,12.8 -142.3,12.6 -142,7.2" />
+      <path class="door" d="M-137.7 10.1L-136.1 10.2" />
+      <polygon class="b k-p7" points="-94.2,46.7 -94.2,39.3 -86.8,39.3 -86.8,46.7" />
+      <path class="door" d="M-94.2 43L-95.8 43" />
+      <polygon class="b k-p8" points="-104.4,54.3 -104.4,59.7 -108.8,59.7 -108.8,54.3" />
+      <path class="door" d="M-104.4 57L-102.8 57" />
+      <polygon class="shelf" points="-88.7,24.8 -90.7,19.2 -89.7,18.8 -87.7,24.4" />
+      <circle class="plinth" cx="-94.2" cy="23.6" r="0.75" />
+      <rect class="pad" x="-123.8" y="34.1" width="6" height="6" />
+      <rect class="clock" x="-106.8" y="14.9" width="3.2" height="3.2" />
+      <path class="walk" d="M-199 10L-187 10L-177 28L-165 32L-99.6 14.5" />
+      <path class="walk w2" d="M-137.3 23.4L-135.7 27.6L-105.2 16.5L-94.2 8.6L-92.1 5.6L-94.2 8.6L-87.3 10L-70.1 3.7" />
+      <text class="t in" x="-90.2" y="11.9" text-anchor="middle">Hall</text>
+      <text class="t in" x="-87" y="-2.2" text-anchor="middle">Forge</text>
+      <text class="t" x="-57.9" y="40.5" text-anchor="middle">Roundhouse</text>
+      <text class="s x" x="-70" y="2.6" text-anchor="middle">platforms</text>
+      <text class="s x" x="-45" y="-9.5" text-anchor="middle">east bay</text>
+      <text class="s" x="-153.5" y="37.2" text-anchor="start">to the dock</text>
+      <text class="s" x="-134" y="-33" text-anchor="middle">to the camp</text>
+      <text class="s" x="-100" y="61.5" text-anchor="start">to the quarry</text>
+      <text class="s in" x="-116" y="11.5" text-anchor="middle">Pip</text>
+      <text class="s in" x="-134.2" y="-6.6" text-anchor="middle">Museum</text>
+      <text class="s in" x="-116" y="31.6" text-anchor="middle">Shop</text>
+      <text class="n k-p1" x="-123.8" y="14.5" text-anchor="middle">1</text>
+      <text class="n k-p2" x="-133.5" y="37.6" text-anchor="middle">2</text>
+      <text class="n k-p3" x="-90.5" y="34" text-anchor="middle">3</text>
+      <text class="n k-p4" x="-111.5" y="-4.1" text-anchor="middle">4</text>
+      <text class="n k-p5" x="-119" y="-9.2" text-anchor="middle">5</text>
+      <text class="n k-p6" x="-139.9" y="11" text-anchor="middle">6</text>
+      <text class="n k-p7" x="-90.5" y="44" text-anchor="middle">7</text>
+      <text class="n k-p8" x="-106.6" y="58" text-anchor="middle">8</text>
+      <text class="s x" x="-101" y="13.2" text-anchor="middle">forecourt</text>
+      <g class="scale">
+        <path class="rule" d="M-154 59h10M-154 58.2v1.6M-144 58.2v1.6" />
+        <text class="s" x="-149" y="57.4" text-anchor="middle">10 m</text>
+        <path class="rule" d="M-139 59.8v-4.4m-1.2 1.6l1.2-1.6 1.2 1.6" fill="none" />
+        <text class="s" x="-137.2" y="57.6">N</text>
+      </g>
+    </svg>
+  </div>
+  <div class="legend">
+    <span><i></i>standing</span>
+    <span><i class="board"></i>a board or a frame, not built yet</span>
+    <span><i class="stake"></i>staked plot (number: the order they are staked)</span>
+    <span><i class="bought"></i>bought and built</span>
+    <span><i class="fixd"></i>station, platforms, Roundhouse</span>
+    <span><i class="w"></i>walk from the dock</span>
+    <span><i class="w2"></i>a rider's walk to the ticket window and the train</span>
+    <span><i class="mvd"></i>moved from (circle) to</span>
+    <span><i class="sg"></i>view from the top of the dock path to the hall</span>
+    <span><i class="pd"></i>the glider's balcony</span>
+  </div>
+  <p class="muted">
+    North is up. The station is drawn as the one-station Home you picked on 9 November, with the east bay for the
+    passenger train. The ground is the game's own height grid: the town sits on a flat top about 130 m by 200 m, so none
+    of the options needs earth moved. Black bars are the curio shelf (in the hall) and the finders' bay; the yellow dot
+    in the hall is the ticket window.
+  </p>
+
+  <section class="sec tab-today">
+    <h2>Today: why it does not read as a town</h2>
+    <ul>
+      <li>
+        <b>Seven buildings, seven angles.</b> Their doors face 63°, 88°, 94°, 99°, 117°, 124° and 151°. None is square
+        to the station (70°) or to the street. They were each turned to look good from the old spawn point.
+      </li>
+      <li>
+        <b>No street has two sides.</b> Only 2 of the 7 front doors are within a few steps of a path. Fine Prices is 11
+        m from the nearest one; a cottage is 12 m.
+      </li>
+      <li>
+        <b>No centre.</b> The "square" is where three paths meet, 4 m in front of the hall. It has no edges and nothing
+        in the middle.
+      </li>
+      <li><b>Nothing to walk round.</b> The paths are a Y: dock, camp, quarry. There is no loop anywhere in town.</li>
+      <li>
+        <b>A ring nobody can see.</b> Five of the seven buildings already sit about 20 m from one point, but Pip's house
+        and a cottage stand in the middle of it and no door faces it.
+      </li>
+      <li>
+        <b>Bare ground.</b> The flat top is about 26,000 m²; the buildings cover about 540 m² of it, and no tree stands
+        within 57 m of the middle of town.
+      </li>
+      <li>
+        <b>Coming up from the dock</b> you meet the blank sides of two cottages. The path bends between them, and the
+        station stays hidden behind Pip's house until the last few metres (about a sixth of the hall shows from the top
+        of the path). The walk is 127 m, 23 seconds.
+      </li>
+    </ul>
+    <p class="muted">Stills of all of this are in the plan (docs/plans/town-layout.md).</p>
+  </section>
+
+  <section class="sec tab-cross">
+    <h2>1 · The Cross: two straight streets</h2>
+    <p>
+      A classic railway town. Station Street runs dead straight from the top of the dock path to the hall's front, along
+      the same line as the platforms, so from the dock you look down the street at the station. A second street crosses
+      it, with the museum at one end and Fine Prices at the other. The clock stands where they cross. Back lanes behind
+      the houses make blocks you can walk round. No radial part.
+    </p>
+    <ul>
+      <li>
+        <b>On arrival:</b> the hall, Pip's house on the square, one cottage at the top of the dock path, the forge as a
+        frame.
+      </li>
+      <li>
+        <b>Every building faces one of two ways</b> (square to the station), plus the two that face the quarry road.
+      </li>
+      <li>
+        <b>Walks:</b> dock to the Cross 93 m (17 s); dock to the hall door 121 m (22 s); platform to the Cross 54 m (10
+        s).
+      </li>
+      <li>
+        <b>A rider</b> from the far cottage walks 60 m to the ticket window, then 29 m to the train: about 53 s at a
+        little guy's pace.
+      </li>
+      <li>
+        <b>Weak points:</b> houses hide each other along a street, so from the hall you cannot see which plots are
+        staked; the only open space is a strip in front of the hall.
+      </li>
+    </ul>
+  </section>
+
+  <section class="sec tab-round">
+    <h2>2 · The Round: a green with a ring road (recommended)</h2>
+    <p>
+      The radial part you mentioned. A round green, 28 m across, sits in front of the hall with a road round it. Houses
+      stand in a ring facing the green, 30° apart, the same spacing as the Roundhouse's stalls. The hall takes the
+      ring's east side, so the green is the station square. Four ways leave the ring: to the station, the dock, the camp
+      and the quarry. The clock stands in the middle.
+    </p>
+    <ul>
+      <li>
+        <b>On arrival:</b> the hall, Pip's house (by the camp road, where you are sent first), one cottage beside the
+        dock street, the forge as a frame, and the green with its ring road already there. The empty ring shows where
+        the town will go.
+      </li>
+      <li>
+        <b>Buying a plot fills a gap in the ring.</b> From the green or the hall's front you can see nearly every door
+        and every staked plot at once.
+      </li>
+      <li>
+        <b>Walks:</b> dock to the clock 97 m (17 s); dock to the hall door 120 m (22 s); platform to the clock 50 m (9
+        s); once round the ring 107 m (19 s).
+      </li>
+      <li>
+        <b>A rider</b> from the far cottage walks 48 m across the green to the ticket window, then 29 m to the train:
+        about 45 s. Riders from every house cross the same green, so a crowd reads as a crowd.
+      </li>
+      <li>
+        <b>From the dock path</b> you see the gate cottage, then the clock with the hall and the forge's chimney behind
+        it, on one line.
+      </li>
+      <li>
+        <b>Costs:</b> Pip's house moves 17 m, Fine Prices 15 m (its balcony goes with it), the museum only turns. The
+        ring holds seven buildings, so the last plots go along the quarry and camp roads.
+      </li>
+    </ul>
+  </section>
+
+  <section class="sec tab-fan">
+    <h2>3 · The Fan: streets radiating from the station</h2>
+    <p>
+      The other radial answer. A half-round forecourt in front of the hall, and streets fanning out from it: Dock Street
+      on the station's line, Museum Street with the museum closing its far end, and the camp and quarry roads as the
+      fan's outer edges. A curved back lane joins them. Every street ends at the station.
+    </p>
+    <ul>
+      <li>
+        <b>On arrival:</b> the hall, Pip's house (2 m from where it is now), one cottage at the top of Dock Street, the
+        forge as a frame.
+      </li>
+      <li>
+        <b>Least to move:</b> Fine Prices stays where it is and only turns; today's buildings already sit close to these
+        lines.
+      </li>
+      <li>
+        <b>Walks:</b> dock to the forecourt 113 m (20 s); dock to the hall door 120 m (22 s); platform to the forecourt
+        33 m (6 s); loop by the two streets and the lane 89 m (16 s).
+      </li>
+      <li>
+        <b>A rider</b> from the far cottage walks 54 m down Dock Street to the ticket window, then 29 m: about 49 s.
+      </li>
+      <li>
+        <b>Weak points:</b> the only place to gather is the forecourt, which also holds the shelf, the way in and
+        everyone arriving; the blocks are wedges, so plots are awkward shapes; from the dock the forge is hidden.
+      </li>
+    </ul>
+  </section>
+
+  <h2>The three moments, in every option</h2>
+  <div class="scroll">
+    <table>
+      <tr>
+        <th>On arrival</th>
+        <td>
+          The station hall, Pip's house, one cottage, the forge's frame. Boards mark where Fine Prices and the museum
+          will rise. The first two plots are staked, each with a price sign.
+        </td>
+      </tr>
+      <tr>
+        <th>Mid-game (trains running, about two hours in)</th>
+        <td>
+          The forge is finished, roof and chimney on, the moment you finish building it, and you can walk in. Fine
+          Prices and the museum stand (they rise free when the first path opens, as today). The clock is up. Three
+          bought houses stand; two more plots are staked.
+        </td>
+      </tr>
+      <tr>
+        <th>Full town</th>
+        <td>
+          Eight bought buildings, twelve in all, plus the station, the forge and the Roundhouse. A busy town, not a
+          city.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>Side by side</h2>
+  <div class="scroll">
+    <table class="wide">
+      <tr>
+        <th></th>
+        <th>Today</th>
+        <th>1 · The Cross</th>
+        <th>2 · The Round</th>
+        <th>3 · The Fan</th>
+      </tr>
+      <tr>
+        <td>Shape</td>
+        <td>Scattered round a path junction</td>
+        <td>Two straight streets crossing</td>
+        <td>A ring of houses round a green</td>
+        <td>Streets fanning from the station</td>
+      </tr>
+      <tr>
+        <td>Radial part</td>
+        <td>None</td>
+        <td>None</td>
+        <td>The whole centre</td>
+        <td>The streets</td>
+      </tr>
+      <tr>
+        <td>Ways buildings face</td>
+        <td>7 buildings, 7 angles</td>
+        <td>Square to the station; 2 square to the quarry road</td>
+        <td>Each faces the green, 30° apart; the rest square to their road</td>
+        <td>Square to their own street</td>
+      </tr>
+      <tr>
+        <td>Front doors on a street</td>
+        <td>2 of 7</td>
+        <td>12 of 12</td>
+        <td>12 of 12</td>
+        <td>10 of 12 (two face the forecourt or the lane)</td>
+      </tr>
+      <tr>
+        <td>Open centre</td>
+        <td>None</td>
+        <td>A 26 × 11 m strip at the hall, and the Cross</td>
+        <td>A 28 m green (615 m²), 40 m with its road</td>
+        <td>A half-round forecourt (265 m²)</td>
+      </tr>
+      <tr>
+        <td>A loop to walk</td>
+        <td>None</td>
+        <td>Round a block: 63 m, 11 s</td>
+        <td>Round the green: 107 m, 19 s</td>
+        <td>Two streets and the lane: 89 m, 16 s</td>
+      </tr>
+      <tr>
+        <td>Dock to the centre</td>
+        <td>127 m, 23 s</td>
+        <td>93 m, 17 s</td>
+        <td>97 m, 17 s</td>
+        <td>113 m, 20 s</td>
+      </tr>
+      <tr>
+        <td>Platform to the centre</td>
+        <td>29 m, 5 s</td>
+        <td>54 m, 10 s</td>
+        <td>50 m, 9 s</td>
+        <td>33 m, 6 s</td>
+      </tr>
+      <tr>
+        <td>East bay to the centre</td>
+        <td>51 m, 9 s</td>
+        <td>75 m, 13 s</td>
+        <td>71 m, 13 s</td>
+        <td>55 m, 10 s</td>
+      </tr>
+      <tr>
+        <td>Far house to the ticket window, then the train</td>
+        <td>59 m + 29 m, about 52 s</td>
+        <td>60 m + 29 m, about 53 s</td>
+        <td>48 m + 29 m, about 45 s</td>
+        <td>54 m + 29 m, about 49 s</td>
+      </tr>
+      <tr>
+        <td>Seen first from the dock path</td>
+        <td>Two cottages' blank sides; a sliver of the hall</td>
+        <td>The gate cottage, then the hall at the end of the street</td>
+        <td>The gate cottage, then the clock, the hall and the forge behind it</td>
+        <td>The gate cottage, then the hall at the end of the street</td>
+      </tr>
+      <tr>
+        <td>Buildings in clear view from the hall's front</td>
+        <td>2 of 7</td>
+        <td>3 of 12</td>
+        <td>8 of 12</td>
+        <td>4 of 12</td>
+      </tr>
+      <tr>
+        <td>What moves at the start</td>
+        <td></td>
+        <td>Pip 3 m, museum 4 m, shop 12 m, cottage 17 m</td>
+        <td>Pip 17 m, museum turns, shop 15 m, cottage 9 m</td>
+        <td>Pip 2 m, museum 9 m, shop turns, cottage 15 m</td>
+      </tr>
+      <tr>
+        <td>Rooms close enough to the centre to be drawn at once</td>
+        <td>5 of 7</td>
+        <td>11 of 12</td>
+        <td>9 of 12</td>
+        <td>7 of 12</td>
+      </tr>
+      <tr>
+        <td>Needs a world reset</td>
+        <td></td>
+        <td colspan="3">
+          Not for the town itself (the trees and the railway do not change). Buying plots is new shared state, and that
+          step does.
+        </td>
+      </tr>
+    </table>
+  </div>
+  <p class="muted">
+    Walks are for a player at 5.6 m/s; riders are timed at a little guy's 1.7 m/s. "In clear view" means half or more of
+    the building's outline can be seen, counting only buildings as blockers.
+  </p>
+
+  <h2>Recommendation</h2>
+  <div class="pick">
+    <p>
+      <b>2 · The Round.</b> It is the one that gives the town a middle: a place to meet, something to walk round, and
+      one spot from which you can see what has been built and what is still staked. Filling a ring a house at a time is
+      the clearest picture of "building up", and the round green echoes the Roundhouse's turntable across the station.
+      The Cross is the fallback if you would rather have plain streets; the Fan is the cheapest and keeps Fine Prices
+      where it is, but it has no room to gather.
+    </p>
+  </div>
+
+  <h2>The same in all three</h2>
+  <ul>
+    <li>
+      <b>The forge</b> stays where it is (the railway is tied to it). Its door moves from the south wall, where the hall
+      would crowd it, to the west wall on the camp road. It finishes with its roof and chimney when you finish building
+      it.
+    </li>
+    <li>
+      <b>The ticket window</b> is inside the hall's north end, as you decided. Every rider's walk ends there, then goes
+      out to the platforms.
+    </li>
+    <li>
+      <b>The finders' bay</b> moves beside the hall's south end, facing the square, in line with the shelf. Where it
+      stands now its back would face everyone coming up from the dock.
+    </li>
+    <li>
+      <b>Plots:</b> eight to buy. Three are the cottages that no longer stand on arrival; five are new houses. Two are
+      staked at a time, nearest the station and the dock first.
+    </li>
+    <li>
+      <b>Other towns</b> get the same parts, not the same shape: a station on the town's edge, one centre the land
+      suggests, streets that end at something, plots staked on the centre's edge first. Home is the only round one.
+    </li>
+  </ul>
+
+  <h2>Questions for you</h2>
+  <div class="q">
+    <p><b>1. Which layout?</b> Recommended: 2, the Round.</p>
+  </div>
+  <div class="q">
+    <p>
+      <b>2. What stands on arrival?</b> Recommended: the hall, Pip's house and one cottage; Fine Prices and the museum
+      still rise free when the first path opens; the other three cottages are bought. Other choices: a second cottage
+      stands from the start (plot 4), or Fine Prices and the museum are bought too.
+    </p>
+  </div>
+  <div class="q">
+    <p><b>3. Move the finders' bay beside the hall's south end?</b> Recommended: yes. It was placed "for now".</p>
+  </div>
+  <div class="q">
+    <p>
+      <b>4. The clock in the middle:</b> free when the first trains run, or bought? Recommended: free, so one thing
+      still grows because a train came.
+    </p>
+  </div>
+  <div class="q">
+    <p>
+      <b>5. Are the first two plots staked from the very start,</b> before there are any fares to spend? Recommended:
+      yes, with their price signs, so the plan of the town reads on the first walk in.
+    </p>
+  </div>
+
+  <h2>What I could not confirm</h2>
+  <ul>
+    <li>
+      None of the three has been seen in the game. They are drawn from the layout numbers; the level check passed with
+      each option's positions put in, but it does not know streets, roofs or the green.
+    </li>
+    <li>
+      Whether a player with the second jump can already hop from a cottage roof to Fine Prices' roof and on to the
+      glider's balcony. Today a cottage roof is 5.8 m from the shop's; every option puts the nearest one at least 11 m
+      away.
+    </li>
+    <li>What the town costs to draw. The figures in the plan are counted from the building kit, not measured.</li>
+  </ul>
+</main>
+<script>
+  const page = document.getElementById('page');
+  for (const b of document.querySelectorAll('button[data-tab], button[data-stage]')) {
+    b.addEventListener('click', () => {
+      const key = b.dataset.tab ? 'tab' : 'stage';
+      page.dataset[key] = b.dataset[key];
+      for (const o of b.parentElement.children) o.setAttribute('aria-pressed', String(o === b));
+    });
+  }
+</script>
