@@ -46,7 +46,6 @@ function createRealSea() {
   const waveTex = bakeWaveCell();
   const caustics = createCaustics();
   const ocean = createOcean({
-
     coast,
     waveTex,
     fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),
@@ -132,10 +131,11 @@ function createRealSea() {
     if (disposed || !entity.alive) return;
     await post.prepare();
   });
-  waterReady = Promise.all([rendererReady, frozen.ready]).then(() => {
-    if (disposed || !entity.alive) return;
-    coast.sync();
-  });
+  // No coast bake here: Place's and Ring Island's shores still register after this, in the warm-up's preparations
+  // (measured on 10 November: the first frame always baked again), and every bake redoes
+  // every region, so one made now was thrown away (docs/research/cold-start.md). The coast bakes on its next read
+  // instead (the water field, or the first frame's lateUpdate), behind the loading screen either way.
+  waterReady = Promise.all([rendererReady, frozen.ready]).then(() => {});
   warmUp(
     async () => {
       await waterReady;
