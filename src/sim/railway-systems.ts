@@ -60,6 +60,7 @@ import {
 import { call, trainTick } from './railway-sys-trains.ts';
 import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
 import { resume, supply } from './railway-sys-away.ts';
+import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
@@ -90,12 +91,14 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.boilerFit': [boilerFit],
   'rail.call': [call],
   'rail.breaker': [breaker],
-  'rail.strike': [strike],
+  'rail.strike': [strike, ringStrike],
   'rail.kiln': [kiln],
-  'rail.footTake': [footTake],
-  'rail.footSet': [footSet],
+  'rail.footTake': [footTake, ringFootTake],
+  'rail.footSet': [footSet, ringFootSet],
   'rail.cradle': [cradle],
   'rail.turn': [turn],
+  // Ring Island (v27, ./railway-sys-ring.ts): the rivet, the railhead rack and jib above, and the leaf's brace.
+  'rail.brace': [brace],
 };
 
 export function railOutcome(w: World, pid: string, epoch: number, request: number): RailResult | null {

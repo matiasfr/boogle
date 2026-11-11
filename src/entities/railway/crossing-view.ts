@@ -31,7 +31,7 @@ import {
   CROSSING_DECK_Y,
   CROSSING_FOOT_OFF,
 } from '../../sim/railway-works-layout.ts';
-import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { pierLaid } from '../../sim/railway-line2-layout.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
 import { account, beam, boiler, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
@@ -72,7 +72,7 @@ export async function createRailwayCrossing(
   let opened = false;
   const refresh = () => {
     wd = adapter.read.world();
-    opened = adapter.read.ready() && line2Trains(wd) && line2Completed(wd) >= LINE2_STATIONS.length;
+    opened = adapter.read.ready() && line2Trains(wd) && pierLaid(line2Completed(wd));
   };
   refresh();
   const batch = createBoxBatch(owner, 360);

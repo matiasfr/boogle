@@ -12,7 +12,7 @@ import {
   linePanels,
   LINE1_RAIL_PAIRS,
 } from '../src/sim/railway-line-layout.ts';
-import { LINE2_STATIONS, line2Panels } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_STATIONS, Q6, line2Panels } from '../src/sim/railway-line2-layout.ts';
 import { apply, createRailway, invariant, railSession, rocks } from './helpers/rail.ts';
 import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { lineFeed, lineLayDistance, lineSchedule, type LineTiming } from '../src/sim/railway-line-schedule.ts';
@@ -108,7 +108,7 @@ test('line 1 preserves source identity, exact bills and the one twelve-panel all
   }
   assert.deepEqual(
     LINE2_STATIONS.map((station) => line2Panels(station).length),
-    [12, 24, 24, 32, 96, 64],
+    [12, 24, 24, 32, 96, 64, 40],
   );
 });
 
@@ -175,8 +175,8 @@ test('the machine view lays the same rail pairs the shared schedule commits', as
     local.forEach((p, i) => assert.ok(Math.abs(p.end * 100 - shared[i]!.toCm) <= 1, `pair ${i} end`));
   };
   same(view('timber'), linePanels());
-  // Production line two is Q1-Q6: all six stages.
-  const shared = LINE2_STATIONS.flatMap((station) => line2Panels(station));
+  // Place lays Q1-Q6; Q7's double deck is the crossing view's (R4), not the quarry link's.
+  const shared = LINE2_STATIONS.slice(0, Q6 + 1).flatMap((station) => line2Panels(station));
   same(view('quarry').slice(0, shared.length), shared);
 });
 

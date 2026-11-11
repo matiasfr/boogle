@@ -7,6 +7,7 @@ import {
   LINE2_STATIONS,
   LINE2_BOILER,
   Q6,
+  Q7,
   line2BoilerGround,
   RAILS,
 } from './railway-line2-layout.ts';
@@ -20,6 +21,7 @@ import { WORKS } from './railway-works-layout.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
 import {
   Account,
+  Aperture,
   Beam,
   Boiler,
   Cart,
@@ -127,7 +129,7 @@ export const boilerDrop = defineSystem(
 );
 export const boilerFit = defineSystem(
   'rail.boilerFit',
-  { reads: [Account, QJob], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
+  { reads: [Account, QJob, Works, Aperture], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (w.get(Rail, railId(w))!.trains >= 0 || !boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
@@ -188,7 +190,7 @@ function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
 export const deposit2 = defineSystem(
   'rail.deposit2',
   {
-    reads: [Boiler, Beam, Job],
+    reads: [Boiler, Beam, Job, Works],
     writes: [Rail, Forge, ForgeClock, QJob, QJobRun, Account, Cart, Train],
     phase: 'act',
     order: 20,
@@ -233,7 +235,7 @@ export const deposit2 = defineSystem(
 );
 export const forgeTake = defineSystem(
   'rail.forgeTake',
-  { reads: [Boiler, Rail, Beam, QJob, Shed], writes: [Forge, Account], phase: 'act', order: 21 },
+  { reads: [Boiler, Rail, Beam, QJob, Shed, Works], writes: [Forge, Account], phase: 'act', order: 21 },
   (w, { a: aid }: Act) => {
     if (trainOwed(w)) return 0;
     const a = w.mut(Account, aid)!;
@@ -432,17 +434,20 @@ export function layLine2(w: World, tick: number) {
     // stops there once, as if a rider had asked, then runs on to the pier (review of 4a, P3a). endMoved
     // (./railway-trains.ts) is that hunk, row for row (test/railway-trains.test.ts).
     if (k === Q6) endMoved(trainMoveIO(w), LINE2, 2, tick);
+    // Q7 laid opens the Railhead: a train running up to the Pier as its end whose nose is past the stub's turnout turns
+    // back there; one short of it runs on to the Railhead with no Pier stop (the Pier is homeward-only from now).
+    if (k === Q7) endMoved(trainMoveIO(w), LINE2, 3, tick);
   }
 }
 export const line2Tick = defineSystem(
   'rail.line2Tick',
-  { writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
+  { reads: [Aperture], writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
   (w, { tick }: Tick) => layLine2(w, tick),
 );
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */
 export const cartTick = defineSystem(
   'rail.cartTick',
-  { reads: [QJob, Train], writes: [Cart, Rail, Forge], phase: 'tick', order: 2 },
+  { reads: [QJob, Train, Works], writes: [Cart, Rail, Forge], phase: 'tick', order: 2 },
   (w, { tick }: Tick) => cartStep(w, tick),
 );
 export const boilerStood = defineSystem(

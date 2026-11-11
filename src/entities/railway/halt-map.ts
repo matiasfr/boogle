@@ -36,7 +36,8 @@ export function haltMapLines(layout: Layout): MapLine[] {
 
 /** Place's halts, then line 2's Pier halt (LINE_HALTS[5], Place's halt maths at s 719-741 m), which opens with Q6. */
 export function haltRows(layout: Layout) {
-  const pier = LINE_HALTS[LINE_HALTS.length - 1]!;
+  // By name: from v27 the Railhead and Ring Island follow it (R4a draws those and moves this one east).
+  const pier = LINE_HALTS.find((h) => h.name === 'Pier')!;
   return [
     ...layout.HALTS.map((h) => ({ ...h, island: !!h.island })),
     { name: pier.name, line: 1 as const, s0: 719, s1: 741, lat: -2.9, stop: 3, island: false },

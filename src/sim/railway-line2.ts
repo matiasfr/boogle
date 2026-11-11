@@ -73,6 +73,8 @@ export const line2Completed = (s: Railway) => s.line2?.jobs.filter((j) => j.comp
 export const line2Active = (s: Railway) => {
   if (!line2Lit(s)) return -1;
   const k = s.line2!.jobs.findIndex((j) => !j.completion);
+  // Q7 opens with the crossing (qActive's rule).
+  if (k >= 0 && LINE2_STATIONS[k]!.opens === 'crossing' && (s.works?.crossing ?? -1) < 0) return -1;
   return k;
 };
 /** The quarry gate is down only with Q3 complete and the lever pulled. */
@@ -279,13 +281,19 @@ export const line2Trains = (s: Railway) => (s.line2?.trains ?? -1) >= 0;
 /** Remaining kit to source, counting the rack, frame and both vehicles; production caps avoid replacing carried cargo. */
 export function line2KitOwed(s: Railway) {
   const l = s.line2!,
-    j = l.jobs[5]!;
-  if (line2Active(s) !== 5 || j.start >= 0) return { logs: 0, rails: 0 };
+    k = line2Active(s),
+    spec = LINE2_STATIONS[k];
+  if (k < 0 || spec?.feed !== 'train' || l.jobs[k]!.start >= 0) return { logs: 0, rails: 0 };
+  const j = l.jobs[k]!,
+    [logs, rails] = spec.bill;
   return {
-    logs: Math.max(0, Math.min(32 - j.stock - l.depot - l.cart.logs - line2Aboard(s, 'logs'), 32 - l.depotOut[5]!)),
+    logs: Math.max(
+      0,
+      Math.min(logs - j.stock - l.depot - l.cart.logs - line2Aboard(s, 'logs'), logs - l.depotOut[k]!),
+    ),
     rails: Math.max(
       0,
-      Math.min(32 - j.railStock - l.depotRails - l.cart.rails - line2Aboard(s, 'rails'), 32 - l.shelfOut),
+      Math.min(rails - j.railStock - l.depotRails - l.cart.rails - line2Aboard(s, 'rails'), rails - l.shelfOut),
     ),
   };
 }

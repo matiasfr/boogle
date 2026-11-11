@@ -1,14 +1,15 @@
 // The Works' and the Roundhouse's derived facts on the world (docs/plans/ecs-migration-railway.md, M8): the world twins
 // of the read model's helpers in ./railway-works.ts. Pure reads.
 //
-//   footingTotal(w)    every footing's home: Works rack, backs, ground piles, the wagon, pier rack, stall, cradle, sea
+//   footingTotal(w)    every footing's home: Works rack, backs, ground piles, the wagon, pier rack, stall, cradle, sea,
+//                      and Ring Island's railhead rack, bents and counterweight (v27)
 //   pierNeed(w)        footings the pier still wants that are not already set, racked there or aboard the wagon
 //   worksStage(w)      a label for views and the bot
 import type { World } from '../ecs/index.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { SEAM_THROAT, type WorksStage } from './railway-works.ts';
-import { Account, Pile, Shed, Train, Works } from './railway-components.ts';
-import { FOOT, pierOwed, shedId, worksId } from './railway-queries.ts';
+import { Account, Aperture, Pile, Shed, Train, Works } from './railway-components.ts';
+import { apertureId, FOOT, pierOwed, shedId, worksId } from './railway-queries.ts';
 
 /** Footings aboard any train (the wagon). */
 const wagonFoot = (w: World) => {
@@ -23,7 +24,20 @@ export function footingTotal(w: World) {
     piles = 0;
   w.each([Account], (_id, a) => (backs += a.foot));
   w.each([Pile], (_id, p) => (piles += p.kind === FOOT ? p.n : 0));
-  return works.rack + works.pierRack + works.pierSet + shed.stall + shed.cradle + backs + piles + wagonFoot(w);
+  const ring = w.get(Aperture, apertureId(w))!;
+  return (
+    works.rack +
+    works.pierRack +
+    works.pierSet +
+    shed.stall +
+    shed.cradle +
+    backs +
+    piles +
+    wagonFoot(w) +
+    ring.rack +
+    ring.set +
+    ring.cw
+  );
 }
 export const pierNeed = (w: World) => pierOwed(w, wagonFoot(w));
 export function worksStage(w: World): WorksStage {

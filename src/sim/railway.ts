@@ -98,9 +98,9 @@ export type RailAction = RailRequest & {
   kind?: number;
   station?: string;
   revision?: number;
-  /** rail.footTake: 0 the Works rack, 1 the pier rack. */
+  /** rail.footTake: 0 the Works rack, 1 the pier rack, 2 the railhead rack (v27). */
   rack?: number;
-  /** rail.footSet: 0 the stall, 1 the cradle, 2 the pier. */
+  /** rail.footSet: 0 the stall, 1 the cradle, 2 the pier, 3 the railhead jib (v27). */
   site?: number;
   /** rail.turn: the road the table turns to (0 the stall road, 1 line 2's). */
   to?: number;

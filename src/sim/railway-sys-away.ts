@@ -15,6 +15,7 @@ import {
 } from './railway-supply.ts';
 import { RAILWAY_MAX_INT } from './railway.ts';
 import {
+  Aperture,
   Beam,
   Boiler,
   Cart,
@@ -94,6 +95,7 @@ function awayCredit(w: World, ticks: number, tick: number) {
 export const resume = defineSystem(
   'rail.resume',
   {
+    reads: [Aperture],
     writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock, Cart, Boiler, Train, Works],
     phase: 'resume',
     order: 0,

@@ -4,7 +4,14 @@
 // LINE_HALTS, TRAIN_HOME and trainStopsOf are views of it. Pure integers (world cm, cm a tick), no imports but the
 // works and ring layouts (./railway-ring-layout.ts imports only this file's RailPlatform type, so it is not a cycle).
 import { PIER_STOP_CM } from './railway-works-layout.ts';
-import { RING_HEAD } from './railway-ring-layout.ts';
+import {
+  RING_END,
+  RING_END_BRAKE_CMS2,
+  RING_HALT,
+  RING_HEAD,
+  RING_JOINT_UP,
+  RING_PATH,
+} from './railway-ring-layout.ts';
 
 export type RailEndKind = 'stub' | 'crossover' | 'loop';
 /** Where a line turns back: a stub (the two tracks merge into one terminal track at `mergeCm`), a crossover (a facing
@@ -89,6 +96,10 @@ export const railEnd = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailE
 // s 513-535. Today's platforms serve the down track.
 const QUARRY_UP: RailPlatform = { x: 106912, z: 3135, y: 2502, reach: 1160 };
 const FAR_HEAD_UP: RailPlatform = { x: 135850, z: -17195, y: 2502, reach: 1260 };
+/** The Pier's one platform from Q6 on (ring-island-build1, call 53): s 719-741 m, lat +2.9, east of the down track;
+ * the pier rack stands on it. v26's west platform mirrored across the track at s 730, 2.9 m east of the path point
+ * (140259, -35846). */
+export const PIER_EAST: RailPlatform = { x: 140549, z: -35859, y: 2502, reach: 1260 };
 
 export const RAIL_LINES: readonly RailLineDef[] = [
   {
@@ -136,6 +147,8 @@ export const RAIL_LINES: readonly RailLineDef[] = [
       -22878, 140106, -23865, 140236, -24856, 140330, -25852, 140393, -26850, 140427, -27849, 140438, -28849, 140434,
       -29849, 140421, -30849, 140403, -31849, 140378, -32848, 140343, -33848, 140303, -34847, 140259, -35846, 140215,
       -36845,
+      // v27: on from the pier head over the bents and the Pilgrims' Way to Ring Island (RING_PATH, s 750 m on).
+      ...RING_PATH,
     ],
     halts: [
       {
@@ -159,20 +172,44 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         platforms: [FAR_HEAD_UP, { x: 136361, z: -16353, y: 2502, reach: 1260 }],
         end: railEnd('crossover', 49000, 1),
       },
-      // Place's halt maths at s 719-741 m, lat -2.9 (the side of the pier rack); open once Q6 (slot 5) is laid. The
-      // far tracks merge at s 556 m, the pier's root, so the pier stays one terminal track.
+      // s 719-741 m, lat +2.9, east of the down track; the pier rack stands on it. Open once Q6 (slot 5) is laid; the
+      // end until Q7 (slot 6) is laid (the far tracks merge at s 556 m, the pier's root), then homeward-only (owner,
+      // 10 November: no up train stops there).
       {
         name: 'Pier',
         s: PIER_STOP_CM,
         opens: 5,
-        platforms: both({ x: 139969, z: -35833, y: 2502, reach: 1260 }),
+        platforms: both(PIER_EAST),
         end: railEnd('stub', 55600, 1),
+        only: -1,
+      },
+      // The moving railhead (ring-island-build1, R3): open once Q7 is laid, its stop at the bent the gap is footed to
+      // (`heads`), its end a stub that moves with it; every up train eases in (call 46).
+      {
+        name: 'Railhead',
+        s: RING_HEAD[0]!.s,
+        opens: 6,
+        platforms: [RING_JOINT_UP, RING_HEAD[0]!.platform],
+        end: railEnd('stub', RING_HEAD[0]!.mergeCm, 1),
+        heads: RING_HEAD.map((h) => h.s),
+        brake: RING_END_BRAKE_CMS2 / 100,
+      },
+      // Ring Island: open once the rivet is struck; buffers 15 m past the platforms, a crossover before them (R1b).
+      {
+        name: 'Ring Island',
+        s: RING_END.s,
+        opens: 6,
+        platforms: [RING_HALT.up, RING_HALT.down],
+        end: railEnd('crossover', RING_END.mergeCm, 1),
+        ring: true,
       },
     ],
     home: 0,
-    trains: 2,
+    trains: 3,
     speed: 200,
     accel: 3.5,
+    // The balanced hold, capped 60 s past the dwell (R3b, call 47).
+    balance: 600,
   },
 ];
 

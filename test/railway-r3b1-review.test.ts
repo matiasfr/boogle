@@ -5,14 +5,14 @@ import assert from 'node:assert/strict';
 import { TRAIN, TRAIN_PHASE } from '../src/sim/railway-train.ts';
 import { trainPlaces } from '../src/sim/railway-lines.ts';
 import { balancedHold, endBlocks, trainStepLine } from '../src/sim/railway-trains.ts';
-import { FixtureLine, V27_LINE2 as V, standingAt, v27Stops } from './helpers/railway-v27-line.ts';
+import { FixtureLine, LINE2_ROWS as V, standingAt, line2Stops } from './helpers/rail-rows.ts';
 
 const ISLAND = 5;
 const FOREVER = 1e6;
 /** Train 0 at the Village going up, its dwell from `depart`; train 1 at Far Head going up, train 2 at the island going
  * down, both dwelling for ever: the gap ahead of train 0 stays the shorter, so only the cap lets it go. */
 function bunched(depart = 0) {
-  const stops = v27Stops(7, 7, true);
+  const stops = line2Stops(7, 7, true);
   const f = new FixtureLine(stops);
   f.rows = [standingAt(stops, 0, 0, depart), standingAt(stops, 2, 0, FOREVER), standingAt(stops, ISLAND, 1, FOREVER)];
   return f;
@@ -57,8 +57,8 @@ test('griefing, worst case: one ask on the last held tick doubles the hold, and 
 test('the waiter exception misses a train held at the old far signal after the railhead moves on; the cap still ends it', () => {
   // Q7 laid, the railhead at bent 1: train 0 stands at the Railhead end (stop 4) going down. A second train stands at
   // bent 0's signal on the up track (the signal the bent moved on from), a third running down just ahead of train 0.
-  const stops = v27Stops(7, 1),
-    old = endBlocks(V, v27Stops(7, 0))[1].signal,
+  const stops = line2Stops(7, 1),
+    old = endBlocks(V, line2Stops(7, 0))[1].signal,
     now = endBlocks(V, stops)[1].signal;
   assert.notEqual(old, now);
   const f = new FixtureLine(stops);
@@ -84,7 +84,7 @@ test("the hold's answer survives a save and restore, and reads no slot order", (
 });
 
 test('a line whose balance is not a whole number of ticks within reason is refused (trainPlaces), or its hold still ends', () => {
-  const stops = v27Stops(7, 7, true);
+  const stops = line2Stops(7, 7, true);
   for (const balance of [Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53, -1, 0.5]) {
     const line = { ...V, balance };
     let refused = false;

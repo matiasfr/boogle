@@ -10,6 +10,7 @@ import {
   TURNOUT_CM,
   BALANCE_MAX_TICKS,
   balanceOk,
+  PIER_EAST,
   haltPlatform,
   trainPlaces,
 } from '../src/sim/railway-lines.ts';
@@ -21,7 +22,7 @@ import {
   RING_JOINT_UP,
   RING_PATH,
 } from '../src/sim/railway-ring-layout.ts';
-import { PIER_EAST, V27_LINE2, v27Stops } from './helpers/railway-v27-line.ts';
+import { LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
 import { TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
 import { FORMATION, TURNOUT } from '../src/place/layout.ts';
 import { LINE_HALTS, TRAIN, TRAIN_HOME, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
@@ -34,8 +35,10 @@ const V25_STOPS = [
   [1700, 17400, 52400, PIER_STOP_CM],
 ];
 const V25_HOME = [1, 0];
-/** v26 (step 4a): line 2 runs two trains, the second at Far Head (down) before the wake. */
-const V26_HOME = [1, 0, 2];
+/** v27 (ring-island-build1, R3b): line 2 runs three trains, at the Village (up), Far Head (down) and Quarry (down). */
+const V27_HOME = [1, 0, 2, 1];
+/** v27's two halts after the Pier: the Railhead at its first head, Ring Island. */
+const V27_STOPS = [RING_HEAD[0]!.s, RING_END.s];
 const V25_HALTS = [
   { name: 'Village', line: 0, stop: 0, x: 92819, z: -434, y: 1902, reach: 1260 },
   { name: 'Camp', line: 0, stop: 1, x: 100964, z: -14610, y: 3102, reach: 1360 },
@@ -64,18 +67,27 @@ const V25_PATHS = [
   ],
 ];
 
-test("v25's stop, home and halt tables are views of the catalog", () => {
-  assert.deepEqual(TRAIN_STOPS, V25_STOPS);
+test("v25's stop, home and halt tables are views of the catalog, with v27's two halts appended", () => {
+  assert.deepEqual(TRAIN_STOPS, [V25_STOPS[0], [...V25_STOPS[1]!, ...V27_STOPS]]);
   assert.deepEqual([...TRAIN_HOME].slice(0, 2), V25_HOME, 'the first train of each line stands where v25s did');
-  assert.deepEqual([...TRAIN_HOME], V26_HOME);
-  assert.deepEqual(LINE_HALTS, V25_HALTS);
+  assert.deepEqual([...TRAIN_HOME], V27_HOME);
+  // Halt ids 0-4 keep v25's down platform; the Pier's moved east of the down track (call 53).
+  assert.deepEqual(LINE_HALTS.slice(0, 5), V25_HALTS.slice(0, 5));
+  assert.deepEqual(LINE_HALTS[5], { name: 'Pier', line: 1, stop: 3, ...PIER_EAST });
+  assert.deepEqual(
+    LINE_HALTS.slice(6).map((h) => [h.name, h.line, h.stop]),
+    [
+      ['Railhead', 1, 4],
+      ['Ring Island', 1, 5],
+    ],
+  );
   assert.deepEqual(
     RAIL_TRAINS.map((t) => t.line),
-    [0, 1, 1],
-    'line 1 one train, line 2 two',
+    [0, 1, 1, 1],
+    'line 1 one train, line 2 three',
   );
-  assert.equal(RAIL_HALTS.length, V25_HALTS.length);
-  RAIL_HALTS.forEach((h, id) => {
+  assert.equal(RAIL_HALTS.length, V25_HALTS.length + 2);
+  RAIL_HALTS.slice(0, 5).forEach((h, id) => {
     assert.equal(h.s, V25_STOPS[h.line]![h.stop], `halt ${id} stands at its stop`);
     // Today's platform serves the down track; Quarry and Far Head have an up one (step 2), the stubs' ends one.
     assert.deepEqual(h.platforms[1], {
@@ -88,14 +100,18 @@ test("v25's stop, home and halt tables are views of the catalog", () => {
   });
 });
 
-test('the pier opens with Q6, as v25 (BEFORE_PIER)', () => {
+test('the pier opens with Q6, as v25 (BEFORE_PIER); the Railhead with Q7', () => {
   assert.deepEqual(trainStopsOf(0, false), V25_STOPS[0]);
   assert.deepEqual(trainStopsOf(0, true), V25_STOPS[0]);
   assert.deepEqual(trainStopsOf(1, false), V25_STOPS[1]!.slice(0, 3));
   assert.deepEqual(trainStopsOf(1, true), V25_STOPS[1]);
-  // By count of complete QJob slots: the pier is slot 5, Q6.
+  // By count of complete QJob slots: the pier is slot 5, Q6; the Railhead slot 6, Q7; the island waits for the rivet.
   for (let laid = 0; laid <= LINE2_STATIONS.length; laid++)
-    assert.deepEqual(trainStopsOf(1, laid), laid >= 6 ? V25_STOPS[1] : V25_STOPS[1]!.slice(0, 3), `${laid} laid`);
+    assert.deepEqual(
+      trainStopsOf(1, laid),
+      laid >= 7 ? [...V25_STOPS[1]!, V27_STOPS[0]] : laid >= 6 ? V25_STOPS[1] : V25_STOPS[1]!.slice(0, 3),
+      `${laid} laid`,
+    );
 });
 
 test("every halt's opening slot exists, and halts run in s order", () => {
@@ -116,11 +132,12 @@ test("every halt's opening slot exists, and halts run in s order", () => {
   );
 });
 
-test("railLinePoint reads the catalog's path, v25's PATHS", () => {
+test("railLinePoint reads the catalog's path, v25's PATHS and line 2's on to Ring Island", () => {
+  const paths = [V25_PATHS[0]!, [...V25_PATHS[1]!, ...RING_PATH]];
   RAIL_LINES.forEach((l, line) => {
-    assert.deepEqual(l.path, V25_PATHS[line]);
+    assert.deepEqual(l.path, paths[line]);
     for (let k = 0; k < l.path.length / 2; k++)
-      assert.deepEqual(railLinePoint(line, k * 1000), { x: V25_PATHS[line]![k * 2], z: V25_PATHS[line]![k * 2 + 1] });
+      assert.deepEqual(railLinePoint(line, k * 1000), { x: paths[line]![k * 2], z: paths[line]![k * 2 + 1] });
   });
 });
 
@@ -147,7 +164,9 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
   const drawn = [FORMATION.timber, FORMATION.quarry];
   RAIL_LINES.forEach((l, line) =>
     l.halts.forEach((h, k) => {
-      if (!h.end) return;
+      // The Railhead's and Ring Island's ends are the ring layout's (test/railway-ring-layout.test.ts, R1b), not
+      // FORMATION's.
+      if (!h.end || h.heads || h.ring) return;
       const side = k === 0 ? -1 : 1,
         lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
       if (h.end.kind === 'stub') {
@@ -166,19 +185,21 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
   assert.equal(RAIL_LINES[1]!.halts[3]!.end!.signalCm, 52980);
 });
 
-// ---------------------------------------------------------------- v27's line 2, as R3a's fixture line
-// docs/plans/ring-island-build1.md, R3a: the catalog row R3b writes (orchestrator call, 10 November 2026: it moves
-// into R3b with the WORLD_NS bump), checked here on test/helpers/railway-v27-line.ts so the rules can be built inert.
+// ---------------------------------------------------------------- v27's line 2 (ring-island-build1, R3b)
 test("v27's line 2 keeps v26's halts, moves the Pier east of the down track and appends the Railhead and the island", () => {
-  const halts = V27_LINE2.halts;
+  const line2 = RAIL_LINES[1]!,
+    halts = line2.halts;
   assert.deepEqual(
     halts.map((h) => h.name),
     ['Village, line 2', 'Quarry', 'Far Head', 'Pier', 'Railhead', 'Ring Island'],
   );
   halts.slice(0, 4).forEach((h, k) => assert.equal(h.s, V25_STOPS[1]![k], `${h.name} stands where v26's did`));
-  halts.slice(0, 3).forEach((h, k) => assert.deepEqual(h.platforms, RAIL_LINES[1]!.halts[k]!.platforms, h.name));
+  halts.slice(0, 3).forEach((h, k) => {
+    const v = V25_HALTS[k + 2]!;
+    assert.deepEqual(h.platforms[1], { x: v.x, z: v.z, y: v.y, reach: v.reach }, `${h.name}: v26's down platform`);
+  });
   // The Pier's one platform, both ways: 2.9 m east of line 2's path at s 730 m (x greater: east), its lever's reach.
-  const [px, pz] = [V27_LINE2.path[73 * 2]!, V27_LINE2.path[73 * 2 + 1]!];
+  const [px, pz] = [line2.path[73 * 2]!, line2.path[73 * 2 + 1]!];
   assert.deepEqual([px, pz], [140259, -35846]);
   for (const p of halts[3]!.platforms) {
     assert.equal(p, PIER_EAST);
@@ -188,9 +209,10 @@ test("v27's line 2 keeps v26's halts, moves the Pier east of the down track and 
   }
   assert.equal(halts[3]!.only, -1);
   // The path runs on: line 2's, then RING_PATH, its index still s / 1000.
-  assert.equal(V27_LINE2.path.length, RAIL_LINES[1]!.path.length + RING_PATH.length);
-  assert.deepEqual(V27_LINE2.path.slice(0, RAIL_LINES[1]!.path.length), V25_PATHS[1]);
-  assert.equal(V27_LINE2.trains, 3);
+  assert.equal(line2.path.length, V25_PATHS[1]!.length + RING_PATH.length);
+  assert.deepEqual(line2.path.slice(0, V25_PATHS[1]!.length), V25_PATHS[1]);
+  assert.equal(line2.trains, 3);
+  assert.equal(line2.balance, 600, 'the balanced hold, capped 60 s past the dwell (call 47)');
   for (const h of halts)
     assert.ok(h.opens === -1 || (Number.isInteger(h.opens) && h.opens >= 0 && h.opens <= 6), `${h.name} opens`);
   // The Railhead: every number from the ring layout, its end at bent 6 (R1b's numbers).
@@ -219,56 +241,56 @@ test("v27's line 2 keeps v26's halts, moves the Pier east of the down track and 
   assert.equal(haltPlatform(halts[3]!, 1), PIER_EAST);
 });
 
-test('the catalog as it stands: every halt platform by way is its own, and no halt uses a v27 field', () => {
+test("the catalog: every fixed halt's platform by way is its own; v27's fields only on the Pier, Railhead and island", () => {
   RAIL_HALTS.forEach((h, id) => {
     assert.equal(haltPlatform(id, 1), h.platforms[0]);
-    assert.equal(haltPlatform(id, -1), h.platforms[1]);
-    assert.ok(!h.ring && !h.heads && h.only === undefined && h.brake === undefined, `${h.name}: inert until R3b`);
+    if (!h.heads) assert.equal(haltPlatform(id, -1), h.platforms[1]);
+    const v27 = [h.ring ? 'ring' : '', h.heads ? 'heads' : '', h.only !== undefined ? 'only' : '', h.brake ? 'brake' : '']
+      .filter(Boolean)
+      .join();
+    assert.equal(v27, { Pier: 'only', Railhead: 'heads,brake', 'Ring Island': 'ring' }[h.name] ?? '', h.name);
   });
 });
 
 test('v27 stops: Q6 opens the Pier, Q7 the Railhead at its bent, the rivet the island', () => {
   assert.deepEqual(trainStopsOf(1, true), V25_STOPS[1], "v26's shim: true is Q6 laid");
-  assert.deepEqual(v27Stops(0), [1700, 17400, 52400]);
-  assert.deepEqual(v27Stops(6), [1700, 17400, 52400, 72650]);
-  assert.deepEqual(trainStopsOf(V27_LINE2, true), v27Stops(6), 'the shim means Q6, not every slot');
+  assert.deepEqual(line2Stops(0), [1700, 17400, 52400]);
+  assert.deepEqual(line2Stops(6), [1700, 17400, 52400, 72650]);
+  assert.deepEqual(trainStopsOf(LINE2_ROWS, true), line2Stops(6), 'the shim means Q6, not every slot');
   for (let k = 0; k < RING_HEAD.length; k++) {
-    assert.deepEqual(v27Stops(7, k), [1700, 17400, 52400, 72650, RING_HEAD[k]!.s]);
-    assert.deepEqual(v27Stops(7, k, true), [1700, 17400, 52400, 72650, RING_HEAD[k]!.s, 119000]);
-    assert.deepEqual(v27Stops(6, k, true), v27Stops(6), 'nothing past the pier before Q7');
+    assert.deepEqual(line2Stops(7, k), [1700, 17400, 52400, 72650, RING_HEAD[k]!.s]);
+    assert.deepEqual(line2Stops(7, k, true), [1700, 17400, 52400, 72650, RING_HEAD[k]!.s, 119000]);
+    assert.deepEqual(line2Stops(6, k, true), line2Stops(6), 'nothing past the pier before Q7');
   }
   // 1173 m end to end once joined (the plan's v27 numbers).
-  const joined = v27Stops(7, 7, true);
+  const joined = line2Stops(7, 7, true);
   assert.deepEqual(joined, [1700, 17400, 52400, 72650, 99200, 119000]);
   assert.equal(joined[joined.length - 1]! - joined[0]!, 117300);
 });
 
 test('three trains stand on three places: the Village (up), Far Head (down) and Quarry (down)', () => {
-  assert.deepEqual(trainPlaces(V27_LINE2, v27Stops(0)), [
+  assert.deepEqual(trainPlaces(LINE2_ROWS, line2Stops(0)), [
     { stop: 0, track: 0 },
     { stop: 2, track: 1 },
     { stop: 1, track: 1 },
   ]);
-  for (const stops of [v27Stops(6), v27Stops(7, 3), v27Stops(7, 7, true)]) {
-    const places = trainPlaces(V27_LINE2, stops).map((p) => `${p.stop}/${p.track}`);
+  for (const stops of [line2Stops(6), line2Stops(7, 3), line2Stops(7, 7, true)]) {
+    const places = trainPlaces(LINE2_ROWS, stops).map((p) => `${p.stop}/${p.track}`);
     assert.equal(new Set(places).size, 3, `${places.join(' ')}`);
   }
-  // The catalog's own lines place as v26.
-  assert.deepEqual(trainPlaces(1, TRAIN_STOPS[1]!.slice(0, 3)), [
-    { stop: 0, track: 0 },
-    { stop: 2, track: 1 },
-  ]);
+  // The catalog's line 2 is the same row.
+  assert.deepEqual(trainPlaces(1, TRAIN_STOPS[1]!.slice(0, 3)), trainPlaces(LINE2_ROWS, line2Stops(0)));
 });
 
 test("a line's balanced hold is absent or 1 to BALANCE_MAX_TICKS whole ticks; trainPlaces refuses any other", () => {
-  const stops = v27Stops(7, 7, true);
+  const stops = line2Stops(7, 7, true);
   for (const balance of [undefined, 1, 600, BALANCE_MAX_TICKS]) {
     assert.ok(balanceOk(balance), `${balance}`);
-    assert.doesNotThrow(() => trainPlaces({ ...V27_LINE2, balance }, stops));
+    assert.doesNotThrow(() => trainPlaces({ ...LINE2_ROWS, balance }, stops));
   }
   for (const balance of [0, -1, 0.5, Number.NaN, Number.POSITIVE_INFINITY, BALANCE_MAX_TICKS + 1, 2 ** 53]) {
     assert.ok(!balanceOk(balance), `${balance}`);
-    assert.throws(() => trainPlaces({ ...V27_LINE2, balance }, stops), /balance/);
+    assert.throws(() => trainPlaces({ ...LINE2_ROWS, balance }, stops), /balance/);
   }
   for (const l of RAIL_LINES) assert.ok(balanceOk(l.balance), l.id);
 });

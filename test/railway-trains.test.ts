@@ -47,7 +47,7 @@ import { Line, Train, createRailwayWorld } from '../src/sim/railway-components.t
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
-import { FixtureLine, V27_LINE2, standingAt, v27Stops } from './helpers/railway-v27-line.ts';
+import { FixtureLine, LINE2_ROWS, standingAt, line2Stops } from './helpers/rail-rows.ts';
 import {
   act,
   advanceWorks,
@@ -69,7 +69,8 @@ import {
 } from './helpers/rail.ts';
 
 const LINE2 = 1;
-const [A, B] = LINE_SLOTS[LINE2] as [number, number];
+/** Line 2's trains: A at the Village (up), B at Far Head (down) and, since v27, C at the Quarry (down). */
+const [A, B, C] = LINE_SLOTS[LINE2] as [number, number, number];
 const BRAKE = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
 const rows = (w: Seed) => (k: number) => train(w.w, k);
 const stops = (w: Seed) => (line: number) => trainStops(w.w, line);
@@ -116,7 +117,9 @@ function stands(w: Seed, k: number, ticks: number, headPct = TRAIN_HEAD_PCT) {
   }
   return out;
 }
-/** Two trains standing where a test puts them, awake, nothing asked, the ends never left. */
+/** Trains standing where a test puts them, awake, nothing asked, the ends never left. v26's two-train tests also park
+ * v27's third train (`parked`): standing at a halt, its dwell never over, out of the way of the two they watch. */
+const parked = (stop: number, track: number) => ({ k: C, stop, track, depart: 1e9 });
 function place(w: Seed, at: { k: number; stop: number; track: number; depart: number; s?: number }[]) {
   {
     const e = w.w;
@@ -153,18 +156,22 @@ function awake(stage: 'trains-on' | 'q6-done' = 'trains-on', audit = true) {
 }
 
 // ---------------------------------------------------------------- the catalog's numbers
-test("line 2's cycle and headway: 92.4 s to the pier (34.6 s apart), 72 s before it (27 s)", () => {
-  const all = TRAIN_STOPS[LINE2]!,
-    before = all.slice(0, 3);
-  assert.equal(cycleTicks(LINE2, all), 924);
-  assert.equal(headTicks(LINE2, all), 346);
+test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to the Railhead; three trains (v27)", () => {
+  const pier = TRAIN_STOPS[LINE2]!.slice(0, 4),
+    before = pier.slice(0, 3),
+    railhead = line2Stops(7, 0);
+  assert.equal(cycleTicks(LINE2, pier), 924);
+  assert.equal(headTicks(LINE2, pier), 231);
   assert.equal(cycleTicks(LINE2, before), 722);
-  assert.equal(headTicks(LINE2, before), 270);
+  assert.equal(headTicks(LINE2, before), 180);
+  assert.equal(cycleTicks(LINE2, railhead), 1050);
   assert.equal(headTicks(0, TRAIN_STOPS[0]!), 0, 'one train: no hold');
-  // Line 2's two start spread round the circuit: the Village (up) and Far Head (down, its end before the pier).
+  // Line 2's three start spread round the circuit: the Village (up), Far Head (down, its end before the pier) and the
+  // Quarry (down).
   assert.deepEqual(trainPlaces(LINE2, before), [
     { stop: 0, track: 0 },
     { stop: 2, track: 1 },
+    { stop: 1, track: 1 },
   ]);
   assert.deepEqual(trainPlaces(0, TRAIN_STOPS[0]!), [{ stop: 1, track: 1 }], "line 1's one at Camp, as v25");
   // Every block reaches past its stub's turnout (a crossover's starts at it), and every signal stands on the inbound
@@ -173,9 +180,14 @@ test("line 2's cycle and headway: 92.4 s to the pier (34.6 s apart), 72 s before
   assert.deepEqual([village.from, village.to, village.signal], [1700, 5400, 6300]);
   assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48380]);
   assert.deepEqual(
-    endBlocks(LINE2, all).map((b) => b.signal),
+    endBlocks(LINE2, pier).map((b) => b.signal),
     [6300, 52980],
     "the far end's block moves to the pier's stub",
+  );
+  assert.deepEqual(
+    endBlocks(LINE2, railhead).map((b) => b.signal),
+    [6300, 80580],
+    "and on to the Railhead's at Q7",
   );
 });
 
@@ -331,6 +343,8 @@ test('a train held at the old Far Head signal when the pier opens runs signal to
       v0: 0,
       dest: 48000,
     });
+    // v27's third train parked at the Quarry going down, out of the way.
+    Object.assign(e.mut(Train, e.lookup(Train, C)!)!, standingAt(TRAIN_STOPS[LINE2]!, 1, 1, 1e9));
     for (const id of e.ids(Line)) Object.assign(e.mut(Line, id)!, { req: 0, left0: -1, left1: -1 });
   }
   assert.equal(invariant(w.w), null, 'the placed state is valid');
@@ -389,13 +403,26 @@ test('a lever ask goes to the next train that way that can brake; the one too cl
   until(w, () => TRAIN_STOPS[LINE2]![1]! - along(w, A) < BRAKE - 600);
   assert.equal(lever(w, QUARRY, 1), 1);
   const st = trainStops(w.w, LINE2);
-  assert.equal(trainServes(rows(w), LINE2, st, 1, 1, w.t), B, 'B, the next up train, is named');
-  const a = stands(w, A, 400);
+  // The next up train behind A (with three trains, whichever comes round first) is named, not A.
+  const next = trainServes(rows(w), LINE2, st, 1, 1, w.t);
+  assert.ok(next >= 0 && next !== A, `the next up train, ${next}, is named`);
+  // The named train can reach the quarry before A reaches Far Head (C, just short of the village): watch both at once.
+  const a: [number, number][] = [];
+  let served = false;
+  for (let t = 0; t < 3000 && !(served && a.length); t++) {
+    const was = row(w, A).phase,
+      waiting = standing(w, next, 1, 1)();
+    step(w);
+    if (was === TRAIN_PHASE.RUN && row(w, A).phase === TRAIN_PHASE.STAND) a.push([row(w, A).at, trainDir(row(w, A))]);
+    if (standing(w, next, 1, 1)())
+      assert.notEqual(lineRow(w.w, LINE2).req, 0, 'the ask stands until the named train leaves with it');
+    if (waiting && row(w, next).phase === TRAIN_PHASE.RUN) {
+      served = true;
+      assert.equal(lineRow(w.w, LINE2).req, 0, 'served by the named train');
+    }
+  }
+  assert.ok(served, 'the named train stood at the quarry going up and left with the ask');
   assert.deepEqual(a[0], [2, -1], 'A runs through to Far Head');
-  until(w, standing(w, B, 1, 1));
-  assert.equal(lineRow(w.w, LINE2).req !== 0, true, 'the ask stands until B leaves with it');
-  until(w, () => row(w, B).phase === TRAIN_PHASE.RUN);
-  assert.equal(lineRow(w.w, LINE2).req, 0, 'served by B');
   assert.equal(invariant(w.w), null);
 });
 test('a lever ask in time stops the first train; the one behind is not named', () => {
@@ -438,6 +465,7 @@ function blocked(delay: number) {
   place(w, [
     { k: A, stop: 0, track: 0, depart: w.t + delay - TRAIN.dwellTicks },
     { k: B, stop: 1, track: 1, depart: w.t - TRAIN.dwellTicks },
+    parked(2, 1),
   ]);
   step(w);
   assert.equal(row(w, B).phase, TRAIN_PHASE.RUN);
@@ -482,8 +510,9 @@ for (const pct of [100, TRAIN_HEAD_PCT])
       { k: A, stop: 0, track: 0, depart: w.t - TRAIN.dwellTicks },
       { k: B, stop: -1, track: 1, depart: w.t, s: 6300 },
     ]);
+    // v27: three trains, so an even spacing is a third of the cycle; the balanced hold at the ends evens them too.
     const st = trainStops(w.w, LINE2),
-      half = cycleTicks(LINE2, st) / 2,
+      even = cycleTicks(LINE2, st) / RAIL_LINES[LINE2]!.trains,
       head = headTicks(LINE2, st, pct);
     const left: number[] = [];
     let last = lineRow(w.w, LINE2).left0;
@@ -494,13 +523,10 @@ for (const pct of [100, TRAIN_HEAD_PCT])
       if (now !== last) left.push(now);
       last = now;
     }
-    // Departures from the village alternate A, B; after three laps each gap is as the hold sets it.
+    // Departures from the village take turns; after two laps each gap is at least the hold and about even.
     const gaps = left.slice(-2).map((v, k) => v - left.at(-3 + k)!);
-    if (pct === 100) for (const g of gaps) assert.ok(Math.abs(g - half) <= TRAIN.dwellTicks, `${g} vs ${half}`);
-    else {
-      assert.ok(Math.min(...gaps) >= head, `${gaps} at least ${head}`);
-      assert.ok(Math.min(...gaps) <= head + TRAIN.dwellTicks, `${gaps}: the follower stays at the hold`);
-    }
+    assert.ok(Math.min(...gaps) >= head - TRAIN.dwellTicks, `${gaps} at least ${head}`);
+    for (const g of gaps) assert.ok(Math.abs(g - even) <= TRAIN.dwellTicks, `${g} vs ${even}`);
   });
 test('the wagon train is never held for headway while the pier owes footings', () => {
   const w = railwayAtWorks('wagon-on');
@@ -575,6 +601,8 @@ test('a train bound for Far Head as its end when the pier opens still stops ther
       v0: 0,
       dest: TRAIN_STOPS[LINE2]![0]!,
     });
+    // v27's third train parked at the Quarry going down, out of the way.
+    Object.assign(e.mut(Train, e.lookup(Train, C)!)!, standingAt(TRAIN_STOPS[LINE2]!, 1, 1, 1e9));
   }
   until(w, () => line2Completed(w.w) >= 6, 50);
   assert.equal(row(w, A).to, 2, 'still bound for Far Head');
@@ -596,14 +624,14 @@ test("Far Head's up lever is refused while Far Head is the end; the pier's the w
   assert.equal(lever(done, pier, 1), 0, "the pier's way in");
   assert.equal(lever(done, pier, -1), 1);
   assert.equal(circuitLen(trainStops(done.w, LINE2)), 2 * (TRAIN_STOPS[LINE2]![3]! - TRAIN_STOPS[LINE2]![0]!));
-  assert.equal(RAIL_LINES[LINE2]!.trains, 2);
+  assert.equal(RAIL_LINES[LINE2]!.trains, 3);
 });
 
 // ---------------------------------------------------------------- v27's rules on the fixture line (R3a)
 // docs/plans/ring-island-build1.md, R3a: the island terminus, the moving end and stop, the homeward-only Pier and three
 // trains, on test/helpers/railway-v27-line.ts's line (R3b puts its row in the catalog with the WORLD_NS bump). Pure
 // rows over a pure TrainIO; FUZZ_TICKS lengthens the fuzzes as above.
-const V = V27_LINE2;
+const V = LINE2_ROWS;
 const PIER = 3,
   HEAD = 4,
   ISLAND = 5;
@@ -636,23 +664,23 @@ const standF = (f: FixtureLine, k: number, stop: number, track?: number) => {
 };
 
 test('the fixture line: three trains, a 1173 m line, 138.8 s round, 462 ticks apart evenly', () => {
-  const joined = v27Stops(7, 7, true);
+  const joined = line2Stops(7, 7, true);
   assert.equal(cycleTicks(V, joined), 1388);
   assert.equal(Math.floor(cycleTicks(V, joined) / 3), 462);
   assert.equal(headTicks(V, joined), Math.floor((1388 * TRAIN_HEAD_PCT) / 300));
   const [, island] = endBlocks(V, joined);
   assert.deepEqual([island.from, island.to, island.signal], [113700, 119000, 113080]);
   // The railhead's block and signal follow its stop: at bent 6 and at bent 13, its end in turn.
-  const [, at6] = endBlocks(V, v27Stops(7, 0)),
-    [, at13] = endBlocks(V, v27Stops(7, 7));
+  const [, at6] = endBlocks(V, line2Stops(7, 0)),
+    [, at13] = endBlocks(V, line2Stops(7, 7));
   assert.deepEqual([at6.from, at6.to, at6.signal], [81200, 85200, 80580]);
   assert.deepEqual([at13.from, at13.to, at13.signal], [95200, 99200, 94580]);
-  // v26's ends are unmoved (no halt of the catalog has heads).
-  assert.deepEqual(endBlocks(LINE2, TRAIN_STOPS[LINE2]!), endBlocks(V, v27Stops(6)));
+  // v26's ends are unmoved at Q6 (the catalog's line and its copy, the same row).
+  assert.deepEqual(endBlocks(LINE2, TRAIN_STOPS[LINE2]!.slice(0, 4)), endBlocks(V, line2Stops(6)));
 });
 
 test('an up train into the open island stands at 119000 on its row alone, turns onto the down track and leaves', () => {
-  const stops = v27Stops(7, 7, true);
+  const stops = line2Stops(7, 7, true);
   const f = new FixtureLine(stops);
   f.rows = [standingAt(stops, HEAD, 0), standingAt(stops, 1, 1), standingAt(stops, 0, 0)];
   let t = 0;
@@ -674,7 +702,7 @@ test('an up train into the open island stands at 119000 on its row alone, turns 
 });
 
 test("a second up train holds at the island's signal (113080) until the first is out of its block", () => {
-  const stops = v27Stops(7, 7, true);
+  const stops = line2Stops(7, 7, true);
   const f = new FixtureLine(stops);
   f.rows = [standingAt(stops, ISLAND, 1, 0), standingAt(stops, HEAD, 0, 0), standingAt(stops, 0, 0)];
   f.lineRow = { req: 0, left0: -1, left1: 0 };
@@ -693,7 +721,7 @@ test("a second up train holds at the island's signal (113080) until the first is
 });
 
 test('the balanced hold: an end waits while the gap ahead is the shorter, never past its cap or a waiter at its signal', () => {
-  const stops = v27Stops(7, 7, true);
+  const stops = line2Stops(7, 7, true);
   // Train 0 standing at the Village going up, its dwell done; train 1 at Far Head going up (507 m ahead round the
   // circuit), train 2 at the island going down (1173 m behind): the gap ahead is the shorter.
   const f = new FixtureLine(stops);
@@ -740,7 +768,8 @@ test("endMoved at Far Head is v26's Q6 hunk, row for row, on the world", () => {
     Object.assign(w.mut(Train, trainId(w, A))!, runRow(from, 2, 52400, probe.t));
     Object.assign(w.mut(Train, trainId(w, A))!, { at: 1 });
     Object.assign(w.mut(Train, trainId(w, B))!, standingAt(TRAIN_STOPS[LINE2]!, 0, 0, probe.t));
-    const pre = [train(w, A), train(w, B)].map((r) => ({ ...r }));
+    Object.assign(w.mut(Train, trainId(w, C))!, standingAt(TRAIN_STOPS[LINE2]!, 1, 1, 1e9)); // v27's third, parked
+    const pre = [train(w, A), train(w, B), train(w, C)].map((r) => ({ ...r }));
     railTick(w, probe.t);
     assert.equal(qCompleted(w), 6, 'the pier opened this tick');
     const out = [...pre];
@@ -756,6 +785,7 @@ test("endMoved at Far Head is v26's Q6 hunk, row for row, on the world", () => {
     );
     assert.deepEqual({ ...train(w, A) }, out[0], `A from ${from}`);
     assert.deepEqual({ ...train(w, B) }, out[1], `B, A from ${from}`);
+    assert.deepEqual({ ...train(w, C) }, out[2], `C, A from ${from}`);
     if (out[0]!.turn) turned++;
     else if (out[0]!.req) asked++;
   }
@@ -769,8 +799,8 @@ test("at Q7 a train past the Pier stub's turnout (s 536 m) turns back there; one
     [52981, true],
     [60000, true],
   ] as const) {
-    const q6 = v27Stops(6),
-      q7 = v27Stops(7, 0);
+    const q6 = line2Stops(6),
+      q7 = line2Stops(7, 0);
     const f = new FixtureLine(q6);
     f.rows = [runRow(from, PIER, 72650, 0), standingAt(q6, 0, 0), standingAt(q6, 1, 1)];
     f.rows[0] = { ...f.rows[0]!, at: 2 };
@@ -796,8 +826,8 @@ test("on the rivet a train past the railhead stub's turnout turns back; one shor
     [94581, true],
     [97000, true],
   ] as const) {
-    const before = v27Stops(7, 7),
-      joined = v27Stops(7, 7, true);
+    const before = line2Stops(7, 7),
+      joined = line2Stops(7, 7, true);
     const f = new FixtureLine(before);
     f.rows = [runRow(from, HEAD, 99200, 0), standingAt(before, 0, 0), standingAt(before, 1, 1)];
     f.rows[0] = { ...f.rows[0]!, at: PIER };
@@ -823,7 +853,7 @@ test("on the rivet a train past the railhead stub's turnout turns back; one shor
 
 test("stopMoved over the railhead's seven advances moves no pose; a standing train is at a signal, a running one bound on", () => {
   for (const running of [false, true]) {
-    let stops = v27Stops(7, 0);
+    let stops = line2Stops(7, 0);
     const f = new FixtureLine(stops);
     f.rows = [
       running ? { ...runRow(76000, HEAD, stops[HEAD]!, 0), at: PIER } : standingAt(stops, HEAD, 1, 0),
@@ -835,7 +865,7 @@ test("stopMoved over the railhead's seven advances moves no pose; a standing tra
       t += running ? 12 : 30;
       const r0 = f.rows.map((r) => ({ ...r })),
         poses = f.rows.map((_r, j) => alongF(f, j, t));
-      stops = v27Stops(7, k);
+      stops = line2Stops(7, k);
       f.stops = stops;
       stopMoved(f.io(), V, HEAD, t);
       f.rows.forEach((_r, j) => assert.equal(alongF(f, j, t), poses[j], `head ${k}: train ${j} did not move`));
@@ -950,7 +980,7 @@ for (const [seed, headPct] of ISLAND_SEEDS)
     const { worst, riderWorst, restores } = fixtureFuzz(
       seed,
       headPct,
-      v27Stops(7, 7, true),
+      line2Stops(7, 7, true),
       FUZZ_TICKS,
       undefined,
       ISLAND_LINE,
@@ -973,33 +1003,33 @@ for (const seed of [0x5eed, 0xbee])
       q7 = false,
       upAtPier = 0,
       atIsland = 0;
-    const { f } = fixtureFuzz(seed, TRAIN_HEAD_PCT, v27Stops(6), Math.max(FUZZ_TICKS, at.rivet + 2000), (f, tick) => {
+    const { f } = fixtureFuzz(seed, TRAIN_HEAD_PCT, line2Stops(6), Math.max(FUZZ_TICKS, at.rivet + 2000), (f, tick) => {
       if (q7 && f.rows.some((r) => r.phase === TRAIN_PHASE.STAND && r.at === PIER && r.track === 0)) upAtPier++;
       if (tick > at.rivet && f.rows.some((r) => r.phase === TRAIN_PHASE.STAND && r.at === ISLAND)) atIsland++;
       if (tick === at.q7) {
-        f.stops = v27Stops(7, 0);
+        f.stops = line2Stops(7, 0);
         endMoved(f.io(), V, PIER, tick);
         q7 = true;
       }
       if (at.heads[head] === tick) {
         head++;
-        f.stops = v27Stops(7, head);
+        f.stops = line2Stops(7, head);
         stopMoved(f.io(), V, HEAD, tick);
       }
       if (tick === at.rivet) {
-        f.stops = v27Stops(7, 7, true);
+        f.stops = line2Stops(7, 7, true);
         endMoved(f.io(), V, HEAD, tick);
       }
       assert.equal(f.broken(), null, `after the stage at ${tick}`);
     });
     t.diagnostic(`Q7 at ${at.q7}, bents at ${at.heads.join(', ')}, rivet at ${at.rivet}`);
     assert.equal(upAtPier, 0, 'no up train stood at the Pier once Q7 was laid');
-    assert.deepEqual(f.stops, v27Stops(7, 7, true));
+    assert.deepEqual(f.stops, line2Stops(7, 7, true));
     assert.ok(atIsland > 0, 'trains stood at the island after the rivet');
   });
 
 test('the load check refuses an up train standing at the homeward-only Pier; a leg held onto it ends at no halt', () => {
-  const stops = v27Stops(7, 0);
+  const stops = line2Stops(7, 0);
   const f = new FixtureLine(stops);
   assert.equal(f.broken(), null);
   f.rows[0] = standingAt(stops, PIER, 0);

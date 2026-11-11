@@ -213,9 +213,9 @@ test('the kiln waits for the throat; lights once when both bills are full', () =
   assert.equal(act(s, 'a', 'rail.kiln'), 0, 'a lit kiln takes nothing');
   assert.equal(worksStage(w), 'lit');
 });
-test('pours one footing every 80 ticks to a rack of 6, 14 in all: the stall two and the pier twelve', () => {
-  assert.equal(WORKS.total, WORKS.stall + WORKS.cradle + WORKS.pier);
-  assert.deepEqual([WORKS.cradle, WORKS.total], [0, 14], 'the cradle takes rails only (works-late-game step 2a)');
+test('pours one footing every 80 ticks to a rack of 6, 32 in all: the stall two, the pier twelve and the ring eighteen (v27)', () => {
+  assert.equal(WORKS.total, WORKS.stall + WORKS.cradle + WORKS.pier + WORKS.ring + WORKS.counterweight);
+  assert.deepEqual([WORKS.cradle, WORKS.total], [0, 32], 'the cradle takes rails only (works-late-game step 2a)');
   const s = railwayAtWorks('works-lit'),
     w = s.w;
   assert.deepEqual([works(w).rack, works(w).poured], [WORKS.rackCap, WORKS.rackCap]);
@@ -239,7 +239,7 @@ test('pours one footing every 80 ticks to a rack of 6, 14 in all: the stall two 
   assert.equal(pours[0], first + 1, 'the first comes as soon as the rack has room');
   for (let k = 1; k < pours.length; k++) assert.ok(pours[k]! - pours[k - 1]! >= WORKS.castTicks);
   advanceWorks(s, 400);
-  assert.equal(works(w).poured, WORKS.total, 'fourteen in all');
+  assert.equal(works(w).poured, WORKS.total, 'thirty-two in all');
   assert.equal(invariant(w), null);
 });
 test('a footing fills your back', () => {
@@ -476,7 +476,7 @@ test('a dropped footing is a pile; it recovers to the Works rack', () => {
 test("a leaver's footing goes back to the Works rack, so the crossing still finishes", () => {
   const s = railwayAtWorks('wagon-on'),
     w = s.w;
-  // B shoulders one footing and leaves; the kiln casts exactly the sixteen the sites need.
+  // B shoulders one footing and leaves; the kiln casts exactly what the sites need.
   assert.equal(act(s, 'b', 'rail.footTake', { rack: 0 }), 1);
   const epoch = account(w, 'b')!.epoch;
   assert.equal(railFootRelease(w, 'b', epoch + 1), 0, 'only the session the host saw leave');
@@ -493,7 +493,8 @@ test("a leaver's footing goes back to the Works rack, so the crossing still fini
       assert.equal(act(s, 'a', 'rail.footSet', { site: 2 }), 1);
     } else advanceWorks(s, 1);
   }
-  assert.equal(works(w).poured, WORKS.total);
+  // Since v27 the kiln pours on past the pier's twelve, for the ring's eighteen.
+  assert.equal(footingTotal(w), works(w).poured);
   assert.equal(works(w).pierSet, WORKS.pier);
   assert.ok(works(w).crossing >= 0);
 });

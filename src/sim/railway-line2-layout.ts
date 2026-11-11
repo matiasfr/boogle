@@ -1,7 +1,9 @@
-// Line two's pinned numeric catalog: the forge, Q1-Q6, the pack chest and the gates' switches and hook device.
+// Line two's pinned numeric catalog: the forge, Q1-Q7, the pack chest and the gates' switches and hook device.
 // Coordinates are world centimetres pinned from Place's layout/tech-layout/ladder (6-7 November 2026);
-// no runtime prototype imports or native trig in lockstep. Q6 is the last.
+// no runtime prototype imports or native trig in lockstep. Q7 (v27, ring-island-build1 R3b) is the last: the double
+// deck over the pier's six bents, opened by the crossing.
 import { pairsOf, type LineStation } from './railway-line-layout.ts';
+import { RING_Q7_FRAME } from './railway-ring-layout.ts';
 
 export const RAILS = 2;
 /** The forge takes 24 logs for its frame, then 32 for walls and chimney; then it is lit and pours rails. */
@@ -16,10 +18,12 @@ export const LINE2_FORGE = {
   pourTicks: 5,
   turnTicks: 26,
 } as const;
-export type Line2StationId = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6';
+export type Line2StationId = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6' | 'Q7';
 /** `bill[1]` is rails. Panels are the station's rails, evenly spaced; `speed` scales the room's laying speed.
  * `depot`: the cart brings its logs to a rack by the frame; `shelf`: it also moves its rails there from the forge rack.
- * `gate`: the frame takes nothing until that gate is down. */
+ * `gate`: the frame takes nothing until that gate is down. `feed: 'train'`: its kit (its bill, call 63) loads onto a
+ * line 2 train at the Village and unloads at line 2's halt `kitStop` (call 62: Q6's at Far Head, Q7's at the Pier).
+ * `opens: 'crossing'`: it is not the active stretch until the crossing's footings are all set (Works.crossing). */
 export type Line2Station = Omit<LineStation, 'id'> & {
   id: Line2StationId;
   speed: number;
@@ -27,6 +31,8 @@ export type Line2Station = Omit<LineStation, 'id'> & {
   shelf: boolean;
   gate?: 'quarry' | 'sea';
   feed?: 'train';
+  kitStop?: number;
+  opens?: 'crossing';
 };
 export const LINE2_STATIONS: readonly Line2Station[] = [
   {
@@ -115,8 +121,29 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     depot: true,
     shelf: true,
     feed: 'train',
+    kitStop: 2,
+  },
+  // v27: the double deck over the pier's six bents (u 0-120 m), its frame on its own piled deck by the Pier (call 55).
+  {
+    id: 'Q7',
+    bill: [20, 20],
+    beam: 0,
+    fromCm: 74200,
+    toCm: 86200,
+    x: RING_Q7_FRAME.x,
+    z: RING_Q7_FRAME.z,
+    panels: 20,
+    crate: true,
+    speed: 180,
+    depot: true,
+    shelf: true,
+    feed: 'train',
+    kitStop: 3,
+    opens: 'crossing',
   },
 ];
+/** Q7's slot: the double deck to the railhead, whose completion opens the Railhead halt and the ring's footings. */
+export const Q7 = 6;
 /** Q6's slot: the job whose completion opens the pier (the Pier halt, the pier's footings, the breaker). Read this, not
  * `LINE2_STATIONS.length`, wherever a rule means "Q6 is laid": v27 appends Q7 (ring-island-build1, R3b). */
 export const Q6 = 5;

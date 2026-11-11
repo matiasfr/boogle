@@ -5,7 +5,7 @@
 //
 //   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
 //                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
-//                                  outcome, line; RAIL_REPLICATED is the wire
+//                                  outcome, line, aperture (v27); RAIL_REPLICATED is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 import { createWorld, defineComponent, type AnyComponent } from '../ecs/index.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
@@ -60,6 +60,7 @@ export const Rail = defineComponent(
     out4: 'int',
     out5: 'int',
     trains: 'int',
+    out6: 'int',
     pack: 'bool',
     depotRails: 'int',
     shelfOut: 'int',
@@ -124,6 +125,16 @@ export const Train = defineComponent(
     foot: 'int',
   },
   { key: 'slot' },
+);
+/** Ring Island's gap (docs/plans/ring-island-build1.md, R3, v27; rules in ./railway-sys-ring.ts): `set` bent footings set
+ * past bent 6 (0-14; the railhead is at bent 6 + floor(set / 2)), `rack` footings on the railhead rack, `cw`
+ * counterweight footings hung on the jib (0-4), `brace` the raised leaf's pawl (1 raised on it, 2 braced, 0 down), and
+ * `joined` the tick the rivet was struck (-1 not yet). Defined here with the other components (not beside its systems)
+ * so the schema has one module and no import cycle. */
+export const Aperture = defineComponent(
+  'aperture',
+  { set: 'int', rack: 'int', cw: 'u8', brace: 'u8', joined: 'int' },
+  { defaults: { brace: 1, joined: -1 } },
 );
 /** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
  * and the tick a train last left its start end and its far end (-1 never), for the headway hold. */
@@ -233,11 +244,12 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   WorksClock,
   Shed,
   Line,
+  Aperture,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
 export const RAIL_STATUS = ['accepted', 'noop', 'rejected'] as const satisfies readonly RailResult['status'][];
-export const DEPOT_OUT = ['out0', 'out1', 'out2', 'out3', 'out4', 'out5'] as const;
+export const DEPOT_OUT = ['out0', 'out1', 'out2', 'out3', 'out4', 'out5', 'out6'] as const;
 if (LINE2_STATIONS.length !== DEPOT_OUT.length) throw new Error('railway: depot outputs');
 
 /** The fresh railway, catalog entities spawned in a fixed order (so a fresh world's ids match on every machine). */
@@ -260,5 +272,6 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   w.spawn([Works, {}], [WorksClock, {}]);
   w.spawn([Shed, {}]);
   RAIL_LINES.forEach((_l, slot) => w.spawn([Line, { slot }]));
+  w.spawn([Aperture, {}]);
   return w;
 }
