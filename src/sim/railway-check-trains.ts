@@ -1,5 +1,5 @@
-// The trains' and lines' part of the load check (docs/plans/ecs-migration-railway.md, M8b): validateRailTrains's
-// conditions on the rows and the world queries, in the same order and with the same messages. The conditions are
+// The trains' and lines' part of the load check (docs/plans/ecs-migration-railway.md, M8b): the old read-model validator's
+// (validateRailTrains, deleted in M12b-2) conditions on the rows and the world queries, in the same order and with the same messages. The conditions are
 // railway-trains.ts's own (lineReqOk, trainRowBroken, lineBlocksBroken: one copy, so v27's run here too); this file
 // reads the world for them. Run by railwayCheck (./railway-check.ts). The spacing needs a tick and is not part of it
 // (trainSpacing).
@@ -20,7 +20,7 @@ const bad = (what: string): never => {
 };
 /** The trains' and lines' whole-world invariants; throws on the first broken one. */
 export function checkTrains(w: World) {
-  // validateRailTrains's 'railway: trains' (row counts) is railwayCheck's own count check here, which refuses first.
+  // The old validator's 'railway: trains' (row counts) is railwayCheck's own count check here, which refuses first.
   const awake = rail(w).trains >= 0;
   const stops = (line: number) => stopsOf(w, line);
   lines(w).forEach((l, line) => {

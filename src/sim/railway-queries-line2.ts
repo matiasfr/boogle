@@ -1,7 +1,6 @@
-// Line two's derived facts on the world, and the conserved counts (docs/plans/ecs-migration-railway.md, M8): the world
-// twins of the read model's helpers in ./railway-line2.ts and ./railway.ts, same names, a world first and the same
-// arithmetic (where a system's own twin differs, as cartWants and gateDown do, the read model's is kept here). Pure
-// reads; `at` is the job clock's tick (./railway-queries.ts, jobProgress), absent for the run rows.
+// Line two's derived facts on the world, and the conserved counts (docs/plans/ecs-migration-railway.md, M8): the read model's
+// helpers moved onto the world (the model went in M12b-2), same names, a world first and the same arithmetic (where a
+// system's own twin differs, as cartWants and gateDown do, the view's is kept here). Pure reads; `at` is the job clock's tick (./railway-queries.ts, jobProgress), absent for the run rows.
 //
 //   line2Open, line2Lit, line2PackReady, line2Completed, line2Active, line2GateOpen, line2SeaOpen, line2GateDown,
 //   line2Trains                            the forge, the stretches and the gates

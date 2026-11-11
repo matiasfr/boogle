@@ -1,5 +1,5 @@
 // The rail drivers' worlds unaudited, for a local unit run (docs/agents/ship-pipeline.md, "Unit test settings"): the inverse of ./rail-audit.ts.
-// The seed and test drivers (src/sim/railway-drive.ts, src/sim/railway-live.ts) build every world with
+// The seed and test driver (src/sim/railway-drive.ts) builds every world with
 // `{ audit: true }`; the audit re-serializes every row around every system run, so it is most of the suite's time.
 // It only reads and throws (src/ecs/world.ts: rowsText, audit, and the spawn-time schema check), never writes, so an
 // unaudited world steps and hashes exactly as an audited one. Preloaded, this rewrites those calls in memory to
@@ -13,7 +13,7 @@
 import { registerHooks } from 'node:module';
 
 const CALL = 'createRailwayWorld({ audit: true })';
-const SITES: Record<string, number> = { '/src/sim/railway-drive.ts': 1, '/src/sim/railway-live.ts': 2 };
+const SITES: Record<string, number> = { '/src/sim/railway-drive.ts': 1 };
 registerHooks({
   load(url, context, nextLoad) {
     const out = nextLoad(url, context);

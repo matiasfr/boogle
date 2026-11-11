@@ -66,6 +66,6 @@ export const CROSSING_FOOT_OFF = 330;
  * bent 1 and 0.8 m lower each 20 m bent, so bent 6 is 20.3 m. */
 export const CROSSING_DECK_Y = [2430, 2350, 2270, 2190, 2110, 2030] as const;
 export const RAIL_ROCKS = [...LINE1_ROCKS, ...WORKS_ROCKS] as const;
-/** Every rock slot's starting stone: the conserved stone total before renewal (`railCounts(s).stone.total` and
- * validateRailLine both equal this plus `stoneProduced`). */
+/** Every rock slot's starting stone: the conserved stone total before renewal (`railCounts(w).stone.total` and the
+ * load check both equal this plus `stoneProduced`). */
 export const RAIL_STONE = RAIL_ROCKS.reduce((n, r) => n + r.initial, 0);

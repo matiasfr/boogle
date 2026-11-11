@@ -22,7 +22,7 @@ import {
   createRailway,
   forge,
   hash,
-  invariant as railwayInvariant,
+  invariant,
   job,
   rail,
   railActiveStation,
@@ -47,7 +47,7 @@ function act(s: World, pid: string, op: string, fields: Partial<RailAction> = {}
   const a = account(s, pid)!;
   const e = { op, epoch: a.epoch, request: a.request + 1, ...fields };
   const r = apply(s, pid, e, tick(s));
-  assert.equal(railwayInvariant(s), null, op);
+  assert.equal(invariant(s), null, op);
   return { r, e };
 }
 function fresh(pids = ['a', 'b']) {
@@ -87,7 +87,7 @@ function finish(s: World) {
   assert.ok(current.job.start >= 0);
   railTick(s, current.run.lastTick + railMaxDuration(s));
   assert.equal(job(s, slot).completion, 1);
-  assert.equal(railwayInvariant(s), null);
+  assert.equal(invariant(s), null);
 }
 function toT3() {
   const s = fresh();
@@ -372,7 +372,7 @@ test('safe loose beam keeps its identity; recovery is slow, explicit, revision-f
   act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
   pulse(200, beam(s).revision);
   assert.equal(beam(s).state, 'held');
-  assert.equal(railwayInvariant(s), null);
+  assert.equal(invariant(s), null);
 });
 
 test("a beam drop's point is checked: never -0, never out of range, and the room still saves", () => {
@@ -397,8 +397,12 @@ test("a beam drop's point is checked: never -0, never out of range, and the room
   }
   act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
   act(s, 'a', 'rail.beamDrop', { revision: beam(s).revision, x: 99650, y: 3000, z: -13800 });
-  assert.deepEqual([beam(s).state, beam(s).x, beam(s).y, beam(s).z], ['ground', 99650, 3000, -13800], 'a valid point still lands');
-  assert.equal(railwayInvariant(s), null);
+  assert.deepEqual(
+    [beam(s).state, beam(s).x, beam(s).y, beam(s).z],
+    ['ground', 99650, 3000, -13800],
+    'a valid point still lands',
+  );
+  assert.equal(invariant(s), null);
 });
 
 test('production ceiling refuses an unrepresentable proper-axe bonus atomically', () => {
@@ -407,7 +411,7 @@ test('production ceiling refuses an unrepresentable proper-axe bonus atomically'
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
   Object.assign(s.mut(Rail, s.single(Rail))!, { produced: 2147479735, rack: 2147479735 });
   const k = trees(s).findIndex((t) => t.left === 10);
-  assert.equal(railwayInvariant(s), null);
+  assert.equal(invariant(s), null);
   assert.equal(act(s, 'a', 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }).r.accepted, 0);
   restore(s);
 });
@@ -530,5 +534,5 @@ test('offline panel catch-up consumes one funded interval and cannot advance the
   assert.equal(railPanelCount(s), 26);
   assert.equal(railPanelStock(s), 30);
   assert.equal(railCurrentJob(s).job.start, -1);
-  assert.equal(railwayInvariant(s), null);
+  assert.equal(invariant(s), null);
 });

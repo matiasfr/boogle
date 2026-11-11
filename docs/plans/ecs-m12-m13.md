@@ -428,7 +428,23 @@ typecheck`, `npm run lint`.
     main; `rail-mutants` over the railway test set kills what it killed before X1.
   - **Reviewer attacks:** the server's resume cap and panel numbers on a room resumed after days
     (`test/railway-m11-host.test.ts`); a check condition that only the old side exercised.
-- [ ] **M12b-2. Delete it.** _S, High by path, deletions only. After M12b-1 and M12f._ The parent plan's M12b
+- [x] **M12b-2. Delete it.** _S, High by path, deletions only. After M12b-1 and M12f._ (**As built**, on
+      `ecs/m12b-1`'s fixed tip. Deleted: `railway-read-model.ts`, `railway-live.ts`, and `railway-line2.ts` whole (every
+      export in it took the model). From `railway.ts`, `railway-line.ts`, `railway-works.ts` and `railway-trains.ts`:
+      the `Railway` type, `RailPile`, `RailRing`, `RAILWAY_DURATION`, `railAccount`, `railCounts`, `railPhase` and the
+      re-export block, the model's shape types, the old facts, `railTrainsOf(s)` and the four domain validators. From
+      `railway-train.ts`: `railRingOpen`. From `railway-check.ts`: `validateRailway` and `railwayInvariant`.
+      `railway-line.ts` now holds only `LINE_TIMING`, and `railway-works.ts` only the stage labels and seam bits; both
+      stay where their importers are. Also deleted: `dev/migrate/railway-imports.ts`, M3b's one-off migration script,
+      whose table named the deleted files. Lint: rule 5's ban, both lists, the `read-model` and `live` alternatives in
+      `RAIL_DYNAMIC`, the leaf ban and the driver ban, and the retired-name rule's exemption are gone. The src/sim
+      blocks now leave the seeds, the driver and `railway-check*.ts` free to load the check. The rg line over the
+      eight names now finds only the two guards that ban them (`policy.ts`'s `RETIRED`, `review-m12c.test.ts`'s
+      fixtures). `npm run unused` lists no export that only the deleted code used. `trainRowBroken` stays in
+      `railway-trains.ts`, which the corpus test reads. The bad-worlds fixture's section headers name the domain check
+      files. `test/railway-line-authority.test.ts`'s `railwayInvariant` alias is now `invariant`. `ecs-e.md` section 4,
+      `src/world/README.md` and `ship-pipeline.md` were corrected; `sync.md` and `src/sim/AGENTS.md` named no model.)
+      The parent plan's M12b
       entry as written: `src/sim/railway-read-model.ts`, `src/sim/railway-live.ts`, the `Railway` type and the old
       facts in `railway.ts`, `railway-line.ts`, `railway-line2.ts`, `railway-works.ts`, `railway-trains.ts`
       (`railRingOpen` included: `ringOpen(w)` is its world twin), the five validators and `railwayInvariant` in
