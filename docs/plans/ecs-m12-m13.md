@@ -423,9 +423,11 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
   railway-photo,railway-request-stop,railway-roof-start,railway-seats,railway-signal-hold,railway-trains-pass,
   railway-works-bot,shared-gate-shot}.ts` and the comments in `dev/lint/policy.ts`. Renaming the flag is a
   leftover (P3); the M13e grep `proto/place` does not meet it.
-- [ ] **M13b. Delete group 2.** _S, Low. After M13a._ The 39 evals, 3 bots, 7 harness and video files and 5 tests of
+- [x] **M13b. Delete group 2.** _S, Low. After M13a._ The 39 evals, 3 bots, 7 harness and video files and 5 tests of
       group 2, and their `package.json`, `dev/checks-for.ts` and docs lines. **Checks:** `npm run check`; `npm run
       look -- --at list` still lists; `npm run unused`.
+      **Done 11 November: the twin table leaves 2 files to delete** (`place-early-beam`, `replay-bridge`, 134 lines);
+      the other 52 move to M13c, M13d and M13e as the table says. M13c also takes the 43 it names.
 - [ ] **M13c. Retarget group 3.** _M, Low. After M13b, D3 and D4 (it edits `railway-b4-at`, `railway-b5b8-at`,
       `railway-bench`, `railway-passenger-car*`)._ The 18 evals, 9 beats and their fixture, the harness files, and
       the five tests of group 3 onto the production entry and `--rail-seed`. It may run as two agents split at
