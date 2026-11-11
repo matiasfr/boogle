@@ -786,7 +786,7 @@ export async function railwayRequestStop(c: Ctx) {
   const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { LINE_HALTS, TRAIN_PHASE, reqHas } = await import('../../src/sim/railway-train.ts');
   const { trainStops } = await import('../../src/sim/railway-line2.ts');
-  const { LINE2 } = await import('../../src/sim/railway-lines.ts');
+  const { LINE2, RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
   const { LINE_SLOTS, trainServes } = await import('../../src/sim/railway-trains.ts');
   const seed = railwayAtTrains('trains-on');
   const roomId = railwayRoomId(`${c.room}-request`);
@@ -835,7 +835,10 @@ export async function railwayRequestStop(c: Ctx) {
     const all = await Promise.all(pages.map(adapter));
     return all.every((p) => slots.every((k) => sameRow(p.state.trains[k]!, rail().trains[k]!)));
   }, 10000);
-  c.check(`request stop: every tab mirrors line 2's ${slots.length} trains`, slots.length === 2 && bothMirrored >= 0);
+  c.check(
+    `request stop: every tab mirrors line 2's ${slots.length} trains`,
+    slots.length === RAIL_LINES[LINE2]!.trains && bothMirrored >= 0,
+  );
   c.check('request stop: the seed starts with nothing asked at the quarry', !asked(leverReq()));
   // From off the platform: refused, nothing set.
   await ask(pages[2]!, [h.x + h.reach + 3000, h.y, h.z]);
