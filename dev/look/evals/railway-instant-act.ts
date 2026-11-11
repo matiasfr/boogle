@@ -1,7 +1,7 @@
 // Action for the instant-feedback capture (replication R1b; setup: railway-instant.ts): three strokes at the tree, then
 // the walk to the active frame, whose automatic unload deposits. Each stroke's logs must reach the back on its contact
 // beat, not a round trip later: it logs press -> visible carry per stroke, and the adapter's own press -> effect cost.
-const { account, activeStation, inspectRailway, railAt, railJobs, railPid, rw } = (await import(
+const { activeStation, inspectRailway, railBack, railJobs, rw } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -16,7 +16,7 @@ const bot = makeBot({
 });
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const read = () => inspectRailway()!;
-const carry = () => account(rw(), railPid())?.carry ?? 0;
+const carry = () => railBack().carry;
 // Strokes from the side: six metres off the line from the player to the tree, so neither hides the other.
 {
   const p = me.body!.position;
@@ -67,7 +67,7 @@ background(
         responseMs: s.prediction.responseMs.slice(-12).map((x) => Math.round(x * 100) / 100),
         corrected: s.prediction.corrected,
         predicted: s.prediction.predicted,
-        stock: railJobs(rw(), railAt())[activeStation(rw())]!.job.stock,
+        stock: railJobs(rw())[activeStation(rw())]!.job.stock,
       })}`,
     );
   })(),

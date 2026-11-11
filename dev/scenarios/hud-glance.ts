@@ -12,10 +12,10 @@ import type { T } from './run.ts';
 
 // In the page: `r` is the view's inspection (session scalars, the scene's trees and reward); the world's facts are rows
 // and queries: `carry()` is this player's back (the account row), `phase()` the machine's.
-const READ = `const { inspectRailway, railAt, railPid, railRead, railPhase, account, rw } = await import('/dev/look/rail-read.ts');
+const READ = `const { inspectRailway, railBack, railRead, railPhase, rw } = await import('/dev/look/rail-read.ts');
   const r = inspectRailway();
-  const carry = () => (railRead() ? (account(rw(), railPid())?.carry ?? 0) : -1);
-  const phase = () => (railRead() ? railPhase(rw(), railAt(), railAt()) : null);`;
+  const carry = () => (railRead() ? railBack().carry : -1);
+  const phase = () => (railRead() ? railPhase(rw()) : null);`;
 const shown = (sel: string) =>
   `(() => { const e = document.querySelector('${sel}'); return !!e && !e.closest('[hidden]'); })()`;
 const PROMPT = `(document.querySelector('.prompt:not([hidden]) .prompt-chip')?.textContent ?? '')`;

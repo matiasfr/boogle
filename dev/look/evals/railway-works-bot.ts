@@ -5,7 +5,10 @@ const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof impor
 const { splitRockToCrossing } = (await import(
   '/dev/look/bots/railway-works.ts' as string
 )) as typeof import('../bots/railway-works.ts');
-const { inspectRailway, railAt, railRead, rw, shed, trains, works, worksStage } = (await import(
+const { railCheckpoint } = (await import(
+  '/dev/look/bots/railway-checkpoint.ts' as string
+)) as typeof import('../bots/railway-checkpoint.ts');
+const { inspectRailway, railRead, rw, shed, trains, works, worksStage } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -32,30 +35,18 @@ background(
     await splitRockToCrossing(
       {
         bot,
-        checkpoint: async (beat) => {
-          bot.note(beat);
+        checkpoint: railCheckpoint(bot, `Split-rock seeded ${from}`, () => {
           const w = rw();
-          console.log(
-            `RAILWAY CHECKPOINT ${JSON.stringify({
-              beat,
-              tick: railAt(),
-              hash: railRead()!.debug().hash,
-              works: works(w),
-              stage: worksStage(w),
-              shed: shed(w),
-              trains: trains(w),
-              crossingView: inspectRailway()!.crossingView,
-              wall: Date.now(),
-              seconds: Math.round((Date.now() - started) / 100) / 10,
-              position: me.body!.position,
-              swimming: me.swimming,
-            })}`,
-          );
-          if (query.get('railStop') !== beat) return;
-          shot.__railStop = beat;
-          if (!shot.__railPhoto) bot.finish(`Split-rock seeded ${from}: ${beat}; no recovery`);
-          await new Promise<void>(() => {});
-        },
+          return {
+            works: works(w),
+            stage: worksStage(w),
+            shed: shed(w),
+            trains: trains(w),
+            crossingView: inspectRailway()!.crossingView,
+            wall: Date.now(),
+            seconds: Math.round((Date.now() - started) / 100) / 10,
+          };
+        }),
       },
       from,
     );

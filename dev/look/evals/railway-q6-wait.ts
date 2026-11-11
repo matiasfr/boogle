@@ -3,7 +3,7 @@
 // (whose leftover logs offer no "Pick up"), then walk into the frame's reach loaded. Logs what was offered, the sign
 // and the nudge count; the motion sheet films the one bob and puff.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { account, inspectRailway, line2Trains, rail, rw, railPid, qjob } = (await import(
+const { account, inspectRailway, line2Trains, rail, railBack, rw, railPid, qjob } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 const { interactTarget } = (await import(
@@ -11,7 +11,7 @@ const { interactTarget } = (await import(
 )) as typeof import('../../../src/player/hands.ts');
 const bot = makeBot();
 const read = () => inspectRailway()!;
-const carry = () => account(rw(), railPid())?.carry ?? 0;
+const carry = () => railBack().carry;
 const report = (beat: string) => {
   const w = rw(),
     acct = account(w, railPid()),

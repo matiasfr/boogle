@@ -1,9 +1,10 @@
 // Run either half against an accepted host seed. No teleport, direct op or recovery.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { seaToFarHead } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
-const { inspectRailway, line2Active, line2Completed, line2Jobs, rail, railAt, railReady, rw } = (await import(
-  '/dev/look/rail-read.ts' as string
-)) as typeof import('../rail-read.ts');
+const { railCheckpoint, line2Checkpoint } = (await import(
+  '/dev/look/bots/railway-checkpoint.ts' as string
+)) as typeof import('../bots/railway-checkpoint.ts');
+const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const query = new URLSearchParams(location.search);
@@ -24,31 +25,7 @@ background(
     await seaToFarHead(
       {
         bot,
-        checkpoint: async (beat) => {
-          bot.note(beat);
-          const state = inspectRailway()!;
-          const w = rw();
-          console.log(
-            `RAILWAY CHECKPOINT ${JSON.stringify({
-              beat,
-              tick: state.tick,
-              hash: state.hash,
-              line2: {
-                ...rail(w),
-                active: line2Active(w),
-                completed: line2Completed(w),
-                completions: line2Jobs(w, railAt()).map((j) => j.job.completion),
-              },
-              line2View: state.line2View,
-              position: me.body!.position,
-              swimming: me.swimming,
-            })}`,
-          );
-          if (query.get('railStop') !== beat) return;
-          shot.__railStop = beat;
-          if (!shot.__railPhoto) bot.finish(`B4 seeded ${from}: ${beat}; no recovery`);
-          await new Promise<void>(() => {});
-        },
+        checkpoint: railCheckpoint(bot, `B4 seeded ${from}`, line2Checkpoint),
       },
       from,
     );

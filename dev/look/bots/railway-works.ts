@@ -5,11 +5,10 @@
 // Inspection observes; it never seeds a world or moves a player.
 import type { Bot } from '../bot.ts';
 import {
-  account,
   carryMax,
+  railBack,
   forge,
   inspectRailway,
-  railPid,
   railRead,
   rock,
   rw,
@@ -57,11 +56,10 @@ const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
 export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from: WorksFrom = 'pier') {
   // Rows are read now, each time: a published world is never written, so none is held across an await.
   const scene = () => inspectRailway()!;
-  const bag = () => account(rw(), railPid());
-  const carry = () => bag()?.carry ?? 0;
-  const stoneCarry = () => bag()?.stone ?? 0;
-  const railsCarry = () => bag()?.rails ?? 0;
-  const foot = () => bag()?.foot ?? 0;
+  const carry = () => railBack().carry;
+  const stoneCarry = () => railBack().stone;
+  const railsCarry = () => railBack().rails;
+  const foot = () => railBack().foot;
   const pending = () => railRead()!.pending();
   const works = () => worksRow(rw());
   const shed = () => shedRow(rw());

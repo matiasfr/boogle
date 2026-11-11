@@ -16,7 +16,7 @@ import type { FrameCtx } from '../../loop.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { createRailwaySources } from './sources.ts';
 import { createRailwayReward } from './reward.ts';
-import { registerRailwayYouGot, type RailwayScene, type RailwayViewInspection } from './state.ts';
+import { railwaySession, registerRailwayYouGot, type RailwayScene, type RailwayViewInspection } from './state.ts';
 import { createRailwayArrival } from './arrival.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
@@ -612,21 +612,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       return seats.withSeatTargets(targets);
     },
     // The session's scalars and the scene walk; state is read as rows (docs/plans/ecs-m12-m13.md, section 2).
-    inspect: (): RailwayViewInspection => {
-      const read = adapter.read;
-      const out = {
-        pid: read.pid,
-        status: read.status(),
-        ready: read.ready(),
-        pending: read.pending(),
-        stalled: read.stalled(),
-        tick: read.tick(),
-        ...scene(),
-      };
-      // debug()'s fields copied as they are defined, so `hash` stays a getter: the mirror is hashed only when read.
-      const debug = read.debug();
-      return Object.defineProperties(out, Object.getOwnPropertyDescriptors(debug)) as typeof out & typeof debug;
-    },
+    // Assigned onto the session object, so its `hash` stays a getter.
+    inspect: (): RailwayViewInspection => Object.assign(railwaySession(adapter.read), scene()),
     dispose: () => owner.dispose(),
   };
   function scene() {

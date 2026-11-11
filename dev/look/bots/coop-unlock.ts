@@ -13,7 +13,7 @@
 //   --until "(import('/dev/look/bots/coop-unlock.ts').then((m) => m.start()), window.__coopShot || location.search.includes('player=2'))" --seconds 6 --video
 // (alone and together add &railStop=optional%20jump%20used, so the finder stops after its jump demonstration)
 import { background } from '../../../src/async.ts';
-import { inspectRailway, rail, railAt, railPhase, railRead, rw } from '../rail-read.ts';
+import { inspectRailway, rail, railPhase, railRead, rw } from '../rail-read.ts';
 import { me } from '../../../src/player/player.ts';
 import { inputState } from '../../../src/player/input-state.ts';
 import { input } from '../../../src/player/input.ts';
@@ -44,7 +44,7 @@ function read() {
 const ready = () => !!railRead()?.ready();
 const found = () => rail(rw()).jump;
 const axeFound = () => rail(rw()).axe;
-const phase = () => railPhase(rw(), railAt(), railAt());
+const phase = () => railPhase(rw());
 function check(ok: unknown, label: string) {
   if (!ok) throw new Error(`COOP FAIL ${label}`);
   console.log(`COOP PASS ${label}`);

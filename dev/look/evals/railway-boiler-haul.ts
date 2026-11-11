@@ -6,9 +6,9 @@
 //   --question "Does the boiler drag on its rope without popping, on the ground and up onto the deck?"
 // HAUL lines: a trace every 250 ms (feet, the boiler's drawn centre and tail, the speed); PASS/FAIL checks.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, railRead } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -65,7 +65,7 @@ function trace() {
 }
 
 async function take() {
-  check(!!me.body && read().ready, 'landed');
+  check(!!me.body && !!railRead()?.ready(), 'landed');
   const b = boiler();
   teleport(me.body!, b.x + 2.5, b.y + 1.2, b.z + 1);
   me.body!.velocity.set(0, 0, 0);
@@ -134,7 +134,7 @@ async function haul() {
 }
 
 async function helper() {
-  check(await bot.until(() => !!me.body && read().ready, 60000, 'landed'), 'helper landed');
+  check(await bot.until(() => !!me.body && !!railRead()?.ready(), 60000, 'landed'), 'helper landed');
   check(await bot.until(() => boiler().state === 'held' && !boiler().mine, 120000, 'held'), 'the friend hauls');
   for (const r of remotes.values()) {
     const s = r.avatar?.position;

@@ -3,7 +3,7 @@
 // &railLag=200 (added round trip on the railway's own messages), for example:
 //   npm run look -- --eval dev/look/evals/railway-instant.ts --action dev/look/evals/railway-instant-act.ts \
 //     --query 'shot=play&railLag=200' --video --seconds 16 --name instant-200
-const { accounts, inspectRailway, rail, railAt, railPhase, railRead, rw } = (await import(
+const { accounts, inspectRailway, rail, railPhase, railRead, rw } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -21,7 +21,7 @@ const bot = makeBot({
   },
 });
 const read = () => inspectRailway()!;
-const phase = () => railPhase(rw(), railAt(), railAt());
+const phase = () => railPhase(rw());
 const need = async (fn: () => unknown, what: string) => {
   if (!(await bot.until(fn, 300000))) throw new Error(what);
 };

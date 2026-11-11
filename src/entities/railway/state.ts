@@ -21,6 +21,19 @@ export type RailwaySession = {
   stalled: ReturnType<RailwayRead['stalled']>;
   tick: number;
 } & ReturnType<RailwayRead['debug']>;
+/** The session's scalars, read now. debug()'s fields are copied as they are defined, so `hash` stays a getter: the
+ * mirror is hashed only when read. The view inspection and the peer-test probe both take them from here. */
+export function railwaySession(read: RailwayRead): RailwaySession {
+  const out = {
+    pid: read.pid,
+    status: read.status(),
+    ready: read.ready(),
+    pending: read.pending(),
+    stalled: read.stalled(),
+    tick: read.tick(),
+  };
+  return Object.defineProperties(out, Object.getOwnPropertyDescriptors(read.debug())) as RailwaySession;
+}
 /** What the railway's views hold and no component does: the scene walk. */
 export type RailwayScene = {
   owned: { meshes: number; bodies: number; geometries: number; animations: number };

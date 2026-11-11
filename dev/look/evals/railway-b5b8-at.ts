@@ -5,7 +5,6 @@ const {
   line2Completed,
   line2Jobs,
   rail: railRow,
-  railAt,
   railRead,
   rw,
 } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
@@ -73,7 +72,7 @@ console.log(
       ...railRow(w),
       active: line2Active(w),
       completed: line2Completed(w),
-      completions: line2Jobs(w, railAt()).map((j) => j.job.completion),
+      completions: line2Jobs(w).map((j) => j.job.completion),
     },
     view: state.line2View,
   })}`,

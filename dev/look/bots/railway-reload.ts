@@ -1,6 +1,6 @@
 // Run through the existing look eval/until hooks; sessionStorage carries observations, never game state.
 import { background } from '../../../src/async.ts';
-import { inspectRailway, piles, railCounts, railAt, railCurrentJob, railRead, rw, trees } from '../rail-read.ts';
+import { inspectRailway, piles, railCounts, railCurrentJob, railRead, rw, trees } from '../rail-read.ts';
 import { me } from '../../../src/player/player.ts';
 import { identity } from '../../../src/player/identity.ts';
 import { net } from '../../../src/netplay/net.ts';
@@ -29,22 +29,22 @@ function read() {
 }
 const ready = () => !!railRead()?.ready();
 /** T1 stations laid: railCounts' completion is the sum over the line's jobs. */
-const completion = () => railCounts(rw(), railAt()).completion;
+const completion = () => railCounts(rw()).completion;
 /** Every material balance, as rows read now: the trees' wood and work, the piles, the conserved counts and the
  * active station's stock (compared across a reload, so only the two sides' sameness matters). */
 function balances() {
   const w = rw();
-  const { job, run } = railCurrentJob(w, railAt());
+  const { job, run } = railCurrentJob(w);
   return JSON.stringify({
     sources: trees(w).map((t) => t.left),
     work: trees(w).map((t) => t.work),
     piles: piles(w),
-    counts: railCounts(w, railAt()),
+    counts: railCounts(w),
     stock: job.stock,
     allocation: run.allocation,
     used: run.used,
     delivered: job.delivered,
-    completion: railCounts(w, railAt()).completion,
+    completion: railCounts(w).completion,
   });
 }
 type Saved = { stage: 'unopened' | 'claimed'; pid: string; balances: string; x: number; z: number; session: string };

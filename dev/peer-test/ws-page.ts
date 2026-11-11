@@ -23,7 +23,6 @@ import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
 import {
   createRailwayAdapter,
-  type RailwayAdapter,
   railMovement,
   type RailwayAccepted,
   type RailwayCorrection,
@@ -32,6 +31,7 @@ import {
 import { trainAlong } from '../../src/sim/railway-train.ts';
 import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
+import { railwaySession, type RailwaySession } from '../../src/entities/railway/state.ts';
 import home from '../../src/world/home-land.json';
 
 export type RailwayProbe = {
@@ -56,14 +56,8 @@ export type RailwayProbe = {
 };
 export type RailwayAdapterProbe = {
   /** `adapter.read`'s session values (ready, pending, status, stalled, tick) and its `debug()` (step, hash, epoch,
-   * next, prediction, ...), taken when the probe was. */
-  session: {
-    ready: boolean;
-    pending: number;
-    status: ReturnType<RailwayAdapter['read']['status']>;
-    stalled: ReturnType<RailwayAdapter['read']['stalled']>;
-    tick: number;
-  } & ReturnType<RailwayAdapter['read']['debug']>;
+   * next, prediction, ...), taken when the probe was: the view inspection's own. */
+  session: RailwaySession;
   /** Rows and queries on the world the views see, read when the probe was taken: the checks' facts, not a model of
    * the state (docs/plans/ecs-m12-m13.md, section 2). */
   rows: {
@@ -386,14 +380,7 @@ function startWorld(room: Room) {
         w = read.world(),
         at = read.tick();
       return {
-        session: {
-          ready: read.ready(),
-          pending: read.pending(),
-          status: read.status(),
-          stalled: read.stalled(),
-          tick: at,
-          ...read.debug(),
-        },
+        session: railwaySession(read),
         rows: {
           account: account(w, PID),
           freeCarry: freeCarryIgnoringBig(w, PID),

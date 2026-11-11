@@ -1,5 +1,5 @@
 // Disposable accepted --rail-seed fixture. No route bot, no shared-state fabrication in the browser.
-const { inspectRailway, line2Completed, line2Jobs, line2SeaOpen, railAt, railRead, rw } = (await import(
+const { inspectRailway, line2Completed, line2Jobs, line2SeaOpen, railRead, rw } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -23,7 +23,7 @@ while (completed() < 4 && performance.now() < until) await wait(50);
 const state = inspectRailway();
 if (!state || completed() < 4 || !me.body) throw new Error('B4 requires an accepted Q4-complete --rail-seed');
 // Q5's finish flag as the page found it (the seed's, not the live edge).
-const q5Done = line2Jobs(rw(), railAt())[4]!.job.completion === 1;
+const q5Done = line2Jobs(rw())[4]!.job.completion === 1;
 const query = new URLSearchParams(location.search);
 const shot = window as Window & { __b4Prepared?: boolean };
 const action = !!shot.__b4Prepared;
@@ -81,7 +81,7 @@ if (query.get('b4edge') === '1') {
   const rim = rail.besideLine(line, 280, 0);
   teleport(me.body, rim.x, layout.railY(line, 280) + 0.85, rim.z);
   me.body.velocity.set(0, 0, 0);
-  if (line2Jobs(rw(), railAt())[4]!.job.completion === 1)
+  if (line2Jobs(rw())[4]!.job.completion === 1)
     throw new Error('Q5 finishing seed expired before mounting; live edge not observed');
   // completion is a terminal flag, not a progress fraction: watch the moving head before its final pairs.
   while (inspectRailway()!.line2View.head < 532) await wait(50);
@@ -91,7 +91,7 @@ if (query.get('b4edge') === '1') {
     const state = inspectRailway()!;
     console.log(
       `BFOUR edge ${JSON.stringify({
-        completion: line2Jobs(rw(), railAt())[4]!.job.completion,
+        completion: line2Jobs(rw())[4]!.job.completion,
         lamps: state.line2View.trestleLamps,
         rockets: state.line2View.farHeadRockets,
         panels: state.line2View.panelCursor,
