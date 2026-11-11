@@ -7,3 +7,5 @@ docs/research/
 docs/world/economy-prototype.html
 # Generated (node --import ./dev/sim/hooks.ts dev/level/rail-map.ts); prettier would reflow its embedded script and data
 docs/world/rail-map.html
+# Generated (node dev/economy/build-trade-page.ts); prettier would reflow its script blocks
+docs/world/trade-economy.html

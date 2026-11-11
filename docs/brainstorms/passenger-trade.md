@@ -6,6 +6,12 @@
 > notes ([Still open, now answered](#still-open-for-the-owner-after-the-change-of-10-november)) are in this file word
 > for word.
 >
+> **Step 0 done (11 November): the economy model and its 2D page are built** (no game code):
+> [`dev/economy/trade-model.ts`](../../dev/economy/trade-model.ts) and
+> [`trade-data.ts`](../../dev/economy/trade-data.ts) (one table of tunables), the page
+> [trade-economy.html](../world/trade-economy.html), and `npm run economy -- trade`. Results are in
+> [Model results](#model-results-11-november). Not tested on a device.
+>
 > **What his later answers changed (10 November):** Boogles **build houses** on town plots ("Boogles build the house
 > itself; unbought plots stay empty ground") and **upgrade sources**, the faster loader arm included. **Anything on
 > rails costs materials**, "including the passenger train and seats", so passenger cars and seats left the Boogle
@@ -970,7 +976,7 @@ Passenger capacity is hauled for now, not bought with Boogles; the heading is ke
 
 ## 10. The smallest first build
 
-**Step 0, model and 2D (about a day; first, as the owner answered):** fares, seats, towns with plots, the strongbox's
+**Step 0, model and 2D (about a day; first, as the owner answered) [done 11 November for the model and its page; the playable prototype's riders, till and house are still to do]:** fares, seats, towns with plots, the strongbox's
 size, the two Boogle buy lists and the seat parts in the economy model, with the rooms and checks of section 8; then
 the playable economy prototype gets riders, a till, a house to build, a source upgrade and seats to haul for. The
 owner can play the wheel in 2D, see whether the wallet is ever tight, and tune the first prices there, as he asked.
@@ -1001,6 +1007,70 @@ owner can play the wheel in 2D, see whether the wallet is ever tight, and tune t
   the 2D page carry the source upgrades.
 - Host-kind on the lead tab, unsaved, no `WORLD_NS`, no op; the rest of the game unchanged. Held with every other
   build behind the ECS migration.
+
+## Model results (11 November)
+
+The model is [`dev/economy/trade-model.ts`](../../dev/economy/trade-model.ts) with every number a named tunable in
+[`trade-data.ts`](../../dev/economy/trade-data.ts); its page is [trade-economy.html](../world/trade-economy.html), where
+each tunable can be changed and the four rooms play again. It plays the route one minute at a time on the ring model's
+own 17 steps and minutes (`ring-sim.ts`, so a room that never spends finishes in exactly 6.00 h solo, 5.35 h with
+three), with the brief's stand-ins as written. **Where it differs from section 8's plan:** a separate trade model that
+reads the ring model's route, not a `TRADE` block in `ring-data.ts` and a change to `ring-sim.ts` (`PRICES`, `sold` and
+`bucks` are untouched); the playable prototype (`play-sim.ts`) is not changed yet. **Stand-ins that are mine, not the
+brief's:** each town's ride length (Village 0.5 km, Ring 1.2, Canopy 2.9 as the brief, Port 3.8 and Gorge 5.4 from the
+ring model's step distances), the trains' round trip (1 + 1.3 min a km, which gives line 2 the brief's 4.8 riders a
+minute), the seat bills of the later towns, a minute to haul each material (0.14 a log, 0.30 steel, 0.35 fibre, 0.50
+copper), what one source step takes off (4%, 2% and 3% of the labour and waiting still to come), the express set's
+effect (+8 seats at Port Quay) and 24 riders as the most a platform holds before the rest give up. The flat 5 on
+arriving at a junction is not modelled. All figures are one seed, solo, desktop arithmetic; the 5% and 10% bounds are
+reported and not enforced.
+
+| Room, solo | Route | Against 6.00 h | Boogles earned, spent, capped (to the route's end) | Houses and town buildings | Extra hauling for seats | Cut by source upgrades | Crowd of four or more | Box full |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A. Never spends, no seat | 6.00 h | 0 | 11,250, 0, 72,372 | 0 | 0 | 0 | 76% | 76% |
+| B. Houses, hauls for seats | 6.98 h | +0.98 h | 147,454, 116,570, 165,456 | 13 | 58.7 min = 16.3% | 0 | 79% | 37% |
+| C. Source upgrades first | 6.85 h | +0.85 h | 215,054, 184,170, 44,764 | 13 | 58.7 min = 16.3% | 7.9 min = 2.2% | 54% | 8% |
+| D. B with seats in Boogles | 6.00 h | 0 | 168,304, 137,420, 87,428 | 13 | 0 | 0 | 84% | 20% |
+
+Ranked, P1 first (a P1 changes what the owner decides; none is a bug):
+
+- **P1. Income runs about 2.4 times the brief's hand arithmetic.** Arrival incomes match it (56, 144, 247, 355 and 467 a
+  minute against the stage table's 56, 150, 230, 330 and 450), but with every house built the model reaches 168, 431,
+  778, 1,209 and 1,544 a minute against its 110, 220, 330, 420 and 650, because every town's riders pay a fare that
+  grows with the distance. At 0.4 times the fares the model gives 618 at the end, which is the brief's figure. So the
+  fare formula and the stage table disagree; the owner picks which to keep, and two numbers (`fare.per100m` and
+  `fare.board`) move it on the page.
+- **P1. The Boogle list is short and the end-game goals are nothing.** Room B has bought every town-side thing (house,
+  town building, fit-out, 116,570 in all with houses at 1.5 times) by hour 5.72 of 6.98 and its box stands full a
+  third of the route, with 165,456 of fares not landing. Room D clears its list by hour 4.92 of 6.00. The three
+  Boogle goals (60,000) take **18 minutes** after the route in every spending room, where the brief wanted a few hours;
+  they take 6.1 h at ten times the price, or 1.5 to 4.5 h at 0.4 times the fares. Dearer houses alone (2.5 times)
+  leave the goals at 0.3 h.
+- **P1. Seats on materials cost the route 58.7 minutes, 16.3% of it, and the crowd does not go away.** B and C add 0.98
+  and 0.85 h to the route; D (seats in Boogles) adds none and buys the Village's two seat steps by hour 1.27. The extra
+  is the number the owner judges; it is three times the old 5% bound, and doubling or halving the hauling minutes
+  moves the route to 7.96 or 6.49 h. Under either pricing a crowd of four or more stands at some platform for 79% (B)
+  and 84% (D) of the route, because every town's riders outgrow its seats a stage at a time, and 5,876 (B) and 4,523
+  (D) riders give up waiting; a room that adds no seat (A) sees the same 76%.
+- **P2. Source upgrades cannot shorten the route much.** The room that spends on sources first saves 7.9 minutes, 2.2%
+  of the route. Only labour and waiting at sources can shorten: 33.6 of the route's 360 minutes (9.3%; the rest is
+  authored play and riding). With every step three times as strong it saves 0.26 h (6.72 against 6.98). Spending first
+  on sources also costs fares early: its Ring Island stage earns 7,616 against B's 18,190, it waits 47 minutes a buy
+  against B's 9 and meets 40 choices it cannot afford both of (B: 14).
+- **P2. The seat hauling widens the solo-to-three-players gap.** Rooms A and D finish 10.8% sooner with three players
+  (6.00 against 5.35 h); B and C 17.4% sooner (6.98 against 5.76 h), past the existing 15%, because hauling shares out
+  less well than the route does (0.7 of a hauler a friend). Boogles earned barely change with party size.
+- **P3. A buy every eight to fifteen minutes, four to eight an hour:** B 4.1, D 6.8 and C 7.6 buys an hour, with at
+  least 14 moments where two things were on offer that the room could not buy both of. The brief's worry (one every ten
+  minutes) is inside that range; the 12 to 20 minutes from the research is met only by B.
+- **P3. A night away credits one capped sack:** 23,163 at the end of the route (the box's room, which at 20 minutes of
+  1,544 is also the sack's 15 minutes), 7,004 for room A. The empty room earns nothing (tested).
+- **P3. The first house comes about seven minutes after the trade opens** (hour 0.69, 450 Boogles, solo) against the
+  brief's five; room D buys it at 300 in about five minutes.
+- **Seats, both ways:** B and D differ most in the route's hours (6.98 against 6.00), not in what is bought. D earns
+  about 20,800 more than B because its seats arrive sooner, spends part of it on the second cars (2,000 to 6,000 each)
+  and has its box full 20% of the route instead of 37%. Whether the hauling reads as the game or as a second chore is a
+  question for the page and for him, not a number.
 
 ## Design review (designer, 2026-11-10)
 
