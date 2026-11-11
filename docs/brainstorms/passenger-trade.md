@@ -1,5 +1,5 @@
-> **Status: answered twice by the owner on 10 November and reworked for his second set of answers; five questions are
-> open.** Light brainstorm (one agent, three lenses: play designer, systems architect, creative director), then a
+> **Status: answered three times by the owner on 10 November and reworked each time; five questions are open, two of
+> them now answered in part.** Light brainstorm (one agent, three lenses: play designer, systems architect, creative director), then a
 > [design review](#design-review-designer-2026-11-10). Design only: nothing here changes code, saves or a `WORLD_NS`,
 > and the build is held behind the ECS migration. The owner's seed, his pick of the name (**Boogles**), his first six
 > answers ([Open questions](#open-questions-answered-by-the-owner-10-november)) and his seven later answers with his
@@ -22,6 +22,20 @@
 > buildings as intentional buys, and money that no individual can spend. The five questions still his are under
 > [Open after his answers](#open-after-his-answers-of-10-november). **The shop stays free**, fares are the only
 > source, and nothing converts: those answers stand.
+>
+> **His four follow-ups (10 November), and what they changed.** The orchestrator put four places to him where this
+> brief's reading of his words could be wrong; his replies are word for word under
+> [Follow-ups](#follow-ups-answered-by-the-owner-10-november). (1) The Village: "maybe only a couple buildings exist, so
+> you get the satisfaction of building up", a leaning, so the brief now proposes that two cottages stand on arrival
+> and the other two are bought plots
+> ([leaning](../decisions-rail.md#d-2026-11-10-the-village-may-start-with-a)). (2) "On rails" read as what rolls:
+> "sounds ok". (3) Loose coins in a tray at each halt: "yeah we can run with this for now". (4) The 10% limit on how
+> much source upgrades may shorten the route: "this doesn't Seem a restriction we need explicitly", so it is no longer
+> a rule; the model only reports the number
+> ([decision](../decisions-rewards.md#d-2026-11-10-boogles-follow-ups-on-rails-is)). With the first reply he also
+> said "Forge should finish when the player finishes building it btw, and it should have an interior.", which is not
+> about this brief and is recorded in the
+> [rail log](../decisions-rail.md#d-2026-11-10-the-forge-finishes-when-the-player).
 
 # Passenger trade (passenger-trade)
 
@@ -43,6 +57,11 @@ connecting a place. it's also a good opportunity for construction animation. for
 separation should be between personal money and not? should depositing your own money to help with communal upgrades
 be the way it's incentivized to be merged? Maybe money doesn't buy anything for individuals, it can just be pooled
 into the shared deposit, and otherwise it's used comedically ."
+
+His four follow-up replies (10 November), word for word, in the order asked: "maybe only a couple buildings exist, so
+you get the satisfaction of building up. Forge should finish when the player finishes building it btw, and it should
+have an interior."; "sounds ok"; "yeah we can run with this for now"; "yeah I want clarification but this doesn't Seem
+a restriction we need explicitly".
 
 **Read:** DESIGN.md (6, 7, 8, 9, 11, the core loop); the decision log's routing table and the rewards, rail and
 core-loop rules, and these entries: 10 November Boogles build houses and upgrade sources; the strongbox, the coin sack
@@ -73,7 +92,8 @@ and a car to haul for. The reasons: the wallet doesn't exist in `src/` or `serve
 saved shared state plus the first spend op. Today's lines are short (line 2 is about 0.75 km), so fares are pocket
 change; the flywheel only starts to bite from Ring Island (1.2 km on). And the model has three things to show: that
 the shorter Boogle list still keeps the wallet tight (by hand it no longer does: [section 3](#3-the-money)), what
-seats cost in hauling now that they are materials, and how far source upgrades shorten the six hours. The production
+seats cost in hauling now that they are materials, and how far source upgrades shorten the six hours (a number he
+judges, not a limit). The production
 build (lockstep, saved) ships on its own `WORLD_NS` bump when it is ready ("Nothing waits on a world bump"), after the
 prototype says yes and the ECS migration lets it in.
 
@@ -148,7 +168,7 @@ question 2 asks him. (f) Seats on materials take the seat buys out of the Boogle
 smaller than what a room can earn (section 3): the model has to close that, and question 4 asks whether seats on
 materials stands once he has seen it. (g) His sentence says "Anything on rails"; a station's benches and canopy are
 not on rails, and train paint is. This rework keeps station fit-outs on Boogles and gives looks and whistles no price
-yet (question 4).
+yet; he confirmed that reading ("sounds ok", [follow-up 2](#follow-ups-answered-by-the-owner-10-november)).
 
 ## Shape
 
@@ -177,8 +197,9 @@ Each moment captured with `look`; the hooks named here are proposals for the bui
   to 12. A still shows twelve little guys on the platform; after the next departure (real-time clip) eight board, four
   stay. Measured: waiting before and after, seats filled.
 - **An empty platform and a staked plot:** before any house is bought, a clip of a train leaving the Village with
-  empty benches and nobody left waiting; the plot's stakes and its sign are in the same shot or one turn of the camera
-  away, and a player can walk across the plot.
+  empty benches and nobody left waiting; the Village shows two cottages standing and two staked plots, the first
+  plot's stakes and its sign are in the same shot or one turn of the camera away, and a player can walk across the
+  plot.
 - **A rider seat given up:** two players, one sits on line 2's car. The rider in that seat stands on the step; the
   wallet's fares for that trip match a run with nobody seated.
 - **Fares land:** a clip at Home's ticket window as line 2's train stands: the coin column rises and the counter flips
@@ -322,9 +343,13 @@ the five holds the model step.
    town, a plot stays empty ground with stakes and a sign until the room pays, and then the little guys build on it.
    Hauling still sets how big a town can get, so fares cannot outgrow the railway. The other end, taken whole (nothing
    grows without a buy, and the 2 November rule and DESIGN.md's "Towns grow from what arrives" are reworded), is
-   designed in [section 1](#1-the-loop). Answer: ___
+   designed in [section 1](#1-the-loop). Answer: ___ **In part, later on 10 November (a leaning):** "maybe only a
+   couple buildings exist, so you get the satisfaction of building up". So "the town's starting few buildings" is now
+   a couple: two at the Village, two at each later town. Whether arrival growth stays at all, or nothing grows
+   without a buy, is still open.
 3. **What is the prototype's first buy?** Your first answer asked for "one car to buy", and a car now costs materials.
-   Recommended: the first buy is **a house** (300 Boogles at the Village's first plot), because building a house is
+   Recommended: the first buy is **a house** (300 Boogles at the Village's first plot, which after his follow-up is
+   the third cottage's site, staked and empty), because building a house is
    what Boogles now do and it is the part nobody has seen: the plot, the little guys building, the new door. The car
    stays in the prototype as the second thing, bought with hauled logs, because the house's riders leave a crowd and
    without the car that crowd has no answer. Alternative: keep only the car, as a materials buy, and no house; that
@@ -337,15 +362,51 @@ the five holds the model step.
    as this brief's reading of "on rails": it means anything that rolls (engines, cars, seats, the express's passenger
    set, more trains), so a station's fit-out (benches, a canopy, lamps) stays a town upgrade for Boogles, and train
    looks and whistles, which your 6 November call pays from the wallet, take no price of either kind until you say
-   which. Answer: ___
+   which. Answer: ___ **The reading of "on rails", later on 10 November:** "sounds ok". Confirmed: what rolls is
+   hauled for, station fit-outs stay on Boogles, and train looks and whistles have no price until he says. The first
+   half (seats on materials after the model) is still open.
 5. **Who moves in?** Each house brings "new characters and a building to discover". Recommended: the roles in
    [section 6](#6-show-dont-tell) as a starting list (for the Village a retired engine driver, a baker and a
    lost-property keeper), one character and one room a house, each offering a thing to see or play with and never a
    shop or a price. They are roles only; the characters and every line are yours and your collaborators' to write.
    Answer: ___
 
+## Follow-ups (answered by the owner, 10 November)
+
+Four places where this brief's reading of his words could have been wrong, put to him by the orchestrator. Each item
+is the question as he saw it, then his reply word for word, then what it does here. Recorded in
+[rewards](../decisions-rewards.md#d-2026-11-10-boogles-follow-ups-on-rails-is) and
+[rail](../decisions-rail.md#d-2026-11-10-the-village-may-start-with-a).
+
+1. **The Village's cottages.** "The Village's four cottages: they're kept as arrival buildings, with two new staked
+   plots added. You may have meant two of the existing cottages to be the plots." **Reply:** "maybe only a couple
+   buildings exist, so you get the satisfaction of building up. Forge should finish when the player finishes building
+   it btw, and it should have an interior." **A leaning ("maybe"), not a decision.** The brief now proposes it: two
+   cottages stand when the railway arrives, and the other two are staked plots the room buys
+   ([section 1](#the-village-two-cottages-stand-two-are-built-proposed-after-his-follow-up)). It also answers
+   [question 2](#open-after-his-answers-of-10-november) in part: a town arrives small. The forge sentence is not this
+   brief's; it is recorded in the
+   [rail log](../decisions-rail.md#d-2026-11-10-the-forge-finishes-when-the-player).
+2. **"Anything on rails".** "'Anything on rails': read as what rolls. Station fit-outs stay on Boogles; train looks
+   and whistles have no price until you say." **Reply:** "sounds ok". **Confirmed.** It settles the second half of
+   [question 4](#open-after-his-answers-of-10-november); whether seats on materials stands after the model is still
+   his.
+3. **Loose coins.** "Loose coins: a small tray of coins at each halt is an invention to give you a coin to carry while
+   keeping 'fares only' true. You may have pictured players earning their own." **Reply:** "yeah we can run with this
+   for now". **Confirmed for now** ([section 5](#coins-in-the-hand-a-proposal-question-1)). Whether there is any
+   personal money ([question 1](#open-after-his-answers-of-10-november)) is still his.
+4. **Source upgrades and the 10%.** "Source upgrades: the brief still limits how much they can shorten the route to
+   10%, which you haven't seen; your note welcomed more resource gain." **Reply:** "yeah I want clarification but this
+   doesn't Seem a restriction we need explicitly". **The limit is removed as a rule.** The model still reports the
+   number and he judges it; the clarification he asked for is
+   [The 10% limit: what it was](#the-10-limit-what-it-was).
+
 ## Parked
 
+- Source upgrades held to shortening the route by no more than 10%: removed as a rule (owner, 10 November: "this
+  doesn't Seem a restriction we need explicitly"); the model reports the number.
+- Two new staked plots beside the Village's four standing cottages: replaced by two cottages standing and two bought
+  (owner's leaning, 10 November: "maybe only a couple buildings exist, so you get the satisfaction of building up").
 - Personal wearables priced in Boogles: the shop stays free (owner, 10 November).
 - Boogles on engine and cargo upgrades: not adopted (owner, 10 November).
 - Boogles on passenger cars and seats: replaced by "Anything on rails costs materials" (owner, 10 November), as a
@@ -402,11 +463,11 @@ walked into". Both ends, designed:
 
 | | On arrival (from hauling, as today) | Bought (Boogles, on purpose) |
 | --- | --- | --- |
-| **What it is** | The station (its frame is hauled) and the town's starting few buildings. At Home these are the Village's four cottages, which stand today and stay; a later town's first two or three buildings rise from what the first trains deliver | Every building after those: a house on a staked plot, or a town building (a workplace or a sight) on one |
+| **What it is** | The station (its frame is hauled) and the town's first couple of buildings (his leaning, 10 November: "maybe only a couple buildings exist, so you get the satisfaction of building up"). At Home these are two of the Village's cottages, the two on the way in from the dock; a later town's first two buildings rise from what the first trains deliver | Every building after those: a house on a staked plot, or a town building (a workplace or a sight) on one |
 | **How it happens** | By connecting the place and delivering to it. Nobody chooses it; it is the payoff for laying the line, seen from the hub and the train | Somebody walks to the plot, reads the sign and holds Install. Little guys build it in front of whoever is there |
-| **What it gives** | The town's first riders (4 a minute each way), and doors that open in the owner's order: "The two cottages on the way in from the dock, then the other two, then a room behind the Ring Island works wall" | 2 more riders a minute each way, one new character, one new room |
+| **What it gives** | The town's first riders (4 a minute each way: 2 from each of its two buildings), and doors that open in the owner's order: "The two cottages on the way in from the dock, then the other two, then a room behind the Ring Island works wall" (at the Village the "other two" are now houses the room builds, open from the day they stand) | 2 more riders a minute each way, one new character, one new room |
 | **Walk-in rule** | Every one can be walked into once opened, in his order | A built house is walk-in from the day it stands. A plot is not a building: it is empty ground you can walk across, marked by four stakes, a string and a sign with the price. Nothing is ever a sealed box |
-| **What caps it** | The route | The plots the route has staked in that town (two or three a stage) |
+| **What caps it** | The route | The plots the route has staked in that town (two or three a stage; at the Village the first two are the other two cottages' sites) |
 
 - **Recommended (question 2):** the table as it stands. Arrival growth stays, for the station and the starting
   buildings; everything after is a bought plot. It keeps the 2 November payoff he liked and gives his leaning the rest
@@ -416,9 +477,40 @@ walked into". Both ends, designed:
   It is simpler to say and makes every building a choice. It costs the sight of a town growing because a train came,
   and it rewords the 2 November entries and DESIGN.md's "Towns grow from what arrives, and grown towns give upgrades
   that extend your reach". The cap still holds as long as plots are staked by the route and not sold.
-- **Either way:** plots are placed by level design, each with a position, a facing and a still before it is built; the
-  Village's first two need placing ([section 10](#10-the-smallest-first-build)). The existing cottages are not turned
-  into plots.
+- **Either way:** plots are placed by level design, each with a position, a facing and a still before it is built.
+  Positions are per the town layout plan (`docs/plans/town-layout.md`, being written and not on main yet); this brief
+  gives none.
+
+### The Village: two cottages stand, two are built (proposed after his follow-up)
+
+His words, 10 November: "maybe only a couple buildings exist, so you get the satisfaction of building up". A leaning.
+Before it this brief kept all four cottages and added two plots on new ground; that is replaced.
+
+- **What stands on arrival:** the two cottages on the way in from the dock. They are the first two a new player
+  walks past, and they are the first pair in his own order for opening sealed buildings ("The two cottages on the way
+  in from the dock, then the other two"), so the first doors a player meets are real ones. Two lit windows on the way
+  in say that people live here before anything is explained. The first rework of 10 November started the prototype
+  the same way, with these two lived in.
+- **What is bought:** the other two cottages become the Village's first and second plots: staked, empty ground until
+  the room pays, then built by the little guys. They are "the other two" of his opening order, so the order reads the
+  same from the player's side: the first pair is found, the second pair is made.
+- **The third plot** comes at the first branch, on new ground, as before.
+- **Where:** the two cottages and the three plots are placed per the town layout plan. If that plan moves or renames
+  the cottages, the rule to keep is the one above: the two a new player passes first are the two that stand.
+- **Riders:** every building sends 2 riders a minute each way, whether it stood on arrival or was bought. Two
+  cottages send 4, which is the arrival rate the tables already used, so no figure in [section 3](#3-the-money)
+  moves: the Village still starts at 56 Boogles a minute and each house still adds 28. A place with a halt and no
+  building sends nobody; riders only arrive there.
+- **The buying order at the Village:** the first plot's house (300, about five minutes in); then the room hauls for
+  line 2's Six fit-out, because that house's riders leave a crowd; then the second plot's house (800); then the four
+  source upgrades; then the third plot at the first branch (3,000). It is the order the brief had; only the ground
+  under the first two houses changed.
+- **What it costs:** the live game has four cottages standing today, so production takes two of them down to stakes
+  when the trade build ships (on its own `WORLD_NS` bump), and the prototype hides them behind its flag. The Village
+  is five buildings when full, where the last draft made it seven. If the model finds the Boogle list short
+  ([section 3](#3-the-money)), "one more plot a town" now fits his words better than it did.
+- **If the leaning does not hold:** the four cottages stand and the two plots go back to new ground. The money does
+  not change, because the arrival rate is 4 a minute either way.
 
 ### Building a house
 
@@ -469,8 +561,9 @@ not a model run.
 7; Home to Ring Island (about 1.2 km) 14; Home to Canopy Town (2.9 km) 31. The first draft doubled fares at a junction
 station; the review's call 15 replaces that with a flat 5 on arriving at one, and the model picks.
 
-**Riders.** A town arrives sending 4 riders a minute each way from the buildings it has. Each house built on a plot
-adds 2 a minute each way, and each rider pays on stepping off, out and back. At the Village's 7 a trip the town starts
+**Riders.** Every building in a town sends 2 riders a minute each way. A town arrives with a couple of buildings
+(the Village: two cottages), so it arrives sending 4 a minute each way. Each house built on a plot adds 2 a minute
+each way, and each rider pays on stepping off, out and back. At the Village's 7 a trip the town starts
 at 56 Boogles a minute and a house adds 28. A fitted-out station raises its town's riders by a quarter, twice at most.
 Income is the lesser of what the riders would pay and what the seats can carry: line 2's two trains with one Four car
 each carry about 4.8 riders a minute each way, 67 Boogles a minute at the Village.
@@ -487,9 +580,9 @@ with his answer.
 
 | What you buy | What it does in play | How many | First price (Boogles) |
 | --- | --- | --- | --- |
-| A house built on a staked plot | Little guys build it while you watch; a new character moves in and there is a new room to walk into; 2 more riders a minute each way from that town. Before the buy the plot is empty ground with stakes and a sign | Up to the town's plots. Home: two plots at the Village at v26 (its four cottages are arrival buildings and stay), a third at the first branch. Each later town has two or three plots | The Village's first plot 300 (5 min), its second 800 (9 min), its third 3,000; Ring Island 1,300 then 2,100; Canopy Town 2,500, 4,000, 6,400; Port Quay 3,500, 5,600; High Gorge 5,000, 8,000. Each next house in a town costs 1.6 times the last |
+| A house built on a staked plot | Little guys build it while you watch; a new character moves in and there is a new room to walk into; 2 more riders a minute each way from that town. Before the buy the plot is empty ground with stakes and a sign | Up to the town's plots. Home: two plots at the Village at v26 (the sites of its third and fourth cottages; the two cottages on the way in from the dock stand on arrival), a third at the first branch. Each later town has two or three plots | The Village's first plot 300 (5 min), its second 800 (9 min), its third 3,000; Ring Island 1,300 then 2,100; Canopy Town 2,500, 4,000, 6,400; Port Quay 3,500, 5,600; High Gorge 5,000, 8,000. Each next house in a town costs 1.6 times the last |
 | A town building built on a plot (a workplace or a sight) | Riders get a place to go: 1 more rider a minute each way to that halt, and up to four little guys are seen inside (review call 21). It is built and walked into like a house | One or two a place, the first at Ring Island. The room behind Ring Island's works wall is not one of these: it is third in the owner's opening order and is opened, not bought | 1,600 at Ring Island; later ones 8 to 12 min |
-| A station fitted out (benches, a canopy, lamps, a clock) | That town's riders rise by a quarter; the platform reads as a station. The second fit-out adds another quarter. Kept on Boogles as this brief's reading of "on rails" (question 4) | Two steps, only at a place with a station house ([junction-stations](junction-stations.md): the tier is earned by what the place is, not bought) | Home's hall 1,800; Ring Island's Lookers' waiting room 2,400; Canopy Town 3,500; Port Quay 5,000; High Gorge 7,000 |
+| A station fitted out (benches, a canopy, lamps, a clock) | That town's riders rise by a quarter; the platform reads as a station. The second fit-out adds another quarter. Kept on Boogles by the reading of "on rails" as what rolls (owner, 10 November: "sounds ok") | Two steps, only at a place with a station house ([junction-stations](junction-stations.md): the tier is earned by what the place is, not bought) | Home's hall 1,800; Ring Island's Lookers' waiting room 2,400; Canopy Town 3,500; Port Quay 5,000; High Gorge 7,000 |
 
 **Source upgrades (they change a rate; the room still hauls).**
 
@@ -522,7 +615,9 @@ rework, sized beside [engine-garage](engine-garage.md)'s (a boiler 6 to 10 steel
 - **Source upgrades do bring materials in sooner, and that is their point** (his note: "would theoretically increase
   resource gain in the system so it's a good candidate fro upgrades"). What they cannot raise is what a train carries
   a trip, which is cars, cradles and the boiler, all materials. The model reports how much shorter the route gets
-  (section 8); this brief's bound of 10% is a proposal he has not seen.
+  (section 8). There is no limit on that number: this brief's 10% is removed as a rule (owner, 10 November: "yeah I
+  want clarification but this doesn't Seem a restriction we need explicitly"). What it was is
+  [below](#the-10-limit-what-it-was).
 - **The works' own stages** (the model's producer levels, each a hauled build) stay hauled. A Boogle step is never the
   same thing as a level, so no upgrade has two prices.
 - **Yards at halts** ([station-deposit](station-deposit.md), answered 10 November) are not sources and get no Boogle
@@ -532,6 +627,26 @@ rework, sized beside [engine-garage](engine-garage.md)'s (a boiler 6 to 10 steel
   still waits "As a visible stack in the Roundhouse bay, spent by an install"; Boogles never touch that stack.
 - **Loader upgrades changed currency.** [engine-garage](engine-garage.md) listed "Loader upgrades (faster jib,
   gantry)" as a placeholder priced in steel. His answer puts the faster arm on Boogles, and that row is marked there.
+
+### The 10% limit: what it was
+
+A note in plain words for the owner, who asked for clarification.
+
+- **What it was.** Source upgrades are the one thing Boogles buy that touches materials: trees and rocks come back
+  sooner, a rack holds more, a loader swings faster. Fares arrive whether or not anyone is hauling. So a room could
+  let fares pile up, buy every source upgrade first and get its materials faster than the game was sized for.
+- **What it was protecting.** Two things: the roughly six hours (6 November), which this brief did not want a side
+  loop to shorten by accident; and hauling as the way the railway gets built, so that waiting for coins could not
+  stand in for carrying.
+- **How it worked.** It was a tripwire in the 2D model, not something a player would ever meet. If the room that
+  buys source upgrades first finished the route more than a tenth sooner (about half an hour of the six), the source
+  steps were to be made weaker. This brief set it; he had not seen it, and his note welcomed more resource gain.
+- **What replaces it.** Nothing limits it now. The model still plays that room, and the 2D page shows the result as
+  one plain figure: a room that buys source upgrades first finishes the route in so many hours, against so many for
+  a room that never spends a Boogle. He looks at it and decides whether that is the good kind of faster.
+- **What still holds without it.** These describe what the upgrades are, and are not a limit on their effect: two
+  steps a source; never more than the cars carry; the room still chops, carries and hauls every piece; and no Boogle
+  ever becomes a material.
 
 ### How the wheel closes, stage by stage
 
@@ -544,7 +659,7 @@ rework, sized beside [engine-garage](engine-garage.md)'s (a boiler 6 to 10 steel
 | Ring closed (4.7–6) | 78 | 450 → about 650 | about 43,000 | 25,500 (4 things), then the Boogle-priced goals | 31,500 (5) | about 12,000 |
 | **Whole route** | 326 | | about 99,000 | about 89,800 (29 things) | about 108,000 (35) | |
 
-The v26 walk-through, solo: the Village's cottages pay 56 a minute. The first plot's house (300) comes in five minutes
+The v26 walk-through, solo: the Village's two cottages pay 56 a minute. The first plot's house (300) comes in five minutes
 and its riders overfill the trains, so income stops at the seats' 67 and a crowd is left. The crowd is now a hauling
 job: 24 logs to the Roundhouse bay and an install for line 2's Six fit-out, which lifts the seats to 100 and clears
 it, so income is the riders' 84. The second plot's house (800, nine and a half minutes) fills the seats again at 100.
@@ -569,7 +684,8 @@ things.
   replaces (the Village's 450 and 1,200, and so on): it is a whole building with a character now, and the list comes
   to about 111,000. (2) Each town gets one more plot. (3) Fares come down. Recommended as the model's starting point:
   (1), which keeps a house at 8 to 22 minutes of income. The tables above keep the prices he saw; the model applies
-  the change.
+  the change. After his follow-up ("maybe only a couple buildings exist, so you get the satisfaction of building up")
+  the model also tries (2), since a town that arrives small has room for one more plot.
 - **What got better:** steel, fibre and copper have another use (the review's finding 1 feared the later materials
   would have only track), and seats or cargo is now one choice in one currency.
 - **What got worse:** the seat buy that answered a crowd in minutes is now a hauling job that competes with the route,
@@ -596,7 +712,8 @@ tuning:
    each next step of the same thing 1.6 times the last. Across the route more should be on offer than is earned; after
    his later answers that is no longer true by hand (above), and the model restores it. Things left unbought stay on
    offer and get cheap, which is the catch-up.
-7. **Source upgrades are two steps a source and never raise what the cars carry.**
+7. **Source upgrades are two steps a source and never raise what the cars carry.** How much they shorten the route is
+   not capped (owner, 10 November); the model reports it.
 
 Two more things the model must check: a Boogle buy about every ten minutes may be too many beside the building
 ([incremental-game-maths](../research/incremental-game-maths.md) gives 12 to 20 minutes between smaller gains), which
@@ -611,10 +728,10 @@ the dearer houses of fix (1) also help; and the end-game goals need sizing again
 | Engine upgrades: boilers (speed and the car cap), the plough | **Materials only**, from the stack in the Roundhouse bay |
 | Cargo upgrades: cargo cars past the free first, cradles | **Materials only** |
 | Passenger cars past the first, the Six fit-out, the express's passenger set, more trains on a line | **Materials only** ("Anything on rails costs materials, including the passenger train and seats"; a leaning by his note, question 4) |
-| A town's station and starting buildings | Hauled: they rise on arrival from what is delivered (question 2) |
-| Houses and town buildings on plots; station fit-outs | **Boogles only** (fit-outs by this brief's reading, question 4) |
+| A town's station and its first couple of buildings | Hauled: they rise on arrival from what is delivered (question 2) |
+| Houses and town buildings on plots; station fit-outs | **Boogles only** (fit-outs by the reading he confirmed, 10 November: "sounds ok") |
 | Source upgrades: faster regrowth, a bigger source rack, a faster loader arm | **Boogles only** |
-| Train looks and whistles | No price of either kind yet: they are on rails by his sentence and paid from the wallet by his 6 November call (question 4) |
+| Train looks and whistles | No price of either kind until he says (confirmed, 10 November: "sounds ok"): they are on rails by his sentence and paid from the wallet by his 6 November call |
 | The end-game goals | One price each, below |
 | Wearables at Fine Prices | Free: the shop stays free (owner, 10 November) |
 | Logs, stone, rails, footings, steel and every other material | Never bought and never sold: "Fares only; materials and Boogles never convert" |
@@ -658,6 +775,10 @@ personal and free.
   is refused with the balance shown. A house going up is a thing to stand and watch together.
 
 ### Coins in the hand (a proposal; question 1)
+
+**The tray of loose coins is confirmed for now** (owner, 10 November, told that it is this brief's invention to give a
+player a coin to carry while keeping "fares only" true, and that he may have pictured players earning their own:
+"yeah we can run with this for now"). Whether there is any personal money is still question 1.
 
 His question, not a decision: "what the separation should be between personal money and not? should depositing your
 own money to help with communal upgrades be the way it's incentivized to be merged? Maybe money doesn't buy anything
@@ -743,7 +864,9 @@ is a thing to see or play with. None is a shop, a price or a way to earn.
 | Port Quay | A diver; a fishmonger | A house on the quay; a stall with a room behind | Things brought up from the sea bed to look at; the day's oddest catch on a slab |
 | High Gorge | An echo keeper; a bridge painter | A house on the lip of the gorge; a hut hung under the bridge | A place to shout and be answered; a cradle to ride along the bridge's side |
 
-The first three are the ones the prototype and the first production build would need; the rest show the kind. A town
+The first three are the ones the prototype and the first production build would need; the rest show the kind. After
+his follow-up the Village's first and second plots are the sites of its third and fourth cottages, so the engine
+driver's and the baker's buildings stand where those cottages do today. A town
 building (a workplace or a sight) follows the same rule with a place in the role's stead: a lookout, a workshop, a
 bandstand.
 
@@ -803,8 +926,9 @@ Passenger capacity is hauled for now, not bought with Boogles; the heading is ke
   - **One that builds houses and hauls for seats as crowds appear.** It shows the income curve, the minutes waited for
     each buy, how long the box stands full, and the hauling its seats added. Seats are optional, so the route's own
     hours must not move; proposed bound on the extra hauling: 5% of the route's.
-  - **One that spends on source upgrades first.** How much shorter the route gets. Proposed bound: 10%; past that the
-    source steps shrink, or he is shown the number and keeps it, since more resource gain is what he likes about them.
+  - **One that spends on source upgrades first.** How much shorter the route gets, reported as a number with no pass
+    mark: the 10% bound is removed (owner, 10 November: "this doesn't Seem a restriction we need explicitly";
+    [what it was](#the-10-limit-what-it-was)). He judges the figure on the 2D page.
   - **Seats both ways** (question 4): the second room again with seats priced in Boogles as before his later answer,
     so he can compare the two curves and the two feelings on the 2D page.
 
@@ -827,7 +951,8 @@ Passenger capacity is hauled for now, not bought with Boogles; the heading is ke
 - **Two games side by side:** the wallet now touches nothing on the train. The crowd on the platform is the one thing
   that ties them, and it is on the way to every train; the house's new character arriving by train is the other tie.
 - **The six hours:** houses move no freight. Seats are hauled for, which adds optional hauling beside the route (bound
-  proposed: 5%). Source upgrades shorten waits at a source (bound proposed: 10%).
+  proposed: 5%). Source upgrades shorten waits at a source; by how much is reported, not bounded (owner, 10
+  November).
 - **Hauling made pointless, or trade made pointless:** neither currency buys the other's things.
 - **Too many small buys:** about one every ten minutes on the stand-in prices, each at a place you walk or ride to.
   With friends that is things to split up for; solo it may be a chore. The model reports buys an hour.
@@ -848,20 +973,24 @@ size, the two Boogle buy lists and the seat parts in the economy model, with the
 the playable economy prototype gets riders, a till, a house to build, a source upgrade and seats to haul for. The
 owner can play the wheel in 2D, see whether the wallet is ever tight, and tune the first prices there, as he asked.
 
-**Step 1, `?proto=trade` on v26** (two lines from Home; the Village's four cottages; the Quarry, Far Head, the Pier):
+**Step 1, `?proto=trade` on v26** (two lines from Home; the Village; the Quarry, Far Head, the Pier):
 
-- Riders only between the **Village and Far Head** on line 2. The Village's cottages send 4 riders a minute each way,
+- **The Village starts with two cottages** (his leaning, 10 November): the two on the way in from the dock stand; the
+  prototype hides the other two behind its flag and stakes their ground as the first and second plots. Positions per
+  the town layout plan.
+- Riders only between the **Village and Far Head** on line 2. The Village's two cottages send 4 riders a minute each way,
   so line 2's two trains (one Four car each) just keep up, at 56 Boogles a minute.
 - Fares (7 Boogles a trip) land in a **till at Home's hall**, on the north end wall: a placeholder strongbox with a
   coin column, its mark and a split-flap counter; the away sack is not in this step.
-- **The first buy is a house** (recommended; question 3): the Village's first plot, 300 Boogles, about five minutes
-  in. Stakes and a sign beside the lane, in sight of the platform; hold Install at the sign; the little guys build it;
-  its door opens onto a plain room. The plot needs a position and a still before it is built, and so does the second.
+- **The first buy is a house** (recommended; question 3): the Village's first plot, the third cottage's site, 300
+  Boogles, about five minutes in. Stakes and a sign on the empty ground; hold Install at the sign; the little guys
+  build it; its door opens onto a plain room. The town layout plan places the plot, so whether it is in sight of the
+  platform is that plan's to show; it needs a still before it is built, and so does the second.
 - **The car, hauled for** (the owner's "one car to buy", now a materials buy): line 2's second passenger car, a second
   Four, for 24 logs stacked in the Roundhouse bay and the garage's hold. It is offered once a train has left riders
   behind, which the first house causes. The prototype's line 2 trains run four cars for it, which today's cap does not
   allow (review finding 8); production's first seats step is the Six fit-out.
-- **A second house** (800), which goes one step past his words and is this brief's proposal: it shows the wheel
+- **A second house** (800, on the fourth cottage's site), which goes one step past his words and is this brief's proposal: it shows the wheel
   turning a second time. Expected: 56 → 67 with a crowd left (the first house) → 84 with none (the car) → 112 (the
   second house).
 - **The character in the house** is a placeholder little guy with no lines; who moves in is question 5 and the writing

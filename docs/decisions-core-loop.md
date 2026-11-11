@@ -34,7 +34,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-02 · The dino and the guest: optional fun for now. ([entry](#d-2026-11-02-the-dino-and-the-guest))
 - 2026-11-02 · Documents: this log and DESIGN.md count. ([entry](#d-2026-11-02-documents))
 - 2026-11-10 · the train upgrade screen: Install, plain readouts, boilers set speed and cars ([entry](#d-2026-11-10-the-train-upgrade-screen-install-plain))
-- 2026-11-10 · every building can be walked into; Ring Island's land is detailed and organic _(the reviewed layout's loop: buffers with a crossover instead ("open calls answered: Ring Island"))_ ([entry](#d-2026-11-10-every-building-can-be-walked-into))
+- 2026-11-10 · every building can be walked into; Ring Island's land is detailed and organic _(the reviewed layout's loop: buffers with a crossover instead ("open calls answered: Ring Island"))_ ([entry](#d-2026-11-10-every-building-can-be-walked-into)) _Applied to the forge by name: it has an interior, and it finishes when the player finishes building it ([rail](decisions-rail.md#d-2026-11-10-the-forge-finishes-when-the-player); owner, 10 November: "it should have an interior")._
 - 2026-11-06 · roughly six hours, close for one to three players _(wearables: the shop stays free ("open calls answered: riders and Boogles"))_ ([entry](#d-2026-11-06-roughly-six-hours-close-for-one))
 - 2026-11-05 · slice 3 coordinator continuation ([entry](#d-2026-11-05-slice-3-coordinator-continuation))
 - 2026-11-05 · supply review follow-up: Fix return-pose readiness after collider reconstruction and pin the durability fixture clock. ([entry](#d-2026-11-05-supply-review-follow-up))
