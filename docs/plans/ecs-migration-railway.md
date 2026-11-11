@@ -1004,8 +1004,22 @@ later change with a bundle report. Place's remaining callers get one owner from 
     itself; a row held across an `apply` (stale: rows are replaced); a test that passed through the proxy's
     read-only guard and now writes a row without `mut` (audit mode throws: keep audit on in every converted test); a
     `deepEqual` against a whole model object silently narrowed to two fields.
-- [ ] **M11. The server and its tools read the world.** _High (`src/world`, `server/`). After M8 and T5 to T7 (they
-      are the getter's last test readers)._
+- [x] **M11. The server and its tools read the world.** _High (`src/world`, `server/`). After M8 and T5 to T7 (they
+      are the getter's last test readers)._ (11 November, branch `ecs/m11-server-reads-world`, not shipped.) The
+      host's `counts`, `phase`, `panels`, `line2` and the resume cap are queries on its world; `dev/loop/run.ts` reads
+      rows (`npm run loop -- run --json` hashes the same as main, `ab52869e…`); `ws-railway.ts` reads rows and
+      `counts()` and seeds from `src/sim/railway-seed-*.ts` (off `test/railway-live.ts` and the legacy helpers);
+      `ws-page.ts`'s probes read the mirror's world at the tick, or a fresh world before a whole state;
+      `test/loop-graph.test.ts` builds its states as worlds (4 tests, 11 asserts before and after). **Not done: the
+      lazy `railway` getter stays**, because it is not the getter's last readers that T5 to T7 converted: 25 reads in
+      `test/railway-adapter.test.ts`, `test/railway-replicate.test.ts` (M12's) and `test/railway-queries.test.ts`
+      (M12b's), and `dev/spikes/ecs/server-path.ts` (M12b), still read `api.railway`. Nothing in the host or a tool
+      reads it; it goes when those do (M12 rewrites the two, M12b deletes the rest). The marks still take the read
+      model (`createRailwayProgressMarks`, M12), so the loop-graph test passes `railwayOf(world)`. `ws-page.ts`'s
+      adapter load cycle reads `adapter.inspect()` (M12). Proof: `test/railway-m11-host.test.ts` (16 stages and a
+      seeded stream of acts, ticks, supply pulses and away credits; three days away on six stages; the fresh probe).
+      `npm run load` on three rows (1, 2 and 4 players, 0 ms, `normal`) and the cart and train rides pass, server step
+      0.03 to 0.07 ms (one machine, not a timing claim); an 8-player row stops on a null probe on main too.
   - `src/world/railway-server.ts`: `counts`, `phase`, the panel numbers and `railMaxDuration` come from queries; the
     lazy `railway` getter goes. `dev/loop/run.ts` and `dev/loop/host.ts` read through the same API.
   - Tools off the model in the same step: `dev/loop/run.ts` (1,016 lines; 7 calls of the old facts),
