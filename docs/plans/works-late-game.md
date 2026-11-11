@@ -318,6 +318,11 @@ from the table toward the stall door, and a video of the turn.
 
 ### 6. The forge's finished look (P3; client only, unless the owner prefers a bill) · size S–M
 
+> **Owner, later on 10 November 2026:** "Forge should finish when the player finishes building it btw, and it should
+> have an interior." This replaces the trigger below (the twelfth pier footing) and his "Later upgrade" of the same
+> morning; the step is not redesigned here and the change is queued
+> ([decision](../decisions-rail.md#d-2026-11-10-the-forge-finishes-when-the-player)).
+
 **Port check (owner call "Port from Place only what still fits").** Place roofed the forge with 8 freight crates lifted
 on by the dock crane ("hands started it, trains finish it"): the poles came down and it poured rails twice as fast.
 Production lit it roofless and said "the roof still waits for trains" (place.md, 6 November), and place-retirement T6b
