@@ -1075,11 +1075,23 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > platform while `head` advances (the walkway's cover is a test of the numbers). R4a's P3 (old merge sleepers kept after
   > the relay) is fixed in `track.ts`; its P2 (the laying machine travelling out onto the deck) is not, it is Place's six
   > stretches. `dev/look/ring-mid-seed.ts`: `--rail-seed ring-set-N` (N 0-14), a look save with N footings set.
-- [~] **4c. R4c, the leaf.** (part built 11 November 2026, branch `ring/r4c-leaf`: the swing and the single writer of `ringIslandPose`, `src/entities/railway/leaf-view.ts` and `leaf-shape.ts`; left: the brace and counterweight prompts, splash, creak, bracket outline, rivet glint, the player under the toe, `test:net`, the two-page proof look) `src/entities/ring-leaf/` as under "R4". Checks: `npm run check`, `npm run test:net` (the leaf's
+- [~] **4c. R4c, the leaf.** (views and prompts built 11 November 2026, branches `ring/r4c-leaf` and `ring/r4c-prompts`: the swing, the single writer of `ringIslandPose`, the brace and counterweight prompts, the player under the toe; left: splash, creak, bracket outline, rivet glint, `test:net`, the two-page proof look) `src/entities/ring-leaf/` as under "R4". Checks: `npm run check`, `npm run test:net` (the leaf's
   state mirrored on three tabs). Proof look (Done means): `npm
   run look -- --players 2 --rail-seed leaf-raised`, one player braced on the island side, the other hanging the last
   counterweight footing: the leaf swings down onto the bents on both pages. Also in the eval: a third player standing on
   bent 13's deck end at u 258 as the leaf lands ends on top of it or beside it, never inside it.
+  > **Built (implementer, 11 November 2026): R4c prompts, on `ring/r4c-prompts`; not shipped.** (1) The brace prompt: verb
+  > "Pull" (the lever's, reused) at the gold strut (`RING_BRACE`, the server's own reach test), offered only while
+  > `set === 14` and `brace === 1` (`braceOffered`, `leaf-shape.ts`; `leaf-view.ts` `targets()`, via `works-live.ts`).
+  > (2) The jib's prompt stays "Set the footing" and now also offers a counterweight footing while `cw < 4` once the gap is
+  > footed (`jibOffered`; `railhead-view.ts`). "Knock out the pawl" and "Hang the weight" are not used: owner to choose.
+  > (3) The player under the toe: while the leaf is coming down (35 degrees or less) the local player within 1.4 m of the
+  > toe's edge or under it (u 258.6 to 261 m, on the deck) is walked back along the deck at 6 m/s, away from the hinge
+  > (`toeShove`); no tumble, no lift; once settled nobody is moved. Others' pages shove their own player. Tests:
+  > `test/railway-r4c-leaf.test.ts` (windows over every set, brace and cw; the seeds; the shove). Looks:
+  > `dev/look/evals/railway-leaf-act.ts` (`--rail-seed leaf-raised`, real prompts: pull, then four rack-to-jib trips;
+  > `--query leafdo=under` steps onto u 259.4 as the last footing hangs). **Not done:** the two-page and three-page
+  > looks, `test:net`, the tumble, splash, creak, outline, glint. Not tested on a device.
 - [ ] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
   Checks: `npm run check`, `npm run test:net`. Proof look (Done means): the same two-page room, then strike: the
   rivet glints, the 6 s shot plays on both pages, uninterruptible but for the one skip, `inspectRailway().ring.joined`
