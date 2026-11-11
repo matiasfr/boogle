@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../decisions.md#current-decision-index).
 
-**Updated:** 10 November 2026, 15:40 local (23:40 UTC), in the 10–11 November orchestrator session (started 12:11 local, ends 11 November 12:11; an hourly heartbeat runs in that session; no new agents from 09:11 on the 11th). World v25 is live; main is green. On main since the 15:20 update: the walkable Ring Island (#1452), the terrain prototype and round two (#1453, #1457), the buildings decision (#1454), the train upgrade brief, mock and the owner's two rounds of answers (#1455, #1461, #1462), the station-deposit brief with its review (#1458) and its build 0 (#1463), the rail map with its design review (#1459, #1460). Running: v26's two P2 fixes, the rail map correction, the install-moment design. Owner call #1396: the orchestrator makes direction and design calls too, records them, and the owner can overrule. The roadmap is [direction.md](../direction.md). The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 10 November 2026, 16:45 local (00:45 UTC on the 11th), in the 10–11 November orchestrator session (started 12:11 local, ends 11 November 12:11; an hourly heartbeat runs in that session; no new agents from 09:11 on the 11th). **World v26 is live** (two trains on line 2, #1467); main is green. The "Priority call" section below overrides the order in Running, Queued and Next moves, which are otherwise as of 15:40.
 
 ## Links
 
@@ -14,6 +14,31 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
   - proposed: [money](../brainstorms/money.md), [cart first](../brainstorms/cart-first.md), [first evening](../brainstorms/first-evening.md);
   - approved: [recovery rack](../brainstorms/recovery-rack.md), [signposts](../brainstorms/signposts.md);
   - building: [tunables](../brainstorms/tunables.md), [cart whistle](../brainstorms/cart-whistle.md).
+
+## Priority call, 10 November (owner; overrides the order below)
+
+The owner's words are in the [decision log](../decisions.md#decided) (10 November, "priority call"). No engine switch is authorized; the migration keeps the replication component schema as the portable layer.
+
+**Queue order from 16:45:**
+
+1. **ECS migration, railway first** (out of `src/proto/place/rail.ts`, `src/adapters/railway.ts`, `railway-systems.ts`). A planner writes `docs/plans/ecs-migration-railway.md`: small steps that each ship alone with an independent review, no `WORLD_NS` bump unless a step says why. Then implementers (opus, high-risk), one step at a time.
+2. **Chunk, cull and stream the world** ([performance](../research/performance.md)): committed track chunking and culling, and the railway adapter read cached per tick, planned with or straight after step 1's first slices since they share files.
+3. **Remote device tests**: a unique URL the owner opens on any machine, Run, then the test runs there, reports device diagnostics and a profile, and the data is pulled automatically. Tooling only, so it is planned and built beside 1.
+4. **Plan only: per-system divergence diagnosis** ([research](../research/deterministic-sim-at-scale.md) rec 1). A grep of `src/sim`, `src/net`, `src/netplay`, `src/ecs` and `server/` on 10 November found no per-subsystem hashes; the planner confirms before planning.
+5. **Held behind 1 ("before more build outs"), in this order when it lifts:** Ring Island v27 (R1b buffers and crossover, then R3a–R5; the owner chose buffers about 15 m past the halt with a crossover before it); yards at halts build 1; Ring Island's first landform step; the train upgrade screen's install build; terrain fixes on the wedge, then all of Home after a quiet-machine perf run; the passenger-trade model and prototype; the express (after v27 and Home's hall map); opening the cottages; the blockout view's two ruled-out legs; the sky cube.
+
+**Since 15:40, on main:** install-moment spec (#1465), rail map corrected to layout B (#1466), v26 (#1467), junction stations brief, review and answers (#1468, #1473), express brief and its design review (#1469, 9d9d14b4d), passenger-trade brief (#1472). The owner answered 39 open calls on the [decisions page](https://claude.ai/artifact/VT1appiKrQs8YPsmZf73u6) at about 16:20; four against the recommendation (the drawbridge stays at true scale; an express runs past a pulled lever; Boogles may buy anything; the wearables shop stays free).
+
+**Running at 16:45 (worktrees under `.claude/worktrees/`):**
+
+| Job | Branch or worktree | Next step |
+| --- | --- | --- |
+| Record the 39 answers in decisions, agent-calls and the briefs (docs) | `docs/open-calls-answers` | Review, ship |
+| Express brief corrected per its review, answers filled (docs) | `design-review/express-apply` | Review, ship |
+| Passenger-trade design review, then the owner's answers applied (docs) | the review agent's worktree | Review, ship, update the decisions page |
+| Ring Island plan re-planned for buffers against v26's real code (docs) | `plan/ring-island-buffers` | Review, ship; the build is held (item 5) |
+| Train upgrade screen first build, view only (code, started 16:30) | `feat/engine-garage-view` | The owner decides: pause or finish |
+| Ring Island greybox station house, **finished, not shipped** (`?ring=greybox`, adds `src/proto/greybox/ring-house.ts`) | `worktree-agent-a21540a454e11529d` | The owner decides: ship or hold. Its approach still does not show the lean; step B (buffers, end board) not built |
 
 ## Running
 
@@ -151,7 +176,7 @@ From 5–6 November; drop each when answered.
 4. **Suspect copy:** `SHOP.kept[0]` says "the hat" for any item; "Chops trees, breaks rocks, and more" appears before rocks exist in T1; the Works verbs under Leftovers.
 5. **Museum:** inspect the miniature, the crystal specimen, or both.
 6. **Worktrees left after the 9 November cleanup** (30 archived as local `archive/worktree/<branch>` tags, 39 merged ones removed): three with uncommitted changes (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`) and four recent ones (`claude/godot-assumptions`, `claude/glider-b-plan`, `claude/idea-land-ack`, `claude/playtest-jump-in-plan`). Commit-and-archive, or keep?
-10. **From the afternoon of 10 November:** Ring Island's end of line, buffers or a loop (blocks R3a); the other four rail map questions; the five station-deposit questions; the two train upgrade questions; start Ring Island's first landform step or not; terrain round two's look; the order for opening sealed buildings; the drop control label "Drop one thing off your back (hold: all of it)".
+10. **Answered 10 November at about 16:20 (see Priority call; being recorded on `docs/open-calls-answers`). Was:** Ring Island's end of line, buffers or a loop (blocks R3a); the other four rail map questions; the five station-deposit questions; the two train upgrade questions; start Ring Island's first landform step or not; terrain round two's look; the order for opening sealed buildings; the drop control label "Drop one thing off your back (hold: all of it)".
 8. **Ring Island build 1** ([plan](../plans/ring-island-build1.md), Owner questions): only a glide crosses the gap; Get unstuck before the Meet returns you to our side; the one-minute wait budget; the railhead stays a halt and its plaque's name; the name Rivet and the early-arrival lines. Nine calls were put to the owner on 10 November with options; unanswered. Also: the far leaf larger than life at distance, or accept 6 px; v26 with two trains and waits up to about 95 s (orchestrator's call), or hold.
 9. **The cab windows are open frames, not glass panes** (#1441): say if a pane is wanted. **Sky cube:** replace the 16 MiB sky cube with a gradient and cloud sprites?
 7. **From 10 November:** one lever per platform side (call 19) or keep the two handles; passenger car Four (built) or Six; the glider banner wording. End-game train direction ([mock-ups](../brainstorms/engine-endgame-mockups.md)): steam to modern (freight or high speed) or the dark plated sci-fi train, or that one as a rival; lengthen halts and gates past 6 m or articulate short cars; a tender on the largest current-era engine or not.
