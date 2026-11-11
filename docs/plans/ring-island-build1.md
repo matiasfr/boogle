@@ -574,7 +574,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   and glider read the railway tunables' defaults (sprint, coyote and the fall cap stay literals: they are unexported
   literals in `state.ts`); the island's cones moved to `src/proto/greybox/ring-cones.ts`, read by the greybox, the
   test and the report.
-- [ ] **1b. R1b, buffers and a crossover (pure layout amendment; no rule, no `WORLD_NS` bump; ships alone;
+- [x] **1b. R1b, buffers and a crossover (pure layout amendment; no rule, no `WORLD_NS` bump; ships alone;
   independent review, since it is `src/sim`).** Owner, 10 November 2026: "Ring Island while it's the end of the line:
   Buffers about 15 m past the halt, with a crossover before it".
   - `src/sim/railway-ring-layout.ts`: add `RING_END` exactly as under "R1b" above (computed with `ringAt` and
@@ -626,6 +626,24 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     u 468–471.5 and the house, on main since #1479): the rails run under the crossing's planks.
   - Checks: `npm run check`; `npm run level-check` (the new section prints, "ring (planned): ok"). Proof: the report
     (no player-visible change, no look).
+  *Built 10 November 2026* (`RING_END` with every number derived from `RING_HALT`, `RING_FORMATION`, `RING_S_HEAD`
+  and `ringAt`; no other export changed value; no hash, golden, fixture or `WORLD_NS` moved; not tested on a device).
+  Measured by `npm run level-check` ("ring (planned): ok", "track continuity: ok"): buffer faces at u 483.0, 15.0 m
+  past the platforms, up (1411.1, 9.4, −854.9) and down (1415.1, 9.4, −854.8), the blank board (1413.2, 8.9, −856.4);
+  the crossover u 395–417 (s 1137–1159 m), 22.0 m, 11.0 m short of the platforms, deck 9.3 to 8.4 m, steepest angle
+  15.3° and tightest radius 24.5 m (3-point, 2 m arms; Far Head's live one 15.3° and 24.3 m), 32.4 m on the
+  continuity report's 5 m resample, worst kink 0.07°, both straight tracks 0.00°, steepest grade 4.00%; today's train
+  u 439.0–454.2 (22.0 m clear of the crossover, 28.8 m short of the buffers), the long one u 435.3–456.2 (18.3 and
+  26.8 m); held at the signal (s 1130.8 m) the tails are 102.8 and 97.1 m past the hinge, 129.8 and 124.1 m past the
+  Railhead's stop. The ground under the run-off rises through the cut level (7.5 m) from about u 476; the cutting is
+  1.3 m at u 482 and **1.6 m at the bed's end (u 483.5, lat −5.8)**, not the 1.5 m estimated at the faces (under
+  2.0). The end is 2.5 m clear of the station house's terrace grown by 1 m, westmost lat −5.8; the faces 11.5 m past
+  the plank crossing. From a train braking at 3.5 m/s² into u 448 the worst late double jump is the chimney's, u 477.1
+  (6.7 m/s, 6.4 m before the stop), 5.9 m short of the faces; from the platforms' north end on the level 16.6 m, to
+  u 484.6. **Departures:** `FORMATION` is `src/place/layout.ts`'s (the step's `src/proto/place/layout.ts` does not
+  exist); the report reuses the continuity report's `measure` on the island's three tracks (the down and up tracks
+  from u 385 to the faces and the crossover), which the step did not name; `dev/level/rail-network.ts`'s `ring-loop`
+  track is still listed there (the rail map's job).
 
 - [x] **2a. R2a, the coast in regions (no bump).** `coast.ts`: providers group into regions (a provider whose bounds,
   grown by `MARGIN`, overlap another's joins its region; home and place are one region today). Each region bakes at

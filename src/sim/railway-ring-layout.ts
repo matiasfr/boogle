@@ -1,6 +1,6 @@
 // Ring Island build 1's layout (docs/plans/ring-island-build1.md, R1): where line 2 runs on from the pier head to the
 // island halt, the bents 7-13 on the bow, the railhead as it moves out, the gap, the folk's brace platform, the hook
-// ring, the rivet, the halts, the loop, recovery points, buoys and sea ramps. Pure world centimetres, no rules: v27's
+// ring, the rivet, the halts, the island's buffers and crossover, recovery points, buoys and sea ramps. Pure world centimetres, no rules: v27's
 // systems (src/sim/railway-ring.ts), views and dev/level/ring.ts read it. Numbers are the greybox's RING_LAYOUT
 // (src/proto/greybox/ring.ts) on ring-island ruling 5's datum with the design review's ruling on Level finding 1.
 //
@@ -56,9 +56,10 @@ export const RING_PATH: readonly number[] = Array.from({ length: 47 }, (_, i) =>
   return [p.x, p.z];
 }).flat();
 
-/** The loop (generic lines' balloon): centre and radius, world cm. `neckCm` runs from the halt's north end (u 468 m)
- * 12 m on, then to the loop's west point (the greybox's straight links); `loopCm` is the circle, 2 pi r with pi as
- * 355/113. */
+/** Overruled, 10 November: not part of line 2 (owner: "Buffers about 15 m past the halt, with a crossover before it";
+ * the island's end is RING_END). Kept, unchanged, for the tools and views that still read it until they move off it:
+ * the greybox's balloon, centre and radius in world cm; `neckCm` runs from the halt's north end (u 468 m) 12 m on,
+ * then to the loop's west point (the greybox's straight links); `loopCm` is the circle, 2 pi r with pi as 355/113. */
 export const RING_LOOP = (() => {
   const x = 146200,
     z = -82200,
@@ -188,9 +189,39 @@ export const RING_HALT = {
   upLat: [-930, -580],
   downLat: [180, 530],
 } as const;
+/** The island's end (R1b; owner, 10 November: "Buffers about 15 m past the halt, with a crossover before it"), Far
+ * Head's shape: a facing crossover on the Way carries up trains (lat -4) onto the down track (lat 0), they stand at the
+ * east platform with the passenger car at the platforms' middle (`u`, line 2's `s`), and leave on the down track. Both
+ * tracks run on level to buffer faces 15 m past the platforms (`bufferU`, y deck + 140 as the railhead's buffer), the
+ * blank end board 1.5 m behind them, over the run-off `bed`, cut into the island's ground down to `cut` (the underside
+ * of its 0.5 m slab). Nothing here is west of the formation (lat -5.8): the station house's terrace starts at -9.3. */
+const RING_END_U = (RING_HALT.u0 + RING_HALT.u1) / 2,
+  RING_END_CROSS = { u0: 39500, u1: 41700 } as const,
+  RING_BUFFER_U = RING_HALT.u1 + 1500;
+export const RING_END = {
+  u: RING_END_U,
+  s: RING_S_HEAD + RING_END_U,
+  cross: RING_END_CROSS,
+  mergeCm: RING_S_HEAD + RING_END_CROSS.u0,
+  bufferU: RING_BUFFER_U,
+  buffers: [
+    { ...ringAt(RING_BUFFER_U, RING_FORMATION.tracks[0]), y: RING_HALT.y + 140 },
+    { ...ringAt(RING_BUFFER_U, RING_FORMATION.tracks[1]), y: RING_HALT.y + 140 },
+  ],
+  board: { ...ringAt(RING_BUFFER_U + 150, RING_FORMATION.mid), y: RING_HALT.y + 90 },
+  bed: {
+    u0: RING_HALT.u1,
+    u1: RING_BUFFER_U + 50,
+    lat0: RING_FORMATION.left,
+    lat1: RING_FORMATION.right,
+    y: RING_HALT.y,
+  },
+  cut: RING_HALT.y - 50,
+} as const;
 /** The joint's west platform at the last bent (lat -9.6..-5.8, u 235..260 m), opened on joined (call 14). */
 export const RING_JOINT_UP: RailPlatform = { ...ringAt(24750, -770), y: ringDeckY(24750) + 90, reach: 1260 };
-/** The pier's up platform, lat -6.9 at s 720.5 m (s 700..741), on line 2's path (test/railway-ring-layout.test.ts). */
+/** Not built: the Pier is homeward-only (owner, 10 November). Kept, unchanged, for the tools that still read it: the
+ * pier's up platform, lat -6.9 at s 720.5 m (s 700..741), on line 2's path (test/railway-ring-layout.test.ts). */
 export const RING_PIER_UP: RailPlatform = { x: 139612, z: -34867, y: 2502, reach: 1260 };
 /** Q7's frame: the pier's east edge, s 720 m, lat +4.5 (on line 2's path). */
 export const RING_Q7_FRAME = { x: 140753, z: -34867 } as const;
