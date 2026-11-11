@@ -231,7 +231,17 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
 
 ### Lane A: the sim
 
-- [ ] **M0. Guards before anything moves.** _Low. New files only._
+- [x] **M0. Guards before anything moves.** _Low. New files only._ **Built 10 November, branch `ecs/m0-guards`.** Three
+      test files and three fixtures, nothing under `src/` or `server/` touched. Each guard was shown to fail on a
+      throwaway change and reverted: a reordered `Hardwood` field and a dropped `Hardwood` key trip the schema test
+      (message says bump `WORLD_NS`); `TRAIN.dwellTicks` 50 to 51 trips the 13 stages from `trains-on` on in the golden
+      (the 22 earlier stages stay green, which is also the run-to-run stability check); swapping the `Beam` and `Forge`
+      spawns trips the golden at every stage and the snapshot's fresh-build hash. Found: the schema golden also
+      records `track`, `requires` and non-zero `defaults` (a changed default alters fresh worlds); the golden test
+      costs about 2.5 minutes of `npm run check` wall time (stage building is about 90% of it; tick on the raw world,
+      not the live read-model proxy, which doubled it); the snapshot fixture is a v26 shape and is retired, not
+      regenerated, at the next `WORLD_NS` bump. Not done: a scripted stream for ops no stage runs (reviewer attack 1
+      is open); Node 24 not run.
   - `test/railway-golden.test.ts` and `test/fixtures/railway-golden.json`: for every `SeedStage` in
     `src/sim/railway-seeds.ts`, build the stage (at module scope, as `test/railway-trains.test.ts` does, outside the
     5 s test timeout) and record `world.hash()` at the stage and after 1,200 further `railTick`s. `GOLDEN=1`
