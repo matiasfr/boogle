@@ -10,10 +10,41 @@ import type { Seed } from '../../src/sim/railway-seed-route.ts';
 import { createRailwayWorld, Pile } from '../../src/sim/railway-components.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import type { Read, ReadWorld } from '../../src/sim/railway-rows.ts';
+import { createRailway } from '../../src/sim/railway-drive.ts';
+import * as seeds from '../../src/sim/railway-seeds.ts';
+import * as works from '../../src/sim/railway-seed-works.ts';
+import * as ring from '../../src/sim/railway-seed-ring.ts';
 
 export * from '../../src/sim/railway-drive.ts';
 export * from '../../src/sim/railway-seeds.ts';
 export * from '../../src/sim/railway-seed-works.ts';
+
+// Each seed stage is replayed once per test file (one process) and handed out as fresh copies of that world through a
+// save: the same rows, ids, tick and hash, and the same audit as the driver gives (createRailway). The replay itself
+// stays proven by every first call and by the goldens (test/helpers/railway-golden.ts replays on its own).
+const built = new Map<string, { snapshot: string; t: number }>();
+function shared<A extends string[]>(name: string, build: (...args: A) => Seed): (...args: A) => Seed {
+  return (...args) => {
+    const key = `${name}(${args.join(',')})`;
+    const done = built.get(key);
+    if (!done) {
+      const seed = build(...args);
+      built.set(key, { snapshot: JSON.stringify(seed.w.snapshot()), t: seed.t });
+      return seed;
+    }
+    const w = createRailway();
+    w.load(JSON.parse(done.snapshot), railwayCheck);
+    return { w, t: done.t };
+  };
+}
+export const railwayAtQ2 = shared('railwayAtQ2', seeds.railwayAtQ2);
+export const railwayAtHook = shared('railwayAtHook', seeds.railwayAtHook);
+export const railwayAtQ4 = shared('railwayAtQ4', seeds.railwayAtQ4);
+export const railwayAtQ5 = shared('railwayAtQ5', seeds.railwayAtQ5);
+export const railwayAtTrains = shared('railwayAtTrains', seeds.railwayAtTrains);
+export const buildSeedWorld = shared('buildSeedWorld', seeds.buildSeedWorld);
+export const railwayAtWorks = shared('railwayAtWorks', works.railwayAtWorks);
+export const railwayAtRing = shared('railwayAtRing', ring.railwayAtRing);
 export * from '../../src/sim/railway-rows.ts';
 export * from '../../src/sim/railway-queries.ts';
 export { job, qjob } from '../../src/sim/railway-rows.ts';
