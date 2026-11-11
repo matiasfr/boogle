@@ -202,7 +202,7 @@ type TrackChunk = {
 const liveChunks = new Set<TrackChunk>();
 let warmRegistered = false;
 
-/** Draws a track's pieces by kind and 50 m chunk, in the looks that are on. The set keeps its timing: only its matrices
+/** Draws a track's pieces by kind and chunk (src/entities/railway/track-chunks.ts), in the looks that are on. The set keeps its timing: only its matrices
  * are redirected. `chunks[k]` is piece k's chunk along the line (`chunkOf(u)`); each chunk is its own instanced batch
  * with the bounds of what has landed in it, hidden until something has, and its tall pieces cast only near the camera. */
 export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chunks: readonly number[] = []): DropSet {

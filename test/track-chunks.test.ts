@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three/webgpu';
 import {
   TRACK_CHUNK_M,
+  TRACK_LIGHT_CHUNK_M,
   TRACK_SHADOW_HYSTERESIS_M,
   TRACK_SHADOW_M,
   castsShadow,
@@ -14,9 +15,16 @@ import {
 
 test('a piece on a chunk boundary belongs to exactly one chunk, the later', () => {
   assert.equal(chunkOf(0), 0);
-  assert.equal(chunkOf(TRACK_CHUNK_M - 1e-9), 0);
-  assert.equal(chunkOf(TRACK_CHUNK_M), 1);
-  assert.equal(chunkOf(2 * TRACK_CHUNK_M + 0.01), 2);
+  assert.equal(chunkOf(TRACK_CHUNK_M - 1e-9, 'rail'), 0);
+  assert.equal(chunkOf(TRACK_CHUNK_M, 'rail'), 1);
+  assert.equal(chunkOf(2 * TRACK_CHUNK_M + 0.01, 'sleeper'), 2);
+});
+
+test('light kinds take the longer span and the heavy kinds the shorter', () => {
+  assert.ok(TRACK_LIGHT_CHUNK_M >= TRACK_CHUNK_M);
+  assert.equal(chunkOf(TRACK_CHUNK_M, 'leg'), 0);
+  assert.equal(chunkOf(TRACK_LIGHT_CHUNK_M, 'leg'), 1);
+  assert.equal(chunkOf(TRACK_CHUNK_M, 'sleeper_steel'), 1);
 });
 
 test('runs keep every piece once, in its kind order, so the grain seed (kind index) is from + slot', () => {

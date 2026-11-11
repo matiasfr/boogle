@@ -105,7 +105,7 @@ export function buildTrack(
     triggers.push(u(s) - lead);
     falls.push(fall);
     kinds.push(kind);
-    chunks.push(chunkOf(u(s)));
+    chunks.push(chunkOf(u(s), kind));
     pre.push(frontier(s) === -Infinity);
   };
   const q = { x: 0, z: 0 };

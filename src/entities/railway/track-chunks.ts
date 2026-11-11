@@ -1,10 +1,15 @@
-// The committed track's chunk maths, pure: which 50 m stretch of the line a piece belongs to, the runs of pieces that
+// The committed track's chunk maths, pure: which stretch of the line (200 m for heavy kinds, 400 m for light ones) a piece belongs to, the runs of pieces that
 // share one instanced batch, the bounds of what has landed in a batch, and when a batch's shadow is worth its draw.
 // No scene, no clock: `lookTrack` (src/place/look-kit.ts) wires these to meshes. Local and cosmetic.
 import * as THREE from 'three/webgpu';
 
-/** Length of a chunk along the line, in u metres. */
-export const TRACK_CHUNK_M = 50;
+/** Length of a chunk along the line, in u metres, for the kinds that are heavy to draw (rails of 228 triangles, sleepers
+ * and their plates). 200 m, not the 50 m the plan first set: every chunk is a draw, the whole line shows from Far
+ * Head, and at 50 m that was +12.6% calls there for 1.2% fewer triangles than 200 m (docs/plans/ecs-migration-railway.md, M9). */
+export const TRACK_CHUNK_M = 200;
+/** Posts, planks, caps, stringers and braces are 44 triangles each: smaller chunks save no triangles worth a draw. */
+export const TRACK_LIGHT_CHUNK_M = 400;
+const HEAVY = new Set(['rail', 'sleeper', 'sleeper_steel']);
 /** Legs, braces, caps and stringers cast a shadow only in chunks this close to the camera (the sun's shadow camera
  * reaches 36 m, so this is generous: nothing that matters is dropped). */
 export const TRACK_SHADOW_M = 120;
@@ -13,7 +18,8 @@ export const TRACK_SHADOW_HYSTERESIS_M = 20;
 /** Kinds whose shadow is gated by distance; the rest (sleepers, rails, planks) keep what they had. */
 export const SHADOW_GATED = new Set(['cap', 'stringer', 'leg', 'brace']);
 
-export const chunkOf = (u: number) => Math.floor(u / TRACK_CHUNK_M);
+/** Piece of `kind` at `u`: its chunk. Without a kind, the heavy span. */
+export const chunkOf = (u: number, kind = 'rail') => Math.floor(u / (HEAVY.has(kind) ? TRACK_CHUNK_M : TRACK_LIGHT_CHUNK_M));
 
 export type ChunkRun = {
   kind: string;
