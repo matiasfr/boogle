@@ -1116,6 +1116,18 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > player 1's sheet has the leaf down from 19.5 degrees onto the bents by 2.1 s with player 2 at the buffer short of
   > the toe; player 2's still has the landed leaf ahead, both tracks on to the island. The third player is in the unit
   > model, not rendered. Not tested on a device.
+  > **Review fixes (11 November, same branch):** the leaf's rest read `read.ready()`, which is also false with a full
+  > pending window or the link down, so a landed leaf rose and landed again (and a landing could stop walking you
+  > clear); it now latches the first readiness (`first-ready.ts`, shared with `train-view.ts`), and so do
+  > `railhead-view.ts` (bents 7 to 13 and their colliders un-decked), `crossing-view.ts` (the pier decks lifted) and
+  > `cart-view.ts` (the cart hidden), which had the same read. The multi-player tests now drive the real
+  > `createRailwayLeaf` and live in `test/railway-r4c-leaf.test.ts`. A restore (reconnect, hard reset) snaps the leaf to
+  > its rest with no walk back; a landed plate lies 0.68 m below the toe deck's top, so it is never inside anyone there.
+  > **Leftovers:** P2, the toe pennant (`ring-island/view.ts` `buildLeaf`: a 12 m mast and a 10 by 5 m flag past the toe)
+  > has no collider and sweeps through anyone on the railhead deck (u 248 to 260) as the leaf comes down, then lies
+  > about 1 m inside that deck with the flag reaching past its edge; it was the pale band in the two-page sheet. P3,
+  > `toeShove` (`leaf-shape.ts`) has no sideways bound: anyone at deck height in the toe's span along the line is
+  > walked back, whatever their lateral offset.
 - [ ] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
   Checks: `npm run check`, `npm run test:net`. Proof look (Done means): the same two-page room, then strike: the
   rivet glints, the 6 s shot plays on both pages, uninterruptible but for the one skip, `inspectRailway().ring.joined`
