@@ -47,7 +47,7 @@ const harness = matches(/^dev\/(look|scenarios|codex)\//);
 const gameplay = matches(/^src\//);
 if (files.length) add('Static validation', 'npm', 'run', 'check');
 // The seed builders and jump-ins (docs/plans/playtest-jump-in.md): every routed and offered stage still builds.
-if (matches(/^(src\/sim\/railway-(seed|live)[^/]*\.ts|src\/world\/railway-jump\.ts|server\/src\/seeds\/)/))
+if (matches(/^(src\/sim\/railway-(seed|live|drive|rows)[^/]*\.ts|src\/world\/railway-jump\.ts|server\/src\/seeds\/)/))
   add('Railway seeds or jump-ins', 'npm', 'run', 'checkpoints');
 // The rail loop through the real host rules, in Node: every order, softlocks and decided orders the rules don't hold.
 if (matches(/^(src\/sim\/railway[^/]*\.ts|src\/world\/railway-server\.ts|dev\/loop\/)/))

@@ -12,7 +12,6 @@ import type { World } from '../src/ecs/index.ts';
 import { buildSeedWorld, type SeedStage } from '../src/sim/railway-seeds.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { createRailwayWorld } from '../src/sim/railway-components.ts';
-import { worldOf } from './railway-live.ts';
 
 const FILE = new URL('./fixtures/railway-tick-order.json', import.meta.url);
 const TICKS = 300;
@@ -55,7 +54,7 @@ function recording(w: World, names: string[]): World {
 function record(stage: SeedStage, ticks: number, headPct?: number): Row {
   const seed = buildSeedWorld(stage);
   const w = createRailwayWorld();
-  w.load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())));
+  w.load(JSON.parse(JSON.stringify(seed.w.snapshot())));
   const row: Row = { tick: seed.t, sequences: [], perTick: [], hashes: [] };
   let t = seed.t;
   for (let i = 0; i < ticks; i++) {

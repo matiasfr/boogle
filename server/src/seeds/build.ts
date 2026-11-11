@@ -11,12 +11,11 @@ import { createRailwayWorldHost } from '../host/world-host.ts';
 import { railwayRoomId } from '../../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../../src/sim/railway-check.ts';
 import { buildSeedWorld, type SeedStage } from '../../../src/sim/railway-seeds.ts';
-import { worldOf } from '../../../src/sim/railway-live.ts';
 
 export type SeedDoc = { tick: number; data: unknown };
 
 export async function buildSeedDoc(stage: SeedStage): Promise<SeedDoc> {
-  const w = buildSeedWorld(stage);
+  const seed = buildSeedWorld(stage);
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-seed-'));
   try {
     const roomId = railwayRoomId('seed');
@@ -25,9 +24,9 @@ export async function buildSeedDoc(stage: SeedStage): Promise<SeedDoc> {
     const host = createRailwayWorldHost({ roomId, store, tick: false, now: () => Date.now(), pidOf: () => 'a' });
     try {
       await host.whenReady();
-      while (host.sync.world.tick <= w.t) host.step(0.1);
+      while (host.sync.world.tick <= seed.t) host.step(0.1);
       await host.sync.whenDurable();
-      host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+      host.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
       host.rules.railway.touchAll();
       await host.close({ save: true });
     } finally {

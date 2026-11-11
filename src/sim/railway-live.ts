@@ -1,5 +1,6 @@
 // Seed and test driver over an E world; never imported by the game, rules or adapters (docs/plans/playtest-jump-in.md).
-// The seed builders (./railway-seeds.ts) and the rule tests (test/railway-live.ts re-exports this) share it.
+// Only the rule tests not yet converted use it (test/railway-live.ts re-exports this); the seeds and converted tests
+// drive a World through ./railway-drive.ts (docs/plans/ecs-migration-railway.md, M3c), and M12b deletes this file.
 // Test support for the railway on E (docs/plans/ecs-e.md, step 3): the rule tests written before the move read the
 // state as a `Railway` and drive the rules by name. Here a state is an E world (audited: a write that skips mut()
 // throws) behind a read-only live view: every read sees the world as it is now (the read model is rebuilt after each
@@ -64,6 +65,8 @@ function proxy(root: Root, path: PropertyKey[]): object {
  * when it changes outside these helpers. */
 export const live = (w: World | (() => World), opts: { cache?: boolean } = {}): Live =>
   proxy({ w, view: null, cache: opts.cache ?? typeof w !== 'function' }, []) as Live;
+/** The live view of a seed's world (./railway-drive.ts), for a test not yet converted (M3c; M12b deletes this file). */
+export const liveOf = (w: World): Live => live(w);
 export const worldOf = (s: Railway): World => (s as Live)[WORLD];
 const changed = (s: Railway) => void (roots.get(s)!.view = null);
 /** Set state up directly on the world (marked, so it replicates and the view rebuilds). */

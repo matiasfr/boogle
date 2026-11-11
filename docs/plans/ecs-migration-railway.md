@@ -10,9 +10,9 @@
 > `Railway` read model is deleted entirely and its tests are rewritten against components (section 2, "The read model
 > goes entirely"; new steps M3c, M8b, T1 to T7 and M12b). As recommended: build-outs resume at the gates, views stay
 > objects that query, the re-export files go right after M3 with lint rules (new step M3b), Place's tools are deleted,
-> retargeted or archived by group (M13), and seats stay Host kind. State of the steps: M0, M0b, M1, M4 and M5 done; M2
-> reviewed and shipping; M6 building; M3 not started. The amendment's inventory was measured on `origin/main` at
-> `05696f2f1` with `rg`, the patterns named beside each number.
+> retargeted or archived by group (M13), and seats stay Host kind. State of the steps (updated at M3c): M0, M0b, M1, M2,
+> M3, M3b, M4, M5, M6 and M7 done; M3c built; M8 building beside it. The amendment's inventory was measured on
+> `origin/main` at `05696f2f1` with `rg`, the patterns named beside each number.
 
 # ECS migration, railway first: out of `src/proto`, onto components and queries
 
@@ -322,14 +322,14 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
 | --- | --- | --- | --- | --- |
 | M0, M0b | Guards: stage and ops goldens, schema golden | Low | | done |
 | M1 | Pin the adapter's per-tick read | Medium | | done |
-| M2 | Split `railway-world.ts` | High | M0 | reviewed, shipping |
-| M3 | Split the systems; the tick is a schedule | High | M2 | not started. **Gate: build-out rules** |
-| M3b | Remove both re-export files; lint the split (new) | High, mechanical | M3, the same day | |
-| M3c | A world driver; seeds and guards on the world (new) | High | M3b | |
+| M2 | Split `railway-world.ts` | High | M0 | done |
+| M3 | Split the systems; the tick is a schedule | High | M2 | done. **Gate: build-out rules** |
+| M3b | Remove both re-export files; lint the split (new) | High, mechanical | M3, the same day | done, but `rail-kit.ts` (owner's call) |
+| M3c | A world driver; seeds and guards on the world (new) | High | M3b | done |
 | M4, M5 | Render primitives; land and the village kit | Low to medium | | done |
-| M6 | The railway's modules out of Place; split `rail.ts` | Medium | M5 | building. **Gate: build-out views, with M8** |
-| M7 | The town's modules | Low to medium | M6 | |
-| M8 | The read facade; every fact as a query (grown) | High | M1, M3b; beside M3c | built, not shipped. **Gate: build-out views, with M6** |
+| M6 | The railway's modules out of Place; split `rail.ts` | Medium | M5 | done. **Gate: build-out views, with M8** |
+| M7 | The town's modules | Low to medium | M6 | done |
+| M8 | The read facade; every fact as a query (grown) | High | M1, M3b; beside M3c | done (#1524). **Gate open: build-out views** |
 | M8b | The load check on the world (new) | High | M8, M3c | |
 | M9 | Chunk and cull the track | Medium | M6 | |
 | M10 a to f | Views read rows and queries | Medium each | M6, M8 | six groups in parallel |
@@ -506,8 +506,38 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     `npm run lint` for cycles and load each `src/sim/railway-*.ts` file alone in Node); a path the script missed in a
     string (`rg "railway-world" src server test dev protos docs/agents` is empty apart from this plan's history); a
     sixth boundary the split allows that this list missed.
-- [ ] **M3c. A world driver; the seeds and the guards on the world.** _High (`src/sim`, `server/src/seeds`). After
-      M3b. It is the first step of the read model's deletion and needs none of M8._
+  - **Review leftovers** (branch `review/m3b`, `1f837d44b`). The three lint findings were fixed in M3c (the
+    `import()` ban missed a template-literal path and a `'/src/…' as string` path; `src/net` could import a system
+    file; `src/sim/railway-check*.ts` had no read-model ban). Left, because `dev/migrate/railway-imports.ts` is a
+    one-off: its `--check` reports nothing left over a side-effect import (`import '…/railway-world.ts'`) or a
+    double-quoted import of the deleted file, or over a namespace member `railway-systems.ts` no longer exports
+    (`sys.railSession`); its namespace rewrite also edits a string literal (`'sys.railResume'`) and another object's
+    property (`other.sys.railSession`); a comment inside an import's braces crashes it. A build-out branch that
+    reruns it checks those forms by hand (`rg "railway-world|sys\.rail" <its files>`).
+- [x] **M3c. A world driver; the seeds and the guards on the world.** _High (`src/sim`, `server/src/seeds`). After
+      M3b. It is the first step of the read model's deletion and needs none of M8._ **Built 11 November, branch
+      `ecs/m3c-world-driver`; not shipped.** `railway-drive.ts` (59 lines) has `need`, `createRailway`, `apply`,
+      `invariant`, `restore`, `hash` and one more, `check(w)`: the load check on the world as it stands, which the
+      seeds run per tick where they checked `line2Rails` and `footingTotal` on the model (no world twin of either
+      exists before M8; the whole check holds both). `invariant` is `check`, then the round trip: until M8b
+      `railwayCheck` itself runs `validateRailway` on the model, so it is the old proxy's check or more, never less.
+      `railway-rows.ts` (103) has the 22 readers and the slot lists (`trees`, `rocks`, `trains`, `accounts`, `piles`
+      and the rest); a missing slot throws. A seed is `Seed = { w: World; t: number }` (the world alone has no tick).
+      The legacy helpers keep their names and shape: a fixture is `liveOf(seed.w)` and its tick, and their
+      `act`/`advance`/`logs`/`rails`/`chopTo`/`advanceWorks` run the world seed's step and refresh the view, so no
+      unconverted test changed but two plumbing lines: `test/railway-tick-order.test.ts` and one site in
+      `server/test/railway-line-host.test.ts` called `buildSeedWorld` and read `worldOf(seed.s)`; both read `seed.w`
+      now. `test/helpers/rail.ts` also re-exports the rules' entry points by name (`railTick`, `railSession`, …); its
+      `job`/`qjob` are the rows, which shadow the queries' id getters of the same name. Lint gaps from M3b's review
+      closed in the same branch (M3b's leftovers). Results: every stage hash, every ops hash and the tick-order
+      fixture unchanged with `GOLDEN` unset; unit 969/969, server 150/150, `test:net` 131/131, each plain and with the
+      `rail-audit` preload; `npm run loop -- run` equal to base but its wall time; game chunk names and sizes
+      identical to base (the dev atlas page lists source files and grew by the two new ones); `look --rail-seed
+      q6-done` loads, and the jump-in to `q6-done` reaches a room with all six line-two stretches laid. The jump-in
+      eval's landing check fails by 1.4 m in z, the same on a rerun; the `q6-done` seed save is identical to base's but
+      its wall-clock `epochMs`, so that is not this step's (a base look could not be run beside it). Kill table on the
+      goldens alone: 10 of 18 mutations killed, one or more in every rule file; the other 8 reach edges no stage runs
+      and are for the batches' tests. Not run: `npm run checkpoints`, Node 24, a device.
   - `src/sim/railway-drive.ts` (new, at most 80 lines): `need`; `createRailway(): World` (audit on);
     `apply(w, pid, action, tick, timing?)` (`railApply`, then `railSettle`); `invariant(w): string | null`
     (`railwayCheck` on a JSON snapshot loaded into a fresh world, the message or `null`); `restore(w): World` (the

@@ -14,7 +14,6 @@ import { WORLD_NS } from '../../src/world/namespace.ts';
 import { SEED_STAGES, buildSeedWorld, type SeedStage } from '../../src/sim/railway-seeds.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { createRailwayWorld } from '../../src/sim/railway-components.ts';
-import { worldOf } from '../railway-live.ts';
 
 const FILE = new URL('../fixtures/railway-golden.json', import.meta.url);
 const TICKS = 1200;
@@ -57,7 +56,7 @@ export function goldenShard(shard: number) {
   const got: Record<string, Row> = {};
   for (const stage of SHARDS[shard]!) {
     const seed = buildSeedWorld(stage);
-    const built = worldOf(seed.s);
+    const built = seed.w;
     const at = built.hash();
     // The same state on an unaudited world: the audit only checks writes, it never changes them.
     const w = createRailwayWorld();

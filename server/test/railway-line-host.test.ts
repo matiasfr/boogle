@@ -268,7 +268,7 @@ test('line host: the hook judged at p2 moved out for the second track, not its o
     // Q3 laid, the hook not yet taken.
     const w = buildSeedWorld('q3-done');
     while (host.sync.world.tick <= w.t) await ticks(1);
-    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    host.rules.railway.world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
     host.rules.railway.touchAll();
     for (const sid of ['a', 'b']) await open(sid);
     assert.equal(host.rules.railway.railway.line2!.hook, false);
