@@ -104,6 +104,17 @@ export const descriptors: Record<string, AssetDescriptor> = {
     rootNote:
       'Working deck origin; rear power unit at Z -3.7 m. Existing game seats, cargo and moving fork added by Place.',
   },
+  'track-wing': {
+    label: 'Track-layer wing',
+    category: 'props',
+    motion: {
+      kind: 'rail-wheels',
+      source:
+        'machine-wing.ts: the arm, truck and up-stack platform follow wingState(gap); stage sweeps the gap folded to open to folded over 12 s and runs the same panel cycle as the machine; shown beside the track-layer shell',
+    },
+    rootNote:
+      "Post-foot origin on the up track (+x outboard, +z ahead); the stage sets it at the shell's rig frame, 1.2 m ahead of the deck centre. Moving parts are separate nodes; the hinge sits on the shell's header end.",
+  },
   'feeder-roller': {
     motion: { kind: 'none', source: 'src/place/look-kit.ts: stationKit static roller matrices' },
     label: 'Feeder roller trial',

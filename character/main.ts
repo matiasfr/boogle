@@ -25,6 +25,7 @@ import {
   poseMachineRods,
   wheelAngle,
 } from '../src/entities/railway/machine-model.ts';
+import { wingStage, WING_REVIEW_SECONDS } from './wing-stage.ts';
 import { MACHINE_REVIEW_SECONDS, machineReviewDistance } from './machine-motion.ts';
 import { panelMechanism } from '../src/entities/railway/machine-panels.ts';
 import { carriedPiece, MAX_PANEL_LENGTH } from '../src/entities/railway/track-panels.ts';
@@ -214,7 +215,19 @@ const thumbnails = createThumbnails(renderer, async (entry) => {
   return { group: asset.instance(entry.node || undefined), dispose() {} };
 });
 const browser = createBrowser(selectEntry, thumbnails.get);
-function generic(asset: Asset): Preview {
+function generic(asset: Asset, shell?: Asset): Preview {
+  if (shell) {
+    // The wing beside the real shell: the gap sweeps folded to open and back while both hands run the panel cycle.
+    const staged = wingStage(asset.instance(state.node || undefined), shell.instance());
+    let at = 0;
+    const seek = (t: number) => {
+      at = t;
+      staged.seek(t);
+      staged.group.updateMatrixWorld(true);
+    };
+    seek(0);
+    return { group: staged.group, figure: staged.group, seek, advance: (dt) => seek(at + dt), dispose: staged.dispose };
+  }
   const group = asset.instance(state.node || undefined),
     own = cloneMaterials(group);
   const machineFinish = state.asset === 'track-layer' ? dressMachine(group) : undefined;
@@ -477,6 +490,7 @@ async function choose(reframe = true) {
     const entry = assetsById.get(state.asset);
     if (!entry) throw new Error('Missing asset: ' + state.asset);
     const asset = entry.sourceKind === 'built' ? await load(state.asset) : undefined;
+    const shell = state.asset === 'track-wing' ? await load('track-layer') : undefined;
     const code =
       entry.sourceKind === 'code'
         ? await (await import('./code-preview.ts')).codePreview(entry.codeId, kitPart, stagedBuddy)
@@ -516,7 +530,8 @@ async function choose(reframe = true) {
     if (state.asset === 'buddy' && state.chop !== 'off') duration = CHOP_PREVIEW_DURATION;
     if (diagnosticRate !== null) duration = (Math.PI * 2) / Math.abs(diagnosticRate);
     else if (entry.motion.kind === 'spin') duration = sailCycleSeconds();
-    else if (entry.motion.kind === 'rail-wheels') duration = MACHINE_REVIEW_SECONDS;
+    else if (entry.motion.kind === 'rail-wheels')
+      duration = state.asset === 'track-wing' ? WING_REVIEW_SECONDS : MACHINE_REVIEW_SECONDS;
     preview =
       state.asset === 'buddy'
         ? buddy.create(state.mode, state.clip, state.pose, state.hat, q.has('blink') ? number('blink', 1) : undefined, {
@@ -552,7 +567,7 @@ async function choose(reframe = true) {
           })
         : code
           ? { ...code, figure: code.group }
-          : generic(asset!);
+          : generic(asset!, shell);
     stage.add(preview.group);
     $('buddy-controls').hidden = state.asset !== 'buddy';
     $('mode-note').textContent =
@@ -564,9 +579,11 @@ async function choose(reframe = true) {
             : 'Retargeted authored clip only; no body blend or procedural life. Inspect hero-clips for the original skeleton.'
         : entry.sourceKind === 'code'
           ? 'Shared code factory · static representative geometry; no game behavior.'
-          : state.asset === 'track-layer'
-            ? 'Production distance/radius wheel formula; synthetic 4 m pull-away/cruise/stop inspection input. Game travel is checked separately.'
-            : 'Authored glTF clip; no game placement or procedural layers.';
+          : state.asset === 'track-wing'
+            ? 'Synthetic 12 s review: the gap beside the flatbed opens 0 to 4 m (t 1 to 5), holds, and closes (t 7 to 11) while both hands run the panel cycle. Pose from machine-wing.ts; not game timing.'
+            : state.asset === 'track-layer'
+              ? 'Production distance/radius wheel formula; synthetic 4 m pull-away/cruise/stop inspection input. Game travel is checked separately.'
+              : 'Authored glTF clip; no game placement or procedural layers.';
     stats();
     seek(state.time);
     measure();
