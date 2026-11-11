@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import type { World } from '../src/ecs/index.ts';
 import { buildSeedWorld, type SeedStage } from '../src/sim/railway-seeds.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
-import { createRailwayWorld } from '../src/sim/railway-world.ts';
+import { createRailwayWorld } from '../src/sim/railway-components.ts';
 import { worldOf } from './railway-live.ts';
 
 const FILE = new URL('./fixtures/railway-tick-order.json', import.meta.url);
@@ -26,6 +26,13 @@ const STAGES: readonly SeedStage[] = [
   'wagon-on',
   'crossing-finishing',
 ];
+/** The trains' headway hold (the room tunable railTrainHeadPct, 0 to 100, default 75) where trains run, over 1,200
+ * ticks. Recorded on the schedule (main after M3, before M3b), which the default rows prove equal to the hand-coded
+ * tick; re-recorded never, as above (`TICK_ORDER_HEADS=1`). */
+const HEADS_FILE = new URL('./fixtures/railway-tick-order-heads.json', import.meta.url);
+const HEAD_TICKS = 1200;
+const HEAD_STAGES: readonly SeedStage[] = ['trains-on', 'wagon-on', 'crossing-finishing'];
+const HEAD_PCTS = [0, 40, 100] as const;
 /** Per stage: the distinct per-tick sequences of system names, which one each tick ran, and the hash after it. */
 type Row = { tick: number; sequences: string[][]; perTick: number[]; hashes: number[] };
 type Fixture = { ticks: number; stages: Record<string, Row> };
@@ -44,26 +51,36 @@ function recording(w: World, names: string[]): World {
   });
 }
 
-// Built at module scope, outside the 5 s test timeout (as test/helpers/railway-golden.ts does).
-const got: Record<string, Row> = {};
-for (const stage of STAGES) {
+/** `ticks` rule ticks from a stage, on an unaudited copy of it, at the default headway hold or at `headPct`. */
+function record(stage: SeedStage, ticks: number, headPct?: number): Row {
   const seed = buildSeedWorld(stage);
   const w = createRailwayWorld();
   w.load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())));
   const row: Row = { tick: seed.t, sequences: [], perTick: [], hashes: [] };
   let t = seed.t;
-  for (let i = 0; i < TICKS; i++) {
+  for (let i = 0; i < ticks; i++) {
     const names: string[] = [];
-    railTick(recording(w, names), ++t);
+    if (headPct === undefined) railTick(recording(w, names), ++t);
+    else railTick(recording(w, names), ++t, headPct);
     let k = row.sequences.findIndex((s) => s.join() === names.join());
     if (k < 0) k = row.sequences.push(names) - 1;
     row.perTick.push(k);
     row.hashes.push(w.hash());
   }
-  got[stage] = row;
+  return row;
 }
+
+// Built at module scope, outside the 5 s test timeout (as test/helpers/railway-golden.ts does).
+const got: Record<string, Row> = {};
+for (const stage of STAGES) got[stage] = record(stage, TICKS);
+const gotHeads: Record<string, Row> = {};
+for (const stage of HEAD_STAGES)
+  for (const pct of HEAD_PCTS) gotHeads[`${stage}@${pct}`] = record(stage, HEAD_TICKS, pct);
 if (process.env.TICK_ORDER === '1') writeFileSync(FILE, JSON.stringify({ ticks: TICKS, stages: got }) + '\n');
+if (process.env.TICK_ORDER_HEADS === '1')
+  writeFileSync(HEADS_FILE, JSON.stringify({ ticks: HEAD_TICKS, stages: gotHeads }) + '\n');
 const fixture = JSON.parse(readFileSync(FILE, 'utf8')) as Fixture;
+const heads = JSON.parse(readFileSync(HEADS_FILE, 'utf8')) as Fixture;
 
 const HOW =
   'the tick runs other systems, in another order, or with another result than the hand-coded tick did: undo it';
@@ -71,17 +88,20 @@ test('the fixture covers the stages and ticks this test runs', () => {
   assert.deepEqual(Object.keys(fixture.stages), [...STAGES]);
   assert.equal(fixture.ticks, TICKS);
 });
+function same(stage: string, have: Row, want: Row, ticks: number) {
+  assert.equal(have.tick, want.tick, `${stage}: the seed route changed`);
+  for (let i = 0; i < ticks; i++) {
+    assert.deepEqual(have.sequences[have.perTick[i]!], want.sequences[want.perTick[i]!], `${stage} tick ${i}: ${HOW}`);
+    assert.equal(have.hashes[i], want.hashes[i], `${stage} tick ${i}: hash differs; ${HOW}`);
+  }
+}
 for (const stage of STAGES)
-  test(`seed stage ${stage}: each of ${TICKS} ticks runs the recorded systems in order and hashes as recorded`, () => {
-    const want = fixture.stages[stage]!,
-      have = got[stage]!;
-    assert.equal(have.tick, want.tick, `${stage}: the seed route changed`);
-    for (let i = 0; i < TICKS; i++) {
-      assert.deepEqual(
-        have.sequences[have.perTick[i]!],
-        want.sequences[want.perTick[i]!],
-        `${stage} tick ${i}: ${HOW}`,
-      );
-      assert.equal(have.hashes[i], want.hashes[i], `${stage} tick ${i}: hash differs; ${HOW}`);
-    }
-  });
+  test(`seed stage ${stage}: each of ${TICKS} ticks runs the recorded systems in order and hashes as recorded`, () =>
+    same(stage, got[stage]!, fixture.stages[stage]!, TICKS));
+test('the headway fixture covers the stages, holds and ticks this test runs', () => {
+  assert.deepEqual(Object.keys(heads.stages), Object.keys(gotHeads));
+  assert.equal(heads.ticks, HEAD_TICKS);
+});
+for (const key of Object.keys(gotHeads))
+  test(`seed stage ${key.replace('@', ' at headway hold ')}%: ${HEAD_TICKS} ticks as recorded`, () =>
+    same(key, gotHeads[key]!, heads.stages[key]!, HEAD_TICKS));

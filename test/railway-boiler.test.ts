@@ -4,17 +4,9 @@ import { railwayAtTrains, TRAIN_STAGES } from './helpers/railway-trains.ts';
 import { chopTo } from './helpers/railway-works.ts';
 import { railwayAtQ5, act, advance } from './helpers/railway-q2.ts';
 import { restore, worldOf, edit, invariant, railResume, railSession, railSupplyPulse } from './railway-live.ts';
-import { railBoilerPutDown, railBoilerStood } from '../src/sim/railway-systems.ts';
-import {
-  Account,
-  Boiler,
-  Forge,
-  Pile,
-  QJob,
-  Rail,
-  createRailwayWorld,
-  railwayCheck,
-} from '../src/sim/railway-world.ts';
+import { railBoilerPutDown, railBoilerStood } from '../src/sim/railway-sys-line2.ts';
+import { Account, Boiler, Forge, Pile, QJob, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import { railAccount } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';

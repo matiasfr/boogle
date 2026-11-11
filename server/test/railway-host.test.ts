@@ -12,7 +12,7 @@ import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 import { railMaxDuration } from '../../src/sim/railway.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-check.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';

@@ -20,7 +20,8 @@ import {
   validateRailTrains,
 } from '../src/sim/railway-trains.ts';
 import { line2Completed, trainStops } from '../src/sim/railway-line2.ts';
-import { Line, Train, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { Line, Train, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { railwayAtTrains } from './helpers/railway-trains.ts';
 import { act } from './helpers/railway-q2.ts';

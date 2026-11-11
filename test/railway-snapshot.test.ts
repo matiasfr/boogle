@@ -7,7 +7,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
-import { createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import { worldOf } from './railway-live.ts';
 
 const FILE = new URL('./fixtures/railway-v26-snapshot.json', import.meta.url);

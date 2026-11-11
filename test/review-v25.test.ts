@@ -17,7 +17,7 @@ import { railValid } from '../src/world/railway-server.ts';
 import { railwayAtTrains } from './helpers/railway-trains.ts';
 import { act, advance } from './helpers/railway-q2.ts';
 import { edit, worldOf } from './railway-live.ts';
-import { Forge } from '../src/sim/railway-world.ts';
+import { Forge } from '../src/sim/railway-components.ts';
 import type { World as Fixture } from './helpers/railway-q2.ts';
 
 const H = { quarry: 3, farHead: 4 } as const;

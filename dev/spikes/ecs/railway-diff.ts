@@ -2,8 +2,13 @@
 // src/sim from before the move, at LEGACY) and the systems run the same random action streams, and the read model
 // must equal the legacy state after every action, tick, pulse and resume. Run once during the move:
 //   LEGACY=/path/to/legacy/sim node dev/spikes/ecs/railway-diff.ts [seeds]
-import { createRailwayWorld, railwayView, railwayCheck } from '../../../src/sim/railway-world.ts';
+import { createRailwayWorld } from '../../../src/sim/railway-components.ts';
+import { railwayView } from '../../../src/sim/railway-read-model.ts';
+import { railwayCheck } from '../../../src/sim/railway-check.ts';
+import * as sysCore from '../../../src/sim/railway-sys-core.ts';
 import * as sys from '../../../src/sim/railway-systems.ts';
+import * as sysAway from '../../../src/sim/railway-sys-away.ts';
+import * as sysLine1 from '../../../src/sim/railway-sys-line1.ts';
 import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_GREAT_TREE } from '../../../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../../../src/sim/railway-line2-layout.ts';
@@ -154,7 +159,7 @@ function run(seed: number, steps: number) {
   for (const pid of PIDS) {
     ep.set(pid, 1);
     req.set(pid, 0);
-    same('session', [old.railSession!(o, pid, 1), sys.railSession(w, pid, 1)]);
+    same('session', [old.railSession!(o, pid, 1), sysCore.railSession(w, pid, 1)]);
   }
   const pileIds = () => [o.piles.map((p) => p.id), railwayView(w).piles.map((p) => p.id)] as const;
   for (let step = 0; step < steps; step++) {
@@ -184,14 +189,14 @@ function run(seed: number, steps: number) {
       const intervals = { regrow: pick([1, 5, 31]), recover: pick([1, 3, 21]) };
       same(`supply`, [
         oldSupply.railSupplyPulse!(o, p, intervals),
-        sys.railSupplyPulse(w, { ...p, recover: pulse(ni as number[]).recover }, intervals),
+        sysAway.railSupplyPulse(w, { ...p, recover: pulse(ni as number[]).recover }, intervals),
       ]);
       continue;
     }
     if (roll < 0.15) {
       const ticks = pick([1, 10, 100, 2000]),
         marker = step + 1;
-      same('resume', [old.railResume!(o, ticks, marker, tick), sys.railResume(w, ticks, marker, tick)]);
+      same('resume', [old.railResume!(o, ticks, marker, tick), sysAway.railResume(w, ticks, marker, tick)]);
       continue;
     }
     const pid = pick(PIDS);
@@ -201,7 +206,7 @@ function run(seed: number, steps: number) {
       if (which === 'release')
         same('beamRelease', [
           oldLine.railBeamRelease!(o, b.holder || pid, b.epoch, b.revision),
-          sys.railBeamRelease(w, b.holder || pid, b.epoch, b.revision),
+          sysLine1.railBeamRelease(w, b.holder || pid, b.epoch, b.revision),
         ]);
       else if (which === 'stood') {
         const [x, y, z] = pick([
@@ -211,15 +216,18 @@ function run(seed: number, steps: number) {
         ]);
         same('beamStood', [
           oldLine.railBeamStood!(o, b.holder || pid, x, y, z),
-          sys.railBeamStood(w, b.holder || pid, x!, y!, z!),
+          sysLine1.railBeamStood(w, b.holder || pid, x!, y!, z!),
         ]);
       } else if (which === 'putDown')
-        same('beamPutDown', [oldLine.railBeamPutDown!(o, b.holder || pid), sys.railBeamPutDown(w, b.holder || pid)]);
+        same('beamPutDown', [
+          oldLine.railBeamPutDown!(o, b.holder || pid),
+          sysLine1.railBeamPutDown(w, b.holder || pid),
+        ]);
       else {
         const e = ep.get(pid)! + 1;
         ep.set(pid, e);
         req.set(pid, 0);
-        same('session', [old.railSession!(o, pid, e), sys.railSession(w, pid, e)]);
+        same('session', [old.railSession!(o, pid, e), sysCore.railSession(w, pid, e)]);
       }
       continue;
     }
@@ -295,7 +303,7 @@ function run(seed: number, steps: number) {
     cost.legacyAct += performance.now() - t0;
     t0 = performance.now();
     const rn = sys.railApply(w, pid, en, tick);
-    sys.railSettle(w);
+    sysCore.railSettle(w);
     cost.eAct += performance.now() - t0;
     cost.acts++;
     same(`${e.op} by ${pid} at ${tick}`, [ro, rn]);

@@ -8,7 +8,8 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror, RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
-import { Account, Job, Rail, Tree, railwayInvariant } from '../src/sim/railway-world.ts';
+import { Account, Job, Rail, Tree } from '../src/sim/railway-components.ts';
+import { railwayInvariant } from '../src/sim/railway-check.ts';
 import { RULE_STEPS } from '../src/world/room-clock.ts';
 import {
   railCounts,

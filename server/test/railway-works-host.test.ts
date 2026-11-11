@@ -8,7 +8,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-check.ts';
 import { LINE2_BOILER } from '../../src/sim/railway-line2-layout.ts';
 import {
   SHED_TABLE,

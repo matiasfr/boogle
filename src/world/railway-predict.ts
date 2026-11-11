@@ -43,11 +43,8 @@ import {
   Shed,
   Works,
   WorksClock,
-  copyRailway,
-  fillRailway,
-  railwayView,
-  refreshRailway,
-} from '../sim/railway-world.ts';
+} from '../sim/railway-components.ts';
+import { copyRailway, fillRailway, railwayView, refreshRailway } from '../sim/railway-read-model.ts';
 
 export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.wake',

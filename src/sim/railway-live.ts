@@ -6,7 +6,13 @@
 // rule), and a write to the view throws, so setup goes through `edit` (the world) and play through the systems.
 import type { World } from '../ecs/index.ts';
 import * as sys from './railway-systems.ts';
-import { createRailwayWorld, railwayCheck, railwayInvariant, railwayView } from './railway-world.ts';
+import * as sysCore from './railway-sys-core.ts';
+import * as sysAway from './railway-sys-away.ts';
+import * as sysLine1 from './railway-sys-line1.ts';
+import * as sysWorks from './railway-sys-works.ts';
+import { createRailwayWorld } from './railway-components.ts';
+import { railwayCheck, railwayInvariant } from './railway-check.ts';
+import { railwayView } from './railway-read-model.ts';
 import type { RailAction, Railway } from './railway.ts';
 import type { LineTiming } from './railway-line-schedule.ts';
 import type { SupplyIntervals, SupplyPulse } from './railway-supply.ts';
@@ -77,19 +83,19 @@ function rule<A extends unknown[], R>(fn: (w: World, ...a: A) => R) {
 /** An action as the server applies it: the rule, then the job clocks it settles. */
 export const railApply = rule((w, pid: string, e: RailAction, tick: number, timing?: LineTiming) => {
   const r = sys.railApply(w, pid, e, tick, timing);
-  sys.railSettle(w);
+  sysCore.railSettle(w);
   return r;
 });
 export const railTick = rule(sys.railTick);
-export const railResume = rule(sys.railResume);
-export const railSession = rule(sys.railSession);
+export const railResume = rule(sysAway.railResume);
+export const railSession = rule(sysCore.railSession);
 export const railOutcome = rule(sys.railOutcome);
-export const railBeamRelease = rule(sys.railBeamRelease);
-export const railBeamStood = rule(sys.railBeamStood);
-export const railBeamPutDown = rule(sys.railBeamPutDown);
-export const railFootRelease = rule(sys.railFootRelease);
+export const railBeamRelease = rule(sysLine1.railBeamRelease);
+export const railBeamStood = rule(sysLine1.railBeamStood);
+export const railBeamPutDown = rule(sysLine1.railBeamPutDown);
+export const railFootRelease = rule(sysWorks.railFootRelease);
 export const railSupplyPulse = rule((w, e: SupplyPulse, intervals?: SupplyIntervals) =>
-  sys.railSupplyPulse(w, e, intervals),
+  sysAway.railSupplyPulse(w, e, intervals),
 );
 
 /** The world's invariant: its own load check, on a snapshot round-trip. */

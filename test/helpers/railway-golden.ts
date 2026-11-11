@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { WORLD_NS } from '../../src/world/namespace.ts';
 import { SEED_STAGES, buildSeedWorld, type SeedStage } from '../../src/sim/railway-seeds.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
-import { createRailwayWorld } from '../../src/sim/railway-world.ts';
+import { createRailwayWorld } from '../../src/sim/railway-components.ts';
 import { worldOf } from '../railway-live.ts';
 
 const FILE = new URL('../fixtures/railway-golden.json', import.meta.url);

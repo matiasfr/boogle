@@ -1,7 +1,9 @@
 // What one predicted press costs on the client after the move onto E (docs/plans/ecs-e.md, step 3): the pieces of
 // createPredictor's rebuild, timed on a fresh railway world. node dev/spikes/ecs/predict-cost.ts
-import { createRailwayWorld, railwayView, fillRailway } from '../../../src/sim/railway-world.ts';
-import { railSession, railApply } from '../../../src/sim/railway-systems.ts';
+import { createRailwayWorld } from '../../../src/sim/railway-components.ts';
+import { railwayView, fillRailway } from '../../../src/sim/railway-read-model.ts';
+import { railSession } from '../../../src/sim/railway-sys-core.ts';
+import { railApply } from '../../../src/sim/railway-systems.ts';
 import { cloneRailway, railPredict, railwayOf } from '../../../src/world/railway-predict.ts';
 import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
 

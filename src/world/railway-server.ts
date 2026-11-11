@@ -69,26 +69,16 @@ import {
   Tree,
   Works,
   createRailwayWorld,
-  railwayCheck,
-  railwayView,
-} from '../sim/railway-world.ts';
-import {
-  railApply,
-  railBoilerPutDown,
-  railBoilerStood,
-  railFootHolders,
-  railFootRelease,
-  railBeamPutDown,
-  railBeamRelease,
-  railBeamStood,
-  railLine2Active,
-  railOutcome,
-  railResume,
-  railSession,
-  railSettle,
-  railSupplyPulse,
-  railTick,
-} from '../sim/railway-systems.ts';
+} from '../sim/railway-components.ts';
+import { railwayCheck } from '../sim/railway-check.ts';
+import { railwayView } from '../sim/railway-read-model.ts';
+import { railApply, railOutcome, railTick } from '../sim/railway-systems.ts';
+import { railBoilerPutDown, railBoilerStood } from '../sim/railway-sys-line2.ts';
+import { railFootHolders, railFootRelease } from '../sim/railway-sys-works.ts';
+import { railBeamPutDown, railBeamRelease, railBeamStood } from '../sim/railway-sys-line1.ts';
+import { railLine2Active } from '../sim/railway-queries.ts';
+import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
+import { railSession, railSettle } from '../sim/railway-sys-core.ts';
 import type { World } from '../ecs/index.ts';
 import { GLOBAL_CELL, cellOf, type Fields } from './replicate.ts';
 import { touchChanges, worldProjections } from './replicate-world.ts';

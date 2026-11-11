@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RailAction } from '../src/sim/railway.ts';
-import { Rail } from '../src/sim/railway-world.ts';
+import { Rail } from '../src/sim/railway-components.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { RIDER_REACH, RIDER_SPAN, railValid } from '../src/world/railway-server.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';

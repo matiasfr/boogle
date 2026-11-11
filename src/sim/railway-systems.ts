@@ -2,20 +2,17 @@
 // the index. The systems live by domain in ./railway-sys-core.ts, -line1, -line2, -trains, -works and -away, the
 // facts they share in ./railway-queries.ts. This file holds the dispatch and the order: the `OPS` table (line one's
 // system first, then line two's when line one moved nothing, as railLineApply || railLine2Apply did), the tick
-// schedule, `RAIL_SYSTEMS`, and the entry points under their old names. Pure; the server runs them on arrival and a
-// client's prediction runs the very same ones on a clone of its mirror.
+// schedule and `RAIL_SYSTEMS`. Pure; the server runs them on arrival and a client's prediction runs the very same ones
+// on a clone of its mirror. The other entry points live beside their systems and are imported from there (M3b):
+// railSession and railSettle (-core), the beam's (-line1), the boiler's (-line2), the footing's (-works), railResume
+// and railSupplyPulse (-away), railLine2Active (./railway-queries.ts).
 //
 //   railApply(w, pid, e, tick, timing)   one action: receipt, the op, remember (the request history)
+//   railOutcome(w, pid, epoch, request)  the receipt: a request's recorded result, snapshot-required, or null
 //   railTick(w, tick, headPct)           the rule tick, a schedule: line one's job, line two's forge and job, the depot
 //                                        cart's trip (./railway-cart.ts), every line's trains (./railway-trains.ts)
 //                                        with line 2's kit and footing wagon, the Works kiln's casts
 //                                        (./railway-works.ts), the job clocks
-//   the Works block                      rail.breaker, rail.strike, rail.kiln, rail.footTake, rail.footSet,
-//                                        rail.cradle, rail.turn and the shed's commissioning (the wagon's roll-out)
-//   rail.glide                           the glider's one shared take on Needle Bell's summit, once Q5 is laid
-//   railBoilerStood / railBoilerPutDown  follow the hauled boiler; put an absent hauler's down where they stood
-//   railFootRelease / railFootHolders   return an absent carrier's footing to the Works rack
-//   railResume / railSession / railSupplyPulse / railBeamRelease / railBeamStood / railBeamPutDown
 import { createSchedule, type System, type World } from '../ecs/index.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import type { LineTiming } from './railway-line-schedule.ts';
@@ -63,13 +60,6 @@ import {
 import { call, trainTick } from './railway-sys-trains.ts';
 import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
 import { resume, supply } from './railway-sys-away.ts';
-
-export { railLine2Active } from './railway-queries.ts';
-export { railSession, railSettle } from './railway-sys-core.ts';
-export { railBeamPutDown, railBeamRelease, railBeamStood } from './railway-sys-line1.ts';
-export { railBoilerPutDown, railBoilerStood } from './railway-sys-line2.ts';
-export { railFootHolders, railFootRelease } from './railway-sys-works.ts';
-export { railResume, railSupplyPulse } from './railway-sys-away.ts';
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.

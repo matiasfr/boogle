@@ -56,6 +56,42 @@ const debugBan = {
   regex: '(^|/)debug/',
   message: 'Outside src/debug/, load debug tools with a dynamic import().',
 };
+// The railway's sim split (docs/plans/ecs-migration-railway.md, M3b): what may import which part.
+const RAIL_PLAN = 'docs/plans/ecs-migration-railway.md, M3b';
+const railCheckBan = {
+  regex: '(^|/)railway-check(-[\\w-]+)?\\.ts$',
+  message: `The railway's load check runs where a world is loaded: the server install, the seeds and driver, the live view, tests and tools; never in a view (${RAIL_PLAN}).`,
+};
+const railSystemsBan = {
+  regex: '(^|/)railway-(systems|sys-[\\w-]+)\\.ts$',
+  message: `Railway systems run in src/sim, src/world, the server, tests and tools; a view sends an intent (${RAIL_PLAN}).`,
+};
+const railReadModelBan = {
+  regex: '(^|/)railway-read-model\\.ts$',
+  message: `The Railway read model's importers are a closed list that only shrinks until M12b deletes it (${RAIL_PLAN}).`,
+};
+const railLeafBan = {
+  regex: '(^|/)railway-(systems|sys-[\\w-]+|queries[\\w-]*|check[\\w-]*|read-model)\\.ts$',
+  message: `railway-components.ts is the schema, a leaf: it imports no systems, queries, check or read model (${RAIL_PLAN}).`,
+};
+const railQueriesBan = {
+  regex: '(^|/)railway-(systems|sys-[\\w-]+)\\.ts$',
+  message: `Queries are pure reads of the world: they import no system file (${RAIL_PLAN}).`,
+};
+/** What code outside src/sim and src/world may not import of the railway's sim. */
+const railViewBans = [railCheckBan, railSystemsBan, railReadModelBan];
+// The same for an `import()`, which no-restricted-imports does not see (views load most of their code that way).
+const railDynamicBan = {
+  selector: 'ImportExpression[source.value=/(^|\\/)railway-(check|read-model|systems|sys-[\\w-]+)(-[\\w-]+)?\\.ts$/]',
+  message: `A view does not load the railway's systems, check or read model (${RAIL_PLAN}).`,
+};
+/** The tests and tools that import the read model today, file by file; the list may only lose lines (M12b deletes it). */
+const READ_MODEL_IMPORTERS = [
+  'dev/spikes/ecs/predict-cost.ts',
+  'dev/spikes/ecs/railway-diff.ts',
+  'test/railway-marks.test.ts',
+  'test/railway.test.ts',
+];
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
@@ -192,26 +228,60 @@ const policyBlocks: PolicyBlock[] = [
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
     files: ['src/**/*.{js,ts}'],
-    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, protoBan, debugBan] }] },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: rapierBans, patterns: [syncBan, protoBan, debugBan, ...railViewBans] },
+      ],
+    },
   },
   {
     files: ['src/proto/**/*.{js,ts}', 'src/place/**/*.{js,ts}'], // src/place still reaches proto helpers until M6/M13
-    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, debugBan] }] },
+    rules: {
+      'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, debugBan, ...railViewBans] }],
+    },
   },
   {
     files: ['src/debug/**/*.{js,ts}'],
-    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, protoBan] }] },
+    rules: {
+      'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, protoBan, ...railViewBans] }],
+    },
   },
+  // src/world may run the railway's systems; only the server install loads with the check, and only the server, the
+  // mirror and the predictor build the read model.
   {
     files: ['src/world/*.{js,ts}', 'src/net/**/*.{js,ts}'],
     ignores: ['src/world/game-world.{js,ts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan, railReadModelBan] },
+      ],
+    },
+  },
+  {
+    files: ['src/world/railway-predict.ts', 'src/world/railway-replicate.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan] },
+      ],
+    },
+  },
+  {
+    files: ['src/world/railway-server.ts'],
     rules: {
       'no-restricted-imports': ['error', { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan] }],
     },
   },
   {
     files: ['src/world/game-world.{js,ts}'],
-    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [headlessBan, protoBan, debugBan] }] },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: rapierBans, patterns: [headlessBan, protoBan, debugBan, railCheckBan, railReadModelBan] },
+      ],
+    },
   },
   {
     files: ['src/world/rules/**/*.{js,ts}'],
@@ -231,6 +301,8 @@ const policyBlocks: PolicyBlock[] = [
               regex: '^(three/|\\.\\./(?!grid\\.[jt]s$|\\.\\./sim/[^/.]+\\.[jt]s$))',
               message: rulesMessage,
             },
+            railCheckBan,
+            railReadModelBan,
           ],
         },
       ],
@@ -252,13 +324,25 @@ const policyBlocks: PolicyBlock[] = [
             syncBan,
             protoBan,
             debugBan,
+            ...railViewBans,
           ],
         },
       ],
     },
   },
-  {
-    files: ['src/sim/**/*.{js,ts}'],
+  // src/sim, and within it the railway's split (M3b): the check is loaded by the seeds, the driver and the live
+  // view; the read model by the check and the live view; the components file is a leaf; queries import no system.
+  ...(
+    [
+      [['src/sim/**/*.{js,ts}'], [railCheckBan, railReadModelBan]],
+      [['src/sim/railway-seed*.ts', 'src/sim/railway-drive.ts'], [railReadModelBan]],
+      [['src/sim/railway-live.ts'], []],
+      [['src/sim/railway-check*.ts'], []],
+      [['src/sim/railway-components.ts'], [railLeafBan]],
+      [['src/sim/railway-queries*.ts'], [railCheckBan, railReadModelBan, railQueriesBan]],
+    ] as const
+  ).map(([files, rail]): PolicyBlock => ({
+    files: [...files],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -269,12 +353,12 @@ const policyBlocks: PolicyBlock[] = [
               message: simMessage,
             })),
           ],
-          patterns: [{ regex: '^(three/|\\.\\./(?!ecs/index\\.ts$))', message: simMessage }, syncBan],
+          patterns: [{ regex: '^(three/|\\.\\./(?!ecs/index\\.ts$))', message: simMessage }, syncBan, ...rail],
         },
       ],
       'no-restricted-globals': ['error', 'window', 'document', 'navigator', 'localStorage'],
     },
-  },
+  })),
   // Game networking is infrastructure: it never reaches up into what it carries (docs/plans/entity-architecture.md,
   // "Layers"). identity.ts is the one exception: it lives in player/, but imports only src/sim/ and src/net/ and holds
   // the id and key a room join needs. The core rule also counts `import type`; net.ts needs none of these.
@@ -303,6 +387,7 @@ const policyBlocks: PolicyBlock[] = [
             syncBan,
             protoBan,
             debugBan,
+            ...railViewBans,
           ],
         },
       ],
@@ -354,6 +439,7 @@ const policyBlocks: PolicyBlock[] = [
             syncBan,
             protoBan,
             debugBan,
+            ...railViewBans,
           ],
         },
       ],
@@ -417,7 +503,7 @@ const policyBlocks: PolicyBlock[] = [
     files: ['src/**/*.{js,ts}'],
     ignores: [...LOCKSTEP_FILES, 'src/world/**'],
     rules: {
-      'no-restricted-syntax': ['error', glOnly, ...DOORS.map(doorRule), ecsDeclare],
+      'no-restricted-syntax': ['error', glOnly, ...DOORS.map(doorRule), ecsDeclare, railDynamicBan],
     },
   },
   {
@@ -435,7 +521,9 @@ const policyBlocks: PolicyBlock[] = [
   // A door's allow-list keeps every other door, and the WebGL ban, in force on that file.
   ...DOORS.map((door): PolicyBlock => ({
     files: door.allow,
-    rules: { 'no-restricted-syntax': ['error', glOnly, ...DOORS.filter((d) => d !== door).map(doorRule)] },
+    rules: {
+      'no-restricted-syntax': ['error', glOnly, ...DOORS.filter((d) => d !== door).map(doorRule), railDynamicBan],
+    },
   })),
   {
     files: ['src/**/*.ts'],
@@ -450,7 +538,13 @@ const policyBlocks: PolicyBlock[] = [
   // The physics backend is the only module that imports a physics library (docs/plans/done/rapier.md).
   {
     files: ['src/physics/backend-*.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [syncBan, protoBan, debugBan] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [syncBan, protoBan, debugBan, ...railViewBans] }] },
+  },
+  // Tests and tools may import any of the railway's sim but the read model, whose importers are the closed list above.
+  {
+    files: ['test/**/*.ts', 'dev/**/*.ts'],
+    ignores: READ_MODEL_IMPORTERS,
+    rules: { 'no-restricted-imports': ['error', { patterns: [railReadModelBan] }] },
   },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule
   // for these files would replace it).
@@ -488,7 +582,12 @@ const policyBlocks: PolicyBlock[] = [
 // Every import block but E's own carries the facade ban (a later block replaces the rule for its files).
 export const policy: PolicyBlock[] = policyBlocks.map((block) => {
   const rule = block.rules?.['no-restricted-imports'];
-  if (!Array.isArray(rule) || block.files?.includes('src/ecs/**/*.{js,ts}')) return block;
+  if (
+    !Array.isArray(rule) ||
+    block.files?.includes('src/ecs/**/*.{js,ts}') ||
+    !block.files?.some((f) => f.startsWith('src/'))
+  )
+    return block;
   const [level, options] = rule as [string, ImportOptions];
   return {
     ...block,

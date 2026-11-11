@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { railAccount, railCounts } from '../src/sim/railway.ts';
-import { Cart, Forge, Rail, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { Cart, Forge, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import { railwayRoomId } from '../src/world/railway-namespace.ts';
 import {
   CART,

@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { railAccount, railCounts, type Railway, type RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { railGrowthMask } from '../src/sim/railway-supply.ts';
-import { Forge, QJob, QJobRun, Rail, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import { Forge, QJob, QJobRun, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import {
   createRailway,
   hash as hashOf,
