@@ -266,7 +266,7 @@ export function buildTrack(
   // the panel at their place; `upRails` marks the up track's rails, of which the gantry carries a pair a panel.
   const upRails = new Set<number>(),
     crossRails = new Set<number>();
-  /** The up track's rails in the merge turnout, which Q7's relay retires. */
+  /** The up track's rails and sleepers on the merge turnout's curve, which Q7's relay retires. */
   const merge: { k: number; from: number }[] = [],
     retired = new Set<number>();
   const wa = { x: 0, z: 0 },
@@ -328,6 +328,9 @@ export function buildTrack(
       0,
       1.1,
     );
+    // A sleeper (and its legs) on the curve of the merge turnout goes with the rails when Q7 relays it.
+    const inMerge = s > formation.to - 60 && l > UP_LAT + 0.01;
+    if (inMerge) merge.push({ k: boxes.length - 1, from: s - half });
     // Low sleepers need support too, as today's (the trestle's bents only start beyond a metre of clearance).
     const y = railY(line, s) - 0.03;
     for (const side of [-0.75, 0.75]) {
@@ -346,6 +349,7 @@ export function buildTrack(
           0.4,
           0.5,
         );
+        if (inMerge) merge.push({ k: boxes.length - 1, from: s - half });
       }
     }
   }
@@ -394,7 +398,8 @@ export function buildTrack(
           offsetBox('rail', a, la + r, b, lb + r, 0.1, 0.12, TOP, '#4c5058', -2.2, 0.8);
           upRails.add(boxes.length - 1);
           // A rail piece that is not on the straight up track (UP_LAT) at one end is in the merge turnout.
-          if (a > formation.to - 60 && (la > UP_LAT + 0.01 || lb > UP_LAT + 0.01)) merge.push({ k: boxes.length - 1, from: a });
+          if (a > formation.to - 60 && (la > UP_LAT + 0.01 || lb > UP_LAT + 0.01))
+            merge.push({ k: boxes.length - 1, from: a });
         }
     }
     const c = formation.crossover;

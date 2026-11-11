@@ -9,6 +9,7 @@ import { hookRings, type HookRing } from './hook-path.ts';
 import { me, camForward } from '../../player/player.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { placeSound } from '../../render/place-sfx.ts';
+import { RING_HOOK } from '../../sim/railway-ring-layout.ts';
 import { onRemotePresence, onPeerRemoved, type Remote } from '../../netplay/net.ts';
 
 type RemoteView = { presence: (r: Remote, value: unknown) => void; removed: (peer: string) => void };
@@ -86,9 +87,10 @@ export async function createRailwayHookView(owner: OwnedView) {
       under.position.set(p.x + ox, p.top - thick - 0.04, p.z);
     }
   }
-  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length));
+  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length + 1));
+  const climbRings = rings.length;
   const posts = add(
-    new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 1, 0.22), flatMod.flat('#917b5e', 0.9), rings.length),
+    new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 1, 0.22), flatMod.flat('#917b5e', 0.9), climbRings),
   );
   const halo = add(new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.045, 6, 28), haloMat));
   halo.visible = false;
@@ -108,7 +110,38 @@ export async function createRailwayHookView(owner: OwnedView) {
     hot = new THREE.Color('#d6fff5'),
     color = new THREE.Color();
   // Allocate instanceColor before the first material compilation; later updates change its contents.
-  rings.forEach((_, k) => ringMesh.setColorAt(k, dim));
+  for (let k = 0; k <= climbRings; k++) ringMesh.setColorAt(k, dim);
+  ringMesh.count = rings.length;
+  /** Ring Island's ring (ring-island-build1, R4b): on a sea pile 276 m out, its pad the railhead platform's gold square. It
+   * joins the rings once the gap is footed (set === 14), and leaves them if the room is rewound. */
+  const island: HookRing = (() => {
+    const pad = {
+      id: 'island',
+      x: RING_HOOK.pad.x / 100,
+      z: RING_HOOK.pad.z / 100,
+      top: RING_HOOK.pad.y / 100,
+      hx: 1.2,
+      hz: 1.2,
+      look: 'wood',
+    } as const;
+    return {
+      id: 'island',
+      pad: { ...pad },
+      at: { x: RING_HOOK.x / 100, y: RING_HOOK.y / 100, z: RING_HOOK.z / 100 },
+      land: { x: pad.x, y: pad.top + 0.45 + 0.2, z: pad.z },
+    };
+  })();
+  function setIslandRing(on: boolean) {
+    if (on === ringById.has('island')) return;
+    if (on) {
+      rings.push(island);
+      ringById.set('island', island);
+    } else {
+      rings.splice(rings.indexOf(island), 1);
+      ringById.delete('island');
+    }
+    ringMesh.count = rings.length;
+  }
   const camAt = new THREE.Vector3();
   const cableMat = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#2b2a33', emissive: '#39e6c6', emissiveIntensity: 0.5 }),
@@ -272,6 +305,7 @@ export async function createRailwayHookView(owner: OwnedView) {
   return {
     rings,
     ringById,
+    setIslandRing,
     update,
     fire,
     end,

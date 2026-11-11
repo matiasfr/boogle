@@ -180,6 +180,8 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     offProbe();
   });
   return {
+    /** The island's ring on its sea pile, once the gap is footed (hook-view.ts). */
+    setIslandRing: view.setIslandRing,
     demo() {
       demoLeft = 0.3;
     },

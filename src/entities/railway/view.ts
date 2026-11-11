@@ -118,6 +118,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           seated: () => !!seats.seated(),
           busy: () => reward.inspect().busy,
           toPier: () => trains.footFlying().toPier,
+          toRing: () => trains.footFlying().toRing,
+          hookRing: hook.setIslandRing,
         }),
       )
     : null;
