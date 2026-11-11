@@ -397,7 +397,7 @@ function startWorld(room: Room) {
         rows: {
           account: account(w, PID),
           freeCarry: freeCarryIgnoringBig(w, PID),
-          phase: railPhase(w, at),
+          phase: railPhase(w, at, at),
           counts: railCounts(w, at),
           jobs: railJobs(w, at),
           cart: cart(w),

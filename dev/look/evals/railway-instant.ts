@@ -21,7 +21,7 @@ const bot = makeBot({
   },
 });
 const read = () => inspectRailway()!;
-const phase = () => railPhase(rw(), railAt());
+const phase = () => railPhase(rw(), railAt(), railAt());
 const need = async (fn: () => unknown, what: string) => {
   if (!(await bot.until(fn, 300000))) throw new Error(what);
 };

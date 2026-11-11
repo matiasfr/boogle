@@ -15,7 +15,7 @@ import type { T } from './run.ts';
 const READ = `const { inspectRailway, railAt, railPid, railRead, railPhase, account, rw } = await import('/dev/look/rail-read.ts');
   const r = inspectRailway();
   const carry = () => (railRead() ? (account(rw(), railPid())?.carry ?? 0) : -1);
-  const phase = () => (railRead() ? railPhase(rw(), railAt()) : null);`;
+  const phase = () => (railRead() ? railPhase(rw(), railAt(), railAt()) : null);`;
 const shown = (sel: string) =>
   `(() => { const e = document.querySelector('${sel}'); return !!e && !e.closest('[hidden]'); })()`;
 const PROMPT = `(document.querySelector('.prompt:not([hidden]) .prompt-chip')?.textContent ?? '')`;
