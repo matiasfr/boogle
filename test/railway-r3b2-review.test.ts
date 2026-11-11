@@ -447,11 +447,11 @@ test('an ask on the last held tick is owed its dwell by the dwell check alone, n
     return { left: -1, ask };
   };
   const capped = run(V.balance);
-  // Today: the ask restarts the cap too, so the train leaves dwell + cap after the ask.
-  assert.equal(capped.left, capped.ask + TRAIN.dwellTicks + V.balance!);
-  // With the cap from arrival, the hold would end at dwell + cap, and the dwell check (tick < depart + dwell, before the
-  // hold is read) still keeps the asked train a full dwell from the ask: shown by the same ask with the hold's answer
-  // false after its cap, i.e. balancedHold on a row whose depart is the arrival.
+  // The cap runs from the arrival (`arrived`): the ask restarts only the dwell, so the train leaves one dwell after it.
+  assert.equal(capped.left, capped.ask + TRAIN.dwellTicks);
+  // The hold ends at dwell + cap from the arrival, and the dwell check (tick < depart + dwell, before the hold is read)
+  // still keeps the asked train a full dwell from the ask: the hold's answer is false after its cap, and the asker's
+  // dwell alone holds it.
   const f = new FixtureLine(stops);
   f.rows = [standingAt(stops, 0, 0, 0), standingAt(stops, 2, 0, 1e6), standingAt(stops, ISLAND, 1, 1e6)];
   assert.equal(balancedHold(f.io(), V, stops, 0, 0, capped.ask + 1), false, 'from arrival: the cap has run out');

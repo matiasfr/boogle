@@ -123,6 +123,7 @@ export const Train = defineComponent(
     rails: 'int',
     wagon: 'bool',
     foot: 'int',
+    arrived: 'int',
   },
   { key: 'slot' },
 );

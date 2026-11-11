@@ -51,6 +51,7 @@ export function standingAt(stops: readonly number[], k: number, track: number, d
     rails: 0,
     wagon: false,
     foot: 0,
+    arrived: depart,
   };
 }
 /** Line 2's trains as rows, standing where trainPlaces puts them over `stops`, awake from `awake`. */

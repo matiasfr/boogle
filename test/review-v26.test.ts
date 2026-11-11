@@ -203,6 +203,7 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
         to: stop,
         track,
         depart,
+        arrived: depart,
         req: 0,
         from: s,
         v0: 0,

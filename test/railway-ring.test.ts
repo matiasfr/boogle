@@ -63,6 +63,7 @@ const running = (from: number, to: number, dest: number, tick: number): Partial<
   to,
   track: 0,
   depart: tick,
+  arrived: tick,
   req: 0,
   from,
   v0: 0,

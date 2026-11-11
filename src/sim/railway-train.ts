@@ -113,6 +113,9 @@ export type RailTrain = {
   /** Line 2 only, one train at most: the footing wagon is coupled, and the footings aboard it. */
   wagon: boolean;
   foot: number;
+  /** The tick it last came to a stand (v27): the balanced hold's cap runs from here, so a lever ask, which restarts
+   * `depart` (the dwell), never restarts the cap. At most `depart`. */
+  arrived: number;
 };
 /** Train `slot` standing at its home, asleep. */
 export function trainIdle(slot: number): RailTrain {
@@ -133,6 +136,7 @@ export function trainIdle(slot: number): RailTrain {
     rails: 0,
     wagon: false,
     foot: 0,
+    arrived: 0,
   };
 }
 

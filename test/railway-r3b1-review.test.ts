@@ -35,15 +35,15 @@ test('the cap: a bunched train leaves the tick its cap runs out, with no asks', 
   );
 });
 
-test('griefing: lever asks every tick at a held end restart the cap once, never again (bounded, not a livelock)', () => {
+test('griefing: lever asks every tick at a held end never restart the cap (bounded, not a livelock)', () => {
   const f = bunched();
   let accepted = 0;
   const t = leaves(f, 1, 50000, (tick) => void (accepted += f.call(0, 1, tick)));
   assert.equal(accepted, 1, 'only the first ask is taken: the line keeps it until a train leaves that way');
-  assert.equal(t, 1 + TRAIN.dwellTicks + V.balance!, 'the cap runs from the one ask');
+  assert.equal(t, TRAIN.dwellTicks + V.balance!, 'the cap runs from the arrival, not the ask');
 });
 
-test('griefing, worst case: one ask on the last held tick doubles the hold, and no more', () => {
+test('griefing, worst case: one ask on the last held tick adds its dwell, and no more', () => {
   const f = bunched();
   const last = TRAIN.dwellTicks + V.balance! - 1;
   let accepted = 0;
@@ -51,7 +51,7 @@ test('griefing, worst case: one ask on the last held tick doubles the hold, and 
     if (tick >= last) accepted += f.call(0, 1, tick);
   });
   assert.equal(accepted, 1);
-  assert.equal(t, last + TRAIN.dwellTicks + V.balance!, `held ${t} ticks: about twice dwell + cap`);
+  assert.equal(t, last + TRAIN.dwellTicks, `held ${t} ticks: dwell + cap + one asker's dwell`);
 });
 
 test('the waiter exception misses a train held at the old far signal after the railhead moves on; the cap still ends it', () => {

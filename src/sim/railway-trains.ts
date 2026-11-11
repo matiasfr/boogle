@@ -277,11 +277,10 @@ function endStanding(line: LineRef, stops: readonly number[], r: Readonly<RailTr
  * train while it is exempt from headway, or while another train waits behind at this end's signal (it would keep the
  * end block shut).
  *
- * The cap runs from the row's `depart`: its arrival, or a lever ask's restart of its dwell (rail.call), which the ask
- * is owed so its asker can reach the platform. The row keeps no separate arrival tick (running the cap from arrival
- * would need a new Train field), so one ask can restart the cap; the line takes one ask a (halt, way) until a train
- * leaves that way, so a hold is at most about twice dwell and cap: 2 × (50 + 600) ticks, 130 s on line 2
- * (test/railway-r3b1-review.test.ts, "griefing").
+ * The cap runs from the row's `arrived` (v27), not its `depart`: a lever ask restarts the dwell (rail.call), which the
+ * ask is owed so its asker can reach the platform, but never the cap. The dwell check runs before this hold, so an
+ * ask on the hold's last tick still gets its full dwell; a hold is at most dwell + cap and one asker's dwell:
+ * 50 + 600 + 50 ticks, 70 s on line 2 (test/railway-r3b1-review.test.ts, "griefing").
  *
  * The waiter test matches only a train at this end's signal now. One left at a signal the railhead's stop has since
  * moved on from (stopMoved) is not matched, and the train behind it may be held; the cap still ends that hold (the
@@ -297,7 +296,7 @@ export function balancedHold<L extends LineRef>(
   const cap = lineDef(line).balance,
     r = io.row(slot);
   if (cap === undefined || !balanceOk(cap) || io.headExempt(slot)) return false;
-  if (tick >= r.depart + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
+  if (tick >= r.arrived + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
   const others = lineSlots(line).filter((k) => k !== slot);
   if (!others.length) return false;
   const b = endBlocks(line, stops)[from === 0 ? 0 : 1],
@@ -334,7 +333,16 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
         // A leg it could not replan off a halt that refuses its way (the homeward-only Pier, held short of a busy
         // railhead) ends at a stand with no halt, as at a signal: no platform, no dwell, no arrival.
         const at = !turn && r.to >= 0 && trainPassesBy(line, r.to, r.track ? -1 : 1, n) ? -1 : r.to;
-        io.set(slot, { phase: TRAIN_PHASE.STAND, at, to: at, from: r.dest, v0: 0, depart: arrival, turn: false });
+        io.set(slot, {
+          phase: TRAIN_PHASE.STAND,
+          at,
+          to: at,
+          from: r.dest,
+          v0: 0,
+          depart: arrival,
+          arrived: arrival,
+          turn: false,
+        });
         if (at >= 0) io.arrive(slot);
         // At an end (or the one it had crossed over at: `turn`) it turns back onto the other track; its riders' asks
         // the old way are past serving.
@@ -450,6 +458,7 @@ export function trainRowBroken(
     !int(r.to, last, -1) ||
     !int(r.track, 1) ||
     !int(r.depart) ||
+    !int(r.arrived, r.depart) ||
     !reqValid(r.req, st.length) ||
     !int(r.from, st[last]!, st[0]!) ||
     !int(r.dest, st[last]!, st[0]!) ||
