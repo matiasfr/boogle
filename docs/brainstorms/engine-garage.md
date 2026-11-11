@@ -142,7 +142,7 @@ are the gates: steel from Ring Island ([ring-island](ring-island.md), suggestion
 | Cargo | Cargo car (stakes and boards; logs and rails) | **built** (`train-view.ts:140`) | free |
 | Cargo | Footing wagon (6 footings) | **built**; arrives free at the Works (below) | free at unlock |
 | Cargo | Bigger orange cradle (more footings a trip) | planned, the second steel pick (ring-island 4) | steel |
-| Cargo | Loader upgrades (faster jib, gantry) | placeholder; fitted at the source | steel |
+| Cargo | Loader upgrades (faster jib, gantry) | placeholder; fitted at the source | steel. _Changed 10 November 2026 (owner, asked about a faster loader arm at a source: "Boogles (a source upgrade)"): the faster arm is bought with Boogles at its source, not steel ([decision](../decisions-rewards.md#d-2026-11-10-boogles-build-houses-and-upgrade-sources)); his answer names the arm only, so the gantry keeps this placeholder._ |
 | Looks | Paint (red today; shared cosmetic, owner 6 November) | placeholder | coins, once the wallet exists |
 | Whistle | Today's whistle; a two-tone | placeholder | coins, once the wallet exists |
 | (not here) | The 24-rail depot cart (`railway-cart.ts:21`) | **built**, stays 24 (decisions, 9 November) | not a train car |
