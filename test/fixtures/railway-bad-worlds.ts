@@ -6,7 +6,7 @@
 // replaced message for message.
 //
 // A site no world edit can reach is listed in UNREACHABLE with the reason. A build-out adds one entry per `throw` of
-// its own check here (Ring Island's are in test/railway-ring.test.ts).
+// its own check here (Ring Island's are in test/railway-check-ring.test.ts).
 import type { AnyComponent, RowOf, World } from '../../src/ecs/index.ts';
 import type { SeedStage } from '../../src/sim/railway-seeds.ts';
 import {

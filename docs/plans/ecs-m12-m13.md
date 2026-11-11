@@ -399,11 +399,16 @@ typecheck`, `npm run lint`.
       shards and `railway-ring.test.ts` drop `modelVerdict`. `test/railway-m11-host.test.ts` and its helper are deleted
       (the plan named only the helper). The host's literals per stage (phase, panels, `line2()`, the resume cap, and
       the counts' score, total, rails and stone) are in `railway-m11-review.test.ts`, recorded on 9e7dfcbde while the
-      model differential was still green. The phase walk is held to a literal list of runs. The late-join and refill
+      model differential was still green; the three-day resume (yard credit, then the host's reads) is one literal test
+      beside it. The phase walk is held to a literal list of runs. The late-join and refill
       probes are held to a fresh railway, then to the server's world. `jobProgress` now has its own test on both lines
       against the run rows the tick writes, in `railway-read-facade.test.ts`, next to the moved `read.world()` case. A
-      +1 mutant in `jobProgress` fails it. The three spikes are gone. Ring Island's check (`railway-check-ring.ts`) has
-      no bad worlds: logged. `src/sim/railway-live.ts` has no importer now; `test/helpers/rail-no-audit.ts` still
+      +1 mutant in `jobProgress` fails it. The three spikes are gone. Review fixes: the completeness test also counts
+      sites with repeats (the reviewer's test), so each line's job start/completion range site has its own bad world
+      (`completion: 2`); `test/railway-check-ring.test.ts` (cherry-picked) holds `checkRing`'s five refusals. A
+      surviving mutant, a late join's changes sent in reverse order, is logged, not tested: within one send each
+      entity's change appears once and the mirror publishes only at the last chunk, so the order cannot change what
+      is shown. `src/sim/railway-live.ts` has no importer now; `test/helpers/rail-no-audit.ts` still
       lists it for M12b-2.)
       `src/world/railway-server.ts` (delete the lazy `railway` getter, `view` and the `railwayView` import);
       `src/sim/town-facts.ts` (`townRead` takes a world: move `townReadOfWorld` in from

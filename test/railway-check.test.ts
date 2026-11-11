@@ -27,7 +27,7 @@ for (const entry of BAD_WORLDS)
   });
 
 // The world check's messages, read from its source: every `bad('…')` in the check files, and the message literals of
-// trainRowBroken, which checkTrains throws (railway-check-trains.ts). Ring Island's file has no bad worlds yet.
+// trainRowBroken, which checkTrains throws (railway-check-trains.ts). Ring Island's are in test/railway-check-ring.test.ts.
 function said() {
   const files = ['railway-check.ts', 'railway-check-line1.ts', 'railway-check-line2.ts', 'railway-check-trains.ts'];
   const text = [...files, 'railway-check-works.ts']
