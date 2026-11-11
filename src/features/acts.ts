@@ -26,16 +26,15 @@ import { createCameraPullOut } from '../render/camera-pull-out.ts';
 import { showActCard, momentBusy } from '../ui/moment-banner.ts';
 import { storyAct, type StoryAct } from '../sim/railway-queries-story.ts';
 
-/** Every string on a card. A title is the owner's to write: an act he has not titled shows its number only. The line
- * under it names a built place the railway goes next, or nothing. */
-const ACTS: Record<StoryAct, { title: string | null; next: string | null }> = {
-  1: { title: 'The beginning', next: null }, // the owner's own words
-  2: { title: null, next: 'the Pier' },
+/** Every string on a card. A title is the owner's to write: an act he has not titled shows its number only, and no line
+ * under it (owner, 11 November: keep it a bit mysterious). */
+const TITLES: Record<StoryAct, string | null> = {
+  1: 'The beginning', // the owner's own words
+  2: null,
 };
 const parts = (act: StoryAct) => ({
-  above: ACTS[act].title ? `Act ${act}` : '',
-  title: ACTS[act].title ?? `Act ${act}`,
-  line: ACTS[act].next ? `Next stop: ${ACTS[act].next}` : '',
+  above: TITLES[act] ? `Act ${act}` : '',
+  title: TITLES[act] ?? `Act ${act}`,
 });
 
 const CARD_S = 4.5; // on screen, fade in and out included
@@ -53,7 +52,7 @@ addWelcomeItem({
     const act = storyAct(w);
     if (act <= was) return null;
     const p = parts(act);
-    return [p.above ? `${p.above} · ${p.title}` : p.title, p.line].filter(Boolean).join(' · ');
+    return p.above ? `${p.above} · ${p.title}` : p.title;
   },
 });
 
