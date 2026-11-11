@@ -11,7 +11,10 @@ const url = (p: string) => new URL(p, import.meta.url).href;
 /** Runs `code` (an ES module) under a mode's node flags and environment; its stdout, trimmed. */
 function under(mode: TestMode, code: string, env: NodeJS.ProcessEnv = {}) {
   const saved = { ...process.env };
-  Object.assign(process.env, env);
+  // An undefined value unsets the variable: this test also runs inside CI's own run, which sets RAIL_AUDIT=1.
+  for (const [k, v] of Object.entries(env))
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
   const run = testEnv(mode);
   process.env = saved;
   const flags = run.flags.filter((f) => !f.startsWith('--test-timeout'));
@@ -30,7 +33,7 @@ try { createRailway().spawn([Line, { slot: 99, req: 1.5 }]); } catch (e) { audit
 console.log(audited ? 'audited' : 'unaudited');`;
 
 test("CI's unit job and the long run audit the rail drivers' worlds; a local run does not", () => {
-  assert.equal(under('local', PROBE).stdout, 'unaudited', 'the probe tells the two apart');
+  assert.equal(under('local', PROBE, { RAIL_AUDIT: undefined }).stdout, 'unaudited', 'the probe tells the two apart');
   for (const mode of ['ci', 'long'] as const) {
     assert.equal(under(mode, PROBE).stdout, 'audited', mode);
     assert.equal(
