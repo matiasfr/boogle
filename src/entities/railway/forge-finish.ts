@@ -1,37 +1,38 @@
-// The forge's finished look (docs/plans/works-late-game.md, step 6; owner, 10 November: free at the twelfth pier
-// footing). When the crossing is accepted (`works.crossing`), line 1's next village arrival brings eight roof beams on
-// its last car; they hop off beside the track, two little guys carry them to the forge in pairs and lift each pair on as
-// a truss, the roof's boards follow, the scaffold poles come down, the chimney gets its cap and the walk-in workshop
-// opens (Place's T6b, ../town/workshop.ts). Place's freight crates and doubled pour are not ported.
-// Local presentation over accepted state: the show plays on the live edge; a reload or a late joiner after the crossing
-// sees it finished. No op, presence or shared state.
+// The forge's finished look (docs/plans/works-late-game.md, step 6; owner, 10 November: "Forge should finish when the
+// player finishes building it"). The moment the forge is lit (its last hand-fed bill, `line2.forge.lit`), eight roof
+// beams drop in on a stack beside the village halt; two little guys carry them to the forge in pairs and lift each pair
+// on as a truss, the roof's boards follow, the scaffold poles come down, the chimney gets its cap and the walk-in
+// workshop (its interior, ../town/workshop.ts) opens. Place's freight crates and doubled pour are not ported.
+// Local presentation over accepted state: the show plays on the live edge; a reload or a late joiner after the forge
+// lit sees it finished. No op, presence or shared state, and no train: the beams no longer wait for line 1.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { dustRing } from '../../render/particle-effects.ts';
-import { trainAlong } from '../../sim/railway-train.ts';
 
 /** The scaffold poles, read by opening-view.ts each frame: 0 standing, 1 gone. Local. */
 export const forgePoles = { down: 0 };
 
 const BEAMS = 8,
   LENGTH = 5,
-  /** The beams ride line 1's last car (TRAIN_OFFSETS[2]), a little behind its centre so they clear the car ahead. */
+  /** The stack beside the village halt, where line 1's last car stands (TRAIN_OFFSETS[2]), as the beams used to ride. */
   CAR = -3.7 - 0.5,
+  /** The beams drop in from this high. */
+  DROP = 7,
   LIFT_S = 0.8,
-  HOP_S = 0.45,
+  HOP_S = 0.7,
   POLES_S = 1.4,
   LEG_S = 12;
 type Beam = {
-  at: 'car' | 'ground' | 'guy' | 'fly' | 'roof';
+  at: 'hidden' | 'ground' | 'guy' | 'fly' | 'roof';
   guy: number;
   t: number;
   from: THREE.Matrix4;
 };
 type DropSet = import('../../place/pieces.ts').DropSet;
 type Plan = import('../../place/building-plans.ts').Plan;
-type Stage = 'idle' | 'ride' | 'unload' | 'fetch' | 'carry' | 'finish' | 'done';
+type Stage = 'idle' | 'unload' | 'fetch' | 'carry' | 'finish' | 'done';
 
 export async function createForgeFinish(
   adapter: RailwayAdapter,
@@ -63,13 +64,11 @@ export async function createForgeFinish(
     tilt = Math.atan2(RISE, EAVE);
   let stage: Stage = 'idle',
     wait = 0,
-    clock = -1,
-    wasHome = false,
     trips = 0,
     /** Seconds since the crew was last sent: a walk that takes longer than LEG_S counts as arrived. */
     leg = 0;
   const beams: Beam[] = Array.from({ length: BEAMS }, () => ({
-    at: 'car',
+    at: 'hidden',
     guy: -1,
     t: 0,
     from: new THREE.Matrix4(),
@@ -107,15 +106,13 @@ export async function createForgeFinish(
     b = { x: 0, z: 0, ux: 0, uz: 0 };
   const line1 = layout.LINKS[0]!.line;
   const ground = { x: 0, y: 0, z: 0, yaw: 0 };
-  /** The last car's beam stack pose: centre on the deck and heading. */
+  /** The beams' stack pose at the village halt: centre on the deck of line 1's last car and its heading. */
   function carPose(out: { x: number; y: number; z: number; yaw: number }) {
-    const s = adapter.inspect();
-    const along = trainAlong(s.trains[0]!, 0, clock) / 100 + CAR;
-    layout.lineAt(line1, along + 1.1, a);
-    layout.lineAt(line1, along - 1.1, b);
+    layout.lineAt(line1, CAR + 1.1, a);
+    layout.lineAt(line1, CAR - 1.1, b);
     out.x = (a.x + b.x) / 2 + layout.ORIGIN.x;
     out.z = (a.z + b.z) / 2 + layout.ORIGIN.z;
-    out.y = (layout.railY(line1, along + 1.1) + layout.railY(line1, along - 1.1)) / 2 + 0.75;
+    out.y = (layout.railY(line1, CAR + 1.1) + layout.railY(line1, CAR - 1.1)) / 2 + 0.75;
     out.yaw = Math.atan2(a.x - b.x, a.z - b.z);
     return out;
   }
@@ -194,7 +191,7 @@ export async function createForgeFinish(
     stage = 'idle';
     folk.crewEnd();
     beams.forEach((beam) => {
-      beam.at = 'car';
+      beam.at = 'hidden';
       beam.guy = -1;
     });
     forgePoles.down = 0;
@@ -207,23 +204,15 @@ export async function createForgeFinish(
       to = Math.round(((truss + 1) / 4) * roof.length);
     for (let n = from; n < to; n++) building.drop(roof[n]!, 2.4, 0.15 + (n - from) * 0.06);
   }
+  /** The forge is lit: its last hand-fed bill is in. */
+  const lit = () => (adapter.inspect().line2?.forge.lit ?? -1) >= 0;
   function restore() {
-    const s = adapter.inspect();
-    clock = adapter.tickNow();
-    wasHome = home();
-    if (s.works.crossing >= 0) snapDone();
+    if (lit()) snapDone();
     else reset();
-  }
-  /** Line 1's train stands at the village halt. */
-  function home() {
-    const s = adapter.inspect(),
-      row = s.trains[0];
-    return !!s.line2.trains && !!row && row.phase === 0 && row.at === 0;
   }
   restore();
 
   function draw(dt: number) {
-    if (stage === 'ride') carPose(car);
     const crew = folk.crewState();
     crew?.forEach((g, k) => {
       if (k > 1) return;
@@ -232,10 +221,8 @@ export async function createForgeFinish(
       lastGuy[k] = { x: g.x, z: g.z };
     });
     beams.forEach((beam, k) => {
-      if (beam.at === 'car') {
-        if (stage === 'idle') m.makeScale(0, 0, 0);
-        else stacked(k, car, m);
-      } else if (beam.at === 'ground') stacked(k, ground, m);
+      if (beam.at === 'hidden') m.makeScale(0, 0, 0);
+      else if (beam.at === 'ground') stacked(k, ground, m);
       else if (beam.at === 'guy') {
         const g = crew?.[beam.guy];
         if (g) carried(k, g, guyYaw[beam.guy]!, m);
@@ -277,23 +264,16 @@ export async function createForgeFinish(
     /** The workshop is open: the sealed walls stay off. */
     open: () => stage === 'done',
     update(dt: number) {
-      const s = adapter.inspect(),
-        target = adapter.tickNow();
-      if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
-      else clock += dt * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
-      const atHome = home();
-      const arrived = atHome && !wasHome;
-      wasHome = atHome;
-      if (s.works.crossing < 0 && stage !== 'idle') reset();
-      if (stage === 'idle' && s.works.crossing >= 0) stage = 'ride';
+      const isLit = lit();
+      if (!isLit && stage !== 'idle') reset();
       wait = Math.max(0, wait - dt);
       leg += dt;
       const arrivedAll = (c: { here: boolean }[]) => c.every((g) => g.here) || leg > LEG_S;
       const crew = folk.crewState();
       switch (stage) {
-        case 'ride':
-          if (!arrived) break;
-          // Off the car onto a stack past the platform, on the forge's side, so the train can go on its way.
+        case 'idle':
+          if (!isLit) break;
+          // A stack past the village platform, on the forge's side; the beams drop in onto it.
           carPose(car);
           {
             const side = (X - car.x) * Math.cos(car.yaw) - (Z - car.z) * Math.sin(car.yaw) > 0 ? 1 : -1;
@@ -306,7 +286,7 @@ export async function createForgeFinish(
             beam.at = 'fly';
             beam.guy = -1;
             beam.t = -k * 0.12;
-            stacked(k, car, beam.from);
+            stacked(k, { ...ground, y: ground.y + DROP }, beam.from);
           });
           trips = 0;
           if (folk.crewStart(ground.x, ground.z) > 0) send(atStack(), false, ground);

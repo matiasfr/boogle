@@ -1,9 +1,8 @@
-// The forge's finished look (docs/plans/works-late-game.md, step 6), as an `--eval` from `--rail-seed crossing-finishing`:
-// shoulder and set the last pier footing (the crossing is accepted live), then watch the forge from above the village
-// until line 1's next train is home, and set `window.__forgeShot` so `--until` starts the real-time capture there.
-// `&forge=before` only frames the forge (the before still). FORGE lines: the finish's stage as it goes.
-// npm run look -- --rail-seed crossing-finishing --eval dev/look/evals/railway-forge-finish.ts --until window.__forgeShot
-//   --cam 911,27,21 --look 919,19,-3 --video --seconds 30 --question "Do the beams come on line 1 and go up as the forge's roof?"
+// The forge's finished look (docs/plans/works-late-game.md, step 6; owner, 10 November: it finishes when it lights), as
+// an `--eval` that watches the forge from above the village and sets `window.__forgeShot` once the show starts, so
+// `--until` starts the real-time capture there. It needs the forge about to light (feed it in the page, or take the
+// playthrough's `--to forge-lit` segment); `&forge=before` only frames the forge (the before still).
+// FORGE lines: the finish's stage as it goes.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
@@ -34,22 +33,7 @@ async function run() {
     bot.finish('forge before');
     return;
   }
-  // The last pier footings (the seed leaves the last bent's pair): off the pier rack, onto the apron beside the jib,
-  // set (railway-works-act.ts's pier, pierN=2).
-  for (let n = 0; n < 2 && inspectRailway()!.works.crossing < 0; n++) {
-    teleport(me.body!, 1399.7, 26, -356);
-    me.body!.velocity.set(0, 0, 0);
-    await bot.wait(600);
-    check(await bot.use(1398.94, -361.77, 'shoulder a footing', /Shoulder a footing/), 'shoulder the footing');
-    await bot.wait(600);
-    teleport(me.body!, 1405.4, 25.4, -365.5);
-    me.body!.velocity.set(0, 0, 0);
-    await bot.wait(400);
-    check(await bot.use(1405.54, -371.07, 'set the footing', /Set the footing/), 'set the footing');
-    await bot.wait(800);
-  }
-  check(await bot.until(() => inspectRailway()!.works.crossing >= 0, 20000, 'crossing'), 'the crossing is accepted');
-  // Home to watch: line 1 brings the beams.
+  // Home to watch: the beams drop in the moment the forge lights.
   teleport(me.body!, 921, 20, 8);
   me.body!.velocity.set(0, 0, 0);
   frame();
@@ -60,8 +44,7 @@ async function run() {
     if (line !== last) console.log(`FORGE STAGE ${line}`);
     last = line;
   }, 200);
-  check(await bot.until(() => finish().stage === 'ride', 5000, 'armed'), 'armed by the crossing');
-  check(await bot.until(() => finish().stage !== 'ride', 240000, 'line 1 home'), 'line 1 brings the beams');
+  check(await bot.until(() => finish().stage !== 'idle', 120000, 'lit'), 'the lit forge starts the show');
   shot.__forgeShot = true;
   check(await bot.until(() => finish().stage === 'done', 90000, 'done'), 'the forge is finished');
   clearInterval(log);
