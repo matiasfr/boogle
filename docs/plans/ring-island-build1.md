@@ -743,6 +743,11 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > the bed's end, so 1.5 m was too shallow. The terrace test holds every node in `CONCOURSE.terrace` grown by 1 m to the
   > uncapped ground; three nodes at lat −8.9 to −9.0 rise 0.03–0.75 m from the loop's old neck cap (still 0.65 m under the
   > platforms' 8.9 m). A 2 m triangle across the bed's edge can reach into its slab (never over its top); the test says so.
+  > Proof (`--rail-seed ring-joined`; trains run to the island there): a line-2 train's cars through the crossover (116
+  > samples, u 393–408) ride within −1 to +4 cm of the drawn rails' lateral (`crossLat`'s curve), so the rails sit under
+  > them; stills `r2d-end-still.png` (the run-off: no ground through deck or rails) and `r2d-train-still.png` (a train past
+  > the crossover on the down lane, standing short of the platforms). A train at the buffers or the plank crossing was
+  > not framed: the stop mark leaves the nose 28.8 m short (level-check), by numbers only.
 
 - [x] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
   main).** Everything under "R3" above up to `Aperture`; the sim's three train files and their tests only.
