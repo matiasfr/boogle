@@ -105,7 +105,7 @@ export const descriptors: Record<string, AssetDescriptor> = {
       'Working deck origin; rear power unit at Z -3.7 m. Existing game seats, cargo and moving fork added by Place.',
   },
   'feeder-roller': {
-    motion: { kind: 'none', source: 'src/proto/place/look-kit.ts: stationKit static roller matrices' },
+    motion: { kind: 'none', source: 'src/place/look-kit.ts: stationKit static roller matrices' },
     label: 'Feeder roller trial',
     category: 'props',
     rootNote: 'Z axle pivot; 20% length revision. Original 0.86 m span retained in trial evidence.',

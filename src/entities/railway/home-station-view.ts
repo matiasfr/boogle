@@ -20,9 +20,9 @@ const STONE = '#c8c0b0',
 
 export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ H }, layout, home] = await Promise.all([
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/home-station.ts'),
+    import('../../place/land.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/home-station.ts'),
   ]);
   const world = (p: { x: number; z: number }): WorksPoint => ({ x: p.x + layout.ORIGIN.x, z: p.z });
   const ground = (p: WorksPoint) => H(p.x, p.z);

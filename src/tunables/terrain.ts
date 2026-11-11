@@ -94,5 +94,5 @@ export const COVE_SPECS: readonly NumberSpec[] = Object.entries(COVE_PARAMETERS)
   scope: 'local',
   integer: key === 'bandColourCount',
   at: 'next presentation frame',
-  owner: 'src/proto/place/cove-material.ts',
+  owner: 'src/place/cove-material.ts',
 }));

@@ -1,17 +1,17 @@
 // The land of ?proto=place, drawn from terrain.ts; the cove locally refines the shared render/collision surface, with the
 // spire, the footbridges and what stands across the sea. chop.ts owns every tree. Local.
 import * as THREE from 'three/webgpu';
-import { flat } from '../../render/flat.ts';
-import { paletteMaterial } from '../../render/material-palette.ts';
-import { woodMaterial, type GrainAxis } from '../../render/wood.ts';
+import { flat } from '../render/flat.ts';
+import { paletteMaterial } from '../render/material-palette.ts';
+import { woodMaterial, type GrainAxis } from '../render/wood.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
-import { scene } from '../../render/scene.ts';
-import { readableGlow } from '../../render/readable-unlit.ts';
-import { shoreApronHeight } from '../../render/water/shore-providers.ts';
-import { SEA } from '../../constants.ts';
-import { addBody, createBody, type Shape } from '../../physics/engine.ts';
-import { GROUP, groundMat } from '../../physics/physics.ts';
-import { smoothstep } from '../../math.ts';
+import { scene } from '../render/scene.ts';
+import { readableGlow } from '../render/readable-unlit.ts';
+import { shoreApronHeight } from '../render/water/shore-providers.ts';
+import { SEA } from '../constants.ts';
+import { addBody, createBody, type Shape } from '../physics/engine.ts';
+import { GROUP, groundMat } from '../physics/physics.ts';
+import { smoothstep } from '../math.ts';
 import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
 import {
   CELL,
@@ -32,13 +32,13 @@ import {
 } from './terrain.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
 import { boxFootprint, sampleFootprint } from './support.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
-import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../render/locomotion-surfaces.ts';
+import type { OwnedView } from '../render/owned-view.ts';
+import { tagStepSupport, segmentStepSupport, type StepSurface } from '../render/locomotion-surfaces.ts';
 import { coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
 import { buildCove } from './cove-view.ts';
 import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
-import { applyTerrainPass } from '../terrain-pass/index.ts';
+import { applyTerrainPass } from '../proto/terrain-pass/index.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 

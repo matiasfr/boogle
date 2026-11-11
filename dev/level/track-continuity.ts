@@ -23,7 +23,7 @@
 // measures; their would-be failures are listed as "planned, would fail" and do not fail the check, because no train
 // runs there yet and their data is a greybox draft (they become enforced as each line moves into RAIL_LINES).
 import { LIVE, beside, deg, joins, tracks, wrap, type Join, type Pt, type Track } from './rail-network.ts';
-import { HALTS, UP_HALTS, crossLat, upLat } from '../../src/proto/place/layout.ts';
+import { HALTS, UP_HALTS, crossLat, upLat } from '../../src/place/layout.ts';
 
 /** A car's half width and a platform's (src/proto/place/halts.ts: 2.5 m decks). */
 const CAR_HX = 1.1,

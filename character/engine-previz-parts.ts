@@ -74,7 +74,7 @@ export const CAB_FIT = { headroom: 0.2, between: 0.1, door: 1.0, doorHead: 0.15,
 /** All three are scaled by the same factor, the size Home station's layout recommends and is sized beyond (1.5). */
 export const SCALE = 1.25;
 
-// The game's flat palette (src/proto/place/look-kit.ts, halts-view.ts, gold-rope.ts).
+// The game's flat palette (src/place/look-kit.ts, halts-view.ts, gold-rope.ts).
 export const RED = '#e8392a',
   RUST = '#9a5a44',
   DARK = '#24262c',

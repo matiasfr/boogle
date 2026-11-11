@@ -12,12 +12,12 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { flat } from '../../render/flat.ts';
 import { GOLD_ROPE, createRope } from '../../render/gold-rope.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
-import { H, addStatic } from './land.ts';
-import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from './look.ts';
-import { kitBatch, stationKit } from './look-kit.ts';
-import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from './layout.ts';
-import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot } from './pieces.ts';
-import { addFoot } from './sites.ts';
+import { H, addStatic } from '../../place/land.ts';
+import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from '../../place/look.ts';
+import { kitBatch, stationKit } from '../../place/look-kit.ts';
+import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
+import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot } from '../../place/pieces.ts';
+import { addFoot } from '../../place/sites.ts';
 import {
   FRAME_D,
   FRAME_W,
@@ -27,11 +27,11 @@ import {
   stationColliders,
   stationStockCollider,
   type FrameAt,
-} from './spatial-station.ts';
-export { frameBesideLine, type FrameAt } from './spatial-station.ts';
+} from '../../place/spatial-station.ts';
+export { frameBesideLine, type FrameAt } from '../../place/spatial-station.ts';
 
 export type StationRun = ReturnType<typeof buildStation>;
-/** The bill's paint: ink on paper, like the village's boards (src/proto/place/signs.ts). */
+/** The bill's paint: ink on paper, like the village's boards (src/place/signs.ts). */
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 /** The same deposit flight locally and on a partner's screen. Origins and landing effects belong to the caller. */
 export function flyToStock(

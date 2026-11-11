@@ -3,9 +3,9 @@
 // the tree catalog or the level check: they all keep reading terrain.ts's 2 m grid. Local look experiment.
 import { smoothstep } from '../../math.ts';
 import { WALKABLE_NY } from '../../constants.ts';
-import { GRID, ORIGIN, ROCKS } from '../place/layout.ts';
-import { CELL, NX, NZ, at, cellX, cellZ, clearMask, gorgeD, heights, pathMask } from '../place/terrain.ts';
-import { LAND_TREES } from '../place/tree-catalog.ts';
+import { GRID, ORIGIN, ROCKS } from '../../place/layout.ts';
+import { CELL, NX, NZ, at, cellX, cellZ, clearMask, gorgeD, heights, pathMask } from '../../place/terrain.ts';
+import { LAND_TREES } from '../../place/tree-catalog.ts';
 
 /** The wedge, Place-local metres on the 2 m grid: the village's south slope, the path's switchback down into the
  * gorge's stem, the south footbridge, both gorge walls and the south coast. No rail bed inside it. */

@@ -4,8 +4,8 @@
 // centrelines sampled every 10 cm.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PATHS, SHELF } from '../src/proto/place/layout.ts';
-import { SHORE_PATH } from '../src/proto/place/shore-layout.ts';
+import { PATHS, SHELF } from '../src/place/layout.ts';
+import { SHORE_PATH } from '../src/place/shore-layout.ts';
 import {
   BAY_BOXES,
   FINDERS_B,
@@ -16,7 +16,7 @@ import {
   bayBoxPoint,
   bayPoint,
   toAxis,
-} from '../src/proto/place/home-station.ts';
+} from '../src/place/home-station.ts';
 
 type XZ = { x: number; z: number };
 /** Half the crate's width, with a little over: the box block is the boxes' centres grown by this. */

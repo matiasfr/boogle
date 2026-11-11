@@ -1,6 +1,6 @@
 // Existing forge scenery, without cargo, jobs, saves or module-time scene ownership.
 import * as THREE from 'three/webgpu';
-import { flat } from '../../render/flat.ts';
+import { flat } from '../render/flat.ts';
 import { H } from './land.ts';
 import { CRANE, ORIGIN, RACK } from './layout.ts';
 import { WOOD2 } from './opening-plans.ts';

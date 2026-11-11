@@ -12,7 +12,7 @@ import { me } from '../../player/player.ts';
 import { back, greatBeamView } from './chop.ts';
 import { COOP, job } from './job.ts';
 import { currentCoopPeer } from './coop-identity.ts';
-import { GREAT } from './layout.ts';
+import { GREAT } from '../../place/layout.ts';
 import { pair } from './pair.ts';
 
 export type GreatBeamHelp = string | null;

@@ -97,7 +97,7 @@ export type Sketch = { lines: [number, number][][]; rails: [number, number][][];
 export async function sketchOf(card: string): Promise<Sketch | null> {
   if (card !== 'place') return null;
   try {
-    const L = await import('../../src/proto/place/layout.ts');
+    const L = await import('../../src/place/layout.ts');
     const ox = L.ORIGIN.x;
     const oz = L.ORIGIN.z;
     const lines = L.PATHS.map((p) => p.pts.map(([x, z]) => [x + ox, z + oz] as [number, number]));

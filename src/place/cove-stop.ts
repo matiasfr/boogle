@@ -1,9 +1,9 @@
 // Owner-only, installed by the cove experiment. No change to moving friction or shared physics rules.
-import { GRAVITY, PLAYER_MASS, WALKABLE_NY } from '../../constants.ts';
-import { forEachContact, forEachStatic, type Body } from '../../physics/engine.ts';
-import { carry } from '../../physics/platforms.ts';
-import { GROUP } from '../../physics/physics.ts';
-import { me } from '../../player/state.ts';
+import { GRAVITY, PLAYER_MASS, WALKABLE_NY } from '../constants.ts';
+import { forEachContact, forEachStatic, type Body } from '../physics/engine.ts';
+import { carry } from '../physics/platforms.ts';
+import { GROUP } from '../physics/physics.ts';
+import { me } from '../player/state.ts';
 
 const staticSupports = new WeakSet<Body>();
 export function holdCoveStop() {

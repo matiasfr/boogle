@@ -37,14 +37,14 @@ const { partnerWearing, wardrobe } = (await import(
   '/src/entities/wardrobe/state.ts' as string
 )) as typeof import('../../../src/entities/wardrobe/state.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
-const talk = (await import('/src/proto/place/talk.ts' as string)) as typeof import('../../../src/proto/place/talk.ts');
+const talk = (await import('/src/place/talk.ts' as string)) as typeof import('../../../src/place/talk.ts');
 const layout = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
-const land = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
+const land = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const shore = (await import(
-  '/src/proto/place/shore-layout.ts' as string
-)) as typeof import('../../../src/proto/place/shore-layout.ts');
+  '/src/place/shore-layout.ts' as string
+)) as typeof import('../../../src/place/shore-layout.ts');
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const deadline = performance.now() + 20000;

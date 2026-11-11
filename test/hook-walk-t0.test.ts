@@ -4,7 +4,7 @@
 // within two jumps of t0.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PADS, PILLARS, SERVICE_ROUTES } from '../src/proto/place/tech-layout.ts';
+import { PADS, PILLARS, SERVICE_ROUTES } from '../src/place/tech-layout.ts';
 
 // dev/economy/place-level.ts: two jumps' rise and walking reach.
 const TWO_JUMPS = 3.03,

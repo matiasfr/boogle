@@ -15,13 +15,13 @@ import { smoothstep } from '../../math.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { me } from '../../player/player.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { H } from './land.ts';
-import { FORGE, GRID, ORIGIN, SPIRE, railY, toWorld, type Line } from './layout.ts';
+import { H } from '../../place/land.ts';
+import { FORGE, GRID, ORIGIN, SPIRE, railY, toWorld, type Line } from '../../place/layout.ts';
 import { addSolid, plate, roomMesh, type Part, type Rooms } from './rooms.ts';
-import type { Plan } from './sites.ts';
-import { pathMask, heights, at as cellAt, NX, NZ, cellX, cellZ, gorgeD } from './terrain.ts';
+import type { Plan } from '../../place/sites.ts';
+import { pathMask, heights, at as cellAt, NX, NZ, cellX, cellZ, gorgeD } from '../../place/terrain.ts';
 import { mulberry32 } from '../../sim/rng.ts';
-import { softGlow } from './look.ts';
+import { softGlow } from '../../place/look.ts';
 import { BOARDS } from './town-lines.ts';
 
 /** What the miniature shows, in world metres. The live game reads the shared railway; Place reads its own modules. */

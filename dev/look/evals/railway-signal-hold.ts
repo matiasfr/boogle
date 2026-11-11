@@ -10,8 +10,8 @@ const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const layout = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 
 type Car = { x: number; y: number; z: number };
 type Train = { slot: number; line: number; along: number; track: number; phase: number; at: number; cars: Car[] };

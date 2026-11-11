@@ -120,9 +120,9 @@ test('the read model is plain data: rebuilt from the world, never carrying its b
 });
 
 test('catalog exactly pins current T1 recipe and every starter source to centimetres', async () => {
-  const layout = await import('../src/proto/place/layout.ts');
-  const { frameBesideLine } = await import('../src/proto/place/spatial-station.ts');
-  const { LAND_TREES } = await import('../src/proto/place/tree-catalog.ts');
+  const layout = await import('../src/place/layout.ts');
+  const { frameBesideLine } = await import('../src/place/spatial-station.ts');
+  const { LAND_TREES } = await import('../src/place/tree-catalog.ts');
   const rng = mulberry32(77),
     rows: number[][] = [];
   let id = 0;

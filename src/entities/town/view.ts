@@ -54,12 +54,12 @@ export async function createTownView(read: () => RailwayInspection | null) {
     import('../../proto/place/rooms.ts'),
     import('../../proto/place/house.ts'),
     import('../../proto/place/shop.ts'),
-    import('../../proto/place/sites.ts'),
+    import('../../place/sites.ts'),
     import('../../proto/place/town-lines.ts'),
     import('../../proto/place/residents.ts'),
     import('../../proto/place/museum.ts'),
-    import('../../proto/place/opening-plans.ts'),
-    import('../../proto/place/layout.ts'),
+    import('../../place/opening-plans.ts'),
+    import('../../place/layout.ts'),
   ]);
   let facts: TownRead = { path: false, forge: false, completed: 0, trains: false };
   let score = 0;

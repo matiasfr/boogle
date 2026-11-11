@@ -1,10 +1,10 @@
 // Authored tree identities and sizes, shared by the legacy and production renderers.
 // Finite production balances use the separately pinned integer railway catalog.
-import { mulberry32 } from '../../sim/rng.ts';
+import { mulberry32 } from '../sim/rng.ts';
 import { GREAT_TREE, GROVES, OAK, ORIGIN } from './layout.ts';
 import { LAND_TREES, shoreTreeCleared } from './tree-catalog.ts';
 import { treeSeat } from './support.ts';
-import type { TreeRoot } from '../../render/tree-roots.ts';
+import type { TreeRoot } from '../render/tree-roots.ts';
 export type TreeSource = {
   index: number;
   root: TreeRoot;

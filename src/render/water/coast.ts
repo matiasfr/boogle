@@ -183,7 +183,7 @@ function bedAt(providers: ShoreProvider[], x: number, z: number) {
   const b = nearest.bounds;
   const edge = nearest.bedAt(Math.min(Math.max(x, b.minX), b.maxX), Math.min(Math.max(z, b.minZ), b.maxZ));
   if (!edge.valid) return OPEN_BED;
-  // The terrain's own offshore apron (proto/place/land.ts draws it from the same function), kept under the surface so
+  // The terrain's own offshore apron (place/land.ts draws it from the same function), kept under the surface so
   // no open water reads as dry land where a grid's edge meets its shore.
   return Math.min(SEA + shoreApronHeight(edge.height - nearest.seaLevel, gap, nearest.extent), SEA - 0.5);
 }

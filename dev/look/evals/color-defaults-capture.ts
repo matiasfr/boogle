@@ -10,7 +10,7 @@ const { teleport } = (await import(
 const { rooms, roomToWorld } = (await import(
   '/src/proto/place/place-rooms.ts' as string
 )) as typeof import('../../../src/proto/place/place-rooms.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { skyNow } = (await import('/src/render/sky.ts' as string)) as typeof import('../../../src/render/sky.ts');
 type V = [number, number, number];
 type View = { name: string; cam: V; look: V; fov?: number; player?: V };

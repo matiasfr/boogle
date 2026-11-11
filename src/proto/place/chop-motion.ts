@@ -1,7 +1,7 @@
 // Local curve and existing-rig arm posing. Play and the stage call this adapter after the body mixer.
 import * as THREE from 'three/webgpu';
-import { CHOP_CONTACT, CHOP_DURATION } from './chop-timing.ts';
-export { CHOP_CONTACT, CHOP_DURATION } from './chop-timing.ts';
+import { CHOP_CONTACT, CHOP_DURATION } from '../../place/chop-timing.ts';
+export { CHOP_CONTACT, CHOP_DURATION } from '../../place/chop-timing.ts';
 export const CHOP_TRUNK = { distance: 1.35, radius: 0.4, height: 2.3 };
 export const CHOP_SIDE = 0.18;
 /** Local Dev trial; never saved or sent. The floating tool remains the default. */

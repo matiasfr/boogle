@@ -12,8 +12,8 @@ import {
   boxDistance,
   type WorksPoint,
 } from '../src/entities/railway/works-shape.ts';
-import { LINES, ORIGIN, TOWN } from '../src/proto/place/layout.ts';
-import { PATH_SAMPLES } from '../src/proto/place/terrain.ts';
+import { LINES, ORIGIN, TOWN } from '../src/place/layout.ts';
+import { PATH_SAMPLES } from '../src/place/terrain.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 function samples(line: readonly WorksPoint[], step = 0.5) {
   const points: WorksPoint[] = [];

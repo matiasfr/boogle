@@ -159,12 +159,12 @@ test('review: the amber lamp is dark for a rider ask too late to stop for, lit f
 });
 
 // P2-1: the end blocks started at the merge (RailHalt.end.mergeCm) and a train that couldn't enter waited 10 m outside
-// it, but the drawn tracks only part over a 20 m turnout beyond the merge (src/proto/place/layout.ts TURNOUT, upLat),
+// it, but the drawn tracks only part over a 20 m turnout beyond the merge (src/place/layout.ts TURNOUT, upLat),
 // and a train stretches 9 m behind its reference point (the wagon at -7.4 m, src/proto/wagon/cars.ts): a train held at
 // a stub end's signal stood on the turnout, and the train leaving the end block passed through it. Checked on the
 // drawn footprint: each car's box at its pose and its track's offset.
 test('review: no two drawn trains overlap (a train held at a stub signal stands clear of the one leaving)', async () => {
-  const { FORMATION, LINKS, upLat, crossLat } = await import('../src/proto/place/layout.ts');
+  const { FORMATION, LINKS, upLat, crossLat } = await import('../src/place/layout.ts');
   const { TRAIN_CARS, TRAIN_OFFSETS } = await import('../src/proto/wagon/cars.ts');
   const { trainAlong } = await import('../src/sim/railway-train.ts');
   const w = unaudited(railwayAtTrains('q6-stocked'));

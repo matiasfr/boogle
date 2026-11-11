@@ -25,14 +25,14 @@ import {
 import { shakeView, trainsShow, wakeShow, type Waker } from './celebrate.ts';
 import { coop } from './coop.ts';
 import { rack, rackAdd } from './depot.ts';
-import { cheerAround, setCamp, setRiders } from './folk.ts';
+import { cheerAround, setCamp, setRiders } from '../../place/folk.ts';
 import { craneBusy, craneClear, craneLift, crateIn, nextDrop, roofed } from './forge.ts';
 import { halts } from './halts.ts';
-import { TUNE, VILLAGE } from './layout.ts';
+import { TUNE, VILLAGE } from '../../place/layout.ts';
 import { count, job, num, save, sharedSlice } from './job.ts';
 import { L1, L2, allHeaps, dock, hub, lines, type LineRun, yard } from './lines.ts';
-import { dustRing } from './pieces.ts';
-import { rustTrainU } from './look.ts';
+import { dustRing } from '../../place/pieces.ts';
+import { rustTrainU } from '../../place/look.ts';
 import { trainEta } from './rail.ts';
 import { wakeCamp } from './town.ts';
 

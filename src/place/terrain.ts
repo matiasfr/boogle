@@ -1,7 +1,7 @@
 // The land of ?proto=place as numbers: a height function baked onto one 2 m grid. No three.js, so dev/economy/place-level.ts
 // can walk it in Node. ./land.ts draws it and makes it solid. The gorge's walls are near-vertical cells of the grid, so nothing
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
-import { smoothstep } from '../../math.ts';
+import { smoothstep } from '../math.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
 import { coveFront, coveGround, coveSurface, coveWeight, fitCoveBacking } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';

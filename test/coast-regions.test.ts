@@ -7,12 +7,12 @@ import * as THREE from 'three/webgpu';
 import { CELL, GRID_RES, HALF, SEA } from '../src/constants.ts';
 import { gridBedAt, registerShoreProvider } from '../src/render/water/shore-providers.ts';
 import { createCoast, type Coast } from '../src/render/water/coast.ts';
-import { GRID, ORIGIN } from '../src/proto/place/layout.ts';
-import { heights as placeHeights, NX, NZ, at, fineHeightAt } from '../src/proto/place/terrain.ts';
-import { coveSurface } from '../src/proto/place/cove.ts';
+import { GRID, ORIGIN } from '../src/place/layout.ts';
+import { heights as placeHeights, NX, NZ, at, fineHeightAt } from '../src/place/terrain.ts';
+import { coveSurface } from '../src/place/cove.ts';
 
 // Home's heights come from Vite-only layout data, so Home here is a stand-in island on Home's own grid, bounds and
-// extent; Place is its real terrain and bed query (src/proto/place/water.ts).
+// extent; Place is its real terrain and bed query (src/place/water.ts).
 function registerToday() {
   const home = (i: number, j: number) => {
     const x = i * CELL - HALF,

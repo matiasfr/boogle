@@ -3,9 +3,9 @@
 // and high, on the voice bus at a low level and without ducking anything, so a passing exchange never pumps the mix
 // (docs/research/little-guys.md, "a silence budget"). Silent until the player's first gesture, like all audio: getAudio
 // returns null till then. ./folk.ts decides who talks, how rarely and for how long. Local.
-import { dbToGain, getAudio } from '../../render/audio.ts';
-import { buildPlan, createLane, type VoiceSpec } from '../../render/npc-voice.ts';
-import { camera } from '../../render/scene.ts';
+import { dbToGain, getAudio } from '../render/audio.ts';
+import { buildPlan, createLane, type VoiceSpec } from '../render/npc-voice.ts';
+import { camera } from '../render/scene.ts';
 
 /** The tunes to listen for. `levelDb` is against the voice bus, where The Boogler talks at 0. */
 export const CHATTER = {

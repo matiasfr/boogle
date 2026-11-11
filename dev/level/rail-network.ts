@@ -1,7 +1,7 @@
 // The whole rail network as the game draws and runs it, in one place, for level-check's "Track continuity" report
 // (./track-continuity.ts) and the rail map (./rail-map.ts, docs/world/rail-map.html). Read-only: every point comes from
 // the owning data, nothing here is a second copy of a layout.
-//   live lines   Place's rail splines (src/proto/place/layout.ts LINES, 1 m samples): what the view draws and poses cars
+//   live lines   Place's rail splines (src/place/layout.ts LINES, 1 m samples): what the view draws and poses cars
 //                on (rail.ts poseCarOnLine), today's track (down) and the up track's lateral offset (FORMATION, upLat,
 //                crossLat: the stub turnouts, Far Head's crossover)
 //   sim paths    RAIL_LINES[...].path (src/sim/railway-lines.ts, 10 m samples): what railLinePoint reads (the server's
@@ -23,8 +23,8 @@ import {
   upLat,
   type Line,
   type LinePoint,
-} from '../../src/proto/place/layout.ts';
-import { GATES } from '../../src/proto/place/tech-layout.ts';
+} from '../../src/place/layout.ts';
+import { GATES } from '../../src/place/tech-layout.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import { TRAIN_STOPS } from '../../src/sim/railway-train.ts';
 import { FORMATION as WORLD_FORMATION, WORLD_LINES } from '../../src/sickle/world-lines.ts';
@@ -47,7 +47,7 @@ import {
   ringDeckY,
 } from '../../src/sim/railway-ring-layout.ts';
 import { ENGINE } from '../../src/proto/wagon/engine.ts';
-import { BUFFERS, LEG, SPUR, homeLayout } from '../../src/proto/place/home-station.ts';
+import { BUFFERS, LEG, SPUR, homeLayout } from '../../src/place/home-station.ts';
 import { TRAILER, TRAIN_OFFSETS } from '../../src/proto/wagon/cars.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };

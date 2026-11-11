@@ -37,15 +37,15 @@ import { inReach } from '../../player/reach.ts';
 import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { carry } from '../../physics/platforms.ts';
 import { knock, pop } from '../../render/fanfare.ts';
-import { H, addStatic } from './land.ts';
+import { H, addStatic } from '../../place/land.ts';
 import { COOP, job, personalSlice } from './job.ts';
-import { SHELF, toWorld } from './layout.ts';
-import { FINDERS } from './tech-layout.ts';
-import { dustRing } from './pieces.ts';
-import { softGlow } from './look.ts';
+import { SHELF, toWorld } from '../../place/layout.ts';
+import { FINDERS } from '../../place/tech-layout.ts';
+import { dustRing } from '../../place/pieces.ts';
+import { softGlow } from '../../place/look.ts';
 import { dropGot, youGot } from './got.ts';
 import type { ShopWardrobe } from './shop.ts';
-import { addFoot } from './sites.ts';
+import { addFoot } from '../../place/sites.ts';
 import { SHOP } from './town-lines.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours

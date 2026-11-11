@@ -200,7 +200,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       readIf: [{ when: 'Changing documented wildlife', refs: ['docs/game-design/critters.md'] }],
       sync: 'Local; shared/interactive critters need an explicit sync choice',
       checks: `${look}; perf before/after many meshes`,
-      lookalikes: ['src/proto/place/folk.ts'],
+      lookalikes: ['src/place/folk.ts'],
       warning: 'Place residents are prototype NPCs, not the cosmetic critter lifecycle recipe.',
     },
   ],

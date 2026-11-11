@@ -44,7 +44,7 @@ For existing lines, `points` are all 1 m samples from `LINES.north/east`, and `l
 Start with `npm run map -- src/proto/place` and the applicable AGENTS routes. Read the relevant exported tables and current as-built chapter. Source is authoritative over this snapshot. An offline Node inspection can import the data owners directly:
 
 ```sh
-node --input-type=module -e "const l = await import('./src/proto/place/layout.ts'); const t = await import('./src/proto/place/tech-layout.ts'); console.log(JSON.stringify({origin:l.ORIGIN,lines:l.LINES,links:l.LINKS,paths:l.PATHS,forge:l.FORGE,devices:t.DEVICES,gates:t.GATES},null,2))"
+node --input-type=module -e "const l = await import('./src/place/layout.ts'); const t = await import('./src/place/tech-layout.ts'); console.log(JSON.stringify({origin:l.ORIGIN,lines:l.LINES,links:l.LINKS,paths:l.PATHS,forge:l.FORGE,devices:t.DEVICES,gates:t.GATES},null,2))"
 ```
 
 Convert Float32Array samples to ordinary `[x,z]` arrays; preserve every sample and round only at serialization (this snapshot uses 0.001 m). Read each frame through `frameBesideLine(station, line, dir)` and subtract ORIGIN. Preserve foot-path heights while calculating length, even though the map stores only the top-down projection. Take `SHORE_PATH` from `shore-layout.ts` and the acquisition points from `DEVICES` in `tech-layout.ts`; do not infer them from the old six-era schedule.

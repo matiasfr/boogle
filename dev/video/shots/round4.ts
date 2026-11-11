@@ -62,7 +62,7 @@ export default {
     if (wants('path')) {
       const g = await open('path');
       await g.eval(`${PRE} P.skipPath(); P.job.chest=null;
-        const {lineAt,railY}=await import('/src/proto/place/layout.ts');
+        const {lineAt,railY}=await import('/src/place/layout.ts');
         const l=P.lines[0].spec.line, p={}; lineAt(l,85,p);
         put(P.ORIGIN.x+p.x,railY(l,85)+1,p.z,Math.atan2(-p.ux,-p.uz));`);
       await g.wait(2);

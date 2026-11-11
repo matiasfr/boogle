@@ -454,8 +454,8 @@ const PAGES: Page[] = [
         body: `const { getAudio } = await import('/src/render/audio.ts');
           for (const bus of ['music', 'sfx', 'ui', 'voice']) getAudio(bus).out.gain.value = 0;
           const { teleport } = await import('/src/physics/engine.ts');
-          const { H } = await import('/src/proto/place/land.ts');
-          const { toWorld } = await import('/src/proto/place/layout.ts');
+          const { H } = await import('/src/place/land.ts');
+          const { toWorld } = await import('/src/place/layout.ts');
           const x = toWorld(${x}), z = ${z}, b = window.boogle.me.body;
           teleport(b, x, Math.max(H(x, z), 0) + 1, z);
           b.velocity.set(0, 0, 0);

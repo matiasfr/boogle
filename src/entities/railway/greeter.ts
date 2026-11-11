@@ -37,11 +37,11 @@ export const GREETER_LINES = {
 
 export async function createTownGreeter(owner: OwnedView, read: () => RailwayInspection) {
   const [folk, talk, layout, shore, land] = await Promise.all([
-    import('../../proto/place/folk.ts'),
-    import('../../proto/place/talk.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/shore-layout.ts'),
-    import('../../proto/place/land.ts'),
+    import('../../place/folk.ts'),
+    import('../../place/talk.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/shore-layout.ts'),
+    import('../../place/land.ts'),
   ]);
   if (!owner.alive) return { update: () => {}, targets: (): Interactable[] => [] };
   const g = folk.addGreeter(layout.toWorld(shore.SHORE_WORKER.x), layout.VILLAGE.y, shore.SHORE_WORKER.z);

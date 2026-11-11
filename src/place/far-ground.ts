@@ -8,9 +8,9 @@
 // its centre vertex that keeps every vertex on the sides that face full-resolution cells. Vertices, normals and the
 // cove shader's attributes are the full mesh's own, so near tiles are exactly the old ground. Local rendering only.
 import * as THREE from 'three/webgpu';
-import { camera, scene } from '../../render/scene.ts';
-import { registerGraphics, graphicsInitial } from '../../graphics-settings.ts';
-import { setViewGeometry, type OwnedView } from '../../render/owned-view.ts';
+import { camera, scene } from '../render/scene.ts';
+import { registerGraphics, graphicsInitial } from '../graphics-settings.ts';
+import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
 
 const TILE = 96; // cells per tile side (192 m)
 // [step in cells, from this distance (m) between the camera and the tile's bounds]. Step 1 is the full grid.

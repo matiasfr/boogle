@@ -26,7 +26,7 @@ Do not retain the current authority-election protocol as a second production syn
 ## 2. A visible piece landing can still complete gameplay
 
 **Evidence:** [run.ts](../../src/proto/place/run.ts), `unload`, decrements the back before its flight;
-`landAtStation` changes stock and score and can start feeding. [pieces.ts](../../src/proto/place/pieces.ts),
+`landAtStation` changes stock and score and can start feeding. [pieces.ts](../../src/place/pieces.ts),
 `updatePieces`, calls `land` on elapsed render time; `clearTrips` discards flights.
 [coop.ts](../../src/proto/place/coop.ts), `applyFull`, clears trips and incoming counts before reconstructing state.
 Its pending/refund protocol protects specific co-op cases, but presentation still participates in advancement.

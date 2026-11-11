@@ -15,10 +15,10 @@ import { clearMoments, firstPathShow, headShow, pierShow, shakeView, wakeShow } 
 import { back, putDownBig } from './chop.ts';
 import { coop, coopWire } from './coop.ts';
 import { cart, drawRack, moveRack, rack, setDepotFrame, snapCart } from './depot.ts';
-import { cheerAround, pourOut, setCamp, setCommuters, setPushers, setRiders } from './folk.ts';
+import { cheerAround, pourOut, setCamp, setCommuters, setPushers, setRiders } from '../../place/folk.ts';
 import { forge, logIn, nextPiece, snapForge } from './forge.ts';
 import { deliver } from './gifts.ts';
-import { H } from './land.ts';
+import { H } from '../../place/land.ts';
 import { lampRow, snapLamps } from './lamps.ts';
 import { grantChest, grantMultiAxe, snapChest } from './ladder.ts';
 import { job, save, sharedSlice, num, count } from './job.ts';
@@ -35,13 +35,13 @@ import {
   railY,
   toWorld,
   type Goods,
-} from './layout.ts';
+} from '../../place/layout.ts';
 import { L1, L2, TX, TY, TZ, disc, forgeFrame, heading, lines, machine, type LineRun } from './lines.ts';
-import { dustRing, send } from './pieces.ts';
+import { dustRing, send } from '../../place/pieces.ts';
 import { besideLine } from './rail.ts';
 import { delivered, earn } from './score.ts';
 import { flyToStock, type StationRun } from './stations.ts';
-import { OUT } from './spatial-station.ts';
+import { OUT } from '../../place/spatial-station.ts';
 import { snapCamp, wakeCamp } from './town.ts';
 
 export type Mode =

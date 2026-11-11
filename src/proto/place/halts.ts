@@ -13,11 +13,11 @@ import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
-import { H, addStatic, slab } from './land.ts';
-import { ORIGIN, lineAt, railY, type Line, type LinePoint } from './layout.ts';
-import { boardMaterial } from './look.ts';
-import { dropSet, dustRing } from './pieces.ts';
-import { addFoot } from './sites.ts';
+import { H, addStatic, slab } from '../../place/land.ts';
+import { ORIGIN, lineAt, railY, type Line, type LinePoint } from '../../place/layout.ts';
+import { boardMaterial } from '../../place/look.ts';
+import { dropSet, dustRing } from '../../place/pieces.ts';
+import { addFoot } from '../../place/sites.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const WOOD = '#a9794c',

@@ -31,7 +31,7 @@ import { line2Active, line2Completed, line2Rails, trainStops } from '../src/sim/
 import { railCounts } from '../src/sim/railway.ts';
 import { Cart, Line, Train, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
 import { CART_PHASE } from '../src/sim/railway-cart.ts';
-import { HALTS, LINKS, ORIGIN, lineAt, railY } from '../src/proto/place/layout.ts';
+import { HALTS, LINKS, ORIGIN, lineAt, railY } from '../src/place/layout.ts';
 import { PIER_STOP_CM, WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal, pierNeed } from '../src/sim/railway-works.ts';
 import { advanceWorks, railwayAtWorks, WORKS_STAGES } from './helpers/railway-works.ts';

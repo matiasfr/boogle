@@ -13,13 +13,13 @@ import { me } from '../../player/player.ts';
 import { camera } from '../../render/scene.ts';
 import { playMark } from '../mark.ts';
 import { pageQuery } from '../flags.ts';
-import { addGreeter } from './folk.ts';
+import { addGreeter } from '../../place/folk.ts';
 import { job, save } from './job.ts';
-import { VILLAGE, toWorld } from './layout.ts';
+import { VILLAGE, toWorld } from '../../place/layout.ts';
 import { indoors } from './place-rooms.ts';
 import { CAST, type Residents } from './residents.ts';
-import { SHORE_COAST, SHORE_WORKER, SHORE_WORKER_LOOK } from './shore-layout.ts';
-import { endTalk, startTalk } from './talk.ts';
+import { SHORE_COAST, SHORE_WORKER, SHORE_WORKER_LOOK } from '../../place/shore-layout.ts';
+import { endTalk, startTalk } from '../../place/talk.ts';
 import { BYE, SHORE_ASK } from './town-lines.ts';
 
 export function createShoreWorker(residents: Residents) {

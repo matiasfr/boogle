@@ -4,7 +4,7 @@ const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof 
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 teleport(me.body!, 803, H(803, 10) + 0.8, 10);
 cam.yaw = -Math.PI / 2;
 cam.pitch = 0.2;

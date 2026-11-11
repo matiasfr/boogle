@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../src/sickle/world-lines.ts';
 import { TRAIN, TRAIN_STOPS } from '../src/sim/railway-train.ts';
-import { LINES, ORIGIN } from '../src/proto/place/layout.ts';
+import { LINES, ORIGIN } from '../src/place/layout.ts';
 
 test('the catalog and the world-blockout page are current with the map JSON', () => {
   // The generator reads Place's terrain, which needs the dev hooks (import.meta.glob), so it runs in its own process.

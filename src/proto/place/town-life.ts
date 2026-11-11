@@ -28,9 +28,9 @@ import { TREES, standing } from './chop.ts';
 import { forge } from './forge.ts';
 import { job } from './job.ts';
 import { run } from './run.ts';
-import { sites } from './sites.ts';
+import { sites } from '../../place/sites.ts';
 import { createShop } from './shop.ts';
-import { updateTalkCard, talking } from './talk.ts';
+import { updateTalkCard, talking } from '../../place/talk.ts';
 import { BOARDS } from './town-lines.ts';
 
 roomEnv.up = (id) => id === 'house' || L1.open;

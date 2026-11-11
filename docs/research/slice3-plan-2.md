@@ -42,7 +42,7 @@ The [supply record](https://github.com/matiasfr/boogle/blob/d3dd0c138e6dff962183
 
 ## Exact promotion inventory
 
-**V:** [layout.ts](../../src/proto/place/layout.ts), [spatial-station.ts](../../src/proto/place/spatial-station.ts), [run.ts](../../src/proto/place/run.ts), [ladder.ts](../../src/proto/place/ladder.ts), [chop.ts](../../src/proto/place/chop.ts), [big-cargo.ts](../../src/proto/place/big-cargo.ts), [great-carry.ts](../../src/proto/place/great-carry.ts), [pair.ts](../../src/proto/place/pair.ts) and [tech.ts](../../src/proto/place/tech.ts) own the behavior being ported. Map routes and nested `src/sim`, `src/world`, `src/entities` and branch `server/AGENTS.md`, plus the adapters/player state-consumer rule, were read before contract inspection.
+**V:** [layout.ts](../../src/place/layout.ts), [spatial-station.ts](../../src/place/spatial-station.ts), [run.ts](../../src/proto/place/run.ts), [ladder.ts](../../src/proto/place/ladder.ts), [chop.ts](../../src/proto/place/chop.ts), [big-cargo.ts](../../src/proto/place/big-cargo.ts), [great-carry.ts](../../src/proto/place/great-carry.ts), [pair.ts](../../src/proto/place/pair.ts) and [tech.ts](../../src/proto/place/tech.ts) own the behavior being ported. Map routes and nested `src/sim`, `src/world`, `src/entities` and branch `server/AGENTS.md`, plus the adapters/player state-consumer rule, were read before contract inspection.
 
 Coordinates below are centimetres in the existing world, computed from this checkout's numeric layout/frame helper with Node 26.13.0. They are catalog candidates to regenerate against the final integration, not new placements. Do not import `layout.ts` into sim: it uses native trig/hypot for presentation layout.
 

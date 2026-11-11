@@ -18,9 +18,9 @@ import {
   railY,
   upLat,
   type Line,
-} from '../../src/proto/place/layout.ts';
-import { SHORE_COAST, SHORE_LANDING } from '../../src/proto/place/shore-layout.ts';
-import { openingStops } from '../../src/proto/place/opening-stops.ts';
+} from '../../src/place/layout.ts';
+import { SHORE_COAST, SHORE_LANDING } from '../../src/place/shore-layout.ts';
+import { openingStops } from '../../src/place/opening-stops.ts';
 import {
   GATES,
   GATE_SLAB,
@@ -33,11 +33,11 @@ import {
   SERVICE_WIDTH,
   HOOK_FLUSH,
   padById,
-} from '../../src/proto/place/tech-layout.ts';
-import { forgePlan, openingBuildings } from '../../src/proto/place/opening-plans.ts';
-import { frameBesideLine, stationColliders, stationStockCollider } from '../../src/proto/place/spatial-station.ts';
+} from '../../src/place/tech-layout.ts';
+import { forgePlan, openingBuildings } from '../../src/place/opening-plans.ts';
+import { frameBesideLine, stationColliders, stationStockCollider } from '../../src/place/spatial-station.ts';
 import type { Box } from '../../src/render/box-plan.ts';
-import { H } from '../../src/proto/place/terrain.ts';
+import { H } from '../../src/place/terrain.ts';
 
 export type Deck = { id: string; owner: string; center: THREE.Vector3; axes: THREE.Vector3[]; half: number[] };
 
@@ -146,7 +146,7 @@ export function timberDecks(): Deck[] {
     decks.push(
       between(
         `footbridge/${k}`,
-        'src/proto/place/land.ts',
+        'src/place/land.ts',
         a[0] + ORIGIN.x,
         a[1] + ORIGIN.z,
         b[0] + ORIGIN.x,
@@ -166,7 +166,7 @@ export function timberDecks(): Deck[] {
       decks.push(
         between(
           `landing/${i}`,
-          'src/proto/place/land.ts',
+          'src/place/land.ts',
           x - 19 + i * 2,
           SHORE_LANDING.z,
           x - 17.02 + i * 2,
@@ -181,7 +181,7 @@ export function timberDecks(): Deck[] {
 
   // The opening's props (lookout deck, flag, bank cart, arches).
   for (const p of openingStops())
-    decks.push(standing(p.id, 'src/proto/place/opening-stops.ts', p.x, p.base, p.z, p.w, p.h, p.d, p.yaw));
+    decks.push(standing(p.id, 'src/place/opening-stops.ts', p.x, p.base, p.z, p.w, p.h, p.d, p.yaw));
 
   // Route v2's walkways from Q2 and Q3 (src/entities/railway/line2-view.ts draws them 0.35 thick).
   for (const kind of ['hook', 'quarry'] as const) {
@@ -254,7 +254,7 @@ export function timberDecks(): Deck[] {
   }
   // The forge, its scaffold and the opening's buildings (opening-plans.ts).
   for (const b of [...openingBuildings(), { id: 'forge', boxes: forgePlan().scaffold }])
-    b.boxes.forEach((box, i) => decks.push(fromBox(`${b.id}/${i}`, 'src/proto/place/opening-plans.ts', box)));
+    b.boxes.forEach((box, i) => decks.push(fromBox(`${b.id}/${i}`, 'src/place/opening-plans.ts', box)));
 
   // The station frames, feeders and stock of every stretch of both lines (spatial-station.ts).
   for (const link of LINKS)
@@ -266,7 +266,7 @@ export function timberDecks(): Deck[] {
         decks.push(
           standing(
             `${spec.id}/${p.id}`,
-            'src/proto/place/spatial-station.ts',
+            'src/place/spatial-station.ts',
             p.position.x,
             p.position.y - p.shape.hy,
             p.position.z,

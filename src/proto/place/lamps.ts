@@ -5,8 +5,8 @@ import { scene } from '../../render/scene.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { pop } from '../../render/fanfare.ts';
 import { flat } from '../../render/flat.ts';
-import { addStatic } from './land.ts';
-import { railY } from './layout.ts';
+import { addStatic } from '../../place/land.ts';
+import { railY } from '../../place/layout.ts';
 import { lines } from './lines.ts';
 import { besideLine } from './rail.ts';
 

@@ -15,10 +15,10 @@ import { PLAYER_R, WALKABLE_NY } from '../../../src/constants.ts';
 import { GROUP } from '../../../src/physics/physics.ts';
 import { input } from '../../../src/player/input.ts';
 import { cam, me } from '../../../src/player/player.ts';
-import { H } from '../../../src/proto/place/land.ts';
+import { H } from '../../../src/place/land.ts';
 import { giftState } from '../../../src/proto/place/gifts.ts';
 import { lines, forgeFrame } from '../../../src/proto/place/lines.ts';
-import { stationColliders, FRAME_D } from '../../../src/proto/place/spatial-station.ts';
+import { stationColliders, FRAME_D } from '../../../src/place/spatial-station.ts';
 import type { Bot } from '../bot.ts';
 
 type Point = { x: number; y: number; z: number };

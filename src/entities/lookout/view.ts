@@ -32,9 +32,9 @@ export type LookoutView = Awaited<ReturnType<typeof createLookoutView>>;
 export async function createLookoutView() {
   const owner = createOwnedView();
   const [layout, land, sites, { flat }] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/sites.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/land.ts'),
+    import('../../place/sites.ts'),
     import('../../render/flat.ts'),
   ]);
   const { ORIGIN, FAR, LINES } = layout;

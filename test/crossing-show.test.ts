@@ -35,7 +35,7 @@ test('the finale whistle is heard at about half its gain where the twelfth footi
 });
 
 test('the finale shot travels the bents and ends on Ring Island, with the far end and the shard in frame', async () => {
-  const { FAR, ORIGIN } = await import('../src/proto/place/layout.ts');
+  const { FAR, ORIGIN } = await import('../src/place/layout.ts');
   assert.deepEqual(RING_SHARD, { x: FAR.x + ORIGIN.x + 10, y: 140, z: FAR.z + ORIGIN.z });
   const { from: start, to, at, seconds } = FINALE_SHOT;
   assert.ok(seconds >= 6 && seconds <= 8);

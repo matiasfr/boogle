@@ -4,12 +4,12 @@
 // solid"; docs/research/growing-towns.md (8-10 s for an ordinary addition, the longest for the landmark). Every building's
 // pieces share one instanced set, batched by shape. Local.
 import * as THREE from 'three/webgpu';
-import type { OwnedView } from '../../render/owned-view.ts';
-import { thump } from '../../render/machine-sfx.ts';
-import { PLAYER_R } from '../../constants.ts';
-import { me } from '../../player/player.ts';
-import { removeBody, teleport, type Body } from '../../physics/engine.ts';
-import type { Box } from '../../render/boxes.ts';
+import type { OwnedView } from '../render/owned-view.ts';
+import { thump } from '../render/machine-sfx.ts';
+import { PLAYER_R } from '../constants.ts';
+import { me } from '../player/player.ts';
+import { removeBody, teleport, type Body } from '../physics/engine.ts';
+import type { Box } from '../render/boxes.ts';
 import { H, ROOM_GROUP, addStatic } from './land.ts';
 import { paintSite } from './look.ts';
 import { dropSet, dustRing, type DropSet } from './pieces.ts';

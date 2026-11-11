@@ -172,6 +172,7 @@ export const INPUT_LAYER = [
 export const INPUT_ALLOW = [
   'src/debug/**', // dev and debug tools: free camera, record, dev menu, panels
   'src/proto/**', // prototypes load by import() and carry their own bindings
+  'src/place/**', // the village kit moved out of src/proto with its key reads (talk, look-kit); it goes through actions with the owner conversion (ecs-migration-railway M5)
   'src/render/audio.ts', // any gesture unlocks the audio context; reads no control
   'src/features/wake-lock.ts', // any input takes the screen wake lock; reads no control
   'src/boogler/dialogue.ts', // keeps clicks inside the DOM dialogue from reaching the canvas; reads no control
@@ -187,7 +188,7 @@ const policyBlocks: PolicyBlock[] = [
     rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, protoBan, debugBan] }] },
   },
   {
-    files: ['src/proto/**/*.{js,ts}'],
+    files: ['src/proto/**/*.{js,ts}', 'src/place/**/*.{js,ts}'], // src/place still reaches proto helpers until M6/M13
     rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, debugBan] }] },
   },
   {
@@ -431,7 +432,7 @@ const policyBlocks: PolicyBlock[] = [
   })),
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/proto/**', 'src/debug/**', 'src/entity/**', ...ENTITY_SERVICES],
+    ignores: ['src/proto/**', 'src/place/**', 'src/debug/**', 'src/entity/**', ...ENTITY_SERVICES], // src/place: scene adds and hooks get an owner in the follow-up listed in the plan
     rules: { 'boogle/use-an-entity': 'error' },
   },
   {

@@ -37,12 +37,12 @@ export async function createRailwayCart(
   shelfSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
   const [layout, rail, pieces, flatMod, look, kit, props, common] = await Promise.all([
-    import('../../proto/place/layout.ts'),
+    import('../../place/layout.ts'),
     import('../../proto/place/rail.ts'),
-    import('../../proto/place/pieces.ts'),
+    import('../../place/pieces.ts'),
     import('../../render/flat.ts'),
-    import('../../proto/place/look.ts'),
-    import('../../proto/place/look-kit.ts'),
+    import('../../place/look.ts'),
+    import('../../place/look-kit.ts'),
     import('../../render/prop-kit.ts'),
     import('../../render/fanfare.ts'),
   ]);

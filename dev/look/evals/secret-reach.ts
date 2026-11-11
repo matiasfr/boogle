@@ -11,13 +11,13 @@ const { interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');
 const { inReach } = (await import('/src/player/reach.ts' as string)) as typeof import('../../../src/player/reach.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { ORIGIN } = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const { SECRETS, padById } = (await import(
-  '/src/proto/place/tech-layout.ts' as string
-)) as typeof import('../../../src/proto/place/tech-layout.ts');
+  '/src/place/tech-layout.ts' as string
+)) as typeof import('../../../src/place/tech-layout.ts');
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const ox = ORIGIN.x;
 for (const s of SECRETS) {

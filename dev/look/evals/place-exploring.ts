@@ -5,7 +5,7 @@ import { actionById } from '../../../src/player/controls.ts';
 import { teleport } from '../../../src/physics/engine.ts';
 import { scene } from '../../../src/render/scene.ts';
 import { job } from '../../../src/proto/place/job.ts';
-import { ORIGIN } from '../../../src/proto/place/layout.ts';
+import { ORIGIN } from '../../../src/place/layout.ts';
 import { coop } from '../../../src/proto/place/coop.ts';
 import { COOP_IDENTITY } from '../../../src/proto/place/coop-identity.ts';
 import { techApi, snapTech } from '../../../src/proto/place/tech.ts';

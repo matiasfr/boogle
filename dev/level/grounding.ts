@@ -1,11 +1,11 @@
 // Source-owned production placements, sampled against the triangles actually drawn by Place's terrain.
 // Foundations deliberately extend below ground; test exposed gaps and terrain above the authored seating surface.
 import { Vector3 } from 'three/webgpu';
-import { openingBuildings, forgePlan } from '../../src/proto/place/opening-plans.ts';
-import { surfaceHeight as ground } from '../../src/proto/place/terrain.ts';
+import { openingBuildings, forgePlan } from '../../src/place/opening-plans.ts';
+import { surfaceHeight as ground } from '../../src/place/terrain.ts';
 import { checkPropGrounding } from './grounding-props.ts';
 import { checkTrackGrounding } from './grounding-track.ts';
-import type { Plan } from '../../src/proto/place/building-plans.ts';
+import type { Plan } from '../../src/place/building-plans.ts';
 import type { Box } from '../../src/render/box-plan.ts';
 
 const TOLERANCE_CM = 5;

@@ -14,7 +14,7 @@ const { back, shoulder, setTrunkTaken } = (await import(
   '/src/proto/place/chop.ts' as string
 )) as typeof import('../../../src/proto/place/chop.ts');
 const { job } = (await import('/src/proto/place/job.ts' as string)) as typeof import('../../../src/proto/place/job.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { wearOwned } = (await import(
   '/src/proto/place/gifts.ts' as string
 )) as typeof import('../../../src/proto/place/gifts.ts');

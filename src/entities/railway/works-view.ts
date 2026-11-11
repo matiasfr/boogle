@@ -46,7 +46,7 @@ export async function createRailwayWorks(
     busy: () => boolean;
   },
 ) {
-  const { H, addStatic } = await import('../../proto/place/land.ts');
+  const { H, addStatic } = await import('../../place/land.ts');
   const kiln = { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 },
     rack = { x: WORKS_RACK.x / 100, z: WORKS_RACK.z / 100 };
   const throat = { x: WORKS_SEAMS[1].x / 100, z: WORKS_SEAMS[1].z / 100 };
@@ -220,7 +220,7 @@ export async function createRailwayWorks(
     post.z = offset[0]!.z + out.z * Math.sign(side) * 1.3;
     post.yaw = Math.atan2(-(offset[1]!.z - offset[0]!.z), offset[1]!.x - offset[0]!.x);
   }
-  const { paintBoard } = await import('../../proto/place/signs.ts');
+  const { paintBoard } = await import('../../place/signs.ts');
   const postY = H(post.x, post.z);
   const signMat = paintBoard([{ t: 'Kiln', px: 190 }], 1.2, 0.34);
   const front = new THREE.PlaneGeometry(1.2, 0.34),

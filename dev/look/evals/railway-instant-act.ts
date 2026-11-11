@@ -7,8 +7,8 @@ const { inspectRailway } = (await import(
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { CHOP_CONTACT } = (await import(
-  '/src/proto/place/chop-timing.ts' as string
-)) as typeof import('../../../src/proto/place/chop-timing.ts');
+  '/src/place/chop-timing.ts' as string
+)) as typeof import('../../../src/place/chop-timing.ts');
 const bot = makeBot({
   recover: () => {
     throw new Error('Instant-feedback action needed recovery');

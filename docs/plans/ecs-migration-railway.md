@@ -380,7 +380,7 @@ later change with a bundle report. Place's remaining callers get one owner from 
     triangles) identical to base; one look at `--rail-seed trains-on`.
   - **Reviewer attacks:** a module-level `scene.add` that used to run on import and now never runs; the remaining
     prototypes (`?proto=net`, `wagon`, `greybox`) still load.
-- [ ] **M5. Land, layout and the shared village kit to `src/place/`.** _Medium._
+- [x] **M5. Land, layout and the shared village kit to `src/place/`.** _Medium._
   - `layout`, `land`, `terrain`, `shore-layout`, `tech-layout`, `home-station`, `spatial-station`, `support`,
     `chop-timing`, `tree-catalog`, `tree-sources`, `pose`, `cove`, `cove-ground`, `cove-material`, `cove-sand`,
     `cove-stop`, `cove-textures`, `cove-tuning`, `cove-view`, `far-ground`, `water`, `look`, `look-kit`, `pieces`,
@@ -390,6 +390,15 @@ later change with a bundle report. Place's remaining callers get one owner from 
   - `land.ts`'s `addStatic` takes the owner. Hooks and adds to convert: `land.ts` (10 `scene.add`, 2 `addBody`),
     `pieces.ts:102`, `:109`, `:234`, `look-kit.ts:230`, `:346`, `:363`, `:417`, `:554`, `:572`, `look.ts:332`,
     `folk.ts:58`. `dev/lint/policy.ts` gains `src/place/**`; `src/README.md` gains a `place/` line.
+  - **Done 11 November (branch `ecs/m5-place-moves`):** the 34 files moved with `git mv`; `dev/lint/policy.ts` gives
+    `src/place/**` the three exemptions `src/proto/**` has (static proto imports, input reads, the entity ratchet), so no
+    file content changed beyond import paths; `src/README.md` gains its `place/` line. The `render/carry-models`
+    directive is gone. **Not done, and listed under M13 with M4's:** `addStatic` taking the owner, the `scene.add`, `addBody` and
+    `onFrame` conversions named above, and D1d (`look-kit` still imports Place's `job.ts` for `job.boiler` and `job.rung.trains`
+    at two lines; the callers are `rail.ts` and the live `line2-view`, `view` and `cart-view` loaders). `proto/place` imports from
+    `src/place` remain: `look-kit` (`job`, `wagon/engine`, `engine-kit`), `folk` (`machine-model`), `land` (`terrain-pass`).
+    `src/proto`: 136 files and 34,459 lines to 102 and 26,482; `src/place`: 34 files, 7,977 lines. Build: 350 chunks, same
+    names, first-load gzip identical (837 KB js, 14 css, 92 other); `level-check` output identical.
   - **Hold:** check `npm run inflight` for the terrain pass and the Ring Island landform, which edit `land.ts`, and
     land this the day it is rebased.
   - **Verify:** `npm run check` (level-check reads the layout); the bench census identical at `spawn`, `town`, `forge`
@@ -489,6 +498,9 @@ later change with a bundle report. Place's remaining callers get one owner from 
     plus the 230-line remainder of `rail.ts` and `place-owner.ts`. Tag the parent `archive/place` first. It needs the
     D1 brief on what still drives Place (orchestrator-state, Leftovers): 148 files name the entry, 53 of them look
     evals and 9 beats.
+  - Also from M5 (deferred, same reason): `land.ts` `addStatic` takes the owner, and its `scene.add`/`addBody`, `pieces.ts`,
+    `look-kit.ts`, `look.ts` and `folk.ts` adds and hooks go to an owner; `look-kit` takes `boilerShown: () => boolean` from its
+    caller; then `src/place/**` leaves the three `dev/lint/policy.ts` exemptions.
   - Also from M4 (deferred; a move step changes no behaviour): give `render/boxes.ts` (`makeSet`), `render/crates.ts` (the
     `ground` heap mesh, `hopTo`) and `render/wagon-look.ts` (`animate`) a required owner, remove their `scene.add` and
     `else onFrame` fallbacks and the three `use-an-entity` directives, and give the `?proto=net`, `wagon`, `crossing`

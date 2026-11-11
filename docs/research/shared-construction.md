@@ -221,7 +221,7 @@ These are ordered experiments, not a twelve-feature implementation brief. The fi
 
 ### 1. Establish the unchanged shared-station baseline
 
-**Hypothesis:** two people enjoy the proven job more even with no new co-op mechanic. Serve DESIGN 1 and 4. Use [place's current numbers](../../src/proto/place/layout.ts) through [rail-slice step 2](../plans/rail-slice.md#steps): one grove, one 24-log frame, twelve-log backs, one layer and a rideable result. Compare the same route solo and as a pair; keep cost, movement and yield fixed. Observe voluntary help and shared attention as well as elapsed time. A single enthusiastic pair is a direction signal, not validation for eight people.
+**Hypothesis:** two people enjoy the proven job more even with no new co-op mechanic. Serve DESIGN 1 and 4. Use [place's current numbers](../../src/place/layout.ts) through [rail-slice step 2](../plans/rail-slice.md#steps): one grove, one 24-log frame, twelve-log backs, one layer and a rideable result. Compare the same route solo and as a pair; keep cost, movement and yield fixed. Observe voluntary help and shared attention as well as elapsed time. A single enthusiastic pair is a direction signal, not validation for eight people.
 
 **Smallest two-player prototype:** two actual people complete that frame and ride, then repeat once with the other person arriving first. No relay, larger bill or new reward. **What's new:** “Your logs now build the same track.” **Gut question:** “Did having your friend there make that job better?”
 
@@ -233,7 +233,7 @@ These are ordered experiments, not a twelve-feature implementation brief. The fi
 
 ### 3. Keep the bill fixed when friends arrive or leave
 
-**Hypothesis:** help should shorten the material job, while shared rides and machine work provide time together. Serve DESIGN 8. Preserve the fixed-cap call in [rail-slice authority](../plans/rail-slice.md#authority-and-the-production-seam), with recipe counts from [place layout](../../src/proto/place/layout.ts). Scale physical access and later authored structures, not today's bill by attendance. Revisit content pacing only after observing 4, 6 and then 8 people.
+**Hypothesis:** help should shorten the material job, while shared rides and machine work provide time together. Serve DESIGN 8. Preserve the fixed-cap call in [rail-slice authority](../plans/rail-slice.md#authority-and-the-production-seam), with recipe counts from [place layout](../../src/place/layout.ts). Scale physical access and later authored structures, not today's bill by attendance. Revisit content pacing only after observing 4, 6 and then 8 people.
 
 **Smallest two-player prototype:** A starts the 24-log frame, B joins at half-full, then leaves before the next frame. No cost changes at either boundary; A completes the next frame alone. **What's new:** “A joining friend never adds to the bill.” **Gut question:** “Did your friend joining feel like help?”
 
@@ -257,7 +257,7 @@ These are ordered experiments, not a twelve-feature implementation brief. The fi
 
 ### 7. Credit accepted help equally and let everyone use the result
 
-**Hypothesis:** visible contribution and a useful common route give recognition without competition over the final log. Serve DESIGN 4 and 6. Use the contributor set proposed in [rail projects](../plans/rail-slice.md#authority-and-the-production-seam), accepted material arcs and [place's pieces](../../src/proto/place/pieces.ts). No sorted totals, contribution tiers, exclusive seats or last-depositor reward. Do not invent a personal reward economy before its separate verdict.
+**Hypothesis:** visible contribution and a useful common route give recognition without competition over the final log. Serve DESIGN 4 and 6. Use the contributor set proposed in [rail projects](../plans/rail-slice.md#authority-and-the-production-seam), accepted material arcs and [place's pieces](../../src/place/pieces.ts). No sorted totals, contribution tiers, exclusive seats or last-depositor reward. Do not invent a personal reward economy before its separate verdict.
 
 **Smallest two-player prototype:** A supplies twenty logs and B four; acknowledge both in the same style and let both ride. Reverse who makes the final deposit on the next attempt. **What's new:** “The track remembers both helpers equally.” **Gut question:** “Did it feel like something you both made?”
 

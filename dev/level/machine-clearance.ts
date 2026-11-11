@@ -21,12 +21,12 @@ import {
   pathLamps,
   railY,
   upLat,
-} from '../../src/proto/place/layout.ts';
-import { openingBuildings, openingStops, forgePlan, WOOD2 } from '../../src/proto/place/opening-plans.ts';
-import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '../../src/proto/place/spatial-station.ts';
+} from '../../src/place/layout.ts';
+import { openingBuildings, openingStops, forgePlan, WOOD2 } from '../../src/place/opening-plans.ts';
+import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '../../src/place/spatial-station.ts';
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_AXE_STAND, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
-import { H } from '../../src/proto/place/terrain.ts';
+import { H } from '../../src/place/terrain.ts';
 import {
   panelPose,
   panelEase,
@@ -34,12 +34,12 @@ import {
   carriedPiece,
   MAX_PANEL_LENGTH,
 } from '../../src/proto/place/track-panels.ts';
-import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
+import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import { boxAt, place } from '../../src/render/box-plan.ts';
 import { merged } from '../../src/render/part-geometry.ts';
 import { T1_CRATE_PARTS } from '../../src/render/t1-reward-parts.ts';
-import { PILLARS, PADS, DEVICES, p1LipClear } from '../../src/proto/place/tech-layout.ts';
+import { PILLARS, PADS, DEVICES, p1LipClear } from '../../src/place/tech-layout.ts';
 import { timberDecks } from './timber-track.ts';
 
 export async function checkMachineClearance() {
@@ -185,8 +185,8 @@ export async function checkMachineClearance() {
     }
     treePart++;
   });
-  const models = sourceModule<typeof import('../../src/proto/place/opening-models.ts')>(
-    fs.readFileSync('src/proto/place/opening-models.ts', 'utf8'),
+  const models = sourceModule<typeof import('../../src/place/opening-models.ts')>(
+    fs.readFileSync('src/place/opening-models.ts', 'utf8'),
     { THREE, H, CRANE, RACK, ORIGIN, WOOD2, flat: material },
   );
   const crane = models.craneModel();

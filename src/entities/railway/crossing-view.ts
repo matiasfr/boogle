@@ -55,8 +55,8 @@ export async function createRailwayCrossing(
   },
 ) {
   const [{ H, addStatic }, layout, sounds] = await Promise.all([
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/layout.ts'),
+    import('../../place/land.ts'),
+    import('../../place/layout.ts'),
     import('../../render/fanfare.ts'),
   ]);
   // The finale's shot: every pull-out's rules (plays to the end, the one highlighted Interact skip from 0.8 s; none for

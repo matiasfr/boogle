@@ -7,8 +7,8 @@ const { TREES, chop } = (await import(
   '/src/proto/place/chop.ts' as string
 )) as typeof import('../../../src/proto/place/chop.ts');
 const { H } = (await import(
-  '/src/proto/place/terrain.ts' as string
-)) as typeof import('../../../src/proto/place/terrain.ts');
+  '/src/place/terrain.ts' as string
+)) as typeof import('../../../src/place/terrain.ts');
 const { snapshotFeelSpring } = (await import(
   '/src/player/feel-tuning.ts' as string
 )) as typeof import('../../../src/player/feel-tuning.ts');

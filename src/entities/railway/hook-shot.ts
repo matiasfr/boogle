@@ -40,7 +40,7 @@ onStart(() =>
 );
 
 export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedView) {
-  const [view, tech] = await Promise.all([createRailwayHookView(owner), import('../../proto/place/tech-layout.ts')]);
+  const [view, tech] = await Promise.all([createRailwayHookView(owner), import('../../place/tech-layout.ts')]);
   const { MOVE } = tech;
   const latch = createHookLatch(),
     hold = holdPick();

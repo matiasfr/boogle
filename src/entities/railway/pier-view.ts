@@ -6,7 +6,7 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { whistle } from '../../render/machine-sfx.ts';
 
 type Deps = {
-  layout: typeof import('../../proto/place/layout.ts');
+  layout: typeof import('../../place/layout.ts');
   rail: typeof import('../../proto/place/rail.ts');
   sounds: typeof import('../../render/fanfare.ts');
 };

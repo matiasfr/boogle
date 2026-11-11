@@ -2,8 +2,8 @@
 // nothing yet. The API a later system needs, like The Boogler's prices: `money()`, `earn(n, why)`, `spend(n, why)` (false if
 // you can't afford it), `onMoney(fn)`. It lives in `job.score`, so it's saved and shared with everything else. Local.
 import { job } from './job.ts';
-import type { Goods } from './layout.ts';
-import { PAY } from './layout.ts';
+import type { Goods } from '../../place/layout.ts';
+import { PAY } from '../../place/layout.ts';
 
 type Fn = (delta: number, why: string) => void;
 const fns: Fn[] = [];
@@ -25,4 +25,4 @@ export function delivered(kind: Goods) {
   earn(PAY[kind], kind);
 }
 /** "$1,250", the way the HUD writes it. */
-export { dollars } from './signs.ts';
+export { dollars } from '../../place/signs.ts';

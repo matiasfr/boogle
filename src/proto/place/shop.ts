@@ -8,7 +8,7 @@
 // wardrobe (src/entities/wardrobe/state.ts); ?proto=place's in ./town-life.ts, with ./gifts.ts adapted to the same surface.
 // Docs: docs/research/town-interiors.md, "A shop when money is a joke"; docs/research/cosmetic-rarity.md.
 import * as THREE from 'three/webgpu';
-import { dollars, paperMaterial } from './signs.ts';
+import { dollars, paperMaterial } from '../../place/signs.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { NO_TARGETS, interactTarget, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';

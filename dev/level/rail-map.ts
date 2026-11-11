@@ -1,6 +1,6 @@
 // node --import ./dev/sim/hooks.ts dev/level/rail-map.ts [--check] [--numbers]: the whole network's rail map,
 // docs/world/rail-map.html (docs/plans/rail-map.md), from the same data the game and the blockout read: Place's rails
-// and the double formation (src/proto/place/layout.ts), the sim catalog (src/sim/railway-lines.ts), Ring Island's R1
+// and the double formation (src/place/layout.ts), the sim catalog (src/sim/railway-lines.ts), Ring Island's R1
 // layout (src/sim/railway-ring-layout.ts), the blockout's future lines (src/sickle/world-lines.ts, itself generated
 // from docs/world/map-prototypes.html) and the Sickle Isles outlines. The track continuity report's worst places are
 // marked on it. `--check` writes nothing and exits 1 when the page is stale (test/rail-map.test.ts); `--numbers`
@@ -27,10 +27,10 @@ import {
   ROOM_PLOTS,
   FORGE_FRAME,
   AXE_STAND,
-} from '../../src/proto/place/layout.ts';
+} from '../../src/place/layout.ts';
 import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ground.ts';
-import { FAR } from '../../src/proto/place/layout.ts';
+import { FAR } from '../../src/place/layout.ts';
 import { WORLD_LINES, FORMATION } from '../../src/sickle/world-lines.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import {
@@ -57,8 +57,8 @@ import {
   legPoints,
   spurPoints,
   stallFrame,
-} from '../../src/proto/place/home-station.ts';
-import { frameBesideLine } from '../../src/proto/place/spatial-station.ts';
+} from '../../src/place/home-station.ts';
+import { frameBesideLine } from '../../src/place/spatial-station.ts';
 import {
   CONSIST,
   LIVE,

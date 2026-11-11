@@ -102,7 +102,7 @@ Tip numbers refer to the linked Utsubo article; the table records Boogle finding
 |  52 | Already                                  | [materials.ts][materials] and [precompile.ts][precompile] reuse/cache and report stages/pipelines. Preserve uniform parameters; structural changes can still create variants. No current total variant census performed.                                                                                    |
 |  53 | Already                                  | [lights.ts](../../src/render/lights.ts) selects two nearby point lights; [scene.ts][scene] supplies sun/fill. This is scoped pooling, not a claim that every prototype has exactly three lights.                                                                                                            |
 |  54 | Already avoided                          | Pooled point lights in [lights.ts](../../src/render/lights.ts) do not enable shadows. Retain this default; new shadowed lamps need a pass-cost measurement, not a global light-count formula.                                                                                                               |
-|  55 | Later — stable interior art              | [look.ts](../../src/proto/place/look.ts) already has vertex contact shading. True lightmaps add UV/texture/memory work and must match prepared lighting states; evaluate for a finished interior, not the whole changing construction scene.                                                                |
+|  55 | Later — stable interior art              | [look.ts](../../src/place/look.ts) already has vertex contact shading. True lightmaps add UV/texture/memory work and must match prepared lighting states; evaluate for a finished interior, not the whole changing construction scene.                                                                |
 |  56 | Already lab / Later production           | [look-world.ts](../../src/debug/look-world.ts) already tries `CSMShadowNode`. [Official node docs](https://threejs.org/docs/pages/CSMShadowNode.html) confirm the WebGPU path. Revisit only when the current tight sun frustum misses important distant shadows; no new CSM task or SunLight migration now. |
 |  57 | Already                                  | [scene.ts][scene] selects 1024 touch / 2048 desktop shadow maps. Tune only with matched quality/cost evidence; no automatic increase to 4096.                                                                                                                                                               |
 |  58 | Already partly / Later audit             | [kit][kit] disables shadows on sleepers, rails, plates and wheels. [loader][loader] initially enables both flags on imported meshes; inspect new dense kit assets for unnecessary casters when shadow cost grows.                                                                                           |
@@ -169,8 +169,8 @@ Use the existing [cost protocol][cost]: representative M1 Max views, fixed resol
 [instances]: ../../src/render/instances.ts
 [particles]: ../../src/render/particles.ts
 [fft]: ../../src/render/water/fft.ts
-[kit]: ../../src/proto/place/look-kit.ts
-[land]: ../../src/proto/place/land.ts
+[kit]: ../../src/place/look-kit.ts
+[land]: ../../src/place/land.ts
 [loader]: ../../src/render/asset-loader.ts
 [manifest]: ../../src/render/asset-manifest.ts
 [build]: ../../dev/assets/build.ts

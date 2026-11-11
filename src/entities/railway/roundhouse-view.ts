@@ -49,9 +49,9 @@ export async function createRailwayRoundhouse(
   deps: { contactIn: (id: number) => number },
 ) {
   const [{ addStatic }, layout, home] = await Promise.all([
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/home-station.ts'),
+    import('../../place/land.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/home-station.ts'),
   ]);
   // `?home=b` (docs/plans/home-station.md, step 3) draws the open stall on the table's 190 degree road and the table at
   // its spur's end. Look only: the prompts' reach keeps today's anchors, and the shunt still runs today's path.

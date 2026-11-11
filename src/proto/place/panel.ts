@@ -6,17 +6,17 @@ import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { drawHeaps } from '../../render/crates.ts';
-import { DAY } from './look.ts';
+import { DAY } from '../../place/look.ts';
 import { ROCK_LIST, TREES, back, greatTree, shoulder, setTrunkTaken, standing } from './chop.ts';
 import { clearMoments, pullOn } from './celebrate.ts';
 import { coop } from './coop.ts';
 import { cart, drawRack, rack, snapCart } from './depot.ts';
-import { folk, setPushers } from './folk.ts';
+import { folk, setPushers } from '../../place/folk.ts';
 import { forge, snapForge } from './forge.ts';
 import { HAND_LOGS } from './forge.ts';
 import { deliver, giftState, nearestCrate, openCrate, snapGifts, type GiftId } from './gifts.ts';
 import { crystals, crystalAt, CRYSTALS, snapCrystals } from './crystals.ts';
-import { H, PATH_SAMPLES } from './land.ts';
+import { H, PATH_SAMPLES } from '../../place/land.ts';
 import { job, save } from './job.ts';
 import {
   CRANE,
@@ -30,7 +30,7 @@ import {
   lineAt,
   toWorld,
   type LinePoint,
-} from './layout.ts';
+} from '../../place/layout.ts';
 import { L1, L2, allHeaps, dock, forgeFrame, hub, lines, machine, stepsOf, yard } from './lines.ts';
 import { halts } from './halts.ts';
 import { trainEta, callTrain } from './rail.ts';

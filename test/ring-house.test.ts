@@ -15,7 +15,7 @@ import {
   type HouseBox,
 } from '../src/proto/greybox/ring-house.ts';
 import { ringHeight } from '../src/proto/greybox/ring-cones.ts';
-import { ORIGIN } from '../src/proto/place/layout.ts';
+import { ORIGIN } from '../src/place/layout.ts';
 
 const R = 0.45,
   TALL = 1.8;

@@ -23,11 +23,11 @@ import { currentCoopPeer } from './coop-identity.ts';
 import { cart, cartHere, depotRails, depotRide, loadCart, onCart, railsOwed } from './depot.ts';
 import { forge, rackTop, takeRail } from './forge.ts';
 import { COOP, count, job, num, save } from './job.ts';
-import { CART, ORIGIN } from './layout.ts';
+import { CART, ORIGIN } from '../../place/layout.ts';
 import { TX, TY, TZ } from './lines.ts';
-import { dustRing, send } from './pieces.ts';
-import { H } from './terrain.ts';
-import { addStatic } from './land.ts';
+import { dustRing, send } from '../../place/pieces.ts';
+import { H } from '../../place/terrain.ts';
+import { addStatic } from '../../place/land.ts';
 
 export const BEAM = {
   len: 9,

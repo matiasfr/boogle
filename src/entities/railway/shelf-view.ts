@@ -22,12 +22,12 @@ export async function createRailwayShelf(
   bundleOrigin: (pid: string, count: number, out: THREE.Vector3) => boolean,
 ) {
   const [layout, land, pieces, flatMod, look, kit, sounds] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/pieces.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/land.ts'),
+    import('../../place/pieces.ts'),
     import('../../render/flat.ts'),
-    import('../../proto/place/look.ts'),
-    import('../../proto/place/look-kit.ts'),
+    import('../../place/look.ts'),
+    import('../../place/look-kit.ts'),
     import('../../render/fanfare.ts'),
   ]);
   const { flat } = flatMod;

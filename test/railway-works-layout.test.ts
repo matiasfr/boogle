@@ -19,8 +19,8 @@ import {
   TURNTABLE,
   lineAt,
   railY,
-} from '../src/proto/place/layout.ts';
-import { H, PATH_SAMPLES } from '../src/proto/place/terrain.ts';
+} from '../src/place/layout.ts';
+import { H, PATH_SAMPLES } from '../src/place/terrain.ts';
 import { distToLine, parseMapPage, type XZ } from '../src/proto/greybox/map-data.ts';
 import { LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';

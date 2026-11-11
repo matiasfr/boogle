@@ -39,9 +39,9 @@ export async function createRailwayTools(
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
   const [layout, tech, land, shapes, axes, flat, gear, sparkle] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/tech-layout.ts'),
-    import('../../proto/place/land.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/tech-layout.ts'),
+    import('../../place/land.ts'),
     import('../../render/part-geometry.ts'),
     import('../../render/axe-models.ts'),
     import('../../render/flat.ts'),

@@ -32,13 +32,13 @@ _Research report, 5 November 2026. Proposals from the owner's 4 November solo iP
 
 **Options [H].** A: an empty boiler saddle and matching mounting bands. B: a destination sign beside the forge. C: a camera cut from boiler to train.
 
-**Recommend A; smallest build.** In [`look-kit.ts`](../../src/proto/place/look-kit.ts)/[`rail.ts`](../../src/proto/place/rail.ts), hide the dormant engine's boiler mass and expose two unmistakable curved saddles; preserve its frame/wheels. Give the carried boiler the same band spacing. On fitting, visibly seat that part before the existing wake in [`cargo.ts`](../../src/proto/place/cargo.ts). Verify the silhouette from the earlier camp visit and the final approach; do not alter protected dialogue.
+**Recommend A; smallest build.** In [`look-kit.ts`](../../src/place/look-kit.ts)/[`rail.ts`](../../src/proto/place/rail.ts), hide the dormant engine's boiler mass and expose two unmistakable curved saddles; preserve its frame/wheels. Give the carried boiler the same band spacing. On fitting, visibly seat that part before the existing wake in [`cargo.ts`](../../src/proto/place/cargo.ts). Verify the silhouette from the earlier camp visit and the final approach; do not alter protected dialogue.
 
 **Tap:** Show the missing boiler in the old train? **A — matching empty saddle (recommended)** / B — sign / C — camera cut.
 
 ## 3. Show the switch gate blocking the future railway
 
-**Problem / today [C].** It is not directly in front of the parked machine. [`tech-layout.ts`](../../src/proto/place/tech-layout.ts)'s quarry slab sits at line distance 186, on the future track bed; [`run.ts`](../../src/proto/place/run.ts)'s `gateWaits` prevents the corresponding station job. A chain already connects the lever mechanism. The missing information is the route between these objects.
+**Problem / today [C].** It is not directly in front of the parked machine. [`tech-layout.ts`](../../src/place/tech-layout.ts)'s quarry slab sits at line distance 186, on the future track bed; [`run.ts`](../../src/proto/place/run.ts)'s `gateWaits` prevents the corresponding station job. A chain already connects the lever mechanism. The missing information is the route between these objects.
 
 **Reference [V].** Astroneer's rail posts visibly chain into a route, and junction controls correspond to its branches ([Rails Update](https://blog.astroneer.space/p/rails-update/)). Boogle can borrow route continuity without importing its wiring system.
 
@@ -109,7 +109,7 @@ These are track-construction systems, not passenger locomotives. They require pr
 
 ## 8. Spread abilities by meaningful uses, not elapsed timers
 
-**Problem / today [C].** Tonight's owner-supplied acquisition times are **jump 7:06, hook 15:05, glider 17:57**: gaps of **7:59** and **2:52**. These are one session's observations, not target averages. [`tech-layout.ts`](../../src/proto/place/tech-layout.ts) places jump at the first-line pillar, hook at the second-line pillar and glider at Needle Bell's summit. [`tech.ts`](../../src/proto/place/tech.ts) couples the summit pickup to the sea gate. The notes also flag an automatic demonstration jump and overlapping glider/island reveals.
+**Problem / today [C].** Tonight's owner-supplied acquisition times are **jump 7:06, hook 15:05, glider 17:57**: gaps of **7:59** and **2:52**. These are one session's observations, not target averages. [`tech-layout.ts`](../../src/place/tech-layout.ts) places jump at the first-line pillar, hook at the second-line pillar and glider at Needle Bell's summit. [`tech.ts`](../../src/proto/place/tech.ts) couples the summit pickup to the sea gate. The notes also flag an automatic demonstration jump and overlapping glider/island reveals.
 
 **Reference [V].** A Short Hike's creator designed for players taking the opposite of the obvious route while retaining good pacing ([developer retrospective](https://blog.playstation.com/2021/08/05/crafting-a-tiny-open-world-a-look-behind-the-scenes-at-the-creation-of-a-short-hike/)). Time spacing must tolerate exploration.
 
@@ -121,7 +121,7 @@ These are track-construction systems, not passenger locomotives. They require pr
 
 ## 9. Move the proper axe before the great tree, without shortening Station 3's ordinary work
 
-**Problem / today [C].** [`layout.ts`](../../src/proto/place/layout.ts) requires **40 logs and one beam at T3**. [`chop.ts`](../../src/proto/place/chop.ts) permits the great tree's starter-axe strokes; [`run.ts`](../../src/proto/place/run.ts)/[`ladder.ts`](../../src/proto/place/ladder.ts) grant the proper-axe chest only after T3 opens the path. Merely adding an axe check would deadlock that route. The newer owner call already forbids early felling/shouldering until T3 needs it.
+**Problem / today [C].** [`layout.ts`](../../src/place/layout.ts) requires **40 logs and one beam at T3**. [`chop.ts`](../../src/proto/place/chop.ts) permits the great tree's starter-axe strokes; [`run.ts`](../../src/proto/place/run.ts)/[`ladder.ts`](../../src/proto/place/ladder.ts) grant the proper-axe chest only after T3 opens the path. Merely adding an axe check would deadlock that route. The newer owner call already forbids early felling/shouldering until T3 needs it.
 
 **Reference [V].** Minecraft's axe progression improves harvesting speed ([Mojang's axe article](https://www.minecraft.net/en-us/article/taking-inventory--axe)). That makes the ordinary-log economy relevant even when the proposed new requirement concerns only one special tree. A stronger-looking tree is not enough to fix reward order.
 
@@ -133,7 +133,7 @@ These are track-construction systems, not passenger locomotives. They require pr
 
 ## 10. Make the four small moments readable at approach distance
 
-**Problem / today [C].** Tower rewards become visible too late; the axe is easy to miss; hangers do not explain swapping; filling the back needs a little response. [`tech-layout.ts`](../../src/proto/place/tech-layout.ts) owns secret placements; [`ladder.ts`](../../src/proto/place/ladder.ts) owns the axe chest. [`gifts.ts`](../../src/proto/place/gifts.ts)'s `swapSlot` cycles owned items and then empty, while [`verbs.ts`](../../src/proto/place/verbs.ts) says “Swap [slot]”. [`chop.ts`](../../src/proto/place/chop.ts) updates the carried view.
+**Problem / today [C].** Tower rewards become visible too late; the axe is easy to miss; hangers do not explain swapping; filling the back needs a little response. [`tech-layout.ts`](../../src/place/tech-layout.ts) owns secret placements; [`ladder.ts`](../../src/proto/place/ladder.ts) owns the axe chest. [`gifts.ts`](../../src/proto/place/gifts.ts)'s `swapSlot` cycles owned items and then empty, while [`verbs.ts`](../../src/proto/place/verbs.ts) says “Swap [slot]”. [`chop.ts`](../../src/proto/place/chop.ts) updates the carried view.
 
 **Reference [V].** A Short Hike rewards off-route curiosity; Nintendo's TotK interview stresses recognition at a glance ([A Short Hike](https://blog.playstation.com/2021/08/05/crafting-a-tiny-open-world-a-look-behind-the-scenes-at-the-creation-of-a-short-hike/), [Nintendo](https://www.nintendo.com/us/whatsnew/ask-the-developer-vol-9-the-legend-of-zelda-tears-of-the-kingdom-part-4/)). Discovery should hide the route or surprise, not every reason to investigate.
 
@@ -167,7 +167,7 @@ Prove one source generation and one pile expiry in the isolated production spine
 
 ## 12. Keep money and cart-first after the replay
 
-**Problem / today [C].** Money's meaning and the cart-to-train upgrade need a focused decision, but changing them now would change the replay. [`layout.ts`](../../src/proto/place/layout.ts)'s `PAY` and [`run.ts`](../../src/proto/place/run.ts) already reward construction. Yellow finds do not pay. [`ladder.ts`](../../src/proto/place/ladder.ts) and [`depot.ts`](../../src/proto/place/depot.ts) already place the supply cart before the boiler-powered trains; the deferred “cart-first” experiment is a broader progression comparison, not proof that no cart exists today.
+**Problem / today [C].** Money's meaning and the cart-to-train upgrade need a focused decision, but changing them now would change the replay. [`layout.ts`](../../src/place/layout.ts)'s `PAY` and [`run.ts`](../../src/proto/place/run.ts) already reward construction. Yellow finds do not pay. [`ladder.ts`](../../src/proto/place/ladder.ts) and [`depot.ts`](../../src/proto/place/depot.ts) already place the supply cart before the boiler-powered trains; the deferred “cart-first” experiment is a broader progression comparison, not proof that no cart exists today.
 
 **Reference [V].** Astroneer gives rail cars and rail engines distinct storage/transport roles ([developer notes](https://blog.astroneer.space/p/rails-update/)). That is a useful later comparison, not authority to change this run.
 

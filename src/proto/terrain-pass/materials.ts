@@ -21,11 +21,11 @@ import {
 import { patchNode } from '../../render/material-patch.ts';
 import { registerWaterReceiver } from '../../render/water/receivers.ts';
 import { paletteNode } from '../../render/material-palette.ts';
-import { groundMaterial, selectiveColour } from '../place/look.ts';
-import { coveU } from '../place/cove-tuning.ts';
-import { coveTextures } from '../place/cove-textures.ts';
-import { applyCoveLayers } from '../place/cove-material.ts';
-import { ORIGIN } from '../place/layout.ts';
+import { groundMaterial, selectiveColour } from '../../place/look.ts';
+import { coveU } from '../../place/cove-tuning.ts';
+import { coveTextures } from '../../place/cove-textures.ts';
+import { applyCoveLayers } from '../../place/cove-material.ts';
+import { ORIGIN } from '../../place/layout.ts';
 import { STRATA, WEDGE } from './surface.ts';
 
 // TSL's types don't follow these graphs; kept loose like look.ts.

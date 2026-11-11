@@ -9,11 +9,11 @@ const props = (await import(
 )) as typeof import('../../../src/proto/place/props.ts');
 const tech = (await import('/src/proto/place/tech.ts' as string)) as typeof import('../../../src/proto/place/tech.ts');
 const { toWorld } = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const { H, PATH_SAMPLES } = (await import(
-  '/src/proto/place/terrain.ts' as string
-)) as typeof import('../../../src/proto/place/terrain.ts');
+  '/src/place/terrain.ts' as string
+)) as typeof import('../../../src/place/terrain.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string

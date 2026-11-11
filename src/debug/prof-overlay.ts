@@ -74,7 +74,7 @@ function textureInfo(texture: Texture) {
 /** Observe only work that really executes. Stop in finally; counts can use this without enabling timestamps/UI. */
 export async function observeGpu() {
   await rendererReady;
-  const placeLook = PROTO === 'place' ? (await import('../proto/place/look.ts')).LOOK : null;
+  const placeLook = PROTO === 'place' ? (await import('../place/look.ts')).LOOK : null;
   const targets = new Map<RenderTarget, Context>();
   let frame = -1,
     renderPasses = 0,

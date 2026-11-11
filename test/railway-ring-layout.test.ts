@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { CROSSING_BENTS, CROSSING_DECK_Y } from '../src/sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { ringHeight } from '../src/proto/greybox/ring-cones.ts';
-import { ORIGIN } from '../src/proto/place/layout.ts';
+import { ORIGIN } from '../src/place/layout.ts';
 
 import {
   RING_BENTS,

@@ -28,8 +28,8 @@ export async function createFindsView(store: FindsApi) {
   const owner = createOwnedView();
   owner.root.name = 'finds';
   const [{ H }, { toWorld }, { pop }] = await Promise.all([
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/layout.ts'),
+    import('../../place/land.ts'),
+    import('../../place/layout.ts'),
     import('../../render/fanfare.ts'),
   ]);
   // F2's secrets, their boxes and the ground they stand on (./secrets-view.ts).

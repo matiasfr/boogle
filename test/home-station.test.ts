@@ -34,13 +34,13 @@ import {
   stallFrame,
   toAxis,
   type XZ,
-} from '../src/proto/place/home-station.ts';
-import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/proto/place/layout.ts';
+} from '../src/place/home-station.ts';
+import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/place/layout.ts';
 import { TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/proto/wagon/cars.ts';
 import { ENGINE, ENGINE_LONG_AHEAD } from '../src/proto/wagon/engine.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
-import { H } from '../src/proto/place/terrain.ts';
+import { H } from '../src/place/terrain.ts';
 
 const bearingOf = (ux: number, uz: number) => ((((Math.atan2(ux, -uz) * 180) / Math.PI) % 360) + 360) % 360;
 const angleGap = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);

@@ -73,7 +73,7 @@ function distances(water: Uint8Array) {
       }
   return d;
 }
-// Place's land (src/proto/place/terrain.ts and layout.ts), which startAmbience loads; the railway has loaded it already.
+// Place's land (src/place/terrain.ts and layout.ts), which startAmbience loads; the railway has loaded it already.
 type Land = { H: (x: number, z: number) => number; ORIGIN: { x: number; z: number }; SPIRE: { x: number; z: number } };
 let land: Land | null = null;
 let seaField: Float32Array | null = null,
@@ -342,8 +342,8 @@ export async function startAmbience(): Promise<void> {
   if (OFF || started) return;
   started = true;
   const [{ H }, { ORIGIN, SPIRE }] = await Promise.all([
-    import('../proto/place/terrain.ts'),
-    import('../proto/place/layout.ts'),
+    import('../place/terrain.ts'),
+    import('../place/layout.ts'),
   ]);
   land = { H, ORIGIN, SPIRE };
   // Baked now, while the page loads, not in the first frame after Jump in: the arrival's roll began with it (10 November).

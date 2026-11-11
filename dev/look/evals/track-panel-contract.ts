@@ -14,8 +14,8 @@ const { coopWire } = (await import(
   '/src/proto/place/coop.ts' as string
 )) as typeof import('../../../src/proto/place/coop.ts');
 const { clearTrips } = (await import(
-  '/src/proto/place/pieces.ts' as string
-)) as typeof import('../../../src/proto/place/pieces.ts');
+  '/src/place/pieces.ts' as string
+)) as typeof import('../../../src/place/pieces.ts');
 const q = new URLSearchParams(location.search);
 const assert = (ok: boolean, message: string) => {
   if (!ok) throw new Error('PANEL CONTRACT: ' + message);

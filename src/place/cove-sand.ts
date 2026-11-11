@@ -1,8 +1,8 @@
 // Ultra Water scene/terrain.js sand ripples, adapted to TSL. Normals only: no render/collision displacement.
 import type { MeshStandardNodeMaterial } from 'three/webgpu';
-import { patchNode } from '../../render/material-patch.ts';
-import { registerWaterReceiver, vnoise } from '../../render/water/receivers.ts';
-import { TSL, type N } from '../../render/water/tsl.ts';
+import { patchNode } from '../render/material-patch.ts';
+import { registerWaterReceiver, vnoise } from '../render/water/receivers.ts';
+import { TSL, type N } from '../render/water/tsl.ts';
 import { coveU } from './cove-tuning.ts';
 
 const { Fn, cameraViewMatrix, cos, dot, float, fwidth, max, mix, normalViewGeometry, normalWorldGeometry } = TSL;

@@ -25,16 +25,16 @@ type OpeningEnv = {
 
 export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   const [plans, models, layout, land, sites, pieces, boxes, look, signs, folk, rail] = await Promise.all([
-    import('../../proto/place/opening-plans.ts'),
-    import('../../proto/place/opening-models.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/sites.ts'),
-    import('../../proto/place/pieces.ts'),
+    import('../../place/opening-plans.ts'),
+    import('../../place/opening-models.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/land.ts'),
+    import('../../place/sites.ts'),
+    import('../../place/pieces.ts'),
     import('../../render/boxes.ts'),
-    import('../../proto/place/look.ts'),
-    import('../../proto/place/signs.ts'),
-    import('../../proto/place/folk.ts'),
+    import('../../place/look.ts'),
+    import('../../place/signs.ts'),
+    import('../../place/folk.ts'),
     import('../../proto/place/rail.ts'),
   ]);
   if (!owner.alive) return { update: () => {}, numbers: () => {}, targets: () => [] };
