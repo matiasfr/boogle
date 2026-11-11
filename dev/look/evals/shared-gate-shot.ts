@@ -4,9 +4,9 @@
 // npm run look -- --players 2 --rail-seed hook-earned --query shot=play --eval dev/look/evals/shared-gate-shot.ts \
 //   --until window.__placeDone --real --frames 2 --seconds 0.3 --wall 240 --name shared-gate-shot
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, railReady } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -40,7 +40,8 @@ watchPlayMarks((name, data) => {
 setTimeout(() => window.__debugCam?.clear(), 100);
 background(
   (async () => {
-    await until(() => read()?.ready && me.body && me.coyote > 0 && view()?.lever, 'seed arrived', 300000);
+    if (!(await railReady(300000))) throw new Error('shared-gate-shot: the railway never became ready');
+    await until(() => me.body && me.coyote > 0 && view()?.lever, 'seed arrived', 300000);
     const land = jumpOf('hook-earned')!.land!;
     // Player 2 stands 30 m back from the apron, facing away from the gate.
     const off = player === '1' ? 0 : 30;

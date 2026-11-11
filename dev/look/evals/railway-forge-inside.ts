@@ -7,9 +7,7 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { X, Z, forgePlan } = (await import(
   '/src/place/opening-plans.ts' as string
 )) as typeof import('../../../src/place/opening-plans.ts');
@@ -26,7 +24,8 @@ const VIEWS: Record<string, [number[], number[], number[], number]> = {
 const [at, cam, look, fov] = VIEWS[view]!;
 background(
   (async () => {
-    while (!me.body || !inspectRailway()?.ready) await new Promise((r) => setTimeout(r, 100));
+    if (!(await railReady())) throw new Error('railway-forge-inside: the railway never became ready');
+    while (!me.body) await new Promise((r) => setTimeout(r, 100));
     teleport(me.body!, X + at![0]!, floor + 0.6, Z + at![1]!);
     me.body!.velocity.set(0, 0, 0);
     await new Promise((r) => setTimeout(r, 1800));
