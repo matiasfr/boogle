@@ -36,7 +36,7 @@ export async function createRailwayWorksLive(
   const footings = createRailwayFootings(adapter, owner);
   const railhead = createRailwayRailhead(adapter, owner, deps);
   const leaf = createRailwayLeaf(adapter);
-  const meet = createRingMeet(adapter, owner, deps);
+  const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
   const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk];
   return {

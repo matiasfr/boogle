@@ -1150,7 +1150,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > leaf because it needs the adapter's accepted edges; there is no `index.ts` (nothing for the glob to spawn).
   > (2) The rivet: a brass stud in the joint at bent 13's toe, dull until the leaf is down (`brace === 0`), then gold,
   > pulsing, with gold motes rising (`goldMote`, within 160 m of the camera) until struck; the prompt "Strike the rivet"
-  > only with the leaf down, `joined < 0`, the breaker in hand (the rule's `Works.breaker === 2`) and no boiler on your
+  > only with the leaf down, `joined < 0`, the room having the breaker (the rule's `Works.breaker === 2`: room-wide, 2 in every ring seed, not a carry) and no boiler on your
   > back, inside `RING_RIVET.reach` (the server's own test). (3) On the accepted `rail.strike` id 2 (`meetOffered`): the
   > clang, a thump and a burst of gold at the stud on every page, and `playSharedMoment('the meet')`: the banner ("Ring
   > Island" over "The line has arrived", 4.5 s) and the 6 s shot, from back along the bents above the leaf, running
@@ -1168,6 +1168,18 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > offer, the race, the late-join framing, the crossing once, the prompt and glint windows, the shots' geometry).
   > **Not done:** the breaker's swing at the rivet (the prompt strikes at once; the Works' swing is `breaker-view.ts`'s),
   > the browser proof (two pages, strike, third page), `test:net`. Not tested on a device.
+  > **Review fixes (11 November, `feature/ring-r4de`, from the Windows look; not shipped).** (1) The prompt, glint and gold
+  > stud wait for the visible landing (`leafLanded`, `leaf-shape.ts`; `leaf-view.ts` `landed()`): the sim's `brace === 0`
+  > flips as the swing starts, 2.5 s before the plate lies down. The server still takes an early strike (a page that is
+  > behind, or a client that presses at once); a sim-side guard (refuse a strike until 2.5 s after `brace` reached 0)
+  > needs the tick `brace` flipped, i.e. a new `Aperture` field and a bump: **P3 follow-up, worth it only if early
+  > strikes happen in play**. (2) The Meet: 1 s held 9 m back on the stud (clang and burst in frame), 4 s eased in and out
+  > over 63 m (peak 23.6 m/s, was 30), 1 s held on the board and buffers, then a deliberate cut back (0.14 s; a blend home
+  > was 140 m in 0.55 s). The late framing: 0.8 s, 3.2 s over 50 m (peak 23.4 m/s, was 37), 1 s; the crossing pull-out
+  > cuts back too. `createCameraPullOut.play` takes an optional `{ lead, atFrom, back }`. (3) The stud is lit gold metal
+  > with a pulsing emissive and a 3.4 m gold beacon; the glints are big `glint` sprites (the breaker's small motes were
+  > the reason none read). (4) The breaker condition is "the room has it", as the server has it. **P3 design question:**
+  > should the breaker be visibly carried to the rivet (and swing at it)?
 - [x] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stand upright facing the shard; the whistle swaps two of them for the two

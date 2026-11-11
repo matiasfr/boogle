@@ -16,7 +16,17 @@ import { ringIslandPose } from '../ring-island/state.ts';
 import { createFirstReady } from './first-ready.ts';
 import { line2World } from './line2-path.ts';
 import { RING_S, line2Y } from './line2-path.ts';
-import { BRACE, BRACE_VERB, LEAF_UP, TOE_U, toeShove, braceOffered, createLeafMotion, leafRest } from './leaf-shape.ts';
+import {
+  BRACE,
+  BRACE_VERB,
+  LEAF_UP,
+  TOE_U,
+  toeShove,
+  braceOffered,
+  createLeafMotion,
+  leafLanded,
+  leafRest,
+} from './leaf-shape.ts';
 
 export function createRailwayLeaf(adapter: RailwayAdapter) {
   const motion = createLeafMotion(),
@@ -86,6 +96,8 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
       write();
     },
     accepted() {},
+    /** The plate has finished its swing and lies on the bents (this frame's leaf motion; update runs before the Meet's). */
+    landed: () => leafLanded(motion.deg, motion.moving),
     /** The brace prompt (call 9): `set === 14`, the pawl in, you within the strut's reach (the server's own test). */
     targets(): Interactable[] {
       const pos = me.body?.position,
