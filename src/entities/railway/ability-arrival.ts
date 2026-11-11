@@ -40,11 +40,8 @@ import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
 
 /** What an ability's `has` reads: the rows now, and the estimated tick the line-one phase is judged at. */
-type Look = { w: ReadWorld; tick: number };
-const AWAKE = ({ w, tick }: Look) => {
-  const phase = railPhase(w, tick, tick);
-  return rail(w).awake >= 0 && phase !== 'asleep' && phase !== 'waking';
-};
+type Look = { w: ReadWorld; tick: number; phase: ReturnType<typeof railPhase> };
+const AWAKE = ({ w, phase }: Look) => rail(w).awake >= 0 && phase !== 'asleep' && phase !== 'waking';
 const ABILITIES: {
   key: string;
   op: RailwayAccepted['op'];
@@ -268,7 +265,7 @@ export function createAbilityArrival(
       seen: ABILITIES.filter((a) => seen.has(a.key)).map((a) => a.key),
     }),
     update(dt: number) {
-      const ready = adapter.inspect().ready;
+      const ready = adapter.read.ready();
       const b = me.body;
       if (!ready || !b) {
         mark.visible = false;
@@ -276,7 +273,10 @@ export function createAbilityArrival(
         return;
       }
       // The rows, re-read each frame and never held: a refill swaps the world.
-      const look: Look = { w: adapter.read.world(), tick: adapter.read.tick() };
+      // The line-one phase is worked out once, with the frame's tick.
+      const w = adapter.read.world(),
+        tick = adapter.read.tick();
+      const look: Look = { w, tick, phase: railPhase(w, tick, tick) };
       const row = rail(look.w);
       for (const a of ABILITIES) {
         const gone = a.has(look) ? 0 : (missing.get(a.key) ?? 0) + dt;

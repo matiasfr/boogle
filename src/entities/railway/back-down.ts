@@ -63,7 +63,7 @@ export function setDown(adapter: RailwayAdapter, away?: { x: number; z: number }
   const w = adapter.read.world(),
     pid = adapter.read.pid;
   const body = me.body;
-  if (busy || !adapter.inspect().ready || !body || !total(w, pid)) return false;
+  if (busy || !adapter.read.ready() || !body || !total(w, pid)) return false;
   const p = body.interpolatedPosition;
   // Behind you when you are facing the thing, else in front of you as a tap drops it.
   let dx = -Math.sin(me.yaw),
@@ -122,8 +122,7 @@ export function setDownThen(
     if (!confirmed) return void take();
     const t0 = performance.now();
     const wait = () => {
-      const s = adapter.inspect();
-      if (s.pending === 0) return void take();
+      if (adapter.read.pending() === 0) return void take();
       if (performance.now() - t0 < WAIT_MS) setTimeout(wait, 30);
     };
     wait();

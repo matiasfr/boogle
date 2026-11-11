@@ -122,14 +122,13 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
       v.x = b.velocity.x;
       v.y = b.velocity.y;
       v.z = b.velocity.z;
-      // The numbers are the room's `railGlide*` tunables, through the adapter's movement (a GlideMove subset): not rows,
-      // and the read facade has no reader for them yet, so they still come from inspect().
-      if (!stepGlide(g, before, v, me.wish, adapter.inspect())) return;
+      // The numbers are the room's `railGlide*` tunables, through the adapter's movement (a GlideMove subset), read.movement().
+      if (!stepGlide(g, before, v, me.wish, adapter.read.movement())) return;
       b.velocity.set(v.x, v.y, v.z);
       b.force.y = PLAYER_MASS * GRAVITY; // gravity's taken out once, and nothing else has a say
     },
     update(dt: number, now: number) {
-      const ready = adapter.inspect().ready,
+      const ready = adapter.read.ready(),
         glide = rail(adapter.read.world()).glide;
       has = ready && glide;
       owned = latch(ready, glide, dt);

@@ -20,7 +20,7 @@ import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
 import { airJumpApexForce } from '../player/apex-float.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
 import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
-import { account, forge, rail } from '../../sim/railway-rows.ts';
+import { account, forge, rail, type ReadWorld } from '../../sim/railway-rows.ts';
 import { railPanelCount } from '../../sim/railway-queries-line1.ts';
 import { line2PackReady } from '../../sim/railway-queries-line2.ts';
 
@@ -202,13 +202,25 @@ export async function createRailwayTools(
         jumpReveals++;
     }
   });
+  // The laid pairs only change with the tick or the world: keep the count until one does, not every frame.
+  let panelsFor: ReadWorld | null = null,
+    panelsTick = NaN,
+    panels = 0;
+  const panelsAt = (w: ReadWorld, tick: number) => {
+    if (w !== panelsFor || tick !== panelsTick) {
+      panelsFor = w;
+      panelsTick = tick;
+      panels = railPanelCount(w, tick);
+    }
+    return panels;
+  };
   const axeAvailable = () => {
     const w = adapter.read.world();
-    return adapter.inspect().ready && !rail(w).axe && forge(w).lit >= 0;
+    return adapter.read.ready() && !rail(w).axe && forge(w).lit >= 0;
   };
   const packAvailable = () => {
     const w = adapter.read.world();
-    return adapter.inspect().ready && line2PackReady(w) && !rail(w).pack;
+    return adapter.read.ready() && line2PackReady(w) && !rail(w).pack;
   };
   // The pack frame on every back, once the world has it (shared state, so a friend's is derived the same way: no
   // presence key). It rides the avatar's back socket, the same frame the haul bundle sits in.
@@ -239,7 +251,7 @@ export async function createRailwayTools(
         x: deviceAt.x,
         y: deviceAt.y,
         z: deviceAt.z,
-        available: adapter.inspect().ready && !rail(adapter.read.world()).jump,
+        available: adapter.read.ready() && !rail(adapter.read.world()).jump,
       },
       axeReveals,
       jumpReveals,
@@ -249,7 +261,7 @@ export async function createRailwayTools(
     }),
     targets(): Interactable[] {
       const p = me.body?.position;
-      if (!adapter.inspect().ready || !p) return [];
+      if (!adapter.read.ready() || !p) return [];
       const targets: Interactable[] = [];
       if (axeAvailable() && inReach(chestAt))
         targets.push({
@@ -283,7 +295,7 @@ export async function createRailwayTools(
       if (lip) {
         machineAt.set(0, 0, -Infinity);
         machineFrom?.(machineAt);
-        lip.visible = tech.p1LipClear(UNITS_LAID[railPanelCount(w, adapter.read.tick())] ?? 0, machineAt.z);
+        lip.visible = tech.p1LipClear(UNITS_LAID[panelsAt(w, adapter.read.tick())] ?? 0, machineAt.z);
         if (lip.visible && !lipBody)
           lipBody = land.addStatic(
             { kind: 'box', hx: 1.2, hy: 0.25, hz: lipLength / 2 },
@@ -339,8 +351,7 @@ export async function createRailwayTools(
         second = false;
         return;
       }
-      // The tunables (jumpImpulse and the rest) are not rows: the facade has no reader for them yet (M10 e handover).
-      const movement = adapter.inspect();
+      const movement = adapter.read.movement();
       if (me.jumpQueued > 0 && unlocked && charge) {
         charge = false;
         second = true;

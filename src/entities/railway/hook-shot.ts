@@ -206,7 +206,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
       return true;
     },
     update(dt: number, now: number) {
-      owned = latch(adapter.inspect().ready, rail(adapter.read.world()).hook, dt);
+      owned = latch(adapter.read.ready(), rail(adapter.read.world()).hook, dt);
       const summit = view.ringById.get('summit');
       const p = me.body?.position;
       if (

@@ -183,7 +183,7 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
         showMomentBanner(WAKE_BANNER[0], WAKE_BANNER[1], 4.5);
         playMark('glider woken', { authority: 'local' });
       }
-      if (adapter.inspect().ready) seenCompleted = l.completed;
+      if (adapter.read.ready()) seenCompleted = l.completed;
       if (unfurlT >= 0) {
         unfurlT += dt;
         if (unfurlT >= UNFURL_S) unfurlT = -1;
