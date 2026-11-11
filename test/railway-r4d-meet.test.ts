@@ -7,6 +7,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RING_END, RING_FORMATION, RING_HALT, RING_RIVET, ringAt, ringDeckY } from '../src/sim/railway-ring-layout.ts';
 import { createLeafMotion, leafLanded, SWING_S } from '../src/entities/railway/leaf-shape.ts';
+import {
+  FORM_W,
+  PLATE_BOTTOM,
+  TRACK_X,
+  bracketSolids,
+  gaugeBoxes,
+  hingePlane,
+  overlaps,
+  weightSolids,
+} from '../src/entities/ring-island/bracket.ts';
 import { aperture } from '../src/sim/railway-rows.ts';
 import { railwayAtRing } from '../src/sim/railway-seed-ring.ts';
 import {
@@ -18,6 +28,8 @@ import {
   crossingShot,
   glintShown,
   peakSpeed,
+  STUD,
+  glintPlan,
   meetKept,
   meetOffered,
   ringUV,
@@ -168,4 +180,55 @@ test('the end frame is a close cut on the RINGWORKS board, east platform u 448 m
   assert.ok(d > 8 && d < 18, `${d} m from the board: close enough to read it at 960`);
   const cam = ringUV(end.pos.x, end.pos.z);
   assert.ok(cam.u < 44800 - 1000 && cam.u > RING_HALT.u0, 'on the halt, short of the board, facing down the line');
+});
+
+test('the counterweight bracket and the weights lie under the plate: nothing on the running line, on either lane', () => {
+  const solids = bracketSolids();
+  assert.equal(solids.length, 9);
+  for (const s of solids)
+    assert.ok(s.y1 <= PLATE_BOTTOM + 1e-9, `solid top ${s.y1} is under the plate (${PLATE_BOTTOM})`);
+  for (const g of gaugeBoxes())
+    for (const s of solids) assert.equal(overlaps(g, s), false, 'clear of the loading gauge');
+  assert.equal(TRACK_X.length, 2);
+  for (const s of solids)
+    assert.ok(s.x0 >= -FORM_W / 2 && s.x1 <= FORM_W / 2, 'inside the leaf, so clear of the pennant pole at lat -7.8');
+});
+
+test('swung through every angle, the weights never touch the hinge pier (3 m either side of the hinge, to the deck)', () => {
+  // The first pier block spans h in [-3, 3] from the hinge (u HINGE +/- 3), down from 0.5 m under the deck.
+  for (let deg = 0; deg <= 90; deg += 0.5) {
+    for (const w of weightSolids())
+      for (const z of [w.z0, w.z1])
+        for (const y of [w.y0, w.y1]) {
+          const { h, v } = hingePlane(z, y, deg);
+          assert.ok(
+            !(h > -3 && h < 3 && v < -0.5),
+            `a weight corner at ${deg} deg is inside the pier (h ${h}, v ${v})`,
+          );
+        }
+  }
+});
+
+test('the stud is a low bolt on the joint plate: clear of a car on either lane', () => {
+  const carInnerEdge = Math.abs(TRACK_X[0]!) - 1.1; // cars are 2.2 m wide on tracks 2 m from the middle
+  assert.ok(STUD.rFoot + 0.3 <= carInnerEdge, `${STUD.rFoot} m foot, ${carInnerEdge} m to the car`);
+  assert.ok(STUD.h <= 0.4, 'under a car body (its bottom is 0.4 m up)');
+});
+
+test('the glint plan: monotonic in distance, bounded, slim and sparse at the follow camera, tall from afar', () => {
+  let last = glintPlan(0);
+  for (let d = 0; d <= 300; d += 0.5) {
+    const p = glintPlan(d);
+    assert.ok(p.size >= last.size - 1e-12 && p.rise >= last.rise - 1e-12, `grows with distance at ${d}`);
+    assert.ok(p.interval <= last.interval + 1e-12, 'fewer seconds between glints with distance');
+    assert.ok(p.size >= 0.28 - 1e-9 && p.size <= 0.9 + 1e-9 && p.rise >= 1.4 - 1e-9 && p.rise <= 4.8 + 1e-9);
+    assert.ok(p.interval >= 0.1 - 1e-9 && p.interval <= 0.3 + 1e-9);
+    last = p;
+  }
+  const near = glintPlan(5.8); // the follow camera behind the striker
+  assert.ok(near.size <= 0.3 && near.rise <= 1.5 && near.interval >= 0.3 - 1e-9, 'slim, low and sparse up close');
+  const alive = (p: ReturnType<typeof glintPlan>) => p.life / p.interval;
+  assert.ok(alive(near) <= 5, `${alive(near)} glints alive near`);
+  assert.ok(alive(glintPlan(40)) <= 15, 'bounded far');
+  assert.ok(glintPlan(40).rise >= 4.5 && glintPlan(40).size >= 0.85, 'a taller, larger column from a train length');
 });

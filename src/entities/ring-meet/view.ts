@@ -29,6 +29,8 @@ import { createSeen } from '../railway/ability-arrival.ts';
 import { playSharedMoment } from '../railway/shared-moment.ts';
 import {
   CROSSING_SHOT,
+  STUD,
+  glintPlan,
   MEET_REPLAY,
   MEET_SHOT,
   RIVET_AT,
@@ -46,11 +48,8 @@ import {
 const BANNER = ['Ring Island', 'The line has arrived'] as const;
 const BANNER_S = 4.35;
 const STRIKE_VERB = 'Strike the rivet';
-/** Glints off the stud, seconds apart, only while the camera is within this many metres (it reads from the bents). */
-const MOTE_S = 0.05;
-/** The column's metres over the stud: above the leaf-end blocks, Buddy and an engine's roof (3 to 5 m). */
-const COLUMN_UP: readonly [number, number] = [0.8, 4.8];
 const MOTE = new THREE.Color('#ffd25a');
+/** Glints are emitted only while the camera is within this many metres (it reads from the bents). */
 const GLINT_RANGE = 240;
 /** The memory keys (per room and player, createSeen): shown the Meet; shown the first-crossing pull-out. */
 const SAW_MEET = 'meet';
@@ -74,9 +73,9 @@ export function createRingMeet(
   const studMat = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#d99a14', metalness: 0.85, roughness: 0.35, emissive: '#ff9d00' }),
   );
-  const studGeo = new THREE.CylinderGeometry(0.5, 0.58, 0.5, 24);
+  const studGeo = new THREE.CylinderGeometry(STUD.rTop, STUD.rFoot, STUD.h, 24);
   const stud = new THREE.Mesh(studGeo, studMat);
-  stud.position.set(RIVET_AT.x, RIVET_AT.y + 0.25, RIVET_AT.z);
+  stud.position.set(RIVET_AT.x, RIVET_AT.y + STUD.h / 2, RIVET_AT.z);
   stud.castShadow = true;
   stud.visible = false;
   owner.add(stud);
@@ -163,23 +162,29 @@ export function createRingMeet(
     if (!lit(a.brace, a.joined)) return;
     mote -= dt;
     if (mote > 0) return;
-    mote = MOTE_S;
-    if (Math.hypot(camera.position.x - RIVET_AT.x, camera.position.z - RIVET_AT.z) > GLINT_RANGE) return;
-    // The glint is the breaker seam's mechanism (particles `emit`, gold, the `glint` sprite, as breaker-view.ts's
-    // goldMote) at a larger scale: a narrow column from the stud up past the blocks, Buddy and a train's roof line
-    // (COLUMN_UP), seeded along its whole height so it stands at once, sized with the stud's pulse.
+    const d = Math.hypot(
+      camera.position.x - RIVET_AT.x,
+      camera.position.y - RIVET_AT.y,
+      camera.position.z - RIVET_AT.z,
+    );
+    const plan = glintPlan(d);
+    mote = plan.interval;
+    if (d > GLINT_RANGE) return;
+    // The breaker seam's language (particles `emit`, gold, the `glint` sprite, as breaker-view.ts's goldMote), rising
+    // FROM the stud a few at a time: slim and sparse when you stand at it, a taller column of larger glints from afar
+    // (glintPlan). Sized and brightened with the stud's pulse; never a floating cloud.
     const pulse = 0.5 + 0.5 * Math.sin(t * 5);
     emit({
-      x: RIVET_AT.x + (Math.random() - 0.5) * 0.4,
-      y: RIVET_AT.y + COLUMN_UP[0] + Math.random() * (COLUMN_UP[1] - COLUMN_UP[0]),
-      z: RIVET_AT.z + (Math.random() - 0.5) * 0.4,
+      x: RIVET_AT.x + (Math.random() - 0.5) * 0.3,
+      y: RIVET_AT.y + STUD.h,
+      z: RIVET_AT.z + (Math.random() - 0.5) * 0.3,
       vx: 0,
-      vy: 0.5,
+      vy: plan.rise / plan.life,
       vz: 0,
-      life: 1,
-      size: 0.6 + 0.8 * pulse,
+      life: plan.life,
+      size: plan.size * (0.85 + 0.3 * pulse),
       color: MOTE,
-      intensity: readableIntensity() * (1.8 + 1.2 * pulse),
+      intensity: readableIntensity() * (1.4 + 1.0 * pulse),
       alpha: 1,
       grow: [0.6, 1],
       shrink: 0.5,

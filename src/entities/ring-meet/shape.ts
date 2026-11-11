@@ -160,5 +160,23 @@ export function glintShown(brace: number, joined: number, landed: boolean): bool
   return brace === 0 && joined < 0 && landed;
 }
 
+/** The rivet stud: a low gold bolt head on the joint plate between the lanes (r at its foot, h proud of the deck). A car
+ * is 2.2 m wide with its bottom 0.4 m up, on tracks 2 m either side of the middle, so its inner edge is 0.9 m from
+ * the stud's centre; test/railway-r4d-meet.test.ts keeps the stud clear of it. */
+export const STUD = { rTop: 0.4, rFoot: 0.46, h: 0.3 } as const;
+
+/** The glint's look at `distance` metres from the camera (the breaker seam's language, `emit` with the gold `glint`
+ * sprite, scaled to read at both ends): from a few slim sparkles rising a metre or so off the stud when you stand at
+ * it (the follow camera is about 6 m back), to a taller column of larger glints that a train's length away can see.
+ * Monotonic in distance and bounded: `size` 0.28 to 0.9 m, `interval` 0.3 to 0.1 s, `rise` 1.4 to 4.8 m. Fully near at
+ * `NEAR` and below, fully far at `FAR` and beyond. */
+export const GLINT_NEAR = 10;
+export const GLINT_FAR = 22;
+export function glintPlan(distance: number) {
+  const k = Math.min(1, Math.max(0, (distance - GLINT_NEAR) / (GLINT_FAR - GLINT_NEAR))),
+    e = k * k * (3 - 2 * k);
+  return { size: 0.28 + 0.62 * e, interval: 0.3 - 0.2 * e, rise: 1.4 + 3.4 * e, life: 1.4 };
+}
+
 /** The rivet stud's place: the joint, at the rivet's prompt site. */
 export const RIVET_AT: V3 = { x: RING_RIVET.x / 100, y: ringDeckY(JOINT_U) / 100, z: RING_RIVET.z / 100 };
