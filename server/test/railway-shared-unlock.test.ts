@@ -11,6 +11,7 @@ import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+import { rail } from '../../test/helpers/rail.ts';
 import { LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
 
 const START = 1800000000000;
@@ -78,7 +79,7 @@ async function fixture() {
   };
   const jump = (cid: string) => {
     const m = mirrors.get(cid)!;
-    return m.synced() && m.railway.line!.jump;
+    return m.synced() && rail(m.world()).jump;
   };
   return {
     connect,
@@ -119,7 +120,7 @@ test("one player's double jump reaches every connected player at once, a reconne
     assert.equal(f.jump('b'), false);
     const outcome = await f.claimJump('a', f.open('a'));
     assert.equal(outcome?.status, 'accepted');
-    assert.equal(f.host.rules.railway.railway.line!.jump, true);
+    assert.equal(rail(f.host.rules.railway.world()).jump, true);
     // Both mirrors show it from the same packets: the finder and the friend who did nothing.
     assert.equal(f.jump('a'), true, "the finder's mirror");
     assert.equal(f.jump('b'), true, "the friend's mirror, with no action of their own");
@@ -151,7 +152,7 @@ test('the shared unlock survives an orderly restart (the save) and a crash after
     assert.equal((await f.claimJump('a', f.open('a')))?.status, 'accepted');
     await f.restart();
     await f.step(3);
-    assert.equal(f.host.rules.railway.railway.line!.jump, true, 'restored from the save');
+    assert.equal(rail(f.host.rules.railway.world()).jump, true, 'restored from the save');
     assert.equal(f.jump('a'), true);
     assert.equal(f.jump('b'), true);
     // Past a periodic checkpoint, a crash keeps it too.
@@ -159,7 +160,7 @@ test('the shared unlock survives an orderly restart (the save) and a crash after
     while (f.host.sync.worldStatus().saves === saves) await f.step(1);
     await f.crash();
     await f.step(3);
-    assert.equal(f.host.rules.railway.railway.line!.jump, true, 'restored from the checkpoint');
+    assert.equal(rail(f.host.rules.railway.world()).jump, true, 'restored from the checkpoint');
     assert.equal(f.jump('b'), true);
   } finally {
     await f.close();

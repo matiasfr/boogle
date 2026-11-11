@@ -9,7 +9,7 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { MAX_RECOVERY_BYTES, type RecoveryEnvelope } from '../../src/world/sync.ts';
 import { MAX_PLAYERS, NAME_MAX } from '../../src/sim/roster.ts';
-import { railwayInvariant } from '../../src/sim/railway-check.ts';
+import { invariant } from '../../test/helpers/rail.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
 
 type Obj = Record<string, unknown>;
@@ -59,7 +59,7 @@ async function fixture() {
         host.step(0.1);
       }
       await host.sync.whenDurable();
-      assert.equal(railwayInvariant(host.rules.railway.railway), null);
+      assert.equal(invariant(host.rules.railway.world()), null);
     },
     async restart() {
       await host.close({ save: false });
@@ -164,7 +164,7 @@ test('full roster tuning refuses oversized ids and tail pressure before stamping
     assert.equal(f.host.rules.roster.roster.pids.length, MAX_PLAYERS);
     assert.equal(f.tune().tune.revision, 2);
     assert.equal(f.tune().get('railRegrowMinutes'), 3);
-    assert.equal(railwayInvariant(f.host.rules.railway.railway), null);
+    assert.equal(invariant(f.host.rules.railway.world()), null);
     const beforeLongId = f.recovery().seq;
     const tooLong = '\ud800'.repeat(65);
     f.host.deliver({ t: 'w:edit', e: commit(tooLong, 2) }, sid(0));

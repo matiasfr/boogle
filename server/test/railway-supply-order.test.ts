@@ -7,7 +7,8 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
-import { railwayInvariant } from '../../src/sim/railway-check.ts';
+import { railCounts } from '../../src/sim/railway-queries-line2.ts';
+import { account, invariant, piles, railClock } from '../../test/helpers/rail.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 test('a fresh drop applies after the missed maintenance and starts at age zero', async () => {
@@ -55,20 +56,20 @@ test('a fresh drop applies after the missed maintenance and starts at age zero',
     position = { x: source[1] / 100, z: source[2] / 100 };
     send({ op: 'rail.chop', request: 2, id: source[0], yaw: 0, collapsed: false });
     await ticks(3);
-    assert.equal(host.rules.railway.account('supplier')!.carry, 2);
-    const marker = host.rules.railway.railway.supply!.marker;
+    assert.equal(account(host.rules.railway.world(), 'supplier')!.carry, 2);
+    const marker = railClock(host.rules.railway.world()).supplyMarker;
     now += 21 * 60000;
     const drop = { op: 'rail.drop', request: 3, x: source[1], z: source[2], y: 3000, n: 2 };
     // Arrival before the next host step, with a genuinely fresh pose: the missed maintenance applies first (it is
     // a direct server rule now, not a stamp waiting for a tick), then the drop.
     send(drop);
     assert.deepEqual(refusals(), []);
-    assert.ok(host.rules.railway.railway.supply!.marker >= marker + 21);
+    assert.ok(railClock(host.rules.railway.world()).supplyMarker >= marker + 21);
     assert.equal(host.rules.railway.outcome('supplier', 1, 3)?.status, 'accepted');
-    assert.equal(host.rules.railway.railway.piles[0]!.age, 0);
-    assert.equal(host.rules.railway.counts().rack, 0);
-    assert.equal(host.rules.railway.counts().loose, 2);
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(piles(host.rules.railway.world())[0]!.age, 0);
+    assert.equal(railCounts(host.rules.railway.world()).rack, 0);
+    assert.equal(railCounts(host.rules.railway.world()).loose, 2);
+    assert.equal(invariant(host.rules.railway.world()), null);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });

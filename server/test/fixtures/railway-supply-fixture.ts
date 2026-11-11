@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { createStore } from '../../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../../src/sim/railway-layout.ts';
-import { railwayInvariant } from '../../../src/sim/railway-check.ts';
+import { railCounts } from '../../../src/sim/railway-queries-line2.ts';
+import { invariant, trees } from '../../../test/helpers/rail.ts';
 
 export const SUPPLY_SOURCE = 5;
 export async function supplyFixture(dataDir: string, roomId: string, recover = true) {
@@ -41,7 +42,7 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
       host.step(0.1);
     }
     await host.sync.whenDurable();
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(invariant(host.rules.railway.world()), null);
   }
   let request = 0;
   async function action(fields: Record<string, unknown>) {
@@ -65,18 +66,18 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
     await action({ op: 'rail.chop', id: source[0], yaw: 0.5, collapsed: false });
     await action({ op: 'rail.drop', x: source[1], z: source[2], y: 3000, n: 2 });
   }
-  assert.equal(host.rules.railway.railway.sources[SUPPLY_SOURCE], 0);
-  assert.equal(host.rules.railway.counts().loose, 10);
+  assert.equal(trees(host.rules.railway.world())[SUPPLY_SOURCE]!.left, 0);
+  assert.equal(railCounts(host.rules.railway.world()).loose, 10);
   const advance = (minutes: number) => {
     clock += minutes * 60000;
   };
   if (recover) {
     advance(21);
     await ticks(12);
-    assert.equal(host.rules.railway.counts().rack, 10);
-    assert.equal(host.rules.railway.counts().loose, 0);
+    assert.equal(railCounts(host.rules.railway.world()).rack, 10);
+    assert.equal(railCounts(host.rules.railway.world()).loose, 0);
   }
-  const stage = () => host.rules.railway.railway.supply!.ages[SUPPLY_SOURCE]!;
+  const stage = () => trees(host.rules.railway.world())[SUPPLY_SOURCE]!.age;
   const toStage = async (target: number) => {
     for (let n = 0; n < 20 && stage() < target; n++) {
       advance(1);

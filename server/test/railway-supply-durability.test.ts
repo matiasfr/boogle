@@ -8,9 +8,10 @@ import { createServer } from 'node:http';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { createRoomHost } from '../src/host/rooms.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from '../../src/sim/railway-layout.ts';
+import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
-import { railwayInvariant } from '../../src/sim/railway-check.ts';
+import { railCounts } from '../../src/sim/railway-queries-line2.ts';
+import { invariant, trees } from '../../test/helpers/rail.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
 import { SUPPLY_SOURCE, supplyFixture } from './fixtures/railway-supply-fixture.ts';
 
@@ -23,17 +24,17 @@ async function until(predicate: () => boolean, label: string) {
   }
 }
 function assertSupply(host: RailwayWorldHost, stage: number) {
-  const state = host.rules.railway.railway;
-  const counts = host.rules.railway.counts();
-  const initial = state.line ? LINE1_INITIAL[0] : RAILWAY_SUPPLY;
-  assert.equal(state.supply!.ages[SUPPLY_SOURCE], stage);
+  const w = host.rules.railway.world();
+  const counts = railCounts(w);
+  const initial = LINE1_INITIAL[0];
+  assert.equal(trees(w)[SUPPLY_SOURCE]!.age, stage);
   assert.equal(counts.rack, 10);
   assert.equal(counts.loose, 0);
   assert.equal(counts.carry, 0);
   assert.equal(counts.produced, stage === 35 ? 10 : 0);
   assert.equal(counts.source, initial - (stage === 35 ? 0 : 10));
   assert.equal(counts.total, initial + counts.produced);
-  assert.equal(railwayInvariant(state), null);
+  assert.equal(invariant(w), null);
 }
 
 test('only controlled T1 proto commits accept the two supply tunes, which survive restart and govern conserved progress', async (t) => {
@@ -94,7 +95,7 @@ test('only controlled T1 proto commits accept the two supply tunes, which surviv
     f.advance(1);
     await f.ticks(4);
     assert.equal(f.stage(), 31);
-    assert.equal(f.host.rules.railway.counts().rack, 0);
+    assert.equal(railCounts(f.host.rules.railway.world()).rack, 0);
     await f.restart();
     assert.equal(tune().get('railRegrowMinutes'), 1);
     assert.equal(tune().get('railRecoveryMinutes'), 2);
@@ -141,14 +142,14 @@ test('occupied room protects nearby drops while slow renewal ignores visibility 
     f.advance(21);
     f.observe([{ x, z, at: f.now() }]);
     await f.ticks(12);
-    assert.equal(f.host.rules.railway.counts().rack, 0, 'nearby observer keeps all drops in place');
-    assert.equal(f.host.rules.railway.counts().loose, 10);
+    assert.equal(railCounts(f.host.rules.railway.world()).rack, 0, 'nearby observer keeps all drops in place');
+    assert.equal(railCounts(f.host.rules.railway.world()).loose, 10);
     f.observe([far(f.now() - 2001)]);
     await f.ticks(4);
-    assert.equal(f.host.rules.railway.counts().rack, 0, 'stale observer cannot authorize cleanup');
+    assert.equal(railCounts(f.host.rules.railway.world()).rack, 0, 'stale observer cannot authorize cleanup');
     f.observe([far()]);
     await f.ticks(12);
-    assert.equal(f.host.rules.railway.counts().rack, 10, 'fresh distant observer permits ordinary recovery');
+    assert.equal(railCounts(f.host.rules.railway.world()).rack, 10, 'fresh distant observer permits ordinary recovery');
     f.advance(10);
     f.observe([{ x, z, at: f.now() }]);
     await f.ticks(4);
