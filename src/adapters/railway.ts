@@ -514,6 +514,9 @@ export function createRailwayAdapter({
     /** ms from a press to its predicted effect having played (the input-to-response cost in the adapter). */
     responseMs: [] as number[],
     log: [] as { request: number; op: string; lost: number; reason: string; winner?: string }[],
+    /** Read-path counts (tests and perf looks): how often the frozen reads were asked for, how often their cache key
+     * was evaluated (the tick and the movement tunables) and how often a read was really rebuilt. */
+    reads: { frames: 0, inspects: 0, readStates: 0, keyEvals: 0, stateBuilds: 0, inspectionBuilds: 0 },
   };
   const predictor = createPredictor<Railway, Act>({
     confirmed: () => confirmed,
@@ -871,12 +874,15 @@ export function createRailwayAdapter({
     a.glideTurnMax === b.glideTurnMax &&
     a.glideDeploy === b.glideDeploy;
   function readState() {
+    stats.reads.readStates++;
+    stats.reads.keyEvals++;
     const t = tick();
     const v = view();
     const m = movement();
     const applied = rail.mirror.stats.applied;
     if (read && v === readFor && t === readTick && applied === readApplied && sameMovement(m, readMovement))
       return read;
+    stats.reads.stateBuilds++;
     readFor = v;
     readTick = t;
     readApplied = applied;
@@ -1053,7 +1059,32 @@ export function createRailwayAdapter({
     stalled: RailwayIntent['op'] | null;
     view: ReturnType<typeof inspection>;
   } | null = null;
+  // The frame memo. update() runs once a frame in the railway entity's update (order 10, after its prePhysics and fixed steps) and moves `frame`; until the next one
+  // the estimated tick, the tunables and the clock-bound session fields (step, ready, stalled) are taken as they were
+  // at the head of the frame, so about a hundred readers a frame skip the 18 tune reads and the rest of the key. What
+  // can still change inside a frame is checked each call, and is cheap: the view object (a press rebuilds the
+  // prediction, a refill or its end swaps it), the mirror's applied count, the pending count and the session fields.
+  // Outside the loop (tests, tools) `frame` never moves and every call evaluates the whole key as before.
+  let frame = 0;
+  let inspectedFrame = -1;
   function inspect() {
+    stats.reads.inspects++;
+    const i0 = inspected;
+    if (
+      frame &&
+      !disposed &&
+      i0 &&
+      inspectedFrame === frame &&
+      view() === readFor &&
+      rail.mirror.stats.applied === readApplied &&
+      predictor.pending().length === i0.pending &&
+      status === i0.status &&
+      connected === i0.connected &&
+      synced === i0.synced &&
+      epoch === i0.epoch &&
+      next === i0.next
+    )
+      return i0.view;
     const state = readState();
     const pending = predictor.pending().length;
     // Only a pending action can be stalled.
@@ -1073,8 +1104,11 @@ export function createRailwayAdapter({
       i.next === next &&
       i.pending === pending &&
       i.stalled === stalled
-    )
+    ) {
+      inspectedFrame = frame;
       return i.view;
+    }
+    stats.reads.inspectionBuilds++;
     const out = inspection(state, step, ready, pending, stalled);
     inspected = {
       state,
@@ -1089,6 +1123,7 @@ export function createRailwayAdapter({
       stalled,
       view: out,
     };
+    inspectedFrame = frame;
     return out;
   }
   function inspection(
@@ -1154,6 +1189,8 @@ export function createRailwayAdapter({
     update(nowMs: number) {
       if (disposed) return;
       clock = nowMs;
+      frame++;
+      stats.reads.frames++;
       probe();
       probeClock();
     },

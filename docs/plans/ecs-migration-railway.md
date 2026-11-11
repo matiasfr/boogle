@@ -282,7 +282,7 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
 
 ### Lane C: the adapter read
 
-- [ ] **M1. Pin the per-tick read and make it once a frame.** _Medium. `src/adapters/railway.ts`,
+- [x] **M1. Pin the per-tick read and make it once a frame.** _Medium. `src/adapters/railway.ts`,
       `test/railway-adapter.test.ts`._
   - Performance rec 1 has landed: `readState()` returns the same frozen object while the view object, the estimated
     tick, the mirror's applied count and the movement tunables are unchanged, `inspect()` does the same over the
@@ -300,6 +300,16 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
     deposit's count change on the press.
   - **Reviewer attacks:** a read that survives a prediction made inside the same frame (press, then read: the press
     must show); a read that survives a reconnect or a `refill()`; callers that hold the object across frames.
+  - **Built (10 November):** four tests in `test/railway-adapter.test.ts` (identity and one key per frame; the no-loop
+    key path; packet/action/tick/tunable/reset/refill each give a new read; a held read never changes). The frame memo
+    sits in `inspect()`: after `update()` moved `frame`, a call returns the last object while the view object, the
+    mirror's applied count, the pending count and the status/connected/synced/epoch/next fields are unchanged, so it
+    skips the tick, the 18 tunables, `rail.step()`, `available()` and `stalled`. Consequence, by design: a tunable edit
+    or the clock shows from the next frame, not inside the frame it changed in. New debug counts on
+    `inspect().prediction.reads` (frames, inspects, readStates, keyEvals, stateBuilds, inspectionBuilds).
+  - **Measured (counts, `look --rail-seed trains-on`, 301 frames, not a device):** reads per frame 137.5 both ways;
+    key evaluations per frame **137.5 before, 1.0 after**; state builds and inspection builds 0.03 per frame
+    both ways (9 vs 8 in 5 s). `npm run perf` was not run: counts, not timing under load, are the evidence.
 - [ ] **M8. The read facade and the timed queries.** _High (`src/sim`, `src/world`). After M1 and M3._
   - `src/sim/railway-line-schedule.ts`: `layProgress(spec, schedule, elapsed)`; `layLine1` and `layLine2` call it.
     `src/sim/railway-queries.ts`: `jobProgress(w, c, id, tick)` on the same function.
