@@ -22,6 +22,20 @@ async function until(predicate: () => boolean, label: string, ms = 4000) {
     await sleep(5);
   }
 }
+// Bound an awaited event: a lost event fails the test with the wait's name instead of hanging the run (the suite runs
+// with --test-timeout=0).
+const WAIT_MS = 5000;
+async function within<T>(wait: Promise<T>, label: string, state: () => string, ms = WAIT_MS): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const limit = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timed out after ${ms} ms waiting for ${label} (${state()})`)), ms);
+  });
+  try {
+    return await Promise.race([wait, limit]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 function connect(base: string, room: string, sid: string) {
   const ws = new WebSocket(`${base}/room/${room}?self=${sid}&pid=alice&key=alicekey000000000000&b=test`, ['boogle.1']);
   const messages: Obj[] = [];
@@ -29,11 +43,14 @@ function connect(base: string, room: string, sid: string) {
   const closed = new Promise<number>((resolve) => {
     ws.onclose = (e) => resolve(e.code);
   });
+  // The listener is attached at construction, so a close that fires before anyone awaits is still seen.
+  const closedWithin = (label: string) =>
+    within(closed, `${sid} close: ${label}`, () => `readyState ${ws.readyState}, messages ${messages.length}`);
   const first = async () => {
     await until(() => messages.length > 0, `${sid} first message`);
     return messages[0]!;
   };
-  return { ws, closed, first };
+  return { ws, closedWithin, first };
 }
 async function manager(store: Store, t: test.TestContext) {
   const logs: string[] = [];
@@ -64,7 +81,14 @@ async function manager(store: Store, t: test.TestContext) {
   t.after(async () => {
     for (const ws of sockets) ws.close();
     await Promise.race([rooms.close({ save: false }).catch(() => {}), sleep(2000)]);
-    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await within(
+      new Promise<void>((resolve) => {
+        server.close(() => resolve());
+        server.closeAllConnections();
+      }),
+      'the test server to close',
+      () => 'teardown',
+    );
   });
   const base = `ws://127.0.0.1:${address.port}`;
   return {
@@ -79,7 +103,9 @@ async function manager(store: Store, t: test.TestContext) {
 }
 async function tmpStore(t: test.TestContext) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-room-close-'));
-  t.after(() => fs.rm(dataDir, { recursive: true, force: true }));
+  // A closing room can still have a queued store write landing as its close resolves (the second test ended with
+  // ENOTEMPTY here under load), so retry the removal until that write has finished.
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }));
   return { dataDir, base: createStore({ dataDir, maxRooms: 8 }) };
 }
 
@@ -98,7 +124,7 @@ test('a room whose save did not load cleanly can be joined again after its idle 
   const room = app.rooms.room(id)!;
   assert.equal(room.status().noSave, true, 'the fallback is marked no-save');
   a.ws.close();
-  await a.closed;
+  await a.closedWithin('idle close of the only player');
   await until(() => app.logs.some((l) => l.includes(`room ${id}: close `)), 'close failure reported');
   const b = app.join(id, 'second');
   assert.equal((await b.first()).t, 'welcome', 'the next join loads the room again');
@@ -143,17 +169,17 @@ test('a close whose save stalls times out, fences the old writer and reopens onc
   };
   await until(() => writes > 0, 'the startup checkpoint is writing');
   a.ws.close();
-  await a.closed;
+  await a.closedWithin('idle close of the only player');
   await until(() => closeStarted, 'the idle close is draining');
   const during = app.join(id, 'during');
   assert.equal((await during.first()).t, 'bye', 'a join racing the close is refused');
-  assert.equal(await during.closed, CLOSE.RESTART);
+  assert.equal(await during.closedWithin('refused join'), CLOSE.RESTART);
   await until(() => app.logs.some((l) => l.includes(`room ${id}: close failed`) && l.includes('timed out')), 'timeout');
   // Its stalled write is still queued: the room stays closing until that lands, or the next authority would load an
   // older file and later save it back over the old authority's write.
   const stalled = app.join(id, 'stalled');
   assert.equal((await stalled.first()).t, 'bye', 'a join while its write is queued is refused');
-  assert.equal(await stalled.closed, CLOSE.RESTART);
+  assert.equal(await stalled.closedWithin('refused join'), CLOSE.RESTART);
   assert.equal(app.rooms.room(id), room, 'the slot is held until the queued write lands');
   // The filesystem answers again: the queued write lands, the old close resumes, and its next save is refused.
   const before = writes;
@@ -196,12 +222,12 @@ test('a join after a timed-out close never loads a file the old authority is sti
   assert.ok(t1 > t0, `${t1} > ${t0}`);
   stall = true;
   a.ws.close();
-  await a.closed;
+  await a.closedWithin('idle close of the only player');
   await until(() => app.logs.some((l) => l.includes(`room ${id}: close failed`)), 'the close times out');
   stall = false;
   const early = app.join(id, 'early');
   assert.equal((await early.first()).t, 'bye', 'refused while the old save is queued');
-  assert.equal(await early.closed, CLOSE.RESTART);
+  assert.equal(await early.closedWithin('refused join'), CLOSE.RESTART);
   release(); // the disk answers: the old authority's queued last save lands
   await until(() => app.rooms.room(id) !== room, 'the slot is freed once it has');
   const b = app.join(id, 'second');

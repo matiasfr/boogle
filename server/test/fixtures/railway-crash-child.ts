@@ -8,6 +8,9 @@ import { createStore } from '../../src/store.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../../src/sim/railway-layout.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 
+// The parent SIGKILLs this process while it waits on promises that never settle. Nothing else needs to hold the event
+// loop open, and a drained loop exits with code 13 (unsettled top-level await) before the kill lands.
+setInterval(() => {}, 1 << 30);
 const [dataDir, boundary, roomId] = process.argv.slice(2);
 if (
   !dataDir ||
