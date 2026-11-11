@@ -78,6 +78,7 @@ import {
   RAIL_CADENCE_SLACK_MS,
   RAIL_PREDICTED,
   cloneRailway,
+  worldOf,
   railCadence,
   railParseTempPile,
   railPredict,
@@ -1160,8 +1161,23 @@ export function createRailwayAdapter({
     });
   }
   const pileIn = (id: number) => view().piles.find((p) => p.id === id);
+  // The read facade (docs/plans/ecs-migration-railway.md, M8): what views read once they move off inspect() (M10).
+  // world() is the world behind the read model the views see now (the predicted clone while actions are pending, the
+  // confirmed mirror otherwise, the last shown state while a refill comes in), so it keeps that model's consistency
+  // rule: a read model is linked to a world only once the world is whole. Read its rows and pass it to the queries in
+  // src/sim/railway-queries*.ts with `tick()` as their `at`; never write to it.
+  const facade = {
+    world: () => worldOf(view()) ?? worldOf(confirmed)!,
+    /** The estimated server tick (whole, never going backwards): the job clocks' `at`. */
+    tick,
+    /** The same with its fraction, for movers (tickNow). */
+    tickNow,
+    pid,
+    status: () => status,
+  };
   return {
     inspect,
+    read: facade,
     attach(nextRoom: WorldRoom) {
       if (disposed || room === nextRoom) return;
       for (const off of offRoom) off();

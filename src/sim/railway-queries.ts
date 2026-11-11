@@ -1,11 +1,12 @@
 // The railway's derived facts on the world (docs/plans/ecs-migration-railway.md, section 2, "Queries"): pure reads of
 // `(world)` or `(world, tick)` that the systems share. Queries never write. The view-side twins on `Railway`
-// (railActiveStation, line2Active, ...) still exist until M8 and M12 move the views onto these.
-import type { World } from '../ecs/index.ts';
+// (railActiveStation, line2Active, ...) still exist until M12b; each now has a world twin here or in its domain's file
+// (railway-queries-line1.ts, -line2.ts, -trains.ts, -works.ts), and test/railway-queries.test.ts holds each pair equal.
+import type { RowOf, World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { LINE2_PACK as PACK, LINE2_STATIONS, type Line2Station } from './railway-line2-layout.ts';
-import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
+import { layProgress, lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART } from './railway-cart.ts';
 import { trainStopsOf, type RailTrain } from './railway-train.ts';
 import { LINE2 } from './railway-lines.ts';
@@ -20,8 +21,10 @@ import {
   DEPOT_OUT,
   Forge,
   Job,
+  JobRun,
   Line,
   QJob,
+  QJobRun,
   Rail,
   Shed,
   Train,
@@ -134,6 +137,80 @@ export function cartWants(w: World, k: number) {
   const { rails } = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
   return Math.min(CART.rails - w.get(Cart, cartId(w))!.rails, rails);
 }
+// ---------------------------------------------------------------- the job clocks and the facts views read (M8)
+// The facts below are the world twins of the read model's (`railJobs`, `railCounts`, ... on a `Railway`): same names, a
+// world first. A fact that reads a job's timed fields (elapsed, used, allocation and the second material's pair) takes
+// an optional `at`: absent, it reads the run rows the rule tick advances (the server's world, a seed, a test); given, it
+// reads the job clock at that tick (jobProgress), which is what a client's mirror and its predicted clones hold, since
+// their run rows never move.
+type Station = (typeof LINE1_STATIONS)[number] | (typeof LINE2_STATIONS)[number];
+export type JobRunRow = RowOf<typeof JobRun>;
+export type QJobRunRow = RowOf<typeof QJobRun>;
+// One schedule per station and timing (the mirror kept the same cache per job clock): a query never re-solves it.
+const schedules = new WeakMap<Station, { key: string; schedule: ReturnType<typeof lineSchedule> }>();
+function scheduleFor(spec: Station, j: LineTiming) {
+  const key = TIMING_KEYS.map((k) => j[k]).join(',');
+  const hit = schedules.get(spec);
+  if (hit?.key === key) return hit.schedule;
+  const schedule = scheduleOf(spec, j);
+  schedules.set(spec, { key, schedule });
+  return schedule;
+}
+/** A job's timed fields at `tick`, as the rule tick would leave them, from its Job or QJob row alone: elapsed is
+ * `tick - start + ahead` up to the schedule's total, a completed job has used its whole bill and stopped at `end`, an
+ * unfunded one is all zero. The same arithmetic as the tick (layProgress). Never writes. */
+export function jobProgress(w: World, c: typeof Job, id: number, tick: number): JobRunRow;
+export function jobProgress(w: World, c: typeof QJob, id: number, tick: number): QJobRunRow;
+export function jobProgress(w: World, c: typeof Job | typeof QJob, id: number, tick: number) {
+  const j = w.get(c, id)!;
+  const spec: Station = c === Job ? LINE1_STATIONS[j.slot]! : LINE2_STATIONS[j.slot]!;
+  let elapsed = 0,
+    lastTick = 0,
+    used = 0,
+    allocation = 0,
+    used2 = 0,
+    allocation2 = 0;
+  if (j.start >= 0) {
+    const schedule = scheduleFor(spec, j);
+    if (j.completion) {
+      [elapsed, lastTick, used, used2] = [schedule.totalTicks, j.end, spec.bill[0], spec.bill[1]];
+    } else {
+      elapsed = Math.min(schedule.totalTicks, Math.max(0, tick - j.start + j.ahead));
+      lastTick = Math.max(j.start, tick);
+      ({ used, allocation, used2, allocation2 } = layProgress(spec, schedule, elapsed));
+    }
+  }
+  return c === Job
+    ? { allocation, used, stoneAllocation: allocation2, stoneUsed: used2, elapsed, lastTick }
+    : { allocation, railAllocation: allocation2, used, railUsed: used2, elapsed, lastTick };
+}
+/** A line-one job: its row and its timed fields (the run row, or the clock at `at`). */
+export type JobRead = { id: number; job: Readonly<RowOf<typeof Job>>; run: Readonly<JobRunRow> };
+export type QJobRead = { id: number; job: Readonly<RowOf<typeof QJob>>; run: Readonly<QJobRunRow> };
+/** Line one's jobs, T1 to T3 (railJobs). */
+export const railJobs = (w: World, at?: number): JobRead[] =>
+  LINE1_STATIONS.map((_s, slot) => {
+    const id = job(w, slot);
+    return { id, job: w.get(Job, id)!, run: at === undefined ? w.get(JobRun, id)! : jobProgress(w, Job, id, at) };
+  });
+/** Line two's jobs, Q1 to Q6. */
+export const line2Jobs = (w: World, at?: number): QJobRead[] =>
+  LINE2_STATIONS.map((_s, slot) => {
+    const id = qjob(w, slot);
+    return { id, job: w.get(QJob, id)!, run: at === undefined ? w.get(QJobRun, id)! : jobProgress(w, QJob, id, at) };
+  });
+/** The line-one station taking materials now (activeStation). */
+export const railActiveStation = activeStation;
+/** The line-one job taking materials now. */
+export const railCurrentJob = (w: World, at?: number) => railJobs(w, at)[activeStation(w)]!;
+/** A player's account row, or undefined. */
+export const railAccount = (w: World, pid: string) => {
+  const id = w.lookup(Account, pid);
+  return id === undefined ? undefined : w.get(Account, id)!;
+};
+/** What a back carries (carryMax). */
+export const railCarryMax = carryMax;
+
 /** Footings the pier still needs that are neither set, racked there, nor aboard the wagon (`aboard`). */
 export function pierOwed(w: World, aboard: number) {
   const works = w.get(Works, worksId(w))!;

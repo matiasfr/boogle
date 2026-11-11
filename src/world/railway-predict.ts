@@ -8,6 +8,7 @@
 //                                     depot and shelf takes, wake, lever, summit switch, pack, the kiln, footings and
 //                                     the cradle, the glider take); the rest wait for the server as in R1a
 //   railwayOf(world, into?)           the read model of a world, linked to it (a mirror's confirmed state, a clone's)
+//   worldOf(s)                        the world a read model is linked to (the views' read facade)
 //   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
 //                                     fills is lit only when confirmed, and so are the Works' thresholds (the kiln lit,
@@ -163,6 +164,9 @@ export function railwayOf(w: World, into?: Railway): Railway {
   worlds.set(s, w);
   return s;
 }
+/** The world a read model is linked to (a mirror's confirmed state, a predicted clone), or undefined: the views' read
+ * facade (`adapter.read.world()`). Linked only once the world is whole, so it never returns a half-filled world. */
+export const worldOf = (s: Railway): World | undefined => worlds.get(s);
 /** Whether the world holds a whole railway yet (a mirror before its late join's last chunk does not). */
 const whole = (w: World) => w.count(Rail) === 1;
 /** A copy of a read model, linked to a copy of its world (the predictor's scratch state). */
