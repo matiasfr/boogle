@@ -29,7 +29,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-09 · Halt boards show the island map ([entry](#d-2026-11-09-halt-boards-show-the-island-map))
 - 2026-11-09 · Home station B: the curio shelf leaves the north end wall ([entry](#d-2026-11-09-home-station-b-the-curio-shelf))
 - 2026-11-09 · Home station B: the hall's end walls are low ([entry](#d-2026-11-09-home-station-b-the-hall-s))
-- 2026-11-09 · A live line map stands at the Home station; halts get real split-flap signs ([entry](#d-2026-11-09-a-live-line-map-stands-at))
+- 2026-11-09 · A live line map stands at the Home station; halts get real split-flap signs ([entry](#d-2026-11-09-a-live-line-map-stands-at)) _Replaced in part: its "No fast travel or picker" gives way to the 10 November express answers (the map takes a pick and the board sends you on a ride); the live map and the split-flap signs stand (owner, 10 November, asked whether the later entry replaces this part: "yes please")._
 - 2026-11-09 · Home gets one coherent station ([entry](#d-2026-11-09-home-gets-one-coherent-station))
 - 2026-11-09 · The boiler is hauled on a rope like the great log, a little faster ([entry](#d-2026-11-09-the-boiler-is-hauled-on-a))
 - 2026-11-10 · engine doors parked; cab glass; riders sit forward ([entry](#d-2026-11-10-engine-doors-parked-cab-glass-riders))
@@ -75,7 +75,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-02 · the venue plan is dropped ([entry](#d-2026-11-02-the-venue-plan-is-dropped))
 - 2026-11-02 · working layout picks: Threefold Reach for home, Two-Bay Weave for the network ([entry](#d-2026-11-02-working-layout-picks-threefold-reach-for))
 - 2026-11-01 · an archipelago, not one big open map. ([entry](#d-2026-11-01-an-archipelago-not-one-big-open))
-- undated · Trains are ride-only and timetabled. ([entry](#d-undated-trains-are-ride-only-and-timetabled))
+- undated · Trains are ride-only and timetabled. ([entry](#d-undated-trains-are-ride-only-and-timetabled)) _Replaced in part: trains stop on request since 10 November, so position is no longer a pure function of the world tick; ride-only stands (owner, 10 November, asked whether the later entry replaces this part: "yes please")._
 - undated · Crates visibly ride the trains to construction sites. ([entry](#d-undated-crates-visibly-ride-the-trains))
 - undated · Construction shows both scaffolding and pieces appearing. ([entry](#d-undated-construction-shows-both-scaffolding-and-pieces))
 - 2026-11-01 · stops start with the pole sign ([entry](#d-2026-11-01-stops-start-with-the-pole-sign))
