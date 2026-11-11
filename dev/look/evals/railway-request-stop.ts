@@ -7,9 +7,9 @@
 // BOOGLE_BOT_RANK=1 npm run look -- --players 2 --rail-seed trains-on --query shot=play \
 //   --eval dev/look/evals/railway-request-stop.ts --until window.__placeDone --hud --name request-stop
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, lines, railRead, rw, trains } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
 const { interactTarget } = (await import(
@@ -36,8 +36,7 @@ type Car = { x: number; y: number; z: number; riding: boolean };
 type Train = { slot: number; line: number; along: number; cars: Car[]; stopLamp: boolean; holdLamp: boolean };
 type Up = { pair: number; up: boolean; x: number; y: number; z: number; path: { x: number; z: number }[] };
 type View = { halts: Halt[]; trains: Train[]; upPlatforms: Up[] };
-const read = () => inspectRailwayLegacy()!;
-const view = () => read().line2View as unknown as View;
+const view = () => inspectRailway()!.line2View as unknown as View;
 const LINE2_SLOTS = [1, 2];
 const player = new URLSearchParams(location.search).get('player');
 const shot = window as Window & { __placeDone?: boolean };
@@ -62,7 +61,7 @@ const QUARRY = 3;
 setTimeout(() => window.__debugCam?.clear(), 100);
 background(
   (async () => {
-    await until(() => read()?.ready && me.body && me.coyote > 0, 'seed arrived', 300000);
+    await until(() => railRead()?.ready() && me.body && me.coyote > 0, 'seed arrived', 300000);
     await until(() => view().halts[QUARRY]?.up && view().halts[2]?.up, 'line 2 halts stand', 60000);
     if (player === '1') {
       // Over the plank crossing to the up platform (the walk from it, reversed), then its lever toward Far Head.
@@ -84,7 +83,7 @@ background(
       const passedDown: number[] = [];
       await until(() => {
         for (const k of LINE2_SLOTS) {
-          const r = read().trains[k]!,
+          const r = trains(rw())[k]!,
             t = view().trains[k]!;
           if (r.track === 0 && t.stopLamp && r.to === 1) served = k;
           if (r.track === 1 && r.phase === 1 && Math.abs(t.along - 17400) < 600 && !passedDown.includes(k))
@@ -92,11 +91,11 @@ background(
         }
         return served >= 0;
       }, 'an up train lights its lamp for the up lever');
-      console.log(`SERVED ${JSON.stringify({ served, row: read().trains[served], lines: read().lines })}`);
+      console.log(`SERVED ${JSON.stringify({ served, row: trains(rw())[served], lines: lines(rw()) })}`);
       await until(() => {
-        const r = read().trains[served]!;
+        const r = trains(rw())[served]!;
         for (const k of LINE2_SLOTS) {
-          const o = read().trains[k]!,
+          const o = trains(rw())[k]!,
             t = view().trains[k]!;
           if (
             k !== served &&
@@ -124,7 +123,7 @@ background(
       }, 16);
       await bot.wait(400);
       console.log(
-        `REQUEST STOP ${JSON.stringify({ served, passedDown, trains: read().trains, lever: view().halts[QUARRY]!.lever })}`,
+        `REQUEST STOP ${JSON.stringify({ served, passedDown, trains: trains(rw()), lever: view().halts[QUARRY]!.lever })}`,
       );
       shot.__placeDone = true;
       return;
@@ -137,7 +136,7 @@ background(
     await until(() => {
       slot =
         LINE2_SLOTS.find((k) => {
-          const r = read().trains[k]!;
+          const r = trains(rw())[k]!;
           return r.phase === 0 && r.at === 0 && r.track === 0;
         }) ?? -1;
       return slot >= 0;
@@ -166,7 +165,7 @@ background(
     check(interactTarget()?.verb === 'Request stop: Quarry', 'the prompt names the quarry');
     if (interactTarget()?.run) bot.press();
     await until(() => train().stopLamp, 'the engine lamp lights', 30000);
-    console.log(`ABOARD REQUESTED ${JSON.stringify({ slot, row: read().trains[slot] })}`);
+    console.log(`ABOARD REQUESTED ${JSON.stringify({ slot, row: trains(rw())[slot] })}`);
     shot.__placeDone = true;
   })(),
   'request-stop look',

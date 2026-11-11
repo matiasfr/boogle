@@ -1,9 +1,9 @@
 // Action for the instant-feedback capture (replication R1b; setup: railway-instant.ts): three strokes at the tree, then
 // the walk to the active frame, whose automatic unload deposits. Each stroke's logs must reach the back on its contact
 // beat, not a round trip later: it logs press -> visible carry per stroke, and the adapter's own press -> effect cost.
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { account, activeStation, inspectRailway, railAt, railJobs, railPid, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { CHOP_CONTACT } = (await import(
@@ -15,7 +15,8 @@ const bot = makeBot({
   },
 });
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
-const read = () => inspectRailwayLegacy()!;
+const read = () => inspectRailway()!;
+const carry = () => account(rw(), railPid())?.carry ?? 0;
 // Strokes from the side: six metres off the line from the player to the tree, so neither hides the other.
 {
   const p = me.body!.position;
@@ -34,11 +35,11 @@ background(
   (async () => {
     const strokes: { pressToCarryMs: number; frames: number; afterContactMs: number; pendingAtShow: number }[] = [];
     for (let k = 0; k < 3; k++) {
-      const carry = read().carry;
+      const before = carry();
       const t0 = performance.now();
       bot.press();
       let frames = 0;
-      while (read().carry === carry && frames < 240) {
+      while (carry() === before && frames < 240) {
         await frame();
         frames++;
       }
@@ -53,11 +54,11 @@ background(
     }
     window.__debugCam?.clear(); // the game's follow camera for the walk to the frame and its unload
     const station = read().station;
-    const carried = read().carry;
+    const carried = carry();
     await bot.walk(station.x, station.z, 3);
-    await bot.until(() => read().carry < carried, 8000, 'the frame takes a log');
+    await bot.until(() => carry() < carried, 8000, 'the frame takes a log');
     const pendingWhenFirstLogLeft = read().pending;
-    await bot.until(() => read().pending === 0 && read().carry === 0, 20000, 'every deposit settles');
+    await bot.until(() => read().pending === 0 && carry() === 0, 20000, 'every deposit settles');
     const s = read();
     console.log(
       `RAILWAY INSTANT act ${JSON.stringify({
@@ -66,7 +67,7 @@ background(
         responseMs: s.prediction.responseMs.slice(-12).map((x) => Math.round(x * 100) / 100),
         corrected: s.prediction.corrected,
         predicted: s.prediction.predicted,
-        stock: s.stations[s.activeStation]!.stock,
+        stock: railJobs(rw(), railAt())[activeStation(rw())]!.job.stock,
       })}`,
     );
   })(),

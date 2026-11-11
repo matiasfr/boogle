@@ -312,7 +312,7 @@ typecheck`, `npm run lint`.
       `railway-b5b8-bot`, `railway-boiler-fit`, `railway-forge-lights`, `railway-head-forge`, `railway-gated-fill`,
       `railway-glide-wake`, `railway-signal-hold`, `railway-trains-pass`, `gpu-portability` (`jump-in` was done in
       M12c).
-- [ ] **D4. The rest.** _M._ `dev/look/evals/`: `railway-instant`, `railway-instant-act`, `railway-motion`,
+- [x] **D4. The rest.** _M._ (**As built:** 12 evals, 2 scenarios and the 2 peer-test files; `INSPECT_LEGACY_IMPORTERS` 35 to 21. The peer-test probe is `session` (`read` scalars and `debug()`) plus `rows` (the checks' rows and queries), no inspection. `railway-finds` and `railway-town` still read `railwayRead()`: M12d.) `dev/look/evals/`: `railway-instant`, `railway-instant-act`, `railway-motion`,
       `railway-q6-wait`, `railway-q6-forge` (found by M12c), `railway-passenger-car`, `railway-passenger-car-two`, `railway-request-stop`,
       `railway-works-act`, `railway-works-at`, `railway-works-bot`, `ring-greybox`; `dev/scenarios/hud-glance.ts`,
       `world-inputs.ts`; `dev/peer-test/ws-railway.ts` and `ws-page.ts` (`T.railAdapter().state` and `state:
