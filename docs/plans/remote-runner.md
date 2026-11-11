@@ -343,8 +343,8 @@ it does not do them.
 - [ ] Settings, Accounts, Other users: add a local **standard** user `boogle` (not an administrator).
 - [ ] Settings, System, Optional features: add **OpenSSH Server**; then in an administrator PowerShell
       `Set-Service sshd -StartupType Automatic; Start-Service sshd`.
-- [ ] Check that Git for Windows and Node 26 are installed for all users (on the system path), and install ffmpeg
-      (`winget install Gyan.FFmpeg`).
+- [ ] Check that Git for Windows and Node 26 are installed for all users (on the system path).
+- [x] Install ffmpeg (`winget install Gyan.FFmpeg`). Installed on HOTBOX (11 November).
 - [ ] Administrator PowerShell, so ssh commands run in bash as on the Mac:
       `New-ItemProperty -Path HKLM:\SOFTWARE\OpenSSH -Name DefaultShell -Value "C:\Program Files\Git\bin\bash.exe" -PropertyType String -Force`.
 - [ ] In `C:\ProgramData\ssh\sshd_config` set `PasswordAuthentication no` and `AllowUsers boogle` (after the key
