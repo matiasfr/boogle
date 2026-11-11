@@ -2,7 +2,8 @@
 # npm run heartbeat [-- --all]: everything an orchestrator checks each round, in one read-only report: main's CI
 # verdict first (RED MAIN with its fix PR and issue), model mode, main,
 # open pull requests, the last CI, deploy and smoke runs, recent play sessions, device runs not yet pulled, the bot
-# queue, the nightly jobs and their open issues, the ship lock, machine load and the worktrees holding unmerged or
+# queue, the nightly jobs and their open issues, the ship lock, machine load, test and check processes that have run
+# long or stalled, and the worktrees holding unmerged or
 # uncommitted work (those active in the last 48 hours and a count of the rest; --all lists every one).
 set -uo pipefail
 all=0
@@ -80,6 +81,25 @@ say "Ship lock and load"
 lock=${BOOGLE_SHIP_LOCK:-/tmp/boogle-ship-$(id -u).lock}
 [ -d "$lock" ] && echo "a ship holds the lock (pid $(cat "$lock/pid" 2>/dev/null))" || echo "no ship running"
 uptime | sed 's/.*load averages*: */load: /'
+# Owner, 11 November: check for the bottleneck each round. Two full server-suite runs sat at 0% CPU for 62 and 83
+# minutes inside one test file while their agents "waited", and that held a review and the views behind it.
+say "Bottleneck: long test and check processes (STALLED = over 15 minutes and under 1% CPU now)"
+found=0
+while read -r pid etime cpu cmd; do
+  secs=$(echo "$etime" | awk -F'[-:]' '{ n = NF; s = $n + $(n-1) * 60; if (n > 2) s += $(n-2) * 3600; if (n > 3) s += $(n-3) * 86400; print s }')
+  [ "$secs" -lt "${HEARTBEAT_STALL_SECS:-900}" ] && continue
+  found=1
+  cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | sed "s|^$main/||; s|^\.claude/worktrees/||")
+  # A test runner idles while its children work, so judge the whole process tree.
+  tree=$pid kids=$pid
+  while kids=$(for k in $kids; do pgrep -P "$k"; done) && [ -n "$kids" ]; do tree="$tree $kids"; done
+  cpu=$(ps -o %cpu= -p "$(echo $tree | tr ' ' ',')" 2>/dev/null | awk '{ s += $1 } END { printf "%.1f", s }')
+  mark=running
+  awk -v c="$cpu" 'BEGIN { exit !(c < 1) }' && mark=STALLED
+  echo "$mark: pid $pid, $((secs / 60)) min, ${cpu}% CPU with its children, in ${cwd:-?}: $(echo "$cmd" | sed 's|.*/bin/node |node |' | cut -c1-90)"
+done < <(ps -Ao pid=,etime=,%cpu=,command= | grep -E 'node (.* )?--test |dev/migrate/rail-mutants|dev/level/check|dev/loop/cli|dev/look/|playwright|npm run (check|test)' | grep -v -E 'grep|--test-concurre|shell-snapshots')
+[ "$found" = 0 ] && echo "none over 15 minutes"
+echo "A STALLED run: find its test file (pgrep -P <pid>), rerun that file alone with a timeout, kill the run, tell its agent."
 say "Worktrees with unmerged or uncommitted work$([ "$all" = 1 ] || echo ', active in the last 48 hours')"
 since=$(($(date +%s) - 48 * 3600))
 older=0 runs=0
