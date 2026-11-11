@@ -1,5 +1,5 @@
 // Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
-// rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-systems.ts.
+// rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-sys-line2.ts.
 import { trainStopsOf } from './railway-train.ts';
 import { LINE2 } from './railway-lines.ts';
 import { railTrainsOf } from './railway-trains.ts';

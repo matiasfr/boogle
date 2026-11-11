@@ -1,7 +1,7 @@
 // Several trains on a line (docs/plans/generic-lines.md, "The state shape" 3-8; v26): the circuit, the end blocks and
 // their signals, the block rule, the headway hold at the ends, who serves a lever ask, and the per-line step. Pure, in
 // whole cm and ticks over the rows (a `Rows` getter by slot), so the server's systems and a client's mirror read the
-// same rules; railway-systems.ts supplies the world's side (cargo, the wagon, the cart) through `TrainIO`.
+// same rules; railway-sys-trains.ts supplies the world's side (cargo, the wagon, the cart) through `TrainIO`.
 //
 //   circuitCm, circuitLen         (./railway-lines.ts) one number round a line, for ordering and spacing only
 //   endBlocks(line, stops)        the two open ends' blocks (turnout to end stop, both tracks) and their signals
@@ -187,7 +187,7 @@ export function planLeg(
 }
 
 // ---------------------------------------------------------------- one line's step
-/** The world's side of a line's step, from railway-systems.ts: rows to read and write, and the cargo rules. */
+/** The world's side of a line's step, from railway-sys-trains.ts: rows to read and write, and the cargo rules. */
 export type TrainIO = {
   row: Rows;
   set(slot: number, patch: Partial<RailTrain>): void;

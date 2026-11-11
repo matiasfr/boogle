@@ -1,5 +1,5 @@
 // Split-rock Works and the smallest Roundhouse (docs/plans/split-rock-roundhouse.md, "The rules"): the read model's
-// shapes, read helpers and invariants. Pure and integer only; the rules are systems in ./railway-systems.ts.
+// shapes, read helpers and invariants. Pure and integer only; the rules are systems in ./railway-sys-works.ts.
 //
 //   footingTotal(s)        every footing's home: Works rack, backs, ground piles, the wagon, pier rack, stall, cradle, sea
 //   pierNeed(s)            footings the pier still wants that are not already set, racked there or aboard the wagon

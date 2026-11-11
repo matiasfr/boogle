@@ -1,4 +1,4 @@
-// Line one's shapes and read helpers on the read model; its rules are systems in ./railway-systems.ts.
+// Line one's shapes and read helpers on the read model; its rules are systems in ./railway-sys-line1.ts.
 import type { RailAccount, Railway } from './railway.ts';
 import { LINE1_STATIONS, LINE1_RAIL_PAIRS, lineBeamGround } from './railway-line-layout.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
