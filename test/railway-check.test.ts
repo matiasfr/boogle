@@ -45,6 +45,24 @@ test('every message the world check throws is a bad world, unreachable or domina
   assert.deepEqual([...listed].sort(), [...said()].sort());
 });
 
+// Review of M12b-1 (FAILING, review/m12b-1): the set above counts messages, not sites. The old completeness test counted
+// the old validators' 87 throw sites with repeats; the world check splits 'job bounds' and 'line2 job bounds' into three
+// sites each (railway-check-line1.ts:38-40, railway-check-line2.ts:50-54) and the corpus has two worlds for each, so
+// the start/completion range site has no bad world: dropping `!railInt(j.completion, 1)` from line one's check passes
+// every test in this file and the golden shards.
+test('review M12b-1: each bad() site of the world check has its own entry (sites counted with repeats)', () => {
+  const files = ['railway-check.ts', 'railway-check-line1.ts', 'railway-check-line2.ts', 'railway-check-works.ts'];
+  const sites = new Map<string, number>();
+  for (const f of [...files, 'railway-check-trains.ts'])
+    for (const m of readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8').matchAll(/bad\('([^']+)'\)/g))
+      sites.set(`railway: ${m[1]!}`, (sites.get(`railway: ${m[1]!}`) ?? 0) + 1);
+  const entries = new Map<string, number>();
+  for (const e of [...BAD_WORLDS, ...UNREACHABLE, ...DOMINATED])
+    entries.set(e.message, (entries.get(e.message) ?? 0) + 1);
+  const short = [...sites].filter(([m, n]) => (entries.get(m) ?? 0) < n).map(([m, n]) => `${m}: ${n} sites`);
+  assert.deepEqual(short, []);
+});
+
 // The seeds' safety rests on these two staying in the load check (M3c's review): the seed builders check the world
 // (railway-drive.ts check) where they once read line2Rails and footingTotal off the model. A rail or a footing that
 // appears from nowhere, or goes missing, must be refused by the check the seeds run.
