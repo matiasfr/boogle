@@ -1,11 +1,32 @@
-// The railway's system census (docs/plans/ecs-migration-railway.md, section 2, M3): every system is dispatched by
-// exactly one of the op table, the tick schedule or the named entry points; every component is written by some
-// system; and no two systems share a phase and order (createSchedule refuses that).
+// The railway's system census (docs/plans/ecs-migration-railway.md, section 2, M3, M3b): every system a
+// railway-sys-*.ts file exports is dispatched by exactly one of the op table, the tick schedule or the named entry
+// points; every component is written by some system; no two systems share a phase and order (createSchedule refuses
+// that); and no railway sim file re-exports another's names but the two blocks recorded here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSchedule } from '../src/ecs/index.ts';
+import { readdirSync, readFileSync } from 'node:fs';
+import { createSchedule, type System } from '../src/ecs/index.ts';
 import { RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
 import { RAIL_ENTRIES, RAIL_OPS, RAIL_SYSTEMS, RAIL_TICK } from '../src/sim/railway-systems.ts';
+
+const SIM = new URL('../src/sim/', import.meta.url);
+/** Every railway-sys-*.ts module, found on disk, so a new domain file is counted without editing this test. */
+const SYSTEM_FILES: [string, Record<string, unknown>][] = await Promise.all(
+  readdirSync(SIM)
+    .filter((f) => /^railway-sys-.+\.ts$/.test(f))
+    .sort()
+    .map(async (f) => [f, (await import(new URL(f, SIM).href)) as Record<string, unknown>] as const),
+);
+const isSystem = (v: unknown): v is System<never, unknown> =>
+  typeof v === 'object' &&
+  v !== null &&
+  typeof (v as { fn?: unknown }).fn === 'function' &&
+  typeof (v as { phase?: unknown }).phase === 'string' &&
+  typeof (v as { order?: unknown }).order === 'number';
+const REEXPORT = /export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s*(?:as\s+\w+\s*)?from\s*'([^']+)'/g;
+/** The re-exports left after M3b: line one's read helpers on `Railway` (deleted with them in M12b) and the seed
+ * route behind railway-seeds.ts (not on M3b's list). */
+const RE_EXPORTS = ['railway-seeds.ts <- ./railway-seed-route.ts', 'railway.ts <- ./railway-line.ts'];
 
 test('every railway system is in exactly one of the op table, the tick and the entry points', () => {
   const ops = Object.values(RAIL_OPS).flat();
@@ -23,7 +44,25 @@ test('every railway system is in exactly one of the op table, the tick and the e
     [...homes.keys()],
     'RAIL_SYSTEMS is the op table, the tick and the entry points',
   );
-  assert.equal(RAIL_SYSTEMS.length, 50);
+});
+
+test('every system a railway-sys-*.ts file exports is in RAIL_SYSTEMS, and RAIL_SYSTEMS holds nothing else', () => {
+  const listed = new Set<unknown>(RAIL_SYSTEMS);
+  const exported: string[] = [];
+  for (const [file, mod] of SYSTEM_FILES)
+    for (const [key, value] of Object.entries(mod))
+      if (isSystem(value)) {
+        exported.push(value.name);
+        assert.ok(listed.has(value), `${file} exports ${key} (${value.name}), which no list dispatches`);
+      }
+  assert.deepEqual([...exported].sort(), RAIL_SYSTEMS.map((s) => s.name).sort());
+});
+
+test('no src/sim/railway-*.ts file re-exports, but the two recorded blocks', () => {
+  const found: string[] = [];
+  for (const f of readdirSync(SIM).filter((f) => /^railway.*\.ts$/.test(f)))
+    for (const m of readFileSync(new URL(f, SIM), 'utf8').matchAll(REEXPORT)) found.push(`${f} <- ${m[1]}`);
+  assert.deepEqual(found.sort(), RE_EXPORTS);
 });
 
 test('the op table names each system after its op, the deposit falling through to line two', () => {

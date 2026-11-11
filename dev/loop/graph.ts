@@ -217,7 +217,12 @@ const dec = (on: NodeId, by: EnforcedBy, source: string, scope?: 'finish'): Edge
   source,
   ...(scope ? { scope } : {}),
 });
-const RULES = 'src/sim/railway-systems.ts';
+// Where each cited rule lives since the systems split by domain (docs/plans/ecs-migration-railway.md, M3).
+const RULES_QUERIES = 'src/sim/railway-queries.ts';
+const RULES_LINE1 = 'src/sim/railway-sys-line1.ts';
+const RULES_LINE2 = 'src/sim/railway-sys-line2.ts';
+const RULES_TRAINS = 'src/sim/railway-sys-trains.ts';
+const RULES_WORKS = 'src/sim/railway-sys-works.ts';
 const onMain = (kind: Cue['kind'], what: string, source: string): Cue => ({ kind, state: 'on-main', what, source });
 const unbuilt = (what: string, source: string): Cue => ({ kind: 'world', state: 'decided', what, source });
 const frameSign = (file: string): Cue =>
@@ -298,8 +303,8 @@ export const NODES: readonly LoopNode[] = [
       },
     ],
   },
-  lineStation('T1', [dec('wake', 'rules', `${RULES} ready(): awake + wakeTicks`)], ['t1-done']),
-  lineStation('T2', [dec('T1', 'rules', `${RULES} activeStation()`)], ['t2-funded', 'T2']),
+  lineStation('T1', [dec('wake', 'rules', `${RULES_QUERIES} ready(): awake + wakeTicks`)], ['t1-done']),
+  lineStation('T2', [dec('T1', 'rules', `${RULES_QUERIES} activeStation()`)], ['t2-funded', 'T2']),
   {
     id: 'beam',
     label: 'Fell the great tree and drag the beam to T3',
@@ -311,7 +316,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.beamChop', 'rail.beamTake', 'rail.beamDeposit'],
     reached: { mark: 'deposit', data: { material: 'beam' } },
     stops: [],
-    requires: [dec('T2', 'rules', `${RULES} beamNeeded(): T3 active and unfunded`)],
+    requires: [dec('T2', 'rules', `${RULES_LINE1} beamNeeded(): T3 active and unfunded`)],
     cue: [
       onMain(
         'world',
@@ -323,14 +328,14 @@ export const NODES: readonly LoopNode[] = [
   lineStation(
     'T3',
     [
-      dec('T2', 'rules', `${RULES} activeStation()`),
+      dec('T2', 'rules', `${RULES_QUERIES} activeStation()`),
       {
         on: 'beam',
         status: 'free',
         by: 'none',
         source: 'decisions.md 2026-11-07 the great beam: logs and beam arrive in either order',
       },
-      dec('beam', 'rules', `${RULES} fund(): the beam allocated; decisions.md 2026-11-07`, 'finish'),
+      dec('beam', 'rules', `${RULES_LINE1} fund(): the beam allocated; decisions.md 2026-11-07`, 'finish'),
     ],
     ['T3'],
   ),
@@ -366,7 +371,7 @@ export const NODES: readonly LoopNode[] = [
     ops: [],
     reached: { mark: 'forge lit' },
     stops: ['forge-lit'],
-    requires: [dec('T3', 'rules', `${RULES} deposit2: station F needs T3 complete`)],
+    requires: [dec('T3', 'rules', `${RULES_LINE2} deposit2: station F needs T3 complete`)],
     cue: [onMain('world', "the forge frame's sign while unlit", 'src/entities/railway/line2-view.ts:906')],
   },
   {
@@ -379,7 +384,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.axe'],
     reached: { mark: 'proper axe gained' },
     stops: [],
-    requires: [dec('forge', 'rules', `${RULES} axe: forge lit; decisions.md 2026-11-07`)],
+    requires: [dec('forge', 'rules', `${RULES_LINE1} axe: forge lit; decisions.md 2026-11-07`)],
     cue: [onMain('world', 'the axe chest by the forge', 'src/entities/railway/tools.ts:71,251-258')],
     optional: true,
   },
@@ -393,12 +398,12 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.pack'],
     reached: { mark: 'pack gained' },
     stops: [],
-    requires: [dec('forge', 'rules', `${RULES} pack: the forge's first bill (${LINE2_FORGE.bills[0]} logs)`)],
+    requires: [dec('forge', 'rules', `${RULES_LINE2} pack: the forge's first bill (${LINE2_FORGE.bills[0]} logs)`)],
     cue: [onMain('world', 'the pack chest beside the forge', 'src/entities/railway/tools.ts:81,259-266')],
     optional: true,
   },
-  quarryStation('Q1', [dec('forge', 'rules', `${RULES} deposit2: forge lit + turnTicks`)]),
-  quarryStation('Q2', [dec('Q1', 'rules', `${RULES} qActive()`)]),
+  quarryStation('Q1', [dec('forge', 'rules', `${RULES_LINE2} deposit2: forge lit + turnTicks`)]),
+  quarryStation('Q2', [dec('Q1', 'rules', `${RULES_QUERIES} qActive()`)]),
   {
     id: 'hook',
     label: 'Take the hook shot (pillar p2)',
@@ -413,12 +418,12 @@ export const NODES: readonly LoopNode[] = [
       dec(
         'Q2',
         'rules',
-        `${RULES} hook: two stretches laid; line2Routes(2).hook = ${String(line2Routes(2).hook)} (the walkway)`,
+        `${RULES_LINE2} hook: two stretches laid; line2Routes(2).hook = ${String(line2Routes(2).hook)} (the walkway)`,
       ),
     ],
     cue: [onMain('world', "the hook drum on pillar p2's top", 'src/entities/railway/line2-view.ts:368-380')],
   },
-  quarryStation('Q3', [dec('Q2', 'rules', `${RULES} qActive()`)]),
+  quarryStation('Q3', [dec('Q2', 'rules', `${RULES_QUERIES} qActive()`)]),
   {
     id: 'lever',
     label: 'Pull the quarry lever',
@@ -429,21 +434,21 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.lever'],
     reached: { mark: 'quarry lever pulled' },
     stops: [],
-    requires: [dec('Q3', 'rules', `${RULES} lever: three stretches laid (Q3 couples the drive)`)],
+    requires: [dec('Q3', 'rules', `${RULES_LINE2} lever: three stretches laid (Q3 couples the drive)`)],
     cue: [
       onMain('world', 'the quarry gate and its lever on the apron', 'src/entities/railway/line2-view.ts:393-394'),
       onMain('world', 'Q4\'s sign: "Pull the lever to start" once full', 'src/entities/railway/line2-view.ts:957-960'),
     ],
   },
   quarryStation('Q4', [
-    dec('Q3', 'rules', `${RULES} qActive()`),
+    dec('Q3', 'rules', `${RULES_QUERIES} qActive()`),
     {
       on: 'lever',
       status: 'free',
       by: 'none',
       source: 'decisions.md 2026-11-08 fill a gated stretch before its switch',
     },
-    dec('lever', 'rules', `${RULES} fundQ(): gateDown`, 'finish'),
+    dec('lever', 'rules', `${RULES_LINE2} fundQ(): gateDown`, 'finish'),
   ]),
   {
     id: 'sea',
@@ -474,8 +479,8 @@ export const NODES: readonly LoopNode[] = [
     ],
   },
   quarryStation('Q5', [
-    dec('Q4', 'rules', `${RULES} qActive()`),
-    dec('sea', 'rules', `${RULES} fundQ(): gateDown`, 'finish'),
+    dec('Q4', 'rules', `${RULES_QUERIES} qActive()`),
+    dec('sea', 'rules', `${RULES_LINE2} fundQ(): gateDown`, 'finish'),
   ]),
   {
     id: 'glider',
@@ -488,7 +493,7 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'glider gained' },
     stops: ['glider'],
     requires: [
-      dec('Q5', 'rules', `${RULES} glide: five stretches laid`),
+      dec('Q5', 'rules', `${RULES_LINE2} glide: five stretches laid`),
       dec('hook', 'world', 'docs/plans/glider-b-home-flow.md: on the summit deck'),
     ],
     cue: [onMain('world', 'the woken summit device and its locator', 'src/entities/railway/glide-device-view.ts:1-5')],
@@ -504,7 +509,9 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.boilerTake'],
     reached: { mark: 'boiler taken' },
     stops: [],
-    requires: [dec('Q5', 'rules', `${RULES} boilerTake: on the pedestal once Q5 is laid; decisions.md 8 Nov (B5-B8)`)],
+    requires: [
+      dec('Q5', 'rules', `${RULES_LINE2} boilerTake: on the pedestal once Q5 is laid; decisions.md 8 Nov (B5-B8)`),
+    ],
     cue: [
       onMain(
         'world',
@@ -526,7 +533,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.boilerFit'],
     reached: { mark: 'trains unlocked', also: ['boiler fitted'] },
     stops: ['trains'],
-    requires: [dec('boiler', 'rules', `${RULES} boilerFit: the holder fits it`)],
+    requires: [dec('boiler', 'rules', `${RULES_LINE2} boilerFit: the holder fits it`)],
     cue: [
       onMain('world', "the old train's two open brass receivers", 'src/entities/railway/train-view.ts:93'),
       onMain(
@@ -546,11 +553,11 @@ export const NODES: readonly LoopNode[] = [
   quarryStation(
     'Q6',
     [
-      dec('Q5', 'rules', `${RULES} qActive()`),
+      dec('Q5', 'rules', `${RULES_QUERIES} qActive()`),
       dec(
         'trains',
         'rules',
-        `decisions.md 9 Nov station 6 takes nothing by hand until trains run; ${RULES} deposit2 and forgeTake (trainOwed)`,
+        `decisions.md 9 Nov station 6 takes nothing by hand until trains run; ${RULES_LINE2} deposit2 and forgeTake (trainOwed)`,
       ),
     ],
     {
@@ -587,7 +594,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.breaker'],
     reached: { mark: 'breaker taken' },
     stops: [],
-    requires: [dec('Q6', 'rules', `${RULES} breaker: cast when Q6 is laid; docs/plans/split-rock-roundhouse.md`)],
+    requires: [dec('Q6', 'rules', `${RULES_WORKS} breaker: cast when Q6 is laid; docs/plans/split-rock-roundhouse.md`)],
     cue: [onMain('world', "the forge call's plume over the breaker", 'src/entities/railway/breaker-view.ts:49')],
   },
   {
@@ -600,7 +607,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.strike'],
     reached: { mark: 'seam struck', data: { seam: 0 } },
     stops: [],
-    requires: [dec('breaker', 'rules', `${RULES} strike: breaker taken`)],
+    requires: [dec('breaker', 'rules', `${RULES_WORKS} strike: breaker taken`)],
     cue: [
       onMain('world', 'the cracked slab in the Roundhouse', 'src/entities/railway/roundhouse-view.ts:1'),
       onMain('prompt-only', '"Strike the seam" within reach', 'src/entities/railway/breaker-view.ts:212-230'),
@@ -617,7 +624,7 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'seam struck', data: { seam: 1 } },
     stops: [],
     requires: [
-      dec('breaker', 'rules', `${RULES} strike: breaker taken`),
+      dec('breaker', 'rules', `${RULES_WORKS} strike: breaker taken`),
       { on: 'slab', status: 'free', by: 'none', source: 'decisions.md 2026-11-09 loop orders: either seam first' },
     ],
     cue: [
@@ -639,7 +646,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.kiln'],
     reached: { mark: 'kiln filled', nth: 'last' },
     stops: [],
-    requires: [dec('throat', 'rules', `${RULES} kiln: throat struck; railway-server.ts railValid rail.kiln`)],
+    requires: [dec('throat', 'rules', `${RULES_WORKS} kiln: throat struck; railway-server.ts railValid rail.kiln`)],
     cue: [
       onMain(
         'prompt-only',
@@ -659,8 +666,8 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'footing set', data: { site: 0 }, nth: WORKS.stall },
     stops: [],
     requires: [
-      dec('slab', 'rules', `${RULES} footSet site 0: the stall slab struck`),
-      dec('kiln', 'rules', `${RULES} worksTick: footings are cast by the lit kiln`),
+      dec('slab', 'rules', `${RULES_WORKS} footSet site 0: the stall slab struck`),
+      dec('kiln', 'rules', `${RULES_WORKS} worksTick: footings are cast by the lit kiln`),
     ],
     cue: [onMain('prompt-only', '"Set the footing" at the stall', 'src/entities/railway/roundhouse-view.ts:645-653')],
   },
@@ -675,7 +682,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.cradle'],
     reached: { mark: 'cradle rails', nth: 'last' },
     stops: [],
-    requires: [dec('stall', 'rules', `${RULES} cradle: the stall stands`)],
+    requires: [dec('stall', 'rules', `${RULES_WORKS} cradle: the stall stands`)],
     cue: [onMain('prompt-only', '"Fit the cradle" at the stall', 'src/entities/railway/roundhouse-view.ts:654-675')],
   },
   {
@@ -689,11 +696,11 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'table turned', nth: 'last' },
     stops: [],
     requires: [
-      dec('stall', 'rules', `${RULES} turn: the stall stands`),
+      dec('stall', 'rules', `${RULES_WORKS} turn: the stall stands`),
       // Owner, 10 November ("Only when ready"): the turn is refused until the cradle is fitted, and after the wagon goes.
-      dec('cradle', 'rules', `${RULES} turn: only once the cradle is fitted, before the wagon rolls out`),
-      dec('cradle', 'rules', `${RULES} commission(): fitted and table at line 2`, 'finish'),
-      dec('trains', 'rules', `${RULES} wagonArrives: the wagon couples at line 2's train`, 'finish'),
+      dec('cradle', 'rules', `${RULES_WORKS} turn: only once the cradle is fitted, before the wagon rolls out`),
+      dec('cradle', 'rules', `${RULES_WORKS} commission(): fitted and table at line 2`, 'finish'),
+      dec('trains', 'rules', `${RULES_TRAINS} wagonArrives: the wagon couples at line 2's train`, 'finish'),
     ],
     cue: [onMain('prompt-only', '"Turn the table"', 'src/entities/railway/roundhouse-view.ts:676-694')],
   },
@@ -715,8 +722,8 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'footing set', data: { site: 2 }, nth: WORKS.pier },
     stops: ['crossing'],
     requires: [
-      dec('Q6', 'rules', `${RULES} footSet site 2: all stretches laid; split-rock-roundhouse.md pier after Q6`),
-      dec('table', 'rules', `${RULES} wagonArrives: footings ride the wagon`),
+      dec('Q6', 'rules', `${RULES_WORKS} footSet site 2: all stretches laid; split-rock-roundhouse.md pier after Q6`),
+      dec('table', 'rules', `${RULES_TRAINS} wagonArrives: footings ride the wagon`),
     ],
     cue: [
       onMain(
