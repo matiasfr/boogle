@@ -5,8 +5,16 @@ import {
   createRailwayProgressMarks,
   createRailwayJourneyMarks,
 } from '../src/adapters/railway-marks.ts';
-import { createRailwayWorld } from '../src/sim/railway-components.ts';
-import { railwayView } from '../src/sim/railway-read-model.ts';
+import {
+  Aperture,
+  Forge,
+  Job,
+  QJob,
+  Rail,
+  Works,
+  createRailwayWorld,
+} from '../src/sim/railway-components.ts';
+import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { parseSession } from '../dev/playtest/read.ts';
 import { summarize } from '../dev/playtest/summary.ts';
@@ -51,43 +59,59 @@ test('accepted railway actions map amounts and material without identifying the 
 });
 
 test('consistent progress edges mark every stretch once, and baseline/refill never invent achievements', () => {
-  const s = railwayView(createRailwayWorld());
+  const w = createRailwayWorld();
   const observe = createRailwayProgressMarks();
-  assert.deepEqual(observe(s), []);
-  const jobs = [s, ...s.line!.jobs, ...s.line2!.jobs];
-  const ids = ['T1', 'T2', 'T3', ...s.line2!.jobs.map((_, i) => `Q${i + 1}`)];
+  assert.deepEqual(observe(w), []);
+  // Line one's three jobs, then line two's, by slot.
+  const jobs = [
+    ...[0, 1, 2].map((k) => () => w.mut(Job, w.lookup(Job, k)!)!),
+    ...LINE2_STATIONS.map((_, k) => () => w.mut(QJob, w.lookup(QJob, k)!)!),
+  ];
+  const ids = ['T1', 'T2', 'T3', ...LINE2_STATIONS.map((_, i) => `Q${i + 1}`)];
   for (const [i, job] of jobs.entries()) {
-    job.start = 10;
+    job().start = 10;
     assert.deepEqual(
-      observe(s).map(([name]) => name),
+      observe(w).map(([name]) => name),
       [`stretch funded ${ids[i]}`],
     );
-    job.completion = 1;
+    job().completion = 1;
     assert.deepEqual(
-      observe(s).map(([name]) => name),
+      observe(w).map(([name]) => name),
       [`stretch laid ${ids[i]}`],
     );
-    assert.deepEqual(observe(s), []);
+    assert.deepEqual(observe(w), []);
   }
-  s.line2!.forge.lit = 20;
+  w.mut(Forge, w.single(Forge))!.lit = 20;
   assert.deepEqual(
-    observe(s).map(([name]) => name),
+    observe(w).map(([name]) => name),
     ['forge lit'],
   );
-  s.line2!.trains = 30;
+  w.mut(Rail, w.single(Rail))!.trains = 30;
   assert.deepEqual(
-    observe(s).map(([name]) => name),
+    observe(w).map(([name]) => name),
     ['trains unlocked'],
   );
-  assert.deepEqual(observe(s), []);
-  s.works!.crossing = 40;
-  assert.deepEqual(observe(s), [['crossing footed', { authority: 'server' }]]);
+  assert.deepEqual(observe(w), []);
+  w.mut(Works, w.single(Works))!.crossing = 40;
+  assert.deepEqual(observe(w), [['crossing footed', { authority: 'server' }]]);
   assert.ok(beatsOf('place', true).some(([, pattern]) => pattern.test('crossing footed')));
   assert.ok(beatsOf('place', true).some(([, pattern]) => pattern.test('crossing finale')));
-  assert.deepEqual(observe(s), []);
+  assert.deepEqual(observe(w), []);
+  // Ring Island's gap: the fourteenth bent footing, then the rivet.
+  w.mut(Aperture, w.single(Aperture))!.set = 14;
+  assert.deepEqual(
+    observe(w).map(([name]) => name),
+    ['gap footed'],
+  );
+  w.mut(Aperture, w.single(Aperture))!.joined = 50;
+  assert.deepEqual(
+    observe(w).map(([name]) => name),
+    ['ring joined'],
+  );
+  assert.deepEqual(observe(w), []);
   const rejoin = createRailwayProgressMarks();
-  assert.deepEqual(rejoin(s, true), []);
-  assert.deepEqual(rejoin(s), []);
+  assert.deepEqual(rejoin(w, true), []);
+  assert.deepEqual(rejoin(w), []);
 });
 
 test('journey marks require a train platform or the completed dry pier, once per visit or session', () => {

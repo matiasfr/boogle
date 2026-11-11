@@ -6,7 +6,8 @@
 // started flag); a change to a view's read is a change to its function below. Modelled on test/railway-m10d-review.test.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRailwayAdapter, railMovement, railStopsNow } from '../src/adapters/railway.ts';
+import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
+import { railStopsNow } from './helpers/railway-m10a-twins.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync } from '../src/world/sync.ts';

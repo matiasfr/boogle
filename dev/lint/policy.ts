@@ -108,7 +108,6 @@ const railDynamicBan = {
 const READ_MODEL_IMPORTERS = [
   'dev/spikes/ecs/predict-cost.ts',
   'dev/spikes/ecs/railway-diff.ts',
-  'test/railway-marks.test.ts',
   'test/railway.test.ts',
 ];
 

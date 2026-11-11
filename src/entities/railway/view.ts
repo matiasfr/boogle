@@ -170,7 +170,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     awake: () => phaseNow() !== 'asleep' && phaseNow() !== 'waking',
     hush: () => reward.inspect().busy,
     pathOpen: opened,
-    progress: () => adapter.inspect(),
+    progress: { world, phase: phaseNow, ready },
     driver: trains.driverSeat,
   });
   // hard: rebuild from the state (first join); soft: the state came again after a lost connection or a resync, and

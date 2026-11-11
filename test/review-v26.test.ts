@@ -12,8 +12,7 @@ import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { Line, Train, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { act, invariant, lines, rail, railTick, railwayAtTrains, train, trains, type Seed } from './helpers/rail.ts';
-import { aperture } from '../src/sim/railway-rows.ts';
+import { act, invariant, railTick, railwayAtTrains, train, trains, type Seed } from './helpers/rail.ts';
 
 const LINE2 = 1;
 const [A, B] = LINE_SLOTS[LINE2] as [number, number];
@@ -132,14 +131,9 @@ test('review: line 1 still shuttles end to end', () => {
 // The 4a review's P3c, claimed fixed in 33d7c0a96 with no test: a rider's ask made too late for the train to brake
 // leaves its amber lamp dark; one in time lights it.
 test('review: the amber lamp is dark for a rider ask too late to stop for, lit for one in time', async () => {
-  const { railTrainAsked } = await import('../src/adapters/railway.ts');
+  // The world twin the views call (train-view's amber lamp); the adapter's own copy went in M12.
+  const { railTrainAsked } = await import('../src/sim/railway-queries-trains.ts');
   const { trainAlong, trainSpeed } = await import('../src/sim/railway-train.ts');
-  const read = (w: Seed) => ({
-    trains: trains(w.w),
-    lines: lines(w.w),
-    line2: { trains: rail(w.w).trains >= 0, trainsAt: rail(w.w).trains, completed: line2Completed(w.w) },
-    ring: aperture(w.w),
-  });
   const brake = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
   const quarry = TRAIN_STOPS[LINE2]![1]!;
   const run = (late: boolean) => {
@@ -154,7 +148,7 @@ test('review: the amber lamp is dark for a rider ask too late to stop for, lit f
       railTick(w.w, ++w.t);
     }
     assert.equal(act(w, 'a', 'rail.call', { id: haltId(LINE2, 1), dir: 1, train: A }), 1, 'the ask is taken');
-    return railTrainAsked(read(w), A, w.t);
+    return railTrainAsked(w.w, A, w.t);
   };
   assert.equal(run(false), true, 'in time: lit');
   assert.equal(run(true), false, 'too late: dark');

@@ -25,7 +25,7 @@ import { frameOf, fitOf, slotAt, shownOf, SHOWN } from '../../render/haul-bundle
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { createRecoveryRack } from './supply-view.ts';
 import { createLineCargo } from './line-cargo.ts';
-import { loadOf, setDown, useGround } from './back-down.ts';
+import { loadIn, setDown, useGround } from './back-down.ts';
 import { createGreatTreeDress } from './great-tree-view.ts';
 import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
 import { worksPreview } from './works-flag.ts';
@@ -707,8 +707,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   const offDrop = bindCargoDrop(dropOne, {
     all: () => setDown(adapter),
     more: () => {
-      const s = adapter.inspect();
-      return !s.foot && loadOf(s).reduce((a, b) => a + b, 0) > 1;
+      const w = adapter.read.world();
+      return !accountRow(w, adapter.read.pid)?.foot && loadIn(w, adapter.read.pid).reduce((a, b) => a + b, 0) > 1;
     },
   });
 
