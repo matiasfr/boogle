@@ -51,12 +51,13 @@ const CRANE_S = 4.8,
   CRANE_BLEND_S = 1.8,
   TITLE_DELAY_MS = 600,
   ARRIVAL_CARD_S = 3.8;
-// How far it rises and goes back over the follow camera (about 7 m behind and 3 m above Buddy), and how far past him it
-// looks (negative: back toward the bay behind him), in metres. Wide: the apex is about 13 m from Buddy, 45 degrees
-// down, looking straight at him: about 30 px tall at 960x600 and in the middle third of the frame throughout. Tall (a
-// phone held upright): steeper, 56 degrees down and about 14 m out, looking 2.5 m back toward the dock and bay rather
-// than at the cliff wall ahead, about 37 px tall at 390x844. Peak turn about 20 (wide) and 28 (tall) degrees a second.
-const CRANE = { wide: { back: 2, up: 6, ahead: 0 }, tall: { back: 1, up: 9, ahead: -2.5 } };
+// How far it rises and goes back over the follow camera (measured: about 5.9 m behind Buddy and 1 m above), in metres.
+// Buddy is held at 0.17 below the middle of the frame by the shot itself (src/render/crane-aim.ts). Wide: the apex is
+// about 14 m from Buddy and 29 degrees down (about 48 px tall at 960x600). Tall (a phone held upright): about 15 m out
+// and 40 degrees down (about 63 px tall at 390x844), steeper because the frame is tall. The wide turn peaks near 13
+// degrees a second, the tall one near 21. The shore's water is 15 m to the camera's right and 16 m behind it (the
+// landing faces inland): a no-cut crane under the turn cap cannot bring it into frame, so it is not tried.
+const CRANE = { wide: { back: 6.3, up: 5.7 }, tall: { back: 5.6, up: 8.5 } };
 
 // The words the Welcome back card says when the act went up while you were away.
 addWelcomeItem({
@@ -91,7 +92,7 @@ const lift = new THREE.Vector3();
 function craneMove() {
   const c = camera.aspect < 1 ? CRANE.tall : CRANE.wide;
   lift.set(Math.sin(cam.yaw) * c.back, c.up, Math.cos(cam.yaw) * c.back);
-  aerial.crane(lift, c.ahead, CRANE_S, CRANE_BLEND_S);
+  aerial.crane(lift, CRANE_S, CRANE_BLEND_S);
 }
 
 function show(act: StoryAct, how: 'arrival' | 'live', waitedMs = 0) {

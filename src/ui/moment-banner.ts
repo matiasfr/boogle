@@ -97,8 +97,6 @@ export function showActCard({ above, title, seconds }: ActCard) {
   actUntil = performance.now() + seconds * 1000;
   present(el, above, title, '', seconds, Math.max(0, seconds - FADE_S));
 }
-/** The act card is on screen: world prompts stay down while it shows, as behind a menu (src/features/prompt.ts). */
-export const actCardOn = () => !!banner?.classList.contains('act') && banner.classList.contains('on');
 /** The banner's text while it shows, else null (for inspect). */
 export const momentBanner = () =>
   banner?.classList.contains('on')
