@@ -43,8 +43,7 @@ import {
 } from '../src/sim/railway-trains.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
-import { Line, Train, createRailwayWorld } from '../src/sim/railway-components.ts';
-import { railwayCheck } from '../src/sim/railway-check.ts';
+import { Line, Train } from '../src/sim/railway-components.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
 import { FixtureLine, LINE2_ROWS, standingAt, line2Stops } from './helpers/rail-rows.ts';
@@ -64,9 +63,11 @@ import {
   train,
   trainId,
   trains,
+  unaudited,
   works as worksRow,
   type Seed,
 } from './helpers/rail.ts';
+import { fuzzSeeds, fuzzTicks } from './helpers/fuzz.ts';
 
 const LINE2 = 1;
 /** Line 2's trains: A at the Village (up), B at Far Head (down) and, since v27, C at the Quarry (down). */
@@ -145,12 +146,7 @@ function place(w: Seed, at: { k: number; stop: number; track: number; depart: nu
 function awake(stage: 'trains-on' | 'q6-done' = 'trains-on', audit = true) {
   const seed = railwayAtTrains(stage);
   // The long runs skip the write audit (which re-reads every row each system run): the same rules, unaudited.
-  let w = seed;
-  if (!audit) {
-    const raw = createRailwayWorld();
-    raw.load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
-    w = { w: raw, t: seed.t };
-  }
+  const w = audit ? seed : unaudited(seed);
   for (let t = 0; t < TRAIN.wakeTicks; t++) railTick(w.w, ++w.t);
   return w;
 }
@@ -196,13 +192,8 @@ test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to t
  * s at the default hold over 5 seeds × 40,000 ticks). Two trains do NOT meet the design's one-minute bound under heavy
  * random asks; v27's third train (or an even-spacing hold) is to. */
 const WAIT_BOUND = 1050;
-const FUZZ_TICKS = Number(process.env.FUZZ_TICKS ?? 3000);
+const FUZZ_TICKS = fuzzTicks(3000);
 const LIGHT = process.env.FUZZ_LIGHT === '1';
-const unaudited = (s: Seed): Seed => {
-  const raw = createRailwayWorld();
-  raw.load(JSON.parse(JSON.stringify(s.w.snapshot())), railwayCheck);
-  return { w: raw, t: s.t };
-};
 /** Q6's kit off the train and its logs and rails into the frame, so the pier opens a few hundred ticks on. */
 function fundQ6(w: Seed) {
   assert.equal(act(w, 'a', 'rail.pack'), 1);
@@ -965,11 +956,9 @@ const waitTable = (worst: Map<string, number>) =>
  * `balance: 600`). With it (11 November, the same long runs): worst 87.7 s (Quarry up), 0 of 10 over, and the 75% and
  * 0% runs give the same waits (the balanced hold binds before the headway hold does). The default runs pass and print
  * the waits. */
-const ISLAND_SEEDS: readonly (readonly [number, number])[] = process.env.FUZZ_SEEDS
-  ? process.env.FUZZ_SEEDS.split(',').flatMap((h) => [
-      [Number.parseInt(h, 16), TRAIN_HEAD_PCT] as const,
-      [Number.parseInt(h, 16), 0] as const,
-    ])
+const LONG_SEEDS = fuzzSeeds([]);
+const ISLAND_SEEDS: readonly (readonly [number, number])[] = LONG_SEEDS.length
+  ? LONG_SEEDS.flatMap((sd) => [[sd, TRAIN_HEAD_PCT] as const, [sd, 0] as const])
   : [
       [0xc0ffee, TRAIN_HEAD_PCT],
       [0x777, 0],
@@ -994,7 +983,8 @@ for (const [seed, headPct] of ISLAND_SEEDS)
     assert.ok(![...worst.keys()].includes(`${PIER}/1`));
   });
 
-for (const seed of [0x5eed, 0xbee])
+// The same seeds as the island fuzz's long runs (FUZZ_SEEDS, ./helpers/fuzz.ts).
+for (const seed of fuzzSeeds([0x5eed, 0xbee]))
   test(`fixture fuzz ${seed.toString(16)}: Q7, the railhead's seven bents and the rivet under random asks; no up train stands at the Pier after Q7`, (t) => {
     const at = { q7: 400 + (seed % 300), heads: [] as number[], rivet: 0 };
     for (let k = 1; k <= 7; k++) at.heads.push(at.q7 + 250 * k + ((seed >> k) % 120));

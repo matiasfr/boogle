@@ -14,6 +14,7 @@ import { WORLD_NS } from '../../src/world/namespace.ts';
 import { SEED_STAGES, buildSeedWorld, type SeedStage } from '../../src/sim/railway-seeds.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { createRailwayWorld } from '../../src/sim/railway-components.ts';
+import { modelVerdict, worldVerdict } from './railway-check.ts';
 
 const FILE = new URL('../fixtures/railway-golden.json', import.meta.url);
 const TICKS = 1200;
@@ -58,6 +59,7 @@ const HOW =
 export function goldenShard(shard: number) {
   // Built at module scope, outside the 5 s test timeout (as test/railway-trains.test.ts does).
   const got: Record<string, Row> = {};
+  const verdicts: Record<string, { world: string | null; model: string | null }> = {};
   for (const stage of SHARDS[shard]!) {
     const seed = buildSeedWorld(stage);
     const built = seed.w;
@@ -66,6 +68,8 @@ export function goldenShard(shard: number) {
     const w = createRailwayWorld();
     w.load(JSON.parse(JSON.stringify(built.snapshot())));
     assert.equal(w.hash(), at, `${stage}: the copy hashes as the built world`);
+    // The load check's corpus (./railway-check.ts): the stage as the server holds it, before the tick pass.
+    verdicts[stage] = { world: worldVerdict(w), model: modelVerdict(w) };
     let t = seed.t;
     for (let i = 0; i < TICKS; i++) railTick(w, ++t);
     got[stage] = { tick: seed.t, stage: at, after: w.hash() };
@@ -88,6 +92,11 @@ export function goldenShard(shard: number) {
     assert.deepEqual(Object.keys(golden.stages), [...SEED_STAGES], 'stage list changed: ' + HOW);
     assert.equal(golden.ticks, TICKS);
   });
+  for (const stage of SHARDS[shard]!)
+    test(`seed stage ${stage}: the world check and the read model's check accept it`, () => {
+      assert.equal(verdicts[stage]!.world, null, `${stage}: the world check`);
+      assert.equal(verdicts[stage]!.model, null, `${stage}: the read model's check`);
+    });
   for (const stage of SHARDS[shard]!)
     test(`seed stage ${stage}: hash at the stage and after ${TICKS} ticks match the golden`, () => {
       assert.deepEqual(got[stage], golden.stages[stage], `${stage}: ${HOW}`);

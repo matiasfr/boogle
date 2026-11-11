@@ -1,7 +1,7 @@
 // The independent review of WORLD_NS v26 (generic lines step 4: two trains on line 2, block signals, headway, request
 // stops), 10 November: its probes, kept as regression tests once its two findings (P2-1, the stub signals; P2-2, the
 // Far Head crossover at the pier's opening) were fixed. SAVE_TICKS lengthens the every-tick save check (the review ran
-// 2,500 ticks a seed; `npm run check` runs 500 to stay inside its 5 s a test).
+// 2,500 ticks a seed, as the nightly long run does; the unit run does 500: ./helpers/fuzz.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32 } from '../src/sim/rng.ts';
@@ -10,18 +10,13 @@ import { TRAIN, TRAIN_PHASE, TRAIN_STOPS, trainDir } from '../src/sim/railway-tr
 import { LINE_SLOTS, trainSpacing } from '../src/sim/railway-trains.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
-import { Line, Train, createRailwayWorld } from '../src/sim/railway-components.ts';
-import { railwayCheck } from '../src/sim/railway-check.ts';
-import { act, invariant, railTick, railwayAtTrains, train, trains, type Seed } from './helpers/rail.ts';
+import { Line, Train } from '../src/sim/railway-components.ts';
+import { act, invariant, railTick, railwayAtTrains, train, trains, unaudited, type Seed } from './helpers/rail.ts';
+import { SAVE_TICKS } from './helpers/fuzz.ts';
 
 const LINE2 = 1;
 const [A, B] = LINE_SLOTS[LINE2] as [number, number];
 const haltId = (line: number, stop: number) => RAIL_HALTS.findIndex((h) => h.line === line && h.stop === stop);
-const unaudited = (s: Seed): Seed => {
-  const raw = createRailwayWorld();
-  raw.load(JSON.parse(JSON.stringify(s.w.snapshot())), railwayCheck);
-  return { w: raw, t: s.t };
-};
 function fundQ6(w: Seed) {
   assert.equal(act(w, 'a', 'rail.pack'), 1);
   for (const kind of [0, 2])
@@ -32,7 +27,6 @@ function fundQ6(w: Seed) {
 }
 
 // Every tick's save must load: the snapshot through railwayCheck, every tick, under heavy asks, at the hold's extremes.
-const SAVE_TICKS = Number(process.env.SAVE_TICKS ?? 500);
 railwayAtTrains('boiler'); // the shared base, built outside every test's 5 s
 for (const [seed, pct] of [
   [0x51, 75],

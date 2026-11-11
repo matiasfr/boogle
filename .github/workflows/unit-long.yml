@@ -1,0 +1,52 @@
+name: Unit long
+
+# npm run test:long, one a night in three shards: the unit tests with the rail audit on and the full versions of what
+# the per-PR run samples (dev/test-env.ts; docs/agents/ship-pipeline.md, "Unit test settings"). Never blocks a merge;
+# a red shard opens or updates one issue.
+
+on:
+  schedule:
+    - cron: '17 11 * * *' # daily, 11:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  unit-long:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - run: npm run test:long -- --test-shard=${{ matrix.shard }}/3 2>&1 | tee unit-long.log
+        shell: bash -o pipefail {0}
+      - name: Open or update the unit-long issue
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          gh label create unit-long --color d93f0b --description 'Nightly long unit tests' 2>/dev/null || true
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fails=$(grep -E '^(✖|not ok)' unit-long.log 2>/dev/null | sort -u | head -20 || true)
+          body=$(printf 'The nightly long unit tests (npm run test:long, shard %s/3) failed or timed out (%s).\n\n```\n%s\n```' \
+            "$SHARD" "$run" "${fails:-no failing test listed; see the run log}")
+          num=$(gh issue list --label unit-long --state open --limit 1 --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body "$body"
+          else
+            gh issue create --title 'Nightly long unit tests are failing' --label unit-long --body "$body"
+          fi

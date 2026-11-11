@@ -114,13 +114,20 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run build
 
+  # The unit tests in four parallel shards (node --test-shard: every fourth file), with the rail audit and every tick
+  # offset of the sweeps (`--ci`, dev/test-env.ts), which local runs skip or sample (docs/agents/ship-pipeline.md, "Unit
+  # test settings"). `needs: unit` waits for all four.
   unit:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-latest
-    # 20, not 10: the suite ran 540 to 570 s before world v27, whose Ring Island fuzz tests (four over 55 s each)
-    # took it past 10 minutes, so main's run was cancelled twice on 11 November. Cut the suite before raising this.
-    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    # The whole suite took 16 minutes in one job on 11 November (world v27's Ring Island fuzz tests took it past 10, so
+    # main's run was cancelled twice). Cut the suite or add a shard before raising this.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -130,7 +137,7 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - run: npm run test:unit
+      - run: npm run test:unit -- --ci --test-shard=${{ matrix.shard }}/4
 
   registry:
     needs: changes
