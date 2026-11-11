@@ -905,6 +905,27 @@ later change with a bundle report. Place's remaining callers get one owner from 
   - **Reviewer attacks:** a predicted press that no longer shows on the press (owner call "Input gets instant
     feedback"); a view holding a row across a packet (rows are replaced, not patched); a count that read
     `availableCarry` and now ignores pending actions.
+  - **Readers added for the groups (11 November, branch `ecs/m10-facade-readers`; asked for by b and e, for c, d and
+    f too).** Use these instead of the `inspect()` fields of the same meaning; each equals that field at the same
+    moment (`test/railway-read-session.test.ts`, a differential over a lagged random stream):
+    - `adapter.read.ready(): boolean` for `inspect().ready` (an action can be sent now). Not `read.status() ===
+      'ready'`, which stays 'ready' while the pending window is full.
+    - `adapter.read.pending(): number` for `inspect().pending`; `adapter.read.stalled(): op | null` for
+      `inspect().stalled`.
+    - `adapter.read.movement(): Readonly<RailwayMovement>` for the 18 movement tunables `inspect()` spreads
+      (`jumpImpulse`, `jumpTurn`, `jumpSteer`, `jumpApexSpeed`, the beam, boiler and footing speeds, the glide fields
+      `stepGlide` reads): one frozen object, re-read only when the tune state's `rev` moves. Views never import
+      `world/game-world`.
+    - `adapter.read.tick()` now holds one value per frame, `inspect().tick`'s (it was live): pass it as `at` and read
+      `read.world()` in the same frame, and an edge such as waking to idle is seen once. `read.tickNow()` stays live,
+      for movers.
+    - `treeGrowth(w, slot)` in `railway-queries-line1.ts` for `inspect().growth[k]`.
+    - `freeCarryIgnoringBig(w, pid)` in `railway-queries-line1.ts` for `inspect().freeCarry`: carryMax less what the
+      back holds, not 0 while a beam, the boiler or a footing is held (unlike `free`; "Your back is full" needs it).
+      Both are in M8's name list in `test/railway-queries.test.ts`.
+    - In the loop the read's tick, movement and stall cue are now taken once a frame, at the first read, also on a
+      rebuild later in the frame (a press, a packet): before, such a rebuild took them live. `REGROW_MINUTES` moved
+      to `railway-supply.ts` (exported) so the query names it.
 - [ ] **T1 to T7. The tests, rewritten on rows and queries.** _Low each (tests only). After M3c and M8. Seven
       batches, one agent each, in parallel: no two batches, and no batch and M10 group, edit the same file._
   - Per batch: state is a `World` from `test/helpers/rail.ts`; `s.a.b` reads become row readers; the 33 facts become

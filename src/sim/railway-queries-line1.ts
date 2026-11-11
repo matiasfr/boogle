@@ -6,12 +6,25 @@
 //   railPanelCount, railPanelStock         rail pairs laid on line one, and still on the machine's stack
 //   railBeamChoppable, railAxeAvailable    a stroke at the great tree bites; the forge's axe is there to take
 //   railPhase(w, tick?, at?)               asleep, waking, idle, deposit, feeding, laying or done
+//   treeGrowth, freeCarryIgnoringBig       a felled tree's growth stage; room on a back, a big load aside (M10)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_RAIL_PAIRS, LINE1_STATIONS } from './railway-line-layout.ts';
 import { linePanelCount } from './railway-line-schedule.ts';
-import { Beam, Forge, Job, Rail } from './railway-components.ts';
-import { activeStation, beamId, forgeId, job, railId, railJobs, scheduleOf } from './railway-queries.ts';
+import { REGROW_MINUTES } from './railway-supply.ts';
+import { Beam, Forge, Job, Rail, Tree } from './railway-components.ts';
+import {
+  activeStation,
+  beamId,
+  carried,
+  carryMax,
+  forgeId,
+  job,
+  railAccount,
+  railId,
+  railJobs,
+  scheduleOf,
+} from './railway-queries.ts';
 
 /** The active station's whole schedule, in ticks. */
 export const railMaxDuration = (w: World) =>
@@ -52,4 +65,17 @@ export function railPhase(
     : run.elapsed < schedule.depositTicks + schedule.feedTicks
       ? 'feeding'
       : 'laying';
+}
+/** Tree `slot`'s growth stage: the minutes its age is past REGROW_MINUTES (0 while it stands or waits to regrow, or
+ * for no such tree). The read model's `growth[k]`. */
+export function treeGrowth(w: World, slot: number) {
+  const id = w.lookup(Tree, slot);
+  return id === undefined ? 0 : Math.max(0, w.get(Tree, id)!.age - REGROW_MINUTES);
+}
+/** What `pid`'s back has room for by count alone: carryMax less what it carries (the whole back for no account).
+ * Unlike `free` (./railway-queries.ts), it ignores the big-load rule, so it is not 0 while a beam, the boiler or a
+ * footing is held: the "Your back is full" prompt tells those apart. The read model's `freeCarry`. */
+export function freeCarryIgnoringBig(w: World, pid: string) {
+  const a = railAccount(w, pid);
+  return Math.max(0, carryMax(w) - (a ? carried(a) : 0));
 }

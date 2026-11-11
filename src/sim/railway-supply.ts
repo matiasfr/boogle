@@ -2,6 +2,8 @@
 // (./railway-sys-away.ts). Host-stamped whole minutes; never reads presence or a wall clock.
 import { RAILWAY_SOURCES } from './railway-layout.ts';
 
+/** A felled tree's wait to regrow, in minutes: past it its age counts the visible growth stages (to 35). */
+export const REGROW_MINUTES = 31;
 export const RECOVERY_MINUTES = 21; // minute quantization still leaves at least twenty minutes
 export const RECOVERY_RACK = { x: 90500, z: 100 };
 // Pinned centimetre bounds of the two initially laid stubs and T1's whole corridor, plus 8 m clearance.
