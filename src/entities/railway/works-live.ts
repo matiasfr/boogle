@@ -64,6 +64,7 @@ export async function createRailwayWorksLive(
       ...footings.targets(),
       ...crossing.targets(),
       ...railhead.targets(),
+      ...leaf.targets(),
     ],
     inspect: () => ({
       ...works.inspect(),

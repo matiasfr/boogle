@@ -2,8 +2,20 @@
 // should rest for the pawl and the counterweight, and how it gets there. Raised on the pawl; once braced each hung
 // footing dips it a quarter; the last one (or the pawl knocked out with all four hung) swings it down, 2.5 s, ease-in.
 
+import { WORKS } from '../../sim/railway-works-layout.ts';
+
 /** The Aperture row's `brace` encoding (src/sim/railway-components.ts; test/railway-r4c-leaf.test.ts pins it to the sim's). */
 export const BRACE = { DOWN: 0, RAISED: 1, BRACED: 2 } as const;
+
+/** The brace prompt's window: the gap footed and the leaf still on its pawl (the sim's `brace` accepts exactly this). */
+export function braceOffered(set: number, brace: number): boolean {
+  return set === WORKS.ring && brace === BRACE.RAISED;
+}
+/** The jib's prompt window, given a footing on your back: a bent's footing while the gap is open, then a counterweight
+ * footing until four hang (one site, its meaning by state: call 7). Never once the leaf is weighted. */
+export function jibOffered(set: number, cw: number): boolean {
+  return set < WORKS.ring || cw < WORKS.counterweight;
+}
 
 /** Degrees up when raised (ringIslandPose.leaf's 78). */
 export const LEAF_UP = 78;
@@ -66,4 +78,18 @@ export function createLeafMotion(start = LEAF_UP) {
       return false;
     },
   };
+}
+
+/** The toe's landing (bent 13's deck end, u 255-260 m): while the leaf is still coming down (`TOE_CLEAR_DEG` degrees up or less: the
+ * last third of the swing), anyone within `TOE_MARGIN` of the toe's edge or under it is walked back
+ * along the deck, away from the hinge, so the plate never meets a body. Returns the speed (m/s) toward lower u, 0 when
+ * the spot is clear. `u` is the player's metres along the line, `above` their feet over the toe's deck. */
+export const TOE_U = 260;
+export const TOE_MARGIN = 1.4;
+export const TOE_CLEAR_DEG = 35;
+export const TOE_SPEED = 6;
+export function toeShove(u: number, above: number, deg: number, moving: boolean): number {
+  if (!moving || deg > TOE_CLEAR_DEG) return 0;
+  if (u <= TOE_U - TOE_MARGIN || u >= TOE_U + 1 || above < -0.5 || above > 3) return 0;
+  return TOE_SPEED;
 }
