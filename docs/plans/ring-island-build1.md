@@ -746,9 +746,19 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > `only` test, read by `trainReasons`, `trainServes`, `trainRequestable`, `validateRailTrains` and **`planLeg`'s
   > holds** (found by the long fuzz: a held up train stood at the Pier after Q7 until holds skipped a refused way);
   > `validateRailTrains` is split into `trainRowBroken`, `lineReqOk` and `lineBlocksBroken`, and `trainSpacing` into
-  > `lineSpacing`, so the fixture runs the same checks; `railEnd` is exported. **Three trains miss the wait bound**
-  > (call 47): over 40,000 ticks, seeds c0ffee, 777, 15a4d, 5eed, bee at 75% and 0%, three trains reach 137.9 s worst
-  > (8 of 10 runs over `WAIT_BOUND`); four trains hold it (worst 98.4 s, all 10 under); see R3b. The default 3,000-tick runs pass and print the waits.
+  > `lineSpacing`, so the fixture runs the same checks; `railEnd` is exported. **Three trains at today's hold miss the wait bound** (call 47; see R3b for the ruling).
+  > **After the independent review (ship, no P1; 10 November):** its tests are kept: `test/railway-r3a-differential.test.ts`
+  > runs the branch's train rules beside a frozen copy of main's (`test/helpers/main-rail/`) on the live catalog, row
+  > for row, query for query and check for check: the inertness proof. **R3b deletes both at the bump** (the catalog
+  > row changes the rules on purpose). `test/railway-r3a-adversarial.test.ts` stays. Its five findings, fixed:
+  > `trainPlaces` never places a train where its way out is refused (it put an up train at the Pier at Q7 stages) and
+  > throws rather than stack two when places run out (every stage of every catalog line is placed at load, so a room
+  > never meets it); a train left at the old railhead stop by `stopMoved` leaves as from that end (headway hold,
+  > `left1`, the lever's way-home ask dropped: `endStanding`); `trainRequestable`'s count form reads a `heads` halt at
+  > its last head, the same offer as the stops form; a catalog row passed as an object resolves to its own slots
+  > (`lineIndex`). Also: a leg that ends at a halt refusing its way (held short of a busy railhead, never replanned
+  > off the Pier) stands at no halt, as at a signal, and the load check refuses an up train standing at an `only`
+  > halt, so the save gate refuses what the rules never produce.
   - `railway-lines.ts`: `RailHalt`'s four optional fields; line 2's row (the path, `trains: 3`, the Pier's `only`
     and its platform moved to the east side, call 53: the row's comment becomes "s 719-741 m, lat +2.9, east of the
     down track; the pier rack stands on it", the Railhead and Ring Island rows); `haltPlatform`; `trainPlaces` takes the nearest place not already taken. The
@@ -792,11 +802,37 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > `LINE_HALTS` cast, `RAIL_TRAINS`' four rows, and R3a's catalog tests moved off the fixture onto the catalog (halt ids
   > 0–5 in name and `s`, the Pier 290 ± 2 cm east, the R1b ends, four trains on four places); then the `WORLD_NS` bump
   > and `GOLDEN=1` regeneration in this step's own review, never mid-session. The fixture helper goes once the catalog
-  > holds the row. **Call 47 applies:** three trains miss `WAIT_BOUND` (105 s) under the long fuzz (worst 137.9 s, 8 of 10 runs
-  > over) and four hold it (worst 98.4 s), so by call 47 the row goes to `trains: 4`, a logged Default (the
-  > orchestrator logs it; R3a left the fixture at the plan's 3). Reproduce: `FUZZ_TICKS=40000
+  > holds the row. **Train count and the hold (call 47; orchestrator, 10 November, on the R3a review).** The owner's decision
+  > is "3 for now": **the plan keeps three trains and fixes the headway hold.** The cause is the hold, not the count:
+  > `headTicks` is sized off the non-stop cycle (138.8 s) and is only a minimum since the last departure from that
+  > end, so trains that bunch under demand never re-spread; the round trip under heavy asks is about 217–221 s.
+  > Measured with the reviewer's script (`waits.ts eff`/`base`/`hold` in the session scratchpad; fixture line,
+  > 40,000 ticks, lever asks 5% and rider asks 3% a tick, R3a's tip after the review fixes; the reviewer's own runs
+  > on 3f2423111 gave 103.5 s worst for the best fix):
+  >
+  > | Variant | Worst | Runs over 105 s | Round trip |
+  > | --- | --- | --- | --- |
+  > | 3 trains, today's hold (75%) | 137.9 s | 8 of 10 | 217.4 s |
+  > | 3 trains, hold 100% of the non-stop cycle | 131.5 s | 4 of 5 | 217.4 s |
+  > | 3 trains, headway 75% of a stop-counting cycle | 122.8 s | 4 of 10 | 217.4 s |
+  > | 3 trains, headway 100% of a stop-counting cycle | 89.1 s | 0 of 10 | 218.6 s |
+  > | **3 trains, balanced hold at the ends** | **88.7 s** | **0 of 10** | 221.4 s |
+  > | 3 trains, balanced, a tenth of the asks | 87.1 s | 0 of 5 | 172.4 s |
+  > | 4 trains, today's hold (10 seeds) | 105.8 s | 1 of 10 | 216.8 s |
+  >
+  > R3a's own long fuzz (with rider asks, restores, a legal start: `FUZZ_TICKS=40000
   > FUZZ_SEEDS=c0ffee,777,15a4d,5eed,bee FUZZ_TRAINS=3|4 node --test --test-name-pattern="fixture fuzz"
-  > test/railway-trains.test.ts`. With four, `RAIL_TRAINS` has five rows and the place test needs four places.
+  > test/railway-trains.test.ts`): three trains at today's hold worst 130.5 s, 10 of 10 over; four 98.4 s, 0 of 10.
+  > **Balanced hold preferred** (a train ready to leave an end waits while the gap to the train ahead round the circuit
+  > is shorter than the gap behind it): it reacts to the spacing the rows already hold (`trainPose`, as `blockFree`
+  > reads; no new state, nothing per peer), costs nothing when the trains are already even (light play), and needs no
+  > estimate of a demand-dependent round trip, which a stop-counting headway must make from asks that change every
+  > tick. It needs a cap (the script's: at most 60 s past the dwell) and must not hold a train another train waits
+  > behind at the end's signal, or it can hold the end block; the wagon's `headExempt` still applies. Build it as a
+  > per-line rule (a catalog field on line 2's v27 row) or at the bump, so v26's lines do not change early. **The
+  > margin is thin and the goal is not met:** the reviewer's best was 103.5 s against the 105 s bound, the one-minute
+  > goal (train-riding rec 6) is not reached by any variant under these asks, and these asks are far heavier than a
+  > playtest's. Four trains at today's hold are not safely under (1 of 10 over at 105.8 s).
 
   New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,
