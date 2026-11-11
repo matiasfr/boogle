@@ -2,7 +2,13 @@
 // server test whose assertions changed; imports, skip conditions and verbatim moves are the orchestrator's to read.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { reviewVerdicts, type FileChange } from '../dev/review-stamp.ts';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
 
 const patch = (file: string, minus: string[], plus: string[], opts: { added?: boolean; deleted?: boolean } = {}) =>
   [
@@ -38,13 +44,122 @@ test('a changed assertion in a sim test needs review, and the rule names the lin
   assert.match(v!.rule, /assertion change \(first: - assert\.equal\(x, 3\);\)/);
 });
 
-test('imports, comments and a skip condition alone are the orchestrator to read', () => {
+test('import bindings, comments and a removed skip alone are the orchestrator to read', () => {
   const c = change(
     'test/railway.test.ts',
-    ["import { a } from './helpers/old.ts';", "test('trains run', () => {"],
-    ["import { a } from './helpers/rail.ts';", '// slow on a loaded Mac', "test('trains run', { skip: SLOW }, () => {"],
+    ["import { a } from './helpers/rail.ts';", "test('trains run', { skip: SLOW }, () => {", 't.skip();'],
+    ["import { a, b } from './helpers/rail.ts';", '// slow on a loaded Mac', "test('trains run', () => {"],
   );
-  assert.deepEqual(verdict(c), ['read test/railway.test.ts: tests only: comment, import, moved lines']);
+  assert.deepEqual(verdict(c), ['read test/railway.test.ts: tests only: comment, import, skip removed']);
+});
+
+// The review's cases (11 November).
+test('a return with a todo comment is an assertion change, not a skip', () => {
+  const [v] = reviewVerdicts([change('server/test/host.test.ts', [], ['  return; // todo: flaky on CI'], '')]);
+  assert.equal(v!.review, true);
+  assert.match(v!.rule, /assertion change \(first: \+ return; \/\/ todo: flaky on CI\)/);
+});
+
+test('adding a skip to a sim test needs review: it turns coverage off', () => {
+  for (const [minus, plus] of [
+    [["test('trains run', () => {"], ["test('trains run', { skip: process.env.CI }, () => {"]],
+    [[], ['  t.skip();']],
+    [["test('trains run', () => {"], ["test.skip('trains run', () => {"]],
+  ]) {
+    const [v] = reviewVerdicts([change('test/railway.test.ts', minus!, plus!)]);
+    assert.equal(v!.review, true, plus!.join());
+    assert.match(v!.rule, /adds a skip/, plus!.join());
+  }
+});
+
+test('an import whose module changed needs review (a fake swapped in for the real server)', () => {
+  const [v] = reviewVerdicts([
+    change(
+      'server/test/host.test.ts',
+      ["import { createService } from '../src/server.ts';"],
+      ["import { createService } from './fixtures/fake-server.ts';"],
+      '',
+    ),
+  ]);
+  assert.equal(v!.review, true);
+  assert.match(v!.rule, /an import's module changed/);
+});
+
+test('lines moved out of a test into a non-test file are not a move', () => {
+  const line = '  assert.equal(railCounts(w).logs, 4);';
+  const [v] = reviewVerdicts([change('test/railway.test.ts', [line], []), change('dev/sim/notes.ts', [], [line], '')]);
+  assert.equal(v!.review, true);
+});
+
+test('test helpers and fixtures count, and so does a test reaching the sim through a helper', () => {
+  assert.equal(
+    reviewVerdicts([change('test/helpers/fuzz.ts', ['const STRIDE = 1;'], ['const STRIDE = 16;'], '')])[0]!.review,
+    true,
+  );
+  assert.equal(reviewVerdicts([change('test/fixtures/railway-m12-trace.json', ['1'], ['2'], '')])[0]!.review, true);
+  // test/railway-set-down.test.ts imports only ./helpers/rail.ts, which reaches src/sim.
+  const viaHelper = change(
+    'test/railway-set-down.test.ts',
+    ['  assert.ok(a);'],
+    ['  assert.ok(b);'],
+    "import { x } from './helpers/rail.ts';\n",
+  );
+  assert.deepEqual(reviewVerdicts([viaHelper]), [], 'without a checkout to walk, only its own imports count');
+  assert.equal(reviewVerdicts([viaHelper], ROOT)[0]!.review, true);
+});
+
+// One stamp covers every classed file once anything needs review: a test line added after the review changes it.
+test('the stamp covers read files beside reviewed ones', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-stamp-'));
+  const git = (...a: string[]) => execFileSync('git', ['-C', dir, ...a], { encoding: 'utf8', stdio: 'pipe' });
+  const write = (f: string, text: string) => {
+    fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
+    fs.writeFileSync(path.join(dir, f), text);
+  };
+  const stamp = () =>
+    execFileSync(
+      process.execPath,
+      [path.join(ROOT, 'dev/review-stamp.ts'), dir, '--id', '--no-fetch', '--base', 'base'],
+      {
+        encoding: 'utf8',
+      },
+    ).trim();
+  try {
+    git('init', '-q', '-b', 'main');
+    git('config', 'user.email', 't@example.invalid');
+    git('config', 'user.name', 't');
+    write('src/sim/railway.ts', 'export const a = 1;\n');
+    write(
+      'server/test/host.test.ts',
+      "import { a } from '../../src/sim/railway.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
+    );
+    git('add', '-A');
+    git('commit', '-qm', 'base');
+    git('branch', 'base');
+    write('src/sim/railway.ts', 'export const a = 2;\n');
+    write(
+      'server/test/host.test.ts',
+      "import { a, b } from '../../src/sim/railway.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
+    );
+    git('commit', '-qam', 'reviewed');
+    const reviewed = stamp();
+    assert.match(reviewed, /^[0-9a-f]{12}$/);
+    // Still only a `read` change to the test (an import binding and a comment), yet the stamp moves.
+    write(
+      'server/test/host.test.ts',
+      "import { a, b, c } from '../../src/sim/railway.ts';\n// flaky\ntest('a', () => {\n  assert.ok(a);\n});\n",
+    );
+    git('commit', '-qam', 'after the review');
+    const files = execFileSync(
+      process.execPath,
+      [path.join(ROOT, 'dev/review-stamp.ts'), dir, '--files', '--no-fetch', '--base', 'base'],
+      { encoding: 'utf8' },
+    );
+    assert.match(files, /^read server\/test\/host\.test\.ts: tests only/m);
+    assert.notEqual(stamp(), reviewed);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('a helper moved verbatim from a test into a helper file is read, not reviewed', () => {

@@ -48,8 +48,8 @@ if [ -n "$risky" ]; then
   stamp=$(node "$here/review-stamp.ts" "$wt" --id --no-fetch) || exit 1
   given=${reviewed%% *}
   if [ -z "$reviewed" ]; then
-    echo "ship-queue: needs an independent review before it ships (rule per file):"
-    echo "$risky" | sed 's/^review /  /'
+    echo "ship-queue: needs an independent review before it ships (rule per file; the stamp covers the read files too):"
+    echo "$verdicts" | sed "s/^/  /"
     echo "Review it (orchestrate skill, \"Review\"), then pass --reviewed \"$stamp <who, what they found>\"."
     exit 4
   elif ! [[ "$given" =~ ^[0-9a-f]{12}$ ]]; then
@@ -58,7 +58,7 @@ if [ -n "$risky" ]; then
     exit 4
   elif [ "$given" != "$stamp" ]; then
     echo "ship-queue: the reviewed files changed after the review (stamp $given, now $stamp): re-review, then pass the new stamp."
-    echo "$risky" | sed 's/^review /  /'
+    echo "$verdicts" | sed "s/^/  /"
     exit 4
   fi
   echo "ship-queue: reviewed: $reviewed"
