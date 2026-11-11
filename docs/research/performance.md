@@ -345,3 +345,32 @@ minutes; loads hitched 442 ms. Measured in Chromium on the M1 Max at the owner's
 - `bench`'s first pose on a seeded world used to time the pipelines its own shadow toggle builds (4 frames in 5 s);
   it now waits 3 s after counting.
 - Not tested on a device; Safari not measured.
+
+## 9. The device runs of 10 November: a rise that did not reproduce (main 9d901f84e)
+
+Two quick-suite runs on the owner's M5 Max in Safari, 3nmjkct8 (build 353d7a6bc, 19:39) and clqroru (9d901f84e, 23:03),
+read 2.5–5 ms more CPU and 1.6–5.7 ms more GPU a frame in every scene. Bisected in Chromium on the M1 Max:
+`npm run bench -- --root <git archive> --no-load --rail-seed q6-done --poses spawn,head --cpu-prof <prefix>` (1280x800,
+DPR 2, MSAA 4), 2–5 runs a build, interleaved, at load averages of 14–49 (the machine was shared all evening). Medians:
+
+| build | runs | spawn CPU / GPU ms | head CPU / GPU ms | calls spawn / head |
+| --- | --- | --- | --- | --- |
+| 353d7a6bc (the earlier device run) | 3 | 7.26 / 11.08 | 9.38 / 14.91 | 488 / 718 |
+| 8ffdaf18c (before #1518, track chunks) | 2 | 7.25 / 10.80 | 9.52 / 14.89 | 488 / 718 |
+| 744d0f4e0 (before #1520, cold start) | 2 | 6.98 / 10.73 | 9.63 / 15.02 | 505 / 746 |
+| c7dc1271d (before #1529, lobby first) | 2 | 7.63 / 11.38 | 9.80 / 15.26 | 525 / 756 |
+| 54b67ccc9 (after #1529) | 2 | 7.40 / 11.08 | 9.89 / 15.39 | 525 / 756 |
+| 9d901f84e (the later device run) | 5 | 7.28 / 10.85 | 9.93 / 15.25 | 526 / 757 |
+
+- **No step anywhere.** Spawn is flat; Far Head is +0.55 ms CPU and +0.3 ms GPU over the evening, with 5% more draw
+  calls (the track's chunks, Ring Island's end, the forge). Run-to-run spread at these loads is about ±0.6 ms.
+- **CPU profiles agree.** `renderer.render` inclusive per frame: 7.4–8.4 ms at Far Head on every build, 5.0–6.1 at
+  spawn. The lobby-first patch of `_renderObjectDirect` (src/render/precompile.ts) costs 0.10–0.13 ms a frame of its own
+  time once everything has been drawn (three WeakSet lookups a draw); total busy time a frame does not change.
+- **The two device runs differ in more than the build.** Safari 27.0 in the first, 27.2 in the second (the session's user
+  agent; the report printed "Safari 27" for both); a 1489x974 window (2978x1948 canvas) then a 1128x730 one (2030x1314);
+  a measured refresh interval of 17 ms then 21 ms. The second drew 54% of the pixels and fewer triangles yet read more
+  GPU time, which a heavier frame cannot explain; a browser update or a power or clock state can (at a 60 Hz cap Apple
+  GPUs and CPUs run as slowly as the deadline allows, so ms a frame there is not work).
+- The Windows run on f9ecb4749 (head 11.68 / 15.87 ms) has no earlier run on that machine to compare with.
+- Not tested on a device. Safari's own frame cost was not measured here (no WebKit automation on this Mac).

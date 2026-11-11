@@ -1,5 +1,5 @@
 // The performance benchmark: `npm run bench [-- --root <checkout>] [--out file.json] [--seconds N] [--poses a,b]
-// [--no-load] [--query a=b] [--dpr 2] [--size 1280x800] [--commit label]`. The daily perf job (dev/daily) runs it on origin/main; bisecting runs it on old commits with --root
+// [--no-load] [--query a=b] [--dpr 2] [--size 1280x800] [--commit label] [--cpu-prof prefix]`. The daily perf job (dev/daily) runs it on origin/main; bisecting runs it on old commits with --root
 // (a `git archive` of the commit, its node_modules a symlink to this checkout's), serving that checkout's game and
 // server with this harness. Results: docs/agents/test-details/performance.md; first report docs/research/performance.md.
 //
@@ -46,6 +46,10 @@ const poses = (opt('--poses')?.split(',') ??
   Object.keys(POSES).filter((p) => !OPT_IN.includes(p as PoseName))) as PoseName[];
 // --rail-seed <stage>: the bench room starts from an accepted railway server save, as look's (dev/look/rail-seed.ts).
 const railSeed = opt('--rail-seed');
+// --cpu-prof <prefix>: after each pose's timing, 5 s of Chrome's sampling profiler on the page, saved as
+// <prefix>-<pose>.cpuprofile with the frames it spanned (`frames`), for where main-thread time per frame goes
+// (DevTools, Performance tab, Load profile). The timing sample above it is not profiled.
+const cpuProf = opt('--cpu-prof');
 // --scaler [load,after]: instead of the poses, watch the resolution scaler (adaptive, no ?dpr=fixed) through `load`
 // seconds of a frame cost that scales with the pixels (K x ratio² ms of main-thread work a frame, --scaler-k, default
 // 14: a frame misses a 120 Hz vsync above 0.8x) and `after` seconds without it. Reports when it first stepped down,
@@ -352,6 +356,21 @@ async function measure(browser: Browser, stack: Stack, dataDir: string) {
       // showed before: on a seeded world's first pose that took seconds (4 frames in a 5 s sample, 9 November).
       await sleep(3000);
       const timing = await g.eval(TIMING(seconds));
+      if (cpuProf) {
+        const cdp = await g.page.context().newCDPSession(g.page);
+        await cdp.send('Profiler.enable');
+        await cdp.send('Profiler.setSamplingInterval', { interval: 200 });
+        await cdp.send('Profiler.start');
+        const f0 = (await g.eval('return window.boogle.prof.last.frames')) as number;
+        await sleep(5000);
+        const f1 = (await g.eval('return window.boogle.prof.last.frames')) as number;
+        const { profile } = await cdp.send('Profiler.stop');
+        fs.writeFileSync(
+          `${cpuProf}-${pose}.cpuprofile`,
+          JSON.stringify({ ...profile, frames: f1 - f0 }),
+        );
+        await cdp.detach();
+      }
       const { sections, ...rest } = timing as { sections: Sections };
       rows[pose] = {
         ...counts,
