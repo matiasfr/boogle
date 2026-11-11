@@ -46,7 +46,15 @@ const img = root.querySelector<HTMLImageElement>('.splash-art')!;
 const fill = root.querySelector<HTMLElement>('.splash-fill')!;
 const label = root.querySelector<HTMLElement>('.splash-label')!;
 img.addEventListener('load', () => img.classList.add('in'), { once: true });
-img.src = art;
+// After the game's modules (owner, 10 November: the art at lower priority): 94 KB that only decorates. Started at
+// once, it shared the slow link with three.js and the game chunk even at the browser's low image priority
+// (docs/research/cold-start.md). The sky gradient and title show until then; it fades in when it lands, as before.
+img.fetchPriority = 'low';
+const startArt = onBootMark(() => {
+  if (!bootMarks().some((m) => m.name === 'graphics-start' || m.name === 'failed' || m.name === 'world-failed')) return;
+  startArt();
+  img.src = art;
+});
 document.body.append(root);
 // Draft owner copy. Sky baking precedes precompile on the default Place route.
 // No timer advances reported shader progress; fast steps are skipped, never queued after completion.
