@@ -270,7 +270,9 @@ test('an address budget keys IPv4 on the address and IPv6 on its /64', () => {
   assert.equal(addressKey(undefined), 'unknown');
 });
 
-test('a jump whose save throws leaves no room and no sidecar behind', { skip: process.getuid?.() === 0 }, async () => {
+// Root and Windows both ignore a read-only directory, so there the save cannot be made to throw.
+const noReadOnlyDirs = process.getuid?.() === 0 || process.platform === 'win32';
+test('a jump whose save throws leaves no room and no sidecar behind', { skip: noReadOnlyDirs }, async () => {
   const s = await start({ jumpBuildDoc: tinyDoc });
   try {
     await fs.mkdir(path.join(s.dataDir, 'jumps'), { recursive: true });
