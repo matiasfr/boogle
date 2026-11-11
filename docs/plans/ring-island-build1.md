@@ -800,7 +800,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     the worst wait each way at every halt and bounds it by v26's `WAIT_BOUND` (1050 ticks)** (call 47; if it fails,
     the catalog goes to four trains: a logged Default).
   - Checks: `npm run check`. Proof: headless, no look.
-- [ ] **3b. R3b, the Meet's rules, the adapter and the bump (v27).**
+- [x] **3b. R3b, the Meet's rules, the adapter and the bump (v27).**
   > **Gains R3a-2 (orchestrator call, 10 November 2026; R3a's split above):** line 2's catalog row in
   > `src/sim/railway-lines.ts` exactly as `test/helpers/railway-v27-line.ts`'s `V27_LINE2` holds it (`RING_PATH`,
   > `trains: 3`, the Pier's east platform and `only: -1`, the Railhead and Ring Island rows), the eight-halt
@@ -882,6 +882,23 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > - **P3s.** The Village's `kitWaitTicks` hold and the "forge lit" test follow the active job too; `line2-view.ts`
   >   and the station-6 shelf and sign are checked for a hard-coded index; the stale "Q1 to Q6" and "the Q6 kit"
   >   comments are fixed.
+  >
+  > **Built (implementer, 11 November 2026): R3b-2, the v27 bump, on `ring/r3b2-v27`; not shipped.** Calls 62–65 as
+  > ruled. Goldens regenerated for v27 only, in their own commit (sha256 prefixes before → after: rail-schema
+  > 9634e4f9a18e → ba204ca72414, railway-golden 99561d1faba0 → d71c55559890, ops 38998c3aab0f → 49d76f3ef3de,
+  > tick-order 0cf57d3dcca6 → a91a19d2f390, heads 57719fe3a0db → 24508229e4c9). **Measured** (the real v27 line 2):
+  > the fixture fuzz (`FUZZ_TICKS=40000`, seeds c0ffee, 777, 15a4d, 5eed, bee, 75% and 0%) worst lever wait 87.7 s,
+  > 0 of 10 over 105 s; the world fuzz worst 66.0 s and 66.2 s, means 24.0 s and 23.6 s. `npm run loop -- run`
+  > (straight-line / calibrated): 1 player 34:01 / 40:09, 2 players 30:39 / 36:36, 3 players 30:25 / 34:46, 4 players
+  > 29:12 / 32:51; the bents node 5:43–6:21, Q7 1:15–1:45. **Call 65's report:** in the seed sim Q7 is laid 84 s after
+  > `crossing-done`; the first ring footings reach the railhead 141.9 s after Q7 is laid (more than 90 s with nothing
+  > to do, reported, not fixed); later loads come 116 s and 122 s apart; set 14 at 380 s after Q7. **Deviations:** the
+  > rule file is `railway-sys-ring.ts` (the census wants `railway-sys-*`); `gap-footed` leaves 4 footings on the
+  > ring rack (the loads come 6 + 6 + 6, no op empties it); R5's loop-graph nodes (Q7, bents, brace, weights, rivet)
+  > went in now so the graph test stays green; the read model gained `ring` (plan's `railwayView.ring`); the views
+  > keep six frames and read `pierLaid`, and so does `secrets-view.ts`'s "end of the run" (found on the rebase: with
+  > Q7 it would have waited for Q7; R4a or the designer may move it). The P3 index checks: the kit hold already reads
+  > the active job; `line2-view.ts`'s `stations[5]` is the Pier's own job (Q6), correct as written.
 
   New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,
