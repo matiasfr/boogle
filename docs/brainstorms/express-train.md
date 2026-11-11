@@ -308,6 +308,11 @@ board it there off the running line, and it comes out by the spur when the end b
 table carries the works copy, there is one open stall, and the decided "the Roundhouse holds the garage only" (9 and
 10 November) would need the owner's change.
 
+**Owner, 10 November: "No: the Roundhouse stays the upgrade screen only; find it a bay elsewhere".** The passenger set
+does not stand in the Roundhouse and does not come out by the engine spur. Home's bay for the passenger set is now an
+open design item ([decision](../decisions-rail.md#d-2026-11-10-the-passenger-set-does-not-stand)); the Roundhouse
+readings above, in question 1 and in the design review's finding 1 are history.
+
 ## 8. When the player gets it
 
 - **The express:** once line 2 reaches Ring Island (v27) and Home's hall map exists (layout B's big board), with no
