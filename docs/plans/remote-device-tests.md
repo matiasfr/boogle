@@ -239,7 +239,23 @@ review stamp for the ship queue; the rest ships on one green run.
     `report.md`. `npm run playtest` must not list the run without `--all`.
   - **Done when** the owner's phone run produces a `report.md` with diagnostics, load and seven scene rows, and the
     shared world's save is untouched (`npm run server` shows no new write to it).
-- [ ] **2. Baseline, comparison and the automatic pull.** Tier: tooling only.
+- [x] **2. Baseline, comparison and the automatic pull.** Tier: tooling only. **Built (10 November), not yet run with a
+  second device.** What differs from the text below: `baseline` takes a pulled run from disk (no token needed) and refuses
+  an unfinished run or one with no passing scene; the pure wait and pull-planning logic is `dev/device/runs.ts` (fake-clock
+  tests), the baseline files are `dev/device/baseline.ts`; `--wait` ends early on a run that went quiet for 10 minutes and
+  gives up after six failed polls; `pull --new` leaves a run still sending, re-pulls a cut-off copy only when the server has
+  more, and carries on past one bad run; `npm run device -- waiting` is the heartbeat's line (no token or server error
+  prints "unknown", never fails the report). The paste line is unchanged: it already named run, device and build.
+  **After the owner's first phone run (aa9lzm), also in this step:** `dev.load` kept only the first 14 boot marks, so its
+  "ready" was `sky_ready` at 2.8 s, not the interactive mark (the game was not ready for far longer): the run now sends
+  the first navigation's load as its own record (`dev.first`, every mark in `dev.boot`, `dev.first.files`), captured when
+  the game is usable and kept in sessionStorage by run id, with whether a service worker or cache served that first
+  page; the report and card lead with "Cold launch" and "Warm launch" and say unknown rather than a warm number under
+  the cold label; `?device=<id>&cold=1` (`new --cold`) clears the service worker and Cache Storage and reloads once.
+  Draw calls and triangles were 0 where the frame limit skipped the render (three resets `renderer.info` every
+  animation tick): read after the render, 0 is "not measured". Long tasks are `n/a` where the API is absent; the GPU and
+  long-task limit lines follow what the run reported; the report names the frame limit the page ran with (the suite
+  never changes it) and the drawn rate.
   - `dev/device/cli.ts`: `baseline <id>`, `new --wait`, `pull --new`; `dev/device/report.ts` adds the baseline
     columns and ratios, and, when `~/.boogle/daily/perf/history.jsonl` has an entry for the same commit, a line
     comparing draw calls and triangles per pose with the bench's exact counts.

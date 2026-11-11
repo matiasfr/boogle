@@ -22,4 +22,11 @@ export async function prepareDevice() {
   url.searchParams.set('notrack', '1');
   if (!url.searchParams.has('profui')) url.searchParams.set('profui', '0'); // the timing hooks, not the panel
   history.replaceState(history.state, '', url);
+  // The first navigation's load is recorded from here (a later navigation of the run does not replace it). With
+  // `cold=1` the service worker and Cache Storage are cleared first and the page reloads once; the card says so.
+  const run = parseDeviceLink(url.search);
+  if (run.kind !== 'run') return;
+  const first = await import('../debug/device/first-load.ts');
+  if (url.searchParams.get('cold') === '1') await first.coldReset(run.id);
+  first.noteNavigationStart(run.id);
 }

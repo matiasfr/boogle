@@ -1,8 +1,13 @@
 // Frame intervals of the running game, collected from the game loop's own frame hook (a second frame loop is not
 // allowed). Registers once, when this lazy module loads between frames. Local, debug only.
 import { onFrame } from '../../loop.ts';
+import { renderer } from '../../render/scene.ts';
 
-let sink: number[] | null = null;
+type Sink = { intervals: number[]; rendered: number };
+let sink: Sink | null = null;
+/** The last frame that drew anything: three resets `renderer.info` on every animation tick, so a tick the frame limit
+ * skipped reads 0 calls and 0 triangles; only a frame with draw calls is a measurement of a frame. */
+let lastDraw: { calls: number; tris: number } | null = null;
 let previous = 0;
 let waiters: (() => void)[] = [];
 let hiddenSeen = false;
@@ -10,8 +15,16 @@ let hiddenSeen = false;
 onFrame(
   ({ now }) => {
     if (document.hidden) hiddenSeen = true;
-    if (previous && sink && !document.hidden) sink.push(now - previous);
+    if (previous && sink && !document.hidden) sink.intervals.push(now - previous);
     previous = document.hidden ? 0 : now;
+    // The render comes after this hook in the same animation callback, so read the counts once that callback is over
+    // (a microtask runs right after it). Read here they are always the reset zeros.
+    queueMicrotask(() => {
+      const r = renderer.info.render;
+      if (r.drawCalls <= 0) return;
+      lastDraw = { calls: r.drawCalls, tris: r.triangles };
+      if (sink && !document.hidden) sink.rendered++;
+    });
     if (waiters.length) {
       const w = waiters;
       waiters = [];
@@ -26,15 +39,17 @@ document.addEventListener('visibilitychange', () => {
 
 /** Starts collecting frame intervals (ms); returns what stop() needs. */
 export function collectFrames() {
-  const mine: number[] = [];
+  const mine: Sink = { intervals: [], rendered: 0 };
   hiddenSeen = document.hidden;
+  lastDraw = null;
   sink = mine;
   return {
-    count: () => mine.length,
-    /** The intervals so far, and whether the tab was hidden since the start. */
+    count: () => mine.intervals.length,
+    /** The intervals so far, whether the tab was hidden since the start, how many of the frames drew (a frame limit
+     * skips the others) and the counts of the last frame that drew (null if none did). */
     stop() {
       if (sink === mine) sink = null;
-      return { intervals: mine, hidden: hiddenSeen };
+      return { intervals: mine.intervals, hidden: hiddenSeen, rendered: mine.rendered, draw: lastDraw };
     },
   };
 }

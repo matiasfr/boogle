@@ -1,607 +1,131 @@
 {
- "opening": [
-  [
-   "jump",
-   1,
-   1598632334
+  "opening": [
+    ["jump", 1, 1598632334],
+    ["jump again", 0, 2464169189],
+    ["axe before the forge", 0, 2009097736],
+    ["reject", 0, 3492940367],
+    ["unknown op", 0, 2559996226],
+    ["chop", 2, 2280074425],
+    ["drop", 2, 587604206],
+    ["take part", 2, 1248402422],
+    ["take wrong kind", 0, 3265587949],
+    ["drop for recovery", 1, 3896531378],
+    ["supply pulse 1", 0, 1071602098],
+    ["supply pulse 2 recovers the pile", 1, 65584119],
+    ["rackTake stone", 0, 3771727082],
+    ["rackTake rails", 0, 727027022],
+    ["rackTake logs", 1, 4189100020],
+    ["drop the rest", 2, 2593602740],
+    ["beamChop 0", 1, 523783480],
+    ["beamChop 1", 1, 2200799970],
+    ["beamChop 2", 1, 114532842],
+    ["beamChop 3", 1, 2476059512],
+    ["beamChop 4", 1, 751275004],
+    ["beamChop 5", 1, 1196016881],
+    ["beamChop 6", 1, 2002306686],
+    ["beamChop 7", 1, 3360003747],
+    ["beamChop 8", 1, 2929907536],
+    ["beamChop 9", 1, 3136555269],
+    ["beamChop 10", 1, 3981799138],
+    ["beamChop 11", 1, 3591673887],
+    ["beamTake", 1, 4080358093],
+    ["beamStood", 1, 2052496397],
+    ["beamStood same spot", 0, 2052496397],
+    ["beamRelease stale revision", 0, 2052496397],
+    ["beamRelease", 1, 1614555550],
+    ["beamTake again", 1, 3073878298],
+    ["beamDrop", 1, 2249751637],
+    ["supply pulse beam age", 0, 2232269909],
+    ["supply pulse beam recovers", 1, 1272511900],
+    ["beamTake from the tree", 1, 3942350872],
+    ["beamPutDown", 1, 3990653780],
+    ["beamPutDown not held", 0, 3990653780],
+    ["beamTake from the ground", 1, 2891035377],
+    ["beamDeposit", 1, 1204971363],
+    ["resume", 200, 1397909347],
+    ["resume same marker", 0, 1397909347],
+    ["session epoch 2", 1, 2102044515],
+    ["session epoch skipped", 0, 2102044515]
   ],
-  [
-   "jump again",
-   0,
-   2464169189
+  "axe": [
+    ["axe", 1, 179785787],
+    ["axe again", 0, 3466630024],
+    ["chop 0", 1, 1929117640],
+    ["drop 0", 1, 1820686503],
+    ["chop 1", 1, 1904034372],
+    ["drop 1", 1, 572914605],
+    ["chop 2", 1, 1495508698],
+    ["drop 2", 1, 750634611],
+    ["chop 3", 1, 988600320],
+    ["drop 3", 1, 1487521161],
+    ["chop 4", 1, 1663972630],
+    ["drop 4", 1, 1022606799],
+    ["chop 5", 1, 2406971884],
+    ["drop 5", 1, 1605047989],
+    ["chop a hardwood", 1, 3818745282],
+    ["chop the other hardwood", 0, 1486939131],
+    ["supply pulse 1", 0, 890758139],
+    ["supply pulse 2 regrows", 0, 2326819835],
+    ["supply pulse 3 regrows", 0, 4014996475]
   ],
-  [
-   "axe before the forge",
-   0,
-   2009097736
+  "boiler": [
+    ["boilerTake", 1, 3457161833],
+    ["boilerStood", 1, 2867488041],
+    ["boilerStood same spot", 0, 2867488041],
+    ["boilerPutDown", 1, 3850997163],
+    ["boilerPutDown not held", 0, 3850997163],
+    ["boilerTake from the ground", 1, 641670528],
+    ["boilerDrop", 1, 450299117],
+    ["supply pulse 1", 0, 565576941],
+    ["supply pulse 2 recovers", 1, 1553336664]
   ],
-  [
-   "reject",
-   0,
-   3492940367
+  "call": [
+    ["call 0 (line 0 stop 0) dir -1", 0, 3631338076],
+    ["call 0 (line 0 stop 0) dir 1", 1, 1809654927],
+    ["call 1 (line 0 stop 1) dir -1", 1, 104907842],
+    ["call 1 (line 0 stop 1) dir 1", 0, 3309656301],
+    ["call 2 (line 1 stop 0) dir -1", 0, 3485278968],
+    ["call 2 (line 1 stop 0) dir 1", 1, 3395926267],
+    ["call 3 (line 1 stop 1) dir -1", 1, 3048798014],
+    ["call 3 (line 1 stop 1) dir 1", 1, 1571882105],
+    ["call 4 (line 1 stop 2) dir -1", 1, 4027824196],
+    ["call 4 (line 1 stop 2) dir 1", 0, 3137042711],
+    ["call 5 (line 1 stop 3) dir -1", 0, 1581695114],
+    ["call 5 (line 1 stop 3) dir 1", 0, 265427413],
+    ["call bad id", 0, 2843310272],
+    ["call bad dir", 0, 702284675],
+    ["aboard train 0 calls 0 dir -1", 0, 3301699169],
+    ["aboard train 0 calls 0 dir 1", 0, 3208431865],
+    ["aboard train 0 calls 1 dir -1", 0, 2994218731],
+    ["aboard train 0 calls 1 dir 1", 0, 3174849784],
+    ["aboard train 1 calls 2 dir -1", 0, 474642645],
+    ["aboard train 1 calls 2 dir 1", 0, 2907042730],
+    ["aboard train 1 calls 3 dir -1", 0, 948172311],
+    ["aboard train 1 calls 3 dir 1", 1, 2394360308],
+    ["aboard train 1 calls 4 dir -1", 0, 2828724625],
+    ["aboard train 1 calls 4 dir 1", 0, 1133268534],
+    ["aboard train 1 calls 5 dir -1", 0, 2444774387],
+    ["aboard train 1 calls 5 dir 1", 0, 2707142016],
+    ["aboard train 2 calls 2 dir -1", 0, 1858700733],
+    ["aboard train 2 calls 2 dir 1", 0, 2844713266],
+    ["aboard train 2 calls 3 dir -1", 1, 220055167],
+    ["aboard train 2 calls 3 dir 1", 0, 3131606140],
+    ["aboard train 2 calls 4 dir -1", 0, 3548768782],
+    ["aboard train 2 calls 4 dir 1", 0, 1853860310],
+    ["aboard train 2 calls 5 dir -1", 0, 3730559804],
+    ["aboard train 2 calls 5 dir 1", 0, 4052853800],
+    ["advance 300", 300, 3365522728],
+    ["call 0 dir 1 after", 0, 3233918794],
+    ["call 1 dir 1 after", 0, 2794318770],
+    ["call 2 dir 1 after", 1, 3179173800],
+    ["call 3 dir 1 after", 1, 2078849348],
+    ["call 4 dir 1 after", 0, 2480852342],
+    ["call 5 dir 1 after", 0, 3102479406]
   ],
-  [
-   "unknown op",
-   0,
-   2559996226
-  ],
-  [
-   "chop",
-   2,
-   2280074425
-  ],
-  [
-   "drop",
-   2,
-   587604206
-  ],
-  [
-   "take part",
-   2,
-   1248402422
-  ],
-  [
-   "take wrong kind",
-   0,
-   3265587949
-  ],
-  [
-   "drop for recovery",
-   1,
-   3896531378
-  ],
-  [
-   "supply pulse 1",
-   0,
-   1071602098
-  ],
-  [
-   "supply pulse 2 recovers the pile",
-   1,
-   65584119
-  ],
-  [
-   "rackTake stone",
-   0,
-   3771727082
-  ],
-  [
-   "rackTake rails",
-   0,
-   727027022
-  ],
-  [
-   "rackTake logs",
-   1,
-   4189100020
-  ],
-  [
-   "drop the rest",
-   2,
-   2593602740
-  ],
-  [
-   "beamChop 0",
-   1,
-   523783480
-  ],
-  [
-   "beamChop 1",
-   1,
-   2200799970
-  ],
-  [
-   "beamChop 2",
-   1,
-   114532842
-  ],
-  [
-   "beamChop 3",
-   1,
-   2476059512
-  ],
-  [
-   "beamChop 4",
-   1,
-   751275004
-  ],
-  [
-   "beamChop 5",
-   1,
-   1196016881
-  ],
-  [
-   "beamChop 6",
-   1,
-   2002306686
-  ],
-  [
-   "beamChop 7",
-   1,
-   3360003747
-  ],
-  [
-   "beamChop 8",
-   1,
-   2929907536
-  ],
-  [
-   "beamChop 9",
-   1,
-   3136555269
-  ],
-  [
-   "beamChop 10",
-   1,
-   3981799138
-  ],
-  [
-   "beamChop 11",
-   1,
-   3591673887
-  ],
-  [
-   "beamTake",
-   1,
-   4080358093
-  ],
-  [
-   "beamStood",
-   1,
-   2052496397
-  ],
-  [
-   "beamStood same spot",
-   0,
-   2052496397
-  ],
-  [
-   "beamRelease stale revision",
-   0,
-   2052496397
-  ],
-  [
-   "beamRelease",
-   1,
-   1614555550
-  ],
-  [
-   "beamTake again",
-   1,
-   3073878298
-  ],
-  [
-   "beamDrop",
-   1,
-   2249751637
-  ],
-  [
-   "supply pulse beam age",
-   0,
-   2232269909
-  ],
-  [
-   "supply pulse beam recovers",
-   1,
-   1272511900
-  ],
-  [
-   "beamTake from the tree",
-   1,
-   3942350872
-  ],
-  [
-   "beamPutDown",
-   1,
-   3990653780
-  ],
-  [
-   "beamPutDown not held",
-   0,
-   3990653780
-  ],
-  [
-   "beamTake from the ground",
-   1,
-   2891035377
-  ],
-  [
-   "beamDeposit",
-   1,
-   1204971363
-  ],
-  [
-   "resume",
-   200,
-   1397909347
-  ],
-  [
-   "resume same marker",
-   0,
-   1397909347
-  ],
-  [
-   "session epoch 2",
-   1,
-   2102044515
-  ],
-  [
-   "session epoch skipped",
-   0,
-   2102044515
+  "foot": [
+    ["footTake works rack", 1, 559756668],
+    ["footRelease", 1, 1353266556],
+    ["footRelease nothing held", 0, 1353266556],
+    ["footTake pier rack", 0, 1933468964]
   ]
- ],
- "axe": [
-  [
-   "axe",
-   1,
-   179785787
-  ],
-  [
-   "axe again",
-   0,
-   3466630024
-  ],
-  [
-   "chop 0",
-   1,
-   1929117640
-  ],
-  [
-   "drop 0",
-   1,
-   1820686503
-  ],
-  [
-   "chop 1",
-   1,
-   1904034372
-  ],
-  [
-   "drop 1",
-   1,
-   572914605
-  ],
-  [
-   "chop 2",
-   1,
-   1495508698
-  ],
-  [
-   "drop 2",
-   1,
-   750634611
-  ],
-  [
-   "chop 3",
-   1,
-   988600320
-  ],
-  [
-   "drop 3",
-   1,
-   1487521161
-  ],
-  [
-   "chop 4",
-   1,
-   1663972630
-  ],
-  [
-   "drop 4",
-   1,
-   1022606799
-  ],
-  [
-   "chop 5",
-   1,
-   2406971884
-  ],
-  [
-   "drop 5",
-   1,
-   1605047989
-  ],
-  [
-   "chop a hardwood",
-   1,
-   3818745282
-  ],
-  [
-   "chop the other hardwood",
-   0,
-   1486939131
-  ],
-  [
-   "supply pulse 1",
-   0,
-   890758139
-  ],
-  [
-   "supply pulse 2 regrows",
-   0,
-   2326819835
-  ],
-  [
-   "supply pulse 3 regrows",
-   0,
-   4014996475
-  ]
- ],
- "boiler": [
-  [
-   "boilerTake",
-   1,
-   3457161833
-  ],
-  [
-   "boilerStood",
-   1,
-   2867488041
-  ],
-  [
-   "boilerStood same spot",
-   0,
-   2867488041
-  ],
-  [
-   "boilerPutDown",
-   1,
-   3850997163
-  ],
-  [
-   "boilerPutDown not held",
-   0,
-   3850997163
-  ],
-  [
-   "boilerTake from the ground",
-   1,
-   641670528
-  ],
-  [
-   "boilerDrop",
-   1,
-   450299117
-  ],
-  [
-   "supply pulse 1",
-   0,
-   565576941
-  ],
-  [
-   "supply pulse 2 recovers",
-   1,
-   1553336664
-  ]
- ],
- "call": [
-  [
-   "call 0 (line 0 stop 0) dir -1",
-   0,
-   3631338076
-  ],
-  [
-   "call 0 (line 0 stop 0) dir 1",
-   1,
-   1809654927
-  ],
-  [
-   "call 1 (line 0 stop 1) dir -1",
-   1,
-   104907842
-  ],
-  [
-   "call 1 (line 0 stop 1) dir 1",
-   0,
-   3309656301
-  ],
-  [
-   "call 2 (line 1 stop 0) dir -1",
-   0,
-   3485278968
-  ],
-  [
-   "call 2 (line 1 stop 0) dir 1",
-   1,
-   3395926267
-  ],
-  [
-   "call 3 (line 1 stop 1) dir -1",
-   1,
-   3048798014
-  ],
-  [
-   "call 3 (line 1 stop 1) dir 1",
-   1,
-   1571882105
-  ],
-  [
-   "call 4 (line 1 stop 2) dir -1",
-   1,
-   4027824196
-  ],
-  [
-   "call 4 (line 1 stop 2) dir 1",
-   0,
-   3137042711
-  ],
-  [
-   "call 5 (line 1 stop 3) dir -1",
-   0,
-   1581695114
-  ],
-  [
-   "call 5 (line 1 stop 3) dir 1",
-   0,
-   265427413
-  ],
-  [
-   "call bad id",
-   0,
-   2843310272
-  ],
-  [
-   "call bad dir",
-   0,
-   702284675
-  ],
-  [
-   "aboard train 0 calls 0 dir -1",
-   0,
-   3301699169
-  ],
-  [
-   "aboard train 0 calls 0 dir 1",
-   0,
-   3208431865
-  ],
-  [
-   "aboard train 0 calls 1 dir -1",
-   0,
-   2994218731
-  ],
-  [
-   "aboard train 0 calls 1 dir 1",
-   0,
-   3174849784
-  ],
-  [
-   "aboard train 1 calls 2 dir -1",
-   0,
-   474642645
-  ],
-  [
-   "aboard train 1 calls 2 dir 1",
-   0,
-   2907042730
-  ],
-  [
-   "aboard train 1 calls 3 dir -1",
-   0,
-   948172311
-  ],
-  [
-   "aboard train 1 calls 3 dir 1",
-   1,
-   2394360308
-  ],
-  [
-   "aboard train 1 calls 4 dir -1",
-   0,
-   2828724625
-  ],
-  [
-   "aboard train 1 calls 4 dir 1",
-   0,
-   1133268534
-  ],
-  [
-   "aboard train 1 calls 5 dir -1",
-   0,
-   2444774387
-  ],
-  [
-   "aboard train 1 calls 5 dir 1",
-   0,
-   2707142016
-  ],
-  [
-   "aboard train 2 calls 2 dir -1",
-   0,
-   1858700733
-  ],
-  [
-   "aboard train 2 calls 2 dir 1",
-   0,
-   2844713266
-  ],
-  [
-   "aboard train 2 calls 3 dir -1",
-   1,
-   220055167
-  ],
-  [
-   "aboard train 2 calls 3 dir 1",
-   0,
-   3131606140
-  ],
-  [
-   "aboard train 2 calls 4 dir -1",
-   0,
-   3548768782
-  ],
-  [
-   "aboard train 2 calls 4 dir 1",
-   0,
-   1853860310
-  ],
-  [
-   "aboard train 2 calls 5 dir -1",
-   0,
-   3730559804
-  ],
-  [
-   "aboard train 2 calls 5 dir 1",
-   0,
-   4052853800
-  ],
-  [
-   "advance 300",
-   300,
-   3365522728
-  ],
-  [
-   "call 0 dir 1 after",
-   0,
-   3233918794
-  ],
-  [
-   "call 1 dir 1 after",
-   0,
-   2794318770
-  ],
-  [
-   "call 2 dir 1 after",
-   1,
-   3179173800
-  ],
-  [
-   "call 3 dir 1 after",
-   1,
-   2078849348
-  ],
-  [
-   "call 4 dir 1 after",
-   0,
-   2480852342
-  ],
-  [
-   "call 5 dir 1 after",
-   0,
-   3102479406
-  ]
- ],
- "foot": [
-  [
-   "footTake works rack",
-   1,
-   559756668
-  ],
-  [
-   "footRelease",
-   1,
-   1353266556
-  ],
-  [
-   "footRelease nothing held",
-   0,
-   1353266556
-  ],
-  [
-   "footTake pier rack",
-   0,
-   1933468964
-  ]
- ]
 }

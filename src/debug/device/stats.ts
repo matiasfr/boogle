@@ -78,3 +78,19 @@ export function heatDrift(first: number | null, last: number | null): number | n
   if (first === null || last === null || !(first > 0) || !Number.isFinite(last)) return null;
   return Math.round(((last - first) / first) * 1000) / 10;
 }
+
+/** The headline of a run's load: "Ready in 2.8 s (warm load)". `ms` is the game's interactive mark in ms since the
+ * navigation began; `warm` is whether a service worker already controlled the page (the first visit has none);
+ * `coldAsked` is a `cold=1` link, which wants a first visit. A warm load hides the real first-visit time. */
+export function readyLine(ms: number | null, warm: boolean | null, coldAsked = false): string {
+  if (ms === null || !Number.isFinite(ms) || ms <= 0) return 'Ready: not measured';
+  const kind = warm === null ? 'load' : warm ? 'warm load' : 'cold load';
+  const note = coldAsked && warm === true ? '; a cold one was asked for, so open the link in a private tab' : '';
+  return `Ready in ${(ms / 1000).toFixed(1)} s (${kind}${note})`;
+}
+
+/** Whether this browser delivers `longtask` entries (Chromium; Safari and Firefox accept the observer and never fire),
+ * judged from the user agent, for the runs sent before the page said so. */
+export function longTasksSupported(ua: string): boolean {
+  return /Chrome\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+}

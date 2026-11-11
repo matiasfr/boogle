@@ -3,11 +3,11 @@
 // adaptive resolution and detail, as a player gets it, and the row names the rung. A missing GPU timer costs only the
 // GPU column. Local, debug only.
 import { renderer } from '../../render/scene.ts';
-import { autoRung } from '../../graphics-settings.ts';
+import { autoRung, graphicsSnapshot } from '../../graphics-settings.ts';
 import { POSES, putPlayer } from '../perf-poses.ts';
 import { warmGraphics } from '../dev/performance.ts';
 import { hardwareTiming } from '../prof-overlay.ts';
-import { collectFrames, nextFrame } from './frames.ts';
+import { collectFrames } from './frames.ts';
 import { countOver, frameStats, sceneVerdict, STALL_MS } from './stats.ts';
 import type { SceneDef } from './suites.ts';
 import type { Fields } from './wire.ts';
@@ -39,7 +39,15 @@ async function cut(def: SceneDef, home: Home | null) {
   } else if (home) await putPlayer(home.x, home.y, home.z, home.yaw);
 }
 
+/** The frame limit the page runs with (the player's or the device's own setting): 0 follows the display. */
+function frameCap(): number | null {
+  const row = graphicsSnapshot().find((g) => g.id === 'frameLimit');
+  return row ? (typeof row.effective === 'number' ? row.effective : 0) : null;
+}
+
 function observeLongTasks() {
+  // Safari accepts the observer and never delivers a long task: a zero there would read as "none", not "unsupported".
+  if (!PerformanceObserver.supportedEntryTypes?.includes('longtask')) return () => null;
   try {
     const seen = { n: 0, ms: 0 };
     const po = new PerformanceObserver((list) => {
@@ -92,8 +100,7 @@ export async function measureScene(
       await sleep(opts.sampleS * 1000);
     }
     const seconds = (performance.now() - start) / 1000;
-    const { intervals, hidden } = sample.stop();
-    await nextFrame(); // renderer.info now holds a complete frame
+    const { intervals, hidden, rendered, draw } = sample.stop();
     const stats = frameStats(intervals);
     const verdict = sceneVerdict({ stats, seconds, hidden, refreshMs: opts.refreshMs });
     const lt = longTasks();
@@ -115,8 +122,10 @@ export async function measureScene(
       cpu95: timing?.cpu.stats ? round(timing.cpu.stats.p95Ms, 2) : null,
       gpu: timing?.gpu.span.stats ? round(timing.gpu.span.stats.avgMs, 2) : null,
       gpu_status: timing ? timing.gpu.span.status.slice(0, 60) : timingNote.slice(0, 60),
-      calls: renderer.info.render.drawCalls,
-      tris: renderer.info.render.triangles,
+      calls: draw?.calls ?? null, // never a zero: no drawn frame in the sample is "not measured"
+      tris: draw?.tris ?? null,
+      rfps: seconds > 0 ? round(rendered / seconds) : null, // frames that drew a second (a frame limit lowers it)
+      fcap: frameCap(),
       progs: mem.programs ?? null,
       geoms: mem.geometries ?? null,
       texs: mem.textures ?? null,

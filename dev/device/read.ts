@@ -32,6 +32,10 @@ export type SceneRow = {
   stallMax: number | null;
   progsNew: number | null;
   heapMb: number | null;
+  /** Frames that drew a second of the sample; below the callback rate when a frame limit skips renders. */
+  renderFps: number | null;
+  /** The frame limit the page ran with: 30, 60, or 0 for the display's rate; null if the run did not say. */
+  frameCap: number | null;
 };
 export type DeviceResult = {
   id: string;
@@ -49,6 +53,12 @@ export type DeviceResult = {
   dlim: Raw;
   env: Raw;
   load: Raw;
+  /** The first navigation's load (`dev.first`), taken before Run was tapped; null for a run that predates it. */
+  first: Raw | null;
+  /** Its boot marks, `m_<name>` in ms since that navigation began (every `dev.boot` event merged). */
+  boot: Raw;
+  /** Its largest files, as the page described them. */
+  files: string[];
   scenes: SceneRow[];
   done: Raw | null;
   /** `dev.done` arrived; false for a run cut off part-way. */
@@ -56,6 +66,12 @@ export type DeviceResult = {
 };
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+/** A count that is a measurement: a draw call or triangle count of 0 means nothing was drawn when it was read, which
+ * is no measurement (an older page read it on a frame the frame limit skipped). */
+const count = (v: unknown) => {
+  const n = num(v);
+  return n !== null && n > 0 ? n : null;
+};
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const VERDICTS = ['pass', 'fail', 'not-measured'] as const;
 
@@ -81,8 +97,8 @@ function sceneRow(e: Raw): SceneRow | null {
     cpu95: num(e.cpu95),
     gpu: num(e.gpu),
     gpuStatus: str(e.gpu_status),
-    calls: num(e.calls),
-    tris: num(e.tris),
+    calls: count(e.calls),
+    tris: count(e.tris),
     progs: num(e.progs),
     geoms: num(e.geoms),
     ratio: num(e.ratio),
@@ -91,6 +107,8 @@ function sceneRow(e: Raw): SceneRow | null {
     stallMax: num(e.stall_max),
     progsNew: num(e.progs_new),
     heapMb: num(e.heap_mb),
+    renderFps: num(e.rfps),
+    frameCap: num(e.fcap),
   };
 }
 
@@ -111,6 +129,9 @@ export function readDevice(session: Session, minted = false): DeviceResult {
     dlim: {},
     env: {},
     load: {},
+    first: null,
+    boot: {},
+    files: [],
     scenes: [],
     done: null,
     complete: false,
@@ -142,6 +163,18 @@ export function readDevice(session: Session, minted = false): DeviceResult {
         break;
       case 'dev.load':
         out.load = raw;
+        break;
+      case 'dev.first':
+        out.first = raw;
+        break;
+      case 'dev.boot':
+        out.boot = { ...out.boot, ...raw };
+        break;
+      case 'dev.first.files':
+        out.files = Object.entries(raw)
+          .filter(([k, v]) => /^f\d+$/.test(k) && typeof v === 'string')
+          .sort((a, b) => Number(a[0].slice(1)) - Number(b[0].slice(1)))
+          .map(([, v]) => String(v));
         break;
       case 'dev.scene':
       case 'dev.scene.cost': {

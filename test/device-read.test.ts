@@ -229,3 +229,31 @@ test('a scene is two events, each within the 24 fields the endpoint keeps, and t
   assert.equal(r.scenes[0]!.calls, 221);
   assert.equal(r.scenes[0]!.heapMb, 120);
 });
+
+test('a draw call or triangle count of 0 is not a measurement: it reads as missing', () => {
+  const batches = [
+    [
+      ...sceneEvents(10, {
+        name: 'spawn',
+        idx: 0,
+        n: 300,
+        p50: 17,
+        calls: 0,
+        tris: 0,
+        verdict: 'pass',
+        why: '',
+        rfps: 30,
+        fcap: 30,
+      }),
+      ...sceneEvents(11, { name: 'town', idx: 1, n: 300, p50: 17, calls: 201, tris: 953051, verdict: 'pass', why: '' }),
+    ],
+  ];
+  const r = readDevice(parseSession(ID, lines(batches)));
+  const [spawn, town] = r.scenes;
+  assert.equal(spawn!.calls, null);
+  assert.equal(spawn!.tris, null);
+  assert.equal(spawn!.renderFps, 30);
+  assert.equal(spawn!.frameCap, 30);
+  assert.equal(town!.calls, 201);
+  assert.equal(town!.renderFps, null);
+});
