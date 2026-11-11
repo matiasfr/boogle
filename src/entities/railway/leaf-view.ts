@@ -12,8 +12,9 @@ import { RING_BRACE, RING_GAP } from '../../sim/railway-ring-layout.ts';
 import { aperture } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { ringIslandPose } from '../ring-island/state.ts';
-import { RING_S, line2World } from './line2-path.ts';
-import { BRACE, LEAF_UP, braceOffered, createLeafMotion, leafRest } from './leaf-shape.ts';
+import { line2World } from './line2-path.ts';
+import { RING_S, line2Y } from './line2-path.ts';
+import { BRACE, LEAF_UP, TOE_U, toeShove, braceOffered, createLeafMotion, leafRest } from './leaf-shape.ts';
 
 export function createRailwayLeaf(adapter: RailwayAdapter) {
   const motion = createLeafMotion(),
@@ -28,6 +29,12 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
     offered: Interactable[] = [strut],
     none: Interactable[] = [];
   line2World(RING_S + RING_GAP.toe / 100, 0, toe);
+  // The way back along the deck, away from the hinge (unit, ground plane), and the deck under the toe.
+  const back = { x: 0, z: 0 },
+    toeY = line2Y(RING_S + TOE_U);
+  line2World(RING_S + TOE_U - 1, 0, back);
+  back.x -= toe.x;
+  back.z -= toe.z;
   // Whether a real row has been read: until then (the facade loading) the leaf is placed, never swung, so a page that
   // joins after the rivet sees it flat at once.
   let seen = false;
@@ -38,6 +45,17 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
     ringIslandPose.bracket = a ? Math.min(4, a.cw) : 0;
     ringIslandPose.braced = !!a && a.brace === BRACE.BRACED;
     return a ? leafRest(a.brace, a.cw, a.joined) : LEAF_UP;
+  }
+  /** Someone under the toe as the leaf lands is walked back along the deck, never pinned (R4c, finding 4). Local body;
+   * u is read off the line's straight run past the toe, so nothing is allocated. */
+  function shove(dt: number) {
+    const b = me.body;
+    if (!b) return;
+    const u = TOE_U - ((b.position.x - toe.x) * back.x + (b.position.z - toe.z) * back.z),
+      v = toeShove(u, b.position.y - toeY, motion.deg, motion.moving);
+    if (v === 0) return;
+    b.position.x += back.x * v * dt;
+    b.position.z += back.z * v * dt;
   }
   function write() {
     ringIslandPose.leaf = motion.deg;
@@ -54,6 +72,7 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
       if (!seen) return snap();
       motion.aim(rest());
       if (motion.step(dt)) thump(toe.x, toe.z);
+      shove(dt);
       write();
     },
     accepted() {},

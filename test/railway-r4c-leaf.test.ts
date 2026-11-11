@@ -7,7 +7,19 @@ import assert from 'node:assert/strict';
 import { railwayAtRing } from '../src/sim/railway-seed-ring.ts';
 import { aperture } from '../src/sim/railway-rows.ts';
 import { BRACE as SIM_BRACE } from '../src/sim/railway-sys-ring.ts';
-import { BRACE, DIP_S, LEAF_UP, SWING_S, createLeafMotion, leafRest } from '../src/entities/railway/leaf-shape.ts';
+import {
+  BRACE,
+  DIP_S,
+  LEAF_UP,
+  SWING_S,
+  TOE_SPEED,
+  TOE_U,
+  braceOffered,
+  createLeafMotion,
+  jibOffered,
+  leafRest,
+  toeShove,
+} from '../src/entities/railway/leaf-shape.ts';
 
 const DT = 1 / 60;
 /** Runs `s` seconds toward `rest`; returns the degrees seen each frame and the frames that reported a landing. */
@@ -72,4 +84,52 @@ test('a late joiner after the join sees it flat at once, with no swing', () => {
   assert.equal(m.moving, false);
   const r = run(m, leafRest(0, 4, 100), 1);
   assert.deepEqual([r.landings, r.degs[0], r.degs.at(-1)], [0, 0, 0]);
+});
+
+test('the brace prompt is offered exactly once the gap is footed with the pawl in, and at no other state', () => {
+  for (let set = 0; set <= 14; set++)
+    for (let brace = 0; brace <= 2; brace++)
+      assert.equal(braceOffered(set, brace), set === 14 && brace === 1, `set ${set} brace ${brace}`);
+});
+
+test("the jib's prompt is the bent's footing, then a counterweight footing until four hang, then none", () => {
+  for (let set = 0; set <= 14; set++)
+    for (let cw = 0; cw <= 4; cw++) assert.equal(jibOffered(set, cw), set < 14 || cw < 4, `set ${set} cw ${cw}`);
+});
+
+test('at each ring seed the windows are the plan names', () => {
+  const at = (stage: Parameters<typeof railwayAtRing>[0]) => aperture(railwayAtRing(stage).w);
+  const deck = at('deck-laid'),
+    gap = at('gap-footed'),
+    leaf = at('leaf-raised'),
+    joined = at('ring-joined');
+  assert.deepEqual([braceOffered(deck.set, deck.brace), jibOffered(deck.set, deck.cw)], [false, true], 'deck-laid');
+  assert.deepEqual([braceOffered(gap.set, gap.brace), jibOffered(gap.set, gap.cw)], [true, true], 'gap-footed');
+  assert.deepEqual([braceOffered(leaf.set, leaf.brace), jibOffered(leaf.set, leaf.cw)], [true, true], 'leaf-raised');
+  assert.deepEqual(
+    [braceOffered(joined.set, joined.brace), jibOffered(joined.set, joined.cw)],
+    [false, false],
+    'joined',
+  );
+});
+
+test('the toe shove: only under the landing, only while the leaf is coming down, walking back and never up', () => {
+  const deg = 20;
+  assert.equal(toeShove(259.5, 0, deg, true), TOE_SPEED, 'under the toe');
+  assert.equal(toeShove(258.7, 0, deg, true), TOE_SPEED, 'inside the margin');
+  assert.equal(toeShove(258.5, 0, deg, true), 0, 'clear of it');
+  assert.equal(toeShove(255, 0, deg, true), 0, 'the deck end is not touched');
+  assert.equal(toeShove(262, 0, deg, true), 0, 'on the plate stays put');
+  assert.equal(toeShove(259.5, 0, 60, true), 0, 'the leaf is still high');
+  assert.equal(toeShove(259.5, 0, 0, false), 0, 'settled: someone stepping onto the plate is left alone');
+  assert.equal(toeShove(259.5, 8, deg, true), 0, 'in the air above is not the deck');
+  // Walked at its speed through the swing, anyone from the toe's edge is clear before it lands.
+  const m = createLeafMotion();
+  m.aim(0);
+  let u = 260.9;
+  for (let t = 0; t < SWING_S + 0.2; t += DT) {
+    m.step(DT);
+    u -= toeShove(u, 0, m.deg, m.moving) * DT;
+  }
+  assert.ok(u <= TOE_U - 1, `cleared to ${u.toFixed(2)}`);
 });

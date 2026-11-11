@@ -79,3 +79,17 @@ export function createLeafMotion(start = LEAF_UP) {
     },
   };
 }
+
+/** The toe's landing (bent 13's deck end, u 255-260 m): while the leaf is still coming down (`TOE_CLEAR_DEG` degrees up or less: the
+ * last third of the swing), anyone within `TOE_MARGIN` of the toe's edge or under it is walked back
+ * along the deck, away from the hinge, so the plate never meets a body. Returns the speed (m/s) toward lower u, 0 when
+ * the spot is clear. `u` is the player's metres along the line, `above` their feet over the toe's deck. */
+export const TOE_U = 260;
+export const TOE_MARGIN = 1.4;
+export const TOE_CLEAR_DEG = 35;
+export const TOE_SPEED = 6;
+export function toeShove(u: number, above: number, deg: number, moving: boolean): number {
+  if (!moving || deg > TOE_CLEAR_DEG) return 0;
+  if (u <= TOE_U - TOE_MARGIN || u >= TOE_U + 1 || above < -0.5 || above > 3) return 0;
+  return TOE_SPEED;
+}
