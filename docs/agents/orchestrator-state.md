@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 11 November 2026, 07:45 local (03:35 UTC on the 11th), in the 10–11 November orchestrator session (started 12:11 local, ends 11 November 12:11; an hourly heartbeat runs in that session; no new agents from 09:11 on the 11th). **World v26 is live** (#1467); main is green. The "Priority call" section below is current and overrides the order in Running, Queued and Next moves, which are as of 15:40.
+**Updated:** 11 November 2026, 07:45 local (15:45 UTC), in the 10–11 November orchestrator session (started 12:11 local, ends 11 November 12:11; an hourly heartbeat runs in that session; no new agents from 09:11 on the 11th). **World v26 is live** (#1467); main is green. The "Priority call" section below is current and overrides the order in Running, Queued and Next moves, which are as of 15:40.
 
 ## Links
 
