@@ -1,13 +1,13 @@
-// R4a, the line goes out (views; docs/plans/ring-island-build1.md, step 4a): the new reads the views make through the
-// read facade equal the inspection they replace, at the Ring seeds, frame by frame over a run; and line 2's path and
-// lateral past the pier head (src/entities/railway/line2-path.ts) join the layout's, follow the ring's rows, and never
-// jump a train sideways. The views need three.js and a DOM, so their reads are reproduced here as written (train-view's
-// stops, kit job and ring rack; halts-view's stops, head and aperture; ring-deck's Q7 panels and relay; crossing-view's
-// started flag); a change to a view's read is a change to its function below. Modelled on test/railway-m10d-review.test.ts.
+// R4a, the line goes out (views; docs/plans/ring-island-build1.md, step 4a): the ring seeds put the stops, the relay and
+// Q7's panels where the views read them, through the read facade's world; and line 2's path and lateral past the pier
+// head (src/entities/railway/line2-path.ts) join the layout's, follow the ring's rows, and never jump a train sideways.
+// The views need three.js and a DOM, so their reads are reproduced here as written (train-view's stops, kit job and ring
+// rack; halts-view's stops, head and aperture; ring-deck's Q7 panels and relay; crossing-view's started flag); a change
+// to a view's read is a change to the function below. The differential proof against `inspect()` went with it (X2 of
+// docs/plans/ecs-m12-m13.md). Modelled on test/railway-m10d-review.test.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
-import { railStopsNow } from './helpers/railway-m10a-twins.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync } from '../src/world/sync.ts';
@@ -18,14 +18,13 @@ import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { homeLand } from './helpers/land.ts';
 import { buildSeedWorld, type SeedStage } from './helpers/rail.ts';
-import { aperture, line as lineRow, qjob as qjobRow, trains } from '../src/sim/railway-rows.ts';
-import { line2Active, line2Completed } from '../src/sim/railway-queries-line2.ts';
+import { qjob as qjobRow } from '../src/sim/railway-rows.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { line2Jobs, q7Laid, ringHead, timingOf } from '../src/sim/railway-queries.ts';
 import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
 import { linePanelCount } from '../src/sim/railway-line-schedule.ts';
 import { LINE2, RAIL_LINES } from '../src/sim/railway-lines.ts';
-import { railRingOpen, trainStopsOf } from '../src/sim/railway-train.ts';
+import { trainStopsOf } from '../src/sim/railway-train.ts';
 import { RING_HEAD, RING_END, RING_S_HEAD, ringAt, ringDeckY } from '../src/sim/railway-ring-layout.ts';
 import { PIER_STOP_CM } from '../src/sim/railway-works-layout.ts';
 import { FORMATION, crossLat, lineAt, LINKS, railY } from '../src/place/layout.ts';
@@ -73,24 +72,15 @@ function client(stage: SeedStage) {
   return { adapter, pump };
 }
 
-// ---------------------------------------------------------------- the views' new reads, as written
-function newReads(adapter: ReturnType<typeof client>['adapter']) {
+// ---------------------------------------------------------------- the views' reads, as written
+function reads(adapter: ReturnType<typeof client>['adapter']) {
   const w = adapter.read.world();
-  const tick = adapter.read.tick();
-  const jobs = line2Jobs(w, tick);
-  const job = jobs[Q7]!;
-  const completed = line2Completed(w);
+  const job = line2Jobs(w, adapter.read.tick())[Q7]!;
   return {
     // train-view.ts (stops2) and halts-view.ts (refreshStops): the open stops of both lines
     stops: [0, 1].map((k) => [...trainStops(w, k)]),
-    // train-view.ts: the train-fed kit job unloads at its halt (kitStop), onto its rack
-    kit: line2Active(w),
-    // halts-view.ts (ring levers' head and need), train-view.ts (the ring rack the footings hop to)
+    // halts-view.ts (ring levers' head and need)
     head: ringHead(w),
-    set: aperture(w).set,
-    joined: aperture(w).joined,
-    // halts-view.ts: the line's lever asks
-    req: [0, 1].map((k) => lineRow(w, k).req),
     // ring-deck.ts: the relay is down, Q7's panels laid; crossing-view.ts: Q7 started
     relay: q7Laid(w),
     panels: job.job.completion
@@ -99,45 +89,10 @@ function newReads(adapter: ReturnType<typeof client>['adapter']) {
         ? 0
         : linePanelCount(LINE2_STATIONS[Q7]!, job.run.elapsed, timingOf(job.job)),
     started: !!qjobRow(w, Q7).completion || qjobRow(w, Q7).start >= 0,
-    completed,
-    foot: trains(w).map((r) => r.foot),
   };
-}
-function oldReads(adapter: ReturnType<typeof client>['adapter']) {
-  const s = adapter.inspect();
-  const q7 = s.line2.stations[Q7]!;
-  return {
-    stops: [0, 1].map((k) => [...railStopsNow(s, k)]),
-    kit: s.line2.active,
-    head: railRingOpen(s).head,
-    set: s.ring.set,
-    joined: s.ring.joined,
-    req: s.lines.map((l) => l.req),
-    relay: s.line2.completed >= LINE2_STATIONS.length,
-    panels: q7.completion
-      ? LINE2_STATIONS[Q7]!.panels
-      : q7.start < 0
-        ? 0
-        : linePanelCount(LINE2_STATIONS[Q7]!, q7.elapsed, q7.timing),
-    started: !!q7.completion || q7.start >= 0,
-    completed: s.line2.completed,
-    foot: s.trains.map((r) => r.foot),
-  };
-}
-for (const stage of ['crossing-done', 'deck-laid', 'gap-footed', 'leaf-raised', 'ring-joined'] as const) {
-  test(`the views' new reads equal the inspection they replace at ${stage}, over a run`, () => {
-    const c = client(stage);
-    for (let i = 0; i < 300; i++) {
-      c.pump();
-      const fresh = newReads(c.adapter),
-        old = oldReads(c.adapter);
-      assert.deepEqual(fresh, old, `${stage} tick ${i}`);
-    }
-    c.adapter.dispose();
-  });
 }
 test('the ring seeds put the stops where the views expect them', () => {
-  const at = (stage: SeedStage) => newReads(client(stage).adapter);
+  const at = (stage: SeedStage) => reads(client(stage).adapter);
   assert.equal(at('crossing-done').stops[1]!.length, 4, 'the Pier is the end before Q7');
   assert.equal(at('deck-laid').stops[1]!.length, 5, 'the Railhead is the end once Q7 is laid');
   assert.equal(at('deck-laid').relay, true);

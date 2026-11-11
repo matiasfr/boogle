@@ -1,10 +1,11 @@
 // Proof of M12 (docs/plans/ecs-migration-railway.md, M12): the client's read chain moved off the `Railway` read model
 // (the predictor and the mirror on worlds, the adapter's own reads on rows) and nothing a view, a press or an effect
 // sees changed. The oracle is a trace recorded on main before the change (test/fixtures/railway-m12-trace.json, made
-// with M12_RECORD=1 on the commit that adds this file, and never re-recorded after it): for every client, every frame,
-// what the read facade gives (the world's hash and next id, the tick, the live tick, ready, pending, stalled, status),
-// the whole `inspect()` (bar its read-path counters), and every accepted, corrected, remap and reset event the
-// adapter plays. Scripted runs at every seed the M10 groups used, with two lagged players pressing every op the
+// with M12_RECORD=1 on the commit that adds this file; re-recorded once, in step X2 of docs/plans/ecs-m12-m13.md, to drop
+// the `inspect()` column when that function went, on unchanged source with every other column's hash equal): for every
+// client, every frame, what the read facade gives (the world's hash and next id, the tick, the live tick, ready,
+// pending, stalled, status), and every accepted, corrected, remap and reset event the adapter plays. Scripted runs at
+// every seed the M10 groups used, with two lagged players pressing every op the
 // adapter sends, a disconnect and refill, and a late joiner; a predicted press read before the server answers.
 // The value is the trace's FNV hash per client, with a checkpoint every 25 frames so a difference can be found.
 import test from 'node:test';
@@ -39,8 +40,6 @@ const fnv = (h: number, text: string) => {
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
   return h >>> 0;
 };
-// The read-path counters count cache hits and rebuilds: how the adapter reads, not what it shows.
-const skip = (k: string, v: unknown) => (k === 'reads' ? undefined : v);
 type Trace = { h: number; frames: number; marks: number[] };
 const traces = new Map<string, Trace>();
 /** What the runs exercised (the coverage test). */
@@ -71,7 +70,6 @@ function frame(name: string, adapter: Adapter) {
       rd.status(),
     ]),
   );
-  add(name, JSON.stringify(adapter.inspect(), skip));
   const t = traceOf(name);
   if (++t.frames % 25 === 0) t.marks.push(t.h);
 }
