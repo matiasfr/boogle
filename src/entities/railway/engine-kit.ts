@@ -7,7 +7,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import url from '../../../assets/built/engine.glb?url';
 import { paint } from '../../place/look.ts';
-import { ENGINE_CAB } from '../wagon/engine.ts';
+import { ENGINE_CAB } from './engine.ts';
 
 const kit = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
 kit.scene.updateMatrixWorld(true);

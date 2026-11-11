@@ -24,8 +24,8 @@ const { carry } = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
 const { ENGINE, ENGINE_CAB, ENGINE_STOOL } = (await import(
-  '/src/proto/wagon/engine.ts' as string
-)) as typeof import('../../../src/proto/wagon/engine.ts');
+  '/src/entities/railway/engine.ts' as string
+)) as typeof import('../../../src/entities/railway/engine.ts');
 const { LINE_HALTS } = (await import(
   '/src/sim/railway-train.ts' as string
 )) as typeof import('../../../src/sim/railway-train.ts');

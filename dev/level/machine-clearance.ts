@@ -33,7 +33,7 @@ import {
   trackPanels,
   carriedPiece,
   MAX_PANEL_LENGTH,
-} from '../../src/proto/place/track-panels.ts';
+} from '../../src/entities/railway/track-panels.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import { boxAt, place } from '../../src/render/box-plan.ts';
@@ -44,12 +44,12 @@ import { timberDecks } from './timber-track.ts';
 
 export async function checkMachineClearance() {
   const material = () => new THREE.MeshBasicNodeMaterial();
-  const panels = sourceModule<typeof import('../../src/proto/place/machine-panels.ts')>(
-    fs.readFileSync('src/proto/place/machine-panels.ts', 'utf8'),
+  const panels = sourceModule<typeof import('../../src/entities/railway/machine-panels.ts')>(
+    fs.readFileSync('src/entities/railway/machine-panels.ts', 'utf8'),
     { THREE, carriedPiece, panelPose, panelEase },
   );
-  const model = sourceModule<typeof import('../../src/proto/place/machine-model.ts')>(
-    fs.readFileSync('src/proto/place/machine-model.ts', 'utf8'),
+  const model = sourceModule<typeof import('../../src/entities/railway/machine-model.ts')>(
+    fs.readFileSync('src/entities/railway/machine-model.ts', 'utf8'),
     { THREE, material, panelMechanism: panels.panelMechanism },
   );
   await MeshoptDecoder.ready;
@@ -283,13 +283,13 @@ export async function checkMachineClearance() {
     new THREE.Matrix4().makeTranslation(axeX, H(axeX, axeZ), axeZ).scale(new THREE.Vector3(2.2, 0.7, 2.2)),
   );
   const seatPoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  const besideLine = sourceFunction<typeof import('../../src/proto/place/rail.ts').besideLine>(
-    'src/proto/place/rail.ts',
+  const besideLine = sourceFunction<typeof import('../../src/entities/railway/rail-kit.ts').besideLine>(
+    'src/entities/railway/line-geometry.ts',
     'besideLine',
     {
       P: seatPoint,
       lineAt,
-      lateral: sourceFunction('src/proto/place/rail.ts', 'lateral', { P: seatPoint, ORIGIN }),
+      lateral: sourceFunction('src/entities/railway/line-geometry.ts', 'lateral', { P: seatPoint, ORIGIN }),
     },
   );
   const rewardSeat = sourceFunction<typeof import('../../src/entities/railway/reward.ts').rewardSeat>(
@@ -425,15 +425,15 @@ export async function checkMachineClearance() {
     for (const id of prior.keys()) if (!seen.has(id)) prior.delete(id);
   }
   const trackPoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  const trackFile = 'src/proto/place/rail.ts';
-  const buildTrack = sourceFunction<typeof import('../../src/proto/place/rail.ts').buildTrack>(
+  const trackFile = 'src/entities/railway/track.ts';
+  const buildTrack = sourceFunction<typeof import('../../src/entities/railway/rail-kit.ts').buildTrack>(
     trackFile,
     'buildTrack',
     {
       THREE,
       P: trackPoint,
       ORIGIN,
-      lateral: sourceFunction(trackFile, 'lateral', { P: trackPoint, ORIGIN }),
+      lateral: sourceFunction('src/entities/railway/line-geometry.ts', 'lateral', { P: trackPoint, ORIGIN }),
       STUB,
       lineAt,
       railY,

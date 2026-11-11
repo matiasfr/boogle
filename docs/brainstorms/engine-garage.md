@@ -64,7 +64,7 @@ accessible at select locations". They fit if the garage is **a framing of a real
    on the engine as a see-through yellow ghost (the swap is the preview); Before / After flips between the room's engine
    and the preview. Fit replays the boiler fit's staging: the part lifts in, two little guys bolt it, a puff, the card.
    Reuses `roundhouse-view.ts`'s bolt-on pieces (`bolts`, :207, :624) and the engine kit's swap nodes
-   (`engine_body_long`, `engine_boiler_long`, `engine_lashing_long`, `src/proto/place/engine-kit.ts:21`).
+   (`engine_body_long`, `engine_boiler_long`, `engine_lashing_long`, `src/entities/railway/engine-kit.ts:21`).
 3. **Three felt readouts, never bars** (design). Each in the player's units, with the previewed change in a second colour:
    ride time to a named place, what one trip carries (seats, footings, rails), and cars the engine pulls. Computed by
    the sim's own `trainLegTicks` (`src/sim/railway-train.ts:107`), so the number is true.
@@ -118,7 +118,7 @@ the open stall at 190° (`:157`–`165`), about 33 m from the hall's works board
 | Readout | Engine A today | With the longer boiler | Source |
 | --- | --- | --- | --- |
 | Village → the island (line 2's end, about 1.2 km) | 65 s | 54 s | `trainLegTicks`, nonstop, 20 vs 25 m/s at 3.5 m/s² |
-| Cars it pulls | 3 (line 2 today: passenger, cargo, footing wagon) | 4 (new call, suggestion 4) | `TRAIN_CARS`, `src/proto/wagon/cars.ts:17` |
+| Cars it pulls | 3 (line 2 today: passenger, cargo, footing wagon) | 4 (new call, suggestion 4) | `TRAIN_CARS`, `src/entities/railway/cars.ts:17` |
 | What a trip carries | 4 seats · 6 footings · 32 logs and 32 rails (kit) | unchanged | Four seats (passenger previz), `WORKS.wagonCap`, `LINE2_KIT` (`railway-line2-layout.ts:161`) |
 
 The ride time shows to the place the line actually reaches (the island once v26/v27 land; the Pier before: 41 s → 36 s).

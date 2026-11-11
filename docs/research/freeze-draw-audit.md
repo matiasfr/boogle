@@ -17,10 +17,10 @@ The table distinguishes the safety of current producers from arbitrary writes to
 | Draw and source | Allocated instances | Why ordinary counts cannot exceed allocation |
 | --- | --- | --- |
 | [Forge rail rack](../../src/proto/place/forge.ts#L230) | `TUNE.rackMax = 24` | `drawRack` clamps to `instanceMatrix.count` before both the count assignment and write loop. |
-| [Station log stock](../../src/proto/place/stations.ts#L142) | 56 per station | `drawStock` clamps to the matrix allocation; write loops and displayed-stock height use the bounded count. |
-| [Station rail stock](../../src/proto/place/stations.ts#L144) | `max(1, spec0.rails)` | Same allocation clamp. Current Q1–Q6 allocations are 6, 12, 12, 16, 24, 32; T/F allocations are 1 even when their bill requests zero rails. |
-| [Station stone stock](../../src/proto/place/stations.ts#L155) | `spec0.stone`, or no mesh | Same allocation clamp. T2 allocates 8. |
-| [Greybox station rollers](../../src/proto/place/stations.ts#L92) | `round(SPAN / 0.3)` | Fixed constructor count; initialization loops below that count. The default kit rollers use the shared batch below. |
+| [Station log stock](../../src/entities/railway/stations.ts#L142) | 56 per station | `drawStock` clamps to the matrix allocation; write loops and displayed-stock height use the bounded count. |
+| [Station rail stock](../../src/entities/railway/stations.ts#L144) | `max(1, spec0.rails)` | Same allocation clamp. Current Q1–Q6 allocations are 6, 12, 12, 16, 24, 32; T/F allocations are 1 even when their bill requests zero rails. |
+| [Station stone stock](../../src/entities/railway/stations.ts#L155) | `spec0.stone`, or no mesh | Same allocation clamp. T2 allocates 8. |
+| [Greybox station rollers](../../src/entities/railway/stations.ts#L92) | `round(SPAN / 0.3)` | Fixed constructor count; initialization loops below that count. The default kit rollers use the shared batch below. |
 | [Depot rack logs and rails](../../src/proto/place/depot.ts#L29) | 48 logs, 40 rails | `drawRack` limits loops/counts with `min(capacity, stock)`. Positive over-counts are bounded. Negative/nonfinite requests are a separate gap below. |
 | [Cart logs and rails](../../src/proto/place/depot.ts#L232) | `CART.load = 24`, `CART.rails = 16` | `drawLoad` clamps both counts to their matrix allocations before writes. |
 | [Machine cradle and rail rack](../../src/proto/place/rail.ts#L485) | 40 logs, 12 rails | Cradle limits to 40 before writing/count assignment. Rail count is bounded to 0–12; its matrices are initialized only within 12 slots. |

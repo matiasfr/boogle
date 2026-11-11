@@ -9,8 +9,8 @@ import { FIXED, GRAVITY, JUMP_SPEED, PLAYER_R, WALKABLE_NY } from '../../src/con
 import { JUMP } from '../../src/entities/player/state.ts';
 import { APEX_GRAVITY } from '../../src/entities/player/apex-float.ts';
 import { MOVE } from '../../src/place/tech-layout.ts';
-import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/proto/wagon/engine.ts';
-import { TRAIN_CARS, TRAIN_OFFSETS } from '../../src/proto/wagon/cars.ts';
+import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/engine.ts';
+import { TRAIN_CARS, TRAIN_OFFSETS } from '../../src/entities/railway/cars.ts';
 import { CARRY } from '../../src/physics/platforms.ts';
 import { TUNABLES } from '../../src/sim/tune.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';

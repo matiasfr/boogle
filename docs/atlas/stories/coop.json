@@ -8,7 +8,7 @@
       "hl": ["fr.features"],
       "text": "The panel-machine branch isolates continuous-track peers with placeCoopPanels1. Its authority accepts a generation/line/stage/panel index: renderer, colliders and one magazine unit advance together. Additive trackPanelsV1 snapshots preserve the accepted cursor and full-precision motion for quiet restore and late join.",
       "cite": [
-        { "file": "src/proto/place/track-panels.ts" },
+        { "file": "src/entities/railway/track-panels.ts" },
         { "file": "src/proto/place/run.ts" },
         { "file": "src/proto/place/coop.ts" }
       ]

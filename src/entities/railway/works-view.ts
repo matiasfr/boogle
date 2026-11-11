@@ -34,7 +34,7 @@ const ROLL_S = 4,
   HOP_S = 0.45;
 /** The throat slabs: tipping into the bowl, then sinking into rubble. */
 const TOPPLE = { stagger: [0.08, 0, 0.14], fall: 0.95, sink: 1.2, rest: 0.9 } as const;
-/** The stations' bill look (src/proto/place/stations.ts). */
+/** The stations' bill look (src/entities/railway/stations.ts). */
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 
 export async function createRailwayWorks(

@@ -1,7 +1,7 @@
 // Local panel choreography (rail.ts layPanel). Only the verified integer cursor commits track, collision and stock.
 import type { OwnedView } from '../../render/owned-view.ts';
 
-type Rail = typeof import('../../proto/place/rail.ts');
+type Rail = typeof import('./rail-kit.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
 type Track = ReturnType<Rail['buildTrack']>;
 /** The accepted facts one line's panel choreography reads: line one's inspection, or line two's projection. */

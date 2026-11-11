@@ -21,7 +21,7 @@ export const tool: Tool = {
   async run(command, args) {
     if (command === 'chop') {
       if (typeof args.twoHanded !== 'boolean') return no('twoHanded must be true or false.');
-      const { chopPresentation } = await import('../../proto/place/chop-motion.ts');
+      const { chopPresentation } = await import('../../entities/railway/chop-motion.ts');
       chopPresentation.twoHanded = args.twoHanded;
       return ok('Local chop preview updated.', { ...chopPresentation });
     }
@@ -34,7 +34,7 @@ export const tool: Tool = {
   },
   snapshot: fixture,
   async mount(parent, ctx) {
-    const { chopPresentation } = await import('../../proto/place/chop-motion.ts');
+    const { chopPresentation } = await import('../../entities/railway/chop-motion.ts');
     const chopLabel = el('label', ' Two-handed chop (retuning trial)');
     const chop = el('input');
     chop.type = 'checkbox';

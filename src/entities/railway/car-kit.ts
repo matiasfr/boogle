@@ -11,7 +11,7 @@ import { paint } from '../../place/look.ts';
 const kit = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
 kit.scene.updateMatrixWorld(true);
 
-/** The flatbed's deck top over the rail line (src/proto/wagon/cars.ts TRAILER.top): the recipe's origin is the rail line. */
+/** The flatbed's deck top over the rail line (src/entities/railway/cars.ts TRAILER.top): the recipe's origin is the rail line. */
 export const CAR_DECK = 0.7;
 /** The bench's seat top over the deck (the track layer's low stool's, seat.ts) and the bench's rider anchors: a rider's
  * capsule centre sits `SEAT_X` from the middle, facing out, at these z along the car. `forward`: the drawn rider sits

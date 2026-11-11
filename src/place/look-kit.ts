@@ -16,8 +16,7 @@ import type { DropSet } from './pieces.ts';
 import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
 import { makeBoiler } from '../render/carry-models.ts';
 import { makeProp } from '../render/prop-kit.ts';
-import { job } from '../proto/place/job.ts';
-import { ENGINE_BOILER, ENGINE_WHEELS } from '../proto/wagon/engine.ts';
+import { ENGINE_BOILER, ENGINE_WHEELS } from '../entities/railway/engine.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -397,7 +396,7 @@ export type MachineLook = {
   cab?: ReturnType<EngineKit['engineBodyWithCab']>;
 };
 /** The railway's engine (./engine-kit.ts), loaded: trainLook draws its loco with it. */
-type EngineKit = typeof import('../proto/place/engine-kit.ts');
+type EngineKit = typeof import('../entities/railway/engine-kit.ts');
 /** The track layer's look, the shape of wagonLook's: a red toy loco and a flatbed with its cradle, guard, arm and fork. */
 type Wheel = { x: number; y: number; z: number; at: number };
 const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),
@@ -420,12 +419,18 @@ const wheelSet = (p: Paint, n: number, owner?: OwnedView) => {
 };
 const machineWheels = wheelSet({ ...IRON, rust: true }, 8),
   trainWheels = wheelSet({ ...IRON, rust: 'train' }, 36); // three trains (v26): three cars each, four wheels each
-export const machineLook = (owner?: OwnedView): MachineLook => kitCars(1, true, owner);
+export const machineLook = (owner?: OwnedView): MachineLook => kitCars(1, true, () => false, owner);
 /** A train's look: the same loco, the same livery, and plain flatbeds; the railway's trains lead with `engine` (A with
  * its walk-in cab, docs/plans/engine-previz.md) in place of Place's shell. */
-export const trainLook = (trailers: number, engine?: EngineKit): MachineLook =>
-  kitCars(trailers, false, undefined, engine);
-function kitCars(trailers: number, working: boolean, owner?: OwnedView, engine?: EngineKit): MachineLook {
+export const trainLook = (trailers: number, boilerShown: () => boolean, engine?: EngineKit): MachineLook =>
+  kitCars(trailers, false, boilerShown, undefined, engine);
+function kitCars(
+  trailers: number,
+  working: boolean,
+  boilerShown: () => boolean,
+  owner?: OwnedView,
+  engine?: EngineKit,
+): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
     // The timber keeps its grain; only painted and bare metal age with the engine.
     const m = piece(name, { ...p, rust: p.grain ? false : working ? true : 'train' }, owner);
@@ -461,7 +466,7 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView, engine?:
     loco.add(makeProp('train_shell'));
     boiler!.position.set(0, 1.2, 0.5);
     boiler!.rotation.y = Math.PI;
-    boiler!.visible = job.boiler >= 3 || job.rung.trains;
+    boiler!.visible = boilerShown();
     loco.add(boiler!);
   }
   const locoR = engine ? ENGINE_WHEELS.r : 0.36;
@@ -515,7 +520,7 @@ function kitCars(trailers: number, working: boolean, owner?: OwnedView, engine?:
   let travel = 0;
   const slip = { rate: 0 };
   const animate = ({ dt }: { dt: number }) => {
-    if (boiler) boiler.visible = job.boiler >= 3 || job.rung.trains;
+    if (boiler) boiler.visible = boilerShown();
     cars.forEach((car, n) => {
       const parent = car.parent;
       const { wheels: list, r } = sets[n]!;

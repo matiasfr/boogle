@@ -7,7 +7,7 @@ import {
   CLAIM_GRACE_MS,
   type ClaimSeat,
   type SeatRequest,
-} from '../src/proto/place/seat-claims.ts';
+} from '../src/entities/railway/seat-claims.ts';
 
 const deck = (open = [true, true]): ClaimSeat[] =>
   open.map((on, i) => ({ id: `machine-deck-${i}`, group: 'machine-deck', available: () => on }));

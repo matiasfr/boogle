@@ -47,7 +47,7 @@ import {
   wake,
   wakeNow,
 } from './run.ts';
-import { seated, sitDown, standUp } from './seat.ts';
+import { seated, sitDown, standUp } from '../../entities/railway/seat.ts';
 import { backUp } from './verbs.ts';
 import { boilerAt, lookThrough } from './props.ts';
 import { snapCamp, snapTown } from './town.ts';

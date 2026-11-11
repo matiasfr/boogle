@@ -15,8 +15,8 @@ const { carry } = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
 const { sitDown, seatState, lowStoolAnchor } = (await import(
-  '/src/proto/place/seat.ts' as string
-)) as typeof import('../../../src/proto/place/seat.ts');
+  '/src/entities/railway/seat.ts' as string
+)) as typeof import('../../../src/entities/railway/seat.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 
 type Car = { x: number; y: number; z: number; id: string };

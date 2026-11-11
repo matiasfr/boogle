@@ -18,8 +18,8 @@ const { TREES, back, readTreeHarvest } = (await import(
   '/src/proto/place/chop.ts' as string
 )) as typeof import('../../../src/proto/place/chop.ts');
 const { CHOP_CONTACT } = (await import(
-  '/src/proto/place/chop-motion.ts' as string
-)) as typeof import('../../../src/proto/place/chop-motion.ts');
+  '/src/entities/railway/chop-motion.ts' as string
+)) as typeof import('../../../src/entities/railway/chop-motion.ts');
 const { job } = (await import('/src/proto/place/job.ts' as string)) as typeof import('../../../src/proto/place/job.ts');
 const { H } = (await import(
   '/src/place/terrain.ts' as string

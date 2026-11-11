@@ -47,7 +47,7 @@ export async function createStationBoxes(
       import('../../render/fanfare.ts'),
       import('../../place/layout.ts'),
       import('../../place/land.ts'),
-      import('../../proto/place/rail.ts'),
+      import('./rail-kit.ts'),
       import('../../place/pieces.ts'),
       import('../../place/spatial-station.ts'),
     ]);

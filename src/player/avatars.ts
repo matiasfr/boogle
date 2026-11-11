@@ -33,7 +33,7 @@ export type AvatarData = {
   holdKind?: 'item' | 'hang' | 'ball' | null;
   flopAmt?: number;
   seatedAt?: number;
-  seatRise?: number; // m a seated body is held above where it would stand on that deck (src/proto/place/seat.ts)
+  seatRise?: number; // m a seated body is held above where it would stand on that deck (src/entities/railway/seat.ts)
   seatAhead?: number; // m a seated body is drawn ahead of its seat, the way it faces (seat.ts `forward`)
   audioRole?: 'local' | 'remote' | 'preview';
   riding?: boolean;

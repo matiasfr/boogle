@@ -4,8 +4,8 @@ const { L1 } = (await import(
   '/src/proto/place/lines.ts' as string
 )) as typeof import('../../../src/proto/place/lines.ts');
 const { besideLine } = (await import(
-  '/src/proto/place/rail.ts' as string
-)) as typeof import('../../../src/proto/place/rail.ts');
+  '/src/entities/railway/rail-kit.ts' as string
+)) as typeof import('../../../src/entities/railway/rail-kit.ts');
 const { job } = (await import('/src/proto/place/job.ts' as string)) as typeof import('../../../src/proto/place/job.ts');
 if (!L1.open || job.ways.short) throw new Error('Need a completed bridge before its first timed crossing');
 const bot = makeBot({

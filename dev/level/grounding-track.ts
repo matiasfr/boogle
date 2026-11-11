@@ -4,17 +4,17 @@ import { boxAt, place, type Box } from '../../src/render/box-plan.ts';
 import { FORMATION, LINKS, ORIGIN, STUB, UP_LAT, crossLat, lineAt, railY, upLat } from '../../src/place/layout.ts';
 import { H, surfaceHeight } from '../../src/place/terrain.ts';
 import { sampleFootprint } from '../../src/place/support.ts';
-import { carriedPiece, trackPanels } from '../../src/proto/place/track-panels.ts';
+import { carriedPiece, trackPanels } from '../../src/entities/railway/track-panels.ts';
 import { sourceFunction } from './source.ts';
 
 /** Every settled track box of both lines, panelled and continuous, as the game's own buildTrack makes them. */
 export function trackBoxes() {
-  const file = 'src/proto/place/rail.ts';
+  const file = 'src/entities/railway/track.ts';
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
-  const lateral = sourceFunction(file, 'lateral', { P, ORIGIN });
+  const lateral = sourceFunction('src/entities/railway/line-geometry.ts', 'lateral', { P, ORIGIN });
   const complete = new Error('Track geometry captured');
   const captured: { boxes: Box[]; kinds: string[] }[] = [];
-  const buildTrack = sourceFunction<typeof import('../../src/proto/place/rail.ts').buildTrack>(file, 'buildTrack', {
+  const buildTrack = sourceFunction<typeof import('../../src/entities/railway/rail-kit.ts').buildTrack>(file, 'buildTrack', {
     THREE,
     P,
     lateral,

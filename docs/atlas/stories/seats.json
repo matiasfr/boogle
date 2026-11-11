@@ -7,7 +7,7 @@
     {
       "go": [["you.input", "you.features", "lane:owner", "fr.netplay"]],
       "text": "Interact requests an authored chair with a fresh ticket. The avatar waits for a grant instead of snapping into a contested seat.",
-      "cite": [{ "presence": "placeSeatRequest" }, { "file": "src/proto/place/seat.ts" }]
+      "cite": [{ "presence": "placeSeatRequest" }, { "file": "src/entities/railway/seat.ts" }]
     },
     {
       "go": [["fr.netplay", "lane:host", "you.features"]],
@@ -17,7 +17,7 @@
     {
       "go": [["you.features", "lane:owner", "fr.screen"]],
       "text": "Movement remains Owner-driven in the platform frame. Presence supplies the seated pose; Jump or Interact moves the rider to the authored exit and releases the claim. Seats are never saved.",
-      "cite": [{ "presence": "placeSeatPose" }, { "file": "src/proto/place/seat.ts" }]
+      "cite": [{ "presence": "placeSeatPose" }, { "file": "src/entities/railway/seat.ts" }]
     }
   ]
 }

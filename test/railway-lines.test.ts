@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT, TURNOUT_CM } from '../src/sim/railway-lines.ts';
-import { TRAIN_CARS, TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
+import { TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
 import { FORMATION, TURNOUT } from '../src/place/layout.ts';
 import { LINE_HALTS, TRAIN, TRAIN_HOME, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';

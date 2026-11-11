@@ -12,7 +12,7 @@ import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
-type CabFace = import('../../proto/place/engine-kit.ts').CabFace;
+type CabFace = import('./engine-kit.ts').CabFace;
 import { setShapes, stepAlpha, type Shape } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
@@ -74,23 +74,23 @@ let kitModels: ReturnType<typeof import('../../place/look-kit.ts').trainLook>[] 
 export async function createRailwayTrains(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  seats: typeof import('../../proto/place/seat.ts'),
+  seats: typeof import('./seat.ts'),
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
   const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
     await Promise.all([
       import('../../place/layout.ts'),
-      import('../../proto/place/rail.ts'),
+      import('./rail-kit.ts'),
       import('../../place/look.ts'),
       import('../../place/look-kit.ts'),
       import('../../render/wagon-look.ts'),
       import('../../render/crates.ts'),
-      import('../../proto/place/train-load.ts'),
+      import('./train-load.ts'),
       import('../../place/pieces.ts'),
       import('../../render/fanfare.ts'),
-      import('../../proto/place/engine-kit.ts'),
-      import('../../proto/place/car-kit.ts'),
-      import('../../proto/wagon/engine.ts'),
+      import('./engine-kit.ts'),
+      import('./car-kit.ts'),
+      import('./engine.ts'),
       import('../../place/folk.ts'),
       import('../../place/land.ts'),
       import('../../render/flat.ts'),
@@ -108,7 +108,7 @@ export async function createRailwayTrains(
   const wagonRock = new THREE.Group();
   // One train a RAIL_TRAINS slot (v26: line 1's, then line 2's two), each posed on its line from its own row.
   const trains = RAIL_TRAINS.map(({ line }, slot) => {
-    if (look.LOOK.kit) kitModels ??= RAIL_TRAINS.map(() => kit.trainLook(2, engineKit));
+    if (look.LOOK.kit) kitModels ??= RAIL_TRAINS.map(() => kit.trainLook(2, () => false, engineKit));
     const model = look.LOOK.kit ? kitModels![slot]! : wagon.wagonLook(2, false, owner);
     const cars = offsets.slice(0, WAGON).map((_, n) => {
       const car = rail.makeCar(

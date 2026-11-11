@@ -38,7 +38,7 @@ import { uiSound } from '../../ui/ui-sound.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
 const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
-type Rail = typeof import('../../proto/place/rail.ts');
+type Rail = typeof import('./rail-kit.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
 type Line2 = NonNullable<Inspection['line2']>;
@@ -65,8 +65,8 @@ export async function createRailwayLine2(
   const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
     await Promise.all([
       import('../../place/layout.ts'),
-      import('../../proto/place/rail.ts'),
-      import('../../proto/place/stations.ts'),
+      import('./rail-kit.ts'),
+      import('./stations.ts'),
       import('../../place/pieces.ts'),
       import('../../place/land.ts'),
       import('../../place/opening-plans.ts'),
@@ -448,7 +448,7 @@ export async function createRailwayLine2(
   const boiler = createRailwayBoiler(
     adapter,
     owner,
-    { land, props, carry, engine: await import('../../proto/place/engine-kit.ts'), sounds, pieces, flat, youGot },
+    { land, props, carry, engine: await import('./engine-kit.ts'), sounds, pieces, flat, youGot },
     chimneyTop,
   );
   const pier = createRailwayPier(owner, { layout, rail, sounds });

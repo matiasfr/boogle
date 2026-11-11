@@ -17,8 +17,8 @@ const { pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
 const { seatState } = (await import(
-  '/src/proto/place/seat.ts' as string
-)) as typeof import('../../../src/proto/place/seat.ts');
+  '/src/entities/railway/seat.ts' as string
+)) as typeof import('../../../src/entities/railway/seat.ts');
 
 type Halt = {
   name: string;

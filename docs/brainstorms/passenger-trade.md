@@ -607,7 +607,7 @@ screen, cars per line, long trains, stop on request, walk-in buildings); directi
 [ring-and-economy](ring-and-economy.md), [money](money.md), [engine-garage](engine-garage.md) and its review,
 [express-train](express-train.md) and its review, [junction-stations](junction-stations.md),
 [home-station](../plans/home-station.md) (the hall's layout); `src/proto/place/folk.ts`, `town-lines.ts`,
-`src/boogler/lines.ts`, `src/proto/wagon/cars.ts`, `dev/economy/ring-sim.ts` and `ring-data.ts`.
+`src/boogler/lines.ts`, `src/entities/railway/cars.ts`, `dev/economy/ring-sim.ts` and `ring-data.ts`.
 **Research:** [incremental-game-maths](../research/incremental-game-maths.md) (short cost ramps with fixed
 benchmarks after each upgrade; 12 to 20 minutes between smaller gains: **the table does not meet it, finding 2**; its
 "money remains a comic score" is superseded); [upgrade-economy](../research/upgrade-economy.md) rec 2 (each upgrade

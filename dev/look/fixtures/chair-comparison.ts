@@ -4,8 +4,8 @@ import * as THREE from 'three/webgpu';
 const { scene } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { seatMesh } = (await import(
-  '/src/proto/place/seat.ts' as string
-)) as typeof import('../../../src/proto/place/seat.ts');
+  '/src/entities/railway/seat.ts' as string
+)) as typeof import('../../../src/entities/railway/seat.ts');
 const { flat } = (await import('/src/render/flat.ts' as string)) as typeof import('../../../src/render/flat.ts');
 const { bind } = (await import(
   '/src/render/water/live.ts' as string

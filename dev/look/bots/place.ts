@@ -20,7 +20,7 @@ import { GLIDE_RAMP, JUMP_COURSE, JUMP_RECOVERY } from '../../../src/place/tech-
 import { playMark } from '../../../src/proto/mark.ts';
 import { RINGS, fireHook, move, whyNot } from '../../../src/proto/place/moves.ts';
 import { watchLanding } from './place-landing.ts';
-import { seatState } from '../../../src/proto/place/seat.ts';
+import { seatState } from '../../../src/entities/railway/seat.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -665,7 +665,7 @@ async function playRoute() {
       );
     });
     if (q.get('machineBoard') === '1') {
-      const { seatState } = await import('../../../src/proto/place/seat.ts');
+      const { seatState } = await import('../../../src/entities/railway/seat.ts');
       const car = place.machine.flatbed;
       const side = peer === 1 ? -1 : 1;
       const point = (x: number) =>

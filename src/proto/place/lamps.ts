@@ -8,7 +8,7 @@ import { flat } from '../../render/flat.ts';
 import { addStatic } from '../../place/land.ts';
 import { railY } from '../../place/layout.ts';
 import { lines } from './lines.ts';
-import { besideLine } from './rail.ts';
+import { besideLine } from '../../entities/railway/rail-kit.ts';
 
 const MAX = 120;
 const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 1.5, 0.12), flat('#5c4530'), MAX);

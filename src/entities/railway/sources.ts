@@ -61,7 +61,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     import('../../place/layout.ts'),
     import('../../render/fanfare.ts'),
     import('../../place/look.ts'),
-    import('../../proto/place/chop-motion.ts'),
+    import('./chop-motion.ts'),
     import('../../render/axe-sparkle.ts'),
   ]);
   if (!owner.alive) throw new Error('Railway sources mounted after disposal');

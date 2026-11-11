@@ -11,7 +11,7 @@ const PAGE = 'docs/world/home-layout.html';
 const SOURCES = [
   'src/place/layout.ts',
   'src/place/home-station.ts',
-  'src/proto/wagon/cars.ts',
+  'src/entities/railway/cars.ts',
   'src/sim/railway-train.ts',
   'src/sim/railway-line2-layout.ts',
   'src/sim/railway-works-layout.ts',
@@ -30,7 +30,7 @@ async function part(b: boolean) {
   const layout = await import('../../src/place/layout.ts');
   const { frameBesideLine } = await import('../../src/place/spatial-station.ts');
   const home = await import('../../src/place/home-station.ts');
-  const { LOCO, TRAILER, WAGON_CAR, TRAIN_OFFSETS } = await import('../../src/proto/wagon/cars.ts');
+  const { LOCO, TRAILER, WAGON_CAR, TRAIN_OFFSETS } = await import('../../src/entities/railway/cars.ts');
   const { TRAIN_STOPS } = await import('../../src/sim/railway-train.ts');
   const { LINE2_FORGE, LINE2_BOILER, LINE2_PACK, LINE2_STATIONS } =
     await import('../../src/sim/railway-line2-layout.ts');

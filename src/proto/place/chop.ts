@@ -36,7 +36,7 @@ import { addFoot } from '../../place/sites.ts';
 import { packFrameMesh } from '../../render/gear-models.ts';
 import { LAND_TREES, safeTreeFall, shoreTreeCleared } from '../../place/tree-catalog.ts';
 import { makeAxes } from '../../render/axe-models.ts';
-import { applyChopPose, CHOP_SIDE } from './chop-motion.ts';
+import { applyChopPose, CHOP_SIDE } from '../../entities/railway/chop-motion.ts';
 import { sparkleAxe } from '../../render/axe-sparkle.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { reducedMotion } from '../../constants.ts';

@@ -227,7 +227,7 @@ These are ordered experiments, not a twelve-feature implementation brief. The fi
 
 ### 2. Let visible work and access divide the jobs
 
-**Hypothesis:** readable backs, frame stock and several usable approaches are enough for spontaneous division and switching. Serve DESIGN 4 and 7. Touch [place's station presentation](../../src/proto/place/stations.ts), the [interactable contract](../../src/player/hands.ts) and the planned shared station; keep one bill and one destination. Wider access does not mean a fixed chopper, porter or operator.
+**Hypothesis:** readable backs, frame stock and several usable approaches are enough for spontaneous division and switching. Serve DESIGN 4 and 7. Touch [place's station presentation](../../src/entities/railway/stations.ts), the [interactable contract](../../src/player/hands.ts) and the planned shared station; keep one bill and one destination. Wider access does not mean a fixed chopper, porter or operator.
 
 **Smallest two-player prototype:** compare one frame with a narrow approach against the same frame reachable from two sides; start both people with empty backs and offer no job assignment. Check whether either can switch from chopping to depositing without displacing the other. **What's new:** “There is room to help from either side.” **Gut question:** “Could you see a useful thing to do without asking?”
 

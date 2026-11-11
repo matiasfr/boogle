@@ -83,7 +83,7 @@ These are track-construction systems, not passenger locomotives. They require pr
 
 **Owner approval, 5 November:** Option A is approved for fixed train seats, then the track layer only if its deck has safe space; station benches coordinate with `solo-clips-looks`. Movement stays Owner-driven and contested seats must be exclusive.
 
-**Problem / today [C].** Sitting works, but positions and pose feel improvised. [`seat.ts`](../../src/proto/place/seat.ts) holds the player's current deck-local point, clamps it inboard and drives the existing seated clip; Interact or Jump stands up. [`verbs.ts`](../../src/proto/place/verbs.ts) supplies Sit/Stand prompts. There is no authored seat selection.
+**Problem / today [C].** Sitting works, but positions and pose feel improvised. [`seat.ts`](../../src/entities/railway/seat.ts) holds the player's current deck-local point, clamps it inboard and drives the existing seated clip; Interact or Jump stands up. [`verbs.ts`](../../src/proto/place/verbs.ts) supplies Sit/Stand prompts. There is no authored seat selection.
 
 **Reference [S].** Sea of Thieves added prompted sitting at particular ship/world locations with a view camera ([Rare's 2.4.0 notes](https://www.seaofthieves.com/release-notes/2.4.0); indexed text read, direct fetch returned 403). This supports chosen places to enjoy a view, not a claim about Rare's animation implementation.
 

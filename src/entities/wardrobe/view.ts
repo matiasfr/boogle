@@ -50,7 +50,7 @@ const follow = (p: { x: number; y: number; z: number }): Follow => ({
   rx: 0,
   rz: 0,
 });
-// src/proto/place/seat.ts stamps `seatedAt` and `seatRise` on a seated avatar each frame: its body is held seatRise m
+// src/entities/railway/seat.ts stamps `seatedAt` and `seatRise` on a seated avatar each frame: its body is held seatRise m
 // above where it would stand on that deck, so the deck under a sitter is that much further down.
 const seatRise = (avatar: THREE.Object3D | null | undefined) =>
   performance.now() - ((avatar?.userData.seatedAt as number | undefined) ?? -1e9) < 200

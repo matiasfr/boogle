@@ -14,7 +14,7 @@ import { SHELLS } from '../net/town-fx.ts';
 import { dustRing } from '../../place/pieces.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { scheduleWake, type Waker } from '../../render/wake-presentation.ts';
-import { seated } from './seat.ts';
+import { seated } from '../../entities/railway/seat.ts';
 
 // ---------------------------------------------------------------- a little timeline
 const queue: { t: number; fn: () => void }[] = [];

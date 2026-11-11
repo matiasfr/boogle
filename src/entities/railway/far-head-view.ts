@@ -10,7 +10,7 @@ import { whistle } from '../../render/machine-sfx.ts';
 
 type Deps = {
   layout: typeof import('../../place/layout.ts');
-  rail: typeof import('../../proto/place/rail.ts');
+  rail: typeof import('./rail-kit.ts');
   land: typeof import('../../place/land.ts');
   flat: (typeof import('../../render/flat.ts'))['flat'];
   sounds: typeof import('../../render/fanfare.ts');

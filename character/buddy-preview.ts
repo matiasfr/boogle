@@ -17,7 +17,7 @@ import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
 import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/render/carry-models.ts';
 import { makeBundlePreview } from '../src/render/haul-bundle.ts';
 import { makeAxes, type AxeTier } from '../src/render/axe-models.ts';
-import { applyChopPose, CHOP_DURATION, CHOP_TRUNK, chopPresentation } from '../src/proto/place/chop-motion.ts';
+import { applyChopPose, CHOP_DURATION, CHOP_TRUNK, chopPresentation } from '../src/entities/railway/chop-motion.ts';
 import { sparkleAxe } from '../src/render/axe-sparkle.ts';
 import type { Particle } from '../src/render/particle-pool.ts';
 import { T1_REWARD } from '../src/render/t1-reward-parts.ts';

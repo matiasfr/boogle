@@ -22,9 +22,9 @@ import { CART, STUB, lineAt, railY, type LinePoint } from '../../place/layout.ts
 import { COOP, count, job, num, sharedSlice } from './job.ts';
 import { L1, L2 } from './lines.ts';
 import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog } from '../../place/pieces.ts';
-import { besideLine, drawCar, makeCar, poseCarOnLine, snapCar, type Car } from './rail.ts';
+import { besideLine, drawCar, makeCar, poseCarOnLine, snapCar, type Car } from '../../entities/railway/rail-kit.ts';
 import { addFoot } from '../../place/sites.ts';
-import type { StationRun } from './stations.ts';
+import type { StationRun } from '../../entities/railway/stations.ts';
 import { makeProp } from '../../render/prop-kit.ts';
 
 // ---------------------------------------------------------------- the rack

@@ -318,7 +318,7 @@ with low boards between them (`cargoFittings`, src/render/wagon-look.ts; cosmeti
 so the two read apart at a glance. The crates it carries are solid (owner, 10 November: "the cargo should have
 colliders so we dont clip through it"): each settled crate is a box on the car's own kinematic body, so it rides with
 the platform, blocks a player walking into it on the deck and carries one standing on top
-(src/proto/place/train-load.ts, `solidTrainLoad`). A crate in flight never collides. When a crate lands under a
+(src/entities/railway/train-load.ts, `solidTrainLoad`). A crate in flight never collides. When a crate lands under a
 standing rider they are lifted onto its top, and when one leaves from under them they are lowered to what is beneath,
 both by the height change only, never by a launch. The stakes and boards stay without a collider: the car's deck edge
 is where the old rides already end, and a 0.2 m board would only catch feet. A train therefore seats four. The passenger car is a knifeboard (owner's pick pending between candidates Four and Six
@@ -327,7 +327,7 @@ the deck, two seats a side, riders facing out over the halt decks, at Z -0.85 an
 low stool's numbers (seat top 0.32 m over the deck, rider anchor `lowStoolAnchor`, 0.45 m from the middle, hips on the seat,
 feet on the deck), so Buddy sits as at the track layer. The car is still the flatbed's 3.2 m by 2.2 m: the first car is
 natural wood and dark iron with boarded end panels, rails at hand height and a board under each side of the deck (the
-`passenger-car` kit asset, `car_fit`, src/proto/place/car-kit.ts). The upgrade (red and brass, a canopy roof with a
+`passenger-car` kit asset, `car_fit`, src/entities/railway/car-kit.ts). The upgrade (red and brass, a canopy roof with a
 cream fringe, two lamps: `car_upgrade`) is built and switched off, as no upgrade rule exists yet; `PASSENGER_CAR_UPGRADED`
 in train-view.ts is its hook. Like the track layer's, the bench has no solid: walking and the bots' boarding pass through
 it. Stand up puts you 0.4 m out in front of your seat, on the deck by its edge. A seated rider is drawn 0.16 m

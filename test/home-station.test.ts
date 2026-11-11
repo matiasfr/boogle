@@ -36,8 +36,8 @@ import {
   type XZ,
 } from '../src/place/home-station.ts';
 import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/place/layout.ts';
-import { TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/proto/wagon/cars.ts';
-import { ENGINE, ENGINE_LONG_AHEAD } from '../src/proto/wagon/engine.ts';
+import { TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/entities/railway/cars.ts';
+import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
 import { H } from '../src/place/terrain.ts';
@@ -62,7 +62,7 @@ test('each head is 1 m samples from s 0 to its join, meeting today line at the j
   }
 });
 
-/** The engine's lengths: A as built (src/proto/wagon/engine.ts) and with the longer boiler, its frame 0.5 m longer
+/** The engine's lengths: A as built (src/entities/railway/engine.ts) and with the longer boiler, its frame 0.5 m longer
  * ahead (docs/plans/engine-previz.md: 4.5 m, 1.5× the old LOCO, the longest these halts allow). */
 const ENGINES = [1, 1 + ENGINE_LONG_AHEAD / (2 * ENGINE.hz)];
 /** A train's extent along its road at stop `s`: cars from TRAIN_OFFSETS, the engine scaled by `engine` and moved out

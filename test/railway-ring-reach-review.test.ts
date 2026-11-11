@@ -8,8 +8,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FIXED, GRAVITY, JUMP_SPEED, PLAYER_R, WALKABLE_NY } from '../src/constants.ts';
 import { APEX_GRAVITY } from '../src/entities/player/apex-float.ts';
-import { ENGINE_CAB } from '../src/proto/wagon/engine.ts';
-import { TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
+import { ENGINE_CAB } from '../src/entities/railway/engine.ts';
+import { TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
 import {
   RING_BRACE_PLATFORM,
   RING_END_APPROACH,

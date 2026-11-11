@@ -38,7 +38,7 @@ export async function createRailwayCart(
 ) {
   const [layout, rail, pieces, flatMod, look, kit, props, common] = await Promise.all([
     import('../../place/layout.ts'),
-    import('../../proto/place/rail.ts'),
+    import('./rail-kit.ts'),
     import('../../place/pieces.ts'),
     import('../../render/flat.ts'),
     import('../../place/look.ts'),

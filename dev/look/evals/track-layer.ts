@@ -21,8 +21,8 @@ const { carry, fromPlatform, toPlatform } = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
 const { sitDown, standUp, seatState } = (await import(
-  '/src/proto/place/seat.ts' as string
-)) as typeof import('../../../src/proto/place/seat.ts');
+  '/src/entities/railway/seat.ts' as string
+)) as typeof import('../../../src/entities/railway/seat.ts');
 const { renderer } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
 const { pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
