@@ -148,6 +148,13 @@ Built on `ci/diet-batch-1` (11 November); `.github/workflows` changes are unprov
    `-m10c-review` 68 to 47, `-train` 71 to 63, `-trains` 27 to 19, `-boiler` 18 to 12, `-works` 31 to 25,
    `-m10e-review` 39 to 28). Shard balancing: the plan names no method; Node still deals files by index.
 
+**Left from the Batch 1 review (11 November), recorded, not built:**
+- A red pre-deploy boot fails `deploy.yml`'s build job, so `recover` is skipped and no issue opens; only the
+  heartbeat's deploy line shows it. A `deploy` issue on a red boot would make it loud.
+- ci-autofix's `Bash(git bisect:*)` also allows `git bisect run <any command>`, wider than the rerun it is for.
+- `server/Dockerfile`, the server's dependencies and `fly.toml` no longer trigger a review (rule (c) names
+  `server/src`): an owner question, logged for the orchestrator to ask.
+
 ## Batch 2: moves coverage later (the orchestrator's call)
 
 1. **Tier 1 unit for non-lockstep ships** (1): the affected set plus the core instead of all four shards. A merge no
