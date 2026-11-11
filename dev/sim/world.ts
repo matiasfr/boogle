@@ -9,6 +9,7 @@
 //   await joinRoom(room)          into a real room on VITE_BOOGLE_SERVER, as src/main.ts's connectRoom does
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { beginFrame, endFrame, frameCtx, mark, runFrame } from '../../src/loop.ts';
 import { physicsReady, stepPhysics } from '../../src/physics/engine.ts';
 import { connectRoom } from '../../src/netplay/net.ts';
@@ -29,7 +30,7 @@ export async function headless() {
   };
   Object.assign(land.layout, home.layout);
   for (const file of fs.globSync('src/entities/*/headless.ts', { cwd: root }).sort())
-    await import(path.join(root, file));
+    await import(pathToFileURL(path.join(root, file)).href);
 }
 
 export function virtualClock() {
