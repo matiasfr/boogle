@@ -19,7 +19,8 @@
 // glider and the canopy shut, the Glide action's glyph pulses at Buddy's back. Glide, not Jump, while the double jump is
 // still yours: Jump spends the air jump first and opens the canopy only on a second press (glider-b plan, finding 2).
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';

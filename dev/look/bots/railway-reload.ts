@@ -1,6 +1,6 @@
 // Run through the existing look eval/until hooks; sessionStorage carries observations, never game state.
 import { background } from '../../../src/async.ts';
-import { inspectRailwayLegacy } from '../../../src/entities/railway/state.ts';
+import { inspectRailway, piles, railCounts, railCurrentJob, railRead, rw, trees } from '../rail-read.ts';
 import { me } from '../../../src/player/player.ts';
 import { identity } from '../../../src/player/identity.ts';
 import { net } from '../../../src/netplay/net.ts';
@@ -21,23 +21,30 @@ async function until(ok: () => unknown, label: string, ms = 60000) {
   while (!ok() && performance.now() < end) await wait(50);
   check(ok(), label);
 }
+/** The view's and the session's own fields: the reward, the scene. */
 function read() {
-  const state = inspectRailwayLegacy();
+  const state = inspectRailway();
   if (!state) throw new Error('Missing railway view');
   return state;
 }
+const ready = () => !!railRead()?.ready();
+/** T1 stations laid: railCounts' completion is the sum over the line's jobs. */
+const completion = () => railCounts(rw()).completion;
+/** Every material balance, as rows read now: the trees' wood and work, the piles, the conserved counts and the
+ * active station's stock (compared across a reload, so only the two sides' sameness matters). */
 function balances() {
-  const s = read();
+  const w = rw();
+  const { job, run } = railCurrentJob(w);
   return JSON.stringify({
-    sources: s.sources,
-    work: s.work,
-    piles: s.piles,
-    counts: s.counts,
-    stock: s.stock,
-    allocation: s.allocation,
-    used: s.used,
-    delivered: s.delivered,
-    completion: s.completion,
+    sources: trees(w).map((t) => t.left),
+    work: trees(w).map((t) => t.work),
+    piles: piles(w),
+    counts: railCounts(w),
+    stock: job.stock,
+    allocation: run.allocation,
+    used: run.used,
+    delivered: job.delivered,
+    completion: railCounts(w).completion,
   });
 }
 type Saved = { stage: 'unopened' | 'claimed'; pid: string; balances: string; x: number; z: number; session: string };
@@ -56,7 +63,7 @@ async function locks() {
   const pid = 'railwaylockproof';
   const profile = createBrowserRailwayProfile(pid, ['hat']);
   const entitlement = { world: 'look-verified-t1', station: 'T1' as const, completion: 1 as const };
-  check(read().ready && read().completion === 1, 'lock fixture runs only after verified real-input T1 completion');
+  check(ready() && completion() === 1, 'lock fixture runs only after verified real-input T1 completion');
   try {
     check(localStorage.getItem(profile.key) === null, 'lock fixture starts empty');
     let release!: () => void;
@@ -102,19 +109,15 @@ async function locks() {
   }
 }
 async function run() {
-  await until(
-    () => inspectRailwayLegacy()?.ready && me.body && !fallArrival.active && me.coyote > 0,
-    'verified dry arrival',
-    300000,
-  );
+  await until(() => ready() && me.body && !fallArrival.active && me.coyote > 0, 'verified dry arrival', 300000);
   const saved = JSON.parse(sessionStorage.getItem(KEY) ?? 'null') as Saved | null;
   if (!saved) {
     // Drop and reconnect inside serveSnapshot's throttle window, then let the ordinary real-input bot play.
     net.room!.pause(50);
-    await until(() => !read().ready, 'disconnect gates railway input');
-    await until(() => read().ready, 'quick socket reconnect restores verified railway');
+    await until(() => !ready(), 'disconnect gates railway input');
+    await until(() => ready(), 'quick socket reconnect restores verified railway');
     await play({ stopBeforeReward: true });
-    check(read().completion === 1 && !read().reward.claimed, 'completed T1 has an unopened personal reward');
+    check(completion() === 1 && !read().reward.claimed, 'completed T1 has an unopened personal reward');
     await locks();
     await reload('unopened');
     return;
@@ -157,8 +160,8 @@ async function run() {
   );
   const before = balances();
   net.room!.pause(2500);
-  await until(() => !read().ready, 'completed-room departure gates input');
-  await until(() => read().ready, 'completed-room rejoin restores verified railway');
+  await until(() => !ready(), 'completed-room departure gates input');
+  await until(() => ready(), 'completed-room rejoin restores verified railway');
   check(
     balances() === before && read().reward.revealCount === 0,
     'departure and rejoin preserve balances without reward replay',

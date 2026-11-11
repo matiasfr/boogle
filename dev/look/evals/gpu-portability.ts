@@ -1,9 +1,9 @@
 // Existing broker look operation, accepted --rail-seed fixtures, production views and real jump input.
 // gpuShot=depot|cart|jump|rockets; gpuProfile=portable constrains the device before renderer initialization.
 const query = new URLSearchParams(location.search);
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, line2Completed, rail, railRead, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me, pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
@@ -23,8 +23,8 @@ const until = async (ready: () => boolean, label: string, timeout = 15000) => {
     await wait(25);
   }
 };
-await until(() => !!inspectRailwayLegacy()?.ready && !!me.body, 'railway mounted');
-const read = () => inspectRailwayLegacy()!;
+await until(() => !!railRead()?.ready() && !!me.body, 'railway mounted');
+const read = () => inspectRailway()!;
 const device = (renderer.backend as unknown as { device: GPUDevice }).device;
 console.log(
   'GPU PROBE ' +
@@ -53,7 +53,7 @@ if (mode === 'depot' || mode === 'cart') {
   onFrame(frame, { phase: 'late', order: 999, name: 'GPU cart/depot framing' });
   console.log('GPU DEPOT ' + JSON.stringify(read().line2View));
 } else if (mode === 'rockets') {
-  if (read().line2.completed >= 5) throw new Error('Rockets need a live q5-finishing seed, not a restored completion');
+  if (line2Completed(rw()) >= 5) throw new Error('Rockets need a live q5-finishing seed, not a restored completion');
   const p = read().line2View.farHead;
   onFrame(() => window.__debugCam!.set([p.x + 65, p.y + 42, p.z + 80], [p.x, p.y + 30, p.z], 65), {
     phase: 'late',
@@ -66,7 +66,7 @@ if (mode === 'depot' || mode === 'cart') {
   let last = '';
   onFrame(
     () => {
-      const value = JSON.stringify({ done: read().line2.completed, rockets: read().line2View.farHeadRockets });
+      const value = JSON.stringify({ done: line2Completed(rw()), rockets: read().line2View.farHeadRockets });
       if (performance.now() - start < 7000 && value !== last) {
         last = value;
         console.log('GPU ROCKETS live ' + value);
@@ -90,7 +90,7 @@ if (mode === 'depot' || mode === 'cart') {
   await until(() => interactTarget()?.id === 'railway-jump-device', 'jump device target');
   triggerAction('interact', 'down');
   triggerAction('interact', 'up');
-  await until(() => read().jump, 'accepted jump unlock');
+  await until(() => rail(rw()).jump, 'accepted jump unlock');
   await wait(2000);
   // The reveal owns a capture-phase keyboard listener, as in the existing railway bot's dismiss().
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));

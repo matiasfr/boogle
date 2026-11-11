@@ -6,7 +6,7 @@
 //    lays them (`linePanelCount`), planks, both tracks' rails, stringers, and the plank footway on its east edge from
 //    the pad to where the railhead's walkway begins. Solid as it is laid (one slab a panel); the sim reads none of it.
 // Local view over the read facade (`adapter.read`); a restore shows what is laid without dropping it.
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { H, slab } from '../../place/land.ts';
 import { UP_LAT } from '../../place/layout.ts';

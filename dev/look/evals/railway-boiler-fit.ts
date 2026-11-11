@@ -13,9 +13,13 @@
 // npm run look -- --rail-seed boiler-camp --action dev/look/evals/railway-boiler-fit.ts --video --seconds 14
 //   --question "Does the boiler leave the rope on the press frame, and do two little guys hammer at the saddle?"
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const {
+  boiler: boilerRow,
+  inspectRailway,
+  line2Trains,
+  railRead,
+  rw,
+} = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { inputState } = (await import(
   '/src/player/input-state.ts' as string
@@ -40,7 +44,8 @@ const solo = !new URLSearchParams(location.search).has('player');
 const fitter = solo || new URLSearchParams(location.search).get('player') === '2';
 const w = window as Window & { __boilerShot?: boolean };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-const read = () => inspectRailwayLegacy()!;
+const read = () => inspectRailway()!;
+const trainsOn = () => line2Trains(rw());
 const boiler = () => (read().line2View as unknown as { boiler: BoilerView }).boiler;
 const arrival = () => read().reward.arrival;
 function check(ok: unknown, label: string) {
@@ -61,7 +66,7 @@ function other() {
   }
   return null;
 }
-const landed = () => !!me.body && me.coyote > 0 && !me.swimming && !!inspectRailwayLegacy()?.ready;
+const landed = () => !!me.body && me.coyote > 0 && !me.swimming && !!railRead()?.ready();
 const near = (p: { x: number; z: number } | null, q: { x: number; z: number }, r: number) =>
   !!p && Math.hypot(p.x - q.x, p.z - q.z) < r;
 const bot = makeBot({ doneFlag: '__boilerDone' });
@@ -69,7 +74,7 @@ const bot = makeBot({ doneFlag: '__boilerDone' });
 async function fit() {
   if (!solo) w.__boilerShot = true; // the friend's page times the capture; this page must not hold the warm-up
   await until(landed, 'fitter landed');
-  check(!read().line2.trains, 'trains are not running yet');
+  check(!trainsOn(), 'trains are not running yet');
   const b = boiler();
   teleport(me.body!, b.x + 3, b.y + 1.2, b.z);
   me.body!.velocity.set(0, 0, 0);
@@ -92,13 +97,13 @@ async function fit() {
   await wait(1500);
   let acceptedFrame = -1;
   const watch = setInterval(() => {
-    if (acceptedFrame < 0 && read().line2.trains) acceptedFrame = boiler().frame;
+    if (acceptedFrame < 0 && trainsOn()) acceptedFrame = boiler().frame;
   }, 0);
   check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
   // Read synchronously after the press, before any server message can be handled.
   const flying = boiler().fitting,
-    atPress = { phase: flying?.phase ?? null, trains: read().line2.trains };
-  check(await bot.work(() => read().line2.trains, 30000, 380), 'boiler fitted');
+    atPress = { phase: flying?.phase ?? null, trains: trainsOn() };
+  check(await bot.work(() => trainsOn(), 30000, 380), 'boiler fitted');
   clearInterval(watch);
   await bot.until(() => !boiler().fitting, 3000, 'landed');
   const f = boiler().lastFit;
@@ -143,7 +148,7 @@ async function friend() {
   );
   check(!before.keys.includes('boiler'), 'no boiler flourish before the fit');
   // The fitter holds it by the old train: the capture starts here.
-  await until(() => boiler().mine === false && read().line2.boiler.state === 'held', 'the fitter holds the boiler');
+  await until(() => boiler().mine === false && boilerRow(rw()).state === 'held', 'the fitter holds the boiler');
   await until(() => near(other(), boiler().saddle, 6), 'the fitter is at the saddle');
   w.__boilerShot = true;
   const rows: unknown[] = [];
@@ -152,7 +157,7 @@ async function friend() {
     const a = arrival();
     rows.push({
       t: Math.round(performance.now() - start),
-      trains: read().line2.trains,
+      trains: trainsOn(),
       held: inputState.held,
       card: read().reward.showing,
       badge: a.badge?.map((n) => +n.toFixed(2)),
@@ -163,10 +168,10 @@ async function friend() {
   const p = me.body!.position;
   const home = { x: p.x, z: p.z };
   const walking = (async () => {
-    for (let k = 0; k < 4 && !(read().line2.trains && arrival().keys.includes('boiler')); k++)
+    for (let k = 0; k < 4 && !(trainsOn() && arrival().keys.includes('boiler')); k++)
       await bot.walk(home.x + (k % 2 ? 0 : 6), home.z + 3, 1, { limit: 6000 });
   })();
-  await until(() => read().line2.trains, 'friend sees trains on', 120000);
+  await until(() => trainsOn(), 'friend sees trains on', 120000);
   await until(() => arrival().keys.includes('boiler'), 'friend boiler flourish played', 10000);
   check(!read().reward.showing && !inputState.held, 'no card and no hold at the boiler flourish');
   const moving = { x: me.body!.position.x, z: me.body!.position.z };

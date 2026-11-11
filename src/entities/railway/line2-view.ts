@@ -2,7 +2,8 @@
 // Q1-Q6 frames, depot racks, route-v2 decks, both gates, the summit switch, Far Head, the boiler and the pier show.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -39,7 +40,7 @@ import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-lin
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
-import { forgeRailsOffered, waitsForTrainOn } from './forge-offer.ts';
+import { forgeRailsOffered, waitsForTrain } from './forge-offer.ts';
 import { createRailwayGlideDevice } from './glide-device-view.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
@@ -943,7 +944,7 @@ export async function createRailwayLine2(
         jobs = jobsOf(w),
         completed = line2Completed(w),
         gateOpen = line2GateOpen(w);
-      const owed = waitsForTrainOn(w, active);
+      const owed = waitsForTrain(w, active);
       if (tick !== shownTick) {
         shownTick = tick;
         sinceTick = 0;
@@ -1183,7 +1184,7 @@ export async function createRailwayLine2(
           run: () => void adapter.forgeTake(),
           ...full,
         });
-      if (stock.depot > 0 && framed(active) && !waitsForTrainOn(w, active)) {
+      if (stock.depot > 0 && framed(active) && !waitsForTrain(w, active)) {
         depotPlace(active, from);
         if (
           Math.hypot(p.x - from.x, p.z - from.z) <= 3.2 &&
@@ -1234,7 +1235,7 @@ export async function createRailwayLine2(
         ...farHead.inspect(),
         ...boiler.inspect(),
         ...pier.inspect(),
-        trainOwed: waitsForTrainOn(w, active),
+        trainOwed: waitsForTrain(w, active),
         q6Sign: { kind: depotSign.kind, visible: depotSign.board.visible, nudges },
         q6Rack: (() => {
           const p = depotPlace(5, new THREE.Vector3());

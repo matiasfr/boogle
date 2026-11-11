@@ -7,7 +7,9 @@ import { camConstraints, camForward, me } from '../../player/player.ts';
 import { openModal, closeModal } from '../../player/modal.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { FrameCtx } from '../../loop.ts';
-import { railwayRead } from '../railway/state.ts';
+import { railwayWorldRead } from '../railway/state.ts';
+import { aperture } from '../../sim/railway-rows.ts';
+import { ringOpen } from '../../sim/railway-queries.ts';
 import { buoyLifted } from '../railway/railhead-shape.ts';
 import { splash } from '../../render/splash.ts';
 import { SEA } from '../../constants.ts';
@@ -201,10 +203,11 @@ export async function createLookoutView() {
   const lifted = buoyAt.map(() => false);
   let known = false;
   function readLifted(dt: number) {
-    const ring = railwayRead()?.ring;
-    const head = ring?.head ?? 0,
-      joined = !!ring && ring.joined >= 0;
-    const live = !!ring;
+    // The world is taken again every call: a published world is never written.
+    const w = railwayWorldRead()?.world();
+    const live = !!w;
+    const head = w ? ringOpen(w).head : 0,
+      joined = !!w && aperture(w).joined >= 0;
     buoyAt.forEach((q, k) => {
       const want = live && buoyLifted(k, head, joined);
       if (want === lifted[k]) return;

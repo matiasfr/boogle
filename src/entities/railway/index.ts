@@ -6,10 +6,10 @@ import { identity } from '../../player/identity.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
 import { net, onRoomReady, onNetState, localPresence } from '../../netplay/net.ts';
 import { warmUp } from '../../render/precompile.ts';
-import { createRailwayAdapter, railMovement } from '../../adapters/railway.ts';
+import { createRailwayAdapter, railMovement } from '../../adapters/railway-session.ts';
 import { delayedRoom } from '../../world/delayed-room.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
-import { setRailwayLegacy, setRailwayRead, setRailwayView, setRailwayWorldRead } from './state.ts';
+import { setRailwayView, setRailwayWorldRead } from './state.ts';
 
 defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10, lateUpdate: 0 });
 // The glide keeps the heading it had before the controller's air steering (Place's order-22 note, at 23 here): a second slot.
@@ -29,7 +29,6 @@ if (productionRailway && railwayMirror) {
       return local?.entered && local.body ? local.body.position : null;
     },
   });
-  setRailwayRead(adapter.inspect);
   setRailwayWorldRead(adapter.read);
   // Dev only: &railLag=<ms> adds that round trip to the railway's own messages (replication R1b captures).
   const lag = import.meta.env.DEV ? Math.min(1000, Math.max(0, Number(query.get('railLag')) || 0)) : 0;
@@ -40,7 +39,6 @@ if (productionRailway && railwayMirror) {
   const loaded = createRailwayView(adapter).then((view) => {
     active = view;
     setRailwayView(view.inspect);
-    setRailwayLegacy(view.inspectLegacy);
     const note = spawn({
       kind: 'railway-glide',
       fixedPre() {
@@ -68,8 +66,6 @@ if (productionRailway && railwayMirror) {
         despawn(note);
         active = null;
         setRailwayView(null);
-        setRailwayLegacy(null);
-        setRailwayRead(null);
         setRailwayWorldRead(null);
         view.dispose();
         adapter.dispose();

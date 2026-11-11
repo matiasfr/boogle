@@ -1,22 +1,27 @@
 // Disposable accepted B5-B8 seed framing; no route bot or browser-side shared-state fabrication.
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const {
+  inspectRailway,
+  line2Active,
+  line2Completed,
+  line2Jobs,
+  rail: railRow,
+  railRead,
+  rw,
+} = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const layout = (await import(
-  '/src/place/layout.ts' as string
-)) as typeof import('../../../src/place/layout.ts');
-const rail = (await import('/src/entities/railway/rail-kit.ts' as string)) as typeof import('../../../src/entities/railway/rail-kit.ts');
+const layout = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
+const rail = (await import(
+  '/src/entities/railway/rail-kit.ts' as string
+)) as typeof import('../../../src/entities/railway/rail-kit.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const completed = () => (railRead()?.ready() ? line2Completed(rw()) : 0);
 const until = performance.now() + 15000;
-while ((!inspectRailwayLegacy()?.ready || (inspectRailwayLegacy()?.line2?.completed ?? 0) < 5) && performance.now() < until)
-  await wait(50);
-const state = inspectRailwayLegacy();
-if (!state?.ready || !state.line2 || state.line2.completed < 5 || !me.body)
-  throw new Error('B5-B8 requires an accepted Q5-complete --rail-seed');
+while (completed() < 5 && performance.now() < until) await wait(50);
+const state = inspectRailway();
+if (!state || completed() < 5 || !me.body) throw new Error('B5-B8 requires an accepted Q5-complete --rail-seed');
 const mode = new URLSearchParams(location.search).get('b58at') ?? 'q6';
 let p: { x: number; y: number; z: number }, target: { x: number; y: number; z: number };
 if (mode === 'apron') {
@@ -60,5 +65,16 @@ const camera: [number, number, number] =
 const aim: [number, number, number] = [target.x, target.y, target.z];
 window.__debugCam!.set(camera, aim, 65);
 setTimeout(() => window.__debugCam!.set(camera, aim, 65), 100);
-console.log(`BFIVE ${mode} ${JSON.stringify({ line2: state.line2, view: state.line2View })}`);
+const w = rw();
+console.log(
+  `BFIVE ${mode} ${JSON.stringify({
+    line2: {
+      ...railRow(w),
+      active: line2Active(w),
+      completed: line2Completed(w),
+      completions: line2Jobs(w).map((j) => j.job.completion),
+    },
+    view: state.line2View,
+  })}`,
+);
 export {};

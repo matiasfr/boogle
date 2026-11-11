@@ -3,9 +3,9 @@
 // &railLag=200 (added round trip on the railway's own messages), for example:
 //   npm run look -- --eval dev/look/evals/railway-instant.ts --action dev/look/evals/railway-instant-act.ts \
 //     --query 'shot=play&railLag=200' --video --seconds 16 --name instant-200
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { accounts, inspectRailway, rail, railPhase, railRead, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { fallArrival } = (await import(
   '/src/fall/arrival.ts' as string
@@ -20,14 +20,15 @@ const bot = makeBot({
     throw new Error('Instant-feedback capture needed recovery');
   },
 });
-const read = () => inspectRailwayLegacy()!;
+const read = () => inspectRailway()!;
+const phase = () => railPhase(rw());
 const need = async (fn: () => unknown, what: string) => {
   if (!(await bot.until(fn, 300000))) throw new Error(what);
 };
-if (!(await bot.until(() => !!me.body && inspectRailwayLegacy()?.ready, 300000))) {
-  const s = inspectRailwayLegacy();
+if (!(await bot.until(() => !!me.body && railRead()?.ready(), 300000))) {
+  const r = railRead();
   throw new Error(
-    `The railway never became ready: ${JSON.stringify(s && { status: s.status, connected: s.connected, synced: s.synced, epoch: s.epoch, accounts: s.accounts.length })}`,
+    `The railway never became ready: ${JSON.stringify(r && { status: r.status(), connected: r.debug().connected, synced: r.debug().synced, epoch: r.debug().epoch, accounts: accounts(r.world()).length })}`,
   );
 }
 await need(() => !fallArrival.active && me.coyote > 0 && !me.swimming, 'The arrival never landed');
@@ -36,13 +37,13 @@ for (let i = 0; i < PATH_SAMPLES[0]!.length; i += 3) {
   if (!(await bot.walk(point[0] + layout.ORIGIN.x, point[1]))) throw new Error('Opening path blocked');
 }
 const machine = read().machine;
-if (read().phase === 'asleep' && !(await bot.use(machine.x, machine.z, 'wake the machine', /^Wake it up$/)))
+if (phase() === 'asleep' && !(await bot.use(machine.x, machine.z, 'wake the machine', /^Wake it up$/)))
   throw new Error('Wake was not offered');
 // Two frames after the press (the hands read it on the next frame): well inside one 100 ms leg of a 200 ms trip.
 const pressedAt = performance.now();
 await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-const wakeAtPress = { phase: read().phase, ms: Math.round(performance.now() - pressedAt), pending: read().pending };
-await need(() => read().phase === 'idle', 'The machine never woke');
+const wakeAtPress = { phase: phase(), ms: Math.round(performance.now() - pressedAt), pending: read().pending };
+await need(() => phase() === 'idle', 'The machine never woke');
 // The wake reveals the multi-axe; it holds the player until dismissed with Interact, as the route bot does.
 await need(() => read().reward.showing, 'The multi-axe reveal never showed');
 await bot.wait(1600);
@@ -69,7 +70,7 @@ console.log(
   `RAILWAY INSTANT setup ${JSON.stringify({
     tree: tree.id,
     wakeAtPress,
-    awake: read().awake,
+    awake: rail(rw()).awake,
     lag: new URLSearchParams(location.search).get('railLag'),
   })}`,
 );

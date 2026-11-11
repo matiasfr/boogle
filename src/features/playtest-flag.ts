@@ -9,17 +9,19 @@ import { registerAction } from '../player/controls.ts';
 import { me } from '../player/player.ts';
 import { inv } from '../player/inventory.ts';
 import { carry } from '../physics/platforms.ts';
-import { railwayRead } from '../entities/railway/state.ts';
+import { railwayWorldRead } from '../entities/railway/state.ts';
+import { account } from '../sim/railway-rows.ts';
 import { uiSound } from '../ui/ui-sound.ts';
 
 function flag() {
   if (!me.entered || !me.body) return;
   const p = me.body.position;
-  const r = railwayRead();
-  const logs = r?.carry ?? 0,
-    rails = r?.railsCarry ?? 0,
-    stone = r?.stoneCarry ?? 0,
-    big = r?.foot ? 'footing' : null;
+  const r = railwayWorldRead();
+  const mine = r && account(r.world(), r.pid);
+  const logs = mine?.carry ?? 0,
+    rails = mine?.rails ?? 0,
+    stone = mine?.stone ?? 0,
+    big = mine?.foot ? 'footing' : null;
   const loaded = !!inv.held || logs + rails + stone > 0 || big !== null;
   playMark('flag', {
     y: Math.round(p.y * 10) / 10,

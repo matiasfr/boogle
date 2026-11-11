@@ -3,9 +3,9 @@
 // the next run can frame one with --cam/--look.
 //   npm run look -- --rail-seed trains-on --eval dev/look/evals/railway-glide-map.ts --until window.__placeDone \
 //     --cam <face + 1.2 m out> --look <face> --name glide-map
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, railReady } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const page = window as Window & { __placeDone?: boolean };
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,7 +16,7 @@ const until = async (ready: () => boolean, label: string, timeout: number) => {
     await wait(50);
   }
 };
-await until(() => !!inspectRailway()?.ready, 'railway mounted', 60000);
+if (!(await railReady(60000))) throw new Error('GLIDE MAP timed out: railway mounted');
 background(
   (async () => {
     // The halts' fields ride in line2View at run time (view.ts) but not in its declared type.

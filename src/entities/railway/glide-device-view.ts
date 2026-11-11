@@ -6,7 +6,8 @@
 // finder's card plays on their own accepted (predicted) take; everyone else's flourish is ability-arrival.ts. Nothing
 // here grants anything.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { V3 } from '../../physics/engine.ts';

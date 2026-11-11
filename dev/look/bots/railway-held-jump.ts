@@ -9,7 +9,7 @@
 //     --until window.__placeDone --action dev/look/evals/railway-held-jump-act.ts --video --seconds 9
 import { me, cam } from '../../../src/player/player.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
-import { inspectRailwayLegacy } from '../../../src/entities/railway/state.ts';
+import { inspectRailway, rail, rw, railRead } from '../rail-read.ts';
 import { teleport } from '../../../src/physics/engine.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -32,25 +32,24 @@ const at = { x: 0, y: 0, z: 0 };
 const mode = new URLSearchParams(location.search).get('heldjump') ?? 'flat';
 
 export async function stage() {
-  await until(() => !!inspectRailwayLegacy()?.ready && !!me.body, 'railway ready', 60000);
+  await until(() => !!railRead()?.ready() && !!me.body, 'railway ready', 60000);
   const b = me.body!;
   await until(() => me.coyote > 0, 'landed', 10000);
   const spawn = { x: b.position.x, y: b.position.y, z: b.position.z };
   // The double jump is a find, not a seed fact: take it at its device as gpu-portability.ts does (staging only).
-  if (!inspectRailwayLegacy()!.jump) {
-    const d = inspectRailwayLegacy()!.reward.jumpDevice;
+  if (!rail(rw()).jump) {
+    const d = inspectRailway()!.reward.jumpDevice;
     teleport(b, d.x, d.y + 0.5, d.z);
     b.velocity.set(0, 0, 0);
     await until(() => interactTarget()?.id === 'railway-jump-device', 'jump device target', 5000);
     triggerAction('interact', 'down');
     triggerAction('interact', 'up');
-    await until(() => inspectRailwayLegacy()!.jump, 'accepted jump unlock', 5000);
+    await until(() => rail(rw()).jump, 'accepted jump unlock', 5000);
     await wait(2000);
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
-    await until(() => !inspectRailwayLegacy()!.reward.showing, 'jump reveal dismissed', 5000);
+    await until(() => !inspectRailway()!.reward.showing, 'jump reveal dismissed', 5000);
   }
-  const s = inspectRailwayLegacy()!;
   if (mode !== 'flat') teleport(b, SUMMIT.x + 2.5, SUMMIT.y + PLAYER_R + 0.2, SUMMIT.z - 1);
   else teleport(b, spawn.x, spawn.y + 0.2, spawn.z);
   b.velocity.set(0, 0, 0);
@@ -62,13 +61,13 @@ export async function stage() {
   at.z = b.position.z;
   for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
     if (panel.style.zIndex === '9999' && panel.style.whiteSpace === 'pre') panel.style.display = 'none';
-  console.log(`HELDJUMP staged ${JSON.stringify({ at, glide: s.glide })}`);
+  console.log(`HELDJUMP staged ${JSON.stringify({ at, glide: rail(rw()).glide })}`);
   page.__placeDone = true;
 }
 
 export async function hold() {
   const b = me.body!;
-  const jumps = inspectRailwayLegacy()!.reward.tools.jumps;
+  const jumps = inspectRailway()!.reward.tools.jumps;
   const cliff = mode === 'cliff';
   if (cliff) {
     window.__debugCam?.clear(); // the game's follow camera: the drop and the canopy read behind you
@@ -76,15 +75,15 @@ export async function hold() {
     input.keys.add('KeyW');
   }
   pressJump();
-  if (cliff && inspectRailwayLegacy()!.glider.owned) {
+  if (cliff && inspectRailway()!.glider.owned) {
     await wait(120);
     triggerAction('glide', 'down'); // armed while you rise
     triggerAction('glide', 'up');
-    if (!inspectRailwayLegacy()!.glider.open) throw new Error('HELDJUMP the Glide action did not open the canopy');
+    if (!inspectRailway()!.glider.open) throw new Error('HELDJUMP the Glide action did not open the canopy');
     await wait(130);
   } else await wait(250); // the first jump is still rising, and Jump is still held
   pressJump();
-  await until(() => inspectRailwayLegacy()!.reward.tools.jumps === jumps + 1, 'the air jump', 1000);
+  await until(() => inspectRailway()!.reward.tools.jumps === jumps + 1, 'the air jump', 1000);
   const t0 = performance.now();
   let top = 0,
     topAt = 0;
@@ -105,8 +104,8 @@ export async function hold() {
     top: +top.toFixed(2),
     topAtMs: Math.round(topAt),
     endRise: +(b.position.y - at.y).toFixed(2),
-    glide: inspectRailwayLegacy()!.glide,
-    canopy: inspectRailwayLegacy()!.glider.open,
+    glide: rail(rw()).glide,
+    canopy: inspectRailway()!.glider.open,
     trace,
   };
   page.__heldJump = result;

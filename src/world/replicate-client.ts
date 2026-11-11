@@ -1,6 +1,6 @@
 // Replication core, client side (docs/plans/replication.md, sections 1-2): the mirror of what the server sent, and
 // the prediction hooks. Headless and pure. The railway mirrors through it (R1a), and its adapter predicts with
-// createPredictor (R1b, src/adapters/railway.ts), settling acks and refusals itself rather than through attach.
+// createPredictor (R1b, src/adapters/railway-session.ts), settling acks and refusals itself rather than through attach.
 //
 //   const mirror = createMirror([treeSchema, pileSchema])
 //   mirror.apply(packet, atMs)        a server 's' packet (./replicate.ts). Validated whole before anything changes;
@@ -24,7 +24,7 @@
 //   p.state()                         predicted state: clone(confirmed()) with pending actions replayed by the same
 //                                     pure apply the server uses; rebuilt only after a packet or a new action
 //   p.pending() / p.stalled(atMs)     actions still unconfirmed / those pending longer than STALL_MS (the stall cue)
-//   p.confirm(ack) / p.reject(id)     settle actions (the owner reads them off packets: src/adapters/railway.ts)
+//   p.confirm(ack) / p.reject(id)     settle actions (the owner reads them off packets: src/adapters/railway-session.ts)
 //   p.invalidate()                    the confirmed base changed (a packet applied): rebuild on the next read
 import { createStepEstimate } from './room-clock.ts';
 import {

@@ -10,7 +10,12 @@
 import { INV } from './lib/world.ts';
 import type { T } from './run.ts';
 
-const READ = `const { inspectRailwayLegacy } = await import('/src/entities/railway/state.ts'); const r = inspectRailwayLegacy();`;
+// In the page: `r` is the view's inspection (session scalars, the scene's trees and reward); the world's facts are rows
+// and queries: `carry()` is this player's back (the account row), `phase()` the machine's.
+const READ = `const { inspectRailway, railBack, railRead, railPhase, rw } = await import('/dev/look/rail-read.ts');
+  const r = inspectRailway();
+  const carry = () => (railRead() ? railBack().carry : -1);
+  const phase = () => (railRead() ? railPhase(rw()) : null);`;
 const shown = (sel: string) =>
   `(() => { const e = document.querySelector('${sel}'); return !!e && !e.closest('[hidden]'); })()`;
 const PROMPT = `(document.querySelector('.prompt:not([hidden]) .prompt-chip')?.textContent ?? '')`;
@@ -19,7 +24,7 @@ const CARRY = `(async () => { ${READ}
   return { slots: document.querySelectorAll('.carry-slot[data-material="logs"]').length,
     label: document.querySelector('.carry-tag')?.getAttribute('aria-label') ?? '',
     seen: Number(document.querySelector('.carry-tag')?.style.opacity || 0),
-    carry: r?.carry ?? -1, pending: r?.pending ?? -1 }; })()`;
+    carry: carry(), pending: r?.pending ?? -1 }; })()`;
 const CONFIRMED = (n: string) =>
   `(async () => { const c = await ${CARRY}; return c.pending === 0 && c.carry ${n} && c.slots === c.carry && c.seen > 0; })()`;
 
@@ -48,7 +53,7 @@ export default {
         content: '.hud-tl, .hud-tr, .reticle, .touch:not(body), .lobby, .splash { display: none !important }',
       });
       const ready = await g.waitFor(
-        `(async () => { ${READ} return window.boogle.me.entered && !!window.boogle.me.body && !!r?.ready && r.phase === 'idle' && !r.reward.showing; })()`,
+        `(async () => { ${READ} return window.boogle.me.entered && !!window.boogle.me.body && !!r?.ready && phase() === 'idle' && !r.reward.showing; })()`,
         { timeout: 60000 },
       );
       t.check(`${tag}: in a room seeded awake`, ready >= 0, `${ready} ms`);
@@ -100,11 +105,11 @@ export default {
       t.check(`${tag}: a press squashes the prompt`, !!pressed);
       // Chop on at a person's pace until three logs are on your back.
       const chopped = await g.eval(`${INV} ${READ}
-        for (let k = 0; k < 80 && inspectRailwayLegacy().carry < 3; k++) {
-          if (inspectRailwayLegacy().pending === 0) { H.interactDown(); H.interactUp(); }
+        for (let k = 0; k < 80 && carry() < 3; k++) {
+          if (inspectRailway().pending === 0) { H.interactDown(); H.interactUp(); }
           await new Promise((res) => setTimeout(res, 380));
         }
-        return inspectRailwayLegacy().carry;`);
+        return carry();`);
       const filled = await g.waitFor(CONFIRMED('>= 3'), { timeout: 15000 });
       const after = await g.eval(`return ${CARRY};`);
       t.check(

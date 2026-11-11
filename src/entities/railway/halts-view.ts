@@ -7,7 +7,7 @@
 // the pier is laid. Local over the server's request bits (`Line.req`, each train's `req`).
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../../sim/railway-lines.ts';

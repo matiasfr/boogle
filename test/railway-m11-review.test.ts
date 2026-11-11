@@ -12,8 +12,7 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { railwayOf } from './helpers/railway-model.ts';
-import { railwayAt } from '../src/world/railway-replicate.ts';
+import { railwayModelAt, railwayOf } from './helpers/railway-model.ts';
 import * as old from '../src/sim/railway.ts';
 import * as q1 from '../src/sim/railway-queries-line1.ts';
 import * as rows from '../src/sim/railway-rows.ts';
@@ -87,7 +86,7 @@ for (const stage of ['fresh', 'q6-done', 'ring-joined'] as const)
     const tick = r.sync.world.tick;
     for (const [k, p] of packets.entries()) {
       assert.ok(m.mirror.apply(p, 0), `chunk ${k} applies`);
-      const was = probeWas(railwayAt(m.confirmed(), tick), tick);
+      const was = probeWas(railwayModelAt(m.confirmed(), tick), tick);
       let now: unknown;
       try {
         now = probe(mirrored(m), tick);
@@ -133,7 +132,7 @@ test('M11 review: after a refill swaps in, and during it, the probes read the re
     assert.ok(m.mirror.apply(p, 0), `refill chunk ${k}`);
     assert.deepEqual(
       probe(mirrored(m), tick),
-      probeWas(railwayAt(m.confirmed(), tick), tick),
+      probeWas(railwayModelAt(m.confirmed(), tick), tick),
       `refill chunk ${k} of ${packets.length}`,
     );
   }

@@ -42,9 +42,9 @@ import {
   depotNeed,
   FOOT,
   forgeId,
-  job,
+  jobId,
   qActive,
-  qjob,
+  qjobId,
   railId,
   scheduleOf,
   worksId,
@@ -81,7 +81,7 @@ function awayCredit(w: World, ticks: number, tick: number) {
     // The cart's trips while away, each transfer as the tick would make it: the load under way lands, then whole trips
     // mint logs at the camp and move rails off the (credited) forge rack, and land them. It is home again after.
     cartUnload(w);
-    const { logs, rails } = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
+    const { logs, rails } = depotNeed(w, k, w.get(QJob, qjobId(w, k))!);
     const n = Math.min(logs, trips * CART.load);
     cartMint(w, k, n);
     cartTakeRails(w, Math.min(rails, trips * CART.rails, w.get(Forge, fid)!.rack));
@@ -106,14 +106,14 @@ export const resume = defineSystem(
     clock.resumeMarker = marker;
     awayCredit(w, yard, tick);
     const slot = activeStation(w),
-      id = job(w, slot);
+      id = jobId(w, slot);
     const j = w.get(Job, id)!;
     if (j.start < 0 || j.completion) {
       const k = qActive(w);
       if (k < 0) return 0;
-      const q = w.get(QJob, qjob(w, k))!;
+      const q = w.get(QJob, qjobId(w, k))!;
       if (q.start < 0 || q.completion) return 0;
-      const run = w.mut(QJobRun, qjob(w, k))!;
+      const run = w.mut(QJobRun, qjobId(w, k))!;
       const n = Math.min(ticks, scheduleOf(LINE2_STATIONS[k]!, q).totalTicks - run.elapsed);
       run.elapsed += n;
       layLine2(w, tick);

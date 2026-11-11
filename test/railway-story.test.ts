@@ -7,7 +7,7 @@ import { install as installRailway } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { homeLand } from './helpers/land.ts';
 import { QJob } from '../src/sim/railway-components.ts';
-import { qjob } from '../src/sim/railway-queries.ts';
+import { qjobId } from '../src/sim/railway-queries.ts';
 import { storyAct } from '../src/sim/railway-queries-story.ts';
 
 test('the act turns over when Q5 is laid, not before', () => {
@@ -17,8 +17,8 @@ test('the act turns over when Q5 is laid, not before', () => {
   api.touchAll();
   const w = api.world();
   assert.equal(storyAct(w), 1, 'a new room');
-  for (let k = 0; k < 4; k++) w.mut(QJob, qjob(w, k))!.completion = 1;
+  for (let k = 0; k < 4; k++) w.mut(QJob, qjobId(w, k))!.completion = 1;
   assert.equal(storyAct(w), 1, 'Q1 to Q4 laid');
-  w.mut(QJob, qjob(w, 4))!.completion = 1;
+  w.mut(QJob, qjobId(w, 4))!.completion = 1;
   assert.equal(storyAct(w), 2, 'Q5 laid');
 });

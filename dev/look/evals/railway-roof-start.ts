@@ -7,15 +7,14 @@ const { me } = (await import('/src/player/player.ts' as string)) as typeof impor
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const w = window as Window & { __placeDone?: boolean };
 const bot = makeBot();
 background(
   (async () => {
-    await bot.until(() => inspectRailway()?.ready && me.body && me.coyote > 0, 300000, 'seed arrived');
+    if (!(await railReady(300000))) throw new Error('railway-roof-start: the railway never became ready');
+    await bot.until(() => me.body && me.coyote > 0, 300000, 'seed arrived');
     // Beside the halt, on the track side of its platform edge (centre 1363.61, -163.53; lateral axis 0.519, 0.855).
     const x = 1363.39,
       z = -166.79;

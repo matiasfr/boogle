@@ -1,16 +1,8 @@
 // Read-only observation of the mounted railway. Debug setup lives outside the production entry.
-import type { RailwayAdapter, RailwayInspection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 
 type RailwayRead = RailwayAdapter['read'];
 
-let read: (() => RailwayInspection) | null = null;
-/** The adapter's cached read (the same object until something changes): cheap enough for every frame, unlike
- * inspectRailway, which walks the railway's scene. Null until the railway is mounted. */
-export const railwayRead = () => read?.() ?? null;
-/** Lifecycle owner only. */
-export function setRailwayRead(fn: (() => RailwayInspection) | null) {
-  read = fn;
-}
 let worldRead: RailwayRead | null = null;
 /** The adapter's read facade (docs/plans/ecs-migration-railway.md, M8): the world the views see now, its tick, the
  * local pid and the session status, for rows and queries. Null until the railway is mounted. */
@@ -29,6 +21,19 @@ export type RailwaySession = {
   stalled: ReturnType<RailwayRead['stalled']>;
   tick: number;
 } & ReturnType<RailwayRead['debug']>;
+/** The session's scalars, read now. debug()'s fields are copied as they are defined, so `hash` stays a getter: the
+ * mirror is hashed only when read. The view inspection and the peer-test probe both take them from here. */
+export function railwaySession(read: RailwayRead): RailwaySession {
+  const out = {
+    pid: read.pid,
+    status: read.status(),
+    ready: read.ready(),
+    pending: read.pending(),
+    stalled: read.stalled(),
+    tick: read.tick(),
+  };
+  return Object.defineProperties(out, Object.getOwnPropertyDescriptors(read.debug())) as RailwaySession;
+}
 /** What the railway's views hold and no component does: the scene walk. */
 export type RailwayScene = {
   owned: { meshes: number; bodies: number; geometries: number; animations: number };
@@ -71,15 +76,6 @@ export const inspectRailway = () => current?.() ?? null;
 /** Lifecycle owner only; observers receive detached scalar state from inspectRailway. */
 export function setRailwayView(view: (() => RailwayViewInspection) | null) {
   current = view;
-}
-/** Temporary (M12c to M12e): today's wide object, the adapter's read model under the scene walk. Only the files in
- * INSPECT_LEGACY_IMPORTERS (dev/lint/policy.ts) may call it, and that list only loses lines; M12e deletes it. */
-export type RailwayLegacyInspection = RailwayInspection & RailwayScene;
-let legacy: (() => RailwayLegacyInspection) | null = null;
-export const inspectRailwayLegacy = () => legacy?.() ?? null;
-/** Lifecycle owner only. */
-export function setRailwayLegacy(view: (() => RailwayLegacyInspection) | null) {
-  legacy = view;
 }
 
 let recover: (() => void) | null = null;

@@ -42,7 +42,7 @@ import {
   kitStop,
   lineId,
   q7Laid,
-  qjob,
+  qjobId,
   railId,
   shedId,
   stopsOf,
@@ -181,8 +181,8 @@ function trainIO(w: World, headPct: number): TrainIO {
       // The active train-fed job's kit (its bill, up to the kit car's LINE2_KIT) loads onto whichever line 2 train
       // stands at the village while it is owed.
       const kit = kitJob(w);
-      if (r.at === 0 && kit >= 0 && w.get(QJob, qjob(w, kit))!.start < 0) {
-        const need = depotNeed(w, kit, w.get(QJob, qjob(w, kit))!);
+      if (r.at === 0 && kit >= 0 && w.get(QJob, qjobId(w, kit))!.start < 0) {
+        const need = depotNeed(w, kit, w.get(QJob, qjobId(w, kit))!);
         const n = Math.min(LINE2_KIT.logs - r.logs, need.logs);
         const rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
         if (n || rails) {
@@ -196,7 +196,7 @@ function trainIO(w: World, headPct: number): TrainIO {
           if (rails) w.mut(Forge, forgeId(w))!.rack -= rails;
         }
         if (
-          depotNeed(w, kit, w.get(QJob, qjob(w, kit))!).rails > 0 &&
+          depotNeed(w, kit, w.get(QJob, qjobId(w, kit))!).rails > 0 &&
           w.get(Forge, forgeId(w))!.lit >= 0 &&
           tick < r.depart + TRAIN.dwellTicks + TRAIN.kitWaitTicks
         )

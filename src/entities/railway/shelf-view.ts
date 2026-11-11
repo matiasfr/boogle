@@ -3,7 +3,8 @@
 // where that stretch will end (Q4's at the rim). Nothing here transfers material: a take is the adapter's, shown on
 // the press from the prediction and sent back on a correction.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
@@ -11,7 +12,7 @@ import { readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_STATIONS, Q7 } from '../../sim/railway-line2-layout.ts';
 import { q7Spot } from './q7-site.ts';
 import { stockSign } from './stock-sign.ts';
-import { waitsForTrainOn } from './forge-offer.ts';
+import { waitsForTrain } from './forge-offer.ts';
 import { line2Active } from '../../sim/railway-queries-line2.ts';
 import { freeCarryIgnoringBig } from '../../sim/railway-queries-line1.ts';
 import { account, rail } from '../../sim/railway-rows.ts';
@@ -220,7 +221,7 @@ export async function createRailwayShelf(
     update() {
       const w = adapter.read.world();
       const k = line2Active(w);
-      draw(k, k >= 0 ? Math.max(0, rail(w).depotRails - inFlight().rails) : 0, waitsForTrainOn(w, k));
+      draw(k, k >= 0 ? Math.max(0, rail(w).depotRails - inFlight().rails) : 0, waitsForTrain(w, k));
       drawStake(k);
     },
     targets(): Interactable[] {
@@ -228,7 +229,7 @@ export async function createRailwayShelf(
         p = me.body?.position;
       const k = line2Active(w);
       if (!adapter.read.ready() || !p || k < 0 || !LINE2_STATIONS[k]!.shelf || rail(w).depotRails <= 0) return [];
-      if (waitsForTrainOn(w, k)) return [];
+      if (waitsForTrain(w, k)) return [];
       place(k);
       if (Math.hypot(p.x - at.x, p.z - at.z) > REACH) return [];
       return [

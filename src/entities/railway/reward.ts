@@ -3,7 +3,7 @@
 // Construction is Lockstep; eligibility is read-only, claims are personal Local. A claimed hat or scarf goes into the
 // wardrobe (../wardrobe/state.ts), which owns what is worn and shows it to others.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { createBrowserRailwayProfile } from '../../railway-profile-browser.ts';
 import { claimsPruned } from '../../boot/world-reset.ts';
 import { getRoomId } from '../../netplay/net.ts';

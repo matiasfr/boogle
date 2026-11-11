@@ -3,7 +3,8 @@
 // tail dragging, a friend's Help carry lifting it level between two shoulders. The take shows at once like the beam's;
 // everything else follows accepted state.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import type { OwnedView } from '../../render/owned-view.ts';

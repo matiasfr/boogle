@@ -8,17 +8,8 @@
 // test/railway-r4a-views.test.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
-import { specOf } from '../src/sim/tune.ts';
-import { SERVER_ID } from '../src/net/ids.ts';
-import { createSync } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
-import { install as installRailway } from '../src/world/railway-server.ts';
-import { createReplicator } from '../src/world/replicate-server.ts';
-import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
-import { homeLand } from './helpers/land.ts';
 import { buildSeedWorld, type SeedStage } from './helpers/rail.ts';
+import { railRoom } from './helpers/rail-room.ts';
 import { aperture } from '../src/sim/railway-rows.ts';
 import { q7Laid, ringHead } from '../src/sim/railway-queries.ts';
 import { line2Trains } from '../src/sim/railway-queries-line2.ts';
@@ -60,49 +51,16 @@ import {
 import { RING_S } from '../src/entities/railway/line2-path.ts';
 
 // ---------------------------------------------------------------- a client at a seed
-const MOVEMENT = railMovement({ get: (k) => specOf(k)!.def });
+/** The read facade's world of one client that has the seed's state: a room at the seed, stepped until it is ready. */
 function client(stage: SeedStage) {
-  const seed = buildSeedWorld(stage);
-  const sync = createSync();
-  sync.setSelfId('server');
-  const replication = createReplicator();
-  const api = installRailway(sync, installRules(sync, homeLand()), replication);
-  while (sync.world.tick < seed.t) sync.stepWorld(100);
-  api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
-  api.touchAll();
-  api.session('a', 1);
-  const mirror = createRailwayMirror();
-  replication.addClient('a');
-  const adapter = createRailwayAdapter({
-    mirror,
-    movement: () => MOVEMENT,
-    pid: 'a',
-    pose: () => ({ x: T1.x / 100, y: 30, z: T1.z / 100 }),
-    now: () => 1000,
-  });
-  adapter.attach({
-    selfId: 'a',
-    send: () => {},
-    onMessage: (fn) => {
-      fn({ t: 'r:session', to: 'a', epoch: 1, next: 1 }, SERVER_ID);
-      return () => {};
-    },
-    onConnection: () => () => {},
-  });
-  let flushed = -1;
-  const pump = () => {
-    if (sync.roomStep() === flushed) sync.stepWorld(1000 / 60 + 1);
-    const step = (flushed = sync.roomStep());
-    replication.commit(step);
-    replication.flush(step, (_c, _p, json) => assert.ok(mirror.mirror.apply(JSON.parse(json), 0)));
-    adapter.update(1000);
-  };
-  pump();
-  return { adapter, pump };
+  const r = railRoom(buildSeedWorld(stage));
+  const c = r.join('a', 'a');
+  r.ready();
+  return c.adapter;
 }
 
 // ---------------------------------------------------------------- the views' reads, as written
-type Adapter = ReturnType<typeof client>['adapter'];
+type Adapter = ReturnType<typeof client>;
 /** railhead-view.ts `refresh` (opened, set, rack, joined, as the view takes them) and the lookout's `readLifted`
  * (head and joined, then each buoy's lifted flag), read once a frame through the facade. */
 function newReads(adapter: Adapter) {
@@ -121,7 +79,7 @@ function newReads(adapter: Adapter) {
   };
 }
 test('the ring seeds put the railhead where the view draws it', () => {
-  const at = (stage: SeedStage) => newReads(client(stage).adapter);
+  const at = (stage: SeedStage) => newReads(client(stage));
   assert.equal(at('crossing-done').opened, false, 'nothing of the railhead before Q7');
   const laid = at('deck-laid');
   assert.deepEqual([laid.opened, laid.set, laid.head, laid.joined], [true, 0, 0, false]);

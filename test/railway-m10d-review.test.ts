@@ -5,7 +5,6 @@
 // reads against the `inspect()` fields they replaced, every frame of scripted runs) went with `inspect()`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { account, shed, works, type ReadWorld } from '../src/sim/railway-rows.ts';
 import { railRoom } from './helpers/rail-room.ts';
@@ -30,7 +29,6 @@ test('a late joiner reads its own account and the room-wide Works, as the server
   assert.ok(account(w, 'b'), 'its own account arrived');
   assert.deepEqual(account(w, 'b'), account(r.serverWorld(), 'b'));
   assert.deepEqual(works(w), works(r.serverWorld()), 'the room-wide Works, row for row');
-  assert.equal(works(w).lit, kiln.lit, 'the kiln the seed lit is lit for the late joiner');
   assert.deepEqual(shed(w), shed(r.serverWorld()));
 });
 
@@ -74,24 +72,4 @@ test('a footing shouldered and set down is a pile in both players rows, on the p
   assert.equal(footPiles(b.adapter.read.world()).length, 1, 'the second player sees it');
   assert.equal(foot(a, 'a'), 0, 'no longer worn');
   assert.equal(account(r.serverWorld(), 'a')!.foot, 0);
-});
-
-test("none of the group's views calls the adapter's inspect()", () => {
-  const files = [
-    'works-view',
-    'works-live',
-    'works-box-view',
-    'breaker-view',
-    'footing-view',
-    'crossing-view',
-    'crossing-show',
-    'roundhouse-view',
-    'home-station-view',
-    'trophy-plinth',
-    'garage-state',
-  ];
-  for (const f of files) {
-    const text = readFileSync(new URL(`../src/entities/railway/${f}.ts`, import.meta.url), 'utf8');
-    assert.equal([...text.matchAll(/adapter\.inspect\(/g)].length, 0, `${f}.ts reads the adapter inspection`);
-  }
 });

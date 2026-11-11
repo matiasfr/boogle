@@ -1,6 +1,7 @@
 // One accepted line, one machine. Flights and rigid poses display the ledger and never transfer material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
 import { account as accountRow, beam as beamRow, job as jobRow, rail as railRow } from '../../sim/railway-rows.ts';
@@ -16,7 +17,7 @@ import type { FrameCtx } from '../../loop.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { createRailwaySources } from './sources.ts';
 import { createRailwayReward } from './reward.ts';
-import { registerRailwayYouGot, type RailwayScene, type RailwayViewInspection } from './state.ts';
+import { railwaySession, registerRailwayYouGot, type RailwayScene, type RailwayViewInspection } from './state.ts';
 import { createRailwayArrival } from './arrival.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
@@ -612,23 +613,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       return seats.withSeatTargets(targets);
     },
     // The session's scalars and the scene walk; state is read as rows (docs/plans/ecs-m12-m13.md, section 2).
-    inspect: (): RailwayViewInspection => {
-      const read = adapter.read;
-      const out = {
-        pid: read.pid,
-        status: read.status(),
-        ready: read.ready(),
-        pending: read.pending(),
-        stalled: read.stalled(),
-        tick: read.tick(),
-        ...scene(),
-      };
-      // debug()'s fields copied as they are defined, so `hash` stays a getter: the mirror is hashed only when read.
-      const debug = read.debug();
-      return Object.defineProperties(out, Object.getOwnPropertyDescriptors(debug)) as typeof out & typeof debug;
-    },
-    /** Temporary (M12c to M12e): the adapter's wide object under the scene walk, for INSPECT_LEGACY_IMPORTERS. */
-    inspectLegacy: () => ({ ...adapter.inspect(), ...scene() }),
+    // Assigned onto the session object, so its `hash` stays a getter.
+    inspect: (): RailwayViewInspection => Object.assign(railwaySession(adapter.read), scene()),
     dispose: () => owner.dispose(),
   };
   function scene() {

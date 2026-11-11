@@ -2,7 +2,7 @@
 // second track and Q7's deck (./ring-deck.ts), laid from the room's rows once Q7 starts.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { createRingDeck } from './ring-deck.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';

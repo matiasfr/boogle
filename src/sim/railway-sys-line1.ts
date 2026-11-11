@@ -17,7 +17,7 @@ import {
   forgeId,
   free,
   held,
-  job,
+  jobId,
   railId,
   ready,
   roomFor,
@@ -98,7 +98,7 @@ export const mine = defineSystem(
 /** Funds a full line-one station (railway-line fund): the bill moves to allocation and the stretch starts. */
 function fund(w: World, slot: number, tick: number, timing: LineTiming) {
   const spec = LINE1_STATIONS[slot]!;
-  const id = job(w, slot);
+  const id = jobId(w, slot);
   const j = w.get(Job, id)!;
   if (
     j.start >= 0 ||
@@ -124,14 +124,14 @@ export const deposit = defineSystem(
   (w, { a: aid, e, tick, timing }: Act) => {
     const slot = activeStation(w),
       spec = LINE1_STATIONS[slot]!;
-    const j = w.get(Job, job(w, slot))!;
+    const j = w.get(Job, jobId(w, slot))!;
     if (!ready(w, tick) || e.kind === 2 || e.station !== spec.id || j.start >= 0 || j.completion) return 0;
     const stone = e.kind === 1;
     const a = w.mut(Account, aid)!;
     const carry = stone ? a.stone : a.carry;
     const n = Math.min(e.n!, carry, spec.bill[stone ? 1 : 0] - (stone ? j.stoneStock : j.stock));
     if (n === 0) return 0;
-    const jm = w.mut(Job, job(w, slot))!;
+    const jm = w.mut(Job, jobId(w, slot))!;
     if (stone) {
       a.stone = carry - n;
       jm.stoneStock += n;
@@ -220,7 +220,7 @@ export const axe = defineSystem('rail.axe', { reads: [Forge], writes: [Rail], ph
 /** The great beam is needed: T3 active and unfunded, the machine ready. Your first axe fells the great tree once
  * Station 3 opens; beam and logs fund it in either order (7 November). */
 const beamNeeded = (w: World, tick: number) =>
-  ready(w, tick) && activeStation(w) === 2 && w.get(Job, job(w, 2))!.start < 0;
+  ready(w, tick) && activeStation(w) === 2 && w.get(Job, jobId(w, 2))!.start < 0;
 export const beamChop = defineSystem(
   'rail.beamChop',
   { reads: [Rail, Job], writes: [Beam], phase: 'act', order: 9 },
@@ -316,7 +316,7 @@ export const jump = defineSystem('rail.jump', { writes: [Rail], phase: 'act', or
 });
 export function layLine1(w: World, tick: number) {
   const slot = activeStation(w),
-    id = job(w, slot);
+    id = jobId(w, slot);
   const j = w.get(Job, id)!;
   if (j.start < 0 || j.completion) return;
   const spec = LINE1_STATIONS[slot]!,

@@ -7,9 +7,9 @@ const flags = (await import('/src/proto/flags.ts' as string)) as typeof import('
 if (!flags.productionRailway) throw new Error('Needs the default entry');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { play } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { forge, inspectRailway, railRead } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const hide = () =>
   // The bot's on-screen notes would cover the forge.
   document.querySelectorAll<HTMLElement>('div').forEach((d) => {
@@ -17,7 +17,8 @@ const hide = () =>
   });
 // The moment the forge lights (not when the bot notices): frame it and start the capture.
 const watch = setInterval(() => {
-  if ((inspectRailwayLegacy()?.line2?.forge.lit ?? -1) < 0) return;
+  const read = railRead();
+  if (!read || forge(read.world()).lit < 0) return;
   clearInterval(watch);
   hide();
   window.__debugCam?.set([899, 26, 22], [905, 21, -3], 60);
@@ -26,18 +27,7 @@ const watch = setInterval(() => {
   const t0 = performance.now();
   let last = '';
   const log = setInterval(() => {
-    const f = (
-      inspectRailwayLegacy() as unknown as {
-        line2View?: {
-          forgeFinish?: {
-            stage: string;
-            poles: number;
-            beams: string[];
-            crew: { x: number; z: number; here: boolean }[] | null;
-          };
-        };
-      }
-    )?.line2View?.forgeFinish;
+    const f = inspectRailway()?.line2View.forgeFinish;
     if (!f) return;
     const now = `${f.stage} poles=${f.poles.toFixed(1)} roof=${f.beams.filter((b) => b === 'roof').length}/8`;
     if (now !== last) console.log(`PLAY forge ${((performance.now() - t0) / 1000).toFixed(1)}s ${now}`);

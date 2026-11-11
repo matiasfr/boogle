@@ -4,9 +4,9 @@
 // playthrough's `--to forge-lit` segment); `&forge=before` only frames the forge (the before still).
 // FORGE lines: the finish's stage as it goes.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, railReady } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -24,7 +24,7 @@ function check(ok: unknown, label: string) {
   if (!ok) throw new Error(`FORGE FAIL ${label}`);
 }
 async function run() {
-  check(await bot.until(() => !!me.body && !!inspectRailway()?.ready, 60000, 'landed'), 'landed');
+  check((await railReady(60000)) && (await bot.until(() => !!me.body, 60000, 'landed')), 'landed');
   if (query.get('forge') === 'before') {
     teleport(me.body!, 921, 20, 8);
     frame();
