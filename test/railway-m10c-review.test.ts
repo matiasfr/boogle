@@ -138,24 +138,12 @@ function room(seed?: Seed) {
 }
 
 // ---------------------------------------------------------------- line2-view.ts's memo, as written on the branch
-/** line2-view.ts `seen()`, `activeIn`, `jobsIn` (createRailwayLine2, the `rd` block): kept for a world and a tick. */
+/** line2-view.ts after the review fix: no memo; the active stretch and the jobs are worked out at the head of each entry
+ * point (`line2Active(w)`, `line2Jobs(w, rd.tick())`). Kept under the memo's name so the attacks below read as before. */
 function viewMemo(adapter: Adapter) {
   const rd = adapter.read;
-  let seenW: ReadWorld | null = null,
-    seenAt = -1,
-    seenActive = -1,
-    seenJobs: QJobRead[] | null = null;
-  function seen(w: ReadWorld) {
-    const at = rd.tick();
-    if (w !== seenW || at !== seenAt) {
-      seenW = w;
-      seenAt = at;
-      seenActive = line2Active(w);
-      seenJobs = null;
-    }
-  }
-  const activeIn = (w: ReadWorld) => (seen(w), seenActive);
-  const jobsIn = (w: ReadWorld) => (seen(w), (seenJobs ??= line2Jobs(w, seenAt)));
+  const activeIn = (w: ReadWorld) => line2Active(w);
+  const jobsIn = (w: ReadWorld): QJobRead[] => line2Jobs(w, rd.tick());
   return { activeIn, jobsIn };
 }
 type Memo = ReturnType<typeof viewMemo>;
@@ -399,10 +387,11 @@ test("line2-view's forgeTake flight aims where main's did after the back's rails
     const a = r.join('a', 'a', 4);
     r.ready();
     r.run(5);
-    const flights: { branch: number; main: () => number }[] = [];
+    const flights: { branch: () => number; main: () => number }[] = [];
     a.adapter.onAccepted((e) => {
       if (e.op !== 'rail.forgeTake' || e.pid !== a.pid) return;
-      const branch = account(a.adapter.read.world(), a.pid)?.rails ?? 0;
+      // The view's aim reads the back's rails live, each frame of the flight, from that frame's world.
+      const branch = () => account(a.adapter.read.world(), a.pid)?.rails ?? 0;
       flights.push({ branch, main: () => a.adapter.inspect().railsCarry });
     });
     const took = a.adapter.forgeTake();
@@ -413,7 +402,7 @@ test("line2-view's forgeTake flight aims where main's did after the back's rails
     if (!took || !changed || !flights.length) continue;
     // The first flight is still in the air (0.3 s, about 18 frames): its aim runs now, each frame.
     const first = flights[0]!;
-    assert.equal(first.branch, first.main(), `${stage}: the first take's rails aim at the bundle slot main aims at`);
+    assert.equal(first.branch(), first.main(), `${stage}: the first take's rails aim at the bundle slot main aims at`);
     return;
   }
   assert.fail(`no seed let the back's rails change during a forge take's flight: ${tried.join('; ')}`);

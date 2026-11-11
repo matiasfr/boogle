@@ -135,25 +135,11 @@ export async function createRailwayLine2(
     STONE2 = '#b6a080',
     BRASS = '#c79a3e';
   const rd = adapter.read;
-  // What this view works out from the rows is worked out once for a world and a tick (a press makes a new predicted
-  // world, a packet a new tick), however many of its parts ask: the stretch taking materials, and line 2's jobs with
-  // their timed fields at the tick. A job row in the list is live (rows are written in place), and nothing here holds
-  // one across a call that can run a rule.
-  let seenW: ReadWorld | null = null,
-    seenAt = -1,
-    seenActive = -1,
-    seenJobs: QJobRead[] | null = null;
-  function seen(w: ReadWorld) {
-    const at = rd.tick();
-    if (w !== seenW || at !== seenAt) {
-      seenW = w;
-      seenAt = at;
-      seenActive = line2Active(w);
-      seenJobs = null;
-    }
-  }
-  const activeIn = (w: ReadWorld) => (seen(w), seenActive);
-  const jobsIn = (w: ReadWorld) => (seen(w), (seenJobs ??= line2Jobs(w, seenAt)));
+  // The stretch taking materials and line 2's jobs (their timed fields at the frame's tick) are worked out once at the
+  // head of each entry point (update, step, restore, targets, accepted, the panel's state) and passed down: no memo,
+  // so a packet that writes the mirror in place is seen by the next read. A job row in the list is live (rows are
+  // written in place), and nothing here holds one across a call that can run a rule.
+  const jobsOf = (w: ReadWorld) => line2Jobs(w, rd.tick());
 
   // ---------------------------------------------------------------- the forge
   // The furnace/output opening stays clear in the front wall, as in the prototype: the lit mouth shows through it.
@@ -557,28 +543,26 @@ export async function createRailwayLine2(
     const lit = forgeRow(rd.world()).lit;
     return lit >= 0 && rd.tick() >= lit + LINE2_FORGE.turnTicks;
   };
-  const activeIndex = () => {
-    const active = activeIn(rd.world());
+  const activeIndex = (active: number) => {
     // Q6's frame once the active job is not the machine's (all laid, or Q7): the machine parks at the pier's end.
     return machined(active) ? active : MACHINED - 1;
   };
-  const jobElapsed = (k: number) => {
-    const w = rd.world(),
-      { job, run } = jobsIn(w)[k]!;
-    return run.elapsed + (k === activeIn(w) && job.start >= 0 && !job.completion && rd.ready() ? sinceTick * 10 : 0);
+  const jobElapsed = (k: number, active: number, jobs: QJobRead[]) => {
+    const { job, run } = jobs[k]!;
+    return run.elapsed + (k === active && job.start >= 0 && !job.completion && rd.ready() ? sinceTick * 10 : 0);
   };
-  const phaseOf = (k: number) => {
-    const { job, run } = jobsIn(rd.world())[k]!;
+  const phaseOf = (k: number, jobs: QJobRead[]) => {
+    const { job, run } = jobs[k]!;
     if (job.completion) return 'done';
     if (job.start < 0) return 'idle';
     const feed = lineFeed(LINE2_STATIONS[k]!, job);
     const feedEnd = Math.ceil(job.depositMs / 100) + Math.ceil(Math.max(0, ...feed.map((f) => f.landMs)) / 100);
     return run.elapsed < Math.ceil(job.depositMs / 100) ? 'deposit' : run.elapsed < feedEnd ? 'feeding' : 'laying';
   };
-  const head = () => {
-    const k = activeIndex(),
+  const head = (active: number, jobs: QJobRead[]) => {
+    const k = activeIndex(active),
       spec = LINE2_STATIONS[k]!,
-      job = jobsIn(rd.world())[k]!.job;
+      job = jobs[k]!.job;
     if (job.completion) return spec.toCm / 100;
     if (job.start < 0) return spec.fromCm / 100;
     const depositTicks = Math.ceil(job.depositMs / 100);
@@ -586,22 +570,27 @@ export async function createRailwayLine2(
     const feedTicks = Math.ceil(Math.max(0, ...feed.map((f) => f.landMs)) / 100);
     return (
       (spec.fromCm +
-        Math.min(spec.toCm - spec.fromCm, lineLayDistance(jobElapsed(k) - depositTicks - feedTicks, job))) /
+        Math.min(
+          spec.toCm - spec.fromCm,
+          lineLayDistance(jobElapsed(k, active, jobs) - depositTicks - feedTicks, job),
+        )) /
       100
     );
   };
   const panelState = (): PanelState => {
-    const jobs = jobsIn(rd.world());
+    const w = rd.world(),
+      active = line2Active(w),
+      jobs = jobsOf(w);
     let count = 0;
     for (let k = 0; k < jobs.length; k++) {
       const { job, run } = jobs[k]!;
       if (machined(k) && job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, run.elapsed, job);
     }
-    const k = activeIndex(),
+    const k = activeIndex(active),
       job = jobs[k]!.job;
     const before = STRETCH_PAIRS.slice(0, k).reduce((n, pairs) => n + pairs, 0);
     const stock = job.start >= 0 && !job.completion ? STRETCH_PAIRS[k]! - (count - before) : 0;
-    return { phase: phaseOf(k), activeStation: k, panelStock: Math.max(0, stock), panelCount: count };
+    return { phase: phaseOf(k, jobs), activeStation: k, panelStock: Math.max(0, stock), panelCount: count };
   };
   const panels = createRailwayPanelView(
     machine,
@@ -618,10 +607,13 @@ export async function createRailwayLine2(
   );
   function step(dt: number) {
     const previous = visualHead - setback;
-    const k = activeIndex(),
-      job = jobsIn(rd.world())[k]!.job;
+    const w = rd.world(),
+      active = line2Active(w),
+      jobs = jobsOf(w);
+    const k = activeIndex(active),
+      job = jobs[k]!.job;
     const speed = job.cruiseCmPerTick / 10;
-    const laying = phaseOf(k) === 'laying';
+    const laying = phaseOf(k, jobs) === 'laying';
     if (visualHead < targetHead) {
       const s = Math.min(targetHead - visualHead, speed * dt);
       visualHead += s;
@@ -645,7 +637,8 @@ export async function createRailwayLine2(
     deposits = [];
     const w = rd.world(),
       f = forgeRow(w),
-      jobs = jobsIn(w);
+      active = line2Active(w),
+      jobs = jobsOf(w);
     litShown = f.lit;
     pouredShown = f.poured;
     pouring = 0;
@@ -665,11 +658,12 @@ export async function createRailwayLine2(
     farHead.restore(jobs[4]!.job.completion === 1);
     boiler.restore();
     pier.restore(jobs[5]!.job.completion === 1);
-    visualHead = targetHead = working() ? head() : TURN_HEAD;
+    visualHead = targetHead = working() ? head(active, jobs) : TURN_HEAD;
     setback = 2.4;
     if (working()) {
-      const k = activeIndex();
-      if (phaseOf(k) === 'laying') setback = Math.min(machine.F, 2.4 + visualHead - LINE2_STATIONS[k]!.fromCm / 100);
+      const k = activeIndex(active);
+      if (phaseOf(k, jobs) === 'laying')
+        setback = Math.min(machine.F, 2.4 + visualHead - LINE2_STATIONS[k]!.fromCm / 100);
       machine.at(quarry.line, visualHead, 1, setback);
       machine.snap();
     }
@@ -696,7 +690,6 @@ export async function createRailwayLine2(
     boiler.accepted(event);
     if (event.op === 'rail.seaSwitch') playSharedMoment('sea gate', event, pid, () => showSwitch('sea'));
     if (event.op === 'rail.forgeTake') {
-      const railsHeld = account(w, pid)?.rails ?? 0;
       for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
         deposits.push({
           station: -2,
@@ -708,7 +701,8 @@ export async function createRailwayLine2(
             {
               dur: 0.3,
               apex: 0.9,
-              aim: (out) => void bundleOrigin(event.pid, railsHeld, out),
+              // Each frame of the flight, from the world of that frame (your own back's rails, as the view read them live).
+              aim: (out) => void bundleOrigin(event.pid, account(rd.world(), rd.pid)?.rails ?? 0, out),
               land: () => sounds.pop(3, 0.4),
             },
             owner,
@@ -719,7 +713,7 @@ export async function createRailwayLine2(
     if (event.op === 'rail.depotTake') {
       const taken = event.accepted - (event.returned ?? 0);
       const carried = event.carried ?? account(w, event.pid)?.carry ?? 0;
-      const active = activeIn(w),
+      const active = line2Active(w),
         depot = railRow(w).depot;
       for (let n = 0; n < taken; n++) {
         depotSlot(Math.max(0, active), depot + taken - n - 1, from);
@@ -815,7 +809,7 @@ export async function createRailwayLine2(
       e.op === 'rail.forgeTake'
         ? rackFrom
         : e.op === 'rail.depotTake'
-          ? depotPlace(framed(activeIn(w)) ? activeIn(w) : 0, new THREE.Vector3()).add(UP_08)
+          ? depotPlace(framed(line2Active(w)) ? line2Active(w) : 0, new THREE.Vector3()).add(UP_08)
           : null;
     if (home) {
       for (let n = 0; n < c.lost; n++) {
@@ -944,8 +938,8 @@ export async function createRailwayLine2(
         pid = rd.pid;
       const fg = forgeRow(w),
         stock = railRow(w),
-        active = activeIn(w),
-        jobs = jobsIn(w),
+        active = line2Active(w),
+        jobs = jobsOf(w),
         completed = line2Completed(w),
         gateOpen = line2GateOpen(w);
       const owed = waitsForTrainOn(w, active);
@@ -1044,7 +1038,7 @@ export async function createRailwayLine2(
           frame = frames[k]!;
         const feed = lineFeed(spec, job);
         const depositTicks = Math.ceil(job.depositMs / 100);
-        const feedMs = (jobElapsed(k) - depositTicks) * 100;
+        const feedMs = (jobElapsed(k, active, jobs) - depositTicks) * 100;
         const wanted = job.start < 0 ? 0 : feed.filter((f) => f.launchMs <= feedMs).length;
         while (feedLaunched[k]! < wanted) {
           const f = feed[feedLaunched[k]!]!;
@@ -1086,7 +1080,7 @@ export async function createRailwayLine2(
           now && k === active && job.start < 0 && !owed,
           waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : undefined,
         );
-        if (now && k === activeIndex()) {
+        if (now && k === activeIndex(active)) {
           const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
           const fraction = Math.min(
             1,
@@ -1096,7 +1090,7 @@ export async function createRailwayLine2(
         }
       }
       if (now) {
-        targetHead = head();
+        targetHead = head(active, jobs);
         panels.update(dt);
       }
       drawDepot(active, Math.max(0, stock.depot - cartFlying().logs), owed || kitComing(w, active));
@@ -1169,7 +1163,7 @@ export async function createRailwayLine2(
       const p = me.body?.position;
       if (!p || !rd.ready()) return [];
       const w = rd.world(),
-        active = activeIn(w),
+        active = line2Active(w),
         stock = railRow(w),
         completed = line2Completed(w),
         quarryRoute = line2Routes(completed).quarry;
@@ -1228,7 +1222,7 @@ export async function createRailwayLine2(
     },
     inspect: () => {
       const w = rd.world(),
-        active = activeIn(w),
+        active = line2Active(w),
         stock = railRow(w),
         completed = line2Completed(w);
       return {

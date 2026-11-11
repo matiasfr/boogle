@@ -1,3 +1,8 @@
+// NOTE (review of M10 c, P3): this test copies the views' reads by hand rather than importing the views, so a mutated
+// read in the view itself (shelf-view.ts's `waitsForTrainOn` arguments, cart-view.ts's `cartOn`, line2-view.ts's
+// `kitComing`) is not caught here. test/railway-m10c-review.test.ts is the proof that imports real view code where it
+// can (forge-offer.ts); treat this file as the value-for-value check of the rows against `inspect()`, not as a guard of
+// the views' own functions.
 // Proof of M10 c (branch ecs/m10c-line2): line 2's views read rows and queries through the read facade
 // (`adapter.read`) and no longer call `adapter.inspect()`. These tests run the very reads the views make (line2-view,
 // shelf-view, cart-view, boiler-view, forge-finish, sea-gate-view and glide-device-view, with forge-offer's
