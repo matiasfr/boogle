@@ -24,7 +24,8 @@ test('a scratch repo stays sealed when GIT_DIR and GIT_WORK_TREE name another re
       inner.write('b.txt', 'b\n');
       inner.git('add', '-A');
       inner.git('commit', '-qm', 'inner');
-      assert.equal(inner.git('rev-parse', '--absolute-git-dir').trim(), path.join(inner.dir, '.git'));
+      // git prints '/' separators on Windows too; compare the resolved paths, not their spelling.
+      assert.equal(path.resolve(inner.git('rev-parse', '--absolute-git-dir').trim()), path.join(inner.dir, '.git'));
     } finally {
       inner.remove();
     }
