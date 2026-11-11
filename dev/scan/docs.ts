@@ -12,6 +12,12 @@ function docAuthority(file: string, text: string): Authority {
   const f = file.replaceAll('\\', '/').replace(/^\.\//, '');
   const header = text.split('\n').slice(0, 12).join('\n');
   if (f === 'docs/ideas.md') return { status: 'parked', next: decisions, why: 'ideas are not tasks' };
+  if (f === 'docs/decisions-archive.md')
+    return {
+      status: 'historical',
+      next: decisions,
+      why: 'superseded entries and ruled calls; current rules are in the topic files',
+    };
   if (['PLAN.md', 'SETTLED.md'].includes(f) || f.startsWith('docs/plans/done/'))
     return { status: 'historical', next: work, why: 'superseded plan or record' };
   if (f.startsWith('docs/proposals/') && ![decisions, 'docs/proposals/README.md'].includes(f))

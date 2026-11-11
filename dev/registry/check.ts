@@ -15,6 +15,7 @@ import { DEBT_FILES, debtOf, debtCounts, compareDebt } from './debt.ts';
 import { PROTOS } from '../../protos/protos.ts';
 import { prototypeReport } from './prototypes.ts';
 import { checkAgentDocs } from './agent-docs.ts';
+import { checkDecisions } from '../decisions/check.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -129,8 +130,10 @@ if (args.includes('--json')) {
   process.exit(prototypeFacts.errors.length || agentDocs.errors.length ? 1 : 0);
 }
 
+const decisionLog = checkDecisions(ROOT);
 const errors = [
   ...agentDocs.errors,
+  ...decisionLog.errors.map((e) => `decision log: ${e} (npm run decisions)`),
   ...checkRegistry(head),
   ...checkKnots(findKnots(importsOf(sources(ROOT))), KNOTS),
   ...checkTaskRoutes(ROOT),
@@ -138,6 +141,7 @@ const errors = [
 ];
 const { dir, note } = baseTree(baseRef);
 const notes: string[] = [];
+notes.push(`decision log: ${decisionLog.notes[0]}`);
 notes.push(`agent launch docs: ${agentDocs.elapsedMs} ms (3,000/1,000-byte budgets and launch imports)`);
 notes.push(
   `prototype dependencies: ${prototypeFacts.prototypes.length} cards, ${prototypeFacts.elapsedMs} ms (JSON has owner-review notes)`,
