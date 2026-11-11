@@ -38,6 +38,10 @@ type Start = {
 /** This navigation's own start note. */
 let thisStart: Start | null = null;
 
+/** Whether a service worker controlled this navigation when it began (null before noteNavigationStart). Read later,
+ * `navigator.serviceWorker.controller` is our own worker, which claims the page once the game is in a room. */
+export const controlledAtStart = (): boolean | null => thisStart?.sw0 ?? null;
+
 /** Unregister the service worker and clear Cache Storage, once per run, then reload. Resolves only when no reload was
  * needed (already done, or nothing to do it with). */
 export async function coldReset(id: string): Promise<void> {
