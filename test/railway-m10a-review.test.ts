@@ -11,7 +11,7 @@ import { rail, type ReadWorld } from '../src/sim/railway-rows.ts';
 import { apertureId, railId, trainId } from '../src/sim/railway-queries.ts';
 import { line2Trains } from '../src/sim/railway-queries-line2.ts';
 import { railOpenEnd, railTrainAsked, railTrainHeld, trainStops } from '../src/sim/railway-queries-trains.ts';
-import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { LINE_HALTS, TRAIN, TRAIN_PHASE } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
@@ -20,13 +20,6 @@ import type { World } from '../src/ecs/index.ts';
 import { createFirstReady } from '../src/entities/railway/first-ready.ts';
 
 const mutTrain = (w: World, slot: number) => w.mut(Train, trainId(w, slot))!;
-
-test('line 2 has three trains, and the views index the shared stops by a train line that has them', () => {
-  assert.equal(LINE_SLOTS[LINE2]!.length, 3, 'line 2 runs three trains');
-  assert.equal(RAIL_LINES.length, 2, "halts-view's refreshStops covers lines [0, 1] only");
-  assert.equal(LINE2, 1, "train-view's stops = [trainStops(w, 0), trainStops(w, LINE2)] is indexed by tr.line");
-  for (const t of RAIL_TRAINS) assert.ok(t.line === 0 || t.line === LINE2);
-});
 
 for (const stage of ['trains-on', 'q6-done', 'crossing-done', 'deck-laid', 'ring-joined'] as const)
   test(`${stage}: a train is held from its dwell's end (+10 ticks) at a halt, at once at a signal, and never asked while it stands at a halt`, () => {

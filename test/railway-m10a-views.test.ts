@@ -7,12 +7,13 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { buildSeedWorld } from './helpers/rail.ts';
 import { railRoom, replicatedRows } from './helpers/rail-room.ts';
+import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { account, trains } from '../src/sim/railway-rows.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 
 test("a late joiner's rows are the server's, every frame from the whole state on, and its own account arrives after it", () => {
   const r = railRoom(buildSeedWorld('q6-done'), { served: true });
-  r.join('a', 'a', 4);
+  const a = r.join('a', 'a', 4);
   r.ready();
   r.run(10);
   const late = r.join('c', 'c', 6);
@@ -20,8 +21,11 @@ test("a late joiner's rows are the server's, every frame from the whole state on
   assert.doesNotThrow(() => [trains(late.adapter.read.world()), account(late.adapter.read.world(), 'c')]);
   assert.equal(late.adapter.read.pid, 'c');
   let compared = 0,
-    noAccount = 0;
-  for (let k = 0; k < 80; k++)
+    noAccount = 0,
+    chops = 0;
+  for (let k = 0; k < 80; k++) {
+    // Client a chops every few frames, so rows move in place while the late joiner is compared.
+    if (k % 4 === 0 && RAILWAY_SOURCES.some(([id]) => a.adapter.chop(id, 0, false))) chops++;
     r.run(1, {
       each: (c) => {
         if (c !== late || !c.mirror.synced()) return;
@@ -36,6 +40,8 @@ test("a late joiner's rows are the server's, every frame from the whole state on
         compared++;
       },
     });
+  }
+  assert.ok(chops > 2, 'rows moved while the late joiner was compared');
   assert.ok(compared > 20, 'the late joiner was compared from its whole state on');
   assert.ok(noAccount > 0, 'a synced world with no account for this pid was read (its session had not arrived)');
   const w = late.adapter.read.world();

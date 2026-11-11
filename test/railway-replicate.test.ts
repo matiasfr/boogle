@@ -8,7 +8,7 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror, RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
-import { Account, Job, Pile, Rail, Tree } from '../src/sim/railway-components.ts';
+import { Account, Job, Rail, Tree } from '../src/sim/railway-components.ts';
 import { RULE_STEPS } from '../src/world/room-clock.ts';
 import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
@@ -30,6 +30,7 @@ import {
   job,
   line2Jobs,
   lines,
+  pilesWithIds,
   logs as seedLogs,
   qjob,
   qjobRun,
@@ -185,7 +186,7 @@ test('a random multi-player action stream replicates exactly, live and to a late
     const roll = rng();
     const active = LINE1_STATIONS[railActiveStation(s)]!.id;
     const q = LINE2_STATIONS.find((_x, i) => !qjob(s, i).completion)?.id ?? 'Q1';
-    const pileIds = s.ids(Pile);
+    const pileIds = pilesWithIds(s).map((p) => p.id);
     const fields: Omit<RailAction, 'epoch' | 'request'> =
       roll < 0.03
         ? { op: 'rail.wake' }
