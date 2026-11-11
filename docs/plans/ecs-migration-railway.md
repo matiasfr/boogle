@@ -260,7 +260,17 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
   - **Reviewer attacks:** do the stages cover every op and tick system (list ops no stage runs and add a scripted
     stream for them); is the golden stable across two runs and across Node 24 and 26; does the schema test also catch a
     reordered field and a changed `key`.
-- [ ] **M2. Split `railway-world.ts`.** _High (sim), mechanical._
+- [x] **M2. Split `railway-world.ts`.** _High (sim), mechanical._ **Built 10 November, branch `ecs/m2-world-split`.**
+      Moves only: `railway-components.ts` (264 lines) is old lines 32–275 under a new header, `railway-read-model.ts`
+      (334) is 278–562, `railway-check.ts` (215) is 565–730, each body byte-identical to its source range (`cmp`
+      against `sed -n` of the old file); `railway-world.ts` (730 to 34) re-exports the same 34 names by explicit list.
+      The only edit inside a moved block: `TIMING` is exported, because the read model's `jobOf`/`qjobOf` read its
+      keys; the barrel does not re-export it. Lines 1–275 also hold `RAIL_STATUS`, `DEPOT_OUT` and the depot-output
+      assertion, so they went to the components file with the rest (section 2's "nothing else" is not quite true of
+      it). Import graph: check → read model → components, check → components; no file imports the barrel back, no
+      new knot. The importer count is 38 today, not 34; none changed. The three M0 goldens passed untouched,
+      `npm run loop -- run` matched base byte for byte except its wall-time line, the server tests passed with every
+      railway world audited (a local, uncommitted default flip), and `npm run test:net` passed 131/131.
   - Create `src/sim/railway-components.ts` (lines 1–275 with `createRailwayWorld`),
     `src/sim/railway-read-model.ts` (`railwayView`, `fillRailway`, `refreshRailway`, `copyRailway` and their helpers)
     and `src/sim/railway-check.ts` (`railwayCheck`, `validateRailway`, `railwayInvariant`, `ARCHETYPES`).
