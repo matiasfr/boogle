@@ -1141,10 +1141,33 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > about 1 m inside that deck with the flag reaching past its edge; it was the pale band in the two-page sheet. P3,
   > `toeShove` (`leaf-shape.ts`) has no sideways bound: anyone at deck height in the toe's span along the line is
   > walked back, whatever their lateral offset.
-- [ ] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
+- [x] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
   Checks: `npm run check`, `npm run test:net`. Proof look (Done means): the same two-page room, then strike: the
   rivet glints, the 6 s shot plays on both pages, uninterruptible but for the one skip, `inspectRailway().ring.joined`
   set; a third page joining after gets the snapped state, no shot, then the Meet framing on its own first crossing.
+  > **Built (implementer, 11 November 2026): R4d, on `feature/ring-r4d`; not shipped, browser proof not taken.**
+  > (1) `src/entities/ring-meet/view.ts` (the view) and `shape.ts` (pure decisions), mounted by `works-live.ts` beside the
+  > leaf because it needs the adapter's accepted edges; there is no `index.ts` (nothing for the glob to spawn).
+  > (2) The rivet: a brass stud in the joint at bent 13's toe, dull until the leaf is down (`brace === 0`), then gold,
+  > pulsing, with gold motes rising (`goldMote`, within 160 m of the camera) until struck; the prompt "Strike the rivet"
+  > only with the leaf down, `joined < 0`, the breaker in hand (the rule's `Works.breaker === 2`) and no boiler on your
+  > back, inside `RING_RIVET.reach` (the server's own test). (3) On the accepted `rail.strike` id 2 (`meetOffered`): the
+  > clang, a thump and a burst of gold at the stud on every page, and `playSharedMoment('the meet')`: the banner ("Ring
+  > Island" over "The line has arrived", 4.5 s) and the 6 s shot, from back along the bents above the leaf, running
+  > along the joined line to the halt, looking at the RINGWORKS board and the buffers (`MEET_SHOT`). The shot is
+  > `createCameraPullOut`'s: only the one skip ends it. Never from a restore: the frame the first whole state arrives
+  > (`createFirstReady`, not `read.ready()`) places the stud and drops any shot. A refused prediction takes the shot back
+  > unless the rivet is struck anyway (`meetKept`: a same-moment race keeps it). (4) The first crossing: a standing rider
+  > (`carry.on`) crossing u 259.5 m toward the island with the rivet struck gets, once per player per room, the 5 s
+  > pull-out (`CROSSING_SHOT`) if they saw the Meet, or the Meet's framing for 5 s if they did not (joined late, seated,
+  > reduced motion); memory is `createSeen('boogle.ring-meet.v0')` (now exported from `ability-arrival.ts` with a store
+  > name), marked only when a shot was actually queued. **Reads:** the `Aperture` row (`set`, `brace`, `joined`), `Works`
+  > (`breaker`) and `Boiler` (`state`, `holder`) through `adapter.read.world()`, re-read at the head of `update`, `accepted`,
+  > `corrected`, `targets` and `restore`; "`inspectRailway().ring.joined`" is `aperture(world).joined >= 0` here. Nothing
+  > reads `inspectRailwayLegacy`. No sim rule, wire or `WORLD_NS` change. Tests: `test/railway-r4d-meet.test.ts` (the
+  > offer, the race, the late-join framing, the crossing once, the prompt and glint windows, the shots' geometry).
+  > **Not done:** the breaker's swing at the rivet (the prompt strikes at once; the Works' swing is `breaker-view.ts`'s),
+  > the browser proof (two pages, strike, third page), `test:net`. Not tested on a device.
 - [ ] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stare straight up; the whistle swaps them; standing still and looking up

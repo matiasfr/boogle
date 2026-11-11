@@ -3,7 +3,7 @@
 // each counterweight footing dips it a quarter; the last brings it down onto the bents in 2.5 s, ease-in, with a thump.
 // A restore or a page that joins after the join sees the rest at once. Local view over the read facade; the sim reads
 // none of it. The brace prompt ("Knock out the pawl") is here; the counterweight prompt ("Hang the weight") is the jib's,
-// in railhead-view.ts. The rivet's glint is R4d's.
+// in railhead-view.ts. The rivet's glint, prompt and the Meet are ring-meet/view.ts (R4d).
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Interactable } from '../../player/hands.ts';
