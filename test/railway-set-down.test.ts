@@ -1,47 +1,42 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { railwayAtTrains } from './helpers/railway-trains.ts';
-import { chopTo } from './helpers/railway-works.ts';
-import { act } from './helpers/railway-q2.ts';
-import { railAccount } from '../src/sim/railway.ts';
+import { account, act, boiler, chopTo, piles, railwayAtTrains, type Seed } from './helpers/rail.ts';
 import { plan } from '../src/entities/railway/back-down-plan.ts';
 import { createDropHold, DROP_HOLD_MS } from '../src/player/drop-hold.ts';
 
 // docs/brainstorms/station-deposit.md build 0: a full back goes down as piles and the big thing is taken, all from the
 // existing ops, in one tick and in order.
-const logsIn = (w: ReturnType<typeof railwayAtTrains>) =>
-  w.s.piles.filter((p) => (p.kind ?? 0) === 0).reduce((n, p) => n + p.n, 0);
+const logsIn = (s: Seed) =>
+  piles(s.w)
+    .filter((p) => p.kind === 0)
+    .reduce((n, p) => n + p.n, 0);
 
 test('16 logs on the back: two drops and a boilerTake in one tick are all accepted and nothing is lost', () => {
-  const w = railwayAtTrains('boiler'),
-    b = w.s.line2!.boiler;
-  const before = logsIn(w);
-  act(w, 'a', 'rail.pack'); // the pack frame: a back of 16
-  chopTo(w, 'a', 16);
-  const a = () => railAccount(w.s, 'a')!;
+  const s = railwayAtTrains('boiler'),
+    first = boiler(s.w).revision;
+  const before = logsIn(s);
+  act(s, 'a', 'rail.pack'); // the pack frame: a back of 16
+  chopTo(s, 'a', 16);
+  const a = () => account(s.w, 'a')!;
   assert.equal(a().carry, 16);
-  const carried = a().carry + logsIn(w);
-  assert.equal(
-    act(w, 'a', 'rail.boilerTake', { revision: b.revision }),
-    0,
-    'a loaded back is still refused by the rule',
-  );
-  assert.equal(act(w, 'a', 'rail.drop', { x: 100000, y: 3000, z: -15000, n: 8, kind: 0 }), 8);
-  assert.equal(act(w, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8, kind: 0 }), 8);
+  const carried = a().carry + logsIn(s);
+  assert.equal(act(s, 'a', 'rail.boilerTake', { revision: first }), 0, 'a loaded back is still refused by the rule');
+  assert.equal(act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -15000, n: 8, kind: 0 }), 8);
+  assert.equal(act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8, kind: 0 }), 8);
   assert.equal(a().carry, 0);
-  assert.equal(act(w, 'a', 'rail.boilerTake', { revision: b.revision }), 1);
-  assert.equal(b.holder, 'a');
-  assert.equal(logsIn(w), before + 16, 'every log is in a pile, none lost');
-  assert.equal(logsIn(w) + a().carry, carried);
-  const at = w.s.piles.filter((p) => p.x === 100000 && (p.z === -15000 || p.z === -14000));
+  assert.equal(act(s, 'a', 'rail.boilerTake', { revision: boiler(s.w).revision }), 1);
+  assert.equal(boiler(s.w).holder, 'a');
+  assert.equal(logsIn(s), before + 16, 'every log is in a pile, none lost');
+  assert.equal(logsIn(s) + a().carry, carried);
+  const at = piles(s.w).filter((p) => p.x === 100000 && (p.z === -15000 || p.z === -14000));
   assert.deepEqual(at.map((p) => p.n).sort(), [8, 8], 'the pile is where it was set down');
 });
 
 test('a single drop of a whole back takes only a pile (8): the planner sends two', () => {
-  const w = railwayAtTrains('boiler');
-  act(w, 'a', 'rail.pack'); // the pack frame: a back of 16
-  chopTo(w, 'a', 16);
-  assert.equal(act(w, 'a', 'rail.drop', { x: 100000, y: 3000, z: -15000, n: 16, kind: 0 }), 8);
+  const s = railwayAtTrains('boiler');
+  act(s, 'a', 'rail.pack'); // the pack frame: a back of 16
+  chopTo(s, 'a', 16);
+  assert.equal(act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -15000, n: 16, kind: 0 }), 8);
 });
 
 const spots = [0, 1, 2, 3].map((i) => ({ x: i, y: 0, z: 0 }));
