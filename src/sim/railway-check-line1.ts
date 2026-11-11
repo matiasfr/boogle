@@ -1,6 +1,6 @@
-// Line one's part of the load check (docs/plans/ecs-migration-railway.md, M8b): validateRailLine's conditions
-// (./railway-line.ts) restated on the rows and the world queries, in the same order and with the same messages, so a
-// broken world is refused for the same reason. Run by railwayCheck (./railway-check.ts) after its own conditions.
+// Line one's part of the load check (docs/plans/ecs-migration-railway.md, M8b): the old read-model validator's
+// conditions (validateRailLine, deleted in M12b-2) on the rows and the world queries, in its order and with its
+// messages. Run by railwayCheck (./railway-check.ts) after its own conditions.
 //
 //   checkLine1(w)    T1 to T3's bounds, order, funding and laying; the axe; the upgraded sources; rock and hardwood
 //                    work; stone conservation; the great beam (throws on the first broken one)
@@ -17,7 +17,7 @@ const bad = (what: string): never => {
 };
 /** Line one's whole-world invariants; throws on the first broken one. */
 export function checkLine1(w: World) {
-  // validateRailLine's 'line requires playable state' and 'missing funded timing' read fields a world always has.
+  // The old validator's 'line requires playable state' and 'missing funded timing' read fields a world always has.
   const r0 = rail(w);
   const jobs = railJobs(w);
   jobs.forEach(({ job: j, run }, index) => {

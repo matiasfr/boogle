@@ -1,7 +1,6 @@
 // The railway's seed and test driver on a World (docs/plans/ecs-migration-railway.md, M3c): the rules by name, the
 // world's invariant and a save round trip, with no proxy and no read model. The seed builders (./railway-seeds.ts) and
 // the converted rule tests (test/helpers/rail.ts) use it; never imported by the game, the rules or the adapters.
-// ./railway-live.ts is the old driver, a `Railway` view with no test left on it; M12b-2 deletes it.
 //
 //   need(cond, msg)                     a seed or test step that must hold
 //   createRailway()                     a fresh world, audited: a write that skips mut() or a declaration throws

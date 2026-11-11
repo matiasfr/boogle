@@ -143,11 +143,11 @@ no port tried]
   first, then line two's when line one moved nothing): `rail.receipt` (the outcome check), the op, `rail.remember`;
   `rail.lineTick` then `rail.line2Tick` then `rail.jobClock` on the rule tick; `rail.supply` (the minute pulse),
   `rail.resume`, `rail.session`, the beam's release, stood and put-down. Each names its reads and writes.
-- **The read model.** `railwayView(world)` builds today's `Railway` from the components (the T1 job back on the root,
-  the arrays in slot order). It is derived and never written, and it is what the load check validates (the existing
-  domain invariants, unchanged), what `railCounts`/`railPhase` read, and what the client adapter and views see. The
-  client mirror writes replication packets into a world and refills the read model in place; prediction clones that
-  world, runs the same systems and refills a scratch read model. The adapter's code does not change.
+- **No read model (since M12b-2).** Readers query the world: rows (`src/sim/railway-rows.ts`) and queries
+  (`railway-queries*.ts`); the load check is `railwayCheck(world)` and its domain files. The client mirror writes
+  replication packets into a world and publishes a clone of it once whole; prediction clones that world and runs the
+  same systems. (The `Railway` read model this step first planned, `railwayView(world)`, was built in M2 and deleted in
+  M12b-2: docs/plans/ecs-migration-railway.md, M12b; docs/plans/ecs-m12-m13.md.)
 - **Save:** `world.snapshot()` replaces `serializeRailway`, `railway-line-code.ts`'s packing and line two's base-36
   rows; `world.hash()` replaces `JSON.stringify` + FNV. **`WORLD_NS` v17** (world reset; no migration; v16 was the great beam pass).
 - **Deleted:** the legacy T1-only and playable-without-line states (no production room uses them; "No old builds in

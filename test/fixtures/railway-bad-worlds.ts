@@ -1,9 +1,8 @@
 // The load check's bad worlds (docs/plans/ecs-migration-railway.md, M8b): one entry per `throw` message of the world
 // check (railwayCheck in src/sim/railway-check.ts and its domain files, -line1, -line2, -trains and -works), each one
 // edit to a golden seed stage that breaks that condition alone, with the message the site throws.
-// test/railway-check.test.ts requires the world check to refuse each with that message. The `site` names say which
-// domain a site belongs to; they were written against the old validators (validateRail…), which the domain files
-// replaced message for message.
+// test/railway-check.test.ts requires the world check to refuse each with that message. Each `site` names its domain
+// (line, line2, trains, works, or none for railwayCheck's own) and the message.
 //
 // A site no world edit can reach is listed in UNREACHABLE with the reason. A build-out adds one entry per `throw` of
 // its own check here (Ring Island's are in test/railway-check-ring.test.ts).
@@ -62,7 +61,7 @@ const A = 'awake',
   Q = 'q2-arriving',
   X = 'crossing-done';
 export const BAD_WORLDS: readonly BadWorld[] = [
-  // ------------------------------------------------ validateRailway (src/sim/railway-check.ts)
+  // ------------------------------------------------ railwayCheck's own (src/sim/railway-check.ts)
   { site: 'check catalog', message: 'railway: catalog', stage: A, break: (w) => set(w, Tree, { left: 16 }, 0) },
   { site: 'check fall state', message: 'railway: fall state', stage: A, break: (w) => set(w, Tree, { yaw: 1 }, 0) },
   { site: 'check accounts', message: 'railway: accounts', stage: A, break: (w) => set(w, Account, { carry: 9 }, 'a') },
@@ -102,7 +101,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     stage: A,
     break: (w) => set(w, Tree, { left: 9 }, 0),
   },
-  // ------------------------------------------------ validateRailLine (src/sim/railway-line.ts)
+  // ------------------------------------------------ line one (src/sim/railway-check-line1.ts)
   {
     site: 'line job bounds (fields)',
     message: 'railway: job bounds',
@@ -186,7 +185,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     stage: Q,
     break: (w) => set(w, Beam, { state: 'allocated' }),
   },
-  // ------------------------------------------------ validateRailLine2 (src/sim/railway-line2.ts)
+  // ------------------------------------------------ line two (src/sim/railway-check-line2.ts)
   {
     site: 'line2 forge before path',
     message: 'railway: forge before path',
@@ -270,7 +269,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     stage: Q,
     break: (w) => set(w, Forge, { poured: 38 }),
   },
-  // ------------------------------------------------ validateRailTrains (src/sim/railway-trains.ts)
+  // ------------------------------------------------ the trains (src/sim/railway-check-trains.ts)
   { site: 'trains line', message: 'railway: line', stage: A, break: (w) => set(w, Line, { left0: -2 }, 0) },
   {
     site: 'trains line asleep',
@@ -296,7 +295,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
         set(w, Train, { phase: 0, at: 0, to: 0, from: s0, dest: s0, track: 0, v0: 0, req: 0, turn: false }, slot);
     },
   },
-  // ------------------------------------------------ validateRailWorks (src/sim/railway-works.ts)
+  // ------------------------------------------------ the Works (src/sim/railway-check-works.ts)
   { site: 'works bounds', message: 'railway: works bounds', stage: X, break: (w) => set(w, Works, { seams: 4 }) },
   { site: 'works shed bounds', message: 'railway: shed bounds', stage: X, break: (w) => set(w, Shed, { table: 2 }) },
   { site: 'works breaker', message: 'railway: breaker', stage: A, break: (w) => set(w, Works, { breaker: 1 }) },

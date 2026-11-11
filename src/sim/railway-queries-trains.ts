@@ -1,5 +1,4 @@
-// The trains' derived facts on the world (docs/plans/ecs-migration-railway.md, M8): the world twins of the read
-// model's railTrainsOf (./railway-trains.ts) and trainStops (./railway-line2.ts). Pure reads.
+// The trains' derived facts on the world (docs/plans/ecs-migration-railway.md, M8). Pure reads.
 //
 //   railTrainsOf(w, line)     a line's train rows, in slot order
 //   trainStops(w, k)          the stops line k serves now (line 2's pier once Q6 is laid; stopsOf)
