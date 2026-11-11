@@ -2,8 +2,8 @@
 import './node-version.ts'; // first: re-runs under the pinned Node
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import path from 'node:path';
 import { changeClass } from './ci/change-class.ts';
+import { affectedTests } from './ci/unit-select.ts';
 import { testEnv } from './test-env.ts';
 
 const [base = 'origin/main', head = 'HEAD'] = process.argv.slice(2);
@@ -40,21 +40,10 @@ const policy = [...files].some((f) => /^(dev\/lint\/|\.oxlint|lint-suppressions|
 if (policy || lint.length) run(['dev/lint/run.ts', ...(policy ? [] : lint)]);
 run(['node_modules/typescript/bin/tsc', '-p', '.']);
 
-// Follow static relative imports transitively. Unknown/dynamic dependencies remain covered by full CI.
-const memo = new Map<string, boolean>();
-function affected(file: string, seen = new Set<string>()): boolean {
-  if (files.has(file)) return true;
-  if (memo.has(file)) return memo.get(file)!;
-  if (seen.has(file) || !fs.existsSync(file)) return false;
-  seen.add(file);
-  const imports = [...fs.readFileSync(file, 'utf8').matchAll(/(?:from\s*|import\s*)['"](\.[^'"]+)['"]/g)];
-  const result = imports.some((m) => affected(path.normalize(path.join(path.dirname(file), m[1]!)), seen));
-  if (result) memo.set(file, true);
-  return result;
-}
-const tests = git('ls-files', 'test/**/*.test.ts', 'test/*.test.ts')
-  .split('\n')
-  .filter((f) => f && affected(f));
+// The tests whose closure holds a changed file, plus the core: the same walk and core as CI's selection
+// (dev/ci/unit-select.ts), in the local unit run's settings below. A lockstep diff still runs only these here; CI runs
+// the full suite for it.
+const tests = affectedTests([...files]);
 if (tests.length) {
   // The unit run's settings (./test-env.ts): the rail audit off unless RAIL_AUDIT=1, as `npm run test:unit` runs.
   const { env, flags } = testEnv();
