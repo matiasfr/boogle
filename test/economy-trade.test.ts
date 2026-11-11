@@ -145,6 +145,13 @@ test("trade: the brief's buys and the first house are on offer as written", () =
   assert.ok(headline(run(spine, T, room('houses'))).houses > 0);
 });
 
+test('trade: each next house in a town costs the house order times the last', () => {
+  const price = (id: string, t = T) => catalog(t, room('houses')).find((i) => i.id === id)!.price;
+  assert.equal(price('house.village.2'), 800 * 1.5 * 2);
+  assert.equal(price('house.village.3'), 3000 * 1.5 * 4);
+  assert.equal(price('house.village.2', { ...T, 'house.order': 1 }), 800 * 1.5);
+});
+
 test('trade: the committed page is current', () => {
   assert.equal(
     pageData(readFileSync(PAGE, 'utf8')).sourceHash,
