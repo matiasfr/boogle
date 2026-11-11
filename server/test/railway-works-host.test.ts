@@ -8,7 +8,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-check.ts';
+import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { LINE2_BOILER } from '../../src/sim/railway-line2-layout.ts';
 import {
   SHED_TABLE,
@@ -18,17 +18,36 @@ import {
   WORKS_RACK,
   WORKS_SEAMS,
 } from '../../src/sim/railway-works-layout.ts';
-import { footingTotal } from '../../src/sim/railway-works.ts';
-import { createRailway, railApply, railSession, worldOf } from '../../test/railway-live.ts';
-import { advanceWorks, railwayAtWorks, type WorksStage } from '../../test/helpers/railway-works.ts';
-import { act, advance, logs, type World as Fixture } from '../../test/helpers/railway-q2.ts';
-import { railwayAtTrains } from '../../test/helpers/railway-trains.ts';
+import { footingTotal } from '../../src/sim/railway-queries-works.ts';
+import {
+  account,
+  act,
+  advance,
+  advanceWorks,
+  apply,
+  beam,
+  boiler,
+  createRailway,
+  invariant,
+  logs,
+  piles,
+  railSession,
+  railwayAtTrains,
+  railwayAtWorks,
+  rocks,
+  train,
+  trains,
+  works,
+  worksClock,
+  type Seed,
+  type WorksStage,
+} from '../../test/helpers/rail.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
 
 /** A real host on a temp store, loaded with an accepted fixture; actions go through r:edit with their actor's spot. */
-async function host(name: string, fixture: Fixture) {
+async function host(name: string, fixture: Seed) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), `boogle-works-${name}-`));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
@@ -59,7 +78,7 @@ async function host(name: string, fixture: Fixture) {
   };
   await h.whenReady();
   while (h.sync.world.tick <= fixture.t) await ticks(1);
-  h.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(fixture.s).snapshot())), railwayCheck);
+  h.rules.railway.world().load(JSON.parse(JSON.stringify(fixture.w.snapshot())), railwayCheck);
   h.rules.railway.touchAll();
   const open = async () => {
     h.deliver({ t: 'r:open' }, 's');
@@ -73,6 +92,10 @@ async function host(name: string, fixture: Fixture) {
     get h() {
       return h;
     },
+    /** The room's world, read again at every use: a restart replaces it. */
+    get w() {
+      return h.rules.railway.world();
+    },
     people,
     ticks,
     later: (ms: number) => void (now += ms),
@@ -81,14 +104,14 @@ async function host(name: string, fixture: Fixture) {
       now += 1000;
       h.deliver({ t: 'r:edit', e: { ...e, epoch, request: ++request, at, ms: now - 1800000000000 } }, 's');
       await h.sync.whenDurable();
-      assert.equal(railwayInvariant(h.rules.railway.railway), null);
+      assert.equal(invariant(h.rules.railway.world()), null);
       return h.rules.railway.outcome('a', epoch, request)!.status;
     },
     async restart() {
       await h.close({ save: true });
       h = create();
       await h.whenReady();
-      assert.equal(railwayInvariant(h.rules.railway.railway), null);
+      assert.equal(invariant(h.rules.railway.world()), null);
       await open();
     },
     async done() {
@@ -117,7 +140,7 @@ test('works host: strikes, the kiln and the table judged where their actor stand
     assert.equal(await r.action({ op: 'rail.strike', id: 1 }, spot(throat)), 'noop');
     assert.equal(await r.action({ op: 'rail.strike', id: 0 }, spot(throat)), 'rejected', 'the stall slab is at Home');
     assert.equal(await r.action({ op: 'rail.strike', id: 0 }, spot(WORKS_SEAMS[0])), 'accepted');
-    assert.equal(r.h.rules.railway.railway.works!.seams, 3);
+    assert.equal(works(r.w).seams, 3);
     assert.equal(await r.action({ op: 'rail.kiln' }, spot(WORKS_KILN)), 'noop', 'open now; nothing on the back');
     // The table: before the stall it is the rule's to refuse; a stale revision is the judge's.
     assert.equal(await r.action({ op: 'rail.turn', to: 1, revision: 0 }, spot(SHED_TABLE)), 'noop');
@@ -165,32 +188,32 @@ test('works host: a restart mid-cast keeps rack and poured; a restart with the w
   try {
     assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
     await r.ticks(40);
-    const before = { ...r.h.rules.railway.railway.works! };
-    assert.equal(before.rack, WORKS.rackCap, 'the room came back at once');
+    const before = { works: { ...works(r.w) }, clock: { ...worksClock(r.w) } };
+    assert.equal(before.works.rack, WORKS.rackCap, 'the room came back at once');
     await r.restart();
-    assert.deepEqual(r.h.rules.railway.railway.works, before, 'rack, poured and the cast clock survive');
+    assert.deepEqual({ ...works(r.w) }, before.works, 'rack and poured survive');
+    assert.deepEqual({ ...worksClock(r.w) }, before.clock, 'and the cast clock');
     await r.ticks(WORKS.castTicks);
-    const s = r.h.rules.railway.railway;
-    assert.equal(s.works!.poured, before.poured, 'a full rack waits');
-    assert.equal(footingTotal(s), s.works!.poured);
+    assert.equal(works(r.w).poured, before.works.poured, 'a full rack waits');
+    assert.equal(footingTotal(r.w), works(r.w).poured);
   } finally {
     await r.done();
   }
   const wagon = fixture('wagon-on');
   // The wagon couples to whichever line-2 train reaches the Village first.
-  const slot = wagon.s.trains.findIndex((r) => r.wagon);
+  const slot = trains(wagon.w).findIndex((r) => r.wagon);
   assert.ok(slot >= 0, 'the wagon is coupled');
-  for (let guard = 0; wagon.s.trains[slot]!.foot === 0; guard++) {
+  for (let guard = 0; train(wagon.w, slot).foot === 0; guard++) {
     assert.ok(guard < 4000, 'the wagon loads at the quarry');
     advanceWorks(wagon, 1);
   }
   const t = await host('wagon', wagon);
   try {
-    const row = t.h.rules.railway.train(slot)!;
+    const row = { ...train(t.w, slot) };
     assert.ok(row.wagon && row.foot > 0);
     await t.restart();
-    assert.deepEqual(t.h.rules.railway.train(slot), row);
-    assert.equal(footingTotal(t.h.rules.railway.railway), t.h.rules.railway.railway.works!.poured);
+    assert.deepEqual({ ...train(t.w, slot) }, row);
+    assert.equal(footingTotal(t.w), works(t.w).poured);
   } finally {
     await t.done();
   }
@@ -206,18 +229,18 @@ test('works host: an aged footing pile with nobody near goes back to the Works r
       await r.action({ op: 'rail.drop', n: 1, kind: 3, x: ground[0], y: ground[1], z: ground[2] }, ground),
       'accepted',
     );
-    const pile = () => r.h.rules.railway.railway.piles.find((p) => p.kind === 3);
+    const pile = () => piles(r.w).find((p) => p.kind === 3);
     assert.ok(pile());
-    const before = r.h.rules.railway.railway.works!.rack;
+    const before = works(r.w).rack;
     // Someone standing by keeps it on the ground.
     r.later(22 * 60000);
-    for (let k = 0, n = r.h.rules.railway.railway.piles.length; k <= n; k++) {
+    for (let k = 0, n = piles(r.w).length; k <= n; k++) {
       r.people.list = [{ pid: 'b', x: ground[0] / 100, z: ground[2] / 100, at: r.now() + 100 }];
       await r.ticks(1);
       r.later(60000);
     }
     assert.deepEqual(
-      r.h.rules.railway.railway.piles.map((p) => p.kind),
+      piles(r.w).map((p) => p.kind),
       [3],
       'every other pile went back; this one is protected while someone is near',
     );
@@ -228,10 +251,10 @@ test('works host: an aged footing pile with nobody near goes back to the Works r
       await r.ticks(1);
     }
     assert.equal(pile(), undefined);
-    assert.equal(r.h.rules.railway.railway.works!.rack, before + 1);
+    assert.equal(works(r.w).rack, before + 1);
     await r.restart();
-    assert.equal(r.h.rules.railway.railway.works!.rack, before + 1);
-    assert.equal(footingTotal(r.h.rules.railway.railway), r.h.rules.railway.railway.works!.poured);
+    assert.equal(works(r.w).rack, before + 1);
+    assert.equal(footingTotal(r.w), works(r.w).poured);
   } finally {
     await r.done();
   }
@@ -242,8 +265,8 @@ test("works host: a leaver's footing waits out the grace, then goes back to the 
   // the pier at eleven for good.
   const r = await host('leaver', fixture('wagon-on'));
   try {
-    const works = () => r.h.rules.railway.railway.works!;
-    const foot = () => r.h.rules.railway.account('a')!.foot;
+    const now = () => works(r.w);
+    const foot = () => account(r.w, 'a')!.foot;
     const grace = () => r.h.rules.tune.get('railBeamGraceS') * 1000;
     assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
     // A restart ends every session; whoever comes back within the grace still carries it.
@@ -254,16 +277,16 @@ test("works host: a leaver's footing waits out the grace, then goes back to the 
     r.h.depart('s');
     await r.ticks(5);
     assert.equal(foot(), 1, 'an absent carrier keeps it through the grace');
-    const before = { ...works() };
+    const before = { ...now() };
     r.later(grace());
     await r.ticks(3);
     assert.equal(foot(), 0);
     // Back on the Works rack, besides whatever the kiln cast meanwhile (it may run over six; the kiln then waits).
-    assert.equal(works().rack, before.rack + 1 + works().poured - before.poured);
-    assert.equal(footingTotal(r.h.rules.railway.railway), works().poured);
+    assert.equal(now().rack, before.rack + 1 + now().poured - before.poured);
+    assert.equal(footingTotal(r.w), now().poured);
     await r.restart();
     assert.equal(foot(), 0, 'a restart does not bring it back');
-    assert.equal(footingTotal(r.h.rules.railway.railway), works().poured);
+    assert.equal(footingTotal(r.w), now().poured);
   } finally {
     await r.done();
   }
@@ -272,8 +295,8 @@ test("works host: a leaver's footing waits out the grace, then goes back to the 
 test('works host: a carrier back for less than a rule tick still gets a fresh grace', async () => {
   const r = await host('brief', fixture('wagon-on'));
   try {
-    const works = () => r.h.rules.railway.railway.works!;
-    const foot = () => r.h.rules.railway.account('a')!.foot;
+    const now = () => works(r.w);
+    const foot = () => account(r.w, 'a')!.foot;
     const grace = () => r.h.rules.tune.get('railBeamGraceS') * 1000;
     assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
     r.h.depart('s');
@@ -285,12 +308,12 @@ test('works host: a carrier back for less than a rule tick still gets a fresh gr
     r.later(1500);
     await r.ticks(1);
     assert.equal(foot(), 1, 'the second absence has its own grace');
-    const before = { ...works() };
+    const before = { ...now() };
     r.later(grace());
     await r.ticks(1);
     assert.equal(foot(), 0);
-    assert.equal(works().rack, before.rack + 1 + works().poured - before.poured);
-    assert.equal(footingTotal(r.h.rules.railway.railway), works().poured);
+    assert.equal(now().rack, before.rack + 1 + now().poured - before.poured);
+    assert.equal(footingTotal(r.w), now().poured);
   } finally {
     await r.done();
   }
@@ -307,41 +330,40 @@ async function briefReturn(r: Host) {
   await r.ticks(1);
 }
 /** Line one at T3, open and unfunded, with the great tree felled: the beam is there to take. Sim ops only. */
-function atBeam(): Fixture {
-  const s = createRailway();
-  for (const pid of ['a', 'b']) railSession(s, pid, 1);
-  railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
-  const w = { s, t: 40 };
+function atBeam(): Seed {
+  const w: Seed = { w: createRailway(), t: 40 };
+  for (const pid of ['a', 'b']) railSession(w.w, pid, 1);
+  apply(w.w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   logs(w, 'a', 'T1', 24);
   advance(w, 300);
   for (let i = 0; i < 8;) {
-    const n = act(w, 'b', 'rail.mine', { id: s.line!.rocks.findIndex((left) => left > 0) });
+    const n = act(w, 'b', 'rail.mine', { id: rocks(w.w).findIndex((r) => r.left > 0) });
     assert.equal(act(w, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }), n);
     i += n;
   }
   logs(w, 'a', 'T2', 32);
   advance(w, 300);
   for (let i = 0; i < 12; i++) assert.equal(act(w, 'a', 'rail.beamChop'), 1);
-  assert.equal(s.line!.beam.state, 'available');
+  assert.equal(beam(w.w).state, 'available');
   return w;
 }
 test('works host: a boiler carrier back for less than a rule tick gets a fresh grace, then it goes to the pedestal', async () => {
   const r = await host('brief-boiler', railwayAtTrains('boiler'));
   try {
-    const boiler = () => r.h.rules.railway.boiler();
+    const boilerNow = () => boiler(r.w);
     const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
     assert.equal(
-      await r.action({ op: 'rail.boilerTake', revision: boiler().revision }, spot(LINE2_BOILER)),
+      await r.action({ op: 'rail.boilerTake', revision: boilerNow().revision }, spot(LINE2_BOILER)),
       'accepted',
     );
     await briefReturn(r);
-    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
-    assert.deepEqual([boiler().state, boiler().holder], ['held', 'a'], 'the second absence has its own grace');
+    assert.equal(invariant(r.w), null);
+    assert.deepEqual([boilerNow().state, boilerNow().holder], ['held', 'a'], 'the second absence has its own grace');
     r.later(grace);
     await r.ticks(1);
-    assert.deepEqual([boiler().state, boiler().holder], ['pedestal', '']);
-    assert.deepEqual([boiler().x, boiler().y, boiler().z], spot(LINE2_BOILER));
-    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
+    assert.deepEqual([boilerNow().state, boilerNow().holder], ['pedestal', '']);
+    assert.deepEqual([boilerNow().x, boilerNow().y, boilerNow().z], spot(LINE2_BOILER));
+    assert.equal(invariant(r.w), null);
   } finally {
     await r.done();
   }
@@ -349,21 +371,21 @@ test('works host: a boiler carrier back for less than a rule tick gets a fresh g
 test('works host: a beam carrier back for less than a rule tick gets a fresh grace, then it lies where they stood', async () => {
   const r = await host('brief-beam', atBeam());
   try {
-    const beam = () => r.h.rules.railway.beam();
+    const beamNow = () => beam(r.w);
     const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
     assert.equal(
-      await r.action({ op: 'rail.beamTake', revision: beam().revision }, [beam().x, 0, beam().z]),
+      await r.action({ op: 'rail.beamTake', revision: beamNow().revision }, [beamNow().x, 0, beamNow().z]),
       'accepted',
     );
-    const stood = [beam().x, beam().y, beam().z];
+    const stood = [beamNow().x, beamNow().y, beamNow().z];
     await briefReturn(r);
-    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
-    assert.deepEqual([beam().state, beam().holder], ['held', 'a'], 'the second absence has its own grace');
+    assert.equal(invariant(r.w), null);
+    assert.deepEqual([beamNow().state, beamNow().holder], ['held', 'a'], 'the second absence has its own grace');
     r.later(grace);
     await r.ticks(1);
-    assert.deepEqual([beam().state, beam().holder], ['ground', '']);
-    assert.deepEqual([beam().x, beam().y, beam().z], stood, 'where they stood');
-    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
+    assert.deepEqual([beamNow().state, beamNow().holder], ['ground', '']);
+    assert.deepEqual([beamNow().x, beamNow().y, beamNow().z], stood, 'where they stood');
+    assert.equal(invariant(r.w), null);
   } finally {
     await r.done();
   }
