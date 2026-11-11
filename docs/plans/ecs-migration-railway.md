@@ -438,9 +438,31 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     every tick; a system's `reads` or `writes` narrowed or widened in the move (audit mode throws on an undeclared
     access: run the server tests with audit on); a helper that read through a stale row after a `mut` in the old
     file and now reads a fresh one; `rail.jobClock` and `rail.worksTick` really touching disjoint components.
-- [ ] **M3b. Remove both re-export files; lint the split.** _High by path (`src/sim`, `src/world`, `server/`),
+- [x] **M3b. Remove both re-export files; lint the split.** _High by path (`src/sim`, `src/world`, `server/`),
       mechanical: import lines only. Right after M3, the same day._ Owner, 10 November: "Remove them right after M3,
-      with a lint rule".
+      with a lint rule". **Built on branch `ecs/m3b-drop-reexports`, except `rail-kit.ts` (below).**
+      `node dev/migrate/railway-imports.ts` rewrote 39 files (named imports split per defining file, `type` kept;
+      `import * as sys` in `railway-live.ts` and `dev/spikes/ecs/railway-diff.ts` became one namespace per file,
+      `sysCore`, `sysAway`, `sysLine1`, `sysWorks`; three `await import()` in `dev/peer-test/ws-railway.ts`), is
+      idempotent, and `--check` reports nothing left. `railway-world.ts` is deleted and `railway-systems.ts` holds no
+      `export … from`. The five rules are in `dev/lint/policy.ts`, each shown failing on a throwaway import; a sixth
+      the list missed: `no-restricted-imports` does not see `import()`, and the views load most code that way, so a
+      `no-restricted-syntax` selector bans an `import()` of a check, read-model or system file outside `src/sim` and
+      `src/world`. Rule 5 holds for `src` (the three `src/world` files, `railway-check`, `railway-live`) and for
+      `test`/`dev` (four files listed); `server/` is outside lint, so its tests are not covered (none imports the read
+      model). The census test now finds systems by importing every `railway-sys-*.ts` file, and records two re-export
+      blocks, not one: `railway-seeds.ts` has `export * from './railway-seed-route.ts'`, not on this step's list.
+      `dev/loop/graph.ts` cites the file that holds each rule. `test/railway-tick-order.test.ts` also runs three
+      headway holds (0, 40, 100) over 1,200 ticks, recorded on main before this step. **Not done: `rail-kit.ts`.**
+      Loading `line-geometry`, `track`, `car` and `track-machine` directly splits the one `rail-kit` chunk into
+      several (a one-view trial added a `car.js` chunk beside `rail-kit.js`), against this step's rule that the
+      chunk list stays the same or shrinks; and three views (`view.ts`, `line2-view.ts`, `panel-view.ts`) use members
+      of three files through one `rail` object, so their bodies would change. Left for the owner's call. Results:
+      every railway guard passed with its body and fixture unchanged (their import lines moved with the file);
+      `npm run check` green (969 tests); `npm run loop -- run` equal to base but for its wall-time line; server tests
+      150/150 and `npm run test:net` 131/131, plain and audited; `npm run counts -- --build-only` and the built chunk
+      list (names and gzip sizes) identical to a fresh build of the base commit; every `src/sim/railway-*.ts` loads
+      alone in Node; `rg railway-world src server test dev protos` finds only the migration script's table.
   - `dev/migrate/railway-imports.ts` (new, committed): a table from each exported name to the file that defines it
     (the 34 names `railway-world.ts` re-exports; every name `railway-systems.ts` re-exports from a `railway-sys-*.ts`
     file or from `railway-queries.ts`). It rewrites static imports, `import type`, `import()` and
