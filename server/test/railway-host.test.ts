@@ -11,8 +11,9 @@ import { createWorldHost, createRailwayWorldHost } from '../src/host/world-host.
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
-import { railMaxDuration } from '../../src/sim/railway.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-check.ts';
+import { railwayCheck } from '../../src/sim/railway-check.ts';
+import { railMaxDuration } from '../../src/sim/railway-queries-line1.ts';
+import { accounts, invariant, job, jobRun, rail, railClock, trees } from '../../test/helpers/rail.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
@@ -101,7 +102,7 @@ async function fixture(roomId = railwayRoomId('host'), saveMs = 2000) {
     const pid = pids.get(sid)!;
     const before = host.rules.railway.account(pid)!.carry;
     while (host.rules.railway.account(pid)!.carry < before + amount) {
-      const index = host.rules.railway.railway.sources.findIndex((n) => n > 0);
+      const index = trees(host.rules.railway.world()).findIndex((t) => t.left > 0);
       const source = RAILWAY_SOURCES[index]!;
       pose(sid, source[1], source[2]);
       const r = await edit(sid, { op: 'rail.chop', id: source[0], yaw: 0, collapsed: false }, epoch);
@@ -130,6 +131,8 @@ async function fixture(roomId = railwayRoomId('host'), saveMs = 2000) {
     get host() {
       return host;
     },
+    /** The room's world, read again each time: a restart replaces it. */
+    world: () => host.rules.railway.world(),
     advance(ms: number) {
       now += ms;
     },
@@ -172,7 +175,7 @@ test('ordinary rooms keep the classic registry; a railway room holds railway as 
     assert.equal(rejected.status, 'rejected');
     assert.deepEqual(f.heard('a').rej, [[1, 1, 'refused']]);
     assert.deepEqual(f.heard('a').acks.at(-1), [1, 1], 'a refused request is settled too');
-    assert.equal(f.host.rules.railway.railway.awake, -1);
+    assert.equal(rail(f.world()).awake, -1);
     await f.restart();
     assert.equal(f.host.rules.railway.outcome('alice', 1, 1)?.status, 'rejected');
   } finally {
@@ -196,7 +199,7 @@ test('the last-piece race between two players in one step transfers one log; it 
     f.pose('a', T1.x, T1.z);
     await f.edit('a', { op: 'rail.drop', x: T1.x, y: 3000, z: T1.z, n: 1 });
     await f.harvest('b', 4);
-    assert.equal(f.host.rules.railway.railway.stock, 23);
+    assert.equal(job(f.world(), 0).stock, 23);
     // Both arrive before the next step: they apply in arrival order, each rechecking the bill.
     const races = ['a', 'b'].map((sid) => {
       f.pose(sid, T1.x, T1.z);
@@ -207,15 +210,15 @@ test('the last-piece race between two players in one step transfers one log; it 
     assert.equal(api.outcome('alice', 1, races[0]!)!.accepted, 1);
     assert.equal(api.outcome('bob', 1, races[1]!)!.accepted, 0);
     assert.equal(api.account('alice')!.carry + api.account('bob')!.carry, 7);
-    assert.equal(api.railway.allocation, 24);
-    assert.equal(railwayInvariant(api.railway), null);
+    assert.equal(jobRun(api.world(), 0).allocation, 24);
+    assert.equal(invariant(api.world()), null);
     await f.restart();
-    assert.equal(f.host.rules.railway.railway.allocation, 24);
-    await f.step(railMaxDuration(f.host.rules.railway.railway) + 1);
-    assert.equal(f.host.rules.railway.railway.used, 24);
-    assert.equal(f.host.rules.railway.railway.completion, 1);
+    assert.equal(jobRun(f.world(), 0).allocation, 24);
+    await f.step(railMaxDuration(f.world()) + 1);
+    assert.equal(jobRun(f.world(), 0).used, 24);
+    assert.equal(job(f.world(), 0).completion, 1);
     await f.restart();
-    assert.equal(f.host.rules.railway.railway.completion, 1);
+    assert.equal(job(f.world(), 0).completion, 1);
     assert.equal(f.host.rules.railway.counts().total, LINE1_INITIAL[0]);
   } finally {
     await f.close();
@@ -275,12 +278,12 @@ test('requests apply in order: a resend is answered from its outcome, a gap or a
     }
     await f.step(1);
     assert.equal(f.host.rules.railway.account('alice')!.request, first + 7);
-    assert.equal(f.host.rules.railway.railway.stock, 8);
+    assert.equal(job(f.world(), 0).stock, 8);
     assert.deepEqual(f.heard('a').acks.slice(acks).at(-1), [1, first + 7], 'one ack covers the burst');
     // A resend changes nothing and is acknowledged again.
     f.send('a', { op: 'rail.deposit', station: 'T1', n: 1 }, 1, first);
     await f.step(1);
-    assert.equal(f.host.rules.railway.railway.stock, 8);
+    assert.equal(job(f.world(), 0).stock, 8);
     assert.deepEqual(f.heard('a').acks.at(-1), [1, first]);
     // A gap is refused without spending its number.
     f.send('a', { op: 'rail.wake' }, 1, first + 10);
@@ -296,7 +299,7 @@ test('requests apply in order: a resend is answered from its outcome, a gap or a
     f.send('a2', { op: 'rail.wake' }, 1, 1);
     await f.step(1);
     assert.deepEqual(f.heard('a2').rej.at(-1), [1, 1, 'session']);
-    assert.equal(railwayInvariant(f.host.rules.railway.railway), null);
+    assert.equal(invariant(f.world()), null);
   } finally {
     await f.close();
   }
@@ -366,28 +369,28 @@ test('offline time completes only funded work and consumes its absolute interval
     await f.harvest('a', 8);
     await f.deposit('a', 8);
     await f.restart(10000);
-    assert.equal(f.host.rules.railway.railway.stock, 16);
-    assert.equal(f.host.rules.railway.railway.start, -1);
-    assert.equal(f.host.rules.railway.railway.completion, 0);
+    assert.equal(job(f.world(), 0).stock, 16);
+    assert.equal(job(f.world(), 0).start, -1);
+    assert.equal(job(f.world(), 0).completion, 0);
     assert.equal(await f.open('a'), 2);
     f.requests.set('a', 0);
     await f.harvest('a', 8, 2);
     await f.deposit('a', 8, 2);
-    assert.ok(f.host.rules.railway.railway.start >= 0, 'funded');
+    assert.ok(job(f.world(), 0).start >= 0, 'funded');
     await f.restart();
-    const before = f.host.rules.railway.railway.elapsed;
+    const before = jobRun(f.world(), 0).elapsed;
     await f.restart(2000);
-    assert.equal(f.host.rules.railway.railway.elapsed, before + 20, 'twenty absent ticks, once');
-    const elapsed = f.host.rules.railway.railway.elapsed;
-    const marker = f.host.rules.railway.railway.resumeMarker;
+    assert.equal(jobRun(f.world(), 0).elapsed, before + 20, 'twenty absent ticks, once');
+    const elapsed = jobRun(f.world(), 0).elapsed;
+    const marker = railClock(f.world()).resumeMarker;
     assert.ok(marker > 2147483647, 'absolute wall tick survives beyond signed32');
     await f.restart();
-    assert.equal(f.host.rules.railway.railway.elapsed, elapsed);
-    assert.equal(f.host.rules.railway.railway.resumeMarker, marker);
+    assert.equal(jobRun(f.world(), 0).elapsed, elapsed);
+    assert.equal(railClock(f.world()).resumeMarker, marker);
     await f.restart(60000);
     await f.restart();
-    assert.equal(f.host.rules.railway.railway.completion, 1);
-    assert.equal(f.host.rules.railway.railway.used, 24);
+    assert.equal(job(f.world(), 0).completion, 1);
+    assert.equal(jobRun(f.world(), 0).used, 24);
     assert.equal(f.host.rules.railway.counts().total, LINE1_INITIAL[0]);
   } finally {
     await f.close();
@@ -437,7 +440,7 @@ test('before ready a session request hears starting at once; a full roster of ac
     assert.deepEqual(sent, [{ t: 'r:state', to: 'a', state: 'starting' }]);
     await host.whenReady();
     // Every account slot taken: a new player gets a refusal instead of silence (and stops asking).
-    for (let k = 0; host.rules.railway.railway.accounts.length < MAX_PLAYERS; k++)
+    for (let k = 0; accounts(host.rules.railway.world()).length < MAX_PLAYERS; k++)
       assert.ok(host.rules.railway.session(`filler${k}`, 1));
     host.deliver({ t: 'r:open' }, 'late');
     assert.deepEqual(sent.at(-1), { t: 'r:state', to: 'late', state: 'full' });

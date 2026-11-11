@@ -10,14 +10,28 @@ import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_ROCKS, LINE1_GREAT_TREE } from '../../src/sim/railway-line-layout.ts';
-import { railMaxDuration } from '../../src/sim/railway-line.ts';
-import { railwayCheck, railwayInvariant } from '../../src/sim/railway-check.ts';
-import { railCounts } from '../../src/sim/railway.ts';
+import { railwayCheck } from '../../src/sim/railway-check.ts';
+import { Pile } from '../../src/sim/railway-components.ts';
+import { railMaxDuration } from '../../src/sim/railway-queries-line1.ts';
+import { line2Active, line2Rails, line2SeaOpen, railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
-import { line2Active, line2SeaOpen } from '../../src/sim/railway-line2.ts';
 import { CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
-import { worldOf } from '../../test/railway-live.ts';
-import { railwayAtQ4, railwayAtQ5 } from '../../test/helpers/railway-q2.ts';
+import {
+  buildSeedWorld,
+  cart,
+  chopTo,
+  forge,
+  invariant,
+  job,
+  qjob,
+  rail,
+  railClock,
+  railwayAtQ4,
+  railwayAtQ5,
+  railwayAtTrains,
+  trees,
+  type Seed,
+} from '../../test/helpers/rail.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
 
 type Obj = Record<string, unknown>;
@@ -40,6 +54,7 @@ for (const early of [true, false]) {
       return value;
     };
     let host = create();
+    const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
     const ticks = async (n: number) => {
       for (let i = 0; i < n; i++) {
         now += 100;
@@ -51,7 +66,7 @@ for (const early of [true, false]) {
       await host.whenReady();
       const w = early ? railwayAtQ4() : railwayAtQ5('q4-done');
       while (host.sync.world.tick <= w.t) await ticks(1);
-      host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+      world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
       host.rules.railway.touchAll();
       host.deliver({ t: 'r:open' }, 's1');
       await ticks(3);
@@ -69,7 +84,7 @@ for (const early of [true, false]) {
           's1',
         );
         await ticks(3);
-        assert.equal(railwayInvariant(host.rules.railway.railway), null);
+        assert.equal(invariant(world()), null);
         return host.rules.railway.outcome('a', Number(session.epoch), request)!;
       };
       const q5 = LINE2_STATIONS[4]!;
@@ -77,7 +92,7 @@ for (const early of [true, false]) {
       const summit: [number, number, number] = [101180, 10240, -600];
       assert.equal((await edit({ op: 'rail.seaSwitch' }, [101180, 2400, -600])).status, 'rejected');
       assert.equal((await edit({ op: 'rail.seaSwitch' }, frame)).status, 'rejected');
-      assert.equal(host.rules.railway.railway.line2!.sea, false);
+      assert.equal(rail(world()).sea, false);
       // Rack logs give the actor something real to deposit on either side of the pull.
       const active = LINE2_STATIONS[early ? 3 : 4]!;
       const rack: [number, number, number] = [active.x, 2400, active.z];
@@ -85,13 +100,13 @@ for (const early of [true, false]) {
       assert.equal((await edit({ op: 'rail.depotTake' }, rack)).status, 'accepted');
       const deposit = { op: 'rail.deposit', station: 'Q5', n: 1, kind: 0 };
       assert.equal((await edit(deposit, frame)).status, early ? 'noop' : 'accepted');
-      assert.equal(host.rules.railway.railway.line2!.jobs[4]!.start, -1);
+      assert.equal(qjob(world(), 4).start, -1);
       if (!early) {
         await host.close({ save: true });
         host = create();
         await host.whenReady();
-        assert.equal(host.rules.railway.railway.line2!.sea, false);
-        assert.equal(host.rules.railway.railway.line2!.jobs[4]!.stock, 1, 'gated stock survives restart');
+        assert.equal(rail(world()).sea, false);
+        assert.equal(qjob(world(), 4).stock, 1, 'gated stock survives restart');
         host.deliver({ t: 'r:open' }, 's1');
         await ticks(3);
         session = getSession();
@@ -99,7 +114,7 @@ for (const early of [true, false]) {
       }
       assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'accepted');
       assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'noop');
-      assert.equal(line2SeaOpen(host.rules.railway.railway), true);
+      assert.equal(line2SeaOpen(world()), true);
       assert.equal((await edit(deposit, frame)).status, early ? 'noop' : 'accepted');
       if (early) {
         const carry = host.rules.railway.account('a')!.carry;
@@ -111,21 +126,21 @@ for (const early of [true, false]) {
         assert.equal((await edit({ op: 'rail.depotRailTake' }, rack)).status, 'accepted');
         assert.ok(host.rules.railway.account('a')!.rails! > 0);
         assert.equal((await edit({ op: 'rail.deposit', station: 'Q5', n: 1, kind: 2 }, frame)).status, 'noop');
-        const q5 = host.rules.railway.railway.line2!.jobs[4]!;
+        const q5 = qjob(world(), 4);
         assert.deepEqual([q5.stock, q5.railStock, q5.start], [0, 0, -1]);
       }
-      const rails = railCounts(host.rules.railway.railway).rails!;
+      const rails = railCounts(world()).rails!;
       assert.equal(rails.total, rails.poured);
       await host.close({ save: true });
       host = create();
       await host.whenReady();
-      assert.equal(host.rules.railway.railway.line2!.sea, true);
-      assert.equal(line2SeaOpen(host.rules.railway.railway), true);
-      assert.equal(line2Active(host.rules.railway.railway), early ? 3 : 4, 'restart cannot advance the active stretch');
-      const restored = railCounts(host.rules.railway.railway).rails!;
+      assert.equal(rail(world()).sea, true);
+      assert.equal(line2SeaOpen(world()), true);
+      assert.equal(line2Active(world()), early ? 3 : 4, 'restart cannot advance the active stretch');
+      const restored = railCounts(world()).rails!;
       assert.equal(restored.total, rails.total);
       assert.equal(restored.total, restored.poured);
-      assert.equal(railwayInvariant(host.rules.railway.railway), null);
+      assert.equal(invariant(world()), null);
     } finally {
       await host.close({ save: false }).catch(() => {});
       await fs.rm(dir, { recursive: true, force: true });
@@ -151,6 +166,7 @@ test('line host: the glider judged on the summit device, only after Q5; one shar
     return value;
   };
   let host = create();
+  const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       now += 100;
@@ -171,12 +187,12 @@ test('line host: the glider judged on the summit device, only after Q5; one shar
     now += 1000;
     host.deliver({ t: 'r:edit', e: { ...e, epoch: s.epoch, request: ++s.request, at, ms: now - 1800000000000 } }, sid);
     await ticks(3);
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(invariant(world()), null);
     return host.rules.railway.outcome(sid, s.epoch, s.request)!;
   };
-  const load = async (w: { s: Parameters<typeof worldOf>[0]; t: number }) => {
+  const load = async (w: Seed) => {
     while (host.sync.world.tick <= w.t) await ticks(1);
-    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
     host.rules.railway.touchAll();
   };
   const device: [number, number, number] = [LINE2_GLIDE.x, LINE2_GLIDE.y, LINE2_GLIDE.z];
@@ -187,7 +203,7 @@ test('line host: the glider judged on the summit device, only after Q5; one shar
     await load(railwayAtQ5('q5-finishing'));
     await open('a');
     assert.equal((await edit('a', glide, device)).status, 'noop');
-    assert.equal(host.rules.railway.railway.line2!.glide, false);
+    assert.equal(rail(world()).glide, false);
     await host.close({ save: false });
     host = create();
     await host.whenReady();
@@ -201,15 +217,15 @@ test('line host: the glider judged on the summit device, only after Q5; one shar
     // Reach is 3.2 m across the deck and from 2.2 m below to 3 m above the device's foot.
     assert.equal((await edit('a', glide, [LINE2_GLIDE.x + 330, LINE2_GLIDE.y, LINE2_GLIDE.z])).status, 'rejected');
     assert.equal((await edit('a', glide, [LINE2_GLIDE.x, LINE2_GLIDE.y + 320, LINE2_GLIDE.z])).status, 'rejected');
-    assert.equal(host.rules.railway.railway.line2!.glide, false);
+    assert.equal(rail(world()).glide, false);
     assert.equal((await edit('a', glide, [LINE2_GLIDE.x + 300, LINE2_GLIDE.y, LINE2_GLIDE.z])).status, 'accepted');
     assert.equal((await edit('b', glide, device)).status, 'noop', 'one shared take');
-    assert.equal(host.rules.railway.railway.line2!.glide, true);
+    assert.equal(rail(world()).glide, true);
     await host.close({ save: true });
     host = create();
     await host.whenReady();
-    assert.equal(host.rules.railway.railway.line2!.glide, true, 'the glider survives an orderly restart');
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(rail(world()).glide, true, 'the glider survives an orderly restart');
+    assert.equal(invariant(world()), null);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });
@@ -220,7 +236,6 @@ test('line host: the hook judged at p2 moved out for the second track, not its o
   // generic-lines step 2 moved pillar p2 (and its device) 11 m left of line 2 at s 89.5. No saved field holds the
   // device's position (Rail.hook is a flag), so a save with the hook taken loads as it was: no WORLD_NS bump.
   const { LINE2_HOOK } = await import('../../src/sim/railway-line2-layout.ts');
-  const { buildSeedWorld } = await import('../../src/sim/railway-seeds.ts');
   const OLD = { x: 99954, z: 2086, y: 2350 };
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-hook-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
@@ -239,6 +254,7 @@ test('line host: the hook judged at p2 moved out for the second track, not its o
     return value;
   };
   let host = create();
+  const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       now += 100;
@@ -259,7 +275,7 @@ test('line host: the hook judged at p2 moved out for the second track, not its o
     now += 1000;
     host.deliver({ t: 'r:edit', e: { ...e, epoch: s.epoch, request: ++s.request, at, ms: now - 1800000000000 } }, sid);
     await ticks(3);
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(invariant(world()), null);
     return host.rules.railway.outcome(sid, s.epoch, s.request)!;
   };
   const hook = { op: 'rail.hook' };
@@ -268,25 +284,25 @@ test('line host: the hook judged at p2 moved out for the second track, not its o
     // Q3 laid, the hook not yet taken.
     const w = buildSeedWorld('q3-done');
     while (host.sync.world.tick <= w.t) await ticks(1);
-    host.rules.railway.world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
+    world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
     host.rules.railway.touchAll();
     for (const sid of ['a', 'b']) await open(sid);
-    assert.equal(host.rules.railway.railway.line2!.hook, false);
+    assert.equal(rail(world()).hook, false);
     // The old device spot is 5 m off the new one: refused there, and past the 3.2 m reach of the new spot.
     assert.equal((await edit('a', hook, [OLD.x, OLD.y, OLD.z])).status, 'rejected');
     assert.equal((await edit('a', hook, [LINE2_HOOK.x + 330, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'rejected');
-    assert.equal(host.rules.railway.railway.line2!.hook, false);
+    assert.equal(rail(world()).hook, false);
     assert.equal((await edit('a', hook, [LINE2_HOOK.x + 300, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'accepted');
     assert.equal((await edit('b', hook, [LINE2_HOOK.x, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'noop', 'one shared take');
-    assert.equal(host.rules.railway.railway.line2!.hook, true);
+    assert.equal(rail(world()).hook, true);
     const saved = JSON.stringify(host.rules.railway.world().snapshot());
     for (const cm of [OLD.x, OLD.z, LINE2_HOOK.x, LINE2_HOOK.z])
       assert.ok(!saved.includes(String(cm)), `no saved field holds the hook's position (${cm})`);
     await host.close({ save: true });
     host = create();
     await host.whenReady();
-    assert.equal(host.rules.railway.railway.line2!.hook, true, 'a save with the hook taken loads as it was');
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(rail(world()).hook, true, 'a save with the hook taken loads as it was');
+    assert.equal(invariant(world()), null);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });
@@ -317,6 +333,7 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     return value;
   };
   let host = create();
+  const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       await host.sync.whenDurable();
@@ -352,14 +369,14 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     await ticks(3);
     const response = host.rules.railway.outcome(pidOf(sid), sessions.get(sid)!.epoch, request);
     assert.equal(response?.status, 'accepted', JSON.stringify({ e, response }));
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(invariant(world()), null);
   };
   const logs = async (index: number, n: number) => {
     const station = LINE1_STATIONS[index]!;
     for (let remaining = n; remaining > 0;) {
       const wanted = Math.min(8, remaining);
       while (host.rules.railway.account('alice')!.carry < wanted) {
-        const k = host.rules.railway.railway.sources.findIndex((count) => count > 0);
+        const k = trees(world()).findIndex((t) => t.left > 0);
         const source = RAILWAY_SOURCES[k]!;
         pose('a', source[1], source[2]);
         await edit('a', { op: 'rail.chop', id: source[0], yaw: 0, collapsed: false });
@@ -376,7 +393,7 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     await edit('a', { op: 'rail.wake' });
     await ticks(RAILWAY_T1.wakeTicks);
     await logs(0, 24);
-    await ticks(railMaxDuration(host.rules.railway.railway) + 3);
+    await ticks(railMaxDuration(world()) + 3);
     await logs(1, 32);
     for (let i = 0; i < 4; i++) {
       pose('a', LINE1_ROCKS[0].x, LINE1_ROCKS[0].z);
@@ -384,11 +401,19 @@ test('line host keeps a departed carrier the beam through its grace, then ground
       if (i === 0) {
         const rock = LINE1_ROCKS[0];
         await edit('a', { op: 'rail.drop', kind: 1, n: 2, x: rock.x, y: 100, z: rock.z });
-        const pile = host.rules.railway.railway.piles.find((p) => p.kind === 1)!;
+        const pileIds = (kind?: number) => {
+          const ids: number[] = [];
+          world().each([Pile], (id, p) => {
+            if (kind === undefined || p.kind === kind) ids.push(id);
+          });
+          return ids;
+        };
+        const [pile] = pileIds(1);
+        assert.ok(pile !== undefined, 'the dropped stone lies as a pile');
         assert.equal(host.rules.railway.account('alice')!.stone, 0);
-        await edit('a', { op: 'rail.take', kind: 1, id: pile.id });
+        await edit('a', { op: 'rail.take', kind: 1, id: pile });
         assert.equal(host.rules.railway.account('alice')!.stone, 2);
-        assert.ok(!host.rules.railway.railway.piles.some((p) => p.id === pile.id));
+        assert.ok(!pileIds().includes(pile));
       }
     }
     pose('a', LINE1_STATIONS[1]!.x, LINE1_STATIONS[1]!.z);
@@ -397,14 +422,14 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     now += 3600000;
     host = create();
     await host.whenReady();
-    assert.equal(host.rules.railway.railway.line!.jobs[0].completion, 1, 'absence completes funded T2');
-    assert.equal(host.rules.railway.railway.line!.jobs[1].start, -1, 'absence cannot fund T3');
-    const marker = host.rules.railway.railway.resumeMarker;
+    assert.equal(job(world(), 1).completion, 1, 'absence completes funded T2');
+    assert.equal(job(world(), 2).start, -1, 'absence cannot fund T3');
+    const marker = railClock(world()).resumeMarker;
     await host.close({ save: true });
     host = create();
     await host.whenReady();
-    assert.equal(host.rules.railway.railway.resumeMarker, marker, 'restart consumes no interval twice');
-    assert.equal(host.rules.railway.railway.line!.jobs[1].start, -1);
+    assert.equal(railClock(world()).resumeMarker, marker, 'restart consumes no interval twice');
+    assert.equal(job(world(), 2).start, -1);
     await ticks(4);
     await open('a');
     await logs(2, 40);
@@ -413,7 +438,7 @@ test('line host keeps a departed carrier the beam through its grace, then ground
       pose('a', LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z);
       await edit('a', { op: 'rail.beamChop' });
     }
-    const beam = () => host.rules.railway.beam(); // the read model is rebuilt after each change
+    const beam = () => host.rules.railway.beam(); // a copy of the beam row, read again after each change
     assert.equal(beam().state, 'available');
     pose('a', beam().x, beam().z);
     await edit('a', { op: 'rail.beamTake', revision: beam().revision });
@@ -469,10 +494,10 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     host.depart('a3');
     await ticks(8);
     assert.equal(beam().state, 'allocated', 'accepted delivery defeats later departure');
-    await ticks(railMaxDuration(host.rules.railway.railway) + 3);
+    await ticks(railMaxDuration(world()) + 3);
     assert.equal(beam().state, 'used');
-    assert.equal(host.rules.railway.railway.line!.jobs[1].completion, 1);
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(job(world(), 2).completion, 1);
+    assert.equal(invariant(world()), null);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });
@@ -493,6 +518,7 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     return value;
   };
   let host = create();
+  const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       now += 100;
@@ -514,33 +540,32 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     now += 1000; // past every cadence
     host.deliver({ t: 'r:edit', e: { ...e, epoch: session.epoch, request, at, ms: now - 1800000000000 } }, sid);
     await ticks(3);
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(invariant(world()), null);
     return host.rules.railway.outcome('a', session.epoch, request)!;
   };
-  const line2 = () => host.rules.railway.railway.line2!;
   try {
     await host.whenReady();
     const w = railwayAtQ4();
     while (host.sync.world.tick < w.t) await ticks(1);
-    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
     host.rules.railway.touchAll();
     await open('s1');
     const q4 = LINE2_STATIONS[3]!;
     // The pack chest: refused from the Q4 frame, opened beside the forge.
     assert.equal((await edit('s1', { op: 'rail.pack' }, [q4.x, 0, q4.z])).status, 'rejected');
-    assert.equal(line2().pack, false);
+    assert.equal(rail(world()).pack, false);
     assert.equal((await edit('s1', { op: 'rail.pack' }, [LINE2_PACK.x, 0, LINE2_PACK.z])).status, 'accepted');
-    assert.equal(line2().pack, true);
+    assert.equal(rail(world()).pack, true);
     // "Call cart to forge" is gone (v25): its op is refused even where its handle stood.
     const handle = [91520, 0, 1480] as [number, number, number];
     assert.equal((await edit('s1', { op: 'rail.cartCall' }, handle)).status, 'rejected');
     // The cart's first trip to the Q4 rack; the shelf is taken from beside the frame, not from the forge.
     let waited = 0;
     // (A load under way from Q2, which the helper filled by hand, lands first; the trip after brings the rails.)
-    while (!(line2().cart.phase === CART_PHASE.DROP && line2().depotRails > 0) && waited < 3 * cartCycleTicks(3))
+    while (!(cart(world()).phase === CART_PHASE.DROP && rail(world()).depotRails > 0) && waited < 3 * cartCycleTicks(3))
       waited += (await ticks(10), 10);
-    assert.equal(line2().cart.phase, CART_PHASE.DROP, 'the cart reached the rack');
-    assert.equal(line2().depotRails, LINE2_STATIONS[3]!.bill[1]);
+    assert.equal(cart(world()).phase, CART_PHASE.DROP, 'the cart reached the rack');
+    assert.equal(rail(world()).depotRails, LINE2_STATIONS[3]!.bill[1]);
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');
     const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
@@ -548,19 +573,19 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     // The quarry gate is up: deliveries stock the frame without starting it.
     const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
     assert.equal(shut.status, 'accepted');
-    assert.equal(line2().jobs[3]!.railStock, 8);
-    assert.equal(line2().jobs[3]!.start, -1);
-    const rails = railCounts(host.rules.railway.railway).rails!;
+    assert.equal(qjob(world(), 3).railStock, 8);
+    assert.equal(qjob(world(), 3).start, -1);
+    const rails = railCounts(world()).rails!;
     assert.equal(rails.total, rails.poured);
     // A restart keeps the pack, the shelf and the rails on the back.
     await host.close({ save: true });
     host = create();
     await host.whenReady();
-    assert.equal(line2().pack, true);
+    assert.equal(rail(world()).pack, true);
     assert.equal(host.rules.railway.account('a')!.rails, LINE2_STATIONS[3]!.bill[1] - 8);
-    assert.equal(line2().jobs[3]!.railStock, 8);
-    assert.equal(line2().lever, false);
-    assert.equal(railCounts(host.rules.railway.railway).rails!.total, rails.total);
+    assert.equal(qjob(world(), 3).railStock, 8);
+    assert.equal(rail(world()).lever, false);
+    assert.equal(railCounts(world()).rails!.total, rails.total);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });
@@ -568,11 +593,8 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
 });
 
 test('line host: the boiler and trains; a call judged on the halt; trains survive a restart', async () => {
-  const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
   const { LINE2_BOILER, LINE2_OLD_TRAIN } = await import('../../src/sim/railway-line2-layout.ts');
   const { LINE_HALTS, trainAlong } = await import('../../src/sim/railway-train.ts');
-  const { line2Rails } = await import('../../src/sim/railway-line2.ts');
-  const { chopTo } = await import('../../test/helpers/railway-works.ts');
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-trains-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
@@ -594,6 +616,7 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
   let host = create(),
     epoch = 0,
     request = 0;
+  const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       now += 100;
@@ -622,7 +645,7 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     const w = railwayAtTrains('boiler');
     chopTo(w, 'a', 4);
     while (host.sync.world.tick <= w.t) await ticks(1);
-    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
     host.rules.railway.touchAll();
     await open();
     // Station 6 takes nothing by hand before the fit (docs/plans/boiler-first-choice.md, step 3): a real load at its
@@ -631,7 +654,7 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
     const carry = host.rules.railway.account('a')!.carry;
     assert.ok(carry >= 4);
     assert.equal((await action({ op: 'rail.deposit', station: 'Q6', n: carry, kind: 0 }, q6)).status, 'noop');
-    assert.equal(host.rules.railway.railway.line2!.jobs[5]!.stock, 0);
+    assert.equal(qjob(world(), 5).stock, 0);
     assert.equal(host.rules.railway.account('a')!.carry, carry);
     const drop = { op: 'rail.drop', n: carry, kind: 0, x: q6[0], y: q6[1], z: q6[2] };
     assert.equal((await action(drop, q6)).status, 'accepted');
@@ -755,9 +778,8 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
       rows.map((_r, k) => trainAlong(host.rules.railway.train(k)!, k ? 1 : 0, host.sync.world.tick)),
       pose,
     );
-    const l = host.rules.railway.railway.line2!;
-    assert.equal(line2Rails(host.rules.railway.railway), l.forge.poured);
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    assert.equal(line2Rails(world()), forge(world()).poured);
+    assert.equal(invariant(world()), null);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });
