@@ -12,14 +12,14 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { railwayOf } from '../src/world/railway-predict.ts';
+import { railwayOf, worldOf } from '../src/world/railway-predict.ts';
 import * as old from '../src/sim/railway.ts';
 import * as q1 from '../src/sim/railway-queries-line1.ts';
 import * as rows from '../src/sim/railway-rows.ts';
 import { buildSeedWorld, type SeedStage } from '../src/sim/railway-seeds.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { railResume } from '../src/sim/railway-sys-away.ts';
-import { Job, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { Job, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import type { ServerPacket } from '../src/world/replicate.ts';
@@ -53,10 +53,11 @@ function host(stage?: SeedStage) {
 }
 
 // ---------------------------------------------------------------- ws-page.ts's probes during a late join
-// As ws-page.ts reads now: the mirror's world once it holds a Rail, a fresh railway before that.
+// As ws-page.ts reads now (fixed after this review): the world the mirror's read model is linked to, which is linked
+// only once the state is whole, a fresh railway before that. The review's first copy gated on `count(Rail) === 1`,
+// which a late join's first chunk already meets.
 const fresh = createRailwayWorld();
-const mirrored = (m: ReturnType<typeof createRailwayMirror>): World =>
-  m.world().count(Rail) === 1 ? m.world() : fresh;
+const mirrored = (m: ReturnType<typeof createRailwayMirror>): World => worldOf(m.railway) ?? fresh;
 /** T.railLoad's reads (ws-page.ts, the no-adapter load cycle): the account and the first standing tree from `first`. */
 function loadReads(mw: World, first: number) {
   let source = first;
@@ -134,9 +135,12 @@ test('M11 review: after a refill swaps in, and during it, the probes read the re
 });
 
 // ---------------------------------------------------------------- dev/loop/run.ts: a row held across a rule
-// `Game.w`'s comment: "A system replaces the rows it writes, so a row held across a press keeps its value from before
-// it, as the read model's copy did." Held here: the account row and the read model's account, across one accepted chop.
-test('M11 review: a row held across an accepted action keeps its value from before, as the read model copy did', () => {
+// `Game.w`'s first comment said a held row keeps its value from before a press, as the read model's copy did. It does
+// not: `world.mut` writes the row in place (src/ecs/world.ts, `write`: only a row a cloned world still shares is
+// copied), so a row held across a rule is live and shows the write; only the read model's copy keeps the old value.
+// The comments now say so (dev/loop/run.ts, src/sim/railway-rows.ts); the loop's hash shows no policy relied on it.
+// Held here: the account row and the read model's account, across one accepted chop.
+test('M11 review: a row held across an accepted action is live; the read model copy kept its value from before', () => {
   const r = host('awake');
   const e = open(r, 'a');
   const held = rows.account(r.api.world(), 'a')!;
@@ -150,7 +154,7 @@ test('M11 review: a row held across an accepted action keeps its value from befo
   assert.equal(res.status, 'accepted');
   assert.notDeepEqual({ ...rows.account(r.api.world(), 'a')! }, before, 'the chop changed the account');
   assert.deepEqual({ ...heldWas }, before, 'the read model copy kept its value');
-  assert.deepEqual({ ...held }, before, 'the held row kept its value (the comment on Game.w)');
+  assert.deepEqual({ ...held }, { ...rows.account(r.api.world(), 'a')! }, 'the held row is live: it shows the chop');
 });
 
 // ---------------------------------------------------------------- the away credit's cap
