@@ -69,13 +69,12 @@ export type ActCard = {
   /** The small line above the title; empty when the title is the number. */
   above: string;
   title: string;
-  line: string;
   seconds: number;
 };
-export function showActCard({ above, title, line, seconds }: ActCard) {
+export function showActCard({ above, title, seconds }: ActCard) {
   const el = element();
   el.classList.add('act');
-  present(el, above, title, line, seconds, Math.max(0, seconds - FADE_S));
+  present(el, above, title, '', seconds, Math.max(0, seconds - FADE_S));
 }
 export function endActCard() {
   if (!banner?.classList.contains('act') || !banner.classList.contains('on')) return;
