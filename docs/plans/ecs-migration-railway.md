@@ -926,6 +926,20 @@ later change with a bundle report. Place's remaining callers get one owner from 
     - In the loop the read's tick, movement and stall cue are now taken once a frame, at the first read, also on a
       rebuild later in the frame (a press, a packet): before, such a rebuild took them live. `REGROW_MINUTES` moved
       to `railway-supply.ts` (exported) so the query names it.
+  - [x] **b. Line 1 built (11 November, branch `ecs/m10b-line1-views`; not shipped).** `view`, `sources`, `reward`,
+    `line-cargo` and `crates-view` read `adapter.read.world()` on every ask (rows: `job`, `rail`, `beam`, `tree`,
+    `hardwood`, `rock`, `account`, `pile`, `w.each([Pile])` for ids; queries: `railPhase`, `railJobs`, `activeStation`,
+    `railPanelCount/Stock`, `railCounts`, `carryMax`, `timingOf`, all at `read.tick()`). `panel-view`, `path`,
+    `great-tree-view`, `supply-view` and `beam-drag` never read `inspect()` (the panel takes view.ts's four-field
+    `panelState()`). The piles redraw on a copied value key, not on array identity. **Still on `inspect()`** (no read
+    yet; the facade or a query is missing): `ready` (the adapter's `available()`: connected, synced, account epoch,
+    window not full; `status() === 'ready'` differs when 8 actions are pending), `pending` (reward, line-cargo),
+    `stalled` (sources), the beam speeds (`movement`, line-cargo), `growth` (`max(0, tree.age - 31)`) and `freeCarry`
+    (`max(0, carryMax - carried)` with no big-load rule, unlike `free`), plus three calls that take an inspection
+    and belong to other groups: `opening-view`'s `progress`, `back-down`'s `onlyALoad`, `loadOf` and `setDown`.
+    No unit test: none of these views has pure logic to hold. Oracle: `inspectRailway()` equal to base on `awake` and
+    `q3-stocked` bar the random pid and the wall-clock movers (boiler frame, cart, shunter). Mid-chop look (`railLag=200`):
+    press to carry 133 ms on every stroke, stock 6, the frame's tag and the panel rack as before.
 - [ ] **T1 to T7. The tests, rewritten on rows and queries.** _Low each (tests only). After M3c and M8. Seven
       batches, one agent each, in parallel: no two batches, and no batch and M10 group, edit the same file._
   - Per batch: state is a `World` from `test/helpers/rail.ts`; `s.a.b` reads become row readers; the 33 facts become
