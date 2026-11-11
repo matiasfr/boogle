@@ -623,6 +623,10 @@ track's source.
    `world.load` refuse production saves; the room then reports `storage` and players lose the world without a
    `WORLD_NS` bump having been chosen. Guards: the schema golden and the v26 snapshot fixture in M0; M2 keeps the
    lists byte for byte. Never ship M2 or M3 while the owner is mid-session (`npm run heartbeat`).
+   **Owner, 10 November: "Don't priotiize save guards. we can do a full wipe at any time in development."** So this
+   is P3, not P1: where a step is simpler with a changed shape, bump `WORLD_NS` and wipe; the v26 snapshot fixture is
+   deleted at the next bump, not re-recorded; the schema golden stays, since a schema change with no bump is a
+   mixed-build bug.
 3. **Prediction or consistency regresses in M12.** A threshold shown early, an effect played twice, corrections
    rising when the predictor's state changes type, or a view reading a world mid-fill: today the read model is also
    the consistency boundary (it is relinked only to a whole world), and M12 has to rebuild that rule on worlds. This is the owner's acceptance test for netcode ("Input gets instant feedback").
