@@ -37,7 +37,7 @@ import { L1, allHeaps, hub, lines, machine } from './lines.ts';
 import { send } from '../../place/pieces.ts';
 import { SCOPE_AT, boilerAt, lookThrough } from './props.ts';
 import { activeFrame, mark, run, wake } from './run.ts';
-import { freeSeat, seated, sitDown, standUp } from './seat.ts';
+import { freeSeat, seated, sitDown, standUp } from '../../entities/railway/seat.ts';
 import { SHORE_SAMPLES } from '../../place/terrain.ts';
 
 const SHELF_AT = { x: toWorld(SHELF.x), z: SHELF.z };

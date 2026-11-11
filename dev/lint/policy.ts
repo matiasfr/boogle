@@ -129,6 +129,11 @@ export const ENTITY_MESSAGE =
 // src/pois/ stays suppressed: the home redesign replaces it, so migrating it now would be wasted.
 // The services that stay on onFrame ("Entity or system" in that plan).
 const ENTITY_SERVICES = [
+  // Moved from src/proto/place with their hooks and adds unchanged (ecs-migration-railway M6); the owner conversion is listed under M13.
+  'src/entities/railway/car.ts',
+  'src/entities/railway/seat.ts',
+  'src/entities/railway/stations.ts',
+  'src/entities/railway/track-machine.ts',
   'src/features/identity.ts', // keeps this player's name and colour on the room's roster; no screen and no object
   'src/loop.ts', // onFrame itself, and the profiler
   'src/physics/physics.ts', // the static ground and spheres: fixed collision, no mesh, no frame work and no end
@@ -170,6 +175,7 @@ export const INPUT_LAYER = [
 ];
 // Not gameplay input, or not ours to change yet. Each entry says why.
 export const INPUT_ALLOW = [
+  'src/entities/railway/machine-model.ts', // moved from src/proto/place with its key read unchanged (ecs-migration-railway M6); goes through actions with the owner conversion
   'src/debug/**', // dev and debug tools: free camera, record, dev menu, panels
   'src/proto/**', // prototypes load by import() and carry their own bindings
   'src/place/**', // the village kit moved out of src/proto with its key reads (talk, look-kit); it goes through actions with the owner conversion (ecs-migration-railway M5)

@@ -51,7 +51,7 @@ const both = (p: RailPlatform) => [p, p] as const;
 /** A stub's turnout: past its merge the two tracks part over this length (src/place/layout.ts draws it). */
 export const TURNOUT_CM = 2000;
 /** How far a train reaches from its along (cm), with the footing wagon: the engine's nose ahead (+s), the wagon's tail
- * behind. The cars are src/proto/wagon/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
+ * behind. The cars are src/entities/railway/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
  * in step), so a longer train moves every signal with it. */
 export const TRAIN_EXTENT = { aheadCm: 620, behindCm: 900 } as const;
 /** A line end at `mergeCm`, at its line's low end (`side` -1, the first halt) or high end (+1). Its block reaches the

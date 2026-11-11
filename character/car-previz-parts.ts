@@ -22,11 +22,11 @@ export type CarCandidate = {
   exits: Seat[];
 };
 
-// The car the game draws today (src/proto/wagon/cars.ts TRAILER, place-kit flat_deck): deck top 0.7 m over the rail
+// The car the game draws today (src/entities/railway/cars.ts TRAILER, place-kit flat_deck): deck top 0.7 m over the rail
 // line, 1.1 m either side, 1.6 m either way along.
 export const DECK = { top: 0.7, hx: 1.1, hz: 1.6 };
 /** Seat top over the deck and the seated hips under the capsule centre: the track layer's low stool and the Buddy
- * seated pose (src/proto/place/machine-model.ts MACHINE_CHAIR_SEAT, src/proto/place/seat.ts SEATED_HIPS). A bench
+ * seated pose (src/entities/railway/machine-model.ts MACHINE_CHAIR_SEAT, src/entities/railway/seat.ts SEATED_HIPS). A bench
  * at this height holds the game's seated Buddy with his feet on the deck, as the stools do. */
 export const SEAT_TOP = 0.32,
   SEATED_HIPS = 0.63,

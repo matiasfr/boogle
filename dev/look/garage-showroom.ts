@@ -11,11 +11,11 @@
 import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import * as engineKit from '../../src/proto/place/engine-kit.ts';
-import * as carKit from '../../src/proto/place/car-kit.ts';
+import * as engineKit from '../../src/entities/railway/engine-kit.ts';
+import * as carKit from '../../src/entities/railway/car-kit.ts';
 import * as look from '../../src/place/look.ts';
 import * as wagonLook from '../../src/render/wagon-look.ts';
-import * as engineSpec from '../../src/proto/wagon/engine.ts';
+import * as engineSpec from '../../src/entities/railway/engine.ts';
 
 export async function showroom() {
   const done = window as Window & { __garageDone?: boolean; __garageInfo?: unknown };

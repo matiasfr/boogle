@@ -12,7 +12,7 @@ import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
-type CabFace = import('../../proto/place/engine-kit.ts').CabFace;
+type CabFace = import('./engine-kit.ts').CabFace;
 import { setShapes, stepAlpha, type Shape } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
@@ -74,23 +74,23 @@ let kitModels: ReturnType<typeof import('../../place/look-kit.ts').trainLook>[] 
 export async function createRailwayTrains(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  seats: typeof import('../../proto/place/seat.ts'),
+  seats: typeof import('./seat.ts'),
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
   const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
     await Promise.all([
       import('../../place/layout.ts'),
-      import('../../proto/place/rail.ts'),
+      import('./rail-kit.ts'),
       import('../../place/look.ts'),
       import('../../place/look-kit.ts'),
       import('../../render/wagon-look.ts'),
       import('../../render/crates.ts'),
-      import('../../proto/place/train-load.ts'),
+      import('./train-load.ts'),
       import('../../place/pieces.ts'),
       import('../../render/fanfare.ts'),
-      import('../../proto/place/engine-kit.ts'),
-      import('../../proto/place/car-kit.ts'),
-      import('../../proto/wagon/engine.ts'),
+      import('./engine-kit.ts'),
+      import('./car-kit.ts'),
+      import('./engine.ts'),
       import('../../place/folk.ts'),
       import('../../place/land.ts'),
       import('../../render/flat.ts'),

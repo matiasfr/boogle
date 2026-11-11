@@ -38,9 +38,9 @@ import {
 } from '../../place/layout.ts';
 import { L1, L2, TX, TY, TZ, disc, forgeFrame, heading, lines, machine, type LineRun } from './lines.ts';
 import { dustRing, send } from '../../place/pieces.ts';
-import { besideLine } from './rail.ts';
+import { besideLine } from '../../entities/railway/rail-kit.ts';
 import { delivered, earn } from './score.ts';
-import { flyToStock, type StationRun } from './stations.ts';
+import { flyToStock, type StationRun } from '../../entities/railway/stations.ts';
 import { OUT } from '../../place/spatial-station.ts';
 import { snapCamp, wakeCamp } from './town.ts';
 

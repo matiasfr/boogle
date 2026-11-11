@@ -5,7 +5,7 @@ import { setShapes, teleport, type Shape } from '../../physics/engine.ts';
 import { CARRY, carry, toPlatform } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
 import { deckBox, type Deck } from '../../render/crates.ts';
-import type { Car } from './rail.ts';
+import type { Car } from './car.ts';
 
 export function solidTrainLoad(car: Car, load: Deck) {
   let mask = -1;

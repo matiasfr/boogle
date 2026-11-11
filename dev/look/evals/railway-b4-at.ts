@@ -9,7 +9,7 @@ const { teleport, raycastClosest } = (await import(
 const layout = (await import(
   '/src/place/layout.ts' as string
 )) as typeof import('../../../src/place/layout.ts');
-const rail = (await import('/src/proto/place/rail.ts' as string)) as typeof import('../../../src/proto/place/rail.ts');
+const rail = (await import('/src/entities/railway/rail-kit.ts' as string)) as typeof import('../../../src/entities/railway/rail-kit.ts');
 const { interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');

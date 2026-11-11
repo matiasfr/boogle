@@ -172,7 +172,7 @@ type B4Route = {
 
 async function walkQuarryRail(bot: Bot, from: number, to: number) {
   const { LINKS, ORIGIN, lineAt, railY } = await import('../../../src/place/layout.ts');
-  const { besideLine } = await import('../../../src/proto/place/rail.ts');
+  const { besideLine } = await import('../../../src/entities/railway/rail-kit.ts');
   const direction = Math.sign(to - from);
   if (from === 546 && direction < 0) {
     for (const [along, side] of [
@@ -1093,7 +1093,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   // &seat=1 (with &ride=1): take a track-layer chair by Interact, ride the whole laying seated, stand up aboard.
   const sit = async (station: number) => {
     const name = LINE1_STATIONS[station]!.id;
-    const { seatState } = await import('../../../src/proto/place/seat.ts');
+    const { seatState } = await import('../../../src/entities/railway/seat.ts');
     const remoteSeated = () =>
       [...remotes.values()].some((r) => r.avatar && performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 300);
     // Boarding lands on the deck within reach (2.5 m) of a chair: Sit is the prompt when nothing else acts.

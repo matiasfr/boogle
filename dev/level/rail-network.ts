@@ -46,9 +46,9 @@ import {
   ringAt,
   ringDeckY,
 } from '../../src/sim/railway-ring-layout.ts';
-import { ENGINE } from '../../src/proto/wagon/engine.ts';
+import { ENGINE } from '../../src/entities/railway/engine.ts';
 import { BUFFERS, LEG, SPUR, homeLayout } from '../../src/place/home-station.ts';
-import { TRAILER, TRAIN_OFFSETS } from '../../src/proto/wagon/cars.ts';
+import { TRAILER, TRAIN_OFFSETS } from '../../src/entities/railway/cars.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };
 /** Who runs it: `live` trains run on it today; `v26` drawn in the game today, trains from v26; `v27` Ring Island build

@@ -17,7 +17,7 @@ import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
 import { makeBoiler } from '../render/carry-models.ts';
 import { makeProp } from '../render/prop-kit.ts';
 import { job } from '../proto/place/job.ts';
-import { ENGINE_BOILER, ENGINE_WHEELS } from '../proto/wagon/engine.ts';
+import { ENGINE_BOILER, ENGINE_WHEELS } from '../entities/railway/engine.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -397,7 +397,7 @@ export type MachineLook = {
   cab?: ReturnType<EngineKit['engineBodyWithCab']>;
 };
 /** The railway's engine (./engine-kit.ts), loaded: trainLook draws its loco with it. */
-type EngineKit = typeof import('../proto/place/engine-kit.ts');
+type EngineKit = typeof import('../entities/railway/engine-kit.ts');
 /** The track layer's look, the shape of wagonLook's: a red toy loco and a flatbed with its cradle, guard, arm and fork. */
 type Wheel = { x: number; y: number; z: number; at: number };
 const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),

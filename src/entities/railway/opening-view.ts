@@ -35,7 +35,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     import('../../place/look.ts'),
     import('../../place/signs.ts'),
     import('../../place/folk.ts'),
-    import('../../proto/place/rail.ts'),
+    import('./rail-kit.ts'),
   ]);
   if (!owner.alive) return { update: () => {}, numbers: () => {}, targets: () => [] };
   const footprints = new Set<(typeof sites.feet)[number]>();

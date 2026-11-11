@@ -44,7 +44,7 @@ type Deps = {
   props: typeof import('../../render/prop-kit.ts');
   carry: typeof import('../../render/carry-models.ts');
   /** The engine's boiler (docs/plans/engine-previz.md): the one on the pedestal and the rope is the one fitted. */
-  engine: typeof import('../../proto/place/engine-kit.ts');
+  engine: typeof import('./engine-kit.ts');
   sounds: typeof import('../../render/fanfare.ts');
   pieces: typeof import('../../place/pieces.ts');
   flat: typeof import('../../render/flat.ts').flat;

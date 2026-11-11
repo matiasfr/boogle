@@ -65,7 +65,7 @@ import {
   type LinePoint,
 } from '../../place/layout.ts';
 import { clearTrips, updatePieces, dustRing } from '../../place/pieces.ts';
-import { besideLine } from './rail.ts';
+import { besideLine } from '../../entities/railway/rail-kit.ts';
 import { TREES, back, resetRocks, resetTrees, updateChop, felled } from './chop.ts';
 import { coop, coopWire } from './coop.ts';
 import { rungFromPeer } from './ladder.ts';

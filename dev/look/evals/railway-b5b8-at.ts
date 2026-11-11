@@ -9,7 +9,7 @@ const { teleport } = (await import(
 const layout = (await import(
   '/src/place/layout.ts' as string
 )) as typeof import('../../../src/place/layout.ts');
-const rail = (await import('/src/proto/place/rail.ts' as string)) as typeof import('../../../src/proto/place/rail.ts');
+const rail = (await import('/src/entities/railway/rail-kit.ts' as string)) as typeof import('../../../src/entities/railway/rail-kit.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const until = performance.now() + 15000;
 while ((!inspectRailway()?.ready || (inspectRailway()?.line2?.completed ?? 0) < 5) && performance.now() < until)

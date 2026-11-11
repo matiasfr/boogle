@@ -327,9 +327,9 @@ export async function checkPropGrounding() {
   });
   // The settled reward is also a placed prop. Execute its real seat and mesh builders.
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
-  const lateral = sourceFunction('src/proto/place/rail.ts', 'lateral', { P, ORIGIN });
-  const besideLine = sourceFunction<typeof import('../../src/proto/place/rail.ts').besideLine>(
-    'src/proto/place/rail.ts',
+  const lateral = sourceFunction('src/entities/railway/line-geometry.ts', 'lateral', { P, ORIGIN });
+  const besideLine = sourceFunction<typeof import('../../src/entities/railway/rail-kit.ts').besideLine>(
+    'src/entities/railway/line-geometry.ts',
     'besideLine',
     { P, lineAt, lateral },
   );

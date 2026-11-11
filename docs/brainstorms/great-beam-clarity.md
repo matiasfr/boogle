@@ -127,7 +127,7 @@ Station 3's frame gets two empty timber saddles on top, with gold rope lashings 
 it seats in them and the lashings tie off. The same move the owner chose for the boiler (an empty matching saddle on
 the old train). Readable from the Station 2 approach and from the receiver.
 
-*Cost:* small. Local presentation in `src/proto/place/stations.ts` beside the existing hidden beam mesh, which already
+*Cost:* small. Local presentation in `src/entities/railway/stations.ts` beside the existing hidden beam mesh, which already
 sits "across the frame's top". No state, ops or saves. Needs a look capture at phone distance.
 
 ### C2. The tree wears the same rope, and answers truthfully (recommended)
@@ -327,7 +327,7 @@ One branch, a few files, no carry change yet:
    the beam and the 40th log fund Station 3 in either order. `railAxeAvailable` points at the lit forge. Tests in
    `test/railway-line-authority.test.ts` for both orders and the moved axe. `WORLD_NS` bump.
 2. `src/entities/railway/sources.ts`: rebound locally when the sim would refuse the stroke (suggestion 1).
-3. `src/proto/place/stations.ts`: two empty saddles with loose gold lashings on Station 3's frame; they tie off when the
+3. `src/entities/railway/stations.ts`: two empty saddles with loose gold lashings on Station 3's frame; they tie off when the
    beam lands.
 4. `src/render/place-tree-view.ts` (or the tree catalog): the gold sling on the great tree once Station 3 is active.
 5. `src/entities/railway/tools.ts`: the chest and stand move to the forge.

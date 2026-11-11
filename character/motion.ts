@@ -2,9 +2,9 @@
 import * as THREE from 'three/webgpu';
 import type { Motion } from './descriptors.ts';
 import { sailAngle } from '../src/pois/windmills/motion.ts';
-import { wheelAngle } from '../src/proto/place/machine-model.ts';
+import { wheelAngle } from '../src/entities/railway/machine-model.ts';
 import { machineReviewDistance } from './machine-motion.ts';
-import { CHOP_CONTACT, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+import { CHOP_CONTACT, CHOP_TRUNK } from '../src/entities/railway/chop-motion.ts';
 
 type Pose = { p: number[]; q: number[] };
 export type MotionRow = {

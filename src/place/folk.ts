@@ -15,7 +15,7 @@ import { me } from '../player/player.ts';
 import { flat } from '../render/flat.ts';
 import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
-import { MACHINE_CHAIR_SEAT } from '../proto/place/machine-model.ts';
+import { MACHINE_CHAIR_SEAT } from '../entities/railway/machine-model.ts';
 import { merged } from '../render/part-geometry.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';

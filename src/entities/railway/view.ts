@@ -38,14 +38,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   owner.cleanup(() => connection.remove());
   const [land, rail, stations, pieces, layout, sounds, kit, look, seats] = await Promise.all([
     import('../../place/land.ts'),
-    import('../../proto/place/rail.ts'),
-    import('../../proto/place/stations.ts'),
+    import('./rail-kit.ts'),
+    import('./stations.ts'),
     import('../../place/pieces.ts'),
     import('../../place/layout.ts'),
     import('../../render/fanfare.ts'),
     import('../../place/look-kit.ts'),
     import('../../place/look.ts'),
-    import('../../proto/place/seat.ts'),
+    import('./seat.ts'),
   ]);
   land.buildLand(owner);
   const line = layout.LINKS[0]!;

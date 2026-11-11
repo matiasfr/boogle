@@ -15,7 +15,7 @@ import { descriptors, gearAttachments } from './descriptors.ts';
 import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
 import { cargoCapacity, type CargoKind } from '../src/render/carry-models.ts';
 import { COLORS } from '../src/constants.ts';
-import { CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+import { CHOP_TRUNK } from '../src/entities/railway/chop-motion.ts';
 import { createParticlePool } from '../src/render/particle-pool.ts';
 import type { AxeTier } from '../src/render/axe-models.ts';
 import {
@@ -24,10 +24,10 @@ import {
   machineRodPivots,
   poseMachineRods,
   wheelAngle,
-} from '../src/proto/place/machine-model.ts';
+} from '../src/entities/railway/machine-model.ts';
 import { MACHINE_REVIEW_SECONDS, machineReviewDistance } from './machine-motion.ts';
-import { panelMechanism } from '../src/proto/place/machine-panels.ts';
-import { carriedPiece, MAX_PANEL_LENGTH } from '../src/proto/place/track-panels.ts';
+import { panelMechanism } from '../src/entities/railway/machine-panels.ts';
+import { carriedPiece, MAX_PANEL_LENGTH } from '../src/entities/railway/track-panels.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -875,7 +875,7 @@ const api = {
         state.asset === 'buddy' && state.hat === 'railway'
           ? gearAttachments['railway-hat']
           : state.asset === 'buddy' && state.chop !== 'off'
-            ? { kind: 'chop' as const, source: 'src/proto/place/chop-motion.ts and axe-models.ts' }
+            ? { kind: 'chop' as const, source: 'src/entities/railway/chop-motion.ts and axe-models.ts' }
             : state.asset === 'buddy' && state.attachment
               ? gearAttachments[state.attachment]
               : state.asset === 'buddy' && state.hat === 'conductor'

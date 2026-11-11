@@ -15,7 +15,7 @@
 //               the deck point under you while you stand on it, kept through the air when you jump or walk off, and
 //               bled away once you land on plain ground or water (a short skid; landing fast counts a tumble)
 //   carry.spin  yaw (radians) the deck turned under you since the last frame; src/entities/player/ turns you and the camera by it
-//   carry.seat  the platform whose chair you sit in (src/proto/place/seat.ts sets it). A seated rider is held at chair
+//   carry.seat  the platform whose chair you sit in (src/entities/railway/seat.ts sets it). A seated rider is held at chair
 //               height, off the deck, so carry.on stays null; aboard() is either, for "on the train" readers that
 //               aren't physics (the `riding` presence, your stowaway's shoulder)
 //

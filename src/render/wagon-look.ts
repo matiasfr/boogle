@@ -13,11 +13,9 @@ import { reducedMotion } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { damp, springStep, stiffnessOf, dampingOf, type Spring } from './motion.ts';
 
-// boogle-disable-next-line no-restricted-imports -- moves out of proto with M5/M6 (ecs-migration-railway)
-import { LOCO, TRAILER } from '../proto/wagon/cars.ts';
+import { LOCO, TRAILER } from '../entities/railway/cars.ts';
 // The car sizes live in ./cars.ts (no three.js) so the layout tests read them too.
-// boogle-disable-next-line no-restricted-imports -- moves out of proto with M5/M6 (ecs-migration-railway)
-export { LOCO, TRAILER, WAGON_CAR, TRAIN_CARS, TRAIN_OFFSETS, type CarSpec } from '../proto/wagon/cars.ts';
+export { LOCO, TRAILER, WAGON_CAR, TRAIN_CARS, TRAIN_OFFSETS, type CarSpec } from '../entities/railway/cars.ts';
 
 /** The freight on the last flatbed: centre x, z on the deck, size, yaw, and how high its bottom sits over the deck. */
 export const CRATES = [

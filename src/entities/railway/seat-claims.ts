@@ -1,5 +1,5 @@
 // Seat claims, pure: the lead's assignment of chairs to requests and a sitter's reading of the lead's answer.
-// Host kind (src/proto/place/seat.ts owns the fields); nothing here is saved or simulated.
+// Host kind (src/entities/railway/seat.ts owns the fields); nothing here is saved or simulated.
 export type SeatRequest = { id: string; ticket: number };
 export type SeatGrant = { peer: string; ticket: number };
 export type Grants = Record<string, SeatGrant>;

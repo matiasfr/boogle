@@ -7,7 +7,7 @@ import * as THREE from 'three/webgpu';
 import { addPart, mergeParts } from '../src/render/geometry-parts.ts';
 import { merged } from '../src/render/part-geometry.ts';
 import { GIFTS } from '../src/render/cosmetic-parts.ts';
-import { ENGINE, ENGINE_WHEELS } from '../src/proto/wagon/engine.ts';
+import { ENGINE, ENGINE_WHEELS } from '../src/entities/railway/engine.ts';
 import { partGeometry, type KitPart } from './engine-previz.ts';
 import {
   CARS,
@@ -36,7 +36,7 @@ const DECK_WOOD = '#9a7b55',
 const GAP = 0.6; // from the car's deck end to the engine's frame (cars.ts TRAIN_OFFSETS)
 /** Body colours for the riders (src/constants.ts COLORS), so each reads apart. */
 const RIDER_COLORS = ['#ff6b5a', '#3d9bff', '#7fd14a', '#ffc23d', '#9b6bff', '#ff6fb5'];
-/** How far a seated Buddy's drawn body comes down from his capsule (src/proto/place/seat.ts SEATED_DROP). */
+/** How far a seated Buddy's drawn body comes down from his capsule (src/entities/railway/seat.ts SEATED_DROP). */
 const SEATED_DROP = 0.55;
 
 /** `?carView=halt|upgraded|plan|plan-upgraded`. */

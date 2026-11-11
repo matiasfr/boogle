@@ -25,9 +25,9 @@ import { distToLine, parseMapPage, type XZ } from '../src/proto/greybox/map-data
 import { LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';
 import { TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
-import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS } from '../src/proto/wagon/cars.ts';
-import { ENGINE, ENGINE_LONG_AHEAD } from '../src/proto/wagon/engine.ts';
-/** src/proto/place/machine-model.ts MACHINE_GAP (that module loads three.js, so it is pinned here). */
+import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
+import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
+/** src/entities/railway/machine-model.ts MACHINE_GAP (that module loads three.js, so it is pinned here). */
 const MACHINE_GAP = 3.7;
 import {
   WORKS,
@@ -150,7 +150,7 @@ test('the pier stop fits', () => {
   assert.ok(Math.hypot(at[0] - p.x, at[1] - p.z) <= 0.05);
   assert.ok(LINES.east.len >= 735.3);
 });
-// Line 2's footprints along its rails, in metres, from the constants the views pose with (src/proto/wagon/cars.ts):
+// Line 2's footprints along its rails, in metres, from the constants the views pose with (src/entities/railway/cars.ts):
 // train-view puts car n at the train's along + TRAIN_OFFSETS[n], sized TRAIN_CARS[n]; rail.ts `buildMachine().at(line,
 // head, 1, setback)` puts the track layer's flatbed (TRAILER) at head − setback and its loco (LOCO) MACHINE_GAP behind,
 // with line2-view's setback of 2.4 m whenever it isn't laying. `engine` grows the engine (ENGINE) alone, as cars.ts places it.

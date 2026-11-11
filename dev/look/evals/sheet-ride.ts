@@ -8,8 +8,8 @@ const { onATrain } = (await import(
   '/src/proto/place/cargo.ts' as string
 )) as typeof import('../../../src/proto/place/cargo.ts');
 const { seated } = (await import(
-  '/src/proto/place/seat.ts' as string
-)) as typeof import('../../../src/proto/place/seat.ts');
+  '/src/entities/railway/seat.ts' as string
+)) as typeof import('../../../src/entities/railway/seat.ts');
 if (!me.body || !onATrain() || hands.interactTarget()?.id !== 'place-sit')
   throw new Error('Boarding checkpoint did not restore a usable train seat');
 const start = { ...me.body.position };

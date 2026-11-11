@@ -49,10 +49,10 @@ const CAMS: Record<CatId, { pos: [number, number, number]; at: [number, number, 
 
 export async function createGarageView(owner: OwnedView, geo: Geo) {
   const [kit, spec, cars, carKit, look] = await Promise.all([
-    import('../../proto/place/engine-kit.ts'),
-    import('../../proto/wagon/engine.ts'),
-    import('../../proto/wagon/cars.ts'),
-    import('../../proto/place/car-kit.ts'),
+    import('./engine-kit.ts'),
+    import('./engine.ts'),
+    import('./cars.ts'),
+    import('./car-kit.ts'),
     import('../../place/look.ts'),
   ]);
   const { ENGINE_WHEELS, ENGINE_BOILER, ENGINE } = spec;

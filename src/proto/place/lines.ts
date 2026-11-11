@@ -23,9 +23,10 @@ import {
   type LinePoint,
 } from '../../place/layout.ts';
 import { count, job, sharedSlice } from './job.ts';
-import { besideLine, buildMachine, buildTrack, buildTrain, thud, type Track, type TrainRun } from './rail.ts';
+import { besideLine, buildMachine, buildTrack, thud, type Track } from '../../entities/railway/rail-kit.ts';
+import { buildTrain, type TrainRun } from './rail.ts';
 import { addFoot } from '../../place/sites.ts';
-import { buildStation, frameBesideLine, type StationRun } from './stations.ts';
+import { buildStation, frameBesideLine, type StationRun } from '../../entities/railway/stations.ts';
 import { campSmoke } from './town.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };

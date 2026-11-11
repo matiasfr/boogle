@@ -112,7 +112,7 @@ export async function createRailwayReward(
 
 export function rewardSeat(
   line: import('../../place/layout.ts').LineSpec,
-  besideLine: typeof import('../../proto/place/rail.ts').besideLine,
+  besideLine: typeof import('./rail-kit.ts').besideLine,
   H: typeof import('../../place/terrain.ts').H,
   railY: typeof import('../../place/layout.ts').railY,
   frameOffset: number,
@@ -187,7 +187,7 @@ async function createStationReward(
       import('../../render/fanfare.ts'),
       import('../../place/layout.ts'),
       import('../../place/land.ts'),
-      import('../../proto/place/rail.ts'),
+      import('./rail-kit.ts'),
       import('../../place/pieces.ts'),
       import('../../place/spatial-station.ts'),
     ]);

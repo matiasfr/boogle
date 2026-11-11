@@ -29,7 +29,7 @@ const [
   import('../../proto/place/run.ts'),
   import('../../proto/place/chop.ts'),
   import('../../proto/place/pair.ts'),
-  import('../../proto/place/seat.ts'),
+  import('../../entities/railway/seat.ts'),
   import('../../proto/place/moves.ts'),
   import('../../proto/place/coop.ts'),
   import('../../proto/place/panel.ts'),

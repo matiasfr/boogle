@@ -76,7 +76,7 @@ import { clearTrips } from '../../place/pieces.ts';
 import { callTrain } from './rail.ts';
 import type { TrainSave } from './cargo.ts';
 import { COOP_IDENTITY, currentCoopPeer } from './coop-identity.ts';
-import { flyToStock, type StationRun } from './stations.ts';
+import { flyToStock, type StationRun } from '../../entities/railway/stations.ts';
 import {
   bigCargo,
   cargoGround,

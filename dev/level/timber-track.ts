@@ -114,7 +114,7 @@ export function standing(
 export function timberDecks(): Deck[] {
   const decks: Deck[] = [];
   const path = 'src/entities/railway/path.ts';
-  const railFile = 'src/proto/place/rail.ts';
+  const railFile = 'src/entities/railway/line-geometry.ts';
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
   const besideLine = sourceFunction<(line: Line, s: number, l: number) => { x: number; z: number }>(
     railFile,
@@ -399,7 +399,7 @@ export function trackObbs() {
       const up = new THREE.Vector3(0, scale.y / 2, 0).applyQuaternion(quat);
       out.push({
         id: `${spec.id}/${kind}/${k}`,
-        owner: 'src/proto/place/rail.ts',
+        owner: 'src/entities/railway/track.ts',
         ...rotated(new THREE.Vector3(box.x, box.y, box.z).add(pos).add(up), quat, scale.x, scale.y, scale.z),
       });
     });

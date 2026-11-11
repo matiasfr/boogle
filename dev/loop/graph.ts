@@ -244,7 +244,7 @@ function lineStation(id: 'T1' | 'T2' | 'T3', requires: Edge[], stops: string[], 
     reached: { mark: `stretch laid ${id}` },
     stops,
     requires,
-    cue: [frameSign('src/entities/railway/view.ts:438-455; src/proto/place/stations.ts:367 setTag')],
+    cue: [frameSign('src/entities/railway/view.ts:438-455; src/entities/railway/stations.ts:367 setTag')],
     ...extra,
   };
   return node;

@@ -150,7 +150,7 @@ export const RAIL_ACTIONS = new Set([
 export const RIDER_REACH = 1000;
 const RIDER_LAG_TICKS = 10;
 /** The farthest car from the train's pose: the rear car (line 2's footing wagon) sits 7.4 m behind it
- * (TRAIN_OFFSETS in src/proto/wagon/cars.ts). */
+ * (TRAIN_OFFSETS in src/entities/railway/cars.ts). */
 export const RIDER_SPAN = 740;
 /** A passenger's ask is judged against the train's pose now, widened by what it can travel in the lag window (its
  * speed now × RIDER_LAG_TICKS) and by the train's length, all in integer cm. Not replayed from the row's past poses:
