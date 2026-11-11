@@ -1,13 +1,11 @@
 // Ring Island's folk (src/entities/ring-folk/; docs/plans/ring-island-build1.md, step 4e): stages the player in the island
 // square (the works yard east of the halt) and a fixed camera for one question per mode (`--query folk=<mode>`):
-//   stare     (default) four lookers upright with the head tipped back at the shard, two resting, from the lane's west end
+//   stare     (default) four lookers standing upright facing the shard, two resting, from the lane's west end
 //   rest      the two resting crew from 3 m: they turn toward the player when near
-//   nod       the nearest looker's head from 2 m while the player stands still looking up: a nod after 1.5 s (use --warm 0)
 //   whistle   from 8 s before a shift boundary: Hooter's whistle, two walk off the posts and two walk on
 //   platform  from the east platform at the train doors (u 448): where you step off: can you see the lookers?
 //   npm run look -- --rail-seed ring-joined --eval dev/look/evals/ring-folk.ts --size 960x600
 //   npm run look -- --rail-seed ring-joined --eval dev/look/evals/ring-folk.ts --size 390x844 --name phone
-//   npm run look -- --rail-seed ring-joined --query folk=nod --warm 0 --eval dev/look/evals/ring-folk.ts
 //   npm run look -- --rail-seed ring-joined --query folk=whistle --real --warm 120 --until "window.__folkInto?.() >= 365 && window.__folkInto() < 440" --seconds 14 --frames 12 --eval dev/look/evals/ring-folk.ts
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
@@ -46,20 +44,18 @@ const c = to(folk.SQUARE_UV);
 const Y = folk.YARD_Y;
 const h0 = folk.POST_UV[0]!.u - 17.5;
 const stand: UV =
-  mode === 'nod'
-    ? { u: folk.POST_UV[2]!.u + 3, lat: 10 }
-    : mode === 'rest'
-      ? { u: h0 + 6.5, lat: 6.2 }
-      : mode === 'platform' || mode === 'whistle'
-        ? { u: h0 + 19, lat: 3.4 }
-        : { u: folk.POST_UV[0]!.u - 7, lat: 6.2 };
+  mode === 'rest'
+    ? { u: h0 + 6.5, lat: 6.2 }
+    : mode === 'platform' || mode === 'whistle'
+      ? { u: h0 + 19, lat: 3.4 }
+      : { u: folk.POST_UV[0]!.u - 7, lat: 6.2 };
 const p = to(stand);
 teleport(b, p.x, Y + PLAYER_R + 0.3, p.z);
 b.velocity.set(0, 0, 0);
 input.keys.clear();
 releaseJump();
 cam.yaw = me.yaw = Math.atan2(-(c.x - p.x), -(c.z - p.z));
-cam.pitch = mode === 'nod' ? 0.9 : -0.05;
+cam.pitch = -0.05;
 await until(() => ring.ringIslandNear.mounted, 'near view mounted');
 if (mode === 'whistle') {
   // Room time does not run during the eval, only in the warm-up: this says how far into a shift the room is, and the run
@@ -67,7 +63,7 @@ if (mode === 'whistle') {
   // 5 to 8 s before the whistle.
   (window as unknown as { __folkInto: () => number }).__folkInto = () =>
     (inspectRailway()?.tick ?? 0) % folk.ROTA_TICKS;
-} else await wait(mode === 'nod' ? 300 : 1500);
+} else await wait(1500);
 // look would otherwise freeze its own default camera over the staging: a fixed one per mode.
 type Eye = UV & { y: number };
 const cams: Record<string, [Eye, Eye]> = {
@@ -78,10 +74,6 @@ const cams: Record<string, [Eye, Eye]> = {
   rest: [
     { u: folk.REST_UV[0]!.u + 1, lat: 3.4, y: Y + 1.7 },
     { u: folk.REST_UV[0]!.u + 1, lat: 6.2, y: Y + 0.9 },
-  ],
-  nod: [
-    { u: folk.POST_UV[2]!.u - 1.5, lat: 7, y: Y + 1.7 },
-    { ...folk.POST_UV[2]!, y: Y + 1.2 },
   ],
   whistle: [
     { u: h0 + 25.5, lat: 4.2, y: Y + 3.2 },

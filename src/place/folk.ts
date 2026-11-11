@@ -43,9 +43,8 @@ const headGeo = merged([
   ['s', -0.17, 0.63, 0.2, 0.04, 0.025, 0.02, '#f0a58a'],
   ['s', 0.17, 0.63, 0.2, 0.04, 0.025, 0.02, '#f0a58a'],
 ]);
-const coatGeo = merged([['s', 0, 0.3, 0, 0.23, 0.26, 0.2, '#ffffff']]);
-// The hat is its own mesh, drawn on the head's matrix, so a head that tips back (Guy.tip) takes its hat with it.
-const hatGeo = merged([
+const coatGeo = merged([
+  ['s', 0, 0.3, 0, 0.23, 0.26, 0.2, '#ffffff'],
   ['s', 0, 0.81, -0.01, 0.285, 0.18, 0.275, '#ffffff'],
   ['c', 0, 0.8, 0.015, 0.292, 0.05, 0.282, '#d8d8d8'],
 ]);
@@ -53,14 +52,13 @@ const skinMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughne
 const coatMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.8 });
 const heads = new THREE.InstancedMesh(headGeo, skinMat, COUNT);
 const coats = new THREE.InstancedMesh(coatGeo, coatMat, COUNT);
-const hats = new THREE.InstancedMesh(hatGeo, coatMat, COUNT);
 const limbs = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#ffffff', 0.8), COUNT * 4);
 const held = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), flat('#ffffff', 0.8), COUNT * 2);
-for (const m of [heads, coats, hats, limbs, held]) {
+for (const m of [heads, coats, limbs, held]) {
   m.frustumCulled = false;
   scene.add(m);
 }
-coats.castShadow = hats.castShadow = true; // the hat and the coat are the shadow's outline: the head inside it adds nothing but triangles
+coats.castShadow = true; // the hat and the coat are the shadow's outline: the head inside it adds nothing but triangles
 const COLORS = ['#e4574a', '#3f8ee0', '#f0c030', '#42b887', '#ef8a3a', '#a569e0'].map((c) => new THREE.Color(c));
 const HAND = new THREE.Color(SKIN),
   BOOT = new THREE.Color('#4a3424'),
@@ -121,8 +119,6 @@ type Guy = {
   chat: 0 | 1 | 2; // in an exchange: 1 saying something, 2 listening
   route: Route;
   act: Mood; // a resident: what they're doing when you're not there
-  tip: number; // rad the head tips back about the neck, hat with it; its owner sets it each frame
-  lean: number; // rad the whole figure leans back from its feet (a looker staring up); its owner sets it each frame
   tint: THREE.Color | null;
 };
 // Where steer() is taking it: the goal it was given (r), that goal clear of footprints (g), the corner it's rounding (w),
@@ -180,14 +176,11 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     chat: 0,
     route: { rx: 0, rz: 0, gx: 0, gz: 0, wx: 0, wz: 0, px: 0, pz: 0, way: false, left: -1 },
     act: 'idle',
-    lean: 0,
-    tip: 0,
     tint: null,
     ...extra,
   };
   guys.push(g);
   coats.setColorAt(g.k, COLORS[g.k % COLORS.length]!);
-  hats.setColorAt(g.k, COLORS[g.k % COLORS.length]!);
   return g;
 }
 // Doors: the cottages'.
@@ -270,8 +263,8 @@ export function addResident(x: number, y: number, z: number, yaw: number, act: M
 export function addGreeter(x: number, y: number, z: number) {
   return make('greeter', x, z, { fy: y, yaw: -Math.PI / 2, tint: new THREE.Color('#f0c030') });
 }
-/** One of Ring Island's square (src/entities/ring-folk/view.ts): placed, moved, leaned and talked to by its owner; the kit
- * only draws it and, like the greeter, never steers it. */
+/** One of Ring Island's folk (src/entities/ring-folk/view.ts): placed, moved, faced and talked to by its owner; the kit only
+ * draws it and, like the greeter, never steers it. */
 export function addLooker(x: number, y: number, z: number, yaw: number, color: string) {
   return make('looker', x, z, { fy: y, yaw, tint: new THREE.Color(color) });
 }
@@ -311,7 +304,7 @@ export const setFolkEnv = (e: FolkEnv) => void (env = e);
 export function mountFolk(owner: OwnedView, next: FolkEnv) {
   resetFolk();
   env = next;
-  owner.add(heads, coats, hats, limbs, held);
+  owner.add(heads, coats, limbs, held);
   owner.cleanup(() => {
     resetFolk();
     env = null;
@@ -785,7 +778,6 @@ function pose(g: Guy) {
   if (slot >= COUNT) return;
   const k = slot++;
   coats.setColorAt(k, g.tint ?? COLORS[g.k % COLORS.length]!);
-  hats.setColorAt(k, g.tint ?? COLORS[g.k % COLORS.length]!);
   const t = g.t;
   let hop = 0,
     tilt = 0,
@@ -907,19 +899,11 @@ function pose(g: Guy) {
     pitch += talk * 0.1;
     sq *= 1 + talk * 0.05;
   }
-  pitch -= g.lean;
   const gy = g.fy ?? H(g.x, g.z);
   q.setFromEuler(e.set(pitch, g.yaw, tilt, 'YXZ'));
   base.compose(p.set(g.x, gy + hop, g.z), q, s.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq)));
   coats.setMatrixAt(k, base);
-  m.copy(base).multiply(tr.makeRotationY(g.gaze));
-  // The head tips back about the neck (a looker staring up); the hat goes with it.
-  if (g.tip)
-    m.multiply(tr.makeTranslation(0, 0.5, 0))
-      .multiply(tr.makeRotationX(-g.tip))
-      .multiply(tr.makeTranslation(0, -0.5, 0));
-  heads.setMatrixAt(k, m);
-  hats.setMatrixAt(k, m);
+  heads.setMatrixAt(k, m.copy(base).multiply(tr.makeRotationY(g.gaze)));
   limb(k, 2, hl[0]!, hl[1]!, hl[2]!, 0.075, 0.075, 0.075);
   limb(k, 3, hr[0]!, hr[1]!, hr[2]!, 0.075, 0.075, 0.075);
   const i0 = k * 2,
@@ -1390,12 +1374,11 @@ export function updateFolk(dt: number) {
     if (nx * look.x + ny * look.y + nz * look.z < -BEHIND) continue;
     pose(g);
   }
-  heads.count = coats.count = hats.count = slot;
+  heads.count = coats.count = slot;
   limbs.count = slot * 4;
   held.count = slot * 2;
   if (coats.instanceColor) coats.instanceColor.needsUpdate = true;
-  if (hats.instanceColor) hats.instanceColor.needsUpdate = true;
-  heads.instanceMatrix.needsUpdate = coats.instanceMatrix.needsUpdate = hats.instanceMatrix.needsUpdate = true;
+  heads.instanceMatrix.needsUpdate = coats.instanceMatrix.needsUpdate = true;
   limbs.instanceMatrix.needsUpdate = held.instanceMatrix.needsUpdate = true;
   if (held.instanceColor) held.instanceColor.needsUpdate = true;
 }

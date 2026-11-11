@@ -1,34 +1,27 @@
 // R4e, the island's folk (docs/plans/ring-island-build1.md, step 4e): the pure decisions in
 // src/entities/ring-folk/shape.ts. The rota (four posts of six crew, two relieved at each whistle, a pure function of the
-// room tick), what a first read or a stall does (snap, no whistle), the lane the walkers keep off the tarp, the nod's
-// still-and-looking-up window, and which line each fact earns. The drawing (the lean, the walk, the whistle's sound) is
+// room tick), what a first read or a stall does (snap, no whistle), the lane the walkers keep off the tarp, and which line each fact earns. The drawing (the lean, the walk, the whistle's sound) is
 // the kit's and needs a browser: the look covers it.
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { RING_HALT } from '../src/sim/railway-ring-layout.ts';
 import {
   CREW,
   HOOTER_UV,
   LANE_LAT,
-  NOD,
   POSTS,
   POST_UV,
   REST_UV,
   ROTA_TICKS,
   glidingTheGap,
   linesFor,
-  lookingUp,
-  newNod,
-  nodStare,
-  poseOf,
-  nodder,
   postsAt,
   restersAt,
   shiftAt,
   shiftChange,
   standingUV,
   stationOf,
-  stepNod,
   swamToIsland,
   walkStep,
   waypoints,
@@ -149,59 +142,13 @@ test('stations: a post is the post, a rest is a rest spot', () => {
   assert.deepEqual(stationOf(5, 0), { kind: 'rest', slot: 1 });
 });
 
-test('a nod is earned by 1.5 s still, within 8 m, looking up past 50 degrees, and only once per stand', () => {
-  const s = newNod(),
-    ok = { near: true, still: true, up: true };
-  let fired = 0;
-  for (let t = 0; t < 1.45; t += 0.05) fired += +stepNod(s, 0.05, ok);
-  assert.equal(fired, 0, 'not yet');
-  for (let t = 0; t < 0.2; t += 0.05) fired += +stepNod(s, 0.05, ok);
-  assert.equal(fired, 1, 'at 1.5 s');
-  for (let t = 0; t < 5; t += 0.05) fired += +stepNod(s, 0.05, ok);
-  assert.equal(fired, 1, 'standing there longer does not nod again');
-  for (const broken of [
-    { ...ok, near: false },
-    { ...ok, still: false },
-    { ...ok, up: false },
-  ]) {
-    stepNod(s, 0.1, broken);
-    let again = 0;
-    for (let t = 0; t < 1.7; t += 0.05) again += +stepNod(s, 0.05, ok);
-    assert.equal(again, 1, 'breaking any of the three starts the count again');
-  }
-  const cut = newNod();
-  stepNod(cut, 1.4, ok);
-  stepNod(cut, 0.1, { ...ok, up: false });
-  assert.equal(stepNod(cut, 0.2, ok), false, 'a look down resets it');
-});
-
-test('the camera looks up past 50 degrees', () => {
-  assert.equal(lookingUp((49 * Math.PI) / 180), false);
-  assert.equal(lookingUp((51 * Math.PI) / 180), true);
-  assert.equal(lookingUp(0.9), true, 'the controls cap the pitch at 0.9 rad, so the nod is reachable');
-});
-
-test('the nod brings the head down to the player and back up to the stare, and nobody is ever near horizontal', () => {
-  assert.equal(nodStare(0), 1);
-  assert.equal(nodStare(NOD.seconds), 1);
-  assert.ok(nodStare(0.6) < 0.4, 'faces the player mid-nod');
-  for (let t = 0; t <= NOD.seconds; t += 0.02) {
-    const s = nodStare(t);
-    assert.ok(s >= -0.2 && s <= 1 + 1e-9, `${t}: ${s}`);
-  }
-  assert.ok(nodStare(0.05) > nodStare(0.25), 'goes down');
-  assert.ok(nodStare(NOD.seconds - 0.05) > nodStare(NOD.seconds - 0.3), 'comes back up');
-  const up = poseOf(1);
-  assert.ok(up.lean < 0.35, 'the body stays upright, under 20 degrees');
-  assert.ok(up.lean + up.tip > 1.45, 'the face is to the sky');
-  assert.deepEqual(poseOf(0), { lean: 0, tip: 0 });
-});
-
-test('the nodder is the nearest post-holder within 8 m, never a walker or a rester', () => {
-  const p = { x: 0, z: 0 };
-  assert.equal(nodder(p, [null, { x: 5, z: 0 }, { x: 3, z: 0 }, null]), 2);
-  assert.equal(nodder(p, [null, { x: 9, z: 0 }, null, null]), -1);
-  assert.equal(nodder(p, [null, null, null, null]), -1);
+test('the folk stand upright and face the shard: no lean and no tipped head in the shape or the kit (owner, 11 November)', async () => {
+  const shape = await import('../src/entities/ring-folk/shape.ts');
+  assert.ok(!('poseOf' in shape) && !('LEAN_UP' in shape) && !('TIP_UP' in shape), 'no stare pose exists');
+  assert.equal(shape.FACE_AT.x, 1340, 'they face the shard (Ring Island\u2019s RING_SHARD, 1340, -1120)');
+  assert.equal(shape.FACE_AT.z, -1120);
+  const kit = await readFile(new URL('../src/place/folk.ts', import.meta.url), 'utf8');
+  assert.ok(!/\btip:|g\.lean|hatGeo|\bhats\b/.test(kit), 'the kit has no head pivot, lean or separate hat');
 });
 
 test('each talker says only what the facts allow, in the table order', () => {

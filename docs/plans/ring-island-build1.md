@@ -1170,28 +1170,25 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > the browser proof (two pages, strike, third page), `test:net`. Not tested on a device.
 - [x] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
-  camera in the island square: four lookers stare straight up; the whistle swaps them; standing still and looking up
-  gets a nod.
+  camera in the island square: four lookers stand upright facing the shard; the whistle swaps two of them for the two
+  who rested. (The staring-up pose and the nod were overruled by the owner, 11 November: see the Built note.)
   > **Built (implementer, 11 November 2026): R4e, on `feature/ring-r4e` (sits on `feature/ring-r4d`); not shipped, browser proof
-  > not taken.** (1) `src/entities/ring-folk/`: `shape.ts` (pure: the rota, stations, lane and walk, the nod, the facts that
+  > not taken.** (1) `src/entities/ring-folk/`: `shape.ts` (pure: the rota, stations, lane and walk, the facts that
   > pick a line), `lines.ts` (the Copy table verbatim), `view.ts` (the figures), mounted by `works-live.ts` beside the Meet
-  > (no `index.ts`, it needs the adapter). (2) Seven figures from the village folk kit (`place/folk.ts`: a `looker` job, a
-  > `lean` and `tip` fields, `addLooker`, capacity +8, and the hat split off the coat into its own mesh so a head tips with its hat): six crew in orange hard hats and Hooter in blue. The island's square is the
+  > (no `index.ts`, it needs the adapter). (2) Seven figures from the village folk kit (`place/folk.ts`: a `looker` job,
+  > `addLooker` and capacity +8, nothing else): six crew in orange hard hats and Hooter in blue. The island's square is the
   > works yard east of the halt, between the tarped steel and the drop hammer (no layout constant named a square). Four
-  > crew stand at four posts upright with the head tipped back at the shard (body 14 degrees, head 72 more, hat with it,
-  > feet planted; a first try that tipped the whole body 54 degrees read as people lying down), facing the platform, two rest on the lane south of the tarp. `shiftAt(tick)` is
+  > crew stand at four posts, upright and turned to face the shard (`FACE_AT`, `RING_SHARD`), two rest on the lane south of the tarp. `shiftAt(tick)` is
   > `floor(tick / 450)` on `adapter.read.tick()`: at each whistle two post-holders hand over to the two who rested
   > (everyone stands at most two shifts and every crew member gets turns; the rota repeats every 6). Hooter's whistle
   > (`machine-sfx` `whistle`) sounds at the clock's edge only when the page saw the previous shift; a first read, a remount
-  > or a stall that skipped shifts snaps with no whistle and no walk. (3) The nod: the nearest post-holder within 8 m, when
-  > the player has been still (under 0.35 m/s) looking up past 50 degrees (`cam.pitch`; the controls cap it at 0.9 rad)
-  > for 1.5 s, brings its head down to the player, bobs and goes back; once per stand. (4) Talk with Rivet (gold hat), Squint
+  > or a stall that skipped shifts snaps with no whistle and no walk. (3) **11 November, owner (seeing the first stills, where the lookers leaned and tipped their heads back): "why are the little guys leaning over, they can just be standing", then "they can just be facing the shard maybe".** The orchestrator's reading, recorded as its own: the folk stand upright like the village folk, no body lean and no head tipped back, turned (yaw only) to face the shard. That replaces "stare straight up"; two earlier tries (the whole body tipped 54 degrees, which read as lying down, then an upright body with the head tipped back on a new head pivot and a hat split from the coat) were built and reverted: the kit is as it was. **The nod is dropped:** with no head pivot the kit's only bob is its talking gesture, which reads as a raised hand. The resting crew still turn to face a player nearby. Logged in `docs/decisions-rail.md`. (4) Talk with Rivet (gold hat), Squint
   > and Hooter; lines from `linesFor(who, facts)`: "arrived wet" is a swim in the last 60 s (local clock), "glided the gap"
   > and "swam over" are per-player per-room memory (`createSeen('boogle.ring-folk.v0')`, written from where the player
   > swims or glides: `swamToIsland`, `glidingTheGap`), "first ride" reads the Meet's `crossing` memory, the co-op line counts
   > `accounts(world)` and waits for `joined`. **Reads:** `Aperture.joined` and the accounts through `adapter.read.world()`
   > (inside `facts()`, re-read per Talk), `adapter.read.tick()`, `createFirstReady`; no world kept. No sim rule, wire or
-  > `WORLD_NS` change. Tests: `test/railway-r4e-folk.test.ts` (16). Look: `dev/look/evals/ring-folk.ts`. **Not done:** the
+  > `WORLD_NS` change. Tests: `test/railway-r4e-folk.test.ts` (13). Look: `dev/look/evals/ring-folk.ts`. **Not done:** the
   > browser proof, `npm run perf` at the halt (owed at the checkpoint), "the rivet toss" (the plan gives it no trigger or
   > copy), Hooter's line spoken as a bark at the whistle (it is a Talk line only). Not tested on a device.
 

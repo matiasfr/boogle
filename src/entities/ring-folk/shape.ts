@@ -1,8 +1,9 @@
 // The island's folk, pure decisions (docs/plans/ring-island-build1.md, R4e; calls 17, 29, 37 and 38): who stands where
 // on the staring rota, when the whistle swaps them (a pure function of the railway room tick, so every page sees the same
-// swap), how a figure walks between its post and its rest, the nod at a player who stands still and looks up, and which
+// swap), how a figure walks between its post and its rest, and which
 // of the three talkers' lines a fact earns. No three.js, no DOM: ring-folk/view.ts draws and plays what this decides.
 import { RING_HALT, ringAt } from '../../sim/railway-ring-layout.ts';
+import { RING_SHARD } from '../railway/crossing-show.ts';
 import { HOOTER, RIVET, SQUINT } from './lines.ts';
 
 // ---------------------------------------------------------------- the rota
@@ -69,12 +70,11 @@ export const REST_UV: readonly UV[] = [
 ];
 /** The lane the walkers take (south of the tarp, which fills u HALT0+2.6..15.4, lat 7.1..13.9) before turning in. */
 export const LANE_LAT = 6.2;
-/** Hooter stands by the board and the posts, never looking up. */
+/** Hooter stands by the board and the posts. */
 export const HOOTER_UV: UV = { u: HALT0 + 20.5, lat: 6.2 };
-/** Where the crew face: the east platform at the train doors (u 448), so a player stepping off, and one coming along the
- * lane, meets faces tipped back, not the backs of heads. */
-export const ARRIVE_UV: UV = { u: HALT0 + 19, lat: 3.4 };
-/** The square's middle: every post faces it; the shard is overhead. */
+/** What the crew face (yaw only, heads level; owner, 11 November: "they can just be facing the shard"). */
+export const FACE_AT = { x: RING_SHARD.x, z: RING_SHARD.z } as const;
+/** The square's middle, for cameras and looks. */
 export const SQUARE_UV: UV = { u: HALT0 + 19, lat: 10.5 };
 
 /** A point on the island's frame in world metres. */
@@ -118,58 +118,6 @@ export function walkStep(p: UV, route: UV[], dt: number, speed = WALK_SPEED): bo
   }
   return moved;
 }
-
-// ---------------------------------------------------------------- staring up, and the nod
-/** A looker's stare as one number: 1 is staring straight up (the body leaning `LEAN_UP`, the head tipped `TIP_UP`, the
- * hat with it, feet planted: about 14 and 72 degrees, the face to the sky), 0 is upright and facing you. Nobody is ever
- * near horizontal. */
-export const LEAN_UP = 0.25;
-export const TIP_UP = 1.25;
-export const poseOf = (stare: number) => ({ lean: LEAN_UP * stare, tip: TIP_UP * stare });
-export const NOD = { reach: 8, pitch: (50 * Math.PI) / 180, stillFor: 1.5, still: 0.35, seconds: 1.3 } as const;
-
-export type NodInput = { near: boolean; still: boolean; up: boolean };
-export type NodState = { held: number; fired: boolean };
-export const newNod = (): NodState => ({ held: 0, fired: false });
-/** A nod is earned after `stillFor` s of standing still, within reach, looking up past the pitch; it is not earned again
- * until the player breaks one of the three. Returns true on the frame it is earned. */
-export function stepNod(s: NodState, dt: number, i: NodInput): boolean {
-  if (!(i.near && i.still && i.up)) {
-    s.held = 0;
-    s.fired = false;
-    return false;
-  }
-  s.held += dt;
-  if (s.fired || s.held < NOD.stillFor) return false;
-  s.fired = true;
-  return true;
-}
-/** The stare (1 up, 0 facing the player) of a looker `t` seconds into a nod: down to face the player, two bobs of the
- * head, then back up. */
-export function nodStare(t: number): number {
-  if (t <= 0 || t >= NOD.seconds) return 1;
-  const down = Math.min(1, t / 0.25, (NOD.seconds - t) / 0.3),
-    ease = down * down * (3 - 2 * down),
-    bob = 0.12 * Math.sin(t * 13) * ease;
-  return Math.min(1, 1 - ease + bob);
-}
-/** The nearest post-holder within the nod's reach of the player (metres, world frame), or -1. `folk` is the crew's
- * post-holders' positions by crew index (null: resting or walking). */
-export function nodder(player: { x: number; z: number }, folk: readonly ({ x: number; z: number } | null)[]): number {
-  let best = -1,
-    bestD: number = NOD.reach;
-  folk.forEach((f, c) => {
-    if (!f) return;
-    const d = Math.hypot(f.x - player.x, f.z - player.z);
-    if (d < bestD) {
-      bestD = d;
-      best = c;
-    }
-  });
-  return best;
-}
-/** Whether the player's camera looks up past the nod's pitch (`cam.pitch`, rad, positive up). */
-export const lookingUp = (pitch: number) => pitch > NOD.pitch;
 
 // ---------------------------------------------------------------- the talkers' lines, tied to facts (call 38)
 export type Facts = {
