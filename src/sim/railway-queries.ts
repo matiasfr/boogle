@@ -1,7 +1,7 @@
 // The railway's derived facts on the world (docs/plans/ecs-migration-railway.md, section 2, "Queries"): pure reads of
-// `(world)` or `(world, tick)` that the systems share. Queries never write. The view-side twins on `Railway`
-// (railActiveStation, line2Active, ...) still exist until M12b; each now has a world twin here or in its domain's file
-// (railway-queries-line1.ts, -line2.ts, -trains.ts, -works.ts), and test/railway-queries.test.ts holds each pair equal.
+// `(world)` or `(world, tick)` that the systems share. Queries never write. The old twins on `Railway`
+// (railActiveStation, line2Active, ...) have no reader left and go in M12b-2; each fact lives here or in its domain's
+// file (railway-queries-line1.ts, -line2.ts, -trains.ts, -works.ts).
 import type { RowOf, World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';

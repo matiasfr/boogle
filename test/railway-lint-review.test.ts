@@ -1,7 +1,7 @@
 // The guards M3c's review asked for (branch review/m3c, b5cfb6c68, where these failed; fixed in M8b):
 //
-// 1. No view or src/world file value-imports the seeds and drivers (src/sim/railway-drive.ts, railway-seeds.ts,
-//    railway-live.ts), which run the rules and the load check; a type-only import stays allowed
+// 1. No view or src/world file value-imports the seeds and drivers (src/sim/railway-drive.ts, railway-seeds.ts),
+//    which run the rules and the load check; a type-only import stays allowed
 //    (src/world/railway-jump.ts takes SeedStage).
 // 2. The view import() ban catches a path cast twice, a template literal cast once and a parenthesized path cast.
 // 3. dev/migrate/test-census.ts does not count test.skip, test.todo or a literal `{ skip: true }` as a test.
@@ -25,11 +25,10 @@ test('a view or src/world may not import the seed and test drivers (they run the
       'src/entities/railway/zz-probe.ts',
       "import { buildSeedWorld } from '../../sim/railway-seeds.ts';\nvoid buildSeedWorld;\n",
     ],
-    ['src/entities/railway/zz-probe.ts', "import { live } from '../../sim/railway-live.ts';\nvoid live;\n"],
     ['src/entities/railway/zz-probe.ts', "export const load = () => import('../../sim/railway-drive.ts');\n"],
     ['src/world/zz-probe.ts', "import { check } from '../sim/railway-drive.ts';\nvoid check;\n"],
     ['src/world/zz-probe.ts', "import { buildSeedWorld } from '../sim/railway-seeds.ts';\nvoid buildSeedWorld;\n"],
-    ['src/world/railway-zz.ts', "import { liveOf } from '../sim/railway-live.ts';\nvoid liveOf;\n"],
+    ['src/world/railway-zz.ts', "import { apply } from '../sim/railway-drive.ts';\nvoid apply;\n"],
     ['src/adapters/zz-probe.ts', "import { apply } from '../sim/railway-drive.ts';\nvoid apply;\n"],
   ].filter(([file, code]) => !restricted(code!, file!));
   assert.deepEqual(missed, []);
@@ -47,12 +46,12 @@ test('a view or src/world may not import the seed and test drivers (they run the
   assert.deepEqual(typed, []);
 });
 
-test("a view's import() of the check, read model or systems is banned however the path is cast", () => {
+test("a view's import() of the check, drivers or systems is banned however the path is cast", () => {
   const file = 'src/entities/railway/zz-probe.ts';
   const missed = [
     "export const load = () => import('/src/sim/railway-check.ts' as unknown as string);",
     'export const load = () => import(`/src/sim/railway-check.ts` as string);',
-    "export const load = () => import(('/src/sim/railway-read-model.ts') as string);",
+    "export const load = () => import(('/src/sim/railway-systems.ts') as string);",
     'export const load = () => import(`/src/sim/railway-drive.ts` as unknown as string);',
     "export const load = () => import((('/src/sim/railway-seeds.ts')) as string);",
   ].filter((code) => !restricted(code, file));

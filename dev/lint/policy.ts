@@ -104,15 +104,9 @@ const railDynamicBan = {
     .join(', '),
   message: `A view does not load the railway's systems, check, read model, seeds or drivers (${RAIL_PLAN}).`,
 };
-/** The tests and tools that import the read model today, file by file; the list may only lose lines (M12b deletes it). */
-const READ_MODEL_IMPORTERS = [
-  'dev/spikes/ecs/predict-cost.ts',
-  'dev/spikes/ecs/railway-diff.ts',
-  // M12: railwayOf left src/world (the client no longer builds the model); the differential tests' old side builds it
-  // here, in place of railway-marks.test.ts, which left the list in the same step.
-  'test/helpers/railway-model.ts',
-  'test/railway.test.ts',
-];
+/** The tests and tools that import the read model today, file by file: none since M12b-1 (its last readers went); the
+ * list may only lose lines, and M12b-2 deletes it with the model. */
+const READ_MODEL_IMPORTERS: string[] = [];
 /** The read model's own files: they still define `Railway`, `railwayView` and the `validateRail…` validators until
  * M12b-2 deletes them (docs/plans/ecs-m12-m13.md). The list may only lose lines. */
 const READ_MODEL_FILES = [
