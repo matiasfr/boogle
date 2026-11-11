@@ -245,7 +245,7 @@ const RIG = registerAsset({ id: 'hero-rig', url: rigUrl, kind: 'model', priority
 - **Registered today:** `scaffold-kit` (`first` under `?proto=assets`).
   Not yet: the groove prototype's stems (`src/proto/groove/stems.ts`, loaded by its own glob) and the KTX2 transcoder
   (three's `KTX2Loader` resolves it itself; the worker caches it on first use, which is enough).
-- **Download budgets.** `npm run assets -- --check` (in `npm run check`) reports and enforces the first-load budget
+- **Download budgets.** `npm run assets -- --check` (in `npm run check`) reports (as warnings, never a failure: owner, 10 November) the first-load budget
   (25 MB: `first` assets with no `when`) and the total (100 MB) by joining `assets/built/manifest.json` sizes with the
   priorities declared here; 4 MB per asset. The numbers live in `BUDGET` (`dev/assets/manifest.ts`), see
   [asset-pipeline](asset-pipeline.md). Unregistered built files count in the total only.
