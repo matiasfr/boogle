@@ -951,6 +951,18 @@ later change with a bundle report. Place's remaining callers get one owner from 
     out once a frame and the laid-pair count kept until the tick or the world changes. `back-down.ts`
     keeps `loadOf` and `onlyALoad` for groups b, c and d and adds `loadIn` and `onlyALoadIn`; they move over with
     their groups and the old pair goes in M12.
+  - [x] **f. Outside readers** (11 November, branch `ecs/m10f-outside-readers`, not shipped). Only two files in the
+    list read the adapter's inspection: `town/view.ts` (through `town/index.ts`) and `finds/secrets-view.ts`; wardrobe,
+    ring-island, water-render, frozen-sky and `debug/dev/inspect.ts` have their own `inspect()` and read nothing from the
+    adapter (`debug/dev/inspect.ts` and `room.ts` still dump `inspectRailway()`, the oracle). The town reads through
+    `town/town-read.ts` (`createTownReader(railwayWorldRead)`: facts from `jobs`, `forge`, `line2Completed`,
+    `line2Trains`; `works.breaker`; `jobs`/`qjobs` completions; the score and `railPhase` once per world and frame
+    tick); `secrets-view` reads `rail(w)`, `line2Completed/Trains` and `read.ready()`. The town still reads the
+    railway view's scene walk (`inspectRailway()`: trees, machine, trains, reward) at 2 to 4 Hz: view data, not
+    adapter data. **Left for a step that may touch `src/sim`:** `townRead(s: Railway)` and `townReadOf` stay in
+    `town-facts.ts` (the world twin is `townReadOfWorld` in `town-read.ts`; move it and delete the pair in M12b).
+    `test/town-facts.test.ts` runs on seed worlds, 23 asserts before and after. Proof:
+    `test/railway-m10f-review.test.ts`.
 - [ ] **T1 to T7. The tests, rewritten on rows and queries.** _Low each (tests only). After M3c and M8. Seven
       batches, one agent each, in parallel: no two batches, and no batch and M10 group, edit the same file._
   - Per batch: state is a `World` from `test/helpers/rail.ts`; `s.a.b` reads become row readers; the 33 facts become

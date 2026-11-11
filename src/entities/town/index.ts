@@ -4,7 +4,8 @@ import { productionRailway } from '../../proto/flags.ts';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
 import { warmUp } from '../../render/precompile.ts';
-import { railwayRead } from '../railway/state.ts';
+import { railwayWorldRead } from '../railway/state.ts';
+import { createTownReader } from './town-read.ts';
 import { createTownView, type TownView } from './view.ts';
 import { setTownView } from './state.ts';
 
@@ -14,7 +15,7 @@ let active: TownView | null = null;
 registerInteractable(() => active?.targets() ?? NO_TARGETS);
 
 if (productionRailway && railwayMirror) {
-  const loaded = createTownView(railwayRead).then((view) => {
+  const loaded = createTownView(createTownReader(railwayWorldRead).look).then((view) => {
     active = view;
     setTownView(view);
     return spawn({

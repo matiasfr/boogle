@@ -1,4 +1,5 @@
-// The town facts (src/sim/town-facts.ts) on the accepted-op fixtures `dev/look/rail-seed.ts` seeds from.
+// The town facts (src/sim/town-facts.ts) on the accepted-op fixtures `dev/look/rail-seed.ts` seeds from, read from the
+// rows the town reads (src/entities/town/town-read.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -7,16 +8,26 @@ import {
   townHas,
   townLevel,
   townPopulation,
-  townRead,
   townReadOf,
   type TownFact,
 } from '../src/sim/town-facts.ts';
-import type { Railway } from '../src/sim/railway.ts';
-import { railJobs } from '../src/sim/railway-line.ts';
-import { line2Completed, line2Trains } from '../src/sim/railway-line2.ts';
-import { createRailway, railApply, railSession } from './railway-live.ts';
-import { act, advance, logs, railwayAtQ2 } from './helpers/railway-q2.ts';
-import { railwayAtTrains } from './helpers/railway-trains.ts';
+import type { World } from '../src/ecs/index.ts';
+import { townReadOfWorld as townRead } from '../src/entities/town/town-read.ts';
+import { railJobs } from '../src/sim/railway-queries.ts';
+import { line2Completed, line2Trains } from '../src/sim/railway-queries-line2.ts';
+import {
+  act,
+  advance,
+  apply,
+  beam,
+  buildSeedWorld,
+  createRailway,
+  forge,
+  logs,
+  railSession,
+  rocks,
+  type Seed,
+} from './helpers/rail.ts';
 
 // Each fixture is built once and only read.
 const once = <T>(make: () => T) => {
@@ -24,32 +35,32 @@ const once = <T>(make: () => T) => {
   return () => (v ??= make());
 };
 const atPath = once(() => railwayAtPath());
-const atQ1 = once(() => railwayAtQ2().s);
-const atTrains = once(() => railwayAtTrains('trains-on').s);
-const atPier = once(() => railwayAtTrains('q6-done').s);
-const facts = (s: Railway) => TOWN_FACTS.filter((f) => townHas(townRead(s), f));
+const atQ1 = once(() => buildSeedWorld('q1-done').w);
+const atTrains = once(() => buildSeedWorld('trains-on').w);
+const atPier = once(() => buildSeedWorld('q6-done').w);
+const facts = (s: World) => TOWN_FACTS.filter((f) => townHas(townRead(s), f));
 /** Line one played to T3 laid, the forge not yet fed: railwayAtQ2's first half. */
-function railwayAtPath(): Railway {
-  const s = createRailway();
-  for (const pid of ['a', 'b']) railSession(s, pid, 1);
-  railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
-  const w = { s, t: 40 };
-  logs(w, 'a', 'T1', 24);
-  advance(w, 300);
+function railwayAtPath(): World {
+  const w = createRailway();
+  for (const pid of ['a', 'b']) railSession(w, pid, 1);
+  apply(w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  const s: Seed = { w, t: 40 };
+  logs(s, 'a', 'T1', 24);
+  advance(s, 300);
   for (let i = 0; i < 8;) {
-    const n = act(w, 'b', 'rail.mine', { id: s.line!.rocks.findIndex((r) => r > 0) });
-    assert.equal(act(w, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }), n);
+    const n = act(s, 'b', 'rail.mine', { id: rocks(w).findIndex((r) => r.left > 0) });
+    assert.equal(act(s, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }), n);
     i += n;
   }
-  logs(w, 'a', 'T2', 32);
-  advance(w, 300);
-  logs(w, 'a', 'T3', 40);
-  act(w, 'a', 'rail.axe');
-  for (let i = 0; i < 12; i++) act(w, 'a', 'rail.beamChop');
-  act(w, 'a', 'rail.beamTake', { revision: s.line!.beam.revision });
-  assert.equal(act(w, 'a', 'rail.beamDeposit', { revision: s.line!.beam.revision, station: 'T3' }), 1);
-  advance(w, 600);
-  return s;
+  logs(s, 'a', 'T2', 32);
+  advance(s, 300);
+  logs(s, 'a', 'T3', 40);
+  act(s, 'a', 'rail.axe');
+  for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
+  act(s, 'a', 'rail.beamTake', { revision: beam(w).revision });
+  assert.equal(act(s, 'a', 'rail.beamDeposit', { revision: beam(w).revision, station: 'T3' }), 1);
+  advance(s, 600);
+  return w;
 }
 
 test('a fresh railway has no facts and 12 people', () => {
@@ -100,11 +111,11 @@ test('newest is the last true fact in TOWN_FACTS order', () => {
   assert.deepEqual(order, ['path', 'forge', 'depot', 'head', 'trains', 'town', 'stone', 'pier']);
 });
 
-test("the adapter's read model gives the same facts as the state", () => {
+test("the adapter's read model gives the same facts as the rows", () => {
   for (const s of [createRailway(), atPath(), atQ1(), atPier()]) {
     const shaped = {
-      stations: railJobs(s).map((j) => ({ completion: j.completion })),
-      line2: { forge: { lit: s.line2!.forge.lit }, completed: line2Completed(s), trains: line2Trains(s) },
+      stations: railJobs(s, 1e9).map((j) => ({ completion: j.job.completion })),
+      line2: { forge: { lit: forge(s).lit }, completed: line2Completed(s), trains: line2Trains(s) },
     };
     assert.deepEqual(townReadOf(shaped), townRead(s));
   }
