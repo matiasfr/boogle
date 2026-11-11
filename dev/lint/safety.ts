@@ -16,7 +16,6 @@ export const customRules = new Set([
   'boogle/use-an-entity',
   'boogle/input-through-actions',
   'boogle/inspect-legacy',
-  'boogle/railway-read',
 ]);
 export const matches = (file: string, patterns: string[]) => patterns.some((p) => path.matchesGlob(file, p));
 export const ignorePatterns = ['**/.git/**', '**/node_modules/**', ...policy[0]!.ignores!.map((p) => p + '**')];

@@ -22,7 +22,7 @@
 const { inspectTown } = (await import(
   '/src/entities/town/state.ts' as string
 )) as typeof import('../../../src/entities/town/state.ts');
-const { railwayRead, inspectRailway } = (await import(
+const { railwayWorldRead, inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -48,8 +48,8 @@ const shore = (await import(
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const deadline = performance.now() + 20000;
-while ((!inspectTown() || !railwayRead()?.ready || !me.body) && performance.now() < deadline) await wait(50);
-if (!inspectTown() || !railwayRead()?.ready || !me.body)
+while ((!inspectTown() || !railwayWorldRead()?.ready() || !me.body) && performance.now() < deadline) await wait(50);
+if (!inspectTown() || !railwayWorldRead()?.ready() || !me.body)
   throw new Error('railway-town needs the live town and railway');
 const body = me.body;
 const query = new URLSearchParams(location.search);

@@ -26,7 +26,9 @@ import { coarseUa, firstFrame, scrub } from '../../netplay/report-format.ts';
 import { BUILD } from '../../build-id.ts';
 import { IDLE_S } from '../../../protos/store.ts';
 import { PROTO, protoV, pageQuery, productionRailway } from '../flags.ts';
-import { inspectRailwayLegacy } from '../../entities/railway/state.ts';
+import { railwayWorldRead } from '../../entities/railway/state.ts';
+import { qjob } from '../../sim/railway-rows.ts';
+import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createRailwayJourneyMarks } from '../../adapters/railway-marks.ts';
 import { HEAD, ORIGIN } from '../../place/layout.ts';
 import { currentCard } from '../card.ts';
@@ -385,13 +387,14 @@ function sample(ms: number) {
   const x = round(b.x),
     z = round(b.z);
   const a = activity();
-  const state = productionRailway ? inspectRailwayLegacy() : null;
-  if (state?.ready)
+  const read = productionRailway ? railwayWorldRead() : null;
+  const w = read?.world();
+  if (read && w && read.ready())
     for (const [name, data] of journeyMarks(
       b,
       carry.on?.id,
-      state.line2.trains,
-      state.line2.stations[5]?.completion === 1,
+      line2Trains(w),
+      qjob(w, 5).completion === 1,
       me.swimming,
     ))
       playMark(name, data);
@@ -399,7 +402,7 @@ function sample(ms: number) {
     productionRailway &&
     !reachedHead &&
     !me.swimming &&
-    (state?.line2.completed ?? 0) >= 5 &&
+    (w ? line2Completed(w) : 0) >= 5 &&
     Math.abs(b.y - HEAD.y) < 5 &&
     Math.hypot(b.x - HEAD.x - ORIGIN.x, b.z - HEAD.z - ORIGIN.z) < HEAD.r
   ) {

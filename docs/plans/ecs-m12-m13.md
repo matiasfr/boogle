@@ -290,7 +290,7 @@ typecheck`, `npm run lint`.
   - **Checks:** `npm run check`; `npm run scenario -- hud-glance`; `npm run look -- --query from=q3-done --eval
     dev/look/evals/jump-in.ts --until window.__jumpDone` (a state reader on the legacy door) and one view-only eval
     (`railway-seats.ts`).
-- [ ] **M12d. The live readers and the dump.** _S, Medium. After M12c._ `src/entities/lookout/view.ts`
+- [x] **M12d. The live readers and the dump.** _S, Medium. After M12c._ `src/entities/lookout/view.ts`
       (`ringOpen(w).head` and `aperture(w).joined` through `railwayWorldRead()`, read at the head of `readLifted`),
       `src/features/playtest-flag.ts` (`account(w, pid)`), `src/proto/playdata/record.ts` (`line2Trains`,
       `line2Completed`, `qjob(w, 5).completion`, `read.ready()`), `src/debug/dev/inspect.ts` and `room.ts` (the view

@@ -2,8 +2,7 @@
 //
 // 1. boogle/inspect-legacy ignores all of src/entities/railway/, so any railway view may start calling the legacy door
 //    unlisted; only state.ts defines it (index.ts mounts it through setRailwayLegacy, a different name).
-// 2. The ratchet closes one door of two: railwayRead() in state.ts hands any file the same wide object (the adapter's
-//    inspect()), unrestricted, so a D batch can leave the list by switching doors.
+// 2. (Closed by M12d: the second door, railwayRead(), is deleted with its list and rule.)
 // 3. read.debug().prediction is the adapter's live counters: a tool that writes to it, or holds it and compares later,
 //    changes or sees the session's own stats.
 // 4. A tool that casts inspectRailway() past the typecheck still reads fields the narrow inspection no longer holds
@@ -14,7 +13,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lintSafety } from '../dev/lint/safety.ts';
-import { INSPECT_LEGACY_IMPORTERS, LEGACY_DOOR_CEILINGS, RAILWAY_READ_IMPORTERS } from '../dev/lint/policy.ts';
+import { INSPECT_LEGACY_IMPORTERS, LEGACY_DOOR_CEILINGS } from '../dev/lint/policy.ts';
 import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { specOf } from '../src/sim/tune.ts';
@@ -27,14 +26,6 @@ test('a railway view may not call the legacy door unlisted: only state.ts define
   const code = `import { ${DOOR} } from './state.ts';\nexport const peek = () => ${DOOR}()?.line2;\n`;
   assert.equal(flagged(code, 'src/entities/railway/zz-probe.ts'), true, 'a new file in the railway entity');
   assert.equal(flagged(code, 'src/entities/railway/train-view.ts'), true, 'an existing railway view');
-});
-
-test('an unlisted tool cannot take the wide object through the other door, railwayRead()', () => {
-  const code =
-    "const { railwayRead } = (await import('/src/entities/railway/state.ts' as string)) as typeof import('../../../src/entities/railway/state.ts');\n" +
-    'console.log(railwayRead()?.line2.completed);\nexport {};\n';
-  const d = lintSafety(code, 'dev/look/evals/zz-probe.ts');
-  assert.ok(d.length > 0, 'railwayRead() is the same wide object as the legacy door and is not held by any rule');
 });
 
 test('read.debug().prediction is detached: writing to it does not change the session counters', () => {
@@ -110,12 +101,8 @@ test('every file on INSPECT_LEGACY_IMPORTERS still names the door', () => {
   assert.deepEqual(stale, []);
 });
 
-// Added with the fixes (M12c): the second door's list gets the same guard, and both lists only shrink (a batch that
-// takes files off lowers its ceiling in dev/lint/policy.ts).
-test('every file on RAILWAY_READ_IMPORTERS still names railwayRead, and neither list grows', () => {
-  const name = ['railway', 'Read'].join('');
-  const stale = RAILWAY_READ_IMPORTERS.filter((f) => !new RegExp(`\\b${name}\\b`).test(fs.readFileSync(f, 'utf8')));
-  assert.deepEqual(stale, []);
+// Both lists only shrink (a batch that takes files off lowers its ceiling in dev/lint/policy.ts). The second door,
+// railwayRead(), and its list are gone (M12d).
+test('the legacy list does not grow', () => {
   assert.ok(INSPECT_LEGACY_IMPORTERS.length <= LEGACY_DOOR_CEILINGS.inspectRailwayLegacy);
-  assert.ok(RAILWAY_READ_IMPORTERS.length <= LEGACY_DOOR_CEILINGS.railwayRead);
 });
