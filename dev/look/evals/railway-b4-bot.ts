@@ -1,9 +1,9 @@
 // Run either half against an accepted host seed. No teleport, direct op or recovery.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { seaToFarHead } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, line2Active, line2Completed, line2Jobs, rail, railAt, railReady, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const query = new URLSearchParams(location.search);
@@ -19,20 +19,26 @@ const shot = window as Window & { __railStop?: string; __placeDone?: boolean; __
 setTimeout(() => window.__debugCam!.clear(), 100);
 background(
   (async () => {
-    if (!(await bot.until(() => inspectRailwayLegacy()?.ready && me.body && me.coyote > 0, 300000, 'B4 seed arrived')))
+    if (!(await railReady(300000)) || !(await bot.until(() => me.body && me.coyote > 0, 300000, 'B4 seed arrived')))
       throw new Error('B4 seed did not arrive');
     await seaToFarHead(
       {
         bot,
         checkpoint: async (beat) => {
           bot.note(beat);
-          const state = inspectRailwayLegacy()!;
+          const state = inspectRailway()!;
+          const w = rw();
           console.log(
             `RAILWAY CHECKPOINT ${JSON.stringify({
               beat,
               tick: state.tick,
               hash: state.hash,
-              line2: state.line2,
+              line2: {
+                ...rail(w),
+                active: line2Active(w),
+                completed: line2Completed(w),
+                completions: line2Jobs(w, railAt()).map((j) => j.job.completion),
+              },
               line2View: state.line2View,
               position: me.body!.position,
               swimming: me.swimming,

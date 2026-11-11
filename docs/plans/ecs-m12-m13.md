@@ -308,7 +308,7 @@ typecheck`, `npm run lint`.
 - [ ] **D2. The other bots.** _S._ `dev/look/bots/railway-glide.ts`, `railway-held-jump.ts`, `railway-works.ts`,
       `coop-unlock.ts`, `railway-reload.ts` (the last two found by M12c's typecheck).
       **Checks:** each bot's own eval once (`railway-works-bot.ts`, the glide and held-jump looks).
-- [ ] **D3. Line 2's evals.** _M._ `dev/look/evals/`: `railway-b4-at`, `railway-b4-bot`, `railway-b5b8-at`,
+- [x] **D3. Line 2's evals.** _M._ `dev/look/evals/`: `railway-b4-at`, `railway-b4-bot`, `railway-b5b8-at`,
       `railway-b5b8-bot`, `railway-boiler-fit`, `railway-forge-lights`, `railway-head-forge`, `railway-gated-fill`,
       `railway-glide-wake`, `railway-signal-hold`, `railway-trains-pass`, `gpu-portability` (`jump-in` was done in
       M12c).

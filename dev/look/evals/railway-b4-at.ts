@@ -1,15 +1,15 @@
 // Disposable accepted --rail-seed fixture. No route bot, no shared-state fabrication in the browser.
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, line2Completed, line2Jobs, line2SeaOpen, railAt, railRead, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport, raycastClosest } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const layout = (await import(
-  '/src/place/layout.ts' as string
-)) as typeof import('../../../src/place/layout.ts');
-const rail = (await import('/src/entities/railway/rail-kit.ts' as string)) as typeof import('../../../src/entities/railway/rail-kit.ts');
+const layout = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
+const rail = (await import(
+  '/src/entities/railway/rail-kit.ts' as string
+)) as typeof import('../../../src/entities/railway/rail-kit.ts');
 const { interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');
@@ -17,12 +17,13 @@ const { GROUP } = (await import(
   '/src/physics/physics.ts' as string
 )) as typeof import('../../../src/physics/physics.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const completed = () => (railRead()?.ready() ? line2Completed(rw()) : 0);
 const until = performance.now() + 15000;
-while ((!inspectRailwayLegacy()?.ready || (inspectRailwayLegacy()?.line2?.completed ?? 0) < 4) && performance.now() < until)
-  await wait(50);
-const state = inspectRailwayLegacy();
-if (!state?.ready || !state.line2 || state.line2.completed < 4 || !me.body)
-  throw new Error('B4 requires an accepted Q4-complete --rail-seed');
+while (completed() < 4 && performance.now() < until) await wait(50);
+const state = inspectRailway();
+if (!state || completed() < 4 || !me.body) throw new Error('B4 requires an accepted Q4-complete --rail-seed');
+// Q5's finish flag as the page found it (the seed's, not the live edge).
+const q5Done = line2Jobs(rw(), railAt())[4]!.job.completion === 1;
 const query = new URLSearchParams(location.search);
 const shot = window as Window & { __b4Prepared?: boolean };
 const action = !!shot.__b4Prepared;
@@ -80,17 +81,17 @@ if (query.get('b4edge') === '1') {
   const rim = rail.besideLine(line, 280, 0);
   teleport(me.body, rim.x, layout.railY(line, 280) + 0.85, rim.z);
   me.body.velocity.set(0, 0, 0);
-  if (inspectRailwayLegacy()!.line2.stations[4]!.completion === 1)
+  if (line2Jobs(rw(), railAt())[4]!.job.completion === 1)
     throw new Error('Q5 finishing seed expired before mounting; live edge not observed');
   // completion is a terminal flag, not a progress fraction: watch the moving head before its final pairs.
-  while (inspectRailwayLegacy()!.line2View.head < 532) await wait(50);
-  if (inspectRailwayLegacy()!.line2View.head >= 546) throw new Error('Missed the live final-pair approach');
+  while (inspectRailway()!.line2View.head < 532) await wait(50);
+  if (inspectRailway()!.line2View.head >= 546) throw new Error('Missed the live final-pair approach');
   let samples = 0;
   const timer = setInterval(() => {
-    const state = inspectRailwayLegacy()!;
+    const state = inspectRailway()!;
     console.log(
       `BFOUR edge ${JSON.stringify({
-        completion: state.line2.stations[4]!.completion,
+        completion: line2Jobs(rw(), railAt())[4]!.job.completion,
         lamps: state.line2View.trestleLamps,
         rockets: state.line2View.farHeadRockets,
         panels: state.line2View.panelCursor,
@@ -101,7 +102,7 @@ if (query.get('b4edge') === '1') {
 }
 window.__debugCam!.set(camera, aim, 65);
 await wait(250);
-if (state.line2.stations[4]?.completion === 1) {
+if (q5Done) {
   // Probe the solid walking surface every metre, including the Q4/Q5 seam. This does not replace a human walk.
   const hit = { hasHit: false, distance: 0, hitPointWorld: { x: 0, y: 0, z: 0 }, hitNormalWorld: { x: 0, y: 0, z: 0 } };
   let samples = 0,
@@ -131,7 +132,7 @@ if (state.line2.stations[4]?.completion === 1) {
     }
   console.log(`BFOUR deck ${JSON.stringify({ samples, maxError, misses })}`);
 }
-console.log(`BFOUR pose ${mode} ${JSON.stringify(inspectRailwayLegacy()?.line2View)}`);
+console.log(`BFOUR pose ${mode} ${JSON.stringify(inspectRailway()?.line2View)}`);
 shot.__b4Prepared = true;
 // Optional action body in the same permitted eval file; pressing uses the existing real-input bot.
 if (query.get('b4pull') === '1' && action) {
@@ -148,18 +149,17 @@ if (query.get('b4pull') === '1' && action) {
   console.log(`BFOUR prompt ${JSON.stringify({ id: offered?.id, verb: offered?.verb })}`);
   if (offered?.id !== 'railway-sea-switch') throw new Error('Summit did not offer the sea switch');
   bot.press();
-  if (!(await bot.until(() => !!inspectRailwayLegacy()?.line2?.sea, 2000, 'sea switch accepted')))
+  if (!(await bot.until(() => line2SeaOpen(rw()), 2000, 'sea switch accepted')))
     throw new Error('Sea switch press was not accepted');
-  console.log(`BFOUR pull ${JSON.stringify(inspectRailwayLegacy()?.line2View)}`);
+  console.log(`BFOUR pull ${JSON.stringify(inspectRailway()?.line2View)}`);
 }
 // look applies its default pose after setup returns. Reapply this authored pose during its short warm-up.
 setTimeout(() => window.__debugCam!.set(camera, aim, 65), 100);
 for (const ms of [500, 2000, 6000, 10000])
   setTimeout(() => {
-    const s = inspectRailwayLegacy(),
-      v = s?.line2View;
+    const v = inspectRailway()?.line2View;
     console.log(
-      `BFOUR after ${ms} ${JSON.stringify({ completed: s?.line2?.completed, seaGateSolid: v?.seaGateSolid, lamps: v?.trestleLamps, rockets: v?.farHeadRockets, panels: v?.panelCursor, cart: v?.cart })}`,
+      `BFOUR after ${ms} ${JSON.stringify({ completed: completed(), seaGateSolid: v?.seaGateSolid, lamps: v?.trestleLamps, rockets: v?.farHeadRockets, panels: v?.panelCursor, cart: v?.cart })}`,
     );
   }, ms);
 export {};
