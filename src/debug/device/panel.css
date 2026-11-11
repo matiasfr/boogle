@@ -1,0 +1,95 @@
+/* The device test's panel: a card over the loading screen, a strip while it runs, a summary card at the end. */
+.device-panel {
+  position: fixed;
+  z-index: 130;
+  left: 50%;
+  top: max(10px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  width: min(440px, calc(100vw - 20px));
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(14, 20, 18, 0.9);
+  color: #edf3e8;
+  font:
+    13px/1.4 system-ui,
+    sans-serif;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  max-height: calc(100vh - 20px);
+  overflow: auto;
+}
+.device-panel h2 {
+  margin: 0 0 2px;
+  font-size: 15px;
+}
+.device-panel p {
+  margin: 4px 0;
+}
+.device-panel .dev-sub {
+  opacity: 0.7;
+  font-size: 12px;
+}
+.device-panel button {
+  font: inherit;
+  font-weight: 600;
+  padding: 9px 18px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: #7fd18b;
+  color: #0c1a10;
+}
+.device-panel button:disabled {
+  background: #55615a;
+  color: #aab5ad;
+}
+.device-panel.strip {
+  padding: 8px 12px;
+  background: rgba(14, 20, 18, 0.78);
+  pointer-events: none;
+}
+.device-panel .dev-bar {
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+.device-panel .dev-bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #7fd18b;
+  transition: width 0.3s;
+}
+.device-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.device-panel th,
+.device-panel td {
+  padding: 2px 4px;
+  text-align: right;
+}
+.device-panel th:first-child,
+.device-panel td:first-child {
+  text-align: left;
+}
+.device-panel .pass {
+  color: #7fd18b;
+}
+.device-panel .fail {
+  color: #ff8a7a;
+}
+.device-panel .nm {
+  color: #e6c26a;
+}
+.device-panel .dev-code {
+  font:
+    600 18px/1.2 ui-monospace,
+    monospace;
+  letter-spacing: 0.08em;
+}

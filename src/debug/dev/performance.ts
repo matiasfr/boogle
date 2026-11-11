@@ -9,7 +9,7 @@ export const graphicsMeasuring = () => matching;
 type HardwareTiming = Awaited<ReturnType<typeof import('../prof-overlay.ts').hardwareTiming>>;
 
 /** A sleep alone can finish during late pipeline compilation. Require a continuous window of advancing renders. */
-async function warmGraphics(seconds: number) {
+export async function warmGraphics(seconds: number) {
   const started = performance.now();
   let stable = started;
   let previousPoll = started;

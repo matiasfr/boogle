@@ -4,24 +4,7 @@
 // (docs/research/webgpu-on-ipad.md, recommendation 1). Local, debug only.
 import { renderer, rendererReady } from '../render/scene.ts';
 
-const LIMITS = [
-  'maxTextureDimension2D',
-  'maxBufferSize',
-  'maxStorageBufferBindingSize',
-  'maxUniformBufferBindingSize',
-  'maxStorageBuffersPerShaderStage',
-  'maxStorageBuffersInFragmentStage',
-  'maxStorageTexturesPerShaderStage',
-  'maxSampledTexturesPerShaderStage',
-  'maxBindGroups',
-  'maxColorAttachments',
-  'maxColorAttachmentBytesPerSample',
-  'maxComputeWorkgroupStorageSize',
-  'maxComputeInvocationsPerWorkgroup',
-  'maxComputeWorkgroupsPerDimension',
-  'maxVertexBuffers',
-  'maxInterStageShaderVariables',
-] as const;
+import { LIMITS } from './device/limits.ts';
 
 type Limits = Record<string, number | undefined>;
 // The limits include optional and nonstandard WebGPU properties; describe just the parts read below.
