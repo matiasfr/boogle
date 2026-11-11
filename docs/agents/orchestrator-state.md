@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 10 November 2026, 16:45 local (00:45 UTC on the 11th), in the 10–11 November orchestrator session (started 12:11 local, ends 11 November 12:11; an hourly heartbeat runs in that session; no new agents from 09:11 on the 11th). **World v26 is live** (two trains on line 2, #1467); main is green. The "Priority call" section below overrides the order in Running, Queued and Next moves, which are otherwise as of 15:40.
+**Updated:** 10 November 2026, 17:35 local (01:35 UTC on the 11th), in the 10–11 November orchestrator session (started 12:11 local, ends 11 November 12:11; an hourly heartbeat runs in that session; no new agents from 09:11 on the 11th). **World v26 is live** (#1467); main is green. The "Priority call" section below is current and overrides the order in Running, Queued and Next moves, which are as of 15:40.
 
 ## Links
 
@@ -27,18 +27,33 @@ The owner's words are in the [decision log](../decisions.md#decided) (10 Novembe
 4. **Plan only: per-system divergence diagnosis** ([research](../research/deterministic-sim-at-scale.md) rec 1). A grep of `src/sim`, `src/net`, `src/netplay`, `src/ecs` and `server/` on 10 November found no per-subsystem hashes; the planner confirms before planning.
 5. **Held behind 1 ("before more build outs"), in this order when it lifts:** Ring Island v27 (R1b buffers and crossover, then R3a–R5; the owner chose buffers about 15 m past the halt with a crossover before it); yards at halts build 1; Ring Island's first landform step; the train upgrade screen's install build; terrain fixes on the wedge, then all of Home after a quiet-machine perf run; the passenger-trade model and prototype; the express (after v27 and Home's hall map); opening the cottages; the blockout view's two ruled-out legs; the sky cube.
 
-**Since 15:40, on main:** install-moment spec (#1465), rail map corrected to layout B (#1466), v26 (#1467), junction stations brief, review and answers (#1468, #1473), express brief and its design review (#1469, 9d9d14b4d), passenger-trade brief (#1472). The owner answered 39 open calls on the [decisions page](https://claude.ai/artifact/VT1appiKrQs8YPsmZf73u6) at about 16:20; four against the recommendation (the drawbridge stays at true scale; an express runs past a pulled lever; Boogles may buy anything; the wearables shop stays free).
+**The migration ([plan](../plans/ecs-migration-railway.md), 14 steps, no `WORLD_NS` bump needed; lanes A sim M0/M2/M3, B moves M4–M7, C read M1):**
 
-**Running at 16:45 (worktrees under `.claude/worktrees/`):**
-
-| Job | Branch or worktree | Next step |
+| Step | State at 17:35 | Next |
 | --- | --- | --- |
-| Record the 39 answers in decisions, agent-calls and the briefs (docs) | `docs/open-calls-answers` | Review, ship |
-| Express brief corrected per its review, answers filled (docs) | `design-review/express-apply` | Review, ship |
-| Passenger-trade design review, then the owner's answers applied (docs) | the review agent's worktree | Review, ship, update the decisions page |
-| Ring Island plan re-planned for buffers against v26's real code (docs) | `plan/ring-island-buffers` | Review, ship; the build is held (item 5) |
-| Train upgrade screen first build, view only (code, started 16:30) | `feat/engine-garage-view` | The owner decides: pause or finish |
-| Ring Island greybox station house, **finished, not shipped** (`?ring=greybox`, adds `src/proto/greybox/ring-house.ts`) | `worktree-agent-a21540a454e11529d` | The owner decides: ship or hold. Its approach still does not show the lean; step B (buffers, end board) not built |
+| M0 guards, M0b ops stream | On main (#1487, #1493): hash golden for 34 stages in nine shards (about 21 s), scripted stream for ops no stage runs, schema golden, v26 snapshot | The snapshot fixture is deleted, not re-recorded, at the next bump (owner call "Save guards are not a priority") |
+| M1 adapter read once a frame | On main (#1485), reviewed; a disposed adapter no longer serves the memo | None |
+| M2 world split | Built on `ecs/m2-world-split` (worktree agent-a17e67f8bc34bd460); independent review running | Rebase over M0b (the golden is now `test/railway-golden-<n>.test.ts`), re-run the guards, ship with `--reviewed`; then M3 (opus, reviewed) |
+| M4 render moves | On main (#1489) | None; owner conversions deferred to M13 |
+| M5 place moves | Built on `ecs/m5-place-moves` (worktree agent-a03197e24c59ee4bf), shipping; `src/proto` 102 files, 26,482 lines | Then M6 (same agent). Skipped from M5: D1d, `look-kit` taking `boilerShown` (four caller signatures), wants its own small step |
+| Re-export files (`railway-world.ts`, later `railway-systems.ts`) | The plan removes them in M12 | Proposed to the owner: pull forward to right after M3, importers rewritten by script, plus a lint rule; unanswered |
+
+**Gates for the held build-outs:** rules after M3 (M8 preferred), views after M6 and M8. The plan's five owner questions are unanswered (resume at the gates; views stay objects that query; keep the `Railway` read model for the load check, seeds and tests; delete Place-only tools with a twin; seats as a Server component later).
+
+**Other work since 15:40, on main:** v26 (#1467); install-moment spec (#1465); rail map on layout B (#1466); junction stations brief, review, answers (#1468, #1473); express brief, review, body corrected with answers (#1469, 9d9d14b4d, #1475); passenger-trade brief and review (#1472, #1476); the owner's 39 answers recorded (#1477); remote device tests plan and step 1 (#1478, 874c0b8cd; live at https://boogle.club/?device=new, no real phone run yet); Ring Island greybox station house (#1479, `?ring=greybox`); train upgrade screen v1, view only, `?home=b` (fbfbca0a0); Ring Island plan amended for buffers against v26 (88dd06d86); the decision log stored by topic (040db292c; record decisions per `docs/decisions.md`, check with `npm run decisions`); the Boogles split (7a3356150); eight conflicting pairs in the log ruled or noted (e748ff608, 83c50fcf1, #1492).
+
+**Owner decisions after 16:20 (all recorded):** Boogles buy town upgrades, source upgrades and passenger cars, never engine or cargo parts, never materials; "Finish train upgrade v1 at a logical point to stop" (done); device plan answers (previews deferred; a device report may replace "not tested on a device"; full user agent stored; self-minted runs may upload stills later; p95 under two refresh intervals); save guards not a priority; the decision log by topic; the objective marker may come back sparingly; the sky is the gradient and cloud sprites; The Boogler is an entrepreneur.
+
+**Also running at 17:35:**
+
+| Job | Branch | Next step |
+| --- | --- | --- |
+| Remote device tests step 2 (baseline, `new --wait`, heartbeat line, a live-site check) | `feat/device-tests-step2` | Review, ship; then step 3 needs a `server/` review |
+| Passenger-trade body reworked for the Boogles split (docs) | `design/passenger-trade-split` | Review, ship, log its calls in `agent-calls.md` |
+
+**Waiting on the owner:** the first real device run (open the link on a phone, tap Run, give the code); three or four trains on line 2 for v27 (worst wait about 105 s with three, by hand); the Pier's platform side once the second track goes in (needs a design review first); whether the bought passenger set stands in the Roundhouse at Home; the migration plan's five questions; the re-export files moved forward.
+
+**Leftovers from this stretch:** train upgrade v1: Esc against Pause and Skip unchecked, phone width unseen, "Footings to the island a minute" readout wants rewording, speed part offered on today's 710 m line against the ten-second rule (P2). Device step 1: Safari/iOS paths and live-site behaviour unproven (P2). Passenger-trade review's 28 New and Default calls not yet in `agent-calls.md` (P2). Express: the held connecting train is not designed (P2). Station house: lean not legible from the approaching train; step B (buffers, end board) not built (P3). The scene census (`npm run bench`) was not run for M4 or M5 (P3). Worktrees to clear at wind-down: agent-a3a6bb9b54e08728c (v26, merged, locked), agent-a2c535d562153dc90 (merged, untracked scaffold).
 
 ## Running
 
