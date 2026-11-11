@@ -14,7 +14,6 @@ import { headwearTop } from './head-clearance.ts';
 import { camera } from './scene.ts';
 import { dismissPointer } from '../player/dismiss-pointer.ts';
 import { clamp } from '../math-pure.ts';
-import { holdMoment } from '../ui/moment-banner.ts';
 import { outCubic } from './motion.ts';
 
 export type Got = {
@@ -207,8 +206,8 @@ export function createRewardReveal({
   function updateGot(dt: number) {
     cameraWeight += ((cur ? 1 : 0) - cameraWeight) * (1 - Math.exp(-dt * (cur ? 3.5 : 7)));
     if (cameraWeight < 0.001) cameraWeight = 0;
-    holdCamera(self, cameraWeight > 0 || gettingItem());
-    holdMoment(self, gettingItem() ? Infinity : null); // the shared full-screen check (src/ui/moment-banner.ts)
+    // The card has the screen until put away; the camera easing home afterwards is held but no longer busy.
+    holdCamera(self, cameraWeight > 0 || gettingItem(), gettingItem() ? Infinity : 0);
     if (!cur) return;
     const u = (cur.t += dt);
     overHead(top);
@@ -290,7 +289,6 @@ export function createRewardReveal({
     dispose() {
       dropGot();
       holdCamera(self, false);
-      holdMoment(self, null);
       listeners.abort();
       const index = camConstraints.indexOf(cameraConstraint);
       if (index >= 0) camConstraints.splice(index, 1);
