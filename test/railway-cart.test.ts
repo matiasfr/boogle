@@ -3,8 +3,7 @@
 // stands once, and the away credit counts its loads.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { railAccount, railCounts } from '../src/sim/railway.ts';
-import { Cart, Forge, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { railwayRoomId } from '../src/world/railway-namespace.ts';
 import {
@@ -18,57 +17,62 @@ import {
   legTicks,
   type RailCart,
 } from '../src/sim/railway-cart.ts';
-import { line2CartStatus, line2Served } from '../src/sim/railway-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
-import { hash, invariant, railApply, railResume, railTick, restore, worldOf } from './railway-live.ts';
-import { railwayAtQ2, railwayAtQ4, type World } from './helpers/railway-q2.ts';
+import {
+  account,
+  apply,
+  cart as cartRow,
+  forge as forgeRow,
+  hash,
+  invariant,
+  rail as railRow,
+  railResume,
+  railTick,
+  railwayAtQ2,
+  railwayAtQ4,
+  restore,
+  type Seed,
+} from './helpers/rail.ts';
+import { line2CartStatus, line2Served, railCounts } from '../src/sim/railway-queries-line2.ts';
 
 // The played-through worlds are slow to build: build each once, and start every test from a restored copy.
-let q2: World | null = null,
-  q4: World | null = null;
+let q2: Seed | null = null,
+  q4: Seed | null = null;
 /** Q4's rail bill: what one Q4 trip brings, now that a cart holds more (24, for Q5). */
 const Q4_RAILS = LINE2_STATIONS[3]!.bill[1];
-const atQ2 = (): World => {
+const atQ2 = (): Seed => {
   q2 ??= railwayAtQ2();
-  return { s: restore(q2.s), t: q2.t };
+  return { w: restore(q2.w), t: q2.t };
 };
-const atQ4 = (): World => {
+const atQ4 = (): Seed => {
   q4 ??= railwayAtQ4();
-  return { s: restore(q4.s), t: q4.t };
+  return { w: restore(q4.w), t: q4.t };
 };
-const cart = (w: World) => {
-  const e = worldOf(w.s);
-  return e.get(Cart, e.single(Cart))! as Readonly<RailCart>;
-};
-const rail = (w: World) => {
-  const e = worldOf(w.s);
-  return e.get(Rail, e.single(Rail))!;
-};
-const forgeRack = (w: World) => {
-  const e = worldOf(w.s);
-  return e.get(Forge, e.single(Forge))!.rack;
-};
+// Rows are replaced when a rule writes: each read is fresh.
+const cart = (w: Seed) => cartRow(w.w) as Readonly<RailCart>;
+const rail = (w: Seed) => railRow(w.w);
+const forgeRack = (w: Seed) => forgeRow(w.w).rack;
 /** Totals conserved: every log one the world began with or produced, every rail one the forge poured. */
-function conserved(w: World) {
-  assert.equal(invariant(w.s), null);
-  const c = railCounts(w.s);
+function conserved(w: Seed) {
+  assert.equal(invariant(w.w), null);
+  const c = railCounts(w.w);
   assert.equal(c.total, 3910 + c.produced, 'logs conserved');
-  assert.equal(c.rails!.total, c.rails!.poured, 'rails conserved');
+  assert.equal(c.rails.total, c.rails.poured, 'rails conserved');
 }
-const tick = (w: World, n = 1) => {
-  for (let i = 0; i < n; i++) railTick(w.s, ++w.t);
+const tick = (w: Seed, n = 1) => {
+  for (let i = 0; i < n; i++) railTick(w.w, ++w.t);
 };
 /** Tick until pred holds, at most `max` ticks; returns the ticks taken. */
-function until(w: World, pred: () => boolean, max: number, what: string) {
+function until(w: Seed, pred: () => boolean, max: number, what: string) {
   for (let t = 0; t <= max; t++) {
     if (pred()) return t;
     tick(w);
   }
   assert.fail(what);
 }
-function act(w: World, pid: string, op: string, fields: object = {}) {
-  const a = railAccount(w.s, pid)!;
-  return railApply(w.s, pid, { op, epoch: a.epoch, request: a.request + 1, ...fields }, w.t).accepted;
+function act(w: Seed, pid: string, op: string, fields: object = {}) {
+  const a = account(w.w, pid)!;
+  return apply(w.w, pid, { op, epoch: a.epoch, request: a.request + 1, ...fields }, w.t).accepted;
 }
 
 test('the pose: whole centimetres along the road, eased, continuous across every phase change', () => {
@@ -115,11 +119,11 @@ test('a load is conserved across a mid-trip snapshot and load, and the restored 
   assert.equal(cart(w).rails, Q4_RAILS);
   assert.equal(rail(w).depotRails, 0, 'the shelf changes only at the unload');
   conserved(w);
-  const back = { s: restore(w.s), t: w.t };
+  const back = { w: restore(w.w), t: w.t };
   conserved(back);
   until(w, () => cart(w).phase === CART_PHASE.DROP, cartCycleTicks(3), 'unloaded');
   tick(back, w.t - back.t);
-  assert.equal(hash(back.s), hash(w.s), 'the restored world reached the same unload');
+  assert.equal(hash(back.w), hash(w.w), 'the restored world reached the same unload');
   assert.equal(rail(w).depotRails, Q4_RAILS);
   conserved(w);
 });
@@ -143,7 +147,7 @@ test('an empty forge keeps the cart waiting: it leaves only with the rails the s
   }
   drain();
   tick(w);
-  assert.equal(line2CartStatus(w.s), 'waiting', 'the tag reads Waiting for forge');
+  assert.equal(line2CartStatus(w.w), 'waiting', 'the tag reads Waiting for forge');
   const waited = until(w, () => cart(w).phase !== CART_PHASE.FORGE, 400, 'the cart left the forge');
   // The forge pours one rail every five ticks; the cart takes each as it lands and waits for the whole bill.
   assert.ok(waited >= (Q4_RAILS - 1) * 5, `waited ${waited} ticks`);
@@ -154,7 +158,7 @@ test('an empty forge keeps the cart waiting: it leaves only with the rails the s
 
 test('"Call cart to forge" is gone (v25): its op moves nothing, and a resting cart rests until a stretch needs it', () => {
   const w = atQ2();
-  assert.equal(line2Served(w.s), 1);
+  assert.equal(line2Served(w.w), 1);
   until(w, () => cart(w).phase === CART_PHASE.HOME || cart(w).phase === CART_PHASE.REST, 2 * cartCycleTicks(1), 'home');
   until(w, () => cart(w).phase === CART_PHASE.REST, cartCycleTicks(1), 'resting');
   // Q2's logs are all on the rack: the cart rests, and the cut op does not send it.
@@ -168,7 +172,7 @@ test('"Call cart to forge" is gone (v25): its op moves nothing, and a resting ca
 test('a save still carrying the cart recall column is refused whole, and older saves sit under their own namespace', () => {
   // Saves are columnar and never migrated (server/AGENTS.md): v24 rooms are rail-v24-*, which a v25 server never
   // opens; a v24-shaped cart row in a v25 save would be refused, never half-loaded with the field dropped.
-  const snap = JSON.parse(JSON.stringify(worldOf(atQ2().s).snapshot()));
+  const snap = JSON.parse(JSON.stringify(atQ2().w.snapshot()));
   snap.c.cart.push(snap.c.cart[0].map(() => 0));
   assert.throws(() => createRailwayWorld().load(snap, railwayCheck), /load: cart columns/);
   assert.match(railwayRoomId('boogle'), /^rail-v26-/);
@@ -176,23 +180,23 @@ test('a save still carrying the cart recall column is refused whole, and older s
 
 test('the away credit counts the cart: the load under way lands, whole trips bring the rest, the cart is home', () => {
   const w = atQ4();
-  const produced = railCounts(w.s).produced;
+  const produced = railCounts(w.w).produced;
   const aboard = cart(w).logs;
   // Shorter than one trip: the cart's own clock carries it, nothing is credited for it.
-  const h = hash(w.s);
-  railResume(w.s, 0, 50, w.t, cartCycleTicks(3) - 1);
-  assert.notEqual(hash(w.s), h, 'the forge rack credit still applies');
+  const h = hash(w.w);
+  railResume(w.w, 0, 50, w.t, cartCycleTicks(3) - 1);
+  assert.notEqual(hash(w.w), h, 'the forge rack credit still applies');
   assert.equal(cart(w).logs, aboard, 'no trip completed: the load stays aboard');
-  railResume(w.s, 0, 51, w.t, 10 * cartCycleTicks(3));
+  railResume(w.w, 0, 51, w.t, 10 * cartCycleTicks(3));
   assert.equal(cart(w).phase, CART_PHASE.REST);
   assert.equal(cart(w).logs + cart(w).rails, 0);
   assert.equal(rail(w).depot, aboard + Math.max(0, LINE2_STATIONS[3]!.bill[0] - aboard));
   assert.equal(rail(w).depotRails, Q4_RAILS, "the shelf has Q4's rails, moved off the forge rack");
-  assert.equal(railCounts(w.s).produced, produced + Math.max(0, 16 - aboard));
+  assert.equal(railCounts(w.w).produced, produced + Math.max(0, 16 - aboard));
   conserved(w);
-  const again = hash(w.s);
-  railResume(w.s, 0, 51, w.t, 10 * cartCycleTicks(3));
-  assert.equal(hash(w.s), again, 'once per marker');
+  const again = hash(w.w);
+  railResume(w.w, 0, 51, w.t, 10 * cartCycleTicks(3));
+  assert.equal(hash(w.w), again, 'once per marker');
 });
 
 test("one cart load of rails fills from one full forge rack and covers Q5's rail bill", () => {

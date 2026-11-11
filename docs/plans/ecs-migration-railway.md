@@ -920,7 +920,7 @@ later change with a bundle report. Place's remaining callers get one owner from 
   | Batch | Files | Lines |
   | --- | --- | --- |
   | T1 line 1 and core (done) | `test/railway.test.ts` (168), `railway-line.test.ts` (203), `railway-line-authority.test.ts` (517), `railway-placement.test.ts` (131), `railway-supply.test.ts` (236) | 1,255 |
-  | T2 line 2 | `test/railway-line2.test.ts` (656), `railway-cart.test.ts` (205), `railway-boiler.test.ts` (302), `review-v25.test.ts` (88) | 1,251 |
+  | T2 line 2 (done, branch ecs/t2-tests-line2) | `test/railway-line2.test.ts` (656), `railway-cart.test.ts` (205), `railway-boiler.test.ts` (302), `review-v25.test.ts` (88) | 1,251 |
   | T3 trains | `test/railway-train.test.ts` (582), `railway-trains.test.ts` (556), `review-v26.test.ts` (226) | 1,364 |
   | T4 works (done) | `test/railway-works.test.ts` (562), `railway-set-down.test.ts` (94) | 656 |
   | T5 server, the lines | `server/test/railway-line-host.test.ts` (806), `railway-host.test.ts` (474) | 1,280 |
