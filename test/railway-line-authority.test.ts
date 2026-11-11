@@ -1,83 +1,92 @@
-// Accepted transfers, production and the one beam through line one's systems (on E: ./railway-live.ts).
+// Accepted transfers, production and the one beam through line one's systems (on the world).
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { World } from '../src/ecs/index.ts';
+import type { RailAction } from '../src/sim/railway.ts';
 import {
-  railAccount,
-  railCounts,
-  railMaxDuration,
-  railJobs,
-  railCurrentJob,
-  railActiveStation,
   railAxeAvailable,
   railBeamChoppable,
+  railMaxDuration,
   railPanelCount,
   railPanelStock,
-  type Railway,
-  type RailAction,
-} from '../src/sim/railway.ts';
+} from '../src/sim/railway-queries-line1.ts';
+import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { railGrowthMask, railGrowthAllowed } from '../src/sim/railway-supply.ts';
 import { Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import {
+  account,
+  apply,
+  beam,
   createRailway,
-  edit,
+  forge,
   hash,
   invariant as railwayInvariant,
-  railApply,
+  job,
+  rail,
+  railActiveStation,
   railBeamRelease,
+  railCurrentJob,
+  railJobs,
   railResume,
   railSession,
   railSupplyPulse,
   railTick,
   restore,
-  worldOf,
-} from './railway-live.ts';
+  rock,
+  rocks,
+  scheduleOf,
+  tree,
+  trees,
+} from './helpers/rail.ts';
 import { LINE1_STATIONS, LINE1_RAIL_PAIRS, linePanels } from '../src/sim/railway-line-layout.ts';
-import { lineSchedule } from '../src/sim/railway-line-schedule.ts';
 
-const tick = (s: Railway) => Math.max(100, ...railJobs(s).map((j) => j.lastTick)) + 1;
-function act(s: Railway, pid: string, op: string, fields: Partial<RailAction> = {}) {
-  const a = railAccount(s, pid)!;
+const tick = (s: World) => Math.max(100, ...railJobs(s).map((j) => j.run.lastTick)) + 1;
+function act(s: World, pid: string, op: string, fields: Partial<RailAction> = {}) {
+  const a = account(s, pid)!;
   const e = { op, epoch: a.epoch, request: a.request + 1, ...fields };
-  const r = railApply(s, pid, e, tick(s));
+  const r = apply(s, pid, e, tick(s));
   assert.equal(railwayInvariant(s), null, op);
   return { r, e };
 }
 function fresh(pids = ['a', 'b']) {
   const s = createRailway();
   for (const pid of pids) railSession(s, pid, 1);
-  railApply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  apply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   return s;
 }
-function logs(s: Railway, pid: string, n: number, station: string = LINE1_STATIONS[railActiveStation(s)]!.id) {
+function logs(s: World, pid: string, n: number, station: string = LINE1_STATIONS[railActiveStation(s)]!.id) {
   while (n > 0) {
-    const a = railAccount(s, pid)!;
-    while (a.carry === 0) {
-      const k = s.sources.findIndex((n) => n > 0);
+    while (account(s, pid)!.carry === 0) {
+      const k = trees(s).findIndex((t) => t.left > 0);
       assert.ok(k >= 0);
       assert.ok(act(s, pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }).r.accepted > 0);
     }
-    const moved = act(s, pid, 'rail.deposit', { n: Math.min(n, a.carry), station, kind: 0 }).r.accepted;
+    const moved = act(s, pid, 'rail.deposit', { n: Math.min(n, account(s, pid)!.carry), station, kind: 0 }).r.accepted;
     assert.ok(moved > 0);
     n -= moved;
   }
 }
-function stones(s: Railway, pid: string, n: number, deposit = true) {
+function stones(s: World, pid: string, n: number, deposit = true) {
   while (n > 0) {
     // Line one's three rocks (the Works' limestone, slots 3-4, waits in the bowl).
-    const k = s.line!.rocks.slice(0, 3).findIndex((n) => n > 0);
+    const k = rocks(s)
+      .map((r) => r.left)
+      .slice(0, 3)
+      .findIndex((n) => n > 0);
     const moved = act(s, pid, 'rail.mine', { id: k }).r.accepted;
     assert.ok(moved > 0);
     if (deposit) assert.equal(act(s, pid, 'rail.deposit', { station: 'T2', kind: 1, n: moved }).r.accepted, moved);
     n -= moved;
   }
 }
-function finish(s: Railway) {
-  const job = railCurrentJob(s);
-  assert.ok(job.start >= 0);
-  railTick(s, job.lastTick + railMaxDuration(s));
-  assert.equal(job.completion, 1);
+function finish(s: World) {
+  const slot = railActiveStation(s);
+  const current = railCurrentJob(s);
+  assert.ok(current.job.start >= 0);
+  railTick(s, current.run.lastTick + railMaxDuration(s));
+  assert.equal(job(s, slot).completion, 1);
   assert.equal(railwayInvariant(s), null);
 }
 function toT3() {
@@ -90,19 +99,19 @@ function toT3() {
   return s;
 }
 /** Fell the great tree with the first axe and lay the beam (no axe asked for). */
-function beam(s: Railway, pid = 'a') {
+function giveBeam(s: World, pid = 'a') {
   for (let i = 0; i < 12; i++) assert.equal(act(s, pid, 'rail.beamChop').r.accepted, 1);
-  assert.equal(act(s, pid, 'rail.beamTake', { revision: s.line!.beam.revision }).r.accepted, 1);
-  assert.equal(act(s, pid, 'rail.beamDeposit', { revision: s.line!.beam.revision, station: 'T3' }).r.accepted, 1);
+  assert.equal(act(s, pid, 'rail.beamTake', { revision: beam(s).revision }).r.accepted, 1);
+  assert.equal(act(s, pid, 'rail.beamDeposit', { revision: beam(s).revision, station: 'T3' }).r.accepted, 1);
 }
 /** Station 3 done and the forge lit (56 logs): the proper axe waits on its stand. */
 function toForge() {
   const s = toT3();
   logs(s, 'a', 40);
-  beam(s);
+  giveBeam(s);
   finish(s);
   logs(s, 'a', 56, 'F');
-  assert.ok(s.line2!.forge.lit >= 0);
+  assert.ok(forge(s).lit >= 0);
   return s;
 }
 
@@ -113,29 +122,29 @@ test('the great tree rebounds before Station 3, then the first axe fells it and 
   finish(early);
   assert.equal(railBeamChoppable(early), false);
   assert.equal(act(early, 'a', 'rail.beamChop').r.accepted, 0);
-  assert.equal(early.line!.beam.work, 0);
+  assert.equal(beam(early).work, 0);
   // Beam first: laid on the empty frame, the job waits for the 40th log and starts on it.
   let s = toT3();
   assert.equal(railBeamChoppable(s), true);
-  assert.equal(s.line!.axe, false);
-  beam(s);
+  assert.equal(rail(s).axe, false);
+  giveBeam(s);
   assert.equal(railBeamChoppable(s), false);
-  assert.equal(s.line!.beam.state, 'allocated');
-  assert.equal(railCurrentJob(s).start, -1);
+  assert.equal(beam(s).state, 'allocated');
+  assert.equal(railCurrentJob(s).job.start, -1);
   s = restore(s);
   logs(s, 'a', 39);
-  assert.equal(railCurrentJob(s).start, -1);
+  assert.equal(railCurrentJob(s).job.start, -1);
   s = restore(s);
   logs(s, 'a', 1);
-  assert.ok(railCurrentJob(s).start >= 0, 'the 40th log starts the feed');
+  assert.ok(railCurrentJob(s).job.start >= 0, 'the 40th log starts the feed');
   finish(s);
-  assert.equal(s.line!.beam.state, 'used');
+  assert.equal(beam(s).state, 'used');
   // Logs part way, then the beam, then the rest: also fine.
   s = toT3();
   logs(s, 'a', 20);
-  beam(s, 'b');
+  giveBeam(s, 'b');
   logs(s, 'a', 20);
-  assert.ok(railCurrentJob(s).start >= 0);
+  assert.ok(railCurrentJob(s).job.start >= 0);
   restore(s);
 });
 
@@ -144,7 +153,7 @@ test('the proper axe is the lit forge first made thing, not Station 3', () => {
   logs(s, 'a', 40);
   assert.equal(railAxeAvailable(s), false, 'the 40th log no longer offers the axe');
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 0);
-  beam(s);
+  giveBeam(s);
   finish(s);
   assert.equal(railAxeAvailable(s), false, 'path open, forge cold');
   logs(s, 'a', 55, 'F');
@@ -165,31 +174,31 @@ test('line-one bills, unique beam and funded completion survive every stage rest
   let s = toT3();
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 0);
   logs(s, 'a', 40);
-  assert.equal(railCurrentJob(s).start, -1);
+  assert.equal(railCurrentJob(s).job.start, -1);
   assert.equal(railAxeAvailable(s), false);
   s = restore(s);
   for (let i = 0; i < 12; i++) {
     assert.equal(act(s, i % 2 ? 'a' : 'b', 'rail.beamChop').r.accepted, 1);
     s = restore(s);
   }
-  assert.equal(s.line!.beam.state, 'available');
+  assert.equal(beam(s).state, 'available');
   assert.equal(act(s, 'a', 'rail.beamChop').r.accepted, 0);
-  const revision = s.line!.beam.revision;
+  const revision = beam(s).revision;
   const claim = act(s, 'a', 'rail.beamTake', { revision });
   assert.equal(claim.r.accepted, 1);
   assert.equal(act(s, 'b', 'rail.beamTake', { revision }).r.accepted, 0);
-  assert.deepEqual(railApply(s, 'a', claim.e, tick(s)), claim.r);
+  assert.deepEqual(apply(s, 'a', claim.e, tick(s)), claim.r);
   assert.equal(
     act(s, 'a', 'rail.chop', { id: 0, yaw: 0, collapsed: false }).r.accepted,
     0,
     'held beam excludes ordinary carry',
   );
   s = restore(s);
-  assert.equal(act(s, 'a', 'rail.beamDrop', { revision: s.line!.beam.revision, x: 0, y: -1000, z: 0 }).r.accepted, 1);
-  assert.equal(s.line!.beam.state, 'available');
-  assert.equal(s.line!.beam.x, 99600, 'unsafe/unverified pose uses same source anchor');
-  act(s, 'b', 'rail.beamTake', { revision: s.line!.beam.revision });
-  const heldRevision = s.line!.beam.revision;
+  assert.equal(act(s, 'a', 'rail.beamDrop', { revision: beam(s).revision, x: 0, y: -1000, z: 0 }).r.accepted, 1);
+  assert.equal(beam(s).state, 'available');
+  assert.equal(beam(s).x, 99600, 'unsafe/unverified pose uses same source anchor');
+  act(s, 'b', 'rail.beamTake', { revision: beam(s).revision });
+  const heldRevision = beam(s).revision;
   assert.equal(act(s, 'b', 'rail.beamDeposit', { revision: heldRevision, station: 'T3' }).r.accepted, 1);
   assert.equal(railBeamRelease(s, 'b', 1, heldRevision), 0, 'late departure cannot resurrect allocated beam');
   s = restore(s);
@@ -197,7 +206,7 @@ test('line-one bills, unique beam and funded completion survive every stage rest
   s = restore(s);
   assert.equal(railCounts(s).used, 96);
   assert.equal(railCounts(s).stone!.used, 8);
-  assert.equal(s.line!.beam.state, 'used');
+  assert.equal(beam(s).state, 'used');
   assert.equal(railCounts(s).completion, 3);
   assert.equal(railCounts(s).total, 3910);
   assert.equal(railCounts(s).stone!.total, 40, 'line one 24 and the bowl 16');
@@ -208,32 +217,32 @@ test('mixed back, final deposit races and exact station identity cannot overflow
   logs(s, 'a', 24);
   finish(s);
   for (let i = 0; i < 3; i++) {
-    const k = s.sources.findIndex((n) => n > 0);
+    const k = trees(s).findIndex((t) => t.left > 0);
     act(s, 'a', 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
   }
   act(s, 'a', 'rail.mine', { id: 0 });
-  assert.equal(railAccount(s, 'a')!.carry + railAccount(s, 'a')!.stone!, 8);
+  assert.equal(account(s, 'a')!.carry + account(s, 'a')!.stone!, 8);
   assert.equal(act(s, 'a', 'rail.mine', { id: 0 }).r.accepted, 0);
   assert.equal(act(s, 'a', 'rail.deposit', { station: 'T1', n: 8 }).r.accepted, 0);
   act(s, 'a', 'rail.deposit', { station: 'T2', n: 6 });
   act(s, 'a', 'rail.deposit', { station: 'T2', kind: 1, n: 2 });
   logs(s, 'a', 26);
   stones(s, 'b', 6);
-  assert.ok(s.line!.jobs[0].start >= 0);
+  assert.ok(job(s, 1).start >= 0);
   assert.equal(act(s, 'b', 'rail.deposit', { station: 'T2', kind: 1, n: 8 }).r.accepted, 0);
   finish(s);
   logs(s, 'a', 39);
   // Two deposits each request four; only the missing log is accepted, never a second chest/unlock.
   for (const pid of ['a', 'b'])
-    while (railAccount(s, pid)!.carry < 4) {
-      const k = s.sources.findIndex((n) => n > 0);
+    while (account(s, pid)!.carry < 4) {
+      const k = trees(s).findIndex((t) => t.left > 0);
       act(s, pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
     }
   const first = act(s, 'a', 'rail.deposit', { station: 'T3', n: 4 }),
     second = act(s, 'b', 'rail.deposit', { station: 'T3', n: 4 });
   assert.equal(first.r.accepted + second.r.accepted, 1);
   assert.equal(railAxeAvailable(s), false);
-  assert.equal(railCurrentJob(s).start, -1);
+  assert.equal(railCurrentJob(s).job.start, -1);
   restore(s);
 });
 
@@ -242,23 +251,32 @@ test('three departed stone carriers cannot strand T2: slow counted renewal never
   logs(s, 'visitor', 24);
   finish(s);
   for (const pid of ['a', 'b', 'c']) stones(s, pid, 8, false);
-  assert.deepEqual(s.line!.rocks, [0, 0, 0, 8, 8]);
+  assert.deepEqual(
+    rocks(s).map((r) => r.left),
+    [0, 0, 0, 8, 8],
+  );
   assert.equal(railCounts(s).stone!.carry, 24);
   const pulse = (marker: number) => railSupplyPulse(s, { marker, grow: railGrowthMask([]), recover: [] });
   pulse(100);
   pulse(130);
-  assert.deepEqual(s.line!.rocks, [0, 0, 0, 8, 8]);
+  assert.deepEqual(
+    rocks(s).map((r) => r.left),
+    [0, 0, 0, 8, 8],
+  );
   pulse(131);
-  assert.deepEqual(s.line!.rocks, [8, 8, 8, 8, 8]);
-  assert.equal(s.line!.stoneProduced, 24);
+  assert.deepEqual(
+    rocks(s).map((r) => r.left),
+    [8, 8, 8, 8, 8],
+  );
+  assert.equal(rail(s).stoneProduced, 24);
   pulse(131);
-  assert.equal(s.line!.stoneProduced, 24);
-  for (const pid of ['a', 'b', 'c']) assert.equal(railAccount(s, pid)!.stone, 8);
+  assert.equal(rail(s).stoneProduced, 24);
+  for (const pid of ['a', 'b', 'c']) assert.equal(account(s, pid)!.stone, 8);
   stones(s, 'visitor', 8);
   logs(s, 'visitor', 32);
   finish(s);
   restore(s);
-  assert.equal(s.line!.jobs[0].completion, 1);
+  assert.equal(job(s, 1).completion, 1);
   assert.equal(railCounts(s).stone!.total, 64);
 });
 
@@ -268,46 +286,46 @@ test('partial jobs stay partial offline; funded jobs finish once without funding
   finish(s);
   logs(s, 'a', 12);
   assert.equal(railResume(s, 99999, 1000, tick(s)), 0);
-  assert.equal(s.line!.jobs[0].stock, 12);
+  assert.equal(job(s, 1).stock, 12);
   logs(s, 'a', 20);
   stones(s, 'b', 8);
   assert.ok(railResume(s, 99999, 2000, tick(s)) > 0);
-  assert.equal(s.line!.jobs[0].completion, 1);
+  assert.equal(job(s, 1).completion, 1);
   assert.equal(railResume(s, 99999, 2000, tick(s)), 0);
-  assert.equal(railCurrentJob(s).stock, 0);
-  assert.equal(s.line!.axe, false);
+  assert.equal(railCurrentJob(s).job.stock, 0);
+  assert.equal(rail(s).axe, false);
   restore(s);
 });
 
 test('proper axe improvement is counted once, clipped source output remains, renewal cannot double-bonus', () => {
   const s = toForge();
-  if (railAccount(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
+  if (account(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
-  const k = s.sources.findIndex((n) => n === 10),
+  const k = trees(s).findIndex((t) => t.left === 10),
     id = RAILWAY_SOURCES[k]![0];
-  const before = s.supply!.produced;
+  const before = rail(s).produced;
   act(s, 'a', 'rail.chop', { id, yaw: 0, collapsed: false });
-  assert.equal(s.supply!.produced, before + 5);
-  assert.equal(s.sources[k], 10);
+  assert.equal(rail(s).produced, before + 5);
+  assert.equal(tree(s, k).left, 10);
   act(s, 'a', 'rail.chop', { id, yaw: 0, collapsed: false });
-  assert.equal(s.sources[k], 7, 'only three free back slots');
-  assert.equal(s.supply!.produced, before + 5);
+  assert.equal(tree(s, k).left, 7, 'only three free back slots');
+  assert.equal(rail(s).produced, before + 5);
   restore(s);
   act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
-  const eligible = s.sources.findIndex((n, k) => n === 10 && railGrowthAllowed(k, true));
+  const eligible = trees(s).findIndex((t, k) => t.left === 10 && railGrowthAllowed(k, true));
   const eligibleId = RAILWAY_SOURCES[eligible]![0];
-  while (s.sources[eligible]! > 0) {
-    if (railAccount(s, 'a')!.carry === 8) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
+  while (tree(s, eligible).left > 0) {
+    if (account(s, 'a')!.carry === 8) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
     act(s, 'a', 'rail.chop', { id: eligibleId, yaw: 0, collapsed: false });
   }
-  const produced = s.supply!.produced;
+  const produced = rail(s).produced;
   for (const marker of [100, 131, 132, 133, 134, 135])
     railSupplyPulse(s, { marker, grow: railGrowthMask([eligible]), recover: [] });
-  assert.equal(s.sources[eligible], 15);
-  assert.equal(s.supply!.produced, produced + 15);
-  if (railAccount(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
+  assert.equal(tree(s, eligible).left, 15);
+  assert.equal(rail(s).produced, produced + 15);
+  if (account(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
   act(s, 'a', 'rail.chop', { id: eligibleId, yaw: 0, collapsed: false });
-  assert.equal(s.supply!.produced, produced + 15);
+  assert.equal(rail(s).produced, produced + 15);
   restore(s);
 });
 
@@ -315,14 +333,14 @@ test('beam departure is epoch/revision fenced and reconnect cannot duplicate its
   const s = toT3();
   logs(s, 'a', 40);
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
-  act(s, 'a', 'rail.beamTake', { revision: s.line!.beam.revision });
-  const old = s.line!.beam.revision;
+  act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
+  const old = beam(s).revision;
   assert.equal(railBeamRelease(s, 'a', 2, old), 0);
   assert.equal(railBeamRelease(s, 'a', 1, old), 1);
   railSession(s, 'a', 2);
-  act(s, 'a', 'rail.beamTake', { revision: s.line!.beam.revision });
+  act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
   assert.equal(railBeamRelease(s, 'a', 1, old), 0);
-  assert.equal(s.line!.beam.state, 'held');
+  assert.equal(beam(s).state, 'held');
   restore(s);
 });
 
@@ -330,11 +348,10 @@ test('safe loose beam keeps its identity; recovery is slow, explicit, revision-f
   const s = toT3();
   logs(s, 'a', 40);
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
-  const b = s.line!.beam;
-  act(s, 'a', 'rail.beamTake', { revision: b.revision });
-  act(s, 'a', 'rail.beamDrop', { revision: b.revision, x: 99650, y: 3000, z: -13800 });
-  assert.equal(b.state, 'ground');
-  assert.equal(b.x, 99650);
+  act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
+  act(s, 'a', 'rail.beamDrop', { revision: beam(s).revision, x: 99650, y: 3000, z: -13800 });
+  assert.equal(beam(s).state, 'ground');
+  assert.equal(beam(s).x, 99650);
   restore(s);
   const pulse = (marker: number, revision?: number) =>
     railSupplyPulse(s, {
@@ -344,17 +361,17 @@ test('safe loose beam keeps its identity; recovery is slow, explicit, revision-f
       ...(revision === undefined ? {} : { beam: revision }),
     });
   pulse(100);
-  pulse(120, b.revision);
-  assert.equal(b.state, 'ground');
+  pulse(120, beam(s).revision);
+  assert.equal(beam(s).state, 'ground');
   pulse(121);
-  assert.equal(b.state, 'ground', 'age alone is not recovery clearance');
-  pulse(122, b.revision - 1);
-  assert.equal(b.state, 'ground');
-  pulse(123, b.revision);
-  assert.equal(b.state, 'available');
-  act(s, 'a', 'rail.beamTake', { revision: b.revision });
-  pulse(200, b.revision);
-  assert.equal(b.state, 'held');
+  assert.equal(beam(s).state, 'ground', 'age alone is not recovery clearance');
+  pulse(122, beam(s).revision - 1);
+  assert.equal(beam(s).state, 'ground');
+  pulse(123, beam(s).revision);
+  assert.equal(beam(s).state, 'available');
+  act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
+  pulse(200, beam(s).revision);
+  assert.equal(beam(s).state, 'held');
   assert.equal(railwayInvariant(s), null);
 });
 
@@ -362,7 +379,6 @@ test("a beam drop's point is checked: never -0, never out of range, and the room
   const s = toT3();
   logs(s, 'a', 40);
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
-  const b = s.line!.beam;
   for (const [x, y, z] of [
     [99650, 3000, -0],
     [-0, 3000, -13800],
@@ -371,26 +387,26 @@ test("a beam drop's point is checked: never -0, never out of range, and the room
     [99650, 3000, 0.5],
     [NaN, 3000, -13800],
   ]) {
-    act(s, 'a', 'rail.beamTake', { revision: b.revision });
-    assert.equal(b.state, 'held');
-    assert.doesNotThrow(() => worldOf(s).snapshot(), `held: ${x}, ${y}, ${z}`);
+    act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
+    assert.equal(beam(s).state, 'held');
+    assert.doesNotThrow(() => s.snapshot(), `held: ${x}, ${y}, ${z}`);
     // The release still happens; the point is refused, so it goes back to the tree, as an off-ground drop does.
-    assert.equal(act(s, 'a', 'rail.beamDrop', { revision: b.revision, x: x!, y: y!, z: z! }).r.accepted, 1);
-    assert.equal(b.state, 'available', `${x}, ${y}, ${z}`);
-    assert.doesNotThrow(() => worldOf(s).snapshot(), `dropped: ${x}, ${y}, ${z}`);
+    assert.equal(act(s, 'a', 'rail.beamDrop', { revision: beam(s).revision, x: x!, y: y!, z: z! }).r.accepted, 1);
+    assert.equal(beam(s).state, 'available', `${x}, ${y}, ${z}`);
+    assert.doesNotThrow(() => s.snapshot(), `dropped: ${x}, ${y}, ${z}`);
   }
-  act(s, 'a', 'rail.beamTake', { revision: b.revision });
-  act(s, 'a', 'rail.beamDrop', { revision: b.revision, x: 99650, y: 3000, z: -13800 });
-  assert.deepEqual([b.state, b.x, b.y, b.z], ['ground', 99650, 3000, -13800], 'a valid point still lands');
+  act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
+  act(s, 'a', 'rail.beamDrop', { revision: beam(s).revision, x: 99650, y: 3000, z: -13800 });
+  assert.deepEqual([beam(s).state, beam(s).x, beam(s).y, beam(s).z], ['ground', 99650, 3000, -13800], 'a valid point still lands');
   assert.equal(railwayInvariant(s), null);
 });
 
 test('production ceiling refuses an unrepresentable proper-axe bonus atomically', () => {
   const s = toForge();
-  if (railAccount(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
+  if (account(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
-  edit(s, (w) => Object.assign(w.mut(Rail, w.single(Rail))!, { produced: 2147479735, rack: 2147479735 }));
-  const k = s.sources.findIndex((n) => n === 10);
+  Object.assign(s.mut(Rail, s.single(Rail))!, { produced: 2147479735, rack: 2147479735 });
+  const k = trees(s).findIndex((t) => t.left === 10);
   assert.equal(railwayInvariant(s), null);
   assert.equal(act(s, 'a', 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }).r.accepted, 0);
   restore(s);
@@ -398,11 +414,11 @@ test('production ceiling refuses an unrepresentable proper-axe bonus atomically'
 
 test('malformed line loads are atomic and replay hashes match through accepted actions and restoration', () => {
   const s = toT3();
-  const saved = worldOf(s).snapshot(),
+  const saved = s.snapshot(),
     before = hash(s);
   type Snap = typeof saved;
   const col = (j: Snap, kind: string, field: string) => {
-    const c = worldOf(s).components.find((row) => row.kind === kind)!;
+    const c = s.components.find((row) => row.kind === kind)!;
     return j.c[kind]![1 + c.names.indexOf(field)]!;
   };
   for (const mutate of [
@@ -414,14 +430,14 @@ test('malformed line loads are atomic and replay hashes match through accepted a
   ]) {
     const bad = structuredClone(saved);
     mutate(bad);
-    assert.throws(() => worldOf(s).load(bad, railwayCheck));
+    assert.throws(() => s.load(bad, railwayCheck));
     assert.throws(() => createRailwayWorld().load(bad, railwayCheck));
     assert.equal(hash(s), before);
   }
   const copy = restore(s);
   for (let i = 0; i < 12; i++) {
-    const a = railAccount(s, 'a')!,
-      k = s.sources.findIndex((n) => n > 0);
+    const a = account(s, 'a')!,
+      k = trees(s).findIndex((t) => t.left > 0);
     const e = {
       op: i % 2 ? 'rail.deposit' : 'rail.chop',
       epoch: 1,
@@ -432,7 +448,7 @@ test('malformed line loads are atomic and replay hashes match through accepted a
       yaw: 0,
       collapsed: false,
     };
-    assert.deepEqual(railApply(s, 'a', e, 500 + i), railApply(copy, 'a', e, 500 + i));
+    assert.deepEqual(apply(s, 'a', e, 500 + i), apply(copy, 'a', e, 500 + i));
     assert.equal(hash(s), hash(copy));
   }
 });
@@ -442,17 +458,17 @@ test('wrong material deposits and spent-rock strokes remain material no-ops', ()
   stones(s, 'a', 8, false);
   assert.equal(act(s, 'a', 'rail.deposit', { station: 'T1', kind: 1, n: 8 }).r.accepted, 0);
   // T1 takes no stone: its job's stone counts stay zero.
-  assert.equal(s.stoneStock, 0);
-  assert.equal(s.stoneDelivered, 0);
+  assert.equal(job(s, 0).stoneStock, 0);
+  assert.equal(job(s, 0).stoneDelivered, 0);
   restore(s);
   railSupplyPulse(s, { marker: 100, grow: railGrowthMask([]), recover: [] });
   railSupplyPulse(s, { marker: 110, grow: railGrowthMask([]), recover: [] });
-  assert.equal(s.line!.rockAge[0], 10);
+  assert.equal(rock(s, 0).age, 10);
   assert.equal(act(s, 'b', 'rail.mine', { id: 0 }).r.accepted, 0);
-  assert.equal(s.line!.rockAge[0], 10);
+  assert.equal(rock(s, 0).age, 10);
   railSupplyPulse(s, { marker: 131, grow: railGrowthMask([]), recover: [] });
-  assert.equal(s.line!.rocks[0], 8);
-  assert.equal(s.line!.stoneProduced, 8);
+  assert.equal(rocks(s).map((r) => r.left)[0], 8);
+  assert.equal(rail(s).stoneProduced, 8);
   restore(s);
 });
 
@@ -465,12 +481,12 @@ test('every rail-pair contact derives stock and survives restore without a conti
     if (station.bill[1]) stones(s, 'a', station.bill[1]);
     if (station.beam) {
       for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
-      act(s, 'a', 'rail.beamTake', { revision: s.line!.beam.revision });
-      act(s, 'a', 'rail.beamDeposit', { revision: s.line!.beam.revision, station: 'T3' });
+      act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
+      act(s, 'a', 'rail.beamDeposit', { revision: beam(s).revision, station: 'T3' });
     }
-    const job = railJobs(s)[index]!,
-      start = job.start;
-    const schedule = lineSchedule(station, job.timing!);
+    const funded = railJobs(s)[index]!.job,
+      start = funded.start;
+    const schedule = scheduleOf(station, funded);
     for (const panel of schedule.panels) {
       const at = start + schedule.depositTicks + schedule.feedTicks + panel.tick;
       railTick(s, at - 1);
@@ -504,7 +520,7 @@ test('offline panel catch-up consumes one funded interval and cannot advance the
   logs(s, 'a', 32);
   stones(s, 'a', 8);
   assert.equal(railPanelCount(s), 14, 'T1 laid as its 14 rail pairs');
-  const now = railCurrentJob(s).lastTick;
+  const now = railCurrentJob(s).run.lastTick;
   railResume(s, railMaxDuration(s), 123, now);
   assert.equal(railPanelCount(s), 26);
   assert.equal(railPanelStock(s), 30);
@@ -513,6 +529,6 @@ test('offline panel catch-up consumes one funded interval and cannot advance the
   railResume(s, railMaxDuration(s), 124, now + 10000);
   assert.equal(railPanelCount(s), 26);
   assert.equal(railPanelStock(s), 30);
-  assert.equal(railCurrentJob(s).start, -1);
+  assert.equal(railCurrentJob(s).job.start, -1);
   assert.equal(railwayInvariant(s), null);
 });
