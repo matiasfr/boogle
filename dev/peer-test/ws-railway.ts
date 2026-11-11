@@ -10,7 +10,8 @@ import { DEFAULT_ROOM } from '../../src/constants.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { RAIL_STONE } from '../../src/sim/railway-works-layout.ts';
-import { railCounts, type RailAction } from '../../src/sim/railway.ts';
+import type { RailAction } from '../../src/sim/railway.ts';
+import { cart as cartRow, line as lineRow, train as trainRow, trains as trainRows } from '../../src/sim/railway-rows.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import type { RailwayProbe, RailwayAdapterProbe } from './ws-page.ts';
 import type { RailwayWorldHost } from '../../server/src/host/world-host.ts';
@@ -521,8 +522,7 @@ export async function railwayLoad(
         });
         // Conservation on the server and agreement of every mirror at quiescence.
         await sleep(300);
-        const server = world.rules.railway.railway;
-        const counts = railCounts(server);
+        const counts = world.rules.railway.counts();
         const conserved =
           counts.total === INITIAL + counts.produced &&
           counts.stone!.total === RAIL_STONE + counts.stone!.produced &&
@@ -600,8 +600,7 @@ export async function railwayLoad(
  * disagree (kept under half the deck, 1.35 m), and a tab's cart jumping between frames is what would throw its own
  * rider. */
 export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
-  const { railwayAtQ4 } = await import('../../test/helpers/railway-q2.ts');
-  const { worldOf } = await import('../../test/railway-live.ts');
+  const { railwayAtQ4 } = await import('../../src/sim/railway-seed-route.ts');
   const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { CART, CART_PHASE } = await import('../../src/sim/railway-cart.ts');
   const q4 = railwayAtQ4(); // built before the room opens: it holds the event loop ~20 s
@@ -616,12 +615,12 @@ export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
   const world = c.hosted(roomId)!.world as RailwayWorldHost;
   // The built world's clock is ahead of this fresh room's: wait for the room to pass it, then load it.
   await waitFor(() => world.sync.world.tick > q4.t + 5, (q4.t + 60) * 100);
-  world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(q4.s).snapshot())), railwayCheck);
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(q4.w.snapshot())), railwayCheck);
   world.rules.railway.touchAll();
   const cartOf = (p: Page) => ev(p.page, () => window.T.railCart());
   // Every tab has the loaded world's cart (its phase and where it set out), then a moment to settle: the load itself
   // relocates the cart, which is a restart, not a ride.
-  const server = () => world.rules.railway.railway.line2!.cart;
+  const server = () => cartRow(world.rules.railway.world());
   await waitFor(async () => {
     const want = server();
     return (await Promise.all(pages.map(adapter))).every(
@@ -676,14 +675,13 @@ export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
 
 /** WS_LOAD_CHURN=train: the line-2 kit train across three tabs at 0/100/200 ms. Same sample clock as the cart. */
 export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
-  const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
-  const { worldOf } = await import('../../test/railway-live.ts');
+  const { railwayAtTrains } = await import('../../src/sim/railway-seed-route.ts');
   const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { TRAIN, TRAIN_PHASE, trainAlong } = await import('../../src/sim/railway-train.ts');
   // WS_LOAD_TRAIN_SEED=wagon-on rides the line-2 train with its footing wagon and four stops (Works J3).
   const seed =
     process.env.WS_LOAD_TRAIN_SEED === 'wagon-on'
-      ? (await import('../../test/helpers/railway-works.ts')).railwayAtWorks('wagon-on')
+      ? (await import('../../src/sim/railway-seed-works.ts')).railwayAtWorks('wagon-on')
       : railwayAtTrains('trains-on');
   const roomId = railwayRoomId(`${c.room}-train`);
   const lats = [0, 100, 200];
@@ -696,12 +694,12 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   const world = c.hosted(roomId)!.world as RailwayWorldHost;
   // The built world's clock is ahead of this fresh room's: advance the disposable room to pass it, then load it.
   await advancePast(world, seed.t + 5);
-  world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())), railwayCheck);
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
   world.rules.railway.touchAll();
   const trainOf = (p: Page) => ev(p.page, () => window.T.railTrain(1));
   // Every tab has the loaded world's train (its phase and where it set out), then a moment to settle: the load itself
   // relocates the train, which is a restart, not a ride.
-  const server = () => world.rules.railway.railway.trains[1]!;
+  const server = () => trainRow(world.rules.railway.world(), 1);
   await waitFor(async () => {
     const want = server();
     return (await Promise.all(pages.map(adapter))).every(
@@ -781,11 +779,10 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
  * train stands at the quarry for it, leaving that way, while the other never stops there. Every tab agrees on the row.
  * The server is stepped ahead rather than waited for (state, not timing). */
 export async function railwayRequestStop(c: Ctx) {
-  const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
-  const { worldOf } = await import('../../test/railway-live.ts');
+  const { railwayAtTrains } = await import('../../src/sim/railway-seed-route.ts');
   const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { LINE_HALTS, TRAIN_PHASE, reqHas } = await import('../../src/sim/railway-train.ts');
-  const { trainStops } = await import('../../src/sim/railway-line2.ts');
+  const { trainStops } = await import('../../src/sim/railway-queries-trains.ts');
   const { LINE2, RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
   const { LINE_SLOTS, trainServes } = await import('../../src/sim/railway-trains.ts');
   const seed = railwayAtTrains('trains-on');
@@ -796,7 +793,7 @@ export async function railwayRequestStop(c: Ctx) {
   await waitFor(async () => !!c.hosted(roomId), 15000);
   const world = c.hosted(roomId)!.world as RailwayWorldHost;
   await advancePast(world, seed.t + 5);
-  world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())), railwayCheck);
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
   world.rules.railway.touchAll();
   const pages: Page[] = [];
   for (const [k, l] of [0, 100, 200].entries())
@@ -805,11 +802,12 @@ export async function railwayRequestStop(c: Ctx) {
     );
   await host.page.close();
   await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
-  const rail = () => world.rules.railway.railway;
+  // The server's world, read again at each use (rows are replaced by the rules, ECS M11).
+  const live = () => world.rules.railway.world();
   const slots = LINE_SLOTS[LINE2]!;
   // A lever ask is the line's (`Line.req`), served by whichever of line 2's trains can brake for it.
-  const leverReq = () => world.rules.railway.railway.lines[LINE2]!.req;
-  const n = trainStops(world.rules.railway.railway, 1).length;
+  const leverReq = () => lineRow(live(), LINE2).req;
+  const n = trainStops(live(), 1).length;
   const quarry = LINE_HALTS.findIndex((h) => h.name === 'Quarry');
   const h = LINE_HALTS[quarry]!;
   const asked = (req: number) => reqHas(req, h.stop, -1, n);
@@ -833,7 +831,7 @@ export async function railwayRequestStop(c: Ctx) {
     a.phase === b.phase && a.at === b.at && a.track === b.track && a.dest === b.dest;
   const bothMirrored = await waitFor(async () => {
     const all = await Promise.all(pages.map(adapter));
-    return all.every((p) => slots.every((k) => sameRow(p.state.trains[k]!, rail().trains[k]!)));
+    return all.every((p) => slots.every((k) => sameRow(p.state.trains[k]!, trainRow(live(), k))));
   }, 10000);
   c.check(
     `request stop: every tab mirrors line 2's ${slots.length} trains`,
@@ -866,9 +864,9 @@ export async function railwayRequestStop(c: Ctx) {
   );
   // Who serves it: the server's rows and every tab's mirrored rows name the same train at the server's tick.
   const serves = (rows: readonly { phase: number }[], tick: number) =>
-    trainServes((k) => rows[k] as never, LINE2, trainStops(rail(), LINE2), h.stop, -1, tick);
+    trainServes((k) => rows[k] as never, LINE2, trainStops(live(), LINE2), h.stop, -1, tick);
   const tick0 = world.sync.world.tick,
-    named = serves(rail().trains, tick0);
+    named = serves(trainRows(live()), tick0);
   const tabsNamed = (await Promise.all(pages.map(adapter))).map((p) => serves(p.state.trains, tick0));
   c.check(
     'request stop: every tab names the same serving train as the server',
@@ -883,13 +881,13 @@ export async function railwayRequestStop(c: Ctx) {
     world.step(0.1);
     slot =
       slots.find((i) => {
-        const r = rail().trains[i]!;
+        const r = trainRow(live(), i);
         return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && r.track === 1;
       }) ?? -1;
-    if (slot < 0) serving = serves(rail().trains, world.sync.world.tick);
+    if (slot < 0) serving = serves(trainRows(live()), world.sync.world.tick);
   }
   const stood = slot >= 0;
-  const row = rail().trains[Math.max(slot, slots[0]!)]!;
+  const row = trainRow(live(), Math.max(slot, slots[0]!));
   c.check('request stop: a train stands at the quarry, leaving toward the village', stood, JSON.stringify(row));
   c.check(
     'request stop: the serving train is the one that stops',
