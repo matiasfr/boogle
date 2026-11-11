@@ -298,7 +298,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
 }
 
 export function install(sync: SyncView & { roomStep(): number }, rules: { tune: TuneApi }, replication: Replicator) {
-  // The railway's state is an E world (src/sim/railway-world.ts); its rules are systems (src/sim/railway-systems.ts).
+  // The railway's state is an E world (src/sim/railway-components.ts); its rules are systems
+  // (src/sim/railway-systems.ts).
   let world = createRailwayWorld();
   const touch = (kind: string, id: number | string) => replication.touch(kind, id);
   const cells = {

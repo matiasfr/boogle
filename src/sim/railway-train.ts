@@ -54,7 +54,7 @@ export type RailTrain = {
   track: number;
   depart: number;
   /** Its riders' stop requests: digit `reqIndex(stop, dir)`, middle halts its way only. The halts' lever asks are
-   * the line's (`Line.req`, railway-world.ts). */
+   * the line's (`Line.req`, railway-components.ts). */
   req: number;
   /** Where this leg started (cm along the line) and its speed there (cm per tick); standing, where it stands and 0. */
   from: number;

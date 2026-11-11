@@ -1,6 +1,6 @@
 // The railway's shared types and read helpers (docs/plans/ecs-e.md, section 4). Its state lives in an E world
-// (./railway-world.ts) and its rules are systems (./railway-systems.ts); `Railway` here is the read model rebuilt from
-// that world for views, read helpers and validation, never written back.
+// (./railway-components.ts) and its rules are systems (./railway-systems.ts); `Railway` here is the read model rebuilt
+// from that world for views, read helpers and validation, never written back.
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { railJobs, railCurrentJob, railActiveStation, LINE_TIMING, type RailLine } from './railway-line.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';

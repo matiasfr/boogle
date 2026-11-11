@@ -374,8 +374,9 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
       Moves only: `railway-components.ts` (264 lines) is old lines 32–275 under a new header, `railway-read-model.ts`
       (334) is 278–562, `railway-check.ts` (215) is 565–730, each body byte-identical to its source range (`cmp`
       against `sed -n` of the old file); `railway-world.ts` (730 to 34) re-exports the same 34 names by explicit list.
-      The only edit inside a moved block: `TIMING` is exported, because the read model's `jobOf`/`qjobOf` read its
-      keys; the barrel does not re-export it. Lines 1–275 also hold `RAIL_STATUS`, `DEPOT_OUT` and the depot-output
+      The edits around the moved blocks: `TIMING` is exported, because the read model's `jobOf`/`qjobOf` read its
+      keys (the barrel does not re-export it), with a one-line doc comment added above it, and the two section-divider
+      comments (`the read model`, `the load check`) were dropped; the commit's "moves, no edits" overstated it. Lines 1–275 also hold `RAIL_STATUS`, `DEPOT_OUT` and the depot-output
       assertion, so they went to the components file with the rest (section 2's "nothing else" is not quite true of
       it). Import graph: check → read model → components, check → components; no file imports the barrel back, no
       new knot. The importer count is 38 today, not 34; none changed. The three M0 goldens passed untouched,
@@ -392,7 +393,28 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
   - **Verify:** `npm run check`; `npm --prefix server test`; `npm run test:net`; `git diff --stat` shows moves only.
   - **Reviewer attacks:** diff each moved block against its source for edits hidden in a move; import cycles between
     the three files; a component left importing from the barrel.
-- [ ] **M3. Split the systems; make the tick a schedule.** _High (sim; the order becomes data)._
+- [x] **M3. Split the systems; make the tick a schedule.** _High (sim; the order becomes data)._ **Built 10 November,
+      branch `ecs/m3-systems-split`.** `railway-systems.ts` 1,650 lines to 163 (the `OPS` table, `railApply`,
+      `railOutcome`, the tick schedule, `RAIL_TICK`, `RAIL_ENTRIES`, `RAIL_OPS`, `RAIL_SYSTEMS`, re-exports);
+      `railway-queries.ts` 149, `railway-sys-core.ts` 91, `-line1` 388, `-line2` 496, `-trains` 171, `-works` 197,
+      `-away` 235. Each block was cut from the old file by line range and checked against it (whitespace and `export `
+      ignored); the only lines that differ are the tick systems' inputs (`tick: number` to `{ tick }: Tick`) and the
+      two orders (`rail.worksTick` 5 to 4, `rail.jobClock` 4 to 5), plus Prettier re-wrapping two one-line systems
+      that `export ` pushed past 120 columns. `reads`/`writes` are unchanged everywhere. Import graph: queries →
+      components; every `sys-*` → components, queries (and `import type` from core); away → line1 (`layLine1`) and
+      line2 (`layLine2`, `boilerPedestal`, the cart's three transfers); the index → all of them; no cycle. Queries also
+      took the shared non-writing helpers the plan does not list (`carried`, `free`, `roomFor`, `FOOT`, `qCompleted`,
+      `stopsOf`, `aboard`, `trainOwed`, `timingOf`, `scheduleOf`); `credit`, `pileKind`, `pileCap`, `balanceOf` and
+      `beamNeeded` stay with line one, their only user. `jobClock` keeps no input (`defineSystem<Tick | undefined>`),
+      since `railSettle` and `railResume` still run it alone. No two act systems shared an order, so none was
+      renumbered. New guards: `test/railway-tick-order.test.ts` (recorded on the hand-coded tick before the split:
+      300 ticks on seven stages, every tick's system names in order and the hash after it; a throwaway swap of
+      `rail.worksTick` behind `rail.jobClock` fails all seven) and `test/railway-census.test.ts`;
+      `test/helpers/rail-audit.ts` audits every railway world for a whole run by a preload (see its header), so the
+      server tests with audit on are repeatable without editing rule code. Results: the nine golden shards, the ops
+      stream, the schema and snapshot goldens passed untouched; `npm run check` green (930 tests); `npm run loop --
+      run` equal to base but for its wall-time line; `npm --prefix server test` 150/150 plain and audited;
+      `npm run test:net` 131/131 plain and audited.
   - Create the six `railway-sys-*.ts` files and `src/sim/railway-queries.ts` (the private helpers of
     `railway-systems.ts` 87–170 and the inline facts, exported: `activeStation`, `ready`, `held`, `boilerHeld`,
     `qActive`, `gateDown`, `depotNeed`, `cartWants`, `cartServing`, `pierOwed`, `kitOwed`, `wagonSlot`, the singleton id

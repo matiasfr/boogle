@@ -1,5 +1,5 @@
 // Supply maintenance's constants and growth masks; the pulse itself is the rail.supply system
-// (./railway-systems.ts). Host-stamped whole minutes; never reads presence or a wall clock.
+// (./railway-sys-away.ts). Host-stamped whole minutes; never reads presence or a wall clock.
 import { RAILWAY_SOURCES } from './railway-layout.ts';
 
 export const RECOVERY_MINUTES = 21; // minute quantization still leaves at least twenty minutes
