@@ -238,6 +238,9 @@ colliders only, so it can be walked and glided before R1 is written: the bow at 
 raised leaf, the brace platform, the hook ring, the island halt with its loop, the shore and the path to the summit
 lookout. The live cones are made solid for it. No sim, server or world change.
 
+10 November addition: the halt's north-west corner carries the first junction-station greybox, a leaning station house and its
+waiting room, a plank crossing and LOOK UP on the platform edges ([junction-stations](junction-stations.md), "Built").
+
 **The glide numbers at the new heights** (the design review's finding 1, re-measured; gravity 18 m/s², jump 7.6 m/s,
 glide 10 m/s forward and 3.2 m/s down, hook 24 m):
 

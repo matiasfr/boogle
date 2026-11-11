@@ -62,6 +62,12 @@ island is walkable. Local static colliders only; no ops, state, saves or sim. `w
 `views` (`pier`, `gap`, `halt`, `lookout`). It doesn't combine with `?blockout=world`, whose `ringx` still draws the
 old 7% bow and Ring top.
 
+The halt also has the junction-stations first proof ([brief](../../../docs/brainstorms/junction-stations.md), "Built"):
+the leaning station house at its north-west corner with a walkable 5 by 4 m room, a bench facing a window that the lean
+points at the shard, a plank crossing and terrace at platform height, and LOOK UP painted on both edges in line 2's
+colour. `ring-house.ts` holds its pure numbers and colliders (read by `test/ring-house.test.ts`); `&house=0` leaves it
+out. `dev/look/evals/ring-house.ts` walks it by real input.
+
 ## What it reads from the JSON
 
 Everything the page draws, plus optional greybox fields the page ignores:

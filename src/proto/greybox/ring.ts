@@ -14,14 +14,12 @@ import { GROUP, groundMat } from '../../physics/physics.ts';
 import { flat } from '../flat.ts';
 import { FAR, ORIGIN } from '../place/layout.ts';
 import { RING_CONES } from './ground.ts';
+import { at, CONCOURSE, HOUSE, HX, houseBoxes, houseYaw, slab } from './ring-house.ts';
 import { refreshMaterials } from './build.ts';
 
 // ---------------------------------------------------------------- the layout (world metres; u = metres out from the pier head)
-/** Line 2's track at the pier head (the crossing's line: bent n stands at u = 20 n, CROSSING_BENTS), and its heading. */
-const HEAD = { x: 1402.0, z: -372 };
-const HX = 0.0272;
-/** Where along u, and how far right (east) of line 2's track, in world x/z. */
-const at = (u: number, lat = 0) => ({ x: HEAD.x + HX * u + lat, z: HEAD.z - u + HX * lat });
+// Line 2's track at the pier head (the crossing's line: bent n stands at u = 20 n, CROSSING_BENTS), its heading HX and
+// `at(u, lat)`, the world x/z of u along and lat right (east) of it, come from ./ring-house.ts (pure, shared with its test).
 /** The ruling grade's bow, u from the pier head (ruling 5): 24.3 m to bent 1, 4% down to the island halt's south end
  * (u 428), 8.0 m level through the halt and the loop. Bent 6 is 20.3 m, the railhead 14.7 m, the hinge 14.0 m. */
 const deckY = (u: number) => (u <= 20 ? 24.3 : Math.max(8, 24.3 - 0.04 * (u - 20)));
@@ -55,6 +53,7 @@ const TIMBER = '#8a6a48',
   SAND = '#d6c69c',
   PATH = '#c9b48a',
   TARP = '#4f6b8a',
+  LINE2 = '#2ec4b6', // line 2's colour (LINE_MARK[1] in src/entities/railway/halt-map.ts): the Ring Island halt's edge paint
   RING = '#f4f1e8',
   FOLK = '#7a8f6a',
   HAT = '#ff8a1f';
@@ -413,7 +412,7 @@ const haltY = deckY(L.halt[0]);
   };
   const GORGE = toward(-103, -1988), // High Gorge: the stack line
     CANOPY = toward(-1085, -313); // Canopy Town: the bay trestle
-  const fp = at(L.halt[0] + 8, FORM.left - 1.7);
+  const fp = at(L.halt[1] - 4, FORM.left - 1.7); // the platforms' north end, where the walk to the west platform ends
   post(TIMBER_DARK, fp.x, fp.z, deckTop, deckTop + 3.7, 0.28, 0.28, false);
   for (const [dir, y, emblem] of [
     [GORGE, 3.2, 'gorge'],
@@ -561,6 +560,124 @@ const haltY = deckY(L.halt[0]);
   }
 }
 
+// ---------------------------------------------------------------- the concourse, the station house and the edge paint
+// `&house=0` leaves all three out (today's halt), so the draw count can be measured with and without them.
+const HOUSE_ON = new URLSearchParams(location.search).get('house') !== '0';
+// Junction-stations design review, finding 1 (docs/brainstorms/junction-stations.md): the house stands at the halt's
+// north-west corner, where land touches the fill, on a terrace level with the platforms; the way between the platforms
+// is a plank crossing at their north end that runs on into the terrace and the house door. The house leans (its two long
+// walls, 24 degrees), has a doorway with no leaf and a 5 x 4 m room under a 3.2 m ceiling, and a bench facing a tall
+// tilted window that the lean points at the shard. Numbers and colliders: ./ring-house.ts (and test/ring-house.test.ts).
+if (HOUSE_ON) {
+  const cr = CONCOURSE.crossing,
+    tr = CONCOURSE.terrace;
+  // the crossing's planks, over the track ends, one level with both platforms (drawn raised: see the README)
+  const mid = (u0: number, u1: number, l0: number, l1: number) => at((u0 + u1) / 2, (l0 + l1) / 2);
+  const cp = mid(cr.u0, cr.u1, cr.lat0, cr.lat1);
+  post(TIMBER, cp.x, cp.z, CONCOURSE.y - 0.5, CONCOURSE.y, cr.lat1 - cr.lat0, cr.u1 - cr.u0);
+  // the terrace: a retained fill up to platform height, the house's floor and its forecourt
+  const tp = mid(tr.u0, tr.u1, tr.lat0, tr.lat1);
+  post(CONCRETE, tp.x, tp.z, -2, CONCOURSE.y, tr.lat1 - tr.lat0, tr.u1 - tr.u0);
+
+  // the house, local frame to world
+  const c0 = at(HOUSE.u, HOUSE.lat);
+  const base = new THREE.Matrix4().compose(
+    new THREE.Vector3(c0.x, HOUSE.floorY, c0.z),
+    new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, houseYaw()),
+    new THREE.Vector3(1, 1, 1),
+  );
+  const X = new THREE.Vector3(1, 0, 0);
+  const place = (b: { x: number; y: number; z: number; rx: number }) =>
+    new THREE.Matrix4().multiplyMatrices(
+      base,
+      new THREE.Matrix4().compose(
+        new THREE.Vector3(b.x, b.y, b.z),
+        new THREE.Quaternion().setFromAxisAngle(X, b.rx),
+        new THREE.Vector3(1, 1, 1),
+      ),
+    );
+  for (const b of houseBoxes()) {
+    const m = place(b);
+    solidBox(b.hx * 2, b.hy * 2, b.hz * 2, m);
+    if (b.name === 'east' || b.name === 'west') continue; // drawn below, as parallelograms
+    const color = b.name === 'roof' ? RING : b.name.startsWith('bench') ? TIMBER_DARK : PATH;
+    add(color, new THREE.BoxGeometry(b.hx * 2, b.hy * 2, b.hz * 2), m);
+  }
+  // the side walls: parallelograms, vertical at the floor and leaning with the long walls at the top
+  const tan = Math.tan((HOUSE.lean * Math.PI) / 180),
+    h = HOUSE.room.h,
+    zn = -(HOUSE.room.d / 2 + HOUSE.wall),
+    zs = HOUSE.room.d / 2 + HOUSE.wall;
+  const outline = new THREE.Shape();
+  outline.moveTo(zn, 0);
+  outline.lineTo(zs, 0);
+  outline.lineTo(zs + h * tan, h);
+  outline.lineTo(zn + h * tan, h);
+  const toLocal = new THREE.Matrix4().makeBasis(
+    new THREE.Vector3(0, 0, 1),
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(-1, 0, 0),
+  );
+  for (const x of [HOUSE.room.w / 2 + HOUSE.wall, -HOUSE.room.w / 2]) {
+    const geo = new THREE.ExtrudeGeometry(outline, { depth: HOUSE.wall, bevelEnabled: false });
+    geo.applyMatrix4(toLocal).applyMatrix4(new THREE.Matrix4().makeTranslation(x, 0, 0));
+    add(PATH, geo, base);
+  }
+  // the window's frame: four orange bars, a little proud of the leaning wall
+  {
+    const w = HOUSE.window,
+      zp = zn + HOUSE.wall / 2,
+      bar = (x0: number, x1: number, s0: number, s1: number) => {
+        const piece = slab('frame', zp, x0, x1, s0, s1);
+        add(STEEL, new THREE.BoxGeometry(piece.hx * 2, piece.hy * 2, HOUSE.wall + 0.12), place(piece));
+      };
+    bar(-w.w / 2 - 0.12, -w.w / 2, w.s0 - 0.12, w.s1 + 0.12);
+    bar(w.w / 2, w.w / 2 + 0.12, w.s0 - 0.12, w.s1 + 0.12);
+    bar(-w.w / 2, w.w / 2, w.s0 - 0.12, w.s0);
+    bar(-w.w / 2, w.w / 2, w.s1, w.s1 + 0.12);
+  }
+  // the floor: boards over the terrace, inside the walls
+  add(
+    SAND,
+    new THREE.BoxGeometry(HOUSE.room.w, 0.03, HOUSE.room.d),
+    new THREE.Matrix4().multiplyMatrices(base, new THREE.Matrix4().makeTranslation(0, 0.015, 0)),
+  );
+}
+// The platform edges, painted in line 2's colour: a stripe along each edge and LOOK UP in block letters beside it, the
+// right way up for someone standing on the platform and facing the track. Draft copy for the owner (the brief's joke).
+if (HOUSE_ON) {
+  const GLYPH: Record<string, string[]> = {
+    L: ['X....', 'X....', 'X....', 'X....', 'X....', 'X....', 'XXXXX'],
+    O: ['.XXX.', 'X...X', 'X...X', 'X...X', 'X...X', 'X...X', '.XXX.'],
+    K: ['X...X', 'X..X.', 'X.X..', 'XX...', 'X.X..', 'X..X.', 'X...X'],
+    U: ['X...X', 'X...X', 'X...X', 'X...X', 'X...X', 'X...X', '.XXX.'],
+    P: ['XXXX.', 'X...X', 'X...X', 'XXXX.', 'X....', 'X....', 'X....'],
+  };
+  const TEXT = 'LOOK UP',
+    px = 0.14,
+    top = haltY + 0.9;
+  const cols = [...TEXT].reduce((n, ch) => n + (ch === ' ' ? 4 : 6), -1);
+  for (const [edge, away, sign] of [
+    [FORM.left, -1, -1], // west platform: facing east, left is north, the text runs south; its top toward the track
+    [FORM.right, 1, 1], // east platform: facing west, left is south, the text runs north; its top toward the track
+  ] as const) {
+    const stripe = at(448, edge + away * 0.15);
+    post(LINE2, stripe.x, stripe.z, top - 0.01, top + 0.012, 0.3, 36, false);
+    const u0 = 446 - (sign * cols * px) / 2;
+    let col = 0;
+    for (const ch of TEXT) {
+      GLYPH[ch]?.forEach((row, r) =>
+        [...row].forEach((cell, k) => {
+          if (cell !== 'X') return;
+          const p = at(u0 + sign * (col + k + 0.5) * px, edge + away * (0.4 + r * px));
+          post(LINE2, p.x, p.z, top - 0.01, top + 0.012, px * 0.92, px * 0.92, false);
+        }),
+      );
+      col += ch === ' ' ? 4 : 6;
+    }
+  }
+}
+
 // ---------------------------------------------------------------- the island: the live cones, solid; the shore; the path
 // The cones exactly as Place's buildFar draws them (src/proto/place/land.ts), as trimesh solids, so the shore and the
 // slopes are walkable; a sand band marks the shore; a trodden path climbs to the lookout on the main cone's summit.
@@ -677,8 +794,8 @@ const views = {
   hingeRamp: { cam: p3(322, 20, 1.2), look: p3(292, 15, 4.5) },
   bentRamp: { cam: p3(222, 20, 1.2), look: p3(244, 12, 7) },
   fingerpost: {
-    cam: p3(L.halt[0] + 22, FORM.left - 1.2, haltY + 2.6),
-    look: p3(L.halt[0] + 10, FORM.left - 1.7, haltY + 2.6),
+    cam: p3(L.halt[1] - 14, FORM.left - 1.2, haltY + 2.6),
+    look: p3(L.halt[1] - 4, FORM.left - 1.7, haltY + 2.6),
   },
   lookout: { cam: { x: CX + 4, y: coneY(CX, CZ) + 2, z: CZ + 3 }, look: { x: CX - 400, y: 50, z: CZ - 30 } },
 };
