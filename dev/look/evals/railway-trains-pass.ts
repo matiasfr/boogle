@@ -3,25 +3,22 @@
 // still is taken as they pass. Logs where along the line they met and whether the ground under it is sea.
 // npm run look -- --rail-seed trains-on --eval dev/look/evals/railway-trains-pass.ts --until window.__placeDone --real \
 //   --name trains-pass
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
-const layout = (await import(
-  '/src/place/layout.ts' as string
-)) as typeof import('../../../src/place/layout.ts');
+const { inspectRailway, line2Trains, railRead, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
+const layout = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
 const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { SEA } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
 
 type Car = { x: number; y: number; z: number };
 type Train = { slot: number; line: number; along: number; track: number; cars: Car[] };
-const view = () => inspectRailwayLegacy()?.line2View as unknown as { trains: Train[] } | undefined;
+const view = () => inspectRailway()?.line2View as unknown as { trains: Train[] } | undefined;
 const shot = window as Window & { __placeDone?: boolean };
 const P = { x: 0, z: 0, ux: 0, uz: 1 };
 let aim: ReturnType<typeof setInterval> | null = null;
 const tick = setInterval(() => {
-  const s = inspectRailwayLegacy();
   const v = view();
-  if (!s?.ready || !s.line2.trains || !v) return;
+  if (!railRead()?.ready() || !line2Trains(rw()) || !v) return;
   const [a, b] = v.trains.filter((t) => t.line === 1);
   if (!a || !b || a.track === b.track) return;
   const gap = Math.abs(a.along - b.along) / 100;

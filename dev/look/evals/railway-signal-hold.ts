@@ -6,23 +6,20 @@
 // with two trains doesn't bunch them there (test/review-v26.test.ts holds a train at it headlessly).
 // npm run look -- --rail-seed q6-done --eval dev/look/evals/railway-signal-hold.ts --until window.__placeDone --real \
 //   --name signal-hold
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
-const layout = (await import(
-  '/src/place/layout.ts' as string
-)) as typeof import('../../../src/place/layout.ts');
+const { inspectRailway, line2Trains, railRead, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
+const layout = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
 
 type Car = { x: number; y: number; z: number };
 type Train = { slot: number; line: number; along: number; track: number; phase: number; at: number; cars: Car[] };
-const view = () => inspectRailwayLegacy()?.line2View as unknown as { trains: Train[] } | undefined;
+const view = () => inspectRailway()?.line2View as unknown as { trains: Train[] } | undefined;
 const shot = window as Window & { __placeDone?: boolean };
 const P = { x: 0, z: 0, ux: 0, uz: 1 };
 let aim: ReturnType<typeof setInterval> | null = null;
 const tick = setInterval(() => {
-  const s = inspectRailwayLegacy();
   const v = view();
-  if (!s?.ready || !s.line2.trains || !v) return;
+  if (!railRead()?.ready() || !line2Trains(rw()) || !v) return;
   const line2 = v.trains.filter((t) => t.line === 1);
   const held = line2.find((t) => t.phase === 0 && t.at === -1 && t.track === 0);
   const leaving = line2.find((t) => t !== held && t.track === 1 && t.phase === 1);
