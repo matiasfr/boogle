@@ -21,6 +21,7 @@ import {
   RAIL_LINES,
   RAIL_TRAINS,
   TRAIN_EXTENT,
+  balanceOk,
   circuitAhead,
   circuitCm,
   circuitLen,
@@ -274,7 +275,17 @@ function endStanding(line: LineRef, stops: readonly number[], r: Readonly<RailTr
  * that bunched under demand spread out again. It reads only the rows' poses (as blockFree does), costs nothing when
  * the trains are already even, and never holds: past `balance` ticks after the dwell (the cap), the footing wagon's
  * train while it is exempt from headway, or while another train waits behind at this end's signal (it would keep the
- * end block shut). */
+ * end block shut).
+ *
+ * The cap runs from the row's `depart`: its arrival, or a lever ask's restart of its dwell (rail.call), which the ask
+ * is owed so its asker can reach the platform. The row keeps no separate arrival tick (running the cap from arrival
+ * would need a new Train field), so one ask can restart the cap; the line takes one ask a (halt, way) until a train
+ * leaves that way, so a hold is at most about twice dwell and cap: 2 × (50 + 600) ticks, 130 s on line 2
+ * (test/railway-r3b1-review.test.ts, "griefing").
+ *
+ * The waiter test matches only a train at this end's signal now. One left at a signal the railhead's stop has since
+ * moved on from (stopMoved) is not matched, and the train behind it may be held; the cap still ends that hold (the
+ * review's "unmatched waiter" test). A `balance` outside balanceOk holds nothing. */
 export function balancedHold<L extends LineRef>(
   io: TrainIO<L>,
   line: L,
@@ -285,7 +296,7 @@ export function balancedHold<L extends LineRef>(
 ) {
   const cap = lineDef(line).balance,
     r = io.row(slot);
-  if (cap === undefined || io.headExempt(slot)) return false;
+  if (cap === undefined || !balanceOk(cap) || io.headExempt(slot)) return false;
   if (tick >= r.depart + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
   const others = lineSlots(line).filter((k) => k !== slot);
   if (!others.length) return false;

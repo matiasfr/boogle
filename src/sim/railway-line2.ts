@@ -5,7 +5,7 @@ import { LINE2 } from './railway-lines.ts';
 import { railTrainsOf } from './railway-trains.ts';
 import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
-import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, RAILS, pierLaid } from './railway-line2-layout.ts';
+import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, Q6, RAILS, pierLaid } from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD, type RailCart } from './railway-cart.ts';
 
@@ -223,7 +223,7 @@ export function validateRailLine2(s: Railway) {
     throw new Error('railway: depot output');
   if (l.depot + l.cart.logs + line2Aboard(s, 'logs') > l.depotProduced) throw new Error('railway: depot stock');
   const c = l.cart;
-  const road = CART_ROAD.rackCm(LINE2_STATIONS.length - 1);
+  const road = CART_ROAD.rackCm(Q6);
   if (
     !int(c.phase, CART_PHASES - 1) ||
     !int(c.depart) ||

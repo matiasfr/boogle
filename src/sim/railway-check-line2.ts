@@ -6,7 +6,7 @@
 //                    the lever, hook, glider and pack; the shelf; the boiler; rail conservation (throws on the first)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { LINE2_FORGE as FORGE, LINE2_STATIONS } from './railway-line2-layout.ts';
+import { LINE2_FORGE as FORGE, LINE2_STATIONS, Q6 } from './railway-line2-layout.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD } from './railway-cart.ts';
 import { DEPOT_OUT } from './railway-components.ts';
 import { accounts, beam, boiler, cart, forge, forgeClock, rail } from './railway-rows.ts';
@@ -95,7 +95,8 @@ export function checkLine2(w: World) {
     bad('depot output');
   const c = cart(w);
   if (r0.depot + c.logs + line2Aboard(w, 'logs') > r0.depotProduced) bad('depot stock');
-  const road = CART_ROAD.rackCm(LINE2_STATIONS.length - 1);
+  // The cart's road ends at Q6's rack (the farthest it is ever sent; Q6 and Q7 are fed by train).
+  const road = CART_ROAD.rackCm(Q6);
   if (
     !railInt(c.phase, CART_PHASES - 1) ||
     !railInt(c.depart) ||

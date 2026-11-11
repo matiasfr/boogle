@@ -58,9 +58,16 @@ export type RailLineDef = {
   /** Cm a tick². */
   accel: number;
   /** Set on a line with the balanced hold at its ends (railway-trains.ts, balancedHold): the most ticks past its dwell
-   * a train ready to leave an end waits for the gap ahead to grow to the gap behind. */
+   * a train ready to leave an end waits for the gap ahead to grow to the gap behind. A safe integer from 1 to
+   * BALANCE_MAX_TICKS (balanceOk; trainPlaces refuses any other). */
   balance?: number;
 };
+/** The longest balanced hold a line may ask for: 3 minutes, about one round trip of line 2 to the island (138.8 s
+ * non-stop, about 220 s under heavy asks). */
+export const BALANCE_MAX_TICKS = 1800;
+/** Whether a line's `balance` is absent or a whole number of ticks from 1 to BALANCE_MAX_TICKS. */
+export const balanceOk = (b: number | undefined) =>
+  b === undefined || (Number.isSafeInteger(b) && b >= 1 && b <= BALANCE_MAX_TICKS);
 
 const both = (p: RailPlatform) => [p, p] as const;
 /** A stub's turnout: past its merge the two tracks part over this length (src/place/layout.ts draws it). */
@@ -215,6 +222,7 @@ export function trainPlaces(line: LineRef, stops: readonly number[]) {
   const l = lineDef(line),
     c = circuitLen(stops),
     last = stops.length - 1;
+  if (!balanceOk(l.balance)) throw new Error(`railway: line ${l.id} has a balance of ${l.balance} ticks`);
   const at = (k: number, track: number) => circuitCm(stops, track, stops[k]!);
   const home = at(l.home, l.home === last ? 1 : 0);
   const taken: { stop: number; track: number }[] = [];

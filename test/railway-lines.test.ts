@@ -8,6 +8,8 @@ import {
   RAIL_TRAINS,
   TRAIN_EXTENT,
   TURNOUT_CM,
+  BALANCE_MAX_TICKS,
+  balanceOk,
   haltPlatform,
   trainPlaces,
 } from '../src/sim/railway-lines.ts';
@@ -256,4 +258,17 @@ test('three trains stand on three places: the Village (up), Far Head (down) and 
     { stop: 0, track: 0 },
     { stop: 2, track: 1 },
   ]);
+});
+
+test("a line's balanced hold is absent or 1 to BALANCE_MAX_TICKS whole ticks; trainPlaces refuses any other", () => {
+  const stops = v27Stops(7, 7, true);
+  for (const balance of [undefined, 1, 600, BALANCE_MAX_TICKS]) {
+    assert.ok(balanceOk(balance), `${balance}`);
+    assert.doesNotThrow(() => trainPlaces({ ...V27_LINE2, balance }, stops));
+  }
+  for (const balance of [0, -1, 0.5, Number.NaN, Number.POSITIVE_INFINITY, BALANCE_MAX_TICKS + 1, 2 ** 53]) {
+    assert.ok(!balanceOk(balance), `${balance}`);
+    assert.throws(() => trainPlaces({ ...V27_LINE2, balance }, stops), /balance/);
+  }
+  for (const l of RAIL_LINES) assert.ok(balanceOk(l.balance), l.id);
 });
