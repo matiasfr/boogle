@@ -16,7 +16,7 @@ import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { carry } from '../../physics/platforms.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { dustRing } from '../../render/particle-effects.ts';
-import { readableGlow, readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
+import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
@@ -64,8 +64,7 @@ export function createRingMeet(
   const firstReady = createFirstReady(adapter.read.ready);
   owner.cleanup(() => shot.dispose());
 
-  // The stud: a raised gold bolt head in the joint at the toe (lit metal, so it reads gold, not cream), with a thin gold
-  // beacon over it that rises above Buddy from the follow camera. Both stay dull until the plate has visibly landed
+  // The stud: a raised gold bolt head in the joint at the toe (lit metal, so it reads gold, not cream). It stays dull until the plate has visibly landed
   // (`deps.landed`), then pulse (strongly enough to see in a still pair); bright and steady once struck.
   const studMat = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#d99a14', metalness: 0.85, roughness: 0.35, emissive: '#ff9d00' }),
@@ -75,19 +74,10 @@ export function createRingMeet(
   stud.position.set(RIVET_AT.x, RIVET_AT.y + 0.25, RIVET_AT.z);
   stud.castShadow = true;
   stud.visible = false;
-  const beamMat = readableUnlit(
-    new THREE.MeshBasicNodeMaterial({ color: '#ffc02e', transparent: true, opacity: 0.6, depthWrite: false }),
-  );
-  const beamGeo = new THREE.CylinderGeometry(0.07, 0.07, 3.4, 10, 1, true);
-  const beam = new THREE.Mesh(beamGeo, beamMat);
-  beam.position.set(RIVET_AT.x, RIVET_AT.y + 0.5 + 1.7, RIVET_AT.z);
-  beam.visible = false;
-  owner.add(stud, beam);
+  owner.add(stud);
   owner.cleanup(() => {
     studGeo.dispose();
     studMat.dispose();
-    beamGeo.dispose();
-    beamMat.dispose();
   });
 
   /** The Meet shot has been offered on this page (so a second accepted strike, a race's loser, plays nothing more). */
@@ -102,7 +92,9 @@ export function createRingMeet(
     shot.play(v3(s.from), v3(s.to), v3(s.at), s.seconds, s.drift, {
       lead: s.lead,
       back: s.back,
+      cutIn: s.cutIn,
       atFrom: s.atFrom ? v3(s.atFrom) : undefined,
+      end: s.end ? { pos: v3(s.end.pos), at: v3(s.end.at) } : undefined,
     });
     return shot.active();
   }
@@ -127,15 +119,12 @@ export function createRingMeet(
     const wd = adapter.read.world(),
       a = firstReady() && line2Trains(wd) ? aperture(wd) : null;
     stud.visible = !!a && a.set === WORKS.ring;
-    beam.visible = false;
     if (!a) return;
     if (a.joined >= 0) {
       studMat.emissiveIntensity = 0.9;
     } else if (lit(a.brace, a.joined)) {
       const pulse = 0.5 + 0.5 * Math.sin(t * 5);
       studMat.emissiveIntensity = 0.3 + 1.7 * pulse;
-      beam.visible = true;
-      beamMat.opacity = 0.3 + 0.55 * pulse;
     } else studMat.emissiveIntensity = 0;
   }
   /** The ride over the joint, once per player per room: the pull-out for a player who saw the Meet, the Meet's framing for

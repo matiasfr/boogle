@@ -1,20 +1,19 @@
 // The Meet and the first crossing, pure numbers and decisions (docs/plans/ring-island-build1.md, R4d; calls 11 and 35):
 // when the rivet's shot is offered, what the framings are, which crossing gets which shot, and what a page that joins
 // after the join (or reloads) is owed. No three.js, no DOM: ring-meet/view.ts plays what this decides.
-import { RING_END, RING_FORMATION, RING_ORIGIN, RING_RIVET, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
+import { RING_END, RING_FORMATION, RING_RIVET, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
+import { ringUL } from '../ring-island/ground.ts';
 
 export type V3 = { x: number; y: number; z: number };
 
 /** The rivet's u (cm along line 2 from the pier head): `RING_RIVET` is `ringAt(25950, mid)`; test/railway-r4d-meet.test.ts
  * pins this to it. The joint the first crossing is judged against. */
 export const JOINT_U = 25950;
-const UNIT = Math.hypot(1, 0.0272);
 
-/** (u, lat) in cm of a world point in metres, the inverse of `ringAt` (to the centimetre). Local views only. */
+/** (u, lat) in cm of a world point in metres: the island ground's `ringUL`, in the layout's centimetres. */
 export function ringUV(x: number, z: number) {
-  const dx = x * 100 - RING_ORIGIN.x,
-    dz = z * 100 - RING_ORIGIN.z;
-  return { u: (0.0272 * dx - dz) / UNIT, lat: (dx + 0.0272 * dz) / UNIT };
+  const r = ringUL(x, z);
+  return { u: r.u * 100, lat: r.lat * 100 };
 }
 
 /** A point in world metres at (u, lat) cm, `up` metres over the deck there. */
@@ -35,48 +34,65 @@ export type MeetShot = {
   lead: number;
   atFrom: V3 | null;
   back: number;
+  /** Opens on `from` at once (a cut), not a blend in from the follow camera through whatever lies between. */
+  cutIn: boolean;
+  /** A second deliberate cut when the travel ends: the held end frame (camera position and look), or null. */
+  end: { pos: V3; at: V3 } | null;
 };
 /** The hand-back is a deliberate cut: a blend home from the halt is 140 m and reads as a near-cut anyway (270 m/s), so
  * the shot ends on its held frame and cuts back to the player (the same 0.14 s as a skip). */
 const CUT_S = 0.14;
 /** The stud, as the shot's opening look (a little over the deck). */
 const STUD_AT: V3 = { x: RING_RIVET.x / 100, y: ringDeckY(25950) / 100 + 0.4, z: RING_RIVET.z / 100 };
-/** The board and buffers the Meet looks down the line at (RINGWORKS, under the shard). */
+/** The far look of the travel: down the joined line toward the halt's end board and buffers. */
 const BOARD_AT: V3 = { x: RING_END.board.x / 100, y: RING_END.board.y / 100 + 4, z: RING_END.board.z / 100 };
+/** The end frame: 14 m short of the RINGWORKS board on the east platform (u 448 m, lat +5, 4 m over the platform; src/
+ * entities/ring-island/view.ts), 5.2 m wide so about 170 px at 960; the end board and buffers run on down the line to
+ * the left of it (the camera looks 12 degrees off the line toward the board). */
+const END: { pos: V3; at: V3 } = {
+  pos: over(43400, -150, 5),
+  at: over(46300, 470, 4.6),
+};
 
-/** The Meet, 6 s: 1 s held 9 m back and above the rivet (the stud in frame, the clang and gold burst), 4 s easing in
- * and out 63 m along the joined line over the leaf (peak 23.6 m/s; it was 30 m/s steady), the look easing from the
- * stud to the board and buffers, then 1 s held on them; cut back. Call 11. */
+/** The Meet, 6 s: a cut to 1 s held 17 m back and above the rivet looking at the stud (the clang and the gold burst in
+ * frame), 3.5 s easing in and out 57 m along the joined line over the leaf (peak 24.6 m/s; it was 30), the look easing
+ * from the stud toward the halt, a cut to 1.5 s held on the RINGWORKS board with the buffers beyond, then a cut back.
+ * Call 11. */
 export const MEET_SHOT: MeetShot = {
   seconds: 6,
   lead: 1,
-  drift: 4,
+  drift: 3.5,
   back: CUT_S,
+  cutIn: true,
   from: over(24700, -1100, 4.5),
-  to: over(31000, -1300, 9),
+  to: over(30400, -1300, 9),
   atFrom: STUD_AT,
   at: BOARD_AT,
+  end: END,
 };
-/** A late player's first crossing shows the Meet's framing in 5 s: 0.8 s on the joint, 3.2 s over 50 m (peak 23.4
- * m/s; it was 37 m/s), 1 s held on the board; cut back. */
+/** A late player's first crossing shows the Meet's framing in 5 s: a cut to 0.8 s on the joint, 3 s over 49 m (peak
+ * 24.6 m/s; it was 37), a cut to 1.2 s on the board; cut back. */
 export const MEET_REPLAY: MeetShot = {
   ...MEET_SHOT,
   seconds: 5,
   lead: 0.8,
-  drift: 3.2,
-  to: over(29700, -1300, 9),
+  drift: 3,
+  to: over(29600, -1300, 9),
 };
 /** The first-crossing pull-out: from beside the track at the leaf's mainland end, out and up over the bents, looking at
- * the joint as the train goes over it. 5 s, an even drift; cut back like the Meet. */
+ * the joint as the train goes over it. 5 s, an even drift, blended in from the rider's own camera; cut back like the
+ * Meet. */
 export const CROSSING_SHOT: MeetShot = {
   seconds: 5,
   lead: 0,
   drift: 5,
   back: CUT_S,
+  cutIn: false,
   from: over(25000, -900, 4),
   to: over(23300, -2800, 15),
   atFrom: null,
   at: over(JOINT_U, RING_FORMATION.mid, 1),
+  end: null,
 };
 /** Peak camera speed (m/s) of a shot: eased travel (smoothstep) peaks at 1.5 times the mean; an even drift is the mean. */
 export function peakSpeed(s: MeetShot): number {

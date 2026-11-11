@@ -34,8 +34,15 @@ function showSkip(owner: object, on: boolean) {
 }
 
 /** Optional shaping of one shot: `lead` seconds held at `from` before the travel starts, `atFrom` where it looks until
- * then (it eases to `at` over the travel), and `back` the hand-back blend (a tiny one is a deliberate cut). */
-export type ShotShape = { lead?: number; atFrom?: THREE.Vector3; back?: number };
+ * then (it eases to `at` over the travel), and `back` the hand-back blend (a tiny one is a deliberate cut), `end` cuts to a held position and look the moment the travel ends (a deliberate second cut), `cutIn` opens on `from` at once instead of blending in
+ * from the follow camera (which can pass through geometry between the player and the shot). */
+export type ShotShape = {
+  lead?: number;
+  atFrom?: THREE.Vector3;
+  back?: number;
+  cutIn?: boolean;
+  end?: { pos: THREE.Vector3; at: THREE.Vector3 };
+};
 type Shot = {
   from: THREE.Vector3;
   to: THREE.Vector3;
@@ -45,6 +52,8 @@ type Shot = {
   lead: number;
   atFrom: THREE.Vector3 | null;
   back: number;
+  cutIn: boolean;
+  end: { pos: THREE.Vector3; at: THREE.Vector3 } | null;
 };
 export function createCameraPullOut(busy = () => false, behindBuddy = false, seated = () => false) {
   const inSeat = () => inputState.seated || seated();
@@ -82,6 +91,10 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     position.lerpVectors(shot.from, shot.to, shot.drift === shot.seconds ? travel : ease(travel));
     if (shot.atFrom) target.lerpVectors(shot.atFrom, shot.at, ease(travel));
     else target.copy(shot.at);
+    if (shot.end && t >= shot.lead + shot.drift) {
+      position.copy(shot.end.pos);
+      target.copy(shot.end.at);
+    }
     aim.copy(look).addScaledVector(forward, 8).lerp(target, weight);
     pos.lerp(position, weight);
     look.copy(aim).addScaledVector(forward, -8);
@@ -120,7 +133,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
       returned = true;
     }
     if (cut < 1) cut = Math.max(0, cut - dt / 0.14);
-    const out = Math.min(1, t / 0.8),
+    const out = shot.cutIn ? 1 : Math.min(1, t / 0.8),
       back = clamp((t - shot.seconds + shot.back) / shot.back, 0, 1);
     weight = ease(out) * (1 - ease(back)) * cut;
     if (t >= shot.seconds || cut <= 0) return reset();
@@ -146,6 +159,8 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
         lead: shape.lead ?? 0,
         atFrom: shape.atFrom?.clone() ?? null,
         back: shape.back ?? BACK_S,
+        cutIn: shape.cutIn ?? false,
+        end: shape.end ? { pos: shape.end.pos.clone(), at: shape.end.at.clone() } : null,
       };
     },
     update(dt: number) {

@@ -147,11 +147,28 @@ test('the gate waits for the visible landing: offered only after the swing ends,
 test('the shots never move the camera faster than 25 m/s at their peak, and hold on the rivet first and the board last', () => {
   for (const s of [MEET_SHOT, MEET_REPLAY, CROSSING_SHOT]) assert.ok(peakSpeed(s) <= 25, `${peakSpeed(s)}`);
   assert.equal(MEET_SHOT.lead, 1, 'a second on the rivet before it travels');
-  assert.ok(MEET_SHOT.seconds - MEET_SHOT.lead - MEET_SHOT.drift >= 1 - 1e-9, 'a second held on the board at the end');
-  assert.ok(MEET_REPLAY.seconds - MEET_REPLAY.lead - MEET_REPLAY.drift >= 1 - 1e-9);
+  assert.ok(
+    MEET_SHOT.seconds - MEET_SHOT.lead - MEET_SHOT.drift >= 1.5 - 1e-9,
+    'a second and a half held on the board',
+  );
+  assert.equal(MEET_SHOT.cutIn && MEET_REPLAY.cutIn, true, 'opens with a cut, not a blend through the train');
+  assert.equal(CROSSING_SHOT.cutIn, false, 'the first-crossing pull-out blends from the rider');
+  assert.ok(MEET_REPLAY.seconds - MEET_REPLAY.lead - MEET_REPLAY.drift >= 1.2 - 1e-9);
   assert.ok(MEET_SHOT.back < 0.2, 'the hand-back is a deliberate cut');
   assert.ok(
     MEET_SHOT.atFrom && Math.abs(ringUV(MEET_SHOT.atFrom.x, MEET_SHOT.atFrom.z).u - JOINT_U) < 2,
     'looks at the stud first',
   );
+});
+
+test('the end frame is a close cut on the RINGWORKS board, east platform u 448 m lat +5, with the buffers down the line', () => {
+  const end = MEET_SHOT.end!;
+  assert.ok(end, 'the Meet ends on a held frame');
+  assert.deepEqual(MEET_REPLAY.end, end);
+  assert.equal(CROSSING_SHOT.end, null);
+  const board = ringAt(44800, 500),
+    d = Math.hypot(end.pos.x - board.x / 100, end.pos.z - board.z / 100);
+  assert.ok(d > 8 && d < 18, `${d} m from the board: close enough to read it at 960`);
+  const cam = ringUV(end.pos.x, end.pos.z);
+  assert.ok(cam.u < 44800 - 1000 && cam.u > RING_HALT.u0, 'on the halt, short of the board, facing down the line');
 });

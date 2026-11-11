@@ -1180,6 +1180,20 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > with a pulsing emissive and a 3.4 m gold beacon; the glints are big `glint` sprites (the breaker's small motes were
   > the reason none read). (4) The breaker condition is "the room has it", as the server has it. **P3 design question:**
   > should the breaker be visibly carried to the rivet (and swing at it)?
+  > **Second review (11 November, D3D12 retake).** The Meet opens with a **cut** to the held framing (a blend in from the
+  > follow camera went through the second player's locomotive cab): `createCameraPullOut.play` gains `cutIn` and `end`
+  > (a second cut to a held end frame) beside `{ lead, atFrom, back }`. Timeline, 6 s: cut in on the stud (17 m back, 5 m
+  > up) and hold 1.0 s; 3.5 s eased travel over 57 m along the line (peak 24.5 m/s), the look easing from the stud to the
+  > halt; **cut** at 4.5 s to a held frame 14 m short of the RINGWORKS board with the buffers down the line (1.5 s); cut
+  > back (0.14 s). The late-rider replay, 5 s: cut in, 0.8 s hold, 3.0 s over 49 m (peak 24.6 m/s), cut to the board 1.2 s,
+  > cut back. The banner (top 16%, 4.5 s) ends as the board frame begins and never sits over the held stud (centre). The
+  > beacon is deleted (a faint column behind Buddy); the stud's pulse and the glints carry it. **Perf at the halt
+  > (ring-joined, 709,598 triangles):** the island ground is the top contributor I could count without a browser:
+  > 375 x 360 vertices at a 2 m cell, 199,960 triangles (28%) in one draw, no shadow cast; the far view is hidden while the
+  > near one is mounted (`root.visible = !mounted`), so the leaf is not drawn twice, and Place's `buildFar` cones, ring and
+  > shard (a few hundred triangles) stay under the ground. The other contributors (the rest of the scene, the island's
+  > merged parts, the folk) are not measured; to find them, toggle each entity group's `visible` in a scratch eval and diff
+  > `renderer.info.render.triangles`. Cheapest later fix: a coarser ground grid beyond the halt (4 m past 150 m).
 - [x] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stand upright facing the shard; the whistle swaps two of them for the two
@@ -1202,7 +1216,8 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > (inside `facts()`, re-read per Talk), `adapter.read.tick()`, `createFirstReady`; no world kept. No sim rule, wire or
   > `WORLD_NS` change. Tests: `test/railway-r4e-folk.test.ts` (13). Look: `dev/look/evals/ring-folk.ts`. **Not done:** the
   > browser proof, `npm run perf` at the halt (owed at the checkpoint), "the rivet toss" (the plan gives it no trigger or
-  > copy), Hooter's line spoken as a bark at the whistle (it is a Talk line only). Not tested on a device.
+  > copy), Hooter's line spoken as a bark at the whistle (it is a Talk line only: **whistle bark not built**, so the
+  > whistle has no visible cue at 9 m, no prop or puff; a small steam puff at Hooter would be the trivial one). Not tested on a device.
 
 ### Design review: the halt map at eight stops (designer, 2026-11-11)
 
