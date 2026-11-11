@@ -175,7 +175,7 @@ const base = `https://127.0.0.1:${port}/`;
 
 // ---- source maps: a profile's minified positions to source files ------------------------------------------------
 const maps = new Map<string, SourceMapConsumer | null>();
-function sourceOf(url: string, line: number, column: number): string {
+function sourceOf(url: string, line: number, column: number, withLine = false): string {
   const m = url.match(/\/assets\/[^?#]+\.js/);
   if (!m) return url ? url.replace(base, '/').slice(0, 60) : '(native)';
   const file = path.join(dist, m[0]);
@@ -186,7 +186,9 @@ function sourceOf(url: string, line: number, column: number): string {
   const consumer = maps.get(file);
   if (!consumer) return m[0];
   const pos = consumer.originalPositionFor({ line: line + 1, column });
-  return (pos.source ?? m[0]).replace(/^(\.\.\/)+/, '').replace(/^.*node_modules\//, '');
+  return (
+    (pos.source ?? m[0]).replace(/^(\.\.\/)+/, '').replace(/^.*node_modules\//, '') + (withLine ? `:${pos.line}` : '')
+  );
 }
 // The leaf's library; the owner is the nearest game file up the stack.
 const LIB: [RegExp, string][] = [
@@ -697,6 +699,14 @@ function attributeProfile(cpu: CpuProfile, t0: number, marks: Record<string, num
     .sort((a, b) => a[1] - b[1]);
   const byPhase: Record<string, Record<string, number>> = {};
   const inLong = long.map(() => ({}) as Record<string, number>);
+  // Inclusive time per named function on the stack inside each long task: what the owner was doing.
+  const inLongFn = long.map(() => ({}) as Record<string, number>);
+  const names = new Map(
+    cpu.nodes.map((n) => {
+      const f = n.callFrame;
+      return [n.id, f.url ? sourceOf(f.url, f.lineNumber, f.columnNumber, true) : f.functionName];
+    }),
+  );
   const add = (o: Record<string, number>, k: string, v: number) => (o[k] = (o[k] ?? 0) + v);
   for (let i = 0; i < (cpu.samples?.length ?? 0); i++) {
     t += cpu.timeDeltas![i]!;
@@ -711,7 +721,16 @@ function attributeProfile(cpu: CpuProfile, t0: number, marks: Record<string, num
     add(byOwner, owner, dt);
     add((byPhase[order.find(([, m]) => m * 1000 >= at)?.[0] ?? 'after'] ??= {}), owner, dt);
     long.forEach(([start, dur], j) => {
-      if (at >= start! * 1000 && at <= (start! + dur!) * 1000) add(inLong[j]!, owner, dt);
+      if (at < start! * 1000 || at > (start! + dur!) * 1000) return;
+      add(inLong[j]!, owner, dt);
+      const seen = new Set<string>();
+      for (let n: number | undefined = id; n !== undefined; n = parent.get(n)) {
+        const name = names.get(n);
+        if (name && !seen.has(name)) {
+          seen.add(name);
+          add(inLongFn[j]!, name, dt);
+        }
+      }
     });
   }
   const round = (o: Record<string, number>, n = 40) =>
@@ -726,7 +745,7 @@ function attributeProfile(cpu: CpuProfile, t0: number, marks: Record<string, num
     byLib: round(byLib),
     byOwner: round(byOwner),
     byPhase: Object.fromEntries(Object.entries(byPhase).map(([p, o]) => [p, round(o, 6)])),
-    longTasks: long.map(([start, dur], j) => ({ start, dur, top: round(inLong[j]!, 4) })),
+    longTasks: long.map(([start, dur], j) => ({ start, dur, top: round(inLong[j]!, 4), fns: round(inLongFn[j]!, 24) })),
   };
 }
 

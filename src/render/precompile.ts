@@ -160,8 +160,9 @@ rendererReady.then(
 
 // Never a first-use stall in play. From the end of pass 1, in the game's scene (its camera and shadow passes):
 // - an object drawn for the first time whose shader (WGSL) is not generated yet is skipped in that frame and compiled
-//   with compileAsync, which yields to the frames; it is drawn once that is done. Shadow-pass shaders are small (under
-//   3 ms a frame in the cold-launch runs) and three cannot build them outside a frame, so those still generate there.
+//   with compileAsync, which yields to the frames; it is drawn once that is done. Shadow-pass shaders cannot be built
+//   outside a frame (three applies the caster's nodes to the shadow material only while drawing it), so a frame
+//   generates them up to a budget and the casters past it cast their shadow a frame or more later.
 //   An object drawn before keeps three's behaviour when its material changes (it would blink otherwise).
 // - a pipeline three would build synchronously is built with createRenderPipelineAsync instead: r187's draw path skips
 //   an object whose pipeline is not ready (Pipelines.isReady), so that object (or its shadow) is drawn a few frames
@@ -169,6 +170,7 @@ rendererReady.then(
 // Other scenes keep three's synchronous build, since their one-off renders need the result at once: PMREM, the item
 // icons, the output pass (a skipped output quad would be a black frame). Mipmap pipelines are three's internal ones.
 let deferring = false;
+const SHADOW_WGSL_MS = 8; // shadow-shader generation a frame may spend before more casters wait for the next
 const building = new Set<Promise<unknown>>();
 const track = (p: Promise<unknown>) => {
   building.add(p);
@@ -219,13 +221,12 @@ rendererReady.then(
     if (typeof direct !== 'function' || !r._nodes?.nodeBuilderCache) return;
     const drawn = new WeakSet<THREE.Object3D>();
     const holding = new WeakSet<THREE.Object3D>();
+    const shadowDrawn = new WeakSet<THREE.Object3D>();
+    let budgetFrame = -1,
+      wgslAtFrame = 0;
     r._renderObjectDirect = function (object, material, s, camera_, lightsNode, group, clippingContext, passId) {
-      if (
-        deferring &&
-        s === scene &&
-        !drawn.has(object) &&
-        !(material as { isShadowPassMaterial?: boolean }).isShadowPassMaterial
-      ) {
+      const shadow = (material as { isShadowPassMaterial?: boolean }).isShadowPassMaterial === true;
+      if (deferring && s === scene && !(shadow ? shadowDrawn : drawn).has(object)) {
         if (holding.has(object)) return;
         const o = this._objects.get(
           object,
@@ -237,10 +238,18 @@ rendererReady.then(
           clippingContext,
           passId,
         );
-        if (
+        const missing =
           this._nodes.get(o).nodeBuilderState === undefined &&
-          !this._nodes.nodeBuilderCache.has(this._nodes.getForRenderCacheKey(o))
-        ) {
+          !this._nodes.nodeBuilderCache.has(this._nodes.getForRenderCacheKey(o));
+        if (missing && shadow) {
+          // A caster's shadow shader: generated here, at most SHADOW_WGSL_MS of them a frame; the rest wait a frame.
+          const frame = renderer.info.frame;
+          if (frame !== budgetFrame) {
+            budgetFrame = frame;
+            wgslAtFrame = bootSpanMs('wgsl');
+          }
+          if (bootSpanMs('wgsl') - wgslAtFrame >= SHADOW_WGSL_MS) return;
+        } else if (missing) {
           holding.add(object);
           late.held++;
           if (allDone) late.afterAll++;
@@ -253,7 +262,7 @@ rendererReady.then(
           );
           return;
         }
-        drawn.add(object);
+        (shadow ? shadowDrawn : drawn).add(object);
       }
       direct.call(this, object, material, s, camera_, lightsNode, group, clippingContext, passId);
     };
