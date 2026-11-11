@@ -16,69 +16,49 @@ import { LINE1_GREAT_TREE } from '../src/sim/railway-line-layout.ts';
 import { RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { railGrowthMask } from '../src/sim/railway-supply.ts';
 import { Pile } from '../src/sim/railway-components.ts';
-import { act, advance, buildSeedWorld, logs, type SeedStage, type World } from '../src/sim/railway-seeds.ts';
+import { act, advance, buildSeedWorld, logs, type SeedStage, type Seed } from '../src/sim/railway-seeds.ts';
 import { railBoilerPutDown, railBoilerStood } from '../src/sim/railway-sys-line2.ts';
-import {
-  createRailway,
-  edit,
-  need,
-  railApply,
-  railBeamPutDown,
-  railBeamRelease,
-  railBeamStood,
-  railFootRelease,
-  railResume,
-  railSession,
-  railSupplyPulse,
-  restore,
-  worldOf,
-} from './railway-live.ts';
+import { railBeamPutDown, railBeamRelease, railBeamStood } from '../src/sim/railway-sys-line1.ts';
+import { railResume, railSupplyPulse } from '../src/sim/railway-sys-away.ts';
+import { railSession } from '../src/sim/railway-sys-core.ts';
+import { railFootRelease } from '../src/sim/railway-sys-works.ts';
+import { apply, createRailway, need, restore } from '../src/sim/railway-drive.ts';
+import { account, beam, boiler, rocks, trees } from '../src/sim/railway-rows.ts';
 
 const FILE = new URL('./fixtures/railway-ops-golden.json', import.meta.url);
 type Step = [label: string, result: number, hash: number];
 const got: Record<string, Step[]> = {};
 
-function scenario(name: string, w: World, body: (step: (label: string, fn: () => number | boolean) => number) => void) {
+function scenario(name: string, s: Seed, body: (step: (label: string, fn: () => number | boolean) => number) => void) {
   const steps: Step[] = [];
   const step = (label: string, fn: () => number | boolean) => {
     const r = Number(fn());
-    steps.push([label, r, worldOf(w.s).hash()]);
+    steps.push([label, r, s.w.hash()]);
     return r;
   };
   body(step);
   got[name] = steps;
 }
 /** A copy of a built stage world (the stage itself belongs to the stage golden). */
-const from = (stage: SeedStage): World => {
-  const w = buildSeedWorld(stage);
-  return { s: restore(w.s), t: w.t };
-};
-// The boiler's two presence entry points have no wrapper in railway-live.ts: run them through edit().
-const boilerStood = (w: World, pid: string, x: number, y: number, z: number) => {
-  let r = false;
-  edit(w.s, (e) => void (r = railBoilerStood(e, pid, x, y, z)));
-  return r;
-};
-const boilerPutDown = (w: World, pid: string) => {
-  let r = 0;
-  edit(w.s, (e) => void (r = railBoilerPutDown(e, pid)));
-  return r;
+const from = (stage: SeedStage): Seed => {
+  const s = buildSeedWorld(stage);
+  return { w: restore(s.w), t: s.t };
 };
 const PILE = { x: 100000, y: 2000, z: 3000 };
 const GROW = railGrowthMask([]);
-const pulse = (w: World, marker: number, extra: { recover?: number[]; beam?: number; boiler?: number } = {}) =>
-  railSupplyPulse(w.s, { marker, grow: GROW, recover: [], ...extra });
+const pulse = (s: Seed, marker: number, extra: { recover?: number[]; beam?: number; boiler?: number } = {}) =>
+  railSupplyPulse(s.w, { marker, grow: GROW, recover: [], ...extra });
 
 // ---- line one's opening, to the moment the great beam is wanted (the first third of the route's railwayAtQ2)
-function opening(): World {
+function opening(): Seed {
   const s = createRailway();
   for (const pid of ['a', 'b']) railSession(s, pid, 1);
-  railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
-  const w = { s, t: 40 };
+  apply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  const w = { w: s, t: 40 };
   logs(w, 'a', 'T1', 24);
   advance(w, 300);
   for (let i = 0; i < 8;) {
-    const n = act(w, 'b', 'rail.mine', { id: s.line!.rocks.findIndex((r) => r > 0) });
+    const n = act(w, 'b', 'rail.mine', { id: rocks(s).findIndex((r) => r.left > 0) });
     need(act(w, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }) === n, 'T2 took stone');
     i += n;
   }
@@ -93,7 +73,7 @@ scenario('opening', w1, (step) => {
     (op: string, f = {}) =>
     () =>
       act(w1, 'a', op, f);
-  const tree = () => RAILWAY_SOURCES[w1.s.sources.findIndex((n) => n > 0)]![0];
+  const tree = () => RAILWAY_SOURCES[trees(w1.w).findIndex((n) => n.left > 0)]![0];
   step('jump', a('rail.jump'));
   step('jump again', a('rail.jump'));
   step('axe before the forge', a('rail.axe'));
@@ -101,37 +81,37 @@ scenario('opening', w1, (step) => {
   step('unknown op', a('rail.nonsense'));
   step('chop', () => act(w1, 'a', 'rail.chop', { id: tree(), yaw: 0, collapsed: false }));
   step('drop', a('rail.drop', { ...PILE, n: 2, kind: 0 }));
-  step('take part', a('rail.take', { id: worldOf(w1.s).ids(Pile)[0]!, kind: 0 }));
-  step('take wrong kind', a('rail.take', { id: worldOf(w1.s).ids(Pile)[0] ?? 0, kind: 1 }));
+  step('take part', a('rail.take', { id: w1.w.ids(Pile)[0]!, kind: 0 }));
+  step('take wrong kind', a('rail.take', { id: w1.w.ids(Pile)[0] ?? 0, kind: 1 }));
   step('drop for recovery', a('rail.drop', { ...PILE, n: 1, kind: 0 }));
   step('supply pulse 1', () => pulse(w1, 100));
-  step('supply pulse 2 recovers the pile', () => pulse(w1, 140, { recover: [...worldOf(w1.s).ids(Pile)] }));
+  step('supply pulse 2 recovers the pile', () => pulse(w1, 140, { recover: [...w1.w.ids(Pile)] }));
   step('rackTake stone', a('rail.rackTake', { kind: 1 }));
   step('rackTake rails', a('rail.rackTake', { kind: 2 }));
   step('rackTake logs', a('rail.rackTake', { kind: 0 }));
   step('drop the rest', a('rail.drop', { ...PILE, n: 8, kind: 0 }));
   for (let i = 0; i < 12; i++) step(`beamChop ${i}`, a('rail.beamChop'));
-  const beam = () => w1.s.line!.beam.revision;
-  step('beamTake', () => act(w1, 'a', 'rail.beamTake', { revision: beam() }));
-  step('beamStood', () => railBeamStood(w1.s, 'a', 99700, 3000, -13700));
-  step('beamStood same spot', () => railBeamStood(w1.s, 'a', 99700, 3000, -13700));
-  step('beamRelease stale revision', () => railBeamRelease(w1.s, 'a', 1, beam() + 5));
-  step('beamRelease', () => railBeamRelease(w1.s, 'a', 1, beam()));
-  step('beamTake again', () => act(w1, 'a', 'rail.beamTake', { revision: beam() }));
+  const beamRev = () => beam(w1.w).revision;
+  step('beamTake', () => act(w1, 'a', 'rail.beamTake', { revision: beamRev() }));
+  step('beamStood', () => railBeamStood(w1.w, 'a', 99700, 3000, -13700));
+  step('beamStood same spot', () => railBeamStood(w1.w, 'a', 99700, 3000, -13700));
+  step('beamRelease stale revision', () => railBeamRelease(w1.w, 'a', 1, beamRev() + 5));
+  step('beamRelease', () => railBeamRelease(w1.w, 'a', 1, beamRev()));
+  step('beamTake again', () => act(w1, 'a', 'rail.beamTake', { revision: beamRev() }));
   step('beamDrop', () =>
-    act(w1, 'a', 'rail.beamDrop', { revision: beam(), x: LINE1_GREAT_TREE.x, y: 3000, z: LINE1_GREAT_TREE.z + 100 }),
+    act(w1, 'a', 'rail.beamDrop', { revision: beamRev(), x: LINE1_GREAT_TREE.x, y: 3000, z: LINE1_GREAT_TREE.z + 100 }),
   );
   step('supply pulse beam age', () => pulse(w1, 170));
-  step('supply pulse beam recovers', () => pulse(w1, 200, { beam: beam() }));
-  step('beamTake from the tree', () => act(w1, 'a', 'rail.beamTake', { revision: beam() }));
-  step('beamPutDown', () => railBeamPutDown(w1.s, 'a'));
-  step('beamPutDown not held', () => railBeamPutDown(w1.s, 'a'));
-  step('beamTake from the ground', () => act(w1, 'a', 'rail.beamTake', { revision: beam() }));
-  step('beamDeposit', () => act(w1, 'a', 'rail.beamDeposit', { revision: beam(), station: 'T3' }));
-  step('resume', () => railResume(w1.s, 200, 1, w1.t));
-  step('resume same marker', () => railResume(w1.s, 200, 1, w1.t));
-  step('session epoch 2', () => railSession(w1.s, 'a', 2));
-  step('session epoch skipped', () => railSession(w1.s, 'a', 9));
+  step('supply pulse beam recovers', () => pulse(w1, 200, { beam: beamRev() }));
+  step('beamTake from the tree', () => act(w1, 'a', 'rail.beamTake', { revision: beamRev() }));
+  step('beamPutDown', () => railBeamPutDown(w1.w, 'a'));
+  step('beamPutDown not held', () => railBeamPutDown(w1.w, 'a'));
+  step('beamTake from the ground', () => act(w1, 'a', 'rail.beamTake', { revision: beamRev() }));
+  step('beamDeposit', () => act(w1, 'a', 'rail.beamDeposit', { revision: beamRev(), station: 'T3' }));
+  step('resume', () => railResume(w1.w, 200, 1, w1.t));
+  step('resume same marker', () => railResume(w1.w, 200, 1, w1.t));
+  step('session epoch 2', () => railSession(w1.w, 'a', 2));
+  step('session epoch skipped', () => railSession(w1.w, 'a', 9));
 });
 
 // ---- the proper axe, once the forge is lit
@@ -143,7 +123,7 @@ scenario('axe', w2, (step) => {
       act(w2, 'a', op, f);
   step('axe', a('rail.axe'));
   step('axe again', a('rail.axe'));
-  const tree = () => RAILWAY_SOURCES[w2.s.sources.findIndex((n) => n > 0)]![0];
+  const tree = () => RAILWAY_SOURCES[trees(w2.w).findIndex((n) => n.left > 0)]![0];
   // Five logs a chop with the axe: drop the load after each so the next chop has room.
   for (let i = 0; i < 6; i++) {
     step(`chop ${i}`, a('rail.chop', { id: tree(), yaw: 1.5, collapsed: i % 2 === 0 }));
@@ -159,12 +139,12 @@ scenario('axe', w2, (step) => {
 // ---- the boiler carried, stood, put down, dropped and recovered
 const w3 = from('boiler');
 scenario('boiler', w3, (step) => {
-  const rev = () => w3.s.line2!.boiler.revision;
+  const rev = () => boiler(w3.w).revision;
   step('boilerTake', () => act(w3, 'a', 'rail.boilerTake', { revision: rev() }));
-  step('boilerStood', () => boilerStood(w3, 'a', 92000, 1815, 600));
-  step('boilerStood same spot', () => boilerStood(w3, 'a', 92000, 1815, 600));
-  step('boilerPutDown', () => boilerPutDown(w3, 'a'));
-  step('boilerPutDown not held', () => boilerPutDown(w3, 'a'));
+  step('boilerStood', () => railBoilerStood(w3.w, 'a', 92000, 1815, 600));
+  step('boilerStood same spot', () => railBoilerStood(w3.w, 'a', 92000, 1815, 600));
+  step('boilerPutDown', () => railBoilerPutDown(w3.w, 'a'));
+  step('boilerPutDown not held', () => railBoilerPutDown(w3.w, 'a'));
   step('boilerTake from the ground', () => act(w3, 'a', 'rail.boilerTake', { revision: rev() }));
   step('boilerDrop', () => act(w3, 'a', 'rail.boilerDrop', { revision: rev(), x: 95000, y: 2000, z: 0 }));
   step('supply pulse 1', () => pulse(w3, 100));
@@ -194,10 +174,10 @@ scenario('call', w4, (step) => {
 // ---- a footing shouldered and released
 const w5 = from('works-lit');
 scenario('foot', w5, (step) => {
-  const epoch = () => w5.s.accounts.find((x) => x.pid === 'a')!.epoch;
+  const epoch = () => account(w5.w, 'a')!.epoch;
   step('footTake works rack', () => act(w5, 'a', 'rail.footTake', { rack: 0 }));
-  step('footRelease', () => railFootRelease(w5.s, 'a', epoch()));
-  step('footRelease nothing held', () => railFootRelease(w5.s, 'a', epoch()));
+  step('footRelease', () => railFootRelease(w5.w, 'a', epoch()));
+  step('footRelease nothing held', () => railFootRelease(w5.w, 'a', epoch()));
   step('footTake pier rack', () => act(w5, 'a', 'rail.footTake', { rack: 1 }));
 });
 
