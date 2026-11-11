@@ -199,7 +199,7 @@ that touches a copy removes it, and is not done while the copy remains. Each row
 | Driving a world in a test; seeds | `railway-live.ts` (the proxy) and `railway-drive.ts`; `test/helpers/railway-{q2,trains,works}.ts` beside `src/sim/railway-seed-*.ts` | `railway-drive.ts` and the seed files, through `test/helpers/rail.ts` | X1, X2 (callers), M12b-1 (files) |
 | A tool for each beat | a Place eval or bot and its `railway-*` twin | the `railway-*` eval, the railway bot's segment or the rail seed | M13a names each pair, M13b deletes Place's |
 | The level check's line constants | copied from Place's layout into `dev/level/check.ts` | imported from `src/sim/railway-*-layout.ts` and `src/place/layout.ts`; the tool holds no layout number | M13d |
-| The stations of each line | `LINE1_STATIONS` and `LINE2_STATIONS` in the sim's layouts, and `LINKS[n].stations` in `src/place/layout.ts` (the 11 November outage: v27 added Q7 to one only; the test's `OFF_PLACE` list papers over it) | the sim's layout files; `src/place/layout.ts` derives its rows from them, in metres | M13g |
+| The stations of each line | `LINE1_STATIONS` and `LINE2_STATIONS` in the sim's layouts, and `LINKS[n].stations` in `src/place/layout.ts` (the 11 November outage: v27 added Q7 to one only) | the sim's layout files; `src/place/layout.ts` derives its rows from them, in metres | M13g |
 
 ## 5. Steps
 
@@ -249,8 +249,8 @@ typecheck`, `npm run lint`.
       `test/helpers/railway-m10a-twins.ts` (deleted once X2's r4a edit is on main; otherwise left for M12e). Kept
       and re-pointed at the server's rows: the late joiner, the source checks ("neither view calls…": now a `grep`
       over every view for `.inspect()` on the adapter), `boiler-view`'s press closure, the `forgeTake` flight, the
-      Q5 and crossing "goes active the frame the server's row does" cases, the skipped hidden-trains case (it stays
-      skipped, with its owner question).
+      Q5 and crossing "goes active the frame the server's row does" cases, the hidden-trains case (rebase over
+      `hotbox/trains-visible`, which keeps trains drawn with actions pending and unskips it).
 - [ ] **X4. Triage d, e, f and the session.** _M._ `test/railway-m10d-review.test.ts`, `railway-m10e-review.test.ts`,
       `railway-m10f-review.test.ts`, `railway-read-session.test.ts`. Kept: a predicted press shows before the
       answer; a footing set down reads as a pile; `read.movement()` identity and rev; `read.tick()` one value a
@@ -386,10 +386,11 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
       `src/proto/place/` (44 files), `src/features/proto-place.ts`, `src/debug/dev/place.ts` and its callers'
       branches, `place-owner.ts`, the 230-line remainder of `rail.ts`.
   - **It changes what loads at startup.** On 11 November v27 broke the boot because `createStationBoxes` read
-    Place's `LINKS[1].stations`. Before shipping: `test/railway-station-seats.test.ts` and `node dev/live-boot.ts`
-    against a local build pass, and `grep -rn "proto/place" src` is empty (`src/place/layout.ts` stays: it is the
-    live layout). After shipping: load https://boogle.club/ in a browser, jump in, and see the island draw and the
-    railway connect before the site is called healthy; the smoke alone is not that.
+    Place's `LINKS[1].stations`. Before shipping: `node dev/live-boot.ts` passes against the built game locally, and
+    `grep -rn "proto/place" src` is empty (`src/place/layout.ts` stays: it is the live layout). After shipping: the
+    live smoke runs the same boot check, and https://boogle.club/ is loaded in a browser (jump in, the island draws,
+    the railway connects) before the site is called healthy. No unit test guards the boot (owner, 11 November:
+    "Remove it, rely on the smoke"; [owner calls](../agents/owner-calls.md)).
   - **Checks:** `npm run check:full`; `npm run bench -- --poses spawn,town` census equal to main; `npm run
     playthrough -- --to T2`; `?proto=place` opens the production game; first-load gzip reported.
   - **Reviewer attacks:** a module whose import ran a side effect the live game relied on (a `scene.add`, a CSS
@@ -407,7 +408,7 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
       (`src/sim/railway-line-layout.ts`, `railway-line2-layout.ts`) with only what is the land's own (a platform's
       offset, a sign) kept beside it by station id. Start by listing the 18 `LINKS[0]` and `LINKS[1]` readers under
       `src` and what each takes; a station the land cannot place (Q7 on the piled deck) carries that in its sim row,
-      not in a test's list. `test/railway-station-seats.test.ts` loses `OFF_PLACE` and keeps the boot's seat check.
+      not in a list kept beside it.
   - **Done:** adding a station is one edit; no file under `src`, `dev` or `test` lists station ids a second time.
   - **Checks:** `npm run check` (the level check reads the layout: reports equal to main); `node dev/live-boot.ts`
     on a local build; the bench census equal at `spawn`, `town`, `forge`; a look at `--rail-seed deck-laid` (Q7's
@@ -444,9 +445,10 @@ positions. It is a regression check here: M13d and M13f2 must leave its reports 
    census, the kill table for converted files, and the M12 trace kept through M12f.
 3. **M12f regresses prediction** (P1; "Input gets instant feedback"). Guards: a cut-and-import diff only, the trace,
    `npm run load` against main in one session, the independent review.
-4. **M13e breaks the boot** (P1). The rule and the two guards above; never called healthy on the smoke alone.
-5. **In flight:** PR #1553 against M12b-1; Ring Island R5 against D1; the wing greybox against M13e (open question
-   1). Each step runs `npm run inflight` first.
+4. **M13e or M13g breaks the boot** (P1). `dev/live-boot.ts` on the built game before the ship; the live smoke and
+   the live site loaded in a browser after it.
+5. **In flight:** PR #1553 against M12b-1; Ring Island R5 against D1; the wing's model step, which lands before
+   M13e. Each step runs `npm run inflight` first.
 6. **Room-safety "Don't"s that apply:** effects stay in the accepted path through the split (M12f); a reader that
    holds a world across a packet reads the past (every X and D batch); nothing here changes apply, presence,
    transport or saves. **Mixed builds:** no wire change in any step. **Performance:** M12e removes work (no
@@ -474,8 +476,9 @@ building on it." So the architecture choices are made, not asked. For [agent-cal
 6. **`createRailwayAdapter` keeps its name and lives in `railway-session.ts`.** Why: 40-odd importers change a path,
    not a name.
 7. **M12f gets the independent review though its path does not require one.** Why: it moves the predictor.
-8. **`test/railway-station-seats.test.ts` stays** as the boot's unit guard, with `dev/live-boot.ts`. Why: no still
-   shows a startup throw; M13e leans on both.
+8. **The boot is guarded by `dev/live-boot.ts` and the live site, not a unit test.** The owner's call ("Remove it,
+   rely on the smoke"); `test/railway-station-seats.test.ts` is being deleted on `ci/unit-speed`. M13e and M13g run
+   the boot check on the built game before the ship and load the live site after it.
 9. **M13 is seven steps, tools before source,** and its proof is bot segments, not the full bot.
 10. **A step that touches a copy removes it** (section 4's table): the page tools get one reader module, the
     adapter one per-frame helper, and the station list one home in the sim's layouts (M13g, new scope that the
@@ -484,12 +487,10 @@ building on it." So the architecture choices are made, not asked. For [agent-cal
 
 ## Open questions
 
-Two, neither blocks X1 to X4, M12c or M13a.
+None. The two this plan raised are settled (11 November):
 
-1. **The double-track "wing" greybox lives at `?proto=place&layer=wing&machineView=lay`,** waiting for your look.
-   M13e deletes that entry, and `archive/place` is then the only way back to it. **Recommended:** M13e waits for
-   your look (M13a to d and all of M12 do not); if the look is not soon, the greybox moves behind a production flag
-   first as its own small step.
-2. **With 8 actions pending every train is hidden** (`train-view.ts:385`, `read.ready()` false; on main since before
-   M10; already on your list). X3 keeps its test skipped until you say. **Recommended:** trains stay drawn while the
-   window is full; a small view fix after M12e.
+1. **The double-track "wing" greybox at `?proto=place&layer=wing&machineView=lay`.** Owner: "Yes, build the model".
+   The wing's model step lands before M13e, so M13e does not wait for a look at the greybox; it checks `npm run
+   inflight` for that step and follows it.
+2. **Trains hidden with 8 actions pending** (`train-view.ts:385`). Trains stay visible; being built now on
+   `hotbox/trains-visible`, not after M12e. X3 rebases over it.
