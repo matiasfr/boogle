@@ -4,7 +4,7 @@ Brief (write before modelling):
 
 - Purpose / silhouette question / reference views and landmarks.
 - Measured dimensions in metres, each with source; inferred dimensions separately.
-- Named parts, expected closed solids and intentional open surfaces; triangle/material/byte ceilings.
+- Named parts, expected closed solids and intentional open surfaces; triangle/material/byte targets (guides to report against, not caps that cut the asset; [owner call](../../../../docs/agents/owner-calls.md#performance-guides-not-gates)).
 - Game axes (+Y up, +Z forward), origin/pivot/axle, receiver dimensions; bone name and rest transform for attachments.
 - Revision parameter, materials, intended motion (or explicit none), forbidden details.
 

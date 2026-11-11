@@ -206,7 +206,7 @@ Numbered; each with its expected gain on the Mac (phones gain proportionally mor
   before they ship.
 - Recommendation 1 lives in the railway networking another agent is changing now; it should land there.
 - Frame budget used by the daily job: 8.33 ms CPU and GPU per frame on the Mac (120 Hz), so a phone at a third of the
-  speed still holds about 40 fps. Raise or lower it in `PERF_POLICY.budget.frameMs`.
+  speed still holds about 40 fps. Raise or lower it in `PERF_POLICY.budget.frameMs`. _(10 November: the budgets here and in `PERF_POLICY` are reporting references, not gates on a feature; see the owner's [performance guides, it doesn't gate](../agents/owner-calls.md#performance-guides-not-gates) call.)_
 - Not tested on a device.
 
 ## 6. The railway update in Safari (7 November, after R1b)
