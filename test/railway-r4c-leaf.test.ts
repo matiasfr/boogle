@@ -14,9 +14,11 @@ import {
   SWING_S,
   TOE_SPEED,
   TOE_U,
+  BRACE_VERB,
   braceOffered,
   createLeafMotion,
   jibOffered,
+  jibVerb,
   leafRest,
   toeShove,
 } from '../src/entities/railway/leaf-shape.ts';
@@ -138,4 +140,10 @@ test('the toe shove: only under the landing, only while the leaf is coming down,
     u -= toeShove(u, 0, m.deg, m.falling) * DT;
   }
   assert.ok(u <= TOE_U - 1, `cleared to ${u.toFixed(2)}`);
+});
+
+test("the prompts' words: the owner's two labels for the leaf, the jib's own words before the gap is footed", () => {
+  assert.equal(BRACE_VERB, 'Knock out the pawl');
+  for (let set = 0; set < 14; set++) assert.equal(jibVerb(set), 'Set the footing', `set ${set}`);
+  assert.equal(jibVerb(14), 'Hang the weight');
 });

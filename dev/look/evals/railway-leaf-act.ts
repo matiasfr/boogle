@@ -1,6 +1,6 @@
 // R4c proof (docs/plans/ring-island-build1.md, step 4c), `look --action` at `--rail-seed leaf-raised`: the leaf's swing
-// reached through the real prompts. The bot is set down on the brace platform and pulls the gold strut ("Pull"), then four
-// times takes a footing off the railhead rack and sets it at the jib ("Shoulder a footing", "Set the footing"); the
+// reached through the real prompts. The bot is set down on the brace platform and knocks out the pawl at the gold strut ("Knock out the pawl"), then four
+// times takes a footing off the railhead rack and sets it at the jib ("Shoulder a footing", "Hang the weight"); the
 // fourth brings the leaf down and the motion sheet films it. `leafdo=under` steps onto the platform's last metre (u 259.4,
 // the toe's landing) the moment the last footing is hung, to see the player walked clear. Staging teleports only.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -32,7 +32,7 @@ const site = (s: { x: number; z: number }) => [s.x / 100, s.z / 100] as const;
 say(`start ${state()}`);
 stand(288, 3.4, layout.RING_BRACE.y / 100);
 await bot.wait(400);
-if (!(await bot.use(...site(layout.RING_BRACE), 'pull the strut', /Pull/)))
+if (!(await bot.use(...site(layout.RING_BRACE), 'knock out the pawl', /Knock out the pawl/)))
   throw new Error('the brace was not offered');
 await bot.wait(900);
 say(`braced ${state()}`);
@@ -45,7 +45,7 @@ async function take(n: number) {
   await bot.wait(400);
 }
 async function hang(n: number) {
-  if (!(await bot.use(...site(head.jib), 'set the footing', /Set the footing/))) throw new Error(`no set ${n}`);
+  if (!(await bot.use(...site(head.jib), 'hang the weight', /Hang the weight/))) throw new Error(`no set ${n}`);
   say(`hung ${n} ${state()}`);
 }
 for (let n = 1; n <= 3; n++) {

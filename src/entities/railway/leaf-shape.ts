@@ -17,6 +17,13 @@ export function jibOffered(set: number, cw: number): boolean {
   return set < WORKS.ring || cw < WORKS.counterweight;
 }
 
+/** The prompts' words (owner, 11 November: "Use the plan's two labels"): the brace at the gold strut, and the jib's,
+ * which sets a bent's footing until the gap is footed and then hangs the counterweight. */
+export const BRACE_VERB = 'Knock out the pawl';
+export function jibVerb(set: number): string {
+  return set < WORKS.ring ? 'Set the footing' : 'Hang the weight';
+}
+
 /** Degrees up when raised (ringIslandPose.leaf's 78). */
 export const LEAF_UP = 78;
 /** The counterweight footings that bring it down. */

@@ -23,7 +23,7 @@ const remote = () => {
   const p = r?.avatar?.position;
   return p ? `${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}` : 'none';
 };
-if (!(await bot.use(head.jib.x / 100, head.jib.z / 100, 'set the footing', /Set the footing/)))
+if (!(await bot.use(head.jib.x / 100, head.jib.z / 100, 'hang the weight', /Hang the weight/)))
   throw new Error('no set 4');
 cam.yaw = me.yaw = yaw; // back to facing the leaf for the sheet
 for (const ms of [0, 500, 1000, 1500, 2000, 2500, 3500])

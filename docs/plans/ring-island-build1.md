@@ -1090,7 +1090,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > "Pull" (the lever's, reused) at the gold strut (`RING_BRACE`, the server's own reach test), offered only while
   > `set === 14` and `brace === 1` (`braceOffered`, `leaf-shape.ts`; `leaf-view.ts` `targets()`, via `works-live.ts`).
   > (2) The jib's prompt stays "Set the footing" and now also offers a counterweight footing while `cw < 4` once the gap is
-  > footed (`jibOffered`; `railhead-view.ts`). "Knock out the pawl" and "Hang the weight" are not used: owner to choose. **Answered 11 November: use the plan's two labels** ("Knock out the pawl" for the brace, "Hang the weight" for the counterweight; orchestrator's reading); queued for the next prompt change.
+  > footed (`jibOffered`; `railhead-view.ts`). "Knock out the pawl" and "Hang the weight" are not used: owner to choose. **Answered 11 November: use the plan's two labels** ("Knock out the pawl" for the brace, "Hang the weight" for the counterweight; orchestrator's reading); built 11 November (Copy table).
   > (3) The player under the toe: while the leaf is coming down (35 degrees or less) the local player within 1.4 m of the
   > toe's edge or under it (u 258.6 to 261 m, on the deck) is walked back along the deck at 6 m/s, away from the hinge
   > (`toeShove`); no tumble, no lift; once settled nobody is moved. Others' pages shove their own player. Tests:
@@ -1309,7 +1309,7 @@ concrete), New (this plan's).
 | Halt plaques | **Railhead**, **Ring Island**; the island's chained west lever: plaqued **Ring Island** as built (was: the branch's emblem, no name; call 40) | The Railhead's name after the Meet is the owner's (open question 2). Owner, 11 November: "Keep both" (the lever plaque and Station 7's board) |
 | Q7's frame board | **Station 7** (as built; the plan named no label) | Owner, 11 November: "Keep both" |
 | Jump-in rows | **Deck laid** / *Q7 laid over the six bents; the wagon brings the ring's footings*; **Ring joined** / *The leaf is down and riveted; trains run to Ring Island* (as built in `src/world/railway-jump.ts`; the first draft was "The deck is laid" and "Ring Island joined") | Owner, 11 November: "Keep" |
-| Prompts | **Knock out the pawl**, **Hang the weight**, **Strike the rivet** | **Set the footing** is today's. Owner, 11 November: "Use the plan's two labels ("Knock out the pawl", "Hang the weight")". Orchestrator's reading: the brace prompt (R4c built "Pull") becomes "Knock out the pawl" and the counterweight prompt (R4c built "Set the footing") becomes "Hang the weight". Queued, not built |
+| Prompts | **Knock out the pawl**, **Hang the weight**, **Strike the rivet** | **Set the footing** is today's. Owner, 11 November: "Use the plan's two labels ("Knock out the pawl", "Hang the weight")". Orchestrator's reading: the brace prompt (R4c built "Pull") becomes "Knock out the pawl" and the counterweight prompt (R4c built "Set the footing") becomes "Hang the weight". **Built 11 November** (`BRACE_VERB`, `jibVerb` in `leaf-shape.ts`): the jib still says "Set the footing" for a bent's footing before the gap is footed; "Pull" and "Set the footing" elsewhere are unchanged. "Strike the rivet" is R4d's |
 | Meet banner | **Ring Island** over *The line has arrived*, 4.5 s | Like "Next stop: Ring Island" |
 | Board at the halt | **RINGWORKS** | Kept (owner, 10 November) |
 | End board behind the buffers | blank | The owner's words (call 52) |

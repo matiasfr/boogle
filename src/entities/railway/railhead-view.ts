@@ -29,7 +29,7 @@ import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { q7Laid } from '../../sim/railway-queries.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
-import { jibOffered } from './leaf-shape.ts';
+import { jibOffered, jibVerb } from './leaf-shape.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { RING_S, line2At, line2World, line2Y } from './line2-path.ts';
 import {
@@ -836,7 +836,7 @@ export function createRailwayRailhead(
       )
         out.push({
           id: 'railway-foot-set-3',
-          verb: 'Set the footing',
+          verb: jibVerb(set),
           at: new THREE.Vector3(jibFoot.x, jibFoot.y + 1.8, jibFoot.z),
           run: () => void adapter.setFooting(3),
         });

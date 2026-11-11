@@ -2,7 +2,8 @@
 // `ringIslandPose` (ring-island/view.ts draws it, ring-island-far/view.ts reads it). It rests raised on the pawl; braced,
 // each counterweight footing dips it a quarter; the last brings it down onto the bents in 2.5 s, ease-in, with a thump.
 // A restore or a page that joins after the join sees the rest at once. Local view over the read facade; the sim reads
-// none of it. The brace prompt is here; the counterweight prompt is the jib's, in railhead-view.ts. The rivet's glint is R4d's.
+// none of it. The brace prompt ("Knock out the pawl") is here; the counterweight prompt ("Hang the weight") is the jib's,
+// in railhead-view.ts. The rivet's glint is R4d's.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Interactable } from '../../player/hands.ts';
@@ -14,7 +15,7 @@ import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { ringIslandPose } from '../ring-island/state.ts';
 import { line2World } from './line2-path.ts';
 import { RING_S, line2Y } from './line2-path.ts';
-import { BRACE, LEAF_UP, TOE_U, toeShove, braceOffered, createLeafMotion, leafRest } from './leaf-shape.ts';
+import { BRACE, BRACE_VERB, LEAF_UP, TOE_U, toeShove, braceOffered, createLeafMotion, leafRest } from './leaf-shape.ts';
 
 export function createRailwayLeaf(adapter: RailwayAdapter) {
   const motion = createLeafMotion(),
@@ -22,7 +23,7 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
   // The gold strut's prompt: the brace platform's foot, only once the gap is footed and the leaf is still on the pawl.
   const strut = {
       id: 'railway-brace-leaf',
-      verb: 'Pull',
+      verb: BRACE_VERB,
       at: new THREE.Vector3(RING_BRACE.x / 100, RING_BRACE.y / 100 + 1.6, RING_BRACE.z / 100),
       run: () => void adapter.braceLeaf(),
     } satisfies Interactable,

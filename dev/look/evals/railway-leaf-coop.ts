@@ -1,6 +1,6 @@
 // R4c's two-page proof (docs/plans/ring-island-build1.md, step 4c), `look --players 2 --rail-seed leaf-raised`: player 2
-// pulls the gold strut ("Pull") and then steps under the toe (u 259.4, facing the hinge); player 1 carries three
-// footings from the railhead rack to the jib ("Shoulder a footing", "Set the footing"), shoulders the fourth and waits at
+// knocks out the pawl at the gold strut ("Knock out the pawl") and then steps under the toe (u 259.4, facing the hinge); player 1 carries three
+// footings from the railhead rack to the jib ("Shoulder a footing", "Hang the weight"), shoulders the fourth and waits at
 // the jib facing the leaf. Pair it with `--action dev/look/evals/railway-leaf-coop-hang.ts`, which hangs the fourth on
 // player 1's page, so player 1's motion sheet films the swing with player 2 drawn under the toe, and player 2's still
 // (taken after the sheet) shows the landed leaf from where they were walked to. Staging teleports only.
@@ -46,7 +46,7 @@ say(`player ${player} start ${state()}`);
 if (player === '2') {
   stand(288, 3.4, layout.RING_BRACE.y / 100);
   await bot.wait(400);
-  if (!(await bot.use(...site(layout.RING_BRACE), 'pull the strut', /Pull/))) throw new Error('no brace offered');
+  if (!(await bot.use(...site(layout.RING_BRACE), 'knock out the pawl', /Knock out the pawl/))) throw new Error('no brace offered');
   await until(() => ring()?.brace === 2, 8000, 'braced');
   say(`braced ${state()}`);
   // Under the toe once the other player has three hung, facing the hinge: the leaf comes down at you.
@@ -75,7 +75,7 @@ if (player === '2') {
     stand(254, 3.6, head.jib.y / 100);
     await bot.wait(400);
     if (n === 4) break;
-    if (!(await bot.use(...site(head.jib), 'set the footing', /Set the footing/))) throw new Error(`no set ${n}`);
+    if (!(await bot.use(...site(head.jib), 'hang the weight', /Hang the weight/))) throw new Error(`no set ${n}`);
     say(`hung ${n} ${state()}`);
     await bot.wait(1200);
   }
