@@ -365,7 +365,7 @@ later change with a bundle report. Place's remaining callers get one owner from 
     `fanfare`'s frame hook was the big world label (`label`, used only by Place's halts, depot and pair): it moved to
     `src/proto/place/label.ts`, so `fanfare` is sounds only. The module-level `scene.add` in `boxes` and `crates` and the
     owner-less `onFrame` fallback in `wagon-look` are unchanged, each with a `use-an-entity` directive; the owner conversion
-    is not done (its callers are all prototypes) and goes with M13. `boxes`, `carry-models` and `wagon-look` still import
+    is deliberately not done in M4 (a move step changes no behaviour; its callers are all prototypes) and is listed under M13. `boxes`, `carry-models` and `wagon-look` still import
     `proto/era/blocks`, `proto/place/layout` and `proto/wagon/cars` (directives; they go when M5 and M6 move those).
     `src/proto`: 148 files and 36,118 lines to 136 and 34,459; `src/render`: 92 and 11,605 to 104 and 13,275. Chunk names
     unchanged but `common`/`cars`/`look` now `fanfare`/`wagon-look`. `bench` census not run.
@@ -482,6 +482,11 @@ later change with a bundle report. Place's remaining callers get one owner from 
     plus the 230-line remainder of `rail.ts` and `place-owner.ts`. Tag the parent `archive/place` first. It needs the
     D1 brief on what still drives Place (orchestrator-state, Leftovers): 148 files name the entry, 53 of them look
     evals and 9 beats.
+  - Also from M4 (deferred; a move step changes no behaviour): give `render/boxes.ts` (`makeSet`), `render/crates.ts` (the
+    `ground` heap mesh, `hopTo`) and `render/wagon-look.ts` (`animate`) a required owner, remove their `scene.add` and
+    `else onFrame` fallbacks and the three `use-an-entity` directives, and give the `?proto=net`, `wagon`, `crossing`
+    callers an owner. The `no-restricted-imports` directives on `boxes`, `carry-models` and `wagon-look` go when M5 and
+    M6 have moved `layout`, `era/blocks` types and `wagon/cars`.
   - **Done:** `src/proto/place/` does not exist; `rg "proto/place" src dev test server protos` is empty.
 
 ## 4. What waits on what
