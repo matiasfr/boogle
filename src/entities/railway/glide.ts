@@ -5,7 +5,7 @@
 // Opening: Jump in the air once no air jump is left, or the Glide action (LB / Q / touch) as a toggle. Jump while it's
 // open does nothing. A shouldered great beam or boiler keeps it shut (docs/brainstorms/glider-placement.md, call 16).
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { account, rail } from '../../sim/railway-rows.ts';
 import { boilerHeld, held } from '../../sim/railway-queries.ts';

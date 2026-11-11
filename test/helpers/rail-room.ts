@@ -5,7 +5,7 @@
 // again at every read: a published world is never written, so a held one is the past). With `{ served: true }` the room
 // also records the server's replicated rows at the end of each room step: `served(step)` is them as they stood then,
 // which is the step a client's mirror reports (`mirror.step()`) when it is current to it.
-import { createRailwayAdapter, railMovement, type RailwayAdapter } from '../../src/adapters/railway.ts';
+import { createRailwayAdapter, railMovement, type RailwayAdapter } from '../../src/adapters/railway-session.ts';
 import { specOf, type TuneKey } from '../../src/sim/tune.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../../src/world/sync.ts';
@@ -66,7 +66,6 @@ export function railRoom(seed?: Seed, options: RailRoomOptions = {}) {
   const up: { at: number; cid: string; m: unknown }[] = [];
   const down: { at: number; cid: string; m: unknown }[] = [];
   const clients = new Map<string, RoomClient>();
-  const hidden = new Set<string>();
   const handlersOf = new Map<string, Set<(m: unknown, from: string) => void>>();
   const history = new Map<number, string>();
   const requests = createRailwayRequests({
@@ -147,17 +146,15 @@ export function railRoom(seed?: Seed, options: RailRoomOptions = {}) {
       replication.flush(
         sync.roomStep(),
         (cid, _p, json) => down.push({ at: step + (clients.get(cid)?.delay ?? 0), cid, m: JSON.parse(json) }),
-        (cid) => !hidden.has(cid),
       );
       for (const c of clients.values())
-        if (!hidden.has(c.cid)) down.push({ at: step + c.delay, cid: c.cid, m: { t: 'w:c', ht: sync.world.tick } });
-      for (const x of down.filter((x) => x.at <= step && !hidden.has(x.cid))) {
+        down.push({ at: step + c.delay, cid: c.cid, m: { t: 'w:c', ht: sync.world.tick } });
+      for (const x of down.filter((x) => x.at <= step)) {
         down.splice(down.indexOf(x), 1);
         const c = clients.get(x.cid);
         if (c?.live) for (const h of handlersOf.get(x.cid)!) h(x.m, SERVER_ID);
       }
       for (const c of clients.values()) {
-        if (hidden.has(c.cid)) continue;
         if (loop) c.adapter.update(clock.now);
         each?.(c);
       }
@@ -170,7 +167,6 @@ export function railRoom(seed?: Seed, options: RailRoomOptions = {}) {
     run,
     clients,
     clock,
-    hidden,
     advance: (ms: number) => void (clock.now += ms),
     /** The head of a frame on every client (the railway entity's update). */
     frame: () => clients.forEach((c) => c.adapter.update(clock.now)),

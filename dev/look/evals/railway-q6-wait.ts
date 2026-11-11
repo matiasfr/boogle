@@ -3,25 +3,27 @@
 // (whose leftover logs offer no "Pick up"), then walk into the frame's reach loaded. Logs what was offered, the sign
 // and the nudge count; the motion sheet films the one bob and puff.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { account, inspectRailway, line2Trains, rail, railBack, rw, railPid, qjob } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');
 const bot = makeBot();
-const read = () => inspectRailwayLegacy()!;
+const read = () => inspectRailway()!;
+const carry = () => railBack().carry;
 const report = (beat: string) => {
-  const s = read(),
-    v = s.line2View as { trainOwed?: boolean; q6Sign?: unknown; depot?: number[] | null };
+  const w = rw(),
+    acct = account(w, railPid()),
+    v = read().line2View as { trainOwed?: boolean; q6Sign?: unknown; depot?: number[] | null };
   console.log(
     `SIXWAIT ${beat} ${JSON.stringify({
       offered: interactTarget()?.verb ?? null,
-      carry: s.carry,
-      railsCarry: s.railsCarry,
-      depot: s.line2.depot,
-      q6: { stock: s.line2.stations[5]!.stock, railStock: s.line2.stations[5]!.railStock },
-      trains: s.line2.trains,
+      carry: acct?.carry ?? 0,
+      railsCarry: acct?.rails ?? 0,
+      depot: rail(w).depot,
+      q6: { stock: qjob(w, 5).stock, railStock: qjob(w, 5).railStock },
+      trains: line2Trains(w),
       trainOwed: v.trainOwed,
       sign: v.q6Sign,
     })}`,
@@ -34,7 +36,7 @@ const tree = read()
   .trees.filter((t) => !t.cleared && t.remaining >= 8)
   .sort((a, b) => Math.hypot(a.x - frame.x, a.z - frame.z) - Math.hypot(b.x - frame.x, b.z - frame.z))[0];
 if (!tree || !(await bot.use(tree.x, tree.z, 'a tree', /^Chop$/))) throw new Error('no tree');
-if (!(await bot.work(() => read().carry >= 8, 60000))) throw new Error('the logs never came onto the back');
+if (!(await bot.work(() => carry() >= 8, 60000))) throw new Error('the logs never came onto the back');
 await bot.wait(600);
 report('loaded');
 const depot = (read().line2View as { depot: number[] | null }).depot!;

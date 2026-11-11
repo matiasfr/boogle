@@ -19,9 +19,10 @@ const { teleport } = (await import(
 const { releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
-const { inspectRailway, getRailwayUnstuck } = (await import(
+const { getRailwayUnstuck } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
+const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const ring = (await import(
   '/src/entities/ring-island/state.ts' as string
 )) as typeof import('../../../src/entities/ring-island/state.ts');
@@ -62,7 +63,8 @@ const first = !reloaded && !view && !(page as unknown as { __ringWalkStarted?: b
 (page as unknown as { __ringWalkStarted?: boolean }).__ringWalkStarted = true;
 
 if (view || reloaded || first) {
-  await until(() => me.body && inspectRailway()?.ready, 'body and railway ready');
+  if (!(await railReady())) throw new Error('ring-island-walk: the railway never became ready');
+  await until(() => me.body, 'body ready');
   const g = await ring.islandGround();
   const b = me.body!;
   const faceTo = (dx: number, dz: number) => {

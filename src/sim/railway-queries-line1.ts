@@ -19,7 +19,7 @@ import {
   carried,
   carryMax,
   forgeId,
-  job,
+  jobId,
   railAccount,
   railId,
   railJobs,
@@ -28,9 +28,9 @@ import {
 
 /** The active station's whole schedule, in ticks. */
 export const railMaxDuration = (w: World) =>
-  scheduleOf(LINE1_STATIONS[activeStation(w)]!, w.get(Job, job(w, activeStation(w)))!).totalTicks;
+  scheduleOf(LINE1_STATIONS[activeStation(w)]!, w.get(Job, jobId(w, activeStation(w)))!).totalTicks;
 /** T3 is laid: line one is open. */
-export const railLineOpen = (w: World) => !!w.get(Job, job(w, 2))!.completion;
+export const railLineOpen = (w: World) => !!w.get(Job, jobId(w, 2))!.completion;
 /** Rail pairs laid on line one (whole contacts from accepted elapsed ticks). */
 export const railPanelCount = (w: World, at?: number) =>
   railJobs(w, at).reduce(
@@ -41,7 +41,7 @@ export const railPanelCount = (w: World, at?: number) =>
 export const railPanelStock = (w: World, at?: number) => LINE1_RAIL_PAIRS - railPanelCount(w, at);
 /** Whether a stroke at the great tree bites (wake aside): Station 3 is open, unfunded, and the tree still stands. */
 export const railBeamChoppable = (w: World) =>
-  activeStation(w) === 2 && w.get(Job, job(w, 2))!.start < 0 && w.get(Beam, beamId(w))!.state === 'standing';
+  activeStation(w) === 2 && w.get(Job, jobId(w, 2))!.start < 0 && w.get(Beam, beamId(w))!.state === 'standing';
 /** The proper axe is the lit forge's first made thing. */
 export const railAxeAvailable = (w: World) => w.get(Forge, forgeId(w))!.lit >= 0 && !w.get(Rail, railId(w))!.axe;
 /** Line one's phase now. `tick` judges the wake (default: T1's last tick, as the read model's did). */

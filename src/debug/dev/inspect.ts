@@ -6,9 +6,17 @@ import { waterField } from '../../physics/water-field.ts';
 import { waterRuntime } from '../../render/water-render.ts';
 import { me } from '../../player/state.ts';
 import { PROTO, productionRailway } from '../../proto/flags.ts';
-import { inspectRailwayLegacy } from '../../entities/railway/state.ts';
+import { inspectRailway, railwayWorldRead } from '../../entities/railway/state.ts';
 import { el, command, note, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
+
+/** The railway as the dev dump shows it: the view's inspection (scene walk and session scalars) and the rows as stored,
+ * `world.snapshot()`, generic over the components. Built per call; null until the railway is mounted. */
+export function railwayDump() {
+  const view = inspectRailway();
+  const read = railwayWorldRead();
+  return view && read ? { ...view, rows: read.world().snapshot() } : null;
+}
 
 let overlay: GameEntity | null = null;
 let mounted = false;
@@ -28,7 +36,7 @@ export async function inspectSummary() {
     water: p ? waterField.nearby(p) : null,
     waterRuntime: waterRuntime.inspect(),
     place: productionRailway
-      ? inspectRailwayLegacy()
+      ? railwayDump()
       : PROTO === 'place'
         ? (await import('./place.ts')).inspectPlace()
         : null,

@@ -14,9 +14,7 @@ const { teleport } = (await import(
 const { releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const H = (await import(
   '/src/proto/greybox/ring-house.ts' as string
 )) as typeof import('../../../src/proto/greybox/ring-house.ts');
@@ -34,7 +32,8 @@ const until = async (fn: () => unknown, label: string, ms = 60000) => {
     await wait(50);
   }
 };
-await until(() => page.__ring && me.body && inspectRailway()?.ready, 'greybox, body and railway ready');
+if (!(await railReady())) throw new Error('ring-house: the railway never became ready');
+await until(() => page.__ring && me.body, 'greybox and body ready');
 const b = me.body!;
 const result: Record<string, unknown> = {};
 page.__houseResult = result;

@@ -3,9 +3,9 @@
 // `probe=x,z,y;x,z,y` checks those points instead: each with the railway arrival's own landing test (a sphere swept
 // down from 3 m above, src/entities/railway/arrival.ts) and a ray grid 1 m apart against every static collider.
 //   npm run look -- --rail-seed crossing-done --eval dev/look/evals/jump-land-probe.ts --until window.__probeDone --name land-probe
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, railReady } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { raycastClosest, rayHit, sweepSphere } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
@@ -17,8 +17,7 @@ const tech = (await import(
 )) as typeof import('../../../src/place/tech-layout.ts');
 const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const until = performance.now() + 30000;
-while (!inspectRailway()?.ready && performance.now() < until) await wait(50);
+if (!(await railReady(30_000))) throw new Error('jump-land-probe: the railway never became ready');
 await wait(3000);
 const s = inspectRailway()!;
 const out: string[] = [];

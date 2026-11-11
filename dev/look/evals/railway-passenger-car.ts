@@ -5,9 +5,9 @@
 //   --real --warm 5 --video --name passenger-car
 // Run as `--action`, so the journey is inside the real-time recording.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, railRead, rw, trains } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
 const { interactTarget } = (await import(
@@ -29,14 +29,13 @@ type Halt = {
 };
 type Car = { x: number; z: number; riding: boolean };
 type View = { halts: Halt[]; trains: { cars: Car[]; stopLamp: boolean }[] };
-const read = () => inspectRailwayLegacy()!;
-const view = () => read().line2View as unknown as View;
+const view = () => inspectRailway()!.line2View as unknown as View;
 // The ridden train's slot: whichever of line 2's two stops at the village toward Far Head (v26).
 let slot = 1;
-const row = () => read().trains[slot]!;
+const row = () => trains(rw())[slot]!;
 const standsUp = () => {
   const k = [1, 2].find((k) => {
-    const r = read().trains[k]!;
+    const r = trains(rw())[k]!;
     return r.phase === 0 && r.at === 0 && r.track === 0;
   });
   if (k !== undefined) slot = k;
@@ -58,7 +57,7 @@ const mark = (beat: string) => {
 };
 setTimeout(() => window.__debugCam?.clear(), 100);
 await (async () => {
-  await until(() => read()?.ready && me.body && me.coyote > 0, 'seed arrived', 300000);
+  await until(() => railRead()?.ready() && me.body && me.coyote > 0, 'seed arrived', 300000);
   await until(() => view().halts[3]?.up && view().halts[2]?.up, 'line 2 halts stand', 60000);
   // Ask at the village for a train toward Far Head, as the request-stop look does.
   const village = view().halts[2]!;

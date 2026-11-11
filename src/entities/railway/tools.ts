@@ -1,7 +1,7 @@
 // Shared tools are accepted railway facts; meshes, reveals and the second jump are Local/Owner views.
 // This leaf imports authored shapes/layout only, never Place's job, tech, ladder or coop owners.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { createRewardReveal } from '../../render/reward-reveal.ts';
 import type { Interactable } from '../../player/hands.ts';

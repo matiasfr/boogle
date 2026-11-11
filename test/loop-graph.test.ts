@@ -9,11 +9,11 @@ import {
   createRailwayProgressMarks,
   railwayActionMarks,
 } from '../src/adapters/railway-marks.ts';
-import type { RailwayIntent } from '../src/adapters/railway.ts';
+import type { RailwayIntent } from '../src/adapters/railway-intents.ts';
 import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { Forge, Job, QJob, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
-import { job, qjob } from '../src/sim/railway-queries.ts';
+import { jobId, qjobId } from '../src/sim/railway-queries.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { BEATS, RAIL_STOPS } from '../dev/look/segments.ts';
 
@@ -36,9 +36,9 @@ function markNames() {
     const w = createRailwayWorld();
     if (on) {
       for (let k = 0; k < LINE1_STATIONS.length; k++)
-        Object.assign(w.mut(Job, job(w, k))!, { start: 0, completion: 1 });
+        Object.assign(w.mut(Job, jobId(w, k))!, { start: 0, completion: 1 });
       for (let k = 0; k < LINE2_STATIONS.length; k++)
-        Object.assign(w.mut(QJob, qjob(w, k))!, { start: 0, completion: 1 });
+        Object.assign(w.mut(QJob, qjobId(w, k))!, { start: 0, completion: 1 });
       w.mut(Forge, w.single(Forge))!.lit = 0;
       w.mut(Rail, w.single(Rail))!.trains = 0;
     }

@@ -156,7 +156,7 @@ tick; no `WORLD_NS` bump (no step below changes a component, an op, a packet or 
   | the 18 movement fields | `r.movement().…` |
   | `carry`, `stoneCarry`, `railsCarry`, `foot`, `available*` | `me?.carry ?? 0`, `.stone`, `.rails`, `.foot` |
   | `carryMax`, `freeCarry`, `accounts`, `piles` | `carryMax(w)`, `freeCarryIgnoringBig(w, r.pid)`, `accounts(w)`, `piles(w)` |
-  | `phase`, `panelCount`, `panelStock`, `counts`, `activeStation` | `railPhase(w, at)`, `railPanelCount(w, at)`, `railPanelStock(w, at)`, `railCounts(w, at)`, `railActiveStation(w)` |
+  | `phase`, `panelCount`, `panelStock`, `counts`, `activeStation` | `railPhase(w, at, at)` (the wake judged at `at` too), `railPanelCount(w, at)`, `railPanelStock(w, at)`, `railCounts(w, at)`, `railActiveStation(w)` |
   | `stations[k].…`, and the flat `stock`, `allocation`, `used`, `delivered`, `start`, `elapsed`, `completion` | `railJobs(w, at)[k]` (`{ id, job, run }`); the flat ones are the active station's; `completion` is the sum over `jobs(w)` |
   | `awake`, `axe`, `jump`, `stoneRack`, `rack`, `beam`, `hardwood`, `rocks`, `sources`, `work`, `growth` | `rail(w).…`, `beam(w)`, `hardwoods(w)`, `rocks(w)`, `trees(w)`, `treeGrowth(w, slot)` |
   | `line2.forge`, `.cart`, `.boiler`, `.lever`, `.sea`, `.hook`, `.pack`, `.depot`, `.depotRails`, `glide` | `forge(w)`, `cart(w)`, `boiler(w)`, `rail(w).…` |
@@ -290,7 +290,7 @@ typecheck`, `npm run lint`.
   - **Checks:** `npm run check`; `npm run scenario -- hud-glance`; `npm run look -- --query from=q3-done --eval
     dev/look/evals/jump-in.ts --until window.__jumpDone` (a state reader on the legacy door) and one view-only eval
     (`railway-seats.ts`).
-- [ ] **M12d. The live readers and the dump.** _S, Medium. After M12c._ `src/entities/lookout/view.ts`
+- [x] **M12d. The live readers and the dump.** _S, Medium. After M12c._ `src/entities/lookout/view.ts`
       (`ringOpen(w).head` and `aperture(w).joined` through `railwayWorldRead()`, read at the head of `readLifted`),
       `src/features/playtest-flag.ts` (`account(w, pid)`), `src/proto/playdata/record.ts` (`line2Trains`,
       `line2Completed`, `qjob(w, 5).completion`, `read.ready()`), `src/debug/dev/inspect.ts` and `room.ts` (the view
@@ -308,11 +308,11 @@ typecheck`, `npm run lint`.
 - [ ] **D2. The other bots.** _S._ `dev/look/bots/railway-glide.ts`, `railway-held-jump.ts`, `railway-works.ts`,
       `coop-unlock.ts`, `railway-reload.ts` (the last two found by M12c's typecheck).
       **Checks:** each bot's own eval once (`railway-works-bot.ts`, the glide and held-jump looks).
-- [ ] **D3. Line 2's evals.** _M._ `dev/look/evals/`: `railway-b4-at`, `railway-b4-bot`, `railway-b5b8-at`,
+- [x] **D3. Line 2's evals.** _M._ `dev/look/evals/`: `railway-b4-at`, `railway-b4-bot`, `railway-b5b8-at`,
       `railway-b5b8-bot`, `railway-boiler-fit`, `railway-forge-lights`, `railway-head-forge`, `railway-gated-fill`,
       `railway-glide-wake`, `railway-signal-hold`, `railway-trains-pass`, `gpu-portability` (`jump-in` was done in
       M12c).
-- [ ] **D4. The rest.** _M._ `dev/look/evals/`: `railway-instant`, `railway-instant-act`, `railway-motion`,
+- [x] **D4. The rest.** _M._ (**As built:** 12 evals, 2 scenarios and the 2 peer-test files; `INSPECT_LEGACY_IMPORTERS` 35 to 21. The peer-test probe is `session` (`read` scalars and `debug()`) plus `rows` (the checks' rows and queries), no inspection. `railway-finds` and `railway-town` still read `railwayRead()`: M12d.) `dev/look/evals/`: `railway-instant`, `railway-instant-act`, `railway-motion`,
       `railway-q6-wait`, `railway-q6-forge` (found by M12c), `railway-passenger-car`, `railway-passenger-car-two`, `railway-request-stop`,
       `railway-works-act`, `railway-works-at`, `railway-works-bot`, `ring-greybox`; `dev/scenarios/hud-glance.ts`,
       `world-inputs.ts`; `dev/peer-test/ws-railway.ts` and `ws-page.ts` (`T.railAdapter().state` and `state:
@@ -329,7 +329,19 @@ typecheck`, `npm run lint`.
     with a run on main (same seed, same numbers); `npm run scenario -- hud-glance` and `world-inputs`; `npm run
     test:net` for the peer-test files. An eval whose header command no longer runs on main is listed, not fixed.
   - **Done (each D):** its files are off `INSPECT_LEGACY_IMPORTERS` and name `inspectRailwayLegacy` nowhere.
-- [ ] **M12e. Delete `inspect()`.** _S, High (`src/world`). After X1 to X4, M12d, D1 to D4._ Delete from
+- [x] **M12e. Delete `inspect()`.** _S, High (`src/world`). After X1 to X4, M12d, D1 to D4._ (**As built:**
+      `railwayAt` went to `test/helpers/railway-model.ts` as `railwayModelAt` (three differential tests still read
+      the model; M12b-1 deletes them with it); the read counters went whole (`frames` had no reader). The export
+      rule is `boogle/retired-railway-names` (its own rule, so the `src/sim` block's `no-restricted-syntax` does not
+      replace it), with the read model's seven files exempt until M12b-2 deletes them. The latch is `read.whole()`,
+      latched in `update()` too. Also: `dev/look/rail-read.ts`'s timed queries (`railJobs`, `line2Jobs`,
+      `railCurrentJob`, `railPhase`, `railPanelCount`/`Stock`, `railCounts`, `line2Logs`, `line2Rails`) take the
+      world alone and supply the tick, so a page tool cannot call the tick-less form that throws on a client's world;
+      `railStation`, `line2Station` and `railBack` are the tools' one flat-job and back reader; `railwaySession` in
+      `state.ts` is the session's scalars for the view inspection and the peer-test probe;
+      `dev/look/bots/railway-checkpoint.ts` is the seeded routes' checkpoint. No query was added to `src/sim`: none
+      of the wished-for ones had two callers. The Done grep's remaining hits are the guards that ban the names.)
+      Delete from
       `src/adapters/railway.ts`: `readState`, `buildState`, `worksOf`, `samePile`, `inspection`, `inspect`, the
       frame memo's inspection half, `stats.reads`' inspect counters, `RailwayInspection`, and every import of an old
       fact or `Railway`; from `state.ts`, `view.ts`, `index.ts`: the legacy door; from
@@ -353,8 +365,18 @@ typecheck`, `npm run lint`.
     of the first `read.ready()`, moves to a session read here (a `read.loaded()` or similar). It now has five users,
     not one: `train-view.ts`, `leaf-view.ts`, `railhead-view.ts`, `crossing-view.ts` and `cart-view.ts`, each of which
     hid, reset or un-decked on `!read.ready()` (also false with a full pending window or the link down).
-- [ ] **M12f. The adapter split.** _M, Medium by path; ask for the independent review (it moves the predictor's
-      code). After M12e._ Section 3's three files; `git mv src/adapters/railway.ts
+- [x] **M12f. The adapter split.** _M, Medium by path; ask for the independent review (it moves the predictor's
+      code). After M12e._ (**As built**, two commits: a pure `git mv` with every importer's path, then the cut.
+      `railway-intents.ts` (323 lines) holds the intent type, `CARRY_MAX`, `intentOf`, `implied`, `holds`, the three
+      op sets and `railwayActs(submit, view)`, the act methods as one object the session spreads into the adapter
+      (`pileIn` went with `take`); `railway-effects.ts` (63) holds `RailwayAccepted`, `RailwayCorrection`, `effectOf`,
+      `accepted`, `sameTarget`; `railway-session.ts` (668) keeps the rest, `railMovement` and `RailwayMovement`
+      included. Importers take each name from its owning file; `railway-marks.ts` changed one type import (it took
+      `RailwayIntent` from the old file, which made a type cycle with the session; now it takes it from intents).
+      **The limits are not met**: section 3's ≤ 450 and ≤ 300 do not fit a mechanical cut, since `submit`, `settle`
+      and the read facade are closures over the session's state. Shrinking the session is its own step, not a move:
+      `railway-read.ts` for `railMovement`, `perFrame` and the facade over a narrow session handle, and `settle`
+      over an explicit pending/shown state object; logged for the owner's call.) Section 3's three files; `git mv src/adapters/railway.ts
       src/adapters/railway-session.ts` first so the history follows, then cut the other two out; importers
       rewritten (`rg -l "adapters/railway.ts"`); `railway-marks.ts` unchanged; `docs/agents/sync.md`'s Server
       entry names the new files.

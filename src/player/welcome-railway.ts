@@ -1,7 +1,7 @@
 // What the welcome back (src/features/welcome-back.ts) remembers of the railway and compares on return, from rows and
 // queries through the adapter's read facade (docs/plans/ecs-migration-railway.md, M10). Pure over a world: the card's
 // "stretches of track laid" counts the stations laid on both lines (T1 to T3, then Q1 on), each one a stretch.
-import type { RailwayAdapter } from '../adapters/railway.ts';
+import type { RailwayAdapter } from '../adapters/railway-session.ts';
 import { jobs, type ReadWorld } from '../sim/railway-rows.ts';
 import { line2Completed } from '../sim/railway-queries-line2.ts';
 

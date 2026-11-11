@@ -2,7 +2,8 @@
 // cast slides a footing down the roller road to the halt rack. Local view: topples, fire and flights play on the press
 // (your own predicted kiln fill), on accepted events and on live edges, and snap without a show on restore.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';

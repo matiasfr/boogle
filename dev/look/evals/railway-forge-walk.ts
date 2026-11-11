@@ -7,9 +7,7 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { X, Z, forgePlan } = (await import(
   '/src/place/opening-plans.ts' as string
 )) as typeof import('../../../src/place/opening-plans.ts');
@@ -17,7 +15,8 @@ const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof impor
 const floor = forgePlan().y + 0.5;
 background(
   (async () => {
-    while (!me.body || !inspectRailway()?.ready) await new Promise((r) => setTimeout(r, 100));
+    if (!(await railReady())) throw new Error('railway-forge-walk: the railway never became ready');
+    while (!me.body) await new Promise((r) => setTimeout(r, 100));
     teleport(me.body!, X - 2.9, floor + 3, Z + 10);
     await new Promise((r) => setTimeout(r, 1500));
     const bot = makeBot();

@@ -1,6 +1,7 @@
 // Local train presentation. Server rows and the shared mover clock alone choose the decks' poses.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
@@ -32,7 +33,6 @@ import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
-import { createFirstReady } from './first-ready.ts';
 
 const BRASS = '#c79a3e';
 /** Far Head's stop on line 2: its facing crossover is the line's end until the pier is laid. */
@@ -364,15 +364,14 @@ export async function createRailwayTrains(
   let flyingLogs = 0,
     flyingRails = 0,
     unloading = false;
-  // Hidden only until the first whole state is in, never for a full pending window (first-ready.ts).
-  const trainsShown = createFirstReady(adapter.read.ready);
+  // Hidden only until the first whole state is in, never for a full pending window (read.whole()).
   const chimney = new THREE.Vector3(),
     smoke = new THREE.Color('#ece8e0');
   function step() {
     const w = adapter.read.world(),
       target = adapter.tickNow(),
       on = line2Trains(w),
-      shown = trainsShown();
+      shown = adapter.read.whole();
     stops2 = trainStops(w, LINE2);
     merge2 = endMergeM(stops2);
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;

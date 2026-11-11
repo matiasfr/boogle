@@ -3,9 +3,12 @@
 // set it from the pier-head apron (pose `pierhead`, seed `crossing-finishing`; `pierN=2` sets both). The bot is set down a few metres short of the thing on the
 // pose's side, walks up and presses what the game offers; the motion sheet then films what follows.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, pierNeed, rock, rw, works, worksStage } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
+const { WORKS_ROCKS } = (await import(
+  '/src/sim/railway-works-layout.ts' as string
+)) as typeof import('../../../src/sim/railway-works-layout.ts');
 const { STALL_SOCKETS } = (await import(
   '/src/entities/railway/works-shape.ts' as string
 )) as typeof import('../../../src/entities/railway/works-shape.ts');
@@ -31,6 +34,11 @@ const moves: Record<string, Move> = {
 };
 const move = moves[doing];
 if (!move) throw new Error(`Choose worksdo=${Object.keys(moves).join('|')}`);
+// The Works' row with its two derived facts, for the log lines.
+const worksNow = () => {
+  const w = rw();
+  return { row: works(w), stage: worksStage(w), pierNeed: pierNeed(w) };
+};
 const start = { x: me.body!.position.x, y: me.body!.position.y, z: me.body!.position.z };
 /** Set down 3.5 m short of (x, z) on the side of `from`, then walk up and press it. */
 async function doAt([tx, tz, verb]: Move, from: { x: number; y: number; z: number }) {
@@ -44,7 +52,7 @@ async function doAt([tx, tz, verb]: Move, from: { x: number; y: number; z: numbe
   }
   return bot.use(tx, tz, verb.source, verb);
 }
-if ((doing === 'strike0' || doing === 'strike1') && inspectRailwayLegacy()!.works.breaker === 1) {
+if ((doing === 'strike0' || doing === 'strike1') && works(rw()).breaker === 1) {
   // The breaker first, from the pedestal: the strike needs it in hand.
   if (!(await doAt(BREAKER, { x: 922, y: 19, z: 9 }))) throw new Error('no breaker');
   await bot.wait(600);
@@ -52,10 +60,9 @@ if ((doing === 'strike0' || doing === 'strike1') && inspectRailwayLegacy()!.work
 let from = start;
 if (doing === 'kiln') {
   // `--rail-seed works-stocked`: chop the bowl rock's last stone, then the fill lights the kiln live.
-  const rock = inspectRailwayLegacy()!.works.rocks[0]!;
-  if (!(await doAt([rock.x / 100, rock.z / 100, /Chop/], start))) throw new Error('no rock');
-  if (!(await bot.work(() => inspectRailwayLegacy()!.works.rocks[0]!.remaining === 0, 20000)))
-    throw new Error('the rock never gave its stone');
+  const spot = WORKS_ROCKS[0];
+  if (!(await doAt([spot.x / 100, spot.z / 100, /Chop/], start))) throw new Error('no rock');
+  if (!(await bot.work(() => rock(rw(), spot.id).left === 0, 20000))) throw new Error('the rock never gave its stone');
   await bot.wait(500);
   const p = me.body!.position;
   from = { x: p.x, y: p.y, z: p.z };
@@ -79,10 +86,9 @@ if (doing === 'foot') {
   await bot.wait(700);
   await bot.walk(start.x, start.z, 1);
 }
-console.log(`WORKS ACT ${doing} ${JSON.stringify(inspectRailwayLegacy()!.works)}`);
+console.log(`WORKS ACT ${doing} ${JSON.stringify(worksNow())}`);
 for (const ms of [0, 200, 400, 700, 1000, 1500, 2000, 3000, 5000, 8000])
   setTimeout(() => {
-    const view = inspectRailwayLegacy() as unknown as { worksView: unknown; works: unknown };
-    console.log(`WORKS AFTER ${ms} ${JSON.stringify({ view: view.worksView, works: view.works })}`);
+    console.log(`WORKS AFTER ${ms} ${JSON.stringify({ view: inspectRailway()!.worksView, works: worksNow() })}`);
   }, ms);
 export {};

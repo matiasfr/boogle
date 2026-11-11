@@ -21,9 +21,9 @@ const { pressJump, releaseJump } = (await import(
 const { triggerAction } = (await import(
   '/src/player/controls.ts' as string
 )) as typeof import('../../../src/player/controls.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, rail, railRead, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');
@@ -67,7 +67,7 @@ async function run() {
       await wait(50);
     }
   };
-  await until(() => page.__ring && me.body && inspectRailwayLegacy()?.ready, 'greybox, body and railway ready');
+  await until(() => page.__ring && me.body && railRead()?.ready(), 'greybox, body and railway ready');
   const R = page.__ring!;
   await until(() => R.root.visible, 'greybox pipelines');
   const b = me.body!;
@@ -173,15 +173,15 @@ async function run() {
 
   // ---------------------------------------------------------------- measuring helpers
   const owned = () => {
-    const s = inspectRailwayLegacy()!;
-    return { jump: s.jump, hook: s.hookShot.owned, glide: s.glider.owned };
+    const s = inspectRailway()!;
+    return { jump: rail(rw()).jump, hook: s.hookShot.owned, glide: s.glider.owned };
   };
   result.ownedAtStart = owned();
   // The double jump and the glider are finds, not seed facts (crossing-done has neither): take each at its device with a
   // real Interact press, as railway-held-jump.ts and railway-glide.ts do. Staging teleports only; the greybox is untouched.
   async function take(what: 'jump' | 'glide') {
-    const s = inspectRailwayLegacy()!;
-    if (what === 'jump' ? s.jump : s.glide) return;
+    const s = inspectRailway()!;
+    if (what === 'jump' ? rail(rw()).jump : rail(rw()).glide) return;
     const d = what === 'jump' ? s.reward.jumpDevice : s.line2View.glideDevice;
     teleport(b, d.x + (what === 'glide' ? 2.5 : 0), d.y + PLAYER_R + 0.5, d.z);
     b.velocity.set(0, 0, 0);
@@ -189,19 +189,19 @@ async function run() {
     say(`${what} device target ${interactTarget()?.id}`);
     triggerAction('interact', 'down');
     triggerAction('interact', 'up');
-    await until(() => (what === 'jump' ? inspectRailwayLegacy()!.jump : inspectRailwayLegacy()!.glide), `${what} accepted`, 8000);
+    await until(() => (what === 'jump' ? rail(rw()).jump : rail(rw()).glide), `${what} accepted`, 8000);
     await wait(2200);
-    for (let k = 0; k < 6 && inspectRailwayLegacy()!.reward.showing; k++) {
+    for (let k = 0; k < 6 && inspectRailway()!.reward.showing; k++) {
       key('keydown', 'KeyE');
       key('keyup', 'KeyE');
       await wait(700);
     }
-    await until(() => !inspectRailwayLegacy()!.reward.showing, `${what} card dismissed`, 8000);
+    await until(() => !inspectRailway()!.reward.showing, `${what} card dismissed`, 8000);
   }
   try {
     await take('jump');
     await take('glide');
-    await until(() => inspectRailwayLegacy()!.glider.owned, 'glider owned', 8000);
+    await until(() => inspectRailway()!.glider.owned, 'glider owned', 8000);
   } catch (e) {
     result.takeError = String(e);
     say(`take failed ${e}`);
@@ -328,7 +328,7 @@ async function run() {
     key('keyup', code);
   };
   const hookState = () => {
-    const h = inspectRailwayLegacy()!.hookShot;
+    const h = inspectRailway()!.hookShot;
     return {
       owned: h.owned,
       pick: h.pick,
@@ -521,7 +521,7 @@ async function run() {
   const firstJump = () => {
     pressJump();
   };
-  const jumpsSpent = () => inspectRailwayLegacy()!.reward.tools.jumps;
+  const jumpsSpent = () => inspectRailway()!.reward.tools.jumps;
 
   await item('f', async () => {
     const out: Record<string, unknown> = {};
@@ -577,7 +577,7 @@ async function run() {
 
   /** (g) a sprint jump, the air jump at the apex, then Jump opens the canopy. */
   const glideAfterJumps = async (releaseAtU: number) => {
-    const opens0 = inspectRailwayLegacy()!.glider.jumpOpens;
+    const opens0 = inspectRailway()!.glider.jumpOpens;
     const trace = await flight(
       async () => {
         pressJump();
@@ -593,28 +593,28 @@ async function run() {
         await wait(60);
         releaseJump();
         await wait(100);
-        await until(() => !inspectRailwayLegacy()!.glider.open || standing() || me.swimming, 'glide ends', 14000);
+        await until(() => !inspectRailway()!.glider.open || standing() || me.swimming, 'glide ends', 14000);
       },
       16000,
       releaseAtU,
     );
-    return { ...spanOf(trace), canopyOpened: inspectRailwayLegacy()!.glider.jumpOpens > opens0 };
+    return { ...spanOf(trace), canopyOpened: inspectRailway()!.glider.jumpOpens > opens0 };
   };
   /** (g2) straight off the edge with no jump: once the ground is gone, the Glide action. */
   const glideOffEdge = async (releaseAtU: number) => {
-    const opens0 = inspectRailwayLegacy()!.glider.opened;
+    const opens0 = inspectRailway()!.glider.opened;
     const trace = await flight(
       async () => {
         await until(() => me.coyote <= 0 && !standing(), 'off the edge', 3000);
         triggerAction('glide', 'down');
         triggerAction('glide', 'up');
         await wait(100);
-        await until(() => !inspectRailwayLegacy()!.glider.open || standing() || me.swimming, 'glide ends', 14000);
+        await until(() => !inspectRailway()!.glider.open || standing() || me.swimming, 'glide ends', 14000);
       },
       16000,
       releaseAtU,
     );
-    return { ...spanOf(trace), canopyOpened: inspectRailwayLegacy()!.glider.opened > opens0 };
+    return { ...spanOf(trace), canopyOpened: inspectRailway()!.glider.opened > opens0 };
   };
   // Full stick all the way, and the stick let go once past u 280 (the canopy brakes and sinks): a player would do the second.
   await item('g', async () => ({ fullStick: await glideAfterJumps(Infinity), letGoAt280: await glideAfterJumps(280) }));

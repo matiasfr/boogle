@@ -2,7 +2,7 @@
 // the load down"). Composed on the client from the ops that exist: `rail.drop` for every pile (it takes up to 8 a pile,
 // so a full back of 16 is two), then whatever the press was for. The host applies them in order; nothing new is on the
 // wire. Used by hold Drop (sources.ts) and by shouldering a footing, the great beam or the boiler with a loaded back.
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { me } from '../../player/player.ts';
 import { heldId } from '../../player/inventory.ts';
 import { PLAYER_R } from '../../constants.ts';

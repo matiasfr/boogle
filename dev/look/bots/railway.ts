@@ -1,7 +1,7 @@
 // Production line 1 through ordinary inputs. Inspection observes; it never seeds a world or moves a player.
 import { makeBot, type Bot } from '../bot.ts';
-import { railRead } from '../rail-read.ts';
-import { inspectRailwayLegacy, hookWhyNot, type RailwayLegacyInspection } from '../../../src/entities/railway/state.ts';
+import * as R from '../rail-read.ts';
+import { inspectRailway, hookWhyNot, type RailwayViewInspection } from '../../../src/entities/railway/state.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { background } from '../../../src/async.ts';
 import { me, cam } from '../../../src/player/player.ts';
@@ -15,6 +15,7 @@ import {
   LINE1_GREAT_TREE,
   LINE1_INITIAL,
   LINE1_RAIL_PAIRS,
+  LINE1_ROCKS,
   linePanels,
 } from '../../../src/sim/railway-line-layout.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
@@ -35,7 +36,7 @@ function hookCheck(bot: Bot, ok: unknown, label: string) {
   if (!ok) throw new Error(label);
 }
 function hookRing(id: string) {
-  const ring = inspectRailwayLegacy()?.hookShot.rings.find((r) => r.id === id);
+  const ring = inspectRailway()?.hookShot.rings.find((r) => r.id === id);
   if (!ring) throw new Error(`Missing production hook ring ${id}`);
   return ring;
 }
@@ -55,7 +56,7 @@ async function hookLanding(bot: Bot, id: string) {
       () => {
         const p = me.body!.position;
         return (
-          !inspectRailwayLegacy()!.hookShot.pulling &&
+          !inspectRailway()!.hookShot.pulling &&
           me.coyote > 0 &&
           !me.swimming &&
           Math.abs(p.y - PLAYER_R - pad.top) < 1 &&
@@ -72,14 +73,14 @@ export async function hookTo(bot: Bot, id: string) {
   aimHook(id);
   hookCheck(
     bot,
-    await bot.until(() => inspectRailwayLegacy()?.hookShot.pick === id, 3500, `picked hook ${id}`),
-    `hook ${id}: picked ${inspectRailwayLegacy()?.hookShot.pick ?? 'nothing'}, ${hookWhyNot(id)}`,
+    await bot.until(() => inspectRailway()?.hookShot.pick === id, 3500, `picked hook ${id}`),
+    `hook ${id}: picked ${inspectRailway()?.hookShot.pick ?? 'nothing'}, ${hookWhyNot(id)}`,
   );
   hookCheck(bot, hookWhyNot(id) === 'nothing', `hook ${id} path is clear: ${hookWhyNot(id)}`);
-  const before = inspectRailwayLegacy()!.hookShot.pulls;
+  const before = inspectRailway()!.hookShot.pulls;
   triggerAction('hook', 'down');
   triggerAction('hook', 'up');
-  hookCheck(bot, inspectRailwayLegacy()!.hookShot.pulls === before + 1, `hook ${id} starts on the press`);
+  hookCheck(bot, inspectRailway()!.hookShot.pulls === before + 1, `hook ${id} starts on the press`);
   await hookLanding(bot, id);
   bot.note(`hook: ${id}`);
 }
@@ -94,7 +95,7 @@ export async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', '
         aimHook(id);
         if (
           body.position.y < departureY - 1.5 &&
-          inspectRailwayLegacy()?.hookShot.pick === id &&
+          inspectRailway()?.hookShot.pick === id &&
           hookWhyNot(id) === 'nothing'
         ) {
           clear = true;
@@ -117,7 +118,7 @@ export async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', '
 
 /** The original p2 approach; the first visit pauses here to take the device and play its demo. */
 async function approachNeedleBell(bot: Bot) {
-  const view = inspectRailwayLegacy()!.line2View;
+  const view = inspectRailway()!.line2View;
   let lowest = Infinity;
   for (const [x, y, z] of view.routePoints.hook) {
     hookCheck(bot, await bot.straight(x!, z!, 0.6, 10000), 'walked the hook walkway');
@@ -151,7 +152,7 @@ async function climbNeedleBell(bot: Bot, onRing?: (id: string) => Promise<void>)
 async function downFromNeedleBell(bot: Bot, noJump: (beat: string) => void) {
   await returnFromTower(bot);
   noJump('hook descent');
-  const back = inspectRailwayLegacy()!.line2View.routePoints.hook;
+  const back = inspectRailway()!.line2View.routePoints.hook;
   for (let i = back.length - 1; i >= 0; i--)
     hookCheck(bot, await bot.straight(back[i]![0]!, back[i]![2]!, 0.6, 10000), 'walked back down the walkway');
   noJump('hook walk return');
@@ -248,9 +249,8 @@ export async function seaToFarHead(
   { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b), quarryFrom = 10 }: B4Route,
   from: 'sea' | 'q5' = 'sea',
 ) {
-  const read = () => inspectRailwayLegacy()!;
-  const l2 = () => read().line2;
-  const view = () => read().line2View as RailwayLegacyInspection['line2View'] & B4View;
+  const read = () => inspectRailway()!;
+  const view = () => read().line2View as RailwayViewInspection['line2View'] & B4View;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   const until = async (fn: () => unknown, beat: string, ms = 600000) => check(await bot.until(fn, ms, beat), beat);
   const walk = async (x: number, z: number, radius = 2.4) =>
@@ -259,7 +259,7 @@ export async function seaToFarHead(
     view().sea && typeof view().seaGateSolid === 'boolean' && view().farHead && typeof view().trestleLamps === 'number',
     'B4 Local views missing: line2View.sea, seaGateSolid, farHead, trestleLamps (job B required)',
   );
-  check(l2().stations[3]?.completion === 1, 'B4 starts with Q4 laid');
+  check(R.line2Station(3).completion === 1, 'B4 starts with Q4 laid');
   if (from === 'sea') {
     const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
     const deck = lineAt(LINKS[1]!.line, quarryFrom, { x: 0, z: 0, ux: 0, uz: 1 });
@@ -271,14 +271,14 @@ export async function seaToFarHead(
     await walk(sea.x, sea.z, 0.8);
     await until(() => interactTarget()?.id === 'railway-sea-switch', 'summit offers railway-sea-switch', 5000);
     check(await bot.use(sea.x, sea.z, 'pull sea switch', /^Pull$/), 'sea switch offered');
-    check(await bot.work(() => l2().seaOpen, 5000, 380), 'sea switch accepted');
-    await until(() => l2().seaOpen && !view().seaGateSolid, 'sea gate collider removed');
+    check(await bot.work(() => R.line2SeaOpen(R.rw()), 5000, 380), 'sea switch accepted');
+    await until(() => R.line2SeaOpen(R.rw()) && !view().seaGateSolid, 'sea gate collider removed');
     await checkpoint('sea gate');
     await downFromNeedleBell(bot, (beat) =>
       check(read().reward.tools.jumps === jumps, `${beat} needed no extra air jump`),
     );
   }
-  check(l2().seaOpen, 'Q5 seed or summit pull opens the sea gate');
+  check(R.line2SeaOpen(R.rw()), 'Q5 seed or summit pull opens the sea gate');
   const q5 = view().frames[4]!;
   check(q5, 'Q5 frame exists');
   const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
@@ -288,7 +288,7 @@ export async function seaToFarHead(
     const start = lineAt(LINKS[1]!.line, entry, { x: 0, z: 0, ux: 0, uz: 1 });
     await walk(start.x + ORIGIN.x, start.z, 1);
     const home = [CART_PHASE.HOME, CART_PHASE.REST, CART_PHASE.LOAD] as number[];
-    await until(() => home.includes(l2().cart.phase), 'the cart is off the quarry track');
+    await until(() => home.includes(R.cart(R.rw()).phase), 'the cart is off the quarry track');
     await walkQuarry(entry, 274);
     const off = lineAt(LINKS[1]!.line, 274, { x: 0, z: 0, ux: 0, uz: 1 });
     const x = off.x + ORIGIN.x;
@@ -299,11 +299,11 @@ export async function seaToFarHead(
     );
   }
   await walk(q5.x, q5.z);
-  const job = () => l2().stations[4]!;
+  const job = () => R.line2Station(4);
   const deliver = async () => {
     await walk(q5.x, q5.z);
     await until(
-      () => (read().carry === 0 && read().railsCarry === 0 && read().pending === 0) || job().start >= 0,
+      () => (R.railBack().carry === 0 && R.railBack().rails === 0 && read().pending === 0) || job().start >= 0,
       'Q5 frame unloads automatically',
       30000,
     );
@@ -311,33 +311,33 @@ export async function seaToFarHead(
   for (let trip = 0; job().start < 0; trip++) {
     check(trip < 8, 'Q5 funds in bounded depot trips');
     const seen = new Set<number>();
-    const waiting = l2().depot + l2().depotRails === 0;
+    const waiting = R.rail(R.rw()).depot + R.rail(R.rw()).depotRails === 0;
     // The cart runs on the server's real-time clock while the page's clock races ahead (about 10x in a --long run), and
     // Q5's rack is 469 m down the cart road, so each Q5 trip needs a much longer page-time wait than the default.
     await until(
       () => {
-        seen.add(l2().cart.phase);
-        return l2().depot > 0 || l2().depotRails > 0 || job().start >= 0;
+        seen.add(R.cart(R.rw()).phase);
+        return R.rail(R.rw()).depot > 0 || R.rail(R.rw()).depotRails > 0 || job().start >= 0;
       },
       'Q5 depot brings a load',
       2400000,
     );
     if (job().start >= 0) break;
     if (waiting) check(seen.has(CART_PHASE.RUN) || seen.has(CART_PHASE.DROP), 'Q5 cart seen bringing the load');
-    if (l2().depot > 0 && job().stock < 24) {
+    if (R.rail(R.rw()).depot > 0 && job().stock < 24) {
       const depot = view().depot!;
       const before = job().stock;
       check(await bot.use(depot[0]!, depot[2]!, 'take Q5 depot logs', /^Pick up$/), 'Q5 depot rack offered');
-      check(await bot.work(() => read().carry > 0 || job().stock > before, 5000, 380), 'Q5 depot logs accepted');
+      check(await bot.work(() => R.railBack().carry > 0 || job().stock > before, 5000, 380), 'Q5 depot logs accepted');
       await until(() => read().pending === 0, 'Q5 depot logs settle');
       await deliver(); // Logs and rails share the same back capacity.
     }
-    if (l2().depotRails > 0 && job().railStock < 24) {
+    if (R.rail(R.rw()).depotRails > 0 && job().railStock < 24) {
       const shelf = view().shelf!;
       const before = job().railStock;
       check(await bot.use(shelf.x, shelf.z, 'take Q5 shelf rails', /^Take rails$/), 'Q5 rails shelf offered');
       check(
-        await bot.work(() => read().railsCarry > 0 || job().railStock > before, 5000, 380),
+        await bot.work(() => R.railBack().rails > 0 || job().railStock > before, 5000, 380),
         'Q5 shelf rails accepted',
       );
       await until(() => read().pending === 0, 'Q5 shelf rails settle');
@@ -368,9 +368,8 @@ export async function glideHome(
   { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
   from: 'far-head' | 'village',
 ) {
-  const read = () => inspectRailwayLegacy()!;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
-  check(read().line2.stations[4]?.completion === 1, 'the glide home starts after Q5');
+  check(R.line2Station(4).completion === 1, 'the glide home starts after Q5');
   if (from === 'far-head') await walkQuarry(546, 92);
   else {
     const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
@@ -388,7 +387,7 @@ export async function glideHome(
 /** Take the woken glider on Needle Bell's summit with Interact, standing by it; the finder's card is dismissed with
  * Interact after `cardMs` (a co-op partner's find shows none). Returns whether the card showed. */
 export async function takeGlider(bot: Bot) {
-  const read = () => inspectRailwayLegacy()!;
+  const read = () => inspectRailway()!;
   const view = () => read().line2View;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   const until = async (fn: () => unknown, beat: string, ms = 60000) => check(await bot.until(fn, ms, beat), beat);
@@ -397,7 +396,7 @@ export async function takeGlider(bot: Bot) {
   const device = view().glideDevice;
   check(device.available && device.woken, 'the summit glider is woken and waiting after Q5');
   check(await bot.use(device.x, device.z, 'take the glider', /^Take it$/), 'glider device offered');
-  check(await bot.work(() => read().glide, 5000, 380), 'the glider accepted after bounded retries');
+  check(await bot.work(() => R.rail(R.rw()).glide, 5000, 380), 'the glider accepted after bounded retries');
   await bot.wait(1200);
   const card = read().reward.showing;
   if (card || !coop) {
@@ -416,7 +415,7 @@ export async function takeGlider(bot: Bot) {
  * of the stick 9 m short so the canopy brakes and sinks you onto dry ground. Full stick from 3 s after the canopy
  * opens to the let-go is sampled for the BotW numbers. Real inputs only; the result goes in the bot's notes. */
 export async function glideToBoiler(bot: Bot) {
-  const read = () => inspectRailwayLegacy()!;
+  const read = () => inspectRailway()!;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   const until = async (fn: () => unknown, beat: string, ms = 60000) => check(await bot.until(fn, ms, beat), beat);
   const device = read().line2View.glideDevice;
@@ -492,15 +491,14 @@ export async function boilerToPier(
   { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
   from: 'far-head' | 'boiler' | 'q6' = 'far-head',
 ) {
-  const read = () => inspectRailwayLegacy()!;
-  const l2 = () => read().line2;
+  const read = () => inspectRailway()!;
   type Trains = ReturnType<
     Awaited<ReturnType<typeof import('../../../src/entities/railway/train-view.ts').createRailwayTrains>>['inspect']
   >;
   type Halts = ReturnType<
     Awaited<ReturnType<typeof import('../../../src/entities/railway/halts-view.ts').createRailwayHalts>>['inspect']
   >;
-  const view = () => read().line2View as RailwayLegacyInspection['line2View'] & Trains & Halts;
+  const view = () => read().line2View as RailwayViewInspection['line2View'] & Trains & Halts;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   // The page races about 10x faster than the authority. These are page-time budgets, not train schedules.
   const until = async (fn: () => unknown, beat: string, ms = 2400000) => check(await bot.until(fn, ms, beat), beat);
@@ -513,13 +511,13 @@ export async function boilerToPier(
     const p = lineAt(LINKS[line]!.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
     return { ...p, x: p.x + ORIGIN.x };
   };
-  check(l2().stations[4]?.completion === 1, 'B8 starts after Q5');
+  check(R.line2Station(4).completion === 1, 'B8 starts after Q5');
   check(view().boiler && view().trains && view().halts, 'B8 requires merged boiler, train and halt inspections');
   // The accepted q5-done and trains-on seeds stop short of the pack chest; the full route opened it at Q4.
-  if (from !== 'far-head' && !l2().pack) {
+  if (from !== 'far-head' && !R.rail(R.rw()).pack) {
     const chest = read().reward.tools.packChest;
     check(await bot.use(chest.x, chest.z, 'open the pack chest', /^Open/), 'seeded pack chest offered');
-    check(await bot.work(() => l2().pack, 30000, 380), 'seeded pack accepted');
+    check(await bot.work(() => R.rail(R.rw()).pack, 30000, 380), 'seeded pack accepted');
     await bot.wait(1600);
     if (read().reward.showing) {
       // The reveal owns the menu key rather than the world Interact action, as in the full route's dismiss().
@@ -552,7 +550,7 @@ export async function boilerToPier(
     }
     const saddle = view().boiler.saddle;
     check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
-    check(await bot.work(() => l2().trains, 30000, 380), 'boiler fitted at the old train');
+    check(await bot.work(() => R.line2Trains(R.rw()), 30000, 380), 'boiler fitted at the old train');
     await checkpoint('TRAINS');
   }
   // Trains stop on request (works-late-game step 1): the lever on the platform the way to `destination`; every ride
@@ -573,7 +571,7 @@ export async function boilerToPier(
       view()
         .trains.filter((t) => t.line === line)
         .find((t) => {
-          const r = read().trains[t.slot]!;
+          const r = R.trains(R.rw())[t.slot]!;
           return r.phase === 0 && r.at === halt.stop && (r.track ? -1 : 1) === dir;
         })?.slot;
     await until(() => standing() !== undefined, 'called train arrives');
@@ -610,19 +608,19 @@ export async function boilerToPier(
           offAt = performance.now();
           const b = me.body!;
           console.log(
-            `RIDE BLIP ${JSON.stringify({ line, slot, row: read().trains[slot], along: train().along, on: carry.on?.id ?? null, at: b.position, v: b.velocity, swimming: me.swimming })}`,
+            `RIDE BLIP ${JSON.stringify({ line, slot, row: R.trains(R.rw())[slot], along: train().along, on: carry.on?.id ?? null, at: b.position, v: b.velocity, swimming: me.swimming })}`,
           );
         }
         if (on) offAt = -1;
         check(on || performance.now() - offAt < 1500, 'rider stays aboard throughout the train journey');
-        const row = read().trains[slot]!;
+        const row = R.trains(R.rw())[slot]!;
         ran ||= row.phase === 1;
         if (row.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf')) {
           sample = (async () => {
             const { hardwareTiming } = await import('../../../src/debug/prof-overlay.ts');
             const timing = await hardwareTiming(3);
             console.log(
-              `RAILWAY MOVING PERF ${JSON.stringify({ line, timing, riding: aboard(), phase: read().trains[slot]!.phase })}`,
+              `RAILWAY MOVING PERF ${JSON.stringify({ line, timing, riding: aboard(), phase: R.trains(R.rw())[slot]!.phase })}`,
             );
           })();
           background(sample, 'moving train performance sample');
@@ -640,15 +638,18 @@ export async function boilerToPier(
   };
   if (from !== 'q6') await ride(0, 1, 0, true);
   await ride(1, 2, 2, from === 'q6');
-  await until(() => l2().depot === 32 && l2().depotRails === 32, 'Q6 train unloads all 32 logs and 32 rails');
+  await until(
+    () => R.rail(R.rw()).depot === 32 && R.rail(R.rw()).depotRails === 32,
+    'Q6 train unloads all 32 logs and 32 rails',
+  );
   await checkpoint('Q6 stocked');
-  check(read().carryMax === 16, 'Q6 back holds sixteen');
-  const job = () => l2().stations[5]!;
+  check(R.carryMax(R.rw()) === 16, 'Q6 back holds sixteen');
+  const job = () => R.line2Station(5);
   const frame = view().frames[5]!;
   const deliver = async () => {
     await walk(frame.x, frame.z, 2.4);
     await until(
-      () => read().carry === 0 && read().railsCarry === 0 && read().pending === 0,
+      () => R.railBack().carry === 0 && R.railBack().rails === 0 && read().pending === 0,
       'Q6 unload settles',
       30000,
     );
@@ -658,14 +659,14 @@ export async function boilerToPier(
     if (job().stock < 32) {
       const depot = view().depot!;
       check(await bot.use(depot[0]!, depot[2]!, 'take Q6 depot logs', /^Pick up$/), 'Q6 depot offered');
-      check(await bot.work(() => read().carry > 0, 30000, 380), 'Q6 logs accepted');
+      check(await bot.work(() => R.railBack().carry > 0, 30000, 380), 'Q6 logs accepted');
       await until(() => read().pending === 0, 'Q6 log take settles', 30000);
       await deliver();
     }
     if (job().railStock < 32) {
       const shelf = view().shelf!;
       check(await bot.use(shelf.x, shelf.z, 'take Q6 shelf rails', /^Take rails$/), 'Q6 shelf offered');
-      check(await bot.work(() => read().railsCarry > 0, 30000, 380), 'Q6 rails accepted');
+      check(await bot.work(() => R.railBack().rails > 0, 30000, 380), 'Q6 rails accepted');
       await until(() => read().pending === 0, 'Q6 rail take settles', 30000);
       await deliver();
     }
@@ -764,7 +765,7 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   }
   bot.note(`hook drop ${id} reached the existing upper quarry path`);
   const line = layout.LINKS[1]!.line;
-  const frame = inspectRailwayLegacy()!.line2View.frames[2]!;
+  const frame = inspectRailway()!.line2View.frames[2]!;
   hookCheck(
     bot,
     await returning.walk(frame.x, frame.z - 5, 0.8),
@@ -825,9 +826,7 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
 /** The station boxes waiting for this player (Q2-Q6): the route walks round them, so their cards never interrupt a
  * walk at an awkward spot. A player opens one by walking into it; the route's job is the railway. */
 const waitingBoxes = () =>
-  (inspectRailwayLegacy()?.reward.stationBoxes.boxes ?? [])
-    .filter((b) => b.visible)
-    .map((b) => ({ x: b.x, z: b.z, r: 1.4 }));
+  (inspectRailway()?.reward.stationBoxes.boxes ?? []).filter((b) => b.visible).map((b) => ({ x: b.x, z: b.z, r: 1.4 }));
 
 const HOOK_RELOAD_KEY = 'look.railway-hook-reload';
 let hookReloadStarted = false;
@@ -848,7 +847,7 @@ export function startHookReload() {
       // On a real navigation the eval can re-enter before the player body exists. Wait without the bot's body sampler.
       const deadline = performance.now() + 300000;
       while (
-        (!me.body || !inspectRailwayLegacy()?.ready || fallArrival.active || me.coyote <= 0) &&
+        (!me.body || !inspectRailway()?.ready || fallArrival.active || me.coyote <= 0) &&
         performance.now() < deadline
       )
         await new Promise<void>((resolve) => setTimeout(resolve, 60));
@@ -860,17 +859,17 @@ export function startHookReload() {
       hookCheck(
         bot,
         await bot.until(
-          () => inspectRailwayLegacy()?.ready && me.body && !fallArrival.active && me.coyote > 0,
+          () => inspectRailway()?.ready && me.body && !fallArrival.active && me.coyote > 0,
           300000,
           'hook reload arrival',
         ),
         'hook reload arrived dry',
       );
-      hookCheck(bot, inspectRailwayLegacy()!.pid === saved.pid, 'hook reload retains player identity');
+      hookCheck(bot, inspectRailway()!.pid === saved.pid, 'hook reload retains player identity');
       await hookLanding(bot, 't2');
       hookCheck(
         bot,
-        await bot.until(() => inspectRailwayLegacy()?.hookShot.owned, 5000, 'hook latch restored'),
+        await bot.until(() => inspectRailway()?.hookShot.owned, 5000, 'hook latch restored'),
         'hook latch restored once ready',
       );
       await returnFromTower(bot, ['t1']);
@@ -932,8 +931,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     },
     avoid: waitingBoxes,
   });
-  const read = (): RailwayLegacyInspection => {
-    const state = inspectRailwayLegacy();
+  const read = (): RailwayViewInspection => {
+    const state = inspectRailway();
     if (!state) throw new Error('Production railway view is unavailable');
     return state;
   };
@@ -947,15 +946,15 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   // The depot cart runs on the server's clock (a round trip of 70-101 s of it), which a loaded machine runs well behind
   // the warped page clock: as with laying, its waits get twice the default.
   const CART_MS = 600000;
-  const job = (station: number) => read().stations[station]!;
+  const job = R.railStation;
   // Co-op witness: mirrored railway hashes by server step, compared offline between the two peers' logs.
   const tickHashes = new Map<number, number>();
   const sampler = coop
     ? setInterval(() => {
-        const state = inspectRailwayLegacy();
+        const state = inspectRailway();
         if (second && state && state.hookShot.remoteCables >= 1) remoteCableSeen = true;
         // A segment run (botTo) may end before the forge: witness its whole route.
-        if (state?.ready && (stopAt || state.line2.forge.used > 0) && state.step >= 0)
+        if (state?.ready && (stopAt || R.forge(R.rw()).used > 0) && state.step >= 0)
           tickHashes.set(state.step, state.hash);
       }, 50)
     : 0;
@@ -963,7 +962,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   // away, as a player would: wait the card's readable time, then press E. The route's own cards keep dismiss().
   let boxCardAt = 0;
   setInterval(() => {
-    const reward = inspectRailwayLegacy()?.reward;
+    const reward = inspectRailway()?.reward;
     if (!reward?.stationBoxes.showing || !reward.showing) return void (boxCardAt = 0);
     boxCardAt ||= performance.now();
     if (performance.now() - boxCardAt < 1600) return;
@@ -976,8 +975,15 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     console.log(`RAILWAY TICKHASH ${JSON.stringify({ player: player ?? 'solo', hashes: [...tickHashes] })}`);
   const mark = (name: string) => {
     const state = read();
+    // The facts are rows and queries on one world, taken once for the line.
+    const w = R.rw();
+    const active = R.railActiveStation(w);
+    const stations = R.railJobs(w).map(({ job, run }) => ({ ...job, ...run }));
+    const now = stations[active]!;
+    const me1 = R.railBack();
+    const counts = R.railCounts(w);
     document.documentElement.dataset.railwayBeat = name;
-    playMark(name, { tick: state.tick, stock: state.stock, carry: state.carry, completion: state.completion });
+    playMark(name, { tick: state.tick, stock: now.stock, carry: me1.carry, completion: counts.completion });
     bot.note(name);
     console.log(
       `RAILWAY CHECKPOINT ${JSON.stringify({
@@ -986,26 +992,26 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         pid: state.pid,
         tick: state.tick,
         hash: state.hash,
-        phase: state.phase,
+        phase: R.railPhase(w),
         ready: state.ready,
-        activeStation: state.activeStation,
-        stations: state.stations,
-        carry: state.carry,
-        stoneCarry: state.stoneCarry,
-        completion: state.completion,
-        stock: state.stock,
-        allocation: state.allocation,
-        used: state.used,
-        delivered: state.delivered,
+        activeStation: active,
+        stations,
+        carry: me1.carry,
+        stoneCarry: me1.stone,
+        completion: counts.completion,
+        stock: now.stock,
+        allocation: now.allocation,
+        used: now.used,
+        delivered: now.delivered,
         pending: state.pending,
-        accounts: state.accounts,
-        counts: state.counts,
-        panelCount: state.panelCount,
-        panelStock: state.panelStock,
-        axe: state.axe,
-        jump: state.jump,
-        beam: state.beam,
-        rocks: state.rocks,
+        accounts: R.accounts(w),
+        counts,
+        panelCount: R.railPanelCount(w),
+        panelStock: R.railPanelStock(w),
+        axe: R.rail(w).axe,
+        jump: R.rail(w).jump,
+        beam: R.beam(w),
+        rocks: R.rocks(w),
         head: state.head,
         targetHead: state.targetHead,
         machine: state.machine,
@@ -1110,12 +1116,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     );
     if (coop) await until(remoteSeated, `${name} friend seen seated`, 60000);
     await checkpoint(`${name} seated`);
-    const startCount = read().panelCount;
+    const startCount = R.railPanelCount(R.rw());
     let stayed = true;
     let midway = false;
     await until(() => {
       stayed &&= !!seatState().sitting && !me.swimming;
-      if (!midway && read().panelCount >= startCount + 6) midway = true;
+      if (!midway && R.railPanelCount(R.rw()) >= startCount + 6) midway = true;
       return midway;
     }, `${name} lays while seated`);
     await checkpoint(`${name} seated laying`);
@@ -1139,13 +1145,13 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const ids = LINE1_STATIONS.slice(0, stations).map((s) => s.id);
     const committed = linePanels().filter((p) => ids.includes(p.station)).length,
       stock = LINE1_RAIL_PAIRS - committed;
-    require(read().panelCount === committed &&
-      read().panelStock === stock, `${committed} accepted rail pairs leave ${stock} on the stack`);
+    require(R.railPanelCount(R.rw()) === committed &&
+      R.railPanelStock(R.rw()) === stock, `${committed} accepted rail pairs leave ${stock} on the stack`);
   };
   const logs = async (station: number, loads: number) => {
     for (let load = 0; load < loads; load++) {
       let attempts = 0;
-      while (read().carry < 8) {
+      while (R.railBack().carry < 8) {
         await settled();
         require(++attempts <= 20, `${LINE1_STATIONS[station]!.id} found enough reachable logs`);
         const p = me.body!.position;
@@ -1154,7 +1160,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
             (tree) => !tree.cleared && tree.remaining > 0 && tree.id !== 28 && tree.id !== 209 && tree.id !== 232,
           )
           .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
-        let chosen: RailwayLegacyInspection['trees'][number] | undefined;
+        let chosen: RailwayViewInspection['trees'][number] | undefined;
         for (const candidate of candidates.slice(0, 20)) {
           const route = await bot.plan(candidate.x, candidate.z, 2.6);
           if (route.arrives && route.path.every((point) => point.y >= 3)) {
@@ -1165,8 +1171,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         require(chosen, 'a physically reachable ordinary source exists');
         await walk(chosen!.x, chosen!.z, 2.6);
         face(chosen!.x, chosen!.z);
-        const before = read().carry;
-        for (let swing = 0; swing < 100 && read().carry < 8; swing++) {
+        const before = R.railBack().carry;
+        for (let swing = 0; swing < 100 && R.railBack().carry < 8; swing++) {
           const target = interactTarget();
           if (!target?.click || target.verb !== 'Chop') break;
           bot.press();
@@ -1174,13 +1180,13 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
           if (read().trees.find((source) => source.id === chosen!.id)?.remaining === 0) break;
         }
         await until(() => read().pending === 0, 'harvest requests settle');
-        require(read().carry > before, `source ${chosen!.id} transferred accepted logs`);
+        require(R.railBack().carry > before, `source ${chosen!.id} transferred accepted logs`);
       }
-      require(read().carry === 8 && read().stoneCarry === 0, 'eight-piece log back');
+      require(R.railBack().carry === 8 && R.railBack().stone === 0, 'eight-piece log back');
       mark(`${LINE1_STATIONS[station]!.id} load ${load + 1} carried`);
       const frame = read().station;
       await walk(frame.x, frame.z, 3);
-      await until(() => read().carry === 0 && read().pending === 0, 'automatic log deposit settles');
+      await until(() => R.railBack().carry === 0 && read().pending === 0, 'automatic log deposit settles');
       mark(`${LINE1_STATIONS[station]!.id} load ${load + 1} deposited`);
     }
   };
@@ -1203,11 +1209,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(!read().reward.error, 'profile write succeeded');
   };
   try {
-    await until(() => !!me.body && railRead()?.ready(), 'verified production room ready');
+    await until(() => !!me.body && R.railRead()?.ready(), 'verified production room ready');
     await until(() => !fallArrival.active && me.coyote > 0 && !me.swimming, 'opening arrival lands dry');
     require(!('__place' in window), 'production installs no mutable legacy Place surface');
-    require(read().phase === 'asleep' && read().carry === 0, 'fresh production route starts asleep and empty');
-    if (coop) await until(() => read().accounts.length === 2, 'both independent players joined');
+    require(R.railPhase(R.rw()) === 'asleep' &&
+      R.railBack().carry === 0, 'fresh production route starts asleep and empty');
+    if (coop) await until(() => R.accounts(R.rw()).length === 2, 'both independent players joined');
     if (second) {
       const spawn = { x: me.body!.position.x, z: me.body!.position.z };
       await until(
@@ -1282,9 +1289,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await until(() => interactTarget()?.id === 'place-wake', 'wake offered');
       // A real keyboard tap, once, as soon as offered. No retry or held key can hide a refused wake.
       interact();
-      require(read().phase === 'waking' && read().pending === 1, 'single wake tap predicts immediately');
+      require(R.railPhase(R.rw()) === 'waking' && read().pending === 1, 'single wake tap predicts immediately');
     }
-    await until(() => read().phase === 'idle', 'accepted wake ready');
+    await until(() => R.railPhase(R.rw()) === 'idle', 'accepted wake ready');
     require(read().prediction.corrected === 0, 'single wake tap was not refused');
     mark('awake');
     // Option E: the card is the waker's alone; a friend gets the flourish as the wake ends, and is never held.
@@ -1309,13 +1316,13 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await box(0);
     if (stopBeforeReward) return;
     mark('T1 production completed');
-    if (read().stations.length === 1 || query.get('t1Only') === '1') {
+    if (R.jobs(R.rw()).length === 1 || query.get('t1Only') === '1') {
       document.documentElement.dataset.railwayProof = 'done';
       bot.finish('T1 real inputs and personal claim');
       return;
     }
-    await until(() => read().activeStation === 1, 'T2 opens after T1');
-    require(!read().axe, 'proper axe remains locked at T2');
+    await until(() => R.railActiveStation(R.rw()) === 1, 'T2 opens after T1');
+    require(!R.rail(R.rw()).axe, 'proper axe remains locked at T2');
     if (!coop) {
       // A swing always answers: before Station 3 opens the great tree rebounds, and nothing is sent.
       const tree = LINE1_GREAT_TREE;
@@ -1325,23 +1332,23 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await checkpoint('great tree before Station 3');
       bot.press();
       await bot.wait(900);
-      require(read().beam?.state === 'standing' &&
-        read().beam?.work === 0 &&
+      require(R.beam(R.rw()).state === 'standing' &&
+        R.beam(R.rw()).work === 0 &&
         read().pending === 0, 'the great tree rebounds before Station 3, sending nothing');
       mark('great tree rebounds before Station 3');
     }
     if (!second) await logs(1, 4);
     if (!coop || second) {
-      const rock = read().rocks.find((r) => r.remaining >= 8)!;
+      const rock = LINE1_ROCKS.find((r) => R.rock(R.rw(), r.id).left >= 8)!;
       require(rock, 'stone source available');
       await walk(rock.x / 100, rock.z / 100, 2.6);
       face(rock.x / 100, rock.z / 100);
       await until(() => interactTarget()?.id === `railway-rock${rock.id}`, 'the chosen rock is targeted', 5000);
-      require(await bot.work(() => read().stoneCarry === 8, 30000), 'four productive rock strokes fill stone back');
+      require(await bot.work(() => R.railBack().stone === 8, 30000), 'four productive rock strokes fill stone back');
       await until(() => read().pending === 0, 'stone requests settle');
       mark('T2 stone carried');
       await walk(read().station.x, read().station.z, 3);
-      await until(() => read().stoneCarry === 0 && read().pending === 0, 'stone automatically deposited');
+      await until(() => R.railBack().stone === 0 && read().pending === 0, 'stone automatically deposited');
       mark('T2 stone deposited');
     }
     await until(() => job(1).start >= 0, 'T2 exact mixed bill funded');
@@ -1352,13 +1359,13 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(job(1).used === 32 && job(1).stoneUsed === 8, 'T2 embodies 32 logs and 8 stone');
     await checkpoint('T2 laid');
     await box(1);
-    await until(() => read().activeStation === 2, 'T3 opens after T2');
-    require(!read().axe, 'proper axe not granted by T2 completion');
+    await until(() => R.railActiveStation(R.rw()) === 2, 'T3 opens after T2');
+    require(!R.rail(R.rw()).axe, 'proper axe not granted by T2 completion');
     require(!read().reward.axeChest.available, 'Station 3 offers no proper axe (it is the forge’s)');
     // The great beam pass: logs and beam fund T3 in either order. Solo lays the beam first (the 40th log starts the
     // feed); a pair brings the logs first (the beam starts it).
     const beamFirst = !coop;
-    const laid = () => read().beam?.state === 'allocated' || read().beam?.state === 'used';
+    const laid = () => R.beam(R.rw()).state === 'allocated' || R.beam(R.rw()).state === 'used';
     const t3Logs = async () => {
       if (second) await until(() => job(2).delivered === 24, 'friend supplies the first 24 T3 logs');
       await logs(2, coop ? (second ? 2 : 3) : 5);
@@ -1374,24 +1381,24 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await walk(tree.x / 100, tree.z / 100, 2.6);
       face(tree.x / 100, tree.z / 100);
       await until(() => interactTarget()?.id === 'place-tree28', 'the great tree is targeted', 5000);
-      require(!read().axe, 'the first axe is the one that fells the great tree');
+      require(!R.rail(R.rw()).axe, 'the first axe is the one that fells the great tree');
       require(await bot.work(
-        () => read().beam?.state === 'available',
+        () => R.beam(R.rw()).state === 'available',
         30000,
       ), 'great tree yields unique beam after twelve first-axe strokes');
       await until(() => read().pending === 0, 'great tree requests settle');
       mark('T3 beam available');
-      const beam = read().beam!;
-      require(read().carry === 0 && read().stoneCarry === 0, 'empty back before unique beam claim');
+      const beam = R.beam(R.rw());
+      require(R.railBack().carry === 0 && R.railBack().stone === 0, 'empty back before unique beam claim');
       require(await bot.use(beam.x / 100, beam.z / 100, 'pick up unique beam', /^Pick up/), 'beam pickup offered');
       await until(
-        () => read().beam?.state === 'held' && read().beam?.holder === read().pid,
+        () => R.beam(R.rw()).state === 'held' && R.beam(R.rw()).holder === read().pid,
         'unique beam held by carrier',
       );
       await checkpoint('T3 beam carried');
       if (coop) {
         const holder = read().pid;
-        const revision = read().beam!.revision;
+        const revision = R.beam(R.rw()).revision;
         const helperNear = () =>
           [...peers.values()].some(
             (p) =>
@@ -1410,8 +1417,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
           if (laid()) break;
           if (Math.hypot(point.x - last.x, point.z - last.z) < 2) continue;
           await until(helperNear, 'helper stays near before the next short beam leg', 10000);
-          require(read().beam?.holder === holder &&
-            read().beam?.revision === revision, 'help never claims a second beam');
+          require(R.beam(R.rw()).holder === holder &&
+            R.beam(R.rw()).revision === revision, 'help never claims a second beam');
           await walk(point.x, point.z, 0.7);
           last = point;
           if (!shown && Math.hypot(me.body!.position.x - tree.x / 100, me.body!.position.z - tree.z / 100) >= 9) {
@@ -1427,8 +1434,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       } else await walk(read().station.x, read().station.z, 3);
       await until(laid, 'beam laid in the frame’s saddles');
     } else {
-      await until(() => read().beam?.state === 'held', 'friend picks up the sole beam');
-      const holder = read().beam!.holder;
+      await until(() => R.beam(R.rw()).state === 'held', 'friend picks up the sole beam');
+      const holder = R.beam(R.rw()).holder;
       const carrier = () => [...peers.values()].find((p) => p.pid === holder && performance.now() - p.seenAt < 1500);
       await until(carrier, 'carrier has a fresh real position');
       const initial = carrier()!;
@@ -1461,9 +1468,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
             Math.hypot(p!.x - me.body!.position.x, p!.z - me.body!.position.z) <= 2.5);
         if (!shown && photoReady && Math.hypot(p!.x - LINE1_GREAT_TREE.x / 100, p!.z - LINE1_GREAT_TREE.z / 100) >= 9) {
           require(interactTarget()?.id === 'railway-beam-help-release', 'helper grip remains active after moving');
-          require(read().beam?.holder === holder &&
-            read().carry === 0 &&
-            read().stoneCarry === 0, 'helper has an empty back and no second beam claim');
+          require(R.beam(R.rw()).holder === holder &&
+            R.railBack().carry === 0 &&
+            R.railBack().stone === 0, 'helper has an empty back and no second beam claim');
           shown = true;
           await checkpoint('T3 helped beam carried');
         }
@@ -1483,14 +1490,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await ride(2);
     await until(() => job(2).completion === 1, 'T3 laid once', LAYING_MS);
     panels(3);
-    require(read().beam?.state === 'used' && job(2).used === 40, 'single beam and 40 logs embodied');
+    require(R.beam(R.rw()).state === 'used' && job(2).used === 40, 'single beam and 40 logs embodied');
     require(read().reward.claims === 2, 'only T1 and T2 personal boxes earned');
-    const counts = read().counts;
+    const counts = R.railCounts(R.rw());
     require(counts.total === LINE1_INITIAL[0] + counts.produced, 'counted logs conserve initial supply and renewal');
     require(counts.stone &&
       counts.stone.total === RAIL_STONE + counts.stone.produced, 'counted stone conserves initial supply and renewal');
     await checkpoint('T3 laid');
-    require(!read().jump, 'walk home does not need optional jump');
+    require(!R.rail(R.rw()).jump, 'walk home does not need optional jump');
     const access = railAt(116);
     await walk(access.x + layout.ORIGIN.x, access.z, 0.8);
     await walkTrack(116, 191);
@@ -1514,7 +1521,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     };
     await walkBypass(bypass.slice(1));
     await checkpoint('path walked home');
-    require(!read().jump, 'walk home completed before jump discovery');
+    require(!R.rail(R.rw()).jump, 'walk home completed before jump discovery');
     await walkBypass([...bypass].reverse().slice(1));
     require(Math.abs(me.body!.position.y - PLAYER_R - layout.railY(line.line, 30)) <
       1, 'village stub rejoins the new deck');
@@ -1552,7 +1559,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     ), 'walked from completed rail to first-pillar lip');
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'walked the lip onto the first pillar');
     await until(() => me.coyote > 0 && !me.swimming, 'first pillar supports the player');
-    if (!second) require(!read().jump, 'first pillar reached before optional jump discovery');
+    if (!second) require(!R.rail(R.rw()).jump, 'first pillar reached before optional jump discovery');
     mark('first pillar reached');
     if (coop && !second)
       await until(() => friendAt(friendSlot), 'friend reaches the first pillar before shared discovery');
@@ -1560,7 +1567,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const device = read().reward.jumpDevice;
       require(await bot.use(device.x, device.z, 'take the first jump device', /^Take it$/), 'jump device offered');
     }
-    await until(() => read().jump, 'shared optional jump accepted');
+    await until(() => R.rail(R.rw()).jump, 'shared optional jump accepted');
     // Co-op abilities, option E: the card is the finder's alone; a friend gets a flourish that never stops them.
     if (second) {
       await until(() => read().reward.arrival.seen.includes('jump'), "friend's jump flourish played");
@@ -1584,7 +1591,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     );
     require(Math.abs(me.body!.position.y - PLAYER_R - pillar.top) < 1, 'air jump returns to the same pillar');
     // The railway's ops are Server kind, never in the lockstep registry: ask the state.
-    require(!read().glide && !read().glider.owned, 'the glider is not granted after line one');
+    require(!R.rail(R.rw()).glide && !read().glider.owned, 'the glider is not granted after line one');
     await checkpoint('optional jump used');
     if (query.get('line2') === '0') {
       document.documentElement.dataset.railwayProof = 'done';
@@ -1595,7 +1602,6 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     let jumpsAtLine2 = read().reward.tools.jumps;
     const noJump = (beat: string) =>
       require(read().reward.tools.jumps === jumpsAtLine2, `${beat} needed no extra air jump`);
-    const l2 = () => read().line2!;
     const v2 = () => read().line2View;
     const quarry = layout.LINKS[1]!;
     const qAt = (s: number) => layout.lineAt(quarry.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
@@ -1605,13 +1611,13 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const seen = new Set<number>();
       await until(
         () => {
-          seen.add(l2().cart.phase);
+          seen.add(R.cart(R.rw()).phase);
           return done();
         },
         beat,
         CART_MS,
       );
-      if (l2().depot + l2().depotRails > 0)
+      if (R.rail(R.rw()).depot + R.rail(R.rw()).depotRails > 0)
         require(seen.has(CART_PHASE.RUN) || seen.has(CART_PHASE.DROP), `${beat}: the cart was seen bringing it`);
       mark(`${beat} (the cart unloaded at the rack)`);
     };
@@ -1621,39 +1627,35 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       // The leader opens the pack (at the forge, or after the lever under botOrder=legacy): the friend's back carries
       // 16 too, and they get the flourish, not the card.
       const friendPack = async () => {
-        await until(() => read().line2?.pack, 'leader opens the pack', 1800000);
+        await until(() => R.rail(R.rw()).pack, 'leader opens the pack', 1800000);
         await bot.wait(1500);
-        require(read().carryMax === 16, "the friend's back carries 16");
+        require(R.carryMax(R.rw()) === 16, "the friend's back carries 16");
         require(read().reward.arrival.seen.includes('pack'), "friend's pack flourish played");
         await checkpoint('pack');
       };
       if (!legacy) await friendPack();
-      await until(() => read().line2?.gateOpen, 'leader opens the quarry gate', 1800000);
+      await until(() => R.line2GateOpen(R.rw()), 'leader opens the quarry gate', 1800000);
       require(hookSeen.size >= 5, `friend saw ${hookSeen.size} distinct hook ring ids`);
       require(remoteCableSeen, 'friend saw a remote hook cable');
       await checkpoint('quarry gate open');
       if (legacy) await friendPack();
-      await until(
-        () => read().stations.length && read().line2?.stations[3]?.completion === 1,
-        'leader lays Q4',
-        LAYING_MS * 3,
-      );
+      await until(() => R.line2Station(3).completion === 1, 'leader lays Q4', LAYING_MS * 3);
       await checkpoint('Q4 laid');
-      await until(() => read().line2?.stations[4]?.completion === 1, 'leader lays Q5', LAYING_MS * 3);
+      await until(() => R.line2Station(4).completion === 1, 'leader lays Q5', LAYING_MS * 3);
       await checkpoint('Q5 laid');
       if (!legacy) {
         // The leader climbs back up and takes the glider: the friend gets the flourish wherever they stand, no card.
-        await until(() => read().glide, 'leader takes the glider', LAYING_MS * 3);
+        await until(() => R.rail(R.rw()).glide, 'leader takes the glider', LAYING_MS * 3);
         await bot.wait(1500);
         require(read().reward.arrival.seen.includes('glide'), "friend's glider flourish played");
         require(!read().reward.showing, 'no glider card for a friend’s find');
         require(read().glider.owned, 'the friend owns the glider too');
         await checkpoint('glider taken');
       }
-      await until(() => read().line2?.stations[5]?.completion === 1, 'leader lays Q6', LAYING_MS * 6);
+      await until(() => R.line2Station(5).completion === 1, 'leader lays Q6', LAYING_MS * 6);
       await checkpoint('Q6 laid');
       // Split-rock: the leader opens the Works and footes the crossing; the friend sees it stand.
-      await until(() => (read().works?.crossing ?? -1) >= 0, 'leader footes the crossing', LAYING_MS * 40);
+      await until(() => (R.works(R.rw()).crossing ?? -1) >= 0, 'leader footes the crossing', LAYING_MS * 40);
       await checkpoint('crossing footed');
       document.documentElement.dataset.railwayProof = 'done';
       await bot.wait(3000);
@@ -1672,9 +1674,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await walkTrack(92, 30);
     await walkBypass(bypass.slice(1));
     mark('line two started');
-    const fill = async (max: number = read().carryMax) => {
+    const fill = async (max: number = R.carryMax(R.rw())) => {
       let attempts = 0;
-      while (read().carry < max) {
+      while (R.railBack().carry < max) {
         require(++attempts <= 24, 'found enough reachable logs for line two');
         const p = me.body!.position;
         const candidates = read()
@@ -1682,7 +1684,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
             (tree) => !tree.cleared && tree.remaining > 0 && tree.id !== 28 && tree.id !== 209 && tree.id !== 232,
           )
           .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
-        let chosen: RailwayLegacyInspection['trees'][number] | undefined;
+        let chosen: RailwayViewInspection['trees'][number] | undefined;
         for (const candidate of candidates.slice(0, 20)) {
           const route = await bot.plan(candidate.x, candidate.z, 2.6);
           if (route.arrives && route.path.every((point) => point.y >= 3)) {
@@ -1693,7 +1695,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         require(chosen, 'a reachable ordinary source exists for line two');
         await walk(chosen!.x, chosen!.z, 2.6);
         face(chosen!.x, chosen!.z);
-        for (let swing = 0; swing < 60 && read().carry < max; swing++) {
+        for (let swing = 0; swing < 60 && R.railBack().carry < max; swing++) {
           const target = interactTarget();
           if (!target?.click || target.verb !== 'Chop') break;
           bot.press();
@@ -1711,22 +1713,22 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await walk(v2().forgeRack.x, v2().forgeRack.z, 3);
       await walk(packChest.x, packChest.z);
       require(await bot.use(packChest.x, packChest.z, 'open the pack chest', /^Open/), 'pack chest offered');
-      require(await bot.work(() => l2().pack, 5000, 380), 'pack accepted after bounded retries');
+      require(await bot.work(() => R.rail(R.rw()).pack, 5000, 380), 'pack accepted after bounded retries');
       await bot.wait(1200);
       if (read().reward.showing || !coop) await dismiss('pack reveal');
-      require(read().carryMax === 16, 'every back carries 16 with the pack');
+      require(R.carryMax(R.rw()) === 16, 'every back carries 16 with the pack');
       await checkpoint('pack');
     };
-    for (let load = 0; l2().forge.used < 56; load++) {
+    for (let load = 0; R.forge(R.rw()).used < 56; load++) {
       require(load < 12, 'forge bills fill in bounded loads');
       // A player opens the pack as soon as its chest appears, beside the forge they are filling.
-      if (!legacy && l2().forge.used >= 24 && !l2().pack) await openPack();
-      await fill(Math.min(read().carryMax, 56 - l2().forge.used));
+      if (!legacy && R.forge(R.rw()).used >= 24 && !R.rail(R.rw()).pack) await openPack();
+      await fill(Math.min(R.carryMax(R.rw()), 56 - R.forge(R.rw()).used));
       await walk(forge.x, forge.z, 2.4);
-      await until(() => read().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
-      mark(`forge load ${load + 1} (${l2().forge.used}/56)`);
+      await until(() => R.railBack().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
+      mark(`forge load ${load + 1} (${R.forge(R.rw()).used}/56)`);
     }
-    await until(() => l2().forge.lit >= 0, 'forge lit by its second bill');
+    await until(() => R.forge(R.rw()).lit >= 0, 'forge lit by its second bill');
     await checkpoint('forge lit');
     // The proper axe is the lit forge's first made thing; the hardwoods by it rebound the first axe and fell to it.
     const hardwood = read().trees.find((tree) => tree.id === 209)!;
@@ -1743,7 +1745,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(await bot.use(chest.x, chest.z, 'open proper axe chest', /^Open/), 'proper axe chest offered');
     // A single press can be rejected before the host receives the settled Owner position.
     // Repeat ordinary input for a bounded window; acceptance remains the required beat.
-    require(await bot.work(() => read().axe, 5000, 380), 'proper axe accepted after bounded retries');
+    require(await bot.work(() => R.rail(R.rw()).axe, 5000, 380), 'proper axe accepted after bounded retries');
     // Whoever opened it gets the card; a friend gets the flourish.
     await bot.wait(1200);
     if (read().reward.showing || !coop) await dismiss('proper axe reveal');
@@ -1763,16 +1765,20 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => v2().working, 'machine crosses to line two');
     const rack = v2().forgeRack;
     const takeRails = async (n: number) => {
-      await until(() => l2().forge.rack >= Math.min(n, read().carryMax), 'forge has poured enough rails', 60000);
+      await until(
+        () => R.forge(R.rw()).rack >= Math.min(n, R.carryMax(R.rw())),
+        'forge has poured enough rails',
+        60000,
+      );
       require(await bot.use(rack.x, rack.z, 'take rails from the forge rack', /^Take rails$/), 'forge rack offered');
       // As with the axe chest, a first press can precede the host's settled Owner position: repeat ordinary input.
-      require(await bot.work(() => read().railsCarry > 0, 5000, 380), 'rails accepted after bounded retries');
+      require(await bot.work(() => R.railBack().rails > 0, 5000, 380), 'rails accepted after bounded retries');
       await until(() => read().pending === 0, 'rails accepted onto the back');
     };
     const deliver = async (k: number, frameAt: { x: number; z: number }) => {
       await walk(frameAt.x, frameAt.z, 2.4);
       await until(
-        () => (read().carry === 0 && read().railsCarry === 0) || l2().stations[k]!.start >= 0,
+        () => (R.railBack().carry === 0 && R.railBack().rails === 0) || R.line2Station(k).start >= 0,
         `Q${k + 1} frame unloads automatically`,
         20000,
       );
@@ -1780,15 +1786,15 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     };
     // Q1, by hand beside the turntable: 16 logs and 6 rails.
     const q1 = v2().frames[0]!;
-    while (l2().stations[0]!.start < 0 && l2().stations[0]!.stock < 16) {
-      await fill(Math.min(read().carryMax, 16 - l2().stations[0]!.stock));
+    while (R.line2Station(0).start < 0 && R.line2Station(0).stock < 16) {
+      await fill(Math.min(R.carryMax(R.rw()), 16 - R.line2Station(0).stock));
       await deliver(0, q1);
     }
     await takeRails(6);
     await deliver(0, q1);
-    await until(() => l2().stations[0]!.start >= 0, 'Q1 funded from logs and rails');
+    await until(() => R.line2Station(0).start >= 0, 'Q1 funded from logs and rails');
     await checkpoint('Q1 funded');
-    await until(() => l2().stations[0]!.completion === 1, 'Q1 laid once', LAYING_MS);
+    await until(() => R.line2Station(0).completion === 1, 'Q1 laid once', LAYING_MS);
     await checkpoint('Q1 laid');
     // Q2 and Q3: logs from the depot rack by the frame, rails from the forge by hand.
     const viaTrack = async (frameAt: { x: number; z: number }) => {
@@ -1798,7 +1804,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       // The depot cart runs this track too and would shove a walker off the trestle: set out while it is on line one
       // (home, resting or loading at the camp), which leaves it at least a leg's run behind.
       const home = [CART_PHASE.HOME, CART_PHASE.REST, CART_PHASE.LOAD] as number[];
-      await until(() => home.includes(l2().cart.phase), 'the cart is off the quarry track', CART_MS);
+      await until(() => home.includes(R.cart(R.rw()).phase), 'the cart is off the quarry track', CART_MS);
       await walkQuarry(10, 112);
       // The parked machine fills the track's end: step off on the frame's side, clear of its body.
       const off = besideQ(112, frameAt);
@@ -1823,32 +1829,32 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const bill = [0, 24, 16][k]!,
         rails = [0, 12, 12][k]!;
       if (k === 2) await viaTrack(frameAt);
-      while (l2().stations[k]!.start < 0 && l2().stations[k]!.stock < bill) {
+      while (R.line2Station(k).start < 0 && R.line2Station(k).stock < bill) {
         // The cart runs on the server's clock (a round trip of 70-90 s); the warped page clock can run ~9x faster.
-        await cartBrings(`Q${k + 1} depot brings logs`, () => l2().depot > 0);
+        await cartBrings(`Q${k + 1} depot brings logs`, () => R.rail(R.rw()).depot > 0);
         const depot = v2().depot!;
-        const stockBefore = l2().stations[k]!.stock;
+        const stockBefore = R.line2Station(k).stock;
         require(await bot.use(depot[0]!, depot[2]!, 'take depot logs', /^Pick up$/), 'depot rack offered');
         // Confirmed within a round trip now, the logs can already have unloaded into the frame beside the rack.
         require(await bot.work(
-          () => read().carry > 0 || l2().stations[k]!.stock > stockBefore,
+          () => R.railBack().carry > 0 || R.line2Station(k).stock > stockBefore,
           5000,
           380,
         ), 'depot logs accepted after bounded retries');
         await until(() => read().pending === 0, 'depot logs settle');
         await walk(frameAt.x, frameAt.z, 2.4);
-        await until(() => read().carry === 0 && read().pending === 0, `Q${k + 1} logs unload`, 20000);
+        await until(() => R.railBack().carry === 0 && read().pending === 0, `Q${k + 1} logs unload`, 20000);
       }
       mark(`Q${k + 1} logs delivered`);
-      while (l2().stations[k]!.start < 0 && l2().stations[k]!.railStock < rails) {
+      while (R.line2Station(k).start < 0 && R.line2Station(k).railStock < rails) {
         if (k === 2) await homeFromQuarry();
-        await takeRails(rails - l2().stations[k]!.railStock);
+        await takeRails(rails - R.line2Station(k).railStock);
         if (k === 2) await viaTrack(frameAt);
         await deliver(k, frameAt);
       }
-      await until(() => l2().stations[k]!.start >= 0, `Q${k + 1} funded`);
+      await until(() => R.line2Station(k).start >= 0, `Q${k + 1} funded`);
       await checkpoint(`Q${k + 1} funded`);
-      await until(() => l2().stations[k]!.completion === 1, `Q${k + 1} laid once`, LAYING_MS);
+      await until(() => R.line2Station(k).completion === 1, `Q${k + 1} laid once`, LAYING_MS);
       await checkpoint(`Q${k + 1} laid`);
       if (k === 1) {
         // The hook walk: from the finished deck near s=92 up the broad sloped walkway to pillar p2.
@@ -1863,7 +1869,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         const hook = v2().hook;
         require(hook.available, 'hook device available after Q2');
         require(await bot.use(hook.x, hook.z, 'take the hook device', /^Take it$/), 'hook device offered');
-        require(await bot.work(() => l2().hook, 5000, 380), 'shared hook accepted after bounded retries');
+        require(await bot.work(() => R.rail(R.rw()).hook, 5000, 380), 'shared hook accepted after bounded retries');
         // Whoever took it gets the card; a friend who got there second gets the flourish.
         await bot.wait(1200);
         if (read().reward.showing || !coop) await dismiss('hook reveal');
@@ -1891,7 +1897,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         noJump('hook climb');
         await checkpoint('needle bell summit');
         const sealed = v2().glideDevice;
-        require(!sealed.available && !sealed.woken && !read().glide, 'the summit glider is sealed before Q5');
+        require(!sealed.available && !sealed.woken && !R.rail(R.rw()).glide, 'the summit glider is sealed before Q5');
         const drop = query.get('hookDrop');
         if (drop === 't3' || drop === 'summit') {
           await dropFromTower(bot, drop);
@@ -1904,8 +1910,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
           await walk(sea.x, sea.z, 0.8);
           await until(() => interactTarget()?.id === 'railway-sea-switch', 'summit offers railway-sea-switch', 5000);
           require(await bot.use(sea.x, sea.z, 'pull sea switch', /^Pull$/), 'sea switch offered');
-          require(await bot.work(() => l2().seaOpen, 5000, 380), 'sea switch accepted');
-          await until(() => l2().seaOpen && !v2().seaGateSolid, 'sea gate collider removed');
+          require(await bot.work(() => R.line2SeaOpen(R.rw()), 5000, 380), 'sea switch accepted');
+          await until(() => R.line2SeaOpen(R.rw()) && !v2().seaGateSolid, 'sea gate collider removed');
           await checkpoint('sea gate');
         }
         await downFromNeedleBell(bot, noJump);
@@ -1934,7 +1940,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
           require(Math.abs(me.body!.position.y - PLAYER_R - top![1]!) < 0.6, 'reached the apron early by jumping');
           require(await bot.use(leverAt.x, leverAt.z, 'try the uncoupled lever', /^Pull$/), 'lever reachable early');
           await bot.wait(1500);
-          require(!l2().lever && !l2().gateOpen && v2().gateSolid, 'early pull does nothing before Q3');
+          require(!R.rail(R.rw()).lever &&
+            !R.line2GateOpen(R.rw()) &&
+            v2().gateSolid, 'early pull does nothing before Q3');
           await checkpoint('early lever does nothing');
           require(await bot.straight(top![0]!, top![2]! + 4, 0.6, 6000), 'stepped off the apron');
           await until(() => me.coyote > 0, 'landed beside the apron', 6000);
@@ -1958,7 +1966,11 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     noJump('quarry ramp');
     const lever = v2().lever;
     require(await bot.use(lever.x, lever.z, 'pull the quarry lever', /^Pull$/), 'lever offered');
-    require(await bot.work(() => l2().gateOpen, 5000, 380), 'quarry gate opens with Q3 complete and the lever pulled');
+    require(await bot.work(
+      () => R.line2GateOpen(R.rw()),
+      5000,
+      380,
+    ), 'quarry gate opens with Q3 complete and the lever pulled');
     await until(() => !v2().gateSolid, 'gate slab collider removed');
     await checkpoint('quarry gate open');
     // botOrder=legacy: the pack only now, home on foot after the lever.
@@ -1987,10 +1999,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const aboardCart = () => carry.on?.id === 'railway:cart';
       const stop = besideQ(0, rack);
       await walk(stop.x, stop.z, 1.6);
-      await until(() => l2().cart.phase === CART_PHASE.FORGE, 'the cart comes to the forge', CART_MS);
+      await until(() => R.cart(R.rw()).phase === CART_PHASE.FORGE, 'the cart comes to the forge', CART_MS);
       // A loaded cart stands about 2 m tall: up with the optional double jump, as Place's porter boards it.
       const boardBy = performance.now() + 15000;
-      while (!aboardCart() && performance.now() < boardBy && l2().cart.phase === CART_PHASE.FORGE) {
+      while (!aboardCart() && performance.now() < boardBy && R.cart(R.rw()).phase === CART_PHASE.FORGE) {
         const c = v2().cart;
         face(c.x, c.z);
         input.keys.add('KeyW');
@@ -2015,7 +2027,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await until(
         () => {
           stayed &&= aboardCart() && !me.swimming;
-          return l2().cart.phase === CART_PHASE.DROP;
+          return R.cart(R.rw()).phase === CART_PHASE.DROP;
         },
         'the cart reaches the Q4 rack',
         CART_MS,
@@ -2029,24 +2041,31 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       }
     }
     await toQ4();
-    const q4Job = () => l2().stations[3]!;
+    const q4Job = () => R.line2Station(3);
     for (let trip = 0; q4Job().start < 0; trip++) {
       require(trip < 8, 'Q4 funds in bounded trips');
-      await cartBrings('Q4 depot brings a load', () => l2().depot > 0 || l2().depotRails > 0 || q4Job().start >= 0);
+      await cartBrings(
+        'Q4 depot brings a load',
+        () => R.rail(R.rw()).depot > 0 || R.rail(R.rw()).depotRails > 0 || q4Job().start >= 0,
+      );
       if (q4Job().start >= 0) break;
-      if (l2().depot > 0) {
+      if (R.rail(R.rw()).depot > 0) {
         const depot = v2().depot!;
-        const before = read().carry;
+        const before = R.railBack().carry;
         require(await bot.use(depot[0]!, depot[2]!, 'take Q4 depot logs', /^Pick up$/), 'Q4 depot rack offered');
-        require(await bot.work(() => read().carry > before || q4Job().stock > 0, 5000, 380), 'Q4 depot logs accepted');
+        require(await bot.work(
+          () => R.railBack().carry > before || q4Job().stock > 0,
+          5000,
+          380,
+        ), 'Q4 depot logs accepted');
         await until(() => read().pending === 0, 'Q4 depot logs settle');
       }
       const shelf = v2().shelf;
-      if (l2().depotRails > 0 && shelf) {
-        const before = read().railsCarry;
+      if (R.rail(R.rw()).depotRails > 0 && shelf) {
+        const before = R.railBack().rails;
         require(await bot.use(shelf.x, shelf.z, 'take Q4 shelf rails', /^Take rails$/), 'Q4 rails shelf offered');
         require(await bot.work(
-          () => read().railsCarry > before || q4Job().railStock > 0,
+          () => R.railBack().rails > before || q4Job().railStock > 0,
           5000,
           380,
         ), 'Q4 shelf rails accepted');
@@ -2055,7 +2074,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await walk(q4.x, q4.z, 2.4);
       await until(
         () =>
-          (read().carry === 0 && (read().railsCarry === 0 || q4Job().railStock === 16) && read().pending === 0) ||
+          (R.railBack().carry === 0 &&
+            (R.railBack().rails === 0 || q4Job().railStock === 16) &&
+            read().pending === 0) ||
           q4Job().start >= 0,
         'Q4 frame unloads automatically',
         30000,
@@ -2077,7 +2098,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await boilerToPier({ bot, checkpoint, walkQuarry }, 'boiler');
     }
     await splitRockToCrossing({ bot, checkpoint, walkQuarry });
-    const totals = read().counts;
+    const totals = R.railCounts(R.rw());
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
     require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');
     document.documentElement.dataset.railwayProof = 'done';
@@ -2103,7 +2124,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
     console.log(
       `RAILWAY FAILURE ${JSON.stringify({
-        ...inspectRailwayLegacy(),
+        ...inspectRailway(),
+        rows: R.railRead()?.world().snapshot(),
         player: {
           position: me.body?.position,
           velocity: me.body?.velocity,

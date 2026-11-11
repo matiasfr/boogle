@@ -14,24 +14,20 @@ import { delayedRoom } from '../../src/world/delayed-room.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import type { RailAction, RailAccount } from '../../src/sim/railway.ts';
-import { railActiveStation } from '../../src/sim/railway-queries.ts';
-import { railPhase } from '../../src/sim/railway-queries-line1.ts';
+import { railActiveStation, railJobs } from '../../src/sim/railway-queries.ts';
+import { freeCarryIgnoringBig, railPhase } from '../../src/sim/railway-queries-line1.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
-import { account, accounts, cart, qjobs, train, tree } from '../../src/sim/railway-rows.ts';
+import { account, accounts, aperture, cart, lines, qjobs, train, trains, tree } from '../../src/sim/railway-rows.ts';
 import { Pile } from '../../src/sim/railway-components.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
-import {
-  createRailwayAdapter,
-  railMovement,
-  type RailwayAccepted,
-  type RailwayCorrection,
-  type RailwayInspection,
-  type RailwayIntent,
-} from '../../src/adapters/railway.ts';
+import { createRailwayAdapter, railMovement } from '../../src/adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../src/adapters/railway-effects.ts';
+import type { RailwayIntent } from '../../src/adapters/railway-intents.ts';
 import { trainAlong } from '../../src/sim/railway-train.ts';
 import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
+import { railwaySession, type RailwaySession } from '../../src/entities/railway/state.ts';
 import home from '../../src/world/home-land.json';
 
 export type RailwayProbe = {
@@ -55,7 +51,22 @@ export type RailwayProbe = {
   classicItems: number;
 };
 export type RailwayAdapterProbe = {
-  state: RailwayInspection;
+  /** `adapter.read`'s session values (ready, pending, status, stalled, tick) and its `debug()` (step, hash, epoch,
+   * next, prediction, ...), taken when the probe was: the view inspection's own. */
+  session: RailwaySession;
+  /** Rows and queries on the world the views see, read when the probe was taken: the checks' facts, not a model of
+   * the state (docs/plans/ecs-m12-m13.md, section 2). */
+  rows: {
+    account: ReturnType<typeof account>;
+    freeCarry: number;
+    phase: ReturnType<typeof railPhase>;
+    counts: ReturnType<typeof railCounts>;
+    jobs: ReturnType<typeof railJobs>;
+    cart: ReturnType<typeof cart>;
+    trains: ReturnType<typeof trains>;
+    lines: ReturnType<typeof lines>;
+    ring: ReturnType<typeof aperture>;
+  };
   effects: readonly RailwayAccepted[];
   corrections: readonly RailwayCorrection[];
   resets: number;
@@ -360,12 +371,28 @@ function startWorld(room: Room) {
       const tick = adapter.tickNow();
       return { along: cartAlong(c, tick), phase: c.phase, tick, at: Date.now() };
     };
-    T.railAdapter = () => ({
-      state: adapter.inspect(),
-      effects: effects.map((e) => ({ ...e })),
-      corrections: corrections.map((c) => ({ ...c })),
-      resets,
-    });
+    T.railAdapter = () => {
+      const read = adapter.read,
+        w = read.world(),
+        at = read.tick();
+      return {
+        session: railwaySession(read),
+        rows: {
+          account: account(w, PID),
+          freeCarry: freeCarryIgnoringBig(w, PID),
+          phase: railPhase(w, at, at),
+          counts: railCounts(w, at),
+          jobs: railJobs(w, at),
+          cart: cart(w),
+          trains: trains(w),
+          lines: lines(w),
+          ring: aperture(w),
+        },
+        effects: effects.map((e) => ({ ...e })),
+        corrections: corrections.map((c) => ({ ...c })),
+        resets,
+      };
+    };
     // The load run through the real adapter (R1b): the same chop, drop and take cycle, predicted.
     T.railLoad = ({ ms, every, first }) =>
       new Promise((resolve) => {

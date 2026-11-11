@@ -1,9 +1,18 @@
 // Disposable --rail-seed proof: relocations frame the fixture; pickups, unloads and pulls use real interactions.
 // gatedAction=1 leaves the last carried rails for --action: unload, wait full, pull, then lay in one real-time clip.
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const {
+  inspectRailway,
+  line2Active,
+  line2GateOpen,
+  line2SeaOpen,
+  line2Station,
+  piles: pileRows,
+  rail,
+  railBack,
+  railRead,
+  rw,
+} = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -25,14 +34,16 @@ const bot = makeBot({
     throw new Error('Gated fixture must not recover');
   },
 });
-const read = () => inspectRailwayLegacy()!;
-const job = () => read().line2.stations[k]!;
-const down = () => (k === 3 ? read().line2.gateOpen : read().line2.seaOpen);
+const read = () => inspectRailway()!;
+/** Station k.s row and its timed fields, flat. */
+const job = () => line2Station(k);
+const down = () => (k === 3 ? line2GateOpen(rw()) : line2SeaOpen(rw()));
+const pending = () => railRead()!.pending();
 async function until(fn: () => unknown, label: string, ms = 180000) {
   if (!(await bot.until(fn, ms, label))) throw new Error(label);
 }
-await until(() => inspectRailwayLegacy()?.ready && me.body, 'seed ready');
-if (read().line2.active !== k) throw new Error(`Requires Q${k + 1} active seed`);
+await until(() => railRead()?.ready() && me.body, 'seed ready');
+if (line2Active(rw()) !== k) throw new Error(`Requires Q${k + 1} active seed`);
 const frame = read().line2View.frames[k]!;
 const camera: [number, number, number] = [frame.x - 9, frame.y + 7, frame.z + 12];
 const aim: [number, number, number] = [frame.x, frame.y + 1.8, frame.z];
@@ -44,7 +55,7 @@ function move(p: { x: number; y: number; z: number }, dx = 0.8, dz = 0.8) {
 }
 async function take(kind: 0 | 2) {
   await until(
-    () => (kind === 0 ? read().line2.depot > 0 : read().line2.depotRails > 0),
+    () => (kind === 0 ? rail(rw()).depot > 0 : rail(rw()).depotRails > 0),
     'cart delivered requested material',
   );
   const depot = read().line2View.depot!;
@@ -52,22 +63,22 @@ async function take(kind: 0 | 2) {
   move(at);
   const id = kind === 0 ? 'railway-depot-logs' : 'railway-depot-rails';
   await until(() => interactTarget()?.id === id, `${id} offered`, 3000);
-  const before = kind === 0 ? read().carry : read().railsCarry;
+  const before = kind === 0 ? railBack().carry : railBack().rails;
   bot.press();
-  await until(() => (kind === 0 ? read().carry : read().railsCarry) > before, `${id} carried`, 3000);
-  await until(() => read().pending === 0, 'pickup confirmed', 3000);
+  await until(() => (kind === 0 ? railBack().carry : railBack().rails) > before, `${id} carried`, 3000);
+  await until(() => pending() === 0, 'pickup confirmed', 3000);
 }
 async function unload(kind: 0 | 2) {
-  const carried = kind === 0 ? read().carry : read().railsCarry;
+  const carried = kind === 0 ? railBack().carry : railBack().rails;
   const stock = kind === 0 ? job().stock : job().railStock;
   // A supply pulse ages existing piles independently of this carry. Compare material, not its recovery clock.
-  const piles = () => JSON.stringify(read().piles.map((p) => [p.id, p.kind, p.n]));
+  const piles = () => JSON.stringify(pileRows(rw()).map((p) => [p.x, p.z, p.kind, p.n]));
   const beforePiles = piles();
   move(frame, 0, 2.8);
   await wait(250);
   const origin = { ...me.body!.position };
   await until(
-    () => (kind === 0 ? read().carry : read().railsCarry) === 0 && read().pending === 0,
+    () => (kind === 0 ? railBack().carry : railBack().rails) === 0 && pending() === 0,
     'stationary automatic unload',
     10000,
   );
@@ -90,7 +101,7 @@ function fullWaiting() {
   )
     throw new Error('full gated frame did not wait');
   console.log(
-    `GATED full waiting ${JSON.stringify({ job: job(), gateSolid: k === 3 ? read().line2View.gateSolid : read().line2View.seaGateSolid, piles: read().piles.length })}`,
+    `GATED full waiting ${JSON.stringify({ job: job(), gateSolid: k === 3 ? read().line2View.gateSolid : read().line2View.seaGateSolid, piles: pileRows(rw()).length })}`,
   );
 }
 if (!shot.__gatedPrepared) {
@@ -99,7 +110,7 @@ if (!shot.__gatedPrepared) {
     for (let trip = 0; (kind === 0 ? job().stock : job().railStock) < spec.bill[kind === 0 ? 0 : 1]; trip++) {
       if (trip > 5) throw new Error('Too many fixture trips');
       await take(kind);
-      if (kind === 2 && query.get('gatedAction') === '1' && job().railStock + read().railsCarry >= spec.bill[1]) break;
+      if (kind === 2 && query.get('gatedAction') === '1' && job().railStock + railBack().rails >= spec.bill[1]) break;
       await unload(kind);
     }
   }
@@ -116,7 +127,7 @@ if (!shot.__gatedPrepared) {
       const id = k === 3 ? 'railway-quarry-lever' : 'railway-sea-switch';
       await until(() => interactTarget()?.id === id, 'gate pull offered', 3000);
       bot.press();
-      await until(() => down() && job().start >= 0 && read().pending === 0, 'pull funds stocked frame', 5000);
+      await until(() => down() && job().start >= 0 && pending() === 0, 'pull funds stocked frame', 5000);
       move(frame, 0, 4.2);
       await until(() => job().elapsed > 50 && read().line2View.head > spec.fromCm / 100, 'pull starts laying', 10000);
       console.log(`GATED laying ${JSON.stringify({ job: job(), head: read().line2View.head })}`);

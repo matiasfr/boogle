@@ -4,7 +4,7 @@
 // friend within the same few metres and it's bigger: the bell, confetti and a wider crowd. Never required, never a
 // card. Local: who has seen it is this browser's (ability-arrival.ts), partner positions are the presence it has.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { AbilitySeen } from './ability-arrival.ts';
 import { me } from '../../player/player.ts';

@@ -5,7 +5,7 @@
 // decision is silent on distance, so a player anywhere in the room gets it. Item cards stay with the finder; the others
 // get ability-arrival.ts's flourish. Each moment's views own their shot (createCameraPullOut, which no input ends but
 // the one highlighted skip) and banner; this only decides who plays and leaves a playtest mark of who saw what.
-import type { RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import { playMark } from '../../proto/mark.ts';
 
 export type SharedMoment = 'quarry gate' | 'sea gate' | 'works throat' | 'glider';

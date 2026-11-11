@@ -17,16 +17,8 @@ import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
 import { Aperture, Rail, Train } from '../src/sim/railway-components.ts';
 import type { World } from '../src/ecs/index.ts';
-import { createFirstReady } from '../src/entities/railway/first-ready.ts';
 
 const mutTrain = (w: World, slot: number) => w.mut(Train, trainId(w, slot))!;
-
-test('line 2 has three trains, and the views index the shared stops by a train line that has them', () => {
-  assert.equal(LINE_SLOTS[LINE2]!.length, 3, 'line 2 runs three trains');
-  assert.equal(RAIL_LINES.length, 2, "halts-view's refreshStops covers lines [0, 1] only");
-  assert.equal(LINE2, 1, "train-view's stops = [trainStops(w, 0), trainStops(w, LINE2)] is indexed by tr.line");
-  for (const t of RAIL_TRAINS) assert.ok(t.line === 0 || t.line === LINE2);
-});
 
 for (const stage of ['trains-on', 'q6-done', 'crossing-done', 'deck-laid', 'ring-joined'] as const)
   test(`${stage}: a train is held from its dwell's end (+10 ticks) at a halt, at once at a signal, and never asked while it stands at a halt`, () => {
@@ -116,12 +108,12 @@ test('the open end moving: line 2 from Q6 to the ring joined, bent by bent', () 
 // Pre-existing before M10 a: the hide condition. train-view.ts step() hid every car (y -60) while `!read.ready()`.
 // ready() is false not only before the whole state is in but also while RAILWAY_WINDOW actions are pending, so a player
 // with a full window (a burst of presses on a slow link) saw every train vanish until an answer came back. The view now
-// hides them only until the first whole state is in (first-ready.ts, the latch step() calls each frame), and draws
+// hides them only until the first whole state is in (read.whole(), the session's latch, which step() reads each frame), and draws
 // them from read.world() after that.
-test('a full pending window keeps every train shown (train-view.ts step: hidden = !trainsShown())', () => {
+test('a full pending window keeps every train shown (train-view.ts step: hidden = !read.whole())', () => {
   const r = railRoom(buildSeedWorld('trains-on'));
   const a = r.join('a', 'a', 30);
-  const shown = createFirstReady(a.adapter.read.ready);
+  const shown = a.adapter.read.whole;
   assert.equal(shown(), false, 'hidden before the whole state is in');
   r.ready();
   assert.equal(shown(), true, 'shown once it is');
@@ -132,4 +124,10 @@ test('a full pending window keeps every train shown (train-view.ts step: hidden 
   assert.equal(a.adapter.read.ready(), false, 'ready() is false with the window full');
   assert.ok(a.mirror.synced() && line2Trains(a.adapter.read.world()), 'whole and running');
   assert.equal(shown(), true, 'the trains stay shown while the whole state is in and the window is full');
+});
+
+// train-view.ts (ISLAND_STOPS, its cargo filter) and halts-view.ts (the ring's halts) index line two as LINE2 among
+// two lines: a third line, or line two moved, must revisit them.
+test('the views index two lines, line two at 1', () => {
+  assert.deepEqual([RAIL_LINES.length, LINE2], [2, 1]);
 });

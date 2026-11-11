@@ -38,6 +38,8 @@ type Ctx = {
 const rail = (p: Page): Promise<RailwayProbe> => ev(p.page, () => window.T.rail());
 const adapter = (p: Page): Promise<RailwayAdapterProbe> => ev(p.page, () => window.T.railAdapter());
 const INITIAL = LINE1_INITIAL[0];
+/** The logs on a probed tab's back: its account row, or none. */
+const backOf = (p: RailwayAdapterProbe) => p.rows.account?.carry ?? 0;
 // What the room adds around a replication packet (hosted-room.ts writes it without re-serializing).
 const ENVELOPE = `{"t":"m","from":${JSON.stringify(SERVER_ID)},"d":}`.length;
 
@@ -260,14 +262,14 @@ export async function railwayChecks(c: Ctx) {
     c.web.open(name, `room=${adapterRoom}&server=http://127.0.0.1:${c.port()}&pid=${pid}&adapter=1`);
   const AA = await openAdapter('AA', 'adaptera'),
     AB = await openAdapter('AB', 'adapterb');
-  const adapterReady = async () => (await Promise.all([AA, AB].map(adapter))).every((p) => p.state.ready);
+  const adapterReady = async () => (await Promise.all([AA, AB].map(adapter))).every((p) => p.session.ready);
   railCheck('browser adapters become ready on the mirror and a session', (await waitFor(adapterReady)) >= 0);
   await pose(AA, 'station');
   railCheck('adapter sends a wake', await ev(AA.page, () => window.T.railIntent({ op: 'rail.wake' })));
   railCheck(
     'adapter wake retires and both show idle',
     (await waitFor(async () =>
-      (await Promise.all([AA, AB].map(adapter))).every((p) => p.state.phase === 'idle' && p.state.pending === 0),
+      (await Promise.all([AA, AB].map(adapter))).every((p) => p.rows.phase === 'idle' && p.session.pending === 0),
     )) >= 0,
   );
   const beforeRejected = await adapter(AA);
@@ -280,9 +282,9 @@ export async function railwayChecks(c: Ctx) {
     (await waitFor(async () => {
       const p = await adapter(AA);
       return (
-        p.state.ready &&
-        p.state.pending === 0 &&
-        p.state.carry === 0 &&
+        p.session.ready &&
+        p.session.pending === 0 &&
+        backOf(p) === 0 &&
         p.effects.length === beforeRejected.effects.length + 1 &&
         p.effects.at(-1)!.predicted === true &&
         p.corrections.length === beforeRejected.corrections.length + 1 &&
@@ -308,13 +310,13 @@ export async function railwayChecks(c: Ctx) {
         await new Promise((r) => setTimeout(r, every));
         queued.push(window.T.railIntent({ op: 'rail.chop', id, yaw: 0, collapsed: false }));
       }
-      return { queued, state: window.T.railAdapter().state };
+      return { queued, probe: window.T.railAdapter() };
     },
     { id: RAILWAY_SOURCES[0]![0], every: RAILWAY_T1.swingMs + 10 },
   );
   railCheck(
     'predicted strokes cannot offer more than eight carry slots',
-    incoming.queued.filter(Boolean).length === 3 && incoming.state.carry === 8 && incoming.state.freeCarry === 0,
+    incoming.queued.filter(Boolean).length === 3 && backOf(incoming.probe) === 8 && incoming.probe.rows.freeCarry === 0,
   );
   railCheck(
     'every burst stroke retires; what was shown minus what was given back is what is carried',
@@ -324,22 +326,22 @@ export async function railwayChecks(c: Ctx) {
       const returned = p.corrections.filter((x) => x.event.op === 'rail.chop').reduce((n, x) => n + x.lost, 0);
       const harvested = chops.reduce((n, e) => n + e.accepted, 0) - returned;
       return (
-        p.state.pending === 0 &&
-        p.state.carry === harvested &&
+        p.session.pending === 0 &&
+        backOf(p) === harvested &&
         new Set(chops.map((e) => e.request)).size === chops.length &&
-        p.state.counts.total === INITIAL + p.state.counts.produced
+        p.rows.counts.total === INITIAL + p.rows.counts.produced
       );
     })) >= 0,
   );
-  while ((await adapter(AA)).state.carry < 8) {
+  while (backOf(await adapter(AA)) < 8) {
     await sleep(RAILWAY_T1.swingMs);
-    const before = (await adapter(AA)).state.carry;
+    const before = backOf(await adapter(AA));
     await ev(
       AA.page,
       (id: number) => window.T.railIntent({ op: 'rail.chop', id, yaw: 0, collapsed: false }),
       RAILWAY_SOURCES[0]![0],
     );
-    await waitFor(async () => (await adapter(AA)).state.carry > before && (await adapter(AA)).state.pending === 0);
+    await waitFor(async () => backOf(await adapter(AA)) > before && (await adapter(AA)).session.pending === 0);
   }
   await pose(AA, 'station');
   const outgoing = await ev(
@@ -350,30 +352,29 @@ export async function railwayChecks(c: Ctx) {
         await new Promise((r) => setTimeout(r, every));
         queued.push(window.T.railIntent({ op: 'rail.deposit', station: 'T1', n: 1 }));
       }
-      return { queued, state: window.T.railAdapter().state };
+      return { queued, probe: window.T.railAdapter() };
     },
     RAILWAY_T1.unloadMs + 10,
   );
   railCheck(
     'eight predicted deposits show at once and prevent a ninth spend',
     outgoing.queued.filter(Boolean).length === 8 &&
-      outgoing.state.availableCarry === 0 &&
-      outgoing.state.carry === 0 &&
-      outgoing.state.stations[0]!.stock === 8,
+      backOf(outgoing.probe) === 0 &&
+      outgoing.probe.rows.jobs[0]!.job.stock === 8,
   );
   railCheck(
     'every deposit retires and only accepted logs leave carry, in both mirrors',
     (await waitFor(async () => {
       const states = await Promise.all([AA, AB].map(adapter));
-      const s = states[0]!.state;
+      const s = states[0]!.rows;
       return (
-        s.pending === 0 &&
+        states[0]!.session.pending === 0 &&
         s.counts.stock > 0 &&
         states.every(
           (p) =>
-            p.state.counts.stock === s.counts.stock &&
-            p.state.counts.carry === 8 - s.counts.stock &&
-            p.state.counts.total === INITIAL + p.state.counts.produced,
+            p.rows.counts.stock === s.counts.stock &&
+            p.rows.counts.carry === 8 - s.counts.stock &&
+            p.rows.counts.total === INITIAL + p.rows.counts.produced,
         )
       );
     })) >= 0,
@@ -385,7 +386,7 @@ export async function railwayChecks(c: Ctx) {
     'a reload rebuilds balances without replaying effects',
     (await waitFor(async () => {
       const p = await adapter(AB);
-      return p.state.ready && p.state.counts.stock === settled.state.counts.stock && p.effects.length === 0;
+      return p.session.ready && p.rows.counts.stock === settled.rows.counts.stock && p.effects.length === 0;
     })) >= 0,
   );
   await c.restart();
@@ -395,9 +396,9 @@ export async function railwayChecks(c: Ctx) {
       const p = await adapter(AA);
       return (
         (await adapterReady()) &&
-        p.state.epoch === settled.state.epoch + 1 &&
-        p.state.counts.stock === settled.state.counts.stock &&
-        p.state.counts.carry === settled.state.counts.carry &&
+        p.session.epoch === settled.session.epoch + 1 &&
+        p.rows.counts.stock === settled.rows.counts.stock &&
+        p.rows.counts.carry === settled.rows.counts.carry &&
         p.effects.length === settled.effects.length
       );
     }, 15000)) >= 0,
@@ -438,13 +439,10 @@ export async function railwayLoad(
             ),
           );
         // Each adapter opens its own session once the whole state has arrived.
-        await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
+        await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.session.ready), 15000);
         await ev(pages[0]!.page, () => window.T.railPose('station'));
         await ev(pages[0]!.page, () => window.T.railIntent({ op: 'rail.wake' }));
-        await waitFor(
-          async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.phase === 'idle'),
-          10000,
-        );
+        await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.rows.phase === 'idle'), 10000);
         await ev(pages[0]!.page, () => {
           window.T.railResponse.length = 0;
           window.T.railCorrections.length = 0;
@@ -483,7 +481,7 @@ export async function railwayLoad(
               packets: window.T.railPackets,
               response: window.T.railResponse,
               corrections: window.T.railCorrections,
-              stats: window.T.railAdapter().state.prediction,
+              stats: window.T.railAdapter().session.prediction,
             })),
           ),
         );
@@ -616,7 +614,7 @@ export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
     pages.push(
       await c.web.open(`C${k}`, `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=cart${k}&lat=${l}&adapter=1`),
     );
-  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
+  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.session.ready), 15000);
   const world = c.hosted(roomId)!.world as RailwayWorldHost;
   // The built world's clock is ahead of this fresh room's: wait for the room to pass it, then load it.
   await waitFor(() => world.sync.world.tick > q4.t + 5, (q4.t + 60) * 100);
@@ -629,7 +627,7 @@ export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
   await waitFor(async () => {
     const want = server();
     return (await Promise.all(pages.map(adapter))).every(
-      (p) => p.state.line2.cart.phase === want.phase && p.state.line2.cart.depart === want.depart,
+      (p) => p.rows.cart.phase === want.phase && p.rows.cart.depart === want.depart,
     );
   }, 10000);
   await sleep(2000);
@@ -695,7 +693,7 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
     pages.push(
       await c.web.open(`T${k}`, `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=train${k}&lat=${l}&adapter=1`),
     );
-  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
+  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.session.ready), 15000);
   const world = c.hosted(roomId)!.world as RailwayWorldHost;
   // The built world's clock is ahead of this fresh room's: advance the disposable room to pass it, then load it.
   await advancePast(world, seed.t + 5);
@@ -708,7 +706,7 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   await waitFor(async () => {
     const want = server();
     return (await Promise.all(pages.map(adapter))).every(
-      (p) => p.state.trains[1]!.phase === want.phase && p.state.trains[1]!.depart === want.depart,
+      (p) => p.rows.trains[1]!.phase === want.phase && p.rows.trains[1]!.depart === want.depart,
     );
   }, 10000);
   await sleep(2000);
@@ -806,7 +804,7 @@ export async function railwayRequestStop(c: Ctx) {
       await c.web.open(`Q${k}`, `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=req${k}&lat=${l}&adapter=1`),
     );
   await host.page.close();
-  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
+  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.session.ready), 15000);
   // The server's world, read again at each use (ECS M11): a load replaces the world, and the rules write rows in place.
   const live = () => world.rules.railway.world();
   const slots = LINE_SLOTS[LINE2]!;
@@ -829,14 +827,14 @@ export async function railwayRequestStop(c: Ctx) {
       { at, id: quarry },
     );
   await waitFor(
-    async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.lines[LINE2]!.req === leverReq()),
+    async () => (await Promise.all(pages.map(adapter))).every((p) => p.rows.lines[LINE2]!.req === leverReq()),
     10000,
   );
   const sameRow = (a: { phase: number; at: number; track: number; dest: number }, b: typeof a) =>
     a.phase === b.phase && a.at === b.at && a.track === b.track && a.dest === b.dest;
   const bothMirrored = await waitFor(async () => {
     const all = await Promise.all(pages.map(adapter));
-    return all.every((p) => slots.every((k) => sameRow(p.state.trains[k]!, trainRow(live(), k))));
+    return all.every((p) => slots.every((k) => sameRow(p.rows.trains[k]!, trainRow(live(), k))));
   }, 10000);
   c.check(
     `request stop: every tab mirrors line 2's ${slots.length} trains`,
@@ -851,7 +849,7 @@ export async function railwayRequestStop(c: Ctx) {
   const set = await waitFor(async () => asked(leverReq()), 5000);
   c.check('request stop: the lever request is accepted by the server', set >= 0);
   const mirrored = await waitFor(
-    async () => (await Promise.all(pages.map(adapter))).every((p) => asked(p.state.lines[LINE2]!.req)),
+    async () => (await Promise.all(pages.map(adapter))).every((p) => asked(p.rows.lines[LINE2]!.req)),
     5000,
   );
   c.check('request stop: every tab mirrors the request', mirrored >= 0);
@@ -872,7 +870,7 @@ export async function railwayRequestStop(c: Ctx) {
     trainServes((k) => rows[k] as never, LINE2, trainStops(live(), LINE2), h.stop, -1, tick);
   const tick0 = world.sync.world.tick,
     named = serves(trainRows(live()), tick0);
-  const tabsNamed = (await Promise.all(pages.map(adapter))).map((p) => serves(p.state.trains, tick0));
+  const tabsNamed = (await Promise.all(pages.map(adapter))).map((p) => serves(p.rows.trains, tick0));
   c.check(
     'request stop: every tab names the same serving train as the server',
     named >= 0 && tabsNamed.every((k) => k === named),
@@ -901,7 +899,7 @@ export async function railwayRequestStop(c: Ctx) {
   );
   const agreed = await waitFor(async () => {
     const all = await Promise.all(pages.map(adapter));
-    return all.every((p) => sameRow(p.state.trains[Math.max(slot, slots[0]!)]!, row));
+    return all.every((p) => sameRow(p.rows.trains[Math.max(slot, slots[0]!)]!, row));
   }, 10000);
   c.check('request stop: every tab agrees on the standing train', agreed >= 0);
   await Promise.all(pages.map((p) => p.page.close()));
@@ -942,13 +940,16 @@ export async function railwayLeaf(c: Ctx) {
   const mirrored = async (label: string, want: string, ms = 10000) => {
     const ok = await waitFor(async () => {
       const all = await Promise.all(pages.map(tab));
-      return row(live()) === want && all.every((p) => p?.state.ready && p.state.pending === 0 && row(p.state.ring) === want);
+      return (
+        row(live()) === want &&
+        all.every((p) => p?.session.ready && p.session.pending === 0 && row(p.rows.ring) === want)
+      );
     }, ms);
     const all = await Promise.all(pages.map(tab));
     c.check(
       `leaf: ${label}`,
       ok >= 0,
-      `server ${row(live())} (pose ${leafRest(live().brace, live().cw, live().joined)}), tabs ${all.map((p) => (p ? row(p.state.ring) : 'loading')).join(' / ')}, want ${want}`,
+      `server ${row(live())} (pose ${leafRest(live().brace, live().cw, live().joined)}), tabs ${all.map((p) => (p ? row(p.rows.ring) : 'loading')).join(' / ')}, want ${want}`,
     );
   };
   const act = (p: Page, at: { x: number; y: number; z: number }, intent: Record<string, unknown>) =>
@@ -964,9 +965,11 @@ export async function railwayLeaf(c: Ctx) {
   const hang = async () => {
     const before = live().cw;
     await act(hanger, head.rack, { op: 'rail.footTake', rack: 2 });
-    await waitFor(async () => (await adapter(hanger)).state.pending === 0 && (await adapter(hanger)).state.foot === 1);
+    await waitFor(
+      async () => (await adapter(hanger)).session.pending === 0 && (await adapter(hanger)).rows.account?.foot === 1,
+    );
     await act(hanger, head.jib, { op: 'rail.footSet', site: 3 });
-    await waitFor(async () => live().cw > before && (await adapter(hanger)).state.pending === 0);
+    await waitFor(async () => live().cw > before && (await adapter(hanger)).session.pending === 0);
   };
   await mirrored('both tabs mirror the raised leaf (14 set, 4 racked, none hung, on its pawl)', '14,4,0,1,-1', 15000);
   await hang();

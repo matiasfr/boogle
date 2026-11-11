@@ -47,11 +47,11 @@ export const aboard = (w: World, key: 'logs' | 'rails' | 'foot') =>
   LINE2_SLOTS.reduce((n, k) => n + w.get(Train, trainId(w, k))![key], 0);
 /** The slot the footing wagon is coupled to, or -1. */
 export const wagonSlot = (w: World) => LINE2_SLOTS.find((k) => w.get(Train, trainId(w, k))!.wagon) ?? -1;
-export const job = (w: World, slot: number) => w.lookup(Job, slot)!;
-export const qjob = (w: World, slot: number) => w.lookup(QJob, slot)!;
+export const jobId = (w: World, slot: number) => w.lookup(Job, slot)!;
+export const qjobId = (w: World, slot: number) => w.lookup(QJob, slot)!;
 /** The line-one station taking materials now (railActiveStation). */
 export function activeStation(w: World) {
-  return !w.get(Job, job(w, 0))!.completion ? 0 : !w.get(Job, job(w, 1))!.completion ? 1 : 2;
+  return !w.get(Job, jobId(w, 0))!.completion ? 0 : !w.get(Job, jobId(w, 1))!.completion ? 1 : 2;
 }
 export function ready(w: World, tick: number) {
   const awake = w.get(Rail, railId(w))!.awake;
@@ -77,7 +77,7 @@ export const FOOT = 3;
 /** What a back can take of a kind: a footing only onto an empty back. */
 export const roomFor = (w: World, a: Readonly<AccountRow>, kind: number) =>
   kind === FOOT ? Number(!heldBig(w, a) && carried(a) === 0) : free(w, a);
-export const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjob(w, k))!.completion).length;
+export const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjobId(w, k))!.completion).length;
 export const apertureId = (w: World) => w.single(Aperture);
 /** The railhead: bents footed past bent 6 (0-7), two footings a bent (ring-island-build1, R3). */
 export const ringHead = (w: World) => Math.floor(w.get(Aperture, apertureId(w))!.set / 2);
@@ -98,7 +98,7 @@ export function railLine2Active(w: World) {
 }
 export function qActive(w: World) {
   if (w.get(Forge, forgeId(w))!.lit < 0) return -1;
-  const k = LINE2_STATIONS.findIndex((_s, k) => !w.get(QJob, qjob(w, k))!.completion);
+  const k = LINE2_STATIONS.findIndex((_s, k) => !w.get(QJob, qjobId(w, k))!.completion);
   if (k >= 0 && LINE2_STATIONS[k]!.opens === 'crossing' && w.get(Works, worksId(w))!.crossing < 0) return -1;
   return k;
 }
@@ -152,12 +152,12 @@ export function depotNeed(w: World, k: number, j: Readonly<{ stock: number; rail
 export function cartServing(w: World) {
   const k = qActive(w);
   if (k < 0 || !LINE2_STATIONS[k]!.depot || LINE2_STATIONS[k]!.feed === 'train') return -1;
-  return w.get(QJob, qjob(w, k))!.start < 0 ? k : -1;
+  return w.get(QJob, qjobId(w, k))!.start < 0 ? k : -1;
 }
 /** The rails the cart still wants at the forge stop for the stretch it serves (k), up to what it holds. */
 export function cartWants(w: World, k: number) {
   if (k < 0 || !LINE2_STATIONS[k]!.shelf) return 0;
-  const { rails } = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
+  const { rails } = depotNeed(w, k, w.get(QJob, qjobId(w, k))!);
   return Math.min(CART.rails - w.get(Cart, cartId(w))!.rails, rails);
 }
 // ---------------------------------------------------------------- the job clocks and the facts views read (M8)
@@ -246,10 +246,10 @@ function jobRead<C extends typeof Job | typeof QJob>(
 }
 /** Line one's jobs, T1 to T3 (railJobs). */
 export const railJobs = (w: World, at?: number): JobRead[] =>
-  LINE1_STATIONS.map((_s, slot) => jobRead(w, Job, JobRun, job(w, slot), at) as JobRead);
+  LINE1_STATIONS.map((_s, slot) => jobRead(w, Job, JobRun, jobId(w, slot), at) as JobRead);
 /** Line two's jobs, Q1 to Q7. */
 export const line2Jobs = (w: World, at?: number): QJobRead[] =>
-  LINE2_STATIONS.map((_s, slot) => jobRead(w, QJob, QJobRun, qjob(w, slot), at) as QJobRead);
+  LINE2_STATIONS.map((_s, slot) => jobRead(w, QJob, QJobRun, qjobId(w, slot), at) as QJobRead);
 /** The line-one station taking materials now (activeStation). */
 export const railActiveStation = activeStation;
 /** The line-one job taking materials now. */
@@ -268,7 +268,7 @@ export function pierOwed(w: World, aboard: number) {
   return WORKS.pier - works.pierSet - works.pierRack - aboard;
 }
 /** Q7 (slot 6) is laid: the Railhead is open and the ring's footings are owed. */
-export const q7Laid = (w: World) => !!w.get(QJob, qjob(w, Q7))!.completion;
+export const q7Laid = (w: World) => !!w.get(QJob, qjobId(w, Q7))!.completion;
 /** Footings Ring Island still needs (its bents' fourteen and the counterweight's four) that are neither set, hung,
  * racked at the railhead, aboard the wagon (`aboard`) nor on a back; none before Q7 is laid (call 65), so the wagon
  * loads only the pier's twelve until then. */
@@ -287,7 +287,7 @@ export const footOwed = (w: World, aboard: number) => (q7Laid(w) ? ringOwed(w, a
 export function kitOwed(w: World, r: Readonly<RailTrain>) {
   const k = kitJob(w);
   if (r.logs + r.rails > 0 || k < 0) return false;
-  const j = w.get(QJob, qjob(w, k))!;
+  const j = w.get(QJob, qjobId(w, k))!;
   if (j.start >= 0) return false;
   const need = depotNeed(w, k, j);
   return need.logs > 0 || need.rails > 0;

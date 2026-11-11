@@ -24,7 +24,7 @@ const { inspectFinds } = (await import(
 const { inspectTown } = (await import(
   '/src/entities/town/state.ts' as string
 )) as typeof import('../../../src/entities/town/state.ts');
-const { railwayRead } = (await import(
+const { railwayWorldRead } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -36,7 +36,7 @@ const land = (await import('/src/place/land.ts' as string)) as typeof import('..
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const deadline = performance.now() + 20000;
-const ready = () => !!inspectFinds()?.spots && !!inspectTown()?.shelf && !!railwayRead()?.ready && !!me.body;
+const ready = () => !!inspectFinds()?.spots && !!inspectTown()?.shelf && !!railwayWorldRead()?.ready() && !!me.body;
 while (!ready() && performance.now() < deadline) await wait(50);
 if (!ready()) throw new Error('railway-finds needs the live finds, town shelf and railway');
 const body = me.body!;
