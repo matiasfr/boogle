@@ -5,9 +5,9 @@ const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof impor
 const { splitRockToCrossing } = (await import(
   '/dev/look/bots/railway-works.ts' as string
 )) as typeof import('../bots/railway-works.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, railAt, railRead, rw, shed, trains, works, worksStage } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const query = new URLSearchParams(location.search);
@@ -24,29 +24,27 @@ const shot = window as Window & { __railStop?: string; __placeDone?: boolean; __
 setTimeout(() => window.__debugCam!.clear(), 100);
 background(
   (async () => {
-    if (
-      !(await bot.until(() => inspectRailwayLegacy()?.ready && me.body && me.coyote > 0, 300000, 'Split-rock seed arrived'))
-    )
+    if (!(await bot.until(() => railRead()?.ready() && me.body && me.coyote > 0, 300000, 'Split-rock seed arrived')))
       throw new Error('Split-rock seed did not arrive');
     const want = from === 'works' ? 'breaker' : 'wagon';
-    if (!(await bot.until(() => inspectRailwayLegacy()?.works.stage === want, 30000, `seed at stage ${want}`)))
-      throw new Error(`Split-rock seed is at ${inspectRailwayLegacy()?.works.stage}, not ${want}`);
+    if (!(await bot.until(() => worksStage(rw()) === want, 30000, `seed at stage ${want}`)))
+      throw new Error(`Split-rock seed is at ${worksStage(rw())}, not ${want}`);
     await splitRockToCrossing(
       {
         bot,
         checkpoint: async (beat) => {
           bot.note(beat);
-          const state = inspectRailwayLegacy()!;
-          const view = state as typeof state & { worksView?: unknown; crossingView?: unknown };
+          const w = rw();
           console.log(
             `RAILWAY CHECKPOINT ${JSON.stringify({
               beat,
-              tick: state.tick,
-              hash: state.hash,
-              works: state.works,
-              shed: state.shed,
-              trains: state.trains,
-              crossingView: view.crossingView,
+              tick: railAt(),
+              hash: railRead()!.debug().hash,
+              works: works(w),
+              stage: worksStage(w),
+              shed: shed(w),
+              trains: trains(w),
+              crossingView: inspectRailway()!.crossingView,
               wall: Date.now(),
               seconds: Math.round((Date.now() - started) / 100) / 10,
               position: me.body!.position,

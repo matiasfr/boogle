@@ -2,9 +2,9 @@
 // railway-b5b8-at.ts --query b58at=apron` on a seed with station 6 active: walk up to the forge's rails rack, then to
 // the boiler's pedestal, logging what each offers. Before trains the rack offers no "Take rails"; once they run it does.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { forge, inspectRailway, line2Active, line2Trains, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { interactTarget } = (await import(
   '/src/player/hands.ts' as string
 )) as typeof import('../../../src/player/hands.ts');
@@ -14,17 +14,17 @@ const face = (x: number, z: number) => {
   const p = me.body!.position;
   cam.yaw = me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
 };
-const read = () => inspectRailwayLegacy()!;
+const read = () => inspectRailway()!;
 const report = (beat: string) => {
-  const s = read();
+  const w = rw();
   console.log(
     `SIXFORGE ${beat} ${JSON.stringify({
       offered: interactTarget()?.verb ?? null,
       blocked: interactTarget()?.blocked ?? null,
-      active: s.line2.active,
-      trains: s.line2.trains,
-      rack: s.line2.forge.rack,
-      trainOwed: (s.line2View as { trainOwed?: boolean }).trainOwed,
+      active: line2Active(w),
+      trains: line2Trains(w),
+      rack: forge(w).rack,
+      trainOwed: (read().line2View as { trainOwed?: boolean }).trainOwed,
     })}`,
   );
 };

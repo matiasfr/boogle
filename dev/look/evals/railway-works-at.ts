@@ -1,8 +1,8 @@
 // J2 poses, plus a no-jump walk through the real colliders. Works on a fresh world; with --rail-seed (look's seeded
 // room, look-rail) it first waits for the accepted Works state, then prints the adapter's `works` and `shed`.
-const { inspectRailwayLegacy } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { account, inspectRailway, railPid, railReady, rw, shed, trains, works, worksStage } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -12,15 +12,13 @@ const { WORKS_WALK } = (await import(
   '/src/entities/railway/works-shape.ts' as string
 )) as typeof import('../../../src/entities/railway/works-shape.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const deadline = performance.now() + 20000;
-while (!inspectRailwayLegacy()?.ready && performance.now() < deadline) await wait(50);
-if (!inspectRailwayLegacy()?.ready || !me.body) throw new Error('Works view not ready');
+if (!(await railReady(20000)) || !me.body) throw new Error('Works view not ready');
 const query = new URLSearchParams(location.search),
   mode = query.get('worksat') ?? 'halt';
 if (query.get('room') === 'look-rail') {
   const seeded = performance.now() + 15000;
-  while ((inspectRailwayLegacy()?.works.stage ?? 'dormant') === 'dormant' && performance.now() < seeded) await wait(50);
-  if (inspectRailwayLegacy()?.works.stage === 'dormant') console.log('WORKS seed: still dormant (a seed before Q6?)');
+  while (worksStage(rw()) === 'dormant' && performance.now() < seeded) await wait(50);
+  if (worksStage(rw()) === 'dormant') console.log('WORKS seed: still dormant (a seed before Q6?)');
 }
 const poses: Record<
   string,
@@ -58,12 +56,12 @@ if (mode === 'wagon') {
   const end = performance.now() + 240000;
   const home = () => {
     // The wagon's train (v26: whichever of line 2's two it coupled to).
-    const row = inspectRailwayLegacy()!.trains.find((r) => r.wagon);
+    const row = trains(rw()).find((r) => r.wagon);
     return !!row && row.phase === 0 && row.at === 0;
   };
   while (!home() && performance.now() < end) await wait(100);
   const train = (
-    inspectRailwayLegacy() as unknown as { line2View: { trains: { wagon?: unknown; cars: unknown[] }[] } }
+    inspectRailway() as unknown as { line2View: { trains: { wagon?: unknown; cars: unknown[] }[] } }
   ).line2View.trains.find((t) => t.wagon);
   console.log(
     `WORKS wagon pose: line 2 at the village ${home()} ${JSON.stringify({ wagon: train?.wagon, cars: train?.cars })}`,
@@ -83,10 +81,10 @@ setTimeout(frame, 100);
 if (query.get('workscam') === 'play' && query.get('player') === '2') setTimeout(() => window.__debugCam?.clear(), 300);
 shot.__worksPrepared = true;
 {
-  const state = inspectRailwayLegacy()!;
-  console.log(`WORKS pose ${mode} ${JSON.stringify({ works: state.works, shed: state.shed, foot: state.foot })}`);
-  const view = state as typeof state & { worksView?: unknown };
-  console.log(`WORKS view ${JSON.stringify(view.worksView)}`);
+  const w = rw();
+  const foot = account(w, railPid())?.foot ?? 0;
+  console.log(`WORKS pose ${mode} ${JSON.stringify({ works: works(w), stage: worksStage(w), shed: shed(w), foot })}`);
+  console.log(`WORKS view ${JSON.stringify(inspectRailway()!.worksView)}`);
 }
 if (query.get('workswalk') === '1' && action) {
   const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
