@@ -12,7 +12,9 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { cloneRailway, railPredict, railwayOf, worldOf } from '../src/world/railway-predict.ts';
+import { railPredict } from '../src/world/railway-predict.ts';
+import { railwayAt } from '../src/world/railway-replicate.ts';
+import { railwayOf } from './helpers/railway-model.ts';
 import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
@@ -276,9 +278,12 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
     // The server: run rows, and the job clock at its own tick (the clock follows from what the tick advanced).
     same(r.api.railway, server, undefined, `server ${where}`);
     same(r.api.railway, server, tick, `server clock ${where}`);
-    // The confirmed mirror at the tick: its run rows never move, the clock is what the views see.
+    // The confirmed mirror at the tick: its run rows never move, the clock is what the views see. Since M12 the old
+    // side's clocks are jobProgress too (railwayAt; the mirror's advance() is gone), so the clock lines below hold the
+    // ingest world equal to the published one; the clock's own arithmetic is held to the rule tick by the server
+    // comparison above.
     const m = r.mirror;
-    const shown = m.at(tick);
+    const shown = railwayAt(m.confirmed(), tick);
     same(shown, m.world(), tick, `mirror ${where}`);
     const jobs = old.railJobs(shown);
     for (let k = 0; k < jobs.length; k++)
@@ -299,13 +304,12 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
     for (const pid of PLAYERS) {
       const a = q.railAccount(m.world(), pid);
       if (!a) continue;
-      const clone = cloneRailway(shown);
-      const cw = worldOf(clone)!;
-      assert.notEqual(cw, m.world());
+      const cw = q.cloneWorld(m.confirmed());
+      assert.notEqual(cw, m.confirmed());
       const before = q.railJobs(cw).map((j) => j.job.stock);
       const station = LINE1_STATIONS[q.railActiveStation(cw)]!;
       railPredict(
-        clone,
+        cw,
         pid,
         {
           op: 'rail.deposit',
@@ -320,7 +324,7 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
       const qk = q.qActive(cw);
       if (qk >= 0)
         railPredict(
-          clone,
+          cw,
           pid,
           {
             op: 'rail.deposit',
@@ -345,8 +349,7 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
         qj.railStock === LINE2_STATIONS[qk]!.bill[1]
       )
         heldQ++;
-      m.at(tick, clone);
-      same(clone, cw, tick, `clone ${pid} ${where}`);
+      same(railwayAt(cw, tick), cw, tick, `clone ${pid} ${where}`);
       clones++;
     }
     funded = q.railJobs(server).filter((j) => j.job.start >= 0).length;
@@ -468,7 +471,9 @@ test('on random rows every fact equals its twin (the stretches, the cart, the tr
       w.spawn([Account, { pid, carry: int(8), stone: int(4), rails: int(4), foot: int(2), epoch: 1 }]);
     for (let k = int(5); k > 0; k--) w.spawn([Pile, { x: int(1000), z: int(1000), n: 1 + int(8), kind: int(4) }]);
     // Drawn last, so the rows above are what they were before M10 added these: felled trees at every age, a big load.
-    RAILWAY_SOURCES.forEach((_s, slot) => set(Tree, w.lookup(Tree, slot)!, { left: coin() ? 0 : int(9), age: int(40) }));
+    RAILWAY_SOURCES.forEach((_s, slot) =>
+      set(Tree, w.lookup(Tree, slot)!, { left: coin() ? 0 : int(9), age: int(40) }),
+    );
     if (coin()) set(Boiler, q.boilerId(w), { state: 'held', holder: pids[int(4)]! });
     same(railwayOf(w), w, undefined, `round ${round}`);
   }
@@ -505,16 +510,16 @@ test('read.world() is the world behind what the views see: whole before a packet
   hear!({ t: 'r:session', to: 'a', epoch: 1, next: 1 }, SERVER_ID);
   r.pump();
   assert.equal(read.status(), 'ready');
-  assert.equal(read.world(), mirror.world(), 'nothing pending: the confirmed mirror');
+  assert.equal(read.world(), mirror.confirmed(), 'nothing pending: the confirmed mirror');
   assert.equal(read.tick(), adapter.inspect().tick);
   // A predicted wake: the views see the clone, and so does read.world().
   assert.equal(adapter.wake(), true);
   const clone = read.world();
-  assert.notEqual(clone, mirror.world());
+  assert.notEqual(clone, mirror.confirmed());
   assert.equal(clone.count(Rail), 1);
   assert.equal(adapter.inspect().pending, 1);
   const awake = (w: World) => w.get(Rail, q.railId(w))!.awake;
-  assert.equal(awake(mirror.world()), -1);
+  assert.equal(awake(mirror.confirmed()), -1);
   assert.equal(awake(clone), adapter.inspect().awake, 'the clone is what inspect() shows');
   assert.ok(awake(clone) >= 0);
   assert.equal(read.world(), clone, 'the same world on a second read in the frame');

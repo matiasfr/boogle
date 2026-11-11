@@ -1,9 +1,9 @@
 // The authored opening scenery and local cast, with no legacy run, job or save owner.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { RailwayInspection } from '../../adapters/railway.ts';
-import { townPopulation, townReadOf } from '../../sim/town-facts.ts';
-import { createTownGreeter } from './greeter.ts';
+import { townPopulation } from '../../sim/town-facts.ts';
+import { townReadOfWorld } from '../town/town-read.ts';
+import { createTownGreeter, type GreeterRead } from './greeter.ts';
 import { forgePoles } from './forge-finish.ts';
 
 type OpeningEnv = {
@@ -15,7 +15,8 @@ type OpeningEnv = {
   awake: () => boolean;
   hush: () => boolean;
   pathOpen: () => boolean;
-  progress: () => RailwayInspection;
+  /** The railway as the views see it (the read facade's world and ready, view.ts's phase this frame). */
+  progress: GreeterRead;
   /** The engines' driving stools (train-view.ts), for the little guy at the controls. */
   driver: (
     line: number,
@@ -158,7 +159,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   const greeter = await createTownGreeter(owner, env.progress);
   let pathOpen = false;
   let population = -1;
-  const people = () => townPopulation(townReadOf(env.progress()));
+  const people = () => townPopulation(townReadOfWorld(env.progress.world()));
   return {
     targets: greeter.targets,
     numbers(score: { money: number; logs: number; metres: number }, snapshot = false) {

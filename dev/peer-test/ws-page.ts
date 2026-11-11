@@ -17,9 +17,8 @@ import type { RailAction, RailAccount } from '../../src/sim/railway.ts';
 import { railActiveStation } from '../../src/sim/railway-queries.ts';
 import { railPhase } from '../../src/sim/railway-queries-line1.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
-import { account, accounts, qjobs, tree } from '../../src/sim/railway-rows.ts';
-import { Pile, createRailwayWorld } from '../../src/sim/railway-components.ts';
-import { worldOf } from '../../src/world/railway-predict.ts';
+import { account, accounts, cart, qjobs, train, tree } from '../../src/sim/railway-rows.ts';
+import { Pile } from '../../src/sim/railway-components.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
 import {
@@ -236,12 +235,11 @@ function startWorld(room: Room) {
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const rules = installRules(w, land);
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
-  // What the probes read (ECS M11): the world the mirror's read model is linked to, which happens only once a whole
-  // state has arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and stays through
-  // a refill and a reset, as the read model does; a fresh railway before that. Not `rail.synced()`: it goes false
-  // during a refill while the world is still whole. Timed facts take the tick (a client's world holds no job clock).
-  const fresh = createRailwayWorld();
-  const mirrored = () => worldOf(rail!.railway) ?? fresh;
+  // What the probes read (ECS M11, M12): the mirror's confirmed world, published only once a whole state has fully
+  // arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and kept through a refill
+  // and a reset; a fresh railway before that. Not `rail.synced()`: it goes false during a refill while the world is
+  // still whole. Timed facts take the tick (a client's world holds no job clock).
+  const mirrored = () => rail!.confirmed();
   railRoom = rail ? delayedRoom(room, LAT) : null;
   T.railStartAt = Date.now();
   const adapter =
@@ -343,7 +341,8 @@ function startWorld(room: Room) {
     adapter.onReset(() => resets++);
     T.railTrain = (k) => {
       // Train slot k (RAIL_TRAINS), on its own line.
-      const row = adapter.inspect().trains[k];
+      // The views' world (the predicted clone while an action is pending), as the read model's trains were.
+      const row = Number.isInteger(k) && k >= 0 && k < RAIL_TRAINS.length ? train(adapter.read.world(), k) : null;
       if (!row) return null;
       const tick = adapter.tickNow();
       return {
@@ -357,7 +356,7 @@ function startWorld(room: Room) {
       };
     };
     T.railCart = () => {
-      const c = adapter.inspect().line2.cart;
+      const c = cart(adapter.read.world());
       const tick = adapter.tickNow();
       return { along: cartAlong(c, tick), phase: c.phase, tick, at: Date.now() };
     };
@@ -371,17 +370,23 @@ function startWorld(room: Room) {
     T.railLoad = ({ ms, every, first }) =>
       new Promise((resolve) => {
         let k = 0;
-        let tree = first;
+        let source = first;
         let pressed = 0;
         const t = setInterval(() => {
-          const s = adapter.inspect();
+          // The rows the views read (the predicted world while actions are pending): the tree's logs left, your
+          // carry, and the first named pile (a predicted drop's temporary id is negative) at the tree's spot.
+          const w = adapter.read.world();
+          const carry = account(w, PID)?.carry ?? 0;
           const phase = k++ % 3;
-          while (s.sources[tree] === 0) tree = (tree + 1) % RAILWAY_SOURCES.length;
-          const [id, x, z] = RAILWAY_SOURCES[tree]!;
+          while (tree(w, source).left === 0) source = (source + 1) % RAILWAY_SOURCES.length;
+          const [id, x, z] = RAILWAY_SOURCES[source]!;
           railAt = [x, 3000, z];
-          const mine = s.piles.find((p) => p.id > 0 && p.x === x && p.z === z && p.y === 3000);
+          let mine: { id: number } | undefined;
+          w.each([Pile], (pid, p) => {
+            if (!mine && pid > 0 && p.x === x && p.z === z && p.y === 3000) mine = { id: pid };
+          });
           pressedAt = performance.now();
-          if (phase === 1 && s.carry > 0) adapter.drop(x, 3000, z, Math.min(2, s.carry), 0);
+          if (phase === 1 && carry > 0) adapter.drop(x, 3000, z, Math.min(2, carry), 0);
           else if (phase === 2 && mine) adapter.take(mine.id);
           else adapter.chop(id, 0, false);
           pressedAt = -1;

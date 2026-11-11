@@ -1090,6 +1090,34 @@ later change with a bundle report. Place's remaining callers get one owner from 
   - **Reviewer attacks:** thresholds shown early (a bill that reads complete before the server says so); effects
     played twice (once predicted, once confirmed); a correction with no recipient; a late joiner mid-chunk, a refill
     and a `reset()` each reading a half-filled or empty world; memory held by retained clones.
+  - [x] **a and b built** (11 November, branch `ecs/m12`, not shipped; the step stays open). **a:** opening-view's
+    `progress` and the greeter read the facade (world, view.ts's frame phase, `ready()`); back-down's `loadOf` and
+    `onlyALoad` are deleted (sources and line-cargo call `loadIn`/`onlyALoadIn`); ws-page's load cycle, `railTrain` and
+    `railCart` read rows; `createRailwayProgressMarks` takes a world; `railServing`, `railTrainAsked`, `railTrainHeld`,
+    `railOpenEnd`, `railStopsNow`, `railTrainsOf` and `RailTrainsRead` leave the adapter (review-v26 calls the world
+    query; M10 a/c and R4a keep them as a frozen oracle in `test/helpers/railway-m10a-twins.ts`, M12b's). **b:** the
+    mirror publishes `confirmed()` as described above (packets write an ingest world; a clone is published at the end
+    of a packet without `m` on a whole state; marks drained per packet so the clone shares tables; `reset()` keeps the
+    last published world); `createPredictor<World, Act>` on `cloneWorld(confirmed())`; `railPredict` takes the world;
+    `railwayOf`, `worldOf`, `cloneRailway`, the `WeakMap`, `rail.railway`, `rail.at()` and `advance()` are deleted; the
+    adapter's own reads (`available`, `holds`, `submit`'s checks, `beamChop`, `take`, `deposit`, the marks) are rows and
+    queries. A published world is never written, so a row held from it keeps its value (not live, unlike the mirror
+    before): views re-read at each entry point, as M10 left them. Proof: `test/railway-m12.test.ts`, a per-frame trace
+    of every client (the facade's world hash, next id, tick, live tick, ready, pending, stalled, status; the whole
+    `inspect()` bar its read counters; every accepted, corrected, remap and reset event) recorded on main and matched
+    after the change, 27 seeds, two lagged players pressing every op, a disconnect and refill, a late joiner, a predicted
+    press; plus the published world's identity and a late join's chunks. Loop hash unchanged (`ab52869e…`).
+    **Not done, and why:** `inspect()`, `readState`, `buildState` and `inspection` stay, built only when asked from
+    `read.world()` with `railwayAt` (`src/world/railway-replicate.ts`, the read model's last client-side use): view.ts's
+    `inspectRailway()` spreads it and the dev bots, looks, scenarios and `ws-railway.ts` (`T.railAdapter().state`) read
+    its fields, as do the M10 proof tests and the adapter tests (about 200 calls). Deleting it needs a call on the oracle
+    (a debug snapshot built from rows in `src/debug`, or the consumers moved to rows) and those tests rewritten. The
+    split into `railway-session.ts`, `-intents.ts` and `-effects.ts` waits for that (the session holds the inspection
+    until then). `test/railway-replicate.test.ts` predicts on worlds but still asserts through the read model of the
+    clone (`shownOf`); `railway-adapter.test.ts` and `-m1-review` still read `inspect()`. The old side of the
+    differential tests builds the model through `test/helpers/railway-model.ts`, which took `railway-marks.test.ts`'s
+    line on the read model's importer list. `dev/spikes/ecs/predict-cost.ts` (outside the typecheck) still calls the
+    deleted `cloneRailway`; M12b deletes it. No `npm run load` and no look (the change is meant to show nothing).
 - [ ] **M12b. Delete the read model.** _High by path (`src/sim`), deletions only. After M8b, T1 to T7, M10, M11 and
       M12._
   - Delete `src/sim/railway-read-model.ts`, `src/sim/railway-live.ts`, `test/railway-live.ts`,

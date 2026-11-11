@@ -14,7 +14,6 @@ import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { Forge, Job, QJob, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { job, qjob } from '../src/sim/railway-queries.ts';
-import { railwayOf } from '../src/world/railway-predict.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { BEATS, RAIL_STOPS } from '../dev/look/segments.ts';
 
@@ -32,8 +31,7 @@ function markNames() {
   for (const op of RAIL_ACTIONS)
     for (const [name] of railwayActionMarks({ op } as unknown as RailwayIntent, 1, true)) names.add(name);
   // A world with every line-one and line-two job funded and laid, the forge lit and the trains unlocked, or none of it
-  // (ECS M11). The Works and Ring Island rows stay at their defaults. The marks still take the read model until M12,
-  // so the world goes in as the read model built from it.
+  // (ECS M11). The Works and Ring Island rows stay at their defaults. The marks read its rows (M12).
   const state = (on: boolean) => {
     const w = createRailwayWorld();
     if (on) {
@@ -44,7 +42,7 @@ function markNames() {
       w.mut(Forge, w.single(Forge))!.lit = 0;
       w.mut(Rail, w.single(Rail))!.trains = 0;
     }
-    return railwayOf(w);
+    return w;
   };
   const progress = createRailwayProgressMarks();
   progress(state(false));

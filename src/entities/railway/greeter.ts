@@ -5,7 +5,10 @@ import { conversation } from '../../player/conversation.ts';
 import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { RailwayInspection } from '../../adapters/railway.ts';
+import type { ReadWorld } from '../../sim/railway-rows.ts';
+import { forge } from '../../sim/railway-rows.ts';
+import { line2Completed, line2SeaOpen } from '../../sim/railway-queries-line2.ts';
+import type { railPhase } from '../../sim/railway-queries-line1.ts';
 
 export const GREETER_LINES = {
   asleep: [
@@ -35,7 +38,14 @@ export const GREETER_LINES = {
   ],
 };
 
-export async function createTownGreeter(owner: OwnedView, read: () => RailwayInspection) {
+/** What the greeter reads of the railway: the world the views see, line one's phase this frame and whether an action
+ * can be sent (the read facade's). */
+export type GreeterRead = {
+  world: () => ReadWorld;
+  phase: () => ReturnType<typeof railPhase>;
+  ready: () => boolean;
+};
+export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   const [folk, talk, layout, shore, land] = await Promise.all([
     import('../../place/folk.ts'),
     import('../../place/talk.ts'),
@@ -67,11 +77,12 @@ export async function createTownGreeter(owner: OwnedView, read: () => RailwayIns
   let lastStage = '';
   let cursor = 0;
   const stage = () => {
-    const s = read();
-    if (s.phase === 'asleep' || s.phase === 'waking') return 'asleep';
-    if (s.line2?.seaOpen) return 'onward';
-    if ((s.line2?.completed ?? 0) >= 2) return 'needle';
-    if ((s.line2?.forge.lit ?? -1) >= 0) return 'cart';
+    const phase = read.phase();
+    if (phase === 'asleep' || phase === 'waking') return 'asleep';
+    const w = read.world();
+    if (line2SeaOpen(w)) return 'onward';
+    if (line2Completed(w) >= 2) return 'needle';
+    if (forge(w).lit >= 0) return 'cart';
     return 'forge';
   };
   const open = () => {
@@ -112,7 +123,7 @@ export async function createTownGreeter(owner: OwnedView, read: () => RailwayIns
     targets(): Interactable[] {
       const p = me.body?.position;
       return p &&
-        read().ready &&
+        read.ready() &&
         !conversation.open &&
         Math.hypot(p.x - g.x, p.z - g.z) < 3.3 &&
         Math.abs(p.y - g.fy!) < 3

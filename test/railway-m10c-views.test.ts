@@ -14,12 +14,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import {
-  createRailwayAdapter,
-  railMovement,
-  railTrainsOf as inspectedTrainsOf,
-  type RailwayInspection,
-} from '../src/adapters/railway.ts';
+import { createRailwayAdapter, railMovement, type RailwayInspection } from '../src/adapters/railway.ts';
+import { railTrainsOf as inspectedTrainsOf } from './helpers/railway-m10a-twins.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';

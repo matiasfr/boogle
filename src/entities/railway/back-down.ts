@@ -2,7 +2,7 @@
 // the load down"). Composed on the client from the ops that exist: `rail.drop` for every pile (it takes up to 8 a pile,
 // so a full back of 16 is two), then whatever the press was for. The host applies them in order; nothing new is on the
 // wire. Used by hold Drop (sources.ts) and by shouldering a footing, the great beam or the boiler with a loaded back.
-import type { RailwayAdapter, RailwayInspection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway.ts';
 import { me } from '../../player/player.ts';
 import { heldId } from '../../player/inventory.ts';
 import { PLAYER_R } from '../../constants.ts';
@@ -17,14 +17,8 @@ let groundAt: ((x: number, z: number) => number) | null = null;
 /** The terrain height, once it has loaded (sources.ts); until then a pile lands at your feet's height. */
 export const useGround = (fn: (x: number, z: number) => number) => void (groundAt = fn);
 
-/** Logs, stone and rails on your back (what a set-down moves), per pile kind 0, 1, 2. */
-export const loadOf = (s: RailwayInspection): [number, number, number] => [
-  s.availableCarry,
-  s.availableStone,
-  s.availableRails,
-];
-/** The same load, read off the rows (logs, stone, rails on `pid`'s back; your pending actions are in the predicted
- * world already). The other groups' callers still pass an inspection to `loadOf`; they move here with their group. */
+/** Logs, stone and rails on `pid`'s back (what a set-down moves), per pile kind 0, 1, 2, read off the rows: your
+ * pending actions are in the predicted world already. */
 export const loadIn = (w: ReadWorld, pid: string): [number, number, number] => {
   const a = account(w, pid);
   return [a?.carry ?? 0, a?.stone ?? 0, a?.rails ?? 0];
@@ -33,14 +27,6 @@ const total = (w: ReadWorld, pid: string) => loadIn(w, pid).reduce((a, b) => a +
 
 /** The only thing between you and a big load is a load of logs, stone or rails: no footing, great beam or boiler on
  * your back, nothing in your hand. (Those cases stay refused: "Empty your back first" is reachable only there.) */
-export const onlyALoad = (s: RailwayInspection, hand = true) =>
-  loadOf(s).some((n) => n > 0) &&
-  !s.foot &&
-  s.beam?.holder !== s.pid &&
-  s.line2.boiler.holder !== s.pid &&
-  (!hand || !heldId());
-
-/** `onlyALoad` on the rows. */
 export const onlyALoadIn = (w: ReadWorld, pid: string, hand = true) =>
   total(w, pid) > 0 &&
   !account(w, pid)?.foot &&

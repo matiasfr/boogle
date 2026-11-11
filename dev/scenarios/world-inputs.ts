@@ -120,7 +120,7 @@ export default {
       const { RAILWAY_SOURCES } = await import('/src/sim/railway-layout.ts');
       return {
         registry: sync.registry(),
-        installed: !!railwayMirror?.railway.line,
+        installed: !!railwayMirror?.confirmed(),
         catalog: {
           version: line.LINE1_CATALOG, stations: line.LINE1_STATIONS, rocks: line.LINE1_ROCKS,
           greatTree: line.LINE1_GREAT_TREE, axe: line.LINE1_AXE_STAND, jump: line.LINE1_JUMP_DEVICE,

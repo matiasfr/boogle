@@ -1,7 +1,8 @@
 // The railway as a client sees it (docs/plans/replication.md, R1a and R1b): the server's state mirrored through
-// replication, read as today's `Railway` so the views keep their shape. Actions go up with the actor's position and
-// action time. Your own material actions are predicted (R1b): the same rule the server runs (railApply, through
-// railPredict) applies to a copy of the mirror at once, the views read that predicted state, and the action's effect
+// replication into worlds the views read through `read` (docs/plans/ecs-migration-railway.md, M12). Actions go up with
+// the actor's position and action time. Your own material actions are predicted (R1b): the same rule the server runs
+// (railApply, through railPredict) applies to a clone of the confirmed world at once, the views read that predicted
+// world, and the action's effect
 // plays the moment you press. Each packet drops the actions it settled and replays the rest on the new mirror. When the
 // server's answer (`ok`: what each of your accepted actions moved), or a replay on a newer mirror, gives you less than
 // you were shown (a refusal, the last log taken by someone else), onCorrected names what went back and to whom, so the
@@ -24,8 +25,6 @@ import {
   railYaw,
   railJobs,
   railActiveStation,
-  railCarry,
-  railAccount,
   railCounts,
   railPhase,
   railPanelCount,
@@ -42,7 +41,7 @@ import {
   type RailMaterial,
   type LineStationId,
 } from '../sim/railway-line-layout.ts';
-import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
+import { LINE_TIMING } from '../sim/railway-line.ts';
 import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import {
   line2Active,
@@ -56,31 +55,35 @@ import {
   line2Served,
   railCarryMax,
 } from '../sim/railway-line2.ts';
-import {
-  LINE_HALTS,
-  TRAIN,
-  TRAIN_PHASE,
-  railRingOpen,
-  reqHas,
-  trainCanBrake,
-  trainStopsOf,
-  type RailTrain,
-} from '../sim/railway-train.ts';
-import { trainStops } from '../sim/railway-line2.ts';
-import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
-import { LINE_SLOTS, atEnd, trainPose, trainServes, type RailLineRow } from '../sim/railway-trains.ts';
+import { LINE_HALTS, railRingOpen, reqHas } from '../sim/railway-train.ts';
+import { RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { RAIL_ROCKS, WORKS_ROCKS } from '../sim/railway-works-layout.ts';
 import { pierNeed, worksStage } from '../sim/railway-works.ts';
-import type { ReadWorld } from '../sim/railway-rows.ts';
+import {
+  account as accountRow,
+  aperture,
+  beam as beamRow,
+  boiler as boilerRow,
+  line as lineRow,
+  rail as railRow,
+  shed as shedRow,
+  train as trainRow,
+  works as worksRow,
+  type ReadWorld,
+} from '../sim/railway-rows.ts';
+import { Pile } from '../sim/railway-components.ts';
+import { activeStation, cloneWorld } from '../sim/railway-queries.ts';
+import { railBeamChoppable } from '../sim/railway-queries-line1.ts';
+import { line2Trains as line2TrainsIn } from '../sim/railway-queries-line2.ts';
+import { trainStops } from '../sim/railway-queries-trains.ts';
+import type { World } from '../ecs/index.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
 import { createRailwayClock, RAIL_CLOCK_EVERY_MS, RAIL_CLOCK_TIMEOUT_MS } from '../world/railway-clock.ts';
-import type { RailwayMirror } from '../world/railway-replicate.ts';
+import { railwayAt, type RailwayMirror } from '../world/railway-replicate.ts';
 import { createPredictor } from '../world/replicate-client.ts';
 import {
   RAIL_CADENCE_SLACK_MS,
   RAIL_PREDICTED,
-  cloneRailway,
-  worldOf,
   railCadence,
   railParseTempPile,
   railPredict,
@@ -182,58 +185,6 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   glideTurnMax: (tune.get('railGlideTurnMax') * Math.PI) / 180,
   glideDeploy: tune.get('railGlideDeploy') / 1000,
 });
-/** What the per-train reads need of an inspected state (docs/plans/generic-lines.md, v26). */
-export type RailTrainsRead = {
-  readonly trains: readonly Readonly<RailTrain>[];
-  readonly lines: readonly Readonly<RailLineRow>[];
-  readonly line2: { readonly trains: boolean; readonly trainsAt: number; readonly completed: number };
-  /** Ring Island's gap (v27): the railhead's head and the rivet decide line 2's stops past the Pier. */
-  readonly ring: { readonly set: number; readonly joined: number };
-};
-/** Line `line`'s trains, in slot order, with their slots (replaces v25's `line2.train[k]`). */
-export const railTrainsOf = (s: Pick<RailTrainsRead, 'trains'>, line: number) =>
-  LINE_SLOTS[line]!.map((slot) => ({ slot, row: s.trains[slot]! }));
-/** The line train `slot` runs on. */
-export const railLineOf = (slot: number) => RAIL_TRAINS[slot]!.line;
-/** The stops line `line` serves now (line 2's pier once Q6 is laid; the Railhead at its head once Q7 is; Ring Island
- * once the rivet is struck). */
-export const railStopsNow = (s: Pick<RailTrainsRead, 'line2' | 'ring'>, line: number) =>
-  trainStopsOf(line, s.line2.completed, railRingOpen(s));
-/** The train a lever ask at (`line`, `stop`) heading `dir` is for at `tick`: the sim's trainServes over the mirrored
- * rows, -1 for none. */
-export function railServing(s: RailTrainsRead, line: number, stop: number, dir: number, tick: number) {
-  return trainServes((k) => s.trains[k]!, line, railStopsNow(s, line), stop, dir, Math.floor(tick));
-}
-/** Whether train `slot` is on its way to a request stop it will make: its riders' ask at a halt it can still brake for
- * (one asked too late, which it runs through and drops at its turnback, leaves the lamp dark), or a lever ask at a
- * middle halt it is the serving train for (its amber stop lamp; design review, finding 2). Off while it stands at a
- * halt. */
-export function railTrainAsked(s: RailTrainsRead, slot: number, tick: number) {
-  const r = s.trains[slot]!,
-    line = railLineOf(slot),
-    stops = railStopsNow(s, line),
-    n = stops.length,
-    dir = r.track ? -1 : 1;
-  if (!s.line2.trains || (r.phase === TRAIN_PHASE.STAND && r.at >= 0)) return false;
-  const lineReq = s.lines[line]!.req,
-    pose = trainPose(r, line, stops, Math.floor(tick));
-  for (let k = 1; k < n - 1; k++) {
-    if (reqHas(r.req, k, dir, n) && (r.to === k || trainCanBrake(pose.s, pose.v, dir, stops[k]!, RAIL_LINES[line]!)))
-      return true;
-    if (reqHas(lineReq, k, dir, n) && railServing(s, line, k, dir, tick) === slot) return true;
-  }
-  return false;
-}
-/** Whether train `slot` is held (its hold lamp; the boards' held departure): awake and standing at a signal, or at a
- * halt a second past its dwell, waiting on the block ahead or the headway at an end. */
-export function railTrainHeld(s: RailTrainsRead, slot: number, tick: number) {
-  const r = s.trains[slot]!;
-  if (!s.line2.trains || r.phase !== TRAIN_PHASE.STAND || tick < s.line2.trainsAt + TRAIN.wakeTicks) return false;
-  return r.at < 0 || tick >= r.depart + TRAIN.dwellTicks + 10;
-}
-/** Whether halt `stop` of `line` is one of its open ends now. */
-export const railOpenEnd = (s: Pick<RailTrainsRead, 'line2' | 'ring'>, line: number, stop: number) =>
-  atEnd(stop, railStopsNow(s, line));
 export type RailwayMovement = {
   beamSoloSpeed: number;
   beamHelpSpeed: number;
@@ -369,35 +320,41 @@ function implied(v: Record<string, unknown>) {
   return out;
 }
 /** Ops whose whole result is one shared flag: when it holds anyway (someone else woke the machine), losing the race
- * gives nothing back. */
-const holds = (s: Railway, op: string, event?: RailwayIntent) =>
+ * gives nothing back. Read on the confirmed world's rows. */
+const holds = (w: World, op: string, event?: RailwayIntent) =>
   op === 'rail.boilerFit'
-    ? line2Trains(s)
+    ? line2TrainsIn(w)
     : op === 'rail.call' && event?.op === 'rail.call'
       ? (() => {
           // A lever ask is the line's (`Line.req`), a rider's its own train's.
           const h = LINE_HALTS[event.id];
-          const req = !h ? undefined : event.train === undefined ? s.lines[h.line]?.req : s.trains[event.train]?.req;
-          return req !== undefined && reqHas(req, h!.stop, event.dir, trainStops(s, h!.line).length);
+          const req = !h
+            ? undefined
+            : event.train === undefined
+              ? lineRow(w, h.line)?.req
+              : event.train >= 0 && event.train < RAIL_TRAINS.length
+                ? trainRow(w, event.train)?.req
+                : undefined;
+          return req !== undefined && reqHas(req, h!.stop, event.dir, trainStops(w, h!.line).length);
         })()
       : op === 'rail.wake'
-        ? s.awake >= 0
+        ? railRow(w).awake >= 0
         : op === 'rail.lever'
-          ? !!s.line2?.lever
+          ? railRow(w).lever
           : op === 'rail.seaSwitch'
-            ? !!s.line2?.sea
+            ? railRow(w).sea
             : op === 'rail.pack'
-              ? !!s.line2?.pack
+              ? railRow(w).pack
               : op === 'rail.glide'
-                ? !!s.line2?.glide
+                ? railRow(w).glide
                 : op === 'rail.strike' && event?.op === 'rail.strike'
                   ? event.id === 2
-                    ? (s.ring?.joined ?? -1) >= 0
-                    : !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
+                    ? aperture(w).joined >= 0
+                    : !!(worksRow(w).seams & (event.id ? 2 : 1))
                   : op === 'rail.brace'
-                    ? (s.ring?.brace ?? 1) !== 1
+                    ? aperture(w).brace !== 1
                     : op === 'rail.turn' && event?.op === 'rail.turn'
-                      ? s.shed?.table === event.to
+                      ? shedRow(w).table === event.to
                       : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
@@ -470,7 +427,7 @@ export function createRailwayAdapter({
   /** The client's monotonic clock in ms: action times, the server step estimate and the stall cue. */
   now?: () => number;
 }) {
-  const confirmed = rail.railway;
+  const confirmed = () => rail.confirmed();
   const progressMarks = createRailwayProgressMarks();
   const effects = new Set<(event: RailwayAccepted) => void>();
   const corrections = new Set<(c: RailwayCorrection) => void>();
@@ -535,11 +492,12 @@ export function createRailwayAdapter({
      * was evaluated (the tick and the movement tunables) and how often a read was really rebuilt. */
     reads: { frames: 0, inspects: 0, readStates: 0, keyEvals: 0, stateBuilds: 0, inspectionBuilds: 0 },
   };
-  const predictor = createPredictor<Railway, Act>({
-    confirmed: () => confirmed,
+  // The predicted state is a copy-on-write clone of the confirmed world: only the tables a prediction writes are copied.
+  const predictor = createPredictor<World, Act>({
+    confirmed,
     clone: (x) => {
       results.clear();
-      return cloneRailway(x);
+      return cloneWorld(x);
     },
     apply: (x, a, [e, r]) => {
       if (a.predict) results.set(r, railPredict(x, pid, { ...a.intent, epoch: e, request: r } as RailAction, a.tick));
@@ -549,8 +507,8 @@ export function createRailwayAdapter({
   /** What the views read: the mirror, with your pending actions applied. */
   // While a whole state comes again (a lost connection, a resync), what was last shown stays shown, its timed jobs still
   // advancing: no blink, no snap. The new state replaces it at its last chunk, and the views ease to it.
-  let frozen: Railway | null = null;
-  const view = () => frozen ?? (predictor.pending().length ? predictor.state() : confirmed);
+  let frozen: World | null = null;
+  const view = (): World => frozen ?? (predictor.pending().length ? predictor.state() : confirmed());
   function refill() {
     if (synced) frozen ??= view();
     rail.refill();
@@ -562,7 +520,7 @@ export function createRailwayAdapter({
     connected &&
     synced &&
     epoch > 0 &&
-    railAccount(confirmed, pid)?.epoch === epoch &&
+    accountRow(confirmed(), pid)?.epoch === epoch &&
     !stopped() &&
     predictor.pending().length < RAILWAY_WINDOW;
 
@@ -632,7 +590,7 @@ export function createRailwayAdapter({
       const intent = e === ep ? pending.get(r) : undefined;
       if (intent) playMark('railway refused', { op: intent.op, reason, authority: 'server' });
     }
-    if (consistent) for (const [name, data] of progressMarks(confirmed, rebuilt)) playMark(name, data);
+    if (consistent) for (const [name, data] of progressMarks(confirmed(), rebuilt)) playMark(name, data);
     const events: RailwayAccepted[] = [];
     for (const raw of p.ev ?? []) {
       const full = implied(raw);
@@ -678,7 +636,7 @@ export function createRailwayAdapter({
     const standing = new Set<string>();
     const differ = (was: Shown, kept: number, reason: RailwayCorrection['reason'], effect?: RailEffect | null) => {
       if (kept > was.n) more.push(Object.freeze({ ...was.event, ...(effect ?? {}), accepted: kept - was.n }));
-      else if (kept < was.n && holds(confirmed, was.event.op, was.event)) standing.add(was.event.op);
+      else if (kept < was.n && holds(confirmed(), was.event.op, was.event)) standing.add(was.event.op);
       else if (kept < was.n) back.push({ event: was.event, kept, lost: was.n - kept, reason });
     };
     for (const [r, reason] of settled) {
@@ -787,12 +745,12 @@ export function createRailwayAdapter({
     const pressed = now();
     if (!available() || !room || next >= RAILWAY_MAX_INT) return false;
     const v = view();
-    const account = railAccount(v, pid);
-    const beam = v.line?.beam;
-    if (beam?.state === 'held' && beam.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
-    const boiler = v.line2?.boiler;
+    const account = accountRow(v, pid);
+    const beam = beamRow(v);
+    if (beam.state === 'held' && beam.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
+    const boiler = boilerRow(v);
     if (
-      boiler?.state === 'held' &&
+      boiler.state === 'held' &&
       boiler.holder === pid &&
       (!NOT_MATERIAL.has(intent.op) || NOT_WHILE_HAULING.has(intent.op))
     )
@@ -808,7 +766,7 @@ export function createRailwayAdapter({
       return false;
     if (
       (intent.op === 'rail.beamTake' || intent.op === 'rail.boilerTake') &&
-      ((account ? railCarry(account) : 0) || foot || predictor.pending().length)
+      ((account ? account.carry + account.stone + account.rails : 0) || foot || predictor.pending().length)
     )
       return false;
     const t = tick();
@@ -865,7 +823,7 @@ export function createRailwayAdapter({
   // only with a packet (the mirror's applied count), the predicted state (a new object on every rebuild), the
   // estimated tick or the movement tunables, so the frozen read is rebuilt only then and shared until it changes. The
   // views can then tell that nothing changed by identity: piles keep the same array while their rows are equal.
-  let readFor: Railway | null = null,
+  let readFor: World | null = null,
     readApplied = -1,
     readTick = -1,
     readMovement: RailwayMovement | null = null,
@@ -931,7 +889,7 @@ export function createRailwayAdapter({
     readTick = t;
     readApplied = applied;
     readMovement = m;
-    return (read = buildState(t, rail.at(t, v), m, read));
+    return (read = buildState(t, railwayAt(v, t), m, read));
   }
   // The per-tree lists (a few hundred entries each) are copied but not frozen: in JavaScriptCore (Safari) freezing an
   // array that size costs ~35 us and leaves it slower to read, ~0.2 ms per read in all. They are readonly to TypeScript.
@@ -1023,7 +981,7 @@ export function createRailwayAdapter({
         ),
       ),
     });
-    const account = railAccount(s, pid);
+    const account = s.accounts.find((a) => a.pid === pid);
     return Object.freeze({
       tick: t,
       ...moves,
@@ -1218,15 +1176,15 @@ export function createRailwayAdapter({
       freeCarry: Math.max(0, state.carryMax - state.carry - state.stoneCarry - state.railsCarry),
     });
   }
-  const pileIn = (id: number) => view().piles.find((p) => p.id === id);
-  // The read facade (docs/plans/ecs-migration-railway.md, M8): what views read once they move off inspect() (M10).
-  // world() is the world behind the read model the views see now (the predicted clone while actions are pending, the
-  // confirmed mirror otherwise, the last shown state while a refill comes in), so it keeps that model's consistency
-  // rule: a read model is linked to a world only once the world is whole. Read its rows and pass it to the queries in
+  const pileIn = (id: number) => view().get(Pile, id);
+  // The read facade (docs/plans/ecs-migration-railway.md, M8, M12): what views read. world() is the world the views see
+  // now: the predicted clone while actions are pending, the confirmed (published) world otherwise, the last shown world
+  // while a refill comes in. It is never half-filled: the mirror publishes only whole, fully applied states, and a
+  // published world is never written. Read its rows and pass it to the queries in
   // src/sim/railway-queries*.ts with `tick()` as their `at` (a timed fact without it throws on a client's world); it
   // is typed read-only, so a view cannot write to it or drain its changes.
   const facade = {
-    world: () => (worldOf(view()) ?? worldOf(confirmed)!) as unknown as ReadWorld,
+    world: () => view() as unknown as ReadWorld,
     /** The estimated server tick (whole, never going backwards): the job clocks' `at`. In the frame loop it holds one
      * value for the whole frame, inspect().tick's, so it stays consistent with world() and with itself within a frame;
      * outside the loop it is live. */
@@ -1366,7 +1324,7 @@ export function createRailwayAdapter({
     /** Take the glider from its summit device (once Q5 is laid; the rule and the server judge it). */
     claimGlide: () => submit({ op: 'rail.glide' }),
     deposit(n = 1, kind: RailMaterial = 0) {
-      const station = LINE1_STATIONS[railActiveStation(view())]!.id;
+      const station = LINE1_STATIONS[activeStation(view())]!.id;
       return railInt(n, CARRY_MAX, 1) && submit({ op: 'rail.deposit', station, n, kind });
     },
     onAccepted(fn: (event: RailwayAccepted) => void) {

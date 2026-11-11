@@ -1,6 +1,7 @@
 // Local playtest observations, never a gameplay or prediction input.
 import type { RailwayIntent } from './railway.ts';
-import type { Railway } from '../sim/railway.ts';
+import { aperture, forge, jobs, qjobs, rail, works, type ReadWorld } from '../sim/railway-rows.ts';
+import type { World } from '../ecs/index.ts';
 import type { PlayData } from '../proto/mark.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
 
@@ -52,27 +53,28 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
   return [[name, data]];
 }
 
-/** Scalar edges only. A first snapshot/refill establishes a baseline, never replays historical achievements. */
+/** Scalar edges only. A first snapshot/refill establishes a baseline, never replays historical achievements. Reads the
+ * rows of a whole world (the client's confirmed one; the job rows' start and completion need no tick). */
 export function createRailwayProgressMarks() {
   let previous: Map<string, boolean> | null = null;
-  return (state: Railway, baseline = false): RailwayMark[] => {
+  return (w: ReadWorld | World, baseline = false): RailwayMark[] => {
     const facts = new Map<string, boolean>();
-    const jobs = [state, ...(state.line?.jobs ?? [])];
-    jobs.forEach((job, i) => {
+    jobs(w).forEach((job, i) => {
       facts.set(`stretch funded T${i + 1}`, job.start >= 0);
       facts.set(`stretch laid T${i + 1}`, !!job.completion);
     });
-    state.line2?.jobs.forEach((job, i) => {
+    qjobs(w).forEach((job, i) => {
       facts.set(`stretch funded Q${i + 1}`, job.start >= 0);
       facts.set(`stretch laid Q${i + 1}`, !!job.completion);
     });
-    facts.set('forge lit', !!state.line2 && state.line2.forge.lit >= 0);
-    facts.set('trains unlocked', !!state.line2 && state.line2.trains >= 0);
+    facts.set('forge lit', forge(w).lit >= 0);
+    facts.set('trains unlocked', rail(w).trains >= 0);
     // The twelfth pier footing as this page saw it arrive; the view's finale marks 'crossing finale' when it plays.
-    facts.set('crossing footed', !!state.works && state.works.crossing >= 0);
+    facts.set('crossing footed', works(w).crossing >= 0);
     // Ring Island's gap (v27): the fourteenth bent footing, the rivet.
-    facts.set('gap footed', !!state.ring && state.ring.set >= 14);
-    facts.set('ring joined', !!state.ring && state.ring.joined >= 0);
+    const ring = aperture(w);
+    facts.set('gap footed', ring.set >= 14);
+    facts.set('ring joined', ring.joined >= 0);
     const marks: RailwayMark[] = [];
     if (previous && !baseline)
       for (const [name, value] of facts)

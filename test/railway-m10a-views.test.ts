@@ -8,17 +8,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRailwayAdapter, railMovement, type RailwayInspection } from '../src/adapters/railway.ts';
 import {
-  createRailwayAdapter,
-  railMovement,
   railServing as oldServing,
   railStopsNow,
   railTrainAsked as oldAsked,
   railTrainHeld as oldHeld,
   railOpenEnd as oldOpenEnd,
   railTrainsOf as oldTrainsOf,
-  type RailwayInspection,
-} from '../src/adapters/railway.ts';
+} from './helpers/railway-m10a-twins.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';
