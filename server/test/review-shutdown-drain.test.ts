@@ -40,12 +40,12 @@ const outcomeOf = (p: Promise<void>) =>
     (error: unknown) => ({ outcome: 'reported', error }),
   );
 
-// P1: index.ts exits 1 after 8000 ms. rooms.close reports a write still queued at 7500 ms, but server.ts's close only
-// rethrows it after its HTTP close, which waits up to 5 s for every socket. A room whose save hangs never closes its
-// players' sockets (hosted-room.ts closes them after world.close settles), and the client waits for the server's close,
-// so that wait is the full 5 s: the report reaches index.ts at about 12.5 s and the hard exit always wins, losing the
-// per-room detail exactly when it matters.
-test('a stalled write with a player connected is reported to index.ts before its 8000 ms hard exit', async (t) => {
+// P1 (fixed in 5dfe9e807): index.ts's hard exit (now 9000 ms) must not beat the per-room report. A room whose save hangs
+// never closes its players' sockets itself (hosted-room.ts closes them after world.close settles), and the client waits
+// for the server's close, so before the fix server.ts's HTTP close waited its full 5 s force and the report reached
+// index.ts at about 12.5 s. The bound is the real budget (rooms 7.5 s + HTTP force 1 s, under 9 s), not a tighter one.
+const HARD_EXIT_MS = 9000; // index.ts
+test('a stalled write with a player connected is reported to index.ts before its hard exit', async (t) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-review-drain-'));
   const id = 'review-stall-svc';
   const realWrite = fs.writeFile;
@@ -64,9 +64,17 @@ test('a stalled write with a player connected is reported to index.ts before its
     await fs.rm(dataDir, { recursive: true, force: true });
   });
   const logs: string[] = [];
+  let detailAt = Infinity; // when the room host's error, naming the room, reached the log
   const cfg = loadConfig(
     { DATA_DIR: dataDir, SERVER_ROOMS: '*', PORT: '0' },
-    { log: (...a: unknown[]) => logs.push(a.map(String).join(' ')) },
+    {
+      log: (...a: unknown[]) => {
+        const line = a.map(String).join(' ');
+        logs.push(line);
+        if (line.includes('rooms failed to close') && line.includes(id))
+          detailAt = Math.min(detailAt, performance.now());
+      },
+    },
   );
   const svc = createService(cfg);
   const port = await svc.listen(0);
@@ -79,8 +87,12 @@ test('a stalled write with a player connected is reported to index.ts before its
   const reportedAt = performance.now() - start;
   assert.equal(outcome, 'reported');
   assert.ok(
-    reportedAt < 8000,
-    `the report reached index.ts after ${Math.round(reportedAt)} ms; its hard exit fires at 8000 ms and logs no room`,
+    detailAt - start < HARD_EXIT_MS,
+    `the room's detail reached the log after ${Math.round(detailAt - start)} ms (hard exit at ${HARD_EXIT_MS} ms)`,
+  );
+  assert.ok(
+    reportedAt < HARD_EXIT_MS,
+    `the report reached index.ts after ${Math.round(reportedAt)} ms; its hard exit fires at ${HARD_EXIT_MS} ms`,
   );
 });
 
