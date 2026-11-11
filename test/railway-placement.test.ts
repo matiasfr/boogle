@@ -2,26 +2,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RailAction } from '../src/sim/railway.ts';
-import { Rail } from '../src/sim/railway-components.ts';
+import { Pile, Rail } from '../src/sim/railway-components.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { RIDER_REACH, RIDER_SPAN, railValid } from '../src/world/railway-server.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { RAIL_HALTS } from '../src/sim/railway-lines.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
-import { createRailway, edit, hash, invariant, railApply, railSession, restore, worldOf } from './railway-live.ts';
+import { account, apply, createRailway, hash, invariant, piles, railSession, restore, tree } from './helpers/rail.ts';
 
 function sourceFixture() {
   const state = createRailway();
   railSession(state, 'alice', 1);
-  edit(state, (w) => (w.mut(Rail, w.single(Rail))!.awake = 0));
+  const w = state;
+  w.mut(Rail, w.single(Rail))!.awake = 0;
   let request = 0;
   const action = (e: Omit<RailAction, 'epoch' | 'request'>) =>
-    railApply(state, 'alice', { ...e, epoch: 1, request: ++request }, 100);
+    apply(state, 'alice', { ...e, epoch: 1, request: ++request }, 100);
   return { state, action };
 }
 
 test('wake accepts the whole machine prompt circle, including the side away from the receiving frame', () => {
-  const w = worldOf(createRailway());
+  const w = createRailway();
   const e = { op: 'rail.wake', epoch: 1, request: 1 };
   // This live-reproduced point offered Wake it up but was over 10 m from the old frame-centred check.
   for (const [px, pz, expected] of [
@@ -46,21 +47,21 @@ test('a fall keeps its exact direction, and collapse only on the accepted final 
   const { state, action } = sourceFixture();
   const yaw = 1.2345678901234567;
   for (let k = 0; k < 4; k++) action({ op: 'rail.chop', id: 0, yaw, collapsed: true });
-  assert.equal(state.accounts[0]!.carry, 8);
-  assert.equal(state.falls!.yaw[0], 0);
+  assert.equal(account(state, 'alice')!.carry, 8);
+  assert.equal(tree(state, 0).yaw, 0);
   action({ op: 'rail.drop', x: 100000, y: 3201, z: -14000, n: 1 });
   action({ op: 'rail.chop', id: 0, yaw, collapsed: true });
-  assert.equal(state.work[0], 15);
-  assert.equal(state.sources[0], 1);
-  assert.equal(state.falls!.yaw[0], 0, 'a clipped fifth hit is not a felled tree');
+  assert.equal(tree(state, 0).work, 15);
+  assert.equal(tree(state, 0).left, 1);
+  assert.equal(tree(state, 0).yaw, 0, 'a clipped fifth hit is not a felled tree');
   action({ op: 'rail.drop', x: 100000, y: 3201, z: -14000, n: 1 });
   action({ op: 'rail.chop', id: 0, yaw, collapsed: true });
-  assert.equal(state.sources[0], 0);
-  assert.equal(state.falls!.yaw[0], yaw);
-  assert.equal(state.falls!.collapsed[0], true);
+  assert.equal(tree(state, 0).left, 0);
+  assert.equal(tree(state, 0).yaw, yaw);
+  assert.equal(tree(state, 0).fell, true);
   assert.equal(invariant(state), null);
   const restored = restore(state);
-  assert.equal(restored.falls!.yaw[0], yaw, 'the float survives the save by its bits');
+  assert.equal(tree(restored, 0).yaw, yaw, 'the float survives the save by its bits');
   assert.equal(hash(restored), hash(state));
 });
 
@@ -69,19 +70,19 @@ test('the same horizontal position on two heights keeps distinct accepted piles 
   action({ op: 'rail.chop', id: 0, yaw: 0, collapsed: false });
   action({ op: 'rail.drop', x: 100000, y: 3201, z: -14000, n: 1 });
   action({ op: 'rail.drop', x: 100000, y: 2801, z: -14000, n: 1 });
-  assert.equal(state.piles.length, 2);
+  assert.equal(piles(state).length, 2);
   assert.deepEqual(
-    restore(state).piles.map((p) => p.y),
+    piles(restore(state)).map((p) => p.y),
     [3201, 2801],
   );
-  action({ op: 'rail.take', id: state.piles[0]!.id });
-  assert.equal(state.piles.length, 1);
-  assert.equal(state.accounts[0]!.carry, 1);
+  action({ op: 'rail.take', id: state.ids(Pile)[0]! });
+  assert.equal(piles(state).length, 1);
+  assert.equal(account(state, 'alice')!.carry, 1);
   assert.equal(invariant(state), null);
 });
 
 test('the server refuses missing and invalid placement before it reaches the rule', () => {
-  const w = worldOf(createRailway());
+  const w = createRailway();
   const actor = { reach: () => true, height: () => true, cadence: () => true };
   const token = { epoch: 1, request: 1 };
   for (const e of [
@@ -100,7 +101,7 @@ test('the server refuses missing and invalid placement before it reaches the rul
   );
 });
 test("a stop request is judged from the halt's lever or aboard its line's train", () => {
-  const w = worldOf(createRailway());
+  const w = createRailway();
   const at = (px: number, pz: number) => ({
     reach: (x: number, z: number, r: number) => Math.hypot(px - x, pz - z) <= r,
     height: () => true,

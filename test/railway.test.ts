@@ -2,24 +2,39 @@
 // the catalog the line is built from. Line one's and line two's rules: railway-line-authority and railway-line2.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { railPhase, RAILWAY_OUTCOMES, type RailAction } from '../src/sim/railway.ts';
+import { RAILWAY_OUTCOMES, type RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import { Account, Outcome, Tree, createRailwayWorld, RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
+import { Account, Beam, Outcome, Tree, createRailwayWorld, RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { railwayView } from '../src/sim/railway-read-model.ts';
-import { createRailway, invariant, railApply, railOutcome, railSession, restore, worldOf } from './railway-live.ts';
+import type { World } from '../src/ecs/index.ts';
+import { railPhase } from '../src/sim/railway-queries-line1.ts';
+import { railCounts } from '../src/sim/railway-queries-line2.ts';
+import {
+  account,
+  accounts,
+  apply,
+  beam,
+  createRailway,
+  hash,
+  invariant,
+  outcomes,
+  railOutcome,
+  railSession,
+  restore,
+  trees,
+} from './helpers/rail.ts';
 
 function awake(pids = ['p0']) {
   const s = createRailway();
   for (const pid of pids) railSession(s, pid, 1);
-  railApply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  apply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   return s;
 }
-const action = (s: ReturnType<typeof createRailway>, pid: string, op: string, fields: Partial<RailAction> = {}) => {
-  const a = s.accounts.find((row) => row.pid === pid)!;
+const action = (s: World, pid: string, op: string, fields: Partial<RailAction> = {}) => {
+  const a = account(s, pid)!;
   const e = { epoch: a.epoch, request: a.request + 1, op, ...fields } as RailAction;
-  const result = railApply(s, pid, e, 100);
+  const result = apply(s, pid, e, 100);
   assert.equal(invariant(s), null);
   return { result, e };
 };
@@ -28,29 +43,29 @@ test('terminal receipts survive retries, rejection, eviction, takeover and resta
   const s = awake();
   action(s, 'p0', 'rail.chop', { id: RAILWAY_SOURCES[0]![0], yaw: 0, collapsed: false });
   const first = action(s, 'p0', 'rail.drop', { n: 1, x: T1.x, y: 0, z: T1.z });
-  assert.deepEqual(railApply(s, 'p0', first.e, 100), first.result, 'a retry answers from the receipt');
+  assert.deepEqual(apply(s, 'p0', first.e, 100), first.result, 'a retry answers from the receipt');
   for (let i = 0; i < RAILWAY_OUTCOMES + 1; i++) action(s, 'p0', 'rail.reject');
-  assert.equal(s.outcomes.length, RAILWAY_OUTCOMES, 'the history keeps its bound, the oldest despawned');
+  assert.equal(outcomes(s).length, RAILWAY_OUTCOMES, 'the history keeps its bound, the oldest despawned');
   const r = restore(s);
-  assert.equal(railApply(r, 'p0', first.e, 200).status, 'snapshot-required');
-  const carry = r.accounts[0]!.carry;
+  assert.equal(apply(r, 'p0', first.e, 200).status, 'snapshot-required');
+  const carry = account(r, 'p0')!.carry;
   const rejected = action(r, 'p0', 'rail.reject');
   assert.equal(
-    railApply(r, 'p0', { ...rejected.e, op: 'rail.drop', n: 1, x: T1.x, y: 0, z: T1.z }, 200).status,
+    apply(r, 'p0', { ...rejected.e, op: 'rail.drop', n: 1, x: T1.x, y: 0, z: T1.z }, 200).status,
     'rejected',
   );
   assert.equal(railSession(r, 'p0', 2), true);
   assert.equal(railSession(r, 'p0', 2), false);
   assert.equal(railOutcome(r, 'p0', 1, rejected.e.request + 1)!.status, 'snapshot-required');
-  assert.equal(r.accounts[0]!.carry, carry, 'nothing was spent twice');
+  assert.equal(account(r, 'p0')!.carry, carry, 'nothing was spent twice');
 });
 
 test('an action from a player with no account is refused and changes nothing', () => {
   const s = awake();
-  const hash = worldOf(s).hash();
+  const before = hash(s);
   const e = { op: 'rail.chop', id: RAILWAY_SOURCES[0]![0], yaw: 0, collapsed: false, epoch: 1, request: 2 };
-  assert.equal(railApply(s, 'nobody', e as RailAction, 100).status, 'snapshot-required');
-  assert.equal(worldOf(s).hash(), hash, 'no receipt, no state');
+  assert.equal(apply(s, 'nobody', e as RailAction, 100).status, 'snapshot-required');
+  assert.equal(hash(s), before, 'no receipt, no state');
   assert.equal(invariant(s), null);
 });
 
@@ -58,10 +73,10 @@ test('wake eligibility is scheduled', () => {
   const s = createRailway();
   railSession(s, 'p0', 1);
   assert.equal(
-    railApply(s, 'p0', { op: 'rail.chop', id: 0, yaw: 0, collapsed: false, epoch: 1, request: 1 }, 1).accepted,
+    apply(s, 'p0', { op: 'rail.chop', id: 0, yaw: 0, collapsed: false, epoch: 1, request: 1 }, 1).accepted,
     0,
   );
-  railApply(s, 'p0', { op: 'rail.wake', epoch: 1, request: 2 }, 2);
+  apply(s, 'p0', { op: 'rail.wake', epoch: 1, request: 2 }, 2);
   assert.equal(railPhase(s, 2), 'waking');
   assert.equal(railPhase(s, 2 + T1.wakeTicks), 'idle');
 });
@@ -71,7 +86,7 @@ test('a saved world loads all or nothing: archetypes, catalog, keys and every do
   const r = mulberry32(5);
   for (let k = 0; k < 40; k++)
     action(s, r() < 0.5 ? 'a' : 'b', 'rail.chop', { id: RAILWAY_SOURCES[k % 9]![0], yaw: r(), collapsed: true });
-  const w = worldOf(s);
+  const w = s;
   const good = w.snapshot();
   const before = w.hash();
   type Snap = typeof good;
@@ -97,16 +112,21 @@ test('a saved world loads all or nothing: archetypes, catalog, keys and every do
   const copy = createRailwayWorld();
   copy.load(JSON.parse(JSON.stringify(good)), railwayCheck);
   assert.equal(copy.hash(), before);
-  assert.deepEqual(railwayView(copy), railwayView(w));
+  assert.deepEqual(
+    [copy.snapshot(), accounts(copy), outcomes(copy), trees(copy), railCounts(copy)],
+    [w.snapshot(), accounts(w), outcomes(w), trees(w), railCounts(w)],
+  );
 });
 
-test('the read model is plain data: rebuilt from the world, never carrying its bookkeeping', () => {
-  const s = awake(['a']);
-  const w = worldOf(s);
-  const view = railwayView(w);
-  assert.deepEqual(structuredClone(view), view);
-  assert.equal(Object.getOwnPropertySymbols(view.line!.beam).length, 0);
-  assert.equal(Object.getOwnPropertySymbols(view.accounts[0]!).length, 0);
+test('rows are plain data: read from the world, carrying only their schema fields', () => {
+  const w = awake(['a']);
+  const plain = (row: object) => Object.fromEntries(Object.entries(row));
+  assert.deepEqual(
+    [structuredClone(account(w, 'a')), structuredClone(beam(w)), structuredClone(trees(w))],
+    [plain(account(w, 'a')!), plain(beam(w)), trees(w).map(plain)],
+  );
+  assert.deepEqual(Object.keys(beam(w)), Beam.names);
+  assert.deepEqual(Object.keys(accounts(w)[0]!), Account.names);
   assert.equal(w.count(Tree), RAILWAY_SOURCES.length);
   assert.equal(w.count(Account), 1);
   assert.ok(w.count(Outcome) > 0, 'the request history is part of the world (not replicated)');

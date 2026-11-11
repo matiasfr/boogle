@@ -13,6 +13,8 @@ import {
   LINE1_RAIL_PAIRS,
 } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS, line2Panels } from '../src/sim/railway-line2-layout.ts';
+import { apply, createRailway, invariant, railSession, rocks } from './helpers/rail.ts';
+import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { lineFeed, lineLayDistance, lineSchedule, type LineTiming } from '../src/sim/railway-line-schedule.ts';
 
 // Accepted Place inputs in milliseconds/10 Hz ticks, supplied as room settings at the future funding boundary.
@@ -180,8 +182,6 @@ test('the machine view lays the same rail pairs the shared schedule commits', as
 
 test('rock slots: line one three, the Works two; stone conserved across both', async () => {
   const { RAIL_ROCKS, RAIL_STONE, WORKS_ROCKS } = await import('../src/sim/railway-works-layout.ts');
-  const { createRailway, railApply, railSession, invariant } = await import('./railway-live.ts');
-  const { railCounts } = await import('../src/sim/railway.ts');
   assert.deepEqual(
     RAIL_ROCKS.map((r) => r.id),
     [0, 1, 2, 3, 4],
@@ -189,15 +189,15 @@ test('rock slots: line one three, the Works two; stone conserved across both', a
   assert.deepEqual(RAIL_ROCKS.slice(0, 3), [...LINE1_ROCKS]);
   assert.deepEqual(RAIL_ROCKS.slice(3), [...WORKS_ROCKS]);
   const s = createRailway();
-  assert.deepEqual(s.line!.rocks, [8, 8, 8, 8, 8]);
+  assert.deepEqual(rocks(s).map((r) => r.left), [8, 8, 8, 8, 8]);
   assert.equal(railCounts(s).stone!.total, RAIL_STONE);
   railSession(s, 'a', 1);
-  railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  apply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   // A Works rock mines like line one's (the bowl is walkable early; its stone only matters once the kiln is open).
-  const r = railApply(s, 'a', { op: 'rail.mine', epoch: 1, request: 2, id: 3 }, 100);
+  const r = apply(s, 'a', { op: 'rail.mine', epoch: 1, request: 2, id: 3 }, 100);
   assert.equal(r.accepted, 2);
-  assert.equal(railApply(s, 'a', { op: 'rail.mine', epoch: 1, request: 3, id: 5 }, 101).accepted, 0);
-  assert.deepEqual(s.line!.rocks, [8, 8, 8, 6, 8]);
+  assert.equal(apply(s, 'a', { op: 'rail.mine', epoch: 1, request: 3, id: 5 }, 101).accepted, 0);
+  assert.deepEqual(rocks(s).map((r) => r.left), [8, 8, 8, 6, 8]);
   assert.equal(railCounts(s).stone!.total, RAIL_STONE);
   assert.equal(invariant(s), null);
 });
