@@ -41,6 +41,8 @@ const parts = (act: StoryAct) => ({
 
 const CARD_S = 4.5; // a live card: on screen, fade in and out included
 const LEAD_S = CARD_S - 1; // a live card comes up when the shot in front of it has this long left
+const MAX_WAIT_MS = 9000; // the longest a live card waits behind other moments
+const LOG_WAIT_MS = 3000; // a wait this long is marked for the playtest trace
 const SETTLE_MS = 300; // a risen act is seen this long before it shows, so the show that marks it has queued its shot
 // The arrival's crane: 4.8 s from the follow camera up and back down to it, easing 1.8 s each way (about 35 degrees a
 // second at the steepest). The title fades in 0.6 s after it starts, once the view is steady, and is gone before the
@@ -49,10 +51,12 @@ const CRANE_S = 4.8,
   CRANE_BLEND_S = 1.8,
   TITLE_DELAY_MS = 600,
   ARRIVAL_CARD_S = 3.8;
-// How far it rises and goes back, and how far past Buddy it looks, in metres. At the apex the camera is about 39 m
-// (wide view) or 27 m (portrait) from Buddy, who stays on the centre line and, with the look-ahead, within the middle
-// third of the frame; portrait is closer and looks less far ahead because its frame is narrow and tall.
-const CRANE = { wide: { back: 14, up: 30, ahead: 5 }, tall: { back: 8, up: 20, ahead: 3 } };
+// How far it rises and goes back over the follow camera (about 7 m behind and 3 m above Buddy), and how far past him it
+// looks (negative: back toward the bay behind him), in metres. Wide: the apex is about 13 m from Buddy, 45 degrees
+// down, looking straight at him: about 30 px tall at 960x600 and in the middle third of the frame throughout. Tall (a
+// phone held upright): steeper, 56 degrees down and about 14 m out, looking 2.5 m back toward the dock and bay rather
+// than at the cliff wall ahead, about 37 px tall at 390x844. Peak turn about 20 (wide) and 28 (tall) degrees a second.
+const CRANE = { wide: { back: 2, up: 6, ahead: 0 }, tall: { back: 1, up: 9, ahead: -2.5 } };
 
 // The words the Welcome back card says when the act went up while you were away.
 addWelcomeItem({
@@ -74,6 +78,7 @@ const returning = !showCard(); // a returning visit has the Welcome back card
 let seen = 0; // the highest act this browser has shown (or, when returning, been told of)
 let arrived = false;
 let risenAt = 0;
+let logged = false;
 let landed = false,
   cardAct: StoryAct | 0 = 0,
   cardAt = 0;
@@ -105,7 +110,7 @@ const known = () => {
   return w.mode !== 'local' && w.ready ? railwayKnown(railwayWorldRead()) : null;
 };
 
-defineKind('acts', { lateUpdate: 45 });
+defineKind('acts', { lateUpdate: -2 }); // before the interact prompt (0), so its card hides the prompt on the frame it rises
 spawn({
   kind: 'acts',
   lateUpdate({ now, dt }) {
@@ -157,9 +162,20 @@ spawn({
       risenAt = now;
       actRising(); // a banner raised in the same moment waits behind the card
     }
-    // The card shares one element with the banners, so it also waits for a banner to run out whole.
-    if (now - risenAt < SETTLE_MS || momentBusy(LEAD_S) || momentBanner()) return;
-    show(act, 'live', now - risenAt);
+    const waited = now - risenAt;
+    // The card shares one element with the banners, so it also waits for a banner to run out whole. It never waits
+    // for ever on a moment that has stopped reporting: after MAX_WAIT_MS it comes up over whatever is left.
+    const busy = momentBusy(LEAD_S),
+      banner = !!momentBanner();
+    if (waited < SETTLE_MS || ((busy || banner) && waited < MAX_WAIT_MS)) {
+      if (!logged && waited > LOG_WAIT_MS) {
+        logged = true;
+        playMark('act waiting', { act, waitedMs: Math.round(waited), busy, banner });
+      }
+      return;
+    }
+    show(act, 'live', waited);
+    logged = false;
     risenAt = 0;
   },
 });
