@@ -2,6 +2,8 @@
 // Sickle Isles map, against the ring model's bills, producers, ladders, prices and away credit. Every number comes from
 // ring-data.ts through ring-sim.ts's formulas; the map's lines give the distances. Pure (no DOM, no Node), so
 // docs/world/economy-prototype.html bundles this file and test/economy-prototype.test.ts drives it headlessly.
+// With `trade` set it also runs the passenger trade (play-trade.ts, on trade-model.ts's rules): riders, the shared
+// strongbox, houses, and seats hauled for by the players; left out, the world is the ring model's alone.
 //
 // Where the closed-form model and this agent sim differ, on purpose:
 // - Steps run in the map's stage order (second branch before High Port), not ring-data's ROUTE order.
@@ -34,6 +36,20 @@ import {
   type Settings,
 } from './ring-sim.ts';
 import type { PlayLine, PlayMap } from './play-map.ts';
+import {
+  awayBoogles,
+  buy as buyTrade,
+  createTrade,
+  finishSeatJob,
+  startSeatJob,
+  tradeStep,
+  isCrowd,
+  offered,
+  type SeatMode,
+  type Trade,
+} from './play-trade.ts';
+import { ARRIVES, type StepDone } from './trade-model.ts';
+import { TOWNS, townName, type Town } from './trade-data.ts';
 
 export type XZ = [number, number];
 export type Use = 'haul' | 'explore' | 'wait';
@@ -124,6 +140,13 @@ export type Options = {
   /** Which players the bot drives; the rest wait for commands. Default: all. */
   auto?: boolean[];
   settings?: Settings;
+  /** Turns the passenger trade on (riders, fares, houses, seats); left out, the world is the ring model's alone. */
+  trade?: {
+    seats: SeatMode;
+    seed?: number;
+    /** The bots spend Boogles on the cheapest house on offer, as the model's house room does; the page leaves it to you. */
+    autoBuy?: boolean;
+  };
 };
 export type World = {
   map: PlayMap;
@@ -154,6 +177,9 @@ export type World = {
   /** Each player's hauling, exploring and waiting seconds when the main game ended. */
   mainUse: Record<Use, number>[] | null;
   done: boolean;
+  /** The passenger trade (play-trade.ts), or null when the world is the ring model's alone. */
+  trade: Trade | null;
+  tradeAutoBuy: boolean;
   memo: { key: string; rates: Rates; dist: Map<string, Path | null> } | null;
 };
 type Path = { m: number; pts: XZ[] };
@@ -385,8 +411,21 @@ function deliver(w: World, m: Material, n: number) {
       j.got[m] = (j.got[m] ?? 0) + k;
       left -= k;
     }
-  if (left > EPS) stockpile(w, m, left);
+  if (left > EPS) toYard(w, m, left);
   settle(w);
+}
+/** A hand drop that no step needs: the seats being hauled for first (see the trade, below), then the Home Yard. */
+function toYard(w: World, m: Material, n: number) {
+  const j = w.trade?.job;
+  if (j) {
+    const k = Math.min(n, seatNeed(w, m));
+    if (k > EPS) {
+      j.got[m] = (j.got[m] ?? 0) + k;
+      n -= k;
+    }
+  }
+  if (n > EPS) stockpile(w, m, n);
+  installSeats(w);
 }
 /** Into the yard up to its cap; past that it's sold to the town for the shared wallet. */
 function stockpile(w: World, m: Material, n: number) {
@@ -470,10 +509,10 @@ const endsAt = (p: Player) => {
   for (const t of p.queue) if (t.kind === 'travel') at = t.to;
   return at;
 };
-function gatherPlan(w: World, p: Player, m: Material, n: number): Task[] | null {
+function gatherPlan(w: World, p: Player, m: Material, n: number, dest?: string): Task[] | null {
   const src = sourceOf(w, m);
   const st = step(w);
-  const site = st ? st.place : w.map.slots.home!;
+  const site = dest ?? (st ? st.place : w.map.slots.home!);
   if (!src || !placeOpen(w, src)) return null;
   const go = travelTask(w, endsAt(p), src, 'haul');
   const back = travelTask(w, src, site, 'haul');
@@ -566,6 +605,16 @@ export function decide(w: World, p: Player): Task[] {
     }
     return null;
   };
+  // Hauling for the seats a crowd asked for comes first, as the trade model puts it ahead of the route.
+  const seating = (): Task[] | null => {
+    for (const m of MATERIALS) {
+      if (!res(m).manual || seatOpen(w, m) - w.yard[m] <= EPS) continue;
+      if (r.auto[m] > 0 && w.policy === 'model') continue;
+      const plan = gatherPlan(w, p, m, Math.min(load, Math.ceil(seatOpen(w, m) - w.yard[m])), w.map.slots.home!);
+      if (plan) return plan;
+    }
+    return null;
+  };
   const acts = activities(w);
   const exploring = (ahead: boolean): Task[] | null => {
     for (const a of acts) {
@@ -582,6 +631,7 @@ export function decide(w: World, p: Player): Task[] {
     w.n > 1 && p.id === 0
       ? [() => exploring(false), placing, hauling, () => exploring(true)]
       : [placing, hauling, () => exploring(false), () => exploring(true)];
+  if (w.trade?.job) order.unshift(seating);
   for (const f of order) {
     const plan = f();
     if (plan) return plan;
@@ -600,7 +650,7 @@ export function goTo(w: World, pid: number, to: string): string | null {
   if (!placeOpen(w, to)) return `${placeName(w, to)} isn't reachable yet`;
   const st = step(w);
   const exploring = activities(w).some((a) => a.place === to);
-  const sourcing = MATERIALS.some((m) => sourceOf(w, m) === to && open(w, m) > 0);
+  const sourcing = MATERIALS.some((m) => sourceOf(w, m) === to && (open(w, m) > 0 || seatOpen(w, m) > 0));
   const use: Use = p.load || (st && to === st.place && !exploring) || sourcing ? 'haul' : 'explore';
   const t = travelTask(w, p.at, to, use);
   if (!t) return `No line to ${placeName(w, to)} yet`;
@@ -637,6 +687,18 @@ export function actionsFor(w: World, pid: number): Action[] {
       if (plan)
         out.push({ id: `gather-${m}`, label: `Gather ${n} ${NAMES[m]}`, run: () => setQueue(p, plan.slice(1, 2)) });
     }
+    // Hauling for the seats a crowd asked for: carry it to Home, where it is stacked and installed.
+    for (const m of MATERIALS) {
+      if (!res(m).manual || sourceOf(w, m) !== here || open(w, m) > EPS || seatOpen(w, m) <= EPS) continue;
+      const n = Math.min(load, Math.ceil(seatOpen(w, m)));
+      const plan = gatherPlan(w, p, m, n, w.map.slots.home!);
+      if (plan)
+        out.push({
+          id: `gather-seat-${m}`,
+          label: `Gather ${n} ${NAMES[m]} for the seats`,
+          run: () => setQueue(p, plan.slice(1, 2)),
+        });
+    }
   }
   if (st && here === st.place)
     for (const m of MATERIALS) {
@@ -656,6 +718,130 @@ export function actionsFor(w: World, pid: number): Action[] {
         run: () => setQueue(p, [{ kind: 'explore', act: a, left: Infinity }]),
       });
   return out;
+}
+
+// ---------------------------------------------------------------- the passenger trade
+// play-trade.ts holds the state and calls trade-model.ts's rules; this is where the world meets it: the route's finished
+// steps open the towns, a minute of play is a minute of riding, and seats are hauled for by the players.
+/** Which route steps are finished, as the trade model's rules ask it. */
+export const stepDone =
+  (w: World): StepDone =>
+  (key) =>
+    key === 'end' ? w.mainDoneAt !== null : w.steps.some((s) => s?.key === key && s.doneAt !== null);
+/** The map place a town sits at: the Village is a stop by Home; the branch towns are whichever branch came first or second. */
+export function townPlace(w: World, tw: Town): string | null {
+  if (tw === 'village') return w.map.slots.home!;
+  if (tw === 'canopy') return placeOfSlot(w, 'b1');
+  if (tw === 'gorge') return placeOfSlot(w, 'b2');
+  return tw === 'ring' ? w.map.slots.ring! : (w.map.places.find((p) => p.id === 'quay')?.id ?? null);
+}
+/** Where a town is drawn: the Village a little way from Home, the rest at their places. */
+export function townAt(w: World, tw: Town): XZ | null {
+  const p = townPlace(w, tw);
+  if (!p) return null;
+  const at = placeAt(w, p);
+  return tw === 'village' ? [at[0] - 330, at[1] + 230] : at;
+}
+export const townLabel = (w: World, tw: Town) => {
+  const p = townPlace(w, tw);
+  return tw === 'village' || !p ? townName(tw) : placeName(w, p);
+};
+/** What the seats being hauled for still need of a material. */
+export function seatNeed(w: World, m: Material) {
+  const j = w.trade?.job;
+  return j ? Math.max(0, (j.bill[m] ?? 0) - (j.got[m] ?? 0)) : 0;
+}
+/** The seat need nobody carries or is on the way to gather: a load beyond what the step wants counts for the seats. */
+export function seatOpen(w: World, m: Material) {
+  const n = seatNeed(w, m);
+  return n <= EPS ? 0 : Math.max(0, n - Math.max(0, inFlight(w, m) - need(w, m)));
+}
+/** Materials the seats are waiting on that nobody can fetch yet: their source isn't on the line (or no hand can gather them). */
+export function seatBlockers(w: World): Material[] {
+  return MATERIALS.filter((m) => {
+    if (seatNeed(w, m) <= EPS || w.yard[m] >= seatNeed(w, m)) return false;
+    const src = sourceOf(w, m);
+    return !res(m).manual || !src || !placeOpen(w, src);
+  });
+}
+/** Installs the seats once the bill is in, from what was hauled for them and any stock the machines stacked at Home. */
+function installSeats(w: World) {
+  const tr = w.trade;
+  const j = tr?.job;
+  if (!tr || !j) return;
+  const mats = Object.keys(j.bill) as Material[];
+  for (const m of mats) if ((j.got[m] ?? 0) + Math.floor(w.yard[m] + EPS) + EPS < j.bill[m]!) return;
+  for (const m of mats) {
+    const take = Math.min(Math.max(0, j.bill[m]! - (j.got[m] ?? 0)), Math.floor(w.yard[m] + EPS));
+    w.yard[m] -= take;
+    j.got[m] = j.bill[m]!;
+  }
+  const done = finishSeatJob(tr);
+  if (done) log(w, 'trade', `Seats installed at ${townLabel(w, done.town)} (${done.step}); the Boogles didn't move`);
+}
+function tradeClock(w: World, dt: number) {
+  const tr = w.trade!;
+  const done = stepDone(w);
+  if (!tr.started) {
+    if (!done(ARRIVES.village)) return;
+    tr.started = true;
+    tr.secs = 0;
+    log(w, 'trade', 'The Village line is open: the first riders come in a minute');
+  }
+  tr.secs += dt;
+  while (tr.secs >= 60) {
+    tr.secs -= 60;
+    tradeMinute(w, done);
+  }
+  installSeats(w);
+}
+function tradeMinute(w: World, done: StepDone) {
+  const tr = w.trade!;
+  const open = TOWNS.filter((tw) => tr.rt[tw].open);
+  const crowded = TOWNS.filter((tw) => isCrowd(tr, tw));
+  const houses = TOWNS.map((tw) => tr.rt[tw].houses);
+  const full = tr.minute > 0 && tr.wallet >= tr.cap - 1e-6;
+  tradeStep(tr, done);
+  TOWNS.forEach((tw, i) => {
+    if (tr.rt[tw].open && !open.includes(tw)) log(w, 'trade', `Riders start coming at ${townLabel(w, tw)}`);
+    if (tr.rt[tw].houses > houses[i]!) log(w, 'trade', `A new house stands at ${townLabel(w, tw)}: more riders`);
+    if (isCrowd(tr, tw) && !crowded.includes(tw))
+      log(w, 'trade', `A crowd of ${tr.rt[tw].waiting} waits at ${townLabel(w, tw)}: the train stops there`);
+  });
+  if (!full && tr.wallet >= tr.cap - 1e-6)
+    log(w, 'trade', `The strongbox is full at ${Math.round(tr.cap)}: fares stop landing`);
+  const had = tr.job;
+  const job = startSeatJob(tr);
+  if (job && !had)
+    log(w, 'trade', `The crowd at ${townLabel(w, job.town)} asks for seats (${job.step}): haul the bill`);
+  if (w.tradeAutoBuy) autoBuy(w, done);
+}
+/** The bots' buying, as the model's house room: the cheapest house, building or fit-out on offer, saving for it. */
+function autoBuy(w: World, done: StepDone) {
+  const tr = w.trade!;
+  for (;;) {
+    const groups =
+      tr.seats === 'boogles' ? [['seat'], ['house', 'building', 'fitout']] : [['house', 'building', 'fitout']];
+    let pick: string | null = null;
+    for (const kinds of groups) {
+      const c = offered(tr, done)
+        .filter((it) => kinds.includes(it.kind) && (it.kind !== 'seat' || isCrowd(tr, it.town!)))
+        .sort((a, b) => a.price - b.price || (a.id < b.id ? -1 : 1))[0];
+      if (!c) continue;
+      if (c.price <= tr.wallet) pick = c.id;
+      break;
+    }
+    if (!pick || buyItem(w, pick)) return;
+  }
+}
+/** Spends Boogles from the strongbox on something on offer; returns why not, or null when bought. */
+export function buyItem(w: World, id: string): string | null {
+  const tr = w.trade;
+  if (!tr) return 'The trade is off in this run';
+  const it = tr.items.find((x) => x.id === id);
+  const err = buyTrade(tr, stepDone(w), id);
+  if (!err && it) log(w, 'trade', `Bought ${it.label} for ${it.price.toLocaleString('en')} Boogles`);
+  return err;
 }
 
 // ---------------------------------------------------------------- the clock
@@ -704,6 +890,8 @@ export function createWorld(map: PlayMap, o: Options): World {
     mainDoneAt: null,
     mainUse: null,
     done: false,
+    trade: o.trade ? createTrade(o.trade.seats, { seed: o.trade.seed }) : null,
+    tradeAutoBuy: o.trade?.autoBuy ?? false,
     memo: null,
   };
   log(w, 'start', `${o.players} player${o.players > 1 ? 's' : ''} on ${map.name}`);
@@ -745,7 +933,7 @@ export function tick(w: World, dt = 1) {
       if (p.load) {
         const atSite = step(w)?.place === p.at;
         if (atSite) deliver(w, p.load.m, p.load.n);
-        else stockpile(w, p.load.m, p.load.n);
+        else toYard(w, p.load.m, p.load.n);
         p.load = null;
       }
     }
@@ -817,6 +1005,7 @@ export function tick(w: World, dt = 1) {
         `Machines overtake hands: ${NAMES[m]}, ${Math.round(now.auto[m])}/h against ${Math.round(now.party[m])}/h by hand`,
       );
     }
+  if (w.trade) tradeClock(w, dt);
   if (w.mainDoneAt !== null) endgame(w);
   if (w.sittings && w.sittingT >= num(w.s, 'sessionHours') * 3600 && !w.done) leave(w, num(w.s, 'awayHours'));
   if (Math.floor(w.t / 60) !== Math.floor((w.t - dt) / 60)) sample(w);
@@ -860,6 +1049,11 @@ export function leave(w: World, awayH: number) {
   }
   w.sittingT = 0;
   w.sitting++;
+  if (w.trade) {
+    const fares = awayBoogles(w.trade, stepDone(w), awayH);
+    if (fares > 0)
+      log(w, 'trade', `The ticket window held ${Math.round(fares)} Boogles of fares for the night, one capped sack`);
+  }
   log(
     w,
     'away',

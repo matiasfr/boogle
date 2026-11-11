@@ -1,6 +1,6 @@
 // The economy prototype page's controls and drawing (docs/world/economy-prototype.html). build-prototype.ts bundles
 // this with play-sim.ts into the page; all game logic lives in play-sim.ts, so the Node test plays the same sim.
-import { GOALS, MATERIALS, type Branch } from './ring-data.ts';
+import { GOALS, MATERIALS, ROUTE, type Branch, type Material } from './ring-data.ts';
 import {
   CHOICES,
   NAMES,
@@ -8,6 +8,7 @@ import {
   actDone,
   actionsFor,
   buyGoal,
+  buyItem,
   choose,
   createWorld,
   goTo,
@@ -19,15 +20,24 @@ import {
   placeOpen,
   playerPos,
   rates,
+  route,
+  seatBlockers,
   step,
+  stepDone,
   summarize,
   tick,
   timelineCsv,
+  townAt,
+  townLabel,
+  townPlace,
   type Policy,
   type RunSummary,
   type World,
   type XZ,
 } from './play-sim.ts';
+import { isCrowd, offered, seatBill, townNumbers, type SeatMode } from './play-trade.ts';
+import { nextSeatStep } from './trade-model.ts';
+import { TOWNS, type Town } from './trade-data.ts';
 import type { PlayMap } from './play-map.ts';
 
 type Reference = { runs: RunSummary[]; model: Record<string, number[]> };
@@ -51,7 +61,13 @@ const html = (id: string, markup: string) => {
 };
 
 // ---------------------------------------------------------------- setup
-const setup = { players: 1, fork: '' as '' | Branch, policy: 'model' as Policy, watch: false };
+const setup = {
+  players: 1,
+  fork: '' as '' | Branch,
+  policy: 'model' as Policy,
+  watch: false,
+  seats: 'haul' as SeatMode,
+};
 let speed = 60;
 let paused = false;
 let w: World = fresh();
@@ -62,6 +78,8 @@ function fresh(): World {
     policy: setup.policy,
     ...(setup.fork ? { branchFirst: setup.fork } : {}),
     auto: [setup.watch, true, true],
+    // The page leaves the buying to you; with Watch the bots on, the bots buy the cheapest house, as the model's room.
+    trade: { seats: setup.seats, autoBuy: setup.watch },
   });
 }
 function seg(id: string, on: (v: string) => void) {
@@ -77,14 +95,18 @@ function seg(id: string, on: (v: string) => void) {
 seg('players', (v) => (setup.players = Number(v)));
 seg('fork', (v) => (setup.fork = v as '' | Branch));
 seg('policy', (v) => (setup.policy = v as Policy));
+seg('seats', (v) => (setup.seats = v as SeatMode));
 seg('watch', () => {
   setup.watch = !setup.watch;
   const p = w.players[0];
   if (p) p.auto = setup.watch;
+  w.tradeAutoBuy = setup.watch;
 });
 seg('speed', (v) => (speed = Number(v)));
 $('new').addEventListener('click', () => {
   w = fresh();
+  fx = [];
+  fxMinute = 0;
   logShown = 0;
   html('log', '');
   toast('');
@@ -160,7 +182,142 @@ function go(id: string) {
   const err = goTo(w, 0, id);
   toast(err ?? `Heading to ${placeName(w, id)}`);
 }
-function draw() {
+// ---------------------------------------------------------------- the trade, drawn
+// Little guys wait on a platform at each town (a dot each), a train carries them to Home when four or more wait (a
+// moving block with its riders), and the fares drop into the box at the ticket window by Home. A coin is a prop: the
+// number in the strongbox is the sim's, not the picture's.
+type Fx = { tw: Town; n: number; born: number; life: number; pts: XZ[] };
+let fx: Fx[] = [];
+let fxMinute = 0;
+const homeXZ = (): XZ => data.map.places.find((p) => p.id === data.map.slots.home!)!.at;
+function along(pts: XZ[], f: number): XZ {
+  let len = 0;
+  const seg = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i]![0], p[1] - pts[i]![1]));
+  for (const s of seg) len += s;
+  let goal = Math.max(0, Math.min(1, f)) * len;
+  for (let i = 0; i < seg.length; i++) {
+    if (goal <= seg[i]! || i === seg.length - 1) {
+      const k = seg[i]! ? Math.min(1, goal / seg[i]!) : 1;
+      const a = pts[i]!,
+        b = pts[i + 1]!;
+      return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+    }
+    goal -= seg[i]!;
+  }
+  return pts[0]!;
+}
+function pathFor(tw: Town): XZ[] | null {
+  const at = townAt(w, tw);
+  const p = townPlace(w, tw);
+  if (!at || !p) return null;
+  if (tw === 'village') return [at, homeXZ()];
+  return route(w, p, data.map.slots.home!)?.pts ?? [at, homeXZ()];
+}
+function spawnFx(now: number) {
+  const tr = w.trade;
+  if (!tr?.last) return;
+  if (tr.minute < fxMinute) fxMinute = 0;
+  if (tr.minute === fxMinute) return;
+  fxMinute = tr.minute;
+  for (const tw of TOWNS) {
+    const m = tr.last.towns[tw];
+    const pts = m && m.served > 0 ? pathFor(tw) : null;
+    if (pts && fx.length < 80) fx.push({ tw, n: m!.served, born: now, life: 1700, pts });
+  }
+}
+function drawTrade(now: number) {
+  const tr = w.trade;
+  if (!tr) return;
+  const c = ctx;
+  const [hx, hy] = toScreen(homeXZ());
+  // The ticket window: a box by Home that fills with the strongbox.
+  const bx = hx - 28,
+    by = hy - 20,
+    fill = tr.cap > 0 ? Math.min(1, tr.wallet / tr.cap) : 0;
+  c.strokeStyle = css('--boogle');
+  c.lineWidth = 1.5;
+  c.strokeRect(bx, by, 12, 16);
+  c.fillStyle = css(fill >= 1 ? '--crowd' : '--boogle');
+  c.fillRect(bx + 1, by + 15 - 14 * fill, 10, 14 * fill);
+  const small = view.w < 500;
+  for (const tw of TOWNS) {
+    const at = townAt(w, tw);
+    if (!at) continue;
+    const [x, y] = toScreen(at);
+    const r = tr.rt[tw];
+    if (tw === 'village') {
+      c.fillStyle = css(r.open ? '--boogle' : '--ink-3');
+      c.fillRect(x - 4, y - 4, 8, 8);
+      c.fillStyle = css(r.open ? '--ink' : '--ink-3');
+      c.font = `${small ? 10 : 12}px system-ui, sans-serif`;
+      c.textAlign = 'right';
+      c.fillText(r.open ? 'The Village' : 'The Village (no line yet)', x - 7, y - 9);
+      c.textAlign = 'left';
+    }
+    if (!r.open) continue;
+    // Cottages: filled stand, outlined build, dashed plots still empty ground.
+    const plots = tr.items.filter((it) => it.kind === 'house' && it.town === tw).length;
+    const standing = (tr.t['riders.startBuildings'] ?? 0) + r.houses;
+    for (let i = 0; i < standing + plots; i++) {
+      const cx = x - 6 + i * 7,
+        cy = y + 12;
+      if (i < standing) {
+        c.fillStyle = css('--ink');
+        c.fillRect(cx, cy, 5, 5);
+      } else {
+        c.strokeStyle = css(i < standing + r.due.length ? '--boogle' : '--ink-3');
+        c.lineWidth = 1.2;
+        c.setLineDash(i < standing + r.due.length ? [] : [2, 2]);
+        c.strokeRect(cx + 0.5, cy + 0.5, 4, 4);
+        c.setLineDash([]);
+      }
+    }
+    // The platform: a dot for each little guy waiting; four or more stop a train.
+    const n = Math.min(r.waiting, 24);
+    const stop = isCrowd(tr, tw);
+    for (let i = 0; i < n; i++) {
+      c.beginPath();
+      c.arc(x + 12 + (i % 12) * 6, y + 3 + Math.floor(i / 12) * 7, 2.5, 0, Math.PI * 2);
+      c.fillStyle = css(stop ? '--crowd' : '--ink-2');
+      c.fill();
+    }
+    if (stop) {
+      c.beginPath();
+      c.arc(x, y, 12 + 2 * Math.sin(now / 160), 0, Math.PI * 2);
+      c.strokeStyle = css('--crowd');
+      c.lineWidth = 2;
+      c.stroke();
+    }
+  }
+  // Trains on their way to Home with what they carry, then the fares dropping into the box.
+  fx = fx.filter((f) => now - f.born < f.life + 900);
+  for (const f of fx) {
+    const age = now - f.born;
+    if (age < f.life) {
+      const [x, y] = toScreen(along(f.pts, age / f.life));
+      c.fillStyle = css('--auto');
+      c.beginPath();
+      c.roundRect(x - 9, y - 6, 18, 12, 3);
+      c.fill();
+      c.fillStyle = '#fff';
+      c.font = 'bold 9px system-ui, sans-serif';
+      c.textAlign = 'center';
+      c.fillText(String(f.n), x, y + 0.5);
+      c.textAlign = 'left';
+    } else {
+      const k = (age - f.life) / 900;
+      c.globalAlpha = 1 - k;
+      for (let i = 0; i < Math.min(3, 1 + Math.floor(f.n / 3)); i++) {
+        c.beginPath();
+        c.arc(bx + 6 + (i - 1) * 5, by - 4 - 16 * k - i * 2, 3, 0, Math.PI * 2);
+        c.fillStyle = css('--boogle');
+        c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+  }
+}
+function draw(now = performance.now()) {
   const c = ctx;
   c.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
   c.fillStyle = css('--sea');
@@ -221,6 +378,7 @@ function draw() {
     c.fillText(p.name, right ? x - 9 : x + 9, y - 9);
     c.textAlign = 'left';
   });
+  drawTrade(now);
   for (const p of [...w.players].reverse()) {
     const [x, y] = toScreen(playerPos(w, p));
     c.beginPath();
@@ -340,10 +498,75 @@ function panels() {
     li.innerHTML = `<b>${clock(e.t)}</b>${esc(e.text)}`;
     log.prepend(li);
   }
+  tradePanel();
   goals();
   timeline();
   modal();
 }
+const STEP_NAME = {
+  six: 'Six fit-out (more seats a car)',
+  car: 'Second passenger car',
+  express: "The express's passenger set",
+};
+function tradePanel() {
+  const tr = w.trade;
+  if (!tr) return;
+  const done = stepDone(w);
+  const line2 = ROUTE.find((r) => r.key === 'home.line2')?.name ?? 'Line 2';
+  $('trade-wait').textContent = tr.started
+    ? `Minute ${tr.minute} of riding. ${tr.seats === 'haul' ? 'Seats are hauled for: no Boogle is spent on them.' : 'Seats are bought with Boogles: the variant to compare.'}`
+    : `The line to the Village opens when the step "${line2}" is done; then the first riders come.`;
+  $('t-wallet').textContent = Math.round(tr.wallet).toLocaleString('en');
+  $('t-cap').textContent = tr.started ? `of ${Math.round(tr.cap).toLocaleString('en')} (the box's mark)` : '';
+  const full = tr.started && tr.wallet >= tr.cap - 1e-6;
+  $('t-fill').style.width = `${tr.cap > 0 ? Math.min(100, (100 * tr.wallet) / tr.cap) : 0}%`;
+  $('t-meter').classList.toggle('full', full);
+  const last = tr.last;
+  $('t-flow').textContent = !last
+    ? ''
+    : full
+      ? `Box full: fares stop landing. ${Math.round(tr.capped).toLocaleString('en')} Boogles of fares have been lost so far.`
+      : `+${Math.round(last.landed)} last minute from ${last.carried} riders. ${Math.round(tr.earned).toLocaleString('en')} earned, ${Math.round(tr.spent).toLocaleString('en')} spent.`;
+  const rows = TOWNS.filter((tw) => tr.rt[tw].open).map((tw) => {
+    const r = tr.rt[tw];
+    const nums = townNumbers(tr, tw);
+    const stop = isCrowd(tr, tw);
+    const dots = '●'.repeat(Math.min(r.waiting, 24));
+    const house = offered(tr, done).find((it) => it.kind === 'house' && it.town === tw);
+    const houseBtn = house
+      ? `<button class="btn" data-buy="${house.id}" ${tr.wallet >= house.price ? '' : 'disabled'}>${tw === 'village' && house.id.endsWith('.1') ? "Build the third cottage's house" : 'Build a house'}: ${house.price.toLocaleString('en')} Boogles</button>`
+      : `<small>No more house plots on offer here yet.</small>`;
+    let seat: string;
+    const next = nextSeatStep(tw, r);
+    if (!next) seat = 'All seats built.';
+    else if (tr.seats === 'haul') {
+      const j = tr.job;
+      if (j && j.town === tw) {
+        const parts = (Object.keys(j.bill) as Material[]).map(
+          (m) => `${NAMES[m]} ${Math.floor(j.got[m] ?? 0)}/${j.bill[m]}`,
+        );
+        const blocked = seatBlockers(w);
+        seat = `Hauling for ${STEP_NAME[j.step]}: ${parts.join(', ')}. Bring it to Home; the seats go in when the bill is stacked.${blocked.length ? ` <b>Waiting on ${blocked.map((m) => NAMES[m]).join(', ')}: its source is not on the line yet.</b>` : ''}`;
+      } else {
+        const b = seatBill(tr, tw, next);
+        seat = `Next seats: ${STEP_NAME[next]}, ${Object.entries(b)
+          .map(([m, n]) => `${n} ${NAMES[m as Material]}`)
+          .join(', ')} hauled${stop ? ' (another town is being served first)' : ' once a crowd of four waits'}.`;
+      }
+    } else {
+      const it = tr.items.find((x) => x.id === `seat.${tw}.${next}`);
+      seat = it
+        ? `<button class="btn" data-buy="${it.id}" ${stop && tr.wallet >= it.price ? '' : 'disabled'}>${STEP_NAME[next]}: ${it.price.toLocaleString('en')} Boogles</button> ${stop ? '' : '<small>(for a crowd of four or more)</small>'}`
+        : '';
+    }
+    return `<div class="town${stop ? ' crowd' : ''}"><div class="head"><b>${esc(townLabel(w, tw).replace(/^./, (c) => c.toUpperCase()))}</b><small>${nums.riders.toFixed(1)} riders a minute each way · ${nums.seats} seats · fare ${nums.fare} · ${r.houses} bought house${r.houses === 1 ? '' : 's'}${nums.building ? ` · ${nums.building} going up` : ''}</small></div><div class="riders">${dots || '<small>nobody waiting</small>'} <span>${r.waiting} waiting${stop ? ': the train stops' : ''}</span></div><div class="buys">${houseBtn}</div><div class="seat">${seat}</div></div>`;
+  });
+  html('towns', rows.join(''));
+}
+$('towns').addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLElement>('[data-buy]');
+  if (b) toast(buyItem(w, b.dataset.buy!) ?? 'Bought.');
+});
 function goals() {
   html(
     'goals',
@@ -504,7 +727,8 @@ function frame(now: number) {
     }
     if (acc > 1) acc = 0;
   }
-  draw();
+  spawnFx(now);
+  draw(now);
   if (now - uiAt > 200) {
     uiAt = now;
     panels();
