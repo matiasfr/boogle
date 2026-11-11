@@ -6,6 +6,11 @@
 > upgrades**, and **the shop stays free**. The body below was reworked for both on 10 November; where the rework had to
 > pick a reading of his words it says so, and the review lists what those answers do to the materials economy. Anything
 > he did not answer is still this brief's proposal, not his pick.
+>
+> **Changed later on 10 November (owner):** Boogles buy town upgrades, source upgrades and passenger cars; never engine or
+> cargo parts, never materials ([decision log](../decisions.md#decided)). This replaces "Anything, including engine and
+> cargo upgrades" wherever the body below still says it ("Boogles beside resources", open question 2, the design
+> review's ruling 1 and owner questions 1 and 2, which it settles). The body is reworked before the model step.
 
 # Passenger trade (passenger-trade)
 
