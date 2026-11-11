@@ -168,13 +168,13 @@ test('the report leads with the line to paste and says what it is not', () => {
   assert.equal(md.split('\n')[2], pasteLine(r));
   assert.match(
     pasteLine(r),
-    /^Tested on a device: tablet \(Apple GPU\), Safari 26, build abc123def456, suite quick, 1\/2 scenes pass, run dv-/,
+    /^Tested on a device: tablet \(Apple GPU\), Safari 26\.0, build abc123def456, suite quick, 1\/2 scenes pass, run dv-/,
   );
   assert.match(md, /\*\*town\*\*: fail: p95 80\.0 ms/);
   assert.match(md, /gpu ms/);
   assert.match(md, /unavailable/);
   assert.match(md, /public/);
-  assert.equal(browserVersion('Mozilla/5.0 Chrome/142.0.1 Safari/537.36'), 'Chrome 142');
+  assert.equal(browserVersion('Mozilla/5.0 Chrome/142.0.1 Safari/537.36'), 'Chrome 142.0.1');
   assert.equal(browserVersion('weird'), 'browser');
 });
 

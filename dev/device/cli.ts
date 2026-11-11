@@ -23,6 +23,7 @@ import { cleanLabel, makeRunId, SUITE_NAMES, shortCode } from '../../src/debug/d
 import { OUT as PLAYTEST_OUT, playdata, resolveSession } from '../playtest/fetch.ts';
 import { parseSession, str } from '../playtest/read.ts';
 import { loadBaseline, loadBenchHistory, saveBaseline } from './baseline.ts';
+import { previousRun, type Pulled } from './compare.ts';
 import { readDevice, type DeviceResult } from './read.ts';
 import { pasteLine, report } from './report.ts';
 import { WAIT_MS, planPull, waitForRun } from './runs.ts';
@@ -66,6 +67,23 @@ const pulledAt = (id: string) => {
     return 0;
   }
 };
+/** Every pulled run on disk with its pull time, for the "previous run of this device" section. Bad files skipped. */
+function pulledRuns(): Pulled[] {
+  if (!fs.existsSync(OUT)) return [];
+  return fs.readdirSync(OUT).flatMap((id) => {
+    try {
+      const result = JSON.parse(fs.readFileSync(resultFile(id), 'utf8')) as DeviceResult;
+      return Array.isArray(result.scenes) ? [{ result, at: pulledAt(id) }] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+const context = (result: DeviceResult) => ({
+  baseline: loadBaseline(result.suite),
+  bench: loadBenchHistory(),
+  previous: previousRun(result, pulledAt(result.id), pulledRuns()),
+});
 
 function makeLink(): string {
   const suite = option('--suite') ?? 'quick';
@@ -132,10 +150,7 @@ async function pullOne(server: ReturnType<typeof playdata>, row: Row) {
     minted(row.id),
   );
   fs.writeFileSync(resultFile(row.id), JSON.stringify(result, null, 2) + '\n');
-  fs.writeFileSync(
-    path.join(dirOf(row.id), 'report.md'),
-    report(result, { baseline: loadBaseline(result.suite), bench: loadBenchHistory() }),
-  );
+  fs.writeFileSync(path.join(dirOf(row.id), 'report.md'), report(result, context(result)));
   console.log(pasteLine(result));
   console.log(`  ${path.relative(ROOT, path.join(dirOf(row.id), 'report.md'))}`);
   return result;
@@ -206,10 +221,7 @@ function baseline() {
   if (!id) throw new Error(`no pulled run like "${want}" in .look/device/: npm run device -- pull ${want} first`);
   const result = JSON.parse(fs.readFileSync(resultFile(id), 'utf8')) as DeviceResult;
   const file = saveBaseline(result);
-  fs.writeFileSync(
-    path.join(dirOf(id), 'report.md'),
-    report(result, { baseline: loadBaseline(result.suite), bench: loadBenchHistory() }),
-  );
+  fs.writeFileSync(path.join(dirOf(id), 'report.md'), report(result, context(result)));
   console.log(
     `Baseline for suite ${result.suite}: run ${result.code}${result.label ? ` (${result.label})` : ''}, ${result.device || 'device'}, build ${result.build || '?'}.`,
   );

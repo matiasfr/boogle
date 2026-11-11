@@ -53,7 +53,7 @@ folder map in [src/README.md](../../src/README.md).
   the `crystal`/`finds` mark. Compare initial and final checkpoints before treating that line as a missed action.
 - **Scenarios.** `npm run scenario -- <name>` and `npm run look` (stills, motion sheets, heatmaps). Scenarios in
   [dev/scenarios/](../../dev/scenarios/): atlas, boogler-tag, caves, controls-guide, dino, falls,
-  guest-play, haul-loop, interact, lighthouse, one-hand, particles, pause, reconnect-edit, shared-kinds, smoke, splash,
+  guest-play, interact, lighthouse, one-hand, particles, pause, reconnect-edit, shared-kinds, smoke, splash,
   world-inputs. PR CI runs single-player
   scenarios only (`world-inputs`, must pass; two software-rendered tabs are too slow there); seven others (reconnect-edit,
   shared-kinds, one-hand, interact, caves, lighthouse, atlas) run nightly on the owner Mac via `dev/daily` and never block; the

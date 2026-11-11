@@ -17,6 +17,8 @@
 //   t.page(pathname, { size, colorScheme })    a plain page of the stack (not the game), e.g. the atlas at 'atlas/';
 //                                              its uncaught errors fail the scenario like a player's
 //   t.sleep(ms), t.VIEWS, t.out                helpers and the image directory (.look/scenarios/<name>/)
+// A scenario that cannot pass in the current game sets `stale: '<why, and what a port needs>'`: every run prints that
+// line as SKIP and runs the rest (it is never a pass); `--stale` runs it anyway.
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
 // failure every player's last frame is saved as <name>-final-still.png and a Playwright trace as <name>-trace.zip
 // (`npx playwright show-trace <zip>`: the action timeline, console, network and errors; `--no-trace` skips it).
@@ -47,8 +49,15 @@ export type Scenario = {
   island?: boolean;
   /** URL params for every player of the scenario, before a player's own `query`. */
   query?: string;
+  /** Known stale: why it cannot pass in the current game and what a port needs. The runner prints this and skips the
+   * scenario (never silently, never as a pass); `--stale` runs it anyway. */
+  stale?: string;
   run: (t: T) => Promise<void>;
 };
+
+/** The line the runner prints for a known-stale scenario it skips. */
+export const staleLine = (name: string, why: string) =>
+  `  SKIP  ${name} is known stale, not run (\`--stale\` runs it): ${why}`;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // <name>.ts
@@ -70,6 +79,8 @@ if (outAt >= 0) {
 }
 const trace = !args.includes('--no-trace');
 if (!trace) args.splice(args.indexOf('--no-trace'), 1);
+const runStale = args.includes('--stale');
+if (runStale) args.splice(args.indexOf('--stale'), 1);
 const at = args.findIndex((a) => a === '--url' || a.startsWith('--url='));
 let url: string | null = process.env.LOOK_URL || null;
 if (at >= 0) {
@@ -90,14 +101,28 @@ if (bad.length) {
 let stack: Stack | undefined,
   browser: Browser | undefined,
   failed = 0;
+// Known-stale scenarios are named and skipped before anything starts, so a run of only those opens no browser.
+const mods = new Map<string, Scenario>();
+for (const name of names)
+  mods.set(name, (await import(pathToFileURL(path.join(here, files.get(name)!)).href)).default as Scenario);
+const skipped = names.filter((n) => mods.get(n)!.stale && !runStale);
+for (const name of skipped) {
+  const mod = mods.get(name)!;
+  console.log(`\n== ${name}: ${mod.about || ''}\n${staleLine(name, mod.stale!)}`);
+}
+const toRun = names.filter((n) => !skipped.includes(n));
 startRun(path.join(outputRoot, 'verdict.json'), { checkout: root });
 try {
-  stack = await startStack({ url });
-  const st = stack;
-  const br = (browser = await launch());
-  const base = st.base;
-  for (const name of names) {
-    const mod: Scenario = (await import(pathToFileURL(path.join(here, files.get(name)!)).href)).default;
+  if (toRun.length) {
+    stack = await startStack({ url });
+    browser = await launch();
+  }
+  // Both are set whenever the loop below has a scenario to run.
+  const st = stack as Stack;
+  const br = browser as Browser;
+  const base = toRun.length ? st.base : '';
+  for (const name of toRun) {
+    const mod = mods.get(name)!;
     const out = path.join(outputRoot, name);
     fs.rmSync(out, { recursive: true, force: true });
     fs.mkdirSync(out, { recursive: true });
@@ -188,6 +213,10 @@ try {
   await browser?.close().catch(() => {});
   await stack?.close();
 }
-console.log(`\n${failed ? failed + ' scenario(s) FAILED' : 'all scenarios passed'}`);
-finishRun({ verdict: failed ? 'failure' : 'pass', scenarios: names, failed });
+const ran = names.length - skipped.length;
+const skips = skipped.length ? `; ${skipped.length} known stale, skipped: ${skipped.join(', ')}` : '';
+console.log(
+  `\n${failed ? failed + ' scenario(s) FAILED' : ran ? 'all scenarios that ran passed' : 'no scenario ran'}${skips}`,
+);
+finishRun({ verdict: failed ? 'failure' : ran ? 'pass' : 'skipped', scenarios: names, failed, skipped });
 process.exit(failed ? 1 : 0);

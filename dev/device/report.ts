@@ -4,6 +4,7 @@ import { launchHeadlines, launchKind } from '../../src/debug/device/launch.ts';
 import { heatDrift, longTasksSupported, readyLine } from '../../src/debug/device/stats.ts';
 import { LIMIT_KEYS } from '../../src/debug/device/limits.ts';
 import type { Baseline, BenchEntry } from './baseline.ts';
+import { browserVersion, differences, gpuName, sameHardware } from './compare.ts';
 import type { DeviceResult, Raw, SceneRow } from './read.ts';
 
 const dash = '-';
@@ -11,24 +12,7 @@ const fmt = (v: number | null | undefined, d = 1) => (typeof v === 'number' ? v.
 const cell = (v: unknown) => (v === null || v === undefined || v === '' ? dash : String(v));
 const esc = (v: unknown) => cell(v).replace(/\|/g, '/').replace(/\n/g, ' ');
 
-/** "Safari 26", "Chrome 142", "Firefox 140" from a user agent; the browser's name alone when no version shows. */
-export function browserVersion(ua: string, fallback = 'browser'): string {
-  const pick = (re: RegExp, name: string) => {
-    const m = re.exec(ua);
-    return m ? `${name} ${m[1]!.split('.')[0]}` : null;
-  };
-  return (
-    pick(/Edg\/([\d.]+)/, 'Edge') ??
-    pick(/(?:CriOS|Chrome)\/([\d.]+)/, 'Chrome') ??
-    pick(/(?:FxiOS|Firefox)\/([\d.]+)/, 'Firefox') ??
-    (/Safari\//.test(ua) ? pick(/Version\/([\d.]+)/, 'Safari') : null) ??
-    fallback
-  );
-}
-
-const gpuName = (r: DeviceResult) =>
-  [r.gpu.desc, [r.gpu.vendor, r.gpu.arch].filter(Boolean).join(' ')].find((s) => typeof s === 'string' && s) ||
-  'GPU unknown';
+export { browserVersion } from './compare.ts';
 
 /** The line an agent pastes into a report. */
 export function pasteLine(r: DeviceResult): string {
@@ -95,8 +79,8 @@ function limits(r: DeviceResult) {
   return table(['limit', 'adapter', 'device (what three requested)'], rows);
 }
 
-/** What a report compares against; either may be missing. */
-export type Context = { baseline?: Baseline | null; bench?: BenchEntry[] };
+/** What a report compares against; any may be missing. `previous` is this device's newest earlier pulled run. */
+export type Context = { baseline?: Baseline | null; bench?: BenchEntry[]; previous?: DeviceResult | null };
 
 /** `this / base` as "1.84x"; a dash when either is missing or the base is zero. */
 export function ratio(v: number | null, base: number | null): string {
@@ -111,51 +95,53 @@ export function diff(v: number | null, base: number | null): string {
 
 const same = (a: string, b: string) => a.length >= 7 && b.length >= 7 && (a.startsWith(b) || b.startsWith(a));
 
-/** The baseline section: the device's figures beside the Mac's. Scenes the baseline lacks print dashes. */
-export function baselineSection(r: DeviceResult, ctx: Context): string[] {
-  const b = ctx.baseline;
-  if (!b)
-    return [
-      '## Against the baseline',
-      '',
-      `No baseline for suite ${r.suite || '?'} yet. On the Mac, open the same link in your own Chrome when it is quiet, pull that run, then \`npm run device -- baseline <code>\`.`,
-      '',
-    ];
-  const base = b.result;
-  const who = `run ${base.code}${base.label ? ` (${base.label})` : ''}, ${base.device || 'device'} (${gpuName(base)}), ${browserVersion(base.ua)}, build ${base.build || '?'}, saved ${b.saved.slice(0, 10)}`;
-  if (base.id === r.id)
-    return ['## Against the baseline', '', `This run is the baseline for suite ${r.suite}: ${who}.`, ''];
-  const out = [
-    '## Against the baseline',
-    '',
-    `Baseline: ${who}. Ratios are this run over the baseline (above 1 is slower).`,
-    '',
-  ];
-  if (base.suite !== r.suite)
+const who = (o: DeviceResult) =>
+  `run ${o.code}${o.label ? ` (${o.label})` : ''}, ${o.device || 'device'} (${gpuName(o)}), ${browserVersion(o.ua)}, build ${o.build || '?'}`;
+
+/**
+ * This run beside another (`name`: "the baseline", "the previous run"). On the same hardware with any condition
+ * different (browser version, viewport, DPR, refresh interval, graphics settings, cold or warm) it says the runs are
+ * not comparable, lists each difference and prints no frame-time ratios, only counts: a smaller window or a newer
+ * browser is not a regression. On other hardware (a phone beside the Mac) the ratios are the point; the differing
+ * conditions are listed beside them.
+ */
+export function comparison(r: DeviceResult, o: DeviceResult, name: string): string[] {
+  const out: string[] = [];
+  const diffs = differences(r, o);
+  const hardware = sameHardware(r, o);
+  const frames = !hardware || !diffs.length;
+  if (hardware && diffs.length)
     out.push(
-      `> The baseline is suite ${base.suite}, this run is suite ${r.suite}: scenes are matched by name only.`,
+      `> **Not comparable with ${name}.** Same hardware, different conditions, so frame times are not compared (a difference here is the setting, not a regression):`,
+      ...diffs.map((d) => `> - ${d}`),
       '',
     );
-  if (base.build && r.build && base.build !== r.build)
+  else if (diffs.length)
     out.push(
-      `> The builds differ (${r.build} here, ${base.build} in the baseline): a count that moved may be the code, not the device.`,
+      `> Other hardware than ${name}, and also: ${diffs.join('; ')}. Read the ratios as this device against ${name} under these settings.`,
+      '',
+    );
+  if (frames) out.push(`Ratios are this run over ${name} (above 1 is slower).`, '');
+  if (o.suite !== r.suite)
+    out.push(`> ${name} is suite ${o.suite}, this run is suite ${r.suite}: scenes are matched by name only.`, '');
+  if (o.build && r.build && o.build !== r.build)
+    out.push(
+      `> The builds differ (${r.build} here, ${o.build} in ${name}): a count that moved may be the code, not the device.`,
       '',
     );
   const rungs: string[] = [];
   const rows = r.scenes.map((s) => {
-    const m = base.scenes.find((x) => x.name === s.name) ?? null;
+    const m = o.scenes.find((x) => x.name === s.name) ?? null;
     if (m && s.rung !== null && m.rung !== null && s.rung !== m.rung)
       rungs.push(
-        `- **${s.name}**: detail rung ${s.rung} on this device, ${m.rung} on the baseline, so calls and triangles differ for that reason, not because of the code.`,
+        `- **${s.name}**: detail rung ${s.rung} on this device, ${m.rung} on ${name}, so calls and triangles differ for that reason, not because of the code.`,
       );
+    const timing = frames
+      ? [fmt(s.p50), fmt(m?.p50), ratio(s.p50, m?.p50 ?? null), fmt(s.p95), fmt(m?.p95), ratio(s.p95, m?.p95 ?? null)]
+      : [];
     return [
       s.name,
-      fmt(s.p50),
-      fmt(m?.p50),
-      ratio(s.p50, m?.p50 ?? null),
-      fmt(s.p95),
-      fmt(m?.p95),
-      ratio(s.p95, m?.p95 ?? null),
+      ...timing,
       cell(s.calls),
       cell(m?.calls),
       diff(s.calls, m?.calls ?? null),
@@ -166,16 +152,12 @@ export function baselineSection(r: DeviceResult, ctx: Context): string[] {
       `${fmt(s.ratio, 2)} / ${fmt(m?.ratio, 2)}`,
     ];
   });
+  const timingHead = frames ? ['p50 ms', 'base p50', 'x', 'p95 ms', 'base p95', 'x'] : [];
   out.push(
     ...table(
       [
         'scene',
-        'p50 ms',
-        'base p50',
-        'x',
-        'p95 ms',
-        'base p95',
-        'x',
+        ...timingHead,
         'calls',
         'base',
         'diff',
@@ -191,9 +173,39 @@ export function baselineSection(r: DeviceResult, ctx: Context): string[] {
     ...rungs,
     ...(rungs.length ? [''] : []),
   );
-  const missing = r.scenes.filter((s) => !base.scenes.some((x) => x.name === s.name)).map((s) => s.name);
-  if (missing.length) out.push(`Not in the baseline (dashes): ${missing.join(', ')}.`, '');
+  const missing = r.scenes.filter((s) => !o.scenes.some((x) => x.name === s.name)).map((s) => s.name);
+  if (missing.length) out.push(`Not in ${name} (dashes): ${missing.join(', ')}.`, '');
   return out;
+}
+
+/** The baseline section: the device's figures beside the Mac's. Scenes the baseline lacks print dashes. */
+export function baselineSection(r: DeviceResult, ctx: Context): string[] {
+  const b = ctx.baseline;
+  if (!b)
+    return [
+      '## Against the baseline',
+      '',
+      `No baseline for suite ${r.suite || '?'} yet. On the Mac, open the same link in your own Chrome when it is quiet, pull that run, then \`npm run device -- baseline <code>\`.`,
+      '',
+    ];
+  const base = b.result;
+  const line = `${who(base)}, saved ${b.saved.slice(0, 10)}`;
+  if (base.id === r.id)
+    return ['## Against the baseline', '', `This run is the baseline for suite ${r.suite}: ${line}.`, ''];
+  return ['## Against the baseline', '', `Baseline: ${line}.`, '', ...comparison(r, base, 'the baseline')];
+}
+
+/** This device's newest earlier run, when there is one and it is not the baseline (already compared above). */
+export function previousSection(r: DeviceResult, ctx: Context): string[] {
+  const p = ctx.previous;
+  if (!p || p.id === r.id || p.id === ctx.baseline?.result.id) return [];
+  return [
+    "## Against this device's previous run",
+    '',
+    `Previous: ${who(p)}.`,
+    '',
+    ...comparison(r, p, 'the previous run'),
+  ];
 }
 
 /** One line comparing exact draw calls and triangles with the bench's, when its history has this build. Null if not. */
@@ -442,6 +454,7 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
   const d = drift(r);
   out.push(
     ...baselineSection(r, ctx),
+    ...previousSection(r, ctx),
     ...benchBlock(r, ctx),
     '## Heat check',
     '',

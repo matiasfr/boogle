@@ -1,13 +1,13 @@
 // Replication budget at 3,000 entities (docs/plans/replication.md, red-team revision 5): the server's per-step diff
 // and flush, the fallback full re-projection, the late-join size, and the client's mirror clone and predicted
-// rebuild. Bounds are loose enough for a slow CI runner; the measured numbers are printed for the record.
+// rebuild. Over a bound is a printed warning, never a failure (owner, 10 November); the numbers are printed for the record.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { defineReplicated, cellOf, cellsNear, type EntityId, type Fields } from '../src/world/replicate.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createMirror, createPredictor } from '../src/world/replicate-client.ts';
-import { measureWithinBudget, overBudget } from './helpers/budget.ts';
+import { budgetWarning, measureWithinBudget } from './helpers/budget.ts';
 
 const N = 3000;
 const CLIENTS = 6;
@@ -153,6 +153,7 @@ test(`budget: ${N} entities, ${CLIENTS} clients`, { timeout: 60_000 }, (t) => {
   });
   t.diagnostic(JSON.stringify({ ...last.report, best, loadScale: +scale.toFixed(2), runs }));
   if (process.env.REPLICATION_BUDGET) console.log(last.report, best);
-  const bad = overBudget(best, limits, scale, runs);
-  assert.equal(bad, '', `replication budget: ${bad}`);
+  // A timing target guides and never fails (owner, 10 November); the size and state checks above still fail.
+  const warning = budgetWarning('replication budget', best, limits, scale, runs);
+  if (warning) t.diagnostic(warning);
 });

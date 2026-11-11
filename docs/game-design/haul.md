@@ -87,7 +87,7 @@ for now. The build is one data table (every piece with the stock fraction it app
 
 Code: [src/render/hut-blueprint.ts](../../src/render/hut-blueprint.ts) (the pieces),
 [src/features/hut-build.ts](../../src/features/hut-build.ts) (the view and sounds). No state or ops of its own.
-Scenario: `npm run scenario -- hut-build`.
+No scenario: `hut-build` drove the classic `src.take`/`site.stock` edits the railway room refuses and was removed (11 November).
 
 ## Machine runs, helpers and the age change
 
@@ -127,7 +127,7 @@ checks the deck never lunges at the end).
 
 Code: [src/sim/scripted-run.ts](../../src/sim/scripted-run.ts) (`runAt`, `MACHINE_RUN`), op `site.run {s}` and the
 `sites` tick; the bank: [src/sim/bank.ts](../../src/sim/bank.ts), [src/world/rules/bank.ts](../../src/world/rules/bank.ts),
-[src/features/helper-bank.ts](../../src/features/helper-bank.ts), op `bank.wake`, state `bank`. Scenario: `npm run scenario -- haul-loop`.
+[src/features/helper-bank.ts](../../src/features/helper-bank.ts), op `bank.wake`, state `bank`. No scenario: `haul-loop` drove the classic edits the railway room refuses and was removed (11 November); the railway's two-player route is `npm run playthrough -- --players 2`.
 
 Code: [src/sim/sites.ts](../../src/sim/sites.ts), [src/sim/tiers.ts](../../src/sim/tiers.ts),
 [src/world/rules/sites.ts](../../src/world/rules/sites.ts), [src/features/work-sites.ts](../../src/features/work-sites.ts),

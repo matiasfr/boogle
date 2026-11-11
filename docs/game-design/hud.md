@@ -37,7 +37,7 @@ answers"); the owner kept it (2026-11-01). Local and cosmetic: nothing here is s
 - **Files.** [src/ui/](../../src/ui/), [src/features/held.ts](../../src/features/held.ts),
   [src/features/prompt.ts](../../src/features/prompt.ts), [src/features/haul-stack.ts](../../src/features/haul-stack.ts),
   [src/features/work-sites.ts](../../src/features/work-sites.ts), [src/features/updates.ts](../../src/features/updates.ts).
-  Stills at desktop and iPad size: `npm run scenario -- hud-glance`. Listening pack: `node dev/audio/render.ts --only ui`.
+  Stills at desktop and iPad size: `npm run scenario -- hud-glance` is known stale (skipped; it drives classic edits the railway room refuses; what a port needs is in its header). Listening pack: `node dev/audio/render.ts --only ui`.
 
 ---
 
