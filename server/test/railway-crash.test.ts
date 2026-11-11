@@ -12,6 +12,8 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { railCounts } from '../../src/sim/railway-queries-line2.ts';
+import { railClock, trees } from '../../test/helpers/rail.ts';
 
 type Boundary = {
   boundary: 'after-checkpoint' | 'replacement' | 'recovery-checkpoint';
@@ -81,8 +83,8 @@ for (const boundary of ['after-checkpoint', 'replacement', 'recovery-checkpoint'
     else assert.equal(document.tick, evidence.checkpointTick, 'the last whole checkpoint is what is on disk');
     const restored = createRailwayWorldHost({ roomId, store, tick: false, now: () => evidence.resumedAt ?? 1000000 });
     await restored.whenReady();
-    assert.equal(restored.rules.railway.railway.falls?.yaw[0], 0.5);
-    const counts = restored.rules.railway.counts();
+    assert.equal(trees(restored.rules.railway.world())[0]!.yaw, 0.5);
+    const counts = railCounts(restored.rules.railway.world());
     // The final deposit was after the checkpoint: a crash takes it back, whole (two logs back on the back).
     assert.equal(counts.total, initial, 'every unit conserved');
     assert.equal(counts.stock, offline ? 0 : 22);
@@ -94,7 +96,10 @@ for (const boundary of ['after-checkpoint', 'replacement', 'recovery-checkpoint'
       offline ? 'accepted' : null,
     );
     if (offline)
-      assert.ok(restored.rules.railway.railway.resumeMarker > 2147483647, 'real calendar marker stays valid');
+      assert.ok(
+        railClock(restored.rules.railway.world()).resumeMarker > 2147483647,
+        'real calendar marker stays valid',
+      );
     const snapshot = restored.sync.snapshot();
     await restored.close();
     const again = createRailwayWorldHost({ roomId, store, tick: false, now: () => evidence.resumedAt ?? 1000000 });

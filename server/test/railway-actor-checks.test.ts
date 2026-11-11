@@ -9,6 +9,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
+import { rail } from '../../test/helpers/rail.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 type Obj = Record<string, unknown>;
@@ -126,7 +127,7 @@ test('an action without well-formed position and time is a recorded rejection', 
       await f.step(3);
       assert.equal(f.result(r), 'rejected', JSON.stringify(facts));
     }
-    assert.equal(f.host.rules.railway.railway.awake, -1);
+    assert.equal(rail(f.host.rules.railway.world()).awake, -1);
   } finally {
     await f.close();
   }

@@ -14,6 +14,8 @@ import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespac
 import { JUMP_ADDRESS_ERROR, JUMP_DAY_ERROR, JUMP_ROOM_RE } from '../../src/world/railway-jump.ts';
 import { addressKey } from '../src/jump.ts';
 import { DEFAULT_ROOM } from '../../src/constants.ts';
+import { qjob } from '../../test/helpers/rail.ts';
+import { LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import type { SeedStage } from '../../src/sim/railway-seeds.ts';
 
 const ns = RAILWAY_PLAY_NS;
@@ -46,8 +48,8 @@ async function loadedRailway(dataDir: string, roomId: string) {
   await store.init();
   const host = createRailwayWorldHost({ roomId, store, tick: false, pidOf: () => 'a' });
   await host.whenReady();
-  const railway = host.rules.railway.railway;
-  const line2 = railway.line2 ? railway.line2.jobs.map((j) => j.completion) : null;
+  const w = host.rules.railway.world();
+  const line2 = LINE2_STATIONS.map((_s, k) => qjob(w, k).completion);
   await host.close({ save: false });
   return { line2 };
 }
