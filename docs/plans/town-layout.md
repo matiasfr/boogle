@@ -370,7 +370,7 @@ also split step 4 and ordered step 7; its build-order ruling is in
   the path mask for the ring and the dock street, one merged kerb and green mesh, no shadow of its own. The green's
   edge is `TOWN_GREEN`'s outline, not a circle; the kerb is on the green's side only; the worn path is paint. Verify:
   a look from the hall's front and one from above; `npm run perf` on a quiet machine (one mesh, one material added).
-- [ ] **4a. The forge finishes when it is built. After M8; does not wait for the flip.** Normal review.
+- [x] **4a. The forge finishes when it is built. After M8; does not wait for the flip.** Normal review.
   `src/entities/railway/forge-finish.ts`: the show's trigger is the forge lit, not `works.crossing` (owner's decision
   of 10 November; nothing in it depends on the layout); `works-late-game.md` step 6 and `place.md` updated. Verify: a
   look at `--rail-seed q1-done` (roof on) and at `awake` (frame only); the Works bot from `works-arrive` no longer

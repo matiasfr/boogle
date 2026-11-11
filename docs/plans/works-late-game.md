@@ -336,7 +336,9 @@ left the roof to "slice 5's cargo", which was never built. Piece by piece:
 - **The doubled pour:** cut. Nobody asked for it, and it would change Q6's pacing.
 - **The walk-in workshop (T6b):** keep, opening with the roof.
 
-**Recommended trigger: the crossing.** When the twelfth pier footing is set, the forge is finished as the area's
+**Built (10 November): the trigger is the forge lit, not the crossing** (`forge-finish.ts`; [town-layout](town-layout.md), step 4a). The beams drop in beside the village halt when the forge lights, with no train; a reload or late joiner sees it finished. The paragraph below is the superseded recommendation.
+
+**Superseded trigger: the crossing.** When the twelfth pier footing is set, the forge is finished as the area's
 closing reward. It has cast the boiler, the breaker and every footing.
 - **The show:** line 1's next village arrival after `crossing ≥ 0` brings a stack of roof trusses on its car. Two little
   guys lift the roof and the finished chimney cap on, about 20 s, as the scaffold poles come down.
