@@ -1,9 +1,10 @@
 // Ring Island's ground (docs/plans/ring-island-build1.md, R2b): a 2 m grid over the island's waterline box, the max of
 // the four cones' surfaces (Place's buildFar, src/proto/greybox/ring-cones.ts) carried on below their -4 m base to the
-// sea bed, graded to a fill under the island halt and 1.5 m under the loop deck and its neck (Level findings 7 and 8).
+// sea bed, graded to a fill under the island halt and capped under the run-off bed (RING_END.cut, R2d; Level findings 7,
+// 15 and 20).
 // Pure: no three.js, no physics. The view builds the drawn mesh and the heightfield collider from `heights`; recovery
 // and the saved pose read `islandH`, the same triangles the collider has. World metres.
-import { RING_FORMATION, RING_HALT, RING_LOOP, RING_ORIGIN, ringAt } from '../../sim/railway-ring-layout.ts';
+import { RING_END, RING_ORIGIN } from '../../sim/railway-ring-layout.ts';
 
 /** dx, dz, radius, height from the island's centre, as RING_CONES. */
 export type Cone = readonly [number, number, number, number];
@@ -13,41 +14,14 @@ export const ISLAND_BED = -7.5;
 /** The fill under the island halt: its top, under the 8.0 m deck's 0.5 m slab with 10 cm spare, and the embankment's
  * fall per metre outside it (1 in 1.5). */
 export const ISLAND_FILL = { top: 7.4, u0: 42700, u1: 46900, lat0: -1030, lat1: 630, fall: 1 / 1.5 } as const;
-/** The loop deck's grade (Level finding 8): ground at most 1.5 m under the 8.0 m deck within `band` m of the loop's
- * centreline or its neck, rising at `fall` per metre beyond. */
-export const ISLAND_LOOP_GRADE = { cap: 6.5, band: 3.5, fall: 1 / 1.5 } as const;
-
-const m = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
+/** The deepest the run-off's cutting goes into the cones (Level finding 15 counts 1.5 m at the faces; the cone is 9.4 m at the bed's end, so 2 m leaves room). */
+export const ISLAND_CUT_MAX = 2;
 const UNIT = Math.sqrt(1 + 0.0272 * 0.0272);
 /** u and lat (m) of a world point: the inverse of ringAt (its orthogonal unit axes, unrounded). */
 export function ringUL(x: number, z: number) {
   const dx = x - RING_ORIGIN.x / 100,
     dz = z - RING_ORIGIN.z / 100;
   return { u: (0.0272 * dx - dz) / UNIT, lat: (dx + 0.0272 * dz) / UNIT };
-}
-
-/** The loop's neck and ring as segments (world m) for the grade: both tracks off the halt's north end, 12 m on, then
- * to the loop's mouth beside its west point (the greybox's links, at RING_LOOP's angles). */
-function loopNeck() {
-  const r = RING_LOOP.r / 100,
-    cx = RING_LOOP.x / 100,
-    cz = RING_LOOP.z / 100;
-  const segs: [number, number, number, number][] = [];
-  for (const [t, a] of [
-    [RING_FORMATION.tracks[1], Math.PI - 0.22],
-    [RING_FORMATION.tracks[0], Math.PI + 0.22],
-  ] as const) {
-    const from = m(ringAt(RING_HALT.u1, t)),
-      mid = m(ringAt(RING_HALT.u1 + 1200, t));
-    segs.push([from.x, from.z, mid.x, mid.z], [mid.x, mid.z, cx + Math.cos(a) * r, cz + Math.sin(a) * r]);
-  }
-  return segs;
-}
-function segDist(x: number, z: number, [ax, az, bx, bz]: readonly number[]) {
-  const dx = bx! - ax!,
-    dz = bz! - az!;
-  const t = Math.max(0, Math.min(1, ((x - ax!) * dx + (z - az!) * dz) / (dx * dx + dz * dz)));
-  return Math.hypot(x - ax! - dx * t, z - az! - dz * t);
 }
 
 /** The island's ground: `centre` is the cones' origin (Place's FAR + ORIGIN), `cones` RING_CONES. */
@@ -68,8 +42,6 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
     z0 = Math.floor(minZ / ISLAND_CELL) * ISLAND_CELL;
   const nx = Math.ceil((maxX - x0) / ISLAND_CELL) + 1,
     nz = Math.ceil((maxZ - z0) / ISLAND_CELL) + 1;
-  const neck = loopNeck();
-  const loop = { x: RING_LOOP.x / 100, z: RING_LOOP.z / 100, r: RING_LOOP.r / 100 };
 
   /** The cones alone, carried below their base: ringHeight wherever that stands, the sea bed under the rest. */
   function cone(x: number, z: number) {
@@ -85,16 +57,23 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
       dl = Math.max(ISLAND_FILL.lat0 / 100 - lat, 0, lat - ISLAND_FILL.lat1 / 100);
     return Math.hypot(du, dl);
   }
-  /** Metres outside the loop's and neck's grade band (0 inside). */
-  function loopOut(x: number, z: number) {
-    let d = Math.abs(Math.hypot(x - loop.x, z - loop.z) - loop.r);
-    for (const s of neck) d = Math.min(d, segDist(x, z, s));
-    return Math.max(0, d - ISLAND_LOOP_GRADE.band);
+  /** Metres outside the run-off bed's rect (0 inside; RING_END.bed, u from the halt's north end to the buffers). */
+  function bedOut(x: number, z: number) {
+    const { u, lat } = ringUL(x, z),
+      B = RING_END.bed;
+    return Math.hypot(Math.max(B.u0 / 100 - u, 0, u - B.u1 / 100), Math.max(B.lat0 / 100 - lat, 0, lat - B.lat1 / 100));
   }
-  /** The graded ground at a world point (grid nodes sample this). */
+  /** The graded ground at a world point (grid nodes sample this): the cones, cut to RING_END.cut under the bed and back up
+   * the fill's 1 in 1.5 outside it, the cut at most ISLAND_CUT_MAX deep and gone within ISLAND_CUT_MAX / fall metres of
+   * the bed (so the cutting is a notch, not a slice through the hillside), never below the halt's fill. */
   function graded(x: number, z: number) {
-    const capped = Math.min(cone(x, z), ISLAND_LOOP_GRADE.cap + ISLAND_LOOP_GRADE.fall * loopOut(x, z));
-    return Math.max(capped, ISLAND_FILL.top - ISLAND_FILL.fall * fillOut(x, z));
+    const c = cone(x, z),
+      d = bedOut(x, z);
+    const depth = Math.max(
+      0,
+      Math.min(c - RING_END.cut / 100 - ISLAND_FILL.fall * d, ISLAND_CUT_MAX - ISLAND_FILL.fall * d),
+    );
+    return Math.max(c - depth, ISLAND_FILL.top - ISLAND_FILL.fall * fillOut(x, z));
   }
 
   // Row-major from (x0, z0): heights[i + j * nx], i along +x, j along +z.
@@ -143,7 +122,7 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
     onIsland,
     cone,
     fillOut,
-    loopOut,
+    bedOut,
     collider,
   };
 }

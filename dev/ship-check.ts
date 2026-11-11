@@ -1,8 +1,10 @@
 // Shared local pre-push gate. CI remains the full check on the exact branch head.
+import './node-version.ts'; // first: re-runs under the pinned Node
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { changeClass } from './ci/change-class.ts';
+import { testEnv } from './test-env.ts';
 
 const [base = 'origin/main', head = 'HEAD'] = process.argv.slice(2);
 const start = performance.now();
@@ -48,5 +50,9 @@ function affected(file: string, seen = new Set<string>()): boolean {
 const tests = git('ls-files', 'test/**/*.test.ts', 'test/*.test.ts')
   .split('\n')
   .filter((f) => f && affected(f));
-if (tests.length) run(['--test', '--test-timeout=5000', ...tests]);
+if (tests.length) {
+  // The unit run's settings (./test-env.ts): the rail audit off unless RAIL_AUDIT=1, as `npm run test:unit` runs.
+  const { env, flags } = testEnv();
+  execFileSync(process.execPath, ['--test', ...flags, ...tests], { stdio: 'inherit', env });
+}
 console.log(`ship-check: ${lint.length} lint files, typecheck, ${tests.length} affected tests; ${elapsed()}`);

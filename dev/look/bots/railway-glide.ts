@@ -11,7 +11,7 @@ import { triggerAction } from '../../../src/player/controls.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
-import { inspectRailway } from '../../../src/entities/railway/state.ts';
+import { inspectRailwayLegacy } from '../../../src/entities/railway/state.ts';
 import { teleport } from '../../../src/physics/engine.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
 import { background } from '../../../src/async.ts';
@@ -26,7 +26,7 @@ async function until(ok: () => boolean, what: string, ms: number) {
     await wait(20);
   }
 }
-const glider = () => inspectRailway()!.glider;
+const glider = () => inspectRailwayLegacy()!.glider;
 const query = new URLSearchParams(location.search);
 const taking = query.get('glideTake') === '1';
 /** Heading -x: off the summit towards the village, the forge and the line. */
@@ -40,11 +40,11 @@ function hideNotes() {
 }
 
 export async function stage() {
-  await until(() => !!inspectRailway()?.ready && !!me.body, 'railway ready', 60000);
+  await until(() => !!inspectRailwayLegacy()?.ready && !!me.body, 'railway ready', 60000);
   // With --players 2 the second stands a little apart, so each flies beside the other.
   const side = query.get('player') === '2' ? 2.5 : -1;
   if (taking) {
-    const s = inspectRailway()!;
+    const s = inspectRailwayLegacy()!;
     const device = s.line2View.glideDevice;
     if (s.glide || !device.available || !device.woken)
       throw new Error(`GLIDE glideTake=1 needs a woken, untaken device (q5-done): ${JSON.stringify(device)}`);
@@ -58,10 +58,10 @@ export async function stage() {
     if (side > 0) background(watchTake(), "player 2 watches the leader's take");
     return;
   }
-  if (!inspectRailway()!.glide)
+  if (!inspectRailwayLegacy()!.glide)
     throw new Error('GLIDE the room has not taken the glider: use --rail-seed glide-earned, or glideTake=1');
   await until(() => glider().owned, 'glider owned within 2 s', 2000);
-  const s = inspectRailway()!;
+  const s = inspectRailwayLegacy()!;
   if (!s.line2View.glideDevice.taken) throw new Error('GLIDE the summit device does not read taken');
   if (s.reward.showing) throw new Error('GLIDE a restored glider played its card');
   teleport(me.body!, SUMMIT.x + 2.5, SUMMIT.y + PLAYER_R + 0.2, SUMMIT.z + side);
@@ -69,7 +69,7 @@ export async function stage() {
   face();
   await wait(800);
   if (glider().rolls < 1) throw new Error('GLIDE no folded roll on your back');
-  if (inspectRailway()!.reward.showing) throw new Error('GLIDE a restored glider played its card');
+  if (inspectRailwayLegacy()!.reward.showing) throw new Error('GLIDE a restored glider played its card');
   hideNotes();
   console.log(`GLIDE staged ${JSON.stringify(glider())}`);
   page.__placeDone = true;
@@ -78,9 +78,9 @@ export async function stage() {
 
 /** glideTake=1, player 2: the leader's take reaches you as the flourish (no card) and the roll on your back. */
 async function watchTake() {
-  await until(() => inspectRailway()!.glide, "the leader's take reaches player 2", 90000);
+  await until(() => inspectRailwayLegacy()!.glide, "the leader's take reaches player 2", 90000);
   await wait(1500);
-  const s = inspectRailway()!;
+  const s = inspectRailwayLegacy()!;
   const seen = {
     flourish: s.reward.arrival.seen.includes('glide'),
     card: s.reward.showing,
@@ -137,7 +137,7 @@ export async function fly() {
   window.__debugCam?.clear();
   face();
   const b = me.body!;
-  const s = inspectRailway()!;
+  const s = inspectRailwayLegacy()!;
   input.keys.add('KeyW');
   try {
     await until(() => me.coyote <= 0, 'walk off the summit', 5000);
@@ -147,7 +147,7 @@ export async function fly() {
       // The first Jump in the air is the air jump: the canopy waits for it.
       const jumps = s.reward.tools.jumps;
       pressJump();
-      await until(() => inspectRailway()!.reward.tools.jumps === jumps + 1, 'air jump first', 1000);
+      await until(() => inspectRailwayLegacy()!.reward.tools.jumps === jumps + 1, 'air jump first', 1000);
       releaseJump();
       if (glider().open) throw new Error('GLIDE the air jump opened the canopy');
       await wait(450);

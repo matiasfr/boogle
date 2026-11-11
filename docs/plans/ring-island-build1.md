@@ -14,7 +14,7 @@
 > keep trains visible while actions wait on the server; the plan's two prompts ("Knock out the pawl", "Hang the weight");
 > "Station 7" and the "Ring Island" lever plaque, and the jump-in labels, kept as built; the halt map's smaller names
 > and Ring Island from the Pier laid (as the designer recommended); the glide-only secret boxes stay at the Pier laid.
-> Queued, not built: the trains fix, the two prompts and the halt map (calls 66 to 70 above).
+> Queued, not built: the trains fix and the two prompts. The halt map (calls 66 to 70) is built, 11 November.
 
 # Ring Island build 1: the line reaches the island
 
@@ -722,7 +722,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   not shown empty), `npm run perf`. Stills (`.look/`, 844x390; stitched `far-leaf-four.png`): the leaf reads as a raised
   orange slab on a grey pier at telescope zoom 2 (about 26 px), with and without the pennant; from Home's summit it is
   still a few-pixel orange tick behind the lookout tower and rock, the pennant adds a cream speck. Owner picks the pennant.
-- [ ] **2d. R2d, the terminus drawn (near view; no bump; after R1b).** `src/entities/ring-island/view.ts`: delete the
+- [x] **2d. R2d, the terminus drawn (near view; no bump; after R1b).** `src/entities/ring-island/view.ts`: delete the
   "the loop and its neck" block and its `RING_LOOP` import; draw `RING_END.bed` as deck with both tracks' rails from
   the halt's north end to the buffer faces, the two buffer stops (the railhead kit's shape, static colliders), the end
   board at `RING_END.board` (blank face: its words are the owner's), and the crossover's rails on the Way between
@@ -735,6 +735,19 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   after (the loop's 36 deck segments and posts go: fewer triangles expected, same draws). Proof look:
   `npm run look -- --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts`, its halt still, and one from
   the east platform's north end toward the buffers and the shard.
+  > **Built (11 November).** The loop block, `loopNeck`, `loopOut` and `ISLAND_LOOP_GRADE` are gone; the view draws the
+  > run-off deck (u 470–483.5), rails to the faces under both lanes, two timber stops, a blank end board and the
+  > crossover's rails (1 m steps, eased as `crossLat`). `ground.ts` cuts the cones to `RING_END.cut` under `bed` with the
+  > fill's 1 in 1.5, **the cut capped at 2 m (`ISLAND_CUT_MAX`) and gone within 3 m of the bed**: the plan's plain
+  > `min(cone, cap + fall × d)` slices the whole hillside (the cone climbs steeper than 1 in 1.5), and the cone is 9.4 m at
+  > the bed's end, so 1.5 m was too shallow. The terrace test holds every node in `CONCOURSE.terrace` grown by 1 m to the
+  > uncapped ground; three nodes at lat −8.9 to −9.0 rise 0.03–0.75 m from the loop's old neck cap (still 0.65 m under the
+  > platforms' 8.9 m). A 2 m triangle across the bed's edge can reach into its slab (never over its top); the test says so.
+  > Proof (`--rail-seed ring-joined`; trains run to the island there): a line-2 train's cars through the crossover (116
+  > samples, u 393–408) ride within −1 to +4 cm of the drawn rails' lateral (`crossLat`'s curve), so the rails sit under
+  > them; stills `r2d-end-still.png` (the run-off: no ground through deck or rails) and `r2d-train-still.png` (a train past
+  > the crossover on the down lane, standing short of the platforms). A train at the buffers or the plank crossing was
+  > not framed: the stop mark leaves the nose 28.8 m short (level-check), by numbers only.
 
 - [x] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
   main).** Everything under "R3" above up to `Aperture`; the sim's three train files and their tests only.
@@ -1202,6 +1215,16 @@ take if the stills show soft letters (sizes are fractions of the face, so the de
 nothing in this review changes: calls 66, 67 and 69 are confirmed
 ([decision](../decisions-rail.md#d-2026-11-11-ring-island-views-open-calls-answered)). Calls 68 and 70 were not put to
 him and stay open in [agent-calls](../agent-calls.md). The build (not started) proceeds on all five.
+
+**Built (11 November 2026, branch `worktree-agent-ac35c61470c137016`).** Calls 66 to 70 as recommended (68 and 70 are
+still unanswered by the owner). `halt-map.ts` builds the map per stage (`haltMap(layout, {open, head})`), the boards refit
+and redraw when the stage changes, `island-map.ts` has `MAP_CELL` and `MAP_SEA_SCALE`.
+- [x] Map by stage: v26's until the Pier is laid, then all of line 2 at true scale at 0.7, the Railhead from Q7, solid to Ring Island when joined.
+- [x] `island-map-labels` tests for every display at every stage (5, 6, 7, 7 names: the design counted stops, not names, as Village is shared) and the ring-plus-dot gap between stops of different names.
+- [x] `pathAt` test at the Railhead's and Ring Island's `s`, railheads 0 and 7 (`test/island-map-path.test.ts`).
+- [x] `npm run check`.
+- [x] `place.md`, "Departure boards at the halts".
+- [ ] The in-game proof look (`npm run look`, the 3D face at 1.5 m): not taken, the machine was at load 140; the map texture was drawn by the game's own `drawMapBase` in a browser canvas instead.
 
 - [ ] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
   loop graph's `crossing` node are re-run with the rack on the east platform (call 54): the bot no longer crosses the

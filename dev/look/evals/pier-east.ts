@@ -15,7 +15,8 @@ type Halts = {
 };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const f2 = (n: number) => +n.toFixed(2);
-const view = () => inspectRailway() as unknown as Halts | null;
+// The halts view's own inspection, under line2View with the other line-two views'.
+const view = () => (inspectRailway()?.line2View ?? null) as Halts | null;
 const end = performance.now() + 30000;
 const pier = () => view()?.halts?.find((h) => h.name === 'Pier');
 // The jump-in lands the player after the eval starts: wait for the Pier's x (about 1402) and the halt standing.

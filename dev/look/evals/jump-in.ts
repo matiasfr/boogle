@@ -3,9 +3,9 @@
 // frames Q3. `jumpwant=<stage>` checks another stage (its line-two count from `jumpdone=<n>`). A row with a `land`
 // also checks the avatar landed there, standing, and frames it from behind instead.
 //   npm run look -- --query from=q3-done --eval dev/look/evals/jump-in.ts --until window.__jumpDone --hud
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { inspectRailway, line2Jobs, railReady, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const { getRoomId } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
 const { roomSeed } = (await import(
   '/src/netplay/room-seed.ts' as string
@@ -20,15 +20,14 @@ const query = new URLSearchParams(location.search);
 const want = query.get('jumpwant') ?? 'q3-done';
 const done = Number(query.get('jumpdone') ?? 3);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const until = performance.now() + 30_000;
-while (!inspectRailway()?.ready && performance.now() < until) await wait(50);
-const state = inspectRailway();
+const ready = await railReady(30_000);
 const seed = await roomSeed();
-const stations = state?.line2?.stations ?? [];
+// Completion is a row (no clock): read without `at`.
+const stations = ready ? line2Jobs(rw()).map(({ job }) => job) : [];
 const result = {
   room: getRoomId(),
   search: location.search,
-  ready: !!state?.ready,
+  ready,
   completed: stations.map((s) => s.completion),
   seed,
 };
@@ -89,7 +88,7 @@ if (land) {
   ];
 } else {
   // Frame the last laid stretch, from above and behind.
-  const frame = state!.line2View.frames[Math.max(0, done - 1)];
+  const frame = inspectRailway()!.line2View.frames[Math.max(0, done - 1)];
   if (frame)
     aim = [
       [frame.x - 14, frame.y + 12, frame.z + 18],

@@ -1,7 +1,7 @@
 // Action for the instant-feedback capture (replication R1b; setup: railway-instant.ts): three strokes at the tree, then
 // the walk to the active frame, whose automatic unload deposits. Each stroke's logs must reach the back on its contact
 // beat, not a round trip later: it logs press -> visible carry per stroke, and the adapter's own press -> effect cost.
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -15,7 +15,7 @@ const bot = makeBot({
   },
 });
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 // Strokes from the side: six metres off the line from the player to the tree, so neither hides the other.
 {
   const p = me.body!.position;

@@ -2,7 +2,7 @@ import { worldStatus } from '../../world/sync.ts';
 import { net, getRoomId, remotes } from '../../netplay/net.ts';
 import { BUILD } from '../../build-id.ts';
 import { PROTO, productionRailway } from '../../proto/flags.ts';
-import { inspectRailway } from '../../entities/railway/state.ts';
+import { inspectRailwayLegacy } from '../../entities/railway/state.ts';
 import { command, note, more } from './ui.ts';
 import { ok, type Tool } from './types.ts';
 
@@ -22,7 +22,7 @@ export async function roomSummary() {
     rejected: 'unavailable: no per-command rejection stream exposed by the current room adapter',
     hash: { ok: status.hashOk, bad: status.hashBad, lastBad: status.lastBad, subsystems: status.subsystems },
     placeAuthority: productionRailway
-      ? inspectRailway()
+      ? inspectRailwayLegacy()
       : PROTO === 'place'
         ? (await import('./place.ts')).inspectPlace().authority
         : 'not a place route',

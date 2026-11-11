@@ -16,7 +16,7 @@ import type { FrameCtx } from '../../loop.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { createRailwaySources } from './sources.ts';
 import { createRailwayReward } from './reward.ts';
-import { registerRailwayYouGot } from './state.ts';
+import { registerRailwayYouGot, type RailwayScene, type RailwayViewInspection } from './state.ts';
 import { createRailwayArrival } from './arrival.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
@@ -35,8 +35,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
   const connection = document.createElement('div');
   connection.setAttribute('role', 'status');
-  connection.style.cssText =
-    'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);padding:8px 14px;border-radius:12px;background:#211e19e8;color:#fff1d8;font:14px system-ui;pointer-events:none;z-index:40';
+  connection.className = 'railway-connecting';
   connection.hidden = true;
   document.body.append(connection);
   owner.cleanup(() => connection.remove());
@@ -612,8 +611,28 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       // The track layer's two chairs: Sit aboard with nothing else to press for; seated, Interact stands you up.
       return seats.withSeatTargets(targets);
     },
-    inspect: () => ({
-      ...adapter.inspect(), // the oracle's own spread; the adapter's fields go in M12
+    // The session's scalars and the scene walk; state is read as rows (docs/plans/ecs-m12-m13.md, section 2).
+    inspect: (): RailwayViewInspection => {
+      const read = adapter.read;
+      const out = {
+        pid: read.pid,
+        status: read.status(),
+        ready: read.ready(),
+        pending: read.pending(),
+        stalled: read.stalled(),
+        tick: read.tick(),
+        ...scene(),
+      };
+      // debug()'s fields copied as they are defined, so `hash` stays a getter: the mirror is hashed only when read.
+      const debug = read.debug();
+      return Object.defineProperties(out, Object.getOwnPropertyDescriptors(debug)) as typeof out & typeof debug;
+    },
+    /** Temporary (M12c to M12e): the adapter's wide object under the scene walk, for INSPECT_LEGACY_IMPORTERS. */
+    inspectLegacy: () => ({ ...adapter.inspect(), ...scene() }),
+    dispose: () => owner.dispose(),
+  };
+  function scene() {
+    return {
       owned: owner.counts(),
       head: visualHead,
       targetHead,
@@ -635,8 +654,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       // The Works and Roundhouse views' own inspection; `works` and `shed` are the adapter's accepted state (J3).
       worksView: works?.inspect() ?? null,
       crossingView: works?.crossingInspect() ?? null,
-    }),
-    dispose: () => owner.dispose(),
-  };
+    } satisfies RailwayScene;
+  }
 }
 export type RailwayView = Awaited<ReturnType<typeof createRailwayView>>;

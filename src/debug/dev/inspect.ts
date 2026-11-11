@@ -6,7 +6,7 @@ import { waterField } from '../../physics/water-field.ts';
 import { waterRuntime } from '../../render/water-render.ts';
 import { me } from '../../player/state.ts';
 import { PROTO, productionRailway } from '../../proto/flags.ts';
-import { inspectRailway } from '../../entities/railway/state.ts';
+import { inspectRailwayLegacy } from '../../entities/railway/state.ts';
 import { el, command, note, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 
@@ -28,7 +28,7 @@ export async function inspectSummary() {
     water: p ? waterField.nearby(p) : null,
     waterRuntime: waterRuntime.inspect(),
     place: productionRailway
-      ? inspectRailway()
+      ? inspectRailwayLegacy()
       : PROTO === 'place'
         ? (await import('./place.ts')).inspectPlace()
         : null,

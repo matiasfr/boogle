@@ -1,6 +1,7 @@
 // Production line 1 through ordinary inputs. Inspection observes; it never seeds a world or moves a player.
 import { makeBot, type Bot } from '../bot.ts';
-import { inspectRailway, hookWhyNot, type RailwayViewInspection } from '../../../src/entities/railway/state.ts';
+import { railRead } from '../rail-read.ts';
+import { inspectRailwayLegacy, hookWhyNot, type RailwayLegacyInspection } from '../../../src/entities/railway/state.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { background } from '../../../src/async.ts';
 import { me, cam } from '../../../src/player/player.ts';
@@ -34,7 +35,7 @@ function hookCheck(bot: Bot, ok: unknown, label: string) {
   if (!ok) throw new Error(label);
 }
 function hookRing(id: string) {
-  const ring = inspectRailway()?.hookShot.rings.find((r) => r.id === id);
+  const ring = inspectRailwayLegacy()?.hookShot.rings.find((r) => r.id === id);
   if (!ring) throw new Error(`Missing production hook ring ${id}`);
   return ring;
 }
@@ -54,7 +55,7 @@ async function hookLanding(bot: Bot, id: string) {
       () => {
         const p = me.body!.position;
         return (
-          !inspectRailway()!.hookShot.pulling &&
+          !inspectRailwayLegacy()!.hookShot.pulling &&
           me.coyote > 0 &&
           !me.swimming &&
           Math.abs(p.y - PLAYER_R - pad.top) < 1 &&
@@ -71,14 +72,14 @@ export async function hookTo(bot: Bot, id: string) {
   aimHook(id);
   hookCheck(
     bot,
-    await bot.until(() => inspectRailway()?.hookShot.pick === id, 3500, `picked hook ${id}`),
-    `hook ${id}: picked ${inspectRailway()?.hookShot.pick ?? 'nothing'}, ${hookWhyNot(id)}`,
+    await bot.until(() => inspectRailwayLegacy()?.hookShot.pick === id, 3500, `picked hook ${id}`),
+    `hook ${id}: picked ${inspectRailwayLegacy()?.hookShot.pick ?? 'nothing'}, ${hookWhyNot(id)}`,
   );
   hookCheck(bot, hookWhyNot(id) === 'nothing', `hook ${id} path is clear: ${hookWhyNot(id)}`);
-  const before = inspectRailway()!.hookShot.pulls;
+  const before = inspectRailwayLegacy()!.hookShot.pulls;
   triggerAction('hook', 'down');
   triggerAction('hook', 'up');
-  hookCheck(bot, inspectRailway()!.hookShot.pulls === before + 1, `hook ${id} starts on the press`);
+  hookCheck(bot, inspectRailwayLegacy()!.hookShot.pulls === before + 1, `hook ${id} starts on the press`);
   await hookLanding(bot, id);
   bot.note(`hook: ${id}`);
 }
@@ -93,7 +94,7 @@ export async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', '
         aimHook(id);
         if (
           body.position.y < departureY - 1.5 &&
-          inspectRailway()?.hookShot.pick === id &&
+          inspectRailwayLegacy()?.hookShot.pick === id &&
           hookWhyNot(id) === 'nothing'
         ) {
           clear = true;
@@ -116,7 +117,7 @@ export async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', '
 
 /** The original p2 approach; the first visit pauses here to take the device and play its demo. */
 async function approachNeedleBell(bot: Bot) {
-  const view = inspectRailway()!.line2View;
+  const view = inspectRailwayLegacy()!.line2View;
   let lowest = Infinity;
   for (const [x, y, z] of view.routePoints.hook) {
     hookCheck(bot, await bot.straight(x!, z!, 0.6, 10000), 'walked the hook walkway');
@@ -150,7 +151,7 @@ async function climbNeedleBell(bot: Bot, onRing?: (id: string) => Promise<void>)
 async function downFromNeedleBell(bot: Bot, noJump: (beat: string) => void) {
   await returnFromTower(bot);
   noJump('hook descent');
-  const back = inspectRailway()!.line2View.routePoints.hook;
+  const back = inspectRailwayLegacy()!.line2View.routePoints.hook;
   for (let i = back.length - 1; i >= 0; i--)
     hookCheck(bot, await bot.straight(back[i]![0]!, back[i]![2]!, 0.6, 10000), 'walked back down the walkway');
   noJump('hook walk return');
@@ -247,9 +248,9 @@ export async function seaToFarHead(
   { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b), quarryFrom = 10 }: B4Route,
   from: 'sea' | 'q5' = 'sea',
 ) {
-  const read = () => inspectRailway()!;
+  const read = () => inspectRailwayLegacy()!;
   const l2 = () => read().line2;
-  const view = () => read().line2View as RailwayViewInspection['line2View'] & B4View;
+  const view = () => read().line2View as RailwayLegacyInspection['line2View'] & B4View;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   const until = async (fn: () => unknown, beat: string, ms = 600000) => check(await bot.until(fn, ms, beat), beat);
   const walk = async (x: number, z: number, radius = 2.4) =>
@@ -367,7 +368,7 @@ export async function glideHome(
   { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
   from: 'far-head' | 'village',
 ) {
-  const read = () => inspectRailway()!;
+  const read = () => inspectRailwayLegacy()!;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   check(read().line2.stations[4]?.completion === 1, 'the glide home starts after Q5');
   if (from === 'far-head') await walkQuarry(546, 92);
@@ -387,7 +388,7 @@ export async function glideHome(
 /** Take the woken glider on Needle Bell's summit with Interact, standing by it; the finder's card is dismissed with
  * Interact after `cardMs` (a co-op partner's find shows none). Returns whether the card showed. */
 export async function takeGlider(bot: Bot) {
-  const read = () => inspectRailway()!;
+  const read = () => inspectRailwayLegacy()!;
   const view = () => read().line2View;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   const until = async (fn: () => unknown, beat: string, ms = 60000) => check(await bot.until(fn, ms, beat), beat);
@@ -415,7 +416,7 @@ export async function takeGlider(bot: Bot) {
  * of the stick 9 m short so the canopy brakes and sinks you onto dry ground. Full stick from 3 s after the canopy
  * opens to the let-go is sampled for the BotW numbers. Real inputs only; the result goes in the bot's notes. */
 export async function glideToBoiler(bot: Bot) {
-  const read = () => inspectRailway()!;
+  const read = () => inspectRailwayLegacy()!;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   const until = async (fn: () => unknown, beat: string, ms = 60000) => check(await bot.until(fn, ms, beat), beat);
   const device = read().line2View.glideDevice;
@@ -491,7 +492,7 @@ export async function boilerToPier(
   { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
   from: 'far-head' | 'boiler' | 'q6' = 'far-head',
 ) {
-  const read = () => inspectRailway()!;
+  const read = () => inspectRailwayLegacy()!;
   const l2 = () => read().line2;
   type Trains = ReturnType<
     Awaited<ReturnType<typeof import('../../../src/entities/railway/train-view.ts').createRailwayTrains>>['inspect']
@@ -499,7 +500,7 @@ export async function boilerToPier(
   type Halts = ReturnType<
     Awaited<ReturnType<typeof import('../../../src/entities/railway/halts-view.ts').createRailwayHalts>>['inspect']
   >;
-  const view = () => read().line2View as RailwayViewInspection['line2View'] & Trains & Halts;
+  const view = () => read().line2View as RailwayLegacyInspection['line2View'] & Trains & Halts;
   const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
   // The page races about 10x faster than the authority. These are page-time budgets, not train schedules.
   const until = async (fn: () => unknown, beat: string, ms = 2400000) => check(await bot.until(fn, ms, beat), beat);
@@ -763,7 +764,7 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   }
   bot.note(`hook drop ${id} reached the existing upper quarry path`);
   const line = layout.LINKS[1]!.line;
-  const frame = inspectRailway()!.line2View.frames[2]!;
+  const frame = inspectRailwayLegacy()!.line2View.frames[2]!;
   hookCheck(
     bot,
     await returning.walk(frame.x, frame.z - 5, 0.8),
@@ -824,7 +825,9 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
 /** The station boxes waiting for this player (Q2-Q6): the route walks round them, so their cards never interrupt a
  * walk at an awkward spot. A player opens one by walking into it; the route's job is the railway. */
 const waitingBoxes = () =>
-  (inspectRailway()?.reward.stationBoxes.boxes ?? []).filter((b) => b.visible).map((b) => ({ x: b.x, z: b.z, r: 1.4 }));
+  (inspectRailwayLegacy()?.reward.stationBoxes.boxes ?? [])
+    .filter((b) => b.visible)
+    .map((b) => ({ x: b.x, z: b.z, r: 1.4 }));
 
 const HOOK_RELOAD_KEY = 'look.railway-hook-reload';
 let hookReloadStarted = false;
@@ -845,7 +848,7 @@ export function startHookReload() {
       // On a real navigation the eval can re-enter before the player body exists. Wait without the bot's body sampler.
       const deadline = performance.now() + 300000;
       while (
-        (!me.body || !inspectRailway()?.ready || fallArrival.active || me.coyote <= 0) &&
+        (!me.body || !inspectRailwayLegacy()?.ready || fallArrival.active || me.coyote <= 0) &&
         performance.now() < deadline
       )
         await new Promise<void>((resolve) => setTimeout(resolve, 60));
@@ -857,17 +860,17 @@ export function startHookReload() {
       hookCheck(
         bot,
         await bot.until(
-          () => inspectRailway()?.ready && me.body && !fallArrival.active && me.coyote > 0,
+          () => inspectRailwayLegacy()?.ready && me.body && !fallArrival.active && me.coyote > 0,
           300000,
           'hook reload arrival',
         ),
         'hook reload arrived dry',
       );
-      hookCheck(bot, inspectRailway()!.pid === saved.pid, 'hook reload retains player identity');
+      hookCheck(bot, inspectRailwayLegacy()!.pid === saved.pid, 'hook reload retains player identity');
       await hookLanding(bot, 't2');
       hookCheck(
         bot,
-        await bot.until(() => inspectRailway()?.hookShot.owned, 5000, 'hook latch restored'),
+        await bot.until(() => inspectRailwayLegacy()?.hookShot.owned, 5000, 'hook latch restored'),
         'hook latch restored once ready',
       );
       await returnFromTower(bot, ['t1']);
@@ -929,8 +932,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     },
     avoid: waitingBoxes,
   });
-  const read = (): RailwayViewInspection => {
-    const state = inspectRailway();
+  const read = (): RailwayLegacyInspection => {
+    const state = inspectRailwayLegacy();
     if (!state) throw new Error('Production railway view is unavailable');
     return state;
   };
@@ -949,7 +952,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const tickHashes = new Map<number, number>();
   const sampler = coop
     ? setInterval(() => {
-        const state = inspectRailway();
+        const state = inspectRailwayLegacy();
         if (second && state && state.hookShot.remoteCables >= 1) remoteCableSeen = true;
         // A segment run (botTo) may end before the forge: witness its whole route.
         if (state?.ready && (stopAt || state.line2.forge.used > 0) && state.step >= 0)
@@ -960,7 +963,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   // away, as a player would: wait the card's readable time, then press E. The route's own cards keep dismiss().
   let boxCardAt = 0;
   setInterval(() => {
-    const reward = inspectRailway()?.reward;
+    const reward = inspectRailwayLegacy()?.reward;
     if (!reward?.stationBoxes.showing || !reward.showing) return void (boxCardAt = 0);
     boxCardAt ||= performance.now();
     if (performance.now() - boxCardAt < 1600) return;
@@ -1151,7 +1154,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
             (tree) => !tree.cleared && tree.remaining > 0 && tree.id !== 28 && tree.id !== 209 && tree.id !== 232,
           )
           .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
-        let chosen: RailwayViewInspection['trees'][number] | undefined;
+        let chosen: RailwayLegacyInspection['trees'][number] | undefined;
         for (const candidate of candidates.slice(0, 20)) {
           const route = await bot.plan(candidate.x, candidate.z, 2.6);
           if (route.arrives && route.path.every((point) => point.y >= 3)) {
@@ -1200,7 +1203,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(!read().reward.error, 'profile write succeeded');
   };
   try {
-    await until(() => !!me.body && inspectRailway()?.ready, 'verified production room ready');
+    await until(() => !!me.body && railRead()?.ready(), 'verified production room ready');
     await until(() => !fallArrival.active && me.coyote > 0 && !me.swimming, 'opening arrival lands dry');
     require(!('__place' in window), 'production installs no mutable legacy Place surface');
     require(read().phase === 'asleep' && read().carry === 0, 'fresh production route starts asleep and empty');
@@ -1679,7 +1682,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
             (tree) => !tree.cleared && tree.remaining > 0 && tree.id !== 28 && tree.id !== 209 && tree.id !== 232,
           )
           .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
-        let chosen: RailwayViewInspection['trees'][number] | undefined;
+        let chosen: RailwayLegacyInspection['trees'][number] | undefined;
         for (const candidate of candidates.slice(0, 20)) {
           const route = await bot.plan(candidate.x, candidate.z, 2.6);
           if (route.arrives && route.path.every((point) => point.y >= 3)) {
@@ -2100,7 +2103,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
     console.log(
       `RAILWAY FAILURE ${JSON.stringify({
-        ...inspectRailway(),
+        ...inspectRailwayLegacy(),
         player: {
           position: me.body?.position,
           velocity: me.body?.velocity,

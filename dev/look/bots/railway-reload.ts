@@ -1,6 +1,6 @@
 // Run through the existing look eval/until hooks; sessionStorage carries observations, never game state.
 import { background } from '../../../src/async.ts';
-import { inspectRailway } from '../../../src/entities/railway/state.ts';
+import { inspectRailwayLegacy } from '../../../src/entities/railway/state.ts';
 import { me } from '../../../src/player/player.ts';
 import { identity } from '../../../src/player/identity.ts';
 import { net } from '../../../src/netplay/net.ts';
@@ -22,7 +22,7 @@ async function until(ok: () => unknown, label: string, ms = 60000) {
   check(ok(), label);
 }
 function read() {
-  const state = inspectRailway();
+  const state = inspectRailwayLegacy();
   if (!state) throw new Error('Missing railway view');
   return state;
 }
@@ -103,7 +103,7 @@ async function locks() {
 }
 async function run() {
   await until(
-    () => inspectRailway()?.ready && me.body && !fallArrival.active && me.coyote > 0,
+    () => inspectRailwayLegacy()?.ready && me.body && !fallArrival.active && me.coyote > 0,
     'verified dry arrival',
     300000,
   );

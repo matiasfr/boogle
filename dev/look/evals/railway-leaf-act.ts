@@ -8,9 +8,9 @@ const { me } = (await import('/src/player/player.ts' as string)) as typeof impor
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { inspectRailway } = (await import(
-  '/src/entities/railway/state.ts' as string
-)) as typeof import('../../../src/entities/railway/state.ts');
+const { aperture, inspectRailway, ringOpen, rw } = (await import(
+  '/dev/look/rail-read.ts' as string
+)) as typeof import('../rail-read.ts');
 const layout = (await import(
   '/src/sim/railway-ring-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-ring-layout.ts');
@@ -19,8 +19,9 @@ const bot = makeBot();
 const head = layout.RING_HEAD[7]!;
 const say = (text: string) => console.log(`LEAF ${text}`);
 const state = () => {
-  const view = inspectRailway() as unknown as { leafView?: { deg: number; moving: boolean }; ring?: unknown };
-  return JSON.stringify({ leaf: view.leafView, ring: view.ring });
+  // The leaf's swing is the Works view's; the ring is rows (ringOpen's head, the aperture's set and joined).
+  const w = rw();
+  return JSON.stringify({ leaf: inspectRailway()?.worksView?.leafView, ring: { ...ringOpen(w), ...aperture(w) } });
 };
 /** Set down at (u, lat) on a deck whose top is `y` m. */
 function stand(u: number, lat: number, y: number) {

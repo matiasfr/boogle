@@ -3,7 +3,7 @@
 // warm-up runs the page's waits in game time while the room's server ticks at real speed.
 //   npm run look -- --real --rail-seed q5-finishing --eval dev/look/evals/railway-glide-wake.ts \
 //     --until window.__placeDone --cam 1379,27.5,-180 --look 1016,120,-8.8 --name glide-woken
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -17,8 +17,8 @@ const until = async (ready: () => boolean, label: string, timeout: number) => {
     await wait(50);
   }
 };
-await until(() => !!inspectRailway()?.ready && !!me.body, 'railway mounted', 60000);
-const read = () => inspectRailway()!;
+await until(() => !!inspectRailwayLegacy()?.ready && !!me.body, 'railway mounted', 60000);
+const read = () => inspectRailwayLegacy()!;
 if (read().line2.completed >= 5)
   throw new Error('GLIDE WAKE needs a live q5-finishing seed, not a restored completion');
 if (read().line2View.glideDevice.woken) throw new Error('GLIDE WAKE the device is woken before Q5');

@@ -10,7 +10,7 @@
 import { INV } from './lib/world.ts';
 import type { T } from './run.ts';
 
-const READ = `const { inspectRailway } = await import('/src/entities/railway/state.ts'); const r = inspectRailway();`;
+const READ = `const { inspectRailwayLegacy } = await import('/src/entities/railway/state.ts'); const r = inspectRailwayLegacy();`;
 const shown = (sel: string) =>
   `(() => { const e = document.querySelector('${sel}'); return !!e && !e.closest('[hidden]'); })()`;
 const PROMPT = `(document.querySelector('.prompt:not([hidden]) .prompt-chip')?.textContent ?? '')`;
@@ -100,11 +100,11 @@ export default {
       t.check(`${tag}: a press squashes the prompt`, !!pressed);
       // Chop on at a person's pace until three logs are on your back.
       const chopped = await g.eval(`${INV} ${READ}
-        for (let k = 0; k < 80 && inspectRailway().carry < 3; k++) {
-          if (inspectRailway().pending === 0) { H.interactDown(); H.interactUp(); }
+        for (let k = 0; k < 80 && inspectRailwayLegacy().carry < 3; k++) {
+          if (inspectRailwayLegacy().pending === 0) { H.interactDown(); H.interactUp(); }
           await new Promise((res) => setTimeout(res, 380));
         }
-        return inspectRailway().carry;`);
+        return inspectRailwayLegacy().carry;`);
       const filled = await g.waitFor(CONFIRMED('>= 3'), { timeout: 15000 });
       const after = await g.eval(`return ${CARRY};`);
       t.check(

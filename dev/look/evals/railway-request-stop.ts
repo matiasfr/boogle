@@ -7,7 +7,7 @@
 // BOOGLE_BOT_RANK=1 npm run look -- --players 2 --rail-seed trains-on --query shot=play \
 //   --eval dev/look/evals/railway-request-stop.ts --until window.__placeDone --hud --name request-stop
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -36,7 +36,7 @@ type Car = { x: number; y: number; z: number; riding: boolean };
 type Train = { slot: number; line: number; along: number; cars: Car[]; stopLamp: boolean; holdLamp: boolean };
 type Up = { pair: number; up: boolean; x: number; y: number; z: number; path: { x: number; z: number }[] };
 type View = { halts: Halt[]; trains: Train[]; upPlatforms: Up[] };
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 const view = () => read().line2View as unknown as View;
 const LINE2_SLOTS = [1, 2];
 const player = new URLSearchParams(location.search).get('player');

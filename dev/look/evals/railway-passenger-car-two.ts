@@ -4,7 +4,7 @@
 // npm run look -- --players 2 --rail-seed trains-on --query shot=play --eval dev/look/evals/railway-passenger-car-two.ts \
 //   --until window.__placeDone --wall 240 --name passenger-car-two
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -22,7 +22,7 @@ const { background } = (await import('/src/async.ts' as string)) as typeof impor
 
 type Halt = { x: number; z: number; up: boolean; lever: { dir: number; on: boolean; x: number; z: number }[] };
 type View = { halts: Halt[]; trains: { cars: { x: number; z: number; riding: boolean }[] }[] };
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 const view = () => read().line2View as unknown as View;
 // The ridden train's slot: whichever of line 2's two stops at the village toward Far Head (v26).
 let slot = 1;
