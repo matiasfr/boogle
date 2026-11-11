@@ -26,7 +26,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-04 · keep the current look; post looks are parked ([entry](#d-2026-11-04-keep-the-current-look-post-looks))
 - 2026-11-04 · the room owns the time of day ([entry](#d-2026-11-04-the-room-owns-the-time-of))
 - 2026-11-04 · new water is the default for tonight's Place replay _(the new (Ultra) water itself: deleted by "the sea is rebuilt small" (2026-11-10))_ ([entry](#d-2026-11-04-new-water-is-the-default-for))
-- 2026-11-04 · Neutral on the real water for now ([entry](#d-2026-11-04-neutral-on-the-real-water-for))
+- 2026-11-04 · Neutral on the real water for now ([entry](#d-2026-11-04-neutral-on-the-real-water-for)) _Replaced in part: its "The demo sky, frozen at `tod=0.24`, and the water itself stand" gives way to the 10 November sky (gradient and cloud sprites) and the rebuilt sea; Neutral tone mapping stands (owner, 10 November: "you can replace those")._
 - 2026-11-04 · the shore is the first landing, with one exception to terrain following water ([entry](#d-2026-11-04-the-shore-is-the-first-landing))
 - 2026-11-04 · terrain follows water, with level design ([entry](#d-2026-11-04-terrain-follows-water-with-level-design))
 - 2026-11-03 · procedural sky preferred over toy sky ([entry](#d-2026-11-03-procedural-sky-preferred-over-toy-sky)) _(the sky itself is now the gradient and cloud sprites ("the sky is the gradient and cloud sprites, in the lighter blue, lit by the 6 November cell 5 settings" (2026-11-10)); the toy sky stays unused)_
