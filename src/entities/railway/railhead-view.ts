@@ -10,7 +10,8 @@
 // Local view over the read facade (`adapter.read`); the sim reads none of it. A restore shows what is built, nothing
 // dropping. Bents 1-6 and Q7's deck are crossing-view.ts's and ring-deck.ts's.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway-session.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';

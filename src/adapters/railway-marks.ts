@@ -1,5 +1,5 @@
 // Local playtest observations, never a gameplay or prediction input.
-import type { RailwayIntent } from './railway-session.ts';
+import type { RailwayIntent } from './railway-intents.ts';
 import { aperture, forge, jobs, qjobs, rail, works, type ReadWorld } from '../sim/railway-rows.ts';
 import type { World } from '../ecs/index.ts';
 import type { PlayData } from '../proto/mark.ts';

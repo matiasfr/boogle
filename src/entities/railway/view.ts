@@ -1,6 +1,7 @@
 // One accepted line, one machine. Flights and rigid poses display the ledger and never transfer material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway-session.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
 import { account as accountRow, beam as beamRow, job as jobRow, rail as railRow } from '../../sim/railway-rows.ts';

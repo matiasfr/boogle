@@ -1,6 +1,7 @@
 // The owned Local source/carry view. Only the adapter can request a transfer; poses and flights never spend material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway-session.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../sim/railway-layout.ts';
 import { RECOVERY_RACK } from '../../sim/railway-supply.ts';
 import {

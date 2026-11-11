@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { playSharedMoment } from '../src/entities/railway/shared-moment.ts';
 import { watchPlayMarks, type PlayData } from '../src/proto/mark.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
-import type { RailwayAccepted } from '../src/adapters/railway-session.ts';
+import type { RailwayAccepted } from '../src/adapters/railway-effects.ts';
 
 const marks: [string, PlayData | undefined][] = [];
 watchPlayMarks((name, data) => marks.push([name, data]));

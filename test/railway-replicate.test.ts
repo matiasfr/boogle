@@ -57,12 +57,8 @@ import { cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
-import {
-  createRailwayAdapter,
-  railMovement,
-  type RailwayAccepted,
-  type RailwayCorrection,
-} from '../src/adapters/railway-session.ts';
+import { createRailwayAdapter, railMovement } from '../src/adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../src/adapters/railway-effects.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 

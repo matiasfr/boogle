@@ -1,7 +1,8 @@
 // Split-rock Works and the Roundhouse, live (docs/plans/split-rock-roundhouse.md, J4): the breaker, the Works, the
 // stall and table, footings on backs and the ground, and (J5) the crossing at the pier, behind one seam for view.ts.
 // Local views of accepted state.
-import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway-session.ts';
+import type { RailwayAdapter } from '../../adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createRailwayBreaker } from './breaker-view.ts';

@@ -21,13 +21,9 @@ import { account, accounts, aperture, cart, lines, qjobs, train, trains, tree } 
 import { Pile } from '../../src/sim/railway-components.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
-import {
-  createRailwayAdapter,
-  railMovement,
-  type RailwayAccepted,
-  type RailwayCorrection,
-  type RailwayIntent,
-} from '../../src/adapters/railway-session.ts';
+import { createRailwayAdapter, railMovement } from '../../src/adapters/railway-session.ts';
+import type { RailwayAccepted, RailwayCorrection } from '../../src/adapters/railway-effects.ts';
+import type { RailwayIntent } from '../../src/adapters/railway-intents.ts';
 import { trainAlong } from '../../src/sim/railway-train.ts';
 import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';

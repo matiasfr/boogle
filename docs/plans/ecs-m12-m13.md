@@ -365,8 +365,18 @@ typecheck`, `npm run lint`.
     of the first `read.ready()`, moves to a session read here (a `read.loaded()` or similar). It now has five users,
     not one: `train-view.ts`, `leaf-view.ts`, `railhead-view.ts`, `crossing-view.ts` and `cart-view.ts`, each of which
     hid, reset or un-decked on `!read.ready()` (also false with a full pending window or the link down).
-- [ ] **M12f. The adapter split.** _M, Medium by path; ask for the independent review (it moves the predictor's
-      code). After M12e._ Section 3's three files; `git mv src/adapters/railway.ts
+- [x] **M12f. The adapter split.** _M, Medium by path; ask for the independent review (it moves the predictor's
+      code). After M12e._ (**As built**, two commits: a pure `git mv` with every importer's path, then the cut.
+      `railway-intents.ts` (323 lines) holds the intent type, `CARRY_MAX`, `intentOf`, `implied`, `holds`, the three
+      op sets and `railwayActs(submit, view)`, the act methods as one object the session spreads into the adapter
+      (`pileIn` went with `take`); `railway-effects.ts` (63) holds `RailwayAccepted`, `RailwayCorrection`, `effectOf`,
+      `accepted`, `sameTarget`; `railway-session.ts` (668) keeps the rest, `railMovement` and `RailwayMovement`
+      included. Importers take each name from its owning file; `railway-marks.ts` changed one type import (it took
+      `RailwayIntent` from the old file, which made a type cycle with the session; now it takes it from intents).
+      **The limits are not met**: section 3's ≤ 450 and ≤ 300 do not fit a mechanical cut, since `submit`, `settle`
+      and the read facade are closures over the session's state. Shrinking the session is its own step, not a move:
+      `railway-read.ts` for `railMovement`, `perFrame` and the facade over a narrow session handle, and `settle`
+      over an explicit pending/shown state object; logged for the owner's call.) Section 3's three files; `git mv src/adapters/railway.ts
       src/adapters/railway-session.ts` first so the history follows, then cut the other two out; importers
       rewritten (`rg -l "adapters/railway.ts"`); `railway-marks.ts` unchanged; `docs/agents/sync.md`'s Server
       entry names the new files.

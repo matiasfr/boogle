@@ -9,7 +9,7 @@ import {
   createRailwayProgressMarks,
   railwayActionMarks,
 } from '../src/adapters/railway-marks.ts';
-import type { RailwayIntent } from '../src/adapters/railway-session.ts';
+import type { RailwayIntent } from '../src/adapters/railway-intents.ts';
 import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { Forge, Job, QJob, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
