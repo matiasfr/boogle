@@ -4,6 +4,7 @@
 # Cancelled CI runs are rerun automatically (twice at most). Exit codes: 2 code conflict (nothing shipped, rebase aborted), 3 a commit became empty on rebase (aborted, check it
 # isn't already on main), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
 set -uo pipefail
+here=$(cd "$(dirname "$0")" && pwd)
 cd "${1:?worktree path}" || exit 1
 wait=0
 for arg in "${@:2}"; do
@@ -41,7 +42,9 @@ done
 for link in node_modules server/node_modules; do
   if [ -L "$link" ]; then rm "$link"; fi
 done
-npm ci --silent >/dev/null 2>&1
+# `npm ci` only when node_modules is out of step with package-lock.json (dev/look/install-check.ts, from this script's
+# checkout); a dropped symlink leaves nothing installed, so it reinstalls.
+node "$here/../look/install-check.ts" . >/dev/null 2>&1 || npm ci --silent >/dev/null 2>&1
 ship_args=(--silent ship --)
 if [ "$wait" = 1 ]; then ship_args+=(--wait); fi
 SHIP_NO_AI=1 npm run "${ship_args[@]}" 2>&1 | tail -8

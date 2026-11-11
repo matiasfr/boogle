@@ -1,8 +1,10 @@
 // Stops a harness run whose node_modules doesn't match the checkout's package-lock.json: a stale Rapier once showed up as
 // page errors and a missed landing that weren't the game's. It only reports. `npm ci` deletes node_modules, and something
 // may be running from it.
+// CLI, for dev/codex/ship-branch.sh: `node dev/look/install-check.ts [dir]` exits 1 with the drift, 0 when in step.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 type Lock = { packages?: Record<string, { version?: string; optional?: boolean }> };
 const read = (file: string) => JSON.parse(fs.readFileSync(file, 'utf8')) as Lock;
@@ -37,4 +39,13 @@ export function checkInstall(dir: string) {
   throw new Error(
     `${dir} is out of step with its package-lock.json:\n  ${shown}${more}\nRun npm ci there, then try again.`,
   );
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  try {
+    checkInstall(path.resolve(process.argv[2] ?? '.'));
+  } catch (error) {
+    console.error((error as Error).message);
+    process.exit(1);
+  }
 }
