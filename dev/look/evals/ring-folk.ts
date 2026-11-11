@@ -1,9 +1,14 @@
 // Ring Island's folk (src/entities/ring-folk/; docs/plans/ring-island-build1.md, step 4e): stages the player in the island
-// square (the works yard east of the halt) facing the posts, so the stills show four lookers leaning back at the shard and
-// two resting. Stills and motion only; every state is the view's own.
-//   npm run look -- --rail-seed ring-joined --eval dev/look/evals/ring-folk.ts                       the stare
-//   npm run look -- --rail-seed ring-joined --query folk=nod --eval dev/look/evals/ring-folk.ts     stand still, look up: a nod after 1.5 s
-//   npm run look -- --rail-seed ring-joined --seconds 50 --frames 10 --eval dev/look/evals/ring-folk.ts   the whistle swaps two (every 45 s of room time)
+// square (the works yard east of the halt) and a fixed camera for one question per mode (`--query folk=<mode>`):
+//   stare     (default) four lookers upright with the head tipped back at the shard, two resting, from the lane's west end
+//   rest      the two resting crew from 3 m: they turn toward the player when near
+//   nod       the nearest looker's head from 2 m while the player stands still looking up: a nod after 1.5 s (use --warm 0)
+//   whistle   from 8 s before a shift boundary: Hooter's whistle, two walk off the posts and two walk on
+//   platform  from the east platform at the train doors (u 448): where you step off: can you see the lookers?
+//   npm run look -- --rail-seed ring-joined --eval dev/look/evals/ring-folk.ts --size 960x600
+//   npm run look -- --rail-seed ring-joined --eval dev/look/evals/ring-folk.ts --size 390x844 --name phone
+//   npm run look -- --rail-seed ring-joined --query folk=nod --warm 0 --eval dev/look/evals/ring-folk.ts
+//   npm run look -- --rail-seed ring-joined --query folk=whistle --real --warm 120 --until "window.__folkInto?.() >= 365 && window.__folkInto() < 440" --seconds 14 --frames 12 --eval dev/look/evals/ring-folk.ts
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
 const { teleport } = (await import(
@@ -35,30 +40,67 @@ const mode = new URLSearchParams(location.search).get('folk') ?? 'stare';
 
 await until(() => me.body && inspectRailway()?.ready, 'body and railway ready');
 const b = me.body!;
-const to = (uv: { u: number; lat: number }) => folk.worldOf(uv);
-// Nod: in the middle of the square. Stare: back on the lane's west end, the four posts ahead and the rests beside you.
-const stand = mode === 'nod' ? folk.SQUARE_UV : { u: folk.POST_UV[0]!.u - 7, lat: 6.2 };
-const p = to(stand),
-  c = to(folk.SQUARE_UV);
-teleport(b, p.x, folk.YARD_Y + PLAYER_R + 0.3, p.z);
+type UV = { u: number; lat: number };
+const to = (uv: UV) => folk.worldOf(uv);
+const c = to(folk.SQUARE_UV);
+const Y = folk.YARD_Y;
+const h0 = folk.POST_UV[0]!.u - 17.5;
+const stand: UV =
+  mode === 'nod'
+    ? { u: folk.POST_UV[2]!.u + 3, lat: 10 }
+    : mode === 'rest'
+      ? { u: h0 + 6.5, lat: 6.2 }
+      : mode === 'platform' || mode === 'whistle'
+        ? { u: h0 + 19, lat: 3.4 }
+        : { u: folk.POST_UV[0]!.u - 7, lat: 6.2 };
+const p = to(stand);
+teleport(b, p.x, Y + PLAYER_R + 0.3, p.z);
 b.velocity.set(0, 0, 0);
 input.keys.clear();
 releaseJump();
 cam.yaw = me.yaw = Math.atan2(-(c.x - p.x), -(c.z - p.z));
 cam.pitch = mode === 'nod' ? 0.9 : -0.05;
 await until(() => ring.ringIslandNear.mounted, 'near view mounted');
-await wait(mode === 'nod' ? 300 : 1500);
-// look would otherwise freeze its own default camera over the staging: a fixed one for the nod (on the nearest looker) and
-// for the stare one on the lane's east end, high, looking at the square's middle (posts ahead, rests beside).
-if (mode !== 'nod') {
-  const eye = to({ u: folk.SQUARE_UV.u - 5, lat: 5.2 });
-  window.__debugCam!.set([eye.x, folk.YARD_Y + 3.2, eye.z], [c.x, folk.YARD_Y + 1.6, c.z]);
-} else {
-  // the nod fires once, 1.5 s into the stillness, so the setup hardly waits (run with --warm 0); the nearest looker is post 2, 1.6 m from the player: watch it from the lane's east side, level with its head, the player out of the line
-  const eye = to({ u: folk.POST_UV[2]!.u + 0.3, lat: 8.0 }),
-    at = to(folk.POST_UV[2]!);
-  window.__debugCam!.set([eye.x, folk.YARD_Y + 1.5, eye.z], [at.x, folk.YARD_Y + 1.2, at.z]);
-}
+if (mode === 'whistle') {
+  // Room time does not run during the eval, only in the warm-up: this says how far into a shift the room is, and the run
+  // is started with --until "window.__folkInto?.() >= 365 && window.__folkInto() < 440" --real --warm 120 (the room clock only runs in real time, about 10 ticks a second) so the capture opens
+  // 5 to 8 s before the whistle.
+  (window as unknown as { __folkInto: () => number }).__folkInto = () =>
+    (inspectRailway()?.tick ?? 0) % folk.ROTA_TICKS;
+} else await wait(mode === 'nod' ? 300 : 1500);
+// look would otherwise freeze its own default camera over the staging: a fixed one per mode.
+type Eye = UV & { y: number };
+const cams: Record<string, [Eye, Eye]> = {
+  stare: [
+    { u: folk.SQUARE_UV.u - 5, lat: 5.2, y: Y + 3.2 },
+    { ...folk.SQUARE_UV, y: Y + 1.6 },
+  ],
+  rest: [
+    { u: folk.REST_UV[0]!.u + 1, lat: 3.4, y: Y + 1.7 },
+    { u: folk.REST_UV[0]!.u + 1, lat: 6.2, y: Y + 0.9 },
+  ],
+  nod: [
+    { u: folk.POST_UV[2]!.u - 1.5, lat: 7, y: Y + 1.7 },
+    { ...folk.POST_UV[2]!, y: Y + 1.2 },
+  ],
+  whistle: [
+    { u: h0 + 25.5, lat: 4.2, y: Y + 3.2 },
+    { u: h0 + 16, lat: 8.8, y: Y + 0.8 },
+  ],
+  platform: [
+    { u: h0 + 19, lat: 3.4, y: Y + 1.9 },
+    { ...folk.SQUARE_UV, y: Y + 1.2 },
+  ],
+};
+const [e, l] = cams[mode] ?? cams.stare!;
+const ew = to(e),
+  lw = to(l);
+window.__debugCam!.set([ew.x, e.y, ew.z], [lw.x, l.y, lw.z]);
 window.__debugCam!.set = () => {};
+
+// What the view says as the capture runs, so the whistle can be matched to the frames.
+setInterval(() => {
+  console.log(`RINGFOLK tick ${inspectRailway()?.tick} into ${(inspectRailway()?.tick ?? 0) % folk.ROTA_TICKS}`);
+}, 2000);
 
 export {};

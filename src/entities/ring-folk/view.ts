@@ -1,5 +1,5 @@
 // The island's folk (docs/plans/ring-island-build1.md, R4e): six crew in orange hard hats on the staring rota, four of them
-// leaning back at the shard over the square while two rest, Hooter by the board whose whistle swaps them every 45 s, a nod
+// with their heads tipped back at the shard over the square while two rest, Hooter by the board whose whistle swaps them every 45 s, a nod
 // at a player who stands still and looks up, and Talk with Rivet, Squint and Hooter. Local, drawn by the village folk kit
 // (place/folk.ts: the figures, their walk and their shadows; this file places, moves and leans them, the way the greeter
 // is directed). The rota is a pure function of the railway room tick (shape.ts `shiftAt`), so every page swaps on the
@@ -24,11 +24,10 @@ import { ringUV } from '../ring-meet/shape.ts';
 import {
   CREW,
   HOOTER_UV,
-  LEAN_UP,
   NOD,
   POST_UV,
   RIVET_CREW,
-  SQUARE_UV,
+  ARRIVE_UV,
   SQUINT_CREW,
   WET_S,
   YARD_Y,
@@ -36,7 +35,8 @@ import {
   linesFor,
   lookingUp,
   newNod,
-  nodLean,
+  nodStare,
+  poseOf,
   nodder,
   shiftAt,
   shiftChange,
@@ -55,7 +55,7 @@ import {
 type Who = 'rivet' | 'squint' | 'hooter';
 type Kit = typeof import('../../place/folk.ts');
 type Guy = ReturnType<Kit['addLooker']>;
-type Figure = { guy: Guy; uv: UV; route: UV[]; station: Station | null; lean: number };
+type Figure = { guy: Guy; uv: UV; route: UV[]; station: Station | null; stare: number };
 
 const ORANGE = ['#e8742c', '#f08a3a', '#d8641c', '#e8742c'];
 const LOOK_COLOR = { rivet: '#f0c030', squint: '#e8742c', hooter: '#3f8ee0' } as const;
@@ -120,9 +120,9 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
 
   function figure(k: Kit, uv: UV, color: string): Figure {
     const w = worldOf(uv),
-      c = worldOf(SQUARE_UV);
+      c = worldOf(ARRIVE_UV);
     const guy = k.addLooker(w.x, YARD_Y, w.z, Math.atan2(c.x - w.x, c.z - w.z), color);
-    return { guy, uv: { ...uv }, route: [], station: null, lean: 0 };
+    return { guy, uv: { ...uv }, route: [], station: null, stare: 0 };
   }
   const place = (f: Figure) => {
     const w = worldOf(f.uv);
@@ -132,7 +132,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
   };
   const faceSquare = (f: Figure, dt: number, k = 5) => {
     const w = worldOf(f.uv),
-      c = worldOf(SQUARE_UV);
+      c = worldOf(ARRIVE_UV);
     f.guy.yaw = angleLerp(f.guy.yaw, Math.atan2(c.x - w.x, c.z - w.z), Math.min(1, dt * k));
   };
   const facePlayer = (f: Figure, dt: number) => {
@@ -152,7 +152,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
       f.station = s;
       f.route = [];
       f.uv = { ...standingUV(s) };
-      f.lean = s.kind === 'post' ? LEAN_UP : 0;
+      f.stare = s.kind === 'post' ? 1 : 0;
       place(f);
       faceSquare(f, 1, 100);
     }
@@ -249,7 +249,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
         place(f);
         const talking =
           speaking !== null && c === (speaking === 'rivet' ? RIVET_CREW : speaking === 'squint' ? SQUINT_CREW : -1);
-        let target = f.station?.kind === 'post' && !walking && !f.route.length ? LEAN_UP : 0;
+        let target = f.station?.kind === 'post' && !walking && !f.route.length ? 1 : 0;
         if (walking) {
           g.mood = 'walk';
           g.yaw = angleLerp(g.yaw, Math.atan2(g.x - was.x, g.z - was.z), Math.min(1, dt * 10));
@@ -261,13 +261,15 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
           else faceSquare(f, dt);
         }
         if (talking) target = 0;
-        f.lean += (target - f.lean) * (1 - Math.exp(-dt * 6));
-        g.lean = c === nodCrew && !talking ? nodLean(nodT) : f.lean;
+        f.stare += (target - f.stare) * (1 - Math.exp(-dt * 6));
+        const pose = poseOf(c === nodCrew && !talking ? nodStare(nodT) : f.stare);
+        g.lean = pose.lean;
+        g.tip = pose.tip;
       }
       // Hooter: by the board, never looking up; a wave with the whistle; turns to a player nearby.
       whistled = Math.max(0, whistled - dt);
       hooter.guy.mood = whistled > 0 ? 'wave' : 'idle';
-      hooter.guy.lean = 0;
+      hooter.guy.lean = hooter.guy.tip = 0;
       place(hooter);
       if (near(hooter, 6) || speaking === 'hooter') facePlayer(hooter, dt);
       else faceSquare(hooter, dt);
@@ -316,7 +318,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
         crew: crew.map((f) => ({
           at: f.station ? `${f.station.kind}${f.station.slot}` : null,
           walking: f.route.length > 0,
-          lean: Math.round(f.guy.lean * 100) / 100,
+          tip: Math.round(f.guy.tip * 100) / 100,
         })),
       },
     }),

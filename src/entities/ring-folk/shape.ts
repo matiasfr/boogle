@@ -71,6 +71,9 @@ export const REST_UV: readonly UV[] = [
 export const LANE_LAT = 6.2;
 /** Hooter stands by the board and the posts, never looking up. */
 export const HOOTER_UV: UV = { u: HALT0 + 20.5, lat: 6.2 };
+/** Where the crew face: the east platform at the train doors (u 448), so a player stepping off, and one coming along the
+ * lane, meets faces tipped back, not the backs of heads. */
+export const ARRIVE_UV: UV = { u: HALT0 + 19, lat: 3.4 };
 /** The square's middle: every post faces it; the shard is overhead. */
 export const SQUARE_UV: UV = { u: HALT0 + 19, lat: 10.5 };
 
@@ -117,9 +120,12 @@ export function walkStep(p: UV, route: UV[], dt: number, speed = WALK_SPEED): bo
 }
 
 // ---------------------------------------------------------------- staring up, and the nod
-/** How far a looker leans back from the feet (rad). The kit's hard hat sits on the body, so the whole figure tips: a
- * head tipped alone would hide its face under the hat. About 54 degrees: the face is up, the hat is up with it. */
-export const LEAN_UP = 0.95;
+/** A looker's stare as one number: 1 is staring straight up (the body leaning `LEAN_UP`, the head tipped `TIP_UP`, the
+ * hat with it, feet planted: about 14 and 72 degrees, the face to the sky), 0 is upright and facing you. Nobody is ever
+ * near horizontal. */
+export const LEAN_UP = 0.25;
+export const TIP_UP = 1.25;
+export const poseOf = (stare: number) => ({ lean: LEAN_UP * stare, tip: TIP_UP * stare });
 export const NOD = { reach: 8, pitch: (50 * Math.PI) / 180, stillFor: 1.5, still: 0.35, seconds: 1.3 } as const;
 
 export type NodInput = { near: boolean; still: boolean; up: boolean };
@@ -138,13 +144,14 @@ export function stepNod(s: NodState, dt: number, i: NodInput): boolean {
   s.fired = true;
   return true;
 }
-/** The lean (rad) of a looker `t` seconds into a nod: down to face the player, two bobs, then back up. */
-export function nodLean(t: number): number {
-  if (t <= 0 || t >= NOD.seconds) return LEAN_UP;
+/** The stare (1 up, 0 facing the player) of a looker `t` seconds into a nod: down to face the player, two bobs of the
+ * head, then back up. */
+export function nodStare(t: number): number {
+  if (t <= 0 || t >= NOD.seconds) return 1;
   const down = Math.min(1, t / 0.25, (NOD.seconds - t) / 0.3),
     ease = down * down * (3 - 2 * down),
-    bob = 0.16 * Math.sin(t * 13) * ease;
-  return Math.min(LEAN_UP, LEAN_UP * (1 - ease) + 0.05 * ease + bob);
+    bob = 0.12 * Math.sin(t * 13) * ease;
+  return Math.min(1, 1 - ease + bob);
 }
 /** The nearest post-holder within the nod's reach of the player (metres, world frame), or -1. `folk` is the crew's
  * post-holders' positions by crew index (null: resting or walking). */

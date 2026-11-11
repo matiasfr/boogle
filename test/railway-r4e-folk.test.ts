@@ -10,7 +10,6 @@ import {
   CREW,
   HOOTER_UV,
   LANE_LAT,
-  LEAN_UP,
   NOD,
   POSTS,
   POST_UV,
@@ -20,7 +19,8 @@ import {
   linesFor,
   lookingUp,
   newNod,
-  nodLean,
+  nodStare,
+  poseOf,
   nodder,
   postsAt,
   restersAt,
@@ -181,16 +181,20 @@ test('the camera looks up past 50 degrees', () => {
   assert.equal(lookingUp(0.9), true, 'the controls cap the pitch at 0.9 rad, so the nod is reachable');
 });
 
-test('the nod brings the head down to the player and back up to the stare', () => {
-  assert.equal(nodLean(0), LEAN_UP);
-  assert.equal(nodLean(NOD.seconds), LEAN_UP);
-  assert.ok(nodLean(0.6) < 0.4, 'faces the player mid-nod');
+test('the nod brings the head down to the player and back up to the stare, and nobody is ever near horizontal', () => {
+  assert.equal(nodStare(0), 1);
+  assert.equal(nodStare(NOD.seconds), 1);
+  assert.ok(nodStare(0.6) < 0.4, 'faces the player mid-nod');
   for (let t = 0; t <= NOD.seconds; t += 0.02) {
-    const l = nodLean(t);
-    assert.ok(l >= -0.2 && l <= LEAN_UP + 1e-9, `${t}: ${l}`);
+    const s = nodStare(t);
+    assert.ok(s >= -0.2 && s <= 1 + 1e-9, `${t}: ${s}`);
   }
-  assert.ok(nodLean(0.05) > nodLean(0.25), 'goes down');
-  assert.ok(nodLean(NOD.seconds - 0.05) > nodLean(NOD.seconds - 0.3), 'comes back up');
+  assert.ok(nodStare(0.05) > nodStare(0.25), 'goes down');
+  assert.ok(nodStare(NOD.seconds - 0.05) > nodStare(NOD.seconds - 0.3), 'comes back up');
+  const up = poseOf(1);
+  assert.ok(up.lean < 0.35, 'the body stays upright, under 20 degrees');
+  assert.ok(up.lean + up.tip > 1.45, 'the face is to the sky');
+  assert.deepEqual(poseOf(0), { lean: 0, tip: 0 });
 });
 
 test('the nodder is the nearest post-holder within 8 m, never a walker or a rester', () => {

@@ -1176,10 +1176,10 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > not taken.** (1) `src/entities/ring-folk/`: `shape.ts` (pure: the rota, stations, lane and walk, the nod, the facts that
   > pick a line), `lines.ts` (the Copy table verbatim), `view.ts` (the figures), mounted by `works-live.ts` beside the Meet
   > (no `index.ts`, it needs the adapter). (2) Seven figures from the village folk kit (`place/folk.ts`: a `looker` job, a
-  > `lean` field and `addLooker`; capacity +8): six crew in orange hard hats and Hooter in blue. The island's square is the
+  > `lean` and `tip` fields, `addLooker`, capacity +8, and the hat split off the coat into its own mesh so a head tips with its hat): six crew in orange hard hats and Hooter in blue. The island's square is the
   > works yard east of the halt, between the tarped steel and the drop hammer (no layout constant named a square). Four
-  > crew stand at four posts leaning back about 54 degrees at the shard (the whole figure tips: the kit's hat sits on the
-  > body, so a head tipped alone would hide its face), two rest on the lane south of the tarp. `shiftAt(tick)` is
+  > crew stand at four posts upright with the head tipped back at the shard (body 14 degrees, head 72 more, hat with it,
+  > feet planted; a first try that tipped the whole body 54 degrees read as people lying down), facing the platform, two rest on the lane south of the tarp. `shiftAt(tick)` is
   > `floor(tick / 450)` on `adapter.read.tick()`: at each whistle two post-holders hand over to the two who rested
   > (everyone stands at most two shifts and every crew member gets turns; the rota repeats every 6). Hooter's whistle
   > (`machine-sfx` `whistle`) sounds at the clock's edge only when the page saw the previous shift; a first read, a remount
