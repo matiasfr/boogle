@@ -1,6 +1,10 @@
-> **Status: proposed (2026-11-11).** Light brainstorm (one agent, three lenses). Look and read only: the rule that one
-> action lays both tracks ([decision](../decisions-rail.md#d-2026-11-10-the-railway-is-double-track)) stays as it is,
-> with no bill, timing, wire, save or `WORLD_NS` change.
+> **Status: greybox built behind `?layer=wing` (11 November 2026, branch `layer/wing-greybox`); GLB step awaits a yes.**
+> Light brainstorm (one agent, three lenses). Look and read only: the rule that one action lays both tracks
+> ([decision](../decisions-rail.md#d-2026-11-10-the-railway-is-double-track)) stays as it is, with no bill, timing, wire,
+> save or `WORLD_NS` change. Built: [machine-wing.ts](../../src/entities/railway/machine-wing.ts), the flag path in
+> [track-machine.ts](../../src/entities/railway/track-machine.ts), `WING*` and the stack offset in
+> [machine-panels.ts](../../src/entities/railway/machine-panels.ts), `panelStartUp` in
+> [track.ts](../../src/entities/railway/track.ts); eval `dev/look/evals/track-wing.ts`; test `test/track-wing.test.ts`.
 
 # Laying both tracks plausibly (track-layers-double)
 
@@ -203,3 +207,15 @@ beat happens twice at once, one under each hand):
 At a turnout (about the first 15 m): the arm grows with the gap while the truck stays lifted beside the flatbed and
 the up hand works cantilevered; at gap 1.8 m the truck sets down on the new rails, and on the way in it lifts at the
 same gap. At Far Head (s 490 to 512) the crossover's rails drop under the arm as sleepers drop under the jaws.
+
+## Greybox result (11 November 2026)
+
+Built as the sheet above says, with these differences: the arm and platform are scaled boxes (greybox only); the wing
+stack's lateral position is `WING.stackFolded` to `stackOpen` (outboard of the flatbed when folded, between the tracks
+when open), so it never overlaps the gantry's own; the side is taken from the up seat once its x passes 1 m (the first
+metres of a turnout flip sign on a curve), before that from the heading. The magazine splits in the flag path only:
+`rig` draws one pair per panel, the wing one per up panel, deliveries alternate. The track still keys sweeping pieces to
+the main hand's frame, and both pairs appear at the panel's commit, which is the same beat for both hands.
+Live reach (`machine.wingStats`, all of line 1's first two stretches and line 2 to Far Head): down hand at most 5.01 m,
+up hand at most 4.81 m, of the 5.8 m beam; the unit test covers every panel of both lines on straight ground (4.98 m and
+3.84 m).

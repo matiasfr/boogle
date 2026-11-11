@@ -43,7 +43,32 @@ export type UpSeat = { seat: THREE.Vector3; yaw: number; pitch: number };
 /** Kit rail batch: native 0.1 x 0.12 x 3.05 m, base origin. */
 export type RailBatch = (n: number) => THREE.InstancedMesh;
 
-export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
+/** ?layer=wing greybox (docs/brainstorms/track-layers-double.md, "Wing greybox"): the second hand's own beam length and
+ * the numbers its frame is drawn from, in the flatbed's rig frame. The main hand keeps the built 7.0 m beam; with the
+ * flag both hands are held to this reach, as the single beam was before the second track. */
+export const WING_BEAM_LENGTH = 5.8;
+export const WING = { postZ: 1.2, fold: 1.4, set: 1.8, lift: 0.9, armY: 1.3, armBase: 1.1, stackFolded: 1.95, stackOpen: 2.9 };
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+/** The side of the machine the up track is on: +1 its left (+x), -1 its right, from the up seat's x in the rig frame. */
+export const wingSide = (upSeatX: number): 1 | -1 => (upSeatX < 0 ? -1 : 1);
+/** The wing's drawn state for a gap (m) between the flatbed's side and the up track at the post's s: where the post
+ * stands (x, unsigned), how far the truck is lifted (0 on the rails from a gap of `set`, fully lifted at `fold`), and the
+ * stack's centre x (unsigned) between the tracks when open and outboard of the flatbed when folded. */
+export function wingState(gap: number) {
+  const g = Math.max(0, gap);
+  return {
+    post: Math.max(g, WING.fold),
+    lift: WING.lift * (1 - smooth(WING.fold, WING.set, g)),
+    stack: WING.stackFolded + (WING.stackOpen - WING.stackFolded) * Math.min(1, g / 4),
+  };
+}
+
+export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch, stackX = 0) {
+  // The wing's stack stands off its post (x in this frame); the main hand's is centred on its pivot.
+  let shift = stackX;
   const root = new THREE.Group();
   root.name = 'panel-mechanism';
   parent.add(root);
@@ -113,7 +138,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
     up = new THREE.Vector3(),
     q = new THREE.Quaternion(),
     e = new THREE.Euler(0, 0, 0, 'YXZ');
-  const last = { at: new THREE.Vector3(0, PANEL_BEAM_Y, STACK.z), yaw: 0, pitch: 0, slide: GAUGE - GRIP_X };
+  const last = { at: new THREE.Vector3(shift, PANEL_BEAM_Y, STACK.z), yaw: 0, pitch: 0, slide: GAUGE - GRIP_X };
   let hasContact = false,
     stackCount = 0,
     stackLengths: number[] = [],
@@ -126,7 +151,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       const length = carriedPiece(stackLengths[shown - 1 - k] ?? 3).length;
       for (let side = 0; side < 2; side++) {
         stackSlot(k, side ? 1 : -1, slot);
-        matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
+        matrix.makeTranslation(slot.x + shift, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
         rails.setMatrixAt(CARRIED + k * 2 + side, matrix);
       }
     }
@@ -195,8 +220,14 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       selecting = Math.min(count, Number(selected));
       drawStack();
     },
+    /** The wing's stack follows its platform: move it (and redraw) when the stack's x in this frame changes. */
+    setStackX(x: number) {
+      if (Math.abs(x - shift) < 1e-4) return;
+      shift = x;
+      drawStack();
+    },
     /** Next free slot's left rail base, where a delivered rail lands. */
-    nextSlot: (out: THREE.Vector3) => stackSlot(Math.min(STACK_PAIRS - 1, stackCount), -1, out),
+    nextSlot: (out: THREE.Vector3) => stackSlot(Math.min(STACK_PAIRS - 1, stackCount), -1, out).setX(out.x + shift),
     /**
      * One panel cycle in this rig frame. `seat` is the midpoint of the carried pair's committed rail bases,
      * `yaw`/`pitch` its travel heading, `start` the rail-level point the sweep starts from and `length` the
@@ -227,7 +258,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       if (!p.picked) {
         // Return from the last seat (or home) to the top pair, then reach down for it.
         const r = p.returnT;
-        at.lerpVectors(last.at, slot.set(0, 0, STACK.z), r);
+        at.lerpVectors(last.at, slot.set(shift, 0, STACK.z), r);
         const y =
           r < 1
             ? THREE.MathUtils.lerp(last.at.y, PANEL_BEAM_Y, panelEase(r * 2))
@@ -238,11 +269,11 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
         // Before the pick the top pair (both top pairs on a double panel) still lies in its slot, held by nothing.
         for (let i = 0; i < 2 && n > 0; i++) {
           stackSlot(n - 1, i ? 1 : -1, slot);
-          matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
+          matrix.makeTranslation(slot.x + shift, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
           rails.setMatrixAt(i, matrix);
           if (!two) continue;
           stackSlot(n - 2, i ? 1 : -1, slot);
-          matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
+          matrix.makeTranslation(slot.x + shift, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
           rails.setMatrixAt(2 + i, matrix);
         }
         rails.instanceMatrix.needsUpdate = true;
@@ -250,7 +281,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       }
       carrying = true;
       const slide = THREE.MathUtils.lerp(slotSlide, GAUGE - GRIP_X, p.gauge);
-      from.set(0, 0, STACK.z);
+      from.set(shift, 0, STACK.z);
       let x: number, y: number, z: number, heading: number, tilt: number;
       if (p.travel < 1) {
         // Lift out of the stack, then run out along the beam to the start of the pending panel.
@@ -307,13 +338,13 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       carryingUp = false;
       stackSlot(Math.max(0, n - 1), 1, slot);
       const slotSlide = slot.x - GRIP_X;
-      at.lerpVectors(last.at, slot.set(0, 0, STACK.z), r);
+      at.lerpVectors(last.at, slot.set(shift, 0, STACK.z), r);
       const y = THREE.MathUtils.lerp(last.at.y, PANEL_BEAM_Y, panelEase(r * 2));
       carrying = false;
       place(at.x, y, at.z, last.yaw * (1 - r), last.pitch * (1 - r), THREE.MathUtils.lerp(last.slide, slotSlide, r));
       if (!hasContact) beam.rotation.y = 0;
       if (t >= 1) {
-        last.at.set(0, PANEL_BEAM_Y, STACK.z);
+        last.at.set(shift, PANEL_BEAM_Y, STACK.z);
         last.yaw = last.pitch = 0;
         last.slide = slotSlide;
       }

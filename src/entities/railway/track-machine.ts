@@ -12,7 +12,7 @@ import machineUrl from '../../../assets/built/track-layer.glb?url';
 import { stepAlpha } from '../../physics/engine.ts';
 import { type Platform } from '../../physics/platforms.ts';
 import { wagonLook, LOCO, TRAILER } from '../../render/wagon-look.ts';
-import { type Line } from '../../place/layout.ts';
+import { FORMATION, LINKS, upLat, type Line } from '../../place/layout.ts';
 import { RAIL_SIZE, dustRing, logStackMesh, setStackLog } from '../../place/pieces.ts';
 import { flat } from '../../render/flat.ts';
 import { LOOK, STEEL, paint, rustU, softGlow } from '../../place/look.ts';
@@ -22,7 +22,8 @@ import { kitBatch, machineLook } from '../../place/look-kit.ts';
 import { machineModel, MACHINE_CHAIR_SEAT, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
 import { registerSeat, SEATED_HIPS } from './seat.ts';
 import { MAX_PANEL_LENGTH } from './track-panels.ts';
-import { FIRST_SEATED, type UpSeat } from './machine-panels.ts';
+import { FIRST_SEATED, WING, WING_BEAM_LENGTH, wingSide, type UpSeat } from './machine-panels.ts';
+import { buildWing } from './machine-wing.ts';
 
 // ---------------------------------------------------------------- the machine
 /** What the machine carries, drawn in the flatbed's frame: its rack of rails down each side, its cradle of logs. */
@@ -30,6 +31,16 @@ const CRADLE_LOGS = 40;
 export type Machine = ReturnType<typeof buildMachine>;
 export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 'panels') {
   const panelled = mode === 'panels';
+  // ?layer=wing: the greybox second hand for the up track (docs/brainstorms/track-layers-double.md). Off, nothing changes.
+  const wingOn = panelled && new URLSearchParams(location.search).get('layer') === 'wing';
+  const railBatch = (n: number) => {
+    // The stack and the carried pair are the committed track's own kit rail; nothing lies flat
+    // enough to need a second shadow draw.
+    const rails = kitBatch('rail', STEEL, n);
+    rails.castShadow = false;
+    rails.receiveShadow = true;
+    return rails;
+  };
   const F = panelled ? MAX_PANEL_LENGTH + 2.4 : 2.4;
   const GAP = panelled ? MACHINE_GAP : 3.7;
   const model = panelled
@@ -37,14 +48,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
         kitBatch('rail', STEEL, 1),
         kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1),
         kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1),
-        (n) => {
-          // The stack and the carried pair are the committed track's own kit rail; nothing lies flat
-          // enough to need a second shadow draw.
-          const rails = kitBatch('rail', STEEL, n);
-          rails.castShadow = false;
-          rails.receiveShadow = true;
-          return rails;
-        },
+        railBatch,
       )
     : null;
   const kitLook = !panelled && LOOK.kit ? machineLook(owner) : null;
@@ -58,7 +62,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     );
   const flatRock = look.cars[1]!,
     locoRock = look.cars[0]!;
-  const pose = { line: null as Line | null, s: 0, sign: 1 };
+  const pose = { line: null as Line | null, s: 0, sign: 1, back: F };
   const onDeck = TRAILER.top;
   const step = { hx: 1.4, hz: 0.3, h: 0.16, z: -1.9 };
   const flatbed = makeCar(
@@ -96,6 +100,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     upDir = new THREE.Vector3(),
     startAt = new THREE.Vector3();
   let heldRail: THREE.Object3D;
+  let wing: ReturnType<typeof buildWing> | null = null;
   let rack: THREE.InstancedMesh;
   const rig = model?.panelRig;
   if (model && rig) {
@@ -130,6 +135,10 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     heldRail.visible = false;
     flatbed.mesh.add(rig.root);
     rig.root.position.y = -(BOTTOM + flatbed.hy);
+    if (wingOn) {
+      wing = buildWing(flatbed.mesh, railBatch);
+      wing.group.position.y = rig.root.position.y;
+    }
     rack = rig.rails;
   } else {
     const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
@@ -184,7 +193,23 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     for (let i = 0; i < panels; i++) n += rackPairs[i] ?? 1;
     return n;
   };
+  /** Up-track pairs among the next `panels` panels (the wing's stack, ?layer=wing). */
+  const upIn = (panels: number) => {
+    let n = 0;
+    for (let i = 0; i < panels; i++) n += (rackPairs[i] ?? 1) > 1 ? 1 : 0;
+    return n;
+  };
   const drawPanelRack = () => {
+    if (wing) {
+      // Two stacks: the down pairs on the gantry (one a panel), the up pairs on the wing's platform.
+      rig?.drawStack(rackCount, rackLengths, selecting ? 1 : 0);
+      wing.mech.drawStack(
+        upIn(rackCount),
+        rackLengths.filter((_, i) => (rackPairs[i] ?? 1) > 1),
+        selecting && (rackPairs[0] ?? 1) > 1 ? 1 : 0,
+      );
+      return;
+    }
     const lengths = rackLengths.flatMap((length, i) => Array<number>(rackPairs[i] ?? 1).fill(length));
     rig?.drawStack(pairsIn(rackCount), lengths, selecting ? (rackPairs[0] ?? 1) : 0);
   };
@@ -213,7 +238,13 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     flatRock.updateWorldMatrix(true, false);
     return flatRock.localToWorld(out.set(0, onDeck + 0.3, 0.7));
   };
+  let deliveries = 0;
   const worldRack = (out: THREE.Vector3) => {
+    if (wing && rackPairs.some((n) => n > 1) && deliveries++ % 2) {
+      // Deliveries land alternately on the two stacks.
+      wing.mech.root.updateWorldMatrix(true, false);
+      return wing.mech.root.localToWorld(wing.mech.nextSlot(out));
+    }
     if (rig) {
       rig.root.updateWorldMatrix(true, false);
       return rig.root.localToWorld(rig.nextSlot(out));
@@ -308,6 +339,74 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
         fade: 0.5,
       });
   }
+  // ?layer=wing -------------------------------------------------------------
+  const wingStats = { side: 0, gap: 0, lift: 0, reachDown: 0, reachUp: 0, panels: 0 };
+  let wingSideNow = 0,
+    warned = false;
+  /** Gap (m) between the flatbed's side and the up track under the wing's post; 0 where the line is single. */
+  const wingGap = () => {
+    const link = LINKS.find((l) => l.line === pose.line);
+    if (!link) return 0;
+    const sPost = pose.s - pose.sign * pose.back + pose.sign * WING.postZ;
+    return -(upLat(FORMATION[link.id], sPost) ?? 0);
+  };
+  /** Stow or open the wing for where the machine stands. The side is the up seat's once a panel has shown it; before
+   * that the machine's heading says it (laid toward Home the up track is on its right, away from Home on its left). */
+  const placeWing = () => {
+    if (!wing) return;
+    const side = wingSideNow || (pose.sign > 0 ? 1 : -1);
+    wingStats.side = side;
+    wingStats.gap = wingGap();
+    wingStats.lift = wing.place(side, wingStats.gap);
+  };
+  const toWing = new THREE.Matrix4(),
+    wingAt = new THREE.Vector3();
+  function layWing(track: Track, index: number, phase: number, stock: number) {
+    if (!wing || !rig) return;
+    const len = track.carriedLength(index);
+    // The gantry lays the down pair alone, with no crossing: the up pair is the wing's.
+    const frame = rig.pose(
+      phase,
+      stock,
+      seatAt,
+      Math.atan2(seatDir.x, seatDir.z),
+      Math.asin(Math.max(-1, Math.min(1, seatDir.y))),
+      startAt,
+      len,
+      null,
+    );
+    wingStats.reachDown = Math.max(wingStats.reachDown, Math.hypot(rig.trolley.position.x, rig.trolley.position.z));
+    if (track.seatUp(index, upAt, upDir)) {
+      wingAt.copy(upAt).applyMatrix4(toRig);
+      // The first metres of a turnout lie too close to the flatbed's line to tell a side by: wait for 1 m.
+      const side = Math.abs(wingAt.x) > 1 ? wingSide(wingAt.x) : wingSideNow;
+      if (side !== wingSideNow) {
+        wingSideNow = side;
+        placeWing();
+      }
+      toWing.copy(wing.mech.root.matrixWorld).invert();
+      upAt.applyMatrix4(toWing);
+      upDir.transformDirection(toWing);
+      track.panelStartUp(index, startAt).applyMatrix4(toWing);
+      wing.mech.pose(
+        phase,
+        upIn(stock),
+        upAt,
+        Math.atan2(upDir.x, upDir.z),
+        Math.asin(Math.max(-1, Math.min(1, upDir.y))),
+        startAt,
+        len,
+        null,
+      );
+      wingStats.reachUp = Math.max(wingStats.reachUp, Math.hypot(wing.mech.trolley.position.x, wing.mech.trolley.position.z));
+      wingStats.panels++;
+    } else wing.mech.home(1, upIn(stock));
+    if (!warned && Math.max(wingStats.reachDown, wingStats.reachUp) > WING_BEAM_LENGTH + 0.02) {
+      warned = true;
+      console.warn('?layer=wing: a hand reached past the 5.8 m beam', wingStats);
+    }
+    track.presentPanel(index, frame, false);
+  }
   const m = {
     /** Called once per physics step, before the cars move: the run advances the machine here. */
     onStep: (() => {}) as (dt: number) => void,
@@ -325,6 +424,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
       pose.line = line;
       pose.s = head;
       pose.sign = sign;
+      pose.back = setback;
       poseCarOnLine(flatbed, line, head - sign * setback, sign);
       poseCarOnLine(loco, line, head - sign * (setback + GAP), sign);
     },
@@ -395,6 +495,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
       seatAt.applyMatrix4(toRig);
       seatDir.transformDirection(toRig);
       track.panelStart(index, startAt).applyMatrix4(toRig);
+      if (wing) return layWing(track, index, phase, stock);
       let up: UpSeat | null = null;
       if (track.seatUp(index, upAt, upDir)) {
         upAt.applyMatrix4(toRig);
@@ -416,8 +517,13 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     },
     /** Not laying: the gantry goes home over the stack on local time (0..1). */
     layHome(t: number, stock: number) {
-      rig?.home(t, pairsIn(stock));
+      if (wing) {
+        rig?.home(t, stock);
+        wing.mech.home(t, upIn(stock));
+      } else rig?.home(t, pairsIn(stock));
     },
+    /** For evidence (?layer=wing): the wing's side (+1 the machine's left), gap, truck lift and the hands' reach so far. */
+    wingStats,
     setCradle,
     worldCradle,
     worldRack,
@@ -476,6 +582,11 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
       gear.position.y = -(BOTTOM + flatbed.hy) / scale.y;
       rig.root.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
       rig.root.position.y = -(BOTTOM + flatbed.hy) / scale.y;
+      if (wing) {
+        wing.group.scale.copy(rig.root.scale);
+        wing.group.position.y = rig.root.position.y;
+        placeWing();
+      }
       m.onPanelFrame(dt);
     }
   };
@@ -484,6 +595,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     owner.add(flatbed.mesh, loco.mesh);
     owner.animate(animate, 7);
     owner.cleanup(() => {
+      wing?.dispose();
       glass.dispose();
       shine.dispose();
       beamMat.dispose();
