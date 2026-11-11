@@ -1,11 +1,13 @@
 // Arrival at iPad size (src/player/arrival.ts, src/features/welcome-back.ts; docs/game-design/first-run.md): a first
-// visit gets the short card (a friendly name already filled in, colours, Jump in); a returning visit skips it, lands in
-// the world with the saved name and colour and a "Welcome back" card that leaves on its own; and after time away with a
-// friend in, the route laid and opening day started, the card says so. Solo in a proto- room (its shortcut lays the
-// route). Stills of all three. Serves DESIGN.md 8 (Designed for drop-in) and 9 (Leave something for the next visitor).
+// visit gets the short card (a friendly name already filled in, colours, Jump in); a returning visit skips it and lands
+// in the world with the saved name and colour and a "Welcome back" card that leaves on its own. Stills of both. Serves
+// DESIGN.md 8 (Designed for drop-in) and 9 (Leave something for the next visitor).
+//
+// Its third leg (11 November: removed) laid the route and started opening day with the classic `open.lay` and
+// `open.start` edits, which the railway room refuses, and checked the card's "what changed" lines. Those lines read
+// classic state (the sites' plaques, the opening flag, the lockstep roster), which the railway never changes; a
+// "what changed" check comes back when the welcome back reads the railway.
 type Page = {
-  url: () => string;
-  goto: (u: string) => Promise<unknown>;
   reload: () => Promise<unknown>;
   click: (s: string) => Promise<void>;
   waitForSelector: (s: string, o?: { timeout?: number }) => Promise<unknown>;
@@ -14,7 +16,6 @@ type Page = {
 };
 type Game = {
   page: Page;
-  ctx: { close: () => Promise<void> };
   eval: (body: string) => Promise<unknown>;
   waitFor: (expr: string, opts?: { timeout?: number }) => Promise<number>;
   wait: (s: number) => Promise<void>;
@@ -27,7 +28,6 @@ type Run = {
 
 const IPAD = [1180, 820];
 const NO_SPLASH = { content: '.splash { display: none !important }' };
-const R = `const { rules } = await import('/src/world/game-world.ts'); const S = await import('/src/world/sync.ts');`;
 const CARD = `(() => { const c = document.querySelector('.welcome-back'); return c && { hi: c.querySelector('.welcome-back-hi').textContent,
   lines: [...c.querySelectorAll('.welcome-back-line')].map((p) => p.textContent) }; })()`;
 
@@ -38,11 +38,10 @@ async function reloadIn(g: Game) {
 }
 
 export default {
-  about:
-    'arrival at iPad size: first-visit card, straight in when returning, and a welcome back that says what changed',
+  about: 'arrival at iPad size: first-visit card, then straight in when returning with a welcome back',
   timeout: 420000,
   async run(t: Run) {
-    const room = 'proto-arrival' + Math.random().toString(36).slice(2, 6);
+    const room = 'arrival' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'Ana', room, hud: true, size: IPAD });
 
     // 1. A first visit: forget the name and load again. The card, with a friendly name filled in.
@@ -91,32 +90,5 @@ export default {
     );
     const goneMs = await g.waitFor(`!document.querySelector('.welcome-back')`, { timeout: 8000 });
     t.check('the welcome back leaves on its own', goneMs >= 0, `${goneMs} ms`);
-
-    // 3. Time away: remember the room as it is now, then a friend drops in, the route is laid and opening day starts.
-    const memory = await g.eval(`return localStorage.getItem('boogle.visit.${room}');`);
-    const bo = await t.open({ name: 'Bo', room, size: [640, 400] });
-    await g.waitFor(`(async () => { ${R} return rules.roster.size() >= 2; })()`, { timeout: 20000 });
-    await bo.ctx.close();
-    await g.eval(`${R} S.submitEdit({ op: 'open.lay', i: 0, j: 0 });`);
-    await g.waitFor(`(async () => { ${R} return rules.opening.ready(); })()`, { timeout: 10000 });
-    await g.eval(`${R} S.submitEdit({ op: 'open.start', i: 0, j: 0 });`);
-    await g.waitFor(`(async () => { ${R} return rules.opening.opening.t0 >= 0; })()`, { timeout: 10000 });
-    await g.eval(`${R} S.saveNow?.(true);`);
-    await g.wait(1);
-    // Put back the memory from before, and keep this tab's last save (every few seconds, and on pagehide) off it.
-    await g.eval(`localStorage.setItem('boogle.visit.${room}', ${JSON.stringify(memory)});
-      const set = Storage.prototype.setItem;
-      Storage.prototype.setItem = function (k, v) { if (!k.startsWith('boogle.visit.')) set.call(this, k, v); };`);
-    await reloadIn(g);
-    await g.waitFor(`!!document.querySelector('.welcome-back.shown')`, { timeout: 8000 });
-    await g.wait(0.5);
-    const news = (await g.eval(`return ${CARD};`)) as { hi: string; lines: string[] } | null;
-    const newsShot = await g.still('returning-changes');
-    const said = news?.lines.join(' / ') ?? '';
-    t.check(
-      'returning after changes: the card names the friend, the track laid and opening day',
-      /Bo was here/.test(said) && /track/.test(said) && /Opening day/.test(said),
-      `${JSON.stringify(news)}; ${newsShot}`,
-    );
   },
 };

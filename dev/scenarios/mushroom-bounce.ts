@@ -16,8 +16,9 @@ type Run = {
 };
 
 const MIN_RISE = 4; // m above the cap the first bounce has to reach (a bounce is 15 m/s: about 11 m)
-// How many mushroom colliders a tab has (the page-side check, as an expression that awaits nothing: engine on window).
-const CAPS = `(window.__caps ??= 0, import('/src/physics/engine.ts').then(({ forEachStatic }) => { let n = 0; forEachStatic(-1, (b, shapes) => { if (shapes.length === 2 && shapes[1].rTop === 1.9) n++; }); window.__caps = n; }), window.__caps)`;
+// How many mushroom colliders a tab has now, as a promise (an earlier cached form read 0 on its first poll, so a
+// wait for none passed at once on a tab that never counted).
+const CAPS = `import('/src/physics/engine.ts').then(({ forEachStatic }) => { let n = 0; forEachStatic(-1, (b, shapes) => { if (shapes.length === 2 && shapes[1].rTop === 1.9) n++; }); return n; })`;
 
 export default {
   island: true, // the classic island by the court (run.ts)
@@ -46,7 +47,7 @@ export default {
     t.check('found open ground for mushrooms', !!spot, JSON.stringify(spot));
     if (!spot) return;
     await t.sleep(1000); // the pop, then the collider
-    const seen = await friend.waitFor(`${CAPS} === ${spot.ground}`, { timeout: 15000 });
+    const seen = await friend.waitFor(`${CAPS}.then((n) => n === ${spot.ground})`, { timeout: 15000 });
     t.check('the other tab sees the same mushrooms', seen >= 0, seen + ' ms');
 
     // The cap's top, from the collider (the body's highest shape).
@@ -87,8 +88,13 @@ export default {
       `peak ${rise.toFixed(2)} m over the cap, top speed up ${maxUp.toFixed(1)} m/s, ${trace.length} frames; ${sheet.sheet}`,
     );
 
-    // They are temporary, on both tabs.
-    const gone = await friend.waitFor(`${CAPS} === 0`, { timeout: 30000 });
-    t.check('the mushrooms wilt away on their own', gone >= 0, gone + ' ms');
+    // They are temporary, on both tabs (the sprouting tab first: the friend's count is 0 too when it never saw them).
+    const goneHere = await g.waitFor(`${CAPS}.then((n) => n === 0)`, { timeout: 30000 });
+    const gone = await friend.waitFor(`${CAPS}.then((n) => n === 0)`, { timeout: 30000 });
+    t.check(
+      'the mushrooms wilt away on their own, on both tabs',
+      goneHere >= 0 && gone >= 0,
+      `${goneHere} / ${gone} ms`,
+    );
   },
 };

@@ -35,6 +35,16 @@ const BUNDLE = `${R}
 
 export default {
   about: 'the HUD at desktop and iPad size: prompt, name tag, haul chip, notification lane, plaque flip',
+  // Known stale (11 November). Every leg starts from classic edits the railway room refuses (src.take for the logs on
+  // your back, site.stock for the plaque), so the first check waits for a stack that never fills. What it looks at
+  // still matters (docs/game-design/hud.md points here for its stills). A port to the railway room needs: a load on
+  // your back through the railway's own take (a rail or log stack near Home's spawn, through its interactable, not
+  // window.boogle.sync.submitEdit) and the haul chip read against the railway mirror's back count, not
+  // rules.stacks; a railway interactable for the prompt and the press squash; the work-site rings and plaque legs
+  // dropped or replaced by a railway surface that shows shared news (none is named yet); the hands note and update
+  // notice legs carry over as they are (they are DOM and notify only).
+  stale:
+    'drives classic src.take/site.stock edits the railway room refuses; a port needs the railway back, a railway prompt and a news surface in place of the plaque (header of dev/scenarios/hud-glance.ts)',
   timeout: 300000,
   async run(t: Run) {
     for (const tag of ['desk', 'ipad']) {

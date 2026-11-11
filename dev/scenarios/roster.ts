@@ -15,7 +15,11 @@ type Run = {
   sleep: (ms: number) => Promise<void>;
 };
 
-const ROSTER = `document.getElementById('roster').textContent`;
+// Since 5 November (3bae8f408, "Move player identity and Live status into Pause") the roster lives in Pause and is out
+// of the document while Pause is shut; src/player/hud.ts renderPeople still updates it there. So Alice opens Pause
+// (Esc, as a desktop player does) before the checks that read it; a null read is a closed Pause, not an empty list.
+const ROSTER = `(document.getElementById('roster')?.textContent ?? '')`;
+const PAUSED = `!!document.querySelector('dialog.pause[open] #roster')`;
 
 export default {
   sourceImports: false,
@@ -30,6 +34,10 @@ export default {
     await t.sleep(3000);
     const calls = (await A.eval(`return window.__peerCalls;`)) as number;
     t.check('alone, onPeers is called once (on subscribe), not 20 times a second', calls <= 1, `${calls} calls in 3 s`);
+
+    await A.page.keyboard.press('Escape'); // the desktop's way in when the pointer is not locked (the menu button is touch only)
+    const paused = await A.waitFor(PAUSED, { timeout: 10000 });
+    t.check('the roster shows in Pause', paused >= 0 && /Alice/.test(String(await A.eval(`return ${ROSTER};`))));
 
     const B = await t.open({ name: 'Bob', room, size });
     const joined = await A.waitFor(`${ROSTER}.includes('Bob')`, { timeout: 60000 });
