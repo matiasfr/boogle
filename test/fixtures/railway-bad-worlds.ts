@@ -116,6 +116,12 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     break: (w) => set(w, Job, { stock: 25 }, 0),
   },
   {
+    site: 'line job bounds (start, completion range)',
+    message: 'railway: job bounds',
+    stage: A,
+    break: (w) => set(w, Job, { completion: 2 }, 0),
+  },
+  {
     site: 'line ordered stations',
     message: 'railway: ordered stations',
     stage: A,
@@ -206,6 +212,12 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: line2 job bounds',
     stage: A,
     break: (w) => set(w, QJob, { stock: 17 }, 0),
+  },
+  {
+    site: 'line2 job bounds (start, completion range)',
+    message: 'railway: line2 job bounds',
+    stage: A,
+    break: (w) => set(w, QJob, { completion: 2 }, 0),
   },
   {
     site: 'line2 ordered stations',

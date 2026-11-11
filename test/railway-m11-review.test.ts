@@ -75,16 +75,18 @@ const HOST_READS = [
 ] as const;
 // Built at module scope, outside the 5 s test timeout (as the golden shards do); STAGES below is a subset.
 for (const [stage] of HOST_READS) if (stage !== 'fresh') seedOf(stage);
+/** A HOST_READS row (without its stage) from the host now. */
+function hostRow(r: ReturnType<typeof host>) {
+  const p = r.api.panels(),
+    l = r.api.line2(),
+    c = r.api.counts();
+  const got = [r.api.phase(), p.committed, p.stock, l.active, l.completed, l.gateOpen];
+  got.push(q1.railMaxDuration(r.api.world()), c.score, c.total, c.rails.total, c.stone.total);
+  return got;
+}
 test("M11 review: the host's phase, panels, line two, resume cap and counts at each stage", () => {
-  for (const [stage, ...want] of HOST_READS) {
-    const r = host(stage === 'fresh' ? undefined : stage);
-    const p = r.api.panels(),
-      l = r.api.line2(),
-      c = r.api.counts();
-    const got = [r.api.phase(), p.committed, p.stock, l.active, l.completed, l.gateOpen];
-    got.push(q1.railMaxDuration(r.api.world()), c.score, c.total, c.rails.total, c.stone.total);
-    assert.deepEqual(got, want, stage);
-  }
+  for (const [stage, ...want] of HOST_READS)
+    assert.deepEqual(hostRow(host(stage === 'fresh' ? undefined : stage)), want, stage);
 });
 
 // ---------------------------------------------------------------- ws-page.ts's probes during a late join
@@ -225,6 +227,7 @@ function resumeAgrees(r: ReturnType<typeof host>, ticks: number, yard: number, w
   const want = railResume(copy, Math.min(ticks, q1.railMaxDuration(copy)), marker, r.sync.world.tick, yard);
   assert.equal(r.api.resume(ticks, marker, yard), want, `${where}: job ticks credited`);
   assert.equal(r.api.world().hash(), copy.hash(), `${where}: the same world`);
+  return want;
 }
 for (const stage of STAGES)
   test(`M11 review at ${stage}: the away credit at the cap, a tick under and a tick over`, () => {
@@ -233,6 +236,26 @@ for (const stage of STAGES)
     for (const ticks of [cap - 1, cap, cap + 1, Number.MAX_SAFE_INTEGER])
       for (const yard of [0, 600]) resumeAgrees(host(stage), Math.max(1, ticks), yard, `${stage} ${ticks}/${yard}`);
   });
+// A room resumed after three days away (yard credit included), then the host's reads: [stage, job ticks credited,
+// then the HOST_READS row after the credit]. No stage has a job laying, so none credits job ticks; the yard's credit
+// shows in the rails (q1-done's 33 become 37). The mid-job test below holds the cap on a laying job. Recorded on 5241b102f from the host (unchanged since 9e7dfcbde, where the
+// deleted M11 proof held the same reads equal to the read model's).
+const DAYS_AWAY = [
+  ['awake', 0, 'idle', 0, 56, -1, 0, false, 115, 0, 3910, 0, 40],
+  ['q1-done', 0, 'done', 56, 0, 1, 1, false, 217, 6460, 3934, 37, 40],
+  ['q4-done', 0, 'done', 56, 0, 4, 4, true, 217, 10400, 3934, 77, 40],
+  ['q6-done', 0, 'done', 56, 0, -1, 6, true, 217, 14480, 3966, 133, 40],
+  ['works-lit', 0, 'done', 56, 0, -1, 6, true, 217, 14480, 3966, 133, 40],
+  ['ring-joined', 0, 'done', 56, 0, -1, 7, true, 217, 16080, 3986, 161, 40],
+] as const;
+test('M11 review: a room resumed after three days is capped, credited and read as recorded', () => {
+  const days = 3 * 24 * 36000; // ticks of 100 ms
+  const got = DAYS_AWAY.map(([stage]) => {
+    const r = host(stage);
+    return [stage, resumeAgrees(r, days, days, `${stage} after three days`), ...hostRow(r)];
+  });
+  assert.deepEqual(got, DAYS_AWAY);
+});
 test('M11 review: the away credit mid-job on line one, at the cap and either side of it', () => {
   // T1 funded `part` ticks ago (its row set as a funding would leave it), then credited around what is left.
   const whole = q1.railMaxDuration(host('awake').api.world());
