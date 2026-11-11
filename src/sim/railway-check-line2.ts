@@ -1,6 +1,5 @@
-// Line two's part of the load check (docs/plans/ecs-migration-railway.md, M8b): validateRailLine2's conditions
-// (./railway-line2.ts) restated on the rows and the world queries, in the same order and with the same messages. Run
-// by railwayCheck (./railway-check.ts).
+// Line two's part of the load check (docs/plans/ecs-migration-railway.md, M8b): its conditions on the rows and the
+// world queries. Run by railwayCheck (./railway-check.ts).
 //
 //   checkLine2(w)    the forge and its pour clock; Q1 to Q7's bounds, order, funding and laying; the depot, the cart,
 //                    the lever, hook, glider and pack; the shelf; the boiler; rail conservation (throws on the first)

@@ -390,7 +390,26 @@ typecheck`, `npm run lint`.
 
 ### M12b: the read model
 
-- [ ] **M12b-1. The last readers.** _M, High (`src/world`, `src/sim`). After M12e; beside M12f (no shared file)._
+- [x] **M12b-1. The last readers.** _M, High (`src/world`, `src/sim`). After M12e; beside M12f (no shared file)._
+      (**As built**, on `ecs/m12f`: `READ_MODEL_IMPORTERS` is empty, and nothing outside `src/sim` imports the read
+      model, `railway-live.ts` or `Railway`. `townRead(w)` takes the world (`townReadOf`, `TownReadable` and
+      `townReadOfWorld` are gone). The check corpus checks the world only. Its completeness test now reads the world
+      check's own messages, not the old validators' source, so M12b-2 deletes the validators without touching it. With
+      that change go the four UNREACHABLE entries that only the old validators threw, and `BY_CONSTRUCTION`. The golden
+      shards and `railway-ring.test.ts` drop `modelVerdict`. `test/railway-m11-host.test.ts` and its helper are deleted
+      (the plan named only the helper). The host's literals per stage (phase, panels, `line2()`, the resume cap, and
+      the counts' score, total, rails and stone) are in `railway-m11-review.test.ts`, recorded on 9e7dfcbde while the
+      model differential was still green; the three-day resume (yard credit, then the host's reads) is one literal test
+      beside it. The phase walk is held to a literal list of runs. The late-join and refill
+      probes are held to a fresh railway, then to the server's world. `jobProgress` now has its own test on both lines
+      against the run rows the tick writes, in `railway-read-facade.test.ts`, next to the moved `read.world()` case. A
+      +1 mutant in `jobProgress` fails it. The three spikes are gone. Review fixes: the completeness test also counts
+      sites with repeats (the reviewer's test), so each line's job start/completion range site has its own bad world
+      (`completion: 2`); `test/railway-check-ring.test.ts` (cherry-picked) holds `checkRing`'s five refusals. A
+      surviving mutant, a late join's changes sent in reverse order, is logged, not tested: within one send each
+      entity's change appears once and the mirror publishes only at the last chunk, so the order cannot change what
+      is shown. `src/sim/railway-live.ts` has no importer now; `test/helpers/rail-no-audit.ts` still
+      lists it for M12b-2.)
       `src/world/railway-server.ts` (delete the lazy `railway` getter, `view` and the `railwayView` import);
       `src/sim/town-facts.ts` (`townRead` takes a world: move `townReadOfWorld` in from
       `src/entities/town/town-read.ts`, delete `townReadOf`); `test/railway-check.test.ts`,
@@ -409,7 +428,23 @@ typecheck`, `npm run lint`.
     main; `rail-mutants` over the railway test set kills what it killed before X1.
   - **Reviewer attacks:** the server's resume cap and panel numbers on a room resumed after days
     (`test/railway-m11-host.test.ts`); a check condition that only the old side exercised.
-- [ ] **M12b-2. Delete it.** _S, High by path, deletions only. After M12b-1 and M12f._ The parent plan's M12b
+- [x] **M12b-2. Delete it.** _S, High by path, deletions only. After M12b-1 and M12f._ (**As built**, on
+      `ecs/m12b-1`'s fixed tip. Deleted: `railway-read-model.ts`, `railway-live.ts`, and `railway-line2.ts` whole (every
+      export in it took the model). From `railway.ts`, `railway-line.ts`, `railway-works.ts` and `railway-trains.ts`:
+      the `Railway` type, `RailPile`, `RailRing`, `RAILWAY_DURATION`, `railAccount`, `railCounts`, `railPhase` and the
+      re-export block, the model's shape types, the old facts, `railTrainsOf(s)` and the four domain validators. From
+      `railway-train.ts`: `railRingOpen`. From `railway-check.ts`: `validateRailway` and `railwayInvariant`.
+      `railway-line.ts` now holds only `LINE_TIMING`, and `railway-works.ts` only the stage labels and seam bits; both
+      stay where their importers are. Also deleted: `dev/migrate/railway-imports.ts`, M3b's one-off migration script,
+      whose table named the deleted files. Lint: rule 5's ban, both lists, the `read-model` and `live` alternatives in
+      `RAIL_DYNAMIC`, the leaf ban and the driver ban, and the retired-name rule's exemption are gone. The src/sim
+      blocks now leave the seeds, the driver and `railway-check*.ts` free to load the check. The rg line over the
+      eight names now finds only the two guards that ban them (`policy.ts`'s `RETIRED`, `review-m12c.test.ts`'s
+      fixtures). `npm run unused` lists no export that only the deleted code used. `trainRowBroken` stays in
+      `railway-trains.ts`, which the corpus test reads. The bad-worlds fixture's section headers name the domain check
+      files. `test/railway-line-authority.test.ts`'s `railwayInvariant` alias is now `invariant`. `ecs-e.md` section 4,
+      `src/world/README.md` and `ship-pipeline.md` were corrected; `sync.md` and `src/sim/AGENTS.md` named no model.)
+      The parent plan's M12b
       entry as written: `src/sim/railway-read-model.ts`, `src/sim/railway-live.ts`, the `Railway` type and the old
       facts in `railway.ts`, `railway-line.ts`, `railway-line2.ts`, `railway-works.ts`, `railway-trains.ts`
       (`railRingOpen` included: `ringOpen(w)` is its world twin), the five validators and `railwayInvariant` in

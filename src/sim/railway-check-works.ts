@@ -1,6 +1,5 @@
-// The Works' and the Roundhouse's part of the load check (docs/plans/ecs-migration-railway.md, M8b): validateRailWorks's
-// conditions (./railway-works.ts) restated on the rows and the world queries, in the same order and with the same
-// messages. Run by railwayCheck (./railway-check.ts).
+// The Works' and the Roundhouse's part of the load check (docs/plans/ecs-migration-railway.md, M8b): its conditions on
+// the rows and the world queries. Run by railwayCheck (./railway-check.ts).
 //
 //   checkWorks(w)    the Works' and the shed's bounds; the breaker, seams, kiln and casts; the pier and the crossing;
 //                    the stall, cradle, fit and table; the wagon; footings on backs and piles; footing conservation
@@ -20,7 +19,7 @@ const bad = (what: string): never => {
 };
 /** The Works' and the shed's whole-world invariants; throws on the first broken one. */
 export function checkWorks(w: World) {
-  // validateRailWorks's 'works missing' reads rows a world always has (railwayCheck counts them first).
+  // The Works, shed and line-two rows always exist here: railwayCheck counted them first.
   const k = works(w),
     lastCast = worksClock(w).lastCast,
     h = shed(w);

@@ -11,7 +11,7 @@ Everything players can change and everyone must agree on (items, piles) lives be
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break; a bump also resets players' local progress: `src/player/world-reset.ts`. |
 | `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...), and the railway mirror. Adapters import it first. |
 | `replicate*.ts`, `room-clock.ts` | Replication (docs/plans/replication.md): component schemas, the server's touched-entity diff and per-client send, the client mirror and prediction hooks; the one 60 Hz room clock. |
-| `railway-server.ts`, `railway-replicate.ts` | The railway as Server kind: the host's rules (actions applied on arrival, a server state saved with the checkpoint) and its projections; the client mirror rebuilt into the `Railway` shape. |
+| `railway-server.ts`, `railway-replicate.ts` | The railway as Server kind: the host's rules (actions applied on arrival, a server state saved with the checkpoint) and its projections; the client mirror, a world published whole (`confirmed()`) that views and the predictor read. |
 | `grid.ts` | Pure, lockstep: grid constants. |
 | `background.ts`, `clock-worker.ts` | One bounded elapsed-time clock shared by visible frames and hidden-tab heartbeats; independent of the physics frame clamp. |
 

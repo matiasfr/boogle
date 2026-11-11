@@ -1,7 +1,6 @@
 // The railway's seed and test driver on a World (docs/plans/ecs-migration-railway.md, M3c): the rules by name, the
-// world's invariant and a save round trip, with no proxy and no read model. The seed builders (./railway-seeds.ts) and
-// the converted rule tests (test/helpers/rail.ts) use it; never imported by the game, the rules or the adapters.
-// ./railway-live.ts is the old driver, a `Railway` view for the tests not yet converted; M12b deletes it.
+// world's invariant and a save round trip. The seed builders (./railway-seeds.ts) and the converted rule tests
+// (test/helpers/rail.ts) use it; never imported by the game, the rules or the adapters.
 //
 //   need(cond, msg)                     a seed or test step that must hold
 //   createRailway()                     a fresh world, audited: a write that skips mut() or a declaration throws
@@ -29,7 +28,7 @@ export function apply(w: World, pid: string, action: RailAction, tick: number, t
 }
 const saved = (w: World): unknown => JSON.parse(JSON.stringify(w.snapshot()));
 const message = (e: unknown) => (e instanceof Error ? e.message : 'railway: invalid');
-/** railwayCheck on the world itself: rows and queries only, no read model (M8b). */
+/** railwayCheck on the world: its message, or null. */
 export function check(w: World): string | null {
   try {
     railwayCheck(w);

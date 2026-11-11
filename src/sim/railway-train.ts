@@ -39,11 +39,6 @@ const Q6_LAID = 6;
  * index) and whether the rivet is struck (a `ring` halt opens). */
 export type RingOpen = { readonly head: number; readonly joined: boolean };
 const RING_SHUT: RingOpen = { head: 0, joined: false };
-/** The ring's stop state from a read model's `ring` (the Aperture row): the railhead's head, and the rivet struck. */
-export const railRingOpen = (s: { readonly ring?: { readonly set: number; readonly joined: number } }): RingOpen => ({
-  head: Math.floor((s.ring?.set ?? 0) / 2),
-  joined: (s.ring?.joined ?? -1) >= 0,
-});
 /** The stops a line serves now: the halts whose `opens` QJob slot is complete and, for a `ring` halt, the rivet
  * struck; a `heads` halt's stop is `heads[ring.head]` (every decision reads this, while the pose reads only the row).
  * Open stops are a prefix of the halts (endBlocks reads the last's end). `laid` is how many QJob slots are complete,

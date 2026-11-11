@@ -38,8 +38,8 @@ export function chopTo(s: Seed, pid: string, n: number) {
     need(act(s, pid, 'rail.chop', { id, yaw: 0, collapsed: false }) > 0, 'a log chopped');
   }
 }
-/** Keeps every footing in one home across `ticks` rule ticks (footing conservation, among the rest of the load check;
- * was footingTotal on the read model). */
+/** Keeps every footing in one home across `ticks` rule ticks (footing conservation, among the rest of the load
+ * check). */
 export function advanceWorks(s: Seed, ticks: number) {
   for (let i = 0; i < ticks; i++) {
     advance(s, 1);

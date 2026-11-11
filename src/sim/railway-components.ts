@@ -17,7 +17,7 @@ import { TRAIN_STOPS } from './railway-train.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import type { RailResult } from './railway.ts';
 
-/** A job's timing fields, in wire order (the read model copies them into its `timing`). */
+/** A job's timing fields, in wire order (the job's schedule reads them: railway-line-schedule.ts). */
 export const TIMING = {
   depositMs: 'int',
   feedIntervalMs: 'int',

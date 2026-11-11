@@ -1,21 +1,14 @@
 // The load check on the world (docs/plans/ecs-migration-railway.md, M8b): each bad world in
-// test/fixtures/railway-bad-worlds.ts, one per `throw` site of the old validators, is refused by the world check with
-// that site's message, and the read model's check (until M12b) gives the same; every throw site is either an entry or
-// named unreachable; and the two conservation checks the seeds rely on stay in it. Every golden stage's acceptance is in
-// the golden shards (test/helpers/railway-golden.ts).
+// test/fixtures/railway-bad-worlds.ts, one per `throw` message of the world check, is refused with that message; every
+// message the world check throws is an entry or named unreachable; and the two conservation checks the seeds rely on
+// stay in it. Every golden stage's acceptance is in the golden shards (test/helpers/railway-golden.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import type { World } from '../src/ecs/index.ts';
 import { check } from '../src/sim/railway-drive.ts';
-import {
-  BAD_WORLDS,
-  BAD_WORLD_STAGES,
-  BY_CONSTRUCTION,
-  DOMINATED,
-  UNREACHABLE,
-} from './fixtures/railway-bad-worlds.ts';
-import { modelVerdict, stageWorld, worldVerdict } from './helpers/railway-check.ts';
+import { BAD_WORLDS, BAD_WORLD_STAGES, DOMINATED, UNREACHABLE } from './fixtures/railway-bad-worlds.ts';
+import { stageWorld, worldVerdict } from './helpers/railway-check.ts';
 
 // Built at module scope, outside the 5 s test timeout (as the golden shards do).
 const bases = new Map<string, World>(BAD_WORLD_STAGES.map((stage) => [stage, stageWorld(stage)]));
@@ -25,53 +18,48 @@ const broken = (entry: (typeof BAD_WORLDS)[number]) => {
   return w;
 };
 
-test('the bad worlds are built on stages both checks accept', () => {
-  for (const [stage, w] of bases) {
-    assert.equal(worldVerdict(w), null, stage);
-    assert.equal(modelVerdict(w), null, stage);
-  }
+test('the bad worlds are built on stages the world check accepts', () => {
+  for (const [stage, w] of bases) assert.equal(worldVerdict(w), null, stage);
 });
 for (const entry of BAD_WORLDS)
-  test(`bad world ${entry.site}: refused with "${entry.message}" by the world check and the read model's`, () => {
-    const w = broken(entry);
-    assert.equal(worldVerdict(w), entry.message, 'the world check');
-    assert.equal(modelVerdict(w), entry.message, "the read model's check");
+  test(`bad world ${entry.site}: refused with "${entry.message}" by the world check`, () => {
+    assert.equal(worldVerdict(broken(entry)), entry.message);
   });
 
-// The old validators' `throw` sites, counted in their source: each is an entry, unreachable or dominated.
-const SOURCES: [string, string][] = [
-  ['src/sim/railway-check.ts', 'validateRailway'],
-  ['src/sim/railway-line.ts', 'validateRailLine'],
-  ['src/sim/railway-line2.ts', 'validateRailLine2'],
-  ['src/sim/railway-trains.ts', 'validateRailTrains'],
-  // validateRailTrains throws what trainRowBroken returns (R3a): that function's message literals are its sites.
-  ['src/sim/railway-trains.ts', 'trainRowBroken'],
-  ['src/sim/railway-works.ts', 'validateRailWorks'],
-];
-function throwSites(file: string, fn: string) {
-  const text = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
-  const start = text.indexOf(`export function ${fn}(`);
-  const end = text.indexOf('\n}\n', start);
-  const body = text.slice(start, end);
-  if (fn === 'trainRowBroken') return [...body.matchAll(/'(railway: [^']+)'/g)].map((m) => m[1]!);
-  return [...body.matchAll(/throw new Error\('([^']+)'\)/g)].map((m) => m[1]!);
-}
-test('every throw site of the old validators is a bad world, unreachable or dominated (87 sites)', () => {
-  const sites = SOURCES.flatMap(([file, fn]) => throwSites(file, fn)).sort();
-  assert.equal(sites.length, 87, 'the old validators changed: list the new sites');
-  const listed = [...BAD_WORLDS, ...UNREACHABLE, ...DOMINATED].map((e) => e.message).sort();
-  assert.deepEqual(listed, sites);
-  assert.equal(BY_CONSTRUCTION.length, 2);
-});
-test("the world check's own throw sites hold the same messages as the old validators'", () => {
+// The world check's messages, read from its source: every `bad('…')` in the check files, and the message literals of
+// trainRowBroken, which checkTrains throws (railway-check-trains.ts). Ring Island's are in test/railway-check-ring.test.ts.
+function said() {
   const files = ['railway-check.ts', 'railway-check-line1.ts', 'railway-check-line2.ts', 'railway-check-trains.ts'];
   const text = [...files, 'railway-check-works.ts']
     .map((f) => readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8'))
     .join('\n');
-  const said = new Set([...text.matchAll(/bad\('([^']+)'\)/g)].map((m) => `railway: ${m[1]!}`));
-  // checkTrains throws whatever trainRowBroken returns (railway-check-trains.ts), so its message literals are said too.
-  for (const m of throwSites('src/sim/railway-trains.ts', 'trainRowBroken')) said.add(m);
-  for (const e of BAD_WORLDS) assert.ok(said.has(e.message), e.message);
+  const out = new Set([...text.matchAll(/bad\('([^']+)'\)/g)].map((m) => `railway: ${m[1]!}`));
+  const trains = readFileSync(new URL('../src/sim/railway-trains.ts', import.meta.url), 'utf8');
+  const start = trains.indexOf('export function trainRowBroken(');
+  const body = trains.slice(start, trains.indexOf('\n}\n', start));
+  for (const m of body.matchAll(/'(railway: [^']+)'/g)) out.add(m[1]!);
+  return out;
+}
+test('every message the world check throws is a bad world, unreachable or dominated, and nothing else is listed', () => {
+  const listed = new Set([...BAD_WORLDS, ...UNREACHABLE, ...DOMINATED].map((e) => e.message));
+  assert.deepEqual([...listed].sort(), [...said()].sort());
+});
+
+// Review of M12b-1: the set above counts messages, not sites. The world check splits 'job bounds' and 'line2 job
+// bounds' into three sites each (railway-check-line1.ts, railway-check-line2.ts); the corpus had two worlds for each,
+// so the start/completion range site had none (dropping `!railInt(j.completion, 1)` passed every test). Each line now
+// has a `completion: 2` world for it.
+test('review M12b-1: each bad() site of the world check has its own entry (sites counted with repeats)', () => {
+  const files = ['railway-check.ts', 'railway-check-line1.ts', 'railway-check-line2.ts', 'railway-check-works.ts'];
+  const sites = new Map<string, number>();
+  for (const f of [...files, 'railway-check-trains.ts'])
+    for (const m of readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8').matchAll(/bad\('([^']+)'\)/g))
+      sites.set(`railway: ${m[1]!}`, (sites.get(`railway: ${m[1]!}`) ?? 0) + 1);
+  const entries = new Map<string, number>();
+  for (const e of [...BAD_WORLDS, ...UNREACHABLE, ...DOMINATED])
+    entries.set(e.message, (entries.get(e.message) ?? 0) + 1);
+  const short = [...sites].filter(([m, n]) => (entries.get(m) ?? 0) < n).map(([m, n]) => `${m}: ${n} sites`);
+  assert.deepEqual(short, []);
 });
 
 // The seeds' safety rests on these two staying in the load check (M3c's review): the seed builders check the world

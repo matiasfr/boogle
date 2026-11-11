@@ -17,7 +17,6 @@
 //
 // Every `line` is a LineRef: a catalog index, or a test's fixture line (./railway-lines.ts).
 import {
-  LINE2,
   RAIL_LINES,
   RAIL_TRAINS,
   TRAIN_EXTENT,
@@ -29,7 +28,6 @@ import {
   lineIndex,
   type LineRef,
 } from './railway-lines.ts';
-import type { Railway } from './railway.ts';
 import {
   TRAIN,
   TRAIN_PHASE,
@@ -422,10 +420,6 @@ export function stopMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, k: num
   }
 }
 
-// ---------------------------------------------------------------- the read model
-/** A line's trains on the read model, in slot order (replaces v25's `line2.train[k]`). */
-export const railTrainsOf = (s: Pick<Railway, 'trains'>, line: number) => LINE_SLOTS[line]!.map((k) => s.trains[k]!);
-
 // ---------------------------------------------------------------- invariants
 const int = (v: unknown, max = 2147483647, min = 0): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max && !Object.is(v, -0);
@@ -500,31 +494,6 @@ export function lineBlocksBroken(trains: readonly Readonly<RailTrain>[], line: L
           (r.phase === TRAIN_PHASE.STAND && within(b, r.from)) || (r.phase === TRAIN_PHASE.RUN && within(b, r.dest)),
       ).length > 1,
   );
-}
-/** The trains' and lines' rows on the read model (railwayCheck's part for them): shapes and bounds by each train's
- * line and its open stops, asks that pass `reqValid` (a rider's only at middle halts, its own way; none for a way a
- * halt refuses), the asleep placement, cargo only on line 2, and at most one train in or bound for each end block.
- * The spacing needs a tick: trainSpacing. */
-export function validateRailTrains(s: Railway, stops: (line: number) => readonly number[]) {
-  if (s.trains.length !== RAIL_TRAINS.length || s.lines.length !== RAIL_LINES.length)
-    throw new Error('railway: trains');
-  const awake = (s.line2?.trains ?? -1) >= 0;
-  s.lines.forEach((l, line) => {
-    if (!lineReqOk(l.req, line, stops(line)) || !int(l.left0, 2147483647, -1) || !int(l.left1, 2147483647, -1))
-      throw new Error('railway: line');
-    if (!awake && (l.req || l.left0 >= 0 || l.left1 >= 0)) throw new Error('railway: line asleep');
-  });
-  s.trains.forEach((r, slot) => {
-    const { line, home, track } = RAIL_TRAINS[slot]!;
-    const asleep =
-      !awake &&
-      !!(r.phase || r.at !== home || r.to !== home || r.track !== track || r.depart || r.req || r.logs || r.rails);
-    const broken = trainRowBroken(r, line, stops(line), line === LINE2 ? 32 : 0, asleep);
-    if (broken) throw new Error(broken);
-  });
-  // Without a tick: standing in a block, or a leg ending in one.
-  for (let line = 0; line < RAIL_LINES.length; line++)
-    if (lineBlocksBroken(railTrainsOf(s, line), line, stops(line))) throw new Error('railway: end block');
 }
 /** One line's spacing invariants at `tick` (null when they hold): every train at least `TRAIN.sepCm` behind the one
  * ahead round its circuit, and at most one train in or bound for each end block. */

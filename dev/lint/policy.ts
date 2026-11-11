@@ -60,19 +60,15 @@ const debugBan = {
 const RAIL_PLAN = 'docs/plans/ecs-migration-railway.md, M3b';
 const railCheckBan = {
   regex: '(^|/)railway-check(-[\\w-]+)?\\.ts$',
-  message: `The railway's load check runs where a world is loaded: the server install, the seeds and driver, the live view, tests and tools; never in a view (${RAIL_PLAN}).`,
+  message: `The railway's load check runs where a world is loaded: the server install, the seeds and driver, tests and tools; never in a view (${RAIL_PLAN}).`,
 };
 const railSystemsBan = {
   regex: '(^|/)railway-(systems|sys-[\\w-]+)\\.ts$',
   message: `Railway systems run in src/sim, src/world, the server, tests and tools; a view sends an intent (${RAIL_PLAN}).`,
 };
-const railReadModelBan = {
-  regex: '(^|/)railway-read-model\\.ts$',
-  message: `The Railway read model's importers are a closed list that only shrinks until M12b deletes it (${RAIL_PLAN}).`,
-};
 const railLeafBan = {
-  regex: '(^|/)railway-(systems|sys-[\\w-]+|queries[\\w-]*|check[\\w-]*|read-model)\\.ts$',
-  message: `railway-components.ts is the schema, a leaf: it imports no systems, queries, check or read model (${RAIL_PLAN}).`,
+  regex: '(^|/)railway-(systems|sys-[\\w-]+|queries[\\w-]*|check[\\w-]*)\\.ts$',
+  message: `railway-components.ts is the schema, a leaf: it imports no systems, queries or check (${RAIL_PLAN}).`,
 };
 const railQueriesBan = {
   regex: '(^|/)railway-(systems|sys-[\\w-]+)\\.ts$',
@@ -81,17 +77,17 @@ const railQueriesBan = {
 // The seed builders and the drivers run the rules and the load check (M3c's review): a view or src/world may name
 // their types (src/world/railway-jump.ts takes SeedStage), never their code.
 const railDriverBan = {
-  regex: '(^|/)railway-(drive|seeds|live)\\.ts$',
+  regex: '(^|/)railway-(drive|seeds)\\.ts$',
   allowTypeImports: true,
-  message: `The seeds and the drivers (railway-drive, -seeds, -live) run the rules and the load check: the server, src/sim, tests and tools import them, a view or src/world only their types (${RAIL_PLAN}).`,
+  message: `The seeds and the driver (railway-drive, -seeds) run the rules and the load check: the server, src/sim, tests and tools import them, a view or src/world only their types (${RAIL_PLAN}).`,
 };
 /** What code outside src/sim and src/world may not import of the railway's sim. */
-const railViewBans = [railCheckBan, railSystemsBan, railReadModelBan, railDriverBan];
+const railViewBans = [railCheckBan, railSystemsBan, railDriverBan];
 // The same for an `import()`, which no-restricted-imports does not see (views load most of their code that way):
 // a quoted path, a template literal and a `'/src/…' as string` path alike, cast or parenthesized up to three deep
 // (`as unknown as string`, `(…) as string`). Attribute paths, not combinators: the safety runner re-matches each
 // reported node without its ancestors.
-const RAIL_DYNAMIC = '/(^|\\/)railway-(check|read-model|systems|sys-[\\w-]+|drive|seeds|live)(-[\\w-]+)?\\.ts$/';
+const RAIL_DYNAMIC = '/(^|\\/)railway-(check|systems|sys-[\\w-]+|drive|seeds)(-[\\w-]+)?\\.ts$/';
 const RAIL_DYNAMIC_AT = [
   'source',
   'source.expression',
@@ -102,28 +98,8 @@ const railDynamicBan = {
   selector: RAIL_DYNAMIC_AT.flatMap((at) => [`${at}.value`, `${at}.quasis.0.value.raw`])
     .map((at) => `ImportExpression[${at}=${RAIL_DYNAMIC}]`)
     .join(', '),
-  message: `A view does not load the railway's systems, check, read model, seeds or drivers (${RAIL_PLAN}).`,
+  message: `A view does not load the railway's systems, check, seeds or driver (${RAIL_PLAN}).`,
 };
-/** The tests and tools that import the read model today, file by file; the list may only lose lines (M12b deletes it). */
-const READ_MODEL_IMPORTERS = [
-  'dev/spikes/ecs/predict-cost.ts',
-  'dev/spikes/ecs/railway-diff.ts',
-  // M12: railwayOf left src/world (the client no longer builds the model); the differential tests' old side builds it
-  // here, in place of railway-marks.test.ts, which left the list in the same step.
-  'test/helpers/railway-model.ts',
-  'test/railway.test.ts',
-];
-/** The read model's own files: they still define `Railway`, `railwayView` and the `validateRail…` validators until
- * M12b-2 deletes them (docs/plans/ecs-m12-m13.md). The list may only lose lines. */
-const READ_MODEL_FILES = [
-  'src/sim/railway.ts',
-  'src/sim/railway-check.ts',
-  'src/sim/railway-line.ts',
-  'src/sim/railway-line2.ts',
-  'src/sim/railway-read-model.ts',
-  'src/sim/railway-trains.ts',
-  'src/sim/railway-works.ts',
-];
 /** The names the adapter's wide object and the read model went by (M12e): no file under src/ exports one again.
  * Checked by boogle/retired-railway-names (safety.ts), a rule of its own so no other block's no-restricted-syntax
  * replaces it. */
@@ -295,8 +271,7 @@ const policyBlocks: PolicyBlock[] = [
       'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, protoBan, ...railViewBans] }],
     },
   },
-  // src/world may run the railway's systems; only the server install loads with the check, and only the server, the
-  // mirror and the predictor build the read model.
+  // src/world may run the railway's systems; only the server install loads with the check.
   {
     files: ['src/world/*.{js,ts}'],
     ignores: ['src/world/game-world.{js,ts}'],
@@ -305,7 +280,7 @@ const policyBlocks: PolicyBlock[] = [
         'error',
         {
           paths: rapierBans,
-          patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan, railReadModelBan, railDriverBan],
+          patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan, railDriverBan],
         },
       ],
     },
@@ -345,7 +320,7 @@ const policyBlocks: PolicyBlock[] = [
         'error',
         {
           paths: rapierBans,
-          patterns: [headlessBan, protoBan, debugBan, railCheckBan, railReadModelBan, railDriverBan],
+          patterns: [headlessBan, protoBan, debugBan, railCheckBan, railDriverBan],
         },
       ],
     },
@@ -369,7 +344,6 @@ const policyBlocks: PolicyBlock[] = [
               message: rulesMessage,
             },
             railCheckBan,
-            railReadModelBan,
             railDriverBan,
           ],
         },
@@ -398,17 +372,14 @@ const policyBlocks: PolicyBlock[] = [
       ],
     },
   },
-  // src/sim, and within it the railway's split (M3b): the check is loaded by the seeds, the driver and the live
-  // view; the read model by the check and the live view; the components file is a leaf; queries import no system.
+  // src/sim, and within it the railway's split (M3b): the check is loaded by the seeds, the driver and its own domain
+  // files; the components file is a leaf; queries import no system.
   ...(
     [
-      [['src/sim/**/*.{js,ts}'], [railCheckBan, railReadModelBan]],
-      [['src/sim/railway-seed*.ts', 'src/sim/railway-drive.ts'], [railReadModelBan]],
-      [['src/sim/railway-live.ts'], []],
-      [['src/sim/railway-check.ts'], []],
-      [['src/sim/railway-check-*.ts'], [railReadModelBan]],
+      [['src/sim/**/*.{js,ts}'], [railCheckBan]],
+      [['src/sim/railway-seed*.ts', 'src/sim/railway-drive.ts', 'src/sim/railway-check*.ts'], []],
       [['src/sim/railway-components.ts'], [railLeafBan]],
-      [['src/sim/railway-queries*.ts'], [railCheckBan, railReadModelBan, railQueriesBan]],
+      [['src/sim/railway-queries*.ts'], [railCheckBan, railQueriesBan]],
     ] as const
   ).map(([files, rail]): PolicyBlock => ({
     files: [...files],
@@ -609,15 +580,8 @@ const policyBlocks: PolicyBlock[] = [
     files: ['src/physics/backend-*.ts'],
     rules: { 'no-restricted-imports': ['error', { patterns: [syncBan, protoBan, debugBan, ...railViewBans] }] },
   },
-  // Tests and tools may import any of the railway's sim but the read model, whose importers are the closed list above.
-  {
-    files: ['test/**/*.ts', 'dev/**/*.ts'],
-    ignores: READ_MODEL_IMPORTERS,
-    rules: { 'no-restricted-imports': ['error', { patterns: [railReadModelBan] }] },
-  },
   {
     files: ['src/**/*.{js,ts}'],
-    ignores: READ_MODEL_FILES,
     rules: { [RETIRED_RAILWAY_NAMES.rule]: 'error' },
   },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule

@@ -3,8 +3,9 @@
 // mirror; nothing here is kept, sent or saved. Pure. The town entity (src/entities/town/) and the opening village's
 // population read these; the residents notice them in T2. `town` and `stone` (cargo-built rows) stay false until
 // production-core slice 5 brings train cargo (design review, 9 November, finding 1).
-import type { Railway } from './railway.ts';
-import { line2Completed, line2Lit, line2Open, line2Trains } from './railway-line2.ts';
+import type { World } from '../ecs/index.ts';
+import { forge, jobs, type ReadWorld } from './railway-rows.ts';
+import { line2Completed, line2Trains } from './railway-queries-line2.ts';
 
 /** Oldest first, in ../entities/town/town-lines.ts's `Fact` order. */
 export const TOWN_FACTS = ['path', 'forge', 'depot', 'head', 'trains', 'town', 'stone', 'pier'] as const;
@@ -12,27 +13,15 @@ export type TownFact = (typeof TOWN_FACTS)[number];
 /** The village sign's people: Place's TUNE.people, then +8 when the path opens, +6 at Far Head, +6 at the pier. */
 export const TOWN_PEOPLE = { start: 12, path: 8, head: 6, pier: 6 } as const;
 
-/** The few shared thresholds the facts come from. Both the sim state (`townRead`) and the railway adapter's inspection
- * (`townReadOf`) reduce to this, so the rules below are written once. */
+/** The few shared thresholds the facts come from, so the rules below are written once. */
 export type TownRead = { path: boolean; forge: boolean; completed: number; trains: boolean };
-/** The fields of the railway adapter's inspection the town reads; that inspection satisfies this structurally. */
-export type TownReadable = {
-  readonly stations: readonly { readonly completion: number }[];
-  readonly line2: { readonly forge: { readonly lit: number }; readonly completed: number; readonly trains: boolean };
-};
 
-export const townRead = (s: Railway): TownRead => ({
-  path: line2Open(s),
-  forge: line2Lit(s),
-  completed: line2Completed(s),
-  trains: line2Trains(s),
-});
-/** Station 2 is T3 (the root job is T1); the same thresholds as `townRead`, from the read model. */
-export const townReadOf = (i: TownReadable): TownRead => ({
-  path: !!i.stations[2]?.completion,
-  forge: i.line2.forge.lit >= 0,
-  completed: i.line2.completed,
-  trains: i.line2.trains,
+/** The thresholds behind the town facts, from the rows. Station 2 is T3 (the root job is T1). */
+export const townRead = (w: ReadWorld | World): TownRead => ({
+  path: !!jobs(w)[2]?.completion,
+  forge: forge(w).lit >= 0,
+  completed: line2Completed(w),
+  trains: line2Trains(w),
 });
 
 export function townHas(r: TownRead, f: TownFact): boolean {

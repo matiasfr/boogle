@@ -7,7 +7,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { line2Trains } from '../src/sim/railway-queries-line2.ts';
-import { createTownReader, townReadOfWorld } from '../src/entities/town/town-read.ts';
+import { createTownReader } from '../src/entities/town/town-read.ts';
+import { townRead } from '../src/sim/town-facts.ts';
 import { railRoom, type RoomClient } from './helpers/rail-room.ts';
 import { buildSeedWorld } from './helpers/rail.ts';
 
@@ -24,7 +25,7 @@ test('a late joiner reads the room-wide facts the server holds', () => {
   assert.equal(line2Trains(r.serverWorld()), true, 'the server has the trains on');
   const look = townReader(b).look()!;
   assert.equal(look.facts.trains, true, 'the late joiner sees the trains');
-  assert.deepEqual(look.facts, townReadOfWorld(r.serverWorld()), 'the facts the server holds');
+  assert.deepEqual(look.facts, townRead(r.serverWorld()), 'the facts the server holds');
 });
 
 test('the look is built once for a frame however often it is asked, and again for a press', () => {
@@ -45,5 +46,9 @@ test('the look is built once for a frame however often it is asked, and again fo
   const after = t.look()!;
   t.look();
   assert.equal(t.stats.builds - n0, 2, 'the press: a second build, shared by the asks after it');
-  assert.deepEqual(after.facts, townReadOfWorld(a.adapter.read.world()), 'the rebuilt look holds the facts of the pressed world');
+  assert.deepEqual(
+    after.facts,
+    townRead(a.adapter.read.world()),
+    'the rebuilt look holds the facts of the pressed world',
+  );
 });

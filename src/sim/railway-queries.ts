@@ -1,7 +1,6 @@
 // The railway's derived facts on the world (docs/plans/ecs-migration-railway.md, section 2, "Queries"): pure reads of
-// `(world)` or `(world, tick)` that the systems share. Queries never write. The view-side twins on `Railway`
-// (railActiveStation, line2Active, ...) still exist until M12b; each now has a world twin here or in its domain's file
-// (railway-queries-line1.ts, -line2.ts, -trains.ts, -works.ts), and test/railway-queries.test.ts holds each pair equal.
+// `(world)` or `(world, tick)` that the systems share. Queries never write. Each fact lives here or in its domain's
+// file (railway-queries-line1.ts, -line2.ts, -trains.ts, -works.ts).
 import type { RowOf, World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
@@ -161,11 +160,10 @@ export function cartWants(w: World, k: number) {
   return Math.min(CART.rails - w.get(Cart, cartId(w))!.rails, rails);
 }
 // ---------------------------------------------------------------- the job clocks and the facts views read (M8)
-// The facts below are the world twins of the read model's (`railJobs`, `railCounts`, ... on a `Railway`): same names, a
-// world first. A fact that reads a job's timed fields (elapsed, used, allocation and the second material's pair) takes
-// an optional `at`: absent, it reads the run rows the rule tick advances (the server's world, a seed, a test); given, it
-// reads the job clock at that tick (jobProgress), which is what a client's mirror and its predicted clones hold, since
-// their run rows never move.
+// A fact that reads a job's timed fields (elapsed, used, allocation and the second material's pair) takes an optional
+// `at`: absent, it reads the run rows the rule tick advances (the server's world, a seed, a test); given, it reads the
+// job clock at that tick (jobProgress), which is what a client's mirror and its predicted clones hold, since their run
+// rows never move.
 type Station = (typeof LINE1_STATIONS)[number] | (typeof LINE2_STATIONS)[number];
 export type JobRunRow = RowOf<typeof JobRun>;
 export type QJobRunRow = RowOf<typeof QJobRun>;

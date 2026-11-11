@@ -1,9 +1,8 @@
 // The railway's row readers (docs/plans/ecs-migration-railway.md, section 2, "Queries", and M3c): one per component
 // kind, each the stored row typed read-only, with no copy and no merged shape. They are what a seed, a test or a view
-// reads where it read `s.line2.forge.lit` off the `Railway` read model. A system writes a row in place
-// (`world.mut`; a cloned world copies a shared row on its first write), so a row held across a rule or a tick is live:
-// it shows the write. Read again after one where the value before is what you mean. A catalog slot or singleton that is
-// missing throws.
+// reads. A system writes a row in place (`world.mut`; a cloned world copies a shared row on its first write), so a row
+// held across a rule or a tick is live: it shows the write. Read again after one where the value before is what you
+// mean. A catalog slot or singleton that is missing throws.
 //
 //   singletons     rail, railClock, beam, forge, forgeClock, cart, boiler, works, worksClock, shed
 //   by slot        job, jobRun, qjob, qjobRun, tree, hardwood, rock, train, line (and the lists below)
@@ -113,7 +112,7 @@ export const account = (w: World, pid: string): Read<typeof Account> | undefined
   return id === undefined ? undefined : w.get(Account, id);
 };
 export const pile = (w: World, id: number): Read<typeof Pile> | undefined => w.get(Pile, id);
-/** Ascending id order, as the read model listed them. */
+/** Ascending id order. */
 export const accounts = each(Account);
 export const piles = each(Pile);
 export const outcomes = each(Outcome);

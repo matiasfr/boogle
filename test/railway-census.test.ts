@@ -24,9 +24,9 @@ const isSystem = (v: unknown): v is System<never, unknown> =>
   typeof (v as { phase?: unknown }).phase === 'string' &&
   typeof (v as { order?: unknown }).order === 'number';
 const REEXPORT = /export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s*(?:as\s+\w+\s*)?from\s*'([^']+)'/g;
-/** The re-exports left after M3b: line one's read helpers on `Railway` (deleted with them in M12b) and the seed
- * route behind railway-seeds.ts (not on M3b's list). */
-const RE_EXPORTS = ['railway-seeds.ts <- ./railway-seed-route.ts', 'railway.ts <- ./railway-line.ts'];
+/** The one re-export left: the seed route behind railway-seeds.ts (not on M3b's list; line one's read helpers on
+ * `Railway` went in M12b-2). */
+const RE_EXPORTS = ['railway-seeds.ts <- ./railway-seed-route.ts'];
 
 test('every railway system is in exactly one of the op table, the tick and the entry points', () => {
   const ops = Object.values(RAIL_OPS).flat();
