@@ -125,14 +125,13 @@ export function railwayCheck(w: World) {
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
 };
-/** The domain's invariants on the world (M8b): the old read-model validator's own conditions on the rows, in its
- * order and with its messages, then line one, line two, the trains and the Works (./railway-check-*.ts), then the conserved logs. Every
- * row and slot is there: railwayCheck counted them first. */
+/** The domain's invariants on the world (M8b): the accounts, piles, outcomes and catalog here, then line one, line
+ * two, the trains, the Works and the ring (./railway-check-*.ts), then the conserved logs. Every row and slot is
+ * there: railwayCheck counted them first. */
 function checkRailway(w: World) {
   const ts = trees(w),
     r0 = rail(w),
     clock = railClock(w);
-  // The old validator's `work.length !== sources.length` holds by construction: both are the trees.
   if (ts.some((t) => !railInt(t.left, 15))) bad('catalog');
   if (ts.some((t) => !railYaw(t.yaw) || (t.left !== 0 && (t.yaw !== 0 || t.fell)))) bad('fall state');
   const cm = carryMax(w);

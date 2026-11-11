@@ -1,6 +1,5 @@
-// Line one's derived facts on the world (docs/plans/ecs-migration-railway.md, M8): the world twins of the read model's
-// helpers in ./railway-line.ts and ./railway.ts, same names, a world first. Pure reads; `at` is the job clock's tick
-// (./railway-queries.ts, jobProgress), absent for the run rows.
+// Line one's derived facts on the world (docs/plans/ecs-migration-railway.md, M8). Pure reads; `at` is the job clock's
+// tick (./railway-queries.ts, jobProgress), absent for the run rows.
 //
 //   railMaxDuration, railLineOpen          the active station's whole schedule; T3 laid
 //   railPanelCount, railPanelStock         rail pairs laid on line one, and still on the machine's stack
@@ -44,7 +43,7 @@ export const railBeamChoppable = (w: World) =>
   activeStation(w) === 2 && w.get(Job, jobId(w, 2))!.start < 0 && w.get(Beam, beamId(w))!.state === 'standing';
 /** The proper axe is the lit forge's first made thing. */
 export const railAxeAvailable = (w: World) => w.get(Forge, forgeId(w))!.lit >= 0 && !w.get(Rail, railId(w))!.axe;
-/** Line one's phase now. `tick` judges the wake (default: T1's last tick, as the read model's did). */
+/** Line one's phase now. `tick` judges the wake (default: T1's last tick). */
 export function railPhase(
   w: World,
   tick?: number,
@@ -67,14 +66,14 @@ export function railPhase(
       : 'laying';
 }
 /** Tree `slot`'s growth stage: the minutes its age is past REGROW_MINUTES (0 while it stands or waits to regrow, or
- * for no such tree). The read model's `growth[k]`. */
+ * for no such tree). */
 export function treeGrowth(w: World, slot: number) {
   const id = w.lookup(Tree, slot);
   return id === undefined ? 0 : Math.max(0, w.get(Tree, id)!.age - REGROW_MINUTES);
 }
 /** What `pid`'s back has room for by count alone: carryMax less what it carries (the whole back for no account).
  * Unlike `free` (./railway-queries.ts), it ignores the big-load rule, so it is not 0 while a beam, the boiler or a
- * footing is held: the "Your back is full" prompt tells those apart. The read model's `freeCarry`. */
+ * footing is held: the "Your back is full" prompt tells those apart. */
 export function freeCarryIgnoringBig(w: World, pid: string) {
   const a = railAccount(w, pid);
   return Math.max(0, carryMax(w) - (a ? carried(a) : 0));

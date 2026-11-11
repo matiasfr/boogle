@@ -60,7 +60,7 @@ const debugBan = {
 const RAIL_PLAN = 'docs/plans/ecs-migration-railway.md, M3b';
 const railCheckBan = {
   regex: '(^|/)railway-check(-[\\w-]+)?\\.ts$',
-  message: `The railway's load check runs where a world is loaded: the server install, the seeds and driver, the live view, tests and tools; never in a view (${RAIL_PLAN}).`,
+  message: `The railway's load check runs where a world is loaded: the server install, the seeds and driver, tests and tools; never in a view (${RAIL_PLAN}).`,
 };
 const railSystemsBan = {
   regex: '(^|/)railway-(systems|sys-[\\w-]+)\\.ts$',

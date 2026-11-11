@@ -206,7 +206,7 @@ export function railwayAtTrains(stage: TrainStage): Seed {
     while (rail(w).depot !== 32 || rail(w).depotRails !== 32) {
       need(ticks++ < 4000, 'kit unloaded at Far Head');
       advance(s, 1);
-      // Rails conserved, among the rest of the load check (was line2Rails on the read model).
+      // Rails conserved, among the rest of the load check.
       const broken = check(w);
       need(broken === null, `rails conserved: ${broken}`);
     }

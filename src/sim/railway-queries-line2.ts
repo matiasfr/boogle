@@ -1,6 +1,6 @@
-// Line two's derived facts on the world, and the conserved counts (docs/plans/ecs-migration-railway.md, M8): the read model's
-// helpers moved onto the world (the model went in M12b-2), same names, a world first and the same arithmetic (where a
-// system's own twin differs, as cartWants and gateDown do, the view's is kept here). Pure reads; `at` is the job clock's tick (./railway-queries.ts, jobProgress), absent for the run rows.
+// Line two's derived facts on the world, and the conserved counts (docs/plans/ecs-migration-railway.md, M8). Where a
+// system has its own version that differs (cartWants, gateDown), the one here is what views read. Pure reads; `at` is
+// the job clock's tick (./railway-queries.ts, jobProgress), absent for the run rows.
 //
 //   line2Open, line2Lit, line2PackReady, line2Completed, line2Active, line2GateOpen, line2SeaOpen, line2GateDown,
 //   line2Trains                            the forge, the stretches and the gates
@@ -69,8 +69,8 @@ export const line2Served = (w: World) => {
   const k = qActive(w);
   return k >= 0 && LINE2_STATIONS[k]!.depot && w.get(QJob, qjobId(w, k))!.start < 0 ? k : -1;
 };
-/** The rails the cart still wants aboard for stretch k at the forge stop (the read model's rule: rails aboard a train
- * are not counted, unlike the system's cartWants). */
+/** The rails the cart still wants aboard for stretch k at the forge stop (the view's rule: rails aboard a train are
+ * not counted, unlike the system's cartWants). */
 export function line2CartWants(w: World, k: number) {
   const spec = LINE2_STATIONS[k];
   if (!spec?.shelf || spec.feed === 'train') return 0;

@@ -1,5 +1,4 @@
-// The Works' and the Roundhouse's derived facts on the world (docs/plans/ecs-migration-railway.md, M8): the world twins
-// of the read model's helpers in ./railway-works.ts. Pure reads.
+// The Works' and the Roundhouse's derived facts on the world (docs/plans/ecs-migration-railway.md, M8). Pure reads.
 //
 //   footingTotal(w)    every footing's home: Works rack, backs, ground piles, the wagon, pier rack, stall, cradle, sea,
 //                      and Ring Island's railhead rack, bents and counterweight (v27)
