@@ -89,7 +89,10 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   // ready, stalled, growth and freeCarry have no read yet (reported in M10 b): they stay on the session's inspection.
   let session = adapter.inspect();
   const world = () => adapter.read.world();
-  const phase = () => railPhase(world(), adapter.read.tick(), adapter.read.tick());
+  // One tick and one phase for a whole frame (update, targets): the facade's tick is live, and railPhase is not cheap.
+  let framePhase: ReturnType<typeof railPhase> | null = null;
+  const beginFrame = () => (framePhase = null);
+  const phase = () => (framePhase ??= railPhase(world(), adapter.read.tick(), adapter.read.tick()));
   const awakeNow = () => railRow(world()).awake >= 0 && phase() !== 'asleep' && phase() !== 'waking';
   const beamStanding = () => beamRow(world()).state === 'standing';
   const heldBeam = () => beamRow(world()).state === 'held' && beamRow(world()).holder === adapter.read.pid;
@@ -271,20 +274,36 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
 
   // The pile batches are rewritten (and uploaded) only when what they show changed: the piles read (the adapter keeps
   // the same array while every pile is equal), a flight into a pile landing or being re-keyed, or the racks.
-  let drawnPiles: number[] = [],
-    drawnRack = -1,
+  const drawnPiles: number[] = []; // id, x, y, z, n, kind, age of each pile as last drawn (values, never rows)
+  let drawnRack = -1,
     drawnStoneRack = -1,
     pilesDirty = true;
+  /** Whether the piles differ from what was drawn, compared in place (no allocation but the visit's closure). */
+  function pilesChanged() {
+    let i = 0,
+      changed = false;
+    world().each([Pile], (id, p) => {
+      const o = i++ * 7;
+      if (!changed)
+        changed =
+          drawnPiles[o] !== id ||
+          drawnPiles[o + 1] !== p.x ||
+          drawnPiles[o + 2] !== p.y ||
+          drawnPiles[o + 3] !== p.z ||
+          drawnPiles[o + 4] !== p.n ||
+          drawnPiles[o + 5] !== p.kind ||
+          drawnPiles[o + 6] !== p.age;
+    });
+    return changed || i * 7 !== drawnPiles.length;
+  }
   function drawPiles(force = true) {
     for (let k = pileFlights.length - 1; k >= 0; k--)
       if (!pileFlights[k]!.active()) {
         pileFlights.splice(k, 1);
         pilesDirty = true;
       }
-    const now = listPiles();
-    const key = now.flatMap((p) => [p.id, p.x, p.y, p.z, p.n, p.kind, p.age]);
     const { rack: rackLogs, stoneRack } = railRow(world());
-    if (!force && !pilesDirty && key.length === drawnPiles.length && key.every((v, i) => v === drawnPiles[i])) {
+    if (!force && !pilesDirty && !pilesChanged()) {
       if (drawnRack !== rackLogs || drawnStoneRack !== stoneRack) {
         rack.setStock(rackLogs, stoneRack);
         drawnRack = rackLogs;
@@ -293,7 +312,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       return;
     }
     pilesDirty = false;
-    drawnPiles = key;
+    const now = listPiles();
+    drawnPiles.length = 0;
+    for (const p of now) drawnPiles.push(p.id, p.x, p.y, p.z, p.n, p.kind, p.age);
     drawnRack = rackLogs;
     drawnStoneRack = stoneRack;
     let count = 0,
@@ -716,6 +737,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     models.pose(tree, tree.hitAt);
   }
   function update(dt: number, now: number) {
+    beginFrame();
     session = adapter.inspect();
     // Stages change only after a verified host event. No local clock can grow or harvest a source.
     for (const tree of trees) {
@@ -799,6 +821,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   }
 
   function targets(): Interactable[] {
+    beginFrame();
     if (!alive || !session.ready || !me.body) return NO_TARGETS;
     const p = me.body.interpolatedPosition;
     const result: Interactable[] = [];

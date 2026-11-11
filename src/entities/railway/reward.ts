@@ -389,7 +389,8 @@ async function createStationReward(
     update(dt: number, now: number) {
       // ready and pending are the session's (no read.ready()/read.pending() yet; reported in M10 b).
       const state = adapter.inspect();
-      const phase = railPhase(adapter.read.world(), adapter.read.tick(), adapter.read.tick());
+      const tickNow = adapter.read.tick();
+      const phase = railPhase(adapter.read.world(), tickNow, tickNow);
       // No pending action: the server has answered every one of mine, the wake among them.
       if (liveWake && state.ready && state.pending === 0 && phase !== 'asleep' && phase !== 'waking') {
         liveWake = false;

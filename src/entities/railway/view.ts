@@ -133,17 +133,29 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   // What the line reads, each time it asks (the rows are replaced, so none is kept): the facade's world is the predicted
   // copy while an action is pending. The session's own `ready` and the opening's inspection have no read yet (M10 b).
   const world = () => adapter.read.world();
-  const tick = () => adapter.read.tick();
-  const phaseNow = () => railPhase(world(), tick(), tick());
+  // One tick, one phase and one panel state for a whole frame, taken at the frame's entry (update, targets, accepted,
+  // corrected): the facade's tick is live, so a frame that straddled a boundary would miss the waking -> idle edge, and
+  // railPhase is not cheap. Main's inspect() held one tick the same way.
+  let frameTick = adapter.read.tick();
+  let framePhase: ReturnType<typeof railPhase> | null = null;
+  let framePanel: ReturnType<typeof panelNow> | null = null;
+  const beginFrame = () => {
+    frameTick = adapter.read.tick();
+    framePhase = null;
+    framePanel = null;
+  };
+  const tick = () => frameTick;
+  const phaseNow = () => (framePhase ??= railPhase(world(), frameTick, frameTick));
   const activeNow = () => activeStation(world());
   const jobAt = (index: number) => railJobs(world(), tick())[index]!;
   const ready = () => adapter.inspect().ready;
-  const panelState = () => ({
+  const panelNow = () => ({
     phase: phaseNow(),
     activeStation: activeNow(),
     panelStock: railPanelStock(world(), tick()),
     panelCount: railPanelCount(world(), tick()),
   });
+  const panelState = () => (framePanel ??= panelNow());
   const opened = () => jobRow(world(), 2).completion === 1;
   const opening = await createRailwayOpening(owner, {
     // top: the deck in the mesh frame (the chairs stand on it), not the car spec height above the rails.
@@ -256,6 +268,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     machine.snap();
   }
   function accepted(event: RailwayAccepted) {
+    beginFrame();
     trains.accepted(event);
     works?.accepted(event);
     if (event.op === 'rail.wake') {
@@ -302,6 +315,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   // asleep with a thump; logs you were shown going into a frame lift out and return to your back.
   owner.cleanup(
     adapter.onCorrected((c: RailwayCorrection) => {
+      beginFrame();
       works?.corrected(c);
       const e = c.event;
       if (e.op === 'rail.wake') {
@@ -405,6 +419,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     noteVelocity: glide.noteVelocity,
     update(ctx: FrameCtx) {
       const { dt, now } = ctx;
+      beginFrame();
       const sessionReady = ready();
       connection.hidden = sessionReady;
       connection.textContent =
@@ -516,7 +531,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       }
       path.update(opened(), reconstructed);
       previousOpen = opened();
-      previousPhase = phaseNow();
+      previousPhase = phase;
       unload -= dt;
       const p = me.body?.position,
         station = frames[activeNow()]!;
@@ -568,6 +583,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       works?.lateUpdate();
     },
     targets(): Interactable[] {
+      beginFrame();
       const targets = [
         ...opening.targets(),
         ...sources.targets(),

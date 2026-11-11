@@ -41,7 +41,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   // The session's own fields (ready, pending, the beam speeds, and onlyALoad's inspection) have no read yet: reported in M10 b.
   let session = adapter.inspect();
   const world = () => adapter.read.world();
-  const phase = () => railPhase(world(), adapter.read.tick(), adapter.read.tick());
+  const phase = (at = adapter.read.tick()) => railPhase(world(), at, at);
   const beamNow = () => beamRow(world());
   // Line 1's three rocks and the Works bowl's two limestone ones (slots 3 and 4, J4: they replace J2's boulders).
   const rocks = RAIL_ROCKS.map((source, i) => {
