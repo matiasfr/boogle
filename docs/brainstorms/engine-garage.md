@@ -1,4 +1,4 @@
-> **Status: answered (2026-11-10).** The owner answered the five questions, each as recommended, with four notes ([answers](#owner-questions-answered-10-november), [what the notes change](#acting-on-the-owners-notes-10-november)); [design review](#design-review-designer-2026-11-10) below; [the install moment](#the-install-moment) is specified, with three questions open. Light brainstorm (one agent, three lenses). Mock: [engine-garage-mock.html](../world/engine-garage-mock.html). Owner rulings folded in the same day: cargo cars are an explicit category; trains may be longer than platforms (the passenger cars align); sources load by cargo loaders ([decision log](../decisions.md#decided), 10 November).
+> **Status: answered (2026-11-10).** The owner answered the five questions, each as recommended, with four notes ([answers](#owner-questions-answered-10-november), [what the notes change](#acting-on-the-owners-notes-10-november)); [design review](#design-review-designer-2026-11-10) below; [the install moment](#the-install-moment) is specified, and its three questions are answered (10 November, below). Light brainstorm (one agent, three lenses). Mock: [engine-garage-mock.html](../world/engine-garage-mock.html). Owner rulings folded in the same day: cargo cars are an explicit category; trains may be longer than platforms (the passenger cars align); sources load by cargo loaders ([decision log](../decisions.md#decided), 10 November).
 
 # The train garage (engine-garage)
 
@@ -742,12 +742,12 @@ So the feel can be judged before any purchase rule exists:
 ### Install owner questions
 
 1. **Committing an install.** (a) **Recommended: hold for about a second; your hold cranks the part up, finishing it
-   drops the part; release to cancel; no dialog.** (b) Press Install, then confirm. Answer: ___
+   drops the part; release to cancel; no dialog.** (b) Press Install, then confirm. Answer (owner, 10 November): "Hold for about a second (the hold lifts the part; letting go lowers it back); no dialog" (a).
 2. **Players away from the table.** (a) **Recommended: nobody's camera is taken. They hear a new boiler's whistle
    across the island, get a small corner note, and see the part go onto their train at its next Home stop.** (b) A new
-   boiler or engine plays for everyone in the room like a gate; smaller installs as (a). Answer: ___
+   boiler or engine plays for everyone in the room like a gate; smaller installs as (a). Answer (owner, 10 November): "They keep their camera, hear the whistle, and see the part go onto their train at Home" (a).
 3. **"Try it" after the first build.** (a) **Recommended: keep it for parts you can't install yet, in a lighter form
-   (no whistle, no turn, no card).** (b) First build only; remove it once Install exists. Answer: ___
+   (no whistle, no turn, no card).** (b) First build only; remove it once Install exists. Answer (owner, 10 November): "Keep it for parts you can't install yet, in a lighter form" (a).
 
 ## Parked
 
@@ -858,7 +858,7 @@ the v26/v27 block rules. Nothing here reorders the Ring Island work or waits for
    machine. Counting starts with the second pick. Two rules for the counted store: it is a physical stack in the bay
    that shrinks when a fit is made, and nothing the main route needs is priced in a material that can run out (rule 3
    of [progression-flow-layout](../research/progression-flow-layout.md#the-rules-as-lenses): keys can't be lost). Say
-   in the brief whether the steel works casts without end.
+   in the brief whether the steel works casts without end. **Owner, 10 November: "The longer boiler, the first steel install: Free, as the reward for reaching steel"**, as recommended; the mock's "6 steel" is dropped.
 5. **The mock still reads as a shop page, not a racing game's garage.** After today's edit it has the two groups, the
    line strip and no dead readout. It is still paper cards on a page: a flat side-on drawing in about a quarter of the
    frame that does not turn, a priced list beside it, and the selected item's card below.
@@ -912,8 +912,8 @@ the v26/v27 block rules. Nothing here reorders the Ring Island work or waits for
 ### Owner questions
 
 1. **The longer boiler.** (a) **Recommended: faster (66 s → 55 s to the island) and pulls a fourth car, filled by
-   steel's own car.** (b) Faster only. (c) A bigger speed step and no extra car. Answer: ___
+   steel's own car.** (b) Faster only. (c) A bigger speed step and no extra car. Answer: ___ (not on the owner's 10 November page; the "Free" answer below prices this part, not its speed or car).
 2. **Committing a fit.** (a) **Recommended: hold for about a second while the little guys lift the part; no dialog.**
-   (b) Press Fit, then confirm. Answer: ___
+   (b) Press Fit, then confirm. Answer (owner, 10 November): "Hold for about a second (the hold lifts the part; letting go lowers it back); no dialog" (a).
 3. **Roof and lamps on the passenger car.** (a) **Recommended: a look, until it has a rule.** (b) An upgrade, with a
-   rule to be written. Answer: ___
+   rule to be written. Answer (owner, 10 November): "A look, until it has a rule of its own" (a).

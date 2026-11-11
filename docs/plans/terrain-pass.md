@@ -1,6 +1,6 @@
 # Terrain pass: geometry fidelity and texturing (scope and prototype)
 
-> **Status:** look experiment behind `?terrain=1` (round two; `a`, `b` and `ab` stay for comparison), off without the parameter. Round one shipped behind the flag (#1453); round two is on its branch. Not tested on a device.
+> **Status:** look experiment behind `?terrain=1` (round two; `a`, `b` and `ab` stay for comparison), off without the parameter. Round one shipped behind the flag (#1453); round two is on its branch. Not tested on a device. Owner, 10 November: fix round two's problems on the wedge, then apply it to all of Home after a quiet-machine performance run; start Ring Island's first landform step (below).
 > **Owner's ask (10 November 2026):** "Should we do a pass on terrain geometry if we're filling things out? I think we should have more terrain fidelity so things look better, and do texturing pass, both on the existing island, and also on ring island now that we're building it out."
 
 Binding calls this works inside: [smooth, textured terrain](../decisions.md#look) (5 November: Odyssey-style smooth forms, rock by slope, Sunshine strata as a tunable height band), [terrain follows gameplay](../decisions.md#look) (5 November), "the ground keeps its current soft edges" (4 November), islands sit close to the sea with cliffs the exception (3 November), the Fresh palette, baseline Standard shading again (10 November, toon B removed), no rim light, the M1 Max as the average target and the M4 iPad Pro as the floor, and "what looks solid is solid". Research it builds on: [stylized-terrain](../research/stylized-terrain.md), [terrain-texturing](../research/terrain-texturing.md), [terrain-art](../research/terrain-art.md), the [terrain pilot](terrain-pilot.md) and [look-pass](look-pass.md).
@@ -128,6 +128,12 @@ To all four questions above: "Yes, recommended." So:
 
 Later the same day, on Ring Island: "For the ring island, the terrain should be more detailed and organic most likely, especially if people live there." Logged in the [decision log](../decisions.md#look).
 
+**Round two and the island, answered later on 10 November** (decisions page, "question: answer"), each as recommended:
+
+- Terrain round two (see it at boogle.club/?terrain=1): "Fix those on the wedge, then apply to all of Home after a quiet-machine performance run". Read as: fix the problems the round-two stills below name (the green coast patch seen from the sea, the faint strata beds) on the wedge, then do step 2 below once `npm run daily -- perf` has been run on a quiet machine before and after.
+- Start the island's first landform step now?: "Yes, start it" (see [the smallest first step](#the-smallest-first-step)).
+- Opening sealed buildings: "The two cottages on the way in from the dock, then the other two, then a room behind the Ring Island works wall" (the order for "every building can be walked into"; not part of the terrain work).
+
 ## Round two (`?terrain=1`)
 
 One variant on the same wedge, built on those answers. Files: `surface.ts` (`buildSteepSurface`), `materials.ts` (`roundTwoMaterial`), `index.ts` (`1`, or a bare `?terrain`, picks it; `a`, `b`, `ab` stay).
@@ -187,7 +193,7 @@ A landform written as data on top of the cones, still in `ground.ts`, inside a *
 
 ### The smallest first step
 
-**Heights, outside the keep band, in one place: the beach shelf and the lower dwelling shelf on the west flank, plus round two's surface rules.** It touches nothing the layout fixes (the keep band covers the track, halt, loop, neck, ramps and recovery points). Cost: the same 376 × 361 grid and about the same 200 k triangles (a few thousand more land cells where the beach widens), one material (round two's, as data: pigments and thresholds), 0 new textures, build time well under a second. What it needs alongside: `test/ring-island-ground.test.ts` changed from "the cones within 5 cm off the fills" to "the cones within 5 cm inside the keep band, and 50 cm under every planned deck" (the second half stays as is); the far view drawn from the same heights (a decimated mesh of the grid instead of `buildFar`'s cones) so the 500/650 m hand-over doesn't pop; `npm run level-check` (ring report) and the `ring-island-walk` eval rerun; the path's waypoints rechecked against the new shelf.
+**Owner, 10 November: "Yes, start it".** **Heights, outside the keep band, in one place: the beach shelf and the lower dwelling shelf on the west flank, plus round two's surface rules.** It touches nothing the layout fixes (the keep band covers the track, halt, loop, neck, ramps and recovery points). Cost: the same 376 × 361 grid and about the same 200 k triangles (a few thousand more land cells where the beach widens), one material (round two's, as data: pigments and thresholds), 0 new textures, build time well under a second. What it needs alongside: `test/ring-island-ground.test.ts` changed from "the cones within 5 cm off the fills" to "the cones within 5 cm inside the keep band, and 50 cm under every planned deck" (the second half stays as is); the far view drawn from the same heights (a decimated mesh of the grid instead of `buildFar`'s cones) so the 500/650 m hand-over doesn't pop; `npm run level-check` (ring report) and the `ring-island-walk` eval rerun; the path's waypoints rechecked against the new shelf.
 
 ### What to settle before R3a–R6
 

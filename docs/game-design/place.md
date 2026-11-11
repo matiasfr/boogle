@@ -612,7 +612,7 @@ the rail. Each side has a doorway at the back of the cab, 1.0 m wide and 1.78 m 
 halt deck; its door is drawn shut and stays shut (owner, 10 November: "park that functionality"; the swing on
 approach is kept behind `DOORS_SWING`, off, in train-view.ts). The door was never solid, so you walk in through it as
 before. The cab's two front windows, either side of the boiler, and each door's window are open, each with a thin dark
-frame (no glass pane), so the driver on his stool shows from the platform, from the track ahead and through the door. Inside, the boiler's back end is the backhead (regulator, gauges, firebox door) and a
+frame (no glass pane; owner, 10 November: "Open frames, as built"), so the driver on his stool shows from the platform, from the track ahead and through the door. Inside, the boiler's back end is the backhead (regulator, gauges, firebox door) and a
 little guy drives from a tall stool beside where Buddy stands. Before the fit the body is rusted and the saddles
 empty; the fitted boiler (the same part as on the pedestal and the rope, `assets/src/engine.py`) and its lashing come
 with the fit. The engine is a compound of client platform colliders: the deck to the cab floor, the cab's walls either

@@ -1,4 +1,4 @@
-> **Status: decided (2026-11-10); layout greyboxed, build 1 waits for v26.** Brought in line with the 10 November
+> **Status: decided (2026-11-10); layout greyboxed, build 1 waits for v26. Owner answers, 10 November: buffers, the leaf at true scale, Rivet and RINGWORKS kept, the landform step started ([below](#owner-answers-10-november)).** Brought in line with the 10 November
 > rulings ([world-blockout](../plans/world-blockout.md#rulings-10-november), conflicts 1–4 and 11) and the generic-lines
 > sequencing ([generic-lines](../plans/generic-lines.md#sequencing-v26-alone-ring-island-as-v27)): build 1 is
 > `WORLD_NS` v27, build 2 v28. The near view is walkable behind `?ring=greybox` (no sim); see
@@ -52,7 +52,8 @@ set (the longer boiler is an upgrade, 10 November).
    - **The shot:** everyone in the room gets it, merged with the first ride's start (one shot, not two). A friend who
      missed it gets it once on their own first crossing.
    - **Telegraph:** until it's lowered, the raised leaf shows from Home, in the Split-rock finale's last frame and in
-     the telescope.
+     the telescope, at its true scale (17 m; about 8 px from Home's summit at phone size), not enlarged (owner,
+     10 November: "Leave it at true scale").
    - Tension: design wanted the train-first Meet with the glide only as an optional peek. Decided for the glide: it
      keeps the glider's one main-line use, makes the gap a two-ended co-op stage, and the hook and shore remove the
      strand risk design raised.
@@ -220,6 +221,18 @@ Each capture uses `node dev/look/look.ts` (or `npm run look --`):
 ## Open questions
 
 All decided; the owner may overrule.
+
+### Owner answers (10 November)
+
+On the decisions page, in the form "question: answer":
+
+- Ring Island while it's the end of the line: "Buffers about 15 m past the halt, with a crossover before it" (as recommended; [rail-map](../plans/rail-map.md)).
+- **Changed from the recommendation:** the raised drawbridge seen from Home: "Leave it at true scale". The far leaf is not drawn larger than life; the telegraph above is corrected to say so.
+- Start the island's first landform step now?: "Yes, start it" ([terrain plan](../plans/terrain-pass.md#ring-island-a-landform-people-could-live-on)).
+- Get unstuck on the island before the Meet: "It returns you to your own side (the Pier halt)" (build 1's question 2).
+- The name "Rivet" for the island character: "Keep it". The works board reads "RINGWORKS": "Keep it for now".
+
+Logged in the [decision log](../decisions.md#decided), "open calls answered: Ring Island".
 
 1. **Is the glide how the gap is crossed, rather than the train-first Meet with the glide as an optional peek?**
    Decided: **the glide**, with the hook ring on the last bent and a swimmable shore, so the glider gets its one
