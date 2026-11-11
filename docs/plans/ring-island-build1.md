@@ -242,8 +242,8 @@ faces stand 11.5 m beyond.
   `joined`) are never recovery candidates: `laidPath()` stops at the railhead.
 - **R2a, the coast** (`src/render/water/coast.ts`): see "The sea's shore texture" under Risks for the option and why.
 - **R2c, the far leaf** (`src/entities/ring-island-far/`): always on in the production railway, a 17 × 7.6 m orange
-  plate (**true scale, and it stays so**: owner, 10 November, "Leave it at true scale") and its pier at the hinge in the readable-glow orange, its angle read from `ringIslandPose.leaf`. A toe pennant
-  only if the proof look fails at Home (call 20). The glow fades with distance to the near leaf's own orange by 500 m,
+  plate (**true scale, and it stays so**: owner, 10 November, "Leave it at true scale") and its pier at the hinge in the readable-glow orange, its angle read from `ringIslandPose.leaf`. A pennant, on its own
+  fixed pole beside the hinge pier (owner, 11 November; it was on the leaf's toe), for the proof look at Home (call 20). The glow fades with distance to the near leaf's own orange by 500 m,
   so the swap to the near view at the mount distance doesn't pop (design review finding 8).
 - **R2d, the terminus drawn** (`src/entities/ring-island/view.ts` and `ground.ts`; no bump): the loop's deck, its
   neck and the ground cap under them go; the formation runs on level from u 468 to u 483.5 (`RING_END.bed`) with both
@@ -715,7 +715,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   after its rockets fix lands, review finding 7.)
   *Built 10 November 2026* (`src/entities/ring-island-far/{index,view}.ts`; `npm run check` green; not tested on a device).
   Leaf plate 17 x 7.6 x 0.5 m turned 78 degrees about the hinge's deck edge, grey hinge pier: 2 draws; the toe pennant
-  (`TOE_PENNANT`, off) is a third (cream mast and flag, 12 m mast, 10 x 5 m flag). Glow orange `#ff8a1f` lerps to the near
+  (`TOE_PENNANT`, off; since 11 November `POLE_PENNANT`, on its own fixed pole: 26 m mast, 10 x 5 m flag) is a third. Glow orange `#ff8a1f` lerps to the near
   orange `LEAF_ORANGE` (`#e0701c`, exported for R2b) between 900 m and 500 m. Departures: the angle is a constant
   (`ringIslandPose` is not on main); visibility is a seam, `setNearViewMounted(fn | null)` in `ring-island-far/view.ts` (default never mounted, so the far leaf is always drawn until R2b's near view registers its own "is mounted" and owns the 500/650 m hysteresis); the glow ramp is
   500 to 900 m, not 650, so the exit swap at 650 m is a 0.3 colour step. Not measured: frame time (load about 6, bot queue
@@ -1137,8 +1137,12 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > `createRailwayLeaf` and live in `test/railway-r4c-leaf.test.ts`. A restore (reconnect, hard reset) snaps the leaf to
   > its rest with no walk back; a landed plate lies 0.68 m below the toe deck's top, so it is never inside anyone there.
   > **Leftovers:** P2, the toe pennant (`ring-island/view.ts` `buildLeaf`: a 12 m mast and a 10 by 5 m flag past the toe)
-  > has no collider and sweeps through anyone on the railhead deck (u 248 to 260) as the leaf comes down, then lies
-  > about 1 m inside that deck with the flag reaching past its edge; it was the pale band in the two-page sheet. P3,
+  > had no collider and swept through anyone on the railhead deck (u 248 to 260) as the leaf came down, then lay
+  > about 1 m inside that deck with the flag reaching past its edge; it was the pale band in the two-page sheet.
+  > **Done 11 November (owner: "the white flag from the drawbridge clips when it comes down, it should maybe be on it's
+  > own pole if we need it"; built, not seen):** it is kept, on its own fixed pole (`PENNANT_POLE` in
+  > `ring-island-far/view.ts`, read by both views) at u 282, lat -7.8, outboard of the Way's left edge and 5 m island-side
+  > of the hinge edge, so it never meets the leaf and stays up after the Meet. P3,
   > `toeShove` (`leaf-shape.ts`) has no sideways bound: anyone at deck height in the toe's span along the line is
   > walked back, whatever their lateral offset.
 - [ ] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
@@ -1493,9 +1497,9 @@ option was built (R2a). What is left:
    **Answer (designer, 10 November 2026): east, and from Q6, not from Q7.** The platform and the rack are built on the
    east side when the halt drops in, so there is no old platform to stand on and nothing to see happen; Q7's frame
    moves to s 710 (calls 53–61, [the review](#design-review-the-pier-at-v27-designer-2026-11-10)). Nothing waits.
-4. **The toe pennant and "true scale".** (owner, only if he sees it differently) The pennant he turned on the same day
-   (a 12 m mast on the leaf's toe) is kept as a marker, not as scale; it is one constant (`TOE_PENNANT`) if he meant
-   the leaf bare.
+4. **The pennant and "true scale".** (owner, only if he sees it differently) The pennant he turned on the same day
+   is kept as a marker, not as scale; since 11 November it stands on its own pole beside the hinge pier, not on the
+   leaf's toe; it is one constant (`POLE_PENNANT`) if he meant the leaf bare.
 5. **`npm run inflight`** (10 November): one unmerged branch, `ship/matias-franco-0f2b6e5`, touching only
    `docs/brainstorms/express-train.md`; none touches this plan's files. The station-house greybox merged as #1479
    during this amendment; its step B owns `src/proto/greybox/ring.ts` next, which is why this plan leaves that file
