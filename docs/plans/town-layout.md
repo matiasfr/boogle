@@ -314,7 +314,10 @@ also split step 4 and ordered step 7; its build-order ruling is in
 - [x] **0. The owner picks**, and the designer rules on the Level findings. Done 10 November: the Round; the
   [design review](#design-review-designer-2026-11-10) below. The decision log and the calls table are recorded by
   the coordinator.
-- [ ] **0b. Probe the roof hops. Can start now; must be done before step 2.** No code change. On main as it stands, at
+- [x] **0b. Probe the roof hops. Done 10 November; results in Level findings, item 8.** (a) works today (P2:
+  ground, cottage 2's eave, Fine Prices' roof, the balcony box; step 2 removes the cottage); (b) does not; (c) works
+  under the Round with the bay at its new spot, and a player on the hall's roof can get down (P3). The probe was a
+  look eval kept out of the repo (no code change). The original brief: no code change. On main as it stands, at
   a seed just after T3 with the second jump held, with real input (a look eval, as `dev/look/evals/railway-finds.ts`
   fetches secrets): (a) today's cottage at (−123, 19) to Fine Prices' roof to the balcony box; (b) Fine Prices' own
   building site while its walkway stands (2 m up) to its roof and the balcony; (c) with `BOOGLE_HOME=b`, the finders'
@@ -433,7 +436,8 @@ drawing's; the reviewed balcony is 152 m from the summit.
    station plan's.
 2. **The check cannot see most of this plan.** It floods terrain at 2 m; it does not model props, room and roof
    collision, streets, the green, stakes, or sightlines. The roof and view numbers here are from my scratch script.
-3. **Suspected today, not proven: the balcony secret (glider) may be reachable with the second jump.** A cottage's
+3. **Proven today by the step 0b probe (finding 8): the balcony secret (glider) is reachable with the second jump.**
+   As suspected before the probe: A cottage's
    eave is 3.0 m over a 0.5 m slab (a double jump gains 3.0 m); its roof top is 4.5 m. Cottage 2's roof is 5.8 m
    from Fine Prices' roof (5.86 m), and the balcony pad (6.4 m) is 0.4 m behind the shop. No run confirms it; the
    check says "out of reach" from terrain alone. Every option removes that cottage; the nearest climbable roof to the
@@ -447,6 +451,33 @@ drawing's; the reviewed balcony is 152 m from the summit.
    cottage plot in option 2 is 14.7 m from the nearest pad; nothing else is within 20 m. No plot goes north of z −30.
 7. **Stakes and scaffolds are steps.** A building site's walkway is 2 m up and solid. Beside the shop that is a step
    toward its roof; the two slots beside Fine Prices take the house kit, whose site still wants the probe in finding 3.
+8. **The roof hops, probed (step 0b, 10 November; real key events in `npm run look -- --rail-seed q1-done`, the second
+   jump taken at the first pillar's device by pressing Interact; only staging was teleported, each stage starting
+   where the last came to rest; reach, not timing, is the evidence, the machine was loaded).** Open ground: a jump and
+   the air jump rise 2.9 m, up to 3.3 m best case (second press 300 to 400 ms after the first, run-up 0 to 300 ms).
+   - **(a) Works today: P2.** On main, from the ground 6 m east of cottage 2 (−123, 19), a run-up and double jump
+     comes to rest on the cottage's east eave, 3.0 m up; from that eave (−121, 19) one double jump, no run-up, lands
+     on Fine Prices' roof (5.86 m up); from its back edge one double jump lands on the balcony box (6.4 m up, the
+     pad). The glider's `balcony` find (the `aviator` gift) can be taken today with the second jump alone, after T3 and
+     long before the glider. (The step from the eave to the cottage's own 4.5 m ridge did not land in 12 tries; the
+     chain does not need it.) Rank P2: a cosmetic find out of its order, nothing gated; but the glide from the summit
+     to the balcony is the return to Home that the find is for (call 12). **The Round changes it:** cottage 2 is
+     removed (step 2) and step 1's test keeps every cottage 11 m or more from the shop's roof and the pad; the hop
+     closes by data. The nearest other eave to the shop is far beyond the 5.8 m leap that worked.
+   - **(b) Does not work: not a finding.** From Fine Prices' own building site's walkway (2.04 m up, solid from about
+     2.5 s to 9.4 s of the site), six tries from three places on the plank, run-ups of 0 and 250 ms, rose 1.1 to 2.4 m
+     and stayed on the plank. The roof needs 5.9 m: the walkway's 2.0 plus the best rise of 3.3 is 5.3 m. It holds for
+     a house site (plots 1 and 2) by arithmetic only, not probed: its roof top is about 5.6 m against the same 5.3 m,
+     and a plot is bought after the glider anyway (review, finding 3).
+   - **(c) Works under the Round, with the bay where the plan puts it: P3.** `?home=b`; the finders' bay is not at its
+     new spot yet, so the same collider (curio-shelf.ts: 5.5 m wide, 2.8 m high) was staged at (−89.19, 21.80) at
+     the shelf's yaw. A double jump from the ground stands on its top (2.9 m); from there a double jump lands on the
+     hall's roof (5.1 m up, the roof is 5.0), at the south eave then the ridge. From the hall's end walls (2.4 m) the
+     roof is not reachable (the roof overhangs them; a jump from the wall top rose 0.55 m). **A player on the roof
+     can get down:** walking off any of the four sides ended on the ground. Nobody is stranded. What it gives: a
+     place to stand over the platforms and the green, no reward. Rank P3. What the Round changes: it moves the bay to
+     that spot (call 9), which opens this; to close it, move the bay 3 m or more off the hall's south end or cap
+     the roof's reach; recommended: leave it, a free perch is a small joy and harmless here.
 
 ## Risks
 
@@ -529,8 +560,8 @@ of its section:
 ## What I could not confirm
 
 - None of the options has been seen in the game; the stills are of today's town and `?home=b`.
-- The roof hop (Level finding 3) and every draw and triangle figure for the new town.
-- Whether the hall's roof and end walls give another way up beside the bay's new spot.
+- Every draw and triangle figure for the new town. (The roof hops are probed: Level findings, item 8.)
+- Not probed: a house site's walkway (arithmetic only) and the real bay at its new spot (a stand-in collider was used).
 - The stills were taken on a busy machine (load 12 to 21); they are for layout, not for performance.
 
 ## Design review (designer, 2026-11-10)
