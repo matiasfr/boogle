@@ -10,6 +10,7 @@ import { createRailwayRoundhouse } from './roundhouse-view.ts';
 import { createRailwayFootings } from './footing-view.ts';
 import { createRailwayCrossing } from './crossing-view.ts';
 import { createRailwayRailhead } from './railhead-view.ts';
+import { createRailwayLeaf } from './leaf-view.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -32,7 +33,8 @@ export async function createRailwayWorksLive(
   ]);
   const footings = createRailwayFootings(adapter, owner);
   const railhead = createRailwayRailhead(adapter, owner, deps);
-  const views = [breaker, works, roundhouse, footings, crossing, railhead];
+  const leaf = createRailwayLeaf(adapter);
+  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -66,6 +68,7 @@ export async function createRailwayWorksLive(
     inspect: () => ({
       ...works.inspect(),
       ...railhead.inspect(),
+      ...leaf.inspect(),
       ...roundhouse.inspect(),
       ...breaker.inspect(),
       footings: footings.inspect(),

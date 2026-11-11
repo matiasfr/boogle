@@ -27,7 +27,7 @@ import { RING_HEAD, RING_HOOK } from '../../sim/railway-ring-layout.ts';
 import { account, aperture, beam, boiler, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { q7Laid } from '../../sim/railway-queries.ts';
-import { ringIslandNear, ringIslandPose } from '../ring-island/state.ts';
+import { ringIslandNear } from '../ring-island/state.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { RING_S, line2At, line2World, line2Y } from './line2-path.ts';
@@ -721,8 +721,6 @@ export function createRailwayRailhead(
     // The island's near view (the Way, the leaf, the halt) stays mounted at any distance once Q7 is laid: trains run on
     // it past the pier, and the far leaf is a picture.
     ringIslandNear.keep = opened;
-    // Until the leaf's own view (R4c) swings it, the rivet struck means the leaf is down: the line is a through one.
-    if (joined && ringIslandPose.leaf !== 0) ringIslandPose.leaf = 0;
   }
 
   return {
