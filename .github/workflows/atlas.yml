@@ -1,7 +1,8 @@
 name: Atlas citation report
 
 # Narrative upkeep runs on the owner's Mac: npm run daily -- atlas (dev/daily/README.md).
-# Keep the advisory CI report and the dispatch target used by automerge.yml. No model or write credentials.
+# The advisory CI report, on command (gh workflow run atlas.yml); automerge.yml no longer dispatches it per merge.
+# No model or write credentials.
 on:
   workflow_dispatch:
   push:

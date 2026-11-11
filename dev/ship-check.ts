@@ -22,10 +22,15 @@ const files = new Set(
 function run(args: string[]) {
   execFileSync(process.execPath, args, { stdio: 'inherit' });
 }
+// Tests run in ./test-env.ts's environment, which leaves out the hook's GIT_* variables; this script's own git calls
+// keep the hook's view.
+function runTests(args: string[], env = testEnv().env) {
+  execFileSync(process.execPath, ['--test', ...args], { stdio: 'inherit', env });
+}
 // Docs-only (dev/ci/change-class.ts): the same fast checks as CI's docs job, no lint, typecheck or unit tests.
 if (changeClass([...files]) === 'docs') {
   run(['dev/registry/check.ts', '--base', base]);
-  run(['--test', '--test-timeout=5000', 'test/models.test.ts', 'test/change-class.test.ts']);
+  runTests(['--test-timeout=5000', 'test/models.test.ts', 'test/change-class.test.ts']);
   console.log(`ship-check: docs only (${files.size} files), registry and agent checks; ${elapsed()}`);
   process.exit(0);
 }
@@ -53,6 +58,6 @@ const tests = git('ls-files', 'test/**/*.test.ts', 'test/*.test.ts')
 if (tests.length) {
   // The unit run's settings (./test-env.ts): the rail audit off unless RAIL_AUDIT=1, as `npm run test:unit` runs.
   const { env, flags } = testEnv();
-  execFileSync(process.execPath, ['--test', ...flags, ...tests], { stdio: 'inherit', env });
+  runTests([...flags, ...tests], env);
 }
 console.log(`ship-check: ${lint.length} lint files, typecheck, ${tests.length} affected tests; ${elapsed()}`);

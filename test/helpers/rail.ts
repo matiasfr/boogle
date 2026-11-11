@@ -10,10 +10,35 @@ import type { Seed } from '../../src/sim/railway-seed-route.ts';
 import { createRailwayWorld, Pile } from '../../src/sim/railway-components.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import type { Read, ReadWorld } from '../../src/sim/railway-rows.ts';
+import { restore } from '../../src/sim/railway-drive.ts';
+import * as seeds from '../../src/sim/railway-seeds.ts';
+import * as works from '../../src/sim/railway-seed-works.ts';
+import * as ring from '../../src/sim/railway-seed-ring.ts';
 
 export * from '../../src/sim/railway-drive.ts';
 export * from '../../src/sim/railway-seeds.ts';
 export * from '../../src/sim/railway-seed-works.ts';
+
+// Each seed stage is replayed once per test file (one process) and kept; every caller, the first included, gets its
+// own copy through a save (restore: a fresh world as the driver makes it, audit and all, checked to the same hash). The
+// replay stays proven by that first build and by the goldens (test/helpers/railway-golden.ts replays on its own).
+const built = new Map<string, Seed>();
+function shared<A extends string[]>(name: string, build: (...args: A) => Seed): (...args: A) => Seed {
+  return (...args) => {
+    const key = `${name}(${args.join(',')})`;
+    let seed = built.get(key);
+    if (!seed) built.set(key, (seed = build(...args)));
+    return { w: restore(seed.w), t: seed.t };
+  };
+}
+export const railwayAtQ2 = shared('railwayAtQ2', seeds.railwayAtQ2);
+export const railwayAtHook = shared('railwayAtHook', seeds.railwayAtHook);
+export const railwayAtQ4 = shared('railwayAtQ4', seeds.railwayAtQ4);
+export const railwayAtQ5 = shared('railwayAtQ5', seeds.railwayAtQ5);
+export const railwayAtTrains = shared('railwayAtTrains', seeds.railwayAtTrains);
+export const buildSeedWorld = shared('buildSeedWorld', seeds.buildSeedWorld);
+export const railwayAtWorks = shared('railwayAtWorks', works.railwayAtWorks);
+export const railwayAtRing = shared('railwayAtRing', ring.railwayAtRing);
 export * from '../../src/sim/railway-rows.ts';
 export * from '../../src/sim/railway-queries.ts';
 export { job, qjob } from '../../src/sim/railway-rows.ts';

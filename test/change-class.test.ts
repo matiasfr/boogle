@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { changeClass, isDocs } from '../dev/ci/change-class.ts';
+import { parseSync, type Node } from 'oxc-parser';
+import { changeClass, codeJobs, isDocs, JOBS, jobClosure, relativeLoads } from '../dev/ci/change-class.ts';
+import { isMetaUrl, literal, runtimeSpecifiers, walk } from '../dev/scan/parse.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
@@ -73,8 +75,8 @@ test('nothing the code gates read is classed as docs', () => {
     .split('\n')
     // dev/ only where the build loads it (Vite plugins) or tests import it; the rest runs on the Mac, not in CI.
     .filter((f) => /\.(?:[mc]?[jt]s|html)$/.test(f) && (!f.startsWith('dev/') || f.endsWith('vite-plugin.ts')))
-    // This file's case table names paths; it reads none of them.
-    .filter((f) => f !== 'test/change-class.test.ts');
+    // These files' case tables name paths; they read none of them.
+    .filter((f) => f !== 'test/change-class.test.ts' && f !== 'test/review-stamp.test.ts');
   const bad: string[] = [];
   for (const file of files) {
     const text = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -92,4 +94,112 @@ test('nothing the code gates read is classed as docs', () => {
     }
   }
   assert.deepEqual(bad, [], 'class these paths as code in dev/ci/change-class.ts, or cover them in the docs job');
+});
+
+// Which code jobs run (server tests, the image build and boot, net), from each job's import closure.
+const JOB_CASES: [string, string[], { server: boolean; image: boolean; net: boolean }][] = [
+  ['client-only feature', ['src/features/fireworks/fireworks.ts'], { server: false, image: false, net: false }],
+  ['lockstep code', ['src/sim/railway.ts'], { server: true, image: true, net: true }],
+  ['server source', ['server/src/server.ts'], { server: true, image: true, net: true }],
+  ['a server test', ['server/test/room-close.test.ts'], { server: true, image: true, net: false }],
+  ['the net harness', ['dev/peer-test/harness.ts'], { server: false, image: false, net: true }],
+  ['a net helper the harness imports', ['dev/look/lib.ts'], { server: false, image: false, net: true }],
+  ['a shared wire module', ['src/net/ws-wire.ts'], { server: true, image: true, net: true }],
+  ['the lockfile', ['package-lock.json'], { server: true, image: true, net: true }],
+  ['the server lockfile', ['server/package-lock.json'], { server: true, image: true, net: true }],
+  ['this classifier', ['dev/ci/change-class.ts'], { server: true, image: true, net: true }],
+  ['the CI workflow', ['.github/workflows/ci.yml'], { server: true, image: true, net: true }],
+  ['the boot script', ['scripts/server-boot-check.sh'], { server: false, image: true, net: false }],
+  ['an unrelated dev tool', ['dev/heartbeat.sh', 'dev/models.ts'], { server: false, image: false, net: false }],
+];
+for (const [name, files, want] of JOB_CASES) {
+  test(`code jobs: ${name}`, () => assert.deepEqual(codeJobs(files), want, files.join(', ')));
+}
+
+test('change class CLI --jobs prints CI outputs, and an empty diff runs every job', () => {
+  const run = (input: string) =>
+    execFileSync(process.execPath, ['dev/ci/change-class.ts', '--jobs'], { cwd: ROOT, input, encoding: 'utf8' });
+  assert.equal(run('docs/a.md\n'), 'docs=true\nheavy=false\nserver=false\nimage=false\nnet=false\n');
+  assert.equal(run('src/main.ts\n'), 'docs=false\nheavy=true\nserver=false\nimage=false\nnet=false\n');
+  assert.equal(run(''), 'docs=false\nheavy=true\nserver=true\nimage=true\nnet=true\n');
+});
+
+// The regex walk must reach at least what the parser says each file loads: a server import the closure missed is how
+// a job would skip the change that breaks it (the 10 November crash-loop came from a shared import nobody followed).
+test('each job closure holds every parsed relative load of every file in it', () => {
+  for (const job of Object.keys(JOBS) as (keyof typeof JOBS)[]) {
+    const closure = jobClosure(job);
+    assert.ok(closure.size > 50, `${job}: the walk reached only ${closure.size} files`);
+    const missing: string[] = [];
+    for (const file of closure) {
+      if (!file.endsWith('.ts')) continue;
+      for (const spec of runtimeSpecifiers(fs.readFileSync(path.join(ROOT, file), 'utf8'))) {
+        if (!spec.startsWith('.') || spec.endsWith('/')) continue;
+        const target = path.posix.normalize(path.posix.join(path.posix.dirname(file), spec.replace(/\?.*$/, '')));
+        if (!closure.has(target)) missing.push(`${job}: ${file} loads ${spec}`);
+      }
+    }
+    assert.deepEqual(missing, [], 'dev/ci/change-class.ts relativeLoads() misses these');
+  }
+});
+
+// Loads no walk can follow: a computed import or URL, a worker or child process started from a path that is not a
+// literal URL, a bundle built by entry name. Each one known is listed with what covers it; a new one fails here.
+const UNFOLLOWED: Record<string, string> = {
+  'dev/peer-test/harness.ts: esbuild.build': "bundles dev/peer-test/<entry>: every file there is one of net's roots",
+  'dev/peer-test/worker-source.ts: registerHooks': 'redirects src/ to a worker tree; the same src files',
+  'dev/peer-test/node-player.ts: import': 'imports the bundle node-player itself builds from dev/peer-test',
+};
+test('every load the walk cannot follow is known', () => {
+  const found = new Set<string>();
+  for (const job of Object.keys(JOBS) as (keyof typeof JOBS)[]) {
+    for (const file of jobClosure(job)) {
+      if (!file.endsWith('.ts')) continue;
+      const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      walk(parseSync(file, src, { lang: 'ts' }).program, (n: Node) => {
+        let arg = (n.type === 'NewExpression' || n.type === 'CallExpression' ? n.arguments[0] : undefined) as
+          Node | undefined;
+        // fileURLToPath(new URL('./x.ts', import.meta.url)) is as literal as the URL inside it.
+        const url = (a: Node | undefined) =>
+          a?.type === 'NewExpression' && a.callee.type === 'Identifier' && a.callee.name === 'URL' ? a : undefined;
+        if (arg?.type === 'CallExpression' && url(arg.arguments[0] as Node | undefined)) arg = arg.arguments[0] as Node;
+        const literalUrl = literal(url(arg)?.arguments[0] as Node | undefined) !== undefined;
+        if (n.type === 'ImportExpression' && literal(n.source) === undefined) found.add(`${file}: import`);
+        else if (n.type === 'NewExpression' && n.callee.type === 'Identifier') {
+          if (n.callee.name === 'URL' && isMetaUrl(n.arguments[1] as Node | undefined) && literal(arg) === undefined)
+            found.add(`${file}: new URL`);
+          if (n.callee.name === 'Worker' && !literalUrl) found.add(`${file}: new Worker`);
+        } else if (n.type === 'CallExpression') {
+          const callee =
+            n.callee.type === 'Identifier'
+              ? n.callee.name
+              : n.callee.type === 'MemberExpression' && n.callee.property.type === 'Identifier'
+                ? `${n.callee.object.type === 'Identifier' ? n.callee.object.name + '.' : ''}${n.callee.property.name}`
+                : '';
+          if (callee === 'fork' && !literalUrl) found.add(`${file}: fork`);
+          if (callee === 'esbuild.build' || callee === 'registerHooks') found.add(`${file}: ${callee}`);
+        }
+      });
+    }
+  }
+  const unknown = [...found].filter((k) => !(k in UNFOLLOWED));
+  const stale = Object.keys(UNFOLLOWED).filter((k) => !found.has(k));
+  assert.deepEqual(unknown, [], 'cover these in JOBS (roots or fallback) in dev/ci/change-class.ts, then list them');
+  assert.deepEqual(stale, [], 'these listed loads are gone: drop them from UNFOLLOWED');
+});
+
+test('relativeLoads reads every load form and keeps out directories and packages', () => {
+  const src = [
+    "import a from './a.ts';",
+    "export * from '../b.ts';",
+    "import './c.ts';",
+    "const d = await import('./d.ts');",
+    'const e = await import(`./e.ts`);',
+    "new Worker(new URL('./f.ts', import.meta.url));",
+    "import raw from './g.html?raw';",
+    "const dir = new URL('../seeds/', import.meta.url);",
+    "import three from 'three';",
+    'const h = await import(`./${name}.ts`);',
+  ].join('\n');
+  assert.deepEqual(relativeLoads(src), ['./a.ts', '../b.ts', './c.ts', './d.ts', './e.ts', './f.ts', './g.html']);
 });

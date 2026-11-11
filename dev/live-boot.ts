@@ -5,9 +5,13 @@
 //   boot:interactive                         PASS: the game booted.
 //   boot:gpu, then graphics-failed/failed    FAIL: WebGPU started and something threw during startup.
 //   boot:failed without graphics-failed      FAIL: a file or chunk did not download (src/boot/failure.ts).
-//   graphics-failed without boot:gpu         WARN, exit 0: this browser has no WebGPU, so the boot is unproven.
-//   none of these in time                    FAIL.
-// Usage: node dev/live-boot.ts [--url https://boogle.club/] [--wait <seconds>]
+//   graphics-failed without boot:gpu         WARN (a GitHub annotation in Actions), exit 0: this browser has no WebGPU,
+//                                            so a throw in a view mount is unproven; FAIL if the page threw anyway.
+//   none of these in time                    FAIL (a module that throws on import never marks anything).
+// Usage: node dev/live-boot.ts [--url https://boogle.club/] [--wait <seconds>] [--offline]
+// deploy.yml runs it --offline on the built dist (vite preview) before Pages deploys: only the page's origin loads, so
+// a room server outage never blocks a client deploy (a boot that fails only once the server answers is Smoke's to see);
+// smoke.yml runs it online on the live site after.
 import { chromium } from 'playwright';
 
 const args = process.argv.slice(2);
@@ -19,6 +23,7 @@ const url = new URL(option('--url') || 'https://boogle.club/');
 // Its own seven rooms, as live-smoke.ts's: never boogle or a friend's room.
 url.searchParams.set('room', `smoke-boot-${new Date().getUTCDay()}`);
 const waitMs = Number(option('--wait') || 150) * 1000;
+const offline = args.includes('--offline');
 
 // dev/look/lib.ts's launch flags: Linux (the runner) gets WebGPU on SwiftShader; a Mac uses its GPU through Metal.
 const flags = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'];
@@ -33,9 +38,19 @@ else
 const browser = await chromium.launch({ args: flags, headless: true });
 const failures: string[] = [];
 const pageErrors: string[] = [];
+const refused = new Set<string>(); // --offline: the hosts the page tried and did not get
 let exitCode = 1;
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  if (offline) {
+    // Only the page's own origin loads: the room server (HTTP and WebSocket) and any other host are refused, so the
+    // verdict never depends on a server being up.
+    await page.route(
+      (u) => u.origin !== url.origin,
+      (route) => (refused.add(new URL(route.request().url()).host), route.abort('blockedbyclient')),
+    );
+    await page.routeWebSocket(/.*/, (ws) => (refused.add(new URL(ws.url()).host), ws.close({ code: 1001 })));
+  }
   page.on('console', (m) => {
     if (m.type() === 'error' && m.text().includes('[boot] startup failed')) failures.push(m.text());
   });
@@ -66,14 +81,21 @@ try {
   const secs = ((performance.now() - start) / 1000).toFixed(1);
   const why = [...failures, ...pageErrors.map((e) => `page error: ${e}`)].join('\n  ') || 'no error logged';
   if (seen.includes('interactive')) {
-    console.log(`PASS live boot: ${url.href} interactive in ${secs}s (WebGPU adapter: ${adapter})`);
+    console.log(
+      `PASS live boot: ${url.href} interactive in ${secs}s (WebGPU adapter: ${adapter})${offline ? `, offline: refused ${[...refused].join(', ') || 'nothing'}` : ''}`,
+    );
     exitCode = 0;
   } else if (seen.includes('gpu') && (seen.includes('graphics-failed') || seen.includes('failed')))
     console.error(`FAIL live boot: WebGPU started, then startup threw (lobby: "Can't draw the island")\n  ${why}`);
   else if (seen.includes('failed') && !seen.includes('graphics-failed'))
     console.error(`FAIL live boot: a file or chunk did not load\n  ${why}`);
+  else if (seen.includes('graphics-failed') && pageErrors.length)
+    console.error(`FAIL live boot: no WebGPU here, and the page threw before it got that far\n  ${why}`);
   else if (seen.includes('graphics-failed')) {
-    console.warn(`WARN live boot unproven: WebGPU did not start in this browser (adapter: ${adapter})\n  ${why}`);
+    const line = `WebGPU did not start in this browser (adapter: ${adapter}), so a throw after boot:gpu (a view mount) cannot be seen`;
+    // A GitHub annotation on the run, not only a log line.
+    if (process.env.GITHUB_ACTIONS) console.log(`::warning title=Live boot unproven::${line}`);
+    console.warn(`WARN live boot unproven: ${line}\n  ${why}`);
     exitCode = 0;
   } else console.error(`FAIL live boot: neither booted nor failed in ${secs}s; marks: ${seen.join(' ')}\n  ${why}`);
   if (exitCode === 0 && pageErrors.length) console.warn(`WARN page errors:\n  ${pageErrors.join('\n  ')}`);

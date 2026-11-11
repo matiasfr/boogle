@@ -24,8 +24,9 @@ You plan features for Boogle; you do not implement them. The only file you write
      authority; what is cosmetic. For lockstep, the sim, rules and adapter files, the `src/world/rules/types.ts` entry, the op names, the state key, the `edits` generators
      and `invariants`, and any `env` fact. Controls: action id, pad slot (check `freeSlots()`), key, touch, guide row.
    - **Steps**: a numbered checklist (`- [ ]`). Each step names the files it creates or edits, what to write, and
-     how to verify it (a unit test, `npm run scenario -- <name>`, a `/look` still, `npm run check`). Each step leaves
-     `npm run check` green.
+     how to verify it (a unit test, `npm run scenario -- <name>`, a `/look` still). Each step leaves
+     `node dev/ship-check.ts` green; the full check, bots and `test:net` are the checkpoint's (owner-calls.md, "Build
+     more, test less"), so name the checkpoint and its few proofs rather than adding them to each step.
    - **Level findings**: for anything the plan places in the world (a secret, a prop a player must reach, a gate), run
      the level check on the planned positions before the plan is reviewed (`npm run level-check`, docs/agents/test-details/level.md)
      and list what it finds, especially anything reachable before the ability that should gate it. The designer rules on

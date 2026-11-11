@@ -33,16 +33,35 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      # No lint here: CI linted this same tree before the merge (the ship's run) and again on main.
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - name: Lint (Oxlint, type-aware rules and Boogle protections)
-        run: npm run lint
       - run: npm run build
         env:
           BASE: /
           VITE_BOOGLE_SERVER: ${{ vars.VITE_BOOGLE_SERVER }}
           VITE_BUILD: ${{ github.sha }}
+      # Boot the built site before it goes out (11 November: a build whose startup threw reached players for 2 h 15 min).
+      # A red boot fails this job, so deploy never runs and the old site stays live. dev/live-boot.ts says what it
+      # catches; without WebGPU on the runner it warns loudly (an annotation) and still fails on an uncaught error.
+      # --offline: only the page's own origin loads, so a room server outage never holds a client deploy (perhaps the
+      # fix for it); a boot that fails only once the server answers is left to Smoke, after the deploy.
+      - id: pw
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # No --with-deps (its apt step stalls; the runner image carries Chromium's libraries): ci.yml's net job says why.
+      - run: npx playwright install chromium
+      - name: The built site boots
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          npx vite preview --port 4173 --strictPort > preview.log 2>&1 &
+          for _ in $(seq 60); do curl -fs -o /dev/null http://localhost:4173/ && break; sleep 1; done
+          node dev/live-boot.ts --offline --url http://localhost:4173/ || { cat preview.log; exit 1; }
       # Share pages for patch videos (video-* releases, dev/video/site.ts). Never blocks a game deploy.
       - run: node dev/video/site.ts dist || true
         env:

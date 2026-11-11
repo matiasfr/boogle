@@ -40,33 +40,52 @@ jobs:
       id-token: write
       actions: read
     steps:
+      # Full history: the bisect below walks main's first-parent merges back to the last green run.
       - uses: actions/checkout@v7
         with:
           ref: main
-          fetch-depth: 20
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
         continue-on-error: true
+      # The newest main commit CI passed on, if it is still an ancestor of the red one (a cancelled run is not green).
+      - id: green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RED: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          good=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main --status success --limit 1 \
+            --json headSha --jq '.[].headSha' || true)
+          if [ -n "$good" ] && git merge-base --is-ancestor "$good" "$RED"; then
+            echo "sha=$good" >> "$GITHUB_OUTPUT"
+            echo "merges=$(git rev-list --first-parent --count "$good..$RED")" >> "$GITHUB_OUTPUT"
+          fi
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: github-actions # automerge.yml's dispatches; the action refuses a bot actor otherwise
           additional_permissions: |
             actions: read
-          claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh run list:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git checkout -b:*),Bash(git add:*),Bash(git commit:*),Bash(git push -u origin claude/*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
+          claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh run list:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git bisect:*),Bash(git checkout -b:*),Bash(git checkout main),Bash(git add:*),Bash(git commit:*),Bash(git push -u origin claude/*),Bash(node --test:*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
           prompt: |
             The initial npm ci may have failed; check and fix the install if needed.
             CI run ${{ github.event.workflow_run.html_url }} failed on main at ${{ github.event.workflow_run.head_sha }}.
             Several friends ship to main at once, so this is most likely two recent changes that each passed but conflict.
-            1. Read the failing job logs (`gh run view ${{ github.event.workflow_run.id }} --log-failed`) and the recent commits.
+            The last green main run was at ${{ steps.green.outputs.sha || 'unknown (bisect from the failing commits'' history instead)' }}, ${{ steps.green.outputs.merges || 'an unknown number of' }} first-parent merges back.
+            1. Read the failing job logs (`gh run view ${{ github.event.workflow_run.id }} --log-failed`) and name the failing test file.
             2. If an open PR from a claude/ branch already fixes this, stop.
-            3. Make the smallest fix that keeps every collaborator's intent (don't revert a feature unless there is no other fix).
+            3. If more than one merge landed since the last green run, find the one that broke it by rerunning that file
+               alone: `git bisect start --first-parent ${{ github.event.workflow_run.head_sha }} <last green sha>`, then
+               `git bisect run node --test <file>` (a server test: `git bisect run sh -c 'cd server && node --test test/<file>'`),
+               note the first bad merge, then `git bisect reset` and `git checkout main`. Each step is one file, a minute
+               or two. Skip this when the failure is not one test file (a lint, build or registry error names its cause).
+            4. Make the smallest fix that keeps every collaborator's intent (don't revert a feature unless there is no other fix).
                Follow AGENTS.md and CLAUDE.md. Run `npm run check` (and `npm run test:net` if networking failed).
-            4. Commit to a new `claude/fix-main-<short sha>` branch, push it, and open a PR titled "Fix main: <what broke>".
-               It is squash-merged automatically when CI passes.
+            5. Commit to a new `claude/fix-main-<short sha>` branch, push it, and open a PR titled "Fix main: <what broke>",
+               naming the first bad merge if you bisected. It is squash-merged automatically when CI passes.
 
   branch:
     # A ship/* push after its PR opens runs CI twice (push and pull_request); only the push run counts.

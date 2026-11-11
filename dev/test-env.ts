@@ -15,7 +15,10 @@ const MODES: Record<TestMode, NodeJS.ProcessEnv> = {
 };
 /** The environment and the node flags (the preload and the per-test timeout) to put ahead of `--test`. */
 export function testEnv(mode: TestMode = 'local'): { env: NodeJS.ProcessEnv; flags: string[] } {
-  const env = { ...process.env, ...MODES[mode] };
+  // Never a git hook's environment: pre-push exports GIT_DIR and friends, which beat `git -C <dir>`, so a test's scratch
+  // `git init`/`git config` once wrote into this repository's config (11 November). Tests find the repo from their cwd.
+  const outside = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+  const env = { ...outside, ...MODES[mode] };
   const preload = env.RAIL_AUDIT === '1' ? [] : ['--import', './test/helpers/rail-no-audit.ts'];
   return { env, flags: [...preload, `--test-timeout=${mode === 'long' ? 600_000 : 5000}`] };
 }
