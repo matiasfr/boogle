@@ -13,6 +13,10 @@
 > retargeted or archived by group (M13), and seats stay Host kind. State of the steps (updated at M3c): M0, M0b, M1, M2,
 > M3, M3b, M4, M5, M6 and M7 done; M3c built; M8 building beside it. The amendment's inventory was measured on
 > `origin/main` at `05696f2f1` with `rg`, the patterns named beside each number.
+>
+> **The tail, planned 11 November:** what replaces `inspect()` (nothing: readers query rows), the rest of M12, M12b
+> and M13 as steps with files and checks are in [ecs-m12-m13](ecs-m12-m13.md). Implementers of those steps read that
+> file; the entries below are kept for their file lists and history.
 
 # ECS migration, railway first: out of `src/proto`, onto components and queries
 
@@ -335,9 +339,9 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
 | M10 a to f | Views read rows and queries | Medium each | M6, M8 | six groups in parallel |
 | T1 to T7 | Tests rewritten on rows and queries (new) | Low each | M3c, M8 | seven batches in parallel |
 | M11 | The server and its tools read the world | High | M8, T5 to T7 | |
-| M12 | The predictor and the mirror on worlds; the adapter split | High | M10, M11 | |
-| M12b | Delete the read model (new) | High, deletions | M8b, T1 to T7, M12 | |
-| M13 | Delete Place | Medium to high | M7 | independent of M8 to M12b |
+| M12 | The predictor and the mirror on worlds; the adapter split | High | M10, M11 | a and b done; the rest as M12c to M12f in [ecs-m12-m13](ecs-m12-m13.md) |
+| M12b | Delete the read model (new) | High, deletions | M8b, T1 to T7, M12 | two steps in [ecs-m12-m13](ecs-m12-m13.md) |
+| M13 | Delete Place | Medium to high | M7 | independent of M8 to M12b; seven steps in [ecs-m12-m13](ecs-m12-m13.md) |
 
 ### Lane A: the sim
 
@@ -1118,6 +1122,10 @@ later change with a bundle report. Place's remaining callers get one owner from 
     differential tests builds the model through `test/helpers/railway-model.ts`, which took `railway-marks.test.ts`'s
     line on the read model's importer list. `dev/spikes/ecs/predict-cost.ts` (outside the typecheck) still calls the
     deleted `cloneRailway`; M12b deletes it. No `npm run load` and no look (the change is meant to show nothing).
+  - **The call on the oracle (planned 11 November, [ecs-m12-m13](ecs-m12-m13.md), section 2):** nothing replaces
+    `inspect()`. Tests, bots and evals read rows and queries; `inspectRailway()` keeps only the view's scene walk
+    and the session's scalars; the Dev menu prints `world.snapshot()`. The remaining work is that plan's X1 to X4,
+    M12c to M12f, M12b-1 and M12b-2.
 - [ ] **M12b. Delete the read model.** _High by path (`src/sim`), deletions only. After M8b, T1 to T7, M10, M11 and
       M12._
   - Delete `src/sim/railway-read-model.ts`, `src/sim/railway-live.ts`, `test/railway-live.ts`,
