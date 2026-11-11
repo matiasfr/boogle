@@ -5,9 +5,11 @@
 //   boot:interactive                         PASS: the game booted.
 //   boot:gpu, then graphics-failed/failed    FAIL: WebGPU started and something threw during startup.
 //   boot:failed without graphics-failed      FAIL: a file or chunk did not download (src/boot/failure.ts).
-//   graphics-failed without boot:gpu         WARN, exit 0: this browser has no WebGPU, so the boot is unproven.
-//   none of these in time                    FAIL.
+//   graphics-failed without boot:gpu         WARN (a GitHub annotation in Actions), exit 0: this browser has no WebGPU,
+//                                            so a throw in a view mount is unproven; FAIL if the page threw anyway.
+//   none of these in time                    FAIL (a module that throws on import never marks anything).
 // Usage: node dev/live-boot.ts [--url https://boogle.club/] [--wait <seconds>]
+// deploy.yml runs it on the built dist (vite preview) before Pages deploys; smoke.yml on the live site after.
 import { chromium } from 'playwright';
 
 const args = process.argv.slice(2);
@@ -72,8 +74,13 @@ try {
     console.error(`FAIL live boot: WebGPU started, then startup threw (lobby: "Can't draw the island")\n  ${why}`);
   else if (seen.includes('failed') && !seen.includes('graphics-failed'))
     console.error(`FAIL live boot: a file or chunk did not load\n  ${why}`);
+  else if (seen.includes('graphics-failed') && pageErrors.length)
+    console.error(`FAIL live boot: no WebGPU here, and the page threw before it got that far\n  ${why}`);
   else if (seen.includes('graphics-failed')) {
-    console.warn(`WARN live boot unproven: WebGPU did not start in this browser (adapter: ${adapter})\n  ${why}`);
+    const line = `WebGPU did not start in this browser (adapter: ${adapter}), so a throw after boot:gpu (a view mount) cannot be seen`;
+    // A GitHub annotation on the run, not only a log line.
+    if (process.env.GITHUB_ACTIONS) console.log(`::warning title=Live boot unproven::${line}`);
+    console.warn(`WARN live boot unproven: ${line}\n  ${why}`);
     exitCode = 0;
   } else console.error(`FAIL live boot: neither booted nor failed in ${secs}s; marks: ${seen.join(' ')}\n  ${why}`);
   if (exitCode === 0 && pageErrors.length) console.warn(`WARN page errors:\n  ${pageErrors.join('\n  ')}`);
