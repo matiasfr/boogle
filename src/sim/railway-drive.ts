@@ -29,7 +29,7 @@ export function apply(w: World, pid: string, action: RailAction, tick: number, t
 }
 const saved = (w: World): unknown => JSON.parse(JSON.stringify(w.snapshot()));
 const message = (e: unknown) => (e instanceof Error ? e.message : 'railway: invalid');
-/** railwayCheck on the world itself (until M8b it also runs the domain validators on the read model). */
+/** railwayCheck on the world itself: rows and queries only, no read model (M8b). */
 export function check(w: World): string | null {
   try {
     railwayCheck(w);
