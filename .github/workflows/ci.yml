@@ -118,7 +118,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 20, not 10: the suite ran 540 to 570 s before world v27, whose Ring Island fuzz tests (four over 55 s each)
+    # took it past 10 minutes, so main's run was cancelled twice on 11 November. Cut the suite before raising this.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
