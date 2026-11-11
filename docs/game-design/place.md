@@ -155,7 +155,7 @@ you can step off sideways (owner, 10 November). Past the quarry, across about 17
 and a bright shard in the ring's middle. Two physical things point at it: a line of orange buoys straight out from the end of the pier, and an old brass telescope on the ridge's top, aimed at it; **Look through it** (Interact).
 
 **The lookout in the live game (job F3, 9 November; `src/entities/lookout/`).** Both stand in production with no flag.
-Seven orange buoys bob in a line from where the pier ends towards Ring Island, 62 m apart, the last about 20 m off its
+Seven orange buoys (lifted off as the railhead reaches them, from 11 November: see "The railhead and the gap") bob in a line from where the pier ends towards Ring Island, 62 m apart, the last about 20 m off its
 waterline (Place had twelve; on the production map the last five stood inside the island's hills). The telescope stands on
 the ridge's top at Place-local (-15, -207), 15 m east of Place's spot, which was among pines that blocked the view. Its
 barrel points where its view looks. **Look through it** cuts to the one fixed view from the eyepiece: Ring Island, ring and
@@ -713,8 +713,29 @@ once Q7 is laid, sliding with the railhead and offering no prompt while it moves
 **Ring Island** (east: way home, live from the rivet; west: chained) are drawn on those platforms; a chained lever's
 plaque names the halt that opens next. Not yet: the laying machine does not travel out onto the deck (it stays parked
 at the pier head while the deck drops in), the halt displays' map keeps v26's six stops (the Railhead's and Ring
-Island's names do not fit the 320 x 256 faces beside the Pier's), and the railhead's own platform, rack and jib are
-R4b's. Not tested on a device.
+Island's names do not fit the 320 x 256 faces beside the Pier's). Not tested on a device.
+
+**The railhead and the gap (11 November 2026, R4b; step 4b; calls 14, 16, 49, 51).** Once Q7 is laid line 2 runs on
+from the pier head over **bents 7-13** (u 140-260 m, bowing down 4% to 14.7 m), and every metre a train can stand on has
+its deck and rails drawn. The next bent's two sockets glow on the sea floor and a taller gold-topped stake marks it;
+stakes at the bents after it are a line of small orange posts running on toward the island. Each footing the jib sets
+goes up on its rope, out over the stakes and down into a socket with a splash; the second stands the bent (posts, braces,
+cap), the span (planks, stringers, both tracks' rails, the side walkway) drops onto it from the old end outward, and
+the railhead's **platform, rack, jib and buffers slide out** along it in about 3 s. The platform is 25 m long, 0.9 m
+over the deck, east of the down track (lat +1.8 to +6.3) with a yellow safe line; **its 25 m stay behind as the side
+walkway** (deck height, 4.5 m wide, from u 95), so nobody on the platform is ever left over the sea: while it moves
+it has no collider and whoever is on it drops 0.9 m onto the walkway, and the rack's and the jib's prompts wait for
+the slide. The deck ends on a yellow and black striped beam and buffers on both tracks (a pair of points 50 to 30 m
+short of the end puts the up track on the down track; the up track runs on to its own buffer, so nothing has to appear
+when the rivet makes the line a through one: the buffers and the stripes go then). The wagon's loads hop to the rack
+(three layers of six), a footing is shouldered at the rack and set at the jib with the pier's prompts ("Shoulder a
+footing", "Set the footing"; none once fourteen are set). With bent 13 come the **hook pile** 276 m out (three timbers
+and a mast to its ring, which joins the hook's rings once the fourteenth footing is set), the **gold land pad** and the
+take-off rail on the platform's last 5 m, and the **joint's west platform** (u 235-260) with its plank crossing over
+both tracks at u 240. **The lookout's buoys lift** as the railhead reaches them: 1 and 2 from the start, 3 at bent 8,
+4 at bent 11, 5 to 7 on the rivet, each rising off its mooring with a splash; the crane's little guy does not bow
+(not built). Once Q7 is laid the island's near view stays mounted at any distance, so the Way is there under the trains;
+until the leaf's own view (R4c) swings it, the struck rivet puts the leaf flat. Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
