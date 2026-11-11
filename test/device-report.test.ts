@@ -107,7 +107,7 @@ test('baseline columns give the ratio to the Mac; a scene the baseline lacks pri
   const text = baselineSection(r, { baseline: base }).join('\n');
   assert.match(
     text,
-    /Baseline: run macmac \(mac chrome\), desktop \(Apple M1 Max\), Chrome 142, build bd34b181, saved 2026-11-10/,
+    /Baseline: run macmac \(mac chrome\), desktop \(Apple M1 Max\), Chrome 142\.0, build bd34b181, saved 2026-11-10/,
   );
   const spawn = text.split('\n').find((l) => l.startsWith('| spawn'))!;
   assert.match(
@@ -140,7 +140,7 @@ test('the report carries the baseline section and the paste line keeps its wordi
   const r = run('dv-devicedevicedevicedevice12', [row('spawn')]);
   assert.equal(
     pasteLine(r),
-    'Tested on a device: tablet (Apple GPU), Safari 26, build bd34b181, suite quick, 1/1 scenes pass, run dv-devicedevicedevicedevice12 (.look/device/dv-devicedevicedevicedevice12/report.md)',
+    'Tested on a device: tablet (Apple GPU), Safari 26.0, build bd34b181, suite quick, 1/1 scenes pass, run dv-devicedevicedevicedevice12 (.look/device/dv-devicedevicedevicedevice12/report.md)',
   );
   assert.match(report(r, { baseline: base }), /## Against the baseline/);
   assert.match(report(r), /No baseline for suite quick yet/);

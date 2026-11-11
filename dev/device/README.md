@@ -42,6 +42,13 @@ the cleaner cold. (A run from before this record has only the load at Run time a
   baseline" section: p50 and p95 beside the Mac's with the ratio, calls and triangles with the difference, the detail rung
   of each side (named when they differ), and dashes for a scene the baseline lacks. When
   `~/.boogle/daily/perf/history.jsonl` has an entry for the run's build, one line compares the bench's exact counts.
+- A report also gets an "Against this device's previous run" section: the newest earlier pulled run of the same suite on
+  the same hardware (device class, GPU, cores) and label, unless that run is the baseline. Both comparisons check the
+  conditions first (`dev/device/compare.ts`): full browser version (Safari 27.2, not 27), viewport, DPR, refresh
+  interval (more than 10% apart), graphics settings, cold or warm launch. On the same hardware with any of them
+  different the section says **Not comparable**, lists each difference and prints counts only, no frame-time ratios:
+  on 10 November two runs on one MacBook (Safari 27.0 against 27.2, 1489x974 against 1128x730, 17 against 21 ms) were
+  read as a regression. Against other hardware the ratios stay and the differences are listed beside them.
 - `new --wait` checks it can read the server first, prints the link, then polls every 10 s for up to 30 minutes until the
   run says `done`, and pulls it. It ends early (pulling what arrived) when the run started and has been silent for 10
   minutes, and gives up after six failed polls in a row.
