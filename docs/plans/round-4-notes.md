@@ -167,6 +167,12 @@ Matias on an iPad and Daniel ("twipleset", Firefox on a Mac) played the live v24
 
 Liked: "other than that, the feedback was pretty positive." From the data, the Works signposting part 2 worked: the stall seam 13 s after the breaker, the quarry seam 49 s later, the kiln lit 1 min 39 s after that.
 
+## Owner session, 11 November (phone screenshot; ranked)
+
+| P | Note (his words where quoted) | What it is | Status |
+| --- | --- | --- | --- |
+| P2 | "Connecting to the railway…" covers Jump at phone width (owner, 11 November: "P2, fix soon") | The connecting toast overlaps the Jump button on a phone-width screen, seen in his phone screenshot on 11 November | Queued |
+
 ## No job yet
 
 ### Co-op and carrying

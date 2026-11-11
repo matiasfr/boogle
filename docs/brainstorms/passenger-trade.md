@@ -19,7 +19,8 @@
 > model's own rules (`play-trade.ts` calls `trade-model.ts`; numbers only from `trade-data.ts`), and
 > `test/economy-playable-trade.test.ts` replays the model's rooms through it and asserts the rider income is the same
 > to the last Boogle. What playing it showed is in [Playable prototype](#playable-prototype-11-november). Design
-> tool only; not tested on a device.
+> tool only; not tested on a device. **Owner, 11 November: asked whether to publish it as an artifact, "Yes, publish it"**
+> (queued: publish `docs/world/economy-prototype.html`, as the docs/world README's "published as an artifact" pages are).
 >
 > **What his later answers changed (10 November):** Boogles **build houses** on town plots ("Boogles build the house
 > itself; unbought plots stay empty ground") and **upgrade sources**, the faster loader arm included. **Anything on

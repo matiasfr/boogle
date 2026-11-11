@@ -9,6 +9,12 @@
 > of the down track from the day the halt drops in at Q6, so nothing is lifted or moved when Q7 is laid** (calls
 > 53–61 replace call 48); R4a's pier hunk no longer waits. The first review, of the plan before the amendment, is
 > [below it](#design-review-designer-2026-11-10).
+>
+> **Owner's answers of 11 November** ([decision](../decisions-rail.md#d-2026-11-11-ring-island-views-open-calls-answered)):
+> keep trains visible while actions wait on the server; the plan's two prompts ("Knock out the pawl", "Hang the weight");
+> "Station 7" and the "Ring Island" lever plaque, and the jump-in labels, kept as built; the halt map's smaller names
+> and Ring Island from the Pier laid (as the designer recommended); the glide-only secret boxes stay at the Pier laid.
+> Queued, not built: the trains fix, the two prompts and the halt map (calls 66 to 70 above).
 
 # Ring Island build 1: the line reaches the island
 
@@ -1042,7 +1048,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > active), `crates-view.ts` (`rewardSeat` read `stations[6].s`: the boxes view threw at mount), `stations.ts` and
   > `spatial-station.ts` (a frame on a deck: `FrameAt.y`), `look-kit.ts` (36 train wheels for four trains), `track.ts`.
   > (5) The railhead rack's wagon hop is wired (`footPlaces({ ring })`, `footFlying().toRing`) but R4b mounts the place.
-  > **For the owner:** the jump-in labels "Deck laid" and "Ring joined" exist (`src/world/railway-jump.ts:103, 109`); the
+  > **For the owner (answered 11 November: "Keep" the jump-in labels; "Keep both" for the "Station 7" board and the "Ring Island" lever plaque):** the jump-in labels "Deck laid" and "Ring joined" exist (`src/world/railway-jump.ts:103, 109`); the
   > frame's board reads "Station 7" (a label the plan does not name); the island's west lever is plaqued "Ring Island",
   > not a branch emblem. Unchecked: the eval that walks a footing from the rack to the jib (not written), `npm run perf` at the
   > pier head, a train at the island's crossover.
@@ -1084,7 +1090,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > "Pull" (the lever's, reused) at the gold strut (`RING_BRACE`, the server's own reach test), offered only while
   > `set === 14` and `brace === 1` (`braceOffered`, `leaf-shape.ts`; `leaf-view.ts` `targets()`, via `works-live.ts`).
   > (2) The jib's prompt stays "Set the footing" and now also offers a counterweight footing while `cw < 4` once the gap is
-  > footed (`jibOffered`; `railhead-view.ts`). "Knock out the pawl" and "Hang the weight" are not used: owner to choose.
+  > footed (`jibOffered`; `railhead-view.ts`). "Knock out the pawl" and "Hang the weight" are not used: owner to choose. **Answered 11 November: use the plan's two labels** ("Knock out the pawl" for the brace, "Hang the weight" for the counterweight; orchestrator's reading); queued for the next prompt change.
   > (3) The player under the toe: while the leaf is coming down (35 degrees or less) the local player within 1.4 m of the
   > toe's edge or under it (u 258.6 to 261 m, on the deck) is walked back along the deck at 6 m/s, away from the hinge
   > (`toeShove`); no tumble, no lift; once settled nobody is moved. Others' pages shove their own player. Tests:
@@ -1192,6 +1198,11 @@ take if the stills show soft letters (sizes are fractions of the face, so the de
 2. Should Ring Island be on the map from the first board, dim? Recommended: no, from the Pier laid, so the early map
    keeps today's size.
 
+**Answers (owner, 11 November 2026).** 1: "Yes, smaller is fine". 2: "From the Pier laid". Both are the recommendations, so
+nothing in this review changes: calls 66, 67 and 69 are confirmed
+([decision](../decisions-rail.md#d-2026-11-11-ring-island-views-open-calls-answered)). Calls 68 and 70 were not put to
+him and stay open in [agent-calls](../agent-calls.md). The build (not started) proceeds on all five.
+
 - [ ] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
   loop graph's `crossing` node are re-run with the rack on the east platform (call 54): the bot no longer crosses the
   track, and `npm run loop -- node crossing` reports the new carry (expected 5–9 m, was 11 m).
@@ -1250,7 +1261,7 @@ concrete), New (this plan's).
 | 23 | Pacing: Q7 about 3 min, the 14 footings about 6 min (three wagon laps of about 2 min, 8 s a set), gap and brace about 1 min, counterweight and rivet about 1 min, the first ride about 40 s: **about 12 minutes** of the six hours | Default | Review "Pacing" (10–15 min) |
 | 24 | `rail.brace { revision }` names the brace state the actor saw (1); a stale or repeat press is refused | Default | Brief's Shape (gate-puzzles' revision rule) |
 | 25 | `Aperture.threaded` is not added in v27 | New | Build 2 bumps anyway; no unused field |
-| 40 | Ring Island's halt ends in buffers on both tracks 15 m past the platforms (u 483) with an end board behind them, and a facing crossover on the Way before it (u 395–417); every train stands at the east platform; the west lever is chained and plaqued with the branch | Decided (owner, 10 November 2026) | "Ring Island while it's the end of the line: Buffers about 15 m past the halt, with a crossover before it". The east platform follows from a crossover that leads up trains onto the down track, as Far Head's does; the chained west lever and its plaque are rail-map call 14 |
+| 40 | Ring Island's halt ends in buffers on both tracks 15 m past the platforms (u 483) with an end board behind them, and a facing crossover on the Way before it (u 395–417); every train stands at the east platform; the west lever is chained and plaqued with the branch | Decided (owner, 10 November 2026) | "Ring Island while it's the end of the line: Buffers about 15 m past the halt, with a crossover before it". The east platform follows from a crossover that leads up trains onto the down track, as Far Head's does; the chained west lever and its plaque are rail-map call 14. **Build agent, note:** the plaque reads "Ring Island" as built and the owner kept it on 11 November ("Keep both"), so "emblem, no name" no longer applies to the lever's plaque |
 | 41 | Trains stand with the passenger car at the platforms' middle (u 448), 35 m from the buffers; no train is ever turned, so the engine is always at the island end | Default (reviewed) | Rail-map, "The station plan" (calls 11–13); the alignment itself is the owner's "trains may be longer than platforms; the passenger cars align", and "never turned" follows from his buffers answer |
 | 42 | The 15 m past the platforms is in a cutting up to 1.5 m deep at the buffers, not on a fill | Default (reviewed; was New) | Level finding 15: the cone rises through the 8.0 m deck from about u 478. The loop it replaces cut 12 m. Ground shaping with no rule on it; a 1.5 m wall is under the 1.68 m jump and the 1 in 1.5 banks are walkable, so nobody is held in the cut |
 | 43 | The Pier is homeward-only from the moment Q7 is laid (not only after the Meet): no up train stops there, it has no up lever, its up platform is never built | Decided (owner), the timing a Default (reviewed) | "The Pier becomes a homeward-only stop"; rail-map call 29 (the recommendation he took) says after Q7, when the Pier stops being the end and the ring's footings go to the railhead. The timing also follows from the track: from Q7 an up train is on the far track, with no platform beside it |
@@ -1277,9 +1288,10 @@ concrete), New (this plan's).
 
 | Where | Draft | Note |
 | --- | --- | --- |
-| Halt plaques | **Railhead**, **Ring Island**; the island's chained west lever: the branch's emblem, no name | The Railhead's name after the Meet is the owner's (open question 2) |
-| Jump-in rows | "The deck is laid" / *Q7 is down over the six bents; the rest go out one footing at a time*; "Ring Island joined" / *The leaf is down and riveted; ride to the island* | |
-| Prompts | **Knock out the pawl**, **Hang the weight**, **Strike the rivet** | **Set the footing** is today's |
+| Halt plaques | **Railhead**, **Ring Island**; the island's chained west lever: plaqued **Ring Island** as built (was: the branch's emblem, no name; call 40) | The Railhead's name after the Meet is the owner's (open question 2). Owner, 11 November: "Keep both" (the lever plaque and Station 7's board) |
+| Q7's frame board | **Station 7** (as built; the plan named no label) | Owner, 11 November: "Keep both" |
+| Jump-in rows | **Deck laid** / *Q7 laid over the six bents; the wagon brings the ring's footings*; **Ring joined** / *The leaf is down and riveted; trains run to Ring Island* (as built in `src/world/railway-jump.ts`; the first draft was "The deck is laid" and "Ring Island joined") | Owner, 11 November: "Keep" |
+| Prompts | **Knock out the pawl**, **Hang the weight**, **Strike the rivet** | **Set the footing** is today's. Owner, 11 November: "Use the plan's two labels ("Knock out the pawl", "Hang the weight")". Orchestrator's reading: the brace prompt (R4c built "Pull") becomes "Knock out the pawl" and the counterweight prompt (R4c built "Set the footing") becomes "Hang the weight". Queued, not built |
 | Meet banner | **Ring Island** over *The line has arrived*, 4.5 s | Like "Next stop: Ring Island" |
 | Board at the halt | **RINGWORKS** | Kept (owner, 10 November) |
 | End board behind the buffers | blank | The owner's words (call 52) |
