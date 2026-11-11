@@ -43,6 +43,18 @@ export default {
     const A = await t.open({ name: 'first', room, hud: true });
     t.check('the first tab is live', (await until(A.page, live, 30000)) >= 0);
 
+    // On a desktop Jump in takes the pointer lock, and the new tab taking focus ends it, which opens the pause menu just
+    // before the server drops this tab (a Windows Edge run, 11 November). Headless Chromium never grants a lock, so
+    // fake one and lose it the way a blur does.
+    await A.page.evaluate(() => {
+      let locked: Element | null = document.querySelector('canvas');
+      Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+      document.dispatchEvent(new Event('pointerlockchange'));
+      locked = null;
+      window.dispatchEvent(new Event('blur'));
+      document.dispatchEvent(new Event('pointerlockchange'));
+    });
+
     const B = await A.ctx.newPage(); // same context: same localStorage, so the same pid
     await B.setViewportSize(A.page.viewportSize()!);
     await B.goto(A.page.url());
@@ -56,6 +68,22 @@ export default {
     const shot = `${A.out}/first-elsewhere.png`;
     await A.page.screenshot({ path: shot });
     t.check('the first tab stops and shows the card', toldMs >= 0, `${toldMs} ms; ${shot}`);
+    // Play here is the only way back, so nothing may sit over it: the pause menu (a modal dialog in the top layer,
+    // which also makes the card inert) covered its left half.
+    const cover = await A.page.evaluate(() => {
+      const b = document.querySelector('.elsewhere button')?.getBoundingClientRect();
+      if (!b) return 'no button';
+      const hits = [0.1, 0.5, 0.9].map((f) => document.elementFromPoint(b.x + b.width * f, b.y + b.height / 2));
+      const over = hits.find((e) => !e?.closest('.elsewhere button'));
+      const menu = document.querySelector('dialog[open]');
+      if (menu) return `open dialog .${menu.className}`;
+      return over ? `${over.tagName.toLowerCase()}.${over.className}` : '';
+    });
+    t.check('nothing covers Play here', cover === '', cover ? `covered by ${cover}; ${shot}` : shot);
+    if (cover) return void (await B.close());
+    await A.page.keyboard.press('KeyH'); // the controls key opens the menu anywhere else; not over the card
+    const menu = await A.page.$eval('body', () => document.querySelector('dialog[open]')?.className ?? '');
+    t.check('and H does not open the menu over it', menu === '', menu && `open dialog .${menu}`);
     const pids = await Promise.all(
       [A.page, B].map((p) => p.evaluate(`import('/src/player/identity.ts').then((m) => m.identity.pid)`)),
     );
@@ -71,6 +99,7 @@ export default {
     else await A.page.click('.elsewhere button');
     await A.page.waitForSelector('#enter:not([disabled])', loaded);
     t.check('Play here: the first tab is live again', (await until(A.page, live, 60000)) >= 0);
+    t.check('with no menu left open', !(await A.page.$('dialog[open]')));
     t.check('and the second tab is told', (await until(B, told, 30000)) >= 0);
     await B.close();
   },
