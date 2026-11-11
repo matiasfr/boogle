@@ -5,12 +5,33 @@ import { parseOption } from './options.ts';
 import { threeArea } from './three-area.ts';
 import { fiveArea } from './five-area.ts';
 import { writeCampaignReport } from './report.ts';
+import { headline, playRooms } from './trade-model.ts';
+import { routeSpine } from './trade-route.ts';
 
 const args = process.argv.slice(2);
 const routes = [threeArea, fiveArea];
 const help =
-  'economy [three-area|five-area] [--players=1..4] [--policy=route-first|tool-first|cart-first|town-first|optional-first] [--core-only] [--content=N] [--cost=N] [--supply=N] [--distance=N] [--scenario=late-3h|late-7h|1-2-1|absence] [--omit=ID,ID] [--json]\neconomy --report  # regenerate both routes, all parties, comparisons, Markdown, JSON and 3 SVGs';
+  'economy [three-area|five-area] [--players=1..4] [--policy=route-first|tool-first|cart-first|town-first|optional-first] [--core-only] [--content=N] [--cost=N] [--supply=N] [--distance=N] [--scenario=late-3h|late-7h|1-2-1|absence] [--omit=ID,ID] [--json]\neconomy trade [--players=1..3] [--seed=N] [--json]  # the passenger-trade model: four rooms over the route\neconomy --report  # regenerate both routes, all parties, comparisons, Markdown, JSON and 3 SVGs';
 if (args.includes('--help')) console.log(help);
+else if (args[0] === 'trade') {
+  const num = (k: string, d: number) => Number(args.find((a) => a.startsWith(`--${k}=`))?.split('=')[1] ?? d);
+  const rooms = playRooms(routeSpine(), undefined, { players: num('players', 1), seed: num('seed', 1) });
+  if (args.includes('--json')) console.log(JSON.stringify(rooms.map(headline), null, 2));
+  else
+    console.table(
+      rooms.map(headline).map((h) => ({
+        room: h.id,
+        routeH: +h.routeHours.toFixed(2),
+        earned: Math.round(h.earned),
+        spent: Math.round(h.spent),
+        capped: Math.round(h.capped),
+        houses: h.houses,
+        seatHaulMin: +h.seatHaulMin.toFixed(1),
+        sourceSavedMin: +h.sourceSavedMin.toFixed(1),
+        goalsH: h.goalHours === null ? '-' : +h.goalHours.toFixed(2),
+      })),
+    );
+}
 else if (args.includes('--report')) {
   if (args.length !== 1) throw new Error('--report uses the complete fixed comparison suite; no other flags');
   writeCampaignReport(routes);
