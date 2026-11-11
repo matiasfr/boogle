@@ -3,10 +3,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { reviewVerdicts, type FileChange } from '../dev/review-stamp.ts';
+import { scratchRepo } from './helpers/scratch-git.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
@@ -110,55 +109,43 @@ test('test helpers and fixtures count, and so does a test reaching the sim throu
 
 // One stamp covers every classed file once anything needs review: a test line added after the review changes it.
 test('the stamp covers read files beside reviewed ones', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-stamp-'));
-  const git = (...a: string[]) => execFileSync('git', ['-C', dir, ...a], { encoding: 'utf8', stdio: 'pipe' });
-  const write = (f: string, text: string) => {
-    fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
-    fs.writeFileSync(path.join(dir, f), text);
-  };
-  const stamp = () =>
+  const repo = scratchRepo('review-stamp-');
+  const cli = (...a: string[]) =>
     execFileSync(
       process.execPath,
-      [path.join(ROOT, 'dev/review-stamp.ts'), dir, '--id', '--no-fetch', '--base', 'base'],
+      [path.join(ROOT, 'dev/review-stamp.ts'), repo.dir, '--no-fetch', '--base', 'base', ...a],
       {
         encoding: 'utf8',
+        env: repo.env,
       },
     ).trim();
   try {
-    git('init', '-q', '-b', 'main');
-    git('config', 'user.email', 't@example.invalid');
-    git('config', 'user.name', 't');
-    write('src/sim/railway.ts', 'export const a = 1;\n');
-    write(
+    repo.write('src/sim/railway.ts', 'export const a = 1;\n');
+    repo.write(
       'server/test/host.test.ts',
       "import { a } from '../../src/sim/railway.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
     );
-    git('add', '-A');
-    git('commit', '-qm', 'base');
-    git('branch', 'base');
-    write('src/sim/railway.ts', 'export const a = 2;\n');
-    write(
+    repo.git('add', '-A');
+    repo.git('commit', '-qm', 'base');
+    repo.git('branch', 'base');
+    repo.write('src/sim/railway.ts', 'export const a = 2;\n');
+    repo.write(
       'server/test/host.test.ts',
       "import { a, b } from '../../src/sim/railway.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
     );
-    git('commit', '-qam', 'reviewed');
-    const reviewed = stamp();
+    repo.git('commit', '-qam', 'reviewed');
+    const reviewed = cli('--id');
     assert.match(reviewed, /^[0-9a-f]{12}$/);
     // Still only a `read` change to the test (an import binding and a comment), yet the stamp moves.
-    write(
+    repo.write(
       'server/test/host.test.ts',
       "import { a, b, c } from '../../src/sim/railway.ts';\n// flaky\ntest('a', () => {\n  assert.ok(a);\n});\n",
     );
-    git('commit', '-qam', 'after the review');
-    const files = execFileSync(
-      process.execPath,
-      [path.join(ROOT, 'dev/review-stamp.ts'), dir, '--files', '--no-fetch', '--base', 'base'],
-      { encoding: 'utf8' },
-    );
-    assert.match(files, /^read server\/test\/host\.test\.ts: tests only/m);
-    assert.notEqual(stamp(), reviewed);
+    repo.git('commit', '-qam', 'after the review');
+    assert.match(cli('--files'), /^read server\/test\/host\.test\.ts: tests only/m);
+    assert.notEqual(cli('--id'), reviewed);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    repo.remove();
   }
 });
 
