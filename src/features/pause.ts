@@ -17,7 +17,7 @@ import { COLORS } from '../constants.ts';
 import { inputState } from '../player/input-state.ts';
 import { me } from '../player/player.ts';
 import { dom } from '../player/dom.ts';
-import { remotes, getRoomId } from '../netplay/net.ts';
+import { remotes, getRoomId, net, onNetState } from '../netplay/net.ts';
 import { requestLock } from '../player/input.ts';
 import { canvas } from '../render/scene.ts';
 import { openModal, closeModal, modalOpen } from '../player/modal.ts';
@@ -598,8 +598,12 @@ function build() {
   });
 }
 
+// A newer tab of this player took over (src/features/identity.ts): its card is this tab's only way back, so the menu
+// stays shut over it. Losing focus to that tab can end the pointer lock and open the menu just before the server says so.
+const superseded = () => net.error === 'elsewhere';
+
 export function openPause(start?: Page) {
-  if (!me.entered || open) return false;
+  if (!me.entered || open || superseded()) return false;
   if (!dlg) build();
   if (!openModal({ onKey, onPad })) return false;
   open = true;
@@ -626,7 +630,7 @@ export function closePause() {
   leaveTimer = 0;
   dlg.close();
   closeModal();
-  if (inputKind() === 'kbm' && !document.pointerLockElement) requestLock();
+  if (inputKind() === 'kbm' && !document.pointerLockElement && !superseded()) requestLock();
   canvas.focus({ preventScroll: true });
 }
 
@@ -638,6 +642,9 @@ pauseNavigation.open = (next) => {
   return openPause(next);
 };
 pauseNavigation.close = closePause;
+onNetState(() => {
+  if (superseded()) closePause();
+});
 
 registerAction('pause', {
   pad: 'menu',
