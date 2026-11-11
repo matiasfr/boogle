@@ -838,6 +838,32 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > margin is thin and the goal is not met:** the reviewer's best was 103.5 s against the 105 s bound, the one-minute
   > goal (train-riding rec 6) is not reached by any variant under these asks, and these asks are far heavier than a
   > playtest's. Four trains at today's hold are not safely under (1 of 10 over at 105.8 s).
+  >
+  > **Split (implementer, 11 November 2026): R3b-1 built, inert; R3b-2 (the bump) not started.** R3b-1, proven inert
+  > by the goldens, ops, schema and census tests passing with `GOLDEN` unset and nothing regenerated:
+  > - **The balanced hold** as a catalog field, `RailLineDef.balance` (the cap in ticks past the dwell), read by
+  >   `balancedHold` in `railway-trains.ts` at both ends after the headway check: hold while the gap ahead round the
+  >   circuit is shorter than the gap behind; never past the cap, never the wagon while `headExempt`, never while another
+  >   train waits behind at that end's signal. No catalog row sets it yet; the fixture (`V27_LINE2`) has `balance: 600`.
+  >   **Measured** (`FUZZ_TICKS=40000 FUZZ_SEEDS=c0ffee,777,15a4d,5eed,bee`, the fixture fuzz, three trains): worst lever
+  >   wait **87.7 s** (Quarry up, seed 5eed), 0 of 10 runs over 105 s, per seed 80.1, 77.2, 82.1, 87.7 and 82.4 s; the 75% and 0% runs
+  >   give identical waits (the balanced hold binds before the headway hold). The one-minute goal is not met.
+  > - `Q6 = 5` and `pierLaid(completed)` in `railway-line2-layout.ts`; the sim's and the adapter's "Q6 is laid" read them
+  >   (`stopsOf`, `footSet` site 2, `layLine2`'s breaker and pier opening, the old `trainStops` and `validateRailway`,
+  >   the adapter's `railStopsNow`); `layLine2`'s Q6 hunk is `endMoved(trainMoveIO(w), LINE2, 2, tick)`
+  >   (`trainMoveIO` in `railway-sys-trains.ts`). Not yet changed: `railway-line2.ts`'s and `railway-check-line2.ts`'s
+  >   `CART_ROAD.rackCm(LINE2_STATIONS.length - 1)` (the cart's farthest rack: R3b-2 decides it is Q6's).
+  > - The R3a delta review's two P3s: `checkTrains` throws any `trainRowBroken` message; a note at `railway-train.ts`'s
+  >   load-time catalog check.
+  > **Open for R3b-2, found while reading:** (1) where Q7's kit unloads (Q6's unloads at Far Head, stop 2, hard-coded
+  > in `trainIO.arrive`; `kitOwed`, `serviceOf` and the kit load in `standing` name slot 5): the plan gives Q7 `feed:
+  > 'train'` and a frame at the Pier but no unload stop; the Pier (stop 3, while it is the end) is the obvious reading,
+  > an orchestrator call. (2) Q7 needs a seventh depot output (`Rail.out6`, `DEPOT_OUT`). (3) The plan's file names are
+  > v26's monolith: `railway-systems.ts`'s hunks are now in `railway-sys-trains.ts` (`serviceOf`, `wagonArrives`,
+  > `headExempt`, `call`), `railway-sys-works.ts` (`footSet`, the `OPS` entries), `railway-sys-line2.ts` (`layLine2`);
+  > `railway-world.ts`'s are in `railway-components.ts` (`RAIL_COMPONENTS`, `DEPOT_OUT`), `railway-check.ts`
+  > (`ARCHETYPES`, counts) and a new `railway-check-ring.ts`; the adapter's `inspect()` still builds on the read model,
+  > so `ring` goes in from rows (`read.world()`), not through `Railway`.
 
   New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,

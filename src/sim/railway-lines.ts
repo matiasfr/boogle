@@ -57,6 +57,9 @@ export type RailLineDef = {
   speed: number;
   /** Cm a tick². */
   accel: number;
+  /** Set on a line with the balanced hold at its ends (railway-trains.ts, balancedHold): the most ticks past its dwell
+   * a train ready to leave an end waits for the gap ahead to grow to the gap behind. */
+  balance?: number;
 };
 
 const both = (p: RailPlatform) => [p, p] as const;

@@ -9,6 +9,7 @@
 //   blockFree(...)                whether a train may plan a leg to `dest` now: the block rule and the end blocks
 //   trainServes(...)              the train a lever ask (halt, way) is for: the nearest that way that can still brake
 //   planLeg(...)                  the leg a train plans from a pose: its next reason, or the farthest hold short of it
+//   balancedHold(...)             a line with `balance`: an end holds a train while the gap ahead is the shorter
 //   trainStepLine(io, line, tick) one line's trains for a tick: arrivals, turn-backs, holds, departures and replans
 //   endMoved(io, line, last, tick) the line runs on past its old end `last` (Q6, Q7, the rivet)
 //   stopMoved(io, line, k, tick)  halt k's stop moved on (the railhead's next bent)
@@ -268,6 +269,43 @@ function endStanding(line: LineRef, stops: readonly number[], r: Readonly<RailTr
   for (const b of endBlocks(line, stops)) if (b.dir === -dir && within(b, r.from)) return b.stop;
   return -1;
 }
+/** The balanced hold (a line's `balance`, ring-island-build1 R3b, call 47): a train ready to leave open end `from`
+ * waits while the gap to the train ahead of it round the circuit is shorter than the gap to the one behind, so trains
+ * that bunched under demand spread out again. It reads only the rows' poses (as blockFree does), costs nothing when
+ * the trains are already even, and never holds: past `balance` ticks after the dwell (the cap), the footing wagon's
+ * train while it is exempt from headway, or while another train waits behind at this end's signal (it would keep the
+ * end block shut). */
+export function balancedHold<L extends LineRef>(
+  io: TrainIO<L>,
+  line: L,
+  stops: readonly number[],
+  slot: number,
+  from: number,
+  tick: number,
+) {
+  const cap = lineDef(line).balance,
+    r = io.row(slot);
+  if (cap === undefined || io.headExempt(slot)) return false;
+  if (tick >= r.depart + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
+  const others = lineSlots(line).filter((k) => k !== slot);
+  if (!others.length) return false;
+  const b = endBlocks(line, stops)[from === 0 ? 0 : 1],
+    inbound = b.dir > 0 ? 0 : 1;
+  for (const k of others) {
+    const o = io.row(k);
+    if (o.to === -1 && o.dest === b.signal && o.track === inbound) return false;
+  }
+  const c = circuitLen(stops),
+    me = trainPose(r, line, stops, tick).c;
+  let ahead = c,
+    behind = c;
+  for (const k of others) {
+    const p = trainPose(io.row(k), line, stops, tick).c;
+    ahead = Math.min(ahead, circuitAhead(me, p, c));
+    behind = Math.min(behind, circuitAhead(p, me, c));
+  }
+  return ahead < behind;
+}
 export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
   if (io.awake < 0) return;
   for (const slot of lineSlots(line)) {
@@ -307,6 +345,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
       const head = headTicks(line, stops, io.headPct),
         left = from === 0 ? io.line(line).left0 : io.line(line).left1;
       if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
+      if (end && balancedHold(io, line, stops, slot, from, tick)) break;
       const reasons = trainReasons(io.row, line, stops, slot, io.line(line).req, tick, io.service(slot));
       const leg = planLeg(io.row, line, stops, slot, { s: r.from, v: 0, track: r.track }, tick, reasons);
       if (!leg) break; // held: the block ahead is not clear
