@@ -4,6 +4,15 @@
 > consideration only, and the replication component schema stays the portable layer. Every number below was measured
 > on `origin/main` at `bd34b181b` (world v26) with the commands named beside it. No designer review has run: the plan
 > changes no gameplay.
+>
+> **Amended 10 November for the owner's answers** (section 7;
+> [decision](../decisions-process.md#d-2026-11-10-ecs-migration-answers)). Changed from what this plan recommended: the
+> `Railway` read model is deleted entirely and its tests are rewritten against components (section 2, "The read model
+> goes entirely"; new steps M3c, M8b, T1 to T7 and M12b). As recommended: build-outs resume at the gates, views stay
+> objects that query, the re-export files go right after M3 with lint rules (new step M3b), Place's tools are deleted,
+> retargeted or archived by group (M13), and seats stay Host kind. State of the steps: M0, M0b, M1, M4 and M5 done; M2
+> reviewed and shipping; M6 building; M3 not started. The amendment's inventory was measured on `origin/main` at
+> `05696f2f1` with `rg`, the patterns named beside each number.
 
 # ECS migration, railway first: out of `src/proto`, onto components and queries
 
@@ -139,6 +148,11 @@ views, the server host and the validators. Timed values are queries too: `jobPro
 `railway-line-schedule.ts`, called by `layLine1`, `layLine2` and the query), which replaces the mirror's `advance()`.
 Queries never write: the client writes nothing to its mirror or to a prediction clone.
 
+Row readers sit beside them in `src/sim/railway-rows.ts` (M3c): one per component kind (`rail(w)`, `forge(w)`, `job(w, k)`, `jobRun(w, k)`,
+`train(w, slot)`, `account(w, pid)`, `piles(w)` and the rest of the 22). Each returns the stored row typed read-only,
+with no copy and no merged shape. They are what a test, a seed builder and a view read where they read
+`s.line2.forge.lit` today.
+
 ### Where views read from
 
 ```
@@ -154,6 +168,15 @@ Views stay `GameEntity` closures, the object layer over E's data, as ecs-e secti
 (`defineComponent` and `defineSystem` only in `src/sim/` and `src/world/`). What changes is that a view holds no
 derived logic of its own shape: it reads rows and calls queries.
 
+**Decided by the owner, 10 November:** "Views stay objects that read components through queries". His note beside the
+answer: "why should it not become a system?" The orchestrator is answering him; the answer stands unless he changes it.
+The plan's reasoning, kept: it is what Unity, Unreal and Bevy do with presentation (GameObjects over entity data,
+Actors over replicated properties, systems that write transforms from queried components), and it keeps three.js out
+of E. View systems would mean lifting the headless-only lint rule and growing E past its closed feature list, which by
+ecs-e's own rule is the moment to ask "adopt a library?" instead. What a system would add for a view is a declared
+`reads` list and a scheduled order; the first is what a query import already shows, and the second is the owner's
+`animate` order today.
+
 ### What `src/adapters/railway.ts` becomes, and when it goes
 
 - M1 pins its per-tick cache and stops evaluating the cache key 130 times a frame.
@@ -163,7 +186,67 @@ derived logic of its own shape: it reads rows and calls queries.
   `src/adapters/railway-session.ts` (connection, clocks, predictor, settle and corrections; ≤ 450 lines),
   `railway-intents.ts` (the intent types, wire validation and the `act` methods; ≤ 300) and `railway-effects.ts` (the
   accepted and corrected event shapes; ≤ 150). `src/adapters/railway.ts` is deleted in that step.
-  `railway-marks.ts` stays.
+  `railway-marks.ts` stays and takes a world instead of a `Railway`.
+
+### The read model goes entirely (owner, 10 November)
+
+Owner: "Delete it entirely and rewrite the tests against components". This overrules the plan's call to keep `Railway`
+for the load check, the seed builders and the tests (call 15). After M12b no code builds, reads or names the read
+model: not a frame, not a test, not a tool.
+
+**What reads it today** (`origin/main` at `05696f2f1`):
+
+| Reader | Size | How it reads | Replaced by | Step |
+| --- | --- | --- | --- | --- |
+| The model: `railwayView`, `fillRailway`, `refreshRailway`, `copyRailway` | `railway-read-model.ts`, 334 lines; the `Railway` type in `railway.ts`, imported by 21 files | builds it from rows | nothing: rows and queries are read directly | M12b deletes |
+| 33 domain facts that take a `Railway` (16 `line2…`, 13 `rail…`, `footingTotal`, `pierNeed`, `trainStops`, `worksStage`) | exported from `railway.ts`, `railway-line.ts`, `railway-line2.ts`, `railway-works.ts`, `railway-trains.ts`; named 314 times in 15 files of `test/`, 34 times in 4 of `server/test`, 45 in the adapter, 13 in `src/world`, 25 in 4 tool files | called on the model | the same fact as a query on the world, one per domain file | M8 adds, M12b deletes the old |
+| The load check: `validateRailway`, `validateRailLine`, `validateRailLine2`, `validateRailWorks`, `validateRailTrains`, `railwayInvariant` | 452 lines, about 90 `throw` sites; `railwayCheck` itself (archetypes, counts) is already on the world | `validateRailway(railwayView(w))` at every load | the same conditions on rows and queries | M8b |
+| Seed builders | `railway-seeds.ts`, `-seed-route.ts`, `-seed-works.ts` (544 lines), `server/src/seeds/build.ts` (42) | the live proxy | a world and the row readers | M3c |
+| The live proxy: `live`, `edit`, `worldOf`, `invariant`, `restore`, `hash` | `src/sim/railway-live.ts`, 113 lines; imported by 23 test-side files, the 3 seed files, the seed build and 1 tool | a `Proxy` that rebuilds the model after each rule | `src/sim/railway-drive.ts`: the same driver on a `World`, no proxy | M3c adds, M12b deletes the old |
+| Tests | **48 files, 10,513 lines**: 36 in `test/` (7,139), 12 in `server/test` (3,374). About 530 field reads off the model; 141 reads of the host's `rules.railway.railway` getter (116 in 12 server test files, 25 in the adapter and mirror tests) | proxy, getter, the 33 facts, `inspect().state` | rows, row readers and queries on a world | M3c, T1 to T7, M10f, M11, M12 |
+| Tools | `dev/loop/run.ts` (1,016), `dev/peer-test/ws-railway.ts` (1,008) and `ws-page.ts` (499); the spikes `dev/spikes/ecs/{railway-diff,predict-cost,server-path}.ts` | the getter, the proxy, the facts | the server API's `world()` and queries; the spikes are deleted | M11, M12b |
+| The server | `src/world/railway-server.ts` (469): the lazy `railway` getter, read at 5 sites (the resume cap, counts, phase, panel numbers) | builds the model after each change | queries on its world | M11 |
+| The predictor | `src/world/railway-predict.ts` (253): `railwayOf`, `cloneRailway`, `railPredict`, the `WeakMap` from model to world | its state is typed `Railway` | the cloned world | M12 |
+| The mirror | `src/world/railway-replicate.ts` (186): `refreshRailway` on each packet, `advance()` for the job clocks | patches the model | a published world; `jobProgress` | M12 |
+| The adapter | `src/adapters/railway.ts` (1,313): `buildState` over the model; `railway-marks.ts` (107) | third shape | `read` and queries | M10, M12 |
+
+Counted with `rg -lU "import[^;]*\bRailway\b[^;]*from '[^']*railway\.ts'"` (type importers), `rg -cw` over the 33
+names (calls, with imports and definitions), `rg -l "railway-live"` and `rg -c "railway\.railway\b"`. The earlier
+"about 11,000 lines of tests" was right to within 5%.
+
+**What the tests are rewritten against.** A world (`createRailway()` from `railway-drive.ts`, audit on), the rules by
+name (`apply(w, pid, action, tick)` is `railApply` then `railSettle`), rows through the row readers, facts through the
+per-domain queries. `edit(s, fn)` becomes `fn(w)`. A server test reads `host.rules.railway.world()`, which exists
+today. Nothing in a converted test names `Railway`, `live` or a `validateRail…` function.
+
+**What protects each slice.**
+
+1. The M0 goldens hash worlds, not the model, so they stay valid through all of it. M3c converts the seed builders and
+   must leave every stage hash and every ops hash unchanged without regenerating a fixture: that is the proof the
+   seeds still build the same worlds.
+2. M8's differential test holds every query equal to its `Railway` twin on seeded streams while both exist.
+3. M8b's check corpus holds the world checks equal to the old validators: every golden stage accepted, and one bad
+   world per `throw` site rejected with the same message by both.
+4. Each test batch carries two tables in its commit body, before and after, made by committed scripts (M3c): the
+   **census** (tests and `assert` calls per file: equal, or each difference named) and the **kill table** (which tests
+   fail under each of about twelve one-line rule mutations: identical). A conversion that weakens a test shows in
+   one of them.
+5. The old path is deleted last (M12b), with the differential test and the check corpus's old side, once nothing
+   else reads it.
+
+**Where the wipe is used** (owner: "we can do a full wipe at any time in development"; "Nothing waits on a world
+bump"). No step in this amendment needs a `WORLD_NS` bump as measured. Three places take one instead of writing
+code around a shape, each after `npm run heartbeat` shows no session:
+
+- M3c deletes `test/railway-snapshot.test.ts` and its v26 fixture now, not at the next bump: it is a save guard and a
+  reader of the model's check.
+- M8b: where an invariant can only be stated through a value the model derived and no row holds, the field is added
+  to the component and the world is bumped in that step. No derivation code is kept for a check.
+- M12: if publishing whole worlds to views is simpler with a changed component split (a `*Run` or `*Clock` row folded
+  into its parent, or the reverse), M12 takes the bump. No mirror code is written to preserve today's split.
+
+A step that takes a bump says so in its commit body and regenerates the M0 fixtures in a commit of its own, reviewed
+as a rule change.
 
 ### What leaves `src/proto/place/rail.ts`
 
@@ -195,10 +278,14 @@ deletes it with the rest of Place.
 | Shapes between a component row and a view | 3 | 0 |
 | `adapter.inspect()` call sites | 130 in 26 files | 0 |
 | `src/adapters/railway.ts` | 1,276 lines | deleted; session, intents and effects ≤ 900 lines together |
-| The `Railway` read model | rebuilt or patched on every packet, prediction and tick | never in a frame: the load check, the seed builders and tests only |
+| The `Railway` read model | 334 lines, rebuilt or patched on every packet, prediction and tick; its type imported by 21 files | **deleted**: `railway-read-model.ts`, `railway-live.ts` and the `Railway` type do not exist |
+| Facts and checks that take a `Railway` | 33 facts, 5 validators and `railwayInvariant` | 0; the load check is on the world |
+| Test lines that read the model | 10,513 in 48 files | 0; the same tests on rows and queries, census and kill table unchanged |
+| Re-export files in `src/sim` | 1 after M2, 2 after M3 | 0 after M3b |
+| Lines under `src`, `server`, `test` and `dev` that name `railwayView`, `refreshRailway`, `copyRailway`, `fillRailway`, `railwayOf`, `cloneRailway`, `validateRailway` or `railwayInvariant` (`rg -w`) | 130 in 24 files | 0 |
 
 "defineSystem coverage" is counted on what changes shared state, and it is already complete. Making views E systems
-is not part of "done" (open question 2).
+is not part of "done" (owner, 10 November; call 17).
 
 ## Design
 
@@ -213,8 +300,9 @@ is not part of "done" (open question 2).
 - **Controls:** none added, moved or renamed. No pad slot is claimed.
 - **Lint:** `src/sim/` files stay flat (above). `src/place/` joins the presentation layer in `dev/lint/policy.ts` beside
   `src/island/`. Moved files fall under `boogle/use-an-entity`: an owner parameter is required and
-  `lint-suppressions.json` does not grow. After M12, `railway-read-model.ts` may be imported only by
-  `railway-check.ts`, `railway-live.ts` and tests (a `no-restricted-imports` pattern).
+  `lint-suppressions.json` does not grow. M3b adds the boundaries the three-way split makes enforceable (view code
+  cannot import the check module or a system file; the components file is a leaf; queries do not import systems; the
+  read model's importers are a list that can only shrink until M12b deletes it).
 - **Server image:** `src/sim`, `src/world` and `src/ecs` are copied whole (`server/Dockerfile`, `dev/server-build.ts`,
   `deploy-server.yml`), so new files there need no listing. Queries stay in `src/sim/` for that reason;
   `test/server-image.test.ts` guards it.
@@ -226,8 +314,30 @@ is not part of "done" (open question 2).
 
 ## 3. Steps
 
-Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3; **B** (moves) M4, M5, M6, M7; **C**
-(adapter) M1. M8 joins A and C. M9 follows M6. M10 follows M6 and M8. Within a lane the order is fixed.
+Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3, M3b, then M3c beside M8; **B**
+(moves) M4, M5, M6, M7; **C** (adapter) M1. M8 joins A and C after M3b and shares no file with M3c; M8b follows both. M9 follows M6. M10 follows M6 and M8. The test batches T1
+to T7 follow M3c and M8 and share no file with each other or with M10. Within a lane the order is fixed.
+
+| Step | What | Tier | After | State |
+| --- | --- | --- | --- | --- |
+| M0, M0b | Guards: stage and ops goldens, schema golden | Low | | done |
+| M1 | Pin the adapter's per-tick read | Medium | | done |
+| M2 | Split `railway-world.ts` | High | M0 | reviewed, shipping |
+| M3 | Split the systems; the tick is a schedule | High | M2 | not started. **Gate: build-out rules** |
+| M3b | Remove both re-export files; lint the split (new) | High, mechanical | M3, the same day | |
+| M3c | A world driver; seeds and guards on the world (new) | High | M3b | |
+| M4, M5 | Render primitives; land and the village kit | Low to medium | | done |
+| M6 | The railway's modules out of Place; split `rail.ts` | Medium | M5 | building. **Gate: build-out views, with M8** |
+| M7 | The town's modules | Low to medium | M6 | |
+| M8 | The read facade; every fact as a query (grown) | High | M1, M3b; beside M3c | **Gate: build-out views, with M6** |
+| M8b | The load check on the world (new) | High | M8, M3c | |
+| M9 | Chunk and cull the track | Medium | M6 | |
+| M10 a to f | Views read rows and queries | Medium each | M6, M8 | six groups in parallel |
+| T1 to T7 | Tests rewritten on rows and queries (new) | Low each | M3c, M8 | seven batches in parallel |
+| M11 | The server and its tools read the world | High | M8, T5 to T7 | |
+| M12 | The predictor and the mirror on worlds; the adapter split | High | M10, M11 | |
+| M12b | Delete the read model (new) | High, deletions | M8b, T1 to T7, M12 | |
+| M13 | Delete Place | Medium to high | M7 | independent of M8 to M12b |
 
 ### Lane A: the sim
 
@@ -274,7 +384,8 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
   - Create `src/sim/railway-components.ts` (lines 1–275 with `createRailwayWorld`),
     `src/sim/railway-read-model.ts` (`railwayView`, `fillRailway`, `refreshRailway`, `copyRailway` and their helpers)
     and `src/sim/railway-check.ts` (`railwayCheck`, `validateRailway`, `railwayInvariant`, `ARCHETYPES`).
-    `railway-world.ts` becomes re-exports only, so its 34 importers do not change; M12 removes it.
+    `railway-world.ts` becomes re-exports only, so its 34 importers do not change; M3b removes it (was M12; owner,
+    10 November).
   - Keep the order of `RAIL_COMPONENTS` and of the spawns in `createRailwayWorld` byte for byte: fresh ids and the
     late-join order follow from them.
   - **WORLD_NS:** none; the three M0 goldens are the proof. **Mixed builds:** no wire or save change.
@@ -287,7 +398,8 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
     `qActive`, `gateDown`, `depotNeed`, `cartWants`, `cartServing`, `pierOwed`, `kitOwed`, `wagonSlot`, the singleton id
     getters). `railway-systems.ts` keeps the `OPS` table, exports `RAIL_SYSTEMS`, and re-exports `railApply`,
     `railTick`, `railSettle`, `railOutcome`, `railResume`, `railSession`, `railSupplyPulse`, the beam, boiler and foot
-    entry points and `railLine2Active`, so its 8 importers do not change.
+    entry points and `railLine2Active`, so its importers (10 today, not 8) do not change in this step. M3b removes
+    these re-exports the same day.
   - The six tick systems take one input, `{ tick: number; headPct: number }`. `railTick` becomes
     `TICK.run(w, 'tick', { tick, headPct })` with `TICK = createSchedule([...])`. Set `rail.worksTick` to order 4 and
     `rail.jobClock` to order 5, which is the order `railTick` runs today.
@@ -304,6 +416,80 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
     every tick; a system's `reads` or `writes` narrowed or widened in the move (audit mode throws on an undeclared
     access: run the server tests with audit on); a helper that read through a stale row after a `mut` in the old
     file and now reads a fresh one; `rail.jobClock` and `rail.worksTick` really touching disjoint components.
+- [ ] **M3b. Remove both re-export files; lint the split.** _High by path (`src/sim`, `src/world`, `server/`),
+      mechanical: import lines only. Right after M3, the same day._ Owner, 10 November: "Remove them right after M3,
+      with a lint rule".
+  - `dev/migrate/railway-imports.ts` (new, committed): a table from each exported name to the file that defines it
+    (the 34 names `railway-world.ts` re-exports; every name `railway-systems.ts` re-exports from a `railway-sys-*.ts`
+    file or from `railway-queries.ts`). It rewrites static imports, `import type`, `import()` and
+    `'/src/sim/…' as string` paths under `src`, `server`, `test`, `dev` and `protos`; splits one import into one per
+    defining file; keeps each `type` modifier; is idempotent; `--check` lists what is left and exits 1. The commit
+    body records the command. A build-out branch that started before M3b reruns it after its rebase.
+  - Delete `src/sim/railway-world.ts` (38 importers today: 20 in `test/`, 9 in `server/test`, 3 in `src/world`, 2 in
+    `src/sim`, 1 in `server/src`, 3 in tools). In `src/sim/railway-systems.ts` delete every re-export (10 importers:
+    2 in `src/world`, 1 in `src/sim`, 4 tests, 3 tools); it keeps what it defines: `OPS`, the tick schedule,
+    `RAIL_SYSTEMS`, `railApply`, `railTick`. Left alone: the 11 line 1 helper names `railway.ts` re-exports from
+    `railway-line.ts`; every one of them is deleted in M12b.
+  - `dev/lint/policy.ts`, `no-restricted-imports` patterns, each message naming this plan:
+    1. **The check module** (`railway-check.ts`, and `railway-check-*.ts` from M8b) is imported only by
+       `src/sim/railway-seed*.ts`, `src/sim/railway-drive.ts`, `src/sim/railway-live.ts`, `src/world/railway-server.ts`,
+       `server/**`, `test/**` and `dev/**`. So `src/entities`, `src/adapters`, `src/render`, `src/features`,
+       `src/player`, `src/place` and `src/debug` cannot import it.
+    2. **System files** (`railway-sys-*.ts`, `railway-systems.ts`) are imported only from `src/sim`, `src/world`,
+       `server`, `test` and `dev`. A view sends an intent; it never runs a rule. True today: no file outside those
+       imports `railway-systems.ts`.
+    3. **The components file is a leaf**: `railway-components.ts` imports no `railway-sys-*`, `railway-systems`,
+       `railway-queries*`, `railway-check*` or `railway-read-model` file.
+    4. **Queries do not import systems**: no `railway-queries*.ts` file imports a `railway-sys-*.ts` file or
+       `railway-systems.ts`.
+    5. **The read model's importers are a closed list**: `railway-read-model.ts` is imported only by
+       `railway-check.ts`, `railway-live.ts`, `src/world/railway-predict.ts`, `railway-replicate.ts`,
+       `railway-server.ts`, and the test and tool files that name it today, written out file by file. The list may
+       only lose lines; M12b deletes the rule with the file.
+  - `test/railway-census.test.ts` gains: no `src/sim/railway-*.ts` file holds an `export … from` line, except the one
+    block in `railway.ts` recorded in the test.
+  - **WORLD_NS:** none. **Mixed builds:** no wire or save change.
+  - **Verify:** `node dev/migrate/railway-imports.ts --check` reports nothing left; the M0 goldens unchanged;
+    `npm run loop -- run` equal byte for byte to base; `npm --prefix server test`; `npm run test:net`;
+    `npm run build` with the same chunk names and first-load gzip as base; each of the five lint rules shown to fail
+    on a throwaway import and reverted (the five messages go in the commit body).
+  - **Review:** independent, with a fresh `review-stamp`, through `ship-queue`. **Reviewer attacks:** an
+    `import type` turned into a value import (the server image and the entry chunk grow); module evaluation order
+    changing once the barrel is gone (a cycle that the barrel hid now reads a `const` before it is set: run
+    `npm run lint` for cycles and load each `src/sim/railway-*.ts` file alone in Node); a path the script missed in a
+    string (`rg "railway-world" src server test dev protos docs/agents` is empty apart from this plan's history); a
+    sixth boundary the split allows that this list missed.
+- [ ] **M3c. A world driver; the seeds and the guards on the world.** _High (`src/sim`, `server/src/seeds`). After
+      M3b. It is the first step of the read model's deletion and needs none of M8._
+  - `src/sim/railway-drive.ts` (new, at most 80 lines): `need`; `createRailway(): World` (audit on);
+    `apply(w, pid, action, tick, timing?)` (`railApply`, then `railSettle`); `invariant(w): string | null`
+    (`railwayCheck` on a JSON snapshot loaded into a fresh world, the message or `null`); `restore(w): World` (the
+    same round trip, hash asserted). No `Proxy`, no `Railway`.
+  - `src/sim/railway-rows.ts` (new): the row readers (section 2), one per component kind. Its own file, so this step
+    and M8 (which edits `railway-queries.ts`) share none and run at the same time.
+  - `railway-seeds.ts`, `railway-seed-route.ts`, `railway-seed-works.ts` (544 lines) and `server/src/seeds/build.ts`
+    take and return a `World`; `act`, `advance`, `logs` and `rails` take a world.
+  - `src/sim/railway-live.ts` stays where it is for the unconverted tests and gains `liveOf(w: World): Live`.
+    `test/helpers/railway-{q2,trains,works}.ts` keep their names and return `liveOf(seed())`, so no unconverted test
+    changes here. `test/helpers/rail.ts` (new) re-exports the driver, the world seeds, the row readers and the queries
+    for converted tests.
+  - Guards onto the world: `test/helpers/railway-golden.ts` (92 lines) and its 9 shards, `test/railway-ops.test.ts`
+    (216). Delete `test/railway-snapshot.test.ts` (38) and `test/fixtures/railway-v26-snapshot.json` (owner: save
+    guards are not a priority).
+  - Two committed scripts for the batches: `dev/migrate/test-census.ts <files>` (tests and `assert` calls per file)
+    and `dev/migrate/rail-mutants.ts <files>` (applies each of about twelve named one-line rule mutations in turn,
+    among them `TRAIN.dwellTicks` 50 to 51, a bill one log short, the forge lighting one log early, a carry cap raised
+    by one, a block signal ignored, the kiln's count off by one, the away credit's cap removed; runs the given test
+    files; restores the tree; prints the failing test names per mutation). Neither runs in `npm run check`.
+  - **WORLD_NS:** none. **Mixed builds:** nothing shipped changes; the seed builder writes the same saves.
+  - **Verify:** every stage hash in `test/fixtures/railway-golden.json` and every hash in
+    `railway-ops-golden.json` unchanged, with `GOLDEN` unset; `npm --prefix server test`; one seeded room loaded by
+    `npm run look -- --rail-seed q6-done`; `rail-mutants` kills every mutation with the goldens alone, or the
+    mutation list is extended until each rule file has one.
+  - **Reviewer attacks:** a seed step that used to read a value through the proxy after a rule and now holds a stale
+    row across an `apply` (rows are replaced, not patched); `invariant` weaker than the one it replaces (the old one
+    also ran `railwayInvariant` on the model: until M8b the driver calls it too); a mutation the script fails to
+    restore after a crash (it must work on a copy or restore in a `finally`).
 
 ### Lane C: the adapter read
 
@@ -335,7 +521,8 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
   - **Measured (counts, `look --rail-seed trains-on`, 301 frames, not a device):** reads per frame 137.5 both ways;
     key evaluations per frame **137.5 before, 1.0 after**; state builds and inspection builds 0.03 per frame
     both ways (9 vs 8 in 5 s). `npm run perf` was not run: counts, not timing under load, are the evidence.
-- [ ] **M8. The read facade and the timed queries.** _High (`src/sim`, `src/world`). After M1 and M3._
+- [ ] **M8. The read facade, the timed queries and every fact as a query.** _High (`src/sim`, `src/world`). After M1
+      and M3b, beside M3c. It may ship as the facade first and then one commit per domain file._
   - `src/sim/railway-line-schedule.ts`: `layProgress(spec, schedule, elapsed)`; `layLine1` and `layLine2` call it.
     `src/sim/railway-queries.ts`: `jobProgress(w, c, id, tick)` on the same function.
   - Four new query files, one per domain, so M10's groups never share one: `railway-queries-trains.ts`,
@@ -343,20 +530,50 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
     version of that domain's `Railway`-shaped helpers that have no world twin yet (`line2Served`, `line2CartStatus`,
     `line2Logs`, `line2Rails`, `worksStage`, `pierNeed`, `footingTotal`, `railPanelCount`, `railCounts`, `railPhase`,
     the train reads).
+  - **Grown by the owner's answer:** the four files and `railway-queries.ts` together hold a world version of all 33
+    facts that take a `Railway` today (section 2's table), not only the ones a view reads, because the tests and the
+    load check need the rest (`railCarryMax`, `railAxeAvailable`, `railBeamChoppable`, `railMaxDuration`,
+    `line2PackReady` and the like). Same names, a `World` first argument, exported from the domain's query file. The
+    old ones stay untouched until M12b.
   - `src/world/railway-predict.ts`: export `worldOf(s: Railway): World | undefined` (today's private `worlds` map).
   - `src/adapters/railway.ts`: add `read = { world: () => worldOf(view())!, tick, tickNow, pid, status: () => status }`.
     `src/entities/railway/state.ts`: `railwayWorldRead()` beside `railwayRead()`. `read.world()` is always the world
     behind the read model the views see now, so it inherits today's consistency rule: a read model is linked to a
     world only once that world is whole, and a refill is built aside and swapped in at its last chunk.
   - `test/railway-queries.test.ts`: on seeded action streams with ticks, every query equals its `Railway` twin on
-    `railwayView(w)`, and `jobProgress` equals `rail.at(tick)` for every job at every tick, on the confirmed mirror and
-    on a predicted clone with a held-back threshold.
+    `railwayView(w)` (all 33, listed in the test so a missing one fails), and `jobProgress` equals `rail.at(tick)` for
+    every job at every tick, on the confirmed mirror and on a predicted clone with a held-back threshold. The test is
+    temporary: M12b deletes it with its old side.
   - **WORLD_NS:** none. **Mixed builds:** no wire change.
   - **Verify:** the differential test; the M0 goldens unchanged; `npm run loop -- run` equal to base.
   - **Reviewer attacks:** `jobProgress` on a job funded in a prediction (the mirror's `ahead` and `end` against the
     clone's rows); a completed job whose `end` is still −1 in the clone; the view world changing identity between two
     reads in one frame; `read.world()` before the first whole state, after a `reset()` and during a refill (it must
     never return a half-filled world).
+- [ ] **M8b. The load check on the world.** _High (`src/sim`; what a save must satisfy to load). After M8 and
+      M3c._
+  - `src/sim/railway-check.ts` keeps `railwayCheck(w)` (archetypes, counts, row limits) and calls four new flat
+    files instead of `validateRailway(railwayView(w))`: `railway-check-line1.ts`, `railway-check-line2.ts`,
+    `railway-check-trains.ts`, `railway-check-works.ts`, with the account, pile, outcome and catalog conditions of
+    `validateRailway` in `railway-check.ts` itself. Each holds its old validator's conditions (452 lines, about 90
+    `throw` sites) restated on row readers and queries, with the same message strings.
+  - `test/fixtures/railway-bad-worlds.ts`: one entry per `throw` site, `{ message, break: (w) => void }`, built on a
+    golden stage. `test/railway-check.test.ts`: every golden stage passes the world check; every bad world is refused
+    with its message. While the old validators exist the test also runs `validateRailway(railwayView(w))` on the same
+    worlds and requires the same verdict and message. A `throw` site no world edit can reach (an archetype or count
+    check refuses first) is listed in the fixture with that reason.
+  - Production switches in this step: the server's load, the seed build and the driver's `invariant` run the world
+    check only. The old validators stay, unused by production, until M12b.
+  - A build-out's component adds its check as its own function in its own file, called from `railwayCheck`
+    (call 16), and one entry per `throw` to the bad-worlds fixture.
+  - **WORLD_NS:** none expected. If a condition needs a value no row holds, add the field and bump here (section 2,
+    "Where the wipe is used").
+  - **Verify:** the check test; the M0 goldens unchanged; `npm --prefix server test`; the load check's time on the
+    `q6-done` stage before and after (expected lower: no model is built).
+  - **Reviewer attacks:** a row reader returning `undefined` where the model threw "missing", so a condition passes
+    on nothing; a condition dropped in the restating (count the `throw` sites: old and new must match, or the
+    difference is named); two faults in one world reporting a different message than before (accepted, and noted);
+    the client: confirm nothing in `src/world/railway-replicate.ts` or the adapter relied on the old check.
 
 ### Lane B: out of `src/proto`
 
@@ -464,6 +681,9 @@ later change with a bundle report. Place's remaining callers get one owner from 
     the view into that group's own query file (a: `railway-queries-trains.ts`, b: `-line1.ts`, c: `-line2.ts`,
     d: `-works.ts`; e and f add none, and ask for one through the owning group) with a test. A group that adds a query
     edits `src/sim` and ships as High. Adapter fields nobody reads any more are deleted in M12, not here.
+  - A view's unit test builds a world with the M3c driver and seeds and passes it as `read.world()`; no group adds a
+    `Railway`-shaped or `inspect()`-shaped literal. Group f also changes `townRead(s: Railway)` in
+    `src/sim/town-facts.ts` to `townRead(w)` and converts `test/town-facts.test.ts` (111 lines).
   - **a. Trains and halts:** `train-view`, `halts-view`, `halt-map`, `request-lever`, `up-platforms`, `stock-sign`
     (and `railServing`, `railTrainAsked`, `railTrainHeld`, `railOpenEnd` from the adapter become queries).
     **b. Line 1:** `view`, `sources`, `panel-view`, `path`, `reward`, `crates-view`, `great-tree-view`, `line-cargo`,
@@ -480,9 +700,43 @@ later change with a bundle report. Place's remaining callers get one owner from 
   - **Reviewer attacks:** a predicted press that no longer shows on the press (owner call "Input gets instant
     feedback"); a view holding a row across a packet (rows are replaced, not patched); a count that read
     `availableCarry` and now ignores pending actions.
-- [ ] **M11. The server reads the world.** _High (`src/world`, `server/`)._
+- [ ] **T1 to T7. The tests, rewritten on rows and queries.** _Low each (tests only). After M3c and M8. Seven
+      batches, one agent each, in parallel: no two batches, and no batch and M10 group, edit the same file._
+  - Per batch: state is a `World` from `test/helpers/rail.ts`; `s.a.b` reads become row readers; the 33 facts become
+    their queries; `edit(s, fn)` becomes `fn(w)`; `invariant`, `restore` and `hash` come from the driver; a server
+    test reads `host.rules.railway.world()` instead of `rules.railway.railway`. No batch edits a file under `src/`,
+    the legacy helpers (`test/railway-live.ts`, `test/helpers/railway-{q2,trains,works}.ts`) or another batch's files.
+    A batch that needs a reader or a query that does not exist stops and asks for it through M8's owner.
+  - Per batch, in the commit body: the census before and after (`dev/migrate/test-census.ts`) and the kill table
+    before and after (`dev/migrate/rail-mutants.ts`) for its files. Test and `assert` counts equal and the kill tables
+    identical, or each difference named with its reason. An assertion on a model-only shape (the flattened station 1
+    fields, `falls`) is restated on the rows it was derived from, not dropped.
+
+  | Batch | Files | Lines |
+  | --- | --- | --- |
+  | T1 line 1 and core | `test/railway.test.ts` (168), `railway-line.test.ts` (203), `railway-line-authority.test.ts` (517), `railway-placement.test.ts` (131), `railway-supply.test.ts` (236) | 1,255 |
+  | T2 line 2 | `test/railway-line2.test.ts` (656), `railway-cart.test.ts` (205), `railway-boiler.test.ts` (302), `review-v25.test.ts` (88) | 1,251 |
+  | T3 trains | `test/railway-train.test.ts` (582), `railway-trains.test.ts` (556), `review-v26.test.ts` (226) | 1,364 |
+  | T4 works | `test/railway-works.test.ts` (562), `railway-set-down.test.ts` (94) | 656 |
+  | T5 server, the lines | `server/test/railway-line-host.test.ts` (806), `railway-host.test.ts` (474) | 1,280 |
+  | T6 server, works and away | `server/test/railway-works-host.test.ts` (370), `railway-away.test.ts` (304) | 674 |
+  | T7 server, supply and the rest | `server/test/railway-supply-durability.test.ts` (258), `railway-supply-order.test.ts` (76), `fixtures/railway-supply-fixture.ts` (114), `railway-tuning-budget.test.ts` (179), `railway-actor-checks.test.ts` (152), `railway-crash.test.ts` (108), `railway-shared-unlock.test.ts` (167), `jump.test.ts` (366) | 1,420 |
+
+  The other 2,613 lines convert with the step that changes what they test: the guards in M3c (382, of which 38 are
+  deleted), `test/town-facts.test.ts` in M10 f (111), `test/loop-graph.test.ts` in M11 (77), the adapter, mirror and
+  marks tests in M12 (2,032), and the 11 lines of legacy helpers are deleted in M12b. Total 10,513.
+  - **Verify (each batch):** its files pass; `npm run check`; the two tables.
+  - **Reviewer attacks:** an assertion that compared two reads of the same live proxy and now compares one row with
+    itself; a row held across an `apply` (stale: rows are replaced); a test that passed through the proxy's
+    read-only guard and now writes a row without `mut` (audit mode throws: keep audit on in every converted test); a
+    `deepEqual` against a whole model object silently narrowed to two fields.
+- [ ] **M11. The server and its tools read the world.** _High (`src/world`, `server/`). After M8 and T5 to T7 (they
+      are the getter's last test readers)._
   - `src/world/railway-server.ts`: `counts`, `phase`, the panel numbers and `railMaxDuration` come from queries; the
     lazy `railway` getter goes. `dev/loop/run.ts` and `dev/loop/host.ts` read through the same API.
+  - Tools off the model in the same step: `dev/loop/run.ts` (1,016 lines; 7 calls of the old facts),
+    `dev/peer-test/ws-railway.ts` (1,008; the proxy and 6 getter reads) and `ws-page.ts` (499), and
+    `test/loop-graph.test.ts` (77), which casts a literal to `Railway`.
   - **Verify:** `npm --prefix server test`; `npm run test:net`; `npm run loop -- run` equal to base; `npm run load` on
     three rows with server ms a step no worse than base.
   - **Reviewer attacks:** reach and cadence checks unchanged for every op (replay `server/test/railway-actor-checks`
@@ -493,9 +747,14 @@ later change with a bundle report. Place's remaining callers get one owner from 
     becomes explicit in `createRailwayMirror`: packets write an ingest world, and `confirmed()` is a copy-on-write
     clone published only when `mirror.whole()` and a packet has fully applied; views and the predictor read
     `confirmed()`, and the adapter's `frozen` holds a published world. `src/adapters/railway.ts` is split and deleted
-    (section 2). `railway-read-model.ts` stays for `railway-check.ts`, `railway-live.ts` and tests, behind the lint
-    pattern; the `Railway`-shaped helper names tests use become wrappers in `railway-live.ts` that call the query on
-    the live view's world. `railway-world.ts` (the barrel) is deleted and its 34 importers rewritten by script.
+    (section 2). Nothing of the read model survives this step in `src/world` or `src/adapters`: M12b then deletes
+    the files. (The barrel `railway-world.ts` went in M3b.)
+  - Tests rewritten here, 2,032 lines, with the census and kill table as in the batches:
+    `test/railway-adapter.test.ts` (971), `test/railway-adapter-m1-review.test.ts` (205),
+    `test/railway-replicate.test.ts` (729), `test/railway-marks.test.ts` (127). A test whose subject this step
+    deletes (the frozen read's identity and its per-frame memo from M1, `buildState`'s shape) is deleted and listed
+    by name in the commit body; a test of behaviour (prediction, settle, corrections, refill, reset, late join) is
+    converted, never dropped.
   - **Verify:** `test/railway-replicate.test.ts` and `test/railway-adapter.test.ts` (rewritten onto worlds: predicted
     state equals the server's after the last ack for 2 to 6 simulated clients); `npm run test:net`; `npm run load`, all
     rows and `crowd`, with corrections and press-to-effect no worse than base on the same machine and session;
@@ -503,11 +762,73 @@ later change with a bundle report. Place's remaining callers get one owner from 
   - **Reviewer attacks:** thresholds shown early (a bill that reads complete before the server says so); effects
     played twice (once predicted, once confirmed); a correction with no recipient; a late joiner mid-chunk, a refill
     and a `reset()` each reading a half-filled or empty world; memory held by retained clones.
+- [ ] **M12b. Delete the read model.** _High by path (`src/sim`), deletions only. After M8b, T1 to T7, M10, M11 and
+      M12._
+  - Delete `src/sim/railway-read-model.ts`, `src/sim/railway-live.ts`, `test/railway-live.ts`,
+    `test/helpers/railway-{q2,trains,works}.ts`, the `Railway` type and `railAccount`, `railCounts`, `railPhase` and
+    the re-export block in `railway.ts`, the other 30 facts and the five validators in `railway-line.ts`,
+    `railway-line2.ts`, `railway-works.ts`, `railway-trains.ts` and `railway-check.ts`, `railwayInvariant`, the old
+    side of `test/railway-check.test.ts`, `test/railway-queries.test.ts`, and the spikes
+    `dev/spikes/ecs/{railway-diff,predict-cost,server-path}.ts` (answered; they compare against the model).
+  - Lint: M3b's rule 5 goes with the file. In its place a `no-restricted-syntax` rule refuses an export named
+    `Railway`, `railwayView` or `validateRail…` under `src/sim` and `src/world`, so the shape does not grow back
+    under a build-out.
+  - Row-shaped types the rules and views still use (`RailTrain`, `RailCart`, `RailAccount`, `RailPile` and the like)
+    stay: they are component rows, not the model.
+  - **WORLD_NS:** none. **Mixed builds:** nothing a client or a save sees.
+  - **Verify (the numbers in section 2's "done" table):** the `rg` line there is empty; no file imports a type
+    named `Railway`; `npm run check`; the M0 goldens unchanged; `npm run loop -- run` equal to base;
+    `rail-mutants` over the whole railway test set kills what it killed before T1.
+  - **Reviewer attacks:** a domain file left with a dead import or a helper only the deleted code called
+    (`npm run scan`); a doc that still describes the model as current (`ecs-e.md` section 4, `sync.md`,
+    `src/sim/AGENTS.md`).
 - [ ] **M13. Delete Place.** _Medium to high (tools). After M7; independent of M8–M12._
   - [place-retirement](place-retirement.md) job D1 as written (D1a flags, D1b pause, D1c the Dev menu, D1e tools),
     plus the 230-line remainder of `rail.ts` and `place-owner.ts`. Tag the parent `archive/place` first. It needs the
     D1 brief on what still drives Place (orchestrator-state, Leftovers): 148 files name the entry, 53 of them look
     evals and 9 beats.
+  - **Owner, 10 November:** "Delete the ones with a live-game twin, retarget the level check, and tag an archive of
+    Place first". The tools by group, from `rg -l "proto=place|proto/place|__place"` over `dev`, `test`, `server` and
+    `protos` at `05696f2f1` and [place-retirement](place-retirement.md)'s list. The M13 brief names each deleted
+    file's twin before it goes; a file found to have none moves to group 3.
+    1. **First:** tag the parent commit `archive/place` and push the tag; name it in the commit body and in
+       `docs/game-design/place.md`.
+    2. **Delete (a live-game twin exists: a `railway-*` eval, the railway bot, a rail seed).**
+       Evals in `dev/look/evals/`: `place-act`, `place-big-reload`, `place-cart-whistle`, `place-contact`,
+       `place-coop`, `place-corner`, `place-cues`, `place-draws`, `place-early-beam`, `place-exploring`,
+       `place-forge-reconcile`, `place-great-carry`, `place-job`, `place-kit-draws`, `place-partner-load`,
+       `place-personal-saves`, `place-seats-workshop`, `place-split`, `place-tech`, `place-tech-act`,
+       `place-town-coop`, `place-trees`, `place-trees-coop`, `placement-audit`, `replay-bridge`,
+       `replay-idle-landing`, `replay-pause-bottom`, `replay-pause-talk`, `replay-phone-cost`, `sheet-enter`,
+       `sheet-glide`, `sheet-hook`, `sheet-opening`, `sheet-ride`, `double-jump`, `track-layer`,
+       `track-layer-action`, `track-panel-contract`, `tunables-chop` (39 files).
+       Bots: `dev/look/bots/place.ts`, `place-landing.ts`, `double-jump.ts`.
+       Harness: `dev/look/checkpoints.ts`, `restore-pair.ts`, `coop-warp.ts`, `saves.ts`;
+       `dev/video/shots/place.ts`, `round4.ts`, `round4-pair.ts`.
+       Tests: `test/big-cargo.test.ts`, `train-nudge.test.ts`, `place-coop-snapshot.test.ts`, `restore-pair.test.ts`,
+       `checkpoint-pair.test.ts`.
+    3. **Retarget onto the live game (no twin; the subject is not Place).**
+       Evals that only pass the old entry: `axe-chop`, `carry-tag`, `color-defaults-capture`, `color-defaults-unlit`,
+       `draw-overflow`, `fixed-exposure-controls`, `fixed-exposure-review`, `gpu-reload`, `sky`, `tone`; and the
+       railway evals that still name it: `railway-b4-at`, `railway-b5b8-at`, `railway-bench`, `railway-clips`,
+       `railway-halts` (its `__place.skipTrains()` becomes `--rail-seed trains-on`), `railway-job`,
+       `railway-passenger-car`, `railway-passenger-car-two`.
+       Beats: `dev/look/beats/{chair-comparison,cloud-warmth,colour-textures,dev-looks,lighting-wedge,material-palettes,terrain-cove,unlit,visual-pipeline}.ts`
+       and `dev/look/fixtures/chair-comparison.ts`.
+       Harness and others: `dev/look/playthrough.ts`, `coop-playthrough.ts`, `observe.ts`, `sheet.ts`, `segments.ts`,
+       `garage-showroom.ts`, `bots/railway.ts`; `dev/codex/see.ts`, `dev/audio/render.ts`, `dev/patch.ts`,
+       `dev/scan/retained.ts`, `dev/scan/task-routes.ts`, `dev/scenarios/run.ts`, `dev/scenarios/reconnect-edit.ts`,
+       `dev/playtest/beats.ts`, `dev/loop/graph.ts`, `dev/economy/model.ts`; `protos/protos.ts` (the card keeps the
+       id `place`, call 12).
+       Tests: `test/invite-flags.test.ts` (the new `pageQuery`), `loop-graph.test.ts`, `railway-line.test.ts`,
+       `railway-works-layout.test.ts`, `seat-claims.test.ts` (import paths and comments).
+    4. **Retarget the level check.** `dev/level/check.ts` (its `--place=place` progression, from line 406, with constants
+       copied from Place's layout) and `dev/level/replay.ts` are rewritten onto railway seeds and
+       `src/sim/railway-*-layout.ts`; `dev/level/spatial.ts`, `track-continuity.ts`, `world-blockout.ts` and
+       `dev/economy/place-level.ts` follow; `grounding-props.ts`, `grounding-track.ts`, `timber-track.ts` and
+       `machine-clearance.ts` were pointed at `track.ts` by M6 and lose their last Place path here. `npm run
+       level-check` keeps every assertion that is about the live world; an assertion about a Place-only state is
+       listed in the commit body and removed.
   - Also from M5 (deferred, same reason): `land.ts` `addStatic` takes the owner, and its `scene.add`/`addBody`, `pieces.ts`,
     `look-kit.ts`, `look.ts` and `folk.ts` adds and hooks go to an owner; `look-kit` takes `boilerShown: () => boolean` from its
     caller; then `src/place/**` leaves the three `dev/lint/policy.ts` exemptions.
@@ -520,6 +841,9 @@ later change with a bundle report. Place's remaining callers get one owner from 
 
 ## 4. What waits on what
 
+**Decided by the owner, 10 November:** "Resume at the gates: rules work after M3, view work after M6 and M8". The
+held builds do not wait for the whole migration.
+
 | Held build-out | Its rules may resume after | Its views may resume after | Why |
 | --- | --- | --- | --- |
 | Ring Island v27 ([plan](ring-island-build1.md), amended on `plan/ring-island-buffers`) | **M3** (M8 preferred, below) | **M6 and M8** | R3 adds `Aperture`, four op systems and wagon logic to the files M2 and M3 split. Rebasing new rules over a file split is the expensive direction; the split itself rebases over nothing. R4's views edit `train-view`, `halts-view`, `crossing-view` and `view`, all of which M6's script rewrites |
@@ -530,15 +854,32 @@ later change with a bundle report. Place's remaining callers get one owner from 
   start today; going first would cost one rebase over M6's generated import lines and one more file in M10. It is
   waiting on its install-moment spec anyway, so the recommendation is to start it when that spec lands, whichever side
   of M6 that falls.
-- **Ring Island is cheaper after M8, not only after M3.** Written after M8, `Aperture`'s invariants go on the world
-  (`validateRailRing(w)`, called from `railwayCheck`) and its views read rows, so it adds nothing to `railwayView`,
-  `refreshRailway`, `copyRailway` or `buildState`, all of which M12 deletes. Written before, it adds a field to each.
+- **Do the gates still hold with the read model deleted? Yes: neither gate moves.** Checked against each change:
+  - _The rules gate stays at M3._ A rule written after M3 needs nothing from the model: its component is appended to
+    `RAIL_COMPONENTS`, its check is its own function on the world called from `railwayCheck` (which takes a world
+    today), and its tests call the systems on a world and read rows with `w.get`. It must not add a field to
+    `railwayView`, `refreshRailway` or `copyRailway`, a `Railway`-shaped helper, or a test on the live proxy: each
+    would be new work for T1 to T7 and M12b. M3b's lint rule 5 refuses the import.
+  - _M3b and M3c follow M3 by a session each and do not hold it._ A build-out that starts between M3 and M3b reruns
+    `dev/migrate/railway-imports.ts` after its rebase (generated lines only). One that starts before M3c writes its
+    tests with `railApply` and `w.get` directly; the driver and the row readers are conveniences, and its tests are
+    then already in the converted form.
+  - _The views gate stays at M6 and M8._ M8 still waits only on M1 and M3 (and M3b's import lines); the new M3c runs
+    beside it, not before it. M8 is larger than it was (all 33 facts, not about a dozen), so the gate arrives later
+    in hours, not in steps. If that matters on the day, M8 ships as the facade first: `read.world()`
+    and the timed queries are all a new view needs, and the gate is that first commit.
+  - _A new view is born on `read` and queries_, as before, so it adds nothing to `buildState`.
+- **Ring Island is cheaper after M8, not only after M3,** for its views alone now: written after M8 they read rows,
+  so nothing is added to `buildState`, which M12 deletes. Its rules no longer gain from waiting.
 - **What the amended Ring Island plan should change:** `railway-ring.ts` exports its component and systems; `OPS` and
   `RAIL_COMPONENTS` gain one line each in the index files; its tick work is its own system with the next free tick
   order, not edits inside `trainIO`, where that can be done without changing the wagon's rules.
-- **The tail does not hold build-outs.** M10 to M13 run beside them with one agent. A build-out's new view is born on
-  `read` and queries; a build-out that edits an old view does not convert it.
-- Lane A is three steps and lane B four, each one agent session of mechanical work with a review, and M8 is one more,
+- **The tail does not hold build-outs.** M8b, M10, T1 to T7 and M11 to M13 run beside them. A build-out's new view is
+  born on `read` and queries; a build-out that edits an old view does not convert it; a build-out that edits an
+  unconverted test file tells that file's batch, and the batch rebases over it.
+- **What the tail waits on, in order:** M3 → M3b → (M3c and M8 at once) → (M8b, M10 a to f, T1 to T7 at once) → M11 (after T5 to
+  T7) → M12 (after M10 and M11) → M12b (after M8b, every T batch and M12). M9 and M13 hang off lane B alone.
+- Lane A is five steps and lane B four, each one agent session of mechanical work with a review, and M8 is one more,
   so both gates can be reached while the v27 plan's amendment and re-review are still in progress.
 
 ## 5. After the railway: the rest of `src/proto`
@@ -633,6 +974,29 @@ non-integer), since it is wire input.
 8. Focused tests per change; the long run on command only. Owner, 10 November.
 9. The Boogler's copy and the town's lines are never edited. AGENTS.md.
 
+**Decided by the owner on this plan's questions, 10 November 2026**
+([decision](../decisions-process.md#d-2026-11-10-ecs-migration-answers); the numbers are the calls below that each
+answer rules on):
+
+- **15, overruled.** Keep the old railway "read model" for tests and tools only?: "Delete it entirely and rewrite the
+  tests against components". Section 2, "The read model goes entirely".
+- **16, decided as recommended.** Do the held builds resume part-way through the migration, or only when it is all
+  done?: "Resume at the gates: rules work after M3, view work after M6 and M8".
+- **17, decided as recommended.** Should the code that draws things become ECS systems too?: "Views stay objects that
+  read components through queries". His note: "why should it not become a system?" The orchestrator is answering
+  him; the answer stands unless he changes it.
+- **21, decided as recommended.** Make train seats server-owned now?: "Not in this migration; do it with the
+  passenger and train work".
+- **23, decided as recommended.** The temporary re-export files: remove them early or at the end?: "Remove them right
+  after M3, with a lint rule". Step M3b.
+- **24, decided as recommended.** What happens to the tools that only drive the old Place game?: "Delete the ones
+  with a live-game twin, retarget the level check, and tag an archive of Place first". Step M13.
+- On the same page, for the express and not this plan: the bought passenger train at Home, does it stand in the
+  Roundhouse?: "No: the Roundhouse stays the upgrade screen only; find it a bay elsewhere"
+  ([Rail](../decisions-rail.md#d-2026-11-10-the-passenger-set-does-not-stand)). Changed from the recommendation.
+- Binding from the same day ([owner calls](../agents/owner-calls.md)): "Don't priotiize save guards. we can do a full
+  wipe at any time in development" and "Nothing should wait on a world bump".
+
 **Default** (existing practice applied here):
 
 10. Sim files stay flat with the `railway-` prefix. Source: the sim lint pattern in `dev/lint/policy.ts`.
@@ -646,17 +1010,37 @@ non-integer), since it is wire input.
 
 14. The moves (place-retirement R1 to R3) run before D1, railway first; Place keeps running on a small owner shim
     until M13. Why: the live code leaves `src/proto` now without waiting for 148 tool files to be retargeted.
-15. The `Railway` read model survives for the load check, seed builders and tests only. Why: about 11,000 lines of
-    railway tests read it; rewriting them buys nothing a player or a port would notice.
+15. ~~The `Railway` read model survives for the load check, seed builders and tests only.~~ **Overruled by the
+    owner, 10 November** ("Delete it entirely and rewrite the tests against components"). The model, its helpers,
+    its validators and the live proxy are deleted; 10,513 lines of tests are rewritten on rows and queries.
 16. Build-outs resume at two gates (rules after M3, views after M6 and M8), and a new component's invariants are
-    written on the world.
+    written on the world. **Decided by the owner, 10 November.**
 17. "defineSystem coverage" is counted on shared-state writes. Derived logic moves to queries; views are not systems.
+    **Decided by the owner, 10 November**, with his question recorded above.
 18. The tick order becomes a `createSchedule`; `rail.worksTick` and `rail.jobClock` are re-declared 4 and 5 to match
     the order that runs today.
 19. A committed schema golden, and a test that fails a schema change without a `WORLD_NS` change.
 20. `rail.ts` splits into four files in `src/entities/railway/`; Place's own train stays behind until M13.
-21. Seats stay Host kind through this plan.
+21. Seats stay Host kind through this plan. **Decided by the owner, 10 November.**
 22. Per-component digests are computed outside E, so the core does not grow.
+23. The re-export files go right after M3, by a committed script, with lint rules (M3b). **Decided by the owner, 10
+    November.**
+24. Place's tools: delete those with a live-game twin, retarget the level check, tag `archive/place` first (M13).
+    **Decided by the owner, 10 November.**
+
+**New with the amendment** (the planner's, logged in [agent-calls](../agent-calls.md) under Architecture):
+
+25. Tests are rewritten in seven batches by file, each proved by a census and a kill table from committed scripts.
+    Why: a conversion that drops or weakens an assertion is otherwise invisible in a green run.
+26. The world driver and the seeds move first (M3c), before any query work, so a build-out's tests are born in the
+    converted form.
+27. The load check moves to the world with one bad world per `throw` site, checked against the old validators while
+    both exist (M8b).
+28. A test whose subject is deleted (the frozen read's identity, `buildState`'s shape) is deleted and listed by
+    name; a test of behaviour is always converted.
+29. Row-shaped types (`RailTrain`, `RailAccount` and the like) stay: the owner's answer is read as deleting the
+    derived model, not the rows' types.
+30. The answered spikes under `dev/spikes/ecs` that compare against the model are deleted in M12b.
 
 ## Level findings
 
@@ -664,6 +1048,10 @@ The plan places nothing in the world, moves nothing and gates nothing, so there 
 level-check` was not run for new positions. It matters as a regression check: M5, M6 and M9 must leave its reports
 (track continuity, grounding, machine clearance) identical to base, and M6 changes how five of its tools read the
 track's source.
+
+The amendment places nothing either. The passenger set's bay at Home (open question 1) is the express's to place:
+the level check runs on the designer's proposed bays before the owner picks, not here. M13 rewrites the level
+check's Place progression onto railway seeds; its reports on the live world must not change.
 
 ## 8. Risks
 
@@ -685,36 +1073,58 @@ track's source.
    rising when the predictor's state changes type, or a view reading a world mid-fill: today the read model is also
    the consistency boundary (it is relinked only to a whole world), and M12 has to rebuild that rule on worlds. This is the owner's acceptance test for netcode ("Input gets instant feedback").
    Guards: M8's differential test lands the queries while the old path still exists; `npm run load` with corrections
-   and press-to-effect against base in the same session; two-page looks of a contested take.
+   and press-to-effect against base in the same session; two-page looks of a contested take. With the read model
+   deleted there is no old path to fall back to after M12b: M12 ships and is watched for a day of `npm run load`
+   rows before M12b deletes the files.
+4. **The test rewrite weakens the suite without anyone seeing it** (new with the owner's answer). 10,513 lines are
+    converted by agents; a dropped assertion, a comparison of a row with itself, or a `deepEqual` narrowed to two
+    fields still passes. These tests are the only thing that says the rules are right, and the M0 goldens only say
+    they did not change. Guards: the census and the kill table per batch, before and after, in the commit body;
+    audit mode on in every converted test; batches by file, so one review reads one domain; the differential test
+    and the old validators kept until M12b.
+5. **The load check on the world accepts a save the old one refused** (new). A restated condition that reads
+    nothing passes. A refused save is cheap now (wipe); a wrongly accepted one can put a room into a state no rule
+    expects. Guards: one bad world per `throw` site, refused with the same message by both checks while both exist;
+    the `throw` count old against new.
 
 **P2**
 
-4. **Lane B collides with work in flight.** M5 moves `land.ts` while the terrain pass and the Ring Island landform edit
+6. **Lane B collides with work in flight.** M5 moves `land.ts` while the terrain pass and the Ring Island landform edit
    it; M6 rewrites the imports of every railway view, `train-view.ts` and `roundhouse-view.ts` included, while fixes to
    them may be open. Run `npm run inflight` before each move and land it the day it is rebased.
-5. **The level tools read `rail.ts` as text.** A split that moves a marker breaks `npm run level-check`, which is in
+7. **The level tools read `rail.ts` as text.** A split that moves a marker breaks `npm run level-check`, which is in
    `npm run check`, so it is caught; the risk is a tool that keeps passing while reading the wrong fragment. M6's
    reviewer compares the reports with base.
-6. **`boogle/use-an-entity` on moved files.** About 40 `scene.add`, `onFrame` and `addBody` fallbacks must become
+8. **`boogle/use-an-entity` on moved files.** About 40 `scene.add`, `onFrame` and `addBody` fallbacks must become
    owner calls with the same frame order. `lint-suppressions.json` may not grow and no `APPROVED_DEBT` entry may be
    added.
-7. **Chunked batches cost draw calls.** With the whole line in view there are more batches than today. M9 reports the
+9. **Chunked batches cost draw calls.** With the whole line in view there are more batches than today. M9 reports the
    count at `far` and tunes the chunk length; the grain seed must not change with the instance index.
-8. **The entry chunk grows.** Turning `import()` into static imports in the moved files would pull the track and the
-   machine into the bundle before "Jump in". Call 13 keeps them dynamic.
-9. **Room-safety "Don't"s that apply:** effects stay in the adapter's accepted path, never in a system or a query
+10. **The entry chunk grows.** Turning `import()` into static imports in the moved files would pull the track and
+    the machine into the bundle before "Jump in". Call 13 keeps them dynamic.
+11. **Parallel batches collide** (new). Thirteen pieces of work can be open at once after M8 (six view groups, seven
+    test batches) beside the build-outs. They share no file by construction; the collisions left are a build-out
+    editing an unconverted test, and a batch needing a query that M8 did not add. The first rebases; the second
+    stops and asks, and never adds to `src/sim` from a test batch.
+12. **M3b's script misses a string path.** Look evals and level tools name sim files in strings. `--check` and the
+    `rg` in M3b's review cover it; `npm run check` runs the level check.
+13. **M13 deletes a tool that had no twin.** The groups above come from file names and the retirement plan's list,
+    not from reading each eval. The M13 brief names the twin per deleted file; `archive/place` keeps every one
+    restorable.
+14. **Room-safety "Don't"s that apply:** effects stay in the adapter's accepted path, never in a system or a query
    (M10, M12); a moved presence getter still returns `null` when off (M6); no wall clock or `Math.random` in the new
    sim files (lint); new shared files only under the three directories the server image copies whole.
 
 **P3**
 
-10. **The read model stays as a second shape for tests.** A field added to a component and forgotten in
-    `railwayView` shows only in tests and the load check after M12, which is where it should fail.
-11. **Two re-export files exist for a while** (`railway-world.ts`, `railway-systems.ts`). The first goes in M12; the
-    second is the index by design.
-12. **E's per-call cost** (2 to 3 times a plain object, single microseconds) now also falls on view reads. The M1 and
+15. **The read model lives on through the tail** (was: it stays for tests). From M3c to M12b two ways to read a
+    world exist in tests, and a build-out could add to the old one. M3b's closed importer list and the gate rule in
+    section 4 refuse it; M12b's lint rule keeps it from growing back.
+16. **Two re-export files exist for a day** (`railway-world.ts`, and the re-exports M3 leaves in
+    `railway-systems.ts`). M3b removes both; `railway-systems.ts` stays as the index of what it defines.
+17. **E's per-call cost** (2 to 3 times a plain object, single microseconds) now also falls on view reads. The M1 and
     M10 perf rows will show whether it matters; ecs-e's absolute triggers (0.05 ms of E work in a frame) still decide.
-13. **Docs go stale:** `docs/game-design/place.md` file pointers, `ecs-e.md` section 4, `sync.md`'s Server entry
+18. **Docs go stale:** `docs/game-design/place.md` file pointers, `ecs-e.md` section 4, `sync.md`'s Server entry
     (which names `src/adapters/railway.ts`) and the atlas stories are updated in the step that moves what they name.
 
 ## Open questions
@@ -723,18 +1133,24 @@ No designer fit check has run for this plan, and its steps need none: nothing is
 Code the live game already runs moves folders, and code it does not run is deleted. If any of the 41 unreached Place
 modules should come back, that is a port and gets the check first.
 
-1. **Do the build-outs resume at the two gates, or only when the whole migration is done?** Recommended: at the gates
-   (rules after M3, views after M6 and M8), with the conversion tail running beside them. Holding everything to M12
-   would stall Ring Island behind 26 view rewrites that do not touch it.
-2. **Should views become E systems too, or stay the object layer that queries E?** Recommended: stay the object layer.
-   It is what Unity, Unreal and Bevy do with presentation, and it keeps three.js out of E. View systems would mean
-   lifting the headless-only lint rule and growing E past its closed list, which by ecs-e's own rule is the moment to
-   ask "adopt a library?" instead.
-3. **Keep the `Railway` read model for the load check, seeds and tests?** Recommended: yes. Revisit when a port is
-   real; the schema golden and the queries are what a port needs.
-4. **M13: delete the tools that only drive `?proto=place`, or retarget each?** Recommended: delete those with a
-   production twin (most of the 53 evals and 9 beats), retarget only `level-check`'s place progression onto railway
-   seeds, and tag `archive/place` first.
-5. **Seats as a Server component (`rail.sit`, `rail.stand`, one `WORLD_NS` bump)?** Recommended: not in this plan. Do
-   it with the passenger and train work, where who sits where starts to matter to rules; until then the Host field
-   moves with `seat.ts` unchanged.
+The five questions this plan asked were answered by the owner on 10 November (section 7). What the answers leave
+open:
+
+1. **Where does the passenger set stand at Home?** Owner: "the Roundhouse stays the upgrade screen only; find it a
+   bay elsewhere". Not this plan's to place: it is a design item for the express's shape B
+   ([express-train](../brainstorms/express-train.md), section 7), which comes with the first interchange.
+   Recommended: the designer draws two or three measured bays on layout B as a 2D page (a bay road beside line 2's
+   buffers on the 40 m bay road the junction plans already keep clear, the goods side by the forge, a stub off the
+   engine spur short of the table), and he picks; nothing is built until then.
+2. **Does "the Roundhouse stays the upgrade screen only" also move what already stands there?** The yard shunter and
+   its footing wagon come out of the Roundhouse (8 November), and upgrade steel waits "as a visible stack in the
+   Roundhouse bay" (10 November). Recommended reading: no. He was asked about the passenger set, and both of those
+   serve the upgrade screen or the Works; the earlier entries stand.
+3. **His question on views, "why should it not become a system?", is being answered by the orchestrator.** If he
+   changes the answer, M10 is re-planned: each view becomes a `present`-phase system with declared `reads`, E gains a
+   client-only phase and the lint rule that keeps three.js out of headless code needs an exception per view file.
+   Recommended: keep the answer; revisit only if the divergence work in section 6 shows views reading state they do
+   not declare.
+4. **Should the kill table become a standing check after the migration?** `rail-mutants` is built for the test
+   rewrite and costs minutes per run. Recommended: keep the script, run it on command and in the weekly tidy pass,
+   and keep it out of `npm run check` ("a lighter test load", 1 November).
