@@ -104,3 +104,30 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
 ---
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.
+
+## Acts
+
+The room's story is cut into acts (owner, 11 November: [the game has acts](../decisions-controls.md#d-2026-11-11-the-game-has-acts)).
+`storyAct(w)` (`src/sim/railway-queries-story.ts`) derives the act from the railway: Act 1 until Q5 is laid (Far Head's
+show), Act 2 after. Nothing is saved or sent. `src/features/acts.ts` shows the card; the card is a variant of the moment
+banner (`src/ui/moment-banner.ts`): a quiet full-screen title, the number small above, the title light and widely
+spaced, a thin rule, a slow fade with a slight drift, no panel, no input taken. Only "Act 1 · The beginning" is titled
+(the owner's words); an act he has not titled shows "Act N" alone, with no line under it ("keep it a bit mysterious").
+
+- **First visit:** once Buddy is back up from the landing (about 1.8 s after the impact) a 4.8 s crane of your own
+  camera: it starts and ends at the follow camera (no cut) and rises and pulls back along a smooth arc, looking so that
+  Buddy stays a little below the middle of the frame whatever the camera's real distance and field of view (solved each
+  frame, `src/render/crane-aim.ts`). Wide: the apex is about 14 m out and 29 degrees down (about 48 px tall at 960 wide).
+  Upright phone: about 15 m out and 40 degrees down (about 63 px tall at 390 wide). Eased; the turn peaks near 13 and
+  21 degrees a second. Touch hints, prompts and the like wait while it plays (`momentBusy`). The title fades in
+  0.6 s after it starts and is gone before the hand-back completes. The portrait view uses a closer, lower apex. It is the
+  same slot for a late joiner, who sees the room's current act. Nobody else in the room is held. Reduced motion or a
+  seated player: no move, the title over the plain view. Automated browsers skip it like the fall (`intro=1` asks for it).
+- **A live change** (the room lays Q5): every page's existing Far Head shot (5 s) carries the card from 1.5 s in.
+  No second camera move. The act waits for any other full-screen moment (`momentBusy`: a playing pull-out, a reward
+  card, a banner more than half shown, the open pause view). A banner raised in the same moment (the glider's) waits
+  until the card has finished; world prompts stay down while the card shows.
+- **Returning player:** the act ("Act 2") is the first line of the Welcome back card, not a second full-screen card.
+- **Memory:** each browser keeps the highest act shown in the room's visit memory and shows the current act once when it
+  goes up. One procedural sting (`actSting`), silent within 10 s of a fanfare (Far Head's show plays one).
+- Acts 3 to 5 are not in the code: an act has a card only when its opening content is built.

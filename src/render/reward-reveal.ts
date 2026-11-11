@@ -206,7 +206,8 @@ export function createRewardReveal({
   function updateGot(dt: number) {
     cameraWeight += ((cur ? 1 : 0) - cameraWeight) * (1 - Math.exp(-dt * (cur ? 3.5 : 7)));
     if (cameraWeight < 0.001) cameraWeight = 0;
-    holdCamera(self, cameraWeight > 0 || gettingItem());
+    // The card has the screen until put away; the camera easing home afterwards is held but no longer busy.
+    holdCamera(self, cameraWeight > 0 || gettingItem(), gettingItem() ? Infinity : 0);
     if (!cur) return;
     const u = (cur.t += dt);
     overHead(top);

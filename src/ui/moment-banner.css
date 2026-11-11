@@ -28,8 +28,12 @@
 .moment-banner span {
   font: 700 19px/1.2 var(--font-body);
 }
-.moment-banner span:empty {
+.moment-banner span:empty,
+.moment-banner i:empty {
   display: none;
+}
+.moment-banner i {
+  font-style: normal;
 }
 @media (max-width: 520px) {
   .moment-banner b {
@@ -49,5 +53,81 @@
 @media (prefers-reduced-motion: reduce) {
   .moment-banner.on {
     animation: none;
+  }
+}
+
+/* The act card: the same element as a quiet full-screen title over a camera move (src/features/acts.ts). No panel and no
+   input: the number small above, the title light and widely spaced, a thin rule; a slow fade with a
+   slight drift up, generous empty space around it. */
+.moment-banner.act {
+  display: flex;
+  inset: 0;
+  left: 0;
+  top: 0;
+  transform: translateY(10px);
+  justify-content: center;
+  gap: 10px;
+  padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) calc(14vh + env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  white-space: normal;
+  color: #fff;
+  /* Dark, wide and soft instead of a panel: legible over pale sand and sky. */
+  text-shadow:
+    0 0 1px rgb(0 0 0 / 0.9),
+    0 0 6px rgb(0 0 0 / 0.75),
+    0 1px 18px rgb(0 0 0 / 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 1s ease,
+    transform 1.6s ease-out,
+    visibility 0s 1s;
+}
+.moment-banner.act.on {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition:
+    opacity 1s ease,
+    transform 1.6s ease-out;
+}
+.moment-banner.act i {
+  font: 700 clamp(18px, 4.4vw, 24px) / 1.1 var(--font-body);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+}
+.moment-banner.act b {
+  font: 300 clamp(28px, 7vw, 92px) / 1.05 var(--font-body);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.moment-banner.act b::after {
+  content: '';
+  display: block;
+  width: min(36vw, 280px);
+  height: 1px;
+  margin: 0.45em auto 0.1em;
+  background: linear-gradient(90deg, transparent, #fff 25%, #fff 75%, transparent);
+}
+/* A phone held upright: the title block sits higher (Buddy is below the middle of the frame), narrower tracking so
+   "The beginning" fits on one line. */
+@media (max-aspect-ratio: 1/1) {
+  .moment-banner.act {
+    padding-bottom: calc(34vh + env(safe-area-inset-bottom));
+  }
+  .moment-banner.act b {
+    letter-spacing: 0.14em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moment-banner.act,
+  .moment-banner.act.on {
+    transform: none;
+    transition-property: opacity, visibility;
   }
 }

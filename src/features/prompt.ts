@@ -12,7 +12,7 @@ import { me } from '../player/player.ts';
 import { interactTarget, onInteractPress, type Interactable } from '../player/hands.ts';
 import { uiSound, replay } from '../ui/ui-sound.ts';
 import { conversation } from '../player/conversation.ts';
-import { modalOpen } from '../player/modal.ts';
+import { momentBusy } from '../render/buddy-frame.ts';
 import { glyph } from '../player/glyphs.ts';
 
 const onScreen = { x: 0, y: 0, behind: false };
@@ -43,8 +43,8 @@ spawn({
   kind: 'prompt',
   lateUpdate() {
     const root = ui.root ?? build();
-    // Nothing in the world is offered behind an open menu (Pause): its prompts would draw over the picture it frames.
-    const t = me.entered && !me.charging && !conversation.open && !modalOpen() ? interactTarget() : null;
+    // Nothing in the world is offered behind an open menu (Pause, in momentBusy) or anything full-screen (an act card, a shot, a reward card, a banner): its prompts would draw over the picture it frames.
+    const t = me.entered && !me.charging && !conversation.open && !momentBusy() ? interactTarget() : null;
     const html = t ? chip(t) : '';
     // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
     if (ui.show && (ui.showId !== t?.id || ui.show !== t.show)) ui.show('');
