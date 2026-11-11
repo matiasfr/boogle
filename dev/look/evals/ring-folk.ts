@@ -48,5 +48,13 @@ cam.yaw = me.yaw = Math.atan2(-(c.x - p.x), -(c.z - p.z));
 cam.pitch = mode === 'nod' ? 0.9 : -0.05;
 await until(() => ring.ringIslandNear.mounted, 'near view mounted');
 await wait(mode === 'nod' ? 3500 : 1500);
+// look would otherwise freeze its own default camera over the staging: keep the game's third-person camera for the nod, and
+// for the stare a fixed one on the lane's east end, high, looking at the square's middle (posts ahead, rests beside).
+if (mode !== 'nod') {
+  const eye = to({ u: folk.SQUARE_UV.u - 5, lat: 5.2 });
+  window.__debugCam!.set([eye.x, folk.YARD_Y + 3.2, eye.z], [c.x, folk.YARD_Y + 1.6, c.z]);
+}
+else window.__debugCam!.clear();
+window.__debugCam!.set = () => {};
 
 export {};
