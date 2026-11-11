@@ -1,5 +1,5 @@
 {
-  "worldNs": "v26",
+  "worldNs": "v27",
   "components": [
     {
       "kind": "rail",
@@ -32,6 +32,7 @@
         ["out4", "int"],
         ["out5", "int"],
         ["trains", "int"],
+        ["out6", "int"],
         ["pack", "bool"],
         ["depotRails", "int"],
         ["shelfOut", "int"]
@@ -425,6 +426,24 @@
         ["req", "int"],
         ["left0", "int"],
         ["left1", "int"]
+      ]
+    },
+    {
+      "kind": "aperture",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "brace": 1,
+        "joined": -1
+      },
+      "fields": [
+        ["set", "int"],
+        ["rack", "int"],
+        ["cw", "u8"],
+        ["brace", "u8"],
+        ["joined", "int"]
       ]
     }
   ]
