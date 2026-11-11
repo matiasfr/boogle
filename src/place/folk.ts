@@ -1086,7 +1086,7 @@ function crewBrain(g: Guy, dt: number) {
   g.tx = crew.at[k]!.x;
   g.tz = crew.at[k]!.z;
   if (!crew.here[k]) {
-    if (!steer(g, dt, crew.carrying ? SPEED.walk * 1.2 : SPEED.run)) {
+    if (!steer(g, dt, crew.carrying ? SPEED.run * 0.8 : SPEED.run)) {
       g.mood = crew.carrying ? 'carry' : 'run';
       return true;
     }
