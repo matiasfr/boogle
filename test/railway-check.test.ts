@@ -45,11 +45,10 @@ test('every message the world check throws is a bad world, unreachable or domina
   assert.deepEqual([...listed].sort(), [...said()].sort());
 });
 
-// Review of M12b-1 (FAILING, review/m12b-1): the set above counts messages, not sites. The old completeness test counted
-// the old validators' 87 throw sites with repeats; the world check splits 'job bounds' and 'line2 job bounds' into three
-// sites each (railway-check-line1.ts:38-40, railway-check-line2.ts:50-54) and the corpus has two worlds for each, so
-// the start/completion range site has no bad world: dropping `!railInt(j.completion, 1)` from line one's check passes
-// every test in this file and the golden shards.
+// Review of M12b-1: the set above counts messages, not sites. The world check splits 'job bounds' and 'line2 job
+// bounds' into three sites each (railway-check-line1.ts, railway-check-line2.ts); the corpus had two worlds for each,
+// so the start/completion range site had none (dropping `!railInt(j.completion, 1)` passed every test). Each line now
+// has a `completion: 2` world for it.
 test('review M12b-1: each bad() site of the world check has its own entry (sites counted with repeats)', () => {
   const files = ['railway-check.ts', 'railway-check-line1.ts', 'railway-check-line2.ts', 'railway-check-works.ts'];
   const sites = new Map<string, number>();
