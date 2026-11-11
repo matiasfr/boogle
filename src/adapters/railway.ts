@@ -1059,7 +1059,7 @@ export function createRailwayAdapter({
     stalled: RailwayIntent['op'] | null;
     view: ReturnType<typeof inspection>;
   } | null = null;
-  // The frame memo. update() runs once a frame at the head of the railway entity and moves `frame`; until the next one
+  // The frame memo. update() runs once a frame in the railway entity's update (order 10, after its prePhysics and fixed steps) and moves `frame`; until the next one
   // the estimated tick, the tunables and the clock-bound session fields (step, ready, stalled) are taken as they were
   // at the head of the frame, so about a hundred readers a frame skip the 18 tune reads and the rest of the key. What
   // can still change inside a frame is checked each call, and is cheap: the view object (a press rebuilds the
@@ -1072,6 +1072,7 @@ export function createRailwayAdapter({
     const i0 = inspected;
     if (
       frame &&
+      !disposed &&
       i0 &&
       inspectedFrame === frame &&
       view() === readFor &&
