@@ -1,11 +1,12 @@
-// The load check's bad worlds (docs/plans/ecs-migration-railway.md, M8b): one entry per `throw` site of the domain
-// validators (validateRailway in src/sim/railway-check.ts; validateRailLine, validateRailLine2, validateRailTrains and
-// validateRailWorks), each one edit to a golden seed stage that breaks that condition alone, with the message the site
-// throws. test/railway-check.test.ts requires the world check (railwayCheck) to refuse each with that message, and,
-// while the old validators exist, the read model's check (validateRailway(railwayView(w))) to give the same.
+// The load check's bad worlds (docs/plans/ecs-migration-railway.md, M8b): one entry per `throw` message of the world
+// check (railwayCheck in src/sim/railway-check.ts and its domain files, -line1, -line2, -trains and -works), each one
+// edit to a golden seed stage that breaks that condition alone, with the message the site throws.
+// test/railway-check.test.ts requires the world check to refuse each with that message. The `site` names say which
+// domain a site belongs to; they were written against the old validators (validateRail…), which the domain files
+// replaced message for message.
 //
 // A site no world edit can reach is listed in UNREACHABLE with the reason. A build-out adds one entry per `throw` of
-// its own check here.
+// its own check here (Ring Island's are in test/railway-ring.test.ts).
 import type { AnyComponent, RowOf, World } from '../../src/ecs/index.ts';
 import type { SeedStage } from '../../src/sim/railway-seeds.ts';
 import {
@@ -380,24 +381,8 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   },
 ];
 
-/** The validators' `throw` sites no edit to a world can reach, and why (five of 87). */
+/** The world check's `throw` sites no edit to a world can reach, and why. */
 export const UNREACHABLE: readonly { site: string; message: string; reason: string }[] = [
-  {
-    site: 'line requires playable state',
-    message: 'railway: line requires playable state',
-    reason:
-      "the read model's `falls` and `supply` are built from the trees and the rail clock, which a world always has",
-  },
-  {
-    site: 'line missing funded timing',
-    message: 'railway: missing funded timing',
-    reason: "every Job row has its timing fields (the schema's defaults), so a job's `timing` is never absent",
-  },
-  {
-    site: 'trains trains',
-    message: 'railway: trains',
-    reason: "the train and line row counts: railwayCheck's own count check ('railway: N train') refuses first",
-  },
   {
     site: 'trains rider ask (a refused way)',
     message: 'railway: rider ask',
@@ -405,11 +390,6 @@ export const UNREACHABLE: readonly { site: string; message: string; reason: stri
       "a rider's ask for the way an `only` halt refuses: no catalog halt is `only` until R3b's row (v27), so no world " +
       'can hold one; test/railway-trains.test.ts refuses it, the lever ask and an up train standing there on the ' +
       'fixture line',
-  },
-  {
-    site: 'works works missing',
-    message: 'railway: works missing',
-    reason: "the Works, shed and line-two rows: railwayCheck's own count check refuses first",
   },
 ];
 /** A throw site that can only throw after another site with the same condition already has (dominated). */
@@ -419,9 +399,4 @@ export const DOMINATED: readonly { site: string; message: string; reason: string
     message: 'railway: unlit cast',
     reason: "`poured > 0 && lit < 0` is inside the first 'unlit cast' condition (`lit < 0 && (poured || lastCast)`)",
   },
-];
-/** Sub-conditions the world check drops because they hold by construction (each named where it was). */
-export const BY_CONSTRUCTION: readonly string[] = [
-  "validateRailway 'catalog': work.length === sources.length (both are the trees)",
-  "validateRailLine2 'depot output': depotOut.length === LINE2_STATIONS.length (the six out fields of the rail row)",
 ];

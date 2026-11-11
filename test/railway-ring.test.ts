@@ -2,7 +2,7 @@
 // brace and counterweight before the gap is footed, the rivet before the leaf is down), brace and weights in either
 // order, repeats that move nothing, the railhead moving out with trains at and running to it, the island opening on
 // the rivet with a train in each of endMoved's cases, Q7's kit at the Pier (call 62), the wagon's ring footings only
-// after Q7 (call 65), footing conservation and an empty pier rack under random ops, a leaver, the read model and each
+// after Q7 (call 65), footing conservation and an empty pier rack under random ops, a leaver, and the world check on each
 // seed stage. Every `act` checks the whole world (railwayCheck) after its op.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +17,7 @@ import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
 import { standingAt } from './helpers/rail-rows.ts';
-import { worldVerdict, modelVerdict, stageWorld } from './helpers/railway-check.ts';
+import { worldVerdict, stageWorld } from './helpers/railway-check.ts';
 import {
   account,
   act,
@@ -284,11 +284,10 @@ test('a leaver keeps the gap as it stands: their footing goes back to the Works 
   assert.equal(invariant(s.w), null);
 });
 
-test('each ring seed stage passes the world check and the read model check (which mirrors Aperture)', () => {
+test('each ring seed stage passes the world check', () => {
   for (const stage of RING_STAGES) {
     const w = stageWorld(stage);
     assert.ok(w.single(Aperture) >= 0, stage);
     assert.equal(worldVerdict(w), null, `${stage}: the world check`);
-    assert.equal(modelVerdict(w), null, `${stage}: the read model's check`);
   }
 });
