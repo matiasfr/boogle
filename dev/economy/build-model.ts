@@ -6,6 +6,7 @@
 //                                                                a copy without cached values, to check the formulas
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   GOALS,
   LADDERS,
@@ -40,7 +41,7 @@ import {
 } from './ring-sim.ts';
 import { STYLE, colName, workbook, type Cell, type Sheet } from './xlsx.ts';
 
-const ROOT = new URL('../../', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = join(ROOT, 'docs/economy');
 const PAGE = join(ROOT, 'docs/world/ring-economy.html');
 const args = process.argv.slice(2);

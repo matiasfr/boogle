@@ -25,7 +25,8 @@ function sources(root: string): Source[] {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (/\.[jt]s$/.test(e.name)) out.push({ path: path.relative(root, p), text: fs.readFileSync(p, 'utf8') });
+      else if (/\.[jt]s$/.test(e.name))
+        out.push({ path: path.relative(root, p).split(path.sep).join('/'), text: fs.readFileSync(p, 'utf8') });
     }
   };
   walk(path.join(root, 'src'));
@@ -99,7 +100,7 @@ function baseTree(ref: string): { dir: string | null; note?: string } {
     };
   }
   try {
-    execFileSync('tar', ['-x', '-C', dir], { input: tar });
+    execFileSync('tar', ['-x'], { input: tar, cwd: dir }); // no -C: GNU tar reads C:... as host:path
     return { dir };
   } catch (error) {
     fs.rmSync(dir, { recursive: true, force: true });
