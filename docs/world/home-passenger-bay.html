@@ -1,0 +1,991 @@
+<title>Home's bay for the passenger train</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta
+  name="description"
+  content="Three measured options for where the bought passenger train stands at Home, drawn to scale on layout B."
+/>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f2e9;
+    --panel: #fffdf5;
+    --ink: #233d3c;
+    --muted: #5d716f;
+    --border: #c4cdc3;
+    --sea: #cfe3e1;
+    --land: #dfe5cd;
+    --chalk: #cfd3c2;
+    --plat: #f1e3b8;
+    --flag: #b3261e;
+    --mark: #c2410c;
+    --good: #2f7d4a;
+    --warn: #a15c00;
+    --accent: #2f5f9e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #132322;
+      --panel: #1b2e2c;
+      --ink: #eef2e2;
+      --muted: #a9bdb4;
+      --border: #3f5951;
+      --sea: #12292b;
+      --land: #2c4032;
+      --chalk: #46584a;
+      --plat: #7a6a3c;
+      --flag: #ff8a80;
+      --mark: #fdba74;
+      --good: #86d39b;
+      --warn: #f5c26b;
+      --accent: #8fb8ff;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #132322;
+    --panel: #1b2e2c;
+    --ink: #eef2e2;
+    --muted: #a9bdb4;
+    --border: #3f5951;
+    --sea: #12292b;
+    --land: #2c4032;
+    --chalk: #46584a;
+    --plat: #7a6a3c;
+    --flag: #ff8a80;
+    --mark: #fdba74;
+    --good: #86d39b;
+    --warn: #f5c26b;
+    --accent: #8fb8ff;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  body {
+    font:
+      15px/1.5 system-ui,
+      sans-serif;
+    padding: 20px max(14px, env(safe-area-inset-right, 0px)) 40px max(14px, env(safe-area-inset-left, 0px));
+    overflow-x: hidden;
+  }
+  main {
+    max-width: 980px;
+    margin: auto;
+    min-width: 0;
+  }
+  h1 {
+    font:
+      700 25px/1.2 Georgia,
+      serif;
+    margin: 0 0 8px;
+  }
+  h2 {
+    font:
+      700 19px/1.3 Georgia,
+      serif;
+    margin: 28px 0 8px;
+  }
+  p,
+  li {
+    max-width: 78ch;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 14px 0 8px;
+  }
+  button {
+    font: inherit;
+    font-size: 14px;
+    padding: 8px 12px;
+    min-height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button[aria-pressed='true'] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .map {
+    background: var(--land);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .map svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 8px 2px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .legend i {
+    display: inline-block;
+    width: 18px;
+    height: 0;
+    border-top: 3px solid var(--ink);
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .legend i.bay {
+    border-color: var(--mark);
+  }
+  .legend i.walk {
+    border-top: 2px dotted var(--accent);
+  }
+  .legend i.keep {
+    border-top: 2px dashed var(--flag);
+  }
+  .legend i.car {
+    height: 9px;
+    border: 0;
+    background: var(--mark);
+    border-radius: 2px;
+  }
+  .legend i.long {
+    height: 9px;
+    border: 1.5px dashed var(--mark);
+    border-radius: 2px;
+  }
+  .table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 10px 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    background: var(--panel);
+    font-size: 14px;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child > * {
+    border-bottom: 0;
+  }
+  .facts th {
+    width: 30%;
+    font-weight: 650;
+  }
+  .cmp td,
+  .cmp th {
+    min-width: 120px;
+  }
+  .cmp th:first-child {
+    min-width: 100px;
+  }
+  .pick {
+    background: var(--panel);
+    border: 2px solid var(--good);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+  .pick p {
+    margin: 4px 0;
+  }
+  .rail {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 0.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .rail.up {
+    stroke-width: 0.4;
+    opacity: 0.65;
+  }
+  .rail.bay {
+    stroke: var(--mark);
+    stroke-width: 0.9;
+  }
+  .buffer {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1;
+  }
+  .buffer.bay {
+    stroke: var(--mark);
+  }
+  .bld {
+    fill: var(--panel);
+    stroke: var(--ink);
+    stroke-width: 0.25;
+  }
+  .ruin {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 0.25;
+    stroke-dasharray: 0.8 0.6;
+  }
+  .in {
+    stroke: var(--panel);
+  }
+  circle.tt {
+    fill: var(--panel);
+    stroke: var(--ink);
+    stroke-width: 0.3;
+  }
+  .town {
+    fill: var(--chalk);
+    opacity: 0.7;
+  }
+  .shelf {
+    fill: var(--muted);
+  }
+  .plat {
+    fill: var(--plat);
+    stroke: var(--ink);
+    stroke-width: 0.15;
+  }
+  .plat.ramp {
+    opacity: 0.55;
+  }
+  .plat.new {
+    stroke: var(--mark);
+    stroke-width: 0.3;
+  }
+  .keep {
+    fill: var(--flag);
+    fill-opacity: 0.07;
+    stroke: var(--flag);
+    stroke-width: 0.25;
+    stroke-dasharray: 1.2 0.8;
+  }
+  .frame {
+    fill: var(--muted);
+  }
+  .shunt {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 0.25;
+    stroke-dasharray: 0.3 0.6;
+  }
+  .svc {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2.2;
+    opacity: 0.16;
+  }
+  .car {
+    fill: var(--mark);
+    stroke: var(--ink);
+    stroke-width: 0.15;
+  }
+  .car.eng {
+    fill: var(--ink);
+  }
+  .car.ghost {
+    fill: none;
+    stroke: var(--mark);
+    stroke-width: 0.3;
+    stroke-dasharray: 0.7 0.5;
+  }
+  .long {
+    fill: none;
+    stroke: var(--mark);
+    stroke-width: 0.3;
+    stroke-dasharray: 0.9 0.6;
+  }
+  .walk {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 0.45;
+    stroke-dasharray: 0.2 1;
+    stroke-linecap: round;
+  }
+  .walk.arrow {
+    stroke-dasharray: none;
+    stroke-width: 0.6;
+  }
+  .sight {
+    fill: var(--accent);
+    opacity: 0.1;
+  }
+  .join {
+    fill: none;
+    stroke: var(--mark);
+    stroke-width: 0.3;
+  }
+  .clash {
+    fill: none;
+    stroke: var(--flag);
+    stroke-width: 0.3;
+  }
+  svg text {
+    font-family: system-ui, sans-serif;
+    fill: var(--ink);
+    paint-order: stroke;
+    stroke: var(--land);
+    stroke-width: 0.5px;
+    stroke-linejoin: round;
+  }
+  .t {
+    font-size: 1.7px;
+    font-weight: 600;
+  }
+  .s {
+    font-size: 1.35px;
+  }
+  .t.b {
+    fill: var(--mark);
+  }
+  .s.w {
+    fill: var(--accent);
+  }
+  .s.f,
+  .s.k {
+    fill: var(--flag);
+  }
+  @media (max-width: 640px) {
+    .t {
+      font-size: 2.5px;
+    }
+    .s {
+      font-size: 2.1px;
+    }
+    .x {
+      display: none;
+    }
+    h1 {
+      font-size: 22px;
+    }
+  }
+  #page[data-opt='a'] .o-b,
+  #page[data-opt='a'] .o-c,
+  #page[data-opt='b'] .o-a,
+  #page[data-opt='b'] .o-c,
+  #page[data-opt='c'] .o-a,
+  #page[data-opt='c'] .o-b {
+    display: none;
+  }
+  #page[data-opt='a'] .leg {
+    stroke-dasharray: 0.5 0.9;
+    opacity: 0.45;
+  }
+  #page[data-opt='b'] .svc2 {
+    display: none;
+  }
+</style>
+<main id="page" data-opt="a">
+  <h1>Where does the bought passenger train stand at Home?</h1>
+  <p>
+    The express comes in two stages: first the ordinary train with a headboard, later a passenger train the room buys,
+    "kept ready at each big station". On 10 November you ruled that at Home it does not stand in the Roundhouse: "the
+    Roundhouse stays the upgrade screen only; find it a bay elsewhere". This page draws Home as layout B (the
+    one-station Home you picked on 9 November, not yet live) to scale from the layout code, with three answers. Pick a
+    tab.
+  </p>
+  <div class="bar" role="group" aria-label="Option">
+    <button type="button" data-pick="a" aria-pressed="true">A · East bay</button>
+    <button type="button" data-pick="b" aria-pressed="false">B · The cart's track</button>
+    <button type="button" data-pick="c" aria-pressed="false">C · No bay at Home</button>
+  </div>
+  <div class="map">
+    <svg viewBox="-103 -32 90 79" role="img" aria-labelledby="map-title">
+      <title id="map-title">Home under layout B, to scale, north up, with the chosen bay option drawn over it</title>
+      <rect x="-103" y="-32" width="90" height="79" fill="var(--land)" />
+      <polygon
+        points="-23,-32 -22,-31 -21,-30 -20.5,-29 -19,-28 -19,-27 -17.5,-26 -17,-25 -16,-24 -15.5,-23 -15,-22 -14,-21 -13,-20 -13,-19 -13,-18 -13,-17 -13,-16 -13,-15 -13,-14 -13,-13 -13,-12 -13,-11 -13,-10 -13,-9 -13,-8 -13,-7 -13,-6 -13,-5 -13,-4 -13,-3 -13,-2 -13,-1 -13,0 -13,1 -13,2 -13,3 -13,4 -13,5 -13,6 -13,7 -13,8 -13,9 -13,10 -13,11 -13,12 -13,13 -13,14 -13,15 -13,16 -13,17 -13,18 -13,19 -13,20 -13,21 -13,22 -13.5,23 -13.5,24 -14,25 -14.5,26 -15,27 -15,28 -15.5,29 -15.5,30 -16.5,31 -17,32 -17.5,33 -17.5,34 -18.5,35 -19,36 -19.5,37 -19.5,38 -20.5,39 -21,40 -21.5,41 -21.5,42 -22.5,43 -23,44 -23.5,45 -23.5,46 -24.5,47 -13,47 -13,-32"
+        fill="var(--sea)"
+      />
+      <polygon points="-111.42,-4.64 -106.69,-7.23 -104.58,-3.36 -109.31,-0.77" class="town" />
+      <polygon points="-125.12,21.76 -125.28,16.37 -120.88,16.24 -120.72,21.63" class="town" />
+      <polygon points="-138.19,25.41 -135.74,20.6 -131.81,22.59 -134.26,27.4" class="town" />
+      <polygon points="-141.39,7.54 -141,2.15 -136.61,2.46 -137,7.85" class="town" />
+      <polygon points="-84.56,36.87 -94.64,32.47 -91.44,25.13 -81.36,29.53" class="town" />
+      <polygon points="-87.78,-20.64 -80.82,-21.33 -80.22,-15.36 -87.18,-14.67" class="town" />
+      <polygon points="-73.07,-25.55 -66.05,-21.72 -68.93,-16.45 -75.95,-20.28" class="town" />
+      <polygon points="-100.52,-27.15 -92.68,-28.73 -91.48,-22.85 -99.32,-21.27" class="town" />
+      <polygon points="-87.17,43.22 -82.22,39.83 -78.83,44.78 -83.78,48.17" class="town" />
+      <polygon points="-74.83,46.24 -69.57,43.37 -67.17,47.76 -72.43,50.63" class="town" />
+      <polygon points="-78.23,59.17 -71.54,57.1 -69.77,62.83 -76.46,64.9" class="town" />
+      <polygon points="-64.24,54.06 -60.06,49.76 -55.76,53.94 -59.94,58.24" class="town" />
+      <polygon points="-116.5,56.5 -107.5,56.5 -107.5,63.5 -116.5,63.5" class="town" />
+      <path d="M-57.9 17.12L-37.98 33.83A26 26 0 0 1 -82.33 26.01Z" class="keep" />
+      <polygon points="-92,-7 -82,-7 -82,1 -92,1" class="bld" />
+      <polygon points="-90.76,18.17 -95.2,5.95 -89.57,3.9 -85.12,16.12" class="bld hall" />
+      <polygon points="-92.03,10.38 -90.01,15.93 -90.86,16.24 -92.88,10.69" class="shelf" />
+      <polygon points="-87.14,7.64 -58.67,-2.72 -57.19,1.32 -85.67,11.69" class="plat ramp" />
+      <polygon points="-79.34,4.81 -62.42,-1.35 -60.95,2.69 -77.87,8.85" class="plat" />
+      <polygon points="-52.92,24.36 -49.84,32.81 -53.98,34.32 -57.06,25.86" class="ruin" />
+      <polygon points="-57.21,25.87 -58.77,34.74 -63.1,33.97 -61.54,25.11" class="bld" />
+      <polygon points="-61.67,25.05 -67.46,31.94 -70.83,29.11 -65.05,22.22" class="ruin" />
+      <circle cx="-57.9" cy="17.12" r="4.8" class="tt" />
+      <path
+        d="M-60.94 34.36L-59.37 25.49L-58.73 21.85L-57.9 17.12L-61.57 14.04L-61.73 13.9L-62.5 13.26L-63.28 12.63L-64.09 12.05L-64.94 11.53L-65.83 11.06L-66.74 10.66L-67.68 10.31L-68.64 10.03L-69.62 9.82L-70.6 9.67L-71.6 9.58L-72.6 9.56L-73.6 9.61L-74.59 9.73L-75.58 9.91L-76.54 10.16L-77.49 10.47L-77.96 10.64L-78.9 10.98L-79.84 11.32L-78.9 10.98L-77.96 10.64L-77.02 10.3L-76.09 9.95L-75.15 9.61L-74.21 9.27L-73.64 9.06"
+        class="shunt"
+      />
+      <path
+        d="M-51.73 -12.5L-51.54 -12.96L-51.36 -13.43L-51.21 -13.91L-51.08 -14.39L-50.99 -14.88L-50.91 -15.37L-50.87 -15.87L-50.84 -16.36L-50.84 -16.87L-50.84 -17.38L-50.86 -17.89L-50.88 -18.41L-50.91 -18.92L-50.95 -19.44L-50.99 -19.95L-51.03 -20.47L-51.08 -20.99L-51.13 -21.51L-51.18 -22.03L-51.23 -22.55L-51.28 -23.07L-51.33 -23.59L-51.37 -24.11L-51.42 -24.63L-51.46 -25.14L-51.5 -25.66L-51.54 -26.18L-51.57 -26.69L-51.59 -27.21L-51.61 -27.72L-51.62 -28.23L-51.62 -28.74L-51.61 -29.25L-51.6 -29.76L-51.57 -30.26L-51.53 -30.76L-51.48 -31.26L-51.42 -31.76L-51.34 -32.26L-51.23 -32.88L-51.11 -33.37L-50.94 -34.07L-50.8 -34.55L-50.59 -35.24L-50.43 -35.71L-50.18 -36.39L-49.99 -36.85L-49.75 -37.42L-49.55 -37.87L-49.36 -38.28L-49.16 -38.74L-48.98 -39.15L-48.79 -39.61L-48.62 -40.03L-48.43 -40.49L-48.26 -40.91L-48.08 -41.37L-47.91 -41.8L-47.73 -42.27L-47.57 -42.7L-47.4 -43.17L-47.24 -43.6L-47.07 -44.07L-46.92 -44.51"
+        class="rail up"
+      />
+      <path
+        d="M-50.31 2.92L-49.81 3L-49.32 3.07L-48.82 3.15L-48.32 3.22L-47.82 3.3L-47.31 3.38L-46.81 3.48L-46.29 3.57L-45.79 3.67L-45.26 3.78L-44.76 3.9L-44.21 4.03L-43.71 4.16L-43.16 4.32L-42.66 4.47L-42.1 4.67L-41.61 4.84L-41.04 5.07L-40.56 5.27L-39.99 5.54L-39.52 5.76L-38.97 6.06L-38.51 6.3L-38.04 6.56L-37.59 6.81L-37.14 7.07L-36.69 7.33L-36.24 7.59L-35.8 7.86L-35.37 8.13L-34.94 8.41L-34.51 8.69L-34.1 8.98L-33.68 9.27L-33.28 9.58L-32.88 9.89L-32.5 10.21L-32.12 10.54L-31.75 10.87L-31.39 11.22L-31.04 11.58L-30.68 11.93L-30.33 12.28L-29.98 12.64L-29.62 12.99L-29.27 13.34L-28.92 13.7L-28.56 14.05L-28.21 14.4L-27.86 14.76L-27.5 15.11L-27.15 15.47L-26.8 15.82L-26.44 16.17L-26.09 16.53L-25.73 16.88L-25.38 17.23L-25.03 17.59L-24.67 17.94L-24.32 18.29L-23.97 18.65L-23.61 19L-23.26 19.35L-22.91 19.71L-22.55 20.06L-22.2 20.42L-21.85 20.77L-21.54 21.07L-21.18 21.42L-20.98 21.62L-20.61 21.95L-20.4 22.13L-20 22.44L-19.79 22.61L-19.38 22.9L-19.15 23.06L-18.72 23.32L-18.49 23.47L-18.05 23.7L-17.81 23.84L-17.35 24.05L-17.1 24.17L-16.64 24.36L-16.38 24.47L-15.91 24.63L-15.65 24.72L-15.17 24.85L-14.9 24.93L-14.41 25.04L-14.14 25.1L-13.65 25.18L-13.37 25.23L-12.88 25.28L-12.6 25.32L-12.1 25.34L-11.82 25.36L-11.32 25.35L-11.05 25.36L-10.55 25.32L-10.16 25.3L-9.66 25.26L-9.1 25.2L-8.6 25.17L-8.03 25.12L-7.53 25.1L-6.95 25.06L-6.45 25.04L-5.88 25.02L-5.38 25.01L-4.8 25L-4.3 25L-3.73 25L-3.23 25.01L-2.67 25.02L-2.17 25.04L-1.6 25.06L-1.11 25.08L-0.55 25.11L-0.05 25.14L0.5 25.18L1 25.21L1.54 25.26L2.04 25.3L2.58 25.35"
+        class="rail up"
+      />
+      <path
+        d="M-87.7 6.09L-87.23 5.92L-86.76 5.75L-86.29 5.58L-85.82 5.41L-85.35 5.24L-84.88 5.07L-84.41 4.9L-83.94 4.73L-83.47 4.56L-83 4.38L-82.53 4.21L-82.06 4.04L-81.59 3.87L-81.12 3.7L-80.65 3.53L-80.18 3.36L-79.72 3.19L-79.25 3.02L-78.78 2.85L-78.31 2.67L-77.84 2.5L-77.37 2.33L-76.9 2.16L-76.43 1.99L-75.96 1.82L-75.49 1.65L-75.02 1.48L-74.55 1.31L-74.08 1.14L-73.61 0.96L-73.14 0.79L-72.67 0.62L-72.2 0.45L-71.73 0.28L-71.26 0.11L-70.79 -0.06L-70.32 -0.23L-69.85 -0.4L-69.38 -0.58L-68.91 -0.75L-68.44 -0.92L-67.97 -1.09L-67.5 -1.26L-67.03 -1.43L-66.56 -1.6L-66.09 -1.77L-65.62 -1.94L-65.15 -2.11L-64.68 -2.29L-64.21 -2.46L-63.74 -2.63L-63.27 -2.8L-62.8 -2.97L-62.33 -3.14L-61.86 -3.31L-61.4 -3.49L-60.93 -3.68L-60.48 -3.89L-60.02 -4.1L-59.58 -4.33L-59.14 -4.56L-58.71 -4.82L-58.28 -5.08L-57.87 -5.36L-57.46 -5.64L-57.06 -5.94L-56.66 -6.25L-56.28 -6.57L-55.9 -6.9L-55.54 -7.24L-55.18 -7.59L-54.84 -7.96L-54.5 -8.32L-54.18 -8.7L-53.86 -9.09L-53.56 -9.49L-53.26 -9.89L-52.98 -10.31L-52.71 -10.72L-52.46 -11.16L-52.2 -11.59L-51.97 -12.03L-51.75 -12.48L-51.54 -12.93L-51.34 -13.39L-51.16 -13.86L-50.99 -14.33L-50.84 -14.8L-50.69 -15.28L-50.56 -15.76L-50.44 -16.25L-50.34 -16.74L-50.24 -17.23L-50.14 -17.72L-50.04 -18.21L-49.95 -18.7L-49.85 -19.19L-49.75 -19.68L-49.66 -20.17L-49.56 -20.66L-49.46 -21.15L-49.37 -21.64L-49.27 -22.13L-49.17 -22.62L-49.08 -23.11L-48.98 -23.61L-48.88 -24.1L-48.79 -24.59L-48.69 -25.08L-48.59 -25.57L-48.5 -26.06L-48.4 -26.55L-48.3 -27.04L-48.21 -27.53L-48.11 -28.02L-48.01 -28.51L-47.92 -29L-47.82 -29.49L-47.72 -29.98L-47.63 -30.47L-47.53 -30.96L-47.43 -31.45L-47.34 -31.94L-47.22 -32.43L-47.11 -32.92L-46.97 -33.4L-46.83 -33.88L-46.67 -34.35L-46.5 -34.82L-46.31 -35.28L-46.12 -35.75L-45.91 -36.2L-45.71 -36.66L-45.51 -37.12L-45.31 -37.57L-45.11 -38.04L-44.92 -38.5L-44.73 -38.96L-44.54 -39.42L-44.36 -39.89L-44.18 -40.35L-44 -40.82L-43.83 -41.29L-43.65 -41.76L-43.48 -42.23L-43.31 -42.7L-43.15 -43.17L-43.14 -43.2"
+        class="rail"
+      />
+      <path
+        d="M-85.11 13.24L-84.64 13.07L-84.17 12.9L-83.7 12.72L-83.23 12.55L-82.76 12.38L-82.29 12.21L-81.82 12.04L-81.35 11.87L-80.88 11.7L-80.41 11.53L-79.94 11.36L-79.47 11.19L-79 11.01L-78.53 10.84L-78.06 10.67L-77.59 10.5L-77.12 10.33L-76.65 10.16L-76.18 9.99L-75.71 9.82L-75.24 9.65L-74.77 9.48L-74.3 9.3L-73.83 9.13L-73.36 8.96L-72.89 8.79L-72.42 8.62L-71.95 8.45L-71.48 8.28L-71.01 8.11L-70.54 7.94L-70.07 7.76L-69.6 7.59L-69.13 7.42L-68.66 7.25L-68.19 7.08L-67.72 6.91L-67.25 6.74L-66.78 6.57L-66.31 6.4L-65.84 6.23L-65.37 6.05L-64.9 5.88L-64.43 5.71L-63.96 5.54L-63.49 5.37L-63.02 5.2L-62.55 5.03L-62.08 4.86L-61.61 4.69L-61.14 4.52L-60.67 4.34L-60.2 4.17L-59.73 4L-59.26 3.83L-58.79 3.67L-58.32 3.51L-57.84 3.38L-57.35 3.25L-56.87 3.14L-56.38 3.03L-55.88 2.95L-55.39 2.87L-54.89 2.82L-54.4 2.77L-53.9 2.74L-53.4 2.72L-52.9 2.72L-52.4 2.73L-51.9 2.75L-51.4 2.79L-50.9 2.84L-50.41 2.9L-49.91 2.99L-49.42 3.08L-48.93 3.19L-48.45 3.3L-47.97 3.44L-47.49 3.58L-47.02 3.75L-46.55 3.92L-46.08 4.11L-45.62 4.3L-45.17 4.52L-44.72 4.74L-44.29 4.98L-43.85 5.22L-43.43 5.49L-43 5.76L-42.59 6.04L-42.19 6.33L-41.8 6.64L-41.41 6.96L-41.03 7.29L-40.66 7.62L-40.3 7.97L-39.95 8.32L-39.59 8.68L-39.24 9.03L-38.89 9.38L-38.53 9.74L-38.18 10.09L-37.83 10.44L-37.47 10.8L-37.12 11.15L-36.77 11.51L-36.41 11.86L-36.06 12.21L-35.7 12.57L-35.35 12.92L-35 13.27L-34.64 13.63L-34.29 13.98L-33.94 14.33L-33.58 14.69L-33.23 15.04L-32.88 15.39L-32.52 15.75L-32.17 16.1L-31.82 16.46L-31.46 16.81L-31.11 17.16L-30.76 17.52L-30.4 17.87L-30.05 18.22L-29.69 18.58L-29.34 18.93L-28.99 19.28L-28.63 19.64L-28.28 19.99L-27.93 20.34L-27.57 20.7L-27.22 21.05L-26.87 21.41L-26.51 21.76L-26.16 22.11L-25.81 22.47L-25.45 22.82L-25.1 23.17L-24.75 23.53L-24.39 23.88L-24.03 24.23L-23.67 24.58L-23.3 24.91L-22.92 25.23L-22.53 25.54L-22.13 25.85L-21.72 26.14L-21.31 26.42L-20.89 26.68L-20.46 26.94L-20.02 27.18L-19.58 27.42L-19.13 27.64L-18.68 27.85L-18.21 28.04L-17.75 28.22L-17.28 28.39L-16.8 28.55L-16.32 28.68L-15.84 28.82L-15.35 28.93L-14.87 29.03L-14.37 29.12L-13.88 29.19L-13.38 29.25L-12.89 29.3L-12.39 29.33L-11.89 29.35L-11.39 29.35L-10.89 29.35L-10.39 29.32L-9.89 29.29L-9.39 29.25L-8.89 29.2L-8.4 29.16L-7.9 29.13L-7.4 29.09L-6.9 29.07L-6.4 29.05L-5.9 29.03L-5.4 29.01L-4.9 29L-4.4 29L-3.9 29L-3.4 29.01L-2.9 29.02L-2.4 29.03L-1.9 29.05L-1.4 29.07L-0.9 29.1L-0.4 29.13L0.1 29.16L0.59 29.19L1.09 29.23L1.59 29.28L2.09 29.32L2.19 29.33"
+        class="rail"
+      />
+      <path
+        d="M-77.49 10.47L-76.54 10.16L-75.58 9.91L-74.59 9.73L-73.6 9.61L-72.6 9.56L-71.6 9.58L-70.6 9.67L-69.62 9.82L-68.64 10.03L-67.68 10.31L-66.74 10.66L-65.83 11.06L-64.94 11.53L-64.09 12.05L-63.28 12.63L-62.5 13.26L-61.73 13.9L-61.57 14.04"
+        class="rail"
+      />
+      <path
+        d="M-47.72 -30.01L-47.76 -29.77L-47.81 -29.52L-47.84 -29.27L-47.88 -29.03L-47.91 -28.78L-47.93 -28.53L-47.95 -28.28L-47.97 -28.03L-47.99 -27.78L-47.99 -27.53L-48 -27.28L-48 -27.03L-48 -26.78L-47.99 -26.53L-47.98 -26.28L-47.98 -26.03L-47.97 -25.78L-47.96 -25.53L-47.96 -25.28L-47.95 -25.03L-47.94 -24.78L-47.93 -24.53L-47.93 -24.28L-47.92 -24.03L-47.91 -23.78L-47.91 -23.53L-47.9 -23.28L-47.89 -23.03L-47.89 -22.78L-47.88 -22.53L-47.87 -22.28L-47.87 -22.03L-47.86 -21.78L-47.85 -21.53L-47.84 -21.28L-47.84 -21.03L-47.83 -20.78L-47.82 -20.53L-47.82 -20.28L-47.81 -20.03L-47.8 -19.78L-47.8 -19.53L-47.79 -19.28L-47.78 -19.03L-47.78 -18.78L-47.77 -18.53L-47.76 -18.28L-47.75 -18.03L-47.75 -17.78L-47.74 -17.53L-47.73 -17.28L-47.73 -17.03L-47.72 -16.78L-47.71 -16.53L-47.71 -16.28L-47.7 -16.03L-47.69 -15.78L-47.69 -15.53L-47.68 -15.28L-47.67 -15.03L-47.66 -14.79L-47.66 -14.54L-47.65 -14.29L-47.64 -14.04L-47.64 -13.79L-47.63 -13.54L-47.62 -13.29L-47.62 -13.04L-47.61 -12.79L-47.6 -12.54L-47.59 -12.29L-47.59 -12.04L-47.58 -11.79L-47.57 -11.54L-47.57 -11.29L-47.56 -11.04L-47.56 -10.79L-47.57 -10.54L-47.57 -10.29L-47.59 -10.04L-47.6 -9.79L-47.62 -9.54L-47.65 -9.29L-47.67 -9.04L-47.71 -8.79L-47.74 -8.55L-47.78 -8.3L-47.83 -8.05L-47.88 -7.81L-47.93 -7.56L-47.99 -7.32L-48.05 -7.08L-48.12 -6.84L-48.19 -6.6L-48.26 -6.36L-48.34 -6.12L-48.42 -5.88L-48.5 -5.65L-48.59 -5.41L-48.68 -5.18L-48.78 -4.95L-48.88 -4.72L-48.99 -4.5L-49.09 -4.27L-49.21 -4.05L-49.32 -3.83L-49.44 -3.61L-49.56 -3.39L-49.69 -3.17L-49.82 -2.96L-49.96 -2.75L-50.09 -2.54L-50.23 -2.33L-50.38 -2.13L-50.52 -1.93L-50.68 -1.73L-50.83 -1.53L-50.99 -1.34L-51.15 -1.14L-51.31 -0.96L-51.48 -0.77L-51.65 -0.59L-51.82 -0.41L-52 -0.23L-52.18 -0.05L-52.36 0.12L-52.54 0.29L-52.73 0.45L-52.92 0.61L-53.11 0.77L-53.31 0.93L-53.51 1.08L-53.71 1.23L-53.91 1.38L-54.12 1.52L-54.32 1.66L-54.53 1.79L-54.75 1.93L-54.96 2.05L-55.18 2.18L-55.4 2.3L-55.62 2.42L-55.84 2.53L-56.06 2.64L-56.29 2.75L-56.52 2.85L-56.75 2.95L-56.98 3.05L-57.21 3.14L-57.44 3.22L-57.68 3.31L-57.92 3.39L-58.16 3.46L-58.22 3.48"
+        class="rail leg"
+      />
+      <path d="M-88.15 4.87L-87.26 7.32" class="buffer" />
+      <path d="M-85.55 12.02L-84.66 14.46" class="buffer" />
+      <polygon points="-76.49,17.02 -74.05,16.13 -73.37,18.01 -75.81,18.9" class="frame" />
+      <polygon points="-41.17,-3.02 -38.9,-1.75 -39.88,0 -42.15,-1.28" class="frame" />
+      <path
+        d="M-81.28 3.76L-80.81 3.59L-80.34 3.42L-79.87 3.25L-79.41 3.07L-78.94 2.9L-78.47 2.73L-78 2.56L-77.53 2.39L-77.06 2.22L-76.59 2.05L-76.12 1.88L-75.65 1.71L-75.18 1.54L-74.71 1.36L-74.24 1.19L-73.77 1.02L-73.3 0.85L-72.83 0.68L-72.36 0.51L-71.89 0.34L-71.42 0.17L-70.95 0L-70.48 -0.17L-70.01 -0.35L-69.54 -0.52L-69.07 -0.69L-68.6 -0.86L-68.13 -1.03L-67.66 -1.2L-67.19 -1.37L-66.72 -1.54L-66.25 -1.71L-65.78 -1.88L-65.31 -2.06L-64.84 -2.23L-64.37 -2.4L-63.9 -2.57L-63.43 -2.74L-62.96 -2.91L-62.49 -3.08L-62.02 -3.25L-61.65 -3.4"
+        class="svc"
+      />
+      <path
+        d="M-78.62 10.88L-78.15 10.71L-77.68 10.54L-77.21 10.36L-76.74 10.19L-76.27 10.02L-75.8 9.85L-75.33 9.68L-74.86 9.51L-74.39 9.34L-73.92 9.17L-73.45 9L-72.98 8.83L-72.51 8.65L-72.04 8.48L-71.57 8.31L-71.1 8.14L-70.63 7.97L-70.17 7.8L-69.7 7.63L-69.23 7.46L-68.76 7.29L-68.29 7.12L-67.82 6.94L-67.35 6.77L-66.88 6.6L-66.41 6.43L-65.94 6.26L-65.47 6.09L-65 5.92L-64.53 5.75L-64.06 5.58L-63.59 5.4L-63.12 5.23L-62.65 5.06L-62.18 4.89L-61.71 4.72L-61.24 4.55L-60.77 4.38L-60.3 4.21L-59.83 4.04L-59.36 3.87L-58.98 3.73"
+        class="svc svc2"
+      />
+
+      <g class="o-a">
+        <polygon points="-87.34,10.01 -48.79,-7.73 -44.35,-0.18" class="sight" />
+        <polygon points="-52.57,-3.95 -53.81,-2.71 -52.04,-0.94 -50.8,-2.18" class="plat ramp new" />
+        <polygon points="-50.73,-5.78 -42.46,2.49 -43.45,3.48 -47.12,1.5 -52.57,-3.95" class="plat new" />
+        <path d="M-49.78 -7.16L-31.39 11.22" class="rail bay" />
+        <path d="M-48.86 -8.08L-50.69 -6.24" class="buffer bay" />
+        <polygon points="-48.64,-7.87 -39.66,1.11 -41.5,2.95 -50.48,-6.03" class="long" />
+        <polygon points="-48.79,-7.73 -46.52,-5.47 -48.08,-3.91 -50.34,-6.17" class="car" />
+        <polygon points="-46.1,-5.04 -42.79,-1.73 -44.35,-0.18 -47.65,-3.49" class="car eng" />
+        <path d="M-87.34 10.01L-57.93 -0.7L-50.13 -4.12" class="walk" />
+        <path d="M-59.37 25.49L-50.13 -4.12" class="walk w2" />
+        <circle cx="-31.39" cy="11.22" r="1" class="join" />
+        <circle cx="-40.52" cy="-1.51" r="2.6" class="clash" />
+        <text x="-44.5" y="-8.5" class="t b">East bay</text>
+        <text x="-29.49" y="11.22" class="s">joins line 2</text>
+        <text x="-45.81" y="-20.03" class="s">cart's track (lifted)</text>
+        <text x="-70.26" y="-6" class="s w" text-anchor="middle" transform="rotate(-20 -70.26 -6)">
+          40 m · 7 s
+          <tspan class="x">from the hall</tspan>
+        </text>
+        <text x="-53.55" y="10.68" class="s w">31 m · 6 s</text>
+        <text x="-37.32" y="-1.51" class="s f">Q2 frame: in the way</text>
+      </g>
+
+      <g class="o-b">
+        <polygon points="-87.34,10.01 -48.63,-13.05 -47.75,-4.37" class="sight" />
+        <path
+          d="M-47.72 -30.01L-47.81 -29.52L-47.88 -29.03L-47.93 -28.53L-47.97 -28.03L-47.99 -27.53L-48 -27.03L-47.99 -26.53L-47.98 -26.03L-47.96 -25.53L-47.95 -25.03L-47.93 -24.53L-47.92 -24.03L-47.91 -23.53L-47.89 -23.03L-47.88 -22.53L-47.87 -22.03L-47.85 -21.53L-47.84 -21.03L-47.82 -20.53L-47.81 -20.03L-47.8 -19.53L-47.78 -19.03L-47.77 -18.53L-47.75 -18.03L-47.74 -17.53L-47.73 -17.03L-47.71 -16.53L-47.7 -16.03L-47.69 -15.53L-47.67 -15.03L-47.66 -14.54L-47.64 -14.04L-47.63 -13.54L-47.62 -13.04L-47.6 -12.54L-47.59 -12.04L-47.57 -11.54L-47.56 -11.04L-47.57 -10.54L-47.59 -10.04L-47.62 -9.54L-47.67 -9.04L-47.74 -8.55L-47.83 -8.05L-47.93 -7.56L-48.05 -7.08L-48.19 -6.6L-48.34 -6.12L-48.5 -5.65L-48.68 -5.18L-48.88 -4.72L-49.09 -4.27L-49.32 -3.83L-49.56 -3.39L-49.82 -2.96L-50.09 -2.54L-50.38 -2.13L-50.68 -1.73L-50.99 -1.34L-51.31 -0.96L-51.65 -0.59L-52 -0.23L-52.36 0.12L-52.73 0.45L-53.11 0.77L-53.51 1.08L-53.91 1.38L-54.32 1.66L-54.75 1.93L-55.18 2.18L-55.62 2.42L-56.06 2.64L-56.52 2.85L-56.98 3.05L-57.44 3.22L-57.92 3.39L-58.22 3.48"
+          class="rail bay"
+        />
+        <polygon points="-48.08,-3.66 -49.78,-0.95 -51.65,-2.12 -49.94,-4.83" class="long" />
+        <polygon points="-46.76,-7.41 -47.75,-4.37 -49.84,-5.05 -48.85,-8.1" class="car" />
+        <polygon points="-46.43,-13.02 -46.49,-8.34 -48.69,-8.37 -48.63,-13.05" class="car eng" />
+        <polygon points="-68.57,6.05 -65.56,4.95 -64.81,7.02 -67.82,8.11" class="car ghost" />
+        <polygon points="-65,4.75 -60.6,3.15 -59.85,5.21 -64.24,6.81" class="car ghost" />
+        <path d="M-87.34 10.01L-67.99 2.96L-67.58 4.09" class="walk" />
+        <path d="M-59.37 25.49L-66.24 7.76" class="walk w2" />
+        <text x="-45.81" y="-20.03" class="t b">The cart's track</text>
+        <text x="-70.26" y="-6" class="s w" text-anchor="middle" transform="rotate(-20 -70.26 -6)">
+          21 m · 4 s
+          <tspan class="x">from the hall</tspan>
+        </text>
+        <text x="-63.3" y="10.2" class="s w">20 m · 4 s</text>
+        <text x="-43" y="-8" class="s">when called, it rolls in</text>
+        <text x="-43" y="-5.6" class="s">to platform 2 to load</text>
+      </g>
+
+      <g class="o-c">
+        <path d="M-95.8 15.19L-100.22 18.45" class="walk arrow" marker-end="url(#ah)" />
+        <text x="-102.3" y="20.6" class="s w">to West landing</text>
+        <text x="-46" y="-14" class="t b">No bay at Home</text>
+        <text x="-46" y="-11.1" class="s">it stands at West landing,</text>
+        <text x="-46" y="-8.6" class="s">122–131 m west of here,</text>
+        <text x="-46" y="-6.1" class="s">22–23 s on foot</text>
+        <text x="-66.5" y="-7.37" class="s" text-anchor="middle" transform="rotate(-20 -66.5 -7.37)">
+          service-train express only
+        </text>
+        <text x="-45.81" y="-20.03" class="s">cart's track</text>
+      </g>
+
+      <defs>
+        <marker id="ah" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0 0L6 3L0 6Z" fill="var(--accent)" />
+        </marker>
+      </defs>
+      <text x="-91.39" y="7.65" class="t in" text-anchor="middle" dominant-baseline="middle">Hall</text>
+      <text x="-87" y="-3" class="t in" text-anchor="middle" dominant-baseline="middle">Forge</text>
+      <text x="-102.3" y="3.3" class="s">Square</text>
+      <text x="-46.49" y="-26.09" class="t">Line 1 to Camp</text>
+      <text x="-14.5" y="35" class="t" text-anchor="end">Line 2, the ring</text>
+      <text x="-72.2" y="-1.99" class="s x" text-anchor="middle" transform="rotate(-20 -72.2 -1.99)">platform 1</text>
+      <text x="-60.45" y="7.78" class="s x" text-anchor="middle" transform="rotate(-20 -60.45 7.78)">platform 2</text>
+      <text x="-57.9" y="38.72" class="t" text-anchor="middle">Roundhouse</text>
+      <text x="-57.9" y="41.32" class="s" text-anchor="middle">(train upgrade screen)</text>
+      <text x="-67.5" y="33.5" class="s k" text-anchor="end">kept clear for</text>
+      <text x="-67.5" y="35.9" class="s k" text-anchor="end">a bigger Roundhouse</text>
+      <text x="-74.93" y="20.61" class="s x" text-anchor="middle">Q1</text>
+      <text x="-19" y="-27" class="s x" text-anchor="middle">gorge</text>
+      <text x="-80.5" y="14.6" class="s x">engine spur</text>
+
+      <g class="scale">
+        <path d="M-101.5 45h10" class="rail" />
+        <path d="M-101.5 44.2v1.6M-91.5 44.2v1.6" class="rail" />
+        <text x="-96.5" y="43.4" class="s" text-anchor="middle">10 m</text>
+        <path d="M-86 45.8v-4.2m-1.2 1.6l1.2-1.6 1.2 1.6" class="rail" fill="none" />
+        <text x="-84.2" y="43.6" class="s">N</text>
+      </g>
+    </svg>
+  </div>
+  <div class="legend">
+    <span><i></i>track (thin: line's second track)</span>
+    <span><i class="bay"></i>the option's track</span>
+    <span><i class="car"></i>engine and one coach, 8.5 m</span>
+    <span><i class="long"></i>longest set, 12.7 m</span>
+    <span><i class="walk"></i>walk, at 5.6 m/s</span>
+    <span><i class="keep"></i>kept clear for a bigger Roundhouse</span>
+  </div>
+  <p class="muted">
+    North is up. Grey bars on the platform roads are service trains standing at their marks. The blue wedge is what a
+    player in the hall's back doorway sees of the train.
+  </p>
+
+  <section class="o-a">
+    <h2>A · East bay: off the end of the island</h2>
+    <p>
+      A short straight bay in the open ground where the two lines part, past the island's end. The train stands on its
+      own track with its own small platform, and leaves straight onto line 2 without using a platform road.
+    </p>
+    <div class="table">
+      <table class="facts">
+        <tr>
+          <th scope="row">Where it leaves and ends</th>
+          <td>
+            A dead-straight 26 m track across the open ground past the end of the island. It ends at buffers 10 m beyond
+            the island's end ramp, and joins line 2's outbound track 54 m out along line 2, where line 2 has just become
+            double. It is that outbound track carried straight back toward the station.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Points and curves, against the track rules</th>
+          <td>
+            No new curve and no new points to bend through. The bay is the straight; the curve that already swings
+            platform 2's road onto the outbound track (18 m radius, leaving at up to 16.7°) becomes the points. That
+            curve misses the 7° rule for every train at Home today; the bay adds nothing to it. No kink. It ends, so it
+            gets buffers and an end board: a marked terminal.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Where the train stands</th>
+          <td>
+            Engine and one coach (8.5 m): from 0.3 m off the buffers, the coach at the buffer end beside its platform,
+            the engine facing out. Longest that fits: 12.7 m, the longer-boiler engine and two coaches (eight seats),
+            with 3.0 m between track centres at its nose (the level check calls under 2.3 m too close). An end-game
+            engine (10.7 to 14 m) with a coach does not fit.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Walk to its door</th>
+          <td>
+            From the hall: 40 m, 7 s, straight down the island and off its end ramp. From the Roundhouse's open stall:
+            31 m, 6 s across line 2's track, or 35 m, 6 s round the island's end.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What you see from the hall</th>
+          <td>
+            Standing under the line map you look straight down the island. The train is dead ahead, 43 m away, side-on
+            in the gap between the two platforms' trains, its doors toward you. It is the thing at the end of the view.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it does to the running lines</th>
+          <td>
+            Leaving, it rolls straight onto the outbound track. It never stands at a platform or on the single track in
+            front of them, so it can wait with its doors open for the full 20 s while service trains come and go beside
+            it. It takes the next gap on the outbound track; if a service train is already pulling out, it follows it.
+            Coming home it arrives at platform 2 like any train, lets riders off on the island, then backs into the bay
+            from the outbound track (15 to 20 s, my estimate). It should never hold a service train longer than any
+            train ahead would. Line 1 is untouched; the set cannot reach Camp from here.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it displaces</th>
+          <td>
+            The square, the shelf, the wagon's roll-out and the ground kept clear for a bigger Roundhouse: nothing (its
+            nearest point is 23 m from the table, on the far side of line 2). It does take two things. The cart's old
+            track crosses it, so that track is lifted once the cart has stopped running. And Q2's old delivery frame
+            stands 2.5 m from the bay's centre line, so it is cleared or moved about 2 m.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it costs to build</th>
+          <td>
+            26 m of new track, one buffer stop, one short low platform (about 12 m, the island's own parts) and a ramp,
+            and up to 0.9 m of fill under the buffer end, where the ground dips. No world reset of its own: the track is
+            only drawn, and where the set stands rides the reset the passenger train itself needs.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Alone and together</th>
+          <td>
+            Alone: a 7 s walk, sit down, Go now. Together: the 20 s is always whole, and a friend who arrives late on a
+            service train steps off on the island 10 to 20 m from the bay.
+          </td>
+        </tr>
+      </table>
+    </div>
+  </section>
+  <section class="o-b">
+    <h2>B · The cart's track: no new track</h2>
+    <p>
+      The cart's link between the two lines falls idle when the cart retires. The train is kept there and rolls into
+      platform 2 when called.
+    </p>
+    <div class="table">
+      <table class="facts">
+        <tr>
+          <th scope="row">Where it leaves and ends</th>
+          <td>
+            No new track. The set stands on the cart's track: the 38 m link the cart uses from line 1 (54 m out) round
+            into platform 2's road (26 m out). The cart stops running after Q6, long before a passenger train is bought.
+            The link has no buffers and needs none: it runs through, joined at both ends.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Points and curves, against the track rules</th>
+          <td>
+            Nothing new. The link is a 15 m curve, the same as the engine spur: far under the 60 m rule for running
+            lines (and the 40 m one for slow loops), like everything else in Home's station. No kink.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Where the train stands</th>
+          <td>
+            On the curve, 17 to 25.5 m along the link: the only stretch far enough from both lines (its first 16 m run
+            within 3.3 m of line 1). The 12.7 m set fits too (to 29.7 m, 4.0 m from line 2). It stands bent round a 15 m
+            curve with no platform beside it: you do not board it there.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Walk to its door</th>
+          <td>
+            You board at platform 2 on the island: 21 m, 4 s from the hall, the shortest of the three. From the
+            Roundhouse's open stall: 20 m, 4 s across the track (not through a standing train), or 37 m, 7 s round the
+            island's end.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What you see from the hall</th>
+          <td>
+            The same view down the island: the train is parked 44 m away past the island's end, side-on. When you call
+            it, it rolls 23 m round the curve into platform 2 beside you (about 6 s): a small arrival of its own.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it does to the running lines</th>
+          <td>
+            It loads at platform 2, so for the roll-in, the wait and the pull-out (about 35 s) it holds line 2's only
+            platform road and the single track in front of it. The express rule ends the wait early rather than hold a
+            train, so with three trains on the ring the full 20 s will often be cut short (my estimate: to 10 to 15 s;
+            not simulated). It never holds a service train, but it has no place of its own to wait. Line 1 is untouched,
+            and from here the set could also leave for Camp.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it displaces</th>
+          <td>
+            Nothing. The square, the shelf, the wagon's roll-out and the Roundhouse's ground are all clear, and the
+            cart's track stays as planned.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it costs to build</th>
+          <td>No new track and no platform. No world reset of its own.</td>
+        </tr>
+        <tr>
+          <th scope="row">Alone and together</th>
+          <td>
+            Everyone is already on the island where it loads, so the walk is the best of the three. But the wait for
+            friends is the least certain: it shrinks whenever a service train is due.
+          </td>
+        </tr>
+      </table>
+    </div>
+  </section>
+  <section class="o-c">
+    <h2>C · No bay at Home</h2>
+    <p>
+      The honest do-nothing: the passenger train lives at West landing, and from the hall the first stage's express is
+      all there is.
+    </p>
+    <div class="table">
+      <table class="facts">
+        <tr>
+          <th scope="row">Where it leaves and ends</th>
+          <td>
+            Nothing is built at Home. The passenger train's Home berth is West landing, the ring's other end, where two
+            terminals with buffers are already planned side by side.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Points and curves, against the track rules</th>
+          <td>
+            Nothing at Home. West landing is not drawn yet, so its bay can be drawn to the rules from the start (a 40 m
+            bay road, 65 m of parallel track, 7° points).
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Where the train stands</th>
+          <td>At West landing. Any length its bay is drawn for.</td>
+        </tr>
+        <tr>
+          <th scope="row">Walk to its door</th>
+          <td>
+            From the hall: 122 to 131 m through the village, 22 to 23 s in a straight line (longer by the real path,
+            which is not laid out). From the Roundhouse: about 150 m, 27 s.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What you see from the hall</th>
+          <td>
+            Nothing. The hall's board either sends you on foot ("from West landing") or gives you the first stage's
+            express: the next service train with a headboard, at platform 2.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it does to the running lines</th>
+          <td>
+            Nothing changes at Home. From the hall the only express is the service train with a headboard, its wait cut
+            short by traffic, exactly as before the purchase.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">What it displaces</th>
+          <td>Nothing.</td>
+        </tr>
+        <tr>
+          <th scope="row">What it costs to build</th>
+          <td>
+            Nothing at Home. West landing's bay is part of drawing that station (stage 6 of the map), so the purchase
+            may show nothing near Home until then.
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Alone and together</th>
+          <td>
+            Friends at Home have nothing of their own to gather round: the train they bought is a 22 s walk away, out of
+            sight.
+          </td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <h2>Side by side</h2>
+  <div class="table">
+    <table class="cmp">
+      <tr>
+        <th></th>
+        <th>A · East bay</th>
+        <th>B · The cart's track</th>
+        <th>C · No bay at Home</th>
+      </tr>
+      <tr>
+        <th scope="row">New track</th>
+        <td>26 m, straight, buffers</td>
+        <td>0 m</td>
+        <td>0 m at Home</td>
+      </tr>
+      <tr>
+        <th scope="row">New platform</th>
+        <td>Yes, about 12 m</td>
+        <td>No (loads at platform 2)</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <th scope="row">Hall to its door</th>
+        <td>40 m · 7 s</td>
+        <td>21 m · 4 s</td>
+        <td>122–131 m · 22–23 s</td>
+      </tr>
+      <tr>
+        <th scope="row">Roundhouse to its door</th>
+        <td>31 m · 6 s</td>
+        <td>20 m · 4 s</td>
+        <td>about 150 m · 27 s</td>
+      </tr>
+      <tr>
+        <th scope="row">Seen from the hall</th>
+        <td>Yes, 43 m, dead ahead</td>
+        <td>Yes, 44 m, then it rolls in</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <th scope="row">Longest set</th>
+        <td>12.7 m</td>
+        <td>12.7 m, on a curve</td>
+        <td>Whatever West landing is drawn for</td>
+      </tr>
+      <tr>
+        <th scope="row">New curves</th>
+        <td>None</td>
+        <td>None (stands on the 15 m link)</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <th scope="row">Full 20 s wait for friends</th>
+        <td>Always</td>
+        <td>Often cut to 10–15 s (estimate)</td>
+        <td>As the first stage</td>
+      </tr>
+      <tr>
+        <th scope="row">Holds a service train</th>
+        <td>No</td>
+        <td>No, it leaves early instead</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <th scope="row">Displaces</th>
+        <td>The cart's track; Q2's old frame</td>
+        <td>Nothing</td>
+        <td>Nothing</td>
+      </tr>
+      <tr>
+        <th scope="row">Roundhouse's kept ground</th>
+        <td>Clear (23 m away)</td>
+        <td>Clear</td>
+        <td>Clear</td>
+      </tr>
+      <tr>
+        <th scope="row">World reset of its own</th>
+        <td>No</td>
+        <td>No</td>
+        <td>No</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>Looked at and ruled out</h2>
+  <ul>
+    <li>
+      <b>In the Roundhouse, out by the engine spur.</b> Your ruling. Measured as well: the track behind the spur's
+      points is 8.1 m and an engine with one coach is 8.5 m, so it could not have turned back there without moving the
+      buffers into the hall.
+    </li>
+    <li>
+      <b>A bay beside the hall, south of platform 2's road.</b> It would be 5 m from the hall, but the engine spur
+      swings across that ground 16 m along, and joining the two would need a 7 m curve or a moved table. It also sits on
+      the ground kept free to relay the spur wider when the Roundhouse grows, with Q1's frame in the way.
+    </li>
+    <li>
+      <b>North of line 1's road.</b> That is the forge's goods side: the boiler stand is 3.4 m from the track, with the
+      dock and crane beside it.
+    </li>
+    <li>
+      <b>A through track across the gap, line 1 to line 2's outbound track, no buffers.</b> It can be drawn at about 55
+      m radius, near the 60 m rule, but only about 7 m of it is far enough from both lines to stand a train on, and the
+      set is 8.5 m.
+    </li>
+    <li>
+      <b>The rule for designed stations (a 40 m bay road with 65 m of parallel track).</b> Home's two roads are parallel
+      for 22 and 25 m before they curve apart. Home is the exception whichever option you pick.
+    </li>
+  </ul>
+
+  <h2>Recommendation</h2>
+  <div class="pick">
+    <p>
+      <b>A, the east bay.</b> It is the only place at Home where the train can stand with its doors open for the full 20
+      s without sitting on a running line, in plain view down the island from the hall, and it touches nothing kept for
+      the Roundhouse.
+    </p>
+    <p class="muted">
+      B is the fallback if the cart's track has to stay. C is not competitive: it leaves the hall with nothing to see or
+      board after the purchase.
+    </p>
+  </div>
+
+  <h2>What I could not confirm</h2>
+  <ul>
+    <li>
+      Whether the cart's track stays as track after the cart retires. The plans say the cart stops serving after Q6;
+      they do not say the rails are lifted.
+    </li>
+    <li>What becomes of Q2's delivery frame once its job is done.</li>
+    <li>
+      That outbound trains really run on the left-hand track from 54 m out. The layout draws it there (the double-track
+      work); I read the drawing, not how trains are posed on it. A depends on it.
+    </li>
+    <li>
+      Every time above that is marked as an estimate. They come from distances; no simulation runs a train that belongs
+      to no line yet.
+    </li>
+    <li>West landing's layout. It is not drawn; its distances are straight lines to the blockout's two halts.</li>
+    <li>
+      The ground under the bay is from the terrain data (level within about 0.9 m of the rails), not from a look in the
+      game. Layout B is not live, and the level check does not know the spur, the cart's track or a bay.
+    </li>
+    <li>
+      If the joining curve on line 2 is later eased over 30 m instead of 20 (the rail map's proposal), A's join moves
+      from 54 m to 64 m out. The bay still works, but where a standing train clears the next track should be measured
+      again.
+    </li>
+  </ul>
+  <p class="muted">
+    Drawn from <code>src/place/home-station.ts</code>, <code>src/place/layout.ts</code> and the terrain at commit
+    a5999692c. Design only: nothing here is built. Brief: <code>docs/brainstorms/express-train.md</code>.
+  </p>
+</main>
+<script>
+  (() => {
+    const page = document.getElementById('page');
+    const picks = [...document.querySelectorAll('[data-pick]')];
+    const set = (o) => {
+      page.dataset.opt = o;
+      for (const b of picks) b.setAttribute('aria-pressed', String(b.dataset.pick === o));
+    };
+    for (const b of picks)
+      b.addEventListener('click', () => {
+        set(b.dataset.pick);
+        try {
+          history.replaceState(null, '', '#' + b.dataset.pick);
+        } catch {}
+      });
+    const h = location.hash.slice(1);
+    if (h === 'a' || h === 'b' || h === 'c') set(h);
+  })();
+</script>

@@ -313,6 +313,44 @@ does not stand in the Roundhouse and does not come out by the engine spur. Home'
 open design item ([decision](../decisions-rail.md#d-2026-11-10-the-passenger-set-does-not-stand)); the Roundhouse
 readings above, in question 1 and in the design review's finding 1 are history.
 
+### Home's bay for the passenger set (options, 10 November)
+
+Drawn to scale on layout B, one tab per option: [home-passenger-bay.html](../world/home-passenger-bay.html). Numbers
+are measured from `src/place/home-station.ts`, `src/place/layout.ts` and the terrain at a5999692c; walks are at
+5.6 m/s from the hall's back doorway and from the Roundhouse's open stall door. Design only: nothing is built.
+
+| | A · East bay | B · The cart's track | C · No bay at Home |
+| --- | --- | --- | --- |
+| Where it stands | A straight bay past the island's end, buffers 10 m beyond the end ramp; joins line 2's outbound track at s 54 | On the cart's 38 m link (line 1 s 54 to road 2 s 26), 17 to 25.5 m along it, on its 15 m curve | At West landing |
+| New track | 26 m, straight, one buffer stop | 0 m | 0 m at Home |
+| New platform | Yes, about 12 m | No: it rolls 23 m into platform 2 to load | No |
+| New curves or points | None: the existing joining curve (18 m, up to 16.7°) becomes the points | None | None |
+| Engine and one coach (8.5 m) | Fits, 0.3 m off the buffers | Fits, 3.6 m from line 1 | n/a |
+| Longest set | 12.7 m (longer-boiler engine, two coaches), 3.0 m between track centres at its nose | 12.7 m, 4.0 m from line 2 | Whatever West landing is drawn for |
+| Hall to its door | 40 m, 7 s | 21 m, 4 s | 122–131 m, 22–23 s (straight line) |
+| Roundhouse to its door | 31 m, 6 s across the track (35 m round the island's end) | 20 m, 4 s across the track (37 m round) | about 150 m, 27 s |
+| Seen from the hall | Yes: 43 m, dead ahead down the island, side-on | Yes: 44 m, then it rolls in beside you | No |
+| Running lines | Leaves straight onto the outbound track; never on a platform road or the single track | Holds platform 2 and the single track about 35 s (estimate) | Unchanged |
+| Full 20 s wait | Always | Often cut to 10–15 s with three trains (estimate, not simulated) | As the first stage |
+| Holds a service train | No | No: the wait ends early instead | No |
+| Displaces | The cart's link (crosses it) and Q2's old frame (2.5 m from the bay's centre line); nothing of the square, shelf, wagon's roll-out or the Roundhouse's kept ground (23 m from the table) | Nothing | Nothing |
+| `WORLD_NS` bump of its own | No | No | No |
+
+Ruled out, with the measurements, on the page: a bay beside the hall south of road 2 (the engine spur crosses it at
+s 16, and it sits on the ground kept to relay the spur), north of road 1 (the forge's goods side), a through chord
+across the gap (about 7 m of clear standing room for an 8.5 m set), and the designed-station rule of a 40 m bay road
+with a 65 m parallel throat (Home's roads are parallel for 22 and 25 m). Also measured: the stub behind the spur's
+points is 8.1 m, so the 8.5 m set could not have reversed there.
+
+**Recommended: A, the east bay.** It is the only place at Home where the set can stand with its doors open for the
+full 20 s without sitting on a running line, in plain view down the island from the hall, and it touches nothing kept
+for the Roundhouse. B is the fallback if the cart's link has to stay.
+
+Not confirmed: whether the cart's link stays as track after the cart retires; what becomes of Q2's frame; that
+outbound trains are posed on the left-hand track from s 54; every time marked as an estimate; West landing's layout.
+
+Answer: \_\_\_
+
 ## 8. When the player gets it
 
 - **The express:** once line 2 reaches Ring Island (v27) and Home's hall map exists (layout B's big board), with no
