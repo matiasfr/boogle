@@ -172,6 +172,7 @@ Liked: "other than that, the feedback was pretty positive." From the data, the W
 | P | Note (his words where quoted) | What it is | Status |
 | --- | --- | --- | --- |
 | P2 | "Connecting to the railway…" covers Jump at phone width (owner, 11 November: "P2, fix soon") | The connecting toast overlaps the Jump button on a phone-width screen, seen in his phone screenshot on 11 November | Queued |
+| P2 | "One thing I noticed, the white flag from the drawbridge clips when it comes down, it should maybe be on it's own pole if we need it" (owner, 11 November, after clips of Ring Island's leaf) | The toe pennant swept the railhead deck and the camera as the leaf came down. Kept (it makes the raised leaf readable from Home), moved to its own fixed pole beside the hinge pier (u 282, lat -7.8), clear of the leaf, deck and lanes; it stays up after the Meet | Built (not seen) |
 
 ## No job yet
 
