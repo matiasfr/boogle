@@ -419,16 +419,21 @@ export function createService(cfg: ServerConfig) {
       });
       return (server.address() as AddressInfo).port;
     },
-    // The hosted rooms first (bye, save, close 1012), so index.ts's shutdown needs nothing else.
+    // The hosted rooms first (bye, save, close 1012), so index.ts's shutdown needs nothing else. A room host failure is
+    // logged the moment it arrives (by 7.5 s, rooms.ts close), then rethrown after the HTTP close (at most 1 s more).
     async close({ save = true } = {}) {
       try {
         await roomHost?.close({ save });
+      } catch (error) {
+        const inner = error instanceof AggregateError ? error.errors.map(String) : [];
+        cfg.log('rooms failed to close:', String(error), ...inner);
+        throw error;
       } finally {
         await new Promise<void>((resolve) => {
           const force = setTimeout(() => {
             server.closeAllConnections?.();
             resolve();
-          }, 5000);
+          }, 1000);
           force.unref();
           server.close(() => {
             clearTimeout(force);

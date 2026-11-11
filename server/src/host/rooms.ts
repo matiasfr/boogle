@@ -11,6 +11,7 @@
 //   roomHost.hosts(id), status(id)       whether it hosts that room; GET /rooms/:id/host
 //   await roomHost.offline(id, fn)        admin.ts: close the room unsaved, run fn while joins are refused; 'busy' if closing
 //   await roomHost.close({ save })
+//   roomHost.closing()                    the ids still closing (index.ts names them if shutdown overruns)
 import crypto from 'node:crypto';
 import type http from 'node:http';
 import type { Duplex } from 'node:stream';
@@ -63,6 +64,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const closing = new Set<string>();
   // Rooms whose last close failed, until they load again (after their drain); shutdown reports them.
   const failed = new Map<string, unknown>();
+  const offlines = new Map<string, Promise<void>>(); // offline() runs in progress, settled (never rejected) when done
   let stopping = false;
   for (const id of listed) load(id);
   // A room's close, bounded by closeMs; false when it failed (a refused or failed save, a save that did not load
@@ -207,6 +209,9 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     async offline<T>(id: string, fn: () => Promise<T>): Promise<T | 'busy'> {
       if (stopping || closing.has(id)) return 'busy';
       closing.add(id);
+      // Shutdown waits for this run (fn may queue its write only after other work, after shutdown's drain).
+      let done = () => {};
+      offlines.set(id, new Promise<void>((resolve) => (done = resolve)));
       try {
         const room = rooms.get(id);
         if (room) {
@@ -217,12 +222,18 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         return await fn();
       } finally {
         closing.delete(id);
+        offlines.delete(id);
+        done();
         if (listed.has(id) && !rooms.has(id) && !stopping) load(id);
       }
     },
-    // Settles once every room has closed and every write a closing room queued (a fenced close's last save, or one
-    // still draining from an earlier failed idle close) has landed. The whole wait ends 1.5 x closeMs after it begins
-    // (7.5 s by default, inside index.ts's 8 s hard exit); writes still queued then are reported, saving or not.
+    // Rooms still closing (draining, or offline): index.ts names them if its hard exit fires.
+    closing: () => [...closing],
+    // Settles once every room has closed and every write a closing room queued (a fenced close's last save, one still
+    // draining from an earlier failed idle close, or an offline() run's) has landed. The whole wait ends 1.5 x closeMs
+    // after it begins (7.5 s by default); writes still queued then are reported, saving or not. Then every socket still
+    // open is terminated, so server.ts's HTTP close (forced at 1 s) is not held open by a stalled room's players: the
+    // report reaches index.ts by about 8.5 s, inside its 9 s hard exit and Fly's 10 s kill_timeout.
     async close({ save = true } = {}) {
       stopping = true;
       clearInterval(sweep);
@@ -233,20 +244,23 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         for (const [id, room] of rooms) closeRoom(id, room, save);
         // Drain every writer before reporting any failure: another room may still have accepted edits.
         await Promise.all(unloading);
-        const queued = [...closing];
+        const left = new Set(closing);
+        const settled = [...left].map((id) => Promise.all([drain(id), offlines.get(id)]).then(() => left.delete(id)));
         const drained = await Promise.race([
-          Promise.all(queued.map(drain)).then(() => true),
+          Promise.all(settled).then(() => true),
           new Promise<false>((resolve) => {
             timer = setTimeout(() => resolve(false), Math.max(0, deadline - performance.now()));
           }),
         ]);
         if (!drained) {
-          const late = new Error(`writes still queued for ${queued.join(', ')} after ${closeMs * 1.5} ms`);
+          const late = new Error(`writes still queued for ${[...left].join(', ')} after ${closeMs * 1.5} ms`);
           throw new AggregateError([...failed.values(), late], 'one or more rooms did not finish writing');
         }
         if (save && failed.size) throw new AggregateError([...failed.values()], 'one or more rooms failed to close');
       } finally {
         clearTimeout(timer);
+        // Every player has been sent `bye`; a stalled room's own close would only close them once its save settles.
+        for (const ws of wss.clients) ws.terminate();
         wss.close();
       }
     },
