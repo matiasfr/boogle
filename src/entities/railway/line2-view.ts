@@ -19,7 +19,10 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
-import { LINE2_FORGE, LINE2_STATIONS, line2Panels } from '../../sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, Q7, line2Panels, pierLaid } from '../../sim/railway-line2-layout.ts';
+import { line2Completed } from '../../sim/railway-queries-line2.ts';
+import { RING_Q7_FRAME } from '../../sim/railway-ring-layout.ts';
+import { Q7_DECK_UP, q7Spot } from './q7-site.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
@@ -100,6 +103,9 @@ export async function createRailwayLine2(
     return switchCamera.active();
   }
   const quarry = layout.LINKS[1]!;
+  /** Q7's frame is at s 710 on line 2's path (RING_Q7_FRAME's comment); its heading is the line's there. */
+  const RING_Q7_FRAME_S = 710;
+  const P7 = { x: 0, z: 0, ux: 0, uz: 1 };
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
   const partMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
@@ -202,8 +208,44 @@ export async function createRailwayLine2(
   const frames = quarry.stations
     .slice(0, LINE2_STATIONS.length)
     .map((spec) => stations.buildStation(spec, stations.frameBesideLine(spec, quarry.line, quarry.dir), owner));
-  // Place's quarry link frames Q1-Q6; Q7 (v27, laid on the pier's deck) has no frame here until its view (R4a), so the
-  // frames, feeds, deposits and the depot rack skip it rather than read a frame that is not there.
+  // Place's quarry link frames Q1-Q6, the ones the laying machine works at; `machined` is those. Q7 (v27) is laid on the
+  // pier's piled deck (call 55): its frame is the sim's (RING_Q7_FRAME) at the trestle's deck height, a frame like the
+  // others for deposits, feeds, tags and the depot rack, but the machine stays parked at the pier head while its deck is
+  // laid (./ring-deck.ts), so everything that follows the machine reads `machined`.
+  const MACHINED = frames.length;
+  const machined = (k: number) => k >= 0 && k < MACHINED;
+  /** Q7's frame is built once the pier is laid (its deck, ./crossing-view.ts, stands from Q6): before then there is
+   * nothing for it to stand on. It stays for the page's life. */
+  function ensureQ7Frame() {
+    if (frames.length > MACHINED || !pierLaid(line2Completed(adapter.read.world()))) return;
+    layout.lineAt(quarry.line, RING_Q7_FRAME_S, P7);
+    const out = { x: -P7.uz, z: P7.ux };
+    frames.push(
+      stations.buildStation(
+        // "Line 2, station 7" follows the others' board ("Station 7"); the plan names no label for it.
+        {
+          id: 'Q7',
+          s: 742,
+          to: 862,
+          side: 1,
+          logs: 20,
+          rails: 20,
+          label: 'Line 2, station 7',
+          crate: true,
+          rack: 'train',
+        },
+        {
+          x: RING_Q7_FRAME.x / 100,
+          z: RING_Q7_FRAME.z / 100,
+          yaw: Math.atan2(P7.ux, P7.uz),
+          lx: out.x,
+          lz: out.z,
+          y: layout.railY(quarry.line, RING_Q7_FRAME_S) + Q7_DECK_UP,
+        },
+        owner,
+      ),
+    );
+  }
   const framed = (k: number) => k >= 0 && k < frames.length;
   track.snapTo(track.u(layout.STUB.east));
   const depotLogs = pieces.logStackMesh(32, owner);
@@ -220,6 +262,7 @@ export async function createRailwayLine2(
   const depotSign = stockSign(owner, 'logs');
   depotSign.board.visible = false;
   const depotYaw = (k: number) => frames[k]!.yaw - Math.PI / 2;
+  const deck7 = { x: 0, y: 0, z: 0, yaw: 0 };
   const depotAt = new THREE.Vector3();
   const depotPlace = (k: number, out: THREE.Vector3) => {
     const f = frames[k]!;
@@ -227,6 +270,11 @@ export async function createRailwayLine2(
     // Use the frame's tangent; normalizing a vector toward the frame crowded the pile against it on bends.
     // The full 3.2 m pickup zone stays inside the server's 7 m reach except Q6's dry approach rack below.
     out.set(f.x - Math.sin(f.yaw) * 3.4, 0, f.z - Math.cos(f.yaw) * 3.4);
+    if (k === Q7) {
+      // On the pier's piled deck, south of the frame (q7-site.ts), and over the sea: the deck's height, not the ground's.
+      const d = q7Spot('rack', deck7);
+      return out.set(d.x, d.y + 0.16, d.z);
+    }
     if (LINE2_STATIONS[k]!.feed === 'train') {
       const p = rail.besideLine(quarry.line, LINE2_STATIONS[k]!.fromCm / 100 - 8, quarry.stations[k]!.side * 7.5);
       out.set(p.x, 0, p.z);
@@ -255,7 +303,8 @@ export async function createRailwayLine2(
       .set(-1.2, 0, -1.55)
       .applyAxisAngle(THREE.Object3D.DEFAULT_UP, depotYaw(k))
       .add(depotRack.position);
-    depotSign.board.position.y = land.H(depotSign.board.position.x, depotSign.board.position.z);
+    depotSign.board.position.y =
+      k === Q7 ? depotAt.y - 0.16 : land.H(depotSign.board.position.x, depotSign.board.position.z);
     depotSign.board.rotation.y = depotYaw(k) + Math.PI / 2;
     depotSign.set(n);
     depotSign.show(train ? 'train' : 'logs');
@@ -454,7 +503,7 @@ export async function createRailwayLine2(
     { land, props, carry, engine: await import('./engine-kit.ts'), sounds, pieces, flat, youGot },
     chimneyTop,
   );
-  const pier = createRailwayPier(owner, { layout, rail, sounds });
+  const pier = createRailwayPier(owner, { layout, rail, sounds, adapter, track });
   // The forge's roof, chimney cap and workshop once the crossing is done (works-late-game step 6).
   const finish = await createForgeFinish(adapter, owner, {
     plan,
@@ -483,8 +532,8 @@ export async function createRailwayLine2(
   };
   const activeIndex = () => {
     const l = l2();
-    // Q6's frame once the active job has none (all laid, or Q7): the machine parks at the pier's end.
-    return l ? (framed(l.active) ? l.active : frames.length - 1) : 0;
+    // Q6's frame once the active job is not the machine's (all laid, or Q7): the machine parks at the pier's end.
+    return l ? (machined(l.active) ? l.active : MACHINED - 1) : 0;
   };
   const jobElapsed = (k: number) => {
     const job = l2()!.stations[k]!;
@@ -522,7 +571,7 @@ export async function createRailwayLine2(
     if (!l) return { phase: 'idle', activeStation: 0, panelStock: 0, panelCount: 0 };
     let count = 0;
     l.stations.forEach((job, k) => {
-      if (framed(k) && job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, job.elapsed, job.timing);
+      if (machined(k) && job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, job.elapsed, job.timing);
     });
     const k = activeIndex(),
       job = l.stations[k]!;
@@ -566,6 +615,7 @@ export async function createRailwayLine2(
     pouring = 0,
     pourGeneration = 0;
   function restore() {
+    ensureQ7Frame();
     switchCamera.reset();
     switchKind = null;
     deposits = [];
@@ -1020,6 +1070,7 @@ export async function createRailwayLine2(
       farHead.update(dt, l.stations[4]?.completion === 1);
       boiler.update(dt);
       pier.update(dt, l.stations[5]?.completion === 1);
+      ensureQ7Frame();
       if (slabT >= 0) {
         slabT += dt;
         const u = Math.min(1, slabT / 1.5);

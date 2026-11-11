@@ -692,6 +692,30 @@ wider deck's edge, both line-2 gates span both tracks (slab 10.4 m, centred 2 m 
 lamps stand at its new edge. Trains still run on today's track only (step 4). No `WORLD_NS` bump; not tested on a
 device.
 
+**Line 2 goes out: the views of v27 (11 November 2026, R4a; [ring-island-build1](../plans/ring-island-build1.md), step 4a; owner/designer calls 53-65).**
+The rules went out to Ring Island in v27 (Q7, the Railhead, Ring Island, three trains); this is what a player sees of
+them. **The Pier is on the east side** of the down track, from Q6: its platform (s 719-741, lat +1.65 to +4.15), shelter,
+bench, board, signal mast and one-handle lever (plaqued Village) mirror the old west ones, the one ramp up from the
+trestle's deck at the landward end (s 713-719), and the pier rack on its seaward edge. Nothing stands on the west
+side. Past the platform's north end the pier head's side deck shrinks to a **pad** (s 741-746) that carries the jib, 0.68 m
+under the platform's north end (a drop going out, a plain jump coming back); the jump-ins land on the platform's
+south end. South of the ramp a **piled deck** (s 703-713, lat +1.8 to +6.0) carries **Station 7**'s frame (the
+sim's, s 710), its log rack, the rails' shelf and its box; Q7's kit unloads there from the train that stands at the
+Pier, and the frame, rack and shelf stand once the pier is laid. **Q7's double deck** is laid over bents 1-6 a panel at
+a time (planks across both tracks, both tracks' rails, stringers, a 1.5 m plank footway along its east edge from the
+pad to where the railhead's walkway begins; solid as it is laid), with a finger board "Railhead" at the pad's corner.
+When Q7 is done the pier's **up track** drops in from the old merge out to the pier head as plain double track (the
+turnout before s 556 is taken out of the picture). Trains run past the pier head on the ring's own path (the layout's
+line does not reach it), take the up track's 4 m offset from the open end's stub (the Pier's, the railhead's, sliding
+a bent with `head`) or crossover (Far Head's, Ring Island's), and a train Q7 turns at the Pier eases onto the down
+track instead of jumping across (it once jumped 4 m for a tick). The levers of the **Railhead** (east: way home, live
+once Q7 is laid, sliding with the railhead and offering no prompt while it moves; west: chained until the rivet) and
+**Ring Island** (east: way home, live from the rivet; west: chained) are drawn on those platforms; a chained lever's
+plaque names the halt that opens next. Not yet: the laying machine does not travel out onto the deck (it stays parked
+at the pier head while the deck drops in), the halt displays' map keeps v26's six stops (the Railhead's and Ring
+Island's names do not fit the 320 x 256 faces beside the Pier's), and the railhead's own platform, rack and jib are
+R4b's. Not tested on a device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's

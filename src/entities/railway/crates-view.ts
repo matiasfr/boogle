@@ -20,6 +20,7 @@ import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { wardrobe } from '../wardrobe/state.ts';
 import { inReach } from './tools.ts';
+import { q7Spot } from './q7-site.ts';
 
 /** Every stretch that hands a crate down, in order; each one's place in BOXES sets its tier. T1 and T2 are the
  * hat and scarf, reward.ts's claims, so the boxes here start at the third. */
@@ -80,7 +81,11 @@ export async function createStationBoxes(
   const boxes = STATION_BOXES.map((spec) => {
     // Line two's boxes stand across the track: the frame's own side has its depot rack, whose Take a box's Open
     // would otherwise beat (place-retirement C1, as built).
-    const at = rewardSeat(LINKS[spec.line]!, besideLine, H, railY, OUT, spec.station, spec.line === 1);
+    // Q7's frame stands on the Pier's piled deck, over the sea: its box goes on the deck, not by a ground search.
+    const at =
+      spec.id === 'Q7'
+        ? (({ x, y, z }) => new THREE.Vector3(x, y, z))(q7Spot('crate', { x: 0, y: 0, z: 0, yaw: 0 }))
+        : rewardSeat(LINKS[spec.line]!, besideLine, H, railY, OUT, spec.station, spec.line === 1);
     const mesh = new THREE.Mesh(crateGeo[spec.tier], material);
     mesh.castShadow = true;
     const beam = new THREE.Mesh(beamGeo, glow[spec.tier].mat);

@@ -55,6 +55,10 @@ export type Track = {
   layTo: (u: number) => void;
   snapTo: (u: number) => void;
   update: (dt: number) => void;
+  /** Takes the up track's old merge (the 20 m turnout before the pier stub's merge, FORMATION.to) out of the picture
+   * for good, or puts it back: Q7 relays the pier as plain double track (ring-island-build1, call 61). Returns the
+   * metres along the line where the first retired rail piece starts (the relay's own rails begin there). */
+  retire: (on: boolean) => number;
 };
 type PieceKind = 'sleeper' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'brace';
 export function buildTrack(
@@ -262,6 +266,9 @@ export function buildTrack(
   // the panel at their place; `upRails` marks the up track's rails, of which the gantry carries a pair a panel.
   const upRails = new Set<number>(),
     crossRails = new Set<number>();
+  /** The up track's rails in the merge turnout, which Q7's relay retires. */
+  const merge: { k: number; from: number }[] = [],
+    retired = new Set<number>();
   const wa = { x: 0, z: 0 },
     wb = { x: 0, z: 0 };
   const offsetAt = (s: number, l: number, out: { x: number; z: number }) => {
@@ -386,6 +393,8 @@ export function buildTrack(
         for (const r of [-0.5, 0.5]) {
           offsetBox('rail', a, la + r, b, lb + r, 0.1, 0.12, TOP, '#4c5058', -2.2, 0.8);
           upRails.add(boxes.length - 1);
+          // A rail piece that is not on the straight up track (UP_LAT) at one end is in the merge turnout.
+          if (a > formation.to - 60 && (la > UP_LAT + 0.01 || lb > UP_LAT + 0.01)) merge.push({ k: boxes.length - 1, from: a });
         }
     }
     const c = formation.crossover;
@@ -666,7 +675,7 @@ export function buildTrack(
             set.snap(k, true);
           }
       for (const k of t.panelPieces[index] ?? []) {
-        if (dropped[k] || k === a || k === b || k === c || k === d) continue;
+        if (dropped[k] || retired.has(k) || k === a || k === b || k === c || k === d) continue;
         if (Math.min(triggers[k]!, sweepEnd[index]!) > reach) continue;
         dropped[k] = 1;
         set.drop(k, t.heights[k]!);
@@ -676,6 +685,7 @@ export function buildTrack(
       t.head = to;
       while (t.next < order.length && t.us[order[t.next]!]! <= to) {
         const k = order[t.next++]!;
+        if (retired.has(k)) continue;
         if (panelled) set.snap(k, true);
         else set.drop(k, t.heights[k]!);
       }
@@ -687,7 +697,7 @@ export function buildTrack(
       dropped.fill(0);
       t.head = to;
       t.cursor = panels.filter((p) => p.to <= to + 1e-7).length;
-      boxes.forEach((_, k) => set.snap(k, pre[k]! || t.us[k]! <= to));
+      boxes.forEach((_, k) => set.snap(k, !retired.has(k) && (pre[k]! || t.us[k]! <= to)));
       t.next = order.findIndex((k) => t.us[k]! > to);
       if (t.next < 0) t.next = order.length;
       for (const so of solids) if (so.on) removeBodies(so, owner);
@@ -695,6 +705,15 @@ export function buildTrack(
       growSolids(t, to);
     },
     update: (dt) => set.update(dt),
+    retire(on) {
+      for (const { k } of merge) {
+        if (on) {
+          retired.add(k);
+          set.snap(k, false);
+        } else if (retired.delete(k)) set.snap(k, t.us[k]! <= t.head);
+      }
+      return merge.length ? Math.min(...merge.map((m) => m.from)) : formation.to;
+    },
   };
   owner?.cleanup(() => {
     for (const solid of solids) removeBodies(solid, owner);

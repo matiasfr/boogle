@@ -1,12 +1,6 @@
 // Local train presentation. Server rows and the shared mover clock alone choose the decks' poses.
 import * as THREE from 'three/webgpu';
-import {
-  railStopsNow,
-  railTrainAsked,
-  railTrainHeld,
-  type RailwayAdapter,
-  type RailwayAccepted,
-} from '../../adapters/railway.ts';
+import { railTrainAsked, railTrainHeld, type RailwayAdapter, type RailwayAccepted } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Platform } from '../../physics/platforms.ts';
 import { carry } from '../../physics/platforms.ts';
@@ -29,12 +23,25 @@ import {
   trainRequestable,
   type RailTrain,
 } from '../../sim/railway-train.ts';
-import { LINE2, RAIL_TRAINS } from '../../sim/railway-lines.ts';
-import { pierLaid } from '../../sim/railway-line2-layout.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { line2Active } from '../../sim/railway-queries-line2.ts';
+import { aperture } from '../../sim/railway-rows.ts';
+import { trainStops } from '../../sim/railway-queries-trains.ts';
+import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
+import { BOTTOM, type Car } from './car.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 
 const BRASS = '#c79a3e';
+/** Far Head's stop on line 2: its facing crossover is the line's end until the pier is laid. */
+const FAR_HEAD = 2;
+/** The Railhead's stop on line 2: where the wagon's ring footings come off. */
+const RAILHEAD = 4;
+/** How fast the drawn merge follows the railhead (m/s): a bent in about 3 s, as the lever's slide. */
+const MERGE_SLIDE = 7;
+/** The open stops of line 2 once Ring Island is the end: its crossover carries the up trains. */
+const ISLAND_STOPS = RAIL_LINES[LINE2]!.halts.length;
 /** The passenger car's upgrade (roof, lamps; assets/src/passenger-car.py `car_upgrade`) is built and switched off: no
  * upgrade rule exists yet. The hook is here: pass what the room says about the car's upgrade in its place. */
 const PASSENGER_CAR_UPGRADED = false;
@@ -269,21 +276,52 @@ export async function createRailwayTrains(
   const wagonTrain = () => cargo.find((tr) => adapter.inspect().trains[tr.slot]!.wagon) ?? null;
   /** Every car of `tr`, the wagon behind it while it's coupled. */
   const carsOf = (tr: (typeof trains)[number]) => (wagonTrain() === tr ? [...tr.cars, wagonCar] : tr.cars);
-  /** The up track's offset at s (m) for train `tr` on `row`'s track: 4 m left on track 0 between the turnouts, easing
-   * over each 20 m turnout, and over Far Head's crossover onto today's track while the train is crossing (Local). */
+  /** The up track's offset at s (m) for train `tr` on `row`'s track. Line 1 and line 2 before the pier: 4 m left
+   * between the turnouts, easing over each 20 m turnout, and over Far Head's crossover onto today's track while the
+   * train is crossing. Line 2 once the pier is laid reads the open end from the room's rows (./line2-path.ts: the
+   * Pier's stub, the Railhead's stub that moves with `head`, Ring Island's crossover). Local. */
   const formations = layout.LINKS.map((l) => layout.FORMATION[l.id]);
+  /** The open stops of line 2 and where its end merges, read once a frame through the read facade (step). */
+  let stops2: readonly number[] = trainStops(adapter.read.world(), LINE2),
+    merge2 = endMergeM(stops2),
+    mergeShown = merge2;
   function latOf(tr: (typeof trains)[number], row: Readonly<RailTrain>, s: number) {
+    if (tr.line === LINE2) return line2Lat(row, s, stops2, mergeShown);
     if (row.track) return 0;
     const f = formations[tr.line]!,
       c = f.crossover;
     if (crossing(tr, row) && c && s >= c[0]) return layout.crossLat(f, s) ?? 0;
     return layout.upLat(f, s) ?? 0;
   }
-  const pierOpen = () => pierLaid(adapter.inspect().line2.completed);
-  /** Whether a train on the up track takes Far Head's crossover, from the room's rows alone (a restore or a joining
-   * tab draws it the same): every one while the pier is shut, and one the pier's opening caught on it (`turn`). */
+  /** Whether a train on the up track takes a crossover, from the room's rows alone (a restore or a joining tab draws
+   * it the same): Far Head's while it is line 2's end, or for a train the pier's opening caught on it (`turn` and
+   * bound for Far Head: a train Q7 turns at the Pier is not on it), and Ring Island's once it is the end. */
   const crossing = (tr: (typeof trains)[number], row: Readonly<RailTrain>) =>
-    row.track === 0 && formations[tr.line]!.crossover !== undefined && (row.turn || !pierOpen());
+    row.track === 0 &&
+    formations[tr.line]!.crossover !== undefined &&
+    (tr.line === LINE2
+      ? stops2.length - 1 === FAR_HEAD || (row.turn && row.to === FAR_HEAD) || stops2.length === ISLAND_STOPS
+      : row.turn);
+  /** Poses a car of line 2 on the path that goes on past the layout's pier head (./line2-path.ts). */
+  const a2 = { x: 0, z: 0, ux: 0, uz: 1 },
+    b2 = { x: 0, z: 0, ux: 0, uz: 1 };
+  function poseOnLine2(c: Car, s: number, lat: (s: number) => number) {
+    line2At(s + 1.1, a2);
+    line2At(s - 1.1, b2);
+    const la = lat(s + 1.1),
+      lb = lat(s - 1.1);
+    a2.x -= a2.uz * la;
+    a2.z += a2.ux * la;
+    b2.x -= b2.uz * lb;
+    b2.z += b2.ux * lb;
+    c.x = (a2.x + b2.x) / 2 + layout.ORIGIN.x;
+    c.z = (a2.z + b2.z) / 2 + layout.ORIGIN.z;
+    c.yaw = Math.atan2(a2.x - b2.x, a2.z - b2.z);
+    const ya = line2Y(s + 1.1),
+      yb = line2Y(s - 1.1);
+    c.y = (ya + yb) / 2 + BOTTOM + c.hy;
+    c.pitch = Math.atan2(ya - yb, 2.2);
+  }
   const seatMatrix = new THREE.Matrix4();
   const askAt = new THREE.Vector3(),
     riderAt = new THREE.Vector3();
@@ -330,6 +368,8 @@ export async function createRailwayTrains(
   function step() {
     const s = adapter.inspect(),
       target = adapter.tickNow();
+    stops2 = trainStops(adapter.read.world(), LINE2);
+    merge2 = endMergeM(stops2);
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
     const coupled = wagonTrain();
@@ -341,12 +381,14 @@ export async function createRailwayTrains(
       tr.speed = s.line2.trains ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
       const lat = (x: number) => latOf(tr, row, x);
       const hidden = !s.ready || (tr.line !== 0 && !secondVisible);
+      const pose = (c: Car, at: number) =>
+        tr.line === LINE2 ? poseOnLine2(c, at, lat) : rail.poseCarOnLine(c, line, at, 1, lat);
       tr.cars.forEach((c, n) => {
-        rail.poseCarOnLine(c, line, along + offsets[n]!, 1, lat);
+        pose(c, along + offsets[n]!);
         if (hidden) c.y = -60;
       });
       if (tr === coupled) {
-        rail.poseCarOnLine(wagonCar, line, along + offsets[WAGON]!, 1, lat);
+        pose(wagonCar, along + offsets[WAGON]!);
         if (hidden) wagonCar.y = -60;
       }
       tr.solid();
@@ -363,8 +405,11 @@ export async function createRailwayTrains(
   }
   // ---------------------------------------------------------------- the footing wagon and its footings
   const batch = createBoxBatch(owner, 96);
-  const footFlights: { from: THREE.Vector3; slot: number; toPier: boolean; t: number }[] = [];
-  let places: { works: FootPlace | null; pier: FootPlace | null } = { works: null, pier: null };
+  const footFlights: { from: THREE.Vector3; slot: number; toPier: boolean; toRing?: boolean; t: number }[] = [];
+  let places: { works: FootPlace | null; pier: FootPlace | null; ring?: FootPlace | null } = {
+    works: null,
+    pier: null,
+  };
   const fm = new THREE.Matrix4(),
     lm = new THREE.Matrix4(),
     fv = new THREE.Vector3(),
@@ -377,8 +422,12 @@ export async function createRailwayTrains(
     fm.decompose(out, fq, fsc);
     return out;
   }
-  const inbound = () => footFlights.filter((f) => !f.toPier).length;
+  const inbound = () => footFlights.filter((f) => !f.toPier && !f.toRing).length;
   const toPier = () => footFlights.filter((f) => f.toPier).length;
+  const toRing = () => footFlights.filter((f) => f.toRing).length;
+  /** Where a flying footing lands: the wagon's slot, the pier rack's or the railhead rack's. */
+  const landing = (f: (typeof footFlights)[number], out: THREE.Vector3) =>
+    f.toRing ? places.ring!(f.slot, out) : f.toPier ? places.pier!(f.slot, out) : aboardWorld(f.slot, out);
   function drawWagon() {
     batch.begin();
     const coupled = wagonTrain();
@@ -406,7 +455,7 @@ export async function createRailwayTrains(
         continue;
       }
       const u = Math.min(1, f.t / FOOT_HOP_S);
-      const to = f.toPier ? places.pier!(f.slot, fv) : aboardWorld(f.slot, fv);
+      const to = landing(f, fv);
       const x = f.from.x + (to.x - f.from.x) * u,
         y = f.from.y + (to.y - f.from.y) * u + Math.sin(u * Math.PI) * 1.6,
         z = f.from.z + (to.z - f.from.z) * u;
@@ -420,7 +469,7 @@ export async function createRailwayTrains(
       f.t += dt;
       if (f.t < FOOT_HOP_S) continue;
       footFlights.splice(i, 1);
-      const to = f.toPier ? places.pier!(f.slot, fv) : aboardWorld(f.slot, fv);
+      const to = landing(f, fv);
       thump(to.x, to.z);
       dustRing(to.x, to.y + 0.05, to.z, 6, 1, 0.2);
     }
@@ -453,10 +502,27 @@ export async function createRailwayTrains(
           t: -0.3 * i,
         });
     }
+    // Past the Pier the wagon's footings are the ring's: they hop off at the Railhead onto its rack (R4b mounts
+    // `places.ring`; without it the footings just leave the wagon).
+    if (arrived && row.at === RAILHEAD && row.foot < last.foot && places.ring) {
+      wagonCar.mesh.updateMatrixWorld(true);
+      const n = last.foot - row.foot,
+        rack = aperture(adapter.read.world()).rack;
+      for (let i = 0; i < n; i++)
+        footFlights.push({
+          from: aboardWorld(last.foot - 1 - i, new THREE.Vector3()),
+          slot: rack - 1 - i,
+          toPier: false,
+          toRing: true,
+          t: -0.3 * i,
+        });
+    }
   }
   function restore() {
     const s = adapter.inspect();
     clock = adapter.tickNow();
+    stops2 = trainStops(adapter.read.world(), LINE2);
+    merge2 = mergeShown = endMergeM(stops2);
     secondVisible = s.line2.trains;
     flyingLogs = flyingRails = 0;
     unloading = false;
@@ -649,9 +715,9 @@ export async function createRailwayTrains(
       if (!s.line2.trains || !b) return [];
       const tr = trains.find((t) => carsOf(t).some((c) => c.platform === carry.on));
       if (!tr) return [];
-      const k = tr.line,
-        n = railStopsNow(s, k).length;
-      const ask = trainRequestable(s.trains[tr.slot]!, k, n, adapter.tickNow());
+      const k = tr.line;
+      // The open stops, not their count: a count reads the railhead at its last head.
+      const ask = trainRequestable(s.trains[tr.slot]!, k, trainStops(adapter.read.world(), k), adapter.tickNow());
       if (!ask) return [];
       const id = LINE_HALTS.findIndex((h) => h.line === k && h.stop === ask.stop);
       const halt = LINE_HALTS[id];
@@ -674,6 +740,12 @@ export async function createRailwayTrains(
     trainFlying: () => ({ logs: flyingLogs, rails: flyingRails }),
     update(dt: number) {
       wake.update(dt);
+      // The end's merge slides with a moving railhead (one bent, 20 m, in about 3 s) rather than jumping the trains on
+      // the turnout; a change of end (the rivet) is not a slide.
+      mergeShown =
+        Math.abs(merge2 - mergeShown) > 25
+          ? merge2
+          : mergeShown + Math.max(-MERGE_SLIDE * dt, Math.min(MERGE_SLIDE * dt, merge2 - mergeShown));
       const s = adapter.inspect(),
         tick = adapter.tickNow();
       trains.forEach((tr) => {
@@ -694,12 +766,14 @@ export async function createRailwayTrains(
         if (tr.boiler.visible !== tr.fitted()) tr.fit(tr.boiler.visible);
         if (tr.last && s.line2.trains && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
           whistle(tr.cars[0]!.x, tr.cars[0]!.z);
+        // A train-fed job's kit unloads at its own halt: Q6's at Far Head, Q7's at the Pier, onto that job's rack.
+        const kit = tr.line === LINE2 ? LINE2_STATIONS[line2Active(adapter.read.world())] : undefined;
         if (
-          tr.line === LINE2 &&
+          kit?.feed === 'train' &&
           tr.last &&
           row.phase === TRAIN_PHASE.STAND &&
-          row.at === 2 &&
-          (tr.last.phase !== TRAIN_PHASE.STAND || tr.last.at !== 2) &&
+          row.at === kit.kitStop &&
+          (tr.last.phase !== TRAIN_PHASE.STAND || tr.last.at !== kit.kitStop) &&
           tr.last.logs + tr.last.rails > 0
         ) {
           unloading = true;
@@ -709,7 +783,7 @@ export async function createRailwayTrains(
             logs = flyingLogs,
             rails = flyingRails;
           for (let i = 0; i < count; i++) {
-            const to = depotPlace(5, new THREE.Vector3());
+            const to = depotPlace(LINE2_STATIONS.indexOf(kit), new THREE.Vector3());
             to.y += 0.5;
             crates.hopOff(tr.deck, i, to, i * 0.09, () => {
               // A partially owed kit may contain unequal timber and steel. Divide each accepted total over the
@@ -753,11 +827,11 @@ export async function createRailwayTrains(
       stepFootFlights(dt);
     },
     /** Where footings hop from and to: the Works rack's slot k and the pier rack's (views mounted later set these). */
-    footPlaces(set: { works: FootPlace | null; pier: FootPlace | null }) {
+    footPlaces(set: { works: FootPlace | null; pier: FootPlace | null; ring?: FootPlace | null }) {
       places = set;
     },
     /** Footings in the air: onto the wagon from the Works rack, and off it to the pier rack. */
-    footFlying: () => ({ toWagon: inbound(), toPier: toPier() }),
+    footFlying: () => ({ toWagon: inbound(), toPier: toPier(), toRing: toRing() }),
     inspect: () => ({
       trains: trains.map((tr) => ({
         slot: tr.slot,

@@ -96,7 +96,7 @@ function saddles(g: THREE.Group) {
 }
 export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) {
   const { x, z, yaw, lx, lz } = place;
-  const y = H(x, z);
+  const y = place.y ?? H(x, z);
   const at = new THREE.Vector3(x, y + 0.12, z);
 
   const g = new THREE.Group();
@@ -269,7 +269,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     bx = x;
     byaw = 0;
   }
-  bill.mesh.position.set(bx, H(bx, bz), bz);
+  bill.mesh.position.set(bx, place.y ?? H(bx, bz), bz);
   bill.mesh.rotation.y = byaw;
   if (!owner) scene.add(bill.mesh);
   let painted = '';

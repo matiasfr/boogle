@@ -489,7 +489,7 @@ const wheelSet = (p: Paint, n: number, owner?: OwnedView) => {
   };
 };
 const machineWheels = wheelSet({ ...IRON, rust: true }, 8),
-  trainWheels = wheelSet({ ...IRON, rust: 'train' }, 36); // three trains (v26): three cars each, four wheels each
+  trainWheels = wheelSet({ ...IRON, rust: 'train' }, 48); // four trains (v27): three cars each, four wheels each
 export const machineLook = (owner?: OwnedView): MachineLook => kitCars(1, true, () => false, owner);
 /** A train's look: the same loco, the same livery, and plain flatbeds; the railway's trains lead with `engine` (A with
  * its walk-in cab, docs/plans/engine-previz.md) in place of Place's shell. */
