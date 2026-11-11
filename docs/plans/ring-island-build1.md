@@ -45,7 +45,8 @@ track", "Ring Island", "trains stop on request", "Turn the table only when ready
 [rail-map](rail-map.md)'s design review (finding 2, call 14, "The station plan"): why buffers, the stop mark at u 448,
 the long train (8.2 m ahead of the passenger car's centre, 12.7 m behind), the passenger car at least 14.7 m from any
 buffers. [junction-stations](../brainstorms/junction-stations.md): the station house at the halt's north-west corner
-and the way between the platforms round the north end (its greybox step A, in flight). **v26 as merged** is the code:
+and the way between the platforms at their north end (its greybox step A, on main since #1479:
+`src/proto/greybox/ring-house.ts`'s `CONCOURSE` and `HOUSE`). **v26 as merged** is the code:
 `src/sim/railway-lines.ts`, `railway-train.ts`, `railway-trains.ts`, and `layLine2`'s Q6 hunk in `railway-systems.ts`.
 
 **Read for this.** AGENTS.md's table rows: owner-calls (the orchestrator makes design calls; nothing waits for a
@@ -194,9 +195,12 @@ the Pier is homeward-only"), because `src/entities/ring-island/{view,ground}.ts`
 `dev/level/rail-network.ts` and `dev/level/rail-map.ts` import them; R2d drops the near view's use, the rail map's
 tools are that job's.
 
-**Nothing in R1b is west of lat −5.8.** The station house another agent is greyboxing stands at u 464–476, lat −24 to
-−14 (junction-stations), with the way between the platforms round the north end; R1b fixes only what that walk has to
-clear (the buffer faces at u 483, the board at u 484.5).
+**Nothing in R1b is west of lat −5.8.** The station house's greybox landed while this was written (#1479,
+`src/proto/greybox/ring-house.ts`): the house at u 474, lat −16 on a terrace (`CONCOURSE.terrace`: u 468–477.5, lat −20
+to −9.3, at platform height), and the way between the platforms a plank crossing over both tracks at their north end
+(`CONCOURSE.crossing`: u 468–471.5, lat −9.3 to +5.3). The run-off's rails pass under those planks, as rails do at
+every plank crossing; no train reaches them (the long train's nose stops at u 456.2, 11.8 m short), and the buffer
+faces stand 11.5 m beyond.
 
 ### R2: the island near view, default on (Local)
 
@@ -239,7 +243,8 @@ clear (the buffer faces at u 483, the board at u 484.5).
   Way's deck gains the crossover's rails between u 395 and u 417 (the up track's lateral eased from −4 to 0 with
   `ease`, as `crossLat` does at Far Head). `ground.ts` caps the ground at `RING_END.cut` (7.5 m) under the bed with
   the fill's 1 in 1.5 banks: a cutting up to 1.5 m deep over the last 8 m (Level finding 15), instead of the loop's
-  12 m. The way between the platforms round the north end is drawn as junction-stations' greybox step A leaves it.
+  12 m. The plank crossing at the platforms' north end and the house are junction-stations' to bring into the near
+  view; R2d leaves their ground (`CONCOURSE.terrace`) as it is.
 
 ### R3: rules, v27 (Server)
 
@@ -457,8 +462,8 @@ reviewer per `npm run models`). Each step leaves `npm run check` green.
 | R6 | `docs/game-design/ring-island.md` | `docs/game-design.md` (index line), `docs/brainstorms/ring-island.md` (status), `docs/atlas/stories/railway.json`, this plan's status |
 
 **Not this plan's files, and who has them.** `src/proto/greybox/ring.ts` (`?ring=greybox`): junction-stations' greybox
-step B was waiting for this answer and draws the terminus there, after its step A (the station house, in flight)
-merges; what it must move is listed under R1b. `dev/level/rail-network.ts` and `dev/level/rail-map.ts`: the rail map's
+step B was waiting for this answer and draws the terminus there (its step A, the station house, merged as #1479
+while this was written, so nothing holds it but R1b); what it must move is listed under R1b. `dev/level/rail-network.ts` and `dev/level/rail-map.ts`: the rail map's
 job replaces their `ring-loop` track and its join with the crossover from `RING_END`.
 
 - [x] **0. The greybox's owed and untested items (no game code, no bump).** New eval `dev/look/evals/ring-greybox.ts`,
@@ -589,7 +594,9 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
       (expected 102.8 and 97.1 m) and at least `sepCm` past the Railhead's stop;
     - print the ground under `bed` every 2 m of u at lat −5.8, −4, 0 and +1.8 (`ringHeight`), and assert the cut to
       `RING_END.cut` is nowhere over 2.0 m (expected: none to about u 475, 1.5 m at the faces);
-    - assert: no `RING_END` geometry inside the station house's box (u 462–478, lat −26 to −12);
+    - assert: no `RING_END` geometry inside `CONCOURSE.terrace` grown by 1 m (imported from
+      `src/proto/greybox/ring-house.ts`, which is pure), and the buffer faces at least 10 m past `CONCOURSE.crossing`
+      (expected 11.5 m);
     - **the easing stop and the jump reach, at the new end** (facts, with one assertion): the railhead's seven braking
       rows are unchanged (`RING_HEAD` and `RING_END_BRAKE_CMS2` did not move) and still asserted; for the island's
       stop, braking at the line's own 3.5 m/s², print per standable top the farthest a late double jump with the kept
@@ -601,8 +608,8 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     whole "The loop" block (the 36-segment deck, its legs, and the two links from the halt's end to its mouth) and
     `RING_LAYOUT.loop` go; the halt's deck and both tracks run on from u 468 to u 483.5; two buffer stops at u 483 on
     lat 0 and −4 and the end board at u 484.5, lat −2; the crossover's rails on the Way, u 395–417; the fill under the
-    halt is cut, not raised, north of u 476. It must not touch anything west of lat −9.3 south of u 478, where the
-    station house and its walk are being built.
+    halt is cut, not raised, north of u 476. It must not move `CONCOURSE` or `HOUSE` (the terrace, the plank crossing at
+    u 468–471.5 and the house, on main since #1479): the rails run under the crossing's planks.
   - Checks: `npm run check`; `npm run level-check` (the new section prints, "ring (planned): ok"). Proof: the report
     (no player-visible change, no look).
 
@@ -685,8 +692,8 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   `ground.ts`: remove `loopNeck`, `loopOut` and `ISLAND_LOOP_GRADE`; cap the ground at `RING_END.cut / 100` (7.5 m)
   inside `bed` with the fill's 1 in 1.5 fall outside it (the banks reach lat −8.5 at most, north of u 478).
   `test/ring-island-ground.test.ts`: the loop's "60 cm under the deck" samples go; the same check runs over `bed`, and
-  a new one holds every node inside the station house's box (u 462–478, lat −26 to −12) to today's height (the house's
-  ground must not move). Checks: `npm run check`, `npm run level-check`, `npm run perf` at the island halt before and
+  a new one holds every node inside `CONCOURSE.terrace` grown by 1 m to today's height (the house's ground must not
+  move). Checks: `npm run check`, `npm run level-check`, `npm run perf` at the island halt before and
   after (the loop's 36 deck segments and posts go: fewer triangles expected, same draws). Proof look:
   `npm run look -- --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts`, its halt still, and one from
   the east platform's north end toward the buffers and the shard.
@@ -934,12 +941,12 @@ would fail (a 165.3° reversal at the neck, a 12.4° mismatch onto the circle): 
 | 12 | The railhead platform moving out 20 m with `head` (design review) | It stands beside the formation, over open sea (lat +1.8..+6.3). Moved as one piece, anyone on its back 20 m when a bent's second footing goes in drops about 15–20 m into the sea | It stays behind as the side walkway (`RING_WALK`) and only the rack, jib and lever slide on (call 28). The walkway also keeps walkers beside the track rather than on it once three trains run over the stub |
 | 13 | Other launch points at the gap (design review) | The jib's mast (9 m) and arm (8.5 m up) are out of a double jump's 3.03 m; the rack's 1.6 m top is 42 m back. A stopped train's cab roof (about 3.5 m over the rail) stands on the track with the raised leaf ahead, so a jump from it has to go diagonally, about 29 m to the platform's near edge, against about 23.6 m for a late double jump off a braking train | Nothing to change; R1's report checks the roof from the end stop's real position |
 | 14 | A braking train's kept carry (R1 review, P1) | Leaving a moving deck keeps its speed through the air (`platforms.ts` `carryStep`), and line 2 brakes at 3.5 m/s²: a late double jump from the cab roof at about 8 m/s some 10 m before the stop is 0.2 m short, from the chimney 2.9 m over, from the boiler's front 1.3 m over | **Ruled (orchestrator, 10 November, agent-calls): the platform stays; the end stop eases in at no more than 2 m/s²** (`RING_END_BRAKE_CMS2`, R3a). R1's report steps every standable top (cab roof, chimney, boiler top, running board, both flatbeds, the wagon's deck) at every 10 cm of the braking: worst the chimney, 1.6 m short at 5.1 m/s, 6.5 m before the stop; 2.0 m/s² is the largest that keeps 1.5 m |
-| 15 | **The run-off and buffers**: both tracks level at 8.0 m from u 468 to faces at u 483 | Ground under the formation (lat −5.8 to +1.8): 5.6–6.1 m at u 468, 6.4–6.9 at u 472, 7.2–7.7 at u 476, 8.0–8.5 at u 480, **8.5–9.0 m at u 483**. The cone comes through the deck's underside (7.5 m) at about u 475 and through its top at about u 479. Behind the faces it is 8.9–9.4 m at u 485, level with the platforms (8.9 m) | A cutting up to 1.5 m deep over the last 8 m (call 42, `RING_END.cut`, R2d's `ground.ts`); the walk round the north end is at grade behind the buffers. The loop's alternative cut 12 m |
+| 15 | **The run-off and buffers**: both tracks level at 8.0 m from u 468 to faces at u 483 | Ground under the formation (lat −5.8 to +1.8): 5.6–6.1 m at u 468, 6.4–6.9 at u 472, 7.2–7.7 at u 476, 8.0–8.5 at u 480, **8.5–9.0 m at u 483**. The cone comes through the deck's underside (7.5 m) at about u 475 and through its top at about u 479. Behind the faces it is 8.9–9.4 m at u 485, level with the platforms (8.9 m) | A cutting up to 1.5 m deep over the last 8 m (call 42, `RING_END.cut`, R2d's `ground.ts`); the way between the platforms is the greybox's plank crossing at u 468–471.5, short of the cutting. The loop's alternative cut 12 m |
 | 16 | **The crossover**, u 395–417 on the Way | Over open sea (no cone under it before u 417), on the 4% grade, deck 9.3 m down to 8.4 m; the same 4 m shift over 22 m as Far Head's (the continuity report gives that one 15.3° and a 24.3 m radius, with no kink over 2°). It ends 11 m short of the platforms and 10.5 m short of where the grade levels | None. It is tighter than a real 1:8 turnout, as every turnout on lines 1 and 2 is (reported by the continuity report, not failed) |
 | 17 | **A train standing at the stop mark** (u 448) | Today's train (620 ahead, 900 behind): u 439.0–454.2, 22.0 m clear of the crossover, 28.8 m short of the buffers. The long train (820, 1270): u 435.3–456.2, **18.3 m clear**, 26.8 m short, inside the 40 m platforms; the passenger car 35 m from the buffers | None; R1b asserts 5 m and 14.7 m |
 | 18 | **The signal** before the island's block | s 1130.8 m (u 388.8), from `end()`: a held train's nose is at the crossover's first point and its tail at u 379.8 (long train: u 386.8 and u 374.1), 97–103 m past the hinge and at least 124 m past the Railhead's stop (u 250), against `sepCm` 27.4 m. `s − sepCm` is 1162.6 m, so `endBlocks` keeps the catalog's signal | None |
 | 19 | **The easing stop and the jump reach at the new end** | At the gap nothing moved: the railhead's end stops are R1's and its seven braking rows still pass (the chimney worst, 1.6 m short at 2.0 m/s²). At the island a train brakes at the line's own 3.5 m/s² into u 448: a late double jump with the kept carry lands at most at **u 477.2** (the chimney, 6.7 m/s, 6.4 m before the stop; cab roof 475.4, boiler front 476.7, running board 475.2), on the run-off's deck, **5.8 m short of the buffer faces**. From the platforms' north end a late double jump on the level reaches 16.7 m (u 484.7), over the buffers onto the ground behind them | No easing at the island: everything in reach is open ground you can walk to, and the island's one op (`rail.brace`) is 160 m back. R1b prints these and asserts only "short of the buffers" from a train |
-| 20 | **The station house's corner** (u 464–476, lat −24 to −14; another agent's greybox, in flight) | R1b places nothing west of lat −5.8. R2d's cutting banks at 1 in 1.5 reach lat −8.5 at most, and only north of u 478; the west platform's built ramp (u 462.5–465.5, lat −9.1 out to −18.8) is not touched | R1b's report and R2d's ground test assert the keep-out box (u 462–478, lat −26 to −12) |
+| 20 | **The station house's corner** (the greybox's `CONCOURSE` and `HOUSE`, on main since #1479: terrace u 468–477.5, lat −20 to −9.3; house at u 474, lat −16; plank crossing u 468–471.5 over both tracks) | R1b places nothing west of lat −5.8. R2d's cutting banks at 1 in 1.5 reach lat −8.1 at most (at the faces, u 483), 1.2 m short of the terrace's line and 5.5 m north of its end; the crossing's planks lie over the run-off's rails 11.5 m short of the buffers, where no train runs; the west platform's built ramp (u 462.5–465.5, lat −9.1 out to −18.8) is not touched | R1b's report and R2d's ground test assert the terrace grown by 1 m |
 | 21 | **The Pier once it is double track** | Today's Pier platform is centred 2.9 m **west** of the track (x 139969 against the track's 140260 at z −35833) and the pier rack 3.5 m west; v27's up track runs 4 m west, through both. The old plan added an up platform at lat −6.9 and never said where the down one went | **Not ruled, not level-checked** (no position is planned until it is): call 48 proposes the east side, mirrored, where Q7's frame (s 720, lat +4.5) stands at its south corner. Blocks only R4a's pier hunk (open question 3) |
 
 ## Risks
@@ -955,7 +962,7 @@ would fail (a 165.3° reversal at the neck, a 12.4° mismatch onto the circle): 
 - **Hotspot files.** `src/sim/railway-systems.ts` (1,650 lines): R3b's hunks are the `OPS` table, `stopsOf`, the
   wagon's three rows, `call`'s one refusal and `layLine2`'s Q6 hunk turned into two `endMoved` calls; all new rules are
   in `railway-ring.ts` and `railway-trains.ts`. `src/adapters/railway.ts` (1,276): R3b's (moved from R4a).
-  `src/proto/greybox/ring.ts` is being edited by the station-house job now: this plan edits it nowhere. `railway-world.ts` (701): `Aperture` registration, the view and invariants. Every view piece is its
+  `src/proto/greybox/ring.ts` was edited by the station-house job today (#1479) and its step B edits it next: this plan edits it nowhere. `railway-world.ts` (701): `Aperture` registration, the view and invariants. Every view piece is its
   own entity, so `src/entities/railway/view.ts` is untouched.
 - **Room safety ("Don't").** No effect in a system: the leaf's thump and splash, the rivet's clang, the buoys' splash,
   the shot and the first-crossing pull-out play from the adapter's accepted edges, never in `apply` or on restore.
@@ -1003,9 +1010,8 @@ would fail (a 165.3° reversal at the neck, a 12.4° mismatch onto the circle): 
 - **`stopMoved` and `endMoved` are the risky new sim code** (P1 for the sim reviewer): a train standing at the
   railhead as a bent goes in, and a train on the stub as the rivet is struck, are both likely in play (the wagon's
   train is there by design). R3b's tests put a train in each case on the same tick as the op.
-- **The cut and the house share a hillside.** R2d's ground change is 2 m from the station house's keep band; if the
-  house's greybox moves its ground, R2d's keep-out test is the tripwire, and the two jobs must merge in order (the
-  house first).
+- **The cut and the house share a hillside.** R2d's cutting stops 1.2 m short of the station house's terrace; if the
+  house's production build moves that ground, R2d's terrace test is the tripwire.
 
 ## Open questions
 
@@ -1027,8 +1033,9 @@ option was built (R2a). What is left:
    (a 12 m mast on the leaf's toe) is kept as a marker, not as scale; it is one constant (`TOE_PENNANT`) if he meant
    the leaf bare.
 5. **`npm run inflight`** (10 November): one unmerged branch, `ship/matias-franco-0f2b6e5`, touching only
-   `docs/brainstorms/express-train.md`; none touches this plan's files. Not shown there but known: the station-house
-   greybox job is editing `src/proto/greybox/ring.ts`, which is why this plan leaves that file to it.
+   `docs/brainstorms/express-train.md`; none touches this plan's files. The station-house greybox merged as #1479
+   during this amendment; its step B owns `src/proto/greybox/ring.ts` next, which is why this plan leaves that file
+   to it.
 
 ## Design review (designer, 2026-11-10)
 
