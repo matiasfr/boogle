@@ -742,10 +742,12 @@ Braced, each counterweight footing hung dips it a quarter (0.7 s); the last one,
 hung, swings it down onto the bents in 2.5 s, ease-in, with a thump at the toe. A page that loads after the leaf is down,
 or after the rivet, sees it flat at once, with no swing. One view (`leaf-view.ts`) writes the pose, from the accepted
 rows; nothing else does. **The prompts (R4c, second part).** At the gold strut on the brace platform, once the gap is footed and the pawl is in,
-the prompt is "Pull" (the lever's word); it braces the leaf. At the jib, with a footing on your back, "Set the footing"
-now also hangs a counterweight footing once the gap is footed, until four hang. Either order; the fourth with the leaf
+the prompt is "Knock out the pawl"; it braces the leaf. At the jib, with a footing on your back, the prompt is "Set the
+footing" while bents are still being footed and "Hang the weight" once the gap is footed: it hangs a counterweight
+footing, until four hang (the owner's two labels, 11 November). Either order; the fourth with the leaf
 braced, or the pull with four hung, brings it down. Anyone standing under the toe's landing (the last metre and a half of
-the railhead's deck) is walked back along the deck, away from the hinge, as the leaf comes down, and is never pinned.
+the railhead's deck) is walked back along the deck, away from the hinge, as the leaf comes down (its last swing, not a
+counterweight's dip), and is never pinned.
 **Not built yet:** the splash, the creak on the pawl, the lit bracket, the rivet's glint, and a tumble for the one walked
 clear. Not tested on a device.
 
