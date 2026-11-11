@@ -18,7 +18,7 @@ import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { createRailwayRequests } from '../server/src/host/railway-requests.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
-import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { pierLaid } from '../src/sim/railway-line2-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { townReadOf } from '../src/sim/town-facts.ts';
 import { homeLand } from './helpers/land.ts';
@@ -149,7 +149,7 @@ function secretsNew(adapter: Adapter) {
     if (!f.ready()) return false;
     const w = f.world(),
       row = rail(w);
-    const ended = line2Completed(w) >= LINE2_STATIONS.length;
+    const ended = pierLaid(line2Completed(w));
     if (how === 'glide') return ended;
     if (how === 'jump') return row.jump && ended;
     if (after === 'hook') return row.hook;
@@ -169,7 +169,7 @@ function secretsNew(adapter: Adapter) {
 function secretsOld(r: RailwayInspection) {
   const passed = (how: 'glide' | 'jump' | null, after: 'hook' | 'glide' | 'trains') => {
     if (!r.ready) return false;
-    const ended = r.line2.completed >= r.line2.stations.length;
+    const ended = pierLaid(r.line2.completed);
     if (how === 'glide') return ended;
     if (how === 'jump') return r.jump && ended;
     if (after === 'hook') return r.line2.hook;
