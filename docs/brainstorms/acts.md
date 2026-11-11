@@ -1,4 +1,10 @@
-> **Status: proposed (2026-11-11).** Light brainstorm (one agent, three lenses). Not yet designer-reviewed.
+> **Status: first build done (2026-11-11), on `feature/acts`; designer-reviewed and the owner has answered the review's five
+> questions** ([decision](../decisions-controls.md#d-2026-11-11-the-game-has-acts)). Built: Acts 1 and 2 only, as the
+> review's rulings and the owner's answers set them (Act 1 an aerial move at the first landing, Act 2 over Far Head's
+> shared shot, no band); see [first-run](../game-design/first-run.md#acts). The sections below are the brief; where they
+> differ (band, 4 s card, "after you stand", drafts of titles) the review and the decision win. Owed: the checkpoint look,
+> `npm run look -- --players 2 --rail-seed q5` (page A lays Q5; read Far Head's show, the card once on each page over
+> the lit trestle, and a walk input during it; a first-visit page with `--query intro=1` for the Act 1 move).
 
 # Acts: chapter cards for the room's story
 

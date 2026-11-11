@@ -9,6 +9,7 @@ import { glyph } from '../player/glyphs.ts';
 import { reducedMotion } from '../constants.ts';
 import { clamp, smoothstep } from '../math-pure.ts';
 import { holdCamera } from './buddy-frame.ts';
+import { holdMoment } from '../ui/moment-banner.ts';
 
 // Owner, 9 November: "the cinematic should be uninterruptible unless by maybe a specific highlighted button press".
 // Nothing ends a shot by accident; Interact skips it once its glyph has shown this long. null takes the skip out.
@@ -79,9 +80,12 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     input.release();
     showSkip(self, false);
   };
+  // The shared full-screen check (src/ui/moment-banner.ts): a queued or playing shot is a moment with this long to go.
+  const report = () => holdMoment(self, shot ? shot.seconds - t : pending ? pending.seconds : null);
   const reset = () => {
     shot = pending = null;
     settle();
+    report();
   };
   const step = (dt: number) => {
     if (inSeat() || reducedMotion) return reset();
@@ -115,9 +119,11 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     play(from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds = 3.2, drift = seconds) {
       if (reducedMotion || inSeat()) return;
       pending = { from: from.clone(), to: to.clone(), at: at.clone(), seconds, drift };
+      report();
     },
     update(dt: number) {
       step(dt);
+      report();
       holdCamera(self, !!shot || !!pending); // the You page waits for every shot (src/render/buddy-frame.ts)
     },
     cancel,
@@ -127,6 +133,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     dispose() {
       reset();
       holdCamera(self, false);
+      holdMoment(self, null);
       listeners.abort();
       const index = camConstraints.indexOf(constraint);
       if (index >= 0) camConstraints.splice(index, 1);

@@ -28,8 +28,12 @@
 .moment-banner span {
   font: 700 19px/1.2 var(--font-body);
 }
-.moment-banner span:empty {
+.moment-banner span:empty,
+.moment-banner i:empty {
   display: none;
+}
+.moment-banner i {
+  font-style: normal;
 }
 @media (max-width: 520px) {
   .moment-banner b {
@@ -49,5 +53,73 @@
 @media (prefers-reduced-motion: reduce) {
   .moment-banner.on {
     animation: none;
+  }
+}
+
+/* The act card: the same element as a quiet full-screen title over a camera move (src/features/acts.ts). No panel and no
+   input: the number small above, the title light and widely spaced, a thin rule, one line under it; a slow fade with a
+   slight drift up, generous empty space around it. */
+.moment-banner.act {
+  display: flex;
+  inset: 0;
+  left: 0;
+  top: 0;
+  transform: translateY(10px);
+  justify-content: center;
+  gap: 10px;
+  padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) calc(14vh + env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  white-space: normal;
+  color: #fff;
+  text-shadow:
+    0 0 0.5em rgb(255 244 220 / 0.55),
+    0 1px 10px rgb(0 0 0 / 0.55);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 1s ease,
+    transform 1.6s ease-out,
+    visibility 0s 1s;
+}
+.moment-banner.act.on {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition:
+    opacity 1s ease,
+    transform 1.6s ease-out;
+}
+.moment-banner.act i {
+  font: 500 clamp(13px, 1.8vw, 20px) / 1.1 var(--font-body);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+}
+.moment-banner.act b {
+  font: 300 clamp(34px, 7vw, 92px) / 1.05 var(--font-body);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.moment-banner.act b::after {
+  content: '';
+  display: block;
+  width: min(36vw, 280px);
+  height: 1px;
+  margin: 0.45em auto 0.1em;
+  background: linear-gradient(90deg, transparent, #fff 25%, #fff 75%, transparent);
+}
+.moment-banner.act span {
+  font: 400 clamp(13px, 1.7vw, 19px) / 1.2 var(--font-body);
+  letter-spacing: 0.18em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .moment-banner.act,
+  .moment-banner.act.on {
+    transform: none;
+    transition-property: opacity, visibility;
   }
 }

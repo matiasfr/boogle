@@ -77,10 +77,13 @@ export type WelcomeItem = {
   key: string;
   save: () => unknown;
   since: (then: unknown) => string | null;
+  /** Its line comes first on the card (the story act, src/features/acts.ts). */
+  first?: boolean;
 };
 const items: WelcomeItem[] = [];
 export function addWelcomeItem(item: WelcomeItem) {
-  items.push(item);
+  if (item.first) items.unshift(item);
+  else items.push(item);
 }
 
 type RoomMemory = { at: number; items: Record<string, unknown> };

@@ -22,7 +22,7 @@ type Deps = {
 /** The pull-out over Far Head's rockets: from back along the trestle (metres along the line, beside it, above the rail),
  * drifting further out, looking this far over the rail's end. */
 const FAR_HEAD_SHOT = {
-  seconds: 6,
+  seconds: 5,
   from: { s: 482, side: 22, up: 24 },
   to: { s: 474, side: 27, up: 31 },
   aimUp: 32,

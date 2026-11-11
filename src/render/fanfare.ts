@@ -76,13 +76,30 @@ export function pop(n: number, vol = 1) {
   tone('triangle', f * 2, f * 2.2, 0, 0.08, 0.08 * vol);
 }
 /** Rising arpeggio: a hole, a finish, a new best (bigger with `big`). */
+let lastFanfare = -1e9;
 export function fanfare(big: boolean, vol = 1) {
+  lastFanfare = performance.now();
   const notes = big ? [0, 4, 7, 12, 16, 19, 24] : [0, 4, 7, 12];
   notes.forEach((s, k) => {
     const f = 392 * 2 ** (s / 12);
     tone('triangle', f, f * 1.01, k * 0.075, 0.32, 0.22 * vol);
     tone('sine', f * 2, f * 2, k * 0.075, 0.18, 0.06 * vol);
   });
+}
+/** The act card's sting: two soft chords, one step up. Silent when a fanfare played in the last 10 s (the show the act
+ * follows has its own), so two stingers never stack. */
+export function actSting() {
+  if (performance.now() - lastFanfare < 10_000) return;
+  [
+    [0, 7, 12],
+    [5, 12, 17],
+  ].forEach((chord, c) =>
+    chord.forEach((s) => {
+      const f = 196 * 2 ** (s / 12);
+      tone('triangle', f, f * 1.005, c * 0.32, 1.1, 0.16);
+      tone('sine', f * 2, f * 2, c * 0.32, 0.8, 0.04);
+    }),
+  );
 }
 /** A springy boing for a mushroom (k 0..1: how hard). */
 export function boing(k: number, vol = 1) {
