@@ -68,7 +68,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
       - name: Install Chromium and system deps
         if: ${{ !cancelled() }}
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium || npx playwright install chromium
       - name: The deployed game boots
         if: ${{ !cancelled() }}
         shell: bash
