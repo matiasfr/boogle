@@ -14,7 +14,7 @@
 > keep trains visible while actions wait on the server; the plan's two prompts ("Knock out the pawl", "Hang the weight");
 > "Station 7" and the "Ring Island" lever plaque, and the jump-in labels, kept as built; the halt map's smaller names
 > and Ring Island from the Pier laid (as the designer recommended); the glide-only secret boxes stay at the Pier laid.
-> Queued, not built: the trains fix, the two prompts and the halt map (calls 66 to 70 above).
+> Queued, not built: the trains fix and the two prompts. The halt map (calls 66 to 70) is built, 11 November.
 
 # Ring Island build 1: the line reaches the island
 
@@ -1202,6 +1202,16 @@ take if the stills show soft letters (sizes are fractions of the face, so the de
 nothing in this review changes: calls 66, 67 and 69 are confirmed
 ([decision](../decisions-rail.md#d-2026-11-11-ring-island-views-open-calls-answered)). Calls 68 and 70 were not put to
 him and stay open in [agent-calls](../agent-calls.md). The build (not started) proceeds on all five.
+
+**Built (11 November 2026, branch `worktree-agent-ac35c61470c137016`).** Calls 66 to 70 as recommended (68 and 70 are
+still unanswered by the owner). `halt-map.ts` builds the map per stage (`haltMap(layout, {open, head})`), the boards refit
+and redraw when the stage changes, `island-map.ts` has `MAP_CELL` and `MAP_SEA_SCALE`.
+- [x] Map by stage: v26's until the Pier is laid, then all of line 2 at true scale at 0.7, the Railhead from Q7, solid to Ring Island when joined.
+- [x] `island-map-labels` tests for every display at every stage (5, 6, 7, 7 names: the design counted stops, not names, as Village is shared) and the ring-plus-dot gap between stops of different names.
+- [x] `pathAt` test at the Railhead's and Ring Island's `s`, railheads 0 and 7 (`test/island-map-path.test.ts`).
+- [x] `npm run check`.
+- [x] `place.md`, "Departure boards at the halts".
+- [ ] The in-game proof look (`npm run look`, the 3D face at 1.5 m): not taken, the machine was at load 140; the map texture was drawn by the game's own `drawMapBase` in a browser canvas instead.
 
 - [ ] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
   loop graph's `crossing` node are re-run with the rack on the east platform (call 54): the bot no longer crosses the
