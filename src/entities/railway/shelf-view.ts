@@ -11,7 +11,10 @@ import { readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_STATIONS, Q7 } from '../../sim/railway-line2-layout.ts';
 import { q7Spot } from './q7-site.ts';
 import { stockSign } from './stock-sign.ts';
-import { waitsForTrain } from './forge-offer.ts';
+import { waitsForTrainOn } from './forge-offer.ts';
+import { line2Active } from '../../sim/railway-queries-line2.ts';
+import { freeCarryIgnoringBig } from '../../sim/railway-queries-line1.ts';
+import { account, rail } from '../../sim/railway-rows.ts';
 
 const MAX_RAILS = Math.max(...LINE2_STATIONS.map((station) => station.bill[1]));
 const REACH = 3.2;
@@ -160,10 +163,12 @@ export async function createRailwayShelf(
   // ---------------------------------------------------------------- effects: on the press (predicted), returns
   function accepted(event: RailwayAccepted) {
     if (event.op !== 'rail.depotRailTake') return;
-    const s = adapter.inspect();
+    const w = adapter.read.world();
+    const depotRails = rail(w).depotRails,
+      carried = account(w, adapter.read.pid)?.rails ?? 0;
     const n = event.accepted - (event.returned ?? 0);
     for (let i = 0; i < n; i++) {
-      top(s.line2.depotRails + n - i, from);
+      top(depotRails + n - i, from);
       pieces.send(
         'rail',
         from,
@@ -171,7 +176,7 @@ export async function createRailwayShelf(
         {
           dur: 0.3,
           apex: 0.9,
-          aim: (out) => void bundleOrigin(event.pid, s.railsCarry, out),
+          aim: (out) => void bundleOrigin(event.pid, carried, out),
           land: () => sounds.pop(3, 0.4),
         },
         owner,
@@ -180,13 +185,15 @@ export async function createRailwayShelf(
   }
   function corrected(c: RailwayCorrection) {
     if (c.event.op !== 'rail.depotRailTake') return;
-    const s = adapter.inspect();
-    const k = s.line2.active;
+    const w = adapter.read.world();
+    const k = line2Active(w);
     if (k < 0) return;
     place(k);
+    const carried = account(w, adapter.read.pid)?.rails ?? 0,
+      depotRails = rail(w).depotRails;
     for (let i = 0; i < c.lost; i++) {
-      if (!bundleOrigin(s.pid, s.railsCarry + c.lost - i - 1, from)) continue;
-      top(s.line2.depotRails + i + 1, to);
+      if (!bundleOrigin(adapter.read.pid, carried + c.lost - i - 1, from)) continue;
+      top(depotRails + i + 1, to);
       pieces.send('rail', from, to.clone(), { dur: 0.3, apex: 0.8, land: () => sounds.knock(0.3, 0.6) }, owner);
     }
   }
@@ -211,17 +218,17 @@ export async function createRailwayShelf(
       inFlight = fn;
     },
     update() {
-      const s = adapter.inspect();
-      const k = s.line2.active;
-      draw(k, k >= 0 ? Math.max(0, s.line2.depotRails - inFlight().rails) : 0, waitsForTrain(s.line2));
+      const w = adapter.read.world();
+      const k = line2Active(w);
+      draw(k, k >= 0 ? Math.max(0, rail(w).depotRails - inFlight().rails) : 0, waitsForTrainOn(w, k));
       drawStake(k);
     },
     targets(): Interactable[] {
-      const s = adapter.inspect(),
+      const w = adapter.read.world(),
         p = me.body?.position;
-      const k = s.line2.active;
-      if (!s.ready || !p || k < 0 || !LINE2_STATIONS[k]!.shelf || s.line2.depotRails <= 0) return [];
-      if (waitsForTrain(s.line2)) return [];
+      const k = line2Active(w);
+      if (!adapter.read.ready() || !p || k < 0 || !LINE2_STATIONS[k]!.shelf || rail(w).depotRails <= 0) return [];
+      if (waitsForTrainOn(w, k)) return [];
       place(k);
       if (Math.hypot(p.x - at.x, p.z - at.z) > REACH) return [];
       return [
@@ -230,13 +237,12 @@ export async function createRailwayShelf(
           verb: 'Take rails',
           at: at.clone().setY(at.y + 1.4),
           run: () => void adapter.depotRailTake(),
-          ...(s.freeCarry <= 0 ? { blocked: 'Your back is full' } : {}),
+          ...(freeCarryIgnoringBig(w, adapter.read.pid) <= 0 ? { blocked: 'Your back is full' } : {}),
         },
       ];
     },
     inspect: () => {
-      const s = adapter.inspect();
-      const k = s.line2.active;
+      const k = line2Active(adapter.read.world());
       if (k >= 0 && LINE2_STATIONS[k]!.shelf) place(k);
       return {
         shelf: shelf.visible ? { x: at.x, y: at.y, z: at.z, shown: rails.count } : null,

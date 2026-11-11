@@ -961,6 +961,25 @@ later change with a bundle report. Place's remaining callers get one owner from 
     **Switched to the readers above (same day):** `ready`, `pending`, `stalled`, `movement().beamSoloSpeed/beamHelpSpeed`,
     `treeGrowth` and `freeCarryIgnoringBig`; the "Still on `inspect()`" list above now holds only `opening-view`'s
     `progress` and `back-down`'s `onlyALoad`, `loadOf` and `setDown`, which belong to other groups.
+  - [x] **c. Line 2 built** (11 November, branch `ecs/m10c-line2`, not shipped). `line2-view`, `shelf-view`,
+    `cart-view`, `boiler-view` and `forge-finish` read `adapter.read` and no longer call `inspect()`; `forge-call`,
+    `far-head-view` and `pier-view` never did. Rows: `forge`, `rail`, `cart`, `boiler`, `beam`, `shed`, `account`,
+    `accounts`, `qjob`, line 1's `job(w, 2)`; queries: `line2Active`, `line2Completed`, `line2GateOpen`,
+    `line2Trains`, `line2CartStatus`, `line2Served`, `line2KitOwed`, `aboard`, `railPhase`, `freeCarryIgnoringBig`,
+    `line2Jobs` at `read.tick()` (line 2's `elapsed` and timing, the row itself being the `LineTiming`), with
+    `read.ready()`, `pending()`, `pid` and `movement()`. No query was added. `line2-view` works out the active stretch
+    and `line2Jobs` once at the head of each entry point (update, step, restore, targets, accepted, the panel's state)
+    and passes them down, with no memo (a first memo keyed on world and tick went stale on an in-place packet; review
+    fixed it); `railPhase` runs only while the forge frame's tag is
+    otherwise due. A press's closure (`takeBoiler`, `fitBoiler`) keeps the revision it saw when the prompt was built, not
+    a row. `forge-offer.ts` gains `waitsForTrainOn(w, active)` (the old `waitsForTrain` stays for its test).
+    `sea-gate-view` and `glide-device-view` (group e's) took line 2's inspected `l` from `line2-view`; they now take
+    `sea: boolean` and `completed: number`. **Still on `inspect()` and why:** `back-down.ts`'s `loadOf`/`onlyALoad`
+    (callers `sources.ts` and `line-cargo.ts`, group b's files, which still call them with an inspection), and
+    `opening-view`'s `progress` in `view.ts`; none is line 2's. Proof: `test/railway-m10c-views.test.ts` (32 tests: every
+    converted read equal to the field it replaced, frame by frame, 300 frames per seed at 27 seeds with two lagged
+    players, predicted presses, a disconnect and refill, a late joiner; a source check). Look: `q5-shelved`, Q5's depot
+    rack and 24-rail shelf beside the cart's frame; the cart did not travel in the 10 s window at `q5-arriving`.
   - [x] **d. Works built** (11 November, branch `ecs/m10d-works-views`, not shipped): `works-view`, `breaker-view`,
     `footing-view`, `crossing-view`, `roundhouse-view`, `home-station-view` and `trophy-plinth` read `adapter.read.world()`
     rows (`works`, `shed`, `rock`, `account`, `accounts`, `beam`, `boiler`, `trains`, `rail`, `w.each([Pile])` for the

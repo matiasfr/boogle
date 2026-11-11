@@ -24,7 +24,9 @@ import { LINE2_BOILER, LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts
 import { createForgeCall } from './forge-call.ts';
 import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
-import { onlyALoad, setDownThen } from './back-down.ts';
+import { onlyALoadIn, setDownThen } from './back-down.ts';
+import { line2Trains } from '../../sim/railway-queries-line2.ts';
+import { account, beam as beamRow, boiler as boilerRow } from '../../sim/railway-rows.ts';
 
 // One Owner value per tab: the holder's pid while you help haul the boiler (null otherwise, so the key is left out).
 let help: HelpCarry | null = null;
@@ -163,7 +165,7 @@ export function createRailwayBoiler(
     side = 1,
     echoMote = 0;
   const gold = new THREE.Color('#ffdc7a');
-  let state = adapter.inspect();
+  const read = adapter.read;
   let feetY = 0,
     dragHolder = '',
     grabbing = -Infinity,
@@ -186,14 +188,13 @@ export function createRailwayBoiler(
     cardDue = -1,
     lastFit: { pressFrame: number; movedFrame: number; refused: boolean } | null = null;
   function startFit(now: number) {
-    const s = adapter.inspect();
     fit = {
       phase: 'fly',
       pressed: now,
       t: now,
       from: hauled.position.clone(),
       fromQ: hauled.quaternion.clone(),
-      holder: s.pid,
+      holder: read.pid,
       pressFrame: frames + 1, // the first frame drawn after the input: the press frame
       movedFrame: -1,
     };
@@ -231,7 +232,7 @@ export function createRailwayBoiler(
     } else if (fit.phase === 'sit') {
       hauled.position.copy(seat);
       hauled.quaternion.copy(seatQ);
-      if (now - fit.pressed > FIT.silence * 1000 && state.pending === 0 && !state.line2.trains) refuseFit(now);
+      if (now - fit.pressed > FIT.silence * 1000 && read.pending() === 0 && !line2Trains(read.world())) refuseFit(now);
     } else {
       const k = reducedMotion ? 1 : Math.min(1, u / FIT.back);
       hauled.position.lerpVectors(fit.from, hip, smooth(k));
@@ -253,20 +254,25 @@ export function createRailwayBoiler(
     return h >= feetY - 1.2 ? h : feetY;
   };
   const avatarOf = (pid: string): Avatar | null =>
-    pid === state.pid ? me.avatar : ([...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar ?? null);
+    pid === read.pid ? me.avatar : ([...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar ?? null);
   const backFree = (pid: string) => {
-    const a = state.accounts.find((row) => row.pid === pid);
+    const w = read.world(),
+      a = account(w, pid),
+      beam = beamRow(w);
     return (
       !!a &&
       !a.carry &&
-      !(a.stone ?? 0) &&
-      !(a.rails ?? 0) &&
-      !(a.foot ?? 0) &&
-      !(state.beam?.state === 'held' && state.beam.holder === pid) &&
-      (pid !== state.pid || !heldId())
+      !a.stone &&
+      !a.rails &&
+      !a.foot &&
+      !(beam.state === 'held' && beam.holder === pid) &&
+      (pid !== read.pid || !heldId())
     );
   };
-  const holds = (pid: string) => state.line2?.boiler.state === 'held' && state.line2.boiler.holder === pid;
+  const holds = (pid: string) => {
+    const b = boilerRow(read.world());
+    return b.state === 'held' && b.holder === pid;
+  };
   const side0 = Math.sign(carry.BEAM_CARRY_POSITION[0]) || 1;
   const gripAt = new THREE.Vector3();
   const mine = createHelpCarry({
@@ -277,7 +283,7 @@ export function createRailwayBoiler(
       const avatar = avatarOf(holder);
       return avatar ? restGrip(avatar, BOILER_SHAPE.length, side0, gripAt) : null;
     },
-    self: () => state.pid,
+    self: () => read.pid,
     pidOf: (peer) => {
       const r = remotes.get(peer);
       return r?.entered && r.pid ? r.pid : null;
@@ -299,16 +305,13 @@ export function createRailwayBoiler(
     priorCarry &&
     (() => {
       const load = priorCarry();
-      const s = adapter.inspect(),
-        b = s.line2?.boiler;
-      return b?.state === 'held' && b.holder === s.pid ? { ...load, big: 'boiler' as const } : load;
+      return holds(read.pid) ? { ...load, big: 'boiler' as const } : load;
     });
   // Keep the existing readout's counts/landing semantics; only supply the unique held object.
   if (carryReadout) backSeam.carry = carryReadout;
   function drop() {
-    const s = adapter.inspect(),
-      b = s.line2?.boiler;
-    if (!b || b.state !== 'held' || b.holder !== s.pid || !me.body) return false;
+    const b = boilerRow(read.world());
+    if (b.state !== 'held' || b.holder !== read.pid || !me.body) return false;
     // It stays where you saw it: where it is drawn (well within the server's 3.2 m), else 2.7 m behind you.
     const p = me.body.interpolatedPosition;
     const x = drag.shown() ? hauled.position.x : p.x - Math.sin(me.yaw) * 2.7,
@@ -339,21 +342,21 @@ export function createRailwayBoiler(
   function haul(dt: number, now: number) {
     for (const avatar of posing) avatar.userData.beamGrip = null;
     posing.clear();
-    const b = state.line2?.boiler;
-    const isLoose = b?.state === 'pedestal' || b?.state === 'ground';
-    if (b && isLoose) lay.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
+    const b = boilerRow(read.world());
+    const isLoose = b.state === 'pedestal' || b.state === 'ground';
+    if (isLoose) lay.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
     // Your own Pick up takes the rope the frame you press it, before the server's answer (a refusal drops it again).
-    const grabbed = isLoose && now - grabbing < 1500 && state.pending > 0;
-    const holder = b?.state === 'held' ? b.holder : grabbed ? state.pid : '';
+    const grabbed = isLoose && now - grabbing < 1500 && read.pending() > 0;
+    const holder = b.state === 'held' ? b.holder : grabbed ? read.pid : '';
     loose.visible = isLoose && !grabbed;
     const avatar = holder ? avatarOf(holder) : null;
     if (!holder || !avatar) {
       // Accepted while it is still in the air (a near server answers within a frame): it finishes its flight, and the
       // loco's own boiler shows once it lands (`flying`, read by train-view.ts).
-      if (fit?.phase === 'fly' && b?.state === 'fitted' && flyFit(now) && fit.phase === 'fly') return;
+      if (fit?.phase === 'fly' && b.state === 'fitted' && flyFit(now) && fit.phase === 'fly') return;
       if (fit) {
         // Fitted (the engine's own boiler and its lashing show now), or the rope went another way.
-        lastFit = { pressFrame: fit.pressFrame, movedFrame: fit.movedFrame, refused: b?.state !== 'fitted' };
+        lastFit = { pressFrame: fit.pressFrame, movedFrame: fit.movedFrame, refused: b.state !== 'fitted' };
         fit = null;
       }
       // Put down where it was drawn: it lies on the heading it was hauled on, for everyone who watched (Local; a
@@ -409,13 +412,13 @@ export function createRailwayBoiler(
     drag.update(dt, hip, from, trail, helped);
   }
   function update(dt: number) {
-    state = adapter.inspect();
+    const w = read.world(),
+      pid = read.pid;
     const now = performance.now();
     const frameDt = Math.min(0.1, Math.max(0, (now - last) / 1000));
     last = now;
-    const s = state,
-      b = s.line2?.boiler;
-    const cast = !!b && b.state !== 'none';
+    const b = boilerRow(w);
+    const cast = b.state !== 'none';
     pedestal.visible = cast;
     if (cast && !body)
       body = land.addStatic(
@@ -429,7 +432,7 @@ export function createRailwayBoiler(
       owner.removeBody(body);
       body = null;
     }
-    if (b) loose.position.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
+    loose.position.set(b.x / 100, b.y / 100 + (b.state === 'pedestal' ? onPedestal : lift), b.z / 100);
     frames++;
     mine.helping();
     haul(frameDt, now);
@@ -438,23 +441,25 @@ export function createRailwayBoiler(
       const model = engine.makeEngineBoiler();
       youGot?.({ name: BOILER_CARD_COPY.name, line: BOILER_CARD_COPY.line, model, from: seat.clone() });
     }
-    const held = b?.state === 'held';
-    echoRoot.visible = held && !s.line2.trains && !fit;
+    const held = b.state === 'held';
+    echoRoot.visible = held && !line2Trains(w) && !fit;
     if (echoRoot.visible) {
       placeSeat();
       echoRoot.position.copy(seat);
       echoRoot.quaternion.copy(seatQ);
     }
+    const beam = beamRow(w),
+      mineAcc = account(w, pid);
     document.body.classList.toggle(
       'place-has-load',
-      (held && b.holder === s.pid) ||
-        (s.beam?.state === 'held' && s.beam.holder === s.pid) ||
-        s.carry + s.railsCarry + s.stoneCarry > 0,
+      (held && b.holder === pid) ||
+        (beam.state === 'held' && beam.holder === pid) ||
+        (mineAcc ? mineAcc.carry + mineAcc.rails + mineAcc.stone : 0) > 0,
     );
-    call.update(dt, b?.state === 'pedestal');
+    call.update(dt, b.state === 'pedestal');
     mote -= dt;
     echoMote -= dt;
-    if (b?.state === 'pedestal' && mote <= 0) {
+    if (b.state === 'pedestal' && mote <= 0) {
       mote = 0.8;
       side *= -1;
       emit({
@@ -501,7 +506,7 @@ export function createRailwayBoiler(
     restore() {
       // Rebuild silently; the continuous pedestal invitation resumes on a later frame.
       mote = 0.8;
-      call.restore(adapter.inspect().line2?.boiler.state === 'pedestal');
+      call.restore(boilerRow(read.world()).state === 'pedestal');
       update(0);
     },
     drop,
@@ -523,10 +528,11 @@ export function createRailwayBoiler(
     },
     /** The haul pace: sprint off for the hauler and the helper; the hauler at the room's solo or helped pace. */
     prePhysics() {
-      state = adapter.inspect();
-      if (holds(state.pid)) {
+      const pid = read.pid;
+      if (holds(pid)) {
         input.sprint = me.sprint = false;
-        me.wish.multiplyScalar((mine.helperOf(state.pid) ? state.boilerHelpSpeed : state.boilerSoloSpeed) / 5.6);
+        const speeds = read.movement();
+        me.wish.multiplyScalar((mine.helperOf(pid) ? speeds.boilerHelpSpeed : speeds.boilerSoloSpeed) / 5.6);
       } else if (mine.helping()) {
         input.sprint = me.sprint = false;
         mine.ease(me.wish);
@@ -540,7 +546,7 @@ export function createRailwayBoiler(
       if (e.op === 'rail.boilerFit') {
         // The fitter heard the clank as it landed; everyone else hears it now.
         if (!(fit && e.pid === fit.holder)) clank(saddle.x, saddle.z);
-        if (BOILER_CARD && youGot && e.pid === adapter.inspect().pid) cardDue = performance.now() + FIT.wake * 1000;
+        if (BOILER_CARD && youGot && e.pid === read.pid) cardDue = performance.now() + FIT.wake * 1000;
       }
     },
     /** A refused or lost request: a refused fit hops back onto the rope (a refused take ends `grabbing` once nothing
@@ -555,43 +561,48 @@ export function createRailwayBoiler(
     /** Your fit is still in the air: the old loco keeps its saddle empty until it lands. */
     flying: () => fit?.phase === 'fly',
     targets(): Interactable[] {
-      const s = adapter.inspect(),
-        b = s.line2?.boiler,
+      const w = read.world(),
+        pid = read.pid,
+        b = boilerRow(w),
         p = me.body?.position;
-      if (!s.ready || !b || !p) return [];
+      if (!read.ready() || !p) return [];
+      // What a press acts on is the state this frame saw: a row is live, so take the numbers now.
+      const { revision, holder } = b,
+        bx = b.x / 100,
+        bz = b.z / 100;
       if ((b.state === 'pedestal' || b.state === 'ground') && Math.hypot(p.x - b.x / 100, p.z - b.z / 100) <= 3.6) {
-        const at = new THREE.Vector3(b.x / 100, b.y / 100 + 2, b.z / 100);
+        const at = new THREE.Vector3(bx, b.y / 100 + 2, bz);
         // It takes rail.boilerTake's empty back (no load, footing or beam) and, like the beam, empty hands.
         // Say so rather than offer nothing: a back still loaded from station 5 is common here (the forge rack 4.5 m
         // off offers no rails before trains, but logs or rails carried from elsewhere still block the take).
         // `r`, the pedestal's radius: measured to its edge, so a log pile dropped against it doesn't win the prompt.
         const target = { id: 'railway-boiler', verb: 'Pick up', at, r: 1.3 };
         return [
-          backFree(s.pid)
+          backFree(pid)
             ? {
                 ...target,
                 run: () => {
-                  if (adapter.takeBoiler(b.revision)) grabbing = performance.now();
+                  if (adapter.takeBoiler(revision)) grabbing = performance.now();
                 },
               }
-            : onlyALoad(s)
+            : onlyALoadIn(w, pid)
               ? {
                   // A loaded back: the load goes down beside you, away from the pedestal, then the boiler is taken.
                   ...target,
                   run: () => {
                     const take = () => {
-                      const ok = adapter.takeBoiler(adapter.inspect().line2.boiler.revision);
+                      const ok = adapter.takeBoiler(boilerRow(read.world()).revision);
                       if (ok) grabbing = performance.now();
                       return ok;
                     };
-                    setDownThen(adapter, take, { x: b.x / 100, z: b.z / 100 }, true);
+                    setDownThen(adapter, take, { x: bx, z: bz }, true);
                   },
                 }
               : { ...target, blocked: 'Empty your back first' },
         ];
       }
       if (b.state !== 'held') return [];
-      if (b.holder === s.pid)
+      if (holder === pid)
         return Math.hypot(p.x - LINE2_OLD_TRAIN.x / 100, p.z - LINE2_OLD_TRAIN.z / 100) <= 7
           ? [
               {
@@ -600,40 +611,40 @@ export function createRailwayBoiler(
                 at: saddle,
                 run: () => {
                   // A second press while it is in the air or the saddle is a no-op (one fit per world).
-                  if (!fit && adapter.fitBoiler(b.revision)) startFit(performance.now());
+                  if (!fit && adapter.fitBoiler(revision)) startFit(performance.now());
                 },
               },
             ]
           : [];
-      if (mine.helping() === b.holder)
+      if (mine.helping() === holder)
         return [{ id: 'railway-boiler-help-release', verb: 'Let go', at: drag.grip, run: () => mine.stop() }];
-      const other = avatarOf(b.holder);
-      if (other && mine.canStart(b.holder))
+      const other = avatarOf(holder);
+      if (other && mine.canStart(holder))
         return [
           {
             id: 'railway-boiler-help',
             verb: 'Help carry',
             // The friend reaches for the dragging end.
             at: drag.shown() ? drag.grip : other.position,
-            run: () => mine.start(b.holder),
+            run: () => mine.start(holder),
           },
         ];
       return [];
     },
     inspect: () => {
-      const s = adapter.inspect(),
-        b = s.line2.boiler;
+      const pid = read.pid,
+        b = boilerRow(read.world());
       return {
         boiler: {
           ...b,
           x: b.x / 100,
           y: b.y / 100,
           z: b.z / 100,
-          mine: b.state === 'held' && b.holder === s.pid,
+          mine: b.state === 'held' && b.holder === pid,
           pedestal: pedestal.visible,
           saddle: { x: saddle.x, y: saddle.y, z: saddle.z },
           hauled: hauled.visible,
-          helper: mine.helperOf(b.holder) ? (mine.helping() === b.holder ? s.pid : 'remote') : null,
+          helper: mine.helperOf(b.holder) ? (mine.helping() === b.holder ? pid : 'remote') : null,
           helping: mine.helping(),
           at: { x: hauled.position.x, y: hauled.position.y, z: hauled.position.z },
           tail: { x: drag.tail.x, y: drag.tail.y, z: drag.tail.z },

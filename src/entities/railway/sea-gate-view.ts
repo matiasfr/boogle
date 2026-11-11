@@ -12,7 +12,6 @@ import { playMark } from '../../proto/mark.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
 
-type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
   layout: typeof import('../../place/layout.ts');
   tech: typeof import('../../place/tech-layout.ts');
@@ -116,12 +115,12 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     for (let k = 0; k < tech.POSTS.length; k++) caps.setColorAt(k, tech.POSTS.length - 1 - k < count ? lit : dark);
     caps.instanceColor!.needsUpdate = true;
   };
-  function solid(l: Line2) {
-    if (l.seaOpen && body) {
+  function solid(sea: boolean) {
+    if (sea && body) {
       owner.removeBody(body);
       body = null;
     }
-    if (!l.seaOpen && !body)
+    if (!sea && !body)
       body = land.addStatic(
         { kind: 'box', hx: SLAB.w / 2, hy: SLAB.h / 2, hz: SLAB.d / 2 },
         { x: G.x + ox, y: up, z: G.z },
@@ -146,36 +145,36 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
       refuse();
       slabT = lightT = -1;
     },
-    restore(l: Line2) {
+    restore(sea: boolean) {
       slabT = lightT = -1;
-      solid(l);
-      slab.position.y = l.seaOpen ? down : up;
+      solid(sea);
+      slab.position.y = sea ? down : up;
       rig.pose(slab.position.y);
-      handle.rotation.z = l.sea ? PULLED : READY;
+      handle.rotation.z = sea ? PULLED : READY;
       refusal = 1;
       drum.rotation.z = 0;
-      drawCaps(l.sea ? tech.POSTS.length : 0);
+      drawCaps(sea ? tech.POSTS.length : 0);
     },
-    update(dt: number, l: Line2) {
-      solid(l);
+    update(dt: number, sea: boolean) {
+      solid(sea);
       refusal = Math.min(1, refusal + dt / 0.55);
       drum.rotation.z = Math.sin(refusal * Math.PI * 6) * (1 - refusal) * 0.12;
-      handle.rotation.z += ((l.sea ? PULLED : READY) - handle.rotation.z) * (1 - Math.exp(-dt * 10));
+      handle.rotation.z += ((sea ? PULLED : READY) - handle.rotation.z) * (1 - Math.exp(-dt * 10));
       if (slabT >= 0) {
         slabT += dt;
         const u = Math.min(1, slabT / 1.5);
         slab.position.y = up - (up - down) * u * u * (3 - 2 * u);
         if (u === 1) slabT = -1;
-      } else slab.position.y = l.seaOpen ? down : up;
+      } else slab.position.y = sea ? down : up;
       rig.pose(slab.position.y);
       if (lightT >= 0) {
         lightT += dt;
         drawCaps(Math.min(tech.POSTS.length, 1 + Math.floor(lightT / (1.5 / tech.POSTS.length))));
         if (lightT >= 1.5) lightT = -1;
-      } else drawCaps(l.sea ? tech.POSTS.length : 0);
+      } else drawCaps(sea ? tech.POSTS.length : 0);
     },
-    targets(p: V3, l: Line2): Interactable[] {
-      if (l.sea || Math.hypot(p.x - at.x, p.z - at.z) >= 3 || Math.abs(p.y - at.y) >= 2.2) return [];
+    targets(p: V3, sea: boolean): Interactable[] {
+      if (sea || Math.hypot(p.x - at.x, p.z - at.z) >= 3 || Math.abs(p.y - at.y) >= 2.2) return [];
       return [
         {
           id: 'railway-sea-switch',

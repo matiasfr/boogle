@@ -23,7 +23,6 @@ import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { GLIDE_REWARD } from './reward-data.ts';
 import { playSharedMoment } from './shared-moment.ts';
 
-type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
   land: typeof import('../../place/land.ts');
   shapes: typeof import('../../render/part-geometry.ts');
@@ -137,10 +136,10 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   let t = 0;
   const isWoken = (completed: number) => completed >= 5;
   const taken = () => rail(adapter.read.world()).glide;
-  const available = (l: Line2) => isWoken(l.completed) && !taken();
-  function draw(l: Line2) {
+  const available = (completed: number) => isWoken(completed) && !taken();
+  function draw(completed: number) {
     const gone = taken();
-    const awake = isWoken(l.completed) && !gone;
+    const awake = isWoken(completed) && !gone;
     for (const o of [ring, ring2, core, shaft]) o.visible = awake;
     mast.visible = !gone;
     const u = unfurlT < 0 ? 1 : Math.min(1, unfurlT / UNFURL_S);
@@ -167,23 +166,23 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       });
     },
     /** A restore (load, rejoin, resync) snaps to state: no wake show. */
-    restore(l: Line2) {
-      seenCompleted = l.completed;
+    restore(completed: number) {
+      seenCompleted = completed;
       unfurlT = flareT = -1;
-      draw(l);
+      draw(completed);
     },
-    update(dt: number, l: Line2) {
+    update(dt: number, completed: number) {
       t += dt;
       // The live edge only: Q5's completion seen going from 4 to 5 in this session, while still sealed.
       // Every client sees it from the same accepted edge, so the whole room gets the flare and the banner (shared
       // moments, 10 November); a restore or a late join gets the steady locator only.
-      if (seenCompleted === 4 && l.completed >= 5 && !taken()) {
+      if (seenCompleted === 4 && completed >= 5 && !taken()) {
         unfurlT = 0;
         flareT = 0;
         showMomentBanner(WAKE_BANNER[0], WAKE_BANNER[1], 4.5);
         playMark('glider woken', { authority: 'local' });
       }
-      if (adapter.read.ready()) seenCompleted = l.completed;
+      if (adapter.read.ready()) seenCompleted = completed;
       if (unfurlT >= 0) {
         unfurlT += dt;
         if (unfurlT >= UNFURL_S) unfurlT = -1;
@@ -203,10 +202,10 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       ring2.rotation.y += dt * spin;
       core.rotation.y += dt * 1.2;
       core.position.y = LIGHT_Y + Math.sin(t * 2) * 0.06;
-      draw(l);
+      draw(completed);
     },
-    targets(p: V3, l: Line2): Interactable[] {
-      if (!available(l) || Math.hypot(p.x - at.x, p.z - at.z) > 3 || Math.abs(p.y - at.y) > 2.2) return [];
+    targets(p: V3, completed: number): Interactable[] {
+      if (!available(completed) || Math.hypot(p.x - at.x, p.z - at.z) > 3 || Math.abs(p.y - at.y) > 2.2) return [];
       return [{ id: 'railway-glide-device', verb: 'Take it', at: target, run: () => void adapter.claimGlide() }];
     },
     inspect: () => {
