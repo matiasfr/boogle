@@ -311,6 +311,38 @@ the halt at about (1414, −820)):
    timed (under 15 s), with the fingerpost and its line colour visible from the start.
 5. **Measured:** the junction's mounted draws and triangles against the budget above.
 
+**Built (10 November 2026, step A, `?ring=greybox`).** Built from the design review (findings 1, 2 and 9) once the
+owner approved a greybox now ("Ok this sounds good"). In `src/proto/greybox/ring.ts`, numbers and colliders in
+`src/proto/greybox/ring-house.ts`, proof in `test/ring-house.test.ts` and `dev/look/evals/ring-house.ts`:
+the house at the halt's **north-west corner** (u 474, 16 m west of line 2's track, within the 25 m keep band, no
+terrain changed) on a concrete terrace level with the platforms (8.9 m); the room **5 by 4 m inside, 3.2 m to the
+ceiling**, the two long walls leaning back **24 degrees**; a doorway in the south wall 1.8 m wide and 2.6 m clear with
+no leaf and a collider gap, near its east end toward the platforms; a tall 2 by 2 m window in the north wall (sill 0.9 m)
+whose outward axis is within 1 degree of the line from the bench's seated eye to the shard, framed by orange bars; the
+bench (1.8 m seat, low back) facing it; no character, nothing else inside. A plank crossing at platform height
+(u 468-471.5) over the track ends joins the east platform's north end to the terrace, so the walk to the west platform is
+step-free and passes the open door (the room is not a thoroughfare: the review's finding 1 keeps the house off the
+crossing). The fingerpost moved to the west platform's north end (u 464). Both platform edges carry a stripe and
+**LOOK UP** in block letters in line 2's teal `#2ec4b6`, readable facing the track. `&house=0` leaves the concourse,
+house and paint out, for measuring.
+
+- **Draws and triangles** (real time, at the east stop mark, whole frame): 168-170 draws and 465.6k triangles without the
+  house, 170-172 and 470.1k with it; the greybox's meshes 14 to 15 (one new colour, the paint; the house reuses the
+  halt's colours). About 4.5k triangles, nearly all the painted letters.
+- **Seen** (stills in `.look/`, not committed): the bench still has the shard and the ring's tube centred in the window
+  (`house-bench`); the third-person camera works in the room (`house-door`: the arm closes in behind the player, the
+  ceiling in view, no clipping); LOOK UP reads the right way up (`house-edge`); the fingerpost and both arms are in
+  view at the end of the walk (`house-walk`); the lean reads from the platforms (`house-side`).
+- **Walk** (east stop mark, u 448, to the fingerpost, by real keys, about 38 m): 6.3 s in the warped harness, no jump
+  (longest air 0.05 s); at 5.6 m/s the path is about 7 s. Machine load makes the wall time indicative, not a measure.
+- **Departs from the brief and does not read yet:** still 1 (the approach). The lean is back-and-forth in the plane of
+  the Way, so seen head-on from an inbound train 70-150 m out the house is a pale box with an orange window frame and
+  the lean is not legible; it reads from the platforms. A roll about the house's length (or a lean toward the line's
+  east) would show it from the Way but moves the window's axis; left for the owner. Stills 2 (buffers, end board) is
+  step B and not built. The crossing is drawn at platform height over the loop's neck; if the loop stays, it drops to
+  rail height with ramps.
+- **Draft copy for the owner:** the painted LOOK UP only. Not tested on a device.
+
 ## Owner questions answered (10 November)
 
 The design review's five questions replaced this brief's own. The owner read them with their recommendations and
