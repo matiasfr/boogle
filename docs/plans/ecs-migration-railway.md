@@ -928,6 +928,22 @@ later change with a bundle report. Place's remaining callers get one owner from 
     - In the loop the read's tick, movement and stall cue are now taken once a frame, at the first read, also on a
       rebuild later in the frame (a press, a packet): before, such a rebuild took them live. `REGROW_MINUTES` moved
       to `railway-supply.ts` (exported) so the query names it.
+  - [x] **a. Trains and halts** (11 November, branch `ecs/m10a-trains-halts`, not shipped). `train-view` and `halts-view`
+    were the only two files of the group that read the adapter (`halt-map`, `request-lever`, `up-platforms` and
+    `stock-sign` never did): both now read `adapter.read.world()` rows (`train`, `trains`, `line`, `rail`, `works`) and
+    `line2Completed`, `line2Trains`, `trainStops`, `wagonSlot`, with `read.pid` and `read.ready()`; neither calls
+    `adapter.inspect()` or imports a value from the adapter. Four queries added to `railway-queries-trains.ts`, the world
+    twins of the adapter's `railServing`, `railTrainAsked`, `railTrainHeld` and `railOpenEnd`; asked and serving take the
+    stops as an argument (default `trainStops`), so each view works a frame's open stops out once and shares them (train-view
+    for the lamps, halts-view in `refreshStops` for levers, signals and the boards). The train rows and the movers keep
+    `adapter.tickNow()` (live, as before): no view reads `read.tick()`. Each entry point re-reads the world at its head and
+    holds no row across one. `railTrainsOf` in `halts-view` is a loop over `LINE_SLOTS` with no list built. Still the
+    adapter's: the old `railServing`, `railTrainAsked`, `railTrainHeld`, `railOpenEnd`, `railStopsNow` and `railTrainsOf`
+    stay for `review-v26`, the adapter and the test above (delete in M12). Proof: `test/railway-m10a-views.test.ts`, 22
+    tests, every converted read equal to the `inspect()` field or adapter function it replaced, frame by frame, two
+    players, 320 frames at each of 17 seeds (the earlier groups' plus `q6-done`, `wagon-on`, `deck-laid`, `ring-joined`),
+    random lever asks, a restore and a late joiner. Look: `trains-on`, a Village lever pulled, the Camp train comes in,
+    stands and leaves.
   - [x] **b. Line 1 built (11 November, branch `ecs/m10b-line1-views`; not shipped).** `view`, `sources`, `reward`,
     `line-cargo` and `crates-view` read `adapter.read.world()` on every ask (rows: `job`, `rail`, `beam`, `tree`,
     `hardwood`, `rock`, `account`, `pile`, `w.each([Pile])` for ids; queries: `railPhase`, `railJobs`, `activeStation`,

@@ -11,10 +11,18 @@ import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../../sim/railway-lines.ts';
-import { railStopsNow, railTrainHeld, railTrainsOf } from '../../adapters/railway.ts';
-import { trainStops } from '../../sim/railway-queries-trains.ts';
+import { railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
+import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
+import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { ringHead } from '../../sim/railway-queries.ts';
-import { aperture } from '../../sim/railway-rows.ts';
+import {
+  aperture,
+  line as lineRow,
+  rail as railRow,
+  train as trainRow,
+  works as worksRow,
+  type ReadWorld,
+} from '../../sim/railway-rows.ts';
 import { RING_HEAD } from '../../sim/railway-ring-layout.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
@@ -515,11 +523,35 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const wd0 = () => adapter.read.world();
   spots.push(
     // The railhead's east platform moves with `head`: its lever rides 6 m short of the platform's end (u in metres).
-    ringSpot(RAILHEAD, false, 2.45, () => RING_HEAD[ringHead(wd0())]!.u / 100 - 6, () => true),
+    ringSpot(
+      RAILHEAD,
+      false,
+      2.45,
+      () => RING_HEAD[ringHead(wd0())]!.u / 100 - 6,
+      () => true,
+    ),
     // The joint's west platform stands at bent 13 (footing 14); its lever is chained until the rivet.
-    ringSpot(RAILHEAD, true, -6.3, () => 247.5 + 6, () => aperture(wd0()).set >= 14),
-    ringSpot(RING_ISLAND, false, 2.45, () => 466, () => true),
-    ringSpot(RING_ISLAND, true, -6.3, () => 466, () => true),
+    ringSpot(
+      RAILHEAD,
+      true,
+      -6.3,
+      () => 247.5 + 6,
+      () => aperture(wd0()).set >= 14,
+    ),
+    ringSpot(
+      RING_ISLAND,
+      false,
+      2.45,
+      () => 466,
+      () => true,
+    ),
+    ringSpot(
+      RING_ISLAND,
+      true,
+      -6.3,
+      () => 466,
+      () => true,
+    ),
   );
   const ringSpots = spots.filter((x) => x.ring);
   let shown = false;
@@ -535,6 +567,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     stopsNow = [0, 1].map((line) => trainStops(wd, line));
   };
   refreshStops();
+  /** Whether any train of `line` has the property `fn` reads off its row (no list built). */
+  const someTrain = (w: ReadWorld, line: number, fn: (r: ReturnType<typeof trainRow>) => boolean) =>
+    LINE_SLOTS[line]!.some((k) => fn(trainRow(w, k)));
   /** No train stands at this platform yet: its way is its halt's way in while that halt is the line's open end. */
   function chained(x: Spot) {
     const n = stopsNow[x.line]!.length;
@@ -553,11 +588,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     x.ring ? x.stop < stopsNow[x.line]!.length && x.ring.need() : halts[x.id]!.up && halts[x.id]!.lever.group.visible;
   /** Whether a lever stands over: the line's ask that way stands and no train of the line stands here leaving that way. */
   function over(x: Spot) {
-    const s = adapter.inspect(),
-      n = railStopsNow(s, x.line).length;
-    if (!reqHas(s.lines[x.line]!.req, x.stop, x.dir, n)) return false;
-    return !railTrainsOf(s, x.line).some(
-      ({ row: r }) => r.phase === TRAIN_PHASE.STAND && r.at === x.stop && (r.track ? -1 : 1) === x.dir,
+    const w = adapter.read.world(),
+      n = stopsNow[x.line]!.length;
+    if (!reqHas(lineRow(w, x.line).req, x.stop, x.dir, n)) return false;
+    return !someTrain(
+      w,
+      x.line,
+      (r) => r.phase === TRAIN_PHASE.STAND && r.at === x.stop && (r.track ? -1 : 1) === x.dir,
     );
   }
   /** Rides the railhead's lever to its platform's end at `u` metres (the slide is `dt`-eased at 7 m/s: a bent in
@@ -594,8 +631,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   }
   /** Whether halt `k` stands now: every halt once trains run, the Pier halt only once Q6 is laid. */
   const wanted = (k: number) => {
-    const s = adapter.inspect();
-    return s.line2.trains && (k !== PIER || pierLaid(s.line2.completed));
+    const w = adapter.read.world();
+    return line2Trains(w) && (k !== PIER || pierLaid(line2Completed(w)));
   };
   boards.redraw();
   // The boards' own smooth clock in ticks, pulled gently onto shared time (as train-view's), so markers glide.
@@ -603,13 +640,15 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   /** Each of today's platforms' signal: down while an ask stands for its way (the lever's, or a rider's on a train of
    * its line) or a train of its line stands at it leaving that way. */
   function signals(quiet = false) {
-    const s = adapter.inspect();
+    const w = adapter.read.world();
     halts.forEach((h) => {
-      const n = railStopsNow(s, h.k).length;
+      const n = stopsNow[h.k]!.length;
       const asked =
-        reqHas(s.lines[h.k]!.req, h.stop, h.dir, n) ||
-        railTrainsOf(s, h.k).some(
-          ({ row: r }) =>
+        reqHas(lineRow(w, h.k).req, h.stop, h.dir, n) ||
+        someTrain(
+          w,
+          h.k,
+          (r) =>
             reqHas(r.req, h.stop, h.dir, n) ||
             (r.phase === TRAIN_PHASE.STAND && r.at === h.stop && (r.track ? -1 : 1) === h.dir),
         );
@@ -619,37 +658,42 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   /** The boards: line 2's pier stretch laid or not, every train where it is and whether it is held, each halt's ring
    * cue (a train of its line on its way there). */
   function maps(dt: number) {
-    const s = adapter.inspect(),
+    const w = adapter.read.world(),
       tick = adapter.tickNow();
     // The map ends at the Pier (halt-map.ts): the Railhead's stop moving out with `head` is not a redraw.
-    const laid = Math.min(railStopsNow(s, 1).at(-1)! / 100, mapLines[1]!.stops.at(-1)!.s);
+    const laid = Math.min(stopsNow[1]!.at(-1)! / 100, mapLines[1]!.stops.at(-1)!.s);
     if (mapLines[1]!.laid !== laid) {
       mapLines[1]!.laid = laid;
       boards.redraw();
     }
     boards.trains(
-      RAIL_TRAINS.map(({ line }, k) => (shown ? trainAlong(s.trains[k]!, line, clock) / 100 : null)),
-      s.trains.map((r) => (shown && r.phase !== TRAIN_PHASE.STAND ? r.to : null)),
-      RAIL_TRAINS.map((_t, k) => shown && railTrainHeld(s, k, tick)),
+      RAIL_TRAINS.map(({ line }, k) => (shown ? trainAlong(trainRow(w, k), line, clock) / 100 : null)),
+      RAIL_TRAINS.map((_t, k) => {
+        const r = trainRow(w, k);
+        return shown && r.phase !== TRAIN_PHASE.STAND ? r.to : null;
+      }),
+      RAIL_TRAINS.map((_t, k) => shown && railTrainHeld(w, k, tick)),
     );
     halts.forEach((h) => {
       h.update(
         dt,
-        railTrainsOf(s, h.k).some(({ row: r }) => r.phase !== TRAIN_PHASE.STAND && r.to === h.stop),
+        someTrain(w, h.k, (r) => r.phase !== TRAIN_PHASE.STAND && r.to === h.stop),
       );
     });
     // The Works in gold (docs/plans/works-signposting-2.md, beats 2, 4 and 8): each seam still to strike while the
     // breaker is out, then the kiln from the throat's opening until it lights.
-    const w = s.works;
+    const wk = worksRow(w);
     boards.works(
       // The Works' two seams (WORKS_SEAMS[2] is Ring Island's rivet, R4's to draw).
       WORKS_SEAMS.slice(0, 2).map((p, i) =>
-        w.breaker === 2 && !(w.seams & [SEAM_STALL, SEAM_THROAT][i]!) ? { x: p.x / 100, z: p.z / 100 } : null,
+        wk.breaker === 2 && !(wk.seams & [SEAM_STALL, SEAM_THROAT][i]!) ? { x: p.x / 100, z: p.z / 100 } : null,
       ),
-      w.seams & SEAM_THROAT && w.kiln.lit < 0 ? { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 } : null,
+      wk.seams & SEAM_THROAT && wk.lit < 0 ? { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 } : null,
     );
     // The glider waiting on Needle Bell's summit: woken (Q5 laid) and not yet taken by the room.
-    boards.glider(s.line2.completed >= 5 && !s.glide ? { x: LINE2_GLIDE.x / 100, z: LINE2_GLIDE.z / 100 } : null);
+    boards.glider(
+      line2Completed(w) >= 5 && !railRow(w).glide ? { x: LINE2_GLIDE.x / 100, z: LINE2_GLIDE.z / 100 } : null,
+    );
     boards.update(dt);
   }
   const tick = (dt: number) => {
@@ -660,7 +704,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   return {
     restore() {
       refreshStops();
-      shown = adapter.inspect().line2.trains;
+      shown = line2Trains(adapter.read.world());
       pulled.clear();
       halts.forEach((h, k) => h.snap(wanted(k)));
       ups.update(0, (k) => halts[k]!.up, true);
@@ -701,7 +745,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     },
     update(dt: number) {
       refreshStops();
-      const on = adapter.inspect().line2.trains;
+      const on = line2Trains(adapter.read.world());
       // Live edges only: trains coming drop every open halt in; Q6 completing drops the Pier halt in.
       const was = shown;
       shown = on;
