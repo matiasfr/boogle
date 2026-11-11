@@ -8,7 +8,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { guardInstances } from '../render/draw-count.ts';
 import kitUrl from '../../assets/built/place-kit.glb?url';
 import { onFrame } from '../loop.ts';
-import { scene } from '../render/scene.ts';
+import { camera, scene } from '../render/scene.ts';
+import { warmDraw } from '../render/precompile.ts';
+import { SHADOW_GATED, castsShadow, chunkRuns, growBounds, isHidden, type ChunkRun } from '../entities/railway/track-chunks.ts';
 import { LOCO, TRAILER } from '../render/wagon-look.ts';
 import { H } from './land.ts';
 import { LOOK, STEEL, addBlob, bakeContact, honeyOf, paint, setBlob, type Paint } from './look.ts';
@@ -187,18 +189,32 @@ const unitBox = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
 if (LOOK.contact && !LOOK.kit) bakeContact(unitBox, 0.42, 1);
 const tm = new THREE.Matrix4();
 
-/** Draws a track's pieces by kind, in the looks that are on. The set keeps its timing: only its matrices are redirected. */
-export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView): DropSet {
+/** One chunk of one kind: its meshes, the bounds of what has landed in it, and whether it casts. */
+type TrackChunk = {
+  run: ChunkRun;
+  meshes: THREE.InstancedMesh[];
+  box: THREE.Box3;
+  sphere: THREE.Sphere;
+  placed: boolean;
+  shadow: boolean;
+  gated: boolean;
+};
+const liveChunks = new Set<TrackChunk>();
+let warmRegistered = false;
+
+/** Draws a track's pieces by kind and 50 m chunk, in the looks that are on. The set keeps its timing: only its matrices
+ * are redirected. `chunks[k]` is piece k's chunk along the line (`chunkOf(u)`); each chunk is its own instanced batch
+ * with the bounds of what has landed in it, hidden until something has, and its tall pieces cast only near the camera. */
+export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chunks: readonly number[] = []): DropSet {
   if (!LOOK.kit && !LOOK.mats && !LOOK.contact) return set;
   set.mesh.removeFromParent();
-  const counts = new Map<string, number>();
-  kinds.forEach((k) => counts.set(k, (counts.get(k) ?? 0) + 1));
-  const parts = new Map<string, Part[]>();
-  for (const [kind, n] of counts) {
-    const size = LOOK.kit ? KIT_SIZE[kind]! : ([1, 1, 1] as const);
+  const { runs, of } = chunkRuns(kinds, chunks);
+  const state: TrackChunk[] = [];
+  const parts = runs.map((run): Part[] => {
+    const size = LOOK.kit ? KIT_SIZE[run.kind]! : ([1, 1, 1] as const);
     const inv = new THREE.Vector3(1 / size[0], 1 / size[1], 1 / size[2]);
-    const wood = WOOD_KINDS[kind];
-    const base = set.boxes[kinds.indexOf(kind)]!.color;
+    const wood = WOOD_KINDS[run.kind];
+    const base = set.boxes[kinds.indexOf(run.kind)]!.color;
     const hex = `#${base.getHexString(THREE.SRGBColorSpace)}`;
     const p: Paint = wood
       ? {
@@ -206,48 +222,103 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView): Dro
           grain: { axis: wood.axis, honey: honeyOf(hex), ...(LOOK.kit ? {} : { scale: wood.unit }) },
         }
       : STEEL;
+    const n = run.count;
     const list: Part[] = [];
-    if (LOOK.kit) list.push({ mesh: kitBatch(KIT_NAME[kind] ?? kind, p, n, owner), inv });
+    if (LOOK.kit) list.push({ mesh: kitBatch(KIT_NAME[run.kind] ?? run.kind, p, n, owner), inv });
     else {
       const mesh = new THREE.InstancedMesh(unitBox, paint(p), n);
-      mesh.frustumCulled = false;
       mesh.castShadow = mesh.receiveShadow = true;
       list.push({ mesh, inv });
     }
-    if (LOOK.kit && kind === 'sleeper') {
+    if (LOOK.kit && run.kind === 'sleeper') {
       const plates = kitBatch('sleeper_steel', STEEL, n, owner);
       plates.castShadow = false;
       list.push({ mesh: plates, inv });
     }
-    // Keep the existing material roles and instance indices (wood grain uses them).
-    // Bounds are rebuilt lazily after placement, including falling/laying pieces.
-    for (const q of list) q.mesh.frustumCulled = true;
+    // The grain's seed is the instance index (the piece's place in its whole-line batch): this chunk starts at `from`.
+    // Bounds come from what has landed (below); nothing is drawn until something has.
+    const chunk: TrackChunk = {
+      run,
+      meshes: list.map((q) => q.mesh),
+      box: new THREE.Box3(),
+      sphere: new THREE.Sphere(),
+      placed: false,
+      shadow: true,
+      gated: SHADOW_GATED.has(run.kind),
+    };
+    for (const q of list) {
+      q.mesh.userData.grainBase = run.from;
+      q.mesh.frustumCulled = true;
+      q.mesh.visible = false;
+      // The kit's arrival re-bounds a batch from its geometry; a chunk's bounds are its landed pieces, not that.
+      q.mesh.computeBoundingSphere = () => void (q.mesh.boundingSphere = chunk.sphere);
+    }
     // What lies flat on its bed has no shadow worth a second draw: the bed's contact blobs already ground it.
-    if (kind === 'sleeper' || kind === 'rail') for (const q of list) q.mesh.castShadow = false;
+    if (run.kind === 'sleeper' || run.kind === 'rail') {
+      for (const q of list) q.mesh.castShadow = false;
+      chunk.shadow = false;
+    }
     for (const q of list) {
       if (owner) owner.add(q.mesh);
       else scene.add(q.mesh);
     }
-    parts.set(kind, list);
-  }
-  const next = new Map<string, number>();
-  const route = kinds.map((k) => {
-    const n = next.get(k) ?? 0;
-    next.set(k, n + 1);
-    return { list: parts.get(k)!, at: n };
+    state.push(chunk);
+    liveChunks.add(chunk);
+    return list;
   });
+  owner?.cleanup(() => state.forEach((c) => liveChunks.delete(c)));
+  if (!warmRegistered) {
+    warmRegistered = true;
+    // The warm-up frame draws every caster so its shadow pipelines build off-screen; the gating must not hide one.
+    warmDraw(() => {
+      for (const c of liveChunks)
+        for (const m of c.meshes) {
+          m.visible = true;
+          if (c.gated) m.castShadow = true;
+        }
+      return () => {
+        for (const c of liveChunks) setChunk(c);
+      };
+    });
+  }
+  const route = kinds.map((_, k) => ({ chunk: state[of[k]!.run]!, list: parts[of[k]!.run]!, at: of[k]!.slot }));
   const blobs = new Map<number, number>();
   set.mesh.setMatrixAt = (k: number, m: THREE.Matrix4) => {
     const r = route[k]!;
     for (const q of r.list) {
       q.mesh.setMatrixAt(r.at, tm.copy(m).scale(q.inv));
       q.mesh.instanceMatrix.needsUpdate = true;
-      q.mesh.boundingSphere = null;
+    }
+    if (!isHidden(m)) {
+      growBounds(r.chunk.box, m).getBoundingSphere(r.chunk.sphere);
+      if (!r.chunk.placed) {
+        r.chunk.placed = true;
+        setChunk(r.chunk);
+      }
+      for (const q of r.list) q.mesh.boundingSphere = r.chunk.sphere;
     }
     if (LOOK.contact && kinds[k] === 'sleeper') sleeperBlob(set, k, m, blobs, owner);
     return set.mesh;
   };
+  const update = set.update;
+  set.update = (dt: number) => {
+    update(dt);
+    for (const c of state) {
+      if (!c.gated || !c.placed) continue;
+      const casts = castsShadow(c.box.distanceToPoint(camera.position), c.shadow);
+      if (casts !== c.shadow) {
+        c.shadow = casts;
+        setChunk(c);
+      }
+    }
+  };
   return set;
+}
+function setChunk(c: TrackChunk) {
+  for (const m of c.meshes) {
+    m.visible = c.placed;
+    if (c.gated) m.castShadow = c.shadow;
+  }
 }
 function sleeperBlob(set: DropSet, k: number, m: THREE.Matrix4, blobs: Map<number, number>, owner?: OwnedView) {
   const b = set.boxes[k]!;

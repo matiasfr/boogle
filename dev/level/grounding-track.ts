@@ -5,6 +5,7 @@ import { FORMATION, LINKS, ORIGIN, STUB, UP_LAT, crossLat, lineAt, railY, upLat 
 import { H, surfaceHeight } from '../../src/place/terrain.ts';
 import { sampleFootprint } from '../../src/place/support.ts';
 import { carriedPiece, trackPanels } from '../../src/entities/railway/track-panels.ts';
+import { chunkOf } from '../../src/entities/railway/track-chunks.ts';
 import { sourceFunction } from './source.ts';
 
 /** Every settled track box of both lines, panelled and continuous, as the game's own buildTrack makes them. */
@@ -25,6 +26,7 @@ export function trackBoxes() {
     place,
     trackPanels,
     carriedPiece,
+    chunkOf,
     TOP: sourceFunction<number>(file, 'TOP', {}),
     DECK_W: sourceFunction<number>(file, 'DECK_W', {}),
     BED_W: sourceFunction<number>(file, 'BED_W', {}),

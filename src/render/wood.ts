@@ -138,11 +138,13 @@ export function woodGrain(
   scale: readonly [number, number, number] = [1, 1, 1],
   sides: 'grain' | 'plain' = 'grain',
   level = 1,
+  /** Added to the instance index: a batch cut from a longer one keeps every piece's grain (the track's chunks). */
+  idBase?: N,
 ) {
   const p: N = positionGeometry.mul(vec3(...scale));
   const n: N = abs(normalGeometry);
   const id: N =
-    vary === 'instance' ? float(instanceIndex).add(1) : modelPosition.x.mul(0.37).add(modelPosition.z.mul(0.61));
+    vary === 'instance' ? (idBase ? float(instanceIndex).add(idBase) : float(instanceIndex)).add(1) : modelPosition.x.mul(0.37).add(modelPosition.z.mul(0.61));
   const offset: N = vec2(hash(id, 12.9898), hash(id, 78.233));
   const [a, b] = (axis === 'x' ? ['y', 'z'] : axis === 'y' ? ['x', 'z'] : ['x', 'y']) as [GrainAxis, GrainAxis];
   // Across the grain on whichever long face is showing.

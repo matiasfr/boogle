@@ -150,6 +150,11 @@ export type Paint = {
 /** 1 asleep, rusty and dusty; 0 awake. */
 export const rustU = uniform(0);
 export const rustTrainU = uniform(0);
+/** Where a chunk of a longer batch starts in it (`userData.grainBase`; 0 for any other mesh), so its pieces keep the grain
+ * their place in the whole batch gave them. One shared node, so no material gains a variant by it. */
+const GRAIN_BASE: N = uniform(0).onObjectUpdate(function (this: N, { object }: { object: THREE.Object3D | null }) {
+  this.value = (object?.userData.grainBase as number | undefined) ?? 0;
+});
 const made = new Map<string, THREE.MeshStandardNodeMaterial>();
 /** A piece's material, built from what's on: plain and flat with no layer, grain or metal with `mats`, soft with `kit`. */
 export function paint(p: Paint) {
@@ -169,7 +174,7 @@ export function paint(p: Paint) {
   // sides stay plain and only the cut ends ring.
   if (wood)
     m.colorNode = materialColor.mul(
-      woodGrain(p.grain!.axis, 'instance', p.grain!.scale ?? [1, 1, 1], p.own ? 'plain' : 'grain', 0.955),
+      woodGrain(p.grain!.axis, 'instance', p.grain!.scale ?? [1, 1, 1], p.own ? 'plain' : 'grain', 0.955, GRAIN_BASE),
     );
   if (!steel && !p.own) m.colorNode = selectiveColour(m.colorNode ?? materialColor, wood ? 'timber' : 'accent');
   // Own-coloured pieces (the log's bark, amber band and cut ends) keep their pigments: the timber palette is a ratio
