@@ -1,6 +1,7 @@
 name: Smoke
 
-# Browserless deployment/asset/room check. Two-player rendered smoke runs only on the owner's Mac daily.
+# Browserless deployment/asset/room check, then one headless page load of the game's boot (no play). Two-player rendered
+# smoke runs only on the owner's Mac daily.
 
 on:
   schedule:
@@ -31,7 +32,9 @@ jobs:
     # Forks have no live site of their own here.
     if: github.repository == 'matiasfr/boogle'
     runs-on: ubuntu-latest
-    timeout-minutes: 9 # live-smoke.ts waits up to 5 minutes for deploy-server, 7-minute hard deadline
+    # live-smoke.ts waits up to 5 minutes for deploy-server (7-minute hard deadline); the boot check adds an install
+    # and up to 2.5 minutes of page load.
+    timeout-minutes: 15
     env:
       URL: ${{ inputs.url || 'https://boogle.club/' }}
     steps:
@@ -48,6 +51,28 @@ jobs:
           args=(--url "$URL")
           [ -z "$BUILD" ] || args+=(--build "$BUILD")
           node dev/live-smoke.ts "${args[@]}" 2>&1 | tee smoke.log
+      # The game's own boot, in one headless page (dev/live-boot.ts): fails on a startup throw such as v27's railway
+      # mount, which showed the no-WebGPU lobby and passed the checks above. If SwiftShader's WebGPU does not start on
+      # the runner it warns "unproven" and passes.
+      - if: ${{ !cancelled() }}
+        run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - id: pw
+        if: ${{ !cancelled() }}
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - if: ${{ !cancelled() }}
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium and system deps
+        if: ${{ !cancelled() }}
+        run: npx playwright install --with-deps chromium
+      - name: The deployed game boots
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: node dev/live-boot.ts --url "$URL" 2>&1 | tee -a smoke.log
       - if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
@@ -63,7 +88,7 @@ jobs:
           gh label create smoke --color d93f0b --description 'Nightly live smoke test' 2>/dev/null || true
           run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fails=$(grep -E 'FAIL|threw|page error' smoke.log 2>/dev/null | head -20 || true)
-          body=$(printf 'The browserless live smoke test failed or timed out against %s (%s).\n\n```\n%s\n```\n\nDetails: the smoke-log artifact of that run.' \
+          body=$(printf 'The live smoke test failed or timed out against %s (%s).\n\n```\n%s\n```\n\nDetails: the smoke-log artifact of that run.' \
             "$URL" "$run" "${fails:-no scenario output; see the run log}")
           num=$(gh issue list --label smoke --state open --limit 1 --json number --jq '.[0].number')
           if [ -n "$num" ]; then
