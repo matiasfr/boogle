@@ -32,7 +32,9 @@ import {
   CROSSING_FOOT_OFF,
 } from '../../sim/railway-works-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
-import { onlyALoad, setDownThen } from './back-down.ts';
+import { onlyALoadIn, setDownThen } from './back-down.ts';
+import { account, beam, boiler, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
+import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 
 /** The rockets' launch height over the sea, and the pieces' timings in seconds. */
@@ -65,7 +67,14 @@ export async function createRailwayCrossing(
   owner.cleanup(() => finaleCamera.dispose());
   const line = layout.LINKS[1]!.line;
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
-  let state = adapter.inspect();
+  // The rows, re-read at the head of each entry (update, snap, targets): a refill swaps the world.
+  let wd: ReadWorld = adapter.read.world();
+  let opened = false;
+  const refresh = () => {
+    wd = adapter.read.world();
+    opened = adapter.read.ready() && line2Trains(wd) && line2Completed(wd) >= LINE2_STATIONS.length;
+  };
+  refresh();
   const batch = createBoxBatch(owner, 360);
   const m = new THREE.Matrix4(),
     p = new THREE.Vector3();
@@ -177,15 +186,16 @@ export async function createRailwayCrossing(
   const trail = new THREE.Color('#ffe9b0');
   const ring = towardRing();
 
-  const open = () => state.ready && state.line2.trains && state.line2.completed >= LINE2_STATIONS.length;
+  const open = () => opened;
   /** Footings standing in the sea now: set ones minus those still on their way down. */
-  const inSea = () => Math.max(0, state.works.pierSet - lowering.length);
+  const inSea = () => Math.max(0, worksRow(wd).pierSet - lowering.length);
   const lowerTime = (l: Lowering) => {
     const s = sockets[l.slot]!;
     return Math.hypot(s.x - jibHead.x, s.z - jibHead.z) / OUT_SPEED;
   };
   const avatarBack = (pid: string, out: THREE.Vector3) => {
-    const a = pid === state.pid ? me.avatar : [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
+    const a =
+      pid === adapter.read.pid ? me.avatar : [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
     if (!a) return false;
     out.copy(a.position);
     out.y += 1.3;
@@ -193,11 +203,11 @@ export async function createRailwayCrossing(
   };
 
   function snap() {
-    state = adapter.inspect();
+    refresh();
     lowering.length = 0;
-    const pairs = Math.floor(state.works.pierSet / 2);
+    const pairs = Math.floor(worksRow(wd).pierSet / 2);
     rise.forEach((_, b) => (rise[b] = b < pairs ? RISE_S : -1));
-    shownCrossing = state.works.crossing;
+    shownCrossing = worksRow(wd).crossing;
     show = -1;
     finale = -1;
     finaleWaiting = false;
@@ -287,11 +297,11 @@ export async function createRailwayCrossing(
       bents.forEach((_, b) => drawBent(b));
       // The pier rack stands once the kiln has cast its first footing (there is something to bring), then its stack
       // (less what is still hopping off the wagon).
-      if (state.works.poured > 0) {
+      if (worksRow(wd).poured > 0) {
         footingFrame(m, rack.x, rackY, rack.z, rackYaw);
         for (const r of rackParts) batch.part(m, ...r);
       }
-      const resting = Math.max(0, state.works.pierRack - deps.toPier());
+      const resting = Math.max(0, worksRow(wd).pierRack - deps.toPier());
       for (let k = 0; k < Math.min(resting, WORKS.pier); k++) {
         rackSlot(k, p);
         footingParts(batch, footingFrame(m, p.x, p.y, p.z, rackYaw));
@@ -497,7 +507,7 @@ export async function createRailwayCrossing(
     /** Where a footing hopping off the wagon lands: the pier rack's slot k. */
     rackSlot,
     update(dt: number) {
-      state = adapter.inspect();
+      refresh();
       solidApron(open());
       stepLowering(dt);
       // A bent whose pair arrived without a lowering here (a correction, a late accept) still rises.
@@ -507,8 +517,8 @@ export async function createRailwayCrossing(
         else if (b < pairs) rise[b] = 0;
       });
       if (pairs < rise.filter((t) => t >= 0).length) rise.forEach((_, b) => b >= pairs && (rise[b] = -1));
-      if (state.works.crossing >= 0 && shownCrossing < 0) show = 0;
-      shownCrossing = state.works.crossing;
+      if (worksRow(wd).crossing >= 0 && shownCrossing < 0) show = 0;
+      shownCrossing = worksRow(wd).crossing;
       stepShow(dt);
       finaleCamera.update(dt);
       draw();
@@ -517,11 +527,11 @@ export async function createRailwayCrossing(
       if (e.op === 'rail.footSet' && e.site === 2) {
         const from = new THREE.Vector3();
         if (!avatarBack(e.pid, from)) from.copy(jibHead);
-        lowering.push({ slot: Math.max(0, state.works.pierSet - 1), from, t: 0 });
+        lowering.push({ slot: Math.max(0, worksRow(wd).pierSet - 1), from, t: 0 });
         clank(frame.x, frame.z);
       }
       if (e.op === 'rail.footTake' && e.rack === 1) {
-        rackSlot(Math.max(0, state.works.pierRack), p);
+        rackSlot(Math.max(0, worksRow(wd).pierRack), p);
         placeSound('shoulder', p.x, p.z);
         dustRing(p.x, p.y + 0.1, p.z, 6, 1, 0.2);
       }
@@ -531,11 +541,14 @@ export async function createRailwayCrossing(
     },
     targets(): Interactable[] {
       const pos = me.body?.position;
+      refresh();
       if (!open() || !pos) return [];
-      const w = state.works,
+      const pid = adapter.read.pid,
+        w = worksRow(wd),
+        mine = account(wd, pid),
         out: Interactable[] = [];
-      const backFree = !state.carry && !state.stoneCarry && !state.railsCarry && !state.foot;
-      const free = backFree && state.beam?.holder !== state.pid && state.line2.boiler.holder !== state.pid;
+      const backFree = !mine?.carry && !mine?.stone && !mine?.rails && !mine?.foot;
+      const free = backFree && beam(wd).holder !== pid && boiler(wd).holder !== pid;
       if (
         w.pierRack > 0 &&
         Math.hypot(pos.x - rack.x, pos.z - rack.z) <= PIER_RACK.reach / 100 - 0.4 &&
@@ -550,7 +563,7 @@ export async function createRailwayCrossing(
                 at: top,
                 run: () => void adapter.shoulderFooting(1),
               }
-            : onlyALoad(state, false)
+            : onlyALoadIn(wd, pid, false)
               ? {
                   id: 'railway-foot-take-1',
                   verb: 'Shoulder a footing',
@@ -560,9 +573,9 @@ export async function createRailwayCrossing(
               : { id: 'railway-foot-take-1', verb: 'Shoulder a footing', at: top, blocked: 'Empty your back first' },
         );
       }
-      const aboard = state.trains.reduce((n, r) => n + r.foot, 0); // on the wagon, whichever train has it
+      const aboard = trains(wd).reduce((n, r) => n + r.foot, 0); // on the wagon, whichever train has it
       if (
-        state.foot &&
+        mine?.foot &&
         w.pierSet + w.pierRack + aboard < WORKS.pier &&
         Math.hypot(pos.x - frame.x, pos.z - frame.z) <= PIER_FRAME.reach / 100 - 0.4 &&
         Math.abs(pos.y - PIER_FRAME.y / 100) <= 2.6
@@ -582,7 +595,7 @@ export async function createRailwayCrossing(
         lowering: lowering.length,
         bents: rise.filter((t) => t >= RISE_S).length,
         rising: rise.filter((t) => t >= 0 && t < RISE_S).length,
-        pierRack: Math.max(0, state.works.pierRack - deps.toPier()),
+        pierRack: Math.max(0, worksRow(wd).pierRack - deps.toPier()),
         show: show >= 0,
         shows,
         rockets: rockets.length,

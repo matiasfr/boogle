@@ -19,16 +19,16 @@ import { playSharedMoment } from './shared-moment.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { reducedMotion } from '../../constants.ts';
 import { goldMote } from './breaker-view.ts';
-import { WORKS, WORKS_KILN, WORKS_RACK, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+import { WORKS, WORKS_KILN, WORKS_RACK, WORKS_ROCKS, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+import { account, beam as beamRow, boiler, rock, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { SEAM_THROAT } from '../../sim/railway-works.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { LINE_HALTS } from '../../sim/railway-train.ts';
-import { onlyALoad, setDownThen } from './back-down.ts';
+import { onlyALoadIn, setDownThen } from './back-down.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
 
-type Inspection = ReturnType<RailwayAdapter['inspect']>;
 /** Seconds a cast footing takes down the roller road, and its hop onto the rack. */
 const ROLL_S = 4,
   HOP_S = 0.45;
@@ -260,7 +260,7 @@ export async function createRailwayWorks(
   function drawBill(on: boolean) {
     bill.mesh.visible = on;
     if (!on) return;
-    const k = state.works.kiln;
+    const k = worksRow(wd);
     const small = `logs ${Math.min(k.logs, WORKS.kilnLogs)}/${WORKS.kilnLogs}  stone ${Math.min(k.stone, WORKS.kilnStone)}/${WORKS.kilnStone}`;
     if (small === billPainted) return;
     billPainted = small;
@@ -291,7 +291,8 @@ export async function createRailwayWorks(
   const later = createLater();
   owner.cleanup(() => throatCamera.dispose());
 
-  let state: Inspection = adapter.inspect();
+  // The rows, re-read at the head of each entry (update, accepted, snap, targets): a refill swaps the world.
+  let wd: ReadWorld = adapter.read.world();
   let slabBodies: Body[] = [];
   let open = false,
     topple = -1, // seconds into the throat's topple, -1 when none plays
@@ -429,7 +430,7 @@ export async function createRailwayWorks(
     return i * 0.7;
   };
   function drawKiln() {
-    const k = state.works.kiln;
+    const k = worksRow(wd);
     for (let i = 0; i < Math.min(k.logs, WORKS.kilnLogs); i++) {
       const yaw = logAt(i);
       batch.box(p.x, p.y, p.z, ...LOG, '#8a6238', yaw);
@@ -449,7 +450,7 @@ export async function createRailwayWorks(
     rockMote = 0,
     rockSide = 1;
   function drawGhosts() {
-    const k = state.works.kiln,
+    const k = worksRow(wd),
       wants = open && k.lit < 0;
     const logs = wants ? Math.max(0, WORKS.kilnLogs - k.logs) : 0,
       stone = wants ? Math.max(0, WORKS.kilnStone - k.stone) : 0;
@@ -476,11 +477,11 @@ export async function createRailwayWorks(
     if (rockMote > 0) return;
     rockMote = 0.2;
     rockSide *= -1;
-    for (const rock of state.works.rocks) {
-      if (rock.remaining <= 0) continue;
+    for (const spot of WORKS_ROCKS) {
+      if (rock(wd, spot.id).left <= 0) continue;
       // Round the top of the drawn pile (about 1.3 m tall, 2.4 m across), clear of the stone.
       const a = Math.random() * Math.PI * 2;
-      goldMote(rock.x / 100 + Math.cos(a) * 1, rock.y / 100 + 1.5, rock.z / 100 + Math.sin(a) * 1, rockSide, 0.3);
+      goldMote(spot.x / 100 + Math.cos(a) * 1, spot.y / 100 + 1.5, spot.z / 100 + Math.sin(a) * 1, rockSide, 0.3);
     }
   }
   function drawRack(dt: number) {
@@ -495,7 +496,7 @@ export async function createRailwayWorks(
         continue;
       }
       const u = Math.min(1, (f.t - ROLL_S) / HOP_S);
-      const slot = slotAt(Math.max(0, state.works.rack - flights.length + flights.indexOf(f)), new THREE.Vector3());
+      const slot = slotAt(Math.max(0, worksRow(wd).rack - flights.length + flights.indexOf(f)), new THREE.Vector3());
       const end = road.at(-1)!;
       p.set(
         end.x + (slot.x - end.x) * u,
@@ -510,7 +511,7 @@ export async function createRailwayWorks(
         dustRing(slot.x, slot.y + 0.05, slot.z, 8, 1.3, 0.25);
       }
     }
-    const resting = Math.max(0, state.works.rack - flights.length);
+    const resting = Math.max(0, worksRow(wd).rack - flights.length);
     for (let i = 0; i < Math.min(resting, 12); i++) {
       slotAt(i, p);
       footingFrame(m, p.x, p.y, p.z, rackYaw);
@@ -518,7 +519,7 @@ export async function createRailwayWorks(
     }
   }
   function effects(dt: number) {
-    if (state.works.kiln.lit < 0) return;
+    if (worksRow(wd).lit < 0) return;
     const chimney = { x: kiln.x + 1.5, y: 34.6, z: kiln.z - 1.5 };
     smoke -= dt;
     if (smoke <= 0) {
@@ -647,7 +648,8 @@ export async function createRailwayWorks(
   }
   const fromBack = new THREE.Vector3();
   function avatarBack(pid: string, out: THREE.Vector3) {
-    const a = pid === state.pid ? me.avatar : [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
+    const a =
+      pid === adapter.read.pid ? me.avatar : [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
     if (!a) return false;
     out.copy(a.position);
     out.y += 1.2;
@@ -671,13 +673,13 @@ export async function createRailwayWorks(
     }
   }
   function snap() {
-    state = adapter.inspect();
-    open = !!(state.works.seams & SEAM_THROAT);
+    wd = adapter.read.world();
+    open = !!(worksRow(wd).seams & SEAM_THROAT);
     topple = -1;
     flights.length = 0;
     kilnFlights.length = 0;
-    poured = state.works.poured;
-    litShown = state.works.kiln.lit >= 0;
+    poured = worksRow(wd).poured;
+    litShown = worksRow(wd).lit >= 0;
     flare = 0;
     later.clear();
     throatCamera.reset();
@@ -693,8 +695,8 @@ export async function createRailwayWorks(
     update(dt: number) {
       throatCamera.update(dt);
       later.update(dt);
-      state = adapter.inspect();
-      const w = state.works;
+      wd = adapter.read.world();
+      const w = worksRow(wd);
       const nowOpen = !!(w.seams & SEAM_THROAT);
       // Opened without a strike event here (a correction, or someone else's packet arriving first): no show then.
       if (nowOpen && !open && topple < 0) solid(false);
@@ -711,7 +713,7 @@ export async function createRailwayWorks(
         clank(start.x, start.z);
       }
       if (poured > w.poured) poured = w.poured;
-      const lit = w.kiln.lit >= 0;
+      const lit = w.lit >= 0;
       if (lit && !litShown) light();
       litShown = lit;
       flare = Math.max(0, flare - dt / 1.2);
@@ -722,7 +724,7 @@ export async function createRailwayWorks(
       const marked = w.breaker === 2;
       if (marked) drawPath();
       sign.visible = marked;
-      drawBill(open && w.kiln.lit < 0);
+      drawBill(open && w.lit < 0);
       drawKiln();
       drawKilnFlights(dt);
       drawRack(dt);
@@ -732,13 +734,13 @@ export async function createRailwayWorks(
       effects(dt);
     },
     accepted(e: RailwayAccepted) {
-      state = adapter.inspect();
+      wd = adapter.read.world();
       if (e.op === 'rail.strike' && e.id === 1) {
-        const delay = e.pid === state.pid ? deps.contactIn(1) : 0;
+        const delay = e.pid === adapter.read.pid ? deps.contactIn(1) : 0;
         solid(false);
         startTopple(delay + 0.07);
         open = true;
-        playSharedMoment('works throat', e, state.pid, throatShow);
+        playSharedMoment('works throat', e, adapter.read.pid, throatShow);
         const c = new THREE.Vector3(throat.x, 24, throat.z);
         later.after(delay + 0.07, () => {
           clank(c.x, c.z);
@@ -766,7 +768,7 @@ export async function createRailwayWorks(
       if (e.op === 'rail.kiln') {
         // Logs and stone leave the back for the cradle and the hopper as they were taken.
         if (!avatarBack(e.pid, fromBack)) return;
-        const k = state.works.kiln;
+        const k = worksRow(wd);
         const n = Math.min(8, e.accepted);
         for (let i = 0; i < n; i++) {
           const kind: 0 | 1 = i < n / 2 && k.logs > 0 ? 0 : 1;
@@ -780,7 +782,7 @@ export async function createRailwayWorks(
         }
       }
       if (e.op === 'rail.footTake' && e.rack === 0) {
-        slotAt(Math.max(0, state.works.rack), p);
+        slotAt(Math.max(0, worksRow(wd).rack), p);
         placeSound('shoulder', p.x, p.z);
         dustRing(p.x, p.y + 0.1, p.z, 6, 1, 0.2);
       }
@@ -790,20 +792,23 @@ export async function createRailwayWorks(
     },
     targets(): Interactable[] {
       const p = me.body?.position;
-      if (!state.ready || !p) return [];
-      const w = state.works,
+      if (!adapter.read.ready() || !p) return [];
+      const rows = adapter.read.world(),
+        pid = adapter.read.pid,
+        w = worksRow(rows),
+        mine = account(rows, pid),
         out: Interactable[] = [];
-      const backFree = !state.carry && !state.stoneCarry && !state.railsCarry && !state.foot;
-      const free = backFree && state.beam?.holder !== state.pid && state.line2.boiler.holder !== state.pid && !heldId();
+      const backFree = !mine?.carry && !mine?.stone && !mine?.rails && !mine?.foot;
+      const free = backFree && beamRow(rows).holder !== pid && boiler(rows).holder !== pid && !heldId();
       if (
         w.seams & SEAM_THROAT &&
-        w.kiln.lit < 0 &&
+        w.lit < 0 &&
         Math.hypot(p.x - kiln.x, p.z - kiln.z) <= WORKS_KILN.reach / 100 - 0.4 &&
         Math.abs(p.y - WORKS_KILN.y / 100) <= 2.6
       ) {
         const c = at(3.2, 0);
         const fills =
-          (state.carry > 0 && w.kiln.logs < WORKS.kilnLogs) || (state.stoneCarry > 0 && w.kiln.stone < WORKS.kilnStone);
+          ((mine?.carry ?? 0) > 0 && w.logs < WORKS.kilnLogs) || ((mine?.stone ?? 0) > 0 && w.stone < WORKS.kilnStone);
         // Part 2, beat 9: an empty or wrong back meets the prompt with its reason, never silence.
         out.push(
           fills
@@ -831,7 +836,7 @@ export async function createRailwayWorks(
                 at: top,
                 run: () => void adapter.shoulderFooting(0),
               }
-            : onlyALoad(state)
+            : onlyALoadIn(rows, pid)
               ? {
                   id: 'railway-foot-take-0',
                   verb: 'Shoulder a footing',
@@ -844,15 +849,15 @@ export async function createRailwayWorks(
       return out;
     },
     inspect: () => ({
-      seams: state.works.seams,
+      seams: worksRow(wd).seams,
       throatSolid: slabBodies.length > 0,
       toppling: topple >= 0,
       shot: throatCamera.inspect(),
-      kiln: { ...state.works.kiln, glow: mouth.visible },
+      kiln: { logs: worksRow(wd).logs, stone: worksRow(wd).stone, lit: worksRow(wd).lit, glow: mouth.visible },
       ghosts: { logs: ghostLogs, stone: ghostStone, dashes: ghosts.count },
       path: sign.visible,
       bill: bill.mesh.visible ? billPainted : null,
-      rack: Math.max(0, state.works.rack - flights.length),
+      rack: Math.max(0, worksRow(wd).rack - flights.length),
       rollers: flights.length,
     }),
   };

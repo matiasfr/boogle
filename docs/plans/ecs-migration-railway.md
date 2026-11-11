@@ -943,6 +943,17 @@ later change with a bundle report. Place's remaining callers get one owner from 
     **Switched to the readers above (same day):** `ready`, `pending`, `stalled`, `movement().beamSoloSpeed/beamHelpSpeed`,
     `treeGrowth` and `freeCarryIgnoringBig`; the "Still on `inspect()`" list above now holds only `opening-view`'s
     `progress` and `back-down`'s `onlyALoad`, `loadOf` and `setDown`, which belong to other groups.
+  - [x] **d. Works built** (11 November, branch `ecs/m10d-works-views`, not shipped): `works-view`, `breaker-view`,
+    `footing-view`, `crossing-view`, `roundhouse-view`, `home-station-view` and `trophy-plinth` read `adapter.read.world()`
+    rows (`works`, `shed`, `rock`, `account`, `accounts`, `beam`, `boiler`, `trains`, `rail`, `w.each([Pile])` for the
+    footing piles' ids) and `line2Completed`, `line2Trains`, with `read.ready()`, `read.pid` and `read.movement()`
+    (footing speeds); `works-live`, `works-box-view` and `crossing-show` never read the adapter. No view reads a tick, so
+    none runs `railPhase` or `railPanelCount`. Each view re-reads the world at the head of its entry points and holds no
+    row across one. `garage-state.roomFacts` (the garage's one reader, outside the list) takes a world now. No query
+    was added: `onlyALoadIn` (back-down.ts, e's) and local helpers cover the arithmetic. The group reads nothing from
+    `inspect()` (`test/railway-m10d-review.test.ts`, 17 tests: every read equal to the field it replaced, frame by frame,
+    over 11 seeds with two lagged players, predicted presses, a drop and refill; a late joiner; a worn footing put down
+    as a pile). Look: `works-lit`, kiln lit with logs and stone in, smoke and sparks.
   - [x] **e. Abilities and arrival** (10 November, branch `ecs/m10e-ability-views`, not shipped): rows and queries
     through `adapter.read` for every field that is a row (`jump`, `glide`, `hook`, `pack`, `axe`, `sea`, the account's
     carry, stone, rails and foot, the piles, the beam and boiler holders, `line2Completed`, `line2PackReady`,

@@ -23,8 +23,8 @@ import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
 import { roomFacts } from './garage-state.ts';
+import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 
-type Inspection = ReturnType<RailwayAdapter['inspect']>;
 /** Seconds: the stall frame's build, the tarp's slide, the table's quarter turn. */
 const BUILD_S = 3,
   TARP_S = 1.1,
@@ -198,7 +198,8 @@ export async function createRailwayRoundhouse(
   boiler.castShadow = true;
   owner.add(boiler);
   const later = createLater();
-  let state: Inspection = adapter.inspect();
+  // The rows, re-read at the head of each entry (update, accepted, snap, targets): a refill swaps the world.
+  let wd: ReadWorld = adapter.read.world();
   let slabBody: Body | null = null,
     wagonBody: Body | null = null,
     wagonBodyAt = NaN;
@@ -244,7 +245,7 @@ export async function createRailwayRoundhouse(
   const frameFrom = (k: number) => k / FRAME.length;
   function drawFrame(dt: number) {
     const prior = build;
-    const target = state.shed.stall >= WORKS.stall ? 1 : 0;
+    const target = shed(wd).stall >= WORKS.stall ? 1 : 0;
     if (build < target) build = Math.min(target, build + dt / BUILD_S);
     else if (build > target) build = Math.max(target, build - dt / 0.6);
     FRAME.forEach(([x, y, z, w, h, d, roll], k) => {
@@ -320,7 +321,7 @@ export async function createRailwayRoundhouse(
     return footingFrame(out, sp.x, FLOOR - 0.35, sp.z, STALL_YAW);
   };
   function drawSockets() {
-    const resting = state.shed.stall - lowering.filter((l) => l.site === 0).length;
+    const resting = shed(wd).stall - lowering.filter((l) => l.site === 0).length;
     for (let k = 0; k < Math.min(2, resting); k++) footingParts(batch, socketFrame(k, m));
   }
   // A dashed gold ghost footing in each empty socket once the slab has fallen (docs/plans/works-signposting-2.md,
@@ -329,7 +330,7 @@ export async function createRailwayRoundhouse(
   const socketGhosts = createGhostOutlines(owner, 200, 0.2, 0.12, 0.03);
   let socketKey = '';
   function drawSocketGhosts() {
-    const from = slabOpen ? Math.min(WORKS.stall, state.shed.stall) : WORKS.stall;
+    const from = slabOpen ? Math.min(WORKS.stall, shed(wd).stall) : WORKS.stall;
     const key = `${from} ${homeB}`;
     if (key === socketKey) return;
     socketKey = key;
@@ -355,10 +356,10 @@ export async function createRailwayRoundhouse(
   function drawWagon(frame: THREE.Matrix4) {
     batch.part(frame, 0, 0.3, 0, 2.2, 0.35, 3.2, '#77766b');
     for (const x of [-0.85, 0.85]) for (const z of [-1, 1]) batch.part(frame, x, 0.05, z, 0.25, 0.5, 0.5, '#3a3c3c');
-    const fitted = state.shed.fitted >= 0;
+    const fitted = shed(wd).fitted >= 0;
     // Cradle: two footing seats on the deck and eight arms that hold the footings upright.
-    const seats = Math.min(2, state.shed.cradle);
-    const rails = Math.min(8, state.shed.cradleRails);
+    const seats = Math.min(2, shed(wd).cradle);
+    const rails = Math.min(8, shed(wd).cradleRails);
     const settling = (k: number) => {
       const b = bolts.find((bolt) => bolt.k === k);
       return b ? (1 - Math.min(1, b.t / 0.28)) ** 2 * 0.9 : 0;
@@ -410,7 +411,7 @@ export async function createRailwayRoundhouse(
   /** The deck's yaw: the shunt's choreography while it runs (the deck carrying the wagon round), else the accepted
    * table's stop, eased at a quarter turn per TURN_S. */
   function drawTable(dt: number) {
-    const target = deckK === null ? yaws[state.shed.table]! : yaws[0]! + turnBy * deckK;
+    const target = deckK === null ? yaws[shed(wd).table]! : yaws[0]! + turnBy * deckK;
     const d = wrap(target - tableYaw);
     // Following the choreography it lands exactly; off it (a deck left turned before the cradle was fitted), it catches up.
     const step = (deckK === null ? Math.PI / 2 / TURN_S : Math.PI) * dt;
@@ -444,8 +445,8 @@ export async function createRailwayRoundhouse(
    * k is null before the roll-out, when the deck follows the accepted table.
    */
   function shuntTargets(tick: number): { wagon: number; shunter: number; k: number | null; hidden: boolean } {
-    const sh = state.shed,
-      hidden = state.trains.some((r) => r.wagon);
+    const sh = shed(wd),
+      hidden = trains(wd).some((r) => r.wagon);
     const home = PARKED_A - PARK.gap,
       seated = TABLE_A + PARK.gap / 2; // the wagon's centre on the deck, the shunter's as far behind the middle
     if (sh.ready < 0) return { wagon: PARKED_A, shunter: home, k: hidden ? 0 : null, hidden };
@@ -479,7 +480,7 @@ export async function createRailwayRoundhouse(
   function shuntClock(dt: number, snapTo: boolean) {
     const now = adapter.tickNow(),
       step = dt * TICKS_PER_S,
-      ready = state.shed.ready;
+      ready = shed(wd).ready;
     if (snapTo || !Number.isFinite(shownTick) || Math.abs(now - shownTick) > 10 * TICKS_PER_S) shownTick = now;
     else if (ready !== shownReady && ready >= 0) shownTick = Math.min(now, ready - WORKS.rollTicks);
     else shownTick += step * (1 + Math.min(0.5, Math.max(-0.5, (now - shownTick) / 20)));
@@ -590,31 +591,32 @@ export async function createRailwayRoundhouse(
     }
   }
   function snap() {
-    state = adapter.inspect();
+    wd = adapter.read.world();
     later.clear();
-    slabOpen = !!(state.works.seams & SEAM_STALL);
+    slabOpen = !!(worksRow(wd).seams & SEAM_STALL);
     solidSlab(!slabOpen);
     pop = -1;
-    build = state.shed.stall >= WORKS.stall ? 1 : 0;
+    build = shed(wd).stall >= WORKS.stall ? 1 : 0;
     tarp = build;
     builtShown = build >= 1;
-    fittedShown = state.shed.fitted >= 0;
+    fittedShown = shed(wd).fitted >= 0;
     tableTurning = false;
     lowering.length = 0;
     bolts.length = 0;
     socketKey = '';
 
-    lastCradle = state.shed.cradle;
-    lastRails = state.shed.cradleRails;
+    lastCradle = shed(wd).cradle;
+    lastRails = shed(wd).cradleRails;
     const t = shuntTargets(shuntClock(0, true));
     wagonA = t.wagon;
     shunterA = t.shunter;
     deckK = t.k;
-    tableYaw = deckK === null ? yaws[state.shed.table]! : yaws[0]! + turnBy * deckK;
+    tableYaw = deckK === null ? yaws[shed(wd).table]! : yaws[0]! + turnBy * deckK;
   }
   snap();
   const avatarBack = (pid: string, out: THREE.Vector3) => {
-    const a = pid === state.pid ? me.avatar : [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
+    const a =
+      pid === adapter.read.pid ? me.avatar : [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
     if (!a) return false;
     out.copy(a.position);
     out.y += 1.3;
@@ -625,10 +627,10 @@ export async function createRailwayRoundhouse(
     restore: snap,
     update(dt: number) {
       later.update(dt);
-      state = adapter.inspect();
-      garageView?.update(dt, roomFacts(state));
-      const sh = state.shed;
-      const open = !!(state.works.seams & SEAM_STALL);
+      wd = adapter.read.world();
+      garageView?.update(dt, roomFacts(wd));
+      const sh = shed(wd);
+      const open = !!(worksRow(wd).seams & SEAM_STALL);
       if (open && !slabOpen && pop < 0) solidSlab(false);
       if (!open && slabOpen) {
         pop = -1;
@@ -698,9 +700,9 @@ export async function createRailwayRoundhouse(
       batch.commit();
     },
     accepted(e: RailwayAccepted) {
-      state = adapter.inspect();
+      wd = adapter.read.world();
       if (e.op === 'rail.strike' && e.id === 0) {
-        const delay = e.pid === state.pid ? deps.contactIn(0) : 0;
+        const delay = e.pid === adapter.read.pid ? deps.contactIn(0) : 0;
         solidSlab(false);
         slabOpen = true;
         pop = 0;
@@ -721,7 +723,7 @@ export async function createRailwayRoundhouse(
       if (e.op === 'rail.footSet' && (e.site === 0 || e.site === 1)) {
         const from = new THREE.Vector3();
         if (!avatarBack(e.pid, from)) return;
-        const slot = e.site === 0 ? Math.max(0, state.shed.stall - 1) : Math.max(0, state.shed.cradle - 1);
+        const slot = e.site === 0 ? Math.max(0, shed(wd).stall - 1) : Math.max(0, shed(wd).cradle - 1);
         lowering.push({ site: e.site, slot, from, t: 0 });
       }
       if (e.op === 'rail.turn') clank(table.x, table.z);
@@ -733,14 +735,16 @@ export async function createRailwayRoundhouse(
     },
     targets(): Interactable[] {
       const pos = me.body?.position;
-      if (!state.ready || !pos) return [];
-      const sh = state.shed,
+      if (!adapter.read.ready() || !pos) return [];
+      wd = adapter.read.world();
+      const mine = account(wd, adapter.read.pid),
+        sh = shed(wd),
         out: Interactable[] = [];
       const nearStall =
         Math.hypot(pos.x - stallAt.x, pos.z - stallAt.z) <= SHED_STALL.reach / 100 - 0.4 &&
         Math.abs(pos.y - SHED_STALL.y / 100) <= 2.6;
       if (garageView && !garageView.isOpen() && Math.hypot(pos.x - garagePost.x, pos.z - garagePost.z) <= 2.6) {
-        const facts = roomFacts(state);
+        const facts = roomFacts(wd);
         if (facts.boilerFitted)
           out.push({
             id: 'railway-garage',
@@ -749,7 +753,7 @@ export async function createRailwayRoundhouse(
             ...(facts.tableBusy ? { blocked: 'The table’s busy' } : { run: () => garageView.open() }),
           });
       }
-      if (nearStall && state.foot && state.works.seams & SEAM_STALL) {
+      if (nearStall && mine?.foot && worksRow(wd).seams & SEAM_STALL) {
         if (sh.stall < WORKS.stall) {
           const sp = STALL_SOCKETS[sh.stall]!;
           out.push({
@@ -758,7 +762,7 @@ export async function createRailwayRoundhouse(
             at: new THREE.Vector3(sp.x, FLOOR + 1.6, sp.z),
             run: () => void adapter.setFooting(0),
           });
-        } else if (sh.cradle < WORKS.cradle && !state.trains.some((r) => r.wagon)) {
+        } else if (sh.cradle < WORKS.cradle && !trains(wd).some((r) => r.wagon)) {
           const c = stallPoint(0, PARK.wagon);
           out.push({
             id: 'railway-foot-set-1',
@@ -768,7 +772,7 @@ export async function createRailwayRoundhouse(
           });
         }
       }
-      if (nearStall && sh.stall >= WORKS.stall && state.railsCarry > 0 && sh.cradleRails < WORKS.cradleRails) {
+      if (nearStall && sh.stall >= WORKS.stall && (mine?.rails ?? 0) > 0 && sh.cradleRails < WORKS.cradleRails) {
         const c = stallPoint(0, PARK.wagon);
         out.push({
           id: 'railway-cradle',
@@ -815,9 +819,9 @@ export async function createRailwayRoundhouse(
         slab: !slabOpen,
         slabSolid: !!slabBody,
         socketGhosts: socketGhosts.count,
-        stall: { set: state.shed.stall, frame: build, tarp },
-        cradle: { seats: state.shed.cradle, rails: state.shed.cradleRails, fitted: state.shed.fitted >= 0 },
-        table: { state: state.shed.table, yaw: tableYaw, turning: tableTurning, pending: asked?.to ?? null, k: deckK },
+        stall: { set: shed(wd).stall, frame: build, tarp },
+        cradle: { seats: shed(wd).cradle, rails: shed(wd).cradleRails, fitted: shed(wd).fitted >= 0 },
+        table: { state: shed(wd).table, yaw: tableYaw, turning: tableTurning, pending: asked?.to ?? null, k: deckK },
         wagon: {
           x: w.x,
           y: w.y,
@@ -833,7 +837,7 @@ export async function createRailwayRoundhouse(
           onTable: Math.abs(wagonA - TABLE_A) < 2,
           solid: !!wagonBody,
         },
-        shunter: { along: shunterA, tick: adapter.tickNow(), shown: shownTick, ready: state.shed.ready },
+        shunter: { along: shunterA, tick: adapter.tickNow(), shown: shownTick, ready: shed(wd).ready },
       };
     },
   };
