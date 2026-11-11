@@ -332,7 +332,7 @@ Mac as it does today and the comment says so. The Mac's cost falls to a push, a 
 
 ## The owner's one-time checklist
 
-**Owner, 11 November: asked about this one-time ssh setup, "Later".** Nothing below is done and step 1 waits for it. The five open questions at the end are unanswered. His separate answer, "Mac orchestrates, HOTBOX runs tests" ([owner calls](../agents/owner-calls.md)), is the direction this plan serves; until the setup exists, HOTBOX's own Claude session runs the tests.
+**Owner, 11 November: asked about this one-time ssh setup, "Later".** Nothing below is done and step 1 waits for it. The five open questions at the end are unanswered. His separate answer, "Mac orchestrates, HOTBOX runs tests", clarified as "not exclusive test runner ... another machine to share load with" ([owner calls](../agents/owner-calls.md), "HOTBOX shares the load; the Mac orchestrates"), is the direction this plan serves; until the setup exists, HOTBOX's own Claude session takes the work.
 
 About 30 minutes. The Claude session on the desktop can check each Windows item afterwards and say what is missing;
 it does not do them.

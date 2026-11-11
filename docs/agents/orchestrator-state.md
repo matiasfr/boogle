@@ -110,7 +110,7 @@ The owner's words are in the [decision log](../decisions.md#decided) (10 Novembe
 - Eight server tests failing on HOTBOX (Windows symlinks): "I'll turn on Developer Mode". His to do; nothing to skip.
 - PR #1553 (unit tests six times cheaper): "Next orchestrator rebases and lands it". This session already cherry-picked its commit as `ci/unit-speed` (Running); the next orchestrator confirms it landed.
 - Five archived review-test tags (`archive/review/*`) that never reached main: "Check and land what still applies". Queued.
-- Where the orchestrator runs: "Mac orchestrates, HOTBOX runs tests" (an owner call).
+- Where the orchestrator runs: "Mac orchestrates, HOTBOX runs tests", clarified: "hot box is not exclusive test runner, it should be used as another machine to share load with to increase development throughput" (owner call "HOTBOX shares the load; the Mac orchestrates"). Give HOTBOX's peer session build, review and test work, based on origin/main, one job per set of files as on the Mac.
 - Remote runner, one-time ssh setup: "Later". Step 1 waits; the plan's five questions are still unanswered.
 
 **Still waiting on the owner** (nothing blocks): the remote runner's five questions ([plan](../plans/remote-runner.md)); optional same-conditions device runs. His to overrule when seen: one cottage on arrival, the clock free with a stone footing, blank stake boards until the first fare, the village sign's 12; the Pier's platform and rack east from Q6; the forge's show length.
