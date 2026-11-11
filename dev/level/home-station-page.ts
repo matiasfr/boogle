@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PAGE = 'docs/world/home-layout.html';
 const SOURCES = [
-  'src/proto/place/layout.ts',
-  'src/proto/place/home-station.ts',
+  'src/place/layout.ts',
+  'src/place/home-station.ts',
   'src/proto/wagon/cars.ts',
   'src/sim/railway-train.ts',
   'src/sim/railway-line2-layout.ts',
@@ -27,9 +27,9 @@ const pt = (p: { x: number; z: number }): P => [r2(p.x), r2(p.z)];
 const bx = (b: Box): Box => ({ x: r2(b.x), z: r2(b.z), w: r2(b.w), d: r2(b.d), yaw: r2(b.yaw) });
 
 async function part(b: boolean) {
-  const layout = await import('../../src/proto/place/layout.ts');
-  const { frameBesideLine } = await import('../../src/proto/place/spatial-station.ts');
-  const home = await import('../../src/proto/place/home-station.ts');
+  const layout = await import('../../src/place/layout.ts');
+  const { frameBesideLine } = await import('../../src/place/spatial-station.ts');
+  const home = await import('../../src/place/home-station.ts');
   const { LOCO, TRAILER, WAGON_CAR, TRAIN_OFFSETS } = await import('../../src/proto/wagon/cars.ts');
   const { TRAIN_STOPS } = await import('../../src/sim/railway-train.ts');
   const { LINE2_FORGE, LINE2_BOILER, LINE2_PACK, LINE2_STATIONS } =

@@ -18,12 +18,12 @@ import { camera } from '../../render/scene.ts';
 import type { VoiceSpec } from '../../render/npc-voice.ts';
 import { TOWN_FACTS } from '../../sim/town-facts.ts';
 import { playMark } from '../mark.ts';
-import { babble } from './chatter.ts';
-import { addResident, folk, type Guy, type Mood } from './folk.ts';
-import { VILLAGE, toWorld, type RoomId } from './layout.ts';
+import { babble } from '../../place/chatter.ts';
+import { addResident, folk, type Guy, type Mood } from '../../place/folk.ts';
+import { VILLAGE, toWorld, type RoomId } from '../../place/layout.ts';
 import type { Room, Rooms } from './rooms.ts';
 import { roomToWorld } from './rooms.ts';
-import { startTalk, type Answer, type Beat } from './talk.ts';
+import { startTalk, type Answer, type Beat } from '../../place/talk.ts';
 import {
   BYE,
   GO_ON,

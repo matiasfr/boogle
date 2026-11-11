@@ -1,10 +1,10 @@
 // Talking to a little guy in ?proto=place: a small card low on the screen, typed out with their own babble, through the shared
 // talk input (src/player/conversation.ts), so it works on a pad, a keyboard and a touch screen. You stand still and the world
 // keeps going. The shared conversation camera frames the speaker, then leaves looking to you. Local: two people can talk to the same one at once.
-import { reducedMotion } from '../../constants.ts';
-import { closeConversation, openConversation } from '../../player/conversation.ts';
-import { me } from '../../player/player.ts';
-import { speak, type LineSpeech, type VoiceSpec } from '../../render/npc-voice.ts';
+import { reducedMotion } from '../constants.ts';
+import { closeConversation, openConversation } from '../player/conversation.ts';
+import { me } from '../player/player.ts';
+import { speak, type LineSpeech, type VoiceSpec } from '../render/npc-voice.ts';
 
 export type Answer = { label: string; then: () => Beat | null };
 export type Beat = { say: string; answers: Answer[]; whole?: boolean };

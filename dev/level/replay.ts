@@ -37,13 +37,13 @@ function snapshot(ref: string) {
     return source;
   };
   const math = sourceModule<Record<string, unknown>>(read('src/math-pure.ts'), {});
-  const layout = sourceModule<Layout>(read('src/proto/place/layout.ts'), math);
+  const layout = sourceModule<Layout>(read('src/place/layout.ts'), math);
   return { commit, provenance, read, math, layout };
 }
 
 type Snapshot = ReturnType<typeof snapshot>;
 function terrain(s: Snapshot, oldLand = false): Terrain {
-  const file = oldLand ? 'src/proto/place/land.ts' : 'src/proto/place/terrain.ts';
+  const file = oldLand ? 'src/place/land.ts' : 'src/place/terrain.ts';
   let source = s.read(file);
   if (oldLand)
     source = source.slice(
@@ -251,7 +251,7 @@ function stackReplay(ref: string) {
     ground = terrain(s);
   type Pad = { id: string; x: number; z: number; top: number; ring?: string };
   const tech = sourceModule<{ PADS: Pad[]; ringAt: (p: Pad) => Point; MOVE: { hookRange: number } }>(
-    s.read('src/proto/place/tech-layout.ts'),
+    s.read('src/place/tech-layout.ts'),
     s.layout,
   );
   const stack = tech.PADS.find((p) => p.id === 'stack')!;
@@ -339,7 +339,7 @@ function stackReplay(ref: string) {
   return {
     commit: s.commit,
     source: [
-      { file: 'src/proto/place/tech-layout.ts', symbol: 'PADS/ringAt' },
+      { file: 'src/place/tech-layout.ts', symbol: 'PADS/ringAt' },
       { file: 'src/proto/place/verbs.ts', symbol: 'nearestSample' },
     ],
     routes,
@@ -360,9 +360,9 @@ function stackReplay(ref: string) {
 /** Current T2 completion's actual handCrate candidate beside T3, with terrain-margin residuals. No collision inference. */
 export async function auditCurrentCrate() {
   const started = performance.now();
-  const layout = await import('../../src/proto/place/layout.ts');
-  const ground = await import('../../src/proto/place/terrain.ts');
-  const { frameBesideLine, OUT } = await import('../../src/proto/place/spatial-station.ts');
+  const layout = await import('../../src/place/layout.ts');
+  const ground = await import('../../src/place/terrain.ts');
+  const { frameBesideLine, OUT } = await import('../../src/place/spatial-station.ts');
   const railSource = fs.readFileSync('src/proto/place/rail.ts', 'utf8');
   const railFragment = railPrefix(railSource);
   const { besideLine } = sourceModule<{

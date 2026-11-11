@@ -54,11 +54,11 @@ function fixture() {
       count: (n: unknown, max = 1e7) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= max,
     },
     './lines.ts': { lines: [], machine: { flatbed: { platform: {} }, loco: { platform: {} } } },
-    './layout.ts': { GOODS: ['logs', 'rails', 'stone', 'beam'] },
+    '../../place/layout.ts': { GOODS: ['logs', 'rails', 'stone', 'beam'] },
     './depot.ts': { cartPlatform: {}, cart },
     './chop.ts': { chopHooks: {}, back: { big: null }, trunkTaken: () => false, setTrunkTaken: noop },
     './celebrate.ts': { clearMoments: noop, showBanner: noop },
-    './pieces.ts': { clearTrips: noop },
+    '../../place/pieces.ts': { clearTrips: noop },
     './got.ts': { resetGotHistory: noop },
     './big-cargo.ts': {
       bigCargo: {

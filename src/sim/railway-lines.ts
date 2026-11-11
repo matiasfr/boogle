@@ -34,7 +34,7 @@ export type RailLineDef = {
   /** Stable, never reused. */
   id: string;
   name: string;
-  /** World (x, z) cm every 10 m along it, sampled from Place's rail curves (src/proto/place/layout.ts). */
+  /** World (x, z) cm every 10 m along it, sampled from Place's rail curves (src/place/layout.ts). */
   path: readonly number[];
   /** In s order. */
   halts: readonly RailHalt[];
@@ -48,7 +48,7 @@ export type RailLineDef = {
 };
 
 const both = (p: RailPlatform) => [p, p] as const;
-/** A stub's turnout: past its merge the two tracks part over this length (src/proto/place/layout.ts draws it). */
+/** A stub's turnout: past its merge the two tracks part over this length (src/place/layout.ts draws it). */
 export const TURNOUT_CM = 2000;
 /** How far a train reaches from its along (cm), with the footing wagon: the engine's nose ahead (+s), the wagon's tail
  * behind. The cars are src/proto/wagon/cars.ts's TRAIN_CARS at TRAIN_OFFSETS (test/railway-lines.test.ts keeps them
@@ -63,7 +63,7 @@ const end = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailEnd => {
     lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
   return { kind, mergeCm, edgeCm, signalCm: edgeCm - side * lead };
 };
-// Step 2's up platforms (src/proto/place/layout.ts UP_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
+// Step 2's up platforms (src/place/layout.ts UP_HALTS, lat -6.95), at their deck: Quarry s 154-174.5, Far Head
 // s 513-535. Today's platforms serve the down track.
 const QUARRY_UP: RailPlatform = { x: 106912, z: 3135, y: 2502, reach: 1160 };
 const FAR_HEAD_UP: RailPlatform = { x: 135850, z: -17195, y: 2502, reach: 1260 };

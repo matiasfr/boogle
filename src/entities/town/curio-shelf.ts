@@ -35,10 +35,10 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi) 
   const [{ merged }, { H, addStatic }, { SHELF, toWorld }, { addFoot }, { FINDERS_B: FINDERS, bayBoxPoint }] =
     await Promise.all([
       import('../../render/part-geometry.ts'),
-      import('../../proto/place/land.ts'),
-      import('../../proto/place/layout.ts'),
-      import('../../proto/place/sites.ts'),
-      import('../../proto/place/home-station.ts'),
+      import('../../place/land.ts'),
+      import('../../place/layout.ts'),
+      import('../../place/sites.ts'),
+      import('../../place/home-station.ts'),
     ]);
   const SX = toWorld(SHELF.x),
     SZ = SHELF.z,

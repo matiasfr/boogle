@@ -15,12 +15,12 @@
     "walkSpeed": 5.6,
     "dwell": 5,
     "sourceHashes": {
-      "src/proto/place/layout.ts": "87ee8eee6e13170f022474dec62407cf96d918e145d777090f9dd28db5850743",
-      "src/proto/place/tech-layout.ts": "f2f15a4fcae17489f564960944edf52dde109d2c56b6cf47c26d424416b5e902",
-      "src/proto/place/terrain.ts": "bedccee1fefebc4413018d5caf7a8f817d5ce35866dbf56f17d96d4103fbdae4",
-      "src/proto/place/shore-layout.ts": "031b24aac60175c67afefa95c01558731020c5570d1216183305976e9e2bbc5c",
-      "src/proto/place/cove.ts": "bde1ae677df3482cbe273200982d56b65f857d9f1b7d2da2e89e5f0b384a49dd",
-      "src/proto/place/spatial-station.ts": "bc3d668c489d0e3f6ec0002246282c26c558a073e31e652be56102794302282a"
+      "src/place/layout.ts": "87ee8eee6e13170f022474dec62407cf96d918e145d777090f9dd28db5850743",
+      "src/place/tech-layout.ts": "f2f15a4fcae17489f564960944edf52dde109d2c56b6cf47c26d424416b5e902",
+      "src/place/terrain.ts": "bedccee1fefebc4413018d5caf7a8f817d5ce35866dbf56f17d96d4103fbdae4",
+      "src/place/shore-layout.ts": "031b24aac60175c67afefa95c01558731020c5570d1216183305976e9e2bbc5c",
+      "src/place/cove.ts": "bde1ae677df3482cbe273200982d56b65f857d9f1b7d2da2e89e5f0b384a49dd",
+      "src/place/spatial-station.ts": "bc3d668c489d0e3f6ec0002246282c26c558a073e31e652be56102794302282a"
     },
     "views": {
       "world": [-1600, -3550, 5000, 4200],
@@ -51,7 +51,7 @@
         "name": "Home · Threefold Reach",
         "at": [0, 0],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Current starter island. Walk first, build the shortcut, then earn the train. Town grows from delivered goods.",
         "scale": "world",
         "labelAt": [-190, 140]
@@ -61,7 +61,7 @@
         "name": "Town",
         "at": [-100, 14],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Walk-in house, shop and museum; a forge built by hand and finished by the railway.",
         "radius": 42
       },
@@ -70,7 +70,7 @@
         "name": "Forge",
         "at": [-87, -3],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Logs build the forge; it supplies Line 2 rails. Actual 10 × 8 m footprint.",
         "footprint": [10, 8],
         "labelAt": [-148, -37]
@@ -80,7 +80,7 @@
         "name": "Turntable",
         "at": [-82, 12],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Existing 4.8 m radius turntable joins the two local lines. This is not yet a full roundhouse.",
         "radius": 4.8,
         "labelAt": [-74, 7]
@@ -90,7 +90,7 @@
         "name": "West landing",
         "at": [-199, 10],
         "status": "exists",
-        "source": "src/proto/place/shore-layout.ts",
+        "source": "src/place/shore-layout.ts",
         "description": "Current shore arrival; a ramp and cottage bend lead into town.",
         "labelAt": [-219, -7]
       },
@@ -99,7 +99,7 @@
         "name": "Sandstone cove",
         "at": [-185, 55],
         "status": "exists",
-        "source": "src/proto/place/cove.ts",
+        "source": "src/place/cove.ts",
         "description": "The west cove, now the default shore. Bounds are exact; this outline is the cove region, not a surveyed shoreline.",
         "bounds": [-216, 30, 62, 50],
         "labelAt": [-216, 100]
@@ -109,7 +109,7 @@
         "name": "Timber camp",
         "at": [-13, -142],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "The opening walk reaches the stranded track layer. T1 → T2 → T3 builds back toward town.",
         "labelAt": [-5, -184]
       },
@@ -118,7 +118,7 @@
         "name": "Quarry",
         "at": [98, 52],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Stone source and a double-jump ledge. Opening its gate admits the next construction stretch.",
         "labelAt": [108, 74],
         "proposal": "earlier"
@@ -128,7 +128,7 @@
         "name": "Needle Bell",
         "at": [8, -10],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Hook rings climb to the summit switch. It opens the sea gate; the glider is earned later on Far Head.",
         "labelAt": [35, -30]
       },
@@ -137,7 +137,7 @@
         "name": "Far Head",
         "at": [392, -170],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Existing headland and Q5 arrival. Glider launch above the trestle; Q6 then builds the pier.",
         "scale": "both",
         "labelAt": [445, -146]
@@ -147,7 +147,7 @@
         "name": "Pier",
         "at": [402, -372],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Current slice ends here. Everything connected beyond it on this map is a proposal.",
         "labelAt": [423, -365]
       },
@@ -156,7 +156,7 @@
         "name": "Distant shard",
         "at": [330, -1120],
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Existing unreachable horizon scenery at the source FAR anchor. The surrounding Suspended Coast landing is proposed.",
         "scale": "world",
         "labelAt": [520, -1050],
@@ -167,7 +167,7 @@
         "name": "T1",
         "at": [-4.383657480231818, -141.89089818093396],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Station 1: 24 logs. Rail attachment s=191 m; builds to 150 m.",
         "station": true
       },
@@ -176,7 +176,7 @@
         "name": "T2",
         "at": [-20.03059654770516, -125.52970589446443],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Station 2: 32 logs, 8 stone. Rail attachment s=150 m; builds to 116 m.",
         "station": true
       },
@@ -185,7 +185,7 @@
         "name": "T3",
         "at": [-22.55966944757222, -88.72754463893746],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Station 3: 40 logs, one great beam. Rail attachment s=116 m; builds to 30 m.",
         "station": true
       },
@@ -194,7 +194,7 @@
         "name": "Q1",
         "at": [-72.80758285382319, 10.585815428532996],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Line 2, station 1: 16 logs, 6 rails. Rail attachment s=7 m; builds to 42 m.",
         "station": true
       },
@@ -203,7 +203,7 @@
         "name": "Q2",
         "at": [-50.51855011888415, 30.563314078554807],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Line 2, station 2: 24 logs, 12 rails. Rail attachment s=42 m; builds to 122 m.",
         "station": true
       },
@@ -212,7 +212,7 @@
         "name": "Q3",
         "at": [28.033249251052894, 26.762058712259073],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Line 2, station 3: 16 logs, 12 rails. Rail attachment s=122 m; builds to 178 m.",
         "station": true
       },
@@ -221,7 +221,7 @@
         "name": "Q4",
         "at": [81.47485969236823, 30.732357225890997],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Line 2, station 4: 16 logs, 16 rails. Rail attachment s=178 m; builds to 286 m.",
         "station": true
       },
@@ -230,7 +230,7 @@
         "name": "Q5",
         "at": [166.67651564644325, -28.306393759161015],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "Line 2, station 5: 24 logs, 24 rails. Rail attachment s=286 m; builds to 546 m.",
         "station": true
       },
@@ -239,7 +239,7 @@
         "name": "Q6",
         "at": [372.932138577607, -183.54607084457456],
         "status": "exists",
-        "source": "src/proto/place/layout.ts + spatial-station.ts",
+        "source": "src/place/layout.ts + spatial-station.ts",
         "description": "The pier: 32 logs, 32 rails. Rail attachment s=546 m; builds to 742 m.",
         "station": true
       },
@@ -462,7 +462,7 @@
         "name": "Line 1 · timber → town",
         "kind": "rail",
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "points": [
           [-82, 12],
           [-81.349, 11.241],
@@ -698,7 +698,7 @@
         "name": "Line 2 · town → pier",
         "kind": "rail",
         "status": "exists",
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "points": [
           [-82, 12],
           [-81.293, 12.707],
@@ -1475,7 +1475,7 @@
           [-14, -154]
         ],
         "length": 435.7619668010582,
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Authored foot-path length includes elevation. Time assumes continuous 5.6 m/s walking; no slopes, stops or detours modelled."
       },
       {
@@ -1500,7 +1500,7 @@
           [92, 45]
         ],
         "length": 430.4131931159152,
-        "source": "src/proto/place/layout.ts",
+        "source": "src/place/layout.ts",
         "description": "Authored foot-path length includes elevation. Time assumes continuous 5.6 m/s walking; no slopes, stops or detours modelled."
       },
       {
@@ -1521,7 +1521,7 @@
           [-98, 9]
         ],
         "length": 129.77275096267147,
-        "source": "src/proto/place/shore-layout.ts",
+        "source": "src/place/shore-layout.ts",
         "description": "Authored foot-path length includes elevation. Time assumes continuous 5.6 m/s walking; no slopes, stops or detours modelled."
       },
       {
@@ -1978,7 +1978,7 @@
         "at": [90.4390869140625, 34.66810607910156],
         "status": "exists",
         "requires": "Double jump → apron lever",
-        "source": "src/proto/place/tech-layout.ts",
+        "source": "src/place/tech-layout.ts",
         "description": "At Line 2 s=186 m; permits Q4 after the lever. Existing prototype sequence only; not a requirement for the proposed Split-rock Works route."
       },
       {
@@ -1987,7 +1987,7 @@
         "at": [181.08697509765625, -29.318492889404297],
         "status": "exists",
         "requires": "Hook → Needle Bell summit switch",
-        "source": "src/proto/place/tech-layout.ts",
+        "source": "src/place/tech-layout.ts",
         "description": "At Line 2 s=297 m; permits Q5 after the summit switch. Glider is beyond this gate. Existing prototype sequence only; not a requirement for the proposed Split-rock Works route."
       },
       {
@@ -2062,7 +2062,7 @@
         "name": "Double jump",
         "at": [-47.604226668478006, -70.44495535881704],
         "status": "exists",
-        "source": "src/proto/place/tech-layout.ts",
+        "source": "src/place/tech-layout.ts",
         "routes": [
           [
             [-47.604226668478006, -70.44495535881704],
@@ -2076,7 +2076,7 @@
         "name": "Hook pull",
         "at": [-0.4579203964832619, 20.86114461425058],
         "status": "exists",
-        "source": "src/proto/place/tech-layout.ts",
+        "source": "src/place/tech-layout.ts",
         "routes": [
           [
             [-0.4579203964832619, 20.86114461425058],
@@ -2096,7 +2096,7 @@
         "name": "Glider",
         "at": [369, -169],
         "status": "exists",
-        "source": "src/proto/place/tech-layout.ts",
+        "source": "src/place/tech-layout.ts",
         "routes": [
           [
             [369, -169],

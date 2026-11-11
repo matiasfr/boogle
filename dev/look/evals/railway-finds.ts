@@ -32,7 +32,7 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
-const land = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const land = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const deadline = performance.now() + 20000;

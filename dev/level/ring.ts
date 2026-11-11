@@ -8,14 +8,14 @@
 import { FIXED, GRAVITY, JUMP_SPEED, PLAYER_R, WALKABLE_NY } from '../../src/constants.ts';
 import { JUMP } from '../../src/entities/player/state.ts';
 import { APEX_GRAVITY } from '../../src/entities/player/apex-float.ts';
-import { MOVE } from '../../src/proto/place/tech-layout.ts';
+import { MOVE } from '../../src/place/tech-layout.ts';
 import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/proto/wagon/engine.ts';
 import { TRAIN_CARS, TRAIN_OFFSETS } from '../../src/proto/wagon/cars.ts';
 import { CARRY } from '../../src/physics/platforms.ts';
 import { TUNABLES } from '../../src/sim/tune.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import { ringHeight } from '../../src/proto/greybox/ring-cones.ts';
-import { ORIGIN } from '../../src/proto/place/layout.ts';
+import { ORIGIN } from '../../src/place/layout.ts';
 import {
   RING_BRACE_PLATFORM,
   RING_END_APPROACH,

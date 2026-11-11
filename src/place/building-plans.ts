@@ -1,6 +1,6 @@
 // Shared construction plans with explicit ground height, no world or game lifecycle.
 import * as THREE from 'three/webgpu';
-import { boxAt, place, type Box } from '../../render/box-plan.ts';
+import { boxAt, place, type Box } from '../render/box-plan.ts';
 // ---------------------------------------------------------------- the plan of a building
 export type Hull = { dx: number; dy: number; dz: number; hx: number; hy: number; hz: number; room?: boolean };
 export type Plan = {

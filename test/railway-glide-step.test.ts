@@ -2,7 +2,7 @@
 // 3.2 m/s sink reached in 0.1 s with no overshoot, the canopy armed while rising, and no lift from reopening.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MOVE } from '../src/proto/place/tech-layout.ts';
+import { MOVE } from '../src/place/tech-layout.ts';
 import { closeGlide, createGlide, openGlide, rearmGlide, stepGlide } from '../src/entities/railway/glide-step.ts';
 
 const fly = (steps: number, v: { x: number; y: number; z: number }, wish = { x: 0, z: 1 }) => {

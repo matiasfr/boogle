@@ -1,5 +1,5 @@
 // Original periodic pigment marks, baked once at load. No reference pixels or baked directional light.
-import { bakedTile, tileBytes } from '../../render/baked-tile.ts';
+import { bakedTile, tileBytes } from '../render/baked-tile.ts';
 const SIZE = 512;
 let cached: ReturnType<typeof bake> | undefined;
 /** Original, seamless tuft marks. Strokes share roots and fan apart; pigment and height use the same relief. */

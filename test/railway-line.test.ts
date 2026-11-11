@@ -161,7 +161,7 @@ test('rail pairs commit on the first tick reaching their contact; fixed schedule
 });
 
 test('the machine view lays the same rail pairs the shared schedule commits', async () => {
-  const { LINKS } = await import('../src/proto/place/layout.ts');
+  const { LINKS } = await import('../src/place/layout.ts');
   const { trackPanels } = await import('../src/proto/place/track-panels.ts');
   const view = (id: string) => trackPanels(LINKS.find((spec) => spec.id === id)!);
   // Pair for pair, the same stock flags; ends agree to the shared catalog's centimetre rounding.

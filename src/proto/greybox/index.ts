@@ -14,7 +14,7 @@ import { waterField } from '../../physics/water-field.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { background } from '../../async.ts';
 import { precompile } from '../../render/precompile.ts';
-import { FAR, LINES } from '../place/layout.ts';
+import { FAR, LINES } from '../../place/layout.ts';
 import { MAP } from './page.ts';
 import { layout, polyLen, rideSeconds, type Pick, type XZ } from './map-data.ts';
 import { rideModelSeconds, ridePoints, workRides, type WorkRide } from './rides.ts';

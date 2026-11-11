@@ -38,17 +38,17 @@ import { drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../../render
 import { protoCount } from '../count.ts';
 import { pageQuery } from '../flags.ts';
 import { playMark, playObjective, playWhere } from '../mark.ts';
-import { SHORE_COAST, SHORE_TOWN } from './shore-layout.ts';
-import { H, buildLand, insidePlace } from './land.ts';
-import { registerPlaceShore } from './water.ts';
+import { SHORE_COAST, SHORE_TOWN } from '../../place/shore-layout.ts';
+import { H, buildLand, insidePlace } from '../../place/land.ts';
+import { registerPlaceShore } from '../../place/water.ts';
 import { clearMoments, updateMoments } from './celebrate.ts';
 import { snapCrystals, updateCrystals, onCrystal, crystals } from './crystals.ts';
-import { resetFolk, setFolkEnv, setPopulation, setRiders, updateFolk } from './folk.ts';
+import { resetFolk, setFolkEnv, setPopulation, setRiders, updateFolk } from '../../place/folk.ts';
 import { resetForge, forge, updateForge, craneClear } from './forge.ts';
-import { LOOK } from './look.ts';
-import { installContact } from './look-kit.ts';
-import { clearDrops, feet, outOf } from './sites.ts';
-import { createPosePolicy, type Pose } from './pose.ts';
+import { LOOK } from '../../place/look.ts';
+import { installContact } from '../../place/look-kit.ts';
+import { clearDrops, feet, outOf } from '../../place/sites.ts';
+import { createPosePolicy, type Pose } from '../../place/pose.ts';
 import {
   FORGE_BILLS,
   GOODS,
@@ -63,8 +63,8 @@ import {
   railY,
   toWorld,
   type LinePoint,
-} from './layout.ts';
-import { clearTrips, updatePieces, dustRing } from './pieces.ts';
+} from '../../place/layout.ts';
+import { clearTrips, updatePieces, dustRing } from '../../place/pieces.ts';
 import { besideLine } from './rail.ts';
 import { TREES, back, resetRocks, resetTrees, updateChop, felled } from './chop.ts';
 import { coop, coopWire } from './coop.ts';
@@ -104,7 +104,7 @@ import { clearFinds, updateBoiler, updateBuoys, updateFinds } from './props.ts';
 import { backUp, incoming } from './verbs.ts';
 import { objective } from './objective.ts';
 import { buildPanel } from './panel.ts';
-import { setNumbers } from './signs.ts';
+import { setNumbers } from '../../place/signs.ts';
 import { onStepUp, snapTown, updateTown } from './town.ts';
 import { buildTech, resetFinds, techApi, updateTech } from './tech.ts';
 import { resetTownLife, updateTownLife } from './town-life.ts';

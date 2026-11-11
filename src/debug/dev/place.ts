@@ -24,8 +24,8 @@ const [
   { coop },
   { prepareDevStage },
 ] = await Promise.all([
-  import('../../proto/place/layout.ts'),
-  import('../../proto/place/terrain.ts'),
+  import('../../place/layout.ts'),
+  import('../../place/terrain.ts'),
   import('../../proto/place/run.ts'),
   import('../../proto/place/chop.ts'),
   import('../../proto/place/pair.ts'),

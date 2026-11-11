@@ -8,8 +8,8 @@ import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts'
 import { scene } from '../../render/scene.ts';
 import { me } from '../../player/player.ts';
 import { pop } from '../../render/fanfare.ts';
-import { H } from './land.ts';
-import { toWorld } from './layout.ts';
+import { H } from '../../place/land.ts';
+import { toWorld } from '../../place/layout.ts';
 import { crystalPeg, shelfGroup } from './gifts.ts';
 
 /** On a lookout, through an arch, on a river bank, at the top of the ridge, behind the old kiln, by the old cart, on the far table. */

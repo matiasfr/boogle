@@ -13,7 +13,7 @@ const { me } = (await import('/src/player/player.ts' as string)) as typeof impor
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const doing = new URLSearchParams(location.search).get('worksdo') ?? '';
 const bot = makeBot();
 const socket = STALL_SOCKETS[0]!;

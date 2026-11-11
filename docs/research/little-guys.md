@@ -209,7 +209,7 @@ Everything here is **[I]**, a playtest composition rather than an approved popul
 
 ### One greybox station: five residents
 
-Use the forge-side station in [`?proto=place`](../../src/proto/place/index.ts), with sockets/routes in [its layout](../../src/proto/place/layout.ts). Preserve the player's cargo and boarding approaches.
+Use the forge-side station in [`?proto=place`](../../src/proto/place/index.ts), with sockets/routes in [its layout](../../src/place/layout.ts). Preserve the player's cargo and boarding approaches.
 
 | Cast | Ordinary loop | Response to player / delivery |
 | --- | --- | --- |
@@ -272,7 +272,7 @@ Extend the presentation around [`feedCrane()`](../../src/proto/place/index.ts) a
 
 ### 5. Author safe work routes and explicit recovery before general navigation
 
-Add sockets, side lanes and waiting pockets alongside [place layout](../../src/proto/place/layout.ts). Reachable residents use [entity-owned bodies](../../src/entity/entity.ts); honour the [solidity decision](../decisions.md). Start with the six-state controller and one paired-carry task, with players having right of way. Geometry/layout changes go through [level-check](../../dev/level/check.ts), plus actual resident-contact inspection because the static checker does not prove crowd safety.
+Add sockets, side lanes and waiting pockets alongside [place layout](../../src/place/layout.ts). Reachable residents use [entity-owned bodies](../../src/entity/entity.ts); honour the [solidity decision](../decisions.md). Start with the six-state controller and one paired-carry task, with players having right of way. Geometry/layout changes go through [level-check](../../dev/level/check.ts), plus actual resident-contact inspection because the static checker does not prove crowd safety.
 
 **Smallest prototype:** two carriers and one solid resident in a narrow approach with a safe passing pocket; agents exercise parked cargo, opposite approaches, sprinting and standing on a resident. **Gut question:** “Could you forget about navigating around them?”
 

@@ -14,8 +14,8 @@ const { garage } = (await import(
   '/src/entities/railway/garage-state.ts' as string
 )) as typeof import('../../../src/entities/railway/garage-state.ts');
 const home = (await import(
-  '/src/proto/place/home-station.ts' as string
-)) as typeof import('../../../src/proto/place/home-station.ts');
+  '/src/place/home-station.ts' as string
+)) as typeof import('../../../src/place/home-station.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const deadline = performance.now() + 60000;
 while (!me.body || !me.entered) {

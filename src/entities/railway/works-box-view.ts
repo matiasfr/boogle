@@ -4,7 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { material } from '../../render/materials.ts';
 import type { WorksBox } from './works-shape.ts';
 export async function drawWorksBoxes(owner: OwnedView, boxes: WorksBox[]) {
-  const { addStatic } = await import('../../proto/place/land.ts');
+  const { addStatic } = await import('../../place/land.ts');
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const mesh = new THREE.InstancedMesh(geometry, material('stone', { colour: '#ffffff' }), boxes.length);
   const pose = new THREE.Object3D();

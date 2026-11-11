@@ -108,7 +108,7 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
   const onIsland = (x: number, z: number) =>
     x >= bounds.minX && x <= bounds.maxX && z >= bounds.minZ && z <= bounds.maxZ;
   /** The ground's height at a world point, on the collider's triangles (Place's anti-diagonal split, as
-   * src/proto/place/terrain.ts's triangleHeight); -Infinity off the grid. */
+   * src/place/terrain.ts's triangleHeight); -Infinity off the grid. */
   function islandH(x: number, z: number) {
     if (!onIsland(x, z)) return -Infinity;
     const fx = (x - x0) / ISLAND_CELL,

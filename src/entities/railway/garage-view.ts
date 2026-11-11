@@ -53,7 +53,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo) {
     import('../../proto/wagon/engine.ts'),
     import('../../proto/wagon/cars.ts'),
     import('../../proto/place/car-kit.ts'),
-    import('../../proto/place/look.ts'),
+    import('../../place/look.ts'),
   ]);
   const { ENGINE_WHEELS, ENGINE_BOILER, ENGINE } = spec;
   const { TRAILER, TRAIN_OFFSETS } = cars;

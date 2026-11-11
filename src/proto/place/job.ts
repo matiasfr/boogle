@@ -7,7 +7,7 @@
 // malformed save data or another tab, so it checks what it reads (`num`, `count`) and keeps its defaults when
 // something's missing. Local, or shared by ./coop.ts behind the flag. Never read by the sim.
 import { getRoomId } from '../../netplay/net.ts';
-import { TUNE } from './layout.ts';
+import { TUNE } from '../../place/layout.ts';
 import { pageQuery, productionRailway } from '../flags.ts';
 
 export const COOP = pageQuery().get('coop') === '1';

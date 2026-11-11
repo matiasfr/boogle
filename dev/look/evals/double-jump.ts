@@ -4,11 +4,11 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { JUMP_COURSE, JUMP_RECOVERY } = (await import(
-  '/src/proto/place/tech-layout.ts' as string
-)) as typeof import('../../../src/proto/place/tech-layout.ts');
+  '/src/place/tech-layout.ts' as string
+)) as typeof import('../../../src/place/tech-layout.ts');
 const { ORIGIN } = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const { press, gettingItem } = (await import(
   '/src/proto/place/got.ts' as string
 )) as typeof import('../../../src/proto/place/got.ts');

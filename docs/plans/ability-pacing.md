@@ -16,7 +16,7 @@ That requires **physically separating the hook lesson from the tower entrance**.
 
 ## What moving double jump breaks
 
-The [as-built technology](../game-design/place.md#ancient-technology-round-4-exploring) and [`tech-layout.ts`](../../src/proto/place/tech-layout.ts) establish these dependencies:
+The [as-built technology](../game-design/place.md#ancient-technology-round-4-exploring) and [`tech-layout.ts`](../../src/place/tech-layout.ts) establish these dependencies:
 
 - **Hook pickup and quarry lever:** both sit 2.2 m above their approaches, beyond the intended single jump. Give the hook a base-movement approach and the lever a reachable hook landing. Otherwise removing double jump blocks the main line before the glider/sea gate.
 - **Early lesson and secrets:** the pillar block and lookout shelf teach/reward double jump; finders' bay can hand out their missed prizes at the hook. Keep them optional future revisits and defer their recovery trigger, so the later ability still opens something. The running `double-jump-challenge` job was visible in local job status; reconcile its result before relocation, without duplicating or discarding its work.

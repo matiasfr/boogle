@@ -22,7 +22,7 @@ export const SHOW_FROM_PIER = Math.hypot(SHOW_AT.x - PIER_FRAME.x / 100, SHOW_AT
 /** The finale whistle's hearing range: (1 - 1/3.5)² ≈ 0.51 of its gain at the pier head. */
 export const SHOW_HEAR = SHOW_FROM_PIER * 3.5;
 
-/** Ring Island's shard, in world metres: Place's buildFar (src/proto/place/land.ts) stands it 10 m east of FAR + ORIGIN,
+/** Ring Island's shard, in world metres: Place's buildFar (src/place/land.ts) stands it 10 m east of FAR + ORIGIN,
  * 140 m up, inside the broken ring. */
 export const RING_SHARD: Point = { x: 1340, y: 140, z: -1120 };
 

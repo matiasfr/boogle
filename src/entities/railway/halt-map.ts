@@ -4,8 +4,8 @@
 import { LINE_HALTS, TRAIN_STOPS } from '../../sim/railway-train.ts';
 import { simplify, type MapLine } from '../../render/island-map.ts';
 
-type Layout = typeof import('../../proto/place/layout.ts');
-type LinePoint = import('../../proto/place/layout.ts').LinePoint;
+type Layout = typeof import('../../place/layout.ts');
+type LinePoint = import('../../place/layout.ts').LinePoint;
 
 /** Each line's colour on the displays' map, track and train: line 1 gold, line 2 teal. */
 export const LINE_MARK = ['#ffd23f', '#2ec4b6'] as const;

@@ -7,7 +7,7 @@ const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof 
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { WORKS_WALK } = (await import(
   '/src/entities/railway/works-shape.ts' as string
 )) as typeof import('../../../src/entities/railway/works-shape.ts');

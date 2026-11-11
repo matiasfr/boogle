@@ -1,6 +1,6 @@
 // The west cove, the arrival shore: static Local geometry and Owner collision, never lockstep state.
 // One metre per unit, Y up. Original code recipe; references: docs/plans/terrain-pilot.md.
-import { smoothstep } from '../../math.ts';
+import { smoothstep } from '../math.ts';
 
 export const COVE_BOUNDS = { x0: -216, x1: -154, z0: 30, z1: 80 };
 export const coveFront = (z: number) =>

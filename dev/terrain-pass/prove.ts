@@ -3,8 +3,8 @@
 // two, aN variant a at N vertices per 2 m cell side. A drawn triangle lies inside one collider triangle, so the offset is
 // linear across it and the vertex maxima bound every drawn point. No browser.
 import { WALKABLE_NY } from '../../src/constants.ts';
-import { LAND_TREES } from '../../src/proto/place/tree-catalog.ts';
-import { ORIGIN } from '../../src/proto/place/layout.ts';
+import { LAND_TREES } from '../../src/place/tree-catalog.ts';
+import { ORIGIN } from '../../src/place/layout.ts';
 import {
   KEEPS,
   TOLERANCE,

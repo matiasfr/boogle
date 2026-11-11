@@ -13,8 +13,8 @@ const { wrapAction } = (await import(
   '/src/player/controls.ts' as string
 )) as typeof import('../../../src/player/controls.ts');
 const { startTalk, endTalk: closeDialogue } = (await import(
-  '/src/proto/place/talk.ts' as string
-)) as typeof import('../../../src/proto/place/talk.ts');
+  '/src/place/talk.ts' as string
+)) as typeof import('../../../src/place/talk.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const query = new URLSearchParams(location.search);
 const wait = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -28,7 +28,7 @@ import { IDLE_S } from '../../../protos/store.ts';
 import { PROTO, protoV, pageQuery, productionRailway } from '../flags.ts';
 import { inspectRailway } from '../../entities/railway/state.ts';
 import { createRailwayJourneyMarks } from '../../adapters/railway-marks.ts';
-import { HEAD, ORIGIN } from '../place/layout.ts';
+import { HEAD, ORIGIN } from '../../place/layout.ts';
 import { currentCard } from '../card.ts';
 import { hookActivity, onPlayMark, playMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';

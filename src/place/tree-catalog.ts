@@ -1,5 +1,5 @@
 // The former scenery trees, in their original seeded order. Local numeric placement; no render-instance identity.
-import { mulberry32 } from '../../sim/rng.ts';
+import { mulberry32 } from '../sim/rng.ts';
 import {
   FORGE,
   FORGE_FRAME,

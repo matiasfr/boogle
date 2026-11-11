@@ -69,7 +69,7 @@ type FootPlace = (k: number, out: THREE.Vector3) => THREE.Vector3;
 // Place's kit owns one page-lifetime wheel batch and animation hook. Reuse its models (one a train, three in v26)
 // across view lifetimes rather than consuming another twelve slots each on every remount. The view owns the drawn
 // geometry copies.
-let kitModels: ReturnType<typeof import('../../proto/place/look-kit.ts').trainLook>[] | null = null;
+let kitModels: ReturnType<typeof import('../../place/look-kit.ts').trainLook>[] | null = null;
 
 export async function createRailwayTrains(
   adapter: RailwayAdapter,
@@ -79,20 +79,20 @@ export async function createRailwayTrains(
 ) {
   const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
     await Promise.all([
-      import('../../proto/place/layout.ts'),
+      import('../../place/layout.ts'),
       import('../../proto/place/rail.ts'),
-      import('../../proto/place/look.ts'),
-      import('../../proto/place/look-kit.ts'),
+      import('../../place/look.ts'),
+      import('../../place/look-kit.ts'),
       import('../../render/wagon-look.ts'),
       import('../../render/crates.ts'),
       import('../../proto/place/train-load.ts'),
-      import('../../proto/place/pieces.ts'),
+      import('../../place/pieces.ts'),
       import('../../render/fanfare.ts'),
       import('../../proto/place/engine-kit.ts'),
       import('../../proto/place/car-kit.ts'),
       import('../../proto/wagon/engine.ts'),
-      import('../../proto/place/folk.ts'),
-      import('../../proto/place/land.ts'),
+      import('../../place/folk.ts'),
+      import('../../place/land.ts'),
       import('../../render/flat.ts'),
     ]);
   // The mark (boiler-first-choice plan, step 8): the gold rope it was hauled on stays lashed round each fitted boiler,

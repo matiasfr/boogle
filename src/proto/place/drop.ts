@@ -15,12 +15,12 @@ import { back } from './chop.ts';
 import { coop } from './coop.ts';
 import { bigCargo, freshCargo } from './big-cargo.ts';
 import { count, num, personalSlice, save } from './job.ts';
-import { H } from './land.ts';
-import { LOOK, STEEL } from './look.ts';
-import { kitBatch } from './look-kit.ts';
+import { H } from '../../place/land.ts';
+import { LOOK, STEEL } from '../../place/look.ts';
+import { kitBatch } from '../../place/look-kit.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { impactDust } from '../../render/particle-effects.ts';
-import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog, stackSlot, type PieceKind } from './pieces.ts';
+import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog, stackSlot, type PieceKind } from '../../place/pieces.ts';
 
 type Pile = { x: number; y: number; z: number; yaw: number; logs: number; rails: number; stone: number };
 const piles: Pile[] = [];

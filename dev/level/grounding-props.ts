@@ -6,15 +6,15 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dequantize } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { sourceModule, sourceFunction } from './source.ts';
-import { openingStops, WOOD2 } from '../../src/proto/place/opening-plans.ts';
-import { CRANE, RACK, ORIGIN, LINKS, PATHS, lineAt, railY } from '../../src/proto/place/layout.ts';
-import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from '../../src/proto/place/shore-layout.ts';
-import { frameBesideLine, FRAME_D, FRAME_W, SPAN, OUT } from '../../src/proto/place/spatial-station.ts';
-import { H } from '../../src/proto/place/terrain.ts';
+import { openingStops, WOOD2 } from '../../src/place/opening-plans.ts';
+import { CRANE, RACK, ORIGIN, LINKS, PATHS, lineAt, railY } from '../../src/place/layout.ts';
+import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from '../../src/place/shore-layout.ts';
+import { frameBesideLine, FRAME_D, FRAME_W, SPAN, OUT } from '../../src/place/spatial-station.ts';
+import { H } from '../../src/place/terrain.ts';
 import { SEA } from '../../src/constants.ts';
-import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
+import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
-import { boxFootprint, sampleFootprint, type Footprint } from '../../src/proto/place/support.ts';
+import { boxFootprint, sampleFootprint, type Footprint } from '../../src/place/support.ts';
 import { merged } from '../../src/render/part-geometry.ts';
 import { T1_CRATE_PARTS } from '../../src/render/t1-reward-parts.ts';
 
@@ -99,8 +99,8 @@ export async function checkPropGrounding() {
         supports: ['terrain (root skirt)'],
       });
   const mat = new THREE.MeshBasicNodeMaterial();
-  const models = sourceModule<typeof import('../../src/proto/place/opening-models.ts')>(
-    fs.readFileSync('src/proto/place/opening-models.ts', 'utf8'),
+  const models = sourceModule<typeof import('../../src/place/opening-models.ts')>(
+    fs.readFileSync('src/place/opening-models.ts', 'utf8'),
     { THREE, H, CRANE, RACK, ORIGIN, WOOD2, flat: () => mat },
   );
   const crane = models.craneModel(),
@@ -164,7 +164,7 @@ export async function checkPropGrounding() {
   // Cove supports are constructed by the production function; omit only terrain and mounted deck boards.
   const shore: THREE.Mesh[] = [];
   let coveUnderside = Infinity;
-  const buildLand = sourceFunction<() => void>('src/proto/place/land.ts', 'buildLand', {
+  const buildLand = sourceFunction<() => void>('src/place/land.ts', 'buildLand', {
     THREE,
     SHORE_COAST,
     SHORE_HOP,
@@ -223,7 +223,7 @@ export async function checkPropGrounding() {
   const instances: { name: string; matrix: THREE.Matrix4 }[] = [];
   const pict = new THREE.InstancedMesh(new THREE.BoxGeometry(), mat, 64);
   pict.count = 0;
-  const stationKit = sourceFunction<(...args: unknown[]) => void>('src/proto/place/look-kit.ts', 'stationKit', {
+  const stationKit = sourceFunction<(...args: unknown[]) => void>('src/place/look-kit.ts', 'stationKit', {
     THREE,
     // Match the default game's merged steel feeder; ground-contact supports are unchanged.
     LOOK: { mats: true },
@@ -276,13 +276,13 @@ export async function checkPropGrounding() {
   // planks: only the chain's two outer ends bear on the sand.
   type Strip = { footprint: Footprint; base: number; top: number };
   const chains: { a: Strip; b: Strip; bx: number; bz: number }[][] = [];
-  const buildBridges = sourceFunction<() => void>('src/proto/place/land.ts', 'buildBridges', {
+  const buildBridges = sourceFunction<() => void>('src/place/land.ts', 'buildBridges', {
     THREE,
     PATHS,
     ORIGIN,
     H,
     SEA,
-    BRIDGE: sourceFunction('src/proto/place/land.ts', 'BRIDGE', {}),
+    BRIDGE: sourceFunction('src/place/land.ts', 'BRIDGE', {}),
     boxFootprint,
     sampleFootprint,
     beam: () => new THREE.Object3D(),

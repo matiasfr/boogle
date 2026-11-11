@@ -1,8 +1,8 @@
 // Two cullable opaque batches. Render and collision consume exactly the same original code-mesh recipe.
 import * as THREE from 'three/webgpu';
-import { defineKind, spawn } from '../../entity/entity.ts';
-import { createBody } from '../../physics/engine.ts';
-import { GROUP, groundMat } from '../../physics/physics.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
+import { createBody } from '../physics/engine.ts';
+import { GROUP, groundMat } from '../physics/physics.ts';
 import { coveJoinCoverage, coveJoinNormal, coveMeshes } from './cove.ts';
 import { applyCoveLayers } from './cove-material.ts';
 import { coveTextureBytes } from './cove-textures.ts';

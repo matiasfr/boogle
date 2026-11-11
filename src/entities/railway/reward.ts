@@ -30,7 +30,7 @@ export async function createRailwayReward(
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
   const [{ softGlow }, { fanfare, pop }, shapes, props] = await Promise.all([
-    import('../../proto/place/look.ts'),
+    import('../../place/look.ts'),
     import('../../render/fanfare.ts'),
     import('../../render/part-geometry.ts'),
     import('../../render/prop-kit.ts'),
@@ -111,10 +111,10 @@ export async function createRailwayReward(
 }
 
 export function rewardSeat(
-  line: import('../../proto/place/layout.ts').LineSpec,
+  line: import('../../place/layout.ts').LineSpec,
   besideLine: typeof import('../../proto/place/rail.ts').besideLine,
-  H: typeof import('../../proto/place/terrain.ts').H,
-  railY: typeof import('../../proto/place/layout.ts').railY,
+  H: typeof import('../../place/terrain.ts').H,
+  railY: typeof import('../../place/layout.ts').railY,
   frameOffset: number,
   stationIndex = 0,
   /** Across the track from the frame: line two's frames have depot racks on their own side. */
@@ -183,13 +183,13 @@ async function createStationReward(
   const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }, { OUT }] =
     await Promise.all([
       import('../../render/part-geometry.ts'),
-      import('../../proto/place/look.ts'),
+      import('../../place/look.ts'),
       import('../../render/fanfare.ts'),
-      import('../../proto/place/layout.ts'),
-      import('../../proto/place/land.ts'),
+      import('../../place/layout.ts'),
+      import('../../place/land.ts'),
       import('../../proto/place/rail.ts'),
-      import('../../proto/place/pieces.ts'),
-      import('../../proto/place/spatial-station.ts'),
+      import('../../place/pieces.ts'),
+      import('../../place/spatial-station.ts'),
     ]);
   const root = new THREE.Group();
   owner.root.add(root);

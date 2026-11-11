@@ -28,8 +28,8 @@ const frameOf = (avatar: THREE.Object3D | null) => {
 export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView, mine: (id: number) => void) {
   const [{ H, addStatic }, { ROCKS }, { flat }, { makeCarryModels, BEAM_CARRY_POSITION }, { sparkleAxe }] =
     await Promise.all([
-      import('../../proto/place/land.ts'),
-      import('../../proto/place/layout.ts'),
+      import('../../place/land.ts'),
+      import('../../place/layout.ts'),
       import('../../render/flat.ts'),
       import('../../render/carry-models.ts'),
       import('../../render/axe-sparkle.ts'),

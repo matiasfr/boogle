@@ -3,7 +3,7 @@
 const q = new URLSearchParams(location.search);
 const { me, cam } = await import('/src/player/player.ts' as string);
 const { teleport } = await import('/src/physics/engine.ts' as string);
-const { H } = await import('/src/proto/place/terrain.ts' as string);
+const { H } = await import('/src/place/terrain.ts' as string);
 const { renderer } = await import('/src/render/scene.ts' as string);
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 while (!me.body) await wait(80);

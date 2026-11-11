@@ -13,9 +13,9 @@ import { createGateRig, gateEyes } from './gate-rig.ts';
 
 type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
-  layout: typeof import('../../proto/place/layout.ts');
-  tech: typeof import('../../proto/place/tech-layout.ts');
-  land: typeof import('../../proto/place/land.ts');
+  layout: typeof import('../../place/layout.ts');
+  tech: typeof import('../../place/tech-layout.ts');
+  land: typeof import('../../place/land.ts');
   shapes: typeof import('../../render/part-geometry.ts');
   flat: (typeof import('../../render/flat.ts'))['flat'];
   sounds: typeof import('../../render/fanfare.ts');

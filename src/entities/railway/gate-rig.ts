@@ -8,7 +8,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Part } from '../../render/cosmetic-parts.ts';
 
 type Deps = {
-  land: typeof import('../../proto/place/land.ts');
+  land: typeof import('../../place/land.ts');
   shapes: typeof import('../../render/part-geometry.ts');
   flat: (typeof import('../../render/flat.ts'))['flat'];
   partMat: THREE.Material;

@@ -7,8 +7,8 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const layout = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const rail = (await import('/src/proto/place/rail.ts' as string)) as typeof import('../../../src/proto/place/rail.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const until = performance.now() + 15000;

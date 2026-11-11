@@ -9,9 +9,9 @@ import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts
 import { whistle } from '../../render/machine-sfx.ts';
 
 type Deps = {
-  layout: typeof import('../../proto/place/layout.ts');
+  layout: typeof import('../../place/layout.ts');
   rail: typeof import('../../proto/place/rail.ts');
-  land: typeof import('../../proto/place/land.ts');
+  land: typeof import('../../place/land.ts');
   flat: (typeof import('../../render/flat.ts'))['flat'];
   sounds: typeof import('../../render/fanfare.ts');
   /** A reward card has the screen: the show waits for it. */

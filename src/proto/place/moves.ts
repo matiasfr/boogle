@@ -23,8 +23,8 @@ import { camera } from '../../render/scene.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
 import { job } from './job.ts';
-import { MOVE, PADS, ringAt, type Pad } from './tech-layout.ts';
-import { ORIGIN } from './layout.ts';
+import { MOVE, PADS, ringAt, type Pad } from '../../place/tech-layout.ts';
+import { ORIGIN } from '../../place/layout.ts';
 
 export type Ring = { pad: Pad; at: THREE.Vector3; land: THREE.Vector3 };
 const ox = ORIGIN.x,

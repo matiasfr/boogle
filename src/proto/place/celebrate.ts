@@ -11,7 +11,7 @@ import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { fanfare } from '../../render/fanfare.ts';
 import { SHELLS } from '../net/town-fx.ts';
-import { dustRing } from './pieces.ts';
+import { dustRing } from '../../place/pieces.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { scheduleWake, type Waker } from '../../render/wake-presentation.ts';
 import { seated } from './seat.ts';

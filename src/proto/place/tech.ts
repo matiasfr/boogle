@@ -29,11 +29,11 @@ import { flat } from '../../render/flat.ts';
 import { after, barrage, pullOut, shakeView } from './celebrate.ts';
 import { coop, coopWire } from './coop.ts';
 import { deliver, dropChest, giftState, merged, prizeHooks, type GiftId } from './gifts.ts';
-import { H, addStatic, addStatics } from './land.ts';
+import { H, addStatic, addStatics } from '../../place/land.ts';
 import { job, personalSlice, save } from './job.ts';
-import { ORIGIN, toWorld, lineAt } from './layout.ts';
+import { ORIGIN, toWorld, lineAt } from '../../place/layout.ts';
 import { L1, L2 } from './lines.ts';
-import { dustRing } from './pieces.ts';
+import { dustRing } from '../../place/pieces.ts';
 import { gateHere, snapHooks } from './run.ts';
 import { RINGS, cancelPull, fireHook, move, resetMoves, syncControls, toggleGlide, whyNot } from './moves.ts';
 import { flashCanopy } from './moves-view.ts';
@@ -58,7 +58,7 @@ import {
   type Secret,
   type SecretId,
   type TechId,
-} from './tech-layout.ts';
+} from '../../place/tech-layout.ts';
 
 const TEAL = '#39e6c6',
   TEAL_DIM = '#1a5a52',

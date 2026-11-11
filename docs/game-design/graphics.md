@@ -134,7 +134,7 @@
   azimuth cone (past 40 grid units, 0.3 rad margin) skip displacement, and water past 300 m skips the
   refraction retreat and the glitter. `farGround`: the Place ground draws as 192 m tiles with bounds (out of
   view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every tile
-  border so there are no cracks ([far-ground.ts](../../src/proto/place/far-ground.ts)). Both wait for the
+  border so there are no cracks ([far-ground.ts](../../src/place/far-ground.ts)). Both wait for the
   owner's stills before becoming defaults; `?dev=1&graphics=farSea:true,farGround:true` turns them on.
 - **Terrain pass experiment (flag only, off).** `?terrain=1` redraws one wedge of Place south of the village on the
   owner's terrain answers (grass to a beach, sandstone with subtle beds and 1 m ledges only on unwalkable cliffs, worn

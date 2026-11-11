@@ -13,9 +13,9 @@ const { GROUP } = (await import(
   '/src/physics/physics.ts' as string
 )) as typeof import('../../../src/physics/physics.ts');
 const tech = (await import(
-  '/src/proto/place/tech-layout.ts' as string
-)) as typeof import('../../../src/proto/place/tech-layout.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+  '/src/place/tech-layout.ts' as string
+)) as typeof import('../../../src/place/tech-layout.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const until = performance.now() + 30000;
 while (!inspectRailway()?.ready && performance.now() < until) await wait(50);

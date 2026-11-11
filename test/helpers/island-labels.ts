@@ -10,7 +10,7 @@ const CW = 320,
   CH = 256;
 
 export async function checkHaltLabels() {
-  const layout = await import('../../src/proto/place/layout.ts');
+  const layout = await import('../../src/place/layout.ts');
   const lines = haltMapLines(layout);
   const displays = haltDisplays(layout);
   assert.ok(displays.length >= 5);

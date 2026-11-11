@@ -7,12 +7,12 @@ const { captureShared, applyShared } = (await import(
   '/src/proto/place/job.ts' as string
 )) as typeof import('../../../src/proto/place/job.ts');
 const { clearTrips, updatePieces } = (await import(
-  '/src/proto/place/pieces.ts' as string
-)) as typeof import('../../../src/proto/place/pieces.ts');
+  '/src/place/pieces.ts' as string
+)) as typeof import('../../../src/place/pieces.ts');
 const { scene } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
 const { TUNE } = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const shared = captureShared();
 const replace = (rails: number) => applyShared({ ...shared, forge: { logs: HAND_LOGS, crates: 0, rails, made: 30 } });
 const check = (label: string, expected: number) => {

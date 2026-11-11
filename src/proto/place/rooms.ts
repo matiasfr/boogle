@@ -24,10 +24,10 @@ import { precompile } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { merged } from '../../render/part-geometry.ts';
-import { H, ROOM_GROUP, addStatic } from './land.ts';
-import { ROOM_PLOTS, toWorld, type RoomId } from './layout.ts';
+import { H, ROOM_GROUP, addStatic } from '../../place/land.ts';
+import { ROOM_PLOTS, toWorld, type RoomId } from '../../place/layout.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { paintBoard, woodV } from './signs.ts';
+import { paintBoard, woodV } from '../../place/signs.ts';
 import {
   addSite,
   housePlan,
@@ -38,7 +38,7 @@ import {
   type Hull,
   type Plan,
   type Site,
-} from './sites.ts';
+} from '../../place/sites.ts';
 
 export const ROOM_CAM = {
   enter: 0.75, // m outside the door where the show starts, and past which it can end

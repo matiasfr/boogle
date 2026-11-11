@@ -18,14 +18,14 @@ import {
   FORGE,
   lineAt,
   railY,
-} from '../../src/proto/place/layout.ts';
-import { H } from '../../src/proto/place/terrain.ts';
-import { GATES, GATE_SLAB, PILLARS } from '../../src/proto/place/tech-layout.ts';
-import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/proto/place/spatial-station.ts';
+} from '../../src/place/layout.ts';
+import { H } from '../../src/place/terrain.ts';
+import { GATES, GATE_SLAB, PILLARS } from '../../src/place/tech-layout.ts';
+import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/place/spatial-station.ts';
 import { layout, parseMapPage, polyLen, smoothRing, type XZ } from '../../src/sickle/map-data.ts';
 import { createGround } from '../../src/proto/greybox/ground.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
-import { FAR } from '../../src/proto/place/layout.ts';
+import { FAR } from '../../src/place/layout.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const CATALOG = 'src/sickle/world-lines.ts';

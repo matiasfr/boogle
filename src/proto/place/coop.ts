@@ -70,9 +70,9 @@ import {
 import { callCart, cart, cartPlatform, rackTake, recallCart, reconcileCart } from './depot.ts';
 import { forge, takeRail } from './forge.ts';
 import { COOP, applyShared, captureShared, count, job, num, save, type Rungs } from './job.ts';
-import { GOODS, TUNE, type Goods } from './layout.ts';
+import { GOODS, TUNE, type Goods } from '../../place/layout.ts';
 import { allHeaps, frameById, hub, lines, machine } from './lines.ts';
-import { clearTrips } from './pieces.ts';
+import { clearTrips } from '../../place/pieces.ts';
 import { callTrain } from './rail.ts';
 import type { TrainSave } from './cargo.ts';
 import { COOP_IDENTITY, currentCoopPeer } from './coop-identity.ts';
@@ -89,7 +89,7 @@ import {
   type CargoState,
   type GroundCargo,
 } from './big-cargo.ts';
-import { H, insidePlace } from './terrain.ts';
+import { H, insidePlace } from '../../place/terrain.ts';
 import { me } from '../../player/player.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { sweepSphere } from '../../physics/engine.ts';

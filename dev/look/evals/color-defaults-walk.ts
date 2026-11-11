@@ -1,7 +1,7 @@
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { SHORE_PATH } = (await import(
-  '/src/proto/place/shore-layout.ts' as string
-)) as typeof import('../../../src/proto/place/shore-layout.ts');
+  '/src/place/shore-layout.ts' as string
+)) as typeof import('../../../src/place/shore-layout.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { exposureSettings } = (await import(

@@ -16,17 +16,17 @@ import { removeBody, teleport } from '../../physics/engine.ts';
 import { flat } from '../../render/flat.ts';
 import { draw, makeSet } from '../../render/boxes.ts';
 import { smooth } from '../net/town-fx.ts';
-import { addStatic } from './land.ts';
-import { FORGE_BILLS, TUNE } from './layout.ts';
+import { addStatic } from '../../place/land.ts';
+import { FORGE_BILLS, TUNE } from '../../place/layout.ts';
 import { count, sharedSlice } from './job.ts';
-import { LOOK, STEEL, boardMaterial } from './look.ts';
-import { kitBatch } from './look-kit.ts';
-import { RAIL_SIZE, dropSet, dustRing, send } from './pieces.ts';
-import { addFoot, hullBodies, outOf } from './sites.ts';
+import { LOOK, STEEL, boardMaterial } from '../../place/look.ts';
+import { kitBatch } from '../../place/look-kit.ts';
+import { RAIL_SIZE, dropSet, dustRing, send } from '../../place/pieces.ts';
+import { addFoot, hullBodies, outOf } from '../../place/sites.ts';
 import { makeWorkshop } from './workshop.ts';
 
-import { forgePlan, openForgeMouth, X, Z, W, D, HIGH } from './opening-plans.ts';
-import { craneModel, rackModel } from './opening-models.ts';
+import { forgePlan, openForgeMouth, X, Z, W, D, HIGH } from '../../place/opening-plans.ts';
+import { craneModel, rackModel } from '../../place/opening-models.ts';
 
 // ---------------------------------------------------------------- the plan: the standard every building copies
 // The furnace/output opening beside the new walk-in door; the rail flight remains at its original position.

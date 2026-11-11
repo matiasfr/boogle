@@ -11,10 +11,10 @@ import { thump } from '../../render/machine-sfx.ts';
 
 type Box = import('../../render/boxes.ts').Box;
 type Deps = {
-  layout: typeof import('../../proto/place/layout.ts');
+  layout: typeof import('../../place/layout.ts');
   boxes: typeof import('../../render/boxes.ts');
-  land: typeof import('../../proto/place/land.ts');
-  pieces: typeof import('../../proto/place/pieces.ts');
+  land: typeof import('../../place/land.ts');
+  pieces: typeof import('../../place/pieces.ts');
 };
 
 const STONE = '#bdb8ac',
@@ -30,7 +30,7 @@ export function createUpPlatforms(owner: OwnedView, deps: Deps) {
   const { box, place } = deps.boxes;
   const { ORIGIN, lineAt, railY, upLat, crossingPlanks, CROSSING_SPAN, CROSSING_WIDTH, FORMATION } = layout;
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
-  const at = (line: import('../../proto/place/layout.ts').Line, s: number, l: number) => {
+  const at = (line: import('../../place/layout.ts').Line, s: number, l: number) => {
     lineAt(line, s, P);
     return { x: P.x - P.uz * l + ORIGIN.x, z: P.z + P.ux * l + ORIGIN.z };
   };

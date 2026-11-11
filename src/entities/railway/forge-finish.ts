@@ -29,8 +29,8 @@ type Beam = {
   t: number;
   from: THREE.Matrix4;
 };
-type DropSet = import('../../proto/place/pieces.ts').DropSet;
-type Plan = import('../../proto/place/building-plans.ts').Plan;
+type DropSet = import('../../place/pieces.ts').DropSet;
+type Plan = import('../../place/building-plans.ts').Plan;
 type Stage = 'idle' | 'ride' | 'unload' | 'fetch' | 'carry' | 'finish' | 'done';
 
 export async function createForgeFinish(
@@ -45,10 +45,10 @@ export async function createForgeFinish(
   },
 ) {
   const [layout, folk, { makeWorkshop }, { H }] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/folk.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/folk.ts'),
     import('../../proto/place/workshop.ts'),
-    import('../../proto/place/land.ts'),
+    import('../../place/land.ts'),
   ]);
   const { plan, building } = o;
   const roof = [...plan.pieces.keys()].filter((k) => k >= plan.WALLS && k < plan.ROOFED);

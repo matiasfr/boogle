@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inReach } from '../src/player/reach.ts';
 import { PLAYER_R } from '../src/constants.ts';
-import { padById } from '../src/proto/place/tech-layout.ts';
+import { padById } from '../src/place/tech-layout.ts';
 
 const REACH = 3.4;
 // The lookout's box on its top; the ground round it is 17.46 (tech-layout.ts, the lookout secret's `from`).

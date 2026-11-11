@@ -22,11 +22,11 @@ const { CHOP_CONTACT } = (await import(
 )) as typeof import('../../../src/proto/place/chop-motion.ts');
 const { job } = (await import('/src/proto/place/job.ts' as string)) as typeof import('../../../src/proto/place/job.ts');
 const { H } = (await import(
-  '/src/proto/place/terrain.ts' as string
-)) as typeof import('../../../src/proto/place/terrain.ts');
+  '/src/place/terrain.ts' as string
+)) as typeof import('../../../src/place/terrain.ts');
 const { DAY } = (await import(
-  '/src/proto/place/look.ts' as string
-)) as typeof import('../../../src/proto/place/look.ts');
+  '/src/place/look.ts' as string
+)) as typeof import('../../../src/place/look.ts');
 const { emptyHand } = (await import(
   '/src/player/inventory.ts' as string
 )) as typeof import('../../../src/player/inventory.ts');

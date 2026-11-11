@@ -15,7 +15,7 @@ export const ringIslandNear = { mounted: false, keep: false };
 let ground: Promise<IslandGround> | null = null;
 /** The island's ground, built once (about 40 ms) from Place's cones. */
 export function islandGround() {
-  ground ??= Promise.all([import('../../proto/greybox/ring-cones.ts'), import('../../proto/place/layout.ts')]).then(
+  ground ??= Promise.all([import('../../proto/greybox/ring-cones.ts'), import('../../place/layout.ts')]).then(
     ([{ RING_CONES }, { FAR, ORIGIN }]) => createIslandGround(RING_CONES, { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z }),
   );
   return ground;

@@ -82,8 +82,8 @@ if (mode === 'depot' || mode === 'cart') {
     '/src/player/controls.ts' as string
   )) as typeof import('../../../src/player/controls.ts');
   const { PILLARS } = (await import(
-    '/src/proto/place/tech-layout.ts' as string
-  )) as typeof import('../../../src/proto/place/tech-layout.ts');
+    '/src/place/tech-layout.ts' as string
+  )) as typeof import('../../../src/place/tech-layout.ts');
   const d = read().reward.jumpDevice;
   teleport(me.body!, d.x, d.y + 0.5, d.z);
   me.body!.velocity.set(0, 0, 0);

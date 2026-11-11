@@ -19,9 +19,9 @@ onPeerRemoved((r) => activeRemote?.removed(r.peer));
 
 export async function createRailwayHookView(owner: OwnedView) {
   const [tech, layout, land, shapes, flatMod, gear, sounds] = await Promise.all([
-    import('../../proto/place/tech-layout.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/land.ts'),
+    import('../../place/tech-layout.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/land.ts'),
     import('../../render/part-geometry.ts'),
     import('../../render/flat.ts'),
     import('../../render/gear-models.ts'),

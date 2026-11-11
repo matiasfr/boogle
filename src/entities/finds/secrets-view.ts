@@ -40,11 +40,11 @@ const TIERS: Tier[] = ['common', 'rare', 'wonder'];
 
 export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   const [tech, { ORIGIN }, { H, addStatic }, { merged }, { softGlow }] = await Promise.all([
-    import('../../proto/place/tech-layout.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/land.ts'),
+    import('../../place/tech-layout.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/land.ts'),
     import('../../render/part-geometry.ts'),
-    import('../../proto/place/look.ts'),
+    import('../../place/look.ts'),
   ]);
   const { padById } = tech;
   // The jump course's cap ("block") moves to job E with the double jump's course (designer fit check, 9 November).

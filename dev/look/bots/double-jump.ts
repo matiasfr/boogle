@@ -3,8 +3,8 @@ import { cam, me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
-import { ORIGIN } from '../../../src/proto/place/layout.ts';
-import { JUMP_COURSE, type Pad } from '../../../src/proto/place/tech-layout.ts';
+import { ORIGIN } from '../../../src/place/layout.ts';
+import { JUMP_COURSE, type Pad } from '../../../src/place/tech-layout.ts';
 import type { Bot } from '../bot.ts';
 
 export const onJumpPad = (p: Pad) => {

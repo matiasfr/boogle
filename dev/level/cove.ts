@@ -5,21 +5,21 @@ import { sourceBuild } from './build.ts';
 import { openScene, type Solid } from './scene.ts';
 
 export async function auditCove() {
-  const T = await import('../../src/proto/place/terrain.ts');
-  const C = await import('../../src/proto/place/cove.ts');
-  const { ORIGIN } = await import('../../src/proto/place/layout.ts');
+  const T = await import('../../src/place/terrain.ts');
+  const C = await import('../../src/place/cove.ts');
+  const { ORIGIN } = await import('../../src/place/layout.ts');
   const tiles = T.terrainCollisionTiles();
   const solids: Solid[] = [
     ...tiles.map((tile, i) => ({
       id: `terrain-${i}`,
-      source: { file: 'src/proto/place/land.ts', symbol: 'buildMesh' },
+      source: { file: 'src/place/land.ts', symbol: 'buildMesh' },
       shape: { kind: 'heightfield' as const, heights: tile.heights, cell: tile.cell },
       position: tile.position,
       support: 'embedded' as const,
     })),
     ...C.coveMeshes.map((m) => ({
       id: m.name,
-      source: { file: 'src/proto/place/cove-view.ts', symbol: 'buildCove' },
+      source: { file: 'src/place/cove-view.ts', symbol: 'buildCove' },
       shape: { kind: 'trimesh' as const, vertices: m.vertices, indices: m.indices },
       position: { x: ORIGIN.x, y: 0, z: ORIGIN.z },
       support: 'embedded' as const,

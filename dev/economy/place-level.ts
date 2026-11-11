@@ -1,10 +1,10 @@
 // `npm run level-check -- --place=place`: the progression check for Round 4, the default browser entry.
 // The classic adapter composes dev/layouts from `Site`; this checks place's land with the same player
 // limits: from spawn, what can you reach on foot, in each state of the job? And it reports how long the walks really are.
-// It floods the 2 m grid of src/proto/place/terrain.ts at the player's walkable slope, plus what's solid to walk on (footbridges
+// It floods the 2 m grid of src/place/terrain.ts at the player's walkable slope, plus what's solid to walk on (footbridges
 // and laid track). It doesn't know about props in the way, which only the play-through (dev/look/evals/place-job.ts) tests.
 import { WALKABLE_NY } from '../../src/constants.ts';
-import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/proto/place/terrain.ts';
+import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
   DEVICES,
   GATES,
@@ -19,7 +19,7 @@ import {
   SERVICE_ROUTES,
   padById,
   ringAt,
-} from '../../src/proto/place/tech-layout.ts';
+} from '../../src/place/tech-layout.ts';
 import {
   BUOYS,
   FORGE_FRAME,
@@ -41,7 +41,7 @@ import {
   upLat,
   type Line,
   type LinePoint,
-} from '../../src/proto/place/layout.ts';
+} from '../../src/place/layout.ts';
 
 type Entry = { state: string; message: string } & (
   { kind: 'section' | 'fact' } | { kind: 'assertion'; passed: boolean }

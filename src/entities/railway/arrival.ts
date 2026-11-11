@@ -30,13 +30,13 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     { feet, outOf },
     { createPosePolicy },
   ] = await Promise.all([
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/water.ts'),
+    import('../../place/land.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/water.ts'),
     import('../../proto/place/place.css'),
-    import('../../proto/place/terrain.ts'),
-    import('../../proto/place/sites.ts'),
-    import('../../proto/place/pose.ts'),
+    import('../../place/terrain.ts'),
+    import('../../place/sites.ts'),
+    import('../../place/pose.ts'),
   ]);
   // Ring Island's ground (src/entities/ring-island/) counts as land for the camera, the saved pose and recovery: a pose
   // on the island is kept and restored; past the gap, Get unstuck puts you on our side (ringUnstuck, call 31).

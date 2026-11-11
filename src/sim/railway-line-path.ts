@@ -1,5 +1,5 @@
 // Where each train line runs, coarse: world centimetres every 10 m along it (RAIL_LINES[line].path, sampled from
-// Place's rail curves in src/proto/place/layout.ts, today's Home; test/railway-train.test.ts holds the two together).
+// Place's rail curves in src/place/layout.ts, today's Home; test/railway-train.test.ts holds the two together).
 // Only the server's check of a passenger's stop request reads it (is the actor near the train?), so a metre of chord
 // error is nothing. Pure.
 import { RAIL_LINES } from './railway-lines.ts';

@@ -1,7 +1,7 @@
 // Place's personal return-ground policy. No material state, rendering, registration or persistence owner.
-import { PLAYER_R } from '../../constants.ts';
-import { sweepSphere } from '../../physics/engine.ts';
-import { GROUP } from '../../physics/physics.ts';
+import { PLAYER_R } from '../constants.ts';
+import { sweepSphere } from '../physics/engine.ts';
+import { GROUP } from '../physics/physics.ts';
 import { ROOM_PLOTS, toWorld } from './layout.ts';
 
 export type Pose = { x: number; z: number; yaw: number };

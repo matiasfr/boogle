@@ -19,8 +19,8 @@ import {
   vec3,
   bumpMap,
 } from 'three/tsl';
-import { patchNode } from '../../render/material-patch.ts';
-import { WALKABLE_NY } from '../../constants.ts';
+import { patchNode } from '../render/material-patch.ts';
+import { WALKABLE_NY } from '../constants.ts';
 import { coveU } from './cove-tuning.ts';
 import { coveTextures } from './cove-textures.ts';
 import { registerCoveSand } from './cove-sand.ts';

@@ -45,7 +45,7 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
       islandGround(),
       import('./view.ts'),
       import('../../proto/greybox/ring-cones.ts'),
-      import('../../proto/place/layout.ts'),
+      import('../../place/layout.ts'),
     ]).then(async ([g, { createRingIslandView }, { RING_CONES }, { FAR, ORIGIN }]) => {
       const v = createRingIslandView(g, RING_CONES, { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z });
       // Pipelines compile off the frame before it first shows (src/render/precompile.ts).

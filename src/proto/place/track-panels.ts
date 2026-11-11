@@ -1,5 +1,5 @@
 // Pure, deterministic prototype schedule. Shared authority commits these indices; meshes never decide them.
-import { LINKS, STUB, type LineSpec } from './layout.ts';
+import { LINKS, STUB, type LineSpec } from '../../place/layout.ts';
 
 // Twelve stock units, partitioned at the three stops; T1/T2 end in shorter closures. Each unit lays as its rail
 // pairs, about 3 m each (owner, 6 November: "drop smaller chunks of rail so it doesn't have to extend so far"),

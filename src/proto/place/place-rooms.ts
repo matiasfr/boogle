@@ -4,7 +4,7 @@
 import { createOwnedView } from '../../render/owned-view.ts';
 import { scene } from '../../render/scene.ts';
 import { createRooms } from './rooms.ts';
-import type { RoomId } from './layout.ts';
+import type { RoomId } from '../../place/layout.ts';
 
 export {
   DOOR,

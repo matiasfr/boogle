@@ -73,7 +73,7 @@ export async function codePreview(id: CodeId, kit?: KitPart, figure?: Figure): P
       group.add(rotor);
     }
   } else {
-    const { housePlan, towerPlan, blockPlan } = await import('../src/proto/place/building-plans.ts');
+    const { housePlan, towerPlan, blockPlan } = await import('../src/place/building-plans.ts');
     const plan =
       id === 'tower'
         ? towerPlan(

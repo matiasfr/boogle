@@ -1,7 +1,7 @@
 // Local cove material settings. Live bindings share the existing dev tool and frozen look-development receipts.
-import { scalar } from '../../render/water/live.ts';
+import { scalar } from '../render/water/live.ts';
 import { float } from 'three/tsl';
-import { COVE_PARAMETERS, type CoveTunableKey } from '../../tunables/terrain.ts';
+import { COVE_PARAMETERS, type CoveTunableKey } from '../tunables/terrain.ts';
 
 export type { CoveTunableKey };
 export const coveSettings = Object.fromEntries(

@@ -220,7 +220,7 @@ test('renewal alone completes an exhausted run while every old resource remains 
 });
 
 test('pinned clearings contain initial stubs and all finished T1 track with eight metres of clearance', async () => {
-  const { LINKS, ORIGIN, lineAt } = await import('../src/proto/place/layout.ts');
+  const { LINKS, ORIGIN, lineAt } = await import('../src/place/layout.ts');
   const line = LINKS[0]!.line;
   for (let s = 0; s <= line.len; s += 0.5) {
     if (s > 30 && s < 150) continue;

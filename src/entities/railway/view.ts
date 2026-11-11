@@ -37,14 +37,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   document.body.append(connection);
   owner.cleanup(() => connection.remove());
   const [land, rail, stations, pieces, layout, sounds, kit, look, seats] = await Promise.all([
-    import('../../proto/place/land.ts'),
+    import('../../place/land.ts'),
     import('../../proto/place/rail.ts'),
     import('../../proto/place/stations.ts'),
-    import('../../proto/place/pieces.ts'),
-    import('../../proto/place/layout.ts'),
+    import('../../place/pieces.ts'),
+    import('../../place/layout.ts'),
     import('../../render/fanfare.ts'),
-    import('../../proto/place/look-kit.ts'),
-    import('../../proto/place/look.ts'),
+    import('../../place/look-kit.ts'),
+    import('../../place/look.ts'),
     import('../../proto/place/seat.ts'),
   ]);
   land.buildLand(owner);
@@ -99,7 +99,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);
   // `?home=b`: Home drawn as one terminus station (docs/plans/home-station.md, step 3). Look only.
-  const homeStation = (await import('../../proto/place/home-station.ts')).homeLayout()
+  const homeStation = (await import('../../place/home-station.ts')).homeLayout()
     ? await import('./home-station-view.ts').then((m) => m.createHomeStation(adapter, owner))
     : null;
   const flying = () => ({

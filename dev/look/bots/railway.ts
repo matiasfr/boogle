@@ -46,7 +46,7 @@ export function aimHook(id: string) {
   cam.pitch = Math.min(0.85, Math.atan2(r.y - p.y - 1.35, d) - 0.3);
 }
 async function hookLanding(bot: Bot, id: string) {
-  const { PADS } = await import('../../../src/proto/place/tech-layout.ts');
+  const { PADS } = await import('../../../src/place/tech-layout.ts');
   const pad = PADS.find((p) => p.id === id)!;
   hookCheck(
     bot,
@@ -171,7 +171,7 @@ type B4Route = {
 };
 
 async function walkQuarryRail(bot: Bot, from: number, to: number) {
-  const { LINKS, ORIGIN, lineAt, railY } = await import('../../../src/proto/place/layout.ts');
+  const { LINKS, ORIGIN, lineAt, railY } = await import('../../../src/place/layout.ts');
   const { besideLine } = await import('../../../src/proto/place/rail.ts');
   const direction = Math.sign(to - from);
   if (from === 546 && direction < 0) {
@@ -260,7 +260,7 @@ export async function seaToFarHead(
   );
   check(l2().stations[3]?.completion === 1, 'B4 starts with Q4 laid');
   if (from === 'sea') {
-    const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+    const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
     const deck = lineAt(LINKS[1]!.line, quarryFrom, { x: 0, z: 0, ux: 0, uz: 1 });
     await walk(deck.x + ORIGIN.x, deck.z, 1);
     await walkQuarry(quarryFrom, 92);
@@ -280,7 +280,7 @@ export async function seaToFarHead(
   check(l2().seaOpen, 'Q5 seed or summit pull opens the sea gate');
   const q5 = view().frames[4]!;
   check(q5, 'Q5 frame exists');
-  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
   {
     // Always use the laid track: the general terrain planner can falsely connect the gorge banks.
     const entry = from === 'sea' ? 84 : quarryFrom;
@@ -372,7 +372,7 @@ export async function glideHome(
   check(read().line2.stations[4]?.completion === 1, 'the glide home starts after Q5');
   if (from === 'far-head') await walkQuarry(546, 92);
   else {
-    const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+    const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
     const deck = lineAt(LINKS[1]!.line, 84, { x: 0, z: 0, ux: 0, uz: 1 });
     check(await bot.walk(deck.x + ORIGIN.x, deck.z, 1), 'walked to the quarry deck below Needle Bell');
     await walkQuarry(84, 92);
@@ -507,7 +507,7 @@ export async function boilerToPier(
     check(await bot.walk(x, z, radius), `B8 walked to ${x.toFixed(1)}, ${z.toFixed(1)} without recovery`);
   const straight = async (x: number, z: number) =>
     check(await bot.straight(x, z, 0.5, 12000), 'B8 walked a supported track waypoint');
-  const { LINKS, ORIGIN, lineAt, FORMATION } = await import('../../../src/proto/place/layout.ts');
+  const { LINKS, ORIGIN, lineAt, FORMATION } = await import('../../../src/place/layout.ts');
   const point = (line: number, s: number) => {
     const p = lineAt(LINKS[line]!.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
     return { ...p, x: p.x + ORIGIN.x };
@@ -705,8 +705,8 @@ export async function boilerToPier(
 async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   if (id === 't3') await returnFromTower(bot, ['t5', 't4', 't3']);
   const [{ PADS }, layout] = await Promise.all([
-    import('../../../src/proto/place/tech-layout.ts'),
-    import('../../../src/proto/place/layout.ts'),
+    import('../../../src/place/tech-layout.ts'),
+    import('../../../src/place/layout.ts'),
   ]);
   const pad = PADS.find((p) => p.id === id)!,
     b = me.body!;
@@ -1227,8 +1227,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       );
     }
     const [{ PATH_SAMPLES }, layout] = await Promise.all([
-      import('../../../src/proto/place/terrain.ts'),
-      import('../../../src/proto/place/layout.ts'),
+      import('../../../src/place/terrain.ts'),
+      import('../../../src/place/layout.ts'),
     ]);
     const line = layout.LINKS[0]!;
     const railAt = (s: number) => layout.lineAt(line.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
@@ -1520,7 +1520,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     mark('path walked back');
     // The completed path reaches the first pillar's authored lip without spending the optional ability.
     await walkTrack(191, 92);
-    const { PILLARS } = await import('../../../src/proto/place/tech-layout.ts');
+    const { PILLARS } = await import('../../../src/place/tech-layout.ts');
     const pillar = PILLARS[0]!;
     require(pillar.lipTo, 'first pillar has its walkable approach');
     const approach = { x: pillar.x - pillar.lipTo!.x, z: pillar.z - pillar.lipTo!.z };

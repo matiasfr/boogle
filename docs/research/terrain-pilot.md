@@ -15,7 +15,7 @@ After coordinator merge, compare [sandstone](https://boogle.club/?proto=place&te
 
 - Specification: [terrain-art](terrain-art.md), phased plan and first pilot; [implementation plan](../plans/terrain-pilot.md).
 - Opened the supplied board's `shot-1.png` through `shot-4.png` at `/Users/matiasfranco/Developer/boogle-daily/.look/previz/terrain-corner/`. Shot 4 supplied front/side construction intent; shot 3 supplied contact detail. The original [back/contact schematic](terrain-pilot-reference.svg) supplements these under the no-network constraint. Images are references, not shipped pixels.
-- [cove.ts](../../src/proto/place/cove.ts) owns the deterministic, metre-scale, Y-up recipe, vertex pigment and matching triangles. [cove-view.ts](../../src/proto/place/cove-view.ts) creates the two meshes and fixed colliders. No external model export, generator or asset dependency.
+- [cove.ts](../../src/place/cove.ts) owns the deterministic, metre-scale, Y-up recipe, vertex pigment and matching triangles. [cove-view.ts](../../src/place/cove-view.ts) creates the two meshes and fixed colliders. No external model export, generator or asset dependency.
 - The face spans roughly 24 m along z 42–66. The blend extends to local x -216…-154, z 30…80 to join the old tall shoulder without a steep invisible backing wall. It exceeds the research's provisional search box. Landing, path shoulders, rail bed and catalog clearances take precedence over the blend.
 - A flagged/unflagged grid comparison found 591 changed grid cells, **zero changed protected cells**, identical path masks and identical catalog snapshots. No route was moved.
 

@@ -19,8 +19,8 @@ const { triggerAction } = (await import(
 const { remotes } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { LINKS, ORIGIN, lineAt, railY } = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 
 type P = { x: number; y: number; z: number };
 type BoilerView = P & {

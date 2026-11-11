@@ -1,7 +1,7 @@
 // Material boards and HUD counters (logs, kilometres, town, money). Local.
 import * as THREE from 'three/webgpu';
-import { pauseSections } from '../../player/pause-pages.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
+import { pauseSections } from '../player/pause-pages.ts';
+import type { OwnedView } from '../render/owned-view.ts';
 
 // ---------------------------------------------------------------- boards you can read
 /** Physical painted paper takes scene light and shadows, without inverse gain or an emissive floor. */

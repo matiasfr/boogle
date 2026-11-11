@@ -14,9 +14,9 @@
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { GRID, ORIGIN } from '../place/layout.ts';
-import { CELL, NX, NZ, at } from '../place/terrain.ts';
-import { groundMaterial } from '../place/look.ts';
+import { GRID, ORIGIN } from '../../place/layout.ts';
+import { CELL, NX, NZ, at } from '../../place/terrain.ts';
+import { groundMaterial } from '../../place/look.ts';
 import { bandsMaterial, coveLayersMaterial, roundTwoMaterial } from './materials.ts';
 import { buildSteepSurface, buildWedgeSurface, edgeFade, wedgeCell } from './surface.ts';
 

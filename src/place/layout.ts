@@ -3,8 +3,8 @@
 // gorge is three straight arms from the spire's islet with a slight wiggle; the lobes' heights meet along those rays, and
 // the walls hide the seam. Foot paths are polylines with explicit heights; rail lines are curves with explicit ends.
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim.
-import { smoothstep } from '../../math.ts';
-import { TURNOUT_CM } from '../../sim/railway-lines.ts';
+import { smoothstep } from '../math.ts';
+import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 import {

@@ -12,8 +12,8 @@ const { fallArrival } = (await import(
 )) as typeof import('../../../src/fall/arrival.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const [{ PATH_SAMPLES }, layout] = await Promise.all([
-  import('/src/proto/place/terrain.ts' as string) as Promise<typeof import('../../../src/proto/place/terrain.ts')>,
-  import('/src/proto/place/layout.ts' as string) as Promise<typeof import('../../../src/proto/place/layout.ts')>,
+  import('/src/place/terrain.ts' as string) as Promise<typeof import('../../../src/place/terrain.ts')>,
+  import('/src/place/layout.ts' as string) as Promise<typeof import('../../../src/place/layout.ts')>,
 ]);
 const bot = makeBot({
   recover: () => {

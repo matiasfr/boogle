@@ -9,10 +9,10 @@
 // `job.rung` is where you are on it. To add a rung: a field in `Rungs`, a chest or an event here, and what it changes.
 import * as THREE from 'three/webgpu';
 import { playMark } from '../mark.ts';
-import { H, addStatic } from './land.ts';
+import { H, addStatic } from '../../place/land.ts';
 import { job, type ChestId, type Rungs } from './job.ts';
-import { LINKS, ORIGIN, toWorld } from './layout.ts';
-import { frameBesideLine } from './spatial-station.ts';
+import { LINKS, ORIGIN, toWorld } from '../../place/layout.ts';
+import { frameBesideLine } from '../../place/spatial-station.ts';
 import { scene } from '../../render/scene.ts';
 import { flat } from '../../render/flat.ts';
 import { deliver, dropChest, prizeHooks, showChestPrize } from './gifts.ts';

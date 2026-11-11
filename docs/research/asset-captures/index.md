@@ -72,7 +72,7 @@ Plain proper variant, without the multi-tool pick. Context is a staged tool disp
 
 ### Cart
 
-Sources: [src/proto/place/depot.ts](../../../src/proto/place/depot.ts), [src/proto/place/layout.ts](../../../src/proto/place/layout.ts).
+Sources: [src/proto/place/depot.ts](../../../src/proto/place/depot.ts), [src/proto/place/layout.ts](../../../src/place/layout.ts).
 
 Code dimensions (metres): Deck 1.5 × 0.12 × 2.7; deck top y=0.55. Sideboards 0.08 thick × 0.32 high; wheel radius 0.20, thickness 0.08. Rear pushbar y=1.05, z=−1.45.
 
@@ -128,7 +128,7 @@ Isolated stand only; context retains the boiler and forge apron.
 
 ### First train locomotive
 
-Sources: [src/proto/place/look-kit.ts](../../../src/proto/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/render/wagon-look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
+Sources: [src/proto/place/look-kit.ts](../../../src/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/render/wagon-look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
 
 Code dimensions (metres): Physical footprint 1.6 × 3.0, rideable top 1.75. Frame 1.6 × 0.20 × 3; cab 1.5 × 1.18 × 1; roof 1.72 × 0.10 × 1.2. Wheel radius 0.36.
 
@@ -142,7 +142,7 @@ L1.train.tr.cars[0] at the first stop. Includes its four wheels extracted from t
 
 ### Passenger wagon
 
-Sources: [src/proto/place/look-kit.ts](../../../src/proto/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/render/wagon-look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
+Sources: [src/proto/place/look-kit.ts](../../../src/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/render/wagon-look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
 
 Code dimensions (metres): Physical footprint 2.2 × 3.2, rideable deck top 0.70; wheel radius 0.22. Uses flat_deck and flat_black kit geometry.
 
@@ -184,7 +184,7 @@ Four actual platform instances isolated; rotated so Front faces the seat. Contex
 
 ### Forge shell
 
-Sources: [src/proto/place/forge.ts](../../../src/proto/place/forge.ts), [src/proto/place/layout.ts](../../../src/proto/place/layout.ts), [src/proto/place/building-plans.ts](../../../src/proto/place/building-plans.ts).
+Sources: [src/proto/place/forge.ts](../../../src/proto/place/forge.ts), [src/proto/place/layout.ts](../../../src/place/layout.ts), [src/proto/place/building-plans.ts](../../../src/place/building-plans.ts).
 
 Code dimensions (metres): Wall footprint 10 × 8; wall height 4.6; roof rise 2.1. Foundation footprint in code includes an apron of 0.8 per side: 11.6 × 9.6.
 
@@ -212,7 +212,7 @@ Interior fittings without the forge shell. Context is an inspection cutaway with
 
 ### Quarry switch gate
 
-Sources: [src/proto/place/tech.ts](../../../src/proto/place/tech.ts), [src/proto/place/tech-layout.ts](../../../src/proto/place/tech-layout.ts).
+Sources: [src/proto/place/tech.ts](../../../src/proto/place/tech.ts), [src/proto/place/tech-layout.ts](../../../src/place/tech-layout.ts).
 
 Code dimensions (metres): Slab 6.4 × 5.4 × 0.9. Jambs 1.1 × 6.2 × 1.1; lintel 8.6 × 0.5 × 1.4, top y=6.7.
 
@@ -226,7 +226,7 @@ Closed quarry gate: frame plus slab. Route earthworks, survey stakes and remote 
 
 ### Turntable
 
-Sources: [src/proto/place/lines.ts](../../../src/proto/place/lines.ts), [src/proto/place/layout.ts](../../../src/proto/place/layout.ts).
+Sources: [src/proto/place/lines.ts](../../../src/proto/place/lines.ts), [src/proto/place/layout.ts](../../../src/place/layout.ts).
 
 Code dimensions (metres): Diameter 9.6; disc thickness 0.24; rim width 0.28. Timber bar 1.5 × 0.08 × 9.3; rails 0.10 × 0.10 × 9 at x=±0.63.
 
@@ -240,7 +240,7 @@ Exported disc group. Front/side/back are intentionally thin edge profiles; Three
 
 ### Little-guy hammer worker
 
-Sources: [src/proto/place/folk.ts](../../../src/proto/place/folk.ts).
+Sources: [src/proto/place/folk.ts](../../../src/place/folk.ts).
 
 Code dimensions (metres): Body nominally ~0.95 high. Head radii 0.27/0.25/0.26 at y=0.68; coat radii 0.23/0.26/0.20; hat dome radii 0.285/0.18/0.275 at y=0.81.
 

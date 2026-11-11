@@ -5,19 +5,19 @@
 // with those looks. The machine keeps its cars' sizes, so its colliders still fit. Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { guardInstances } from '../../render/draw-count.ts';
-import kitUrl from '../../../assets/built/place-kit.glb?url';
-import { onFrame } from '../../loop.ts';
-import { scene } from '../../render/scene.ts';
-import { LOCO, TRAILER } from '../../render/wagon-look.ts';
+import { guardInstances } from '../render/draw-count.ts';
+import kitUrl from '../../assets/built/place-kit.glb?url';
+import { onFrame } from '../loop.ts';
+import { scene } from '../render/scene.ts';
+import { LOCO, TRAILER } from '../render/wagon-look.ts';
 import { H } from './land.ts';
 import { LOOK, STEEL, addBlob, bakeContact, honeyOf, paint, setBlob, type Paint } from './look.ts';
 import type { DropSet } from './pieces.ts';
-import { setViewGeometry, type OwnedView } from '../../render/owned-view.ts';
-import { makeBoiler } from '../../render/carry-models.ts';
-import { makeProp } from '../../render/prop-kit.ts';
-import { job } from './job.ts';
-import { ENGINE_BOILER, ENGINE_WHEELS } from '../wagon/engine.ts';
+import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
+import { makeBoiler } from '../render/carry-models.ts';
+import { makeProp } from '../render/prop-kit.ts';
+import { job } from '../proto/place/job.ts';
+import { ENGINE_BOILER, ENGINE_WHEELS } from '../proto/wagon/engine.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -110,7 +110,7 @@ function logColors(g: THREE.BufferGeometry) {
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
 }
 // The machine feeder requests kit pieces with look=none too.
-void import('../../render/assets.ts')
+void import('../render/assets.ts')
   .then((a) => a.loadAsset(kitUrl))
   .then((asset) => {
     asset.gltf.scene.updateMatrixWorld(true);
@@ -397,7 +397,7 @@ export type MachineLook = {
   cab?: ReturnType<EngineKit['engineBodyWithCab']>;
 };
 /** The railway's engine (./engine-kit.ts), loaded: trainLook draws its loco with it. */
-type EngineKit = typeof import('./engine-kit.ts');
+type EngineKit = typeof import('../proto/place/engine-kit.ts');
 /** The track layer's look, the shape of wagonLook's: a red toy loco and a flatbed with its cradle, guard, arm and fork. */
 type Wheel = { x: number; y: number; z: number; at: number };
 const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),

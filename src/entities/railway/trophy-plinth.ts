@@ -26,12 +26,12 @@ export async function createTrophyPlinth(
   busy: () => boolean,
 ) {
   const [layout, land, home, shapes, flat, folk] = await Promise.all([
-    import('../../proto/place/layout.ts'),
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/home-station.ts'),
+    import('../../place/layout.ts'),
+    import('../../place/land.ts'),
+    import('../../place/home-station.ts'),
     import('../../render/part-geometry.ts'),
     import('../../render/flat.ts'),
-    import('../../proto/place/folk.ts'),
+    import('../../place/folk.ts'),
   ]);
   // Out on the finders' bay's centreline, past its missed boxes, on the street's edge where people pass.
   const spot = home.bayPoint(0, home.PLINTH_OUT),

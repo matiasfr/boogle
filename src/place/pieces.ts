@@ -3,15 +3,15 @@
 // (`send`, for logs and rails between trees, backs, frames, machine and rack). docs/decisions.md, "construction
 // is physical". Local and cosmetic.
 import * as THREE from 'three/webgpu';
-import { material } from '../../render/materials.ts';
-export { chips, dustRing } from '../../render/particle-effects.ts';
-import { scene } from '../../render/scene.ts';
-import { PIECE, pieceColor, pieceMesh, commitPieces } from '../../render/haul-pieces.ts';
-import { makeSet, type Box, type BoxSet } from '../../render/boxes.ts';
+import { material } from '../render/materials.ts';
+export { chips, dustRing } from '../render/particle-effects.ts';
+import { scene } from '../render/scene.ts';
+import { PIECE, pieceColor, pieceMesh, commitPieces } from '../render/haul-pieces.ts';
+import { makeSet, type Box, type BoxSet } from '../render/boxes.ts';
 import { LOOK, STEEL, lookBackLogs } from './look.ts';
 import { kitBatch, kitLogs } from './look-kit.ts';
-import { RAIL_SIZE } from '../../render/carry-models.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
+import { RAIL_SIZE } from '../render/carry-models.ts';
+import type { OwnedView } from '../render/owned-view.ts';
 export { RAIL_SIZE };
 
 // ---------------------------------------------------------------- falling into place

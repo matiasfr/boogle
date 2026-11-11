@@ -1,6 +1,6 @@
 // Round 4's shore arrival. Local presentation and static Owner collision; Node tools use the same default grid.
 // The isolated v=village comparison keeps the previous coast. SPAWN remains the village fallback.
-import { pageQuery } from '../flags.ts';
+import { pageQuery } from '../proto/flags.ts';
 import type { Pt } from './layout.ts';
 
 export const SHORE_COAST = pageQuery().get('v') !== 'village';

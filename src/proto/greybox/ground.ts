@@ -2,9 +2,9 @@
 // island, Ring Island's cones, and each new land's `top` from the map JSON. Local metres (x east, z south).
 import { groundHeight } from '../../island/heights.ts';
 import { HALF } from '../../constants.ts';
-import { ORIGIN } from '../place/layout.ts';
+import { ORIGIN } from '../../place/layout.ts';
 import { RING_CONES, ringHeight } from './ring-cones.ts';
-import { H, insidePlace } from '../place/terrain.ts';
+import { H, insidePlace } from '../../place/terrain.ts';
 import { inside, type Layout, type Line, type XZ } from './map-data.ts';
 
 export const SEA_BED = -10;

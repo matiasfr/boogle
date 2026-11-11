@@ -12,7 +12,7 @@ import { precompile } from '../../render/precompile.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { flat } from '../../render/flat.ts';
-import { FAR, ORIGIN } from '../place/layout.ts';
+import { FAR, ORIGIN } from '../../place/layout.ts';
 import { RING_CONES } from './ground.ts';
 import { at, CONCOURSE, HOUSE, HX, houseBoxes, houseYaw, slab } from './ring-house.ts';
 import { refreshMaterials } from './build.ts';
@@ -679,7 +679,7 @@ if (HOUSE_ON) {
 }
 
 // ---------------------------------------------------------------- the island: the live cones, solid; the shore; the path
-// The cones exactly as Place's buildFar draws them (src/proto/place/land.ts), as trimesh solids, so the shore and the
+// The cones exactly as Place's buildFar draws them (src/place/land.ts), as trimesh solids, so the shore and the
 // slopes are walkable; a sand band marks the shore; a trodden path climbs to the lookout on the main cone's summit.
 const CX = FAR.x + ORIGIN.x,
   CZ = FAR.z + ORIGIN.z;

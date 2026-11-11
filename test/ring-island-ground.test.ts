@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RING_CONES, ringHeight } from '../src/proto/greybox/ring-cones.ts';
-import { FAR, ORIGIN } from '../src/proto/place/layout.ts';
+import { FAR, ORIGIN } from '../src/place/layout.ts';
 import {
   RING_BRACE_PLATFORM,
   RING_FORMATION,

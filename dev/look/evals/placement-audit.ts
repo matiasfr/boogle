@@ -25,9 +25,9 @@ const { L1 } = (await import(
   '/src/proto/place/lines.ts' as string
 )) as typeof import('../../../src/proto/place/lines.ts');
 const { ORIGIN, LINES, lineAt, railY } = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { playMark } = (await import('/src/proto/mark.ts' as string)) as typeof import('../../../src/proto/mark.ts');
 const { gettingItem } = (await import(

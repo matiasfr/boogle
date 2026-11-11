@@ -17,8 +17,8 @@ if (intro !== '0' && isFirstVisit() && PROTO === 'place' && !jumpRoom && (!navig
   fallArrival.active = true; // before the place's asynchronous loader can position the player
   const loaded = (async () => {
     const [{ LANDING, toWorld }, { H }] = await Promise.all([
-      import('../proto/place/layout.ts'),
-      import('../proto/place/terrain.ts'),
+      import('../place/layout.ts'),
+      import('../place/terrain.ts'),
     ]);
     fallArrival.target = { x: toWorld(LANDING.x), z: LANDING.z };
     fallArrival.yaw = LANDING.yaw;

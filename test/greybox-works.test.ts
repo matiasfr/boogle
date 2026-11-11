@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { EAST, LINES, LINKS, ORIGIN, STUB, lineAt } from '../src/proto/place/layout.ts';
+import { EAST, LINES, LINKS, ORIGIN, STUB, lineAt } from '../src/place/layout.ts';
 import {
   WORKS_BREAKER,
   WORKS_SEAMS,

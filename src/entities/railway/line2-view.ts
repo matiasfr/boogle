@@ -64,18 +64,18 @@ export async function createRailwayLine2(
 ) {
   const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
     await Promise.all([
-      import('../../proto/place/layout.ts'),
+      import('../../place/layout.ts'),
       import('../../proto/place/rail.ts'),
       import('../../proto/place/stations.ts'),
-      import('../../proto/place/pieces.ts'),
-      import('../../proto/place/land.ts'),
-      import('../../proto/place/opening-plans.ts'),
-      import('../../proto/place/tech-layout.ts'),
+      import('../../place/pieces.ts'),
+      import('../../place/land.ts'),
+      import('../../place/opening-plans.ts'),
+      import('../../place/tech-layout.ts'),
       import('../../render/part-geometry.ts'),
       import('../../render/flat.ts'),
       import('../../render/fanfare.ts'),
-      import('../../proto/place/look.ts'),
-      import('../../proto/place/look-kit.ts'),
+      import('../../place/look.ts'),
+      import('../../place/look-kit.ts'),
       import('../../render/prop-kit.ts'),
       import('../../render/carry-models.ts'),
     ]);

@@ -6,7 +6,7 @@ import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import url from '../../../assets/built/passenger-car.glb?url';
-import { paint } from './look.ts';
+import { paint } from '../../place/look.ts';
 
 const kit = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
 kit.scene.updateMatrixWorld(true);

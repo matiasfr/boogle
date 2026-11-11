@@ -291,7 +291,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
   await checkpoint('footings at the pier');
   // The pier rack stands on the Pier halt's deck (west of the rails) and the jib on the pier head's east apron; the
   // track between them is the way, short of Q6's parked machine. `lat` < 0 is the halt's side.
-  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
   const beside = (along: number, lat: number) => {
     const p = lineAt(LINKS[1]!.line, along, { x: 0, z: 0, ux: 0, uz: 1 });
     return { x: p.x - p.uz * lat + ORIGIN.x, z: p.z + p.ux * lat + ORIGIN.z };

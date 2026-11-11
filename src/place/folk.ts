@@ -6,18 +6,18 @@
 // the village's number is how many you can see, up to a cap an iPad is happy with. No colliders; they walk round buildings
 // (`feet`, ./sites.ts). The hop of the last round's villagers is their cheer. Local.
 import * as THREE from 'three/webgpu';
-import { mulberry32 } from '../../sim/rng.ts';
-import { RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
-import { emit } from '../../render/particles.ts';
-import { scene, camera } from '../../render/scene.ts';
-import { getAudio } from '../../render/audio.ts';
-import { me } from '../../player/player.ts';
-import { flat } from '../../render/flat.ts';
+import { mulberry32 } from '../sim/rng.ts';
+import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { emit } from '../render/particles.ts';
+import { scene, camera } from '../render/scene.ts';
+import { getAudio } from '../render/audio.ts';
+import { me } from '../player/player.ts';
+import { flat } from '../render/flat.ts';
 import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
-import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
-import { merged } from '../../render/part-geometry.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
+import { MACHINE_CHAIR_SEAT } from '../proto/place/machine-model.ts';
+import { merged } from '../render/part-geometry.ts';
+import type { OwnedView } from '../render/owned-view.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
 import { feet, outOf, underway, type Foot, type Site } from './sites.ts';
 

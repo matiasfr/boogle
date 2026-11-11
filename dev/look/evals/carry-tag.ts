@@ -13,7 +13,7 @@ const { input } = (await import(
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { forgeFrame } = (await import(
   '/src/proto/place/lines.ts' as string
 )) as typeof import('../../../src/proto/place/lines.ts');

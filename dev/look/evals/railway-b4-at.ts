@@ -7,8 +7,8 @@ const { teleport, raycastClosest } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const layout = (await import(
-  '/src/proto/place/layout.ts' as string
-)) as typeof import('../../../src/proto/place/layout.ts');
+  '/src/place/layout.ts' as string
+)) as typeof import('../../../src/place/layout.ts');
 const rail = (await import('/src/proto/place/rail.ts' as string)) as typeof import('../../../src/proto/place/rail.ts');
 const { interactTarget } = (await import(
   '/src/player/hands.ts' as string
@@ -36,8 +36,8 @@ if (mode === 'summit') {
   const f = state.line2View.frames[4]!;
   p = { x: f.x - 3, y: f.y + 0.85, z: f.z + 4 };
   const gate = (await import(
-    '/src/proto/place/tech-layout.ts' as string
-  )) as typeof import('../../../src/proto/place/tech-layout.ts');
+    '/src/place/tech-layout.ts' as string
+  )) as typeof import('../../../src/place/tech-layout.ts');
   target = { x: gate.GATES.sea.x + layout.ORIGIN.x, y: gate.GATES.sea.y + 2, z: gate.GATES.sea.z };
 } else if (mode === 'trestle' || mode === 'head') {
   const s = mode === 'head' ? 540 : 416,

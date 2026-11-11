@@ -1,7 +1,7 @@
 // The panel's line-2 rides, with the timings the 2D economy model uses: the depot cart's trip, the line 2 train and the
 // boiler walk. Pure (no three.js): each leg is a run of metres along Place's real rails (`LINES.north` is line 1,
 // `LINES.east` line 2), so the greybox rides the actual track at its real rail height and a test checks the lengths.
-import { CART, EAST, LINES, STUB, lineAt, railY } from '../place/layout.ts';
+import { CART, EAST, LINES, STUB, lineAt, railY } from '../../place/layout.ts';
 import type { MapData } from './map-data.ts';
 
 export type RideLeg = { line: 'north' | 'east'; from: number; to: number; stop: string; dwellS: number };

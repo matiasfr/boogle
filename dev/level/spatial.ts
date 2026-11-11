@@ -62,10 +62,10 @@ export async function runSpatialAudit(args: string[]) {
     throw new Error('Supported regions: T3, stack; states: empty, stocked, path-built, glide');
   if (fixture && !['support-gap', 'blocked-stance', 'missing-descriptor'].includes(fixture))
     throw new Error('Unknown fixture');
-  const L = await import('../../src/proto/place/layout.ts');
-  const T = await import('../../src/proto/place/terrain.ts');
-  const tech = await import('../../src/proto/place/tech-layout.ts');
-  const station = await import('../../src/proto/place/spatial-station.ts');
+  const L = await import('../../src/place/layout.ts');
+  const T = await import('../../src/place/terrain.ts');
+  const tech = await import('../../src/place/tech-layout.ts');
+  const station = await import('../../src/place/spatial-station.ts');
   const build = sourceBuild();
   const issues: Finding[] = [];
   const source = (file: string, symbol: string): Source => ({ file: `src/proto/place/${file}.ts`, symbol });
@@ -126,11 +126,11 @@ export async function runSpatialAudit(args: string[]) {
     if (state === 'stocked') {
       // Obtain the original slot function and constants without importing pieces' renderer and animation setup.
       const piece = sourceFunction<{ r: number }>('src/render/haul-pieces.ts', 'PIECE', {});
-      const stackLog = sourceFunction<{ thick: number }>('src/proto/place/pieces.ts', 'STACK_LOG', {});
-      const logH = sourceFunction<number>('src/proto/place/pieces.ts', 'logH', { PIECE: piece, STACK_LOG: stackLog });
+      const stackLog = sourceFunction<{ thick: number }>('src/place/pieces.ts', 'STACK_LOG', {});
+      const logH = sourceFunction<number>('src/place/pieces.ts', 'logH', { PIECE: piece, STACK_LOG: stackLog });
       const slot = sourceFunction<
         (n: number, perRow: number, at: V3, yaw: number, out: { set: (x: number, y: number, z: number) => V3 }) => V3
-      >('src/proto/place/pieces.ts', 'stackSlot', { logH });
+      >('src/place/pieces.ts', 'stackSlot', { logH });
       const at = { ...center, y: center.y + 0.12 },
         out = { set: (x: number, y: number, z: number) => ({ x, y, z }) };
       const radius = slot(0, station.PER_ROW, at, frame.yaw, out).y - at.y;

@@ -5,8 +5,8 @@ import { scene } from '../../render/scene.ts';
 import { flat } from '../../render/flat.ts';
 import { drawHeaps, heap, type Heap, type Kind } from '../../render/crates.ts';
 import { removeBody, type Body, type Shape } from '../../physics/engine.ts';
-import { H, addStatic, addStatics } from './land.ts';
-import { GOODS, type Goods } from './layout.ts';
+import { H, addStatic, addStatics } from '../../place/land.ts';
+import { GOODS, type Goods } from '../../place/layout.ts';
 import {
   DOCK,
   FORGE_BILLS,
@@ -21,10 +21,10 @@ import {
   railY,
   toWorld,
   type LinePoint,
-} from './layout.ts';
+} from '../../place/layout.ts';
 import { count, job, sharedSlice } from './job.ts';
 import { besideLine, buildMachine, buildTrack, buildTrain, thud, type Track, type TrainRun } from './rail.ts';
-import { addFoot } from './sites.ts';
+import { addFoot } from '../../place/sites.ts';
 import { buildStation, frameBesideLine, type StationRun } from './stations.ts';
 import { campSmoke } from './town.ts';
 

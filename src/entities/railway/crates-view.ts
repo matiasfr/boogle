@@ -43,13 +43,13 @@ export async function createStationBoxes(
   const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }, { OUT }] =
     await Promise.all([
       import('../../render/part-geometry.ts'),
-      import('../../proto/place/look.ts'),
+      import('../../place/look.ts'),
       import('../../render/fanfare.ts'),
-      import('../../proto/place/layout.ts'),
-      import('../../proto/place/land.ts'),
+      import('../../place/layout.ts'),
+      import('../../place/land.ts'),
       import('../../proto/place/rail.ts'),
-      import('../../proto/place/pieces.ts'),
-      import('../../proto/place/spatial-station.ts'),
+      import('../../place/pieces.ts'),
+      import('../../place/spatial-station.ts'),
     ]);
   const root = new THREE.Group();
   owner.root.add(root);

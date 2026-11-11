@@ -27,15 +27,15 @@ import {
   vec3,
   vertexColor,
 } from 'three/tsl';
-import { scene } from '../../render/scene.ts';
-import { flat } from '../../render/flat.ts';
-import { dressBundleLogs } from '../../render/haul-bundle.ts';
-import { patchNode } from '../../render/material-patch.ts';
-import { readableUnlit } from '../../render/readable-unlit.ts';
-import { woodGrain } from '../../render/wood.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
-import { paletteNode, paletteColour, watchPalette } from '../../render/material-palette.ts';
-import type { MaterialFamily } from '../../render/material-palette-tuning.ts';
+import { scene } from '../render/scene.ts';
+import { flat } from '../render/flat.ts';
+import { dressBundleLogs } from '../render/haul-bundle.ts';
+import { patchNode } from '../render/material-patch.ts';
+import { readableUnlit } from '../render/readable-unlit.ts';
+import { woodGrain } from '../render/wood.ts';
+import type { OwnedView } from '../render/owned-view.ts';
+import { paletteNode, paletteColour, watchPalette } from '../render/material-palette.ts';
+import type { MaterialFamily } from '../render/material-palette-tuning.ts';
 
 const asked = new Set((new URLSearchParams(location.search).get('look') ?? 'all').split(','));
 const on = (name: string) => asked.has('all') || asked.has(name);

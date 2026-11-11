@@ -7,11 +7,11 @@ const state = (await import('/src/proto/place/job.ts' as string)) as typeof impo
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const physics = (await import('/src/physics/engine.ts' as string)) as typeof import('../../../src/physics/engine.ts');
 const { H } = (await import(
-  '/src/proto/place/terrain.ts' as string
-)) as typeof import('../../../src/proto/place/terrain.ts');
+  '/src/place/terrain.ts' as string
+)) as typeof import('../../../src/place/terrain.ts');
 const { safeTreeFall, treeFallClear } = (await import(
-  '/src/proto/place/tree-catalog.ts' as string
-)) as typeof import('../../../src/proto/place/tree-catalog.ts');
+  '/src/place/tree-catalog.ts' as string
+)) as typeof import('../../../src/place/tree-catalog.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const { TREES, back, chop, resetTrees, greatTree } = trees;
 const { job, save, restore } = state;

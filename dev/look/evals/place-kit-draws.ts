@@ -5,7 +5,7 @@ const { me } = (await import('/src/player/player.ts' as string)) as typeof impor
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
+const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { captureShots } = (await import('/dev/look/shot-page.ts' as string)) as typeof import('../shot-page.ts');
 const { paintNative } = (await import('/dev/look/sheet-render.ts' as string)) as typeof import('../sheet-render.ts');
 const { scene } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');

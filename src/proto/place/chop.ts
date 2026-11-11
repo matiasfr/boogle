@@ -8,7 +8,7 @@
 // which rung you're on comes from `job.rung`.
 import * as THREE from 'three/webgpu';
 import { createTreeRoots, type TreeRoot } from '../../render/tree-roots.ts';
-import { treeSeat } from './support.ts';
+import { treeSeat } from '../../place/support.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { warmUp } from '../../render/precompile.ts';
@@ -24,17 +24,17 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { mulberry32 } from '../../sim/rng.ts';
 import { knock, pop } from '../../render/fanfare.ts';
 import { flat } from '../../render/flat.ts';
-import { H, addStatic } from './land.ts';
+import { H, addStatic } from '../../place/land.ts';
 import { COOP, count, job, personalSlice, sharedSlice, save } from './job.ts';
-import { LOOK, addBlob, treeMaterial } from './look.ts';
-import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from './layout.ts';
-import { chips, dustRing, send } from './pieces.ts';
+import { LOOK, addBlob, treeMaterial } from '../../place/look.ts';
+import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from '../../place/layout.ts';
+import { chips, dustRing, send } from '../../place/pieces.ts';
 import { BEAM_CARRY_POSITION, makeCarryModels } from '../../render/carry-models.ts';
 import { impactDust } from '../../render/particle-effects.ts';
 import { shakeView } from './celebrate.ts';
-import { addFoot } from './sites.ts';
+import { addFoot } from '../../place/sites.ts';
 import { packFrameMesh } from '../../render/gear-models.ts';
-import { LAND_TREES, safeTreeFall, shoreTreeCleared } from './tree-catalog.ts';
+import { LAND_TREES, safeTreeFall, shoreTreeCleared } from '../../place/tree-catalog.ts';
 import { makeAxes } from '../../render/axe-models.ts';
 import { applyChopPose, CHOP_SIDE } from './chop-motion.ts';
 import { sparkleAxe } from '../../render/axe-sparkle.ts';
@@ -42,7 +42,7 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { reducedMotion } from '../../constants.ts';
 import { bigCargo, freshCargo, validCargo } from './big-cargo.ts';
 import { beginFeelAction, endFeelChop } from '../../player/feel-tuning.ts';
-import { CHOP_DURATION } from './chop-timing.ts';
+import { CHOP_DURATION } from '../../place/chop-timing.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */

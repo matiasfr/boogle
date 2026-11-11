@@ -10,13 +10,13 @@ import { fanfare } from '../../render/fanfare.ts';
 import { blockBoxes, makeSet } from '../../render/boxes.ts';
 import { shell, SHELLS } from '../net/town-fx.ts';
 import type { Block } from '../era/blocks.ts';
-import { buildSites, siteSmokes, snapSite, startSite, updateSites, addSite, type Site } from './sites.ts';
-import { H } from './land.ts';
+import { buildSites, siteSmokes, snapSite, startSite, updateSites, addSite, type Site } from '../../place/sites.ts';
+import { H } from '../../place/land.ts';
 import { snapRooms } from './place-rooms.ts';
-import { LOOK } from './look.ts';
-import { TOWN, VILLAGE, toWorld, type Plot } from './layout.ts';
+import { LOOK } from '../../place/look.ts';
+import { TOWN, VILLAGE, toWorld, type Plot } from '../../place/layout.ts';
 
-import { planOf } from './opening-plans.ts';
+import { planOf } from '../../place/opening-plans.ts';
 const site = (p: Plot, k: string) => addSite(k, planOf(p), p.type === 'clock' || p.type === 'keep' ? 2 : 1);
 const LANDMARK = new Set<Plot['type']>(['clock', 'keep']);
 

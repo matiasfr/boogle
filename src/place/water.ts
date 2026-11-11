@@ -1,7 +1,7 @@
 // Register the finished terrain grid only: tracks, bridge decks and room roofs are separate geometry.
-import { SEA } from '../../constants.ts';
-import { registerShoreProvider } from '../../render/water-render.ts';
-import { gridBedAt } from '../../render/water/shore-providers.ts';
+import { SEA } from '../constants.ts';
+import { registerShoreProvider } from '../render/water-render.ts';
+import { gridBedAt } from '../render/water/shore-providers.ts';
 import { GRID, ORIGIN } from './layout.ts';
 import { heights, NX, NZ, at, fineHeightAt } from './terrain.ts';
 import { coveSurface } from './cove.ts';

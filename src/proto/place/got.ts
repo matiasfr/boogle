@@ -2,7 +2,7 @@
 import { scene } from '../../render/scene.ts';
 import { createRewardReveal } from '../../render/reward-reveal.ts';
 import { fanfare, pop } from '../../render/fanfare.ts';
-import { softGlow } from './look.ts';
+import { softGlow } from '../../place/look.ts';
 
 export type { Got } from '../../render/reward-reveal.ts';
 export const { rememberGot, resetGotHistory, gettingItem, youGot, dropGot, press, updateGot } = createRewardReveal({

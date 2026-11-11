@@ -7,7 +7,7 @@ import { createPoseReadiness } from '../src/entities/railway/pose-readiness.ts';
 
 test('return-pose validation waits for a physics step after initial and replacement scenery', async () => {
   const physics = await import('../src/physics/engine.ts');
-  const { createPosePolicy } = await import('../src/proto/place/pose.ts');
+  const { createPosePolicy } = await import('../src/place/pose.ts');
   const { GROUP } = await import('../src/physics/physics.ts');
   await physics.physicsReady;
   const point = { x: 1000, z: 500, yaw: 0, ground: 10 };

@@ -1,7 +1,7 @@
 // Explicit pure-maths proof requested by docs/plans/hook-shot.md, step 1.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PADS, ringAt, MOVE } from '../src/proto/place/tech-layout.ts';
+import { PADS, ringAt, MOVE } from '../src/place/tech-layout.ts';
 import { PLAYER_R } from '../src/constants.ts';
 import {
   hookRings,

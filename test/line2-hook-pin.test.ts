@@ -3,8 +3,8 @@
 // are tied here: the sim pin is the drawn device plus the place's ORIGIN, to the centimetre.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEVICES } from '../src/proto/place/tech-layout.ts';
-import { ORIGIN } from '../src/proto/place/layout.ts';
+import { DEVICES } from '../src/place/tech-layout.ts';
+import { ORIGIN } from '../src/place/layout.ts';
 import { LINE2_HOOK } from '../src/sim/railway-line2-layout.ts';
 
 test('LINE2_HOOK is the drawn hook device plus ORIGIN, in centimetres', () => {

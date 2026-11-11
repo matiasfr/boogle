@@ -30,9 +30,9 @@ export function approachPlanks(
 export async function createRailwayPath(owner: OwnedView) {
   const [{ LINKS, FORMATION, railY, upLat, pathLamps }, { besideLine }, { addStatic, plank, H }, { flat }, { pop }] =
     await Promise.all([
-      import('../../proto/place/layout.ts'),
+      import('../../place/layout.ts'),
       import('../../proto/place/rail.ts'),
-      import('../../proto/place/land.ts'),
+      import('../../place/land.ts'),
       import('../../render/flat.ts'),
       import('../../render/fanfare.ts'),
     ]);

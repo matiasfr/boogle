@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { FIXED, GRAVITY, PLAYER_MASS } from '../src/constants.ts';
 import { APEX_GRAVITY, airJumpApexForce } from '../src/entities/player/apex-float.ts';
 import { closeGlide, createGlide, openGlide, rearmGlide, stepGlide } from '../src/entities/railway/glide-step.ts';
-import { MOVE } from '../src/proto/place/tech-layout.ts';
+import { MOVE } from '../src/place/tech-layout.ts';
 
 const W = PLAYER_MASS * GRAVITY;
 const APEX_SPEED = 1.6; // JUMP.apexSpeed and railJumpApexSpeed's default (160 cm/s)

@@ -8,7 +8,7 @@
 // -z the way it faces (toward the shard), origin on the floor at the room's middle. The room is 5 m wide (x), 4 m deep
 // (z) inside and 3.2 m to the ceiling; its two long walls (north: the window; south: the door) lean back together by
 // LEAN degrees, so the whole house reads as leaning, while the floor stays flat and level with the platforms.
-import { FAR, ORIGIN } from '../place/layout.ts';
+import { FAR, ORIGIN } from '../../place/layout.ts';
 
 /** Line 2's track at the pier head and its heading (x per unit of -z). */
 export const HEAD = { x: 1402.0, z: -372 };
@@ -16,7 +16,7 @@ export const HX = 0.0272;
 /** World (x, z) of u metres along line 2 and lat metres right (east) of its track, as the greybox lays things out. */
 export const at = (u: number, lat = 0) => ({ x: HEAD.x + HX * u + lat, z: HEAD.z - u + HX * lat });
 
-/** Place's shard, as buildFar draws it (src/proto/place/land.ts): the ring's middle, 140 m up. */
+/** Place's shard, as buildFar draws it (src/place/land.ts): the ring's middle, 140 m up. */
 export const SHARD = { x: FAR.x + ORIGIN.x + 10, y: 140, z: FAR.z + ORIGIN.z };
 
 /** The platforms and the north end they share (ring.ts's halt: u 428-468, decks 8.0 m, platforms 0.9 m up). */
