@@ -1,5 +1,7 @@
 // Read-only observation of the mounted railway. Debug setup lives outside the production entry.
-import type { RailwayInspection } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayInspection } from '../../adapters/railway.ts';
+
+type RailwayRead = RailwayAdapter['read'];
 
 let read: (() => RailwayInspection) | null = null;
 /** The adapter's cached read (the same object until something changes): cheap enough for every frame, unlike
@@ -8,6 +10,14 @@ export const railwayRead = () => read?.() ?? null;
 /** Lifecycle owner only. */
 export function setRailwayRead(fn: (() => RailwayInspection) | null) {
   read = fn;
+}
+let worldRead: RailwayRead | null = null;
+/** The adapter's read facade (docs/plans/ecs-migration-railway.md, M8): the world the views see now, its tick, the
+ * local pid and the session status, for rows and queries. Null until the railway is mounted. */
+export const railwayWorldRead = () => worldRead;
+/** Lifecycle owner only. */
+export function setRailwayWorldRead(r: RailwayRead | null) {
+  worldRead = r;
 }
 
 export type RailwayViewInspection = RailwayInspection & {
