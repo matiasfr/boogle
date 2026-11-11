@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { cleanupSaves, cleanupLine } from '../src/save-cleanup.ts';
+import { cleanupSaves, cleanupLine, trashStamp, trashTime } from '../src/save-cleanup.ts';
 import { inventorySaves } from '../src/save-inventory.ts';
 import { createStore } from '../src/store.ts';
 import { createService, loadConfig } from '../src/server.ts';
@@ -13,7 +13,7 @@ import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
 const ns = { world: WORLD_NS, rail: RAILWAY_PLAY_NS };
 const now = Date.UTC(2026, 10, 8);
 const day = 86_400_000;
-const stamp = (days: number) => new Date(now - days * day).toISOString();
+const stamp = (days: number) => trashStamp(now - days * day);
 async function put(dir: string, name: string, text = 'data', age = 2 * day) {
   const file = path.join(dir, name);
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -59,6 +59,7 @@ test('cleanup moves old namespaces and their stale temps, preserves bare rooms, 
   );
   assert.deepEqual(result.unknown, ['notes.txt']);
   assert.deepEqual(result.purged, [`.trash/${stamp(8)}`]);
+  assert.match(result.trash!, /^\.trash\/2026-11-08T00-00-00\.000Z-[a-zA-Z0-9]{6}$/);
   assert.equal(f.store.count(), 4);
   for (const name of keep) assert.equal(await fs.readFile(path.join(f.dir, name), 'utf8'), `keep:${name}`);
   for (const name of moved) {
@@ -195,8 +196,8 @@ test('kill switch disables moves and purge; a symlinked trash root cannot redire
 
 test('default service boot cleans before hosting, exposes the last cleanup and is a no-op on the next boot', async (t) => {
   const f = await fixture();
-  const expired = new Date(Date.now() - 8 * day).toISOString();
-  const newer = new Date(Date.now() - 6 * day).toISOString();
+  const expired = trashStamp(Date.now() - 8 * day);
+  const newer = trashStamp(Date.now() - 6 * day);
   const current = [`${ns.world}-a.json`, `${ns.rail}-b.json`, `${ns.world}-a.json.12.abcdef01.tmp`, 'garden.json'];
   for (const name of current) await put(f.dir, name, `keep:${name}`);
   const candidates = ['rail-v02-old.json', 'v01-old.json', 'v01-old.json.12.abcdef01.tmp'];
@@ -276,4 +277,64 @@ test('default service boot cleans before hosting, exposes the last cleanup and i
     'v01-fresh.json.12.abcdef01.tmp',
   ])
     assert.ok(await fs.stat(path.join(f.dir, name)));
+});
+
+test('trash run folder names: the dash form round-trips, the old colon form still parses, invalid stamps do not', () => {
+  const t = Date.UTC(2026, 9, 31, 12, 34, 56, 789);
+  assert.equal(trashStamp(t), '2026-10-31T12-34-56.789Z');
+  assert.equal(trashTime(trashStamp(t)), t);
+  assert.equal(trashTime(`${trashStamp(t)}-a1B2c3`), t);
+  assert.equal(trashTime('2026-10-31T12:34:56.789Z'), t);
+  assert.equal(trashTime('2026-10-31T12:34:56.789Z-a1B2c3'), t);
+  const times = [Date.UTC(2026, 0, 2), Date.UTC(2026, 0, 1, 23, 59, 59, 999), Date.UTC(2025, 11, 31)];
+  assert.deepEqual(times.map(trashStamp).sort(), [...times].sort((a, b) => a - b).map(trashStamp));
+  for (const name of [
+    '',
+    'unknown-folder',
+    '2026-10-31T12:34-56.789Z',
+    '2026-10-31T12-34:56.789Z',
+    '2026-02-30T00-00-00.000Z',
+    '2026-02-30T00:00:00.000Z',
+    '2026-10-31T24-00-00.000Z',
+    '2026-10-31T12-34-56Z',
+    '2026-10-31T12-34-56.789',
+    '2026-10-31T12-34-56.789Z-abc',
+    '2026-10-31T12-34-56.789Z-a1B2c3d',
+    '2026-10-31T12_34_56.789Z',
+  ])
+    assert.equal(trashTime(name), null, name);
+});
+
+test(
+  'an expired old colon-form trash folder is still purged and a newer one kept',
+  { skip: process.platform === 'win32' && "':' cannot appear in Windows file names" },
+  async (t) => {
+    const f = await fixture();
+    t.after(() => fs.rm(f.dir, { recursive: true, force: true }));
+    const old = (days: number) => `${new Date(now - days * day).toISOString()}-a1B2c3`;
+    await put(f.dir, `.trash/${old(8)}/files/v01-expired.json`);
+    await put(f.dir, `.trash/${old(8)}/manifest.json`);
+    await put(f.dir, `.trash/${old(6)}/files/v01-newer.json`);
+    await f.store.init();
+    const result = await cleanupSaves(f.dir, await f.inventory(), f.store, { now });
+    assert.deepEqual(result.errors, []);
+    assert.deepEqual(result.unknown, []);
+    assert.deepEqual(result.purged, [`.trash/${old(8)}`]);
+    await assert.rejects(fs.stat(path.join(f.dir, `.trash/${old(8)}`)), { code: 'ENOENT' });
+    assert.ok(await fs.stat(path.join(f.dir, `.trash/${old(6)}/files/v01-newer.json`)));
+  },
+);
+
+test('trash folders with an invalid stamp are reported unknown and kept, however old', async (t) => {
+  const f = await fixture();
+  t.after(() => fs.rm(f.dir, { recursive: true, force: true }));
+  const bad = ['2026-02-30T00-00-00.000Z', '2026-10-31T12-34-56Z-a1B2c3', '2026-10-31T12_34_56.789Z'];
+  for (const name of bad) await put(f.dir, `.trash/${name}/v01-old.json`, 'data', 400 * day);
+  await f.store.init();
+  const result = await cleanupSaves(f.dir, await f.inventory(), f.store, { now });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.purged, []);
+  assert.deepEqual(result.unknown, bad.map((name) => `.trash/${name}`).sort());
+  for (const name of bad)
+    assert.equal(await fs.readFile(path.join(f.dir, `.trash/${name}/v01-old.json`), 'utf8'), 'data');
 });

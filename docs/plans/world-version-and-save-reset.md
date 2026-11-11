@@ -93,7 +93,8 @@ After `store.init()` and inventory, **before `createRoomHost` or listening**, ca
 obsolete digest and legacy configuration fields; digests remain inventory metadata only.
 
 - Move only obsolete-namespace classic/railway saves and their stale temp files into a
-  unique `DATA_DIR/.trash/<UTC ISO timestamp>-<suffix>/files/` folder. Keep the audit manifest in the parent run
+  unique `DATA_DIR/.trash/<UTC ISO timestamp, - for :>-<suffix>/files/` folder (as built 11 November for Windows;
+  the colon form is still read). Keep the audit manifest in the parent run
   folder, so a room named `manifest` cannot overwrite it. Never delete a root save directly.
 - Under `store.withLock(roomId)`, independently reject current names, recheck file type, recheck temp age and check
   `roomHost?.room(roomId)` for a loaded, closing or blocked authority. Recheck protection before rename. Normal boot
