@@ -77,6 +77,8 @@ export type WelcomeItem = {
   key: string;
   save: () => unknown;
   since: (then: unknown) => string | null;
+  /** What a memory from before this item counts as, so a returning player with an older memory hears about it once. */
+  absent?: unknown;
   /** Its line comes first on the card (the story act, src/features/acts.ts). */
   first?: boolean;
 };
@@ -128,9 +130,10 @@ export function welcomeLines(then: RoomMemory | null): string[] {
   if (!then) return [];
   const out: string[] = [];
   for (const it of items) {
-    if (!(it.key in then.items)) continue;
+    const was = it.key in then.items ? then.items[it.key] : it.absent;
+    if (was === undefined) continue;
     try {
-      const line = it.since(then.items[it.key]);
+      const line = it.since(was);
       if (line) out.push(line);
     } catch {
       // Malformed local memory must not interrupt arrival.

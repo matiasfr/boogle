@@ -92,7 +92,7 @@ export function createRailwayFarHead(owner: OwnedView, { layout, rail, land, fla
     secondWhistle = false;
     sounds.fanfare(true);
     whistle(farHead.x, farHead.z);
-    barrage(farHead.x, farHead.y + 6, farHead.z, 10, 0.5, 36, 2.2);
+    barrage(farHead.x, farHead.y + 6, farHead.z, 10, 0.4, 36, 2.2);
     barrage(layout.VILLAGE.x + layout.ORIGIN.x, layout.VILLAGE.y, layout.VILLAGE.z, 5, 0.6, 26, 1.6);
     const { from, to, aimUp, seconds } = FAR_HEAD_SHOT;
     shot(

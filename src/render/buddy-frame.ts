@@ -4,6 +4,7 @@
 // Also the one list of who has the camera: a reveal or a pull-out holds it, and the You page waits its turn.
 import * as THREE from 'three/webgpu';
 import { cam, camForward, me } from '../player/player.ts';
+import { modalOpen } from '../player/modal.ts';
 import { camera } from './scene.ts';
 
 /** Where Buddy sits on screen, as a fraction of half the view from its centre: x to the right, y up. `fill` is the share
@@ -47,10 +48,20 @@ export function frameBuddy(
   look.addScaledVector(forward, 8).lerp(focus, weight).addScaledVector(forward, -8);
 }
 
-// Who holds the camera right now (a reveal's card, a pull-out's shot, each its own key).
-const holders = new Set<object>();
-export function holdCamera(owner: object, on: boolean) {
-  if (on) holders.add(owner);
+// Who holds the camera and the screen right now (a reveal's card, a pull-out's shot, a banner, each its own key), and for
+// how long: `secondsLeft` is how long its moment has to go (Infinity until released; 0 for a camera easing home that
+// no longer has the screen).
+const holders = new Map<object, number>(); // owner -> performance.now() ms when its moment ends
+export function holdCamera(owner: object, on: boolean, secondsLeft = Infinity) {
+  if (on) holders.set(owner, performance.now() + secondsLeft * 1000);
   else holders.delete(owner);
 }
 export const cameraHeld = () => holders.size > 0;
+/** Something full-screen is showing and has more than `slackS` seconds to go, or the pause view is open. The act card
+ * asks it before it comes up (src/features/acts.ts), so two full-screen moments never stack. */
+export function momentBusy(slackS = 0) {
+  if (modalOpen()) return true;
+  const edge = performance.now() + slackS * 1000;
+  for (const end of holders.values()) if (end > edge) return true;
+  return false;
+}
