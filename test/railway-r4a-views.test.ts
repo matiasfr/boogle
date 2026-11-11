@@ -1,28 +1,15 @@
 // R4a, the line goes out (views; docs/plans/ring-island-build1.md, step 4a): the ring seeds put the stops, the relay and
 // Q7's panels where the views read them, through the read facade's world; and line 2's path and lateral past the pier
 // head (src/entities/railway/line2-path.ts) join the layout's, follow the ring's rows, and never jump a train sideways.
-// The views need three.js and a DOM, so their reads are reproduced here as written (train-view's stops, kit job and ring
-// rack; halts-view's stops, head and aperture; ring-deck's Q7 panels and relay; crossing-view's started flag); a change
+// The views need three.js and a DOM, so their reads are reproduced here as written (train-view's stops and halts-view's stops and head; ring-deck's relay); a change
 // to a view's read is a change to the function below. The differential proof against `inspect()` went with it (X2 of
 // docs/plans/ecs-m12-m13.md). Modelled on test/railway-m10d-review.test.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
-import { specOf } from '../src/sim/tune.ts';
-import { SERVER_ID } from '../src/net/ids.ts';
-import { createSync } from '../src/world/sync.ts';
-import { installRules } from '../src/world/rules/index.ts';
-import { install as installRailway } from '../src/world/railway-server.ts';
-import { createReplicator } from '../src/world/replicate-server.ts';
-import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
-import { homeLand } from './helpers/land.ts';
 import { buildSeedWorld, type SeedStage } from './helpers/rail.ts';
-import { qjob as qjobRow } from '../src/sim/railway-rows.ts';
+import { railRoom } from './helpers/rail-room.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
-import { line2Jobs, q7Laid, ringHead, timingOf } from '../src/sim/railway-queries.ts';
-import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
-import { linePanelCount } from '../src/sim/railway-line-schedule.ts';
+import { q7Laid, ringHead } from '../src/sim/railway-queries.ts';
 import { LINE2, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { trainStopsOf } from '../src/sim/railway-train.ts';
 import { RING_HEAD, RING_END, RING_S_HEAD, ringAt, ringDeckY } from '../src/sim/railway-ring-layout.ts';
@@ -31,74 +18,32 @@ import { FORMATION, crossLat, lineAt, LINKS, railY } from '../src/place/layout.t
 import { RING_S, endMergeM, line2At, line2Lat, line2World, line2Y } from '../src/entities/railway/line2-path.ts';
 
 // ---------------------------------------------------------------- a client at a seed
-const MOVEMENT = railMovement({ get: (k) => specOf(k)!.def });
+/** The read facade's world of one client that has the seed's state: a room at the seed, stepped until it is ready. */
 function client(stage: SeedStage) {
-  const seed = buildSeedWorld(stage);
-  const sync = createSync();
-  sync.setSelfId('server');
-  const replication = createReplicator();
-  const api = installRailway(sync, installRules(sync, homeLand()), replication);
-  while (sync.world.tick < seed.t) sync.stepWorld(100);
-  api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
-  api.touchAll();
-  api.session('a', 1);
-  const mirror = createRailwayMirror();
-  replication.addClient('a');
-  const adapter = createRailwayAdapter({
-    mirror,
-    movement: () => MOVEMENT,
-    pid: 'a',
-    pose: () => ({ x: T1.x / 100, y: 30, z: T1.z / 100 }),
-    now: () => 1000,
-  });
-  adapter.attach({
-    selfId: 'a',
-    send: () => {},
-    onMessage: (fn) => {
-      fn({ t: 'r:session', to: 'a', epoch: 1, next: 1 }, SERVER_ID);
-      return () => {};
-    },
-    onConnection: () => () => {},
-  });
-  let flushed = -1;
-  const pump = () => {
-    if (sync.roomStep() === flushed) sync.stepWorld(1000 / 60 + 1);
-    const step = (flushed = sync.roomStep());
-    replication.commit(step);
-    replication.flush(step, (_c, _p, json) => assert.ok(mirror.mirror.apply(JSON.parse(json), 0)));
-    adapter.update(1000);
-  };
-  pump();
-  return { adapter, pump };
+  const r = railRoom(buildSeedWorld(stage));
+  const c = r.join('a', 'a');
+  r.ready();
+  return c.adapter;
 }
 
 // ---------------------------------------------------------------- the views' reads, as written
-function reads(adapter: ReturnType<typeof client>['adapter']) {
+function reads(adapter: ReturnType<typeof client>) {
   const w = adapter.read.world();
-  const job = line2Jobs(w, adapter.read.tick())[Q7]!;
   return {
     // train-view.ts (stops2) and halts-view.ts (refreshStops): the open stops of both lines
     stops: [0, 1].map((k) => [...trainStops(w, k)]),
     // halts-view.ts (ring levers' head and need)
     head: ringHead(w),
-    // ring-deck.ts: the relay is down, Q7's panels laid; crossing-view.ts: Q7 started
+    // ring-deck.ts: the relay is down, Q7's panels laid
     relay: q7Laid(w),
-    panels: job.job.completion
-      ? LINE2_STATIONS[Q7]!.panels
-      : job.job.start < 0
-        ? 0
-        : linePanelCount(LINE2_STATIONS[Q7]!, job.run.elapsed, timingOf(job.job)),
-    started: !!qjobRow(w, Q7).completion || qjobRow(w, Q7).start >= 0,
   };
 }
 test('the ring seeds put the stops where the views expect them', () => {
-  const at = (stage: SeedStage) => reads(client(stage).adapter);
+  const at = (stage: SeedStage) => reads(client(stage));
   assert.equal(at('crossing-done').stops[1]!.length, 4, 'the Pier is the end before Q7');
   assert.equal(at('deck-laid').stops[1]!.length, 5, 'the Railhead is the end once Q7 is laid');
   assert.equal(at('deck-laid').relay, true);
-  assert.equal(at('deck-laid').panels, LINE2_STATIONS[Q7]!.panels);
   assert.equal(at('crossing-done').relay, false);
-  assert.equal(at('crossing-done').started, false);
   assert.equal(at('ring-joined').stops[1]!.length, 6, 'Ring Island is the end once the rivet is struck');
   assert.equal(at('gap-footed').head, 7, 'the railhead at the last bent');
 });

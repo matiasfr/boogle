@@ -42,7 +42,8 @@ test('the look is built once for a frame however often it is asked, and again fo
   for (let k = 0; k < 40 && !took; k++)
     took = a.adapter.chop(RAILWAY_SOURCES[k % RAILWAY_SOURCES.length]![0], 0, false);
   assert.ok(took, 'a chop was taken');
-  t.look();
+  const after = t.look()!;
   t.look();
   assert.equal(t.stats.builds - n0, 2, 'the press: a second build, shared by the asks after it');
+  assert.deepEqual(after.facts, townReadOfWorld(a.adapter.read.world()), 'the rebuilt look holds the facts of the pressed world');
 });

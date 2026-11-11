@@ -25,9 +25,8 @@ import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE_HALTS } from '../src/sim/railway-train.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
-import { buildSeedWorld, type Seed, type SeedStage } from './helpers/rail.ts';
+import { buildSeedWorld, pilesWithIds, type Seed, type SeedStage } from './helpers/rail.ts';
 import { beam, boiler, shed, type ReadWorld } from '../src/sim/railway-rows.ts';
-import { Pile } from '../src/sim/railway-components.ts';
 import type { World } from '../src/ecs/index.ts';
 
 type Adapter = ReturnType<typeof createRailwayAdapter>;
@@ -234,8 +233,7 @@ function press(c: Client, rand: () => number): boolean {
       return a.drop(T1.x + 100 * Math.floor(rand() * 3), 3000, T1.z + 100 * Math.floor(rand() * 3), 1 + r3, r3);
     case 18:
     case 19: {
-      const ids: number[] = [];
-      w.each([Pile], (id) => void ids.push(id));
+      const ids = pilesWithIds(w).map((p) => p.id);
       const id = ids[Math.floor(rand() * Math.max(1, ids.length))];
       return id !== undefined ? a.take(id) : false;
     }
