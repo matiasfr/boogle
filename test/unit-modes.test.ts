@@ -55,3 +55,15 @@ test('FUZZ_STRIDE that is not a whole number of offsets is refused or read as a 
     assert.ok(Number.isInteger(stride) && stride >= 1, `FUZZ_STRIDE=${given} reads as ${out.stdout}`);
   }
 });
+
+test("a ship's CI keeps the audit and a real stride, and runs one seed of each fuzz", () => {
+  assert.equal(under('ship', PROBE, { RAIL_AUDIT: '0' }).stdout, 'audited');
+  const read = (own: string) =>
+    `import { FUZZ_STRIDE, fuzzSeeds } from ${JSON.stringify(url('./helpers/fuzz.ts'))}; console.log(FUZZ_STRIDE, fuzzSeeds(${own}).join());`;
+  assert.equal(under('ship', read('[7, 8, 9]'), { FUZZ_SEEDS: undefined, FUZZ_FIRST_SEED: undefined }).stdout, '16 7');
+  assert.equal(under('ci', read('[7, 8, 9]'), { FUZZ_SEEDS: undefined, FUZZ_FIRST_SEED: undefined }).stdout, '1 7,8,9');
+  assert.equal(
+    under('local', read('[7, 8, 9]'), { FUZZ_SEEDS: undefined, FUZZ_FIRST_SEED: undefined }).stdout,
+    '16 7,8,9',
+  );
+});
