@@ -1,5 +1,8 @@
-> **Status: proposed (2026-11-10).** Next: the owner picks a layout on the [2D page](../world/town-layout.html); the
-> designer rules on the Level findings; the build waits for the Home station flip and the ECS migration's M8.
+> **Status: layout chosen, reviewed (2026-11-10).** The owner picked **option 2, the Round**. The
+> [design review](#design-review-designer-2026-11-10) ruled every call and its rulings are applied to the body below.
+> Next: step 1 (data and its test) and step 0b (the roof probe) can start now; steps 2 to 5 and 7 wait for the Home
+> station flip and the ECS migration's M8; step 6 is the passenger trade's. The [2D page](../world/town-layout.html)
+> still draws the three options as proposed; the Round's reviewed positions are in this plan.
 
 # Home's town layout: a proper town, with a radial part
 
@@ -9,6 +12,9 @@ Bearings are degrees clockwise from north. A three.js `yaw` turns a building's d
 
 ## The owner's words
 
+- 10 November, **the pick**, on the three options: "Ok sounds good, we can do the round, it's a lot more organic
+  feeling than cross". "Organic" is his reason, so the Round is built with small designed irregularities and not as
+  a compass drawing (design review, call 2).
 - 10 November: "I also think we should queue a pass on the town layout so it's more like a proper town. Maybe there's
   like a radial part to it. We should just give this to a good model to plan."
 - 10 November, on the Village's four cottages: "maybe only a couple buildings exist, so you get the satisfaction of
@@ -110,7 +116,9 @@ Stills (10 November, seed `q6-done`): [from above, live](../world/town-layout/a-
 | Riders walk from doors to the ticket window and the platforms in view | the passenger-trade answers |
 | Three players and a crowd of little guys fit; short loops; the next thing in sight | DESIGN 8; level-design recs 2 and 5 |
 
-## The same in all three options
+## What stands, and when
+
+Written for all three options; it holds for the Round, with the design review's rulings applied (marked "review").
 
 - **The station does not move:** hall, island, both roads, the table, stalls and the east bay are layout B's
   (`home-station.ts`). The station's axis (70°/250°) is the town's first direction.
@@ -125,76 +133,83 @@ Stills (10 November, seed `q6-done`): [from above, live](../world/town-layout/a-
   bay (−89.19, 21.80), yaw −1.2217 (faces 250°), 1 m from the hall's south wall; boxes in its own frame; the plinth
   5.3 m out at (−94.17, 23.61), 4.4 m from the quarry road's centre (inside its 4.5 m `NEAR`). Where it stands now
   (−106.76, 18.88), facing 70°, its back panel faces everyone coming up from the dock in all three options, which was
-  the first finding of the [curio plan](curio-shelves-placement.md). Open question 3.
+  the first finding of the [curio plan](curio-shelves-placement.md). In the Round the old spot is also 8.3 m from the
+  centre, on the green itself. Review, call 9: the move proceeds.
 - **On arrival:** the hall, Pip's house, one cottage (the "gate cottage", first building on the way in from the dock),
-  the forge's frame, and stake boards for Fine Prices and the museum. Two households, as the passenger-trade brief's
-  towns arrive. Pip's house because the opening needs one door that opens and a resident who points at the job; a
-  cottage because the little guys need a door to come from.
+  the forge's frame, stake boards for Fine Prices and the museum, and the clock's stone footing at the centre (review,
+  call 7). Two households, as the passenger-trade brief's towns arrive. Pip's house because the opening needs one door
+  that opens and a resident who points at the job; a cottage because the little guys need a door to come from.
+  Review, call 3: this proceeds; plot 4 (the cottage at 311°) is the one to stand from the start if the owner wants a
+  second cottage, by changing its `when`.
 - **Free, from the route:** the forge (built by hand, finished at F2); Fine Prices and the museum (they rise when T3
-  is laid, as today); the clock on the centre when the trains run (new; open question 4).
+  is laid, as today); the clock on its footing when the trains run (review, call 7).
 - **Bought, with Boogles:** eight plots. Three are cottages (`cottage` kit, 5.4 × 4.4 m) standing in for the three
   that no longer exist on arrival; five are houses (Pip's kit, 7.4 × 7.4 m, 3.7 m walls). The route stakes two at a
-  time; plots 1 and 2 are staked from the first arrival (open question 5). The order is nearest the dock walk and the
-  station first, so each new house is passed on a walk players already make.
+  time; plots 1 and 2 are staked from the first arrival, as stakes, string and a blank board on ground you can walk
+  across; the board shows its price only once the room has been paid its first fare (review, call 6). The order is
+  nearest the dock walk and the station first, so each new house is passed on a walk players already make.
 - **Three moments** (drawn on the page): arrival as above; mid-game (trains running, about two hours): forge, Fine
   Prices, museum and clock standing, plots 1 to 3 built, 4 and 5 staked; full: twelve town buildings.
 - **Kit rule from the Level findings:** a `cottage` (3.0 m walls on a 0.5 m slab) can be climbed with the second jump;
   a house (3.7 m walls on a 0.14 m slab) cannot. Cottage plots stay at least 11 m, roof edge to roof edge, from Fine
-  Prices and its balcony.
+  Prices and its balcony. Review, call 11: the balcony stays a glider find, and step 0b probes the hops before the
+  shop moves.
+- **Alleys, not slots (review, call 2):** two buildings stand either 2.4 m or more apart, wall to wall, or not side by
+  side at all. As first drawn the shop stood 1.46 m from plot 2.
 
-## Option 1: the Cross (two straight streets; no radial part)
+## The Round (chosen): a ring road round a green
 
-Station Street runs on the hall's centreline (axis c 3.8, the island's centreline) from the top of the dock path to
-the square, 8 m wide. A 6 m cross street at axis a −40 has the museum at its north end and Fine Prices at its south.
-The clock stands at the crossing (−118.8, 21.5) in a 13 m paved square. Back lanes behind the houses make blocks.
+Owner, 10 November: "we can do the round, it's a lot more organic feeling than cross". Offered as option 2.
 
-| Building | Position | Faces | Yaw | When | Moves |
-| --- | --- | --- | --- | --- | --- |
-| Pip's house | (−112.24, 8.75) | 160° | 0.349 | arrival | 2.9 m |
-| Gate cottage | (−143.68, 21.79) | 160° | 0.349 | arrival | 17.4 m (was (−139, 5)) |
-| Museum | (−128.99, −6.55) | 160° | 0.349 | T3 | 4.2 m |
-| Fine Prices | (−111.47, 41.56) | 340° | −2.793 | T3 | 11.5 m; balcony to (−107.3, 48.2) |
-| 1 house | (−107.30, 27.59) | 340° | −2.793 | bought | |
-| 2 house | (−129.35, 14.97) | 160° | 0.349 | bought | |
-| 3 house | (−122.71, 33.20) | 340° | −2.793 | bought | |
-| 4 cottage | (−138.07, 37.20) | 340° | −2.793 | bought | |
-| 5 house | (−90.50, 33.00) | 270° | −1.571 | bought | |
-| 6 cottage | (−136.73, 19.26) | 160° | 0.349 | bought | |
-| 7 cottage | (−131.12, 34.67) | 340° | −2.793 | bought | |
-| 8 house | (−90.50, 43.00) | 270° | −1.571 | bought | |
+A green of about 14 m radius, centre G (−115.0, 20.07) on the hall's centreline, with a ring road about 6 m wide
+(radius 14 to 20 m). The hall takes the ring's east side (its front is 23.4 m from G), and today's north–south path
+is the ring's east tangent. Ways out: 70° through the hall to the trains, 250° to the dock (8 m wide, 18 m long),
+about 40° to the camp, about 130° to the quarry. The clock stands at G.
 
-- **Walks:** dock to the Cross 93 m (17 s); dock to the hall's doorway 121 m (22 s); spawn to the Cross 23 m (4 s);
-  platform to the Cross 54 m (10 s); east bay to the Cross 75 m (13 s). Loop round the north-east block 63 m (11 s).
-- **A rider** from the gate cottage: 60 m down Station Street to the ticket window, 29 m to the platform, about 53 s.
-- **Seen first:** from the dock path, the gate cottage 12 m ahead, then the hall closing the street (42% of its
-  outline) with a train on each side of the island behind it; the forge barely (8%). From a train, the forge and hall,
-  then plots 5 and 8 beside the quarry road. From the hall's front, 3 of 12 buildings are half or more in view: a
-  street hides its own houses.
-- **Grows:** the street fills from the square outward; a ninth and later plot would extend the cross street.
-- **Weak:** no radial part; the only open space is a 26 × 11 m strip at the hall and the crossing.
+**The ring is the predictable shape; the details are not on a grid** (review, call 2; growing-towns: "predictable
+mass, surprising detail"). Each ring building has a `bearing` from G, a `front` (the radius of its front wall's
+middle) and a `turn` (degrees its face is turned clockwise from straight at G). As first drawn the slots were 30°
+apart at one 22 m setback; the reviewed slots below keep every door facing the green within 7° and vary bearing by up
+to 2°, setback between 21 and 24 m, and turn by up to 7°. The big buildings (museum, shop) sit back; the gate cottage
+leans in at the dock street's mouth. Each `turn` and each `front` beyond 22 m is multiplied by one tunable,
+`TOWN_IRREGULAR` (1 as built; 0 gives the compass drawing back), so the owner can compare the two in one look.
 
-## Option 2: the Round (a ring road round a green; recommended)
+Derivation, for step 1: centre = G + (`front` + depth ÷ 2) × (sin `bearing`, −cos `bearing`); the face's bearing =
+`bearing` + 180° + `turn`; yaw = 180° − face, in radians, wrapped to (−π, π].
 
-A round green of radius 14 m, centre G (−115.0, 20.07) on the hall's centreline, with a 6 m ring road (radius 14 to
-20 m). Building fronts stand at radius 22 m, 30° apart, measured from the station's bearing: the Roundhouse's stalls
-use the same 30°. The hall takes the ring's east side (its front is 23.5 m from G), and today's north–south path is
-the ring's east tangent. Ways out: 70° through the hall to the trains, 250° to the dock (8 m wide, 18 m long), about
-40° to the camp, about 130° to the quarry. The clock stands at G.
+| Building | Kit, w × d | Bearing | Front | Turn | Position | Faces | Yaw | When | Moves |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Pip's house | house, 7.4 × 7.4 | 12° | 22.5 | −5° | (−109.55, −5.56) | 187° | −0.122 | arrival | 17.1 m |
+| Gate cottage | cottage, 5.4 × 4.4 | 282° | 21.0 | +7° | (−137.69, 15.25) | 109° | 1.239 | arrival | 9.2 m (was (−135, 24)) |
+| Museum | museum, 13 × 12 | 339° | 24.0 | +3° | (−125.75, −7.94) | 162° | 0.314 | T3 | 0.8 m, turns 38° |
+| Fine Prices | shop, 10 × 8 | 192° | 23.5 | +3° | (−120.72, 46.97) | 15° | 2.880 | T3 | 16.7 m; balcony to (−121.09, 54.77) |
+| 1 house | house | 221° | 22.5 | −5° | (−132.19, 39.84) | 36° | 2.513 | bought | |
+| 2 house | house | 165° | 22.0 | +4° | (−108.35, 44.89) | 349° | −2.950 | bought | |
+| 4 cottage | cottage | 311° | 21.5 | −4° | (−132.89, 4.52) | 127° | 0.925 | bought | |
 
-| Building | Slot | Position | Faces | Yaw | When | Moves |
+Off the ring, each square to its own road (unchanged from the proposal; already staggered by a metre):
+
+| Building | Kit | Road | Position | Faces | Yaw | When |
 | --- | --- | --- | --- | --- | --- | --- |
-| Pip's house | 10° | (−110.54, −5.24) | 190° | −0.175 | arrival | 16.6 m |
-| Gate cottage | 280° | (−138.83, 15.87) | 100° | 1.396 | arrival | 9.0 m (was (−135, 24)) |
-| Museum | 340°, front at 24 m | (−125.26, −8.12) | 160° | 0.349 | T3 | 0.3 m, turns 36° |
-| Fine Prices | 192° | (−120.41, 45.50) | 12° | 2.932 | T3 | 15.2 m; balcony to (−120.4, 53.3) |
-| 1 house | 220° | (−131.52, 39.76) | 40° | 2.443 | bought | |
-| 2 house | 166° | (−108.78, 45.01) | 346° | −2.897 | bought | |
-| 3 house | quarry road | (−90.50, 33.00) | 270° | −1.571 | bought | |
-| 4 cottage | 310° | (−133.54, 4.51) | 130° | 0.873 | bought | |
-| 5 cottage | quarry road | (−91.50, 42.20) | 270° | −1.571 | bought | |
-| 6 house | quarry road | (−90.50, 51.50) | 270° | −1.571 | bought | |
-| 7 cottage | camp road | (−99.10, −22.80) | 218.7° | −0.675 | bought | |
-| 8 house | quarry road | (−108.30, 56.00) | 90° | 1.571 | bought | |
+| 3 house | house | quarry | (−90.50, 33.00) | 270° | −1.571 | bought |
+| 5 cottage | cottage | quarry | (−91.50, 42.20) | 270° | −1.571 | bought |
+| 6 house | house | quarry | (−90.50, 51.50) | 270° | −1.571 | bought |
+| 7 cottage | cottage | camp | (−99.10, −22.80) | 218.7° | −0.675 | bought |
+| 8 house | house | quarry, west side | (−108.30, 56.00) | 90° | 1.571 | bought |
+
+Measured by the designer with layout B's `HALL` (10 November, a scratch script over the footprints above): the
+narrowest wall-to-wall gaps are shop to plot 2 2.59 m, museum to plot 4 2.78 m, plots 3 to 5 2.80 m, the hall to the
+forge 2.90 m (as layout B has it), plot 2 to plot 8 3.07 m, shop to plot 1 3.67 m and Pip's house to the museum
+4.24 m; nothing else is under 4.7 m. No ring building's corner is nearer G than 20.8 m (the gate cottage; the ring
+road's outer edge is at 20 m). The balcony pad is at the shop's local (−1.67, −7.63), as today, which is
+(−121.09, 54.77): 152 m from the summit against the 187 m glide budget, and 45.9 m from `VILLAGE`.
+
+**The green and the road are drawn by hand too** (review, call 2). The green's edge is a twelve-point outline, its
+radius at bearings 0°, 30°, … 330°: 14.6, 13.2, 14.0, 15.1, 13.6, 13.0, 14.4, 15.2, 13.8, 14.0, 12.9, 14.3 m,
+smoothed; the road is whatever lies between it and 20 m (4.8 to 7.1 m wide). One worn footpath crosses the green from
+the dock street's mouth to the hall's way in, bowing 3 m north of the clock. The outer edge has no kerb: the road
+fades into the verges at the doors.
+
 
 - **Walks:** dock to the clock 97 m (17 s); dock to the hall's doorway 120 m (22 s); spawn to the clock 19 m (3 s);
   platform to the clock 50 m (9 s); east bay to the clock 71 m (13 s). Once round the ring road 107 m (19 s); round
@@ -210,38 +225,19 @@ the ring's east tangent. Ways out: 70° through the hall to the trains, 250° to
 - **Weak:** Pip's house and Fine Prices move furthest; from the clock nine buildings are within the 34 m at which
   interiors draw (Risks); the roads' plots face three other ways (270°, 90°, 219°), each square to its own road.
 
-## Option 3: the Fan (streets radiating from the station)
+The walks and view figures in this section were measured on the first drawing; the reviewed slots move nothing more
+than 1.6 m, so they stand to the second, and the outlines-in-view counts have not been recomputed.
 
-A half-round forecourt of radius 13 m at the hall's front centre O (−92.98, 12.06). Dock Street (250°, 6 m) runs from
-it to the top of the dock path; Museum Street (295°, 6 m) ends at the museum; today's camp and quarry paths are the
-fan's outer edges. A 3 m crescent lane at radius 37.5 m joins Museum Street to Dock Street. The clock stands where
-Dock Street meets the forecourt, (−105.2, 16.5).
+## Not chosen
 
-| Building | Position | Faces | Yaw | When | Moves |
-| --- | --- | --- | --- | --- | --- |
-| Pip's house | (−115.95, 10.90) | 160° | 0.349 | arrival | 2.0 m |
-| Gate cottage | (−138.37, 20.39) | 160° | 0.349 | arrival | 15.4 m (was (−139, 5)) |
-| Museum | (−134.22, −7.17) | 115° | 1.134 | T3 | 9.3 m |
-| Fine Prices | (−116.00, 31.00) | 50.6° | 2.259 | T3 | turns 12°; balcony to (−120.8, 37.1) |
-| 1 house | (−123.85, 13.50) | 160° | 0.349 | bought | |
-| 2 house | (−133.53, 36.61) | 340° | −2.793 | bought | |
-| 3 house | (−90.50, 33.00) | 270° | −1.571 | bought | |
-| 4 cottage | (−111.48, −5.06) | 205° | −0.436 | bought | |
-| 5 house | (−119.00, −10.23) | 205° | −0.436 | bought | |
-| 6 cottage | (−139.94, 10.01) | 92.5° | 1.527 | bought | |
-| 7 house | (−90.50, 43.00) | 270° | −1.571 | bought | |
-| 8 cottage | (−106.60, 57.00) | 90° | 1.571 | bought | |
+- **Option 1, the Cross:** two straight streets (an 8 m Station Street on the hall's centreline, a 6 m cross street
+  with the museum and Fine Prices at its ends), the clock at the crossing. No radial part; a street hides its own
+  houses (3 of 12 in view from the hall's front). The owner on why not: the Round is "a lot more organic feeling than
+  cross".
+- **Option 3, the Fan:** a half-round forecourt at the hall's front with Dock Street and Museum Street radiating from
+  it and a crescent lane joining them. It moved least, but its 265 m² forecourt was the only place to gather.
 
-- **Walks:** dock to the forecourt 113 m (20 s); dock to the hall's doorway 120 m (22 s); spawn to the forecourt 3 m;
-  platform to the forecourt 33 m (6 s); east bay 55 m (10 s). Loop by Museum Street, the crescent and Dock Street
-  89 m (16 s).
-- **A rider** from the gate cottage: 54 m down Dock Street to the ticket window, 29 m to the platform, about 49 s.
-- **Seen first:** from the dock path, the gate cottage, then the hall at the end of the street (42%); the forge is
-  hidden. From the hall's front, 4 of 12 buildings are half or more in view.
-- **Grows:** along the two streets and the crescent; wedge blocks widen with distance, so later plots fit, in odd
-  shapes.
-- **Weak:** the forecourt (265 m²) is the only place to gather and already holds the way in, the shelf, spawn and the
-  greeter; Pip's house and plot 1 stand 0.9 m apart; ten of twelve doors are on a street.
+Their positions are in this file's history (commit 780384032) and drawn on the [2D page](../world/town-layout.html).
 
 ## Side by side
 
@@ -265,9 +261,9 @@ Dock Street meets the forecourt, (−105.2, 16.5).
 "In clear view" and "seen" count how much of a building's outline has a straight line to the eye, with only buildings
 blocking, on flat ground: no trees, roofs or heights.
 
-## Recommendation
+## Why the Round
 
-**Option 2, the Round.** It is the only one with a middle: a place for three players and a crowd to be, a loop, and one
+**Option 2, the Round, was recommended and chosen** (owner, 10 November). It is the only one with a middle: a place for three players and a crowd to be, a loop, and one
 spot (the clock, or the hall's front) from which the built houses, the staked plots, the dock street and the camp road
 are all in view. Filling a ring one house at a time is the clearest picture of building up, and the plan reads as a
 shape from the ridge, the train and the museum's table, beside the Roundhouse's own circle. It costs two longer moves
@@ -306,41 +302,83 @@ Fine Prices in place, but has nowhere to gather.
 ## Steps
 
 Each step ships alone and leaves `npm run check` green. Tiers are from the paths touched; none touches `src/sim`,
-`src/world`, `src/net` or `server/` until step 6. Written for option 2; the other options change the numbers, not the
-steps.
+`src/world`, `src/net` or `server/` until step 6. Steps 0b and 1 were added or expanded by the design review, which
+also split step 4 and ordered step 7; its build-order ruling is in
+[Where it sits against the ECS migration](#where-it-sits-against-the-ecs-migration).
 
-- [ ] **0. The owner picks**, and the designer rules on the Level findings. Record the pick and the answers in the
-  decision log.
-- [ ] **1. The town as data, with its test.** Low risk. New `src/place/town-plan.ts` (no three.js): `TOWN_CENTRE`,
-  the green and ring radii, `TOWN_SLOTS` (the tables above as `{ id, x, z, yaw, kit, when }`), `TOWN_PLOTS` (the eight,
-  in staked order), `TOWN_STREETS`, and `slotPoint(bearing, depth)`. New `test/town-plan.test.ts`: every footprint
-  1 m or more from every other, from the hall, forge, stalls, bay and both lines' rails; no footprint within a street's
-  half width; every door within 3.5 m of a street edge; every pad within 56 m of `VILLAGE`; every `cottage` roof 11 m
-  or more from the shop's roof and the balcony pad; the tree catalog's length and first and last rows unchanged.
-  Verify: the test; `npm run check`.
-- [ ] **2. Move what stands.** Normal review. `src/place/layout.ts`: `TOWN.start` becomes the one gate cottage;
-  `ROOM_PLOTS` takes the three new rows; `PATHS[0]` and `PATHS[1]` start at the ring (bearing 40° and 130° on the
-  ring road's centre) and `SHORE_PATH`'s last five points become the dock street to the ring. `tech-layout.ts`: the
-  `yard` secret moves with the gate cottage (4.5 m behind its back wall) and the `balcony` pad and secret keep their
-  place in the shop's frame. `folk.ts`: `WANDER` points onto the ring road and the green. `home-station.ts`:
-  `FINDERS_B` beside the hall if question 3 is yes. `docs/game-design/place.md`. Verify: `npm run level-check`;
-  step 1's test; one look from the top of the dock path and one from above at `--rail-seed q6-done`;
-  `dev/look/evals/railway-finds.ts`; the bot's `forge-lit` segment (its Home waypoints cross the old square).
+- [x] **0. The owner picks**, and the designer rules on the Level findings. Done 10 November: the Round; the
+  [design review](#design-review-designer-2026-11-10) below. The decision log and the calls table are recorded by
+  the coordinator.
+- [ ] **0b. Probe the roof hops. Can start now; must be done before step 2.** No code change. On main as it stands, at
+  a seed just after T3 with the second jump held, with real input (a look eval, as `dev/look/evals/railway-finds.ts`
+  fetches secrets): (a) today's cottage at (−123, 19) to Fine Prices' roof to the balcony box; (b) Fine Prices' own
+  building site while its walkway stands (2 m up) to its roof and the balcony; (c) with `BOOGLE_HOME=b`, the finders'
+  bay or the hall's 2.4 m south end wall to the hall's roof, and whether a player up there can get down. Write each
+  result under Level findings. If (a) or (b) succeeds, the glider find can be taken with the second jump today: log
+  it, and step 2 fixes (a) by removing that cottage; (b) is then a finding for the town's site walkway, not for this
+  layout.
+- [ ] **1. The town as data, with its test. Can start now.** Low risk; nothing in the game imports it yet, so nothing
+  a player sees changes. New `src/place/town-plan.ts` (no three.js; imports `HALL`, `AXIS`, `SHELF_B`, `axisPoint`
+  and `toAxis` from `./home-station.ts`, which exports layout B's geometry whether or not the flag is on):
+  - `TOWN_CENTRE = axisPoint(HALL.a − 26.44, HALL.c)`, which is G (−115.0, 20.07) today (risk P1: derived, never a
+    literal). `TOWN_RING = { inner: 14, outer: 20 }`. `TOWN_GREEN`: the twelve radii from
+    [The Round](#the-round-chosen-a-ring-road-round-a-green). `TOWN_IRREGULAR = 1`.
+  - `TOWN_SLOTS`: twelve rows, ids `house` (Pip's, the existing `RoomId`), `gate`, `museum`, `shop`, `plot1` to
+    `plot8`; each `{ id, kit: 'house' | 'cottage' | 'museum' | 'shop', w, d, when: 'arrival' | 'T3' | 'bought' }`
+    with either `ring: { bearing, front, turn }` (the seven ring rows) or `at: { x, z, yaw }` (the five road rows).
+    `slotPoint(bearing, radius)` and `townBuilding(id)` return `{ x, z, yaw, w, d }` by the derivation in that
+    section; `turn` and `front − 22` are scaled by `TOWN_IRREGULAR`.
+  - `TOWN_PLOTS`: `plot1` to `plot8` in that order, with `stakedAtOnce: 2` (the two lowest-numbered unbought plots
+    are staked; the passenger trade sets how far up the list the route allows).
+  - `TOWN_STREETS`: the ring; the dock street (from G at 250°, radius 20 to 38 m, 8 m wide); the camp mouth (40°) and
+    the quarry mouth (130°) on the ring road's centre, radius 17 m; the worn path across the green.
+  - `TOWN_PROPS`: the clock and its 5 × 5 m footing at G; the finders' bay at
+    `axisPoint(HALL.a − 2.77, HALL.c + 10.45)`, which is (−89.19, 21.80), yaw `SHELF_B.yaw`; the balcony pad at the
+    shop's local (−1.67, −7.63); the `yard` find 4.5 m behind the gate cottage's back wall, about (−144.0, 13.1);
+    the forge's west door at (−92, −3), 2.8 m wide.
+  - New `test/town-plan.test.ts`: `AXIS.bearing` is 70 and G is within 0.05 m of (−115.0, 20.07) (so a change at the
+    flip fails loudly); each derived position is within 0.02 m of its table row; every footprint is 2.4 m or more
+    from every other building's, and 1 m or more from the hall, forge, stalls, bay and both lines' rails (the hall to
+    the forge is layout B's own 2.90 m); no footprint's corner is inside 20.5 m of G or within a street's half
+    width; every ring door is within 3.5 m of the ring road's outer edge (the museum 4.0 m: its forecourt); every
+    pad is within 56 m of `VILLAGE`; every `cottage` roof is 11 m or more from the shop's roof and the balcony pad;
+    the balcony pad is within 187 m of the summit (18, −6); with `TOWN_IRREGULAR` at 0 every ring face points at G;
+    the tree catalog's length and first and last rows are unchanged.
+  - Verify: the test; `npm run check`.
+- [ ] **2. Move what stands. After the Home flip, M8, step 0b and step 7.** Normal review. `src/place/layout.ts`:
+  `TOWN.start` becomes the one gate cottage; `ROOM_PLOTS` takes the three new rows; all read from `town-plan.ts`.
+  `PATHS[0]` and `PATHS[1]` start at the ring (the camp and quarry mouths) and `SHORE_PATH`'s last five points become
+  the dock street to the ring. `tech-layout.ts`: the `yard` secret moves with the gate cottage and the `balcony` pad
+  and secret keep their place in the shop's frame. `folk.ts`: `WANDER` points onto the ring road and the green.
+  `home-station.ts`: `FINDERS_B` beside the hall (review, call 9). `docs/game-design/place.md`. Verify:
+  `npm run level-check`; step 1's test; looks from the top of the dock path, from the hall's front and from above at
+  `--rail-seed q6-done`, and the first of them again at phone size; `dev/look/evals/railway-finds.ts` (the `yard`
+  find on real ground, the balcony by glide); the bot's `forge-lit` segment (its Home waypoints cross the old
+  square); `npm run loop -- run` for order.
 - [ ] **3. The green, the ring road and the streets.** Normal review; render. `src/entities/town/streets.ts` (new):
-  the path mask for the ring and the dock street, one merged kerb and green mesh, no shadow of its own. Verify: a
-  look from the hall's front; `npm run perf` on a quiet machine (one mesh, one material added).
-- [ ] **4. The forge finishes when it is built, with a west door.** Normal review. `src/entities/railway/forge-finish.ts`:
-  the show's trigger is the forge lit, not `works.crossing`; `src/entities/town/workshop.ts`: `WORKSHOP_DOOR` on the
-  west wall; `works-late-game.md` step 6 and `place.md` updated. Verify: a look at `--rail-seed q1-done` (roof on,
-  door open) and at `awake` (frame only); the Works bot from `works-arrive` no longer waits for a roof.
-- [ ] **5. Stakes, boards and the clock.** Normal review. `src/entities/town/plots.ts` (new): four stakes, a string
-  and a sign per staked plot from `TOWN_PLOTS`, one instanced mesh; the clock from `opening-plans.ts`'s `clock` kit at
-  the centre when `trains` holds, raised by the town's site animation. Verify: looks at `awake` and `trains-on`.
+  the path mask for the ring and the dock street, one merged kerb and green mesh, no shadow of its own. The green's
+  edge is `TOWN_GREEN`'s outline, not a circle; the kerb is on the green's side only; the worn path is paint. Verify:
+  a look from the hall's front and one from above; `npm run perf` on a quiet machine (one mesh, one material added).
+- [ ] **4a. The forge finishes when it is built. After M8; does not wait for the flip.** Normal review.
+  `src/entities/railway/forge-finish.ts`: the show's trigger is the forge lit, not `works.crossing` (owner's decision
+  of 10 November; nothing in it depends on the layout); `works-late-game.md` step 6 and `place.md` updated. Verify: a
+  look at `--rail-seed q1-done` (roof on) and at `awake` (frame only); the Works bot from `works-arrive` no longer
+  waits for a roof.
+- [ ] **4b. The forge's west door. After the flip and M8.** Normal review. `src/entities/town/workshop.ts`:
+  `WORKSHOP_DOOR` on the west wall, from `TOWN_PROPS`. Verify: a look at `--rail-seed q1-done` from the camp road
+  (door open, steps on the verge); walk in.
+- [ ] **5. Stakes, boards, the footing and the clock.** Normal review. `src/entities/town/plots.ts` (new): four
+  stakes with a pennant each, a string and a board per staked plot from `TOWN_PLOTS`, one instanced mesh; the board
+  is blank until the passenger trade gives it a price (review, call 6). The clock's footing at G from the first
+  arrival; the clock from `opening-plans.ts`'s `clock` kit on it when `trains` holds, raised by the town's site
+  animation. Verify: looks at `awake` and `trains-on`, each also at phone size from the top of the dock street (the
+  stakes must read at 40 m).
 - [ ] **6. Plots can be bought** (the passenger trade's step; High by path when Server kind). Reads `TOWN_PLOTS`; the
   build is the existing site animation (`place/sites.ts`) with a little-guy gang; a built plot is a room
   (`createRooms`) with a plain interior. Verify with that plan's checks, plus `npm run scenario` for two players
   seeing one plot built.
-- [ ] **7. Interiors draw by the door.** Normal review. `rooms.ts`: `ROOM_CAM.drawWithin` measured from the door, with
+- [ ] **7. Interiors draw by the door. After M8; before or with step 2** (the Round puts the museum's, the shop's and
+  Pip's interiors inside the present 34 m of where everyone stands). Normal review. `rooms.ts`: `ROOM_CAM.drawWithin` measured from the door, with
   a smaller radius (about 18 m) unless you are inside. Verify: `npm run bench` at the `town` pose and at the clock,
   before and after; a look walking into Pip's house.
 
@@ -349,7 +387,9 @@ steps.
 The owner's standing priority holds this pass with every other build-out. M3 (rules), M6 and M7 (the railway's and the
 town's files moved to `src/entities/`) are on main. **Views resume after M8** (the read facade); steps 2 to 5 and 7
 read the railway through today's `inspect()`, which M10 moves, so they start after M8 and rebase cheaply (each is a
-few files). Step 1 is data and a test and can go first. Step 6 waits for the passenger trade's own gates. Two more
+few files). Step 1 is data and a test and can go first. **Ruling (design review, 10 November):** steps 0b and 1
+start now; step 4a waits for M8 only; steps 2, 3, 4b and 5 wait for both the flip and M8, with step 7 landing before
+or with step 2; nothing here waits for a playtest or a world bump. Step 6 waits for the passenger trade's own gates. Two more
 things come first: **the Home station flip** (home-station step 6), because every option is drawn on layout B and
 the bay's new spot and the quarry road's plots are where layout A's stall and its road stand; and **M13** only if `src/proto/place/town.ts` is to be
 deleted rather than kept in step with `TOWN.start` (it reads the same table; until then Place draws the same one
@@ -374,7 +414,10 @@ cottage).
 
 ## Level findings
 
-For the designer, with the plan (owner, 9 November).
+For the designer, with the plan (owner, 9 November). **Ruled on 10 November** (design review, finding 3): finding 3
+is probed by step 0b before step 2; finding 7 closes for plots 1 and 2, because a plot is bought with fares and the
+glider comes before the trains; findings 4 and 5 are checked on real ground in step 2. Figures below are the first
+drawing's; the reviewed balcony is 152 m from the summit.
 
 1. **`npm run level-check -- --place=place` passes with each option applied** (layout A: 0 problems; production
    grounding 5,282 placements, 0 problems). With `BOOGLE_HOME=b` it reports the same three problems as main does
@@ -419,6 +462,9 @@ For the designer, with the plan (owner, 9 November).
 
 ## Calls
 
+The planner's table, as proposed. The [design review](#design-review-designer-2026-11-10)'s table rules each of
+these and the calls this one misses; where they differ, the review's stands.
+
 | Call | Kind | Source or reason |
 | --- | --- | --- |
 | Home is one station, layout B; the ticket window in the hall's north end; the shelf in the hall's front | Decided | Owner, 9 and 10 November |
@@ -436,7 +482,12 @@ For the designer, with the plan (owner, 9 November).
 
 ## Open questions
 
-1. **Which layout?** Recommended: option 2, the Round.
+All five are closed for building. Question 1 was answered by the owner on 10 November; 2 to 5 he did not answer, and
+they proceed on the design review's rulings (owner call "Pick and log, don't ask"): 2 as recommended (call 3); 3 yes
+(call 9); 4 free, with a footing from the start (call 7); 5 staked from the start, the price shown only after the
+first fare (call 6). As asked:
+
+1. **Which layout?** Recommended: option 2, the Round. **Answered: the Round.**
 2. **What stands on arrival, and what is free?** Recommended: the hall, Pip's house and one cottage stand; Fine Prices
    and the museum rise free at T3 as today; three cottages and five houses are bought. Two other readings, both
    drawn without moving anything: the passenger-trade brief's open call, two cottages standing beside Pip's house
@@ -452,11 +503,13 @@ drops them (Calls).
 
 ## Wording for the decision log and the calls table
 
-Not edited by this job. When he answers:
+Not edited by this job or by the design review (the coordinator records the pick). The planner's wording, with the
+review's one change (the ring is "about 30° apart", not exact); the review's rows for the calls table are at the end
+of its section:
 
-- `docs/decisions-rail.md`, Decided and Current rules: "**2026-11-NN, Home's town is laid out as [the Round]** (owner,
-  on the town layout page: '…'). A round green on the hall's centreline with a ring road; buildings stand on the ring
-  30° apart facing the green; the hall, Pip's house and one cottage stand on arrival; Fine Prices and the museum rise
+- `docs/decisions-rail.md`, Decided and Current rules: "**2026-11-10, Home's town is laid out as the Round** (owner:
+  'Ok sounds good, we can do the round, it's a lot more organic feeling than cross'). A green on the hall's
+  centreline with a ring road; buildings stand on the ring about 30° apart facing the green; the hall, Pip's house and one cottage stand on arrival; Fine Prices and the museum rise
   with the first path; eight plots are bought. Plan: [town-layout](plans/town-layout.md)."
 - If question 3 is yes, an italic note on the 10 November "the curio shelf and the finders' bay share one axis, for
   now" rules line: "_the bay's spot: beside the hall's south end, facing the square (town layout, 2026-11-NN)_".
@@ -471,3 +524,148 @@ Not edited by this job. When he answers:
 - The roof hop (Level finding 3) and every draw and triangle figure for the new town.
 - Whether the hall's roof and end walls give another way up beside the bay's new spot.
 - The stills were taken on a busy machine (load 12 to 21); they are for layout, not for performance.
+
+## Design review (designer, 2026-11-10)
+
+The owner picked the Round ("Ok sounds good, we can do the round, it's a lot more organic feeling than cross"). He
+did not answer questions 2 to 5; none needs his word, so each proceeds on a logged recommendation (owner calls "Pick
+and log, don't ask" and "Nothing waits for a playtest"). The rulings below are applied to the plan's body: the status
+line, [What stands, and when](#what-stands-and-when), [The Round](#the-round-chosen-a-ring-road-round-a-green), the
+steps and the build order. No code was written.
+
+**Read and run:** the decision log's Current rules for rail, rewards, core loop and look; owner calls; the
+passenger-trade brief's plot lines; research top blocks for growing-towns, level-design, route-contract and
+progression-flow-layout; `home-station.ts`, `layout.ts`, `tech-layout.ts`, `folk.ts` and the `clock` kit; `npm run
+loop` for the route's order; the planner's stills from the top of the dock path and from above with `?home=b`; and a
+scratch measurement of the Round's footprints against layout B's `HALL` (gaps, radii, the balcony's glide).
+**Not seen:** nothing of the Round exists in the game, so no still of it could be taken; phone readability and the
+views from the dock street are judged from numbers until step 2's and step 5's looks. The playtest sessions (all on
+Place, 10 November) were listed but hold no town-centre moment to compare, so the flow findings carry little weight.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Home's town is the Round: a green on the hall's centreline, a ring road, buildings facing the green | Decided | Owner, 10 November, the pick |
+| 2 | The ring is not a compass drawing: bearings up to 2° off the 30° grid, setbacks 21 to 24 m, faces turned up to 7°, a hand-drawn green edge, a worn path, alleys of 2.4 m or more; one tunable, `TOWN_IRREGULAR`, scales it to zero | New | His reason for the pick is "organic"; growing-towns ("predictable mass, surprising detail"). The cap is small because he also said "weirdly at angles and not spaced intentionally": every door still faces the green. Proceeds on this recommendation |
+| 3 | On arrival: the hall, Pip's house, one gate cottage, the forge's frame, stake boards for Fine Prices and the museum | New | His leaning "maybe only a couple buildings exist"; it replaces the trade brief's open call (two cottages besides Pip's house). A ring with five empty places is the stronger picture of building up. Cheap to change: plot 4's `when`. Proceeds |
+| 4 | Fine Prices and the museum rise free when T3 is laid, as today | Default | "Towns grow from what arrives" stands (rail, 2 November); buildings as intentional buys is a leaning, and the plan keeps the way to take it whole (they become plots at their drawn places) |
+| 5 | Boogles build the house itself; an unbought plot is empty ground you can walk across | Decided | Owner, 10 November ([rewards](../decisions-rewards.md#d-2026-11-10-boogles-build-houses-and-upgrade-sources)) |
+| 6 | Eight bought plots (five houses, three cottages) in the order 1 to 8; the two lowest-numbered unbought plots are staked; plots 1 and 2 from the first arrival, with a blank board until the room's first fare | New | DESIGN 7 for the stakes. Changed from the plan's "with price signs": a price in a currency nobody can earn for about two hours tells and cannot be acted on (DESIGN 11); the trade's own first moment is "an empty platform and a staked plot". Prices and the route's ceiling stay the trade plan's. Proceeds |
+| 7 | The clock rises free on the centre when the trains run; its stone footing stands there from the first arrival | New | Port check (owner call "Port from Place only what still fits"): keep, changed. It is the town's one tall landmark (level-design: big shapes to steer by; the kit is 5 m wide and about 26 m tall) and the one thing that still grows because a train came. The footing is added so the centre is not bare for the first two hours and the clock is telegraphed. Proceeds |
+| 8 | Place's other cargo-built rows (`TOWN.wood`, `TOWN.stone`: halls, sheds, the stone street, the keep) are not ported | Default | Port check: cut. Bought plots now do their job, and "Home: a busy town at most" (2 November) |
+| 9 | The finders' bay stands beside the hall's south end, on the hall's front line, facing the green | New | Forced by the pick: its "for now" spot is 8.3 m from G, on the green, back to the dock. The new spot keeps Place's pairing (what you have beside what you missed, one glance, 8.8 m from the shelf; port check: keep) and answers "not spaced intentionally". Proceeds; the coordinator adds the italic note to the 10 November "share one axis, for now" line |
+| 10 | The forge finishes when it is lit, and has an interior | Decided | Owner, 10 November ([rail](../decisions-rail.md#d-2026-11-10-the-forge-finishes-when-the-player)); step 4a |
+| 11 | The forge's door is on its west wall, on the camp road | New | In layout B the south door opens 3 m from the hall's north corner beside road 1's buffers. West puts the door on the first road every player walks, 15 m from the hall's front. Proceeds; step 4b waits for the flip |
+| 12 | The balcony stays a glider find: no cottage roof within 11 m of the shop's roof or the pad, and the hops are probed before the shop moves | New | See finding 3. It is a cosmetic find, not a gate, so this is a lens and not a firm rule; the glide from the summit to a balcony in town is the return to Home that the find is for. Proceeds; step 0b |
+| 13 | Cottage roofs may be climbed with the second jump (gate cottage, plots 4, 5 and 7) | Default | DESIGN 2. By the numbers nothing gated is in reach from one: plot 7's roof is 14.7 m from the jump course's pad and 0.9 m short of it |
+| 14 | The `yard` find moves behind the gate cottage, on its seaward side, about 16 m north of the dock street's centre | Default | A small reward for looking left on the first walk in; found before any ability, as today |
+| 15 | Pip's house at 12°, beside the camp road's mouth; the gate cottage (282°) and plot 1's stakes (221°) either side of the dock street | Default | First sight on the way in is one house and one staked plot, 16 m apart across an 8 m street; Pip's door is 20 m from the forge she points at |
+| 16 | The ticket window in the hall's north end; the shelf in the hall's front; the passenger train's east bay; the station does not move | Decided | Owner, 9 and 10 November (rewards, rail) |
+| 17 | Every building can be walked into; the gate cottage is the one sealed cottage left and opens first; a bought house is walk-in from the day it stands | New | The rule is decided (core loop, 10 November). This is a reading of the opening order "the two cottages on the way in from the dock, then the other two" (look, 10 November) now that three of the four are plots. Proceeds; the coordinator notes it on that line |
+| 18 | Riders cross the green on the worn path at 1.7 m/s and go in by the hall's north bay; little guys have no colliders | Default | As `folk.ts` today. The queue at the window is the trade plan's; see finding 6 |
+| 19 | Spawn stays in front of the hall, on the ring's east side, 19 m from the clock | Default | The meeting place for a friend who arrives late (flow lens 8) |
+| 20 | The little guys wander the ring road and the green; the village sign still counts 12 | Default | The number wants the owner's eye with two households standing; not changed here |
+| 21 | Sizes: a green of about 14 m radius, a ring road of about 6 m, a dock street 8 m wide and 18 m long | Default | growing-towns (a 6 to 8 m main street, a clear plaza of about 480 m²; the green is 615 m²) |
+| 22 | A staked plot is four stakes with pennants, a string and a board, and must read at 40 m on a phone | Default | DESIGN 7; checked by step 5's phone-size look |
+| 23 | Interiors draw by distance to the door (about 18 m), and that lands before or with the move | Default | Risk P2: from T3 the museum's, the shop's and Pip's interiors are all inside the present 34 m of the green |
+
+Decided 4, Default 11, New 8. Not ruled, because it is scope for another brief: the pattern for other towns and a
+later outer ring (How it grows, and how it repeats).
+
+### The space, leg by leg
+
+Positions from the reviewed table; walks at 5.6 m/s; the planner's figures where marked (plan).
+
+| Leg | Metres | Seconds | What is in view at its end |
+| --- | --- | --- | --- |
+| Dock to the top of the dock path (−150.7, 33.1) | 59 (plan: 97 to the clock) | 11 | The gate cottage's back on the left, plot 1's stakes on the right, the green, the hall and the forge's frame on one line (plan: 42% and 50% of their outlines) |
+| Down the dock street to the ring | 18 | 3 | The whole ring: Pip's house, the footing, the stake boards; behind you, the `yard` find |
+| Across the green to the footing or clock | 20 | 4 | Every way out: 70° the hall, 40° the camp road, 130° the quarry road |
+| The clock to the hall's way in | 23 | 4 | The shelf, the trains; to the left the forge's west door |
+| The hall's front to the forge's west door | about 15 | 3 | The camp road, the bold path |
+| Platform to the clock (plan) | 50 | 9 | |
+| East bay to the clock (plan) | 71 | 13 | |
+| Once round the ring road (plan) | 107 | 19 | |
+
+The three firm rules. **The next goal can be found:** the first walk in ends facing the hall and the forge's frame
+(today it reaches the square 61° off the station's axis), and the bold path leaves from the 40° mouth beside Pip's
+door; this is a claim from outlines on flat ground until step 2's look and the bot's `forge-lit` segment prove it.
+**A gate keeps its meaning:** no bill, pillar or route gate moves; the second jump still comes after station 3.
+**Nobody is stranded:** plots are open ground; the one unknown is the hall's roof from the bay's new spot (step 0b, c).
+Lenses: the town now has one main line (dock, green, hall, camp road), ends the arrival facing the next thing, and
+has a place to meet; none is broken.
+
+### Findings
+
+1. **Changed before building (applied): a ring on an exact grid would read as a diagram, which is the opposite of
+   why he picked it.** Seen from the ridge, the train and the museum's table, seven fronts at one radius and one
+   angle step are a clock face. Call 2's slots and the hand-drawn green are in the body, with `TOWN_IRREGULAR` to
+   compare.
+2. **Changed before building (applied): the shop stood 1.46 m from plot 2 and 2.22 m from plot 1.** Too narrow to
+   be an alley and too wide to be a terrace: a camera trap. The reviewed slots give 2.59 m and 3.67 m, and step 1's
+   test holds 2.4 m.
+3. **The roof hop: what the level check proves, and what must be probed before anything moves.** `npm run
+   level-check` passing (planner: 0 problems with A; the same three as main with B) covers terrain reach only; it
+   models no roof, prop, site walkway, street or sightline, so it says nothing about findings 3 and 7 of the Level
+   findings. The route's order settles part of it (`npm run loop`): the second jump comes at T3, the glider after the
+   hook, the trains after the glider, and a plot can only be bought with fares. So **a bought house's building site
+   can never be an early way to the balcony**: everyone already holds the glider. Level finding 7 closes for plots 1
+   and 2. What stays open is the stretch from T3 to the glider, on main today: the cottage 5.8 m from the shop's
+   roof, and the shop's own site walkway, which stands when the second jump has just been earned. A secret's `after`
+   is when its missed box turns up at the bay, not a lock, so a hop that works takes the gift. Step 0b probes both,
+   and the hall's roof, before step 2. Nothing in steps 0b or 1 moves anything.
+4. **To check when things move (step 2):** the `yard` find's new ground at about (−144.0, 13.1), 29.8 m from G where
+   the ground starts to fall at 37 m; the balcony pad's ground at (−121.09, 54.77); that a saved pose inside a new
+   footprint is moved out (the plan states it, nothing proves it); the bot's Home waypoints. These are reach claims
+   without proof until then.
+5. **The centre was bare until the trains run, about two hours in.** The clock's footing (call 7) is in the body.
+6. **For the passenger trade, not this plan: the hall's way in is nearly 5 m wide and is where spawn, the shelf, the
+   greeter and every rider's walk meet.** Riders should use the hall's north bay, beside the window (call 18).
+7. **Research.** growing-towns' 30 to 60 s loop is met only by the ring plus the hall and platform (the ring alone
+   is 19 s); acceptable, the green is the plaza it asks for. level-design's tall landmark is absent until the clock
+   rises; the hall's roof and the forge's smoke carry it until then. Neither needs a change.
+8. **Records out of step, for the coordinator:** the 2D page still offers three options at the first drawing's
+   positions; the opening-order line (call 17); the earlier open row "the Village starts with two cottages" in the
+   calls table, which call 3 replaces.
+9. **No line of The Boogler's copy is added or changed.** The plot board's price and any words on it are the trade
+   plan's.
+
+### Owner questions
+
+None blocks the build. For him to overrule when he sees it: the irregularity (call 2, one number), one cottage or
+two on arrival (call 3), the clock free (call 7), and the village sign's 12 (call 20).
+
+### Rows for the calls table
+
+For the coordinator; `docs/agent-calls.md` was not edited by this review. Each row: date 2026-11-10, source
+[town-layout](town-layout.md#design-review-designer-2026-11-10), by designer, status open. Rail table unless marked.
+
+- New: the Round is built with small designed irregularities (bearings within 2° of a 30° grid, setbacks 21 to 24 m,
+  faces within 7° of the centre, a hand-drawn green, alleys of 2.4 m or more), scaled by `TOWN_IRREGULAR`. Reason: the
+  owner chose it as "more organic".
+- New: on arrival Home's town is the hall, Pip's house and one gate cottage, with the forge's frame and stake boards
+  for Fine Prices and the museum; it replaces the row "the Village starts with two cottages". Reason: "only a couple
+  buildings"; plot 4 can stand from the start by one field.
+- New (rewards table): eight bought plots at Home, five houses and three cottages, in a fixed order; the two
+  lowest-numbered unbought plots are staked; plots 1 and 2 from the first arrival with a blank board until the first
+  fare. Reason: DESIGN 7 and 11.
+- New: the clock rises free on the centre when the trains run, on a stone footing that stands from the first arrival.
+  Reason: port check, keep and change; the town's tall landmark.
+- New: the finders' bay stands beside the hall's south end facing the green, at (−89.19, 21.80). Reason: its "for
+  now" spot is on the green.
+- New: the forge's door is on its west wall, on the camp road. Reason: layout B's hall corner.
+- New: the balcony stays a glider find; no cottage roof within 11 m of the shop's roof or pad; the hops are probed
+  before the shop moves. Reason: route contract, early reach of a find.
+- New: the gate cottage is the one sealed cottage and opens first; bought houses are walk-in when built. Reason: a
+  reading of the 10 November opening order.
+- Default: Fine Prices and the museum still rise free at T3.
+- Default: Place's `TOWN.wood` and `TOWN.stone` rows are cut (port check); only the clock is kept.
+- Default: cottage roofs may be climbed with the second jump.
+- Default: the `yard` find moves behind the gate cottage.
+- Default: Pip's house beside the camp road's mouth; the gate cottage and plot 1 either side of the dock street.
+- Default: riders use the worn path and the hall's north bay; spawn stays in front of the hall.
+- Default: the village sign still counts 12 (for the owner's eye).
+- Default: a green of about 14 m radius, a 6 m ring road, an 8 m dock street; staked plots carry pennants and read
+  at 40 m on a phone.
+- Default: interiors draw within about 18 m of the door, landing before or with the move.
