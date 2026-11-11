@@ -722,7 +722,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   not shown empty), `npm run perf`. Stills (`.look/`, 844x390; stitched `far-leaf-four.png`): the leaf reads as a raised
   orange slab on a grey pier at telescope zoom 2 (about 26 px), with and without the pennant; from Home's summit it is
   still a few-pixel orange tick behind the lookout tower and rock, the pennant adds a cream speck. Owner picks the pennant.
-- [ ] **2d. R2d, the terminus drawn (near view; no bump; after R1b).** `src/entities/ring-island/view.ts`: delete the
+- [x] **2d. R2d, the terminus drawn (near view; no bump; after R1b).** `src/entities/ring-island/view.ts`: delete the
   "the loop and its neck" block and its `RING_LOOP` import; draw `RING_END.bed` as deck with both tracks' rails from
   the halt's north end to the buffer faces, the two buffer stops (the railhead kit's shape, static colliders), the end
   board at `RING_END.board` (blank face: its words are the owner's), and the crossover's rails on the Way between
@@ -735,6 +735,19 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   after (the loop's 36 deck segments and posts go: fewer triangles expected, same draws). Proof look:
   `npm run look -- --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts`, its halt still, and one from
   the east platform's north end toward the buffers and the shard.
+  > **Built (11 November).** The loop block, `loopNeck`, `loopOut` and `ISLAND_LOOP_GRADE` are gone; the view draws the
+  > run-off deck (u 470–483.5), rails to the faces under both lanes, two timber stops, a blank end board and the
+  > crossover's rails (1 m steps, eased as `crossLat`). `ground.ts` cuts the cones to `RING_END.cut` under `bed` with the
+  > fill's 1 in 1.5, **the cut capped at 2 m (`ISLAND_CUT_MAX`) and gone within 3 m of the bed**: the plan's plain
+  > `min(cone, cap + fall × d)` slices the whole hillside (the cone climbs steeper than 1 in 1.5), and the cone is 9.4 m at
+  > the bed's end, so 1.5 m was too shallow. The terrace test holds every node in `CONCOURSE.terrace` grown by 1 m to the
+  > uncapped ground; three nodes at lat −8.9 to −9.0 rise 0.03–0.75 m from the loop's old neck cap (still 0.65 m under the
+  > platforms' 8.9 m). A 2 m triangle across the bed's edge can reach into its slab (never over its top); the test says so.
+  > Proof (`--rail-seed ring-joined`; trains run to the island there): a line-2 train's cars through the crossover (116
+  > samples, u 393–408) ride within −1 to +4 cm of the drawn rails' lateral (`crossLat`'s curve), so the rails sit under
+  > them; stills `r2d-end-still.png` (the run-off: no ground through deck or rails) and `r2d-train-still.png` (a train past
+  > the crossover on the down lane, standing short of the platforms). A train at the buffers or the plank crossing was
+  > not framed: the stop mark leaves the nose 28.8 m short (level-check), by numbers only.
 
 - [x] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
   main).** Everything under "R3" above up to `Aperture`; the sim's three train files and their tests only.

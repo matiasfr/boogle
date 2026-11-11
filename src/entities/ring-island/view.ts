@@ -3,7 +3,7 @@
 // posts, the hinge pier, the brace platform with its gold strut and a waving folk, the steps up to their deck, the
 // hinge pier's sea ramp, the raised leaf (a pivot group R4c turns through ringIslandPose, its bracket empty and its
 // outline painted), the island halt's two platforms with the RINGWORKS board, the fingerpost (emblems only), the low map
-// table, the loop deck and its neck, the works yard (steel under a tarp, the drop hammer, the prophecy mural), the path
+// table, the run-off, buffers and end board, the crossover, the works yard (steel under a tarp, the drop hammer, the prophecy mural), the path
 // to the summit lookout, and the ground with its sand band. Nothing here does anything yet and nothing prompts (call
 // 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
 // face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
@@ -19,10 +19,10 @@ import type { FrameCtx } from '../../loop.ts';
 import {
   RING_BRACE,
   RING_BRACE_PLATFORM,
+  RING_END,
   RING_FORMATION,
   RING_GAP,
   RING_HALT,
-  RING_LOOP,
   RING_RAMPS,
   RING_STEPS,
   ringAt,
@@ -567,63 +567,43 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     station(GOLD, 0, 0, 0);
   }
 
-  // ---------------------------------------------------------------- the loop and its neck (generic lines' balloon)
+  // ---------------------------------------------------------------- the run-off, the buffers and the end board (R2d)
   {
-    const cx = RING_LOOP.x / 100,
-      cz = RING_LOOP.z / 100,
-      r = RING_LOOP.r / 100;
-    const N = 36,
-      mouth = Math.PI;
-    const ring = (a: number, rr = r) => ({ x: cx + Math.cos(a) * rr, z: cz + Math.sin(a) * rr, y: HALT_Y });
-    for (let i = 0; i < N; i++) {
-      const a0 = (i / N) * Math.PI * 2,
-        a1 = ((i + 1) / N) * Math.PI * 2;
-      const da = Math.abs((((a0 + a1) / 2 - mouth + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
-      if (da < 0.2) continue;
-      const a = ring(a0),
-        c = ring(a1);
-      beam(STEEL, a, c, 5, 0.5);
-      beam(BED, { ...a, y: HALT_Y + 0.08 }, { ...c, y: HALT_Y + 0.08 }, 2.4, 0.1, false);
-      for (const s of [-0.5, 0.5])
-        beam(
-          RAIL,
-          { ...ring(a0, r + s), y: HALT_Y + 0.22 },
-          { ...ring(a1, r + s), y: HALT_Y + 0.22 },
-          0.12,
-          0.14,
-          false,
-        );
-      if (i % 3 === 0) post(STEEL_DARK, a.x, a.z, -4, HALT_Y - 0.5, 1.6, 1.6, false);
+    // The formation carried on level from the Way's end to the buffer faces: a deck over the cutting (ground.ts), rails
+    // under both lanes to the faces, a timber buffer stop behind each face (the railhead's shape) and the blank board.
+    const B = RING_END.bed,
+      face = RING_END.bufferU / 100,
+      y = B.y / 100;
+    deck(STEEL, WAY_END, B.u1 / 100, B.lat0 / 100, B.lat1 / 100, () => y, 3);
+    track(WAY_END, face, () => y, 3);
+    // Each stop stands 30 cm behind its face, its top at the buffer's y (RING_END.buffers).
+    TRACKS.forEach((t, i) => {
+      const k = at(face + 0.3, t);
+      post(TIMBER_DARK, k.x, k.z, y + 0.2, RING_END.buffers[i]!.y / 100, 2.6, 0.6);
+    });
+    // The board, 1.5 m behind the faces: two posts and a blank face (its words are the owner's), its foot at board.y.
+    const u = face + 1.5,
+      by = RING_END.board.y / 100;
+    for (const s of [-2.3, 2.3]) {
+      const q = at(u, FORM.mid + s);
+      post(RAIL, q.x, q.z, y, by + 1.4, 0.2, 0.2, false);
     }
-    for (const [t, a] of [
-      [TRACKS[1]!, mouth - 0.22],
-      [TRACKS[0]!, mouth + 0.22],
-    ] as const) {
-      const from = p3(HALT[1], t, HALT_Y),
-        mid = p3(HALT[1] + 12, t, HALT_Y),
-        to = ring(a);
-      beam(STEEL, from, mid, 4.4, 0.5);
-      beam(STEEL, mid, to, 4.4, 0.5);
-      for (const [p, q] of [
-        [from, mid],
-        [mid, to],
-      ] as const) {
-        beam(BED, { ...p, y: HALT_Y + 0.08 }, { ...q, y: HALT_Y + 0.08 }, 2.4, 0.1, false);
-        for (const s of [-0.5, 0.5]) {
-          const dx = q.z - p.z,
-            dz = p.x - q.x,
-            n = Math.hypot(dx, dz);
-          const o = { x: (dx / n) * s, z: (dz / n) * s };
-          beam(
-            RAIL,
-            { x: p.x + o.x, y: HALT_Y + 0.22, z: p.z + o.z },
-            { x: q.x + o.x, y: HALT_Y + 0.22, z: q.z + o.z },
-            0.12,
-            0.14,
-            false,
-          );
-        }
-      }
+    const f = at(u, FORM.mid);
+    post(CONCRETE, f.x, f.z, by, by + 1.4, 5.2, 0.12, false);
+  }
+
+  // ---------------------------------------------------------------- the crossover's rails on the Way (R2d)
+  {
+    // The up track's lateral eased from its own (-4) to the down track's (0) over RING_END.cross, as place/layout.ts's
+    // crossLat does at Far Head: ballast and a pair of rails, a metre at a time, on the Way's grade. Rails only.
+    const [c0, c1] = [RING_END.cross.u0 / 100, RING_END.cross.u1 / 100];
+    const ease = (t: number) => t * t * (3 - 2 * t);
+    const lat = (u: number) => TRACKS[0]! * (1 - ease((u - c0) / (c1 - c0)));
+    for (let u = c0; u < c1 - 1e-6; u += 1) {
+      const v = Math.min(c1, u + 1);
+      beam(BED, p3(u, lat(u), deckY(u) + 0.08), p3(v, lat(v), deckY(v) + 0.08), 2.4, 0.1, false);
+      for (const r of [-0.5, 0.5])
+        beam(RAIL, p3(u, lat(u) + r, deckY(u) + 0.22), p3(v, lat(v) + r, deckY(v) + 0.22), 0.12, 0.14, false);
     }
   }
 
