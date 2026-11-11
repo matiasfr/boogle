@@ -117,11 +117,6 @@ const READ_MODEL_IMPORTERS = [
  * one per line; the list may only lose lines. D1 to D4 and M12d take their files off it; M12e deletes it with the door.
  * Checked by boogle/inspect-legacy (safety.ts), a rule of its own so no other block's no-restricted-syntax replaces it. */
 export const INSPECT_LEGACY_IMPORTERS = [
-  'dev/look/bots/coop-unlock.ts',
-  'dev/look/bots/railway-glide.ts',
-  'dev/look/bots/railway-held-jump.ts',
-  'dev/look/bots/railway-reload.ts',
-  'dev/look/bots/railway-works.ts',
   'dev/look/bots/railway.ts',
   'dev/look/evals/gpu-portability.ts',
   'dev/look/evals/railway-b4-at.ts',
@@ -163,7 +158,7 @@ export const RAILWAY_READ_IMPORTERS = [
 ];
 /** Each list's length when it was made; a batch that takes files off lowers its number (test/review-m12c.test.ts holds
  * the list at or under it), so a line can leave and never come back unnoticed. */
-export const LEGACY_DOOR_CEILINGS = { inspectRailwayLegacy: 35, railwayRead: 4 };
+export const LEGACY_DOOR_CEILINGS = { inspectRailwayLegacy: 30, railwayRead: 4 };
 const doorMessage = (name: string, list: string) =>
   `${name}() is a temporary legacy door to the adapter's wide object (docs/plans/ecs-m12-m13.md, M12c): read state as rows and queries through dev/look/rail-read.ts (or railwayWorldRead()), and inspectRailway() for the view's and the session's own fields. Only the files in ${list} (dev/lint/policy.ts) may name it, and that list only loses lines.`;
 /** The legacy doors and their rules (safety.ts): the name as code, or inside a string or template (the scenarios build

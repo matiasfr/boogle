@@ -13,7 +13,7 @@
 //   --until "(import('/dev/look/bots/coop-unlock.ts').then((m) => m.start()), window.__coopShot || location.search.includes('player=2'))" --seconds 6 --video
 // (alone and together add &railStop=optional%20jump%20used, so the finder stops after its jump demonstration)
 import { background } from '../../../src/async.ts';
-import { inspectRailwayLegacy } from '../../../src/entities/railway/state.ts';
+import { inspectRailway, rail, railAt, railPhase, railRead, rw } from '../rail-read.ts';
 import { me } from '../../../src/player/player.ts';
 import { inputState } from '../../../src/player/input-state.ts';
 import { input } from '../../../src/player/input.ts';
@@ -34,11 +34,17 @@ const w = window as Window & { __coopShot?: boolean };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 let started = false;
 
+/** The view's and the session's own fields: the reward, the machine, the scene. */
 function read() {
-  const state = inspectRailwayLegacy();
+  const state = inspectRailway();
   if (!state) throw new Error('Missing railway view');
   return state;
 }
+// The room's facts are rows, read now (a published world is never written, so none is held across an await).
+const ready = () => !!railRead()?.ready();
+const found = () => rail(rw()).jump;
+const axeFound = () => rail(rw()).axe;
+const phase = () => railPhase(rw(), railAt(), railAt());
 function check(ok: unknown, label: string) {
   if (!ok) throw new Error(`COOP FAIL ${label}`);
   console.log(`COOP PASS ${label}`);
@@ -70,7 +76,7 @@ function plinthCam(plinth: { x: number; y: number; z: number }) {
     55,
   );
 }
-const landed = () => !!me.body && !fallArrival.active && me.coyote > 0 && !me.swimming && read().ready;
+const landed = () => !!me.body && !fallArrival.active && me.coyote > 0 && !me.swimming && ready();
 /** Every 100 ms while it runs: where the friend is, and whether anything holds them. */
 function trace(label: string, ms: number) {
   const end = performance.now() + ms;
@@ -112,7 +118,7 @@ async function friend() {
   const bot = makeBot({ doneFlag: '__coopFriendDone' });
   await until(landed, 'friend arrived and landed');
   background(
-    noCards(() => (shot === 'axe' ? read().axe : read().jump)),
+    noCards(() => (shot === 'axe' ? axeFound() : found())),
     'friend is never shown a card',
   );
   // Out of the finder's way: both arrive at the same spot, and the route starts from it.
@@ -120,12 +126,15 @@ async function friend() {
   const away = Math.hypot(DEVICE.x - p.x, DEVICE.z - p.z);
   await bot.walk(p.x - ((DEVICE.x - p.x) / away) * 9, p.z - ((DEVICE.z - p.z) / away) * 9, 2, { limit: 15000 });
   console.log('COOP NOTE friend stepped aside');
-  check(!read().jump, 'the jump is not found yet');
+  check(!found(), 'the jump is not found yet');
   if (shot === 'multi' || shot === 'axe') {
     // The friend walks about near where the finder works, hopping now and then: held input would show.
-    const awake = () => read().awake >= 0 && read().phase !== 'asleep' && read().phase !== 'waking';
+    const awake = () => {
+      const now = phase();
+      return rail(rw()).awake >= 0 && now !== 'asleep' && now !== 'waking';
+    };
     const key = shot === 'multi' ? 'multi-axe' : 'axe';
-    const has = () => (shot === 'multi' ? awake() : read().axe);
+    const has = () => (shot === 'multi' ? awake() : axeFound());
     const near = () => {
       const p = other();
       const target = shot === 'multi' ? read().machine : read().reward.axeChest;
@@ -138,7 +147,7 @@ async function friend() {
     await until(() => near() && (shot === 'multi' || read().reward.axeChest.available), 'finder reached it', 3000000);
     check(!has(), 'not unlocked yet');
     // The wake takes a few seconds after the press and the flourish comes as it ends: the capture starts at the press.
-    if (shot === 'multi') await until(() => read().phase === 'waking' || awake(), 'finder pressed wake', 60000);
+    if (shot === 'multi') await until(() => phase() === 'waking' || awake(), 'finder pressed wake', 60000);
     trace(shot, 9000);
     w.__coopShot = true;
     const target = shot === 'multi' ? read().machine : read().reward.axeChest;
@@ -178,7 +187,7 @@ async function friend() {
         await wait(500);
       }
     })();
-    await until(() => read().jump, 'friend sees the unlock');
+    await until(() => found(), 'friend sees the unlock');
     const airborne = me.coyote <= 0;
     const jumps = read().reward.tools.jumps;
     await until(() => read().reward.arrival.flourishes === 1, 'friend flourish played');
@@ -191,12 +200,12 @@ async function friend() {
     await until(() => finderAtDevice(10), 'finder reached the device');
     // Gone for the find: the finder takes it and plays on meanwhile (game time); the room reconnects by itself after.
     net.room!.pause(40000);
-    await until(() => !read().ready, 'friend offline');
+    await until(() => !ready(), 'friend offline');
     await wait(30000);
     // Held up in the air while reconnecting (a harness pose), so the capture sees their first landing after it:
     // the flourish waits for that.
     const ground = me.body!.position.y;
-    while (!read().ready) {
+    while (!ready()) {
       if (me.body!.position.y < ground + 6) {
         const p = me.body!.position;
         teleport(me.body!, p.x, ground + 12, p.z);
@@ -206,7 +215,7 @@ async function friend() {
     }
     trace('late', 7500);
     w.__coopShot = true;
-    await until(() => read().ready && read().jump, 'reconnected to a world that has the jump');
+    await until(() => ready() && found(), 'reconnected to a world that has the jump');
     check(read().reward.arrival.late === 0 || me.coyote > 0, 'nothing plays in the air');
     await until(() => read().reward.arrival.late === 1, 'late flourish on landing');
     check(!read().reward.showing && !inputState.held, 'no card and no hold for a late friend');
@@ -234,15 +243,15 @@ async function friend() {
     return;
   }
   // alone / together: the find happens while the friend is idle; then the plinth.
-  await until(() => read().jump && read().reward.arrival.flourishes === 1, 'friend got the flourish');
+  await until(() => found() && read().reward.arrival.flourishes === 1, 'friend got the flourish');
   if (shot === 'alone') {
     // What this player has been shown is this browser's: a rejoin rebuilds the world with no event, and the record a
     // reload would read already holds the jump, so nothing plays again. (A real reload would stop the two-player warp.)
     const record = Object.keys(localStorage).find((k) => k.startsWith('boogle.railway-seen.v0:'));
     check(record && (JSON.parse(localStorage.getItem(record)!) as string[]).includes('jump'), 'the record keeps it');
     net.room!.pause(2000);
-    await until(() => !read().ready, 'friend dropped');
-    await until(() => read().ready && read().jump, 'friend rejoined');
+    await until(() => !ready(), 'friend dropped');
+    await until(() => ready() && found(), 'friend rejoined');
     await until(landed, 'landed after the rejoin');
     await wait(4000);
     check(read().reward.arrival.flourishes === 1, 'no second flourish after a rejoin');
