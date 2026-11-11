@@ -2,7 +2,7 @@
 // runs twice: today's way (plain rows, a hand projection, the actions naming what they touched, structuredClone for
 // the predictor) and E's (a component, an action system, world.changes() feeding the replicator, world.clone()).
 // Measured per server step: actions + commit + flush to six mirrors, and the bytes allocated; per client: the
-// predictor's clone and a rebuild with 8 pending actions. ECS_BUDGET=1 prints the numbers; bounds are loose for CI.
+// predictor's clone and a rebuild with 8 pending actions. ECS_BUDGET=1 prints the numbers; over a bound warns, never fails.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createWorld, defineComponent, defineSystem, type World } from '../src/ecs/index.ts';
@@ -10,7 +10,7 @@ import { mulberry32 } from '../src/sim/rng.ts';
 import { cellOf, GLOBAL_CELL } from '../src/world/replicate.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createMirror } from '../src/world/replicate-client.ts';
-import { measureWithinBudget, overBudget } from './helpers/budget.ts';
+import { budgetWarning, measureWithinBudget } from './helpers/budget.ts';
 import { touchChanges, worldProjections } from '../src/world/replicate-world.ts';
 
 const N = 3000;
@@ -177,8 +177,9 @@ test(`E against today's replicated path: ${N} entities, ${CLIENTS} clients`, { t
   const { best, limits, scale, runs } = measureWithinBudget(LIMITS, () => (last = measureOnce()).ms);
   t.diagnostic(JSON.stringify({ report: last.report, best, loadScale: +scale.toFixed(2), runs }));
   if (process.env.ECS_BUDGET) console.table(last.report);
-  const bad = overBudget(best, limits, scale, runs);
-  assert.equal(bad, '', `ecs budget: ${bad}`);
+  // A timing target guides and never fails (owner, 10 November); the state checks above still fail.
+  const warning = budgetWarning('ecs budget', best, limits, scale, runs);
+  if (warning) t.diagnostic(warning);
 });
 function time(fn: () => void) {
   const t = performance.now();
