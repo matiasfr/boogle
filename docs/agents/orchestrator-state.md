@@ -123,7 +123,7 @@ The owner's words are in the [decision log](../decisions.md#decided) (10 Novembe
 
 ## Running
 
-Claude only until 12 November (`npm run models`). Ship with `npm run ship-queue -- <worktree> --wait`; branches touching src/sim, src/net, src/world or server/ need `--reviewed "<npm run review-stamp> <who, what they found>"`.
+Claude only until 12 November (`npm run models`). Ship with `npm run ship-queue -- <worktree> --wait`; branches with a file `npm run review-stamp` marks `review` need `--reviewed "<stamp> <who, what they found>"`, `read`-only ones `--orchestrator-read`.
 
 | Job | Status | Next step |
 | --- | --- | --- |
