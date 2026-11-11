@@ -730,8 +730,25 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   `npm run look -- --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts`, its halt still, and one from
   the east platform's north end toward the buffers and the shard.
 
-- [ ] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
+- [x] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
   main).** Everything under "R3" above up to `Aperture`; the sim's three train files and their tests only.
+  > **Split (orchestrator call, 10 November 2026).** R3a as written was not inert: `trains: 3` gives `RAIL_TRAINS` a
+  > fourth row, a fourth `Train` entity in the world, and every ops-stream hash in `test/railway-ops.test.ts` changes
+  > (measured: opening 572735742 against the golden's 1598632334), so it could not land before the `WORLD_NS` bump.
+  > **R3a-1 (built here):** the rules only, with no catalog row using them, proven inert by the railway goldens, ops,
+  > schema, tick-order, census and replay tests passing unchanged with `GOLDEN` unset and no fixture regenerated.
+  > Tests run on a test-local catalog, `test/helpers/railway-v27-line.ts` (`V27_LINE2`: the row below, held in the
+  > test), with a pure `TrainIO` over plain rows. **R3a-2 (moved to R3b):** the catalog row (`RING_PATH`, `trains: 3`,
+  > the Pier's east platform and `only`, halts 6 and 7, the eight-halt `LINE_HALTS` cast), with the bump and the
+  > golden regeneration. What R3a-1 built, against the bullets below: every `line` argument of the pure train code is
+  > a `LineRef` (a catalog index or a fixture `RailLineDef`; `TrainIO<L>` is generic over it), so `cycleTicks`,
+  > `headTicks`, `blockFree` and `trainStepLine` changed type only, no rule; `trainPassesBy(line, k, dir, n)` is the
+  > `only` test, read by `trainReasons`, `trainServes`, `trainRequestable`, `validateRailTrains` and **`planLeg`'s
+  > holds** (found by the long fuzz: a held up train stood at the Pier after Q7 until holds skipped a refused way);
+  > `validateRailTrains` is split into `trainRowBroken`, `lineReqOk` and `lineBlocksBroken`, and `trainSpacing` into
+  > `lineSpacing`, so the fixture runs the same checks; `railEnd` is exported. **Three trains miss the wait bound**
+  > (call 47): over 40,000 ticks, seeds c0ffee, 777, 15a4d, 5eed, bee at 75% and 0%, three trains reach 137.9 s worst
+  > (8 of 10 runs over `WAIT_BOUND`); four trains hold it (worst 98.4 s, all 10 under); see R3b. The default 3,000-tick runs pass and print the waits.
   - `railway-lines.ts`: `RailHalt`'s four optional fields; line 2's row (the path, `trains: 3`, the Pier's `only`
     and its platform moved to the east side, call 53: the row's comment becomes "s 719-741 m, lat +2.9, east of the
     down track; the pier rack stands on it", the Railhead and Ring Island rows); `haltPlatform`; `trainPlaces` takes the nearest place not already taken. The
@@ -768,7 +785,20 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     the worst wait each way at every halt and bounds it by v26's `WAIT_BOUND` (1050 ticks)** (call 47; if it fails,
     the catalog goes to four trains: a logged Default).
   - Checks: `npm run check`. Proof: headless, no look.
-- [ ] **3b. R3b, the Meet's rules, the adapter and the bump (v27).** New `src/sim/railway-ring.ts`: `Aperture`,
+- [ ] **3b. R3b, the Meet's rules, the adapter and the bump (v27).**
+  > **Gains R3a-2 (orchestrator call, 10 November 2026; R3a's split above):** line 2's catalog row in
+  > `src/sim/railway-lines.ts` exactly as `test/helpers/railway-v27-line.ts`'s `V27_LINE2` holds it (`RING_PATH`,
+  > `trains: 3`, the Pier's east platform and `only: -1`, the Railhead and Ring Island rows), the eight-halt
+  > `LINE_HALTS` cast, `RAIL_TRAINS`' four rows, and R3a's catalog tests moved off the fixture onto the catalog (halt ids
+  > 0–5 in name and `s`, the Pier 290 ± 2 cm east, the R1b ends, four trains on four places); then the `WORLD_NS` bump
+  > and `GOLDEN=1` regeneration in this step's own review, never mid-session. The fixture helper goes once the catalog
+  > holds the row. **Call 47 applies:** three trains miss `WAIT_BOUND` (105 s) under the long fuzz (worst 137.9 s, 8 of 10 runs
+  > over) and four hold it (worst 98.4 s), so by call 47 the row goes to `trains: 4`, a logged Default (the
+  > orchestrator logs it; R3a left the fixture at the plan's 3). Reproduce: `FUZZ_TICKS=40000
+  > FUZZ_SEEDS=c0ffee,777,15a4d,5eed,bee FUZZ_TRAINS=3|4 node --test --test-name-pattern="fixture fuzz"
+  > test/railway-trains.test.ts`. With four, `RAIL_TRAINS` has five rows and the place test needs four places.
+
+  New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,
   `ringStrike`; the last three build the three-function train io over the `Train` rows (as `trainIO` does) for
   `stopMoved` and `endMoved`.
@@ -825,7 +855,13 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     laps' time), `npm run checkpoints`, `npm run check`, `npm run check:full`, `npm run test:net` (the adapter),
     `test/server-image.test.ts` green with no list edits (both new files are under `src/sim/`). Proof: headless, no
     look.
-- [ ] **4a. R4a, the line goes out (views).** `crossing-view.ts`: Q7's double deck over bents 1–6, laid panel by
+- [ ] **4a. R4a, the line goes out (views).**
+  > **Flag (R3a, 10 November 2026):** `src/entities/railway/halt-map.ts:39` takes the last `LINE_HALTS` entry as the
+  > Pier (`LINE_HALTS[LINE_HALTS.length - 1]`); once R3b appends halts 6 and 7 that is Ring Island. Find the Pier by
+  > name or id there, and check `halts-view.ts`'s `chained` (its `filter(...).length - 1`) and `train-view.ts`'s
+  > `trainRequestable(..., n, ...)` (pass the open stops) for the same assumption.
+
+  `crossing-view.ts`: Q7's double deck over bents 1–6, laid panel by
   panel; its `open()` reads `pierLaid`. `pier-view.ts`: the pier's up track from the old merge (s 556) to the pier
   head, laid when Q7 completes; **no up platform** (owner's answer 4). **The Pier as ruled (calls 53–61), all of it in
   place from Q6, none of it changed by Q7:**
