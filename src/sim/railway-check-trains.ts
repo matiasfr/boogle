@@ -38,8 +38,9 @@ export function checkTrains(w: World) {
       !awake &&
       !!(r.phase || r.at !== home || r.to !== home || r.track !== track || r.depart || r.req || r.logs || r.rails);
     const broken = trainRowBroken(r, line, stops(line), line === LINE2 ? 32 : 0, asleep);
-    if (broken === 'railway: train') bad('train');
-    if (broken === 'railway: rider ask') bad('rider ask');
+    // Any message trainRowBroken returns is a refusal ('railway: train' or 'railway: rider ask' today), so a new one
+    // can never pass the check unnoticed.
+    if (broken) throw new Error(broken);
   });
   // Without a tick: standing in a block, or a leg ending in one.
   for (let line = 0; line < RAIL_LINES.length; line++)

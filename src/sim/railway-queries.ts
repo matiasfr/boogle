@@ -5,7 +5,7 @@
 import type { RowOf, World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
-import { LINE2_PACK as PACK, LINE2_STATIONS, type Line2Station } from './railway-line2-layout.ts';
+import { LINE2_PACK as PACK, LINE2_STATIONS, pierLaid, type Line2Station } from './railway-line2-layout.ts';
 import { layProgress, lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART } from './railway-cart.ts';
 import { trainStopsOf, type RailTrain } from './railway-train.ts';
@@ -78,7 +78,7 @@ export const roomFor = (w: World, a: Readonly<AccountRow>, kind: number) =>
   kind === FOOT ? Number(!heldBig(w, a) && carried(a) === 0) : free(w, a);
 export const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjob(w, k))!.completion).length;
 /** The stops line k serves now (trainStops): line 2's pier once Q6 is laid. */
-export const stopsOf = (w: World, k: number) => trainStopsOf(k, qCompleted(w) >= LINE2_STATIONS.length);
+export const stopsOf = (w: World, k: number) => trainStopsOf(k, pierLaid(qCompleted(w)));
 export const worksId = (w: World) => w.single(Works);
 export const shedId = (w: World) => w.single(Shed);
 /** The Q station taking materials now, or -1 before the forge is lit / after Q3 (line2Active). */
