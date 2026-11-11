@@ -1,6 +1,7 @@
 > **Status: layout chosen, reviewed (2026-11-10).** The owner picked **option 2, the Round**. The
 > [design review](#design-review-designer-2026-11-10) ruled every call and its rulings are applied to the body below.
-> Next: step 1 (data and its test) and step 0b (the roof probe) can start now; steps 2 to 5 and 7 wait for the Home
+> **Note, 10 November (owner): the ring is built regular**; the review's designed irregularity (its call 2) is
+> overruled, and the ring table below is the regular one. Next: step 1 (data and its test) and step 0b (the roof probe) can start now; steps 2 to 5 and 7 wait for the Home
 > station flip and the ECS migration's M8; step 6 is the passenger trade's. The [2D page](../world/town-layout.html)
 > still draws the three options as proposed; the Round's reviewed positions are in this plan.
 
@@ -13,8 +14,10 @@ Bearings are degrees clockwise from north. A three.js `yaw` turns a building's d
 ## The owner's words
 
 - 10 November, **the pick**, on the three options: "Ok sounds good, we can do the round, it's a lot more organic
-  feeling than cross". "Organic" is his reason, so the Round is built with small designed irregularities and not as
-  a compass drawing (design review, call 2).
+  feeling than cross". The review read "organic" as a reason for small designed irregularities; **he overruled that
+  later the same day** (10 November): "I meant more organic than a rectangle, I don't need the houses to be clumsily
+  laid." The Round is built regular
+  ([rail](../decisions-rail.md#d-2026-11-10-the-round-is-built-regular); review call 2 overruled).
 - 10 November: "I also think we should queue a pass on the town layout so it's more like a proper town. Maybe there's
   like a radial part to it. We should just give this to a good model to plan."
 - 10 November, on the Village's four cottages: "maybe only a couple buildings exist, so you get the satisfaction of
@@ -166,26 +169,28 @@ A green of about 14 m radius, centre G (−115.0, 20.07) on the hall's centrelin
 is the ring's east tangent. Ways out: 70° through the hall to the trains, 250° to the dock (8 m wide, 18 m long),
 about 40° to the camp, about 130° to the quarry. The clock stands at G.
 
-**The ring is the predictable shape; the details are not on a grid** (review, call 2; growing-towns: "predictable
-mass, surprising detail"). Each ring building has a `bearing` from G, a `front` (the radius of its front wall's
-middle) and a `turn` (degrees its face is turned clockwise from straight at G). As first drawn the slots were 30°
-apart at one 22 m setback; the reviewed slots below keep every door facing the green within 7° and vary bearing by up
-to 2°, setback between 21 and 24 m, and turn by up to 7°. The big buildings (museum, shop) sit back; the gate cottage
-leans in at the dock street's mouth. Each `turn` and each `front` beyond 22 m is multiplied by one tunable,
-`TOWN_IRREGULAR` (1 as built; 0 gives the compass drawing back), so the owner can compare the two in one look.
+**The ring is regular** (owner, later on 10 November, on the review's call 2: "I meant more organic than a rectangle, I
+don't need the houses to be clumsily laid."; [rail](../decisions-rail.md#d-2026-11-10-the-round-is-built-regular)). The
+review had read "organic" as small designed irregularities (bearings off the grid, setbacks of 21 to 24 m, faces turned
+up to 7°, a hand-drawn green, a worn path, a `TOWN_IRREGULAR` tunable). All of that is **overruled and out of the data**:
+the radial shape is the organic part. The ring's houses stand at even 30° steps from the station's bearing (70°, so
+10°, 40°, …, 340°; the Roundhouse's stalls use the same grid), at one setback (front wall 22 m from G), each facing the
+green squarely; the green's edge is a clean round of 14 m. The one exception is the museum, the largest building: it
+stands one step further back (front 24 m), because at 22 m it stood 1.67 m from Pip's house and the review's 2.4 m
+alley rule still binds. The review's other fixes stand (the alley rule, the bay, the footing, the interiors).
 
 Derivation, for step 1: centre = G + (`front` + depth ÷ 2) × (sin `bearing`, −cos `bearing`); the face's bearing =
-`bearing` + 180° + `turn`; yaw = 180° − face, in radians, wrapped to (−π, π].
+`bearing` + 180°; yaw = 180° − face = −`bearing`, in radians, wrapped to (−π, π].
 
-| Building | Kit, w × d | Bearing | Front | Turn | Position | Faces | Yaw | When | Moves |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Pip's house | house, 7.4 × 7.4 | 12° | 22.5 | −5° | (−109.55, −5.56) | 187° | −0.122 | arrival | 17.1 m |
-| Gate cottage | cottage, 5.4 × 4.4 | 282° | 21.0 | +7° | (−137.69, 15.25) | 109° | 1.239 | arrival | 9.2 m (was (−135, 24)) |
-| Museum | museum, 13 × 12 | 339° | 24.0 | +3° | (−125.75, −7.94) | 162° | 0.314 | T3 | 0.8 m, turns 38° |
-| Fine Prices | shop, 10 × 8 | 192° | 23.5 | +3° | (−120.72, 46.97) | 15° | 2.880 | T3 | 16.7 m; balcony to (−121.09, 54.77) |
-| 1 house | house | 221° | 22.5 | −5° | (−132.19, 39.84) | 36° | 2.513 | bought | |
-| 2 house | house | 165° | 22.0 | +4° | (−108.35, 44.89) | 349° | −2.950 | bought | |
-| 4 cottage | cottage | 311° | 21.5 | −4° | (−132.89, 4.52) | 127° | 0.925 | bought | |
+| Building | Kit, w × d | Bearing | Front | Position | Faces | Yaw | When | Moves |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Pip's house | house, 7.4 × 7.4 | 10° | 22 | (−110.54, −5.23) | 190° | −0.175 | arrival | 16.6 m |
+| Gate cottage | cottage, 5.4 × 4.4 | 280° | 22 | (−138.84, 15.87) | 100° | 1.396 | arrival | 9.0 m (was (−135, 24)) |
+| Museum | museum, 13 × 12 | 340° | 24 | (−125.27, −8.11) | 160° | 0.349 | T3 | 0.3 m, turns 36° |
+| Fine Prices | shop, 10 × 8 | 190° | 22 | (−119.52, 45.68) | 10° | 2.967 | T3 | 15.1 m; balcony to (−119.20, 53.49) |
+| 1 house | house | 220° | 22 | (−131.53, 39.76) | 40° | 2.443 | bought | |
+| 2 house | house | 160° | 22 | (−106.22, 44.23) | 340° | −2.793 | bought | |
+| 4 cottage | cottage | 310° | 22 | (−133.55, 4.52) | 130° | 0.873 | bought | |
 
 Off the ring, each square to its own road (unchanged from the proposal; already staggered by a metre):
 
@@ -197,18 +202,18 @@ Off the ring, each square to its own road (unchanged from the proposal; already 
 | 7 cottage | cottage | camp | (−99.10, −22.80) | 218.7° | −0.675 | bought |
 | 8 house | house | quarry, west side | (−108.30, 56.00) | 90° | 1.571 | bought |
 
-Measured by the designer with layout B's `HALL` (10 November, a scratch script over the footprints above): the
-narrowest wall-to-wall gaps are shop to plot 2 2.59 m, museum to plot 4 2.78 m, plots 3 to 5 2.80 m, the hall to the
-forge 2.90 m (as layout B has it), plot 2 to plot 8 3.07 m, shop to plot 1 3.67 m and Pip's house to the museum
-4.24 m; nothing else is under 4.7 m. No ring building's corner is nearer G than 20.8 m (the gate cottage; the ring
-road's outer edge is at 20 m). The balcony pad is at the shop's local (−1.67, −7.63), as today, which is
-(−121.09, 54.77): 152 m from the summit against the 187 m glide budget, and 45.9 m from `VILLAGE`.
+Measured by step 1's test (10 November, layout B's `HALL`, wall to wall): the narrowest gaps are Pip's house to the
+museum 2.67 m, plots 3 to 5 2.80 m, the hall to the forge 2.90 m (layout B's own), plots 5 to 6 2.90 m, the shop to
+plot 1 and to plot 2 3.00 m each, plot 2 to plot 8 3.33 m and the museum to plot 4 3.67 m; nothing else is under 3.7
+m. (The first drawing's shop stood 1.46 m from plot 2 and 2.22 m from plot 1; on the 30° grid it is 3.00 m from both.)
+No ring building's corner is nearer G than 20.5 m, and each door is 2 m from the ring road's outer edge (the museum's
+4 m). The balcony pad is at the shop's local (−1.67, −7.63), as today, which is (−119.20, 53.49): 149.5 m from the
+summit against the 187 m glide budget, and 43.9 m from `VILLAGE`. The `yard` find, 4.5 m behind the gate cottage's back
+wall, is at (−145.44, 14.71).
 
-**The green and the road are drawn by hand too** (review, call 2). The green's edge is a twelve-point outline, its
-radius at bearings 0°, 30°, … 330°: 14.6, 13.2, 14.0, 15.1, 13.6, 13.0, 14.4, 15.2, 13.8, 14.0, 12.9, 14.3 m,
-smoothed; the road is whatever lies between it and 20 m (4.8 to 7.1 m wide). One worn footpath crosses the green from
-the dock street's mouth to the hall's way in, bowing 3 m north of the clock. The outer edge has no kerb: the road
-fades into the verges at the doors.
+**The green and the road are plain.** The green is a circle of radius 14 m; the ring road is the 6 m between it and 20
+m. The worn path across the green, which the review drew with the irregularity, is dropped from the data (it may come
+back as paint if the owner asks). The outer edge has no kerb: the road fades into the verges at the doors.
 
 
 - **Walks:** dock to the clock 97 m (17 s); dock to the hall's doorway 120 m (22 s); spawn to the clock 19 m (3 s);
@@ -309,7 +314,10 @@ also split step 4 and ordered step 7; its build-order ruling is in
 - [x] **0. The owner picks**, and the designer rules on the Level findings. Done 10 November: the Round; the
   [design review](#design-review-designer-2026-11-10) below. The decision log and the calls table are recorded by
   the coordinator.
-- [ ] **0b. Probe the roof hops. Can start now; must be done before step 2.** No code change. On main as it stands, at
+- [x] **0b. Probe the roof hops. Done 10 November; results in Level findings, item 8.** (a) works today (P2:
+  ground, cottage 2's eave, Fine Prices' roof, the balcony box; step 2 removes the cottage); (b) does not; (c) works
+  under the Round with the bay at its new spot, and a player on the hall's roof can get down (P3). The probe was a
+  look eval kept out of the repo (no code change). The original brief: no code change. On main as it stands, at
   a seed just after T3 with the second jump held, with real input (a look eval, as `dev/look/evals/railway-finds.ts`
   fetches secrets): (a) today's cottage at (−123, 19) to Fine Prices' roof to the balcony box; (b) Fine Prices' own
   building site while its walkway stands (2 m up) to its roof and the balcony; (c) with `BOOGLE_HOME=b`, the finders'
@@ -317,24 +325,27 @@ also split step 4 and ordered step 7; its build-order ruling is in
   result under Level findings. If (a) or (b) succeeds, the glider find can be taken with the second jump today: log
   it, and step 2 fixes (a) by removing that cottage; (b) is then a finding for the town's site walkway, not for this
   layout.
-- [ ] **1. The town as data, with its test. Can start now.** Low risk; nothing in the game imports it yet, so nothing
+- [x] **1. The town as data, with its test. Done 10 November** (`src/place/town-plan.ts`, `test/town-plan.test.ts`, 11
+  tests, `npm run check` green, nothing imports the module; built regular per the owner's correction: no
+  `TOWN_IRREGULAR`, no `turn`, a clean green, no worn path; the museum's front is 24 m to clear Pip's house, narrowest
+  gap 2.67 m; ring rows are `{ bearing, front }`). Low risk; nothing in the game imports it yet, so nothing
   a player sees changes. New `src/place/town-plan.ts` (no three.js; imports `HALL`, `AXIS`, `SHELF_B`, `axisPoint`
   and `toAxis` from `./home-station.ts`, which exports layout B's geometry whether or not the flag is on):
   - `TOWN_CENTRE = axisPoint(HALL.a − 26.44, HALL.c)`, which is G (−115.0, 20.07) today (risk P1: derived, never a
-    literal). `TOWN_RING = { inner: 14, outer: 20 }`. `TOWN_GREEN`: the twelve radii from
-    [The Round](#the-round-chosen-a-ring-road-round-a-green). `TOWN_IRREGULAR = 1`.
+    literal). `TOWN_RING = { inner: 14, outer: 20 }`. `TOWN_GREEN`: a clean round, the
+    ring's inner radius. No `TOWN_IRREGULAR` (the ring is regular, owner's correction below).
   - `TOWN_SLOTS`: twelve rows, ids `house` (Pip's, the existing `RoomId`), `gate`, `museum`, `shop`, `plot1` to
     `plot8`; each `{ id, kit: 'house' | 'cottage' | 'museum' | 'shop', w, d, when: 'arrival' | 'T3' | 'bought' }`
-    with either `ring: { bearing, front, turn }` (the seven ring rows) or `at: { x, z, yaw }` (the five road rows).
+    with either `ring: { bearing, front }` (the seven ring rows) or `at: { x, z, yaw }` (the five road rows).
     `slotPoint(bearing, radius)` and `townBuilding(id)` return `{ x, z, yaw, w, d }` by the derivation in that
-    section; `turn` and `front − 22` are scaled by `TOWN_IRREGULAR`.
+    section; `townLocal(building, x, z)` maps a point in a building's own frame.
   - `TOWN_PLOTS`: `plot1` to `plot8` in that order, with `stakedAtOnce: 2` (the two lowest-numbered unbought plots
     are staked; the passenger trade sets how far up the list the route allows).
   - `TOWN_STREETS`: the ring; the dock street (from G at 250°, radius 20 to 38 m, 8 m wide); the camp mouth (40°) and
-    the quarry mouth (130°) on the ring road's centre, radius 17 m; the worn path across the green.
+    the quarry mouth (130°) on the ring road's centre, radius 17 m. (No worn path across the green: dropped with the irregularity.)
   - `TOWN_PROPS`: the clock and its 5 × 5 m footing at G; the finders' bay at
     `axisPoint(HALL.a − 2.77, HALL.c + 10.45)`, which is (−89.19, 21.80), yaw `SHELF_B.yaw`; the balcony pad at the
-    shop's local (−1.67, −7.63); the `yard` find 4.5 m behind the gate cottage's back wall, about (−144.0, 13.1);
+    shop's local (−1.67, −7.63); the `yard` find 4.5 m behind the gate cottage's back wall, (−145.44, 14.71) on the regular ring;
     the forge's west door at (−92, −3), 2.8 m wide.
   - New `test/town-plan.test.ts`: `AXIS.bearing` is 70 and G is within 0.05 m of (−115.0, 20.07) (so a change at the
     flip fails loudly); each derived position is within 0.02 m of its table row; every footprint is 2.4 m or more
@@ -342,7 +353,7 @@ also split step 4 and ordered step 7; its build-order ruling is in
     the forge is layout B's own 2.90 m); no footprint's corner is inside 20.5 m of G or within a street's half
     width; every ring door is within 3.5 m of the ring road's outer edge (the museum 4.0 m: its forecourt); every
     pad is within 56 m of `VILLAGE`; every `cottage` roof is 11 m or more from the shop's roof and the balcony pad;
-    the balcony pad is within 187 m of the summit (18, −6); with `TOWN_IRREGULAR` at 0 every ring face points at G;
+    the balcony pad is within 187 m of the summit (18, −6); every ring door faces G squarely;
     the tree catalog's length and first and last rows are unchanged.
   - Verify: the test; `npm run check`.
 - [ ] **2. Move what stands. After the Home flip, M8, step 0b and step 7.** Normal review. `src/place/layout.ts`:
@@ -425,7 +436,8 @@ drawing's; the reviewed balcony is 152 m from the summit.
    station plan's.
 2. **The check cannot see most of this plan.** It floods terrain at 2 m; it does not model props, room and roof
    collision, streets, the green, stakes, or sightlines. The roof and view numbers here are from my scratch script.
-3. **Suspected today, not proven: the balcony secret (glider) may be reachable with the second jump.** A cottage's
+3. **Proven today by the step 0b probe (finding 8): the balcony secret (glider) is reachable with the second jump.**
+   As suspected before the probe: A cottage's
    eave is 3.0 m over a 0.5 m slab (a double jump gains 3.0 m); its roof top is 4.5 m. Cottage 2's roof is 5.8 m
    from Fine Prices' roof (5.86 m), and the balcony pad (6.4 m) is 0.4 m behind the shop. No run confirms it; the
    check says "out of reach" from terrain alone. Every option removes that cottage; the nearest climbable roof to the
@@ -439,6 +451,33 @@ drawing's; the reviewed balcony is 152 m from the summit.
    cottage plot in option 2 is 14.7 m from the nearest pad; nothing else is within 20 m. No plot goes north of z −30.
 7. **Stakes and scaffolds are steps.** A building site's walkway is 2 m up and solid. Beside the shop that is a step
    toward its roof; the two slots beside Fine Prices take the house kit, whose site still wants the probe in finding 3.
+8. **The roof hops, probed (step 0b, 10 November; real key events in `npm run look -- --rail-seed q1-done`, the second
+   jump taken at the first pillar's device by pressing Interact; only staging was teleported, each stage starting
+   where the last came to rest; reach, not timing, is the evidence, the machine was loaded).** Open ground: a jump and
+   the air jump rise 2.9 m, up to 3.3 m best case (second press 300 to 400 ms after the first, run-up 0 to 300 ms).
+   - **(a) Works today: P2.** On main, from the ground 6 m east of cottage 2 (−123, 19), a run-up and double jump
+     comes to rest on the cottage's east eave, 3.0 m up; from that eave (−121, 19) one double jump, no run-up, lands
+     on Fine Prices' roof (5.86 m up); from its back edge one double jump lands on the balcony box (6.4 m up, the
+     pad). The glider's `balcony` find (the `aviator` gift) can be taken today with the second jump alone, after T3 and
+     long before the glider. (The step from the eave to the cottage's own 4.5 m ridge did not land in 12 tries; the
+     chain does not need it.) Rank P2: a cosmetic find out of its order, nothing gated; but the glide from the summit
+     to the balcony is the return to Home that the find is for (call 12). **The Round changes it:** cottage 2 is
+     removed (step 2) and step 1's test keeps every cottage 11 m or more from the shop's roof and the pad; the hop
+     closes by data. The nearest other eave to the shop is far beyond the 5.8 m leap that worked.
+   - **(b) Does not work: not a finding.** From Fine Prices' own building site's walkway (2.04 m up, solid from about
+     2.5 s to 9.4 s of the site), six tries from three places on the plank, run-ups of 0 and 250 ms, rose 1.1 to 2.4 m
+     and stayed on the plank. The roof needs 5.9 m: the walkway's 2.0 plus the best rise of 3.3 is 5.3 m. It holds for
+     a house site (plots 1 and 2) by arithmetic only, not probed: its roof top is about 5.6 m against the same 5.3 m,
+     and a plot is bought after the glider anyway (review, finding 3).
+   - **(c) Works under the Round, with the bay where the plan puts it: P3.** `?home=b`; the finders' bay is not at its
+     new spot yet, so the same collider (curio-shelf.ts: 5.5 m wide, 2.8 m high) was staged at (−89.19, 21.80) at
+     the shelf's yaw. A double jump from the ground stands on its top (2.9 m); from there a double jump lands on the
+     hall's roof (5.1 m up, the roof is 5.0), at the south eave then the ridge. From the hall's end walls (2.4 m) the
+     roof is not reachable (the roof overhangs them; a jump from the wall top rose 0.55 m). **A player on the roof
+     can get down:** walking off any of the four sides ended on the ground. Nobody is stranded. What it gives: a
+     place to stand over the platforms and the green, no reward. Rank P3. What the Round changes: it moves the bay to
+     that spot (call 9), which opens this; to close it, move the bay 3 m or more off the hall's south end or cap
+     the roof's reach; recommended: leave it, a free perch is a small joy and harmless here.
 
 ## Risks
 
@@ -521,8 +560,8 @@ of its section:
 ## What I could not confirm
 
 - None of the options has been seen in the game; the stills are of today's town and `?home=b`.
-- The roof hop (Level finding 3) and every draw and triangle figure for the new town.
-- Whether the hall's roof and end walls give another way up beside the bay's new spot.
+- Every draw and triangle figure for the new town. (The roof hops are probed: Level findings, item 8.)
+- Not probed: a house site's walkway (arithmetic only) and the real bay at its new spot (a stand-in collider was used).
 - The stills were taken on a busy machine (load 12 to 21); they are for layout, not for performance.
 
 ## Design review (designer, 2026-11-10)
@@ -547,7 +586,7 @@ Place, 10 November) were listed but hold no town-centre moment to compare, so th
 | # | Call | Kind | Source or recommendation |
 | --- | --- | --- | --- |
 | 1 | Home's town is the Round: a green on the hall's centreline, a ring road, buildings facing the green | Decided | Owner, 10 November, the pick |
-| 2 | The ring is not a compass drawing: bearings up to 2° off the 30° grid, setbacks 21 to 24 m, faces turned up to 7°, a hand-drawn green edge, a worn path, alleys of 2.4 m or more; one tunable, `TOWN_IRREGULAR`, scales it to zero | New | His reason for the pick is "organic"; growing-towns ("predictable mass, surprising detail"). The cap is small because he also said "weirdly at angles and not spaced intentionally": every door still faces the green. Proceeds on this recommendation |
+| 2 | **Overruled by the owner, 10 November ("I meant more organic than a rectangle, I don't need the houses to be clumsily laid."): the ring is regular, at even 30° steps and one setback (the museum one step back), and there is no `TOWN_IRREGULAR`; the 2.4 m alley rule stands.** As the review wrote it: the ring is not a compass drawing: bearings up to 2° off the 30° grid, setbacks 21 to 24 m, faces turned up to 7°, a hand-drawn green edge, a worn path, alleys of 2.4 m or more; one tunable, `TOWN_IRREGULAR`, scales it to zero | New | His reason for the pick is "organic"; growing-towns ("predictable mass, surprising detail"). The cap is small because he also said "weirdly at angles and not spaced intentionally": every door still faces the green. Proceeds on this recommendation |
 | 3 | On arrival: the hall, Pip's house, one gate cottage, the forge's frame, stake boards for Fine Prices and the museum | New | His leaning "maybe only a couple buildings exist"; it replaces the trade brief's open call (two cottages besides Pip's house). A ring with five empty places is the stronger picture of building up. Cheap to change: plot 4's `when`. Proceeds |
 | 4 | Fine Prices and the museum rise free when T3 is laid, as today | Default | "Towns grow from what arrives" stands (rail, 2 November); buildings as intentional buys is a leaning, and the plan keeps the way to take it whole (they become plots at their drawn places) |
 | 5 | Boogles build the house itself; an unbought plot is empty ground you can walk across | Decided | Owner, 10 November ([rewards](../decisions-rewards.md#d-2026-11-10-boogles-build-houses-and-upgrade-sources)) |
@@ -598,7 +637,7 @@ has a place to meet; none is broken.
 
 ### Findings
 
-1. **Changed before building (applied): a ring on an exact grid would read as a diagram, which is the opposite of
+1. **Overruled by the owner, 10 November (see call 2).** As the review wrote it, **changed before building (applied): a ring on an exact grid would read as a diagram, which is the opposite of
    why he picked it.** Seen from the ridge, the train and the museum's table, seven fronts at one radius and one
    angle step are a clock face. Call 2's slots and the hand-drawn green are in the body, with `TOWN_IRREGULAR` to
    compare.
@@ -633,7 +672,7 @@ has a place to meet; none is broken.
 
 ### Owner questions
 
-None blocks the build. For him to overrule when he sees it: the irregularity (call 2, one number), one cottage or
+None blocks the build. For him to overrule when he sees it: one cottage or
 two on arrival (call 3), the clock free (call 7), and the village sign's 12 (call 20).
 
 ### Rows for the calls table
@@ -642,7 +681,7 @@ Recorded in `docs/agent-calls.md` on 10 November, after the coordinator's entry 
 replace the planner's four, and two italic notes went on the rules lines (the bay, the opening order). Each row: date 2026-11-10, source
 [town-layout](town-layout.md#design-review-designer-2026-11-10), by designer, status open. Rail table unless marked.
 
-- New: the Round is built with small designed irregularities (bearings within 2° of a 30° grid, setbacks 21 to 24 m,
+- (Overruled by the owner the same day and archived; see call 2.) New: the Round is built with small designed irregularities (bearings within 2° of a 30° grid, setbacks 21 to 24 m,
   faces within 7° of the centre, a hand-drawn green, alleys of 2.4 m or more), scaled by `TOWN_IRREGULAR`. Reason: the
   owner chose it as "more organic".
 - New: on arrival Home's town is the hall, Pip's house and one gate cottage, with the forge's frame and stake boards
