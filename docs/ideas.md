@@ -22,6 +22,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 
 ## Multiplayer
 - Races with the RC carts, since the soapbox turned out fun to drive (owner, 2026-11-01)
+- Rooms have a host who can reset the room from the UI, like Palworld's servers: "A user can host its own server or in this case there's a dedicated server but maybe a user should be able to reset the server from UI like if they're an admin or if they're the host of a room. So maybe rooms should have hosts, but it should work in a way that accommodates for mobile, where a host may intermittently disconnect if they sign up, go to a different app, etc." So being host must survive a phone going to the background and coming back; for the future (owner, 2026-11-10)
 
 ## Controls
 - Camera distance as a setting in the pause menu, beside the volume slider, instead of a dedicated control (owner, 2026-11-02)
