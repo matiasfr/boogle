@@ -80,7 +80,7 @@ export type Item = {
   after?: string;
 };
 
-const fareOf = (t: Tunables, town: Town) => t['fare.board']! + t['fare.per100m']! * t[`km.${town}`]! * 10;
+export const fareOf = (t: Tunables, town: Town) => t['fare.board']! + t['fare.per100m']! * t[`km.${town}`]! * 10;
 export const billOf = (t: Tunables, town: Town, step: SeatStep): Bill => {
   const out: Bill = {};
   for (const m of MATS) {
@@ -215,6 +215,15 @@ export type StageRow = {
   houses: number;
   buys: number;
 };
+/** Ticks are minutes since the trade opened. `completedAt[i]` is the tick the (startSteps + i + 1)th route step ended. */
+export type RoomScript = {
+  startSteps: number;
+  stepKeys: string[];
+  completedAt: number[];
+  opened: Partial<Record<Town, number>>;
+  /** Seats hauled for and installed at the end of this tick. */
+  hauled: { tick: number; town: Town; step: SeatStep }[];
+};
 export type RoomRun = {
   policy: Policy;
   players: number;
@@ -242,6 +251,8 @@ export type RoomRun = {
   };
   riders: { carried: number; lost: number; maxCrowd: number; minutesCrowded: number };
   seatSteps: string[];
+  /** What the room did, minute by minute, so the playable prototype can replay it and be checked against it. */
+  script: RoomScript;
   boxFullMin: number;
   contestedBuys: number;
   night: { sack: number; awayCredit: number; boxRoom: number };
@@ -249,7 +260,9 @@ export type RoomRun = {
   endPotential: number;
 };
 
-type TownRt = {
+// ---------------------------------------------------------------- the rules a room runs by
+// Shared with the playable prototype (play-trade.ts), which calls these same functions so the two cannot drift.
+export type TownRt = {
   open: boolean;
   houses: number;
   building: number;
@@ -262,6 +275,134 @@ type TownRt = {
   cap: number;
   due: { tick: number; kind: 'house' | 'building' }[];
 };
+export const newTownRt = (): TownRt => ({
+  open: false,
+  houses: 0,
+  building: 0,
+  fit: 0,
+  six: false,
+  car: false,
+  express: false,
+  waiting: 0,
+  arr: 0,
+  cap: 0,
+  due: [],
+});
+export const newTowns = (): Record<Town, TownRt> => ({
+  village: newTownRt(),
+  ring: newTownRt(),
+  canopy: newTownRt(),
+  port: newTownRt(),
+  gorge: newTownRt(),
+});
+/** Whether a route step (by key) is finished; 'end' is the whole route. */
+export type StepDone = (key: string) => boolean;
+export const seatsOf = (t: Tunables, r: TownRt) =>
+  t['trains.perLine']! *
+    (r.car ? t['cars.second']! : t['cars.base']!) *
+    (r.six ? t['seats.six']! : t['seats.perCar']!) +
+  (r.express ? t['express.seats']! : 0);
+export const capacityOf = (t: Tunables, town: Town, r: TownRt) =>
+  seatsOf(t, r) / (t['cycle.base']! + t['cycle.perKm']! * t[`km.${town}`]!);
+export const demandOf = (t: Tunables, r: TownRt) =>
+  ((t['riders.startBuildings']! + r.houses) * t['riders.perBuilding']! + r.building * t['riders.townBuilding']!) *
+  (1 + t['riders.fitoutBoost']! * r.fit);
+/** Boogles a minute the open towns would pay with every seat full of the riders they send. */
+export const potentialOf = (t: Tunables, rt: Record<Town, TownRt>) =>
+  TOWNS.reduce(
+    (s, tw) => (rt[tw].open ? s + 2 * Math.min(demandOf(t, rt[tw]), capacityOf(t, tw, rt[tw])) * fareOf(t, tw) : s),
+    0,
+  );
+export const crowdOf = (t: Record<Town, TownRt>, town: Town) => (t[town].open ? t[town].waiting : 0);
+export const offeredNow = (it: Item, bought: ReadonlySet<string>, done: StepDone) =>
+  done(it.offerAt) && (!it.after || bought.has(it.after)) && !bought.has(it.id);
+export const dearestOffered = (items: Item[], bought: ReadonlySet<string>, done: StepDone) =>
+  items.reduce((d, it) => (offeredNow(it, bought, done) && it.price > d ? it.price : d), 0);
+/** The strongbox's size: the larger of its minutes of income and a multiple of the dearest thing on offer. */
+export const boxCapOf = (t: Tunables, potential: number, dearest: number) =>
+  Math.max(t['box.incomeMin']! * potential, t['box.dearestMult']! * dearest);
+/** Houses and town buildings whose build time is up become riders' homes and workplaces. */
+export function completeBuilds(rt: Record<Town, TownRt>, tick: number) {
+  for (const tw of TOWNS) {
+    const r = rt[tw];
+    r.due = r.due.filter((d) => {
+      if (d.tick > tick) return true;
+      if (d.kind === 'house') r.houses++;
+      else r.building++;
+      return false;
+    });
+  }
+}
+/** A town opens once its station's step is done. */
+export function openTowns(rt: Record<Town, TownRt>, done: StepDone) {
+  for (const tw of TOWNS) if (!rt[tw].open && done(ARRIVES[tw])) rt[tw].open = true;
+}
+export const nextSeatStep = (town: Town, r: TownRt): SeatStep | undefined =>
+  SEAT_STEPS[town].find((s) => !(s === 'six' ? r.six : s === 'car' ? r.car : r.express));
+export function installSeat(r: TownRt, step: SeatStep) {
+  if (step === 'six') r.six = true;
+  else if (step === 'car') r.car = true;
+  else r.express = true;
+}
+/** What a buy does to its town: houses and buildings take their build minutes; seats and fit-outs are at once. */
+export function applyTownItem(t: Tunables, rt: Record<Town, TownRt>, it: Item, tick: number) {
+  const r = rt[it.town!];
+  if (it.kind === 'house' || it.kind === 'building') r.due.push({ tick: tick + t['house.buildMin']!, kind: it.kind });
+  else if (it.kind === 'fitout') r.fit++;
+  else if (it.kind === 'seat') installSeat(r, it.step!);
+}
+export type MinuteTown = { served: number; lost: number; fare: number; landed: number };
+export type Minute = {
+  landed: number;
+  capped: number;
+  carried: number;
+  lost: number;
+  towns: Partial<Record<Town, MinuteTown>>;
+};
+/**
+ * One minute of riding in every open town: riders arrive (seeded jitter, towns in table order), a train stops for four
+ * or more and the seats carry what they can, each rider pays once each way, and the strongbox takes what fits.
+ * `wallet` is what the box holds before the minute.
+ */
+export function tradeMinute(
+  t: Tunables,
+  rt: Record<Town, TownRt>,
+  rng: () => number,
+  cap: number,
+  wallet: number,
+): Minute {
+  const out: Minute = { landed: 0, capped: 0, carried: 0, lost: 0, towns: {} };
+  for (const tw of TOWNS) {
+    const r = rt[tw];
+    if (!r.open) continue;
+    r.arr += demandOf(t, r) * (1 + t['riders.jitter']! * (2 * rng() - 1));
+    const come = Math.floor(r.arr);
+    r.arr -= come;
+    r.waiting += come;
+    r.cap += capacityOf(t, tw, r);
+    const room = Math.floor(r.cap);
+    let served = 0;
+    if (r.waiting >= t['crowd.stop']!) {
+      served = Math.min(r.waiting, room);
+      r.cap -= served;
+    }
+    r.cap = Math.min(r.cap, 1); // unused seats do not bank
+    r.waiting -= served;
+    out.carried += served;
+    let lost = 0;
+    if (r.waiting > t['crowd.cap']!) {
+      lost = r.waiting - t['crowd.cap']!;
+      out.lost += lost;
+      r.waiting = t['crowd.cap']!;
+    }
+    const fare = 2 * served * fareOf(t, tw);
+    const take = Math.min(fare, Math.max(0, cap - wallet - out.landed));
+    out.landed += take;
+    out.capped += fare - take;
+    out.towns[tw] = { served, lost, fare, landed: take };
+  }
+  return out;
+}
 
 /** What a night away credits at the next join: the away formula, then the sack, then the room left in the box. */
 export function awayCredit(t: Tunables, ratePerMin: number, wallet: number, boxCap: number, awayH: number) {
@@ -287,26 +428,7 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
   const items = catalog(t, policy);
   const bought = new Set<string>();
   const offeredAt = new Map<string, number>();
-  const newTown = (): TownRt => ({
-    open: false,
-    houses: 0,
-    building: 0,
-    fit: 0,
-    six: false,
-    car: false,
-    express: false,
-    waiting: 0,
-    arr: 0,
-    cap: 0,
-    due: [],
-  });
-  const rt: Record<Town, TownRt> = {
-    village: newTown(),
-    ring: newTown(),
-    canopy: newTown(),
-    port: newTown(),
-    gorge: newTown(),
-  };
+  const rt = newTowns();
   const hands = 1 + t['haul.parallel']! * (players - 1);
   const cutOf: Record<string, number> = {
     regrowth: t['cut.regrowth']!,
@@ -352,6 +474,13 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
     hauling: [],
   };
   const seatSteps: string[] = [];
+  const script: RoomScript = {
+    startSteps: startIdx + 1,
+    stepKeys: steps.map((s) => s.key),
+    completedAt: [],
+    opened: {},
+    hauled: [],
+  };
   const stageAcc = STAGES.map(() => ({
     earned: 0,
     capped: 0,
@@ -369,48 +498,23 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
     return s;
   };
 
-  const seatsOf = (town: Town) => {
-    const r = rt[town];
-    const cars = r.car ? t['cars.second']! : t['cars.base']!;
-    return (
-      t['trains.perLine']! * cars * (r.six ? t['seats.six']! : t['seats.perCar']!) +
-      (r.express ? t['express.seats']! : 0)
-    );
-  };
-  const capacity = (town: Town) => seatsOf(town) / (t['cycle.base']! + t['cycle.perKm']! * t[`km.${town}`]!);
-  const demand = (town: Town) => {
-    const r = rt[town];
-    return (
-      ((t['riders.startBuildings']! + r.houses) * t['riders.perBuilding']! + r.building * t['riders.townBuilding']!) *
-      (1 + t['riders.fitoutBoost']! * r.fit)
-    );
-  };
-  const potential = () =>
-    TOWNS.reduce((s, tw) => (rt[tw].open ? s + 2 * Math.min(demand(tw), capacity(tw)) * fareOf(t, tw) : s), 0);
-  const isOffered = (it: Item) =>
-    completed > idx(it.offerAt) && (!it.after || bought.has(it.after)) && !bought.has(it.id);
+  const done: StepDone = (key) => completed > idx(key);
+  const potential = () => potentialOf(t, rt);
+  const isOffered = (it: Item) => offeredNow(it, bought, done);
   const stamp = () => {
     for (const it of items) if (!offeredAt.has(it.id) && isOffered(it)) offeredAt.set(it.id, tick);
   };
-  const boxCap = () => {
-    let dearest = 0;
-    for (const it of items) if (isOffered(it) && it.price > dearest) dearest = it.price;
-    return Math.max(t['box.incomeMin']! * potential(), t['box.dearestMult']! * dearest);
-  };
-  const crowdOf = (town: Town) => (rt[town].open ? rt[town].waiting : 0);
+  const boxCap = () => boxCapOf(t, potential(), dearestOffered(items, bought, done));
   const inEmpty = (k: number) => (opts.empty ?? []).some(([a, b]) => k >= a && k < b);
 
   const apply = (it: Item) => {
-    if (it.kind === 'house' || it.kind === 'building')
-      rt[it.town!].due.push({ tick: tick + t['house.buildMin']!, kind: it.kind });
-    else if (it.kind === 'fitout') rt[it.town!].fit++;
-    else if (it.kind === 'seat') install(it.town!, it.step!);
-    else if (it.kind !== 'goal') labourMul *= 1 - cutOf[it.kind]!;
+    if (it.kind === 'seat') install(it.town!, it.step!);
+    else if (it.kind === 'goal') return;
+    else if (it.kind in cutOf) labourMul *= 1 - cutOf[it.kind]!;
+    else applyTownItem(t, rt, it, tick);
   };
   const install = (town: Town, step: SeatStep) => {
-    if (step === 'six') rt[town].six = true;
-    else if (step === 'car') rt[town].car = true;
-    else rt[town].express = true;
+    installSeat(rt[town], step);
     seatSteps.push(`${town}.${step}@${((tradeStartMin + tick) / 60).toFixed(2)}h`);
   };
 
@@ -423,7 +527,9 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
         const cands = items
           .filter(
             (it) =>
-              group.includes(it.kind) && isOffered(it) && (it.kind !== 'seat' || crowdOf(it.town!) >= t['crowd.stop']!),
+              group.includes(it.kind) &&
+              isOffered(it) &&
+              (it.kind !== 'seat' || crowdOf(rt, it.town!) >= t['crowd.stop']!),
           )
           .sort((a, b) => a.price - b.price || (a.id < b.id ? -1 : 1));
         if (!cands.length) continue;
@@ -478,46 +584,16 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
       continue;
     }
     // Houses and town buildings that finished building.
-    for (const tw of TOWNS) {
-      const r = rt[tw];
-      r.due = r.due.filter((d) => {
-        if (d.tick > tick) return true;
-        if (d.kind === 'house') r.houses++;
-        else r.building++;
-        return false;
-      });
-      if (!r.open && completed > idx(ARRIVES[tw])) r.open = true;
-    }
+    completeBuilds(rt, tick);
+    openTowns(rt, done);
+    for (const tw of TOWNS) if (rt[tw].open && script.opened[tw] === undefined) script.opened[tw] = tick;
     // Riders arrive, a train stops for four or more, the seats carry what they can; each rider pays once, each way.
-    let landed = 0;
-    let cappedNow = 0;
     const cap = boxCap();
-    for (const tw of TOWNS) {
-      const r = rt[tw];
-      if (!r.open) continue;
-      r.arr += demand(tw) * (1 + t['riders.jitter']! * (2 * rng() - 1));
-      const come = Math.floor(r.arr);
-      r.arr -= come;
-      r.waiting += come;
-      r.cap += capacity(tw);
-      const room = Math.floor(r.cap);
-      let served = 0;
-      if (r.waiting >= t['crowd.stop']!) {
-        served = Math.min(r.waiting, room);
-        r.cap -= served;
-      }
-      r.cap = Math.min(r.cap, 1); // unused seats do not bank
-      r.waiting -= served;
-      carried += served;
-      if (r.waiting > t['crowd.cap']!) {
-        lost += r.waiting - t['crowd.cap']!;
-        r.waiting = t['crowd.cap']!;
-      }
-      const fare = 2 * served * fareOf(t, tw);
-      const take = Math.min(fare, Math.max(0, cap - wallet - landed));
-      landed += take;
-      cappedNow += fare - take;
-    }
+    const ride = tradeMinute(t, rt, rng, cap, wallet);
+    const landed = ride.landed;
+    const cappedNow = ride.capped;
+    carried += ride.carried;
+    lost += ride.lost;
     wallet += landed;
     earned += landed;
     capped += cappedNow;
@@ -525,14 +601,14 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
     stageAcc[st]!.earned += landed;
     stageAcc[st]!.capped += cappedNow;
     if (wallet >= cap - 1e-6 && !routeDone) boxFull++;
-    const crowdNow = TOWNS.reduce((s, tw) => s + crowdOf(tw), 0);
+    const crowdNow = TOWNS.reduce((s, tw) => s + crowdOf(rt, tw), 0);
     maxCrowd = Math.max(maxCrowd, crowdNow);
-    if (!routeDone && TOWNS.some((tw) => crowdOf(tw) >= t['crowd.stop']!)) crowded++;
+    if (!routeDone && TOWNS.some((tw) => crowdOf(rt, tw) >= t['crowd.stop']!)) crowded++;
     buyPass();
     // A crowd left behind is a hauling job when seats cost materials.
     if (policy.seats === 'haul' && !job && !routeDone)
       for (const tw of TOWNS) {
-        if (crowdOf(tw) < t['crowd.stop']!) continue;
+        if (crowdOf(rt, tw) < t['crowd.stop']!) continue;
         const next = SEAT_STEPS[tw].find(
           (s) => !(s === 'six' ? rt[tw].six : s === 'car' ? rt[tw].car : rt[tw].express),
         );
@@ -550,6 +626,7 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
       hauledMin += used;
       if (job.left <= 1e-9) {
         install(job.town, job.step);
+        script.hauled.push({ tick, town: job.town, step: job.step });
         for (const m of MATS) mats[m] += job.bill[m] ?? 0;
         job = null;
       }
@@ -566,6 +643,7 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
       if (prog >= 1 - 1e-9) {
         prog = 0;
         completed++;
+        script.completedAt.push(tick);
         stamp();
         if (completed >= steps.length) {
           routeDoneMin = tradeStartMin + tick + (1 - avail);
@@ -596,9 +674,9 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
     series.income.push(landed);
     series.potential.push(potential());
     series.houses.push(TOWNS.reduce((s, tw) => s + rt[tw].houses + rt[tw].building, 0));
-    series.ridersRate.push(TOWNS.reduce((s, tw) => (rt[tw].open ? s + 2 * demand(tw) : s), 0));
-    series.crowd.push(TOWNS.reduce((s, tw) => s + crowdOf(tw), 0));
-    series.seats.push(TOWNS.reduce((s, tw) => (rt[tw].open ? s + seatsOf(tw) : s), 0));
+    series.ridersRate.push(TOWNS.reduce((s, tw) => (rt[tw].open ? s + 2 * demandOf(t, rt[tw]) : s), 0));
+    series.crowd.push(TOWNS.reduce((s, tw) => s + crowdOf(rt, tw), 0));
+    series.seats.push(TOWNS.reduce((s, tw) => (rt[tw].open ? s + seatsOf(t, rt[tw]) : s), 0));
     series.hauling.push(hauling);
   }
 
@@ -649,6 +727,7 @@ export function run(spine: RouteSpine, t: Tunables, policy: Policy, opts: RunOpt
     },
     riders: { carried, lost, maxCrowd, minutesCrowded: crowded },
     seatSteps,
+    script,
     boxFullMin: boxFull,
     contestedBuys: contested,
     night: { sack: away.sack, awayCredit: away.credit, boxRoom: away.room },
