@@ -8,6 +8,7 @@ type Game = {
   waitFor: (expr: string, opts?: { timeout?: number }) => Promise<number>;
   view: (v: { cam: number[]; look: number[] }, fov?: number) => Promise<void>;
   motion: (label: string, o: { frames: number; seconds: number }) => Promise<{ sheet: string; score: number }>;
+  still: (label: string) => Promise<string>;
 };
 type Run = {
   open: (o: { name: string; room: string; hud?: boolean; query?: string }) => Promise<Game>;
@@ -49,6 +50,20 @@ export default {
     await t.sleep(1000); // the pop, then the collider
     const seen = await friend.waitFor(`${CAPS}.then((n) => n === ${spot.ground})`, { timeout: 15000 });
     t.check('the other tab sees the same mushrooms', seen >= 0, seen + ' ms');
+    // The friend's view of them: framed from beside the cluster, a still to look at (not a check).
+    const mid = (await friend.eval(`
+      const { forEachStatic } = await import('/src/physics/engine.ts');
+      let x = 0, z = 0, y = 0, n = 0;
+      forEachStatic(-1, (b, shapes) => {
+        if (shapes.length !== 2 || shapes[1].rTop !== 1.9) return;
+        x += b.position.x; z += b.position.z; y += b.position.y; n++;
+      });
+      return n ? [x / n, y / n, z / n] : null;`)) as [number, number, number] | null;
+    if (mid) {
+      const [mx, my, mz] = mid;
+      await friend.view({ cam: [mx + 14, my + 7, mz + 10], look: [mx, my + 1, mz] });
+      await friend.still('friend-sees');
+    }
 
     // The cap's top, from the collider (the body's highest shape).
     const found = (await g.eval(`
