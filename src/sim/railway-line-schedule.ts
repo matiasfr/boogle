@@ -80,6 +80,16 @@ export function lineSchedule(station: AnyStation, timing: LineTiming) {
     panels,
   };
 }
+/** What laying has used of a funded, running station's bill after `elapsed` accepted ticks, and what is still allocated:
+ * the rule tick's arithmetic (layLine1, layLine2), shared with a client's job clock (jobProgress). The second pair is
+ * the bill's second material (line one's stone, line two's rails). */
+export function layProgress(station: AnyStation, schedule: ReturnType<typeof lineSchedule>, elapsed: number) {
+  const laying = Math.max(0, elapsed - schedule.depositTicks - schedule.feedTicks);
+  const [first, second] = station.bill;
+  const used = Math.min(first, Math.floor((laying * first) / schedule.layTicks));
+  const used2 = Math.min(second, Math.floor((laying * second) / schedule.layTicks));
+  return { used, allocation: first - used, used2, allocation2: second - used2 };
+}
 /** Whole contacts are derived from accepted integer elapsed ticks, never a rendered/interpolated head. */
 export function linePanelCount(station: AnyStation, elapsed: number, timing: LineTiming): number {
   const schedule = lineSchedule(station, timing);
