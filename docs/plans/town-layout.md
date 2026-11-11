@@ -638,7 +638,8 @@ two on arrival (call 3), the clock free (call 7), and the village sign's 12 (cal
 
 ### Rows for the calls table
 
-For the coordinator; `docs/agent-calls.md` was not edited by this review. Each row: date 2026-11-10, source
+Recorded in `docs/agent-calls.md` on 10 November, after the coordinator's entry for the pick landed: these rows
+replace the planner's four, and two italic notes went on the rules lines (the bay, the opening order). Each row: date 2026-11-10, source
 [town-layout](town-layout.md#design-review-designer-2026-11-10), by designer, status open. Rail table unless marked.
 
 - New: the Round is built with small designed irregularities (bearings within 2° of a 30° grid, setbacks 21 to 24 m,
