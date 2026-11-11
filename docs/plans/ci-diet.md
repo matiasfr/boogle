@@ -126,19 +126,27 @@ ships wait (13).
 
 ## Batch 1: safe, no loss of coverage, can ship today
 
-1. Drop `--with-deps` from `net`, Smoke and Counts (3).
-2. Path-scope `server`, its boot and `net` by their static import closures with the fallback list, and a test in the
+Built on `ci/diet-batch-1` (11 November); `.github/workflows` changes are unproven until their first GitHub runs.
+
+- [x] 1. Drop `--with-deps` from `net`, Smoke and Counts (3).
+- [x] 2. Path-scope `server`, its boot and `net` by their static import closures with the fallback list, and a test in the
    style of `change-class.test.ts` that fails when a server test or a peer-test file imports outside its walk (5, 8).
    Orchestrator's reading of "Fast ships"' "server and net tests for code changes": a test cannot be affected by a file
    outside its import closure; record it under that call.
-3. `deploy.yml`: drop the second lint; boot the built `dist` before `deploy-pages` (9, 12). Correct the state file's
+- [x] 3. `deploy.yml`: drop the second lint; boot the built `dist` before `deploy-pages` (9, 12). Correct the state file's
    "Unproven" line.
-4. Review trigger: the owner's rule (c) plus `src/ecs`, in one list read by `dev/review-stamp.ts` and `ship-queue.sh`;
+- [x] 4. Review trigger: the owner's rule (c) plus `src/ecs`, in one list read by `dev/review-stamp.ts` and `ship-queue.sh`;
    `--orchestrator-read` for test-only diffs under those paths (4).
-5. ship-queue holds review-path ships on an open `red-main` issue (13); ci-autofix bisects (14).
-6. Stop the atlas dispatch (11); `npm ci` in `ship-branch.sh` only when lockfiles changed (10).
-7. Briefs: `implementer.md`, `planner.md`, tests.md and the orchestrate skill ask for `ship-check`, not `check` (2).
-8. Seed snapshots shared within a run (7), measured before and after per file; no step may raise a file's time.
+- [x] 5. ship-queue holds review-path ships on an open `red-main` issue (13); ci-autofix bisects (14).
+- [x] 6. Stop the atlas dispatch (11); `npm ci` in `ship-branch.sh` only when lockfiles changed (10).
+- [x] 7. Briefs: `implementer.md`, `planner.md`, tests.md and the orchestrate skill ask for `ship-check`, not `check` (2).
+- [x] 8. Seed snapshots shared within a run (7), measured before and after per file; no step may raise a file's time.
+   Built per test file (one process): `test/helpers/rail.ts` replays each seed stage once and hands out copies through
+   a save. Cross-file sharing (a disk cache keyed by the sources) is left for later: a stale-cache risk for little more.
+   Measured on the Mac under load 6 to 11, one file at a time, CPU seconds: local mode, the 26 files that take seeds
+   through the helper 187.8 to 174.8, none slower; `--ci` mode, seven of them 313 to 238 (`railway-line2` 58 to 43,
+   `-m10c-review` 68 to 47, `-train` 71 to 63, `-trains` 27 to 19, `-boiler` 18 to 12, `-works` 31 to 25,
+   `-m10e-review` 39 to 28). Shard balancing: the plan names no method; Node still deals files by index.
 
 ## Batch 2: moves coverage later (the orchestrator's call)
 
