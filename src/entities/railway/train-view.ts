@@ -53,7 +53,7 @@ const DOOR = { open: (100 * Math.PI) / 180, swingS: 0.25, near: 1.2, holdS: 0.6 
  * stay shut as drawn; true brings the swing back. They were never solid, so walking in doesn't wait on them. */
 const DOORS_SWING = false;
 /** The cab's cutaway (owner, 11 November: with Buddy in the cab the follow camera saw its back wall), the rooms' recipe
- * (src/proto/place/rooms.ts): while you're in a cab or in its doorway, its roof lifts off and each wall on the camera's
+ * (src/entities/town/rooms.ts): while you're in a cab or in its doorway, its roof lifts off and each wall on the camera's
  * side sinks to a kerb, on your tab alone. Colliders stay; a shadow-only shell keeps the cab's shade. Someone watching
  * from outside sees the cab whole, on theirs. Local: positions every tab already has, no state, op or presence. */
 const CUT = {

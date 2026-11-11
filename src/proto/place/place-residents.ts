@@ -7,7 +7,7 @@ import { showing } from './gifts.ts';
 import { newestFact } from './growth.ts';
 import { personalSlice } from './job.ts';
 import { placeRooms, placeRoomsOwner } from './place-rooms.ts';
-import { createResidents } from './residents.ts';
+import { createResidents } from '../../entities/town/residents.ts';
 import { createShoreWorker } from './shore-worker.ts';
 
 export const placeResidents = createResidents(

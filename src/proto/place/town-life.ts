@@ -8,9 +8,9 @@ import { registerInteractable } from '../../player/hands.ts';
 import { placeWardrobe } from './gifts.ts';
 import { youGot } from './got.ts';
 import { hasFact } from './growth.ts';
-import { createHouse } from './house.ts';
+import { createHouse } from '../../entities/town/house.ts';
 import { L1, lines, machine } from './lines.ts';
-import { createMuseum, type MuseumEnv } from './museum.ts';
+import { createMuseum, type MuseumEnv } from '../../entities/town/museum.ts';
 import { placeResidents, shoreWorker } from './place-residents.ts';
 import {
   indoorCamera,
@@ -29,9 +29,9 @@ import { forge } from './forge.ts';
 import { job } from './job.ts';
 import { run } from './run.ts';
 import { sites } from '../../place/sites.ts';
-import { createShop } from './shop.ts';
+import { createShop } from '../../entities/town/shop.ts';
 import { updateTalkCard, talking } from '../../place/talk.ts';
-import { BOARDS } from './town-lines.ts';
+import { BOARDS } from '../../entities/town/town-lines.ts';
 
 roomEnv.up = (id) => id === 'house' || L1.open;
 stakeBoard(rooms.shop, BOARDS.shopPlot);

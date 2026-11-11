@@ -44,9 +44,9 @@ import { FINDERS } from '../../place/tech-layout.ts';
 import { dustRing } from '../../place/pieces.ts';
 import { softGlow } from '../../place/look.ts';
 import { dropGot, youGot } from './got.ts';
-import type { ShopWardrobe } from './shop.ts';
+import type { ShopWardrobe } from '../../entities/town/shop.ts';
 import { addFoot } from '../../place/sites.ts';
-import { SHOP } from './town-lines.ts';
+import { SHOP } from '../../entities/town/town-lines.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
 // The catalog itself (names, lines, parts, tiers, odds and fits) is src/render/cosmetic-parts.ts.

@@ -97,7 +97,7 @@ These are track-construction systems, not passenger locomotives. They require pr
 
 **Owner approval, 5 November:** Option A is approved as a free completion reward with one doorway, safe floor, guarded furnace and rack-facing seat. Preserve production, pickup and freight paths; verify entry, exit, cutaways and two-player passage.
 
-**Problem / today [C].** Finishing a liked building should reward being there. [`forge.ts`](../../src/proto/place/forge.ts) builds frame/walls by hand, adds its roof from freight and improves rail output; wall collision closes its shell. [`rooms.ts`](../../src/proto/place/rooms.ts) already provides enterable town rooms and camera cutaways, but the forge is separate.
+**Problem / today [C].** Finishing a liked building should reward being there. [`forge.ts`](../../src/proto/place/forge.ts) builds frame/walls by hand, adds its roof from freight and improves rail output; wall collision closes its shell. [`rooms.ts`](../../src/entities/town/rooms.ts) already provides enterable town rooms and camera cutaways, but the forge is separate.
 
 **Reference [V].** Stardew Valley 1.6 makes the restored Community Center fish tank usable ([developer changelog](https://www.stardewvalley.net/stardew-valley-1-6-update-full-changelog/)). A completed structure can become an amenity, not merely a checked bill.
 

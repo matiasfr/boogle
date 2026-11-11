@@ -43,7 +43,7 @@ in the new Lockstep rules. Engine comparison A applies.
 **Evidence:** [index.ts](../../src/proto/place/index.ts) runs most of the place from one update hook, in explicit
 sequence (`updateRun`, cargo, forge, pieces, moments, gifts, folk, chop, town, tech). It also installs camera and
 haul overrides. [moves.ts](../../src/proto/place/moves.ts) brackets the player controller at fixed-step orders
-22 and 42 and picks a hook ring at update order 11. [rooms.ts](../../src/proto/place/rooms.ts), `makeRoom`,
+22 and 42 and picks a hook ring at update order 11. [rooms.ts](../../src/entities/town/rooms.ts), `makeRoom`,
 creates scene groups and bodies; [town-life.ts](../../src/proto/place/town-life.ts) appends a camera constraint.
 Those module lifetimes currently match the page, which is reasonable for the prototype.
 
@@ -56,7 +56,7 @@ Do not create another frame loop, scene graph or ECS. Engine comparison B applie
 
 **Evidence:** [gifts.ts](../../src/proto/place/gifts.ts), `Part`, `unit` and `merged`, owns the primitive batching
 utility along with gift catalogs, meshes, presence handlers, save registration and reveal logic.
-[rooms.ts](../../src/proto/place/rooms.ts) imports `merged` and derives its `Part` type from that function.
+[rooms.ts](../../src/entities/town/rooms.ts) imports `merged` and derives its `Part` type from that function.
 Thus importing a room-building utility also loads gift-system work.
 
 **Later:** move the reusable primitive description/builder into a presentation-only leaf module, then let both
@@ -94,7 +94,7 @@ Do not simply remove the handle or hide missing beats. This is a Boogle tooling 
 **Evidence:** [index.ts](../../src/proto/place/index.ts) imports sea and sky from `proto/crossing`, cargo from
 `proto/net`, sounds from `proto/minis`, and overrides `haulHooks`. [chop.ts](../../src/proto/place/chop.ts) writes
 `backSeam` from `features/haul-stack`. [town-life.ts](../../src/proto/place/town-life.ts) eagerly imports all three
-interiors, while [rooms.ts](../../src/proto/place/rooms.ts) hides nearby detail using visibility.
+interiors, while [rooms.ts](../../src/entities/town/rooms.ts) hides nearby detail using visibility.
 Hiding detail does not unload its modules, stop their registration or establish resource ownership.
 
 **Later:** inventory these dependencies and promote only the production pieces, leaving still-used experiments

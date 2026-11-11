@@ -1,7 +1,7 @@
 // A painted sign standing in the world (owner, 9 November: "diagetic signage instead of large hovering text"): a board
 // in a timber frame on its own post or posts, fixed, never turning to the camera. The face and its wood are one canvas
 // and one material, so a sign is one mesh and one draw: the caller paints the face rows, and the frame and posts
-// sample a strip of plain wood under them (the stake boards' trick in src/proto/place/rooms.ts). Both faces carry the
+// sample a strip of plain wood under them (the stake boards' trick in src/entities/town/rooms.ts). Both faces carry the
 // paint and read the right way round from either side. It casts no shadow of its own, like the stake boards. Local.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';

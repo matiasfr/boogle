@@ -23,7 +23,7 @@ import { LOOK, STEEL, boardMaterial } from '../../place/look.ts';
 import { kitBatch } from '../../place/look-kit.ts';
 import { RAIL_SIZE, dropSet, dustRing, send } from '../../place/pieces.ts';
 import { addFoot, hullBodies, outOf } from '../../place/sites.ts';
-import { makeWorkshop } from './workshop.ts';
+import { makeWorkshop } from '../../entities/town/workshop.ts';
 
 import { forgePlan, openForgeMouth, X, Z, W, D, HIGH } from '../../place/opening-plans.ts';
 import { craneModel, rackModel } from '../../place/opening-models.ts';

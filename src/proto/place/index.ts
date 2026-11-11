@@ -17,7 +17,8 @@
 //   ./town-life.ts the town you can go into: ./rooms.ts, ./house.ts, ./shop.ts, ./museum.ts, ./residents.ts; every word in ./town-lines.ts
 //
 // Sync: Local, all of it, kept in localStorage per room. With `&coop=1`, ./coop.ts shares the railway between the tabs in the room.
-import './place.css';
+import '../../entities/railway/railway.css';
+import '../../entities/town/town.css';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { worldStatus, world } from '../../world/sync.ts';
@@ -120,7 +121,7 @@ describeControl('place-chop', {
   group: 'hands',
   order: 2,
 });
-// A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the panel.
+// A clean view for someone playing it cold (the tester's link, `&fresh=1`): railway.css hides the panel.
 if (pageQuery().get('fresh') === '1') {
   document.body.classList.add('place-fresh');
 }
