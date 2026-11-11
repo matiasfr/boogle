@@ -20,8 +20,10 @@ files both sides touched merge textually and need no rerun.
 
 Bad combinations are caught after the merge, not before: automerge dispatches CI on main after every merge. A red
 main run opens (or comments on) one `red-main` issue, closed by the next green main run (ci.yml, `red-main` job);
-ci-autofix's main job has Claude open a `claude/fix-main-*` PR; `npm run heartbeat` leads with `RED MAIN` and lists
-both. Fixing main beats starting something new.
+ci-autofix's main job has Claude bisect main's first-parent merges since the last green run with the failing file alone
+(`git bisect run`) and open a `claude/fix-main-*` PR naming the first bad merge; `npm run heartbeat` leads with
+`RED MAIN` and lists both. While the issue is open, `ship-queue` holds review-path ships (exit 7, `--main-known`).
+Fixing main beats starting something new.
 
 Main has no branch protection (owner verified GET protection: 404); its ruleset blocks force pushes. Automerge uses
 `GITHUB_TOKEN` and `--match-head-commit`, without `--admin`. Do not enable strict up-to-date required checks: they would
