@@ -55,7 +55,10 @@ type Client = {
 };
 
 /** A server room and its clients. `delay` is each client's one-way delay in steps (6 steps ~ 100 ms). */
-function world({ reach = () => true }: { reach?: (pid: string) => boolean } = {}) {
+function world({
+  reach = () => true,
+  movement = () => MOVEMENT,
+}: { reach?: (pid: string) => boolean; movement?: () => typeof MOVEMENT } = {}) {
   const sync = createSync();
   sync.setSelfId('server');
   const base = installRules(sync, homeLand());
@@ -87,7 +90,7 @@ function world({ reach = () => true }: { reach?: (pid: string) => boolean } = {}
     const mirror = createRailwayMirror();
     const adapter = createRailwayAdapter({
       mirror,
-      movement: () => MOVEMENT,
+      movement,
       pid,
       pose: () => ({ x: -0.001, y: 0.0001, z: 995.62 }),
       now: () => now,
@@ -867,4 +870,102 @@ test('a back set down as two drops 100 ms apart: both predicted, both accepted b
     held,
   );
   agrees(w, a.adapter.inspect());
+});
+
+// ---------------------------------------------------------------- the per-tick read (ECS migration M1)
+// inspect() is asked for about a hundred times a frame. It must be the same frozen object while nothing it shows has
+// changed, and a frame must evaluate its cache key (the tick, 18 tunables) once, not once a call.
+test('the read is one object while nothing changes, and its key is evaluated once a frame, not once a call', () => {
+  let movementReads = 0;
+  const w = world({ movement: () => (movementReads++, MOVEMENT) });
+  const a = w.join('a', 'alice');
+  w.ready();
+  w.quiet(5);
+  const first = a.adapter.inspect();
+  const reads = a.adapter.inspect().prediction.reads;
+  const keys = movementReads;
+  const builds = [reads.stateBuilds, reads.inspectionBuilds];
+  for (let k = 0; k < 100; k++) assert.equal(a.adapter.inspect(), first);
+  assert.equal(movementReads, keys, 'a hundred reads in one frame evaluate no key');
+  assert.deepEqual([reads.stateBuilds, reads.inspectionBuilds], builds, 'and build nothing');
+  assert.equal(reads.inspects >= 101, true);
+  assert.equal(first.hash, first.hash, 'the hash is lazy and stable');
+});
+
+test('the read key without the loop: two reads with no packet, action or tick between are one object; a tunable, a tick and a reset make a new one', () => {
+  let solo = 300;
+  const at = 0;
+  const adapter = createRailwayAdapter({
+    mirror: createRailwayMirror(),
+    movement: () => railMovement({ get: (k) => (k === 'railBoilerSoloSpeed' ? solo : specOf(k)!.def) }),
+    pid: 'a',
+    pose: () => ({ x: 0, y: 0, z: 0 }),
+    now: () => at,
+  });
+  const a = adapter.inspect();
+  assert.equal(adapter.inspect(), a, 'no update(): every call checks the whole key and finds it unchanged');
+  assert.equal(adapter.inspect().prediction.reads.keyEvals, 3);
+  solo = 340;
+  const b = adapter.inspect();
+  assert.notEqual(b, a, 'a tunable change');
+  assert.equal(b.boilerSoloSpeed, 3.4);
+  assert.equal(adapter.inspect(), b);
+  adapter.dispose();
+});
+
+test('a packet, a predicted action, a tick, a tunable change, a reset and a refill each give a new read', () => {
+  let solo = 300;
+  const w = world({ movement: () => ({ ...MOVEMENT, boilerSoloSpeed: solo / 100 }) });
+  const a = w.join('a', 'alice');
+  w.ready();
+  w.awake(a);
+  w.quiet(30);
+  let last = a.adapter.inspect();
+  const changed = (why: string) => {
+    const now = a.adapter.inspect();
+    assert.notEqual(now, last, why);
+    assert.equal(a.adapter.inspect(), now, `${why}: and then it holds`);
+    last = now;
+    return now;
+  };
+  // A tick passing (and whatever packets come with it).
+  const tick0 = a.adapter.inspect().prediction.reads.stateBuilds;
+  w.run(40);
+  changed('a tick and its packets');
+  assert.ok(a.adapter.inspect().prediction.reads.stateBuilds > tick0);
+  // A tunable: not seen inside the frame it changed in (the key is taken at the head of the frame), seen at the next.
+  solo = 340;
+  assert.equal(a.adapter.inspect(), last, 'the frame keeps its read');
+  w.run(1);
+  assert.equal(changed('a tunable change next frame').boilerSoloSpeed, 3.4);
+  // A predicted action shows inside the frame it was pressed in, however the read was cached.
+  const carry = a.adapter.inspect().carry;
+  assert.equal(a.adapter.chop(TREE, 0, false), true);
+  assert.equal(changed('a press').carry, carry + 2);
+  // Its ack and the packets after it.
+  w.run(40);
+  changed('the ack');
+  // A reset (the socket drops) and a refill (it comes back and the whole state arrives again).
+  a.disconnect();
+  changed('a disconnect');
+  a.reconnect();
+  changed('a reconnect');
+  assert.equal(a.adapter.inspect().synced, false);
+  w.ready();
+  w.quiet(20);
+  assert.equal(changed('the refill arriving').synced, true);
+});
+
+test('a read held across frames stays what it was: the next frame gives a new object, never a changed one', () => {
+  const w = world();
+  const a = w.join('a', 'alice');
+  w.ready();
+  w.awake(a);
+  const held = a.adapter.inspect();
+  const frozen = JSON.stringify({ carry: held.carry, step: held.step, pending: held.pending });
+  w.run(60);
+  const now = a.adapter.inspect();
+  assert.notEqual(now, held);
+  assert.equal(JSON.stringify({ carry: held.carry, step: held.step, pending: held.pending }), frozen);
+  assert.equal(Object.isFrozen(held), true);
 });
