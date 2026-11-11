@@ -2,8 +2,9 @@
 // is its position in RAIL_LINES, a halt's id (rail.call's `id`) its position in RAIL_HALTS, a train's slot its position
 // in RAIL_TRAINS; all three follow catalog order, so reordering is a WORLD_NS break. railway-train.ts's TRAIN_STOPS,
 // LINE_HALTS, TRAIN_HOME and trainStopsOf are views of it. Pure integers (world cm, cm a tick), no imports but the
-// works layout.
+// works and ring layouts (./railway-ring-layout.ts imports only this file's RailPlatform type, so it is not a cycle).
 import { PIER_STOP_CM } from './railway-works-layout.ts';
+import { RING_HEAD } from './railway-ring-layout.ts';
 
 export type RailEndKind = 'stub' | 'crossover' | 'loop';
 /** Where a line turns back: a stub (the two tracks merge into one terminal track at `mergeCm`), a crossover (a facing
@@ -29,6 +30,17 @@ export type RailHalt = {
   platforms: readonly [RailPlatform, RailPlatform];
   /** Set on a halt that can be the line's open end: how it turns trains back. */
   end?: RailEnd;
+  // v27's halt fields (docs/plans/ring-island-build1.md, R3a), read by the pure train code only.
+  /** It opens only once Ring Island's rivet is struck (`ring.joined`), on top of its `opens` slot. */
+  ring?: true;
+  /** Its stop per railhead (`RING_HEAD[k].s`): the stop is `heads[head]`, and its `end` is written for `heads[0]`
+   * and moves with the stop (endBlocks). `s` is `heads[0]`. */
+  heads?: readonly number[];
+  /** While it is not an open end, only trains going this way (-1: down, homeward) stop there: the owner's
+   * "homeward-only stop". */
+  only?: -1;
+  /** A leg ending here on the up track (going +s) brakes at this rate (cm a tick²), not the line's `accel`. */
+  brake?: number;
 };
 export type RailLineDef = {
   /** Stable, never reused. */
@@ -156,6 +168,16 @@ export const RAIL_LINES: readonly RailLineDef[] = [
 
 /** Line 2's index: the line that carries cargo (the Q6 kit, the footing wagon). */
 export const LINE2 = RAIL_LINES.findIndex((l) => l.id === 'line2');
+/** A line the pure train code runs: its index in RAIL_LINES, or a line the catalog does not hold (a test's fixture
+ * line, its trains slots 0 to `trains - 1` of the rows it is given). */
+export type LineRef = number | RailLineDef;
+export const lineDef = (line: LineRef): RailLineDef => (typeof line === 'number' ? RAIL_LINES[line]! : line);
+/** Halt `halt`'s platform (a RAIL_HALTS id, or a halt) for a train going `way` (+1 up, -1 down): a `heads` halt's
+ * down side is the railhead's platform at `head` (the server's reach check and the lever's view read it). */
+export function haltPlatform(halt: number | RailHalt, way: number, head = 0): RailPlatform {
+  const h = typeof halt === 'number' ? RAIL_HALTS[halt]! : halt;
+  return h.heads && way < 0 ? RING_HEAD[head]!.platform : h.platforms[way > 0 ? 0 : 1];
+}
 
 // ---------------------------------------------------------------- the circuit (generic-lines, "The state shape" 2)
 /** One number round a line for ordering and spacing only (never stored): the up track (0) runs `s - s0` from the start
@@ -172,23 +194,29 @@ export const circuitLen = (stops: readonly number[]) => 2 * (stops[stops.length 
 export const circuitAhead = (from: number, to: number, c: number) => (((to - from) % c) + c) % c;
 /** Where a line's `n` trains stand before they wake, and again when they wake (rail.boilerFit), over its open stops:
  * train k at the open halt nearest `c = home + k·C/n` round the circuit (its first at `home`), standing on the track
- * whose way out is inward (an end's way out; a middle halt's track by the half of the circuit it is nearest on). */
-export function trainPlaces(line: number, stops: readonly number[]) {
-  const l = RAIL_LINES[line]!,
+ * whose way out is inward (an end's way out; a middle halt's track by the half of the circuit it is nearest on). A
+ * place already taken by an earlier train is skipped (with three trains on line 2's first stops, two are nearest Far
+ * Head's down track), so no two trains stand on one spot. */
+export function trainPlaces(line: LineRef, stops: readonly number[]) {
+  const l = lineDef(line),
     c = circuitLen(stops),
     last = stops.length - 1;
   const at = (k: number, track: number) => circuitCm(stops, track, stops[k]!);
   const home = at(l.home, l.home === last ? 1 : 0);
+  const taken: { stop: number; track: number }[] = [];
   return Array.from({ length: l.trains }, (_v, k) => {
     const want = (home + Math.floor((k * c) / l.trains)) % c;
-    let best = { stop: 0, track: 0, d: c };
+    let best = { stop: 0, track: 0, d: c + 1 };
     for (let stop = 0; stop <= last; stop++)
       for (const track of stop === 0 ? [0] : stop === last ? [1] : [0, 1]) {
+        if (taken.some((t) => t.stop === stop && t.track === track)) continue;
         const p = at(stop, track) % c,
           d = Math.min(circuitAhead(p, want, c), circuitAhead(want, p, c));
         if (d < best.d) best = { stop, track, d };
       }
-    return { stop: best.stop, track: best.track };
+    const place = { stop: best.stop, track: best.track };
+    taken.push(place);
+    return place;
   });
 }
 /** The stops open before any QJob is complete (the pier is the last halt and opens last). */

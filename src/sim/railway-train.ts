@@ -6,7 +6,7 @@
 // tick) to a standstill at stop `to`, so a request made mid-run replans the leg from the train's pose that tick. Since
 // v26 (docs/plans/generic-lines.md) each line is double track, one direction a track: a train runs end to end on its
 // `track` and turns back only at an end; spacing, holds and who serves a lever ask are ./railway-trains.ts.
-import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, lineDef, type LineRef } from './railway-lines.ts';
 export const TRAIN = {
   speed: 200,
   accel: 3.5,
@@ -16,19 +16,30 @@ export const TRAIN = {
   /** The block rule's gap round the circuit: a train's length (RIDER_SPAN, the footing wagon's tail) plus 20 m. */
   sepCm: 2740,
 } as const;
-/** A line's cruise (cm a tick) and acceleration (cm a tick²); TRAIN's by default. */
-export type TrainKin = { readonly speed: number; readonly accel: number };
+/** A line's cruise (cm a tick) and acceleration (cm a tick²); TRAIN's by default. `brake` (cm a tick²), when set, is
+ * the leg's braking rate instead of `accel` (a halt's eased end stop: stopKin). */
+export type TrainKin = { readonly speed: number; readonly accel: number; readonly brake?: number };
+/** The rate a leg brakes at. */
+const brakeOf = (kin: TrainKin) => kin.brake ?? kin.accel;
 export const TRAIN_PHASE = { STAND: 0, RUN: 1 } as const;
 // v25's tables, now views of the catalog (src/sim/railway-lines.ts).
 export const TRAIN_STOPS: readonly (readonly number[])[] = RAIL_LINES.map((l) => l.halts.map((h) => h.s));
-const OPENS: readonly (readonly number[])[] = RAIL_LINES.map((l) => l.halts.map((h) => h.opens));
-const ALL_LAID = Number.MAX_SAFE_INTEGER;
-/** The stops a line serves now: the halts whose `opens` QJob slot is complete (line 2's pier once Q6 is laid; every
- * decision reads this, while the pose and legs index TRAIN_STOPS, whose first stops are the same). `laid` is how
- * many QJob slots are complete, or v25's boolean (true: every slot). */
-export const trainStopsOf = (line: number, laid: number | boolean): readonly number[] => {
-  const done = laid === true ? ALL_LAID : laid === false ? 0 : laid;
-  return TRAIN_STOPS[line]!.filter((_s, k) => OPENS[line]![k]! < done);
+/** v26's boolean `laid`: true is "Q6 is laid" (its six slots complete), which opens the pier. */
+const Q6_LAID = 6;
+/** Ring Island's state as the stops read it (R3b's `ringOpen`): the railhead's bent past bent 6 (`RailHalt.heads`'s
+ * index) and whether the rivet is struck (a `ring` halt opens). */
+export type RingOpen = { readonly head: number; readonly joined: boolean };
+const RING_SHUT: RingOpen = { head: 0, joined: false };
+/** The stops a line serves now: the halts whose `opens` QJob slot is complete and, for a `ring` halt, the rivet
+ * struck; a `heads` halt's stop is `heads[ring.head]` (every decision reads this, while the pose reads only the row).
+ * Open stops are a prefix of the halts (endBlocks reads the last's end). `laid` is how many QJob slots are complete,
+ * or v26's boolean (true: Q6 is laid). */
+export const trainStopsOf = (line: LineRef, laid: number | boolean, ring: RingOpen = RING_SHUT): readonly number[] => {
+  const done = laid === true ? Q6_LAID : laid === false ? 0 : laid;
+  const out: number[] = [];
+  for (const h of lineDef(line).halts)
+    if (h.opens < done && (!h.ring || ring.joined)) out.push(h.heads ? h.heads[ring.head]! : h.s);
+  return out;
 };
 /** The stop each train (by slot) stands at before it wakes. */
 export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);
@@ -97,7 +108,11 @@ export function trainIdle(slot: number): RailTrain {
 type Profile = { v0: number; up: number; cruise: number; peak: number; dec: number; total: number; upCm: number };
 function profile(dist: number, v0: number, kin: TrainKin): Profile {
   const a = kin.accel,
-    top = kin.speed;
+    top = kin.speed,
+    b = brakeOf(kin);
+  // An eased stop: speeding up at `a`, braking at `b`. With `b === a` the three branches below run untouched, so v26's
+  // legs stay bit for bit (test/railway-train.test.ts).
+  if (b !== a) return eased(dist, v0, a, b, top);
   // A save's leg too short to brake at the normal rate brakes harder: never past the stop.
   if (v0 > 0 && dist * 2 * a < v0 * v0) {
     const dec = (v0 * v0) / (2 * dist);
@@ -114,6 +129,24 @@ function profile(dist: number, v0: number, kin: TrainKin): Profile {
   const up = v0 ? (Math.sqrt(a * dist + (v0 * v0) / 2) - v0) / a : Math.sqrt(dist / a);
   const peak = v0 + a * up;
   return { v0, up, cruise: 0, peak, dec: a, total: up + peak / a, upCm: v0 * up + (a * up * up) / 2 };
+}
+/** profile's three branches with braking at `b` (not `a`): the peak where speeding up at `a` from `v0` meets braking
+ * at `b` solves (p² - v0²) / 2a + p² / 2b = dist. */
+function eased(dist: number, v0: number, a: number, b: number, top: number): Profile {
+  if (v0 > 0 && dist * 2 * b < v0 * v0) {
+    const dec = (v0 * v0) / (2 * dist);
+    return { v0, up: 0, cruise: 0, peak: v0, dec, total: v0 / dec, upCm: 0 };
+  }
+  const upTicks = (top - v0) / a,
+    upCm = v0 * upTicks + (a * upTicks * upTicks) / 2,
+    downCm = (top * top) / (2 * b);
+  if (dist >= upCm + downCm) {
+    const cruise = (dist - upCm - downCm) / top;
+    return { v0, up: upTicks, cruise, peak: top, dec: b, total: upTicks + cruise + top / b, upCm };
+  }
+  const peak = Math.sqrt((2 * a * b * dist + b * v0 * v0) / (a + b)),
+    up = (peak - v0) / a;
+  return { v0, up, cruise: 0, peak, dec: b, total: up + peak / b, upCm: v0 * up + (a * up * up) / 2 };
 }
 /** Whole ticks a leg of `dist` cm takes from `v0` cm per tick. */
 export function trainLegTicks(dist: number, v0 = 0, kin: TrainKin = TRAIN) {
@@ -145,22 +178,30 @@ export function trainLegSpeed(dist: number, t: number, v0 = 0, kin: TrainKin = T
   return p.dec * (p.total - t);
 }
 
-// The pose is the row's and its line's speed alone (never a stop table).
-const kinOf = (line?: number): TrainKin => (line === undefined ? TRAIN : (RAIL_LINES[line] ?? TRAIN));
+/** The kin a leg to halt `to` (-1 a signal) on `track` runs at: its line's, braking at the halt's `brake` when it
+ * ends there going up (track 0). */
+export function stopKin(line: LineRef, to: number, track: number): TrainKin {
+  const l = lineDef(line),
+    brake = track === 0 && to >= 0 ? l.halts[to]?.brake : undefined;
+  return brake === undefined ? l : { speed: l.speed, accel: l.accel, brake };
+}
+// The pose is the row's (its `to` and `track` pick the braking rate) and its line's kin alone (never a stop table).
+const kinOf = (row: Readonly<RailTrain>, line?: LineRef): TrainKin =>
+  line === undefined ? TRAIN : typeof line === 'number' && !RAIL_LINES[line] ? TRAIN : stopKin(line, row.to, row.track);
 const legDist = (row: Readonly<RailTrain>) => Math.abs(row.dest - row.from);
 /** Which way the train goes: its track's (+1 up, -1 down). */
 export const trainDir = (row: Readonly<{ track: number }>) => (row.track ? -1 : 1);
-export function trainAlong(row: Readonly<RailTrain>, line: number, tick: number) {
+export function trainAlong(row: Readonly<RailTrain>, line: LineRef, tick: number) {
   if (row.phase === TRAIN_PHASE.STAND) return row.from;
-  return row.from + trainDir(row) * trainLegAlong(legDist(row), tick - row.depart, row.v0, kinOf(line));
+  return row.from + trainDir(row) * trainLegAlong(legDist(row), tick - row.depart, row.v0, kinOf(row, line));
 }
 /** Its speed at `tick` (cm per tick, unsigned). */
-export function trainSpeed(row: Readonly<RailTrain>, line: number, tick: number) {
+export function trainSpeed(row: Readonly<RailTrain>, line: LineRef, tick: number) {
   if (row.phase === TRAIN_PHASE.STAND) return 0;
-  return trainLegSpeed(legDist(row), tick - row.depart, row.v0, kinOf(line));
+  return trainLegSpeed(legDist(row), tick - row.depart, row.v0, kinOf(row, line));
 }
-export function trainArrives(row: Readonly<RailTrain>, line?: number) {
-  return row.depart + trainLegTicks(legDist(row), row.v0, kinOf(line));
+export function trainArrives(row: Readonly<RailTrain>, line?: LineRef) {
+  return row.depart + trainLegTicks(legDist(row), row.v0, kinOf(row, line));
 }
 
 // ---------------------------------------------------------------- requests and where the train stops next
@@ -197,16 +238,25 @@ export const reqValid = (req: number, n: number) =>
 /** Cargo and the footing wagon's stops, decided by the sim from state (never a request). */
 export type ServiceStop = (stop: number, dir: number) => boolean;
 const NO_SERVICE: ServiceStop = () => false;
-/** Halts strictly ahead of `s` going `dir` that a train at `v` cm per tick can still stop at, nearest first. */
-function reachable(stops: readonly number[], s: number, v: number, dir: number, kin: TrainKin) {
-  const brake = (v * v) / (2 * kin.accel);
+/** A kin for every stop (a line's halts may brake at their own rate: stopKin), or one for all. */
+export type StopKin = TrainKin | ((stop: number) => TrainKin);
+const kinAt = (kin: StopKin, k: number) => (typeof kin === 'function' ? kin(k) : kin);
+/** Halts strictly ahead of `s` going `dir` that a train at `v` cm per tick can still stop at (each at its own braking
+ * rate), nearest first. */
+function reachable(stops: readonly number[], s: number, v: number, dir: number, kin: StopKin) {
   const out: number[] = [];
   for (let n = 0; n < stops.length; n++) {
     const k = dir > 0 ? n : stops.length - 1 - n;
     const d = (stops[k]! - s) * dir;
-    if (d > 0 && d >= brake) out.push(k);
+    if (d > 0 && d >= (v * v) / (2 * brakeOf(kinAt(kin, k)))) out.push(k);
   }
   return out;
+}
+/** Whether halt `k` of a line with `n` open stops refuses trains going `dir`: an `only` halt that is not an open end
+ * serves only its own way (the homeward-only Pier: no up train stops there, for any reason). */
+export function trainPassesBy(line: LineRef, k: number, dir: number, n: number) {
+  const only = lineDef(line).halts[k]?.only;
+  return only !== undefined && dir !== only && k !== 0 && k !== n - 1;
 }
 /** The halt a train at `s` (cm), `v` (cm per tick), on the track going `dir` makes next, or -1 if it can stop
  * nowhere ahead: the nearest halt it can still brake for that has a reason (`reasons`: an ask it serves, or a service
@@ -217,7 +267,7 @@ export function trainNextStop(
   v: number,
   dir: number,
   reasons: ServiceStop = NO_SERVICE,
-  kin: TrainKin = TRAIN,
+  kin: StopKin = TRAIN,
 ) {
   const ahead = reachable(stops, s, v, dir, kin);
   for (const k of ahead) if (reasons(k, dir)) return k;
@@ -226,7 +276,7 @@ export function trainNextStop(
 /** Whether a train at `s` going `dir` at `v` can still brake to a standstill at `at` (strictly ahead). */
 export function trainCanBrake(s: number, v: number, dir: number, at: number, kin: TrainKin = TRAIN) {
   const d = (at - s) * dir;
-  return d > 0 && d >= (v * v) / (2 * kin.accel);
+  return d > 0 && d >= (v * v) / (2 * brakeOf(kin));
 }
 /** `req` with only the asks heading `dir` kept (a train turning back at an end drops its riders' asks the other way,
  * which it could no longer serve). */
@@ -236,11 +286,26 @@ export function reqOnly(req: number, n: number, dir: number) {
   return out;
 }
 /** What a passenger's request would ask for now: the first halt ahead the train can still stop at, heading its way.
- * Null when that halt is the line's end (it stops there anyway); `requested` when it already stops there. */
-export function trainRequestable(row: Readonly<RailTrain>, line: number, n: number, tick: number) {
-  const stops = TRAIN_STOPS[line]!.slice(0, n);
+ * Null when that halt is the line's end (it stops there anyway); `requested` when it already stops there. A halt that
+ * refuses its way (trainPassesBy: the homeward-only Pier for an up train) is skipped, so the next one is offered.
+ * `open` is the line's open stops (trainStopsOf), or v26's count of them (the first `n` halts' own stops). */
+export function trainRequestable(
+  row: Readonly<RailTrain>,
+  line: LineRef,
+  open: number | readonly number[],
+  tick: number,
+) {
+  const stops =
+      typeof open === 'number'
+        ? lineDef(line)
+            .halts.slice(0, open)
+            .map((h) => h.s)
+        : open,
+    n = stops.length;
   const dir = trainDir(row);
-  const next = reachable(stops, trainAlong(row, line, tick), trainSpeed(row, line, tick), dir, kinOf(line))[0];
+  const next = reachable(stops, trainAlong(row, line, tick), trainSpeed(row, line, tick), dir, (k) =>
+    stopKin(line, k, row.track),
+  ).find((k) => !trainPassesBy(line, k, dir, n));
   if (next === undefined || next === 0 || next === n - 1) return null;
   const requested = reqHas(row.req, next, dir, n) || (row.phase === TRAIN_PHASE.RUN && row.to === next);
   return { stop: next, dir, requested };

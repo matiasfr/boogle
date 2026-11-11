@@ -10,22 +10,39 @@
 //   trainServes(...)              the train a lever ask (halt, way) is for: the nearest that way that can still brake
 //   planLeg(...)                  the leg a train plans from a pose: its next reason, or the farthest hold short of it
 //   trainStepLine(io, line, tick) one line's trains for a tick: arrivals, turn-backs, holds, departures and replans
-//   trainSpacing(rows, ...)       the spacing invariants at a tick (tests sample it)
-import { LINE2, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT, circuitAhead, circuitCm, circuitLen } from './railway-lines.ts';
+//   endMoved(io, line, last, tick) the line runs on past its old end `last` (Q6, Q7, the rivet)
+//   stopMoved(io, line, k, tick)  halt k's stop moved on (the railhead's next bent)
+//   trainSpacing(rows, ...)       the spacing invariants at a tick (tests sample it); lineSpacing for one line
+//
+// Every `line` is a LineRef: a catalog index, or a test's fixture line (./railway-lines.ts).
+import {
+  LINE2,
+  RAIL_LINES,
+  RAIL_TRAINS,
+  TRAIN_EXTENT,
+  circuitAhead,
+  circuitCm,
+  circuitLen,
+  lineDef,
+  type LineRef,
+} from './railway-lines.ts';
 import type { Railway } from './railway.ts';
 import {
   TRAIN,
   TRAIN_PHASE,
+  reqAdd,
   reqAt,
   reqDrop,
   reqHas,
   reqOnly,
   reqValid,
+  stopKin,
   trainAlong,
   trainArrives,
   trainCanBrake,
   trainLegTicks,
   trainNextStop,
+  trainPassesBy,
   trainSpeed,
   type RailTrain,
   type ServiceStop,
@@ -41,24 +58,30 @@ export type Rows = (slot: number) => Readonly<RailTrain>;
 export const LINE_SLOTS: readonly (readonly number[])[] = RAIL_LINES.map((_l, line) =>
   RAIL_TRAINS.flatMap((t, slot) => (t.line === line ? [slot] : [])),
 );
+/** A line's train slots: LINE_SLOTS for a catalog line, 0 to `trains - 1` for a fixture line. */
+export const lineSlots = (line: LineRef): readonly number[] =>
+  typeof line === 'number' ? LINE_SLOTS[line]! : Array.from({ length: line.trains }, (_v, k) => k);
 
 // ---------------------------------------------------------------- the ends
 /** One open end's block, both tracks from `from` to `to` (cm along the line: from a stub's turnout's far side, or a
  * crossover's start, to the end stop), the halt it ends at (its index in the open stops), the way into it, and where a
  * train that can't enter waits: its signal (`RailEnd.signalCm`), a stop with no halt on the inbound track, never
- * nearer the end stop than `TRAIN.sepCm`. A train is in it while any of it is (`TRAIN_EXTENT`). */
+ * nearer the end stop than `TRAIN.sepCm`. A train is in it while any of it is (`TRAIN_EXTENT`). The far end's block
+ * and signal move with its stop (a `heads` halt's: by `stops[last] - halts[last].s`, 0 for a fixed halt). */
 export type EndBlock = { from: number; to: number; stop: number; dir: number; signal: number };
-export function endBlocks(line: number, stops: readonly number[]): readonly [EndBlock, EndBlock] {
-  const halts = RAIL_LINES[line]!.halts,
+export function endBlocks(line: LineRef, stops: readonly number[]): readonly [EndBlock, EndBlock] {
+  const halts = lineDef(line).halts,
     last = stops.length - 1;
   const a = halts[0]!.end,
     b = halts[last]!.end;
-  if (!a || !b) throw new Error(`railway: line ${line} has no end at halt 0 or ${last}`);
+  if (!a || !b)
+    throw new Error(`railway: line ${typeof line === 'number' ? line : line.id} has no end at halt 0 or ${last}`);
   const s0 = stops[0]!,
-    s1 = stops[last]!;
+    s1 = stops[last]!,
+    shift = s1 - halts[last]!.s;
   return [
     { from: s0, to: a.edgeCm, stop: 0, dir: -1, signal: Math.max(a.signalCm, s0 + TRAIN.sepCm) },
-    { from: b.edgeCm, to: s1, stop: last, dir: 1, signal: Math.min(b.signalCm, s1 - TRAIN.sepCm) },
+    { from: b.edgeCm + shift, to: s1, stop: last, dir: 1, signal: Math.min(b.signalCm + shift, s1 - TRAIN.sepCm) },
   ];
 }
 /** Whether a train with its along at `s` reaches into block `b`. */
@@ -68,24 +91,24 @@ export const atEnd = (stop: number, stops: readonly number[]) => stop === 0 || s
 
 // ---------------------------------------------------------------- the headway
 /** The non-stop round trip between the open ends, two dwells included. */
-export function cycleTicks(line: number, stops: readonly number[]) {
-  return 2 * trainLegTicks(stops[stops.length - 1]! - stops[0]!, 0, RAIL_LINES[line]!) + 2 * TRAIN.dwellTicks;
+export function cycleTicks(line: LineRef, stops: readonly number[]) {
+  return 2 * trainLegTicks(stops[stops.length - 1]! - stops[0]!, 0, lineDef(line)) + 2 * TRAIN.dwellTicks;
 }
 /** The least gap between two trains leaving the same end: `headPct` of an even split; none with one train. */
-export function headTicks(line: number, stops: readonly number[], headPct = TRAIN_HEAD_PCT) {
-  const n = RAIL_LINES[line]!.trains;
+export function headTicks(line: LineRef, stops: readonly number[], headPct = TRAIN_HEAD_PCT) {
+  const n = lineDef(line).trains;
   return n < 2 ? 0 : Math.floor((cycleTicks(line, stops) * headPct) / (100 * n));
 }
 
 // ---------------------------------------------------------------- poses, blocks and service
 /** Where a train is now: cm along the line, speed (whole cm a tick, as a replan starts from it) and circuit position. */
-export function trainPose(row: Readonly<RailTrain>, line: number, stops: readonly number[], tick: number) {
+export function trainPose(row: Readonly<RailTrain>, line: LineRef, stops: readonly number[], tick: number) {
   const s = trainAlong(row, line, tick);
-  const v = Math.min(RAIL_LINES[line]!.speed, Math.round(trainSpeed(row, line, tick)));
+  const v = Math.min(lineDef(line).speed, Math.round(trainSpeed(row, line, tick)));
   return { s, v, c: circuitCm(stops, row.track, s) % circuitLen(stops) };
 }
 /** Whether a train is in an end block or bound for it: standing or running inside it, or its leg ending in it. */
-function inBlock(row: Readonly<RailTrain>, line: number, b: EndBlock, tick: number) {
+function inBlock(row: Readonly<RailTrain>, line: LineRef, b: EndBlock, tick: number) {
   return within(b, trainAlong(row, line, tick)) || (row.phase === TRAIN_PHASE.RUN && within(b, row.dest));
 }
 /** Whether train `slot`, now on `track`, may plan a leg to `dest` (cm): the circuit position it ends at is at least
@@ -93,7 +116,7 @@ function inBlock(row: Readonly<RailTrain>, line: number, b: EndBlock, tick: numb
  * ends in has no other train of its line in it. */
 export function blockFree(
   rows: Rows,
-  line: number,
+  line: LineRef,
   stops: readonly number[],
   slot: number,
   track: number,
@@ -103,32 +126,35 @@ export function blockFree(
   const c = circuitLen(stops),
     me = trainPose(rows(slot), line, stops, tick);
   const leg = circuitAhead(me.c, circuitCm(stops, track, dest) % c, c);
-  for (const other of LINE_SLOTS[line]!) {
+  for (const other of lineSlots(line)) {
     if (other === slot) continue;
     const gap = circuitAhead(me.c, trainPose(rows(other), line, stops, tick).c, c);
     if (leg + TRAIN.sepCm > gap) return false;
   }
   for (const b of endBlocks(line, stops))
-    if (within(b, dest) && LINE_SLOTS[line]!.some((k) => k !== slot && inBlock(rows(k), line, b, tick))) return false;
+    if (within(b, dest) && lineSlots(line).some((k) => k !== slot && inBlock(rows(k), line, b, tick))) return false;
   return true;
 }
 /** The train a lever ask at `stop` heading `dir` is for: the one with the least circuit distance to that platform
  * whose braking distance at its speed now fits in it (a train standing there, leaving that way, at no distance);
- * -1 for none. A train too close runs through and the next one takes it, so the assignment only ever moves back. */
+ * -1 for none (and for a way the halt refuses: trainPassesBy). A train too close runs through and the next one takes
+ * it, so the assignment only ever moves back. Braking distances are at the halt's own rate (stopKin). */
 export function trainServes(
   rows: Rows,
-  line: number,
+  line: LineRef,
   stops: readonly number[],
   stop: number,
   dir: number,
   tick: number,
 ) {
+  if (trainPassesBy(line, stop, dir, stops.length)) return -1;
   const c = circuitLen(stops),
     at = circuitCm(stops, dir > 0 ? 0 : 1, stops[stop]!) % c,
-    a = RAIL_LINES[line]!.accel;
+    kin = stopKin(line, stop, dir > 0 ? 0 : 1),
+    a = kin.brake ?? kin.accel;
   let best = -1,
     near = c;
-  for (const slot of LINE_SLOTS[line]!) {
+  for (const slot of lineSlots(line)) {
     const r = rows(slot),
       p = trainPose(r, line, stops, tick),
       d = circuitAhead(p.c, at, c);
@@ -139,10 +165,11 @@ export function trainServes(
   }
   return best;
 }
-/** Why a train stops at a halt: its riders' ask, a lever ask it serves, or a service stop. */
+/** Why a train stops at a halt: its riders' ask, a lever ask it serves, or a service stop; never at a halt that
+ * refuses its way (trainPassesBy). */
 export function trainReasons(
   rows: Rows,
-  line: number,
+  line: LineRef,
   stops: readonly number[],
   slot: number,
   lineReq: number,
@@ -151,16 +178,17 @@ export function trainReasons(
 ): ServiceStop {
   const n = stops.length;
   return (k, dir) =>
-    reqHas(rows(slot).req, k, dir, n) ||
-    service(k, dir) ||
-    (reqHas(lineReq, k, dir, n) && trainServes(rows, line, stops, k, dir, tick) === slot);
+    !trainPassesBy(line, k, dir, n) &&
+    (reqHas(rows(slot).req, k, dir, n) ||
+      service(k, dir) ||
+      (reqHas(lineReq, k, dir, n) && trainServes(rows, line, stops, k, dir, tick) === slot));
 }
 export type Leg = { to: number; dest: number; reason: boolean };
 /** The leg train `slot` plans from (`s`, `v`) on `track`: to its next reason (or its end) when the blocks allow it,
  * else to the farthest halt or signal short of it they allow (a hold: `reason` false); null when they allow none. */
 export function planLeg(
   rows: Rows,
-  line: number,
+  line: LineRef,
   stops: readonly number[],
   slot: number,
   pose: { s: number; v: number; track: number },
@@ -169,13 +197,14 @@ export function planLeg(
 ): Leg | null {
   const { s, v, track } = pose,
     dir = track ? -1 : 1,
-    kin = RAIL_LINES[line]!;
-  const k = trainNextStop(stops, s, v, dir, reasons, kin);
+    kin = lineDef(line),
+    at = (j: number) => stopKin(line, j, track);
+  const k = trainNextStop(stops, s, v, dir, reasons, at);
   if (k < 0) return null;
   const goal = stops[k]!;
   const holds: { to: number; dest: number }[] = [];
   for (let j = 0; j < stops.length; j++)
-    if (j !== k && (goal - stops[j]!) * dir > 0 && trainCanBrake(s, v, dir, stops[j]!, kin))
+    if (j !== k && (goal - stops[j]!) * dir > 0 && trainCanBrake(s, v, dir, stops[j]!, at(j)))
       holds.push({ to: j, dest: stops[j]! });
   for (const b of endBlocks(line, stops))
     if (b.dir === dir && (goal - b.signal) * dir > 0 && trainCanBrake(s, v, dir, b.signal, kin))
@@ -188,12 +217,12 @@ export function planLeg(
 
 // ---------------------------------------------------------------- one line's step
 /** The world's side of a line's step, from railway-sys-trains.ts: rows to read and write, and the cargo rules. */
-export type TrainIO = {
+export type TrainIO<L extends LineRef = number> = {
   row: Rows;
   set(slot: number, patch: Partial<RailTrain>): void;
-  line(line: number): Readonly<RailLineRow>;
-  setLine(line: number, patch: Partial<RailLineRow>): void;
-  stops(line: number): readonly number[];
+  line(line: L): Readonly<RailLineRow>;
+  setLine(line: L, patch: Partial<RailLineRow>): void;
+  stops(line: L): readonly number[];
   /** The tick the trains were woken (the boiler fit), -1 before. */
   awake: number;
   /** The headway hold's percent (the room's railTrainHeadPct). */
@@ -210,7 +239,7 @@ export type TrainIO = {
 };
 /** A running train's leg, judged again from its pose now: shortened for a reason it can still brake for, or
  * lengthened past a hold the train ahead has moved off. The pose stays continuous (`from` is where it is now). */
-function replan(io: TrainIO, line: number, slot: number, tick: number) {
+function replan<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, tick: number) {
   if (io.row(slot).turn) return; // on a crossover, committed to the halt it turns back at
   const r = io.row(slot),
     stops = io.stops(line),
@@ -223,9 +252,9 @@ function replan(io: TrainIO, line: number, slot: number, tick: number) {
   if ((leg.dest - r.dest) * dir < 0 ? !leg.reason : !heldNow) return;
   io.set(slot, { to: leg.to, from: pose.s, v0: pose.v, dest: leg.dest, depart: tick });
 }
-export function trainStepLine(io: TrainIO, line: number, tick: number) {
+export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
   if (io.awake < 0) return;
-  for (const slot of LINE_SLOTS[line]!) {
+  for (const slot of lineSlots(line)) {
     for (let guard = 0; guard < 16; guard++) {
       const r = io.row(slot),
         stops = io.stops(line),
@@ -278,6 +307,41 @@ export function trainStepLine(io: TrainIO, line: number, tick: number) {
   }
 }
 
+// ---------------------------------------------------------------- the end and a stop move on (v27)
+/** The rows a moved end or stop rewrites: read, write, and the line's open stops (already the new ones). */
+export type TrainMoveIO<L extends LineRef = number> = Pick<TrainIO<L>, 'row' | 'set' | 'stops'>;
+/** The line now runs on past `last`, its old end (Q6 past Far Head, Q7 past the Pier, the rivet past the Railhead;
+ * `io.stops` already has the new end). A train running up to `last` as its end whose nose is past that end's edge (a
+ * crossover's first point, or a stub's turnout, moved with a `heads` stop) has already crossed onto the terminal
+ * track: it turns back there as at an end (`turn`). One short of it runs on and, unless the halt is `only`, stops
+ * there once, as if a rider had asked (its riders could not ask for an end). A train standing at `last` has already
+ * turned onto the down track, and leaves homeward as from a middle halt. */
+export function endMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, last: number, tick: number) {
+  const halt = lineDef(line).halts[last]!,
+    stops = io.stops(line),
+    edge = halt.end!.edgeCm + stops[last]! - halt.s;
+  for (const slot of lineSlots(line)) {
+    const r = io.row(slot);
+    if (r.phase !== TRAIN_PHASE.RUN || r.track !== 0 || r.to !== last) continue;
+    if (trainAlong(r, line, tick) + TRAIN_EXTENT.aheadCm > edge) io.set(slot, { turn: true });
+    else if (halt.only === undefined) io.set(slot, { req: reqAdd(r.req, last, 1, stops.length) });
+  }
+}
+/** Halt `k`'s stop has moved on (the railhead's next bent: `io.stops` already has it). A train standing at the old
+ * stop stands at a signal (`at` and `to` -1: it keeps its pose, has no dwell left and leaves homeward when its way is
+ * clear); one running to `k` is replanned from its pose now to the new stop, as a replan writes a leg. No pose jumps. */
+export function stopMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, k: number, tick: number) {
+  const stops = io.stops(line);
+  for (const slot of lineSlots(line)) {
+    const r = io.row(slot);
+    if (r.phase === TRAIN_PHASE.STAND && r.at === k) io.set(slot, { at: -1, to: -1 });
+    else if (r.phase === TRAIN_PHASE.RUN && r.to === k) {
+      const pose = trainPose(r, line, stops, tick);
+      io.set(slot, { from: pose.s, v0: pose.v, dest: stops[k]!, depart: tick });
+    }
+  }
+}
+
 // ---------------------------------------------------------------- the read model
 /** A line's trains on the read model, in slot order (replaces v25's `line2.train[k]`). */
 export const railTrainsOf = (s: Pick<Railway, 'trains'>, line: number) => LINE_SLOTS[line]!.map((k) => s.trains[k]!);
@@ -285,91 +349,123 @@ export const railTrainsOf = (s: Pick<Railway, 'trains'>, line: number) => LINE_S
 // ---------------------------------------------------------------- invariants
 const int = (v: unknown, max = 2147483647, min = 0): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max && !Object.is(v, -0);
+/** Whether `req` asks for a way a halt refuses (trainPassesBy: the homeward-only Pier's up way). */
+function refusedAsk(req: number, line: LineRef, st: readonly number[]) {
+  const n = st.length;
+  for (let k = 0; k < n; k++)
+    for (const dir of [-1, 1]) if (trainPassesBy(line, k, dir, n) && reqHas(req, k, dir, n)) return true;
+  return false;
+}
+/** Whether a line's lever asks are well formed for its open stops `st`: reqValid, none for a refused way. */
+export const lineReqOk = (req: number, line: LineRef, st: readonly number[]) =>
+  reqValid(req, st.length) && !refusedAsk(req, line, st);
+/** What is wrong with one train row on `line` with open stops `st` (null when nothing): its shape and bounds
+ * ('railway: train', `cargo` the most it carries, `asleep` the caller's asleep-placement check), then its riders'
+ * asks: only at middle halts, its own way, never a refused way ('railway: rider ask'). */
+export function trainRowBroken(
+  r: Readonly<RailTrain>,
+  line: LineRef,
+  st: readonly number[],
+  cargo: number,
+  asleep = false,
+): string | null {
+  const last = st.length - 1,
+    dir = r.track ? -1 : 1;
+  if (
+    asleep ||
+    !int(r.phase, 1) ||
+    !int(r.at, last, -1) ||
+    !int(r.to, last, -1) ||
+    !int(r.track, 1) ||
+    !int(r.depart) ||
+    !reqValid(r.req, st.length) ||
+    !int(r.from, st[last]!, st[0]!) ||
+    !int(r.dest, st[last]!, st[0]!) ||
+    !int(r.v0, lineDef(line).speed) ||
+    !int(r.logs, cargo) ||
+    !int(r.rails, cargo) ||
+    (r.phase === TRAIN_PHASE.STAND && (r.at !== r.to || r.from !== r.dest || r.v0 !== 0)) ||
+    // A leg runs somewhere: a halt to another, or from a signal (-1) to a halt or to another signal (Q6 opening the
+    // pier moves the far signal out, so a train held at the old one runs signal to signal). Its length is always
+    // positive, its way the track's.
+    (r.phase === TRAIN_PHASE.RUN &&
+      ((r.at >= 0 && r.at === r.to) || r.from === r.dest || (r.dest - r.from) * dir < 0)) ||
+    // Turning back at a halt that was an end: running up to it, a halt with an end that is no longer open.
+    (r.turn &&
+      (r.phase !== TRAIN_PHASE.RUN ||
+        r.track !== 0 ||
+        r.to < 0 ||
+        atEnd(r.to, st) ||
+        !lineDef(line).halts[r.to]!.end ||
+        r.dest !== st[r.to])) ||
+    (r.at >= 0 && r.phase === TRAIN_PHASE.STAND && r.from !== st[r.at]) ||
+    (r.to >= 0 && r.dest !== st[r.to])
+  )
+    return 'railway: train';
+  // A rider's ask is for a middle halt its own way (an end it stops at anyway; the other way it can't serve), and
+  // never for a way the halt refuses.
+  for (let k = 0; k <= last; k++)
+    if (atEnd(k, st) ? reqAt(r.req, k) : reqHas(r.req, k, -dir, st.length)) return 'railway: rider ask';
+  return refusedAsk(r.req, line, st) ? 'railway: rider ask' : null;
+}
+/** Whether two of a line's trains stand in, or run to, one of its end blocks (without a tick). */
+export function lineBlocksBroken(trains: readonly Readonly<RailTrain>[], line: LineRef, st: readonly number[]) {
+  return endBlocks(line, st).some(
+    (b) =>
+      trains.filter(
+        (r) =>
+          (r.phase === TRAIN_PHASE.STAND && within(b, r.from)) || (r.phase === TRAIN_PHASE.RUN && within(b, r.dest)),
+      ).length > 1,
+  );
+}
 /** The trains' and lines' rows on the read model (railwayCheck's part for them): shapes and bounds by each train's
- * line and its open stops, asks that pass `reqValid` (a rider's only at middle halts, its own way), the asleep
- * placement, cargo only on line 2, and at most one train in or bound for each end block. The spacing needs a tick:
- * trainSpacing. */
+ * line and its open stops, asks that pass `reqValid` (a rider's only at middle halts, its own way; none for a way a
+ * halt refuses), the asleep placement, cargo only on line 2, and at most one train in or bound for each end block.
+ * The spacing needs a tick: trainSpacing. */
 export function validateRailTrains(s: Railway, stops: (line: number) => readonly number[]) {
   if (s.trains.length !== RAIL_TRAINS.length || s.lines.length !== RAIL_LINES.length)
     throw new Error('railway: trains');
   const awake = (s.line2?.trains ?? -1) >= 0;
   s.lines.forEach((l, line) => {
-    if (!reqValid(l.req, stops(line).length) || !int(l.left0, 2147483647, -1) || !int(l.left1, 2147483647, -1))
+    if (!lineReqOk(l.req, line, stops(line)) || !int(l.left0, 2147483647, -1) || !int(l.left1, 2147483647, -1))
       throw new Error('railway: line');
     if (!awake && (l.req || l.left0 >= 0 || l.left1 >= 0)) throw new Error('railway: line asleep');
   });
   s.trains.forEach((r, slot) => {
-    const { line, home, track } = RAIL_TRAINS[slot]!,
-      st = stops(line),
-      last = st.length - 1,
-      dir = r.track ? -1 : 1;
-    const cargo = line === LINE2 ? 32 : 0;
-    if (
-      !int(r.phase, 1) ||
-      !int(r.at, last, -1) ||
-      !int(r.to, last, -1) ||
-      !int(r.track, 1) ||
-      !int(r.depart) ||
-      !reqValid(r.req, st.length) ||
-      !int(r.from, st[last]!, st[0]!) ||
-      !int(r.dest, st[last]!, st[0]!) ||
-      !int(r.v0, RAIL_LINES[line]!.speed) ||
-      !int(r.logs, cargo) ||
-      !int(r.rails, cargo) ||
-      (r.phase === TRAIN_PHASE.STAND && (r.at !== r.to || r.from !== r.dest || r.v0 !== 0)) ||
-      // A leg runs somewhere: a halt to another, or from a signal (-1) to a halt or to another signal (Q6 opening the
-      // pier moves the far signal out, so a train held at the old one runs signal to signal). Its length is always
-      // positive, its way the track's.
-      (r.phase === TRAIN_PHASE.RUN &&
-        ((r.at >= 0 && r.at === r.to) || r.from === r.dest || (r.dest - r.from) * dir < 0)) ||
-      // Turning back at a halt that was an end: running up to it, a halt with an end that is no longer open.
-      (r.turn &&
-        (r.phase !== TRAIN_PHASE.RUN ||
-          r.track !== 0 ||
-          r.to < 0 ||
-          atEnd(r.to, st) ||
-          !RAIL_LINES[line]!.halts[r.to]!.end ||
-          r.dest !== st[r.to])) ||
-      (r.at >= 0 && r.phase === TRAIN_PHASE.STAND && r.from !== st[r.at]) ||
-      (r.to >= 0 && r.dest !== st[r.to]) ||
-      (!awake &&
-        (r.phase || r.at !== home || r.to !== home || r.track !== track || r.depart || r.req || r.logs || r.rails))
-    )
-      throw new Error('railway: train');
-    // A rider's ask is for a middle halt its own way (an end it stops at anyway; the other way it can't serve).
-    for (let k = 0; k <= last; k++)
-      if (atEnd(k, st) ? reqAt(r.req, k) : reqHas(r.req, k, -dir, st.length)) throw new Error('railway: rider ask');
+    const { line, home, track } = RAIL_TRAINS[slot]!;
+    const asleep =
+      !awake &&
+      !!(r.phase || r.at !== home || r.to !== home || r.track !== track || r.depart || r.req || r.logs || r.rails);
+    const broken = trainRowBroken(r, line, stops(line), line === LINE2 ? 32 : 0, asleep);
+    if (broken) throw new Error(broken);
   });
-  for (let line = 0; line < RAIL_LINES.length; line++) {
-    const st = stops(line);
-    // Without a tick: standing in a block, or a leg ending in one.
-    for (const b of endBlocks(line, st))
-      if (
-        railTrainsOf(s, line).filter(
-          (r) =>
-            (r.phase === TRAIN_PHASE.STAND && within(b, r.from)) || (r.phase === TRAIN_PHASE.RUN && within(b, r.dest)),
-        ).length > 1
-      )
-        throw new Error('railway: end block');
-  }
+  // Without a tick: standing in a block, or a leg ending in one.
+  for (let line = 0; line < RAIL_LINES.length; line++)
+    if (lineBlocksBroken(railTrainsOf(s, line), line, stops(line))) throw new Error('railway: end block');
 }
-/** The spacing invariants at `tick` (null when they hold): every train of a line at least `TRAIN.sepCm` behind the
- * one ahead round its circuit, and at most one train in or bound for each end block. */
+/** One line's spacing invariants at `tick` (null when they hold): every train at least `TRAIN.sepCm` behind the one
+ * ahead round its circuit, and at most one train in or bound for each end block. */
+export function lineSpacing(rows: Rows, line: LineRef, st: readonly number[], tick: number): string | null {
+  const slots = lineSlots(line),
+    c = circuitLen(st),
+    name = typeof line === 'number' ? line : line.id;
+  if (slots.length > 1) {
+    const at = slots.map((k) => trainPose(rows(k), line, st, tick).c).sort((p, q) => p - q);
+    for (let k = 0; k < at.length; k++) {
+      const gap = circuitAhead(at[k]!, at[(k + 1) % at.length]!, c);
+      if (gap < TRAIN.sepCm) return `railway: line ${name} trains ${gap} cm apart`;
+    }
+  }
+  for (const b of endBlocks(line, st))
+    if (slots.filter((k) => inBlock(rows(k), line, b, tick)).length > 1)
+      return `railway: line ${name} end block at ${b.stop} holds two trains`;
+  return null;
+}
+/** The spacing invariants at `tick` for every catalog line (lineSpacing; null when they hold). */
 export function trainSpacing(rows: Rows, stops: (line: number) => readonly number[], tick: number): string | null {
   for (let line = 0; line < RAIL_LINES.length; line++) {
-    const slots = LINE_SLOTS[line]!,
-      st = stops(line),
-      c = circuitLen(st);
-    if (slots.length > 1) {
-      const at = slots.map((k) => trainPose(rows(k), line, st, tick).c).sort((p, q) => p - q);
-      for (let k = 0; k < at.length; k++) {
-        const gap = circuitAhead(at[k]!, at[(k + 1) % at.length]!, c);
-        if (gap < TRAIN.sepCm) return `railway: line ${line} trains ${gap} cm apart`;
-      }
-    }
-    for (const b of endBlocks(line, st))
-      if (slots.filter((k) => inBlock(rows(k), line, b, tick)).length > 1)
-        return `railway: line ${line} end block at ${b.stop} holds two trains`;
+    const broken = lineSpacing(rows, line, stops(line), tick);
+    if (broken) return broken;
   }
   return null;
 }
