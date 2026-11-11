@@ -15,7 +15,12 @@ const { aperture, works, rw } = (await import('/dev/look/rail-read.ts' as string
 const layout = (await import(
   '/src/sim/railway-ring-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-ring-layout.ts');
+const { inspectRailway } = (await import(
+  '/src/entities/railway/state.ts' as string
+)) as typeof import('../../../src/entities/railway/state.ts');
 const bot = makeBot();
+const leafView = () =>
+  (inspectRailway()?.worksView as { leafView?: { deg: number; moving: boolean } } | null)?.leafView;
 const head = layout.RING_HEAD[7]!;
 const say = (text: string) => console.log(`STRIKE ${text}`);
 const offered = () => interactTarget()?.verb ?? 'nothing';
@@ -27,7 +32,18 @@ while (aperture(rw()).brace !== 0) {
   if (performance.now() > end) throw new Error(`the leaf never came down ${state()}`);
   await bot.wait(100);
 }
-say(`leaf down ${state()}`);
+say(`brace is 0 ${state()} leaf ${JSON.stringify(leafView())}`);
+// The sim's brace flips as the swing starts; the rivet is offered only once the plate has visibly landed.
+const standing = layout.ringAt(25950, layout.RING_FORMATION.mid);
+teleport(me.body!, standing.x / 100, layout.ringDeckY(25950) / 100 + 0.85, standing.z / 100);
+await bot.wait(300);
+say(`mid-swing at the rivet offers: ${offered()} (expect nothing) leaf ${JSON.stringify(leafView())}`);
+const landing = performance.now() + 8000;
+while (leafView()?.deg !== 0 || leafView()?.moving) {
+  if (performance.now() > landing) throw new Error(`the leaf never landed ${JSON.stringify(leafView())}`);
+  await bot.wait(100);
+}
+say(`leaf landed ${JSON.stringify(leafView())}`);
 /** Stand at (u, lat) cm on the joint's deck, facing along the line toward the island. */
 function standAt(u: number, lat: number) {
   const p = layout.ringAt(u, lat);
