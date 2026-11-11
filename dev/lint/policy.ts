@@ -78,17 +78,31 @@ const railQueriesBan = {
   regex: '(^|/)railway-(systems|sys-[\\w-]+)\\.ts$',
   message: `Queries are pure reads of the world: they import no system file (${RAIL_PLAN}).`,
 };
+// The seed builders and the drivers run the rules and the load check (M3c's review): a view or src/world may name
+// their types (src/world/railway-jump.ts takes SeedStage), never their code.
+const railDriverBan = {
+  regex: '(^|/)railway-(drive|seeds|live)\\.ts$',
+  allowTypeImports: true,
+  message: `The seeds and the drivers (railway-drive, -seeds, -live) run the rules and the load check: the server, src/sim, tests and tools import them, a view or src/world only their types (${RAIL_PLAN}).`,
+};
 /** What code outside src/sim and src/world may not import of the railway's sim. */
-const railViewBans = [railCheckBan, railSystemsBan, railReadModelBan];
+const railViewBans = [railCheckBan, railSystemsBan, railReadModelBan, railDriverBan];
 // The same for an `import()`, which no-restricted-imports does not see (views load most of their code that way):
-// a quoted path, a template literal and a `'/src/…' as string` path alike. Attribute paths, not combinators: the
-// safety runner re-matches each reported node without its ancestors.
-const RAIL_DYNAMIC = '/(^|\\/)railway-(check|read-model|systems|sys-[\\w-]+)(-[\\w-]+)?\\.ts$/';
+// a quoted path, a template literal and a `'/src/…' as string` path alike, cast or parenthesized up to three deep
+// (`as unknown as string`, `(…) as string`). Attribute paths, not combinators: the safety runner re-matches each
+// reported node without its ancestors.
+const RAIL_DYNAMIC = '/(^|\\/)railway-(check|read-model|systems|sys-[\\w-]+|drive|seeds|live)(-[\\w-]+)?\\.ts$/';
+const RAIL_DYNAMIC_AT = [
+  'source',
+  'source.expression',
+  'source.expression.expression',
+  'source.expression.expression.expression',
+];
 const railDynamicBan = {
-  selector: ['source.value', 'source.quasis.0.value.raw', 'source.expression.value']
+  selector: RAIL_DYNAMIC_AT.flatMap((at) => [`${at}.value`, `${at}.quasis.0.value.raw`])
     .map((at) => `ImportExpression[${at}=${RAIL_DYNAMIC}]`)
     .join(', '),
-  message: `A view does not load the railway's systems, check or read model (${RAIL_PLAN}).`,
+  message: `A view does not load the railway's systems, check, read model, seeds or drivers (${RAIL_PLAN}).`,
 };
 /** The tests and tools that import the read model today, file by file; the list may only lose lines (M12b deletes it). */
 const READ_MODEL_IMPORTERS = [
@@ -260,7 +274,10 @@ const policyBlocks: PolicyBlock[] = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan, railReadModelBan] },
+        {
+          paths: rapierBans,
+          patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan, railReadModelBan, railDriverBan],
+        },
       ],
     },
   },
@@ -279,14 +296,17 @@ const policyBlocks: PolicyBlock[] = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan] },
+        { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, railCheckBan, railDriverBan] },
       ],
     },
   },
   {
     files: ['src/world/railway-server.ts'],
     rules: {
-      'no-restricted-imports': ['error', { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan] }],
+      'no-restricted-imports': [
+        'error',
+        { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan, railDriverBan] },
+      ],
     },
   },
   {
@@ -294,7 +314,10 @@ const policyBlocks: PolicyBlock[] = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { paths: rapierBans, patterns: [headlessBan, protoBan, debugBan, railCheckBan, railReadModelBan] },
+        {
+          paths: rapierBans,
+          patterns: [headlessBan, protoBan, debugBan, railCheckBan, railReadModelBan, railDriverBan],
+        },
       ],
     },
   },
@@ -318,6 +341,7 @@ const policyBlocks: PolicyBlock[] = [
             },
             railCheckBan,
             railReadModelBan,
+            railDriverBan,
           ],
         },
       ],
