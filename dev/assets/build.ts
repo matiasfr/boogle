@@ -3,7 +3,7 @@
 //
 //   npm run assets                 build every source whose hash changed since the manifest
 //   npm run assets -- scaffold-kit build one (or several), changed or not; --force rebuilds them all
-//   npm run assets -- --check      no Blender, no encoders: every source has a fresh output, within budget (in `check`)
+//   npm run assets -- --check      no Blender, no encoders: every source has a fresh output, fresh; size targets only warn (in `check`)
 //
 //   npm run assets -- --scratch .look/lamp lamp  same builder, isolated src/ and built/; no catalogue registration
 //
@@ -35,6 +35,9 @@ import {
   sourceHash,
   readManifest,
   budgetReport,
+  assetSizeWarning,
+  textureSizeWarning,
+  sizeSummary,
   budgetSummary,
 } from './manifest.ts';
 
@@ -42,6 +45,8 @@ import {
 function check() {
   const manifest = readManifest();
   const errors: string[] = [];
+  const sizeWarnings: string[] = [];
+  const textureWarnings: string[] = [];
   const sizes: Record<string, number> = {};
   for (const { name, file } of sources()) {
     const e = manifest[name];
@@ -54,20 +59,25 @@ function check() {
       errors.push(`${name}: ${file} changed since its output was built; run \`npm run assets -- ${name}\``);
     const buf = fs.readFileSync(out);
     if (e.outHash !== sha(buf)) errors.push(`${name}: ${name}.glb doesn't match the manifest; rebuild it`);
-    const budget = (sidecar(name).budgetKB ?? BUDGET.assetKB) * 1024;
-    if (buf.length > budget) errors.push(`${name}: ${kb(buf.length)} is over its ${kb(budget)} budget`);
-    for (const t of e.textures)
+    const over = assetSizeWarning(name, buf.length, sidecar(name).budgetKB ?? BUDGET.assetKB);
+    if (over) sizeWarnings.push(over);
+    for (const t of e.textures) {
+      const big = textureSizeWarning(name, t.name, Math.max(...t.size));
+      if (big) textureWarnings.push(big);
       if (t.mime !== 'image/ktx2' && Math.max(...t.size) > SMALL_TEXTURE)
         errors.push(
           `${name}: texture ${t.name} is ${t.mime} at ${t.size.join('x')}; over ${SMALL_TEXTURE} px needs KTX2`,
         );
+    }
     sizes[name] = buf.length;
   }
   for (const name of Object.keys(manifest))
     if (!sources().some((s) => s.name === name))
       errors.push(`${name}: in the manifest but has no source in assets/src`);
   const report = budgetReport(sizes);
-  errors.push(...report.flags.map((f) => 'all assets: ' + f));
+  // Size targets warn and never fail (owner, 10 November): the exit code ignores these.
+  for (const w of [...sizeWarnings, ...textureWarnings, ...report.flags.map((f) => 'all assets: ' + f)])
+    console.warn('assets: WARNING ' + w);
   if (errors.length) {
     console.error('assets: ' + errors.join('\nassets: '));
     process.exit(1);
@@ -77,6 +87,7 @@ function check() {
     console.log(`assets: first-priority but conditional (not in first load): ${report.conditionalFirst.join(', ')}`);
   if (report.unregistered.length)
     console.log(`assets: not registered (total only, no priority): ${report.unregistered.join(', ')}`);
+  console.log('assets: ' + sizeSummary(Object.keys(manifest).length, sizeWarnings, textureWarnings, report.flags));
 }
 
 // ---------------------------------------------------------------- build
@@ -139,10 +150,9 @@ async function build(names: string[], force: boolean, scratch?: string) {
     const hash = sourceHash(file, name, sourceDir);
     if (names.length ? !names.includes(name) : !force && manifest[name]?.sourceHash === hash) continue;
     const opts = { maxTexture: BUDGET.maxTexture as number, ...sidecar(name, sourceDir) };
-    if (opts.maxTexture > BUDGET.heroMaxTexture)
-      throw new Error(
-        `assets: ${name}: maxTexture ${opts.maxTexture} is over the ${BUDGET.heroMaxTexture} px hero cap`,
-      );
+    // Over the texture target is a warning: the asset is still built with the sidecar's maxTexture as authored.
+    const bigTexture = textureSizeWarning(name, 'maxTexture', opts.maxTexture);
+    if (bigTexture) console.warn('assets: WARNING ' + bigTexture);
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-asset-'));
     try {
       const raw = exportRaw(file, tmp, sourceDir);

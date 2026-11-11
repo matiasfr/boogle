@@ -21,7 +21,7 @@ export const BUDGET = {
   assetKB: 4 * 1024,
   /** Largest texture edge (px) by default. */
   maxTexture: 1024,
-  /** Largest texture edge a sidecar may raise `maxTexture` to: hero surfaces only. */
+  /** Texture edge (px) past which the build warns (owner, 10 November: a warning, never a failure). */
   heroMaxTexture: 2048,
 } as const satisfies Record<string, number>;
 export const SMALL_TEXTURE = 256;
@@ -121,10 +121,25 @@ export function budgetReport(sizes: Record<string, number>, stages = assetStages
   }
   const flags: string[] = [];
   if (firstBytes > BUDGET.firstLoadKB * 1024)
-    flags.push(`First-load budget exceeded: ${kb(firstBytes)} / ${BUDGET.firstLoadKB} KB`);
+    flags.push(`First-load size target exceeded: ${kb(firstBytes)} / ${BUDGET.firstLoadKB} KB`);
   if (totalBytes > BUDGET.totalKB * 1024)
-    flags.push(`Total download budget exceeded: ${kb(totalBytes)} / ${BUDGET.totalKB} KB`);
+    flags.push(`Total download size target exceeded: ${kb(totalBytes)} / ${BUDGET.totalKB} KB`);
   return { firstBytes, totalBytes, unregistered, conditionalFirst, flags };
+}
+/** An asset's built size against its target (its sidecar's `budgetKB` or BUDGET.assetKB): a warning line, or null. A warning only. */
+export function assetSizeWarning(name: string, bytes: number, budgetKB: number): string | null {
+  return bytes > budgetKB * 1024 ? `${name}: ${kb(bytes)} is over its ${kb(budgetKB * 1024)} size target` : null;
+}
+/** A texture edge against BUDGET.heroMaxTexture: a warning line, or null. A warning only; the asset is still emitted as authored. */
+export function textureSizeWarning(name: string, texture: string, edge: number): string | null {
+  return edge > BUDGET.heroMaxTexture
+    ? `${name}: texture ${texture} is ${edge} px, over the ${BUDGET.heroMaxTexture} px target`
+    : null;
+}
+/** The one line that keeps the warnings counted: how many assets are over a size target, and which kinds. */
+export function sizeSummary(total: number, sizeWarnings: string[], textureWarnings: string[], budgetFlags: string[]) {
+  const names = new Set([...sizeWarnings, ...textureWarnings].map((w) => w.split(':')[0]));
+  return `${names.size} of ${total} assets over a size target (${sizeWarnings.length} over size, ${textureWarnings.length} oversized textures, ${budgetFlags.length} of first-load and total over)`;
 }
 export function budgetSummary(r: BudgetReport) {
   const mb = (n: number) => (n / 1048576).toFixed(2) + ' MB';

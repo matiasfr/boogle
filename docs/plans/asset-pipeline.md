@@ -101,7 +101,7 @@ src/render/assets.ts: loadAsset(url) → instance(node) / clip(name, node) / pla
   registered with priority `first` and no `when`: what the first frame waits for), **100 MB in all** (streamed by
   priority), **4 MB per asset** (a sidecar's `budgetKB` may override), **1024 px textures** by default with **2048 px as
   the hero cap** (`heroMaxTexture`: a sidecar's `maxTexture` may raise one asset's textures up to it; above it the build
-  throws and `--check` flags). The first-load figure joins the built sizes with the priorities that `registerAsset`
+  warns; since 10 November no size limit here fails a build, each prints a warning and `--check` ends with a count of the assets over a target). The first-load figure joins the built sizes with the priorities that `registerAsset`
   calls declare in `src/`, which the build reads from source (`assetStages` in `dev/assets/manifest.ts`); a built file
   nothing registers counts in the total only and `--check` lists it. To revisit measured on the iPad. These are
   defaults, not caps: budgets follow each asset's prominence, and the total becomes a resident limit once loading
