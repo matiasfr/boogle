@@ -319,6 +319,9 @@ typecheck`, `npm run lint`.
       plus the export rule of section 3; `test/helpers/railway-m10a-twins.ts` if X3 left it. With it, section 4's
       rows for this step: one `perFrame` helper for the three memos, `sameMovement` over the keys, the old
       `waitsForTrain` deleted, and any view arithmetic X3 reported moved into its query file (that part is `src/sim`).
+      Also (found at M12c): `src/entities/railway/trains-shown.ts` latches "the first whole state is in", a session
+      value kept in a view; it becomes a facade value (`read.whole()`, true from the first whole state on, through
+      refills and full windows), `train-view.ts` reads it and the latch file is deleted.
   - **Done:** `grep -rE "inspectRailwayLegacy|RailwayInspection|railwayAt|\.inspect\(\)\.(carry|line2|stations)" src
     dev test server` is empty; `src/adapters` and `src/entities` import nothing that takes a `Railway`.
   - **Checks:** `npm run check:full`; the M12 trace unchanged; `npm run loop -- run --json` hash equal to main
