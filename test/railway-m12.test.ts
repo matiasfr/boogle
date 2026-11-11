@@ -25,7 +25,8 @@ import { LINE_HALTS } from '../src/sim/railway-train.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
 import { buildSeedWorld, type Seed, type SeedStage } from './helpers/rail.ts';
-import { beam, boiler, piles, shed, type ReadWorld } from '../src/sim/railway-rows.ts';
+import { beam, boiler, shed, type ReadWorld } from '../src/sim/railway-rows.ts';
+import { Pile } from '../src/sim/railway-components.ts';
 import type { World } from '../src/ecs/index.ts';
 
 type Adapter = ReturnType<typeof createRailwayAdapter>;
@@ -195,6 +196,7 @@ function press(c: Client, rand: () => number): boolean {
   const w = c.adapter.read.world() as ReadWorld;
   const a = c.adapter;
   const x = Math.floor(rand() * 36);
+  // Drops land on a small grid, so piles merge and two players contest the same pile.
   const spec = LINE2_STATIONS[Math.floor(rand() * LINE2_STATIONS.length)]!;
   const r3 = Math.floor(rand() * 3) as 0 | 1 | 2;
   switch (x) {
@@ -231,12 +233,13 @@ function press(c: Client, rand: () => number): boolean {
     case 16:
       return a.mine(Math.floor(rand() * 5));
     case 17:
-      return a.drop(T1.x + Math.floor(rand() * 600), 3000, T1.z + Math.floor(rand() * 600), 1 + r3, r3);
+      return a.drop(T1.x + 100 * Math.floor(rand() * 3), 3000, T1.z + 100 * Math.floor(rand() * 3), 1 + r3, r3);
     case 18:
     case 19: {
-      const list = piles(w);
-      const p = list[Math.floor(rand() * Math.max(1, list.length))];
-      return p ? a.take(p.id) : false;
+      const ids: number[] = [];
+      w.each([Pile], (id) => void ids.push(id));
+      const id = ids[Math.floor(rand() * Math.max(1, ids.length))];
+      return id !== undefined ? a.take(id) : false;
     }
     case 20:
       return a.beamTake(beam(w).revision);
@@ -366,6 +369,7 @@ test('M12 coverage: the runs predicted, confirmed, corrected, remapped and reset
     'accepted predicted',
     'accepted confirmed',
     'corrected contested',
+    'corrected refused',
     'remap',
     'reset hard',
     'reset soft',
