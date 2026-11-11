@@ -42,6 +42,8 @@ export type Track = {
   seat: (index: number, mid: THREE.Vector3, dir: THREE.Vector3) => void;
   /** Rail-level world point the gantry's sweep starts from. */
   panelStart: (index: number, out: THREE.Vector3) => THREE.Vector3;
+  /** `panelStart` for the up track's pair (?layer=wing: the second hand sweeps from here). */
+  panelStartUp: (index: number, out: THREE.Vector3) => THREE.Vector3;
   carriedLength: (index: number) => number;
   /** The up track's carried pair for this panel, as `seat`; false where the panel has no up track. */
   seatUp: (index: number, mid: THREE.Vector3, dir: THREE.Vector3) => boolean;
@@ -641,6 +643,12 @@ export function buildTrack(
       const s = dir > 0 ? at : line.len - at;
       lineAt(line, s, P);
       lateral(0, probe);
+      return out.set(probe.x, railY(line, s) + TOP, probe.z);
+    },
+    panelStartUp(index, out) {
+      const at = panels[index]!.from + Math.min(1.5, (panels[index]!.to - panels[index]!.from) / 4);
+      const s = dir > 0 ? at : line.len - at;
+      offsetAt(s, upAt(s) ?? 0, probe);
       return out.set(probe.x, railY(line, s) + TOP, probe.z);
     },
     carriedLength: (index) => carriedPiece(panels[index]!.to - panels[index]!.from).length,
