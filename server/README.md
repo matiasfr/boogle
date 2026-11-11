@@ -96,7 +96,9 @@ Unknown entries are reported. Inventory failure is logged without stopping boot 
 
 Cleanup is **enabled by default**, following the owner's 8 November approval. After inventory and before loading any
 rooms, obsolete classic and railway namespace saves and their stale temp files move to
-`DATA_DIR/.trash/<UTC ISO stamp>-<unique suffix>/files/`. There is no digest gate or legacy opt-in. Each run logs one
+`DATA_DIR/.trash/<UTC ISO stamp with - for :>-<unique suffix>/files/` (`2026-10-31T00-00-00.000Z-a1B2c3`, a name
+Windows accepts; older colon-form folders are still recognised and expire the same way). There is no digest gate or
+legacy opt-in. Each run logs one
 `save cleanup:` line with moved counts/bytes by reason, purged folder count, skipped count, unknown names and errors.
 Unknown root entries, symlinks, `reports/`, `playdata/` and `reviews/` stay in place.
 
