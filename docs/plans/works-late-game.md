@@ -322,6 +322,10 @@ from the table toward the stall door, and a video of the turn.
 > have an interior." This replaces the trigger below (the twelfth pier footing) and his "Later upgrade" of the same
 > morning; the step is not redesigned here and the change is queued
 > ([decision](../decisions-rail.md#d-2026-11-10-the-forge-finishes-when-the-player)).
+>
+> **Confirmed the same day (owner, "yes"):** the finish is the forge's last hand-fed stage (walls and chimney, when it
+> lights), so it never stands lit and roofless, and the existing workshop is its interior for now
+> ([decision](../decisions-rail.md#d-2026-11-10-the-forge-s-finish-is-its-last)).
 
 **Port check (owner call "Port from Place only what still fits").** Place roofed the forge with 8 freight crates lifted
 on by the dock crane ("hands started it, trains finish it"): the poles came down and it poured rails twice as fast.
