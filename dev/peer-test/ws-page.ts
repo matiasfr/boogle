@@ -18,7 +18,8 @@ import { railActiveStation } from '../../src/sim/railway-queries.ts';
 import { railPhase } from '../../src/sim/railway-queries-line1.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { account, accounts, qjobs, tree } from '../../src/sim/railway-rows.ts';
-import { Pile, Rail, createRailwayWorld } from '../../src/sim/railway-components.ts';
+import { Pile, createRailwayWorld } from '../../src/sim/railway-components.ts';
+import { worldOf } from '../../src/world/railway-predict.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
 import {
@@ -235,13 +236,12 @@ function startWorld(room: Room) {
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const rules = installRules(w, land);
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
-  // What the probes read (ECS M11): the mirror's world once a whole state has filled it, a fresh railway before that
-  // (as the read model was until then). Timed facts take the tick (a client's world holds no job clock of its own).
+  // What the probes read (ECS M11): the world the mirror's read model is linked to, which happens only once a whole
+  // state has arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and stays through
+  // a refill and a reset, as the read model does; a fresh railway before that. Not `rail.synced()`: it goes false
+  // during a refill while the world is still whole. Timed facts take the tick (a client's world holds no job clock).
   const fresh = createRailwayWorld();
-  const mirrored = () => {
-    const mw = rail!.world();
-    return mw.count(Rail) === 1 ? mw : fresh;
-  };
+  const mirrored = () => worldOf(rail!.railway) ?? fresh;
   railRoom = rail ? delayedRoom(room, LAT) : null;
   T.railStartAt = Date.now();
   const adapter =

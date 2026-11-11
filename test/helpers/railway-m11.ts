@@ -13,7 +13,7 @@ import { installRules } from '../../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../../src/world/railway-server.ts';
 import { createReplicator } from '../../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
-import { railwayOf } from '../../src/world/railway-predict.ts';
+import { railwayOf, worldOf } from '../../src/world/railway-predict.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import * as old from '../../src/sim/railway.ts';
 import * as oldLine2 from '../../src/sim/railway-line2.ts';
@@ -121,9 +121,10 @@ export function probeWas(s: old.Railway, tick: number) {
 function mirrorAgrees(r: Room, where: string) {
   r.pump();
   const tick = r.sync.world.tick;
-  const mw = r.mirror.world();
-  if (mw.count(Rail) !== 1) return;
-  // Before (ws-page.ts): `rail.at(tick)` then the read model's facts. Now: the mirror's world at that tick.
+  // ws-page.ts's gate: the world the read model is linked to (only once whole). Before: `rail.at(tick)` then the read
+  // model's facts. Now: that world at the tick.
+  const mw = worldOf(r.mirror.railway);
+  if (!mw) return;
   assert.deepEqual(probe(mw, tick), probeWas(r.mirror.at(tick), tick), `mirror ${where}`);
 }
 
