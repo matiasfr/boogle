@@ -161,3 +161,45 @@ jaws hold a pair over the up track in at least three frames and no up pair lies 
 s 178 and side-on from 50 m; a Far Head crossover panel.
 
 Not seen: the wing itself, the distance view, the chair view and line 2 at the platforms.
+
+## Wing greybox: parts and storyboard (step A, 11 November 2026)
+
+Written before the code, as the review requires. Frame: the flatbed's rig frame (rail level, +z the machine's heading,
++x its left; the up track is at +x on line 2 and at -x on line 1). `side` is the sign of the up seat's x. Everything is
+a plain box, behind `?layer=wing`; no colliders. `PANEL_BEAM_LENGTH` stays 7.0 (the GLB beam is untouched and still
+drawn); the flag path asserts its own 5.8 m reach for both hands.
+
+| Part | Pivot (rig frame) | Range | Colour |
+| --- | --- | --- | --- |
+| Arm | hinge on the flatbed's up-side rail, x = side * 1.1, y 1.3, z 1.2 | telescopes from 0.3 m (folded) to 2.9 m (gap 4 m); its tip is the post | orange |
+| Post | tip of the arm, x = side * max(gap, 1.4), z 1.2 ahead of the flatbed centre; head at y 4.0 | fixed 4.0 m tall; moves with the arm only | orange |
+| Truck (frame, stem, two wheels, one per rail at +/-0.5 m) | foot of the post | vertical slide 0.9 m (lifted) to 0 (on the rails); lifted at gap <= 1.4 m, down at gap >= 1.8 m | orange frame, dark wheels |
+| Wing beam | post head, y 4.0, yaws to keep the trolley on it | 5.8 m long, yaw about +/-40 deg | cream |
+| Wing trolley, 3 hoist sleeves, 2 jaws | on the beam, as the main hand's | trolley 0 to 5.8 m; sleeves 3 x 1.45 m stroke; jaws 0.05 to 0.5 m | cream |
+| Up stack | on the platform, 1.5 m ahead of the post, y 2.86 | one pair per up panel still to lay (up to 36); centre x = side * (1.95 folded to 2.9 open), i.e. outboard of the flatbed when folded and between the tracks when open | steel rails on an orange platform |
+| Platform | bracket off the post, y 2.78 | follows the stack's x | orange |
+| Main hand | unchanged GLB rig, `second: null` | down pair only, no crossing | as today |
+
+The gap is `-upLat` at the post's s (the flatbed's s plus 1.2 m toward the head); the side follows the up seat (the
+machine's right on line 1, laid toward Home at dir -1; its left on line 2). Folded (single line, or gap 0): post at
+x = side * 1.4, truck lifted, hand home over its stack, beam parallel to the main beam. The up hand reaches the up seat
+from the post whatever the truck is doing (cantilevered while the truck is lifted); worst case about 4.7 m of the 5.8.
+
+Storyboard, one double panel at cruise (about 0.5 s; both hands run the same `panelPose` on the same phase, so every
+beat happens twice at once, one under each hand):
+
+1. **Rest.** Head at the panel's start; the truck stands on the up rails (gap 4 m), arm out, both trolleys home over
+   their stacks (down on the gantry's shoulders, up on the platform between the tracks), jaws open.
+2. **Lower and pick.** Both trolleys reach down into their stacks and close on the top pair; both stacks lose a pair.
+3. **Lift to sweep height.** Both hoists retract; the pairs rise clear of the stacks. The truck does not move.
+4. **Travel.** Each trolley runs out along its beam to its track's panel start; the wing beam yaws a few degrees toward
+   the up track, the main beam toward the down track.
+5. **Sweep.** Both hands run along their track over the panel; the sleepers and other pieces fall from under the
+   passing jaws (the track still keys them to the main hand's frame).
+6. **Seat and contact.** Both hoists lower and set their pairs on the sleepers in the same beat (view offset between
+   the two, tunable, default 0); the track shows both pairs at once, one clank; the hands rise and return. Each stack
+   is one lower.
+
+At a turnout (about the first 15 m): the arm grows with the gap while the truck stays lifted beside the flatbed and
+the up hand works cantilevered; at gap 1.8 m the truck sets down on the new rails, and on the way in it lifts at the
+same gap. At Far Head (s 490 to 512) the crossover's rails drop under the arm as sleepers drop under the jaws.
