@@ -12,6 +12,8 @@ import type { Interactable } from '../../player/hands.ts';
 import type { V3 } from '../../physics/engine.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { LINE2_GLIDE } from '../../sim/railway-line2-layout.ts';
+import { rail } from '../../sim/railway-rows.ts';
+import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { warmDraw } from '../../render/precompile.ts';
@@ -133,16 +135,17 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   /** Seconds since the wake edge's flare began, -1 when none. */
   let flareT = -1;
   let t = 0;
-  const isWoken = (l: Line2) => l.completed >= 5;
-  const available = (l: Line2) => isWoken(l) && !adapter.inspect().glide;
+  const isWoken = (completed: number) => completed >= 5;
+  const taken = () => rail(adapter.read.world()).glide;
+  const available = (l: Line2) => isWoken(l.completed) && !taken();
   function draw(l: Line2) {
-    const taken = adapter.inspect().glide;
-    const awake = isWoken(l) && !taken;
+    const gone = taken();
+    const awake = isWoken(l.completed) && !gone;
     for (const o of [ring, ring2, core, shaft]) o.visible = awake;
-    mast.visible = !taken;
+    mast.visible = !gone;
     const u = unfurlT < 0 ? 1 : Math.min(1, unfurlT / UNFURL_S);
     vane.visible = awake;
-    furled.visible = !taken && (!awake || u < 0.15);
+    furled.visible = !gone && (!awake || u < 0.15);
     vane.scale.set(0.3 + 0.7 * u, 1, 0.12 + 0.88 * u * u * (3 - 2 * u));
   }
   return {
@@ -150,7 +153,7 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       // A shared moment whose card stays with the finder; everyone else's flourish is ability-arrival.ts (co-op
       // abilities, option E). No camera shot either way.
       if (e.op !== 'rail.glide' || e.accepted <= 0) return;
-      playSharedMoment('glider', e, adapter.inspect().pid, (mine) => {
+      playSharedMoment('glider', e, adapter.read.pid, (mine) => {
         if (!mine) return false;
         placeSound('pickupGlider', at.x, at.z);
         youGot({
@@ -174,13 +177,13 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       // The live edge only: Q5's completion seen going from 4 to 5 in this session, while still sealed.
       // Every client sees it from the same accepted edge, so the whole room gets the flare and the banner (shared
       // moments, 10 November); a restore or a late join gets the steady locator only.
-      if (seenCompleted === 4 && l.completed >= 5 && !adapter.inspect().glide) {
+      if (seenCompleted === 4 && l.completed >= 5 && !taken()) {
         unfurlT = 0;
         flareT = 0;
         showMomentBanner(WAKE_BANNER[0], WAKE_BANNER[1], 4.5);
         playMark('glider woken', { authority: 'local' });
       }
-      if (adapter.inspect().ready) seenCompleted = l.completed;
+      if (adapter.read.ready()) seenCompleted = l.completed;
       if (unfurlT >= 0) {
         unfurlT += dt;
         if (unfurlT >= UNFURL_S) unfurlT = -1;
@@ -207,15 +210,15 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
       return [{ id: 'railway-glide-device', verb: 'Take it', at: target, run: () => void adapter.claimGlide() }];
     },
     inspect: () => {
-      const l = adapter.inspect().line2;
+      const w = adapter.read.world();
       return {
         glideDevice: {
           x: at.x,
           y: at.y,
           z: at.z,
-          available: !!l && available(l),
-          woken: !!l && isWoken(l) && !adapter.inspect().glide,
-          taken: adapter.inspect().glide,
+          available: isWoken(line2Completed(w)) && !rail(w).glide,
+          woken: isWoken(line2Completed(w)) && !rail(w).glide,
+          taken: rail(w).glide,
           locator: shaft.visible,
           unfurling: unfurlT >= 0,
           flaring: flareT >= 0,

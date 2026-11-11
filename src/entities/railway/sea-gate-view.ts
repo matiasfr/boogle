@@ -4,6 +4,7 @@ import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../a
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body, V3 } from '../../physics/engine.ts';
+import { rail } from '../../sim/railway-rows.ts';
 import { LINE2_SEA } from '../../sim/railway-line2-layout.ts';
 import { clank, whistle } from '../../render/machine-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
@@ -194,7 +195,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
         x: at.x,
         y: at.y,
         z: at.z,
-        pulled: !!adapter.inspect().line2?.sea,
+        pulled: rail(adapter.read.world()).sea,
         handleAngle: handle.rotation.z,
         refusal,
       },

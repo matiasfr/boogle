@@ -20,6 +20,9 @@ import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
 import { airJumpApexForce } from '../player/apex-float.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
 import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
+import { account, forge, rail, type ReadWorld } from '../../sim/railway-rows.ts';
+import { railPanelCount } from '../../sim/railway-queries-line1.ts';
+import { line2PackReady } from '../../sim/railway-queries-line2.ts';
 
 /** Stock units line one has closed after each count of laid rail pairs. */
 const UNITS_LAID = [0];
@@ -169,7 +172,7 @@ export async function createRailwayTools(
     disposed = false;
   // Only the finder gets the card (docs/brainstorms/coop-abilities.md, option E); everyone else's flourish is
   // ability-arrival.ts. The shared card owns the finder's bounded particle moment.
-  const mine = (event: { pid: string }) => event.pid === adapter.inspect().pid;
+  const mine = (event: { pid: string }) => event.pid === adapter.read.pid;
   const offAccepted = adapter.onAccepted((event) => {
     if (event.accepted <= 0) return;
     if (event.op === 'rail.axe') {
@@ -199,13 +202,25 @@ export async function createRailwayTools(
         jumpReveals++;
     }
   });
+  // The laid pairs only change with the tick or the world: keep the count until one does, not every frame.
+  let panelsFor: ReadWorld | null = null,
+    panelsTick = NaN,
+    panels = 0;
+  const panelsAt = (w: ReadWorld, tick: number) => {
+    if (w !== panelsFor || tick !== panelsTick) {
+      panelsFor = w;
+      panelsTick = tick;
+      panels = railPanelCount(w, tick);
+    }
+    return panels;
+  };
   const axeAvailable = () => {
-    const s = adapter.inspect();
-    return s.ready && !s.axe && (s.line2?.forge.lit ?? -1) >= 0;
+    const w = adapter.read.world();
+    return adapter.read.ready() && !rail(w).axe && forge(w).lit >= 0;
   };
   const packAvailable = () => {
-    const s = adapter.inspect();
-    return s.ready && s.line2.packReady && !s.line2.pack;
+    const w = adapter.read.world();
+    return adapter.read.ready() && line2PackReady(w) && !rail(w).pack;
   };
   // The pack frame on every back, once the world has it (shared state, so a friend's is derived the same way: no
   // presence key). It rides the avatar's back socket, the same frame the haul bundle sits in.
@@ -236,7 +251,7 @@ export async function createRailwayTools(
         x: deviceAt.x,
         y: deviceAt.y,
         z: deviceAt.z,
-        available: adapter.inspect().ready && !adapter.inspect().jump,
+        available: adapter.read.ready() && !rail(adapter.read.world()).jump,
       },
       axeReveals,
       jumpReveals,
@@ -245,9 +260,8 @@ export async function createRailwayTools(
       second,
     }),
     targets(): Interactable[] {
-      const s = adapter.inspect(),
-        p = me.body?.position;
-      if (!s.ready || !p) return [];
+      const p = me.body?.position;
+      if (!adapter.read.ready() || !p) return [];
       const targets: Interactable[] = [];
       if (axeAvailable() && inReach(chestAt))
         targets.push({
@@ -265,7 +279,7 @@ export async function createRailwayTools(
           r: 3.4,
           run: () => void adapter.openPack(),
         });
-      if (!s.jump && Math.hypot(p.x - deviceAt.x, p.z - deviceAt.z) <= 3 && Math.abs(p.y - deviceAt.y) <= 2.2)
+      if (!rail(adapter.read.world()).jump && Math.hypot(p.x - deviceAt.x, p.z - deviceAt.z) <= 3 && Math.abs(p.y - deviceAt.y) <= 2.2)
         targets.push({
           id: 'railway-jump-device',
           verb: 'Take it',
@@ -275,13 +289,13 @@ export async function createRailwayTools(
       return targets;
     },
     update(dt: number, now: number) {
-      const state = adapter.inspect();
+      const w = adapter.read.world();
       // The sloping route sends the low laying gantry through this crossing. Join it only
       // after accepted construction and the local machine envelope have both passed.
       if (lip) {
         machineAt.set(0, 0, -Infinity);
         machineFrom?.(machineAt);
-        lip.visible = tech.p1LipClear(UNITS_LAID[state.panelCount] ?? 0, machineAt.z);
+        lip.visible = tech.p1LipClear(UNITS_LAID[panelsAt(w, adapter.read.tick())] ?? 0, machineAt.z);
         if (lip.visible && !lipBody)
           lipBody = land.addStatic(
             { kind: 'box', hx: 1.2, hy: 0.25, hz: lipLength / 2 },
@@ -307,9 +321,9 @@ export async function createRailwayTools(
           frame.removeFromParent();
           frames.delete(avatar);
         }
-      for (const object of [ring, ring2, core]) object.visible = !state.jump;
+      for (const object of [ring, ring2, core]) object.visible = !rail(w).jump;
       // Keep the faint unclaimed locator; acquiring the power never expands it into a screen-filling beam.
-      shaft.visible = !state.jump;
+      shaft.visible = !rail(w).jump;
       ring.rotation.z = now * 0.0007;
       ring2.rotation.y = now * 0.001;
       core.rotation.y = now * 0.0012;
@@ -324,11 +338,11 @@ export async function createRailwayTools(
     airJump() {
       const b = me.body;
       // An unlock that arrives in the air never adds a jump to that flight: the charge comes on landing.
-      const unlocked = adapter.inspect().jump;
+      const unlocked = rail(adapter.read.world()).jump;
       if (unlocked && !knew && me.coyote <= 0) charge = false;
       knew = unlocked;
       // Not with a footing on your back (docs/plans/works-late-game.md, step 2b): the plain jump only.
-      if (!b || fallArrival.active || me.swimming || inputState.seated || inputState.held || me.down || adapter.inspect().foot) {
+      if (!b || fallArrival.active || me.swimming || inputState.seated || inputState.held || me.down || account(adapter.read.world(), adapter.read.pid)?.foot) {
         second = false;
         return;
       }
@@ -337,8 +351,8 @@ export async function createRailwayTools(
         second = false;
         return;
       }
-      const movement = adapter.inspect();
-      if (me.jumpQueued > 0 && movement.jump && charge) {
+      const movement = adapter.read.movement();
+      if (me.jumpQueued > 0 && unlocked && charge) {
         charge = false;
         second = true;
         me.jumpQueued = 0;

@@ -35,26 +35,30 @@ import { readableUnlit } from '../../render/readable-unlit.ts';
 import { toScreen } from '../../render/scene.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { railwayGlideOpen } from './glide.ts';
+import { rail, type ReadWorld } from '../../sim/railway-rows.ts';
+import { line2Trains } from '../../sim/railway-queries-line2.ts';
+import { railPhase } from '../../sim/railway-queries-line1.ts';
 
-type Inspection = ReturnType<RailwayAdapter['inspect']>;
-const AWAKE = (s: Inspection) => s.awake >= 0 && s.phase !== 'asleep' && s.phase !== 'waking';
+/** What an ability's `has` reads: the rows now, and the estimated tick the line-one phase is judged at. */
+type Look = { w: ReadWorld; tick: number; phase: ReturnType<typeof railPhase> };
+const AWAKE = ({ w, phase }: Look) => rail(w).awake >= 0 && phase !== 'asleep' && phase !== 'waking';
 const ABILITIES: {
   key: string;
   op: RailwayAccepted['op'];
   cue: PlaceCue;
-  has: (s: Inspection) => boolean;
+  has: (l: Look) => boolean;
   /** An axe's flourish is a floating model of it rather than a charge mark; the model comes from the caller. */
   badge?: boolean;
   /** Shown when the state turns (the wake's end), not when the event arrives. */
   atState?: boolean;
 }[] = [
-  { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: (s) => s.jump },
-  { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: (s) => s.line2.hook },
-  { key: 'glide', op: 'rail.glide', cue: 'pickupGlider', has: (s) => s.glide, badge: true },
+  { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: ({ w }) => rail(w).jump },
+  { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: ({ w }) => rail(w).hook },
+  { key: 'glide', op: 'rail.glide', cue: 'pickupGlider', has: ({ w }) => rail(w).glide, badge: true },
   { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
-  { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: (s) => !!s.axe, badge: true },
-  { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: (s) => s.line2.pack, badge: true },
-  { key: 'boiler', op: 'rail.boilerFit', cue: 'pickupHook', has: (s) => s.line2.trains, badge: true },
+  { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true },
+  { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true },
+  { key: 'boiler', op: 'rail.boilerFit', cue: 'pickupHook', has: ({ w }) => line2Trains(w), badge: true },
 ];
 const BADGE_S = 1.5;
 const TEAL = new THREE.Color('#39e6c6');
@@ -233,7 +237,7 @@ export function createAbilityArrival(
     if (event.accepted <= 0) return;
     const ability = ABILITIES.find((a) => a.op === event.op);
     if (!ability) return;
-    if (event.pid === adapter.inspect().pid) {
+    if (event.pid === adapter.read.pid) {
       // The finder has the card and the place itself; the plinth gives them the crowd, not a second card.
       seen.add(ability.key);
       if (ability.key === 'jump') seen.add('jump-taught');
@@ -261,15 +265,21 @@ export function createAbilityArrival(
       seen: ABILITIES.filter((a) => seen.has(a.key)).map((a) => a.key),
     }),
     update(dt: number) {
-      const state = adapter.inspect();
+      const ready = adapter.read.ready();
       const b = me.body;
-      if (!state.ready || !b) {
+      if (!ready || !b) {
         mark.visible = false;
         chip.classList.remove('on');
         return;
       }
+      // The rows, re-read each frame and never held: a refill swaps the world.
+      // The line-one phase is worked out once, with the frame's tick.
+      const w = adapter.read.world(),
+        tick = adapter.read.tick();
+      const look: Look = { w, tick, phase: railPhase(w, tick, tick) };
+      const row = rail(look.w);
       for (const a of ABILITIES) {
-        const gone = a.has(state) ? 0 : (missing.get(a.key) ?? 0) + dt;
+        const gone = a.has(look) ? 0 : (missing.get(a.key) ?? 0) + dt;
         // Seen going from missing to there in this session: its flourish is the live one, not a late one.
         if (!gone && (missing.get(a.key) ?? 0) > 0) watched.add(a.key);
         missing.set(a.key, gone);
@@ -280,7 +290,7 @@ export function createAbilityArrival(
       // Late: one flourish per ability gained while away, on the first landing, one after another.
       lateWait = Math.max(0, lateWait - dt);
       if (grounded && free && !lateWait) {
-        const missed = ABILITIES.find((a) => a.has(state) && !seen.has(a.key));
+        const missed = ABILITIES.find((a) => a.has(look) && !seen.has(a.key));
         if (missed) {
           flourish(missed.key, !(missed.atState && watched.has(missed.key)));
           lateWait = 1.2;
@@ -307,7 +317,7 @@ export function createAbilityArrival(
       const vy = b.velocity.y;
       if (grounded) jumpsGrounded = localJumpCount();
       if (
-        state.jump &&
+        row.jump &&
         localJumpCount() > jumpsGrounded &&
         airborne &&
         charge &&
@@ -327,7 +337,7 @@ export function createAbilityArrival(
       // The first fast fall with the glider and the canopy shut: the Glide glyph at Buddy's back, once.
       const canopy = railwayGlideOpen();
       if (
-        state.glide &&
+        row.glide &&
         airborne &&
         vy < -GLIDE_TEACH_FALL &&
         !canopy &&
@@ -343,7 +353,7 @@ export function createAbilityArrival(
       glidePulse = Math.max(0, glidePulse - dt);
       // Only for a flourish or the one-time teach: nothing is drawn under you on an ordinary jump, the second jump's
       // glints are its only effect (owner, 9 November).
-      mark.visible = state.jump && !me.swimming && (flash > 0 || pulse > 0);
+      mark.visible = row.jump && !me.swimming && (flash > 0 || pulse > 0);
       if (mark.visible) {
         feet(mark.position);
         fill.visible = charge && !deferred;

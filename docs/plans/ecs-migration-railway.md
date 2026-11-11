@@ -943,6 +943,14 @@ later change with a bundle report. Place's remaining callers get one owner from 
     **Switched to the readers above (same day):** `ready`, `pending`, `stalled`, `movement().beamSoloSpeed/beamHelpSpeed`,
     `treeGrowth` and `freeCarryIgnoringBig`; the "Still on `inspect()`" list above now holds only `opening-view`'s
     `progress` and `back-down`'s `onlyALoad`, `loadOf` and `setDown`, which belong to other groups.
+  - [x] **e. Abilities and arrival** (10 November, branch `ecs/m10e-ability-views`, not shipped): rows and queries
+    through `adapter.read` for every field that is a row (`jump`, `glide`, `hook`, `pack`, `axe`, `sea`, the account's
+    carry, stone, rails and foot, the piles, the beam and boiler holders, `line2Completed`, `line2PackReady`,
+    `line2Trains`, `railPanelCount` and `railPhase` at `read.tick()`), and `read.ready()`, `read.pending()` and
+    `read.movement()` for the session and tunable reads: the group reads nothing from `inspect()`. The phase is worked
+    out once a frame and the laid-pair count kept until the tick or the world changes. `back-down.ts`
+    keeps `loadOf` and `onlyALoad` for groups b, c and d and adds `loadIn` and `onlyALoadIn`; they move over with
+    their groups and the old pair goes in M12.
 - [ ] **T1 to T7. The tests, rewritten on rows and queries.** _Low each (tests only). After M3c and M8. Seven
       batches, one agent each, in parallel: no two batches, and no batch and M10 group, edit the same file._
   - Per batch: state is a `World` from `test/helpers/rail.ts`; `s.a.b` reads become row readers; the 33 facts become

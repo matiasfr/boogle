@@ -1,4 +1,4 @@
-// The glider: a shared fact (inspect().glide) grants an Owner glide, ported from Place's moves.ts. Physics is this tab's;
+// The glider: a shared fact (the Rail row's `glide`) grants an Owner glide, ported from Place's moves.ts. Physics is this tab's;
 // a partner sees the canopy through presence `railwayGlide` (true while it's out, null when shut). Which move has the
 // body each step (hook, then glide, then the jump) is decided in move-order.ts, not here.
 //
@@ -7,6 +7,8 @@
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { account, rail } from '../../sim/railway-rows.ts';
+import { boilerHeld, held } from '../../sim/railway-queries.ts';
 import { GRAVITY, PLAYER_MASS } from '../../constants.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { me } from '../../player/player.ts';
@@ -43,12 +45,9 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
     jumpOpens = 0,
     toggles = 0;
   const shouldered = () => {
-    const s = adapter.inspect();
-    return (
-      (s.beam?.state === 'held' && s.beam.holder === s.pid) ||
-      (s.line2.boiler.state === 'held' && s.line2.boiler.holder === s.pid) ||
-      !!s.foot
-    );
+    const w = adapter.read.world(),
+      pid = adapter.read.pid;
+    return held(w, pid) || boilerHeld(w, pid) || !!account(w, pid)?.foot;
   };
   const canAct = () =>
     owned &&
@@ -123,15 +122,16 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
       v.x = b.velocity.x;
       v.y = b.velocity.y;
       v.z = b.velocity.z;
-      // The numbers are the room's `railGlide*` tunables, through the adapter's movement (a GlideMove subset).
-      if (!stepGlide(g, before, v, me.wish, adapter.inspect())) return;
+      // The numbers are the room's `railGlide*` tunables, through the adapter's movement (a GlideMove subset), read.movement().
+      if (!stepGlide(g, before, v, me.wish, adapter.read.movement())) return;
       b.velocity.set(v.x, v.y, v.z);
       b.force.y = PLAYER_MASS * GRAVITY; // gravity's taken out once, and nothing else has a say
     },
     update(dt: number, now: number) {
-      const state = adapter.inspect();
-      has = state.ready && state.glide;
-      owned = latch(state.ready, state.glide, dt);
+      const ready = adapter.read.ready(),
+        glide = rail(adapter.read.world()).glide;
+      has = ready && glide;
+      owned = latch(ready, glide, dt);
       if (owned && !registered) {
         registered = true;
         // LB/Q, checked free against `npm run registry -- --json`; off the guide and touch layout until it's granted.
