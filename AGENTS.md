@@ -15,7 +15,7 @@ Start with `npm run map -- --kind <kind>`. Read its must-read sections. A row ap
 | When the task actually does this | Read |
 | --- | --- |
 | Applies an owner preference; researches or decides architecture | [owner-calls](docs/agents/owner-calls.md), applicable calls |
-| Picks a milestone, makes a design decision, adds a mechanic, or prototypes | game-direction skill; [context](docs/agents/context.md), DESIGN.md, relevant find-the-fun sections; [decision index](docs/decisions.md#current-decision-index), then only routed topics |
+| Picks a milestone, makes a design decision, adds a mechanic, or prototypes | game-direction skill; [context](docs/agents/context.md), DESIGN.md, relevant find-the-fun sections; [decisions](docs/decisions.md#decided), then one topic's Current rules |
 | Adds or edits code | [typescript](docs/agents/typescript.md) |
 | Changes imports, module boundaries or service/loop ownership | [lint-boundaries](docs/agents/lint-boundaries.md) |
 | Adds or changes feature/entity lifecycle, DOM or loading | [plugins](docs/agents/plugins.md) |

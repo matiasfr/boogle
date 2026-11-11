@@ -37,7 +37,21 @@ const design = {
     'docs/agents/context.md',
     'DESIGN.md',
     'docs/plans/find-the-fun.md#rules-for-every-prototype',
-    'docs/decisions.md#current-decision-index',
+    'docs/decisions.md#decided',
+  ],
+};
+/** The decision log's topics: after the routing table, read only the Current rules of the topic the task touches. */
+const decisionTopics = {
+  when: "Making a design decision in a topic: that topic's Current rules (decisions.md#decided routes them)",
+  refs: [
+    'docs/decisions-core-loop.md#current-rules',
+    'docs/decisions-rail.md#current-rules',
+    'docs/decisions-rewards.md#current-rules',
+    'docs/decisions-characters.md#current-rules',
+    'docs/decisions-look.md#current-rules',
+    'docs/decisions-audio.md#current-rules',
+    'docs/decisions-controls.md#current-rules',
+    'docs/decisions-process.md#current-rules',
   ],
 };
 /** The rail loop's own reads: one command instead of the layout files, the plans and the bot. */
@@ -60,9 +74,11 @@ const processReads = [
   },
 ];
 // Core guidance for narrow tasks fits 14k; new persistent systems need the rules recipe (21k).
-// Prototypes necessarily include design principles and prototype rules (32k). These are relevance budgets,
-// not investigation limits. Conditional sections and path reminders are printed separately.
-const ROUTE_BUDGETS: Record<string, number> = { 'lockstep-system': 21000, prototype: 32000 };
+// Prototypes necessarily include design principles and prototype rules (30k, with room: 32k was hit on 9 and 10
+// November). The decision log's routing table is must-read; a topic file's Current rules are read per task (the log
+// was split by topic on 10 November 2026). These are relevance budgets, not investigation limits. Conditional
+// sections and path reminders are printed separately.
+const ROUTE_BUDGETS: Record<string, number> = { 'lockstep-system': 21000, prototype: 30000 };
 const DEFAULT_ROUTE_BUDGET = 14000;
 
 export const TASK_ROUTES: Record<string, Route[]> = {
@@ -403,9 +419,9 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         'docs/agents/context.md',
         'DESIGN.md',
         'docs/plans/find-the-fun.md#rules-for-every-prototype',
-        'docs/decisions.md#current-decision-index',
+        'docs/decisions.md#decided',
       ],
-      readIf: [{ when: 'Changing the place prototype', refs: ['docs/game-design/place.md#the-run'] }],
+      readIf: [decisionTopics, { when: 'Changing the place prototype', refs: ['docs/game-design/place.md#the-run'] }],
       sync: 'Choose per state; lockstep number changes need a separate proto room',
       checks: `${look}; card question/one-line change and live status when shipped; owner playtest stops further work`,
       lookalikes: ['src/proto/flags.ts', 'src/entities'],

@@ -38,6 +38,8 @@
     "before-after": "node dev/look/before-after.ts",
     "sheet": "node dev/look/sheet.ts",
     "registry": "node dev/registry/check.ts",
+    "decisions": "node dev/decisions/check.ts",
+    "decisions:split": "node dev/decisions/split.ts",
     "atlas": "node dev/atlas/cli.ts",
     "daily": "node dev/daily/run.ts",
     "daily:install": "node dev/daily/install.ts",
