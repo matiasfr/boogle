@@ -28,10 +28,11 @@ const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   RIDERS = 2,
   COMMUTERS = 5,
   PUSHERS = 2,
-  RESIDENTS = 6;
+  RESIDENTS = 6,
+  ISLAND_FOLK = 8; // Ring Island's square (src/entities/ring-folk): six crew and Hooter, one spare
 // A driver a train: the little guy at the engine's controls, on his tall stool (docs/plans/engine-previz.md).
 const DRIVERS = RAIL_TRAINS.length;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS + COMMUTERS + PUSHERS + RESIDENTS;
+const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + DRIVERS + COMMUTERS + PUSHERS + RESIDENTS + ISLAND_FOLK;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -78,7 +79,8 @@ type Job =
   | 'commuter'
   | 'pusher'
   | 'resident'
-  | 'greeter';
+  | 'greeter'
+  | 'looker';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
   k: number;
@@ -260,6 +262,11 @@ export function addResident(x: number, y: number, z: number, yaw: number, act: M
 /** The shore worker uses the same meshes/poses, directed locally by residents.ts. */
 export function addGreeter(x: number, y: number, z: number) {
   return make('greeter', x, z, { fy: y, yaw: -Math.PI / 2, tint: new THREE.Color('#f0c030') });
+}
+/** One of Ring Island's folk (src/entities/ring-folk/view.ts): placed, moved, faced and talked to by its owner; the kit only
+ * draws it and, like the greeter, never steers it. */
+export function addLooker(x: number, y: number, z: number, yaw: number, color: string) {
+  return make('looker', x, z, { fy: y, yaw, tint: new THREE.Color(color) });
 }
 export type { Guy, Mood };
 
@@ -725,6 +732,7 @@ function brain(g: Guy, dt: number) {
       g.mood = 'walk';
       return;
     case 'greeter':
+    case 'looker':
       return;
     case 'resident': {
       // They look up when you come close, and go back to it when you've gone. Local: nobody else's copy has to agree.
@@ -1322,7 +1330,8 @@ export function updateFolk(dt: number) {
       g.job !== 'rider' &&
       g.job !== 'driver' &&
       g.job !== 'resident' &&
-      g.job !== 'greeter'
+      g.job !== 'greeter' &&
+      g.job !== 'looker'
     )
       chatBrain(g, dt);
     else brain(g, dt);

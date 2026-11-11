@@ -13,6 +13,7 @@ import { createRailwayCrossing } from './crossing-view.ts';
 import { createRailwayRailhead } from './railhead-view.ts';
 import { createRailwayLeaf } from './leaf-view.ts';
 import { createRingMeet } from '../ring-meet/view.ts';
+import { createRingFolk } from '../ring-folk/view.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -37,7 +38,8 @@ export async function createRailwayWorksLive(
   const railhead = createRailwayRailhead(adapter, owner, deps);
   const leaf = createRailwayLeaf(adapter);
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
-  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet];
+  const folk = createRingFolk(adapter, owner);
+  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -70,12 +72,14 @@ export async function createRailwayWorksLive(
       ...railhead.targets(),
       ...leaf.targets(),
       ...meet.targets(),
+      ...folk.targets(),
     ],
     inspect: () => ({
       ...works.inspect(),
       ...railhead.inspect(),
       ...leaf.inspect(),
       ...meet.inspect(),
+      ...folk.inspect(),
       ...roundhouse.inspect(),
       ...breaker.inspect(),
       footings: footings.inspect(),
