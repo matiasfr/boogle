@@ -65,8 +65,11 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
 - **Welcome back.** A returning player gets a small paper card at the top centre (under the name tag on touch) for
   3.5 s, plus 0.8 s for each line: "Welcome back, <name>", then what changed in this room since this browser was last
   here, when that is known: "Ana and Bo were here" (players new to the room's roster, or whose plaque points rose),
-  "3 new stretches of track were laid", "Opening day happened while you were away". Nothing changed, or no memory of
-  the room: just the greeting. It waits up to 4 s for the room's state, takes no clicks and blocks nothing.
+  "3 new stretches of track were laid" (in the railway room, stations laid on both lines, read from the railway),
+  "Opening day happened while you were away". In the railway room the plaque points and opening day never change, so
+  only the roster and the stretches can speak; the rest still runs on a classic `?proto=` entry. Nothing changed, or
+  no memory of the room: just the greeting. It waits up to 4 s for the room's state (in the railway room, the
+  railway's too), takes no clicks and blocks nothing.
 - **Hooks for later** ([src/player/arrival.ts](../../src/player/arrival.ts)): `isFirstVisit()`, `showCard()`,
   `lastVisit` (`{ at, room }` of the previous visit, localStorage `boogle.lastVisit`), and `addWelcomeItem({ key,
   save, since })`: `save()` says what to remember about the room now, `since(then)` turns last visit's value into a

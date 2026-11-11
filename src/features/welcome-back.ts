@@ -1,7 +1,8 @@
 // Welcome back: a returning player (src/player/arrival.ts) lands straight in the world and gets a small card at the top
 // for a few seconds, "Welcome back, <name>", plus what changed in this room since their last visit when that is known:
-// friends who were here, sections laid, opening day. It reads existing state only (the roster, the sites' plaques, the
-// opening flag) against what this browser remembered about the room last time. Never blocks: no clicks, no input.
+// friends who were here, sections laid, opening day. It reads existing state only (the roster; in the railway room, the
+// game, the railway's rows through its read facade; on a classic `?proto=` entry the sites' plaques and the opening
+// flag) against what this browser remembered about the room last time. Never blocks: no clicks, no input.
 // More welcome-back lines (persistent progress, a mailbox) are `addWelcomeItem` calls. Local. Serves DESIGN.md 8
 // (Designed for drop-in) and 9 (Leave something for the next visitor: you hear what the others did).
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
@@ -11,6 +12,9 @@ import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
 import { getRoomId } from '../netplay/net.ts';
 import { worldStatus } from '../world/sync.ts';
+import { productionRailway } from '../proto/flags.ts';
+import { railwayWorldRead } from '../entities/railway/state.ts';
+import { railwayKnown, stretchesLaid, stretchesSince } from '../player/welcome-railway.ts';
 import { showCard, addWelcomeItem, rememberVisit, roomMemory, welcomeLines, nameList } from '../player/arrival.ts';
 
 const WAIT_MS = 4000; // the longest the card waits for the room's state before it says just hello
@@ -19,7 +23,8 @@ const LINE_MS = 800;
 const SAVE_MS = 5000; // how often this visit is remembered while you play
 
 // ---------------------------------------------------------------- what a returning player hears about
-// Friends who poured since (their plaque points rose) or who are new to the room's roster.
+// Friends who poured since (their plaque points rose) or who are new to the room's roster. In the railway room (the
+// game) only "new to the roster" can happen: nothing pours into the classic sites there, so the points never rise.
 addWelcomeItem({
   key: 'friends',
   save: () => {
@@ -40,15 +45,29 @@ addWelcomeItem({
     return `${nameList(names)} ${names.length === 1 ? 'was' : 'were'} here`;
   },
 });
+// Stretches of track laid: in the railway room the stations laid on both lines (undefined until its state is in, which
+// keeps the last count); on a classic entry the sites opened.
+const railway = () => railwayKnown(railwayWorldRead());
 addWelcomeItem({
   key: 'laid',
-  save: () => rules.sites.sites.open,
+  save: () => {
+    if (!productionRailway) return rules.sites.sites.open;
+    const w = railway();
+    return w ? stretchesLaid(w) : undefined;
+  },
   since: (then) => {
-    const n = rules.sites.sites.open - (then as number);
+    const w = productionRailway ? railway() : null;
+    const n = productionRailway
+      ? w
+        ? stretchesSince(then, stretchesLaid(w))
+        : 0
+      : rules.sites.sites.open - (then as number);
     if (n <= 0) return null;
     return n === 1 ? 'A new stretch of track was laid' : `${n} new stretches of track were laid`;
   },
 });
+// Unreachable in the railway room (the game): it has no opening day, and the classic opening flag never changes there.
+// Live only on a classic `?proto=` entry.
 addWelcomeItem({
   key: 'opened',
   save: () => rules.opening.opening.t0 >= 0,
@@ -87,10 +106,11 @@ function show(lines: string[]) {
   );
 }
 
-// The room's state is here: joined (a tab starts 'local', with an empty world that reads as ready) and loaded.
+// The room's state is here: joined (a tab starts 'local', with an empty world that reads as ready) and loaded, and in
+// the railway room the railway's whole state too.
 const known = () => {
   const w = worldStatus();
-  return w.mode !== 'local' && w.ready;
+  return w.mode !== 'local' && w.ready && (!productionRailway || !!railway());
 };
 
 // The wait for the room: done once the card is up. A first visit has none to wait for.
