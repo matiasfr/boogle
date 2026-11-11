@@ -13,6 +13,7 @@ import { INTERP_MS, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
+import { rail } from '../../sim/railway-rows.ts';
 
 const TEAL = new THREE.Color('#39e6c6');
 /** Within this of the plinth (m, on the ground), you're passing it; a friend within it too makes the show bigger. */
@@ -121,8 +122,7 @@ export async function createTrophyPlinth(
     at: { x, y: ground, z },
     inspect: () => ({ x, y: ground, z, visible: root.visible, showing: show > 0, ...stats }),
     update(dt: number, now: number) {
-      const state = adapter.inspect();
-      const on = state.ready && state.jump;
+      const on = adapter.read.ready() && rail(adapter.read.world()).jump;
       root.visible = on;
       if (on && !body)
         body = land.addStatic(

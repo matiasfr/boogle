@@ -18,6 +18,7 @@ import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { reducedMotion } from '../../constants.ts';
 import { createForgeCall } from './forge-call.ts';
 import { STALL_SLAB, THROAT_SLAB } from './works-shape.ts';
+import { account, beam, boiler, works as worksRow } from '../../sim/railway-rows.ts';
 
 /** Seconds: the wind-up ends, the head meets the seam, the swing is put away. */
 export const SWING = { raise: 0.42, contact: 0.58, end: 0.85 } as const;
@@ -150,8 +151,9 @@ export function createRailwayBreaker(
     swing.struck = true;
   }
   function pose(dt: number) {
-    const s = adapter.inspect();
-    const w = s.works;
+    const rows = adapter.read.world(),
+      pid = adapter.read.pid;
+    const w = worksRow(rows);
     const swinging = swing.t >= 0 && !!me.body;
     if (swinging) {
       const before = swing.t;
@@ -190,7 +192,8 @@ export function createRailwayBreaker(
     }
     // Taken: slung on your back between strikes while your back is otherwise empty.
     const back = (me.avatar?.userData as { loadFit?: { frame: THREE.Object3D } } | undefined)?.loadFit?.frame;
-    const free = !s.carry && !s.stoneCarry && !s.railsCarry && !s.foot && s.beam?.holder !== s.pid && !heldId();
+    const mine = account(rows, pid);
+    const free = !mine?.carry && !mine?.stone && !mine?.rails && !mine?.foot && beam(rows).holder !== pid && !heldId();
     if (w.breaker === 2 && (w.seams & 3) !== 3 && back && free) {
       back.updateWorldMatrix(true, false);
       contact.set(0.08, 0.05, 0.42);
@@ -210,14 +213,14 @@ export function createRailwayBreaker(
       return swing.t >= 0 && swing.id === id && !swing.struck ? Math.max(0, SWING.contact - swing.t) : 0;
     },
     restore() {
-      const w = adapter.inspect().works;
+      const w = worksRow(adapter.read.world());
       swing.t = -1;
       mote = 0.8;
       call.restore(w.breaker === 1);
       shown = w.breaker === 1;
     },
     update(dt: number) {
-      const w = adapter.inspect().works;
+      const w = worksRow(adapter.read.world());
       call.update(dt, w.breaker === 1);
       onBack = false;
       pose(dt);
@@ -268,11 +271,12 @@ export function createRailwayBreaker(
       uiSound('deny');
     },
     targets(): Interactable[] {
-      const s = adapter.inspect(),
-        w = s.works,
+      const rows = adapter.read.world(),
+        w = worksRow(rows),
+        pid = adapter.read.pid,
         p = me.body?.position;
       // Not while you haul the boiler (docs/plans/boiler-first-choice.md, Part 2); the rule refuses it too.
-      if (!s.ready || !p || swing.t >= 0 || (s.line2.boiler.state === 'held' && s.line2.boiler.holder === s.pid))
+      if (!adapter.read.ready() || !p || swing.t >= 0 || (boiler(rows).state === 'held' && boiler(rows).holder === pid))
         return [];
       if (w.breaker === 1 && Math.hypot(p.x - bx, p.z - bz) <= 3.6)
         return [
@@ -306,7 +310,7 @@ export function createRailwayBreaker(
     },
     inspect: () => ({
       breaker: {
-        state: adapter.inspect().works.breaker,
+        state: worksRow(adapter.read.world()).breaker,
         shown: breaker.visible,
         swinging: swing.t >= 0,
         x: breaker.position.x,

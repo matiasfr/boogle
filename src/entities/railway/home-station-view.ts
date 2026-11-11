@@ -4,6 +4,7 @@
 // open one (./roundhouse-view.ts). Local: the rules keep today's anchors, so prompts stay where they were.
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
+import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { drawWorksBoxes } from './works-box-view.ts';
 import { beam, box, type WorksBox, type WorksPoint } from './works-shape.ts';
 
@@ -194,7 +195,7 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     ]),
   ]);
   legMesh.castShadow = true;
-  const legLaid = () => adapter.inspect().line2.completed >= 1;
+  const legLaid = () => line2Completed(adapter.read.world()) >= 1;
   legMesh.visible = legLaid();
   return {
     update() {
