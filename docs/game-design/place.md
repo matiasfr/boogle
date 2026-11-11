@@ -314,7 +314,7 @@ plus 0.63 m, X ±0.55 m and Z −1.15 m; the station hands retain their seat-hei
 The shared workshop seat builder also has no back. Each production train has one passenger car and one cargo car
 behind it (owner, 10 November: "if there's cargo then it shouldnt have seats I think"). The cargo car, the one whose
 deck takes the crates, has no stools and never offers Sit, loaded or empty. It carries dark stakes up both long sides
-with low boards between them (`cargoFittings`, src/proto/wagon/look.ts; cosmetic, no solid, outside the crate slots),
+with low boards between them (`cargoFittings`, src/render/wagon-look.ts; cosmetic, no solid, outside the crate slots),
 so the two read apart at a glance. The crates it carries are solid (owner, 10 November: "the cargo should have
 colliders so we dont clip through it"): each settled crate is a box on the car's own kinematic body, so it rides with
 the platform, blocks a player walking into it on the deck and carries one standing on top

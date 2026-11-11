@@ -51,7 +51,7 @@ const RAISED = -2.5,
 export function createRailwayBreaker(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  shapes: typeof import('../../proto/place/part-geometry.ts'),
+  shapes: typeof import('../../render/part-geometry.ts'),
 ) {
   const bx = WORKS_BREAKER.x / 100,
     by = WORKS_BREAKER.y / 100,

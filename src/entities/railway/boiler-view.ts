@@ -41,13 +41,13 @@ const smooth = (t: number) => t * t * (3 - 2 * t);
 
 type Deps = {
   land: typeof import('../../proto/place/land.ts');
-  props: typeof import('../../proto/place/prop-kit.ts');
-  carry: typeof import('../../proto/place/carry-models.ts');
+  props: typeof import('../../render/prop-kit.ts');
+  carry: typeof import('../../render/carry-models.ts');
   /** The engine's boiler (docs/plans/engine-previz.md): the one on the pedestal and the rope is the one fitted. */
   engine: typeof import('../../proto/place/engine-kit.ts');
-  sounds: typeof import('../../proto/minis/common.ts');
+  sounds: typeof import('../../render/fanfare.ts');
   pieces: typeof import('../../proto/place/pieces.ts');
-  flat: typeof import('../../proto/flat.ts').flat;
+  flat: typeof import('../../render/flat.ts').flat;
   /** The railway's reveal queue (reward.ts), for the fitter's card when BOILER_CARD is on. */
   youGot?: (got: Got) => boolean;
 };

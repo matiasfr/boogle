@@ -29,8 +29,8 @@ export async function createTrophyPlinth(
     import('../../proto/place/layout.ts'),
     import('../../proto/place/land.ts'),
     import('../../proto/place/home-station.ts'),
-    import('../../proto/place/part-geometry.ts'),
-    import('../../proto/flat.ts'),
+    import('../../render/part-geometry.ts'),
+    import('../../render/flat.ts'),
     import('../../proto/place/folk.ts'),
   ]);
   // Out on the finders' bay's centreline, past its missed boxes, on the street's edge where people pass.

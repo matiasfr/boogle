@@ -12,8 +12,9 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { removeBody, setShapes, stepAlpha, teleport, type Body } from '../../physics/engine.ts';
 import { carry, CARRY } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
-import { flat } from '../flat.ts';
-import { label, pop } from '../minis/common.ts';
+import { flat } from '../../render/flat.ts';
+import { pop } from '../../render/fanfare.ts';
+import { label } from './label.ts';
 import { H, addStatic } from './land.ts';
 import { LOOK, STEEL } from './look.ts';
 import { kitBatch } from './look-kit.ts';
@@ -24,7 +25,7 @@ import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog } from './pieces.t
 import { besideLine, drawCar, makeCar, poseCarOnLine, snapCar, type Car } from './rail.ts';
 import { addFoot } from './sites.ts';
 import type { StationRun } from './stations.ts';
-import { makeProp } from './prop-kit.ts';
+import { makeProp } from '../../render/prop-kit.ts';
 
 // ---------------------------------------------------------------- the rack
 const RACK_LOGS = 48,

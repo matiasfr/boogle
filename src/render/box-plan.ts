@@ -1,6 +1,6 @@
 // Pure box records and transforms. No scene, terrain or game lifecycle.
 import * as THREE from 'three/webgpu';
-import { guardInstances } from '../../render/draw-count.ts';
+import { guardInstances } from './draw-count.ts';
 /** One box: where it stands, and `local`, the unit box placed relative to that point. `pop`: s to rise. */
 export type Box = {
   x: number;

@@ -1,6 +1,6 @@
 // Audit the actual settled buildTrack boxes, stopping before scene/physics construction.
 import * as THREE from 'three/webgpu';
-import { boxAt, place, type Box } from '../../src/proto/net/box-plan.ts';
+import { boxAt, place, type Box } from '../../src/render/box-plan.ts';
 import { FORMATION, LINKS, ORIGIN, STUB, UP_LAT, crossLat, lineAt, railY, upLat } from '../../src/proto/place/layout.ts';
 import { H, surfaceHeight } from '../../src/proto/place/terrain.ts';
 import { sampleFootprint } from '../../src/proto/place/support.ts';
@@ -32,7 +32,7 @@ export function trackBoxes() {
     UP_LAT,
     upLat,
     crossLat,
-    box: sourceFunction('src/proto/net/boxes.ts', 'box', { boxAt, groundHeight: H }),
+    box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
     dropSet: (boxes: Box[]) => boxes,
     lookTrack: (boxes: Box[], kinds: string[]) => {
       captured.push({ boxes, kinds });

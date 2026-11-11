@@ -6,8 +6,8 @@
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
 import { whistle } from '../../render/machine-sfx.ts';
-import { fanfare } from '../minis/common.ts';
-import { blockBoxes, makeSet } from '../net/boxes.ts';
+import { fanfare } from '../../render/fanfare.ts';
+import { blockBoxes, makeSet } from '../../render/boxes.ts';
 import { shell, SHELLS } from '../net/town-fx.ts';
 import type { Block } from '../era/blocks.ts';
 import { buildSites, siteSmokes, snapSite, startSite, updateSites, addSite, type Site } from './sites.ts';

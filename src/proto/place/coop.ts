@@ -27,7 +27,7 @@
 // the money, the felled trees, the paths. A newcomer inherits every rung without earning it again.
 import * as THREE from 'three/webgpu';
 import { cargoDust } from '../../render/particle-effects.ts';
-import { BEAM_CARRY_POSITION } from './carry-models.ts';
+import { BEAM_CARRY_POSITION } from '../../render/carry-models.ts';
 import { createTrainNudge } from './train-nudge.ts';
 import {
   addPresenceField,
@@ -41,7 +41,7 @@ import {
 import { world } from '../../world/sync.ts';
 import { carry } from '../../physics/platforms.ts';
 import { backSeam } from '../../features/haul-stack.ts';
-import { drawHeaps, type Kind } from '../net/crates.ts';
+import { drawHeaps, type Kind } from '../../render/crates.ts';
 import { playMark } from '../mark.ts';
 import { clearMoments, showBanner } from './celebrate.ts';
 import { resetGotHistory } from './got.ts';

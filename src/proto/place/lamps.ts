@@ -3,8 +3,8 @@
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
-import { pop } from '../minis/common.ts';
-import { flat } from '../flat.ts';
+import { pop } from '../../render/fanfare.ts';
+import { flat } from '../../render/flat.ts';
 import { addStatic } from './land.ts';
 import { railY } from './layout.ts';
 import { lines } from './lines.ts';

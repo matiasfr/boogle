@@ -6,7 +6,7 @@
 // dust sheets. The stowaway has a slot of its own. No curios or train ornaments as prizes: train slots wait for the roundhouse.
 // No duplicates. The ladder's tool chests use the same show (./ladder.ts). Personal, and Local.
 import * as THREE from 'three/webgpu';
-import { HAT_SEAT, headCenter } from './head-clearance.ts';
+import { HAT_SEAT, headCenter } from '../../render/head-clearance.ts';
 import { seatConductorHat } from '../../render/head-clearance.ts';
 import {
   BOXES,
@@ -23,9 +23,9 @@ import {
   type Slot,
   type Tier,
 } from '../../render/cosmetic-parts.ts';
-import { merged, type Part } from './part-geometry.ts';
-import { packParts } from './gear-models.ts';
-import { makeAxeModel } from './axe-models.ts';
+import { merged, type Part } from '../../render/part-geometry.ts';
+import { packParts } from '../../render/gear-models.ts';
+import { makeAxeModel } from '../../render/axe-models.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
@@ -36,7 +36,7 @@ import { me } from '../../player/player.ts';
 import { inReach } from '../../player/reach.ts';
 import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { carry } from '../../physics/platforms.ts';
-import { knock, pop } from '../minis/common.ts';
+import { knock, pop } from '../../render/fanfare.ts';
 import { H, addStatic } from './land.ts';
 import { COOP, job, personalSlice } from './job.ts';
 import { SHELF, toWorld } from './layout.ts';
@@ -50,7 +50,7 @@ import { SHOP } from './town-lines.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
 // The catalog itself (names, lines, parts, tiers, odds and fits) is src/render/cosmetic-parts.ts.
-export { merged } from './part-geometry.ts';
+export { merged } from '../../render/part-geometry.ts';
 export { STOCK, type GiftId, type Slot, type Stock, type Tier } from '../../render/cosmetic-parts.ts';
 const m4 = new THREE.Matrix4(),
   e4 = new THREE.Euler(),

@@ -12,8 +12,8 @@ const { readableUnlit, readableIntensity } = (await import(
   '/src/render/readable-unlit.ts' as string
 )) as typeof import('../../../src/render/readable-unlit.ts');
 const { label } = (await import(
-  '/src/proto/minis/common.ts' as string
-)) as typeof import('../../../src/proto/minis/common.ts');
+  '/src/proto/place/label.ts' as string
+)) as typeof import('../../../src/proto/place/label.ts');
 const material = label(1, 1).sprite.material as unknown as import('three/webgpu').SpriteNodeMaterial;
 const patched = material.colorNode;
 if (readableUnlit(material).colorNode !== patched) throw new Error('Repeated readable patch doubled compensation');

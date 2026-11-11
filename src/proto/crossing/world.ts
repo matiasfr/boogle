@@ -3,7 +3,7 @@
 // casts a shadow (the sun's shadow box only covers the player's surroundings), and only the deck and the two stations
 // collide. Sea-crossings research, points 2 and 10: the destination stays in view, as a cheap silhouette.
 import * as THREE from 'three/webgpu';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 import { scene } from '../../render/scene.ts';
 
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';

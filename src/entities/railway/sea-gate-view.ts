@@ -16,9 +16,9 @@ type Deps = {
   layout: typeof import('../../proto/place/layout.ts');
   tech: typeof import('../../proto/place/tech-layout.ts');
   land: typeof import('../../proto/place/land.ts');
-  shapes: typeof import('../../proto/place/part-geometry.ts');
-  flat: (typeof import('../../proto/flat.ts'))['flat'];
-  sounds: typeof import('../../proto/minis/common.ts');
+  shapes: typeof import('../../render/part-geometry.ts');
+  flat: (typeof import('../../render/flat.ts'))['flat'];
+  sounds: typeof import('../../render/fanfare.ts');
   partMat: THREE.Material;
   glow: THREE.Material;
 };

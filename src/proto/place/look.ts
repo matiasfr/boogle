@@ -28,7 +28,7 @@ import {
   vertexColor,
 } from 'three/tsl';
 import { scene } from '../../render/scene.ts';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
 import { patchNode } from '../../render/material-patch.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';

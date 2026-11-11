@@ -30,14 +30,14 @@ import { displayYaw, haltDisplays, haltMapLines, haltRows } from './halt-map.ts'
 
 /** How near a request lever's knob its prompt is offered (m, flat). */
 const LEVER_REACH = 1.8;
-type Box = import('../../proto/net/boxes.ts').Box;
+type Box = import('../../render/boxes.ts').Box;
 type Line = import('../../proto/place/layout.ts').Line;
 type LinePoint = import('../../proto/place/layout.ts').LinePoint;
 
 export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ flat }, boxModule, landModule, layout, { boardMaterial }, piecesModule, { ISLAND }] = await Promise.all([
-    import('../../proto/flat.ts'),
-    import('../../proto/net/boxes.ts'),
+    import('../../render/flat.ts'),
+    import('../../render/boxes.ts'),
     import('../../proto/place/land.ts'),
     import('../../proto/place/layout.ts'),
     import('../../proto/place/look.ts'),

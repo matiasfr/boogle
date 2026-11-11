@@ -6,8 +6,8 @@
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
 import { thump, whistle } from '../../render/machine-sfx.ts';
-import { fanfare } from '../minis/common.ts';
-import { blockBoxes, draw, makeSet, type BoxSet, type Smoke } from './boxes.ts';
+import { fanfare } from '../../render/fanfare.ts';
+import { blockBoxes, draw, makeSet, type BoxSet, type Smoke } from '../../render/boxes.ts';
 import { STAGES, TOWN } from './stages.ts';
 import { easeBack, LANDMARK_AFTER, puff, RIPPLE_MPS, shell, SHELLS, smooth, soot } from './town-fx.ts';
 

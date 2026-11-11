@@ -35,7 +35,7 @@ import { ROUTE } from '../../sim/route.ts';
 import { wagonAt, wagonCycle, WAGON_PACE, type WagonState } from '../../sim/wagon.ts';
 import { paceIn } from '../../sim/tune.ts';
 import { lengthOf, MACHINE_RUN } from '../../sim/scripted-run.ts';
-import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
+import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from '../../render/wagon-look.ts';
 import { wagonFreight } from './freight.ts';
 import { protoOn, protoV } from '../flags.ts';
 
@@ -176,7 +176,7 @@ function advance(dt: number) {
 }
 
 // ---------------------------------------------------------------- the bodies
-// ?proto=net loads the rear flatbed itself (src/proto/net/crates.ts): no fixed crates, drawn or solid.
+// ?proto=net loads the rear flatbed itself (src/render/crates.ts): no fixed crates, drawn or solid.
 const CRATED = !protoOn('net');
 const look = wagonLook(CARS.length - 1, CRATED);
 type Car = {

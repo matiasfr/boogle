@@ -25,10 +25,10 @@ export async function createRailwayShelf(
     import('../../proto/place/layout.ts'),
     import('../../proto/place/land.ts'),
     import('../../proto/place/pieces.ts'),
-    import('../../proto/flat.ts'),
+    import('../../render/flat.ts'),
     import('../../proto/place/look.ts'),
     import('../../proto/place/look-kit.ts'),
-    import('../../proto/minis/common.ts'),
+    import('../../render/fanfare.ts'),
   ]);
   const { flat } = flatMod;
   const quarry = layout.LINKS[1]!;

@@ -1,9 +1,10 @@
 // Greybox boxes for ?proto=net: the shape of src/proto/era/blocks.ts drawn in one instanced mesh per set, each box grown
 // from the ground by a fraction. Pure transforms/drawing are shared with the era swap through box-plan.ts.
 import * as THREE from 'three/webgpu';
-import { scene } from '../../render/scene.ts';
-import { groundHeight } from '../../island/terrain.ts';
-import type { Block } from '../era/blocks.ts';
+import { scene } from './scene.ts';
+import { groundHeight } from '../island/terrain.ts';
+// boogle-disable-next-line no-restricted-imports -- moves out of proto with M5/M6 (ecs-migration-railway)
+import type { Block } from '../proto/era/blocks.ts';
 
 export type Smoke = { x: number; y: number; z: number };
 import { place, boxAt, partMesh, draw, type Box } from './box-plan.ts';
@@ -60,6 +61,7 @@ export function makeSet(boxes: Box[]): BoxSet {
   const mesh = partMesh(boxes, mat);
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.frustumCulled = false;
+  // boogle-disable-next-line boogle/use-an-entity -- module-level add kept as in proto; owner conversion is M13 (ecs-migration-railway)
   scene.add(mesh);
   const set = { boxes, mesh };
   draw(set, () => 0);

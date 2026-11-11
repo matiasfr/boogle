@@ -10,7 +10,7 @@ import { angleLerp } from '../../math.ts';
 import { BODY, addBody, createBody, stepAlpha, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
 import { registerPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
-import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from '../wagon/look.ts';
+import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from '../../render/wagon-look.ts';
 import { lineAt, railY, trainAt, timeAtS, type LinePoint, type TrainState } from './line.ts';
 import { FEEL, TIMETABLE } from './tuning.ts';
 

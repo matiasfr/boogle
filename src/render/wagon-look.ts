@@ -7,15 +7,17 @@
 // when the train speeds up or slows down. All of it is derived from where ./index.ts put the cars this frame, which is
 // a function of the shared tick, so every tab draws the same. Local, cosmetic.
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../../loop.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
-import { reducedMotion } from '../../constants.ts';
-import { clamp } from '../../math.ts';
-import { damp, springStep, stiffnessOf, dampingOf, type Spring } from '../../render/motion.ts';
+import { onFrame } from '../loop.ts';
+import type { OwnedView } from './owned-view.ts';
+import { reducedMotion } from '../constants.ts';
+import { clamp } from '../math.ts';
+import { damp, springStep, stiffnessOf, dampingOf, type Spring } from './motion.ts';
 
-import { LOCO, TRAILER } from './cars.ts';
+// boogle-disable-next-line no-restricted-imports -- moves out of proto with M5/M6 (ecs-migration-railway)
+import { LOCO, TRAILER } from '../proto/wagon/cars.ts';
 // The car sizes live in ./cars.ts (no three.js) so the layout tests read them too.
-export { LOCO, TRAILER, WAGON_CAR, TRAIN_CARS, TRAIN_OFFSETS, type CarSpec } from './cars.ts';
+// boogle-disable-next-line no-restricted-imports -- moves out of proto with M5/M6 (ecs-migration-railway)
+export { LOCO, TRAILER, WAGON_CAR, TRAIN_CARS, TRAIN_OFFSETS, type CarSpec } from '../proto/wagon/cars.ts';
 
 /** The freight on the last flatbed: centre x, z on the deck, size, yaw, and how high its bottom sits over the deck. */
 export const CRATES = [
@@ -232,5 +234,6 @@ function animate(
     });
   };
   if (owner) owner.animate(step, 8);
+  // boogle-disable-next-line boogle/use-an-entity -- module-level add kept as in proto; owner conversion is M13 (ecs-migration-railway)
   else onFrame(step, { phase: 'update', order: 8 });
 }

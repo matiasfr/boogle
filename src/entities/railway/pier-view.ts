@@ -8,7 +8,7 @@ import { whistle } from '../../render/machine-sfx.ts';
 type Deps = {
   layout: typeof import('../../proto/place/layout.ts');
   rail: typeof import('../../proto/place/rail.ts');
-  sounds: typeof import('../../proto/minis/common.ts');
+  sounds: typeof import('../../render/fanfare.ts');
 };
 export function createRailwayPier(owner: OwnedView, { layout, rail, sounds }: Deps) {
   // besideLine already includes ORIGIN, as in the other production rail views.

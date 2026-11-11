@@ -44,7 +44,7 @@ Actual /character/ Buddy + conductor attachment at Idle_Loop t=0. Context is a s
 
 ### Starter axe
 
-Sources: [src/proto/place/axe-models.ts](../../../src/proto/place/axe-models.ts).
+Sources: [src/proto/place/axe-models.ts](../../../src/render/axe-models.ts).
 
 Code dimensions (metres): Shaft 0.07 × 0.64 × 0.07; cheek width 0.25, height 0.18, depth 0.085; bevel 0.008.
 
@@ -58,7 +58,7 @@ Plain starter variant, without the multi-tool pick. +Y follows the shaft; blade 
 
 ### Proper axe
 
-Sources: [src/proto/place/axe-models.ts](../../../src/proto/place/axe-models.ts).
+Sources: [src/proto/place/axe-models.ts](../../../src/render/axe-models.ts).
 
 Code dimensions (metres): Shaft 0.07 × 0.80 × 0.07; cheek width 0.36, height 0.24, depth 0.10; gold edge 0.118 × 0.26 × 0.025.
 
@@ -100,7 +100,7 @@ Empty rackLook assembly, including both bays. Stock and floating service label e
 
 ### Boiler
 
-Sources: [src/proto/place/carry-models.ts](../../../src/proto/place/carry-models.ts), [src/proto/place/props.ts](../../../src/proto/place/props.ts).
+Sources: [src/proto/place/carry-models.ts](../../../src/render/carry-models.ts), [src/proto/place/props.ts](../../../src/proto/place/props.ts).
 
 Code dimensions (metres): Barrel radius 0.55, length 1.50. Bands radius 0.57, width 0.14 at z=±0.5. Stack top/bottom radius 0.16/0.20, height 0.50, centre y=0.62/z=−0.4.
 
@@ -128,7 +128,7 @@ Isolated stand only; context retains the boiler and forge apron.
 
 ### First train locomotive
 
-Sources: [src/proto/place/look-kit.ts](../../../src/proto/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/proto/wagon/look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
+Sources: [src/proto/place/look-kit.ts](../../../src/proto/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/render/wagon-look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
 
 Code dimensions (metres): Physical footprint 1.6 × 3.0, rideable top 1.75. Frame 1.6 × 0.20 × 3; cab 1.5 × 1.18 × 1; roof 1.72 × 0.10 × 1.2. Wheel radius 0.36.
 
@@ -142,7 +142,7 @@ L1.train.tr.cars[0] at the first stop. Includes its four wheels extracted from t
 
 ### Passenger wagon
 
-Sources: [src/proto/place/look-kit.ts](../../../src/proto/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/proto/wagon/look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
+Sources: [src/proto/place/look-kit.ts](../../../src/proto/place/look-kit.ts), [src/proto/place/rail.ts](../../../src/proto/place/rail.ts), [src/proto/wagon/look.ts](../../../src/render/wagon-look.ts), [assets/src/place-kit.py](../../../assets/src/place-kit.py).
 
 Code dimensions (metres): Physical footprint 2.2 × 3.2, rideable deck top 0.70; wheel radius 0.22. Uses flat_deck and flat_black kit geometry.
 

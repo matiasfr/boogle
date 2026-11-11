@@ -1,8 +1,8 @@
 // Existing sprite factories under the old/new surface gains. Diagnostic placement, no production material patch.
 const { scene } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
 const { label } = (await import(
-  '/src/proto/minis/common.ts' as string
-)) as typeof import('../../../src/proto/minis/common.ts');
+  '/src/proto/place/label.ts' as string
+)) as typeof import('../../../src/proto/place/label.ts');
 const { makeLabel } = (await import(
   '/src/player/avatars.ts' as string
 )) as typeof import('../../../src/player/avatars.ts');

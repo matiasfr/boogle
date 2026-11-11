@@ -31,7 +31,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     import('../../proto/place/land.ts'),
     import('../../proto/place/sites.ts'),
     import('../../proto/place/pieces.ts'),
-    import('../../proto/net/boxes.ts'),
+    import('../../render/boxes.ts'),
     import('../../proto/place/look.ts'),
     import('../../proto/place/signs.ts'),
     import('../../proto/place/folk.ts'),

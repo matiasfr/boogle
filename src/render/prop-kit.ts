@@ -3,7 +3,7 @@
 import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import url from '../../../assets/built/boiler-cart.glb?url';
+import url from '../../assets/built/boiler-cart.glb?url';
 
 const kit = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
 export type PropPart = 'boiler' | 'pedestal' | 'train_shell' | 'cart';

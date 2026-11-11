@@ -8,7 +8,7 @@ import { sailAngle } from '../src/pois/windmills/motion.ts';
 import type { CodeId } from './code-descriptors.ts';
 import type { KitPart } from './engine-previz.ts';
 import type { Figure } from './car-previz.ts';
-import { partGeometry } from '../src/proto/net/box-plan.ts';
+import { partGeometry } from '../src/render/box-plan.ts';
 
 export type CodePreview = {
   group: THREE.Group;

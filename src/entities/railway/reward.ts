@@ -31,9 +31,9 @@ export async function createRailwayReward(
 ) {
   const [{ softGlow }, { fanfare, pop }, shapes, props] = await Promise.all([
     import('../../proto/place/look.ts'),
-    import('../../proto/minis/common.ts'),
-    import('../../proto/place/part-geometry.ts'),
-    import('../../proto/place/prop-kit.ts'),
+    import('../../render/fanfare.ts'),
+    import('../../render/part-geometry.ts'),
+    import('../../render/prop-kit.ts'),
   ]);
   // One reveal queue owns input/camera holding for both personal boxes and shared tools.
   const reveal = createRewardReveal({ parent: owner.root, fanfare, pop, softGlow });
@@ -182,9 +182,9 @@ async function createStationReward(
     adapter.inspect().stations[stationIndex]?.completion ?? (stationIndex === 0 ? adapter.inspect().completion : 0);
   const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }, { OUT }] =
     await Promise.all([
-      import('../../proto/place/part-geometry.ts'),
+      import('../../render/part-geometry.ts'),
       import('../../proto/place/look.ts'),
-      import('../../proto/minis/common.ts'),
+      import('../../render/fanfare.ts'),
       import('../../proto/place/layout.ts'),
       import('../../proto/place/land.ts'),
       import('../../proto/place/rail.ts'),

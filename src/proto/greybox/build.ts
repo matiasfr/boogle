@@ -7,7 +7,7 @@ import { scene } from '../../render/scene.ts';
 import { readableGlow } from '../../render/readable-unlit.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 import { FAR } from '../place/layout.ts';
 import { FORMATION, WORLD_LINES } from '../../sickle/world-lines.ts';
 import { RING_CONES, SEA_BED, wx, wz, type Ground } from './ground.ts';

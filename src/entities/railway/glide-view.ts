@@ -24,7 +24,7 @@ let warmed = false;
 const GLIDE_CAM = { dist: 5.2, fov: 50 };
 
 export async function createRailwayGlideView(owner: OwnedView) {
-  const gear = await import('../../proto/place/gear-models.ts');
+  const gear = await import('../../render/gear-models.ts');
   // One template: every back's roll is a clone sharing its geometry and material.
   const roll = gear.makeGear().pack;
   if (!warmed) {

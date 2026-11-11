@@ -25,8 +25,8 @@ if (shot === 'place') {
     '/src/proto/place/lines.ts' as string
   )) as typeof import('../../../src/proto/place/lines.ts');
   const { drawHeaps } = (await import(
-    '/src/proto/net/crates.ts' as string
-  )) as typeof import('../../../src/proto/net/crates.ts');
+    '/src/render/crates.ts' as string
+  )) as typeof import('../../../src/render/crates.ts');
   L1.train.park(0);
   L2.train.park(1);
   hub.list.splice(0, hub.list.length, ...Array<'wood'>(16).fill('wood'));

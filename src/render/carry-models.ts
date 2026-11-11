@@ -1,8 +1,9 @@
 // Local carried shapes and seating. No world, presence, clock or DOM dependencies: game and stage use these builders.
 import * as THREE from 'three/webgpu';
-import { material } from '../../render/materials.ts';
-import { flat } from '../flat.ts';
-import { PACK, TUNE } from './layout.ts';
+import { material } from './materials.ts';
+import { flat } from './flat.ts';
+// boogle-disable-next-line no-restricted-imports -- moves out of proto with M5/M6 (ecs-migration-railway)
+import { PACK, TUNE } from '../proto/place/layout.ts';
 import { merged } from './part-geometry.ts';
 import { sideCarryOffset } from './head-clearance.ts';
 import { makeProp } from './prop-kit.ts';

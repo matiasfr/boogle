@@ -9,8 +9,8 @@ import { NO_TARGETS, registerInteractable, type Interactable } from '../../playe
 import { me } from '../../player/player.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { scene } from '../../render/scene.ts';
-import { flat } from '../flat.ts';
-import { knock, pop } from '../minis/common.ts';
+import { flat } from '../../render/flat.ts';
+import { knock, pop } from '../../render/fanfare.ts';
 import { back } from './chop.ts';
 import { coop } from './coop.ts';
 import { bigCargo, freshCargo } from './big-cargo.ts';

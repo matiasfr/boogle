@@ -12,17 +12,17 @@ import {
   makeCanopy,
   placeCanopy,
   type GearState,
-} from '../src/proto/place/gear-models.ts';
+} from '../src/render/gear-models.ts';
 import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
-import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
+import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/render/carry-models.ts';
 import { makeBundlePreview } from '../src/render/haul-bundle.ts';
-import { makeAxes, type AxeTier } from '../src/proto/place/axe-models.ts';
+import { makeAxes, type AxeTier } from '../src/render/axe-models.ts';
 import { applyChopPose, CHOP_DURATION, CHOP_TRUNK, chopPresentation } from '../src/proto/place/chop-motion.ts';
-import { sparkleAxe } from '../src/proto/place/axe-sparkle.ts';
+import { sparkleAxe } from '../src/render/axe-sparkle.ts';
 import type { Particle } from '../src/render/particle-pool.ts';
 import { T1_REWARD } from '../src/render/t1-reward-parts.ts';
 import { seatConductorHat } from '../src/render/head-clearance.ts';
-import { merged } from '../src/proto/place/part-geometry.ts';
+import { merged } from '../src/render/part-geometry.ts';
 // Inspection-only lead-in and gap expose both production visibility edges.
 const CHOP_PREVIEW_LEAD = 0.2;
 export const CHOP_PREVIEW_DURATION = CHOP_PREVIEW_LEAD + CHOP_DURATION + 0.3;

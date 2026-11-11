@@ -33,8 +33,8 @@ export async function createRailwayPath(owner: OwnedView) {
       import('../../proto/place/layout.ts'),
       import('../../proto/place/rail.ts'),
       import('../../proto/place/land.ts'),
-      import('../../proto/flat.ts'),
-      import('../../proto/minis/common.ts'),
+      import('../../render/flat.ts'),
+      import('../../render/fanfare.ts'),
     ]);
   const row = new THREE.Group();
   row.visible = false;

@@ -35,7 +35,7 @@ export async function createLookoutView() {
     import('../../proto/place/layout.ts'),
     import('../../proto/place/land.ts'),
     import('../../proto/place/sites.ts'),
-    import('../../proto/flat.ts'),
+    import('../../render/flat.ts'),
   ]);
   const { ORIGIN, FAR, LINES } = layout;
   const ring = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };

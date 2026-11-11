@@ -42,11 +42,11 @@ export async function createRailwayTools(
     import('../../proto/place/layout.ts'),
     import('../../proto/place/tech-layout.ts'),
     import('../../proto/place/land.ts'),
-    import('../../proto/place/part-geometry.ts'),
-    import('../../proto/place/axe-models.ts'),
-    import('../../proto/flat.ts'),
-    import('../../proto/place/gear-models.ts'),
-    import('../../proto/place/axe-sparkle.ts'),
+    import('../../render/part-geometry.ts'),
+    import('../../render/axe-models.ts'),
+    import('../../render/flat.ts'),
+    import('../../render/gear-models.ts'),
+    import('../../render/axe-sparkle.ts'),
   ]);
   const root = new THREE.Group();
   owner.root.add(root);

@@ -12,8 +12,8 @@ type Deps = {
   layout: typeof import('../../proto/place/layout.ts');
   rail: typeof import('../../proto/place/rail.ts');
   land: typeof import('../../proto/place/land.ts');
-  flat: (typeof import('../../proto/flat.ts'))['flat'];
-  sounds: typeof import('../../proto/minis/common.ts');
+  flat: (typeof import('../../render/flat.ts'))['flat'];
+  sounds: typeof import('../../render/fanfare.ts');
   /** A reward card has the screen: the show waits for it. */
   busy: () => boolean;
   /** The line's camera pull-out (createCameraPullOut): from, drifting to, looking at, seconds. */

@@ -5,7 +5,7 @@
 // The riders are the stage's real Buddy: seated in the game's seated pose (Driving_Loop, played) or standing.
 import * as THREE from 'three/webgpu';
 import { addPart, mergeParts } from '../src/render/geometry-parts.ts';
-import { merged } from '../src/proto/place/part-geometry.ts';
+import { merged } from '../src/render/part-geometry.ts';
 import { GIFTS } from '../src/render/cosmetic-parts.ts';
 import { ENGINE, ENGINE_WHEELS } from '../src/proto/wagon/engine.ts';
 import { partGeometry, type KitPart } from './engine-previz.ts';

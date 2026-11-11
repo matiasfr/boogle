@@ -2,8 +2,8 @@
 // village's heaps. Nothing here decides anything: ./run.ts runs the machine, ./cargo.ts the trains. Local.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
-import { flat } from '../flat.ts';
-import { drawHeaps, heap, type Heap, type Kind } from '../net/crates.ts';
+import { flat } from '../../render/flat.ts';
+import { drawHeaps, heap, type Heap, type Kind } from '../../render/crates.ts';
 import { removeBody, type Body, type Shape } from '../../physics/engine.ts';
 import { H, addStatic, addStatics } from './land.ts';
 import { GOODS, type Goods } from './layout.ts';

@@ -9,7 +9,7 @@ import { scene } from '../../render/scene.ts';
 import { removeBody, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { flat } from '../flat.ts';
+import { flat } from '../../render/flat.ts';
 import { GOLD_ROPE, createRope } from '../../render/gold-rope.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { H, addStatic } from './land.ts';

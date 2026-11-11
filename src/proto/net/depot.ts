@@ -37,7 +37,7 @@ import {
   type Deck,
   type Heap,
   type Kind,
-} from './crates.ts';
+} from '../../render/crates.ts';
 
 const DEPOT_TUNE = {
   sites: [

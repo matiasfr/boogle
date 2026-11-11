@@ -10,7 +10,7 @@ import { me } from '../../player/player.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { protoCount } from '../count.ts';
 import { playMark, protoMark, type PlayData } from '../mark.ts';
-import { fanfare, knock } from '../minis/common.ts';
+import { fanfare, knock } from '../../render/fanfare.ts';
 import { clearMoments, firstPathShow, headShow, pierShow, shakeView, wakeShow } from './celebrate.ts';
 import { back, putDownBig } from './chop.ts';
 import { coop, coopWire } from './coop.ts';

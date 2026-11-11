@@ -1,6 +1,6 @@
 // Local geometry only: the stage and the equipped tool share these owned meshes.
 import * as THREE from 'three/webgpu';
-import { flat } from '../flat.ts';
+import { flat } from './flat.ts';
 
 export type AxeTier = 'starter' | 'proper' | 'multi' | 'proper-multi';
 const isProper = (tier: AxeTier) => tier === 'proper' || tier === 'proper-multi';
