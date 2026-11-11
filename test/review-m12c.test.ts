@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lintSafety } from '../dev/lint/safety.ts';
-import { INSPECT_LEGACY_IMPORTERS } from '../dev/lint/policy.ts';
+import { INSPECT_LEGACY_IMPORTERS, LEGACY_DOOR_CEILINGS, RAILWAY_READ_IMPORTERS } from '../dev/lint/policy.ts';
 import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { specOf } from '../src/sim/tune.ts';
@@ -108,4 +108,14 @@ test('no tool casts inspectRailway() to read a field the narrow inspection no lo
 test('every file on INSPECT_LEGACY_IMPORTERS still names the door', () => {
   const stale = INSPECT_LEGACY_IMPORTERS.filter((f) => !fs.readFileSync(f, 'utf8').includes(DOOR));
   assert.deepEqual(stale, []);
+});
+
+// Added with the fixes (M12c): the second door's list gets the same guard, and both lists only shrink (a batch that
+// takes files off lowers its ceiling in dev/lint/policy.ts).
+test('every file on RAILWAY_READ_IMPORTERS still names railwayRead, and neither list grows', () => {
+  const name = ['railway', 'Read'].join('');
+  const stale = RAILWAY_READ_IMPORTERS.filter((f) => !new RegExp(`\\b${name}\\b`).test(fs.readFileSync(f, 'utf8')));
+  assert.deepEqual(stale, []);
+  assert.ok(INSPECT_LEGACY_IMPORTERS.length <= LEGACY_DOOR_CEILINGS.inspectRailwayLegacy);
+  assert.ok(RAILWAY_READ_IMPORTERS.length <= LEGACY_DOOR_CEILINGS.railwayRead);
 });

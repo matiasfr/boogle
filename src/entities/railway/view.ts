@@ -615,16 +615,18 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     // The session's scalars and the scene walk; state is read as rows (docs/plans/ecs-m12-m13.md, section 2).
     inspect: (): RailwayViewInspection => {
       const read = adapter.read;
-      return {
+      const out = {
         pid: read.pid,
         status: read.status(),
         ready: read.ready(),
         pending: read.pending(),
         stalled: read.stalled(),
         tick: read.tick(),
-        ...read.debug(),
         ...scene(),
       };
+      // debug()'s fields copied as they are defined, so `hash` stays a getter: the mirror is hashed only when read.
+      const debug = read.debug();
+      return Object.defineProperties(out, Object.getOwnPropertyDescriptors(debug)) as typeof out & typeof debug;
     },
     /** Temporary (M12c to M12e): the adapter's wide object under the scene walk, for INSPECT_LEGACY_IMPORTERS. */
     inspectLegacy: () => ({ ...adapter.inspect(), ...scene() }),

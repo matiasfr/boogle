@@ -187,12 +187,8 @@ export function reportGfxErrors(games: Game[]) {
 const ON_ISLAND = `
   const { productionRailway } = await import('/src/proto/flags.ts');
   if (productionRailway) {
-    const { inspectRailway } = await import('/src/entities/railway/state.ts');
-    const t0 = performance.now();
-    while (!inspectRailway()?.ready) {
-      if (performance.now() - t0 > 90000) throw new Error('island fixture: the current game never became ready');
-      await new Promise((r) => setTimeout(r, 100));
-    }
+    const { railReady } = await import('/dev/look/rail-read.ts');
+    if (!(await railReady(90000))) throw new Error('island fixture: the current game never became ready');
   }
   const { me, cam } = await import('/src/player/player.ts');
   const { teleport } = await import('/src/physics/engine.ts');

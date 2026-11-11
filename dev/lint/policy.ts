@@ -153,14 +153,44 @@ export const INSPECT_LEGACY_IMPORTERS = [
   'src/debug/dev/room.ts',
   'src/proto/playdata/record.ts',
 ];
-const LEGACY_NAME = 'inspectRailwayLegacy';
-export const INSPECT_LEGACY_MESSAGE = `${LEGACY_NAME}() is the temporary legacy door (docs/plans/ecs-m12-m13.md, M12c): read state as rows and queries through dev/look/rail-read.ts (or railwayWorldRead()), and inspectRailway() for the view's and the session's own fields. Only the files in INSPECT_LEGACY_IMPORTERS may name it, and that list only loses lines.`;
-// The name as code, or inside a string or template (the scenarios build their page code as strings).
-export const INSPECT_LEGACY_SELECTORS = [
-  `Identifier[name="${LEGACY_NAME}"]`,
-  `Literal[value=/${LEGACY_NAME}/]`,
-  `TemplateElement[value.raw=/${LEGACY_NAME}/]`,
+/** The second door to the same wide object, `railwayRead()` (the adapter's inspect()), and the files that still use
+ * it; M12d deletes it and empties the list. Checked by boogle/railway-read. */
+export const RAILWAY_READ_IMPORTERS = [
+  'dev/look/evals/railway-finds.ts',
+  'dev/look/evals/railway-town.ts',
+  'src/entities/lookout/view.ts',
+  'src/features/playtest-flag.ts',
 ];
+/** Each list's length when it was made; a batch that takes files off lowers its number (test/review-m12c.test.ts holds
+ * the list at or under it), so a line can leave and never come back unnoticed. */
+export const LEGACY_DOOR_CEILINGS = { inspectRailwayLegacy: 35, railwayRead: 4 };
+const doorMessage = (name: string, list: string) =>
+  `${name}() is a temporary legacy door to the adapter's wide object (docs/plans/ecs-m12-m13.md, M12c): read state as rows and queries through dev/look/rail-read.ts (or railwayWorldRead()), and inspectRailway() for the view's and the session's own fields. Only the files in ${list} (dev/lint/policy.ts) may name it, and that list only loses lines.`;
+/** The legacy doors and their rules (safety.ts): the name as code, or inside a string or template (the scenarios build
+ * their page code as strings). A name built at runtime is not seen; typecheck still types such a read. */
+export const LEGACY_DOORS = [
+  {
+    rule: 'boogle/inspect-legacy',
+    name: 'inspectRailwayLegacy',
+    list: 'INSPECT_LEGACY_IMPORTERS',
+    importers: INSPECT_LEGACY_IMPORTERS,
+  },
+  {
+    rule: 'boogle/railway-read',
+    name: 'railwayRead',
+    list: 'RAILWAY_READ_IMPORTERS',
+    importers: RAILWAY_READ_IMPORTERS,
+  },
+].map(({ rule, name, list, importers }) => ({
+  rule,
+  importers,
+  message: doorMessage(name, list),
+  selectors: [
+    `Identifier[name="${name}"]`,
+    `Literal[value=/\\b${name}\\b/]`,
+    `TemplateElement[value.raw=/\\b${name}\\b/]`,
+  ],
+}));
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
@@ -636,12 +666,13 @@ const policyBlocks: PolicyBlock[] = [
     ignores: READ_MODEL_IMPORTERS,
     rules: { 'no-restricted-imports': ['error', { patterns: [railReadModelBan] }] },
   },
-  // The legacy door's callers are the closed list above; its owner, the railway entity, defines and mounts it.
-  {
-    files: ['src/**/*.ts', 'dev/**/*.ts', 'test/**/*.ts'],
-    ignores: [...INSPECT_LEGACY_IMPORTERS, 'src/entities/railway/**', 'dev/lint/**'],
-    rules: { 'boogle/inspect-legacy': 'error' },
-  },
+  // The legacy doors' callers are the closed lists above. state.ts defines both (index.ts mounts them by other names);
+  // the lint and its review test name them to check the rule. server/ is outside the lint (the first block).
+  ...LEGACY_DOORS.map(({ rule, importers }): PolicyBlock => ({
+    files: ['src', 'dev', 'test', 'protos', 'scripts', 'server'].map((dir) => `${dir}/**/*.{ts,js,mjs}`),
+    ignores: [...importers, 'src/entities/railway/state.ts', 'dev/lint/**', 'test/review-m12c.test.ts'],
+    rules: { [rule]: 'error' },
+  })),
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule
   // for these files would replace it).
   {

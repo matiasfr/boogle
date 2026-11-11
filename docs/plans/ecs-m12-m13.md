@@ -46,7 +46,8 @@ in `ws-railway.ts`). Files that read each group (a file counts once per group), 
 - **28 of the 58 read only session and view fields** (every hook, seat, forge-walk, photo and ring-walk eval, `lib.ts`,
   the two peer-test files): they need no state read at all.
 - **30 read state fields, about 260 reads**, of which `dev/look/bots/railway.ts` (2,123 lines) holds about 124 and
-  `railway-works.ts` 24. No `dev/` file reads `ring` or a movement tunable.
+  `railway-works.ts` 24. No `dev/` file reads a movement tunable. (Corrected at M12c's review: `railway-leaf-act.ts`
+  read `ring` through a cast that typecheck could not see; M12c moved it to `ringOpen(w)` and `aperture(w)`.)
 - Two scenario files build their page code as strings (`hud-glance.ts:13`, `world-inputs.ts:99`): untyped, so
   typecheck does not see their reads (`carry`, `pending`, `ready`).
 
@@ -214,6 +215,7 @@ step branches from `origin/main`, ships alone and leaves `npm run check` green.
 | M12c | The ratchet: narrow `inspectRailway()`, the legacy door | S | Medium, code review | now | X, M13a, M13b |
 | M12d | The four `src` readers; the Dev menu's rows | S | Medium, code review, looks | M12c | X, D |
 | D1 to D4 | Tools off the legacy door | L, S, M, M | Low, code review | M12c | each other, X, M12d |
+| D5 | The ready-wait loops onto `railReady()` | S | Low, code review | M12c | everything |
 | M12e | Delete `inspect()` and `railwayAt` | S | **High, independent** | X, M12d, D | M13 |
 | M12f | The adapter split | M | Medium by path, **independent asked for** | M12e | M12b-1, M13 |
 | M12b-1 | The model's last readers | M | **High, independent** | M12e | M12f, M13 |
@@ -277,6 +279,13 @@ typecheck`, `npm run lint`.
       `jump-in.ts` (converted here, the proving eval). Section 1 missed three state readers, now given batches below:
       `bots/coop-unlock.ts` and `bots/railway-reload.ts` (D2), `evals/railway-q6-forge.ts` (D4). The two peer-test
       files call `adapter.inspect()`, not the door, so they are not on the list; D4 still converts them.
+      **After review:** the second door to the same object, `railwayRead()`, is held the same way
+      (`RAILWAY_READ_IMPORTERS`, 4 files, `boogle/railway-read`) until M12d deletes it; both rules cover
+      `src`, `dev`, `test`, `protos`, `scripts` and `.js`/`.mjs` (`server/` is outside the lint), ignore only
+      `state.ts` in the entity, and do not see a name built at runtime. `LEGACY_DOOR_CEILINGS` holds each list's
+      length (35 and 4); a batch lowers it when its files leave, and `test/review-m12c.test.ts` fails a list that
+      grows or keeps a file that no longer names its door. `read.debug().prediction` is a copy; the view's
+      inspection keeps `hash` a getter.
   - **Done:** typecheck green; the list in the commit body matches section 1's 30 or each difference is named.
   - **Checks:** `npm run check`; `npm run scenario -- hud-glance`; `npm run look -- --query from=q3-done --eval
     dev/look/evals/jump-in.ts --until window.__jumpDone` (a state reader on the legacy door) and one view-only eval
@@ -286,7 +295,8 @@ typecheck`, `npm run lint`.
       `src/features/playtest-flag.ts` (`account(w, pid)`), `src/proto/playdata/record.ts` (`line2Trains`,
       `line2Completed`, `qjob(w, 5).completion`, `read.ready()`), `src/debug/dev/inspect.ts` and `room.ts` (the view
       inspection and `rows: world.snapshot()`); delete `railwayRead` and `setRailwayRead` from `state.ts` and
-      `index.ts`. `record.ts`, `inspect.ts` and `room.ts` come off `INSPECT_LEGACY_IMPORTERS`.
+      `index.ts`. `record.ts`, `inspect.ts` and `room.ts` come off `INSPECT_LEGACY_IMPORTERS`; with `railwayRead` deleted,
+      `RAILWAY_READ_IMPORTERS`, its rule (`boogle/railway-read`) and its ceiling go too (D4 has taken its two evals).
   - **Checks:** `npm run check`; looks at `--rail-seed gap-footed` (buoys lifted where the railhead stands) and
     `deck-laid`; the M flag pressed with a full back (the mark's `logs`); the Dev menu's Inspect opened.
   - **Reviewer attacks:** the lookout before the railway mounts and after it unmounts (null read: buoys afloat, as
@@ -307,6 +317,14 @@ typecheck`, `npm run lint`.
       `railway-works-act`, `railway-works-at`, `railway-works-bot`, `ring-greybox`; `dev/scenarios/hud-glance.ts`,
       `world-inputs.ts`; `dev/peer-test/ws-railway.ts` and `ws-page.ts` (`T.railAdapter().state` and `state:
       adapter.inspect()` become the facade and `debug()`).
+      `dev/look/evals/railway-finds.ts` and `railway-town.ts` read `railwayRead()?.ready`: they become `railReady()`
+      and leave `RAILWAY_READ_IMPORTERS` (found by M12c's review).
+- [ ] **D5. The ready-wait loops.** _S. After M12c; beside D1 to D4 (it touches only the loop lines)._ Each page
+      tool's own "wait until the railway is ready" loop becomes `railReady(ms)` from `dev/look/rail-read.ts` (section
+      4; M12c replaced `dev/look/lib.ts`'s). At M12c, on the narrow door: `jump-land-probe`, `railway-forge-finish`,
+      `railway-glide-map`, `railway-roof-start`, `ring-house`, `ring-island-walk`; the loops in files a D batch
+      converts go with that batch (`rg -n "inspectRailway(Legacy)?\(\)\?\.ready" dev` lists what is left).
+      **Checks:** typecheck; two of the evals run once with their header commands.
   - **D3, D4 checks:** typecheck; each eval run once with the command in its header and its printed line compared
     with a run on main (same seed, same numbers); `npm run scenario -- hud-glance` and `world-inputs`; `npm run
     test:net` for the peer-test files. An eval whose header command no longer runs on main is listed, not fixed.
@@ -319,6 +337,9 @@ typecheck`, `npm run lint`.
       plus the export rule of section 3; `test/helpers/railway-m10a-twins.ts` if X3 left it. With it, section 4's
       rows for this step: one `perFrame` helper for the three memos, `sameMovement` over the keys, the old
       `waitsForTrain` deleted, and any view arithmetic X3 reported moved into its query file (that part is `src/sim`).
+      In `src/sim/railway-queries.ts`, `job` and `qjob` (entity ids, which the rows' `job` and `qjob` shadow by name)
+      become `jobId` and `qjobId`, like `trainId`, `lineId` and `cartId`, and `dev/look/rail-read.ts` drops its
+      override line (M12c's review).
       Also (found at M12c): `src/entities/railway/trains-shown.ts` latches "the first whole state is in", a session
       value kept in a view; it becomes a facade value (`read.whole()`, true from the first whole state on, through
       refills and full windows), `train-view.ts` reads it and the latch file is deleted.
