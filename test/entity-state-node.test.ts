@@ -8,6 +8,7 @@ import '../dev/sim/hooks.ts';
 import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 // Node 26 exposes a warning-producing localStorage getter without a storage file. Keep this DOM-free.
 Object.defineProperty(globalThis, 'localStorage', { value: undefined, configurable: true });
@@ -21,5 +22,5 @@ const states = fs
 test('every entity state.ts and headless.ts imports in Node', async () => {
   const { physicsReady } = await import('../src/physics/engine.ts');
   await physicsReady;
-  for (const file of states) await import(file);
+  for (const file of states) await import(pathToFileURL(file).href);
 });

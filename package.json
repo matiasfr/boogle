@@ -21,7 +21,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -p .",
     "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run level-check && npm run assets -- --check && npm run build",
-    "test:unit": "node --test --test-timeout=5000 'test/**/*.test.ts'",
+    "test:unit": "node dev/test-unit.ts",
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "check:gpu": "node dev/scenarios/run.ts smoke",
     "patch": "node dev/patch.ts",

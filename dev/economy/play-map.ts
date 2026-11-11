@@ -2,6 +2,7 @@
 // for its positions, read through the greybox's loader), joined to the ring model's slots and route steps.
 // Pure apart from the file read; the page gets the result as JSON, the Node test calls it directly.
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { layout, parseMapPage, polyLen, stageOf, type XZ } from '../../src/proto/greybox/map-data.ts';
 import { PLACES, RESOURCES, ROUTE } from './ring-data.ts';
 
@@ -40,7 +41,7 @@ export type PlayMap = {
   stepStage: Record<string, number>;
 };
 
-const MAP_PAGE = new URL('../../docs/world/map-prototypes.html', import.meta.url).pathname;
+const MAP_PAGE = fileURLToPath(new URL('../../docs/world/map-prototypes.html', import.meta.url));
 export const OPTION = 'sickle';
 
 // The bridge between the two models, the one hand-written part: which map stage each ring-model step belongs to.
