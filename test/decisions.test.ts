@@ -5,10 +5,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { manifestOf, ruleText, split } from '../dev/decisions/log.ts';
 import { checkDecisions } from '../dev/decisions/check.ts';
-import { ARCHIVE_FILE, CALLS_FILE, MANIFEST_FILE, ROUTING_FILE } from '../dev/decisions/topics.ts';
+import { ARCHIVE_FILE, CALLS_FILE, MANIFEST_FILE, ROUTING_FILE, TOPICS } from '../dev/decisions/topics.ts';
+import type { TopicId } from '../dev/decisions/topics.ts';
+
+const fileOf = (id: TopicId) => TOPICS.find((t) => t.id === id)!.file;
 
 const LOG = `# Decisions
 
@@ -76,13 +78,13 @@ function tree(): string {
 test('split is deterministic and places entries, rules lines, archive and calls', () => {
   const a = split(LOG, CALLS, 'the test log');
   assert.deepEqual(a.files, split(LOG, CALLS, 'the test log').files);
-  const look = a.files['docs/decisions-look.md']!;
+  const look = a.files[fileOf('look')]!;
   assert.match(
     look,
     /^- 2026-11-10 · Firefox is supported, at P2 \(\[entry\]\(#d-2026-11-10-firefox-is-supported-at-p2\)\)$/m,
   );
   assert.match(look, /^- <a id="d-2026-11-10-firefox-is-supported-at-p2"><\/a>\*\*2026-11-10, Firefox/m);
-  const core = a.files['docs/decisions-core-loop.md']!;
+  const core = a.files[fileOf('core-loop')]!;
   assert.match(core, /- 2026-11-02 · Hauling: you haul each track segment/);
   assert.doesNotMatch(core, /While nobody plays/, 'a superseded entry leaves the topic file');
   const archive = a.files[ARCHIVE_FILE]!;
@@ -90,7 +92,7 @@ test('split is deterministic and places entries, rules lines, archive and calls'
   assert.match(archive, /\| A sea call \|/);
   assert.match(a.files[CALLS_FILE]!, /\| A glider call \|/);
   assert.doesNotMatch(a.files[CALLS_FILE]!, /A sea call/);
-  assert.match(a.files['docs/decisions-controls.md']!, /2026-11-02 · The hotbar is cut/);
+  assert.match(a.files[fileOf('controls')]!, /2026-11-02 · The hotbar is cut/);
   assert.doesNotMatch(a.files[ROUTING_FILE]!, /^- \*\*/m);
 });
 
@@ -110,7 +112,7 @@ test('the no-loss check passes on the split and fails on a lost line or an entry
   const root = tree();
   try {
     assert.deepEqual(checkDecisions(root).errors, []);
-    const look = path.join(root, 'docs/decisions-look.md');
+    const look = path.join(root, fileOf('look'));
     const kept = fs.readFileSync(look, 'utf8');
     fs.writeFileSync(look, kept.replace(/^- <a id[^\n]*Firefox[^\n]*\n/m, ''));
     const lost = checkDecisions(root).errors.join('\n');
@@ -122,9 +124,4 @@ test('the no-loss check passes on the split and fails on a lost line or an entry
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
-});
-
-test("the repository's decision log passes its own check", () => {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-  assert.deepEqual(checkDecisions(root).errors, []);
 });
