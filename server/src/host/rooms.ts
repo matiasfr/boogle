@@ -96,7 +96,8 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   // save always did.
   const drain = (id: string) => store.withLock(id, async () => {});
   // The slot is held until the close has drained, failed or not, then always freed: a join meanwhile is refused with
-  // `bye restart`, and one after loads the room from its file. Shutdown waits only for the bounded close.
+  // `bye restart`, and one after loads the room from its file. Shutdown waits for the bounded close, then for the drain
+  // of every closing room within its own bound (close below).
   function closeRoom(id: string, room: HostedRoom, save: boolean) {
     if (closing.has(id)) return;
     closing.add(id);
@@ -219,16 +220,33 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         if (listed.has(id) && !rooms.has(id) && !stopping) load(id);
       }
     },
+    // Settles once every room has closed and every write a closing room queued (a fenced close's last save, or one
+    // still draining from an earlier failed idle close) has landed. The whole wait ends 1.5 x closeMs after it begins
+    // (7.5 s by default, inside index.ts's 8 s hard exit); writes still queued then are reported, saving or not.
     async close({ save = true } = {}) {
       stopping = true;
       clearInterval(sweep);
       clearInterval(idle);
+      const deadline = performance.now() + closeMs * 1.5;
+      let timer: NodeJS.Timeout | undefined;
       try {
         for (const [id, room] of rooms) closeRoom(id, room, save);
         // Drain every writer before reporting any failure: another room may still have accepted edits.
         await Promise.all(unloading);
+        const queued = [...closing];
+        const drained = await Promise.race([
+          Promise.all(queued.map(drain)).then(() => true),
+          new Promise<false>((resolve) => {
+            timer = setTimeout(() => resolve(false), Math.max(0, deadline - performance.now()));
+          }),
+        ]);
+        if (!drained) {
+          const late = new Error(`writes still queued for ${queued.join(', ')} after ${closeMs * 1.5} ms`);
+          throw new AggregateError([...failed.values(), late], 'one or more rooms did not finish writing');
+        }
         if (save && failed.size) throw new AggregateError([...failed.values()], 'one or more rooms failed to close');
       } finally {
+        clearTimeout(timer);
         wss.close();
       }
     },
