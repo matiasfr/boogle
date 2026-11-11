@@ -20,8 +20,12 @@ import {
   trainIdle,
   trainRequestable,
   trainSpeed,
+  stopKin,
+  trainPassesBy,
 } from '../src/sim/railway-train.ts';
-import { RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { RING_END_BRAKE_CMS2 } from '../src/sim/railway-ring-layout.ts';
+import { V27_LINE2, v27Stops } from './helpers/railway-v27-line.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { railwayAtTrains, TRAIN_STAGES } from './helpers/railway-trains.ts';
@@ -580,4 +584,118 @@ test('pose is continuous with four stops', () => {
   }
   assert.ok(made[3]! >= 1, 'the pier was reached');
   assert.equal(invariant(w.s), null);
+});
+
+// ---------------------------------------------------------------- v27's eased end stop and homeward-only halt (R3a)
+/** v26's leg profile, copied before R3a: legs with no `brake` must stay bit for bit. */
+function v26Profile(dist: number, v0: number, a: number, top: number) {
+  if (v0 > 0 && dist * 2 * a < v0 * v0) {
+    const dec = (v0 * v0) / (2 * dist);
+    return { up: 0, cruise: 0, peak: v0, dec, total: v0 / dec, upCm: 0 };
+  }
+  const upTicks = (top - v0) / a,
+    upCm = v0 * upTicks + (a * upTicks * upTicks) / 2,
+    downCm = (top * top) / (2 * a);
+  if (dist >= upCm + downCm) {
+    const cruise = (dist - upCm - downCm) / top;
+    return { up: upTicks, cruise, peak: top, dec: a, total: upTicks + cruise + top / a, upCm };
+  }
+  const up = v0 ? (Math.sqrt(a * dist + (v0 * v0) / 2) - v0) / a : Math.sqrt(dist / a);
+  const peak = v0 + a * up;
+  return { up, cruise: 0, peak, dec: a, total: up + peak / a, upCm: v0 * up + (a * up * up) / 2 };
+}
+function v26Along(dist: number, t: number, v0: number) {
+  if (dist <= 0 || !(t > 0)) return 0;
+  const p = v26Profile(dist, v0, TRAIN.accel, TRAIN.speed);
+  if (t >= p.total) return dist;
+  let s: number;
+  if (t < p.up) s = v0 * t + (TRAIN.accel * t * t) / 2;
+  else if (t < p.up + p.cruise) s = p.upCm + p.peak * (t - p.up);
+  else s = dist - (p.dec * (p.total - t) * (p.total - t)) / 2;
+  return Math.max(0, Math.min(dist, Math.round(s)));
+}
+function v26Speed(dist: number, t: number, v0: number) {
+  if (dist <= 0) return 0;
+  if (!(t > 0)) return v0;
+  const p = v26Profile(dist, v0, TRAIN.accel, TRAIN.speed);
+  if (t >= p.total) return 0;
+  if (t < p.up) return v0 + TRAIN.accel * t;
+  if (t < p.up + p.cruise) return p.peak;
+  return p.dec * (p.total - t);
+}
+const DISTS = [1, 7, 150, 999, 2740, 5714, 10000, 15600, 34999, 52400, 70950, 117300];
+const V0S = [0, 1, 3.5, 37, 120, 199, 200];
+test("with no brake every leg is v26's, bit for bit (and a brake equal to accel takes the same branches)", () => {
+  const same = { speed: TRAIN.speed, accel: TRAIN.accel, brake: TRAIN.accel };
+  for (const dist of DISTS)
+    for (const v0 of V0S) {
+      const ticks = Math.ceil(v26Profile(dist, v0, TRAIN.accel, TRAIN.speed).total);
+      assert.equal(trainLegTicks(dist, v0), ticks, `${dist}/${v0} ticks`);
+      assert.equal(trainLegTicks(dist, v0, same), ticks);
+      for (let t = -1; t <= ticks + 1; t += t < 40 || t > ticks - 40 ? 1 : 7) {
+        assert.equal(trainLegAlong(dist, t, v0), v26Along(dist, t, v0), `${dist}/${v0} along at ${t}`);
+        assert.equal(trainLegSpeed(dist, t, v0), v26Speed(dist, t, v0), `${dist}/${v0} speed at ${t}`);
+        assert.equal(trainLegAlong(dist, t, v0, same), v26Along(dist, t, v0));
+        assert.equal(trainLegSpeed(dist, t, v0, same), v26Speed(dist, t, v0));
+      }
+    }
+});
+test('with brake 2 a leg never brakes harder than 2 cm a tick², never passes its stop, and is continuous', () => {
+  const kin = { speed: TRAIN.speed, accel: TRAIN.accel, brake: RING_END_BRAKE_CMS2 / 100 };
+  assert.equal(kin.brake, 2);
+  let legs = 0;
+  for (const dist of DISTS)
+    for (const v0 of V0S) {
+      if (dist * 2 * kin.brake < v0 * v0) continue; // the planner never commits to a stop it can't brake for
+      legs++;
+      const ticks = trainLegTicks(dist, v0, kin);
+      assert.ok(ticks >= trainLegTicks(dist, v0), 'an eased stop is never sooner');
+      let s = 0,
+        v = v0;
+      for (let t = 1; t <= ticks + 2; t++) {
+        const s1 = trainLegAlong(dist, t, v0, kin),
+          v1 = trainLegSpeed(dist, t, v0, kin);
+        assert.ok(s1 >= s && s1 <= dist, `${dist}/${v0}: on and never past at ${t}`);
+        assert.ok(s1 - s <= kin.speed + 1, `${dist}/${v0}: no jump at ${t}`);
+        assert.ok(v - v1 <= kin.brake + 1e-9, `${dist}/${v0}: braked ${v - v1} at ${t}`);
+        assert.ok(v1 - v <= kin.accel + 1e-9, `${dist}/${v0}: sped up ${v1 - v} at ${t}`);
+        s = s1;
+        v = v1;
+      }
+      assert.equal(trainLegAlong(dist, ticks, v0, kin), dist, 'stands at the stop');
+      assert.equal(trainLegSpeed(dist, ticks, v0, kin), 0);
+    }
+  assert.ok(legs > 60);
+});
+test("the eased rate is the Railhead's up arrival only: stopKin by halt and track, and the pose reads the row", () => {
+  const stops = v27Stops(7, 0);
+  assert.equal(stopKin(V27_LINE2, 4, 0).brake, 2, 'up into the railhead');
+  assert.equal(stopKin(V27_LINE2, 4, 1).brake, undefined, 'down trains brake at 3.5');
+  for (const k of [0, 1, 2, 3, 5]) assert.equal(stopKin(V27_LINE2, k, 0).brake, undefined, `halt ${k}`);
+  assert.equal(stopKin(V27_LINE2, -1, 0).brake, undefined, 'a signal');
+  assert.equal(stopKin(1, 3, 0), RAIL_LINES[1], "the catalog's lines: the line's own kin");
+  const leg = { ...trainIdle(A), phase: TRAIN_PHASE.RUN, at: 3, to: 4, track: 0, depart: 0, from: 72650, v0: 0 };
+  const into = { ...leg, dest: stops[4]! };
+  const eased = trainArrives(into, V27_LINE2),
+    plain = trainArrives(into, 1);
+  assert.ok(eased > plain, `${eased} ticks eased against ${plain}`);
+  assert.equal(trainAlong(into, V27_LINE2, eased), stops[4]);
+  assert.ok(trainSpeed(into, V27_LINE2, eased - 1) <= 2 + 1e-9);
+});
+test("an up train's riders are offered the Railhead, not the homeward-only Pier; a down train's the Pier", () => {
+  const stops = v27Stops(7, 7, true); // after the Meet: the Railhead is a middle halt
+  const up = { ...trainIdle(A), phase: TRAIN_PHASE.RUN, at: 2, to: 4, track: 0, depart: 0, from: 60000, v0: 200 };
+  const upRow = { ...up, dest: stops[4]! };
+  assert.deepEqual(trainRequestable(upRow, V27_LINE2, stops, 0), { stop: 4, dir: 1, requested: true });
+  assert.equal(trainRequestable({ ...upRow, to: -1, dest: 80000 }, V27_LINE2, stops, 0)?.stop, 4);
+  const down = { ...upRow, at: 4, to: 0, track: 1, from: 80000, dest: stops[0]! };
+  assert.deepEqual(trainRequestable(down, V27_LINE2, stops, 0), { stop: 3, dir: -1, requested: false });
+  // While the Pier is the end it is the end: not offered (the train stops there anyway).
+  const q6 = v27Stops(6);
+  assert.equal(trainRequestable({ ...upRow, to: 3, dest: q6[3]! }, V27_LINE2, q6, 0), null);
+  // v26's count still reads the first `n` halts' stops (train-view.ts until R4a).
+  assert.deepEqual(trainRequestable(upRow, 1, TRAIN_STOPS[1]!, 0), trainRequestable(upRow, 1, 4, 0));
+  assert.equal(trainPassesBy(V27_LINE2, 3, 1, stops.length), true);
+  assert.equal(trainPassesBy(V27_LINE2, 3, -1, stops.length), false);
+  assert.equal(trainPassesBy(V27_LINE2, 3, 1, q6.length), false, 'the open end serves both ways in');
 });

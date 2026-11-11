@@ -44,17 +44,21 @@ const SOURCES: [string, string][] = [
   ['src/sim/railway-line.ts', 'validateRailLine'],
   ['src/sim/railway-line2.ts', 'validateRailLine2'],
   ['src/sim/railway-trains.ts', 'validateRailTrains'],
+  // validateRailTrains throws what trainRowBroken returns (R3a): that function's message literals are its sites.
+  ['src/sim/railway-trains.ts', 'trainRowBroken'],
   ['src/sim/railway-works.ts', 'validateRailWorks'],
 ];
 function throwSites(file: string, fn: string) {
   const text = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
   const start = text.indexOf(`export function ${fn}(`);
   const end = text.indexOf('\n}\n', start);
-  return [...text.slice(start, end).matchAll(/throw new Error\('([^']+)'\)/g)].map((m) => m[1]!);
+  const body = text.slice(start, end);
+  if (fn === 'trainRowBroken') return [...body.matchAll(/'(railway: [^']+)'/g)].map((m) => m[1]!);
+  return [...body.matchAll(/throw new Error\('([^']+)'\)/g)].map((m) => m[1]!);
 }
-test('every throw site of the old validators is a bad world, unreachable or dominated (86 sites)', () => {
+test('every throw site of the old validators is a bad world, unreachable or dominated (87 sites)', () => {
   const sites = SOURCES.flatMap(([file, fn]) => throwSites(file, fn)).sort();
-  assert.equal(sites.length, 86, 'the old validators changed: list the new sites');
+  assert.equal(sites.length, 87, 'the old validators changed: list the new sites');
   const listed = [...BAD_WORLDS, ...UNREACHABLE, ...DOMINATED].map((e) => e.message).sort();
   assert.deepEqual(listed, sites);
   assert.equal(BY_CONSTRUCTION.length, 2);

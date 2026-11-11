@@ -379,7 +379,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   },
 ];
 
-/** The validators' `throw` sites no edit to a world can reach, and why (four of 86). */
+/** The validators' `throw` sites no edit to a world can reach, and why (five of 87). */
 export const UNREACHABLE: readonly { site: string; message: string; reason: string }[] = [
   {
     site: 'line requires playable state',
@@ -396,6 +396,14 @@ export const UNREACHABLE: readonly { site: string; message: string; reason: stri
     site: 'trains trains',
     message: 'railway: trains',
     reason: "the train and line row counts: railwayCheck's own count check ('railway: N train') refuses first",
+  },
+  {
+    site: 'trains rider ask (a refused way)',
+    message: 'railway: rider ask',
+    reason:
+      "a rider's ask for the way an `only` halt refuses: no catalog halt is `only` until R3b's row (v27), so no world " +
+      'can hold one; test/railway-trains.test.ts refuses it, the lever ask and an up train standing there on the ' +
+      'fixture line',
   },
   {
     site: 'works works missing',

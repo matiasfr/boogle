@@ -730,8 +730,40 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   `npm run look -- --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts`, its halt still, and one from
   the east platform's north end toward the buffers and the shard.
 
-- [ ] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
+- [x] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
   main).** Everything under "R3" above up to `Aperture`; the sim's three train files and their tests only.
+  > **Split (orchestrator call, 10 November 2026).** R3a as written was not inert: `trains: 3` gives `RAIL_TRAINS` a
+  > fourth row, a fourth `Train` entity in the world, and every ops-stream hash in `test/railway-ops.test.ts` changes
+  > (measured: opening 572735742 against the golden's 1598632334), so it could not land before the `WORLD_NS` bump.
+  > **R3a-1 (built here):** the rules only, with no catalog row using them, proven inert by the railway goldens, ops,
+  > schema, tick-order, census and replay tests passing unchanged with `GOLDEN` unset and no fixture regenerated.
+  > Tests run on a test-local catalog, `test/helpers/railway-v27-line.ts` (`V27_LINE2`: the row below, held in the
+  > test), with a pure `TrainIO` over plain rows. **R3a-2 (moved to R3b):** the catalog row (`RING_PATH`, `trains: 3`,
+  > the Pier's east platform and `only`, halts 6 and 7, the eight-halt `LINE_HALTS` cast), with the bump and the
+  > golden regeneration. What R3a-1 built, against the bullets below: every `line` argument of the pure train code is
+  > a `LineRef` (a catalog index or a fixture `RailLineDef`; `TrainIO<L>` is generic over it), so `cycleTicks`,
+  > `headTicks`, `blockFree` and `trainStepLine` changed type only, no rule; `trainPassesBy(line, k, dir, n)` is the
+  > `only` test, read by `trainReasons`, `trainServes`, `trainRequestable`, `validateRailTrains` and **`planLeg`'s
+  > holds** (found by the long fuzz: a held up train stood at the Pier after Q7 until holds skipped a refused way);
+  > `validateRailTrains` is split into `trainRowBroken`, `lineReqOk` and `lineBlocksBroken`, and `trainSpacing` into
+  > `lineSpacing`, so the fixture runs the same checks; `railEnd` is exported. **Three trains at today's hold miss the wait bound** (call 47; see R3b for the ruling).
+  > **After the independent review (ship, no P1; 10 November):** its tests are kept: `test/railway-r3a-differential.test.ts`
+  > runs the branch's train rules beside a frozen copy of main's (`test/helpers/main-rail/`) on the live catalog, row
+  > for row, query for query and check for check: the inertness proof. **R3b deletes both at the bump** (the catalog
+  > row changes the rules on purpose). `test/railway-r3a-adversarial.test.ts` stays. Its five findings, fixed:
+  > `trainPlaces` never places a train where its way out is refused (it put an up train at the Pier at Q7 stages) and
+  > throws rather than stack two when places run out (every stage of every catalog line is placed at load, so a room
+  > never meets it); a train left at the old railhead stop by `stopMoved` leaves as from that end (headway hold,
+  > `left1`, the lever's way-home ask dropped: `endStanding`); `trainRequestable`'s count form reads a `heads` halt at
+  > its last head, the same offer as the stops form; a catalog row passed as an object resolves to its own slots
+  > (`lineIndex`). Also: a leg that ends at a halt refusing its way (held short of a busy railhead, never replanned
+  > off the Pier) stands at no halt, as at a signal, and the load check refuses an up train standing at an `only`
+  > halt, so the save gate refuses what the rules never produce.
+  > **On M8b's load check (rebased after #1532):** `checkTrains` (`src/sim/railway-check-trains.ts`) calls
+  > `lineReqOk`, `trainRowBroken` and `lineBlocksBroken`, one copy of the train conditions, so the world check refuses
+  > v27's too; the throw-site corpus counts `trainRowBroken`'s messages (87 sites), the refused-way rider ask is listed
+  > unreachable until R3b's row makes a halt `only` (R3b turns it, the up-at-`only` stand and the refused lever ask
+  > into bad worlds on the catalog), and all 34 seed stages pass both checks.
   - `railway-lines.ts`: `RailHalt`'s four optional fields; line 2's row (the path, `trains: 3`, the Pier's `only`
     and its platform moved to the east side, call 53: the row's comment becomes "s 719-741 m, lat +2.9, east of the
     down track; the pier rack stands on it", the Railhead and Ring Island rows); `haltPlatform`; `trainPlaces` takes the nearest place not already taken. The
@@ -768,7 +800,46 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     the worst wait each way at every halt and bounds it by v26's `WAIT_BOUND` (1050 ticks)** (call 47; if it fails,
     the catalog goes to four trains: a logged Default).
   - Checks: `npm run check`. Proof: headless, no look.
-- [ ] **3b. R3b, the Meet's rules, the adapter and the bump (v27).** New `src/sim/railway-ring.ts`: `Aperture`,
+- [ ] **3b. R3b, the Meet's rules, the adapter and the bump (v27).**
+  > **Gains R3a-2 (orchestrator call, 10 November 2026; R3a's split above):** line 2's catalog row in
+  > `src/sim/railway-lines.ts` exactly as `test/helpers/railway-v27-line.ts`'s `V27_LINE2` holds it (`RING_PATH`,
+  > `trains: 3`, the Pier's east platform and `only: -1`, the Railhead and Ring Island rows), the eight-halt
+  > `LINE_HALTS` cast, `RAIL_TRAINS`' four rows, and R3a's catalog tests moved off the fixture onto the catalog (halt ids
+  > 0–5 in name and `s`, the Pier 290 ± 2 cm east, the R1b ends, four trains on four places); then the `WORLD_NS` bump
+  > and `GOLDEN=1` regeneration in this step's own review, never mid-session. The fixture helper goes once the catalog
+  > holds the row. **Train count and the hold (call 47; orchestrator, 10 November, on the R3a review).** The owner's decision
+  > is "3 for now": **the plan keeps three trains and fixes the headway hold.** The cause is the hold, not the count:
+  > `headTicks` is sized off the non-stop cycle (138.8 s) and is only a minimum since the last departure from that
+  > end, so trains that bunch under demand never re-spread; the round trip under heavy asks is about 217–221 s.
+  > Measured with the reviewer's script (`waits.ts eff`/`base`/`hold` in the session scratchpad; fixture line,
+  > 40,000 ticks, lever asks 5% and rider asks 3% a tick, R3a's tip after the review fixes; the reviewer's own runs
+  > on 3f2423111 gave 103.5 s worst for the best fix):
+  >
+  > | Variant | Worst | Runs over 105 s | Round trip |
+  > | --- | --- | --- | --- |
+  > | 3 trains, today's hold (75%) | 137.9 s | 8 of 10 | 217.4 s |
+  > | 3 trains, hold 100% of the non-stop cycle | 131.5 s | 4 of 5 | 217.4 s |
+  > | 3 trains, headway 75% of a stop-counting cycle | 122.8 s | 4 of 10 | 217.4 s |
+  > | 3 trains, headway 100% of a stop-counting cycle | 89.1 s | 0 of 10 | 218.6 s |
+  > | **3 trains, balanced hold at the ends** | **88.7 s** | **0 of 10** | 221.4 s |
+  > | 3 trains, balanced, a tenth of the asks | 87.1 s | 0 of 5 | 172.4 s |
+  > | 4 trains, today's hold (10 seeds) | 105.8 s | 1 of 10 | 216.8 s |
+  >
+  > R3a's own long fuzz (with rider asks, restores, a legal start: `FUZZ_TICKS=40000
+  > FUZZ_SEEDS=c0ffee,777,15a4d,5eed,bee FUZZ_TRAINS=3|4 node --test --test-name-pattern="fixture fuzz"
+  > test/railway-trains.test.ts`): three trains at today's hold worst 130.5 s, 10 of 10 over; four 98.4 s, 0 of 10.
+  > **Balanced hold preferred** (a train ready to leave an end waits while the gap to the train ahead round the circuit
+  > is shorter than the gap behind it): it reacts to the spacing the rows already hold (`trainPose`, as `blockFree`
+  > reads; no new state, nothing per peer), costs nothing when the trains are already even (light play), and needs no
+  > estimate of a demand-dependent round trip, which a stop-counting headway must make from asks that change every
+  > tick. It needs a cap (the script's: at most 60 s past the dwell) and must not hold a train another train waits
+  > behind at the end's signal, or it can hold the end block; the wagon's `headExempt` still applies. Build it as a
+  > per-line rule (a catalog field on line 2's v27 row) or at the bump, so v26's lines do not change early. **The
+  > margin is thin and the goal is not met:** the reviewer's best was 103.5 s against the 105 s bound, the one-minute
+  > goal (train-riding rec 6) is not reached by any variant under these asks, and these asks are far heavier than a
+  > playtest's. Four trains at today's hold are not safely under (1 of 10 over at 105.8 s).
+
+  New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,
   `ringStrike`; the last three build the three-function train io over the `Train` rows (as `trainIO` does) for
   `stopMoved` and `endMoved`.
@@ -825,7 +896,13 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     laps' time), `npm run checkpoints`, `npm run check`, `npm run check:full`, `npm run test:net` (the adapter),
     `test/server-image.test.ts` green with no list edits (both new files are under `src/sim/`). Proof: headless, no
     look.
-- [ ] **4a. R4a, the line goes out (views).** `crossing-view.ts`: Q7's double deck over bents 1–6, laid panel by
+- [ ] **4a. R4a, the line goes out (views).**
+  > **Flag (R3a, 10 November 2026):** `src/entities/railway/halt-map.ts:39` takes the last `LINE_HALTS` entry as the
+  > Pier (`LINE_HALTS[LINE_HALTS.length - 1]`); once R3b appends halts 6 and 7 that is Ring Island. Find the Pier by
+  > name or id there, and check `halts-view.ts`'s `chained` (its `filter(...).length - 1`) and `train-view.ts`'s
+  > `trainRequestable(..., n, ...)` (pass the open stops) for the same assumption.
+
+  `crossing-view.ts`: Q7's double deck over bents 1–6, laid panel by
   panel; its `open()` reads `pierLaid`. `pier-view.ts`: the pier's up track from the old merge (s 556) to the pier
   head, laid when Q7 completes; **no up platform** (owner's answer 4). **The Pier as ruled (calls 53–61), all of it in
   place from Q6, none of it changed by Q7:**
