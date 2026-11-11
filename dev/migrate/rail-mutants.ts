@@ -46,8 +46,8 @@ export const MUTANTS: readonly Mutant[] = [
   {
     name: 'a block signal ignored',
     file: 'src/sim/railway-trains.ts',
-    from: '    if (within(b, dest) && LINE_SLOTS',
-    to: '    if (false && within(b, dest) && LINE_SLOTS',
+    from: '    if (within(b, dest) && lineSlots(line)',
+    to: '    if (false && within(b, dest) && lineSlots(line)',
   },
   {
     name: 'the kit train never waits for rails',
