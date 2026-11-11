@@ -29,6 +29,7 @@ import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { q7Laid } from '../../sim/railway-queries.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
+import { jibOffered } from './leaf-shape.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { RING_S, line2At, line2World, line2Y } from './line2-path.ts';
 import {
@@ -120,6 +121,7 @@ export function createRailwayRailhead(
   let opened = false,
     set = 0,
     rack = 0,
+    cw = 0,
     joined = false;
   const refresh = () => {
     wd = adapter.read.world();
@@ -127,6 +129,7 @@ export function createRailwayRailhead(
     const a = opened ? aperture(wd) : null;
     set = a?.set ?? 0;
     rack = a?.rack ?? 0;
+    cw = a?.cw ?? 0;
     joined = !!a && a.joined >= 0;
   };
 
@@ -826,7 +829,8 @@ export function createRailwayRailhead(
       }
       if (
         mine?.foot &&
-        set < WORKS.ring &&
+        // The bent's footing, then (the gap footed) a counterweight footing: one site, its meaning by state (call 7).
+        jibOffered(set, cw) &&
         Math.hypot(pos.x - head.jib.x / 100, pos.z - head.jib.z / 100) <= head.jib.reach / 100 - 0.4 &&
         Math.abs(pos.y - head.jib.y / 100) <= 2.6
       )
