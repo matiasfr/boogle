@@ -1,0 +1,366 @@
+/* The train garage's screen (src/features/garage.ts): the game's overlay over a dim vignette, never a menu page. The
+   picture is the world behind it. Tokens follow the engine-garage mock (docs/world/engine-garage-mock.html). */
+.garage-ui {
+  --g-card: #17233a;
+  --g-card-on: #22314f;
+  --g-ink: #eef4ff;
+  --g-soft: #a9b8d0;
+  --g-line: #050a14;
+  --g-edge: #3b4f74;
+  --g-glass: rgba(10, 16, 28, 0.8);
+  --g-preview: #5fd0f0;
+  --g-sun: #ffc93d;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  color: var(--g-ink);
+  font: 600 15px/1.3 var(--font-body);
+}
+.garage-ui[hidden] {
+  display: none;
+}
+.garage-ui button {
+  pointer-events: auto;
+  font-family: var(--font-display);
+  color: var(--g-ink);
+  cursor: pointer;
+}
+.g-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 42% 48%, transparent 52%, rgba(0, 0, 0, 0.5) 100%),
+    linear-gradient(to left, rgba(5, 8, 14, 0.5), transparent 34%);
+}
+.g-top {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  left: max(12px, env(safe-area-inset-left, 0px));
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.g-where,
+.g-tag {
+  font: 400 17px/1 var(--font-display);
+  letter-spacing: 0.4px;
+  background: var(--g-glass);
+  border: 2px solid var(--g-edge);
+  border-radius: 999px;
+  padding: 7px 12px;
+  color: var(--g-soft);
+}
+.g-where b {
+  color: var(--g-ink);
+  font-weight: 400;
+}
+.g-tag {
+  background: var(--g-sun);
+  color: #13243f;
+  border-color: var(--g-line);
+}
+.g-tag[hidden] {
+  display: none;
+}
+.g-back,
+.g-cat,
+.g-part,
+.g-btn,
+.g-skip {
+  background: var(--g-card);
+  border: 3px solid var(--g-line);
+  border-radius: 14px;
+  box-shadow: 0 4px 0 var(--g-line);
+}
+.g-back {
+  font-size: 16px;
+  padding: 6px 12px;
+  min-height: 38px;
+}
+.g-rail {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left, 0px));
+  top: 64px;
+  width: 132px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.g-grp {
+  font: 800 11px/1.2 var(--font-body);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--g-soft);
+  padding: 2px 2px 0;
+}
+.g-grp.cos {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 2px solid var(--g-edge);
+}
+.g-cat {
+  font-size: 17px;
+  text-align: left;
+  padding: 7px 11px;
+  min-height: 40px;
+}
+.g-cat.cos {
+  border-style: dashed;
+  border-color: var(--g-edge);
+}
+.g-cat[aria-selected='true'] {
+  background: var(--g-sun);
+  color: #13243f;
+  border-color: var(--g-line);
+}
+.g-parts {
+  position: absolute;
+  left: 156px;
+  right: 380px;
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+}
+.g-part {
+  flex: 0 0 auto;
+  width: 164px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+  padding: 9px 10px;
+  background: rgba(23, 35, 58, 0.92);
+}
+.g-part .nm {
+  font: 400 17px/1.1 var(--font-display);
+}
+.g-part[aria-selected='true'] {
+  background: var(--g-card-on);
+  outline: 3px solid var(--g-sun);
+  outline-offset: -6px;
+}
+.garage-ui .pill {
+  justify-self: start;
+  font: 800 11px var(--font-body);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--g-line);
+  white-space: nowrap;
+}
+.pill.installed {
+  background: #2f9a52;
+  color: #fff;
+}
+.pill.free {
+  background: #0f9fc0;
+  color: #fff;
+}
+.pill.steel {
+  background: var(--g-sun);
+  color: #13243f;
+}
+.pill.later {
+  background: #2b3a57;
+  color: var(--g-soft);
+}
+.g-panel {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  width: 344px;
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  background: var(--g-glass);
+  border: 2px solid var(--g-edge);
+  border-radius: 18px;
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+.g-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+}
+.g-head h2 {
+  margin: 0;
+  font: 400 24px/1.05 var(--font-display);
+  letter-spacing: 0.4px;
+}
+.g-desc {
+  margin: 0;
+  color: var(--g-soft);
+  font-weight: 500;
+  font-size: 14px;
+}
+.g-rows {
+  display: grid;
+  gap: 6px;
+}
+.g-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.g-row b {
+  font-weight: 800;
+  white-space: nowrap;
+  font-size: 15px;
+  transition: color 0.4s;
+}
+.g-row b s {
+  color: #9aa3b2;
+  text-decoration: none;
+  font-weight: 700;
+}
+.g-row b.preview {
+  color: var(--g-preview);
+}
+.pips {
+  display: inline-flex;
+  gap: 4px;
+  vertical-align: -2px;
+}
+.pips i {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 2px solid var(--g-edge);
+}
+.pips i.on {
+  background: var(--g-ink);
+  border-color: var(--g-line);
+}
+.pips i.new {
+  background: var(--g-preview);
+}
+.pips i.new {
+  animation: g-drop 0.3s var(--ease-pop) both;
+}
+@keyframes g-drop {
+  from {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+.g-note {
+  margin: 0;
+  color: var(--g-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+.g-note:empty {
+  display: none;
+}
+/* The hold button: the ring is the crank. */
+.g-btn {
+  --ring: 0;
+  position: relative;
+  font-size: 20px;
+  padding: 10px 14px;
+  min-height: 48px;
+  overflow: hidden;
+  background: var(--g-sun);
+  color: #13243f;
+  touch-action: none;
+  user-select: none;
+}
+.g-btn[hidden] {
+  display: none;
+}
+.g-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(19, 36, 63, 0.28);
+  transform-origin: left;
+  transform: scaleX(var(--ring));
+}
+.garage-ui .g-btn {
+  color: #13243f;
+}
+.g-btn:disabled {
+  opacity: 0.85;
+  cursor: default;
+}
+.g-label {
+  position: relative;
+}
+.g-btn.pulse {
+  animation: ui-tick 0.5s;
+}
+.g-skip {
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+  translate: -50% 0;
+  font-size: 17px;
+  padding: 8px 14px;
+}
+.g-skip[hidden] {
+  display: none;
+}
+/* The prompts and the mouse hint step back while it is open. */
+body.garage-open .hud > :not(.garage-ui):not(.shot-skip-chip):not(.notify) {
+  visibility: hidden;
+}
+@media (max-width: 899px) {
+  .g-rail {
+    top: auto;
+    bottom: 150px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .g-grp.cos {
+    margin: 0 0 0 6px;
+    padding: 0 0 0 8px;
+    border-top: 0;
+    border-left: 2px solid var(--g-edge);
+  }
+  .g-cat {
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 16px;
+  }
+  .g-parts {
+    left: 12px;
+    right: 12px;
+  }
+  .g-panel {
+    width: auto;
+    left: 12px;
+    top: 56px;
+    padding: 10px;
+    gap: 6px;
+  }
+  .g-desc {
+    display: none;
+  }
+  .g-where {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .g-row b {
+    transition: none;
+  }
+  .pips i.new {
+    animation: none;
+  }
+}
