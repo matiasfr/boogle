@@ -14,6 +14,8 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { WORKS_BREAKER, WORKS_RACK, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+/** The Works' two slabs (WORKS_SEAMS[2] is Ring Island's rivet, v27: its glint and prompt are R4's). */
+const SLAB_SEAMS = [WORKS_SEAMS[0], WORKS_SEAMS[1]] as const;
 import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { reducedMotion } from '../../constants.ts';
 import { createForgeCall } from './forge-call.ts';
@@ -95,7 +97,7 @@ export function createRailwayBreaker(
     if (seamMote > 0) return;
     seamMote = SEAM_MOTE_S;
     side *= -1;
-    for (const seam of WORKS_SEAMS) {
+    for (const seam of SLAB_SEAMS) {
       if (seams & (seam.id === 0 ? SEAM_STALL : SEAM_THROAT)) continue;
       const b = slabs[seam.id]!,
         { cx, sx, off } = faces[seam.id]!,
@@ -289,7 +291,7 @@ export function createRailwayBreaker(
         ];
       if (w.breaker !== 2) return [];
       const out: Interactable[] = [];
-      for (const seam of WORKS_SEAMS) {
+      for (const seam of SLAB_SEAMS) {
         if (w.seams & (seam.id === 0 ? SEAM_STALL : SEAM_THROAT)) continue;
         const at = seamAt(seam.id);
         if (Math.hypot(p.x - at.x, p.z - at.z) > seam.reach / 100 - 0.4 || Math.abs(p.y - seam.y / 100) > 2.6) continue;

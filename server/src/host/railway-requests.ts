@@ -71,6 +71,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
       'rail.boilerDrop',
       'rail.boilerFit',
       'rail.turn',
+      'rail.brace',
     ].includes(String(e.op))
   )
     clean.revision = e.revision;

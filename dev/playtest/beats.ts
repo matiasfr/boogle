@@ -39,7 +39,7 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['woke the machine', /^woke$/],
   ['chopped', /^chop$/],
   ['delivered', /^deposit$/],
-  ...['T1', 'T2', 'T3', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'].flatMap((id): [string, RegExp][] => [
+  ...['T1', 'T2', 'T3', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7'].flatMap((id): [string, RegExp][] => [
     [`funded ${id}`, new RegExp(`^stretch funded ${id}$`)],
     [`laid ${id}`, new RegExp(`^stretch laid ${id}$`)],
   ]),
@@ -70,6 +70,9 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['filled the kiln', /^kiln filled$/],
   ['set a footing', /^footing set$/],
   ['footed the crossing', /^crossing footed$/],
+  ['braced the leaf', /^leaf braced$/],
+  ['footed the gap', /^gap footed$/],
+  ['joined Ring Island', /^ring joined$/],
   ['saw the crossing finale', /^crossing finale$/],
   ['saw a shared moment', /^moment played$/],
   ['fitted the cradle', /^cradle rails$/],

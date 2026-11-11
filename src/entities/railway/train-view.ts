@@ -30,7 +30,7 @@ import {
   type RailTrain,
 } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../../sim/railway-lines.ts';
-import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { pierLaid } from '../../sim/railway-line2-layout.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 
@@ -279,7 +279,7 @@ export async function createRailwayTrains(
     if (crossing(tr, row) && c && s >= c[0]) return layout.crossLat(f, s) ?? 0;
     return layout.upLat(f, s) ?? 0;
   }
-  const pierOpen = () => adapter.inspect().line2.completed >= LINE2_STATIONS.length;
+  const pierOpen = () => pierLaid(adapter.inspect().line2.completed);
   /** Whether a train on the up track takes Far Head's crossover, from the room's rows alone (a restore or a joining
    * tab draws it the same): every one while the pier is shut, and one the pier's opening caught on it (`turn`). */
   const crossing = (tr: (typeof trains)[number], row: Readonly<RailTrain>) =>

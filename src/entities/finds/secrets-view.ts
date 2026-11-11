@@ -27,7 +27,7 @@ import { rewardSparkles } from '../../render/reward-particles.ts';
 import { railwayWorldRead, railwayYouGot } from '../railway/state.ts';
 import { rail } from '../../sim/railway-rows.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
-import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { pierLaid } from '../../sim/railway-line2-layout.ts';
 import { townShelf } from '../town/state.ts';
 import { wardrobe } from '../wardrobe/state.ts';
 import type { FindsApi, FindsViewInspection } from './state.ts';
@@ -312,8 +312,8 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
     if (!f?.ready()) return false;
     const w = f.world(),
       row = rail(w);
-    // The end of the run: every line-2 station complete (`completed` counts them).
-    const ended = line2Completed(w) >= LINE2_STATIONS.length;
+    // The end of the run: the Pier laid (Q6; Ring Island's Q7 is past it, and R4a may move this).
+    const ended = pierLaid(line2Completed(w));
     if (s.how === 'glide') return ended;
     if (s.how === 'jump') return row.jump && ended;
     if (s.after === 'hook') return row.hook;

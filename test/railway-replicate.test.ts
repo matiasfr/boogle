@@ -21,7 +21,7 @@ import {
 } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
-import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_STATIONS, Q6 } from '../src/sim/railway-line2-layout.ts';
 import { railCarryMax } from '../src/sim/railway-line2.ts';
 import { cloneRailway, railPredict, railwayOf } from '../src/world/railway-predict.ts';
 import {
@@ -276,7 +276,7 @@ test('the railway state is a server state: saved by the host, never hashed or se
   const again = room();
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
-  assert.equal(RAIL_SCHEMAS.length, 16); // the depot cart, boiler and trains; the Works and the shed; the lines
+  assert.equal(RAIL_SCHEMAS.length, 17); // the depot cart, boiler and trains; the Works and the shed; the lines; the aperture (v27)
 });
 
 test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
@@ -407,7 +407,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
     r.pump();
     return { adapter, mirror: mirrorOf, corrections, effects };
   };
-  for (let k = 0; k < LINE2_STATIONS.length; k++) {
+  for (let k = 0; k <= Q6; k++) {
     const spec = LINE2_STATIONS[k]!;
     if (spec.gate === 'quarry') {
       chop('b');
@@ -569,7 +569,7 @@ test('boiler and train packets patch the mirror; boiler blocks predicted materia
   assert.equal(r.mirrors.get('a')!.railway.trains[1]!.logs, 32);
 });
 
-test("every train and line row round-trips through railwayView and the replicated components (v26's three trains)", () => {
+test("every train and line row round-trips through railwayView and the replicated components (v27's four trains)", () => {
   const seed = railwayAtTrains('q6-done'),
     r = room();
   while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
@@ -591,7 +591,7 @@ test("every train and line row round-trips through railwayView and the replicate
     agree(r, 'a');
     const server = r.api.railway,
       mirror = r.mirrors.get('a')!.railway;
-    assert.equal(mirror.trains.length, 3);
+    assert.equal(mirror.trains.length, 4);
     assert.deepEqual(mirror.trains, server.trains);
     assert.deepEqual(mirror.lines, server.lines);
   }

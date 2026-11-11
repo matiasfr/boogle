@@ -14,6 +14,7 @@ import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import {
   Account,
+  Aperture,
   Beam,
   Boiler,
   Cart,
@@ -84,6 +85,8 @@ export const boiler = one(Boiler);
 export const works = one(Works);
 export const worksClock = one(WorksClock);
 export const shed = one(Shed);
+/** Ring Island's gap (v27). */
+export const aperture = one(Aperture);
 
 export const job = slotted(Job);
 export const jobRun = slotted(JobRun, Job);

@@ -2,11 +2,11 @@
 // (./railway-line2.ts) restated on the rows and the world queries, in the same order and with the same messages. Run
 // by railwayCheck (./railway-check.ts).
 //
-//   checkLine2(w)    the forge and its pour clock; Q1 to Q6's bounds, order, funding and laying; the depot, the cart,
+//   checkLine2(w)    the forge and its pour clock; Q1 to Q7's bounds, order, funding and laying; the depot, the cart,
 //                    the lever, hook, glider and pack; the shelf; the boiler; rail conservation (throws on the first)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { LINE2_FORGE as FORGE, LINE2_STATIONS } from './railway-line2-layout.ts';
+import { LINE2_FORGE as FORGE, LINE2_STATIONS, Q6 } from './railway-line2-layout.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD } from './railway-cart.ts';
 import { DEPOT_OUT } from './railway-components.ts';
 import { accounts, beam, boiler, cart, forge, forgeClock, rail } from './railway-rows.ts';
@@ -95,7 +95,8 @@ export function checkLine2(w: World) {
     bad('depot output');
   const c = cart(w);
   if (r0.depot + c.logs + line2Aboard(w, 'logs') > r0.depotProduced) bad('depot stock');
-  const road = CART_ROAD.rackCm(LINE2_STATIONS.length - 1);
+  // The cart's road ends at Q6's rack (the farthest it is ever sent; Q6 and Q7 are fed by train).
+  const road = CART_ROAD.rackCm(Q6);
   if (
     !railInt(c.phase, CART_PHASES - 1) ||
     !railInt(c.depart) ||

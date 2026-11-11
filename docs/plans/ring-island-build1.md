@@ -800,7 +800,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     the worst wait each way at every halt and bounds it by v26's `WAIT_BOUND` (1050 ticks)** (call 47; if it fails,
     the catalog goes to four trains: a logged Default).
   - Checks: `npm run check`. Proof: headless, no look.
-- [ ] **3b. R3b, the Meet's rules, the adapter and the bump (v27).**
+- [x] **3b. R3b, the Meet's rules, the adapter and the bump (v27).**
   > **Gains R3a-2 (orchestrator call, 10 November 2026; R3a's split above):** line 2's catalog row in
   > `src/sim/railway-lines.ts` exactly as `test/helpers/railway-v27-line.ts`'s `V27_LINE2` holds it (`RING_PATH`,
   > `trains: 3`, the Pier's east platform and `only: -1`, the Railhead and Ring Island rows), the eight-halt
@@ -864,6 +864,52 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > `railway-world.ts`'s are in `railway-components.ts` (`RAIL_COMPONENTS`, `DEPOT_OUT`), `railway-check.ts`
   > (`ARCHETYPES`, counts) and a new `railway-check-ring.ts`; the adapter's `inspect()` still builds on the read model,
   > so `ring` goes in from rows (`read.world()`), not through `Railway`.
+  >
+  > **Design review (designer, 11 November 2026): the three gaps R3b-1 found.** All Defaults; they proceed
+  > ([agent-calls](../agent-calls.md), Rail, 2026-11-11).
+  > - **Call 62.** Q7's kit unloads at the Pier (stop 3, the line's end while Q7 is laid), onto the rack and shelf on
+  >   Q7's deck (s 703–713), into `Rail.depot`/`depotRails`. Each train-fed job's kit unloads at its own halt; Far
+  >   Head's service stop and unload are Q6's only. `kitOwed`, the kit load in `standing`, `line2KitOwed` and
+  >   `serviceOf` read the active train-fed job, not slot 5. A test holds that Q7's kit passes Far Head and
+  >   `rail.depot` rises only at the Pier.
+  > - **Call 63.** Q7's kit is its bill, 20 logs and 20 rails, one trip. `LINE2_KIT` (32/32) stays as the kit car's
+  >   capacity; `line2KitOwed`'s literal 32 becomes the job's bill; the loop graph's "kit equals bill" check covers Q7.
+  > - **Call 64.** `Rail.out6` is a counter like `out5` (logs issued to Q7, capped at its bill) in `DEPOT_OUT`; nothing
+  >   drawn, no place at the depot.
+  > - **Call 65.** The footing wagon loads no ring footings until Q7 is laid (`ringOwed` is 0 before then), so nothing
+  >   but the pier's twelve reaches the Pier's rack. The first ring footing's arrival after Q7 is reported from `npm run
+  >   loop -- run` (designer's P2: more than about 90 s with nothing to do is reported, not fixed).
+  > - **P3s.** The Village's `kitWaitTicks` hold and the "forge lit" test follow the active job too; `line2-view.ts`
+  >   and the station-6 shelf and sign are checked for a hard-coded index; the stale "Q1 to Q6" and "the Q6 kit"
+  >   comments are fixed.
+  >
+  > **Built (implementer, 11 November 2026): R3b-2, the v27 bump, on `ring/r3b2-v27`; not shipped.** Calls 62–65 as
+  > ruled. Goldens regenerated for v27 only, in their own commit (sha256 prefixes before → after: rail-schema
+  > 9634e4f9a18e → ba204ca72414, railway-golden 99561d1faba0 → d71c55559890, ops 38998c3aab0f → 49d76f3ef3de,
+  > tick-order 0cf57d3dcca6 → a91a19d2f390, heads 57719fe3a0db → 24508229e4c9). **Measured** (the real v27 line 2):
+  > the fixture fuzz (`FUZZ_TICKS=40000`, seeds c0ffee, 777, 15a4d, 5eed, bee, 75% and 0%) worst lever wait 87.7 s,
+  > 0 of 10 over 105 s; the world fuzz worst 66.0 s and 66.2 s, means 24.0 s and 23.6 s. `npm run loop -- run`
+  > (straight-line / calibrated): 1 player 34:01 / 40:09, 2 players 30:39 / 36:36, 3 players 30:25 / 34:46, 4 players
+  > 29:12 / 32:51; the bents node 5:43–6:21, Q7 1:15–1:45. **Call 65's report:** in the seed sim Q7 is laid 84 s after
+  > `crossing-done`; the first ring footings reach the railhead 141.9 s after Q7 is laid (more than 90 s with nothing
+  > to do, reported, not fixed); later loads come 116 s and 122 s apart; set 14 at 380 s after Q7. **Deviations:** the
+  > rule file is `railway-sys-ring.ts` (the census wants `railway-sys-*`); `gap-footed` leaves 4 footings on the
+  > ring rack (the loads come 6 + 6 + 6, no op empties it); R5's loop-graph nodes (Q7, bents, brace, weights, rivet)
+  > went in now so the graph test stays green; the read model gained `ring` (plan's `railwayView.ring`); the views
+  > keep six frames and read `pierLaid`, and so does `secrets-view.ts`'s "end of the run" (found on the rebase: with
+  > Q7 it would have waited for Q7; R4a or the designer may move it). The P3 index checks: the kit hold already reads
+  > the active job; `line2-view.ts`'s `stations[5]` is the Pier's own job (Q6), correct as written.
+  >
+  > **After review (11 November 2026): the hold's cap from arrival, in the same bump.** The reviewer's design: a new
+  > `Train.arrived` (int, set at the stand transition, at most `depart` in `trainRowBroken`) that `balancedHold` reads
+  > for its cap in place of `depart`. A lever ask restarts only the dwell, and the dwell check still runs before the
+  > hold, so the worst hold with one ask is dwell + cap + one asker's dwell (70 s on line 2), down from 130 s. The
+  > reviewer's tests (`test/railway-r3b2-review.test.ts`) are cherry-picked and the griefing tests follow. Goldens
+  > regenerated again in a fixtures-only commit (rail-schema 8f61ba5dd2c6, railway-golden 88e85b2a4f2a, ops
+  > f4d3d311c6dc, tick-order 965b6000fe5b, heads 8965a94360c8). The fuzz waits and the loop totals are unchanged to the
+  > tenth of a second (no run's worst wait was a restarted cap). The adapter's `ring` stays on the read model (review
+  > P3-3): `buildState` reads the predicted view, whose world can be absent, so rows there would mean choosing between
+  > predicted and confirmed, not a like-for-like swap; M12b's.
 
   New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,

@@ -5,7 +5,7 @@
 //
 //   line2Open, line2Lit, line2PackReady, line2Completed, line2Active, line2GateOpen, line2SeaOpen, line2GateDown,
 //   line2Trains                            the forge, the stretches and the gates
-//   line2Served, line2CartWants, line2CartStatus, line2KitOwed   the depot cart and the Q6 kit
+//   line2Served, line2CartWants, line2CartStatus, line2KitOwed   the depot cart and a train-fed job's kit
 //   line2Aboard, line2Logs, line2Rails     line two's cargo and its conserved logs and rails
 //   railCounts(w, at?)                     every conserved total and the score
 import type { World } from '../ecs/index.ts';
@@ -34,6 +34,7 @@ import {
   cartId,
   forgeId,
   job,
+  kitJob,
   line2Jobs,
   qActive,
   qjob,
@@ -48,7 +49,7 @@ export const line2Open = (w: World) => !!w.get(Job, job(w, 2))!.completion;
 export const line2Lit = (w: World) => w.get(Forge, forgeId(w))!.lit >= 0;
 /** The pack chest is there: the forge has taken its first bill. */
 export const line2PackReady = (w: World) => w.get(Forge, forgeId(w))!.used >= FORGE.bills[0];
-/** Completed Q stretches, 0-6. */
+/** Completed Q stretches, 0-7. */
 export const line2Completed = (w: World) =>
   LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjob(w, k))!.completion).length;
 /** The Q station that takes materials now, or -1 before the forge is lit / after the last (qActive). */
@@ -104,19 +105,26 @@ export function line2CartStatus(w: World): 'off' | 'loading' | 'travelling' | 'u
   const logs = Math.min(spec.bill[0] - j.stock - rail.depot, spec.bill[0] - rail[DEPOT_OUT[k]!]);
   return logs > 0 || line2CartWants(w, k) > 0 ? (c.phase === CART_PHASE.REST ? 'loading' : 'travelling') : 'off';
 }
-/** Line 2's trains' cargo: the Q6 kit aboard any of them (aboard). */
+/** Line 2's trains' cargo: a train-fed job's kit aboard any of them (aboard). */
 export const line2Aboard = aboard;
-/** Remaining kit to source, counting the rack, frame and both vehicles. */
+/** The active train-fed job's (Q6's or Q7's) kit still to source, counting the rack, frame and both vehicles: its
+ * bill (call 63). */
 export function line2KitOwed(w: World) {
-  const j = w.get(QJob, qjob(w, 5))!;
-  if (qActive(w) !== 5 || j.start >= 0) return { logs: 0, rails: 0 };
+  const k = kitJob(w);
+  if (k < 0) return { logs: 0, rails: 0 };
+  const j = w.get(QJob, qjob(w, k))!,
+    [logs, rails] = LINE2_STATIONS[k]!.bill;
+  if (j.start >= 0) return { logs: 0, rails: 0 };
   const rail = w.get(Rail, railId(w))!,
     cart = w.get(Cart, cartId(w))!;
   return {
-    logs: Math.max(0, Math.min(32 - j.stock - rail.depot - cart.logs - aboard(w, 'logs'), 32 - rail.out5)),
+    logs: Math.max(
+      0,
+      Math.min(logs - j.stock - rail.depot - cart.logs - aboard(w, 'logs'), logs - rail[DEPOT_OUT[k]!]),
+    ),
     rails: Math.max(
       0,
-      Math.min(32 - j.railStock - rail.depotRails - cart.rails - aboard(w, 'rails'), 32 - rail.shelfOut),
+      Math.min(rails - j.railStock - rail.depotRails - cart.rails - aboard(w, 'rails'), rails - rail.shelfOut),
     ),
   };
 }

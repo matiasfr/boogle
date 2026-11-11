@@ -2,6 +2,7 @@
 // then line 2's Pier), and every display's facing and "you are here" stops. Pure numbers, so halts-view.ts builds
 // from them and a unit test checks every display's names (test/island-map-labels.test.ts).
 import { LINE_HALTS, TRAIN_STOPS } from '../../sim/railway-train.ts';
+import { RAIL_LINES } from '../../sim/railway-lines.ts';
 import { simplify, type MapLine } from '../../render/island-map.ts';
 
 type Layout = typeof import('../../place/layout.ts');
@@ -14,7 +15,10 @@ export const LINE_MARK = ['#ffd23f', '#2ec4b6'] as const;
  * to within 1.5 m, and its stops named as the halts are ("Village, line 2" is Village). */
 export function haltMapLines(layout: Layout): MapLine[] {
   const Q: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  return TRAIN_STOPS.map((cm, k) => {
+  // Place's line and v26's stops: v27's Railhead and Ring Island (past the Pier, off Place's line) join the map with
+  // their views (R4a).
+  return TRAIN_STOPS.map((all, k) => {
+    const cm = all.filter((_c, i) => !RAIL_LINES[k]!.halts[i]!.heads && !RAIL_LINES[k]!.halts[i]!.ring);
     const line = layout.LINKS[k]!.line,
       s0 = cm[0]! / 100,
       s1 = cm[cm.length - 1]! / 100;
@@ -36,7 +40,8 @@ export function haltMapLines(layout: Layout): MapLine[] {
 
 /** Place's halts, then line 2's Pier halt (LINE_HALTS[5], Place's halt maths at s 719-741 m), which opens with Q6. */
 export function haltRows(layout: Layout) {
-  const pier = LINE_HALTS[LINE_HALTS.length - 1]!;
+  // By name: from v27 the Railhead and Ring Island follow it (R4a draws those and moves this one east).
+  const pier = LINE_HALTS.find((h) => h.name === 'Pier')!;
   return [
     ...layout.HALTS.map((h) => ({ ...h, island: !!h.island })),
     { name: pier.name, line: 1 as const, s0: 719, s1: 741, lat: -2.9, stop: 3, island: false },

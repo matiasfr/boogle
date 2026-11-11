@@ -15,7 +15,8 @@ import { createRailwayWorld } from '../src/sim/railway-components.ts';
 
 const FILE = new URL('./fixtures/railway-tick-order.json', import.meta.url);
 const TICKS = 300;
-/** Line one laying, the depot cart, line two laying, the trains waking, the kiln casting, the wagon, the crossing. */
+/** Line one laying, the depot cart, line two laying, the trains waking, the kiln casting, the wagon, the crossing; since
+ * v27 the ring's footings at the railhead and three trains to Ring Island. */
 const STAGES: readonly SeedStage[] = [
   'q1-done',
   'q2-arriving',
@@ -24,13 +25,15 @@ const STAGES: readonly SeedStage[] = [
   'works-lit',
   'wagon-on',
   'crossing-finishing',
+  'deck-laid',
+  'ring-joined',
 ];
 /** The trains' headway hold (the room tunable railTrainHeadPct, 0 to 100, default 75) where trains run, over 1,200
  * ticks. Recorded on the schedule (main after M3, before M3b), which the default rows prove equal to the hand-coded
  * tick; re-recorded never, as above (`TICK_ORDER_HEADS=1`). */
 const HEADS_FILE = new URL('./fixtures/railway-tick-order-heads.json', import.meta.url);
 const HEAD_TICKS = 1200;
-const HEAD_STAGES: readonly SeedStage[] = ['trains-on', 'wagon-on', 'crossing-finishing'];
+const HEAD_STAGES: readonly SeedStage[] = ['trains-on', 'wagon-on', 'crossing-finishing', 'ring-joined'];
 const HEAD_PCTS = [0, 40, 100] as const;
 /** Per stage: the distinct per-tick sequences of system names, which one each tick ran, and the hash after it. */
 type Row = { tick: number; sequences: string[][]; perTick: number[]; hashes: number[] };

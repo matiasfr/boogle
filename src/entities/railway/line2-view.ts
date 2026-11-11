@@ -202,6 +202,9 @@ export async function createRailwayLine2(
   const frames = quarry.stations
     .slice(0, LINE2_STATIONS.length)
     .map((spec) => stations.buildStation(spec, stations.frameBesideLine(spec, quarry.line, quarry.dir), owner));
+  // Place's quarry link frames Q1-Q6; Q7 (v27, laid on the pier's deck) has no frame here until its view (R4a), so the
+  // frames, feeds, deposits and the depot rack skip it rather than read a frame that is not there.
+  const framed = (k: number) => k >= 0 && k < frames.length;
   track.snapTo(track.u(layout.STUB.east));
   const depotLogs = pieces.logStackMesh(32, owner);
   depotLogs.count = 0;
@@ -239,9 +242,9 @@ export async function createRailwayLine2(
     const key = `${k}:${n}:${train}`;
     if (key === drawnDepot) return;
     drawnDepot = key;
-    depotRack.visible = k >= 0 && LINE2_STATIONS[k]!.depot;
+    depotRack.visible = framed(k) && LINE2_STATIONS[k]!.depot;
     depotSign.board.visible = depotRack.visible;
-    if (k < 0 || !LINE2_STATIONS[k]!.depot) {
+    if (!depotRack.visible) {
       commitPieces(depotLogs, 0);
       return;
     }
@@ -480,7 +483,8 @@ export async function createRailwayLine2(
   };
   const activeIndex = () => {
     const l = l2();
-    return l ? (l.active < 0 ? LINE2_STATIONS.length - 1 : l.active) : 0;
+    // Q6's frame once the active job has none (all laid, or Q7): the machine parks at the pier's end.
+    return l ? (framed(l.active) ? l.active : frames.length - 1) : 0;
   };
   const jobElapsed = (k: number) => {
     const job = l2()!.stations[k]!;
@@ -518,7 +522,7 @@ export async function createRailwayLine2(
     if (!l) return { phase: 'idle', activeStation: 0, panelStock: 0, panelCount: 0 };
     let count = 0;
     l.stations.forEach((job, k) => {
-      if (job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, job.elapsed, job.timing);
+      if (framed(k) && job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, job.elapsed, job.timing);
     });
     const k = activeIndex(),
       job = l.stations[k]!;
@@ -572,6 +576,7 @@ export async function createRailwayLine2(
     pourGeneration++;
     if (!l) return;
     l.stations.forEach((job, k) => {
+      if (!framed(k)) return;
       const spec = LINE2_STATIONS[k]!;
       const depositTicks = Math.ceil(job.timing.depositMs / 100);
       feedLaunched[k] =
@@ -675,7 +680,7 @@ export async function createRailwayLine2(
     if (event.op !== 'rail.deposit') return;
     const forge = event.station === 'F';
     const k = forge ? -1 : LINE2_STATIONS.findIndex((s) => s.id === event.station);
-    if (!forge && k < 0) return;
+    if (!forge && !framed(k)) return;
     const frame = forge ? forgeFrame : frames[k]!;
     const kind = event.kind === 2 ? 2 : 0;
     const account = state.accounts.find((a) => a.pid === event.pid);
@@ -731,7 +736,7 @@ export async function createRailwayLine2(
       e.op === 'rail.forgeTake'
         ? rackFrom
         : e.op === 'rail.depotTake'
-          ? depotPlace(Math.max(0, l.active), new THREE.Vector3()).add(UP_08)
+          ? depotPlace(framed(l.active) ? l.active : 0, new THREE.Vector3()).add(UP_08)
           : null;
     if (home) {
       for (let n = 0; n < c.lost; n++) {
@@ -760,7 +765,7 @@ export async function createRailwayLine2(
     if (e.op !== 'rail.deposit') return;
     const forge = e.station === 'F';
     const k = forge ? -1 : LINE2_STATIONS.findIndex((s) => s.id === e.station);
-    if (!forge && k < 0) return;
+    if (!forge && !framed(k)) return;
     const frame = forge ? forgeFrame : frames[k]!;
     for (let n = 0; n < c.lost; n++) {
       const slot = Math.max(0, (e.level ?? 0) - 1 - n);
@@ -947,6 +952,7 @@ export async function createRailwayLine2(
       wasWorking = now;
       // Q frames: stock, feed flights into the machine, tags.
       l.stations.forEach((job, k) => {
+        if (!framed(k)) return;
         const spec = LINE2_STATIONS[k]!,
           frame = frames[k]!;
         const feed = lineFeed(spec, job.timing);
@@ -1036,7 +1042,7 @@ export async function createRailwayLine2(
       const near = (x: number, z: number) => Math.hypot(p.x - x, p.z - z) <= layout.TUNE.reachStation;
       // A loaded arrival at station 6 before trains: the frame takes nothing, so its rack sign answers once, without
       // words (one bob, one puff, a soft tick); it re-arms only once you leave reach.
-      const arrived = owed && near(frames[l.active]!.x, frames[l.active]!.z);
+      const arrived = owed && framed(l.active) && near(frames[l.active]!.x, frames[l.active]!.z);
       if (arrived && !nudged && (state.carry > 0 || state.railsCarry > 0)) {
         nudged = true;
         nudges++;
@@ -1049,7 +1055,7 @@ export async function createRailwayLine2(
         return;
       }
       const k = l.active;
-      if (!now || k < 0) return;
+      if (!now || !framed(k)) return;
       const job = l.stations[k]!,
         spec = LINE2_STATIONS[k]!,
         frame = frames[k]!;
@@ -1088,7 +1094,7 @@ export async function createRailwayLine2(
           run: () => void adapter.forgeTake(),
           ...full,
         });
-      if (l.depot > 0 && l.active >= 0 && !waitsForTrain(l)) {
+      if (l.depot > 0 && framed(l.active) && !waitsForTrain(l)) {
         depotPlace(l.active, from);
         if (
           Math.hypot(p.x - from.x, p.z - from.z) <= 3.2 &&
@@ -1166,7 +1172,7 @@ export async function createRailwayLine2(
         forgeFrame: { x: forgeFrame.x, y: forgeFrame.y, z: forgeFrame.z },
         forgeRack: { x: RX, y: RY, z: RZ },
         frames: frames.map((f) => ({ x: f.x, y: f.y, z: f.z })),
-        depot: l && l.active >= 0 ? depotPlace(l.active, new THREE.Vector3()).toArray() : null,
+        depot: l && framed(l.active) ? depotPlace(l.active, new THREE.Vector3()).toArray() : null,
         routePoints: {
           hook: tech.SERVICE_ROUTES.hook.map((q) => [q.x + ox, q.y, q.z]),
           quarry: tech.SERVICE_ROUTES.quarry.map((q) => [q.x + ox, q.y, q.z]),

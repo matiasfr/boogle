@@ -53,7 +53,16 @@ import {
 
 type Point = { x: number; z: number };
 const local = (p: Point): XZ => [p.x / 100 - ORIGIN.x, p.z / 100 - ORIGIN.z];
-const land = [WORKS_BREAKER, WORKS_CLEFT, WORKS_KILN, WORKS_RACK, ...WORKS_ROCKS, ...WORKS_SEAMS, SHED_STALL];
+// The Works' seams on land; the third, Ring Island's rivet (v27), is over the sea at the leaf's toe.
+const land = [
+  WORKS_BREAKER,
+  WORKS_CLEFT,
+  WORKS_KILN,
+  WORKS_RACK,
+  ...WORKS_ROCKS,
+  ...WORKS_SEAMS.filter((s) => s.id < 2),
+  SHED_STALL,
+];
 const points = [...land, SHED_TABLE, PIER_STOP, PIER_RACK, PIER_FRAME, ...CROSSING_BENTS];
 const rails = Object.values(LINES).map((l) => Array.from(l.xs, (x, i): XZ => [x, l.zs[i]!]));
 const plots = [
@@ -236,7 +245,8 @@ test('the bents bow down at the 4% ruling grade from the pier head', () => {
   });
 });
 test('one footing for every use', () => {
-  assert.equal(WORKS.total, WORKS.stall + WORKS.cradle + WORKS.pier);
+  assert.equal(WORKS.total, WORKS.stall + WORKS.cradle + WORKS.pier + WORKS.ring + WORKS.counterweight);
+  assert.equal(WORKS.ring, 2 * 7, 'two footings a bent, bents 7-13');
   assert.equal(WORKS.pier, 2 * CROSSING_BENTS.length);
   assert.deepEqual(RAIL_ROCKS, [...LINE1_ROCKS, ...WORKS_ROCKS]);
   assert.equal(new Set(RAIL_ROCKS.map((r) => r.id)).size, RAIL_ROCKS.length);

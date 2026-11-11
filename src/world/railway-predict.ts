@@ -12,7 +12,7 @@
 //   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
 //                                     fills is lit only when confirmed, and so are the Works' thresholds (the kiln lit,
-//                                     the cradle fitted, the wagon rolling out, the crossing footed). A pile it creates
+//                                     the cradle fitted, the wagon rolling out, the crossing footed, the leaf down). A pile it creates
 //                                     gets the temporary id -request
 //                                     until the server's id arrives (railTempPile, the replicator's `ids` remap)
 //   railEffect(s, pid, e, before)     what an accepted action's effect needs, as it stood right after that action
@@ -31,6 +31,7 @@ import { LINE2 } from '../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../sim/railway-trains.ts';
 import {
   Account,
+  Aperture,
   Cart,
   Train,
   Forge,
@@ -120,9 +121,12 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
     effect.carried = a.foot;
   if (e.op === 'rail.footTake' || e.op === 'rail.footSet' || e.op === 'rail.kiln' || e.op === 'rail.cradle') {
     const works = w.get(Works, w.single(Works))!,
-      shed = w.get(Shed, w.single(Shed))!;
-    if (e.op === 'rail.footTake') effect.level = e.rack ? works.pierRack : works.rack;
-    else if (e.op === 'rail.footSet') effect.level = [shed.stall, shed.cradle, works.pierSet][e.site!] ?? 0;
+      shed = w.get(Shed, w.single(Shed))!,
+      ring = w.get(Aperture, w.single(Aperture))!;
+    // Rack 2 and site 3 are the railhead's (v27): its rack, and the jib's count (bent footings, then counterweight).
+    if (e.op === 'rail.footTake') effect.level = [works.rack, works.pierRack, ring.rack][e.rack!] ?? 0;
+    else if (e.op === 'rail.footSet')
+      effect.level = [shed.stall, shed.cradle, works.pierSet, ring.set + ring.cw][e.site!] ?? 0;
     else if (e.op === 'rail.kiln') effect.level = works.logs + works.stone;
     else {
       effect.carried = a.rails;
@@ -207,6 +211,9 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   const works0 = { lit: w.get(Works, wid)!.lit, crossing: w.get(Works, wid)!.crossing },
     cast0 = w.get(WorksClock, wid)!.lastCast;
   const shed0 = { fitted: w.get(Shed, sid)!.fitted, ready: w.get(Shed, sid)!.ready };
+  // The leaf coming down under its fourth weight (v27) is the server's, like the crossing footed.
+  const apId = w.single(Aperture),
+    brace0 = w.get(Aperture, apId)!.brace;
   let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
@@ -249,6 +256,7 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     w.mut(WorksClock, wid)!.lastCast = cast0;
   }
   if (shed.fitted !== shed0.fitted || shed.ready !== shed0.ready) Object.assign(w.mut(Shed, sid)!, shed0);
+  if (w.get(Aperture, apId)!.brace !== brace0) w.mut(Aperture, apId)!.brace = brace0;
   refreshRailway(s, w);
   const n = result.status === 'accepted' ? result.accepted : 0;
   return { n, effect: n > 0 ? railEffect(w, pid, e, before) : null };

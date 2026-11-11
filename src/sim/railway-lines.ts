@@ -4,7 +4,14 @@
 // LINE_HALTS, TRAIN_HOME and trainStopsOf are views of it. Pure integers (world cm, cm a tick), no imports but the
 // works and ring layouts (./railway-ring-layout.ts imports only this file's RailPlatform type, so it is not a cycle).
 import { PIER_STOP_CM } from './railway-works-layout.ts';
-import { RING_HEAD } from './railway-ring-layout.ts';
+import {
+  RING_END,
+  RING_END_BRAKE_CMS2,
+  RING_HALT,
+  RING_HEAD,
+  RING_JOINT_UP,
+  RING_PATH,
+} from './railway-ring-layout.ts';
 
 export type RailEndKind = 'stub' | 'crossover' | 'loop';
 /** Where a line turns back: a stub (the two tracks merge into one terminal track at `mergeCm`), a crossover (a facing
@@ -58,9 +65,16 @@ export type RailLineDef = {
   /** Cm a tick². */
   accel: number;
   /** Set on a line with the balanced hold at its ends (railway-trains.ts, balancedHold): the most ticks past its dwell
-   * a train ready to leave an end waits for the gap ahead to grow to the gap behind. */
+   * a train ready to leave an end waits for the gap ahead to grow to the gap behind. A safe integer from 1 to
+   * BALANCE_MAX_TICKS (balanceOk; trainPlaces refuses any other). */
   balance?: number;
 };
+/** The longest balanced hold a line may ask for: 3 minutes, about one round trip of line 2 to the island (138.8 s
+ * non-stop, about 220 s under heavy asks). */
+export const BALANCE_MAX_TICKS = 1800;
+/** Whether a line's `balance` is absent or a whole number of ticks from 1 to BALANCE_MAX_TICKS. */
+export const balanceOk = (b: number | undefined) =>
+  b === undefined || (Number.isSafeInteger(b) && b >= 1 && b <= BALANCE_MAX_TICKS);
 
 const both = (p: RailPlatform) => [p, p] as const;
 /** A stub's turnout: past its merge the two tracks part over this length (src/place/layout.ts draws it). */
@@ -82,6 +96,10 @@ export const railEnd = (kind: RailEndKind, mergeCm: number, side: -1 | 1): RailE
 // s 513-535. Today's platforms serve the down track.
 const QUARRY_UP: RailPlatform = { x: 106912, z: 3135, y: 2502, reach: 1160 };
 const FAR_HEAD_UP: RailPlatform = { x: 135850, z: -17195, y: 2502, reach: 1260 };
+/** The Pier's one platform from Q6 on (ring-island-build1, call 53): s 719-741 m, lat +2.9, east of the down track;
+ * the pier rack stands on it. v26's west platform mirrored across the track at s 730, 2.9 m east of the path point
+ * (140259, -35846). */
+export const PIER_EAST: RailPlatform = { x: 140549, z: -35859, y: 2502, reach: 1260 };
 
 export const RAIL_LINES: readonly RailLineDef[] = [
   {
@@ -118,17 +136,158 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     id: 'line2',
     name: 'Line 2',
     path: [
-      91800, 1200, 92507, 1907, 93204, 2624, 93863, 3375, 94762, 3785, 95758, 3828, 96728, 3600, 97662, 3242, 98624,
-      2980, 99620, 2900, 100617, 2976, 101600, 3153, 102571, 3391, 103543, 3627, 104527, 3803, 105525, 3865, 106525,
-      3850, 107523, 3799, 108509, 3738, 109387, 3260, 110221, 2710, 111042, 2138, 111857, 1559, 112662, 966, 113457,
-      359, 114252, -247, 115057, -841, 115881, -1407, 116715, -1959, 117541, -2522, 118349, -3112, 119138, -3725,
-      119919, -4350, 120695, -4981, 121471, -5612, 122249, -6240, 123029, -6866, 123808, -7493, 124588, -8119, 125369,
-      -8743, 126153, -9363, 126940, -9981, 127726, -10599, 128515, -11214, 129306, -11825, 130103, -12430, 130906,
-      -13025, 131718, -13608, 132537, -14183, 133360, -14751, 134185, -15316, 135015, -15874, 135868, -16396, 136720,
-      -16919, 137516, -17522, 138198, -18253, 138754, -19083, 139192, -19981, 139523, -20924, 139759, -21895, 139944,
-      -22878, 140106, -23865, 140236, -24856, 140330, -25852, 140393, -26850, 140427, -27849, 140438, -28849, 140434,
-      -29849, 140421, -30849, 140403, -31849, 140378, -32848, 140343, -33848, 140303, -34847, 140259, -35846, 140215,
+      91800,
+      1200,
+      92507,
+      1907,
+      93204,
+      2624,
+      93863,
+      3375,
+      94762,
+      3785,
+      95758,
+      3828,
+      96728,
+      3600,
+      97662,
+      3242,
+      98624,
+      2980,
+      99620,
+      2900,
+      100617,
+      2976,
+      101600,
+      3153,
+      102571,
+      3391,
+      103543,
+      3627,
+      104527,
+      3803,
+      105525,
+      3865,
+      106525,
+      3850,
+      107523,
+      3799,
+      108509,
+      3738,
+      109387,
+      3260,
+      110221,
+      2710,
+      111042,
+      2138,
+      111857,
+      1559,
+      112662,
+      966,
+      113457,
+      359,
+      114252,
+      -247,
+      115057,
+      -841,
+      115881,
+      -1407,
+      116715,
+      -1959,
+      117541,
+      -2522,
+      118349,
+      -3112,
+      119138,
+      -3725,
+      119919,
+      -4350,
+      120695,
+      -4981,
+      121471,
+      -5612,
+      122249,
+      -6240,
+      123029,
+      -6866,
+      123808,
+      -7493,
+      124588,
+      -8119,
+      125369,
+      -8743,
+      126153,
+      -9363,
+      126940,
+      -9981,
+      127726,
+      -10599,
+      128515,
+      -11214,
+      129306,
+      -11825,
+      130103,
+      -12430,
+      130906,
+      -13025,
+      131718,
+      -13608,
+      132537,
+      -14183,
+      133360,
+      -14751,
+      134185,
+      -15316,
+      135015,
+      -15874,
+      135868,
+      -16396,
+      136720,
+      -16919,
+      137516,
+      -17522,
+      138198,
+      -18253,
+      138754,
+      -19083,
+      139192,
+      -19981,
+      139523,
+      -20924,
+      139759,
+      -21895,
+      139944,
+      -22878,
+      140106,
+      -23865,
+      140236,
+      -24856,
+      140330,
+      -25852,
+      140393,
+      -26850,
+      140427,
+      -27849,
+      140438,
+      -28849,
+      140434,
+      -29849,
+      140421,
+      -30849,
+      140403,
+      -31849,
+      140378,
+      -32848,
+      140343,
+      -33848,
+      140303,
+      -34847,
+      140259,
+      -35846,
+      140215,
       -36845,
+      // v27: on from the pier head over the bents and the Pilgrims' Way to Ring Island (RING_PATH, s 750 m on).
+      ...RING_PATH,
     ],
     halts: [
       {
@@ -152,24 +311,48 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         platforms: [FAR_HEAD_UP, { x: 136361, z: -16353, y: 2502, reach: 1260 }],
         end: railEnd('crossover', 49000, 1),
       },
-      // Place's halt maths at s 719-741 m, lat -2.9 (the side of the pier rack); open once Q6 (slot 5) is laid. The
-      // far tracks merge at s 556 m, the pier's root, so the pier stays one terminal track.
+      // s 719-741 m, lat +2.9, east of the down track; the pier rack stands on it. Open once Q6 (slot 5) is laid; the
+      // end until Q7 (slot 6) is laid (the far tracks merge at s 556 m, the pier's root), then homeward-only (owner,
+      // 10 November: no up train stops there).
       {
         name: 'Pier',
         s: PIER_STOP_CM,
         opens: 5,
-        platforms: both({ x: 139969, z: -35833, y: 2502, reach: 1260 }),
+        platforms: both(PIER_EAST),
         end: railEnd('stub', 55600, 1),
+        only: -1,
+      },
+      // The moving railhead (ring-island-build1, R3): open once Q7 is laid, its stop at the bent the gap is footed to
+      // (`heads`), its end a stub that moves with it; every up train eases in (call 46).
+      {
+        name: 'Railhead',
+        s: RING_HEAD[0]!.s,
+        opens: 6,
+        platforms: [RING_JOINT_UP, RING_HEAD[0]!.platform],
+        end: railEnd('stub', RING_HEAD[0]!.mergeCm, 1),
+        heads: RING_HEAD.map((h) => h.s),
+        brake: RING_END_BRAKE_CMS2 / 100,
+      },
+      // Ring Island: open once the rivet is struck; buffers 15 m past the platforms, a crossover before them (R1b).
+      {
+        name: 'Ring Island',
+        s: RING_END.s,
+        opens: 6,
+        platforms: [RING_HALT.up, RING_HALT.down],
+        end: railEnd('crossover', RING_END.mergeCm, 1),
+        ring: true,
       },
     ],
     home: 0,
-    trains: 2,
+    trains: 3,
     speed: 200,
     accel: 3.5,
+    // The balanced hold, capped 60 s past the dwell (R3b, call 47).
+    balance: 600,
   },
 ];
 
-/** Line 2's index: the line that carries cargo (the Q6 kit, the footing wagon). */
+/** Line 2's index: the line that carries cargo (the Q6 and Q7 kits, the footing wagon). */
 export const LINE2 = RAIL_LINES.findIndex((l) => l.id === 'line2');
 /** A line the pure train code runs: its index in RAIL_LINES, or a line the catalog does not hold (a test's fixture
  * line, its trains slots 0 to `trains - 1` of the rows it is given). A catalog row passed as an object is its index
@@ -215,6 +398,7 @@ export function trainPlaces(line: LineRef, stops: readonly number[]) {
   const l = lineDef(line),
     c = circuitLen(stops),
     last = stops.length - 1;
+  if (!balanceOk(l.balance)) throw new Error(`railway: line ${l.id} has a balance of ${l.balance} ticks`);
   const at = (k: number, track: number) => circuitCm(stops, track, stops[k]!);
   const home = at(l.home, l.home === last ? 1 : 0);
   const taken: { stop: number; track: number }[] = [];

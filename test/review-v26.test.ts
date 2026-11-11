@@ -13,6 +13,7 @@ import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { Line, Train, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { act, invariant, lines, rail, railTick, railwayAtTrains, train, trains, type Seed } from './helpers/rail.ts';
+import { aperture } from '../src/sim/railway-rows.ts';
 
 const LINE2 = 1;
 const [A, B] = LINE_SLOTS[LINE2] as [number, number];
@@ -137,6 +138,7 @@ test('review: the amber lamp is dark for a rider ask too late to stop for, lit f
     trains: trains(w.w),
     lines: lines(w.w),
     line2: { trains: rail(w.w).trains >= 0, trainsAt: rail(w.w).trains, completed: line2Completed(w.w) },
+    ring: aperture(w.w),
   });
   const brake = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
   const quarry = TRAIN_STOPS[LINE2]![1]!;
@@ -201,6 +203,7 @@ test('review: no two drawn trains overlap (a train held at a stub signal stands 
         to: stop,
         track,
         depart,
+        arrived: depart,
         req: 0,
         from: s,
         v0: 0,

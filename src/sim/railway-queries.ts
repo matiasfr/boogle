@@ -5,16 +5,17 @@
 import type { RowOf, World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
-import { LINE2_PACK as PACK, LINE2_STATIONS, pierLaid, type Line2Station } from './railway-line2-layout.ts';
+import { LINE2_PACK as PACK, LINE2_STATIONS, Q7, type Line2Station } from './railway-line2-layout.ts';
 import { layProgress, lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART } from './railway-cart.ts';
-import { trainStopsOf, type RailTrain } from './railway-train.ts';
+import { trainStopsOf, type RailTrain, type RingOpen } from './railway-train.ts';
 import { LINE2 } from './railway-lines.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import {
   Account,
+  Aperture,
   Beam,
   Boiler,
   Cart,
@@ -41,7 +42,7 @@ export const boilerId = (w: World) => w.single(Boiler);
 export const trainId = (w: World, slot: number) => w.lookup(Train, slot)!;
 export const lineId = (w: World, line: number) => w.lookup(Line, line)!;
 export const LINE2_SLOTS = LINE_SLOTS[LINE2]!;
-/** What line 2's trains carry between them (the Q6 kit, footings). */
+/** What line 2's trains carry between them (a train-fed job's kit, footings). */
 export const aboard = (w: World, key: 'logs' | 'rails' | 'foot') =>
   LINE2_SLOTS.reduce((n, k) => n + w.get(Train, trainId(w, k))![key], 0);
 /** The slot the footing wagon is coupled to, or -1. */
@@ -77,17 +78,39 @@ export const FOOT = 3;
 export const roomFor = (w: World, a: Readonly<AccountRow>, kind: number) =>
   kind === FOOT ? Number(!heldBig(w, a) && carried(a) === 0) : free(w, a);
 export const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjob(w, k))!.completion).length;
-/** The stops line k serves now (trainStops): line 2's pier once Q6 is laid. */
-export const stopsOf = (w: World, k: number) => trainStopsOf(k, pierLaid(qCompleted(w)));
+export const apertureId = (w: World) => w.single(Aperture);
+/** The railhead: bents footed past bent 6 (0-7), two footings a bent (ring-island-build1, R3). */
+export const ringHead = (w: World) => Math.floor(w.get(Aperture, apertureId(w))!.set / 2);
+/** Ring Island's state as the stops read it: the railhead's bent and whether the rivet is struck. */
+export const ringOpen = (w: World): RingOpen => ({
+  head: ringHead(w),
+  joined: w.get(Aperture, apertureId(w))!.joined >= 0,
+});
+/** The stops line k serves now (trainStops): line 2's Pier once Q6 is laid, the Railhead at its bent once Q7 is, Ring
+ * Island once the rivet is struck. */
+export const stopsOf = (w: World, k: number) => trainStopsOf(k, qCompleted(w), ringOpen(w));
 export const worksId = (w: World) => w.single(Works);
 export const shedId = (w: World) => w.single(Shed);
-/** The Q station taking materials now, or -1 before the forge is lit / after Q3 (line2Active). */
+/** The Q station taking materials now, or -1 before the forge is lit, after the last, or while the next one waits to
+ * open (Q7 until the crossing is complete) (line2Active). */
 export function railLine2Active(w: World) {
   return qActive(w);
 }
 export function qActive(w: World) {
   if (w.get(Forge, forgeId(w))!.lit < 0) return -1;
-  return LINE2_STATIONS.findIndex((_s, k) => !w.get(QJob, qjob(w, k))!.completion);
+  const k = LINE2_STATIONS.findIndex((_s, k) => !w.get(QJob, qjob(w, k))!.completion);
+  if (k >= 0 && LINE2_STATIONS[k]!.opens === 'crossing' && w.get(Works, worksId(w))!.crossing < 0) return -1;
+  return k;
+}
+/** The active stretch when its kit comes by train (Q6, Q7), or -1. */
+export function kitJob(w: World) {
+  const k = qActive(w);
+  return k >= 0 && LINE2_STATIONS[k]!.feed === 'train' ? k : -1;
+}
+/** The line 2 halt the active train-fed job's kit unloads at (call 62: Q6's Far Head, Q7's the Pier), or -1. */
+export function kitStop(w: World) {
+  const k = kitJob(w);
+  return k < 0 ? -1 : LINE2_STATIONS[k]!.kitStop!;
 }
 /** Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 3; owner, 9 November): while the active
  * stretch is train-fed and trains don't run, its kit is the train's, so the frame takes nothing by hand and the forge
@@ -224,7 +247,7 @@ function jobRead<C extends typeof Job | typeof QJob>(
 /** Line one's jobs, T1 to T3 (railJobs). */
 export const railJobs = (w: World, at?: number): JobRead[] =>
   LINE1_STATIONS.map((_s, slot) => jobRead(w, Job, JobRun, job(w, slot), at) as JobRead);
-/** Line two's jobs, Q1 to Q6. */
+/** Line two's jobs, Q1 to Q7. */
 export const line2Jobs = (w: World, at?: number): QJobRead[] =>
   LINE2_STATIONS.map((_s, slot) => jobRead(w, QJob, QJobRun, qjob(w, slot), at) as QJobRead);
 /** The line-one station taking materials now (activeStation). */
@@ -244,11 +267,28 @@ export function pierOwed(w: World, aboard: number) {
   const works = w.get(Works, worksId(w))!;
   return WORKS.pier - works.pierSet - works.pierRack - aboard;
 }
-/** Q6's kit is still owed to Far Head and none of it is aboard: the train must go home to the village to load it. */
+/** Q7 (slot 6) is laid: the Railhead is open and the ring's footings are owed. */
+export const q7Laid = (w: World) => !!w.get(QJob, qjob(w, Q7))!.completion;
+/** Footings Ring Island still needs (its bents' fourteen and the counterweight's four) that are neither set, hung,
+ * racked at the railhead, aboard the wagon (`aboard`) nor on a back; none before Q7 is laid (call 65), so the wagon
+ * loads only the pier's twelve until then. */
+export function ringOwed(w: World, aboard: number) {
+  if (!q7Laid(w)) return 0;
+  const a = w.get(Aperture, apertureId(w))!;
+  let backs = 0;
+  w.each([Account], (_id, r) => (backs += r.foot));
+  return WORKS.ring + WORKS.counterweight - a.set - a.cw - a.rack - aboard - backs;
+}
+/** The footings the wagon is to bring now: the pier's until Q7 is laid, then the ring's (the two never overlap: Q7
+ * opens only once the pier's twelve are set). */
+export const footOwed = (w: World, aboard: number) => (q7Laid(w) ? ringOwed(w, aboard) : pierOwed(w, aboard));
+/** The active train-fed job's kit (Q6's or Q7's) is still owed to its halt and none of it is aboard: the train must go
+ * home to the village to load it. */
 export function kitOwed(w: World, r: Readonly<RailTrain>) {
-  if (r.logs + r.rails > 0 || qActive(w) !== 5) return false;
-  const j = w.get(QJob, qjob(w, 5))!;
+  const k = kitJob(w);
+  if (r.logs + r.rails > 0 || k < 0) return false;
+  const j = w.get(QJob, qjob(w, k))!;
   if (j.start >= 0) return false;
-  const need = depotNeed(w, 5, j);
+  const need = depotNeed(w, k, j);
   return need.logs > 0 || need.rails > 0;
 }

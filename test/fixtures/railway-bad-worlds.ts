@@ -246,8 +246,9 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   {
     site: 'line2 shelf outside its stretch',
     message: 'railway: shelf outside its stretch',
+    // Since v27 Q7 is active at crossing-done, a shelf stretch: one rail past its bill of 20.
     stage: X,
-    break: (w) => set(w, Rail, { shelfOut: 1 }),
+    break: (w) => set(w, Rail, { shelfOut: 21 }),
   },
   { site: 'line2 boiler', message: 'railway: boiler', stage: A, break: (w) => set(w, Boiler, { age: 22 }) },
   {

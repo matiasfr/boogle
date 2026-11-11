@@ -3,7 +3,7 @@
 //
 //   railwayCheck(world)            the load check: archetypes, counts, then every domain invariant on the world
 //                                  (accounts, piles, outcomes, catalog here; ./railway-check-line1.ts, -line2.ts,
-//                                  -trains.ts, -works.ts; the conserved logs)
+//                                  -trains.ts, -works.ts, -ring.ts; the conserved logs)
 //   validateRailway(railway)       the old check on a read model (throws): no production caller since M8b, kept for
 //                                  test/railway-check.test.ts's differential side until M12b deletes it
 //   railwayInvariant(railway)      the same as a value: null when valid (the unconverted tests)
@@ -16,10 +16,10 @@ import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-lay
 import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { validateRailWorks } from './railway-works.ts';
-import { LINE2_STATIONS, pierLaid } from './railway-line2-layout.ts';
+import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { validateRailLine } from './railway-line.ts';
 import { line2Completed, railCarryMax, validateRailLine2 } from './railway-line2.ts';
-import { trainStopsOf } from './railway-train.ts';
+import { railRingOpen, trainStopsOf } from './railway-train.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { validateRailTrains } from './railway-trains.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
@@ -27,6 +27,7 @@ import { railCounts, railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWA
 import type { Railway } from './railway.ts';
 import {
   Account,
+  Aperture,
   Beam,
   Boiler,
   Cart,
@@ -73,6 +74,7 @@ import { checkLine1 } from './railway-check-line1.ts';
 import { checkLine2 } from './railway-check-line2.ts';
 import { checkTrains } from './railway-check-trains.ts';
 import { checkWorks } from './railway-check-works.ts';
+import { checkRing } from './railway-check-ring.ts';
 
 const ARCHETYPES = [
   [Rail, RailClock],
@@ -92,6 +94,7 @@ const ARCHETYPES = [
   [Works, WorksClock],
   [Shed],
   [Line],
+  [Aperture],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the world. */
 export function railwayCheck(w: World) {
@@ -119,6 +122,7 @@ export function railwayCheck(w: World) {
     [Works, 1],
     [Shed, 1],
     [Line, RAIL_LINES.length],
+    [Aperture, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
@@ -237,6 +241,7 @@ function checkRailway(w: World) {
   checkLine2(w);
   checkTrains(w);
   checkWorks(w);
+  checkRing(w);
   const counts = worldCounts(w);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) bad('conservation');
 }
@@ -341,7 +346,7 @@ export function validateRailway(n: Railway) {
     if (Object.values(job.timing!).some((v) => !railInt(v, 60000))) throw new Error('railway: timing');
   validateRailLine(n);
   validateRailLine2(n);
-  validateRailTrains(n, (line) => trainStopsOf(line, pierLaid(line2Completed(n))));
+  validateRailTrains(n, (line) => trainStopsOf(line, line2Completed(n), railRingOpen(n)));
   validateRailWorks(n);
   const counts = railCounts(n);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) throw new Error('railway: conservation');

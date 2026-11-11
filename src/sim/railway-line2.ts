@@ -1,11 +1,11 @@
-// Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
+// Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q7, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-sys-line2.ts.
-import { trainStopsOf } from './railway-train.ts';
+import { railRingOpen, trainStopsOf } from './railway-train.ts';
 import { LINE2 } from './railway-lines.ts';
 import { railTrainsOf } from './railway-trains.ts';
 import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
-import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, RAILS, pierLaid } from './railway-line2-layout.ts';
+import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, Q6, RAILS } from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD, type RailCart } from './railway-cart.ts';
 
@@ -73,6 +73,8 @@ export const line2Completed = (s: Railway) => s.line2?.jobs.filter((j) => j.comp
 export const line2Active = (s: Railway) => {
   if (!line2Lit(s)) return -1;
   const k = s.line2!.jobs.findIndex((j) => !j.completion);
+  // Q7 opens with the crossing (qActive's rule).
+  if (k >= 0 && LINE2_STATIONS[k]!.opens === 'crossing' && (s.works?.crossing ?? -1) < 0) return -1;
   return k;
 };
 /** The quarry gate is down only with Q3 complete and the lever pulled. */
@@ -121,7 +123,7 @@ export function line2CartStatus(s: Railway): 'off' | 'loading' | 'travelling' | 
   const logs = Math.min(spec.bill[0] - j.stock - l.depot, spec.bill[0] - l.depotOut[k]!);
   return logs > 0 || line2CartWants(s, k) > 0 ? (c.phase === CART_PHASE.REST ? 'loading' : 'travelling') : 'off';
 }
-/** Line 2's trains' cargo: the Q6 kit aboard any of them. */
+/** Line 2's trains' cargo: the active train-fed job's kit (Q6's or Q7's) aboard any of them. */
 export const line2Aboard = (s: Railway, key: 'logs' | 'rails' | 'foot') =>
   railTrainsOf(s, LINE2).reduce((n, r) => n + r[key], 0);
 export const line2Logs = (s: Railway) => {
@@ -144,7 +146,7 @@ export const line2Rails = (s: Railway) =>
   (s.line2?.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0) ?? 0) +
   (s.shed?.cradleRails ?? 0);
 /** The stops line k serves now (TRAIN_STOPS; line 2's pier opens once Q6 is laid). */
-export const trainStops = (s: Railway, k: number) => trainStopsOf(k, pierLaid(line2Completed(s)));
+export const trainStops = (s: Railway, k: number) => trainStopsOf(k, line2Completed(s), railRingOpen(s));
 
 // ---------------------------------------------------------------- invariants on the read model
 const JOB_FIELDS = [
@@ -223,7 +225,7 @@ export function validateRailLine2(s: Railway) {
     throw new Error('railway: depot output');
   if (l.depot + l.cart.logs + line2Aboard(s, 'logs') > l.depotProduced) throw new Error('railway: depot stock');
   const c = l.cart;
-  const road = CART_ROAD.rackCm(LINE2_STATIONS.length - 1);
+  const road = CART_ROAD.rackCm(Q6);
   if (
     !int(c.phase, CART_PHASES - 1) ||
     !int(c.depart) ||
@@ -279,13 +281,16 @@ export const line2Trains = (s: Railway) => (s.line2?.trains ?? -1) >= 0;
 /** Remaining kit to source, counting the rack, frame and both vehicles; production caps avoid replacing carried cargo. */
 export function line2KitOwed(s: Railway) {
   const l = s.line2!,
-    j = l.jobs[5]!;
-  if (line2Active(s) !== 5 || j.start >= 0) return { logs: 0, rails: 0 };
+    k = line2Active(s),
+    spec = LINE2_STATIONS[k];
+  if (k < 0 || spec?.feed !== 'train' || l.jobs[k]!.start >= 0) return { logs: 0, rails: 0 };
+  const j = l.jobs[k]!,
+    [logs, rails] = spec.bill;
   return {
-    logs: Math.max(0, Math.min(32 - j.stock - l.depot - l.cart.logs - line2Aboard(s, 'logs'), 32 - l.depotOut[5]!)),
+    logs: Math.max(0, Math.min(logs - j.stock - l.depot - l.cart.logs - line2Aboard(s, 'logs'), logs - l.depotOut[k]!)),
     rails: Math.max(
       0,
-      Math.min(32 - j.railStock - l.depotRails - l.cart.rails - line2Aboard(s, 'rails'), 32 - l.shelfOut),
+      Math.min(rails - j.railStock - l.depotRails - l.cart.rails - line2Aboard(s, 'rails'), rails - l.shelfOut),
     ),
   };
 }

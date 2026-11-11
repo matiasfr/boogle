@@ -40,6 +40,7 @@ import {
   PIER_RACK,
   PIER_FRAME,
 } from '../../src/sim/railway-works-layout.ts';
+import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-layout.ts';
 
 export type NodeId =
   | 'wake'
@@ -71,7 +72,12 @@ export type NodeId =
   | 'stall'
   | 'cradle'
   | 'table'
-  | 'crossing';
+  | 'crossing'
+  | 'Q7'
+  | 'bents'
+  | 'brace'
+  | 'weights'
+  | 'rivet';
 
 /** World centimetres, as the catalogs pin them. `y` only where the catalog gives a height. */
 export type Point = { x: number; z: number; y?: number };
@@ -254,7 +260,11 @@ function lineStation(id: 'T1' | 'T2' | 'T3', requires: Edge[], stops: string[], 
   };
   return node;
 }
-function quarryStation(id: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6', requires: Edge[], extra: Partial<LoopNode> = {}) {
+function quarryStation(
+  id: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6' | 'Q7',
+  requires: Edge[],
+  extra: Partial<LoopNode> = {},
+) {
   const s = station2(id);
   const feed = s.feed === 'train';
   const node: LoopNode = {
@@ -278,8 +288,14 @@ function quarryStation(id: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6', requires: Ed
 }
 
 const T3_ID = station1('T3');
+// A train-fed job's kit is its bill, one trip in the kit car (calls 62-63): Q6's fills the car, Q7's (20/20) fits it.
 const Q6 = station2('Q6');
 if (Q6.bill[0] !== LINE2_KIT.logs || Q6.bill[1] !== LINE2_KIT.rails) throw new Error('loop graph: Q6 kit != bill');
+for (const s of LINE2_STATIONS)
+  if (s.feed === 'train' && (s.bill[0] > LINE2_KIT.logs || s.bill[1] > LINE2_KIT.rails))
+    throw new Error(`loop graph: ${s.id}'s kit (its bill) is more than the kit car holds`);
+const RULES_RING = 'src/sim/railway-sys-ring.ts';
+const RING_PLAN = 'docs/plans/ring-island-build1.md';
 
 export const NODES: readonly LoopNode[] = [
   {
@@ -732,6 +748,87 @@ export const NODES: readonly LoopNode[] = [
         'src/entities/railway/crossing-view.ts:1-3',
       ),
     ],
+  },
+  // Ring Island build 1 (v27, R3b): the rules are in; the views (R4) and the bot's stops (R5) are not yet.
+  quarryStation(
+    'Q7',
+    [dec('crossing', 'rules', `${RULES_QUERIES} qActive(): Q7 opens on Works.crossing (opens: 'crossing')`)],
+    { stops: [], cue: [unbuilt("Q7's frame and the double deck over bents 1-6", `${RING_PLAN} R4a`)] },
+  ),
+  {
+    id: 'bents',
+    label: 'Foot the gap (fourteen bent footings)',
+    area: 'line 2',
+    at: p(RING_HEAD[0]!.jib),
+    bill: { footings: WORKS.ring },
+    supply: {
+      footings: {
+        by: 'wagon',
+        rack: p(RING_HEAD[0]!.rack),
+        label: 'wagon to the railhead rack',
+        foot: one(p(WORKS_RACK), 'the Works rack'),
+      },
+    },
+    ops: [],
+    reached: { mark: 'footing set', data: { site: 3 }, nth: WORKS.ring, also: ['gap footed'] },
+    stops: [],
+    requires: [
+      dec('Q7', 'rules', `${RULES_RING} ringFootSet: Q7 laid`),
+      dec('table', 'rules', `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon to the Railhead`),
+    ],
+    cue: [unbuilt('the railhead, its rack and jib moving out a bent each pair', `${RING_PLAN} R4`)],
+  },
+  {
+    id: 'brace',
+    label: 'Brace the raised leaf',
+    area: 'line 2',
+    at: p(RING_BRACE),
+    bill: {},
+    supply: {},
+    ops: ['rail.brace'],
+    reached: { mark: 'leaf braced' },
+    stops: [],
+    requires: [dec('bents', 'rules', `${RULES_RING} brace: set === 14`)],
+    cue: [unbuilt('the gold strut on the brace platform', `${RING_PLAN} R4`)],
+  },
+  {
+    id: 'weights',
+    label: 'Hang the counterweight (four footings)',
+    area: 'line 2',
+    at: p(RING_HEAD[RING_HEAD.length - 1]!.jib),
+    bill: { footings: WORKS.counterweight },
+    supply: {
+      footings: {
+        by: 'wagon',
+        rack: p(RING_HEAD[RING_HEAD.length - 1]!.rack),
+        label: 'wagon to the railhead rack',
+        foot: one(p(WORKS_RACK), 'the Works rack'),
+      },
+    },
+    ops: [],
+    reached: { mark: 'footing set', data: { site: 3 }, nth: WORKS.ring + WORKS.counterweight },
+    stops: [],
+    requires: [
+      dec('bents', 'rules', `${RULES_RING} ringFootSet: the counterweight once set === 14`),
+      { on: 'brace', status: 'free', by: 'none', source: `${RING_PLAN} call 9: brace and weights in either order` },
+    ],
+    cue: [unbuilt("the counterweight's cage on the jib", `${RING_PLAN} R4`)],
+  },
+  {
+    id: 'rivet',
+    label: 'Strike the rivet (Ring Island joined)',
+    area: 'line 2',
+    at: p(RING_RIVET),
+    bill: {},
+    supply: {},
+    ops: [],
+    reached: { mark: 'seam struck', data: { seam: 2 }, also: ['ring joined'] },
+    stops: [],
+    requires: [
+      dec('brace', 'rules', `${RULES_RING} ringStrike: the leaf down (brace === 0)`),
+      dec('weights', 'rules', `${RULES_RING} ringStrike: the leaf down (cw === 4)`),
+    ],
+    cue: [unbuilt('the rivet over the joint', `${RING_PLAN} R4`)],
   },
 ];
 

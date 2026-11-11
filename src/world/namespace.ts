@@ -43,7 +43,11 @@
 // v26 (2026-11-10): generic lines and double track (docs/plans/generic-lines.md, step 4): `train.sweep` becomes
 // `track`, a third train row (line 2 runs two), a new `line` component (the halts' lever asks and the ends' last
 // departures), `rail.call` splits lever asks from riders' (`train`), the railTrainHeadPct tunable; LOOK's turn-back gone.
-export const WORLD_NS = 'v26';
+// v27 (2026-11-11): Ring Island build 1 (docs/plans/ring-island-build1.md, R3): Q7 (a seventh qjob, its kit by train
+// to the Pier; rail `out6`), the bents to the gap, `Aperture` (rail.footTake rack 2, rail.footSet site 3, rail.brace,
+// rail.strike id 2), the Railhead and Ring Island halts (buffers and a crossover), the Pier homeward-only and east of
+// the down track, line 2's third train with the balanced hold, `WORKS.total` 32; no migration.
+export const WORLD_NS = 'v27';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

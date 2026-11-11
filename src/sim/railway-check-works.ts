@@ -12,6 +12,7 @@ import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { Pile } from './railway-components.ts';
 import { accounts, beam, boiler, shed, trains, works, worksClock } from './railway-rows.ts';
 import { line2Completed } from './railway-queries-line2.ts';
+import { pierLaid } from './railway-line2-layout.ts';
 import { footingTotal } from './railway-queries-works.ts';
 
 const bad = (what: string): never => {
@@ -23,7 +24,7 @@ export function checkWorks(w: World) {
   const k = works(w),
     lastCast = worksClock(w).lastCast,
     h = shed(w);
-  const done = line2Completed(w) >= 6;
+  const done = pierLaid(line2Completed(w));
   if (
     !railInt(k.breaker, 2) ||
     !railInt(k.seams, 3) ||

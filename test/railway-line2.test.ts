@@ -298,7 +298,7 @@ test('malformed line-two documents fail atomically', () => {
     assert.throws(() => w.w.load(j, railwayCheck), Error, name);
     assert.equal(hash(w.w), was, name);
   }
-  assert.equal(LINE2_STATIONS.length, 6);
+  assert.equal(LINE2_STATIONS.length, 7, 'Q1-Q7 (v27)');
 });
 
 function toQ2(): World {

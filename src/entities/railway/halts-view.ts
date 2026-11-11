@@ -13,7 +13,7 @@ import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-t
 import { RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { railOpenEnd, railStopsNow, railTrainHeld, railTrainsOf } from '../../adapters/railway.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
-import { LINE2_GLIDE, LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
 import { WORKS_KILN, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
@@ -520,7 +520,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   /** Whether halt `k` stands now: every halt once trains run, the Pier halt only once Q6 is laid. */
   const wanted = (k: number) => {
     const s = adapter.inspect();
-    return s.line2.trains && (k !== PIER || s.line2.completed >= LINE2_STATIONS.length);
+    return s.line2.trains && (k !== PIER || pierLaid(s.line2.completed));
   };
   boards.redraw();
   // The boards' own smooth clock in ticks, pulled gently onto shared time (as train-view's), so markers glide.
@@ -566,7 +566,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     // breaker is out, then the kiln from the throat's opening until it lights.
     const w = s.works;
     boards.works(
-      WORKS_SEAMS.map((p, i) =>
+      // The Works' two seams (WORKS_SEAMS[2] is Ring Island's rivet, R4's to draw).
+      WORKS_SEAMS.slice(0, 2).map((p, i) =>
         w.breaker === 2 && !(w.seams & [SEAM_STALL, SEAM_THROAT][i]!) ? { x: p.x / 100, z: p.z / 100 } : null,
       ),
       w.seams & SEAM_THROAT && w.kiln.lit < 0 ? { x: WORKS_KILN.x / 100, z: WORKS_KILN.z / 100 } : null,

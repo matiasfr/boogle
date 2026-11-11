@@ -16,9 +16,9 @@ import {
   trainServes,
   trainStepLine,
 } from '../src/sim/railway-trains.ts';
-import { FixtureLine, V27_LINE2, v27Stops } from './helpers/railway-v27-line.ts';
+import { FixtureLine, LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
 
-const V = V27_LINE2;
+const V = LINE2_ROWS;
 const PIER = 3,
   HEAD = 4;
 const TICKS = Number(process.env.FUZZ_TICKS ?? 3000);
@@ -109,14 +109,14 @@ const snap = (f: FixtureLine) => {
 
 test('Q7 laid at every tick offset of a run (endMoved past the Pier): no up train at the Pier, no deadlock', () => {
   const rand = mulberry32(0x07);
-  const base = new FixtureLine(v27Stops(6));
+  const base = new FixtureLine(line2Stops(6));
   const t0 = 300;
   drive(base, 0, t0, rand, { lever: 0.02, rider: 0.02 });
   const f = base;
   for (let t = t0 + 1; t <= t0 + 1400; t++) {
     drive(f, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
     const g = snap(f);
-    g.stops = v27Stops(7, 0);
+    g.stops = line2Stops(7, 0);
     endMoved(g.io(), V, PIER, t);
     assert.equal(g.broken(), null, `Q7 at ${t}`);
     drive(g, t, t + 1200, mulberry32(t), { lever: 0.05, rider: 0.05 });
@@ -125,13 +125,13 @@ test('Q7 laid at every tick offset of a run (endMoved past the Pier): no up trai
 
 test('the rivet struck at every tick offset of a run (endMoved past the Railhead at bent 13): no deadlock', () => {
   const rand = mulberry32(0x0e);
-  const base = legal(new FixtureLine(v27Stops(7, 7)));
+  const base = legal(new FixtureLine(line2Stops(7, 7)));
   const t0 = 300;
   drive(base, 0, t0, rand, { lever: 0.02, rider: 0.02 });
   for (let t = t0 + 1; t <= t0 + 1400; t++) {
     drive(base, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
     const g = snap(base);
-    g.stops = v27Stops(7, 7, true);
+    g.stops = line2Stops(7, 7, true);
     endMoved(g.io(), V, HEAD, t);
     assert.equal(g.broken(), null, `rivet at ${t}`);
     drive(g, t, t + 1200, mulberry32(t), { lever: 0.05, rider: 0.05 });
@@ -141,14 +141,14 @@ test('the rivet struck at every tick offset of a run (endMoved past the Railhead
 test("the railhead's stop moves (stopMoved) at every tick offset of a run, every bent: no deadlock, no jump", () => {
   for (let head = 0; head < 7; head++) {
     const rand = mulberry32(0x50 + head);
-    const base = legal(new FixtureLine(v27Stops(7, head)));
+    const base = legal(new FixtureLine(line2Stops(7, head)));
     const t0 = 300;
     drive(base, 0, t0, rand, { lever: 0.02, rider: 0.02 });
     for (let t = t0 + 1; t <= t0 + 700; t += 1) {
       drive(base, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
       const g = snap(base);
       const poses = g.rows.map((r) => trainAlong(r, g.line, t));
-      g.stops = v27Stops(7, head + 1);
+      g.stops = line2Stops(7, head + 1);
       stopMoved(g.io(), V, HEAD, t);
       g.rows.forEach((r, k) =>
         assert.equal(trainAlong(r, g.line, t), poses[k], `head ${head + 1} at ${t}: train ${k}`),
@@ -163,14 +163,14 @@ for (const pct of [0, 75, 100])
   for (const trains of [3, 4])
     test(`storm at ${pct}%, ${trains} trains: every lever and rider ask every tick, the open island`, (t) => {
       const line: RailLineDef = { ...V, trains };
-      const f = legal(new FixtureLine(v27Stops(7, 7, true), 0, pct, line));
+      const f = legal(new FixtureLine(line2Stops(7, 7, true), 0, pct, line));
       const worst = drive(f, 0, Math.max(TICKS, 6000), mulberry32(0x5707 + pct), { lever: 1, rider: 1 });
       const top = Math.max(...worst.values());
       t.diagnostic(`worst lever wait ${(top / 10).toFixed(1)} s`);
     });
 
 test("a rider's offer (trainRequestable) is a halt the train then stands at, on the fixture at every stage", () => {
-  const stages = [v27Stops(6), v27Stops(7, 0), v27Stops(7, 3), v27Stops(7, 7), v27Stops(7, 7, true)];
+  const stages = [line2Stops(6), line2Stops(7, 0), line2Stops(7, 3), line2Stops(7, 7), line2Stops(7, 7, true)];
   let checked = 0;
   for (const [i, stops] of stages.entries()) {
     const rand = mulberry32(0xaa + i);
@@ -204,7 +204,7 @@ test("a rider's offer (trainRequestable) is a halt the train then stands at, on 
 });
 
 test('a lever ask the fixture accepts is served by a train that stops there (never one that passes by)', () => {
-  const stops = v27Stops(7, 2);
+  const stops = line2Stops(7, 2);
   const rand = mulberry32(0x1e7e);
   const f = legal(new FixtureLine(stops));
   drive(f, 0, 200, rand, { lever: 0, rider: 0 });
@@ -219,7 +219,7 @@ test('a lever ask the fixture accepts is served by a train that stops there (nev
 });
 
 test('three and four trains wake at distinct places, spaced and loadable, at every stage', () => {
-  const stages = [v27Stops(6), ...Array.from({ length: 8 }, (_v, h) => v27Stops(7, h)), v27Stops(7, 7, true)];
+  const stages = [line2Stops(6), ...Array.from({ length: 8 }, (_v, h) => line2Stops(7, h)), line2Stops(7, 7, true)];
   for (const trains of [3, 4])
     for (const stops of stages) {
       const line: RailLineDef = { ...V, trains };
@@ -260,7 +260,7 @@ test('more trains than places: trainPlaces never stacks two on one spot (it shou
 test("trainRequestable's v26 count form (train-view.ts until R4a) offers what the stops form does once the railhead has moved", () => {
   // After the rivet the Railhead is a middle halt at heads[7] = 99200; the count form reads the halts' own `s` (85200),
   // so a rider on an up train between the two is offered nothing (the island is the end: null).
-  const stops = v27Stops(7, 7, true);
+  const stops = line2Stops(7, 7, true);
   const f = new FixtureLine(stops);
   const r = {
     ...f.rows[0]!,
@@ -277,7 +277,7 @@ test("trainRequestable's v26 count form (train-view.ts until R4a) offers what th
 });
 
 test('a train left standing at the old railhead stop (stopMoved) that then leaves counts as a departure from the end', () => {
-  const stops = v27Stops(7, 0);
+  const stops = line2Stops(7, 0);
   const f = legal(new FixtureLine(stops));
   // Train 0 has just come to a stand at the railhead (the end), turned onto the down track; the lever asks for it.
   f.rows[0] = {
@@ -318,7 +318,7 @@ test('a train left standing at the old railhead stop (stopMoved) that then leave
   };
   f.lineRow = { req: 0, left0: -1, left1: 0 };
   assert.equal(f.call(HEAD, -1, 101), 1, 'the railhead lever asks for the way home');
-  f.stops = v27Stops(7, 1);
+  f.stops = line2Stops(7, 1);
   stopMoved(f.io(), V, HEAD, 102);
   let t = 102;
   for (; f.rows[0]!.phase === TRAIN_PHASE.STAND; t++) {

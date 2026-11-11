@@ -1,7 +1,7 @@
 // Ring Island build 1's layout (docs/plans/ring-island-build1.md, R1): where line 2 runs on from the pier head to the
 // island halt, the bents 7-13 on the bow, the railhead as it moves out, the gap, the folk's brace platform, the hook
 // ring, the rivet, the halts, the island's buffers and crossover, recovery points, buoys and sea ramps. Pure world centimetres, no rules: v27's
-// systems (src/sim/railway-ring.ts), views and dev/level/ring.ts read it. Numbers are the greybox's RING_LAYOUT
+// systems (src/sim/railway-sys-ring.ts), views and dev/level/ring.ts read it. Numbers are the greybox's RING_LAYOUT
 // (src/proto/greybox/ring.ts) on ring-island ruling 5's datum with the design review's ruling on Level finding 1.
 //
 // Coordinates: `u` cm out from the pier head along line 2's heading (x +0.0272 per unit of -z), `lat` cm east of line
@@ -223,8 +223,9 @@ export const RING_JOINT_UP: RailPlatform = { ...ringAt(24750, -770), y: ringDeck
 /** Not built: the Pier is homeward-only (owner, 10 November). Kept, unchanged, for the tools that still read it: the
  * pier's up platform, lat -6.9 at s 720.5 m (s 700..741), on line 2's path (test/railway-ring-layout.test.ts). */
 export const RING_PIER_UP: RailPlatform = { x: 139612, z: -34867, y: 2502, reach: 1260 };
-/** Q7's frame: the pier's east edge, s 720 m, lat +4.5 (on line 2's path). */
-export const RING_Q7_FRAME = { x: 140753, z: -34867 } as const;
+/** Q7's frame: the pier's east edge, s 710 m, lat +4.5 (on line 2's path; call 55): 2 m across, 2.6 m along, 1.7 m
+ * south of the foot of the Pier platform's ramp (s 713-719). */
+export const RING_Q7_FRAME = { x: 140793, z: -33866 } as const;
 
 /** Dry places to put someone back (Level finding 10): the brace platform, the island halt's two platforms, the path's
  * foot on the slope below the halt, the summit lookout. */

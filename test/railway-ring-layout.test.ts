@@ -29,7 +29,8 @@ import {
 
 const dist = (ax: number, az: number, bx: number, bz: number) =>
   Math.sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
-const line2 = RAIL_LINES[1]!.path;
+// Line 2's path up to the pier head (v26's): from v27 the catalog's path runs on with RING_PATH appended.
+const line2 = RAIL_LINES[1]!.path.slice(0, RAIL_LINES[1]!.path.length - RING_PATH.length);
 /** Line 2's path at s cm, lat cm east of it (its 10 m chords, as railLinePoint reads them). */
 function onLine2(s: number, lat: number) {
   const k = Math.floor(s / 1000),
@@ -78,7 +79,7 @@ test('the path runs on from line 2 every 10 m of s', () => {
 
 test('the pier up platform and Q7 frame stand on line 2 where planned', () => {
   const up = onLine2(72050, -690),
-    frame = onLine2(72000, 450);
+    frame = onLine2(71000, 450);
   assert.ok(dist(up.x, up.z, RING_PIER_UP.x, RING_PIER_UP.z) <= 1);
   assert.ok(dist(frame.x, frame.z, RING_Q7_FRAME.x, RING_Q7_FRAME.z) <= 1);
 });

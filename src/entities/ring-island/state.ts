@@ -29,8 +29,8 @@ export function pastGap(g: IslandGround, x: number, z: number) {
 }
 /** Before the Meet, Get unstuck from past the gap puts you on our side (design review call 31). Before v27 there is no
  * railhead and bents 1-6 carry no deck (no collider stands on bent 6 until Q7), so our side is the farthest built deck
- * on line 2: the Pier halt's deck, crossing-done's jump-in landing (src/world/railway-jump.ts), facing the crossing.
- * R4b moves it to the railhead's land pad by writing `ringUnstuckHome`. */
+ * on line 2: the Pier halt's, crossing-done's jump-in landing (src/world/railway-jump.ts: the east platform's south
+ * end since v27, call 57), facing the crossing. It stays the Pier's through build 1 (call 49). */
 export const ringUnstuckHome: JumpLand = { ...jumpOf('crossing-done')!.land! };
 export function ringUnstuck(g: IslandGround, x: number, z: number) {
   return pastGap(g, x, z) ? ringUnstuckHome : null;

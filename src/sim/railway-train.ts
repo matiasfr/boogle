@@ -39,6 +39,11 @@ const Q6_LAID = 6;
  * index) and whether the rivet is struck (a `ring` halt opens). */
 export type RingOpen = { readonly head: number; readonly joined: boolean };
 const RING_SHUT: RingOpen = { head: 0, joined: false };
+/** The ring's stop state from a read model's `ring` (the Aperture row): the railhead's head, and the rivet struck. */
+export const railRingOpen = (s: { readonly ring?: { readonly set: number; readonly joined: number } }): RingOpen => ({
+  head: Math.floor((s.ring?.set ?? 0) / 2),
+  joined: (s.ring?.joined ?? -1) >= 0,
+});
 /** The stops a line serves now: the halts whose `opens` QJob slot is complete and, for a `ring` halt, the rivet
  * struck; a `heads` halt's stop is `heads[ring.head]` (every decision reads this, while the pose reads only the row).
  * Open stops are a prefix of the halts (endBlocks reads the last's end). `laid` is how many QJob slots are complete,
@@ -73,14 +78,15 @@ export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);
 export const TRAIN_HOME_TRACK: readonly number[] = RAIL_TRAINS.map((t) => t.track);
 type LineHalt = { name: string; line: number; stop: number; x: number; z: number; y: number; reach: number };
 /** Every halt with v25's one platform, today's (the down track's): the id is the index (rail.call's `id`). Typed as
- * v25's six-halt tuple, which test/railway-lines.test.ts holds the catalog to; the type goes when callers read
- * RAIL_HALTS (v26 step 4b). */
+ * v27's eight-halt tuple (v25's six, then the Railhead and Ring Island), which test/railway-lines.test.ts holds the
+ * catalog to; the type goes when callers read RAIL_HALTS (v26 step 4b). The Railhead's here is its first head's
+ * (haltPlatform reads the current one). */
 export const LINE_HALTS = RAIL_HALTS.map(({ name, line, stop, platforms: [, p] }) => ({
   name,
   line,
   stop,
   ...p,
-})) as readonly LineHalt[] as readonly [LineHalt, LineHalt, LineHalt, LineHalt, LineHalt, LineHalt];
+})) as readonly LineHalt[] as readonly [LineHalt, LineHalt, LineHalt, LineHalt, LineHalt, LineHalt, LineHalt, LineHalt];
 export type RailTrain = {
   phase: number;
   /** The stop it stands at, or last left; -1 a signal (no halt). */
@@ -107,6 +113,9 @@ export type RailTrain = {
   /** Line 2 only, one train at most: the footing wagon is coupled, and the footings aboard it. */
   wagon: boolean;
   foot: number;
+  /** The tick it last came to a stand (v27): the balanced hold's cap runs from here, so a lever ask, which restarts
+   * `depart` (the dwell), never restarts the cap. At most `depart`. */
+  arrived: number;
 };
 /** Train `slot` standing at its home, asleep. */
 export function trainIdle(slot: number): RailTrain {
@@ -127,6 +136,7 @@ export function trainIdle(slot: number): RailTrain {
     rails: 0,
     wagon: false,
     foot: 0,
+    arrived: 0,
   };
 }
 
