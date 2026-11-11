@@ -18,6 +18,7 @@ import {
   TRAIN,
   TRAIN_PHASE,
   TRAIN_STOPS,
+  reqAdd,
   reqHas,
   trainAlong,
   trainLegTicks,
@@ -957,6 +958,17 @@ test('the load check refuses an up train standing at the homeward-only Pier; a l
   assert.equal(f.broken(), 'railway: train', 'up at the Pier: no platform');
   f.rows[0] = standingAt(stops, PIER, 1);
   assert.equal(f.broken(), null, 'down at the Pier: its platform');
+  // The refused way's asks (test/fixtures/railway-bad-worlds.ts lists them unreachable on today's catalog).
+  const n = stops.length;
+  f.lineRow = { ...f.lineRow, req: reqAdd(0, PIER, 1, n) };
+  assert.equal(f.broken(), 'railway: line', "the Pier's up lever ask");
+  f.lineRow = { ...f.lineRow, req: reqAdd(0, PIER, -1, n) };
+  assert.equal(f.broken(), null, "its down ask is the lever's");
+  f.lineRow = { ...f.lineRow, req: 0 };
+  f.rows[1] = { ...runRow(30000, HEAD, stops[HEAD]!, 0), at: 1, req: reqAdd(0, PIER, 1, n) };
+  assert.equal(f.broken(), 'railway: rider ask', "an up rider's ask for the Pier");
+  f.rows[1] = { ...f.rows[1]!, req: 0 };
+  assert.equal(f.broken(), null);
   // A leg still bound for the Pier going up when it ends (endMoved short of the stub, held off every replan by a busy
   // railhead) stands at no halt, as at a signal: its arrival tick is the step's, so no replan runs first.
   f.rows = [{ ...runRow(70000, PIER, 72650, 0), at: 2 }, standingAt(stops, 0, 0), standingAt(stops, 1, 1)];
