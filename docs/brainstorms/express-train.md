@@ -1,7 +1,8 @@
-> **Status: proposed (2026-11-10).** Light brainstorm (one agent, three lenses: play designer, systems architect,
-> creative director). Design only: nothing here changes code, map data or a `WORLD_NS`. The owner's two messages are
-> recorded in the [decision log](../decisions.md#decided) (10 November) as an idea under brainstorm, not a decision to
-> build; everything specific below is this brief's proposal, not his pick.
+> **Status: answered by the owner, 10 November; first build waits for v27 and Home's hall map.** Light brainstorm
+> (2026-11-10; one agent, three lenses: play designer, systems architect, creative director). Design only: nothing here
+> changes code, map data or a `WORLD_NS`. The body was corrected per the design review below on 10 November, and the
+> owner's answers are filled in under [Open questions](#open-questions). Where his answer differs from the review (the
+> express runs past a pulled lever), the body follows him.
 
 # The express (express-train)
 
@@ -24,18 +25,27 @@ services table, the junctions paragraph, the continuity rules); [junction-statio
 `src/sim/railway-trains.ts` (`blockFree`, `trainServes`, `planLeg`, `trainStepLine`), `src/world/railway-server.ts`
 (`rail.call`), `src/entities/railway/halts-view.ts` and `island-boards.ts`. `npm run inflight`: nothing unmerged this
 week. Game-direction fit: the [direction](../direction.md) "Next" row is Ring Island; the first build below is small,
-touches only the railway's rows, and orders nothing ahead of v27 (it can share v27's bump).
+touches only the railway's rows, and waits for v27 and Home's hall map (its own bump, after v27's).
 
 ## Verdict: build a smaller version
 
-**Build the express as "the next train is yours", not as an extra train, and build interchanges later, one per
-junction, where a second line really meets the ring.** The seed's feeling (pick a place, board, a short wait so friends
-hop on, then off you go, non-stop) is cheap to deliver with the trains that already run: the next service train
-leaving a junction station takes your destination, waits for friends, and runs straight there; the train behind it
-picks up the request stops it skips. A separate passenger-only train is the wrong first shape: on double track with no
-passing loops nobody overtakes, so an extra train stuck behind a stopping service train is not an express, it needs a
-siding at every junction (Home's layout B has none: line trains never turn on the table), and it is a third train
-on line 2 for phones to draw.
+**Build the express as "the next train is yours" first, then as a passenger set of the room's own later; build the
+first version only after line 2 reaches Ring Island (v27) and Home's hall map exists; and build interchanges later, one
+per junction, where a second line really meets the ring.** The seed's feeling (pick a place, board, a short wait so
+friends hop on, then off you go, non-stop) is cheap to deliver with the trains that already run: the next service train
+leaving a junction station takes your destination, waits for friends, and runs straight there; the train behind it picks
+up the request stops it skips. A separate passenger-only train is the later shape, not the first (question 1): it
+belongs to no line's slots, it needs a bay or spur at each junction station, and it is one more train for phones to
+draw. Two corrections from the design review. Home is not without a siding: layout B's engine spur leaves line 2's road
+at s 5.5 and runs over the 9.6 m table to the Roundhouse's open stall, the shunter already brings the footing wagon out
+that way with one reversal at the buffer stub, and an engine and one coach are 8.5 m, so a passenger set can stand in
+the Roundhouse and come out by the spur (section 7). And the overtaking worry is smaller than first written: with
+request stops the train ahead is non-stop too, so a separate set is delayed about 11 s only when the leader is asked to
+stop, exactly as the service-train shape is.
+
+**Why not now.** On today's 0.7 km line the express saves 0 s against a request-stop train nobody flags, a 20 s wait is
+half of a 41 s trip, the board it is called from does not exist, and with Home the only junction station nothing calls
+an express home from the Pier. At v27 the trip is about 65 s with a junction station at each end (section 9).
 
 Be honest about what it buys. Request stops already make service trains non-stop unless someone asks, so the express
 saves only the stops others ask for (about 11 s each) and the uncertainty of the wait. On today's 0.7 km line 2 that is
@@ -62,7 +72,7 @@ Friends who hear the bell have 20 s to hop on; anyone aboard can pull the cord t
 runs straight there, past every halt, its stop lamp dark. Serves **8, Enjoyable alone and together** (the wait is the
 co-op beat; alone, it is a train that goes where you said) and **11, Show, don't tell** (the board is the map, the
 headboard says where the train is going). It bends **"the rail builds the world: no routing or quotas"** only by one
-choice of a place, never a timetable (question 1).
+choice of a place, never a timetable.
 
 ## Gut question
 
@@ -91,10 +101,11 @@ took together rather than a loading screen?
 
 **Tensions.** The orchestrator's "why call a special when trains run on request" is real: the saving in seconds is
 small, and the brief says so; the feature stands on the gathering and the through-run. "No routing for players" holds
-only if the choice stays a single place on a map (question 1). "Rotunda" in the seed: under layout B line trains never
-turn on the table and the Roundhouse is the garage, so this brief reads it as the station hall (question 2, and
-junction-stations question 3). Home is the one junction today, and it is the worst place for an interchange (section
-5), so the first build is the express on line 2 alone (question 5).
+only if the choice stays a single place on a map. "Rotunda" in the seed: under layout B line trains never turn on the
+table and the Roundhouse is the garage, so this brief first read it as the station hall. The design review found the
+Roundhouse can hold a passenger set (section 7), so the call point stays the hall and the later set at Home comes from
+the Roundhouse (question 1, and junction-stations question 3). Home is the one junction today, and it is the worst
+place for an interchange (section 5), so the first build is the express on line 2 alone, after v27 (question 2).
 
 ## 1. What it is, against the lever
 
@@ -111,8 +122,8 @@ junction-stations question 3). Home is the one junction today, and it is the wor
 | Shape | Feels like | Costs | Verdict |
 | --- | --- | --- | --- |
 | A. The next service train run as your express | Your train, now | One claim on the line's row, one op, the board, a headboard | **Build first** |
-| B. A dedicated passenger set standing at a bay | A named train you call out of its shed | A bay or siding at every junction, a third train on each line, a path that can't overtake, an idle set to draw | Park: maybe the end-game's "named train" look |
-| C. Both: A now, B as a look upgrade later | | | B returns only as livery and a whistle on A |
+| B. A dedicated passenger set standing at a bay | A named train you call out of its shed | A bay or siding at every junction, a third train on each line, a path that can't overtake, an idle set to draw | **Later:** the passenger set the room buys, with the first interchange (question 1); at Home it stands in the Roundhouse (section 7) |
+| C. Both, by stage: A first, B later | | | **Chosen** (owner, 10 November, question 1) |
 
 The cheapest version that delivers the feeling is A with no interchange: the board, the 20 s wait, the bell, the
 headboard and the non-stop run on one line.
@@ -131,6 +142,11 @@ headboard and the non-stop run on one line.
   off cancels. No list.
 - **Who:** anyone. One express a line at a time: while one is called or running, that line's stops on every junction
   board show it ("Express to Pier, leaving") and can't be called again.
+- **Two ends, one hub** (design review finding 4): Home's hall and West landing are the ring's two ends, 100–130 m
+  apart (18–23 s on foot), so their two boards are one hub. Called at the hall, an express to Saltpan would run about
+  8 km east when it is one stop from West landing; Canopy Town is 4.9 km by the ring and 2.4 km by the bay line. So a
+  stop nearer from the other end is shown "from West landing" on the board, with the walk drawn; and at a through
+  junction the express leaves the shorter way round.
 
 ## 3. The wait for friends
 
@@ -208,9 +224,20 @@ on running line (40 m only on loops at reduced speed), at least 20 m of easing, 
 | **Bell Rock** | The bay line on the skerry at 15 m; the north–south line at the water | **No: the exception** | A crossover can't join two levels; a 15 m climb at 4 % is 375 m of ramp plus vertical curves on a 240 × 190 m skerry. It stays walk-between, by the stair tower and its tiny bell |
 | **Port Quay** | The ring only (the cave half and the White Wall line join it as one line at stage 7) | **Nothing to join** | Closing the ring is laying the line, not an interchange |
 
-So, with the ring as one line, **three interchanges are meaningful in the whole game: Canopy Town, West landing and
-(Canopy first) Ring Island**; High Gorge only if its brief makes room, Home and Bell Rock never. That is a rule to
-draw by now: at Canopy Town and West landing, leave 65 m of parallel approach.
+So, with the ring as one line, there are two line pairs to join: **the ring and the bay line** (Canopy Town or West
+landing: either does it) and **the ring and the north–south line** (High Gorge only, since Bell Rock is two levels).
+Canopy Town, West landing and Ring Island alone would be two links for the first pair and none for the second, and the
+Original Island, the ending, would stay dim for ever. So (design review ruling 4; owner, 10 November, question 4): **a
+connecting train held for you across the platform is the base at every junction, so every open stop is lit from the
+first junction and the line to the ending is always reachable; the interchange is the upgrade that removes the walk;
+and High Gorge, Canopy Town and West landing are drawn for one.** Line 1 is the named exception: Camp is a 35 s walk.
+Home never gets one. "Bell Rock never" is true only of its two-level pair: Canopy first, its top level carries both the
+Island to Canopy line and the bay line's bay. That is a rule to draw by now: at High Gorge, Canopy Town and West
+landing, leave 65 m of parallel approach (High Gorge's 90 m split has to be widened in its brief for it).
+
+Where the six-line shape, section 4, section 8 and "Before and after" below still say a stop is dim until an
+interchange joins it, read "reached by the held change, with a walk across the platform". The held change's own rules
+(how long the connecting train waits, what the board shows) are not designed yet.
 
 **What it does to the sim (express only).** Service trains keep their line: their slots, headways, waits and
 purchases are unchanged. The claimed train is the only one that crosses:
@@ -268,24 +295,40 @@ they light up, and the dashed curve on the map is solid.
 
 ## 7. Where it comes from physically
 
-From the platform it is already at: the train standing (or next standing) at the junction's platform for that line.
-Layout B suits it: both lines end at buffers beside one island and the hall, and the board stands at its head. The
-Roundhouse (Home now, Port Quay later) stays the garage: line trains never turn on the table, and nothing in this brief
-uses the spur or the stall. No dedicated set, so the two-Roundhouse proposal is unaffected.
+**Shape A, the first build:** from the platform it is already at: the train standing (or next standing) at the
+junction's platform for that line. Layout B suits it: both lines end at buffers beside one island and the hall, and the
+board stands at its head. The Roundhouse (Home now, Port Quay later) stays the garage: line trains never turn on the
+table, and shape A uses neither the spur nor the stall.
+
+**Shape B, the later passenger set:** it is kept at a bay at each big station. At Home that is the seed's "from the
+rotunda" as he said it (design review finding 1): layout B's engine spur leaves line 2's road at s 5.5 and runs over
+the 9.6 m table to the open stall, the way the shunter already brings the footing wagon out, with one reversal at the
+buffer stub. An engine and one coach are 8.5 m, so the set stands in the Roundhouse about 6 s from the hall, friends
+board it there off the running line, and it comes out by the spur when the end block is free. The cost is real: the
+table carries the works copy, there is one open stall, and the decided "the Roundhouse holds the garage only" (9 and
+10 November) would need the owner's change.
 
 ## 8. When the player gets it
 
-- **The express:** when Home's hall map exists (layout B's big board), with no purchase; it is what a junction
-  station's board does. Its first use teaches "the map is the menu" and "a train can be yours". A small first beat: the
-  first time any player rings a stop, the bell little guy says one line (drafted) and rings the bell himself.
+- **The express:** once line 2 reaches Ring Island (v27) and Home's hall map exists (layout B's big board), with no
+  purchase; it is what a junction station's board does. Its first use teaches "the map is the menu" and "a train can be
+  yours". A small first beat: the first time any player rings a stop, the bell little guy says one line (drafted) and
+  rings the bell himself.
 - **Interchanges:** offered at a junction once two lines both run there (Canopy Town or West landing first, by branch
   order; Ring Island first when Canopy is first). The first teaches that "dim" on the board means "buy the connection
   here", and pays off at once with a through run.
 
-## 9. The smallest first build (today's v26: line 2, Home to the pier)
+## 9. The smallest first build (after v27: line 2, Home ↔ Ring Island)
 
-**What it is:** the express on line 2 from Home's line-2 platform, no interchange. The hall board needs layout B; until
-it is live the call board is a stand-in on the line-2 platform at Home (its departure sign extended).
+**Trigger:** not on today's line. It is built after line 2 reaches Ring Island (v27 is live) and Home's hall map exists
+(layout B's big board, home-station's step 12). Owner, 10 November: "When v27 is live (the line reaches Ring Island)
+and Home's hall map exists". The board's map face can be built now (it is decided work and Local); the claim and its
+bump follow v27.
+
+**What it is:** the express on line 2 between Home and Ring Island, shape A, no interchange, called from the hall
+board. It shares v27's longer line, its train count and Ring Island's board, but not its bump (design review ruling 7:
+"Nothing waits on a world bump", and two independent reviews of two small changes beat one of both). Nothing in v27
+needs to change for it.
 
 **Sync kind:** Server, as the railway (v14 on): the server's rules accept the call and own the claim; the sim's step is
 pure in whole cm and ticks. Local: the board's picking, the headboard, the bell, the flaps, the camera ease.
@@ -299,7 +342,7 @@ pure in whole cm and ticks. Local: the board's picking, the headboard, the bell,
   doesn't name; `trainReasons` for the claimed slot drops lever asks and service stops; `trainServes` skips it; the
   standing branch holds it to `max(headway hold, xGo)` unless Go now or the inbound train reaches the end signal;
   standing at `xStop` clears the claim.
-- **Wire and saves:** a reshaped persisted row and a new op, so **a `WORLD_NS` bump** (its own or sharing v27's), and,
+- **Wire and saves:** a reshaped persisted row and a new op, so **a `WORLD_NS` bump** (its own, after v27's), and,
   as shared state, **an independent review** before merge. No change to line 1 or to `RAIL_TRAINS`.
 
 **Focused tests** (no long playthrough):
@@ -321,10 +364,10 @@ pure in whole cm and ticks. Local: the board's picking, the headboard, the bell,
   blocks), `rail.call`'s rider form, `island-boards.ts`'s map faces and markers, the split-flap face, the request lever's
   prompt pattern, the track layer's panel laying and `shared-moment.ts` for the install.
 - **Smallest first build:** section 9.
-- **Risks:** it trivialises nothing on a 0.7 km line, but can feel pointless there (the gut question answers it);
-  halts stay relevant because only junctions call; a friend left behind gets the next train in about 46 s; griefing is
-  bounded by one per line; phones draw no extra train. The interchange's guest-train sim is the real cost, and it waits
-  for a junction that needs it.
+- **Risks:** it trivialises nothing on a 0.7 km line, but can feel pointless there, which is why the first build waits
+  for v27 (the gut question answers it); halts stay relevant because only junctions call; a friend left behind gets the
+  next train in about 46 s; griefing is bounded by one per line; shape A gives phones no extra train to draw. The
+  interchange's guest-train sim is the real cost, and it waits for a junction that needs it.
 
 ## Done means
 
@@ -352,27 +395,45 @@ Captured with `look` (`npm run look -- --query home=b --rail-seed trains-on`, pl
 
 ## Open questions
 
-1. **What is the express?** Recommended: the line's next service train run non-stop to the stop you pick, with a
-   headboard; no separate passenger set, and the choice is only ever one place on the map.
-   Answer: ___
-2. **Where do you call it?** Recommended: at junction stations only, on the hall's live line map (at Home under layout
-   B), picked on the map itself; "rotunda" read as the station hall, the Roundhouse staying the garage.
-   Answer: ___
-3. **The wait for friends:** Recommended: 20 s from standing, with the bell and the flaps; anyone aboard can Go now;
-   no hold-longer; it ends early rather than ever holding another train; an empty express still runs.
-   Answer: ___
-4. **Interchanges:** Recommended: bought per junction at the junction itself for steel and rails, laid by the track
-   gang while you watch; express only, service trains keep their line; walk-between stays the default; Bell Rock and
-   Home never get one.
-   Answer: ___
-5. **First build:** Recommended: the express on line 2 from Home now (its own bump or v27's), and the first
-   interchange with the first junction that needs one (Canopy Town or West landing), not at Home.
-   Answer: ___
+The design review's five owner questions, with the brief's own question on the wait kept as the sixth. Answered by
+the owner on 10 November; his words are quoted as given.
+
+1. **Is the express the ordinary train with a headboard, or a passenger train of your own that stands ready?**
+   - **Shape A:** the line's next service train, run to the stop you pick, with a headboard. One claim on the line's
+     row, one op, the board; no extra train to draw.
+   - **Shape B:** a passenger-only set the room buys, kept at a bay at each big station; at Home it stands in the
+     Roundhouse and comes out by the engine spur (the spur leaves line 2's road at s 5.5 and runs over the 9.6 m table
+     to the open stall; an engine and one coach are 8.5 m). It is also the train that crosses interchanges and that
+     the little guys ride for trade.
+   - **Staged:** A first, B later, as the purchase that comes with the first interchange.
+
+   Recommended: both, by stage. First the next service train, with a headboard. Later a passenger set the room buys,
+   kept at a bay at each big station (at Home it can come out of the Roundhouse, as you said), which is also the train
+   that crosses interchanges and that the little guys ride for trade.
+   Answer: "Both, by stage: the service train with a headboard first; later a passenger set the room buys, kept ready
+   at each big station"
+2. **Build it now on the 0.7 km line, or when the line reaches Ring Island?** Recommended: when v27 is live and
+   Home's hall map exists. Today it saves nothing and can't bring you home.
+   Answer: "When v27 is live (the line reaches Ring Island) and Home's hall map exists"
+3. **Should an express pass a friend who has pulled a lever?** Recommended: no. It stops for them (11 s) and skips
+   only cargo and little-guy calls.
+   Answer: "It runs past; the next train serves them" (against the recommendation: the brief's original rule stands)
+4. **"Any station on the network": only where an interchange fits, or everywhere?** Recommended: everywhere from the
+   first junction, by a connecting train held for you across the platform; an interchange is the upgrade that removes
+   the walk, drawn in at High Gorge, Canopy Town and West landing.
+   Answer: "Every open stop is reachable from the first junction, by a connecting train held across the platform; an
+   interchange is the upgrade that removes the walk (High Gorge, Canopy Town, West landing)"
+5. **Does this replace the 1 November jump for good, so nothing in the game travels instantly, an invited friend
+   included?** Recommended: yes.
+   Answer: "Yes: hubs and the board stay, the jump becomes a ride"
+6. **The wait for friends** (the brief's own question; the review ruled yes and did not ask it again). Recommended:
+   20 s from standing, with the bell and the flaps; anyone aboard can Go now; no hold-longer; it ends early rather
+   than ever holding another train; an empty express still runs.
+   Answer: "20 s with a bell; anyone aboard can go now"
 
 ## Parked
 
-- A change held for you at a walk-between junction (the connecting train waits), if interchanges stay rare.
-- A dedicated named express with its own livery and whistle, as an end-game look on the express.
+- Its own livery and whistle for the passenger set (shape B, question 1), as an end-game look.
 - A faint bell for players within about 150 m of the station when an express is called.
 - Interchanges for service trains (through services across lines), if a line ever needs them.
 - Home to West landing as a real link through the village, closing the ring into a loop.
@@ -539,6 +600,8 @@ the bell at the hall is the best thing in the brief. Lens 6, the world shortens 
    is probably carrying a footing. In a room of one to three, a lit lever is a friend, and stopping costs the riders
    11 s. Recommended: the express stops for a lit lever its way; it skips cargo stops and, when passenger-trade gives
    trains town calls for little guys, those. `trainServes` is then untouched and the griefing bullet goes.
+
+   Owner, 10 November: 'It runs past; the next train serves them.' The brief's original rule stands.
 3. **The interchange list misses the junction that matters.** See ruling 4. Also: Canopy first, Bell Rock's top level
    carries both the Island to Canopy line and the bay line's bay, so "Bell Rock never" is only true of the two-level
    pair.
@@ -566,6 +629,8 @@ the bell at the hall is the best thing in the brief. Lens 6, the world shortens 
 
 Rewrite question 1 to offer A, B and the staged answer, with the Roundhouse fact; change call 14; replace the
 "three interchanges" paragraph with ruling 4; add the two-ends rule; move the first build behind the v27 trigger.
+
+Applied to the body on 10 November, except call 14: the owner kept the original rule (finding 2).
 
 ### Owner questions
 
