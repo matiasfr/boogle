@@ -5,13 +5,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { testEnv, type TestMode } from '../dev/test-env.ts';
+import { MODE_VARS, testEnv, type TestMode } from '../dev/test-env.ts';
 
 const url = (p: string) => new URL(p, import.meta.url).href;
 /** Runs `code` (an ES module) under a mode's node flags and environment; its stdout, trimmed. */
 function under(mode: TestMode, code: string, env: NodeJS.ProcessEnv = {}) {
   const saved = { ...process.env };
-  // An undefined value unsets the variable: this test also runs inside CI's own run, which sets RAIL_AUDIT=1.
+  // The mode alone, then `env` on top: this test also runs inside CI's own runs, which export the ci or ship mode's
+  // variables (FUZZ_STRIDE=1 once made the local probe read a stride of 1). An undefined value unsets the variable.
+  for (const k of MODE_VARS) delete process.env[k];
   for (const [k, v] of Object.entries(env))
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
@@ -33,7 +35,7 @@ try { createRailway().spawn([Line, { slot: 99, req: 1.5 }]); } catch (e) { audit
 console.log(audited ? 'audited' : 'unaudited');`;
 
 test("CI's unit job and the long run audit the rail drivers' worlds; a local run does not", () => {
-  assert.equal(under('local', PROBE, { RAIL_AUDIT: undefined }).stdout, 'unaudited', 'the probe tells the two apart');
+  assert.equal(under('local', PROBE).stdout, 'unaudited', 'the probe tells the two apart');
   for (const mode of ['ci', 'long'] as const) {
     assert.equal(under(mode, PROBE).stdout, 'audited', mode);
     assert.equal(
@@ -60,10 +62,7 @@ test("a ship's CI keeps the audit and a real stride, and runs one seed of each f
   assert.equal(under('ship', PROBE, { RAIL_AUDIT: '0' }).stdout, 'audited');
   const read = (own: string) =>
     `import { FUZZ_STRIDE, fuzzSeeds } from ${JSON.stringify(url('./helpers/fuzz.ts'))}; console.log(FUZZ_STRIDE, fuzzSeeds(${own}).join());`;
-  assert.equal(under('ship', read('[7, 8, 9]'), { FUZZ_SEEDS: undefined, FUZZ_FIRST_SEED: undefined }).stdout, '16 7');
-  assert.equal(under('ci', read('[7, 8, 9]'), { FUZZ_SEEDS: undefined, FUZZ_FIRST_SEED: undefined }).stdout, '1 7,8,9');
-  assert.equal(
-    under('local', read('[7, 8, 9]'), { FUZZ_SEEDS: undefined, FUZZ_FIRST_SEED: undefined }).stdout,
-    '16 7,8,9',
-  );
+  assert.equal(under('ship', read('[7, 8, 9]')).stdout, '16 7');
+  assert.equal(under('ci', read('[7, 8, 9]')).stdout, '1 7,8,9');
+  assert.equal(under('local', read('[7, 8, 9]')).stdout, '16 7,8,9');
 });

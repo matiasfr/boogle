@@ -16,6 +16,8 @@ const MODES: Record<TestMode, NodeJS.ProcessEnv> = {
   ship: { RAIL_AUDIT: '1', FUZZ_STRIDE: '16', FUZZ_FIRST_SEED: '1' },
   long: { RAIL_AUDIT: '1', FUZZ_STRIDE: '1', SAVE_TICKS: '2500', FUZZ_SEEDS: 'c0ffee,777,15a4d,5eed,bee' },
 };
+/** Every variable a mode sets, for a test that must see a mode alone and not the caller's run (test/unit-modes.test.ts). */
+export const MODE_VARS: readonly string[] = [...new Set(Object.values(MODES).flatMap((m) => Object.keys(m)))];
 /** The environment and the node flags (the preload and the per-test timeout) to put ahead of `--test`. */
 export function testEnv(mode: TestMode = 'local'): { env: NodeJS.ProcessEnv; flags: string[] } {
   // Never a git hook's environment: pre-push exports GIT_DIR and friends, which beat `git -C <dir>`, so a test's scratch
