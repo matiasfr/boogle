@@ -8,6 +8,7 @@
 //   npm run level-check -- my-layout.json         only that classic layout fixture
 //   npm run level-check -- --json                 coverage, issues, allowances and place facts as JSON
 //   npm run level-check -- --place=place --physics --region=T3 --state=empty
+import '../node-version.ts'; // first: re-runs under the pinned Node
 import fs from 'node:fs';
 import path from 'node:path';
 import { ALLOW, type Allow } from './allow.ts';

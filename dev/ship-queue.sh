@@ -29,7 +29,8 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-for d in "$HOME"/.nvm/versions/node/v26*/bin; do [ -d "$d" ] && PATH="$d:$PATH"; done
+# The pinned Node (.nvmrc) from nvm, first on PATH: the one lookup is dev/node-version.ts.
+if bin=$(node "$here/node-version.ts" --bin); then PATH="$bin:$PATH"; fi
 main=$(git -C "$wt" worktree list --porcelain | sed -n '1s/^worktree //p')
 trusted=${BOOGLE_TRUSTED:-$(dirname "$main")/boogle-trusted}
 

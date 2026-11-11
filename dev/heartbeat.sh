@@ -39,7 +39,7 @@ say "Open pull requests"
 gh pr list --json number,title,headRefName,mergeStateStatus,isDraft \
   -q '.[] | "#\(.number) \(.mergeStateStatus)\(if .isDraft then " draft" else "" end) \(.headRefName): \(.title)"' 2>/dev/null | cut -c1-150
 say "Last runs on main"
-for w in ci.yml deploy.yml deploy-server.yml smoke.yml; do
+for w in ci.yml deploy.yml deploy-server.yml smoke.yml unit-long.yml; do
   gh run list --workflow "$w" --branch main -L 1 --json conclusion,status,createdAt,headSha \
     -q ".[] | \"$w: \(.conclusion // .status) \(.headSha[0:8]) \(.createdAt)\"" 2>/dev/null
 done

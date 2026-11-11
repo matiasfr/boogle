@@ -708,7 +708,8 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     (`work.length === sources.length`, `depotOut.length === 6`). `test/railway-check.test.ts` requires each bad world
     refused with its message by the world check and by `validateRailway` on the world's read model, counts the old
     sites in their source, and holds the rail and footing conservation in the check the seeds run (M3c's review);
-    `test/railway-check-stages-0..3.test.ts` accept all 34 golden stages by both checks. Dropping either conservation
+    the golden shards (`test/railway-golden-<n>.test.ts`; `railway-check-stages-*` until 11 November) accept every
+    golden stage (34 at M8b, 38 on 11 November) by both checks. Dropping either conservation
     check or any of three other conditions fails it. The load check's time on `q6-done` as the server loads it (plain
     world, median of 7 × 500): 245.8 µs on main, 244.0 µs here; `awake` 212.0 to 223.0 µs: not lower as expected (the
     archetype walk dominates; the queries' repeated lookups cost what building the model did). Saves: no save is

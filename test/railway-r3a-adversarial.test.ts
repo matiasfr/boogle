@@ -1,7 +1,9 @@
 // Review of ring/r3a-rules (R3a-1): v27's rules on the fixture line under adversarial schedules. The end moving (Q7,
 // the rivet) and the railhead's stop moving at every tick offset of a seeded run; every lever and rider ask every
 // tick; holds at 0, 75 and 100%; riders' offers followed to the stop; three trains' places at every stage. FUZZ_TICKS
-// lengthens the runs.
+// lengthens the runs; the every-offset sweeps branch at every FUZZ_STRIDE-th offset (./helpers/fuzz.ts: every offset in
+// CI, every 16th locally; the base run steps every tick, and each branch's asks are seeded by its own offset, so a
+// sampled sweep is exactly a subset of the full one).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32 } from '../src/sim/rng.ts';
@@ -17,11 +19,12 @@ import {
   trainStepLine,
 } from '../src/sim/railway-trains.ts';
 import { FixtureLine, LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
+import { FUZZ_STRIDE as STRIDE, fuzzTicks } from './helpers/fuzz.ts';
 
 const V = LINE2_ROWS;
 const PIER = 3,
   HEAD = 4;
-const TICKS = Number(process.env.FUZZ_TICKS ?? 3000);
+const TICKS = fuzzTicks(3000);
 type Stage = (f: FixtureLine, t: number) => void;
 type Mode = { lever: number; rider: number };
 
@@ -115,6 +118,7 @@ test('Q7 laid at every tick offset of a run (endMoved past the Pier): no up trai
   const f = base;
   for (let t = t0 + 1; t <= t0 + 1400; t++) {
     drive(f, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
+    if ((t - t0 - 1) % STRIDE) continue;
     const g = snap(f);
     g.stops = line2Stops(7, 0);
     endMoved(g.io(), V, PIER, t);
@@ -130,6 +134,7 @@ test('the rivet struck at every tick offset of a run (endMoved past the Railhead
   drive(base, 0, t0, rand, { lever: 0.02, rider: 0.02 });
   for (let t = t0 + 1; t <= t0 + 1400; t++) {
     drive(base, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
+    if ((t - t0 - 1) % STRIDE) continue;
     const g = snap(base);
     g.stops = line2Stops(7, 7, true);
     endMoved(g.io(), V, HEAD, t);
@@ -146,6 +151,7 @@ test("the railhead's stop moves (stopMoved) at every tick offset of a run, every
     drive(base, 0, t0, rand, { lever: 0.02, rider: 0.02 });
     for (let t = t0 + 1; t <= t0 + 700; t += 1) {
       drive(base, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
+      if ((t - t0 - 1) % STRIDE) continue;
       const g = snap(base);
       const poses = g.rows.map((r) => trainAlong(r, g.line, t));
       g.stops = line2Stops(7, head + 1);

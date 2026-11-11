@@ -1,7 +1,8 @@
 // Review of ring/r3b2-v27 (R3b-2, the v27 bump): the railhead moving out and the rivet with two and three trains near
 // the end (a burst of bents, a waiter, a held train), the ring on the world under random asks, ops and restores from
 // before Q7 to the rivet with the load check every tick, the server's reach at every head, the load check on broken
-// v27 rows, Q7's kit, a v26-shaped save, and the balanced hold's cap (R3b-1 review P3-2).
+// v27 rows, Q7's kit, a v26-shaped save, and the balanced hold's cap (R3b-1 review P3-2). FUZZ_SEEDS replaces the
+// fuzzes' seeds (./helpers/fuzz.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32 } from '../src/sim/rng.ts';
@@ -46,6 +47,7 @@ import {
   works,
   type Seed,
 } from './helpers/rail.ts';
+import { fuzzSeeds } from './helpers/fuzz.ts';
 
 const [A, B, C] = LINE_SLOTS[LINE2] as [number, number, number];
 const PIER = 3,
@@ -185,7 +187,7 @@ function stepF(f: FixtureLine, t: number) {
   );
   assert.equal(f.broken(), null, `rows at ${t}`);
 }
-for (const sd of [0xa11ce, 0x2b2b, 0xd00d, 0x5eed, 0xbee])
+for (const sd of fuzzSeeds([0xa11ce, 0x2b2b, 0xd00d, 0x5eed, 0xbee]))
   test(`fixture fuzz ${sd.toString(16)}: Q7, bents in bursts of up to three on one tick, the rivet at once after`, () => {
     const rand = mulberry32(sd);
     let f = new FixtureLine(line2Stops(6));
@@ -237,7 +239,7 @@ for (const sd of [0xa11ce, 0x2b2b, 0xd00d, 0x5eed, 0xbee])
 
 // ---------------------------------------------------------------- the ring on the world, Q7 to the rivet
 const HALT_OF = (line: number, stop: number) => RAIL_HALTS.findIndex((h) => h.line === line && h.stop === stop);
-for (const sd of [0xa11ce, 0x2b2b, 0xd00d])
+for (const sd of fuzzSeeds([0xa11ce, 0x2b2b, 0xd00d]))
   test(`world fuzz ${sd.toString(16)}: Q7's kit, the ring's footings, brace, weights and rivet under asks and restores`, (t) => {
     const rand = mulberry32(sd);
     let s = seed(railwayAtWorks('crossing-done'));

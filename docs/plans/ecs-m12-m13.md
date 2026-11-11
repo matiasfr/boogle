@@ -477,7 +477,7 @@ building on it." So the architecture choices are made, not asked. For [agent-cal
    not a name.
 7. **M12f gets the independent review though its path does not require one.** Why: it moves the predictor.
 8. **The boot is guarded by `dev/live-boot.ts` and the live site, not a unit test.** The owner's call ("Remove it,
-   rely on the smoke"); `test/railway-station-seats.test.ts` is being deleted on `ci/unit-speed`. M13e and M13g run
+   rely on the smoke"); `test/railway-station-seats.test.ts` was deleted on `ci/unit-speed`. M13e and M13g run
    the boot check on the built game before the ship and load the live site after it.
 9. **M13 is seven steps, tools before source,** and its proof is bot segments, not the full bot.
 10. **A step that touches a copy removes it** (section 4's table): the page tools get one reader module, the

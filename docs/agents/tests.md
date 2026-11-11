@@ -3,6 +3,7 @@
 Run `npm run checks-for`; see [bot checks](test-details/bot-segments.md). Read triggered references. No browser for docs/tooling with no player-visible effect.
 
 - Unit tests (`test/*.test.ts`, `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
+- Local unit runs skip the rail audit and sample the offset sweeps; CI runs both in full: [settings](ship-pipeline.md#unit-test-settings).
 - `npm run check` (lint, typecheck, unit tests, registry, level, assets, build): full local proof before handing off substantive work; CI remains the full merge gate.
 - Pre-push: scoped lint, typecheck and affected unit tests; `ship --full` adds full checks. CI has no rendered scenarios; `world-inputs` runs daily on the Mac. [CI scope](ship-pipeline.md#ci-scope).
 - `npm run check:full` (+ server tests, headless network test): CI runs these gates for code PRs; run it locally when you touch `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
