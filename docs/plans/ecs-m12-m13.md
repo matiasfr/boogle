@@ -472,6 +472,12 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
       the five tests of group 3 onto the production entry and `--rail-seed`. It may run as two agents split at
       `dev/look/` against everything else. **Checks:** typecheck; each retargeted eval and beat run once; `npm run
       scenario -- reconnect-edit`; `npm run playthrough -- --to wake`.
+      **Place-only tools with no counterpart (owner, 11 November: "m13c, shouldn't we just create native dev tools if
+      they're still needed? rather than something place only?"; [decision](../decisions-process.md#d-2026-11-11-native-dev-tools-not-place-only-ones)).**
+      Each tool the twin table marks "None" or "Partial" is deleted or, if a current job still uses it, rebuilt as a
+      native dev tool against rows and queries (`dev/look/rail-read.ts`, `src/sim/railway-queries-*.ts`), never kept
+      alive behind Place. The implementer lists in the commit body, for each file, which it did and why (the job that
+      still needs it, or "no current job"). A tool whose only subject is a Place-only mechanic is deleted.
 - [ ] **M13d. The level check.** _M, Low (tooling). After M13a._ Group 4: `dev/level/check.ts`'s `--place=place`
       progression and `replay.ts` onto railway seeds and `src/sim/railway-*-layout.ts`; `spatial.ts`,
       `track-continuity.ts`, `world-blockout.ts`, `dev/economy/place-level.ts`. **Done:** `npm run level-check`

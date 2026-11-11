@@ -6,6 +6,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-11 · story, characters, names and their quirks are the owner's to choose; agents propose a few varied options and build marked placeholders ([entry](#d-2026-11-11-the-story-and-characters-are-the-owner-s)).
 - 2026-11-10 · no dim behind the pause view's You page ([entry](#d-2026-11-10-no-dim-behind-the-pause-view-s-you))
 - 2026-11-10 · The Boogler is an entrepreneur; the mayor entry is archived ([entry](#d-2026-11-10-the-boogler-is-an-entrepreneur))
 - 2026-11-10 · dress Buddy from Pause: You is Pause's first page; the curio shelf is display only ([entry](#d-2026-11-10-dress-buddy-from-pause-you-is))
@@ -24,6 +25,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Art: a painted concept per era, then a building kit and a vehicle kit per era. ([entry](#d-undated-art))
 
 ## Decided
+
+- <a id="d-2026-11-11-the-story-and-characters-are-the-owner-s"></a>**2026-11-11, the story and characters are the owner's to choose** (owner, 11 November: "I want to exert more agency over the story and characters of the world, even if it's just a placeholder."). Orchestrator's reading: story, characters, names and their quirks are his to choose. Agents propose a few varied options and build placeholders marked as placeholders; they do not settle canon. A brief of locations with options was prepared for him on 11 November (artifact; the link is added later by the orchestrator).
 
 - <a id="d-2026-11-10-no-dim-behind-the-pause-view-s-you"></a>**2026-11-10, no dim behind the pause view's You page** (owner, a P3 bug from the live game in Safari: "when i hit escape there is a dull filter which doesnt make sense on the customization screen"). On You the world behind the panel is not dimmed, so Buddy shows the colour and clothes you pick as they really look; the panel alone says the game is paused. Options and the other pages keep the dim. Overrules the "lighter dim" part of [agent call](agent-calls.md#characters-cosmetics-and-story) 19 of the pause-wardrobe review.
 - <a id="d-2026-11-10-the-boogler-is-an-entrepreneur"></a>**2026-11-10, The Boogler is an entrepreneur** (owner, on the rulings page, 10 November; "[The Boogler] Mayor or entrepreneur: Entrepreneur; the mayor entry is archived"), as recommended. The Design Table lines are in the core loop topic: [the call on the Design Table](decisions-core-loop.md#d-2026-11-02-the-call-on-the-design-table). The "The Boogler is the mayor" entry is in the [archive](decisions-archive.md#archive-characters-cosmetics-and-story).
