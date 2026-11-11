@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { run } from '../look/lib.ts';
 import { music } from './music.ts';
@@ -51,7 +52,8 @@ if (!arg || !fs.existsSync(file)) {
   console.error(`npm run reel -- <name | path/to/reel.mjs>   reels: ${all.map((f) => f.slice(0, -4)).join(', ')}`);
   process.exit(2);
 }
-const reel: Reel = (await import(file)).default;
+// A file URL, so a Windows path (C:\...) imports too.
+const reel: Reel = (await import(pathToFileURL(file).href)).default;
 const name = path.basename(file, path.extname(file));
 const [W, H] = reel.size || [1280, 720];
 const FPS = reel.fps || 30;
