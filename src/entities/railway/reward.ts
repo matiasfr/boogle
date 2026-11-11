@@ -339,7 +339,7 @@ async function createStationReward(
     });
   }
   async function open() {
-    if (busy || claimed || !profile || !adapter.inspect().ready || completion() !== 1) return;
+    if (busy || claimed || !profile || !adapter.read.ready() || completion() !== 1) return;
     busy = true;
     try {
       const result = await profile.claim({ world, station: stationId, completion: 1 }, reward.id);
@@ -387,12 +387,16 @@ async function createStationReward(
       ];
     },
     update(dt: number, now: number) {
-      // ready and pending are the session's (no read.ready()/read.pending() yet; reported in M10 b).
-      const state = adapter.inspect();
       const tickNow = adapter.read.tick();
       const phase = railPhase(adapter.read.world(), tickNow, tickNow);
       // No pending action: the server has answered every one of mine, the wake among them.
-      if (liveWake && state.ready && state.pending === 0 && phase !== 'asleep' && phase !== 'waking') {
+      if (
+        liveWake &&
+        adapter.read.ready() &&
+        adapter.read.pending() === 0 &&
+        phase !== 'asleep' &&
+        phase !== 'waking'
+      ) {
         liveWake = false;
         if (
           reveal.youGot({
@@ -404,14 +408,14 @@ async function createStationReward(
         )
           multiReveals++;
       }
-      if (state.ready) {
+      if (adapter.read.ready()) {
         if (previous === 0 && completion() === 1 && !claimed && machineFrom) {
           machineFrom(from);
           flight = 0;
         }
         previous = completion();
       }
-      crate.visible = state.ready && completion() === 1 && (!claimed || (revealT >= 0 && revealT < 0.12));
+      crate.visible = adapter.read.ready() && completion() === 1 && (!claimed || (revealT >= 0 && revealT < 0.12));
       beam.visible = crate.visible && revealT < 0;
       flare = Math.max(0, flare - dt / 1.6);
       glow.strength.value = 0.16 + flare * flare * 0.4;

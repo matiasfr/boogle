@@ -481,7 +481,7 @@ function edgeOf(twin: { r: ReturnType<typeof room>; a: Client }, tick: number) {
   const from = twin.r.clock.now;
   for (let ms = 0; ms < 400; ms += 0.25) {
     twin.r.clock.now = from + ms;
-    if (twin.a.adapter.read.tick() > tick) return from + ms;
+    if (Math.floor(twin.a.mirror.mirror.step(from + ms) / 6) > tick) return from + ms;
   }
   throw new Error('no tick boundary within 400 ms');
 }

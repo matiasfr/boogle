@@ -940,6 +940,9 @@ later change with a bundle report. Place's remaining callers get one owner from 
     No unit test: none of these views has pure logic to hold. Oracle: `inspectRailway()` equal to base on `awake` and
     `q3-stocked` bar the random pid and the wall-clock movers (boiler frame, cart, shunter). Mid-chop look (`railLag=200`):
     press to carry 133 ms on every stroke, stock 6, the frame's tag and the panel rack as before.
+    **Switched to the readers above (same day):** `ready`, `pending`, `stalled`, `movement().beamSoloSpeed/beamHelpSpeed`,
+    `treeGrowth` and `freeCarryIgnoringBig`; the "Still on `inspect()`" list above now holds only `opening-view`'s
+    `progress` and `back-down`'s `onlyALoad`, `loadOf` and `setDown`, which belong to other groups.
 - [ ] **T1 to T7. The tests, rewritten on rows and queries.** _Low each (tests only). After M3c and M8. Seven
       batches, one agent each, in parallel: no two batches, and no batch and M10 group, edit the same file._
   - Per batch: state is a `World` from `test/helpers/rail.ts`; `s.a.b` reads become row readers; the 33 facts become

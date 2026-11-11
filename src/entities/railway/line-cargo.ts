@@ -38,8 +38,6 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     ]);
   // `&beamcarry=float` shows the floating carry (K1) beside the rope drag, for one comparison (7 November).
   const floatCarry = new URLSearchParams(location.search).get('beamcarry') === 'float';
-  // The session's own fields (ready, pending, the beam speeds, and onlyALoad's inspection) have no read yet: reported in M10 b.
-  let session = adapter.inspect();
   const world = () => adapter.read.world();
   const phase = (at = adapter.read.tick()) => railPhase(world(), at, at);
   const beamNow = () => beamRow(world());
@@ -142,7 +140,6 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   function update() {
     for (const avatar of posing) avatar.userData.beamGrip = null;
     posing.clear();
-    session = adapter.inspect();
     const now = performance.now(),
       dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
     last = now;
@@ -187,7 +184,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     // Your own Pick up takes the rope the frame you press it, before the server's answer (a refusal drops it again).
     const loose = !!beam && (beam.state === 'available' || beam.state === 'ground');
     if (loose) lay.copy(beamAt);
-    const grabbed = loose && now - grabbing < 1500 && session.pending > 0;
+    const grabbed = loose && now - grabbing < 1500 && adapter.read.pending() > 0;
     if (grabbed) ground.root.visible = false;
     const live = new Set<string>();
     for (const account of accounts(world())) {
@@ -282,7 +279,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       }
   }
   function targets(): Interactable[] {
-    if (!session.ready || !me.body) return [];
+    if (!adapter.read.ready() || !me.body) return [];
     const p = me.body.interpolatedPosition,
       result: Interactable[] = [];
     if (!['asleep', 'waking'].includes(phase()) && beamNow().holder !== adapter.read.pid)
@@ -312,7 +309,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
                 if (adapter.beamTake(beam.revision)) grabbing = performance.now();
               },
             }
-          : onlyALoad(session)
+          : onlyALoad(adapter.inspect())
             ? {
                 id: 'railway-beam-take',
                 verb: 'Pick up',
@@ -386,10 +383,13 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     drop,
     rocks,
     prePhysics() {
-      session = adapter.inspect();
       if (beamNow().state === 'held' && beamNow().holder === adapter.read.pid) {
         input.sprint = me.sprint = false;
-        me.wish.multiplyScalar((helperFor(adapter.read.pid) ? session.beamHelpSpeed : session.beamSoloSpeed) / 5.6);
+        me.wish.multiplyScalar(
+          (helperFor(adapter.read.pid)
+            ? adapter.read.movement().beamHelpSpeed
+            : adapter.read.movement().beamSoloSpeed) / 5.6,
+        );
       } else if (mineHelp.helping()) {
         input.sprint = me.sprint = false;
         mineHelp.ease(me.wish);

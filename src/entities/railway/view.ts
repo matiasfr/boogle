@@ -131,7 +131,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const wake = createWakePresentation(machine, owner, { fanfare: sounds.fanfare, dustRing: pieces.dustRing });
   const path = await createRailwayPath(owner);
   // What the line reads, each time it asks (the rows are replaced, so none is kept): the facade's world is the predicted
-  // copy while an action is pending. The session's own `ready` and the opening's inspection have no read yet (M10 b).
+  // copy while an action is pending. The opening's inspection has no read (another group's file).
   const world = () => adapter.read.world();
   // One tick, one phase and one panel state for a whole frame, taken at the frame's entry (update, targets, accepted,
   // corrected): the facade's tick is live, so a frame that straddled a boundary would miss the waking -> idle edge, and
@@ -148,7 +148,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const phaseNow = () => (framePhase ??= railPhase(world(), frameTick, frameTick));
   const activeNow = () => activeStation(world());
   const jobAt = (index: number) => railJobs(world(), tick())[index]!;
-  const ready = () => adapter.inspect().ready;
+  const ready = () => adapter.read.ready();
   const panelNow = () => ({
     phase: phaseNow(),
     activeStation: activeNow(),

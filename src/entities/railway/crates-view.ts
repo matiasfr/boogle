@@ -105,7 +105,7 @@ export async function createStationBoxes(
   /** Waiting for you: its stretch is laid and you haven't opened it (or it's rattling now). */
   const waiting = (box: Box) => {
     const mine = wardrobe();
-    if (!mine || !adapter.inspect().ready || !completion(box)) return false;
+    if (!mine || !adapter.read.ready() || !completion(box)) return false;
     return !mine.isOpened(box.spec.id) || (show.opening() === box.mesh && !show.burst());
   };
   const ready = (box: Box) => box.mesh.visible && box.flight === 1 && !show.busy();
@@ -152,12 +152,11 @@ export async function createStationBoxes(
       return out ?? NO_TARGETS;
     },
     update(dt: number, now: number) {
-      const state = adapter.inspect();
       flare = Math.max(0, flare - dt / 1.6);
       const p = me.body?.position;
       for (const box of boxes) {
         // Laid while you watched: the machine hands it down from its flatbed, as Place's handCrate did.
-        if (state.ready) {
+        if (adapter.read.ready()) {
           const c = completion(box);
           if (box.previous === 0 && c && machineFrom && !wardrobe()?.isOpened(box.spec.id)) {
             machineFrom(box.from);
