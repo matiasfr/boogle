@@ -1,5 +1,5 @@
-> **Status: answered three times by the owner on 10 November and reworked each time; five questions are open, two of
-> them now answered in part.** Light brainstorm (one agent, three lenses: play designer, systems architect, creative director), then a
+> **Status: answered three times by the owner on 10 November and reworked each time; the last five questions were answered on 11 November
+> ("I like your recommendations for 1-5").** Light brainstorm (one agent, three lenses: play designer, systems architect, creative director), then a
 > [design review](#design-review-designer-2026-11-10). Design only: nothing here changes code, saves or a `WORLD_NS`,
 > and the build is held behind the ECS migration. The owner's seed, his pick of the name (**Boogles**), his first six
 > answers ([Open questions](#open-questions-answered-by-the-owner-10-november)) and his seven later answers with his
@@ -319,7 +319,7 @@ the decision entries
 
 ## Open after his answers of 10 November
 
-Five questions, each with a recommendation. The model step and the prototype go ahead on the recommendations; none of
+**All five answered by the owner on 11 November: "I like your recommendations for 1-5"** ([decision](../decisions-rewards.md#d-2026-11-11-boogles-the-five-open-questions-answered)). Five questions, each with a recommendation. The model step and the prototype go ahead on the recommendations; none of
 the five holds the model step.
 
 1. **Is there any personal money?** You asked: "what the separation should be between personal money and not? should
@@ -333,7 +333,7 @@ the five holds the model step.
    shared wallet" (6 November) and "The shop stays free" as they stand. Alternatives: a personal purse you may deposit
    (a second balance to save for every player, a friend who joins late arrives poor, and with nothing personal to buy
    the purse is only a slower way into the same box); a personal purse that buys cosmetics (it undoes "The shop stays
-   free" and brings back the personal coin you retired on 6 November). Answer: ___
+   free" and brings back the personal coin you retired on 6 November). Answer (owner, 11 November, to all five at once: "I like your recommendations for 1-5"): **the recommendation.**
 2. **What does a town have when the railway arrives, and what is bought?** Your note leans to buildings as
    "intentional upgrades instead of naturally happening from connecting a place"; the 2 November rule is "towns grow
    from what arrives", and that day you kept "the trains are substantively growing the town with the cargo".
@@ -343,7 +343,7 @@ the five holds the model step.
    town, a plot stays empty ground with stakes and a sign until the room pays, and then the little guys build on it.
    Hauling still sets how big a town can get, so fares cannot outgrow the railway. The other end, taken whole (nothing
    grows without a buy, and the 2 November rule and DESIGN.md's "Towns grow from what arrives" are reworded), is
-   designed in [section 1](#1-the-loop). Answer: ___ **In part, later on 10 November (a leaning):** "maybe only a
+   designed in [section 1](#1-the-loop). Answer (owner, 11 November, to all five at once: "I like your recommendations for 1-5"): **the recommendation.** **In part, later on 10 November (a leaning):** "maybe only a
    couple buildings exist, so you get the satisfaction of building up". So "the town's starting few buildings" is now
    a couple: two at the Village, two at each later town. Whether arrival growth stays at all, or nothing grows
    without a buy, is still open.
@@ -353,7 +353,7 @@ the five holds the model step.
    what Boogles now do and it is the part nobody has seen: the plot, the little guys building, the new door. The car
    stays in the prototype as the second thing, bought with hauled logs, because the house's riders leave a crowd and
    without the car that crowd has no answer. Alternative: keep only the car, as a materials buy, and no house; that
-   tests the crowd and never spends a Boogle. Answer: ___
+   tests the crowd and never spends a Boogle. Answer (owner, 11 November, to all five at once: "I like your recommendations for 1-5"): **the recommendation.**
 4. **Do seats on materials stand after the model, and how far does "anything on rails" go?** You called the
    train-parts answer "a light suggestion". By hand it has a cost: with the seat buys gone the Boogle list is about
    90,000 against up to about 99,000 earned, so a room can clear the list by waiting ([section 3](#3-the-money)).
@@ -362,14 +362,14 @@ the five holds the model step.
    as this brief's reading of "on rails": it means anything that rolls (engines, cars, seats, the express's passenger
    set, more trains), so a station's fit-out (benches, a canopy, lamps) stays a town upgrade for Boogles, and train
    looks and whistles, which your 6 November call pays from the wallet, take no price of either kind until you say
-   which. Answer: ___ **The reading of "on rails", later on 10 November:** "sounds ok". Confirmed: what rolls is
+   which. Answer (owner, 11 November, to all five at once: "I like your recommendations for 1-5"): **the recommendation.** **The reading of "on rails", later on 10 November:** "sounds ok". Confirmed: what rolls is
    hauled for, station fit-outs stay on Boogles, and train looks and whistles have no price until he says. The first
    half (seats on materials after the model) is still open.
 5. **Who moves in?** Each house brings "new characters and a building to discover". Recommended: the roles in
    [section 6](#6-show-dont-tell) as a starting list (for the Village a retired engine driver, a baker and a
    lost-property keeper), one character and one room a house, each offering a thing to see or play with and never a
    shop or a price. They are roles only; the characters and every line are yours and your collaborators' to write.
-   Answer: ___
+   Answer (owner, 11 November, to all five at once: "I like your recommendations for 1-5"): **the recommendation.**
 
 ## Follow-ups (answered by the owner, 10 November)
 
