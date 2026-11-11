@@ -1,13 +1,14 @@
 // Replication budget at 3,000 entities (docs/plans/replication.md, red-team revision 5): the server's per-step diff
 // and flush, the fallback full re-projection, the late-join size, and the client's mirror clone and predicted
-// rebuild. Over a bound is a printed warning, never a failure (owner, 10 November); the numbers are printed for the record.
+// rebuild. Over a bound is a printed warning (owner, 10 November); over a hard limit far above it fails (owner,
+// 11 November). The numbers are printed for the record.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { defineReplicated, cellOf, cellsNear, type EntityId, type Fields } from '../src/world/replicate.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createMirror, createPredictor } from '../src/world/replicate-client.ts';
-import { budgetWarning, measureWithinBudget } from './helpers/budget.ts';
+import { budgetWarning, hardLimitFailure, measureWithinBudget } from './helpers/budget.ts';
 
 const N = 3000;
 const CLIENTS = 6;
@@ -138,6 +139,12 @@ function measureOnce() {
 // Absolute limits in ms, loose enough for a slow CI runner (several times slower than the M1 Max these were measured on)
 // and stretched by machine load; they still catch a real regression, which is tens of times slower.
 const LIMITS = { normalMs: 2, churn5Ms: 5, fullMs: 30, cloneMs: 10, rebuildMs: 15 };
+// Hard limits that fail, 2x the warning limits (test/helpers/budget.ts). Measured 11 November on HOTBOX (i9-10900K,
+// Node 26; as slow as or slower than the M1 Max's recorded 0.04 / 0.11 / 2.0 / 0.18 / 0.15 in
+// docs/plans/replication.md), best per copy: idle 0.12 / 0.32 / 1.9 / 0.18 / 0.14 ms; worst with 20 budget-test copies
+// beside npm run check 0.31 / 1.1 / 27 / 1.1 / 0.64 ms. So each hard limit is 30x or more idle and 2.2x or more that
+// worst loaded run.
+const HARD = { normalMs: 4, churn5Ms: 10, fullMs: 60, cloneMs: 20, rebuildMs: 30 };
 
 test(`budget: ${N} entities, ${CLIENTS} clients`, { timeout: 60_000 }, (t) => {
   let last!: ReturnType<typeof measureOnce>;
@@ -153,7 +160,10 @@ test(`budget: ${N} entities, ${CLIENTS} clients`, { timeout: 60_000 }, (t) => {
   });
   t.diagnostic(JSON.stringify({ ...last.report, best, loadScale: +scale.toFixed(2), runs }));
   if (process.env.REPLICATION_BUDGET) console.log(last.report, best);
-  // A timing target guides and never fails (owner, 10 November); the size and state checks above still fail.
+  // A timing target guides and never fails (owner, 10 November); the size and state checks above still fail, and so
+  // does a hard limit far above it (owner, 11 November).
   const warning = budgetWarning('replication budget', best, limits, scale, runs);
   if (warning) t.diagnostic(warning);
+  const failure = hardLimitFailure('replication budget', best, HARD, scale, runs);
+  assert.equal(failure, '', failure);
 });
