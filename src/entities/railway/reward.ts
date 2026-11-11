@@ -23,6 +23,8 @@ import { createRailwayTools, inReach } from './tools.ts';
 import { createAbilityArrival } from './ability-arrival.ts';
 import { createTrophyPlinth } from './trophy-plinth.ts';
 import { createStationBoxes } from './crates-view.ts';
+import { job } from '../../sim/railway-rows.ts';
+import { railPhase } from '../../sim/railway-queries-line1.ts';
 
 export async function createRailwayReward(
   adapter: RailwayAdapter,
@@ -178,8 +180,7 @@ async function createStationReward(
 ) {
   const reward = stationIndex === 0 ? T1_REWARD : T2_REWARD;
   const stationId = stationIndex === 0 ? 'T1' : 'T2';
-  const completion = () =>
-    adapter.inspect().stations[stationIndex]?.completion ?? (stationIndex === 0 ? adapter.inspect().completion : 0);
+  const completion = () => job(adapter.read.world(), stationIndex).completion;
   const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }, { OUT }] =
     await Promise.all([
       import('../../render/part-geometry.ts'),
@@ -256,7 +257,7 @@ async function createStationReward(
   // ability-arrival.ts. The wake itself plays at once from the prediction, but the card waits for the server to
   // accept it: a refused wake settles the machine back asleep and shows no card.
   const offAccepted = adapter.onAccepted((event) => {
-    if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0 && event.pid === adapter.inspect().pid)
+    if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0 && event.pid === adapter.read.pid)
       liveWake = true;
   });
   const offCorrected = adapter.onCorrected((c) => {
@@ -282,7 +283,7 @@ async function createStationReward(
     }
   }
   try {
-    profile = createBrowserRailwayProfile(adapter.inspect().pid, [T1_REWARD.id, T2_REWARD.id]);
+    profile = createBrowserRailwayProfile(adapter.read.pid, [T1_REWARD.id, T2_REWARD.id]);
     load();
   } catch (cause) {
     error = cause instanceof Error ? cause.message : 'Personal reward storage unavailable';
@@ -386,9 +387,11 @@ async function createStationReward(
       ];
     },
     update(dt: number, now: number) {
+      // ready and pending are the session's (no read.ready()/read.pending() yet; reported in M10 b).
       const state = adapter.inspect();
+      const phase = railPhase(adapter.read.world(), adapter.read.tick(), adapter.read.tick());
       // No pending action: the server has answered every one of mine, the wake among them.
-      if (liveWake && state.ready && state.pending === 0 && state.phase !== 'asleep' && state.phase !== 'waking') {
+      if (liveWake && state.ready && state.pending === 0 && phase !== 'asleep' && phase !== 'waking') {
         liveWake = false;
         if (
           reveal.youGot({

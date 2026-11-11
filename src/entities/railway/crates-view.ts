@@ -13,6 +13,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { BOXES, boxGift, cosmetic, crateParts, type GiftId, type Tier } from '../../render/cosmetic-parts.ts';
 import { createCrateShow } from '../../render/crate-show.ts';
+import { job, qjob } from '../../sim/railway-rows.ts';
 import { rewardSparkles } from '../../render/reward-particles.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
@@ -98,10 +99,8 @@ export async function createStationBoxes(
   let opened = 0;
 
   const completion = (box: Box) => {
-    const s = adapter.inspect();
-    return box.spec.line === 0
-      ? (s.stations[box.spec.station]?.completion ?? 0)
-      : (s.line2.stations[box.spec.station]?.completion ?? 0);
+    const w = adapter.read.world();
+    return box.spec.line === 0 ? job(w, box.spec.station).completion : qjob(w, box.spec.station).completion;
   };
   /** Waiting for you: its stretch is laid and you haven't opened it (or it's rattling now). */
   const waiting = (box: Box) => {

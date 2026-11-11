@@ -29,6 +29,17 @@ import { loadOf, setDown, useGround } from './back-down.ts';
 import { createGreatTreeDress } from './great-tree-view.ts';
 import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
 import { worksPreview } from './works-flag.ts';
+import {
+  account as accountRow,
+  beam as beamRow,
+  hardwood as hardwoodRow,
+  pile as pileRow,
+  rail as railRow,
+  tree as treeRow,
+} from '../../sim/railway-rows.ts';
+import { activeStation, carryMax } from '../../sim/railway-queries.ts';
+import { Pile } from '../../sim/railway-components.ts';
+import { railPhase } from '../../sim/railway-queries-line1.ts';
 import { insideSplitRock } from './works-shape.ts';
 
 type AvatarData = { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D } };
@@ -75,7 +86,21 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   });
   const root = new THREE.Group();
   owner.root.add(root);
-  let state = adapter.inspect();
+  // ready, stalled, growth and freeCarry have no read yet (reported in M10 b): they stay on the session's inspection.
+  let session = adapter.inspect();
+  const world = () => adapter.read.world();
+  const phase = () => railPhase(world(), adapter.read.tick(), adapter.read.tick());
+  const awakeNow = () => railRow(world()).awake >= 0 && phase() !== 'asleep' && phase() !== 'waking';
+  const beamStanding = () => beamRow(world()).state === 'standing';
+  const heldBeam = () => beamRow(world()).state === 'held' && beamRow(world()).holder === adapter.read.pid;
+  const carriedOf = (pid: string) => accountRow(world(), pid);
+  /** The piles by id, as copies (a pile's id is its entity id; rows are replaced, so none is kept). */
+  type PileNow = { id: number; x: number; y: number; z: number; n: number; kind: number; age: number };
+  const listPiles = () => {
+    const out: PileNow[] = [];
+    world().each([Pile], (id, p) => out.push({ id, x: p.x, y: p.y, z: p.z, n: p.n, kind: p.kind, age: p.age }));
+    return out;
+  };
   const hardwoodIndex = new Map<number, number>(LINE1_HARDWOODS.map((source, i) => [source[0], i]));
   const trees: TreePose[] = TREE_SOURCES.map((source) => ({
     ...source,
@@ -103,7 +128,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     root,
     H,
     { flat, tree: look.treeMaterial },
-    () => state.beam?.state !== 'standing',
+    () => !beamStanding(),
     GREAT.strokes,
   );
   const greatTree = trees.find((tree) => tree.great);
@@ -126,7 +151,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     H,
     (shape, position, rotation) => addStatic(shape, position, rotation, undefined, owner),
     () => me.body,
-    () => state.beam?.state !== 'standing',
+    () => !beamStanding(),
     (body) => owner.removeBody(body),
   );
   const axes = createAxes(flat);
@@ -195,7 +220,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       }
       partner.t += dt;
       if (partner.t > CHOP_DURATION + 0.5 && !partner.axes.root.visible) continue;
-      partner.axes.setTier(state.axe, state.awake >= 0 && !['asleep', 'waking'].includes(state.phase));
+      partner.axes.setTier(railRow(world()).axe, awakeNow());
       const wasVisible = partner.axes.root.visible;
       applyFloatingChopPose(frame, partner.axes.root, partner.t, 'bite', frame, partner.aimed ? partner.contact : null);
       sparkleAxe(partner.axes.root, wasVisible, reducedMotion, emit, readableIntensity(), dt);
@@ -246,7 +271,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
 
   // The pile batches are rewritten (and uploaded) only when what they show changed: the piles read (the adapter keeps
   // the same array while every pile is equal), a flight into a pile landing or being re-keyed, or the racks.
-  let drawnPiles: typeof state.piles | null = null,
+  let drawnPiles: number[] = [],
     drawnRack = -1,
     drawnStoneRack = -1,
     pilesDirty = true;
@@ -256,22 +281,25 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         pileFlights.splice(k, 1);
         pilesDirty = true;
       }
-    if (!force && !pilesDirty && drawnPiles === state.piles) {
-      if (drawnRack !== state.rack || drawnStoneRack !== state.stoneRack) {
-        rack.setStock(state.rack, state.stoneRack);
-        drawnRack = state.rack;
-        drawnStoneRack = state.stoneRack;
+    const now = listPiles();
+    const key = now.flatMap((p) => [p.id, p.x, p.y, p.z, p.n, p.kind, p.age]);
+    const { rack: rackLogs, stoneRack } = railRow(world());
+    if (!force && !pilesDirty && key.length === drawnPiles.length && key.every((v, i) => v === drawnPiles[i])) {
+      if (drawnRack !== rackLogs || drawnStoneRack !== stoneRack) {
+        rack.setStock(rackLogs, stoneRack);
+        drawnRack = rackLogs;
+        drawnStoneRack = stoneRack;
       }
       return;
     }
     pilesDirty = false;
-    drawnPiles = state.piles;
-    drawnRack = state.rack;
-    drawnStoneRack = state.stoneRack;
+    drawnPiles = key;
+    drawnRack = rackLogs;
+    drawnStoneRack = stoneRack;
     let count = 0,
       stoneCount = 0,
       railCount = 0;
-    for (const pile of state.piles) {
+    for (const pile of now) {
       if (pile.kind === 3) continue; // footings draw themselves (footing-view.ts)
       let inFlight = 0;
       for (const flight of pileFlights) if (flight.id === pile.id) inFlight++;
@@ -296,11 +324,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     stonePiles.instanceMatrix.needsUpdate = true;
     railPiles.count = railCount;
     railPiles.instanceMatrix.needsUpdate = true;
-    rack.setStock(state.rack, state.stoneRack);
+    rack.setStock(rackLogs, stoneRack);
   }
 
   function reconstruct() {
-    state = adapter.inspect();
+    session = adapter.inspect();
     harvestFlights = [];
     pileFlights.length = 0;
     swing.t = 99;
@@ -310,27 +338,26 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   // A tree's stable pose from the state it reads (no harvest, no effect).
   function fromState(tree: TreePose) {
     const k = sourceIndex.get(tree.index);
-    tree.work = k === undefined ? 0 : state.work[k]!;
-    tree.growth = k === undefined ? 0 : state.growth[k]!;
-    tree.ceiling = tree.great
-      ? 0
-      : tree.hardwood || (k !== undefined && state.upgrades[k])
-        ? 15
-        : RAILWAY_T1.sourceYield;
-    tree.issued = k === undefined ? 0 : tree.ceiling - state.sources[k]!;
-    tree.fall = k !== undefined && state.sources[k] === 0 ? 1 : -1;
+    const row = k === undefined ? undefined : treeRow(world(), k);
+    tree.work = row ? row.work : 0;
+    tree.growth = k === undefined ? 0 : session.growth[k]!;
+    tree.ceiling = tree.great ? 0 : tree.hardwood || row?.big ? 15 : RAILWAY_T1.sourceYield;
+    tree.issued = row ? tree.ceiling - row.left : 0;
+    tree.fall = row && row.left === 0 ? 1 : -1;
     // A stable Local pose is reconstructed, never another harvest. The same safety query serves legacy trees.
-    tree.fallYaw = k === undefined ? 0 : (state.falls?.yaw[k!] ?? 0);
-    tree.collapsed = k === undefined ? false : (state.falls?.collapsed[k!] ?? false);
+    tree.fallYaw = row ? row.yaw : 0;
+    tree.collapsed = row ? row.fell : false;
     const h = hardwoodIndex.get(tree.index);
     if (h !== undefined) {
-      tree.work = state.hardwoodWork[h] ?? 0;
-      tree.issued = 15 - (state.hardwood[h] ?? 15);
+      const hard = hardwoodRow(world(), h);
+      tree.work = hard.work;
+      tree.issued = 15 - hard.left;
       tree.fall = tree.issued >= 15 ? 1 : -1;
     }
-    if (tree.great && state.beam) {
-      tree.work = state.beam.work;
-      tree.fall = state.beam.state === 'standing' ? -1 : 1;
+    if (tree.great) {
+      const beam = beamRow(world());
+      tree.work = beam.work;
+      tree.fall = beam.state === 'standing' ? -1 : 1;
     }
     tree.shake = 0;
     models.pose(tree, 0);
@@ -338,7 +365,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   }
 
   function start(tree: TreePose) {
-    if (!me.body || !state.ready || swing.t < TUNE.swingS || tree.fall >= 0) return;
+    if (!me.body || !session.ready || swing.t < TUNE.swingS || tree.fall >= 0) return;
     swing.t = 0;
     swing.target = tree;
     swing.rock = null;
@@ -349,7 +376,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   }
 
   function bundleOrigin(pid: string, count: number, out: THREE.Vector3) {
-    if (pid === state.pid) return myBundleNext(count, out, rotation);
+    if (pid === adapter.read.pid) return myBundleNext(count, out, rotation);
     const remote = [...remotes.values()].find((peer) => peer.pid === pid);
     if (!remote?.avatar || !remote.entered) return false;
     remote.avatar.updateWorldMatrix(true, false);
@@ -359,16 +386,16 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
 
   function accepted(event: RailwayAccepted) {
     if (!alive) return;
-    state = adapter.inspect();
+    session = adapter.inspect();
     if (
       (event.op === 'rail.chop' || event.op === 'rail.mine' || event.op === 'rail.beamChop') &&
-      event.pid !== state.pid
+      event.pid !== adapter.read.pid
     )
       partnerSwing(event);
     if ((event.op === 'rail.drop' || event.op === 'rail.take') && event.kind === 3) return; // footing-view.ts
     if (event.op === 'rail.drop') {
       // The event names its pile and the count right after it: a second drop in the same packet still flies.
-      const pile = state.piles.find((pile) => pile.id === event.pile);
+      const pile = event.pile === undefined ? undefined : pileRow(world(), event.pile);
       if (!pile) return;
       const carry = event.carried ?? 0;
       at.set(pile.x / 100, pileHeight(pile) + 0.2, pile.z / 100);
@@ -381,7 +408,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           { dur: 0.28, apex: 0.5, land: () => sounds.knock(0.35, 0.7) },
           owner,
         );
-        pileFlights.push({ id: pile.id, active: flight, request: event.predicted ? event.request : -1 });
+        pileFlights.push({ id: event.pile!, active: flight, request: event.predicted ? event.request : -1 });
       }
       drawPiles();
       return;
@@ -403,14 +430,14 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
             dur: 0.3,
             apex: 0.9,
             aim: (to) => {
-              const carry = event.carried ?? state.accounts.find((account) => account.pid === event.pid)?.carry ?? 0;
+              const carry = event.carried ?? carriedOf(event.pid)?.carry ?? 0;
               if (bundleOrigin(event.pid, carry, target)) to.copy(target);
             },
             land: () => sounds.pop(3, 0.4),
           },
           owner,
         );
-        if (event.pid === state.pid) harvestFlights.push(flight);
+        if (event.pid === adapter.read.pid) harvestFlights.push(flight);
       }
       drawPiles();
       return;
@@ -430,7 +457,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
             dur: TUNE.flyS,
             apex: 1.1,
             aim: (to) => {
-              const stone = event.carried ?? state.accounts.find((a) => a.pid === event.pid)?.stone ?? 0;
+              const stone = event.carried ?? carriedOf(event.pid)?.stone ?? 0;
               if (bundleOrigin(event.pid, stone, target)) to.copy(target);
             },
             land: () => sounds.pop(3, 0.4),
@@ -441,12 +468,12 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     }
     if (event.op === 'rail.beamChop') {
       const tree = trees.find((t) => t.great)!;
-      tree.work = state.beam?.work ?? 0;
+      tree.work = beamRow(world()).work;
       tree.shake = 1;
       tree.hitAt = performance.now();
       pieces.chips(tree.x, tree.y + 1, tree.z, 12);
       placeSound('treeBite', tree.x, tree.z);
-      if (state.beam?.state !== 'standing' && tree.fall < 0) {
+      if (!beamStanding() && tree.fall < 0) {
         tree.fall = 0;
         tree.fallYaw = Math.PI / 2;
       }
@@ -459,11 +486,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       k = sourceIndex.get(event.id);
     const h = hardwoodIndex.get(event.id);
     if (!tree || (k === undefined && h === undefined)) return;
-    tree.work = h === undefined ? state.work[k!]! : state.hardwoodWork[h]!;
-    tree.growth = k === undefined ? 0 : state.growth[k]!;
-    tree.ceiling = h !== undefined || state.upgrades[k!] ? 15 : RAILWAY_T1.sourceYield;
-    tree.issued = h === undefined ? tree.ceiling - state.sources[k!]! : 15 - state.hardwood[h]!;
-    const local = event.pid === state.pid;
+    tree.work = h === undefined ? treeRow(world(), k!).work : hardwoodRow(world(), h).work;
+    tree.growth = k === undefined ? 0 : session.growth[k]!;
+    tree.ceiling = h !== undefined || treeRow(world(), k!).big ? 15 : RAILWAY_T1.sourceYield;
+    tree.issued = h === undefined ? tree.ceiling - treeRow(world(), k!).left : 15 - hardwoodRow(world(), h).left;
+    const local = event.pid === adapter.read.pid;
     const player = local
       ? me.body?.position
       : [...remotes.values()].find((peer) => peer.pid === event.pid)?.avatar?.position;
@@ -486,7 +513,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           dur: TUNE.flyS + k * 0.03,
           apex: 1.1 + k * 0.15,
           aim: (to) => {
-            const count = event.carried ?? state.accounts.find((account) => account.pid === event.pid)?.carry ?? 0;
+            const count = event.carried ?? carriedOf(event.pid)?.carry ?? 0;
             if (bundleOrigin(event.pid, count, target)) to.copy(target);
           },
           land: () => {
@@ -497,9 +524,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       );
       if (local) harvestFlights.push(flight);
     }
-    if ((h === undefined ? state.sources[k!] === 0 : state.hardwood[h] === 0) && tree.fall < 0) {
-      tree.fallYaw = state.falls?.yaw[k!] ?? 0;
-      tree.collapsed = state.falls?.collapsed[k!] ?? false;
+    if ((h === undefined ? treeRow(world(), k!).left === 0 : hardwoodRow(world(), h).left === 0) && tree.fall < 0) {
+      tree.fallYaw = k === undefined ? 0 : treeRow(world(), k).yaw;
+      tree.collapsed = k === undefined ? false : treeRow(world(), k).fell;
       tree.fall = 0;
       if (tree.body) owner.removeBody(tree.body);
       tree.body = null;
@@ -517,12 +544,13 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     homeAt = new THREE.Vector3();
   function corrected(c: RailwayCorrection) {
     if (!alive) return;
-    state = adapter.inspect();
+    session = adapter.inspect();
     const e = c.event;
     const k = 'kind' in e ? e.kind : undefined;
     if (k === 3) return; // a footing goes back by state (footing-view.ts)
     const kind = e.op === 'rail.mine' || k === 1 ? 'stone' : k === 2 ? 'rail' : 'log';
-    const held = kind === 'stone' ? state.stoneCarry : kind === 'rail' ? state.railsCarry : state.carry;
+    const mine = carriedOf(adapter.read.pid);
+    const held = (kind === 'stone' ? mine?.stone : kind === 'rail' ? mine?.rails : mine?.carry) ?? 0;
     let home: THREE.Vector3 | null = null;
     if (e.op === 'rail.chop') {
       const tree = trees[e.id];
@@ -542,12 +570,14 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     for (let k = 0; k < c.lost; k++) {
       if (e.op === 'rail.drop') {
         // Off the pile, back onto your back.
-        if (!bundleOrigin(state.pid, held - c.lost + k, backAt) || backAt.distanceTo(home) > CORRECTION_ARC) continue;
+        if (!bundleOrigin(adapter.read.pid, held - c.lost + k, backAt) || backAt.distanceTo(home) > CORRECTION_ARC)
+          continue;
         pieces.send(kind, home, backAt, { dur: 0.3, apex: 0.8, land: () => sounds.pop(3, 0.4) }, owner);
         continue;
       }
       // Off your back, to whoever got it or back where it came from.
-      if (!bundleOrigin(state.pid, held + c.lost - k - 1, backAt) || backAt.distanceTo(home) > CORRECTION_ARC) continue;
+      if (!bundleOrigin(adapter.read.pid, held + c.lost - k - 1, backAt) || backAt.distanceTo(home) > CORRECTION_ARC)
+        continue;
       const winner = c.winner;
       pieces.send(
         kind,
@@ -558,7 +588,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           apex: 0.8,
           aim: winner
             ? (to) => {
-                const a = state.accounts.find((row) => row.pid === winner);
+                const a = carriedOf(winner);
                 const count = (kind === 'stone' ? a?.stone : kind === 'rail' ? a?.rails : a?.carry) ?? 0;
                 if (bundleOrigin(winner, count, target)) to.copy(target);
               }
@@ -571,24 +601,25 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   }
 
   const previous = { ...backSeam };
-  const count = () => adapter.inspect().carry;
+  const count = () => carriedOf(adapter.read.pid)?.carry ?? 0;
   backSeam.flyIns = false;
   backSeam.count = count;
   backSeam.remote = (peer) => {
     const pid = remotes.get(peer)?.pid;
-    return adapter.inspect().accounts.find((account) => account.pid === pid)?.carry ?? 0;
+    return (pid ? carriedOf(pid) : undefined)?.carry ?? 0;
   };
-  backSeam.pack = () => adapter.inspect().line2.pack;
+  backSeam.pack = () => railRow(world()).pack;
   backSeam.carry = () => {
-    const current = adapter.inspect();
+    const mine = carriedOf(adapter.read.pid);
+    const logs = mine?.carry ?? 0;
     harvestFlights = harvestFlights.filter((flight) => flight());
     return {
-      logs: current.carry,
-      rails: current.railsCarry,
-      stone: current.stoneCarry,
-      big: current.beam?.state === 'held' && current.beam.holder === current.pid ? ('beam' as const) : null,
-      capacity: current.carryMax,
-      flyingLogs: Math.min(current.carry, harvestFlights.length),
+      logs,
+      rails: mine?.rails ?? 0,
+      stone: mine?.stone ?? 0,
+      big: heldBeam() ? ('beam' as const) : null,
+      capacity: carryMax(world()),
+      flyingLogs: Math.min(logs, harvestFlights.length),
       attention: swing.response === 'full' && swing.t < 0.55,
     };
   };
@@ -606,20 +637,22 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   // After a lost connection or a resync only what changed meanwhile is re-posed; swings and flights carry on.
   const offReset = adapter.onReset((soft) => {
     if (!soft) return reconstruct();
-    state = adapter.inspect();
+    session = adapter.inspect();
     for (const tree of trees) {
       const k = sourceIndex.get(tree.index),
         h = hardwoodIndex.get(tree.index);
-      const left = k !== undefined ? state.sources[k] : h !== undefined ? state.hardwood[h] : undefined;
+      const left =
+        k !== undefined ? treeRow(world(), k).left : h !== undefined ? hardwoodRow(world(), h).left : undefined;
       if (left !== undefined && tree.issued !== tree.ceiling - left) fromState(tree);
     }
     drawPiles();
   });
   reconstruct();
   function dropOne() {
-    state = adapter.inspect();
+    session = adapter.inspect();
     if (cargo.drop()) return true;
-    if (state.foot && me.body) {
+    const mine = carriedOf(adapter.read.pid);
+    if (mine?.foot && me.body) {
       // The footing on your back comes down in front of you: the same control, the pile's kind 3.
       const p = me.body.interpolatedPosition;
       const x = p.x - Math.sin(me.yaw) * 1.6,
@@ -630,22 +663,19 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       void adapter.drop(Math.round(x * 100) || 0, Math.round(y * 100) || 0, Math.round(z * 100) || 0, 1, 3);
       return true;
     }
-    if (
-      !state.ready ||
-      (state.availableCarry <= 0 && state.availableStone <= 0 && state.availableRails <= 0) ||
-      !me.body
-    )
-      return false;
-    const kind = state.availableCarry > 0 ? 0 : state.availableStone > 0 ? 1 : 2;
+    // Your own pending actions are already in the predicted rows, so these are the counts themselves.
+    const [carry, stone, rails] = [mine?.carry ?? 0, mine?.stone ?? 0, mine?.rails ?? 0];
+    if (!session.ready || (carry <= 0 && stone <= 0 && rails <= 0) || !me.body) return false;
+    const kind = carry > 0 ? 0 : stone > 0 ? 1 : 2;
     const p = me.body.interpolatedPosition;
     let x = p.x - Math.sin(me.yaw) * 1.4,
       z = p.z - Math.cos(me.yaw) * 1.4;
     const feet = p.y - PLAYER_R,
       ground = H(x, z);
     let y = Math.abs(ground - feet) < 1.5 ? ground : feet;
-    const pile = state.piles.find(
+    const pile = listPiles().find(
       (pile) =>
-        (pile.kind ?? 0) === kind &&
+        pile.kind === kind &&
         pile.n < RAILWAY_T1.carry &&
         Math.hypot(pile.x / 100 - x, pile.z / 100 - z) < 2.2 &&
         Math.abs(pileHeight(pile) - y) < 1,
@@ -686,25 +716,26 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     models.pose(tree, tree.hitAt);
   }
   function update(dt: number, now: number) {
-    state = adapter.inspect();
+    session = adapter.inspect();
     // Stages change only after a verified host event. No local clock can grow or harvest a source.
     for (const tree of trees) {
       const k = sourceIndex.get(tree.index);
-      if (k === undefined || tree.growth === state.growth[k]) continue;
-      tree.growth = state.growth[k]!;
-      tree.work = state.work[k]!;
-      tree.ceiling = state.upgrades[k] ? 15 : RAILWAY_T1.sourceYield;
-      tree.issued = tree.ceiling - state.sources[k]!;
-      tree.fall = state.sources[k] === 0 ? 1 : -1;
-      tree.fallYaw = state.falls?.yaw[k!] ?? 0;
-      tree.collapsed = state.falls?.collapsed[k!] ?? false;
+      if (k === undefined || tree.growth === session.growth[k]) continue;
+      const row = treeRow(world(), k);
+      tree.growth = session.growth[k]!;
+      tree.work = row.work;
+      tree.ceiling = row.big ? 15 : RAILWAY_T1.sourceYield;
+      tree.issued = tree.ceiling - row.left;
+      tree.fall = row.left === 0 ? 1 : -1;
+      tree.fallYaw = row.yaw;
+      tree.collapsed = row.fell;
       tree.shake = 0;
       models.pose(tree, now);
       solid(tree);
     }
     cargo.update();
-    dress?.update(state.activeStation === 2 && state.beam?.state === 'standing');
-    axes.setTier(state.axe, state.awake >= 0 && !['asleep', 'waking'].includes(state.phase));
+    dress?.update(activeStation(world()) === 2 && beamStanding());
+    axes.setTier(railRow(world()).axe, awakeNow());
     const frame = visualFrame(me.avatar);
     if (frame && axe.parent !== frame) frame.add(axe);
     swing.t += dt;
@@ -716,8 +747,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       } else if (swing.target && swing.target.fall < 0) {
         if (swing.target.great) {
           if (!adapter.beamChop()) bounceOff(swing.target);
-        } else if (swing.target.hardwood && !state.axe) bounceOff(swing.target);
-        else if (state.freeCarry === 0) {
+        } else if (swing.target.hardwood && !railRow(world()).axe) bounceOff(swing.target);
+        else if (session.freeCarry === 0) {
           swing.response = 'full';
           if (me.body) placeSound('bagFull', me.body.position.x, me.body.position.z);
         } else if (me.body) {
@@ -734,7 +765,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       const wasVisible = axe.visible;
       // The stall cue (R1b): a stroke the server has not answered after a second hangs at the bite, wobbling, until
       // it does. Nothing is undone meanwhile.
-      const stalled = state.stalled === 'rail.chop' || state.stalled === 'rail.mine';
+      const stalled = session.stalled === 'rail.chop' || session.stalled === 'rail.mine';
       applyFloatingChopPose(body, axe, stalled ? c + 0.05 : swing.t, swing.response, frame ?? body, swing.contact);
       if (stalled && !reducedMotion) axe.rotation.z += 0.12 * Math.sin(now / 70);
       sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity(), dt);
@@ -768,11 +799,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   }
 
   function targets(): Interactable[] {
-    if (!alive || !state.ready || !me.body) return NO_TARGETS;
+    if (!alive || !session.ready || !me.body) return NO_TARGETS;
     const p = me.body.interpolatedPosition;
     const result: Interactable[] = [];
-    const held = state.beam?.state === 'held' && state.beam.holder === state.pid;
-    if (!held && state.phase !== 'asleep' && state.phase !== 'waking')
+    const held = heldBeam();
+    if (!held && phase() !== 'asleep' && phase() !== 'waking')
       for (const tree of choppable) {
         if (tree.cleared || tree.fall >= 0) continue;
         const dx = p.x - tree.x,
@@ -787,13 +818,13 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           run: () => start(tree),
         });
       }
-    for (const pile of state.piles) {
+    for (const pile of listPiles()) {
       if (pile.kind === 3) continue;
       if (Math.hypot(p.x - pile.x / 100, p.z - pile.z / 100) > 2.8 || Math.abs(p.y - PLAYER_R - pileHeight(pile)) > 2)
         continue;
       const point = new THREE.Vector3(pile.x / 100, pileHeight(pile) + 1.4, pile.z / 100);
       result.push(
-        state.freeCarry <= 0
+        session.freeCarry <= 0
           ? { id: `place-pile${pile.id}`, verb: 'Pick up', at: point, blocked: 'Your back is full' }
           : {
               id: `place-pile${pile.id}`,
@@ -805,9 +836,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
             },
       );
     }
-    if (state.rack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
+    if (railRow(world()).rack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
       result.push(
-        state.freeCarry <= 0
+        session.freeCarry <= 0
           ? { id: 'railway-recovery-rack', verb: 'Pick up', at: rack.logBase, blocked: 'Your back is full' }
           : {
               id: 'railway-recovery-rack',
@@ -818,13 +849,13 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
               },
             },
       );
-    if (state.stoneRack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
+    if (railRow(world()).stoneRack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
       result.push({
         id: 'railway-recovery-stone',
         verb: 'Pick up',
         at: rack.stoneAt,
         run: () => void adapter.rackTake(1),
-        ...(state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {}),
+        ...(session.freeCarry <= 0 ? { blocked: 'Your back is full' } : {}),
       });
     result.push(...cargo.targets());
     return result;
@@ -872,8 +903,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           remaining: tree.great
             ? 0
             : tree.hardwood
-              ? (state.hardwood[hardwoodIndex.get(tree.index)!] ?? 15)
-              : state.sources[sourceIndex.get(tree.index)!]!,
+              ? hardwoodRow(world(), hardwoodIndex.get(tree.index)!).left
+              : treeRow(world(), sourceIndex.get(tree.index)!).left,
           falling: tree.fall,
           growth: tree.growth ?? 0,
         })),

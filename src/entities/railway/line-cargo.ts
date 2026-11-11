@@ -8,6 +8,8 @@ import { input } from '../../player/input-state.ts';
 import { heldId } from '../../player/inventory.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { RAIL_ROCKS } from '../../sim/railway-works-layout.ts';
+import { account, accounts, beam as beamRow, rail, rock as rockRow } from '../../sim/railway-rows.ts';
+import { railPhase } from '../../sim/railway-queries-line1.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
@@ -36,7 +38,11 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     ]);
   // `&beamcarry=float` shows the floating carry (K1) beside the rope drag, for one comparison (7 November).
   const floatCarry = new URLSearchParams(location.search).get('beamcarry') === 'float';
-  let state = adapter.inspect();
+  // The session's own fields (ready, pending, the beam speeds, and onlyALoad's inspection) have no read yet: reported in M10 b.
+  let session = adapter.inspect();
+  const world = () => adapter.read.world();
+  const phase = () => railPhase(world(), adapter.read.tick(), adapter.read.tick());
+  const beamNow = () => beamRow(world());
   // Line 1's three rocks and the Works bowl's two limestone ones (slots 3 and 4, J4: they replace J2's boulders).
   const rocks = RAIL_ROCKS.map((source, i) => {
     const radius = ROCKS[i]?.r ?? 1.3,
@@ -108,21 +114,23 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   const beamAt = new THREE.Vector3(),
     lay = new THREE.Vector3(Infinity, 0, Infinity); // where the loose trunk last lay
   const accountEmpty = (pid: string) => {
-    const a = state.accounts.find((account) => account.pid === pid);
-    return !!a && a.carry === 0 && (a.stone ?? 0) === 0;
+    const a = account(world(), pid);
+    return !!a && a.carry === 0 && a.stone === 0;
   };
   const avatarOf = (pid: string) =>
-    pid === state.pid ? me.avatar : ([...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar ?? null);
+    pid === adapter.read.pid
+      ? me.avatar
+      : ([...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar ?? null);
   const gripAt = new THREE.Vector3();
   const mineHelp = createHelpCarry({
-    holds: (pid) => state.beam?.state === 'held' && state.beam.holder === pid,
-    free: (pid) => accountEmpty(pid) && (pid !== state.pid || !heldId()),
+    holds: (pid) => beamNow().state === 'held' && beamNow().holder === pid,
+    free: (pid) => accountEmpty(pid) && (pid !== adapter.read.pid || !heldId()),
     avatarOf,
     gripOf: (holder) => {
       const avatar = avatarOf(holder);
       return avatar ? restGrip(avatar, BEAM_LENGTH, side, gripAt) : null;
     },
-    self: () => state.pid,
+    self: () => adapter.read.pid,
     pidOf: (peer) => {
       const r = remotes.get(peer);
       return r?.entered && r.pid ? r.pid : null;
@@ -134,15 +142,13 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
   function update() {
     for (const avatar of posing) avatar.userData.beamGrip = null;
     posing.clear();
-    state = adapter.inspect();
+    session = adapter.inspect();
     const now = performance.now(),
       dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
     last = now;
     mineHelp.helping();
     for (const rock of rocks) {
-      const current =
-        state.rocks.find((row) => row.id === rock.id) ?? state.works?.rocks.find((row) => row.id === rock.id);
-      const remaining = current?.remaining ?? 0;
+      const remaining = rockRow(world(), rock.id).left;
       if (remaining === rock.remaining) continue;
       rock.remaining = remaining;
       const left = Math.ceil((remaining / 8) * 5);
@@ -168,7 +174,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
             )
           : null;
     }
-    const beam = state.beam;
+    const beam = beamNow();
     ground.root.visible = !!beam && (beam.state === 'available' || beam.state === 'ground');
     if (beam) {
       beamAt.set(beam.x / 100, beam.y / 100 + 0.45, beam.z / 100);
@@ -181,15 +187,15 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     // Your own Pick up takes the rope the frame you press it, before the server's answer (a refusal drops it again).
     const loose = !!beam && (beam.state === 'available' || beam.state === 'ground');
     if (loose) lay.copy(beamAt);
-    const grabbed = loose && now - grabbing < 1500 && state.pending > 0;
+    const grabbed = loose && now - grabbing < 1500 && session.pending > 0;
     if (grabbed) ground.root.visible = false;
     const live = new Set<string>();
-    for (const account of state.accounts) {
+    for (const account of accounts(world())) {
       const avatar = avatarOf(account.pid),
         frame = frameOf(avatar);
       const beamHeld =
-        (beam?.state === 'held' && beam.holder === account.pid) || (grabbed && account.pid === state.pid);
-      if (!frame || (!(account.stone ?? 0) && !(account.rails ?? 0) && !beamHeld)) continue;
+        (beam?.state === 'held' && beam.holder === account.pid) || (grabbed && account.pid === adapter.read.pid);
+      if (!frame || (!account.stone && !account.rails && !beamHeld)) continue;
       live.add(account.pid);
       let model = worn.get(account.pid);
       if (!model) {
@@ -205,10 +211,10 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
         worn.set(account.pid, model);
       }
       if (model.root.parent !== frame) frame.add(model.root);
-      model.stone.count = account.stone ?? 0;
+      model.stone.count = account.stone;
       model.stone.visible = model.stone.count > 0;
       // Rails share capacity with logs, but their mesh has its own count and lifetime, including after logs unload.
-      model.setRails(account.rails ?? 0, state.line2.pack);
+      model.setRails(account.rails, rail(world()).pack);
       let drag = drags.get(account.pid);
       if (!beamHeld || !avatar) {
         model.beam.visible = false;
@@ -276,10 +282,10 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       }
   }
   function targets(): Interactable[] {
-    if (!state.ready || !me.body) return [];
+    if (!session.ready || !me.body) return [];
     const p = me.body.interpolatedPosition,
       result: Interactable[] = [];
-    if (!['asleep', 'waking'].includes(state.phase) && state.beam?.holder !== state.pid)
+    if (!['asleep', 'waking'].includes(phase()) && beamNow().holder !== adapter.read.pid)
       for (const rock of rocks) {
         if (rock.remaining > 0 && Math.hypot(p.x - rock.x, p.z - rock.z) <= 3.2)
           result.push({
@@ -290,14 +296,14 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
             run: () => mine(rock.id),
           });
       }
-    const beam = state.beam;
+    const beam = beamNow();
     if (
       beam &&
       (beam.state === 'available' || beam.state === 'ground') &&
       Math.hypot(p.x - beamAt.x, p.z - beamAt.z) <= 3.2
     )
       result.push(
-        accountEmpty(state.pid) && !heldId()
+        accountEmpty(adapter.read.pid) && !heldId()
           ? {
               id: 'railway-beam-take',
               verb: 'Pick up',
@@ -306,14 +312,14 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
                 if (adapter.beamTake(beam.revision)) grabbing = performance.now();
               },
             }
-          : onlyALoad(state)
+          : onlyALoad(session)
             ? {
                 id: 'railway-beam-take',
                 verb: 'Pick up',
                 at: beamAt,
                 run: () => {
                   const take = () => {
-                    const ok = adapter.beamTake(adapter.inspect().beam?.revision ?? beam.revision);
+                    const ok = adapter.beamTake(beamNow().revision);
                     if (ok) grabbing = performance.now();
                     return ok;
                   };
@@ -338,8 +344,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     return result;
   }
   function drop() {
-    const beam = state.beam;
-    if (!beam || beam.state !== 'held' || beam.holder !== state.pid || !me.body) return false;
+    const beam = beamNow();
+    if (beam.state !== 'held' || beam.holder !== adapter.read.pid || !me.body) return false;
     const p = me.body.interpolatedPosition;
     const x = p.x - Math.sin(me.yaw) * 2.7,
       z = p.z - Math.cos(me.yaw) * 2.7;
@@ -380,10 +386,10 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     drop,
     rocks,
     prePhysics() {
-      state = adapter.inspect();
-      if (state.beam?.state === 'held' && state.beam.holder === state.pid) {
+      session = adapter.inspect();
+      if (beamNow().state === 'held' && beamNow().holder === adapter.read.pid) {
         input.sprint = me.sprint = false;
-        me.wish.multiplyScalar((helperFor(state.pid) ? state.beamHelpSpeed : state.beamSoloSpeed) / 5.6);
+        me.wish.multiplyScalar((helperFor(adapter.read.pid) ? session.beamHelpSpeed : session.beamSoloSpeed) / 5.6);
       } else if (mineHelp.helping()) {
         input.sprint = me.sprint = false;
         mineHelp.ease(me.wish);
