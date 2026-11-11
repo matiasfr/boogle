@@ -968,8 +968,9 @@ later change with a bundle report. Place's remaining callers get one owner from 
     `line2Trains`, `line2CartStatus`, `line2Served`, `line2KitOwed`, `aboard`, `railPhase`, `freeCarryIgnoringBig`,
     `line2Jobs` at `read.tick()` (line 2's `elapsed` and timing, the row itself being the `LineTiming`), with
     `read.ready()`, `pending()`, `pid` and `movement()`. No query was added. `line2-view` works out the active stretch
-    and `line2Jobs` once per world and tick (a press makes a new predicted world, a packet a new tick) and reads
-    everything else from the rows at the head of each entry point; `railPhase` runs only while the forge frame's tag is
+    and `line2Jobs` once at the head of each entry point (update, step, restore, targets, accepted, the panel's state)
+    and passes them down, with no memo (a first memo keyed on world and tick went stale on an in-place packet; review
+    fixed it); `railPhase` runs only while the forge frame's tag is
     otherwise due. A press's closure (`takeBoiler`, `fitBoiler`) keeps the revision it saw when the prompt was built, not
     a row. `forge-offer.ts` gains `waitsForTrainOn(w, active)` (the old `waitsForTrain` stays for its test).
     `sea-gate-view` and `glide-device-view` (group e's) took line 2's inspected `l` from `line2-view`; they now take
