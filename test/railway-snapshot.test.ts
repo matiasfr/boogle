@@ -1,8 +1,8 @@
 // A saved room's shape (docs/plans/ecs-migration-railway.md, M0): test/fixtures/railway-v26-snapshot.json is the
 // `world.snapshot()` of the `q6-done` stage, recorded on world v26. It must keep loading through railwayCheck and
-// hash the same, and saving it again must give the same JSON. A refactor never changes this file. A deliberate
-// WORLD_NS bump is a clean break with no save migration: then record a new fixture and retire this one in the same
-// change (`GOLDEN=1 node --test test/railway-snapshot.test.ts` rewrites this one in place).
+// hash the same, and saving it again must give the same JSON. A refactor never changes this file. At the next
+// WORLD_NS bump this test and its fixture are DELETED, not re-recorded (owner, 10 November: "Don't priotiize save
+// guards. we can do a full wipe at any time in development."); nothing more is spent on it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
