@@ -10,10 +10,21 @@ async function shutdown(signal: string) {
   if (stopping) return;
   stopping = true;
   cfg.log(`${signal} received, shutting down`);
-  // Open WebSockets (peer signaling) can keep the server alive; don't wait forever.
-  const hard = setTimeout(() => process.exit(0), 8000);
+  // Don't wait forever. The budget: rooms report by 7.5 s (server.ts logs the detail then), the HTTP close is forced by
+  // 8.5 s, this exits at 9 s, Fly kills at 10 s (fly.toml kill_timeout). Any way out that is not a clean close (a room
+  // that failed to close or still had writes queued) is logged and exits 1.
+  const hard = setTimeout(() => {
+    const rooms = svc.roomHost()?.closing() ?? [];
+    cfg.log(`shutdown did not finish within 9000 ms; exiting; rooms still closing: ${rooms.join(', ') || 'none'}`);
+    process.exit(1);
+  }, 9000);
   hard.unref();
-  await svc.close();
+  try {
+    await svc.close();
+  } catch (error) {
+    cfg.log('shutdown failed (detail logged above):', String(error));
+    process.exit(1);
+  }
   process.exit(0);
 }
 process.on('SIGTERM', () => shutdown('SIGTERM'));
