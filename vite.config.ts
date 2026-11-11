@@ -202,8 +202,10 @@ export default defineConfig({
             for (const css of (bundle[file] as Rolldown.OutputChunk).viteMetadata?.importedCss ?? []) first.add(css);
           }
           // Authored content (models, textures, audio) loads by need through the content manifest
-          // (src/render/asset-manifest.ts), even where a feature imports its URL eagerly: not precached.
-          const content = /\.(glb|gltf|bin|ktx2|mp3|m4a|ogg|wav|opus)$/;
+          // (src/render/asset-manifest.ts), even where a feature imports its URL eagerly: not precached. The
+          // self-hosted fonts (src/boot/splash.ts) come in with the page's CSS: their WOFF2 files are precached, the WOFF
+          // fallbacks (for browsers that cannot run the game) are not.
+          const content = /\.(glb|gltf|bin|ktx2|mp3|m4a|ogg|wav|opus|woff)$/;
           const config = { build, first: [...first].filter((f) => !content.test(f)).sort(), off: swOff };
           // Independently identify emitted WASM by its source, not its ambiguous rapier_wasm3d_bg basename.
           // A bundler/plugin change must fail the build instead of silently dropping physics from the precache.

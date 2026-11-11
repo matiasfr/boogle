@@ -2,6 +2,13 @@
 
 Served with the game at `/THIRD_PARTY_NOTICES.md`. Scope: code adapted into Boogle from other projects. Dependencies carry their own licences in their packages.
 
+## Fonts: Figtree and Lilita One
+
+- Served with the game since 10 November 2026 (self-hosted instead of the Google Fonts stylesheet), from the npm packages `@fontsource/figtree` and `@fontsource/lilita-one` 5.3.0: the Google Fonts files, unmodified, in their latin and latin-ext subsets. Loaded by `src/boot/splash.ts`.
+- Figtree: Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree). Licence: `/fonts/Figtree-OFL.txt`.
+- Lilita One: Copyright (c) 2011 Juan Montoreano, with Reserved Font Name "Lilita One". Licence: `/fonts/LilitaOne-OFL.txt`.
+- SIL Open Font License 1.1
+
 ## Ultra Water
 
 - Cove sand adaptation: `src/proto/place/cove-sand.ts` and the optional sand profile in `src/render/water/receivers.ts` adapt the damp pigment, sheen and warped sand ripples from `src/scene/terrain.js` at the revision below. They add no source assets.
