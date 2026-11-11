@@ -7,6 +7,7 @@ import { me } from '../../player/player.ts';
 import { heldId } from '../../player/inventory.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { plan, type Pile } from './back-down-plan.ts';
+import { account, beam, boiler, piles, type ReadWorld } from '../../sim/railway-rows.ts';
 
 /** How far from you the set-down lands, and the gap between neighbouring piles. */
 const REACH = 1.5,
@@ -22,12 +23,30 @@ export const loadOf = (s: RailwayInspection): [number, number, number] => [
   s.availableStone,
   s.availableRails,
 ];
-const total = (s: RailwayInspection) => loadOf(s).reduce((a, b) => a + b, 0);
+/** The same load, read off the rows (logs, stone, rails on `pid`'s back; your pending actions are in the predicted
+ * world already). The other groups' callers still pass an inspection to `loadOf`; they move here with their group. */
+export const loadIn = (w: ReadWorld, pid: string): [number, number, number] => {
+  const a = account(w, pid);
+  return [a?.carry ?? 0, a?.stone ?? 0, a?.rails ?? 0];
+};
+const total = (w: ReadWorld, pid: string) => loadIn(w, pid).reduce((a, b) => a + b, 0);
 
 /** The only thing between you and a big load is a load of logs, stone or rails: no footing, great beam or boiler on
  * your back, nothing in your hand. (Those cases stay refused: "Empty your back first" is reachable only there.) */
 export const onlyALoad = (s: RailwayInspection, hand = true) =>
-  total(s) > 0 && !s.foot && s.beam?.holder !== s.pid && s.line2.boiler.holder !== s.pid && (!hand || !heldId());
+  loadOf(s).some((n) => n > 0) &&
+  !s.foot &&
+  s.beam?.holder !== s.pid &&
+  s.line2.boiler.holder !== s.pid &&
+  (!hand || !heldId());
+
+/** `onlyALoad` on the rows. */
+export const onlyALoadIn = (w: ReadWorld, pid: string, hand = true) =>
+  total(w, pid) > 0 &&
+  !account(w, pid)?.foot &&
+  beam(w).holder !== pid &&
+  boiler(w).holder !== pid &&
+  (!hand || !heldId());
 
 let busy = false,
   after: (() => void) | null = null;
@@ -41,9 +60,10 @@ const cm = (m: number) => Math.round(m * 100) || 0;
  * was taken by the rule now (the rest follow 100 ms apart); false when there was nothing to put down, a set-down is
  * already under way, or the first was refused. */
 export function setDown(adapter: RailwayAdapter, away?: { x: number; z: number }): boolean {
-  const s = adapter.inspect();
+  const w = adapter.read.world(),
+    pid = adapter.read.pid;
   const body = me.body;
-  if (busy || !s.ready || !body || !total(s)) return false;
+  if (busy || !adapter.inspect().ready || !body || !total(w, pid)) return false;
   const p = body.interpolatedPosition;
   // Behind you when you are facing the thing, else in front of you as a tap drops it.
   let dx = -Math.sin(me.yaw),
@@ -64,7 +84,7 @@ export function setDown(adapter: RailwayAdapter, away?: { x: number; z: number }
     const ground = groundAt?.(x, z) ?? feet;
     return { x, z, y: Math.abs(ground - feet) < 1.5 ? ground : feet };
   });
-  const drops = plan(loadOf(s), s.piles as readonly (Pile & { kind?: number })[], spots);
+  const drops = plan(loadIn(w, pid), piles(w) as readonly (Pile & { kind?: number })[], spots);
   const send = (d: (typeof drops)[number]) => adapter.drop(cm(d.x), cm(d.y), cm(d.z), d.n, d.kind as 0 | 1 | 2);
   if (!send(drops[0]!)) return false;
   busy = true;
@@ -97,7 +117,7 @@ export function setDownThen(
   confirmed = false,
 ) {
   if (busy) return false;
-  if (total(adapter.inspect()) === 0) return take();
+  if (total(adapter.read.world(), adapter.read.pid) === 0) return take();
   after = () => {
     if (!confirmed) return void take();
     const t0 = performance.now();
