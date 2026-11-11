@@ -13,7 +13,6 @@ import { RING_BRACE, RING_GAP } from '../../sim/railway-ring-layout.ts';
 import { aperture } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { ringIslandPose } from '../ring-island/state.ts';
-import { createFirstReady } from './first-ready.ts';
 import { line2World } from './line2-path.ts';
 import { RING_S, line2Y } from './line2-path.ts';
 import { BRACE, BRACE_VERB, LEAF_UP, TOE_U, toeShove, braceOffered, createLeafMotion, leafRest } from './leaf-shape.ts';
@@ -37,16 +36,15 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
   line2World(RING_S + TOE_U - 1, 0, back);
   back.x -= toe.x;
   back.z -= toe.z;
-  // Whether the first whole state is in (first-ready.ts): until then the leaf is placed, never swung, so a page that
+  // Whether the first whole state is in (read.whole()): until then the leaf is placed, never swung, so a page that
   // joins after the rivet sees it flat at once. Not read.ready(), which is also false with a full pending window or the
   // link down: a landed leaf must not rise then (nor a landing stop walking you clear).
-  const firstReady = createFirstReady(adapter.read.ready);
   /** Placed at a real row's rest at least once: the frame the first whole state arrives snaps, never swings. */
   let placed = false;
   /** The row's rest, or the raised one while Q7 or the row is not there. Once a frame; nothing kept between frames. */
   function rest() {
     const wd = adapter.read.world();
-    const a = firstReady() && line2Trains(wd) ? aperture(wd) : null;
+    const a = adapter.read.whole() && line2Trains(wd) ? aperture(wd) : null;
     ringIslandPose.bracket = a ? Math.min(4, a.cw) : 0;
     ringIslandPose.braced = !!a && a.brace === BRACE.BRACED;
     return a ? leafRest(a.brace, a.cw, a.joined) : LEAF_UP;
@@ -77,7 +75,7 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
     update(dt: number) {
       if (!placed) {
         snap();
-        placed = firstReady();
+        placed = adapter.read.whole();
         return;
       }
       motion.aim(rest());

@@ -1,5 +1,5 @@
 // Read-only observation of the mounted railway. Debug setup lives outside the production entry.
-import type { RailwayAdapter, RailwayInspection } from '../../adapters/railway.ts';
+import type { RailwayAdapter } from '../../adapters/railway.ts';
 
 type RailwayRead = RailwayAdapter['read'];
 
@@ -63,15 +63,6 @@ export const inspectRailway = () => current?.() ?? null;
 /** Lifecycle owner only; observers receive detached scalar state from inspectRailway. */
 export function setRailwayView(view: (() => RailwayViewInspection) | null) {
   current = view;
-}
-/** Temporary (M12c to M12e): today's wide object, the adapter's read model under the scene walk. Only the files in
- * INSPECT_LEGACY_IMPORTERS (dev/lint/policy.ts) may call it, and that list only loses lines; M12e deletes it. */
-export type RailwayLegacyInspection = RailwayInspection & RailwayScene;
-let legacy: (() => RailwayLegacyInspection) | null = null;
-export const inspectRailwayLegacy = () => legacy?.() ?? null;
-/** Lifecycle owner only. */
-export function setRailwayLegacy(view: (() => RailwayLegacyInspection) | null) {
-  legacy = view;
 }
 
 let recover: (() => void) | null = null;

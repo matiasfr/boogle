@@ -16,8 +16,6 @@ export * from '../../src/sim/railway-queries-line1.ts';
 export * from '../../src/sim/railway-queries-line2.ts';
 export * from '../../src/sim/railway-queries-trains.ts';
 export * from '../../src/sim/railway-queries-works.ts';
-// Both export `job` and `qjob`: the rows' (the row at a slot) win here; the queries' are the entity ids.
-export { job, qjob } from '../../src/sim/railway-rows.ts';
 
 /** The adapter's read facade, or null until the railway is mounted. */
 export const railRead = () => railwayWorldRead();

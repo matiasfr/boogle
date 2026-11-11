@@ -30,7 +30,6 @@ import { BRACE as SIM_BRACE } from '../src/sim/railway-sys-ring.ts';
 import { RING_BRACE, RING_GAP, ringDeckY } from '../src/sim/railway-ring-layout.ts';
 import { INTERP_MS, PLAYER_R, SEND_MS } from '../src/constants.ts';
 import { RING_S, line2World, line2Y } from '../src/entities/railway/line2-path.ts';
-import { createFirstReady } from '../src/entities/railway/first-ready.ts';
 import * as shape from '../src/entities/railway/leaf-shape.ts';
 import { homeLand } from './helpers/land.ts';
 
@@ -195,7 +194,6 @@ function leafView(adapter: unknown, me: { body: Body | null }, pose: { leaf: num
     line2World,
     RING_S,
     line2Y,
-    createFirstReady,
     ...shape,
   });
   return create(adapter);
@@ -345,7 +343,7 @@ function settled(r: Room, label: string) {
   r.run(200);
   const s = r.server();
   for (const p of r.pages.values()) {
-    assert.equal(p.adapter.inspect().pending, 0, `${label}: ${p.pid} has nothing pending`);
+    assert.equal(p.adapter.read.pending(), 0, `${label}: ${p.pid} has nothing pending`);
     const a = aperture(p.adapter.read.world());
     assert.deepEqual(
       [a.set, a.rack, a.cw, a.brace, a.joined],
@@ -451,13 +449,13 @@ test('a page that joins mid-swing snaps to the landed leaf: no swing, no landing
 
 test('a landed leaf stays down while the pending window is full or the link is down', () => {
   // The reviewer's case (review/leaf-coop): read.ready() is also false with RAILWAY_WINDOW actions pending or the link
-  // down, and the world the views see is the same joined world; the view latches the first readiness (first-ready.ts).
+  // down, and the world the views see is the same joined world; the view reads the session's latch, read.whole(), which stays true (and ready() is not read).
   const w = railwayAtRing('ring-joined').w;
   let ready = true,
     thumps = 0;
   const pose = { leaf: 78, bracket: 0, braced: false };
   const leaf = leafView(
-    { read: { world: () => w, ready: () => ready }, braceLeaf: () => true },
+    { read: { world: () => w, whole: () => true, ready: () => ready }, braceLeaf: () => true },
     { body: null },
     pose,
     () => void thumps++,

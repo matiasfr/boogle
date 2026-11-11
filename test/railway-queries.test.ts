@@ -13,8 +13,7 @@ import { install as installRailway, type Actor } from '../src/world/railway-serv
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { railPredict } from '../src/world/railway-predict.ts';
-import { railwayAt } from '../src/world/railway-replicate.ts';
-import { railwayOf } from './helpers/railway-model.ts';
+import { railwayModelAt, railwayOf } from './helpers/railway-model.ts';
 import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
@@ -279,22 +278,22 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
     same(r.api.railway, server, undefined, `server ${where}`);
     same(r.api.railway, server, tick, `server clock ${where}`);
     // The confirmed mirror at the tick: its run rows never move, the clock is what the views see. Since M12 the old
-    // side's clocks are jobProgress too (railwayAt; the mirror's advance() is gone), so the clock lines below hold the
+    // side's clocks are jobProgress too (railwayModelAt; the mirror's advance() is gone), so the clock lines below hold the
     // ingest world equal to the published one; the clock's own arithmetic is held to the rule tick by the server
     // comparison above.
     const m = r.mirror;
-    const shown = railwayAt(m.confirmed(), tick);
+    const shown = railwayModelAt(m.confirmed(), tick);
     same(shown, m.world(), tick, `mirror ${where}`);
     const jobs = old.railJobs(shown);
     for (let k = 0; k < jobs.length; k++)
       assert.deepEqual(
-        pick(q.jobProgress(m.world(), Job, q.job(m.world(), k), tick), ['elapsed', 'lastTick', 'used', 'allocation']),
+        pick(q.jobProgress(m.world(), Job, q.jobId(m.world(), k), tick), ['elapsed', 'lastTick', 'used', 'allocation']),
         pick(jobs[k]!, ['elapsed', 'lastTick', 'used', 'allocation']),
         `T${k + 1} clock ${where}`,
       );
     for (let k = 0; k < LINE2_STATIONS.length; k++) {
       const j = shown.line2!.jobs[k]!;
-      const p = q.jobProgress(m.world(), QJob, q.qjob(m.world(), k), tick);
+      const p = q.jobProgress(m.world(), QJob, q.qjobId(m.world(), k), tick);
       assert.deepEqual(
         [p.elapsed, p.lastTick, p.used, p.allocation, p.railUsed, p.railAllocation],
         [j.elapsed, j.lastTick, j.used, j.allocation, j.railUsed, j.railAllocation],
@@ -341,7 +340,7 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
         after.some((j, k) => j.job.start < 0 && j.job.stock === LINE1_STATIONS[k]!.bill[0] && before[k] !== j.job.stock)
       )
         held++;
-      const qj = qk >= 0 ? cw.get(QJob, q.qjob(cw, qk))! : null;
+      const qj = qk >= 0 ? cw.get(QJob, q.qjobId(cw, qk))! : null;
       if (
         qj &&
         qj.start < 0 &&
@@ -349,7 +348,7 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
         qj.railStock === LINE2_STATIONS[qk]!.bill[1]
       )
         heldQ++;
-      same(railwayAt(cw, tick), cw, tick, `clone ${pid} ${where}`);
+      same(railwayModelAt(cw, tick), cw, tick, `clone ${pid} ${where}`);
       clones++;
     }
     funded = q.railJobs(server).filter((j) => j.job.start >= 0).length;
@@ -371,7 +370,7 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
   // short, so a predicted deposit fills it (held back), then the server funds it and it lays out, checked as it runs.
   const w = r.api.world();
   LINE1_STATIONS.forEach((spec, k) => {
-    const id = q.job(w, k);
+    const id = q.jobId(w, k);
     const done = q.scheduleOf(spec, w.get(Job, id)!).totalTicks;
     Object.assign(w.mut(Job, id)!, { start: 0, completion: 1, stock: 0, delivered: spec.bill[0] });
     Object.assign(w.mut(JobRun, id)!, { elapsed: done, used: spec.bill[0], allocation: 0, lastTick: 0 });
@@ -379,20 +378,20 @@ test('on a seeded stream every fact equals its twin: the server, the confirmed m
   });
   w.mut(Forge, q.forgeId(w))!.lit = 0; // lit long ago: past its turn
   const q1 = LINE2_STATIONS[0]!;
-  Object.assign(w.mut(QJob, q.qjob(w, 0))!, { stock: q1.bill[0] - 1, railStock: q1.bill[1] });
+  Object.assign(w.mut(QJob, q.qjobId(w, 0))!, { stock: q1.bill[0] - 1, railStock: q1.bill[1] });
   Object.assign(w.mut(Account, w.lookup(Account, 'alice')!)!, { carry: 1, stone: 0, rails: 0 });
   r.api.touchAll();
   r.sync.stepWorld(100);
   check('Q1 one log short');
   assert.ok(heldQ >= 1, 'a predicted deposit filled Q1 and its funding was held back');
   assert.equal(act('alice', { op: 'rail.deposit', station: 'Q1', n: 1, kind: 0 }).status, 'accepted');
-  assert.ok(w.get(QJob, q.qjob(w, 0))!.start >= 0, 'Q1 funded');
-  const q1Ticks = q.scheduleOf(q1, w.get(QJob, q.qjob(w, 0))!).totalTicks;
+  assert.ok(w.get(QJob, q.qjobId(w, 0))!.start >= 0, 'Q1 funded');
+  const q1Ticks = q.scheduleOf(q1, w.get(QJob, q.qjobId(w, 0))!).totalTicks;
   for (let k = 0; k * 10 <= q1Ticks + 40; k++) {
     for (let i = 0; i < 10; i++) r.sync.stepWorld(100);
     check(`Q1 laying ${k}`);
   }
-  assert.ok(w.get(QJob, q.qjob(w, 0))!.completion, 'Q1 laid');
+  assert.ok(w.get(QJob, q.qjobId(w, 0))!.completion, 'Q1 laid');
   check('at the end');
   console.log(
     `[railway-queries] ${checked} fact checks, ${clones} clones, ${held}+${heldQ} held-back bills, ${funded} funded`,
@@ -449,7 +448,7 @@ test('on random rows every fact equals its twin (the stretches, the cart, the tr
     const done1 = int(4),
       done2 = int(7);
     LINE1_STATIONS.forEach((spec, k) =>
-      set(Job, q.job(w, k), {
+      set(Job, q.jobId(w, k), {
         completion: k < done1 ? 1 : 0,
         start: k < done1 || (k === done1 && coin()) ? int(500) : -1,
         stock: int(spec.bill[0] + 1),
@@ -458,7 +457,7 @@ test('on random rows every fact equals its twin (the stretches, the cart, the tr
       }),
     );
     LINE2_STATIONS.forEach((spec, k) =>
-      set(QJob, q.qjob(w, k), {
+      set(QJob, q.qjobId(w, k), {
         completion: k < done2 ? 1 : 0,
         start: k < done2 || (k === done2 && coin()) ? int(500) : -1,
         stock: int(spec.bill[0] + 1),
@@ -511,16 +510,14 @@ test('read.world() is the world behind what the views see: whole before a packet
   r.pump();
   assert.equal(read.status(), 'ready');
   assert.equal(read.world(), mirror.confirmed(), 'nothing pending: the confirmed mirror');
-  assert.equal(read.tick(), adapter.inspect().tick);
   // A predicted wake: the views see the clone, and so does read.world().
   assert.equal(adapter.wake(), true);
   const clone = read.world();
   assert.notEqual(clone, mirror.confirmed());
   assert.equal(clone.count(Rail), 1);
-  assert.equal(adapter.inspect().pending, 1);
+  assert.equal(read.pending(), 1);
   const awake = (w: World) => w.get(Rail, q.railId(w))!.awake;
   assert.equal(awake(mirror.confirmed()), -1);
-  assert.equal(awake(clone), adapter.inspect().awake, 'the clone is what inspect() shows');
   assert.ok(awake(clone) >= 0);
   assert.equal(read.world(), clone, 'the same world on a second read in the frame');
   // A lost socket: the last shown state stays shown while the whole state comes again, and its world with it.

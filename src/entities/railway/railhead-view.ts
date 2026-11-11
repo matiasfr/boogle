@@ -30,7 +30,6 @@ import { q7Laid } from '../../sim/railway-queries.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
 import { jibOffered, jibVerb } from './leaf-shape.ts';
-import { createFirstReady } from './first-ready.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { RING_S, line2At, line2World, line2Y } from './line2-path.ts';
 import {
@@ -124,11 +123,10 @@ export function createRailwayRailhead(
     rack = 0,
     cw = 0,
     joined = false;
-  // The first whole state, latched (first-ready.ts): a full pending window or a dropped link must not un-deck the bents.
-  const firstReady = createFirstReady(adapter.read.ready);
+  // The first whole state, latched (read.whole()): a full pending window or a dropped link must not un-deck the bents.
   const refresh = () => {
     wd = adapter.read.world();
-    opened = firstReady() && line2Trains(wd) && q7Laid(wd);
+    opened = adapter.read.whole() && line2Trains(wd) && q7Laid(wd);
     const a = opened ? aperture(wd) : null;
     set = a?.set ?? 0;
     rack = a?.rack ?? 0;

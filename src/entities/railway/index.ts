@@ -9,7 +9,7 @@ import { warmUp } from '../../render/precompile.ts';
 import { createRailwayAdapter, railMovement } from '../../adapters/railway.ts';
 import { delayedRoom } from '../../world/delayed-room.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
-import { setRailwayLegacy, setRailwayView, setRailwayWorldRead } from './state.ts';
+import { setRailwayView, setRailwayWorldRead } from './state.ts';
 
 defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10, lateUpdate: 0 });
 // The glide keeps the heading it had before the controller's air steering (Place's order-22 note, at 23 here): a second slot.
@@ -39,7 +39,6 @@ if (productionRailway && railwayMirror) {
   const loaded = createRailwayView(adapter).then((view) => {
     active = view;
     setRailwayView(view.inspect);
-    setRailwayLegacy(view.inspectLegacy);
     const note = spawn({
       kind: 'railway-glide',
       fixedPre() {
@@ -67,7 +66,6 @@ if (productionRailway && railwayMirror) {
         despawn(note);
         active = null;
         setRailwayView(null);
-        setRailwayLegacy(null);
         setRailwayWorldRead(null);
         view.dispose();
         adapter.dispose();

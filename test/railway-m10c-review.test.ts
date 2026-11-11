@@ -8,7 +8,7 @@ import { buildSeedWorld } from './helpers/rail.ts';
 import { railRoom } from './helpers/rail-room.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { account, boiler, rail, type ReadWorld } from '../src/sim/railway-rows.ts';
-import { qjob as qjobId } from '../src/sim/railway-queries.ts';
+import { qjobId } from '../src/sim/railway-queries.ts';
 import { QJob } from '../src/sim/railway-components.ts';
 import { line2Active } from '../src/sim/railway-queries-line2.ts';
 import { waitsForTrainOn } from '../src/entities/railway/forge-offer.ts';
@@ -70,11 +70,7 @@ test("line2-view's forgeTake flight aims at the back's rails as they change duri
     r.run(40);
     assert.equal(a.adapter.read.pending(), 0, `${stage}: both answered`);
     assert.ok(flights > 0, `${stage}: a forge take was accepted`);
-    assert.equal(
-      aim(),
-      account(r.serverWorld(), a.pid)?.rails ?? 0,
-      `${stage}: the aim is the server's count`,
-    );
+    assert.equal(aim(), account(r.serverWorld(), a.pid)?.rails ?? 0, `${stage}: the aim is the server's count`);
     return;
   }
   assert.fail(`no seed let the back's rails change during a forge take's flight: ${tried.join('; ')}`);

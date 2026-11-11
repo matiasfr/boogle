@@ -20,45 +20,12 @@ import { SERVER_ID } from '../net/ids.ts';
 import { playMark } from '../proto/mark.ts';
 import { createRailwayProgressMarks, railwayActionMarks } from './railway-marks.ts';
 import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
-import {
-  railInt,
-  railYaw,
-  railJobs,
-  railActiveStation,
-  railCounts,
-  railPhase,
-  railPanelCount,
-  railPanelStock,
-  RAILWAY_MAX_INT,
-  RAILWAY_WINDOW,
-  type RailAction,
-  type Railway,
-} from '../sim/railway.ts';
-import {
-  LINE1_STATIONS,
-  LINE1_ROCKS,
-  LINE1_HARDWOODS,
-  type RailMaterial,
-  type LineStationId,
-} from '../sim/railway-line-layout.ts';
-import { LINE_TIMING } from '../sim/railway-line.ts';
-import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
-import {
-  line2Active,
-  line2Trains,
-  line2KitOwed,
-  line2CartStatus,
-  line2Completed,
-  line2GateOpen,
-  line2SeaOpen,
-  line2PackReady,
-  line2Served,
-  railCarryMax,
-} from '../sim/railway-line2.ts';
-import { LINE_HALTS, railRingOpen, reqHas } from '../sim/railway-train.ts';
+import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailAction } from '../sim/railway.ts';
+import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId } from '../sim/railway-line-layout.ts';
+import { LINE2_PACK, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import { LINE_HALTS, reqHas } from '../sim/railway-train.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
-import { RAIL_ROCKS, WORKS_ROCKS } from '../sim/railway-works-layout.ts';
-import { pierNeed, worksStage } from '../sim/railway-works.ts';
+import { RAIL_ROCKS } from '../sim/railway-works-layout.ts';
 import {
   account as accountRow,
   aperture,
@@ -79,7 +46,7 @@ import { trainStops } from '../sim/railway-queries-trains.ts';
 import type { World } from '../ecs/index.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
 import { createRailwayClock, RAIL_CLOCK_EVERY_MS, RAIL_CLOCK_TIMEOUT_MS } from '../world/railway-clock.ts';
-import { railwayAt, type RailwayMirror } from '../world/railway-replicate.ts';
+import type { RailwayMirror } from '../world/railway-replicate.ts';
 import { createPredictor } from '../world/replicate-client.ts';
 import {
   RAIL_CADENCE_SLACK_MS,
@@ -185,26 +152,8 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   glideTurnMax: (tune.get('railGlideTurnMax') * Math.PI) / 180,
   glideDeploy: tune.get('railGlideDeploy') / 1000,
 });
-export type RailwayMovement = {
-  beamSoloSpeed: number;
-  beamHelpSpeed: number;
-  boilerSoloSpeed: number;
-  boilerHelpSpeed: number;
-  footSoloSpeed: number;
-  footHelpSpeed: number;
-  jumpImpulse: number;
-  jumpTurn: number;
-  jumpSteer: number;
-  jumpApexSpeed: number;
-  glideSpeed: number;
-  glideSink: number;
-  glideAccel: number;
-  glideBrake: number;
-  glideOver: number;
-  glideTurnTau: number;
-  glideTurnMax: number;
-  glideDeploy: number;
-};
+export type RailwayMovement = ReturnType<typeof railMovement>;
+const MOVEMENT_KEYS = Object.keys(railMovement({ get: () => 0 })) as (keyof RailwayMovement)[];
 /** The most a back ever carries (with the pack): the wire's bound on a moved count; the rule clips to today's back. */
 const CARRY_MAX = LINE2_PACK.carry;
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -488,9 +437,6 @@ export function createRailwayAdapter({
     /** ms from a press to its predicted effect having played (the input-to-response cost in the adapter). */
     responseMs: [] as number[],
     log: [] as { request: number; op: string; lost: number; reason: string; winner?: string }[],
-    /** Read-path counts (tests and perf looks): how often the frozen reads were asked for, how often their cache key
-     * was evaluated (the tick and the movement tunables) and how often a read was really rebuilt. */
-    reads: { frames: 0, inspects: 0, readStates: 0, keyEvals: 0, stateBuilds: 0, inspectionBuilds: 0 },
   };
   // The predicted state is a copy-on-write clone of the confirmed world: only the tables a prediction writes are copied.
   const predictor = createPredictor<World, Act>({
@@ -819,44 +765,28 @@ export function createRailwayAdapter({
   }
 
   // ---------------------------------------------------------------- reads
-  // About twenty readers a frame (every view, the back bundle, the prompts) ask for the state. What they read changes
-  // only with a packet (the mirror's applied count), the predicted state (a new object on every rebuild), the
-  // estimated tick or the movement tunables, so the frozen read is rebuilt only then and shared until it changes. The
-  // views can then tell that nothing changed by identity: piles keep the same array while their rows are equal.
-  let readFor: World | null = null,
-    readApplied = -1,
-    readTick = -1,
-    readMovement: RailwayMovement | null = null,
-    read: ReturnType<typeof buildState> | null = null;
+  // The frame memo. update() runs once a frame in the railway entity's update (order 10, after its prePhysics and fixed
+  // steps) and moves `frame`. A perFrame value is taken at its first read in a frame and held until the next one (while
+  // `keep` says it still stands), so about a hundred readers a frame skip the 18 tune reads, the clock and the stall
+  // scan, and two reads in a frame never straddle a tick (an edge such as waking to idle is seen once). Outside the loop
+  // (tests, tools) `frame` never moves and every call is live.
+  let frame = 0;
+  function perFrame<T>(read: () => T, keep: () => boolean = () => true) {
+    let at = -1,
+      value: T;
+    return () => {
+      if (frame && at === frame && keep()) return value;
+      at = frame;
+      return (value = read());
+    };
+  }
   const sameMovement = (a: RailwayMovement, b: RailwayMovement | null) =>
-    !!b &&
-    a.beamSoloSpeed === b.beamSoloSpeed &&
-    a.beamHelpSpeed === b.beamHelpSpeed &&
-    a.boilerSoloSpeed === b.boilerSoloSpeed &&
-    a.boilerHelpSpeed === b.boilerHelpSpeed &&
-    a.footSoloSpeed === b.footSoloSpeed &&
-    a.footHelpSpeed === b.footHelpSpeed &&
-    a.jumpImpulse === b.jumpImpulse &&
-    a.jumpTurn === b.jumpTurn &&
-    a.jumpSteer === b.jumpSteer &&
-    a.jumpApexSpeed === b.jumpApexSpeed &&
-    a.glideSpeed === b.glideSpeed &&
-    a.glideSink === b.glideSink &&
-    a.glideAccel === b.glideAccel &&
-    a.glideBrake === b.glideBrake &&
-    a.glideOver === b.glideOver &&
-    a.glideTurnTau === b.glideTurnTau &&
-    a.glideTurnMax === b.glideTurnMax &&
-    a.glideDeploy === b.glideDeploy;
-  // The movement tunables as one frozen object, shared by the read and read.movement(): the same object while the
-  // values are unchanged. With `movementRev` the 18 tunables are read only when it moved; in the loop the object is taken
-  // once a frame, at its first read, as the read's key is (the frame memo below).
+    !!b && MOVEMENT_KEYS.every((k) => a[k] === b[k]);
+  // The movement tunables as one frozen object: the same object while the values are unchanged. With `movementRev` the
+  // 18 tunables are read only when it moved.
   let moved: Readonly<RailwayMovement> | null = null,
-    movedRev = NaN,
-    movedFrame = -1;
-  function moves() {
-    if (moved && frame && movedFrame === frame) return moved;
-    movedFrame = frame;
+    movedRev = NaN;
+  const moves = perFrame(() => {
     if (movementRev) {
       const rev = movementRev();
       if (moved && rev === movedRev) return moved;
@@ -865,319 +795,29 @@ export function createRailwayAdapter({
     const m = movement();
     if (!sameMovement(m, moved)) moved = Object.freeze({ ...m });
     return moved!;
-  }
-  // The estimated tick the views read, shared by the read and read.tick(): in the loop it is taken once a frame, at its
-  // first read, so two reads in a frame never straddle a tick (an edge such as waking to idle is seen once). Actions
-  // are still stamped with the live tick (submit); outside the loop every call is live.
-  let tickFrame = -1,
-    frameTickValue = 0;
-  function frameTick() {
-    if (frame && tickFrame === frame) return frameTickValue;
-    tickFrame = frame;
-    return (frameTickValue = tick());
-  }
-  function readState() {
-    stats.reads.readStates++;
-    stats.reads.keyEvals++;
-    const t = frameTick();
-    const v = view();
-    const m = moves();
-    const applied = rail.mirror.stats.applied;
-    if (read && v === readFor && t === readTick && applied === readApplied && m === readMovement) return read;
-    stats.reads.stateBuilds++;
-    readFor = v;
-    readTick = t;
-    readApplied = applied;
-    readMovement = m;
-    return (read = buildState(t, railwayAt(v, t), m, read));
-  }
-  // The per-tree lists (a few hundred entries each) are copied but not frozen: in JavaScriptCore (Safari) freezing an
-  // array that size costs ~35 us and leaves it slower to read, ~0.2 ms per read in all. They are readonly to TypeScript.
-  const copy = <T>(list: readonly T[]): readonly T[] => list.slice();
-  type Pile = Railway['piles'][number];
-  const samePile = (a: Pile, b: Pile) =>
-    a.id === b.id && a.x === b.x && a.y === b.y && a.z === b.z && a.n === b.n && a.kind === b.kind && a.age === b.age;
-  function worksOf(s: Railway) {
-    const w = s.works!;
-    return Object.freeze({
-      breaker: w.breaker,
-      seams: w.seams,
-      kiln: Object.freeze({ logs: w.logs, stone: w.stone, lit: w.lit }),
-      rack: w.rack,
-      poured: w.poured,
-      pierRack: w.pierRack,
-      pierSet: w.pierSet,
-      crossing: w.crossing,
-      stage: worksStage(s),
-      /** Footings the pier still wants beyond what is set, racked there or aboard the wagon. */
-      pierNeed: pierNeed(s),
-      /** The bowl's limestone rocks (rock slots 3 and 4). */
-      rocks: Object.freeze(
-        WORKS_ROCKS.map((rock) =>
-          Object.freeze({
-            ...rock,
-            remaining: s.line!.rocks[rock.id] ?? 0,
-            work: s.line!.rockWork[rock.id] ?? 0,
-            age: s.line!.rockAge[rock.id] ?? 0,
-          }),
-        ),
-      ),
-    });
-  }
-  function buildState(
-    t: number,
-    s: Railway,
-    moves: RailwayMovement,
-    last: { piles: readonly Readonly<Pile>[] } | null,
-  ) {
-    const activeStation = railActiveStation(s);
-    const stations = railJobs(s).map((job, i) =>
-      Object.freeze({
-        id: LINE1_STATIONS[i]!.id,
-        stock: job.stock,
-        allocation: job.allocation,
-        used: job.used,
-        delivered: job.delivered,
-        stoneStock: job.stoneStock ?? 0,
-        stoneAllocation: job.stoneAllocation ?? 0,
-        stoneUsed: job.stoneUsed ?? 0,
-        stoneDelivered: job.stoneDelivered ?? 0,
-        start: job.start,
-        elapsed: job.elapsed,
-        lastTick: job.lastTick,
-        completion: job.completion,
-        timing: Object.freeze({ ...(job.timing ?? LINE_TIMING) }),
-      }),
-    );
-    const current = stations[activeStation]!;
-    const l2 = s.line2!;
-    const line2Done = line2Completed(s);
-    const line2 = Object.freeze({
-      forge: Object.freeze({ ...l2.forge }),
-      active: line2Active(s),
-      completed: line2Done,
-      routes: Object.freeze(line2Routes(line2Done)),
-      gateOpen: line2GateOpen(s),
-      lever: l2.lever,
-      sea: l2.sea,
-      seaOpen: line2SeaOpen(s),
-      hook: l2.hook,
-      pack: l2.pack,
-      packReady: line2PackReady(s),
-      depot: l2.depot,
-      depotRails: l2.depotRails,
-      boiler: Object.freeze({ ...l2.boiler }),
-      trains: line2Trains(s),
-      trainsAt: l2.trains,
-      kitOwed: Object.freeze(line2KitOwed(s)),
-      cart: Object.freeze({ ...l2.cart }),
-      /** The rack's tag: Loading, On the way, Unloading, Waiting for forge, or nothing. */
-      cartStatus: line2CartStatus(s),
-      /** The stretch the cart serves, or -1. */
-      served: line2Served(s),
-      stations: Object.freeze(
-        l2.jobs.map((job, i) =>
-          Object.freeze({ ...job, id: LINE2_STATIONS[i]!.id, timing: Object.freeze({ ...job.timing }) }),
-        ),
-      ),
-    });
-    const account = s.accounts.find((a) => a.pid === pid);
-    return Object.freeze({
-      tick: t,
-      ...moves,
-      panelCount: railPanelCount(s),
-      panelStock: railPanelStock(s),
-      phase: railPhase(s, t),
-      carry: account?.carry ?? 0,
-      stoneCarry: account?.stone ?? 0,
-      railsCarry: account?.rails ?? 0,
-      /** A footing on your back (0 or 1). */
-      foot: account?.foot ?? 0,
-      works: worksOf(s),
-      shed: Object.freeze({ ...s.shed! }),
-      /** Ring Island's gap (v27): the railhead's head (bent 6 + head), the footings set past bent 6, on its rack and
-       * hung as counterweight, the leaf's brace (1 raised, 2 braced, 0 down) and the tick the rivet was struck. */
-      ring: Object.freeze({ head: railRingOpen(s).head, ...s.ring! }),
-      /** What a back carries now: 8, or 16 with the pack (shared). */
-      carryMax: railCarryMax(s),
-      line2,
-      /** Every train by slot (RAIL_TRAINS; railTrainsOf for one line's), and each line's row: its halts' lever asks
-       * and the ends' last departures (docs/plans/generic-lines.md, v26). */
-      trains: Object.freeze(s.trains.map((r) => Object.freeze({ ...r }))),
-      lines: Object.freeze(s.lines.map((r) => Object.freeze({ ...r }))),
-      activeStation,
-      stations: Object.freeze(stations),
-      axe: s.line!.axe,
-      jump: s.line!.jump,
-      /** The room has the glider: the accepted (or your own predicted) `Rail.glide`, taken on Needle Bell's summit. */
-      glide: l2.glide,
-      beam: Object.freeze({ ...s.line!.beam }),
-      rocks: Object.freeze(
-        LINE1_ROCKS.map((rock, i) =>
-          Object.freeze({
-            ...rock,
-            remaining: s.line!.rocks[i] ?? 0,
-            work: s.line!.rockWork[i] ?? 0,
-            age: s.line!.rockAge[i] ?? 0,
-          }),
-        ),
-      ),
-      stoneRack: s.line!.stoneRack,
-      hardwood: Object.freeze([...s.line!.hardwood]),
-      upgrades: copy(s.line!.upgrades),
-      hardwoodWork: Object.freeze([...s.line!.hardwoodWork]),
-      awake: s.awake,
-      start: current.start,
-      elapsed: current.elapsed,
-      completion: stations.reduce((n, job) => n + job.completion, 0),
-      stock: current.stock,
-      allocation: current.allocation,
-      used: current.used,
-      delivered: current.delivered,
-      counts: Object.freeze(railCounts(s)),
-      rack: s.supply!.rack,
-      growth: s.sources.map((_n, k) => Math.max(0, (s.supply!.ages[k] ?? 0) - 31)) as readonly number[],
-      sources: copy(s.sources),
-      work: copy(s.work),
-      falls: Object.freeze({
-        yaw: copy(s.falls!.yaw),
-        collapsed: copy(s.falls!.collapsed),
-      }),
-      piles:
-        last && last.piles.length === s.piles.length && s.piles.every((p, i) => samePile(p, last.piles[i]!))
-          ? last.piles
-          : Object.freeze(s.piles.map((p) => Object.freeze({ ...p }))),
-      accounts: Object.freeze(s.accounts.map((a) => Object.freeze({ ...a }))),
-    });
-  }
-  // inspect() adds the session fields to the read; it too is the same object until one of them changes.
-  let inspected: {
-    state: ReturnType<typeof readState>;
-    status: Status;
-    connected: boolean;
-    synced: boolean;
-    step: number;
-    ready: boolean;
-    epoch: number;
-    next: number;
-    pending: number;
-    stalled: RailwayIntent['op'] | null;
-    view: ReturnType<typeof inspection>;
-  } | null = null;
-  // The frame memo. update() runs once a frame in the railway entity's update (order 10, after its prePhysics and fixed steps) and moves `frame`; until the next one
-  // the estimated tick, the tunables and the clock-bound session fields (step, ready, stalled) are taken as they were
-  // at the head of the frame, so about a hundred readers a frame skip the 18 tune reads and the rest of the key. What
-  // can still change inside a frame is checked each call, and is cheap: the view object (a press rebuilds the
-  // prediction, a refill or its end swaps it), the mirror's applied count, the pending count and the session fields.
-  // Outside the loop (tests, tools) `frame` never moves and every call evaluates the whole key as before.
-  let frame = 0;
-  let inspectedFrame = -1;
-  // The stall cue, shared by inspect() and read.stalled(): in the loop it is taken once a frame while the pending list
-  // keeps its oldest action (actions are pushed in time order, so only the oldest can be the first stalled one).
-  let stallFrame = -1,
-    stallList: unknown = null,
-    stallHead: unknown = null,
-    stallOp: RailwayIntent['op'] | null = null;
-  function stalledNow() {
-    const list = predictor.pending();
-    if (frame && stallFrame === frame && list === stallList && list[0] === stallHead) return stallOp;
-    [stallFrame, stallList, stallHead] = [frame, list, list[0]];
-    // Only a pending action can be stalled.
-    return (stallOp = list.length ? (predictor.stalled(now())[0]?.action.intent.op ?? null) : null);
-  }
-  function inspect() {
-    stats.reads.inspects++;
-    const i0 = inspected;
-    if (
-      frame &&
-      !disposed &&
-      i0 &&
-      inspectedFrame === frame &&
-      view() === readFor &&
-      rail.mirror.stats.applied === readApplied &&
-      predictor.pending().length === i0.pending &&
-      status === i0.status &&
-      connected === i0.connected &&
-      synced === i0.synced &&
-      epoch === i0.epoch &&
-      next === i0.next
-    )
-      return i0.view;
-    const state = readState();
-    const pending = predictor.pending().length;
-    const stalled = stalledNow();
-    const step = rail.step();
-    const ready = available();
-    const i = inspected;
-    if (
-      i &&
-      i.state === state &&
-      i.status === status &&
-      i.connected === connected &&
-      i.synced === synced &&
-      i.step === step &&
-      i.ready === ready &&
-      i.epoch === epoch &&
-      i.next === next &&
-      i.pending === pending &&
-      i.stalled === stalled
-    ) {
-      inspectedFrame = frame;
-      return i.view;
-    }
-    stats.reads.inspectionBuilds++;
-    const out = inspection(state, step, ready, pending, stalled);
-    inspected = {
-      state,
-      status,
-      connected,
-      synced,
-      step,
-      ready,
-      epoch,
-      next,
-      pending,
-      stalled,
-      view: out,
-    };
-    inspectedFrame = frame;
-    return out;
-  }
-  function inspection(
-    state: ReturnType<typeof readState>,
-    step: number,
-    ready: boolean,
-    pending: number,
-    stalled: RailwayIntent['op'] | null,
-  ) {
-    // The session's scalars are read.debug()'s (one place builds them; M12e deletes this with inspect()). `step` stays
-    // the memo's, taken with the rest of its key, and `prediction` the live counters, as the adapter tests read them
-    // (a held `reads` counts on); debug() hands tools a copy.
-    const debug = facade.debug();
-    return Object.freeze({
-      ...state,
-      pid,
-      status,
-      connected: debug.connected,
-      synced: debug.synced,
-      step,
-      get hash() {
-        return debug.hash;
-      },
-      ready,
-      epoch: debug.epoch,
-      next: debug.next,
-      pending,
-      /** The oldest action still unanswered after STALL_MS (the wordless stall cue), or null. */
-      stalled,
-      prediction: stats,
-      // Your own pending actions are already in the predicted counts, so these are the counts themselves.
-      availableCarry: state.carry,
-      availableStone: state.stoneCarry,
-      availableRails: state.railsCarry,
-      freeCarry: Math.max(0, state.carryMax - state.carry - state.stoneCarry - state.railsCarry),
-    });
-  }
+  });
+  // The estimated tick the views read. Actions are still stamped with the live tick (submit).
+  const frameTick = perFrame(tick);
+  // The stall cue, held while the pending list keeps its oldest action (actions are pushed in time order, so only the
+  // oldest can be the first stalled one).
+  let stallList: unknown = null,
+    stallHead: unknown = null;
+  const stalledNow = perFrame(
+    (): RailwayIntent['op'] | null => {
+      const list = predictor.pending();
+      [stallList, stallHead] = [list, list[0]];
+      // Only a pending action can be stalled.
+      return list.length ? (predictor.stalled(now())[0]?.action.intent.op ?? null) : null;
+    },
+    () => {
+      const list = predictor.pending();
+      return list === stallList && list[0] === stallHead;
+    },
+  );
+  // The first whole state, latched: a session value, so a view that hides, resets or un-decks until it is in reads it
+  // here, not a latch of its own. read.ready() is also false with a full pending window or the link down; this is not.
+  let whole = false;
+  const wholeNow = () => (whole ||= available());
   const pileIn = (id: number) => view().get(Pile, id);
   // The read facade (docs/plans/ecs-migration-railway.md, M8, M12): what views read. world() is the world the views see
   // now: the predicted clone while actions are pending, the confirmed (published) world otherwise, the last shown world
@@ -1188,19 +828,21 @@ export function createRailwayAdapter({
   const facade = {
     world: () => view() as unknown as ReadWorld,
     /** The estimated server tick (whole, never going backwards): the job clocks' `at`. In the frame loop it holds one
-     * value for the whole frame, inspect().tick's, so it stays consistent with world() and with itself within a frame;
-     * outside the loop it is live. */
+     * value for the whole frame, so it stays consistent with world() and with itself within a frame; outside the loop it
+     * is live. */
     tick: frameTick,
     /** The live tick with its fraction, for movers: unlike tick(), it moves within a frame. */
     tickNow,
     pid,
     /** The session's state. 'ready' does not mean an action can be sent now: see ready(). */
     status: () => status,
-    // The session values that are not rows (M10, for the views leaving inspect()): each equals inspect()'s field of
-    // the same name at the same moment.
+    // The session values that are not rows.
     /** Whether an action can be sent now: connected, the whole state in, this session's account epoch matching and
      * the pending window not full. Unlike `status() === 'ready'`, false while RAILWAY_WINDOW actions are pending. */
     ready: available,
+    /** The first whole state is in: false until ready() is first true, then true for good (through refills, full
+     * windows and a dropped link, while the world the views see keeps the last whole state). */
+    whole: wholeNow,
     /** Your actions sent and not yet answered (already in the world the views see). */
     pending: () => predictor.pending().length,
     /** The oldest pending action still unanswered after STALL_MS (the wordless stall cue), or null. */
@@ -1224,12 +866,10 @@ export function createRailwayAdapter({
         ...stats,
         responseMs: [...stats.responseMs],
         log: stats.log.map((l) => ({ ...l })),
-        reads: { ...stats.reads },
       },
     }),
   };
   return {
-    inspect,
     read: facade,
     attach(nextRoom: WorldRoom) {
       if (disposed || room === nextRoom) return;
@@ -1259,9 +899,9 @@ export function createRailwayAdapter({
       if (disposed) return;
       clock = nowMs;
       frame++;
-      stats.reads.frames++;
       probe();
       probeClock();
+      wholeNow();
     },
     wake: () => submit({ op: 'rail.wake' }),
     openAxe: () => submit({ op: 'rail.axe' }),
@@ -1381,4 +1021,3 @@ export function createRailwayAdapter({
   };
 }
 export type RailwayAdapter = ReturnType<typeof createRailwayAdapter>;
-export type RailwayInspection = ReturnType<RailwayAdapter['inspect']>;

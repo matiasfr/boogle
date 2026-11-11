@@ -113,34 +113,33 @@ const READ_MODEL_IMPORTERS = [
   'test/helpers/railway-model.ts',
   'test/railway.test.ts',
 ];
-/** The files that still read state through the legacy door, `inspectRailwayLegacy()` (docs/plans/ecs-m12-m13.md, M12c),
- * one per line; the list may only lose lines. D1 to D4 and M12d take their files off it; M12e deletes it with the door.
- * Checked by boogle/inspect-legacy (safety.ts), a rule of its own so no other block's no-restricted-syntax replaces it. */
-export const INSPECT_LEGACY_IMPORTERS = [];
-/** Each list's length when it was made; a batch that takes files off lowers its number (test/review-m12c.test.ts holds
- * the list at or under it), so a line can leave and never come back unnoticed. */
-export const LEGACY_DOOR_CEILINGS = { inspectRailwayLegacy: 0 };
-const doorMessage = (name: string, list: string) =>
-  `${name}() is a temporary legacy door to the adapter's wide object (docs/plans/ecs-m12-m13.md, M12c): read state as rows and queries through dev/look/rail-read.ts (or railwayWorldRead()), and inspectRailway() for the view's and the session's own fields. Only the files in ${list} (dev/lint/policy.ts) may name it, and that list only loses lines.`;
-/** The legacy doors and their rules (safety.ts): the name as code, or inside a string or template (the scenarios build
- * their page code as strings). A name built at runtime is not seen; typecheck still types such a read. */
-export const LEGACY_DOORS = [
-  {
-    rule: 'boogle/inspect-legacy',
-    name: 'inspectRailwayLegacy',
-    list: 'INSPECT_LEGACY_IMPORTERS',
-    importers: INSPECT_LEGACY_IMPORTERS,
-  },
-].map(({ rule, name, list, importers }) => ({
-  rule,
-  importers,
-  message: doorMessage(name, list),
+/** The read model's own files: they still define `Railway`, `railwayView` and the `validateRail…` validators until
+ * M12b-2 deletes them (docs/plans/ecs-m12-m13.md). The list may only lose lines. */
+const READ_MODEL_FILES = [
+  'src/sim/railway.ts',
+  'src/sim/railway-check.ts',
+  'src/sim/railway-line.ts',
+  'src/sim/railway-line2.ts',
+  'src/sim/railway-read-model.ts',
+  'src/sim/railway-trains.ts',
+  'src/sim/railway-works.ts',
+];
+/** The names the adapter's wide object and the read model went by (M12e): no file under src/ exports one again.
+ * Checked by boogle/retired-railway-names (safety.ts), a rule of its own so no other block's no-restricted-syntax
+ * replaces it. */
+const RETIRED = '/^(RailwayInspection|buildState|Railway|railwayView|validateRail\\w*)$/';
+export const RETIRED_RAILWAY_NAMES = {
+  rule: 'boogle/retired-railway-names',
+  message:
+    "The railway's inspect() and read model are gone (docs/plans/ecs-m12-m13.md, M12e): read state as rows and queries (src/sim/railway-rows.ts, railway-queries*.ts) on adapter.read.world(); session values are adapter.read's.",
   selectors: [
-    `Identifier[name="${name}"]`,
-    `Literal[value=/\\b${name}\\b/]`,
-    `TemplateElement[value.raw=/\\b${name}\\b/]`,
+    `ExportNamedDeclaration > FunctionDeclaration[id.name=${RETIRED}]`,
+    `ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=${RETIRED}]`,
+    `ExportNamedDeclaration > TSTypeAliasDeclaration[id.name=${RETIRED}]`,
+    `ExportNamedDeclaration > TSInterfaceDeclaration[id.name=${RETIRED}]`,
+    `ExportSpecifier[exported.name=${RETIRED}]`,
   ],
-}));
+};
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
@@ -616,13 +615,11 @@ const policyBlocks: PolicyBlock[] = [
     ignores: READ_MODEL_IMPORTERS,
     rules: { 'no-restricted-imports': ['error', { patterns: [railReadModelBan] }] },
   },
-  // The legacy doors' callers are the closed lists above. state.ts defines both (index.ts mounts them by other names);
-  // the lint and its review test name them to check the rule. server/ is outside the lint (the first block).
-  ...LEGACY_DOORS.map(({ rule, importers }): PolicyBlock => ({
-    files: ['src', 'dev', 'test', 'protos', 'scripts', 'server'].map((dir) => `${dir}/**/*.{ts,js,mjs}`),
-    ignores: [...importers, 'src/entities/railway/state.ts', 'dev/lint/**', 'test/review-m12c.test.ts'],
-    rules: { [rule]: 'error' },
-  })),
+  {
+    files: ['src/**/*.{js,ts}'],
+    ignores: READ_MODEL_FILES,
+    rules: { [RETIRED_RAILWAY_NAMES.rule]: 'error' },
+  },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule
   // for these files would replace it).
   {

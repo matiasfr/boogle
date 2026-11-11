@@ -627,8 +627,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       const debug = read.debug();
       return Object.defineProperties(out, Object.getOwnPropertyDescriptors(debug)) as typeof out & typeof debug;
     },
-    /** Temporary (M12c to M12e): the adapter's wide object under the scene walk, for INSPECT_LEGACY_IMPORTERS. */
-    inspectLegacy: () => ({ ...adapter.inspect(), ...scene() }),
     dispose: () => owner.dispose(),
   };
   function scene() {

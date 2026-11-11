@@ -49,11 +49,11 @@ import {
   free,
   gateDown,
   held,
-  job,
+  jobId,
   LINE2_SLOTS,
   qActive,
   qCompleted,
-  qjob,
+  qjobId,
   railId,
   scheduleOf,
   shedId,
@@ -162,7 +162,7 @@ export const boilerFit = defineSystem(
 // ---------------------------------------------------------------- line two's ops
 function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
   const spec = LINE2_STATIONS[k]!;
-  const id = qjob(w, k);
+  const id = qjobId(w, k);
   const j = w.get(QJob, id)!;
   if (j.start >= 0 || !gateDown(w, spec) || j.stock !== spec.bill[0] || j.railStock !== spec.bill[1]) return;
   const jm = w.mut(QJob, id)!,
@@ -199,7 +199,7 @@ export const deposit2 = defineSystem(
     const a = w.mut(Account, aid)!;
     const fid = forgeId(w);
     if (boilerHeld(w, a.pid)) return 0;
-    if (e.station === 'F' && (e.kind ?? 0) === 0 && w.get(Job, job(w, 2))!.completion) {
+    if (e.station === 'F' && (e.kind ?? 0) === 0 && w.get(Job, jobId(w, 2))!.completion) {
       const f = w.get(Forge, fid)!;
       const n = Math.min(e.n!, a.carry, FORGE.logs - f.used);
       if (n <= 0) return 0;
@@ -211,7 +211,7 @@ export const deposit2 = defineSystem(
     }
     const k = qActive(w);
     if (k < 0 || e.station !== LINE2_STATIONS[k]!.id || tick < w.get(Forge, fid)!.lit + FORGE.turnTicks) return 0;
-    const j = w.get(QJob, qjob(w, k))!,
+    const j = w.get(QJob, qjobId(w, k))!,
       spec = LINE2_STATIONS[k]!;
     // A gate holds the machine, not deliveries to its frame.
     if (j.start >= 0 || trainOwed(w)) return 0;
@@ -219,7 +219,7 @@ export const deposit2 = defineSystem(
     if (e.kind !== undefined && e.kind !== 0 && !rails) return 0;
     const n = Math.min(e.n!, rails ? a.rails : a.carry, spec.bill[rails ? 1 : 0] - (rails ? j.railStock : j.stock));
     if (n <= 0) return 0;
-    const jm = w.mut(QJob, qjob(w, k))!;
+    const jm = w.mut(QJob, qjobId(w, k))!;
     if (rails) {
       a.rails -= n;
       jm.railStock += n;
@@ -359,7 +359,7 @@ function cartStep(w: World, tick: number) {
     switch (c.phase) {
       case P.REST: {
         if (k < 0) return;
-        const need = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
+        const need = depotNeed(w, k, w.get(QJob, qjobId(w, k))!);
         if (!need.logs && !need.rails) return;
         next(P.LOAD, tick, { from: 0, to: CART_ROAD.rackCm(k) });
         cartMint(w, k, Math.min(CART.load, need.logs));
@@ -414,7 +414,7 @@ export function layLine2(w: World, tick: number) {
   }
   const k = qActive(w);
   if (k < 0) return;
-  const id = qjob(w, k);
+  const id = qjobId(w, k);
   const j = w.get(QJob, id)!,
     spec = LINE2_STATIONS[k]!;
   if (j.start < 0 || j.completion) return;

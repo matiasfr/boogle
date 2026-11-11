@@ -33,7 +33,6 @@ import {
 } from '../../sim/railway-works-layout.ts';
 import { pierLaid } from '../../sim/railway-line2-layout.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
-import { createFirstReady } from './first-ready.ts';
 import { account, beam, boiler, qjob, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
@@ -75,11 +74,10 @@ export async function createRailwayCrossing(
   let opened = false,
     /** Q7 is under way or laid: the footway's board stands. */
     started = false;
-  // The first whole state, latched (first-ready.ts): a full pending window or a dropped link must not lift the decks.
-  const firstReady = createFirstReady(adapter.read.ready);
+  // The first whole state, latched (read.whole()): a full pending window or a dropped link must not lift the decks.
   const refresh = () => {
     wd = adapter.read.world();
-    opened = firstReady() && line2Trains(wd) && pierLaid(line2Completed(wd));
+    opened = adapter.read.whole() && line2Trains(wd) && pierLaid(line2Completed(wd));
     started = opened && (!!qjob(wd, Q7).completion || qjob(wd, Q7).start >= 0);
   };
   refresh();

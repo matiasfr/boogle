@@ -83,8 +83,8 @@ test('a timed fact on a mirror or a predicted clone needs `at`, and with it equa
   const tick = r.sync.world.tick;
   const bill = LINE1_STATIONS[0]!.bill[0];
   Object.assign(w.mut(Rail, q.railId(w))!, { awake: 0 });
-  Object.assign(w.mut(Job, q.job(w, 0))!, { start: tick, stock: 0, delivered: bill });
-  Object.assign(w.mut(JobRun, q.job(w, 0))!, { allocation: bill, used: 0, elapsed: 0, lastTick: tick });
+  Object.assign(w.mut(Job, q.jobId(w, 0))!, { start: tick, stock: 0, delivered: bill });
+  Object.assign(w.mut(JobRun, q.jobId(w, 0))!, { allocation: bill, used: 0, elapsed: 0, lastTick: tick });
   r.api.touchAll();
   for (let k = 0; k < 400; k++) r.sync.stepWorld(100);
   r.pump();

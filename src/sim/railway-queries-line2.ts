@@ -33,11 +33,11 @@ import {
   beamId,
   cartId,
   forgeId,
-  job,
+  jobId,
   kitJob,
   line2Jobs,
   qActive,
-  qjob,
+  qjobId,
   railId,
   railJobs,
   shedId,
@@ -45,13 +45,13 @@ import {
 } from './railway-queries.ts';
 
 /** The first path (T3) is open: the forge frame takes logs. */
-export const line2Open = (w: World) => !!w.get(Job, job(w, 2))!.completion;
+export const line2Open = (w: World) => !!w.get(Job, jobId(w, 2))!.completion;
 export const line2Lit = (w: World) => w.get(Forge, forgeId(w))!.lit >= 0;
 /** The pack chest is there: the forge has taken its first bill. */
 export const line2PackReady = (w: World) => w.get(Forge, forgeId(w))!.used >= FORGE.bills[0];
 /** Completed Q stretches, 0-7. */
 export const line2Completed = (w: World) =>
-  LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjob(w, k))!.completion).length;
+  LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjobId(w, k))!.completion).length;
 /** The Q station that takes materials now, or -1 before the forge is lit / after the last (qActive). */
 export const line2Active = qActive;
 /** The quarry gate is down only with Q3 complete and the lever pulled. */
@@ -66,7 +66,7 @@ export const line2Trains = (w: World) => w.get(Rail, railId(w))!.trains >= 0;
 /** The stretch the depot cart serves (a depot stretch not yet funded), or -1. */
 export const line2Served = (w: World) => {
   const k = qActive(w);
-  return k >= 0 && LINE2_STATIONS[k]!.depot && w.get(QJob, qjob(w, k))!.start < 0 ? k : -1;
+  return k >= 0 && LINE2_STATIONS[k]!.depot && w.get(QJob, qjobId(w, k))!.start < 0 ? k : -1;
 };
 /** The rails the cart still wants aboard for stretch k at the forge stop (the read model's rule: rails aboard a train
  * are not counted, unlike the system's cartWants). */
@@ -76,7 +76,7 @@ export function line2CartWants(w: World, k: number) {
   const rail = w.get(Rail, railId(w))!,
     cart = w.get(Cart, cartId(w))!;
   const owed = Math.min(
-    spec.bill[1] - w.get(QJob, qjob(w, k))!.railStock - rail.depotRails - cart.rails,
+    spec.bill[1] - w.get(QJob, qjobId(w, k))!.railStock - rail.depotRails - cart.rails,
     spec.bill[1] - rail.shelfOut,
   );
   return Math.max(0, Math.min(CART.rails - cart.rails, owed));
@@ -89,7 +89,7 @@ export function line2CartStatus(w: World): 'off' | 'loading' | 'travelling' | 'u
   // A full bill is waiting for its gate/confirmation, not another delivery.
   if (k >= 0) {
     const spec = LINE2_STATIONS[k]!,
-      j = w.get(QJob, qjob(w, k))!;
+      j = w.get(QJob, qjobId(w, k))!;
     if (j.stock === spec.bill[0] && j.railStock === spec.bill[1]) return 'off';
   }
   if (c.phase === CART_PHASE.DROP) return 'unloading';
@@ -101,7 +101,7 @@ export function line2CartStatus(w: World): 'off' | 'loading' | 'travelling' | 'u
   // Home or heading there: more is coming only while the stretch still needs some.
   const rail = w.get(Rail, railId(w))!;
   const spec = LINE2_STATIONS[k]!,
-    j = w.get(QJob, qjob(w, k))!;
+    j = w.get(QJob, qjobId(w, k))!;
   const logs = Math.min(spec.bill[0] - j.stock - rail.depot, spec.bill[0] - rail[DEPOT_OUT[k]!]);
   return logs > 0 || line2CartWants(w, k) > 0 ? (c.phase === CART_PHASE.REST ? 'loading' : 'travelling') : 'off';
 }
@@ -112,7 +112,7 @@ export const line2Aboard = aboard;
 export function line2KitOwed(w: World) {
   const k = kitJob(w);
   if (k < 0) return { logs: 0, rails: 0 };
-  const j = w.get(QJob, qjob(w, k))!,
+  const j = w.get(QJob, qjobId(w, k))!,
     [logs, rails] = LINE2_STATIONS[k]!.bill;
   if (j.start >= 0) return { logs: 0, rails: 0 };
   const rail = w.get(Rail, railId(w))!,

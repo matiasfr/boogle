@@ -24,7 +24,6 @@ import {
   line2Trains,
 } from '../../sim/railway-queries-line2.ts';
 import { cart as cartRow, rail as railRow, type ReadWorld } from '../../sim/railway-rows.ts';
-import { createFirstReady } from './first-ready.ts';
 
 /** The cart is out on its road: line 2's first stretch is laid, and it is not parked while trains run. */
 const cartOn = (w: ReadWorld, ready: boolean) =>
@@ -138,12 +137,11 @@ export async function createRailwayCart(
   // A local clock in rule ticks that runs at the fixed step's rate and leans on the adapter's estimate, so the deck
   // moves the same amount every step (a rider is carried smoothly) and never drifts from the server's clock.
   let clock = -1;
-  // The first whole state, latched (first-ready.ts): a full pending window or a dropped link must not hide the cart.
-  const firstReady = createFirstReady(adapter.read.ready);
+  // The first whole state, latched (read.whole()): a full pending window or a dropped link must not hide the cart.
   let shown = false;
   function step() {
     const w = adapter.read.world();
-    if (!cartOn(w, firstReady())) {
+    if (!cartOn(w, adapter.read.whole())) {
       if (shown) {
         car.y = -60; // waits under the land: nothing to draw, nor to stand on
         shown = false;
@@ -194,7 +192,7 @@ export async function createRailwayCart(
     flying: () => ({ logs: flyingLogs, rails: flyingRails }),
     update(dt: number) {
       const w = adapter.read.world();
-      const on = cartOn(w, firstReady());
+      const on = cartOn(w, adapter.read.whole());
       const aboard = on && carry.on === car.platform;
       if (aboard && !riding) playMark('cart ride', { authority: 'local' });
       riding = aboard;

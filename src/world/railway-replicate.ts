@@ -10,8 +10,6 @@
 //   RAIL_SCHEMAS                       the replicated components: tree, hardwood, rock, pile, account, job, qjob,
 //                                      beam, forge, rail
 //   createRailwayMirror()              client: { mirror, confirmed(), world(), synced(), hash(), step(), ... }
-//   railwayAt(w, tick)                 the `Railway` read model of a world with its job clocks at tick: only the
-//                                      adapter's inspect() (the debug and test snapshot) builds it, and it goes with it
 //
 // Timed things are not replicated as they run: a funded job sends its start tick, `ahead` (ticks of offline catch-up
 // beyond start, so elapsed = tick - start + ahead) and, once complete, its end tick. A client works out elapsed, used
@@ -20,33 +18,12 @@
 // Outcomes (the request history) stay on the server; a client learns its own through ack/rej.
 import { createWorld, type AnyComponent, type World } from '../ecs/index.ts';
 import { createMirror } from './replicate-client.ts';
-import { railJobs, type Railway } from '../sim/railway.ts';
-import { LINE1_STATIONS } from '../sim/railway-line-layout.ts';
-import { LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
-import { createRailwayWorld, Job, QJob, Rail, RAIL_COMPONENTS, RAIL_REPLICATED } from '../sim/railway-components.ts';
-import { railwayView } from '../sim/railway-read-model.ts';
-import { clockWorld, cloneWorld, jobProgress } from '../sim/railway-queries.ts';
+import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED } from '../sim/railway-components.ts';
+import { clockWorld, cloneWorld } from '../sim/railway-queries.ts';
 
 export const RAIL_SCHEMAS = RAIL_REPLICATED;
 /** The components whose writes are marked (the replicated ones, and any other tracked one a spawn fills). */
 const TRACKED = RAIL_COMPONENTS.filter((c) => c.track);
-
-/** The read model of `w` with every job's timed fields at `tick`, as the mirror's job clocks left them before M12 (line
- * one's first job has no second material). For the adapter's inspect() alone; it goes with it. */
-export function railwayAt(w: World, tick: number): Railway {
-  const s = railwayView(w);
-  const jobs = railJobs(s);
-  for (let k = 0; k < LINE1_STATIONS.length; k++) {
-    const p = jobProgress(w, Job, w.lookup(Job, k)!, tick);
-    Object.assign(
-      jobs[k]!,
-      k > 0 ? p : { elapsed: p.elapsed, lastTick: p.lastTick, used: p.used, allocation: p.allocation },
-    );
-  }
-  for (let k = 0; k < LINE2_STATIONS.length; k++)
-    Object.assign(s.line2!.jobs[k]!, jobProgress(w, QJob, w.lookup(QJob, k)!, tick));
-  return s;
-}
 
 /** Client: the mirror, the ingest world its packets write, and the confirmed world it publishes. Until a whole state
  * has arrived the confirmed world is a fresh railway (actions wait for it anyway). */

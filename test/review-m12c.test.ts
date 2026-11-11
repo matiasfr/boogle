@@ -1,7 +1,7 @@
 // M12c's review (branch review/m12c, cut from 54fee05ba): each test below fails on that commit.
 //
-// 1. boogle/inspect-legacy ignores all of src/entities/railway/, so any railway view may start calling the legacy door
-//    unlisted; only state.ts defines it (index.ts mounts it through setRailwayLegacy, a different name).
+// 1. (Closed by M12e: the legacy door, its list and its rule are deleted with inspect(). What stands in for them is
+//    boogle/retired-railway-names: no file under src/ exports the old names again.)
 // 2. (Closed by M12d: the second door, railwayRead(), is deleted with its list and rule.)
 // 3. read.debug().prediction is the adapter's live counters: a tool that writes to it, or holds it and compares later,
 //    changes or sees the session's own stats.
@@ -13,19 +13,22 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lintSafety } from '../dev/lint/safety.ts';
-import { INSPECT_LEGACY_IMPORTERS, LEGACY_DOOR_CEILINGS } from '../dev/lint/policy.ts';
 import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { specOf } from '../src/sim/tune.ts';
 
-// Built at runtime: this file is not on the list, and the rule matches the name inside strings too.
-const DOOR = ['inspectRailway', 'Legacy'].join('');
-const flagged = (code: string, file: string) => lintSafety(code, file).some((d) => d.rule === 'boogle/inspect-legacy');
+const flagged = (code: string, file: string) =>
+  lintSafety(code, file).some((d) => d.rule === 'boogle/retired-railway-names');
 
-test('a railway view may not call the legacy door unlisted: only state.ts defines it', () => {
-  const code = `import { ${DOOR} } from './state.ts';\nexport const peek = () => ${DOOR}()?.line2;\n`;
-  assert.equal(flagged(code, 'src/entities/railway/zz-probe.ts'), true, 'a new file in the railway entity');
-  assert.equal(flagged(code, 'src/entities/railway/train-view.ts'), true, 'an existing railway view');
+test('no file under src/ exports a retired railway name (M12e)', () => {
+  const at = 'src/adapters/zz-probe.ts';
+  assert.equal(flagged('export type RailwayInspection = { carry: number };\n', at), true, 'a type');
+  assert.equal(flagged('export function buildState() {\n  return 0;\n}\n', at), true, 'a function');
+  assert.equal(flagged('export const validateRailWorks = () => true;\n', at), true, 'a const, by prefix');
+  assert.equal(flagged('const railwayView = 1;\nexport { railwayView };\n', at), true, 'a specifier');
+  assert.equal(flagged('const x = 1;\nexport { x as Railway };\n', at), true, 'a renamed specifier');
+  assert.equal(flagged('export type RailwayMovement = { a: number };\n', at), false, 'a name that only starts alike');
+  assert.equal(flagged('export type RailwayInspection = number;\n', 'test/zz-probe.ts'), false, 'outside src/');
 });
 
 test('read.debug().prediction is detached: writing to it does not change the session counters', () => {
@@ -41,7 +44,7 @@ test('read.debug().prediction is detached: writing to it does not change the ses
   held.corrected += 5;
   held.log.push({ request: 0, op: 'probe', lost: 0, reason: 'probe' });
   assert.equal(adapter.read.debug().prediction.corrected, corrected, 'a tool wrote the adapter counter');
-  assert.equal(adapter.inspect().prediction.log.length, 0, 'a tool wrote the adapter log');
+  assert.equal(adapter.read.debug().prediction.log.length, 0, 'a tool wrote the adapter log');
 });
 
 // The narrow inspection's keys (docs/plans/ecs-m12-m13.md, section 2): the session's 13 scalars and the scene walk.
@@ -92,17 +95,4 @@ test('no tool casts inspectRailway() to read a field the narrow inspection no lo
     }
   }
   assert.deepEqual(missed, []);
-});
-
-// Passes on 54fee05ba; the guard the list's "only loses lines" lacks: a converted file must leave the list with the
-// name, or it keeps the door open for its next edit.
-test('every file on INSPECT_LEGACY_IMPORTERS still names the door', () => {
-  const stale = INSPECT_LEGACY_IMPORTERS.filter((f) => !fs.readFileSync(f, 'utf8').includes(DOOR));
-  assert.deepEqual(stale, []);
-});
-
-// Both lists only shrink (a batch that takes files off lowers its ceiling in dev/lint/policy.ts). The second door,
-// railwayRead(), and its list are gone (M12d).
-test('the legacy list does not grow', () => {
-  assert.ok(INSPECT_LEGACY_IMPORTERS.length <= LEGACY_DOOR_CEILINGS.inspectRailwayLegacy);
 });
