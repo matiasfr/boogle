@@ -45,6 +45,7 @@ import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
 import { Aperture, Line, QJob, Rail, Train } from '../src/sim/railway-components.ts';
 import type { World } from '../src/ecs/index.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { createTrainsShown } from '../src/entities/railway/trains-shown.ts';
 
 type Adapter = ReturnType<typeof createRailwayAdapter>;
 const MOVEMENT = railMovement({ get: (k) => specOf(k)!.def });
@@ -452,28 +453,24 @@ test('coverage: the sweeps saw held lamps, asked lamps and served asks', () => {
   assert.ok(lit.held > 0 && lit.asked > 0 && lit.serving > 0);
 });
 
-// ---------------------------------------------------------------- (3) pre-existing, not this branch: the hide condition
-// train-view.ts step() hides every car (y -60) while `!read.ready()` (main: `!inspect().ready`, the same value).
-// ready() is false not only before the whole state is in but also while RAILWAY_WINDOW actions are pending, so a
-// player with a full window (a burst of presses on a slow link) sees every train vanish until an answer comes back.
-// This test expects the trains to stay shown on a whole, connected state with a full window: it fails on main and on
-// the branch alike. Owner's call whether that is intended.
-// Skipped, not deleted: P2, logged in orchestrator-state for the owner (11 November). Unskip with the fix.
-test(
-  'pre-existing: a full pending window hides every train (train-view.ts step: hidden = !read.ready())',
-  { skip: 'P2 on main before M10 a; owner call' },
-  () => {
-    const r = room(buildSeedWorld('trains-on'));
-    const a = r.join('a', 'a', 30);
-    r.ready();
-    let pressed = 0;
-    for (let k = 0; k < 40 && a.adapter.read.pending() < RAILWAY_WINDOW; k++)
-      if (a.adapter.callTrain(k % LINE_HALTS.length, k % 2 ? 1 : -1)) pressed++;
-    assert.equal(a.adapter.read.pending(), RAILWAY_WINDOW, `the window filled (${pressed} presses)`);
-    const s = a.adapter.inspect();
-    assert.ok(s.connected && s.synced && line2Trains(a.adapter.read.world() as unknown as World), 'whole and running');
-    // train-view.ts:385: const hidden = !ready || ...
-    const hidden = !a.adapter.read.ready();
-    assert.equal(hidden, false, 'the trains stay shown while the whole state is in and the link is up');
-  },
-);
+// ---------------------------------------------------------------- (3) pre-existing before M10 a: the hide condition
+// train-view.ts step() hid every car (y -60) while `!read.ready()`. ready() is false not only before the whole state is
+// in but also while RAILWAY_WINDOW actions are pending, so a player with a full window (a burst of presses on a slow
+// link) saw every train vanish until an answer came back. The view now hides them only until the first whole state is
+// in (trains-shown.ts, the latch step() calls each frame), and draws them from read.world() after that.
+test('a full pending window keeps every train shown (train-view.ts step: hidden = !trainsShown())', () => {
+  const r = room(buildSeedWorld('trains-on'));
+  const a = r.join('a', 'a', 30);
+  const shown = createTrainsShown(a.adapter.read.ready);
+  assert.equal(shown(), false, 'hidden before the whole state is in');
+  r.ready();
+  assert.equal(shown(), true, 'shown once it is');
+  let pressed = 0;
+  for (let k = 0; k < 40 && a.adapter.read.pending() < RAILWAY_WINDOW; k++)
+    if (a.adapter.callTrain(k % LINE_HALTS.length, k % 2 ? 1 : -1)) pressed++;
+  assert.equal(a.adapter.read.pending(), RAILWAY_WINDOW, `the window filled (${pressed} presses)`);
+  assert.equal(a.adapter.read.ready(), false, 'ready() is false with the window full');
+  const s = a.adapter.inspect();
+  assert.ok(s.connected && s.synced && line2Trains(a.adapter.read.world() as unknown as World), 'whole and running');
+  assert.equal(shown(), true, 'the trains stay shown while the whole state is in and the window is full');
+});
