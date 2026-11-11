@@ -172,6 +172,7 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 
 ## Tech: engine, ECS, sync, physics, performance, delivery
 
+- [cold-start.md](cold-start.md) (2026-11-10): the time to "Jump in", attributed; a chain of lazy-chunk round trips and a wait for Rapier fixed, pipelines for things off screen are next. **Status:** open.
 - [deterministic-sim-at-scale.md](deterministic-sim-at-scale.md) · [notes/deterministic-sim-at-scale/](notes/deterministic-sim-at-scale/) (2026-10-29): make desyncs diagnosable first: cheap per-tick check plus an expensive diagnostic. **Status:** reference.
 - [ecs-evaluation.md](ecs-evaluation.md) (2026-11-06): build E: in-house ECS-shaped tables with id-ordered systems on the fixed clock. **Status:** adopted. See [plan ecs-e](../plans/ecs-e.md), [Process](../decisions.md#process).
 - [engine-architecture.md](engine-architecture.md) · [notes/engine-architecture/](notes/engine-architecture/) (2026-11-01): review for drift, not missing engine parts; freeze three boundaries. **Status:** partly adopted. See [plan entity-architecture](../plans/entity-architecture.md).
