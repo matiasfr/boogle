@@ -13,8 +13,13 @@ import type { WorldRoom } from '../../src/world/sync.ts';
 import { delayedRoom } from '../../src/world/delayed-room.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
-import { railActiveStation } from '../../src/sim/railway-line.ts';
-import { railCounts, railPhase, type RailAction, type RailAccount } from '../../src/sim/railway.ts';
+import type { RailAction, RailAccount } from '../../src/sim/railway.ts';
+import { railActiveStation } from '../../src/sim/railway-queries.ts';
+import { railPhase } from '../../src/sim/railway-queries-line1.ts';
+import { railCounts } from '../../src/sim/railway-queries-line2.ts';
+import { account, accounts, qjobs, tree } from '../../src/sim/railway-rows.ts';
+import { Pile, createRailwayWorld } from '../../src/sim/railway-components.ts';
+import { worldOf } from '../../src/world/railway-predict.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
 import {
@@ -231,6 +236,12 @@ function startWorld(room: Room) {
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const rules = installRules(w, land);
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
+  // What the probes read (ECS M11): the world the mirror's read model is linked to, which happens only once a whole
+  // state has arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and stays through
+  // a refill and a reset, as the read model does; a fresh railway before that. Not `rail.synced()`: it goes false
+  // during a refill while the world is still whole. Timed facts take the tick (a client's world holds no job clock).
+  const fresh = createRailwayWorld();
+  const mirrored = () => worldOf(rail!.railway) ?? fresh;
   railRoom = rail ? delayedRoom(room, LAT) : null;
   T.railStartAt = Date.now();
   const adapter =
@@ -287,15 +298,18 @@ function startWorld(room: Room) {
       new Promise((resolve) => {
         let request = next;
         let k = 0;
-        let tree = first;
+        let source = first;
         const t = setInterval(() => {
-          const s = rail.railway;
-          const me = s.accounts.find((a) => a.pid === PID);
+          const mw = mirrored();
+          const me = account(mw, PID);
           const phase = k++ % 3;
-          while (s.sources[tree] === 0) tree = (tree + 1) % RAILWAY_SOURCES.length;
-          const [id, x, z] = RAILWAY_SOURCES[tree]!;
+          while (tree(mw, source).left === 0) source = (source + 1) % RAILWAY_SOURCES.length;
+          const [id, x, z] = RAILWAY_SOURCES[source]!;
           railAt = [x, 3000, z];
-          const mine = s.piles.find((p) => p.x === x && p.z === z && p.y === 3000);
+          let mine: { id: number } | undefined;
+          mw.each([Pile], (pid, p) => {
+            if (!mine && p.x === x && p.z === z && p.y === 3000) mine = { id: pid };
+          });
           const e: RailAction =
             phase === 0 || !me
               ? { op: 'rail.chop', id, yaw: 0, collapsed: false, epoch, request }
@@ -470,7 +484,7 @@ function startWorld(room: Room) {
   if (rail)
     T.rail = () => {
       const tick = Math.max(0, Math.floor(rail.mirror.step(performance.now()) / RULE_STEPS));
-      const s = rail.at(tick);
+      const mw = mirrored();
       const acks = T.railPackets.filter((p) => p.ack).map((p) => ({ t: 'ack', epoch: p.ack![0], request: p.ack![1] }));
       const rej = T.railPackets.flatMap((p) =>
         ((p.rej ?? []) as [number, number, string][]).map(([epoch, request, reason]) => ({
@@ -486,14 +500,14 @@ function startWorld(room: Room) {
         ready: rail.synced(),
         step: rail.step(),
         hash: rail.hash(),
-        phase: railPhase(s, tick),
-        activeStation: railActiveStation(s),
-        counts: railCounts(s),
-        accounts: s.accounts.map((a) => ({ ...a })),
+        phase: railPhase(mw, tick, tick),
+        activeStation: railActiveStation(mw),
+        counts: railCounts(mw, tick),
+        accounts: accounts(mw).map((a) => ({ ...a })),
         messages: [...T.railMessages.map((m) => ({ ...m })), ...acks, ...rej],
         registry: w.registry(),
-        sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: s.sources[k]! })),
-        line2: s.line2?.jobs.map((j) => j.completion) ?? [],
+        sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: tree(mw, k).left })),
+        line2: qjobs(mw).map((j) => j.completion),
         people: rules.roster.roster.pids.map((pid, k) => ({ pid, name: rules.roster.nameOf(k) })),
         classicItems: rules.gifts.gifts.items.length,
       };
