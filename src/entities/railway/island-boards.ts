@@ -1,7 +1,7 @@
 // The halts' map displays: each shows the island map (src/render/island-map.ts) on one face, oriented for whoever
 // faces it so what lies beyond the display is up the map (owner, 9 November: "Island map"; 10 November: on "a little
-// display at the station"). Every face is a cell of one shared canvas atlas that is drawn once and again only when the
-// pier is laid; the trains are small instanced quads gliding over the faces and the arrival blink is a red ring quad
+// display at the station"). Every face is a cell of one shared canvas atlas that is drawn once and again only when line 2's
+// stage changes (the Pier laid, Q7, each railhead, the rivet: halt-map.ts); the trains are small instanced quads gliding over the faces and the arrival blink is a red ring quad
 // per "you are here" stop, so a moving train never redraws a texture; the Works' gold marks and the waiting glider's
 // teal canopy are quads too. A marker a train (v26: line 2 runs two), in its line's colour, with a red hold badge over
 // a train held for the block ahead or the headway (the held departure; docs/plans/generic-lines.md, 4). Six draws for
@@ -16,6 +16,7 @@ import {
   mapPx,
   mapSizes,
   pathAt,
+  MAP_CELL,
   MAP_FACE,
   MAP_RING,
   type MapLine,
@@ -24,12 +25,12 @@ import {
 import type { OwnedView } from '../../render/owned-view.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 
-const CW = 320,
-  CH = 256,
+const CW = MAP_CELL.w,
+  CH = MAP_CELL.h,
   COLS = 4,
   BLINK_HZ = 2.5;
 
-type Face = { view: MapView; c: THREE.Vector3; right: THREE.Vector3; out: THREE.Vector3; yaw: number };
+type Face = { view: MapView; fwd: { x: number; z: number }; c: THREE.Vector3; right: THREE.Vector3; out: THREE.Vector3; yaw: number };
 type Here = { line: number; stop: number };
 type Board = { mesh: THREE.Mesh; face: Face; here: readonly Here[]; on: boolean };
 /** "You are here" stops one display can ring (the Home island's is on both lines). */
@@ -62,9 +63,12 @@ export function createIslandBoards(
     material.dispose();
   });
   const boards: Board[] = [];
-  // The map's sizes in metres on a face, for the quads.
-  const S = mapSizes(CH),
+  // The map's sizes in metres on a face, for the quads: `S1` today's (the quads' geometry is built at it), `S` the
+  // marks' now (`scale`, the map's size factor: the sea-line map's are smaller, see haltMap).
+  const S1 = mapSizes(CH),
     toM = h / CH;
+  let scale = 1,
+    S = S1;
 
   // Trains: one quad per train per face; the arrival ring: one per "you are here" stop.
   const markTex = (() => {
@@ -99,7 +103,7 @@ export function createIslandBoards(
     return t;
   })();
   const holdMat = new THREE.MeshStandardNodeMaterial({ map: holdTex, alphaTest: 0.5, roughness: 0.6 });
-  const holdPx = S.markH * 1.1;
+  const holdPx = S1.markH * 1.1;
   const holds = new THREE.InstancedMesh(new THREE.PlaneGeometry(holdPx * toM, holdPx * toM), holdMat, count * T);
   holds.frustumCulled = false;
   owner.add(holds);
@@ -110,7 +114,7 @@ export function createIslandBoards(
   });
   const ringMat = new THREE.MeshStandardNodeMaterial({ color: MAP_RING, roughness: 0.6 });
   const rings = new THREE.InstancedMesh(
-    new THREE.RingGeometry(S.dot * 1.25 * toM, S.ring * toM, 24),
+    new THREE.RingGeometry(S1.dot * 1.25 * toM, S1.ring * toM, 24),
     ringMat,
     count * HERES,
   );
@@ -157,7 +161,7 @@ export function createIslandBoards(
   const goldMats = [zigTex, squareTex].map(
     (map) => new THREE.MeshStandardNodeMaterial({ map, color: GOLD_ROPE, alphaTest: 0.5, roughness: 0.6 }),
   );
-  const goldPx = S.dot * 3.2,
+  const goldPx = S1.dot * 3.2,
     goldSize = goldPx * toM;
   const zigs = new THREE.InstancedMesh(new THREE.PlaneGeometry(goldSize, goldSize), goldMats[0]!, count * SEAMS);
   const squares = new THREE.InstancedMesh(new THREE.PlaneGeometry(goldSize, goldSize), goldMats[1]!, count);
@@ -211,7 +215,7 @@ export function createIslandBoards(
     return t;
   })();
   const gliderMat = new THREE.MeshStandardNodeMaterial({ map: gliderTex, alphaTest: 0.5, roughness: 0.6 });
-  const gliderPx = S.dot * 5;
+  const gliderPx = S1.dot * 5;
   const gliders = new THREE.InstancedMesh(new THREE.PlaneGeometry(gliderPx * toM, gliderPx * toM), gliderMat, count);
   gliders.frustumCulled = false;
   owner.add(gliders);
@@ -241,7 +245,10 @@ export function createIslandBoards(
 
   const cellOf = (b: number) => ({ x: (b % COLS) * CW, y: Math.floor(b / COLS) * CH });
   function drawAll() {
-    boards.forEach((bd, b) => drawMapBase(g, cellOf(b), CW, CH, lines, bd.face.view, bd.here));
+    boards.forEach((bd, b) => {
+      bd.face.view = fitMap(lines, bd.face.fwd, CW, CH, CH * MAP_CELL.pad);
+      drawMapBase(g, cellOf(b), CW, CH, lines, bd.face.view, bd.here, scale);
+    });
     map.needsUpdate = true;
   }
 
@@ -273,7 +280,8 @@ export function createIslandBoards(
       // The reader looks against the normal; their right is (-fz, fx) of where they look.
       const fwd = { x: -n.x, z: -n.z };
       const face: Face = {
-        view: fitMap(lines, fwd, CW, CH, CH * 0.11),
+        view: fitMap(lines, fwd, CW, CH, CH * MAP_CELL.pad),
+        fwd,
         c: c.clone().addScaledVector(n, off),
         right: new THREE.Vector3(-fwd.z, 0, fwd.x),
         out: n,
@@ -294,8 +302,13 @@ export function createIslandBoards(
       boards.push({ mesh, face, here: here.slice(0, HERES), on: false });
       return b;
     },
-    /** Draw every face (after the last `add`, and whenever a line's `laid` changes). */
-    redraw: drawAll,
+    /** Fit and draw every face (after the last `add`, and whenever `lines` change: a line's `laid`, its stops and path),
+     * its marks at `markScale` of today's size (kept when omitted). */
+    redraw(markScale = scale) {
+      scale = markScale;
+      S = mapSizes(CH, scale);
+      drawAll();
+    },
     /** Display `b` shown or not. */
     set(b: number, on: boolean) {
       const bd = boards[b]!;
@@ -353,7 +366,7 @@ export function createIslandBoards(
           marks.setMatrixAt(k, m4.compose(p, q, sc.set(S.markW * toM, S.markH * toM, 1)));
           if (!held[t]) return holds.setMatrixAt(k, hide);
           onFace(face, px, py - S.markH * 1.05, 0.014);
-          holds.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
+          holds.setMatrixAt(k, m4.compose(p, q, sc.set(scale, scale, 1)));
         });
         for (let i = 0; i < HERES; i++) {
           const k = b * HERES + i,
@@ -365,7 +378,7 @@ export function createIslandBoards(
           const st = lines[hr.line]!.stops[hr.stop]!;
           const [px, py] = mapPx(face.view, st.x, st.z);
           onFace(face, px, py, 0.006);
-          rings.setMatrixAt(k, m4.compose(p, q, sc.set(1, 1, 1)));
+          rings.setMatrixAt(k, m4.compose(p, q, sc.set(scale, scale, 1)));
         }
         const gold = (
           mesh: THREE.InstancedMesh,

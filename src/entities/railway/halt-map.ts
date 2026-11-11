@@ -2,7 +2,8 @@
 // then line 2's Pier), and every display's facing and "you are here" stops. Pure numbers, so halts-view.ts builds
 // from them and a unit test checks every display's names (test/island-map-labels.test.ts).
 import { LINE_HALTS, TRAIN_STOPS } from '../../sim/railway-train.ts';
-import { simplify, type MapLine } from '../../render/island-map.ts';
+import { MAP_SEA_SCALE, simplify, type MapLine } from '../../render/island-map.ts';
+import { line2At } from './line2-path.ts';
 import { RAIL_LINES } from '../../sim/railway-lines.ts';
 
 type Layout = typeof import('../../place/layout.ts');
@@ -11,31 +12,53 @@ type LinePoint = import('../../place/layout.ts').LinePoint;
 /** Each line's colour on the displays' map, track and train: line 1 gold, line 2 teal. */
 export const LINE_MARK = ['#ffd23f', '#2ec4b6'] as const;
 
-/** The island map every display shows: each line's track from its first stop to its last, every 4 m then simplified
- * to within 1.5 m, and its stops named as the halts are ("Village, line 2" is Village). The Railhead and Ring Island
- * (v27, off Place's line) are not on it yet: with them the 320 x 256 faces cannot place their names (the review of R4a
- * records the failing pairs: "Pier" covers the Railhead's ring, "Village" covers Camp's), so the map keeps v26's six. */
-export function haltMapLines(layout: Layout): MapLine[] {
+/** How far line 2 has got, as the map shows it: `open` is how many of its stops trains serve (trainStops' length: 3
+ * before the Pier is laid, 4 the Pier laid, 5 with Q7 laid so the Railhead stands, 6 once the rivet is struck) and
+ * `head` the railhead's bent (ringHead; read only from 5 stops). */
+export type MapStage = { open: number; head: number };
+
+/** The island map every display shows, for a stage of line 2 (ring-island-build1, "the halt map at eight stops", calls
+ * 66-70). Each line's track from its first stop to its last, every 4 m then simplified to within 1.5 m (every stop
+ * kept as a vertex, so a train's marker meets its stop), and its stops named as the halts are ("Village, line 2" is
+ * Village).
+ * - Until the Pier is laid it is v26's map at today's sizes: line 2 ends at the dim Pier, the stretch past Far Head
+ *   dashed.
+ * - From the Pier laid it is line 2 whole, out to dim Ring Island, fitted at true scale with every mark at
+ *   `MAP_SEA_SCALE` of today's (the 320 x 256 faces cannot name eight stops any bigger once the sea line is on them).
+ * - From Q7 laid the Railhead is a lit, named stop at its bent (`head`) and the solid track ends there.
+ * - Once joined the track is solid to Ring Island, whose name lights; the Railhead stays at the last bent. */
+export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }): { lines: MapLine[]; scale: number } {
   const Q: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  return TRAIN_STOPS.map((all, k) => {
-    const cm = all.filter((_c, i) => !RAIL_LINES[k]!.halts[i]!.heads && !RAIL_LINES[k]!.halts[i]!.ring);
-    const line = layout.LINKS[k]!.line,
-      s0 = cm[0]! / 100,
-      s1 = cm[cm.length - 1]! / 100;
-    const at = (s: number) => (layout.lineAt(line, s, Q), { x: Q.x + layout.ORIGIN.x, z: Q.z + layout.ORIGIN.z, s });
-    const dense = [];
-    for (let s = s0; s < s1; s += 4) dense.push(at(s));
-    dense.push(at(s1));
-    return {
-      color: LINE_MARK[k]!,
-      path: simplify(dense, 1.5),
-      laid: s1,
-      stops: cm.map((c, i) => ({
-        name: LINE_HALTS.find((h) => h.line === k && h.stop === i)!.name.split(',')[0]!,
-        ...at(c / 100),
-      })),
+  const sea = stage.open >= 4;
+  const lines = RAIL_LINES.map((def, k): MapLine => {
+    // Line 2's halts in order: Village, Quarry, Far Head, Pier, Railhead (it moves with `head`), Ring Island.
+    const picks = def.halts
+      .map((h, i) => ({ h, i }))
+      .filter(({ h }) => (k === 0 ? !h.heads && !h.ring : h.ring ? sea : h.heads ? stage.open >= 5 : true));
+    const stops = picks.map(({ h, i }) => ({
+      name: LINE_HALTS.find((x) => x.line === k && x.stop === i)!.name.split(',')[0]!,
+      s: (h.heads ? h.heads[Math.max(0, Math.min(h.heads.length - 1, stage.head))]! : TRAIN_STOPS[k]![i]!) / 100,
+    }));
+    const at = (s: number) => {
+      if (k === 1) line2At(s, Q);
+      else layout.lineAt(layout.LINKS[k]!.line, s, Q);
+      return { x: Q.x + layout.ORIGIN.x, z: Q.z + layout.ORIGIN.z, s };
     };
+    // Between each pair of stops: a point every 4 m, simplified; the stops themselves stay vertices.
+    const path = [at(stops[0]!.s)];
+    for (let j = 1; j < stops.length; j++) {
+      const a = stops[j - 1]!.s,
+        b = stops[j]!.s,
+        dense = [at(a)];
+      for (let s = a + 4; s < b; s += 4) dense.push(at(s));
+      dense.push(at(b));
+      path.push(...simplify(dense, 1.5).slice(1));
+    }
+    const last = stops[stops.length - 1]!.s;
+    const laid = k === 0 ? last : stage.open >= 6 ? last : stops[stage.open >= 5 ? 4 : sea ? 3 : 2]!.s;
+    return { color: LINE_MARK[k]!, path, laid, stops: stops.map((x) => ({ ...x, ...at(x.s) })) };
   });
+  return { lines, scale: sea ? MAP_SEA_SCALE : 1 };
 }
 
 /** Place's halts, then line 2's Pier halt (s 719-741 m, 2.9 m east of the down track: ring-island-build1, call 53),

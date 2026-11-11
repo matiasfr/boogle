@@ -119,12 +119,26 @@ export function pathAt(l: MapLine, s: number): { x: number; z: number } {
   return p[p.length - 1]!;
 }
 
+/** The halts' map cell in pixels (`w` × `h`) and the padding `fitMap` keeps round the track, as a fraction of `h`;
+ * the boards draw into cells this size and the unit tests place names on the same ones. */
+export const MAP_CELL = { w: 320, h: 256, pad: 0.11 } as const;
+/** Every mark's size once the line heads to sea and the whole crossing is fitted at true scale (owner, 11 November:
+ * "Yes, smaller is fine"; docs/plans/ring-island-build1.md, call 67): 0.7 of the island-only map's. */
+export const MAP_SEA_SCALE = 0.7;
+
 /** Sizes in pixels for a map `h` tall: line width, stop dot radius, ring radius, label size, and a train marker's
- * width and height (callers drawing markers in the world use these too). */
-export function mapSizes(h: number) {
-  const r = h * 0.034,
+ * width and height (callers drawing markers in the world use these too). `scale` shrinks them all together. */
+export function mapSizes(h: number, scale = 1) {
+  const r = h * 0.034 * scale,
     mark = r * 1.15;
-  return { track: h * 0.032, dot: r, ring: r * 2.1, label: h * 0.085, markW: mark * 3.2, markH: mark * 2.27 };
+  return {
+    track: h * 0.032 * scale,
+    dot: r,
+    ring: r * 2.1,
+    label: h * 0.085 * scale,
+    markW: mark * 3.2,
+    markH: mark * 2.27,
+  };
 }
 
 /** A placed name: its box (top-left, size) and how it is inked. */
@@ -149,8 +163,8 @@ export function labelWidth(name: string, size: number) {
   return em * size * 1.08;
 }
 /** What each stop keeps clear of names, in pixels: its ring, or a train marker standing on it, whichever is wider. */
-export function stopClear(h: number) {
-  const S = mapSizes(h);
+export function stopClear(h: number, scale = 1) {
+  const S = mapSizes(h, scale);
   return Math.max(S.ring, Math.hypot(S.markW, S.markH) / 2) + S.label * 0.08;
 }
 
@@ -176,9 +190,10 @@ export function mapLabels(
   w: number,
   h: number,
   here: readonly { line: number; stop: number }[],
+  scale = 1,
 ): MapLabel[] {
-  const S = mapSizes(h),
-    clear = stopClear(h),
+  const S = mapSizes(h, scale),
+    clear = stopClear(h, scale),
     gap = S.label * 0.15,
     lh = S.label * 1.05,
     edge = h * 0.04;
@@ -303,8 +318,9 @@ export function drawMapBase(
   lines: readonly MapLine[],
   v: MapView,
   here: readonly { line: number; stop: number }[],
+  scale = 1,
 ) {
-  const S = mapSizes(h),
+  const S = mapSizes(h, scale),
     x0 = 0,
     y0 = 0;
   g.save();
@@ -360,7 +376,7 @@ export function drawMapBase(
   // Names, each in the box `mapLabels` gave it, set against the side nearer its stop.
   g.font = `700 ${S.label}px ${FONT}`;
   g.textBaseline = 'middle';
-  for (const b of mapLabels(lines, v, w, h, here)) {
+  for (const b of mapLabels(lines, v, w, h, here, scale)) {
     g.textAlign = b.align;
     g.fillStyle = b.here ? MAP_INK : b.lit ? NAME_LIT : MAP_DIM;
     g.fillText(b.name, b.align === 'left' ? b.x : b.align === 'right' ? b.x + b.w : b.x + b.w / 2, b.y + b.h / 2);
