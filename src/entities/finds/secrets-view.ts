@@ -24,7 +24,10 @@ import { cosmetic, crateParts, type GiftId, type Part, type Tier } from '../../r
 import { createCrateShow } from '../../render/crate-show.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { rewardSparkles } from '../../render/reward-particles.ts';
-import { railwayRead, railwayYouGot } from '../railway/state.ts';
+import { railwayWorldRead, railwayYouGot } from '../railway/state.ts';
+import { rail } from '../../sim/railway-rows.ts';
+import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { townShelf } from '../town/state.ts';
 import { wardrobe } from '../wardrobe/state.ts';
 import type { FindsApi, FindsViewInspection } from './state.ts';
@@ -296,21 +299,26 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
 
   /** The room has the glider: the accepted `Rail.glide`, taken on Needle Bell's summit (glider B). Until then the
    * glide-only boxes stay away. */
-  const glider = () => !!railwayRead()?.glide;
+  const glider = () => {
+    const f = railwayWorldRead();
+    return !!f && rail(f.world()).glide;
+  };
   /** You've gone on past it (Place's `passed`), in the order production's abilities come (designer fit check, 9
    * November): the walks with the hook; the catwalk and the tower's first box with the glider; the nook and the loft
    * with trains; the lookout once the double jump is yours and the run is done (Place handed it out at the hook,
    * before you could reach it); the glide-only two at the end of the run. */
   function passed(s: (typeof SECRETS)[number]) {
-    const r = railwayRead();
-    if (!r?.ready) return false;
+    const f = railwayWorldRead();
+    if (!f?.ready()) return false;
+    const w = f.world(),
+      row = rail(w);
     // The end of the run: every line-2 station complete (`completed` counts them).
-    const ended = r.line2.completed >= r.line2.stations.length;
+    const ended = line2Completed(w) >= LINE2_STATIONS.length;
     if (s.how === 'glide') return ended;
-    if (s.how === 'jump') return r.jump && ended;
-    if (s.after === 'hook') return r.line2.hook;
-    if (s.after === 'glide') return r.glide;
-    return r.line2.trains;
+    if (s.how === 'jump') return row.jump && ended;
+    if (s.after === 'hook') return row.hook;
+    if (s.after === 'glide') return row.glide;
+    return line2Trains(w);
   }
   /** Place's updateMissed: a box at the bay for each one you went on past without. Saved at once. */
   function updateMissed() {

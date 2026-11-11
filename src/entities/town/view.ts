@@ -4,7 +4,6 @@
 // the cutaway, the indoor camera, the barks and what's drawn near you are Local; what the residents told you is Personal
 // Local (./memory.ts). The museum's 1:120 table shows the shared railway as it stands (place-retirement T3). Until place-retirement R3 the pieces load from src/proto/place with import(), as the railway's
 // view does.
-import type { RailwayInspection } from '../../adapters/railway.ts';
 import type { FrameCtx } from '../../loop.ts';
 import { conversation } from '../../player/conversation.ts';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
@@ -16,7 +15,6 @@ import {
   townHas,
   townLevel,
   townPopulation,
-  townReadOf,
   type TownRead,
 } from '../../sim/town-facts.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
@@ -24,6 +22,7 @@ import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { inspectWardrobe, wardrobe } from '../wardrobe/state.ts';
 import { inspectRailway, railwayYouGot } from '../railway/state.ts';
 import { createTownMemory } from './memory.ts';
+import type { TownLook } from './town-read.ts';
 import type { TownInspection } from './state.ts';
 type Fact = import('./town-lines.ts').Fact;
 import { createCurioShelf } from './curio-shelf.ts';
@@ -47,7 +46,7 @@ const TABLE_EVERY = 0.5; // s: so is what the museum's table shows (trees, the m
 /** The great tree's id in the railway's sources (LINE1_GREAT_TREE). */
 const GREAT_TREE = 28;
 
-export async function createTownView(read: () => RailwayInspection | null) {
+export async function createTownView(read: () => TownLook | null) {
   const owner = createOwnedView();
   owner.root.name = 'town';
   const [roomKit, houseKit, shopKit, sites, lines, residentKit, museumKit, plans, layout] = await Promise.all([
@@ -63,24 +62,24 @@ export async function createTownView(read: () => RailwayInspection | null) {
   ]);
   let facts: TownRead = { path: false, forge: false, completed: 0, trains: false };
   let score = 0;
-  let railway: RailwayInspection | null = null;
+  let railway: TownLook | null = null;
   const refresh = () => {
     const r = read();
     if (!r) return;
     railway = r;
-    facts = townReadOf(r);
-    score = r.counts.score;
+    facts = r.facts;
+    score = r.score;
   };
   refresh();
   let rewardUp = false,
     hushIn = 0;
   const env: TownEnv = {
     has: (f) => townHas(facts, f),
-    newest: () => (railway?.works.breaker === 2 ? 'breaker' : newestTownFact(facts)),
+    newest: () => (railway?.breaker === 2 ? 'breaker' : newestTownFact(facts)),
     level: () => townLevel(facts),
     people: () => townPopulation(facts),
     awake: () => {
-      const phase = read()?.phase;
+      const phase = railway?.phase;
       return !!phase && phase !== 'asleep' && phase !== 'waking';
     },
     money: () => score,
@@ -146,14 +145,14 @@ export async function createTownView(read: () => RailwayInspection | null) {
       // both ends' stubs are down from the start. Line 2 lays out from the turntable.
       yield { line: line1, lo: 0, hi: layout.STUB.village };
       yield { line: line1, lo: LINE1_STATIONS[0]!.fromCm / 100, hi: line1.len };
-      for (const [i, s] of (railway?.stations ?? []).entries()) {
+      for (const [i, completion] of (railway?.line1 ?? []).entries()) {
         const q = LINE1_STATIONS[i];
-        if (q && s.completion) yield { line: line1, lo: q.toCm / 100, hi: q.fromCm / 100 };
+        if (q && completion) yield { line: line1, lo: q.toCm / 100, hi: q.fromCm / 100 };
       }
       yield { line: line2, lo: 0, hi: LINE2_STATIONS[0]!.fromCm / 100 };
-      for (const [i, s] of (railway?.line2.stations ?? []).entries()) {
+      for (const [i, completion] of (railway?.line2 ?? []).entries()) {
         const q = LINE2_STATIONS[i];
-        if (q && s.completion) yield { line: line2, lo: q.fromCm / 100, hi: q.toCm / 100 };
+        if (q && completion) yield { line: line2, lo: q.fromCm / 100, hi: q.toCm / 100 };
       }
     },
     movers: () => movers,
