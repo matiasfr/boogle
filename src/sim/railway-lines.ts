@@ -352,7 +352,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
   },
 ];
 
-/** Line 2's index: the line that carries cargo (the Q6 kit, the footing wagon). */
+/** Line 2's index: the line that carries cargo (the Q6 and Q7 kits, the footing wagon). */
 export const LINE2 = RAIL_LINES.findIndex((l) => l.id === 'line2');
 /** A line the pure train code runs: its index in RAIL_LINES, or a line the catalog does not hold (a test's fixture
  * line, its trains slots 0 to `trains - 1` of the rows it is given). A catalog row passed as an object is its index

@@ -1,4 +1,4 @@
-// Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
+// Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q7, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-sys-line2.ts.
 import { railRingOpen, trainStopsOf } from './railway-train.ts';
 import { LINE2 } from './railway-lines.ts';
@@ -123,7 +123,7 @@ export function line2CartStatus(s: Railway): 'off' | 'loading' | 'travelling' | 
   const logs = Math.min(spec.bill[0] - j.stock - l.depot, spec.bill[0] - l.depotOut[k]!);
   return logs > 0 || line2CartWants(s, k) > 0 ? (c.phase === CART_PHASE.REST ? 'loading' : 'travelling') : 'off';
 }
-/** Line 2's trains' cargo: the Q6 kit aboard any of them. */
+/** Line 2's trains' cargo: the active train-fed job's kit (Q6's or Q7's) aboard any of them. */
 export const line2Aboard = (s: Railway, key: 'logs' | 'rails' | 'foot') =>
   railTrainsOf(s, LINE2).reduce((n, r) => n + r[key], 0);
 export const line2Logs = (s: Railway) => {

@@ -247,7 +247,7 @@ function jobRead<C extends typeof Job | typeof QJob>(
 /** Line one's jobs, T1 to T3 (railJobs). */
 export const railJobs = (w: World, at?: number): JobRead[] =>
   LINE1_STATIONS.map((_s, slot) => jobRead(w, Job, JobRun, job(w, slot), at) as JobRead);
-/** Line two's jobs, Q1 to Q6. */
+/** Line two's jobs, Q1 to Q7. */
 export const line2Jobs = (w: World, at?: number): QJobRead[] =>
   LINE2_STATIONS.map((_s, slot) => jobRead(w, QJob, QJobRun, qjob(w, slot), at) as QJobRead);
 /** The line-one station taking materials now (activeStation). */

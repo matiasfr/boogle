@@ -2,7 +2,7 @@
 // (./railway-line2.ts) restated on the rows and the world queries, in the same order and with the same messages. Run
 // by railwayCheck (./railway-check.ts).
 //
-//   checkLine2(w)    the forge and its pour clock; Q1 to Q6's bounds, order, funding and laying; the depot, the cart,
+//   checkLine2(w)    the forge and its pour clock; Q1 to Q7's bounds, order, funding and laying; the depot, the cart,
 //                    the lever, hook, glider and pack; the shelf; the boiler; rail conservation (throws on the first)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
