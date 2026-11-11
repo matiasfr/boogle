@@ -66,9 +66,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      - name: Install Chromium and system deps
+      # No --with-deps (its apt step stalls; the runner image carries Chromium's libraries): ci.yml's net job says why.
+      - name: Install Chromium
         if: ${{ !cancelled() }}
-        run: npx playwright install --with-deps chromium || npx playwright install chromium
+        run: npx playwright install chromium
       - name: The deployed game boots
         if: ${{ !cancelled() }}
         shell: bash
