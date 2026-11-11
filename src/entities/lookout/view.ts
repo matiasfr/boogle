@@ -7,6 +7,10 @@ import { camConstraints, camForward, me } from '../../player/player.ts';
 import { openModal, closeModal } from '../../player/modal.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { FrameCtx } from '../../loop.ts';
+import { railwayRead } from '../railway/state.ts';
+import { buoyLifted } from '../railway/railhead-shape.ts';
+import { splash } from '../../render/splash.ts';
+import { SEA } from '../../constants.ts';
 import './telescope.css';
 
 /** Place's 12 buoys, cut to 7: the last five stood inside Ring Island's hills (land.ts buildFar, 340 m round the shard). The
@@ -191,17 +195,44 @@ export async function createLookoutView() {
     }
   }
   const bo = new THREE.Object3D();
-  function updateBuoys(now: number) {
+  /** Per buoy: 0 afloat, 1 lifted out and gone (ring-island-build1, R4b; RING_BUOYS): the bents stand where the first
+   * ones float, so each is lifted off its mooring as the railhead reaches it, with a splash. Restored: gone at once. */
+  const lift = buoyAt.map(() => 0);
+  const lifted = buoyAt.map(() => false);
+  let known = false;
+  function readLifted(dt: number) {
+    const ring = railwayRead()?.ring;
+    const head = ring?.head ?? 0,
+      joined = !!ring && ring.joined >= 0;
+    const live = !!ring;
     buoyAt.forEach((q, k) => {
+      const want = live && buoyLifted(k, head, joined);
+      if (want === lifted[k]) return;
+      lifted[k] = want;
+      if (!known) lift[k] = want ? 1 : 0;
+      else if (want) splash(q.x, q.z, 1, SEA);
+    });
+    known ||= live;
+    buoyAt.forEach((_, k) => {
+      lift[k] = Math.max(0, Math.min(1, lift[k]! + (lifted[k] ? 1 : -1) * dt * 0.8));
+    });
+  }
+  function updateBuoys(now: number, dt = 0) {
+    readLifted(dt);
+    let n = 0;
+    buoyAt.forEach((q, k) => {
+      if (lift[k]! >= 1) return;
       const up = Math.sin(now * 0.0012 + k * 1.3) * 0.25;
-      bo.position.set(q.x, 0.7 + up, q.z);
-      bo.rotation.set(Math.sin(now * 0.0009 + k) * 0.08, 0, Math.cos(now * 0.0011 + k) * 0.08);
+      const raised = lift[k]! * lift[k]! * 14;
+      bo.position.set(q.x, 0.7 + up + raised, q.z);
+      bo.rotation.set(Math.sin(now * 0.0009 + k) * 0.08, 0, Math.cos(now * 0.0011 + k) * 0.08 + lift[k]! * 0.9);
       bo.updateMatrix();
-      buoys.setMatrixAt(k, bo.matrix);
+      buoys.setMatrixAt(n, bo.matrix);
       bo.position.y += 1.45;
       bo.updateMatrix();
-      buoyTops.setMatrixAt(k, bo.matrix);
+      buoyTops.setMatrixAt(n++, bo.matrix);
     });
+    buoys.count = buoyTops.count = n;
     buoys.instanceMatrix.needsUpdate = buoyTops.instanceMatrix.needsUpdate = true;
   }
   updateBuoys(0);
@@ -214,9 +245,15 @@ export async function createLookoutView() {
       return Math.hypot(b.position.x - scopeAt.x, b.position.z - scopeAt.z) < 3.4 ? target : NONE;
     },
     update(ctx: FrameCtx) {
-      updateBuoys(ctx.now);
+      updateBuoys(ctx.now, ctx.dt);
     },
-    inspect: () => ({ open, zoom, buoys: buoyAt.length, scope: { x: SX, y: SY, z: SZ } }),
+    inspect: () => ({
+      open,
+      zoom,
+      buoys: buoyAt.length - lifted.filter(Boolean).length,
+      lifted: lifted.filter(Boolean).length,
+      scope: { x: SX, y: SY, z: SZ },
+    }),
     dispose: () => owner.dispose(),
   };
 }

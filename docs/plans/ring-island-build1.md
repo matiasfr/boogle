@@ -1046,7 +1046,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > frame's board reads "Station 7" (a label the plan does not name); the island's west lever is plaqued "Ring Island",
   > not a branch emblem. Unchecked: the eval that walks a footing from the rack to the jib (not written), `npm run perf` at the
   > pier head, a train at the island's crossover.
-- [ ] **4b. R4b, the railhead and the gap.** `src/entities/ring-railhead/` as under "R4"; `lookout/view.ts` lifts buoys
+- [x] **4b. R4b, the railhead and the gap.** (built 11 November 2026, branch `ring/r4b-railhead`; see the note under this step) `src/entities/ring-railhead/` as under "R4"; `lookout/view.ts` lifts buoys
   by `RING_BUOYS`; `hook-view.ts` adds the pile's ring once `set === 14`. Before and after stills of the finished bow
   from Home's summit and the telescope, logged (brief risk "the bow changes a finished view"). Checks: `npm run check`,
   `npm run perf` at the railhead, `npm run level-check`. Test (in the eval below or a node test of the view's
@@ -1055,6 +1055,26 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   deck (owner's answer 2: this step does not touch `ringUnstuckHome`).
   Proof look: `--rail-seed gap-footed` from the take-off (the greybox's `views.gap` camera, moved with the platform):
   the brace platform, the gold strut and the waving folk straight ahead and 7.6 m down, the leaf on your left.
+  > **Built (implementer, 11 November 2026): R4b, the railhead and the gap, on `ring/r4b-railhead`; not shipped.** What
+  > stands: bents 7-13 each standing on its second footing, the span (planks, stringers, both tracks' rails, the side
+  > walkway) dropping on it, the railhead platform, rack, jib, buffers and the stub's crossover sliding out with it at 7 m/s
+  > (`railhead-view.ts`, `railhead-shape.ts`; the platform's collider only while it is where the sim has it, the walkway
+  > under its old place always), the gap as stakes, glowing sockets and a striped beam, the footing's rope from the jib into
+  > its socket, the prompts at the rack (rack 2) and the jib (site 3) and the wagon's ring hop (`footPlaces({ ring })`),
+  > with bent 13 the hook pile and pad, the take-off rail and the joint's west platform with its plank crossing, the island's
+  > hook ring joining `hook-view.ts`'s rings at `set === 14` (`setIslandRing`), the lookout's buoys lifting by `RING_BUOYS`.
+  > Test: `test/railway-r4b-views.test.ts`. **The P1 (trains over open water at ring-joined):** the near view of the island
+  > was never kept mounted (nothing set `ringIslandNear.keep`, which R4a's note says it did), so past 650 m there was no
+  > Way at all, and the leaf stayed raised after the rivet; the railhead view now sets `keep` from Q7 and lays the leaf flat on
+  > `joined` until R4c swings it. **Deviations:** (1) the view is `src/entities/railway/railhead-view.ts`, mounted by
+  > `works-live.ts` beside the crossing, not `src/entities/ring-railhead/`: it needs the adapter's actions and accepted
+  > edges, which only the railway view holds (R4c-R4e will want the same seam). (2) The kit slides when the bent has
+  > stood (about 3.8 s after the second footing is set), not at once with the sim's head: the prompts at the rack and
+  > jib wait for it. (3) The crane's little guy does not bow at a lifted buoy. (4) Not run: `npm run perf` at the railhead,
+  > the before and after stills of the finished bow from Home's summit and the telescope, the eval that drops a player on the
+  > platform while `head` advances (the walkway's cover is a test of the numbers). R4a's P3 (old merge sleepers kept after
+  > the relay) is fixed in `track.ts`; its P2 (the laying machine travelling out onto the deck) is not, it is Place's six
+  > stretches. `dev/look/ring-mid-seed.ts`: `--rail-seed ring-set-N` (N 0-14), a look save with N footings set.
 - [ ] **4c. R4c, the leaf.** `src/entities/ring-leaf/` as under "R4". Checks: `npm run check`, `npm run test:net` (the leaf's
   state mirrored on three tabs). Proof look (Done means): `npm
   run look -- --players 2 --rail-seed leaf-raised`, one player braced on the island side, the other hanging the last

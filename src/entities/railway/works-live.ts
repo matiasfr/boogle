@@ -9,11 +9,19 @@ import { createRailwayWorks } from './works-view.ts';
 import { createRailwayRoundhouse } from './roundhouse-view.ts';
 import { createRailwayFootings } from './footing-view.ts';
 import { createRailwayCrossing } from './crossing-view.ts';
+import { createRailwayRailhead } from './railhead-view.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  deps: { seated: () => boolean; busy: () => boolean; toPier: () => number },
+  deps: {
+    seated: () => boolean;
+    busy: () => boolean;
+    toPier: () => number;
+    toRing: () => number;
+    /** Shows or hides the island's hook ring (hook-view.ts), once the gap is footed. */
+    hookRing: (on: boolean) => void;
+  },
 ) {
   const shapes = await import('../../render/part-geometry.ts');
   const breaker = createRailwayBreaker(adapter, owner, shapes);
@@ -23,10 +31,11 @@ export async function createRailwayWorksLive(
     createRailwayCrossing(adapter, owner, deps),
   ]);
   const footings = createRailwayFootings(adapter, owner);
-  const views = [breaker, works, roundhouse, footings, crossing];
+  const railhead = createRailwayRailhead(adapter, owner, deps);
+  const views = [breaker, works, roundhouse, footings, crossing, railhead];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
-    footPlaces: { works: works.rackSlot, pier: crossing.rackSlot },
+    footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
     crossingInspect: () => crossing.inspect().crossingView,
     restore() {
       for (const view of views) view.restore();
@@ -43,6 +52,7 @@ export async function createRailwayWorksLive(
       works.corrected(c);
       roundhouse.corrected(c);
       crossing.corrected(c);
+      railhead.corrected(c);
       footings.corrected(c);
     },
     targets: (): Interactable[] => [
@@ -51,9 +61,11 @@ export async function createRailwayWorksLive(
       ...roundhouse.targets(),
       ...footings.targets(),
       ...crossing.targets(),
+      ...railhead.targets(),
     ],
     inspect: () => ({
       ...works.inspect(),
+      ...railhead.inspect(),
       ...roundhouse.inspect(),
       ...breaker.inspect(),
       footings: footings.inspect(),

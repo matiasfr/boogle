@@ -6,10 +6,12 @@ import { buildSeedDoc } from '../../server/src/seeds/build.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { isSeedStage } from '../../src/sim/railway-seeds.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
+import { buildRingMidDoc, ringMidStage } from './ring-mid-seed.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
-  if (!isSeedStage(stage)) throw new Error(`Unknown railway seed: ${stage}`);
-  const doc = await buildSeedDoc(stage);
+  const mid = ringMidStage(stage);
+  if (mid === null && !isSeedStage(stage)) throw new Error(`Unknown railway seed: ${stage}`);
+  const doc = mid !== null ? await buildRingMidDoc(Number(mid)) : await buildSeedDoc(stage as never);
   const store = createStore({ dataDir, maxRooms: 2 });
   await store.init();
   const result = await store.write(railwayRoomId(room), {
