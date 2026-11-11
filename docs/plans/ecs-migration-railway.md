@@ -240,8 +240,13 @@ Three lanes share no files, so they run at the same time: **A** (sim) M0, M2, M3
       records `track`, `requires` and non-zero `defaults` (a changed default alters fresh worlds); the golden test
       costs about 2.5 minutes of `npm run check` wall time (stage building is about 90% of it; tick on the raw world,
       not the live read-model proxy, which doubled it); the snapshot fixture is a v26 shape and is retired, not
-      regenerated, at the next `WORLD_NS` bump. Not done: a scripted stream for ops no stage runs (reviewer attack 1
-      is open); Node 24 not run.
+      regenerated, at the next `WORLD_NS` bump. Follow-up (`ecs/m0b-ops`): the stage golden is now 9 shard files
+      (`test/railway-golden-<n>.test.ts` over `test/helpers/railway-golden.ts`) with the tick pass on an unaudited copy
+      (same hashes, about 250 times faster); `test/railway-ops.test.ts` runs the ops and entry points no stage runs
+      (take, rackTake, axe, beamDrop, call, jump, reject, resume, supply pulse, beam release/stood/put-down, boiler
+      stood/put-down, foot release, session past epoch 1), world hash after every step, in
+      `test/fixtures/railway-ops-golden.json`. The snapshot test is deleted, not re-recorded, at the next bump (owner,
+      10 November). Node 24 not run.
   - `test/railway-golden.test.ts` and `test/fixtures/railway-golden.json`: for every `SeedStage` in
     `src/sim/railway-seeds.ts`, build the stage (at module scope, as `test/railway-trains.test.ts` does, outside the
     5 s test timeout) and record `world.hash()` at the stage and after 1,200 further `railTick`s. `GOLDEN=1`
