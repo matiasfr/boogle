@@ -7,6 +7,10 @@
 History for [decisions-core-loop.md](decisions-core-loop.md), verbatim.
 
 ### Superseded entries
+- **Eras:** six: wood, steam, iron and harbour, diesel and concrete, electric (bullet trains with pantographs and overhead wires), and a future train that "doesn't have to be actually an exact monorail".
+  _Archived 10 November 2026; superseded by Core loop, 2026-11-10, the four era entries (owner: "Archive "Eras: six" and "What ends an era""); eras became better materials (Changed, 2026-11-02, "Materials replace eras")._
+- **What ends an era:** reaching a key connection.
+  _Archived 10 November 2026; superseded by Core loop, 2026-11-10, the four era entries (owner: "Archive "Eras: six" and "What ends an era"")._
 
 - **While nobody plays:** the network banks one project, and the next step waits for players. _(Superseded 2026-11-06: an empty world is paused, and the next join applies one capped away credit.)_
   _Archived 10 November 2026; superseded by its own note, "Superseded 2026-11-06: an empty world is paused"; Rewards, 2026-11-06, economy principles amended._
@@ -106,6 +110,8 @@ History for [decisions-rewards.md](decisions-rewards.md), verbatim.
 History for [decisions-characters.md](decisions-characters.md), verbatim.
 
 ### Superseded entries
+- **The Boogler is the mayor** (from era 2; parked, see the audit picks). His dialogue has no relationship progression; the 4 November call preserves his copy for a later narrative pass.
+  _Archived 10 November 2026; superseded by Characters, 2026-11-10, The Boogler is an entrepreneur (owner: "Entrepreneur; the mayor entry is archived")._
 
 - **2026-11-02, the player is the Tracklayer** (previz name "the Plumber's Cousin": `.look/previz/hero-options-3`, shot 2; renamed by the owner, with a railway cap and not red by default; replaces the open Bib Buddies/split question). A sculpted, skinned humanoid, about 3.5 heads tall, in the spirit of modern Mario as our own character: a big head, simple dark eyes and no mouth, railway engineer's cap, overalls over a tee, big gloves, chunky boots. It plays the hand-made clips on a humanoid skeleton. The owner chose it because it should scale best to customizable outfits and feel like a good character to be. The player's colour on the cap and overalls is the working assumption; not yet confirmed. Not built yet.
   _Archived 10 November 2026; superseded by Characters, 2026-11-02, the Buddy is the one player figure ("The Tracklayer entries below are history")._
@@ -125,6 +131,14 @@ History for [decisions-characters.md](decisions-characters.md), verbatim.
 History for [decisions-look.md](decisions-look.md), verbatim.
 
 ### Superseded entries
+- **2026-11-03, demo sky with AgX is the best starting point for the look** (owner, after the `&sky=demo&tone=agx` boards: "so far I really like Demo Sky AGX"). A frozen late morning (`tod=0.24`) is the comparison's pick. Rolling it out goes with the real-sea work; expect to tune trees and the avatar under it.
+  _Archived 10 November 2026; superseded by Look, 2026-11-10, the sky is the gradient and cloud sprites (owner: "The 10 November gradient and cloud sprites, in the lighter blue, lit by the 6 November cell 5 settings; the demo-sky and bake entries are archived")._
+- **2026-11-03, bake the real-water sky once during loading, at late morning** (owner). Under `?water=new`, the demo sky and metered AgX are the production starting look, frozen at `tod=0.24`. Its cube is baked once behind the loading screen and never during play, with the real sun fixed to that direction; it replaces the toon dome, sun/moon billboards and cycle on this route. More baked times may be considered later. The old route retains Neutral and its cycle until the reviewed switch (water-graduation step 7); `scene.ts` stays unchanged.
+  _Archived 10 November 2026; superseded by Look, 2026-11-10, the sky is the gradient and cloud sprites (owner: "The 10 November gradient and cloud sprites, in the lighter blue, lit by the 6 November cell 5 settings; the demo-sky and bake entries are archived")._
+- **2026-11-03, the real sea uses the demo's sky, with time of day frozen at a pleasant state** (owner): change the time only intentionally, in parts of the game. It replaces the 20-minute cycle, so the Design Table's day-only and night-only things hang off those chosen moments. Bake each chosen time once, ahead of time.
+  _Archived 10 November 2026; superseded by Look, 2026-11-10, the sky is the gradient and cloud sprites (owner: "The 10 November gradient and cloud sprites, in the lighter blue, lit by the 6 November cell 5 settings; the demo-sky and bake entries are archived")._
+- **2026-11-03, use the Ultra Water demo sky, frozen at a pleasant time** (owner: "Let's just go with the demo sky and see what it looks like. Can you give me some comparisons?"). Time changes only on purpose. First compare it with the toy characters under Neutral and AgX; `sky=demo` is the opt-in comparison, not the final integration. This supersedes the earlier decision to keep the original sky below. The reference is `/Users/matiasfranco/Developer/boogle-codex/demo-shots/board.png`.
+  _Archived 10 November 2026; superseded by Look, 2026-11-10, the sky is the gradient and cloud sprites (owner: "The 10 November gradient and cloud sprites, in the lighter blue, lit by the 6 November cell 5 settings; the demo-sky and bake entries are archived")._
 
 - **2026-11-10, toon shading style B is the default look, without its rim** _(superseded the same day: baseline shading again, toon B removed)_ (owner, answering the [toon-shading](research/toon-shading.md) boards: "Let's go with shading style B and clean up"). Every Standard-lit surface, characters and environment alike, gets B's soft step on the sun's diffuse, the flattened sky fill and the cool shade side (a patch on the Standard lighting model, now removed; no draws, no pass). The rim is off: this is the orchestrator's reading, not the owner's words. The recommendation he was answering was B with `toonRim=0`, and the standing 2 November call says Buddy has no rim light, so `toon.rim` stays a tunable defaulting to 0, one line to turn on if he asks. Candidates A (characters only) and C (B plus the ink hull) and the `?toon=a|b|c` flag are removed; `?toon=off` keeps three's plain lighting for before/after looks. This supersedes, for the lighting model only, the 4 November "Buddy keeps his current lighting" call: B's step is softer than the two-band ramp turned down then and keeps 30% of the cosine on the lit side.
   _Archived 10 November 2026; superseded by its own note, "superseded the same day"; Look, 2026-11-10, baseline shading is the default again; toon B removed._
