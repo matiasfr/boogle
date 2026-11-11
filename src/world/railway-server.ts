@@ -6,14 +6,9 @@
 // The rules stay pure (state, action, tick): railApply and railTick are the same functions R1b's prediction runs.
 // Validation reads the facts the action carried (the actor's own position and action clock) through `Actor`.
 import {
-  railCounts,
   railInt,
   railYaw,
-  railPhase,
   railSource,
-  railMaxDuration,
-  railPanelCount,
-  railPanelStock,
   RAILWAY_MAX_INT,
   type RailAction,
   type RailResult,
@@ -40,7 +35,8 @@ import {
   LINE2_BOILER,
   LINE2_OLD_TRAIN,
 } from '../sim/railway-line2-layout.ts';
-import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
+import { railCounts, line2Active, line2GateOpen, line2Completed } from '../sim/railway-queries-line2.ts';
+import { railMaxDuration, railPanelCount, railPanelStock, railPhase } from '../sim/railway-queries-line1.ts';
 import { trainAlong, trainSpeed } from '../sim/railway-train.ts';
 import { RAIL_HALTS, RAIL_TRAINS, haltPlatform } from '../sim/railway-lines.ts';
 import { RING_BRACE, RING_HEAD, RING_RIVET } from '../sim/railway-ring-layout.ts';
@@ -349,7 +345,9 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
   };
   const railId = () => world.single(Rail);
   return {
-    /** The read model (today's `Railway` shape), rebuilt from the world after each change; read only. */
+    /** The read model (today's `Railway` shape), rebuilt from the world after each change; read only. No host
+     * accessor or tool reads it (M11): only the read model's own tests do (test/railway-adapter, -replicate and
+     * -queries), and it goes with them in M12 and M12b. */
     get railway() {
       return (view ??= railwayView(world));
     },
@@ -393,7 +391,7 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     },
     /** The away credit: `yard` production ticks for the yards, then up to `ticks` for the funded job, once per marker. */
     resume(ticks: number, marker: number, yard = 0) {
-      const n = railResume(world, Math.min(ticks, railMaxDuration(this.railway)), marker, sync.world.tick, yard);
+      const n = railResume(world, Math.min(ticks, railMaxDuration(world)), marker, sync.world.tick, yard);
       commit();
       return n;
     },
@@ -435,20 +433,12 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
       return id === undefined ? undefined : { ...world.get(Account, id)! };
     },
     outcome: (pid: string, epoch: number, request: number) => railOutcome(world, pid, epoch, request),
-    counts() {
-      return railCounts(this.railway);
-    },
-    phase() {
-      return railPhase(this.railway, sync.world.tick);
-    },
-    panels() {
-      return { committed: railPanelCount(this.railway), stock: railPanelStock(this.railway) };
-    },
-    line2() {
-      const s = this.railway;
-      return { active: line2Active(s), completed: line2Completed(s), gateOpen: line2GateOpen(s) };
-    },
-    // Narrow reads for the host's maintenance (no read model needed).
+    // The host's reads: queries on the world, its run rows current to the last rule tick (ECS M11).
+    counts: () => railCounts(world),
+    phase: () => railPhase(world, sync.world.tick),
+    panels: () => ({ committed: railPanelCount(world), stock: railPanelStock(world) }),
+    line2: () => ({ active: line2Active(world), completed: line2Completed(world), gateOpen: line2GateOpen(world) }),
+    // Narrow reads for the host's maintenance.
     boiler: () => ({ ...world.get(Boiler, world.single(Boiler))! }),
     train: (k: number) => {
       const id = world.lookup(Train, k);
