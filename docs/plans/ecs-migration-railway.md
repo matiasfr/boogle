@@ -367,8 +367,10 @@ later change with a bundle report. Place's remaining callers get one owner from 
     owner-less `onFrame` fallback in `wagon-look` are unchanged, each with a `use-an-entity` directive; the owner conversion
     is deliberately not done in M4 (a move step changes no behaviour; its callers are all prototypes) and is listed under M13. `boxes`, `carry-models` and `wagon-look` still import
     `proto/era/blocks`, `proto/place/layout` and `proto/wagon/cars` (directives; they go when M5 and M6 move those).
-    `src/proto`: 148 files and 36,118 lines to 136 and 34,459; `src/render`: 92 and 11,605 to 104 and 13,275. Chunk names
-    unchanged but `common`/`cars`/`look` now `fanfare`/`wagon-look`. `bench` census not run.
+    `src/proto`: 148 files and 36,118 lines to 136 and 34,459; `src/render`: 92 and 11,605 to 104 and 13,275. Build: 350 chunks both sides; `common` is now
+    `fanfare`, two of the four `look` chunks are `wagon-look`; first-load gzip identical (837 KB js, 14 css, 92 other); `main`
+    484,204 to 483,814 bytes. Looks before and after (trains passing, a boiler haul, every `fanfare`, `boxes`, `crates`,
+    `wagon-look`, `carry-models` and kit module called in-page): same pictures, no console errors. `bench` census not run.
   - **Verify:** `npm run check`; `npm run bench -- --poses spawn,town` with the scene census (meshes, draws,
     triangles) identical to base; one look at `--rail-seed trains-on`.
   - **Reviewer attacks:** a module-level `scene.add` that used to run on import and now never runs; the remaining
