@@ -632,7 +632,7 @@ later change with a bundle report. Place's remaining callers get one owner from 
     and `far`; `npm run level-check` output identical to base; a look at the village and one at `--rail-seed q6-done`.
   - **Reviewer attacks:** colliders (`addStatic` bodies) present and counted the same; `import.meta.glob` or URL
     imports that resolved relative to the old folder; `place.css` still loaded by its users.
-- [ ] **M6. The railway's own modules to `src/entities/railway/`; split `rail.ts`.** _Medium._
+- [x] **M6. The railway's own modules to `src/entities/railway/`; split `rail.ts`.** _Medium._
   - `rail.ts` as in section 2. Also `stations`, `seat`, `seat-claims`, `track-panels`, `machine-model`,
     `machine-panels`, `train-load`, `chop-motion`, `engine-kit`, `car-kit` from Place and `wagon/{engine,cars}.ts`.
   - Hooks and adds to convert: `rail.ts:845` (`addBody`), `:852`, `:1424`; `seat.ts:283` and `:289`;
@@ -642,6 +642,16 @@ later change with a bundle report. Place's remaining callers get one owner from 
     text by markers (`'const P:'`, the `// --- track:` rule line, `'  const u ='`, `'  const solids: Solid[]'`). Point
     them at `line-geometry.ts` (import it: it has no three.js) and at `track.ts`, keeping the markers `track.ts` needs.
   - After this step `rg "proto/" src/entities/railway` shows only `proto/flags.ts` and `proto/mark.ts`.
+  - **Done 11 November (branch `ecs/m6-railway-moves`):** the ten Place modules and `wagon/{engine,cars}` moved with `git mv`.
+    `rail.ts` (at `3d4e15e77`) was cut by line range: 68-78 to `line-geometry.ts`, 80-772 to `track.ts`, 774-957 to `car.ts`,
+    959-1443 to `track-machine.ts`; each byte-identical but for `export` on `P`, `lateral` (shared) and `BOTTOM`. Place's train
+    (1445 to the end) stays in `src/proto/place/rail.ts`. The plan's line numbers (1-88, 89-810 ...) were 20-odd lines off.
+    `rail-kit.ts` re-exports the four so the views' `import()` loaders changed path only (retire it when M10 imports the files
+    directly). Hooks, adds and the key read were not converted (listed under M13): `dev/lint/policy.ts` exempts `car`, `seat`,
+    `stations`, `track-machine` and `machine-model`. `dev/level` readers point at `line-geometry.ts` and `track.ts`;
+    `replay.ts` keeps reading historical refs at the old paths (M5's rename of those reads had broken `level-check --replay`).
+    D1d done as its own commit: `kitCars` and `trainLook` take `boilerShown`; nothing live reaches `job.ts`.
+    `rg "proto/" src/entities/railway` still shows `place/place.css` (`arrival.ts`) and `place/workshop.ts` (`forge-finish.ts`): M7's.
   - **Verify:** `npm run check`; `npm run level-check` output identical to base (track continuity, grounding, machine
     clearance); the bench census identical; `npm run scenario -- smoke`; looks at `--rail-seed trains-on` (a train with
     a seated rider) and mid-lay on line 2.
@@ -829,9 +839,12 @@ later change with a bundle report. Place's remaining callers get one owner from 
        `machine-clearance.ts` were pointed at `track.ts` by M6 and lose their last Place path here. `npm run
        level-check` keeps every assertion that is about the live world; an assertion about a Place-only state is
        listed in the commit body and removed.
+  - Also from M6 (deferred, same reason): the `addBody` and `scene.add` adds and `onFrame` hooks in `car.ts`, `track-machine.ts`
+    (order 7: keep it through the owner's `animate`), `seat.ts` and `stations.ts`, and `machine-model.ts`'s key read; then those
+    files leave the `ENTITY_SERVICES` and `INPUT_ALLOW` lists in `dev/lint/policy.ts`.
   - Also from M5 (deferred, same reason): `land.ts` `addStatic` takes the owner, and its `scene.add`/`addBody`, `pieces.ts`,
-    `look-kit.ts`, `look.ts` and `folk.ts` adds and hooks go to an owner; `look-kit` takes `boilerShown: () => boolean` from its
-    caller; then `src/place/**` leaves the three `dev/lint/policy.ts` exemptions.
+    `look-kit.ts`, `look.ts` and `folk.ts` adds and hooks go to an owner (`look-kit`'s `boilerShown` is done, in M6's second
+    commit); then `src/place/**` leaves the three `dev/lint/policy.ts` exemptions.
   - Also from M4 (deferred; a move step changes no behaviour): give `render/boxes.ts` (`makeSet`), `render/crates.ts` (the
     `ground` heap mesh, `hopTo`) and `render/wagon-look.ts` (`animate`) a required owner, remove their `scene.add` and
     `else onFrame` fallbacks and the three `use-an-entity` directives, and give the `?proto=net`, `wagon`, `crossing`
