@@ -3,10 +3,12 @@
 > main (#1467), and R3a–R5 below are rewritten against its code, not its plan. **The owner overruled R1's turning loop**
 > ("Ring Island while it's the end of the line: Buffers about 15 m past the halt, with a crossover before it"): step
 > R1b amends the layout, R2d the near view, and R3a is a buffer terminus with a crossover, written as Far Head's end is.
-> **Cleared to build now:** R1b (alone, no bump, independent sim review), then R2d. R3a–R5 wait for R1b on main and for
-> the designer's read of the calls this amendment adds ([Calls](#calls), 40–52); one of them (48, which side the Pier's
-> platform stands once the pier is double track) blocks only R4a's pier hunk. Designer reviewed the plan before the
-> amendment, 10 November ([the review](#design-review-designer-2026-11-10)).
+> **Cleared to build now:** R1b (alone, no bump, independent sim review), then R2d. R3a–R5 wait only for R1b on main:
+> the designer read the amendment's calls (40–52) and ruled on the Pier, 10 November
+> ([the Pier at v27](#design-review-the-pier-at-v27-designer-2026-11-10)). **The Pier's platform and rack stand east
+> of the down track from the day the halt drops in at Q6, so nothing is lifted or moved when Q7 is laid** (calls
+> 53–61 replace call 48); R4a's pier hunk no longer waits. The first review, of the plan before the amendment, is
+> [below it](#design-review-designer-2026-11-10).
 
 # Ring Island build 1: the line reaches the island
 
@@ -135,7 +137,7 @@ export const RING_RIVET = { x, z, y: 1500, reach: 500 }; // the joint at the toe
 export const RING_HALT = { u0: 42800, u1: 46800, y: 800, up: RailPlatform /* west, lat -9.3..-5.8 */, down: RailPlatform /* east, lat +1.8..+5.3 */ };
 export const RING_JOINT_UP = RailPlatform; // the west platform at the last bent, opened on joined (call 14)
 export const RING_PIER_UP = RailPlatform;  // not built (owner's answer 4): the Pier is homeward-only
-export const RING_Q7_FRAME = { x, z }; // the pier head's east edge, s 720, lat +4.5 (level-checked)
+export const RING_Q7_FRAME = { x, z }; // the pier's east edge, lat +4.5: s 720 as built; s 710 from R3b (call 55)
 export const RING_RECOVERY: readonly { x; y; z }[]; // dry spots, never water (Level findings)
 export const RING_BUOYS: readonly ({ head: number } | { joined: true } | { start: true })[]; // per buoy 1..7
 export const RING_RAMPS: readonly { foot: XZ; flights: ... }[]; // the hinge pier's (ruling 2); the railhead's is RING_HEAD[k].ramp
@@ -262,7 +264,7 @@ two halts appended after Pier, so halt ids 0–5 keep their meaning and the new 
 
 | Halt | `s` | `opens` | `platforms` [up, down] | `end` | New fields |
 | --- | --- | --- | --- | --- | --- |
-| Pier (edited) | 72650 | 5 | `both(...)`, today's (call 48 may move it) | `end('stub', 55600, 1)`, kept: it is the end between Q6 and Q7 | `only: -1` |
+| Pier (edited) | 72650 | 5 | `both(PIER_EAST)`: the east platform, `{ x: 140549, z: -35859, y: 2502, reach: 1260 }` (call 53: today's point mirrored across the track at s 730, 2.9 m east of the path point (140259, −35846); pinned within 2 cm by the test) | `end('stub', 55600, 1)`, kept: it is the end between Q6 and Q7 | `only: -1` |
 | Railhead | `RING_HEAD[0].s` (85200) | 6 (Q7) | `[RING_JOINT_UP, RING_HEAD[0].platform]` | `end('stub', RING_HEAD[0].mergeCm, 1)`: merge 83200, edge 81200, signal 80580 | `heads: RING_HEAD.map((h) => h.s)`, `brake: RING_END_BRAKE_CMS2 / 100` (2 cm a tick²) |
 | Ring Island | `RING_END.s` (119000) | 6 | `[RING_HALT.up, RING_HALT.down]` | `end('crossover', RING_END.mergeCm, 1)`: merge and edge 113700, signal 113080 | `ring: true` |
 
@@ -331,6 +333,18 @@ reason to stop there, `trainRequestable` skips it for an up train's riders (they
 `validateRailTrains` refuses a line or rider ask for its up way. v26's `call` in `railway-systems.ts` refuses the lever
 ask (R3b's hunk). The wagon never needs an up stop there: Q7 opens only once the pier is footed.
 
+**The Pier's one platform (ruled, calls 53–61).** It stands **east of the down track from Q6 on**: s 719–741, centre
+lat +2.9, deck lat +1.65 to +4.15, top 25.02 m. Trains only ever stand at it on the down track (lat 0): while the Pier
+is the end, up trains come in over the stub onto that track, as today; after Q7 only down trains call. So the platform,
+its lever (one handle, plaqued **Village**, at the north end: s 739.6, lat +2.45) and its board are the same before and
+after Q7, and nothing at the halt changes when Q7 is laid except that the up track (lat −4) appears on the far side of
+the down track, 5.65 m from the platform's edge, with no platform, lever or lamp of its own. The pier rack is on that
+platform's seaward edge (`PIER_RACK` mirrored: 3.5 m east at s 733, about (140594, −36208); footings at lat +2.9 to
++4.1, a 1.25 m aisle on the track side, as today's). **Nothing is lifted at Q7 and no cargo moves.** The rack is empty
+by then in any case: `validateRailway` holds `pierRack + pierSet <= 12` and `crossing >= 0` only with `pierSet === 12`,
+and Q7 opens on `crossing >= 0`; the ring's footings unload only at the Railhead. It stays standing, empty (no yard at
+the Pier: owner).
+
 **Three trains.** `trainPlaces` as merged can put two trains on one spot when a line has three: over line 2's first
 stops (C = 101400) train 1 and train 2 are both nearest Far Head's down track (16900 cm against 18100 for Quarry). It
 takes the nearest place **not already taken**, so the three stand at the Village (up), Far Head (down) and Quarry
@@ -394,8 +408,8 @@ Each piece is its own entity, auto-loaded by `main.ts`'s glob, so no step edits 
 `inspectRailway()` and the adapter's accepted edges, snaps on restore and plays effects only from `onAccepted`.
 
 - **The line out** (`crossing-view.ts`, `pier-view.ts`, `train-view.ts`, `halts-view.ts` hunks): Q7's double deck laid
-  panel by panel over bents 1–6 by the machine; the pier's second track (no up platform: owner's answer 4; which side
-  its one platform stands is call 48); a train on the up track eased across the island's crossover as it is across
+  panel by panel over bents 1–6 by the machine; the pier's second track (no up platform: owner's answer 4; its one platform and the
+  rack stand east of the down track from Q6, calls 53–54); a train on the up track eased across the island's crossover as it is across
   Far Head's; the request levers of halts 6 and 7.
 - **The railhead** (`src/entities/ring-railhead/`): bents 7–13, each rising when its second footing is set (the jib
   swings the bent's prefabricated span out and drops it on its caps: owner call "machines show their work
@@ -452,7 +466,7 @@ reviewer per `npm run models`). Each step leaves `npm run check` green.
 | R2c (built) | `src/entities/ring-island-far/{index,view}.ts` | none |
 | **R2d** | none | `src/entities/ring-island/view.ts`, `ground.ts`, `test/ring-island-ground.test.ts` |
 | R3a | none | `src/sim/railway-lines.ts`, `railway-train.ts`, `railway-trains.ts`, `test/railway-lines.test.ts`, `test/railway-train.test.ts`, `test/railway-trains.test.ts` |
-| R3b | `src/sim/railway-ring.ts`, `src/sim/railway-seed-ring.ts`, `test/railway-ring.test.ts`, `server/test/railway-ring-host.test.ts` | `src/sim/railway-systems.ts` (hunks below), `railway-world.ts`, `railway-line2.ts`, `railway-works-layout.ts`, `railway-line2-layout.ts`, `railway-seeds.ts`, `src/world/railway-jump.ts`, `railway-server.ts`, `railway-predict.ts`, `namespace.ts`, `src/adapters/railway.ts`, `test/railway-jump.test.ts`, `test/railway-line2.test.ts` |
+| R3b | `src/sim/railway-ring.ts`, `src/sim/railway-seed-ring.ts`, `test/railway-ring.test.ts`, `server/test/railway-ring-host.test.ts` | `src/sim/railway-systems.ts` (hunks below), `railway-world.ts`, `railway-line2.ts`, `railway-works-layout.ts`, `railway-line2-layout.ts`, `railway-ring-layout.ts` (`RING_Q7_FRAME` only; R1b is on main by then), `railway-seeds.ts`, `src/world/railway-jump.ts`, `railway-server.ts`, `railway-predict.ts`, `namespace.ts`, `src/adapters/railway.ts`, `test/railway-jump.test.ts`, `test/railway-line2.test.ts`, and the tests that pin the pier rack's or the frame's place (`test/railway-works-layout.test.ts`, `test/greybox-works.test.ts`, `test/crossing-show.test.ts`, `test/railway-ring-layout.test.ts`) |
 | R4a | none | `src/entities/railway/crossing-view.ts`, `pier-view.ts`, `train-view.ts`, `halts-view.ts`, `halt-map.ts`, `line2-view.ts` |
 | R4b | `src/entities/ring-railhead/{index,view}.ts` | `src/entities/lookout/view.ts`, `src/entities/railway/hook-view.ts` (one hunk each) |
 | R4c | `src/entities/ring-leaf/{index,view}.ts` | none |
@@ -700,8 +714,9 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
 
 - [ ] **3a. R3a, the catalog, the buffer terminus, the moving end and three trains (v27 branch, after R1b is on
   main).** Everything under "R3" above up to `Aperture`; the sim's three train files and their tests only.
-  - `railway-lines.ts`: `RailHalt`'s four optional fields; line 2's row (the path, `trains: 3`, the Pier's `only`,
-    the Railhead and Ring Island rows); `haltPlatform`; `trainPlaces` takes the nearest place not already taken. The
+  - `railway-lines.ts`: `RailHalt`'s four optional fields; line 2's row (the path, `trains: 3`, the Pier's `only`
+    and its platform moved to the east side, call 53: the row's comment becomes "s 719-741 m, lat +2.9, east of the
+    down track; the pier rack stands on it", the Railhead and Ring Island rows); `haltPlatform`; `trainPlaces` takes the nearest place not already taken. The
     header's "no imports but the works layout" gains the ring layout.
   - `railway-train.ts`: `trainStopsOf(line, laid, ring?)` with the boolean shim meaning Q6; `LINE_HALTS`'s six-halt
     tuple cast becomes an eight-halt one (callers in the adapter and views index it, so it stays a tuple);
@@ -713,7 +728,9 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     the halt's `brake`; `endMoved` and `stopMoved` (both take `Pick<TrainIO, 'row' | 'set' | 'stops'>`);
     `validateRailTrains` refusing an ask for an `only` halt's closed way. `cycleTicks`, `circuitCm`, `headTicks`,
     `blockFree` and `trainStepLine` are not edited.
-  - Tests. `test/railway-lines.test.ts`: halt ids 0–5 unchanged in name, `s` and down platform; ids 6 and 7 appended
+  - Tests. `test/railway-lines.test.ts`: halt ids 0–5 unchanged in name and `s`, ids 0–4 in their down platform too;
+    the Pier's platform (both ways) is 290 ± 2 cm **east** of line 2's path at s 730 m (x greater than the path's) and
+    1260 in reach; ids 6 and 7 appended
     with every number from the ring layout; `opens` is −1 or a slot up to 6; `trainStopsOf(1, true)` is still the
     four v26 stops and `trainStopsOf(1, 7, { head: k, joined })` gives `RING_HEAD[k].s` and the island only when
     joined; `RAIL_TRAINS` has four rows on four different (stop, track) places; the Railhead's and the island's `end`
@@ -756,7 +773,18 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     cw, brace, joined }`), the `ring` accepted edges (`footSet` site 3, `brace`, strike id 2), and `rail.brace` in its
     action union and allow-list.
   - `railway-world.ts`: `Aperture` in `ARCHETYPES`, `railwayView.ring`, `railwayCheck`'s count, the invariants.
-    `railway-works-layout.ts`: `WORKS.total: 32`, `ring: 14, counterweight: 4`, `WORKS_SEAMS` row 2 from `RING_RIVET`.
+    `railway-works-layout.ts`: `WORKS.total: 32`, `ring: 14, counterweight: 4`, `WORKS_SEAMS` row 2 from `RING_RIVET`;
+    **`PIER_RACK` moves to the east side** (call 54): 3.5 m east of the real rail at s 733 m by the same
+    least-displacement construction its comment describes, about `{ x: 140594, z: -36208 }`, `y` and `reach`
+    unchanged. `railway-server.ts`'s reach check, `dev/level/rail-network.ts`, `dev/loop/` and the works bot read the
+    constant and follow it. `railway-ring-layout.ts` (one constant, after R1b is on main): **`RING_Q7_FRAME` moves
+    from s 720 to s 710 m**, still lat +4.5 (call 55: about `{ x: 140793, z: -33866 }`, 4.5 m east of the path point
+    (140343, −33848)), so the frame (2 m across, 2.6 m along: lat +3.5 to +5.5, s 708.7–711.3) stands 1.7 m south of
+    the foot of the Pier platform's ramp (s 713–719) and not in its south end; its test line and comment follow.
+    `railway-jump.ts`: the landings of `q6-done`, `crossing-finishing` and `crossing-done` move onto the east
+    platform's south end (call 57): s 720.5 m, lat +2.9, about `near(PIER_STOP, 3.2, 6.4, 25.0, CROSSING_BENTS[0])`,
+    its `y` the deck top measured with a still (today's two spots, lat +3 and +4 at deck height, are inside the new
+    platform and rack). `ringUnstuckHome` copies `crossing-done`'s landing, so Get unstuck from past the gap follows.
     `railway-line2-layout.ts`: `Q7` (`bill: [20, 20]`, `fromCm: 74200`, `toCm: 86200`, `panels: 20`, `crate`, `depot`,
     `shelf`, `feed: 'train'`, frame at `RING_Q7_FRAME`, `Line2StationId` gains `'Q7'`), opening once
     `Works.crossing >= 0`. Server, prediction, seeds and jump rows as under "R3". `namespace.ts`: `WORLD_NS = 'v27'`
@@ -769,7 +797,9 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     `validateRailway` passes on the same tick**; the island halt opens on `joined` and only then, with a train in each
     of the three cases of `endMoved`; the Pier's up lever is refused once Q7 is laid and accepted while it is the end;
     footing conservation over a seeded 5,000-op random run of footTake, footSet, brace, strike and wagon ticks across
-    1–3 accounts; an account leaving keeps `Aperture`; round-trip through `railwayView` and the replicated
+    1–3 accounts; **`Works.pierRack` is 0 from the twelfth pier footing on, through that whole run** (no wagon arrival
+    or op puts a ring footing on the pier rack: the cargo guarantee behind call 54); an account leaving keeps
+    `Aperture`; round-trip through `railwayView` and the replicated
     components; each seed stage passes `validateRailway`. `server/test/railway-ring-host.test.ts`: reach refused off
     the current railhead (the lever too, from `haltPlatform`), malformed `rack`/`site`/`id`/`revision` refused without
     a throw, a stale brace refused.
@@ -779,8 +809,31 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
     look.
 - [ ] **4a. R4a, the line goes out (views).** `crossing-view.ts`: Q7's double deck over bents 1–6, laid panel by
   panel; its `open()` reads `pierLaid`. `pier-view.ts`: the pier's up track from the old merge (s 556) to the pier
-  head, laid when Q7 completes; **no up platform** (owner's answer 4); its one platform and the rack as call 48 is
-  ruled (this hunk waits for that ruling; the rest of the step does not). `train-view.ts`: four trains; `pierOpen`
+  head, laid when Q7 completes; **no up platform** (owner's answer 4). **The Pier as ruled (calls 53–61), all of it in
+  place from Q6, none of it changed by Q7:**
+  - `halt-map.ts`'s Pier row: `lat: -2.9` becomes `lat: +2.9` (s 719–741 unchanged). `makeHalt` mirrors the rest by
+    `sign`: the deck at lat +1.65 to +4.15 on its piles, the shelter and bench on its seaward back edge (s 721.2–729.2),
+    the board in the shelter facing the rails, the signal mast (s 740.2) and the one-handle lever (s 739.6, lat +2.45,
+    plaqued **Village**) at the north end, the one ramp up from the trestle's deck at the landward end (s 713–719).
+    The lever is not touched when Q7 is laid (the plan's earlier "shows only the homeward handle once Q7 is laid" is
+    void: it has one handle from the start, the end's way out).
+  - `crossing-view.ts`: the rack's row is on the east platform's seaward edge (it reads `PIER_RACK` and the line's
+    yaw; only its comment's lats change, to +2.9 to +4.1). The pier head's side deck shrinks to **the pad**: s 741–746,
+    lat +1.8 to +5.3, at the trestle's deck height, carrying the jib (`PIER_FRAME`, unchanged: s 742.3, lat +3.5); the
+    platform's north end stands 0.68 m above it (a drop going out, a plain jump coming back; a footing is set from the
+    platform's last 3 m, which are inside `PIER_FRAME`'s reach). A **piled deck for Q7's frame**, s 703–713, lat +1.8
+    to +6.0, at the trestle's deck height, joined to the trestle and to the ramp's foot, with the frame's depot rack
+    and shelf on it. A **plank footway on Q7's deck**, lat +1.8 to +3.3 (1.5 m), from the pad (u 4) to where
+    `RING_WALK` begins (u 95), laid with Q7's panels (view and collider; the sim never reads it), and a finger board on
+    a post at the pad's north-east corner pointing out along it, lettered **Railhead** (a placeholder, as the plaque).
+  - The pier's west side gets nothing: once Q7 is laid the deck runs to lat −5.8 with the up track at −4 and open sea
+    beyond, as the trestle's edges are today. The old merge's turnout (s 556–576) is relaid by the machine as plain
+    double track with Q7's first panel (call 61).
+  - Whatever draws the pier's rails and deck must be in this step: `track.ts` and `src/place/layout.ts`'s
+    `FORMATION.quarry.to` (556) are not in this step's file list above and `pier-view.ts` today holds only the
+    rockets. The implementer adds them to the step (an engineering gap, flagged by the design review).
+
+  `train-view.ts`: four trains; `pierOpen`
   reads `pierLaid`; the `crossing` predicate (`row.turn || !pierOpen()`, one crossover a line) becomes "on track 0,
   and either `row.turn` or the crossover's halt is the open end", for Far Head's and for the island's
   (`RING_END.cross`, lateral eased as `crossLat`); past s 55600 a train's lateral comes from the open end's `RailEnd`
@@ -788,12 +841,16 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   unload at `row.at === 4`; `trainRequestable` passed the open stops. `halts-view.ts`: its `PIER` test reads
   `pierLaid`; the request levers, plaques and prompts of halts 6 and 7 from `haltPlatform` (the Railhead's sliding
   with `head` over about 3 s, no prompt while it moves; the island's west lever chained and plaqued with the branch,
-  its east lever live from `joined`; the Railhead's west lever chained until `joined`); the Pier's lever shows only
-  the homeward handle once Q7 is laid. `halt-map.ts`: the Pier is found by name, not as the last halt; the two new
+  its east lever live from `joined`; the Railhead's west lever chained until `joined`); the Pier's lever is unchanged
+  (above). `halt-map.ts`: the Pier is found by name, not as the last halt; the two new
   halts on the map. `line2-view.ts`: `active < 0` no longer means Q6's index. Every train's folk driver (v26 gives
   one a slot): check the fourth. Checks: `npm run check`, `npm run perf` at the pier head, `npm run checkpoints --
   deck-laid`. Proof look: `npm run look -- --rail-seed deck-laid` from the pier head along the laid double deck to the
-  bent-6 railhead; and `--rail-seed ring-joined` from the island's east platform as an up train comes over the
+  bent-6 railhead; the Pier's east platform from the trestle's approach and from above, before and after
+  (`--rail-seed crossing-finishing`, the cameras of the design review's stills: `--cam 1403.4,26.4,-322 --look
+  1402,25,-372` and `--cam 1402.6,46,-338 --look 1402.3,24,-360`), and at `deck-laid` an up train passing the Pier on
+  the far track while the camera stands on the platform; an eval there walks a footing from the rack to the jib without
+  stepping on the track, and lands `crossing-done`'s jump-in standing on the platform, not in it; and `--rail-seed ring-joined` from the island's east platform as an up train comes over the
   crossover and stands short of the buffers.
 - [ ] **4b. R4b, the railhead and the gap.** `src/entities/ring-railhead/` as under "R4"; `lookout/view.ts` lifts buoys
   by `RING_BUOYS`; `hook-view.ts` adds the pile's ring once `set === 14`. Before and after stills of the finished bow
@@ -817,7 +874,10 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stare straight up; the whistle swaps them; standing still and looking up
   gets a nod.
-- [ ] **5. R5, the bot and the loop graph.** `dev/look/bots/railway-ring.ts` (registered in `bots/railway.ts`): from
+- [ ] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
+  loop graph's `crossing` node are re-run with the rack on the east platform (call 54): the bot no longer crosses the
+  track, and `npm run loop -- node crossing` reports the new carry (expected 5–9 m, was 11 m).
+  `dev/look/bots/railway-ring.ts` (registered in `bots/railway.ts`): from
   `deck-laid`, waits for the wagon, carries rack to jib 14 times, rides each new railhead; from `gap-footed`, glides
   the gap (reusing `railway-glide.ts`'s flight), braces, hooks back to the pad; hangs four weights; strikes; rides
   from the railhead to the island halt, over the crossover to the stop short of the buffers, and back to the Pier,
@@ -848,7 +908,7 @@ concrete), New (this plan's).
 | # | Call | Kind | Why |
 | --- | --- | --- | --- |
 | 1 | Sequence: Q7 lays the double deck over the six footed bents (u 0–120); then the 14 footings extend the line bent by bent, each pair raising one bent with its span, and the railhead (halt, lever, rack, jib) moves out 20 m with each; then the gap, brace and counterweight, then the rivet | New | Matches the brief's seed order (`deck-laid` before `gap-footed`), "the railhead halt moves", "the wagon delivers to wherever the line ends" and "no second laying job"; the six built bents carry no deck today |
-| 2 | Q7: 20 logs + 20 rails, 20 panels, train-fed like Q6, its frame on the pier head's east edge (s 720, lat +4.5); opens once the pier is footed | New | 120 m at Q6's rate (32 a material for 196 m) is about 20 |
+| 2 | Q7: 20 logs + 20 rails, 20 panels, train-fed like Q6, its frame on the pier's east edge (lat +4.5; at s 710, not s 720: call 55); opens once the pier is footed | New | 120 m at Q6's rate (32 a material for 196 m) is about 20 |
 | 3 | The brace platform moves from u 276.5–289 at 10.0 m to **u 284–294 at 8.0 m**, its gold strut's foot to u 284.5, and the hook ring from u 270 to **u 276** (the planner proposed u 280–290 at 10.0 m and the ring at u 272) | New | Design review finding 1: a late-pressed double jump reaches 20.7 m at 10.0 m, so u 280 didn't separate it; at 8.0 m and 24 m out the double jump falls 2.2 m short and every glide that starts with a jump lands; the ring stays within 22.0 m of every corner |
 | 4 | The bow's numbers: bents 7–13 at 19.5, 18.7, 17.9, 17.1, 16.3, 15.5, 14.7 m; hinge 14.0; the halt and its run-off 8.0 | Decided | Ruling 5 |
 | 5 | The 14 bent footings and the 4 counterweight footings come by the wagon to the railhead rack (cap 6, three loads); rack to jib 15 m; each footing carried by hand once | Default | Review call 19 and finding 6; the grind budget's "twice" and "60 m" hold |
@@ -873,18 +933,27 @@ concrete), New (this plan's).
 | 24 | `rail.brace { revision }` names the brace state the actor saw (1); a stale or repeat press is refused | Default | Brief's Shape (gate-puzzles' revision rule) |
 | 25 | `Aperture.threaded` is not added in v27 | New | Build 2 bumps anyway; no unused field |
 | 40 | Ring Island's halt ends in buffers on both tracks 15 m past the platforms (u 483) with an end board behind them, and a facing crossover on the Way before it (u 395–417); every train stands at the east platform; the west lever is chained and plaqued with the branch | Decided (owner, 10 November 2026) | "Ring Island while it's the end of the line: Buffers about 15 m past the halt, with a crossover before it". The east platform follows from a crossover that leads up trains onto the down track, as Far Head's does; the chained west lever and its plaque are rail-map call 14 |
-| 41 | Trains stand with the passenger car at the platforms' middle (u 448), 35 m from the buffers; no train is ever turned, so the engine is always at the island end | Default | Rail-map, "The station plan" (calls 11–13) |
-| 42 | The 15 m past the platforms is in a cutting up to 1.5 m deep at the buffers, not on a fill | New | Level finding 15: the cone rises through the 8.0 m deck from about u 478. The loop it replaces cut 12 m |
-| 43 | The Pier is homeward-only from the moment Q7 is laid (not only after the Meet): no up train stops there, its up lever is gone, its up platform is never built | Decided (owner), the timing a Default | "The Pier becomes a homeward-only stop"; rail-map call 29 (the recommendation he took) says after Q7, when the Pier stops being the end and the ring's footings go to the railhead |
+| 41 | Trains stand with the passenger car at the platforms' middle (u 448), 35 m from the buffers; no train is ever turned, so the engine is always at the island end | Default (reviewed) | Rail-map, "The station plan" (calls 11–13); the alignment itself is the owner's "trains may be longer than platforms; the passenger cars align", and "never turned" follows from his buffers answer |
+| 42 | The 15 m past the platforms is in a cutting up to 1.5 m deep at the buffers, not on a fill | Default (reviewed; was New) | Level finding 15: the cone rises through the 8.0 m deck from about u 478. The loop it replaces cut 12 m. Ground shaping with no rule on it; a 1.5 m wall is under the 1.68 m jump and the 1 in 1.5 banks are walkable, so nobody is held in the cut |
+| 43 | The Pier is homeward-only from the moment Q7 is laid (not only after the Meet): no up train stops there, it has no up lever, its up platform is never built | Decided (owner), the timing a Default (reviewed) | "The Pier becomes a homeward-only stop"; rail-map call 29 (the recommendation he took) says after Q7, when the Pier stops being the end and the ring's footings go to the railhead. The timing also follows from the track: from Q7 an up train is on the far track, with no platform beside it |
 | 44 | When the line's end moves on (Q7 laid; the rivet struck), a train already past the old end's turnout turns back there as before; a train short of it runs on to the new end. On the rivet it makes one stop at the Railhead on the way; at Q7 it makes none at the Pier | Default | v26's rule at Far Head when Q6 opens the pier, reused; the Pier has no up platform to stop at |
 | 45 | When a bent's second footing moves the railhead out 20 m, a train standing at the old spot stays where it is and leaves for home with no further dwell; a train on its way runs the 20 m further | Default | v26's invariants (a standing train stands at its halt's stop); nobody waits longer and the next train stops at the new spot |
 | 46 | Every up train eases into the Railhead at 2 m/s², after the Meet as well as before | Default | One rule in the catalog instead of a per-train state; costs an up stop there about 2 s once the gap is closed |
-| 47 | Three trains are kept; their worst wait is bounded by what v26 measured and tests (105 s), not by one minute | Default | Three on the 138.8 s circuit are as far apart (46 s) as v26's two on the pier's 92.4 s, which measured 91–97 s. One minute flat needs a fourth train or more (open question 1) |
-| 48 | Once the pier is double track its one platform stands on the east side of the down track (s 719–741, lat +2.9, mirrored), and today's platform and the pier rack, which stand where the up track goes, are lifted when Q7 completes | New, **not yet ruled** | Level finding 21. Today's platform is 2.9 m west of the track and the rack 3.5 m west; the up track is 4 m west. Open question 3 |
+| 47 | Three trains are kept; their worst wait is bounded by what v26 measured and tests (105 s), not by one minute | Decided (owner, 10 November 2026) | "3 for now" (rail rules: "Line 2 runs three trains for now when it reaches Ring Island; worst wait about 105 s") |
+| 48 | ~~Once the pier is double track its one platform stands on the east side of the down track (s 719–741, lat +2.9, mirrored), and today's platform and the pier rack, which stand where the up track goes, are lifted when Q7 completes~~ | **Replaced by calls 53–61 (designer, 10 November 2026)** | The side is kept (east); the lift at Q7 is not: the platform and rack are built east from Q6, so nothing a player stands on or uses is taken away |
 | 49 | Before the Meet, Get unstuck from past the gap or the island puts you on the Pier halt's deck, through all of build 1 | Decided (owner, 10 November 2026) | "It returns you to your own side (the Pier halt)". Replaces call 31's "the railhead's land pad" from R4b on |
 | 50 | The raised leaf is drawn at true scale (17 × 7.6 m) from every distance | Decided (owner, 10 November 2026) | "Leave it at true scale". The far leaf's brighter orange and the toe pennant he turned on the same day are not scale and stay |
 | 51 | Both tracks are laid to every railhead; the up track's last 20 m ends at its own buffer until the rivet | Default | So no rail appears from nowhere when the stub becomes a through line |
 | 52 | The island's end board is blank until the owner gives its words | Default | Rail-map: board words are placeholders for the owner |
+| 53 | The Pier's one platform stands **east of the down track from the day the halt drops in (Q6)**: s 719–741, centre lat +2.9 (deck +1.65 to +4.15), 1.65 m from the down track's centre and 5.65 m from the up track's; nothing of it changes when Q7 is laid | New (designer, ruled; proceeds) | East is the down platform's side at every halt on line 2 (Quarry, Far Head, the Railhead, Ring Island). An island between the tracks needs more than their 4 m; a west platform would serve the track no train stops on; a board and step alone would be the only halt without a deck. Built east from Q6, it is never the thing in the up track's way |
+| 54 | The pier rack stands on that platform's seaward edge (3.5 m east at s 733), so a footing goes rack to jib along the east side without crossing the track: 5–9 m, was 11 m across it. Nothing is lifted at Q7; the rack is empty by rule before Q7 opens and stays standing | New (designer, ruled; proceeds) | Never lose a player's cargo: the surest way is to move nothing. It shortens the pier's twelve carries by a few metres each ("wary of material grinds") and takes footing carriers off the track before three trains run |
+| 55 | Q7's frame stands at s 710, lat +4.5 on its own piled deck (s 703–713) below the platform's ramp, not at s 720; the kit's two carries are about 12 m, not 7 | Default | At s 720 the frame (lat +3.5 to +5.5) stands in the platform's south end. South of the ramp's foot is the first clear place on the east side; the west side is the up track's and puts the standing train between the kit and the frame |
+| 56 | The pier head's side deck shrinks to a pad (s 741–746, lat +1.8 to +5.3) for the jib; the platform's north end is a 0.68 m step above it; a footing can be set from the platform's last 3 m | Default | The platform covers the rest of today's apron (s 729–741) |
+| 57 | The jump-in landings at the Pier (`q6-done`, `crossing-finishing`, `crossing-done`) and so Get unstuck's "your own side" are the platform's south end (s 720.5, lat +2.9), facing the crossing | Default | Today's spots are inside the new platform and rack. From there the lever home, the rack and the line out are all in front of you |
+| 58 | A 1.5 m plank footway on Q7's deck, east side (lat +1.8 to +3.3), from the pad to where the railhead's walkway begins (u 95), and a finger board on the pad pointing out along it, lettered **Railhead** | Default | The Pier is where Get unstuck puts you and no train goes outward from it (calls 43, 49), so the way back to the work is a walk of 117–257 m; without a footway it is on a deck whose edge is 1.3 m from the down track's centre, with three trains running |
+| 59 | The Pier's lever: one handle, plaqued **Village**, at the platform's north end (s 739.6), the same before and after Q7 | Decided (owner, 10 November 2026), its place a Default | "One lever per platform side"; an end's lever asks for the way out, and a homeward-only stop's only way is the same way |
+| 60 | Nothing is added to say "up trains don't stop here": the up track is the far one, across the down track, with no platform, lever, lamp or board beside it | Default | Signs in the world before words: the absence of a platform is the sign. A word goes on only if a session shows someone waiting there for a train out |
+| 61 | When Q7 completes, the old merge's turnout on Far Head (s 556–576) is relaid by the machine as plain double track | Default | "Track has no visible kinks"; a turnout that leads nowhere would read as a way to somewhere |
 
 ### Copy (drafts for the owner; none of The Boogler's)
 
@@ -947,7 +1016,7 @@ would fail (a 165.3° reversal at the neck, a 12.4° mismatch onto the circle): 
 | 18 | **The signal** before the island's block | s 1130.8 m (u 388.8), from `end()`: a held train's nose is at the crossover's first point and its tail at u 379.8 (long train: u 386.8 and u 374.1), 97–103 m past the hinge and at least 124 m past the Railhead's stop (u 250), against `sepCm` 27.4 m. `s − sepCm` is 1162.6 m, so `endBlocks` keeps the catalog's signal | None |
 | 19 | **The easing stop and the jump reach at the new end** | At the gap nothing moved: the railhead's end stops are R1's and its seven braking rows still pass (the chimney worst, 1.6 m short at 2.0 m/s²). At the island a train brakes at the line's own 3.5 m/s² into u 448: a late double jump with the kept carry lands at most at **u 477.2** (the chimney, 6.7 m/s, 6.4 m before the stop; cab roof 475.4, boiler front 476.7, running board 475.2), on the run-off's deck, **5.8 m short of the buffer faces**. From the platforms' north end a late double jump on the level reaches 16.7 m (u 484.7), over the buffers onto the ground behind them | No easing at the island: everything in reach is open ground you can walk to, and the island's one op (`rail.brace`) is 160 m back. R1b prints these and asserts only "short of the buffers" from a train |
 | 20 | **The station house's corner** (the greybox's `CONCOURSE` and `HOUSE`, on main since #1479: terrace u 468–477.5, lat −20 to −9.3; house at u 474, lat −16; plank crossing u 468–471.5 over both tracks) | R1b places nothing west of lat −5.8. R2d's cutting banks at 1 in 1.5 reach lat −8.1 at most (at the faces, u 483), 1.2 m short of the terrace's line and 5.5 m north of its end; the crossing's planks lie over the run-off's rails 11.5 m short of the buffers, where no train runs; the west platform's built ramp (u 462.5–465.5, lat −9.1 out to −18.8) is not touched | R1b's report and R2d's ground test assert the terrace grown by 1 m |
-| 21 | **The Pier once it is double track** | Today's Pier platform is centred 2.9 m **west** of the track (x 139969 against the track's 140260 at z −35833) and the pier rack 3.5 m west; v27's up track runs 4 m west, through both. The old plan added an up platform at lat −6.9 and never said where the down one went | **Not ruled, not level-checked** (no position is planned until it is): call 48 proposes the east side, mirrored, where Q7's frame (s 720, lat +4.5) stands at its south corner. Blocks only R4a's pier hunk (open question 3) |
+| 21 | **The Pier once it is double track** | Today's Pier platform is centred 2.9 m **west** of the track (x 139969 against the track's 140260 at z −35833) and the pier rack 3.5 m west; v27's up track runs 4 m west, through both. The old plan added an up platform at lat −6.9 and never said where the down one went | **Ruled (designer, 10 November; calls 53–61).** East, from Q6: platform s 719–741 at lat +1.65 to +4.15 (top 25.02 m), its ramp s 713–719, the rack on its seaward edge at s 729.1–736.9, the lever at s 739.6; the jib's pad s 741–746; Q7's frame moved to s 710 (lat +3.5 to +5.5, 1.7 m south of the ramp's foot) on a deck s 703–713. After Q7 the pier at the halt is 9.95 m wide (lat −5.8 to +4.15; 11.1 m at the pad), the up track's centre 5.65 m from the platform's edge. **Not level-checked** (`npm run level-check` reads the built layout; `dev/level/timber-track.ts` checks halts against rails and sleepers and will read the moved row once R4a edits it): R4a's eval walks rack to jib and lands the jump-in on the platform |
 
 ## Risks
 
@@ -1010,6 +1079,14 @@ would fail (a 165.3° reversal at the neck, a 12.4° mismatch onto the circle): 
 - **`stopMoved` and `endMoved` are the risky new sim code** (P1 for the sim reviewer): a train standing at the
   railhead as a bent goes in, and a train on the stub as the rivet is struck, are both likely in play (the wagon's
   train is there by design). R3b's tests put a train in each case on the same tick as the op.
+- **The Pier at v27 (was the plan's P1; ruled, design review of 10 November).** Today's platform and rack stand where
+  the up track goes. Ruled: both are built on the east side from Q6 (calls 53–54), so Q7 lays the up track through
+  open deck and nothing is lifted. What that costs: two sim constants (the Pier's `RailPlatform` in R3a, `PIER_RACK`
+  in R3b), `RING_Q7_FRAME` moved 10 m landward (R3b), three jump-in landings (R3b), one sign in `halt-map.ts` and the
+  apron, frame deck and footway in `crossing-view.ts` (R4a), four tests that pin the old places, the works bot's
+  carry and the loop graph's number (R5). All of it is inside v27's bump: the platform and the rack are server reach
+  checks, so they ship with it and never ahead of it. No second bump, no migration. It changes a beat that is live
+  today (the pier's twelve carries no longer cross the track): R4a's before and after stills show it.
 - **The cut and the house share a hillside.** R2d's cutting stops 1.2 m short of the station house's terrace; if the
   house's production build moves that ground, R2d's terrace test is the tripwire.
 
@@ -1030,6 +1107,9 @@ option was built (R2a). What is left:
    where the up track goes. Recommended: mirror the platform to the east side of the down track and lift the rack when
    Q7 completes (call 48, Level finding 21); it needs Q7's frame clear of the platform's south end and a ruling on what
    a player standing on the old platform sees happen. Blocks only R4a's pier hunk.
+   **Answer (designer, 10 November 2026): east, and from Q6, not from Q7.** The platform and the rack are built on the
+   east side when the halt drops in, so there is no old platform to stand on and nothing to see happen; Q7's frame
+   moves to s 710 (calls 53–61, [the review](#design-review-the-pier-at-v27-designer-2026-11-10)). Nothing waits.
 4. **The toe pennant and "true scale".** (owner, only if he sees it differently) The pennant he turned on the same day
    (a 12 m mast on the leaf's toe) is kept as a marker, not as scale; it is one constant (`TOE_PENNANT`) if he meant
    the leaf bare.
@@ -1037,6 +1117,220 @@ option was built (R2a). What is left:
    `docs/brainstorms/express-train.md`; none touches this plan's files. The station-house greybox merged as #1479
    during this amendment; its step B owns `src/proto/greybox/ring.ts` next, which is why this plan leaves that file
    to it.
+
+## Design review: the Pier at v27 (designer, 2026-11-10)
+
+Asked for by the owner ("start pier platform design review", 10 November 2026). It covers the plan's open item (call
+48, Level finding 21, open question 3) and the amendment's calls 41–52, which the first review below never saw. Its
+rulings are applied in the plan's body above (R3's catalog and "The Pier's one platform", steps 3a, 3b, 4a and 5,
+Calls 41–61, Level finding 21, Risks, open question 3), so the plan can be built without this section.
+
+Read: [DESIGN](../../DESIGN.md) (7, 8, 10); [owner calls](../agents/owner-calls.md) ("Pick and log, don't ask",
+"Nothing waits on a world bump", "Signs in the world before hovering text", "Machines show their work physically",
+"Wary of material grinds", "Tune for 1–3 players"); the [rail rules](../decisions-rail.md#current-rules) and the
+entries this rests on: the Pier homeward-only and the Railhead kept (rail map), buffers and a crossover and Get unstuck
+to the Pier halt (Ring Island), "3 for now", yards ("none at the Pier for now"), the track rules (a track that ends has
+buffers; no visible kinks; trains may be longer than platforms, the passenger cars align), request stops and one lever
+per platform side, four or more waiting little guys; [the brief](../brainstorms/ring-island.md);
+[generic-lines](generic-lines.md) ("Migrating": "widens the pier and moves the rack and halt then"; levers; the stop
+mark). Research tops: [route-contract](../research/route-contract.md) (travel never supplies work),
+[progression-flow-layout](../research/progression-flow-layout.md#the-rules-as-lenses) (rules 1–3, lens 6),
+[level-design](../research/level-design.md), [train-riding](../research/train-riding.md).
+Code read: `src/sim/railway-lines.ts` (the Pier's row), `railway-works-layout.ts` (`PIER_STOP`, `PIER_RACK`,
+`PIER_FRAME`), `railway-ring-layout.ts` (`RING_Q7_FRAME`, `RING_PIER_UP`, `RING_WALK`), `railway-works.ts` and
+`railway-sys-works.ts` and `railway-sys-trains.ts` (the pier rack's invariants and the wagon's unload),
+`src/place/layout.ts` (`FORMATION`, `UP_HALTS`), `src/place/spatial-station.ts` (a frame's footprint),
+`src/entities/railway/halts-view.ts`, `halt-map.ts`, `up-platforms.ts`, `crossing-view.ts` (the rack on the halt's
+deck, the apron and the jib), `track.ts` (the trestle's 3.6 m deck), `src/world/railway-jump.ts` and
+`src/entities/ring-island/state.ts` (where Get unstuck lands).
+
+### The Pier today, measured
+
+Lateral metres are east of line 2's track (the down track once the pier is double); `s` is metres along line 2.
+
+| Thing | Where | Source |
+| --- | --- | --- |
+| The trestle's deck | lat −1.8 to +1.8 (3.6 m), one track at lat 0, rails end s 742 | `track.ts` `DECK_W` |
+| The Pier platform | s 719–741, lat −4.15 to −1.65 (centre −2.9, **west**), top 25.02 m; one ramp s 713–719 | `halt-map.ts`, `halts-view.ts` |
+| Its shelter, bench and board | on its seaward (west) back edge, s 721.2–729.2 | `halts-view.ts` |
+| Its lever and signal mast | north end, s 739.6 and s 740.2, on the track side | `halts-view.ts` |
+| The pier rack | six footings in a row, s 729.1–736.9, lat −4.1 to −2.9 (`PIER_RACK` 3.5 m **west**) | `crossing-view.ts` |
+| The apron and the jib | s 729–746, lat +1.8 to +5.3, at deck height; the jib (`PIER_FRAME`) at s 742.3, lat +3.5 (**east**) | `crossing-view.ts` |
+| The stop | s 726.5: the train stands s 717.5–732.7, on the one track | `PIER_STOP_CM`, `TRAIN_EXTENT` |
+| The jump-in and Get unstuck landing | s 730.5, lat +3, on the apron at deck height | `railway-jump.ts` |
+| Q7's frame, as R1 built it | s 720, lat +4.5: a frame is 2 m across and 2.6 m along | `RING_Q7_FRAME`, `spatial-station.ts` |
+| v27's up track | lat −4 (rails −4.5 and −3.5; the formation's edge −5.8) | R1, generic lines |
+
+So the up track passes through the west platform's deck (−4.15 to −1.65) and the rack's row (−4.1 to −2.9), as the
+planner found. The footing carry today goes from the rack on the west side across the track, in front of the engine,
+to the jib on the east side: 11 m (`npm run loop -- node crossing`).
+
+**Stills** (`.look/` in this review's worktree, `--rail-seed crossing-finishing` unless said; 960×600):
+`pier-approach-still.png` (from the trestle at s 693: the platform and its shelter stand left of the track, a train
+on the pier, the ring and the shard dead ahead over it), `pier-platform-north-still.png` (from the platform at s 722:
+the bench and board on the left, the rack's footings along the seaward edge, the lever, the track layer parked at the
+rails' end with the jib's mast right of it, the apron low on the east side), `pier-east-back-still.png` (from beyond
+the pier head looking back: the apron is a clear tan deck the length of the halt's north half with only the jib on
+it, the platform and rack white on the far side of the track), `pier-above-still.png` (plan view: shelter roof and
+platform west of the rails, apron east, the first bents' frames beyond the track layer) and
+`pier-east-phone-still.png` (844×390, `crossing-done`, from deck height where the east platform will stand: the ring,
+the shard and the island fill the middle of the frame; the track layer and the jib stand across the line out).
+**What the stills show for the ruling:** the east side is open deck and sea, with nothing to clear but the jib, which
+stays; everything that has to go is on the west. **Not seen:** the raised leaf from the Pier. At `crossing-done` the
+parked track layer and the jib cover the line to the hinge from deck height, and at 844×390 no orange can be picked
+out beside them; the machine goes out with Q7, so R4a's `deck-laid` still is where that sightline is judged.
+
+**`npm run level-check`** on this branch (main at 353d7a6b): 11 reports, "ring (planned): ok", "track continuity: ok".
+It has no finding on the Pier: the ring report reads the built layout, which plans no pier platform, and the
+continuity report's only pier rows are the join at the pier head (0.04 m, 3.9°). The ring's remaining "would fail"
+rows are the loop's, which R1b's buffers close. Nothing here is level-checked until R4a moves the halt's row.
+
+### The ruling
+
+**The platform stands east of the down track, and it stands there from Q6, when the halt first drops in.** The
+planner's side is right; the timing is not. Lifting a platform and a rack at Q7 means a deck someone may be standing
+on is taken away, a rack is moved, and the review has to say where cargo goes. Building them east in the first place
+means Q7 lays the up track through deck nobody uses, and there is nothing to rule about cargo.
+
+| Option | Verdict |
+| --- | --- |
+| **East of the down track** (lat +1.65 to +4.15) | **Taken.** It is where the down platform stands at every other halt on line 2 (Quarry, Far Head, the Railhead, Ring Island: left-hand running puts the homeward track on the east). The trains that stop here are always on that track: while the Pier is the end they come in over the stub onto it, and afterwards only homeward trains call. The east side already holds the jib, so rack, platform and jib share one side |
+| West of the up track (lat −8.2 to −5.7) | No. It would serve the one track no train stops on, and put the up track between riders and their train |
+| An island between the tracks | No. The tracks are 4 m apart; a 2.5 m deck with a train each side needs about 7.5 m, and widening the formation on the pier alone would put a kink in both tracks at each end |
+| No platform, a board and a step | No. Every halt is a deck you wait on; the wagon's rack needs one; and the stop that Get unstuck returns you to should look like a stop |
+
+**Measurements, once the pier is double.**
+
+| Thing | Where |
+| --- | --- |
+| Down track, up track | lat 0 and lat −4; the formation lat −5.8 to +1.8 (7.6 m) |
+| The platform | s 719–741 (22 m), lat +1.65 to +4.15, top 25.02 m; its edge 1.65 m from the down track's centre (as every halt) and 5.65 m from the up track's |
+| The pier's width at the halt | 9.95 m (lat −5.8 to +4.15); 11.1 m at the jib's pad |
+| The rack | s 729.1–736.9, lat +2.9 to +4.1 on the platform's seaward edge; a 1.25 m aisle on the track side, as today |
+| Ramp, shelter, board, lever | the ramp s 713–719; the shelter s 721.2–729.2 on the back edge; the lever s 739.6, lat +2.45; all mirrored by `makeHalt` from the row's `lat` |
+| The jib's pad | s 741–746, lat +1.8 to +5.3, 0.68 m below the platform's north end |
+| Q7's frame | s 710, lat +3.5 to +5.5, on a deck s 703–713 |
+| Where a standing train is | s 717.5–732.7 on lat 0: its passenger car (s 726.5) at the platform's middle third, its wagon at the landward end by the ramp |
+
+**The rack and cargo.** Nothing is lifted, so nothing can be lost. The rule also holds by the sim's own invariants,
+which is worth a test: `pierRack + pierSet <= 12`, the crossing is done only at `pierSet === 12`, and Q7 opens on the
+crossing, so the pier rack is empty for all of Q7 and after; the ring's eighteen footings unload only at the Railhead.
+A footing on a player's back is on their back and is not the platform's. The empty rack stays standing (what looks
+solid is solid; no yard at the Pier, owner). R3b's fuzz asserts `pierRack === 0` from the twelfth footing on.
+
+**The carry changes, on a beat that is live today.** Rack to jib is 5–9 m along the east side instead of 11 m across
+the track; a footing can be set from the platform's last 3 m. That is a New call (54): it shortens the pier's twelve
+carries a little and takes the walk off the rails. It is one constant to put back.
+
+**Which way it faces, the lever, asking for a train home.** The platform faces west across the down track. Its lever
+is the one it has today, one handle plaqued **Village** at the north end, the end a homeward train comes in from, and
+it is the same lever before and after Q7: while the Pier is the end it asks for the way out, which is home, and
+afterwards home is the only way. A rider aboard a homeward train asks as at any halt. Little guys wait only here, so
+"four or more stop a train" needs nothing new. Nothing at the halt changes on the day Q7 is laid.
+
+**The up train that doesn't stop.** It runs on the far track, 5.65 m from the platform's edge with the down track
+between, past a side of the pier that has no platform, no lever, no lamp and no board. That absence is the sign, and
+it is the same one every through track gives. No word is added (call 60). The one thing a player at the Pier may want
+that the halt doesn't give is a train **out**: finding 1.
+
+**Get unstuck.** Its landing before the Meet is the owner's ("your own side (the Pier halt)") and is today on the
+apron at deck height, inside where the platform and rack will be. It moves to the platform's south end (s 720.5,
+lat +2.9), facing the crossing: the lever home is 19 m ahead on the left, the rack beside you, the line out beyond.
+
+**Sightlines.** From the east platform the island, the ring and the shard are straight ahead and a train standing at
+the platform is on your left, clear of that view; from today's west platform the standing train is on the same side as
+the view of the bents (the approach still). The jib's mast (s 742.3, lat +3.5) is about 3° right of the line to the
+hinge from the platform's middle, and its arm reaches north-west across it about 14° above eye level, so by the numbers the
+leaf (1° left, under 1° up at 290 m) is seen under the arm, left of the mast. That is worked, not seen: in the phone
+still the track layer parked at the rails' end covers it, and it stays parked there until Q7 takes it out. The ring
+and the shard, which are what the halt faces, read clearly at phone size.
+
+**Room.** The platform is the standard 2.5 × 22 m deck every halt has, and the 1.25 m aisle past the rack is the one
+in play today; three players and a wagon's unload fit as they do now. The east side adds the pad and Q7's deck. A
+phone sees the same halt as every other; nothing here adds a prompt or a control.
+
+**Cost.** Two sim constants, one moved frame, three landings, one sign flipped in the halt's row, the apron, a frame
+deck and a footway in `crossing-view.ts`, four tests, the works bot's carry (Risks, "The Pier at v27"). All inside
+v27's bump; no second bump. R1b and R2d are untouched.
+
+### Flow
+
+| Leg | From → to | Length | Time |
+| --- | --- | --- | --- |
+| 1 | Train at the Pier → the rack (wagon's unload) | on the platform | 0–2 s |
+| 2 | Rack → jib, twelve times | 5–9 m (was 11 m, across the track) | 2–3 s at the footing's 3 m/s |
+| 3 | Kit car → Q7's frame, twice | about 12 m (the plan's s 720 gave 7 m) | 2–4 s |
+| 4 | Get unstuck's landing → the lever home | 19 m | 3 s |
+| 5 | Get unstuck's landing → the Railhead's platform | 117 m at bent 6, 257 m at bent 13 | 21–46 s walk; no train goes out from here |
+
+The three rules hold: the next goal is in sight from the landing (the jib, then the line out and the finger board);
+the gate keeps its meaning (nothing here is a travel edge onto work: the rack and jib are the work, and they are
+refused as today); nobody is stranded (one side, one walking line from the ramp to the railhead, never over a rail).
+Lens 6, a world that shortens behind you, is bent at leg 5: finding 1.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 40 | The island's buffers, crossover, east platform and chained west lever | Decided | Owner, 10 November ("Buffers about 15 m past the halt, with a crossover before it"); rail-map call 14 |
+| 41 | The passenger car at the platforms' middle (u 448), 35 m from the buffers; the engine always at the island end | Default | The alignment is the owner's ("the passenger cars align"); the mark is rail-map's station plan. Accepted |
+| 42 | The run-off in a cutting up to 1.5 m deep | Default (was New) | Ground shaping, no rule on it; under the 1.68 m jump, banks walkable. Accepted |
+| 43 | The Pier homeward-only from Q7 | Decided; the timing a Default | Owner ("the Pier becomes a homeward-only stop"). From Q7 the up track has no platform, so the timing is also what the track allows. Accepted |
+| 44 | When the end moves on: a train past the old turnout turns back there, one short of it runs on; one stop at the Railhead on the rivet, none at the Pier at Q7 | Default | v26's rule at Far Head, reused. Accepted |
+| 45 | When the railhead moves a bent: a standing train stays and leaves for home with no more dwell; one on its way runs 20 m further | Default | Nobody waits longer. Riders aboard stay aboard; a player about to board sees it leave early, and the next stops at the new spot. Accepted |
+| 46 | Every up train eases into the Railhead at 2 m/s², before and after the Meet | Default | Level finding 14 needs it before; after, it costs about 2 s a stop and saves a per-train state. Accepted |
+| 47 | Three trains, worst wait about 105 s | Decided | Owner, 10 November ("3 for now") |
+| 48 | Lift today's platform and rack at Q7 | Replaced | By 53 and 54 |
+| 49 | Get unstuck before the Meet: the Pier halt | Decided | Owner, 10 November |
+| 50 | The leaf at true scale | Decided | Owner, 10 November |
+| 51 | Both tracks laid to every railhead; the up track's last 20 m ends at its own buffer | Default | "A track that ends has buffers" (owner) covers the buffer; laying both is the planner's. Accepted |
+| 52 | The end board is blank | Default | The words are the owner's. Accepted |
+| 53 | The Pier's platform east of the down track, from Q6 | **New** | **Recommendation: build it. Proceeds, logged** |
+| 54 | The rack on that platform; the carry no longer crosses the track; nothing lifted at Q7 | **New** | **Recommendation: build it. Proceeds, logged** |
+| 55 | Q7's frame at s 710 | Default | Clear of the platform's south end |
+| 56 | The apron becomes the jib's pad; a 0.68 m step | Default | Follows from 53 |
+| 57 | Landings and Get unstuck on the platform's south end | Default | Follows from 53; the owner's target (the Pier halt) is unchanged |
+| 58 | A footway from the pad to the railhead's walkway, and a finger board | Default | Finding 1 |
+| 59 | One lever, plaqued Village, unchanged by Q7 | Decided; its place a Default | Owner ("one lever per platform side") |
+| 60 | No added sign for the non-stopping up train | Default | Signs in the world: the missing platform is the sign |
+| 61 | The old merge's turnout relaid plain at Q7 | Default | "No visible kinks" |
+
+Count: **6 decided** (40, 43, 47, 49, 50, 59), **13 default** (41, 42, 44, 45, 46, 51, 52, 55, 56, 57, 58, 60, 61),
+**2 new** (53, 54); 48 is replaced. Neither New call waits for the owner: both are a placement and a carry length,
+one constant each to put back, and neither is direction, new scope or irreversible.
+
+### Findings
+
+1. **No train goes out from the place Get unstuck puts you (lens 6; not blocking).** Two owner answers meet at the
+   Pier: Get unstuck returns you there, and from Q7 it is homeward-only. So the way back to the railhead is a walk of
+   117 m (21 s) at bent 6, up to 257 m (46 s) at bent 13, and between the pier head and u 95, where the railhead's
+   walkway begins, the only place to walk is Q7's deck, whose east edge is 1.3 m from the down track's centre, with
+   three trains running. No session has reached past the pier, so there is no evidence either way; it is a recovery
+   path, not the main line, and a 46 s walk after asking to be unstuck is acceptable. The cheap part is taken (call
+   58): a 1.5 m footway on the deck's east side from the pad to u 95 and a finger board pointing out along it, so
+   the walk is one line on one side and off the rails. If the bot or a session shows people waiting at the Pier for a
+   train out, the next step is the owner's (a request stop on the up track would need the platform he ruled out).
+2. **Q7's frame stood in the platform's south end (folded: call 55).** At s 720, lat +4.5 it overlaps the deck from
+   lat +3.5 to +4.15 over s 719–721.3 and its feeder reaches under the shelter. At s 710 it is the first thing you
+   meet at the ramp's foot. The kit's two carries grow from 7 m to about 12 m.
+3. **The landings were inside the new platform (folded: call 57).** `q6-done` (lat +4) and `crossing-done` (lat +3)
+   land at deck height where the platform's piles and the rack will be; `halts-view.ts` shoves a trapped body clear,
+   but a jump-in should not start with a shove.
+4. **R4a has no file that draws the pier's track (engineering, for the implementer).** `pier-view.ts` holds the Q6
+   rockets; the rails and deck are `track.ts`'s from `FORMATION.quarry.to` in `src/place/layout.ts`. Flagged in the
+   step.
+5. **Not seen.** The east side as it will be: nothing is built there, so the leaf-under-the-jib sightline and the
+   0.68 m step with a footing on your back are worked from numbers. R4a's eval and stills are where they are checked.
+
+### Cleared to build
+
+- **R3a: now** (after R1b is on main, as before). Its one pier item, the platform's constant, is ruled.
+- **R3b, R4a–R4e, R5:** cleared on design. R4a's pier hunk no longer waits.
+
+### Owner questions
+
+None. Nothing here is direction, unapproved scope or irreversible; calls 53–58, 60 and 61 are for
+[agent-calls](../agent-calls.md) (rows given to the orchestrator; this review does not edit that file).
 
 ## Design review (designer, 2026-11-10)
 
