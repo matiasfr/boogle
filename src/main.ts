@@ -28,6 +28,7 @@ import { createStall } from './adapters/mushrooms.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
+import { preloadBootChunks } from './boot/boot-chunks.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
 import { background } from './async.ts';
 import { AssetDownloadError, isChunkFetchError } from './boot/asset-fetch.ts';
@@ -38,6 +39,7 @@ import.meta.glob('./features/*.{js,ts}', { eager: true });
 // And every entity's index.ts (src/entities/ball/index.ts is the example).
 import.meta.glob('./entities/*/index.ts', { eager: true });
 bootMark('modules'); // every eager module is in and evaluated (src/boot/timeline.ts lists the phases)
+preloadBootChunks(); // the lazy parts the loading screen waits for, all at once rather than one after another
 // Startup below owns readiness failures; observers must not create another unhandled rejection.
 physicsReady.then(
   () => bootMark('rapier'),

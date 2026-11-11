@@ -174,6 +174,33 @@ export default defineConfig({
             c.imports.forEach(add);
           };
           for (const c of [...page, ...game, ...simd]) add(c.fileName);
+          // The boot's lazy chunks: what the game's dynamic imports reach, less debug tools, other prototypes and
+          // the plain-Rapier fallback. The railway's view imports its parts one after another, so on a first visit they
+          // came as about twenty round trips in a row (docs/research/cold-start.md). The page lists them in a meta tag
+          // for src/boot/boot-chunks.ts to preload at once, and the worker precaches them with the first files.
+          const later =
+            /\/src\/(debug|proto\/(?!place\/|flags\.ts|mark\.ts))|\/dev\/|\/@dimforge\/rapier3d\/|\/src\/boot\/(device-entry|jump-in)\.ts/;
+          const boot: string[] = [];
+          const reach = (c: Rolldown.OutputChunk) => {
+            for (const file of [...c.imports, ...c.dynamicImports]) {
+              const d = bundle[file];
+              if (first.has(file) || boot.includes(file) || d?.type !== 'chunk' || contains(d, later)) continue;
+              boot.push(file);
+              reach(d);
+            }
+          };
+          for (const file of [...first])
+            if (bundle[file]?.type === 'chunk') reach(bundle[file] as Rolldown.OutputChunk);
+          const html = bundle['index.html'];
+          if (html?.type === 'asset' && typeof html.source === 'string')
+            html.source = html.source.replace(
+              '</head>',
+              `<meta name="boogle-boot-chunks" content="${boot.join(' ')}">\n  </head>`,
+            );
+          for (const file of boot) {
+            first.add(file);
+            for (const css of (bundle[file] as Rolldown.OutputChunk).viteMetadata?.importedCss ?? []) first.add(css);
+          }
           // Authored content (models, textures, audio) loads by need through the content manifest
           // (src/render/asset-manifest.ts), even where a feature imports its URL eagerly: not precached.
           const content = /\.(glb|gltf|bin|ktx2|mp3|m4a|ogg|wav|opus)$/;
