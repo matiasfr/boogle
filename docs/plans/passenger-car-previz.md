@@ -1,5 +1,5 @@
-> **Status: Four (the knifeboard) built as the default, 10 November 2026; the owner has not picked.** If he picks Six,
-> the recipe, seats and exits change; the car's size, the stowaway's rule and the layout tests do not. Decision: "2026-11-10, the passenger car is redesigned with benches" in the
+> **Status: Four (the knifeboard) built, and picked by the owner on 10 November 2026: "Four seats (built)".** Six is not built; had he picked it,
+> the recipe, seats and exits would change; the car's size, the stowaway's rule and the layout tests would not. Decision: "2026-11-10, the passenger car is redesigned with benches" in the
 > [decision log](../decisions.md).
 
 # Passenger car previz

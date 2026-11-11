@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-10).** Light brainstorm (one agent, three lenses: play designer, systems architect,
+> **Status: proposed (2026-11-10); the owner answered all five questions on 10 November, each as recommended, with the Drop control labelled in his words (below).** Light brainstorm (one agent, three lenses: play designer, systems architect,
 > creative director), designer-reviewed (below). Not built.
 
 # Spares at the station (station-deposit)
@@ -165,21 +165,22 @@ a bank. The line held here is that a piece is only ever in one place you can see
 
 1. **A yard or a bank?**
    Recommended: **a yard at each halt, taken where it lies; with the cargo cars, trains carry a yard's goods to
-   whatever on their line needs them. Not one pool you reach from every station.** Answer: ___
+   whatever on their line needs them. Not one pool you reach from every station.** Answer (owner, 10 November): "A yard at each halt: take it where it lies; trains later carry it to where their line needs it".
 2. **Put the whole back down in one press, and never be refused a big load?**
    Recommended: **yes, now, as its own small build: hold Drop empties your back, and shouldering the boiler, beam or
-   a footing sets your load down beside you.** Answer: ___
+   a footing sets your load down beside you.** Answer (owner, 10 November): "Drop one thing off your back (hold: all of it)", his label for the Drop control (a tap drops one thing, a hold puts down all of it). Read as taking this question as recommended, big-load swap included; he did not mention the swap.
 3. **Can a yard fill up?**
    Recommended: **no. It always takes what you leave; past 24 of a kind the stack grows in strapped bundles of 8.**
-   Answer: ___
+   Answer (owner, 10 November): "No: past 24 of a kind it grows in strapped bundles of 8".
 4. **When does a yard appear, and does the Pier get one?**
-   Recommended: **when the track reaches the halt site, before trains; none at the Pier for now.** Answer: ___
+   Recommended: **when the track reaches the halt site, before trains; none at the Pier for now.** Answer (owner, 10 November): "When the track reaches the halt site, before trains; none at the Pier for now".
 5. **Where does steel for upgrades wait?**
    Recommended: **as a stack in the Roundhouse bay, brought by train, spent in view by a Fit; no separate store and
-   never in a yard.** Answer: ___
+   never in a yard.** Answer (owner, 10 November): "As a visible stack in the Roundhouse bay, spent by an install".
 
 ## Draft strings for the owner
 
+- **Drop one thing off your back (hold: all of it)**: the Drop control's label, the owner's words (10 November).
 - **Leave it here**: Interact at a yard with something on your back that it takes (new).
 - **Pick up**: the existing verb, reused at a yard.
 

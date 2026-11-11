@@ -1,4 +1,4 @@
-> **Status: corrected per the design review below (2026-11-10); waiting on the owner's five questions.** Nothing here
+> **Status: corrected per the design review below (2026-11-10); the owner's five questions are answered, each as recommended (10 November), and he added a sixth (the ruled-out legs).** Nothing here
 > changes game code; the map page and the level-check report are dev tools. Every number below is printed by
 > `node --import ./dev/sim/hooks.ts dev/level/rail-map.ts --numbers` or `npm run level-check` ("Track continuity").
 > The map draws Home as layout B (`dev/level/home-b.ts` sets `BOOGLE_HOME=b`); the live game still draws today's
@@ -53,7 +53,7 @@ scroll; tables scroll in their own boxes).
 crossover at 63 m on the cone's summit (three halts and two crossovers), and the cave line still climbs to High Port.
 Removing them means editing `SERVICES` in `dev/level/world-blockout.ts` and regenerating `src/sickle/world-lines.ts`,
 which the live build ships in the `?blockout=world` chunk (and the greybox prototype reads): game code that ships, so
-it is left for its own change (the owner or the orchestrator to call). The map draws the catalog as it is: the two
+it is left for its own change. Owner, 10 November: "Yes, as its own small reviewed change" (remove the two ruled-out legs from the live blockout view); still to be built. The map draws the catalog as it is: the two
 removed legs (the draft's climb to Ring top, the lift to High Port) are drawn faint, their ends say "superseded", and
 the services view leaves them out. The end counts below still include those two ends.
 
@@ -428,17 +428,24 @@ The design review's five, recommendation first.
 1. **Should line 2 grow into one ring line round the map?** **Recommended: yes, as the working map.** One train from
    the Village round to West landing; the bay line and the north–south line cross its middle; Home keeps the walk
    between its two ends. Nothing is built on it before the first branch.
+   **Answered (owner, 10 November): "Yes, as the working map", as recommended.**
 2. **Ring Island while it is the end of the line: buffers past the halt, or a turning loop?** **Recommended:
    buffers** about 15 m past the halt, with a crossover on the Way before it. The loop needs a cut of up to 12 m into
    the cone beside the town, turns every train round, and is lifted when the line goes on; it isn't drawn yet (a circle
    wholly east of both tracks can't take the up track without crossing the down track). The loop's lap of the island
    is what is given up.
+   **Answered (owner, 10 November): "Buffers about 15 m past the halt, with a crossover before it", as recommended.**
 3. **Bell Rock on two levels?** **Recommended: yes, with the bay line on top of the rock and the north–south line
    down at the water**, stairs between.
+   **Answered (owner, 10 November): "Yes: the bay line on top, the north–south line at the water", as recommended.**
 4. **Halts with nothing left to do: the Pier and the Railhead after the Meet.** **Recommended: the Railhead stays as
    the Meet's halt (you name it); the Pier becomes a stop for homeward trains only.**
+   **Answered (owner, 10 November): "The Railhead stays as the Meet's halt; the Pier becomes a homeward-only stop", as recommended.**
 5. **Short lines and the upgrade screen.** **Recommended: the screen offers a speed part only where it saves about ten
    seconds a trip (about 1.2 km); line 1 and the early line 2 get seats, looks and a whistle instead.**
+   **Answered (owner, 10 November): "A speed part is offered only where it saves about ten seconds a trip; short lines get seats, looks and a whistle", as recommended.**
+6. **Remove the two ruled-out legs from the live blockout view?** Added by the owner's page; the plan had left it for its own change.
+   **Answered (owner, 10 November): "Yes, as its own small reviewed change".**
 
 ## Design review (designer, 2026-11-10)
 
@@ -708,13 +715,15 @@ layout B (owner, 9 November), which this plan should follow.
 
 ### Before the owner answers
 
+_Answered by the owner on 10 November (see the questions above); the list below is the work that preceded the questions._
+
 1. Redo Home on layout B (finding 1) and withdraw the 23.5 marks.
 2. Replace question 3 (the loop's fate) with the buffers-or-balloon question, and say the balloon is undrawn.
 3. Regenerate the catalog (finding 11) and draw the services for both branch orders (finding 6).
 
 ### Before Ring Island R3a starts
 
-The call in finding 2. With buffers: a small R1 amendment (crossover and buffer positions, `RING_LOOP` out of line
+The call in finding 2, answered 10 November: buffers. With buffers: a small R1 amendment (crossover and buffer positions, `RING_LOOP` out of line
 2's row) and R3a loses its loop leg. With the loop: the planner pass, the continuity report, my re-review, then
 R3a. R1's measured pieces (the gap, the brace platform, the hook ring, the 2 m/s² brake) are untouched either way.
 
@@ -723,12 +732,19 @@ R3a. R1's measured pieces (the gap, the brace platform, the hook ring, the 2 m/s
 1. **Should line 2 grow into one ring line round the map?** **Recommended: yes, as the working map.** One train from
    the Village round to West landing; the bay line and the north–south line cross its middle; Home keeps the walk
    between its two ends. Nothing is built on it before the first branch.
+   **Answered (owner, 10 November): "Yes, as the working map", as recommended.**
 2. **Ring Island while it is the end of the line: buffers past the halt, or a turning loop?** **Recommended:
    buffers.** The loop needs a cut of up to 12 m into the cone beside the town, turns every train round, and is
    lifted when the line goes on. The loop's lap of the island is what is given up.
+   **Answered (owner, 10 November): "Buffers about 15 m past the halt, with a crossover before it", as recommended.**
 3. **Bell Rock on two levels?** **Recommended: yes, with the bay line on top of the rock and the north–south line
    down at the water**, stairs between.
+   **Answered (owner, 10 November): "Yes: the bay line on top, the north–south line at the water", as recommended.**
 4. **Halts with nothing left to do: the Pier and the Railhead after the Meet.** **Recommended: the Railhead stays
    as the Meet's halt (you name it); the Pier becomes a stop for homeward trains only.**
+   **Answered (owner, 10 November): "The Railhead stays as the Meet's halt; the Pier becomes a homeward-only stop", as recommended.**
 5. **Short lines and the upgrade screen.** **Recommended: the screen offers a speed part only where it saves about
    ten seconds a trip (about 1.2 km); line 1 and the early line 2 get seats, looks and a whistle instead.**
+   **Answered (owner, 10 November): "A speed part is offered only where it saves about ten seconds a trip; short lines get seats, looks and a whistle", as recommended.**
+6. **Remove the two ruled-out legs from the live blockout view?** Added by the owner's page; the plan had left it for its own change.
+   **Answered (owner, 10 November): "Yes, as its own small reviewed change".**

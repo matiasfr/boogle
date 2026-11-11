@@ -600,7 +600,7 @@ v27, future rows with their areas) is logged in [agent-calls](../agent-calls.md)
    crossovers and two-way signalling everywhere.
 2. **One lever per platform, for that platform's direction, instead of the two-handled lever (the late game's answer
    2, 10 November)?** Recommended: **yes**, each plaqued with the end it goes to: it still means "the next train my
-   way", without sending you across both tracks to catch it.
+   way", without sending you across both tracks to catch it. **Answered (owner, 10 November): "One lever per platform side".**
 3. **Line 2's second train: from the boiler fit, with the first?** Recommended: **yes**; they pass on the sea trestle
    about 20 s after the wake. The alternative, a reward when Q6 opens the pier, adds a gate and a parked train to
    explain.
@@ -752,6 +752,7 @@ draft words ("Village", "Pier", "Far Head"), still the owner's to reword.
    two-way signalling everywhere.
 2. **One lever per platform, for that platform's direction, instead of your two-handled lever?** Recommended: **yes**,
    each plaqued with the end it goes to: it still means "the next train my way", without crossing the tracks.
+   **Answered (owner, 10 November): "One lever per platform side", as recommended.**
 3. **Line 2's second train: from the boiler fit, with the first?** Recommended: **yes**; they pass on the sea trestle
    about 20 s after the wake.
 4. **Ship double track and the trains as v26 on their own, with Ring Island build 1 as v27?** Recommended: **yes**:
