@@ -4,13 +4,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CROSSING_BENTS, CROSSING_DECK_Y } from '../src/sim/railway-works-layout.ts';
-import { RAIL_LINES } from '../src/sim/railway-lines.ts';
+import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../src/sim/railway-lines.ts';
+import { TRAIN } from '../src/sim/railway-train.ts';
 import { ringHeight } from '../src/proto/greybox/ring-cones.ts';
-import { ORIGIN } from '../src/place/layout.ts';
+import { FORMATION, ORIGIN } from '../src/place/layout.ts';
 
 import {
   RING_BENTS,
   RING_BRACE_PLATFORM,
+  RING_END,
+  RING_GAP,
   RING_HALT,
   RING_HEAD,
   RING_HOOK,
@@ -140,4 +143,50 @@ test('the walkway the railhead leaves behind only grows', () => {
       `k ${k}: walkway ${b.u0}..${b.u1}, old platform ${old - 2500}..${old}`,
     );
   }
+});
+
+test('the island ends in buffers 15 m past the platforms, a crossover before them', () => {
+  const E = RING_END;
+  // Rail-map's long train: the longer boiler ahead, three cargo cars behind (docs/plans/rail-map.md, the station plan).
+  const LONG = { aheadCm: 820, behindCm: 1270 };
+  assert.ok(LONG.aheadCm >= TRAIN_EXTENT.aheadCm && LONG.behindCm >= TRAIN_EXTENT.behindCm);
+  assert.equal(E.bufferU, RING_HALT.u1 + 1500);
+  assert.deepEqual(E.buffers[0], { ...ringAt(E.bufferU, -400), y: 940 });
+  assert.deepEqual(E.buffers[1], { ...ringAt(E.bufferU, 0), y: 940 });
+  assert.equal(E.u, (RING_HALT.u0 + RING_HALT.u1) / 2);
+  assert.equal(E.s, RING_S_HEAD + E.u);
+  assert.equal(E.mergeCm, RING_S_HEAD + E.cross.u0);
+  // As long as Far Head's crossover, at least a turnout, and clear of the platforms.
+  const q = FORMATION.quarry.crossover!;
+  assert.equal(E.cross.u1 - E.cross.u0, (q[1] - q[0]) * 100);
+  assert.ok(E.cross.u1 - E.cross.u0 >= TURNOUT_CM);
+  assert.ok(E.cross.u1 <= RING_HALT.u0);
+  for (const t of [TRAIN_EXTENT, LONG]) {
+    const nose = E.u + t.aheadCm,
+      tail = E.u - t.behindCm;
+    assert.ok(tail - E.cross.u1 >= 500, `tail ${tail} clear of the crossover`);
+    assert.ok(E.bufferU - nose >= 1470, `nose ${nose} short of the buffers`);
+    assert.ok(tail >= RING_HALT.u0 && nose <= RING_HALT.u1, `beside the platforms: ${tail}..${nose}`);
+    // A train held at the signal: its nose at the crossover's first point.
+    const held = E.mergeCm - t.aheadCm - t.behindCm;
+    assert.ok(held - RING_HEAD[7]!.s >= TRAIN.sepCm, `held tail ${held} past the railhead's stop`);
+    assert.ok(held - (RING_S_HEAD + RING_GAP.hinge) >= 2000, `held tail ${held} past the hinge`);
+  }
+  // endBlocks keeps the catalog's signal: it stands at least sepCm short of the stop.
+  assert.ok(E.mergeCm - TRAIN_EXTENT.aheadCm <= E.s - TRAIN.sepCm);
+  for (let u = E.bed.u0; u <= E.bed.u1; u += 50) assert.equal(ringDeckY(u), 800, `deck at u ${u}`);
+  assert.equal(E.bed.y, 800);
+  // Nothing west of the formation (the station house's terrace is at lat -9.3): ringAt's inverse lat.
+  const lat = (x: number, z: number) => (x - 140200 + 0.0272 * (z + 37200)) / Math.sqrt(1 + 0.0272 * 0.0272);
+  assert.ok(E.bed.lat0 >= -580);
+  for (const p of [...E.buffers, E.board]) assert.ok(lat(p.x, p.z) >= -581, `(${p.x}, ${p.z})`);
+  // The world positions, pinned once.
+  const pinned: [{ x: number; z: number }, number, number][] = [
+    [E.buffers[0], 141113, -85493],
+    [E.buffers[1], 141513, -85482],
+    [E.board, 141317, -85638],
+  ];
+  for (const [p, x, z] of pinned) assert.ok(dist(p.x, p.z, x, z) <= 1, `(${p.x}, ${p.z}) against (${x}, ${z})`);
+  assert.equal(E.board.y, 890);
+  assert.equal(E.cut, 750);
 });

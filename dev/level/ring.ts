@@ -13,18 +13,23 @@ import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/en
 import { TRAIN_CARS, TRAIN_OFFSETS } from '../../src/entities/railway/cars.ts';
 import { CARRY } from '../../src/physics/platforms.ts';
 import { TUNABLES } from '../../src/sim/tune.ts';
-import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
+import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../../src/sim/railway-lines.ts';
+import { TRAIN } from '../../src/sim/railway-train.ts';
 import { ringHeight } from '../../src/proto/greybox/ring-cones.ts';
+import { CONCOURSE, HEAD as GREYBOX_HEAD, HX as GREYBOX_HX } from '../../src/proto/greybox/ring-house.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
+import { LIVE, beside, type Track } from './rail-network.ts';
+import { LIMITS, measure } from './track-continuity.ts';
 import {
   RING_BRACE_PLATFORM,
+  RING_END,
   RING_END_APPROACH,
   RING_END_BRAKE_CMS2,
   RING_FORMATION,
   RING_GAP,
+  RING_HALT,
   RING_HEAD,
   RING_HOOK,
-  RING_LOOP,
   RING_PLATFORM_LAT,
   RING_RAILHEAD_KIT,
   RING_RAMPS,
@@ -210,6 +215,221 @@ export function brakingCarry(brake: number, approach: number) {
 }
 
 type Entry = { kind: 'section' | 'fact'; message: string } | { kind: 'assertion'; passed: boolean; message: string };
+
+/** The eased lateral shift of a crossover (src/place/layout.ts crossLat's smoothstep): up track (lat -4 m) at u0 to the
+ * down track at u1, metres. */
+const ease = (t: number) => {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
+};
+/** ringAt in metres, unrounded (a 1 cm grid on 0.5 m chords would read as kinks). */
+function ringAtM(u: number, lat: number) {
+  const k = Math.sqrt(1 + 0.0272 * 0.0272);
+  return {
+    x: (140200 + (0.0272 * u * 100 + lat * 100) / k) / 100,
+    z: (-37200 + (0.0272 * lat * 100 - u * 100) / k) / 100,
+  };
+}
+/** Radius of the circle through three (x, z) points, m. */
+function radius3(a: { x: number; z: number }, b: { x: number; z: number }, c: { x: number; z: number }) {
+  const ab = Math.hypot(b.x - a.x, b.z - a.z),
+    bc = Math.hypot(c.x - b.x, c.z - b.z),
+    ca = Math.hypot(a.x - c.x, a.z - c.z);
+  const cr = Math.abs((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x));
+  return cr < 1e-12 ? Infinity : (ab * bc * ca) / (2 * cr);
+}
+/** A crossover's steepest angle off its straight and its tightest radius, the continuity report's way (3-point, 2 m
+ * arms, 0.5 m steps, from 2 m before to 2 m after): `p(s, lat)` is a point `lat` m beside the base track at s m. */
+function crossoverShape(p: (s: number, lat: number) => { x: number; z: number }, s0: number, s1: number) {
+  const lat = (s: number) => -4 * (1 - ease((Math.max(s0, Math.min(s1, s)) - s0) / (s1 - s0)));
+  let steep = 0,
+    minR = Infinity,
+    at = s0;
+  for (let s = s0 - 2; s <= s1 + 2; s += 0.5) {
+    const t0 = p(s - 0.25, 0),
+      t1 = p(s + 0.25, 0),
+      c0 = p(s - 0.25, lat(s - 0.25)),
+      c1 = p(s + 0.25, lat(s + 0.25));
+    const d = Math.atan2(c1.x - c0.x, c1.z - c0.z) - Math.atan2(t1.x - t0.x, t1.z - t0.z);
+    steep = Math.max(steep, Math.abs((Math.atan2(Math.sin(d), Math.cos(d)) * 180) / Math.PI));
+    const R = radius3(p(s - 2, lat(s - 2)), p(s, lat(s)), p(s + 2, lat(s + 2)));
+    if (R < minR) {
+      minR = R;
+      at = s;
+    }
+  }
+  return { steep, minR, at };
+}
+
+/** "The island terminus (buffers and a crossover)" (R1b; owner, 10 November: "Buffers about 15 m past the halt, with a
+ * crossover before it"): RING_END against the halt, the trains' extents, the signal, the ground, the station house
+ * and the jump reach at the new end. */
+function terminus(
+  fact: (message: string) => void,
+  section: (message: string) => void,
+  assertion: (passed: boolean, message: string) => void,
+) {
+  const E = RING_END,
+    H = RING_HALT,
+    LONG = { aheadCm: 820, behindCm: 1270 };
+  section('The island terminus (buffers and a crossover)');
+  for (const [k, b] of E.buffers.entries())
+    assertion(
+      E.bufferU - H.u1 === 1500 && b.x === ringAt(E.bufferU, RING_FORMATION.tracks[k]!).x,
+      `${k ? 'down' : 'up'} track's buffer face at u ${m(E.bufferU)} m, ${f1(m(E.bufferU - H.u1))} m past the platforms: world (${f1(m(b.x))}, ${f1(m(b.y))}, ${f1(m(b.z))})`,
+    );
+  fact(`  the end board (blank) 1.5 m behind them at (${f1(m(E.board.x))}, ${f1(m(E.board.y))}, ${f1(m(E.board.z))})`);
+
+  const cLen = E.cross.u1 - E.cross.u0;
+  assertion(
+    cLen === 2200 && cLen >= TURNOUT_CM && H.u0 - E.cross.u1 === 1100,
+    `the crossover u ${m(E.cross.u0)}-${m(E.cross.u1)} m: ${f1(m(cLen))} m (a turnout is ${f1(m(TURNOUT_CM))}), ending ${f1(m(H.u0 - E.cross.u1))} m short of the platforms`,
+  );
+  const here = crossoverShape((u, lat) => ringAtM(u, lat), m(E.cross.u0), m(E.cross.u1));
+  const F = LIVE[1].f.crossover!,
+    far = crossoverShape((s, lat) => beside(LIVE[1].line, s, lat), F[0], F[1]);
+  fact(
+    `  deck ${f1(m(ringDeckY(E.cross.u0)))} m to ${f1(m(ringDeckY(E.cross.u1)))} m on the 4% grade (level from u ${f1(m(H.u0 - 50))}); the eased shift's steepest angle ${f1(here.steep)} degrees, tightest radius ${f1(here.minR)} m at u ${f1(here.at)} (Far Head's live crossover: ${f1(far.steep)} degrees, ${f1(far.minR)} m)`,
+  );
+
+  // Every track at the end, as the continuity report measures track: kinks, curvature, grade.
+  const track = (id: string, kind: Track['kind'], u0: number, u1: number, lat: (u: number) => number): Track => {
+    const pts = [];
+    for (let u = u0; u <= u1 + 1e-6; u += 0.5) {
+      const p = ringAtM(u, lat(u));
+      pts.push({ ...p, y: m(ringDeckY(Math.round(u * 100))), s: m(RING_S_HEAD) + u });
+    }
+    return { id, line: 'line2', label: id, status: 'v27', kind, nominal: 0.5, pts, pose: 'polyline', enforce: false };
+  };
+  const c0 = m(E.cross.u0),
+    c1 = m(E.cross.u1),
+    end = m(E.bufferU);
+  const rows = [
+    track('island down track', 'down', c0 - 10, end, () => 0),
+    track('island up track', 'up', c0 - 10, end, () => -4),
+    track('island crossover', 'crossover', c0 - 10, c1 + 10, (u) => -4 * (1 - ease((u - c0) / (c1 - c0)))),
+  ].map(measure);
+  for (const { row, findings } of rows) {
+    const kinks = findings.filter((x) => x.kind === 'kink' || x.kind === 'reversed' || x.kind === 'gap');
+    assertion(
+      row.maxKink <= LIMITS.kinkSoft && !kinks.length && row.maxGrade <= LIMITS.grade + 0.05,
+      `${row.id}: ${f1(row.length)} m, worst kink ${row.maxKink.toFixed(2)} degrees (at most ${LIMITS.kinkSoft}), tightest radius ${row.minRadius === Infinity ? 'straight' : `${f1(row.minRadius)} m`} on the 5 m resample, steepest grade ${row.maxGrade.toFixed(2)}%`,
+    );
+  }
+  fact(
+    `  the crossover is tighter than the continuity report's ${LIMITS.radius} m, as every turnout on lines 1 and 2 is (reported there, not failed); it is Far Head's shape on a straight`,
+  );
+
+  for (const [name, t] of [
+    ["today's train", TRAIN_EXTENT],
+    ['the long train', LONG],
+  ] as const) {
+    const tail = E.u - t.behindCm,
+      nose = E.u + t.aheadCm;
+    assertion(
+      tail - E.cross.u1 >= 500 && E.bufferU - nose >= 1470 && tail >= H.u0 && nose <= H.u1,
+      `${name} (${m(t.aheadCm)} m ahead, ${m(t.behindCm)} m behind) standing at u ${m(E.u)}: u ${f1(m(tail))}-${f1(m(nose))}, ${f1(m(tail - E.cross.u1))} m clear of the crossover, ${f1(m(E.bufferU - nose))} m short of the buffers, beside the platforms (u ${m(H.u0)}-${m(H.u1)})`,
+    );
+  }
+  for (const [name, t] of [
+    ["today's train", TRAIN_EXTENT],
+    ['the long train', LONG],
+  ] as const) {
+    const signal = E.mergeCm - t.aheadCm,
+      tail = signal - t.behindCm;
+    const pastHinge = tail - (RING_S_HEAD + RING_GAP.hinge),
+      pastHead = tail - RING_HEAD[7]!.s;
+    assertion(
+      pastHinge >= 2000 && pastHead >= TRAIN.sepCm,
+      `${name} held at the signal (u ${f1(m(signal - RING_S_HEAD))}): tail at u ${f1(m(tail - RING_S_HEAD))}, ${f1(m(pastHinge))} m past the hinge, ${f1(m(pastHead))} m past the Railhead's stop (sepCm ${f1(m(TRAIN.sepCm))})`,
+    );
+  }
+  assertion(
+    E.mergeCm - TRAIN_EXTENT.aheadCm <= E.s - TRAIN.sepCm,
+    `the catalog's signal (s ${f1(m(E.mergeCm - TRAIN_EXTENT.aheadCm))} m) is at least sepCm short of the stop (s ${f1(m(E.s))} m): endBlocks keeps it`,
+  );
+
+  // The ground under the run-off: the cone rises through the deck, so the last metres are a cutting to RING_END.cut.
+  const lats = [RING_FORMATION.left, RING_FORMATION.tracks[0], RING_FORMATION.tracks[1], RING_FORMATION.right];
+  let deepest = { cut: 0, u: 0, lat: 0 },
+    first = Infinity;
+  fact(`  ground under the run-off (lat ${lats.map(m).join(', ')} m), cut to ${f1(m(E.cut))} m:`);
+  for (let u = E.bed.u0; u < E.bed.u1 + 200; u += 200) {
+    const uu = Math.min(u, E.bed.u1); // every 2 m, and the bed's end behind the faces
+    const g = lats.map((lat) => {
+      const p = ringAt(uu, lat);
+      return ringHeight(m(p.x) - ORIGIN.x, m(p.z) - ORIGIN.z);
+    });
+    for (const [i, h] of g.entries()) {
+      const cut = h - m(E.cut);
+      if (cut > 0 && uu < first) first = uu;
+      if (cut > deepest.cut) deepest = { cut, u: uu, lat: lats[i]! };
+    }
+    fact(`    u ${f1(m(uu))}: ${g.map((h) => (h > -1e9 ? f1(h) : 'sea')).join(', ')} m`);
+  }
+  assertion(
+    deepest.cut <= 2,
+    `the cutting is nowhere over 2.0 m: it starts at about u ${first === Infinity ? 'none' : f1(m(first))}, deepest ${f1(deepest.cut)} m at u ${f1(m(deepest.u))}, lat ${f1(m(deepest.lat))}`,
+  );
+
+  // The station house's terrace (the greybox's skewed axes: invert its `at`) and its plank crossing.
+  const T = CONCOURSE.terrace,
+    X = CONCOURSE.crossing;
+  const greybox = (p: { x: number; z: number }) => {
+    const dx = m(p.x) - GREYBOX_HEAD.x,
+      dz = m(p.z) - GREYBOX_HEAD.z,
+      n = 1 + GREYBOX_HX * GREYBOX_HX;
+    return { u: (GREYBOX_HX * dx - dz) / n, lat: (dx + GREYBOX_HX * dz) / n };
+  };
+  const geometry = [
+    ...E.buffers,
+    E.board,
+    ...[E.bed.u0, E.bed.u1].flatMap((u) => [ringAt(u, E.bed.lat0), ringAt(u, E.bed.lat1)]),
+  ].map(greybox);
+  let clear = Infinity;
+  for (const g of geometry)
+    clear = Math.min(clear, Math.max(gap(g.u, g.u, T.u0 - 1, T.u1 + 1), gap(g.lat, g.lat, T.lat0 - 1, T.lat1 + 1)));
+  assertion(
+    clear > 0 && Math.min(...geometry.map((g) => g.lat)) >= m(RING_FORMATION.left) - 0.2,
+    `nothing of the end inside the station house's terrace grown by 1 m (u ${T.u0 - 1}-${T.u1 + 1}, lat ${T.lat0 - 1} to ${T.lat1 + 1}): nearest ${f1(clear)} m outside it, westmost lat ${f1(Math.min(...geometry.map((g) => g.lat)))}`,
+  );
+  assertion(
+    m(E.bufferU) - X.u1 >= 10,
+    `the buffer faces ${f1(m(E.bufferU) - X.u1)} m past the plank crossing's north edge (u ${X.u1}; at least 10)`,
+  );
+
+  // The easing stop and the jump reach at the new end.
+  fact(
+    `  the railhead's end stops are unchanged (RING_HEAD, RING_END_BRAKE_CMS2 ${f1(m(RING_END_BRAKE_CMS2))} m/s²): its braking rows are asserted above`,
+  );
+  const lineBrake = RAIL_LINES[1]!.accel,
+    vLine = (RAIL_LINES[1]!.speed * 10) / 100,
+    platform = m(H.y + 90);
+  let worst = { land: -Infinity, part: '', v: 0, d: 0 };
+  for (const p of STANDABLE) {
+    const stop = m(E.u) + p.off + p.z;
+    let best = { land: -Infinity, v: 0, d: 0 };
+    for (let d = 0; d <= (vLine * vLine) / (2 * lineBrake) + 5; d += 0.1) {
+      const v = Math.min(vLine, Math.sqrt(2 * lineBrake * d)),
+        u = stop - d,
+        y = m(ringDeckY(Math.round(u * 100))) + RAIL_TOP + p.y;
+      const t = longestFlight(y - platform) + COYOTE,
+        kept = Math.max(0, v - CARRY.skid * CARRY.departureSkidS),
+        land = u + (kept + SPRINT) * t + PLAYER_R;
+      if (land > best.land) best = { land, v, d };
+    }
+    fact(`    ${p.name}: lands at most at u ${f1(best.land)} (${f1(best.v)} m/s, ${f1(best.d)} m before the stop)`);
+    if (best.land > worst.land) worst = { ...best, part: p.name };
+  }
+  assertion(
+    worst.land < m(E.bufferU),
+    `a late double jump off a train braking at the line's ${f1(lineBrake)} m/s² into u ${m(E.u)}, aimed along the track at the platforms' height, lands short of the buffer faces: worst the ${worst.part}, u ${f1(worst.land)}, ${f1(m(E.bufferU) - worst.land)} m short`,
+  );
+  const level = lateDouble(0).reach;
+  fact(
+    `  from the platforms' north end a late double jump on the level reaches ${f1(level)} m, to u ${f1(m(H.u1) + level)}: over the buffers onto the open ground behind them (nothing there is gated)`,
+  );
+}
 const m = (cm: number) => cm / 100;
 const f1 = (x: number) => x.toFixed(1);
 /** Gap between two intervals, 0 if they overlap. */
@@ -380,9 +600,7 @@ export function checkRing() {
       `(${f1(m(p.x))}, ${f1(m(p.y))}, ${f1(m(p.z))}): ${f1(m(p.y))} m, ground ${ground > -1e9 ? f1(ground) : 'sea'}: dry`,
     );
   }
-  fact(
-    `  the loop: ${m(RING_LOOP.loopCm)} m round, its neck ${m(RING_LOOP.neckCm)} m: the greybox's links run 12 m on from the halt's north end, then 30 m back south to the loop's west point beside the halt (a shape for R3a to settle)`,
-  );
+  terminus(fact, section, assertion);
   fact(`  (stepped at 1/${Math.round(1 / DT)} s; the controller steps at 1/${Math.round(1 / FIXED)} s)`);
   const failures = entries.filter((e) => e.kind === 'assertion' && !e.passed).length;
   return { level: 'ring (planned)', entries, failures };
