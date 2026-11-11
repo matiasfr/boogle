@@ -219,7 +219,8 @@ jobs:
         run: |
           gh workflow run deploy.yml --ref main
           gh workflow run ci.yml --ref main
-          if gh pr diff "$PR" --name-only | grep -qE '^(server/|src/world/|src/sim/|src/ecs/|src/net/ids\.ts|src/net/ws-wire\.ts|package\.json|\.dockerignore|\.github/workflows/deploy-server\.yml)'; then
+          # The image's sources, one list (dev/server-build.ts SERVER_IMAGE_PATHS), from main's checkout above.
+          if gh pr diff "$PR" --name-only | node dev/server-build.ts --touches; then
             gh workflow run deploy-server.yml --ref main
           fi
           # No atlas dispatch: its citation report is advisory and the atlas is off (owner, 10 November); it runs on

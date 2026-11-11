@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { builtinModules } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { runtimeSpecifiers as specifiers } from '../dev/scan/parse.ts';
@@ -112,6 +113,25 @@ test('a template-literal dynamic import is found', () => {
 
 test('a trailing line comment is not read as an import', () => {
   assert.deepEqual(specifiers("run(); // was: import old from './gone.ts'\n"), []);
+});
+
+// automerge.yml once kept its own regex of these paths and missed src/net/rtc-wire.ts, so a change to it alone never
+// redeployed the server. It now asks dev/server-build.ts; no second list.
+test('automerge decides a server deploy from SERVER_IMAGE_PATHS, not a copy', () => {
+  const step = read('.github/workflows/automerge.yml');
+  assert.match(step, /\| node dev\/server-build\.ts --touches; then\n\s+gh workflow run deploy-server\.yml/);
+  assert.doesNotMatch(step, /src\/net\/ws-wire\\\.ts/, 'an inline copy of the image paths is back');
+  const touches = (input: string) => {
+    try {
+      execFileSync(process.execPath, ['dev/server-build.ts', '--touches'], { cwd: ROOT, input, stdio: 'pipe' });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  assert.equal(touches('src/net/rtc-wire.ts\n'), true);
+  assert.equal(touches('server/src/server.ts\n'), true);
+  assert.equal(touches('src/features/x.ts\nsrc/network.ts\n'), false);
 });
 
 test('the server image resolves every package the server imports', () => {
