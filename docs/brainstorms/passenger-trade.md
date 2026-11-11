@@ -12,6 +12,15 @@
 > [trade-economy.html](../world/trade-economy.html), and `npm run economy -- trade`. Results are in
 > [Model results](#model-results-11-november). Houses now cost twice the last in a town (owner, 11 November: [decision](../decisions-rewards.md#d-2026-11-11-boogles-prices-are-stand-ins-to)); fares kept; the late-game shortfall is an open content question. Not tested on a device.
 >
+> **Step 0 finished (11 November, `trade/playable-2d`): the playable 2D prototype has the trade.**
+> [economy-prototype.html](../world/economy-prototype.html) now has little guys waiting and riding, fares landing in
+> the shared strongbox at the ticket window (with its mark), the Village's third cottage plot bought at the model's
+> price, the crowd it brings, and seats hauled for (the default) or bought with Boogles (a toggle). It runs the
+> model's own rules (`play-trade.ts` calls `trade-model.ts`; numbers only from `trade-data.ts`), and
+> `test/economy-playable-trade.test.ts` replays the model's rooms through it and asserts the rider income is the same
+> to the last Boogle. What playing it showed is in [Playable prototype](#playable-prototype-11-november). Design
+> tool only; not tested on a device.
+>
 > **What his later answers changed (10 November):** Boogles **build houses** on town plots ("Boogles build the house
 > itself; unbought plots stay empty ground") and **upgrade sources**, the faster loader arm included. **Anything on
 > rails costs materials**, "including the passenger train and seats", so passenger cars and seats left the Boogle
@@ -1016,7 +1025,7 @@ each tunable can be changed and the four rooms play again. It plays the route on
 own 17 steps and minutes (`ring-sim.ts`, so a room that never spends finishes in exactly 6.00 h solo, 5.35 h with
 three), with the brief's stand-ins as written. **Where it differs from section 8's plan:** a separate trade model that
 reads the ring model's route, not a `TRADE` block in `ring-data.ts` and a change to `ring-sim.ts` (`PRICES`, `sold` and
-`bucks` are untouched); the playable prototype (`play-sim.ts`) is not changed yet. **Stand-ins that are mine, not the
+`bucks` are untouched); the playable prototype (`play-sim.ts`) got the trade afterwards (see [Playable prototype](#playable-prototype-11-november)). **Stand-ins that are mine, not the
 brief's:** each town's ride length (Village 0.5 km, Ring 1.2, Canopy 2.9 as the brief, Port 3.8 and Gorge 5.4 from the
 ring model's step distances), the trains' round trip (1 + 1.3 min a km, which gives line 2 the brief's 4.8 riders a
 minute), the seat bills of the later towns, a minute to haul each material (0.14 a log, 0.30 steel, 0.35 fibre, 0.50
@@ -1084,6 +1093,57 @@ Effect on room B, solo: mean wait per buy 9 to 17 minutes, fares lost to a full 
 town-side buy at hour 5.85 (5.72), goals still 18 minutes after the route. The base prices and the order are stand-ins
 to refine from playtests ([decision](../decisions-rewards.md#d-2026-11-11-boogles-prices-are-stand-ins-to)). The seat
 hauling (58.7 minutes) is not touched by this and stays an open finding.
+
+## Playable prototype (11 November)
+
+[economy-prototype.html](../world/economy-prototype.html) (sources `dev/economy/play-trade.ts`, `play-sim.ts`,
+`play-page.ts`; built by `node dev/economy/build-prototype.ts`, whose `--check` and the page-staleness test now cover
+the trade sources too): on the Sickle Isles map the
+Village line opens when "Line 2" is done, little guys wait at each open town (a dot each, red from four), a train block
+with its riders runs to Home and the fares drop into the box at the ticket window, which fills to the model's mark and
+then stops taking them. The player buys the Village's third cottage plot (house 1, **450** Boogles with seats on
+materials, 300 in the Boogles variant) and the next houses (2,400 then 18,000 for the Village, the model's order
+of 2); a crowd of four or more asks for seats, which are hauled to Home and installed with no Boogle spent (default),
+or bought with Boogles (**Seats cost: Boogles** toggle). Not in the prototype yet: station fit-outs, town buildings and
+source upgrades (they still count toward the box's size, so the box is the model's), and the three-room comparison.
+The rules are the model's: `play-trade.ts` calls the same exported functions its rooms run on (the riders' minute, the
+box's size, the offers, the prices), the Boogle numbers come only from `trade-data.ts`, and a Node test replays four
+rooms at one and three players through the playable and asserts the same Boogles every minute. Boogles come from fares
+only, materials and Boogles never convert (the old surplus-sold Bucks are a separate account, labelled so), a night
+away credits one capped sack, and nothing earns while the world is paused. Roles only, no names or dialogue.
+
+What playing it showed, ranked (P1 changes what the owner decides; one seed, mostly bots hauling for the party, so
+read these as leads, not measurements; not tested on a device):
+
+- **P1. Hauling for a seat is mostly not a chore here: it is a locked door.** From the crowd's call to the seats going
+  in, solo with bots: the Village's Six fit-out 0 minutes (the depot cart has already stacked 24 logs at Home, so the
+  bill is on hand), the Village's second car 4 minutes, High Gorge 5 and 4, Canopy 8 and 12, Port Quay 0, 1 and 2, but
+  **Ring Island's second car 91 minutes** (Gorge first): it needs 8 fibre, and fibre's source (Canopy Town) is not on the
+  line for about an hour and a half after the Ring opens, so the crowd stands there and nobody can answer it. The model's single
+  "minute to haul a material" hides both extremes (instant, and not yet possible). The route cost of all this is
+  22 minutes solo and 25 with three players, against the model's 58.7 and 61: bots haul only what is short, machines
+  already stack part of every bill. Whether the owner wants a seat's bill to wait on another town's material is a
+  design question the model could not show; the playable shows it as a line under the town, "waiting on Fibre bundles:
+  its source is not on the line yet".
+- **P1. The crowd reads, but only while it lasts.** A red ring and red dots on the town and a block with a number
+  running to Home read at a glance at desktop width. At phone width the Village, a stop by Home, sits in Home's tight
+  cluster and its dots are small. And a crowd of four to six is gone the next minute, because the train takes what its
+  seats hold: it shows up as a flicker, not as a standing queue, until the town's riders outgrow its seats
+  (about 77% of the minutes have some crowd of four or more, 255 of 329, same as the model). If the crowd is meant to be
+  what asks the player for a seat, a standing queue (the lamp stays lit until the seats are added) would read better
+  than a count that clears itself.
+- **P2. The wait for the first house is about right, and a player who idles hits the box.** The Village's trade opens
+  at about 34 minutes of play in and the first house (450) is affordable 8 minutes later (the model said 7); a bot buys it at once. A
+  player who looks away for 50 minutes finds the box full at 2,700 and 4,000 or more fares lost, which is the cap doing
+  its job but is the first thing the page teaches; the box's size is the strongest pull to come back.
+- **P2. Nothing for the hands to do between buys.** Player 1 has no job at the window: buying a house is one tap, a seat
+  is hauling (or nothing, when logs are stacked), so a solo human sits idle through the Village stage. The wheel
+  turns, but the loop the player feels is the route's, not the trade's.
+- **P3. The two currencies on one page.** The page already had Bucks (surplus sold); two wallets side by side confuse,
+  so Bucks is labelled "surplus sold; not Boogles". The brief's removal of Bucks (the `PRICES` rule) is still to
+  decide in the build.
+- **P3. The branch towns are positional.** The model's Canopy and Gorge towns are "first branch" and "second branch",
+  so the page names them by the place the player's fork made first; their fares keep the model's 2.9 and 5.4 km.
 
 ## Design review (designer, 2026-11-10)
 

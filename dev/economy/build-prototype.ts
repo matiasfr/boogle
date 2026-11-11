@@ -1,6 +1,7 @@
 // Builds docs/world/economy-prototype.html's two generated blocks: #play-data (the Sickle Isles map from
 // map-prototypes.html, plus whole bot runs and the closed-form model's pace for reference) and #play-code (play-page.ts
-// and play-sim.ts bundled with ring-data.ts and ring-sim.ts). Edit those sources, never the blocks.
+// and play-sim.ts bundled with ring-data.ts, ring-sim.ts and the passenger trade: play-trade.ts, trade-model.ts and
+// trade-data.ts). Edit those sources, never the blocks.
 //   node dev/economy/build-prototype.ts           write the page
 //   node dev/economy/build-prototype.ts --check   fail if the page is stale
 import { createHash } from 'node:crypto';
@@ -19,6 +20,9 @@ export const SOURCES = [
   'dev/economy/ring-data.ts',
   'dev/economy/ring-sim.ts',
   'dev/economy/play-sim.ts',
+  'dev/economy/play-trade.ts',
+  'dev/economy/trade-model.ts',
+  'dev/economy/trade-data.ts',
   'dev/economy/play-map.ts',
   'dev/economy/play-page.ts',
   'dev/economy/build-prototype.ts',
