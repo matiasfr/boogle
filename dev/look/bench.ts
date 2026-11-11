@@ -181,6 +181,10 @@ const TIMING = (s: number) => `
   requestAnimationFrame(tick);
   const t = await hardwareTiming(${s});
   run = false;
+  // Times from a software or fallback adapter (SwiftShader, WARP, llvmpipe) are not this device's GPU: refuse them.
+  const a = t.end.adapter;
+  if (a?.isFallbackAdapter || /swiftshader|llvmpipe|basic render|warp/i.test(a?.vendor + ' ' + a?.architecture + ' ' + a?.description))
+    throw new Error('hardware timing refused: software/fallback adapter ' + JSON.stringify(a));
   const sections = window.boogle.prof.table(400);
   const stat = (x) => x ? { avg: +x.avgMs.toFixed(3), p95: +x.p95Ms.toFixed(3), max: +x.maxMs.toFixed(3), n: x.samples } : null;
   return {
