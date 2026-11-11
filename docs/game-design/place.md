@@ -735,7 +735,15 @@ take-off rail on the platform's last 5 m, and the **joint's west platform** (u 2
 both tracks at u 240. **The lookout's buoys lift** as the railhead reaches them: 1 and 2 from the start, 3 at bent 8,
 4 at bent 11, 5 to 7 on the rivet, each rising off its mooring with a splash; the crane's little guy does not bow
 (not built). Once Q7 is laid the island's near view stays mounted at any distance, so the Way is there under the trains;
-until the leaf's own view (R4c) swings it, the struck rivet puts the leaf flat. Not tested on a device.
+the leaf's own view now swings it (below). Not tested on a device.
+
+**The bridge leaf (11 November 2026, R4c, first part; calls 8, 9, 35).** The leaf rests raised (78 degrees) on its pawl.
+Braced, each counterweight footing hung dips it a quarter (0.7 s); the last one, or the pawl knocked out with all four
+hung, swings it down onto the bents in 2.5 s, ease-in, with a thump at the toe. A page that loads after the leaf is down,
+or after the rivet, sees it flat at once, with no swing. One view (`leaf-view.ts`) writes the pose, from the accepted
+rows; nothing else does. **Not built yet:** the brace prompt at the gold strut, the counterweight prompt at the jib,
+the splash, the creak on the pawl, the lit bracket, the rivet's glint, and lifting a player from under the toe. Without
+the two prompts no player can reach the swing yet. Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 

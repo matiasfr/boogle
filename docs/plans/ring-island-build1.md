@@ -1075,7 +1075,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > platform while `head` advances (the walkway's cover is a test of the numbers). R4a's P3 (old merge sleepers kept after
   > the relay) is fixed in `track.ts`; its P2 (the laying machine travelling out onto the deck) is not, it is Place's six
   > stretches. `dev/look/ring-mid-seed.ts`: `--rail-seed ring-set-N` (N 0-14), a look save with N footings set.
-- [ ] **4c. R4c, the leaf.** `src/entities/ring-leaf/` as under "R4". Checks: `npm run check`, `npm run test:net` (the leaf's
+- [~] **4c. R4c, the leaf.** (part built 11 November 2026, branch `ring/r4c-leaf`: the swing and the single writer of `ringIslandPose`, `src/entities/railway/leaf-view.ts` and `leaf-shape.ts`; left: the brace and counterweight prompts, splash, creak, bracket outline, rivet glint, the player under the toe, `test:net`, the two-page proof look) `src/entities/ring-leaf/` as under "R4". Checks: `npm run check`, `npm run test:net` (the leaf's
   state mirrored on three tabs). Proof look (Done means): `npm
   run look -- --players 2 --rail-seed leaf-raised`, one player braced on the island side, the other hanging the last
   counterweight footing: the leaf swings down onto the bents on both pages. Also in the eval: a third player standing on
