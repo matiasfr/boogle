@@ -479,6 +479,8 @@ if (Number(new URLSearchParams(location.search).get('prof')) > 0) {
     recent = emptyTiming();
   });
   onStart(() => {
+    // `&profui=0`: the timing hooks without the panel and its 500 ms refresh (the device test, src/debug/device/).
+    if (new URLSearchParams(location.search).get('profui') === '0') return;
     const panel = document.createElement('section');
     panel.style.cssText =
       'position:fixed;right:8px;top:72px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;padding:8px;border-radius:6px;background:#001b26e8;color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;z-index:50;pointer-events:none';

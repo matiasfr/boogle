@@ -10,6 +10,9 @@ import { bootFailed } from './failure.ts';
 if (new URLSearchParams(location.search).get('startup') === '1')
   (await import('../debug/startup-record.ts')).installStartupRecorder();
 bootMark('files-start');
+// A device test link (./device-entry.ts): its run id and its private room are in the address before the next line reads it.
+if (new URLSearchParams(location.search).has('device'))
+  await import('./device-entry.ts').then((m) => m.prepareDevice(), bootFailed);
 // A playtest jump-in (./jump-in.ts): seed a fresh private room first, before anything reads the room from the address.
 // A chunk that fails to load stops here with the usual failure, rather than loading the address's room unseeded.
 const from = new URLSearchParams(location.search).get('from');

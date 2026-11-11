@@ -24,6 +24,7 @@ import { pathToFileURL } from 'node:url';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import type { Browser } from 'playwright';
 import { Game, launch, root as harnessRoot, sleep, type Stack } from './lib.ts';
+import { OPT_IN, POSES, type PoseName } from '../../src/debug/perf-poses.ts';
 
 const argv = process.argv.slice(2);
 const opt = (name: string) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined);
@@ -41,22 +42,6 @@ if (size.length !== 2 || size.some((n) => !Number.isInteger(n) || n <= 0))
 // The Mac's Retina DPR (the game caps it at 2): what the owner sees. --dpr 1 for a cheaper, CPU-bound sample.
 const dpr = Number(opt('--dpr') ?? 2);
 
-/** World metres, y up. The classic island sits at the origin; Place's world is offset by +1000 in x. */
-export const POSES = {
-  spawn: null, // the player camera where the game puts a new player
-  town: { cam: [940, 34, 72], look: [895, 18, 14] },
-  forge: { cam: [945, 30, -32], look: [913, 19, 2] }, // line 2 leaves the turntable by the forge and rack
-  far: { cam: [1040, 170, 260], look: [0, 0, 0] }, // over Place towards the classic island, ~1 km away
-  island: { cam: [-40, 40, 40], look: [-5, 0, 0] }, // the classic island close (dev/look/lib.ts VIEWS.overview)
-  bay: { cam: [780, 9, 0], look: [-700, 40, -500] }, // from the West landing over the bay: the long view (?greybox=sickle extends the fog here)
-  play: null, // mid-play: a second player beside you, walking, dust particles, the player camera
-  // The player stood there (x, y, z, yaw; forward is (-sin yaw, -cos yaw)) with the player camera: the owner's 9 November
-  // slow spots past the pier. Opt-in (--poses), and built only from `--rail-seed q6-done` on: before Q6 there is no pier.
-  pier: { put: [1406.75, 24.3, -356.96, 0] }, // the pier deck ("Pier reached" jump-in), facing north over open sea
-  head: { put: [1392, 24, -170, 2.356] }, // Far Head's top, facing back south-west along the trestle to the mainland
-} as const;
-type PoseName = keyof typeof POSES;
-const OPT_IN: PoseName[] = ['pier', 'head'];
 const poses = (opt('--poses')?.split(',') ??
   Object.keys(POSES).filter((p) => !OPT_IN.includes(p as PoseName))) as PoseName[];
 // --rail-seed <stage>: the bench room starts from an accepted railway server save, as look's (dev/look/rail-seed.ts).
@@ -227,11 +212,9 @@ const NEAR_ME = `
   const { me } = await import('/src/player/player.ts');
   const p = me.body.translation ? me.body.translation() : me.body.position;
   return [p.x, p.y, p.z, me.yaw];`;
-const PUT = (x: number, y: number, z: number) => `
-  const { me } = await import('/src/player/player.ts');
-  const { teleport } = await import('/src/physics/engine.ts');
-  teleport(me.body, ${x}, ${y}, ${z});
-  return true;`;
+const PUT = (x: number, y: number, z: number, yaw?: number) => `
+  const { putPlayer } = await import('/src/debug/perf-poses.ts');
+  return await putPlayer(${x}, ${y}, ${z}${yaw === undefined ? '' : `, ${yaw}`});`;
 const DUST = `
   const fx = await import('/src/render/particle-effects.ts').catch(() => null);
   const { me } = await import('/src/player/player.ts');
@@ -300,10 +283,7 @@ async function watchScaler(browser: Browser, stack: Stack, dataDir: string, [loa
     const pose = poses.length === 1 ? POSES[poses[0]!] : null;
     if (pose && 'put' in pose) {
       const [x, y, z, yaw] = pose.put;
-      await g.eval(
-        PUT(x, y + 1, z) +
-          `const { cam } = await import('/src/player/state.ts'); me.yaw = cam.yaw = ${yaw}; return true;`,
-      );
+      await g.eval(PUT(x, y + 1, z, yaw));
       await sleep(3000);
     }
     const samples = (await g.eval(SCALER(load!, after!, scalerK))) as [number, number, number][];
@@ -355,10 +335,7 @@ async function measure(browser: Browser, stack: Stack, dataDir: string) {
       else await g.eval(`window.__debugCam.clear();`);
       if (p && 'put' in p) {
         const [x, y, z, yaw] = p.put;
-        await g.eval(
-          PUT(x, y + 1, z) +
-            `const { cam } = await import('/src/player/state.ts'); me.yaw = cam.yaw = ${yaw}; return true;`,
-        );
+        await g.eval(PUT(x, y + 1, z, yaw));
       }
       if (pose === 'play') {
         bob = await Game.open(browser, stack, { name: 'Bob', room, size: [480, 300] });
