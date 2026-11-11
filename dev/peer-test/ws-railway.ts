@@ -907,6 +907,102 @@ export async function railwayRequestStop(c: Ctx) {
   await Promise.all(pages.map((p) => p.page.close()));
 }
 
+// Ring Island's leaf (docs/plans/ring-island-build1.md, R4c; the P1 of 11 November): the Aperture row mirrored on three
+// tabs at 0, 100 and 200 ms through its states (raised, braced and dipped, down, joined), with the brace from one
+// player and the counterweight from another, a late joiner while it is braced and part hung, a reload while it is
+// down, and a restart once joined. The leaf's pose is a pure function of the row (leaf-shape.ts `leafRest`, snapped on
+// a page's first ready frame), so the row on every tab is the pose on every tab.
+export async function railwayLeaf(c: Ctx) {
+  const { railwayAtRing } = await import('../../src/sim/railway-seed-ring.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-check.ts');
+  const { aperture } = await import('../../src/sim/railway-rows.ts');
+  const { RING_BRACE, RING_HEAD, RING_RIVET } = await import('../../src/sim/railway-ring-layout.ts');
+  const { leafRest } = await import('../../src/entities/railway/leaf-shape.ts');
+  const seed = railwayAtRing('leaf-raised');
+  const roomId = railwayRoomId(`${c.room}-leaf`);
+  const url = (pid: string, lat: number) =>
+    `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=${pid}&lat=${lat}&adapter=1`;
+  // As railwayRequestStop: a plain mirror brings the room up and the seed loads before any session opens.
+  const host = await c.web.open('L-host', `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=leafhost`);
+  await waitFor(async () => !!c.hosted(roomId), 15000);
+  const world = c.hosted(roomId)!.world as RailwayWorldHost;
+  await advancePast(world, seed.t + 5);
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
+  world.rules.railway.touchAll();
+  const brace = await c.web.open('L0', url('leaf0', 0)),
+    hanger = await c.web.open('L1', url('leaf1', 100));
+  await host.page.close();
+  let pages = [brace, hanger];
+  // The server's row, read again at each use (a restart replaces the hosted world).
+  const live = () => aperture((c.hosted(roomId)!.world as RailwayWorldHost).rules.railway.world());
+  const row = (r: { set: number; rack: number; cw: number; brace: number; joined: number }) =>
+    [r.set, r.rack, r.cw, r.brace, r.joined >= 0 ? 1 : -1].join();
+  // A tab's adapter probe, or null while a reloaded page is still starting.
+  const tab = (p: Page) => adapter(p) as Promise<RailwayAdapterProbe | null>;
+  const mirrored = async (label: string, want: string, ms = 10000) => {
+    const ok = await waitFor(async () => {
+      const all = await Promise.all(pages.map(tab));
+      return row(live()) === want && all.every((p) => p?.state.ready && p.state.pending === 0 && row(p.state.ring) === want);
+    }, ms);
+    const all = await Promise.all(pages.map(tab));
+    c.check(
+      `leaf: ${label}`,
+      ok >= 0,
+      `server ${row(live())} (pose ${leafRest(live().brace, live().cw, live().joined)}), tabs ${all.map((p) => (p ? row(p.state.ring) : 'loading')).join(' / ')}, want ${want}`,
+    );
+  };
+  const act = (p: Page, at: { x: number; y: number; z: number }, intent: Record<string, unknown>) =>
+    ev(
+      p.page,
+      ({ at, intent }) => {
+        window.T.railStand(at.x, at.y, at.z);
+        return window.T.railIntent(intent as never);
+      },
+      { at: { x: at.x, y: at.y, z: at.z }, intent },
+    );
+  const head = RING_HEAD[RING_HEAD.length - 1]!;
+  const hang = async () => {
+    const before = live().cw;
+    await act(hanger, head.rack, { op: 'rail.footTake', rack: 2 });
+    await waitFor(async () => (await adapter(hanger)).state.pending === 0 && (await adapter(hanger)).state.foot === 1);
+    await act(hanger, head.jib, { op: 'rail.footSet', site: 3 });
+    await waitFor(async () => live().cw > before && (await adapter(hanger)).state.pending === 0);
+  };
+  await mirrored('both tabs mirror the raised leaf (14 set, 4 racked, none hung, on its pawl)', '14,4,0,1,-1', 15000);
+  await hang();
+  await hang();
+  await act(brace, RING_BRACE, { op: 'rail.brace', revision: 1 });
+  await mirrored("one player's brace and the other's two weights: braced and dipped on both tabs", '14,2,2,2,-1');
+  const late = await c.web.open('L2', url('leaf2', 200));
+  pages = [brace, hanger, late];
+  await mirrored('a late joiner at 200 ms gets the braced, half-hung leaf from the server', '14,2,2,2,-1');
+  await hang();
+  await hang();
+  await mirrored('the fourth weight brings it down on all three tabs', '14,0,4,0,-1');
+  // Each tab hears the others' accepted actions (the actor's own predicted ones are answered by its ack, not echoed).
+  const heard = async (p: Page) =>
+    ((await tab(p))?.effects ?? [])
+      .filter((e) => e.op === 'rail.brace' || e.op === 'rail.footSet')
+      .map((e) => `${e.op}:${e.pid}`)
+      .join();
+  const [heard0, heard2] = [await heard(brace), await heard(late)];
+  c.check(
+    'leaf: the server took the brace from one player and the weights from the other',
+    heard0 === `rail.footSet:leaf1,rail.footSet:leaf1,rail.brace:leaf0,rail.footSet:leaf1,rail.footSet:leaf1` &&
+      heard2 === 'rail.footSet:leaf1,rail.footSet:leaf1',
+    `brace tab heard ${heard0}; late tab heard ${heard2}`,
+  );
+  await late.page.reload();
+  await ev(late.page, () => window.T.start());
+  await mirrored('a reloading tab gets the leaf down from the server', '14,0,4,0,-1');
+  c.check('leaf: the reload replays nothing', (await heard(late)) === '');
+  await act(brace, RING_RIVET, { op: 'rail.strike', id: 2 });
+  await mirrored('the rivet: joined on all three tabs', '14,0,4,0,1');
+  await c.restart();
+  await mirrored('after a restart every tab reconnects to the joined leaf', '14,0,4,0,1', 20000);
+  await Promise.all(pages.map((p) => p.page.close()));
+}
+
 // A playtest jump-in (docs/plans/playtest-jump-in.md): two players in one seeded room, through a restart. The seed is
 // an ordinary save, so play goes on from it and survives the restart; the shared room is never created or changed.
 export async function railwayJumpIn(c: Ctx) {

@@ -49,6 +49,10 @@ export function createLeafMotion(start = LEAF_UP) {
     get moving() {
       return t < dur;
     },
+    /** Coming down onto the bents (the last swing), not a counterweight's dip. */
+    get falling() {
+      return t < dur && to === 0;
+    },
     snap(rest: number) {
       deg = from = to = rest;
       t = dur = 1;
@@ -80,16 +84,20 @@ export function createLeafMotion(start = LEAF_UP) {
   };
 }
 
-/** The toe's landing (bent 13's deck end, u 255-260 m): while the leaf is still coming down (`TOE_CLEAR_DEG` degrees up or less: the
- * last third of the swing), anyone within `TOE_MARGIN` of the toe's edge or under it is walked back
- * along the deck, away from the hinge, so the plate never meets a body. Returns the speed (m/s) toward lower u, 0 when
- * the spot is clear. `u` is the player's metres along the line, `above` their feet over the toe's deck. */
+/** The toe's landing (bent 13's deck end, u 255-260 m): while the leaf is coming down onto the bents (`falling`: the
+ * last swing, never a counterweight's dip, which leaves the toe metres up) and is `TOE_CLEAR_DEG` degrees up or less
+ * (the last half of a 78 degree swing, all of the last quarter's), anyone within `TOE_MARGIN` of the toe's edge or
+ * under it is walked back along the deck, away from the hinge, so the plate never meets a body. Only the local player
+ * is moved; the others draw them from presence, about 0.4 s late at 200 ms one way, so the shove starts early enough
+ * that the drawn avatar is clear too (60, not 35: 35 left it inside the plate for 160 ms on the other pages;
+ * test/railway-r4c-leaf-coop.test.ts). Returns the speed (m/s) toward lower u, 0 when the spot is clear. `u` is the
+ * player's metres along the line, `above` their feet over the toe's deck. */
 export const TOE_U = 260;
 export const TOE_MARGIN = 1.4;
-export const TOE_CLEAR_DEG = 35;
+export const TOE_CLEAR_DEG = 60;
 export const TOE_SPEED = 6;
-export function toeShove(u: number, above: number, deg: number, moving: boolean): number {
-  if (!moving || deg > TOE_CLEAR_DEG) return 0;
+export function toeShove(u: number, above: number, deg: number, falling: boolean): number {
+  if (!falling || deg > TOE_CLEAR_DEG) return 0;
   if (u <= TOE_U - TOE_MARGIN || u >= TOE_U + 1 || above < -0.5 || above > 3) return 0;
   return TOE_SPEED;
 }

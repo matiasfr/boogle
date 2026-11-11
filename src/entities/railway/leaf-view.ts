@@ -52,7 +52,7 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
     const b = me.body;
     if (!b) return;
     const u = TOE_U - ((b.position.x - toe.x) * back.x + (b.position.z - toe.z) * back.z),
-      v = toeShove(u, b.position.y - toeY, motion.deg, motion.moving);
+      v = toeShove(u, b.position.y - toeY, motion.deg, motion.falling);
     if (v === 0) return;
     b.position.x += back.x * v * dt;
     b.position.z += back.z * v * dt;

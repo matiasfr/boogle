@@ -1081,7 +1081,7 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > platform while `head` advances (the walkway's cover is a test of the numbers). R4a's P3 (old merge sleepers kept after
   > the relay) is fixed in `track.ts`; its P2 (the laying machine travelling out onto the deck) is not, it is Place's six
   > stretches. `dev/look/ring-mid-seed.ts`: `--rail-seed ring-set-N` (N 0-14), a look save with N footings set.
-- [~] **4c. R4c, the leaf.** (views and prompts built 11 November 2026, branches `ring/r4c-leaf` and `ring/r4c-prompts`: the swing, the single writer of `ringIslandPose`, the brace and counterweight prompts, the player under the toe; left: splash, creak, bracket outline, rivet glint, `test:net`, the two-page proof look) `src/entities/ring-leaf/` as under "R4". Checks: `npm run check`, `npm run test:net` (the leaf's
+- [~] **4c. R4c, the leaf.** (views and prompts built 11 November 2026, branches `ring/r4c-leaf` and `ring/r4c-prompts`: the swing, the single writer of `ringIslandPose`, the brace and counterweight prompts, the player under the toe; the two-player proof, the toe with others watching and `test:net` on 11 November; left: splash, creak, bracket outline, rivet glint) `src/entities/ring-leaf/` as under "R4". Checks: `npm run check`, `npm run test:net` (the leaf's
   state mirrored on three tabs). Proof look (Done means): `npm
   run look -- --players 2 --rail-seed leaf-raised`, one player braced on the island side, the other hanging the last
   counterweight footing: the leaf swings down onto the bents on both pages. Also in the eval: a third player standing on
@@ -1098,6 +1098,24 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > `dev/look/evals/railway-leaf-act.ts` (`--rail-seed leaf-raised`, real prompts: pull, then four rack-to-jib trips;
   > `--query leafdo=under` steps onto u 259.4 as the last footing hangs). **Not done:** the two-page and three-page
   > looks, `test:net`, the tumble, splash, creak, outline, glint. Not tested on a device.
+  > **Proved with more than one player (11 November 2026, branch `worktree-agent-a00c6f3ef6bd6dc01`; not shipped).**
+  > (1) Two players: the brace from one and the counterweight from another, brace first, weights first and a same-moment
+  > race in both arrival orders, each page landing the leaf once on the server's row, nothing corrected
+  > (`test/railway-r4c-leaf-coop.test.ts`, real requests and adapters at 0-200 ms); each judged at its own actor's spot on
+  > the real host (`server/test/railway-ring-host.test.ts`, "one player braces, another hangs"). (2) A third player under
+  > the toe and a fourth on the deck: on their own pages never inside the plate, still on the deck, the one on the deck
+  > never moved; a remote has no body for the leaf to hit (presence poses only), so others see only where the avatar is
+  > drawn. That **failed** with the shove from 35 degrees: at 200 ms one way the remote was drawn inside the plate for
+  > about 160 ms of a brace-last swing on every other page. Fixed in views: the shove starts at 60 degrees, and only on
+  > the last swing (`falling`), never on a counterweight's dip (the look showed the dip walking someone off the toe with
+  > the leaf metres up). (3) A page joining mid-swing snaps to the landed leaf, no swing replayed. `test:net`
+  > (`railwayLeaf` in `dev/peer-test/ws-railway.ts`): the row on three tabs at 0, 100 and 200 ms raised, braced and
+  > dipped, down and joined; a late joiner while braced and half hung, a reload while down (nothing replayed), a restart
+  > once joined. Two-page look: `npm run look -- --players 2 --real --rail-seed leaf-raised --eval
+  > dev/look/evals/railway-leaf-coop.ts --action dev/look/evals/railway-leaf-coop-hang.ts --seconds 3 --frames 8`:
+  > player 1's sheet has the leaf down from 19.5 degrees onto the bents by 2.1 s with player 2 at the buffer short of
+  > the toe; player 2's still has the landed leaf ahead, both tracks on to the island. The third player is in the unit
+  > model, not rendered. Not tested on a device.
 - [ ] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
   Checks: `npm run check`, `npm run test:net`. Proof look (Done means): the same two-page room, then strike: the
   rivet glints, the 6 s shot plays on both pages, uninterruptible but for the one skip, `inspectRailway().ring.joined`

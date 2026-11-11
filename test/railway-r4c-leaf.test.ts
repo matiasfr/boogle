@@ -120,16 +120,22 @@ test('the toe shove: only under the landing, only while the leaf is coming down,
   assert.equal(toeShove(258.5, 0, deg, true), 0, 'clear of it');
   assert.equal(toeShove(255, 0, deg, true), 0, 'the deck end is not touched');
   assert.equal(toeShove(262, 0, deg, true), 0, 'on the plate stays put');
-  assert.equal(toeShove(259.5, 0, 60, true), 0, 'the leaf is still high');
+  assert.equal(toeShove(259.5, 0, 70, true), 0, 'the leaf is still high');
   assert.equal(toeShove(259.5, 0, 0, false), 0, 'settled: someone stepping onto the plate is left alone');
   assert.equal(toeShove(259.5, 8, deg, true), 0, 'in the air above is not the deck');
+  // A counterweight's dip (39 to 19.5 degrees) moves the leaf but is not its landing: nobody under the toe is walked.
+  const dip = createLeafMotion(39);
+  dip.aim(19.5);
+  dip.step(DIP_S / 2);
+  assert.deepEqual([dip.moving, dip.falling], [true, false]);
+  assert.equal(toeShove(259.5, 0, dip.deg, dip.falling), 0, 'a dip is not the landing');
   // Walked at its speed through the swing, anyone from the toe's edge is clear before it lands.
   const m = createLeafMotion();
   m.aim(0);
   let u = 260.9;
   for (let t = 0; t < SWING_S + 0.2; t += DT) {
     m.step(DT);
-    u -= toeShove(u, 0, m.deg, m.moving) * DT;
+    u -= toeShove(u, 0, m.deg, m.falling) * DT;
   }
   assert.ok(u <= TOE_U - 1, `cleared to ${u.toFixed(2)}`);
 });
