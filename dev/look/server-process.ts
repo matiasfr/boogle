@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 export async function startWarpServer(env: Record<string, string>) {
   const child = fork(fileURLToPath(new URL('./server-child.ts', import.meta.url)), [], {
-    execArgv: ['--import', fileURLToPath(new URL('./server-clock.ts', import.meta.url))],
+    // --import takes a module specifier: a file URL works on every platform, a Windows path (C:\...) does not.
+    execArgv: ['--import', new URL('./server-clock.ts', import.meta.url).href],
     env: { ...process.env, LOOK_SERVER_ENV: JSON.stringify(env) },
     stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
   });
