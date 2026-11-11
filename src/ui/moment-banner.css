@@ -75,9 +75,11 @@
   box-shadow: none;
   white-space: normal;
   color: #fff;
+  /* Dark, wide and soft instead of a panel: legible over pale sand and sky. */
   text-shadow:
-    0 0 0.5em rgb(255 244 220 / 0.55),
-    0 1px 10px rgb(0 0 0 / 0.55);
+    0 0 1px rgb(0 0 0 / 0.9),
+    0 0 6px rgb(0 0 0 / 0.75),
+    0 1px 18px rgb(0 0 0 / 0.6);
   opacity: 0;
   visibility: hidden;
   transition:
@@ -95,7 +97,7 @@
     transform 1.6s ease-out;
 }
 .moment-banner.act i {
-  font: 500 clamp(13px, 1.8vw, 20px) / 1.1 var(--font-body);
+  font: 700 clamp(15px, 2.2vw, 24px) / 1.1 var(--font-body);
   letter-spacing: 0.5em;
   text-transform: uppercase;
 }
