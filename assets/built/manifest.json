@@ -121,5 +121,15 @@
     "triangles": 6500,
     "animations": [],
     "textures": []
+  },
+  "track-wing": {
+    "source": "track-wing.py",
+    "sourceHash": "2aff89b8789421c0",
+    "outHash": "bbc91b9471a210b1",
+    "rawBytes": 75228,
+    "bytes": 33168,
+    "triangles": 2636,
+    "animations": [],
+    "textures": []
   }
 }

@@ -692,6 +692,14 @@ wider deck's edge, both line-2 gates span both tracks (slab 10.4 m, centred 2 m 
 lamps stand at its new edge. Trains still run on today's track only (step 4). No `WORLD_NS` bump; not tested on a
 device.
 
+**The wing, modelled (11 November, behind `?layer=wing`).** The second hand is a built model, `assets/src/track-wing.py`
+(`assets/built/track-wing.glb`, 2,636 triangles, 32 KB): a post with a header on a truck that sets down on the up rails once the
+gap beside the flatbed is 1.8 m and lifts as it closes, a three-stage telescoping arm from the flatbed header's end to the post
+(above head height, 3.55 m up), and a platform for the up stack that slides between the tracks, carrying its own beam, trolley,
+hoist and jaws at the 5.8 m reach. Orange frame, cream moving parts, as the machine. View only: no collider ("after a yes the
+wing is solid" is a later step), no rule, wire or `WORLD_NS` change, nothing without the flag. The owner can turn it and scrub
+it in the asset viewer: `/character/?asset=track-wing` ([brief](../brainstorms/track-layers-double.md#the-wing-model-11-november-2026)). Not tested on a device.
+
 **Line 2 goes out: the views of v27 (11 November 2026, R4a; [ring-island-build1](../plans/ring-island-build1.md), step 4a; owner/designer calls 53-65).**
 The rules went out to Ring Island in v27 (Q7, the Railhead, Ring Island, three trains); this is what a player sees of
 them. **The Pier is on the east side** of the down track, from Q6: its platform (s 719-741, lat +1.65 to +4.15), shelter,

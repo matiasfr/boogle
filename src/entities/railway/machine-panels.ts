@@ -47,7 +47,16 @@ export type RailBatch = (n: number) => THREE.InstancedMesh;
  * the numbers its frame is drawn from, in the flatbed's rig frame. The main hand keeps the built 7.0 m beam; with the
  * flag both hands are held to this reach, as the single beam was before the second track. */
 export const WING_BEAM_LENGTH = 5.8;
-export const WING = { postZ: 1.2, fold: 1.4, set: 1.8, lift: 0.9, armY: 1.3, armBase: 1.1, stackFolded: 1.95, stackOpen: 2.9 };
+export const WING = {
+  postZ: 1.2,
+  fold: 1.4,
+  set: 1.8,
+  lift: 0.9,
+  armY: 3.55,
+  armBase: 1.3,
+  stackFolded: 1.95,
+  stackOpen: 2.9,
+};
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);

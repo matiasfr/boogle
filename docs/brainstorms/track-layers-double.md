@@ -1,4 +1,4 @@
-> **Status: greybox built behind `?layer=wing` (11 November 2026, branch `layer/wing-greybox`); GLB step approved by the owner on 11 November ("Yes, build the model"; [decision](../decisions-rail.md#d-2026-11-11-track-layers-build-the-wing-model)), queued with an asset-viewer entry.**
+> **Status: the wing is a built model (11 November 2026, branch `feature/wing-model`): `assets/src/track-wing.py` -> `assets/built/track-wing.glb`, mounted behind `?layer=wing` in place of the greybox boxes and shown in the asset viewer (`/character/?asset=track-wing`; [the model](#the-wing-model-11-november-2026)). Still to do from the GLB step: the `PANEL_BEAM_LENGTH` constant and level check, a line 2 clearance pass, `place.md`'s full rewrite, and the solid wing (colliders). Owner approved on 11 November ("Yes, build the model"; [decision](../decisions-rail.md#d-2026-11-11-track-layers-build-the-wing-model)).**
 > Light brainstorm (one agent, three lenses). Look and read only: the rule that one action lays both tracks
 > ([decision](../decisions-rail.md#d-2026-11-10-the-railway-is-double-track)) stays as it is, with no bill, timing, wire,
 > save or `WORLD_NS` change. Built: [machine-wing.ts](../../src/entities/railway/machine-wing.ts), the flag path in
@@ -221,3 +221,39 @@ the main hand's frame, and both pairs appear at the panel's commit, which is the
 Live reach (`machine.wingStats`, all of line 1's first two stretches and line 2 to Far Head): down hand at most 5.01 m,
 up hand at most 4.81 m, of the 5.8 m beam; the unit test covers every panel of both lines on straight ground (4.98 m and
 3.84 m).
+
+## The wing model (11 November 2026)
+
+Built as the GLB step's first half: the model and its viewer entry. Recipe `assets/src/track-wing.py` (helpers copied from
+`track-layer.py`; keep both in step), built `assets/built/track-wing.glb`: 2,636 triangles, 32 KB (the machine is 6,500
+triangles, 67 KB; sidecar budget 128 KB), 15 named parts, all closed (0 boundary or non-manifold edges). It is a separate
+GLB, loaded only under `?layer=wing`, so the machine's own file and the default build path are untouched.
+
+| Node | Frame | Moves |
+| --- | --- | --- |
+| `wing_paint_mast` (post, header, slewing seat, arm lug, platform pocket) | post foot, +x outboard | fixed in the post frame |
+| `wing_paint_truck`, `wing_iron_truck` (stem, bogie, four wheels) | post foot | slide up 0 to 0.9 m (`wingState.lift`) |
+| `wing_paint_platform`, `wing_cream_shelf` (the up stack's deck, rib, cross bars) | post foot | slide along x, stack centre +0.55 m (folded) to -1.1 m (open) |
+| `wing_paint_hinge` (bracket under the header's end) | hinge, x 1.3, y 3.55, z 0 | fixed to the machine |
+| `wing_paint_arm` (outer tube), `wing_cream_arm_0..2` | hinge, +z along the arm | the arm turns about the hinge to the post; stage i slides (L - 1.2) (i + 1) / 3 |
+| `lay_gantry_beam` (5.8 m), `lay_paint_trolley`, `lay_cream_upper`, `lay_cream_jaw_left` | post head | as the machine's, through `panelMechanism` |
+
+Differences from the greybox, all view only: the arm is a three-stage telescope from the flatbed header's end (x 1.3, 3.55 m
+up, above head height; the greybox's was a scaled box on the side rail at 1.3 m) so it can fold to 1.2 m and stay clear of the
+gantry; the truck rides on the native rail top (the bogie 0.5 m up, wheels on the rails); the beam and trolley are orange like
+the machine's, and the hoist, jaws, arm stages and stack shelf are cream (the greybox had every moving part cream). The side
+is a mirror of the model (negative x scale), so line 1's and line 2's wings are the same model. Nothing else changed:
+`WING` only gained the arm's numbers (`armY` 3.55, `armBase` 1.3), the 5.8 m reach assertions and the test stand.
+
+**Measured against the brief, honestly.** Beam and reach: 5.8 m, the same as the greybox's. Arm above head height: yes
+(3.55 m; the deck is 0.7 m). **Parked, it is not smaller than today's machine: not met.** Folded, the post stands at x 1.4 and
+the platform that carries the up stack runs to x 2.85 (rib 3.0), against today's 1.57 m at the stakes, and the platform runs
+to 1.2 + 3.1 = 4.3 m ahead against the gantry's front at about 2.8 m. The cause is the stack's own numbers (`stackFolded`
+1.95 m, 3.05 m rails), not the model: the greybox is as wide. A fold that meets the call needs the up stack to ride over the
+machine's shoulders when folded (a change to `WING` and the greybox test's clearance sums) or to stay empty-stowed; that is for
+the designer, logged in [agent-calls](../agent-calls.md). Not built: colliders ("after a yes the wing is solid"), the
+constant and level check, line 2 clearance, truck wheels turning with travel.
+
+**Viewer.** `/character/?asset=track-wing` shows the real shell with the wing mounted, a 12 s synthetic review loop (parked
+folded 0 to 1 s, opening 1 to 5 s, open 5 to 7 s, closing 7 to 11 s) and both hands on the machine's panel cycle; the time
+scrubber moves the gap. The hand idles over its stack until the truck is down (gap 1.8 m).

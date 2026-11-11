@@ -9,6 +9,7 @@ import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
 import { background } from '../../async.ts';
 import machineUrl from '../../../assets/built/track-layer.glb?url';
+import wingUrl from '../../../assets/built/track-wing.glb?url';
 import { stepAlpha } from '../../physics/engine.ts';
 import { type Platform } from '../../physics/platforms.ts';
 import { wagonLook, LOCO, TRAILER } from '../../render/wagon-look.ts';
@@ -136,8 +137,15 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     flatbed.mesh.add(rig.root);
     rig.root.position.y = -(BOTTOM + flatbed.hy);
     if (wingOn) {
-      wing = buildWing(flatbed.mesh, railBatch);
+      const built = buildWing(flatbed.mesh, railBatch);
+      wing = built;
       wing.group.position.y = rig.root.position.y;
+      background(
+        import('../../render/assets.ts').then(async ({ loadAsset }) =>
+          built.install((await loadAsset(wingUrl)).gltf.scene),
+        ),
+        'track-wing model',
+      );
     }
     rack = rig.rails;
   } else {
@@ -398,7 +406,10 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
         len,
         null,
       );
-      wingStats.reachUp = Math.max(wingStats.reachUp, Math.hypot(wing.mech.trolley.position.x, wing.mech.trolley.position.z));
+      wingStats.reachUp = Math.max(
+        wingStats.reachUp,
+        Math.hypot(wing.mech.trolley.position.x, wing.mech.trolley.position.z),
+      );
       wingStats.panels++;
     } else wing.mech.home(1, upIn(stock));
     if (!warned && Math.max(wingStats.reachDown, wingStats.reachUp) > WING_BEAM_LENGTH + 0.02) {
