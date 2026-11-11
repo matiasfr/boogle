@@ -132,6 +132,14 @@ for (const t of TOWNS)
   );
 add(
   'Town buys',
+  'house.order',
+  "Each next house in a town costs this times the last, on the brief's base prices",
+  2,
+  'times',
+  "Owner, 11 November: later purchases can cost more; 1 gives the brief's prices as written",
+);
+add(
+  'Town buys',
   'house.mult.materialSeats',
   'House price factor when seats cost materials',
   1.5,

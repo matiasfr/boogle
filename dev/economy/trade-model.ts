@@ -103,7 +103,7 @@ export function catalog(t: Tunables, policy: Policy): Item[] {
         kind: 'house',
         label: `House ${n}, ${townName(town)}`,
         town,
-        price: Math.round(t[`house.${town}.${n}`]! * mult),
+        price: Math.round(t[`house.${town}.${n}`]! * mult * t['house.order']! ** (n - 1)),
         offerAt: town === 'village' && n === 3 ? ARRIVES.canopy : arrive,
         after: n > 1 ? `house.${town}.${n - 1}` : undefined,
       });
