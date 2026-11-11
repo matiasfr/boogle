@@ -352,13 +352,23 @@ remove `else scene.add` and `else onFrame` fallbacks; `npm run lint -- --prune-s
 later change with a bundle report. Place's remaining callers get one owner from a new `src/proto/place/place-owner.ts`
 (a `createOwnedView()` whose root Place adds to the scene), so `?proto=place` keeps running until M13.
 
-- [ ] **M4. Render primitives to `src/render/`.** _Low to medium (renames; the frame hook in `fanfare`)._
+- [x] **M4. Render primitives to `src/render/`.** _Low to medium (renames; the frame hook in `fanfare`)._
   - `src/proto/flat.ts`, `src/proto/net/{boxes,box-plan,crates}.ts`, `src/proto/wagon/look.ts`,
     `src/proto/place/{part-geometry,prop-kit,gear-models,axe-models,carry-models,axe-sparkle}.ts`;
     `src/proto/minis/common.ts` becomes `src/render/fanfare.ts`; Place's `head-clearance.ts` merges into
     `src/render/head-clearance.ts` (place-retirement R1).
   - Frame hooks and scene adds to convert: `minis/common.ts:63`, `wagon/look.ts:235`, `net/boxes.ts:63`,
     `net/crates.ts:33` and `:178`.
+  - **Done 10 November (branch `ecs/m4-render-moves`):** moved with `git mv` to `src/render/`: `flat`, `boxes`, `box-plan`, `crates`,
+    `wagon-look` (was `wagon/look`), `part-geometry`, `prop-kit`, `gear-models`, `axe-models`, `carry-models`, `axe-sparkle`,
+    `fanfare` (was `minis/common`); Place's `head-clearance.ts` was only a re-export, deleted, its importers point at the render file.
+    `fanfare`'s frame hook was the big world label (`label`, used only by Place's halts, depot and pair): it moved to
+    `src/proto/place/label.ts`, so `fanfare` is sounds only. The module-level `scene.add` in `boxes` and `crates` and the
+    owner-less `onFrame` fallback in `wagon-look` are unchanged, each with a `use-an-entity` directive; the owner conversion
+    is not done (its callers are all prototypes) and goes with M13. `boxes`, `carry-models` and `wagon-look` still import
+    `proto/era/blocks`, `proto/place/layout` and `proto/wagon/cars` (directives; they go when M5 and M6 move those).
+    `src/proto`: 148 files and 36,118 lines to 136 and 34,459; `src/render`: 92 and 11,605 to 104 and 13,275. Chunk names
+    unchanged but `common`/`cars`/`look` now `fanfare`/`wagon-look`. `bench` census not run.
   - **Verify:** `npm run check`; `npm run bench -- --poses spawn,town` with the scene census (meshes, draws,
     triangles) identical to base; one look at `--rail-seed trains-on`.
   - **Reviewer attacks:** a module-level `scene.add` that used to run on import and now never runs; the remaining
