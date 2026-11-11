@@ -4,32 +4,15 @@
 //                                     optional small one, high on the screen for a few seconds
 //   showActCard(card)                 the same element as a quiet full-screen title: "Act 2" over a camera move or live
 //                                     play, no panel, no input taken
-//   endActCard()                      starts an act card's fade early
-//   holdMoment(key, secondsLeft)      a moment reports that it is showing and for how long (null: it is over). The camera
-//                                     pull-outs (src/render/camera-pull-out.ts) and the reward card
-//                                     (src/render/reward-reveal.ts) call it; the banners and act cards report themselves
-//   momentBusy(slackS)                something full-screen is showing and has more than `slackS` seconds to go, or the
-//                                     pause view is open. The act card asks it before it comes up, so two full-screen
-//                                     moments never stack and the act waits its turn (src/features/acts.ts)
+//
+// Whether a full-screen moment is showing is the camera's one list, `momentBusy` in src/render/buddy-frame.ts; banners and
+// act cards report their time there with the pull-outs and the reward card.
 // Local and cosmetic; inside .hud.
 import './moment-banner.css';
-import { modalOpen } from '../player/modal.ts';
+import { holdCamera } from '../render/buddy-frame.ts';
 
 const FADE_S = 1; // the act card's fade in and out (moment-banner.css, .act)
 const bannerKey = {};
-/** Each moment's end, in performance.now() ms (Infinity: until it releases). */
-const holds = new Map<object, number>();
-
-export function holdMoment(key: object, secondsLeft: number | null) {
-  if (secondsLeft === null) holds.delete(key);
-  else holds.set(key, performance.now() + secondsLeft * 1000);
-}
-export function momentBusy(slackS = 0) {
-  if (modalOpen()) return true;
-  const edge = performance.now() + slackS * 1000;
-  for (const end of holds.values()) if (end > edge) return true;
-  return false;
-}
 
 let banner: HTMLElement | null = null;
 let kick: HTMLElement, big: HTMLElement, small: HTMLElement;
@@ -54,7 +37,7 @@ function present(el: HTMLElement, above: string, title: string, line: string, se
   el.classList.remove('on');
   void el.offsetWidth; // so the animation runs again
   el.classList.add('on');
-  holdMoment(bannerKey, seconds);
+  holdCamera(bannerKey, true, seconds);
   clearTimeout(timer);
   timer = window.setTimeout(() => el.classList.remove('on'), fadeAt * 1000);
 }
@@ -76,13 +59,6 @@ export function showActCard({ above, title, seconds }: ActCard) {
   el.classList.add('act');
   present(el, above, title, '', seconds, Math.max(0, seconds - FADE_S));
 }
-export function endActCard() {
-  if (!banner?.classList.contains('act') || !banner.classList.contains('on')) return;
-  clearTimeout(timer);
-  banner.classList.remove('on');
-  holdMoment(bannerKey, FADE_S);
-}
-
 /** The banner's text while it shows, else null (for inspect). */
 export const momentBanner = () =>
   banner?.classList.contains('on')

@@ -52,6 +52,8 @@ export const line2PackReady = (w: World) => w.get(Forge, forgeId(w))!.used >= FO
 /** Completed Q stretches, 0-7. */
 export const line2Completed = (w: World) =>
   LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjob(w, k))!.completion).length;
+/** Q5 (slot 4) is laid: Far Head's show plays, and the room's story turns to Act 2 (./railway-queries-story.ts). */
+export const farHeadLaid = (w: World) => w.get(QJob, qjob(w, 4))!.completion === 1;
 /** The Q station that takes materials now, or -1 before the forge is lit / after the last (qActive). */
 export const line2Active = qActive;
 /** The quarry gate is down only with Q3 complete and the lever pulled. */
