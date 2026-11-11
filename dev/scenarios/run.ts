@@ -25,7 +25,7 @@
 // second and time out at random, so a multi-player scenario runs on a device (`npm run check:gpu`) or nightly.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Browser, Page } from 'playwright';
 import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors, root } from '../look/lib.ts';
 import { finishRun, startRun } from '../look/verdict.ts';
@@ -97,7 +97,7 @@ try {
   const br = (browser = await launch());
   const base = st.base;
   for (const name of names) {
-    const mod: Scenario = (await import(path.join(here, files.get(name)!))).default;
+    const mod: Scenario = (await import(pathToFileURL(path.join(here, files.get(name)!)).href)).default;
     const out = path.join(outputRoot, name);
     fs.rmSync(out, { recursive: true, force: true });
     fs.mkdirSync(out, { recursive: true });
