@@ -1,4 +1,4 @@
-// The crossing's train (?proto=crossing): the wagon's look (../wagon/look.ts) on kinematic cars registered as platforms,
+// The crossing's train (?proto=crossing): the wagon's look (../../render/wagon-look.ts) on kinematic cars registered as platforms,
 // running a Local timetable (./line.ts). Push-pull like the wagon: the loco stays at the far end of the train, so it
 // pulls going out and pushes coming home. Cars are level (platforms take yaw only); the climb shows as a drawn pitch.
 // Local: every tab runs its own, nothing is sent. Serves DESIGN.md 1 (Toys before chores).
