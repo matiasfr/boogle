@@ -5,12 +5,22 @@
 //
 // The row readers' `job` and `qjob` (rows) win over the queries' id getters of the same name; take those from
 // src/sim/railway-queries.ts directly.
+import type { World } from '../../src/ecs/index.ts';
+import { Pile } from '../../src/sim/railway-components.ts';
+import type { Read, ReadWorld } from '../../src/sim/railway-rows.ts';
 export * from '../../src/sim/railway-drive.ts';
 export * from '../../src/sim/railway-seeds.ts';
 export * from '../../src/sim/railway-seed-works.ts';
 export * from '../../src/sim/railway-rows.ts';
 export * from '../../src/sim/railway-queries.ts';
 export { job, qjob } from '../../src/sim/railway-rows.ts';
+/** The piles with their entity ids, in id order: `piles(w)` lists the rows without them (a client's drop is a negative
+ * temporary id until the server names it). */
+export function pilesWithIds(w: World | ReadWorld) {
+  const out: ({ id: number } & Read<typeof Pile>)[] = [];
+  w.each([Pile], (id, p) => out.push({ id, ...p }));
+  return out;
+}
 export { railTick, railOutcome } from '../../src/sim/railway-systems.ts';
 export { railSession, railSettle } from '../../src/sim/railway-sys-core.ts';
 export { railResume, railSupplyPulse } from '../../src/sim/railway-sys-away.ts';

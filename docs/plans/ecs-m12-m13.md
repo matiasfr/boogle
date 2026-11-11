@@ -235,7 +235,7 @@ other reason. A file is done when `grep -c '\.inspect()' <file>` is 0 and it imp
 `helpers/railway-{model,q2,trains,works,m10a-twins}.ts`. Checks: the batch's files under `node --test`, `npm run
 typecheck`, `npm run lint`.
 
-- [ ] **X1. The adapter's tests.** _M._ `test/railway-adapter.test.ts` (976; converted: 89 `inspect()` reads, its
+- [x] **X1. The adapter's tests.** _M._ `test/railway-adapter.test.ts` (976; converted: 89 `inspect()` reads, its
       reads of `api.railway`, its seeds from `railway-live.ts` and `helpers/railway-trains.ts` onto
       `test/helpers/rail.ts`), `test/railway-adapter-m1-review.test.ts` (206; the frame-memo cases are deleted, the
       two dispose cases move into the adapter file as `read.ready()` asserts, the file is deleted).
