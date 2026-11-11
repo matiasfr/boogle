@@ -198,7 +198,7 @@ Savings are on the critical path to `interactive`. "Measured" means a before/aft
 | P2 | Bake the coast once (the waterReady bake is gone, done; still 0.42 s fast / 1.7 s slow in the first frame): bake after the last boot shore registers, before the warm-up frame, so the GPU compiles while nothing else waits on it, or register both shores before the sky is ready | −0.2 s more (est.) | −1 to −1.7 s (est.) | small–medium | none visible if the bake still precedes the first frame |
 | **P1** (was P2) | Build the pipelines the warm-up misses (the first frame's two shadow, a standard and a sprite; `buddy_face`'s shadow, built synchronously 0.1 s after Jump in) in the warm-up | ~0 in Chromium | ~0 | small | none; on Safari each is a synchronous build in a frame (ckn9ca: +6 programs at spawn, an 889 ms stall on Far Head) |
 | P2 | Self-host the two Google fonts (**done**, owner's call 10 November) | −0.19 s measured | ~0 measured (−0.1 to −0.7 s on real cellular: no second origin) | small | a moment of fallback font (section 6) |
-| P2 | Start the splash art after the game's modules (**done**, owner's call 10 November; low priority alone changed nothing, Chromium already loads it Low) | 0 | see section 6 | small | the art appears later on a slow link |
+| P2 | Start the splash art after the game's modules (**tried and reverted**: no gain at Jump in and the art showed about 6 s later; owner's call 10 November; low priority alone changed nothing, Chromium already loads it Low) | 0 | see section 6 | small | the art appears later on a slow link |
 | P2 | Extract map-prototypes' JSON at build time instead of importing the whole HTML page | ~0 | ~−0.15 s (est.: ~30 KB) | small | none |
 | P2 | Move Ring Island's view build and audio preparation after "Jump in" | −0.3 s | −0.6 s | small | Ring Island's pipelines compile later (it is 1.5 km away; the precompile-on-build stays) |
 | P3 | Fewer pipeline variants (palette clones share programs already; shadow pass per caster layout; MSAA/target permutations) | ? | ? | medium–large | look changes; needs a census per material first |
@@ -293,7 +293,7 @@ Then, after the owner's answers (10 November), on the branch with the three abov
    of pixels; `.look/cold-launch/stills-before2/` against `.look/cold-launch/art-after/`). Headless Chromium never gave
    a capturable frame in the fallback font, so the "moment it changes" the owner accepted is not shown here; Safari
    may show it briefly.
-5. **The splash art starts after the game's modules** (src/boot/splash.ts). `fetchPriority = 'low'` alone changed
+5. **Reverted before shipping (orchestrator, 10 November: no gain at Jump in, art about 6 s later). What was tried: the splash art starts after the game's modules** (src/boot/splash.ts). `fetchPriority = 'low'` alone changed
    nothing in Chromium (an image already loads at Low; it still took 94 KB of the link from 1.4 to 6.1 s), so the art
    now starts at `graphics-start`. Slow: `graphics-start` 8,137 → **7,666 ms** (−0.47 s), but `interactive` 24.5 →
    25.2 s [24.5–26.5]: no gain there (the art now shares the link with Rapier's WASM, and the warm-up is the critical
