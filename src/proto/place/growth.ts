@@ -4,7 +4,7 @@
 import { forge } from './forge.ts';
 import { job } from './job.ts';
 import { L1, L2, stepsOf } from './lines.ts';
-import type { Fact } from './town-lines.ts';
+import type { Fact } from '../../entities/town/town-lines.ts';
 
 const CHECK: [Fact, () => boolean][] = [
   ['path', () => L1.open],

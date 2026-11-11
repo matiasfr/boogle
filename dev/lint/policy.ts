@@ -134,6 +134,7 @@ const ENTITY_SERVICES = [
   'src/entities/railway/seat.ts',
   'src/entities/railway/stations.ts',
   'src/entities/railway/track-machine.ts',
+  'src/entities/town/workshop.ts', // moved from src/proto/place with its add unchanged (M7)
   'src/features/identity.ts', // keeps this player's name and colour on the room's roster; no screen and no object
   'src/loop.ts', // onFrame itself, and the profiler
   'src/physics/physics.ts', // the static ground and spheres: fixed collision, no mesh, no frame work and no end

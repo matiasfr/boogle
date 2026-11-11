@@ -29,7 +29,7 @@ The table distinguishes the safety of current producers from arbitrary writes to
 | [Flying logs, rails and stone](../../src/place/pieces.ts#L90) | 96 logs, 96 rails, 32 stones | Each per-kind write/increment checks its capacity. The final counts are those bounded counters. Excess trips still update and land. |
 | [Dropped piles](../../src/proto/place/drop.ts#L24) | 64 of each of logs, rails and stone, across all piles | Each aggregate counter is checked against 64 before increment; the bounded counters go to `commitPieces`. |
 | [Gift burst boards](../../src/proto/place/gifts.ts#L1115) | 14 | The packed counter increments only below `boards.instanceMatrix.count`; surplus flying pieces still simulate. Count resets to zero when the burst ends. |
-| [Museum table bits](../../src/proto/place/museum.ts#L325) | 720 | `bit()` returns when `n_ >= MAX`; the draw count is this bounded counter. |
+| [Museum table bits](../../src/entities/town/museum.ts#L325) | 720 | `bit()` returns when `n_ >= MAX`; the draw count is this bounded counter. |
 | [Folk heads, coats, limbs and held items](../../src/place/folk.ts#L22) | 53, 53, 212, 106 | `pose()` returns at `slot >= COUNT`; counts are `slot`, `slot`, `slot * 4`, `slot * 2`, matching allocations. This protects even a larger `guys` list. |
 | [Path lamp posts and glows](../../src/proto/place/lamps.ts#L12) | 120 each | Both counters start at zero and increment together; `place()` returns when posts reach 120. No other count mutation exists. |
 | [Survey stakes](../../src/proto/place/lines.ts#L52) | 80 per line | Construction loop includes `n < 80`; final count is `n`. |

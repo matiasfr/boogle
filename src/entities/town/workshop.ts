@@ -10,7 +10,7 @@ import { flat } from '../../render/flat.ts';
 import { draw, makeSet } from '../../render/boxes.ts';
 import { ROOM_GROUP, addStatic } from '../../place/land.ts';
 import { ROOM_CAM } from './rooms.ts';
-import { registerSeat, seatHeight, seatMesh } from '../../entities/railway/seat.ts';
+import { registerSeat, seatHeight, seatMesh } from '../railway/seat.ts';
 import type { Plan } from '../../place/building-plans.ts';
 import type { DropSet } from '../../place/pieces.ts';
 

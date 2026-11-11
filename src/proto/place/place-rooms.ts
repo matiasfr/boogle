@@ -3,7 +3,7 @@
 // mounts its own in src/entities/town/. Goes with Place in place-retirement D1.
 import { createOwnedView } from '../../render/owned-view.ts';
 import { scene } from '../../render/scene.ts';
-import { createRooms } from './rooms.ts';
+import { createRooms } from '../../entities/town/rooms.ts';
 import type { RoomId } from '../../place/layout.ts';
 
 export {
@@ -17,7 +17,7 @@ export {
   worldToRoom,
   type Part,
   type Room,
-} from './rooms.ts';
+} from '../../entities/town/rooms.ts';
 
 const owner = createOwnedView();
 scene.add(owner.root);

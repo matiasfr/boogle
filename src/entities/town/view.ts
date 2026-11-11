@@ -25,13 +25,13 @@ import { inspectWardrobe, wardrobe } from '../wardrobe/state.ts';
 import { inspectRailway, railwayYouGot } from '../railway/state.ts';
 import { createTownMemory } from './memory.ts';
 import type { TownInspection } from './state.ts';
-type Fact = import('../../proto/place/town-lines.ts').Fact;
+type Fact = import('./town-lines.ts').Fact;
 import { createCurioShelf } from './curio-shelf.ts';
 
 /** What every town piece reads of the world. All of it comes from the shared railway or is this tab's own moment. */
 export type TownEnv = {
   has(f: TownFact): boolean;
-  /** The newest town fact, or the Works' breaker once it is taken (src/proto/place/town-lines.ts, `WORKS_FACTS`). */
+  /** The newest town fact, or the Works' breaker once it is taken (src/entities/town/town-lines.ts, `WORKS_FACTS`). */
   newest(): Fact | null;
   level(): number;
   people(): number;
@@ -51,13 +51,13 @@ export async function createTownView(read: () => RailwayInspection | null) {
   const owner = createOwnedView();
   owner.root.name = 'town';
   const [roomKit, houseKit, shopKit, sites, lines, residentKit, museumKit, plans, layout] = await Promise.all([
-    import('../../proto/place/rooms.ts'),
-    import('../../proto/place/house.ts'),
-    import('../../proto/place/shop.ts'),
+    import('./rooms.ts'),
+    import('./house.ts'),
+    import('./shop.ts'),
     import('../../place/sites.ts'),
-    import('../../proto/place/town-lines.ts'),
-    import('../../proto/place/residents.ts'),
-    import('../../proto/place/museum.ts'),
+    import('./town-lines.ts'),
+    import('./residents.ts'),
+    import('./museum.ts'),
     import('../../place/opening-plans.ts'),
     import('../../place/layout.ts'),
   ]);

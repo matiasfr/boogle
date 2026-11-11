@@ -2,7 +2,7 @@
 // the town's own state is derived from the shared railway (src/sim/town-facts.ts) and Local presentation.
 import type { TownFact } from '../../sim/town-facts.ts';
 import type { CurioShelf } from './curio-shelf.ts';
-/** A town fact or the Works' (src/proto/place/town-lines.ts): what the residents can remember telling you. */
+/** A town fact or the Works' (src/entities/town/town-lines.ts): what the residents can remember telling you. */
 type SaidFact = TownFact | 'breaker';
 
 export type TownRoomInspection = { up: boolean; ready: boolean };

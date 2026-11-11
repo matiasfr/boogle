@@ -1,6 +1,6 @@
 // What the residents told this player (met, noticed, said, rumour, hello, street): Personal Local, per railway room and
 // player, in localStorage `boogle.railway-town.v0:<railwayRoomId>:<pid>`. A world bump prunes it
-// (src/player/world-reset.ts). The residents (src/proto/place/residents.ts) check whatever `load` returns, so bad data
+// (src/player/world-reset.ts). The residents (src/entities/town/residents.ts) check whatever `load` returns, so bad data
 // starts empty. Unavailable storage just forgets.
 import { getRoomId } from '../../netplay/net.ts';
 import { identity } from '../../player/identity.ts';

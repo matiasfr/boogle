@@ -77,7 +77,7 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['tried something on', /^shop tried on$/],
   ['took something from the shop', /^shop kept$/],
   ['swapped on the rail', /^shop swapped$/],
-  // The town (place-retirement T2): src/proto/place/residents.ts's marks, as in Place.
+  // The town (place-retirement T2): src/entities/town/residents.ts's marks, as in Place.
   ['entered a building', /^entered building/],
   ['visited shop or museum', /^entered building (shop|museum)$/],
   ['talked to a resident', /^talked to resident$/],

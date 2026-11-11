@@ -2,7 +2,7 @@
 // footing). When the crossing is accepted (`works.crossing`), line 1's next village arrival brings eight roof beams on
 // its last car; they hop off beside the track, two little guys carry them to the forge in pairs and lift each pair on as
 // a truss, the roof's boards follow, the scaffold poles come down, the chimney gets its cap and the walk-in workshop
-// opens (Place's T6b, ./workshop.ts). Place's freight crates and doubled pour are not ported.
+// opens (Place's T6b, ../town/workshop.ts). Place's freight crates and doubled pour are not ported.
 // Local presentation over accepted state: the show plays on the live edge; a reload or a late joiner after the crossing
 // sees it finished. No op, presence or shared state.
 import * as THREE from 'three/webgpu';
@@ -47,7 +47,7 @@ export async function createForgeFinish(
   const [layout, folk, { makeWorkshop }, { H }] = await Promise.all([
     import('../../place/layout.ts'),
     import('../../place/folk.ts'),
-    import('../../proto/place/workshop.ts'),
+    import('../town/workshop.ts'),
     import('../../place/land.ts'),
   ]);
   const { plan, building } = o;

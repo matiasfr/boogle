@@ -430,6 +430,9 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     2 in `src/world`, 1 in `src/sim`, 4 tests, 3 tools); it keeps what it defines: `OPS`, the tick schedule,
     `RAIL_SYSTEMS`, `railApply`, `railTick`. Left alone: the 11 line 1 helper names `railway.ts` re-exports from
     `railway-line.ts`; every one of them is deleted in M12b.
+  - Also on this step's removal list (owner, 11 November: temporary re-export files go): `src/entities/railway/rail-kit.ts`,
+    added in M6 to keep the views' `import()` loaders to one path change. Each loader imports `line-geometry`, `track`, `car` and
+    `track-machine` directly, and the file is deleted. (It touches no `src/sim` file, so the lint rules here do not apply.)
   - `dev/lint/policy.ts`, `no-restricted-imports` patterns, each message naming this plan:
     1. **The check module** (`railway-check.ts`, and `railway-check-*.ts` from M8b) is imported only by
        `src/sim/railway-seed*.ts`, `src/sim/railway-drive.ts`, `src/sim/railway-live.ts`, `src/world/railway-server.ts`,
@@ -657,11 +660,19 @@ later change with a bundle report. Place's remaining callers get one owner from 
     a seated rider) and mid-lay on line 2.
   - **Reviewer attacks:** two players claiming one seat (the Host grant still arbitrates); the machine's frame order
     (it was `onFrame` order 7; the owner's `animate` must keep it); a collider added twice or never for a car.
-- [ ] **M7. The town's modules to `src/entities/town/`.** _Low to medium._
+- [x] **M7. The town's modules to `src/entities/town/`.** _Low to medium._
   - `rooms`, `house`, `shop`, `museum`, `residents`, `town-lines`, `workshop`; split `place.css` into
     `src/entities/railway/railway.css` and `src/entities/town/town.css` (place-retirement R3).
   - `town-lines.ts` moves verbatim: the diff must be a pure rename. List any line that looks wrong for the owner; edit
     none.
+  - **Done 11 November (branch `ecs/m7-town-moves`):** `rooms`, `house`, `museum`, `residents`, `shop`, `town-lines`, `workshop`
+    moved with `git mv`. `town-lines`, `rooms`, `house` and `museum` are byte-identical (`git diff -M` 100%); `residents`,
+    `shop` and `workshop` differ only in 1 to 2 import lines. `place.css` became `src/entities/railway/railway.css` (231 lines)
+    and `src/entities/town/town.css` (108 lines: the `.place-talk*` and `.place-bark` rules, old lines 136-243), sorted lines equal
+    to the old file. Both load where `place.css` did (`arrival.ts`, and Place's `index.ts`), not from the town view: the
+    shore greeter in the railway view uses `.place-talk` before the town loads. `workshop` (`forge-finish.ts`) and the stylesheet
+    (`arrival.ts`) were the two railway leftovers; `rg "proto/" src/entities/railway` now shows only `flags.ts` and `mark.ts`.
+    `src/entities/town/workshop.ts` joins the entity-ratchet exemptions (its add is unchanged).
   - **Verify:** `npm run check`; the bench at `town`; a look inside the museum and the shop.
   - **Reviewer attacks:** `git diff -M --stat` shows 100% similarity for `town-lines.ts`; a CSS rule dropped in the
     split.

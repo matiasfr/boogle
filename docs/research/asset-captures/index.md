@@ -198,7 +198,7 @@ Completed construction set isolated, including chimney; surrounding crane, outpu
 
 ### Forge workshop fittings
 
-Sources: [src/proto/place/workshop.ts](../../../src/proto/place/workshop.ts).
+Sources: [src/proto/place/workshop.ts](../../../src/entities/town/workshop.ts).
 
 Code dimensions (metres): Floor 9.7 × 0.05 × 7.7 at forge base +0.5. Doorway width 2.8, x=−2.9. Furnace 2.8 × 1.8 × 0.65; front guard 3.3 × 1.2 × 0.16.
 

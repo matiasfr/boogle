@@ -12,7 +12,7 @@
     {
       "go": [["you.input", "you.features"]],
       "text": "You walk into the house and talk to Pip. If something has changed since you last talked, Pip mentions the newest change once. The bubbles and the conversation card are on your screen only.",
-      "cite": [{ "file": "src/proto/place/residents.ts" }, { "file": "src/proto/place/town-lines.ts" }]
+      "cite": [{ "file": "src/entities/town/residents.ts" }, { "file": "src/entities/town/town-lines.ts" }]
     },
     {
       "go": [["you.features", "you.screen"]],

@@ -17,10 +17,10 @@ import { addGreeter } from '../../place/folk.ts';
 import { job, save } from './job.ts';
 import { VILLAGE, toWorld } from '../../place/layout.ts';
 import { indoors } from './place-rooms.ts';
-import { CAST, type Residents } from './residents.ts';
+import { CAST, type Residents } from '../../entities/town/residents.ts';
 import { SHORE_COAST, SHORE_WORKER, SHORE_WORKER_LOOK } from '../../place/shore-layout.ts';
 import { endTalk, startTalk } from '../../place/talk.ts';
-import { BYE, SHORE_ASK } from './town-lines.ts';
+import { BYE, SHORE_ASK } from '../../entities/town/town-lines.ts';
 
 export function createShoreWorker(residents: Residents) {
   const shoreWorker = SHORE_COAST ? addGreeter(toWorld(SHORE_WORKER.x), VILLAGE.y, SHORE_WORKER.z) : null;

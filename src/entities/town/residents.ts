@@ -17,7 +17,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { camera } from '../../render/scene.ts';
 import type { VoiceSpec } from '../../render/npc-voice.ts';
 import { TOWN_FACTS } from '../../sim/town-facts.ts';
-import { playMark } from '../mark.ts';
+import { playMark } from '../../proto/mark.ts';
 import { babble } from '../../place/chatter.ts';
 import { addResident, folk, type Guy, type Mood } from '../../place/folk.ts';
 import { VILLAGE, toWorld, type RoomId } from '../../place/layout.ts';

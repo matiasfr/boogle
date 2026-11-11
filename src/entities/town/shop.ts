@@ -15,8 +15,8 @@ import { me } from '../../player/player.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { STOCK, cosmetic, type Stock } from '../../render/cosmetic-parts.ts';
-import { CLOTHES_SLOTS, type ClothesSlot, type WardrobeApi } from '../../entities/wardrobe/state.ts';
-import { playMark } from '../mark.ts';
+import { CLOTHES_SLOTS, type ClothesSlot, type WardrobeApi } from '../wardrobe/state.ts';
+import { playMark } from '../../proto/mark.ts';
 import { merged } from '../../render/part-geometry.ts';
 import {
   DOOR,

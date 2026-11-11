@@ -6,7 +6,7 @@
 import type { Railway } from './railway.ts';
 import { line2Completed, line2Lit, line2Open, line2Trains } from './railway-line2.ts';
 
-/** Oldest first, in ../proto/place/town-lines.ts's `Fact` order. */
+/** Oldest first, in ../entities/town/town-lines.ts's `Fact` order. */
 export const TOWN_FACTS = ['path', 'forge', 'depot', 'head', 'trains', 'town', 'stone', 'pier'] as const;
 export type TownFact = (typeof TOWN_FACTS)[number];
 /** The village sign's people: Place's TUNE.people, then +8 when the path opens, +6 at Far Head, +6 at the pier. */

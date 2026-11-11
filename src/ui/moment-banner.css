@@ -1,4 +1,4 @@
-/* The big moments' banner, in Place's style (src/proto/place/place.css, .place-banner), for the railway's views. */
+/* The big moments' banner, in Place's style (src/entities/railway/railway.css, .place-banner), for the railway's views. */
 .moment-banner {
   position: absolute;
   left: 50%;
