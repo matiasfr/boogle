@@ -4,34 +4,24 @@
 // stretches are laid. Pure over a world and a tick. The look is worked out once per (world, tick): `railCounts` and
 // `railPhase` walk the rows, and the town asks every frame.
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
-import { forge, jobs, qjobs, works, type ReadWorld } from '../../sim/railway-rows.ts';
+import { jobs, qjobs, works, type ReadWorld } from '../../sim/railway-rows.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
-import { line2Completed, line2Trains, railCounts } from '../../sim/railway-queries-line2.ts';
-import type { TownRead } from '../../sim/town-facts.ts';
-import type { World } from '../../ecs/index.ts';
+import { railCounts } from '../../sim/railway-queries-line2.ts';
+import { townRead, type TownRead } from '../../sim/town-facts.ts';
 
 type Facade = RailwayAdapter['read'];
 
-/** The thresholds behind the town facts: `townReadOf(inspection)`'s, from the rows. Station 2 is T3 (the root job is
- * T1). */
-export const townReadOfWorld = (w: ReadWorld | World): TownRead => ({
-  path: !!jobs(w)[2]?.completion,
-  forge: forge(w).lit >= 0,
-  completed: line2Completed(w),
-  trains: line2Trains(w),
-});
-
 export type TownLook = {
   facts: TownRead;
-  /** `inspect().counts.score`. */
+  /** `railCounts(w, tick).score`: the shop's prices climb with it. */
   score: number;
-  /** `inspect().works.breaker`. */
+  /** The Works' breaker row. */
   breaker: number;
-  /** `inspect().phase`. */
+  /** `railPhase` at the tick. */
   phase: ReturnType<typeof railPhase>;
-  /** `inspect().stations[i].completion`. */
+  /** Each line-one job's completion. */
   line1: readonly number[];
-  /** `inspect().line2.stations[i].completion`. */
+  /** Each line-two job's completion. */
   line2: readonly number[];
 };
 
@@ -40,7 +30,7 @@ const timed = (w: ReadWorld, tick: number) => ({
   phase: railPhase(w, tick, tick),
 });
 export const townLookOf = (w: ReadWorld, tick: number, held = timed(w, tick)): TownLook => ({
-  facts: townReadOfWorld(w),
+  facts: townRead(w),
   ...held,
   breaker: works(w).breaker,
   line1: jobs(w).map((j) => j.completion),

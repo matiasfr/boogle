@@ -1,5 +1,5 @@
 // The town facts (src/sim/town-facts.ts) on the accepted-op fixtures `dev/look/rail-seed.ts` seeds from, read from the
-// rows the town reads (src/entities/town/town-read.ts).
+// rows (townRead).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -8,13 +8,10 @@ import {
   townHas,
   townLevel,
   townPopulation,
-  townReadOf,
+  townRead,
   type TownFact,
 } from '../src/sim/town-facts.ts';
 import type { World } from '../src/ecs/index.ts';
-import { townReadOfWorld as townRead } from '../src/entities/town/town-read.ts';
-import { railJobs } from '../src/sim/railway-queries.ts';
-import { line2Completed, line2Trains } from '../src/sim/railway-queries-line2.ts';
 import {
   act,
   advance,
@@ -22,7 +19,6 @@ import {
   beam,
   buildSeedWorld,
   createRailway,
-  forge,
   logs,
   railSession,
   rocks,
@@ -109,14 +105,4 @@ test('newest is the last true fact in TOWN_FACTS order', () => {
   assert.equal(newestTownFact(townRead(atPier())), 'pier');
   const order: TownFact[] = [...TOWN_FACTS];
   assert.deepEqual(order, ['path', 'forge', 'depot', 'head', 'trains', 'town', 'stone', 'pier']);
-});
-
-test("the adapter's read model gives the same facts as the rows", () => {
-  for (const s of [createRailway(), atPath(), atQ1(), atPier()]) {
-    const shaped = {
-      stations: railJobs(s, 1e9).map((j) => ({ completion: j.job.completion })),
-      line2: { forge: { lit: forge(s).lit }, completed: line2Completed(s), trains: line2Trains(s) },
-    };
-    assert.deepEqual(townReadOf(shaped), townRead(s));
-  }
 });
