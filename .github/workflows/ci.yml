@@ -128,7 +128,10 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      # The merge gate keeps the rail audit that local runs skip (docs/agents/tests.md); unit-long.yml adds the sweeps.
       - run: npm run test:unit
+        env:
+          RAIL_AUDIT: '1'
 
   registry:
     needs: changes

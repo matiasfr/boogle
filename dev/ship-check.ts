@@ -18,7 +18,8 @@ const files = new Set(
     .filter(Boolean),
 );
 function run(args: string[]) {
-  execFileSync(process.execPath, args, { stdio: 'inherit' });
+  // Unit tests run without the rail audit, as `npm run test:unit` does; CI's unit job keeps it.
+  execFileSync(process.execPath, args, { stdio: 'inherit', env: { RAIL_AUDIT: '0', ...process.env } });
 }
 // Docs-only (dev/ci/change-class.ts): the same fast checks as CI's docs job, no lint, typecheck or unit tests.
 if (changeClass([...files]) === 'docs') {

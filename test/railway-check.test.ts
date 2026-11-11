@@ -2,7 +2,7 @@
 // test/fixtures/railway-bad-worlds.ts, one per `throw` site of the old validators, is refused by the world check with
 // that site's message, and the read model's check (until M12b) gives the same; every throw site is either an entry or
 // named unreachable; and the two conservation checks the seeds rely on stay in it. Every golden stage's acceptance is in
-// test/railway-check-stages-<n>.test.ts.
+// the golden shards (test/helpers/railway-golden.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

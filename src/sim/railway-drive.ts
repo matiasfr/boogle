@@ -5,6 +5,7 @@
 //
 //   need(cond, msg)                     a seed or test step that must hold
 //   createRailway()                     a fresh world, audited: a write that skips mut() or a declaration throws
+//   AUDIT                               off under RAIL_AUDIT=0 (local test runs; CI and the server's seeds keep it)
 //   apply(w, pid, action, tick)         an action as the server applies it: railApply, then railSettle
 //   check(w)                            the load check on the world as it stands: the message, or null
 //   invariant(w)                        check(w), then the same on a JSON snapshot loaded into a fresh world
@@ -21,7 +22,10 @@ import type { LineTiming } from './railway-line-schedule.ts';
 export function need(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
 }
-export const createRailway = (): World => createRailwayWorld({ audit: true });
+/** The audit serializes every row around every system run (about 250 times slower). `npm run test:unit` and the
+ * pre-push gate turn it off with RAIL_AUDIT=0; CI's unit job and the nightly long run keep it (docs/agents/tests.md). */
+export const AUDIT = typeof process === 'undefined' || process.env.RAIL_AUDIT !== '0';
+export const createRailway = (): World => createRailwayWorld({ audit: AUDIT });
 export function apply(w: World, pid: string, action: RailAction, tick: number, timing?: LineTiming) {
   const r = railApply(w, pid, action, tick, timing);
   railSettle(w);

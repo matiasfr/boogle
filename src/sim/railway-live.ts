@@ -12,6 +12,7 @@ import * as sysAway from './railway-sys-away.ts';
 import * as sysLine1 from './railway-sys-line1.ts';
 import * as sysWorks from './railway-sys-works.ts';
 import { createRailwayWorld } from './railway-components.ts';
+import { AUDIT } from './railway-drive.ts';
 import { railwayCheck, railwayInvariant } from './railway-check.ts';
 import { railwayView } from './railway-read-model.ts';
 import type { RailAction, Railway } from './railway.ts';
@@ -75,7 +76,7 @@ export function edit(s: Railway, fn: (w: World) => void) {
   changed(s);
 }
 
-export const createRailway = (): Live => live(createRailwayWorld({ audit: true }));
+export const createRailway = (): Live => live(createRailwayWorld({ audit: AUDIT }));
 function rule<A extends unknown[], R>(fn: (w: World, ...a: A) => R) {
   return (s: Railway, ...a: A): R => {
     const r = fn(worldOf(s), ...a);
@@ -114,7 +115,7 @@ export function invariant(s: Railway): string | null {
 }
 /** A save and a restart: the snapshot through JSON into a fresh world, the same hash. */
 export function restore(s: Railway): Live {
-  const w = createRailwayWorld({ audit: true });
+  const w = createRailwayWorld({ audit: AUDIT });
   w.load(JSON.parse(JSON.stringify(worldOf(s).snapshot())), railwayCheck);
   need(w.hash() === worldOf(s).hash(), 'restore: hash');
   return live(w);

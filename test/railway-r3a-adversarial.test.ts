@@ -22,6 +22,9 @@ const V = V27_LINE2;
 const PIER = 3,
   HEAD = 4;
 const TICKS = Number(process.env.FUZZ_TICKS ?? 3000);
+// The every-tick-offset sweeps branch a long run off each offset. `npm run check` branches at every STRIDE-th offset
+// (the base run still steps every tick); FUZZ_STRIDE=1 (`npm run test:long`, nightly) is the review's full sweep.
+const STRIDE = Math.max(1, Number(process.env.FUZZ_STRIDE ?? 16));
 type Stage = (f: FixtureLine, t: number) => void;
 type Mode = { lever: number; rider: number };
 
@@ -115,6 +118,7 @@ test('Q7 laid at every tick offset of a run (endMoved past the Pier): no up trai
   const f = base;
   for (let t = t0 + 1; t <= t0 + 1400; t++) {
     drive(f, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
+    if ((t - t0 - 1) % STRIDE) continue;
     const g = snap(f);
     g.stops = v27Stops(7, 0);
     endMoved(g.io(), V, PIER, t);
@@ -130,6 +134,7 @@ test('the rivet struck at every tick offset of a run (endMoved past the Railhead
   drive(base, 0, t0, rand, { lever: 0.02, rider: 0.02 });
   for (let t = t0 + 1; t <= t0 + 1400; t++) {
     drive(base, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
+    if ((t - t0 - 1) % STRIDE) continue;
     const g = snap(base);
     g.stops = v27Stops(7, 7, true);
     endMoved(g.io(), V, HEAD, t);
@@ -146,6 +151,7 @@ test("the railhead's stop moves (stopMoved) at every tick offset of a run, every
     drive(base, 0, t0, rand, { lever: 0.02, rider: 0.02 });
     for (let t = t0 + 1; t <= t0 + 700; t += 1) {
       drive(base, t - 1, t, rand, { lever: 0.02, rider: 0.02 });
+      if ((t - t0 - 1) % STRIDE) continue;
       const g = snap(base);
       const poses = g.rows.map((r) => trainAlong(r, g.line, t));
       g.stops = v27Stops(7, head + 1);

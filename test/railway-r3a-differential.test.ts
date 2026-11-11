@@ -17,6 +17,8 @@ import type { RailLineRow } from '../src/sim/railway-trains.ts';
 import type { Railway } from '../src/sim/railway.ts';
 
 const TICKS = Number(process.env.FUZZ_TICKS ?? 6000);
+// The Q6 sweep opens at every STRIDE-th tick in `npm run check`; FUZZ_STRIDE=1 (`npm run test:long`, nightly) is every tick.
+const STRIDE = Math.max(1, Number(process.env.FUZZ_STRIDE ?? 16));
 const LINES = BL.RAIL_LINES.length;
 const LINE2 = BL.LINE2;
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -277,7 +279,7 @@ for (const seed of [0xc0ffee, 0x777, 0x15a4d, 0x5eed, 0xbee])
 test('differential: the Q6 opening at every tick offset over a train running up to Far Head (endMoved = v26 hunk)', () => {
   // A fixed stream; the opening tick swept over every tick from 200 to 1700 (the first trains' runs to Far Head).
   let hits = 0;
-  for (let q6 = 200; q6 <= 1700; q6++)
+  for (let q6 = 200; q6 <= 1700; q6 += STRIDE)
     hits += run(0x9e6 + (q6 % 7), 75, q6, q6 + 80, { lever: 0.02, rider: 0.02, flags: 0, corrupt: 0 }).q6hits;
-  assert.ok(hits > 100, `${hits} trains turned or asked at the opening`);
+  assert.ok(hits > 100 / STRIDE, `${hits} trains turned or asked at the opening`);
 });
