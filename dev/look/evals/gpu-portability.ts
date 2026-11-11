@@ -1,7 +1,7 @@
 // Existing broker look operation, accepted --rail-seed fixtures, production views and real jump input.
 // gpuShot=depot|cart|jump|rockets; gpuProfile=portable constrains the device before renderer initialization.
 const query = new URLSearchParams(location.search);
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, pressJump, releaseJump } = (await import(
@@ -23,8 +23,8 @@ const until = async (ready: () => boolean, label: string, timeout = 15000) => {
     await wait(25);
   }
 };
-await until(() => !!inspectRailway()?.ready && !!me.body, 'railway mounted');
-const read = () => inspectRailway()!;
+await until(() => !!inspectRailwayLegacy()?.ready && !!me.body, 'railway mounted');
+const read = () => inspectRailwayLegacy()!;
 const device = (renderer.backend as unknown as { device: GPUDevice }).device;
 console.log(
   'GPU PROBE ' +

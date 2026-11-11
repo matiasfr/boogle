@@ -96,15 +96,15 @@ export default {
     await g.page.goto(production.href, { waitUntil: 'domcontentloaded' });
     await enterGame(g.page, 90000);
     const productionReady = await g.waitFor(
-      `(await import('/src/entities/railway/state.ts')).inspectRailway()?.ready === true`,
+      `(await import('/src/entities/railway/state.ts')).inspectRailwayLegacy()?.ready === true`,
       { timeout: 90000 },
     );
     console.log(
       'production diagnostics',
       await g.eval(`
       const { worldStatus, world } = await import('/src/world/sync.ts');
-      const { inspectRailway } = await import('/src/entities/railway/state.ts');
-      const r = inspectRailway();
+      const { inspectRailwayLegacy } = await import('/src/entities/railway/state.ts');
+      const r = inspectRailwayLegacy();
       return { world: worldStatus(), tick: world.tick, railway: r && {
         ready: r.ready, status: r.status, connected: r.connected, epoch: r.epoch,
         accountEpoch: r.accounts.find(a => a.pid === r.pid)?.epoch,

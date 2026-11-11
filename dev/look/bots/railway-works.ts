@@ -4,7 +4,7 @@
 // the pier and set twelve footings in the sea.
 // Inspection observes; it never seeds a world or moves a player.
 import type { Bot } from '../bot.ts';
-import { inspectRailway, type RailwayViewInspection } from '../../../src/entities/railway/state.ts';
+import { inspectRailwayLegacy, type RailwayLegacyInspection } from '../../../src/entities/railway/state.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -41,11 +41,11 @@ const HALT = { village2: 2, quarry: 3, pier: 5 } as const;
 const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
 
 export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from: WorksFrom = 'pier') {
-  const read = () => inspectRailway()!;
+  const read = () => inspectRailwayLegacy()!;
   const l2 = () => read().line2;
   const works = () => read().works;
   const shed = () => read().shed;
-  const view = () => read().line2View as RailwayViewInspection['line2View'] & Trains & Halts;
+  const view = () => read().line2View as RailwayLegacyInspection['line2View'] & Trains & Halts;
   const check = (ok: unknown, beat: string) => {
     if (!ok) throw new Error(beat);
   };
@@ -167,7 +167,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
       const candidates = read()
         .trees.filter((t) => !t.cleared && t.remaining > 0 && t.id !== 28 && t.id !== 209 && t.id !== 232)
         .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
-      let chosen: RailwayViewInspection['trees'][number] | undefined;
+      let chosen: RailwayLegacyInspection['trees'][number] | undefined;
       for (const candidate of candidates.slice(0, 20)) {
         const route = await bot.plan(candidate.x, candidate.z, 2.6);
         if (route.arrives && route.path.every((point) => point.y >= 3)) {

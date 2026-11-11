@@ -7,7 +7,7 @@ const flags = (await import('/src/proto/flags.ts' as string)) as typeof import('
 if (!flags.productionRailway) throw new Error('Needs the default entry');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { play } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const hide = () =>
@@ -17,7 +17,7 @@ const hide = () =>
   });
 // The moment the forge lights (not when the bot notices): frame it and start the capture.
 const watch = setInterval(() => {
-  if ((inspectRailway()?.line2?.forge.lit ?? -1) < 0) return;
+  if ((inspectRailwayLegacy()?.line2?.forge.lit ?? -1) < 0) return;
   clearInterval(watch);
   hide();
   window.__debugCam?.set([899, 26, 22], [905, 21, -3], 60);
@@ -27,7 +27,7 @@ const watch = setInterval(() => {
   let last = '';
   const log = setInterval(() => {
     const f = (
-      inspectRailway() as unknown as {
+      inspectRailwayLegacy() as unknown as {
         line2View?: {
           forgeFinish?: {
             stage: string;

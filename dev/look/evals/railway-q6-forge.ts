@@ -2,7 +2,7 @@
 // railway-b5b8-at.ts --query b58at=apron` on a seed with station 6 active: walk up to the forge's rails rack, then to
 // the boiler's pedestal, logging what each offers. Before trains the rack offers no "Take rails"; once they run it does.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { interactTarget } = (await import(
@@ -14,7 +14,7 @@ const face = (x: number, z: number) => {
   const p = me.body!.position;
   cam.yaw = me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
 };
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 const report = (beat: string) => {
   const s = read();
   console.log(

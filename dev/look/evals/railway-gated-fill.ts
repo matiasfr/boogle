@@ -1,7 +1,7 @@
 // Disposable --rail-seed proof: relocations frame the fixture; pickups, unloads and pulls use real interactions.
 // gatedAction=1 leaves the last carried rails for --action: unload, wait full, pull, then lay in one real-time clip.
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -25,13 +25,13 @@ const bot = makeBot({
     throw new Error('Gated fixture must not recover');
   },
 });
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 const job = () => read().line2.stations[k]!;
 const down = () => (k === 3 ? read().line2.gateOpen : read().line2.seaOpen);
 async function until(fn: () => unknown, label: string, ms = 180000) {
   if (!(await bot.until(fn, ms, label))) throw new Error(label);
 }
-await until(() => inspectRailway()?.ready && me.body, 'seed ready');
+await until(() => inspectRailwayLegacy()?.ready && me.body, 'seed ready');
 if (read().line2.active !== k) throw new Error(`Requires Q${k + 1} active seed`);
 const frame = read().line2View.frames[k]!;
 const camera: [number, number, number] = [frame.x - 9, frame.y + 7, frame.z + 12];

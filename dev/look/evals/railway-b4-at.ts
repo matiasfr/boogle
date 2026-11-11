@@ -1,5 +1,5 @@
 // Disposable accepted --rail-seed fixture. No route bot, no shared-state fabrication in the browser.
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -18,9 +18,9 @@ const { GROUP } = (await import(
 )) as typeof import('../../../src/physics/physics.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const until = performance.now() + 15000;
-while ((!inspectRailway()?.ready || (inspectRailway()?.line2?.completed ?? 0) < 4) && performance.now() < until)
+while ((!inspectRailwayLegacy()?.ready || (inspectRailwayLegacy()?.line2?.completed ?? 0) < 4) && performance.now() < until)
   await wait(50);
-const state = inspectRailway();
+const state = inspectRailwayLegacy();
 if (!state?.ready || !state.line2 || state.line2.completed < 4 || !me.body)
   throw new Error('B4 requires an accepted Q4-complete --rail-seed');
 const query = new URLSearchParams(location.search);
@@ -80,14 +80,14 @@ if (query.get('b4edge') === '1') {
   const rim = rail.besideLine(line, 280, 0);
   teleport(me.body, rim.x, layout.railY(line, 280) + 0.85, rim.z);
   me.body.velocity.set(0, 0, 0);
-  if (inspectRailway()!.line2.stations[4]!.completion === 1)
+  if (inspectRailwayLegacy()!.line2.stations[4]!.completion === 1)
     throw new Error('Q5 finishing seed expired before mounting; live edge not observed');
   // completion is a terminal flag, not a progress fraction: watch the moving head before its final pairs.
-  while (inspectRailway()!.line2View.head < 532) await wait(50);
-  if (inspectRailway()!.line2View.head >= 546) throw new Error('Missed the live final-pair approach');
+  while (inspectRailwayLegacy()!.line2View.head < 532) await wait(50);
+  if (inspectRailwayLegacy()!.line2View.head >= 546) throw new Error('Missed the live final-pair approach');
   let samples = 0;
   const timer = setInterval(() => {
-    const state = inspectRailway()!;
+    const state = inspectRailwayLegacy()!;
     console.log(
       `BFOUR edge ${JSON.stringify({
         completion: state.line2.stations[4]!.completion,
@@ -131,7 +131,7 @@ if (state.line2.stations[4]?.completion === 1) {
     }
   console.log(`BFOUR deck ${JSON.stringify({ samples, maxError, misses })}`);
 }
-console.log(`BFOUR pose ${mode} ${JSON.stringify(inspectRailway()?.line2View)}`);
+console.log(`BFOUR pose ${mode} ${JSON.stringify(inspectRailwayLegacy()?.line2View)}`);
 shot.__b4Prepared = true;
 // Optional action body in the same permitted eval file; pressing uses the existing real-input bot.
 if (query.get('b4pull') === '1' && action) {
@@ -148,15 +148,15 @@ if (query.get('b4pull') === '1' && action) {
   console.log(`BFOUR prompt ${JSON.stringify({ id: offered?.id, verb: offered?.verb })}`);
   if (offered?.id !== 'railway-sea-switch') throw new Error('Summit did not offer the sea switch');
   bot.press();
-  if (!(await bot.until(() => !!inspectRailway()?.line2?.sea, 2000, 'sea switch accepted')))
+  if (!(await bot.until(() => !!inspectRailwayLegacy()?.line2?.sea, 2000, 'sea switch accepted')))
     throw new Error('Sea switch press was not accepted');
-  console.log(`BFOUR pull ${JSON.stringify(inspectRailway()?.line2View)}`);
+  console.log(`BFOUR pull ${JSON.stringify(inspectRailwayLegacy()?.line2View)}`);
 }
 // look applies its default pose after setup returns. Reapply this authored pose during its short warm-up.
 setTimeout(() => window.__debugCam!.set(camera, aim, 65), 100);
 for (const ms of [500, 2000, 6000, 10000])
   setTimeout(() => {
-    const s = inspectRailway(),
+    const s = inspectRailwayLegacy(),
       v = s?.line2View;
     console.log(
       `BFOUR after ${ms} ${JSON.stringify({ completed: s?.line2?.completed, seaGateSolid: v?.seaGateSolid, lamps: v?.trestleLamps, rockets: v?.farHeadRockets, panels: v?.panelCursor, cart: v?.cart })}`,

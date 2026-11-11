@@ -1150,21 +1150,23 @@ export function createRailwayAdapter({
     pending: number,
     stalled: RailwayIntent['op'] | null,
   ) {
+    // The session's scalars are read.debug()'s (one place builds them; M12e deletes this with inspect()). `step` stays
+    // the memo's, taken with the rest of its key, and `prediction` the live counters, as the adapter tests read them
+    // (a held `reads` counts on); debug() hands tools a copy.
+    const debug = facade.debug();
     return Object.freeze({
       ...state,
       pid,
       status,
-      connected,
-      synced,
-      /** The server step the mirror is current to, and a hash of the mirror there (co-op witnesses compare them;
-       * computed only when read). It is the confirmed mirror's, never the prediction's. */
+      connected: debug.connected,
+      synced: debug.synced,
       step,
       get hash() {
-        return rail.hash();
+        return debug.hash;
       },
       ready,
-      epoch,
-      next,
+      epoch: debug.epoch,
+      next: debug.next,
       pending,
       /** The oldest action still unanswered after STALL_MS (the wordless stall cue), or null. */
       stalled,
@@ -1205,6 +1207,26 @@ export function createRailwayAdapter({
     stalled: stalledNow,
     /** The movement tunables (railMovement), one frozen object while they are unchanged. */
     movement: moves,
+    /** The session scalars no view reads (tools, witnesses and the view's inspection do), built per call: the
+     * connection, the server step the confirmed mirror is current to and its hash (computed only when read; never the
+     * prediction's), the account epoch, the next action id and the prediction's counters. */
+    debug: () => ({
+      connected,
+      synced,
+      step: rail.step(),
+      get hash() {
+        return rail.hash();
+      },
+      epoch,
+      next,
+      // A copy: a tool that writes to it or holds it across frames never touches the session's own counters.
+      prediction: {
+        ...stats,
+        responseMs: [...stats.responseMs],
+        log: stats.log.map((l) => ({ ...l })),
+        reads: { ...stats.reads },
+      },
+    }),
   };
   return {
     inspect,

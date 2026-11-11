@@ -3,7 +3,7 @@
 // &railLag=200 (added round trip on the railway's own messages), for example:
 //   npm run look -- --eval dev/look/evals/railway-instant.ts --action dev/look/evals/railway-instant-act.ts \
 //     --query 'shot=play&railLag=200' --video --seconds 16 --name instant-200
-const { inspectRailway } = (await import(
+const { inspectRailwayLegacy } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -20,12 +20,12 @@ const bot = makeBot({
     throw new Error('Instant-feedback capture needed recovery');
   },
 });
-const read = () => inspectRailway()!;
+const read = () => inspectRailwayLegacy()!;
 const need = async (fn: () => unknown, what: string) => {
   if (!(await bot.until(fn, 300000))) throw new Error(what);
 };
-if (!(await bot.until(() => !!me.body && inspectRailway()?.ready, 300000))) {
-  const s = inspectRailway();
+if (!(await bot.until(() => !!me.body && inspectRailwayLegacy()?.ready, 300000))) {
+  const s = inspectRailwayLegacy();
   throw new Error(
     `The railway never became ready: ${JSON.stringify(s && { status: s.status, connected: s.connected, synced: s.synced, epoch: s.epoch, accounts: s.accounts.length })}`,
   );
