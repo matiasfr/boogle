@@ -10,7 +10,7 @@ import type { Seed } from '../../src/sim/railway-seed-route.ts';
 import { createRailwayWorld, Pile } from '../../src/sim/railway-components.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import type { Read, ReadWorld } from '../../src/sim/railway-rows.ts';
-import { createRailway } from '../../src/sim/railway-drive.ts';
+import { restore } from '../../src/sim/railway-drive.ts';
 import * as seeds from '../../src/sim/railway-seeds.ts';
 import * as works from '../../src/sim/railway-seed-works.ts';
 import * as ring from '../../src/sim/railway-seed-ring.ts';
@@ -19,22 +19,16 @@ export * from '../../src/sim/railway-drive.ts';
 export * from '../../src/sim/railway-seeds.ts';
 export * from '../../src/sim/railway-seed-works.ts';
 
-// Each seed stage is replayed once per test file (one process) and handed out as fresh copies of that world through a
-// save: the same rows, ids, tick and hash, and the same audit as the driver gives (createRailway). The replay itself
-// stays proven by every first call and by the goldens (test/helpers/railway-golden.ts replays on its own).
-const built = new Map<string, { snapshot: string; t: number }>();
+// Each seed stage is replayed once per test file (one process) and kept; every caller, the first included, gets its
+// own copy through a save (restore: a fresh world as the driver makes it, audit and all, checked to the same hash). The
+// replay stays proven by that first build and by the goldens (test/helpers/railway-golden.ts replays on its own).
+const built = new Map<string, Seed>();
 function shared<A extends string[]>(name: string, build: (...args: A) => Seed): (...args: A) => Seed {
   return (...args) => {
     const key = `${name}(${args.join(',')})`;
-    const done = built.get(key);
-    if (!done) {
-      const seed = build(...args);
-      built.set(key, { snapshot: JSON.stringify(seed.w.snapshot()), t: seed.t });
-      return seed;
-    }
-    const w = createRailway();
-    w.load(JSON.parse(done.snapshot), railwayCheck);
-    return { w, t: done.t };
+    let seed = built.get(key);
+    if (!seed) built.set(key, (seed = build(...args)));
+    return { w: restore(seed.w), t: seed.t };
   };
 }
 export const railwayAtQ2 = shared('railwayAtQ2', seeds.railwayAtQ2);
