@@ -28,9 +28,18 @@ async function lstat(file: string) {
   }
 }
 
-function trashTime(name: string): number | null {
-  const stamp = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)(?:-[a-zA-Z0-9]{6})?$/.exec(name)?.[1];
-  if (!stamp) return null;
+// Run folders are named `<UTC ISO time with ':' as '-'>-<6 random>`, e.g. `2026-10-31T00-00-00.000Z-a1B2c3`:
+// Windows forbids ':' in file names. Fixed width, so names still sort by time.
+export function trashStamp(ms: number): string {
+  return new Date(ms).toISOString().replaceAll(':', '-');
+}
+
+// Accepts that form and the colon form (`2026-10-31T00:00:00.000Z-a1B2c3`) older builds wrote, which
+// remain on Linux saves. Builds before the dash form report a dash-form folder as unknown and keep it.
+export function trashTime(name: string): number | null {
+  const m = /^(\d{4}-\d{2}-\d{2}T\d{2})([:-])(\d{2})\2(\d{2}\.\d{3}Z)(?:-[a-zA-Z0-9]{6})?$/.exec(name);
+  if (!m) return null;
+  const stamp = `${m[1]}:${m[3]}:${m[4]}`;
   const ms = Date.parse(stamp);
   return Number.isFinite(ms) && new Date(ms).toISOString() === stamp ? ms : null;
 }
@@ -125,7 +134,7 @@ export async function cleanupSaves(
     if (!destination) {
       await fs.mkdir(trashRoot, { recursive: true });
       if (!(await fs.lstat(trashRoot)).isDirectory()) throw new Error('.trash is not a regular directory');
-      destination = await fs.mkdtemp(path.join(trashRoot, `${result.at}-`));
+      destination = await fs.mkdtemp(path.join(trashRoot, `${trashStamp(now)}-`));
       result.trash = `.trash/${path.basename(destination)}`;
       await fs.mkdir(path.join(destination, 'files'));
     }
