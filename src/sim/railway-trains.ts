@@ -24,6 +24,7 @@ import {
   circuitCm,
   circuitLen,
   lineDef,
+  lineIndex,
   type LineRef,
 } from './railway-lines.ts';
 import type { Railway } from './railway.ts';
@@ -59,8 +60,10 @@ export const LINE_SLOTS: readonly (readonly number[])[] = RAIL_LINES.map((_l, li
   RAIL_TRAINS.flatMap((t, slot) => (t.line === line ? [slot] : [])),
 );
 /** A line's train slots: LINE_SLOTS for a catalog line, 0 to `trains - 1` for a fixture line. */
-export const lineSlots = (line: LineRef): readonly number[] =>
-  typeof line === 'number' ? LINE_SLOTS[line]! : Array.from({ length: line.trains }, (_v, k) => k);
+export function lineSlots(line: LineRef): readonly number[] {
+  const k = lineIndex(line);
+  return k >= 0 ? LINE_SLOTS[k]! : Array.from({ length: lineDef(line).trains }, (_v, j) => j);
+}
 
 // ---------------------------------------------------------------- the ends
 /** One open end's block, both tracks from `from` to `to` (cm along the line: from a stub's turnout's far side, or a
@@ -258,6 +261,13 @@ function replan<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, tick: 
   if ((leg.dest - r.dest) * dir < 0 ? !leg.reason : !heldNow) return;
   io.set(slot, { to: leg.to, from: pose.s, v0: pose.v, dest: leg.dest, depart: tick });
 }
+/** The open end a train standing at no halt (`at` -1) leaves from: the end whose block it stands in, on that end's way
+ * out (only a train the railhead's stop moved on from: a signal stands outside its block); -1 for none. */
+function endStanding(line: LineRef, stops: readonly number[], r: Readonly<RailTrain>) {
+  const dir = r.track ? -1 : 1;
+  for (const b of endBlocks(line, stops)) if (b.dir === -dir && within(b, r.from)) return b.stop;
+  return -1;
+}
 export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
   if (io.awake < 0) return;
   for (const slot of lineSlots(line)) {
@@ -272,8 +282,11 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
           break;
         }
         const turn = r.turn; // the row may be live: read it before the set clears it
-        io.set(slot, { phase: TRAIN_PHASE.STAND, at: r.to, from: r.dest, v0: 0, depart: arrival, turn: false });
-        if (r.to >= 0) io.arrive(slot);
+        // A leg it could not replan off a halt that refuses its way (the homeward-only Pier, held short of a busy
+        // railhead) ends at a stand with no halt, as at a signal: no platform, no dwell, no arrival.
+        const at = !turn && r.to >= 0 && trainPassesBy(line, r.to, r.track ? -1 : 1, n) ? -1 : r.to;
+        io.set(slot, { phase: TRAIN_PHASE.STAND, at, to: at, from: r.dest, v0: 0, depart: arrival, turn: false });
+        if (at >= 0) io.arrive(slot);
         // At an end (or the one it had crossed over at: `turn`) it turns back onto the other track; its riders' asks
         // the old way are past serving.
         if ((r.to === 0 && r.track === 1) || (r.to === n - 1 && r.track === 0) || turn) {
@@ -287,24 +300,27 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
       if (hold === 'hold') break;
       // A halt's dwell (a signal has none: the train goes the tick its block clears), and the wake.
       if ((r.at >= 0 && tick < r.depart + TRAIN.dwellTicks) || tick < io.awake + TRAIN.wakeTicks) break;
-      const end = r.at >= 0 && atEnd(r.at, stops);
+      // The halt it leaves: its own, or the end whose block it stands in on the way out (a train the railhead's stop
+      // moved on from: stopMoved), which it leaves as from that end.
+      const from = r.at >= 0 ? r.at : endStanding(line, stops, r),
+        end = from >= 0 && atEnd(from, stops);
       const head = headTicks(line, stops, io.headPct),
-        left = r.at === 0 ? io.line(line).left0 : io.line(line).left1;
+        left = from === 0 ? io.line(line).left0 : io.line(line).left1;
       if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
       const reasons = trainReasons(io.row, line, stops, slot, io.line(line).req, tick, io.service(slot));
       const leg = planLeg(io.row, line, stops, slot, { s: r.from, v: 0, track: r.track }, tick, reasons);
       if (!leg) break; // held: the block ahead is not clear
       const dir = r.track ? -1 : 1;
-      if (r.at >= 0) {
+      if (from >= 0) {
         // Leaving that way serves this halt's asks that way: its riders' and the lever's.
-        io.setLine(line, { req: reqDrop(io.line(line).req, r.at, dir, n) });
-        if (end) io.setLine(line, r.at === 0 ? { left0: tick } : { left1: tick });
+        io.setLine(line, { req: reqDrop(io.line(line).req, from, dir, n) });
+        if (end) io.setLine(line, from === 0 ? { left0: tick } : { left1: tick });
       }
       io.set(slot, {
         phase: TRAIN_PHASE.RUN,
         to: leg.to,
         depart: tick,
-        req: r.at >= 0 ? reqDrop(r.req, r.at, dir, n) : r.req,
+        req: from >= 0 ? reqDrop(r.req, from, dir, n) : r.req,
         v0: 0,
         dest: leg.dest,
       });
@@ -405,6 +421,8 @@ export function trainRowBroken(
         !lineDef(line).halts[r.to]!.end ||
         r.dest !== st[r.to])) ||
     (r.at >= 0 && r.phase === TRAIN_PHASE.STAND && r.from !== st[r.at]) ||
+    // Never standing at a halt that refuses its way (an up train at the homeward-only Pier: it has no platform).
+    (r.at >= 0 && r.phase === TRAIN_PHASE.STAND && trainPassesBy(line, r.at, dir, st.length)) ||
     (r.to >= 0 && r.dest !== st[r.to])
   )
     return 'railway: train';

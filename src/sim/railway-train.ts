@@ -6,7 +6,16 @@
 // tick) to a standstill at stop `to`, so a request made mid-run replans the leg from the train's pose that tick. Since
 // v26 (docs/plans/generic-lines.md) each line is double track, one direction a track: a train runs end to end on its
 // `track` and turns back only at an end; spacing, holds and who serves a lever ask are ./railway-trains.ts.
-import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, lineDef, type LineRef } from './railway-lines.ts';
+import {
+  RAIL_HALTS,
+  RAIL_LINES,
+  RAIL_TRAINS,
+  lineDef,
+  trainPassesBy,
+  trainPlaces,
+  type LineRef,
+} from './railway-lines.ts';
+export { trainPassesBy };
 export const TRAIN = {
   speed: 200,
   accel: 3.5,
@@ -41,6 +50,20 @@ export const trainStopsOf = (line: LineRef, laid: number | boolean, ring: RingOp
     if (h.opens < done && (!h.ring || ring.joined)) out.push(h.heads ? h.heads[ring.head]! : h.s);
   return out;
 };
+/** Every stage a line's stops can reach (each `opens` slot laid in turn, each head, the rivet). */
+export function lineStages(line: LineRef): (readonly number[])[] {
+  const halts = lineDef(line).halts,
+    top = Math.max(0, ...halts.map((h) => h.opens + 1)),
+    heads = Math.max(1, ...halts.map((h) => h.heads?.length ?? 1));
+  const out: (readonly number[])[] = [];
+  for (let laid = 0; laid <= top; laid++)
+    for (let head = 0; head < heads; head++)
+      for (const joined of [false, true]) out.push(trainStopsOf(line, laid, { head, joined }));
+  return out;
+}
+// The catalog is refused at load if any line's trains could not all be placed at a stage they wake at (trainPlaces
+// throws rather than stack two), so the wake (rail.boilerFit) never meets it in a room.
+RAIL_LINES.forEach((_l, line) => lineStages(line).forEach((stops) => trainPlaces(line, stops)));
 /** The stop each train (by slot) stands at before it wakes. */
 export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);
 /** The track each train (by slot) stands on before it wakes. */
@@ -252,12 +275,6 @@ function reachable(stops: readonly number[], s: number, v: number, dir: number, 
   }
   return out;
 }
-/** Whether halt `k` of a line with `n` open stops refuses trains going `dir`: an `only` halt that is not an open end
- * serves only its own way (the homeward-only Pier: no up train stops there, for any reason). */
-export function trainPassesBy(line: LineRef, k: number, dir: number, n: number) {
-  const only = lineDef(line).halts[k]?.only;
-  return only !== undefined && dir !== only && k !== 0 && k !== n - 1;
-}
 /** The halt a train at `s` (cm), `v` (cm per tick), on the track going `dir` makes next, or -1 if it can stop
  * nowhere ahead: the nearest halt it can still brake for that has a reason (`reasons`: an ask it serves, or a service
  * stop), else its track's end. A track runs one way, so it never turns back mid-line (v25's LOOK went in v26). */
@@ -285,22 +302,25 @@ export function reqOnly(req: number, n: number, dir: number) {
   for (let k = 0; k < n; k++) if (reqIndex(k, -dir, n) !== reqIndex(k, dir, n)) out = reqDrop(out, k, -dir, n);
   return out;
 }
+/** v26's count form of the open stops, the first `n` halts', read as trainStopsOf would: a `heads` halt at its last
+ * head. That is its stop whenever it is a middle halt (the rivet opens the island only once the railhead has reached
+ * its last bent), and while it is the end any head gives the same offer (the end is never offered). */
+function countStops(line: LineRef, n: number) {
+  return lineDef(line)
+    .halts.slice(0, n)
+    .map((h) => (h.heads ? h.heads[h.heads.length - 1]! : h.s));
+}
 /** What a passenger's request would ask for now: the first halt ahead the train can still stop at, heading its way.
  * Null when that halt is the line's end (it stops there anyway); `requested` when it already stops there. A halt that
  * refuses its way (trainPassesBy: the homeward-only Pier for an up train) is skipped, so the next one is offered.
- * `open` is the line's open stops (trainStopsOf), or v26's count of them (the first `n` halts' own stops). */
+ * `open` is the line's open stops (trainStopsOf), or v26's count of them (countStops: the same offer). */
 export function trainRequestable(
   row: Readonly<RailTrain>,
   line: LineRef,
   open: number | readonly number[],
   tick: number,
 ) {
-  const stops =
-      typeof open === 'number'
-        ? lineDef(line)
-            .halts.slice(0, open)
-            .map((h) => h.s)
-        : open,
+  const stops = typeof open === 'number' ? countStops(line, open) : open,
     n = stops.length;
   const dir = trainDir(row);
   const next = reachable(stops, trainAlong(row, line, tick), trainSpeed(row, line, tick), dir, (k) =>

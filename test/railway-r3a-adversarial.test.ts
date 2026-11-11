@@ -251,8 +251,10 @@ test('more trains than places: trainPlaces never stacks two on one spot (it shou
   // Three trains on a line with only Village, Quarry open has three places (0 up, 1 up, 1 down, ... ) - two stops only:
   // Village up and Quarry down. A third train has nowhere and lands on 0/0 again, with nothing to say so.
   const two: RailLineDef = { ...V, trains: 3, halts: [V.halts[0]!, { ...V.halts[1]!, end: V.halts[2]!.end }] };
-  const places = trainPlaces(two, [1700, 17400]);
-  assert.equal(new Set(places.map((p) => `${p.stop}/${p.track}`)).size, places.length, JSON.stringify(places));
+  // Ruled (orchestrator, 10 November): refuse rather than stack. The catalog's lines are checked at every stage at load
+  // (railway-train.ts), so a room never meets it.
+  assert.throws(() => trainPlaces(two, [1700, 17400]), /no place for train 2/);
+  assert.equal(new Set(trainPlaces({ ...two, trains: 2 }, [1700, 17400]).map((p) => `${p.stop}/${p.track}`)).size, 2);
 });
 
 test("trainRequestable's v26 count form (train-view.ts until R4a) offers what the stops form does once the railhead has moved", () => {

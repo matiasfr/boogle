@@ -169,9 +169,18 @@ export const RAIL_LINES: readonly RailLineDef[] = [
 /** Line 2's index: the line that carries cargo (the Q6 kit, the footing wagon). */
 export const LINE2 = RAIL_LINES.findIndex((l) => l.id === 'line2');
 /** A line the pure train code runs: its index in RAIL_LINES, or a line the catalog does not hold (a test's fixture
- * line, its trains slots 0 to `trains - 1` of the rows it is given). */
+ * line, its trains slots 0 to `trains - 1` of the rows it is given). A catalog row passed as an object is its index
+ * (lineIndex), so it never runs as a fixture. */
 export type LineRef = number | RailLineDef;
 export const lineDef = (line: LineRef): RailLineDef => (typeof line === 'number' ? RAIL_LINES[line]! : line);
+/** The catalog index of a line (a catalog row object counts as its own index), or -1 for a fixture line. */
+export const lineIndex = (line: LineRef): number => (typeof line === 'number' ? line : RAIL_LINES.indexOf(line));
+/** Whether halt `k` of a line with `n` open stops refuses trains going `dir`: an `only` halt that is not an open end
+ * serves only its own way (the homeward-only Pier: no up train stops there, for any reason). */
+export function trainPassesBy(line: LineRef, k: number, dir: number, n: number) {
+  const only = lineDef(line).halts[k]?.only;
+  return only !== undefined && dir !== only && k !== 0 && k !== n - 1;
+}
 /** Halt `halt`'s platform (a RAIL_HALTS id, or a halt) for a train going `way` (+1 up, -1 down): a `heads` halt's
  * down side is the railhead's platform at `head` (the server's reach check and the lever's view read it). */
 export function haltPlatform(halt: number | RailHalt, way: number, head = 0): RailPlatform {
@@ -196,7 +205,9 @@ export const circuitAhead = (from: number, to: number, c: number) => (((to - fro
  * train k at the open halt nearest `c = home + k·C/n` round the circuit (its first at `home`), standing on the track
  * whose way out is inward (an end's way out; a middle halt's track by the half of the circuit it is nearest on). A
  * place already taken by an earlier train is skipped (with three trains on line 2's first stops, two are nearest Far
- * Head's down track), so no two trains stand on one spot. */
+ * Head's down track), so no two trains stand on one spot, and so is a halt that refuses the way out (trainPassesBy:
+ * the homeward-only Pier going up). With no place left it throws: the catalog is refused (railway-train.ts checks
+ * every stage of every catalog line at load), rather than two trains stacked. */
 export function trainPlaces(line: LineRef, stops: readonly number[]) {
   const l = lineDef(line),
     c = circuitLen(stops),
@@ -210,10 +221,12 @@ export function trainPlaces(line: LineRef, stops: readonly number[]) {
     for (let stop = 0; stop <= last; stop++)
       for (const track of stop === 0 ? [0] : stop === last ? [1] : [0, 1]) {
         if (taken.some((t) => t.stop === stop && t.track === track)) continue;
+        if (trainPassesBy(line, stop, track ? -1 : 1, stops.length)) continue;
         const p = at(stop, track) % c,
           d = Math.min(circuitAhead(p, want, c), circuitAhead(want, p, c));
         if (d < best.d) best = { stop, track, d };
       }
+    if (best.d > c) throw new Error(`railway: line ${l.id} has no place for train ${k} over ${stops.length} stops`);
     const place = { stop: best.stop, track: best.track };
     taken.push(place);
     return place;

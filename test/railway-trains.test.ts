@@ -20,6 +20,7 @@ import {
   TRAIN_STOPS,
   reqHas,
   trainAlong,
+  trainLegTicks,
   trainDir,
   trainSpeed,
   type RailTrain,
@@ -880,10 +881,11 @@ const waitTable = (worst: Map<string, number>) =>
     .join('; ');
 
 /** The island fuzz's seeds (v26's two by default; FUZZ_SEEDS=hex,hex,... for the long runs, each at the default hold
- * and at 0%) and train count (FUZZ_TRAINS: the fixture's 3, or 4 to size the line, call 47). R3a's long runs (10
- * November; FUZZ_TICKS=40000, seeds c0ffee,777,15a4d,5eed,bee at 75% and 0%): three trains do NOT hold WAIT_BOUND
- * (worst 137.9 s; 8 of 10 runs over 105 s), four trains do (worst 98.4 s, all 10 under). By call 47 the catalog goes to
- * four trains: R3b's row (reported to the orchestrator). The default runs pass and print the waits. */
+ * and at 0%) and train count (FUZZ_TRAINS: the fixture's 3, or 4, call 47). R3a's long runs (10 November;
+ * FUZZ_TICKS=40000, seeds c0ffee,777,15a4d,5eed,bee at 75% and 0%, a legal start): three trains at today's hold do NOT
+ * hold WAIT_BOUND (worst 130.5 s, 10 of 10 over), four do (98.4 s). The cause is the hold (sized off the non-stop
+ * cycle, only a minimum): R3b keeps three trains and adds a balanced hold (the plan's R3b, call 47). The default runs
+ * pass and print the waits. */
 const ISLAND_SEEDS: readonly (readonly [number, number])[] = process.env.FUZZ_SEEDS
   ? process.env.FUZZ_SEEDS.split(',').flatMap((h) => [
       [Number.parseInt(h, 16), TRAIN_HEAD_PCT] as const,
@@ -946,3 +948,21 @@ for (const seed of [0x5eed, 0xbee])
     assert.deepEqual(f.stops, v27Stops(7, 7, true));
     assert.ok(atIsland > 0, 'trains stood at the island after the rivet');
   });
+
+test('the load check refuses an up train standing at the homeward-only Pier; a leg held onto it ends at no halt', () => {
+  const stops = v27Stops(7, 0);
+  const f = new FixtureLine(stops);
+  assert.equal(f.broken(), null);
+  f.rows[0] = standingAt(stops, PIER, 0);
+  assert.equal(f.broken(), 'railway: train', 'up at the Pier: no platform');
+  f.rows[0] = standingAt(stops, PIER, 1);
+  assert.equal(f.broken(), null, 'down at the Pier: its platform');
+  // A leg still bound for the Pier going up when it ends (endMoved short of the stub, held off every replan by a busy
+  // railhead) stands at no halt, as at a signal: its arrival tick is the step's, so no replan runs first.
+  f.rows = [{ ...runRow(70000, PIER, 72650, 0), at: 2 }, standingAt(stops, 0, 0), standingAt(stops, 1, 1)];
+  f.rows[0] = { ...f.rows[0]!, depart: -trainLegTicks(2650) };
+  trainStepLine(f.io(), V, 0);
+  const r = f.rows[0]!;
+  assert.ok(r.phase === TRAIN_PHASE.STAND && r.at === -1 && r.to === -1 && r.from === 72650, JSON.stringify(r));
+  assert.equal(f.broken(), null);
+});
