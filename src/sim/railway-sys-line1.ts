@@ -4,7 +4,7 @@ import { defineSystem, type World } from '../ecs/index.ts';
 import { RAILWAY_SOURCES } from './railway-layout.ts';
 import { LINE1_GREAT_TREE, LINE1_STATIONS, lineBeamGround } from './railway-line-layout.ts';
 import { RAILS } from './railway-line2-layout.ts';
-import type { LineTiming } from './railway-line-schedule.ts';
+import { layProgress, type LineTiming } from './railway-line-schedule.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { railInt, RAILWAY_MAX_INT, RAILWAY_PILES } from './railway.ts';
 import { Account, Beam, Boiler, Forge, Hardwood, Job, JobRun, Pile, Rail, Rock, Tree } from './railway-components.ts';
@@ -324,13 +324,9 @@ export function layLine1(w: World, tick: number) {
   const run = w.mut(JobRun, id)!;
   run.elapsed = Math.min(schedule.totalTicks, run.elapsed + Math.max(0, tick - run.lastTick));
   run.lastTick = tick;
-  const laying = Math.max(0, run.elapsed - schedule.depositTicks - schedule.feedTicks);
-  run.used = Math.min(spec.bill[0], Math.floor((laying * spec.bill[0]) / schedule.layTicks));
-  run.allocation = spec.bill[0] - run.used;
-  if (slot > 0) {
-    run.stoneUsed = Math.min(spec.bill[1], Math.floor((laying * spec.bill[1]) / schedule.layTicks));
-    run.stoneAllocation = spec.bill[1] - run.stoneUsed;
-  }
+  const lay = layProgress(spec, schedule, run.elapsed);
+  [run.used, run.allocation] = [lay.used, lay.allocation];
+  if (slot > 0) [run.stoneUsed, run.stoneAllocation] = [lay.used2, lay.allocation2];
   if (run.elapsed === schedule.totalTicks) {
     w.mut(Job, id)!.completion = 1;
     if (slot === 2) w.mut(Beam, beamId(w))!.state = 'used';

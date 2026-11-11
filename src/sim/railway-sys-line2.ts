@@ -9,7 +9,7 @@ import {
   line2BoilerGround,
   RAILS,
 } from './railway-line2-layout.ts';
-import type { LineTiming } from './railway-line-schedule.ts';
+import { layProgress, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_ROAD, cartEnd } from './railway-cart.ts';
 import { TRAIN, TRAIN_PHASE, TRAIN_STOPS, reqAdd, trainAlong } from './railway-train.ts';
 import { LINE2, RAIL_LINES, TRAIN_EXTENT, trainPlaces } from './railway-lines.ts';
@@ -418,11 +418,8 @@ export function layLine2(w: World, tick: number) {
   const run = w.mut(QJobRun, id)!;
   run.elapsed = Math.min(schedule.totalTicks, run.elapsed + Math.max(0, tick - run.lastTick));
   run.lastTick = tick;
-  const laying = Math.max(0, run.elapsed - schedule.depositTicks - schedule.feedTicks);
-  run.used = Math.min(spec.bill[0], Math.floor((laying * spec.bill[0]) / schedule.layTicks));
-  run.allocation = spec.bill[0] - run.used;
-  run.railUsed = Math.min(spec.bill[1], Math.floor((laying * spec.bill[1]) / schedule.layTicks));
-  run.railAllocation = spec.bill[1] - run.railUsed;
+  const lay = layProgress(spec, schedule, run.elapsed);
+  [run.used, run.allocation, run.railUsed, run.railAllocation] = [lay.used, lay.allocation, lay.used2, lay.allocation2];
   if (run.elapsed === schedule.totalTicks) {
     w.mut(QJob, id)!.completion = 1;
     if (k === 4 && w.get(Boiler, boilerId(w))!.state === 'none') boilerPedestal(w);
