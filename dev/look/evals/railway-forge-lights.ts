@@ -22,6 +22,33 @@ const watch = setInterval(() => {
   hide();
   window.__debugCam?.set([899, 26, 22], [905, 21, -3], 60);
   (window as Window & { __forgeShot?: boolean }).__forgeShot = true;
+  // The show's real-time length: log each stage change with the seconds since it lit (capture time is real speed).
+  const t0 = performance.now();
+  let last = '';
+  const log = setInterval(() => {
+    const f = (
+      inspectRailway() as unknown as {
+        line2View?: {
+          forgeFinish?: {
+            stage: string;
+            poles: number;
+            beams: string[];
+            crew: { x: number; z: number; here: boolean }[] | null;
+          };
+        };
+      }
+    )?.line2View?.forgeFinish;
+    if (!f) return;
+    const now = `${f.stage} poles=${f.poles.toFixed(1)} roof=${f.beams.filter((b) => b === 'roof').length}/8`;
+    if (now !== last) console.log(`PLAY forge ${((performance.now() - t0) / 1000).toFixed(1)}s ${now}`);
+    last = now;
+    if (Math.round((performance.now() - t0) / 100) % 20 === 0)
+      console.log(
+        `PLAY crew ${((performance.now() - t0) / 1000).toFixed(0)}s ` +
+          JSON.stringify(f.crew?.map((g) => [+g.x.toFixed(1), +g.z.toFixed(1), g.here])),
+      );
+    if (f.stage === 'done') clearInterval(log);
+  }, 100);
 }, 20);
 background(play(), 'forge lights');
 export {};

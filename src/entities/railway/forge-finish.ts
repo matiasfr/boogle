@@ -158,14 +158,15 @@ export async function createForgeFinish(
     qa.slerp(qb, s);
     return out.compose(pa, qa, one);
   }
-  /** Where the crew stands: either side of the ground stack, or at the forge's two side walls. */
+  /** Where the crew stands: either side of the ground stack, or together at the forge's village-side wall (the far
+   * side is walled off by the rack and the bill board, where a guy stuck for the whole 12 s leg). */
   const atStack = () => [
     { x: ground.x + Math.cos(ground.yaw) * 1.1, z: ground.z - Math.sin(ground.yaw) * 1.1 },
     { x: ground.x - Math.cos(ground.yaw) * 1.1, z: ground.z + Math.sin(ground.yaw) * 1.1 },
   ];
   const atForge = () => [
     { x: X - W / 2 - 1.1, z: Z + (trips % 2 ? 1.2 : -1.2) },
-    { x: X + W / 2 + 1.1, z: Z + (trips % 2 ? -1.2 : 1.2) },
+    { x: X - W / 2 - 1.1, z: Z + (trips % 2 ? -1.2 : 1.2) },
   ];
   const send = (at: { x: number; z: number }[], carrying: boolean, face: { x: number; z: number }) => {
     leg = 0;
@@ -207,7 +208,14 @@ export async function createForgeFinish(
   /** The forge is lit: its last hand-fed bill is in. */
   const lit = () => (adapter.inspect().line2?.forge.lit ?? -1) >= 0;
   function restore() {
-    if (lit()) snapDone();
+    // A restore in the middle of the show (the machine's crossing begins a few seconds after the forge lights) must
+    // not cut it short: the view's pieces were just cleared, so put back the boards of the trusses already up.
+    if (lit() && (stage === 'unload' || stage === 'fetch' || stage === 'carry' || stage === 'finish')) {
+      for (let t = 0; t < 4; t++)
+        if (beams[2 * t]!.at === 'roof' && beams[2 * t + 1]!.at === 'roof')
+          for (let n = Math.round((t / 4) * roof.length); n < Math.round(((t + 1) / 4) * roof.length); n++)
+            building.snap(roof[n]!, true);
+    } else if (lit()) snapDone();
     else reset();
   }
   restore();

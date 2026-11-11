@@ -10,7 +10,9 @@ import { flat } from '../../render/flat.ts';
 import { draw, makeSet } from '../../render/boxes.ts';
 import { ROOM_GROUP, addStatic } from '../../place/land.ts';
 import { ROOM_CAM } from './rooms.ts';
-import { registerSeat, seatHeight, seatMesh } from '../railway/seat.ts';
+import { kitMaterial, registerSeat, seatHeight, seatMesh } from '../railway/seat.ts';
+import { workshopKit } from './workshop-kit.ts';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Plan } from '../../place/building-plans.ts';
 import type { DropSet } from '../../place/pieces.ts';
 
@@ -39,7 +41,6 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   // Two shallow steps over the existing foundation. They end to the left of the rack/output lane.
   box(door.x, -0.375, hd + 1.25, door.w, 0.25, 0.9, '#9e9686');
   box(door.x, -0.125, hd + 0.7, door.w, 0.25, 0.4, '#b6aa92');
-  box(0, 0.025, 0, hw * 2 - 0.3, 0.05, hd * 2 - 0.3, '#b6aa92', false);
   // Furnace remains on its existing output axis. A solid guard keeps visitors out of the rail flight.
   box(0, 0.6, hd - 1.65, 3.3, 1.2, 0.16, '#536567');
   box(-1.65, 0.6, hd - 0.85, 0.16, 1.2, 1.6, '#536567');
@@ -49,6 +50,18 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   fire.material = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#7a310c', emissive: '#ff5a0a', emissiveIntensity: 0.8 }),
   );
+  // Furnishing: one merged mesh (the floor, bench, anvil, logs, rails...) and one for the lanterns' glass; the glass
+  // shares the furnace mouth's material, so neither adds a shader program.
+  const kit = workshopKit(hw, hd);
+  const furnishing = new THREE.Mesh(kit.geometry, kitMaterial);
+  furnishing.castShadow = furnishing.receiveShadow = true;
+  g.add(furnishing);
+  const panes = new THREE.Mesh(
+    mergeGeometries(kit.glass.map((p) => new THREE.BoxGeometry(0.22, 0.28, 0.22).translate(p.x, p.y, p.z)))!,
+    fire.material,
+  );
+  g.add(panes);
+  for (const k of kit.solids) solidSpecs.push({ ...k, room: false });
   const chair = seatMesh();
   chair.position.set(2.7, 0, 0.3);
   g.add(chair);

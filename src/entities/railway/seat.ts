@@ -348,6 +348,8 @@ const chairGeometry = merged([
 ]);
 const chairMaterial = flat('#ffffff').clone();
 chairMaterial.vertexColors = true;
+/** The stool's vertex-coloured material, for other kit props to share (one program). */
+export const kitMaterial = chairMaterial;
 /** A plain low stool. Its matching solid is owned by the host surface. */
 export function seatMesh() {
   const g = new THREE.Group();
