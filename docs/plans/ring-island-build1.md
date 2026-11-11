@@ -1023,6 +1023,7 @@ option was built (R2a). What is left:
    service (worst waits about 91–97 s under heavy asks, bounded at 105 s), not one minute; a fourth train is one
    number in the catalog and brings the even gap from 46 s to 35 s. Recommended: ship three, read R3a's printed worst
    waits, and add the fourth only if he asks for the minute (call 47).
+   **Answer (owner, 10 November): "3 for now".**
 2. **The Railhead's name after the Meet.** (owner) He kept it as the Meet's halt; "Railhead" stops being true when the
    line runs through. Placeholder until he names it.
 3. **Which side is the Pier's platform once the pier is double track?** (designer) Today's platform and rack stand
