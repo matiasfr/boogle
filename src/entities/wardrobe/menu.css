@@ -3,8 +3,10 @@
 .pause-card[data-page='you'] .pause-sub {
   display: none;
 }
+/* No dim on You: you're picking Buddy's colour and clothes, so he shows in true colour; the panel alone says paused.
+   Options keeps the dim; pause.css fades between them. */
 dialog.pause[data-page='you'] .pause-dim {
-  background: color-mix(in srgb, var(--glass) 35%, transparent);
+  background-color: transparent;
 }
 dialog.pause[data-page='you'][open] {
   place-items: center start;

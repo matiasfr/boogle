@@ -30,6 +30,7 @@ dialog.pause::backdrop {
   inset: 0;
   background: var(--glass);
   animation: pause-fade 200ms ease-out;
+  transition: background-color 200ms ease-out; /* none on You (wardrobe/menu.css): fade, don't pop, between pages */
 }
 .pause-card {
   position: relative;

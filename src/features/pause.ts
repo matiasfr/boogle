@@ -608,7 +608,12 @@ export function openPause(start?: Page) {
   card.querySelector('.pause-title')!.textContent = getRoomId();
   dlg.showModal(); // after openModal: its setPadModal keeps gamepad.ts from pulling focus off the buttons
   startId = startPage()?.id ?? null;
+  // The dim fades between pages (none on You), not on open: skip the fade from the page left last time.
+  const dim = dlg.querySelector<HTMLElement>('.pause-dim')!;
+  dim.style.transition = 'none';
   show(start ?? startId ?? OPTIONS);
+  void getComputedStyle(dim).backgroundColor;
+  dim.style.transition = '';
   return true;
 }
 

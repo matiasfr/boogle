@@ -6,6 +6,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-10 · no dim behind the pause view's You page ([entry](#d-2026-11-10-no-dim-behind-the-pause-view-s-you))
 - 2026-11-10 · The Boogler is an entrepreneur; the mayor entry is archived ([entry](#d-2026-11-10-the-boogler-is-an-entrepreneur))
 - 2026-11-10 · dress Buddy from Pause: You is Pause's first page; the curio shelf is display only ([entry](#d-2026-11-10-dress-buddy-from-pause-you-is))
 - 2026-11-04 · remove The Boogler's relationship progression now ([entry](#d-2026-11-04-remove-the-boogler-s-relationship-progression))
@@ -24,6 +25,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 
 ## Decided
 
+- <a id="d-2026-11-10-no-dim-behind-the-pause-view-s-you"></a>**2026-11-10, no dim behind the pause view's You page** (owner, a P3 bug from the live game in Safari: "when i hit escape there is a dull filter which doesnt make sense on the customization screen"). On You the world behind the panel is not dimmed, so Buddy shows the colour and clothes you pick as they really look; the panel alone says the game is paused. Options and the other pages keep the dim. Overrules the "lighter dim" part of [agent call](agent-calls.md#characters-cosmetics-and-story) 19 of the pause-wardrobe review.
 - <a id="d-2026-11-10-the-boogler-is-an-entrepreneur"></a>**2026-11-10, The Boogler is an entrepreneur** (owner, on the rulings page, 10 November; "[The Boogler] Mayor or entrepreneur: Entrepreneur; the mayor entry is archived"), as recommended. The Design Table lines are in the core loop topic: [the call on the Design Table](decisions-core-loop.md#d-2026-11-02-the-call-on-the-design-table). The "The Boogler is the mayor" entry is in the [archive](decisions-archive.md#archive-characters-cosmetics-and-story).
 - <a id="d-2026-11-10-dress-buddy-from-pause-you-is"></a>**2026-11-10, dress Buddy from Pause: You is Pause's first page; the curio shelf is display only** (owner, answering [pause-wardrobe](brainstorms/pause-wardrobe.md#owner-questions-answered-10-november)'s five questions). (1) Pause opens on a **You** page with Options one button (RB on a pad, Esc on a keyboard), not a second entry point or tabs. (2) A new player sees You first, **even when empty** (every row reads Nothing), overruling the design review's "Options until the first wearable"; it never remembers the last page, H still opens Controls and Place and builds without a wardrobe keep today's main list. (3) The curio shelf and the finders' bay lose their four Swap prompts and are display only (the shop rail keeps its own). (4) Items you don't own show **nothing**, no hollow pips: the pips are Nothing plus what you own. (5) Buddy turns to face you when the page opens. Left and right cycle each slot, applied at once; partners see each step through the usual presence. No wire, op, save or `WORLD_NS` change.
 
