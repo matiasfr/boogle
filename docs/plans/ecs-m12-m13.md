@@ -180,7 +180,28 @@ tick; no `WORLD_NS` bump (no step below changes a component, an op, a packet or 
   `no-restricted-syntax` rule: no export named `RailwayInspection`, `buildState`, `Railway`, `railwayView` or
   `validateRail…` under `src/`.
 
-## 4. Steps
+## 4. One home for each piece of logic
+
+Owner, 11 November: the ownership note "should encourage good architecture calls, and code deduplication". So a step
+that touches a copy removes it, and is not done while the copy remains. Each row is part of the step named.
+
+| Logic | Copies today | The one home | Step |
+| --- | --- | --- | --- |
+| What a view reads to draw (trains, halts, line 2) | the views, and hand copies of their reads in `test/railway-m10a-views.test.ts` and `railway-m10c-views.test.ts`, with frozen adapter twins in `test/helpers/railway-m10a-twins.ts` | the view file for a plain row read; a query in `src/sim/railway-queries-*.ts` for anything with arithmetic, tested there once. No test restates a view's read | X3 deletes the copies and the twins file; a copied read that has arithmetic is reported to M12e, which moves it into the domain's query file |
+| "Is the railway ready", the world, tick and pid in a page tool | 46 evals repeat the typed `import()` of `state.ts`; 9 files and `dev/look/lib.ts` each carry a wait-until-ready loop | `dev/look/rail-read.ts`: `rw()` (the world, read now), `railAt()`, `railPid()`, `railReady(ms)`, and the row readers and queries re-exported | M12c creates it (and proves with one eval that a relative import of it resolves in the page; if not, it is `src/debug/rail-read.ts`, loaded by `import()`); D1 to D4 use it in every file they touch; M13c in every file it retargets |
+| The session's scalars | `inspection()`, the `read` facade and the view's spread | `adapter.read` (with `debug()`); the view inspection spreads it | M12c, M12e |
+| Once-a-frame values in the adapter | three hand-written memos (`moves`, `frameTick`, `stalledNow`) and `inspect()`'s fourth | one `perFrame(read)` helper in the session, used by all three | M12e (it deletes the fourth; the trace holds the behaviour) |
+| The 18 movement tunables | `RailwayMovement`, `railMovement`, and the field-by-field `sameMovement` | `railMovement` and a comparison over its keys | M12e |
+| Waiting on a train at the forge; a back that is only a load | `waitsForTrain` and `waitsForTrainOn` in `forge-offer.ts`; restated `onlyALoad` in `test/railway-m10e-review.test.ts` | `waitsForTrainOn` (renamed `waitsForTrain`), `onlyALoadIn` in `back-down.ts` | X3 and X4 drop the tests' copies; M12e deletes the old function |
+| The town's facts | `townRead(s: Railway)` and `townReadOf` in `src/sim/town-facts.ts`; `townReadOfWorld` in `src/entities/town/town-read.ts` | `townRead(w)` in `src/sim/town-facts.ts` | M12b-1 |
+| The load check | the world checks in `railway-check*.ts` and the five `validateRail…` with `railwayInvariant`; `railway-live.ts` runs both | `railwayCheck(w)` and its four domain files; a build-out's check in its own file, called from it | M12b-1 (tests), M12b-2 (source) |
+| The 33 facts | on `Railway` in `railway{,-line,-line2,-works,-trains}.ts` and on the world in the query files; `railRingOpen(s)` beside `ringOpen(w)` | `src/sim/railway-queries*.ts` | M12b-2 |
+| Driving a world in a test; seeds | `railway-live.ts` (the proxy) and `railway-drive.ts`; `test/helpers/railway-{q2,trains,works}.ts` beside `src/sim/railway-seed-*.ts` | `railway-drive.ts` and the seed files, through `test/helpers/rail.ts` | X1, X2 (callers), M12b-1 (files) |
+| A tool for each beat | a Place eval or bot and its `railway-*` twin | the `railway-*` eval, the railway bot's segment or the rail seed | M13a names each pair, M13b deletes Place's |
+| The level check's line constants | copied from Place's layout into `dev/level/check.ts` | imported from `src/sim/railway-*-layout.ts` and `src/place/layout.ts`; the tool holds no layout number | M13d |
+| The stations of each line | `LINE1_STATIONS` and `LINE2_STATIONS` in the sim's layouts, and `LINKS[n].stations` in `src/place/layout.ts` (the 11 November outage: v27 added Q7 to one only; the test's `OFF_PLACE` list papers over it) | the sim's layout files; `src/place/layout.ts` derives its rows from them, in metres | M13g |
+
+## 5. Steps
 
 Sizes: **S** under half a session, **M** one session, **L** one long session, one implementer each. **Review:** "independent"
 means a fresh reviewer and `npm run ship-queue -- <worktree> --wait --reviewed "<npm run review-stamp> …"`, required
@@ -203,6 +224,7 @@ step branches from `origin/main`, ships alone and leaves `npm run check` green.
 | M13d | The level check onto railway seeds | M | Low (tooling) | M13a | everything but M13c's `dev/economy` files |
 | M13e | Delete `src/proto/place` and the entry | M | Medium, code review, **live boot** | M13b, c, d | M12b |
 | M13f1 to f3 | Owners for the moved modules | S each | Medium, looks | M13e | each other |
+| M13g | One list of stations | M | Medium, code review, **live boot** | M13e | M13f1, f3 |
 
 ### The tests (start now; no file under `src/` is edited)
 
@@ -283,7 +305,9 @@ typecheck`, `npm run lint`.
       frame memo's inspection half, `stats.reads`' inspect counters, `RailwayInspection`, and every import of an old
       fact or `Railway`; from `state.ts`, `view.ts`, `index.ts`: the legacy door; from
       `src/world/railway-replicate.ts`: `railwayAt` and its two imports; from `dev/lint/policy.ts`: the empty list,
-      plus the export rule of section 3; `test/helpers/railway-m10a-twins.ts` if X3 left it.
+      plus the export rule of section 3; `test/helpers/railway-m10a-twins.ts` if X3 left it. With it, section 4's
+      rows for this step: one `perFrame` helper for the three memos, `sameMovement` over the keys, the old
+      `waitsForTrain` deleted, and any view arithmetic X3 reported moved into its query file (that part is `src/sim`).
   - **Done:** `grep -rE "inspectRailwayLegacy|RailwayInspection|railwayAt|\.inspect\(\)\.(carry|line2|stations)" src
     dev test server` is empty; `src/adapters` and `src/entities` import nothing that takes a `Railway`.
   - **Checks:** `npm run check:full`; the M12 trace unchanged; `npm run loop -- run --json` hash equal to main
@@ -296,7 +320,7 @@ typecheck`, `npm run lint`.
       rewritten (`rg -l "adapters/railway.ts"`); `railway-marks.ts` unchanged; `docs/agents/sync.md`'s Server
       entry names the new files.
   - **Done:** `src/adapters/railway.ts` does not exist; the three files are within their limits; no behaviour moved
-    (the diff is cuts and imports).
+    (the diff is cuts and imports: the dedupes of section 4 landed in M12e, so this step stays mechanical).
   - **Checks:** `npm run check:full`; the M12 trace and `test/railway-adapter.test.ts` unchanged and green; `npm
     run load` on three rows (1, 2 and 4 players) with corrections and press-to-effect no worse than main in the same
     session; `npm run playthrough -- --players 2 --to t1-done`.
@@ -378,7 +402,20 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
       equal at `spawn`, `town`, `forge`; `npm run level-check` equal; a look at `--rail-seed trains-on` with a seated
       rider (f1), the village (f2). Each is startup code: the live-boot rule of M13e applies.
 
-## 5. The unit suite's time
+- [ ] **M13g. One list of stations.** _M, Medium. After M13e (Place's readers are gone); not beside f2 (`src/place`)._
+      `src/place/layout.ts`'s `LINKS[n].stations` is built from `LINE1_STATIONS` and `LINE2_STATIONS`
+      (`src/sim/railway-line-layout.ts`, `railway-line2-layout.ts`) with only what is the land's own (a platform's
+      offset, a sign) kept beside it by station id. Start by listing the 18 `LINKS[0]` and `LINKS[1]` readers under
+      `src` and what each takes; a station the land cannot place (Q7 on the piled deck) carries that in its sim row,
+      not in a test's list. `test/railway-station-seats.test.ts` loses `OFF_PLACE` and keeps the boot's seat check.
+  - **Done:** adding a station is one edit; no file under `src`, `dev` or `test` lists station ids a second time.
+  - **Checks:** `npm run check` (the level check reads the layout: reports equal to main); `node dev/live-boot.ts`
+    on a local build; the bench census equal at `spawn`, `town`, `forge`; a look at `--rail-seed deck-laid` (Q7's
+    frame and box). Startup code: the live-boot rule of M13e applies after the ship.
+  - **Reviewer attacks:** a station's position moving by a rounding of cm to m; a reader that indexed `stations` by
+    position and now meets Q7.
+
+## 6. The unit suite's time
 
 The suite runs 540 to 570 s in CI against a 20-minute limit. The conversion must take time out, not add it.
 
@@ -439,7 +476,11 @@ building on it." So the architecture choices are made, not asked. For [agent-cal
 7. **M12f gets the independent review though its path does not require one.** Why: it moves the predictor.
 8. **`test/railway-station-seats.test.ts` stays** as the boot's unit guard, with `dev/live-boot.ts`. Why: no still
    shows a startup throw; M13e leans on both.
-9. **M13 is six steps, tools before source,** and its proof is bot segments, not the full bot.
+9. **M13 is seven steps, tools before source,** and its proof is bot segments, not the full bot.
+10. **A step that touches a copy removes it** (section 4's table): the page tools get one reader module, the
+    adapter one per-frame helper, and the station list one home in the sim's layouts (M13g, new scope that the
+    outage paid for). Why: the owner's clarification, and each copy here has already drifted once or been
+    guarded by a test instead of being removed.
 
 ## Open questions
 

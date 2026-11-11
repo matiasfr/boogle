@@ -341,7 +341,7 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
 | M11 | The server and its tools read the world | High | M8, T5 to T7 | |
 | M12 | The predictor and the mirror on worlds; the adapter split | High | M10, M11 | a and b done; the rest as M12c to M12f in [ecs-m12-m13](ecs-m12-m13.md) |
 | M12b | Delete the read model (new) | High, deletions | M8b, T1 to T7, M12 | two steps in [ecs-m12-m13](ecs-m12-m13.md) |
-| M13 | Delete Place | Medium to high | M7 | independent of M8 to M12b; six steps in [ecs-m12-m13](ecs-m12-m13.md) |
+| M13 | Delete Place | Medium to high | M7 | independent of M8 to M12b; seven steps in [ecs-m12-m13](ecs-m12-m13.md) |
 
 ### Lane A: the sim
 
