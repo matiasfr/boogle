@@ -112,8 +112,7 @@ The room's story is cut into acts (owner, 11 November: [the game has acts](../de
 show), Act 2 after. Nothing is saved or sent. `src/features/acts.ts` shows the card; the card is a variant of the moment
 banner (`src/ui/moment-banner.ts`): a quiet full-screen title, the number small above, the title light and widely
 spaced, a thin rule, a slow fade with a slight drift, no panel, no input taken. Only "Act 1 · The beginning" is titled
-(the owner's words); an act he has not titled shows "Act N" and, under it, "Next stop: (a built place)" (Act 2: the
-Pier).
+(the owner's words); an act he has not titled shows "Act N" alone, with no line under it ("keep it a bit mysterious").
 
 - **First visit:** at the landing (the fall's impact) a 4.5 s aerial move of your own camera, high ahead of where Buddy
   lies, drifting in behind Buddy, with the card over it; it is the same slot for a late joiner, who sees the room's
@@ -122,7 +121,7 @@ Pier).
 - **A live change** (the room lays Q5): every page's existing Far Head shot (5 s) carries the card from 1.5 s in.
   No second camera move. The act waits for any other full-screen moment: a pull-out, a reward card, the crossing
   finale's banner, the open pause view (`momentBusy`).
-- **Returning player:** the act is the first line of the Welcome back card, not a second full-screen card.
+- **Returning player:** the act ("Act 2") is the first line of the Welcome back card, not a second full-screen card.
 - **Memory:** each browser keeps the highest act shown in the room's visit memory and shows the current act once when it
   goes up. One procedural sting (`actSting`), silent within 10 s of a fanfare (Far Head's show plays one).
 - Acts 3 to 5 are not in the code: an act has a card only when its opening content is built.

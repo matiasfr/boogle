@@ -57,7 +57,7 @@
 }
 
 /* The act card: the same element as a quiet full-screen title over a camera move (src/features/acts.ts). No panel and no
-   input: the number small above, the title light and widely spaced, a thin rule, one line under it; a slow fade with a
+   input: the number small above, the title light and widely spaced, a thin rule; a slow fade with a
    slight drift up, generous empty space around it. */
 .moment-banner.act {
   display: flex;
@@ -111,10 +111,6 @@
   height: 1px;
   margin: 0.45em auto 0.1em;
   background: linear-gradient(90deg, transparent, #fff 25%, #fff 75%, transparent);
-}
-.moment-banner.act span {
-  font: 400 clamp(13px, 1.7vw, 19px) / 1.2 var(--font-body);
-  letter-spacing: 0.18em;
 }
 @media (prefers-reduced-motion: reduce) {
   .moment-banner.act,
