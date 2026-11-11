@@ -1,4 +1,5 @@
 // Shared local pre-push gate. CI remains the full check on the exact branch head.
+import './node-version.ts'; // first: re-runs under the pinned Node
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

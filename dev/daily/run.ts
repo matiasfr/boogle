@@ -1,4 +1,5 @@
 // Foreground launchd job. A crash deliberately leaves the lock for inspection: children may still be running.
+import '../node-version.ts'; // first: re-runs under the pinned Node
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

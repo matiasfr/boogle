@@ -50,3 +50,18 @@ jobs:
           else
             gh issue create --title 'Nightly long unit tests are failing' --label unit-long --body "$body"
           fi
+
+  # The way ci.yml's red-main closes its issue: once every shard of a night is green.
+  green:
+    needs: unit-long
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - run: |
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          num=$(gh issue list --label unit-long --state open --limit 1 --json number --jq '.[0].number // empty')
+          [ -z "$num" ] || gh issue close "$num" --comment "Green again: $run"

@@ -13,9 +13,13 @@ on:
 permissions:
   contents: read
 
+# A newer run cancels an older one in its group, queued or running, on a PR and on main: main's runs (one dispatched
+# per merge) only need a verdict on the newest commit, and older ones held runners from ship branches. A ship/** push
+# run is never cancelled: automerge.yml merges on that exact run. Deploys and the smoke are other workflows with their
+# own groups and are never cancelled by this.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
 
 jobs:
   changes:
@@ -223,7 +227,9 @@ jobs:
   # the owner) and closes it when main is green again. `npm run heartbeat` leads with the same verdict.
   red-main:
     needs: [changes, docs, lint, build, unit, registry, server, net]
-    if: always() && github.ref == 'refs/heads/main' && github.repository == 'matiasfr/boogle'
+    # Not in a cancelled (superseded) run: the newer run on main settles the verdict, so a cancelled one never opens,
+    # comments on or closes the issue, even if a job had failed before it was cancelled.
+    if: always() && !cancelled() && github.ref == 'refs/heads/main' && github.repository == 'matiasfr/boogle'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:

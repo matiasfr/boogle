@@ -3,6 +3,7 @@
 // reached Node literally on Windows, matched nothing and passed with 0 tests. An empty match now fails.
 // Extra arguments (npm run test:unit -- --test-name-pattern=x) go to node --test ahead of the files. `--ci` (CI's unit
 // job) and `--long` (npm run test:long, nightly) pick the run's settings (./test-env.ts).
+import './node-version.ts'; // first: re-runs under the pinned Node
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { testEnv } from './test-env.ts';

@@ -67,7 +67,7 @@ import {
   works as worksRow,
   type Seed,
 } from './helpers/rail.ts';
-import { fuzzSeeds, fuzzTicks } from './helpers/fuzz.ts';
+import { FUZZ_LIGHT as LIGHT, fuzzSeeds, fuzzTicks, fuzzTrains } from './helpers/fuzz.ts';
 
 const LINE2 = 1;
 /** Line 2's trains: A at the Village (up), B at Far Head (down) and, since v27, C at the Quarry (down). */
@@ -193,7 +193,6 @@ test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to t
  * random asks; v27's third train (or an even-spacing hold) is to. */
 const WAIT_BOUND = 1050;
 const FUZZ_TICKS = fuzzTicks(3000);
-const LIGHT = process.env.FUZZ_LIGHT === '1';
 /** Q6's kit off the train and its logs and rails into the frame, so the pier opens a few hundred ticks on. */
 function fundQ6(w: Seed) {
   assert.equal(act(w, 'a', 'rail.pack'), 1);
@@ -963,7 +962,7 @@ const ISLAND_SEEDS: readonly (readonly [number, number])[] = LONG_SEEDS.length
       [0xc0ffee, TRAIN_HEAD_PCT],
       [0x777, 0],
     ];
-const ISLAND_LINE = { ...V, trains: Number(process.env.FUZZ_TRAINS ?? V.trains) };
+const ISLAND_LINE = { ...V, trains: fuzzTrains(V.trains) };
 for (const [seed, headPct] of ISLAND_SEEDS)
   test(`fixture fuzz ${seed.toString(16)} at ${headPct}%: ${ISLAND_LINE.trains} trains to the open island, the worst wait each way`, (t) => {
     const { worst, riderWorst, restores } = fixtureFuzz(
