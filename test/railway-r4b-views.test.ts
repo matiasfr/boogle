@@ -1,11 +1,11 @@
-// R4b, the railhead and the gap (views; docs/plans/ring-island-build1.md, step 4b): the reads the railhead view and the
-// lookout make through the read facade equal the inspection they replace, at the ring seeds, frame by frame; and the
-// railhead's numbers (src/entities/railway/railhead-shape.ts) agree with the sim's (RING_HEAD) and keep the step's
+// R4b, the railhead and the gap (views; docs/plans/ring-island-build1.md, step 4b): the ring seeds put the railhead
+// where the view draws it, through the read facade's world; and the railhead's numbers (src/entities/railway/railhead-shape.ts) agree with the sim's (RING_HEAD) and keep the step's
 // promises: every metre of line 2 a train can stand on has its deck drawn at every footing count, the walkway under a
 // moving platform's old place never leaves a player over the sea, the kit slides a bent in about 3 s, and the buoys lift
 // where RING_BUOYS says. The views need three.js and a DOM, so their reads are reproduced here as written
 // (railhead-view.ts's `refresh`, the lookout's `readLifted`); a change to a view's read is a change to its function
-// below. Modelled on test/railway-r4a-views.test.ts.
+// below. The differential proof against `inspect()` went with it (X2 of docs/plans/ecs-m12-m13.md). Modelled on
+// test/railway-r4a-views.test.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRailwayAdapter, railMovement } from '../src/adapters/railway.ts';
@@ -22,7 +22,6 @@ import { buildSeedWorld, type SeedStage } from './helpers/rail.ts';
 import { aperture } from '../src/sim/railway-rows.ts';
 import { q7Laid, ringHead } from '../src/sim/railway-queries.ts';
 import { line2Trains } from '../src/sim/railway-queries-line2.ts';
-import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE2, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import {
   RING_BUOYS,
@@ -120,30 +119,6 @@ function newReads(adapter: Adapter) {
     head,
     lifted: RING_BUOYS.map((_, i) => buoyLifted(i, head, joined)),
   };
-}
-function oldReads(adapter: Adapter) {
-  const s = adapter.inspect();
-  const head = s.ring.head,
-    joined = s.ring.joined >= 0;
-  const opened = s.line2.completed >= LINE2_STATIONS.length;
-  return {
-    opened,
-    set: opened ? s.ring.set : 0,
-    rack: opened ? (s as unknown as { ring: { rack: number } }).ring.rack : 0,
-    joined: opened && joined,
-    head,
-    lifted: RING_BUOYS.map((b) => ('start' in b ? true : 'head' in b ? head >= b.head : joined)),
-  };
-}
-for (const stage of ['crossing-done', 'deck-laid', 'gap-footed', 'leaf-raised', 'ring-joined'] as const) {
-  test(`the railhead and lookout reads equal the inspection they replace at ${stage}, over a run`, () => {
-    const c = client(stage);
-    for (let i = 0; i < 300; i++) {
-      c.pump();
-      assert.deepEqual(newReads(c.adapter), oldReads(c.adapter), `${stage} tick ${i}`);
-    }
-    c.adapter.dispose();
-  });
 }
 test('the ring seeds put the railhead where the view draws it', () => {
   const at = (stage: SeedStage) => newReads(client(stage).adapter);
