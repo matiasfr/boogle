@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # npm run heartbeat [-- --all]: everything an orchestrator checks each round, in one read-only report: main's CI
 # verdict first (RED MAIN with its fix PR and issue), model mode, main,
-# open pull requests, the last CI, deploy and smoke runs, recent play sessions, the bot queue, the nightly jobs and their
-# open issues, the ship lock, machine load and the worktrees holding unmerged or uncommitted work (those active in the
-# last 48 hours and a count of the rest; --all lists every one).
+# open pull requests, the last CI, deploy and smoke runs, recent play sessions, device runs not yet pulled, the bot
+# queue, the nightly jobs and their open issues, the ship lock, machine load and the worktrees holding unmerged or
+# uncommitted work (those active in the last 48 hours and a count of the rest; --all lists every one).
 set -uo pipefail
 all=0
 for arg in "$@"; do
@@ -44,6 +44,8 @@ for w in ci.yml deploy.yml deploy-server.yml smoke.yml; do
 done
 say "Play sessions (newest first; a WORLD_NS bump waits while the owner is mid-session)"
 (cd "$main" && node dev/playtest/cli.ts 2>&1 | head -6 | cut -c1-160)
+# Device runs (npm run device) are bot sessions, so they are not in the list above; unpulled ones can be evicted.
+(cd "$main" && [ -f dev/device/cli.ts ] && node dev/device/cli.ts waiting 2>&1 | head -2 | cut -c1-160)
 say "Bot queue"
 node -e '
 const fs = require("fs"), dir = process.env.BOOGLE_BOT_QUEUE_DIR ?? `/tmp/boogle-bots-${process.getuid()}`;

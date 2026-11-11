@@ -7,6 +7,9 @@
 //       the device runs on the server, newest first: code, label, device, build, state, pulled or not
 //   npm run device -- pull <run id or its last six characters>      one run -> .look/device/<id>/
 //   npm run device -- pull --new                                     every run not yet pulled
+//   npm run device -- new ... --wait      also blocks until that run finishes (up to 30 minutes), then pulls and prints it
+//   npm run device -- baseline <code>     marks a pulled run as the Mac's baseline for its suite (~/.boogle/device/baseline/)
+//   npm run device -- waiting             one line for npm run heartbeat: device runs on the server not yet pulled
 //   The board link `https://boogle.club/?device=new` needs no command: the page makes its own id (self-minted).
 //
 // Reads need REPORT_TOKEN (scripts/report-token.ts), like `npm run playtest`; the device never has it. Server:
@@ -18,8 +21,10 @@ import { ROOT } from '../../scripts/report-token.ts';
 import { cleanLabel, makeRunId, SUITE_NAMES, shortCode } from '../../src/debug/device/id.ts';
 import { OUT as PLAYTEST_OUT, playdata, resolveSession } from '../playtest/fetch.ts';
 import { parseSession, str } from '../playtest/read.ts';
-import { readDevice } from './read.ts';
+import { loadBaseline, loadBenchHistory, saveBaseline } from './baseline.ts';
+import { readDevice, type DeviceResult } from './read.ts';
 import { pasteLine, report } from './report.ts';
+import { WAIT_MS, planPull, waitForRun } from './runs.ts';
 
 const OUT = path.join(ROOT, '.look/device');
 const SITE = 'https://boogle.club';
@@ -43,14 +48,30 @@ function option(name: string): string | undefined {
 const dirOf = (id: string) => path.join(OUT, id);
 const pulled = (id: string) => fs.existsSync(path.join(dirOf(id), 'session.jsonl'));
 const minted = (id: string) => fs.existsSync(path.join(dirOf(id), 'run.json'));
+const resultFile = (id: string) => path.join(dirOf(id), 'result.json');
+/** What is on disk for a run: pulled, finished when pulled, and when (the copy's age, for "has the server more?"). */
+function local(id: string) {
+  try {
+    const r = JSON.parse(fs.readFileSync(resultFile(id), 'utf8')) as { complete?: unknown };
+    return { pulled: true, complete: r.complete === true };
+  } catch {
+    return { pulled: pulled(id), complete: false };
+  }
+}
+const pulledAt = (id: string) => {
+  try {
+    return fs.statSync(path.join(dirOf(id), 'session.jsonl')).mtimeMs;
+  } catch {
+    return 0;
+  }
+};
 
-function makeLink() {
+function makeLink(): string {
   const suite = option('--suite') ?? 'quick';
   if (!(SUITE_NAMES as readonly string[]).includes(suite)) throw new Error(`suite is one of ${SUITE_NAMES.join(', ')}`);
   const label = cleanLabel(option('--label'));
   const query = (option('--query') ?? '').replace(/^[?&]/, '');
   const site = (option('--site') ?? SITE).replace(/\/$/, '');
-  if (flag('--wait')) throw new Error('--wait is step 2 of the plan: not built yet');
   const id = makeRunId();
   const link = new URL(`${site}/`);
   link.searchParams.set('device', id);
@@ -64,6 +85,7 @@ function makeLink() {
   );
   console.log(url);
   console.log(`run ${shortCode(id)}: open it on the device, tap Run; then: npm run device -- pull ${shortCode(id)}`);
+  return id;
 }
 
 type Row = Awaited<ReturnType<ReturnType<typeof playdata>['list']>>[number];
@@ -83,7 +105,7 @@ async function list(server: ReturnType<typeof playdata>) {
         (cleanText(str(m.browser)) || '?').padEnd(8),
         (cleanText(str(m.build)) || '?').padEnd(12),
         m.state === 'done' ? `done ${String(m.pass ?? '?')}/${String(m.total ?? '?')}` : cleanText(str(m.state)) || '?',
-        pulled(s.id) ? 'pulled' : 'not pulled',
+        pulled(s.id) ? (local(s.id).complete ? 'pulled' : 'pulled (cut off)') : 'not pulled',
         m.self === true ? 'self-minted' : '',
       ]
         .join('  ')
@@ -102,19 +124,37 @@ async function pullOne(server: ReturnType<typeof playdata>, row: Row) {
     parseSession(row.id, fs.readFileSync(path.join(dirOf(row.id), 'session.jsonl'), 'utf8')),
     minted(row.id),
   );
-  fs.writeFileSync(path.join(dirOf(row.id), 'result.json'), JSON.stringify(result, null, 2) + '\n');
-  fs.writeFileSync(path.join(dirOf(row.id), 'report.md'), report(result));
+  fs.writeFileSync(resultFile(row.id), JSON.stringify(result, null, 2) + '\n');
+  fs.writeFileSync(
+    path.join(dirOf(row.id), 'report.md'),
+    report(result, { baseline: loadBaseline(result.suite), bench: loadBenchHistory() }),
+  );
   console.log(pasteLine(result));
   console.log(`  ${path.relative(ROOT, path.join(dirOf(row.id), 'report.md'))}`);
+  return result;
 }
 
 async function pull(server: ReturnType<typeof playdata>) {
   const all = flag('--new');
   const rows = (await server.list()).filter((s) => s.card === 'device');
   if (all) {
-    const fresh = rows.filter((s) => !pulled(s.id));
-    if (!fresh.length) return console.log('No device runs waiting.');
-    for (const s of fresh.reverse()) await pullOne(server, s);
+    const plan = planPull(rows, local, pulledAt, Date.now());
+    if (plan.running.length)
+      console.log(
+        `${plan.running.length} still running, left for later: ${plan.running.map((s) => shortCode(s.id)).join(', ')}`,
+      );
+    if (!plan.pull.length) return console.log('No device runs waiting.');
+    // One bad run (a download that fails, a session that will not parse) must not stop the rest.
+    let failed = 0;
+    for (const s of plan.pull) {
+      try {
+        await pullOne(server, s);
+      } catch (e) {
+        failed++;
+        console.error(`run ${shortCode(s.id)}: ${cleanText(e instanceof Error ? e.message : String(e))}`);
+      }
+    }
+    if (failed) throw new Error(`${failed} of ${plan.pull.length} runs could not be pulled`);
     return;
   }
   const want = args[0];
@@ -122,15 +162,87 @@ async function pull(server: ReturnType<typeof playdata>) {
   await pullOne(server, resolveSession(rows, want));
 }
 
+/** Block until the run finishes, then pull and print it. A run that went quiet part-way is pulled as cut off. */
+async function wait(server: ReturnType<typeof playdata>, id: string) {
+  console.log(`waiting for run ${shortCode(id)} (up to ${WAIT_MS / 60_000} minutes; Ctrl-C to stop, pull later)...`);
+  let last = '';
+  const res = await waitForRun(id, {
+    list: () => server.list(),
+    now: Date.now,
+    sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    tick: (seen, ms) => {
+      if (seen === last) return;
+      last = seen;
+      console.log(
+        `  ${Math.round(ms / 1000)} s: ${seen === 'none' ? 'nothing yet' : seen === 'started' ? 'the run has started' : 'finished'}`,
+      );
+    },
+  });
+  if (res.status === 'timeout')
+    throw new Error(
+      `run ${shortCode(id)} did not arrive in ${WAIT_MS / 60_000} minutes; later: npm run device -- pull ${shortCode(id)}`,
+    );
+  if (res.status === 'error') throw new Error(`stopped waiting: ${res.error}`);
+  if (res.status === 'cut-off')
+    console.log('The run stopped sending before it finished (tab closed or device locked); pulling what arrived.');
+  await pullOne(server, res.session);
+}
+
+/** Marks a pulled run as the baseline for its suite. Local only: the run must be on disk (pull it first). */
+function baseline() {
+  const want = args[0];
+  if (!want) throw new Error('baseline <run id or its last six characters> (a pulled run)');
+  const ids = fs.existsSync(OUT) ? fs.readdirSync(OUT).filter((d) => fs.existsSync(resultFile(d))) : [];
+  const hits = ids.filter((id) => id === want || id.endsWith(want));
+  if (hits.length > 1) throw new Error(`"${want}" matches ${hits.length} pulled runs; use more characters`);
+  const id = hits[0];
+  if (!id) throw new Error(`no pulled run like "${want}" in .look/device/: npm run device -- pull ${want} first`);
+  const result = JSON.parse(fs.readFileSync(resultFile(id), 'utf8')) as DeviceResult;
+  const file = saveBaseline(result);
+  fs.writeFileSync(
+    path.join(dirOf(id), 'report.md'),
+    report(result, { baseline: loadBaseline(result.suite), bench: loadBenchHistory() }),
+  );
+  console.log(
+    `Baseline for suite ${result.suite}: run ${result.code}${result.label ? ` (${result.label})` : ''}, ${result.device || 'device'}, build ${result.build || '?'}.`,
+  );
+  console.log(`  ${file}`);
+  if (result.selfMinted) console.log('  (self-minted: the numbers are what the page sent)');
+}
+
+/** One line for the heartbeat; never an error exit, since the heartbeat reads many things. */
+async function waiting() {
+  try {
+    const rows = (await playdata().list()).filter((s) => s.card === 'device');
+    const plan = planPull(rows, local, pulledAt, Date.now());
+    const codes = plan.pull.map((s) => shortCode(s.id)).join(', ');
+    console.log(
+      `device runs not pulled: ${plan.pull.length}${codes ? ` (${codes}); npm run device -- pull --new` : ''}${plan.running.length ? `; ${plan.running.length} still running` : ''}`,
+    );
+  } catch (e) {
+    console.log(
+      `device runs not pulled: unknown (${cleanText(e instanceof Error ? e.message : String(e)).slice(0, 80)})`,
+    );
+  }
+}
+
 try {
-  if (cmd === 'new') makeLink();
+  if (cmd === 'new') {
+    const wantWait = args.includes('--wait');
+    // Fail before making a link nobody will wait for when the Mac cannot read the server.
+    const server = wantWait ? playdata() : null;
+    flag('--wait');
+    const id = makeLink();
+    if (server) await wait(server, id);
+  } else if (cmd === 'baseline') baseline();
+  else if (cmd === 'waiting') await waiting();
   else if (cmd === 'list' || cmd === 'pull') {
     const server = playdata();
     if (cmd === 'list') await list(server);
     else await pull(server);
   } else {
     console.error(
-      'npm run device -- new [--suite quick] [--label x] [--query a=b] | list | pull <id|code> | pull --new',
+      'npm run device -- new [--suite quick] [--label x] [--query a=b] [--wait] | list | pull <id|code> | pull --new | baseline <id|code> | waiting',
     );
     process.exit(cmd ? 1 : 0);
   }

@@ -2,6 +2,7 @@
 // the numbers are and are not, and never ranks devices or turns a missing figure into a zero.
 import { heatDrift } from '../../src/debug/device/stats.ts';
 import { LIMIT_KEYS } from '../../src/debug/device/limits.ts';
+import type { Baseline, BenchEntry } from './baseline.ts';
 import type { DeviceResult, Raw, SceneRow } from './read.ts';
 
 const dash = '-';
@@ -92,7 +93,124 @@ function limits(r: DeviceResult) {
   return table(['limit', 'adapter', 'device (what three requested)'], rows);
 }
 
-export function report(r: DeviceResult): string {
+/** What a report compares against; either may be missing. */
+export type Context = { baseline?: Baseline | null; bench?: BenchEntry[] };
+
+/** `this / base` as "1.84x"; a dash when either is missing or the base is zero. */
+export function ratio(v: number | null, base: number | null): string {
+  return v === null || base === null || base <= 0 ? dash : `${(v / base).toFixed(2)}x`;
+}
+/** `this - base` signed ("+12", "-3", "0"); a dash when either is missing. */
+export function diff(v: number | null, base: number | null): string {
+  if (v === null || base === null) return dash;
+  const d = Math.round(v - base);
+  return d > 0 ? `+${d}` : String(d);
+}
+
+const same = (a: string, b: string) => a.length >= 7 && b.length >= 7 && (a.startsWith(b) || b.startsWith(a));
+
+/** The baseline section: the device's figures beside the Mac's. Scenes the baseline lacks print dashes. */
+export function baselineSection(r: DeviceResult, ctx: Context): string[] {
+  const b = ctx.baseline;
+  if (!b)
+    return [
+      '## Against the baseline',
+      '',
+      `No baseline for suite ${r.suite || '?'} yet. On the Mac, open the same link in your own Chrome when it is quiet, pull that run, then \`npm run device -- baseline <code>\`.`,
+      '',
+    ];
+  const base = b.result;
+  const who = `run ${base.code}${base.label ? ` (${base.label})` : ''}, ${base.device || 'device'} (${gpuName(base)}), ${browserVersion(base.ua)}, build ${base.build || '?'}, saved ${b.saved.slice(0, 10)}`;
+  if (base.id === r.id)
+    return ['## Against the baseline', '', `This run is the baseline for suite ${r.suite}: ${who}.`, ''];
+  const out = [
+    '## Against the baseline',
+    '',
+    `Baseline: ${who}. Ratios are this run over the baseline (above 1 is slower).`,
+    '',
+  ];
+  if (base.suite !== r.suite)
+    out.push(
+      `> The baseline is suite ${base.suite}, this run is suite ${r.suite}: scenes are matched by name only.`,
+      '',
+    );
+  if (base.build && r.build && base.build !== r.build)
+    out.push(
+      `> The builds differ (${r.build} here, ${base.build} in the baseline): a count that moved may be the code, not the device.`,
+      '',
+    );
+  const rungs: string[] = [];
+  const rows = r.scenes.map((s) => {
+    const m = base.scenes.find((x) => x.name === s.name) ?? null;
+    if (m && s.rung !== null && m.rung !== null && s.rung !== m.rung)
+      rungs.push(
+        `- **${s.name}**: detail rung ${s.rung} on this device, ${m.rung} on the baseline, so calls and triangles differ for that reason, not because of the code.`,
+      );
+    return [
+      s.name,
+      fmt(s.p50),
+      fmt(m?.p50),
+      ratio(s.p50, m?.p50 ?? null),
+      fmt(s.p95),
+      fmt(m?.p95),
+      ratio(s.p95, m?.p95 ?? null),
+      cell(s.calls),
+      cell(m?.calls),
+      diff(s.calls, m?.calls ?? null),
+      cell(s.tris),
+      cell(m?.tris),
+      diff(s.tris, m?.tris ?? null),
+      `${cell(s.rung)} / ${cell(m?.rung)}`,
+      `${fmt(s.ratio, 2)} / ${fmt(m?.ratio, 2)}`,
+    ];
+  });
+  out.push(
+    ...table(
+      [
+        'scene',
+        'p50 ms',
+        'base p50',
+        'x',
+        'p95 ms',
+        'base p95',
+        'x',
+        'calls',
+        'base',
+        'diff',
+        'triangles',
+        'base',
+        'diff',
+        'rung (this / base)',
+        'res ratio (this / base)',
+      ],
+      rows,
+    ),
+    '',
+    ...rungs,
+    ...(rungs.length ? [''] : []),
+  );
+  const missing = r.scenes.filter((s) => !base.scenes.some((x) => x.name === s.name)).map((s) => s.name);
+  if (missing.length) out.push(`Not in the baseline (dashes): ${missing.join(', ')}.`, '');
+  return out;
+}
+
+/** One line comparing exact draw calls and triangles with the bench's, when its history has this build. Null if not. */
+export function benchLine(r: DeviceResult, history: BenchEntry[] = []): string | null {
+  const entry = [...history].reverse().find((e) => same(e.base, r.build));
+  if (!entry) return null;
+  const parts = r.scenes.flatMap((s) => {
+    const calls = entry.metrics[`${s.name}.calls`];
+    const tris = entry.metrics[`${s.name}.tris`];
+    if (calls === undefined || tris === undefined || s.calls === null || s.tris === null) return [];
+    return [
+      `${s.name} ${calls} calls / ${tris} tris on the Mac, ${s.calls} / ${s.tris} here (${diff(s.calls, calls)} / ${diff(s.tris, tris)})`,
+    ];
+  });
+  if (!parts.length) return null;
+  return `Bench counts at this commit (${entry.base.slice(0, 8)}, the Mac's daily perf run of ${entry.date.slice(0, 10)}, \`?dpr=fixed\`): ${parts.join('; ')}. Exact counts match only at the same detail rung.`;
+}
+
+export function report(r: DeviceResult, ctx: Context = {}): string {
   const out: string[] = [`# Device run ${r.code}${r.label ? ` (${r.label})` : ''}`, '', pasteLine(r), ''];
   if (r.selfMinted)
     out.push(
@@ -184,6 +302,8 @@ export function report(r: DeviceResult): string {
     );
   const d = drift(r);
   out.push(
+    ...baselineSection(r, ctx),
+    ...benchBlock(r, ctx),
     '## Heat check',
     '',
     d === null
@@ -203,6 +323,11 @@ export function report(r: DeviceResult): string {
     '',
   );
   return out.join('\n');
+}
+
+function benchBlock(r: DeviceResult, ctx: Context): string[] {
+  const line = benchLine(r, ctx.bench);
+  return line ? [line, ''] : [];
 }
 
 function loadRows(l: Raw): [string, unknown][] {

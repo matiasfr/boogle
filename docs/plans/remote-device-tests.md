@@ -239,7 +239,13 @@ review stamp for the ship queue; the rest ships on one green run.
     `report.md`. `npm run playtest` must not list the run without `--all`.
   - **Done when** the owner's phone run produces a `report.md` with diagnostics, load and seven scene rows, and the
     shared world's save is untouched (`npm run server` shows no new write to it).
-- [ ] **2. Baseline, comparison and the automatic pull.** Tier: tooling only.
+- [x] **2. Baseline, comparison and the automatic pull.** Tier: tooling only. **Built (10 November), not yet run with a
+  second device.** What differs from the text below: `baseline` takes a pulled run from disk (no token needed) and refuses
+  an unfinished run or one with no passing scene; the pure wait and pull-planning logic is `dev/device/runs.ts` (fake-clock
+  tests), the baseline files are `dev/device/baseline.ts`; `--wait` ends early on a run that went quiet for 10 minutes and
+  gives up after six failed polls; `pull --new` leaves a run still sending, re-pulls a cut-off copy only when the server has
+  more, and carries on past one bad run; `npm run device -- waiting` is the heartbeat's line (no token or server error
+  prints "unknown", never fails the report). The paste line is unchanged: it already named run, device and build.
   - `dev/device/cli.ts`: `baseline <id>`, `new --wait`, `pull --new`; `dev/device/report.ts` adds the baseline
     columns and ratios, and, when `~/.boogle/daily/perf/history.jsonl` has an entry for the same commit, a line
     comparing draw calls and triangles per pose with the bench's exact counts.

@@ -8,6 +8,9 @@ npm run device -- new --label "iphone 15" [--query 'terrain=1'] [--site <origin>
 npm run device -- list                                                              # runs on the server
 npm run device -- pull <run id or last six characters>                              # -> .look/device/<id>/
 npm run device -- pull --new                                                        # every run not yet pulled
+npm run device -- new --label "iphone 15" --wait                                    # link, then block until it finishes
+npm run device -- baseline <code>                                                   # a pulled run becomes the baseline
+npm run device -- waiting                                                           # one line for npm run heartbeat
 ```
 
 `https://boogle.club/?device=new` is the fixed board link: the page makes its own run id and marks the run
@@ -17,6 +20,22 @@ Files: `src/debug/device/` is the lazy chunk on the device (`index.ts` runs, `sc
 `stats.ts`, `id.ts`, `wire.ts` are pure), `src/boot/device-entry.ts` prepares the address, `src/features/device-test.ts`
 loads the chunk only under `?device=`. Here: `read.ts` (session lines to `DeviceResult`), `report.ts` (to markdown),
 `cli.ts`.
+
+## Baseline, waiting and pulling
+
+- `baseline <code>` marks a pulled, finished run of a suite as the Mac's baseline for it
+  (`~/.boogle/device/baseline/<suite>.json`, `BOOGLE_DEVICE_DIR` moves it). Make one by opening the same link in your own
+  Chrome on the Mac when it is quiet, `pull` it, then `baseline` it. Every later report of that suite gets an "Against the
+  baseline" section: p50 and p95 beside the Mac's with the ratio, calls and triangles with the difference, the detail rung
+  of each side (named when they differ), and dashes for a scene the baseline lacks. When
+  `~/.boogle/daily/perf/history.jsonl` has an entry for the run's build, one line compares the bench's exact counts.
+- `new --wait` checks it can read the server first, prints the link, then polls every 10 s for up to 30 minutes until the
+  run says `done`, and pulls it. It ends early (pulling what arrived) when the run started and has been silent for 10
+  minutes, and gives up after six failed polls in a row.
+- `pull --new` takes finished runs not on disk, leaves a run still sending (it says so), pulls one that went quiet as cut
+  off, pulls a cut-off copy again only when the server has more of it, and carries on past a run that fails.
+- `waiting` prints the heartbeat's line: `device runs not pulled: N (codes)`; a run left unpulled can be evicted
+  when playdata passes its 200 MB or 2000 sessions.
 
 ## What a run sends
 
