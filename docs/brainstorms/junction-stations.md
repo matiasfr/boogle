@@ -285,3 +285,264 @@ the halt at about (1414, −820)):
 - The Original Island's station, as part of the ending's brief.
 - A footbridge kit, if a junction ever needs one over its tracks.
 - Bunting, lamps and per-place sound at each junction, after a yes.
+
+## Design review (designer, 2026-11-10)
+
+**Verdict: the idea fits the seed and the day's rulings, and the tiering is the right way to pay for the walk-in rule.
+Seven things in the brief should be corrected before the owner answers (listed at the end); none needs him. Ring
+Island's station house can be greyboxed now, at a different spot from the one the brief gives; its track end and its
+works side wait for his buffers-or-loop answer.**
+
+**Read:** DESIGN.md; owner-calls; decisions (10 November: big junctions are designed stations, every building walked
+into, Ring Island's land, the train garage, terminals and kinks; 9 November: Home gets one coherent station, signs in
+the world, a well-designed town); direction.md; playtests 10 November (co-op, v24);
+[rail-map](../plans/rail-map.md) and its design review; [world-blockout](../plans/world-blockout.md) (areas, lines,
+telegraphing, the branch choice); [engine-garage](engine-garage.md) (where it lives, the scale audit, the keep-clear,
+the owner's answers and round-2 notes); [ring-island](ring-island.md) (greybox findings and rulings 1–6);
+[terrain-pass](../plans/terrain-pass.md) (Ring Island's landform proposal and its keep band);
+`src/proto/greybox/ring.ts`. **Research:** [level-design](../research/level-design.md) (recs 3 and 5: three sizes of
+shape, one weenie per area and a hub everyone returns to), [progression-flow-layout](../research/progression-flow-layout.md)
+(three firm rules, five lenses), [route-contract](../research/route-contract.md),
+[town-interiors](../research/town-interiors.md) (rec 1: each door gives a different reward; rec 2: indoor camera
+clearance, **which the house shell's spec leaves out: finding 9**), [art-kit-pipeline](../research/art-kit-pipeline.md)
+(prove a kit at a second place before growing it: **finding 10**), [world-detailing](../research/world-detailing.md)
+(a reserved budget per area), [roundhouse-management](../research/roundhouse-management.md) (one small choice per line),
+[train-riding](../research/train-riding.md) (rec 7: the ends of a ride are events, which is what a designed station
+is), [home-station-layout](../research/home-station-layout.md) (Home, followed).
+
+**Seen** (`npm run look -- --query ring=greybox`, desktop, not tested on a device; stills not committed):
+
+- The approach, from the Way about 150 m out (`--cam 1410,16,-672 --look 1414,20,-850`): the ring and the shard fill
+  the top half of the frame; the halt is a thin grey strip where the Way meets the shore, with the dark cone behind
+  every part of it. Nothing at platform height breaks the skyline.
+- The east platform, looking north (`--cam 1417,11.2,-805 --look 1404,16,-870`): the shard hangs straight over the
+  platforms' far end, about 25° up, the summit path zig-zagging under it. The platform already points you at it.
+- The halt from the west (`--cam 1380,22,-800 --look 1420,8,-840`): **the halt stands on a fill in the sea.** The west
+  platform's outer face drops straight into the water for its southern three quarters; land meets the halt only at
+  its north-west corner, where the ramp comes down to the beach and the path starts.
+
+**Not seen:** the station house (it doesn't exist); anything of High Gorge, Bell Rock, Canopy Town, West landing or
+Port Quay beyond blockout massing, so every sightline claim about those five is from map data and needs a still when
+the place is built. **Not run:** `npm run loop -- run` and `npm run level-check` (the brief changes no rule, route or
+map data, and places nothing in data to check); `node dev/playtest/cli.ts` (the 10 November entry was read instead).
+
+### Flow: stepping off at Ring Island, leg by leg
+
+Positions from `ring.ts` (u metres north from the pier head; the halt u 428–468 at about (1414, −820), deck 8.0 m,
+platforms 0.9 m up; walk 5.6 m/s). Trains arrive from the south, over the sea.
+
+| Leg | Distance | Walk | Note |
+| --- | --- | --- | --- |
+| Stop mark (east platform, about u 448) → the platforms' north end | 20 m | 4 s | The shard is dead ahead the whole way (still 2) |
+| Across the two roads at the north end → the west platform's north end | 11 m | 2 s | Behind the buffers if the line ends there; a plank crossing if it runs on |
+| West platform's north end → the foot of the ramp, where the path to the town and the summit starts | 10 m | 2 s | The only land that touches the halt (still 3) |
+| The brief's site: stop mark → the halt's **south** end → back north to the ramp | 20 m + 40 m | 11 s | A detour to the seaward end, across the throat trains arrive through |
+| Ramp foot → the summit lookout, by the greybox's path | about 305 m | about 55 s | The landform proposal re-routes this |
+| East lever → the west fingerpost, by the north end (done-means 4) | about 40–50 m | 7–9 s | Inside the brief's 15 s |
+
+The three firm rules hold for everything proposed: the next goal can be found (end boards, plaques and fingerposts
+all point along a line); no gate loses its meaning (every piece is a view, a stair or a lift beside a stair, so no
+travel edge supplies work, and nothing new is reached early); nobody is stranded (each lift has a stair, each change
+has a walk, each platform a lever). One lens is broken at Ring Island as the brief sites it (one main line: the
+house is off it), fixed by finding 1.
+
+### Rulings on the seven items
+
+1. **Tiers: yes. Six designed stations, not seven, and the tier is earned by what the place is, not by counting
+   lines.** By the brief's own rule ("two or more lines meet, or a line meets a lift") Ring Island is not a junction
+   when the Gorge is first: the ring runs through it and the north–south line starts at the Gorge. It still deserves
+   the full design (a town, a works, the branch read), so the rule should be "a place you change at, choose at, or
+   that a town is built round". **West landing is the one that is really a smaller thing**: 100–130 m (18–23 s) from
+   Home's hall, no works, and the owner's 9 November call was "instead of 2 stations maybe it's one unified one". It
+   becomes Home's second front at the Station tier: the kit house as a boathouse, the listener inside, no bespoke
+   concourse. Six designed stations over six hours is one new one per area from area 3 to area 7 (Home exists), about
+   one every 50 minutes, which is right. None is a halt. Each is built with its area, never ahead of it (finding 11).
+2. **A second Roundhouse with the screen at Port Quay: yes, but for a different reason than the brief gives.** The
+   "one place only" line is the garage brief's and its review's call 20, not the owner's; his seed says "accessible
+   at select locations" and "maybe others in the world if those are the upgrade points", so a second is inside what
+   he approved. But Port Quay is not "several minutes' ride from Home": the cave line reaches it from West landing in
+   under 1.7 km, about two minutes (world-blockout's lines table). The real reasons are that High Port's faster engine
+   comes from there and that it can be built at 16 m from the start. Lines that never reach Home: an install lands at
+   the line's own depot end, as the brief says, **with no screen there** (finding 4 on what the hut is).
+3. **Rotundas: the brief's answer is the cautious reading; offer the owner one step more.** In his own notes "rotunda"
+   is the engine house (2 November: "maybe it's a rotunda"; 10 November: "a pass on the rotunda"). Three options are
+   in owner question 1; recommended is B: two rotundas with tables and screens, a one-road open engine shed at each
+   depot end, and Bell Rock's round tower as the one round hall.
+4. **"A first trip never needs a change": yes, reworded.** As written it fails once: the first ride to the Original
+   Island (the ending) from Home is the bay line to Bell Rock, down the tower, then the north–south line (finding 5).
+5. **The concepts fit their places**, each has a walk-in room with a different reward (town-interiors rec 1: a view,
+   a machine, a toy, a home, a listener, a stamp), and each has one joke. Two landmarks would not read from a train
+   as described (the Gorge's cable, Canopy's roof under the crowns: finding 6), one building is in the wrong place
+   (finding 1), and two jokes exist only as words (finding 7).
+6. **Ring Island first: yes, in two steps** (finding 2). The house, its room, the edge paint, the fingerpost and the
+   measurements don't depend on either open answer if the house stands at the north-west corner, inside the terrain
+   proposal's 25 m keep band. The buffers, end board, crossover, loader and works footprint wait for rail-map
+   question 2; the path, the town and the bay site wait for the landform.
+7. **Kit and bespoke: the split is right; build the kit in two steps and give Port Quay its own budget** (finding 10).
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Big junctions are designed stations, not the generic halt; each may have its own works | Decided | Owner, 10 November |
+| 2 | Every building can be walked into and holds nothing, a character with a few lines, or something odd | Decided | Owner, 10 November |
+| 3 | A track that ends has buffers and an end board | Decided | Owner, 10 November (terminals and kinks) |
+| 4 | The upgrade screen opens only at a Roundhouse table, never in Pause or on a key; the table holds a works copy; an install lands on the real trains at a stop | Decided | Owner, 10 November (train garage, answer 1; verb Install, round-2 notes) |
+| 5 | Home's Roundhouse grows from 9.6 m to about 16 m as an upgrade | Decided | Owner, 10 November (answer 3) |
+| 6 | Purchases are per line and communal | Decided | Owner, 10 November (answer 5); DESIGN 6 |
+| 7 | Home is layout B: one terminus, the hall behind the buffers, the table on its own spur | Decided | Owner, 9 November |
+| 8 | Halt boards show the island map; signs in the world before hovering text | Decided | Owner, 9 November |
+| 9 | Junctions are platforms you walk between; High Port is the crane's top, not a rail halt | Decided | World-blockout rulings and rail-map calls 4 and 6 (orchestrator; open in agent-calls) |
+| 10 | Ring Island has no Roundhouse (the boiler rides home); the branch reads at the halt from the map display and a fingerpost | Decided | Ring-island rulings 3 and 4, build 2 (orchestrator) |
+| 11 | Three tiers; a halt never gets a station building | New | Recommended. The tier is earned by what the place is (a change, a choice or a town), not by a count of lines (ruling 1) |
+| 12 | Seven junction stations | New | **Six.** West landing is Home's second front at the Station tier; Ring Island keeps the full design in both branch orders (ruling 1) |
+| 13 | Halts: Camp, Quarry, Far Head, Pier, the Meet's halt, Saltpan. Stations: Lantern Notch, the Original Island | Default | Agreed, plus West landing. The brief's "19 halts" doesn't match its own list (15 places) or the blockout's 21 stops; state one figure |
+| 14 | A designed station is built with its area, never ahead; only Ring Island's is designed in full now | New, mine | Recommended (finding 11). Canopy's and the Gorge's plans stay provisional until their alignments are drawn |
+| 15 | A second Roundhouse with the upgrade screen at Port Quay, built at about 16 m, r 30 m kept clear; nowhere else | New | Recommended, for the engine built there and the end-game scale, not for distance (finding 3). Owner question 1 |
+| 16 | Both screens show every line; each table has its own works copy | Default | Agreed; follows from calls 4 and 6 |
+| 17 | Lines that never stand at Home take an install at their own depot end (High Gorge's bay road; Ring Island's west bay, Canopy first) | New | Recommended. "The next Home stop" becomes "the next stop at the line's depot". Owner question 2 |
+| 18 | A fitters' hut at each depot end | New | **Not as a hut.** A one-road open engine shed from the Roundhouse's stall kit: no door, no table, no screen; the line's train is the thing to see in it (finding 4) |
+| 19 | No turntable anywhere but Home and Port Quay | New | Recommended. The 10 November session: the owner didn't know why to turn the table at Home; a table that turns nothing is one more thing to not understand |
+| 20 | Bell Rock's round stair tower is the one round hall | New | Recommended. At 30° and 1.6 m wide a 12 m rise is 24 m of ramp, one turn at 4 m radius, so the tower is about 12 m across: a real rotunda, not a turret |
+| 21 | A first trip to a new place never needs a change of train | New | Recommended, reworded: "from the junction a line was built out of, its new stop is one train away" (finding 5). Owner question 4 |
+| 22 | Junction platform edges wear their line's colour; the way between platforms ends at a fingerpost in the other line's colour | Default | Agreed. Line 1's gold beside a halt's yellow reads as the same stripe, which is harmless; the two new lines need colours that are neither orange (the folk's steel) nor yellow, each paired with its painted emblem so colour is never the only cue |
+| 23 | A change of train is a walk of under 15 s with the fingerpost in sight from the start | Default | Agreed; a tunable target. The Gorge's stair (30–40 s) is the lift's fallback, not a change |
+| 24 | Home adds end boards, line colours and a towel on each ruin outline with a little guy beside it | Default | Agreed; telegraphs that the Roundhouse grows (DESIGN 7). Two draft lines |
+| 25 | Ring Island: a leaning station house with the Lookers' waiting room; LOOK UP on the platform edge | New | Recommended, with the site and the window changed (finding 1) |
+| 26 | Ring Island's house stands at the halt's south end, its concourse the way between the platforms | New | **Not there.** At the north-west corner, where the ramp meets the shore; the way between platforms is round the north end (finding 1) |
+| 27 | The waiting room's bench faces "up at a skylight framed on the shard" | Default | The shard is about 23° above the horizon from the halt (130 m up, 308 m off), so it is a tall tilted window in the north-north-west wall, not a skylight; let the house's lean be what points it there |
+| 28 | High Gorge: the winding house, a copper lift cage with a winder, the 165 m switchback stair with a bench every 20 m | New | Recommended. The lift must run for one player alone, and the stair is always there (firm rule 3). The landmark is not the cable (finding 6) |
+| 29 | Bell Rock: the tower's well holds a tiny hand bell anyone can ring | New | Recommended. A toy nothing depends on (DESIGN 2); rung as a one-off message so friends hear it |
+| 30 | Canopy Town: a station house round a living trunk with a resident; the rope walk; a little guy sweeping leaves off standing trains | New | Recommended, provisional (the alignment is undrawn). The sweeper is a new folk job: start simple, motion review. The brief's "its loop turns trains already" meets rail-map finding 10 (turned consists) unsolved |
+| 31 | West landing: a boathouse house with a listener at the window toward the cave plug | New | Recommended, as a kit Station house. It needs a second state once the cave is open at 4.2 h, or the joke points at nothing |
+| 32 | Port Quay: the harbourmaster stamps your hand each visit; the Quay Roundhouse; the 75 m crane | New | Recommended, provisional. The stamp is a sound and a puff unless a mark on Buddy is cheap. Two buildings, a Roundhouse and a crane don't fit the 25-draw row (finding 10) |
+| 33 | Ring Island's halt is the first proof, in `?ring=greybox` | New | Recommended, in two steps (finding 2). Owner question 5 |
+| 34 | Kit: deck, edge stripe, canopy, shelter, signal and lever, map display, buffers and end board, fingerpost, crossing, stair and ramp, loader gantry, yard bay, hut, a house shell in three sizes. Bespoke: front and roof, works, the interior's one thing, the joke | Default | Agreed as the split. Build only what Ring Island uses first (one shell size, buffers and board, fingerpost, edge colour); the rest when a second place asks (finding 10) |
+| 35 | Budgets within 500 m: halt about 6 draws and 3k triangles; station about 10 and 8k; junction about 25 and 30k | Default | Agreed as starting figures ("geometry budgets follow prominence": defaults, not caps). Port Quay gets its own row; a Roundhouse is counted apart, as Home's is |
+| 36 | The shell: a doorway with no leaf, at least 1.6 m wide and 2.6 m clear, lit inside, floor reached without a jump, content declared in data (`empty`, `character`, `odd`) with a check | Default | Agreed. Add a room size for the third-person camera (finding 9) |
+| 37 | Stairs and ramps no steeper than 30°, 1.6 m wide | Default | Ring-island ruling 2 |
+| 38 | The rail map draws a station symbol and a Tier column; halt boards mark a junction larger and show the way to the other platform | Default | Agreed |
+| 39 | Lever plaques name the next big place that way | Default | Rail-map call 28, already logged |
+| 40 | The draft lines in section 2 | Default | Drafts for the owner or a collaborator; list in finding 7 |
+
+**Counts:** 10 Decided, 13 Default, 17 New.
+
+### Findings, ranked
+
+1. **Ring Island's station house is sited at the wrong end of the halt (change before the greybox).** The brief puts it
+   "at the halt's south end by the plank crossing", with its concourse the way between the platforms. The south end is
+   the seaward end: trains arrive through it, a crossing there is across the throat (and the crossover on the Way is
+   just beyond), the fill drops into the sea on the west side (still 3), and under rail-map call 13 it is the cargo
+   end, where the loader and the steel stand. Everyone who gets off walks north, toward the shard and the only land.
+   **Put the house at the north-west corner**, at the foot of the west platform's ramp, about u 464–476 and 10–20 m
+   west of the west track:
+   - it is on the walk every visitor makes, 6 s from the stop mark, with the town path starting at its door;
+   - it is on land, and inside the landform proposal's 25 m keep band, so its ground doesn't move with that answer;
+   - the way between platforms is round the north end, behind the buffers if the line ends there and a plank
+     crossing when it runs on, so the house never has to bridge two roads;
+   - passengers go north and goods stay south, a split the halt keeps when the line runs through;
+   - the reserved bay platform (Canopy first) keeps the west side south of it, though that site is open water today
+     and needs fill.
+   From the approach the house will not break the skyline (still 1: the cone is behind it), so the lean has to be
+   plain (12° or more) and the roof a light colour against the slate hill. The shard is the big shape here already;
+   the house is the medium one. The window is call 27.
+2. **What can be greyboxed before the owner's two open answers, and what can't.** Split section 6:
+   - **Step A, now** (depends on neither answer): the leaning house at the north-west corner with its doorway and
+     room, the bench and the tilted window on the shard, the camera inside, the edge colours and LOOK UP, the
+     fingerpost moved to the platforms' north end, the walk between platforms, done-means stills 1, 3 and 4, and the
+     draw and triangle count.
+   - **Step B, after rail-map question 2** (buffers or a loop): the buffers and end board at u 483, the crossover on
+     the Way, which platform trains stand at and the chained lever, the loader and the works' footprint on the east
+     side (the loop's neck and deck stand there today), done-means still 2. If it helps him answer, draw the buffers
+     end as a variant (`?ring=greybox&end=buffers`) beside today's loop; a proto variant is cheap and reversible.
+   - **After the landform** ([terrain-pass](../plans/terrain-pass.md)): the path from the station to the town and
+     the summit, anything more than 25 m from the track (the works' shelf, the dwellings), and the bay site's fill.
+3. **The case for Port Quay's Roundhouse rests on a wrong distance.** "Several minutes' ride from Home either way
+   round the 8.7 km ring" ignores the cave line the place is reached by: West landing to Port Quay is under 1.7 km,
+   about two minutes. The places furthest from the screen are the first branch's (Home to High Gorge is about 2.9 km,
+   three minutes each way, from 1.8 h until the bay shortcut at 3.0–3.5 h). That is fine: about a dozen installs in
+   six hours, each a reason to come home, is the hub working (level-design rec 5), and purchases are communal, so a
+   friend at Home can do it. Keep Port Quay's Roundhouse for what it is: where the faster engine is built, at
+   end-game scale. Say also how it sits with Home's growth, since both exist for the same engines in the last two
+   hours: Port Quay's is where the big engine first stands, and growing Home's is what brings it home.
+4. **A fitters' hut is either a building or it isn't.** Under the walk-in rule a hut you can stand in needs a room
+   and a content; one you can't is a prop. Make it neither: a one-road open shed from the Roundhouse's stall frame,
+   open at the front as Home's stall is, where the line's train stands for its install and the little guys work. It
+   costs no interior, reuses a kit piece, gives the Gorge and (Canopy first) Ring Island an engine house without a
+   table or a screen, and is the middle option for "maybe have a rotunda".
+5. **The first-trip rule fails at the ending as worded.** Every stage's new stop is one train from the junction its
+   line was built out of (checked against the rail map's stages in both orders), and the player arrives the first
+   time by laying the track anyway. But from Home the first ride to the Original Island changes at Bell Rock, down
+   the tower. That is acceptable, even good (the last ride passes the tiny bell), if the rule says what it means:
+   **from the junction a line was built out of, its new stop is one train away; a change is only ever a shortcut, a
+   return or the last leg to the ending.** A friend who joins late at Home may change trains to reach the frontier;
+   the halt boards cover that.
+6. **Two landmarks would not read from a train as described.** High Gorge: "the lift's cable a single vertical
+   line" is a pixel at any distance; name a big shape instead (a headframe wheel on the cliff edge by the bridge,
+   and the copper cage moving). The station is also at the bottom of a canyon 90 m wide and 85 m deep, so the
+   platform may sit in shade all day: a still decides. Canopy Town: "the station roof under their crowns" is hidden
+   by definition; the mother trees are the area's landmark, and the station needs one thing of its own that shows
+   (the trunk coming through the roof with a lit door high on it, or a gap in the canopy over the platforms). Bell
+   Rock (the pinnacle with a 12 m tower at its foot), Port Quay (the crane, seen from Home since minute one) and Ring
+   Island (the shard) read.
+7. **New copy for the owner or a collaborator** (all drafts, none The Boogler's; his copy is untouched and no line of
+   his is suspect here). Home: "Reserved." / "For the big one." Ring Island: "Shh. I'm on." / "Sit if you like. Eyes
+   up, though." and the painted LOOK UP. High Gorge: "Up's one bell. Down's two. Three means lunch." and "Halfway."
+   Bell Rock: "It's the bell." / "Of Bell Rock." / "You expected bigger." Canopy Town: "You're in my hall. It's also
+   my tree." West landing: "Still in there." / "Something knocked. Might've been me." Port Quay: "Anything to
+   declare? No? Stamp." **Two jokes exist only as words**, LOOK UP and "Halfway."; the other five read without a
+   line (towels on the outlines, a tiny bell in a tall tower, a door in a trunk, an ear trumpet, a stamp).
+8. **Ring Island by line count is a Station, and that should change the rule, not the place.** See ruling 1. The
+   encounter table should also say that, Gorge first, nobody changes trains at Ring Island at all; what it has
+   instead is the choice.
+9. **The house shell has a door size but no room size.** Third-person cameras fail in small rooms
+   (town-interiors rec 2). Give the shell a smallest room (about 5 × 5 m with 3.5 m clear, or a roof that cuts away),
+   and make "walk in and out without the camera clipping" part of done-means 3. Home's hall (13 × 6 m, 4.6 m roof,
+   open front) is the reference that already works. If the bench can be sat on, sitting should tilt the view to the
+   shard; that is the room's whole point.
+10. **Fourteen kit parts in one PR is more kit than one station proves.** Art-kit-pipeline's test is the same parts
+    working at a second place. Extract what Ring Island uses, then let High Gorge or the Home flip ask for the
+    loader gantry, the yard bay, the shed and the other shell sizes. And Port Quay (two buildings, a Roundhouse, a
+    75 m crane) cannot fit a 25-draw row; give it its own, with the Roundhouse counted apart.
+11. **Order (game-direction check).** Nothing here jumps the queue: step A is a proto behind a flag; R2 draws the halt
+    from it in v27; Home's additions ride the layout B flip; the other four are designed when their areas are. No
+    station should be built ahead of its area because its concept exists.
+12. **Small.** West landing's listener needs a line for after the cave opens. The harbourmaster's stamp on every
+    visit will be heard a dozen times; once a session is enough. The encounter table's hours are the model's
+    allowances, not measurements. "Trains are push-pull and never turned" holds only while rail-map call 13 does.
+
+### Port from Place
+
+Nothing new is ported. Reused as they stand, and each still earns its place: the halt's parts (`makeHalt`), the
+request lever, the island boards and line marks, the road plaque, the little guys as residents and fitters (kept:
+"some lo-fi is character"), and Home's hall, Sleeves, gifts shelf and works board (ruled in home-station's review).
+
+### Before the owner answers
+
+1. Move Ring Island's house to the north-west corner and make the skylight a tilted window (finding 1, call 27).
+2. Split section 6 into what is greyboxed now and what waits (finding 2).
+3. Correct Port Quay's distance and restate why it gets a Roundhouse (finding 3).
+4. Replace the fitters' hut with the one-road open shed, or say it is a prop (finding 4).
+5. Reword the first-trip rule and name the ending's change (finding 5).
+6. Make it six: West landing at the Station tier; reword what earns a designed station (ruling 1, finding 8).
+7. Name a landmark that shows for High Gorge and for Canopy Town (finding 6).
+
+### Owner questions
+
+These replace the brief's five; its question 5 is folded into 5 here.
+
+1. **How many engine houses, and where does the upgrade screen open?** **Recommended: B.**
+   - A: two rotundas, Home's and Port Quay's, each with a table and the screen; nothing elsewhere.
+   - B: A, plus a small one-road engine shed with no table and no screen where a line has its depot (High Gorge;
+     Ring Island if Canopy is first), and Bell Rock's round stair tower as the one round hall.
+   - C: a rotunda with a turntable at every big junction. Not recommended: trains are never turned, so five tables
+     would be scenery, and Home's stops being special.
+2. **Lines that never reach Home: where do their trains take an install?** **Recommended: at that line's own engine
+   shed, at its depot end; you still buy at a Roundhouse.**
+3. **Six designed stations or seven?** **Recommended: six. West landing is Home's second front, a small boathouse
+   station 100 m from the hall, not a seventh big station.**
+4. **Should a first ride to a new place ever need a change of train?** **Recommended: no, from the station its line
+   was built out of. The one planned change on a first ride is the last leg to the Original Island, at Bell Rock.**
+5. **Ring Island's station house: build its greybox now?** **Recommended: yes, at the halt's north-west corner where
+   the path to the town starts, leaning, with the Lookers' waiting room. Its track end still waits for your
+   buffers-or-loop answer ([rail-map](../plans/rail-map.md#owner-questions), question 2).**
