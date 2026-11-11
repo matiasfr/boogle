@@ -16,10 +16,10 @@ import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-lay
 import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { validateRailWorks } from './railway-works.ts';
-import { LINE2_STATIONS, pierLaid } from './railway-line2-layout.ts';
+import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { validateRailLine } from './railway-line.ts';
 import { line2Completed, railCarryMax, validateRailLine2 } from './railway-line2.ts';
-import { trainStopsOf } from './railway-train.ts';
+import { railRingOpen, trainStopsOf } from './railway-train.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { validateRailTrains } from './railway-trains.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
@@ -346,7 +346,7 @@ export function validateRailway(n: Railway) {
     if (Object.values(job.timing!).some((v) => !railInt(v, 60000))) throw new Error('railway: timing');
   validateRailLine(n);
   validateRailLine2(n);
-  validateRailTrains(n, (line) => trainStopsOf(line, pierLaid(line2Completed(n))));
+  validateRailTrains(n, (line) => trainStopsOf(line, line2Completed(n), railRingOpen(n)));
   validateRailWorks(n);
   const counts = railCounts(n);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) throw new Error('railway: conservation');

@@ -245,7 +245,12 @@ test("the catalog: every fixed halt's platform by way is its own; v27's fields o
   RAIL_HALTS.forEach((h, id) => {
     assert.equal(haltPlatform(id, 1), h.platforms[0]);
     if (!h.heads) assert.equal(haltPlatform(id, -1), h.platforms[1]);
-    const v27 = [h.ring ? 'ring' : '', h.heads ? 'heads' : '', h.only !== undefined ? 'only' : '', h.brake ? 'brake' : '']
+    const v27 = [
+      h.ring ? 'ring' : '',
+      h.heads ? 'heads' : '',
+      h.only !== undefined ? 'only' : '',
+      h.brake ? 'brake' : '',
+    ]
       .filter(Boolean)
       .join();
     assert.equal(v27, { Pier: 'only', Railhead: 'heads,brake', 'Ring Island': 'ring' }[h.name] ?? '', h.name);

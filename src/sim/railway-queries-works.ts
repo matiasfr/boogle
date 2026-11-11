@@ -39,7 +39,7 @@ export function footingTotal(w: World) {
     ring.cw
   );
 }
-export const pierNeed = (w: World) => pierOwed(w, wagonFoot(w));
+export const pierNeed = (w: World) => Math.max(0, pierOwed(w, wagonFoot(w))); // after Q7 the wagon carries the ring's
 export function worksStage(w: World): WorksStage {
   const works = w.get(Works, worksId(w))!,
     shed = w.get(Shed, shedId(w))!;

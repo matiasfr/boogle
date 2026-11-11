@@ -12,6 +12,7 @@ import {
 } from '../src/world/railway-jump.ts';
 import { SEED_STAGES, TRAIN_STAGES } from '../src/sim/railway-seeds.ts';
 import { WORKS_STAGES } from '../src/sim/railway-seed-works.ts';
+import { RING_STAGES } from '../src/sim/railway-seed-ring.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../src/world/railway-namespace.ts';
 import { DEFAULT_ROOM } from '../src/constants.ts';
 
@@ -29,9 +30,9 @@ test('jump-in rows are unique, buildable and in route order', () => {
   );
 });
 
-test('the seed catalog holds every train and works stage', () => {
+test('the seed catalog holds every train, works and ring stage', () => {
   assert.equal(new Set(seeds).size, seeds.length);
-  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES]) assert.ok(seeds.includes(s), s);
+  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES]) assert.ok(seeds.includes(s), s);
 });
 
 test('jump room names stay readable and never match the shared room', () => {
@@ -64,4 +65,16 @@ test('the crossing almost finished is a jump-in, landing by the pier rack as the
   const finishing = JUMPS.find((j) => j.stage === 'crossing-finishing');
   assert.ok(finishing && OFFERED_STAGES.includes('crossing-finishing'));
   assert.deepEqual(finishing.land, JUMPS.find((j) => j.stage === 'crossing-done')!.land);
+});
+
+test("the Pier's landings stand on the east platform's south end, facing the crossing (call 57, v27)", async () => {
+  const { LINKS, ORIGIN, lineAt, railY } = await import('../src/place/layout.ts');
+  const q = { x: 0, z: 0, ux: 0, uz: 0 };
+  lineAt(LINKS[1]!.line, 720.5, q);
+  const at = { x: ORIGIN.x + q.x - q.uz * 2.9, z: ORIGIN.z + q.z + q.ux * 2.9 };
+  for (const stage of ['q6-done', 'crossing-finishing', 'crossing-done', 'deck-laid', 'ring-joined']) {
+    const land = JUMPS.find((j) => j.stage === stage)!.land!;
+    assert.ok(Math.hypot(land.x - at.x, land.z - at.z) < 0.05, `${stage}: s 720.5, lat +2.9`);
+    assert.ok(Math.abs(land.y - (railY(LINKS[1]!.line, 720.5) + 0.72)) < 0.05, `${stage}: on the platform's deck`);
+  }
 });

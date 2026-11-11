@@ -27,6 +27,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.call': 'train called',
     'rail.breaker': 'breaker taken',
     'rail.strike': 'seam struck',
+    'rail.brace': 'leaf braced',
     'rail.kiln': 'kiln filled',
     'rail.footTake': 'footing shouldered',
     'rail.footSet': 'footing set',
@@ -69,6 +70,9 @@ export function createRailwayProgressMarks() {
     facts.set('trains unlocked', !!state.line2 && state.line2.trains >= 0);
     // The twelfth pier footing as this page saw it arrive; the view's finale marks 'crossing finale' when it plays.
     facts.set('crossing footed', !!state.works && state.works.crossing >= 0);
+    // Ring Island's gap (v27): the fourteenth bent footing, the rivet.
+    facts.set('gap footed', !!state.ring && state.ring.set >= 14);
+    facts.set('ring joined', !!state.ring && state.ring.joined >= 0);
     const marks: RailwayMark[] = [];
     if (previous && !baseline)
       for (const [name, value] of facts)

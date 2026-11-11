@@ -11,6 +11,7 @@ import {
 } from '../src/adapters/railway-marks.ts';
 import type { RailwayIntent } from '../src/adapters/railway.ts';
 import type { Railway } from '../src/sim/railway.ts';
+import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { BEATS, RAIL_STOPS } from '../dev/look/segments.ts';
 
@@ -32,7 +33,11 @@ function markNames() {
     ({
       ...job(on),
       line: { jobs: [job(on), job(on)] },
-      line2: { jobs: Array.from({ length: 6 }, () => job(on)), forge: { lit: on ? 0 : -1 }, trains: on ? 0 : -1 },
+      line2: {
+        jobs: Array.from({ length: LINE2_STATIONS.length }, () => job(on)),
+        forge: { lit: on ? 0 : -1 },
+        trains: on ? 0 : -1,
+      },
     }) as unknown as Railway;
   const progress = createRailwayProgressMarks();
   progress(state(false));

@@ -37,6 +37,7 @@ import {
   PIER_RACK,
   PIER_FRAME,
 } from '../../src/sim/railway-works-layout.ts';
+import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-layout.ts';
 import { railAccount, type RailAction, type Railway } from '../../src/sim/railway.ts';
 import { DETOUR, NODES, WALK_MPS, cm, detourOf, node, proposeOrders, type NodeId, type Point } from './graph.ts';
 import { createHost, type Host } from './host.ts';
@@ -382,12 +383,14 @@ function* pier(g: Game, pl: Player, reached: () => void): Policy {
   yield* walk(PIER_STOP);
   reached();
 }
-function* strike(g: Game, pl: Player, id: 0 | 1): Policy {
+function* strike(g: Game, pl: Player, id: 0 | 1 | 2): Policy {
   if (pl.i !== 0) return;
   yield* waitFor(g, () => g.s.works!.breaker === 2);
-  yield* walk(WORKS_SEAMS[id]);
+  yield* walk(id === 2 ? RING_RIVET : WORKS_SEAMS[id]);
   yield* press('rail.strike', { id });
 }
+/** The ring's railhead now (v27): its rack and jib move out a bent with each pair of footings. */
+const railhead = (g: Game) => RING_HEAD[Math.floor((g.s.ring?.set ?? 0) / 2)]!;
 function* kiln(g: Game, pl: Player): Policy {
   yield* waitFor(g, () => !!(g.s.works!.seams & 2));
   const w = () => g.s.works!;
@@ -413,17 +416,25 @@ function* kiln(g: Game, pl: Player): Policy {
   for (const r of pl.i % 2 ? [stone, logs] : [logs, stone]) yield* r;
 }
 /** Footings from a rack to a site, one per back, shared among friends. */
-function* footings(g: Game, pl: Player, rack: 0 | 1, site: 0 | 1 | 2, left: () => number, stock: () => number): Policy {
+function* footings(
+  g: Game,
+  pl: Player,
+  rack: 0 | 1 | 2,
+  site: 0 | 1 | 2 | 3,
+  left: () => number,
+  stock: () => number,
+): Policy {
   const key = `foot${site}`,
     mark = `${key}|${pl.pid}`;
-  const from = rack ? PIER_RACK : WORKS_RACK,
-    to = site === 2 ? PIER_FRAME : SHED_STALL;
+  // Rack 2 and site 3 are the railhead's, wherever it stands as you go (v27).
+  const from = () => [WORKS_RACK, PIER_RACK, railhead(g).rack][rack]!,
+    to = () => [SHED_STALL, SHED_STALL, PIER_FRAME, railhead(g).jib][site]!;
   try {
     for (let guard = 0; guard < 400; guard++) {
       if (left() - g.others(key, pl.pid) <= 0 && !g.acct(pl.pid).foot) return;
       if (!g.acct(pl.pid).foot) {
         g.bringing.set(mark, 1);
-        yield* walk(from);
+        yield* walk(from());
         yield* clearBack(g, pl);
         if (stock() <= 0 || !(yield* press('rail.footTake', { rack }))) {
           g.bringing.set(mark, 0);
@@ -431,7 +442,7 @@ function* footings(g: Game, pl: Player, rack: 0 | 1, site: 0 | 1 | 2, left: () =
           continue;
         }
       }
-      yield* walk(to);
+      yield* walk(to());
       yield* press('rail.footSet', { site });
       g.bringing.set(mark, 0);
     }
@@ -515,6 +526,11 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     cradle: () => (s().shed?.fitted ?? -1) >= 0,
     table: () => !!s().trains?.some((r) => r.wagon), // any of line 2's trains (v26)
     crossing: () => (s().works?.pierSet ?? 0) >= WORKS.pier,
+    Q7: () => q(6),
+    bents: () => (s().ring?.set ?? 0) >= WORKS.ring,
+    brace: () => (s().ring?.brace ?? 1) !== 1,
+    weights: () => (s().ring?.cw ?? 0) >= WORKS.counterweight,
+    rivet: () => (s().ring?.joined ?? -1) >= 0,
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
   const policy: Record<NodeId, (pl: Player) => Policy> = {
@@ -574,6 +590,34 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
             () => WORKS.pier - s().works!.pierSet,
             () => s().works!.pierRack,
           ),
+    Q7: (pl) => quarry(g, pl, 6, byHand.has('Q7')),
+    // By hand, as the crossing: off the Works rack, not the wagon's at the railhead.
+    bents: (pl) =>
+      footings(
+        g,
+        pl,
+        byHand.has('bents') ? 0 : 2,
+        3,
+        () => WORKS.ring - s().ring!.set,
+        () => (byHand.has('bents') ? s().works!.rack : s().ring!.rack),
+      ),
+    brace: (pl) =>
+      (function* () {
+        if (pl.i !== 0) return;
+        yield* waitFor(g, () => s().ring!.set >= WORKS.ring);
+        yield* walk(RING_BRACE);
+        yield* press('rail.brace', { revision: 1 });
+      })(),
+    weights: (pl) =>
+      footings(
+        g,
+        pl,
+        byHand.has('weights') ? 0 : 2,
+        3,
+        () => WORKS.counterweight - s().ring!.cw,
+        () => (byHand.has('weights') ? s().works!.rack : s().ring!.rack),
+      ),
+    rivet: (pl) => strike(g, pl, 2),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };
 }
@@ -637,12 +681,13 @@ function probePolicy(r: Run, pl: Player, id: NodeId): Policy | null {
         n: g.acct(pl.pid).carry,
       });
     })();
-  const seam = id === 'slab' ? 0 : id === 'throat' ? 1 : -1;
+  const seam = id === 'slab' ? 0 : id === 'throat' ? 1 : id === 'rivet' ? 2 : -1;
   // The pier is the world's (a walk), the crossing's footings ride the wagon: nothing to press early.
   if (seam < 0 && !n.ops.length) return null;
   return (function* () {
     yield* walk(n.at);
-    yield* press(seam >= 0 ? 'rail.strike' : n.ops[0]!, seam >= 0 ? { id: seam } : {});
+    const op = seam >= 0 ? 'rail.strike' : n.ops[0]!;
+    yield* press(op, seam >= 0 ? { id: seam } : op === 'rail.brace' ? { revision: 1 } : {});
   })();
 }
 export type Probe = { node: NodeId; before: NodeId; by: string; accepted: boolean; what: string };
@@ -941,7 +986,8 @@ const VEHICLE_FED = NODES.filter((n) => Object.values(n.supply).some((s) => s.by
 function byHandPlan(id: NodeId) {
   const s = LINE2_STATIONS.find((x) => x.id === id);
   if (s && !s.feed) return { flags: s, before: null };
-  if (id === 'Q6') return { flags: null, before: null };
+  if (id === 'Q6' || id === 'Q7') return { flags: null, before: null };
+  if (id === 'bents' || id === 'weights') return { flags: null, before: null };
   if (id === 'crossing') return { flags: null, before: 'table' as NodeId };
   throw new Error(`--by-hand: no vehicle feeds ${id}`);
 }

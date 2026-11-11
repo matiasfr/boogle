@@ -42,7 +42,8 @@ import {
 } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
 import { trainAlong, trainSpeed } from '../sim/railway-train.ts';
-import { RAIL_HALTS, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { RAIL_HALTS, RAIL_TRAINS, haltPlatform } from '../sim/railway-lines.ts';
+import { RING_BRACE, RING_HEAD, RING_RIVET } from '../sim/railway-ring-layout.ts';
 import { railLinePoint } from '../sim/railway-line-path.ts';
 import {
   PIER_FRAME,
@@ -76,7 +77,7 @@ import { railApply, railOutcome, railTick } from '../sim/railway-systems.ts';
 import { railBoilerPutDown, railBoilerStood } from '../sim/railway-sys-line2.ts';
 import { railFootHolders, railFootRelease } from '../sim/railway-sys-works.ts';
 import { railBeamPutDown, railBeamRelease, railBeamStood } from '../sim/railway-sys-line1.ts';
-import { railLine2Active } from '../sim/railway-queries.ts';
+import { railLine2Active, ringHead } from '../sim/railway-queries.ts';
 import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
 import { railSession, railSettle } from '../sim/railway-sys-core.ts';
 import type { World } from '../ecs/index.ts';
@@ -131,6 +132,7 @@ export const RAIL_ACTIONS = new Set([
   'rail.kiln',
   'rail.footTake',
   'rail.footSet',
+  'rail.brace',
   'rail.cradle',
   'rail.turn',
 ]);
@@ -226,7 +228,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
           nearTrain(w, e.train, tick, actor) &&
           actor.cadence(e.op)
         );
-      const p = h.platforms[e.dir > 0 ? 0 : 1];
+      // The Railhead's down platform moves out with its head (v27): judged where the head stands now.
+      const p = haltPlatform(h, e.dir, ringHead(w));
       return height(p.y) && near(p.x, p.z, p.reach);
     }
     case 'rail.beamTake': {
@@ -270,14 +273,20 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.breaker':
       return at(WORKS_BREAKER);
     case 'rail.strike':
-      return railInt(e.id, 1) && at(WORKS_SEAMS[e.id]!);
+      // Seams 0 and 1 at the Works; 2 is Ring Island's rivet (v27).
+      return railInt(e.id, 2) && at(e.id === 2 ? RING_RIVET : WORKS_SEAMS[e.id]!);
     case 'rail.kiln':
       // Its loading frame stands in the cut: nobody reaches it before the throat is struck.
       return !!(w.get(Works, w.single(Works))!.seams & SEAM_THROAT) && at(WORKS_KILN);
     case 'rail.footTake':
-      return railInt(e.rack, 1) && at(e.rack ? PIER_RACK : WORKS_RACK);
+      // Rack 2 is the railhead's, where its head stands now (v27).
+      return railInt(e.rack, 2) && at([WORKS_RACK, PIER_RACK, RING_HEAD[ringHead(w)]!.rack][e.rack]!);
     case 'rail.footSet':
-      return railInt(e.site, 2) && at(e.site === 2 ? PIER_FRAME : SHED_STALL);
+      // Site 3 is the railhead's jib (v27).
+      return railInt(e.site, 3) && at([SHED_STALL, SHED_STALL, PIER_FRAME, RING_HEAD[ringHead(w)]!.jib][e.site]!);
+    case 'rail.brace':
+      // The brace names the leaf it saw: only the raised one (1) is braced.
+      return e.revision === 1 && at(RING_BRACE);
     case 'rail.cradle':
       return at(SHED_STALL);
     case 'rail.turn':

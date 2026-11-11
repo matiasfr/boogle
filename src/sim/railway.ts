@@ -81,10 +81,14 @@ export type Railway = {
   /** Split-rock Works and the Roundhouse stall (./railway-works.ts); present with line two. */
   works?: RailWorks;
   shed?: RailShed;
+  /** Ring Island's gap (v27, the Aperture row): bent footings set, the railhead rack, the counterweight, the leaf's
+   * brace and the tick the rivet was struck (./railway-sys-ring.ts). */
+  ring?: RailRing;
   /** Playable namespace only: accepted collision presentation, independent of material balances. */
   falls?: { yaw: number[]; collapsed: boolean[] };
   supply?: RailSupply;
 };
+export type RailRing = { set: number; rack: number; cw: number; brace: number; joined: number };
 export type RailRequest = { epoch: number; request: number };
 export type RailAction = RailRequest & {
   op: string;

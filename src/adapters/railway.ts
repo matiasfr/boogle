@@ -43,7 +43,7 @@ import {
   type LineStationId,
 } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
-import { LINE2_PACK, LINE2_STATIONS, line2Routes, pierLaid, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import {
   line2Active,
   line2Trains,
@@ -60,6 +60,7 @@ import {
   LINE_HALTS,
   TRAIN,
   TRAIN_PHASE,
+  railRingOpen,
   reqHas,
   trainCanBrake,
   trainStopsOf,
@@ -111,8 +112,9 @@ export type RailwayIntent =
     }
   | { op: 'rail.call'; id: number; dir: -1 | 1; train?: number }
   | { op: 'rail.strike'; id: number }
-  | { op: 'rail.footTake'; rack: 0 | 1 }
-  | { op: 'rail.footSet'; site: 0 | 1 | 2 }
+  | { op: 'rail.footTake'; rack: 0 | 1 | 2 }
+  | { op: 'rail.footSet'; site: 0 | 1 | 2 | 3 }
+  | { op: 'rail.brace'; revision: 1 }
   | { op: 'rail.turn'; to: 0 | 1; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
   | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
@@ -185,15 +187,18 @@ export type RailTrainsRead = {
   readonly trains: readonly Readonly<RailTrain>[];
   readonly lines: readonly Readonly<RailLineRow>[];
   readonly line2: { readonly trains: boolean; readonly trainsAt: number; readonly completed: number };
+  /** Ring Island's gap (v27): the railhead's head and the rivet decide line 2's stops past the Pier. */
+  readonly ring: { readonly set: number; readonly joined: number };
 };
 /** Line `line`'s trains, in slot order, with their slots (replaces v25's `line2.train[k]`). */
 export const railTrainsOf = (s: Pick<RailTrainsRead, 'trains'>, line: number) =>
   LINE_SLOTS[line]!.map((slot) => ({ slot, row: s.trains[slot]! }));
 /** The line train `slot` runs on. */
 export const railLineOf = (slot: number) => RAIL_TRAINS[slot]!.line;
-/** The stops line `line` serves now (line 2's pier once Q6 is laid). */
-export const railStopsNow = (s: Pick<RailTrainsRead, 'line2'>, line: number) =>
-  trainStopsOf(line, pierLaid(s.line2.completed));
+/** The stops line `line` serves now (line 2's pier once Q6 is laid; the Railhead at its head once Q7 is; Ring Island
+ * once the rivet is struck). */
+export const railStopsNow = (s: Pick<RailTrainsRead, 'line2' | 'ring'>, line: number) =>
+  trainStopsOf(line, s.line2.completed, railRingOpen(s));
 /** The train a lever ask at (`line`, `stop`) heading `dir` is for at `tick`: the sim's trainServes over the mirrored
  * rows, -1 for none. */
 export function railServing(s: RailTrainsRead, line: number, stop: number, dir: number, tick: number) {
@@ -227,7 +232,7 @@ export function railTrainHeld(s: RailTrainsRead, slot: number, tick: number) {
   return r.at < 0 || tick >= r.depart + TRAIN.dwellTicks + 10;
 }
 /** Whether halt `stop` of `line` is one of its open ends now. */
-export const railOpenEnd = (s: Pick<RailTrainsRead, 'line2'>, line: number, stop: number) =>
+export const railOpenEnd = (s: Pick<RailTrainsRead, 'line2' | 'ring'>, line: number, stop: number) =>
   atEnd(stop, railStopsNow(s, line));
 export type RailwayMovement = {
   beamSoloSpeed: number;
@@ -258,9 +263,10 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.wake') return { op: e.op };
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
   if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle') return { op: e.op };
-  if (e.op === 'rail.strike' && railInt(e.id, 1)) return { op: e.op, id: e.id };
-  if (e.op === 'rail.footTake' && railInt(e.rack, 1)) return { op: e.op, rack: e.rack as 0 | 1 };
-  if (e.op === 'rail.footSet' && railInt(e.site, 2)) return { op: e.op, site: e.site as 0 | 1 | 2 };
+  if (e.op === 'rail.strike' && railInt(e.id, 2)) return { op: e.op, id: e.id };
+  if (e.op === 'rail.footTake' && railInt(e.rack, 2)) return { op: e.op, rack: e.rack as 0 | 1 | 2 };
+  if (e.op === 'rail.footSet' && railInt(e.site, 3)) return { op: e.op, site: e.site as 0 | 1 | 2 | 3 };
+  if (e.op === 'rail.brace' && e.revision === 1) return { op: e.op, revision: 1 };
   if (e.op === 'rail.turn' && railInt(e.to, 1) && railInt(e.revision))
     return { op: e.op, to: e.to as 0 | 1, revision: e.revision };
   // A footing goes down and comes up alone, as pile kind 3.
@@ -385,10 +391,14 @@ const holds = (s: Railway, op: string, event?: RailwayIntent) =>
               : op === 'rail.glide'
                 ? !!s.line2?.glide
                 : op === 'rail.strike' && event?.op === 'rail.strike'
-                  ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
-                  : op === 'rail.turn' && event?.op === 'rail.turn'
-                    ? s.shed?.table === event.to
-                    : false;
+                  ? event.id === 2
+                    ? (s.ring?.joined ?? -1) >= 0
+                    : !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
+                  : op === 'rail.brace'
+                    ? (s.ring?.brace ?? 1) !== 1
+                    : op === 'rail.turn' && event?.op === 'rail.turn'
+                      ? s.shed?.table === event.to
+                      : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
@@ -429,6 +439,7 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.beamDeposit',
   'rail.breaker',
   'rail.strike',
+  'rail.brace',
   'rail.turn',
 ]);
 /** Refused only while you haul the boiler, as the sim refuses them (one thing on your back at a time). */
@@ -1026,6 +1037,9 @@ export function createRailwayAdapter({
       foot: account?.foot ?? 0,
       works: worksOf(s),
       shed: Object.freeze({ ...s.shed! }),
+      /** Ring Island's gap (v27): the railhead's head (bent 6 + head), the footings set past bent 6, on its rack and
+       * hung as counterweight, the leaf's brace (1 raised, 2 braced, 0 down) and the tick the rivet was struck. */
+      ring: Object.freeze({ head: railRingOpen(s).head, ...s.ring! }),
       /** What a back carries now: 8, or 16 with the pack (shared). */
       carryMax: railCarryMax(s),
       line2,
@@ -1331,13 +1345,15 @@ export function createRailwayAdapter({
       submit(train === undefined ? { op: 'rail.call', id, dir } : { op: 'rail.call', id, dir, train }),
     /** The Works and the Roundhouse (docs/plans/split-rock-roundhouse.md). */
     takeBreaker: () => submit({ op: 'rail.breaker' }),
-    /** Strike a seam: 0 the stall slab at Home, 1 the throat at the quarry. */
-    strike: (id: number) => railInt(id, 1) && submit({ op: 'rail.strike', id }),
+    /** Strike a seam: 0 the stall slab at Home, 1 the throat at the quarry, 2 Ring Island's rivet (v27). */
+    strike: (id: number) => railInt(id, 2) && submit({ op: 'rail.strike', id }),
     fillKiln: () => submit({ op: 'rail.kiln' }),
-    /** Shoulder a footing: 0 the Works rack, 1 the pier rack. */
-    shoulderFooting: (rack: 0 | 1) => railInt(rack, 1) && submit({ op: 'rail.footTake', rack }),
-    /** Set the footing on your back: 0 the stall, 1 the cradle, 2 the pier. */
-    setFooting: (site: 0 | 1 | 2) => railInt(site, 2) && submit({ op: 'rail.footSet', site }),
+    /** Shoulder a footing: 0 the Works rack, 1 the pier rack, 2 the railhead's rack. */
+    shoulderFooting: (rack: 0 | 1 | 2) => railInt(rack, 2) && submit({ op: 'rail.footTake', rack }),
+    /** Set the footing on your back: 0 the stall, 1 the cradle, 2 the pier, 3 the railhead's jib. */
+    setFooting: (site: 0 | 1 | 2 | 3) => railInt(site, 3) && submit({ op: 'rail.footSet', site }),
+    /** Brace the raised leaf (the gold strut on the brace platform): only the raised leaf you saw. */
+    braceLeaf: () => submit({ op: 'rail.brace', revision: 1 }),
     fitCradle: () => submit({ op: 'rail.cradle' }),
     /** Turn the table to a road (0 the stall road, 1 line 2's) on the revision you saw. */
     turnTable: (to: 0 | 1, revision: number) =>

@@ -443,6 +443,8 @@ function startWorld(room: Room) {
           return adapter.fitCradle();
         case 'rail.turn':
           return adapter.turnTable(intent.to, intent.revision);
+        case 'rail.brace':
+          return adapter.braceLeaf();
       }
     };
   }

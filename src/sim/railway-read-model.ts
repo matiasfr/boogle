@@ -17,9 +17,10 @@ import type { RailTrain } from './railway-train.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import type { RailLineRow } from './railway-trains.ts';
 import type { RailCart } from './railway-cart.ts';
-import type { Railway, RailResult } from './railway.ts';
+import type { RailRing, Railway, RailResult } from './railway.ts';
 import {
   Account,
+  Aperture,
   Beam,
   Boiler,
   Cart,
@@ -194,6 +195,7 @@ export function railwayView(w: World): Railway {
     lines: bySlot(w, Line, RAIL_LINES.length, (id) => lineOf(w, id)),
     works: worksOf(w),
     shed: copyOf(Shed, w.get(Shed, w.single(Shed))!) as RailShed,
+    ring: copyOf(Aperture, w.get(Aperture, w.single(Aperture))!) as RailRing,
     falls: { yaw: trees.map((t) => t.yaw), collapsed: trees.map((t) => t.fell) },
     supply: { marker: clock.supplyMarker, ages: trees.map((t) => t.age), rack: rail.rack, produced: rail.produced },
   };
@@ -271,6 +273,7 @@ export function refreshRailway(s: Railway, w: World) {
   if (w.changes(Cart).length) l2.cart = copyOf(Cart, w.get(Cart, w.single(Cart))!) as RailCart;
   if (w.changes(Works).length) s.works = worksOf(w);
   if (w.changes(Shed).length) s.shed = copyOf(Shed, w.get(Shed, w.single(Shed))!) as RailShed;
+  if (w.changes(Aperture).length) s.ring = copyOf(Aperture, w.get(Aperture, w.single(Aperture))!) as RailRing;
   if (w.changes(Rail).length) {
     const r = w.get(Rail, w.single(Rail))!;
     s.awake = r.awake;
@@ -328,6 +331,7 @@ export function copyRailway(s: Railway): Railway {
     lines: s.lines.map((l) => ({ ...l })),
     works: { ...s.works! },
     shed: { ...s.shed! },
+    ring: { ...s.ring! },
     falls: { yaw: s.falls!.yaw.slice(), collapsed: s.falls!.collapsed.slice() },
     supply: { ...s.supply!, ages: s.supply!.ages.slice() },
   };

@@ -18,7 +18,19 @@ import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt } from './railway.ts';
-import { Account, Aperture, Cart, DEPOT_OUT, Forge, Line, QJob, Rail, Shed, Train, Works } from './railway-components.ts';
+import {
+  Account,
+  Aperture,
+  Cart,
+  DEPOT_OUT,
+  Forge,
+  Line,
+  QJob,
+  Rail,
+  Shed,
+  Train,
+  Works,
+} from './railway-components.ts';
 import {
   apertureId,
   cartId,

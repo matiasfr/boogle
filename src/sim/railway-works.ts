@@ -53,10 +53,13 @@ export function footingTotal(s: Railway) {
     (h ? h.stall + h.cradle : 0) +
     s.accounts.reduce((n, a) => n + (a.foot ?? 0), 0) +
     s.piles.reduce((n, p) => n + (p.kind === 3 ? p.n : 0), 0) +
-    wagonFoot(s)
+    wagonFoot(s) +
+    (s.ring ? s.ring.rack + s.ring.set + s.ring.cw : 0) // Ring Island's (v27)
   );
 }
-export const pierNeed = (s: Railway) => WORKS.pier - (s.works?.pierSet ?? 0) - (s.works?.pierRack ?? 0) - wagonFoot(s);
+/** Footings the pier still wants (never below 0: after Q7 the wagon carries the ring's). */
+export const pierNeed = (s: Railway) =>
+  Math.max(0, WORKS.pier - (s.works?.pierSet ?? 0) - (s.works?.pierRack ?? 0) - wagonFoot(s));
 export function worksStage(s: Railway): WorksStage {
   const w = s.works,
     h = s.shed;

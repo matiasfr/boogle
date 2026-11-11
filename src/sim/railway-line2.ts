@@ -1,11 +1,11 @@
 // Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-sys-line2.ts.
-import { trainStopsOf } from './railway-train.ts';
+import { railRingOpen, trainStopsOf } from './railway-train.ts';
 import { LINE2 } from './railway-lines.ts';
 import { railTrainsOf } from './railway-trains.ts';
 import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
-import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, Q6, RAILS, pierLaid } from './railway-line2-layout.ts';
+import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, Q6, RAILS } from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD, type RailCart } from './railway-cart.ts';
 
@@ -146,7 +146,7 @@ export const line2Rails = (s: Railway) =>
   (s.line2?.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0) ?? 0) +
   (s.shed?.cradleRails ?? 0);
 /** The stops line k serves now (TRAIN_STOPS; line 2's pier opens once Q6 is laid). */
-export const trainStops = (s: Railway, k: number) => trainStopsOf(k, pierLaid(line2Completed(s)));
+export const trainStops = (s: Railway, k: number) => trainStopsOf(k, line2Completed(s), railRingOpen(s));
 
 // ---------------------------------------------------------------- invariants on the read model
 const JOB_FIELDS = [
@@ -287,10 +287,7 @@ export function line2KitOwed(s: Railway) {
   const j = l.jobs[k]!,
     [logs, rails] = spec.bill;
   return {
-    logs: Math.max(
-      0,
-      Math.min(logs - j.stock - l.depot - l.cart.logs - line2Aboard(s, 'logs'), logs - l.depotOut[k]!),
-    ),
+    logs: Math.max(0, Math.min(logs - j.stock - l.depot - l.cart.logs - line2Aboard(s, 'logs'), logs - l.depotOut[k]!)),
     rails: Math.max(
       0,
       Math.min(rails - j.railStock - l.depotRails - l.cart.rails - line2Aboard(s, 'rails'), rails - l.shelfOut),

@@ -189,7 +189,10 @@ test('rock slots: line one three, the Works two; stone conserved across both', a
   assert.deepEqual(RAIL_ROCKS.slice(0, 3), [...LINE1_ROCKS]);
   assert.deepEqual(RAIL_ROCKS.slice(3), [...WORKS_ROCKS]);
   const s = createRailway();
-  assert.deepEqual(rocks(s).map((r) => r.left), [8, 8, 8, 8, 8]);
+  assert.deepEqual(
+    rocks(s).map((r) => r.left),
+    [8, 8, 8, 8, 8],
+  );
   assert.equal(railCounts(s).stone!.total, RAIL_STONE);
   railSession(s, 'a', 1);
   apply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
@@ -197,7 +200,10 @@ test('rock slots: line one three, the Works two; stone conserved across both', a
   const r = apply(s, 'a', { op: 'rail.mine', epoch: 1, request: 2, id: 3 }, 100);
   assert.equal(r.accepted, 2);
   assert.equal(apply(s, 'a', { op: 'rail.mine', epoch: 1, request: 3, id: 5 }, 101).accepted, 0);
-  assert.deepEqual(rocks(s).map((r) => r.left), [8, 8, 8, 6, 8]);
+  assert.deepEqual(
+    rocks(s).map((r) => r.left),
+    [8, 8, 8, 6, 8],
+  );
   assert.equal(railCounts(s).stone!.total, RAIL_STONE);
   assert.equal(invariant(s), null);
 });

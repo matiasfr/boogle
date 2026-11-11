@@ -118,7 +118,10 @@ export function line2KitOwed(w: World) {
   const rail = w.get(Rail, railId(w))!,
     cart = w.get(Cart, cartId(w))!;
   return {
-    logs: Math.max(0, Math.min(logs - j.stock - rail.depot - cart.logs - aboard(w, 'logs'), logs - rail[DEPOT_OUT[k]!])),
+    logs: Math.max(
+      0,
+      Math.min(logs - j.stock - rail.depot - cart.logs - aboard(w, 'logs'), logs - rail[DEPOT_OUT[k]!]),
+    ),
     rails: Math.max(
       0,
       Math.min(rails - j.railStock - rail.depotRails - cart.rails - aboard(w, 'rails'), rails - rail.shelfOut),

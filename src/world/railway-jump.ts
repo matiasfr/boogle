@@ -25,6 +25,12 @@ function near(anchor: Cm, dx: number, dz: number, y: number, toward: Cm | number
   return { x, y, z, yaw: Math.round(yaw * 1000) / 1000 };
 }
 
+/** The Pier's three landings (call 57, v27): the east platform's south end, s 720.5 m, lat +2.9 (the path point plus
+ * 2.9 m east, worked from Place's line), on its deck (rail 24.3 m + 0.72), facing the crossing; the spots before v27
+ * (lat +3 and +4 on the apron) are inside the platform and the rack. R4a draws the platform: until then this lands
+ * 0.7 m above the apron and drops onto it. */
+const PIER_LAND = near(PIER_STOP, 3.15, 5.87, 25.0, CROSSING_BENTS[0]!);
+
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */
 export const JUMPS: readonly Jump[] = [
@@ -71,7 +77,7 @@ export const JUMPS: readonly Jump[] = [
     stage: 'q6-done',
     label: 'Pier reached',
     line: 'Q6 laid to the pier; the forge has cast the breaker',
-    land: near(PIER_STOP, 4, -2, 24.3, 0), // on the pier deck, facing north to Ring Island
+    land: PIER_LAND, // the Pier platform's south end, facing the crossing
   },
   {
     stage: 'works-open',
@@ -83,13 +89,26 @@ export const JUMPS: readonly Jump[] = [
     stage: 'crossing-finishing',
     label: 'Crossing almost finished',
     line: 'Ten pier footings set; the last two wait on the pier rack',
-    land: near(PIER_STOP, 3, -4, 24.3, CROSSING_BENTS[0]!), // crossing-done's spot on the halt's deck, by the rack
+    land: PIER_LAND, // crossing-done's spot, by the rack
   },
   {
     stage: 'crossing-done',
     label: 'Crossing built',
     line: 'The Split-rock crossing is complete',
-    land: near(PIER_STOP, 3, -4, 24.3, CROSSING_BENTS[0]!), // on the halt's deck (the frame's side is the jib's), facing the crossing
+    land: PIER_LAND, // the Pier platform's south end, facing the crossing
+  },
+  // v27 (ring-island-build1, R3b). Both land at the Pier until R4 draws Q7's deck and the island's halt.
+  {
+    stage: 'deck-laid',
+    label: 'Deck laid',
+    line: "Q7 laid over the six bents; the wagon brings the ring's footings",
+    land: PIER_LAND, // the Pier platform's south end, facing the crossing
+  },
+  {
+    stage: 'ring-joined',
+    label: 'Ring joined',
+    line: 'The leaf is down and riveted; trains run to Ring Island',
+    land: PIER_LAND, // the Pier platform's south end, facing the crossing
   },
 ];
 export const jumpOf = (stage: string): Jump | undefined => JUMPS.find((j) => j.stage === stage);

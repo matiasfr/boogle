@@ -701,7 +701,11 @@ test("the eased rate is the Railhead's up arrival only: stopKin by halt and trac
   const leg = { ...trainIdle(A), phase: TRAIN_PHASE.RUN, at: 3, to: 4, track: 0, depart: 0, from: 72650, v0: 0 };
   const into = { ...leg, dest: stops[4]! };
   const eased = trainArrives(into, LINE2_ROWS),
-    plain = trainArrives(into, { ...LINE2_ROWS, id: 'no-brake', halts: LINE2_ROWS.halts.map((h) => ({ ...h, brake: undefined })) });
+    plain = trainArrives(into, {
+      ...LINE2_ROWS,
+      id: 'no-brake',
+      halts: LINE2_ROWS.halts.map((h) => ({ ...h, brake: undefined })),
+    });
   assert.ok(eased > plain, `${eased} ticks eased against ${plain}`);
   assert.equal(trainAlong(into, LINE2_ROWS, eased), stops[4]);
   assert.ok(trainSpeed(into, LINE2_ROWS, eased - 1) <= 2 + 1e-9);
