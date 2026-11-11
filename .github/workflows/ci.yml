@@ -3,7 +3,8 @@ name: CI
 # Runs on PRs, on main, and on the ship/* branches `npm run ship` pushes (their checks count as the PR's required
 # checks: same commit). automerge.yml dispatches it on main after each merge, since a bot merge doesn't fire push.
 # A ship/* PR's own pull_request runs do nothing: the push run is the one automerge counts (owner call "Fast ships").
-# Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit, registry, server, net.
+# Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit and registry, and server
+# and net when their import closure changed (always on main).
 on:
   pull_request:
   push:
@@ -30,6 +31,9 @@ jobs:
     outputs:
       heavy: ${{ steps.diff.outputs.heavy }}
       docs: ${{ steps.diff.outputs.docs }}
+      server: ${{ steps.diff.outputs.server }}
+      image: ${{ steps.diff.outputs.image }}
+      net: ${{ steps.diff.outputs.net }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -48,17 +52,17 @@ jobs:
           if [[ "$REF" == ship/* ]] || { [ "$EVENT" = workflow_dispatch ] && [ "$REF" != main ]; }; then
             BASE=$(git merge-base origin/main HEAD)
           fi
-          # Main dispatches conservatively run all gates.
-          # Empty/unknown diffs and main dispatches conservatively run every gate.
-          if { [ "$EVENT" = workflow_dispatch ] && [ "$REF" = main ]; } || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
-            class=code
+          # Empty/unknown diffs and main (dispatch or push) run every gate: an empty list to --jobs means everything.
+          # Otherwise server and net run when their import closure changed, the image build and boot when its paths
+          # did (dev/ci/change-class.ts).
+          if [ "$REF" = main ] || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
+            jobs=$(node dev/ci/change-class.ts --jobs < /dev/null)
           else
             # Both sides of a rename: moving a file out of docs is a code change.
-            class=$(git diff --no-renames --name-only -z "$BASE" HEAD | node dev/ci/change-class.ts)
+            jobs=$(git diff --no-renames --name-only -z "$BASE" HEAD | node dev/ci/change-class.ts --jobs)
           fi
-          echo "Change class: $class"
-          { [ "$class" = docs ] && echo 'docs=true' || echo 'docs=false'
-            [ "$class" = docs ] && echo 'heavy=false' || echo 'heavy=true'; } >> "$GITHUB_OUTPUT"
+          echo "$jobs"
+          echo "$jobs" >> "$GITHUB_OUTPUT"
 
   # Docs-only: the checks prose can break. Must-read and launch budgets, task routes and rules frontmatter (registry)
   # and the agent definitions' model frontmatter. Nothing a docs path holds is built, bundled or tested otherwise.
@@ -167,9 +171,11 @@ jobs:
       # Reads committed files only: needs neither Blender nor KTX-Software.
       - run: npm run assets -- --check
 
+  # Only when the server tests' import closure changed; the image build and boot only when the image's paths did
+  # (dev/ci/change-class.ts). Skipped, the job reports success. Main always runs both.
   server:
     needs: changes
-    if: needs.changes.outputs.heavy == 'true'
+    if: needs.changes.outputs.heavy == 'true' && (needs.changes.outputs.server == 'true' || needs.changes.outputs.image == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -182,19 +188,24 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: server/package-lock.json
-      - run: npm ci
-      - run: npm test
+      - if: needs.changes.outputs.server == 'true'
+        run: npm ci
+      - if: needs.changes.outputs.server == 'true'
+        run: npm test
       - name: Build the image (from the repo root, as the deploy does)
+        if: needs.changes.outputs.image == 'true'
         working-directory: .
         run: docker build -f server/Dockerfile --build-arg BOOGLE_BUILD=ci-boot -t boogle-server:ci .
       # Tests run from the full checkout; this runs what the image carries (a missing module crash-looped Fly once).
       - name: Boot the image
+        if: needs.changes.outputs.image == 'true'
         working-directory: .
         run: scripts/server-boot-check.sh boogle-server:ci ci-boot
 
+  # Only when the import closure of dev/peer-test changed (dev/ci/change-class.ts); main always runs it.
   net:
     needs: changes
-    if: needs.changes.outputs.heavy == 'true'
+    if: needs.changes.outputs.heavy == 'true' && needs.changes.outputs.net == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -215,11 +226,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      - name: Install Chromium and system deps
-        # The fallback: on 11 November the runners could not reach Ubuntu's package servers for over an hour, so
-        # --with-deps failed before any test ran and a fix for a live outage could not merge. The runner image already
+      - name: Install Chromium
+        # No --with-deps: its apt step stalled 605 s in 16 of 73 net jobs on 11 November. The runner image already
         # carries the libraries headless Chromium needs; if it ever does not, test:net fails loudly at launch.
-        run: npx playwright install --with-deps chromium || npx playwright install chromium
+        run: npx playwright install chromium
       - run: npm run test:net
 
   # A red main is loud (owner call "Fast ships": one green run merges, so main's own CI is the combination check).

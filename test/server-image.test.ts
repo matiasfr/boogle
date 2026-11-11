@@ -9,44 +9,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { builtinModules } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { parseSync, type Node } from 'oxc-parser';
-import { walk as walkAst } from '../dev/scan/parse.ts';
+import { runtimeSpecifiers as specifiers } from '../dev/scan/parse.ts';
+import { SERVER_IMAGE_PATHS } from '../dev/server-build.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ENTRIES = ['server/src/index.ts', 'server/src/seeds/prebuild.ts'];
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-
-// A string literal or a backtick string without `${}`; anything else is not a path the walk can follow.
-function literal(node: Node | null | undefined): string | undefined {
-  if (node?.type === 'Literal' && typeof node.value === 'string') return node.value;
-  if (node?.type === 'TemplateLiteral' && node.expressions.length === 0)
-    return node.quasis[0]!.value.cooked ?? undefined;
-  return undefined;
-}
-
-// Specifiers a module loads at runtime, from the parsed module (comments and strings can't fake or hide one).
-// Whole `import type` / `export type` statements are erased by type stripping; `import { type A }` still loads.
-function specifiers(source: string): string[] {
-  const out: string[] = [];
-  walkAst(parseSync('module.ts', source, { lang: 'ts' }).program, (n) => {
-    if (n.type === 'ImportDeclaration' && n.importKind !== 'type') out.push(n.source.value);
-    else if ((n.type === 'ExportNamedDeclaration' || n.type === 'ExportAllDeclaration') && n.source) {
-      if (n.exportKind !== 'type') out.push(n.source.value);
-    } else if (n.type === 'ImportExpression') {
-      const spec = literal(n.source);
-      if (spec !== undefined) out.push(spec);
-    } else if (n.type === 'NewExpression' && n.callee.type === 'Identifier' && n.callee.name === 'URL') {
-      const [first, base] = n.arguments;
-      const spec = literal(first as Node | undefined);
-      const metaUrl =
-        base?.type === 'MemberExpression' && base.object.type === 'MetaProperty' && !base.computed
-          ? base.property.type === 'Identifier' && base.property.name === 'url'
-          : false;
-      if (spec !== undefined && metaUrl) out.push(spec);
-    }
-  });
-  return out;
-}
 
 const builtin = (spec: string) => spec.startsWith('node:') || builtinModules.includes(spec.split('/')[0]!);
 const packageName = (spec: string) =>
@@ -103,11 +71,6 @@ function dockerIgnored(): string[] {
     .filter((l) => l && !l.startsWith('#') && !l.startsWith('**/'));
 }
 
-function buildIdentityPaths(): string[] {
-  const args = /'--',([\s\S]*?)\]/.exec(read('dev/server-build.ts'))?.[1] ?? '';
-  return [...args.matchAll(/'([^']+)'/g)].map((m) => m[1]!);
-}
-
 function deployPaths(): string[] {
   const block = /\n {4}paths:\n((?: {6}- .*\n)+)/.exec(read('.github/workflows/deploy-server.yml'))?.[1] ?? '';
   return [...block.matchAll(/- '([^']+)'/g)].map((m) => m[1]!);
@@ -117,7 +80,7 @@ test('every file the server image runs is copied, in the build identity and in t
   const { files } = walk();
   const lists = {
     'server/Dockerfile COPY': dockerCopies(),
-    'dev/server-build.ts': buildIdentityPaths(),
+    'dev/server-build.ts': [...SERVER_IMAGE_PATHS],
     'deploy-server.yml paths': deployPaths(),
   };
   for (const [name, entries] of Object.entries(lists)) assert.ok(entries.length > 3, `could not parse ${name}`);
