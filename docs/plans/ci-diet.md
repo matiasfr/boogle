@@ -222,6 +222,13 @@ run less than the full suite.
 - P3(c), logged. `src/adapters/gifts.ts`, `piles.ts` and `mushrooms.ts` are reached now only by broad readers (`atlas`,
   `loop-graph`, `loop-trace`, `registry` and the tests that bundle or evaluate views); no unit test asserts what they do.
   Under the test diet that is the intended state for feature adapters, not a gap this selector can close.
+- Guard follow-ups (re-check). The guard counts an fs read (`readFileSync`, `readdirSync`, `statSync`, `existsSync`,
+  their `fs/promises` forms, `globSync`) as a load when its path, with the file's own bindings substituted, has a
+  literal `src`, `dev`, `server`, `protos` or `test/fixtures` segment after nothing but bases and `./`/`../`; a temp
+  dir (`mkdtemp`, `tmpdir`), a URL (the URL rules) and a path passed in as a parameter are not. A fully literal one
+  passes when the walk has its files; any other is listed, unless only core tests reach the file. None outside the
+  core today. `UNFOLLOWED` entries carry a `count` (default 1) the sites must match, so a second load of a listed kind
+  fails; it found `dev/look/lib.ts`'s second `spawn` (vite, from `node_modules`), now listed with `count: 2`.
 
 ## Batch 3: answered, not built
 
