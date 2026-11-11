@@ -91,6 +91,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     position.lerpVectors(shot.from, shot.to, shot.drift === shot.seconds ? travel : ease(travel));
     if (shot.atFrom) target.lerpVectors(shot.atFrom, shot.at, ease(travel));
     else target.copy(shot.at);
+    // The end cut sets the camera's position and its look together, on the one frame.
     if (shot.end && t >= shot.lead + shot.drift) {
       position.copy(shot.end.pos);
       target.copy(shot.end.at);

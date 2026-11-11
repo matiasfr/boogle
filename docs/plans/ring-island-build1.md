@@ -1183,10 +1183,10 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > **Second review (11 November, D3D12 retake).** The Meet opens with a **cut** to the held framing (a blend in from the
   > follow camera went through the second player's locomotive cab): `createCameraPullOut.play` gains `cutIn` and `end`
   > (a second cut to a held end frame) beside `{ lead, atFrom, back }`. Timeline, 6 s: cut in on the stud (17 m back, 5 m
-  > up) and hold 1.0 s; 3.5 s eased travel over 57 m along the line (peak 24.5 m/s), the look easing from the stud to the
-  > halt; **cut** at 4.5 s to a held frame 14 m short of the RINGWORKS board with the buffers down the line (1.5 s); cut
-  > back (0.14 s). The late-rider replay, 5 s: cut in, 0.8 s hold, 3.0 s over 49 m (peak 24.6 m/s), cut to the board 1.2 s,
-  > cut back. The banner (top 16%, 4.5 s) ends as the board frame begins and never sits over the held stud (centre). The
+  > up) and hold 1.0 s; 3.7 s eased travel over 57 m along the line (peak 23.2 m/s), the look easing from the stud to the
+  > halt; **cut** at 4.5 s to a held frame 14 m short of the RINGWORKS board with the buffers down the line (1.3 s); cut
+  > back (0.14 s). The late-rider replay, 5 s: cut in, 0.8 s hold, 3.0 s over 46 m (peak 23.2 m/s), cut to the board 1.2 s,
+  > cut back. The banner (16 to 34% of the height, built at 4.35 s, 0.15 s under the Copy table's 4.5, so its ghost clears the board frame) ends before the board frame begins and never sits over the held stud (centre). The
   > beacon is deleted (a faint column behind Buddy); the stud's pulse and the glints carry it. **Perf at the halt
   > (ring-joined, 709,598 triangles):** the island ground is the top contributor I could count without a browser:
   > 375 x 360 vertices at a 2 m cell, 199,960 triangles (28%) in one draw, no shadow cast; the far view is hidden while the
@@ -1194,6 +1194,12 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > shard (a few hundred triangles) stay under the ground. The other contributors (the rest of the scene, the island's
   > merged parts, the folk) are not measured; to find them, toggle each entity group's `visible` in a scratch eval and diff
   > `renderer.info.render.triangles`. Cheapest later fix: a coarser ground grid beyond the halt (4 m past 150 m).
+  > **Third review (11 November).** The rivet's cue is the glint seen from a train's length: from landing to strike a
+  > narrow column of large gold glints (0.8 to 4.8 m over the stud, sized and brightened with the stud's pulse, seeded along
+  > its height so it stands at once), the breaker seam's mechanism (`emit`, the `glint` sprite) scaled up, no mesh; range
+  > 240 m. Not used: the glider device's translucent locator shaft (a mesh). The end cut sets position and look in one block
+  > (`camera-pull-out.ts`; by reading I find no frame where they differ, so a 0.2 s aim slew is something else, to measure
+  > with camera position and quaternion logged per frame).
 - [x] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stand upright facing the shard; the whistle swaps two of them for the two

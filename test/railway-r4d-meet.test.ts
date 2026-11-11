@@ -145,12 +145,9 @@ test('the gate waits for the visible landing: offered only after the swing ends,
 });
 
 test('the shots never move the camera faster than 25 m/s at their peak, and hold on the rivet first and the board last', () => {
-  for (const s of [MEET_SHOT, MEET_REPLAY, CROSSING_SHOT]) assert.ok(peakSpeed(s) <= 25, `${peakSpeed(s)}`);
+  for (const s of [MEET_SHOT, MEET_REPLAY, CROSSING_SHOT]) assert.ok(peakSpeed(s) <= 23.5, `${peakSpeed(s)}`);
   assert.equal(MEET_SHOT.lead, 1, 'a second on the rivet before it travels');
-  assert.ok(
-    MEET_SHOT.seconds - MEET_SHOT.lead - MEET_SHOT.drift >= 1.5 - 1e-9,
-    'a second and a half held on the board',
-  );
+  assert.ok(MEET_SHOT.seconds - MEET_SHOT.lead - MEET_SHOT.drift >= 1.3 - 1e-9, '1.3 s held on the board');
   assert.equal(MEET_SHOT.cutIn && MEET_REPLAY.cutIn, true, 'opens with a cut, not a blend through the train');
   assert.equal(CROSSING_SHOT.cutIn, false, 'the first-crossing pull-out blends from the rider');
   assert.ok(MEET_REPLAY.seconds - MEET_REPLAY.lead - MEET_REPLAY.drift >= 1.2 - 1e-9);

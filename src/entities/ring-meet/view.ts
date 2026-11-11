@@ -44,12 +44,14 @@ import {
 
 /** Owner-facing copy (Copy table: "Ring Island" over "The line has arrived", 4.5 s; not The Boogler's). */
 const BANNER = ['Ring Island', 'The line has arrived'] as const;
-const BANNER_S = 4.5;
+const BANNER_S = 4.35;
 const STRIKE_VERB = 'Strike the rivet';
 /** Glints off the stud, seconds apart, only while the camera is within this many metres (it reads from the bents). */
-const MOTE_S = 0.1;
+const MOTE_S = 0.05;
+/** The column's metres over the stud: above the leaf-end blocks, Buddy and an engine's roof (3 to 5 m). */
+const COLUMN_UP: readonly [number, number] = [0.8, 4.8];
 const MOTE = new THREE.Color('#ffd25a');
-const GLINT_RANGE = 160;
+const GLINT_RANGE = 240;
 /** The memory keys (per room and player, createSeen): shown the Meet; shown the first-crossing pull-out. */
 const SAW_MEET = 'meet';
 const PULLED_OUT = 'crossing';
@@ -160,19 +162,22 @@ export function createRingMeet(
     if (mote > 0) return;
     mote = MOTE_S;
     if (Math.hypot(camera.position.x - RIVET_AT.x, camera.position.z - RIVET_AT.z) > GLINT_RANGE) return;
-    // Glints (the star-shaped sprite, big enough to read from the bents) rising off the stud in a slow column.
+    // The glint is the breaker seam's mechanism (particles `emit`, gold, the `glint` sprite, as breaker-view.ts's
+    // goldMote) at a larger scale: a narrow column from the stud up past the blocks, Buddy and a train's roof line
+    // (COLUMN_UP), seeded along its whole height so it stands at once, sized with the stud's pulse.
+    const pulse = 0.5 + 0.5 * Math.sin(t * 5);
     emit({
-      x: RIVET_AT.x + (Math.random() - 0.5) * 0.6,
-      y: RIVET_AT.y + 0.6,
-      z: RIVET_AT.z + (Math.random() - 0.5) * 0.6,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: 0.9 + Math.random() * 0.5,
-      vz: (Math.random() - 0.5) * 0.3,
-      life: 1.8,
-      size: 0.55,
+      x: RIVET_AT.x + (Math.random() - 0.5) * 0.4,
+      y: RIVET_AT.y + COLUMN_UP[0] + Math.random() * (COLUMN_UP[1] - COLUMN_UP[0]),
+      z: RIVET_AT.z + (Math.random() - 0.5) * 0.4,
+      vx: 0,
+      vy: 0.5,
+      vz: 0,
+      life: 1,
+      size: 0.6 + 0.8 * pulse,
       color: MOTE,
-      intensity: readableIntensity() * 1.6,
-      alpha: 0.95,
+      intensity: readableIntensity() * (1.8 + 1.2 * pulse),
+      alpha: 1,
       grow: [0.6, 1],
       shrink: 0.5,
       fade: 0.6,

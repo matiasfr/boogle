@@ -55,13 +55,13 @@ const END: { pos: V3; at: V3 } = {
 };
 
 /** The Meet, 6 s: a cut to 1 s held 17 m back and above the rivet looking at the stud (the clang and the gold burst in
- * frame), 3.5 s easing in and out 57 m along the joined line over the leaf (peak 24.6 m/s; it was 30), the look easing
- * from the stud toward the halt, a cut to 1.5 s held on the RINGWORKS board with the buffers beyond, then a cut back.
+ * frame), 3.7 s easing in and out 57 m along the joined line over the leaf (peak 23.2 m/s; it was 30), the look easing
+ * from the stud toward the halt, a cut to 1.3 s held on the RINGWORKS board with the buffers beyond, then a cut back.
  * Call 11. */
 export const MEET_SHOT: MeetShot = {
   seconds: 6,
   lead: 1,
-  drift: 3.5,
+  drift: 3.7,
   back: CUT_S,
   cutIn: true,
   from: over(24700, -1100, 4.5),
@@ -70,14 +70,14 @@ export const MEET_SHOT: MeetShot = {
   at: BOARD_AT,
   end: END,
 };
-/** A late player's first crossing shows the Meet's framing in 5 s: a cut to 0.8 s on the joint, 3 s over 49 m (peak
- * 24.6 m/s; it was 37), a cut to 1.2 s on the board; cut back. */
+/** A late player's first crossing shows the Meet's framing in 5 s: a cut to 0.8 s on the joint, 3 s over 46 m (peak
+ * 23.2 m/s; it was 37), a cut to 1.2 s on the board; cut back. */
 export const MEET_REPLAY: MeetShot = {
   ...MEET_SHOT,
   seconds: 5,
   lead: 0.8,
   drift: 3,
-  to: over(29600, -1300, 9),
+  to: over(29300, -1300, 9),
 };
 /** The first-crossing pull-out: from beside the track at the leaf's mainland end, out and up over the bents, looking at
  * the joint as the train goes over it. 5 s, an even drift, blended in from the rider's own camera; cut back like the
