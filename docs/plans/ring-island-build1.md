@@ -864,6 +864,24 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > `railway-world.ts`'s are in `railway-components.ts` (`RAIL_COMPONENTS`, `DEPOT_OUT`), `railway-check.ts`
   > (`ARCHETYPES`, counts) and a new `railway-check-ring.ts`; the adapter's `inspect()` still builds on the read model,
   > so `ring` goes in from rows (`read.world()`), not through `Railway`.
+  >
+  > **Design review (designer, 11 November 2026): the three gaps R3b-1 found.** All Defaults; they proceed
+  > ([agent-calls](../agent-calls.md), Rail, 2026-11-11).
+  > - **Call 62.** Q7's kit unloads at the Pier (stop 3, the line's end while Q7 is laid), onto the rack and shelf on
+  >   Q7's deck (s 703–713), into `Rail.depot`/`depotRails`. Each train-fed job's kit unloads at its own halt; Far
+  >   Head's service stop and unload are Q6's only. `kitOwed`, the kit load in `standing`, `line2KitOwed` and
+  >   `serviceOf` read the active train-fed job, not slot 5. A test holds that Q7's kit passes Far Head and
+  >   `rail.depot` rises only at the Pier.
+  > - **Call 63.** Q7's kit is its bill, 20 logs and 20 rails, one trip. `LINE2_KIT` (32/32) stays as the kit car's
+  >   capacity; `line2KitOwed`'s literal 32 becomes the job's bill; the loop graph's "kit equals bill" check covers Q7.
+  > - **Call 64.** `Rail.out6` is a counter like `out5` (logs issued to Q7, capped at its bill) in `DEPOT_OUT`; nothing
+  >   drawn, no place at the depot.
+  > - **Call 65.** The footing wagon loads no ring footings until Q7 is laid (`ringOwed` is 0 before then), so nothing
+  >   but the pier's twelve reaches the Pier's rack. The first ring footing's arrival after Q7 is reported from `npm run
+  >   loop -- run` (designer's P2: more than about 90 s with nothing to do is reported, not fixed).
+  > - **P3s.** The Village's `kitWaitTicks` hold and the "forge lit" test follow the active job too; `line2-view.ts`
+  >   and the station-6 shelf and sign are checked for a hard-coded index; the stale "Q1 to Q6" and "the Q6 kit"
+  >   comments are fixed.
 
   New `src/sim/railway-ring.ts`: `Aperture`,
   `ringHead`, `ringOpen` (`{ head, joined }` for `trainStopsOf`), `ringOwed`, `ringFootTake`, `ringFootSet`, `brace`,
