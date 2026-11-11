@@ -28,6 +28,7 @@ import { createStall } from './adapters/mushrooms.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
+import { preloadBootChunks } from './boot/boot-chunks.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
 import { background } from './async.ts';
 import { AssetDownloadError, isChunkFetchError } from './boot/asset-fetch.ts';
@@ -38,6 +39,7 @@ import.meta.glob('./features/*.{js,ts}', { eager: true });
 // And every entity's index.ts (src/entities/ball/index.ts is the example).
 import.meta.glob('./entities/*/index.ts', { eager: true });
 bootMark('modules'); // every eager module is in and evaluated (src/boot/timeline.ts lists the phases)
+preloadBootChunks(); // the lazy parts the loading screen waits for, all at once rather than one after another
 // Startup below owns readiness failures; observers must not create another unhandled rejection.
 physicsReady.then(
   () => bootMark('rapier'),
@@ -101,6 +103,7 @@ async function play() {
   splashStage(0.45, 0.95);
   await Promise.race([precompile(null, splashProgress), giveUp]);
   shadersMark();
+  await physicsReady; // the warm-up needs only the GPU: on a slow link it runs while Rapier's WASM is still coming
   lobbyReady(); // a returning player joins here, so their avatar's first draw is behind the loading screen too
   last = performance.now();
   // three resets its info, ticks the TSL clock, then runs ours: one loop, one order
@@ -118,11 +121,16 @@ window.boogle = { THREE, scene, camera, me, ball, net, remotes, inspect } as Win
 
 start();
 splashStage(0.3, 0.45);
-Promise.all([rendererReady, physicsReady])
-  .then(play)
-  .catch((e: unknown) => {
-    if (e instanceof AssetDownloadError || isChunkFetchError(e)) return bootFailed(e);
-    console.error('[boot] startup failed:', e); // the lobby note can't say what went wrong
-    graphicsFailed();
-    splashDone(true);
-  });
+let failed = false;
+const startupFailed = (e: unknown) => {
+  if (failed) return;
+  failed = true;
+  if (e instanceof AssetDownloadError || isChunkFetchError(e)) return bootFailed(e);
+  console.error('[boot] startup failed:', e); // the lobby note can't say what went wrong
+  graphicsFailed();
+  splashDone(true);
+};
+// The shader warm-up starts with the GPU; play() waits for physics only before the first frame. Rapier failing to load
+// still fails the start at once, not after the warm-up.
+rendererReady.then(play).catch(startupFailed);
+physicsReady.catch(startupFailed);

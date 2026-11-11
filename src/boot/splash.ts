@@ -10,6 +10,13 @@
 //
 // A step that cannot report progress (a single compileAsync, a download) still moves: the bar eases toward `to`
 // and slows as it gets near, so it never sits still and never claims to be done early.
+// The game's two fonts, self-hosted (owner, 10 November: no Google Fonts stylesheet blocking the boot). The same Google
+// Fonts files in their latin and latin-ext subsets, `font-display: swap`; OFL 1.1, the licences in public/fonts/.
+import '@fontsource/figtree/500.css';
+import '@fontsource/figtree/600.css';
+import '@fontsource/figtree/700.css';
+import '@fontsource/figtree/800.css';
+import '@fontsource/lilita-one/400.css';
 import './splash.css';
 import art from './splash-art.jpg'; // prompt and reference: dev/concepts/splash.json; 1280 px, picked from a contact sheet
 import { bootMark, bootMarks, onBootMark } from './timeline.ts';

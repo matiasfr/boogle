@@ -5,6 +5,7 @@ import { bootTimeline } from '../../boot/timeline.ts';
 import { autoRung, graphicsSnapshot } from '../../graphics-settings.ts';
 import { LIMIT_KEYS, LIMITS } from './limits.ts';
 import { browserName, deviceClass, fit, type Fields } from './wire.ts';
+import { controlledAtStart } from './first-load.ts';
 
 type Limits = Record<string, number | undefined>;
 type Adapter = {
@@ -111,8 +112,9 @@ export function loadFields(): Fields {
     body_kb: Math.round(tl.body / 1000),
     sw_req: tl.fromSw,
   };
-  // Whether a service worker already controlled the page: a warm load, labelled so.
-  f.warm = !!navigator.serviceWorker?.controller;
+  // Whether a service worker already controlled the page when it loaded: a warm load, labelled so. At the start, not
+  // now: by now our own worker has registered and claimed a first visit too (run ckn9ca read "warm" on a cold launch).
+  f.warm = controlledAtStart() ?? !!navigator.serviceWorker?.controller;
   f.nav = tl.nav;
   let n = 0;
   for (const m of tl.marks) {
