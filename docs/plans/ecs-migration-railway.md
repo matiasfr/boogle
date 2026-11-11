@@ -329,7 +329,7 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
 | M4, M5 | Render primitives; land and the village kit | Low to medium | | done |
 | M6 | The railway's modules out of Place; split `rail.ts` | Medium | M5 | building. **Gate: build-out views, with M8** |
 | M7 | The town's modules | Low to medium | M6 | |
-| M8 | The read facade; every fact as a query (grown) | High | M1, M3b; beside M3c | **Gate: build-out views, with M6** |
+| M8 | The read facade; every fact as a query (grown) | High | M1, M3b; beside M3c | built, not shipped. **Gate: build-out views, with M6** |
 | M8b | The load check on the world (new) | High | M8, M3c | |
 | M9 | Chunk and cull the track | Medium | M6 | |
 | M10 a to f | Views read rows and queries | Medium each | M6, M8 | six groups in parallel |
@@ -568,7 +568,7 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
   - **Measured (counts, `look --rail-seed trains-on`, 301 frames, not a device):** reads per frame 137.5 both ways;
     key evaluations per frame **137.5 before, 1.0 after**; state builds and inspection builds 0.03 per frame
     both ways (9 vs 8 in 5 s). `npm run perf` was not run: counts, not timing under load, are the evidence.
-- [ ] **M8. The read facade, the timed queries and every fact as a query.** _High (`src/sim`, `src/world`). After M1
+- [x] **M8. The read facade, the timed queries and every fact as a query.** _High (`src/sim`, `src/world`). After M1
       and M3b, beside M3c. It may ship as the facade first and then one commit per domain file._
   - `src/sim/railway-line-schedule.ts`: `layProgress(spec, schedule, elapsed)`; `layLine1` and `layLine2` call it.
     `src/sim/railway-queries.ts`: `jobProgress(w, c, id, tick)` on the same function.
@@ -597,6 +597,43 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
     clone's rows); a completed job whose `end` is still −1 in the clone; the view world changing identity between two
     reads in one frame; `read.world()` before the first whole state, after a `reset()` and during a refill (it must
     never return a half-filled world).
+  - **Built (10 November, branch `ecs/m8-read-facade`, two commits, not shipped):** `adapter.read = { world, tick,
+    tickNow, pid, status }` with `world: () => worldOf(view()) ?? worldOf(confirmed)!`; `worldOf` exported from
+    `railway-predict.ts`; `railwayWorldRead()` and its setter in `state.ts`, set and cleared by the railway entry. No
+    view reads it yet (M10). `layProgress` in `railway-line-schedule.ts`; `jobProgress` in `railway-queries.ts` reads
+    only the Job/QJob row (`start`, `ahead`, `end`, `completion`, timing), with a one-entry schedule cache per station
+    as the mirror's clocks had. All 33 facts and `railTrainsOf` have world twins under the same names: the job reads
+    (`railJobs`, `line2Jobs`, `railCurrentJob`), `railActiveStation`, `railAccount` and `railCarryMax` in
+    `railway-queries.ts`, the rest in the four domain files (`railCounts` in `-line2.ts`, beside the line-2 logs and
+    rails it sums). A fact that reads a timed field takes an optional `at`: absent, the run rows the tick advances
+    (server, seeds, tests); given, `jobProgress` at that tick (a mirror or clone, whose run rows never move). A job
+    read is `{ id, job, run }`, the rows themselves, not a merged shape. Where a system's world twin differs from
+    the read model's helper (`cartWants` counts train cargo, `gateDown` skips Q3's completion, `kitOwed` is a boolean),
+    the read model's arithmetic is the one ported, so the views keep what they show.
+  - **Not done here, by the lane rule:** `layLine1` and `layLine2` (`railway-sys-line1.ts`, `railway-sys-line2.ts`,
+    M3c's lane) still hold their own copy of the laying arithmetic; each can call `layProgress` in a one-line change,
+    which the stage and ops goldens would then guard.
+  - **Reviewer attacks, answered:** a prediction never writes `ahead` or `end` (`rail.jobClock` runs only on the
+    server, `railSettle` after an applied action) and holds funding back, so a clone's Job rows carry the mirror's
+    clock fields as copied; a clone can only complete a job the mirror already completed, with its `end`. Two reads
+    in a frame return the same world unless a press or a packet changed the view between them, as `inspect()` does
+    today. Before the first whole state `world()` is the fresh railway world the confirmed read model was born
+    linked to; through a refill it is the frozen view's world (the staged state is built aside); `reset()` is called
+    by nothing in the adapter, and after one the confirmed model stays linked to its last whole world until the next
+    whole state relinks it (its piles and accounts are cleared on the model, not on that world).
+  - **Found, kept as it is:** `line2CartStatus` (both twins) throws when the cart has cargo aboard, no stretch is
+    served and the cart is at or bound for home (`LINE2_STATIONS[-1]`). The differential test compares the throw.
+    For the owner or a later step; not changed here.
+  - **Verified:** `test/railway-queries.test.ts` (4 tests, about 1 s): the name list (33 plus `railTrainsOf`); a
+    seeded 2,400-action stream and a laid-out Q1 with 32,076 fact checks on the server's rows, the server's clock, the
+    confirmed mirror at the tick and 297 predicted clones (1 line-one and 3 Q1 bills held back), `jobProgress` per
+    job against `at(tick)`; 300 random-row worlds; the facade (whole before a packet, the clone while pending, the
+    same world twice, kept through a refill). Four one-line mutations (three in `jobProgress`, one in `line2CartWants`) each
+    fail it. Unit tests 973/973 plain and with the audit preload; `npm --prefix server test` 150/150 both ways;
+    `npm run test:net` 131/131 both ways; typecheck, lint, registry clean; `npm run loop -- run` identical to base
+    but wall time; `npm run counts` 238 draws, 67 shadow draws, 209 programs before and after; the `trains-on` engine
+    still identical but the chimney puff. Frame cost not measured (machine load 9 to 26): no view calls the facade
+    or a query yet, so a frame does what it did after M1.
 - [ ] **M8b. The load check on the world.** _High (`src/sim`; what a save must satisfy to load). After M8 and
       M3c._
   - `src/sim/railway-check.ts` keeps `railwayCheck(w)` (archetypes, counts, row limits) and calls four new flat
