@@ -72,10 +72,10 @@ elif [ -n "$verdicts" ]; then
   echo "ship-queue: orchestrator read: $read"
 fi
 if [ -n "$verdicts" ]; then
-  log=${BOOGLE_DAILY_DIR:-$HOME/.boogle/daily}/scenarios.log
-  verdict=$(grep '^Daily scenarios:' "$log" 2>/dev/null | tail -1)
+  # The newest scenarios verdict, scheduled or by hand (dev/daily/verdicts.ts, the heartbeat's reader too).
+  verdict=$(env ${BOOGLE_DAILY_DIR:+BOOGLE_DAILY_STATE="$BOOGLE_DAILY_DIR"} node "$here/daily/verdicts.ts" scenarios 2>/dev/null | tail -1)
   if [ -z "$verdict" ]; then
-    echo "ship-queue: no nightly scenarios run in $log; not held."
+    echo "ship-queue: no scenarios run recorded; not held."
   elif ! [[ "$verdict" =~ ^Daily\ scenarios:\ passed\. ]]; then
     echo "ship-queue: the last nightly scenarios run was not a pass:"
     echo "  $verdict"
