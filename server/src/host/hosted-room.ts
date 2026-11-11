@@ -85,8 +85,8 @@ const MUSH_SPOTS = 10;
 function mushShape(msg: unknown): { s: number[] } | null {
   const s = (msg as { s?: unknown } | null)?.s;
   if (!Array.isArray(s) || !s.length || s.length > MUSH_SPOTS || s.length % 2) return null;
-  if (!s.every((v) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) < HALF)) return null;
-  return { s: s.map((v: number) => Math.round(v * 10) / 10) };
+  const r = s.map((v: unknown) => (typeof v === 'number' ? Math.round(v * 10) / 10 : NaN));
+  return r.every((v) => Number.isFinite(v) && Math.abs(v) < HALF) ? { s: r } : null;
 }
 const visible = (c: Client) => (c.d as { v?: unknown } | null)?.v === 1;
 // Voice chat's presence field (src/features/voice.ts): 1 in voice, 2 muted; missing means not in voice.
