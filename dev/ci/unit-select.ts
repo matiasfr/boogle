@@ -50,8 +50,10 @@ export const CORE_TESTS = [
 /** Loads a test's closure makes that no walk can follow, keyed `<file>: <call>` as test/unit-select.test.ts's guard
  * names them. `reaches` (files, or prefixes ending in /) joins the closure of every test that reaches the file, so a
  * change there selects them; empty when the load reaches no repo file beyond what the walk already has, and `why`
- * says what covers it. */
-export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: string }> = {
+ * says what covers it. `count` (default 1) is how many such sites the file has: one more, unlisted, fails the guard.
+ * The guard also counts an fs read whose path is built into src/, dev/, server/, protos/ or test/fixtures and that the
+ * walk does not follow, in a file a non-core test reaches (its call name: `readFileSync`, `readdir`, ...). */
+export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: string; count?: number }> = {
   'dev/sim/hooks.ts: registerHooks': {
     reaches: [],
     why: 'expands import.meta.glob in the files it loads; the walk expands the same globs itself',
@@ -99,8 +101,9 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     why: 'runs probe modules written inline, which load what its url() entry lists',
   },
   'dev/look/lib.ts: spawn': {
+    count: 2,
     reaches: [],
-    why: 'run(cmd, args) runs what a look tool names (vite, ffmpeg); only core tests reach it, by naming it',
+    why: 'run(cmd, args) runs ffmpeg; the look server runs vite from node_modules; only core tests reach it, by name',
   },
   'dev/lint/runner.ts: spawnSync': {
     reaches: [],
