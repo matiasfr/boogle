@@ -2,8 +2,20 @@
 // should rest for the pawl and the counterweight, and how it gets there. Raised on the pawl; once braced each hung
 // footing dips it a quarter; the last one (or the pawl knocked out with all four hung) swings it down, 2.5 s, ease-in.
 
+import { WORKS } from '../../sim/railway-works-layout.ts';
+
 /** The Aperture row's `brace` encoding (src/sim/railway-components.ts; test/railway-r4c-leaf.test.ts pins it to the sim's). */
 export const BRACE = { DOWN: 0, RAISED: 1, BRACED: 2 } as const;
+
+/** The brace prompt's window: the gap footed and the leaf still on its pawl (the sim's `brace` accepts exactly this). */
+export function braceOffered(set: number, brace: number): boolean {
+  return set === WORKS.ring && brace === BRACE.RAISED;
+}
+/** The jib's prompt window, given a footing on your back: a bent's footing while the gap is open, then a counterweight
+ * footing until four hang (one site, its meaning by state: call 7). Never once the leaf is weighted. */
+export function jibOffered(set: number, cw: number): boolean {
+  return set < WORKS.ring || cw < WORKS.counterweight;
+}
 
 /** Degrees up when raised (ringIslandPose.leaf's 78). */
 export const LEAF_UP = 78;
