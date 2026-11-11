@@ -16,6 +16,18 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { CART, CART_PHASE, CART_ROAD, cartAlong } from '../../sim/railway-cart.ts';
 import { playMark } from '../../proto/mark.ts';
+import {
+  line2Active,
+  line2CartStatus,
+  line2Completed,
+  line2Served,
+  line2Trains,
+} from '../../sim/railway-queries-line2.ts';
+import { cart as cartRow, rail as railRow, type ReadWorld } from '../../sim/railway-rows.ts';
+
+/** The cart is out on its road: line 2's first stretch is laid, and it is not parked while trains run. */
+const cartOn = (w: ReadWorld, ready: boolean) =>
+  ready && line2Completed(w) >= 1 && !(line2Trains(w) && cartRow(w).phase === CART_PHASE.REST);
 
 /** Place's depot service tag (depot.ts SERVICE). */
 const SERVICE = {
@@ -127,10 +139,8 @@ export async function createRailwayCart(
   let clock = -1;
   let shown = false;
   function step() {
-    const s = adapter.inspect();
-    const l2 = s.line2;
-    const on = s.ready && !!l2 && l2.completed >= 1 && !(l2.trains && l2.cart.phase === CART_PHASE.REST);
-    if (!on || !l2) {
+    const w = adapter.read.world();
+    if (!cartOn(w, adapter.read.ready())) {
       if (shown) {
         car.y = -60; // waits under the land: nothing to draw, nor to stand on
         shown = false;
@@ -140,7 +150,7 @@ export async function createRailwayCart(
     const target = adapter.tickNow();
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * TICKS_PER_S + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
-    const d = cartAlong(l2.cart, clock) / 100;
+    const d = cartAlong(cartRow(w), clock) / 100;
     if (d <= F) rail.poseCarOnLine(car, north, F - d, -1);
     else rail.poseCarOnLine(car, east, d - F, 1);
     if (!shown) {
@@ -180,26 +190,27 @@ export async function createRailwayCart(
     /** Logs and rails on their way from the cart to the rack and shelf (line2-view and shelf-view hold them back). */
     flying: () => ({ logs: flyingLogs, rails: flyingRails }),
     update(dt: number) {
-      const s = adapter.inspect();
-      const l2 = s.line2;
-      const on = s.ready && !!l2 && l2.completed >= 1 && !(l2.trains && l2.cart.phase === CART_PHASE.REST);
+      const w = adapter.read.world();
+      const on = cartOn(w, adapter.read.ready());
       const aboard = on && carry.on === car.platform;
       if (aboard && !riding) playMark('cart ride', { authority: 'local' });
       riding = aboard;
-      if (!on || !l2) {
+      if (!on) {
         tag.mesh.visible = false;
         return;
       }
-      const c = l2.cart;
+      const c = cartRow(w),
+        stock = railRow(w),
+        active = line2Active(w);
       if (unloading) unloading.elapsed += dt;
       // The unload: what was aboard is heaved onto the rack and shelf, in a stream.
       if (last && c.phase === CART_PHASE.DROP && last.phase !== CART_PHASE.DROP && last.logs + last.rails > 0) {
-        const k = l2.active >= 0 ? l2.active : -1;
+        const k = active;
         if (k >= 0) {
           depotPlace(k, rackAt);
           unloading = { elapsed: 0, logs: last.logs, rails: last.rails };
           cartLook.updateWorldMatrix(true, false);
-          const firstLog = Math.max(0, l2.depot - last.logs);
+          const firstLog = Math.max(0, stock.depot - last.logs);
           const deliveredLogs = last.logs;
           flyingLogs += last.logs;
           for (let i = 0; i < last.logs; i++) {
@@ -239,7 +250,7 @@ export async function createRailwayCart(
             pieces.send(
               'rail',
               from,
-              shelfSlot(k, Math.max(0, l2.depotRails - last.rails) + i, new THREE.Vector3()),
+              shelfSlot(k, Math.max(0, stock.depotRails - last.rails) + i, new THREE.Vector3()),
               {
                 dur: 0.55,
                 delay: i * STAGGER,
@@ -286,11 +297,13 @@ export async function createRailwayCart(
       }
       moving = going;
       // The rack's tag.
-      const [title, color] = SERVICE[l2.cartStatus];
-      tag.mesh.visible = l2.cartStatus !== 'off' && l2.served >= 0;
+      const status = line2CartStatus(w),
+        served = line2Served(w);
+      const [title, color] = SERVICE[status];
+      tag.mesh.visible = status !== 'off' && served >= 0;
       if (tag.mesh.visible) {
-        const yaw = depotYaw(l2.served);
-        depotPlace(l2.served, rackAt);
+        const yaw = depotYaw(served);
+        depotPlace(served, rackAt);
         tag.mesh.position.set(-1.2, 0, 1.65).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(rackAt);
         tag.mesh.position.y = rackAt.y - 0.16;
         tag.mesh.rotation.y = yaw + Math.PI / 2;
@@ -302,18 +315,19 @@ export async function createRailwayCart(
       }
     },
     inspect: () => {
-      const s = adapter.inspect();
+      const w = adapter.read.world(),
+        c = cartRow(w);
       return {
         cart: {
           x: car.x,
           y: car.y,
           z: car.z,
-          phase: s.line2.cart.phase,
-          logs: s.line2.cart.logs,
-          rails: s.line2.cart.rails,
-          along: cartAlong(s.line2.cart, adapter.tickNow()),
+          phase: c.phase,
+          logs: c.logs,
+          rails: c.rails,
+          along: cartAlong(c, adapter.tickNow()),
           riding: carry.on === car.platform,
-          status: s.line2.cartStatus,
+          status: line2CartStatus(w),
         },
       };
     },

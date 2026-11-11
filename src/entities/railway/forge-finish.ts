@@ -7,6 +7,7 @@
 // lit sees it finished. No op, presence or shared state, and no train: the beams no longer wait for line 1.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
+import { forge as forgeRow } from '../../sim/railway-rows.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { dustRing } from '../../render/particle-effects.ts';
@@ -206,7 +207,7 @@ export async function createForgeFinish(
     for (let n = from; n < to; n++) building.drop(roof[n]!, 2.4, 0.15 + (n - from) * 0.06);
   }
   /** The forge is lit: its last hand-fed bill is in. */
-  const lit = () => (adapter.inspect().line2?.forge.lit ?? -1) >= 0;
+  const lit = () => forgeRow(adapter.read.world()).lit >= 0;
   function restore() {
     // A restore in the middle of the show (the machine's crossing begins a few seconds after the forge lights) must
     // not cut it short: the view's pieces were just cleared, so put back the boards of the trusses already up.

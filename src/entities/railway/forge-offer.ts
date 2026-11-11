@@ -5,6 +5,8 @@
 // view's own "Your back is full". Pure, so test/railway-works.test.ts holds it to the rule.
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { WORKS } from '../../sim/railway-works-layout.ts';
+import { line2Active, line2Trains } from '../../sim/railway-queries-line2.ts';
+import { qjob, type ReadWorld } from '../../sim/railway-rows.ts';
 
 /** The active Q station is fed by train and trains don't run yet: its kit is the train's job, not a back's. */
 export const trainOwed = (active: number, trains: boolean): boolean =>
@@ -18,6 +20,10 @@ export const waitsForTrain = (l: {
   trains: boolean;
   stations: readonly { start: number }[];
 }): boolean => trainOwed(l.active, l.trains) && l.stations[l.active]!.start < 0;
+
+/** `waitsForTrain` on the rows (`active` is `line2Active(w)`; pass it when the caller has it already). */
+export const waitsForTrainOn = (w: ReadWorld, active = line2Active(w)): boolean =>
+  trainOwed(active, line2Trains(w)) && qjob(w, active).start < 0;
 
 /** `active`: line 2's Q station taking materials (-1 for none); `railsCarry`: the rails on your own back. */
 export const forgeRailsOffered = (active: number, trains: boolean, cradleRails: number, railsCarry: number): boolean =>

@@ -2,13 +2,7 @@
 // Q1-Q6 frames, depot racks, route-v2 decks, both gates, the summit switch, Far Head, the boiler and the pier show.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
-import {
-  railTrainsOf,
-  type RailwayAdapter,
-  type RailwayAccepted,
-  type RailwayCorrection,
-} from '../../adapters/railway.ts';
-import { LINE2 } from '../../sim/railway-lines.ts';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -19,15 +13,32 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
-import { LINE2_FORGE, LINE2_STATIONS, Q7, line2Panels, pierLaid } from '../../sim/railway-line2-layout.ts';
-import { line2Completed } from '../../sim/railway-queries-line2.ts';
+import { LINE2_FORGE, LINE2_STATIONS, Q7, line2Panels, line2Routes, pierLaid } from '../../sim/railway-line2-layout.ts';
+import {
+  line2Active,
+  line2Completed,
+  line2GateOpen,
+  line2KitOwed,
+  line2Trains,
+} from '../../sim/railway-queries-line2.ts';
+import { aboard, line2Jobs, type QJobRead } from '../../sim/railway-queries.ts';
+import { freeCarryIgnoringBig, railPhase } from '../../sim/railway-queries-line1.ts';
+import {
+  account,
+  forge as forgeRow,
+  job as line1Job,
+  qjob,
+  rail as railRow,
+  shed as shedRow,
+  type ReadWorld,
+} from '../../sim/railway-rows.ts';
 import { RING_Q7_FRAME } from '../../sim/railway-ring-layout.ts';
 import { Q7_DECK_UP, q7Spot } from './q7-site.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
-import { forgeRailsOffered, waitsForTrain } from './forge-offer.ts';
+import { forgeRailsOffered, waitsForTrainOn } from './forge-offer.ts';
 import { createRailwayGlideDevice } from './glide-device-view.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
@@ -43,16 +54,14 @@ import { uiSound } from '../../ui/ui-sound.ts';
 const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
 type Rail = typeof import('./rail-kit.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
-type Inspection = ReturnType<RailwayAdapter['inspect']>;
-type Line2 = NonNullable<Inspection['line2']>;
 /** The rack's sign keeps the train until the first kit is off it: so the flip back to the count lands as the train
  * unloads at Far Head, not at the fit 500 m away. Trains run, and the kit is still to load or still aboard. */
-const kitComing = (l: Line2, s: Inspection) =>
-  l.trains &&
-  l.active >= 0 &&
-  LINE2_STATIONS[l.active]!.feed === 'train' &&
-  l.stations[l.active]!.start < 0 &&
-  l.kitOwed.logs + l.kitOwed.rails + railTrainsOf(s, LINE2).reduce((n, { row }) => n + row.logs + row.rails, 0) > 0;
+const kitComing = (w: ReadWorld, active: number) => {
+  if (!line2Trains(w) || active < 0 || LINE2_STATIONS[active]!.feed !== 'train' || qjob(w, active).start >= 0)
+    return false;
+  const owed = line2KitOwed(w);
+  return owed.logs + owed.rails + aboard(w, 'logs') + aboard(w, 'rails') > 0;
+};
 
 export async function createRailwayLine2(
   adapter: RailwayAdapter,
@@ -125,8 +134,26 @@ export async function createRailwayLine2(
   const STONE = '#917b5e',
     STONE2 = '#b6a080',
     BRASS = '#c79a3e';
-  let state = adapter.inspect();
-  const l2 = (): Line2 | null => state.line2;
+  const rd = adapter.read;
+  // What this view works out from the rows is worked out once for a world and a tick (a press makes a new predicted
+  // world, a packet a new tick), however many of its parts ask: the stretch taking materials, and line 2's jobs with
+  // their timed fields at the tick. A job row in the list is live (rows are written in place), and nothing here holds
+  // one across a call that can run a rule.
+  let seenW: ReadWorld | null = null,
+    seenAt = -1,
+    seenActive = -1,
+    seenJobs: QJobRead[] | null = null;
+  function seen(w: ReadWorld) {
+    const at = rd.tick();
+    if (w !== seenW || at !== seenAt) {
+      seenW = w;
+      seenAt = at;
+      seenActive = line2Active(w);
+      seenJobs = null;
+    }
+  }
+  const activeIn = (w: ReadWorld) => (seen(w), seenActive);
+  const jobsIn = (w: ReadWorld) => (seen(w), (seenJobs ??= line2Jobs(w, seenAt)));
 
   // ---------------------------------------------------------------- the forge
   // The furnace/output opening stays clear in the front wall, as in the prototype: the lit mouth shows through it.
@@ -527,54 +554,51 @@ export async function createRailwayLine2(
   const from = new THREE.Vector3();
   /** The machine has crossed to line two: the forge is lit and the turn has played. */
   const working = () => {
-    const l = l2();
-    return !!l && l.forge.lit >= 0 && state.tick >= l.forge.lit + LINE2_FORGE.turnTicks;
+    const lit = forgeRow(rd.world()).lit;
+    return lit >= 0 && rd.tick() >= lit + LINE2_FORGE.turnTicks;
   };
   const activeIndex = () => {
-    const l = l2();
+    const active = activeIn(rd.world());
     // Q6's frame once the active job is not the machine's (all laid, or Q7): the machine parks at the pier's end.
-    return l ? (machined(l.active) ? l.active : MACHINED - 1) : 0;
+    return machined(active) ? active : MACHINED - 1;
   };
   const jobElapsed = (k: number) => {
-    const job = l2()!.stations[k]!;
-    return job.elapsed + (k === l2()!.active && job.start >= 0 && !job.completion && state.ready ? sinceTick * 10 : 0);
+    const w = rd.world(),
+      { job, run } = jobsIn(w)[k]!;
+    return run.elapsed + (k === activeIn(w) && job.start >= 0 && !job.completion && rd.ready() ? sinceTick * 10 : 0);
   };
   const phaseOf = (k: number) => {
-    const job = l2()!.stations[k]!;
+    const { job, run } = jobsIn(rd.world())[k]!;
     if (job.completion) return 'done';
     if (job.start < 0) return 'idle';
-    const feed = lineFeed(LINE2_STATIONS[k]!, job.timing);
-    const feedEnd = Math.ceil(job.timing.depositMs / 100) + Math.ceil(Math.max(0, ...feed.map((f) => f.landMs)) / 100);
-    return job.elapsed < Math.ceil(job.timing.depositMs / 100)
-      ? 'deposit'
-      : job.elapsed < feedEnd
-        ? 'feeding'
-        : 'laying';
+    const feed = lineFeed(LINE2_STATIONS[k]!, job);
+    const feedEnd = Math.ceil(job.depositMs / 100) + Math.ceil(Math.max(0, ...feed.map((f) => f.landMs)) / 100);
+    return run.elapsed < Math.ceil(job.depositMs / 100) ? 'deposit' : run.elapsed < feedEnd ? 'feeding' : 'laying';
   };
   const head = () => {
     const k = activeIndex(),
       spec = LINE2_STATIONS[k]!,
-      job = l2()!.stations[k]!;
+      job = jobsIn(rd.world())[k]!.job;
     if (job.completion) return spec.toCm / 100;
     if (job.start < 0) return spec.fromCm / 100;
-    const depositTicks = Math.ceil(job.timing.depositMs / 100);
-    const feed = lineFeed(spec, job.timing);
+    const depositTicks = Math.ceil(job.depositMs / 100);
+    const feed = lineFeed(spec, job);
     const feedTicks = Math.ceil(Math.max(0, ...feed.map((f) => f.landMs)) / 100);
     return (
       (spec.fromCm +
-        Math.min(spec.toCm - spec.fromCm, lineLayDistance(jobElapsed(k) - depositTicks - feedTicks, job.timing))) /
+        Math.min(spec.toCm - spec.fromCm, lineLayDistance(jobElapsed(k) - depositTicks - feedTicks, job))) /
       100
     );
   };
   const panelState = (): PanelState => {
-    const l = l2();
-    if (!l) return { phase: 'idle', activeStation: 0, panelStock: 0, panelCount: 0 };
+    const jobs = jobsIn(rd.world());
     let count = 0;
-    l.stations.forEach((job, k) => {
-      if (machined(k) && job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, job.elapsed, job.timing);
-    });
+    for (let k = 0; k < jobs.length; k++) {
+      const { job, run } = jobs[k]!;
+      if (machined(k) && job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, run.elapsed, job);
+    }
     const k = activeIndex(),
-      job = l.stations[k]!;
+      job = jobs[k]!.job;
     const before = STRETCH_PAIRS.slice(0, k).reduce((n, pairs) => n + pairs, 0);
     const stock = job.start >= 0 && !job.completion ? STRETCH_PAIRS[k]! - (count - before) : 0;
     return { phase: phaseOf(k), activeStation: k, panelStock: Math.max(0, stock), panelCount: count };
@@ -595,8 +619,8 @@ export async function createRailwayLine2(
   function step(dt: number) {
     const previous = visualHead - setback;
     const k = activeIndex(),
-      job = l2()!.stations[k]!;
-    const speed = job.timing.cruiseCmPerTick / 10;
+      job = jobsIn(rd.world())[k]!.job;
+    const speed = job.cruiseCmPerTick / 10;
     const laying = phaseOf(k) === 'laying';
     if (visualHead < targetHead) {
       const s = Math.min(targetHead - visualHead, speed * dt);
@@ -609,9 +633,9 @@ export async function createRailwayLine2(
   }
   // The forge's lighting is the server's to decide (a predicted deposit that fills it waits): its fanfare plays when the
   // mirror shows it lit, never on a rebuild.
-  let litShown = state.line2?.forge.lit ?? -1;
+  let litShown = forgeRow(rd.world()).lit;
   // Rails the mirror has poured that are still flying from the mouth to the rack (Local): the rack shows each as it lands.
-  let pouredShown = state.line2?.forge.poured ?? 0,
+  let pouredShown = forgeRow(rd.world()).poured,
     pouring = 0,
     pourGeneration = 0;
   function restore() {
@@ -619,26 +643,28 @@ export async function createRailwayLine2(
     switchCamera.reset();
     switchKind = null;
     deposits = [];
-    const l = l2();
-    litShown = l?.forge.lit ?? -1;
-    pouredShown = l?.forge.poured ?? 0;
+    const w = rd.world(),
+      f = forgeRow(w),
+      jobs = jobsIn(w);
+    litShown = f.lit;
+    pouredShown = f.poured;
     pouring = 0;
     pourGeneration++;
-    if (!l) return;
-    l.stations.forEach((job, k) => {
-      if (!framed(k)) return;
+    for (let k = 0; k < jobs.length; k++) {
+      if (!framed(k)) continue;
+      const { job, run } = jobs[k]!;
       const spec = LINE2_STATIONS[k]!;
-      const depositTicks = Math.ceil(job.timing.depositMs / 100);
+      const depositTicks = Math.ceil(job.depositMs / 100);
       feedLaunched[k] =
         job.start < 0
           ? 0
-          : lineFeed(spec, job.timing).filter((f) => f.launchMs <= (job.elapsed - depositTicks) * 100).length;
-    });
-    seaGate.restore(l);
-    glideDevice.restore(l);
-    farHead.restore(l.stations[4]?.completion === 1);
+          : lineFeed(spec, job).filter((fl) => fl.launchMs <= (run.elapsed - depositTicks) * 100).length;
+    }
+    seaGate.restore(railRow(w).sea);
+    glideDevice.restore(line2Completed(w));
+    farHead.restore(jobs[4]!.job.completion === 1);
     boiler.restore();
-    pier.restore(l.stations[5]?.completion === 1);
+    pier.restore(jobs[5]!.job.completion === 1);
     visualHead = targetHead = working() ? head() : TURN_HEAD;
     setback = 2.4;
     if (working()) {
@@ -649,11 +675,11 @@ export async function createRailwayLine2(
     }
     panels.restore();
     // Walls are solid only once the accepted second bill has started; rebuild from state like the decks and gate.
-    if (wallsBody && l.forge.used <= F1) {
+    if (wallsBody && f.used <= F1) {
       owner.removeBody(wallsBody);
       wallsBody = null;
     }
-    shownPieces = piecesFor(l.forge.used);
+    shownPieces = piecesFor(f.used);
     building.clear();
     forgePieces.forEach((_, k) => building.snap(k, false));
     for (let n = 0; n < shownPieces; n++) building.snap(ORDER[n]!, true);
@@ -663,14 +689,14 @@ export async function createRailwayLine2(
 
   // ---------------------------------------------------------------- accepted effects
   function accepted(event: RailwayAccepted) {
-    state = adapter.inspect();
-    const l = l2();
-    if (!l) return;
+    const w = rd.world(),
+      pid = rd.pid;
     seaGate.accepted(event);
     glideDevice.accepted(event);
     boiler.accepted(event);
-    if (event.op === 'rail.seaSwitch') playSharedMoment('sea gate', event, state.pid, () => showSwitch('sea'));
+    if (event.op === 'rail.seaSwitch') playSharedMoment('sea gate', event, pid, () => showSwitch('sea'));
     if (event.op === 'rail.forgeTake') {
+      const railsHeld = account(w, pid)?.rails ?? 0;
       for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
         deposits.push({
           station: -2,
@@ -682,7 +708,7 @@ export async function createRailwayLine2(
             {
               dur: 0.3,
               apex: 0.9,
-              aim: (out) => void bundleOrigin(event.pid, state.railsCarry, out),
+              aim: (out) => void bundleOrigin(event.pid, railsHeld, out),
               land: () => sounds.pop(3, 0.4),
             },
             owner,
@@ -692,9 +718,11 @@ export async function createRailwayLine2(
     }
     if (event.op === 'rail.depotTake') {
       const taken = event.accepted - (event.returned ?? 0);
-      const carried = event.carried ?? state.accounts.find((a) => a.pid === event.pid)?.carry ?? 0;
+      const carried = event.carried ?? account(w, event.pid)?.carry ?? 0;
+      const active = activeIn(w),
+        depot = railRow(w).depot;
       for (let n = 0; n < taken; n++) {
-        depotSlot(Math.max(0, l.active), l.depot + taken - n - 1, from);
+        depotSlot(Math.max(0, active), depot + taken - n - 1, from);
         pieces.send(
           'log',
           from,
@@ -706,7 +734,7 @@ export async function createRailwayLine2(
       return;
     }
     if (event.op === 'rail.lever') {
-      playSharedMoment('quarry gate', event, state.pid, () => showSwitch('quarry'));
+      playSharedMoment('quarry gate', event, pid, () => showSwitch('quarry'));
       slabT = 0;
       whistle(G.x + ox, G.z);
       clank(lever.x + ox, lever.z);
@@ -714,7 +742,7 @@ export async function createRailwayLine2(
     }
     if (event.op === 'rail.hook') {
       // Only the finder gets the card; everyone else's flourish is ability-arrival.ts (co-op abilities, option E).
-      if (event.pid !== state.pid) return;
+      if (event.pid !== pid) return;
       placeSound('pickupJump', hookAt.x, hookAt.z);
       // The reveal brings its own fanfare and card, as the jump device's does (tools.ts).
       youGot({
@@ -733,10 +761,10 @@ export async function createRailwayLine2(
     if (!forge && !framed(k)) return;
     const frame = forge ? forgeFrame : frames[k]!;
     const kind = event.kind === 2 ? 2 : 0;
-    const account = state.accounts.find((a) => a.pid === event.pid);
+    const actor = account(w, event.pid);
     // As this deposit left them (several can share one packet): the actor's balance and the frame's count.
-    const carried = event.carried ?? (kind === 2 ? (account?.rails ?? 0) : (account?.carry ?? 0));
-    const job = forge ? null : l.stations[k]!;
+    const carried = event.carried ?? (kind === 2 ? (actor?.rails ?? 0) : (actor?.carry ?? 0));
+    const job = forge ? null : qjob(w, k);
     const current = job ? (event.level ?? (kind === 2 ? job.railDelivered : job.delivered)) : 0;
     for (let n = 0; n < event.accepted; n++) {
       if (!bundleOrigin(event.pid, carried + event.accepted - n - 1, from)) continue;
@@ -769,28 +797,29 @@ export async function createRailwayLine2(
   // and a lever you were shown pulling swings back with a clank.
   const UP_08 = new THREE.Vector3(0, 0.8, 0);
   function corrected(c: RailwayCorrection) {
-    state = adapter.inspect();
-    const l = l2();
+    const w = rd.world(),
+      pid = rd.pid,
+      stock = railRow(w);
     const e = c.event;
-    if (!l) return;
     seaGate.corrected(c);
     boiler.corrected(c);
-    if ((e.op === 'rail.seaSwitch' && !l.sea) || (e.op === 'rail.lever' && !l.lever)) switchCamera.cancel();
+    if ((e.op === 'rail.seaSwitch' && !stock.sea) || (e.op === 'rail.lever' && !stock.lever)) switchCamera.cancel();
     if (e.op === 'rail.lever') {
       clank(lever.x + ox, lever.z);
       return;
     }
     const rails = e.op === 'rail.forgeTake' || ('kind' in e && e.kind === 2);
-    const held = rails ? state.railsCarry : state.carry;
+    const mine = account(w, pid);
+    const held = (rails ? mine?.rails : mine?.carry) ?? 0;
     const home =
       e.op === 'rail.forgeTake'
         ? rackFrom
         : e.op === 'rail.depotTake'
-          ? depotPlace(framed(l.active) ? l.active : 0, new THREE.Vector3()).add(UP_08)
+          ? depotPlace(framed(activeIn(w)) ? activeIn(w) : 0, new THREE.Vector3()).add(UP_08)
           : null;
     if (home) {
       for (let n = 0; n < c.lost; n++) {
-        if (!bundleOrigin(state.pid, held + c.lost - n - 1, from)) continue;
+        if (!bundleOrigin(pid, held + c.lost - n - 1, from)) continue;
         const winner = c.winner;
         pieces.send(
           rails ? 'rail' : 'log',
@@ -801,7 +830,7 @@ export async function createRailwayLine2(
             apex: 0.8,
             aim: winner
               ? (out) => {
-                  const a = state.accounts.find((row) => row.pid === winner);
+                  const a = account(rd.world(), winner);
                   bundleOrigin(winner, (rails ? a?.rails : a?.carry) ?? 0, out);
                 }
               : undefined,
@@ -824,7 +853,7 @@ export async function createRailwayLine2(
         : rails
           ? frame.railSlot(slot, new THREE.Vector3())
           : frame.logSlot(slot, new THREE.Vector3());
-      if (!bundleOrigin(state.pid, held - c.lost + n, from)) continue;
+      if (!bundleOrigin(pid, held - c.lost + n, from)) continue;
       pieces.send(
         rails ? 'rail' : 'log',
         at,
@@ -839,7 +868,6 @@ export async function createRailwayLine2(
   const offCorrected = adapter.onCorrected(corrected);
   // After a lost connection or a resync the views carry on from the new state rather than rebuild (and snap).
   const offReset = adapter.onReset((soft) => {
-    state = adapter.inspect();
     if (!soft) restore();
   });
   owner.cleanup(() => {
@@ -856,9 +884,9 @@ export async function createRailwayLine2(
     nudged = false,
     nudges = 0;
   const wake = new THREE.Vector3();
-  function syncSolids(l: Line2) {
+  function syncSolids(w: ReadWorld, completed: number) {
     for (const deck of decks) {
-      const on = l.routes[deck.kind];
+      const on = line2Routes(completed)[deck.kind];
       deck.mesh.visible = on;
       if (on && !deck.body) {
         deck.mesh.geometry.computeBoundingBox();
@@ -875,8 +903,8 @@ export async function createRailwayLine2(
         deck.body = null;
       }
     }
-    drive.visible = l.routes.quarry;
-    const down = l.gateOpen;
+    drive.visible = line2Routes(completed).quarry;
+    const down = line2GateOpen(w);
     if (down && slabBody) {
       owner.removeBody(slabBody);
       slabBody = null;
@@ -904,33 +932,40 @@ export async function createRailwayLine2(
     step,
     panelFrame: (dt: number) => panels.frame(dt),
     snapshot() {
-      state = adapter.inspect();
       restore();
       wasWorking = working();
     },
     update(dt: number) {
       switchCamera.update(dt);
-      state = adapter.inspect();
-      const l = l2();
-      if (!l) return;
-      const owed = waitsForTrain(l);
-      if (state.tick !== shownTick) {
-        shownTick = state.tick;
+      // The frame's rows: the world is read once, here, and so is the tick; nothing below holds a row across a call
+      // that can run a rule (depositLine2 is the last thing this does).
+      const w = rd.world(),
+        tick = rd.tick(),
+        pid = rd.pid;
+      const fg = forgeRow(w),
+        stock = railRow(w),
+        active = activeIn(w),
+        jobs = jobsIn(w),
+        completed = line2Completed(w),
+        gateOpen = line2GateOpen(w);
+      const owed = waitsForTrainOn(w, active);
+      if (tick !== shownTick) {
+        shownTick = tick;
         sinceTick = 0;
       } else sinceTick = Math.min(0.1, sinceTick + dt);
       // The forge: pieces follow accepted logs; the mouth glows when lit; rails stand on the rack.
-      const wantPieces = piecesFor(l.forge.used);
+      const wantPieces = piecesFor(fg.used);
       while (shownPieces < wantPieces) building.drop(ORDER[shownPieces++]!, 3.2, 0.3);
       building.update(dt);
       finish.update(dt);
-      mouth.visible = l.forge.lit >= 0;
-      if (litShown < 0 && l.forge.lit >= 0) {
+      mouth.visible = fg.lit >= 0;
+      if (litShown < 0 && fg.lit >= 0) {
         sounds.fanfare(true);
         whistle(plans.X, plans.Z);
         pieces.dustRing(plans.X, plan.y + 0.4, plans.Z, 16, 3.2, 0.5);
       }
-      litShown = l.forge.lit;
-      if (l.forge.lit >= 0) {
+      litShown = fg.lit;
+      if (fg.lit >= 0) {
         // Lit: the chimney smokes and each poured rail flies out of the mouth onto the rack, as in the prototype.
         smokeAcc += dt * 3;
         for (; smokeAcc >= 1; smokeAcc--)
@@ -950,12 +985,12 @@ export async function createRailwayLine2(
             drag: 0.2,
           });
       }
-      if (l.forge.poured < pouredShown) pouredShown = l.forge.poured;
-      const fresh = l.forge.poured - pouredShown;
-      pouredShown = l.forge.poured;
+      if (fg.poured < pouredShown) pouredShown = fg.poured;
+      const fresh = fg.poured - pouredShown;
+      pouredShown = fg.poured;
       // A burst (a rebuild or a long hitch) just stands on the rack; ordinary pours arrive one at a time.
       for (let n = 0; fresh <= 4 && n < fresh; n++) {
-        const to = rackSlot(Math.max(0, l.forge.rack - fresh + n), new THREE.Vector3());
+        const to = rackSlot(Math.max(0, fg.rack - fresh + n), new THREE.Vector3());
         const generation = pourGeneration;
         pouring++;
         pieces.send(
@@ -975,7 +1010,7 @@ export async function createRailwayLine2(
           owner,
         );
       }
-      const walls = l.forge.used > F1 && !finish.open();
+      const walls = fg.used > F1 && !finish.open();
       if (walls && !wallsBody)
         wallsBody = land.addStatic(
           { kind: 'box', hx: plans.W / 2, hy: plans.HIGH / 2, hz: plans.D / 2 },
@@ -985,14 +1020,15 @@ export async function createRailwayLine2(
           owner,
         );
       const inFlight = deposits.filter((d) => d.station === -2 && d.active()).length;
-      drawRack(Math.max(0, l.forge.rack - pouring) + inFlight);
+      drawRack(Math.max(0, fg.rack - pouring) + inFlight);
       deposits = deposits.filter((d) => d.active());
-      const forgeStage = l.forge.used < F1 ? 0 : 1;
+      const forgeStage = fg.used < F1 ? 0 : 1;
       forgeFrame.spec = layout.FORGE_BILLS[forgeStage]!;
-      forgeFrame.have.logs = forgeStage ? l.forge.used - F1 : l.forge.used;
+      forgeFrame.have.logs = forgeStage ? fg.used - F1 : fg.used;
       forgeFrame.drawStock({ logs: 0, rails: 0, stone: 0, beam: 0 });
-      const pathOpen = state.stations[2]?.completion === 1;
-      forgeFrame.setTag(pathOpen && l.forge.lit < 0 && state.phase === 'done');
+      const pathOpen = line1Job(w, 2).completion === 1;
+      // railPhase is not cheap: asked only when the other two conditions hold.
+      forgeFrame.setTag(pathOpen && fg.lit < 0 && railPhase(w, tick, tick) === 'done');
       // The machine crosses once the forge is lit.
       const now = working();
       if (now && !wasWorking) {
@@ -1001,12 +1037,13 @@ export async function createRailwayLine2(
       }
       wasWorking = now;
       // Q frames: stock, feed flights into the machine, tags.
-      l.stations.forEach((job, k) => {
-        if (!framed(k)) return;
+      for (let k = 0; k < jobs.length; k++) {
+        if (!framed(k)) continue;
+        const job = jobs[k]!.job;
         const spec = LINE2_STATIONS[k]!,
           frame = frames[k]!;
-        const feed = lineFeed(spec, job.timing);
-        const depositTicks = Math.ceil(job.timing.depositMs / 100);
+        const feed = lineFeed(spec, job);
+        const depositTicks = Math.ceil(job.depositMs / 100);
         const feedMs = (jobElapsed(k) - depositTicks) * 100;
         const wanted = job.start < 0 ? 0 : feed.filter((f) => f.launchMs <= feedMs).length;
         while (feedLaunched[k]! < wanted) {
@@ -1043,10 +1080,10 @@ export async function createRailwayLine2(
           stone: 0,
           beam: 0,
         });
-        const gated = spec.gate === 'quarry' ? !l.gateOpen : spec.gate === 'sea' ? !l.seaOpen : false;
+        const gated = spec.gate === 'quarry' ? !gateOpen : spec.gate === 'sea' ? !stock.sea : false;
         const waiting = gated && job.stock === spec.bill[0] && job.railStock === spec.bill[1];
         frame.setTag(
-          now && k === l.active && job.start < 0 && !owed,
+          now && k === active && job.start < 0 && !owed,
           waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : undefined,
         );
         if (now && k === activeIndex()) {
@@ -1057,19 +1094,19 @@ export async function createRailwayLine2(
           );
           machine.setCradle(Math.min(entered, Math.ceil(spec.bill[0] * (1 - fraction))));
         }
-      });
+      }
       if (now) {
         targetHead = head();
         panels.update(dt);
       }
-      drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs), owed || kitComing(l, state));
+      drawDepot(active, Math.max(0, stock.depot - cartFlying().logs), owed || kitComing(w, active));
       depotSign.update(dt);
-      syncSolids(l);
-      seaGate.update(dt, l);
-      glideDevice.update(dt, l);
-      farHead.update(dt, l.stations[4]?.completion === 1);
+      syncSolids(w, completed);
+      seaGate.update(dt, stock.sea);
+      glideDevice.update(dt, completed);
+      farHead.update(dt, jobs[4]!.job.completion === 1);
       boiler.update(dt);
-      pier.update(dt, l.stations[5]?.completion === 1);
+      pier.update(dt, jobs[5]!.job.completion === 1);
       ensureQ7Frame();
       if (slabT >= 0) {
         slabT += dt;
@@ -1082,39 +1119,41 @@ export async function createRailwayLine2(
         }
       }
       gateRig.pose(slab.position.y);
-      leverArm.rotation.z += ((l.lever ? -0.85 : 0.75) - leverArm.rotation.z) * Math.min(1, dt * 10);
-      for (const o of [hookRing, hookCore]) o.visible = l.completed >= 2 && !l.hook;
+      leverArm.rotation.z += ((stock.lever ? -0.85 : 0.75) - leverArm.rotation.z) * Math.min(1, dt * 10);
+      for (const o of [hookRing, hookCore]) o.visible = completed >= 2 && !stock.hook;
       hookRing.rotation.z += dt * 0.7;
       hookCore.rotation.y += dt * 1.2;
       // Auto-unload at the forge frame and the active Q frame, as on line one.
       unload -= dt;
       const p = me.body?.position;
-      if (!state.ready || !p) return;
+      if (!rd.ready() || !p) return;
+      const mine = account(w, pid),
+        carry = mine?.carry ?? 0,
+        railsCarry = mine?.rails ?? 0;
       const near = (x: number, z: number) => Math.hypot(p.x - x, p.z - z) <= layout.TUNE.reachStation;
       // A loaded arrival at station 6 before trains: the frame takes nothing, so its rack sign answers once, without
       // words (one bob, one puff, a soft tick); it re-arms only once you leave reach.
-      const arrived = owed && framed(l.active) && near(frames[l.active]!.x, frames[l.active]!.z);
-      if (arrived && !nudged && (state.carry > 0 || state.railsCarry > 0)) {
+      const arrived = owed && framed(active) && near(frames[active]!.x, frames[active]!.z);
+      if (arrived && !nudged && (carry > 0 || railsCarry > 0)) {
         nudged = true;
         nudges++;
         depotSign.nudge();
         uiSound('tick');
       } else if (!arrived) nudged = false;
       if (unload > 0) return;
-      if (pathOpen && l.forge.used < LINE2_FORGE.logs && state.availableCarry > 0 && near(forgeFrame.x, forgeFrame.z)) {
+      if (pathOpen && fg.used < LINE2_FORGE.logs && carry > 0 && near(forgeFrame.x, forgeFrame.z)) {
         if (adapter.depositLine2('F', 1, 0)) unload = layout.TUNE.unloadS;
         return;
       }
-      const k = l.active;
+      const k = active;
       if (!now || !framed(k)) return;
-      const job = l.stations[k]!,
+      const job = jobs[k]!.job,
         spec = LINE2_STATIONS[k]!,
         frame = frames[k]!;
       // Retry both materials while in reach, even after a refused attempt. Gates only hold laying.
       if (job.start >= 0 || owed || !near(frame.x, frame.z)) return;
-      if (state.availableCarry > 0 && job.stock < spec.bill[0] && adapter.depositLine2(spec.id, 1, 0))
-        unload = layout.TUNE.unloadS;
-      else if (state.availableRails > 0 && job.railStock < spec.bill[1] && adapter.depositLine2(spec.id, 1, 2))
+      if (carry > 0 && job.stock < spec.bill[0] && adapter.depositLine2(spec.id, 1, 0)) unload = layout.TUNE.unloadS;
+      else if (railsCarry > 0 && job.railStock < spec.bill[1] && adapter.depositLine2(spec.id, 1, 2))
         unload = layout.TUNE.unloadS;
     },
     /** Where the depot rack for stretch k stands (the rails shelf stands beside it: shelf-view.ts). */
@@ -1127,15 +1166,19 @@ export async function createRailwayLine2(
       cartFlying = fn;
     },
     targets(): Interactable[] {
-      const l = l2(),
-        p = me.body?.position;
-      if (!l || !p || !state.ready) return [];
-      const out: Interactable[] = [...seaGate.targets(p, l), ...glideDevice.targets(p, l)];
+      const p = me.body?.position;
+      if (!p || !rd.ready()) return [];
+      const w = rd.world(),
+        active = activeIn(w),
+        stock = railRow(w),
+        completed = line2Completed(w),
+        quarryRoute = line2Routes(completed).quarry;
+      const out: Interactable[] = [...seaGate.targets(p, stock.sea), ...glideDevice.targets(p, completed)];
       out.push(...boiler.targets());
-      const full = state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {};
+      const full = freeCarryIgnoringBig(w, rd.pid) <= 0 ? { blocked: 'Your back is full' } : {};
       if (
-        l.forge.rack > 0 &&
-        forgeRailsOffered(l.active, l.trains, state.shed.cradleRails, state.railsCarry) &&
+        forgeRow(w).rack > 0 &&
+        forgeRailsOffered(active, line2Trains(w), shedRow(w).cradleRails, account(w, rd.pid)?.rails ?? 0) &&
         Math.hypot(p.x - RX, p.z - RZ) <= 3
       )
         out.push({
@@ -1145,12 +1188,12 @@ export async function createRailwayLine2(
           run: () => void adapter.forgeTake(),
           ...full,
         });
-      if (l.depot > 0 && framed(l.active) && !waitsForTrain(l)) {
-        depotPlace(l.active, from);
+      if (stock.depot > 0 && framed(active) && !waitsForTrainOn(w, active)) {
+        depotPlace(active, from);
         if (
           Math.hypot(p.x - from.x, p.z - from.z) <= 3.2 &&
-          (LINE2_STATIONS[l.active]!.feed !== 'train' ||
-            Math.hypot(p.x - frames[l.active]!.x, p.z - frames[l.active]!.z) <= 7)
+          (LINE2_STATIONS[active]!.feed !== 'train' ||
+            Math.hypot(p.x - frames[active]!.x, p.z - frames[active]!.z) <= 7)
         )
           out.push({
             id: 'railway-depot-logs',
@@ -1161,13 +1204,13 @@ export async function createRailwayLine2(
           });
       }
       // The lever is always there to try; before Q3 the uncoupled drive means a pull does nothing.
-      if (!l.lever && Math.hypot(p.x - leverTarget.x, p.z - leverTarget.z) < 3 && p.y > lever.y - 0.2)
+      if (!stock.lever && Math.hypot(p.x - leverTarget.x, p.z - leverTarget.z) < 3 && p.y > lever.y - 0.2)
         out.push({
           id: 'railway-quarry-lever',
           verb: 'Pull',
           at: leverTarget,
           run: () => {
-            if (!l.routes.quarry) {
+            if (!quarryRoute) {
               clank(leverTarget.x, leverTarget.z);
               return;
             }
@@ -1175,8 +1218,8 @@ export async function createRailwayLine2(
           },
         });
       if (
-        l.completed >= 2 &&
-        !l.hook &&
+        completed >= 2 &&
+        !stock.hook &&
         Math.hypot(p.x - hookAt.x, p.z - hookAt.z) <= 3 &&
         Math.abs(p.y - hookAt.y) <= 2.2
       )
@@ -1184,7 +1227,10 @@ export async function createRailwayLine2(
       return out;
     },
     inspect: () => {
-      const l = l2();
+      const w = rd.world(),
+        active = activeIn(w),
+        stock = railRow(w),
+        completed = line2Completed(w);
       return {
         working: working(),
         ...seaGate.inspect(),
@@ -1193,7 +1239,7 @@ export async function createRailwayLine2(
         ...farHead.inspect(),
         ...boiler.inspect(),
         ...pier.inspect(),
-        trainOwed: !!l && waitsForTrain(l),
+        trainOwed: waitsForTrainOn(w, active),
         q6Sign: { kind: depotSign.kind, visible: depotSign.board.visible, nudges },
         q6Rack: (() => {
           const p = depotPlace(5, new THREE.Vector3());
@@ -1203,7 +1249,7 @@ export async function createRailwayLine2(
             z: p.z,
             ground: land.H(p.x, p.z),
             frameDistance: Math.hypot(p.x - frames[5]!.x, p.z - frames[5]!.z),
-            shown: l?.active === 5 ? depotLogs.count : 0,
+            shown: active === 5 ? depotLogs.count : 0,
           };
         })(),
         head: visualHead,
@@ -1218,12 +1264,12 @@ export async function createRailwayLine2(
         routes: decks.map((d) => ({ kind: d.kind, visible: d.mesh.visible, solid: !!d.body })),
         drive: drive.visible,
         gateSolid: !!slabBody,
-        lever: { x: leverTarget.x, y: lever.y, z: leverTarget.z, pulled: !!l?.lever },
-        hook: { x: hookAt.x, y: hookAt.y, z: hookAt.z, available: !!l && l.completed >= 2 && !l.hook },
+        lever: { x: leverTarget.x, y: lever.y, z: leverTarget.z, pulled: stock.lever },
+        hook: { x: hookAt.x, y: hookAt.y, z: hookAt.z, available: completed >= 2 && !stock.hook },
         forgeFrame: { x: forgeFrame.x, y: forgeFrame.y, z: forgeFrame.z },
         forgeRack: { x: RX, y: RY, z: RZ },
         frames: frames.map((f) => ({ x: f.x, y: f.y, z: f.z })),
-        depot: l && framed(l.active) ? depotPlace(l.active, new THREE.Vector3()).toArray() : null,
+        depot: framed(active) ? depotPlace(active, new THREE.Vector3()).toArray() : null,
         routePoints: {
           hook: tech.SERVICE_ROUTES.hook.map((q) => [q.x + ox, q.y, q.z]),
           quarry: tech.SERVICE_ROUTES.quarry.map((q) => [q.x + ox, q.y, q.z]),
