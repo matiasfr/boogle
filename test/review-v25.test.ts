@@ -14,32 +14,31 @@ import {
 } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { railValid } from '../src/world/railway-server.ts';
-import { railwayAtTrains } from './helpers/railway-trains.ts';
-import { act, advance } from './helpers/railway-q2.ts';
-import { edit, worldOf } from './railway-live.ts';
 import { Forge } from '../src/sim/railway-components.ts';
-import type { World as Fixture } from './helpers/railway-q2.ts';
+import { act, advance, forge, rail, railwayAtTrains, train, type Seed } from './helpers/rail.ts';
 
 const H = { quarry: 3, farHead: 4 } as const;
 const STOPS = TRAIN_STOPS[1]!;
 const BRAKE = (TRAIN.speed * TRAIN.speed) / (2 * TRAIN.accel);
-const line2 = (w: Fixture) => w.s.trains[1]!;
-const ask = (w: Fixture, id: number, dir: -1 | 1) => act(w, 'a', 'rail.call', { id, dir });
-const kitAboard = (w: Fixture) => line2(w).logs + line2(w).rails > 0;
+const line2 = (w: Seed) => train(w.w, 1);
+const ask = (w: Seed, id: number, dir: -1 | 1) => act(w, 'a', 'rail.call', { id, dir });
+const kitAboard = (w: Seed) => line2(w).logs + line2(w).rails > 0;
 
 test('review: a Far Head ask never turns an empty kit train back before the village (kit starvation loop)', () => {
   // Q6's kit is owed: the train must reach the village to load it. Someone waiting at Far Head (where the kit is for)
   // presses its lever each time the train leaves Far Head without it.
-  const w = railwayAtTrains('trains-on'),
-    l = w.s.line2!;
+  const w = railwayAtTrains('trains-on');
   // The forge out for the first kit trip's wait, so the kit takes two trips (5 rails on the second).
-  const lit = l.forge.lit;
-  edit(w.s, (e) => (e.mut(Forge, e.single(Forge))!.lit = -1));
+  const lit = forge(w.w).lit;
+  w.w.mut(Forge, w.w.single(Forge))!.lit = -1;
   let pressed = 0;
-  for (let t = 0; l.depot !== 32 || l.depotRails !== 32; t++) {
-    if (t === 200) edit(w.s, (e) => (e.mut(Forge, e.single(Forge))!.lit = lit));
+  for (let t = 0; rail(w.w).depot !== 32 || rail(w.w).depotRails !== 32; t++) {
+    if (t === 200) w.w.mut(Forge, w.w.single(Forge))!.lit = lit;
     // Without asks the second trip lands by tick ~1700; allow three times that.
-    assert.ok(t < 5000, `kit delivered in time (Far Head pressed ${pressed} times, depot ${l.depot}/${l.depotRails})`);
+    assert.ok(
+      t < 5000,
+      `kit delivered in time (Far Head pressed ${pressed} times, depot ${rail(w.w).depot}/${rail(w.w).depotRails})`,
+    );
     const r = line2(w);
     if (
       r.phase === TRAIN_PHASE.RUN &&
@@ -78,11 +77,11 @@ test("review: a rider on the train's rear car keeps reach for the lag window aft
     };
   };
   const bell = { op: 'rail.call', epoch: 1, request: 1, id: H.farHead, dir: 1, train: 1 };
-  assert.equal(railValid(worldOf(w.s), bell, rider(w.t), w.t), true, 'aboard, before any replan');
+  assert.equal(railValid(w.w, bell, rider(w.t), w.t), true, 'aboard, before any replan');
   // Another passenger asks for the quarry: the leg is replanned from this tick.
   assert.equal(ask(w, H.quarry, 1), 1);
   advance(w, 1);
   assert.equal(line2(w).depart, w.t, 'replanned now');
   assert.ok(trainAlong(line2(w), 1, w.t) === trainAlong(before, 1, w.t), 'same pose');
-  assert.equal(railValid(worldOf(w.s), bell, rider(w.t), w.t), true, 'the same rider, one tick later, still aboard');
+  assert.equal(railValid(w.w, bell, rider(w.t), w.t), true, 'the same rider, one tick later, still aboard');
 });
