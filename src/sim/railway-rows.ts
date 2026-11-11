@@ -38,6 +38,17 @@ import {
 } from './railway-components.ts';
 
 export type Read<C extends AnyComponent> = Readonly<RowOf<C>>;
+/** A world a view may only read (the adapter's `read.world()`; review of M8, P3): the writers and the change drain are
+ * typed `never`, so calling one is a type error, and `each` takes no `writes`. Still a `World` to the queries and row
+ * readers, which never write. */
+export type ReadWorld = Omit<World, Writer | 'each'> & { readonly [K in Writer]: never } & {
+  each<const T extends readonly AnyComponent[], const W extends readonly AnyComponent[] = []>(
+    cs: T,
+    fn: (id: number, ...rows: { [K in keyof T]: T[K] extends W[number] ? RowOf<T[K]> : Readonly<RowOf<T[K]>> }) => void,
+    writes?: never,
+  ): void;
+};
+type Writer = 'mut' | 'spawn' | 'despawn' | 'add' | 'remove' | 'reserve' | 'run' | 'changes' | 'load';
 const one =
   <C extends AnyComponent>(c: C) =>
   (w: World): Read<C> =>

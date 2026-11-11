@@ -46,6 +46,7 @@ import {
   WorksClock,
 } from '../sim/railway-components.ts';
 import { copyRailway, fillRailway, railwayView, refreshRailway } from '../sim/railway-read-model.ts';
+import { cloneWorld } from '../sim/railway-queries.ts';
 
 export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.wake',
@@ -174,7 +175,7 @@ export function cloneRailway(s: Railway): Railway {
   const w = worlds.get(s);
   if (!w || !whole(w)) return structuredClone(s);
   const copy = copyRailway(s);
-  worlds.set(copy, w.clone()); // copy-on-write: only the tables a prediction writes are copied
+  worlds.set(copy, cloneWorld(w)); // copy-on-write: only the tables a prediction writes are copied
   return copy;
 }
 

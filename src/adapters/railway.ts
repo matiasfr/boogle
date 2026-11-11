@@ -70,6 +70,7 @@ import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { LINE_SLOTS, atEnd, trainPose, trainServes, type RailLineRow } from '../sim/railway-trains.ts';
 import { RAIL_ROCKS, WORKS_ROCKS } from '../sim/railway-works-layout.ts';
 import { pierNeed, worksStage } from '../sim/railway-works.ts';
+import type { ReadWorld } from '../sim/railway-rows.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
 import { createRailwayClock, RAIL_CLOCK_EVERY_MS, RAIL_CLOCK_TIMEOUT_MS } from '../world/railway-clock.ts';
 import type { RailwayMirror } from '../world/railway-replicate.ts';
@@ -1165,9 +1166,10 @@ export function createRailwayAdapter({
   // world() is the world behind the read model the views see now (the predicted clone while actions are pending, the
   // confirmed mirror otherwise, the last shown state while a refill comes in), so it keeps that model's consistency
   // rule: a read model is linked to a world only once the world is whole. Read its rows and pass it to the queries in
-  // src/sim/railway-queries*.ts with `tick()` as their `at`; never write to it.
+  // src/sim/railway-queries*.ts with `tick()` as their `at` (a timed fact without it throws on a client's world); it
+  // is typed read-only, so a view cannot write to it or drain its changes.
   const facade = {
-    world: () => worldOf(view()) ?? worldOf(confirmed)!,
+    world: () => (worldOf(view()) ?? worldOf(confirmed)!) as unknown as ReadWorld,
     /** The estimated server tick (whole, never going backwards): the job clocks' `at`. */
     tick,
     /** The same with its fraction, for movers (tickNow). */

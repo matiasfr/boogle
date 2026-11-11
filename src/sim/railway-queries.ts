@@ -187,18 +187,46 @@ export function jobProgress(w: World, c: typeof Job | typeof QJob, id: number, t
 /** A line-one job: its row and its timed fields (the run row, or the clock at `at`). */
 export type JobRead = { id: number; job: Readonly<RowOf<typeof Job>>; run: Readonly<JobRunRow> };
 export type QJobRead = { id: number; job: Readonly<RowOf<typeof QJob>>; run: Readonly<QJobRunRow> };
+// A client's worlds (the mirror's, and each predicted clone of it) hold run rows that never move: a timed fact read on
+// one without `at` would answer with no progress at all, so it throws instead (review of M8, P3).
+const clockWorlds = new WeakSet<object>();
+/** Mark a world whose job clocks are its Job/QJob rows alone (a mirror's, a predicted clone): timed facts need `at`. */
+export function clockWorld<W extends object>(w: W): W {
+  clockWorlds.add(w);
+  return w;
+}
+/** A copy of w, marked as w is (a predicted clone of a mirror's world is a client's world too). */
+export function cloneWorld(w: World): World {
+  const copy = w.clone();
+  return clockWorlds.has(w) ? clockWorld(copy) : copy;
+}
+const NEEDS_AT = "railway: a client's world needs the tick (at) for a timed fact";
+/** A job read: the rows, the run row (no `at`) or the clock at `at`. On a client's world without `at` its `run` throws
+ * when read, so a fact that reads only the Job/QJob row still works and a timed one never answers with nothing. */
+function jobRead<C extends typeof Job | typeof QJob>(
+  w: World,
+  c: C,
+  run: typeof JobRun | typeof QJobRun,
+  id: number,
+  at?: number,
+) {
+  const row = w.get(c, id)!;
+  if (at !== undefined) return { id, job: row, run: jobProgress(w, c as typeof Job, id, at) };
+  if (!clockWorlds.has(w)) return { id, job: row, run: w.get(run, id)! };
+  return {
+    id,
+    job: row,
+    get run(): never {
+      throw new Error(NEEDS_AT);
+    },
+  };
+}
 /** Line one's jobs, T1 to T3 (railJobs). */
 export const railJobs = (w: World, at?: number): JobRead[] =>
-  LINE1_STATIONS.map((_s, slot) => {
-    const id = job(w, slot);
-    return { id, job: w.get(Job, id)!, run: at === undefined ? w.get(JobRun, id)! : jobProgress(w, Job, id, at) };
-  });
+  LINE1_STATIONS.map((_s, slot) => jobRead(w, Job, JobRun, job(w, slot), at) as JobRead);
 /** Line two's jobs, Q1 to Q6. */
 export const line2Jobs = (w: World, at?: number): QJobRead[] =>
-  LINE2_STATIONS.map((_s, slot) => {
-    const id = qjob(w, slot);
-    return { id, job: w.get(QJob, id)!, run: at === undefined ? w.get(QJobRun, id)! : jobProgress(w, QJob, id, at) };
-  });
+  LINE2_STATIONS.map((_s, slot) => jobRead(w, QJob, QJobRun, qjob(w, slot), at) as QJobRead);
 /** The line-one station taking materials now (activeStation). */
 export const railActiveStation = activeStation;
 /** The line-one job taking materials now. */
