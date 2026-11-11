@@ -1145,14 +1145,89 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > of the hinge edge, so it never meets the leaf and stays up after the Meet. P3,
   > `toeShove` (`leaf-shape.ts`) has no sideways bound: anyone at deck height in the toe's span along the line is
   > walked back, whatever their lateral offset.
-- [ ] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
+- [x] **4d. R4d, the Meet and the first crossing.** `src/entities/ring-meet/` and the union in `shared-moment.ts`.
   Checks: `npm run check`, `npm run test:net`. Proof look (Done means): the same two-page room, then strike: the
   rivet glints, the 6 s shot plays on both pages, uninterruptible but for the one skip, `inspectRailway().ring.joined`
   set; a third page joining after gets the snapped state, no shot, then the Meet framing on its own first crossing.
-- [ ] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
+  > **Built (implementer, 11 November 2026): R4d, on `feature/ring-r4d`; not shipped, browser proof not taken.**
+  > (1) `src/entities/ring-meet/view.ts` (the view) and `shape.ts` (pure decisions), mounted by `works-live.ts` beside the
+  > leaf because it needs the adapter's accepted edges; there is no `index.ts` (nothing for the glob to spawn).
+  > (2) The rivet: a brass stud in the joint at bent 13's toe, dull until the leaf is down (`brace === 0`), then gold,
+  > pulsing, with gold motes rising (`goldMote`, within 160 m of the camera) until struck; the prompt "Strike the rivet"
+  > only with the leaf down, `joined < 0`, the room having the breaker (the rule's `Works.breaker === 2`: room-wide, 2 in every ring seed, not a carry) and no boiler on your
+  > back, inside `RING_RIVET.reach` (the server's own test). (3) On the accepted `rail.strike` id 2 (`meetOffered`): the
+  > clang, a thump and a burst of gold at the stud on every page, and `playSharedMoment('the meet')`: the banner ("Ring
+  > Island" over "The line has arrived", 4.5 s) and the 6 s shot, from back along the bents above the leaf, running
+  > along the joined line to the halt, looking at the RINGWORKS board and the buffers (`MEET_SHOT`). The shot is
+  > `createCameraPullOut`'s: only the one skip ends it. Never from a restore: the frame the first whole state arrives
+  > (`createFirstReady`, not `read.ready()`) places the stud and drops any shot. A refused prediction takes the shot back
+  > unless the rivet is struck anyway (`meetKept`: a same-moment race keeps it). (4) The first crossing: a standing rider
+  > (`carry.on`) crossing u 259.5 m toward the island with the rivet struck gets, once per player per room, the 5 s
+  > pull-out (`CROSSING_SHOT`) if they saw the Meet, or the Meet's framing for 5 s if they did not (joined late, seated,
+  > reduced motion); memory is `createSeen('boogle.ring-meet.v0')` (now exported from `ability-arrival.ts` with a store
+  > name), marked only when a shot was actually queued. **Reads:** the `Aperture` row (`set`, `brace`, `joined`), `Works`
+  > (`breaker`) and `Boiler` (`state`, `holder`) through `adapter.read.world()`, re-read at the head of `update`, `accepted`,
+  > `corrected`, `targets` and `restore`; "`inspectRailway().ring.joined`" is `aperture(world).joined >= 0` here. Nothing
+  > reads `inspectRailwayLegacy`. No sim rule, wire or `WORLD_NS` change. Tests: `test/railway-r4d-meet.test.ts` (the
+  > offer, the race, the late-join framing, the crossing once, the prompt and glint windows, the shots' geometry).
+  > **Not done:** the breaker's swing at the rivet (the prompt strikes at once; the Works' swing is `breaker-view.ts`'s),
+  > the browser proof (two pages, strike, third page), `test:net`. Not tested on a device.
+  > **Review fixes (11 November, `feature/ring-r4de`, from the Windows look; not shipped).** (1) The prompt, glint and gold
+  > stud wait for the visible landing (`leafLanded`, `leaf-shape.ts`; `leaf-view.ts` `landed()`): the sim's `brace === 0`
+  > flips as the swing starts, 2.5 s before the plate lies down. The server still takes an early strike (a page that is
+  > behind, or a client that presses at once); a sim-side guard (refuse a strike until 2.5 s after `brace` reached 0)
+  > needs the tick `brace` flipped, i.e. a new `Aperture` field and a bump: **P3 follow-up, worth it only if early
+  > strikes happen in play**. (2) The Meet: 1 s held 9 m back on the stud (clang and burst in frame), 4 s eased in and out
+  > over 63 m (peak 23.6 m/s, was 30), 1 s held on the board and buffers, then a deliberate cut back (0.14 s; a blend home
+  > was 140 m in 0.55 s). The late framing: 0.8 s, 3.2 s over 50 m (peak 23.4 m/s, was 37), 1 s; the crossing pull-out
+  > cuts back too. `createCameraPullOut.play` takes an optional `{ lead, atFrom, back }`. (3) The stud is lit gold metal
+  > with a pulsing emissive and a 3.4 m gold beacon; the glints are big `glint` sprites (the breaker's small motes were
+  > the reason none read). (4) The breaker condition is "the room has it", as the server has it. **P3 design question:**
+  > should the breaker be visibly carried to the rivet (and swing at it)?
+  > **Second review (11 November, D3D12 retake).** The Meet opens with a **cut** to the held framing (a blend in from the
+  > follow camera went through the second player's locomotive cab): `createCameraPullOut.play` gains `cutIn` and `end`
+  > (a second cut to a held end frame) beside `{ lead, atFrom, back }`. Timeline, 6 s: cut in on the stud (17 m back, 5 m
+  > up) and hold 1.0 s; 3.7 s eased travel over 57 m along the line (peak 23.2 m/s), the look easing from the stud to the
+  > halt; **cut** at 4.5 s to a held frame 14 m short of the RINGWORKS board with the buffers down the line (1.3 s); cut
+  > back (0.14 s). The late-rider replay, 5 s: cut in, 0.8 s hold, 3.0 s over 46 m (peak 23.2 m/s), cut to the board 1.2 s,
+  > cut back. The banner (16 to 34% of the height, built at 4.35 s, 0.15 s under the Copy table's 4.5, so its ghost clears the board frame) ends before the board frame begins and never sits over the held stud (centre). The
+  > beacon is deleted (a faint column behind Buddy); the stud's pulse and the glints carry it. **Perf at the halt
+  > (ring-joined, 709,598 triangles):** the island ground is the top contributor I could count without a browser:
+  > 375 x 360 vertices at a 2 m cell, 199,960 triangles (28%) in one draw, no shadow cast; the far view is hidden while the
+  > near one is mounted (`root.visible = !mounted`), so the leaf is not drawn twice, and Place's `buildFar` cones, ring and
+  > shard (a few hundred triangles) stay under the ground. The other contributors (the rest of the scene, the island's
+  > merged parts, the folk) are not measured; to find them, toggle each entity group's `visible` in a scratch eval and diff
+  > `renderer.info.render.triangles`. Cheapest later fix: a coarser ground grid beyond the halt (4 m past 150 m).
+  > **Third review (11 November).** The rivet's cue is the glint seen from a train's length: from landing to strike a
+  > narrow column of large gold glints (0.8 to 4.8 m over the stud, sized and brightened with the stud's pulse, seeded along
+  > its height so it stands at once), the breaker seam's mechanism (`emit`, the `glint` sprite) scaled up, no mesh; range
+  > 240 m. Not used: the glider device's translucent locator shaft (a mesh). The end cut sets position and look in one block
+  > (`camera-pull-out.ts`; by reading I find no frame where they differ, so a 0.2 s aim slew is something else, to measure
+  > with camera position and quaternion logged per frame).
+- [x] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
-  camera in the island square: four lookers stare straight up; the whistle swaps them; standing still and looking up
-  gets a nod.
+  camera in the island square: four lookers stand upright facing the shard; the whistle swaps two of them for the two
+  who rested. (The staring-up pose and the nod were overruled by the owner, 11 November: see the Built note.)
+  > **Built (implementer, 11 November 2026): R4e, on `feature/ring-r4e` (sits on `feature/ring-r4d`); not shipped, browser proof
+  > not taken.** (1) `src/entities/ring-folk/`: `shape.ts` (pure: the rota, stations, lane and walk, the facts that
+  > pick a line), `lines.ts` (the Copy table verbatim), `view.ts` (the figures), mounted by `works-live.ts` beside the Meet
+  > (no `index.ts`, it needs the adapter). (2) Seven figures from the village folk kit (`place/folk.ts`: a `looker` job,
+  > `addLooker` and capacity +8, nothing else): six crew in orange hard hats and Hooter in blue. The island's square is the
+  > works yard east of the halt, between the tarped steel and the drop hammer (no layout constant named a square). Four
+  > crew stand at four posts, upright and turned to face the shard (`FACE_AT`, `RING_SHARD`), two rest on the lane south of the tarp. `shiftAt(tick)` is
+  > `floor(tick / 450)` on `adapter.read.tick()`: at each whistle two post-holders hand over to the two who rested
+  > (everyone stands at most two shifts and every crew member gets turns; the rota repeats every 6). Hooter's whistle
+  > (`machine-sfx` `whistle`) sounds at the clock's edge only when the page saw the previous shift; a first read, a remount
+  > or a stall that skipped shifts snaps with no whistle and no walk. (3) **11 November, owner (seeing the first stills, where the lookers leaned and tipped their heads back): "why are the little guys leaning over, they can just be standing", then "they can just be facing the shard maybe".** The orchestrator's reading, recorded as its own: the folk stand upright like the village folk, no body lean and no head tipped back, turned (yaw only) to face the shard. That replaces "stare straight up"; two earlier tries (the whole body tipped 54 degrees, which read as lying down, then an upright body with the head tipped back on a new head pivot and a hat split from the coat) were built and reverted: the kit is as it was. **The nod is dropped:** with no head pivot the kit's only bob is its talking gesture, which reads as a raised hand. The resting crew still turn to face a player nearby. Logged in `docs/decisions-rail.md`. (4) Talk with Rivet (gold hat), Squint
+  > and Hooter; lines from `linesFor(who, facts)`: "arrived wet" is a swim in the last 60 s (local clock), "glided the gap"
+  > and "swam over" are per-player per-room memory (`createSeen('boogle.ring-folk.v0')`, written from where the player
+  > swims or glides: `swamToIsland`, `glidingTheGap`), "first ride" reads the Meet's `crossing` memory, the co-op line counts
+  > `accounts(world)` and waits for `joined`. **Reads:** `Aperture.joined` and the accounts through `adapter.read.world()`
+  > (inside `facts()`, re-read per Talk), `adapter.read.tick()`, `createFirstReady`; no world kept. No sim rule, wire or
+  > `WORLD_NS` change. Tests: `test/railway-r4e-folk.test.ts` (13). Look: `dev/look/evals/ring-folk.ts`. **Not done:** the
+  > browser proof, `npm run perf` at the halt (owed at the checkpoint), "the rivet toss" (the plan gives it no trigger or
+  > copy), Hooter's line spoken as a bark at the whistle (it is a Talk line only: **whistle bark not built**, so the
+  > whistle has no visible cue at 9 m, no prop or puff; a small steam puff at Hooter would be the trivial one). Not tested on a device.
 
 ### Design review: the halt map at eight stops (designer, 2026-11-11)
 
