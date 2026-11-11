@@ -24,6 +24,7 @@ import {
 } from '../../src/place/layout.ts';
 import { openingBuildings, openingStops, forgePlan, WOOD2 } from '../../src/place/opening-plans.ts';
 import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '../../src/place/spatial-station.ts';
+import { chunkOf } from '../../src/entities/railway/track-chunks.ts';
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_AXE_STAND, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
 import { H } from '../../src/place/terrain.ts';
@@ -441,6 +442,7 @@ export async function checkMachineClearance() {
       place,
       trackPanels,
       carriedPiece,
+      chunkOf,
       TOP: sourceFunction(trackFile, 'TOP', {}),
       DECK_W: sourceFunction(trackFile, 'DECK_W', {}),
       BED_W: sourceFunction(trackFile, 'BED_W', {}),

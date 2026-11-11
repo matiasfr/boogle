@@ -8,6 +8,7 @@ import { H, addStatic, slab } from '../../place/land.ts';
 import { FORMATION, ORIGIN, STUB, UP_LAT, crossLat, lineAt, railY, upLat, type LineSpec } from '../../place/layout.ts';
 import { dropSet, type DropSet } from '../../place/pieces.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { chunkOf } from './track-chunks.ts';
 import { lookTrack } from '../../place/look-kit.ts';
 import { carriedPiece, trackPanels, type TrackPanel } from './track-panels.ts';
 
@@ -83,6 +84,7 @@ export function buildTrack(
     triggers: number[] = [],
     falls: number[] = [],
     kinds: PieceKind[] = [],
+    chunks: number[] = [],
     pre: boolean[] = [];
   const add = (
     s: number,
@@ -103,6 +105,7 @@ export function buildTrack(
     triggers.push(u(s) - lead);
     falls.push(fall);
     kinds.push(kind);
+    chunks.push(chunkOf(u(s), kind));
     pre.push(frontier(s) === -Infinity);
   };
   const q = { x: 0, z: 0 };
@@ -478,6 +481,7 @@ export function buildTrack(
     ),
     kinds,
     owner,
+    chunks,
   );
   const order = boxes
     .map((_, k) => k)
