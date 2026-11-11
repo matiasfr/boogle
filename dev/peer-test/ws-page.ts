@@ -18,8 +18,7 @@ import { railActiveStation } from '../../src/sim/railway-queries.ts';
 import { railPhase } from '../../src/sim/railway-queries-line1.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { account, accounts, cart, qjobs, train, tree } from '../../src/sim/railway-rows.ts';
-import { Pile, createRailwayWorld } from '../../src/sim/railway-components.ts';
-import { worldOf } from '../../src/world/railway-predict.ts';
+import { Pile } from '../../src/sim/railway-components.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
 import {
@@ -236,12 +235,11 @@ function startWorld(room: Room) {
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const rules = installRules(w, land);
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
-  // What the probes read (ECS M11): the world the mirror's read model is linked to, which happens only once a whole
-  // state has arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and stays through
-  // a refill and a reset, as the read model does; a fresh railway before that. Not `rail.synced()`: it goes false
-  // during a refill while the world is still whole. Timed facts take the tick (a client's world holds no job clock).
-  const fresh = createRailwayWorld();
-  const mirrored = () => worldOf(rail!.railway) ?? fresh;
+  // What the probes read (ECS M11, M12): the mirror's confirmed world, published only once a whole state has fully
+  // arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and kept through a refill
+  // and a reset; a fresh railway before that. Not `rail.synced()`: it goes false during a refill while the world is
+  // still whole. Timed facts take the tick (a client's world holds no job clock).
+  const mirrored = () => rail!.confirmed();
   railRoom = rail ? delayedRoom(room, LAT) : null;
   T.railStartAt = Date.now();
   const adapter =

@@ -19,7 +19,7 @@ import * as ql1 from '../src/sim/railway-queries-line1.ts';
 import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { Job, JobRun, Rail } from '../src/sim/railway-components.ts';
-import { cloneRailway, worldOf } from '../src/world/railway-predict.ts';
+import { cloneWorld } from '../src/sim/railway-queries.ts';
 
 function room() {
   const sync = createSync();
@@ -91,9 +91,11 @@ test('a timed fact on a mirror or a predicted clone needs `at`, and with it equa
   const server = q2.railCounts(w);
   assert.ok(server.used > 0, 'laying on the server');
   const now = r.sync.world.tick;
-  const clone = worldOf(cloneRailway(r.mirror.railway))!;
+  // The predictor's clone of the confirmed world (M12), and both mirror worlds.
+  const clone = cloneWorld(r.mirror.confirmed());
   for (const [name, client] of [
     ['mirror', r.mirror.world()],
+    ['confirmed', r.mirror.confirmed()],
     ['clone', clone],
   ] as const) {
     assert.throws(() => q2.railCounts(client), /needs the tick/, name);

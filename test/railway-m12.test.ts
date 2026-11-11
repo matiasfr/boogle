@@ -377,6 +377,50 @@ test('M12 coverage: the runs predicted, confirmed, corrected, remapped and reset
     assert.ok(seen.has(k), k);
 });
 
+// ---------------------------------------------------------------- the published world (added with the change)
+test('M12: views read a published world, never the ingest world, and a published world never moves', () => {
+  const r = room(buildSeedWorld('q3-stocked'));
+  const a = r.join('a', 'a', 2, 'published/a');
+  r.ready();
+  const first = a.adapter.read.world() as unknown as World;
+  const before = JSON.stringify(first.snapshot());
+  let pressed = false;
+  for (const source of RAILWAY_SOURCES) if ((pressed = a.adapter.chop(source[0], 0, false))) break;
+  assert.ok(pressed);
+  r.run(20);
+  assert.equal(a.adapter.read.pending(), 0, 'answered');
+  const later = a.adapter.read.world() as unknown as World;
+  assert.notEqual(later, first, 'a packet publishes a new world');
+  assert.equal(JSON.stringify(first.snapshot()), before, 'the world read before is unchanged (re-read it)');
+  assert.notEqual(JSON.stringify(later.snapshot()), before, 'the chop is in the new one');
+});
+
+test("M12: a late join's chunks publish nothing until the whole state, then all of it at once", () => {
+  const sync = createSync();
+  sync.setSelfId('server');
+  const replication = createReplicator();
+  const api = installRailway(sync, installRules(sync, homeLand()), replication);
+  const seed = buildSeedWorld('ring-joined');
+  while (sync.world.tick < seed.t) sync.stepWorld(100);
+  api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
+  api.touchAll();
+  const step = sync.roomStep();
+  replication.commit(step);
+  replication.addClient('c');
+  const packets: unknown[] = [];
+  replication.flush(step, (_cid, _p, json) => packets.push(JSON.parse(json)));
+  assert.ok(packets.length > 1, 'the whole state goes in chunks');
+  const m = createRailwayMirror();
+  const fresh = m.confirmed();
+  for (const [k, p] of packets.entries()) {
+    assert.ok(m.mirror.apply(p, 0));
+    if (k < packets.length - 1) assert.equal(m.confirmed(), fresh, `chunk ${k}: still the fresh railway`);
+  }
+  assert.notEqual(m.confirmed(), fresh, 'published at the last chunk');
+  assert.equal(m.confirmed().hash(), m.world().hash(), 'the published world is the ingest world, copied');
+  assert.notEqual(m.confirmed(), m.world());
+});
+
 test('M12: the trace file', () => {
   if (RECORD) writeFileSync(FIXTURE, `${JSON.stringify(recorded, null, 0)}\n`);
   assert.ok(Object.keys(recorded).length >= STAGES.length * 3 + 1);

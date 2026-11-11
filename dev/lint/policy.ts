@@ -108,6 +108,9 @@ const railDynamicBan = {
 const READ_MODEL_IMPORTERS = [
   'dev/spikes/ecs/predict-cost.ts',
   'dev/spikes/ecs/railway-diff.ts',
+  // M12: railwayOf left src/world (the client no longer builds the model); the differential tests' old side builds it
+  // here, in place of railway-marks.test.ts, which left the list in the same step.
+  'test/helpers/railway-model.ts',
   'test/railway.test.ts',
 ];
 

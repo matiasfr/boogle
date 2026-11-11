@@ -14,7 +14,7 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { railwayOf } from '../src/world/railway-predict.ts';
+import { railwayOf } from './helpers/railway-model.ts';
 import { createRailwayRequests } from '../server/src/host/railway-requests.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { RAILWAY_WINDOW, railAccount as oldAccount, type Railway } from '../src/sim/railway.ts';

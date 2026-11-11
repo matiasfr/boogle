@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import type { World } from '../../src/ecs/index.ts';
 import { buildSeedWorld, type SeedStage } from '../../src/sim/railway-seeds.ts';
 import { railwayCheck, validateRailway } from '../../src/sim/railway-check.ts';
-import { railwayOf } from '../../src/world/railway-predict.ts';
+import { railwayOf } from './railway-model.ts';
 import { createRailwayWorld } from '../../src/sim/railway-components.ts';
 import { SHARDS } from './railway-golden.ts';
 

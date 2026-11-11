@@ -12,7 +12,8 @@ import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
-import { railwayOf, worldOf } from '../src/world/railway-predict.ts';
+import { railwayOf } from './helpers/railway-model.ts';
+import { railwayAt } from '../src/world/railway-replicate.ts';
 import * as old from '../src/sim/railway.ts';
 import * as q1 from '../src/sim/railway-queries-line1.ts';
 import * as rows from '../src/sim/railway-rows.ts';
@@ -56,8 +57,8 @@ function host(stage?: SeedStage) {
 // As ws-page.ts reads now (fixed after this review): the world the mirror's read model is linked to, which is linked
 // only once the state is whole, a fresh railway before that. The review's first copy gated on `count(Rail) === 1`,
 // which a late join's first chunk already meets.
-const fresh = createRailwayWorld();
-const mirrored = (m: ReturnType<typeof createRailwayMirror>): World => worldOf(m.railway) ?? fresh;
+// Since M12: the mirror's confirmed world, published only once whole (a fresh railway before that).
+const mirrored = (m: ReturnType<typeof createRailwayMirror>): World => m.confirmed();
 /** T.railLoad's reads (ws-page.ts, the no-adapter load cycle): the account and the first standing tree from `first`. */
 function loadReads(mw: World, first: number) {
   let source = first;
@@ -86,7 +87,7 @@ for (const stage of ['fresh', 'q6-done', 'ring-joined'] as const)
     const tick = r.sync.world.tick;
     for (const [k, p] of packets.entries()) {
       assert.ok(m.mirror.apply(p, 0), `chunk ${k} applies`);
-      const was = probeWas(m.at(tick), tick);
+      const was = probeWas(railwayAt(m.confirmed(), tick), tick);
       let now: unknown;
       try {
         now = probe(mirrored(m), tick);
@@ -100,7 +101,7 @@ for (const stage of ['fresh', 'q6-done', 'ring-joined'] as const)
       } catch (e) {
         assert.fail(`${stage}: chunk ${k} of ${packets.length}: T.railLoad's reads throw: ${String(e)}`);
       }
-      assert.deepEqual(reads, loadReadsWas(m.railway, 0), `${stage}: T.railLoad after chunk ${k}`);
+      assert.deepEqual(reads, loadReadsWas(railwayOf(m.confirmed()), 0), `${stage}: T.railLoad after chunk ${k}`);
     }
   });
 
@@ -130,7 +131,11 @@ test('M11 review: after a refill swaps in, and during it, the probes read the re
   const tick = r.sync.world.tick;
   for (const [k, p] of packets.entries()) {
     assert.ok(m.mirror.apply(p, 0), `refill chunk ${k}`);
-    assert.deepEqual(probe(mirrored(m), tick), probeWas(m.at(tick), tick), `refill chunk ${k} of ${packets.length}`);
+    assert.deepEqual(
+      probe(mirrored(m), tick),
+      probeWas(railwayAt(m.confirmed(), tick), tick),
+      `refill chunk ${k} of ${packets.length}`,
+    );
   }
 });
 

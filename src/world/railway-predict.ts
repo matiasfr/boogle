@@ -2,14 +2,13 @@
 // Works' mechanism facts (rail.breaker, rail.strike, rail.turn): they wait for the server.
 // Replication R1b (docs/plans/replication.md, section 2): what a client predicts of its own railway actions, and the
 // effect facts both ends compute for an accepted action. Headless and pure: the server runs railEffect after each
-// action it applies; a client runs railPredict on a scratch copy of its mirror with the very same railApply.
+// action it applies; a client runs railPredict on a clone of its confirmed world with the very same railApply (M12: the
+// predicted state is that cloned world itself; no read model is built or linked).
 //
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
 //                                     depot and shelf takes, wake, lever, summit switch, pack, the kiln, footings and
 //                                     the cradle, the glider take); the rest wait for the server as in R1a
-//   railwayOf(world, into?)           the read model of a world, linked to it (a mirror's confirmed state, a clone's)
-//   worldOf(s)                        the world a read model is linked to (the views' read facade)
-//   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
+//   railPredict(w, pid, e, tick)      apply e to w (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
 //                                     fills is lit only when confirmed, and so are the Works' thresholds (the kiln lit,
 //                                     the cradle fitted, the wagon rolling out, the crossing footed, the leaf down). A pile it creates
@@ -21,7 +20,7 @@
 //                                     than the arrival and at most WAKE_BACKDATE_TICKS before it, so the actor's
 //                                     animation and the authoritative wake line up
 import type { World } from '../ecs/index.ts';
-import type { RailAction, Railway } from '../sim/railway.ts';
+import type { RailAction } from '../sim/railway.ts';
 import { LINE1_STATIONS } from '../sim/railway-line-layout.ts';
 import { RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import { LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
@@ -46,8 +45,6 @@ import {
   Works,
   WorksClock,
 } from '../sim/railway-components.ts';
-import { copyRailway, fillRailway, railwayView, refreshRailway } from '../sim/railway-read-model.ts';
-import { cloneWorld } from '../sim/railway-queries.ts';
 
 export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.wake',
@@ -161,35 +158,15 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
   return effect;
 }
 
-// The read model knows its world: a mirror's confirmed state and each predicted clone carry one, so the adapter keeps
-// handling plain `Railway` objects while the rules run on the world.
-const worlds = new WeakMap<Railway, World>();
-export function railwayOf(w: World, into?: Railway): Railway {
-  const s = into ? fillRailway(into, w) : railwayView(w);
-  worlds.set(s, w);
-  return s;
-}
-/** The world a read model is linked to (a mirror's confirmed state, a predicted clone), or undefined: the views' read
- * facade (`adapter.read.world()`). Linked only once the world is whole, so it never returns a half-filled world. */
-export const worldOf = (s: Railway): World | undefined => worlds.get(s);
-/** Whether the world holds a whole railway yet (a mirror before its late join's last chunk does not). */
+/** Whether the world holds a whole railway (a published world always does; the guard stays for any other caller). */
 const whole = (w: World) => w.count(Rail) === 1;
-/** A copy of a read model, linked to a copy of its world (the predictor's scratch state). */
-export function cloneRailway(s: Railway): Railway {
-  const w = worlds.get(s);
-  if (!w || !whole(w)) return structuredClone(s);
-  const copy = copyRailway(s);
-  worlds.set(copy, cloneWorld(w)); // copy-on-write: only the tables a prediction writes are copied
-  return copy;
-}
 
 export type RailPrediction = { n: number; effect: RailEffect | null };
 type Saved = { job: Record<string, unknown>; run: Record<string, unknown> };
-/** Apply a predicted action to a scratch railway as the server would at `tick`; see the header for what is held back. */
-export function railPredict(s: Railway, pid: string, e: RailAction, tick: number): RailPrediction {
-  const w = worlds.get(s);
-  if (!w || !whole(w) || !RAIL_PREDICTED.has(e.op) || w.lookup(Account, pid) === undefined)
-    return { n: 0, effect: null };
+/** Apply a predicted action to a scratch world (a clone of the confirmed one) as the server would at `tick`; see the
+ * header for what is held back. */
+export function railPredict(w: World, pid: string, e: RailAction, tick: number): RailPrediction {
+  if (!whole(w) || !RAIL_PREDICTED.has(e.op) || w.lookup(Account, pid) === undefined) return { n: 0, effect: null };
   const before = piles(w);
   const jobs = [
     ...w.ids(Job).map((id) => [Job, JobRun, id, 'delivered', 'stoneDelivered'] as const),
@@ -257,7 +234,6 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   }
   if (shed.fitted !== shed0.fitted || shed.ready !== shed0.ready) Object.assign(w.mut(Shed, sid)!, shed0);
   if (w.get(Aperture, apId)!.brace !== brace0) w.mut(Aperture, apId)!.brace = brace0;
-  refreshRailway(s, w);
   const n = result.status === 'accepted' ? result.accepted : 0;
   return { n, effect: n > 0 ? railEffect(w, pid, e, before) : null };
 }
