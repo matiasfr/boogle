@@ -13,6 +13,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Got } from '../../render/reward-reveal.ts';
 import { BOXES, boxGift, cosmetic, crateParts, type GiftId, type Tier } from '../../render/cosmetic-parts.ts';
 import { createCrateShow } from '../../render/crate-show.ts';
+import { job, qjob } from '../../sim/railway-rows.ts';
 import { rewardSparkles } from '../../render/reward-particles.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
@@ -98,15 +99,13 @@ export async function createStationBoxes(
   let opened = 0;
 
   const completion = (box: Box) => {
-    const s = adapter.inspect();
-    return box.spec.line === 0
-      ? (s.stations[box.spec.station]?.completion ?? 0)
-      : (s.line2.stations[box.spec.station]?.completion ?? 0);
+    const w = adapter.read.world();
+    return box.spec.line === 0 ? job(w, box.spec.station).completion : qjob(w, box.spec.station).completion;
   };
   /** Waiting for you: its stretch is laid and you haven't opened it (or it's rattling now). */
   const waiting = (box: Box) => {
     const mine = wardrobe();
-    if (!mine || !adapter.inspect().ready || !completion(box)) return false;
+    if (!mine || !adapter.read.ready() || !completion(box)) return false;
     return !mine.isOpened(box.spec.id) || (show.opening() === box.mesh && !show.burst());
   };
   const ready = (box: Box) => box.mesh.visible && box.flight === 1 && !show.busy();
@@ -153,12 +152,11 @@ export async function createStationBoxes(
       return out ?? NO_TARGETS;
     },
     update(dt: number, now: number) {
-      const state = adapter.inspect();
       flare = Math.max(0, flare - dt / 1.6);
       const p = me.body?.position;
       for (const box of boxes) {
         // Laid while you watched: the machine hands it down from its flatbed, as Place's handCrate did.
-        if (state.ready) {
+        if (adapter.read.ready()) {
           const c = completion(box);
           if (box.previous === 0 && c && machineFrom && !wardrobe()?.isOpened(box.spec.id)) {
             machineFrom(box.from);
