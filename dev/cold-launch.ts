@@ -11,6 +11,11 @@
 //   npm run cold-launch -- --detail                  one more fast run with ?startup=1 (each pipeline's object)
 //   npm run cold-launch -- --metal-cold              every run with an empty Metal shader cache (a device's first visit)
 //   npm run cold-launch -- --compare a.json b.json   medians side by side
+//   npm run cold-launch -- --play                    per profile: Jump in the moment it is enabled, walk, jump, coast stills
+//   npm run cold-launch -- --fail                    Rapier's WASM answered 404, then aborted: what the player is left with
+//   npm run cold-launch -- --stills                  per profile: the loading screen before and after its title font lands
+//   npm run cold-launch -- --no-modulepreload        every run as a browser without rel=modulepreload
+// (--detail also clicks Jump in, then puts the player on Far Head, the device suite's `head` scene.)
 //
 // Results: .look/cold-launch/<label>/summary.json (and runs/*.json). Takes the machine-wide bot slot for its browsers.
 import fs from 'node:fs';
@@ -201,7 +206,8 @@ type Request = {
   fromSw: boolean;
   status: number;
 };
-async function run(profileName: string, n: number, mode: 'clean' | 'traced' | 'coverage' | 'detail') {
+type Mode = 'clean' | 'traced' | 'coverage' | 'detail' | 'play' | 'fail-404' | 'fail-abort' | 'stills';
+async function run(profileName: string, n: number, mode: Mode) {
   const profile = PROFILE[profileName]!;
   // --metal-cold: a copy of Chrome with its own bundle id (dev/cold-start/identity.ts), its Metal shader cache cleared
   // before every run, so the GPU compiles every pipeline as on a first visit; otherwise the Mac's cache is warm after
@@ -219,6 +225,33 @@ async function run(profileName: string, n: number, mode: 'clean' | 'traced' | 'c
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text().slice(0, 200)));
   await page.addInitScript(installStartupRecorder);
+  if (flag('no-modulepreload'))
+    // A browser that does not know rel=modulepreload (Safari before 17): Vite's polyfill then fetches the links itself.
+    await page.addInitScript(() => {
+      const supports = DOMTokenList.prototype.supports;
+      DOMTokenList.prototype.supports = function (token: string) {
+        return token === 'modulepreload' ? false : supports.call(this, token);
+      };
+    });
+  // The service worker's own fetches (its precache) are not on the page's Network domain: Playwright reports them on
+  // the context, timed here in the page's clock (Date.now() - timeOrigin) next to a mark for the register() call.
+  const swRequests: { url: string; t: number; end: number; status: number }[] = [];
+  context.on('request', (q) => {
+    if (q.serviceWorker()) swRequests.push({ url: q.url(), t: Date.now(), end: -1, status: 0 });
+  });
+  context.on('requestfinished', async (q) => {
+    const r = q.serviceWorker() && swRequests.find((s) => s.url === q.url() && s.end < 0);
+    if (!r) return;
+    r.end = Date.now();
+    r.status = (await q.response().catch(() => null))?.status() ?? 0; // the worker can close with the browser first
+  });
+  await page.addInitScript(() => {
+    const register = ServiceWorkerContainer.prototype.register;
+    ServiceWorkerContainer.prototype.register = function (...args: Parameters<typeof register>) {
+      performance.mark('cold:sw-register');
+      return register.apply(this, args);
+    };
+  });
   await page.addInitScript(() => {
     // When "Jump in" stops being disabled (the owner's measure), beside the boot marks.
     new MutationObserver((_, obs) => {
@@ -309,13 +342,35 @@ async function run(profileName: string, n: number, mode: 'clean' | 'traced' | 'c
     await cdp.send('Profiler.enable');
     await cdp.send('Profiler.startPreciseCoverage', { callCount: false, detailed: true });
   }
-  const query = `?room=cold-${profileName}-${n}-${Date.now().toString(36)}&notrack=1${mode === 'detail' ? '&startup=1' : ''}`;
+  if (mode === 'fail-404' || mode === 'fail-abort')
+    // Rapier's WASM (both builds) refused: what does the player see?
+    await page.route(/\.wasm$/, (route) =>
+      mode === 'fail-404' ? route.fulfill({ status: 404, body: 'blocked' }) : route.abort('blockedbyclient'),
+    );
+  const extra = mode === 'detail' ? '&startup=1' : mode === 'play' ? '&debugcam=1' : '';
+  const query = `?room=cold-${profileName}-${n}-${Date.now().toString(36)}&notrack=1${extra}`;
   const wall = Date.now();
   await page.goto(base + query, { waitUntil: 'commit', timeout: 180000 });
-  await page.waitForFunction(() => performance.getEntriesByName('boot:interactive').length > 0, null, {
+  if (mode === 'stills') {
+    const seen = await fontSwap(page, path.join(OUT, `${profileName}-font`));
+    await browser.close();
+    fs.writeFileSync(path.join(OUT, 'runs', `${profileName}-${n}-stills.json`), JSON.stringify(seen, null, 1));
+    return seen as never;
+  }
+  if (mode === 'fail-404' || mode === 'fail-abort') {
+    const seen = await failure(page, path.join(OUT, `${profileName}-${mode}`));
+    await browser.close();
+    const result = { profile: profileName, n, mode, errors, ...seen };
+    fs.writeFileSync(path.join(OUT, 'runs', `${profileName}-${n}-${mode}.json`), JSON.stringify(result, null, 1));
+    return result as never;
+  }
+  // --play clicks Jump in the moment it is enabled, which can be before "interactive" (the room, the last frames).
+  const ready = mode === 'play' ? 'cold:enter-enabled' : 'boot:interactive';
+  await page.waitForFunction((m) => performance.getEntriesByName(m).length > 0, ready, {
     timeout: 180000,
-    polling: 100,
+    polling: 16,
   });
+  const played = mode === 'play' ? await play(page, path.join(OUT, `${profileName}-play`)) : undefined;
   let coverage: { url: string; used: number; total: number }[] | undefined;
   if (mode === 'coverage') {
     const { result } = await cdp.send('Profiler.takePreciseCoverage');
@@ -337,8 +392,20 @@ async function run(profileName: string, n: number, mode: 'clean' | 'traced' | 'c
     await page.waitForTimeout(2000);
     await page.evaluate(() => performance.mark('cold:jump-in'));
     await page.locator('#enter').click();
+    await page.waitForTimeout(HOLD_MS);
+    // Then Far Head, as the device suite's `head` scene puts the player (src/debug/perf-poses.ts; teleport's fields,
+    // since a build has no /src imports): which pipelines does the warm-up leave for there?
+    await page.evaluate(() => {
+      performance.mark('cold:head');
+      const { me } = window.boogle;
+      const [x, y, z, yaw] = [1392, 24, -170, 2.356];
+      me.body!.position.set(x, y, z);
+      me.body!.interpolatedPosition.set(x, y, z);
+      me.yaw = yaw;
+    });
   }
   await page.waitForTimeout(HOLD_MS);
+  if (mode === 'detail') await page.screenshot({ path: path.join(OUT, `${profileName}-detail-head.png`) });
   const page_ = await page.evaluate(() => {
     const n = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
     const marks = Object.fromEntries(
@@ -366,8 +433,10 @@ async function run(profileName: string, n: number, mode: 'clean' | 'traced' | 'c
       detail,
       used: (window as unknown as { __used?: () => { label: string; t: number; shown: number }[] }).__used?.(),
       sw: !!navigator.serviceWorker?.controller,
+      origin: performance.timeOrigin,
     };
   });
+  const pageOrigin = page_.origin;
   let profileOut: ReturnType<typeof attributeProfile> | undefined;
   let trace: ReturnType<typeof attributeTrace>;
   if (mode === 'traced') {
@@ -392,12 +461,150 @@ async function run(profileName: string, n: number, mode: 'clean' | 'traced' | 'c
     errors,
     ...page_,
     requests: reqs,
+    swRequests: swRequests.map((s) => ({
+      ...s,
+      t: Math.round(s.t - pageOrigin),
+      end: s.end < 0 ? -1 : Math.round(s.end - pageOrigin),
+    })),
     trace,
     cpu: profileOut,
     coverage,
+    played,
   };
   fs.writeFileSync(path.join(OUT, 'runs', `${profileName}-${n}-${mode}.json`), JSON.stringify(result));
   return result;
+}
+
+// ---- --play: through the lobby the moment Jump in opens, a short input run, and fixed views of the coast ----------
+type Page = Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>;
+type V3 = [number, number, number];
+const VIEWS: [string, V3, V3][] = [
+  ['spawn-shore', [770, 10, 110], [850, 0, 90]], // the landing's shore (dev/cold-start/page.ts's view)
+  ['across-the-bay', [780, 9, 0], [-700, 40, -500]], // src/debug/perf-poses.ts `bay`
+  ['pier', [1406, 30, -330], [1406, 18, -430]], // over the pier's water, facing north (src/debug/perf-poses.ts `pier`)
+  ['shallows', [790, 3.5, 104], [812, 0, 96]], // low over the shallows by the landing
+];
+async function play(page: Page, prefix: string) {
+  const now = () => page.evaluate(() => Math.round(performance.now()));
+  const mark = (name: string) =>
+    page.evaluate((n) => {
+      const m = performance.getEntriesByName('boot:' + n)[0] ?? performance.getEntriesByName('cold:' + n)[0];
+      return m ? Math.round(m.startTime) : -1;
+    }, name);
+  const pos = () =>
+    page.evaluate(() => {
+      const b = window.boogle.me.body;
+      return b ? ([b.position.x, b.position.y, b.position.z] as V3) : null;
+    });
+  const hint = () =>
+    page.evaluate(() => {
+      const h = document.querySelector<HTMLElement>('#hint');
+      return h && !h.hidden ? h.textContent : null;
+    });
+  const out: Record<string, unknown> = {};
+  out.click = await now();
+  await page.locator('#enter').click();
+  await page.screenshot({ path: `${prefix}-0-loading-lifted.png` });
+  await page.waitForFunction(() => window.boogle.me.entered && !!window.boogle.me.body, null, { timeout: 30000 });
+  out.entered = await now();
+  Object.assign(out, {
+    rapier: await mark('rapier'),
+    enterEnabled: await mark('enter-enabled'),
+    interactive: await mark('interactive'),
+  });
+  // The arrival: sample the body until it has settled (physics stepping under gravity), at most 15 s.
+  const track: [number, V3 | null][] = [];
+  for (let i = 0, still = 0; i < 150 && still < 4; i++) {
+    const p = await pos();
+    const last = track.at(-1)?.[1];
+    still =
+      p && last && Math.abs(p[1] - last[1]) < 0.02 && Math.hypot(p[0] - last[0], p[2] - last[2]) < 0.02 ? still + 1 : 0;
+    track.push([await now(), p]);
+    await page.waitForTimeout(100);
+  }
+  out.arrival = track;
+  await page.screenshot({ path: `${prefix}-1-landed.png` });
+  const p0 = await pos();
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(1500);
+  await page.keyboard.up('KeyW');
+  const p1 = await pos();
+  await page.keyboard.press('Space');
+  let top = -Infinity;
+  for (let i = 0; i < 16; i++) {
+    await page.waitForTimeout(50);
+    top = Math.max(top, (await pos())?.[1] ?? -Infinity);
+  }
+  await page.screenshot({ path: `${prefix}-2-walked-jumped.png` });
+  out.walk = { from: p0, to: p1, metres: p0 && p1 ? Math.hypot(p1[0] - p0[0], p1[2] - p0[2]) : null };
+  out.jump = { from: p1?.[1], top, rise: p1 ? top - p1[1] : null };
+  // No pick-up here: the beach ball lives on the classic island, out of reach of the default spawn (the smoke scenario
+  // covers it). What E offers where the player stands is recorded.
+  out.hint = await hint();
+  for (const [name, cam, look] of VIEWS) {
+    await page.evaluate(([c, l]) => window.__debugCam?.set(c, l), [cam, look] as [V3, V3]);
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: `${prefix}-view-${name}.png` });
+  }
+  return out;
+}
+
+// ---- --stills: the loading screen as its title font arrives ------------------------------------------------------
+// Screenshots as fast as they come from the first paint: the last with the title not yet in Lilita One and the first
+// with it (font-display: swap shows a fallback until the file lands), each with its time since navigation.
+async function fontSwap(page: Page, prefix: string) {
+  const start = Date.now();
+  let before: { t: number; shot: Buffer } | null = null;
+  let after: { t: number; shot: Buffer } | null = null;
+  const state = () =>
+    page
+      .evaluate(() => ({
+        t: Math.round(performance.now()),
+        title: !!document.querySelector('.splash-title'),
+        // The title's face itself (Figtree's faces load on their own time).
+        lilita: [...document.fonts].some(
+          (f) => f.family.replace(/["']/g, '') === 'Lilita One' && f.status === 'loaded',
+        ),
+      }))
+      .catch(() => null);
+  while (!after && Date.now() - start < 60000) {
+    const s = await state();
+    if (!s?.title) {
+      await page.waitForTimeout(16);
+      continue;
+    }
+    const shot = await page.screenshot();
+    // A screenshot waits for a frame, seconds at 4x CPU: a frame is before the swap only if the face was still
+    // unloaded after it was taken.
+    const e = await state();
+    if (s.lilita) after = { t: s.t, shot };
+    else if (e && !e.lilita) before = { t: e.t, shot };
+  }
+  if (before) fs.writeFileSync(`${prefix}-0-before-swap.png`, before.shot);
+  if (after) fs.writeFileSync(`${prefix}-1-after-swap.png`, after.shot);
+  return { beforeSwapMs: before?.t ?? null, afterSwapMs: after?.t ?? null };
+}
+
+// ---- fail-*: Rapier blocked; what the loading screen ends on ------------------------------------------------------
+async function failure(page: Page, prefix: string) {
+  const start = Date.now();
+  let ended = 'timeout 90 s';
+  while (Date.now() - start < 90000) {
+    const m = await page
+      .evaluate(() =>
+        ['failed', 'world-failed', 'interactive'].find((n) => performance.getEntriesByName('boot:' + n).length),
+      )
+      .catch(() => undefined);
+    if (m) {
+      ended = m;
+      break;
+    }
+    await page.waitForTimeout(250);
+  }
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${prefix}.png` });
+  const text = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').slice(0, 400)).catch(() => '');
+  return { ended, afterMs: Date.now() - start, text };
 }
 
 // ---- CPU profile: self time by source kind, overall and per boot phase -----------------------------------------
@@ -598,8 +805,11 @@ try {
       );
     }
     if (flag('coverage')) all.push(await run(p, 0, 'coverage'));
+    if (flag('play')) all.push(await run(p, 0, 'play'));
+    if (flag('stills')) await run(p, 0, 'stills');
   }
   if (flag('detail')) all.push(await run('fast', 0, 'detail'));
+  if (flag('fail')) for (const m of ['fail-404', 'fail-abort'] as const) all.push(await run('fast', 0, m));
 } finally {
   lease.release();
   site.close();
