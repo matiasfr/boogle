@@ -23,7 +23,8 @@ import { railwayKnown } from '../player/welcome-railway.ts';
 import { addWelcomeItem, showCard } from '../player/arrival.ts';
 import { fallArrival } from '../fall/arrival.ts';
 import { createCameraPullOut } from '../render/camera-pull-out.ts';
-import { showActCard, momentBusy } from '../ui/moment-banner.ts';
+import { momentBusy } from '../render/buddy-frame.ts';
+import { showActCard, momentBanner } from '../ui/moment-banner.ts';
 import { storyAct, type StoryAct } from '../sim/railway-queries-story.ts';
 
 /** Every string on a card. A title is the owner's to write: an act he has not titled shows its number only, and no line
@@ -45,6 +46,7 @@ const SETTLE_MS = 300; // a risen act is seen this long before it shows, so the 
 addWelcomeItem({
   key: 'act',
   first: true,
+  absent: 1, // a memory from before acts: the room was in Act 1 for them
   save: () => seen || undefined,
   since: (was) => {
     const w = railwayKnown(railwayWorldRead());
@@ -60,6 +62,8 @@ const returning = !showCard(); // a returning visit has the Welcome back card
 let seen = 0; // the highest act this browser has shown (or, when returning, been told of)
 let arrived = false;
 let risenAt = 0;
+let lastX = 0,
+  lastZ = 0;
 const aerial = createCameraPullOut(() => false, true);
 
 /** An aerial move over where you land, ending behind Buddy where the follow camera takes over: the card's title comes up
@@ -104,6 +108,13 @@ spawn({
   kind: 'acts',
   lateUpdate({ now, dt }) {
     if (!productionRailway || !me.entered) return;
+    // Moved during the aerial move (a death, a teleport): the camera comes home at once, not to the old spot.
+    if (me.body) {
+      const { x, z } = me.body.position;
+      if (aerial.active() && Math.hypot(x - lastX, z - lastZ) > 6) aerial.cancel();
+      lastX = x;
+      lastZ = z;
+    }
     aerial.update(dt);
     const w = known(); // re-read every frame: a published world is never written
     if (!w) return;
@@ -129,7 +140,8 @@ spawn({
       return;
     }
     risenAt ||= now;
-    if (now - risenAt < SETTLE_MS || momentBusy(LEAD_S)) return;
+    // The card shares one element with the banners, so it also waits for a banner to run out whole.
+    if (now - risenAt < SETTLE_MS || momentBusy(LEAD_S) || momentBanner()) return;
     show(act, 'live', now - risenAt);
     risenAt = 0;
   },

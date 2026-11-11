@@ -20,6 +20,7 @@ import {
   line2GateOpen,
   line2KitOwed,
   line2Trains,
+  farHeadLaid,
 } from '../../sim/railway-queries-line2.ts';
 import { aboard, line2Jobs, type QJobRead } from '../../sim/railway-queries.ts';
 import { freeCarryIgnoringBig, railPhase } from '../../sim/railway-queries-line1.ts';
@@ -655,7 +656,7 @@ export async function createRailwayLine2(
     }
     seaGate.restore(railRow(w).sea);
     glideDevice.restore(line2Completed(w));
-    farHead.restore(jobs[4]!.job.completion === 1);
+    farHead.restore(farHeadLaid(w));
     boiler.restore();
     pier.restore(jobs[5]!.job.completion === 1);
     visualHead = targetHead = working() ? head(active, jobs) : TURN_HEAD;
@@ -1098,7 +1099,7 @@ export async function createRailwayLine2(
       syncSolids(w, completed);
       seaGate.update(dt, stock.sea);
       glideDevice.update(dt, completed);
-      farHead.update(dt, jobs[4]!.job.completion === 1);
+      farHead.update(dt, farHeadLaid(w));
       boiler.update(dt);
       pier.update(dt, jobs[5]!.job.completion === 1);
       ensureQ7Frame();
