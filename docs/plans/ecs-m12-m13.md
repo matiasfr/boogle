@@ -364,11 +364,65 @@ The parent plan's M13 entry holds the file lists by group (1 tag, 2 delete, 3 re
 [place-retirement](place-retirement.md) job D1 the source edits (D1a flags, D1b pause, D1c Dev menu, D1e tools).
 Its proof line "the full railway bot" is replaced by segments (owner: the long run on command only).
 
-- [ ] **M13a. The archive and the twin table.** _S, docs._ Tag the parent commit `archive/place`, push the tag,
+- [x] **M13a. The archive and the twin table.** _S, docs._ Tag the parent commit `archive/place`, push the tag,
       name it in `docs/game-design/place.md`. Write, in this file under this step, one row per file of group 2 with
       the live-game twin that covers it (a `railway-*` eval, a bot segment, a rail seed); a file with no twin moves
       to group 3. Re-run `grep -rlE "proto=place|proto/place|__place" dev test server protos` (116 files today, 148
       when the lists were written) and name every file in neither list.
+
+  **The twin table (M13a, done 11 November).** `archive/place` is a local tag at `a6fc476fb` (origin/main when it was
+  made); the push waits for the owner, so `docs/game-design/place.md` does not name it yet. Rule used: a twin is a
+  live-game tool that makes the same assertions; an assertion about a mechanic only Place has is listed as removed,
+  not counted as lost. A tool still imported or dispatched by a file that stays (`sheet.ts`, `playthrough.ts`,
+  `coop-playthrough.ts`) is not deleted before that file is retargeted. **The plan's group 2 was written from names:
+  2 of its 54 files have a full twin.** Totals: **deleted 2** (M13b). **52 stay:** 43 for M13c (5 wait on
+  `sheet.ts`, 3 on the wing), 3 tests for M13e, and 6 that need nothing (4 live harness files, 2 live tests). Group 3's
+  51 files are M13c's too. **Kept for M13d: 10** (group 4: 6, and 4 that lose their last Place path). Counts are
+  today's (119 files match the grep).
+
+  | Group 2 file | What it checks | Twin, or what is lost | Step |
+  | --- | --- | --- | --- |
+  | `evals/place-early-beam` | Station 1 rebounds, ordinary logs fit, Station 3 needs the beam, shoulder, walk, deliver | **Full:** `bots/railway.ts` T2 to T3 (lines 1317 to 1328 rebound sends nothing; 1362 logs alone do not feed T3; beam pickup, carried, laid), `npm run playthrough -- --to T3` | **M13b deletes** |
+  | `evals/replay-bridge` | the completed bridge walked with no recovery; a timed-crossing banner | **Full:** `bots/railway.ts` 1494 to 1520 (`walkTrack` 191 to 30 and back, no recovery). The banner is Place-only (`job.ways.short`), removed | **M13b deletes** |
+  | `evals/place-big-reload` | shouldered beam restored, Drop once, empty Drop no duplicate, cargo reachable | None: the live bot carries the beam but never drops or reloads it; `railway-reload` reloads the reward only | M13c (rail seed with the beam held, then Drop) |
+  | `evals/place-cart-whistle` | Q5 cart: gap, waiting, loading, forge, recall, unloading, pair, leave | Partial: the bot sees the cart bring the load (`railway.ts` 325, 1612). Lost: recall, leave, pair, unloading | M13c |
+  | `evals/place-contact`, `place-seats-workshop` | two-player contact probes; seat grants, migration reclaim, workshop Sit | Partial: `railway-seats`, `railway-passenger-car-two`. Lost: the idle ground probe, the reclaim (unit: `seat-claims.test`) | M13c |
+  | `evals/place-coop`, `place-exploring`, `place-trees-coop` | two players: wake, deposit, follower's chest, skip to trains, harvest replay | Partial: the bot's two-player mode (`second`, Help carry) and `rail-coop.ts`. Lost: not found live: the follower opening a chest, the platform call, snapshot assertions | M13c |
+  | `evals/place-great-carry` | solo, pair, drop, retry, gate, helper-leave, carrier-leave | Partial: bot 1380 to 1437 (solo, Help carry pair); `help-carry.test`. Lost: drop, retry, both leaves in a page | M13c |
+  | `evals/place-split` | Q5 solo, walk, split: times, cart ride, jump off | Partial: bot 280 to 350 funds Q5 by depot trips. Lost: riding the cargo, the timed modes | M13c |
+  | `evals/place-tech`, `place-tech-act` | glide, summit, climb, hook, jump, double jump, posts, hub, staged | Partial: `railway-glide-*`, `railway-hook-capture`, `railway-held-jump`. Lost: climb, posts, hub, the glide camera compare and transients | M13c |
+  | `evals/double-jump`, `bots/double-jump` | gaps of the jump course by real input | Partial: `railway-held-jump` (the float bug only). Lost: the gap measure; `dev/economy/place-level.ts` and `bots/place.ts` import them | M13c, M13d |
+  | `evals/place-trees` | checks, decorative, hardwood 1 and 2, rebound, bite, full, dense | Partial: bot 1735 and 1759 (hardwood rebounds, bites). Lost: decorative, full, dense; `axe-chop` imports it | M13c |
+  | `evals/place-job`, `place-act` | 40 staged shots of Place; its action half | None. It is the staging fixture 12 kept files import (`color-defaults-motion`, `fixed-exposure-review`, `carry-tag`, `visual-pipeline`, three beats, `playthrough.ts`, `look-broker.ts`) | M13c |
+  | `evals/place-corner`, `place-cues`, `placement-audit`, `tunables-chop`, `place-town-coop` | Station 3 corner states; walking-in sightlines; T3 placement; chop tunables; two in the shop | None found | M13c |
+  | `evals/place-forge-reconcile`, `place-personal-saves` | soft co-op reconcile of Place's forge; Place's gift and prop saves | None: Place-only mechanics (lockstep has no reconcile). Live cover: `scenarios/reconnect-edit`. Owner's call: delete at M13e, not retarget | M13c |
+  | `evals/place-partner-load` | a partner's worn load: logs, rails, stone, beam, boiler, pet | Partial: `railway-boiler-fit` (two players, the boiler). Lost: the other loads | M13c |
+  | `evals/replay-idle-landing`, `bots/place-landing` | the failed co-op idle landing at a fixed pose | None; `bots/place.ts` and `place-contact` import the bot | M13c |
+  | `evals/sheet-glide`, `sheet-hook`, `sheet-ride`, `sheet-opening`, `sheet-enter` | motion sheet moments from Place checkpoints | Twins exist (`railway-glide-first`, `railway-hook-capture`, `railway-passenger-car`) but `sheet.ts` lines 311 to 382 dispatch these five | M13c retargets `sheet.ts`, then deletes them |
+  | `evals/track-layer`, `track-layer-action`, `track-panel-contract` | the machine's views, panel contract (the wing greybox's own looks) | None live; `track-wing` and the wing URL use them; `railway.ts`, `railway-seats`, `pack-frame`, `machine-clearance` name `track-layer` | M13c, after the wing's model step |
+  | `evals/place-draws`, `place-kit-draws`, `replay-pause-bottom`, `replay-pause-talk`, `replay-phone-cost` | per-mesh draw attribution, matched poses, Pause and phone boot | Not Place tools (no Place module; `__place` count 0 or a live module); `bench` gives totals only. Keep as they are | none (M13c may rename) |
+  | `bots/place.ts` | the Place route bot | The route twin is `bots/railway.ts`, but `coop-playthrough.ts:121`, `place-job`, `place-contact`, `replay-idle-landing` import it | M13c |
+  | `checkpoints.ts`, `restore-pair.ts`, `coop-warp.ts`, `saves.ts` | rail-seed checkpoints, restore pair, warp, saves | **Not Place's:** `look.ts`, `playthrough.ts`, `sheet.ts`, `session.ts`, `shots.ts`, `segments.ts` and `before-after.ts` use them for the live game. Off the delete list | none |
+  | `video/shots/place`, `round4`, `round4-pair` | clips of Place's beats (stage through `__place`, `place-job`, `place-tech`) | None: no live shot records those beats | M13c (retarget or owner deletes) |
+  | `test/big-cargo`, `train-nudge`, `place-coop-snapshot` | Place's cargo, nudge, coop snapshot | Not touched (`test/` is held); they test `src/proto/place` modules | M13e |
+  | `test/restore-pair`, `checkpoint-pair` | the live restore pair | Not Place's; stay with the harness | none |
+
+  Group 3 and 4 rows (no twin, each retargets): the 10 evals, 8 railway evals, 9 beats and fixture, `playthrough`,
+  `coop-playthrough`, `observe`, `sheet`, `segments`, `garage-showroom`, `bots/railway.ts`, `codex/see`,
+  `audio/render`, `patch`, `scan/retained`, `scan/task-routes`, `scenarios/run`, `scenarios/reconnect-edit`,
+  `playtest/beats`, `loop/graph`, `economy/model`, `protos/protos` and five tests: **M13c**. `level/check`,
+  `replay`, `spatial`, `track-continuity`, `world-blockout`, `economy/place-level`, and `grounding-props`,
+  `grounding-track`, `timber-track`, `machine-clearance`: **M13d**.
+
+  **In neither list (28 files in the grep).** Place references that are real: `evals/track-wing` (the wing probe;
+  M13c, with `track-layer`), `evals/terrain-cove` (sets `__placeAct`; M13c with the beat), `look/playtester.md`
+  (`proto=place&fresh=1`; M13c), `dev/codex/README.md`, `dev/look/README.md` (name `place-coop`; they change with it).
+  The other 23 name only the harness's `__placeDone` or `__placeAct` flag, not Place: `look/look.ts`, `bot.ts`,
+  `rail-coop.ts`, `bots/railway-{glide,held-jump,hook-capture}.ts`, `evals/{pack-frame,railway-b4-bot,
+  railway-b5b8-bot,railway-engine,railway-glide-first,railway-glide-map,railway-glide-wake,railway-home,
+  railway-photo,railway-request-stop,railway-roof-start,railway-seats,railway-signal-hold,railway-trains-pass,
+  railway-works-bot,shared-gate-shot}.ts` and the comments in `dev/lint/policy.ts`. Renaming the flag is a
+  leftover (P3); the M13e grep `proto/place` does not meet it.
 - [ ] **M13b. Delete group 2.** _S, Low. After M13a._ The 39 evals, 3 bots, 7 harness and video files and 5 tests of
       group 2, and their `package.json`, `dev/checks-for.ts` and docs lines. **Checks:** `npm run check`; `npm run
       look -- --at list` still lists; `npm run unused`.
