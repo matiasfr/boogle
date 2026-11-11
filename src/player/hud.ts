@@ -9,6 +9,7 @@ import { net, remotes, onNetState, onPeopleChanged } from '../netplay/net.ts';
 import { inputState } from './input-state.ts';
 import { requestLock } from './input.ts';
 import { canvas } from '../render/scene.ts';
+import { momentBusy } from '../render/buddy-frame.ts';
 import { mainVerb } from './hands.ts';
 import { glyph, inputKind } from './glyphs.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
@@ -34,7 +35,7 @@ function updateHud() {
     !inputState.lockFailed &&
     (canLock || (!inputState.looked && !inputState.seated));
   const hint =
-    me.entered && (touchHint || mouseHint)
+    me.entered && !momentBusy() && (touchHint || mouseHint)
       ? mouseHint && canLock
         ? `${glyph('use')}<span>Look around</span>`
         : '<span>Drag or scroll with two fingers to look around</span>'

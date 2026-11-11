@@ -97,12 +97,12 @@
     transform 1.6s ease-out;
 }
 .moment-banner.act i {
-  font: 700 clamp(15px, 2.2vw, 24px) / 1.1 var(--font-body);
+  font: 700 clamp(18px, 4.4vw, 24px) / 1.1 var(--font-body);
   letter-spacing: 0.5em;
   text-transform: uppercase;
 }
 .moment-banner.act b {
-  font: 300 clamp(34px, 7vw, 92px) / 1.05 var(--font-body);
+  font: 300 clamp(28px, 7vw, 92px) / 1.05 var(--font-body);
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -113,6 +113,16 @@
   height: 1px;
   margin: 0.45em auto 0.1em;
   background: linear-gradient(90deg, transparent, #fff 25%, #fff 75%, transparent);
+}
+/* A phone held upright: the title block sits higher (Buddy is below the middle of the frame), narrower tracking so
+   "The beginning" fits on one line. */
+@media (max-aspect-ratio: 1/1) {
+  .moment-banner.act {
+    padding-bottom: calc(34vh + env(safe-area-inset-bottom));
+  }
+  .moment-banner.act b {
+    letter-spacing: 0.14em;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .moment-banner.act,
