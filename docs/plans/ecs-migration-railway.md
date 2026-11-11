@@ -374,8 +374,9 @@ to T7 follow M3c and M8 and share no file with each other or with M10. Within a 
       Moves only: `railway-components.ts` (264 lines) is old lines 32–275 under a new header, `railway-read-model.ts`
       (334) is 278–562, `railway-check.ts` (215) is 565–730, each body byte-identical to its source range (`cmp`
       against `sed -n` of the old file); `railway-world.ts` (730 to 34) re-exports the same 34 names by explicit list.
-      The only edit inside a moved block: `TIMING` is exported, because the read model's `jobOf`/`qjobOf` read its
-      keys; the barrel does not re-export it. Lines 1–275 also hold `RAIL_STATUS`, `DEPOT_OUT` and the depot-output
+      The edits around the moved blocks: `TIMING` is exported, because the read model's `jobOf`/`qjobOf` read its
+      keys (the barrel does not re-export it), with a one-line doc comment added above it, and the two section-divider
+      comments (`the read model`, `the load check`) were dropped; the commit's "moves, no edits" overstated it. Lines 1–275 also hold `RAIL_STATUS`, `DEPOT_OUT` and the depot-output
       assertion, so they went to the components file with the rest (section 2's "nothing else" is not quite true of
       it). Import graph: check → read model → components, check → components; no file imports the barrel back, no
       new knot. The importer count is 38 today, not 34; none changed. The three M0 goldens passed untouched,

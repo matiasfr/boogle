@@ -1,5 +1,5 @@
 // The railway as Server-kind state (docs/plans/replication.md, R1a; docs/plans/ecs-e.md, section 4): its replicated
-// components are E components (src/sim/railway-world.ts, RAIL_REPLICATED) and the server's world is its own
+// components are E components (src/sim/railway-components.ts, RAIL_REPLICATED) and the server's world is its own
 // projection (./replicate-world.ts). This is the client's side: the mirror writes each packet into a world of the same
 // components and rebuilds today's `Railway` read model from it, so views keep reading what they read and prediction
 // runs the server's systems on a clone of that world. Headless and pure.
