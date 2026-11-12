@@ -520,7 +520,11 @@ export function createRailwayWorldHost({
         const edit = e as Msg;
         if (edit.op === 'who.set' && canSet(rules.roster.roster, pidOf(from), edit.n, edit.c))
           sync.receiveEdit({ op: 'who.set', i: 0, j: 0, n: recoveryName(edit.n), c: edit.c }, from);
-        else if ((edit.op === 'tune.set' || edit.op === 'tune.commit') && RAIL_TUNE_KEYS.has(String(edit.key))) {
+        else if (
+          (edit.op === 'tune.set' || edit.op === 'tune.commit') &&
+          typeof edit.key === 'string' &&
+          RAIL_TUNE_KEYS.has(edit.key)
+        ) {
           // Preserve correlation exactly, but bound its escaped representation in the durable tail.
           if (edit.op === 'tune.commit' && typeof edit.requestId === 'string' && edit.requestId.length > 64) {
             if (edit.requestId.length <= 80)

@@ -175,7 +175,8 @@ export function createRailwayRequests({
         send({ t: 'r:session', to: from, epoch, next: 1 });
         return;
       }
-      if (message.t !== 'r:edit' || !object(message.e) || !token(message.e)) return;
+      // A non-string op is malformed, dropped like a missing token: nothing below may coerce a wire object.
+      if (message.t !== 'r:edit' || !object(message.e) || !token(message.e) || typeof message.e.op !== 'string') return;
       const e = message.e;
       const epoch = e.epoch as number,
         request = e.request as number;

@@ -299,7 +299,8 @@ export function createHostedRoom({
         return;
       }
       // Railway actions and world requests go only to the host. Never relay a forged packet or old edit protocol.
-      if (t !== 'w:need' && t !== 'w:edit' && !RAILWAY_CLIENT_MESSAGES.has(String(t))) return void c.dropped++;
+      if (typeof t !== 'string' || (t !== 'w:need' && t !== 'w:edit' && !RAILWAY_CLIENT_MESSAGES.has(t)))
+        return void c.dropped++;
       world.deliver(m.d, c.id);
       return;
     }
@@ -403,7 +404,16 @@ export function createHostedRoom({
     if (old) drop(old, CLOSE.REPLACED);
     clients.set(id, c);
     replication.addClient(id); // a fresh mirror: everything whole from change tick -1 (the proof slice subscribes all)
-    ws.on('message', (data) => onMessage(c, data));
+    ws.on('message', (data) => {
+      // One malformed message must never reach the process (it hosts every room): drop it like other malformed
+      // input. The log names only the error's class, never client text.
+      try {
+        onMessage(c, data);
+      } catch (error) {
+        c.dropped++;
+        log(`room ${roomId}: dropped a message that threw ${error instanceof Error ? error.name : typeof error}`);
+      }
+    });
     ws.on('close', () => leave(c));
     ws.on('error', () => {});
     if (!lead) lead = id;
