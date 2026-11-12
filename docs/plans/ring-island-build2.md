@@ -406,6 +406,24 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       else), `docs/game-design/` (the owning section). No dialog, no new moment. Proof: one look, two players,
       `--rail-seed steel-home`: one holds Install, both pages show the next line 2 train at the Village wearing the
       long boiler. **Visual review.**
+      _Not built (ring2/v3-garage, 12 November): **blocked, for the coordinator.**_ The garage and the server's install
+      point are in two different places. The garage is mounted only under `?home=b`, at layout B's table (world
+      x 942.1, z 17.1; its lever post at x 947.0, z 14.3). `rail.install` is judged at `SHED_TABLE` (x 918, z 12,
+      reach 6 m, from the position the action carries: `railValid`'s `at`, `world-host.ts`'s `reach`), 24.6 m from
+      that table and 29.0 m from the post, so every completed hold at the garage would be refused (worked from the
+      code; not exercised, the hold is not wired). On the default layout there is no post and no garage, so a live
+      player has no way to install: build 2 cannot be finished by a real player today. Making it work needs one of:
+      the garage mounted at the default table (view only, but the table sits between line 2's two roads, the
+      platform and the stall, `.look/v3-table-top-still.png`: the jib at bearing 105 and the stand land on track, so
+      it is a layout job, and it shows the garage's first build to every player); a plain "Install" hold at the
+      default table's rim outside the garage (a new prompt, against "the garage's existing Install"); or a rules
+      change to where the install is judged (not a view step). Nothing of V3 is built. **The fourth car** (owner,
+      12 November: steel's free first car arrives with the install) is a rules matter not in R3 and is the step after
+      build 2 (call 29): open, not built. **Changed here:** the `steel-home` landing only. The old spot (4 m west,
+      2 m south of the table) put the camera inside the stall's shell with the player out of frame
+      (`.look/v1-steel-home-jump-still.png`); it is now 5.2 m east and 1.7 m south, facing the table's centre, yaw
+      1.255, on open ground at 18.1 m, inside the table's reach (`.look/v3-steel-home-jump-still.png`: the player
+      mid-frame, the table ahead, the stall behind it, the forge to the right; default layout).
 - [ ] **Checkpoint B (views).** `npm run check`; `npm run perf` at the island halt and the Roundhouse, before and
       after, reported; the two looks above; one device run (`npm run device`) or the line "not tested on a device".
 - [ ] **T. The train through the ring: a layout and a still, no rules (S, Mac; waits for question 1).** A planned
