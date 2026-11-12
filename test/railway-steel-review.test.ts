@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
+import { Leg } from '../src/sim/railway-components.ts';
 import {
   aboard,
   account,
@@ -35,7 +36,14 @@ function sent(s: Seed, what: string) {
     st = steel(s.w),
     c = cart(s.w);
   assert.ok(r.depot + c.logs + aboard(s.w, 'logs') + st.yardLogs <= r.depotProduced + st.outLogs, `${what}: logs`);
-  assert.ok(r.depotRails + c.rails + aboard(s.w, 'rails') + st.yardRails <= r.shelfOut + st.outRails, `${what}: rails`);
+  // The greybox route's kit rails (Leg.loadedRails, off the forge rack at the Village) ride and rack beside them, as the
+  // load check counts them (railway-check-steel.ts, 'steel sent rails').
+  let legRails = 0;
+  s.w.each([Leg], (_id, l) => (legRails += l.loadedRails));
+  assert.ok(
+    r.depotRails + c.rails + aboard(s.w, 'rails') + st.yardRails <= r.shelfOut + st.outRails + legRails,
+    `${what}: rails`,
+  );
 }
 
 test('review: a save and load every 7 ticks through the kit out, the casts and the steel home changes nothing', () => {
@@ -85,7 +93,8 @@ test('review: a bill fed from backs while its kit rides leaves no kit riding the
   assert.equal(invariant(s.w), null);
   assert.deepEqual(steelNeed(s.w), { logs: 0, rails: 0 });
   assert.deepEqual(
-    trains(s.w).map((r) => r.logs + r.rails),
+    // The works' kit: a greybox leg's kit (Train.legKit) rides until its railhead opens and is not the works'.
+    trains(s.w).map((r) => (r.legKit ? 0 : r.logs + r.rails)),
     trains(s.w).map(() => 0),
     'kit still aboard with the works finished: nowhere takes it',
   );
