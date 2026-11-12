@@ -260,12 +260,26 @@ jump link works once its leg has shipped; a new jump room each time.
 
 Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own; 3 to 5 ship together as bump G1.
 
-- [ ] **1. The map data (P0; Mac, S).** In `dev/level/world-blockout.ts` set `SERVICES` to rail-map's five services:
+- [x] **1. The map data (P0; Mac, S).** In `dev/level/world-blockout.ts` set `SERVICES` to rail-map's five services:
       no Ring top; line 2 runs on from the Ring Island halt along the west shore; the Gorge halt at 3 m in the split;
       one West landing halt; the cave line ends at Port Quay; decks meet islands at their height; no span over 4%.
       Regenerate `src/sickle/world-lines.ts`, the legs table and `docs/world/world-blockout.html`. Verify:
       `test/world-lines.test.ts` gains "no future span is steeper than 4%"; `npm run level-check` lists none of today's
       12 would-fail reports for `stack-centre`.
+      *As built (11 November):* the catalog is five rows, `ring` (ringx to the halt, then the ledge to the Gorge), `ns`
+      (incline, causeway), `bay` (bay-cut, bell-canopy, notch-tunnel), `bay-trestle`, and `cave`, which per the design
+      review carries the White Wall from Port Quay to the Gorge (not "the cave line ends at Port Quay"). The lift is in no
+      row. Leg 1 is 2.05 km (458 m of bow to the halt, then 2.05 km of ledge), sections to be cut at places in step 2. Heights
+      come from the rulings in the generator (station decks, island plateaus, sea deck 4 m, eased at 3.9%), not the map JSON,
+      which the 2D page and the live blockout still draw; the Gorge halts are 3.0 m. All 299 spans are at or under 4%
+      (was 63 of 109 over). The redrawn links (ringx trimmed, ledge round the island's south and west shore with a
+      cutting for its first 300 m, ring-bell from the same halt, seacave from the bay's West landing, wall-s from the quay)
+      live in `ROUTES`. Bell Rock is on two levels as rail-map has it: the `ns` halt at the water (4 m), the `bay` halt on the
+      skerry (15 m). One place, two halt positions: the Ring Island halt differs by 30 m between `ring` and `bay-trestle`
+      and West landing by 37 m between `bay` and `cave`, so step 2's sectioning must treat each pair as one place. The
+      map JSON's heights are not regenerated, so `?blockout=world` draws the new platforms and crossovers (from the
+      catalog) on rails drawn from the old heights: regenerate the JSON's heights before the blockout is looked at
+      again (src/proto/greybox/build.ts:457 is untouched). Row ids changed, so `dev/level/rail-map.ts` follows (its prose maps, `rail-map.html` regenerated).
 - [ ] **2. The catalog, pure (HOTBOX, S).** `git mv src/sickle/world-lines.ts src/sim/railway-world-lines.ts` (it is
       written to the sim's rules; update the generator's path and the three readers). Create
       `src/sim/railway-route.ts` with the types above and all six legs' rows derived from it: `sectionsOf(leg, n)`
@@ -397,6 +411,8 @@ on them before its design review.
 | 14 | The greybox route is on for every player as it ships | **New** | This plan; question 3 |
 
 ## Open questions
+
+Open item (step 1): the map JSON's heights must be regenerated from the rulings before `?blockout=world` is looked at again; its rails still draw the old heights while its platforms follow the catalog.
 
 1. **Do far legs ever take footings by hand?**
    - **No footings on any greybox bill; a sea leg's trestle rises with its section (recommended).** The route then
