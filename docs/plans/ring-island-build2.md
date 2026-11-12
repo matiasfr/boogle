@@ -1,5 +1,5 @@
 > **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Ring Island
-> build 2 as a systems-first greybox, `WORLD_NS` v28. Three owner questions are open ([below](#open-questions)); steps
+> build 2 as a systems-first greybox, `WORLD_NS` v28. Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
 > in the bill, steel on the kit car, the works prompt shown blocked).
@@ -551,9 +551,15 @@ cannot couple; left as it is, for the owner with question 2.
 
 1. **When does the train go through the ring?** Recommended: at the White Wall lap, as the late double-back; build 2
    ships a layout and one still. The alternative is a 750 m spur now, after a brainstorm.
+   **Answered (owner, 12 November UTC): the train goes through the ring later, at the White Wall lap (recommended).**
+   Recorded in the [decisions](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered).
 2. **When does steel's free first car arrive?** "A new resource's first car is free at its unlock" meets an engine that
    pulls three cars, all taken. Recommended: it arrives with the install, as the longer boiler's fourth car, in the
    step straight after build 2 (it changes train length and every platform check). Until then steel rides the kit car
    and the tile's "one more car" is a cap with nothing to couple.
+   **Answered (owner, 12 November UTC): steel's free first car arrives with the install, as the longer boiler's fourth
+   car (recommended).** Recorded in the [decisions](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered).
 3. **Should the steel works take cement?** Recommended: no, logs and rails only (ruling B). If yes, 6 footings in one
    wagon load.
+   **Answered (owner, 12 November UTC): the steel works takes logs and rails only, no cement (recommended).** Recorded
+   in the [decisions](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered).
