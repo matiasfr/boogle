@@ -1,6 +1,7 @@
 > **Status: plan, not built (2026-11-11).** Production-core slice 5, "economy and town growth on the server", systems
-> first. Rules and server steps R1 to R5, then greybox views V1 to V4. Two `WORLD_NS` bumps. Three owner questions at
-> the end; each has a default the build proceeds on.
+> first. Rules and server steps R1 to R5, then greybox views V1 to V4. Two `WORLD_NS` bumps. Designer-reviewed 11
+> November: **build with changes**, already made in the steps ([review](#design-review-designer-2026-11-11)). Two owner
+> questions at the end; neither blocks.
 
 # Slice 5: train cargo grows the Village, then Boogles and one plot buy
 
@@ -12,9 +13,10 @@ one capped coin sack waits. It serves DESIGN.md's core loop ("Towns grow from wh
 personal things** (one wallet, nothing sold to one player) and **11. Show, don't tell** (the money is a column of
 coins at a window, the offer is stakes on the ground).
 
-**Order (binding, owner-calls `mechanisms-systems-greybox-details`):** mechanisms, then systems, then the full
-greybox, then details. This plan is the systems and their greybox. It has no character quirks, barks, idle
-animations, bespoke props or polish steps.
+**Order (binding; owner call ["Mechanisms, then systems, then the full greybox, then
+details"](../agents/owner-calls.md#mechanisms-systems-greybox-details), 11 November).** This plan is the systems and
+their greybox, on blockout geometry with the existing folk and placeholder labels. It has no character quirks, barks,
+idle animations, bespoke props or polish steps.
 
 **Research:** [economy-principles-audit](../research/economy-principles-audit.md) (one wallet, the paused world, the
 away credit; used as adopted). [growing-towns](../research/growing-towns.md), rec 1 (each cargo tied to a part of the
@@ -102,11 +104,11 @@ and built `TRADE.buildTicks` after `at`, so a late joiner and a reload agree wit
 ### Numbers (`src/sim/railway-trade-layout.ts`, new; `TRADE`, all stand-ins)
 
 - `yards`: Camp `{ line: 0, stop: 1, everyTicks: 150, cap: 8 }`, Quarry `{ line: 1, stop: 1, everyTicks: 300, cap: 8 }`;
-  `freightCap: 8` a train. Timber unloads at line 1's Village halt, stone at line 2's.
+  `freightCap: 8` a train; `loadStop: 4`; yards seeded full. Timber unloads at line 1's Village halt, stone at line 2's.
 - `routes: [{ town: 0, line: 1, a: 0, b: 2 }]` (the Village and Far Head); `ridersPerMin: 2`, `startBuildings: 2`,
   `crowdStop: 4`, `crowdCap: 24`, `seats: 4`; `fare: { board: 2, per100m: 1 }`.
 - `plots[0]`: `[{ base: 300, wood: 8, stone: 0 }, { base: 800, wood: 24, stone: 0 }, { base: 3000, wood: 40, stone: 16 }]`;
-  `houseOrder: 2`, `buildTicks: 600`, `stakedAtOnce: 2`.
+  `houseOrder: 2`, `buildTicks: 100`, `stakedAtOnce: 2`.
 - `box: { incomeMin: 20, dearestNum: 3, dearestDen: 2 }`, `sackMin: 15`.
 - Three room tunables beside `railTrainHeadPct` (`src/sim/tune.ts`, `src/tunables/catalog.ts`): `railFarePct`,
   `railRiderPct`, `railPricePct`, each 100 by default, passed to the tick and to `railApply` as `headPct` and
@@ -153,15 +155,15 @@ checkpoint runs for it.
   - Rules: `yardTick` (`rail.yardTick`, phase `tick`, order 2, after `rail.cartTick` by name and before `trainTick`): while `Rail.trains ≥ 0`, each
     yard adds one crate every `everyTicks` up to `cap`. In `trainIO.arrive`: a train standing at its line's Village
     halt unloads `freight` into `Town.wood` or `Town.stone`; a train standing at a yard's halt, heading home, loads
-    `min(freightCap − freight, stock)`. In `serviceOf`: line 2's down trains get a service stop at the Quarry while
-    its yard has stock and they have room. The line 2 `arrive` early return for line 1 goes; the kit, the wagon and
-    the cart's hold are untouched.
+    `min(freightCap − freight, stock)`, whatever it stopped for. In `serviceOf`: line 2's down trains get a service
+    stop at the Quarry only while its yard holds `loadStop` crates and they have room for them. Each yard row is
+    seeded `stock = made = cap`. The line 2 `arrive` early return for line 1 goes; the kit, wagon and cart untouched.
   - Ops: none. State: `Yard`, `YardClock`, `Town.wood`, `Town.stone`, `Train.freight`. Save shape: three new
     components and one new `Train` field in the railway snapshot.
   - `WORLD_NS`: bumped with R2 (bump A).
   - Tests: two worlds driven alike stay equal row for row; the yard invariant holds every tick across 20 minutes of
-    ticks from `trains-on`; a yard never passes its cap; snapshot save and load round-trips; the kit and wagon tests
-    still pass untouched.
+    ticks from `trains-on`; a yard never passes its cap; no Quarry freight stop under `loadStop`; the first line 1
+    arrival home delivers 8; snapshot save and load round-trips; the kit and wagon tests still pass untouched.
   - Seed: `freight-running` (`trains-on` advanced until `Town.wood ≥ 8`).
   - Proof: `npm run checkpoints -- freight-running`; `playthrough --from trains-on --to freight` (a new stop in
     `dev/look/segments.ts`: the bot waits at the Village until the mirror's `Town.wood ≥ 8`); one look at the Village
@@ -253,9 +255,9 @@ diet). Independent review: no (`src/entities` only); the normal review and one l
 - [ ] **V3. The buy and the house (M).** After R4 and V1.
   - Files: `src/entities/town/plots.ts` (the board shows the price and have/need; a `registerInteractable` target
     "Buy", held one second, `blocked` with the shortfall when short; calls `buy(plot)`; nothing is spent or shown
-    until the `Plot` row changes), `src/entities/town/rooms.ts` and `view.ts` (a bought plot builds with the existing
-    site show from `src/place/sites.ts` and snaps on load; built, it is a room from `createRooms` with the house
-    kit's plain interior and nobody in it).
+    until the `Plot` row changes), `src/entities/town/view.ts` (a bought plot builds with the existing
+    site show from `src/place/sites.ts` and snaps on load; built, it is the house kit's closed shell with a collider.
+    No interior and no room: that is the details phase's).
   - The hold: if the Mac's install op is on main first, use its hold helper; if not, the hold lives in `plots.ts`
     and the second to land folds the two ("Fold copies into one helper").
   - Proof: the R4 bot segment with the real hold; one look at the built house on `--rail-seed house-built`.
@@ -268,13 +270,13 @@ diet). Independent review: no (`src/entities` only); the normal review and one l
 
 - **C1, at bump A (R1, R2):** `npm run check`; `npm run check:full` (server tests and `test:net`); the two-peer
   route through T2 and `world-inputs` (the `src/sim` rule in bot-segments); `npm run checkpoints` for the routed
-  stages and `freight-running`; `npm run loop -- run` (the route's order and bills must not move); the R1 and R2
-  proofs.
+  stages and `freight-running`; `npm run loop -- run` (the route's order and bills must not move); the worst wait at
+  each line 2 halt, before and after, under the 1,050-tick bound (C2 reports it again); the R1 and R2 proofs.
 - **C2, at bump B (R3 to R5):** the same gates; the four new seeds; the R3, R4 and R5 proofs; `npm run scenario`
   for two players seeing one plot bought (the one new sync contract: a spend both press for, bought once).
 - **C3, after V4:** the four view looks; `npm run perf` at the Village on `house-built` against `trains-on`
-  (reported, not a gate); the atlas story and check for the new system; a "Trade" chapter in `docs/game-design/` with
-  its index line; a device run at the Village.
+  (reported, not a gate); a "Trade" chapter in `docs/game-design/` with its index line; a device run at the Village.
+  No atlas story (owner call "One nightly load": the atlas runs only when he asks).
 
 ## Jump-in stages, one per beat
 
@@ -285,7 +287,7 @@ row in `src/world/railway-jump.ts`; the labels go to the designer and each `land
 | --- | --- | --- | --- |
 | Cargo comes home (R1, R2, V1) | `freight-running` | on the Village's line 1 platform | watch a train unload; find the stakes |
 | Fares (R3, V2) | `fares-running` | at the till | watch riders board and the column rise |
-| The buy (R4, V3) | `house-ready` | at plot 1's board, 300 in the box | hold to buy; walk in |
+| The buy (R4, V3) | `house-ready` | at plot 1's board, 300 in the box | hold to buy; watch it go up |
 | The town after it (R4, V3) | `house-built` | on the green | more riders, plot 2's price, a crowd left behind |
 | Coming back (R5, V4) | `sack-waiting` | at the till | empty the sack; see the full yards |
 
@@ -354,14 +356,44 @@ Boogler's charging gag, real cosmetic spending.
 
 ## Open questions for the owner
 
-1. **What should train cargo do at the Village now?** Recommended: **deliveries stake the plots.** The first
-   trainload of timber stakes plot 1, more timber stakes plot 2, and plot 3 also needs stone; nothing rises for free
-   beyond what the Round already gives (the forge, Fine Prices, the museum, the clock). The alternative is the route
-   staking plots by milestone, as the town layout plan wrote, with cargo counted but doing nothing you can see at
-   Home. Answer: ___
-2. **Is the first house 300 or 450 Boogles in the game?** Recommended: **300, your decided number**, until seats
-   exist. The model's playable page charges 450, because it prices houses half as much again while seats cost
-   materials. Answer: ___
-3. **After the first house, riders outgrow the seats. Leave the crowd?** Recommended: **yes, leave it.** Income
-   holds near 67 a minute instead of 84 and little guys are left on the platform; that crowd is the ask for seats,
-   which arrive with the garage's install. The alternative pulls the Six fit-out into this slice. Answer: ___
+Ruled by the review below. Old question 2 (300 or 450) is **decided**: "300 Boogles at the Village's first plot" (11
+November). Old question 3 (leave the crowd) is **settled by its default**. Two are his; the build proceeds on each.
+
+1. **What should train cargo do at the Village now?** Recommended: **deliveries stake the plots** (timber stakes
+   plots 1 and 2; plot 3 also needs stone). The alternative is the route staking plots by milestone, as his 11
+   November answer worded it ("plots the route stakes"), with cargo doing nothing you can see at Home. Answer: ___
+2. **Should growing the town be something you do, not something you wait for?** Recommended: **yes, as the next
+   plan, not this one.** Here cargo and fares arrive by themselves. If the route measures short (campaign outline,
+   decision 2), raising a bought house by hand from the crates the trains brought is the play to add. Answer: ___
+
+## Design review (designer, 2026-11-11)
+
+**Verdict: build with changes**, made above at the orchestrator's ask (the numbers, R1, V3, C1, C3). 8 decided, 6
+default, 5 new; rows 2 to 9 are in [agent-calls](../agent-calls.md). **Not read:** `loop/whole-route-standins` is not
+on origin, so pacing rests on the orchestrator's summary of it (about half of six hours, footings dominating). **No
+stills:** nothing is placed beyond town-layout's ruled plots.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | The plan's eight Decided lines (fares only, one box, the fare, the caps, the away sack, 300 and doubling, two starting buildings, model first) | Decided | Checked against [rewards rules](../decisions-rewards.md#current-rules) and [rail](../decisions-rail.md#current-rules) (`crowdStop` 4). One is not decided: 2 riders a minute a building is the brief's stand-in, a Default |
+| 2 | The plan's Default lines: riders Village to Far Head only, demand-rate caps, no rider swing, the one-second hold and one press, the greybox till | Default | Keep all. The hold and the press are acts, not waits; the coin column is the count's physical form |
+| 3 | A bought house counts after `buildTicks` | Default | **Changed: 100 ticks (10 s), was 600.** A minute before riders rise is a wait nobody can read |
+| 4 | Riders outgrow the seats after the first house; a crowd is left (about 67 a minute, not 84) | Default | Keep: the crowd is the ask for seats, which the garage's path builds |
+| 5 | Cargo stakes plots: 8 timber; 24; 40 and 16 stone; two staked at once | New | Build on it. It re-reads "plots the route stakes", so it is his to confirm (question 1) |
+| 6 | Yards make a crate every 15 s (timber) and 30 s (stone), cap 8; freight is never carried | New | Build, **changed:** yards start full; a Quarry freight stop needs `loadStop` 4 crates |
+| 7 | `town` and `stone` turn true from bought houses, firing the residents' existing lines | New | Build; no copy edited. The lines are reachable for the first time: list them for the owner |
+| 8 | Only plots 1 to 3 are priced (300; 1,600; 12,000); 4 to 8 stay unstaked | New | Build; finding 4 |
+| 9 | One home for the trade numbers, shared with the 2D model | New | Build; logged under Architecture |
+
+**Findings.** Pacing first: the economy must add no waiting.
+
+1. **A dead two minutes before the first stake (changed).** Empty yards filled at a crate per 15 s, so plot 1 waited
+   on a later trip. The yards now start full and the first timber train home stakes it.
+2. **Freight added a stop to every line 2 trip, for good (changed).** At a crate per 30 s the Quarry always "has
+   stock", so every down train would dwell there, on the leg that dominates the route. It now stops only for
+   `loadStop` crates, and a train there for footings loads anyway. C1 and C2 report the worst halt waits.
+3. **Detail struck:** the bought house's interior and "walk in" (V3, the jump table) and C3's atlas story.
+4. **The waiting that remains is off the route.** Trains earn while you play: 300 Boogles is about 5.5 minutes of
+   fares and 1,600 about 24 more, inside the Works' 36 minutes; no route step has a price; cargo's thresholds are met
+   before the money is. Plot 3's 12,000 is about three hours on this one route: a standing goal no seed, bot or
+   checkpoint waits for. So the slice cannot close the gap to six hours, and must not be asked to by raising prices.
