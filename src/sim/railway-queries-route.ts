@@ -11,13 +11,14 @@
 //   legKitCap(w, k)              one kit: the current section's bill (one kit a train)
 //   legKitNeed(w, k)             the kit still to load for the sections owed ahead (LEG_TUNE.kitLead)
 //   legRackNeed(w, k)            what the current section still lacks, fed and racked
+//   legKitSurplus(w, slot)       the leg kit aboard a train that no open leg's remaining sections lack (it goes home)
 //   legKitOwed(w, line, r)       an empty train on `line` is owed a kit at its kit halt (within kitTrains)
 //   legKitTrains, legKitCarriers  the trains that may carry kit (running less one), and those that do
 //   legKitWaiting(w, line, r)    the kit aboard cannot unload at any halt open now (the stone stop's test)
 //   gateLeg(g)                   the leg and section a RAIL_GATES row shuts
 //   haltHead(w, halt)            the head a `heads` halt stands at now (the Railhead's ring head, a leg's sections)
 import type { World } from '../ecs/index.ts';
-import { RAIL_HALTS, RAIL_LINES, legBuilt } from './railway-lines.ts';
+import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-lines.ts';
 import { LEG_TUNE, RAIL_LEGS, legS } from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
@@ -70,11 +71,12 @@ export function legKitCap(w: World, k: number) {
   const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid];
   return s ? { logs: s.logs, rails: s.rails } : { logs: 0, rails: 0 };
 }
-/** Leg kit units of leg k's line aboard its trains (a train's `legKit` cargo; the steel works' kit is not the leg's). */
-const aboardLine = (w: World, line: number, key: 'logs' | 'rails') =>
+/** Leg kit units of leg k's line aboard its trains (a train's `legKit` cargo; the steel works' kit is not the leg's),
+ * less train `skip`'s. */
+const aboardLine = (w: World, line: number, key: 'logs' | 'rails', skip = -1) =>
   LINE_SLOTS[line]!.reduce((n, s) => {
     const t = w.get(Train, w.lookup(Train, s)!)!;
-    return n + (t.legKit ? t[key] : 0);
+    return n + (t.legKit && s !== skip ? t[key] : 0);
   }, 0);
 /** Logs or rails on the players' backs (a unit lifted off the rack on its way to the frame). */
 const onBacks = (w: World, key: 'carry' | 'rails') => {
@@ -87,19 +89,32 @@ const onBacks = (w: World, key: 'carry' | 'rails') => {
  * train-fed rack, Q6's and Q7's), aboard the line's trains and on the players' backs. A unit lifted off the rack and
  * then dropped, or fed to another bill, is owed again (the step 4 review's finding 2: a unit taken from one rack can
  * never short the leg's bill), so the leg can always complete. */
-export function legKitNeed(w: World, k: number) {
+export const legKitNeed = (w: World, k: number) => kitOwed(w, k, -1);
+/** legKitNeed, not counting what train `skip` carries (-1: every train's). */
+function kitOwed(w: World, k: number, skip: number) {
   const leg = RAIL_LEGS[k]!,
     row = legRow(w, k),
     rail = w.get(Rail, w.single(Rail))!,
     to = Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead);
   const out = billOf(k, row.laid, to);
   return {
-    logs: Math.max(0, out.logs - row.logs - rail.depot - aboardLine(w, leg.line, 'logs') - onBacks(w, 'carry')),
+    logs: Math.max(0, out.logs - row.logs - rail.depot - aboardLine(w, leg.line, 'logs', skip) - onBacks(w, 'carry')),
     rails: Math.max(
       0,
-      out.rails - row.rails - rail.depotRails - aboardLine(w, leg.line, 'rails') - onBacks(w, 'rails'),
+      out.rails - row.rails - rail.depotRails - aboardLine(w, leg.line, 'rails', skip) - onBacks(w, 'rails'),
     ),
   };
+}
+/** The leg kit aboard train `slot` (its `legKit` cargo) that no leg on its line can use: all of it while no leg there
+ * is open (the leg is complete), else what passes the open leg's remaining sections' lack (legKitNeed without this
+ * train's). It goes home at the kit halt (legKitArrive), as the steel works' surplus does (steelArrives). */
+export function legKitSurplus(w: World, slot: number) {
+  const r = w.get(Train, w.lookup(Train, slot)!)!;
+  if (!r.legKit) return { logs: 0, rails: 0 };
+  const k = openLeg(w, RAIL_TRAINS[slot]!.line);
+  if (k < 0) return { logs: r.logs, rails: r.rails };
+  const owed = kitOwed(w, k, slot);
+  return { logs: Math.max(0, r.logs - owed.logs), rails: Math.max(0, r.rails - owed.rails) };
 }
 /** What leg k's current section still lacks, counting what is fed and on the rack: a train unloads only this. */
 export function legRackNeed(w: World, k: number) {

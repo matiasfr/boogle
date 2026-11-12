@@ -312,6 +312,17 @@ test("High Gorge opens on the fourth; `pick` is refused before it and granted af
   assert.equal(act(s, 'a', 'rail.legStock', { leg: STACK }), 0, 'the leg is complete');
   // Nothing more is owed: every kit unloaded (or rides on, surplus to no section).
   assert.deepEqual(legKitNeed(s.w, STACK), { logs: 0, rails: 0 });
+  // All leg cargo is zero once the leg is complete: what rode on goes home at the Village (legKitHome), so no train
+  // keeps the mark that bars the works' kit from it.
+  for (let k = 0; trains(s.w).some((r) => r.legKit); k++) {
+    assert.ok(k < 4000, 'the leg kit aboard goes home');
+    advance(s, 1);
+  }
+  assert.deepEqual(
+    trains(s.w).filter((r, slot) => RAIL_TRAINS[slot]!.line === LINE2 && r.legKit),
+    [],
+    'no leg kit aboard',
+  );
   assert.equal(invariant(s.w), null);
 });
 
