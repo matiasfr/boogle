@@ -21,7 +21,7 @@ import { RAIL_HALTS, RAIL_LINES, legBuilt } from './railway-lines.ts';
 import { LEG_TUNE, RAIL_LEGS, legS } from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
-import { Aperture, Leg, Rail, Route, Train } from './railway-components.ts';
+import { Account, Aperture, Leg, Rail, Route, Train } from './railway-components.ts';
 
 export const legId = (w: World, slot: number) => w.lookup(Leg, slot)!;
 export const routeId = (w: World) => w.single(Route);
@@ -48,13 +48,14 @@ export const openLeg = (w: World, line: number) =>
 export const legSection = (w: World, k: number) => (legDone(w, k) ? -1 : legRow(w, k).laid);
 /** The halt a line's legs load their kit at: its home halt (line 2's Village). */
 export const legKitHalt = (line: number) => RAIL_LINES[line]!.home;
-/** The halt (an index on its line) leg k's rack stands at now: its first halt while nothing is laid, then its railhead;
- * -1 once complete. */
+/** The halt (an index on its line) leg k's rack stands at now: its first halt while nothing is laid, then the head of the
+ * last section laid; -1 once complete. */
 export function legKitStop(w: World, k: number) {
   const leg = RAIL_LEGS[k]!,
     laid = legRow(w, k).laid;
   if (laid >= leg.sections.length) return -1;
-  if (laid > 0) return leg.railheadHalt;
+  // One halt a head (call 88): the head of the last section laid.
+  if (laid > 0) return leg.railheadHalt + laid - 1;
   const from = legS(leg, leg.fromCm);
   return RAIL_LINES[leg.line]!.halts.findIndex((h) => h.s === from);
 }
@@ -72,25 +73,28 @@ export function legKitCap(w: World, k: number) {
 /** Kit units of leg k's line aboard its trains. */
 const aboardLine = (w: World, line: number, key: 'logs' | 'rails') =>
   LINE_SLOTS[line]!.reduce((n, s) => n + w.get(Train, w.lookup(Train, s)!)![key], 0);
+/** Logs or rails on the players' backs (a unit lifted off the rack on its way to the frame). */
+const onBacks = (w: World, key: 'carry' | 'rails') => {
+  let n = 0;
+  w.each([Account], (_id, a) => (n += a[key]));
+  return n;
+};
 /** The kit still to load for leg k (ruling 1.4, "the kit runs ahead by the whole leg"): the bills of the current
  * section and the next LEG_TUNE.kitLead - 1, less what is fed, on the rack (Rail.depot, Rail.depotRails: the
- * train-fed rack, Q6's and Q7's) and aboard the line's trains; never more than those bills less what was ever loaded
- * for the leg (units taken off the rack and dropped elsewhere are not minted again, as depotNeed). */
+ * train-fed rack, Q6's and Q7's), aboard the line's trains and on the players' backs. A unit lifted off the rack and
+ * then dropped, or fed to another bill, is owed again (the step 4 review's finding 2: a unit taken from one rack can
+ * never short the leg's bill), so the leg can always complete. */
 export function legKitNeed(w: World, k: number) {
   const leg = RAIL_LEGS[k]!,
     row = legRow(w, k),
     rail = w.get(Rail, w.single(Rail))!,
     to = Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead);
-  const out = billOf(k, row.laid, to),
-    all = billOf(k, 0, to);
+  const out = billOf(k, row.laid, to);
   return {
-    logs: Math.max(
-      0,
-      Math.min(out.logs - row.logs - rail.depot - aboardLine(w, leg.line, 'logs'), all.logs - row.loadedLogs),
-    ),
+    logs: Math.max(0, out.logs - row.logs - rail.depot - aboardLine(w, leg.line, 'logs') - onBacks(w, 'carry')),
     rails: Math.max(
       0,
-      Math.min(out.rails - row.rails - rail.depotRails - aboardLine(w, leg.line, 'rails'), all.rails - row.loadedRails),
+      out.rails - row.rails - rail.depotRails - aboardLine(w, leg.line, 'rails') - onBacks(w, 'rails'),
     ),
   };
 }

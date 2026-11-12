@@ -145,19 +145,18 @@ export const LINE2_ON: readonly number[] = (() => {
 const STACK_HEADS = STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm) - HEAD_BACK_CM);
 const STACK_HEAD_PLATFORMS = STACK_HEADS.map((at) => rowPoint('ring', at + ROW_SHIFT.ring));
 const STACK_HALTS: readonly RailHalt[] = [
-  // The stack line's moving railhead: open once its first section is laid, its stop at the last section laid (`heads`),
-  // its end a stub that moves with it. It stays a stop at its last head once the Gorge opens, as the Railhead does.
-  {
-    name: 'Stack railhead',
-    s: STACK_HEADS[0]!,
+  // The stack line's railheads, one halt a head (the step 4 review's call 88): head k opens once section k is laid, a
+  // stub end while it is the line's last; when the next section lays the line runs on past it (endMoved) and it stays,
+  // a request stop, so the first train after the lay stops there and takes whoever stands there on to the new head.
+  ...STACK_HEADS.map((at, k): RailHalt => ({
+    name: `Stack head ${k + 1}`,
+    s: at,
     opens: 6,
     ring: true,
-    leg: { slot: STACK_LEG, section: 0 },
-    platforms: both(STACK_HEAD_PLATFORMS[0]!),
-    end: railEnd('stub', STACK_HEADS[0]! - HEAD_MERGE_CM, 1),
-    heads: STACK_HEADS,
-    headPlatforms: STACK_HEAD_PLATFORMS,
-  },
+    leg: { slot: STACK_LEG, section: k },
+    platforms: both(STACK_HEAD_PLATFORMS[k]!),
+    end: railEnd('stub', at - HEAD_MERGE_CM, 1),
+  })),
   // High Gorge: open once the fourth section is laid; buffers past the platforms, a crossover before them (the row's).
   {
     name: 'High Gorge',
@@ -575,10 +574,14 @@ RAIL_LEGS.forEach((leg, k) => {
   const halts = RAIL_LINES[leg.line]!.halts,
     head = halts[leg.railheadHalt]!,
     last = leg.sections.length - 1;
-  // A built leg's railhead opens with its first section and has a head for each section but the last; it starts at a
-  // halt of its line and its last section opens one more (its destination).
-  if (head.leg!.section !== 0 || !head.heads || head.heads.length !== last || !head.headPlatforms)
-    throw new Error(`railway: leg ${leg.id}'s railhead`);
+  // A built leg has a head halt for each section but the last, in order from its railhead halt, each opened by its
+  // section; it starts at a halt of its line and its last section opens one more (its destination).
+  for (let j = 0; j < last; j++) {
+    const h = halts[leg.railheadHalt + j];
+    if (h?.leg?.slot !== k || h.leg.section !== j || h.heads || !h.end)
+      throw new Error(`railway: leg ${leg.id}'s heads`);
+  }
+  void head;
   if (
     !halts.some((h) => h.s === legS(leg, leg.fromCm)) ||
     !halts.some(

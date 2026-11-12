@@ -16,10 +16,11 @@ import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, LEG_TUNE } from './railway-route.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE } from './railway-train.ts';
-import { endMoved, stopMoved } from './railway-trains.ts';
+import { LINE_SLOTS, endMoved } from './railway-trains.ts';
+import { reqAdd, reqOnly } from './railway-train.ts';
 import { railInt } from './railway.ts';
-import { Account, Aperture, Boiler, Leg, QJob, Route, Train } from './railway-components.ts';
-import { boilerHeld } from './railway-queries.ts';
+import { Account, Aperture, Boiler, Leg, Line, QJob, Route, Train } from './railway-components.ts';
+import { boilerHeld, stopsOf } from './railway-queries.ts';
 import { gateLeg, legDone, legId, legKitStop, legOpen, legRow, routeId, routeRow } from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
@@ -64,15 +65,30 @@ function lay(w: World, k: number, tick: number) {
   m.laid++;
   m.logs = m.rails = 0;
   m.start = -1;
+  // The line runs on past the old end (its first halt, then each head), which stays a stop (call 88): a train running
+  // up to it stops there once (endMoved), and the line's up-way ask there brings the first up train after the lay to
+  // it, so whoever stands at the old head rides on to the new one.
   const io = trainMoveIO(w);
-  if (m.laid === 1 || m.laid === n) endMoved(io, leg.line, from, tick);
-  else stopMoved(io, leg.line, leg.railheadHalt, tick);
+  endMoved(io, leg.line, from, tick);
+  // A train standing at an old head (a stub: its two tracks are one) runs on rather than home (call 88: "that train
+  // runs on"): it had turned onto the down track on arriving at the end, and turns back up.
+  const end = RAIL_LINES[leg.line]!.halts[from]!.end;
+  if (end?.kind === 'stub')
+    for (const slot of LINE_SLOTS[leg.line]!) {
+      const r = io.row(slot);
+      if (r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 1)
+        io.set(slot, { track: 0, req: reqOnly(r.req, stopsOf(w, leg.line).length, 1) });
+    }
+  const lid = w.lookup(Line, leg.line)!,
+    stops = stopsOf(w, leg.line).length;
+  w.mut(Line, lid)!.req = reqAdd(w.get(Line, lid)!.req, from, 1, stops);
+  void n;
 }
 /** The lay clock: a section laying since `start` is laid LEG_TUNE.layTicks later (about 30 s whatever its length;
  * ruling 1.3). Reads the tick against the row's `start`, so nothing is written until it lays. */
 export const legTick = defineSystem(
   'rail.legTick',
-  { reads: [Aperture, Route, QJob], writes: [Leg, Train], phase: 'tick', order: 1.5 },
+  { reads: [Aperture, Route, QJob], writes: [Leg, Train, Line], phase: 'tick', order: 1.5 },
   (w, { tick }: Tick) => {
     for (let k = 0; k < RAIL_LEGS.length; k++) {
       const start = legRow(w, k).start;
