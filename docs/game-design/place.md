@@ -777,8 +777,10 @@ the open deck between the tarp and the shed. Once the rivet is struck a bill sig
 stacks put them on your back ("Your back is full" when it is); **Feed the works** at the doorway puts your logs and
 rails into the bill, and with an empty or wrong back shows blocked with "Bring logs or rails". When the bill is full the
 server lights the works: the sign reads "lit  steel n/12" and orange steel blocks appear on the rack, up to six, for
-the next train's kit car. Every label here is a placeholder. No sound or effect yet; steel on the train and the
-Roundhouse bay are the next two steps. Not tested on a device.
+the next train's kit car. Every label here is a placeholder. No sound or effect yet. **On the train (V2):** steel
+rides home as orange blocks on the kit car of whichever line 2 train took it, up to six; a train that has taken the
+longer boiler at the Village wears the longer engine (a longer frame and barrel ahead of the same cab), drawn only:
+its collider is the short engine's. The Roundhouse bay and the Install are the next step. Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 

@@ -378,10 +378,25 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       ships"): `.look/v1-works-cold-still.png` (steel-kit) and `.look/v1-works-lit-still.png` (steel-lit). Not shown
       in a still: the three prompts (the jump-in lands 4.3 m from the yard point, outside its reach) and the stacks
       shrinking on a take. One of the folk stood beside the rack's bed in the steel-lit landing still (their posts were not moved). Not tested on a device.
-- [ ] **V2. Steel and the boiler on the train (S, Mac).** Edit `src/entities/railway/train-view.ts`, `cars.ts`,
+- [x] **V2. Steel and the boiler on the train (S, Mac).** Edit `src/entities/railway/train-view.ts`, `cars.ts`,
       `engine-kit.ts`. Steel blocks on the cradle from `Train.steel`; the built, unwired `engine_*_long` meshes when
       `Train.boiler === 1`; `cars.ts`'s extent test follows `TRAIN_EXTENT`. No whistle variation, no smoke change.
       Proof: covered by V3's look.
+      _As built (ring2/v2-train, 12 November), on ruling C:_ `train-view.ts` draws up to `STEEL.trip` orange blocks
+      two abreast on a line 2 train's **kit car** (not the cradle) from its row's `steel`, in a batch of their own;
+      aboard when the row says so, with no hop from the rack or into the bay. `engine-kit.ts` gains `engineLong(rope)`:
+      the long body cut as the short one is (`splitBody` now takes either body) and drawn without its cab, the long
+      boiler and its lashing in the rope's gold, and the chimney's cap read off the mesh. A train whose row wears
+      boiler 1 hides the short body's rest and the short boiler and shows these; the cab's faces, doors, stool, rods
+      and drivers stay the short engine's, so the cutaway and the doors work as before, and the steam leaves the long
+      chimney (the puffs themselves are unchanged). **Not changed:** `cars.ts` (R3 already holds `aheadCm` at 820 in
+      `test/railway-lines.test.ts`; the drawn long engine reaches 6.7 m ahead, inside the 8.2 m the rules reserve, so
+      nothing needed reconciling and no rule moved); the engine's collider (the long frame's extra 0.5 m ahead and the
+      longer barrel are drawn only). A leftover kit riding on would share the deck with the steel (not seen). Two
+      looks, since no seed has both (by `boiler-long` all twelve steel are home): `.look/v2-steel-aboard-still.png`
+      (steel-lit) and `.look/v2-long-boiler-still.png` (boiler-long), `dev/look/evals/railway-steel-train.ts`. V1's
+      prompts were pressed in a browser first (`dev/look/evals/railway-steel-prompts.ts`: take, feed, the blocked
+      feed, rails, and the server lighting the works on the last feed). Not tested on a device.
 - [ ] **V3. The bay and the real Install (M, Mac).** Edit `roundhouse-view.ts` (a box stack in the bay from
       `Shed.steel`; its position is set here and level-checked here), `garage-state.ts` (`roomFacts` gains
       `steelHome` and `longFitted`; the header's "nothing is sent" comment goes), `garage-data.ts` (the tile's
