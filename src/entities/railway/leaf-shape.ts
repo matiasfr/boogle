@@ -40,6 +40,12 @@ export function leafRest(brace: number, cw: number, joined: number): number {
   return LEAF_UP;
 }
 
+/** The plate lies on the bents: at 0 degrees and not moving. The sim's `brace === 0` is earlier (it flips as the swing
+ * starts), so views that must wait for the visible landing (the rivet's prompt and glint) read this. */
+export function leafLanded(deg: number, moving: boolean): boolean {
+  return deg === 0 && !moving;
+}
+
 /** The leaf's motion toward its rest. `snap` puts it there at once (a restore, a late joiner); `aim` starts a move when
  * the rest changes; `step` advances it and says (once) when the leaf has just come down onto the bents. */
 export function createLeafMotion(start = LEAF_UP) {

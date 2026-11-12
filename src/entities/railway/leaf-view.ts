@@ -3,7 +3,7 @@
 // each counterweight footing dips it a quarter; the last brings it down onto the bents in 2.5 s, ease-in, with a thump.
 // A restore or a page that joins after the join sees the rest at once. Local view over the read facade; the sim reads
 // none of it. The brace prompt ("Knock out the pawl") is here; the counterweight prompt ("Hang the weight") is the jib's,
-// in railhead-view.ts. The rivet's glint is R4d's.
+// in railhead-view.ts. The rivet's glint, prompt and the Meet are ring-meet/view.ts (R4d).
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
@@ -15,7 +15,17 @@ import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { ringIslandPose } from '../ring-island/state.ts';
 import { line2World } from './line2-path.ts';
 import { RING_S, line2Y } from './line2-path.ts';
-import { BRACE, BRACE_VERB, LEAF_UP, TOE_U, toeShove, braceOffered, createLeafMotion, leafRest } from './leaf-shape.ts';
+import {
+  BRACE,
+  BRACE_VERB,
+  LEAF_UP,
+  TOE_U,
+  toeShove,
+  braceOffered,
+  createLeafMotion,
+  leafLanded,
+  leafRest,
+} from './leaf-shape.ts';
 
 export function createRailwayLeaf(adapter: RailwayAdapter) {
   const motion = createLeafMotion(),
@@ -84,6 +94,8 @@ export function createRailwayLeaf(adapter: RailwayAdapter) {
       write();
     },
     accepted() {},
+    /** The plate has finished its swing and lies on the bents (this frame's leaf motion; update runs before the Meet's). */
+    landed: () => leafLanded(motion.deg, motion.moving),
     /** The brace prompt (call 9): `set === 14`, the pawl in, you within the strut's reach (the server's own test). */
     targets(): Interactable[] {
       const pos = me.body?.position,

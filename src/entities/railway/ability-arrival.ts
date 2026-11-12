@@ -71,8 +71,8 @@ const GLIDE_TEACH_FALL = 4;
 const GLIDE_TEACH_UP = 1.2; // m over Buddy's feet: at the back, where the roll is
 
 /** This player's record of what they've been shown, per railway room. Unavailable storage just forgets. */
-function createSeen() {
-  const storageKey = `boogle.railway-seen.v0:${railwayRoomId(getRoomId())}:${identity.pid}`;
+export function createSeen(store = 'boogle.railway-seen.v0') {
+  const storageKey = `${store}:${railwayRoomId(getRoomId())}:${identity.pid}`;
   let keys = new Set<string>();
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '[]');

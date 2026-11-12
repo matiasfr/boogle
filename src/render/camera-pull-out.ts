@@ -37,12 +37,28 @@ function showSkip(owner: object, on: boolean) {
   chip.classList.toggle('on', !!glyph('interact'));
 }
 
+/** Optional shaping of one shot: `lead` seconds held at `from` before the travel starts, `atFrom` where it looks until
+ * then (it eases to `at` over the travel), `back` the hand-back blend (a tiny one is a deliberate cut), `end` a cut to a
+ * held position and look the moment the travel ends, `cutIn` opens on `from` at once instead of blending in from the
+ * follow camera (which can pass through geometry between the player and the shot). */
+export type ShotShape = {
+  lead?: number;
+  atFrom?: THREE.Vector3;
+  back?: number;
+  cutIn?: boolean;
+  end?: { pos: THREE.Vector3; at: THREE.Vector3 };
+};
 type Shot = {
   from: THREE.Vector3;
   to: THREE.Vector3;
   at: THREE.Vector3;
   seconds: number;
   drift: number;
+  lead: number;
+  atFrom: THREE.Vector3 | null;
+  back: number;
+  cutIn: boolean;
+  end: { pos: THREE.Vector3; at: THREE.Vector3 } | null;
   /** A crane (`crane()`): rises by `lift` over the live follow camera and back, easing in and out over `blend` seconds,
    * looking so that Buddy stays at CRANE_NDC_Y on screen. It starts and ends at the follow camera: no cut. */
   lift?: THREE.Vector3;
@@ -61,6 +77,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
   const forward = new THREE.Vector3(),
     aim = new THREE.Vector3(),
     position = new THREE.Vector3(),
+    target = new THREE.Vector3(),
     chest = new THREE.Vector3(),
     want = new THREE.Vector3();
   const ease = (u: number) => smoothstep(0, 1, u);
@@ -68,8 +85,8 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     pending = null;
     cut = Math.min(cut, 0.999);
   };
-  const inS = () => shot?.blend ?? 0.8,
-    outS = () => shot?.blend ?? BACK_S;
+  const inS = () => (shot?.cutIn ? 0 : (shot?.blend ?? 0.8)),
+    outS = () => shot?.blend ?? shot?.back ?? BACK_S;
   const skipping = () => SKIP_AFTER_S !== null && !!shot && cut === 1 && t >= SKIP_AFTER_S && t < shot.seconds - outS();
   const skip = () => {
     if (!skipping()) return;
@@ -99,8 +116,16 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
       look.copy(aim).addScaledVector(forward, -8);
       return true;
     } else {
-      position.lerpVectors(shot.from, shot.to, shot.drift === shot.seconds ? travel : ease(travel));
-      aim.copy(look).addScaledVector(forward, 8).lerp(shot.at, weight);
+      const run = Math.min(1, Math.max(0, t - shot.lead) / shot.drift);
+      position.lerpVectors(shot.from, shot.to, shot.drift === shot.seconds ? run : ease(run));
+      if (shot.atFrom) target.lerpVectors(shot.atFrom, shot.at, ease(run));
+      else target.copy(shot.at);
+      // The end cut sets the camera's position and its look together, on the one frame.
+      if (shot.end && t >= shot.lead + shot.drift) {
+        position.copy(shot.end.pos);
+        target.copy(shot.end.at);
+      }
+      aim.copy(look).addScaledVector(forward, 8).lerp(target, weight);
     }
     pos.lerp(position, weight);
     look.copy(aim).addScaledVector(forward, -8);
@@ -143,7 +168,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
       returned = true;
     }
     if (cut < 1) cut = Math.max(0, cut - dt / 0.14);
-    const out = Math.min(1, t / inS()),
+    const out = inS() > 0 ? Math.min(1, t / inS()) : 1,
       back = clamp((t - shot.seconds + outS()) / outS(), 0, 1);
     weight = ease(out) * (1 - ease(back)) * cut;
     if (t >= shot.seconds || cut <= 0) return reset();
@@ -151,16 +176,47 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false, sea
     showSkip(self, skipping());
   };
   return {
-    play(from: THREE.Vector3, to: THREE.Vector3, at: THREE.Vector3, seconds = 3.2, drift = seconds) {
+    play(
+      from: THREE.Vector3,
+      to: THREE.Vector3,
+      at: THREE.Vector3,
+      seconds = 3.2,
+      drift = seconds,
+      shape: ShotShape = {},
+    ) {
       if (reducedMotion || inSeat()) return;
-      pending = { from: from.clone(), to: to.clone(), at: at.clone(), seconds, drift };
+      pending = {
+        from: from.clone(),
+        to: to.clone(),
+        at: at.clone(),
+        seconds,
+        drift,
+        lead: shape.lead ?? 0,
+        atFrom: shape.atFrom?.clone() ?? null,
+        back: shape.back ?? BACK_S,
+        cutIn: shape.cutIn ?? false,
+        end: shape.end ? { pos: shape.end.pos.clone(), at: shape.end.at.clone() } : null,
+      };
       report();
     },
     /** A crane over the follow camera: up by `lift` (a world offset) and back down in `seconds`, easing in and out over
      * `blend` seconds each way, with Buddy held at CRANE_NDC_Y. */
     crane(lift: THREE.Vector3, seconds: number, blend: number) {
       if (reducedMotion || inSeat()) return;
-      pending = { from: lift, to: lift, at: lift, seconds, drift: seconds, lift: lift.clone(), blend };
+      pending = {
+        from: lift,
+        to: lift,
+        at: lift,
+        seconds,
+        drift: seconds,
+        lead: 0,
+        atFrom: null,
+        back: BACK_S,
+        cutIn: false,
+        end: null,
+        lift: lift.clone(),
+        blend,
+      };
       report();
     },
     update(dt: number) {

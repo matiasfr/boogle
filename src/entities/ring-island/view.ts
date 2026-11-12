@@ -32,6 +32,7 @@ import {
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
 import { ringIslandPose } from './state.ts';
+import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
 import {
   LEAF_ORANGE,
   PENNANT_CREAM,
@@ -287,21 +288,23 @@ function buildLeaf(group: THREE.Group) {
   for (const s of [-W / 2 + 0.2, W / 2 - 0.2]) box(STEEL_DARK, 0.4, 1.4, GAP, s, 0.3, GAP / 2); // the side girders
   for (const t of TRACKS)
     for (const r of [-0.5, 0.5]) box(RAIL, 0.12, 0.14, GAP - 0.4, t - FORM.mid + r, 0.15, GAP / 2);
-  // The counterweight bracket, empty: its cradle and the painted outline of where four footings go (call 22's outline,
-  // lit by R4c while a footing waits on the railhead rack).
-  const bz = GAP * 0.3;
-  box(STEEL_DARK, 2.4, 0.6, 1.2, 0, 0.3, bz);
+  // The counterweight bracket, empty: a cradle and short hangers under the plate, and the painted outline of where four
+  // footings go (call 22's outline, lit by R4c while a footing waits on the railhead rack) on the underside, where the jib
+  // hangs them. Nothing of it stands on the running line (./bracket.ts; owner, 11 November).
+  const bz = BRACKET_Z;
+  box(STEEL_DARK, CRADLE.w, CRADLE.h, CRADLE.d, 0, CRADLE.y, bz);
+  for (const x of WEIGHT_X) box(STEEL_DARK, HANGER.w, HANGER.h, HANGER.d, x, HANGER.y, bz);
   for (const s of [-1, 1]) {
-    box(GOLD, W - 1, 0.05, 0.12, 0, 0.03, bz + s * 1.3);
-    box(GOLD, 0.12, 0.05, 2.6, s * ((W - 1) / 2), 0.03, bz);
+    box(GOLD, W - 1, 0.04, 0.12, 0, PLATE_BOTTOM - 0.02, bz + s * 1.3);
+    box(GOLD, 0.12, 0.04, 2.6, s * ((W - 1) / 2), PLATE_BOTTOM - 0.02, bz);
   }
-  for (const x of [-1.5, -0.5, 0.5, 1.5]) box(GOLD, 0.06, 0.05, 2.2, x * 1.6, 0.03, bz);
+  for (const x of WEIGHT_X) box(GOLD, 0.06, 0.04, 2.2, x, PLATE_BOTTOM - 0.02, bz);
   const mesh = new THREE.Mesh(parts.merged(), undefined);
   group.add(mesh);
   // The footings hung in the bracket (ringIslandPose.bracket, 0..4): one instanced draw, none while it's empty.
-  const footings = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 1.0, 1.4), undefined, 4);
+  const footings = new THREE.InstancedMesh(new THREE.BoxGeometry(WEIGHT.w, WEIGHT.h, WEIGHT.d), undefined, 4);
   const m = new THREE.Matrix4();
-  [-1.5, -0.5, 0.5, 1.5].forEach((x, k) => footings.setMatrixAt(k, m.makeTranslation(x * 1.6, 0.6, bz)));
+  WEIGHT_X.forEach((x, k) => footings.setMatrixAt(k, m.makeTranslation(x, WEIGHT.y, bz)));
   footings.count = 0;
   group.add(footings);
   return { mesh, footings, W };
