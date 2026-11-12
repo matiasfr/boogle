@@ -60,7 +60,11 @@
 // v31 (2026-11-12): Ring Island build 2 (docs/plans/ring-island-build2.md, R1 to R5): `steel` (+`steelClock`) components,
 // `train.steel` and `train.boiler`, `line.boiler` and `line.fitted`, `shed.steel`; rail.steelTake, rail.steel and
 // rail.install; the steel works' cast tick and its away credit; `TRAIN_EXTENT.aheadCm` 820; no migration.
-export const WORLD_NS = 'v31';
+// v32 (2026-11-12): the greybox route, leg 1 (docs/plans/greybox-route.md, bump G1): `leg`, `legYard` and `route`
+// components for the whole catalog; rail.legStock, rail.grant, rail.gate and rail.arrive; the lay tick; line 2 grows
+// past Ring Island over the stack line's heads to High Gorge with a fleet of 3 then 5 (two rows wait in the shed) and
+// block signals; `ns`, `bay` and `cave` as lines 2 to 4, shut; `train.legKit` (the steel works' kit first); no migration.
+export const WORLD_NS = 'v32';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
