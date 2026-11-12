@@ -9,7 +9,7 @@
 //   room.replication             the room's replicator (src/world/replicate-server.ts): states define projections on it;
 //                                every client is subscribed on join (late join from change tick -1), and at the end of
 //                                each 60 Hz step what changed goes out, skipping sockets over HIGH_WATER (coalescing)
-//   room.status()                { boot, tick, players, max, lead, noSave, steps }  (steps: step-meter.ts)
+//   room.status()                { boot, tick, players, max, dropped, lead, noSave, steps }  (steps: step-meter.ts)
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
 //   A railway room is paused (world.pause(), the paused world) once idleMs() passes cfg.roomPauseMs, and woken with its
 //   away credit by the next join. A hidden tab is still a client (until hiddenDeadMs), so it keeps the room running.
@@ -299,7 +299,8 @@ export function createHostedRoom({
         return;
       }
       // Railway actions and world requests go only to the host. Never relay a forged packet or old edit protocol.
-      if (t !== 'w:need' && t !== 'w:edit' && !RAILWAY_CLIENT_MESSAGES.has(String(t))) return void c.dropped++;
+      if (typeof t !== 'string' || (t !== 'w:need' && t !== 'w:edit' && !RAILWAY_CLIENT_MESSAGES.has(t)))
+        return void c.dropped++;
       world.deliver(m.d, c.id);
       return;
     }
@@ -366,6 +367,8 @@ export function createHostedRoom({
   }
 
   function join(ws: WebSocket, id: string, pid: string, key: string) {
+    // From the first moment, before any refusal below: a bad frame on a socket without one exits the process.
+    ws.on('error', () => {});
     if (closing) return void ws.close(CLOSE.RESTART);
     if (retired.has(id)) return void (ws.send(encode({ t: 'elsewhere' })), ws.close(CLOSE.ELSEWHERE));
     const old = clients.get(id);
@@ -403,9 +406,17 @@ export function createHostedRoom({
     if (old) drop(old, CLOSE.REPLACED);
     clients.set(id, c);
     replication.addClient(id); // a fresh mirror: everything whole from change tick -1 (the proof slice subscribes all)
-    ws.on('message', (data) => onMessage(c, data));
+    ws.on('message', (data) => {
+      // One malformed message must never reach the process (it hosts every room): drop it like other malformed
+      // input. The log names only the error's class, never client text.
+      try {
+        onMessage(c, data);
+      } catch (error) {
+        c.dropped++;
+        log(`room ${roomId}: dropped a message that threw ${error instanceof Error ? error.name : typeof error}`);
+      }
+    });
     ws.on('close', () => leave(c));
-    ws.on('error', () => {});
     if (!lead) lead = id;
     ws.send(encode({ t: 'welcome', v: 1, boot, ...(born === null ? {} : { born }), lead, max: cfg.maxPlayers }));
     let peers: { id: string; s: number; d: unknown }[] = [];
@@ -450,6 +461,8 @@ export function createHostedRoom({
       tick: world.sync.world.tick,
       players: clients.size,
       max: cfg.maxPlayers,
+      // Malformed, over-rate or throwing messages dropped from the sockets connected now.
+      dropped: [...clients.values()].reduce((n, c) => n + c.dropped, 0),
       lead,
       noSave: world.status().badSave, // a failed-load fallback must not replace the durable save
       steps: meter.report(world.sync.stepsDropped()),
