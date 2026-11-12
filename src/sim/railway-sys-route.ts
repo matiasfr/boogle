@@ -17,7 +17,7 @@ import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, LEG_TUNE } from './railway-route.ts
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE } from './railway-train.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
-import { reqAdd, reqOnly } from './railway-train.ts';
+import { reqAdd, reqDrop, reqOnly } from './railway-train.ts';
 import { railInt } from './railway.ts';
 import { Account, Aperture, Boiler, Leg, Line, QJob, Route, Train } from './railway-components.ts';
 import { boilerHeld, stopsOf } from './railway-queries.ts';
@@ -82,6 +82,18 @@ function lay(w: World, k: number, tick: number) {
   const lid = w.lookup(Line, leg.line)!,
     stops = stopsOf(w, leg.line).length;
   w.mut(Line, lid)!.req = reqAdd(w.get(Line, lid)!.req, from, 1, stops);
+  // A head closing behind with this lay (`closesAt`): a train standing there stands at a signal, as at a moved stop,
+  // and every ask there goes (no lever, no rider stop: the halt passes both ways from now).
+  RAIL_LINES[leg.line]!.halts.forEach((h, j) => {
+    if (h.closesAt !== stops) return;
+    for (const slot of LINE_SLOTS[leg.line]!) {
+      const r = io.row(slot);
+      if (r.phase === TRAIN_PHASE.STAND && r.at === j) io.set(slot, { at: -1, to: -1 });
+      const req = reqDrop(reqDrop(io.row(slot).req, j, 1, stops), j, -1, stops);
+      if (req !== io.row(slot).req) io.set(slot, { req });
+    }
+    w.mut(Line, lid)!.req = reqDrop(reqDrop(w.get(Line, lid)!.req, j, 1, stops), j, -1, stops);
+  });
   void n;
 }
 /** The lay clock: a section laying since `start` is laid LEG_TUNE.layTicks later (about 30 s whatever its length;

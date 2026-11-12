@@ -58,6 +58,10 @@ export type RailHalt = {
   headPlatforms?: readonly RailPlatform[];
   /** A catalog halt a later leg's rules open: shut at every stage until then. */
   shut?: true;
+  /** Closed behind (the orchestrator's ruling on call 88): once its line has this many open stops it passes both ways,
+   * a stop no train makes and nobody asks for, though it stays in the line's halts (open stops stay a prefix). A passed
+   * head of the stack line closes when the section after next lays, so the lay's ride-on (call 88) is over first. */
+  closesAt?: number;
 };
 export type RailLineDef = {
   /** Stable, never reused. */
@@ -146,8 +150,10 @@ const STACK_HEADS = STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toC
 const STACK_HEAD_PLATFORMS = STACK_HEADS.map((at) => rowPoint('ring', at + ROW_SHIFT.ring));
 const STACK_HALTS: readonly RailHalt[] = [
   // The stack line's railheads, one halt a head (the step 4 review's call 88): head k opens once section k is laid, a
-  // stub end while it is the line's last; when the next section lays the line runs on past it (endMoved) and it stays,
-  // a request stop, so the first train after the lay stops there and takes whoever stands there on to the new head.
+  // stub end while it is the line's last; when the next section lays the line runs on past it (endMoved) and it stays a
+  // stop, so the first train after the lay stops there and takes whoever stands there on to the new head. Heads 1 and
+  // 2 close behind when the section after next lays (`closesAt`); the third stays, a request stop both ways (the step 4
+  // review's `Stack halt`).
   ...STACK_HEADS.map((at, k): RailHalt => ({
     name: `Stack head ${k + 1}`,
     s: at,
@@ -156,6 +162,7 @@ const STACK_HALTS: readonly RailHalt[] = [
     leg: { slot: STACK_LEG, section: k },
     platforms: both(STACK_HEAD_PLATFORMS[k]!),
     end: railEnd('stub', at - HEAD_MERGE_CM, 1),
+    ...(k < STACK_HEADS.length - 1 ? { closesAt: STACK.railheadHalt + k + 3 } : {}),
   })),
   // High Gorge: open once the fourth section is laid; buffers past the platforms, a crossover before them (the row's).
   {
@@ -469,7 +476,10 @@ export const lineIndex = (line: LineRef): number => (typeof line === 'number' ? 
 /** Whether halt `k` of a line with `n` open stops refuses trains going `dir`: an `only` halt that is not an open end
  * serves only its own way (the homeward-only Pier: no up train stops there, for any reason). */
 export function trainPassesBy(line: LineRef, k: number, dir: number, n: number) {
-  const only = lineDef(line).halts[k]?.only;
+  const h = lineDef(line).halts[k];
+  // A halt closed behind passes both ways (the greybox route's passed heads).
+  if (h?.closesAt !== undefined && n >= h.closesAt) return true;
+  const only = h?.only;
   return only !== undefined && dir !== only && k !== 0 && k !== n - 1;
 }
 /** Halt `halt`'s platform (a RAIL_HALTS id, or a halt) for a train going `way` (+1 up, -1 down): a `heads` halt's
