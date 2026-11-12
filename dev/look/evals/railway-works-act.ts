@@ -4,6 +4,9 @@
 // player): `worksdo=take|strike0|strike1|foot|set|turn`, and (J5) `pier`: shoulder a footing off the pier rack, then
 // set it from the pier-head apron (pose `pierhead`, seed `crossing-finishing`; `pierN=2` sets both). The bot is set down a few metres short of the thing on the
 // pose's side, walks up and presses what the game offers; the motion sheet then films what follows.
+// `take` needs a seed with the breaker still on its pedestal (`works-arrive`; from `works-open` on, `works-stocked`
+// too, it is already taken):
+// npm run look -- --rail-seed works-arrive --query 'worksat=forge&worksdo=take' --eval dev/look/evals/railway-works-at.ts --action dev/look/evals/railway-works-act.ts
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { inspectRailway, pierNeed, rock, rw, works, worksStage } = (await import(
   '/dev/look/rail-read.ts' as string
@@ -59,6 +62,8 @@ if ((doing === 'strike0' || doing === 'strike1') && works(rw()).breaker === 1) {
   if (!(await doAt(BREAKER, { x: 922, y: 19, z: 9 }))) throw new Error('no breaker');
   await bot.wait(600);
 }
+if (doing === 'take' && works(rw()).breaker !== 1)
+  throw new Error('worksdo=take: the breaker is not on its pedestal in this seed; use --rail-seed works-arrive');
 let from = start;
 if (doing === 'kiln') {
   // `--rail-seed works-stocked`: chop the bowl rock's last stone, then the fill lights the kiln live.

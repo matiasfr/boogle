@@ -770,7 +770,8 @@ clear. Not tested on a device.
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's
-plume and whistle. **Take the breaker** is once for the room. **Strike the seam** at the cracked slab by Home's
+plume and whistle. **Take the breaker** is once for the room; like the boiler before it, its prompt measures to the
+pedestal's edge, so logs set down against the pedestal don't take the prompt from it (12 November). **Strike the seam** at the cracked slab by Home's
 turntable opens the old Roundhouse stall (two empty sockets, a tarped shunter and wagon); at the quarry halt the same
 strike topples the split rock's throat and opens the haul cut. **Fill the kiln** at the cut takes 16 logs and 16
 stone (the bowl's two limestone rocks give 8 each); once lit it casts a footing every 8 s down the roller road onto

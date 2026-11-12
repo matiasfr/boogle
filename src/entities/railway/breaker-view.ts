@@ -287,6 +287,9 @@ export function createRailwayBreaker(
             id: 'railway-breaker',
             verb: 'Take the breaker',
             at: new THREE.Vector3(bx, by + 1.9, bz),
+            // `r`, the pedestal's radius, as the boiler's on it had (boiler-view.ts): measured to its edge, so a log
+            // pile set down against the pedestal doesn't win the prompt from the breaker you face.
+            r: 1.3,
             run: () => void adapter.takeBreaker(),
           },
         ];
