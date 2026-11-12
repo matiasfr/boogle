@@ -377,7 +377,8 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       empty; the yard and works points stay where R1 put them. Looks (desktop width; no phone shot, owner call "Fast
       ships"): `.look/v1-works-cold-still.png` (steel-kit) and `.look/v1-works-lit-still.png` (steel-lit). Not shown
       in a still: the three prompts (the jump-in lands 4.3 m from the yard point, outside its reach) and the stacks
-      shrinking on a take. One of the folk stood beside the rack's bed in the steel-lit landing still (their posts were not moved). Not tested on a device.
+      shrinking on a take; the prompts were pressed in a browser afterwards (V2's `railway-steel-prompts.ts`: take,
+      feed, the blocked feed and the server lighting the works) and by R5's steel bot, by id. One of the folk stood beside the rack's bed in the steel-lit landing still (their posts were not moved). Not tested on a device.
 - [x] **V2. Steel and the boiler on the train (S, Mac).** Edit `src/entities/railway/train-view.ts`, `cars.ts`,
       `engine-kit.ts`. Steel blocks on the cradle from `Train.steel`; the built, unwired `engine_*_long` meshes when
       `Train.boiler === 1`; `cars.ts`'s extent test follows `TRAIN_EXTENT`. No whistle variation, no smoke change.

@@ -26,7 +26,7 @@ const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
 const STOP = { railhead: 4, island: 5 } as const;
 
 export async function ringIslandRoute({ bot, checkpoint }: RingRoute) {
-  const { ride, rideFrom, hopTo, view, until, check } = line2Rides(bot);
+  const { ride, hopTo, view, until, check } = line2Rides(bot);
   const ap = () => aperture(rw());
   const head = () => RING_HEAD[ringOpen(rw()).head]!;
   const foot = () => railBack().foot;
@@ -96,8 +96,8 @@ export async function ringIslandRoute({ bot, checkpoint }: RingRoute) {
   const runFrom = cm(ringAt(head().u - 1400, lane));
   // A platform that has slid out leaves the player on the walkway below it: hop up first (as `use` does at the rack).
   if (me.body!.position.y < head().platform.y / 100 - 0.5)
-    await hopTo(runFrom.x, runFrom.z, "onto the railhead platform", 15000, 1, head().platform.y / 100 - 0.5);
-  check(await bot.walk(runFrom.x, runFrom.z, 1), "walked to the run-up");
+    await hopTo(runFrom.x, runFrom.z, 'onto the railhead platform', 15000, 1, head().platform.y / 100 - 0.5);
+  check(await bot.walk(runFrom.x, runFrom.z, 1), 'walked to the run-up');
   const a = ringAt(head().u - 1000, lane),
     b = ringAt(head().u, lane);
   const len = Math.hypot(b.x - a.x, b.z - a.z);
@@ -166,6 +166,12 @@ export async function ringIslandRoute({ bot, checkpoint }: RingRoute) {
   await checkpoint('ring joined');
 
   // 7. Outward from the Railhead to the island halt; step off onto its platform.
+  await rideToIsland(bot, line2Rides(bot));
+  await checkpoint('ring ridden');
+}
+/** Outward from the Railhead (stop 4) to the island halt, from a rider standing on the Railhead's platform or the
+ * joint's west one; steps off onto the island halt's platform. Shared with the steel bot (railway-steel.ts). */
+export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: ReturnType<typeof line2Rides>) {
   const levers = () => (view() as unknown as { ringLevers: RingLever[] }).ringLevers;
   const outward = () => levers().find((l) => l.halt === STOP.railhead && l.dir === 1 && l.on);
   const levers0 = () => `RING LEVERS ${JSON.stringify({ at: me.body!.position, levers: levers() })}`;
@@ -202,7 +208,6 @@ export async function ringIslandRoute({ bot, checkpoint }: RingRoute) {
   const island = cm(RING_HALT.down);
   await hopTo(island.x, island.z, 'stepped across to the island halt');
   await until(() => !train.aboard() && me.coyote > 0 && !me.swimming, 'standing on the island halt', 10000);
-  await checkpoint('ring ridden');
 }
 type RingLever = {
   halt: number;

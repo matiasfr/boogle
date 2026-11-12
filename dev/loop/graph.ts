@@ -893,7 +893,7 @@ export const NODES: readonly LoopNode[] = [
     supply: { logs: steelKit(trees), rails: steelKit(forgeRails) },
     ops: ['rail.steel', 'rail.steelTake'],
     reached: { mark: 'steel works lit' },
-    stops: [],
+    stops: ['steel-lit'],
     requires: [
       dec('rivet', 'rules', `${RULES_STEEL} steelFeed: ringJoined; railway-server.ts railValid rail.steel`),
       // Any logs and rails count, not only the yard's, but nobody carries a bill's worth 1.2 km to the island.
@@ -910,7 +910,7 @@ export const NODES: readonly LoopNode[] = [
     supply: {},
     ops: [],
     reached: { mark: 'steel home' },
-    stops: [],
+    stops: ['steel-home'],
     requires: [dec('steelworks', 'rules', `${RULES_STEEL} steelTick: lit; steelArrives: the kit car takes the rack`)],
     cue: [unbuilt("steel on the kit car's deck and the stack in the Roundhouse bay", `${STEEL_PLAN} V2, V3`)],
   },
@@ -923,7 +923,7 @@ export const NODES: readonly LoopNode[] = [
     supply: {},
     ops: ['rail.install'],
     reached: { mark: 'boiler installed' },
-    stops: [],
+    stops: ['boiler-long'],
     requires: [dec('steelhome', 'rules', `${RULES_STEEL} install: Shed.steel >= 1; railway-server.ts railValid`)],
     cue: [unbuilt("the garage tile's Install, held at the table, sending rail.install", `${STEEL_PLAN} V3`)],
   },
