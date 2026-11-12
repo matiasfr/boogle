@@ -183,12 +183,14 @@ test('each gate shuts the section it names and stands at that frame', () => {
   });
 });
 
-test("the four grants stand at their leg's destination halt", () => {
+test("the four grants stand at their leg's destination halt; `pick` where the step 4 review placed it", () => {
   assert.deepEqual(
     RAIL_GRANTS.map((g) => [g.id, RAIL_LEGS[g.leg]!.id]),
     [['pick', 'stack'], ['seeds', 'incline'], ['cloth', 'bell-canopy'], ['lantern', 'notch-tunnel']],
   );
-  for (const g of RAIL_GRANTS) {
+  // `pick` on the north stack's rim, reach 4 m (greybox-route.md, step 3 as built after the step 4 review).
+  assert.deepEqual(RAIL_GRANTS[0]!.at, { x: -7435, z: -203262, y: 8500, reach: 400 });
+  for (const g of RAIL_GRANTS.slice(1)) {
     const leg = RAIL_LEGS[g.leg]!;
     const h = row(leg.row).halts[leg.destRowHalt]!;
     assert.deepEqual(g.at, { x: h.x, z: h.z, y: h.y, reach: h.reach }, g.id);
