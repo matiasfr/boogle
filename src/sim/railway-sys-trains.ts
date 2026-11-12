@@ -5,16 +5,7 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { LINE2_KIT } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
-import {
-  TRAIN,
-  TRAIN_PHASE,
-  reqAdd,
-  reqHas,
-  trainDir,
-  trainPassesBy,
-  type RailTrain,
-  type ServiceStop,
-} from './railway-train.ts';
+import { TRAIN, TRAIN_PHASE, reqAdd, reqHas, trainDir, trainPassesBy, type ServiceStop } from './railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
@@ -134,7 +125,7 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
  * homeward train that is empty and on no build errand when a whole trainload waits (never while the wagon is owed
  * footings). Riders add no stop (the ruling of 12 November): they board and step off where a train already stands.
  * Trains run end to end on their track since v26, so no ask can turn one back short of an errand. */
-function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
+function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>): ServiceStop {
   // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop).
   const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir);
   if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
@@ -145,7 +136,7 @@ function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop 
     (k === 1 && dir > 0 && r.wagon && r.foot < WORKS.wagonCap && footOwed(w, r.foot) > 0) ||
     (k === 3 && r.wagon && r.foot > 0 && !q7Laid(w)) ||
     (k === 4 && dir > 0 && r.wagon && r.foot > 0) ||
-    steelService(w, w.get(Train, trainId(w, slot))!, k, dir);
+    steelService(w, r, k, dir);
 }
 /** The rows a moved end or stop rewrites (endMoved, stopMoved in ./railway-trains.ts), over the world's Train rows and
  * open stops (read after the change that moved them). */

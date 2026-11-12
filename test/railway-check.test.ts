@@ -29,7 +29,13 @@ for (const entry of BAD_WORLDS)
 // The world check's messages, read from its source: every `bad('…')` in the check files, and the message literals of
 // trainRowBroken, which checkTrains throws (railway-check-trains.ts). Ring Island's are in test/railway-check-ring.test.ts.
 function said() {
-  const files = ['railway-check.ts', 'railway-check-line1.ts', 'railway-check-line2.ts', 'railway-check-trains.ts'];
+  const files = [
+    'railway-check.ts',
+    'railway-check-line1.ts',
+    'railway-check-line2.ts',
+    'railway-check-trains.ts',
+    'railway-check-steel.ts',
+  ];
   const text = [...files, 'railway-check-works.ts']
     .map((f) => readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8'))
     .join('\n');
@@ -50,7 +56,13 @@ test('every message the world check throws is a bad world, unreachable or domina
 // so the start/completion range site had none (dropping `!railInt(j.completion, 1)` passed every test). Each line now
 // has a `completion: 2` world for it.
 test('review M12b-1: each bad() site of the world check has its own entry (sites counted with repeats)', () => {
-  const files = ['railway-check.ts', 'railway-check-line1.ts', 'railway-check-line2.ts', 'railway-check-works.ts'];
+  const files = [
+    'railway-check.ts',
+    'railway-check-line1.ts',
+    'railway-check-line2.ts',
+    'railway-check-works.ts',
+    'railway-check-steel.ts',
+  ];
   const sites = new Map<string, number>();
   for (const f of [...files, 'railway-check-trains.ts'])
     for (const m of readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8').matchAll(/bad\('([^']+)'\)/g))

@@ -3,14 +3,15 @@
 // (./railway-check.ts). Its logs and rails are in the conserved counts (railCounts' line2 and produced, line2Rails:
 // ./railway-queries-line2.ts).
 //
-//   checkSteel(w)   bounds; nothing before the rivet; lit exactly when the bill is full; the cast clock; steel only on
+//   checkSteel(w)   bounds; nothing before the rivet; what is out was sent; lit exactly when the bill is full;
+//                   the cast clock; steel only on
 //                   line 2's kit cars, a trip's worth each; steel conserved (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
-import { shed, steel, steelClock, trains } from './railway-rows.ts';
-import { ringJoined } from './railway-queries.ts';
+import { cart, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
+import { aboard, ringJoined } from './railway-queries.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -41,6 +42,13 @@ export function checkSteel(w: World) {
   // Nothing in the yard, the bill or the rack, and nothing sent, before the rivet.
   if ((s.yardLogs || s.yardRails || s.logs || s.rails || s.outLogs || s.outRails || s.lit >= 0) && !ringJoined(w))
     bad('steel before the rivet');
+  // Everything line 2 has out by cart or train, the yard included, was made for it at the Village: a stretch's kit
+  // (depotProduced, shelfOut) or the works' (outLogs, outRails). The weaker form of R1's "yard <= sent", which a
+  // stretch kit's leftovers aboard could break (review of R1-R2).
+  const r0 = rail(w),
+    c = cart(w);
+  if (r0.depot + c.logs + aboard(w, 'logs') + s.yardLogs > r0.depotProduced + s.outLogs) bad('steel sent logs');
+  if (r0.depotRails + c.rails + aboard(w, 'rails') + s.yardRails > r0.shelfOut + s.outRails) bad('steel sent rails');
   if (s.lit >= 0 !== (s.logs === STEEL.logs && s.rails === STEEL.rails)) bad('steel lit');
   if (s.lit >= 0 && lastCast < s.lit) bad('steel cast clock');
   if (s.lit < 0 && (s.poured || lastCast)) bad('steel unlit cast');

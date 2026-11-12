@@ -17,7 +17,7 @@ import { STEEL } from './railway-ring-layout.ts';
 import { LINE2_KIT } from './railway-line2-layout.ts';
 import { railInt } from './railway.ts';
 import { Account, Aperture, Beam, Boiler, Forge, Rail, Shed, Steel, SteelClock, Train } from './railway-components.ts';
-import { forgeId, free, ringJoined, shedId, steelId, steelNeed, type Row } from './railway-queries.ts';
+import { forgeId, free, railId, ringJoined, shedId, steelId, steelNeed, type Row } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 /** Take logs (kind 0) or rails (kind 1) off the island yard, up to your back's room, once the rivet is struck. */
@@ -85,38 +85,67 @@ export function steelLoads(w: World, id: number) {
   m.rails += rails;
   if (rails) w.mut(Forge, forgeId(w))!.rack -= rails;
 }
+/** What the bill still lacks of each kind for a train's kit to fill (none once lit): the bill less fed and in the yard. */
+function lacks(w: World) {
+  const s = w.get(Steel, steelId(w))!;
+  if (s.lit >= 0) return { logs: 0, rails: 0 };
+  return {
+    logs: Math.max(0, STEEL.logs - s.logs - s.yardLogs),
+    rails: Math.max(0, STEEL.rails - s.rails - s.yardRails),
+  };
+}
 /** A line 2 train arriving: at Ring Island its kit goes into the yard (up to what the bill still lacks; any more rides
- * on) and its kit car takes the rack's steel, up to STEEL.trip; at the Village its steel goes into the Roundhouse bay. */
+ * on) and its kit car takes the rack's steel, up to STEEL.trip. At the Village its steel goes into the Roundhouse bay,
+ * and kit the bill can no longer use (it was fed from backs while the kit rode, or the works is lit) goes home: logs
+ * onto the depot, rails back onto the forge rack, where they were made (review of R1-R2, P2-1). */
 export function steelArrives(w: World, r: Row<typeof Train>) {
-  if (r.at === 0 && r.steel > 0) {
-    w.mut(Shed, shedId(w))!.steel += r.steel;
-    r.steel = 0;
-  } else if (r.at === RING_ISLAND && ringJoined(w)) {
+  if (!ringJoined(w)) return;
+  if (r.at === 0) {
+    if (r.steel > 0) {
+      w.mut(Shed, shedId(w))!.steel += r.steel;
+      r.steel = 0;
+    }
+    const lack = lacks(w),
+      logs = r.logs - Math.min(r.logs, lack.logs),
+      rails = r.rails - Math.min(r.rails, lack.rails);
+    if (logs > 0) {
+      w.mut(Rail, railId(w))!.depot += logs;
+      r.logs -= logs;
+    }
+    if (rails > 0) {
+      w.mut(Forge, forgeId(w))!.rack += rails;
+      r.rails -= rails;
+    }
+  } else if (r.at === RING_ISLAND) {
     const id = steelId(w),
-      s = w.get(Steel, id)!;
-    const logs = Math.min(r.logs, STEEL.logs - s.logs - s.yardLogs),
-      rails = Math.min(r.rails, STEEL.rails - s.rails - s.yardRails),
+      s = w.get(Steel, id)!,
+      lack = lacks(w);
+    const logs = Math.min(r.logs, lack.logs),
+      rails = Math.min(r.rails, lack.rails),
       steel = Math.min(STEEL.trip - r.steel, s.rack);
     if (logs <= 0 && rails <= 0 && steel <= 0) return;
     const sm = w.mut(Steel, id)!;
-    sm.yardLogs += Math.max(0, logs);
-    sm.yardRails += Math.max(0, rails);
-    r.logs -= Math.max(0, logs);
-    r.rails -= Math.max(0, rails);
-    sm.rack -= Math.max(0, steel);
-    r.steel += Math.max(0, steel);
+    sm.yardLogs += logs;
+    sm.yardRails += rails;
+    r.logs -= logs;
+    r.rails -= rails;
+    sm.rack -= steel;
+    r.steel += steel;
   }
 }
 /** The steel works' errands for a line 2 train (serviceOf): home to the Village while the kit is owed and none is
- * aboard, or with steel aboard; out to Ring Island with kit aboard, or while steel waits and the kit car has room. */
+ * aboard, with steel aboard, or with kit the bill can no longer use; out to Ring Island with kit the bill lacks, or while
+ * steel waits and the kit car has room. */
 export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number, dir: number) {
   if (!ringJoined(w)) return false;
+  const lack = lacks(w),
+    usable = Math.min(r.logs, lack.logs) + Math.min(r.rails, lack.rails);
   if (k === 0 && dir < 0) {
     const need = steelNeed(w);
-    return r.steel > 0 || (r.logs + r.rails === 0 && need.logs + need.rails > 0);
+    return r.steel > 0 || usable < r.logs + r.rails || (r.logs + r.rails === 0 && need.logs + need.rails > 0);
   }
   if (k !== RING_ISLAND || dir < 0) return false;
-  return r.logs + r.rails > 0 || (w.get(Steel, steelId(w))!.rack > 0 && r.steel < STEEL.trip);
+  return usable > 0 || (w.get(Steel, steelId(w))!.rack > 0 && r.steel < STEEL.trip);
 }
 /** The works' cast: once lit, one steel to the rack every castTicks while the rack has room, STEEL.total in all. A full
  * rack waits; the next cast comes as soon as there is room. */

@@ -244,6 +244,17 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       that kit aboard (the first train after the rivet loads it): `test/railway-m11-review.test.ts`'s two ring-joined
       literal rows move from 3986 logs and 161 rails to 3994 and 169 (173 after three days' credit); fixtures
       regenerated in their own commit.
+      _Independent review (11 November), fixed:_ **P2-1**, kit stranded aboard for good when the bill is fed from backs
+      while it rides: kit the bill can no longer use now goes home at the train's next Village arrival (logs onto the
+      depot, rails back onto the forge rack, both conserved), and `steelService` asks for Ring Island only with kit the
+      bill lacks and for the Village with kit it can't use (the reviewer's `test/railway-steel-review.test.ts` passes).
+      **P3-1**, `serviceOf` hands `steelService` its own row. **P3-2**, a `railway-bad-worlds.ts` entry per
+      `checkSteel` throw (a `ring-joined` stage joins the corpus), and `railway-check-steel.ts` joins the message
+      census. The dropped "yard <= sent" returns in the reviewer's weaker, proved form as `steel sent logs` and
+      `steel sent rails` (depot, cart, aboard and yard within `depotProduced + outLogs`, and the shelf's rails within
+      `shelfOut + outRails`), in the load check every fuzz op runs. No pinned fixture moved: no seed stage feeds a
+      bill from backs. **P3-3**, noted: the rules commit precedes the bump commit on this branch; that order stands
+      because the branch ships as one, after R5.
 - [ ] **R3. The install and the boiler's speed (L, HOTBOX).** Create `test/railway-install.test.ts`. Edit
       `railway-components.ts` (`Line.boiler`, `Line.fitted`, `Train.boiler`), `railway-train.ts` (`BOILER_SPEED`,
       `stopKin`'s fourth argument and its callers), `railway-trains.ts` (the leg planner, `cycleTicks` and the balanced
