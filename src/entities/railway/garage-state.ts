@@ -1,19 +1,25 @@
-// The garage's two seams (docs/brainstorms/engine-garage.md, first build). Local view only: nothing here is sent, saved
-// or read by the simulation.
+// The garage's two seams (docs/brainstorms/engine-garage.md, first build).
 //  1. `roomFacts`: the ONE place the garage reads railway state, from the rows (`adapter.read.world()`: the
-//     `line2Trains` query, the train rows' `wagon`, the shed's `ready`).
+//     `line2Trains` query, the train rows' `wagon`, the shed's `ready` and `steel`, line 2's `boiler`).
+//     Local view of accepted state.
 //  2. `garage`: the handle the world half (garage-view.ts) registers and the screen half (src/features/garage.ts) drives.
-import { shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
+// Nothing here is sent or saved, and the simulation reads none of it.
+import { line, shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
+import { LINE2 } from '../../sim/railway-lines.ts';
 import type { CatId, Phase, PartId, RoomFacts } from './garage-data.ts';
 
 export function roomFacts(w: ReadWorld): RoomFacts {
   const wagonCoupled = trains(w).some((r) => r.wagon);
+  const boiler = line(w, LINE2).boiler;
   return {
     boilerFitted: line2Trains(w),
     wagonCoupled,
     // The roll-out owns the table from the commission until the wagon has coupled.
     tableBusy: shed(w).ready >= 0 && !wagonCoupled,
+    steelHome: shed(w).steel >= 1,
+    longFitted: boiler >= 1,
+    boilerRev: boiler,
   };
 }
 

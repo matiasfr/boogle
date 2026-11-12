@@ -220,7 +220,7 @@ function refresh() {
   const part = list.find((p) => p.id === snap.sel) ?? list[0];
   if (!part) return;
 
-  const rk = `${snap.cat}|${snap.sel}|${snap.facts.wagonCoupled}|${snap.phase === 'idle' || snap.phase === 'holding'}`;
+  const rk = `${snap.cat}|${snap.sel}|${snap.facts.wagonCoupled}|${snap.facts.steelHome}|${snap.facts.longFitted}|${snap.phase === 'idle' || snap.phase === 'holding'}`;
   if (rk !== railKey) {
     railKey = rk;
     const groupOf = (g: Group) =>
@@ -245,7 +245,7 @@ function refresh() {
     els.desc.textContent = part.desc;
     els.note.textContent = part.price ?? (snap.cat === 'looks' ? 'A look never changes what the train does.' : '');
   }
-  const rows = rowsFor(snap.cat, snap.sel);
+  const rows = rowsFor(snap.cat, snap.sel, snap.facts.longFitted);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   const key = html;
   if (key !== shownKey) {

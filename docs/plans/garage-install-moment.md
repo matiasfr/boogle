@@ -156,7 +156,7 @@ steel pallet (72°, 6.0 m), the plain post (92°, 5.2 m) and a timber frame at 9
 Sizes: S under half a day, M about a day. Each step is one implementer and leaves `node dev/ship-check.ts` green and
 the live install working. One proof look each; the full check, the bot and the two-player look are the checkpoint's.
 
-- [ ] **G1. The room's facts and a true tile (S).** Edit `garage-data.ts` (`RoomFacts`, `Standing`, `partsOf`,
+- [x] **G1. The room's facts and a true tile (S).** Edit `garage-data.ts` (`RoomFacts`, `Standing`, `partsOf`,
       `BOILERS` from `BOILER_SPEED`, `rowsFor`'s `fitted`), `garage-state.ts` (`roomFacts` reads `shed(w).steel`,
       `line(w, LINE2).boiler`; the header's "nothing is read" line corrected), `src/features/garage.ts` (pass the fact;
       pill classes), `garage.css` (two pill colours), `test/garage-data.test.ts`. Longer boiler: "Needs steel", then
@@ -164,6 +164,10 @@ the live install working. One proof look each; the full check, the bot and the t
       the leftover "the tile in `?home=b` still reads Needs steel". Tests: the three standings from three fact sets;
       a fitted room's rows carry no arrow. Proof: `npm run look -- --rail-seed boiler-long --query home=b --eval
       dev/look/evals/garage-open.ts`, the tile reading "Installed".
+      **As built (12 November):** as planned. `boilerRev` is `Line.boiler` itself (what `adapter.installBoiler` is
+      sent on). The Longer boiler is not tryable once fitted (no button). Looked at: `boiler-long` under `?home=b`,
+      Longer boiler "Installed", Boiler "Replaced" struck through, rows 25 m/s, 4 cars, 2.9, 15.3 in ink with no
+      arrow. Still wrong there until G2: the copy wore the short boiler with the yellow ghost over it.
 - [ ] **G2. The garage and the works copy at today's table (M).** Create `src/entities/railway/garage-geo.ts`
       (section 4; `a` from section 5). Edit `garage-view.ts` (take the geo row; `restYaw`; the copy shown from
       `wagonCoupled`, wearing `longFitted`, bolts on when fitted; two static boxes through `addStatic(..., owner)`;

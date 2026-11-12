@@ -244,7 +244,14 @@ export async function createGarageView(owner: OwnedView, geo: Geo) {
     clickAt = 0,
     answered = false,
     hit = false,
-    facts: RoomFacts = { boilerFitted: false, wagonCoupled: false, tableBusy: false },
+    facts: RoomFacts = {
+      boilerFitted: false,
+      wagonCoupled: false,
+      tableBusy: false,
+      steelHome: false,
+      longFitted: false,
+      boilerRev: 0,
+    },
     skipped = false;
   const engineWorld = new THREE.Vector3();
   const baseYaw = (() => {
@@ -658,7 +665,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo) {
       holding = false;
     },
     holdStart() {
-      if (!open || sel !== 'long' || trying || (phase !== 'idle' && phase !== 'holding')) return;
+      if (!open || sel !== 'long' || facts.longFitted || trying || (phase !== 'idle' && phase !== 'holding')) return;
       holdAt = performance.now();
       holding = true;
       if (phase === 'idle') clickAt = 0;

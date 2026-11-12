@@ -162,6 +162,15 @@
   background: var(--g-sun);
   color: #13243f;
 }
+.pill.ready {
+  background: #e8742c;
+  color: #fff;
+}
+.pill.replaced {
+  background: #2b3a57;
+  color: var(--g-soft);
+  text-decoration: line-through;
+}
 .pill.later {
   background: #2b3a57;
   color: var(--g-soft);
