@@ -115,7 +115,8 @@ entry in `src/world/rules/types.ts`, no `edits` generator, no `env` fact. The si
 export type RouteSection = { toCm: number; logs: number; rails: number; gate?: number }; // gate: RAIL_GATES index
 export type RouteLeg = {
   id: string; area: number; line: number; fromCm: number; sections: readonly RouteSection[];
-  railhead: number; dest: number; // halt indexes on its line: the moving railhead and the halt the last section opens
+  railheadHalt: number; // a halt index on the SIM line: the moving railhead
+  destRowHalt: number; // a halt index on the CATALOG row (WORLD_LINES): the halt the last section opens
   after: number; // RAIL_LEGS index that must be complete first; -1: Ring Island joined
   kit: 'home' | number; // where its trains load: the line's Home halt, or a junction yard (a RAIL_YARDS index)
 };
@@ -127,7 +128,7 @@ export const ROUTE = { branchFirst: 'gorge', branches: 'both', ending: 'card', u
 ```
 
 **State.** `Leg { slot, laid, logs, rails, start }` keyed by `slot`, one row per `RAIL_LEGS` entry (`laid`:
-sections complete; `logs`, `rails`: fed into the current section; `start`: its lay clock, -1 idle). `Yard { slot,
+sections complete; `logs`, `rails`: fed into the current section; `start`: its lay clock, -1 idle). `LegYard { slot,
 logs, rails }` per `RAIL_YARDS` entry. `Route { grants, gates, arrived }`, one row.
 
 **Ops** (validated in `src/world/railway-server.ts`, predicted in `railway-predict.ts` as `rail.footSet` is):
@@ -218,7 +219,7 @@ The hook reel and the carry sling are named in `RAIL_GRANTS` beside `pick` and `
 | P4 | **Save resets** | See below | Each bump | HOTBOX |
 
 **`WORLD_NS` bumps: two planned, six at most.** Bump G1 ships with leg 1 and installs everything whose order is
-fixed by the catalog: the `Leg`, `Yard` and `Route` components, the four ops, **every** row of `RAIL_LINES`,
+fixed by the catalog: the `Leg`, `LegYard` and `Route` components, the four ops, **every** row of `RAIL_LINES`,
 `RAIL_LEGS`, `RAIL_GRANTS` and `RAIL_GATES` for legs 1 to 6, and all the train rows, with nothing laid. A leg not yet
 built is closed by its `after` chain, so later legs change rules and unlaid positions, not the saved shape (the
 world-blockout brief's point 8). Bump G2 is held in reserve for the first leg whose build has to reorder or add a
@@ -296,17 +297,21 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       the design review (change 4, call 21: 20 + 20 a section, the ending 6 + 6), not the section 1 table's 24 sections and
       1,024 units. Sections end at places: equal cuts (`sectionsOf`) where the leg has no place on the way (the stack leg's
       four of 510 m; the incline 2 x 568 m; bay-cut 2 x 604 m; bell-canopy 3 x 401 m), halts, and the Wall's islets
-      (measured on the map JSON: cm 192954, 265899, 420401, 478711; the Wall's sections run 523 to 845 m, over the 650 m guide
-      because 4.06 km in six cannot be less; the sixth, the deep gap, carries the `seeds` barrier, not "the fourth"). The
+      (each islet's closest pass to the `cave` row, cm 210027, 253697, 417718, 471680, held by a test to within 1 m of the
+      map JSON; the Wall's sections are 850, 437, 822, 818, 540 and 593 m. Four of them are over the 650 m guide because
+      4.06 km in six cannot average less; both ending sections, 865 m and 726 m, are over it too. The sixth, the deep
+      gap, carries the `seeds` barrier, not "the fourth"). The
       cave's far mouth is not in the map data: the West landing to Saltpan span is cut in halves. `RAIL_GRANTS` are four
       (`pick`, `seeds`, `cloth`, `lantern`; the hook reel and sling are out, per the review) and `RAIL_GATES` six, standing
       at their halt or frame (placeholder positions; step 4 moves pickups off the platform). `RAIL_PLACES` lists the pairs
       that are one place (Ring Island halt, West landing, Gorge, Bell Rock, Canopy), tested within 40 m. Step 3 needs:
       `ROW_LINE` (`ns`, `bay`, `cave` appended after line 2 as lines 2, 3, 4), one railhead halt per leg appended after each
-      row's catalog halts in `RAIL_LEGS` order (line 2: railhead 6, then High Gorge as `dest` 1 of the catalog row, which
+      row's catalog halts in `RAIL_LEGS` order (line 2: `railheadHalt` 6, then High Gorge as `destRowHalt` 1 of the catalog row, which
       step 3 maps to its own halt index), and the one yard (`gorge`, fed by the stack leg) used by the incline and causeway
-      kits. Nothing here is read by the sim yet. The catalog file moved with `git mv` to `src/sim/railway-world-lines.ts`.
-- [ ] **3. The rules (HOTBOX, L).** `railway-components.ts`: `Leg`, `Yard`, `Route`, spawned in catalog order in
+      kits. Nothing here is read by the sim yet. The catalog file moved with `git mv` to `src/sim/railway-world-lines.ts`; its generator's `--check` (and any rerun) needs
+      `node --import ./dev/sim/hooks.ts dev/level/world-blockout.ts`. A `RouteLeg` carries `railheadHalt` (a sim-line halt
+      index) and `destRowHalt` (a catalog-row halt index), kept apart on purpose.
+- [ ] **3. The rules (HOTBOX, L).** `railway-components.ts`: `Leg`, `LegYard` (kind `'legYard'`: `Yard` is the town economy's crate yard on main), `Route`, spawned in catalog order in
       `createRailwayWorld`. New `railway-sys-route.ts`: `rail.legStock`, the lay tick (a section lays over
       `layTicks`, as a QJob does), `rail.grant`, `rail.gate`, `rail.arrive`. `railway-lines.ts`: line 2 gains a
       `Stack railhead` halt (`heads`, a stub end) and `High Gorge` (buffers, a crossover before it), `fleet` of 3, 4, 5
@@ -599,7 +604,7 @@ What gets him to the ending sooner is splitting every leg into a **ride pass** a
 | 5 | The proof pass: the loop-graph nodes, the bot chain, the exit table, device lines | |
 
 Deferred to the proof pass: the per-leg bot segments and loop nodes for legs 2 to 6, and their measured minutes.
-Rejoin proofs run where a component first appears (leg 1 for `Leg` and kit aboard, leg 2 for `Yard`, leg 6 for
+Rejoin proofs run where a component first appears (leg 1 for `Leg` and kit aboard, leg 2 for `LegYard`, leg 6 for
 `arrived`), not once an area. A frame-time line is taken at the Gorge, where streaming is proved, and at one far
 island; the owner called frame time low priority. The independent review still reads every sim and server batch
 before main.

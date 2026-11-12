@@ -13,15 +13,19 @@ export type RouteLeg = {
   id: string;
   /** The campaign outline's area number, 4 to 9. */
   area: number;
-  /** The line it grows on (an index into RAIL_LINES once step 3 appends the rows in `ROW_LINE`'s order). */
+  /** The catalog row it grows on (a WORLD_LINES id). */
+  row: RowId;
+  /** The sim line it grows on (an index into RAIL_LINES once step 3 appends the rows in `ROW_LINE`'s order). */
   line: number;
   /** Where the leg starts, cm along its line (the previous halt's stop). */
   fromCm: number;
   sections: readonly RouteSection[];
-  /** Halt indexes on its line: the moving railhead (one per leg, appended after the row's catalog halts in RAIL_LEGS
-   * order) and the halt the last section opens. */
-  railhead: number;
-  dest: number;
+  /** A halt index on the SIM line `line` (not the catalog row): the leg's moving railhead, one per leg, appended after
+   * the line's other halts in RAIL_LEGS order (line 2: after its six built halts). */
+  railheadHalt: number;
+  /** A halt index on the CATALOG row (`WORLD_LINES[row].halts`), not on the sim line: the halt the last section opens.
+   * Step 3 maps it to the sim line's own halt index. */
+  destRowHalt: number;
   /** The RAIL_LEGS index that must be complete first; -1: Ring Island joined. */
   after: number;
   /** Where its trains load: the line's Home halt, or a junction yard (a RAIL_YARDS index). */
@@ -31,7 +35,7 @@ export type RouteLeg = {
 /** The sim line of each catalog row. Line 2 is the existing one; step 3 appends `ns`, `bay` and `cave` after it in this
  * order. `bay-trestle` is not a sim row (the greybox never builds it). */
 export const ROW_LINE = { ring: LINE2, ns: 2, bay: 3, cave: 4 } as const;
-type RowId = keyof typeof ROW_LINE;
+export type RowId = keyof typeof ROW_LINE;
 
 const row = (id: RowId): WorldLine => {
   const r = WORLD_LINES.find((l) => l.id === id);
@@ -109,16 +113,23 @@ function pointAt(id: RowId, cm: number): RailPlatform {
   throw new Error(`row ${id} has no points`);
 }
 const HALT_REACH = 1260;
+/** A catalog halt's own platform point. */
+const haltAt = (id: RowId, k: number): RailPlatform => {
+  const h = row(id).halts[k]!;
+  return { x: h.x, z: h.z, y: h.y, reach: h.reach };
+};
 
 // ---- the cuts: sections end at a place (design review, change 4)
 // The White Wall's islets, as the cm along the `cave` row where the row passes closest to the islet's centre in
-// docs/world/map-prototypes.html (wall-s2, wall-s1, wall-n2, wall-n1). wall-cs and wall-cn lie inside the sections that
-// end at Canopy Town and at wall-n2; the sixth section is the deep gap to the stacks. Measured once from the map JSON
-// and the row's vertices; the legs' end cuts (halts) come from the row itself.
-const WALL_S2 = 192954;
-const WALL_S1 = 265899;
-const WALL_N2 = 420401;
-const WALL_N1 = 478711;
+// docs/world/map-prototypes.html (wall-s2, wall-s1, wall-n2, wall-n1; the centre is the land's `c` plus the map origin).
+// wall-cs and wall-cn lie inside the sections that end at Canopy Town and at wall-n2; the sixth section is the deep gap
+// to the stacks. test/railway-route.test.ts recomputes each from the map and the row and fails if one is over 1 m off;
+// the legs' other cuts (halts) come from the row itself.
+export const WALL_ISLETS = { 'wall-s2': 210027, 'wall-s1': 253697, 'wall-n2': 417718, 'wall-n1': 471680 } as const;
+const WALL_S2 = WALL_ISLETS['wall-s2'];
+const WALL_S1 = WALL_ISLETS['wall-s1'];
+const WALL_N2 = WALL_ISLETS['wall-n2'];
+const WALL_N1 = WALL_ISLETS['wall-n1'];
 
 const BILL = { logs: 20, rails: 20 } as const; // one train load, Q7's bill (call 21)
 const BILL_END = { logs: 6, rails: 6 } as const; // the ending's two
@@ -252,14 +263,15 @@ const railheadOf = (() => {
 export const RAIL_LEGS: readonly RouteLeg[] = SPECS.map((s) => ({
   id: s.id,
   area: s.area,
+  row: s.row,
   line: ROW_LINE[s.row],
   fromCm: stopCm(s.row, s.from),
   sections: s.cuts.map((toCm, k) => {
     const g = s.gated.find((x) => x[0] === k);
     return g ? { toCm, ...s.bill, gate: g[1] } : { toCm, ...s.bill };
   }),
-  railhead: railheadOf(s.row),
-  dest: s.dest,
+  railheadHalt: railheadOf(s.row),
+  destRowHalt: s.dest,
   after: s.after,
   kit: s.kit,
 }));
@@ -271,32 +283,32 @@ export const sectionFromCm = (leg: RouteLeg, k: number): number => (k === 0 ? le
  * position: step 4's massing moves it off the platform, the plan's change 1). The hook reel and the carry sling are
  * left out until something uses them. */
 export const RAIL_GRANTS: readonly { id: string; label: string; leg: number; at: RailPlatform }[] = [
-  { id: 'pick', label: 'Powered pick', leg: 0, at: pointAt('ring', stopCm('ring', 1)) },
-  { id: 'seeds', label: 'Crystal seeds', leg: 1, at: pointAt('ns', stopCm('ns', 1)) },
-  { id: 'cloth', label: 'Glider cloth', leg: 3, at: pointAt('bay', stopCm('bay', 2)) },
-  { id: 'lantern', label: 'Lantern', leg: 6, at: pointAt('bay', stopCm('bay', 3)) },
+  { id: 'pick', label: 'Powered pick', leg: 0, at: haltAt('ring', 1) },
+  { id: 'seeds', label: 'Crystal seeds', leg: 1, at: haltAt('ns', 1) },
+  { id: 'cloth', label: 'Glider cloth', leg: 3, at: haltAt('bay', 2) },
+  { id: 'lantern', label: 'Lantern', leg: 6, at: haltAt('bay', 3) },
 ];
 const grant = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 
 /** A barrier on a section's frame (`RouteSection.gate`): it opens for anyone once the room holds the `needs` grant. It
  * stands at the frame, the section's first centimetre. */
 export const RAIL_GATES: readonly { id: string; label: string; needs: number; at: RailPlatform }[] = [
-  { id: 'incline', label: "The incline's first frame", needs: grant('pick'), at: pointAt('ns', stopCm('ns', 0)) },
+  { id: 'incline', label: "The incline's first frame", needs: grant('pick'), at: haltAt('ns', 0) },
   {
     id: 'canopy',
     label: "Bell Rock to Canopy's first frame",
     needs: grant('seeds'),
-    at: pointAt('bay', stopCm('bay', 1)),
+    at: haltAt('bay', 1),
   },
-  { id: 'plug', label: 'The sea-cave plug', needs: grant('pick'), at: pointAt('cave', stopCm('cave', 0)) },
+  { id: 'plug', label: 'The sea-cave plug', needs: grant('pick'), at: haltAt('cave', 0) },
   {
     id: 'deep-span',
     label: 'The deep span to the stacks',
     needs: grant('seeds'),
     at: pointAt('cave', WALL_N1),
   },
-  { id: 'notch', label: 'The Notch frame', needs: grant('cloth'), at: pointAt('bay', stopCm('bay', 2)) },
-  { id: 'causeway', label: "The causeway's first frame", needs: grant('lantern'), at: pointAt('ns', stopCm('ns', 1)) },
+  { id: 'notch', label: 'The Notch frame', needs: grant('cloth'), at: haltAt('bay', 2) },
+  { id: 'causeway', label: "The causeway's first frame", needs: grant('lantern'), at: haltAt('ns', 1) },
 ];
 
 /** A junction: trains of the `fedBy` leg unload here and the next leg's kit trains load here. `halt` is an index on the

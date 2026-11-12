@@ -1,5 +1,6 @@
 // The greybox route's catalog (src/sim/railway-route.ts): pure integers, derived from the generated line catalog.
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
   RAIL_GATES,
@@ -8,11 +9,14 @@ import {
   RAIL_PLACES,
   RAIL_YARDS,
   ROW_LINE,
+  WALL_ISLETS,
   pathOf,
   sectionFromCm,
   sectionsOf,
 } from '../src/sim/railway-route.ts';
-import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
+import { WORLD_LINES, type WorldLine } from '../src/sim/railway-world-lines.ts';
+import { ORIGIN } from '../src/place/layout.ts';
+import { layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { standInRoute } from '../dev/loop/standins.ts';
 
 const row = (id: string) => WORLD_LINES.find((l) => l.id === id)!;
@@ -52,26 +56,25 @@ test('pathOf samples every 10 m and ends on the last vertex', () => {
   assert.deepEqual(pathOf([]), []);
 });
 
-test("every leg's sections cover its length exactly, in order, inside its row", () => {
+test("every leg's sections run in order along its row and end on its destination halt", () => {
   for (const leg of RAIL_LEGS) {
-    const r = row(
-      Object.keys(ROW_LINE).find(
-        (k) => ROW_LINE[k as keyof typeof ROW_LINE] === leg.line && row(k).stops.includes(leg.fromCm),
-      )!,
-    );
-    assert.ok(r, leg.id);
+    const r = row(leg.row);
+    assert.equal(leg.line, ROW_LINE[leg.row]);
+    assert.ok(r.stops.includes(leg.fromCm), `${leg.id} starts on a halt's stop`);
     let at = leg.fromCm;
-    let total = 0;
-    leg.sections.forEach((s, k) => {
-      assert.equal(sectionFromCm(leg, k), at);
-      assert.ok(Number.isInteger(s.toCm) && s.toCm > at, `${leg.id} section ${k}`);
-      total += s.toCm - at;
+    for (const s of leg.sections) {
+      assert.ok(Number.isInteger(s.toCm) && s.toCm > at, `${leg.id} sections run forward`);
       at = s.toCm;
-    });
-    assert.equal(total, at - leg.fromCm);
-    assert.ok(r.stops.includes(at), `${leg.id} ends on a halt's stop`);
-    assert.equal(r.stops.indexOf(at), leg.dest, `${leg.id} dest`);
+    }
+    assert.equal(at, r.stops[leg.destRowHalt], `${leg.id} ends on its destination halt`);
   }
+});
+
+test('a leg starts where the previous leg on its row ended', () => {
+  RAIL_LEGS.forEach((leg, i) => {
+    const prev = RAIL_LEGS.slice(0, i).findLast((l) => l.row === leg.row);
+    if (prev) assert.equal(leg.fromCm, prev.sections.at(-1)!.toCm, `${prev.id} then ${leg.id}`);
+  });
 });
 
 test('22 sections: bills are one train load, the ending at 6 + 6', () => {
@@ -146,4 +149,76 @@ test('a place drawn on two rows is one place: its halts are within 40 m', () => 
 test('grants and gates stand on integer positions', () => {
   for (const x of [...RAIL_GRANTS, ...RAIL_GATES])
     for (const v of [x.at.x, x.at.z, x.at.y, x.at.reach]) assert.ok(Number.isInteger(v), x.id);
+});
+
+/** The row's vertex-interpolated point `cm` along the line. */
+function rowPoint(r: WorldLine, cm: number) {
+  let want = cm - r.fromCm;
+  for (let i = 1; i < r.pts.length; i++) {
+    const a = r.pts[i - 1]!;
+    const b = r.pts[i]!;
+    const len = Math.sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2);
+    if (want <= len) return { x: a[0] + ((b[0] - a[0]) * want) / len, z: a[1] + ((b[1] - a[1]) * want) / len };
+    want -= len;
+  }
+  throw new Error('past the row');
+}
+
+test('each gate shuts the section it names and stands at that frame', () => {
+  const frames: Record<string, [leg: string, section: number]> = {
+    incline: ['incline', 0],
+    canopy: ['bell-canopy', 0],
+    plug: ['cave', 0],
+    'deep-span': ['wall', 5],
+    notch: ['notch-tunnel', 0],
+    causeway: ['causeway', 0],
+  };
+  assert.equal(RAIL_GATES.length, Object.keys(frames).length);
+  RAIL_GATES.forEach((g, gi) => {
+    const [legId, k] = frames[g.id]!;
+    const leg = RAIL_LEGS.find((l) => l.id === legId)!;
+    leg.sections.forEach((s, j) => assert.equal(s.gate === gi, j === k, `${g.id} on ${legId} section ${j}`));
+    const p = rowPoint(row(leg.row), sectionFromCm(leg, k));
+    assert.ok(Math.hypot(g.at.x - p.x, g.at.z - p.z) <= 5, `${g.id} stands at its frame`);
+  });
+});
+
+test("the four grants stand at their leg's destination halt", () => {
+  assert.deepEqual(
+    RAIL_GRANTS.map((g) => [g.id, RAIL_LEGS[g.leg]!.id]),
+    [['pick', 'stack'], ['seeds', 'incline'], ['cloth', 'bell-canopy'], ['lantern', 'notch-tunnel']],
+  );
+  for (const g of RAIL_GRANTS) {
+    const leg = RAIL_LEGS[g.leg]!;
+    const h = row(leg.row).halts[leg.destRowHalt]!;
+    assert.deepEqual(g.at, { x: h.x, z: h.z, y: h.y, reach: h.reach }, g.id);
+  }
+});
+
+test('the Wall cuts are the islets\' true closest passes to the cave row, within 1 m', () => {
+  const land = layout(parseMapPage(readFileSync(new URL('../docs/world/map-prototypes.html', import.meta.url), 'utf8')), 'sickle', 'A').land;
+  const cave = row('cave');
+  for (const [id, cm] of Object.entries(WALL_ISLETS)) {
+    const c = land.find((l) => l.id === id)!.c!;
+    const cx = (c[0] + ORIGIN.x) * 100;
+    const cz = (c[1] + ORIGIN.z) * 100;
+    let best = Infinity;
+    let at = 0;
+    let arc = 0;
+    for (let i = 1; i < cave.pts.length; i++) {
+      const a = cave.pts[i - 1]!;
+      const b = cave.pts[i]!;
+      const dx = b[0] - a[0];
+      const dz = b[1] - a[1];
+      const len = Math.sqrt(dx * dx + dz * dz);
+      const t = Math.max(0, Math.min(1, ((cx - a[0]) * dx + (cz - a[1]) * dz) / (len * len)));
+      const d = Math.hypot(a[0] + dx * t - cx, a[1] + dz * t - cz);
+      if (d < best) {
+        best = d;
+        at = cave.fromCm + arc + t * len;
+      }
+      arc += len;
+    }
+    assert.ok(Math.abs(at - cm) <= 100, `${id}: closest pass at ${Math.round(at)}, catalog has ${cm}`);
+  }
 });

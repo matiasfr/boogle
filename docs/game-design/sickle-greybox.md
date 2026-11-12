@@ -18,7 +18,7 @@ walk out along a future line's deck and stand on every island. No panel, labels,
 other players without the flag see none of it. Its chunk loads only behind the flag. Riding a future line stays in the
 greybox, since the live trains are server-owned.
 
-Every future line is a train service in `src/sickle/world-lines.ts` (generated with the
+Every future line is a train service in `src/sim/railway-world-lines.ts` (generated with the
 [world-blockout page](../world/world-blockout.html) by `dev/level/world-blockout.ts`), in the sim's own shape: world-cm
 track vertices, stops along the line, halts and the train's speed. Every corridor is double track (owner, 10 November):
 two tracks on 4 m centres on a 7.6 m deck, a 40 m platform outside each track at every halt, and a crossover or a 40 m
