@@ -60,7 +60,7 @@ const LEG = RAIL_LEGS[STACK]!;
 const N = LEG.sections.length;
 const halt = (name: string) => RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === name);
 const RING = halt('Ring Island'),
-  HEAD = halt('Stack railhead'),
+  HEAD = halt('Stack head 1'),
   GORGE = halt('High Gorge');
 const haltId = (line: number, stop: number) => RAIL_HALTS.findIndex((h) => h.line === line && h.stop === stop);
 // Built at module scope, outside the test timeout (as the golden shards do).
@@ -107,12 +107,18 @@ test('line 2 grows on past Ring Island to the stack railhead and High Gorge; ns,
   );
   assert.equal(ROW_LINE.ring, LINE2);
   const line2 = RAIL_LINES[LINE2]!;
-  assert.deepEqual(line2.halts.map((h) => h.name).slice(5), ['Ring Island', 'Stack railhead', 'High Gorge']);
+  assert.deepEqual(line2.halts.map((h) => h.name).slice(5), [
+    'Ring Island',
+    'Stack head 1',
+    'Stack head 2',
+    'Stack head 3',
+    'High Gorge',
+  ]);
   assert.equal(LEG.railheadHalt, HEAD);
-  // The railhead's heads stand 10 m short of each laid end but the last; the Gorge at the leg's end; s in order.
+  // One halt a head (call 88), 10 m short of each laid end but the last, each a stub end; the Gorge at the leg's end.
   assert.deepEqual(
-    line2.halts[HEAD]!.heads,
-    LEG.sections.slice(0, -1).map((s) => legS(LEG, s.toCm) - 1000),
+    line2.halts.slice(HEAD, HEAD + N - 1).map((h) => [h.s, h.end?.kind, h.leg?.section]),
+    LEG.sections.slice(0, -1).map((sec, k) => [legS(LEG, sec.toCm) - 1000, 'stub', k]),
   );
   assert.equal(line2.halts[GORGE]!.s, legS(LEG, LEG.sections.at(-1)!.toCm));
   assert.equal(line2.halts[RING]!.s, legS(LEG, LEG.fromCm), 'the leg starts at Ring Island (row cm less 100)');
@@ -184,11 +190,12 @@ test('the stops: the railhead opens with the first section and moves on; the Gor
   const joined = { head: 7, joined: true };
   const base = trainStopsOf(LINE2, 7, joined);
   assert.equal(base.length, RING + 1);
-  const heads = RAIL_LINES[LINE2]!.halts[HEAD]!.heads!;
+  const heads = RAIL_LINES[LINE2]!.halts.slice(HEAD, HEAD + N - 1).map((h) => h.s);
+  // Each lay opens the next head; the old ones stay stops (call 88).
   assert.deepEqual(trainStopsOf(LINE2, 7, joined, [1]), [...base, heads[0]]);
-  assert.deepEqual(trainStopsOf(LINE2, 7, joined, [2]), [...base, heads[1]]);
-  assert.deepEqual(trainStopsOf(LINE2, 7, joined, [3]), [...base, heads[2]]);
-  assert.deepEqual(trainStopsOf(LINE2, 7, joined, [4]), [...base, heads[2], RAIL_LINES[LINE2]!.halts[GORGE]!.s]);
+  assert.deepEqual(trainStopsOf(LINE2, 7, joined, [2]), [...base, heads[0], heads[1]]);
+  assert.deepEqual(trainStopsOf(LINE2, 7, joined, [3]), [...base, ...heads]);
+  assert.deepEqual(trainStopsOf(LINE2, 7, joined, [4]), [...base, ...heads, RAIL_LINES[LINE2]!.halts[GORGE]!.s]);
   // Not before the rivet, whatever the row says (a leg halt opens only after every halt before it).
   assert.deepEqual(
     trainStopsOf(LINE2, 7, { head: 7, joined: false }, [4]),
@@ -242,7 +249,7 @@ test('a section lays LEG_TUNE.layTicks after its frame is full, and the railhead
     { ...legRow(s.w, STACK), laid: 1, logs: 0, rails: 0, start: -1 },
     'laid, the frame emptied',
   );
-  const heads = RAIL_LINES[LINE2]!.halts[HEAD]!.heads!;
+  const heads = RAIL_LINES[LINE2]!.halts.slice(HEAD, HEAD + N - 1).map((h) => h.s);
   assert.equal(stopsOf(s.w, LINE2).at(-1), heads[0], 'the railhead is the end');
   feedSection(s);
   assert.equal(stopsOf(s.w, LINE2).at(-1), heads[1], 'it moved on');
@@ -255,7 +262,7 @@ test("High Gorge opens on the fourth; `pick` is refused before it and granted af
     incline = RAIL_GATES.findIndex((g) => g.id === 'incline');
   for (let k = 0; k < N; k++) {
     assert.equal(act(s, 'a', 'rail.grant', { id: pick }), 0, `pick refused at ${k} laid`);
-    assert.equal(stopsOf(s.w, LINE2).length, RING + 1 + Math.min(1, k));
+    assert.equal(stopsOf(s.w, LINE2).length, RING + 1 + k, 'each lay opens a head; the old ones stay');
     feedSection(s);
   }
   assert.equal(stopsOf(s.w, LINE2).length, GORGE + 1, 'the Gorge is open');
@@ -323,14 +330,14 @@ test("the server: each op's ids are catalog indexes, judged at the frame, post o
   });
   assert.equal(railValid(s.w, op('rail.arrive'), actorAt(RAIL_ARRIVAL)), true);
   assert.equal(railValid(s.w, op('rail.arrive'), nowhere), false);
-  // The stack railhead's lever is judged where its head stands now.
+  // Each head's lever is judged at its own platform.
   const t = copy(JOINED);
   feedSection(t);
   feedSection(t);
-  const id = haltId(LINE2, HEAD),
-    plats = RAIL_LINES[LINE2]!.halts[HEAD]!.headPlatforms!;
-  assert.equal(railValid(t.w, op('rail.call', { id, dir: -1 }), actorAt(plats[1]!)), true);
-  assert.equal(railValid(t.w, op('rail.call', { id, dir: -1 }), actorAt(plats[0]!)), false);
+  const second = RAIL_LINES[LINE2]!.halts[HEAD + 1]!.platforms[1],
+    first = RAIL_LINES[LINE2]!.halts[HEAD]!.platforms[1];
+  assert.equal(railValid(t.w, op('rail.call', { id: haltId(LINE2, HEAD + 1), dir: -1 }), actorAt(second)), true);
+  assert.equal(railValid(t.w, op('rail.call', { id: haltId(LINE2, HEAD + 1), dir: -1 }), actorAt(first)), false);
 });
 
 // ---------------------------------------------------------------- the kit
@@ -444,7 +451,6 @@ test('the load check refuses a broken leg, yard, route or fleet', () => {
   refuse('fed over the bill', (w) => leg(w, { logs: 21 }), /leg bounds/);
   refuse('laying with the bill short', (w) => leg(w, { start: 5 }), /leg laying/);
   refuse('a full bill not laying', (w) => leg(w, { logs: 20, rails: 20 }), /leg laying/);
-  refuse('loaded over the leg', (w) => leg(w, { loadedLogs: 81 }), /leg bounds/);
   refuse(
     'an unbuilt leg laid',
     (w) => Object.assign(w.mut(Leg, w.lookup(Leg, 1)!)!, { laid: 1 }),
@@ -1039,4 +1045,101 @@ test("step 4's review: the frames, racks, pick and the incline's barrier stand w
   assert.deepEqual(RAIL_GRANTS.find((g) => g.id === 'pick')!.at, { x: -7435, z: -203262, y: 8500, reach: 400 });
   const inc = RAIL_GATES.find((g) => g.id === 'incline')!.at;
   assert.deepEqual([inc.x, inc.z, inc.y], [-9726, -196884, 390]);
+});
+
+// ---------------------------------------------------------------- call 88: riding on from an old head
+/** From each lay, the ticks until someone standing at the old head (who asks nothing: the lay leaves an up-way ask
+ * there) is at the new head: aboard a train standing there at the lay (it runs on), or the first to stand there going
+ * up after it; then that train stands at the new end. `step` takes the rows as they stood before the tick. */
+function rideOnWatch() {
+  let pending: { at: number; from: number; to: number; slots: Set<number> } | undefined;
+  let laid = -1;
+  const out: number[] = [];
+  return {
+    step(w: World, tick: number, before: readonly Readonly<{ phase: number; at: number }>[]) {
+      const n = legRow(w, STACK).laid;
+      if (laid < 0) laid = n;
+      if (n > laid) {
+        const from = n === 1 ? RING : HEAD + n - 2;
+        pending = { at: tick, from, to: stopsOf(w, LINE2).length - 1, slots: new Set() };
+        // Standing there as the section lays: whoever waits at the old head is aboard (call 88: that train runs on).
+        for (const k of LINE_SLOTS[LINE2]!)
+          if (before[k]!.phase === TRAIN_PHASE.STAND && before[k]!.at === from && n > 1) pending.slots.add(k);
+        laid = n;
+      }
+      if (!pending) return;
+      for (const k of servingSlots((j) => train(w, j), LINE2)) {
+        const r = train(w, k);
+        if (r.phase === TRAIN_PHASE.STAND && r.at === pending.from && r.track === 0) pending.slots.add(k);
+        if (pending.slots.has(k) && r.phase === TRAIN_PHASE.STAND && r.at === pending.to) {
+          out.push(tick - pending.at);
+          pending = undefined;
+          return;
+        }
+      }
+    },
+    done: () => out,
+  };
+}
+test('call 88: fed every tick, someone at each old head is at the new head within 1,158 ticks of the lay', (t) => {
+  const s = unaudited(copy(JOINED)),
+    w = rideOnWatch();
+  for (let guard = 0; legRow(s.w, STACK).laid < N || w.done().length < N; guard++) {
+    assert.ok(guard < 12000, 'every lay ridden on');
+    if (legRow(s.w, STACK).start < 0 && legRow(s.w, STACK).laid < N)
+      for (const pid of ['a', 'b']) {
+        act(s, pid, 'rail.depotTake');
+        act(s, pid, 'rail.depotRailTake');
+        act(s, pid, 'rail.legStock', { leg: STACK });
+      }
+    const before = trains(s.w).map((r) => ({ ...r }));
+    advance(s, 1);
+    w.step(s.w, s.t, before);
+  }
+  t.diagnostic(`old head to the new head after each lay: ${w.done().join(', ')} ticks`);
+  for (const v of w.done()) assert.ok(v <= SETTLED_CAP, `a ride on took ${v}`);
+});
+for (const seed of [0xc0ffee, 0x777, 0x5eed, 0xbadd])
+  test(`call 88, fuzz ${seed.toString(16)} at 75%: someone at each old head is at the new head within 1,158 ticks`, (t) => {
+    let s = unaudited(copy(JOINED));
+    const rand = mulberry32(seed),
+      w = rideOnWatch();
+    for (let k = 0; k < FUZZ && (legRow(s.w, STACK).laid < N || w.done().length < N); k++) {
+      if (k % 30 === 0)
+        for (const pid of ['a', 'b']) {
+          act(s, pid, 'rail.depotTake');
+          act(s, pid, 'rail.depotRailTake');
+          act(s, pid, 'rail.legStock', { leg: STACK });
+        }
+      if (rand() < 0.05) {
+        const id = Math.floor(rand() * RAIL_HALTS.length),
+          dir = rand() < 0.5 ? -1 : 1;
+        if (RAIL_HALTS[id]!.stop < stopsOf(s.w, RAIL_HALTS[id]!.line).length) act(s, 'a', 'rail.call', { id, dir });
+      }
+      const before = trains(s.w).map((r) => ({ ...r }));
+      railTick(s.w, ++s.t, 75);
+      w.step(s.w, s.t, before);
+      if (rand() < 0.002) s = unaudited({ w: restore(s.w), t: s.t });
+    }
+    t.diagnostic(`old head to the new head after each lay: ${w.done().join(', ')} ticks`);
+    assert.equal(w.done().length, N, 'every lay ridden on');
+    for (const v of w.done()) assert.ok(v <= SETTLED_CAP, `a ride on took ${v}`);
+  });
+
+// ---------------------------------------------------------------- the step 4 review's finding 2: a unit lost
+test('a unit lifted off the leg rack and lost is owed again; one carried to the frame is not loaded twice', () => {
+  const s = copy(JOINED);
+  while (rail(s.w).depotRails < 20) advance(s, 1);
+  const need0 = legKitNeed(s.w, STACK).rails;
+  act(s, 'a', 'rail.depotRailTake');
+  const carried = acc(s, 'a').rails;
+  assert.ok(carried > 0);
+  assert.equal(legKitNeed(s.w, STACK).rails, need0, 'on a back it still counts');
+  // A pile takes as many as its cap (the rest stays on the back, still counted).
+  const dropped = act(s, 'a', 'rail.drop', { x: 140573, y: 890, z: -81806, n: carried, kind: 2 });
+  assert.ok(dropped > 0);
+  assert.equal(legKitNeed(s.w, STACK).rails, need0 + dropped, 'dropped, it is owed again');
+  feedSection(s);
+  assert.equal(legRow(s.w, STACK).laid, 1, 'the section still lays');
+  assert.equal(invariant(s.w), null);
 });

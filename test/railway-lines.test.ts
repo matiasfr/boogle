@@ -90,8 +90,9 @@ test("v25's stop, home and halt tables are views of the catalog, with v27's two 
     [0, 1, 1, 1],
     'line 1 one train, line 2 three',
   );
-  // v27's two, then the greybox route's: line 2's stack railhead and High Gorge, and the ns, bay and cave rows' 3 + 4 + 5.
-  assert.equal(RAIL_HALTS.length, V25_HALTS.length + 2 + 2 + 12);
+  // v27's two, then the greybox route's: line 2's three stack heads and High Gorge, and the ns, bay and cave rows'
+  // 3 + 4 + 5.
+  assert.equal(RAIL_HALTS.length, V25_HALTS.length + 2 + 4 + 12);
   RAIL_HALTS.slice(0, 5).forEach((h, id) => {
     assert.equal(h.s, V25_STOPS[h.line]![h.stop], `halt ${id} stands at its stop`);
     // Today's platform serves the down track; Quarry and Far Head have an up one (step 2), the stubs' ends one.
@@ -267,10 +268,10 @@ test("the catalog: every fixed halt's platform by way is its own; v27's fields o
       .filter(Boolean)
       .join();
     // The greybox route's two on line 2 open after the rivet too (`ring`), the railhead with its heads.
-    const fields = { Pier: 'only', Railhead: 'heads,brake', 'Ring Island': 'ring', 'Stack railhead': 'ring,heads' };
+    const fields = { Pier: 'only', Railhead: 'heads,brake', 'Ring Island': 'ring' };
     assert.equal(
       v27,
-      h.line === 1 ? ((fields as Record<string, string>)[h.name] ?? (h.name === 'High Gorge' ? 'ring' : '')) : '',
+      h.line === 1 ? ((fields as Record<string, string>)[h.name] ?? (h.leg ? 'ring' : '')) : '',
       h.name,
     );
   });
