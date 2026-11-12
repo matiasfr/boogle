@@ -346,8 +346,7 @@ board on the one wallet (no second strongbox or ticket window).
 | Canopy Town | Copper (the Gorge, outward) | **Stage 7 only** (finding 1) | Platforms round a trunk |
 | Port Quay | Salt (Saltpan, on the cave line); fibre (Canopy, outward) | The cave leg's first train; fibre at stage 7 | Quay street, the rotunda |
 
-Goods are counters that stake plots (slice 5: freight never becomes something a player carries or a bill takes).
-Salt is a placeholder name. Bell Rock's seeds stay picked by hand and are not freight.
+Goods are counters that stake plots, never carried. Salt is a placeholder name. Bell Rock's seeds stay by hand.
 
 - **New: a hub town's first plot is staked when its station opens**, by the first train in, with no goods; later
   plots need the goods above. That is the first meeting: you step off, and the stakes and board are on your way.
@@ -405,15 +404,12 @@ engages, my estimate is 15 to 25 minutes over four hub towns, inside the four-to
    to five: re-run the model with five towns before prices reach the hubs. No yard row above exists, so reach is
    unproven; each needs R2b's proof when its leg lands.
 
-### Calls
+### Calls and owner questions
 
-Eight Decided (hub towns and sources; the designed stations and rotundas; starting buildings, bought houses, the
-doubling and one wallet; freight by train; no routing; the build order; the three-hour rush; source upgrades). Six New
-and two Default, covering sections 1 to 4, are in [agent-calls](../agent-calls.md#rewards-co-op-and-town-roles), open.
-
-### Owner questions
-
-"Every area or only the larger hubs?" is answered (larger hubs only). The rotundas and the one wallet are decided.
+Eight Decided (hub towns and sources; the stations and rotundas; starting buildings, bought houses, the doubling and
+one wallet; freight by train; no routing; the build order; the three-hour rush; source upgrades). Six New and two
+Default are in [agent-calls](../agent-calls.md#rewards-co-op-and-town-roles), open. "Every area or only the larger
+hubs?" is answered: larger hubs only.
 
 1. **Does the Village also receive what the far sources make?** Recommended: no; each town takes its neighbours'
    goods, so the Village keeps timber and stone and later gains steel. Until he answers: neighbours only.
