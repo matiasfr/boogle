@@ -1,6 +1,6 @@
 // node dev/level/world-blockout.ts [--check]: the whole-map blockout's two derived files, from the Sickle Isles JSON in
 // docs/world/map-prototypes.html and Place's real line 2 (docs/plans/world-blockout.md):
-//   src/sickle/world-lines.ts    every future line as a pinned catalog in the sim's own shape (world cm, stops, halts)
+//   src/sim/railway-world-lines.ts    every future line as a pinned catalog in the sim's own shape (world cm, stops, halts)
 //   docs/world/world-blockout.html  the top-down map and its tables, for the owner's review
 // `--check` writes nothing and exits 1 if either file is stale (test/world-lines.test.ts runs the same comparison).
 import fs from 'node:fs';
@@ -27,7 +27,7 @@ import { RING_CONES } from '../../src/proto/greybox/ground.ts';
 import { FAR } from '../../src/place/layout.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const CATALOG = 'src/sickle/world-lines.ts';
+const CATALOG = 'src/sim/railway-world-lines.ts';
 const PAGE = 'docs/world/world-blockout.html';
 const STILLS = 'docs/world/world-blockout';
 
@@ -615,8 +615,8 @@ function catalog() {
 // Every future line in the sim's own shape (docs/plans/world-blockout.md, "Future lines as data"): world centimetres,
 // x east and z south, \`y\` the deck; \`stops\` are cm along the line like TRAIN_STOPS (an extension counts on from the
 // line it extends), \`halts\` like LINE_HALTS, \`speed\` cm a tick and \`accel\` cm a tick² like TRAIN. Pure integers and
-// no imports, so src/sim can take this file unchanged (git mv) when the server runs these lines. Today only the
-// client's blockout reads it: the rails it describes are visual, not sim state.
+// no imports: it lives in src/sim (lockstep rules), and src/sim/railway-route.ts derives the route's legs from it. The
+// blockout reads it as it always has; the rails it describes are not sim state until the route rules (step 3) lay them.
 
 /** Every corridor is double track: two tracks on \`centresCm\` centres either side of the line's points, each of
  * \`gaugeCm\` gauge, on a \`deckCm\` formation. A halt has a platform at \`platformCm\` either side of the centre; a loop

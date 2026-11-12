@@ -9,7 +9,7 @@ import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { flat } from '../../render/flat.ts';
 import { FAR } from '../../place/layout.ts';
-import { FORMATION, WORLD_LINES } from '../../sickle/world-lines.ts';
+import { FORMATION, WORLD_LINES } from '../../sim/railway-world-lines.ts';
 import { RING_CONES, SEA_BED, wx, wz, type Ground } from './ground.ts';
 import {
   blobPts,
@@ -449,7 +449,7 @@ export function buildGreybox(map: Layout, ground: Ground, { review = true } = {}
     if (review) boxes([{ w: 1.4, h: 30, d: 1.4, x, y: y + 15, z }], MARKER, markers, false);
   }
 
-  // ---- halts and turnbacks (src/sickle/world-lines.ts): a 40 m platform outside each track at every stop, top 0.9 m
+  // ---- halts and turnbacks (src/sim/railway-world-lines.ts): a 40 m platform outside each track at every stop, top 0.9 m
   // over the deck; a scissors crossover inside each terminus; a single-track balloon loop where the line ends on land
   {
     const platforms: Box[] = [],

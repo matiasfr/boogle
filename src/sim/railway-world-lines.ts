@@ -3,8 +3,8 @@
 // Every future line in the sim's own shape (docs/plans/world-blockout.md, "Future lines as data"): world centimetres,
 // x east and z south, `y` the deck; `stops` are cm along the line like TRAIN_STOPS (an extension counts on from the
 // line it extends), `halts` like LINE_HALTS, `speed` cm a tick and `accel` cm a tick² like TRAIN. Pure integers and
-// no imports, so src/sim can take this file unchanged (git mv) when the server runs these lines. Today only the
-// client's blockout reads it: the rails it describes are visual, not sim state.
+// no imports: it lives in src/sim (lockstep rules), and src/sim/railway-route.ts derives the route's legs from it. The
+// blockout reads it as it always has; the rails it describes are not sim state until the route rules (step 3) lay them.
 
 /** Every corridor is double track: two tracks on `centresCm` centres either side of the line's points, each of
  * `gaugeCm` gauge, on a `deckCm` formation. A halt has a platform at `platformCm` either side of the centre; a loop

@@ -8,7 +8,7 @@
 //                near-train check only)
 //   v27          line 2 on over the bents to Ring Island (src/sim/railway-ring-layout.ts: ringAt, ringDeckY,
 //                RING_PATH, RING_LOOP), both tracks and the loop
-//   tentative    every future line in the blockout catalog (src/sickle/world-lines.ts), its crossovers and loops
+//   tentative    every future line in the blockout catalog (src/sim/railway-world-lines.ts), its crossovers and loops
 // World metres: x east, z south, y the rail (or deck) top.
 import {
   FORMATION,
@@ -27,7 +27,7 @@ import {
 import { GATES } from '../../src/place/tech-layout.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import { TRAIN_STOPS } from '../../src/sim/railway-train.ts';
-import { FORMATION as WORLD_FORMATION, WORLD_LINES } from '../../src/sickle/world-lines.ts';
+import { FORMATION as WORLD_FORMATION, WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import {
   CROSSING_BENTS,
   CROSSING_DECK_Y,

@@ -105,7 +105,7 @@ the raw import · `greybox.css` · `blockout.ts` the live client's `?blockout=wo
 
 ## The whole map ([world-blockout](../../../docs/plans/world-blockout.md))
 
-- **Halts.** Every stop in `src/sickle/world-lines.ts` (the future lines as train services, generated from the JSON by
+- **Halts.** Every stop in `src/sim/railway-world-lines.ts` (the future lines as train services, generated from the JSON by
   `dev/level/world-blockout.ts`) gets a solid 40 m platform outside each of its two tracks, top 0.9 m over the deck.
 - **Double track.** Future decks are the 7.6 m `FORMATION` with two track beds (one merged `track-beds` mesh), each line
   end a crossover (an X of beds) or a solid 40 m turning loop. Rides and the rider's sleepers use the left-hand track.

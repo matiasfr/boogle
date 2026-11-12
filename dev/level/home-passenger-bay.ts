@@ -210,7 +210,7 @@ const b = {
   ground: [16, 20, 24, 28].map((d) => r2(H(legAt(d)))),
   legLen: home.LEG.len,
 };
-// ---- option C: West landing (the blockout's two halts, world cm in src/sickle/world-lines.ts)
+// ---- option C: West landing (the blockout's two halts, world cm in src/sim/railway-world-lines.ts)
 const WL = [
   { x: 788.69 - 1000, z: -5.76 },
   { x: 804.27 - 1000, z: 88.88 },
