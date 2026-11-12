@@ -206,6 +206,26 @@ checkpoint runs for it.
   - Seed: `fares-running` (`freight-running` advanced until `boogles ≥ 100`).
   - Proof: `playthrough --from freight-running --to fare` (the bot waits for `Till.landed > 0`); one look at the
     Village's line 2 platform.
+  - **As built (12 November, the designer's ruling: riders never add a stop in this slice).** No rider clause in
+    `serviceOf`: riders board where a train stands to leave their way and step off at the route halt ahead of it.
+    `TRADE.routes` is the Village to `'end'`: the far halt is line 2's current open end, a query (`routeFar`), so the
+    route grows with Q6, Q7 and the rivet. The fare stays the distance rule, 2 + 1 a 100 m (the orchestrator's Default, over the ruling's call 9 "the fare stays 7"):
+    7, 9 at the Pier, 10 at the Railhead, 13 at Ring Island; the cap (20 minutes of the demand rate) follows it: 1,120,
+    1,440, 1,600, 2,080. `crowdStop` stays in the table, unused (the ruling's spec 2). Riders waiting at the far end wait at the new end
+    the tick it moves; riders aboard ride on to it and pay its fare. `rail.tradeTick` runs at order 3.5. No new op;
+    the tunables go through `tune.set` (`railFarePct`, `railRiderPct` 0 to 1,000; `railPricePct` 1 to 1,000, R4's).
+    `WORLD_NS` v31 (a placeholder; v30 is build 2's). Measured, 20 minutes with nothing asked (fares earned = landed +
+    lost a minute; the box is full late on, which is the cap working; waiting at the finish, Village / far end):
+    | Stage | Far end, fare | Earned | Landed | Waiting |
+    | --- | --- | --- | --- | --- |
+    | `trains-on`, `freight-running`, `q6-stocked` | Far Head, 7 | 53.5 to 56 | 53.5 to 56 | 0 to 1 / 0 to 1 |
+    | `q6-done`, `wagon-on`, `crossing-done` | Pier, 9 | 71 to 72 | 58 to 72 | 0 to 2 / 0 to 1 |
+    | `deck-laid`, `gap-footed`, `leaf-raised` | Railhead, 10 | 77.5 to 79 | 36.6 to 55.6 | 1 to 3 / 1 to 2 |
+    | `ring-joined` | Ring Island, 13 | 102 | 59.3 | 1 / 2 |
+
+    The gate against main: every stage on main's tick; the wagon's arrivals and every footing delivery on main's tick;
+    the worst line 2 wait (the `WAIT_BOUND` way) 546 to 733, never above main's; stone as R2b; `npm run loop -- run`
+    unmoved. The fallback (riders on line 1, the Village to the Camp, about 24 a minute) was not needed.
 - [ ] **R4. Plots and the buy (M). Independent review: yes (`src/sim`, `src/world`, the op list).**
   - Files: `railway-components.ts`, `railway-sys-trade.ts`, `railway-systems.ts` (`'rail.buy': [buy]`),
     `railway-queries-trade.ts`, `railway-check-trade.ts`, `src/sim/town-facts.ts`, `test/town-facts.test.ts`,
