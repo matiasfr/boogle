@@ -773,9 +773,11 @@ test("endMoved at Far Head is v26's Q6 hunk, row for row, on the world", () => {
       2,
       probe.t,
     );
-    assert.deepEqual({ ...train(w, A) }, out[0], `A from ${from}`);
-    assert.deepEqual({ ...train(w, B) }, out[1], `B, A from ${from}`);
-    assert.deepEqual({ ...train(w, C) }, out[2], `C, A from ${from}`);
+    // A train's yard freight (slice 5) is the tick's, not endMoved's: C stands at the Quarry heading home and loads.
+    const moved = (k: number) => ({ ...train(w, k), freight: out[k - A]!.freight });
+    assert.deepEqual(moved(A), out[0], `A from ${from}`);
+    assert.deepEqual(moved(B), out[1], `B, A from ${from}`);
+    assert.deepEqual(moved(C), out[2], `C, A from ${from}`);
     if (out[0]!.turn) turned++;
     else if (out[0]!.req) asked++;
   }

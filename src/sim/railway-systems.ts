@@ -1,5 +1,5 @@
 // The railway's rules as E systems (docs/plans/ecs-e.md, section 4; docs/plans/ecs-migration-railway.md, section 2):
-// the index. The systems live by domain in ./railway-sys-core.ts, -line1, -line2, -trains, -works and -away, the
+// the index. The systems live by domain in ./railway-sys-core.ts, -line1, -line2, -trains, -works, -away and -trade, the
 // facts they share in ./railway-queries.ts. This file holds the dispatch and the order: the `OPS` table (line one's
 // system first, then line two's when line one moved nothing, as railLineApply || railLine2Apply did), the tick
 // schedule and `RAIL_SYSTEMS`. Pure; the server runs them on arrival and a client's prediction runs the very same ones
@@ -10,8 +10,9 @@
 //   railApply(w, pid, e, tick, timing)   one action: receipt, the op, remember (the request history)
 //   railOutcome(w, pid, epoch, request)  the receipt: a request's recorded result, snapshot-required, or null
 //   railTick(w, tick, headPct)           the rule tick, a schedule: line one's job, line two's forge and job, the depot
-//                                        cart's trip (./railway-cart.ts), every line's trains (./railway-trains.ts)
-//                                        with line 2's kit and footing wagon, the Works kiln's casts
+//                                        cart's trip (./railway-cart.ts), the yards' crates (./railway-sys-trade.ts),
+//                                        every line's trains (./railway-trains.ts) with their yard freight and
+//                                        line 2's kit and footing wagon, the Works kiln's casts
 //                                        (./railway-works.ts), the job clocks
 import { createSchedule, type System, type World } from '../ecs/index.ts';
 import { LINE_TIMING } from './railway-line.ts';
@@ -61,6 +62,7 @@ import { call, trainTick } from './railway-sys-trains.ts';
 import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
 import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
+import { yardTick } from './railway-sys-trade.ts';
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
@@ -122,6 +124,8 @@ export const RAIL_TICK: readonly System<never, unknown>[] = [
   lineTick,
   line2Tick,
   cartTick,
+  // Slice 5's yards (./railway-sys-trade.ts), between the cart and the trains.
+  yardTick,
   trainTick,
   worksTick,
   jobClock,
