@@ -24,8 +24,7 @@ import {
 import { audioSnapshot } from '../../render/audio.ts';
 import { el, button, more, note, download } from './ui.ts';
 import { background } from '../../async.ts';
-import { pageQuery, PROTO, productionRailway } from '../../proto/flags.ts';
-import { fixture } from './fixtures.ts';
+import { CARD, pageQuery, productionRailway } from '../../proto/flags.ts';
 import { ok, no, type Tool, type Args, type Result } from './types.ts';
 
 // Audio is available on every route, including before gesture unlock. It must not inherit the water binding gate.
@@ -62,12 +61,9 @@ const requests = new Map<
 const audioSlots = new Map<'A' | 'B', { name: string; values: { id: string; value: number }[] }>();
 function setup() {
   const p = me.body?.position;
-  const f = fixture();
   return {
     room: getRoomId(),
-    proto: PROTO,
-    scenario: f.scenario,
-    destination: f.destination,
+    proto: CARD,
     position: p ? { x: p.x, y: p.y, z: p.z } : null,
   };
 }
@@ -124,8 +120,6 @@ export function recordTuneSnapshot() {
     snapshot,
     room: s.room,
     proto: s.proto,
-    scenario: s.scenario,
-    destination: s.destination,
     x: s.position?.x ?? null,
     y: s.position?.y ?? null,
     z: s.position?.z ?? null,

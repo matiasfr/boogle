@@ -1,9 +1,9 @@
 // Round 4's shore arrival. Local presentation and static Owner collision; Node tools use the same default grid.
-// The isolated v=village comparison keeps the previous coast. SPAWN remains the village fallback.
-import { pageQuery } from '../proto/flags.ts';
+// SPAWN remains the village fallback. Always on: Place's isolated v=village comparison, which kept the previous coast
+// in its own room, went with Place (ecs-m12-m13 M13e); a v=village address must not change the land of a shared room.
 import type { Pt } from './layout.ts';
 
-export const SHORE_COAST = pageQuery().get('v') !== 'village';
+export const SHORE_COAST = true;
 export const SHORE_LANDING = { x: -199, z: 10, yaw: -Math.PI / 2 - 0.2 };
 // Broad climb, then a bend between the cottages before the existing northbound walk.
 export const SHORE_PATH: Pt[] = [

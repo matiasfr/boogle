@@ -11,7 +11,7 @@ import { carry } from '../physics/platforms.ts';
 import { addWelcomeItem, isFirstVisit, roomMemory, SPOT_KEY } from '../player/arrival.ts';
 import { inputState } from '../player/input-state.ts';
 import { cam, me } from '../player/player.ts';
-import { PROTO } from '../proto/flags.ts';
+import { PROTO, productionRailway } from '../proto/flags.ts';
 import { WORLD_NS } from '../world/namespace.ts';
 
 type Spot = { x: number; y: number; z: number; yaw: number; ns: string };
@@ -39,7 +39,7 @@ function trusted(v: unknown): Spot | null {
 }
 
 onEntered(() => {
-  if (isFirstVisit() || PROTO) return; // a prototype has its own spawn
+  if (isFirstVisit() || PROTO || productionRailway) return; // a prototype, and the current game, have their own spawn
   const s = trusted(roomMemory(getRoomId())?.items[SPOT_KEY]);
   if (!s) return;
   teleport(me.body!, s.x, s.y + LIFT, s.z);

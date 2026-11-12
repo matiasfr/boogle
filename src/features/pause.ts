@@ -30,7 +30,7 @@ import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
 import { youEditor } from '../player/you-editor.ts';
 import { freshButton } from '../player/fresh-button.ts';
 import { backToSpawn } from '../entities/player/state.ts';
-import { protoOn, roomInviteQuery, productionRailway } from '../proto/flags.ts';
+import { roomInviteQuery, productionRailway } from '../proto/flags.ts';
 import { getRailwayUnstuck } from '../entities/railway/state.ts';
 import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
@@ -291,10 +291,9 @@ function renderMore() {
   const list = el('div', 'pause-page');
   // Get unstuck: one press, nothing lost. A saved spot you were stuck in mustn't bring you back there.
   if (!inputState.seated) {
-    const unstuck = button('Get unstuck', async () => {
+    const unstuck = button('Get unstuck', () => {
       if (me.body) {
         if (productionRailway) getRailwayUnstuck();
-        else if (protoOn('place')) (await import('../proto/place/index.ts')).getUnstuck();
         else backToSpawn();
         carry.x = carry.z = 0;
         forgetInRoom(getRoomId(), SPOT_KEY);

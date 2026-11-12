@@ -2,7 +2,7 @@
 // Never render an extra frame: RenderPipeline's scene pass only runs once per animation frame.
 import { onFrame, onStart, prof } from '../loop.ts';
 import { camera, renderer, rendererReady, scenePass } from '../render/scene.ts';
-import { PROTO, protoV } from '../proto/flags.ts';
+import { CARD, productionRailway, protoV } from '../proto/flags.ts';
 import { gpuInfo } from './gpu-info.ts';
 import { bootDone, bootLine } from '../boot/timeline.ts';
 import type { RenderTarget, Texture } from 'three/webgpu';
@@ -74,7 +74,7 @@ function textureInfo(texture: Texture) {
 /** Observe only work that really executes. Stop in finally; counts can use this without enabling timestamps/UI. */
 export async function observeGpu() {
   await rendererReady;
-  const placeLook = PROTO === 'place' ? (await import('../place/look.ts')).LOOK : null;
+  const placeLook = productionRailway ? (await import('../place/look.ts')).LOOK : null;
   const targets = new Map<RenderTarget, Context>();
   let frame = -1,
     renderPasses = 0,
@@ -118,7 +118,7 @@ export async function observeGpu() {
     snapshot() {
       touch();
       const q = new URLSearchParams(location.search);
-      const prototypes = PROTO ? [PROTO] : [];
+      const prototypes = CARD ? [CARD] : [];
       return {
         ...work(),
         internalPixels: { width: renderer.domElement.width, height: renderer.domElement.height },

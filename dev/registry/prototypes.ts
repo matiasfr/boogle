@@ -19,6 +19,7 @@ const EXEMPTIONS: Record<string, string> = {
   onehand: 'Merged record: one held thing is in the game.',
   ride: 'Merged record: the wagon uses platform carry.',
   arrive: 'Merged record: returning-player arrival is in the game.',
+  place: 'The current game: the default entry, no prototype loader.',
 };
 
 export function prototypeReport(files: Source[], cards: Proto[]) {

@@ -1,19 +1,15 @@
 import { BUILD } from '../../build-id.ts';
 import { WORLD_NS } from '../../world/namespace.ts';
-import { pageQuery, PROTO, productionRailway } from '../../proto/flags.ts';
+import { pageQuery } from '../../proto/flags.ts';
 import { me } from '../../player/state.ts';
 import { camera, canvas } from '../../render/scene.ts';
 import { defineKind, spawn, despawn } from '../../entity/entity.ts';
-import { fixture, setupLink, VERSION } from './fixtures.ts';
-import { command, note, el, copy, download, more } from './ui.ts';
+import { command, el, copy, download, more } from './ui.ts';
 import { ok, no, type Tool } from './types.ts';
 
 let latest: unknown = null;
 let textArea: HTMLTextAreaElement | null = null;
 defineKind('dev-screenshot', { lateUpdate: 2000 });
-async function currentSetup() {
-  return setupLink(!productionRailway && PROTO === 'place' ? (await import('./place.ts')).lastDestination : 'spawn');
-}
 async function report() {
   const [{ inspectSummary }, { roomSummary }] = await Promise.all([import('./inspect.ts'), import('./room.ts')]);
   const p = me.body?.position;
@@ -22,18 +18,14 @@ async function report() {
     schema: 1,
     build: BUILD,
     namespace: WORLD_NS,
-    fixtureVersion: VERSION,
-    fixture: fixture(),
     route: { path: location.pathname, flags: Object.fromEntries(pageQuery()) },
     player: p ? { x: p.x, y: p.y, z: p.z, yaw: me.yaw } : null,
     camera: { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov },
     dev: shell,
     inspection: await inspectSummary(),
     room: await roomSummary(),
-    setup: await currentSetup(),
     tuning: (await import('./tunables.ts')).tuneSnapshot(),
     limits: [
-      'Setup, not exact world replay.',
       'Screenshot contains the game canvas, not menu DOM.',
       'No actual GPU presentation timestamps.',
     ],
@@ -76,12 +68,11 @@ function screenshot() {
 export const tool: Tool = {
   id: 'report',
   label: 'Copy test report',
-  scope: 'Share bounded diagnostics and a setup link. No credentials, world restore or executable code.',
+  scope: 'Share bounded diagnostics. No credentials, world restore or executable code.',
   commands: [
     'read',
     'copy',
     'download',
-    'setup',
     'screenshot',
     'record-start',
     'record-stop',
@@ -98,17 +89,6 @@ export const tool: Tool = {
         width: canvas.width,
         height: canvas.height,
       });
-    }
-    if (name === 'setup') {
-      const url = await currentSetup();
-      const copied = await copy(url);
-      if (textArea) textArea.value = url;
-      return ok(
-        copied
-          ? 'Setup link copied. Reopening asks before a disposable run.'
-          : 'Select the setup URL below; clipboard unavailable.',
-        { url },
-      );
     }
     if (name === 'reload-record') {
       const url = new URL(location.href);
@@ -143,25 +123,20 @@ export const tool: Tool = {
   },
   mount(parent, ctx) {
     const details = more(parent);
-    note(
-      details,
-      'The setup link carries only named scenario/destination and appearance flags. It never resets the current room.',
-    );
     for (const [label, name] of [
       ['Read report', 'read'],
       ['Copy test report', 'copy'],
       ['Download report JSON', 'download'],
-      ['Copy setup link', 'setup'],
       ['Download screenshot', 'screenshot'],
       ['Reload with input recording', 'reload-record'],
       ['Start input trace', 'record-start'],
       ['Stop input trace', 'record-stop'],
       ['Save input trace', 'record-save'],
     ])
-      command(['copy', 'setup', 'screenshot'].includes(name!) ? parent : details, ctx, 'report', label!, name!);
+      command(['copy', 'screenshot'].includes(name!) ? parent : details, ctx, 'report', label!, name!);
     const output = el('textarea');
     output.readOnly = true;
-    output.setAttribute('aria-label', 'Test report or setup link');
+    output.setAttribute('aria-label', 'Test report');
     textArea = output;
     details.append(output);
     parent.append(details);

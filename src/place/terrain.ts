@@ -280,11 +280,9 @@ function bake() {
 }
 bake();
 
-const shelfQuery = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
-const shelfDemo = shelfQuery.get('proto') === 'place' && shelfQuery.get('shelf') === 'demo';
 // Harvest IDs were planted on this grid. Put later terrain edits after this snapshot to keep tree IDs stable.
-export const catalogHeights = SHORE_COAST || shelfDemo ? heights.slice() : heights;
-export const catalogClearMask = SHORE_COAST || shelfDemo ? clearMask.slice() : clearMask;
+export const catalogHeights = SHORE_COAST ? heights.slice() : heights;
+export const catalogClearMask = SHORE_COAST ? clearMask.slice() : clearMask;
 
 if (SHORE_COAST) {
   // A shallow way back from the water beside the level landing. Blend into the original coast beyond
@@ -387,35 +385,6 @@ for (const f of stationPads) {
     1,
     f.yaw + Math.PI / 2,
   );
-}
-
-// Local A/B only: the owner's measured Ultra Water bearing-95 profile, in metres over sea level.
-// Apply once to the finished grid so mesh, Owner collision, H and the shore provider all see the same bed.
-// No shared state or saved terrain changes. The unflagged grid and its facets/colour rules are unchanged.
-if (shelfDemo) {
-  const distances = [-10, -5, 0, 5, 10, 20, 40, 60];
-  const profile = [1.15, 0.48, -0.04, -0.31, -0.12, 0.32, -0.41, -0.16];
-  const ux = Math.sin((95 * Math.PI) / 180),
-    uz = -Math.cos((95 * Math.PI) / 180);
-  // Original grid's waterline on the 95-degree ray from the spire, in place-local coordinates.
-  const cx = 219.5125994885,
-    cz = 8.5049546481;
-  for (let j = 0; j < NZ; j++)
-    for (let i = 0; i < NX; i++) {
-      const dx = cellX(i) - cx,
-        dz = cellZ(j) - cz,
-        d = dx * ux + dz * uz,
-        along = Math.abs(-dx * uz + dz * ux);
-      // Exact profile across 70 m of beach; blend back by 110 m. Fade inland and beyond the measured shelf.
-      const weight = smoothstep(55, 35, along) * smoothstep(-30, -10, d) * smoothstep(90, 60, d);
-      if (weight === 0) continue;
-      let segment = 0;
-      while (segment < distances.length - 2 && d > distances[segment + 1]!) segment++;
-      const t = Math.max(0, Math.min(1, (d - distances[segment]!) / (distances[segment + 1]! - distances[segment]!)));
-      const target = profile[segment]! + (profile[segment + 1]! - profile[segment]!) * t;
-      const k = at(i, j);
-      heights[k] = heights[k]! + (target - heights[k]!) * weight;
-    }
 }
 
 // Support grading runs before cove refinement. Its datums retain the original coarse bilinear sample.
