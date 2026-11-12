@@ -4,223 +4,223 @@
   "stages": {
     "awake": {
       "tick": 40,
-      "stage": 2019042555,
-      "after": 2019042555
+      "stage": 3891513115,
+      "after": 3891513115
     },
     "q1-done": {
       "tick": 1408,
-      "stage": 638127392,
-      "after": 1908468000
+      "stage": 2805385328,
+      "after": 1429294192
     },
     "q2-stocked": {
       "tick": 1749,
-      "stage": 2109947168,
-      "after": 1518764832
+      "stage": 4124934256,
+      "after": 3289125488
     },
     "q2-arriving": {
       "tick": 1686,
-      "stage": 3810915616,
-      "after": 374117664
+      "stage": 3525007472,
+      "after": 4019107952
     },
     "hook-taken": {
       "tick": 1582,
-      "stage": 1182169993,
-      "after": 2749344649
+      "stage": 1146175897,
+      "after": 3421819289
     },
     "q3-stocked": {
       "tick": 1838,
-      "stage": 1790077196,
-      "after": 229131532
+      "stage": 2096588892,
+      "after": 2760676444
     },
     "q3-done": {
       "tick": 1711,
-      "stage": 1799349501,
-      "after": 1759896701
+      "stage": 3474142285,
+      "after": 446664653
     },
     "q4-stocked": {
       "tick": 2937,
-      "stage": 2366519781,
-      "after": 1653724389
+      "stage": 737755957,
+      "after": 803292725
     },
     "q4-arriving": {
       "tick": 2723,
-      "stage": 1502900709,
-      "after": 3723230693
+      "stage": 2768474933,
+      "after": 3864254261
     },
     "hook-earned": {
       "tick": 1711,
-      "stage": 862723101,
-      "after": 1772598173
+      "stage": 1597817261,
+      "after": 651548461
     },
     "q4-done": {
       "tick": 1885,
-      "stage": 220633285,
-      "after": 553498949
+      "stage": 3622871445,
+      "after": 2973984533
     },
     "q5-arriving": {
       "tick": 2390,
-      "stage": 4028020549,
-      "after": 1670105925
+      "stage": 2147452181,
+      "after": 515787029
     },
     "q5-shelved": {
       "tick": 2724,
-      "stage": 1503559493,
-      "after": 2830640965
+      "stage": 1662410005,
+      "after": 263882005
     },
     "sea-open": {
       "tick": 1885,
-      "stage": 742540551,
-      "after": 1421940359
+      "stage": 2844078359,
+      "after": 3560990615
     },
     "q5-stocked": {
       "tick": 2724,
-      "stage": 1972452487,
-      "after": 2459702407
+      "stage": 2790413719,
+      "after": 3001875863
     },
     "q5-carry": {
       "tick": 2724,
-      "stage": 2569069217,
-      "after": 2854628001
+      "stage": 7776241,
+      "after": 615133169
     },
     "q5-finishing": {
       "tick": 2724,
-      "stage": 2890016980,
-      "after": 2562721300
+      "stage": 1879213220,
+      "after": 3773818116
     },
     "q5-done": {
       "tick": 3063,
-      "stage": 1469887508,
-      "after": 1952761108
+      "stage": 1519186692,
+      "after": 859956228
     },
     "glide-earned": {
       "tick": 3063,
-      "stage": 4157028470,
-      "after": 383997814
+      "stage": 2847518246,
+      "after": 110766374
     },
     "boiler": {
       "tick": 3063,
-      "stage": 3752640228,
-      "after": 2128273892
+      "stage": 2307769108,
+      "after": 182378004
     },
     "boiler-camp": {
       "tick": 3063,
-      "stage": 765525779,
-      "after": 2047322643
+      "stage": 1001311587,
+      "after": 3624073315
     },
     "trains-on": {
       "tick": 3083,
-      "stage": 1850450602,
-      "after": 1371653418
+      "stage": 3140279738,
+      "after": 3771910202
     },
     "freight-running": {
       "tick": 3482,
-      "stage": 3129127850,
-      "after": 364375210
+      "stage": 1000477882,
+      "after": 3667242170
     },
     "fares-running": {
       "tick": 4642,
-      "stage": 1388807146,
-      "after": 650367082
+      "stage": 3666354682,
+      "after": 3563576954
     },
     "q6-stocked": {
       "tick": 3484,
-      "stage": 173667498,
-      "after": 2289663658
+      "stage": 1676409274,
+      "after": 3264337594
     },
     "q6-finishing": {
       "tick": 3484,
-      "stage": 136353122,
-      "after": 4082624322
+      "stage": 193200050,
+      "after": 1527507026
     },
     "q6-done": {
       "tick": 3763,
-      "stage": 3343198210,
-      "after": 1792063554
+      "stage": 2845363410,
+      "after": 617747858
     },
     "works-arrive": {
       "tick": 3763,
-      "stage": 3343198210,
-      "after": 1792063554
+      "stage": 2845363410,
+      "after": 617747858
     },
     "works-open": {
       "tick": 3763,
-      "stage": 2814117223,
-      "after": 3596759975
+      "stage": 1565793847,
+      "after": 2043313527
     },
     "works-stocked": {
       "tick": 3763,
-      "stage": 1531894457,
-      "after": 2861312121
+      "stage": 1400010953,
+      "after": 2275005065
     },
     "works-lit": {
       "tick": 4243,
-      "stage": 3997176302,
-      "after": 263780206
+      "stage": 1281213502,
+      "after": 4152359486
     },
     "stall-done": {
       "tick": 4243,
-      "stage": 1107783109,
-      "after": 3717958277
+      "stage": 3305537685,
+      "after": 4006884117
     },
     "cradle-fitted": {
       "tick": 4243,
-      "stage": 1098891279,
-      "after": 4237791887
+      "stage": 776590431,
+      "after": 2845783711
     },
     "wagon-on": {
       "tick": 4448,
-      "stage": 1262590701,
-      "after": 3839624205
+      "stage": 436444349,
+      "after": 2927433693
     },
     "crossing-finishing": {
       "tick": 6050,
-      "stage": 555795305,
-      "after": 2996877225
+      "stage": 3975961977,
+      "after": 817979897
     },
     "crossing-done": {
       "tick": 6050,
-      "stage": 1357752709,
-      "after": 2790342661
+      "stage": 4172646549,
+      "after": 1706630613
     },
     "deck-laid": {
       "tick": 7663,
-      "stage": 4264687181,
-      "after": 2583770349
+      "stage": 6067357,
+      "after": 3285256637
     },
     "gap-footed": {
       "tick": 10697,
-      "stage": 3458692006,
-      "after": 407002758
+      "stage": 3050594742,
+      "after": 3731396822
     },
     "leaf-raised": {
       "tick": 10697,
-      "stage": 3458692006,
-      "after": 407002758
+      "stage": 3050594742,
+      "after": 3731396822
     },
     "ring-joined": {
       "tick": 10797,
-      "stage": 3560476148,
-      "after": 3071686715
+      "stage": 2405559556,
+      "after": 2354693003
     },
     "steel-kit": {
       "tick": 11448,
-      "stage": 3756149713,
-      "after": 3499235500
+      "stage": 2678901537,
+      "after": 1862521980
     },
     "steel-lit": {
       "tick": 11528,
-      "stage": 1002057517,
-      "after": 494777432
+      "stage": 1352696701,
+      "after": 4240181928
     },
     "steel-home": {
       "tick": 12621,
-      "stage": 1060106840,
-      "after": 3082968184
+      "stage": 3865682344,
+      "after": 4183964168
     },
     "boiler-long": {
       "tick": 13530,
-      "stage": 197746035,
-      "after": 3995823571
+      "stage": 4154098339,
+      "after": 813668995
     }
   }
 }

@@ -255,7 +255,20 @@ export const Rock = defineComponent('rock', { slot: 'int', left: 'int', work: 'i
 export const Pile = defineComponent('pile', { x: 'int', y: 'int', z: 'int', n: 'int', kind: 'int', age: 'int' });
 export const Account = defineComponent(
   'account',
-  { pid: 'str', carry: 'int', stone: 'int', rails: 'int', foot: 'int', epoch: 'int', request: 'int' },
+  // `legLogs`, `legRails`: what this back lifted off a greybox leg's rack and still carries toward its frame (the step
+  // 3 review's P2-2; their sum is the leg's `heldLogs`, `heldRails`).
+  {
+    pid: 'str',
+    carry: 'int',
+    stone: 'int',
+    rails: 'int',
+    foot: 'int',
+    epoch: 'int',
+    request: 'int',
+    // u8: a back holds a handful, and 256 accounts' widest rows must fit the recovery envelope (MAX_RECOVERY_BYTES).
+    legLogs: 'u8',
+    legRails: 'u8',
+  },
   { key: 'pid' },
 );
 /** The bounded request history (RAILWAY_OUTCOMES, oldest despawned): the server's idempotency record. */

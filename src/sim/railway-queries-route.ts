@@ -79,12 +79,6 @@ const aboardLine = (w: World, line: number, key: 'logs' | 'rails', skip = -1) =>
     const t = w.get(Train, w.lookup(Train, s)!)!;
     return n + (t.legKit && s !== skip ? t[key] : 0);
   }, 0);
-/** Logs or rails on the players' backs. */
-const onBacks = (w: World, key: 'carry' | 'rails') => {
-  let n = 0;
-  w.each([Account], (_id, a) => (n += a[key]));
-  return n;
-};
 /** What leg k's held counts may reach (Leg.heldLogs, Leg.heldRails): its remaining sections' bills less what is fed
  * (nothing once it is complete). The load check's bound; a lift is clamped to it. */
 export function legHeldRoom(w: World, k: number) {
@@ -92,10 +86,15 @@ export function legHeldRoom(w: World, k: number) {
     out = billOf(k, row.laid, RAIL_LEGS[k]!.sections.length);
   return { logs: out.logs - row.logs, rails: out.rails - row.rails };
 }
-/** Leg k's units on backs: those lifted off its rack and not yet fed or put down (Leg.heldLogs, Leg.heldRails), never
- * more than every back carries (a unit that left a back by a way that does not count it off). */
-const heldOf = (w: World, k: number, key: 'carry' | 'rails') =>
-  Math.min(key === 'carry' ? legRow(w, k).heldLogs : legRow(w, k).heldRails, onBacks(w, key));
+/** Leg k's units on backs: those each account lifted off its rack and has not fed or put down (Account.legLogs,
+ * Account.legRails; their sum is Leg.heldLogs, Leg.heldRails), each never more than that back carries (a unit that
+ * left it by a way that does not count it off). */
+function heldOf(w: World, k: number, key: 'carry' | 'rails') {
+  if (!legRow(w, k).heldLogs && !legRow(w, k).heldRails) return 0;
+  let n = 0;
+  w.each([Account], (_id, a) => (n += Math.min(key === 'carry' ? a.legLogs : a.legRails, a[key])));
+  return n;
+}
 /** The kit still to load for leg k (ruling 1.4, "the kit runs ahead by the whole leg"): the bills of the current
  * section and the next LEG_TUNE.kitLead - 1, less what is fed, on the rack (Rail.depot, Rail.depotRails: the
  * train-fed rack, Q6's and Q7's), aboard the line's trains and lifted off the rack onto backs (heldOf; the step 3

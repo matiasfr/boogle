@@ -6,7 +6,7 @@ import { pierLaid } from './railway-line2-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
-import { Account, Beam, Boiler, Leg, QJob, Shed, Train, Works, WorksClock } from './railway-components.ts';
+import { Account, Aperture, Beam, Boiler, Leg, QJob, Shed, Train, Works, WorksClock } from './railway-components.ts';
 import { legKitPut } from './railway-sys-route-kit.ts';
 import { aboard, boilerHeld, FOOT, qCompleted, roomFor, shedId, wagonSlot, worksId } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
@@ -41,7 +41,7 @@ export const strike = defineSystem(
 /** Logs and stone off your back into the kiln's bills; it lights the moment both are full. */
 export const kiln = defineSystem(
   'rail.kiln',
-  { writes: [Works, WorksClock, Account, Leg], phase: 'act', order: 35 },
+  { reads: [Aperture], writes: [Works, WorksClock, Account, Leg], phase: 'act', order: 35 },
   (w, { a: aid, tick }: Act) => {
     const id = worksId(w),
       works = w.get(Works, id)!;
@@ -57,7 +57,7 @@ export const kiln = defineSystem(
     wm.logs += logs;
     wm.stone += stone;
     if (wm.logs === WORKS.kilnLogs && wm.stone === WORKS.kilnStone) wm.lit = w.mut(WorksClock, id)!.lastCast = tick;
-    legKitPut(w, logs, 0); // a leg rack's logs fed here are owed again (the step 3 review's P2-2)
+    legKitPut(w, aid, logs, 0); // a leg rack's logs fed here are owed again (the step 3 review's P2-2)
     return logs + stone;
   },
 );
@@ -121,7 +121,7 @@ function fit(w: World, tick: number) {
 /** Rails off your back onto the cradle, up to its eight, once the stall stands. */
 export const cradle = defineSystem(
   'rail.cradle',
-  { writes: [Shed, Account, Train, Leg], reads: [QJob], phase: 'act', order: 38 },
+  { writes: [Shed, Account, Train, Leg], reads: [QJob, Aperture], phase: 'act', order: 38 },
   (w, { a: aid, tick }: Act) => {
     const h = w.get(Shed, shedId(w))!;
     if (h.stall !== WORKS.stall) return 0;
@@ -129,7 +129,7 @@ export const cradle = defineSystem(
     if (n <= 0) return 0;
     w.mut(Account, aid)!.rails -= n;
     w.mut(Shed, shedId(w))!.cradleRails += n;
-    legKitPut(w, 0, n);
+    legKitPut(w, aid, 0, n);
     fit(w, tick);
     return n;
   },

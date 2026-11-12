@@ -268,7 +268,7 @@ export const depotTake = defineSystem(
     rail.depot -= n;
     a.carry += n;
     // Off an open leg's rack: held on this back until fed or put down (the step 3 review's P2-2).
-    legKitLifted(w, n, 0);
+    legKitLifted(w, aid, n, 0);
     return n;
   },
 );
@@ -284,7 +284,7 @@ export const depotRailTake = defineSystem(
     const n = Math.min(rail.depotRails, room);
     rail.depotRails -= n;
     a.rails += n;
-    legKitLifted(w, 0, n);
+    legKitLifted(w, aid, 0, n);
     return n;
   },
 );

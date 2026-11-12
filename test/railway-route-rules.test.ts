@@ -1284,6 +1284,10 @@ test('a unit lifted off the leg rack and lost is owed again; one carried to the 
 test("rack units held count; fed to the steel works or a leaver's released they are owed again, never under 0", () => {
   const s = copy(JOINED);
   while (rail(s.w).depotRails < 20) advance(s, 1);
+  // Units on a back that never came off the rack make no holder: chopped logs count for nothing here.
+  chopTo(s, 'b', 4);
+  assert.ok(acc(s, 'b').carry > 0);
+  assert.deepEqual(railLegKitHolders(s.w), [], 'nobody has lifted off the rack');
   const need0 = legKitNeed(s.w, STACK).rails;
   const lifted = act(s, 'a', 'rail.depotRailTake');
   assert.ok(lifted > 0);
@@ -1294,21 +1298,26 @@ test("rack units held count; fed to the steel works or a leaver's released they 
   assert.ok(fed > 0, 'the works takes them');
   assert.equal(legRow(s.w, STACK).heldRails, lifted - fed);
   assert.equal(legKitNeed(s.w, STACK).rails, need0 + fed, 'fed to the works, owed again');
-  // b lifts the rest and leaves: past the grace the host releases what b carries, once.
+  // b lifts the rest and leaves: past the grace the host releases b's own lifted units, once; a's stay counted.
   const more = act(s, 'b', 'rail.depotRailTake');
   assert.ok(more > 0);
   const held = legRow(s.w, STACK).heldRails,
-    need1 = legKitNeed(s.w, STACK).rails;
-  const b = acc(s, 'b');
+    need1 = legKitNeed(s.w, STACK).rails,
+    ofA = acc(s, 'a').legRails;
+  const b = { ...acc(s, 'b') };
+  assert.equal(b.legRails + ofA, held, "the leg's held count is the accounts' lifted counts");
+  assert.ok(b.legRails > 0);
   assert.ok(
     railLegKitHolders(s.w).some((h) => h.pid === 'b' && h.epoch === b.epoch),
     "the host's leaver check sees b",
   );
   assert.equal(railLegKitRelease(s.w, 'b', b.epoch + 1), 0, 'a session that has since changed keeps them');
   const released = railLegKitRelease(s.w, 'b', b.epoch);
-  assert.equal(released, Math.min(held, b.rails));
+  assert.equal(released, b.legRails, "b's own units only");
+  assert.equal(railLegKitRelease(s.w, 'b', b.epoch), 0, 'a second release finds none');
+  assert.equal(legRow(s.w, STACK).heldRails, ofA, "a's stay counted");
+  assert.ok(!railLegKitHolders(s.w).some((h) => h.pid === 'b'), 'released, b is no holder');
   assert.equal(legKitNeed(s.w, STACK).rails, need1 + released, "a leaver's are owed again");
-  assert.ok(legRow(s.w, STACK).heldRails >= 0, 'never under 0');
   assert.equal(invariant(s.w), null);
   // The leg completes with b's rails never coming back.
   for (let k = legRow(s.w, STACK).laid; k < N; k++) feedSection(s);

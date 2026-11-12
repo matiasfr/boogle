@@ -444,8 +444,7 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
       commit();
       return n;
     },
-    /** Who carries logs or rails while a greybox leg counts units lifted off its rack as held (the step 3 review's
-     * P2-2); none while no leg holds any. */
+    /** Who carries units lifted off a greybox leg's rack (the step 3 review's P2-2), and in which session. */
     legKitHolders: () => railLegKitHolders(world),
     /** The carrier stayed away past the grace: what they carry is no longer counted held, so the leg is loaded again. */
     legKitRelease(pid: string, epoch: number) {

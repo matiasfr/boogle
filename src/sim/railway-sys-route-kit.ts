@@ -144,57 +144,95 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
   return 'on';
 }
 // ---------------------------------------------------------------- the rack's units on backs (review of step 3, P2-2)
+// Each account counts what it lifted off the open leg's rack and still carries toward its frame (Account.legLogs,
+// Account.legRails); the leg's held counts (Leg.heldLogs, Leg.heldRails) are their sum, moved with them, so the kit
+// owed reads one number and a release takes off one account's own units only.
 /** The open leg loading at its line's home halt, whose rack is the depot shelf (Rail.depot, Rail.depotRails), or -1
  * (the catalog opens one leg at a time). */
+const LIFT_MAX = 255;
 const rackLeg = (w: World) => RAIL_LEGS.findIndex((l, k) => l.kit === 'home' && legOpen(w, k));
-/** `logs` and `rails` lifted off the leg rack onto a back (rail.depotTake, rail.depotRailTake): the open leg counts
- * them held (Leg.heldLogs, Leg.heldRails), up to what its remaining sections still lack (legHeldRoom), so a train does
+/** Move account `aid`'s lifted counts and leg k's held counts together by `dl` logs and `dr` rails. */
+function moveHeld(w: World, aid: number, k: number, dl: number, dr: number) {
+  if (!dl && !dr) return;
+  const a = w.mut(Account, aid)!,
+    m = w.mut(Leg, legId(w, k))!;
+  a.legLogs += dl;
+  a.legRails += dr;
+  m.heldLogs += dl;
+  m.heldRails += dr;
+}
+/** The leg whose held counts are nonzero (the open rack leg, or one that just completed), or -1. */
+const heldLeg = (w: World) => RAIL_LEGS.findIndex((_l, k) => legRow(w, k).heldLogs + legRow(w, k).heldRails > 0);
+/** `logs` and `rails` lifted off the leg rack onto account `aid`'s back (rail.depotTake, rail.depotRailTake): counted
+ * on that account and its open leg, up to what the leg's remaining sections still lack (legHeldRoom), so a train does
  * not load them twice while they are carried to the frame. */
-export function legKitLifted(w: World, logs: number, rails: number) {
+export function legKitLifted(w: World, aid: number, logs: number, rails: number) {
   const k = rackLeg(w);
   if (k < 0 || logs + rails <= 0) return;
   const room = legHeldRoom(w, k),
     row = legRow(w, k),
-    m = w.mut(Leg, legId(w, k))!;
-  m.heldLogs = Math.min(room.logs, row.heldLogs + logs);
-  m.heldRails = Math.min(room.rails, row.heldRails + rails);
+    a = w.get(Account, aid)!;
+  // Each account's count is a u8 (Account.legLogs, Account.legRails): a back never holds near 255.
+  moveHeld(
+    w,
+    aid,
+    k,
+    Math.max(0, Math.min(logs, room.logs - row.heldLogs, LIFT_MAX - a.legLogs)),
+    Math.max(0, Math.min(rails, room.rails - row.heldRails, LIFT_MAX - a.legRails)),
+  );
 }
-/** `logs` and `rails` gone off a back (fed to a frame, dropped, fed to the steel works, the kiln or the cradle; or a
- * leaver's, released): each leg's held count falls by as many, never under 0. A unit that may not be the rack's still
- * counts off, so a doubt is a unit owed again (a train brings one more; it goes home if no section takes it), never one
- * short. */
-export function legKitPut(w: World, logs: number, rails: number) {
-  if (logs + rails <= 0) return;
-  for (let k = 0; k < RAIL_LEGS.length; k++) {
-    const row = legRow(w, k);
-    if (!row.heldLogs && !row.heldRails) continue;
-    const m = w.mut(Leg, legId(w, k))!;
-    m.heldLogs -= Math.min(row.heldLogs, logs);
-    m.heldRails -= Math.min(row.heldRails, rails);
-  }
+/** `logs` and `rails` gone off account `aid`'s back (fed to a frame, dropped, fed to the steel works, the kiln or the
+ * cradle): its lifted counts, and its leg's, fall by as many, never under 0, then trimLegHeld. A unit that may not be
+ * the rack's still counts off, so a doubt is a unit owed again (a train brings one more; it goes home if no section
+ * takes it), never one short. */
+export function legKitPut(w: World, aid: number, logs: number, rails: number) {
+  const a = w.get(Account, aid)!,
+    k = heldLeg(w);
+  if (k >= 0) moveHeld(w, aid, k, -Math.min(a.legLogs, logs), -Math.min(a.legRails, rails));
+  trimLegHeld(w);
 }
-const heldAll = (w: World) => RAIL_LEGS.reduce((n, _l, k) => n + legRow(w, k).heldLogs + legRow(w, k).heldRails, 0);
-/** A player stayed away past the grace (the host's leaver check, as for a footing's carrier): what they carry is no
- * longer counted held, so a leg is never short a leaver's units (they are loaded again). `epoch` refuses a release for
- * a session that has since changed. Returns the units released from the count. */
+/** Keep the held counts within what the open rack leg's remaining sections still lack (legHeldRoom; nothing once no
+ * leg is open): a feed of units from elsewhere, or the last lay, leaves less room, and the counts past it come off the
+ * accounts in entity order (owed again; a surplus goes home). */
+export function trimLegHeld(w: World) {
+  const k = heldLeg(w);
+  if (k < 0) return;
+  const open = rackLeg(w),
+    room = open === k ? legHeldRoom(w, k) : { logs: 0, rails: 0 },
+    row = legRow(w, k);
+  let logs = Math.max(0, row.heldLogs - room.logs),
+    rails = Math.max(0, row.heldRails - room.rails);
+  if (!logs && !rails) return;
+  const cut: [number, number, number][] = [];
+  w.each([Account], (id, a) => {
+    const dl = Math.min(logs, a.legLogs),
+      dr = Math.min(rails, a.legRails);
+    if (dl || dr) cut.push([id, dl, dr]);
+    [logs, rails] = [logs - dl, rails - dr];
+  });
+  for (const [id, dl, dr] of cut) moveHeld(w, id, k, -dl, -dr);
+}
+/** A player stayed away past the grace (the host's leaver check, as for a footing's carrier): what they lifted off the
+ * rack is no longer counted held, so a leg is never short a leaver's units (they are loaded again). Their own units
+ * only: idempotent (a second release finds none), and state, so it survives a restart. `epoch` refuses a release for a
+ * session that has since changed. Returns the units released from the count. */
 export const legKitRelease = defineSystem(
   'rail.legKitRelease',
-  { reads: [Account], writes: [Leg], phase: 'legKit', order: 0 },
+  { writes: [Leg, Account], phase: 'legKit', order: 0 },
   (w, q: { pid: string; epoch: number }) => {
     const id = w.lookup(Account, q.pid);
     const a = id === undefined ? undefined : w.get(Account, id)!;
-    if (!a || a.epoch !== q.epoch) return 0;
-    const before = heldAll(w);
-    legKitPut(w, a.carry, a.rails);
-    return before - heldAll(w);
+    const k = heldLeg(w);
+    if (!a || a.epoch !== q.epoch || k < 0 || a.legLogs + a.legRails <= 0) return 0;
+    const n = a.legLogs + a.legRails;
+    moveHeld(w, id!, k, -a.legLogs, -a.legRails);
+    return n;
   },
 );
 export const railLegKitRelease = (w: World, pid: string, epoch: number): number => w.run(legKitRelease, { pid, epoch });
-/** Who carries logs or rails while a leg counts units held, and in which session (the host's leaver check; accepted
- * state only). None while no leg holds any. */
+/** Who carries units lifted off a leg's rack, and in which session (the host's leaver check; accepted state only). */
 export function railLegKitHolders(w: World) {
   const out: { pid: string; epoch: number }[] = [];
-  if (!heldAll(w)) return out;
-  w.each([Account], (_id, a) => void (a.carry + a.rails > 0 && out.push({ pid: a.pid, epoch: a.epoch })));
+  w.each([Account], (_id, a) => void (a.legLogs + a.legRails > 0 && out.push({ pid: a.pid, epoch: a.epoch })));
   return out;
 }

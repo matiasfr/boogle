@@ -277,7 +277,9 @@
         ["rails", "int"],
         ["foot", "int"],
         ["epoch", "int"],
-        ["request", "int"]
+        ["request", "int"],
+        ["legLogs", "u8"],
+        ["legRails", "u8"]
       ]
     },
     {

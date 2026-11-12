@@ -493,9 +493,12 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       and `Leg.heldRails` count what `rail.depotTake` and `rail.depotRailTake` lift while a leg is open (clamped to its
       remaining bills less fed, the load check's bound), and what leaves a back counts off (fed to the frame, dropped,
       fed to the steel works, the kiln or the cradle; never under 0: a doubt is a unit owed again, its surplus going
-      home); `legKitNeed` reads the smaller of that and every back's. A leaver's units are released from the count by
-      the host's leaver check after the grace (`railBeamGraceS`, as a footing's carrier), once a session, so a leaver
-      stalls the leg at most for the grace. **Build 2's longer-fleet tests run** (P2-3): they wait on the trains in
+      home). Each account counts its own lifted units (`Account.legLogs`, `Account.legRails`; the leg's held counts
+      are their sum, the load check's equality), and `legKitNeed` reads each account's, never more than that back
+      carries. A leaver's own lifted units are released by the host's leaver check after the grace (`railBeamGraceS`,
+      as a footing's carrier, its clock stamped at departure): state, so idempotent and kept across a restart, and
+      never a present carrier's units (the re-review's P2). A leaver stalls the leg at most for the grace. Open P3
+      (re-review): leg kit goes home only at its line's kit halt, checked before the rack halt in `legKitArrive`. **Build 2's longer-fleet tests run** (P2-3): they wait on the trains in
       service; b011e7 at 75% still breaches 1,050 (1,152, the Quarry down) and stays todo; fa575 at 0% passes (730)
       and is asserted. Gates on this build, the long run (`RAIL_AUDIT=1 FUZZ_STRIDE=1 ROUTE_GATES=1`, 261 s), equal to
       the fourth sheet's run: 8 fixed stages worst 1,166; 9 settled 1,261, 1,340, 1,397, 1,367 and stage 0 766 to 820;

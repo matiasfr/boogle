@@ -92,7 +92,7 @@ export const steelFeed = defineSystem(
     sm.rails += rails;
     if (sm.logs === STEEL.logs && sm.rails === STEEL.rails) sm.lit = w.mut(SteelClock, id)!.lastCast = tick;
     // A leg rack's units fed here are no longer held for its frame (the step 3 review's P2-2): owed again.
-    legKitPut(w, logs, rails);
+    legKitPut(w, aid, logs, rails);
     return logs + rails;
   },
 );

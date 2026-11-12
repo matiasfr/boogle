@@ -9,6 +9,7 @@ import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { railInt, RAILWAY_MAX_INT, RAILWAY_PILES } from './railway.ts';
 import {
   Account,
+  Aperture,
   Beam,
   Boiler,
   Forge,
@@ -160,10 +161,11 @@ export const deposit = defineSystem(
   },
 );
 /** Logs or rails put down are no longer a leg rack's units on a back (legKitPut: they are owed again). */
-const putDown = (w: World, kind: number, n: number) => legKitPut(w, kind ? 0 : n, kind === RAILS ? n : 0);
+const putDown = (w: World, aid: number, kind: number, n: number) =>
+  legKitPut(w, aid, kind ? 0 : n, kind === RAILS ? n : 0);
 export const drop = defineSystem(
   'rail.drop',
-  { writes: [Pile, Account, Leg], phase: 'act', order: 5 },
+  { reads: [Aperture], writes: [Pile, Account, Leg], phase: 'act', order: 5 },
   (w, { a: aid, e }: Act) => {
     const kind = pileKind(e.kind),
       cap = pileCap(kind);
@@ -180,7 +182,7 @@ export const drop = defineSystem(
       const n = Math.min(e.n!, carry, cap);
       w.spawn([Pile, { x: e.x!, y: e.y!, z: e.z!, n, kind, age: 0 }]);
       credit(a, kind, -n);
-      putDown(w, kind, n);
+      putDown(w, aid, kind, n);
       return n;
     }
     const p = w.mut(Pile, at)!;
@@ -188,7 +190,7 @@ export const drop = defineSystem(
     p.n += n;
     if (n) p.age = 0;
     credit(a, kind, -n);
-    putDown(w, kind, n);
+    putDown(w, aid, kind, n);
     return n;
   },
 );

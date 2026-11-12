@@ -64,7 +64,8 @@
 // components for the whole catalog; rail.legStock, rail.grant, rail.gate and rail.arrive; the lay tick; line 2 grows
 // past Ring Island over the stack line's heads to High Gorge with a fleet of 3 then 5 (two rows wait in the shed) and
 // block signals; `ns`, `bay` and `cave` as lines 2 to 4, shut; `train.legKit` (the steel works' kit first);
-// `leg.heldLogs` and `leg.heldRails` (2026-11-12, the step 3 review's P2-2, in the same bump: v32 has not shipped);
+// `leg.heldLogs`, `leg.heldRails`, `account.legLogs` and `account.legRails` (2026-11-12, the step 3 review's P2-2
+// and its re-review, in the same bump: v32 has not shipped);
 // no migration.
 export const WORLD_NS = 'v32';
 

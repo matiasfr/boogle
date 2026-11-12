@@ -14,7 +14,7 @@ import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RAIL_TRAINS, legBuilt } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
-import { LegYard, Train } from './railway-components.ts';
+import { Account, LegYard, Train } from './railway-components.ts';
 import { gateLeg, legDone, legHeldRoom, legReached, legRow, routeRow } from './railway-queries-route.ts';
 
 const bad = (what: string): never => {
@@ -54,6 +54,17 @@ export function checkRoute(w: World) {
     // A gated section is fed only once its barrier is open.
     if (sec?.gate !== undefined && (r.logs || r.rails) && !(routeRow(w).gates & (1 << sec.gate))) bad('leg gate');
   });
+  // The legs' held counts are the accounts' lifted counts, summed (one leg holds any at a time).
+  let liftedLogs = 0,
+    liftedRails = 0;
+  w.each([Account], (_id, a) => {
+    if (!railInt(a.legLogs, 255) || !railInt(a.legRails, 255)) bad('account lifted bounds');
+    [liftedLogs, liftedRails] = [liftedLogs + a.legLogs, liftedRails + a.legRails];
+  });
+  const holding = RAIL_LEGS.filter((_l, k) => legRow(w, k).heldLogs + legRow(w, k).heldRails > 0);
+  const heldLogs = RAIL_LEGS.reduce((n, _l, k) => n + legRow(w, k).heldLogs, 0),
+    heldRails = RAIL_LEGS.reduce((n, _l, k) => n + legRow(w, k).heldRails, 0);
+  if (holding.length > 1 || heldLogs !== liftedLogs || heldRails !== liftedRails) bad('leg held');
   // A train's `legKit` mark stands exactly while it carries a leg's kit: on a line with a leg reached, with cargo aboard
   // (steel first, call 64: the mark is what keeps the works' kit and a leg's apart).
   w.each([Train], (_id, t) => {

@@ -23,7 +23,7 @@ import { Account, Aperture, Boiler, Leg, Line, QJob, Route, Train } from './rail
 import { boilerHeld, stopsOf } from './railway-queries.ts';
 import { gateLeg, legDone, legId, legKitStop, legOpen, legRow, routeId, routeRow } from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
-import { legKitPut } from './railway-sys-route-kit.ts';
+import { legKitPut, trimLegHeld } from './railway-sys-route-kit.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 const bit = (k: number) => 1 << k;
@@ -53,7 +53,7 @@ export const legStock = defineSystem(
     m.rails += rails;
     if (m.logs === sec.logs && m.rails === sec.rails) m.start = tick;
     // Fed: no longer held on a back (the step 3 review's P2-2).
-    legKitPut(w, logs, rails);
+    legKitPut(w, aid, logs, rails);
     return logs + rails;
   },
 );
@@ -68,6 +68,8 @@ function lay(w: World, k: number, tick: number) {
   m.laid++;
   m.logs = m.rails = 0;
   m.start = -1;
+  // The last lay leaves no room: units still counted lifted off its rack are no longer held for it.
+  trimLegHeld(w);
   // The line runs on past the old end (its first halt, then each head), which stays a stop (call 88): a train running
   // up to it stops there once (endMoved), and the line's up-way ask there brings the first up train after the lay to
   // it, so whoever stands at the old head rides on to the new one.
@@ -103,7 +105,7 @@ function lay(w: World, k: number, tick: number) {
  * ruling 1.3). Reads the tick against the row's `start`, so nothing is written until it lays. */
 export const legTick = defineSystem(
   'rail.legTick',
-  { reads: [Aperture, Route, QJob], writes: [Leg, Train, Line], phase: 'tick', order: 1.5 },
+  { reads: [Aperture, Route, QJob], writes: [Leg, Train, Line, Account], phase: 'tick', order: 1.5 },
   (w, { tick }: Tick) => {
     for (let k = 0; k < RAIL_LEGS.length; k++) {
       const start = legRow(w, k).start;
