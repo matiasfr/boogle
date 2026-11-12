@@ -1,5 +1,5 @@
 > **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Ring Island
-> build 2 as a systems-first greybox, `WORLD_NS` v28. Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
+> build 2 as a systems-first greybox, `WORLD_NS` v30 (main took v28 for slice 5; v29 is the Quarry stone stop's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
 > in the bill, steel on the kit car, the works prompt shown blocked).
@@ -100,7 +100,7 @@ generator, no `env` fact. The sim is in `src/sim/` and follows lockstep.md (inte
 | The install moment, the whistle, the boiler swapping on a train | Local, from accepted state | each tab | adapter edges, snapped on restore |
 | Yard stacks, bill sign, rack, loader, the shed | Local | each tab | new `src/entities/ring-steel/` |
 
-**State (all appended; any schema change is the v28 bump).**
+**State (all appended; any schema change is the v30 bump).**
 
 ```ts
 // railway-components.ts
@@ -169,17 +169,18 @@ malformed fields refused (`railInt(e.kind, 1)`, `e.line === 1`, `e.part === 1`, 
 
 **Save, bump and shipping.**
 
-- **v28**, one dated line in `src/world/namespace.ts`, no migration, made in R1 (as built; it still ships only with R5): the `Steel` and `SteelClock` components, two
+- **v30**, one dated line in `src/world/namespace.ts`, no migration, made in R4 as a bump-only commit (as built: R1 to R3 were
+  built on main's v28, whose slice 5 bump came first, and v29 is the stone stop's; it still ships only with R5): the `Steel` and `SteelClock` components, two
   `Train` fields, two `Line` fields, one `Shed` field, `WORKS.total` 40, `TRAIN_EXTENT`, four ops.
 - **It ships when R1 to R5 are reviewed, as one ship, and never while the owner is mid-session**: check play sessions
   in `npm run heartbeat` first and hold if he is playing (owner calls "Nothing waits on a world bump" and its one
   hold). The views (V1 to V3) follow with no bump. Between the two ships the kit rides out and steel rides home unseen
   off the train, which is harmless; a jump-in row puts him back at any beat in one click.
 - **Mixed builds during the deploy.** Dev phase: no compatibility code. A room's id carries the namespace
-  (`rail-v28-<name>`, `railway-namespace.ts`), so an open v27 tab stays in its v27 room until the update notice reloads
-  it, and never sends a v28 op to a v28 world. A new client that reaches a server still on v27 asks for a `rail-v28-`
+  (`rail-v30-<name>`, `railway-namespace.ts`), so an open v28 or v29 tab stays in its own room until the update notice
+  reloads it, and never sends a v30 op to an older world. A new client that reaches an older server asks for a `rail-v30-`
   room, which that server's `isRailwayRoom` does not accept as a railway room, so no v27-shaped save is written under
-  a v28 name; the tab plays alone until the server is current. Every new op is refused cleanly by v27 rules (not in
+  a v30 name; the tab plays alone until the server is current. Every new op is refused cleanly by older rules (not in
   the allow-list).
 
 ## 4. Steps
@@ -294,7 +295,7 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       a directed test lets a fast train go right behind a slow one with no headway hold: the block rule holds it at the
       halt behind (37 s on held legs, closest 157 m, the halt spacing), never under sepCm, never past. No fallback
       needed.
-- [ ] **R4. Server, prediction, seeds (M, HOTBOX; the bump moved to R1).** Create `src/sim/railway-seed-steel.ts`,
+- [x] **R4. Server, prediction, seeds (M, HOTBOX; the bump moved to R1).** Create `src/sim/railway-seed-steel.ts`,
       `server/test/railway-steel-host.test.ts`. Edit `src/world/railway-server.ts`, `railway-predict.ts`,
       `railway-jump.ts` (four rows, section 6), `src/sim/railway-seeds.ts`,
       `src/sim/railway-sys-away.ts` (the works' casts in the away credit, capped by the rack),
@@ -305,10 +306,47 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       No new shared file is imported by the server from outside `src/sim/` or `src/world/` (if one is, it joins
       `server/Dockerfile`, `dev/server-build.ts` and deploy-server.yml in the same step). **Independent review of the
       server hunk.**
+      _As built (ring2/rules, 12 November):_ `railway-server.ts`: `rail.steelTake` (`railInt(e.kind, 1)`) at
+      `RING_STEEL_YARD`, `rail.steel` at `RING_STEEL_WORKS`, `rail.install` (`e.line === LINE2`, `e.part === 1`,
+      `railInt(e.revision, BOILER_MAX)`) at `SHED_TABLE`, all three on the allow-list; `server/src/host/railway-requests.ts`
+      keeps `kind`, `line`, `part` and `revision`, and events carry `line` and `part`. `railway-predict.ts`: the yard take
+      and the feed are predicted (the works' `lit` and `lastCast` held for the server, as the kiln's); `rail.install` is
+      not predicted (as `rail.brace`), **so V3's moment plays on the accepted event, not on the press** (step V3 says
+      "from the prediction"; the handover's "as rail.brace" wins: the brace is not predicted either). Three intents, not
+      five (ruling B: no rack 3, site 4): `steelTake(kind)`, `feedSteel()`, `installBoiler(revision)`; marks "steel kit
+      taken", "works fed", "boiler installed". The away credit casts while the room is empty, capped by the rack and the
+      total (**the kiln is not in the away credit**, so this follows the forge's pattern, not the kiln's). Seeds in
+      `src/sim/railway-seed-steel.ts` from accepted ops and ticks; jump rows land on the island halt's east platform
+      (u 444, lat +4), 4 m off the table's centre facing the garage post, and the Village's line 2 platform; each
+      landing passes the arrival's surface test (`jump-land-probe`), and the steel-kit jump was looked at
+      (`.look/steel-kit-jump-still.png`: standing on the deck by the track, facing along it). Checkpoints: steel-kit
+      61.3 s, steel-lit 0.7 s, steel-home 5.9 s, boiler-long 5.0 s. Tests: `server/test/railway-steel-host.test.ts`
+      (reach, malformed fields, two presses install once), the away case in `server/test/railway-away.test.ts`, and in
+      `test/railway-replicate.test.ts` the predicted take and feed (lit held back, install never predicted) and a take a
+      friend beat you to coming back as `onCorrected`. **The bump:** a bump-only commit to v30 (namespace line, rail-schema's
+      `worldNs`, `rail-v30-` in `test/railway-cart.test.ts`), then the golden regenerated in a fixtures-only commit:
+      keyed against v28, all 39 existing stages unchanged, the four steel stages added, nothing else moved. **For the
+      views (R3 review, P3):** nothing spends `Shed.steel` in build 2; `checkSteel`'s `boiler fit` refuses a fitted
+      room with an empty bay, so the first feature that spends bay steel relaxes it. No new shared file outside
+      `src/sim/` or `src/world/` reaches the server. **Independent review of the server hunk: not run here** (the
+      coordinator's, with R4-R5's review).
 - [ ] **R5. The loop graph and the bot (M, HOTBOX).** Edit `dev/loop/graph.ts` (nodes `steelkit`, `steelworks`,
       `steelhome`, `install`, each with its bill, supply, cue and `requires: rivet`), `dev/look/bots/railway-ring.ts`
       or a new `railway-steel.ts`, `dev/look/evals/railway-steel-bot.ts`. Checks: `npm run loop -- node <id>` for the
       four and `npm run loop -- run` for one to four players (the route's rules changed); the bot segment below.
+      _As built (ring2/rules, 12 November): the graph and the loop; **the bot is not built.**_ Nodes `steelkit`,
+      `steelworks` (8 logs, 12 rails by the kit train to the yard; its edge on `steelkit` held by the world: any logs
+      and rails feed it, but nobody carries a bill 1.2 km to the island), `steelhome` and `install`, each with a cue
+      marked decided and not built (V1 to V3) and no stops. `npm run loop -- run`: 1 to 4 players finish, no softlock,
+      no graph bug; rivet to install 4:06, 4:31, 4:34 and 4:40 straight-line (kit 1:05 to 1:39 after the rivet, the
+      feed 5 to 6 s, steel home 1:38 later; the install's 1:16 is the straight-line walk home, which a rider doesn't
+      make). An order probe whose held node finishes on its own (the train brings the steel home) before the press is
+      now inconclusive instead of a graph bug. `dev/economy/ring-data.ts` corrected (finding 6: the boiler free, the
+      siding 12 rails and 8 logs, the brace the counterweight's four footings; prototype rebuilt: 1p 5.79 h, 2p 5.28 h).
+      **Blocked, for the coordinator:** a bot plays only through ordinary inputs (no direct op), and the yard take, the
+      feed and the Install have no prompt until V1 (the island's interactables) and V3 (the garage's hold sends
+      `rail.install`). Proposed: the steel bot, its eval and the "ring-joined to boiler-long" segment move to after V3,
+      with Checkpoint A's bot proof at Checkpoint B.
 - [ ] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
       `--rail-seed ring-joined` to the `boiler-long` state**, logging minutes per beat; `test:net`'s reconnect pair
       once with a carrier leaving mid-carry. Then ship v28 under the mid-session hold.
