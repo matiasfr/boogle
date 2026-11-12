@@ -1331,6 +1331,84 @@ is what is built; "fix how trains turn at the ends" is no longer part of it.
 
 **Counts:** 0 Decided, 0 New, 4 Default.
 
+### Rulings on the rebased sheet (designer, 2026-11-12, fourth sheet)
+
+**Read:** the builder's figures as relayed by the orchestrator (step 3 rebased onto Ring Island build 2 with
+steel-first built; the long gate run, four seeds, hold 75%), the rulings above, the
+[greybox waits entry](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered) and the 12 November
+rewards entries. **Not read:** the step 3 code or the sheet itself (another machine, branch not pushed). **Not run by
+me:** anything. **No stills:** nothing is placed, moved or gated. Lines marked *arithmetic* are my sums from figures in
+this plan, not measurements.
+
+1. **Gate 9 measured the right thing, so it is not restated as a correction; the figure is the owner's, and the build
+   proceeds on a recommended reading of his word "about"** (Default; owner question below).
+   - **Measured:** settled worst 1,261, 1,340, 1,397 and 1,367 by seed; means 602 to 624; 8 to 12 of about 240 waits
+     over 1,158. Growing worst 1,210 to 1,421 and fixed stages 1,166, both inside their limits.
+   - **Where 1,350 came from:** it is 2 minutes 15 to the tick, and it sat 7 ticks above the one worst then measured
+     (1,343). The four seeds here spread 136 ticks, so a limit that close to one seed's worst was going to fail on
+     another whatever was built.
+   - **What a player meets:** 1,397 is 2 minutes 20. Nobody at a platform can tell that from 2 minutes 15, and it
+     happens on a few waits in a hundred. The mean is about a minute.
+   - **Recommended reading, built until he answers:** "about 2 minutes 15" is **at most 1,400 ticks (2 minutes 20) on
+     the settled line.** The figure is fixed from here until train spacing lands. A settled worst over 1,400 on any
+     of the four seeds fails, and the answer then is a rule or the spacing work, not a third figure.
+   - **Not moved:** 1,600 while the line grows; gate 8 at 1,350 (it passes at 1,166); build 2's own gate (worst
+     1,100); the mean and the share over 1,050, still printed and not gated.
+   - **Owed from the builder:** the tick, halt and side of every settled wait over 1,350, and which change moved the
+     worst from 1,343 (the rebase or steel-first). Neither is on what I was given.
+   - **Worth saying to the owner:** the mean was 464 to 520 before the rebase and is 602 to 624 now. No gate holds it
+     since his answer, and it is the larger change for a player: about ten seconds more on a typical wait.
+2. **Gate 5(a)'s opening allowance measured one lap where it meant the opening's errands; it is restated to them**
+   (Default; amends call 79). Call 79 was written on a base without steel-first ("still without build 2") and gave
+   its reason as "opening a leg puts an errand on every train that can take stone". One lap was that errand's length
+   then. His answer the same day, steel kit first, puts one more kit at the front of the queue, so the last opening
+   kit loads at +1,345 and the first full load waits 2,252 against 1,266.
+   - **What a player meets:** at the rivet the room is on Ring Island with two bills in front of it. Stone goes to the
+     Village's plot 3, which nobody there is watching and nobody has asked for. The first stone of the leg lands at
+     about 3 minutes 45 instead of about 2 minutes, once.
+   - **Why not let a train owed a kit make the stone stop:** each stop is 108 ticks taken from a kit somebody is
+     standing at a frame for. Frame two's idle was 536 against a limit of 600, and the leg was estimated at 3,670
+     against 3,700 (*arithmetic*, from C and the first sheet), so one stop on a kit train is likely to break gate 14.
+     On the steel train it breaks gate 15 outright: the steel kit is to reach the yard on build 2's own tick. That
+     trades a wait a player stands through for one nobody sees.
+   - **Why it is bounded:** the kits owed at a leg's opening are a fixed, short list, and the last of them loads at a
+     known tick. From there one quiet round trip brings a train with no errand past the Quarry.
+   - **If the new gate fails,** stone is being starved by something other than the opening kits; stop and report with
+     each train's errand at that tick.
+
+**The gates as amended** (others as in the whole gate above):
+
+- **5(a).** With no footings owed, a full load never waits in the Quarry's yard over 1,158 ticks, at any stage, fed or
+  idle. Once a leg, at its opening, a full load may wait until the last kit owed at that opening has loaded and one
+  quiet round trip of that stage after it: at the rivet, **2,805 ticks from the rivet** (1,345 plus 1,460). In that
+  time no train passes a full load unless it is owed a kit or carries one it can unload now; each train that passes
+  is printed with its errand. From then on, 1,158 as written. 5(b), (c) and (d) are unchanged, and 5(c)'s 32 from the
+  idle rivet is still owed on this base.
+- **9.** The settled fuzz, 20,000 ticks from 4,000 after the Gorge opens, four seeds, and the same at stage 0 with the
+  leg open and nobody feeding. _Until train spacing lands: worst at most 1,400; the mean and the share over 1,050
+  printed, not gated; every wait over 1,350 printed with its tick, halt and side._ After it, the train-spacing table.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 105 | Until train spacing lands, leg 1's settled worst wait is at most 1,400 ticks (2 minutes 20), read from "about 2 minutes 15"; fixed until then | Default | Ruling 1. Owner question 3 |
+| 106 | At a leg's opening a full load of stone may wait until the last opening kit has loaded and one quiet round trip more (2,805 from the rivet); no train without a kit errand passes it | Default | Ruling 2; amends call 79 |
+| 107 | A train owed a kit still makes no stone stop | Default | Ruling 2; call 65 kept |
+
+**Counts:** 0 Decided, 0 New, 3 Default.
+
+**Owner question** (it does not hold the build):
+
+3. **"You said waits up to about 2 minutes 15 are fine for the greybox. After the steel kit went first, the worst
+   wait on the finished line measures 2 minutes 20. Is that inside 'about'?"**
+   - **Yes: up to 2 minutes 20, and no further until train spacing lands (recommended; built until he answers).**
+   - No, 2 minutes 15 is the limit: leg 1 waits for a rule that buys back five seconds, or for train spacing.
+   - Drop the finished-line limit for the greybox: only the 2 minutes 40 cap applies everywhere until train spacing.
+   Answer: ___
+
+**What the owner is told about stone:** with the steel kit first, the Village's first stone after the rivet arrives
+about 1 minute 45 later than before, once a leg. The other choice was to make kit trains stop for stone, which slows
+the kit to the frame you are standing at.
+
 ## Design review (designer, 2026-11-12): leg 1 step 4
 
 Answers the step 4 reader's questions b, e, f, g, i, j, k and l before the views are built, and fixes the catalog
