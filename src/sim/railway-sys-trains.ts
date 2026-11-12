@@ -37,6 +37,7 @@ import {
   apertureId,
   cartId,
   depotNeed,
+  footingsOwed,
   footOwed,
   forgeId,
   kitJob,
@@ -219,12 +220,7 @@ function trainIO(w: World, headPct: number): TrainIO {
     },
     // The footing wagon's train is never held for headway (nor by the balanced hold) while the pier or the ring still
     // owes footings (design review, 9; ring-island-build1, R3).
-    headExempt: (slot) => {
-      if (!row(slot).wagon) return false;
-      if (w.get(Works, worksId(w))!.pierSet < WORKS.pier) return true;
-      const a = w.get(Aperture, apertureId(w))!;
-      return q7Laid(w) && a.set + a.cw < WORKS.ring + WORKS.counterweight;
-    },
+    headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
   };
 }
 function trainStep(w: World, tick: number, headPct: number) {
