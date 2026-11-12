@@ -425,3 +425,280 @@ on them before its design review.
 5. The outline builds the White Wall "from High Port north"; rail-map builds the ring from both ends at Home.
 6. [dev-menu](../game-design/dev-menu.md) lists jump rows to "Crossing built"; `JUMPS` also has "Deck laid" and
    "Ring joined".
+
+## Design review (designer, 2026-11-11)
+
+**Verdict: cleared to build.** Steps 1 and 2 start now. Seven changes below go into the catalog and the rules before
+bump G1, so G2 is not spent on this review. Two questions are the owner's; neither holds leg 1. Where this section
+differs from the text above, this section is what gets built. The steps above are left as the planner wrote them.
+
+**Read:** DESIGN.md; owner-calls; the Current rules for core loop, rail and controls, and the full entries for the
+rail map, the junction answers, the blockout, three trains, hauling and the network; campaign-outline in full;
+world-blockout (legs, telegraphing, rulings 5 to 7, knock-ons); rail-map's network shape and answered questions;
+build 2's design review; `dev/loop/standins.ts`; `railway-queries.ts` (`kitJob`, `kitOwed`, `depotNeed`),
+`railway-sys-trains.ts`, `railway-sys-line2.ts` (the forge pours a rail every 0.5 s unasked) and
+`railway-line2-layout.ts` (Q7). Research: [route-contract](../research/route-contract.md),
+[progression-flow-layout](../research/progression-flow-layout.md),
+[vast-world-scale](../research/vast-world-scale.md); the plan follows all three except where flow finding 1 says.
+
+**Ran:** `npm run loop -- node Q7` and `-- node gorge`; ride arithmetic from `rideS` in `dev/economy/ring-sim.ts`.
+**Could not see:** `npm run look` does not start in this worktree (the server's packages are not installed), so there
+are no stills. Sightlines below come from world-blockout's stills notes and the catalog's coordinates. Step 4's two
+looks are the first eyes on leg 1; nothing here was judged from a picture.
+
+### Is a two-hour greybox a fair test of the shape?
+
+Yes for the skeleton, no for the play, and the plan's expected reading is right only by accident.
+
+- **What a section costs a player, as built.** Q7 is the pattern, and the loop tool reads it as four carries of 7 m:
+  28 s solo, 14 s for two. Logs are minted at the camp and the forge pours rails unasked, so nothing else is asked of
+  anyone. The plan's "2.9 s a unit" is the built route's average, chopping included; Q7's rate is 0.7 s a unit.
+- **So areas 4 to 9 hold about 11 minutes of hand work** (24 sections of 28 s), about 12 of watching sections lay,
+  about 40 of rides, and whatever the kit trains make you wait. As planned that wait is 2 to 4 minutes a section
+  ([leg 1's pacing](#leg-1-pacing)), so the route would read near two hours with over an hour of it spent at an empty
+  rack. With the kit running ahead it reads about 1:35 to 1:45, which is the honest floor.
+- **What that floor is good for:** the order, the distances, ride times, what you see from where, the shortcut and
+  the double-back, the gates, and whether the line model stretches. That is the owner's "full outline of the game
+  experience", and it is worth riding.
+- **What it cannot tell:** how long the game is, or whether one area plays differently from the next. With every
+  pickup and barrier on a platform, all six areas are the same forty seconds, and the outline's own risk ("another
+  bill, further away") would be read off the greybox when the greybox built it in. Co-op tells nothing either: a third
+  player has no carry to make.
+
+**The minimum per area.** Three things, none of them a mechanism: a gate that takes the area's flag (the plan has it);
+a reason to step off the train; and that reason standing where the area's contrast is, reached with verbs already
+live (walk, jump, glide). It is a placement on the massing. Keep each walk under 60 s.
+
+| Area | Its contrast (outline) | As planned | Smallest honest stand-in | Decides nothing about |
+| --- | --- | --- | --- | --- |
+| 4 High Gorge | Height | Halt, pickup and gate at platform level; "nobody is sent up" | `pick` stands at the bridge level, at the top of a plain box stair from the platform's end. The stair is ruling 5's (about 165 m of steps, 30 to 40 s); you come down by the glider you already hold | The lift, mining, the hook reel, the town |
+| 5 Bell Rock | A junction on two levels; the first ride that passes Home | Two decks and a ramp | `seeds` on the lower deck by the north–south platform, the Canopy frame and its barrier on the top deck, so the ramp is walked once. The shortcut is the contrast: the exit table records Home to Bell Rock before and after `bay` (the outline claims 5.2 to 2.9 min) | The station plan, how seeds are picked |
+| 6 Canopy Town | The largest footprint; range | A flat deck; the pickup at the halt | `cloth` at the west-shore ledge that faces the Notch, with the shut Notch frame beside it. Measure the walk on the map data and keep it under 60 s | The town, the sling, the glide |
+| 7 The Port | The lock seen on day one | The plug barrier at the West landing | Enough as planned: the double-back is true in greybox. The Wall's first frame stands on Port Quay (ruling 2), so the leg ends facing the next | Breaking the plug, salt sliding, the crane |
+| 8 The White Wall | One exceptional crossing; the lap | A `seeds` barrier on "the fourth section" | The barrier at the deep gap the map data draws, one section per islet. The lap is not in the greybox, and the exit table says so | Collars, through-running |
+| 9 The ending | The last ride | Posts and a card | `lantern` at the arch's foot, off the platform. Enough | The glide, the lantern, the meeting |
+
+### Changes the build takes
+
+1. **Pickups stand off the platform** (New), as the table above. Step 4's massing gains the Gorge's plain stair.
+2. **The kit runs ahead** (New). The next section's kit is owed as soon as the current section's kit is on its rack,
+   and it waits aboard until that section's railhead halt opens. Target: after a leg's first kit, no wait over 60 s
+   with nothing to do outside a ride (build 2's ruling F). Checkpoint A's idle log proves it.
+3. **The Wall grows from Port Quay on the `cave` row** (New; ruling 2 below).
+4. **Sections end at a place** (Default): a halt, an islet or a shore, 300 to 650 m each. Gorge 4, Bell Rock 2 + 2,
+   Canopy 3, the Port 3 (the cave, Saltpan, the quay), the Wall 6 (one for each islet), the ending 1 + 1: 22 sections. The
+   Port's seven stops of 171 m existed only to match the model's unit count, and the unit rates never matched.
+5. **Each leg says where it is** (Default; near-universal rule 1). The objective line names the open leg's frame and
+   the halt maps mark it. Twice the next frame is a ride away and out of sight: the bay frame at Home after the
+   incline reaches Bell Rock, and the Notch frame at Canopy after the Wall closes.
+6. **Get unstuck returns you to the leg's last open halt** (Default; rule 3). A fall from a railhead a kilometre out
+   is otherwise a swim of minutes.
+7. **The exit table splits each area's minutes** into hands, watching the lay, rides and waits (Default). One number
+   an area would hide which of the four it is. It also gains a "not in the greybox" column: the lap, any new verb,
+   co-op work.
+
+Also, small: the hook reel and carry sling rows that "do nothing" are left out (a grant is a bit, added when it does
+something). The Notch barrier's blocked prompt gives its real reason ("After the White Wall", placeholder), since the
+room holds `cloth` from leg 3 and is still refused. The lay speed of a section is a named tunable, starting at Q7's
+(about 25 to 35 s for these lengths). The card takes no input from a player who is not at the marker.
+
+### The planner's three questions
+
+1. **"Do far legs ever take footings by hand?" Default; proceed. Not asked now.** The greybox bill is a stand-in and
+   decides no footing rule. The owner called the one-at-a-time carry "the most pain" and is wary of grinds, and Q7's
+   train-fed pattern is already what the live game does. Ask it after he has ridden leg 1, with the idle log, as the
+   outline suggests.
+2. **"Which end is the White Wall built from, and does the lap run through at greybox?" Default; proceed, with a
+   different answer.** No owner entry fixes the build direction: his answer is "one ring line, as the working map",
+   and the outline is an unruled draft. Build it **from Port Quay, as the `cave` row growing on**, meeting line 2 at
+   the Gorge as two platforms. Reasons:
+   - Flow (lens: end a beat facing the next). Area 7 ends on the quay. From there the Gorge end is about five
+     minutes and two changes away; the quay end is where you stand.
+   - Kit. From the West landing the quay is 1.2 km; from the Village the Gorge is about 3.4 km before the Wall starts.
+   - It needs no yard and no reversed half. The `cave` row's `s` just keeps growing; the reversal belongs to the lap.
+   - Line 2 never needs "twelve trains on one line" in the greybox, the plan's stated risk.
+   - The junction answers hold: a first ride from the station a line was built out of needs no change.
+
+   No lap at greybox. The join stays rail-map's technical plan, written while legs 2 to 4 are built.
+3. **"Is the greybox route visible to everyone as each leg ships?" The owner's.** It is what friends see on the live
+   site, and the 10 November blockout entry kept the walkable layer behind a flag "so players can't reach unfinished
+   areas". Recommendation: yes, live for everyone ([owner question 1](#owner-questions)). Until he answers, G1 ships
+   with the route **closed in the shared room and open in jump-in rooms**: one saved bit on `Route` that the seeds
+   set. He rides it by link the day it ships, friends see no change, and opening it later is one line and a bump.
+   Either way a leg reaches main whole, so the live end of the route is a shut barrier at a halt, never a half-fed
+   frame without its next leg's rules.
+
+### The contradictions
+
+| # | Contradiction | The decided source | Before leg 1 | The length model |
+| --- | --- | --- | --- | --- |
+| 1 | Eight lines or five services | The owner's rail-map answer (10 November): line 2 grows on, so the stack leg is line 2's. The outline and `standins.ts` are a draft and a model | Step 1 regenerates the catalog as five services. `standins.ts` groups legs by stage, not by line, so it keeps working; the line name is only a label | No change from the grouping |
+| 2 | `world-lines.ts` never regenerated | The same entry ("Yes, as its own small reviewed change") and the blockout's rulings | Step 1, as planned, with one addition: restate leg 1's length and sections from the new data. The stack line now leaves the island halt, not Ring top, so expect about 2.0 km (1.91 km in a straight line between the catalog's two halts), and its first stretch is Ring Island's west shore, not sea | Area 4's rides rise about 1 min |
+| 3 | The lift counted as rail | The same entry: the lift is one of the two ruled-out legs. Area 7's track is 1.20 km | Falls out of step 1. The outline's row 7 then reads 1.20 km | Area 7's rides fall about 1.6 min (41 to about 39) |
+| 4 | Generic-line components cover no bills | "We should be reusing components there" (10 November), and "the codebase is the agents' to own": a second copy is a finding | `Leg` reuses the line schedule that `QJob` uses and is written so Q6 and Q7 can fold into it. The fold itself stays the logged leftover while build 2 holds those files. The outline's 3 U for the greybox assumed bills were covered, so leg 1 at L is right | None |
+| 5 | The Wall from High Port, or the ring from both ends at Home | Neither is an owner decision on direction. They agree once the Wall grows on the `cave` half | Ruling 2, in the catalog before G1 | The Wall's south leg starts at the quay, not the 55 m top: about 0.1 km longer, 0.2 min |
+
+**The 3:11 figure needs no correction for track:** the three changes net to about half a minute down, inside its
+rounding (arithmetic from `rideS`; rerun `npm run loop -- run` after step 1 to confirm). Its weak part is the unit
+rate, not the legs. The outline's "new track" column changes (area 4 about 2.0 km, area 7 1.20 km, about 12.3 km in
+all), which is the outline's edit to make.
+
+### Order
+
+Leg 1 is the right first step. It is the route's next beat, and growing line 2 is the plan's largest risk, so it should
+fail first if it is going to. A thinner first leg saves little: the grant, gate and arrive ops are a few lines, and the
+size is in the leg job, the moving railhead and the kit per line, which any first leg needs.
+
+What gets him to the ending sooner is splitting every leg into a **ride pass** and a **proof pass**:
+
+| Order | What ships | He can ride |
+| --- | --- | --- |
+| 1 | Steps 1 and 2: the map data and the whole catalog | |
+| 2 | Leg 1 rideable: steps 3 and 4 and step 5's seeds and jump rows (G1). Checkpoint A in full, once, because it carries every shared system. Alongside on the Mac: the arrival, the card, and each island's massing made resident | To the Gorge |
+| 3 | Legs 2 and 3, and leg 4 beside them: rules, massing, a seed, a jump row and one look each | To Canopy and to the quay |
+| 4 | Legs 5 and 6 the same way | **Wake to the card** |
+| 5 | The proof pass: the loop-graph nodes, the bot chain, the exit table, device lines | |
+
+Deferred to the proof pass: the per-leg bot segments and loop nodes for legs 2 to 6, and their measured minutes.
+Rejoin proofs run where a component first appears (leg 1 for `Leg` and kit aboard, leg 2 for `Yard`, leg 6 for
+`arrived`), not once an area. A frame-time line is taken at the Gorge, where streaming is proved, and at one far
+island; the owner called frame time low priority. The independent review still reads every sim and server batch
+before main.
+
+**Moved, not struck:** the High Gorge `/brainstorm --panel` waits until he has ridden leg 1. It is depth work, phase
+C opens on his verdict on the shape, and the panel is better for his notes. **Parked as look, not system:** P2's
+coast-texture measurement, until an island gets real ground. Nothing else in the plan is detail.
+
+### Save resets
+
+The batching is right and is decided ground: a bump ships when ready, outside his sessions, after `npm run
+heartbeat`. Installing the whole catalog closed in G1 is the good part. Three notes for an owner who plays in the
+evenings:
+
+- Expect three or four resets across this plan, build 2 and slice 5, not nine, if the catalog changes above land
+  before G1. "One bump per leg" is a ceiling to stay well under.
+- A reset sends the shared room back to wake. Each bump's note to him carries the jump link nearest to where the room
+  stood, so an evening is not spent replaying Home.
+- No bump between the day leg 6 ships and his whole ride.
+
+### Leg 1 pacing
+
+Solo, from `ring-joined`, as the plan's rules stand (arithmetic from the built 65 s Village-to-island run and the
+105 s worst wait; not measured):
+
+| Beat | What you do | Seconds | Finding |
+| --- | --- | --- | --- |
+| The leg opens; the frame is on the island's west shore | Walk to it | Under 15 | In sight of the halt |
+| The first kit comes from the Village | Nothing | 65 to 170 | Over a minute. In the real route build 2's steel work is on the same island; from a jump seed it is a bare wait. Accepted for the first kit only, and logged |
+| Feed section 1 | Four carries of 7 m | About 30 | |
+| It lays | Watch | About 30 | Construction you can watch |
+| Section 2's kit: owed only now, loads at the Village, rides out | Nothing | 90 to 195 | **Finding** |
+| Sections 3 and 4, the same | Nothing | 115 to 245 each | **Finding** |
+| The Gorge opens; ride in | Ride | About 100 | The split end-on (ruling 5) |
+| The stair, `pick`, the glide down, the incline's barrier | Climb, take, open | About 90 | With change 1 |
+
+As planned that is 6 to 12 minutes of standing in a leg with 2 minutes of hand work. With the kit running ahead
+(change 2) the waits after the first become the ride to the new railhead, and the leg reads about 9 to 11 minutes.
+
+### Flow, beat to beat
+
+Rides at 20 m/s with stops, from world-blockout's legs table; under ruling 2.
+
+| From | To | How | About |
+| --- | --- | --- | --- |
+| Ring Island halt | High Gorge | Line 2, new | 2 min |
+| High Gorge | Bell Rock, lower deck | `ns`, new | 1:10 |
+| Bell Rock | Home's West landing, for the `bay` frame | The long way: `ns`, line 2, the walk across Home | 5 min, once |
+| West landing | Bell Rock, top deck | `bay`, new | 1:12 |
+| Bell Rock | Canopy Town | `bay` grows on | 1:11 |
+| Canopy Town | West landing, for the plug | `bay` | 2:25 |
+| West landing | Saltpan, Port Quay | `cave`, new | 1:20 |
+| Port Quay | High Gorge, along the Wall | `cave` grows on | 3:35 |
+| High Gorge | Canopy, for the Notch frame | `cave` | 1:50 |
+| Canopy Town | Lantern Notch | `bay` grows on | 0:55 |
+| Lantern Notch | Bell Rock, change, the Original Island | `bay`, then `ns` | 3 min |
+
+**Findings.**
+
+1. **The next goal can be found (rule 1): two beats need a pointer**, covered by change 5. The five-minute ride home
+   from Bell Rock breaks the lens "end a beat facing the next", and it is an exception that works: it is the long way
+   that the shortcut then removes, once. Keep it; do not shorten it.
+2. **A gate keeps its meaning (rule 2): holds.** Every pickup and frame refuses until its own leg is laid, so a
+   swimmer or a glide gains distance and no work ([route-contract](../research/route-contract.md)). An island you can
+   stand on hours early with a post that says "Not yet" is acceptable in the greybox. The reach claims are unproved
+   until each leg adds its island to the level check (level finding 2), which the plan already asks for.
+3. **Nobody is stranded (rule 3): change 6.** All gates are one Interact and work solo. No key can be lost: grants
+   are the room's.
+4. **Co-op.** A friend who joins late at Home is three to six minutes of rides from the railhead and needs change 5's
+   pointer as much as anyone. Bell Rock is the natural place to meet, as the map intends. Nothing in the greybox
+   gives a second or third player work, so its two- and three-player minutes will sit on the solo figure. Report that
+   as "not tested", not as "co-op adds nothing".
+5. **The plan's reading of its own number.** "Near the outline's two-hour floor" should read "about 1:35 to 1:45, a
+   floor on travel and logistics". Decision 2 of the outline is then read against hands, rides and waits apart.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | No quirks, barks, idles, bespoke props or polish; placeholder labels | Decided | Owner, 11 November |
+| 2 | The whole route in greybox before depth; future lines are real server lines from line 1 and 2's components | Decided | [10 November](../decisions-rail.md#d-2026-11-10-block-out-the-whole-map-then) |
+| 3 | The stack leg is line 2 growing on; one ring line as the working map; Bell Rock on two levels, the bay line on top | Decided | [Rail map, 10 November](../decisions-rail.md#d-2026-11-10-open-calls-answered-the-rail-map) |
+| 4 | No Ring top halt; High Port is reached by a lift, the cave line ends at the quay | Decided | The same entry |
+| 5 | A far island is first reached by building the line over the sea and riding it | Decided | [2 November](../decisions-core-loop.md#d-2026-11-02-first-reaching-a-far-island) |
+| 6 | You haul for each segment and the network brings materials closer (the rack-to-frame carry) | Decided | [2 November](../decisions-core-loop.md#d-2026-11-02-hauling); Q7's pattern meets it |
+| 7 | A grant applies to the whole room | Decided | Shared progression, 6 November |
+| 8 | It ends on the Original Island with The Boogler; the world stays open; none of his copy is touched | Decided | The Design Table; "after the finale" |
+| 9 | Ends have buffers and read as terminals; double track; no kinks | Decided | 10 November |
+| 10 | Trains stop on request; a lever a platform side; a departure board | Decided | 10 and 9 November |
+| 11 | A first ride to a new stop needs no change; the one planned change is at Bell Rock for the last leg | Decided | [Junction answers](../decisions-rail.md#d-2026-11-10-big-junctions-are-designed-stations-not); the plan and ruling 2 comply |
+| 12 | The card shows for everyone in the room | Decided | [Shared moments](../decisions-controls.md#d-2026-11-10-shared-moments-play-for-everyone) |
+| 13 | A bump ships when ready, outside his sessions | Decided | Owner calls, 10 November |
+| 14 | Measured for one to three players | Decided | Owner calls, 6 November |
+| 15 | Both branch areas in one fixed order, High Gorge first | **New** | Bends "your choice of order" (2 November). Proceed as a switch; owner question 2 |
+| 16 | The greybox route and its massing on for every player | **New** | Bends the 10 November flag clause. Closed in the shared room until he answers; owner question 1 |
+| 17 | The kit runs ahead of the section being fed | **New** | Change 2 |
+| 18 | Pickups stand where each area's contrast is, off the platform | **New** | Change 1 |
+| 19 | The Wall grows from Port Quay on the `cave` row; two platforms at the Gorge; no lap in the greybox | **New** | Ruling 2 |
+| 20 | Bills are logs and rails on the kit train; no hand-carried footings | Default | Decides no footing rule |
+| 21 | 20 + 20 a section, one train load; the ending's two at 6 + 6 | Default | Q7's bill |
+| 22 | Sections end at a place; 22 of them | Default | Change 4 |
+| 23 | A pickup is a post you Take; a gate is a barrier anyone Opens once the room holds the flag | Default | Decides no mechanic |
+| 24 | Which flag opens what: `pick` the incline and the plug, `seeds` the Canopy frame and the deep span, `cloth` the Notch, `lantern` the causeway | Default | The outline's three long-range gates plus three local ones |
+| 25 | The Notch frame stays shut until the Wall closes, and says so | Default | The fixed order; a true reason on the prompt |
+| 26 | Line 2's fleet grows by stage: 3, 4, 5, 5 | Default | "3 for now" was for the line reaching Ring Island; a line twice as long keeps the same worst wait |
+| 27 | A railhead halt moves out with each section; platforms 40 m a side | Default | `RING_HEAD`'s pattern |
+| 28 | Islands can be reached early; a post reads "Not yet" | Default | Flow finding 2 |
+| 29 | The ending: a marker 12 m from the platform, anyone may press once a train has stopped there, a card with Close, a late joiner reads "Arrived" | Default | The outline's decision 3 as recommended, unruled |
+| 30 | The Original Island is blockout massing, not the classic terrain | Default | The ending's depth plan decides |
+| 31 | The mainland is a backdrop; of the three kept double-backs only the sea cave is in the greybox | Default | The outline's decisions 4 and 7, unruled |
+| 32 | No hook reel or carry sling rows | Default | Nothing uses them |
+| 33 | One island resident at a time, from 400 m | Default | map-prototypes question 3 |
+| 34 | The West landing's kit halt draws on the Village's depot stock | Default | Home's seam is its own brainstorm |
+| 35 | Every label, prompt and jump row is a placeholder | Default | Listed for him; none is The Boogler's |
+| 36 | The objective line and halt maps point at the open leg's frame; Get unstuck goes to the last open halt | Default | Changes 5 and 6 |
+| 37 | A section lays at Q7's speed, as a tunable | Default | |
+| 38 | The exit table splits minutes four ways and lists what the greybox leaves out | Default | Change 7 |
+| 39 | A ride pass for all six legs, then one proof pass | Default | Order, above |
+| 40 | The first kit of a leg may take up to about three minutes | Default | Leg 1's pacing; logged, measured at Checkpoint A |
+
+**Counts:** 14 Decided, 5 New, 21 Default. **Suspect lines of The Boogler's:** none; the plan writes and changes none.
+**Port from Place:** nothing is ported. Q7's kit and `RING_HEAD` are the live game's.
+
+### Owner questions
+
+Neither holds the build.
+
+1. **"Is the greybox route visible to everyone as each leg ships?"**
+   - **Yes: live for everyone past Ring Island, grey and labelled, each leg shipped whole, with a "line under
+     construction" board at its end (recommended).** It is the route he wants to judge, friends' sessions give the
+     co-op reading for free, and nothing waits for a playtest.
+   - Jump-in rooms only until he has ridden wake to the card, then live. Friends see nothing half-made; he still
+     rides each leg by link. This is what ships until he answers.
+   - Never in the shared room as greybox; an area goes live when it is built to depth. Keeps the live game finished,
+     and the whole shape is never played together until Alpha.
+2. **"Do both branch areas keep a choice of order?"** (the outline's decision 1; G1 installs the answer)
+   - **Both areas, High Gorge first, fixed for the greybox (recommended).** The choice can come back later for one
+     more line (the bay trestle) and a bump.
+   - Both orders in the greybox now. Adds the bay trestle, a second route to prove and bills that take either
+     material.
+   - One branch only. The sea cave or the ending's glide loses its key.
