@@ -1052,7 +1052,9 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > seeds over 300 frames, and the lateral's no-jump sweeps).
   > **Deviations, for the owner or the designer:** (1) the laying machine does not travel out onto the deck: it stays
   > parked at the pier head while Q7's deck drops in (the machine's track and panel view are Place's six stretches; a
-  > seventh needs `place/layout.ts`'s line past s 743, which the layout does not hold). (2) The up track's relay waits for
+  > seventh needs `place/layout.ts`'s line past s 743, which the layout does not hold). Once Q7 is laid it leaves the scene
+  > (12 November, docs/agent-calls.md, Rail): parked there it stood on the line trains now run, and its loco pushed
+  > riders off the homeward train. (2) The up track's relay waits for
   > Q7's completion, not its first panel (call 61): the trains' lateral is the sim's, and the sim's end moves only then.
   > (3) The halt displays' map keeps v26's six stops: with the Railhead and Ring Island the 320 x 256 faces cannot place
   > their names ("Pier" covers the Railhead's ring; "Village" covers Camp's), so `island-map-labels` goes red. It needs

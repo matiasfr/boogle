@@ -456,6 +456,14 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
       snapCar(flatbed);
       snapCar(loco);
     },
+    /** Out of the scene, where a train not yet needed waits (car.ts: under the land, undrawn, its chairs unavailable,
+     * no rider carried): once line 2 runs past the pier head the parked machine would stand on its running track. */
+    stow() {
+      if (flatbed.y <= -30 && loco.y <= -30) return;
+      flatbed.y = loco.y = -60;
+      snapCar(flatbed);
+      snapCar(loco);
+    },
     wake(on: boolean, silent = false) {
       st.awake = on;
       st.shudder = 0;
@@ -562,7 +570,7 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
       flatRock.position.y = flatY - st.bump * 0.04;
       flatbed.mesh.scale.set(1 + st.bump * 0.02, 1 - st.bump * 0.04, 1 + st.bump * 0.02);
     }
-    if (st.awake) {
+    if (st.awake && flatbed.y > -30) {
       st.idle += dt;
       if (st.idle > 1.4) {
         st.idle = 0;
