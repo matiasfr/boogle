@@ -104,7 +104,7 @@ and built `TRADE.buildTicks` after `at`, so a late joiner and a reload agree wit
 ### Numbers (`src/sim/railway-trade-layout.ts`, new; `TRADE`, all stand-ins)
 
 - `yards`: Camp `{ line: 0, stop: 1, everyTicks: 150, cap: 8 }`, Quarry `{ line: 1, stop: 1, everyTicks: 300, cap: 8 }`;
-  `freightCap: 8` a train; `loadStop: 4`; yards seeded full. Timber unloads at line 1's Village halt, stone at line 2's.
+  `freightCap: 8` a train; yards seeded full; no `loadStop` (R1 as built). Timber unloads at line 1's Village halt.
 - `routes: [{ town: 0, line: 1, a: 0, b: 2 }]` (the Village and Far Head); `ridersPerMin: 2`, `startBuildings: 2`,
   `crowdStop: 4`, `crowdCap: 24`, `seats: 4`; `fare: { board: 2, per100m: 1 }`.
 - `plots[0]`: `[{ base: 300, wood: 8, stone: 0 }, { base: 800, wood: 24, stone: 0 }, { base: 3000, wood: 40, stone: 16 }]`;
@@ -152,17 +152,17 @@ checkpoint runs for it.
     `railway-check-trade.ts`, `railway-seed-trade.ts` (all new); `railway-components.ts`, `railway-sys-trains.ts`,
     `railway-systems.ts`, `railway-check.ts`, `railway-seeds.ts`, `railway-rows.ts`; `test/railway-trade.test.ts`
     (new), `test/railway-census.test.ts`.
-  - Rules: `yardTick` (`rail.yardTick`, phase `tick`, order 2, after `rail.cartTick` by name and before `trainTick`): while `Rail.trains ≥ 0`, each
-    yard adds one crate every `everyTicks` up to `cap`. In `trainIO.arrive`: a train standing at its line's Village
-    halt unloads `freight` into `Town.wood` or `Town.stone`; a train standing at a yard's halt, heading home, loads
-    `min(freightCap − freight, stock)`, whatever it stopped for. In `serviceOf`: line 2's down trains get a service
-    stop at the Quarry only while its yard holds `loadStop` crates and they have room for them. Each yard row is
-    seeded `stock = made = cap`. The line 2 `arrive` early return for line 1 goes; the kit, wagon and cart untouched.
+  - Rules, **as built** (orchestrator, 11 November: freight never adds a stop): `rail.yardTick` (tick order 2.5, as
+    the schedule refuses a shared order) adds a crate every `everyTicks` up to `cap` while `Rail.trains ≥ 0`. A train
+    unloads on `arrive` at its Village halt and loads `min(freightCap − freight, stock)` each tick it stands at its
+    yard heading home. No `loadStop`, no service stop, no asleep rule in the check (conservation covers it). Measured,
+    20 minutes with nothing asked from five stages: timber 79 to 85, stone 8 once (the train parked at the Quarry at
+    the wake), then none. Plot 3 needs 16: today the only way is to call a down train at the Quarry (owner question).
   - Ops: none. State: `Yard`, `YardClock`, `Town.wood`, `Town.stone`, `Train.freight`. Save shape: three new
     components and one new `Train` field in the railway snapshot.
   - `WORLD_NS`: bumped with R2 (bump A).
   - Tests: two worlds driven alike stay equal row for row; the yard invariant holds every tick across 20 minutes of
-    ticks from `trains-on`; a yard never passes its cap; no Quarry freight stop under `loadStop`; the first line 1
+    ticks from `trains-on`; a yard never passes its cap; freight adds no stop, an ask loads; the first line 1
     arrival home delivers 8; snapshot save and load round-trips; the kit and wagon tests still pass untouched.
   - Seed: `freight-running` (`trains-on` advanced until `Town.wood ≥ 8`).
   - Proof: `npm run checkpoints -- freight-running`; `playthrough --from trains-on --to freight` (a new stop in
@@ -332,7 +332,7 @@ Boogler's charging gag, real cosmetic spending.
 - **Hotspots shared with the Mac's build 2** (`railway-components.ts`, `railway-systems.ts`, `railway-sys-trains.ts`,
   `railway-server.ts`, `namespace.ts`): both append; rebase before each bump. `npm run inflight` on 11 November
   shows no pushed branch on these files.
-- **Trains.** A new service stop at the Quarry and at Far Head changes line 2's timing; the kit and footing wagon
+- **Trains.** R3's service stop at Far Head changes line 2's timing (freight adds none); the kit and footing wagon
   tests and `npm run loop -- run` must hold at C1 and C2.
 - **Server image.** `src/sim` is copied whole; `test/server-image.test.ts` confirms it at C1.
 - **Performance.** Tick work is two yards, one town and three trains. Views are instanced; `npm run perf` is reported
@@ -380,7 +380,7 @@ stills:** nothing is placed beyond town-layout's ruled plots.
 | 3 | A bought house counts after `buildTicks` | Default | **Changed: 100 ticks (10 s), was 600.** A minute before riders rise is a wait nobody can read |
 | 4 | Riders outgrow the seats after the first house; a crowd is left (about 67 a minute, not 84) | Default | Keep: the crowd is the ask for seats, which the garage's path builds |
 | 5 | Cargo stakes plots: 8 timber; 24; 40 and 16 stone; two staked at once | New | Build on it. It re-reads "plots the route stakes", so it is his to confirm (question 1) |
-| 6 | Yards make a crate every 15 s (timber) and 30 s (stone), cap 8; freight is never carried | New | Build, **changed:** yards start full; a Quarry freight stop needs `loadStop` 4 crates |
+| 6 | Yards make a crate every 15 s (timber) and 30 s (stone), cap 8; freight is never carried | New | Build, **changed:** yards start full; as built, freight loads only at stops trains already make |
 | 7 | `town` and `stone` turn true from bought houses, firing the residents' existing lines | New | Build; no copy edited. The lines are reachable for the first time: list them for the owner |
 | 8 | Only plots 1 to 3 are priced (300; 1,600; 12,000); 4 to 8 stay unstaked | New | Build; finding 4 |
 | 9 | One home for the trade numbers, shared with the 2D model | New | Build; logged under Architecture |
@@ -390,9 +390,9 @@ stills:** nothing is placed beyond town-layout's ruled plots.
 1. **A dead two minutes before the first stake (changed).** Empty yards filled at a crate per 15 s, so plot 1 waited
    on a later trip. The yards now start full and the first timber train home stakes it.
 2. **Freight added a stop to every line 2 trip, for good (changed).** At a crate per 30 s the Quarry always "has
-   stock", so every down train would dwell there, on the leg that dominates the route. It now stops only for
-   `loadStop` crates, and a train there for footings loads anyway. C1 and C2 report the worst halt waits.
-3. **Detail struck:** the bought house's interior and "walk in" (V3, the jump table) and C3's atlas story.
+   stock", so every down train would dwell there, on the leg that dominates the route. As built it adds none (R1).
+3. **Parked, not cut:** the house's room and walk-in wait for the details phase ("every building can be walked
+   into" stays decided); C3's atlas story is struck.
 4. **The waiting that remains is off the route.** Trains earn while you play: 300 Boogles is about 5.5 minutes of
    fares and 1,600 about 24 more, inside the Works' 36 minutes; no route step has a price; cargo's thresholds are met
    before the money is. Plot 3's 12,000 is about three hours on this one route: a standing goal no seed, bot or
