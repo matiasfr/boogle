@@ -319,6 +319,51 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       line. Verify: `test/railway-route-rules.test.ts`: each refusal above; a section lays and the railhead halt
       moves; the Gorge opens on the fourth; `pick` is refused before it and granted after; the existing mixed-fleet
       fuzz, 20,000 ticks under random lever asks on the grown line, keeps `sepCm`, the end blocks and a 105 s worst wait.
+      *As built so far (12 November; not shipped, held at the gates; no bump, no fixtures yet):* the rules are on the
+      local branch `wip/greybox-leg1-step3`. **Held:** the 105 s worst wait on the grown line fails (line 2 up to 1,169
+      ticks with four trains and 1,130 with five at the Gorge, the WAIT_BOUND way; 1,440 in the whole-leg fuzz), and
+      stone stops while the leg is built (every train carries a waiting kit and slice 5's call 4 refuses it a freight
+      stop); both await rulings. In plain words, for the designer:
+      - **When a leg opens:** the stack leg opens the moment Ring Island's rivet is struck (its `after` is -1). A leg
+        whose rules are not built yet (legs 2 to 8: their line holds no railhead halt) never opens, whatever its `after`.
+      - **What a train loads, and where:** at the Village (line 2's home halt) a train loads one section's kit (20 logs,
+        20 rails; logs minted as the depot's, rails off the forge rack, holding up to 11 s for rails as Q6's kit did)
+        while the leg still owes kit: all its remaining sections at once (`kitLead`, "all remaining", the longest leg's
+        section count). It keeps running its service with the kit aboard. At the leg's rack (Ring Island's halt while
+        nothing is laid, then the stack railhead) it unloads only what the current section still lacks; the rest rides
+        on until a later railhead opens. The rack is Q6's and Q7's depot rack (`Rail.depot`, `Rail.depotRails`), taken
+        with today's `rail.depotTake` and `rail.depotRailTake`, judged at the current frame once the Q jobs are done.
+      - **`kitOwed`, per line:** a Q job's kit first (Q6, Q7: before any leg opens); with none, an empty train is owed a
+        kit when its line's open leg still has kit to load. Slice 5's freight rule reads it: a train owed a kit, or
+        carrying one, makes no stone stop.
+      - **When the stack railhead is a stop:** from the first section laid, at the last section laid's end (10 m short
+        of it, a stub end that moves on with each section); once the Gorge opens on the fourth it stays a stop at the
+        third section's end, as the Railhead stays at bent 13 (a departure the orchestrator accepted).
+      - **The fleet by stage:** 3, 4, 5, 5 and 5 trains with 0 to 4 sections laid (call 26). The extra two are rows
+        that wait in a shed (phase `SHED`, hidden, on no board) and join at the Village on the up track, one at a time,
+        once their stage runs them and the Village's end block is clear and every train is a block's gap away.
+      - **Lay time:** a section lays 30 s after its last unit is fed (`LEG_TUNE.layTicks` 300), whatever its length.
+        `kitLead` and the lay time are constants in `src/sim/railway-route.ts`, not room tunables (accepted for now).
+      Built: `Leg`, `LegYard` (nothing feeds it until leg 2) and `Route`, spawned last; `src/sim/railway-sys-route.ts`
+      (`rail.legStock`, the lay tick, `rail.grant`, `rail.gate`, `rail.arrive`), `railway-sys-route-kit.ts` (the kit on
+      the trains), `railway-queries-route.ts`, `railway-check-route.ts`; line 2's stack railhead and High Gorge halts
+      and its path on to the Gorge; `ns`, `bay` and `cave` as lines 2 to 4, every halt shut, no trains (their train
+      rows come with leg 2 and its own bump). The server validates the four ops (catalog indexes, judged at the frame,
+      the post or the marker). Departures, accepted by the orchestrator: the "gate shut" refusal of `rail.legStock`
+      cannot be tested yet (no built leg has a barrier on a section; the incline's opens only once leg 2 is built);
+      conservation (`railCounts`, the depot and shelf sums) stands in for "kit loaded equals aboard, racked and fed",
+      which units carried off break; `rail.arrive` checks that a train stands at the causeway's end now; the `ring`
+      row's centimetres run 100 cm ahead of line 2's s (the generator measured the pier head along Place's sampled
+      path, line 2 counts from RING_S_HEAD), so the rules shift the row rather than regenerate the catalog or move
+      line 2's halts (a comment in `railway-route.ts`; a test ties the shift to the catalog and to line 2).
+      **Not predicted:** `railway-predict.ts` is unchanged, so `rail.legStock`, `rail.grant`, `rail.gate` and
+      `rail.arrive` wait for the server: the player's press shows nothing until the reply, about one round trip later
+      (a feed whose units leave the back late, a post or barrier that answers late). Acceptable for the greybox, not
+      final: the views step decides. **The endMoved test** (`test/railway-trains.test.ts`, "endMoved at Far Head is
+      v26's Q6 hunk, row for row"): it drives `endMoved` with its own rows for line 2's first three trains only and
+      checks the world's tick moves them exactly as v26's Q6 hunk did. With the fleet rows, `endMoved` and `stopMoved`
+      walked slots the test's IO holds no row for and threw; they now skip a slot with no row (a shed train is never
+      moved anyway), so the test passes unedited and every train it holds moves as before.
 - [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
