@@ -3,6 +3,7 @@
 // Run either Split-rock half against an accepted host seed (docs/plans/split-rock-roundhouse.md, J5e):
 // `railFrom=works` with `--rail-seed works-arrive`, `railFrom=wagon` with `--rail-seed wagon-on`; `railStop` ends at a
 // named checkpoint. No teleport, direct op or recovery.
+// npm run look -- --rail-seed works-arrive --query 'shot=play&railFrom=works&railStop=breaker' --eval dev/look/evals/railway-works-bot.ts --until window.__placeDone
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { splitRockToCrossing } = (await import(
   '/dev/look/bots/railway-works.ts' as string
