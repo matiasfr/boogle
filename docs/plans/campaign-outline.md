@@ -71,6 +71,74 @@ allowances are [world-blockout](world-blockout.md#areas)'s, from the economy mod
 plays at roughly half its allowance for experienced players. No fresh player has played the whole route, so the
 first-time figure is unknown. This is the outline's largest open number (decision 2).
 
+## Whole-route lower bound (stand-ins)
+
+Step 1 of [section 5](#5-order-of-work), run on 11 November at `7d51689d0` (world v27): `npm run loop -- run`. Areas
+1 to 3 are played through the real rules, as in section 2. Areas 4 to 9 are **stand-ins**
+(`dev/loop/standins.ts`, each flagged `standIn: true`): a bill, the area's legs and a gate, nothing else, and they are
+modelled, not played. It uses this outline's defaults (both branch areas, High Gorge first, fixed order); the
+alternatives are flags (`--branch-first canopy`, `--one-branch`, `--bills 1.5`).
+
+| # | Area | Basis | Bill units | New track | 1 player | 2 players | 3 players | Model's allowance |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Home | Bot-timed (built) | | | 17 | 14 | 13 | 36 |
+| 2 | Split-rock Works | Bot-timed (built) | | | 8 | 9 | 9 | 36 |
+| 3 | Ring Island, build 1 | Bot-timed (built) | | | 8 | 8 | 8 | 36 |
+| 4 | High Gorge | Modelled | 160 | 1.70 km | 25 | 23 | 23 | 72 |
+| 5 | Bell Rock and the bay shortcut | Modelled | 154 | 2.38 km | 27 | 25 | 25 | 30 |
+| 6 | Canopy Town | Modelled | 156 | 1.20 km | 21 | 19 | 19 | 42 |
+| 7 | Sea cave, Saltpan, High Port | Modelled | 270 | 1.68 km | 41 | 37 | 37 | 48 |
+| 8 | The White Wall line | Modelled | 252 | 3.82 km | 35 | 32 | 32 | 48 |
+| 9 | Lantern Notch, the causeway, the Original Island | Modelled | 25 | 1.63 km | 7 | 7 | 7 | 18 |
+| | **Whole route, minutes** | | 1,017 | 12.4 km | **191** | **173** | **175** | 366 |
+| | **Hours, and share of the six-hour target** | | | | **3:11 (53%)** | **2:53 (48%)** | **2:55 (49%)** | 6:06 |
+
+**Measured:** rows 1 to 3 only, and by a bot: straight-line walking at 5.6 m/s, no rides, every press right first
+time. Nothing here is a person's time. **Modelled:** rows 4 to 9. Each bill is the main-route bill the economy model
+charges that area's steps (`ring-sim.ts`), so it is the bill the allowance was sized on, not a designed one. Each unit
+costs what a unit cost the bot on the built route at that player count: 21.6 s a footing solo (one per back, cast by
+the kiln, brought by the wagon) and 2.9 s for any other unit (the rest of the built run spread over its logs, stone
+and rails). New materials (steel, copper, fibre, crystal) are charged as ordinary units. Legs are the generated line
+catalog's lengths (`src/sickle/world-lines.ts`), ridden out and back once per model step at 20 m/s.
+
+| Sensitivity (whole route, h:mm) | 1 player | 2 players | 3 players |
+| --- | --- | --- | --- |
+| As above | 3:11 | 2:53 | 2:55 |
+| Walking at the human detours measured so far (`dev/loop/detour.json`) | 3:28 | 3:09 | 3:06 |
+| Canopy Town first, both areas (adds the bay trestle) | 3:18 | 3:00 | 3:01 |
+| One branch only: High Gorge (the ending's glide loses its key) | 2:50 | 2:34 | 2:35 |
+| One branch only: Canopy Town (the sea cave loses its key) | 2:52 | 2:36 | 2:37 |
+| Every stand-in bill 1.5 times larger | 4:11 | 3:46 | 3:48 |
+| Floor: footings carried in packs like logs, as the economy model reads them | 2:00 | 1:53 | 1:51 |
+
+**The range: 1.9 to 3.5 hours for one to three players as a bot plays it; 3.8 to 4.2 with bills half again as large.**
+One assumption carries most of it: the 228 footings on the stand-in bills, at the built rate, are 82 of the 157
+modelled minutes solo.
+
+**What this cannot tell.** Puzzles, discovery, looking for the next goal, first-time confusion, falls and retries,
+the ending, and any new verb (the lift, salt sliding, the lap): the stand-ins hold none. The economy model budgets
+160 of its 258 minutes for areas 4 to 9 as that authored play, and all of it is absent here. It also leaves out Ring
+Island build 2, town growth and Boogle goals, the five double-backs, waiting for trains, and the rides between areas.
+People are slower than the bot: the one measured pair took 43.5 minutes to the last pier footing, where two bots take
+22:40, so 1.9 times. If that held for the whole route (an extrapolation from one session on a third of the game), two
+experienced players would take about 5.5 hours, and 3.6 at the floor.
+
+**What it suggests for decision 2 (a recommendation; the decision text is unchanged).** Risk 1's sign is met: the
+rough route reads under four hours solo. The recommended answer still fits, and the numbers say where to spend it.
+
+- The gap for a bot is about three hours, and for experienced people perhaps half an hour to two and a half. That
+  is no more than the authored play the model already assumed (160 minutes), so puzzles and discovery in the small
+  areas can fill it without larger bills. Bills do work as a lever (half again as large adds an hour), but about two
+  thirds of that hour would be footing carries, the grind he is wary of.
+- Friends barely shorten it (2:53 against 3:11), because the kiln and the wagon set the pace of footings, not hands.
+  That keeps one to three players close, as the six-hour entry asks.
+- Two areas are out of proportion to their allowance: Bell Rock's bill is as large as High Gorge's for under half
+  the allowance (27 modelled minutes against 30, so no room for anything else), and the ending is 7 against 18. Bell
+  Rock's bill is the first to cut or move.
+- Cutting a branch saves about 20 minutes of a bot's time, not the 40 to 70 in decision 1, and loses a gate.
+- The footing rule for areas 4 to 9 (one per back or packed) is worth an hour and more. It should be decided on the
+  greybox's first leg, before any bill is designed.
+
 ## 3. The finite area list
 
 **Decided:** the Sickle Isles map ([6 and 7 November](../world/map-prototypes.md#owner-decisions-after-the-greybox-7-november));
@@ -195,7 +263,8 @@ version. This reverses a standing call at its own stated trigger, so it is decis
 
 1. **Extend the loop graph to the ending with stand-in nodes** (`dev/loop/graph.ts`; areas 4 to 9 with allowance-sized
    bills and the legs' real lengths) and run it. A day's work that gives the first whole-campaign lower bound and tells
-   decision 2 how short the route really is, before any line is built.
+   decision 2 how short the route really is, before any line is built. **Done, 11 November:**
+   [Whole-route lower bound](#whole-route-lower-bound-stand-ins).
 2. **Ring Island build 2**, with the first real install: the steel works, the longer boiler through the garage, the
    train through the ring. It closes the first "big area unlocks a component" loop end to end and makes the garage real.
 3. **The greybox route's plan and first leg**: the stack line to High Gorge as a server line with a stand-in bill,
