@@ -189,8 +189,8 @@ export function trainServes(
   }
   return best;
 }
-/** Why a train stops at a halt: its riders' ask, a lever ask it serves, or a service stop; never at a halt that
- * refuses its way (trainPassesBy). */
+/** Why a train stops at a halt: its riders' ask, a lever ask it serves, a service stop, or (a line with `control`,
+ * when `control` says it may act for this train) a control stop; never at a halt that refuses its way (trainPassesBy). */
 export function trainReasons(
   rows: Rows,
   line: LineRef,
@@ -199,13 +199,82 @@ export function trainReasons(
   lineReq: number,
   tick: number,
   service: ServiceStop,
+  control = false,
 ): ServiceStop {
   const n = stops.length;
   return (k, dir) =>
     !trainPassesBy(line, k, dir, n) &&
     (reqHas(rows(slot).req, k, dir, n) ||
       service(k, dir) ||
-      (reqHas(lineReq, k, dir, n) && trainServes(rows, line, stops, k, dir, tick) === slot));
+      (reqHas(lineReq, k, dir, n) && trainServes(rows, line, stops, k, dir, tick) === slot) ||
+      (control && controlStop(rows, line, stops, slot, k, dir, tick)));
+}
+
+// ---------------------------------------------------------------- candidate B: the control halt (scratch)
+/** The circuit gaps from train `slot` to the nearest serving train ahead and behind; null with no other train. */
+function trainGaps(rows: Rows, line: LineRef, stops: readonly number[], slot: number, tick: number) {
+  const others = servingSlots(rows, line).filter((k) => k !== slot);
+  if (!others.length) return null;
+  const c = circuitLen(stops),
+    me = trainPose(rows(slot), line, stops, tick).c;
+  let ahead = c,
+    behind = c;
+  for (const k of others) {
+    const p = trainPose(rows(k), line, stops, tick).c;
+    ahead = Math.min(ahead, circuitAhead(me, p, c));
+    behind = Math.min(behind, circuitAhead(p, me, c));
+  }
+  return { ahead, behind };
+}
+/** Whether halt `k` going `dir` is a control stop for train `slot` now (RailLineDef.control): a control halt, open,
+ * not an end, the train's way, and the gap ahead shorter than the gap behind by more than `on` (`off` once the train is
+ * bound for or standing at it: hysteresis read from the row). */
+export function controlStop(
+  rows: Rows,
+  line: LineRef,
+  stops: readonly number[],
+  slot: number,
+  k: number,
+  dir: number,
+  tick: number,
+) {
+  const ctl = lineDef(line).control;
+  if (!ctl || !ctl.halts.includes(k) || k >= stops.length || atEnd(k, stops)) return false;
+  const r = rows(slot);
+  if ((r.track ? -1 : 1) !== dir) return false;
+  const bound = r.phase === TRAIN_PHASE.RUN ? r.to === k : r.at === k;
+  const g = trainGaps(rows, line, stops, slot, tick);
+  return g !== null && g.ahead + (bound ? ctl.off : ctl.on) < g.behind;
+}
+/** Whether the control may act for train `slot` (RailLineDef.control): never for the headway-exempt train, one the IO
+ * puts off (an errand, footings owed), or one a lever ask is assigned to (other than one it stands at, serving it). */
+function controlFree<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, tick: number) {
+  const ctl = lineDef(line).control;
+  if (!ctl || io.headExempt(slot) || io.controlOff?.(line, slot) !== false) return false;
+  if (ctl.asks) return true;
+  const stops = io.stops(line),
+    n = stops.length,
+    req = io.line(line).req,
+    r = io.row(slot),
+    way = r.track ? -1 : 1;
+  for (let k = 0; k < n; k++)
+    for (const dir of [1, -1]) {
+      if (!reqHas(req, k, dir, n)) continue;
+      if (r.phase === TRAIN_PHASE.STAND && r.at === k && dir === way) continue;
+      if (trainServes(io.row, line, stops, k, dir, tick) === slot) return false;
+    }
+  return true;
+}
+/** The control hold: a train standing at a control halt past its dwell waits while the gap ahead plus `off` is
+ * shorter than the gap behind, at most `cap` ticks past the dwell from its `arrived`. */
+function controlHold<L extends LineRef>(io: TrainIO<L>, line: L, stops: readonly number[], slot: number, tick: number) {
+  const ctl = lineDef(line).control,
+    r = io.row(slot);
+  if (!ctl || r.at < 0 || !ctl.halts.includes(r.at) || atEnd(r.at, stops)) return false;
+  if (tick >= r.arrived + TRAIN.dwellTicks + ctl.cap) return false;
+  if (!controlFree(io, line, slot, tick)) return false;
+  const g = trainGaps(io.row, line, stops, slot, tick);
+  return g !== null && g.ahead + ctl.off < g.behind;
 }
 export type Leg = { to: number; dest: number; reason: boolean };
 /** The leg train `slot` plans from (`s`, `v`) on `track`: to its next reason (or its end) when the blocks allow it,
@@ -276,6 +345,8 @@ export type TrainIO<L extends LineRef = number> = {
   /** The trains the line runs at its stage now (railway-train.ts, fleetOf; the greybox route, step 3). Absent (a test's
    * fixture IO): no train ever joins from the shed. */
   fleet?(line: L): number;
+  /** Candidate B (scratch): the control is off for this train now (footings owed, an errand). Absent: always off. */
+  controlOff?(line: L, slot: number): boolean;
 };
 /** A running train's leg, judged again from its pose now: shortened for a reason it can still brake for, or
  * lengthened past a hold the train ahead has moved off. The pose stays continuous (`from` is where it is now). */
@@ -285,7 +356,16 @@ function replan<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, tick: 
     stops = io.stops(line),
     dir = r.track ? -1 : 1;
   const pose = trainPose(r, line, stops, tick);
-  const reasons = trainReasons(io.row, line, stops, slot, io.line(line).req, tick, io.service(slot));
+  const reasons = trainReasons(
+    io.row,
+    line,
+    stops,
+    slot,
+    io.line(line).req,
+    tick,
+    io.service(slot),
+    controlFree(io, line, slot, tick),
+  );
   const leg = planLeg(io.row, line, stops, slot, { s: pose.s, v: pose.v, track: r.track }, tick, reasons);
   if (!leg || leg.dest === r.dest) return;
   const heldNow = r.to < 0 || !(atEnd(r.to, stops) || reasons(r.to, dir));
@@ -429,7 +509,17 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
         left = from === 0 ? io.line(line).left0 : io.line(line).left1;
       if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
       if (end && balancedHold(io, line, stops, slot, from, tick)) break;
-      const reasons = trainReasons(io.row, line, stops, slot, io.line(line).req, tick, io.service(slot));
+      if (!end && controlHold(io, line, stops, slot, tick)) break;
+      const reasons = trainReasons(
+        io.row,
+        line,
+        stops,
+        slot,
+        io.line(line).req,
+        tick,
+        io.service(slot),
+        controlFree(io, line, slot, tick),
+      );
       const leg = planLeg(io.row, line, stops, slot, { s: r.from, v: 0, track: r.track }, tick, reasons);
       if (!leg) break; // held: the block ahead is not clear
       const dir = r.track ? -1 : 1;
