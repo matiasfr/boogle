@@ -1,6 +1,7 @@
 // The town economy's facts on the world (docs/plans/slice5-town-economy.md, "Queries"): the one home for trade
 // arithmetic, pure reads that the trade systems, the trains' side of them and the load check share. R1: the yards and
-// the freight (which never adds a stop: a train loads only where it already stands).
+// the freight (a train loads where it stands); R2: the staked plots; R2b: the full-load stop (freightStop), the one
+// stop freight adds.
 //
 //   yardId, townId                 the rows' entity ids by slot
 //   lineYard(line)                 the yard slot a line loads at and delivers for (-1 none)

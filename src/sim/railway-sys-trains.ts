@@ -122,9 +122,10 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
 /** The stops a line 2 train makes with no request (docs/plans/works-late-game.md, step 1): the village going home
  * while the active train-fed job's kit is owed and not aboard, and that job's halt (`kitStop`: Q6's Far Head, Q7's
  * the Pier, call 62) while it is aboard; the quarry going out while its wagon has room and footings are owed; the Pier
- * while its wagon carries the pier's footings (before Q7), the Railhead going out while it carries the ring's. Line 1
- * carries nothing by train. Trains run end to end on their track since v26, so no ask can turn one back short of an
- * errand. */
+ * while its wagon carries the pier's footings (before Q7), the Railhead going out while it carries the ring's. Slice 5's
+ * freight clause comes first, on any line (R2b, freightStop): a yard at a middle halt, once its `after` is met, for a
+ * homeward train that is empty and on no build errand when a whole trainload waits. Trains run end to end on their
+ * track since v26, so no ask can turn one back short of an errand. */
 function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
   // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop).
   const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir);
@@ -175,7 +176,8 @@ function trainIO(w: World, headPct: number): TrainIO {
       wagonArrives(w, r);
     },
     standing(slot, tick) {
-      // A train standing at its line's yard heading home loads; freight never adds a stop (slice 5, R1 as built).
+      // A train standing at its line's yard heading home loads, whatever it stopped for (slice 5; R2b's full-load stop
+      // in serviceOf is the one stop freight adds).
       freightLoads(w, slot);
       if (!line2(slot)) return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       const r = row(slot);
