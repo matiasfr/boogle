@@ -413,3 +413,89 @@ stills:** nothing is placed beyond town-layout's ruled plots.
    fares and 1,600 about 24 more, inside the Works' 36 minutes; no route step has a price; cargo's thresholds are met
    before the money is. Plot 3's 12,000 is about three hours on this one route: a standing goal no seed, bot or
    checkpoint waits for. So the slice cannot close the gap to six hours, and must not be asked to by raising prices.
+
+## Design review (designer, 2026-11-11): freight stops (R2b)
+
+Rules the [open design item](#open-design-item-trains-stop-at-every-resource-source) against the owner's answer of 12
+November UTC ([entry](../decisions-rewards.md#d-2026-11-12-town-economy-answered)). **Verdict: build R2b as below.** 2
+decided, 3 default, 2 new. **Read:** R1 and R2 as built on `origin/rail/slice5-r1-freight-b` (`railway-sys-trade.ts`,
+`railway-trade-layout.ts`, `railway-queries-trade.ts`, `serviceOf` in `railway-sys-trains.ts`); they are not on main.
+**Not run:** no sim, bot or `npm run loop` run was made for this ruling; every figure marked "by arithmetic" is from
+the code's constants and is R2b's gate to measure. **No stills:** nothing is placed, moved or gated in the world; the
+Quarry's down platform stands today.
+
+**Where the 108 ticks come from (by arithmetic).** A stop costs the dwell (`TRAIN.dwellTicks` 50) plus braking from and
+climbing back to 200 cm a tick at 3.5 (2 × (57.1 − 28.6) ≈ 57 ticks): about 107, the 108 measured. It is the price of
+one stop, 10.8 s. Line 2's round trip with the Pier as its end is about 930 ticks, so a stop on every down trip is
++11.6% for good (finding 2 of the first review). The stone yard makes 8 crates, one trainload, every 2,400 ticks.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Freight is hauled by trains, never by hand, and the player never has to call a train for it | Decided | Owner, 12 November UTC. Confirms the "never carried" half of first-review row 6 |
+| 2 | The Quarry's stone stop starts once the pier's footings are done; before that stone moves only as R1 built it | Decided | Owner's pick, same entry. "Done" is read as all twelve set: `Works.pierSet ≥ WORKS.pier` |
+| 3 | "Stops at all resource sources" is met by a **full-load stop**: a yard at a line's end is served by every train that stands there (the Camp, as built); a yard at a middle halt gets a service stop only when a whole trainload waits. No scheduled stop on every train, no separate freight train | New | Build. One stop per trainload is the fewest stops that still hauls everything the yard makes; scheduled stops are finding 2 again (+11.6% a trip); a freight train is a fourth slot in `RAIL_TRAINS` (catalog order, the headway split and every pinned fixture move). Owner question 1 |
+| 4 | A train on a build errand never makes the freight stop: the footing wagon's train, a train with a kit aboard, and any train while a kit is owed | New | Build. It is how "freight adds no waiting on the main route" survives the stop: the trains that carry the route's work keep their timings |
+| 5 | The stop itself: line 2, heading home, at the Quarry's down platform; the normal 50-tick dwell; `loadStop` 8 (= `freightCap`), so the train must be empty and takes exactly 8 crates | Default | Tunables. 8, not the old 4: the same stone for half the stops. By arithmetic one stop about every 2,400 to 2,700 ticks, roughly one down train in eight, about 40 stone in 20 minutes |
+| 6 | It applies whoever is aboard or waiting; the sim reads no player for it. A rider on that train sees the crates load and gets home 10.8 s later. The Quarry's lever and a rider's ask still load stone at any time, as R1 built | Default | Keep. The load is the show ("Show, don't tell"), and a player check would be a second rule for a 10.8 s stop once in about four minutes |
+| 7 | The proof gate's limits (below) | Default | Numbers to change after C1 reports |
+
+**The ruling, item by item.**
+
+1. **The stop.** From the tick the pier's twelfth footing is set, a line 2 train heading home stops at the Quarry when
+   the yard holds 8 crates, the train carries no freight, and it is on no build errand (call 4). It dwells 50 ticks and
+   leaves with 8. The yard is already full by then, so the first free down train after the last footing loads, and the
+   Village has its 16 stone (8 from the wake, 8 now) about one headway and a 14 s run later: plot 3's stone threshold
+   is met in under a minute, hours before its 12,000 Boogles. **Headway:** one train in about eight is 108 ticks late
+   once; line 2's balanced hold (cap 600) spreads them again at the ends. **Build legs:** every stage up to the
+   twelfth footing cannot move (the rule is off); after it the wagon's and the kit's trains never stop for stone, so
+   the only cost left is a work train caught in the block behind a loading train, at most 108 ticks a time.
+2. **Cheapest on R1 and R2 as built: the full-load stop.** `freightLoads` already loads any train standing at its yard
+   heading home, whatever it stopped for, and `freightArrives` already unloads. R2b is one clause in `serviceOf`, one
+   constant and one query. No new state, op, component or save shape.
+3. **The two rows.** The 11 November Default "line 2 stops at the Quarry for freight only when 4 or more crates wait"
+   is **changed** in that half by his answer and calls 3 to 5 (its other halves stay open). The New row "freight is
+   its own integer and never becomes logs, stone or rails a player carries" is **confirmed** in its never-carried half
+   (its yard rates stay open stand-ins). The R1 branch's own row ("you call a down train at the Quarry to haul stone;
+   that is the only way today") is contradicted outright: mark it `changed` when that branch lands; it is not on main.
+4. **The next plan** (growing the town by hand, his answer 2) must keep the hand work at the plot: crates the trains
+   brought are raised there; nobody carries them from a source.
+
+**R2b. The stone stop (S). Independent review: yes (`src/sim`).** After R1 and R2; rides bump A if that has not
+shipped, else bump B (a rule change, no shape change).
+
+- Files: `src/sim/railway-trade-layout.ts` (`loadStop: 8`; the Quarry yard gains `after: 'pier'`),
+  `railway-queries-trade.ts` (`freightStop(w, slot, r, k, dir)`: the train's line has a yard at middle halt `k`,
+  `dir < 0`, the yard's `after` is met (`pierSet ≥ WORKS.pier`), `stock ≥ loadStop`,
+  `freightCap − r.freight ≥ loadStop`, and not `r.wagon`, `r.logs + r.rails > 0` or `kitOwed(w, r)`),
+  `railway-sys-trains.ts` (`serviceOf` ors it in, ahead of the line 2 early return so a later line's yard gets it
+  from data alone), `test/railway-trade.test.ts`, this plan's R1 text and Numbers, `docs/game-design/place.md`.
+- Tests (replace "freight never adds a stop"): no Quarry freight stop on any tick before the twelfth footing; after
+  it, with nothing asked, each stop loads exactly 8 and none is made by a wagon, kit or kit-owed train; an up train
+  never stops for freight; a lever ask still loads before and after; determinism and the yard invariant as R1.
+- **Proof gate** (C1 runs it; measured against R1 as built):
+  1. Every seed stage up to the pier's twelfth footing is tick for tick what it was: its pinned fixtures do not move.
+  2. Each later stage (`deck-laid` to `ring-joined`) is at most 108 ticks later than before, leg by leg, and
+     `ring-joined` at most 324 in all. `npm run loop -- run`: order and bills unmoved.
+  3. The worst wait at each line 2 halt, before and after, stays under C1's 1,050-tick bound, and no worse than 108
+     ticks above R1's figure.
+  4. Stone: 20 minutes with nothing asked from the first post-footings stage delivers at least 32, timber still 79
+     to 85.
+  - If 2 or 3 fails: also refuse the stop while the wagon's train is the next train behind on the down track, and
+    measure again. If it still fails, report to the designer; do not raise the limits.
+
+**Findings.**
+
+1. **Before the twelfth footing, stone still arrives only by an ask** (8 at the wake, then none). That is his pick,
+   and it costs nothing: plot 3 is three hours of fares away. V1's stone stack at the Village will sit at 8 through
+   the Works; the Quarry's yard standing full beside passing trains is the thing a player may read as broken. Not a
+   blocker; watch for it in the first owner session.
+2. **The principle is now data, not a Quarry special case.** A later source (the steel works' yard, a second town's)
+   is a `TRADE.yards` row: at an end it loads free, at a middle halt it gets the full-load stop. Its `after` gate is
+   that plan's call.
+
+**Owner question (one).**
+
+1. **Is a stop only when a full trainload waits what you meant by "stopping at all resource sources"?** Recommended:
+   **yes.** Every source is served with nobody asking, and a train stops about once in four minutes instead of every
+   trip. The alternative, every down train stopping at the Quarry, costs 10.8 s on each trip for the rest of the
+   game. Until he answers, R2b builds the full-load stop; switching is `loadStop` 8 to 1. Answer: ___
