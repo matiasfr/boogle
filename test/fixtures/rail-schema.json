@@ -566,7 +566,9 @@
         ["rails", "int"],
         ["start", "int"],
         ["loadedLogs", "int"],
-        ["loadedRails", "int"]
+        ["loadedRails", "int"],
+        ["heldLogs", "int"],
+        ["heldRails", "int"]
       ]
     },
     {

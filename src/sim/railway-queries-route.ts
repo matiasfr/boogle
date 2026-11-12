@@ -10,6 +10,7 @@
 //   legKitHalt(line), legKitStop(w, k)   where a leg's kit loads (its line's home halt) and unloads (the rack's halt)
 //   legKitCap(w, k)              one kit: the current section's bill (one kit a train)
 //   legKitNeed(w, k)             the kit still to load for the sections owed ahead (LEG_TUNE.kitLead)
+//   legHeldRoom(w, k)            the most a leg's held counts (units lifted off its rack onto backs) may reach
 //   legRackNeed(w, k)            what the current section still lacks, fed and racked
 //   legKitSurplus(w, slot)       the leg kit aboard a train that no open leg's remaining sections lack (it goes home)
 //   legKitOwed(w, line, r)       an empty train on `line` is owed a kit at its kit halt (within kitTrains)
@@ -78,17 +79,29 @@ const aboardLine = (w: World, line: number, key: 'logs' | 'rails', skip = -1) =>
     const t = w.get(Train, w.lookup(Train, s)!)!;
     return n + (t.legKit && s !== skip ? t[key] : 0);
   }, 0);
-/** Logs or rails on the players' backs (a unit lifted off the rack on its way to the frame). */
+/** Logs or rails on the players' backs. */
 const onBacks = (w: World, key: 'carry' | 'rails') => {
   let n = 0;
   w.each([Account], (_id, a) => (n += a[key]));
   return n;
 };
+/** What leg k's held counts may reach (Leg.heldLogs, Leg.heldRails): its remaining sections' bills less what is fed
+ * (nothing once it is complete). The load check's bound; a lift is clamped to it. */
+export function legHeldRoom(w: World, k: number) {
+  const row = legRow(w, k),
+    out = billOf(k, row.laid, RAIL_LEGS[k]!.sections.length);
+  return { logs: out.logs - row.logs, rails: out.rails - row.rails };
+}
+/** Leg k's units on backs: those lifted off its rack and not yet fed or put down (Leg.heldLogs, Leg.heldRails), never
+ * more than every back carries (a unit that left a back by a way that does not count it off). */
+const heldOf = (w: World, k: number, key: 'carry' | 'rails') =>
+  Math.min(key === 'carry' ? legRow(w, k).heldLogs : legRow(w, k).heldRails, onBacks(w, key));
 /** The kit still to load for leg k (ruling 1.4, "the kit runs ahead by the whole leg"): the bills of the current
  * section and the next LEG_TUNE.kitLead - 1, less what is fed, on the rack (Rail.depot, Rail.depotRails: the
- * train-fed rack, Q6's and Q7's), aboard the line's trains and on the players' backs. A unit lifted off the rack and
- * then dropped, or fed to another bill, is owed again (the step 4 review's finding 2: a unit taken from one rack can
- * never short the leg's bill), so the leg can always complete. */
+ * train-fed rack, Q6's and Q7's), aboard the line's trains and lifted off the rack onto backs (heldOf; the step 3
+ * review's P2-2: not every back's logs and rails, so the steel works' rails held, or a leaver's, never short it). A
+ * unit lifted off the rack and then dropped, or fed to another bill, is owed again (the step 4 review's finding 2: a
+ * unit taken from one rack can never short the leg's bill), so the leg can always complete. */
 export const legKitNeed = (w: World, k: number) => kitOwed(w, k, -1);
 /** legKitNeed, not counting what train `skip` carries (-1: every train's). */
 function kitOwed(w: World, k: number, skip: number) {
@@ -98,10 +111,10 @@ function kitOwed(w: World, k: number, skip: number) {
     to = Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead);
   const out = billOf(k, row.laid, to);
   return {
-    logs: Math.max(0, out.logs - row.logs - rail.depot - aboardLine(w, leg.line, 'logs', skip) - onBacks(w, 'carry')),
+    logs: Math.max(0, out.logs - row.logs - rail.depot - aboardLine(w, leg.line, 'logs', skip) - heldOf(w, k, 'carry')),
     rails: Math.max(
       0,
-      out.rails - row.rails - rail.depotRails - aboardLine(w, leg.line, 'rails', skip) - onBacks(w, 'rails'),
+      out.rails - row.rails - rail.depotRails - aboardLine(w, leg.line, 'rails', skip) - heldOf(w, k, 'rails'),
     ),
   };
 }

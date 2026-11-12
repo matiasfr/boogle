@@ -61,6 +61,7 @@ import {
 } from './railway-sys-line2.ts';
 import { call, trainTick } from './railway-sys-trains.ts';
 import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
+import { legKitRelease } from './railway-sys-route-kit.ts';
 import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
 import { tradeTick, yardTick } from './railway-sys-trade.ts';
@@ -169,6 +170,7 @@ export const RAIL_ENTRIES: readonly System<never, unknown>[] = [
   boilerStood,
   boilerPutDown,
   footRelease,
+  legKitRelease,
 ];
 /** The op table, by op name. */
 export const RAIL_OPS: Readonly<Record<string, readonly System<never, number>[]>> = OPS;

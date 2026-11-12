@@ -434,6 +434,30 @@ export function createRailwayWorldHost({
       }
     }
   };
+  // A greybox leg's rack units on a leaver's back (the step 3 review's P2-2): through the grace they stay counted held
+  // for the leg's frame; past it they are not (the leg loads them again), once a session, so a leaver never stalls it.
+  const legAway = new Map<string, number>(),
+    legReleased = new Map<string, number>();
+  const maintainLegKit = () => {
+    const holders = api.legKitHolders();
+    for (const pid of legAway.keys()) if (!holders.some((h) => h.pid === pid)) legAway.delete(pid);
+    for (const pid of legReleased.keys()) if (!holders.some((h) => h.pid === pid)) legReleased.delete(pid);
+    for (const { pid, epoch } of holders) {
+      if (requests.active(pid)) {
+        legAway.delete(pid);
+        legReleased.delete(pid);
+        continue;
+      }
+      if (legReleased.get(pid) === epoch) continue;
+      const away = legAway.get(pid) ?? now();
+      legAway.set(pid, away);
+      if (now() - away >= rules.tune.get('railBeamGraceS') * 1000) {
+        api.legKitRelease(pid, epoch);
+        legAway.delete(pid);
+        legReleased.set(pid, epoch);
+      }
+    }
+  };
   const ready = (async () => {
     attach();
     await sync.whenDurable();
@@ -491,6 +515,7 @@ export function createRailwayWorldHost({
             maintainBeam();
             maintainBoiler();
             maintainFeet();
+            maintainLegKit();
           }
           const ms = performance.now() - time;
           stats.wakes++;
@@ -574,6 +599,7 @@ export function createRailwayWorldHost({
         maintainBeam();
         maintainBoiler();
         maintainFeet();
+        maintainLegKit();
       }
     },
     status: () => ({

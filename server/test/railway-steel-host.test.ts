@@ -13,7 +13,10 @@ import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
 import { SHED_TABLE } from '../../src/sim/railway-works-layout.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
-import { invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
+import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
+import { rail } from '../../src/sim/railway-rows.ts';
+import { RAIL_LEGS, legRack } from '../../src/sim/railway-route.ts';
+import { legKitNeed, legRow } from '../../src/sim/railway-queries-route.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
@@ -56,6 +59,12 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
     get w() {
       return h.rules.railway.world();
     },
+    ticks,
+    later(ms: number) {
+      now += ms;
+    },
+    depart: (sid: string) => h.depart(sid),
+    grace: () => h.rules.tune.get('railBeamGraceS') * 1000,
     async action(e: Obj, at: At, sid = 's') {
       const x = sessions[sid]!;
       now += 1000;
@@ -93,6 +102,32 @@ test('steel host: the yard take at the yard, the feed at the works, each refused
     assert.equal(await r.action({ op: 'rail.steel' }, spot(RING_STEEL_WORKS)), 'noop', 'an empty back');
     // No steel in the bay yet: the install is the rule's noop at the table.
     assert.equal(await r.action(install(), spot(SHED_TABLE)), 'noop');
+  } finally {
+    await r.done();
+  }
+});
+
+// The greybox route (the step 3 review's P2-2): a leg counts the units lifted off its rack as held for its frame. A
+// leaver holding them keeps them counted through the grace, then the host's leaver check releases them, so the leg
+// loads them again and is never stalled by someone who is gone.
+test("route host: a leaver's leg rack rails stay counted through the grace, then are owed again", async () => {
+  const r = await host('leg-leaver', buildSeedWorld('ring-joined'), { s: 'a', t: 'b' });
+  try {
+    for (let k = 0; rail(r.w).depotRails === 0; k++) {
+      assert.ok(k < 4000, 'the first kit racked');
+      await r.ticks(1);
+    }
+    const rack = legRack(RAIL_LEGS[0]!, legRow(r.w, 0).laid);
+    assert.equal(await r.action({ op: 'rail.depotRailTake' }, spot(rack), 't'), 'accepted');
+    const held = legRow(r.w, 0).heldRails;
+    assert.ok(held > 0, 'held on b');
+    r.depart('t');
+    await r.ticks(5);
+    assert.equal(legRow(r.w, 0).heldRails, held, 'an absent carrier keeps them counted through the grace');
+    r.later(r.grace());
+    await r.ticks(3);
+    assert.equal(legRow(r.w, 0).heldRails, 0, 'past the grace: owed again');
+    assert.ok(legKitNeed(r.w, 0).rails >= held, 'the leg loads them again');
   } finally {
     await r.done();
   }

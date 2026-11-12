@@ -63,7 +63,9 @@
 // v32 (2026-11-12): the greybox route, leg 1 (docs/plans/greybox-route.md, bump G1): `leg`, `legYard` and `route`
 // components for the whole catalog; rail.legStock, rail.grant, rail.gate and rail.arrive; the lay tick; line 2 grows
 // past Ring Island over the stack line's heads to High Gorge with a fleet of 3 then 5 (two rows wait in the shed) and
-// block signals; `ns`, `bay` and `cave` as lines 2 to 4, shut; `train.legKit` (the steel works' kit first); no migration.
+// block signals; `ns`, `bay` and `cave` as lines 2 to 4, shut; `train.legKit` (the steel works' kit first);
+// `leg.heldLogs` and `leg.heldRails` (2026-11-12, the step 3 review's P2-2, in the same bump: v32 has not shipped);
+// no migration.
 export const WORLD_NS = 'v32';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps

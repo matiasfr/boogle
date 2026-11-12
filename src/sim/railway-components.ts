@@ -308,10 +308,22 @@ export const Till = defineComponent('till', {
 // when it lays.
 /** A leg by RAIL_LEGS slot: `laid` sections complete (0 to its sections); `logs` and `rails` fed into the current
  * section's frame; `start` the tick that section began to lay (-1 not laying); and the kit units ever loaded onto its
- * trains for it (`loadedLogs`, `loadedRails`; a unit lost off the rack is owed and loaded again). */
+ * trains for it (`loadedLogs`, `loadedRails`; a unit lost off the rack is owed and loaded again); and the units lifted
+ * off its rack onto backs and not yet fed or put down (`heldLogs`, `heldRails`: the step 3 review's P2-2, so the kit
+ * owed counts these and not every back's). */
 export const Leg = defineComponent(
   'leg',
-  { slot: 'int', laid: 'int', logs: 'int', rails: 'int', start: 'int', loadedLogs: 'int', loadedRails: 'int' },
+  {
+    slot: 'int',
+    laid: 'int',
+    logs: 'int',
+    rails: 'int',
+    start: 'int',
+    loadedLogs: 'int',
+    loadedRails: 'int',
+    heldLogs: 'int',
+    heldRails: 'int',
+  },
   { key: 'slot', defaults: { start: -1 } },
 );
 /** A junction yard by RAIL_YARDS slot (`LegYard`, kind `legYard`: slice 5's `Yard` is the town economy's crate yard):

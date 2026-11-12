@@ -23,6 +23,7 @@ import { Account, Aperture, Boiler, Leg, Line, QJob, Route, Train } from './rail
 import { boilerHeld, stopsOf } from './railway-queries.ts';
 import { gateLeg, legDone, legId, legKitStop, legOpen, legRow, routeId, routeRow } from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
+import { legKitPut } from './railway-sys-route-kit.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 const bit = (k: number) => 1 << k;
@@ -51,6 +52,8 @@ export const legStock = defineSystem(
     m.logs += logs;
     m.rails += rails;
     if (m.logs === sec.logs && m.rails === sec.rails) m.start = tick;
+    // Fed: no longer held on a back (the step 3 review's P2-2).
+    legKitPut(w, logs, rails);
     return logs + rails;
   },
 );

@@ -15,7 +15,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RAIL_TRAINS, legBuilt } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { LegYard, Train } from './railway-components.ts';
-import { gateLeg, legDone, legReached, legRow, routeRow } from './railway-queries-route.ts';
+import { gateLeg, legDone, legHeldRoom, legReached, legRow, routeRow } from './railway-queries-route.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -37,13 +37,20 @@ export function checkRoute(w: World) {
       !railInt(r.start, RAILWAY_MAX_INT, -1) ||
       // A unit lifted off the rack and lost is owed again, so what was ever loaded may pass the bill.
       !railInt(r.loadedLogs) ||
-      !railInt(r.loadedRails)
+      !railInt(r.loadedRails) ||
+      // Units lifted off its rack onto backs, never past what its remaining sections still lack (none once complete).
+      !railInt(r.heldLogs, legHeldRoom(w, k).logs) ||
+      !railInt(r.heldRails, legHeldRoom(w, k).rails)
     )
       bad('leg bounds');
     // Laying exactly while the current section's bill is full (the last unit starts it; laying spends it).
     if (r.start >= 0 !== (!!sec && r.logs === sec.logs && r.rails === sec.rails)) bad('leg laying');
     // Nothing happens on a leg before it opens: not built, or the leg before it not complete (the rivet, for the first).
-    if (!legReached(w, k) && (r.laid || r.logs || r.rails || r.loadedLogs || r.loadedRails)) bad('leg before it opens');
+    if (
+      !legReached(w, k) &&
+      (r.laid || r.logs || r.rails || r.loadedLogs || r.loadedRails || r.heldLogs || r.heldRails)
+    )
+      bad('leg before it opens');
     // A gated section is fed only once its barrier is open.
     if (sec?.gate !== undefined && (r.logs || r.rails) && !(routeRow(w).gates & (1 << sec.gate))) bad('leg gate');
   });

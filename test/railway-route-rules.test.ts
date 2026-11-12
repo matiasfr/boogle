@@ -73,6 +73,7 @@ import {
   type Seed,
 } from './helpers/rail.ts';
 import { checkRoute } from '../src/sim/railway-check-route.ts';
+import { railLegKitHolders, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { ROUTE_GATES, fuzzTicks, routeTicks } from './helpers/fuzz.ts';
 
 const STACK = 0;
@@ -1276,6 +1277,43 @@ test('a unit lifted off the leg rack and lost is owed again; one carried to the 
   assert.equal(legKitNeed(s.w, STACK).rails, need0 + dropped, 'dropped, it is owed again');
   feedSection(s);
   assert.equal(legRow(s.w, STACK).laid, 1, 'the section still lays');
+  assert.equal(invariant(s.w), null);
+});
+
+// The step 3 review's P2-2: the leg counts the units lifted off its rack (Leg.heldLogs, Leg.heldRails), not every back's.
+test("rack units held count; fed to the steel works or a leaver's released they are owed again, never under 0", () => {
+  const s = copy(JOINED);
+  while (rail(s.w).depotRails < 20) advance(s, 1);
+  const need0 = legKitNeed(s.w, STACK).rails;
+  const lifted = act(s, 'a', 'rail.depotRailTake');
+  assert.ok(lifted > 0);
+  assert.equal(legRow(s.w, STACK).heldRails, lifted, 'held');
+  assert.equal(legKitNeed(s.w, STACK).rails, need0, 'held, it still counts');
+  // Fed to the steel works instead: owed again.
+  const fed = act(s, 'a', 'rail.steel');
+  assert.ok(fed > 0, 'the works takes them');
+  assert.equal(legRow(s.w, STACK).heldRails, lifted - fed);
+  assert.equal(legKitNeed(s.w, STACK).rails, need0 + fed, 'fed to the works, owed again');
+  // b lifts the rest and leaves: past the grace the host releases what b carries, once.
+  const more = act(s, 'b', 'rail.depotRailTake');
+  assert.ok(more > 0);
+  const held = legRow(s.w, STACK).heldRails,
+    need1 = legKitNeed(s.w, STACK).rails;
+  const b = acc(s, 'b');
+  assert.ok(
+    railLegKitHolders(s.w).some((h) => h.pid === 'b' && h.epoch === b.epoch),
+    "the host's leaver check sees b",
+  );
+  assert.equal(railLegKitRelease(s.w, 'b', b.epoch + 1), 0, 'a session that has since changed keeps them');
+  const released = railLegKitRelease(s.w, 'b', b.epoch);
+  assert.equal(released, Math.min(held, b.rails));
+  assert.equal(legKitNeed(s.w, STACK).rails, need1 + released, "a leaver's are owed again");
+  assert.ok(legRow(s.w, STACK).heldRails >= 0, 'never under 0');
+  assert.equal(invariant(s.w), null);
+  // The leg completes with b's rails never coming back.
+  for (let k = legRow(s.w, STACK).laid; k < N; k++) feedSection(s);
+  assert.equal(legRow(s.w, STACK).laid, N);
+  assert.deepEqual([legRow(s.w, STACK).heldLogs, legRow(s.w, STACK).heldRails], [0, 0], 'none held once complete');
   assert.equal(invariant(s.w), null);
 });
 

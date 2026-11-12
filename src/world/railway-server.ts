@@ -64,6 +64,7 @@ import { railwayCheck } from '../sim/railway-check.ts';
 import { railApply, railOutcome, railTick } from '../sim/railway-systems.ts';
 import { railBoilerPutDown, railBoilerStood } from '../sim/railway-sys-line2.ts';
 import { railFootHolders, railFootRelease } from '../sim/railway-sys-works.ts';
+import { railLegKitHolders, railLegKitRelease } from '../sim/railway-sys-route-kit.ts';
 import { railBeamPutDown, railBeamRelease, railBeamStood } from '../sim/railway-sys-line1.ts';
 import { railLine2Active, ringHead } from '../sim/railway-queries.ts';
 import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
@@ -440,6 +441,15 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     footHolders: () => railFootHolders(world),
     footRelease(pid: string, epoch: number) {
       const n = railFootRelease(world, pid, epoch);
+      commit();
+      return n;
+    },
+    /** Who carries logs or rails while a greybox leg counts units lifted off its rack as held (the step 3 review's
+     * P2-2); none while no leg holds any. */
+    legKitHolders: () => railLegKitHolders(world),
+    /** The carrier stayed away past the grace: what they carry is no longer counted held, so the leg is loaded again. */
+    legKitRelease(pid: string, epoch: number) {
+      const n = railLegKitRelease(world, pid, epoch);
       commit();
       return n;
     },

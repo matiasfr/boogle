@@ -26,6 +26,7 @@ import {
   Beam,
   Boiler,
   Forge,
+  Leg,
   Line,
   Rail,
   Shed,
@@ -46,6 +47,7 @@ import {
   type Row,
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
+import { legKitPut } from './railway-sys-route-kit.ts';
 
 /** Take logs (kind 0) or rails (kind 1) off the island yard, up to your back's room, once the rivet is struck. */
 export const steelTake = defineSystem(
@@ -73,7 +75,7 @@ export const steelTake = defineSystem(
  * rails count, not only the yard's. */
 export const steelFeed = defineSystem(
   'rail.steel',
-  { reads: [Aperture], writes: [Steel, SteelClock, Account], phase: 'act', order: 55 },
+  { reads: [Aperture], writes: [Steel, SteelClock, Account, Leg], phase: 'act', order: 55 },
   (w, { a: aid, tick }: Act) => {
     const id = steelId(w),
       s = w.get(Steel, id)!;
@@ -89,6 +91,8 @@ export const steelFeed = defineSystem(
     sm.logs += logs;
     sm.rails += rails;
     if (sm.logs === STEEL.logs && sm.rails === STEEL.rails) sm.lit = w.mut(SteelClock, id)!.lastCast = tick;
+    // A leg rack's units fed here are no longer held for its frame (the step 3 review's P2-2): owed again.
+    legKitPut(w, logs, rails);
     return logs + rails;
   },
 );

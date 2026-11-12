@@ -17,6 +17,7 @@ import { TRAIN, TRAIN_PHASE, TRAIN_STOPS } from './railway-train.ts';
 import { LINE2, RAIL_LINES, trainPlaces } from './railway-lines.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
+import { legKitLifted } from './railway-sys-route-kit.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
 import {
@@ -257,7 +258,7 @@ export const forgeTake = defineSystem(
 );
 export const depotTake = defineSystem(
   'rail.depotTake',
-  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 22 },
+  { reads: [Boiler, Beam, Aperture], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -266,13 +267,15 @@ export const depotTake = defineSystem(
     const n = Math.min(rail.depot, room);
     rail.depot -= n;
     a.carry += n;
+    // Off an open leg's rack: held on this back until fed or put down (the step 3 review's P2-2).
+    legKitLifted(w, n, 0);
     return n;
   },
 );
 /** Rails from the shelf by a `shelf` stretch's rack (moved there from the forge; railValid checks the stretch). */
 export const depotRailTake = defineSystem(
   'rail.depotRailTake',
-  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 25 },
+  { reads: [Boiler, Beam, Aperture], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -281,6 +284,7 @@ export const depotRailTake = defineSystem(
     const n = Math.min(rail.depotRails, room);
     rail.depotRails -= n;
     a.rails += n;
+    legKitLifted(w, 0, n);
     return n;
   },
 );
