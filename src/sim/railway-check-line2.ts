@@ -8,7 +8,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, Q6 } from './railway-line2-layout.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD } from './railway-cart.ts';
 import { DEPOT_OUT } from './railway-components.ts';
-import { accounts, beam, boiler, cart, forge, forgeClock, rail } from './railway-rows.ts';
+import { accounts, beam, boiler, cart, forge, forgeClock, rail, steel } from './railway-rows.ts';
 import { line2Jobs, scheduleOf } from './railway-queries.ts';
 import {
   line2Aboard,
@@ -93,7 +93,8 @@ export function checkLine2(w: World) {
   )
     bad('depot output');
   const c = cart(w);
-  if (r0.depot + c.logs + line2Aboard(w, 'logs') > r0.depotProduced) bad('depot stock');
+  // Logs aboard are a stretch's kit or, after the rivet, the steel works' (made at the Village: outLogs).
+  if (r0.depot + c.logs + line2Aboard(w, 'logs') > r0.depotProduced + steel(w).outLogs) bad('depot stock');
   // The cart's road ends at Q6's rack (the farthest it is ever sent; Q6 and Q7 are fed by train).
   const road = CART_ROAD.rackCm(Q6);
   if (
@@ -116,7 +117,7 @@ export function checkLine2(w: World) {
   if (
     !railInt(r0.depotRails, 64) ||
     !railInt(r0.shelfOut, 64) ||
-    r0.depotRails + c.rails + line2Aboard(w, 'rails') > r0.shelfOut
+    r0.depotRails + c.rails + line2Aboard(w, 'rails') > r0.shelfOut + steel(w).outRails
   )
     bad('shelf bounds');
   if (r0.shelfOut) {

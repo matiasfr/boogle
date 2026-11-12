@@ -130,6 +130,8 @@ export const Train = defineComponent(
     freight: 'int',
     // R3: riders aboard, all bound for the route halt ahead of it (one destination per route).
     riders: 'int',
+    // Steel riding home on the kit car's deck (ring-island-build2, R2; ruling C): any line 2 train, STEEL.trip a trip.
+    steel: 'int',
   },
   { key: 'slot' },
 );
@@ -201,6 +203,8 @@ export const Shed = defineComponent(
     table: 'u8',
     tableRev: 'int',
     ready: 'int',
+    // Steel landed in the Roundhouse bay off line 2's trains (ring-island-build2, R2): shown, never spent in build 2.
+    steel: 'int',
   },
   { defaults: { fitted: -1, ready: -1 } },
 );

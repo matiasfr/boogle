@@ -71,7 +71,8 @@ const HOST_READS = [
   ['crossing-finishing', 'done', 56, 0, -1, 6, true, 217, 14480, 3966, 141, 40],
   ['crossing-done', 'done', 56, 0, 6, 6, true, 217, 14480, 3966, 141, 40],
   ['deck-laid', 'done', 56, 0, -1, 7, true, 217, 16080, 3986, 161, 40],
-  ['ring-joined', 'done', 56, 0, -1, 7, true, 217, 16080, 3986, 161, 40],
+  // R2: the rivet's first train at the Village took the steel works' kit (8 logs made, 12 rails the forge pours again).
+  ['ring-joined', 'done', 56, 0, -1, 7, true, 217, 16080, 3994, 169, 40],
 ] as const;
 // Built at module scope, outside the 5 s test timeout (as the golden shards do); STAGES below is a subset.
 for (const [stage] of HOST_READS) if (stage !== 'fresh') seedOf(stage);
@@ -246,7 +247,7 @@ const DAYS_AWAY = [
   ['q4-done', 0, 'done', 56, 0, 4, 4, true, 217, 10400, 3934, 77, 40],
   ['q6-done', 0, 'done', 56, 0, -1, 6, true, 217, 14480, 3966, 133, 40],
   ['works-lit', 0, 'done', 56, 0, -1, 6, true, 217, 14480, 3966, 133, 40],
-  ['ring-joined', 0, 'done', 56, 0, -1, 7, true, 217, 16080, 3986, 161, 40],
+  ['ring-joined', 0, 'done', 56, 0, -1, 7, true, 217, 16080, 3994, 173, 40], // R2: the steel kit, as above
 ] as const;
 test('M11 review: a room resumed after three days is capped, credited and read as recorded', () => {
   const days = 3 * 24 * 36000; // ticks of 100 ms

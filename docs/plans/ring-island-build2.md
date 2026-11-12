@@ -188,7 +188,7 @@ Sizes: S under half a day, M about a day, L two. **HOTBOX** takes rules, server 
 views and looks (V steps) and can start V1 against the seeds as soon as R1 and R4 are on the rules branch. Each step
 leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` are the two checkpoints'.
 
-- [ ] **R1. The steel works' rules (M, HOTBOX).** Create `src/sim/railway-sys-steel.ts`, `railway-check-steel.ts`,
+- [x] **R1. The steel works' rules (M, HOTBOX).** Create `src/sim/railway-sys-steel.ts`, `railway-check-steel.ts`,
       `test/railway-steel.test.ts`. Edit `railway-components.ts` (`Steel`, `SteelClock`, the spawn),
       `railway-ring-layout.ts` (`STEEL`, the two points), `railway-works-layout.ts` (`total: 40`), `railway-rows.ts`
       and `railway-queries.ts` (`steelId`, `steelOwed`), `railway-systems.ts` (four `OPS` rows, `steelTick`),
@@ -208,7 +208,7 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       (level flags 1 and 2): the yard at u 445.5, lat +8 (the open deck between the tarp and the shed), the works at the
       shed's doorway, u 452, lat +6.5; yard to works 6.7 m, not 12 (V1's look may move them). `dev/level/ring.ts`
       asserts both: on the deck, clear of the tarp, anvil and hammer posts. Ruling E's blocked prompt is V1's (no sim
-      part). Tests: `test/railway-steel.test.ts` (refusals, lighting on either kind, casts to the cap, the check's seven
+      part). Tests: `test/railway-steel.test.ts` (refusals, lighting on either kind, the first cast, the check's
       refusals, a two-seed fuzz that re-asserts the bill can be completed every 500 ops). **The v28 bump moved here
       from R4** (orchestrator's ruling, 11 November): R1 is the first save-shape change (a new component kind and
       entity change every world hash), and the fixture rule (test/helpers/railway-golden.ts) regenerates only with a
@@ -218,13 +218,32 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       pinned tests (goldens, tick order, ops stream, M12 trace, schema) pass on the old fixtures. The tick-order move is
       inert: `steelTick` writes only `Steel` and `SteelClock`, which `jobClock` never reads, and does nothing before the
       works is lit. The fixtures are then regenerated in a commit of their own.
-- [ ] **R2. The train carries it (M, HOTBOX).** Edit `railway-sys-trains.ts` (`standing`, `arrive`, `wagonArrives`,
+- [x] **R2. The train carries it (M, HOTBOX).** Edit `railway-sys-trains.ts` (`standing`, `arrive`, `wagonArrives`,
       `serviceOf`, `headExempt` while the works owes footings), `railway-components.ts` (`Train.steel`, `Shed.steel`),
       `railway-queries-line2.ts` (the kit's need for the works), `test/railway-trains.test.ts`. Checks: a kit loaded
       at the Village reaches `yardLogs` and `yardRails`; eight footings arrive in two wagon loads; steel racked at the
       island reaches `Shed.steel`; footings out and steel home never exceed `wagonCap`; no train stops at the island
       with nothing to do. Also confirm the forge still has 12 rails to give after Q7 (`npm run loop -- run`); if not,
       the bill's rails drop to what it has and the number is logged. **Independent sim review.**
+      _As built (ring2/rules, 11 November), on rulings B and C:_ `Train.steel` and `Shed.steel` (appended; inside v28).
+      The trains' side lives in `railway-sys-steel.ts` (`steelLoads`, `steelArrives`, `steelService`), called from
+      `standing`, `arrive` and `serviceOf`; `trainTick` now declares `Steel` and `Shed` as writes. After the rivet any
+      line 2 train standing at the Village loads `steelNeed` onto its kit car (logs made, `outLogs`; rails off the forge
+      rack, `outRails`); at Ring Island (halt 5) the kit goes into the yard, capped at what the bill lacks (any more
+      rides on), and the kit car takes up to `STEEL.trip` (6) off the rack; at the Village its steel goes into the bay.
+      **Not built (ruling B):** footings to the works, `wagonArrives` and `headExempt` changes; the "eight footings in two
+      loads" and `wagonCap` checks. **Not the cradle (ruling C):** steel rides any train's kit car; the check holds
+      `Train.steel <= STEEL.trip`, line 2 only, and `poured === rack + aboard + Shed.steel`. `depot stock` and `shelf
+      bounds` widen by `outLogs` and `outRails`. **Dropped from R1's check:** "the yard holds no more than was sent":
+      a stretch kit's leftover logs (a frame filled from backs while its kit rode) would land in the yard and fail a
+      room's load; the yard's bounds (the bill) still hold. "No train stops at the island with nothing to do": Ring
+      Island is the line's end, where every train stands, so there is no extra stop to forbid; `steelService` asks for it
+      only with an errand. Measured (test): the kit is in the yard 65 s after the rivet, all of it on one train (the
+      forge rack holds 24, so 12 rails are there); the first steel is home 109 s after lighting; all 12 reach the bay.
+      A load lost from the yard (taken and dropped) comes again on the next train. The ring-joined stage now holds
+      that kit aboard (the first train after the rivet loads it): `test/railway-m11-review.test.ts`'s two ring-joined
+      literal rows move from 3986 logs and 161 rails to 3994 and 169 (173 after three days' credit); fixtures
+      regenerated in their own commit.
 - [ ] **R3. The install and the boiler's speed (L, HOTBOX).** Create `test/railway-install.test.ts`. Edit
       `railway-components.ts` (`Line.boiler`, `Line.fitted`, `Train.boiler`), `railway-train.ts` (`BOILER_SPEED`,
       `stopKin`'s fourth argument and its callers), `railway-trains.ts` (the leg planner, `cycleTicks` and the balanced
