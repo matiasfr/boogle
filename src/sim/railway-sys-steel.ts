@@ -188,6 +188,8 @@ export const install = defineSystem(
       l = w.get(Line, id)!,
       h = w.get(Shed, shedId(w))!;
     if (e.revision !== l.boiler || l.boiler >= e.part || h.steel < 1) return 0;
+    // Unreachable in play today (nothing uncouples the wagon once it is on); kept so the table is never fitted mid
+    // roll-out if that changes.
     if (h.ready >= 0 && wagonSlot(w) < 0) return 0;
     const m = w.mut(Line, id)!;
     m.boiler = e.part;

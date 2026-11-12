@@ -22,7 +22,8 @@ export const TRAIN = {
   dwellTicks: 50,
   wakeTicks: 60,
   kitWaitTicks: 60,
-  /** The block rule's gap round the circuit: a train's length (RIDER_SPAN, the footing wagon's tail) plus 20 m. */
+  /** The block rule's gap round the circuit (27.4 m, set as the footing wagon's tail, RIDER_SPAN, plus 20 m). Since
+   * v30's 8.2 m extent ahead of the pose (TRAIN_EXTENT), the nose-to-tail clearance at this floor is 10.2 m (R3 review). */
   sepCm: 2740,
 } as const;
 /** A train's cruise (cm a tick) by the boiler it wears (`Train.boiler`; ring-island-build2, R3): the standard boiler
