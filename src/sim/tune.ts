@@ -119,6 +119,11 @@ export const TUNABLES = [
     max: 100,
     label: 'Railway train headway hold (percent of an even split)',
   },
+  // Slice 5's trade (docs/plans/slice5-town-economy.md, R3): the fare, the riders and (R4) the prices, as percents of
+  // the stand-ins in src/sim/railway-trade-layout.ts. Appended: hashed order.
+  { key: 'railFarePct', def: 100, min: 0, max: 1000, label: 'Railway fares (percent of the stand-in fare)' },
+  { key: 'railRiderPct', def: 100, min: 0, max: 1000, label: 'Railway riders (percent of the stand-in rate)' },
+  { key: 'railPricePct', def: 100, min: 1, max: 1000, label: 'Railway prices (percent of the stand-in prices)' },
 ] as const;
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];

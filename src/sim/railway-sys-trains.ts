@@ -32,6 +32,7 @@ import {
   Train,
   Works,
   Yard,
+  Till,
 } from './railway-components.ts';
 import {
   apertureId,
@@ -55,8 +56,9 @@ import {
   type Row,
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
-import { freightArrives, freightLoads } from './railway-sys-trade.ts';
+import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
 import { freightStop } from './railway-queries-trade.ts';
+import type { TradePct } from './railway-trade-layout.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -125,8 +127,9 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
  * the Pier, call 62) while it is aboard; the quarry going out while its wagon has room and footings are owed; the Pier
  * while its wagon carries the pier's footings (before Q7), the Railhead going out while it carries the ring's. Slice 5's
  * freight clause comes first, on any line (R2b, freightStop): a yard at a middle halt, once its `after` is met, for a
- * homeward train that is empty and on no build errand when a whole trainload waits. Trains run end to end on their
- * track since v26, so no ask can turn one back short of an errand. */
+ * homeward train that is empty and on no build errand when a whole trainload waits (never while the wagon is owed
+ * footings). Riders add no stop (the ruling of 12 November): they board and step off where a train already stands.
+ * Trains run end to end on their track since v26, so no ask can turn one back short of an errand. */
 function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
   // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop).
   const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir);
@@ -151,7 +154,7 @@ export function trainMoveIO(w: World): TrainMoveIO {
 /** The world's side of the trains' step (./railway-trains.ts): rows, stops, every line's yard freight (slice 5,
  * ./railway-sys-trade.ts), and line 2's cargo, wagon and the cart's hold on line 1. Transfers and phase changes are
  * atomic inside this tick apply. */
-function trainIO(w: World, headPct: number): TrainIO {
+function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
   const row = (slot: number) => w.get(Train, trainId(w, slot))!;
   const line2 = (slot: number) => RAIL_TRAINS[slot]!.line === LINE2;
   return {
@@ -165,6 +168,7 @@ function trainIO(w: World, headPct: number): TrainIO {
     service: (slot) => serviceOf(w, slot, row(slot)),
     arrive(slot) {
       freightArrives(w, slot);
+      ridersArrive(w, slot, pct);
       if (!line2(slot)) return;
       const r = w.mut(Train, trainId(w, slot))!;
       // A kit unloads at its job's halt (Q6's at Far Head, Q7's at the Pier: call 62).
@@ -180,6 +184,8 @@ function trainIO(w: World, headPct: number): TrainIO {
       // A train standing at its line's yard heading home loads, whatever it stopped for (slice 5; R2b's full-load stop
       // in serviceOf is the one stop freight adds).
       freightLoads(w, slot);
+      // R3: riders waiting here to ride its way board, whatever it stopped for.
+      ridersBoard(w, slot);
       if (!line2(slot)) return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       const r = row(slot);
       // The footing wagon couples to the first line 2 train standing at the village once it has rolled out; a train
@@ -223,18 +229,18 @@ function trainIO(w: World, headPct: number): TrainIO {
     headExempt: (slot) => row(slot).wagon && footingsOwed(w),
   };
 }
-function trainStep(w: World, tick: number, headPct: number) {
+function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
   if (w.get(Rail, railId(w))!.trains < 0) return;
-  const io = trainIO(w, headPct);
+  const io = trainIO(w, headPct, pct);
   for (let line = 0; line < RAIL_LINES.length; line++) trainStepLine(io, line, tick);
 }
 export const trainTick = defineSystem(
   'rail.trainTick',
   {
     reads: [QJob, Cart, Shed, Account],
-    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town],
+    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till],
     phase: 'tick',
     order: 3,
   },
-  (w, { tick, headPct }: Tick) => trainStep(w, tick, headPct),
+  (w, { tick, headPct, farePct, riderPct }: Tick) => trainStep(w, tick, headPct, { farePct, riderPct }),
 );
