@@ -59,8 +59,8 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     why: 'expands import.meta.glob in the files it loads; the walk expands the same globs itself',
   },
   'test/helpers/rail-no-audit.ts: registerHooks': {
-    reaches: ['src/sim/railway-drive.ts', 'src/sim/railway-live.ts'],
-    why: 'rewrites the audit flag in these two as they load (src/sim: the full suite anyway)',
+    reaches: ['src/sim/railway-drive.ts'],
+    why: 'rewrites the audit flag in the driver as it loads (src/sim: the full suite anyway)',
   },
   'test/entity-state-node.test.ts: import': {
     reaches: ['src/entities/'],
@@ -69,10 +69,6 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
   'test/railway-census.test.ts: import': {
     reaches: ['src/sim/'],
     why: 'imports each file in src/sim through the folder URL the walk follows (src/sim: the full suite anyway)',
-  },
-  'test/railway-check.test.ts: new URL': {
-    reaches: [],
-    why: 'reads the src/sim files SOURCES names as rooted paths, which the walk follows (src/sim: full anyway)',
   },
   'test/unit-modes.test.ts: new URL': {
     reaches: ['src/sim/railway-drive.ts'],
