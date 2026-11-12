@@ -8,6 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
 import {
+  Aperture,
   createRailwayWorld,
   Forge,
   ForgeClock,
@@ -24,7 +25,7 @@ import { TRADE_STAGES } from '../src/sim/railway-seed-trade.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, town, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
 import { freightAboard, freightStop, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
-import { kitOwed, worksId } from '../src/sim/railway-queries.ts';
+import { footingsOwed, kitOwed, wagonSlot, worksId } from '../src/sim/railway-queries.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { RAILWAY_MAX_INT } from '../src/sim/railway.ts';
 import { railResume } from '../src/sim/railway-sys-away.ts';
@@ -52,6 +53,8 @@ const ASLEEP = buildSeedWorld('awake');
 const WAGON = buildSeedWorld('wagon-on');
 /** The pier's twelve footings set (R2b's stone stop is on). */
 const CROSSED = buildSeedWorld('crossing-done');
+/** Q7 laid, the ring's footings owed: the stone stop is off. */
+const DECK = buildSeedWorld('deck-laid');
 const MIN20 = 20 * 600;
 const [CAMP, QUARRY] = [0, 1];
 const LINE1_SLOT = RAIL_TRAINS.findIndex((t) => t.line === 0);
@@ -631,28 +634,43 @@ function wagonArrivals(w: World, t0: number, ticks: number) {
   }
   return out;
 }
-// Known, sent back to the designer (slice 5 R2b review, 12 November): the stone stop delays the wagon's train by more
-// than the ruling's "at most 108 ticks a time", and the drift grows trip over trip (a plain train stops for stone just
-// ahead of it; the wagon then waits behind it). The "wagon's train next behind" fallback does not remove it. Marked
-// todo, so it runs and reports its numbers without failing the suite until the designer rules.
-test(
-  "R2b: the wagon's arrivals after the footings stay within 108 ticks of no stone stop, without growing",
-  { todo: 'slice 5 R2b: the wagon drift is with the designer' },
-  () => {
-    const t0 = CROSSED.t;
-    const stop = copy(CROSSED.w);
-    const none = copy(CROSSED.w);
-    // The baseline: the Quarry yard emptied (made lowered with it) and its clock stopped, so no stone stop is made.
-    const y = none.mut(Yard, yardId(none, QUARRY))!;
-    y.made -= y.stock;
-    y.stock = 0;
-    none.mut(YardClock, yardId(none, QUARRY))!.last = RAILWAY_MAX_INT;
-    const a = wagonArrivals(stop, t0, MIN20),
-      b = wagonArrivals(none, t0, MIN20);
-    const drift = a.map((v, i) => v - (b[i] ?? Infinity));
-    for (const [i, d] of drift.entries()) {
-      assert.ok(d <= 108, `trip ${i + 1}: ${d} ticks later`);
-      if (i) assert.ok(d <= drift[i - 1]!, `trip ${i + 1}: the drift grows (${drift.join(', ')})`);
-    }
-  },
-);
+/** A copy of `w` with its Quarry yard emptied (made lowered with it) and its clock stopped: no stone stop is made. */
+function noStone(w: World) {
+  const out = copy(w);
+  const y = out.mut(Yard, yardId(out, QUARRY))!;
+  y.made -= y.stock;
+  y.stock = 0;
+  out.mut(YardClock, yardId(out, QUARRY))!.last = RAILWAY_MAX_INT;
+  return out;
+}
+// The ruling of 12 November (the proof gate's 2): while line 2's wagon is owed footings the economy adds no stop on
+// that line, so the wagon's train arrives on the tick it would with no stone stop at all, every trip.
+test("R2b: while footings are owed the wagon's train arrives on the no-stone-stop tick every trip, and no stone moves", () => {
+  const t0 = DECK.t;
+  const w = copy(DECK.w);
+  assert.ok(footingsOwed(w) && wagonSlot(w) >= 0, "deck-laid: the ring's footings are owed");
+  const stone0 = town(w, 0).stone;
+  const a = wagonArrivals(w, t0, MIN20),
+    b = wagonArrivals(noStone(DECK.w), t0, MIN20);
+  assert.ok(a.length >= 8, `${a.length} trips`);
+  assert.deepEqual(a, b);
+  assert.equal(town(w, 0).stone, stone0, 'no stone while footings are owed');
+});
+
+test('R2b: once no footings are owed, stone flows (the ring finished by hand)', () => {
+  const w = copy(DECK.w),
+    stone0 = town(w, 0).stone;
+  Object.assign(w.mut(Aperture, w.single(Aperture))!, { set: WORKS.ring, cw: WORKS.counterweight });
+  assert.equal(footingsOwed(w), false);
+  for (let t = DECK.t + 1; t <= DECK.t + MIN20; t++) railTick(w, t);
+  assert.ok(town(w, 0).stone - stone0 >= 32, `stone ${town(w, 0).stone - stone0}`);
+});
+
+// Outside that window the wagon's train is an ordinary train and may run late: reported, not asserted (the ruling's
+// accepted cost).
+test("R2b: the wagon's arrivals with no footings owed, against no stone stop (reported)", (t) => {
+  const a = wagonArrivals(copy(CROSSED.w), CROSSED.t, MIN20),
+    b = wagonArrivals(noStone(CROSSED.w), CROSSED.t, MIN20);
+  t.diagnostic(`crossing-done, wagon drift per trip: ${a.map((v, i) => v - (b[i] ?? 0)).join(', ')}`);
+  assert.ok(a.length > 0);
+});
