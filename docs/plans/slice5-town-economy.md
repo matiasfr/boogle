@@ -504,3 +504,108 @@ shipped, else bump B (a rule change, no shape change).
    **yes.** Every source is served with nobody asking, and a train stops about once in four minutes instead of every
    trip. The alternative, every down train stopping at the Quarry, costs 10.8 s on each trip for the rest of the
    game. Until he answers, R2b builds the full-load stop; switching is `loadStop` 8 to 1. Answer: ___
+
+## Design review (designer, 2026-11-12): economy stops (R2b and R3)
+
+Rules one question two build steps failed on: may the economy add a stop to line 2's trains while the build is
+running, and if not, how do stone and riders move. **Verdict: no. While a line's wagon is owed footings the economy adds
+no stop on that line; riders never add a stop at all in this slice.** 5 decided, 4 default, 3 new. It amends the
+[freight stops ruling](#design-review-designer-2026-11-11-freight-stops-r2b) (its call 4 and proof gate) and R3's
+`serviceOf` clause. **Read:** `freightStop` and `serviceOf` on `origin/rail/slice5-r2b-stone-stop-c`, that branch's
+as-built tables, the two 12 November entries in the [rewards rules](../decisions-rewards.md#current-rules). **Not run by
+me:** every figure is the builder's, measured on HOTBOX and relayed by the orchestrator; R3's code is on another machine
+and was not read. **Ticks:** the relay said 20 ticks a second; the plan's own figures (546 ticks printed as 54.6 s, +809
+as 81 s) are 10 a second, and seconds below use 10. **No stills:** nothing is placed, moved or gated.
+
+**What the measurements say.**
+
+- **Any stop ahead of the wagon costs it a dwell it never gets back.** The wagon's train is exempt from the headway hold
+  while footings are owed, so it has no timetable to recover to; each stone stop by a train ahead put it about 110 ticks
+  later for good (`gap-footed` +350 by the ninth trip). The first ruling's "at most 108 ticks a time" was right a time and
+  silent on the sum; its gate never looked at the wagon. Per-train exemptions cannot fix it (the fallback: +200).
+- **Riders as R3 writes them are a stop on every trip.** Stages +108 to +809 ticks, the route to Ring Island 81 s
+  longer, `ring-joined`'s worst wait 1,144 against 1,050, the pier's second six footings 216 ticks late. A whole-carload
+  stop with R2b's exemptions also fails (+109 a stage, waits +234 and +181, the wagon +647 to +736).
+- **Riders that never add a stop move nothing** (all 40 stages identical), but with Far Head as the destination income
+  halves after Q6 (27 to 29 a minute) and Far Head's 24 riders never board: no train stands there any more.
+- **Stone candidate (i) is clean where it matters:** the wagon's drift is 0 on every trip at `deck-laid`, `gap-footed`
+  and `leaf-raised`, and waits match main. Where nothing is owed (`crossing-done`, `ring-joined`) the stop runs, 32
+  stone arrive, and the wagon's train, by then an ordinary train with no errand, is later by up to +247.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Freight is hauled by trains, never by hand; nobody has to call a train for it | Decided | Owner, 12 November ([entry](../decisions-rewards.md#d-2026-11-12-town-economy-answered)). Kept |
+| 2 | The stone stop starts once the pier's footings are done | Decided | Same entry. Kept for its start; call 6 pauses it, which bends his words: the owner question |
+| 3 | Hub towns receive freight over the network; every other area is a source | Decided | Owner, 12 November ([entry](../decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight)). Call 6 is written per line, so a later line's yard and works get it from data |
+| 4 | Waiting little guys stop a train only at four or more, never an express | Decided | Owner, 10 November ([rail](../decisions-rail.md#d-2026-11-10-waiting-little-guys-stop-a-train)). Stands; under call 7 no rider route in this slice has a middle halt, so it is not built here |
+| 5 | The passenger set is a later purchase with its own bay; more trains are hauled for; mechanisms, then systems, then details | Decided | Owner, 10 and 11 November ([rail](../decisions-rail.md#d-2026-11-10-home-s-bay-for-the-passenger), [owner-calls](../agents/owner-calls.md#mechanisms-systems-greybox-details)). Why call 8 builds no new train now |
+| 6 | **No economy stop on a line while its wagon is owed footings** (the pier's twelve not all set, or Q7 laid and the ring's fourteen plus four not all set: the headway exemption's own condition). Outside that window the full-load stone stop runs as R2b built it | New | Build (candidate i). Zero drift where the wagon has work; costs no stone a player can use (finding 1) |
+| 7 | **Riders never add a stop: they board and step off only where a train already stands, and the rider route's far end is line 2's current end** (Far Head, then the Pier, then the island's Railhead). Replaces the plan's Default "Village to Far Head only" and R3's `serviceOf` clause | New | Build once measured (below). Riders keep paying after Q6 with no stop added, and they end at Ring Island, a town in the hub towns proposal. The research index was not re-read for this ruling |
+| 8 | **No separate freight train and no riders on a passenger set in this slice** | New | Hold. A fourth train on the same two tracks still holds the wagon behind each of its stops, so it fixes nothing without a siding at every source; it costs a fourth catalog slot, the headway split, every pinned fixture and a save reset. Its home is a later plan (the owner question) |
+| 9 | The fare stays 7 while the far end moves | Default | A stand-in ("all prices are stand-ins"); keeps the money invariant one constant. Re-price by distance when routes get real destinations |
+| 10 | The crowd waiting at the far end moves with the end (one integer; V2 draws it at the current end) | Default | Greybox. A crowd that jumps platforms when a job completes is a detail for later |
+| 11 | An ordinary train's lateness, the wagon's included once no footing is owed, is judged by the 1,050-tick wait bound only | Default | `crossing-done` and `ring-joined` drift is reported, not gated: nobody waits on an empty wagon with no errand |
+| 12 | The proof gate below | Default | Replaces the first ruling's gate; numbers to change after C1 |
+
+**The spec.**
+
+1. **R2b, one clause.** `freightStop` also returns false while the train's line has footings owed: a query
+   `footingsOwed(w, line)` in `railway-queries.ts` holding the condition `headExempt` uses today (line 2:
+   `pierSet < WORKS.pier`, or `q7Laid` and `set + cw < WORKS.ring + WORKS.counterweight`; any other line false), and
+   `headExempt` reads the same query. Everything else in R2b stands (`loadStop` 8, `after: 'pier'`, the wagon, kit and
+   kit-owed exemptions, loading on a lever or rider ask at any time). The dropped fallback stays dropped. It rides
+   R2b's own bump: v29 has not shipped.
+2. **R3, riders.** Delete the rider clause from `serviceOf`. In `arrive`, riders step off and board only when the halt
+   is the route's `a` or the line's last open stop (`stopsOf(w, line).length − 1`), where every train stands. The
+   route row's `b` becomes "the line's end". `fareOf` stays 7. `crowdStop` stays in the table, unused. Tests replace
+   "a route halt is a stop" with: no tick at which a train stops for riders; both crowds board in every 1,200 ticks at
+   every stage; the rider and money invariants across an end moving (Q6 done, Q7 laid) with riders aboard.
+3. **Not built:** a freight train, a stop for riders at any middle halt, riders on line 1, anything for the passenger
+   set.
+
+**Proof gate (replaces the R2b gate; R3 runs it again with riders on).** Nothing asked, 12,000 ticks, against main
+(R1 and R2) unless said.
+
+1. **Stage ticks:** all 40 seed stages land on main's tick. 0, not "at most 108".
+2. **The wagon, trip by trip:** at every stage where footings are owed (`wagon-on` to the pier's twelfth, `deck-laid`,
+   `gap-footed`, `leaf-raised`) the wagon's train arrives at the far end and at the Village on main's tick, every
+   trip. The todo test in `test/railway-trade.test.ts` becomes this test. `crossing-done` and `ring-joined` are
+   printed, not gated.
+3. **Footing delivery ticks:** every tick a footing lands on the pier rack or the railhead rack, with the Works rack
+   kept full, matches main: the pier's first and second six (the one R3 moved from 1,602 to 1,818) and each ring and
+   counterweight delivery.
+4. **Waits:** the worst line 2 lever wait the `WAIT_BOUND` way at the six stages, no higher than main's and under 1,050.
+5. **Stone:** at least 32 in 20 minutes from `crossing-done` and from `ring-joined`; no freight stop on any tick while
+   footings are owed; timber unchanged from R1.
+6. **Fares:** at least 40 Boogles a minute at every stage from `trains-on` on, and neither crowd sits at `crowdCap`
+   for 1,200 ticks running.
+7. `npm run loop -- run`: order and bills unmoved.
+
+**What would change this ruling.** The far-end variant is being measured. If it moves any tick in gates 1 to 4, or pays
+under 40 a minute at any stage, build the other measured variant instead (riders on line 1, the Village to the Camp,
+both always ends) provided it moves nothing; if both move a tick or both pay under 40, riders are suspended while
+footings are owed and the builder reports back. No result re-opens a rider stop at a middle halt in this slice.
+
+**Findings.**
+
+1. **The pause costs no stone anyone can spend.** The Village holds 8 from the wake and needs 16 for plot 3, which is
+   three hours of fares away. One stop between the pier's twelfth footing and Q7's deck (seen at `crossing-done`) or the
+   first after the ring is footed supplies it. What a player may read as broken is the Quarry's full yard beside
+   passing trains while the ring is footed, as in the first ruling's finding 1; watch for it in the first owner session.
+2. **Shipping now against later.** Now: call 6 with R2b; call 7 with R3 once its table passes. Later, in the plan
+   that builds the passenger set or the first second source: where freight and riders live when one line has several
+   sources and a town in the middle. That plan, not this one, decides sidings and the crowd-of-four stop.
+3. **The first ruling's gate missed the wagon** because it measured stages and halts, not the one train with a job.
+   Gates 2 and 3 are the fix; C1 and C2 both run them.
+
+**Owner question (one).**
+
+1. **When you wrote "cargo trains", did you picture trains of their own?** Three pictures:
+   - **A (recommended; built now).** The trains you ride also carry the crates. While the footing wagon is working,
+     they pass the Quarry without stopping and the stone waits in its yard; once the ring is footed, a train stops
+     about every four minutes and takes a full load. Little guys ride to the end of the line and back.
+   - **B.** Your words to the letter: stone stops from the pier's last footing on, always. The footing wagon then gets
+     back about 11 s later for each load of stone taken ahead of it, roughly one trip in three.
+   - **C.** A cargo train of its own on each line, hauled for at the garage, pulling into a short siding at each
+     source so nothing queues behind it, with little guys on the passenger set. A later plan, after the greybox route.
+   Recommended: **A now, C as where it ends up.** Until he answers, A is built; B is one clause removed. Answer: ___
