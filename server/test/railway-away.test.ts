@@ -15,11 +15,14 @@ import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { line2Active, railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { railAwayCredit, RAIL_AWAY } from '../../src/sim/railway-away.ts';
+import { yards as yardRows } from '../../src/sim/railway-rows.ts';
+import { TRADE } from '../../src/sim/railway-trade-layout.ts';
 import {
   account,
   act,
   advance,
   apply,
+  buildSeedWorld,
   cart,
   createRailway,
   forge,
@@ -102,6 +105,8 @@ async function fixture(name: string) {
     },
   };
 }
+/** The crate yards' rows (slice 5). */
+const cratesOf = (w: World) => yardRows(w).map((y) => ({ stock: y.stock, made: y.made }));
 // The production counters and the credit's marker: what an away credit changes.
 const yards = (w: World) => ({
   rack: forge(w).rack,
@@ -252,6 +257,36 @@ test('a restart after hours away credits once on the join that wakes it, and a s
     f.host.wake();
     assert.equal(railClock(f.w).resumeMarker, after);
     assert.equal(invariant(f.w), null);
+  } finally {
+    await f.close();
+  }
+});
+
+// Slice 5 R2 (docs/plans/slice5-town-economy.md): the Camp's and the Quarry's crate yards (the Yard rows) join the
+// same credit, through the real host.
+test('slice 5: 8 hours away fills both crate yards to their cap once; a restart and a join add nothing', async () => {
+  const f = await fixture('away-crates');
+  try {
+    f.host.wake();
+    await f.adopt(buildSeedWorld('freight-running'));
+    f.host.pause();
+    const before = cratesOf(f.w);
+    assert.ok(
+      before.some((y, slot) => y.stock < TRADE.yards[slot]!.cap),
+      'a yard has room (line 1 took the Camp)',
+    );
+    f.clock.now += 8 * HOUR;
+    f.host.wake();
+    const after = cratesOf(f.w);
+    after.forEach((y, slot) => {
+      const cap = TRADE.yards[slot]!.cap;
+      assert.equal(y.stock, cap, `yard ${slot} at its cap`);
+      assert.equal(y.made, before[slot]!.made + cap - before[slot]!.stock, `yard ${slot} made up by the same`);
+    });
+    assert.equal(invariant(f.w), null);
+    await f.restart(0);
+    f.host.wake();
+    assert.deepEqual(cratesOf(f.w), after, 'the credited time is not credited again');
   } finally {
     await f.close();
   }

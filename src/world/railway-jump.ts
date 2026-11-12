@@ -6,6 +6,7 @@ import type { SeedStage } from '../sim/railway-seeds.ts';
 import { LINE2_BOILER, LINE2_HOOK, LINE2_LEVER, LINE2_SEA, LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
 import { RING_HEAD, RING_JOINT_UP, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, WORKS_KILN } from '../sim/railway-works-layout.ts';
+import { RAIL_LINES } from '../sim/railway-lines.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
 export type JumpLand = { x: number; y: number; z: number; yaw?: number };
@@ -38,6 +39,10 @@ const ringLand = (p: { x: number; z: number; y: number }, lat: number): JumpLand
   near(p, 0, 0, p.y / 100, ringAt(28500, lat));
 const RAILHEAD_LAND = ringLand(RING_HEAD[7]!.platform, 405);
 const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
+
+/** Line 1's Village and Camp platforms (slice 5's freight-running lands on the first, facing the second). */
+const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
+  CAMP_LINE1 = RAIL_LINES[0]!.halts[1]!.platforms[0];
 
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */
@@ -81,6 +86,15 @@ export const JUMPS: readonly Jump[] = [
     land: near(LINE2_SEA, 2.2, 1, 102.4, LINE2_STATIONS[0]!), // on the summit deck, facing the glide home
   },
   { stage: 'trains-on', label: 'Trains running', line: 'The boiler is fitted and both lines run' },
+  // Slice 5 (R1, R2). Its position was checked with a still on Windows/Edge, 12 November (on the platform, not
+  // clipped); not on a device. Facing: camera and yaw toward the Camp, measured on Windows/Edge 12 November; the
+  // avatar is drawn face to camera on landing, as on other rows.
+  {
+    stage: 'freight-running',
+    label: 'Timber home',
+    line: "Line 1's first load of timber is at the Village; plot 1 is staked",
+    land: near(VILLAGE_LINE1, 0, 0, VILLAGE_LINE1.y / 100, CAMP_LINE1), // the Village's line 1 platform, facing the Camp
+  },
   {
     stage: 'q6-done',
     label: 'Pier reached',

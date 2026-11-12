@@ -17,6 +17,9 @@ export const RAIL_STOPS = {
   Q5: 'Q5 laid',
   glider: 'glided home',
   trains: 'TRAINS',
+  // Slice 5 (R1, R2): meant with `--from trains-on`; the bot waits until line 1's first timber is at the Village. A bare
+  // `--to freight` plays the whole route first (past the 300 s limit in a run on 12 November).
+  freight: 'freight home',
   Q6: 'Q6 laid',
   pier: 'pier',
   crossing: 'crossing footed',

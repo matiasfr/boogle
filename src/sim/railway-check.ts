@@ -3,7 +3,7 @@
 //
 //   railwayCheck(world)            the load check: archetypes, counts, then every domain invariant on the world
 //                                  (accounts, piles, outcomes, catalog here; ./railway-check-line1.ts, -line2.ts,
-//                                  -trains.ts, -works.ts, -ring.ts; the conserved logs)
+//                                  -trains.ts, -works.ts, -ring.ts, -trade.ts; the conserved logs)
 //
 // A build-out's component adds its check as its own function in its own railway-check-<domain>.ts, called from
 // checkRailway, and one entry per `throw` to test/fixtures/railway-bad-worlds.ts.
@@ -14,6 +14,7 @@ import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
 import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWAY_PILES } from './railway.ts';
 import {
@@ -38,11 +39,14 @@ import {
   RailClock,
   Rock,
   Shed,
+  Town,
   Train,
   Tree,
   Works,
   WorksClock,
   TIMING,
+  Yard,
+  YardClock,
 } from './railway-components.ts';
 import {
   account,
@@ -66,6 +70,7 @@ import { checkLine2 } from './railway-check-line2.ts';
 import { checkTrains } from './railway-check-trains.ts';
 import { checkWorks } from './railway-check-works.ts';
 import { checkRing } from './railway-check-ring.ts';
+import { checkTrade } from './railway-check-trade.ts';
 
 const ARCHETYPES = [
   [Rail, RailClock],
@@ -86,6 +91,8 @@ const ARCHETYPES = [
   [Shed],
   [Line],
   [Aperture],
+  [Yard, YardClock],
+  [Town],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the world. */
 export function railwayCheck(w: World) {
@@ -114,6 +121,8 @@ export function railwayCheck(w: World) {
     [Shed, 1],
     [Line, RAIL_LINES.length],
     [Aperture, 1],
+    [Yard, TRADE.yards.length],
+    [Town, TRADE_TOWNS],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
@@ -126,7 +135,7 @@ const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
 };
 /** The domain's invariants on the world (M8b): the accounts, piles, outcomes and catalog here, then line one, line
- * two, the trains, the Works and the ring (./railway-check-*.ts), then the conserved logs. Every row and slot is
+ * two, the trains, the Works, the ring and the trade (./railway-check-*.ts), then the conserved logs. Every row and slot is
  * there: railwayCheck counted them first. */
 function checkRailway(w: World) {
   const ts = trees(w),
@@ -232,6 +241,7 @@ function checkRailway(w: World) {
   checkTrains(w);
   checkWorks(w);
   checkRing(w);
+  checkTrade(w);
   const counts = worldCounts(w);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) bad('conservation');
 }
