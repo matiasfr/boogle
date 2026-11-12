@@ -475,3 +475,65 @@ test('mover clock probes echo the current room step only for a live session, bou
     await f.close();
   }
 });
+
+test('an r:edit whose op is an object with a non-callable toString never throws in the host and writes nothing', async () => {
+  // From the independent review (12 November): String(e.op) on such an op threw out of world.deliver.
+  const f = await fixture(railwayRoomId('op-throw'));
+  try {
+    await f.open('a');
+    await f.wake();
+    const rules = () => f.host.rules.railway;
+    const hash = rules().world().hash();
+    const request = rules().account('alice')!.request;
+    const packets = f.packets.length;
+    f.pose('a', T1.x, T1.z);
+    // Each arrives off the socket through JSON, with the session's epoch and next request number.
+    for (const op of ['{"toString":0}', '{"toString":0,"valueOf":0}', '[{"toString":0}]', '{}', '[]', 'null', '7']) {
+      assert.doesNotThrow(() => f.send('a', { op: JSON.parse(op) }, 1, request + 1), `op ${op}`);
+      assert.equal(rules().outcome('alice', 1, request + 1), null, `op ${op}: no outcome recorded`);
+    }
+    await f.step(1);
+    assert.equal(rules().world().hash(), hash, 'nothing written');
+    assert.equal(rules().account('alice')!.request, request, 'the request number is not spent');
+    assert.equal(
+      f.packets.slice(packets).some((x) => x.cid === 'a' && (x.p.ack || x.p.rej)),
+      false,
+      'dropped like other malformed messages: no ack or rej',
+    );
+    // The session goes on: the same number, well formed, is settled and acknowledged.
+    f.send('a', { op: 'rail.wake' }, 1, request + 1);
+    await f.step(1);
+    assert.equal(rules().account('alice')!.request, request + 1);
+    assert.deepEqual(f.heard('a').acks.at(-1), [1, request + 1]);
+  } finally {
+    await f.close();
+  }
+});
+
+test('a tuning edit whose key is an object with a non-callable toString never throws and writes nothing', async () => {
+  const f = await fixture(railwayRoomId('key-throw'));
+  try {
+    await f.open('a');
+    const hash = f.host.rules.railway.world().hash();
+    const sent = f.sent.length;
+    for (const op of ['tune.set', 'tune.commit'])
+      for (const key of ['{"toString":0}', '[{"toString":0}]'])
+        assert.doesNotThrow(
+          () =>
+            f.host.deliver(
+              { t: 'w:edit', e: { op, i: 0, j: 0, key: JSON.parse(key), v: 1, expectedRevision: 0 } },
+              'a',
+            ),
+          `${op} key ${key}`,
+        );
+    await f.step(1);
+    assert.equal(f.host.rules.railway.world().hash(), hash);
+    assert.equal(
+      f.sent.slice(sent).some((m) => m.t === 'w:edit' || m.t === 'w:accepted'),
+      false,
+      'no edit reached the sync',
+    );
+  } finally {
+    await f.close();
+  }
+});
