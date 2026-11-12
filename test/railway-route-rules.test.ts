@@ -28,7 +28,11 @@ import {
   ROW_LINE,
   legFrame,
   legS,
+  ROW_SHIFT,
+  rowPoint,
 } from '../src/sim/railway-route.ts';
+import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
+import { RING_END, RING_S_HEAD, ringAt } from '../src/sim/railway-ring-layout.ts';
 import { TRAIN, TRAIN_PHASE, fleetOf, trainDir, trainStopsOf } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
@@ -116,6 +120,26 @@ test('line 2 grows on past Ring Island to the stack railhead and High Gorge; ns,
     [true, false, false, false, false, false, false, false],
     'step 3 builds the stack leg only',
   );
+});
+
+test('the ring row counts 100 cm ahead of line 2: the shift is the catalog row against RING_S_HEAD, the same places', () => {
+  const ring = WORLD_LINES.find((l) => l.id === 'ring')!;
+  assert.equal(ROW_SHIFT.ring, ring.fromCm - RING_S_HEAD);
+  assert.equal(
+    ROW_SHIFT.ring,
+    100,
+    'regenerating the catalog changes this: check the stack line still stands where it is drawn',
+  );
+  assert.deepEqual([ROW_SHIFT.ns, ROW_SHIFT.bay, ROW_SHIFT.cave], [0, 0, 0]);
+  // The Ring Island halt: the row's stop less the shift is line 2's, and both are the ring layout's u 448 m.
+  assert.equal(legS(LEG, ring.stops[0]!), RING_END.s);
+  const at = ringAt(RING_END.u),
+    row = rowPoint('ring', ring.stops[0]!);
+  assert.ok(Math.hypot(row.x - at.x, row.z - at.z) <= 100, 'the same place within 1 m');
+  // Line 2's path past s 1220 m is the row read at s + shift (its first sample, and the Gorge's halt).
+  const k = 122;
+  const p0 = rowPoint('ring', 122000 + ROW_SHIFT.ring);
+  assert.deepEqual([RAIL_LINES[LINE2]!.path[2 * k], RAIL_LINES[LINE2]!.path[2 * k + 1]], [p0.x, p0.z]);
 });
 
 test('the fleet: 3, 4, 5, 5 and 5 trains as 0 to 4 sections are laid; the fourth and fifth rows start in the shed', () => {

@@ -366,7 +366,10 @@ export const ROUTE = { branchFirst: 'gorge', branches: 'both', ending: 'card', u
 // ---------------------------------------------------------------- step 3: what the rules read (greybox-route.md)
 /** A row's centimetres against its sim line's `s`: the `ring` row counts on from the pier head at its `fromCm` (74300),
  * line 2 from RING_S_HEAD (74200), so the same place is 100 cm further along the row (the Ring Island halt: row 119100,
- * line 2's 119000). The other rows are their own lines and count from 0. */
+ * line 2's 119000). The generator measured the pier head along Place's sampled path, which ends 3.55 m short of it;
+ * line 2's s is the ring layout's (s = RING_S_HEAD + u). The rules shift the row instead of regenerating the catalog
+ * (step 2's, tested against the map) or moving line 2's built halts; test/railway-route-rules.test.ts ties the shift to
+ * both. The other rows are their own lines and count from 0. */
 export const ROW_SHIFT: Readonly<Record<RowId, number>> = {
   ring: row('ring').fromCm - RING_S_HEAD,
   ns: 0,
