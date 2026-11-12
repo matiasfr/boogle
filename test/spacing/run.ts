@@ -15,8 +15,8 @@
 // world hash every 1,000 ticks. `stages` builds every seed stage and prints its tick and hash.
 import { createHash } from 'node:crypto';
 import { mulberry32 } from '../../src/sim/rng.ts';
-import { RAIL_HALTS, circuitAhead, circuitCm, circuitLen } from '../../src/sim/railway-lines.ts';
-import { TRAIN, TRAIN_PHASE, trainAlong, trainDir } from '../../src/sim/railway-train.ts';
+import { RAIL_HALTS, RAIL_LINES, circuitAhead, circuitCm, circuitLen, trainPlaces } from '../../src/sim/railway-lines.ts';
+import { TRAIN, TRAIN_PHASE, lineStages, trainAlong, trainDir } from '../../src/sim/railway-train.ts';
 import * as trainsMod from '../../src/sim/railway-trains.ts';
 import * as sysTrains from '../../src/sim/railway-sys-trains.ts';
 import { LINE_SLOTS, cycleTicks, trainPose, trainSpacing } from '../../src/sim/railway-trains.ts';
@@ -39,6 +39,13 @@ import {
 } from '../helpers/rail.ts';
 
 const LINE2 = 1;
+// SPACING_PASS=<cm>,<band>: set line 2's catalog `pass` (candidate A, docs/plans/train-spacing.md 2A) for this run,
+// checked by trainPlaces as the catalog is; unset leaves the catalog as committed. A branch without A ignores it.
+if (process.env.SPACING_PASS) {
+  const [cm, band] = process.env.SPACING_PASS.split(',').map(Number) as [number, number];
+  Object.assign(RAIL_LINES[LINE2]!, { pass: { cm, band } });
+  for (const stops of lineStages(LINE2)) trainPlaces(LINE2, stops);
+}
 const haltId = (line: number, stop: number) => RAIL_HALTS.findIndex((h) => h.line === line && h.stop === stop);
 const lever = (w: Seed, id: number, dir: number) => act(w, 'a', 'rail.call', { id, dir });
 const num = (name: string, own: number) => {
@@ -128,7 +135,9 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
     worst = new Map<string, { ticks: number; tick: number }>(),
     riderAsk = new Map<string, number>(),
     standSince = new Map<number, number>(),
-    waits: { wait: number; key: string; tick: number; passed: number }[] = [];
+    waits: { wait: number; key: string; tick: number; passed: number }[] = [],
+    waitsAll: number[] = [], // every line's served lever waits
+    unserved: number[] = []; // line 2's asks still waiting at the end, how long so far
   let longest = { slot: -1, ticks: 0, at: -1, tick: 0 };
   // Per outstanding line-2 ask: the trains named under the nearest rule while it waited, the server under the line's
   // rule last tick (and how long), and the trains that ran through its platform its way.
@@ -235,6 +244,7 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
       if (LINE_SLOTS[h.line]!.some((s) => standingAt(w, s, h.stop, dir))) {
         const wt = w.t - since;
         if (wt > (worst.get(key)?.ticks ?? -1)) worst.set(key, { ticks: wt, tick: w.t });
+        waitsAll.push(wt);
         if (h.line === LINE2) {
           const t = track.get(key);
           let pass = 0;
@@ -306,6 +316,7 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
   for (const [key, since] of asked) {
     const wt = w.t - since;
     if (wt > (worst.get(key)?.ticks ?? -1)) worst.set(key, { ticks: wt, tick: w.t });
+    if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2) unserved.push(wt);
   }
   let top = { key: '', ticks: -1, tick: 0, open: false };
   for (const [key, v] of worst)
@@ -327,6 +338,8 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
     accepted,
     acceptedAll,
     waits: waits.map((x) => x.wait),
+    waitsAll,
+    unserved,
     worst: { ticks: top.ticks, at: top.key ? name(top.key) : '', tick: top.tick, open: top.open },
     longest,
     headway: Object.fromEntries(
