@@ -4,7 +4,7 @@
 // track's lateral easing and the joins between separately defined pieces.
 //
 // Why these thresholds. A car is a rigid box on the line, posed from the chord between two points 1.1 m either side of
-// its centre (src/proto/place/rail.ts poseCarOnLine); cars are 3.2 m long and 2.2 m wide on a 3.7 m pitch, so 0.5 m
+// its centre (src/entities/railway/car.ts poseCarOnLine); cars are 3.2 m long and 2.2 m wide on a 3.7 m pitch, so 0.5 m
 // apart. On a polyline whose chords are longer than that 2.2 m window, each vertex turns every car by its whole heading
 // change while it rolls 2.2 m: 0.11 s at 20 m/s.
 //   KINK_SOFT 2°   a car's end (1.6 m from its centre) swings 5.6 cm sideways within about 7 frames at 20 m/s while the
@@ -25,7 +25,7 @@
 import { LIVE, beside, deg, joins, tracks, wrap, type Join, type Pt, type Track } from './rail-network.ts';
 import { HALTS, UP_HALTS, crossLat, upLat } from '../../src/place/layout.ts';
 
-/** A car's half width and a platform's (src/proto/place/halts.ts: 2.5 m decks). */
+/** A car's half width and a platform's (src/entities/railway/halts-view.ts: 2.5 m decks). */
 const CAR_HX = 1.1,
   PLATFORM_HX = 1.25;
 /** The up track's turnouts and Far Head's crossover: how steeply each leaves today's track and its tightest radius

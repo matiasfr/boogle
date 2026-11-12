@@ -37,8 +37,8 @@ type HaltSpec = { name: string; place?: string; at?: 'end' | 'start'; nearPt?: X
 type Service = { id: string; name: string; extends?: 1; legs: Leg[]; halts: HaltSpec[]; note: string };
 type Turn = 'crossover' | 'loop' | null;
 
-/** Every corridor is double track (owner, 10 November): two tracks on 4 m centres. The gauge is Place's: rails 0.5 m
- * either side of the centre (src/proto/place/rail.ts), on a 3.6 m deck, so the formation is 7.6 m wide. Halts get a
+/** Every corridor is double track (owner, 10 November): two tracks on 4 m centres. The gauge is the village's: rails 0.5 m
+ * either side of the centre (src/entities/railway/track.ts), on a 3.6 m deck, so the formation is 7.6 m wide. Halts get a
  * platform outside each track. */
 export const FORMATION = { tracks: 2, centresCm: 400, gaugeCm: 100, deckCm: 760, platformCm: 580, loopCm: 4000 };
 /** How each line's ends turn a train back without reversing it: a scissors crossover just short of the terminus

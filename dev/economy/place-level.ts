@@ -1,8 +1,8 @@
-// `npm run level-check -- --place=place`: the progression check for Round 4, the default browser entry.
+// `npm run level-check` (the village part): the progression check on the production world's land and tech layout (src/place).
 // The classic adapter composes dev/layouts from `Site`; this checks place's land with the same player
 // limits: from spawn, what can you reach on foot, in each state of the job? And it reports how long the walks really are.
 // It floods the 2 m grid of src/place/terrain.ts at the player's walkable slope, plus what's solid to walk on (footbridges
-// and laid track). It doesn't know about props in the way, which only the play-through (dev/look/evals/place-job.ts) tests.
+// and laid track). It doesn't know about props in the way, which only the play-through (the railway bot, dev/look/bots/railway.ts) tests.
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
@@ -197,7 +197,7 @@ export function runPlaceLevelCheck() {
   // ---------------------------------------------------------------- abilities: what each state of the run can reach
   // The flood above is walking. Over it, the moves as numbers, from the real controller's constants: one jump's rise, two jumps',
   // a hook's 24 m to a ring, and the glide's budget with the research's margins. Each edge names what it needs, so a state's list is
-  // everything you can stand on with what you have then. Not physics: the bot (dev/look/evals/place-job.ts, `tour`) does those moves
+  // everything you can stand on with what you have then. Not physics: the bot (the railway bot, dev/look/bots/railway.ts) does those moves
   // for real. This one looks for what shouldn't be possible yet.
   type Have = { jump: boolean; hook: boolean; glide: boolean };
   const ONE_JUMP = 1.68,

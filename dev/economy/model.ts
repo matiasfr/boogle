@@ -403,7 +403,7 @@ for (const [era, speed, lay, carry, kit, sourceM, rate, length, contentMin, walk
   }
 }
 
-// Round 4 of ?proto=place (docs/plans/round-4.md), hypotheses until played: a slog by hand that's starting to feel long by the
+// Round 4 of the retired Place prototype (docs/plans/round-4.md), hypotheses until played: a slog by hand that's starting to feel long by the
 // end, then each rung. Bills and spans are src/place/layout.ts's. A press every 0.38 s (a person, not the 0.24 s cooldown),
 // 2 logs a stroke, then 5 with the proper axe. sourceM is the historical grove-based one-way carry, weighted by
 // how many of a station's loads go that far (Q3 is one load of rails 130 m and one of logs 16 m from the rack, so 73).

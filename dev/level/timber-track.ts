@@ -4,6 +4,7 @@
 // The track layer's own swept clearance against these decks is dev/level/machine-clearance.ts (it reads `timberDecks`).
 import * as THREE from 'three/webgpu';
 import { sourceFunction } from './source.ts';
+import { PLAYER_R } from '../../src/constants.ts';
 import { trackBoxes } from './grounding-track.ts';
 import {
   CROSSING_WIDTH,
@@ -111,6 +112,75 @@ export function standing(
   return { id, owner, ...rotated(new THREE.Vector3(x, base + h / 2, z), q, w, h, d) };
 }
 
+/** A service route's points as line2-view.ts draws them: the hook walk's first points lifted flush with the plank top. */
+function servicePoints(kind: keyof typeof SERVICE_ROUTES) {
+  return SERVICE_ROUTES[kind].map((p, i) => ({
+    ...p,
+    y: p.y + (kind === 'hook' && i < HOOK_FLUSH.points ? HOOK_FLUSH.top : 0),
+  }));
+}
+
+const SERVICE_THICK = 0.35; // line2-view.ts: each walkway deck is a 0.35 m thick box
+const SERVICE_OVER = 0.2; // ... `length + 0.4`: 0.2 m past each end
+/** The highest edge a walker still rides over (before 10 November the hook walk's corners stood 0.22 m proud and were walked; the 0.73 m ledge stopped the bot). */
+const LEDGE_M = 0.3;
+
+/**
+ * Ledge rule for service walkways: walking a route's centreline, no deck (the next one, where the route turns back over
+ * itself, or any other) may stand more than LEDGE_M above the deck underfoot, inside the walker's footprint and not overhead.
+ */
+export function checkServiceLedges() {
+  const ledges: { route: string; deck: number; over: number; above: number; x: number; z: number }[] = [];
+  let samples = 0;
+  let routes = 0;
+  for (const kind of Object.keys(SERVICE_ROUTES) as (keyof typeof SERVICE_ROUTES)[]) {
+    routes++;
+    const pts = servicePoints(kind);
+    const decks = pts.slice(1).map((b, i) => {
+      const a = pts[i]!;
+      const run = Math.hypot(b.x - a.x, b.z - a.z);
+      const ux = (b.x - a.x) / run,
+        uz = (b.z - a.z) / run,
+        slope = (b.y - a.y) / run,
+        over = SERVICE_OVER / Math.hypot(1, slope);
+      return {
+        i: i + 1,
+        /** The deck's top and its underside straight above (x, z), or null off its footprint. */
+        at(x: number, z: number) {
+          const t = (x - a.x) * ux + (z - a.z) * uz,
+            w = -(x - a.x) * uz + (z - a.z) * ux;
+          if (t < -over || t > run + over || Math.abs(w) > SERVICE_WIDTH / 2) return null;
+          const top = a.y + slope * t;
+          return { top, under: top - SERVICE_THICK * Math.hypot(1, slope) };
+        },
+      };
+    });
+    for (let k = 0; k < decks.length; k++) {
+      const a = pts[k]!,
+        b = pts[k + 1]!,
+        n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.1);
+      const worst = new Map<number, { above: number; x: number; z: number }>();
+      for (let j = 0; j <= n; j++) {
+        const x = a.x + ((b.x - a.x) * j) / n,
+          z = a.z + ((b.z - a.z) * j) / n;
+        samples++;
+        const feet = decks[k]!.at(x, z)!.top;
+        for (const d of decks)
+          for (let r = 0; r < 8; r++) {
+            const s = d.at(x + PLAYER_R * Math.cos((r * Math.PI) / 4), z + PLAYER_R * Math.sin((r * Math.PI) / 4));
+            if (s && s.top - feet > LEDGE_M && s.under < feet + 2 * PLAYER_R) {
+              const was = worst.get(d.i);
+              if (!was || was.above < s.top - feet) worst.set(d.i, { above: s.top - feet, x: x + ORIGIN.x, z });
+              break;
+            }
+          }
+      }
+      for (const [deck, w] of worst) ledges.push({ route: kind, deck: k + 1, over: deck, ...w });
+    }
+  }
+  return { level: 'service-ledges', routes, samples, ledgeM: LEDGE_M, failures: ledges.length, ledges };
+}
+
 export function timberDecks(): Deck[] {
   const decks: Deck[] = [];
   const path = 'src/entities/railway/path.ts';
@@ -185,11 +255,7 @@ export function timberDecks(): Deck[] {
 
   // Route v2's walkways from Q2 and Q3 (src/entities/railway/line2-view.ts draws them 0.35 thick).
   for (const kind of ['hook', 'quarry'] as const) {
-    // The same flush lift line2-view.ts gives the hook walk's first points.
-    const pts = SERVICE_ROUTES[kind].map((p, i) => ({
-      ...p,
-      y: p.y + (kind === 'hook' && i < HOOK_FLUSH.points ? HOOK_FLUSH.top : 0),
-    }));
+    const pts = servicePoints(kind);
     for (let i = 1; i < pts.length; i++)
       decks.push(
         between(
@@ -207,7 +273,7 @@ export function timberDecks(): Deck[] {
       );
   }
 
-  // The stations' platforms, shelters and the ramps off them (halts.ts makeHalt); calls from place/index.ts.
+  // The stations' platforms, shelters and the ramps off them (src/entities/railway/halts-view.ts).
   const at = { x: 0, z: 0, ux: 0, uz: 1 };
   const lateral = (line: Line, s: number, l: number) => {
     lineAt(line, s, at);
@@ -224,7 +290,7 @@ export function timberDecks(): Deck[] {
     const yaw = Math.atan2(at.ux, at.uz);
     const c = lateral(line, mid, lat);
     const ground = H(c.x, c.z);
-    const file = 'src/proto/place/halts.ts';
+    const file = 'src/entities/railway/halts-view.ts';
     decks.push(
       standing(
         `${name}/platform`,
@@ -239,7 +305,7 @@ export function timberDecks(): Deck[] {
       ),
     );
     const sign = Math.sign(lat);
-    // The roof slab, 3.2 m up on posts, and the bench, at the platform's back edge (halts.ts `shelter`).
+    // The roof slab, 3.2 m up on posts, and the bench, at the platform's back edge (halts-view.ts `shelter`).
     const shelter = -4.8,
       cs = Math.cos(yaw),
       sn = Math.sin(yaw);
@@ -278,8 +344,8 @@ export function timberDecks(): Deck[] {
         );
     }
 
-  // The jump, hook and glide pads, their columns, the catch ribbon and ramps, and the pillar lip (tech.ts buildPads).
-  const tech = 'src/proto/place/tech.ts';
+  // The jump, hook and glide pads, their columns, the catch ribbon and ramps, and the pillar lip (src/entities/railway/hook-view.ts, tools.ts).
+  const tech = 'src/place/tech-layout.ts'; // the pads' data; hook-view.ts and tools.ts draw them
   const pads: {
     id: string;
     x: number;
@@ -362,7 +428,7 @@ export function timberDecks(): Deck[] {
       );
     }
   }
-  // Both line-2 gates' jambs (tech.ts buildGates): the gates span both tracks since the second track (generic-lines step 2).
+  // Both line-2 gates' jambs (src/entities/railway/hook-view.ts): the gates span both tracks since the second track (generic-lines step 2).
   for (const [id, g] of Object.entries(GATES))
     for (const side of [-1, 1]) {
       const px = (side * (GATE_SLAB.w + GATE_SLAB.pillar)) / 2;

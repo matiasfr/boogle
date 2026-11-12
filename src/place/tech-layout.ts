@@ -198,7 +198,7 @@ export const SERVICE_ROUTES = {
     // It rises round p2's far side from t0 (down the line, then behind the pillar), every point more than two jumps
     // from t0 so t0 still needs the hook (review of generic-lines step 2; test/hook-walk-t0.test.ts). It is level for its
     // last 3 m before turning back: the next deck's inner half lies over this one, so a rise there is a ledge across the
-    // walk (test/hook-walk-lip.test.ts).
+    // walk (the ledge rule of dev/level/timber-track.ts).
     beside(E, 92, -1, 3.4 - UP_LAT),
     beside(E, 88, -1, 3.4 - UP_LAT),
     beside(E, 84, -1, 3.4 - UP_LAT),
