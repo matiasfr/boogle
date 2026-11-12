@@ -907,23 +907,23 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     targets,
     dispose,
     bundleOrigin,
+    // Read by the slot the tree was admitted with, as fromState and onReset do, not by its catalog `hardwood` flag:
+    // under `?home=b` the Place catalog plants on another grid, so the two disagree (the sim's ids are layout A's).
     inspect: () =>
-      trees
-        .filter((tree) => sourceIndex.has(tree.index) || hardwoodIndex.has(tree.index) || tree.great)
-        .map((tree) => ({
+      choppable.map((tree) => {
+        const h = hardwoodIndex.get(tree.index),
+          k = sourceIndex.get(tree.index);
+        return {
           id: tree.index,
           x: tree.x,
           y: tree.y,
           z: tree.z,
           cleared: tree.cleared,
           work: tree.work,
-          remaining: tree.great
-            ? 0
-            : tree.hardwood
-              ? hardwoodRow(world(), hardwoodIndex.get(tree.index)!).left
-              : treeRow(world(), sourceIndex.get(tree.index)!).left,
+          remaining: h !== undefined ? hardwoodRow(world(), h).left : k !== undefined ? treeRow(world(), k).left : 0,
           falling: tree.fall,
           growth: tree.growth ?? 0,
-        })),
+        };
+      }),
   };
 }
