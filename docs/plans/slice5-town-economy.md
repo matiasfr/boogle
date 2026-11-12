@@ -487,41 +487,34 @@ shipped, else bump B (a rule change, no shape change).
      to 85.
   - If 2 or 3 fails: also refuse the stop while the wagon's train is the next train behind on the down track, and
     measure again. If it still fails, report to the designer; do not raise the limits.
-- **As built (12 November; figures measured, replacing the arithmetic above where they differ).** `freightStop` in
-  `railway-queries-trade.ts` as specified, ored into `serviceOf` ahead of the line 2 early return; `loadStop: 8`, the
-  Quarry yard's `after: 'pier'`. No state, op or shape change; a rule change that moves pinned fixtures, so `WORLD_NS` v29. Measured against R1+R2 (main `e2a63297`):
-  - Rows: every stage through `crossing-finishing`, and `crossing-done` at the stage, identical at the stage and every
-    100 ticks for 1,200 ticks. **No stage moved a tick** (gate 2: 0 against 108 and 324). Fixtures moved for
-    `crossing-done` (after its stage) and `deck-laid` to `ring-joined` only.
-  - Stone in 20 minutes with nothing asked: 32 from `crossing-done`, `deck-laid` and `ring-joined`, 40 from
-    `gap-footed` and `leaf-raised` (4 or 5 stops, each exactly 8; the arithmetic's "about 40"). At `crossing-done`
-    Q7's kit is owed first, so no train stops for stone until it is aboard. Timber is unchanged from R1 at every
-    stage (78 at `crossing-done` under both; the gate's "79 to 85" was R1's range on other stages): gate 4 is read
-    as "timber unchanged from R1".
-  - Worst line 2 lever wait the `WAIT_BOUND` way (the test's own fuzz loop, both seeds, 3,000 ticks; worst of the
-    two), R1 → R2b: `q6-stocked` 546 → 546 (the test prints 54.6 s), `crossing-done` 603 → 603, `deck-laid` 702 →
-    702, `gap-footed` and `leaf-raised` 588 → 547, `ring-joined` 735 → 764; all under 1,050 (gate 3, judged this way
-    only: orchestrator, 12 November). A first copy of the loop skipped one random draw (the light-mode `nextAsk`) and
-    read 605 at `q6-stocked`; these are from the corrected copy, which matches the test's printout.
-  - **The fallback was built, measured and removed.** Refusing the stop while the wagon's train was next behind cut
-    `gap-footed` from 40 stone in 5 stops to 32 in 4 and left every worst wait identical to the tick, so it bought
-    nothing; the orchestrator dropped it.
+- **As built (12 November, as ruled; figures measured against origin/main, replacing the arithmetic above where they
+  differ).** `freightStop` in `railway-queries-trade.ts`, ored into `serviceOf` ahead of the line 2 early return;
+  `loadStop: 8`, the Quarry yard's `after: 'pier'`; and, per the ruling (while line 2's wagon is owed footings the
+  economy adds no stop on that line, call 6), no stone stop while `footingsOwed(w, line)` (line 2: the pier's twelve
+  or, once Q7 is laid, the ring's bents and counterweight still to set; any other line none: the same query that
+  exempts the wagon from headway). No state, op or shape change; a rule change that moves pinned fixtures, so `WORLD_NS` v29. The gate:
+  | Stage | Stage tick | Wagon trips vs main | Footing deliveries | Worst wait (main → R2b) | Stone in 20 min |
+  | --- | --- | --- | --- | --- | --- |
+  | through `crossing-finishing` | main's; rows identical | identical (`wagon-on`: footings owed) | identical (pier's 6 and 6 at +570, +1,602) | `q6-stocked` 546 → 546 | 0 (before the footings) |
+  | `crossing-done` (nothing owed) | main's | +33 every third trip, +132 by the eleventh (accepted cost, reported) | none due | 603 → 603 | 32, from +903 |
+  | `deck-laid` (ring owed) | main's | identical every trip | identical (the ring's 6 at +654) | 702 → 702 | 0 |
+  | `gap-footed`, `leaf-raised` (ring owed) | main's | identical every trip | none due | 588 → 588 | 0 |
+  | `ring-joined` (nothing owed) | main's | 0, 0, 0, +31, +31, +139, +139, +247 (accepted cost) | none due | 735 → 733 | 32, from +1,053 |
+
+  Worst waits are the `WAIT_BOUND` way (the test's own fuzz loop, both seeds, 3,000 ticks; the test prints 546 as
+  54.6 s); `npm run loop -- run` prints the same output on main and here (its wall-time line aside). Each stop loads
+  exactly 8. Timber is unchanged from main at every stage.
+  - **How it was ruled.** The first build stopped for stone whenever 8 waited; the review measured the wagon's train
+    running late behind those stops (+350 by the ninth trip at `gap-footed`, +380 at `ring-joined`). A first fallback
+    (refuse the stop while the wagon's train is next behind) removed none of it (+200 at `gap-footed`) and was dropped;
+    candidate (i), no stop while the wagon is owed footings, is the ruling's rule. Stone then waits for the ring: none
+    moves from Q7 laid to the rivet unless asked for.
   - While a kit is owed no train makes the stone stop (in a live room, until players pour Q7's rails); stone still
-    moves by a lever or rider ask then (the review's finding 5; `test/railway-trade.test.ts` holds both).
-  - **Finding for the designer (review, 12 November; measured, nothing asked, 12,000 ticks): the stone stop delays the
-    footing wagon's train by more than the ruling's "at most 108 ticks a time", and the delay grows trip over trip.**
-    Arrivals at the line's far end, cumulative drift against R1+R2: `gap-footed` and `leaf-raised` 0, −1, −1, +130,
-    +130, +241, +241, +350, +350; `ring-joined` 0, +56, +56, +164, +164, +272, +272, +380; `crossing-done` 0, +33,
-    +33, +33, +66, +66, +66, +99, +99, +99, +132; `deck-laid` none (−1). A plain train stops for stone just ahead of the wagon's,
-    which closes up and is then held a dwell at Far Head behind it. The fallback (refuse the stop while the wagon's
-    train is next behind) does not remove it: `gap-footed` 0 for six trips, then +31, +33, +200; `ring-joined` 0, +46, +46,
-    +103, +103, +103, +170, +170; `crossing-done` as without it; its stone drops to 32 at `gap-footed` and its waits match the shipped rule.
-    With footings aboard (`deck-laid`, 6 a trip) the wagon is not delayed and the one delivery lands at the same tick.
-    The wagon ran empty in the delayed cases and no seed stage moved a tick. Not changed in the rule; the designer
-    rules. `test/railway-trade.test.ts` carries it as a todo test.
+    moves by a lever or rider ask then. `test/railway-trade.test.ts` holds both, the wagon's arrivals against no stone
+    stop while footings are owed (equal) and outside the window (reported).
 - **Finding (line 2 with the wagon and the leaf, not freight).** With a lever ask at every line 2 halt both ways
   every 600 ticks, R1's own worst waits pass the 1,050 bound late in the route: `deck-laid` 1,039, `gap-footed` and
-  `leaf-raised` 1,124 (R2b: 1,099, 1,129, 1,129, each within +90 of R1), against 702 and 588 the `WAIT_BOUND` way.
+  `leaf-raised` 1,124 (R2b as ruled makes no stone stop at these stages), against 702 and 588 the `WAIT_BOUND` way.
   That method asks everywhere at once, so every train stops at every middle halt each trip and the trips lengthen;
   the fuzz asks one random halt at a time. The long waits come with the footing wagon's trips and the raised leaf;
   C1's report should carry them.
