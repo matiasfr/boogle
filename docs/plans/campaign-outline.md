@@ -324,7 +324,7 @@ with each hub's plan.
 | **High Gorge** | Town | A large area and a junction; a street across the bridge or a terrace on the lip |
 | **Canopy Town** | Town | A large area and a junction; platforms round a trunk |
 | **Port Quay** (with High Port above) | Town | The largest area; a one-sided quay street and the second rotunda |
-| Bell Rock, West landing | Station, no town | A skerry on two levels; Home's second front. Town-layout: "stations, not towns" |
+| Bell Rock, West landing | Station, no town (Bell Rock: now the market, [below](#the-market-hub-bell-rock)) | A skerry on two levels; Home's second front. Town-layout: "stations, not towns" |
 | Camp, Quarry, Saltpan, the Wall's islets, Lantern Notch | Source or halt | One reason to stop; no building. The Original Island is the ending |
 
 All five towns stand on the ring (line 2 grown: Village, Quarry, Far Head, Ring Island, High Gorge, Canopy Town, Port
@@ -394,6 +394,56 @@ stand-in towns, and 0.5 U a hub town at depth (a centre, three walk-in houses, t
 27 U; the range of 5 to 14 weeks becomes roughly 6 to 16.** The main route's time does not change: no bill, gate or
 wait depends on a town and freight stops stay inside R2b's gate, so a three-hour rush stands. For a player who
 engages, my estimate is 15 to 25 minutes over four hub towns, inside the four-to-five-hour target; not modelled.
+
+### The market hub: Bell Rock
+
+**Direction (owner, [12 November](../decisions-rewards.md#d-2026-11-12-a-market-hub-in-the-middle)), hedged:** "maybe"
+the final hub unlocked is in the middle of the ring, built out "as like a market hub", "a good junction ultimately";
+when it opens is open. This replaces Bell Rock's row in section 1: it is the sixth hub that is built out.
+
+**The place.** Bell Rock (halts at about −50, −850 m) is the only junction inside the ring: the north–south line at
+the water, the bay line on the skerry at 15 m, the round stair tower between. The Original Island is also inside and
+nearer the middle (about −6, −135 m), but it is a loop terminus and the ending. **A limit to know:** Gorge first,
+only two lines meet at Bell Rock. The ring never touches it, so "every line meets there" is true of the bay and
+north–south lines and, through them, of Home, High Gorge, Canopy Town and the Original Island.
+
+**What a market hub is here (New).**
+
+- **It grows by connection, not by plots.** One stall for each place whose line reaches Bell Rock, put up by the
+  little guys when the first train from that place arrives: no stakes, no price, no thresholds. This is the thing
+  that grows because a train came, beside towns that grow because the room paid.
+- **It receives a little of what each of those lines carries.** A stall shows its place's crates. Reachable goods,
+  Gorge first: copper (north–south line), fibre (bay line), timber and stone (the bay line from West landing). Steel
+  and salt do not reach it without a change of line; their stalls wait for a later brief or stay absent.
+- **What is bought there:** the wallet's network buys, in one place and in view: source upgrades for any connected
+  source and station fit-outs. Houses stay at each town's own plots. It never sells materials or turns goods into
+  Boogles ("materials and Boogles never convert", decided), and Fine Prices stays free.
+- **What is traded there is riders.** Most town-to-town trips change at Bell Rock, so its platforms are the busiest
+  and its fare trays the fullest; it is also where two or three players meet again after splitting up.
+
+**The two timings.**
+
+| | (a) Opened last, as the final hub | (b) A bare junction early, built out as each line arrives |
+| --- | --- | --- |
+| Route order | Unchanged only if "opened" means built out at stage 7 or 8. Reaching it last would move the incline and the bay shortcut after the Wall, undoing the answered fixed order and area 5's first loop | Unchanged |
+| Greybox | Leg 2 first touches Bell Rock, as planned; nothing added until leg 6 | Leg 2 first touches it and puts up two stall markers (the Gorge's, Home's); leg 3 adds Canopy's; leg 6 the causeway's |
+| The ending | The causeway leaves from Bell Rock, so the market's opening and the ending's fall in the same 18 minutes and compete | The market is already whole when the lantern is lit; the ending stays the last new thing, and the one planned change of train on the way to The Boogler happens in a full market |
+| Cost | About 0.5 U, all in the last area | About 1 U: 0.5 at depth (Bell Rock from 1 to 1.5 U), 0.25 systems, 0.25 greybox markers. 27 U becomes 28 |
+
+**Recommended: (b).** It makes the first loop's junction a place worth returning to as each line arrives, spreads the cost,
+and keeps the ending alone at the end. It does not make Bell Rock the final hub unlocked; it makes it the last one
+finished.
+
+**The destination rule does not change.** A yard row still has one town. The market adds rows of its own on the two
+lines that reach it (a hub on two lines has a row on each); no crate is split and nothing is routed. **Default:** the
+main route gains no wait: R2b's full-load rule applies to these rows.
+
+**Finding.** The skerry is 240 × 190 m on two levels, carrying two lines' platforms. Whether five stalls and a board fit on the
+upper deck round the tower is unproven; Bell Rock's own plan runs the level check before anything is placed.
+
+**Owner question (one).** Is the market Bell Rock, built out in stages as lines arrive (recommended), or did you mean
+the last place unlocked, which on this map is the Original Island? Until he answers: Bell Rock, timing (b), as
+greybox markers only; nothing is built on the Original Island beyond the recorded ending.
 
 ### Findings
 
