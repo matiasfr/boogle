@@ -47,15 +47,11 @@ const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100,
  * roads (surface 18.1 m by `jump-land-probe`), facing the table's centre with the stall behind it. Inside the table's
  * 6 m reach. The spot before (4 m west, 2 m south) put the camera inside the stall's shell. */
 const TABLE_LAND = near(SHED_TABLE, 5.2, 1.7, 18.1, SHED_TABLE);
-/** Line 2's Village platform, facing out along the line toward the Quarry (boiler-long: ride out at 25 m/s). */
-const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
-  QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[1];
-
 /** Line 1's Village and Camp platforms (slice 5's freight-running lands on the first, facing the second). */
 const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
   CAMP_LINE1 = RAIL_LINES[0]!.halts[1]!.platforms[0];
 /** Line 2's Village and Quarry platforms (slice 5's fares-running lands on the first, where riders board, facing the
- * second: along the line). */
+ * second: along the line; boiler-long lands there too, to ride out at 25 m/s). */
 const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
   QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[1];
 
