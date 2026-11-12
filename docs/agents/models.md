@@ -26,6 +26,10 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   default logged in [agent-calls](../agent-calls.md). A Sonnet implementer that stalls on a plan step reports back;
   the orchestrator reruns that step on Opus. Deep research stays on Opus medium (owner: "we try planning on and
   deep research on Opus Medium still"); planning has since moved to Fable (below).
+- **Fable at medium where taste or judgment decides** (owner, 11 November,
+  [call](owner-calls.md#fable-where-taste-decides)): player-visible implementation, the visual review of it, the
+  independent review, brainstorms and the hardest design work. Spawn the implementer with `model: fable` for
+  player-visible work; mechanical work stays on Sonnet.
 - **Explore on Haiku** (same source): the built-in Explore agent otherwise runs on the session's model, Fable or Opus
   here. `.claude/agents/Explore.md` pins it to Haiku 5.5 for searching, finding files and reading logs, where a wrong
   answer is cheap to spot. Code edits and judgment calls stay on Opus or the main session.

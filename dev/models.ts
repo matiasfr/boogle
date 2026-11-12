@@ -40,6 +40,16 @@ export const routes: Route[] = [
     normal: claude('implementer agent', 'sonnet', 'medium'),
   },
   {
+    work: 'Player-visible implementation: views, cameras, effects, characters, prompts, feel, assets and look work',
+    withCodex: claude('implementer agent, spawned with model fable', 'fable', 'medium'),
+    normal: claude('implementer agent, spawned with model fable', 'fable', 'medium'),
+  },
+  {
+    work: 'Visual review of a player-visible change before it ships (opens the stills and motion sheets; names what looks wrong)',
+    withCodex: claude('a fresh general-purpose subagent that did not build it', 'fable', 'medium'),
+    normal: claude('a fresh general-purpose subagent that did not build it', 'fable', 'medium'),
+  },
+  {
     work: 'Fixes, tooling and captures-driven tasks with no plan to follow',
     withCodex: codex('gpt-6.1-sol', 'medium'),
     normal: claude('general-purpose subagent', 'opus', 'medium'),
@@ -56,7 +66,7 @@ export const routes: Route[] = [
       model: 'gpt-6-astra, or fable or opus',
       effort: 'xhigh for astra, medium for fable or opus',
     },
-    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable or opus', 'medium'),
+    normal: claude('a fresh general-purpose subagent that did not write the code', 'fable', 'medium'),
   },
   {
     work: 'Code review before shipping (/code-review, e.g. on src/net*, src/world/ or server/)',
@@ -71,7 +81,7 @@ export const routes: Route[] = [
   {
     work: 'Hardest design, research or second-opinion review',
     withCodex: codex('gpt-6-astra', 'xhigh'),
-    normal: claude('general-purpose subagent', 'opus', 'medium'),
+    normal: claude('general-purpose subagent', 'fable', 'medium'),
   },
   {
     work: 'Search, file finding, log reading and summaries (the Explore agent; mistakes are cheap to spot)',
@@ -86,7 +96,7 @@ export const routes: Route[] = [
   {
     work: 'Brainstorm (light: one agent, three lenses; --panel: three panelists)',
     withCodex: codex('gpt-6.1-sol', 'high'),
-    normal: claude('one general-purpose subagent (light), or three with the role files (--panel)', 'opus', 'medium'),
+    normal: claude('one general-purpose subagent (light), or three with the role files (--panel)', 'fable', 'medium'),
   },
   {
     work: 'Images and previz (only Codex paints)',
