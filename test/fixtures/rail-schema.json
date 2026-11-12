@@ -1,5 +1,5 @@
 {
-  "worldNs": "v27",
+  "worldNs": "v28",
   "components": [
     {
       "kind": "rail",
@@ -357,7 +357,8 @@
         ["rails", "int"],
         ["wagon", "bool"],
         ["foot", "int"],
-        ["arrived", "int"]
+        ["arrived", "int"],
+        ["freight", "int"]
       ]
     },
     {
@@ -445,6 +446,41 @@
         ["cw", "u8"],
         ["brace", "u8"],
         ["joined", "int"]
+      ]
+    },
+    {
+      "kind": "yard",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": ["yardClock"],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["stock", "int"],
+        ["made", "int"]
+      ]
+    },
+    {
+      "kind": "yardClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["last", "int"]]
+    },
+    {
+      "kind": "town",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["wood", "int"],
+        ["stone", "int"]
       ]
     }
   ]
