@@ -16,6 +16,7 @@ import { rail, town, train, trains, yard, yards } from '../src/sim/railway-rows.
 import { freightAboard, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
 import { railResume } from '../src/sim/railway-sys-away.ts';
 import { RAIL_AWAY, railAwayCredit } from '../src/sim/railway-away.ts';
+import { TOWN_PLOTS } from '../src/place/town-plan.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { TRAIN_PHASE } from '../src/sim/railway-train.ts';
@@ -312,7 +313,7 @@ test('the trade check refuses a corrupt or hostile save, each with its message',
 const resumeAway = (w: World, away: number, marker: number, tick: number) =>
   railResume(w, away >= RAIL_AWAY.finishTicks ? Number.MAX_SAFE_INTEGER : away, marker, tick, railAwayCredit(away));
 
-test('10 minutes, 8 hours and 3 days away fill each yard by whole intervals of the credit, never past its cap', () => {
+test('10 minutes, 8 hours and 3 days away each fill both yards to their cap, never past it', () => {
   for (const away of [10 * 600, 8 * 36000, 3 * 24 * 36000]) {
     // freight-running with both yards part-empty: the Camp at 0 (line 1 took it), the Quarry drained to 0 as well.
     const w = copy(FREIGHT.w),
@@ -320,16 +321,13 @@ test('10 minutes, 8 hours and 3 days away fill each yard by whole intervals of t
     const q = w.mut(Yard, yardId(w, QUARRY))!;
     q.made -= q.stock;
     q.stock = 0;
-    const before = yards(w).map((y) => ({ ...y })),
-      credit = railAwayCredit(away);
+    const before = yards(w).map((y) => ({ ...y }));
     resumeAway(w, away, 1_000_000, tick);
     railwayCheck(w);
     yards(w).forEach((y, slot) => {
-      const c = TRADE.yards[slot]!,
-        n = Math.min(c.cap - before[slot]!.stock, Math.floor(credit / c.everyTicks));
-      assert.ok(y.stock <= c.cap, `${away}: yard ${slot} at or under its cap`);
-      assert.equal(y.stock, before[slot]!.stock + n, `${away}: yard ${slot} credited ${n}`);
-      assert.equal(y.made, before[slot]!.made + n, `${away}: made grows with it`);
+      const c = TRADE.yards[slot]!;
+      assert.equal(y.stock, c.cap, `${away}: yard ${slot} full, at its cap`);
+      assert.equal(y.made, before[slot]!.made + c.cap - before[slot]!.stock, `${away}: made grows with it`);
       assert.equal(w.get(YardClock, yardId(w, slot))!.last, tick, 'the clock moves to the join');
     });
     // Nothing runs while away: no train moved freight.
@@ -366,8 +364,12 @@ test('a short absence credits only its whole intervals, and a second resume at t
 });
 
 test('no yard credit while the trains sleep', () => {
-  const w = copy(ASLEEP.w),
-    before = JSON.stringify(yards(w).map((y) => [y.stock, y.made])),
+  const w = copy(ASLEEP.w);
+  // A yard with room (made lowered with it), so only the trains' guard keeps the credit out.
+  const y = w.mut(Yard, yardId(w, CAMP))!;
+  y.made -= y.stock;
+  y.stock = 0;
+  const before = JSON.stringify(yards(w).map((y) => [y.stock, y.made])),
     clocks = yards(w).map((_y, slot) => w.get(YardClock, yardId(w, slot))!.last);
   resumeAway(w, 8 * 36000, 1, ASLEEP.t + 1);
   assert.equal(JSON.stringify(yards(w).map((y) => [y.stock, y.made])), before);
@@ -412,4 +414,17 @@ test('plotsStaked: the lowest unbought plots whose timber and stone are in, two 
   // On the world: freight-running has the first timber home, so plot 1 is staked.
   assert.deepEqual(plotsStaked(FREIGHT.w, 0), [0]);
   assert.deepEqual(plotsStaked(ON.w, 0), []);
+  assert.deepEqual(plotsStaked(ON.w, 1), [], 'a town with no row has nothing staked');
+});
+
+test("the plots' thresholds never fall, so the lowest met unbought plots are the first ones in order", () => {
+  for (const plots of TRADE.plots)
+    for (let k = 1; k < plots.length; k++) {
+      assert.ok(plots[k]!.wood >= plots[k - 1]!.wood, `plot ${k} timber`);
+      assert.ok(plots[k]!.stone >= plots[k - 1]!.stone, `plot ${k} stone`);
+    }
+});
+
+test('stakedAtOnce has one value: the trade table and the town plan agree', () => {
+  assert.equal(TRADE.stakedAtOnce, TOWN_PLOTS.stakedAtOnce);
 });
