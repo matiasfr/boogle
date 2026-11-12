@@ -30,6 +30,8 @@ import {
   RAIL_LEGS,
   ROW_LINE,
   legFrame,
+  legRack,
+  LEG_SITE_REACH,
   legS,
   ROW_SHIFT,
   rowPoint,
@@ -303,10 +305,13 @@ test("the server: each op's ids are catalog indexes, judged at the frame, post o
     'below',
   );
   assert.equal(railValid(s.w, op('rail.legStock', { leg: STACK }), nowhere), false);
-  // The leg's rack (Q6's and Q7's depot racks, once the Q jobs are done) at its frame; none before the rivet.
-  assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(frame)), true);
-  assert.equal(railValid(s.w, op('rail.depotRailTake'), actorAt(frame)), true);
-  assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(legFrame(LEG, 2))), false);
+  // The leg's rack (Q6's and Q7's depot racks, once the Q jobs are done) at its own spot, 7 m from the frame (step 4's
+  // review, b: reach 4 m); none before the rivet.
+  const rack = legRack(LEG, 0);
+  assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(rack)), true);
+  assert.equal(railValid(s.w, op('rail.depotRailTake'), actorAt(rack)), true);
+  assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(frame)), false, 'the frame is out of the rack reach');
+  assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(legRack(LEG, 2))), false);
   assert.equal(railValid(LEAF.w, op('rail.depotTake'), anywhere), false, 'no rack before the leg opens');
   RAIL_GRANTS.forEach((g, id) => {
     assert.equal(railValid(s.w, op('rail.grant', { id }), actorAt(g.at)), true, g.id);
@@ -1006,4 +1011,32 @@ test('gate 14: fed every tick from the rivet, the Gorge within 3,700 ticks; the 
   t.diagnostic(`rivet to Gorge ${s.t - t0}; idle per frame ${idle.join(', ')}`);
   assert.ok(idle[0]! <= 1200, 'the first frame');
   for (const v of idle.slice(1)) assert.ok(v <= 600, `a later frame idle ${v}`);
+});
+
+// ---------------------------------------------------------------- step 4's review: the catalog positions (b, k)
+test("step 4's review: the frames, racks, pick and the incline's barrier stand where the designer placed them", () => {
+  const near = (p: { x: number; z: number; y: number }, x: number, z: number, y: number) =>
+    Math.abs(p.x - x) <= 3 && Math.abs(p.z - z) <= 3 && Math.abs(p.y - y) <= 1;
+  assert.ok(near(legFrame(LEG, 0), 140602, -82506, 890), 'frame 0, u 453 on the west platform');
+  assert.ok(near(legRack(LEG, 0), 140573, -81806, 890), 'rack 0, u 446');
+  // The designer's metres, to 3 cm (his script rounds to the centimetre in metres).
+  const frames = [
+      [98075, -92138],
+      [56692, -119448],
+      [22663, -156630],
+    ],
+    racks = [
+      [99056, -91995],
+      [57442, -118787],
+      [23207, -155792],
+    ];
+  for (let k = 1; k <= 3; k++) {
+    assert.ok(near(legFrame(LEG, k), frames[k - 1]![0]!, frames[k - 1]![1]!, 490), `frame ${k}`);
+    assert.ok(near(legRack(LEG, k), racks[k - 1]![0]!, racks[k - 1]![1]!, 490), `rack ${k}`);
+  }
+  for (let k = 0; k <= 3; k++) assert.equal(legFrame(LEG, k).reach, LEG_SITE_REACH);
+  assert.equal(LEG_SITE_REACH, 400);
+  assert.deepEqual(RAIL_GRANTS.find((g) => g.id === 'pick')!.at, { x: -7435, z: -203262, y: 8500, reach: 400 });
+  const inc = RAIL_GATES.find((g) => g.id === 'incline')!.at;
+  assert.deepEqual([inc.x, inc.z, inc.y], [-9726, -196884, 390]);
 });

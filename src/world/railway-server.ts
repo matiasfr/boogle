@@ -68,7 +68,7 @@ import { railBeamPutDown, railBeamRelease, railBeamStood } from '../sim/railway-
 import { railLine2Active, ringHead } from '../sim/railway-queries.ts';
 import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
 import { railSession, railSettle } from '../sim/railway-sys-core.ts';
-import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame } from '../sim/railway-route.ts';
+import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
 import { haltHead, legOpen, legRow } from '../sim/railway-queries-route.ts';
 import type { World } from '../ecs/index.ts';
 import { GLOBAL_CELL, cellOf, type Fields } from './replicate.ts';
@@ -319,10 +319,10 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
   return false;
 }
 /** After the last Q job, the depot's racks are the open leg's (the greybox route: its kit unloads onto Rail.depot and
- * Rail.depotRails), judged at its current frame; with no leg open there is no rack to take from. */
+ * Rail.depotRails), judged at its current rack (legRack); with no leg open there is no rack to take from. */
 function legRackNear(w: World, at: (p: { x: number; z: number; y: number; reach: number }) => boolean) {
   const k = RAIL_LEGS.findIndex((_l, j) => legOpen(w, j));
-  return k >= 0 && at(legFrame(RAIL_LEGS[k]!, legRow(w, k).laid));
+  return k >= 0 && at(legRack(RAIL_LEGS[k]!, legRow(w, k).laid));
 }
 
 export function install(sync: SyncView & { roomStep(): number }, rules: { tune: TuneApi }, replication: Replicator) {

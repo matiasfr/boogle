@@ -5,7 +5,7 @@
 //
 // Lockstep math: integers and `+ - * /`, `Math.floor`, `Math.round` and `Math.sqrt` only (docs/agents/lockstep.md).
 import type { RailPlatform } from './railway-lines.ts';
-import { RING_S_HEAD } from './railway-ring-layout.ts';
+import { RING_S_HEAD, ringAt } from './railway-ring-layout.ts';
 import { WORLD_LINES, type WorldLine } from './railway-world-lines.ts';
 
 /** One section of a leg: it lays when `logs` + `rails` are fed to its frame; `gate` (a RAIL_GATES index) shuts the frame. */
@@ -286,7 +286,8 @@ export const sectionFromCm = (leg: RouteLeg, k: number): number => (k === 0 ? le
  * position: step 4's massing moves it off the platform, the plan's change 1). The hook reel and the carry sling are
  * left out until something uses them. */
 export const RAIL_GRANTS: readonly { id: string; label: string; leg: number; at: RailPlatform }[] = [
-  { id: 'pick', label: 'Powered pick', leg: 0, at: haltAt('ring', 1) },
+  // The north stack's rim, 82 m over the Gorge's halt (step 4's review, k: call 92).
+  { id: 'pick', label: 'Powered pick', leg: 0, at: { x: -7435, z: -203262, y: 8500, reach: 400 } },
   { id: 'seeds', label: 'Crystal seeds', leg: 1, at: haltAt('ns', 1) },
   { id: 'cloth', label: 'Glider cloth', leg: 3, at: haltAt('bay', 2) },
   { id: 'lantern', label: 'Lantern', leg: 6, at: haltAt('bay', 3) },
@@ -296,7 +297,8 @@ const grant = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 /** A barrier on a section's frame (`RouteSection.gate`): it opens for anyone once the room holds the `needs` grant. It
  * stands at the frame, the section's first centimetre. */
 export const RAIL_GATES: readonly { id: string; label: string; needs: number; at: RailPlatform }[] = [
-  { id: 'incline', label: "The incline's first frame", needs: grant('pick'), at: haltAt('ns', 0) },
+  // On a pad behind the Gorge's south platform, at the `ns` halt point, 3.9 m up (step 4's review, k).
+  { id: 'incline', label: "The incline's first frame", needs: grant('pick'), at: { ...haltAt('ns', 0), y: 390 } },
   {
     id: 'canopy',
     label: "Bell Rock to Canopy's first frame",
@@ -381,10 +383,32 @@ export const legS = (leg: Pick<RouteLeg, 'row'>, cm: number) => cm - ROW_SHIFT[l
 /** A catalog row's point `cm` along it (row cm) and a catalog halt's platform point: the sim catalog's sources. */
 export const rowPoint = pointAt;
 export const rowHalt = haltAt;
-/** Section k's frame (placeholder: on the row at the section's first centimetre, a halt's reach; step 4 places it
- * beside the railhead with its rack): where `rail.legStock` is judged, and where the leg's rack stands. */
+/** The point `lat` cm to the right (going out) of a row's centre at `cm` along it, `up` cm over its deck. */
+function rowSide(id: RowId, cm: number, lat: number, up: number, reach: number): RailPlatform {
+  const p = pointAt(id, cm),
+    q = pointAt(id, cm + 100),
+    dx = q.x - p.x,
+    dz = q.z - p.z,
+    len = Math.sqrt(dx * dx + dz * dz);
+  return { x: Math.round(p.x - (dz * lat) / len), z: Math.round(p.z + (dx * lat) / len), y: p.y + up, reach };
+}
+/** A frame's and a rack's reach (the design review of step 4, b: 4 m, not a halt's 12.6). */
+export const LEG_SITE_REACH = 400;
+/** The stack leg's first frame and rack on Ring Island's west platform (step 4's review, b: u 453 and u 446). */
+const STACK_FRAME_0: RailPlatform = { ...ringAt(45300, -830), y: 890, reach: LEG_SITE_REACH },
+  STACK_RACK_0: RailPlatform = { ...ringAt(44600, -840), y: 890, reach: LEG_SITE_REACH };
+/** Section k's frame, where `rail.legStock` is judged: the stack leg's first on Ring Island's west platform, then 8 m
+ * short of the railhead (the section's first centimetre), 4.8 m to the right going out, 90 cm over the deck (step 4's
+ * review, b). Another leg's: a placeholder on its row at the section's first centimetre, until its rules are built. */
 export function legFrame(leg: RouteLeg, k: number): RailPlatform {
-  return pointAt(leg.row, sectionFromCm(leg, k));
+  if (leg.row !== 'ring') return { ...pointAt(leg.row, sectionFromCm(leg, k)), reach: LEG_SITE_REACH };
+  return k === 0 ? STACK_FRAME_0 : rowSide('ring', sectionFromCm(leg, k) - 800, 480, 90, LEG_SITE_REACH);
+}
+/** Section k's rack (the depot racks' take, once the Q jobs are done): the stack leg's first on Ring Island's west
+ * platform, then abreast of the kit wagon at the head's stop, 18 m short of the railhead, 4.8 m right. */
+export function legRack(leg: RouteLeg, k: number): RailPlatform {
+  if (leg.row !== 'ring') return legFrame(leg, k);
+  return k === 0 ? STACK_RACK_0 : rowSide('ring', sectionFromCm(leg, k) - 1800, 480, 90, LEG_SITE_REACH);
 }
 /** The meeting marker on the Original Island (placeholder: at the `ns` row's last halt, 25 m round it): `rail.arrive`. */
 export const RAIL_ARRIVAL: RailPlatform = { ...haltAt('ns', 2), reach: 2500 };
