@@ -131,6 +131,9 @@ export type LoopNode = {
   requires: Edge[];
   cue: Cue[];
   optional?: boolean;
+  /** Never set here: every node of NODES is built and played through the rules. The route past them is modelled as
+   * stand-ins, which carry `standIn: true` (dev/loop/standins.ts). */
+  standIn?: never;
 };
 
 /** Rail actions that carry or move material for whichever node is current. */

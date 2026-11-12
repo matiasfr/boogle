@@ -2,7 +2,8 @@
 // npm run loop -- node <id>          one node only: bill, supply, cue, what it requires (read this, not the whole graph)
 // (docs/brainstorms/loop-graph.md; the graph is dev/loop/graph.ts)
 // npm run loop -- run [--players N] [--order <name>] [--by-hand <node|all>] [--no-share] [--json]
-//   play the graph's orders through the real rules
+//   play the graph's orders through the real rules; then the whole route to the ending, areas 4 to 9 as stand-ins
+//   (dev/loop/standins.ts): [--branch-first gorge|canopy] [--one-branch] [--bills <factor>]
 // npm run loop -- calibrate [ids...] [--dry]   detour factors per node from human sessions (dev/loop/detour.json)
 // npm run loop -- trace <id|path> [more...] [--since YYYY-MM-DD] [--offline] [--bot <name|path>] [--players N] [--json]
 //   prediction vs bot vs human per node; several sessions give one ranked table

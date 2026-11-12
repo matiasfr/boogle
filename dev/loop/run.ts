@@ -1,4 +1,5 @@
-// `npm run loop -- run [--players N] [--order <name>] [--json]`: plays each order the loop graph allows through the
+// `npm run loop -- run [--players N] [--order <name>] [--json] [--branch-first gorge|canopy] [--one-branch]
+// [--bills <factor>]`: plays each order the loop graph allows through the
 // REAL rules (the host's install: railValid, railApply, railTick; dev/loop/host.ts) for 1 to 4 players and prints
 // the time each node is reached. Walking is straight-line at WALK_MPS (no terrain, no trains ridden); cart, train,
 // laying and kiln time come from the sim. A stall with nothing accepted is a softlock; an order the graph allows that
@@ -59,6 +60,7 @@ import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-la
 import type { RailAction } from '../../src/sim/railway.ts';
 import { DETOUR, NODES, WALK_MPS, cm, detourOf, node, proposeOrders, type NodeId, type Point } from './graph.ts';
 import { createHost, type Host } from './host.ts';
+import { variantOf, wholeRouteLines } from './standins.ts';
 
 type Cmd = { walk: Point } | { act: string; fields?: Partial<RailAction> } | { wait: number };
 type Policy = Generator<Cmd, void, number>;
@@ -928,8 +930,17 @@ export function runLoop(args: string[]) {
     for (const players of counts)
       calibrated.set(players, playOrder(shownOrder.order, `${shownOrder.name}, calibrated`, players, { detour: true }));
   const ms = Math.round(performance.now() - started);
+  // The route past the built graph, modelled from these runs (dev/loop/standins.ts): only when each one finished.
+  const shownRuns = counts.map((n) => results.find((r) => r.players === n && r.order === shownOrder.name)!);
+  const calRuns = counts.flatMap((n) => calibrated.get(n) ?? []);
+  const route =
+    broken || [...shownRuns, ...calRuns].some((r) => r.softlock)
+      ? null
+      : wholeRouteLines(counts, shownRuns, calRuns, variantOf(args));
   if (args.includes('--json'))
-    return console.log(JSON.stringify({ ms, results, calibrated: [...calibrated.values()] }, null, 2));
+    return console.log(
+      JSON.stringify({ ms, results, calibrated: [...calibrated.values()], wholeRoute: route?.data ?? null }, null, 2),
+    );
   const out: string[] = [
     `Loop run through the real rules (railway-server install: railValid, railApply, railTick). A lower bound: walking`,
     `is straight-line at ${WALK_MPS} m/s with no terrain, trains are not ridden, presses take ${PRESS / 10} s, there`,
@@ -980,6 +991,7 @@ export function runLoop(args: string[]) {
     for (const r of results.filter((x) => x.players === players && x.order !== shown))
       out.push(`  order "${r.order}": ${verdict(r)}`);
   }
+  if (route) out.push(...route.lines);
   console.log(out.join('\n'));
 }
 // ---------------------------------------------------------------- by hand: the vehicle isn't there

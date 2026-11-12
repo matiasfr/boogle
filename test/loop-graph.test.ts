@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITY_MARKS, GENERIC_OPS, NODES, proposeOrders } from '../dev/loop/graph.ts';
+import { isStandIn, standInRoute } from '../dev/loop/standins.ts';
 import { RAIL_ACTIONS } from '../src/world/railway-server.ts';
 import {
   createRailwayJourneyMarks,
@@ -83,4 +84,29 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
   const orders = proposeOrders();
   assert.equal(orders[0]!.order.length, NODES.length);
   for (const o of orders) assert.equal(new Set(o.order).size, NODES.length, o.name);
+});
+
+test('built nodes and stand-ins are told apart by the flag, and the stand-ins reach the ending', () => {
+  for (const n of NODES) assert.ok(!isStandIn(n), `${n.id} is built: it carries no standIn flag`);
+  const built = new Set<string>(NODES.map((n) => n.id));
+  for (const first of ['gorge', 'canopy'] as const)
+    for (const branches of ['both', 'first'] as const) {
+      const { nodes, lost } = standInRoute({ first, branches, bills: 1 });
+      assert.equal(nodes.length, branches === 'both' ? 6 : 5);
+      assert.equal(
+        nodes[0]!.requires[0]!.on,
+        NODES[NODES.length - 1]!.id,
+        'the stand-ins start where the built graph ends',
+      );
+      assert.equal(nodes[nodes.length - 1]!.id, 'ending');
+      assert.equal(lost.length, branches === 'both' ? 0 : 1, 'cutting a branch loses exactly its gate');
+      for (const s of nodes) {
+        assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
+        assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
+        assert.ok(
+          Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0),
+          `${s.id}: a bill and a leg`,
+        );
+      }
+    }
 });
