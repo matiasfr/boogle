@@ -575,6 +575,13 @@ export async function boilerToPier(
     check(await bot.work(() => R.line2Trains(R.rw()), 30000, 380), 'boiler fitted at the old train');
     await checkpoint('TRAINS');
   }
+  // Slice 5 (R1): `--to freight` waits where the trains woke for line 1's first load of timber at the Village (the
+  // mirror's Town.wood >= 8); asked for only, so no other run waits for it.
+  const params = new URLSearchParams(location.search);
+  if (params.get('railStop') === RAIL_STOPS.freight || params.get('botTo') === 'freight') {
+    await until(() => R.town(R.rw(), 0).wood >= 8, 'line 1 brings its first timber home');
+    await checkpoint(RAIL_STOPS.freight);
+  }
   // Trains stop on request (works-late-game step 1): the lever on the platform the way to `destination`; every ride
   // here ends at its line's end, so nothing is asked aboard. Whichever of the line's trains stops for it is the ride
   // (v26: line 2 runs two).

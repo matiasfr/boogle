@@ -75,8 +75,8 @@ test('the hand-kept beat lists agree with the graph', () => {
     );
   const stops = new Set(NODES.flatMap((n) => n.stops));
   for (const s of stops) assert.ok(s in RAIL_STOPS, `${s} is not a RAIL_STOPS key`);
-  // Not a loop beat: the audio check.
-  const notLoop = new Set(['audio-loop']);
+  // Not loop beats: the audio check, and slice 5's freight home (an economy beat no route step waits for).
+  const notLoop = new Set(['audio-loop', 'freight']);
   for (const s of Object.keys(RAIL_STOPS)) assert.ok(stops.has(s) || notLoop.has(s), `RAIL_STOPS ${s} has no node`);
 });
 

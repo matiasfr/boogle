@@ -17,6 +17,8 @@ export const RAIL_STOPS = {
   Q5: 'Q5 laid',
   glider: 'glided home',
   trains: 'TRAINS',
+  // Slice 5 (R1, R2): from `--from trains-on`, the bot waits at the Village until line 1's first timber is home.
+  freight: 'freight home',
   Q6: 'Q6 laid',
   pier: 'pier',
   crossing: 'crossing footed',
