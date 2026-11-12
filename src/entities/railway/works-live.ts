@@ -12,6 +12,7 @@ import { createRailwayFootings } from './footing-view.ts';
 import { createRailwayCrossing } from './crossing-view.ts';
 import { createRailwayRailhead } from './railhead-view.ts';
 import { createRailwayLeaf } from './leaf-view.ts';
+import { createBoilerInstall } from './boiler-install-view.ts';
 import { createRingMeet } from '../ring-meet/view.ts';
 import { createRingFolk } from '../ring-folk/view.ts';
 import { createRingSteel } from '../ring-steel/view.ts';
@@ -41,7 +42,8 @@ export async function createRailwayWorksLive(
   const leaf = createRailwayLeaf(adapter);
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
-  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, steel];
+  const install = createBoilerInstall(adapter, owner);
+  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, steel, install];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -76,6 +78,7 @@ export async function createRailwayWorksLive(
       ...meet.targets(),
       ...folk.targets(),
       ...steel.targets(),
+      ...install.targets(),
     ],
     inspect: () => ({
       ...works.inspect(),
@@ -84,6 +87,7 @@ export async function createRailwayWorksLive(
       ...meet.inspect(),
       ...folk.inspect(),
       ...steel.inspect(),
+      ...install.inspect(),
       ...roundhouse.inspect(),
       ...breaker.inspect(),
       footings: footings.inspect(),
