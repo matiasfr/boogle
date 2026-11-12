@@ -769,6 +769,17 @@ readable from Home is not on the leaf: it flies from its own fixed pole on a foo
 **Not built yet:** the splash, the creak on the pawl, the lit bracket, the rivet's glint, and a tumble for the one walked
 clear. Not tested on a device.
 
+**The steel works, a greybox (12 November 2026; [ring-island-build2](../plans/ring-island-build2.md), V1).** On the
+island halt's works yard, east of the east platform, from v30: a grey open shed stands over the drop hammer with a
+doorway facing the platform, a box loader and a rack stand beside the platform's south half, and two pallets lie on
+the open deck between the tarp and the shed. Once the rivet is struck a bill sign under the shed's roof reads
+"logs 0/8  rails 0/12"; the first train out unloads the kit onto the pallets. **Take logs** and **Take rails** at the
+stacks put them on your back ("Your back is full" when it is); **Feed the works** at the doorway puts your logs and
+rails into the bill, and with an empty or wrong back shows blocked with "Bring logs or rails". When the bill is full the
+server lights the works: the sign reads "lit  steel n/12" and orange steel blocks appear on the rack, up to six, for
+the next train's kit car. Every label here is a placeholder. No sound or effect yet; steel on the train and the
+Roundhouse bay are the next two steps. Not tested on a device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's

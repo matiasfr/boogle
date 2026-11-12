@@ -350,13 +350,34 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
 - [ ] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
       `--rail-seed ring-joined` to the `boiler-long` state**, logging minutes per beat; `test:net`'s reconnect pair
       once with a carrier leaving mid-carry. Then ship v28 under the mid-session hold.
-- [ ] **V1. The works on the island (M, Mac).** Create `src/entities/ring-steel/{index,view}.ts`. Greybox boxes only:
+- [x] **V1. The works on the island (M, Mac).** Create `src/entities/ring-steel/{index,view}.ts`. Greybox boxes only:
       yard stacks drawn from `yardLogs`, `yardRails`, `yardFoot`; a bill sign over the works (the frame sign's
       have/need per material, `stock-sign.ts`'s pattern); the rack's steel blocks; a box jib for the loader between
       u 436.9 and 444.3; an open shed over the hammer with a doorway and a collider; the four interactables. Build 1's
       tarp stack stays as it is. Effects only from accepted edges. Proof: one look,
       `npm run look -- --rail-seed steel-kit` at the yard, phone and desktop width. **Visual review** per
       `npm run models`.
+      _As built (ring2/v1-works, 12 November), on rulings B and E:_ one file, `src/entities/ring-steel/view.ts`
+      (`createRingSteel`), mounted by `railway/works-live.ts` beside the Meet (**no `index.ts`**: the prompts send
+      through the adapter that only the railway's view holds, as the Meet's and the folk's do). It reads `Steel`,
+      `Aperture` and the local `Account` off `adapter.read.world()` at the head of every entry point and keeps nothing;
+      drawn only while the island's near view is mounted. Static grey boxes (`drawWorksBoxes`, with colliders): the
+      shed inside u 448 to 455, lat 6.5 to 14 (four posts, a roof at 6.9 m over the gantry, a 3.6 m door wall with a
+      2.4 m doorway at u 452; the other three sides open), the loader (a mast and a post at lat 6.6, a beam from
+      u 436.9 to 444.3 at 4.6 m, an arm over the platform), the rack's bed (u 438.6 to 442.6, lat 6.3) and two yard
+      pallets (logs u 444.75, rails u 446.6, lat 8.3). From the rows (`createBoxBatch`): up to 8 logs and 12 rails on
+      the pallets from `yardLogs` and `yardRails`, up to 6 orange steel blocks on the rack from `rack`. The bill sign
+      (6.4 by 1.4 m, hung under the roof's front edge, facing the platform) stands from `joined`: "logs 0/8  rails
+      0/12" over "Steel works", then "lit  steel n/12" from `lit` and `poured` (the server's; nothing predicts it).
+      **Three interactables, not four** (ruling B, no footings): "Take logs" and "Take rails" at their stacks inside
+      the yard's reach (blocked "Your back is full"), and "Feed the works" at the doorway until lit (blocked "Bring
+      logs or rails", ruling E); none before the rivet. **Changed from the step:** no `yardFoot`; the sign is under
+      the roof edge, not on the lintel (build 1's RINGWORKS board, u 445.4 to 450.6 at lat 5.0, hid it from the
+      platform's south end at the first look); no effect or sound on any edge (greybox order), so `accepted` is
+      empty; the yard and works points stay where R1 put them. Looks (desktop width; no phone shot, owner call "Fast
+      ships"): `.look/v1-works-cold-still.png` (steel-kit) and `.look/v1-works-lit-still.png` (steel-lit). Not shown
+      in a still: the three prompts (the jump-in lands 4.3 m from the yard point, outside its reach) and the stacks
+      shrinking on a take. One of the folk stood beside the rack's bed in the steel-lit landing still (their posts were not moved). Not tested on a device.
 - [ ] **V2. Steel and the boiler on the train (S, Mac).** Edit `src/entities/railway/train-view.ts`, `cars.ts`,
       `engine-kit.ts`. Steel blocks on the cradle from `Train.steel`; the built, unwired `engine_*_long` meshes when
       `Train.boiler === 1`; `cars.ts`'s extent test follows `TRAIN_EXTENT`. No whistle variation, no smoke change.
