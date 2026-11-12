@@ -1828,8 +1828,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const home = [CART_PHASE.HOME, CART_PHASE.REST, CART_PHASE.LOAD] as number[];
       await until(() => home.includes(R.cart(R.rw()).phase), 'the cart is off the quarry track', CART_MS);
       await walkQuarry(10, 112);
-      // The parked machine fills the track's end: step off on the frame's side, clear of its body.
-      const off = besideQ(112, frameAt);
+      // The parked machine fills the track's end (its rear is at 114 m): step off on the frame's side, clear of its
+      // body. Aim 3 m on, at the up track's bed: square off the abutment at 112 m the ground between the two beds dips
+      // 0.7 m, a pocket a walker without a jump can't step out of sideways (the double formation, 10 November).
+      const off = besideQ(115, frameAt);
       require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the track beside the parked machine');
       await walk(frameAt.x, frameAt.z, 2.4);
     };
