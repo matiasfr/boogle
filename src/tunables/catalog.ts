@@ -189,6 +189,27 @@ const supply = {
     meaning:
       "The headway hold: a train leaves a line's end no sooner than this share of the round trip split between its trains after the last one left it.",
   },
+  railFarePct: {
+    id: 'railway.farePct',
+    units: 'percent of the stand-in fare',
+    at: 'next rider stepping off a train',
+    owner: 'src/sim/railway-queries-trade.ts',
+    meaning: "Every route's fare, from 2 to board and 1 a 100 m; rounded down to whole Boogles.",
+  },
+  railRiderPct: {
+    id: 'railway.riderPct',
+    units: 'percent of the stand-in rate',
+    at: 'next rule tick',
+    owner: 'src/sim/railway-sys-trade.ts',
+    meaning: 'Riders each town sends to its route halts, from 2 a minute a building each way.',
+  },
+  railPricePct: {
+    id: 'railway.pricePct',
+    units: 'percent of the stand-in prices',
+    at: 'next buy (slice 5 R4; read by nothing yet)',
+    owner: 'src/sim/railway-trade-layout.ts',
+    meaning: "Every plot's price, from the stand-ins; R4's buy reads it.",
+  },
 } as const;
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;

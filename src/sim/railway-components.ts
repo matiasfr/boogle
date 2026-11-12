@@ -5,7 +5,7 @@
 //
 //   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
 //                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
-//                                  outcome, line, aperture (v27), yard(+yardClock), town (slice 5); RAIL_REPLICATED
+//                                  outcome, line, aperture (v27), yard(+yardClock), town(+townClock), till (slice 5); RAIL_REPLICATED
 //                                  is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 import { createWorld, defineComponent, type AnyComponent } from '../ecs/index.ts';
@@ -128,6 +128,8 @@ export const Train = defineComponent(
     arrived: 'int',
     // Slice 5 (docs/plans/slice5-town-economy.md, R1): the yard crates aboard, its line's yard's goods.
     freight: 'int',
+    // R3: riders aboard, all bound for the route halt ahead of it (one destination per route).
+    riders: 'int',
   },
   { key: 'slot' },
 );
@@ -236,8 +238,34 @@ export const Yard = defineComponent(
   { slot: 'int', stock: 'int', made: 'int' },
   { key: 'slot', requires: [YardClock] },
 );
-/** A town by slot (0 the Village): the timber and stone its line halts have been delivered. */
-export const Town = defineComponent('town', { slot: 'int', wood: 'int', stone: 'int' }, { key: 'slot' });
+/** A town's rider clock (R3; as YardClock is the yard's): the riders accrued toward the next one, in hundredths of a
+ * rider-tick. Written every rule tick, so never replicated: only what it changes (a rider arriving) is. */
+export const TownClock = defineComponent('townClock', { acc: 'int' }, { replicate: false });
+/** A town by slot (0 the Village): the timber and stone its yards have delivered (R1); for its route (R3), those
+ * waiting at each end (`wait0` at halt `a`, `wait1` at the far halt) and the riders who have boarded and stepped off. */
+export const Town = defineComponent(
+  'town',
+  {
+    slot: 'int',
+    wood: 'int',
+    stone: 'int',
+    wait0: 'int',
+    wait1: 'int',
+    boarded: 'int',
+    alighted: 'int',
+  },
+  { key: 'slot', requires: [TownClock] },
+);
+/** R3, the one shared strongbox (decided: one wallet, no personal money): the Boogles in it, the fares that landed and
+ * those lost to its cap, and (R4, R5) what was spent, the away sack and what was poured from it. */
+export const Till = defineComponent('till', {
+  boogles: 'int',
+  landed: 'int',
+  lost: 'int',
+  spent: 'int',
+  sack: 'int',
+  poured: 'int',
+});
 export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Rail,
   RailClock,
@@ -266,6 +294,8 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Yard,
   YardClock,
   Town,
+  TownClock,
+  Till,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
@@ -296,6 +326,7 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   w.spawn([Aperture, {}]);
   // Slice 5: each yard starts full (design review, finding 1), so the first timber train home delivers a load.
   TRADE.yards.forEach(({ cap }, slot) => w.spawn([Yard, { slot, stock: cap, made: cap }], [YardClock, {}]));
-  for (let slot = 0; slot < TRADE_TOWNS; slot++) w.spawn([Town, { slot }]);
+  for (let slot = 0; slot < TRADE_TOWNS; slot++) w.spawn([Town, { slot }], [TownClock, {}]);
+  w.spawn([Till, {}]);
   return w;
 }
