@@ -1,6 +1,9 @@
 // Passenger trade ("Boogles"): every number the trade model uses, in one table. Offline design arithmetic only.
 // Source: docs/brainstorms/passenger-trade.md sections 3 and 8; the owner called the first prices "fine as stand-ins;
-// tune them on the 2D model page" (10 November 2026). Nothing here is a game rule until the owner says so.
+// tune them on the 2D model page" (10 November 2026). Nothing here is a game rule until the owner says so. The rows
+// the game uses come from src/sim/railway-trade-layout.ts's TRADE (call 5: one home for the numbers; dev may import
+// src/sim, never the reverse).
+import { TRADE } from '../../src/sim/railway-trade-layout.ts';
 export const TOWNS = ['village', 'ring', 'canopy', 'port', 'gorge'] as const;
 export type Town = (typeof TOWNS)[number];
 export const MATS = ['W', 'St', 'Fi', 'Cu'] as const;
@@ -22,8 +25,8 @@ const TOWN_NAME: Record<Town, string> = {
 export const townName = (t: Town) => TOWN_NAME[t];
 
 // Fares: 2 to board plus 1 a 100 m. Village to Far Head is 7 and Home to Ring Island 14 (brief, section 3).
-add('Fares', 'fare.board', 'Fare to board', 2, 'Boogles', 'Brief section 3');
-add('Fares', 'fare.per100m', 'Fare per 100 m ridden', 1, 'Boogles', 'Brief section 3');
+add('Fares', 'fare.board', 'Fare to board', TRADE.fare.board, 'Boogles', 'Brief section 3');
+add('Fares', 'fare.per100m', 'Fare per 100 m ridden', TRADE.fare.per100m, 'Boogles', 'Brief section 3');
 const KM: Record<Town, number> = { village: 0.5, ring: 1.2, canopy: 2.9, port: 3.8, gorge: 5.4 };
 for (const t of TOWNS)
   add(
@@ -36,7 +39,14 @@ for (const t of TOWNS)
   );
 
 // Riders.
-add('Riders', 'riders.perBuilding', 'Riders a building sends', 2, 'a minute each way', 'Brief section 3');
+add(
+  'Riders',
+  'riders.perBuilding',
+  'Riders a building sends',
+  TRADE.ridersPerMin,
+  'a minute each way',
+  'Brief section 3',
+);
 add(
   'Riders',
   'riders.townBuilding',
@@ -49,7 +59,7 @@ add(
   'Riders',
   'riders.startBuildings',
   'Buildings a town has on arrival',
-  2,
+  TRADE.startBuildings,
   'buildings',
   'Owner, 10 and 11 November: a couple',
 );
@@ -63,7 +73,14 @@ add(
 );
 add('Riders', 'riders.jitter', 'Random swing in riders each minute', 0.2, 'of the rate', 'Seeded; the only randomness');
 add('Riders', 'crowd.stop', 'Waiting riders that stop a train', 4, 'riders', 'Decided: four or more, never an express');
-add('Riders', 'crowd.cap', 'Waiting riders past which the rest give up', 24, 'riders', 'Stand-in; 12 are drawn');
+add(
+  'Riders',
+  'crowd.cap',
+  'Waiting riders past which the rest give up',
+  TRADE.crowdCap,
+  'riders',
+  'Stand-in; 12 are drawn',
+);
 add(
   'Riders',
   'house.buildMin',
@@ -74,7 +91,7 @@ add(
 );
 
 // Trains and seats.
-add('Seats', 'seats.perCar', 'Seats in a passenger car', 4, 'seats', 'A Four car');
+add('Seats', 'seats.perCar', 'Seats in a passenger car', TRADE.seats, 'seats', 'A Four car');
 add('Seats', 'seats.six', 'Seats in a car after the Six fit-out', 6, 'seats', '');
 add('Seats', 'trains.perLine', 'Trains on a line', 2, 'trains', 'Line 2 has two');
 add('Seats', 'cars.base', 'Passenger cars a train starts with', 1, 'cars', 'The free first car');
@@ -102,12 +119,19 @@ add(
   'Box',
   'box.incomeMin',
   'Strongbox holds, in minutes of income',
-  20,
+  TRADE.box.incomeMin,
   'minutes',
   'Decided: the larger of this or the next',
 );
-add('Box', 'box.dearestMult', 'Strongbox holds, times the dearest thing on offer', 1.5, 'times', 'Decided');
-add('Box', 'sack.min', 'Coin sack holds, in minutes of income', 15, 'minutes', 'Decided');
+add(
+  'Box',
+  'box.dearestMult',
+  'Strongbox holds, times the dearest thing on offer',
+  TRADE.box.dearestNum / TRADE.box.dearestDen,
+  'times',
+  'Decided',
+);
+add('Box', 'sack.min', 'Coin sack holds, in minutes of income', TRADE.sackMin, 'minutes', 'Decided');
 add('Box', 'away.horizonH', 'Away credit horizon H', 2, 'hours', 'Decided 6 November: H x (1 - e^(-away/H))');
 add('Box', 'away.hours', 'A night away', 22, 'hours', 'Used for the night-away figure');
 
