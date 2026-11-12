@@ -21,7 +21,8 @@ import { account, accounts, aperture, cart, lines, qjobs, train, trains, tree } 
 import { Pile } from '../../src/sim/railway-components.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
-import { createRailwayAdapter, railMovement } from '../../src/adapters/railway-session.ts';
+import { createRailwayAdapter } from '../../src/adapters/railway-session.ts';
+import { railMovement } from '../../src/adapters/railway-read.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../src/adapters/railway-effects.ts';
 import type { RailwayIntent } from '../../src/adapters/railway-intents.ts';
 import { trainAlong } from '../../src/sim/railway-train.ts';
@@ -355,7 +356,7 @@ function startWorld(room: Room) {
       // The views' world (the predicted clone while an action is pending), as the read model's trains were.
       const row = Number.isInteger(k) && k >= 0 && k < RAIL_TRAINS.length ? train(adapter.read.world(), k) : null;
       if (!row) return null;
-      const tick = adapter.tickNow();
+      const tick = adapter.read.tickNow();
       return {
         along: trainAlong(row, RAIL_TRAINS[k]!.line, tick),
         phase: row.phase,
@@ -368,7 +369,7 @@ function startWorld(room: Room) {
     };
     T.railCart = () => {
       const c = cart(adapter.read.world());
-      const tick = adapter.tickNow();
+      const tick = adapter.read.tickNow();
       return { along: cartAlong(c, tick), phase: c.phase, tick, at: Date.now() };
     };
     T.railAdapter = () => {

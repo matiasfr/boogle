@@ -661,7 +661,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
    * cue (a train of its line on its way there). */
   function maps(dt: number) {
     const w = adapter.read.world(),
-      tick = adapter.tickNow();
+      tick = adapter.read.tickNow();
     // The map follows line 2's stops (halt-map.ts): a redraw when the Pier is laid, Q7 is, the railhead moves out a
     // bent or the rivet is struck, and none in between.
     const open = trainStops(w, 1).length,
@@ -703,7 +703,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     boards.update(dt);
   }
   const tick = (dt: number) => {
-    const target = adapter.tickNow();
+    const target = adapter.read.tickNow();
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += dt * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
   };
@@ -714,7 +714,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       pulled.clear();
       halts.forEach((h, k) => h.snap(wanted(k)));
       ups.update(0, (k) => halts[k]!.up, true);
-      clock = adapter.tickNow();
+      clock = adapter.read.tickNow();
       signals(true);
       levers(0, true);
     },

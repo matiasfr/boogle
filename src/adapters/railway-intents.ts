@@ -5,22 +5,12 @@ import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
 import { railInt, railYaw } from '../sim/railway.ts';
 import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId } from '../sim/railway-line-layout.ts';
 import { LINE2_PACK, type Line2StationId } from '../sim/railway-line2-layout.ts';
-import { LINE_HALTS, reqHas } from '../sim/railway-train.ts';
+import { LINE_HALTS } from '../sim/railway-train.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { RAIL_ROCKS } from '../sim/railway-works-layout.ts';
-import {
-  aperture,
-  line as lineRow,
-  rail as railRow,
-  shed as shedRow,
-  train as trainRow,
-  works as worksRow,
-} from '../sim/railway-rows.ts';
 import { Pile } from '../sim/railway-components.ts';
 import { activeStation } from '../sim/railway-queries.ts';
 import { railBeamChoppable } from '../sim/railway-queries-line1.ts';
-import { line2Trains as line2TrainsIn } from '../sim/railway-queries-line2.ts';
-import { trainStops } from '../sim/railway-queries-trains.ts';
 import type { World } from '../ecs/index.ts';
 
 export type RailwayIntent =
@@ -156,43 +146,6 @@ export function implied(v: Record<string, unknown>) {
   if (v.op === 'rail.take') out.pile ??= v.id;
   return out;
 }
-/** Ops whose whole result is one shared flag: when it holds anyway (someone else woke the machine), losing the race
- * gives nothing back. Read on the confirmed world's rows. */
-export const holds = (w: World, op: string, event?: RailwayIntent) =>
-  op === 'rail.boilerFit'
-    ? line2TrainsIn(w)
-    : op === 'rail.call' && event?.op === 'rail.call'
-      ? (() => {
-          // A lever ask is the line's (`Line.req`), a rider's its own train's.
-          const h = LINE_HALTS[event.id];
-          const req = !h
-            ? undefined
-            : event.train === undefined
-              ? lineRow(w, h.line)?.req
-              : event.train >= 0 && event.train < RAIL_TRAINS.length
-                ? trainRow(w, event.train)?.req
-                : undefined;
-          return req !== undefined && reqHas(req, h!.stop, event.dir, trainStops(w, h!.line).length);
-        })()
-      : op === 'rail.wake'
-        ? railRow(w).awake >= 0
-        : op === 'rail.lever'
-          ? railRow(w).lever
-          : op === 'rail.seaSwitch'
-            ? railRow(w).sea
-            : op === 'rail.pack'
-              ? railRow(w).pack
-              : op === 'rail.glide'
-                ? railRow(w).glide
-                : op === 'rail.strike' && event?.op === 'rail.strike'
-                  ? event.id === 2
-                    ? aperture(w).joined >= 0
-                    : !!(worksRow(w).seams & (event.id ? 2 : 1))
-                  : op === 'rail.brace'
-                    ? aperture(w).brace !== 1
-                    : op === 'rail.turn' && event?.op === 'rail.turn'
-                      ? shedRow(w).table === event.to
-                      : false;
 /** Pieces flowing to the actor (a correction can return them to whoever got them instead). */
 export const TAKES: ReadonlySet<string> = new Set([
   'rail.chop',

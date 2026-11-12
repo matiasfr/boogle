@@ -13,7 +13,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lintSafety } from '../dev/lint/safety.ts';
-import { createRailwayAdapter, railMovement } from '../src/adapters/railway-session.ts';
+import { createRailwayAdapter } from '../src/adapters/railway-session.ts';
+import { railMovement } from '../src/adapters/railway-read.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { specOf } from '../src/sim/tune.ts';
 

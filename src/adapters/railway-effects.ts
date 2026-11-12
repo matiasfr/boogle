@@ -2,6 +2,19 @@
 // accepted action (yours predicted, or anyone's from the server) and a correction of one, plus the wire reads that
 // build them. The session's settle and submit play them; nothing here does.
 import { railInt, RAILWAY_MAX_INT } from '../sim/railway.ts';
+import { RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { line2Trains as line2TrainsIn } from '../sim/railway-queries-line2.ts';
+import { trainStops } from '../sim/railway-queries-trains.ts';
+import {
+  aperture,
+  line as lineRow,
+  rail as railRow,
+  shed as shedRow,
+  train as trainRow,
+  works as worksRow,
+} from '../sim/railway-rows.ts';
+import { LINE_HALTS, reqHas } from '../sim/railway-train.ts';
+import type { World } from '../ecs/index.ts';
 import { CARRY_MAX, type RailwayIntent } from './railway-intents.ts';
 
 export type RailwayAccepted = Readonly<
@@ -61,3 +74,40 @@ export function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op === 'rail.footTake') return a.rack === (b as typeof a).rack;
   return a.op === 'rail.forgeTake' || a.op === 'rail.depotTake' || a.op === 'rail.depotRailTake';
 }
+/** Ops whose whole result is one shared flag: when it holds anyway (someone else woke the machine), losing the race
+ * gives nothing back. Read on the confirmed world's rows. */
+export const holds = (w: World, op: string, event?: RailwayIntent) =>
+  op === 'rail.boilerFit'
+    ? line2TrainsIn(w)
+    : op === 'rail.call' && event?.op === 'rail.call'
+      ? (() => {
+          // A lever ask is the line's (`Line.req`), a rider's its own train's.
+          const h = LINE_HALTS[event.id];
+          const req = !h
+            ? undefined
+            : event.train === undefined
+              ? lineRow(w, h.line)?.req
+              : event.train >= 0 && event.train < RAIL_TRAINS.length
+                ? trainRow(w, event.train)?.req
+                : undefined;
+          return req !== undefined && reqHas(req, h!.stop, event.dir, trainStops(w, h!.line).length);
+        })()
+      : op === 'rail.wake'
+        ? railRow(w).awake >= 0
+        : op === 'rail.lever'
+          ? railRow(w).lever
+          : op === 'rail.seaSwitch'
+            ? railRow(w).sea
+            : op === 'rail.pack'
+              ? railRow(w).pack
+              : op === 'rail.glide'
+                ? railRow(w).glide
+                : op === 'rail.strike' && event?.op === 'rail.strike'
+                  ? event.id === 2
+                    ? aperture(w).joined >= 0
+                    : !!(worksRow(w).seams & (event.id ? 2 : 1))
+                  : op === 'rail.brace'
+                    ? aperture(w).brace !== 1
+                    : op === 'rail.turn' && event?.op === 'rail.turn'
+                      ? shedRow(w).table === event.to
+                      : false;

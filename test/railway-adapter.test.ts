@@ -5,7 +5,8 @@
 // client's `read.world()` and the server's `api.world()`, never through the adapter's wide read (docs/plans/ecs-m12-m13.md, X1).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRailwayAdapter, railMovement } from '../src/adapters/railway-session.ts';
+import { createRailwayAdapter } from '../src/adapters/railway-session.ts';
+import { railMovement } from '../src/adapters/railway-read.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../src/adapters/railway-effects.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';

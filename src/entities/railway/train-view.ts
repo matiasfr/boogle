@@ -364,7 +364,7 @@ export async function createRailwayTrains(
     smoke = new THREE.Color('#ece8e0');
   function step() {
     const w = adapter.read.world(),
-      target = adapter.tickNow(),
+      target = adapter.read.tickNow(),
       on = line2Trains(w),
       shown = adapter.read.whole();
     stops2 = trainStops(w, LINE2);
@@ -520,7 +520,7 @@ export async function createRailwayTrains(
   function restore() {
     const w = adapter.read.world(),
       on = line2Trains(w);
-    clock = adapter.tickNow();
+    clock = adapter.read.tickNow();
     stops2 = trainStops(w, LINE2);
     merge2 = mergeShown = endMergeM(stops2);
     secondVisible = on;
@@ -717,7 +717,7 @@ export async function createRailwayTrains(
       if (!tr) return [];
       const k = tr.line;
       // The open stops, not their count: a count reads the railhead at its last head.
-      const ask = trainRequestable(trainRow(w, tr.slot), k, trainStops(w, k), adapter.tickNow());
+      const ask = trainRequestable(trainRow(w, tr.slot), k, trainStops(w, k), adapter.read.tickNow());
       if (!ask) return [];
       const id = LINE_HALTS.findIndex((h) => h.line === k && h.stop === ask.stop);
       const halt = LINE_HALTS[id];
@@ -747,7 +747,7 @@ export async function createRailwayTrains(
           ? merge2
           : mergeShown + Math.max(-MERGE_SLIDE * dt, Math.min(MERGE_SLIDE * dt, merge2 - mergeShown));
       const w = adapter.read.world(),
-        tick = adapter.tickNow(),
+        tick = adapter.read.tickNow(),
         on = line2Trains(w);
       // Each line's open stops, worked out once for the frame and shared by the lamps.
       const stops = [trainStops(w, 0), trainStops(w, LINE2)];
