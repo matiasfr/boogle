@@ -39,6 +39,7 @@ import {
   RailClock,
   Rock,
   Shed,
+  Till,
   Town,
   Train,
   Tree,
@@ -93,6 +94,7 @@ const ARCHETYPES = [
   [Aperture],
   [Yard, YardClock],
   [Town],
+  [Till],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the world. */
 export function railwayCheck(w: World) {
@@ -123,6 +125,7 @@ export function railwayCheck(w: World) {
     [Aperture, 1],
     [Yard, TRADE.yards.length],
     [Town, TRADE_TOWNS],
+    [Till, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)

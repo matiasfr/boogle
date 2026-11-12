@@ -35,6 +35,7 @@ import {
   RailClock,
   Rock,
   Shed,
+  Till,
   Town,
   Train,
   Tree,
@@ -117,6 +118,8 @@ export const yardClock = slotted(YardClock, Yard);
 export const town = slotted(Town);
 export const yards = listed(yard, TRADE.yards.length);
 export const towns = listed(town, TRADE_TOWNS);
+/** R3's one strongbox. */
+export const till = one(Till);
 
 export const account = (w: World, pid: string): Read<typeof Account> | undefined => {
   const id = w.lookup(Account, pid);
