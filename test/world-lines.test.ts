@@ -77,3 +77,21 @@ test("line 2's extension starts at line 2's rail end and counts on from it", () 
   assert.ok(Math.abs(ring.fromCm - Math.round(E.len * 100)) <= 1);
   assert.ok(ring.stops[0]! > TRAIN_STOPS[1]!.at(-1)!, 'its stops come after the pier stop');
 });
+
+test('no future span is steeper than the 4% ruling grade, and the Gorge halts stand low in the split', () => {
+  for (const l of WORLD_LINES)
+    for (let i = 1; i < l.pts.length; i++) {
+      const a = l.pts[i - 1]!,
+        b = l.pts[i]!;
+      const run = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      assert.ok(run > 0 && Math.abs(b[2] - a[2]) <= 0.04 * run, `${l.id} span ${i} is steeper than 4%`);
+    }
+  const gorge = WORLD_LINES.flatMap((l) => l.halts).filter((h) => h.name === 'High Gorge');
+  assert.equal(gorge.length, 3, 'line 2, the north-south line and the White Wall each end there');
+  for (const h of gorge) assert.equal(h.y, 300);
+  for (const l of WORLD_LINES)
+    assert.ok(
+      !l.halts.some((h) => h.name === 'Ring top' || h.name === 'High Port'),
+      `${l.id} has no Ring top or High Port`,
+    );
+});

@@ -23,7 +23,6 @@ import { H } from '../../src/place/terrain.ts';
 import { GATES, GATE_SLAB, PILLARS } from '../../src/place/tech-layout.ts';
 import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/place/spatial-station.ts';
 import { layout, parseMapPage, polyLen, smoothRing, type XZ } from '../../src/sickle/map-data.ts';
-import { createGround } from '../../src/proto/greybox/ground.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
 import { FAR } from '../../src/place/layout.ts';
 
@@ -33,7 +32,7 @@ const PAGE = 'docs/world/world-blockout.html';
 const STILLS = 'docs/world/world-blockout';
 
 type Leg = { id: string; reverse?: boolean };
-type HaltSpec = { name: string; place?: string; at?: 'end' | 'start'; nearPt?: XZ };
+type HaltSpec = { name: string; place?: string; at?: 'end' | 'start'; nearPt?: XZ; deck?: number };
 type Service = { id: string; name: string; extends?: 1; legs: Leg[]; halts: HaltSpec[]; note: string };
 type Turn = 'crossover' | 'loop' | null;
 
@@ -45,106 +44,78 @@ export const FORMATION = { tracks: 2, centresCm: 400, gaugeCm: 100, deckCm: 760,
  * platform, or a single-track balloon loop past it where the island has room. Null: the line runs on (line 2's end). */
 const TURNBACKS: Record<string, [start: Turn, end: Turn]> = {
   ring: [null, 'crossover'],
-  stack: ['crossover', 'crossover'],
+  ns: ['crossover', 'loop'],
   bay: ['crossover', 'loop'],
   'bay-trestle': ['crossover', 'crossover'],
-  cave: ['crossover', 'loop'],
-  wall: ['crossover', 'crossover'],
-  notch: ['crossover', 'loop'],
-  causeway: ['crossover', 'loop'],
+  cave: ['crossover', 'crossover'],
 };
 
-/** The future lines as train services: which map links each runs over, in order, and where it stops. */
+/** The future lines as train services, rail-map's five (docs/plans/rail-map.md, "The shape it gives the network"; the
+ * greybox route's step 1): which map links each runs over, in order, and where it stops. Line 1 is not a future line.
+ * High Port is a crane lift, not a rail leg, so the `lift` link is in no service. The White Wall grows from Port Quay on
+ * the `cave` row (greybox-route design review, ruling 2): its `s` keeps growing to the Gorge, where it ends beside
+ * line 2 as a second platform. `deck` is a halt's deck where no map place names it. */
 export const SERVICES: Service[] = [
   {
     id: 'ring',
-    name: 'Line 2 to Ring Island',
+    name: 'Line 2 to High Gorge',
     extends: 1,
-    legs: [{ id: 'ringx' }],
+    legs: [{ id: 'ringx' }, { id: 'ledge' }],
     halts: [
-      { name: 'Ring Island halt', nearPt: [414, -820] },
-      { name: 'Ring top', place: 'ring' },
+      { name: 'Ring Island halt', nearPt: [414, -820], deck: 8 },
+      { name: 'High Gorge', place: 'gorge' },
     ],
-    note: "Line 2's own extension over the bow (Ring Island build 1 lays it to the island halt; the climb to the Ring top junction comes with the branch).",
+    note: "Line 2's own extension: over the bow to the Ring Island halt (build 1), on along the island's west shore and out over the sea to the split stack. No Ring top junction (ruling 3).",
   },
   {
-    id: 'stack',
-    name: 'Stack line',
-    legs: [{ id: 'ledge' }, { id: 'incline', reverse: true }],
+    id: 'ns',
+    name: 'North-south line',
+    legs: [{ id: 'incline', reverse: true }, { id: 'final' }],
     halts: [
-      { name: 'Ring top', place: 'ring' },
       { name: 'High Gorge', place: 'gorge' },
       { name: 'Bell Rock', place: 'bell' },
+      { name: 'Original Island', place: 'original' },
     ],
-    note: 'Ring Island out to the split stack, then down the incline to Bell Rock, so the Gorge comes home through the hub.',
+    note: "The Gorge's low station at the water, Bell Rock (stage 4), and the last line over the shallows to The Boogler's island.",
   },
   {
     id: 'bay',
     name: 'Bay line',
-    legs: [{ id: 'bay-cut' }, { id: 'bell-canopy' }],
+    legs: [{ id: 'bay-cut' }, { id: 'bell-canopy' }, { id: 'notch-tunnel' }],
     halts: [
-      { name: 'West landing (bay)', place: 'home' },
+      { name: 'West landing', place: 'home' },
       { name: 'Bell Rock', place: 'bell' },
       { name: 'Canopy Town', place: 'canopy' },
+      { name: 'Lantern Notch', place: 'notch' },
     ],
-    note: "Home's West landing straight across the bay to Bell Rock (the shortcut), on through the cleft to Canopy Town.",
+    note: "Home's West landing straight across the bay to Bell Rock (the shortcut), on through the cleft to Canopy Town and out to the Notch.",
   },
   {
     id: 'bay-trestle',
     name: 'Bay trestle',
     legs: [{ id: 'ring-bell' }],
     halts: [
-      { name: 'Ring top', place: 'ring' },
+      { name: 'Ring Island halt', nearPt: [414, -820], deck: 8 },
       { name: 'Bell Rock', place: 'bell' },
     ],
-    note: 'Only built when Canopy Town is the first branch; otherwise the shortcut makes it unnecessary.',
+    note: 'Only built when Canopy Town is the first branch (the island-to-Canopy line); otherwise the shortcut makes it unnecessary.',
   },
   {
     id: 'cave',
-    name: 'Cave line',
-    legs: [{ id: 'seacave' }, { id: 'salt-quay' }, { id: 'lift' }],
+    name: 'Cave line and the White Wall',
+    legs: [{ id: 'seacave' }, { id: 'salt-quay' }, { id: 'wall-s' }, { id: 'wall-n' }],
     halts: [
-      { name: 'West landing (cave)', place: 'home' },
+      { name: 'West landing', place: 'home' },
       { name: 'Saltpan Halt', place: 'saltpan' },
       { name: 'Port Quay', place: 'quay' },
-      { name: 'High Port', place: 'port' },
-    ],
-    note: 'Through the sea cave the powered pick opens, past the Saltpan, along the breakwater, and up the crane lift.',
-  },
-  {
-    id: 'wall',
-    name: 'White Wall line',
-    legs: [{ id: 'wall-s' }, { id: 'wall-n' }],
-    halts: [
-      { name: 'High Port', place: 'port' },
       { name: 'Canopy Town', place: 'canopy' },
       { name: 'High Gorge', place: 'gorge' },
     ],
-    note: 'Along the foot of the chalk; its last span, on crystal collars, closes the ring.',
-  },
-  {
-    id: 'notch',
-    name: 'Notch line',
-    legs: [{ id: 'notch-tunnel' }],
-    halts: [
-      { name: 'Canopy Town', place: 'canopy' },
-      { name: 'Lantern Notch', place: 'notch' },
-    ],
-    note: 'Out to the sea arch whose lantern lights the causeway.',
-  },
-  {
-    id: 'causeway',
-    name: 'Lantern causeway',
-    legs: [{ id: 'final' }],
-    halts: [
-      { name: 'Bell Rock', place: 'bell' },
-      { name: 'Original Island', place: 'original' },
-    ],
-    note: "The last line, over the shallows to The Boogler's island.",
+    note: "Through the sea cave the powered pick opens, past the Saltpan and along the breakwater to Port Quay, then the White Wall at the chalk's foot to Canopy Town and its last span, on crystal collars, to the Gorge.",
   },
 ];
 
-/** The greybox ride round the whole network: Home, Ring Island, the Gorge, the Wall, High Port and back through the cave. */
+/** The greybox ride round the whole network: Home, Ring Island, the Gorge, the Wall, Port Quay and back through the cave. */
 export const FULL_LOOP: Leg[] = [
   { id: 'l2a' },
   { id: 'l2b' },
@@ -152,7 +123,6 @@ export const FULL_LOOP: Leg[] = [
   { id: 'ledge' },
   { id: 'wall-n', reverse: true },
   { id: 'wall-s', reverse: true },
-  { id: 'lift', reverse: true },
   { id: 'salt-quay', reverse: true },
   { id: 'seacave', reverse: true },
 ];
@@ -161,12 +131,179 @@ const html = fs.readFileSync(ROOT + 'docs/world/map-prototypes.html', 'utf8');
 const MAP = parseMapPage(html);
 const A = layout(MAP, 'sickle', 'A');
 const B = layout(MAP, 'sickle', 'B');
-const ground = createGround(A);
+
+// ---------------------------------------------------------------- the rulings applied to the map's drawn lines
+// The catalog follows the 10 November rulings (docs/plans/world-blockout.md, "The ruling grade"): trains run low, a deck
+// meets an island at its height, and no span is steeper than 4%. The map JSON's heights predate them (they jump onto
+// cliffs at 45 to 340%), so the heights here come from the rulings, not from `heights`: a station's deck, a plateau
+// where the JSON holds a deck at an island's height, and the sea deck everywhere else. A line eases between them at the
+// ruling grade, beside the higher end. The 2D map page and the live blockout still draw the JSON's own heights.
+const SEA_DECK = 4;
+/** An authored height above this is a cliff or a summit the JSON climbed onto: the line stays at the sea deck instead. */
+const DECK_CAP = 16;
+/** The eased grade (3.9%): under the ruling 4%, with the margin a centimetre of rounding needs on a 12 m chord. */
+const GRADE = 0.039;
+/** Station decks, metres (rulings 3 and 5: the Gorge halt low in the split, Port Quay at the harbour, one West landing). */
+const DECKS: Record<string, number> = {
+  home: 4,
+  saltpan: 3,
+  quay: 3,
+  gorge: 3,
+  bell: 15,
+  canopy: 13,
+  notch: 7,
+  original: 4,
+};
+
+/** A smooth route through keys [point, heading in degrees (0 east, 90 south), tangent length], a vertex every 15 m. */
+function hermite(keys: [XZ, number, number][]): XZ[] {
+  const out: XZ[] = [];
+  for (let k = 0; k < keys.length - 1; k++) {
+    const [p0, h0, m0] = keys[k]!,
+      [p1, h1, m1] = keys[k + 1]!;
+    const t0 = [Math.cos((h0 * Math.PI) / 180) * m0, Math.sin((h0 * Math.PI) / 180) * m0];
+    const t1 = [Math.cos((h1 * Math.PI) / 180) * m1, Math.sin((h1 * Math.PI) / 180) * m1];
+    const n = Math.max(2, Math.ceil(Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) / 15));
+    for (let i = k ? 1 : 0; i <= n; i++) {
+      const t = i / n,
+        a = 2 * t ** 3 - 3 * t ** 2 + 1,
+        b = t ** 3 - 2 * t ** 2 + t,
+        c = -2 * t ** 3 + 3 * t ** 2,
+        d = t ** 3 - t ** 2;
+      out.push([
+        Math.round((a * p0[0] + b * t0[0]! + c * p1[0] + d * t1[0]!) * 100) / 100,
+        Math.round((a * p0[1] + b * t0[1]! + c * p1[1] + d * t1[1]!) * 100) / 100,
+      ]);
+    }
+  }
+  return out;
+}
+
+/** Line 2's bow ends at the Ring Island halt (ringx's fifth vertex, the halt's north end at u 458). From there the stack line
+ * turns west and runs out along the island's southern then western shore, over a cutting for the first 300 m or so (ruling 3:
+ * the junction is the halt, the cone's summit a walked-up lookout), clear of the cones' waterline, then straight down the
+ * split end-on at 31° north of west (ruling 5). R 90 m at its tightest; 2.05 km to the Gorge. */
+const ISLAND_HALT: XZ = [414.46, -830.08];
+const GORGE_AT: XZ = [-1103, -1988];
+const SHORE_OUT = hermite([
+  [ISLAND_HALT, 270, 150],
+  [[314.46, -930.08], 180, 150],
+  [[100, -905], 184, 260],
+]);
+const STACK_LEDGE = [
+  ...SHORE_OUT,
+  ...hermite([
+    [[100, -905], 184, 260],
+    [[-150, -950], 200, 300],
+    [[-550, -1280], 214, 600],
+    [GORGE_AT, 211.2, 600],
+  ]).slice(1),
+];
+
+type Route = { pts: XZ[]; heights?: (number | null)[]; ruled?: boolean };
 const lineOf = (id: string) => {
   const l = A.lines.find((x) => x.id === id);
   if (!l) throw new Error(`no map line ${id}`);
   return l;
 };
+const NULLS = (n: number) => Array.from({ length: n }, () => null);
+/** The links the rulings redraw; every other link runs as the map JSON draws it. `ruled`: its heights are the rulings' own
+ * (the bow's 24.3 m is not a cliff). */
+const ROUTES: Record<string, Route> = {
+  // The bow ends at the island halt (no Ring top); the pier head and first bent at 24.3 m, then 4% down to the halt.
+  ringx: { pts: lineOf('ringx').pts.slice(0, 5), heights: [24.3, 24.3, null, null, null], ruled: true },
+  ledge: { pts: STACK_LEDGE },
+  // The bay trestle leaves the same halt and the same shore, then runs on to Bell Rock as drawn.
+  'ring-bell': {
+    pts: [...SHORE_OUT, ...lineOf('ring-bell').pts.slice(16)],
+    heights: [...NULLS(SHORE_OUT.length), ...lineOf('ring-bell').heights!.slice(16)],
+  },
+  // One West landing: the cave line starts at the bay line's station (ruling 6), 25 m off the cave mouth it is to meet.
+  seacave: { pts: [[-199, 10], [-205, 75], ...lineOf('seacave').pts.slice(1)] },
+  // The White Wall's south end starts from the quay, not the 55 m top the lift reaches (ruling 4's knock-on).
+  'wall-s': {
+    pts: [
+      ...hermite([
+        [[-880, 960], 150, 250],
+        [[-1535, 840], 235.5, 300],
+      ]),
+      ...lineOf('wall-s').pts.slice(8),
+    ],
+    heights: [
+      ...NULLS(
+        hermite([
+          [[-880, 960], 150, 250],
+          [[-1535, 840], 235.5, 300],
+        ]).length,
+      ),
+      ...lineOf('wall-s').heights!.slice(8),
+    ],
+  },
+};
+/** A leg's vertices (x, z in map metres) and the heights it asks for (null: none), in the direction it is ridden. */
+function routeOf(id: string, reverse = false) {
+  const line = lineOf(id),
+    over = ROUTES[id];
+  const pts = [...(over?.pts ?? line.pts)];
+  const raw = over ? (over.heights ?? NULLS(pts.length)) : (line.heights ?? NULLS(pts.length));
+  const hs = pts.map((_, i) => {
+    const h = raw[i] ?? null;
+    return h === null || over?.ruled || h <= DECK_CAP ? h : null;
+  });
+  if (reverse) {
+    pts.reverse();
+    hs.reverse();
+  }
+  return { pts, hs };
+}
+
+type Vtx = { x: number; z: number; h: number | null; leg: number };
+/** A service's vertices in centimetres, legs end to end (a leg's first vertex is the last one of the leg before). */
+function vertices(svc: Service): Vtx[] {
+  const out: Vtx[] = [];
+  svc.legs.forEach((leg, k) => {
+    const { pts, hs } = routeOf(leg.id, leg.reverse);
+    pts.forEach((p, i) => {
+      const v = { x: cm(p[0] + ORIGIN.x), z: cm(p[1] + ORIGIN.z), h: hs[i] ?? null, leg: k };
+      const last = out.at(-1);
+      if (last && last.x === v.x && last.z === v.z) {
+        last.h ??= v.h;
+        return;
+      }
+      out.push(v);
+    });
+  });
+  return out;
+}
+
+/** The deck's height (metres) at `s` metres along a service. Hills (a station's deck, a plateau the JSON holds at an
+ * island's height) and dips (a station below the sea deck) hold their height along their length and ease to the sea deck at
+ * the ruling grade; elsewhere it is the sea deck. */
+function deckProfile(V: Vtx[], at: number[], stopsM: number[], svc: Service) {
+  type Plateau = { a: number; b: number; y: number };
+  const plateaus: Plateau[] = [];
+  let run: Plateau | null = null;
+  V.forEach((v, i) => {
+    if (v.h === null || Math.abs(v.h - SEA_DECK) < 0.05) return;
+    if (run && Math.abs(run.y - v.h) < 0.005) run.b = at[i]!;
+    else plateaus.push((run = { a: at[i]!, b: at[i]!, y: v.h }));
+  });
+  svc.halts.forEach((h, k) => {
+    const y = h.deck ?? (h.place ? DECKS[h.place] : undefined);
+    if (y === undefined || y === SEA_DECK) return;
+    plateaus.push({ a: stopsM[k]! - 20, b: stopsM[k]! + 20, y });
+  });
+  return (s: number) => {
+    let hi = SEA_DECK,
+      lo = SEA_DECK;
+    for (const p of plateaus) {
+      const d = Math.max(0, p.a - s, s - p.b);
+      if (p.y > SEA_DECK) hi = Math.max(hi, p.y - GRADE * d);
+      else lo = Math.min(lo, p.y + GRADE * d);
+    }
+    return hi > SEA_DECK ? hi : lo;
+  };
+}
 const stageIn = (id: string, pick: 'A' | 'B') => {
   const l = (pick === 'A' ? A : B).lines.find((x) => x.id === id)!;
   const s = l.stage;
@@ -190,63 +327,127 @@ type Built = {
   note: string;
 };
 
-function build(svc: Service): Built {
+type Pt3 = { x: number; z: number; y: number; leg: number; s?: number };
+/** Points end to end as the catalog keeps them: no repeated x, z; `along` the centimetres from `fromCm`; each leg's span. */
+function lay(P: Pt3[], fromCm: number, nLegs: number) {
   const pts: [number, number, number][] = [];
-  const legs: Built['legs'] = [];
   const along: number[] = [];
-  const fromCm = svc.extends ? LINE2_CM : 0;
+  const legAt: { from: number; to: number }[] = Array.from({ length: nLegs }, () => ({ from: -1, to: -1 }));
   let s = fromCm;
-  for (const leg of svc.legs) {
-    const line = lineOf(leg.id);
-    const path = ground.linePath(line, false);
-    if (leg.reverse) path.reverse();
-    const start = s;
-    for (const [x, y, z] of path) {
-      const p: [number, number, number] = [cm(x), cm(z), cm(y)];
-      const last = pts.at(-1);
-      if (last && last[0] === p[0] && last[1] === p[1]) continue;
-      if (last) s += Math.round(Math.hypot(p[0] - last[0], p[1] - last[1]));
-      pts.push(p);
-      along.push(s);
-    }
-    legs.push({
-      id: leg.id,
-      reverse: !!leg.reverse,
-      fromCm: start,
-      toCm: s,
-      stage: [stageIn(leg.id, 'A'), stageIn(leg.id, 'B')],
-    });
+  for (const q of P) {
+    const p: [number, number, number] = [q.x, q.z, q.y];
+    const last = pts.at(-1);
+    if (last && last[0] === p[0] && last[1] === p[1]) continue;
+    if (legAt[q.leg]!.from < 0) legAt[q.leg]!.from = s;
+    if (last) s += Math.round(Math.hypot(p[0] - last[0], p[1] - last[1]));
+    pts.push(p);
+    along.push(s);
+    legAt[q.leg]!.to = s;
   }
-  const at = (sCm: number) => {
-    let i = 1;
-    while (i < along.length - 1 && along[i]! < sCm) i++;
-    const t = (sCm - along[i - 1]!) / Math.max(1, along[i]! - along[i - 1]!);
+  return { pts, along, s, legAt };
+}
+
+function build(svc: Service): Built {
+  const fromCm = svc.extends ? LINE2_CM : 0;
+  const V = vertices(svc);
+  const flat = V.map((v) => ({ x: v.x, z: v.z, y: 0, leg: v.leg }));
+  const first = lay(flat, fromCm, svc.legs.length);
+  const stopsOf = (L: ReturnType<typeof lay>) => {
+    const { pts, along, s } = L;
+    const at = (sCm: number) => {
+      let i = 1;
+      while (i < along.length - 1 && along[i]! < sCm) i++;
+      const t = (sCm - along[i - 1]!) / Math.max(1, along[i]! - along[i - 1]!);
+      const a = pts[i - 1]!,
+        b = pts[i]!;
+      return [0, 1, 2].map((k) => Math.round(a[k]! + (b[k]! - a[k]!) * t)) as [number, number, number];
+    };
+    const nearest = (x: number, z: number) => {
+      let best = { d: Infinity, s: 0 };
+      for (let k = 0; k <= s - fromCm; k += 100) {
+        const p = at(fromCm + k);
+        const d = Math.hypot(p[0] - x, p[1] - z);
+        if (d < best.d) best = { d, s: fromCm + k };
+      }
+      return best.s;
+    };
+    // A halt at a place stands at the line's nearest point to it (Home's at the line's own end), 20 m in from either end
+    // so its platform fits.
+    const stops = svc.halts.map((h, stop) => {
+      const p = A.places.find((x) => x.id === h.place);
+      const v = h.nearPt
+        ? nearest(cm(h.nearPt[0] + 1000), cm(h.nearPt[1]))
+        : h.place === 'home'
+          ? stop === 0
+            ? fromCm
+            : s
+          : nearest(cm(p!.at[0] + 1000), cm(p!.at[1]));
+      return Math.max(fromCm + 2000, Math.min(s - 2000, v));
+    });
+    return { at, stops };
+  };
+  // The deck: stations and island plateaus from the rulings, eased at the ruling grade (see deckProfile). The line's
+  // vertices keep their places; a vertex is added where the deck changes slope.
+  const m1 = first.along.map((a) => (a - fromCm) / 100); // V and `first` share indexes (V has no repeated x, z)
+  const deck = deckProfile(
+    V,
+    m1,
+    stopsOf(first).stops.map((x) => (x - fromCm) / 100),
+    svc,
+  );
+  const total = m1.at(-1)!;
+  const yCm = (sM: number) => Math.round(deck(sM) * 100);
+  const corners: number[] = [];
+  const STEP = 0.25;
+  let prev = deck(0);
+  let prevSlope = 0;
+  for (let t = STEP; t <= total + 1e-9; t += STEP) {
+    const y = deck(t);
+    const slope = (y - prev) / STEP;
+    if (Math.abs(slope - prevSlope) > 1e-6) corners.push(t - STEP);
+    prev = y;
+    prevSlope = slope;
+  }
+  const full: Pt3[] = [];
+  const MIN_GAP = 12;
+  let ci = 0;
+  V.forEach((v, i) => {
+    const sM = m1[i]!;
+    if (i > 0) {
+      const a = V[i - 1]!,
+        sa = m1[i - 1]!;
+      while (ci < corners.length && corners[ci]! < sM) {
+        const c = corners[ci++]!;
+        if (c <= sa + MIN_GAP || c >= sM - MIN_GAP) continue;
+        if (full.length && c - full.at(-1)!.s! < MIN_GAP) continue;
+        const t = (c - sa) / (sM - sa);
+        full.push({
+          x: Math.round(a.x + (v.x - a.x) * t),
+          z: Math.round(a.z + (v.z - a.z) * t),
+          y: yCm(c),
+          leg: v.leg,
+          s: c,
+        });
+      }
+    }
+    full.push({ x: v.x, z: v.z, y: yCm(sM), leg: v.leg, s: sM });
+  });
+  const { pts, along, s, legAt } = lay(full, fromCm, svc.legs.length);
+  const legs: Built['legs'] = svc.legs.map((leg, k) => ({
+    id: leg.id,
+    reverse: !!leg.reverse,
+    fromCm: legAt[k]!.from,
+    toCm: legAt[k]!.to,
+    stage: [stageIn(leg.id, 'A'), stageIn(leg.id, 'B')],
+  }));
+  // The gate the catalog keeps: no span steeper than the 4% ruling.
+  for (let i = 1; i < pts.length; i++) {
     const a = pts[i - 1]!,
       b = pts[i]!;
-    return [0, 1, 2].map((k) => Math.round(a[k]! + (b[k]! - a[k]!) * t)) as [number, number, number];
-  };
-  const nearest = (x: number, z: number) => {
-    let best = { d: Infinity, s: 0 };
-    for (let k = 0; k <= s - fromCm; k += 100) {
-      const p = at(fromCm + k);
-      const d = Math.hypot(p[0] - x, p[1] - z);
-      if (d < best.d) best = { d, s: fromCm + k };
-    }
-    return best.s;
-  };
-  // A halt at a place stands at the line's nearest point to it (Home's at the line's own end), 20 m in from either end
-  // so its platform fits.
-  const stops = svc.halts.map((h, stop) => {
-    const p = A.places.find((x) => x.id === h.place);
-    const v = h.nearPt
-      ? nearest(cm(h.nearPt[0] + 1000), cm(h.nearPt[1]))
-      : h.place === 'home'
-        ? stop === 0
-          ? fromCm
-          : s
-        : nearest(cm(p!.at[0] + 1000), cm(p!.at[1]));
-    return Math.max(fromCm + 2000, Math.min(s - 2000, v));
-  });
+    const g = (100 * Math.abs(b[2] - a[2])) / Math.max(1, Math.hypot(b[0] - a[0], b[1] - a[1]));
+    if (g > 4) throw new Error(`${svc.id}: span ${i} is ${g.toFixed(2)}% (the ruling grade is 4%)`);
+  }
+  const { at, stops } = stopsOf({ pts, along, s, legAt });
   const halts = svc.halts.map((h, stop) => {
     const [x, z, y] = at(stops[stop]!);
     return { name: h.name, stop, x, z, y, reach: 1260 };
@@ -471,16 +672,17 @@ const LADDER: Record<number, [accel: number, dwell: number]> = { 20: [3.5, 5], 2
 const ride = (m: number, mps: number, stops = 1) => m / mps + stops * (mps / LADDER[mps]![0] + LADDER[mps]![1]);
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 const km = (m: number) => (m / 1000).toFixed(2);
-const legLen = (id: string) => polyLen(lineOf(id).pts);
+const legLen = (id: string) => polyLen(ROUTES[id]?.pts ?? lineOf(id).pts);
 const LOOP_M = FULL_LOOP.reduce((s, l) => s + legLen(l.id), 0);
-const ALL_FUTURE = A.lines.filter((l) => l.kind !== 'built').reduce((s, l) => s + polyLen(l.pts), 0);
+/** Rail only: the crane lift to High Port carries players, not trains. */
+const ALL_FUTURE = A.lines.filter((l) => l.kind !== 'built' && l.id !== 'lift').reduce((s, l) => s + legLen(l.id), 0);
 const BUILT_M = A.lines.filter((l) => l.kind === 'built' && l.id !== 'l1').reduce((s, l) => s + polyLen(l.pts), 0);
 
 function legRows() {
   return A.lines
     .filter((l) => l.kind !== 'built')
     .map((l) => {
-      const m = polyLen(l.pts);
+      const m = legLen(l.id);
       const svc = BUILT.find((b) => b.legs.some((g) => g.id === l.id));
       const st = [stageIn(l.id, 'A'), stageIn(l.id, 'B')].map((v) => (v === null ? 'never' : v)).join(' / ');
       return {
@@ -629,13 +831,10 @@ const DOUBLE_BACKS: [string, string, string, string][] = [
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const COLOURS: Record<string, string> = {
   ring: '#3f7fd8',
-  stack: '#e89b2f',
+  ns: '#9157d6',
   bay: '#d8412f',
   'bay-trestle': '#c58f8f',
   cave: '#22b39a',
-  wall: '#c9a514',
-  notch: '#e85cab',
-  causeway: '#9157d6',
 };
 function svg() {
   const [x0, z0, w, h] = [-3000, -2350, 3700, 3800];

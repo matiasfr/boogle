@@ -241,26 +241,23 @@ function lineRows(): LineRow[] {
 }
 /** The proposal, per future line's [start, end] (docs/plans/rail-map.md, "The ends audit"). */
 const AFTER: Record<string, [string, string]> = {
-  ring: ["through: this draft's Ring top end is superseded (ruling 3); line 2 ends on the island halt's loop", ''],
-  stack: [
+  ring: [
     'through: line 2 runs on from the Ring Island halt (the island halt is a through halt)',
-    'split at High Gorge: the ledge runs on as the White Wall line (the ring); the incline is the N-S line, through Bell Rock into the causeway (a terminal with buffers facing the causeway until stage 8)',
+    "terminal in the High Gorge split: buffers (a crossover before them); the cave row's White Wall ends beside it as a second platform",
+  ],
+  ns: [
+    "terminal at High Gorge's low station (buffers), beside line 2's",
+    'turning loop round the Original Island (kept); through Bell Rock at the water',
   ],
   bay: [
     'terminal: a bay platform at the one West landing station, buffers',
-    'through to Lantern Notch at stage 8 (Canopy keeps its loop until then)',
+    'turning loop at Lantern Notch (kept); Canopy Town is a through stop at stage 8',
   ],
   'bay-trestle': ['terminal with buffers at the island halt (Canopy first only)', 'terminal with buffers at Bell Rock'],
   cave: [
     "terminal: the ring's Home end at West landing, buffers",
-    'through at Port Quay into the White Wall line (the quay is a terminal with buffers until the ring closes); High Port is the crane',
+    'terminal at High Gorge, beside line 2 (no lap in the greybox); the White Wall grows from Port Quay on this row, and High Port is the crane',
   ],
-  wall: [
-    'through from the cave line at Port Quay (ruling: the south end starts from the quay)',
-    'through at High Gorge onto the ledge (a terminal with buffers in the split until stage 7)',
-  ],
-  notch: ['through: the bay line runs on from Canopy Town', 'turning loop at Lantern Notch (kept)'],
-  causeway: ['through from the incline at Bell Rock', 'turning loop round the Original Island (kept)'],
 };
 
 // ---------------------------------------------------------------- every track end, before and after
@@ -457,20 +454,20 @@ function ends(): End[] {
 }
 const FUTURE_AFTER: Record<string, Pick<End, 'after' | 'afterText' | 'cost'>> = {
   'ring-end': {
-    after: 'through',
-    afterText: 'Superseded by ruling 3 (no Ring top halt): the catalog line ends at the island halt, as R1 does.',
-    cost: 'Generator data (src/sickle/world-lines.ts regenerates); no game code.',
-  },
-  'stack-start': {
-    after: 'through',
+    after: 'terminal',
     afterText:
-      'Line 2 runs on through the Ring Island halt along the west shore: no change of train to the first branch.',
-    cost: "The branch's bump: line 2's row grows (like `extends: 1`); a through halt needs no junction rule.",
+      "Line 2 runs on through the Ring Island halt along the west shore (no Ring top, ruling 3) and ends in the High Gorge split: buffers and a crossover before them, the White Wall's last span arriving beside it as a second platform.",
+    cost: "The branch's bump: line 2's row grows (like `extends: 1`); the catalog (src/sickle/world-lines.ts) already draws it.",
   },
-  'stack-end': {
-    after: 'through',
+  'ns-start': {
+    after: 'terminal',
+    afterText: "A terminal at High Gorge's low station (3 m in the split), beside line 2's platform.",
+    cost: 'Map data.',
+  },
+  'ns-end': {
+    after: 'loop',
     afterText:
-      "The incline and the causeway are one north-south line through Bell Rock (they are collinear), at the water: it comes from the Gorge's low station and goes on to a sunken causeway, so it never needs height. Stages 4-8: a terminal with buffers at the skerry's foot, facing the causeway at its own level.",
+      "The incline and the causeway are one north-south line through Bell Rock (they are collinear), at the water: it goes on to a sunken causeway, so it never needs height. Kept: The Boogler's island is the ending; the train circles it.",
     cost: "Map data and the hub's station plan; Bell Rock on two levels, the bay line on the skerry at 15 m above it (owner question 3).",
   },
   'bay-start': {
@@ -480,9 +477,9 @@ const FUTURE_AFTER: Record<string, Pick<End, 'after' | 'afterText' | 'cost'>> = 
     cost: 'Map data.',
   },
   'bay-end': {
-    after: 'through',
+    after: 'loop',
     afterText:
-      'Canopy keeps its loop while it is the end (stages 3/5-8); at stage 8 the bay line runs on as the Notch line (a 102° turn, 71 m of arc at r 40, on the 12 m isle).',
+      'Canopy keeps its loop while it is the end (stages 3/5-8); at stage 8 the bay line runs on to Lantern Notch, where the loop stays (the arch is the end of the world).',
     cost: "Stage 8's bump.",
   },
   'bay-trestle-start': {
@@ -504,25 +501,10 @@ const FUTURE_AFTER: Record<string, Pick<End, 'after' | 'afterText' | 'cost'>> = 
     cost: 'Map data.',
   },
   'cave-end': {
-    after: 'through',
+    after: 'terminal',
     afterText:
-      'The cave line ends at Port Quay (ruling: High Port is the crane), and runs on as the White Wall line (a 48° turn on the 3 m harbour apron). Stages 6-7: buffers at the quay, the crane behind them.',
+      'The row runs through Port Quay (High Port is the crane) and on as the White Wall to High Gorge, where it ends beside line 2 as a second platform (the greybox route, ruling 2; no lap). Stages 6-7: buffers at the quay while the Wall is unbuilt, the crane behind them.',
     cost: 'Map data (the lift leg leaves the rail catalog).',
-  },
-  'wall-start': { after: 'through', afterText: 'Through from the cave line at Port Quay.', cost: 'Map data.' },
-  'wall-end': {
-    after: 'through',
-    afterText:
-      'Through at High Gorge onto the ledge (an 81° turn, 57 m of arc at r 40, inside the 90 m split). Stages 3-7: the ledge ends at buffers in the split, the stair beside them.',
-    cost: "Map data; the Gorge's station plan.",
-  },
-  'notch-start': { after: 'through', afterText: 'The bay line runs on from Canopy Town.', cost: 'Stage 8.' },
-  'notch-end': { after: 'loop', afterText: 'Kept: the arch is the end of the world.', cost: 'None.' },
-  'causeway-start': { after: 'through', afterText: 'Through from the incline at Bell Rock.', cost: 'Stage 8.' },
-  'causeway-end': {
-    after: 'loop',
-    afterText: "Kept: The Boogler's island is the ending; the train circles it.",
-    cost: 'None.',
   },
 };
 
@@ -863,7 +845,7 @@ function loaders() {
     z: r1(sw.z / 100),
     text: `On the down (east, homeward) side of the island halt, where trains stand while it is the end. With buffers the train is never turned, so the cargo cars are Home-side of the mark as everywhere else: the loader at u ${r1((ringMid - 1110) / 100)} to ${r1((ringMid - 370) / 100)} m, east of the platform's south half.`,
   });
-  const g = WORLD_LINES.find((l) => l.id === 'stack')!.halts.find((h) => h.name === 'High Gorge')!;
+  const g = WORLD_LINES.find((l) => l.id === 'ring')!.halts.find((h) => h.name === 'High Gorge')!;
   rows.push({
     name: 'High Gorge copper works (later)',
     x: r1(g.x / 100),

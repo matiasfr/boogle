@@ -260,12 +260,21 @@ jump link works once its leg has shipped; a new jump room each time.
 
 Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own; 3 to 5 ship together as bump G1.
 
-- [ ] **1. The map data (P0; Mac, S).** In `dev/level/world-blockout.ts` set `SERVICES` to rail-map's five services:
+- [x] **1. The map data (P0; Mac, S).** In `dev/level/world-blockout.ts` set `SERVICES` to rail-map's five services:
       no Ring top; line 2 runs on from the Ring Island halt along the west shore; the Gorge halt at 3 m in the split;
       one West landing halt; the cave line ends at Port Quay; decks meet islands at their height; no span over 4%.
       Regenerate `src/sickle/world-lines.ts`, the legs table and `docs/world/world-blockout.html`. Verify:
       `test/world-lines.test.ts` gains "no future span is steeper than 4%"; `npm run level-check` lists none of today's
       12 would-fail reports for `stack-centre`.
+      *As built (11 November):* the catalog is five rows, `ring` (ringx to the halt, then the ledge to the Gorge), `ns`
+      (incline, causeway), `bay` (bay-cut, bell-canopy, notch-tunnel), `bay-trestle`, and `cave`, which per the design
+      review carries the White Wall from Port Quay to the Gorge (not "the cave line ends at Port Quay"). The lift is in no
+      row. Leg 1 is 2.05 km (458 m of bow to the halt, then 2.05 km of ledge), sections to be cut at places in step 2. Heights
+      come from the rulings in the generator (station decks, island plateaus, sea deck 4 m, eased at 3.9%), not the map JSON,
+      which the 2D page and the live blockout still draw; the Gorge halts are 3.0 m. All 302 spans are at or under 4%
+      (was 63 of 109 over). The redrawn links (ringx trimmed, ledge round the island's south and west shore with a
+      cutting for its first 300 m, ring-bell from the same halt, seacave from the bay's West landing, wall-s from the quay)
+      live in `ROUTES`. Row ids changed, so `dev/level/rail-map.ts` follows (its prose maps, `rail-map.html` regenerated).
 - [ ] **2. The catalog, pure (HOTBOX, S).** `git mv src/sickle/world-lines.ts src/sim/railway-world-lines.ts` (it is
       written to the sim's rules; update the generator's path and the three readers). Create
       `src/sim/railway-route.ts` with the types above and all six legs' rows derived from it: `sectionsOf(leg, n)`
