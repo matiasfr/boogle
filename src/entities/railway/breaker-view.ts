@@ -52,15 +52,9 @@ const SEAM_MOTE_S = 0.15;
 const RAISED = -2.5,
   DOWN = 1.35;
 
-export function createRailwayBreaker(
-  adapter: RailwayAdapter,
-  owner: OwnedView,
-  shapes: typeof import('../../render/part-geometry.ts'),
-) {
-  const bx = WORKS_BREAKER.x / 100,
-    by = WORKS_BREAKER.y / 100,
-    bz = WORKS_BREAKER.z / 100;
-  // A broad-faced hammer, 1.4 m: ash handle, a squat iron head with brass bands. Origin at the grip's end.
+/** The breaker's mesh parts: a broad-faced hammer, 1.4 m (ash handle, a squat iron head with brass bands), origin at the
+ * grip's end. The caller owns both (ring-meet/breaker.ts draws the same hammer in hand at the rivet). */
+export function breakerParts(shapes: typeof import('../../render/part-geometry.ts')) {
   const geometry = shapes.merged([
     ['c', 0, 0.62, 0, 0.055, 1.24, 0.055, '#9a7448'],
     ['b', 0, 1.36, 0, 0.62, 0.34, 0.36, '#646a70'],
@@ -70,7 +64,21 @@ export function createRailwayBreaker(
     ['b', 0.18, 1.36, 0, 0.05, 0.36, 0.38, '#c79a3e'],
     ['c', 0, 0.06, 0, 0.075, 0.12, 0.075, '#3c3a36'],
   ]);
-  const mat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.7, flatShading: true });
+  const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.7, flatShading: true });
+  return { geometry, material };
+}
+
+export function createRailwayBreaker(
+  adapter: RailwayAdapter,
+  owner: OwnedView,
+  shapes: typeof import('../../render/part-geometry.ts'),
+  /** The breaker is in someone's hands at the rivet on this page (ring-meet/breaker.ts): it is not also on your back. */
+  inHand: () => boolean = () => false,
+) {
+  const bx = WORKS_BREAKER.x / 100,
+    by = WORKS_BREAKER.y / 100,
+    bz = WORKS_BREAKER.z / 100;
+  const { geometry, material: mat } = breakerParts(shapes);
   const breaker = new THREE.Mesh(geometry, mat);
   breaker.castShadow = true;
   owner.add(breaker);
@@ -197,7 +205,7 @@ export function createRailwayBreaker(
     const back = (me.avatar?.userData as { loadFit?: { frame: THREE.Object3D } } | undefined)?.loadFit?.frame;
     const mine = account(rows, pid);
     const free = !mine?.carry && !mine?.stone && !mine?.rails && !mine?.foot && beam(rows).holder !== pid && !heldId();
-    if (w.breaker === 2 && (w.seams & 3) !== 3 && back && free) {
+    if (w.breaker === 2 && (w.seams & 3) !== 3 && back && free && !inHand()) {
       back.updateWorldMatrix(true, false);
       contact.set(0.08, 0.05, 0.42);
       back.localToWorld(contact);

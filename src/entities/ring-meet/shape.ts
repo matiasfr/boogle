@@ -138,8 +138,8 @@ export function crossingShot(c: Crossing): 'pull-out' | 'meet' | null {
 
 /** `Works.breaker` as the sim's strike needs it: 2, which is the room's, not a carry rule. It is 2 once the breaker has
  * been taken from its pedestal by anyone (and stays 2 in every ring seed), so "the room has the breaker", not "you hold
- * it"; the breaker's mesh is hidden once both slabs are struck. Whether it should be visibly carried to the rivet is an
- * open design question (plan, leftovers). */
+ * it"; the Works' mesh is hidden once both slabs are struck. At the rivet every page draws it in the hands of whoever
+ * stands in the rivet's reach, and swings it on the strike (breaker.ts; a view of the room's flag, not a carry). */
 const BREAKER_HELD = 2;
 /** The strike prompt's window: the leaf has visibly landed on the bents (`landed`: leaf-shape.ts `leafLanded`; the sim's
  * `brace === 0` flips 2 s or more before the plate lands, and the server takes a strike then, but the view does not
@@ -180,3 +180,40 @@ export function glintPlan(distance: number) {
 
 /** The rivet stud's place: the joint, at the rivet's prompt site. */
 export const RIVET_AT: V3 = { x: RING_RIVET.x / 100, y: ringDeckY(JOINT_U) / 100, z: RING_RIVET.z / 100 };
+
+/** The breaker at the rivet (breaker.ts), a view of the room's flag: it is in the hands of every player within `near`
+ * metres of the stud (out again past `far`) and `rise` of its deck while the strike is open, and whoever strikes swings
+ * it. The prompt is offered inside `prompt` metres, the furthest a swing lands its head on the stud; the server's own
+ * reach (`RING_RIVET.reach`, 5 m) is wider and unchanged. */
+export const RIVET_CARRY = { near: 5, far: 5.6, rise: 2.6, prompt: 2.2 } as const;
+/** The rivet swing, seconds from the accepted strike: the head is over the shoulder at `raise`, meets the stud at
+ * `contact` (breaker-view.ts SWING's 0.58; the clang, the burst and the Meet's cut-in wait for it, so the swing is seen
+ * from the follow camera first), rests on the stud until `rest` (through the shot's held second) and is gone at `away`. */
+export const RIVET_SWING = { raise: 0.4, contact: 0.58, settle: 0.8, rest: 1.9, away: 2.15 } as const;
+/** The handle's length from the grip to the middle of the head, and the head's half height (breaker-view.ts). */
+const HANDLE = 1.36,
+  HEAD = 0.17;
+/** How a swing from `d` metres (horizontal, avatar to stud) lands its head on the stud: `ahead`, metres the grip is held
+ * out in front at contact; `up`, the grip's height over the deck then; `angle`, radians the handle has turned from
+ * upright toward the stud (past level: the head is below the grip). The head lands `ahead + reach` metres out, which is
+ * `d` held to what arms can do (0.58 to 2.17 m). */
+export function rivetSwing(d: number) {
+  const out = Math.min(2.17, Math.max(0.58, d)),
+    reach = Math.min(1.27, Math.max(0.58, out - 0.3)),
+    ahead = Math.min(0.9, Math.max(0, out - reach)),
+    drop = Math.sqrt(HANDLE * HANDLE - reach * reach);
+  return { ahead, up: STUD.h + HEAD + drop, angle: Math.PI - Math.asin(reach / HANDLE) };
+}
+/** The handle's angle `t` seconds into the swing whose contact angle is `land`, from the carry's `rest` angle (negative:
+ * tipped back over the shoulder): back and up, accelerating down into the stud, a small recoil, then lying on it. */
+export function rivetSwingAngle(t: number, land: number, rest: number) {
+  const S = RIVET_SWING,
+    back = -2.2;
+  if (t < S.raise) return rest + (back - rest) * (1 - (1 - t / S.raise) ** 3);
+  if (t < S.contact) {
+    const u = (t - S.raise) / (S.contact - S.raise);
+    return back + (land - back) * u * u;
+  }
+  const u = Math.min(1, (t - S.contact) / (S.settle - S.contact));
+  return land - Math.sin(u * Math.PI) * 0.22;
+}
