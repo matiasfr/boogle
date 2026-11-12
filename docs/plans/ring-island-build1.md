@@ -1136,6 +1136,8 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > `cart-view.ts` (the cart hidden), which had the same read. The multi-player tests now drive the real
   > `createRailwayLeaf` and live in `test/railway-r4c-leaf.test.ts`. A restore (reconnect, hard reset) snaps the leaf to
   > its rest with no walk back; a landed plate lies 0.68 m below the toe deck's top, so it is never inside anyone there.
+  > **Owner, 11 November: "what are the stones in the middle of the tracks?"** The four footings hung in the bracket lay on
+  > the rails once the leaf landed; they now hang under the plate (see 4d's third review).
   > **Leftovers:** P2, the toe pennant (`ring-island/view.ts` `buildLeaf`: a 12 m mast and a 10 by 5 m flag past the toe)
   > had no collider and swept through anyone on the railhead deck (u 248 to 260) as the leaf came down, then lay
   > about 1 m inside that deck with the flag reaching past its edge; it was the pale band in the two-page sheet.
@@ -1204,6 +1206,18 @@ job replaces their `ring-loop` track and its join with the crossover from `RING_
   > 240 m. Not used: the glider device's translucent locator shaft (a mesh). The end cut sets position and look in one block
   > (`camera-pull-out.ts`; by reading I find no frame where they differ, so a 0.2 s aim slew is something else, to measure
   > with camera position and quaternion logged per frame).
+  > **Owner, 11 November, watching the clips: "something looks a bit glitchy in the video, what are the particles for? what
+  > are the stones in the middle of the tracks?"** (1) The particles were the glint column, a cloud at the follow camera's
+  > 5.8 m. It is now `glintPlan(distance)` (`ring-meet/shape.ts`): a few slim 0.28 m glints rising a metre and a half off the
+  > stud, one every 0.3 s, up close; a column of 0.9 m glints rising 4.8 m, one every 0.1 s, past 22 m; smoothly between
+  > (monotonic, bounded, tested). They rise from the stud, so they read as sparkle on the rivet, in the breaker seam's
+  > language. (2) The stones were the four counterweight footings, hung on the leaf's top face (R2c's bracket): once the leaf
+  > landed they lay across the rails. The cradle, hangers and the four weights now hang under the plate
+  > (`ring-island/bracket.ts`; the painted outline is on the underside, facing the railhead's jib when the leaf is raised),
+  > so nothing of the bracket is above the plate's underside: clear of both lanes' loading gauge, and swung through every
+  > angle clear of the hinge pier (tested). The rivet stud is a low bolt (0.3 m proud, 0.46 m foot) between the lanes, 0.3 m
+  > clear of a car's inner edge and under its 0.4 m bottom. The 4c Built note's "counterweight hung on the leaf" is
+  > replaced by this.
 - [x] **4e. R4e, the island's folk.** `src/entities/ring-folk/` as under "R4", lines in `lines.ts` (Copy, below).
   Checks: `npm run check`, `npm run perf` at the island halt. Proof look (Done means): `--rail-seed ring-joined`, the
   camera in the island square: four lookers stand upright facing the shard; the whistle swaps two of them for the two

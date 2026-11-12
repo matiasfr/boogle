@@ -56,9 +56,11 @@ function standAt(u: number, lat: number) {
 standAt(25950 - 1500, layout.RING_FORMATION.mid);
 await bot.wait(600);
 say(`15 m short of the rivet offers: ${offered()}`);
-standAt(25950, layout.RING_FORMATION.mid);
+standAt(25950 - Number(new URLSearchParams(location.search).get('strikeback') ?? 0), layout.RING_FORMATION.mid);
 await bot.wait(600);
 say(`at u 259.5 offers: ${offered()} (breaker ${works(rw()).breaker})`);
+// Let the glint show for a while at the rivet before the press (the follow camera is about 6 m back).
+await bot.wait(2500);
 if (new URLSearchParams(location.search).get('strikedo') !== 'none') {
   if (!/Strike the rivet/.test(offered())) throw new Error(`no rivet prompt: ${offered()}`);
   (window as unknown as { __struckAt?: number }).__struckAt = Date.now();
