@@ -4,11 +4,11 @@
 // top of it, at the rate the built route itself played. Every stand-in carries `standIn: true`; a built node never does.
 //   bill   the main-route bill the economy model charges the area's steps (dev/economy/ring-sim.ts): the bill its
 //          allowance was sized on, not a designed bill
-//   legs   the real lengths of the track the area builds, from the generated line catalog (src/sickle/world-lines.ts)
+//   legs   the real lengths of the track the area builds, from the generated line catalog (src/sim/railway-world-lines.ts)
 //   gate   what the area grants (`grants`) and which later area needs it (`requires[].needs`)
 // The owner has not ruled on the outline's area list or order, so the choices are one switch (`Variant`): which branch
 // is first, whether the second branch exists, and a factor on every bill.
-import { WORLD_LINES } from '../../src/sickle/world-lines.ts';
+import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import { ROUTE as MODEL_ROUTE, type Material as ModelMaterial } from '../economy/ring-data.ts';
 import { defaultSettings, rideS, simulate } from '../economy/ring-sim.ts';
 import { NODES, type NodeId } from './graph.ts';

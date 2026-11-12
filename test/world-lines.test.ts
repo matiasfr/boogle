@@ -1,9 +1,9 @@
-// The whole-map blockout's future lines (src/sickle/world-lines.ts): current with the map JSON, and in the sim's own
+// The whole-map blockout's future lines (src/sim/railway-world-lines.ts): current with the map JSON, and in the sim's own
 // shape so the server can take them unchanged (docs/plans/world-blockout.md, "Future lines as data").
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../src/sickle/world-lines.ts';
+import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../src/sim/railway-world-lines.ts';
 import { TRAIN, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { LINES, ORIGIN } from '../src/place/layout.ts';
 

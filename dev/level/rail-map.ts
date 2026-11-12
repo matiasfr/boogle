@@ -1,7 +1,7 @@
 // node --import ./dev/sim/hooks.ts dev/level/rail-map.ts [--check] [--numbers]: the whole network's rail map,
 // docs/world/rail-map.html (docs/plans/rail-map.md), from the same data the game and the blockout read: Place's rails
 // and the double formation (src/place/layout.ts), the sim catalog (src/sim/railway-lines.ts), Ring Island's R1
-// layout (src/sim/railway-ring-layout.ts), the blockout's future lines (src/sickle/world-lines.ts, itself generated
+// layout (src/sim/railway-ring-layout.ts), the blockout's future lines (src/sim/railway-world-lines.ts, itself generated
 // from docs/world/map-prototypes.html) and the Sickle Isles outlines. The track continuity report's worst places are
 // marked on it. `--check` writes nothing and exits 1 when the page is stale (test/rail-map.test.ts); `--numbers`
 // prints the figures docs/plans/rail-map.md quotes.
@@ -31,7 +31,7 @@ import {
 import { layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import { RING_CONES, ringHeight } from '../../src/proto/greybox/ground.ts';
 import { FAR } from '../../src/place/layout.ts';
-import { WORLD_LINES, FORMATION } from '../../src/sickle/world-lines.ts';
+import { WORLD_LINES, FORMATION } from '../../src/sim/railway-world-lines.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import {
   RING_HALT,
@@ -457,7 +457,7 @@ const FUTURE_AFTER: Record<string, Pick<End, 'after' | 'afterText' | 'cost'>> = 
     after: 'terminal',
     afterText:
       "Line 2 runs on through the Ring Island halt along the west shore (no Ring top, ruling 3) and ends in the High Gorge split: buffers and a crossover before them, the White Wall's last span arriving beside it as a second platform.",
-    cost: "The branch's bump: line 2's row grows (like `extends: 1`); the catalog (src/sickle/world-lines.ts) already draws it.",
+    cost: "The branch's bump: line 2's row grows (like `extends: 1`); the catalog (src/sim/railway-world-lines.ts) already draws it.",
   },
   'ns-start': {
     after: 'terminal',
@@ -1437,7 +1437,7 @@ ${markList}
     .map(([k, v]) => `${esc(k)}, ${esc(v)}`)
     .join(
       '; ',
-    )}. The blockout catalog (<code>src/sickle/world-lines.ts</code>) was regenerated for the greybox route's step 1: it has no lift leg and no Ring top halt, and its line 2 extension ends at the Ring Island halt (R1's data supersedes that draft).</p>
+    )}. The blockout catalog (<code>src/sim/railway-world-lines.ts</code>) was regenerated for the greybox route's step 1: it has no lift leg and no Ring top halt, and its line 2 extension ends at the Ring Island halt (R1's data supersedes that draft).</p>
 <h3>High Gorge first</h3>
 <ul>
 ${serviceList('gorge')}

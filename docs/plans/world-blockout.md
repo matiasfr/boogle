@@ -188,7 +188,7 @@ Island build 1.
 [ring-and-economy](../brainstorms/ring-and-economy.md); the 10 November decisions (double track, Ring Island, stop on
 request); [DESIGN](../../DESIGN.md) 7, 8, 10 and 11; [route-contract](../research/route-contract.md) and
 [progression-flow-layout](../research/progression-flow-layout.md) for the three firm rules. **Measured:** every future
-line's grade profile, from `src/sickle/world-lines.ts`; the live lines' climbs, from `railY` and `LINES` in
+line's grade profile, from `src/sim/railway-world-lines.ts`; the live lines' climbs, from `railY` and `LINES` in
 `src/proto/place/layout.ts`. **Seen:** the blockout's stills 02 (aerial from the north) and 04 (the bow to Ring
 Island). **Not seen:** no new stills; Ring Island's near view, the Gorge's split and the island halt's sightlines don't
 exist in 3D yet, so every sightline claim below is from the map data and needs a still when the place is built.
@@ -421,7 +421,7 @@ a contact sheet of the full-loop ride clip (real time at the review's x4, 80 m/s
 
 ## Future lines as data
 
-Every future line is in [src/sickle/world-lines.ts](../../src/sickle/world-lines.ts), generated from the map JSON by the
+Every future line is in [src/sim/railway-world-lines.ts](../../src/sim/railway-world-lines.ts), generated from the map JSON by the
 script above and checked current by `test/world-lines.test.ts`. Its shape follows the sim's own lines:
 
 - `pts`: track vertices, `[x, z, y]` world centimetres, each pair one straight span (like Place's sampled rails, but
