@@ -5,7 +5,9 @@
 // Why that mesh is never culled: land.ts sets frustumCulled = false on it (a prototype default, no vertex displacement),
 // and one mesh over the whole island could not be culled anyway, since the camera stands inside its bounds. On, that mesh hides and its main
 // grid draws as tiles with bounds, so the frustum drops what is out of view, and tiles far from the camera use coarser
-// cells. The cove's fine patch and the offshore rings stay one always-drawn mesh, unchanged.
+// cells. The cove's fine patch and the offshore rings stay one always-drawn mesh, unchanged. Ring Island's ground
+// (entities/ring-island/view.ts) uses the same tiles with no extra part; its view is at the world origin, so a mesh's
+// local frame is the world's.
 //
 // No cracks: every tile keeps full resolution along its own border, so neighbours of any level meet on the same vertices.
 // Inside a coarse tile a block of S x S cells is two triangles when all four neighbours are blocks, otherwise a fan from
@@ -84,6 +86,7 @@ function pick() {
 /**
  * Tiles for the main grid of `full` (cells nx-1 by nz-1, vertex `i + j * nx`); `skip` names cells the full mesh leaves
  * out (the cove's fine patch). `mainEnd` is where the main grid's quads end in its index; what follows draws as is.
+ * The mesh must sit untransformed in the world. Returns what to call when the view goes away (without an `owner`).
  */
 export function addFarGround(
   full: THREE.Mesh,
@@ -95,12 +98,14 @@ export function addFarGround(
 ) {
   const made: THREE.BufferGeometry[] = [];
   const view: View = { full, build: () => build(full, nx, nz, mainEnd, skip, made, owner), built: null };
-  owner?.cleanup(() => {
+  const dispose = () => {
     views.delete(view);
     for (const geo of made) geo.dispose();
-  });
+  };
+  owner?.cleanup(dispose);
   views.add(view);
   show(view);
+  return dispose;
 }
 
 function build(
@@ -154,11 +159,12 @@ function build(
       group.add(mesh);
     }
   // The cove's fine patch and the offshore rings: everything after the main grid, drawn as before.
-  const rest = compact(Array.from(index.subarray(mainEnd)));
-  const restMesh = new THREE.Mesh(rest, full.material);
-  restMesh.receiveShadow = full.receiveShadow;
-  restMesh.frustumCulled = false;
-  group.add(restMesh);
+  if (mainEnd < index.length) {
+    const restMesh = new THREE.Mesh(compact(Array.from(index.subarray(mainEnd))), full.material);
+    restMesh.receiveShadow = full.receiveShadow;
+    restMesh.frustumCulled = false;
+    group.add(restMesh);
+  }
 
   // An owner takes its own copies of the geometries it sees (setViewGeometry copies the other levels once); `made` stays ours.
   if (owner) owner.add(group);

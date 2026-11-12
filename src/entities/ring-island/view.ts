@@ -32,6 +32,7 @@ import {
 } from '../../sim/railway-ring-layout.ts';
 import type { Cone, IslandGround } from './ground.ts';
 import { ringIslandPose } from './state.ts';
+import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
 import {
   LEAF_ORANGE,
@@ -670,7 +671,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   });
 
   // ---------------------------------------------------------------- the ground: the grid as one mesh and one heightfield
-  const groundMesh = (() => {
+  const ground = (() => {
     const { nx, nz, x0, z0, cell } = g;
     const pos = new Float32Array(nx * nz * 3),
       col = new Float32Array(nx * nz * 3);
@@ -701,6 +702,9 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
         c.lerp(sand, Math.max(shore, fill * 0.85));
         col.set([c.r, c.g, c.b], k * 3);
       }
+    // Cells entirely under the sea are left out of the mesh (and so out of its tiles).
+    const underwater = (i: number, j: number) =>
+      Math.max(g.at(i, j), g.at(i + 1, j), g.at(i, j + 1), g.at(i + 1, j + 1)) < -6.5;
     const index: number[] = [];
     for (let j = 0; j < nz - 1; j++)
       for (let i = 0; i < nx - 1; i++) {
@@ -708,7 +712,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
           bb = a + 1,
           cc = a + nx,
           d = cc + 1;
-        if (Math.max(g.at(i, j), g.at(i + 1, j), g.at(i, j + 1), g.at(i + 1, j + 1)) < -6.5) continue;
+        if (underwater(i, j)) continue;
         // The collider's anti-diagonal split (ground.ts islandH): (a, b, c) and (d, c, b), both facing up.
         index.push(a, cc, bb, d, bb, cc);
       }
@@ -720,9 +724,12 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     const mesh = new THREE.Mesh(geo, new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95 }));
     mesh.receiveShadow = true;
     mesh.name = 'ring-island-ground';
-    return mesh;
+    return { mesh, underwater, mainEnd: index.length };
   })();
+  const groundMesh = ground.mesh;
   root.add(groundMesh);
+  // Frustum-culled tiles in three levels of detail, as the main island's far ground (place/far-ground.ts).
+  const disposeTiles = addFarGround(groundMesh, g.nx, g.nz, ground.mainEnd, ground.underwater);
   const hf = g.collider();
   const groundBody = createBody({
     material: groundMat,
@@ -867,6 +874,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
         if (o instanceof THREE.Mesh) o.geometry.dispose();
       });
       material.dispose();
+      disposeTiles();
       (groundMesh.material as THREE.Material).dispose();
       (head.material as THREE.Material).dispose();
       (board.material as THREE.Material).dispose();
