@@ -5,12 +5,12 @@ Show, don't tell. Record confusion; do not repair the game during the run.
 
 Use a fresh agent context when possible. Read this brief, not gameplay source, bot routes, saves,
 previous findings or design plans. A harness author running it must disclose that prior knowledge.
-Never use coordinates, `eval`, `__place`, `--at`, debug state, inspect, source code or a known walkthrough.
+Never use coordinates, `eval`, `--at`, debug state, inspect, source code or a known walkthrough.
 No targets or controls inferred from filenames or implementation. Read world signs only in screenshots:
 the observer's painted-text history includes things you may never have seen.
 
 ```sh
-npm run session -- start --query 'proto=place&fresh=1'
+npm run session -- start
 npm run session -- still first
 npm run session -- state --blind
 ```

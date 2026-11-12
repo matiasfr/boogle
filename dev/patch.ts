@@ -2,7 +2,7 @@
 // file exactly once, or nothing at all is written and it says which failed: a throwaway script's `s.replace` misses in silence.
 // Then Prettier and the full lint runner on what it touched and a typecheck, since the editor's own format hook doesn't see this.
 //
-//   === src/proto/place/job.ts
+//   === src/entities/railway/view.ts
 //   <<<<
 //   const old = 1;
 //   ====

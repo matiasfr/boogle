@@ -3,17 +3,17 @@
 Serves DESIGN.md's **Light tests, real playtests**: exercise the real room and both renderers quickly, with measured clocks.
 
 ```sh
-BOOGLE_QUERY='proto=place&coop=1' npm run look -- --players 2 --eval dev/look/evals/place-coop.ts
+npm run look -- --players 2 --rail-seed trains-on --query shot=play --eval dev/look/evals/railway-passenger-car-two.ts \
+  --until window.__placeDone --wall 240
 # Same run at real speed:
-node dev/look/look.ts --query 'proto=place&coop=1' --players 2 --real --eval dev/look/evals/place-coop.ts
-# Three extra game minutes of trains, with the same camera on both pages:
-node dev/look/look.ts --query 'proto=place&coop=1&coopMinutes=3' --players 2 --eval dev/look/evals/place-coop.ts --name coop-long --cam 918,40,-18 --look 930,18,-54
+node dev/look/look.ts --players 2 --rail-seed trains-on --query shot=play --real \
+  --eval dev/look/evals/railway-passenger-car-two.ts --until window.__placeDone --wall 240
 ```
 
 Two local players default to a 5x cap. `--warp-speed N` changes it; `--real` opts out. Loading and captures stay at
-1x. Setup runs concurrently on both pages, so one eval can await the other's deposit. The supplied co-op eval awaits
-its entire sequence and checks that the deposit, path, chest upgrade and running trains actually arrive. It uses
-prototype shortcuts to reach trains; this is not a complete player-driven round.
+1x. Setup runs concurrently on both pages, so one eval can await the other's move. That eval starts from an accepted
+server seed and drives both players by real input; for the whole route by two players, `npm run playthrough --
+--players 2`.
 
 The normal `startStack()` path used by scenarios and real-time runs still uses the in-process server. Only
 `startStack({ warp: true })` starts a disposable server child. Its preload changes Date, performance.now and the

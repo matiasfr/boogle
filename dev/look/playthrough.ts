@@ -9,7 +9,6 @@
 //   --wall 2700                           the wall-clock limit in seconds (default 300, or 3000 with --long: a full run takes about 1700)
 //   --query 'shot=play'                   the page and the bot's own settings (the default: the production entry)
 //   --eval dev/look/evals/railway-job.ts  the file with the bot (the default); it must set window.__placeDone
-//   --query 'proto=place&shot=play'       the legacy Place route and its fixture segments, until D1 deletes it
 //   --root <checkout>                     play another checkout's build, with this harness
 //   --stall 600                           give up after this many game seconds with no new beat or bot line
 // Everything lands in .look/playthrough/<name>/: report.txt (what's printed), bot.txt (all it said), summary.txt (the full session, as
@@ -26,16 +25,13 @@ import { IGNORE_TEXT, installObserver, WATCH_MARKS, type Observed } from './obse
 import { beatsOf } from '../playtest/beats.ts';
 import { clock, parseSession, span, str, num, type Ev, type Session } from '../playtest/read.ts';
 import { marksByName, objectiveSteps, summarize, compare } from '../playtest/summary.ts';
-import { coopPlaythrough } from './coop-playthrough.ts';
-import { railSegmentOptions, segmentOptions, RAIL_COOP_STOPS, RAIL_STOPS } from './segments.ts';
+import { railSegmentOptions, RAIL_COOP_STOPS, RAIL_STOPS } from './segments.ts';
 import { writeRailSeed } from './rail-seed.ts';
 import { railCoopPlaythrough } from './rail-coop.ts';
-import { checkpointDirectory, readCheckpoint, ROUTE_SEED, POSE_AT, writeCheckpoints } from './saves.ts';
-import { expectedRestore, pairRestores, READ_RESTORED } from './restore-pair.ts';
 import { finishRun, runOpen, startRun } from './verdict.ts';
 
 const SIZE = [1180, 820];
-const LEGACY_ROOM = 'proto-place'; // a legacy Place save belongs to its room
+const ROOM = 'playthrough';
 
 const args = process.argv.slice(2);
 const opt = (name: string, fallback: string) => {
@@ -238,38 +234,24 @@ async function main() {
     return compareRuns(args[i + 1]!, args[i + 2]!);
   }
   const params = new URLSearchParams(opt('--query', 'shot=play'));
-  const legacy = params.get('proto') === 'place';
-  const ROOM = legacy ? LEGACY_ROOM : 'playthrough';
-  // Legacy Place: client fixture segments. Production: rail stops, and accepted server seeds written per run.
-  const segment = legacy ? segmentOptions(args) : undefined;
-  const rail = legacy ? undefined : railSegmentOptions(args);
-  if (segment && (segment.from || segment.to || segment.regenerate) && (params.has('from') || has('--eval')))
-    throw new Error('Segments use the Place route without a custom eval or query from=');
-  if (segment?.to) params.set('botTo', segment.to);
-  if (rail && (rail.from || rail.to) && has('--eval')) throw new Error('Segments use the railway bot; omit --eval');
-  if (rail?.seed) {
+  if (params.get('proto') === 'place')
+    throw new Error('The Place route is retired; playthrough plays the production one');
+  // Rail stops, and accepted server seeds written per run.
+  const rail = railSegmentOptions(args);
+  if ((rail.from || rail.to) && has('--eval')) throw new Error('Segments use the railway bot; omit --eval');
+  if (rail.seed) {
     params.set('railFrom', rail.seed.railFrom);
     if (rail.to && rail.to !== 'pier') params.set('railStop', RAIL_STOPS[rail.to]);
-  } else if (rail?.to) params.set('botTo', rail.to);
+  } else if (rail.to) params.set('botTo', rail.to);
   const query = params.toString();
   const checkout = path.resolve(opt('--root', root));
   const stallS = Number(opt('--stall', '600'));
   const players = Number(opt('--players', '1'));
   if (players !== 1 && players !== 2) throw new Error('--players must be 1 or 2');
-  const fixtureDir = segment?.saves ? path.resolve(segment.saves) : checkpointDirectory(checkout, players);
-  const save = segment?.from ? readCheckpoint(fixtureDir, segment.from, players) : undefined;
   if (!Number.isFinite(stallS) || stallS <= 0) throw new Error('--stall must be positive game seconds');
-  const job = path.join(checkout, 'dev/look/evals/place-job.ts');
   const evalFile = path.resolve(
     checkout,
-    opt(
-      '--eval',
-      !legacy
-        ? `dev/look/evals/${rail?.seed ? 'railway-b5b8-bot.ts' : 'railway-job.ts'}`
-        : fs.existsSync(job)
-          ? job
-          : 'dev/look/evals/place.ts',
-    ),
+    opt('--eval', `dev/look/evals/${rail.seed ? 'railway-b5b8-bot.ts' : 'railway-job.ts'}`),
   );
   const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: checkout, encoding: 'utf8' }).trim();
   const name = opt('--name', commit);
@@ -286,12 +268,11 @@ async function main() {
   fs.mkdirSync(path.join(dir, 'saves'), { recursive: true });
   startRun(path.join(dir, 'verdict.json'), { checkout, report: path.join(dir, 'report.txt') });
 
-  if (players === 2 && legacy) return coopPlaythrough({ args, checkout, dir, query, stallS, report });
   if (players === 2) {
-    if (rail?.from) throw new Error('Two-player runs start fresh; the seeded bot is solo');
-    if (rail?.to && !RAIL_COOP_STOPS.includes(rail.to))
+    if (rail.from) throw new Error('Two-player runs start fresh; the seeded bot is solo');
+    if (rail.to && !RAIL_COOP_STOPS.includes(rail.to))
       throw new Error(`Two-player --to: ${RAIL_COOP_STOPS.join(', ')} (beats both peers pass)`);
-    return railCoopPlaythrough({ args, checkout, dir, query, stallS, evalFile, to: rail?.to });
+    return railCoopPlaythrough({ args, checkout, dir, query, stallS, evalFile, to: rail.to });
   }
 
   let stack: Stack | undefined, browser: Browser | undefined;
@@ -303,7 +284,7 @@ async function main() {
       if (!dataDir) throw new Error('--url needs --data-dir (the local server playtest data)');
       stack.dataDir = path.resolve(dataDir);
     }
-    if (rail?.from) {
+    if (rail.from) {
       if (url) throw new Error('--from writes a server seed: it needs a local stack, not --url');
       await writeRailSeed(stack.dataDir!, ROOM, rail.from);
       console.log(`Seeded ${rail.from} (railFrom=${rail.seed!.railFrom}) through the host's save path`);
@@ -316,7 +297,7 @@ async function main() {
       room: ROOM,
       query,
       warp: true,
-      init: `${save ? ROUTE_SEED(save) : ''}\n(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)})`,
+      init: `(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)})`,
     });
     const botLog: string[] = [];
     let heardAt = 0;
@@ -335,13 +316,6 @@ async function main() {
       }
     });
     const watching = await g.eval(WATCH_MARKS);
-    if (save) {
-      await g.eval(POSE_AT(save));
-      const actual = await g.eval(READ_RESTORED);
-      const restored = pairRestores(actual, actual, expectedRestore(save));
-      if (!restored.pair) throw new Error(`Checkpoint did not restore: ${restored.reason}; regenerate fixtures`);
-      console.log(restored.reason);
-    }
     if (!watching) console.log('(This build has no watchPlayMarks: no save states from this run.)');
     await g.page.evaluate(() => (window as unknown as { __warp: { go(n: number): void } }).__warp.go(Infinity));
     const body = stripTypeScriptTypes(fs.readFileSync(evalFile, 'utf8')).replace(/^export \{\};.*$/m, '');
@@ -434,19 +408,18 @@ async function main() {
     const verdict = health.length ? 'health-failure' : missed ? 'beat-failure' : w.done ? 'pass' : w.reason;
     finishRun({
       verdict,
-      from: segment?.from ?? rail?.from,
-      to: segment?.to ?? rail?.to,
+      from: rail.from,
+      to: rail.to,
       wall: w.wall,
       game: w.game,
       timeoutAfterBeat: w.timeoutAfterBeat,
     });
     if (verdict !== 'pass') process.exitCode = 1;
-    if (segment?.regenerate && verdict === 'pass') writeCheckpoints(observed.saves, fixtureDir, query);
   } catch (error) {
     const failure = {
       verdict: 'failure',
-      from: segment?.from ?? rail?.from,
-      to: segment?.to ?? rail?.to,
+      from: rail.from,
+      to: rail.to,
       error: String(error),
     };
     fs.appendFileSync(path.join(dir, 'report.txt'), `\nFAIL: ${String(error)}\n`);

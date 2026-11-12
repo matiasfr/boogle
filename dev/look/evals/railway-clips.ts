@@ -1,7 +1,7 @@
 // One played checkpoint, then a still of every place a timber deck or walkway meets the laid track (dev/level/timber-track.ts
 // finds them): the bot earns the state through real inputs, parks, and `playthrough` takes one still per entry in
 // `window.__shotList` before its own final one.
-// node dev/look/playthrough.ts --name clips-after --query 'proto=place&fresh=1&coop=1&shot=play&railStop=hook%20taken' --eval dev/look/evals/railway-clips.ts
+// node dev/look/playthrough.ts --name clips-after --query 'shot=play&railStop=hook%20taken' --eval dev/look/evals/railway-clips.ts
 // (`--root <checkout>` plays another build, for the before set.)
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { play } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');

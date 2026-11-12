@@ -104,7 +104,7 @@ The broker owns `--url`, `--root`, `--data-dir` and `--out`. The worker starts V
 the trusted launcher's harness runs Chromium on the local GPU. Only page eval/action code crosses into the browser.
 Operations have a seven-minute timeout. Do not edit source or launch simultaneous commands while collecting evidence.
 
-`npm run cold-start -- --runs 3 --mode paired --query 'proto=place' --video-probe` starts a worker-side
+`npm run cold-start -- --runs 3 --mode paired --video-probe` starts a worker-side
 production build and asks an updated trusted broker for headed Metal measurements (35-minute cap). The trusted
 launcher must contain `dev/cold-start.ts`; an already-running older broker reports `Unknown operation`.
 `node dev/codex/see.ts look --production ...` inspects that production build through the ordinary look operation.

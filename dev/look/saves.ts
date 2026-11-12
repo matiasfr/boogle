@@ -1,20 +1,18 @@
 // A save state per beat, written by `npm run playthrough` (./playthrough.ts) and read by `npm run look -- --at <beat>`: every
 // localStorage entry at that moment and where the player stood, from a real run of the bot. It comes back through the game's
 // own restore, so it holds whatever the game saves, abilities and town included, with no skip to write for them. What it can't
-// hold is what the save doesn't: a train part way along, a moment mid-show. `npm run checkpoints` regenerates named route
-// fixtures when the world changes; a full regeneration can take a long run.
+// hold is what the save doesn't: a train part way along, a moment mid-show. On the production route that is the pose and
+// personal things only: railway progress is server state, started from a `--rail-seed` (./rail-seed.ts).
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from './lib.ts';
 import type { SaveState } from './observe.ts';
-import { CHECKPOINTS } from './segments.ts';
 
 const DIR = path.join(root, '.look/playthrough/latest/saves');
 export type Save = SaveState & { room: string; query: string; run: string; pageQuery: string };
 
 const files = (dir = DIR) => {
-  if (!fs.existsSync(dir))
-    throw new Error('No saves yet: npm run playthrough records them; npm run checkpoints builds named fixtures.');
+  if (!fs.existsSync(dir)) throw new Error('No saves yet: npm run playthrough records them.');
   return fs
     .readdirSync(dir)
     .filter((file) => file.endsWith('.json'))
@@ -64,49 +62,3 @@ export const POSE_AT = (s: Save) => `
   cam.yaw = me.yaw = p.yaw;
   cam.pitch = p.pitch;
 `;
-
-export function checkpointDirectory(checkout: string, players: number) {
-  return path.join(checkout, '.look/checkpoints', players === 2 ? 'coop' : 'solo');
-}
-export function readCheckpoint(dir: string, name: string, players: number, peer = 0): Save {
-  const file = path.join(dir, `${name}${peer ? '-p2' : ''}.json`);
-  if (!fs.existsSync(file))
-    throw new Error(`Missing ${file}; run npm run checkpoints${players === 2 ? ' -- --players 2' : ''}`);
-  const save = read(file);
-  if (
-    !save.pose ||
-    save.beat !== name ||
-    save.room !== 'proto-place' ||
-    !save.route ||
-    save.route.mode !== (players === 2 ? 'coop' : 'solo') ||
-    !Number.isInteger(save.route.step) ||
-    save.route.step < 1
-  )
-    throw new Error(`Invalid route checkpoint ${file}; regenerate fixtures`);
-  return save;
-}
-export const ROUTE_SEED = (s: Save) =>
-  SEED(s) +
-  `
-  if (!sessionStorage.getItem('look.route.step')) {
-    sessionStorage.setItem('look.route.step', ${JSON.stringify(String(s.route!.step))});
-    sessionStorage.setItem('look.coop.step', ${JSON.stringify(String(s.route!.step))});
-    sessionStorage.setItem('look.coop.delivered', ${JSON.stringify(String(s.route!.delivered))});
-    sessionStorage.setItem('look.route.restored', '1');
-  }
-`;
-export function requireCheckpoints(saves: SaveState[]) {
-  for (const name of CHECKPOINTS) {
-    const save = saves.find((s) => s.beat === name && s.route);
-    if (!save) throw new Error(`Regeneration did not reach ${name}; keep the previous fixtures and inspect the report`);
-  }
-}
-export function writeCheckpoints(saves: SaveState[], dir: string, query: string, peer = 0) {
-  requireCheckpoints(saves);
-  fs.mkdirSync(dir, { recursive: true });
-  for (const save of saves.filter((s) => s.route && CHECKPOINTS.some((name) => name === s.beat))) {
-    const file = path.join(dir, `${save.beat}${peer ? '-p2' : ''}.json`);
-    fs.writeFileSync(file + '.tmp', JSON.stringify({ ...save, room: 'proto-place', query, run: 'checkpoints' }));
-    fs.renameSync(file + '.tmp', file);
-  }
-}

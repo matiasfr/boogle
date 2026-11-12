@@ -6,9 +6,8 @@
 //   export default { about: 'one line', async run(t) { ... } };
 // Players open the current game, as the bare address does. `island: true` starts every player of the scenario on the
 // classic island by the court (the original island at the world's origin), for The Boogler, the ball and its content.
-// The current game's railway room refuses the classic lockstep edits (gift.toss, src.take, site.stock). `query` adds URL
-// params for every player: `proto=place` opens the classic room, which takes them, but it also puts Place's
-// interactables on the island, so it suits window-handle edits (reconnect-edit), not checks of what is in reach.
+// The current game's railway room refuses the classic lockstep edits (gift.toss, src.take, site.stock); it takes the
+// roster's `who.set` (reconnect-edit). `query` adds URL params for every player.
 // `t` gives you:
 //   t.open({ name, room, size, hud, touch, ownBrowser })   a player (Game from dev/look/lib.ts); same `room` = same island;
 //                                              touch: true starts a phone client; ownBrowser: true gives the player

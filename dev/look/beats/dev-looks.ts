@@ -1,6 +1,6 @@
 import type { ShotList } from '../shot-types.ts';
 
-// Authored fixture, not a bot checkpoint. For played beats use at + saves instead of setup.
+// The production entry at its first-visit spawn, not a bot checkpoint. For played beats use at + saves.
 const cameras = [
   { name: 'Town play distance', anchor: 'player', cam: [6, 6, 15], look: [0, 0.7, 0], fov: 62 },
   { name: 'Buddy close', anchor: 'player', cam: [2.3, 1.4, 3.4], look: [0, 0.7, 0], fov: 40 },
@@ -12,8 +12,7 @@ export default {
   beats: [
     {
       name: 'Dev Looks',
-      query: 'proto=place&dev=1&shot=pack',
-      setup: 'dev/look/evals/place-job.ts',
+      query: 'dev=1',
       warm: 3,
       cameras,
       variants: [

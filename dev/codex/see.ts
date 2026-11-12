@@ -1,4 +1,4 @@
-// How a sandboxed Codex job sees the game: `node dev/codex/see.ts --query 'proto=place' <npm run look options>`, then
+// How a sandboxed Codex job sees the game: `node dev/codex/see.ts <npm run look options>`, then
 // open the PNGs it names with view_image. macOS's sandbox won't let Chromium start, so this runs the job's own server and
 // Vite in the sandbox and asks ./look-broker.ts, outside it, to point a browser at them. See .claude/skills/codex/SKILL.md.
 import fs from 'node:fs';

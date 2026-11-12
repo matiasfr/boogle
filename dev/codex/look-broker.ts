@@ -152,9 +152,7 @@ async function execute(id: string, request: Request) {
     args.push('--saves', inside(saves.directory));
   }
   if (operation === 'playthrough') {
-    const twoPlayers = args[args.indexOf('--players') + 1] === '2' && args.includes('--players');
-    if (!twoPlayers && !args.some((arg) => ['--eval', '--from', '--to', '--regenerate'].includes(arg)))
-      args.push('--eval', inside('dev/look/evals/place-job.ts'));
+    // No --eval: playthrough's own default, the production railway bot.
     args.push('--data-dir', request.dataDir, '--name', 'run', '--root', worktree);
   }
   const outputFile = path.join(out, 'output.txt');

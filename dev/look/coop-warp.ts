@@ -30,29 +30,13 @@ async function serverClock(url: string, speed?: number) {
 const read = (g: Game) =>
   g.eval(`
   const w = window.__warp;
-  const p = window.__place;
   return {
     ...(w?.read() ?? { game: performance.now()/1000, wall: Date.now()/1000, lag: 0 }),
     // A page between a reload and its features' onStart has no sync handle yet: sample it as tick -1.
     tick: window.boogle?.sync?.world.tick ?? -1, peers: window.boogle?.remotes?.size ?? 0,
-    place: p ? { authority: p.coop.debug().amAuthority, mode: p.run.mode, head: p.run.head,
-      logs: p.stationOf(p.lines[0])?.have.logs, trains: p.lines.map(l => ({ s: l.train.tr.s, target: l.train.tr.target, running: l.train.clockRunning() })) } : null
   };
 `);
-type Sample = {
-  game: number;
-  wall: number;
-  lag: number;
-  tick: number;
-  peers: number;
-  place: null | {
-    authority: boolean;
-    mode: string;
-    head: number;
-    logs: number;
-    trains: { s: number; target: number; running: boolean }[];
-  };
-};
+type Sample = { game: number; wall: number; lag: number; tick: number; peers: number };
 
 /** Measures independent clocks; never copies state or corrects drift. Both pages remain running until stop(). */
 export async function startCoopWarp(games: Game[], url: string | undefined, speed: number, file: string) {
@@ -153,30 +137,7 @@ export async function startCoopWarp(games: Game[], url: string | undefined, spee
       console.log(
         `warp samples: max page tick gap ${tickGap}, max read skew ${(skew * 1000).toFixed(1)} wall ms; ${file}`,
       );
-      console.log(
-        `warp final state: ${JSON.stringify(last.pages.map((p) => ({ tick: p.tick, peers: p.peers, ...p.place })))}`,
-      );
-      for (let i = 0; i < (last.pages[0]!.place?.trains.length ?? 0); i++) {
-        const gaps = samples
-          .flatMap((s) => {
-            const a = s.pages[0]!.place?.trains[i],
-              b = s.pages[1]!.place?.trains[i];
-            return a && b ? [Math.abs(a.s - b.s)] : [];
-          })
-          .sort((a, b) => a - b);
-        console.log(
-          `train ${i + 1} sampled position gap: p95 ${gaps[Math.floor(gaps.length * 0.95)]!.toFixed(3)} m, max ${gaps.at(-1)!.toFixed(3)} m (includes network lag and read skew)`,
-        );
-        const running = samples.flatMap((s) => {
-          const a = s.pages[0]!.place?.trains[i],
-            b = s.pages[1]!.place?.trains[i];
-          return a?.running && b?.running ? [Math.abs(a.s - b.s)] : [];
-        });
-        if (running.length)
-          console.log(
-            `train ${i + 1} with clocks running on both pages: max ${Math.max(...running).toFixed(3)} m over ${running.length} samples`,
-          );
-      }
+      console.log(`warp final state: ${JSON.stringify(last.pages.map((p) => ({ tick: p.tick, peers: p.peers })))}`);
       if (failure) throw failure;
       if (serverLag > 1 || worldDeficit > 1 || samples.some((s) => s.pages.some((p) => p.lag > 1)))
         console.warn(
