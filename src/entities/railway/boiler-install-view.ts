@@ -12,7 +12,8 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { onStart } from '../../loop.ts';
 import { me } from '../../player/player.ts';
-import { wrapAction } from '../../player/controls.ts';
+import { touchHold, wrapAction } from '../../player/controls.ts';
+import { dom } from '../../player/dom.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { SHED_TABLE } from '../../sim/railway-works-layout.ts';
 import { STEEL } from '../../sim/railway-ring-layout.ts';
@@ -42,14 +43,17 @@ const POST = { x: TABLE.x + 5.2, z: TABLE.z + 0.2 },
   PALLET = { x: TABLE.x + 5.7, z: TABLE.z - 1.8, w: 1.5, d: 2.1 };
 
 let release: (() => void) | null = null;
-onStart(() =>
+onStart(() => {
   wrapAction('interact', {
     up: (next) => {
       release?.();
       next();
     },
-  }),
-);
+  });
+  // The touch Grab button presses through touchDown but releases through useUp (src/player/input.ts), so the interact
+  // action's release never fires for it: a tap would run the hold out. Its own pointer release lets go as well.
+  touchHold(dom.grabBtn, { down: () => {}, up: () => release?.(), cancel: () => release?.() });
+});
 
 export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
   const batch = createBoxBatch(owner, STEEL.total + 6, false);
