@@ -1174,3 +1174,67 @@ Neither holds the build.
      room in a hurry can leave the boiler for later.
    - Only after the install. One job at a time, steel always done, and 6 to 9 minutes before the west shore wakes.
    Answer: ___
+
+### Rulings on the re-measure (designer, 2026-11-12, later the same day)
+
+The builder built the ruling above and stopped on gates 5, 8 and 9 without moving a limit, with two questions on
+gates 10 and 11. **Read:** the re-measure sheet (relayed; base `a82a0d6e`, without build 2, so steel-first and gate 15
+are not built or run). **Not run or read by me:** anything else. No limit below is raised. Two gates are restated
+because they measured the wrong thing, and each restatement is at least as strict where it bites.
+
+1. **Gate 8 stands; three laid fails, and the fault is in the rules.** A stage a room can stop at for twenty minutes
+   is a settled line by A.2's own words. The sheet shows the cause without my guessing at code: the quiet round trip
+   is 4,014 at three laid and 4,015 at four, on a line 520 ticks shorter (2,908 against 3,428 non-stop). Trains at
+   three laid are held to the finished line's period, about 1,100 ticks a lap of standing still. The crowd at cap for
+   512 ticks is the same thing seen from the platform. **Fix:** find what holds them (the builder prints hold ticks by
+   halt at three and four laid) and bring three laid to gate 10. The 6 ticks are expected to go with it; if they do
+   not, report, do not adjust.
+2. **Gate 10 is per stage** (Default; tightens it). I wrote "at four laid, printed at the others", which was wrong: a
+   player rides at every stage and a room may rest at any. Every stage at most 1.2: stages 0, 1, 2 and 4 pass (1.03,
+   1.02, 1.14, 1.17); three laid fails at 1.38. It is the same defect as ruling 1, so one fix answers both.
+3. **Gate 5 measured deliveries in a window, which shrinks with the ride, not whether stone is starved** (Default).
+   - *Arithmetic:* a load is 8, so a 20-minute count moves in steps of 8. Stone is 24 at three and four laid with
+     nothing asked, where no kit errand exists at four laid, and 32 on the short line; a fed room is on the finished
+     line for 73% of its window. A load taken at the Quarry rides a 4,015 lap, not 1,426, before it lands, so the
+     window's last load is still aboard. That reads as transit, not kit. It is a reading: the yard's interval is not
+     on the sheet.
+   - **The gate, restated:** (a) with no footings owed, a full load never waits in the Quarry's yard longer than
+     1,158 ticks (one wait bound) at any stage, fed or idle; (b) stone landed at the Village in 20 minutes is at
+     least the loads taken in the window's first 12,000 minus one round trip, times 8, printed beside the load ticks;
+     (c) the two figures that were slice 5's stay as they were and pass: 32 from `crossing-done`, 32 from the rivet
+     idle. "32 fed from the rivet" is withdrawn as a count.
+   - **If (a) fails** (a full load sat while a train that could stop went by): stone is being starved; stop and
+     report with the train's errand at that tick.
+4. **Gate 9: A.7 confirmed, unchanged.** Settled worst 1,286 on five trains (seed badd; means 464 and 520 pass). The
+   gate is recorded as failing with its table. G1 ships with 1,600 as the only worst-wait limit, the fleet stays at
+   five, and the end turn is the next rail step, before leg 2's fleet is set. No figure moves.
+5. **Gate 11's railhead clause was aimed at nothing** (Default; restated). While the railhead is the line's end its
+   lever offers only the way back, so "an ask up the line at the current railhead" never occurs. The builder's
+   direction reading is what I wrote, and it passes vacuously. What it should measure is the room that has just laid a
+   section: **from each section laying, a train stands at the new railhead (or the Gorge) within 1,158 ticks.**
+   Gate 14's idle figures imply it passes (kit racked there within 536); print it. The one breach, a down ask at the
+   stack railhead for 1,412, was asked 232 ticks before the Gorge opened and was passed by trains that then ran on to
+   the Gorge. It is under the growth cap and stays there; a player there can board the train to the Gorge.
+6. **Still owed before G1 ships:** the rebase onto build 2, steel-first, and gate 15. Nothing on this sheet proves
+   them.
+7. **3, 5, 5, 5, 5 is confirmed** (554 / 679 at one laid).
+
+**The gates as amended** (others as in E): **5** as ruling 3. **8** unchanged, failing at three laid until ruling 1's
+fix. **9** unchanged, failing; ships under A.7. **10** every stage at most 1.2. **11** worst at most 1,600; a train at
+the new railhead within 1,158 of each lay; no wait over 1,158 asked later than 3,000 ticks after the Gorge opens,
+reported under gate 9's failure, not gated twice.
+
+**What the owner is told.** Owner question 1 above said "about 116 s at worst". As built it is: a typical wait of 46
+to 52 s; a worst case of about 129 s on the finished line (measured at the Quarry and the Railhead) and about 153 s
+while the line is being extended; 116 s is what the end-turn fix is for. The question and its three answers stand
+with those figures. **Nothing else here is his:** no direction, scope or irreversible step is added, and the build
+proceeds.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 74 | The ride gate applies at every stage; three laid is to be fixed in the rules, not excused | Default | Rulings 1 and 2 |
+| 75 | The stone gate is a full load never left over 1,158 ticks in the yard, with the landed count following from the round trip | Default | Ruling 3 |
+| 76 | The railhead clause is a train at the new railhead within 1,158 ticks of each lay | Default | Ruling 5 |
+| 77 | G1 ships with the settled wait gate recorded as failing (1,286) | Default | Ruling 4; call 67 confirmed |
+
+**Counts:** 0 Decided, 0 New, 4 Default.
