@@ -11,7 +11,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { createRailwayAdapter, railMovement } from '../src/adapters/railway-session.ts';
+import { createRailwayAdapter } from '../src/adapters/railway-session.ts';
+import { railMovement } from '../src/adapters/railway-read.ts';
 import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';

@@ -37,7 +37,7 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 | `feature/ring-r5b` | The ring seeds carry the glider (dev seed data, may be under `src/sim`: independent review); prove `--from leaf-raised`; build `--from deck-laid` |
 | HOTBOX | The full eval and scenario sweep on dbc3ebb4e; then a frame-time pass (below) |
 
-**Next, in order:** review and ship the three branches (load https://boogle.club/ after any that changes what loads); M13f and M13g, which end the migration; R6 docs; a frame-time pass on HOTBOX and a device run, before and after the perf changes ([owner call](owner-calls.md#frame-time-60)); trees (one always-drawn batch), then shadow draws; cut `railway-session.ts` (668 lines against the plan's 450) into a `railway-read.ts`.
+**Next, in order:** review and ship the three branches (load https://boogle.club/ after any that changes what loads); M13f and M13g, which end the migration; R6 docs; a frame-time pass on HOTBOX and a device run, before and after the perf changes ([owner call](owner-calls.md#frame-time-60)); trees (one always-drawn batch), then shadow draws; `railway-session.ts` (573 lines against the plan's 450) after the `railway-read.ts` cut: the rest is `settle`, `submit` and `hear`, closures over the session state (see the M12f as-built note).
 
 **Rules learned on 11 November** (the lessons; the orchestrator keeps them):
 

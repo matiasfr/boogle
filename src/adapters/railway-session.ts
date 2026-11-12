@@ -20,7 +20,6 @@ import { SERVER_ID } from '../net/ids.ts';
 import { playMark } from '../proto/mark.ts';
 import { createRailwayProgressMarks, railwayActionMarks } from './railway-marks.ts';
 import {
-  holds,
   implied,
   intentOf,
   NOT_MATERIAL,
@@ -29,9 +28,16 @@ import {
   TAKES,
   type RailwayIntent,
 } from './railway-intents.ts';
-import { accepted, effectOf, sameTarget, type RailwayAccepted, type RailwayCorrection } from './railway-effects.ts';
+import {
+  accepted,
+  effectOf,
+  holds,
+  sameTarget,
+  type RailwayAccepted,
+  type RailwayCorrection,
+} from './railway-effects.ts';
 import { railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailAction } from '../sim/railway.ts';
-import { account as accountRow, beam as beamRow, boiler as boilerRow, type ReadWorld } from '../sim/railway-rows.ts';
+import { account as accountRow, beam as beamRow, boiler as boilerRow } from '../sim/railway-rows.ts';
 import { cloneWorld } from '../sim/railway-queries.ts';
 import type { World } from '../ecs/index.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
@@ -49,32 +55,8 @@ import {
 } from '../world/railway-predict.ts';
 import type { ServerPacket } from '../world/replicate.ts';
 import type { WorldRoom } from '../world/sync.ts';
-import type { TuneApi } from '../world/rules/tune.ts';
+import { createRailwayRead, type RailwayMovement, type RailwayStatus } from './railway-read.ts';
 
-/** Movement tunables the views read; tune stays lockstep, so a tab reads its own copy. */
-export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
-  beamSoloSpeed: tune.get('railBeamSoloSpeed') / 100,
-  beamHelpSpeed: tune.get('railBeamHelpSpeed') / 100,
-  boilerSoloSpeed: tune.get('railBoilerSoloSpeed') / 100,
-  boilerHelpSpeed: tune.get('railBoilerHelpSpeed') / 100,
-  footSoloSpeed: tune.get('railFootSoloSpeed') / 100,
-  footHelpSpeed: tune.get('railFootHelpSpeed') / 100,
-  jumpImpulse: tune.get('railJumpImpulse') / 100,
-  jumpTurn: tune.get('railJumpTurn') / 100,
-  jumpSteer: tune.get('railJumpSteer') / 100,
-  jumpApexSpeed: tune.get('railJumpApexSpeed') / 100,
-  // The glider (piece B): metres, seconds and radians for glide-step.ts's GlideMove.
-  glideSpeed: tune.get('railGlideSpeed') / 100,
-  glideSink: tune.get('railGlideSink') / 100,
-  glideAccel: tune.get('railGlideAccel') / 100,
-  glideBrake: tune.get('railGlideBrake') / 100,
-  glideOver: tune.get('railGlideOver') / 100,
-  glideTurnTau: tune.get('railGlideTurnTau') / 1000,
-  glideTurnMax: (tune.get('railGlideTurnMax') * Math.PI) / 180,
-  glideDeploy: tune.get('railGlideDeploy') / 1000,
-});
-export type RailwayMovement = ReturnType<typeof railMovement>;
-const MOVEMENT_KEYS = Object.keys(railMovement({ get: () => 0 })) as (keyof RailwayMovement)[];
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 // Metres to whole centimetres; `|| 0` turns -0 (which railInt refuses) into 0.
 const cm = (m: number) => Math.round(m * 100) || 0;
@@ -119,8 +101,7 @@ export function createRailwayAdapter({
   let epoch = 0;
   let next = 1;
   // storage: the room lost its storage; full: the server has no session for this player (the account cap). Both stop.
-  type Status = 'connecting' | 'starting' | 'ready' | 'storage' | 'full';
-  let status = 'connecting' as Status;
+  let status = 'connecting' as RailwayStatus;
   let clock = 0;
   let probeAt = -Infinity;
   let resyncAt = -Infinity;
@@ -494,92 +475,18 @@ export function createRailwayAdapter({
   }
 
   // ---------------------------------------------------------------- reads
-  // The frame memo. update() runs once a frame in the railway entity's update (order 10, after its prePhysics and fixed
-  // steps) and moves `frame`. A perFrame value is taken at its first read in a frame and held until the next one (while
-  // `keep` says it still stands), so about a hundred readers a frame skip the 18 tune reads, the clock and the stall
-  // scan, and two reads in a frame never straddle a tick (an edge such as waking to idle is seen once). Outside the loop
-  // (tests, tools) `frame` never moves and every call is live.
-  let frame = 0;
-  function perFrame<T>(read: () => T, keep: () => boolean = () => true) {
-    let at = -1,
-      value: T;
-    return () => {
-      if (frame && at === frame && keep()) return value;
-      at = frame;
-      return (value = read());
-    };
-  }
-  const sameMovement = (a: RailwayMovement, b: RailwayMovement | null) =>
-    !!b && MOVEMENT_KEYS.every((k) => a[k] === b[k]);
-  // The movement tunables as one frozen object: the same object while the values are unchanged. With `movementRev` the
-  // 18 tunables are read only when it moved.
-  let moved: Readonly<RailwayMovement> | null = null,
-    movedRev = NaN;
-  const moves = perFrame(() => {
-    if (movementRev) {
-      const rev = movementRev();
-      if (moved && rev === movedRev) return moved;
-      movedRev = rev;
-    }
-    const m = movement();
-    if (!sameMovement(m, moved)) moved = Object.freeze({ ...m });
-    return moved!;
-  });
-  // The estimated tick the views read. Actions are still stamped with the live tick (submit).
-  const frameTick = perFrame(tick);
-  // The stall cue, held while the pending list keeps its oldest action (actions are pushed in time order, so only the
-  // oldest can be the first stalled one).
-  let stallList: unknown = null,
-    stallHead: unknown = null;
-  const stalledNow = perFrame(
-    (): RailwayIntent['op'] | null => {
-      const list = predictor.pending();
-      [stallList, stallHead] = [list, list[0]];
-      // Only a pending action can be stalled.
-      return list.length ? (predictor.stalled(now())[0]?.action.intent.op ?? null) : null;
-    },
-    () => {
-      const list = predictor.pending();
-      return list === stallList && list[0] === stallHead;
-    },
-  );
-  // The first whole state, latched: a session value, so a view that hides, resets or un-decks until it is in reads it
-  // here, not a latch of its own. read.ready() is also false with a full pending window or the link down; this is not.
-  let whole = false;
-  const wholeNow = () => (whole ||= available());
-  // The read facade (docs/plans/ecs-migration-railway.md, M8, M12): what views read. world() is the world the views see
-  // now: the predicted clone while actions are pending, the confirmed (published) world otherwise, the last shown world
-  // while a refill comes in. It is never half-filled: the mirror publishes only whole, fully applied states, and a
-  // published world is never written. Read its rows and pass it to the queries in
-  // src/sim/railway-queries*.ts with `tick()` as their `at` (a timed fact without it throws on a client's world); it
-  // is typed read-only, so a view cannot write to it or drain its changes.
-  const facade = {
-    world: () => view() as unknown as ReadWorld,
-    /** The estimated server tick (whole, never going backwards): the job clocks' `at`. In the frame loop it holds one
-     * value for the whole frame, so it stays consistent with world() and with itself within a frame; outside the loop it
-     * is live. */
-    tick: frameTick,
-    /** The live tick with its fraction, for movers: unlike tick(), it moves within a frame. */
+  const { read, nextFrame, latch } = createRailwayRead({
+    view,
+    tick,
     tickNow,
+    available,
     pid,
-    /** The session's state. 'ready' does not mean an action can be sent now: see ready(). */
     status: () => status,
-    // The session values that are not rows.
-    /** Whether an action can be sent now: connected, the whole state in, this session's account epoch matching and
-     * the pending window not full. Unlike `status() === 'ready'`, false while RAILWAY_WINDOW actions are pending. */
-    ready: available,
-    /** The first whole state is in: false until ready() is first true, then true for good (through refills, full
-     * windows and a dropped link, while the world the views see keeps the last whole state). */
-    whole: wholeNow,
-    /** Your actions sent and not yet answered (already in the world the views see). */
-    pending: () => predictor.pending().length,
-    /** The oldest pending action still unanswered after STALL_MS (the wordless stall cue), or null. */
-    stalled: stalledNow,
-    /** The movement tunables (railMovement), one frozen object while they are unchanged. */
-    movement: moves,
-    /** The session scalars no view reads (tools, witnesses and the view's inspection do), built per call: the
-     * connection, the server step the confirmed mirror is current to and its hash (computed only when read; never the
-     * prediction's), the account epoch, the next action id and the prediction's counters. */
+    pending: () => predictor.pending(),
+    stalled: (at) => predictor.stalled(at),
+    now,
+    movement,
+    movementRev,
     debug: () => ({
       connected,
       synced,
@@ -596,9 +503,9 @@ export function createRailwayAdapter({
         log: stats.log.map((l) => ({ ...l })),
       },
     }),
-  };
+  });
   return {
-    read: facade,
+    read,
     attach(nextRoom: WorldRoom) {
       if (disposed || room === nextRoom) return;
       for (const off of offRoom) off();
@@ -626,14 +533,12 @@ export function createRailwayAdapter({
     update(nowMs: number) {
       if (disposed) return;
       clock = nowMs;
-      frame++;
+      nextFrame();
       probe();
       probeClock();
-      wholeNow();
+      latch();
     },
     ...railwayActs(submit, view),
-    /** The server's tick as this tab estimates it, with its fraction (never going backwards). */
-    tickNow,
     onAccepted(fn: (event: RailwayAccepted) => void) {
       effects.add(fn);
       return () => effects.delete(fn);

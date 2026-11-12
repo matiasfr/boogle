@@ -148,7 +148,7 @@ export async function createRailwayCart(
       }
       return;
     }
-    const target = adapter.tickNow();
+    const target = adapter.read.tickNow();
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * TICKS_PER_S + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
     const d = cartAlong(cartRow(w), clock) / 100;
@@ -326,7 +326,7 @@ export async function createRailwayCart(
           phase: c.phase,
           logs: c.logs,
           rails: c.rails,
-          along: cartAlong(c, adapter.tickNow()),
+          along: cartAlong(c, adapter.read.tickNow()),
           riding: carry.on === car.platform,
           status: line2CartStatus(w),
         },

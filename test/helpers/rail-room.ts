@@ -5,7 +5,8 @@
 // again at every read: a published world is never written, so a held one is the past). With `{ served: true }` the room
 // also records the server's replicated rows at the end of each room step: `served(step)` is them as they stood then,
 // which is the step a client's mirror reports (`mirror.step()`) when it is current to it.
-import { createRailwayAdapter, railMovement, type RailwayAdapter } from '../../src/adapters/railway-session.ts';
+import { createRailwayAdapter, type RailwayAdapter } from '../../src/adapters/railway-session.ts';
+import { railMovement } from '../../src/adapters/railway-read.ts';
 import { specOf, type TuneKey } from '../../src/sim/tune.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../../src/world/sync.ts';

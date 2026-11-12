@@ -376,7 +376,14 @@ typecheck`, `npm run lint`.
       **The limits are not met**: section 3's ≤ 450 and ≤ 300 do not fit a mechanical cut, since `submit`, `settle`
       and the read facade are closures over the session's state. Shrinking the session is its own step, not a move:
       `railway-read.ts` for `railMovement`, `perFrame` and the facade over a narrow session handle, and `settle`
-      over an explicit pending/shown state object; logged for the owner's call.) Section 3's three files; `git mv src/adapters/railway.ts
+      over an explicit pending/shown state object; logged for the owner's call.) **Follow-up cut** (`ecs/adapter-read-cut`,
+      move only): `railway-read.ts` (167) holds `railMovement`, `RailwayMovement`, `RailwayStatus`, `perFrame`, the
+      latches and the read facade as `createRailwayRead(handle)`, the handle being getters over the session (`view`,
+      `tick`, `tickNow`, `available`, `status`, `pending`, `stalled`, `debug`); `update()` calls its `nextFrame()` and
+      `latch()` in the old order. `holds` moved from intents to effects (intents 276, effects 113). `adapter.tickNow`
+      was dropped (a P3: one door), views call `adapter.read.tickNow()`. `railway-session.ts` is 573 against 450: the
+      rest is `settle` (about 127 lines), `submit` (76) and `hear` (39), closures over the pending/shown/epoch state,
+      so it needs the explicit state object above, not another move. Section 3's three files; `git mv src/adapters/railway.ts
       src/adapters/railway-session.ts` first so the history follows, then cut the other two out; importers
       rewritten (`rg -l "adapters/railway.ts"`); `railway-marks.ts` unchanged; `docs/agents/sync.md`'s Server
       entry names the new files.

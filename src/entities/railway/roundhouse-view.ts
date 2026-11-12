@@ -479,7 +479,7 @@ export async function createRailwayRoundhouse(
    * so the roll-out starts from the parked pose whatever the clock says. More than 10 s adrift, or on a restore, it
    * snaps to the room clock. */
   function shuntClock(dt: number, snapTo: boolean) {
-    const now = adapter.tickNow(),
+    const now = adapter.read.tickNow(),
       step = dt * TICKS_PER_S,
       ready = shed(wd).ready;
     if (snapTo || !Number.isFinite(shownTick) || Math.abs(now - shownTick) > 10 * TICKS_PER_S) shownTick = now;
@@ -838,7 +838,7 @@ export async function createRailwayRoundhouse(
           onTable: Math.abs(wagonA - TABLE_A) < 2,
           solid: !!wagonBody,
         },
-        shunter: { along: shunterA, tick: adapter.tickNow(), shown: shownTick, ready: shed(wd).ready },
+        shunter: { along: shunterA, tick: adapter.read.tickNow(), shown: shownTick, ready: shed(wd).ready },
       };
     },
   };
