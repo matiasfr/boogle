@@ -7,6 +7,7 @@ import { graphicsInitial, registerGraphics } from '../graphics-settings.ts';
 import { playMark } from '../proto/mark.ts';
 import { bootMark } from '../boot/timeline.ts';
 import { splashDone } from '../boot/splash.ts';
+import { atLeastOneDevicePixel, clampTargetSize, drawableBox } from './drawable-size.ts';
 
 export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
@@ -47,6 +48,13 @@ errorSource.onError = (info) => {
   gpuErrorVersion++;
 };
 export { MAX_DPR, FIXED_DPR } from './quality.ts';
+// The drawing buffer is never empty (./drawable-size.ts): every resize and pixel-ratio change goes through this.
+const canvasTarget = renderer.getCanvasTarget();
+const setCanvasSize = canvasTarget.setSize.bind(canvasTarget);
+canvasTarget.setSize = (width, height, updateStyle) => {
+  const ratio = canvasTarget.getPixelRatio();
+  setCanvasSize(atLeastOneDevicePixel(width, ratio), atLeastOneDevicePixel(height, ratio), updateStyle);
+};
 renderer.setPixelRatio(MAX_DPR);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -240,6 +248,7 @@ export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, CAMERA_FAR);
 // The colour space is the one three's compileAsync target has. It changes nothing in the image (both are linear), but it
 // is in the pipeline cache key: left unset, every pipeline the warm-up built was built again by the first frame.
 export const scenePass = pass(scene, camera, { colorSpace: THREE.LinearSRGBColorSpace });
+clampTargetSize(scenePass.renderTarget); // a lower resolution scale must not floor a tiny canvas to 0x0
 export const pipeline = new THREE.RenderPipeline(renderer, scenePass);
 export const renderFrame = () => pipeline.render();
 installQuality(renderer, scenePass);
@@ -260,14 +269,25 @@ registerGraphics({
 
 // The canvas's CSS box, in CSS pixels: the window, except in the Home Screen app, where src/boot/app-fill.ts may make it
 // taller than innerHeight to reach the bottom of the screen. The drawing buffer and the camera follow the box.
-export const view = { w: innerWidth, h: innerHeight };
+// Never under 1x1 (./drawable-size.ts): a page opened with no size yet (a hidden pane, a 0x0 container) gets one later.
+export const view = { w: Math.max(1, innerWidth), h: Math.max(1, innerHeight) };
+let drawableNow: () => void;
+let sized = false, // the canvas has had an area
+  waitedForSize = false;
+/** Resolves once the canvas first has an area. The first scene frame (the shader warm-up's) waits for it, so no screen
+ * target is first built for a page that has no size yet; a later 0x0 only clamps (the ResizeObserver below). */
+export const drawable = new Promise<void>((resolve) => (drawableNow = resolve));
 function resize() {
-  const w = canvas.clientWidth,
-    h = canvas.clientHeight;
-  view.w = w > 1 ? w : innerWidth;
-  view.h = h > 1 ? h : innerHeight;
+  const box = drawableBox(canvas.clientWidth, canvas.clientHeight, innerWidth, innerHeight);
+  if (box && !sized) {
+    sized = true;
+    if (waitedForSize) bootMark('drawable'); // a hidden first load: when it got a size
+    drawableNow();
+  } else if (!box && !sized) waitedForSize = true;
+  view.w = box?.w ?? 1;
+  view.h = box?.h ?? 1;
   renderer.setSize(view.w, view.h, false);
-  camera.aspect = view.w / Math.max(1, view.h);
+  camera.aspect = view.w / view.h;
   camera.updateProjectionMatrix();
   markSize();
 }

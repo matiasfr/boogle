@@ -2,6 +2,7 @@
 // BloomNode's five Gaussian levels/high-pass do not reproduce this filter or its strength scale.
 import { HalfFloatType } from 'three/webgpu';
 import { luma, TSL, type N } from '../tone.ts';
+import { clampTargetSize } from '../drawable-size.ts';
 
 const { Fn, uv, vec2, vec3, vec4, float, max, min, clamp, textureSize, rtt } = TSL;
 
@@ -9,6 +10,7 @@ export function createWaterBloom(source: N, threshold: N) {
   const targets: N[] = [];
   const target = (node: N, scale: number, name: string) => {
     const out = rtt(node, null, null, { type: HalfFloatType, depthBuffer: false, resolutionScale: scale });
+    clampTargetSize(out.renderTarget); // the 1/64 level floors to 0 on a canvas under 64 px (a pane opening)
     out.name = `water_bloom_${name.replaceAll(' ', '_')}`;
     out.value.name = out.name;
     targets.push(out);
