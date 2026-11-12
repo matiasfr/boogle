@@ -15,7 +15,7 @@ import { me } from '../../player/player.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL, ringAt } from '../../sim/railway-ring-layout.ts';
 import { account, aperture, steel } from '../../sim/railway-rows.ts';
-import { free } from '../../sim/railway-queries.ts';
+import { free, heldBig } from '../../sim/railway-queries.ts';
 import { createBoxBatch, drawWorksBoxes } from '../railway/works-box-view.ts';
 import type { WorksBox } from '../railway/works-shape.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
@@ -24,8 +24,11 @@ import { ringIslandNear } from '../ring-island/state.ts';
 const TAKE_LOGS = 'Take logs',
   TAKE_RAILS = 'Take rails',
   FEED = 'Feed the works',
-  FEED_BLOCKED = 'Bring logs or rails',
+  BRING_LOGS = 'Bring logs',
+  BRING_RAILS = 'Bring rails',
+  BRING_BOTH = 'Bring logs or rails',
   BACK_FULL = 'Your back is full',
+  HANDS_FULL = 'Hands full',
   SIGN_TITLE = 'Steel works';
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
 const GREY = '#9c9ea1',
@@ -184,7 +187,8 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
         mine = account(wd, adapter.read.pid),
         out: Interactable[] = [];
       if (within(p, YARD, RING_STEEL_YARD.reach)) {
-        const full = mine && free(wd, mine) <= 0 ? { blocked: BACK_FULL } : {};
+        const full =
+          mine && free(wd, mine) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : BACK_FULL } : {};
         if (s.yardLogs > 0)
           out.push({
             id: 'railway-steel-take-logs',
@@ -203,10 +207,22 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
           });
       }
       if (s.lit < 0 && within(p, WORKS_AT, RING_STEEL_WORKS.reach)) {
-        const fills =
-          ((mine?.carry ?? 0) > 0 && s.logs < STEEL.logs) || ((mine?.rails ?? 0) > 0 && s.rails < STEEL.rails);
-        const target = { id: 'railway-steel-feed', verb: FEED, at: v((SHED.door[0] + SHED.door[1]) / 2, SHED.l0, 1.7) };
-        out.push(fills ? { ...target, run: () => void adapter.feedSteel() } : { ...target, blocked: FEED_BLOCKED });
+        // The bill still lacks logs, rails, or both; a full bill waits for the server to light the works: no prompt.
+        const needLogs = s.logs < STEEL.logs,
+          needRails = s.rails < STEEL.rails;
+        if (needLogs || needRails) {
+          const fills = ((mine?.carry ?? 0) > 0 && needLogs) || ((mine?.rails ?? 0) > 0 && needRails);
+          const target = {
+            id: 'railway-steel-feed',
+            verb: FEED,
+            at: v((SHED.door[0] + SHED.door[1]) / 2, SHED.l0, 1.7),
+          };
+          out.push(
+            fills
+              ? { ...target, run: () => void adapter.feedSteel() }
+              : { ...target, blocked: needLogs && needRails ? BRING_BOTH : needLogs ? BRING_LOGS : BRING_RAILS },
+          );
+        }
       }
       return out;
     },

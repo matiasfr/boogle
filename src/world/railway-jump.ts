@@ -174,7 +174,7 @@ export const JUMPS: readonly Jump[] = [
   {
     stage: 'steel-home',
     label: 'Steel at Home',
-    line: 'The first steel is in the Roundhouse bay',
+    line: 'The first steel is on the pallet by Home’s table',
     land: TABLE_LAND, // east of the table, facing it
   },
   {

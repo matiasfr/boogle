@@ -23,10 +23,11 @@ import { createBoxBatch } from './works-box-view.ts';
 import { playSharedMoment } from './shared-moment.ts';
 
 // Placeholder labels (docs/agent-calls.md; none is The Boogler's).
-const INSTALL = 'Install the longer boiler',
+const INSTALL = 'Hold: install the longer boiler',
   HOLDING = 'Keep holding',
   TAPPED = 'Hold to install',
   BUSY = 'The table’s busy',
+  NOT_NOW = 'Not now',
   BANNER = ['Longer boiler installed', 'Line 2’s trains take it at the Village'] as const;
 /** Seconds of hold (the garage's Large install, garage-data.ts SIZES.large.hold). */
 const HOLD_S = 1.2;
@@ -39,7 +40,7 @@ const GREY = '#9c9ea1',
  * (inside the 6 m the server judges the install from) and the pallet north of it, 3 m clear of the road to the
  * Village platform and of line 2's frame. */
 const TABLE = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100, y: SHED_TABLE.y / 100 - 0.2 };
-const POST = { x: TABLE.x + 5.2, z: TABLE.z + 0.2 },
+export const POST = { x: TABLE.x + 5.2, z: TABLE.z + 0.2 },
   PALLET = { x: TABLE.x + 5.7, z: TABLE.z - 1.8, w: 1.5, d: 2.1 };
 
 let release: (() => void) | null = null;
@@ -86,9 +87,10 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
       Math.abs(p.y - SHED_TABLE.y / 100) <= 2.6
     );
   };
-  /** The prompt's standing: hidden before steel is home and once fitted. */
+  /** The prompt's standing: hidden before steel is home and once fitted; 'refused' while the server's answer is out. */
   function standing(r: NonNullable<ReturnType<typeof rows>>) {
-    if (r.steel < 1 || r.fitted || performance.now() < askedUntil) return 'hidden' as const;
+    if (r.steel < 1 || r.fitted) return 'hidden' as const;
+    if (performance.now() < askedUntil) return 'refused' as const;
     return r.busy ? ('blocked' as const) : ('ready' as const);
   }
   function draw() {
@@ -167,6 +169,8 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
       const s = standing(r);
       if (s === 'hidden') return [];
       const at = new THREE.Vector3(POST.x, TABLE.y + 1.8, POST.z);
+      // The adapter's correction names only a code (refused, noop), not a reason a player can read: a neutral one.
+      if (s === 'refused') return [{ id: 'railway-install', verb: INSTALL, at, blocked: NOT_NOW }];
       if (s === 'blocked') return [{ id: 'railway-install', verb: INSTALL, at, blocked: BUSY }];
       const verb = held >= 0 ? HOLDING : performance.now() - tappedAt < 1500 ? TAPPED : INSTALL;
       return [
