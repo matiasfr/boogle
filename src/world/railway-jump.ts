@@ -41,9 +41,9 @@ const RAILHEAD_LAND = ringLand(RING_HEAD[7]!.platform, 405);
 const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 
 /** Ring Island build 2 (R4, v30). The island halt's east (down) platform at u 444, lat +4, on its deck, facing the
- * works' doorway (u 452, lat +6.5). Until V1 draws the works it lands on a bare deck. */
+ * works' doorway (u 452, lat +6.5), beside the loader's mast (V1). */
 const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100, RING_STEEL_WORKS);
-/** Four metres back from the Roundhouse table's centre toward the Village platform side, facing the garage's lever post
+/** 4.5 m from the Roundhouse table's centre (4 m back, 2 m across) toward the Village platform side, facing the garage's lever post
  * (60 degrees round the rim, 5.6 m out: src/entities/railway/roundhouse-view.ts), on the table's deck. */
 const GARAGE_POST = {
   x: SHED_TABLE.x + Math.round(Math.sin((60 * Math.PI) / 180) * 560),
