@@ -34,8 +34,9 @@ export function checkRoute(w: World) {
       !railInt(r.logs, sec?.logs ?? 0) ||
       !railInt(r.rails, sec?.rails ?? 0) ||
       !railInt(r.start, RAILWAY_MAX_INT, -1) ||
-      !railInt(r.loadedLogs, logs) ||
-      !railInt(r.loadedRails, rails)
+      // A unit lifted off the rack and lost is owed again, so what was ever loaded may pass the bill.
+      !railInt(r.loadedLogs) ||
+      !railInt(r.loadedRails)
     )
       bad('leg bounds');
     // Laying exactly while the current section's bill is full (the last unit starts it; laying spends it).

@@ -305,7 +305,7 @@ export const Till = defineComponent('till', {
 // when it lays.
 /** A leg by RAIL_LEGS slot: `laid` sections complete (0 to its sections); `logs` and `rails` fed into the current
  * section's frame; `start` the tick that section began to lay (-1 not laying); and the kit units ever loaded onto its
- * trains for it (`loadedLogs`, `loadedRails`: the cap on what its kit halt mints and gives). */
+ * trains for it (`loadedLogs`, `loadedRails`; a unit lost off the rack is owed and loaded again). */
 export const Leg = defineComponent(
   'leg',
   { slot: 'int', laid: 'int', logs: 'int', rails: 'int', start: 'int', loadedLogs: 'int', loadedRails: 'int' },
