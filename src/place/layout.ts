@@ -5,6 +5,8 @@
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim.
 import { smoothstep } from '../math.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
+import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
+import { LINE2_STATIONS, type Line2Station, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 import {
@@ -294,12 +296,55 @@ export type LineSpec = {
   stops: number[]; // where trains stand, in metres along the line
   freeUpTo: number; // the last of `stations` that opens the line for trains; the rest lay on past the last stop
 };
-const N = LINES.north.len,
-  E = LINES.east.len;
+const N = LINES.north.len;
 /** Where the track is already down at each end of line 1; line 2 has a few metres off the turntable. */
 export const STUB = { camp: N - 30, village: 30, east: 7 };
 /** Line 2's landmarks in metres along it. */
 export const EAST = { quarry: 178, rim: 286, head: 546, headStop: 524 };
+/** What the land keeps of each station beside the sim's row (LINE1_STATIONS, LINE2_STATIONS: the one list of
+ * stations): which side of the track its frame stands, and its board. Typed over every sim station id, so a station
+ * added there without its entry here fails the typecheck (the 11 November outage: v27 added Q7 to the sim only). */
+const STATION_LAND: Record<LineStationId | Line2StationId, { side: number; label: string }> = {
+  T1: { side: 1, label: 'Station 1' },
+  T2: { side: 1, label: 'Station 2' },
+  T3: { side: 1, label: 'Station 3' },
+  // In B the island is on road 2's north side, so Q1's frame stands south of it.
+  Q1: { side: HOME_B ? 1 : -1, label: 'Line 2, station 1' },
+  Q2: { side: -1, label: 'Line 2, station 2' },
+  Q3: { side: -1, label: 'Line 2, station 3' },
+  Q4: { side: -1, label: 'Line 2, station 4' },
+  Q5: { side: -1, label: 'Line 2, station 5' },
+  Q6: { side: -1, label: 'The pier' },
+  // "Line 2, station 7" follows the others' board ("Station 7"); the plan names no label for it.
+  Q7: { side: 1, label: 'Line 2, station 7' },
+};
+/** A sim station row as the land reads it: metres along its line, its bill by goods, line 2's laying speed in m/s
+ * (the row's is per cent of TUNE.laySpeed) and its rack (a depot's cart, or a kit by train). Line 1's second good is
+ * stone, line 2's rails. Fields the row leaves at nothing are left out, as the hand-written rows did. */
+export function landStation(row: LineStation | Line2Station): Station {
+  const two = 'speed' in row,
+    [logs, second] = row.bill,
+    { side, label } = STATION_LAND[row.id];
+  return {
+    id: row.id,
+    s: row.fromCm / 100,
+    to: row.toCm / 100,
+    side,
+    logs,
+    rails: two ? second : 0,
+    ...(!two && second ? { stone: second } : {}),
+    ...(row.beam ? { beam: row.beam } : {}),
+    ...(two && row.speed !== 100 ? { speed: (row.speed * TUNE.laySpeed) / 100 } : {}),
+    label,
+    ...(two && (row.feed === 'train' || row.depot) ? { rack: row.feed === 'train' ? 'train' : 'cart' } : {}),
+    ...(row.crate ? { crate: true } : {}),
+    ...(two && row.gate ? { gate: row.gate } : {}),
+  };
+}
+/** The stations whose frames stand beside a line's laid track: every sim row whose stretch lies on it. Q7's lies past
+ * line 2's end, on the pier's piled deck (RING_Q7_FRAME): line2-view.ts frames it there, and the machine never works it. */
+const onLine = (rows: readonly (LineStation | Line2Station)[], line: Line) =>
+  rows.filter((row) => Math.max(row.fromCm, row.toCm) <= line.len * 100).map(landStation);
 export const LINKS: LineSpec[] = [
   {
     id: 'timber',
@@ -308,11 +353,7 @@ export const LINKS: LineSpec[] = [
     dir: -1,
     camp: { x: -13, z: -142, y: 30 },
     // Three on the ridge, and the last is the big one: its stretch is the trestle and the run home, and it opens the path.
-    stations: [
-      { id: 'T1', s: STUB.camp, to: 150, side: 1, logs: 24, rails: 0, label: 'Station 1', crate: true },
-      { id: 'T2', s: 150, to: 116, side: 1, logs: 32, rails: 0, stone: 8, label: 'Station 2', crate: true },
-      { id: 'T3', s: 116, to: STUB.village, side: 1, logs: 40, rails: 0, beam: 1, label: 'Station 3' },
-    ],
+    stations: onLine(LINE1_STATIONS, LINES.north),
     stops: [14, N - 14],
     freeUpTo: 2,
   },
@@ -322,72 +363,7 @@ export const LINKS: LineSpec[] = [
     line: LINES.east,
     dir: 1,
     camp: { x: 98, z: 52, y: 24 },
-    stations: [
-      // In B the island is on road 2's north side, so Q1's frame stands south of it.
-      { id: 'Q1', s: STUB.east, to: 42, side: HOME_B ? 1 : -1, logs: 16, rails: 6, label: 'Line 2, station 1' },
-      {
-        id: 'Q2',
-        s: 42,
-        to: 122,
-        side: -1,
-        logs: 24,
-        rails: 12,
-        speed: 6,
-        label: 'Line 2, station 2',
-        rack: 'cart',
-        crate: true,
-      },
-      {
-        id: 'Q3',
-        s: 122,
-        to: EAST.quarry,
-        side: -1,
-        logs: 16,
-        rails: 12,
-        speed: 6,
-        label: 'Line 2, station 3',
-        rack: 'cart',
-        crate: true,
-      },
-      {
-        id: 'Q4',
-        s: EAST.quarry,
-        to: EAST.rim,
-        side: -1,
-        logs: 16,
-        rails: 16,
-        speed: 8,
-        label: 'Line 2, station 4',
-        rack: 'cart',
-        crate: true,
-        gate: 'quarry',
-      },
-      {
-        id: 'Q5',
-        s: EAST.rim,
-        to: EAST.head,
-        side: -1,
-        logs: 24,
-        rails: 24,
-        speed: 9,
-        label: 'Line 2, station 5',
-        rack: 'cart',
-        crate: true,
-        gate: 'sea',
-      },
-      {
-        id: 'Q6',
-        s: EAST.head,
-        to: E - 1,
-        side: -1,
-        logs: 32,
-        rails: 32,
-        speed: 9,
-        label: 'The pier',
-        rack: 'train',
-        crate: true,
-      },
-    ],
+    stations: onLine(LINE2_STATIONS, LINES.east),
     stops: [17, EAST.quarry - 4, EAST.headStop],
     freeUpTo: 4,
   },
