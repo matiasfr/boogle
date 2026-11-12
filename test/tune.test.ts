@@ -90,7 +90,10 @@ test("the boiler's haul pace: appended after the glider's keys, 300 cm/s solo an
 test("a footing's own pace, then the trains' headway hold: appended last (works-late-game 2b, generic-lines 4a)", () => {
   const keys = TUNABLES.map((t) => t.key as string);
   const foot = { railFootSoloSpeed: 300, railFootHelpSpeed: 540, railTrainHeadPct: 75 };
-  assert.deepEqual(keys.slice(-3), Object.keys(foot), 'appended in order, at the end');
+  // Appended in order; only later appended keys follow them (slice 5's trade tunables, in their own test).
+  const at = keys.indexOf('railFootSoloSpeed');
+  assert.deepEqual(keys.slice(at, at + 3), Object.keys(foot), 'appended in order');
+  assert.deepEqual(keys.slice(at + 3), ['railFarePct', 'railRiderPct', 'railPricePct'], 'then only the trade keys');
   for (const [key, def] of Object.entries(foot)) {
     const t = TUNABLES.find((s) => s.key === key)!;
     assert.equal(t.def, def, key);
