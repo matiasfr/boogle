@@ -8,6 +8,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 - Special unlocks for finding all seven crystals (2026-11-09)
 
 ## Look
+- A living-world shader pass: one shared wind field, then tree sway and path-side grass, then round puffs from the track machine and chimneys, all Local; order and sources in [living-world-shaders](research/living-world-shaders.md). The owner, reviewing unused research: critters and living-world shaders "seem like things that'll be great to flesh out the game world and make it feel alive" (owner, 2026-11-11)
 - Revisit time of day and colour grading with the new sky and AgX: the game felt a bit dull and even the stars around the player's head looked very dark, maybe material properties and emissive values on things (owner, 2026-11-03)
 
 ## Island
@@ -15,6 +16,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 ## The Boogler
 
 ## Trains
+- Rail network depth: friends choose which connection next (a new source against a shortcut) and which visible bottleneck to fix, and the railway runs itself, with no signals, orders or dispatch. The owner is "curious about" it; the research asks for a ten-minute paper railway (a 2D page) before any code: [rail-network-depth](research/rail-network-depth.md#first-prototype-a-ten-minute-paper-railway) (owner, 2026-11-11)
 - A side-on camera while seated on the train, the island sliding by; sitting itself is now decided (decisions.md), but the bench variant's camera was cut (owner, 2026-11-02)
 - Train-riding UX pass once there are trains beyond the default cargo ones: a way to board that looks natural (a passenger car or seats, not sitting on a flat deck), and a ride that feels really satisfying over the long stretches; builds on [train-riding](research/train-riding.md) (owner, 2026-11-06)
 - A world / rail map view: the Home hall's live line map and the halt boards grown to show every line, its trains and their loads, a wall you stand at rather than a screen; parked in [engine-garage](brainstorms/engine-garage.md#parked) (owner, 2026-11-10)
@@ -41,7 +43,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 
 - **Post looks for a later rendering pass.** Toy-only outlines (dark, 2 px) read best, then haze for distance. Before reuse: cut the roughly 6 ms cost, reduce line crawl on hat seams and roofs, and explain the white shoreline marks using frozen-frame captures. Layers are on tag `archive/post-looks-round2`; see [round two](research/post-look-round2.md).
 
-- **A critters-and-life pass for the new environments** (owner, 6 November): fish and gulls now live on the classic island only; give the new world its own critters and life, reusing the fish (`src/features/critter-fish.ts`) and gull (`src/features/critter-gulls.ts`) code. (2026-11-06)
+- **A critters-and-life pass for the new environments** (owner, 6 November): fish and gulls now live on the classic island only; give the new world its own critters and life, reusing the fish (`src/features/critter-fish.ts`) and gull (`src/features/critter-gulls.ts`) code. (2026-11-06) Raised again on 11 November with the shader pass under Look; keep them many, cheap and reactive, with no ecosystem ([creature-ai-and-ecosystems](research/creature-ai-and-ecosystems.md)).
 
 ## World and story
 - The story frame: by connecting everywhere and building an economy for the simple little guys, the players are secretly doing The Boogler's work, for good (owner, 2026-11-06)

@@ -323,6 +323,10 @@ effort stays the same: two footings a bent, 14 for the seven (the decision's "th
   starts from the quay, not the 55 m top.
 - **The White Wall line runs at the chalk's foot**, through Canopy's cleft in a cut rather than over the 120 m tops.
   "Collar the deep gap" still works at sea-deck height: the collars carry the span over deep water, not over height.
+  How a collar is set is the owner's liked direction in
+  [open question 19](../decisions-open-questions.md#open-questions-round-8-and-the-architecture-review): one mined
+  crystal goes in an iron collar under the track and grows down to the seabed in visible steps, with few pillars so it
+  is not a grind (owner, 11 November: "make sure it's not ignored if we're building out the world").
 - **Bell Rock's station plan** (the stills' finding: four lines' platforms cross on the skerry) is the next thing the
   hub needs; the 15 m deck rule keeps all four at one level.
 - **The legs and hours tables** change where a line shortens (line 2 to Ring Island) or moves its end (the stack line,
