@@ -150,7 +150,7 @@ function steamBurst(m: Waker) {
 }
 /** About 3 s, and the player keeps control: a shudder, rust and dust shaking off, the boiler catching, a big burst of
  * steam, the headlamps, a whistle. `done` is when it's ready for work. */
-export function scheduleWake(
+function scheduleWake(
   m: Waker,
   { after, shakeView, fanfare, dustRing }: WakeEffects,
   onLamps: () => void,

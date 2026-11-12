@@ -1,5 +1,5 @@
-// The little guys of ?proto=place (owner: "little guys running around, kind of like the Boogler, but maybe a cuter version
-// since the Boogler is the mayor"), so the world stops feeling dead. Round and stubby, in a few colours, the proportions of
+// The little guys of the village (owner: "little guys running around, kind of like the Boogler, but maybe a cuter
+// version"), so the world stops feeling dead. Round and stubby, in a few colours, the proportions of
 // Castle Story's Bricktrons as our own character; four instanced meshes and a small state machine each. They work at the
 // camp, the stations and the town: carrying logs, hammering at scaffolds, riding the train and the machine, waving and
 // following you for a moment, and cheering at milestones. They're life, not labour: nothing they do moves the run on, and
@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import { mulberry32 } from '../sim/rng.ts';
 import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { emit } from '../render/particles.ts';
-import { scene, camera } from '../render/scene.ts';
+import { camera } from '../render/scene.ts';
 import { getAudio } from '../render/audio.ts';
 import { me } from '../player/player.ts';
 import { flat } from '../render/flat.ts';
@@ -54,10 +54,7 @@ const heads = new THREE.InstancedMesh(headGeo, skinMat, COUNT);
 const coats = new THREE.InstancedMesh(coatGeo, coatMat, COUNT);
 const limbs = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#ffffff', 0.8), COUNT * 4);
 const held = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), flat('#ffffff', 0.8), COUNT * 2);
-for (const m of [heads, coats, limbs, held]) {
-  m.frustumCulled = false;
-  scene.add(m);
-}
+for (const m of [heads, coats, limbs, held]) m.frustumCulled = false; // mountFolk gives them to the view's owner
 coats.castShadow = true; // the hat and the coat are the shadow's outline: the head inside it adds nothing but triangles
 const COLORS = ['#e4574a', '#3f8ee0', '#f0c030', '#42b887', '#ef8a3a', '#a569e0'].map((c) => new THREE.Color(c));
 const HAND = new THREE.Color(SKIN),
@@ -299,7 +296,6 @@ export type FolkEnv = {
   hush: () => boolean;
 };
 let env: FolkEnv | null = null;
-export const setFolkEnv = (e: FolkEnv) => void (env = e);
 /** The same local cast, attached to the production view's lifetime. */
 export function mountFolk(owner: OwnedView, next: FolkEnv) {
   resetFolk();
@@ -990,29 +986,6 @@ let wanted = 0;
 export function setPopulation(n: number) {
   wanted = Math.min(VILLAGE_MAX, n);
 }
-/** Everyone in the village: out of doors, to the track, cheering. */
-export function pourOut(seconds = 9) {
-  const gr = env?.gather;
-  for (let k = 0; k < VILLAGE_MAX; k++) {
-    const g = guys[k]!;
-    if (!g.on || g.job === 'scaffold' || g.job === 'platform') {
-      g.cheer = seconds;
-      continue;
-    }
-    g.cheer = seconds + rng();
-    g.gather = true;
-    g.hasTarget = !!gr;
-    g.site = null;
-    g.follow = 0;
-    g.loaded = false;
-    if (gr) {
-      const along = ((k * 0.618) % 1) * gr.len,
-        out = 1.4 + ((k * 0.37) % 1) * 3.6;
-      g.tx = gr.x + gr.ux * along + gr.lx * out;
-      g.tz = gr.z + gr.uz * along + gr.lz * out;
-    }
-  }
-}
 /** Everyone in sight of a smaller moment hops where they stand. */
 export function cheerAround(x: number, z: number, r: number, seconds = 5) {
   for (const g of guys) if (g.on && Math.hypot(g.x - x, g.z - z) < r) g.cheer = seconds;
@@ -1108,7 +1081,7 @@ function crewBrain(g: Guy, dt: number) {
 /** Who is bolting now (for the evals). */
 export const bolting = () =>
   bolt ? { left: bolt.left, guys: bolt.guys.length, here: bolt.here.filter(Boolean).length } : null;
-export function setRiders(line: number, on: boolean) {
+function setRiders(line: number, on: boolean) {
   for (const g of riders) if (g.camp === line) g.on = on;
 }
 /** The path's open: they come out onto it. `run`: s they run for, the first time. */
@@ -1122,11 +1095,11 @@ export function setCommuters(on: boolean, run = 0) {
     g.on = on;
   });
 }
-export const setPushers = (on: boolean) => {
+const setPushers = (on: boolean) => {
   for (const g of pushers) g.on = on;
 };
 /** Start over. */
-export function resetFolk() {
+function resetFolk() {
   endTalk();
   rest = TALK.firstAfter;
   wanted = 0;

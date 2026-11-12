@@ -126,7 +126,7 @@ function onLand(k: number) {
   if (landed % 4 === 0) dustRing(b.x, b.y + 0.3, b.z, 4, 1.8, 0.3);
 }
 /** Solid boxes from a plan's hulls. */
-export function hullBodies(plan: Plan, hulls: Hull[], owner?: OwnedView) {
+export function hullBodies(plan: Plan, hulls: Hull[], owner: OwnedView) {
   const { x, y, z, yaw } = plan;
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
@@ -152,7 +152,7 @@ function solid(site: Site, on: boolean) {
     site.bodies.length = 0;
     return;
   }
-  if (site.bodies.length) return;
+  if (site.bodies.length || !owned) return; // the view is gone: its bodies went with it
   const { x, y, z, yaw, hulls } = site.plan;
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
@@ -171,7 +171,7 @@ function solid(site: Site, on: boolean) {
 }
 /** Call once, after every addSite. With an owner, its mesh and bodies are the owner's, and disposing it (or calling the
  * returned disposer) forgets every site added since the last call. */
-export function buildSites(owner?: OwnedView) {
+export function buildSites(owner: OwnedView) {
   set = dropSet(boxes, onLand, owner);
   paintSite(set.mesh, boxes);
   owned = owner;
@@ -193,7 +193,7 @@ export function buildSites(owner?: OwnedView) {
     set = null;
     owned = undefined;
   };
-  owner?.cleanup(dispose);
+  owner.cleanup(dispose);
   return dispose;
 }
 /** The pieces fall in order, starting after `delay` s. */
@@ -213,7 +213,6 @@ export function startSite(site: Site, delay = 0, onDone?: () => void) {
 export const showPiece = (k: number, on: boolean) => set?.snap(k, on);
 export const liftPiece = (k: number, y: number) => set?.lift(k, y);
 /** Start over: nothing's in the air. */
-export const clearDrops = () => set?.clear();
 /** There or not, with no show. */
 export function snapSite(site: Site, on: boolean) {
   if (!set) return;
@@ -251,4 +250,3 @@ export function updateSites(dt: number) {
     }
   }
 }
-export const siteSmokes = () => sites.filter((q) => q.state === 'done' && q.plan.smoke).map((q) => q.plan.smoke!);

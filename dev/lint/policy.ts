@@ -563,7 +563,7 @@ const policyBlocks: PolicyBlock[] = [
   })),
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/proto/**', 'src/place/**', 'src/debug/**', 'src/entity/**', ...ENTITY_SERVICES], // src/place: scene adds and hooks get an owner in the follow-up listed in the plan
+    ignores: ['src/proto/**', 'src/debug/**', 'src/entity/**', ...ENTITY_SERVICES],
     rules: { 'boogle/use-an-entity': 'error' },
   },
   {

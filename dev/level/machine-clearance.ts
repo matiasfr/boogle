@@ -455,7 +455,9 @@ export async function checkMachineClearance() {
       lookTrack: () => ({}),
     },
   );
-  const track = buildTrack(line, () => {});
+  // dropSet and lookTrack are stubbed, so the track asks its owner only to run cleanups later; none run here.
+  const noOwner = { cleanup() {}, removeBody() {} } as unknown as import('../../src/render/owned-view.ts').OwnedView;
+  const track = buildTrack(line, () => {}, noOwner);
   const schedule = trackPanels(line),
     seat = new THREE.Vector3(),
     dir = new THREE.Vector3(),

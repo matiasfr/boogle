@@ -1,14 +1,14 @@
 // The finished forge's walk-in reward. Local geometry/cutaway; no production, payment or freight state.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
-import { getMask, removeBody, type Body } from '../../physics/engine.ts';
+import { addBody, getMask, removeBody, type Body } from '../../physics/engine.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { readableGlow } from '../../render/readable-unlit.ts';
 import { flat } from '../../render/flat.ts';
 import { draw, makeSet } from '../../render/boxes.ts';
-import { ROOM_GROUP, addStatic } from '../../place/land.ts';
+import { ROOM_GROUP, staticBody } from '../../place/land.ts';
 import { ROOM_CAM } from './rooms.ts';
 import { kitMaterial, registerSeat, seatHeight, seatMesh } from '../railway/seat.ts';
 import { workshopKit } from './workshop-kit.ts';
@@ -131,15 +131,16 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
         wasReady = open;
         g.visible = open;
         if (open)
-          for (const s of solidSpecs)
-            bodies.push(
-              addStatic(
-                { kind: 'box', hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 },
-                { x: x + s.x, y: floor + s.y, z: z + s.z },
-                undefined,
-                s.room ? ROOM_GROUP : undefined,
-              ),
+          for (const s of solidSpecs) {
+            const body = staticBody(
+              { kind: 'box', hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 },
+              { x: x + s.x, y: floor + s.y, z: z + s.z },
+              undefined,
+              s.room ? ROOM_GROUP : undefined,
             );
+            addBody(body);
+            bodies.push(body);
+          }
         else {
           for (const b of bodies) removeBody(b);
           bodies.length = 0;

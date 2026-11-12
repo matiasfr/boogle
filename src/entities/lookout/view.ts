@@ -23,7 +23,7 @@ const BUOYS = { n: 7, gap: 62 };
 const SCOPE = { x: -15, z: -207 };
 /** The fixed view, from the eyepiece to `target` (world metres, degrees). It never pans; only the zoom changes. `ahead`
  * starts the view just past the barrel's end. */
-export const telescopeTuning = {
+const telescopeTuning = {
   // Ring Island left of centre, the buoys running from the pier's end (the right edge) towards it.
   target: new THREE.Vector3(1330, 0, -700),
   ahead: 2.5,

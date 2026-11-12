@@ -7,8 +7,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { guardInstances } from '../render/draw-count.ts';
 import kitUrl from '../../assets/built/place-kit.glb?url';
-import { onFrame } from '../loop.ts';
-import { camera, scene } from '../render/scene.ts';
+import { camera } from '../render/scene.ts';
 import { warmDraw } from '../render/precompile.ts';
 import {
   FAR_KINDS,
@@ -137,13 +136,13 @@ function useKitGeometry(mesh: THREE.Mesh, geometry: THREE.BufferGeometry) {
   // Static station bounds must include the loaded piece, not the startup speck.
   if (mesh instanceof THREE.InstancedMesh && mesh.frustumCulled) mesh.computeBoundingSphere();
 }
-function want<M extends THREE.Mesh>(name: string, mesh: M, owner?: OwnedView) {
+function want<M extends THREE.Mesh>(name: string, mesh: M, owner: OwnedView) {
   if (loadedKit) useKitGeometry(mesh, kitGeometry(name));
   else {
     let list = waiting.get(name);
     if (!list) waiting.set(name, (list = []));
     list.push(mesh);
-    owner?.cleanup(() => {
+    owner.cleanup(() => {
       const pending = waiting.get(name);
       const at = pending?.indexOf(mesh) ?? -1;
       if (pending && at >= 0) pending.splice(at, 1);
@@ -153,15 +152,15 @@ function want<M extends THREE.Mesh>(name: string, mesh: M, owner?: OwnedView) {
   return mesh;
 }
 /** One kit piece, drawn once. */
-const piece = (name: string, p: Paint, owner?: OwnedView) => want(name, new THREE.Mesh(SPECK, paint(p)), owner);
+const piece = (name: string, p: Paint, owner: OwnedView) => want(name, new THREE.Mesh(SPECK, paint(p)), owner);
 /** A batch of a kit piece. */
-export function kitBatch(name: string, p: Paint, n: number, owner?: OwnedView) {
+export function kitBatch(name: string, p: Paint, n: number, owner: OwnedView) {
   const m = want(name, new THREE.InstancedMesh(SPECK, paint(p), Math.max(1, n)), owner);
   m.frustumCulled = false;
   return guardInstances(m, `place kit ${name}`);
 }
 /** The same contract as pieceMesh: a log batch, hidden until committed. Its colours are its own, so its tint is white. */
-export function kitLogs(max: number, owner?: OwnedView) {
+export function kitLogs(max: number, owner: OwnedView) {
   const m = kitBatch(
     'log',
     { color: '#ffffff', own: true, rough: 0.9, grain: { axis: 'x', honey: '#ffffff' } },
@@ -221,7 +220,7 @@ let warmRegistered = false;
 /** Draws a track's pieces by kind and chunk (src/entities/railway/track-chunks.ts), in the looks that are on. The set keeps its timing: only its matrices
  * are redirected. `chunks[k]` is piece k's chunk along the line (`chunkOf(u)`); each chunk is its own instanced batch
  * with the bounds of what has landed in it, hidden until something has, and its tall pieces cast only near the camera. */
-export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chunks: readonly number[] = []): DropSet {
+export function lookTrack(set: DropSet, kinds: string[], owner: OwnedView, chunks: readonly number[] = []): DropSet {
   if (!LOOK.kit && !LOOK.mats && !LOOK.contact) return set;
   set.mesh.removeFromParent();
   const { runs, of } = chunkRuns(kinds, chunks);
@@ -283,14 +282,13 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chun
       chunk.shadow = false;
     }
     for (const q of list) {
-      if (owner) owner.add(q.mesh);
-      else scene.add(q.mesh);
+      owner.add(q.mesh);
     }
     state.push(chunk);
     liveChunks.add(chunk);
     return list;
   });
-  owner?.cleanup(() => state.forEach((c) => liveChunks.delete(c)));
+  owner.cleanup(() => state.forEach((c) => liveChunks.delete(c)));
   if (!warmRegistered) {
     warmRegistered = true;
     // The warm-up frame draws every caster so its shadow pipelines build off-screen; the gating must not hide one.
@@ -444,7 +442,7 @@ function setChunk(c: TrackChunk) {
     if (c.gated) m.castShadow = c.shadow;
   }
 }
-function sleeperBlob(set: DropSet, k: number, m: THREE.Matrix4, blobs: Map<number, number>, owner?: OwnedView) {
+function sleeperBlob(set: DropSet, k: number, m: THREE.Matrix4, blobs: Map<number, number>, owner: OwnedView) {
   const b = set.boxes[k]!;
   const down = m.elements[0] !== 0 && Math.abs(m.elements[13]! - b.y) < 0.2;
   const yaw = Math.atan2(b.local.elements[8]!, b.local.elements[10]!);
@@ -476,7 +474,7 @@ export function stationKit(
   FRAME_W: number,
   SPAN: number,
   corner = false,
-  owner?: OwnedView,
+  owner: OwnedView,
 ) {
   const { batches: stationBatches, pict: stationPict } = stationViews(owner);
   // Every station's pieces go in one batch per piece: nothing here moves, and six stations are no more draws than one.
@@ -526,7 +524,7 @@ function stationPiece(
   p: Paint,
   m: THREE.Matrix4,
   stationBatches: Map<string, THREE.InstancedMesh>,
-  owner?: OwnedView,
+  owner: OwnedView,
 ) {
   let b = stationBatches.get(name);
   if (!b) {
@@ -536,8 +534,7 @@ function stationPiece(
     // existing shared-material batches in both camera and shadow passes.
     b.frustumCulled = true;
     stationBatches.set(name, b);
-    if (owner) owner.add(b);
-    else scene.add(b);
+    owner.add(b);
   }
   if (b.count >= b.instanceMatrix.count) return;
   b.setMatrixAt(b.count++, m);
@@ -545,7 +542,7 @@ function stationPiece(
   if (b.frustumCulled) b.computeBoundingSphere();
 }
 // The board's log pictogram.
-function createStationView(owner?: OwnedView) {
+function createStationView(owner: OwnedView) {
   const stationPictGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.75, 10).rotateX(Math.PI / 2);
   const stationPict = new THREE.InstancedMesh(
     LOOK.contact ? bakeContact(stationPictGeo) : stationPictGeo,
@@ -553,14 +550,11 @@ function createStationView(owner?: OwnedView) {
     16,
   );
   stationPict.count = 0;
-  if (owner) owner.add(stationPict);
-  else scene.add(stationPict);
+  owner.add(stationPict);
   return { batches: new Map<string, THREE.InstancedMesh>(), pict: stationPict };
 }
-let legacyStations: ReturnType<typeof createStationView> | undefined;
 const ownedStations = new WeakMap<OwnedView, ReturnType<typeof createStationView>>();
-function stationViews(owner?: OwnedView) {
-  if (!owner) return (legacyStations ??= createStationView());
+function stationViews(owner: OwnedView) {
   let view = ownedStations.get(owner);
   if (!view) {
     view = createStationView(owner);
@@ -600,30 +594,33 @@ const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),
   wheelP = new THREE.Vector3(),
   wheelS = new THREE.Vector3(),
   wheelM = new THREE.Matrix4();
-const wheelSet = (p: Paint, n: number, owner?: OwnedView) => {
+const wheelSet = (p: Paint, n: number, owner: OwnedView) => {
   let b: THREE.InstancedMesh | null = null;
   return () => {
     if (b) return b;
     b = kitBatch('wheel', p, n, owner);
     b.castShadow = false;
     b.count = 0;
-    if (owner) owner.add(b);
-    else scene.add(b);
+    owner.add(b);
     return b;
   };
 };
-const machineWheels = wheelSet({ ...IRON, rust: true }, 8),
-  trainWheels = wheelSet({ ...IRON, rust: 'train' }, 48); // four trains (v27): three cars each, four wheels each
-export const machineLook = (owner?: OwnedView): MachineLook => kitCars(1, true, () => false, owner);
+// The four trains of a view (v27: three cars each, four wheels each) share one batch of its own.
+const trainWheels = new WeakMap<OwnedView, () => THREE.InstancedMesh>();
+export const machineLook = (owner: OwnedView): MachineLook => kitCars(1, true, () => false, owner);
 /** A train's look: the same loco, the same livery, and plain flatbeds; the railway's trains lead with `engine` (A with
  * its walk-in cab, docs/plans/engine-previz.md) in place of Place's shell. */
-export const trainLook = (trailers: number, boilerShown: () => boolean, engine?: EngineKit): MachineLook =>
-  kitCars(trailers, false, boilerShown, undefined, engine);
+export const trainLook = (
+  trailers: number,
+  boilerShown: () => boolean,
+  owner: OwnedView,
+  engine?: EngineKit,
+): MachineLook => kitCars(trailers, false, boilerShown, owner, engine);
 function kitCars(
   trailers: number,
   working: boolean,
   boilerShown: () => boolean,
-  owner?: OwnedView,
+  owner: OwnedView,
   engine?: EngineKit,
 ): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
@@ -634,7 +631,9 @@ function kitCars(
     return m;
   };
   // The wheels of all the cars are one batch, posed each frame, and cast no shadow: they're under the deck.
-  const wheelBatch = owner ? wheelSet({ ...IRON, rust: true }, 8, owner)() : working ? machineWheels() : trainWheels();
+  let shared = trainWheels.get(owner);
+  if (!shared) trainWheels.set(owner, (shared = wheelSet({ ...IRON, rust: 'train' }, 48, owner)));
+  const wheelBatch = working ? wheelSet({ ...IRON, rust: true }, 8, owner)() : shared();
   const wheels = (hz: number, r: number) => {
     const list: Wheel[] = [];
     for (const sx of [-0.5, 0.5])
@@ -750,15 +749,14 @@ function kitCars(
     }
     if (working) fork.position.y = 0.2 + 0.3 * Math.abs(Math.cos((travel / 1.2) * Math.PI));
   };
-  if (owner) owner.animate(animate, 8);
-  else onFrame(animate, { phase: 'update', order: 8 });
+  owner.animate(animate, 8);
   return { cars, chimneyTop, heldRail, slip, ...(doors ? { doors } : {}), ...(cab ? { cab } : {}) };
 }
 
 // ---------------------------------------------------------------- what sits on the ground and moves
 type Ground = { x: number; y: number; z: number; yaw: number };
 /** Ground contact for the machine and trees. The avatar already casts its own articulated shadow. */
-export function installContact(cars: Ground[], standing: { x: number; y: number; z: number }[], owner?: OwnedView) {
+export function installContact(cars: Ground[], standing: { x: number; y: number; z: number }[], owner: OwnedView) {
   const under = cars.map(() => addBlob(0, -999, 0, 0.01, 0.01, 0, owner));
   for (const t of standing) addBlob(t.x, t.y, t.z, 1.6, 1.6, 0, owner);
   const update = () => {
@@ -768,6 +766,5 @@ export function installContact(cars: Ground[], standing: { x: number; y: number;
       setBlob(under[n]!, c.x, near ? h : -999, c.z, 3.1, 4.3, c.yaw, owner);
     });
   };
-  if (owner) owner.animate(update, 9);
-  else onFrame(update, { phase: 'update', order: 9 });
+  owner.animate(update, 9);
 }

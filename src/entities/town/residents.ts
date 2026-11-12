@@ -56,7 +56,7 @@ const voice = (baseHz: number, cps: number, formantScale: number, brightnessHz: 
   vowels: [0.3, 0.15, 0.2, 0.25, 0.1],
 });
 /** Room space; `yaw` 0 faces the door. Fixed spots, out of the way of the door: nobody has to walk round a shared little guy. */
-export const CAST: Record<ResidentId, Cast> = {
+const CAST: Record<ResidentId, Cast> = {
   pip: {
     room: 'house',
     x: 1.6,
