@@ -5,8 +5,8 @@
 //
 //   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
 //                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
-//                                  outcome, line, aperture (v27), yard(+yardClock), town(+townClock), till (slice 5); RAIL_REPLICATED
-//                                  is the wire
+//                                  outcome, line, aperture (v27), yard(+yardClock), town(+townClock), till (slice 5),
+//                                  steel(+steelClock) (ring-island-build2, R1); RAIL_REPLICATED is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 import { createWorld, defineComponent, type AnyComponent } from '../ecs/index.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
@@ -142,6 +142,28 @@ export const Aperture = defineComponent(
   'aperture',
   { set: 'int', rack: 'int', cw: 'u8', brace: 'u8', joined: 'int' },
   { defaults: { brace: 1, joined: -1 } },
+);
+/** Ring Island's steel works (docs/plans/ring-island-build2.md, R1; rules in ./railway-sys-steel.ts): the kit lying in
+ * the island yard off the train (`yardLogs`, `yardRails`), what has been fed into its bill (`logs`, `rails`, STEEL's
+ * eight and twelve), `lit` the tick the bill filled (-1 not yet), the steel on its `rack` and `poured` in all. `outLogs`
+ * and `outRails` count what the Village has ever loaded for it (logs made for the kit, rails off the forge rack; the
+ * depot's `DEPOT_OUT` and `shelfOut` for the works), so the conserved counts and the kit's bounds hold. Nothing here
+ * before the rivet. */
+export const SteelClock = defineComponent('steelClock', { lastCast: 'int' }, { replicate: false });
+export const Steel = defineComponent(
+  'steel',
+  {
+    yardLogs: 'int',
+    yardRails: 'int',
+    logs: 'int',
+    rails: 'int',
+    lit: 'int',
+    rack: 'int',
+    poured: 'int',
+    outLogs: 'int',
+    outRails: 'int',
+  },
+  { requires: [SteelClock], defaults: { lit: -1 } },
 );
 /** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
  * and the tick a train last left its start end and its far end (-1 never), for the headway hold. */
@@ -296,6 +318,8 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Town,
   TownClock,
   Till,
+  Steel,
+  SteelClock,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
@@ -328,5 +352,6 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   TRADE.yards.forEach(({ cap }, slot) => w.spawn([Yard, { slot, stock: cap, made: cap }], [YardClock, {}]));
   for (let slot = 0; slot < TRADE_TOWNS; slot++) w.spawn([Town, { slot }], [TownClock, {}]);
   w.spawn([Till, {}]);
+  w.spawn([Steel, {}], [SteelClock, {}]);
   return w;
 }

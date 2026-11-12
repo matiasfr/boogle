@@ -262,3 +262,15 @@ export const RING_RAMPS: readonly RingRamp[] = [
     ],
   },
 ];
+
+/** Ring Island build 2's steel works (docs/plans/ring-island-build2.md, R1; design review ruling B: logs and rails, no
+ * footings): the bill a train brings (8 logs and 12 rails, one kit car's load), and the casts once it is fed (12 steel
+ * in all, one every 80 ticks while its rack has room, rack cap 6: the kiln's numbers). */
+export const STEEL = { logs: 8, rails: 12, castTicks: 80, rackCap: 6, total: 12 } as const;
+/** Where the kit lies once a train unloads it (rail.steelTake's site): the works yard's open deck between the tarp's end
+ * (u 443.4 m) and the shed (u 448 m), u 445.5, lat +8, level with the east platform (level flag 2; V1's look may move
+ * it). */
+export const RING_STEEL_YARD: RingSite = { ...ringAt(44550, 800), y: 890, reach: 400 };
+/** Where the works is fed (rail.steel's site): the shed's doorway (u 452, lat +6.5, its wall facing the platform), clear
+ * of the hammer's west post at lat 9.1 (level flag 1; V1 builds the shed inside u 448 to 455, lat 6.5 to 14). */
+export const RING_STEEL_WORKS: RingSite = { ...ringAt(45200, 650), y: 890, reach: 450 };

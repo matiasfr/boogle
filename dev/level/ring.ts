@@ -30,11 +30,14 @@ import {
   RING_HALT,
   RING_HEAD,
   RING_HOOK,
+  RING_ORIGIN,
   RING_PLATFORM_LAT,
   RING_RAILHEAD_KIT,
   RING_RAMPS,
   RING_RECOVERY,
   RING_S_HEAD,
+  RING_STEEL_WORKS,
+  RING_STEEL_YARD,
   RING_STEPS,
   ringAt,
   ringDeckY,
@@ -590,6 +593,50 @@ export function checkRing() {
   assertion(
     low.every((y) => y <= 1.6) && high.every((y) => y > reachable),
     `rack ${f1(m(kit.rack))}, lever ${f1(m(kit.lever))}, buffer ${f1(m(kit.buffer))} m over it (at most 1.6); the jib's mast ${f1(m(kit.mast))} and arm ${high.slice(1).map(f1).join('-')} m, out of a double jump from the rack's top (${f1(reachable)} m)`,
+  );
+
+  section("The steel works' points (ring-island-build2, R1; level flags 1 and 2), on the works yard's deck");
+  // Build 1's works yard (src/entities/ring-island/view.ts): its deck u 430..468, lat 5.3..16 at 8.9 m; the tarp stack
+  // u 430.6..443.4, lat 7.1..13.9; the anvil u 450.8..453.2, lat 9.8..12.2; the hammer's posts 0.5 m square at u 452,
+  // lat 9.1 and 12.9. The planned shed (V1) stands inside u 448..455, lat 6.5..14, its door wall facing the platform.
+  const solids = [
+    { name: 'the tarp stack', u0: 430.6, u1: 443.4, lat0: 7.1, lat1: 13.9 },
+    { name: 'the anvil', u0: 450.8, u1: 453.2, lat0: 9.8, lat1: 12.2 },
+    { name: "the hammer's west post", u0: 451.75, u1: 452.25, lat0: 8.85, lat1: 9.35 },
+    { name: "the hammer's east post", u0: 451.75, u1: 452.25, lat0: 12.65, lat1: 13.15 },
+  ];
+  const where = (p: { x: number; z: number }) => {
+    // Invert ringAt: u along the heading, lat across it (both true metres).
+    const dx = m(p.x - RING_ORIGIN.x),
+      dz = m(p.z - RING_ORIGIN.z),
+      unit = Math.sqrt(1 + 0.0272 * 0.0272);
+    return { u: (0.0272 * dx - dz) / unit, lat: (dx + 0.0272 * dz) / unit };
+  };
+  const yard = where(RING_STEEL_YARD),
+    works = where(RING_STEEL_WORKS);
+  for (const [name, p, site] of [
+    ['yard (rail.steelTake)', yard, RING_STEEL_YARD],
+    ['works (rail.steel)', works, RING_STEEL_WORKS],
+  ] as const) {
+    const onDeck = p.u > 430 && p.u < 468 && p.lat > 5.3 && p.lat < 16 && site.y === 890;
+    const clear = solids.map((b) => ({
+      name: b.name,
+      gap: Math.hypot(gap(p.u, p.u, b.u0, b.u1), gap(p.lat, p.lat, b.lat0, b.lat1)),
+    }));
+    const nearest = clear.reduce((a, b) => (b.gap < a.gap ? b : a));
+    assertion(
+      onDeck && nearest.gap >= PLAYER_R,
+      `${name} at u ${f1(p.u)}, lat ${f1(p.lat)}, ${f1(m(site.y))} m: on the deck, ${f1(nearest.gap)} m clear of ${nearest.name}`,
+    );
+  }
+  const carry = Math.hypot(works.u - yard.u, works.lat - yard.lat);
+  assertion(
+    carry <= 15 && yard.u < 448,
+    `yard to works ${f1(carry)} m, level, no track crossed (the plan's budget: under 15 m); the yard west of the shed (u 448)`,
+  );
+  assertion(
+    Math.abs(works.lat - 6.5) < 0.05 && works.u > 448 && works.u < 455,
+    `the works point is at the shed's doorway (lat 6.5, u 448..455), ${f1(6.5 - 5.3)} m from the platform's edge`,
   );
 
   section('Recovery points');

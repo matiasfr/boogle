@@ -4,7 +4,8 @@
 // held across a rule or a tick is live: it shows the write. Read again after one where the value before is what you
 // mean. A catalog slot or singleton that is missing throws.
 //
-//   singletons     rail, railClock, beam, forge, forgeClock, cart, boiler, works, worksClock, shed
+//   singletons     rail, railClock, beam, forge, forgeClock, cart, boiler, works, worksClock, shed, aperture, steel,
+//                  steelClock
 //   by slot        job, jobRun, qjob, qjobRun, tree, hardwood, rock, train, line, yard, yardClock, town (and the
 //                  lists below)
 //   by key or id   account(w, pid) (undefined when absent), pile(w, id), outcomes(w), piles(w), accounts(w)
@@ -38,6 +39,8 @@ import {
   Till,
   Town,
   TownClock,
+  Steel,
+  SteelClock,
   Train,
   Tree,
   Works,
@@ -95,6 +98,9 @@ export const worksClock = one(WorksClock);
 export const shed = one(Shed);
 /** Ring Island's gap (v27). */
 export const aperture = one(Aperture);
+/** Ring Island's steel works (ring-island-build2, R1). */
+export const steel = one(Steel);
+export const steelClock = one(SteelClock);
 
 export const job = slotted(Job);
 export const jobRun = slotted(JobRun, Job);

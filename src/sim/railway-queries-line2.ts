@@ -24,6 +24,7 @@ import {
   Rail,
   Rock,
   Shed,
+  Steel,
   Tree,
   Works,
 } from './railway-components.ts';
@@ -40,6 +41,7 @@ import {
   railId,
   railJobs,
   shedId,
+  steelId,
   worksId,
 } from './railway-queries.ts';
 
@@ -132,10 +134,13 @@ export function line2KitOwed(w: World) {
 /** Line two's logs, wherever they are (conserved with the line-one totals in railCounts). */
 export function line2Logs(w: World, at?: number) {
   const f = w.get(Forge, forgeId(w))!,
-    rail = w.get(Rail, railId(w))!;
+    rail = w.get(Rail, railId(w))!,
+    s = w.get(Steel, steelId(w))!;
   return (
     f.used +
     rail.depot +
+    s.yardLogs +
+    s.logs +
     w.get(Cart, cartId(w))!.logs +
     aboard(w, 'logs') +
     line2Jobs(w, at).reduce((n, { job: j, run }) => n + j.stock + run.allocation + run.used, 0)
@@ -153,10 +158,13 @@ const sumPiles = (w: World, kind: (k: number) => boolean) => {
 };
 /** Every rail poured, wherever it is: equals the forge's `poured`. */
 export function line2Rails(w: World, at?: number) {
-  const rail = w.get(Rail, railId(w))!;
+  const rail = w.get(Rail, railId(w))!,
+    s = w.get(Steel, steelId(w))!;
   return (
     w.get(Forge, forgeId(w))!.rack +
     rail.depotRails +
+    s.yardRails +
+    s.rails +
     w.get(Cart, cartId(w))!.rails +
     aboard(w, 'rails') +
     sumAccounts(w, 'rails') +
@@ -224,7 +232,8 @@ export function railCounts(w: World, at?: number) {
     used,
     line2,
     rack: rail.rack,
-    produced: rail.produced + rail.depotProduced,
+    // Logs the Village loads for the steel works' kit are made there, as a train-fed stretch's are (outLogs).
+    produced: rail.produced + rail.depotProduced + w.get(Steel, steelId(w))!.outLogs,
     total: source + carry + loose + stock + allocation + used + line2 + rail.rack,
     delivered,
     score:

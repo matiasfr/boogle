@@ -197,6 +197,23 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       Checks: each op's refusals (before `joined`, a full bill, a full back, a lit works); the bill lights on the last
       item whichever op brings it; a seeded `mulberry32` op fuzz holding every invariant.
       **Independent sim review.**
+      _As built (ring2/rules, 11 November), on ruling B:_ `Steel` is `yardLogs, yardRails, logs, rails, lit, rack,
+      poured, outLogs, outRails` (no `yardFoot`, `foot`); `STEEL` is `{ logs: 8, rails: 12, castTicks: 80, rackCap: 6,
+      total: 12 }` (no `foot`). No rack 3, site 4, `steelOwed`, `WORKS.total` change or `footingTotal` change. **Added
+      beyond the step:** `outLogs`/`outRails` (what the Village has loaded for the works, the depot's `DEPOT_OUT` and
+      `shelfOut` for it): the kit's logs are made at the Village, so `railCounts().produced` counts `outLogs`, and the
+      yard is bounded by them; R2's line-2 checks (`depot stock`, `shelf bounds`) widen by them. `steelNeed(w)`
+      (railway-queries.ts) is the kit's need per finding 2: the bill less fed, yard and aboard (backs and piles not
+      counted, so a train brings what is lost). `steelTick` runs at tick order 5 and `jobClock` moves to 6. Points
+      (level flags 1 and 2): the yard at u 445.5, lat +8 (the open deck between the tarp and the shed), the works at the
+      shed's doorway, u 452, lat +6.5; yard to works 6.7 m, not 12 (V1's look may move them). `dev/level/ring.ts`
+      asserts both: on the deck, clear of the tarp, anvil and hammer posts. Ruling E's blocked prompt is V1's (no sim
+      part). Tests: `test/railway-steel.test.ts` (refusals, lighting on either kind, casts to the cap, the check's seven
+      refusals, a two-seed fuzz that re-asserts the bill can be completed every 500 ops). **The pinned fixtures moved
+      and were not regenerated** (a new component kind and entity change every world hash): `railway-golden.json`
+      (every stage), `railway-tick-order.json`, `railway-ops-golden.json`, `railway-m12-trace.json` and
+      `rail-schema.json` (which fails without the bump). The step order put the bump in R4; regenerating needs the
+      owner's word and belongs with the v28 bump.
 - [ ] **R2. The train carries it (M, HOTBOX).** Edit `railway-sys-trains.ts` (`standing`, `arrive`, `wagonArrives`,
       `serviceOf`, `headExempt` while the works owes footings), `railway-components.ts` (`Train.steel`, `Shed.steel`),
       `railway-queries-line2.ts` (the kit's need for the works), `test/railway-trains.test.ts`. Checks: a kit loaded

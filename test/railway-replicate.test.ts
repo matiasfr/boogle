@@ -289,8 +289,8 @@ test('the railway state is a server state: saved by the host, never hashed or se
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
   // the depot cart, boiler and trains; the Works and the shed; the lines; the aperture (v27); the yards, the town and
-  // the till (slice 5)
-  assert.equal(RAIL_SCHEMAS.length, 20);
+  // the till (slice 5); the steel works (ring-island-build2)
+  assert.equal(RAIL_SCHEMAS.length, 21);
 });
 
 test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
