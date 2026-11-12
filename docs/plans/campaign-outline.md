@@ -299,6 +299,125 @@ experienced players'. Elapsed days were set as much by his answers and by review
 new model can move the rate either way. Phase B replaces this estimate with a measured one; do not plan against a date
 before then.
 
+## Towns at the hubs
+
+**Proposal (designer, 12 November 2026).** Decided
+([12 November](../decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight)): the larger hubs each have a
+town that grows and receives freight like the Village; other areas are sources. The rest is logged in
+[agent-calls](../agent-calls.md) and builds proceed on it. Nothing is placed: each hub's plan runs its level check.
+
+**What this outline and the greybox plan had dropped.** Two records already describe the hubs: the
+[10 November decision](../decisions-rail.md#d-2026-11-10-big-junctions-are-designed-stations-not) (six designed
+stations; rotundas with the upgrade screen at Home and Port Quay; an engine shed where a line never reaches Home) with
+[junction-stations](../brainstorms/junction-stations.md), and [town-layout](town-layout.md)'s "pattern for other
+towns". The trade model (`dev/economy/trade-data.ts`) already plays five towns; the rules have one
+(`TRADE_TOWNS = 1`). **Where the map and the owner's memory differ:** the rail map's data (`dev/level/rail-map.ts`)
+draws a Roundhouse at Home only; Port Quay's rotunda and the sheds are decided but not drawn, and join the map data
+with each hub's plan.
+
+### 1. Which places have a town
+
+| Place | Kind | Reason |
+| --- | --- | --- |
+| **Home (the Village)** | Town, built | The starter town; the Round, eight plots, the first rotunda |
+| **Ring Island** | Town | A designed station with folk and the Ringworks; in the trade model; town-layout draws it as a crescent facing the shard |
+| **High Gorge** | Town | A large area and a junction; a street across the bridge or a terrace on the lip |
+| **Canopy Town** | Town | A large area and a junction; platforms round a trunk |
+| **Port Quay** (with High Port above) | Town | The largest area; a one-sided quay street and the second rotunda |
+| Bell Rock, West landing | Station, no town | A skerry on two levels; Home's second front. Town-layout: "stations, not towns" |
+| Camp, Quarry, Saltpan, the Wall's islets, Lantern Notch | Source or halt | One reason to stop; no building. The Original Island is the ending |
+
+All five towns stand on the ring (line 2 grown: Village, Quarry, Far Head, Ring Island, High Gorge, Canopy Town, Port
+Quay, Saltpan, West landing), so one line can feed every town with no transfer.
+
+### 2. What each town receives, grows into and gives
+
+**The Village's rules are the shape for all (Decided,
+[11 November](../decisions-rewards.md#d-2026-11-11-boogles-the-five-open-questions-answered)):** a town arrives with
+its station and two buildings; later houses are bought on plots deliveries stake, each double the last; one wallet.
+**Default:** three priced plots a hub town at Alpha, at the trade model's prices; a buy is the hold at the plot's
+board on the one wallet (no second strongbox or ticket window).
+
+| Town | Receives by train, from | First freight arrives | Its own shape (each needs its brief) |
+| --- | --- | --- | --- |
+| The Village | Timber (Camp, line 1); stone (Quarry); later steel (Ringworks, homeward), for plots 4 to 8 | As built (R1, R2) | The Round |
+| Ring Island | Stone (Quarry, outward); copper (the Gorge, homeward) | With slice 5 on today's line; copper at stage 3 | Crescent facing the shard |
+| High Gorge | Steel (Ringworks, outward); fibre (Canopy, homeward) | The leg's first train; fibre at stage 7 | Street on the bridge or lip terrace |
+| Canopy Town | Copper (the Gorge, outward) | **Stage 7 only** (finding 1) | Platforms round a trunk |
+| Port Quay | Salt (Saltpan, on the cave line); fibre (Canopy, outward) | The cave leg's first train; fibre at stage 7 | Quay street, the rotunda |
+
+Goods are counters that stake plots, never carried. Salt is a placeholder name. Bell Rock's seeds stay by hand.
+
+- **New: a hub town's first plot is staked when its station opens**, by the first train in, with no goods; later
+  plots need the goods above. That is the first meeting: you step off, and the stakes and board are on your way.
+- **New: what growing a hub town gives.** More riders and so more fares, and longer rides between towns pay more
+  (decided mechanism); a building to walk into with one character (roles and lines are the owner's); and the town's
+  board offers the source upgrades of the yards that feed it
+  ([decided](../decisions-rewards.md#d-2026-11-10-boogles-build-houses-and-upgrade-sources) that Boogles buy them).
+  Nothing on the route gains a Boogle price, so a solo room that ignores every town still finishes; a friend who
+  joins late sees the same stakes and houses.
+
+### 3. How freight picks its town
+
+Options: the nearest town on its line; a fixed destination per yard; routing the player sets. **Recommended (New): a
+fixed destination per yard row, in data, authored as "the next town along its own line the way the train is
+going".** It is the code's shape already (`TradeYard.home`). A source between two towns is two rows, one each way,
+each with its own stock, so towns never compete for a crate. Freight never changes line and nobody chooses: "no
+routing or quotas" (DESIGN) holds, which rules out player routing; a computed "nearest" adds a rule to explain.
+**Default:** a freight stop follows R2b's rule (a middle halt only when a whole trainload waits; never a train on a
+build errand), so waits stay inside R2b's gate of 108 ticks a leg.
+
+### 4. Notes for the other plans (pointers only; neither plan is rewritten here)
+
+**[greybox-route](greybox-route.md): a stand-in town per hub leg (New).** Legs 1 (High Gorge), 3 (Canopy Town) and 4
+(Port Quay), and Ring Island with slice 5. The minimum, an eleventh tick on those legs' checklist:
+
+- a `Town` row and section 2's yard rows, unloading at the hub's halt; a source-only place gets a yard marker only;
+- a flat pad within 60 m of the platform (about 11 s on foot), on the way to the area's pickup, with two box
+  buildings (no interior, no folk), three sets of stakes and one board;
+- plot 1 staked by the leg's first train (the bot asserts it); the buy works once slice 5's R4 is on main.
+
+**[slice5-town-economy](slice5-town-economy.md): what R2b, R3, R4 and the views must not hard-wire to one town.**
+
+- R2b: a yard row names its town and direction (never town 0 inferred from `home`); unloading must work at a through
+  halt. To prove: the Quarry's outward stop needs its up platform.
+- R3: `routes`, the waiting counts, `boarded` and `alighted` are per town; `tillRate`, `boxCap` and `sackCap` scan
+  every town; the `Till` stays one (decided). At bump B, make `Town.wood` and `Town.stone` two counters whose meaning
+  comes from the town's `TRADE` row.
+- R4: `Plot.slot = town × 16 + k` and `plotPrice(town, k)` are already per town; keep them so. The facts `town` and
+  `stone` stay the Village's. V1 to V3 read plot sites and the board from a per-town table.
+
+### 5. Cost, and the modelled route time
+
+Estimates in section 6's units, none measured: 0.5 U to take slice 5's rules from one town to five, 0.5 U for four
+stand-in towns, and 0.5 U a hub town at depth (a centre, three walk-in houses, the board), 2 U. **About 3 U on 24, so
+27 U; the range of 5 to 14 weeks becomes roughly 6 to 16.** The main route's time does not change: no bill, gate or
+wait depends on a town and freight stops stay inside R2b's gate, so a three-hour rush stands. For a player who
+engages, my estimate is 15 to 25 minutes over four hub towns, inside the four-to-five-hour target; not modelled.
+
+### Findings
+
+1. **Canopy Town gets no freight until the Wall closes.** It is reached at stage 5 by the bay line, which carries no
+   freight; its ring neighbour arrives at stage 7, so until then it has plot 1 only. Its brainstorm should give the
+   bay line a yard or accept the wait (a fair reason to return). This blocks nothing.
+2. **The town buys were tuned for six hours** (last buy at hour 5.7 to 5.9, 11 November) and the target is now four
+   to five: re-run the model with five towns before prices reach the hubs. No yard row above exists, so reach is
+   unproven; each needs R2b's proof when its leg lands.
+
+### Calls and owner questions
+
+Eight Decided (hub towns and sources; the stations and rotundas; starting buildings, bought houses, the doubling and
+one wallet; freight by train; no routing; the build order; the three-hour rush; source upgrades). Six New and two
+Default are in [agent-calls](../agent-calls.md#rewards-co-op-and-town-roles), open. "Every area or only the larger
+hubs?" is answered: larger hubs only.
+
+1. **Does the Village also receive what the far sources make?** Recommended: no; each town takes its neighbours'
+   goods, so the Village keeps timber and stone and later gains steel. Until he answers: neighbours only.
+2. **What should growing a hub town give?** Recommended: riders and fares, a building with a character, and its
+   sources' upgrades; nothing the route needs. Until he answers: that list.
+3. **Do the stand-in towns go into the greybox now, or wait for each area's depth pass?** Recommended: now, at the
+   minimum above. Until he answers: each hub leg not yet built carries one; nothing already built is redone.
+
 ## 7. Owner decisions
 
 **Blocks the outline**
