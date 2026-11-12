@@ -5,6 +5,8 @@
 //                     a train loads at, a crate every `everyTicks` up to `cap`, and the Town field it delivers to at
 //                     its line's `home` halt (the Village); each yard row starts full (stock = made = cap)
 //   TRADE.freightCap  the crates one train carries
+//   TRADE.loadStop    R2b: the crates a middle-halt yard must hold (and an empty train have room for) before a train
+//                     heading home makes a service stop for them: a whole trainload (the full-load stop)
 //   TRADE.plots       by town, its priced plots in order: the timber and stone the town must have received before
 //                     each is staked (R2; the prices come with the buy, R4); at most `stakedAtOnce` staked unbought
 export type TradeYard = {
@@ -17,15 +19,19 @@ export type TradeYard = {
   /** The halt its freight unloads at (the line's Village halt) and the Town field it counts in. */
   home: number;
   goods: 'wood' | 'stone';
+  /** R2b: its full-load stop is made only once this is met ('pier': the pier's twelve footings set). */
+  after?: 'pier';
 };
 /** A plot's staking thresholds: the town's delivered timber and stone. */
 export type TradePlot = { wood: number; stone: number };
 export const TRADE = {
   yards: [
     { line: 0, stop: 1, everyTicks: 150, cap: 8, home: 0, goods: 'wood' },
-    { line: 1, stop: 1, everyTicks: 300, cap: 8, home: 0, goods: 'stone' },
+    { line: 1, stop: 1, everyTicks: 300, cap: 8, home: 0, goods: 'stone', after: 'pier' },
   ] as const satisfies readonly TradeYard[],
   freightCap: 8,
+  // R2b (the freight-stops ruling, call 5): a whole trainload.
+  loadStop: 8,
   // R2: cargo stakes plots (call 1). The Village's first three; plots 4 to 8 stay unstaked until priced.
   plots: [
     [

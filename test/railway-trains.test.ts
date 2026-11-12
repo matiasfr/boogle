@@ -50,6 +50,7 @@ import { FixtureLine, LINE2_ROWS, standingAt, line2Stops } from './helpers/rail-
 import {
   act,
   advanceWorks,
+  buildSeedWorld,
   check,
   invariant,
   line as lineRow,
@@ -86,6 +87,7 @@ railwayAtTrains('q6-stocked');
 railwayAtTrains('q6-finishing');
 railwayAtWorks('wagon-on');
 railwayAtWorks('cradle-fitted');
+for (const stage of ['crossing-done', 'deck-laid', 'gap-footed', 'ring-joined'] as const) buildSeedWorld(stage);
 const lever = (w: Seed, id: number, dir: number) => act(w, 'a', 'rail.call', { id, dir });
 /** One rule tick, checking every train's pose stays continuous and the spacing invariants hold. */
 function step(w: Seed, headPct = TRAIN_HEAD_PCT) {
@@ -202,103 +204,108 @@ function fundQ6(w: Seed) {
       assert.equal(act(w, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }), 16);
     }
 }
-for (const [seed, headPct] of [
-  [0xc0ffee, TRAIN_HEAD_PCT],
-  [0x777, 0],
-] as const)
-  test(`fuzz ${seed.toString(16)} at ${headPct}%: lever and rider asks, the pier at a random tick, restores; the worst wait`, (t) => {
-    let w = unaudited(railwayAtTrains('q6-stocked'));
-    for (let k = 0; k < TRAIN.wakeTicks; k++) railTick(w.w, ++w.t, headPct);
-    const rand = mulberry32(seed);
-    const packAt = Math.floor(rand() * Math.min(3000, FUZZ_TICKS / 2));
-    let pierAt = -1,
-      restores = 0,
-      nextAsk = w.t;
-    // Lever waits by "halt/dir" (the ask's tick until a train of its line stands there leaving that way), riders' by
-    // "slot/stop"; how long a line-2 train stood at most.
-    const asked = new Map<string, number>(),
-      worst = new Map<string, number>(),
-      riderAsk = new Map<string, number>(),
-      riderWorst = new Map<string, number>(),
-      standSince = new Map<number, number>(),
-      waits: number[] = [];
-    let longest = { slot: -1, ticks: 0, at: -1, tick: 0 };
-    for (let k = 0; k < FUZZ_TICKS; k++) {
-      if (k === packAt) fundQ6(w);
-      if (pierAt < 0 && line2Completed(w.w) >= 6) pierAt = w.t;
-      const n2 = trainStops(w.w, LINE2).length;
-      if (LIGHT ? w.t >= nextAsk : rand() < 0.05) {
-        nextAsk = w.t + 600 + Math.floor(rand() * 300);
-        const id = Math.floor(rand() * RAIL_HALTS.length),
-          dir = rand() < 0.5 ? -1 : 1;
-        const h = RAIL_HALTS[id]!;
-        if (h.stop < trainStops(w.w, h.line).length && lever(w, id, dir) && !asked.has(`${id}/${dir}`))
-          asked.set(`${id}/${dir}`, w.t);
-      }
-      if (!LIGHT && rand() < 0.03) {
-        const slot = LINE_SLOTS[LINE2]![Math.floor(rand() * 2)]!,
-          stop = 1 + Math.floor(rand() * (n2 - 2));
-        if (
-          act(w, 'a', 'rail.call', { id: haltId(LINE2, stop), dir: trainDir(row(w, slot)), train: slot }) &&
-          !riderAsk.has(`${slot}/${stop}`)
-        )
-          riderAsk.set(`${slot}/${stop}`, w.t);
-      }
-      // Junk the server's validation would refuse: the rule refuses it too, and never throws.
-      if (rand() < 0.01) {
-        const train = [-1, 3, 99, 1.5, -0, Number.NaN, 2 ** 60, '1', null][Math.floor(rand() * 9)];
-        act(w, 'a', 'rail.call', { id: Math.floor(rand() * 8) - 1, dir: rand() < 0.5 ? -1 : 2, train } as never);
-      }
-      step(w, headPct);
-      trains(w.w).forEach((r, slot) => {
-        if (r.phase !== TRAIN_PHASE.STAND) return void standSince.delete(slot);
-        if (!standSince.has(slot)) standSince.set(slot, w.t);
-        const d = w.t - standSince.get(slot)!;
-        if (RAIL_TRAINS[slot]!.line === LINE2 && d > longest.ticks) longest = { slot, ticks: d, at: r.at, tick: w.t };
-      });
-      for (const [key, since] of asked) {
-        const [id, dir] = key.split('/').map(Number) as [number, number];
-        const h = RAIL_HALTS[id]!;
-        if (LINE_SLOTS[h.line]!.some((s) => standing(w, s, h.stop, dir)())) {
-          worst.set(key, Math.max(worst.get(key) ?? 0, w.t - since));
-          if (h.line === LINE2) waits.push(w.t - since);
-          asked.delete(key);
+// The same fuzz from the stages after the pier's twelfth footing (slice 5 R2b's gate: the Quarry stone stop is on), so
+// the worst wait there is judged the WAIT_BOUND way too; its diagnostics give the per-stage figures. leaf-raised's world
+// is gap-footed's with the wagon away, the same trains.
+const FUZZ_STAGES = ['q6-stocked', 'crossing-done', 'deck-laid', 'gap-footed', 'ring-joined'] as const;
+for (const stage of FUZZ_STAGES)
+  for (const [seed, headPct] of [
+    [0xc0ffee, TRAIN_HEAD_PCT],
+    [0x777, 0],
+  ] as const)
+    test(`fuzz ${seed.toString(16)} at ${headPct}%${stage === 'q6-stocked' ? '' : ` from ${stage}`}: lever and rider asks, the pier at a random tick, restores; the worst wait`, (t) => {
+      let w = unaudited(stage === 'q6-stocked' ? railwayAtTrains('q6-stocked') : buildSeedWorld(stage));
+      for (let k = 0; k < TRAIN.wakeTicks; k++) railTick(w.w, ++w.t, headPct);
+      const rand = mulberry32(seed);
+      const packAt = Math.floor(rand() * Math.min(3000, FUZZ_TICKS / 2));
+      let pierAt = -1,
+        restores = 0,
+        nextAsk = w.t;
+      // Lever waits by "halt/dir" (the ask's tick until a train of its line stands there leaving that way), riders' by
+      // "slot/stop"; how long a line-2 train stood at most.
+      const asked = new Map<string, number>(),
+        worst = new Map<string, number>(),
+        riderAsk = new Map<string, number>(),
+        riderWorst = new Map<string, number>(),
+        standSince = new Map<number, number>(),
+        waits: number[] = [];
+      let longest = { slot: -1, ticks: 0, at: -1, tick: 0 };
+      for (let k = 0; k < FUZZ_TICKS; k++) {
+        if (k === packAt && stage === 'q6-stocked') fundQ6(w);
+        if (pierAt < 0 && line2Completed(w.w) >= 6) pierAt = w.t;
+        const n2 = trainStops(w.w, LINE2).length;
+        if (LIGHT ? w.t >= nextAsk : rand() < 0.05) {
+          nextAsk = w.t + 600 + Math.floor(rand() * 300);
+          const id = Math.floor(rand() * RAIL_HALTS.length),
+            dir = rand() < 0.5 ? -1 : 1;
+          const h = RAIL_HALTS[id]!;
+          if (h.stop < trainStops(w.w, h.line).length && lever(w, id, dir) && !asked.has(`${id}/${dir}`))
+            asked.set(`${id}/${dir}`, w.t);
+        }
+        if (!LIGHT && rand() < 0.03) {
+          const slot = LINE_SLOTS[LINE2]![Math.floor(rand() * 2)]!,
+            stop = 1 + Math.floor(rand() * (n2 - 2));
+          if (
+            act(w, 'a', 'rail.call', { id: haltId(LINE2, stop), dir: trainDir(row(w, slot)), train: slot }) &&
+            !riderAsk.has(`${slot}/${stop}`)
+          )
+            riderAsk.set(`${slot}/${stop}`, w.t);
+        }
+        // Junk the server's validation would refuse: the rule refuses it too, and never throws.
+        if (rand() < 0.01) {
+          const train = [-1, 3, 99, 1.5, -0, Number.NaN, 2 ** 60, '1', null][Math.floor(rand() * 9)];
+          act(w, 'a', 'rail.call', { id: Math.floor(rand() * 8) - 1, dir: rand() < 0.5 ? -1 : 2, train } as never);
+        }
+        step(w, headPct);
+        trains(w.w).forEach((r, slot) => {
+          if (r.phase !== TRAIN_PHASE.STAND) return void standSince.delete(slot);
+          if (!standSince.has(slot)) standSince.set(slot, w.t);
+          const d = w.t - standSince.get(slot)!;
+          if (RAIL_TRAINS[slot]!.line === LINE2 && d > longest.ticks) longest = { slot, ticks: d, at: r.at, tick: w.t };
+        });
+        for (const [key, since] of asked) {
+          const [id, dir] = key.split('/').map(Number) as [number, number];
+          const h = RAIL_HALTS[id]!;
+          if (LINE_SLOTS[h.line]!.some((s) => standing(w, s, h.stop, dir)())) {
+            worst.set(key, Math.max(worst.get(key) ?? 0, w.t - since));
+            if (h.line === LINE2) waits.push(w.t - since);
+            asked.delete(key);
+          }
+        }
+        for (const [key, since] of riderAsk) {
+          const [slot, stop] = key.split('/').map(Number) as [number, number];
+          const r = row(w, slot);
+          if (r.phase === TRAIN_PHASE.STAND && r.at === stop) {
+            riderWorst.set(key, Math.max(riderWorst.get(key) ?? 0, w.t - since));
+            riderAsk.delete(key);
+          } else if (r.at === 0 || r.at === trainStops(w.w, LINE2).length - 1) riderAsk.delete(key); // dropped at a turnback
+        }
+        if (k % 50 === 0) assert.equal(invariant(w.w), null, `invariant at ${w.t}`);
+        if (rand() < 0.002) {
+          w = unaudited({ w: restore(w.w), t: w.t });
+          restores++;
         }
       }
-      for (const [key, since] of riderAsk) {
-        const [slot, stop] = key.split('/').map(Number) as [number, number];
-        const r = row(w, slot);
-        if (r.phase === TRAIN_PHASE.STAND && r.at === stop) {
-          riderWorst.set(key, Math.max(riderWorst.get(key) ?? 0, w.t - since));
-          riderAsk.delete(key);
-        } else if (r.at === 0 || r.at === trainStops(w.w, LINE2).length - 1) riderAsk.delete(key); // dropped at a turnback
-      }
-      if (k % 50 === 0) assert.equal(invariant(w.w), null, `invariant at ${w.t}`);
-      if (rand() < 0.002) {
-        w = unaudited({ w: restore(w.w), t: w.t });
-        restores++;
-      }
-    }
-    for (const [key, since] of asked) worst.set(key, Math.max(worst.get(key) ?? 0, w.t - since));
-    const table = [...worst]
-      .sort(([p], [q]) => (p < q ? -1 : 1))
-      .map(([key, ticks]) => {
-        const [id, dir] = key.split('/').map(Number) as [number, number];
-        return `${RAIL_HALTS[id]!.name} ${dir > 0 ? 'up' : 'down'} ${(ticks / 10).toFixed(1)} s`;
-      });
-    t.diagnostic(`${FUZZ_TICKS} ticks${LIGHT ? ', light asks' : ''}; pier opened at ${pierAt}; restores ${restores}`);
-    t.diagnostic(`worst lever waits: ${table.join('; ')}`);
-    const mean = waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length);
-    t.diagnostic(`line 2 lever waits: ${waits.length} served, mean ${(mean / 10).toFixed(1)} s`);
-    t.diagnostic(`worst rider waits (slot/stop): ${[...riderWorst].map(([k, v]) => `${k} ${v / 10} s`).join('; ')}`);
-    t.diagnostic(`longest line-2 stand: ${JSON.stringify(longest)}`);
-    for (const [key, ticks] of worst)
-      if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2)
-        assert.ok(ticks <= WAIT_BOUND, `line 2 ${key}: waited ${ticks} ticks (bound ${WAIT_BOUND})`);
-    assert.ok(pierAt >= 0, 'the pier opened');
-    assert.ok(longest.ticks < 1200, 'no line-2 train stands two minutes');
-    assert.equal(invariant(w.w), null);
-  });
+      for (const [key, since] of asked) worst.set(key, Math.max(worst.get(key) ?? 0, w.t - since));
+      const table = [...worst]
+        .sort(([p], [q]) => (p < q ? -1 : 1))
+        .map(([key, ticks]) => {
+          const [id, dir] = key.split('/').map(Number) as [number, number];
+          return `${RAIL_HALTS[id]!.name} ${dir > 0 ? 'up' : 'down'} ${(ticks / 10).toFixed(1)} s`;
+        });
+      t.diagnostic(`${FUZZ_TICKS} ticks${LIGHT ? ', light asks' : ''}; pier opened at ${pierAt}; restores ${restores}`);
+      t.diagnostic(`worst lever waits: ${table.join('; ')}`);
+      const mean = waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length);
+      t.diagnostic(`line 2 lever waits: ${waits.length} served, mean ${(mean / 10).toFixed(1)} s`);
+      t.diagnostic(`worst rider waits (slot/stop): ${[...riderWorst].map(([k, v]) => `${k} ${v / 10} s`).join('; ')}`);
+      t.diagnostic(`longest line-2 stand: ${JSON.stringify(longest)}`);
+      for (const [key, ticks] of worst)
+        if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2)
+          assert.ok(ticks <= WAIT_BOUND, `line 2 ${key}: waited ${ticks} ticks (bound ${WAIT_BOUND})`);
+      if (stage === 'q6-stocked') assert.ok(pierAt >= 0, 'the pier opened');
+      assert.ok(longest.ticks < 1200, 'no line-2 train stands two minutes');
+      assert.equal(invariant(w.w), null);
+    });
 
 test('a train held at the old Far Head signal when the pier opens runs signal to signal, a leg the save check takes', () => {
   // The review's P1: the far signal moves out with the pier's stub, so a train standing at Far Head's (48000) plans a

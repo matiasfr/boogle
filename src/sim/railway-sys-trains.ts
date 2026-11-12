@@ -37,6 +37,7 @@ import {
   apertureId,
   cartId,
   depotNeed,
+  footingsOwed,
   footOwed,
   forgeId,
   kitJob,
@@ -55,6 +56,7 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads } from './railway-sys-trade.ts';
+import { freightStop } from './railway-queries-trade.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -121,12 +123,16 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
 /** The stops a line 2 train makes with no request (docs/plans/works-late-game.md, step 1): the village going home
  * while the active train-fed job's kit is owed and not aboard, and that job's halt (`kitStop`: Q6's Far Head, Q7's
  * the Pier, call 62) while it is aboard; the quarry going out while its wagon has room and footings are owed; the Pier
- * while its wagon carries the pier's footings (before Q7), the Railhead going out while it carries the ring's. Line 1
- * carries nothing by train. Trains run end to end on their track since v26, so no ask can turn one back short of an
- * errand. */
+ * while its wagon carries the pier's footings (before Q7), the Railhead going out while it carries the ring's. Slice 5's
+ * freight clause comes first, on any line (R2b, freightStop): a yard at a middle halt, once its `after` is met, for a
+ * homeward train that is empty and on no build errand when a whole trainload waits. Trains run end to end on their
+ * track since v26, so no ask can turn one back short of an errand. */
 function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
-  if (RAIL_TRAINS[slot]!.line !== LINE2) return () => false;
+  // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop).
+  const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir);
+  if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
   return (k, dir) =>
+    freight(k, dir) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
     (k === 1 && dir > 0 && r.wagon && r.foot < WORKS.wagonCap && footOwed(w, r.foot) > 0) ||
@@ -171,7 +177,8 @@ function trainIO(w: World, headPct: number): TrainIO {
       wagonArrives(w, r);
     },
     standing(slot, tick) {
-      // A train standing at its line's yard heading home loads; freight never adds a stop (slice 5, R1 as built).
+      // A train standing at its line's yard heading home loads, whatever it stopped for (slice 5; R2b's full-load stop
+      // in serviceOf is the one stop freight adds).
       freightLoads(w, slot);
       if (!line2(slot)) return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       const r = row(slot);
@@ -213,12 +220,7 @@ function trainIO(w: World, headPct: number): TrainIO {
     },
     // The footing wagon's train is never held for headway (nor by the balanced hold) while the pier or the ring still
     // owes footings (design review, 9; ring-island-build1, R3).
-    headExempt: (slot) => {
-      if (!row(slot).wagon) return false;
-      if (w.get(Works, worksId(w))!.pierSet < WORKS.pier) return true;
-      const a = w.get(Aperture, apertureId(w))!;
-      return q7Laid(w) && a.set + a.cw < WORKS.ring + WORKS.counterweight;
-    },
+    headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
   };
 }
 function trainStep(w: World, tick: number, headPct: number) {

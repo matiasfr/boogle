@@ -1,25 +1,41 @@
 // Slice 5's town economy, the lockstep rules (docs/plans/slice5-town-economy.md; src/sim/railway-sys-trade.ts,
 // railway-queries-trade.ts, railway-check-trade.ts). R1: the Camp's timber yard and the Quarry's stone yard make
 // crates while the trains run, and the trains carry them home to the Village. Determinism, conservation, the caps, no
-// freight stop (a train loads only where it already stands), the first timber home, the save round trip and the trade
-// check's refusals; R2: the yards' away credit, once per marker, and the plots staked from deliveries.
+// freight stop before the pier's footings (a train loads where it already stands), the first timber home, the save
+// round trip and the trade check's refusals; R2: the yards' away credit, once per marker, and the plots staked from
+// deliveries; R2b: the Quarry's full-load stone stop after the footings, its exemptions and the wagon's drift.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
-import { createRailwayWorld, Town, Train, Yard, YardClock } from '../src/sim/railway-components.ts';
+import {
+  Aperture,
+  createRailwayWorld,
+  Forge,
+  ForgeClock,
+  QJob,
+  Town,
+  Train,
+  Works,
+  Yard,
+  YardClock,
+} from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { checkTrade } from '../src/sim/railway-check-trade.ts';
 import { buildSeedWorld, SEED_STAGES } from '../src/sim/railway-seeds.ts';
 import { TRADE_STAGES } from '../src/sim/railway-seed-trade.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, town, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
-import { freightAboard, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
+import { freightAboard, freightStop, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
+import { footingsOwed, kitOwed, wagonSlot, worksId } from '../src/sim/railway-queries.ts';
+import { WORKS } from '../src/sim/railway-works-layout.ts';
+import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
+import { RAILWAY_MAX_INT } from '../src/sim/railway.ts';
 import { railResume } from '../src/sim/railway-sys-away.ts';
 import { RAIL_AWAY, railAwayCredit } from '../src/sim/railway-away.ts';
 import { TOWN_PLOTS } from '../src/place/town-plan.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
-import { TRAIN_PHASE } from '../src/sim/railway-train.ts';
+import { TRAIN_PHASE, trainAlong } from '../src/sim/railway-train.ts';
 import { act, advance } from '../src/sim/railway-seed-route.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
 import { worldVerdict } from './helpers/railway-check.ts';
@@ -37,6 +53,13 @@ const FREIGHT = buildSeedWorld('freight-running');
 const ASLEEP = buildSeedWorld('awake');
 /** The footing wagon running (a later stage for the per-tick world check). */
 const WAGON = buildSeedWorld('wagon-on');
+/** The pier's twelve footings set (R2b's stone stop is on). */
+const CROSSED = buildSeedWorld('crossing-done');
+/** Q7 laid, the ring's footings owed: the stone stop is off. */
+const DECK = buildSeedWorld('deck-laid');
+/** The ring's bents footed, then the leaf raised: footings (the counterweight's) still owed. */
+const GAP = buildSeedWorld('gap-footed');
+const LEAF = buildSeedWorld('leaf-raised');
 const MIN20 = 20 * 600;
 const [CAMP, QUARRY] = [0, 1];
 const LINE1_SLOT = RAIL_TRAINS.findIndex((t) => t.line === 0);
@@ -120,7 +143,7 @@ test('the first line 1 arrival home delivers a full load of 8', () => {
   assert.fail('line 1 never came home');
 });
 
-test('freight never adds a stop: with nothing asked, line 2 trains stand only at the ends for 20 minutes', () => {
+test("before the pier's footings freight adds no stop: with nothing asked, line 2 trains stand only at the ends for 20 minutes", () => {
   const w = copy(ON.w),
     n = stopsOf(w, LINE2).length;
   let arrivals = 0;
@@ -427,4 +450,320 @@ test("the plots' thresholds never fall, so the lowest met unbought plots are the
 
 test('stakedAtOnce has one value: the trade table and the town plan agree', () => {
   assert.equal(TRADE.stakedAtOnce, TOWN_PLOTS.stakedAtOnce);
+});
+
+// ---------------------------------------------------------------- R2b: the Quarry's full-load stone stop
+test("R2b's stop: only heading home at the Quarry, after the pier's footings, with 8 crates there and an empty train", () => {
+  const w = copy(CROSSED.w),
+    q = TRADE.yards[QUARRY]!,
+    slot = LINE2_SLOTS.find((k) => !train(w, k).wagon)!;
+  assert.equal(w.get(Works, worksId(w))!.pierSet, WORKS.pier);
+  // Q7's kit is owed at crossing-done (no train stops for stone then); on until it is aboard and no longer owed.
+  for (let t = CROSSED.t + 1; kitOwed(w, { ...train(w, slot), logs: 0, rails: 0 }); t++) {
+    assert.ok(t < CROSSED.t + 6000, "Q7's kit is taken");
+    railTick(w, t);
+  }
+  const set = (stock: number, freight: number, pierSet: number = WORKS.pier) => {
+    const y = w.mut(Yard, yardId(w, QUARRY))!;
+    y.stock = stock;
+    w.mut(Train, w.lookup(Train, slot)!)!.freight = freight;
+    w.mut(Works, worksId(w))!.pierSet = pierSet;
+  };
+  const stop = (k: number = q.stop, dir = -1, r = train(w, slot)) => freightStop(w, slot, r, k, dir);
+  set(TRADE.loadStop, 0);
+  assert.equal(TRADE.loadStop, TRADE.freightCap, 'a whole trainload');
+  assert.equal(stop(), true);
+  assert.equal(stop(q.stop, 1), false, 'going out');
+  assert.equal(stop(q.stop + 1), false, 'another halt');
+  set(TRADE.loadStop, 0, WORKS.pier - 1);
+  assert.equal(stop(), false, 'before the twelfth footing');
+  set(TRADE.loadStop - 1, 0);
+  assert.equal(stop(), false, 'under a trainload in the yard');
+  set(TRADE.loadStop, 1);
+  assert.equal(stop(), false, 'a train with freight aboard');
+  set(TRADE.loadStop, 0);
+  // The build errands (call 4): the wagon's train, a kit aboard.
+  assert.equal(stop(q.stop, -1, { ...train(w, slot), wagon: true }), false, "the footing wagon's train");
+  assert.equal(stop(q.stop, -1, { ...train(w, slot), logs: 1 }), false, 'a kit aboard');
+  assert.equal(stop(q.stop, -1, { ...train(w, slot), rails: 1 }), false, 'a kit aboard');
+  // Line 1's yard is at its end: no service stop, every train stands there (a full yard and an empty train, so only
+  // the end-halt guard refuses it).
+  w.mut(Yard, yardId(w, CAMP))!.stock = TRADE.loadStop;
+  w.mut(Train, w.lookup(Train, LINE1_SLOT)!)!.freight = 0;
+  assert.equal(freightStop(w, LINE1_SLOT, train(w, LINE1_SLOT), TRADE.yards[CAMP]!.stop, -1), false);
+});
+
+test('R2b: no stone stop for any train while a kit is owed', () => {
+  // trains-on: Q6's kit is owed at the Village; the pier's footings set by hand here, only for the query.
+  const w = copy(ON.w),
+    slot = LINE2_SLOTS.find((k) => !train(w, k).wagon && !train(w, k).logs && !train(w, k).rails)!;
+  w.mut(Works, worksId(w))!.pierSet = WORKS.pier;
+  const y = w.mut(Yard, yardId(w, QUARRY))!;
+  y.stock = TRADE.loadStop;
+  const r = { ...train(w, slot), freight: 0 };
+  w.mut(Train, w.lookup(Train, slot)!)!.freight = 0;
+  assert.equal(kitOwed(w, r), true);
+  assert.equal(freightStop(w, slot, r, TRADE.yards[QUARRY]!.stop, -1), false);
+});
+
+test('R2b: after the footings, with nothing asked, each stone stop loads exactly 8 and no build-errand train makes one', () => {
+  const w = copy(CROSSED.w),
+    q = TRADE.yards[QUARRY]!,
+    n = stopsOf(w, LINE2).length;
+  const stone0 = town(w, 0).stone;
+  let stops = 0;
+  for (let t = CROSSED.t + 1; t <= CROSSED.t + MIN20; t++) {
+    const was = LINE2_SLOTS.map((k) => ({ ...train(w, k) }));
+    railTick(w, t);
+    LINE2_SLOTS.forEach((k, i) => {
+      const r = train(w, k),
+        p = was[i]!;
+      if (p.phase !== TRAIN_PHASE.RUN || r.phase !== TRAIN_PHASE.STAND || r.at <= 0 || r.at >= n - 1) return;
+      // Nothing is asked, so a middle-halt stand is a service stop: the wagon's own, or the stone stop.
+      if (r.wagon) return;
+      assert.equal(r.at, q.stop, `train ${k} stood at halt ${r.at} at ${t}`);
+      assert.equal(r.track, 1, 'heading home');
+      assert.ok(!p.logs && !p.rails && p.freight === 0, 'an empty train on no errand');
+      assert.equal(r.freight, TRADE.loadStop, 'exactly a trainload');
+      stops++;
+    });
+    if (t % 600 === 0) checkTrade(w);
+  }
+  railwayCheck(w);
+  assert.ok(stops >= 4, `${stops} stone stops`);
+  assert.ok(town(w, 0).stone - stone0 >= 32, `stone delivered ${town(w, 0).stone - stone0}`);
+});
+
+test("R2b: a rider's ask homeward at the Quarry still loads stone before the footings", () => {
+  const s = { w: copy(ON.w), t: ON.t },
+    q = TRADE.yards[QUARRY]!;
+  advance(s, q.cap * q.everyTicks);
+  const halt = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === q.stop);
+  for (let i = 0; i < 4000; i++) {
+    const k = LINE2_SLOTS.find((j) => train(s.w, j).phase === TRAIN_PHASE.RUN && train(s.w, j).track === 1);
+    if (k !== undefined && act(s, 'a', 'rail.call', { id: halt, dir: -1, train: k }) === 1) {
+      for (let j = 0; j < 3000; j++) {
+        advance(s, 1);
+        const r = train(s.w, k);
+        if (r.phase === TRAIN_PHASE.STAND && r.at === q.stop) {
+          assert.equal(r.track, 1);
+          assert.equal(r.freight, TRADE.freightCap);
+          return;
+        }
+        if (r.phase === TRAIN_PHASE.STAND && r.at === 0) break; // it could not brake for the ask: ask again
+      }
+    }
+    advance(s, 1);
+  }
+  assert.fail('no rider ask was served at the Quarry');
+});
+
+test('R2b: while a kit is owed, no train makes the stone stop (integrated)', () => {
+  // trains-on, with the pier's footings set by hand, the Quarry's yard full (made raised with it) and the forge's next
+  // pour held back: Q6's kit is 5 rails short, so it stays owed while empty down trains pass the full yard. (A live
+  // room's Q7 kit waits the same way on its rails.)
+  const w = copy(ON.w),
+    q = TRADE.yards[QUARRY]!;
+  w.mut(Works, worksId(w))!.pierSet = WORKS.pier;
+  w.mut(ForgeClock, w.single(Forge))!.lastPour = RAILWAY_MAX_INT;
+  const y = w.mut(Yard, yardId(w, QUARRY))!;
+  y.made += q.cap - y.stock;
+  y.stock = q.cap;
+  const owed = () => LINE2_SLOTS.some((k) => kitOwed(w, { ...train(w, k), logs: 0, rails: 0 }));
+  let ticks = 0,
+    passed = 0;
+  for (let t = ON.t + 1; ticks < 3000; t++) {
+    assert.ok(owed(), `the kit is owed at ${t}`);
+    const was = LINE2_SLOTS.map((k) => ({ ...train(w, k) }));
+    railTick(w, t);
+    ticks++;
+    LINE2_SLOTS.forEach((k, i) => {
+      const r = train(w, k),
+        p = was[i]!;
+      if (p.phase === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND && r.at === q.stop && r.track === 1)
+        assert.fail(`train ${k} stood at the Quarry homeward at ${t} while a kit was owed`);
+      if (
+        r.track === 1 &&
+        trainAlong(p, LINE2, t - 1) > stopsOf(w, LINE2)[q.stop]! &&
+        trainAlong(r, LINE2, t) <= stopsOf(w, LINE2)[q.stop]!
+      )
+        passed++;
+    });
+  }
+  assert.ok(passed > 0, `an empty down train ran past the full yard (${ticks} ticks owed)`);
+});
+
+test("R2b: a lever ask homeward at the Quarry still loads after the footings, whatever the stop's conditions", () => {
+  // crossing-done, while Q7's kit is owed (the stone stop is off): the ask stands a train there and it loads.
+  const s = { w: copy(CROSSED.w), t: CROSSED.t },
+    q = TRADE.yards[QUARRY]!;
+  const halt = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === q.stop);
+  assert.equal(act(s, 'a', 'rail.call', { id: halt, dir: -1 }), 1);
+  for (let i = 0; i < 3000; i++) {
+    const was = LINE2_SLOTS.map((k) => [train(s.w, k).phase, train(s.w, k).freight] as const);
+    advance(s, 1);
+    for (const [j, k] of LINE2_SLOTS.entries()) {
+      const r = train(s.w, k);
+      if (was[j]![0] !== TRAIN_PHASE.RUN || r.phase !== TRAIN_PHASE.STAND || r.at !== q.stop || r.track !== 1) continue;
+      assert.ok(r.freight > was[j]![1], `train ${k} loaded at the ask`);
+      checkTrade(s.w);
+      return;
+    }
+  }
+  assert.fail('no train stopped at the Quarry for the ask');
+});
+
+test('R2b: two worlds driven alike after the footings stay equal row for row', () => {
+  const a = copy(CROSSED.w),
+    b = copy(CROSSED.w);
+  for (let t = CROSSED.t + 1; t <= CROSSED.t + 6000; t++) {
+    railTick(a, t);
+    railTick(b, t);
+    if (t % 100 === 0) assert.equal(a.hash(), b.hash(), `tick ${t}`);
+  }
+  assert.deepEqual(a.snapshot(), b.snapshot());
+  assert.ok(town(a, 0).stone > town(CROSSED.w, 0).stone, 'a stone stop was made');
+});
+
+/** The footing wagon's train's arrivals at its line's far end and at the Village over `ticks` from a world, nothing
+ * asked (the ruling's gate 2), each as `halt@tick`. */
+function wagonArrivals(w: World, t0: number, ticks: number) {
+  const out: string[] = [];
+  let prev = trains(w).map((r) => r.phase);
+  for (let t = t0 + 1; t <= t0 + ticks; t++) {
+    railTick(w, t);
+    const n = stopsOf(w, LINE2).length;
+    trains(w).forEach((r, k) => {
+      if (r.wagon && prev[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND && (r.at === n - 1 || r.at === 0))
+        out.push(`${r.at}@${t - t0}`);
+    });
+    prev = trains(w).map((r) => r.phase);
+  }
+  return out;
+}
+/** A copy of `w` with its Quarry yard emptied (made lowered with it) and its clock stopped: no stone stop is made. */
+function noStone(w: World) {
+  const out = copy(w);
+  const y = out.mut(Yard, yardId(out, QUARRY))!;
+  y.made -= y.stock;
+  y.stock = 0;
+  out.mut(YardClock, yardId(out, QUARRY))!.last = RAILWAY_MAX_INT;
+  return out;
+}
+// The ruling of 12 November (the proof gate's 2): while line 2's wagon is owed footings the economy adds no stop on
+// that line, so the wagon's train arrives on the tick it would with no stone stop at all, every trip.
+test("R2b: while footings are owed the wagon's train arrives on the no-stone-stop tick every trip, and no stone moves", () => {
+  // Every footings-owed stage: the pier's (wagon-on), the ring's (deck-laid, gap-footed, leaf-raised).
+  for (const [name, seed] of [
+    ['wagon-on', WAGON],
+    ['deck-laid', DECK],
+    ['gap-footed', GAP],
+    ['leaf-raised', LEAF],
+  ] as const) {
+    const w = copy(seed.w);
+    assert.ok(footingsOwed(w, LINE2) && wagonSlot(w) >= 0, `${name}: footings are owed`);
+    const stone0 = town(w, 0).stone;
+    const a = wagonArrivals(w, seed.t, MIN20),
+      b = wagonArrivals(noStone(seed.w), seed.t, MIN20);
+    assert.ok(a.length >= 14, `${name}: ${a.length} arrivals, far end and Village`);
+    assert.deepEqual(a, b, name);
+    assert.equal(town(w, 0).stone, stone0, `${name}: no stone while footings are owed`);
+  }
+});
+
+test('R2b: footings owed with no wagon coupled (a hand-made state): still no stone stop', () => {
+  // The ruling's condition is the line's footings, not the wagon: uncouple it by hand at deck-laid.
+  const w = copy(DECK.w);
+  for (const k of LINE2_SLOTS) w.mut(Train, w.lookup(Train, k)!)!.wagon = false;
+  assert.ok(footingsOwed(w, LINE2) && wagonSlot(w) < 0);
+  const y = w.mut(Yard, yardId(w, QUARRY))!;
+  y.stock = TRADE.loadStop;
+  const slot = LINE2_SLOTS.find((k) => !train(w, k).logs && !train(w, k).rails)!;
+  w.mut(Train, w.lookup(Train, slot)!)!.freight = 0;
+  assert.equal(kitOwed(w, train(w, slot)), false);
+  assert.equal(freightStop(w, slot, train(w, slot), TRADE.yards[QUARRY]!.stop, -1), false);
+  // With the ring footed by hand too, the same train would stop: only the footings refused it.
+  Object.assign(w.mut(Aperture, w.single(Aperture))!, { set: WORKS.ring, cw: WORKS.counterweight });
+  assert.equal(freightStop(w, slot, train(w, slot), TRADE.yards[QUARRY]!.stop, -1), true);
+});
+
+test('R2b: once no footings are owed, stone flows (the ring finished by hand)', () => {
+  const w = copy(DECK.w),
+    stone0 = town(w, 0).stone;
+  Object.assign(w.mut(Aperture, w.single(Aperture))!, { set: WORKS.ring, cw: WORKS.counterweight });
+  assert.equal(footingsOwed(w, LINE2), false);
+  for (let t = DECK.t + 1; t <= DECK.t + MIN20; t++) railTick(w, t);
+  assert.ok(town(w, 0).stone - stone0 >= 32, `stone ${town(w, 0).stone - stone0}`);
+});
+
+// Outside that window the wagon's train is an ordinary train and may run late: reported, not asserted (the ruling's
+// accepted cost).
+test("R2b: the wagon's arrivals with no footings owed, against no stone stop (reported)", (t) => {
+  const a = wagonArrivals(copy(CROSSED.w), CROSSED.t, MIN20),
+    b = wagonArrivals(noStone(CROSSED.w), CROSSED.t, MIN20);
+  const at = (x: string) => Number(x.split('@')[1]);
+  t.diagnostic(`crossing-done, wagon drift per arrival: ${a.map((v, i) => at(v) - at(b[i] ?? '0@0')).join(', ')}`);
+  assert.ok(a.length > 0);
+});
+
+// ---------------------------------------------------------------- R2b gate 3: the whole footing sequence, played
+/** From a world at `wagon-on`, play every footing as it arrives, as a room would: the pier's off its rack into the
+ * pier, Q7's kit off the Pier into its frame, the ring's off the railhead rack onto the jib, the brace once the gap is
+ * footed and the counterweight hung; the kiln keeps the Works rack supplied. Returns each footing delivery (a rack
+ * gaining) and each wagon arrival at either end, as `what@tick`, until the counterweight is hung. */
+function playFootings(start: World, t0: number, max: number) {
+  const s = { w: copy(start), t: t0 },
+    w = s.w,
+    out: string[] = [];
+  const [q7Logs, q7Rails] = LINE2_STATIONS[Q7]!.bill;
+  let prev = trains(w).map((r) => r.phase),
+    pierRack = w.get(Works, worksId(w))!.pierRack,
+    headRack = w.get(Aperture, w.single(Aperture))!.rack;
+  for (let i = 0; i < max; i++) {
+    const wk = w.get(Works, worksId(w))!,
+      ap = w.get(Aperture, w.single(Aperture))!;
+    if (ap.cw === WORKS.counterweight) return out;
+    if (wk.pierRack > 0) {
+      assert.equal(act(s, 'a', 'rail.footTake', { rack: 1 }), 1);
+      assert.equal(act(s, 'a', 'rail.footSet', { site: 2 }), 1);
+    } else if (ap.rack > 0 && w.get(QJob, w.lookup(QJob, Q7)!)!.completion) {
+      assert.equal(act(s, 'a', 'rail.footTake', { rack: 2 }), 1);
+      assert.equal(act(s, 'a', 'rail.footSet', { site: 3 }), 1);
+    }
+    if (ap.set === WORKS.ring && ap.brace === 1) assert.equal(act(s, 'a', 'rail.brace', { revision: 1 }), 1);
+    const r0 = rail(w);
+    if (w.get(QJob, w.lookup(QJob, Q7)!)!.start < 0 && r0.depot === q7Logs && r0.depotRails === q7Rails)
+      for (const kind of [0, 2])
+        for (let guard = 0; kind ? rail(w).depotRails : rail(w).depot; guard++) {
+          assert.ok(guard < 8);
+          const pid = guard % 2 ? 'b' : 'a';
+          const n = act(s, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake');
+          assert.ok(n > 0);
+          assert.equal(act(s, pid, 'rail.deposit', { station: 'Q7', kind, n }), n);
+        }
+    advance(s, 1);
+    const n = stopsOf(w, LINE2).length;
+    trains(w).forEach((r, k) => {
+      if (r.wagon && prev[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND && (r.at === n - 1 || r.at === 0))
+        out.push(`wagon ${r.at}@${s.t - t0}`);
+    });
+    prev = trains(w).map((r) => r.phase);
+    const pr = w.get(Works, worksId(w))!.pierRack,
+      hr = w.get(Aperture, w.single(Aperture))!.rack;
+    if (pr > pierRack) out.push(`pier +${pr - pierRack}@${s.t - t0}`);
+    if (hr > headRack) out.push(`railhead +${hr - headRack}@${s.t - t0}`);
+    pierRack = pr;
+    headRack = hr;
+  }
+  assert.fail('the counterweight is hung within the run');
+}
+// Gate 3 (the ruling of 12 November): with every footing played as it arrives, each footing delivery and each of the
+// wagon's arrivals land on the tick they would with no stone stop at all, through the pier, the ring and the
+// counterweight.
+test('R2b gate 3: the whole footing sequence, played, lands every delivery and wagon arrival on the no-stone-stop tick', (t) => {
+  const a = playFootings(WAGON.w, WAGON.t, 30000),
+    b = playFootings(noStone(WAGON.w), WAGON.t, 30000);
+  assert.ok(a.filter((x) => x.startsWith('pier')).length >= 2 && a.some((x) => x.startsWith('railhead')));
+  t.diagnostic(`${a.length} events: ${a.join(' ')}`);
+  assert.deepEqual(a, b);
 });
