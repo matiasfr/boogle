@@ -40,7 +40,15 @@ import {
 } from '../src/sim/railway-route.ts';
 import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
 import { RING_END, RING_S_HEAD, STEEL, ringAt } from '../src/sim/railway-ring-layout.ts';
-import { TRAIN, TRAIN_PHASE, fleetOf, trainDir, trainPassesBy, trainStopsOf } from '../src/sim/railway-train.ts';
+import {
+  TRAIN,
+  TRAIN_PHASE,
+  fleetOf,
+  trainAlong,
+  trainDir,
+  trainPassesBy,
+  trainStopsOf,
+} from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, cycleTicks, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, train, trains } from '../src/sim/railway-rows.ts';
@@ -624,6 +632,11 @@ function askPool(w: World) {
  * asked later than 3,000 ticks after the Gorge opens is reported under gate 9 (a diagnostic), not gated twice. */
 const GROWTH_CAP = 1600,
   SETTLED_CAP = 1158;
+/** Until train spacing lands (greybox-route.md, the fourth sheet, calls 105 and the owner's 12 November answer): the
+ * settled line's worst wait (gate 9) and a fixed stage's (gate 8); a settled wait over PRINT_OVER is printed. */
+const GATE9_CAP = 1400,
+  GATE8_CAP = 1350,
+  PRINT_OVER = 1350;
 /** The gate fuzzes' length: 20,000 in the long run (ROUTE_GATES=1), 3,000 otherwise (test/helpers/fuzz.ts). */
 const FUZZ = routeTicks();
 // Round 3, ruling 1: the waits are owed at the shipped hold (75%) on four seeds; at 0% two seeds run for the structural
@@ -936,7 +949,16 @@ function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
   let s = unaudited({ w: restore(base.w), t: base.t });
   const rand = mulberry32(seed),
     asked = new Map<string, number>(),
-    waits: number[] = [];
+    waits: number[] = [],
+    long: string[] = [];
+  const note = (id: number, dir: number, since: number, served: number | null) => {
+    const v = (served ?? s.t) - since;
+    if (v > PRINT_OVER)
+      long.push(
+        `${RAIL_HALTS[id]!.name} ${dir > 0 ? 'up' : 'down'} asked ${since - base.t} ${served === null ? 'unserved at the end' : `served ${served - base.t}`} (${v})`,
+      );
+    waits.push(v);
+  };
   for (let k = 0; k < ticks; k++) {
     const n2 = stopsOf(s.w, LINE2).length;
     if (rand() < 0.05) {
@@ -969,7 +991,7 @@ function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
         return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && trainDir(r) === dir;
       });
       if (there) {
-        if (h.line === LINE2) waits.push(s.t - since);
+        if (h.line === LINE2) note(id, dir, since, s.t);
         asked.delete(key);
       }
     }
@@ -984,9 +1006,14 @@ function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
     if (k % 250 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     if (rand() < 0.002) s = unaudited({ w: restore(s.w), t: s.t });
   }
-  for (const [key, since] of asked) if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2) waits.push(s.t - since);
+  for (const [key, since] of asked) {
+    const [id, dir] = key.split('/').map(Number) as [number, number];
+    if (RAIL_HALTS[id]!.line === LINE2) note(id, dir, since, null);
+  }
   assert.equal(invariant(s.w), null);
   return {
+    long,
+    over1050: waits.filter((v) => v > 1050).length,
     worst: Math.max(0, ...waits),
     mean: Math.round(waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length)),
     over: waits.filter((v) => v > SETTLED_CAP).length,
@@ -996,62 +1023,110 @@ function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
 const SEEDS = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
 const SETTLED_FUZZ = routeTicks();
 
-test('gate 9, stage 0: the leg open and nobody feeding, four seeds at 75%: worst at most 1,158, mean at most 525', (t) => {
+test('gate 9, stage 0: the leg open and nobody feeding, four seeds at 75%: worst at most 1,400; the mean and the share over 1,050 printed', (t) => {
   for (const seed of SEEDS) {
     const f = leverWaits(stageWorlds()[0]!, seed, 75, SETTLED_FUZZ);
-    t.diagnostic(`${seed.toString(16)}: worst ${f.worst}, mean ${f.mean}, ${f.over} of ${f.n} over ${SETTLED_CAP}`);
-    assert.ok(f.worst <= SETTLED_CAP, `${seed.toString(16)}: worst ${f.worst}`);
-    assert.ok(f.mean <= 525, `${seed.toString(16)}: mean ${f.mean}`);
+    t.diagnostic(
+      `${seed.toString(16)}: worst ${f.worst}, mean ${f.mean}, ${f.over1050} of ${f.n} over 1,050; over ${PRINT_OVER}: ${f.long.join('; ') || 'none'}`,
+    );
+    assert.ok(f.worst <= GATE9_CAP, `${seed.toString(16)}: worst ${f.worst}`);
   }
 });
 
-// TODO(owner question 1, greybox-route.md "Rulings on round 3"): the grown line's wait bound is the owner's choice.
-// At the shipped hold (75%), on main's ask method, five trains give settled means of 603 to 632 ticks, 2 to 5 of about
-// 245 waits over 1,158 and a worst of 1,343 (seed badd; 20,000 ticks). Gates 8 and 9's four-seed runs are printed here,
-// not asserted, until he answers. Holds of 0, 25 and 50% failed them too, but were measured under-asked (picks from the
-// whole grown catalog) and are not re-run on this method.
-test('gates 8 and 9, printed: fixed stages 0 to 4 and the settled line, four seeds at 75% (owner question 1)', (t) => {
+// Gates 8 and 9 as the owner answered and the designer read him (greybox-route.md, "Rulings on the rebased sheet", the
+// fourth sheet; calls 105 to 107), until train spacing lands: a fixed stage's worst wait at most 1,350 (gate 8), the
+// settled line's at most 1,400 (gate 9); the mean and the share over 1,050 are printed, not gated, and every settled
+// wait over 1,350 is printed with its tick (from the run's start), halt and side. Holds of 0, 25 and 50% were measured
+// under-asked on the earlier sheets and are not re-run.
+test('gates 8 and 9: fixed stages 0 to 4 worst at most 1,350; the settled line worst at most 1,400; four seeds at 75% in the long run', (t) => {
   const stages = stageWorlds();
   const settled = unaudited({ w: restore(stages[N]!.w), t: stages[N]!.t });
   advance(settled, 1000); // 4,000 ticks after the Gorge opened
-  t.diagnostic('seed | 0 laid | 1 | 2 | 3 | 4 | settled: worst (mean), and waits over 1,158 of all');
-  // Printed, not asserted: the four seeds in the long run (ROUTE_GATES=1), the first alone in the short one.
+  t.diagnostic('seed | 0 laid | 1 | 2 | 3 | 4 | settled: worst (mean), and waits over 1,050 of all');
+  // The four seeds in the long run (ROUTE_GATES=1), the first alone in the short one; asserted in both.
   for (const seed of ROUTE_GATES ? SEEDS : SEEDS.slice(0, 1)) {
     const row = stages.map((st) => leverWaits(st, seed, 75, fuzzTicks(3000)));
     const set = leverWaits(settled, seed, 75, SETTLED_FUZZ);
     t.diagnostic(
-      `${seed.toString(16)} | ${row.map((f) => `${f.worst} (${f.mean})`).join(' | ')} | ${set.worst} (${set.mean}), ${set.over} of ${set.n}`,
+      `${seed.toString(16)} | ${row.map((f) => `${f.worst} (${f.mean})`).join(' | ')} | ${set.worst} (${set.mean}), ${set.over1050} of ${set.n}`,
     );
+    t.diagnostic(`${seed.toString(16)} settled waits over ${PRINT_OVER}: ${set.long.join('; ') || 'none'}`);
+    row.forEach((f, laid) =>
+      assert.ok(f.worst <= GATE8_CAP, `gate 8, ${seed.toString(16)}, ${laid} laid: worst ${f.worst}`),
+    );
+    assert.ok(set.worst <= GATE9_CAP, `gate 9, ${seed.toString(16)}: settled worst ${set.worst}`);
   }
-  t.diagnostic('holds of 0, 25 and 50%: none passed, measured under-asked, not re-run; see owner question 1');
 });
 
-test('gate 5: a full load never waits in the Quarry yard over 1,158 (once, in the first lap after the leg opens, up to the quiet lap); landed follows the loads; no stone stop on a kit errand', (t) => {
+// Gate 5(a) as restated on the fourth sheet (call 106, amending call 79): once a leg, at its opening, a full load may
+// wait until the last kit owed at that opening has loaded and one quiet round trip of that stage after it (at the
+// rivet 2,805 ticks: 1,345 plus 1,460); in that time no train passes a full load unless it is owed a kit, carries
+// one it can unload now, or is the footing wagon's train (slice 5 call 4; the orchestrator's call 108), and each train
+// that passes is printed with its errand or "wagon". A train owed a kit still makes no stone stop (call 107).
+const OPENING_CAP = 2805;
+test('gate 5: a full load never waits in the Quarry yard over 1,158 (once, at the leg opening, until the last opening kit has loaded and a quiet lap more, 2,805 from the rivet; no train but the footing wagon train passes it without a kit errand); landed follows the loads; no stone stop on a kit errand', (t) => {
   const quarry = TRADE.yards.findIndex((y) => y.line === LINE2);
+  const quarryS = RAIL_LINES[LINE2]!.halts[TRADE.yards[quarry]!.stop]!.s;
   const stone = (w: World) => w.get(Town, w.lookup(Town, 0)!)!.stone;
+  const loaded = (w: World) => legRow(w, STACK).loadedLogs + legRow(w, STACK).loadedRails;
   stageWorlds().forEach((base, laid) => {
     const lap = quietLap(base);
     const s = unaudited({ w: restore(base.w), t: base.t }),
       stone0 = stone(s.w),
-      loads: number[] = [];
+      loads: number[] = [],
+      passes: string[] = [],
+      bare: string[] = [];
     let fullSince = -1,
+      opening = laid === 0, // until the opening's first full load is taken
+      lastKit = 0,
+      kits = loaded(s.w),
       prev = trains(s.w).map((r) => ({ ...r }));
     for (let k = 1; k <= 12000; k++) {
+      const wasFull = s.w.get(Yard, s.w.lookup(Yard, quarry)!)!.stock >= TRADE.loadStop;
       advance(s, 1);
+      if (opening && loaded(s.w) > kits) [kits, lastKit] = [loaded(s.w), k];
       const y = s.w.get(Yard, s.w.lookup(Yard, quarry)!)!.stock;
       if (fullSince >= 0 && y < TRADE.loadStop) {
         const wait = k - fullSince;
-        // The opening transient: once a leg, in the first lap after it opens (the rivet), up to that lap.
-        const allowed = laid === 0 && fullSince <= lap ? lap : SETTLED_CAP;
-        assert.ok(wait <= allowed, `${laid} laid: a full load waited ${wait} (allowed ${allowed})`);
+        if (opening) {
+          // The opening transient: the last opening kit's load and one quiet lap, and never past the ruled figure.
+          assert.ok(k <= lastKit + lap, `0 laid: the opening load taken at +${k} (last kit +${lastKit}, lap ${lap})`);
+          assert.ok(k <= OPENING_CAP, `0 laid: the opening load taken at +${k} (ruled ${OPENING_CAP})`);
+          opening = false;
+        } else assert.ok(wait <= SETTLED_CAP, `${laid} laid: a full load waited ${wait} (allowed ${SETTLED_CAP})`);
         loads.push(k);
         fullSince = -1;
       }
       if (fullSince < 0 && y >= TRADE.loadStop) fullSince = k === 1 ? 0 : k;
-      // (d) No stone stop by a train owed a kit, or carrying one it can unload now.
       trains(s.w).forEach((r, slot) => {
         const p = prev[slot]!;
-        if (RAIL_TRAINS[slot]!.line !== LINE2 || r.freight <= p.freight || r.at <= 0) return;
+        if (RAIL_TRAINS[slot]!.line !== LINE2) return;
+        // At the opening: a homeward train that runs past the Quarry's stop while a full load waits has a kit errand.
+        if (opening && wasFull && p.phase !== TRAIN_PHASE.SHED && trainDir(p) < 0) {
+          const was = trainAlong(p, LINE2, s.t - 1),
+            now = trainAlong(r, LINE2, s.t);
+          if (
+            was >= quarryS &&
+            now < quarryS &&
+            !(r.phase === TRAIN_PHASE.STAND && r.at === TRADE.yards[quarry]!.stop)
+          ) {
+            const errand =
+              p.logs + p.rails === 0
+                ? kitOwed(s.w, p, LINE2)
+                  ? 'owed a kit'
+                  : ''
+                : !legKitWaiting(s.w, LINE2, p)
+                  ? p.legKit
+                    ? "carries a leg's kit it can unload now"
+                    : "carries the works' kit"
+                  : '';
+            passes.push(`train ${slot} at +${k}: ${errand || (p.wagon ? 'wagon' : 'no errand')}`);
+            // The footing wagon's train makes no freight stop (slice 5 call 4): exempt by name (call 108).
+            if (!errand && !p.wagon) bare.push(`train ${slot} at +${k}`);
+          }
+        }
+        // (d) No stone stop by a train owed a kit, or carrying one it can unload now.
+        if (r.freight <= p.freight || r.at <= 0) return;
         if (r.at === stopsOf(s.w, LINE2).length - 1) return;
         const errand =
           (p.logs + p.rails === 0 && kitOwed(s.w, p, LINE2)) || (p.logs + p.rails > 0 && !legKitWaiting(s.w, LINE2, p));
@@ -1062,6 +1137,15 @@ test('gate 5: a full load never waits in the Quarry yard over 1,158 (once, in th
     const landed = stone(s.w) - stone0,
       before = loads.filter((k) => k <= 12000 - lap).length;
     t.diagnostic(`${laid} laid: lap ${lap}; loads at ${loads.join(', ')}; landed ${landed}, at least ${8 * before}`);
+    if (laid === 0)
+      t.diagnostic(
+        `0 laid: last opening kit loaded +${lastKit}; trains past a full load: ${passes.join('; ') || 'none'}`,
+      );
+    assert.deepEqual(
+      bare,
+      [],
+      `${laid} laid: trains past a full load at the opening with no kit errand (the wagon's aside)`,
+    );
     assert.ok(landed >= 8 * before, `${laid} laid: landed ${landed}`);
     if (laid === 0) assert.ok(landed >= 32, 'gate 5(c): 32 from the idle rivet');
   });

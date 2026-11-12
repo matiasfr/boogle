@@ -471,7 +471,19 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       with the leg fed every tick. Call 88: 313 to 1,060. **5 fails at 0 laid:** with the steel kit first, kits 1 to 3
       load at +436, +942 and +1,345, every train is owed a kit or carries one it can unload until then, and the first
       full stone load waits 2,252 ticks against the quiet lap's 1,460 (1,266 before steel first). No limit and no stop
-      rule is changed for either. **Leftover (P2):** the kit still owed counts every log and rail on a back as leg
+      rule is changed for either. *After the fourth sheet and call 108 (same branch, rebased onto main with the
+      rulings):* gates 8 and 9 are asserted (fixed stages at most 1,350, the settled line and stage 0 at most 1,400;
+      the mean and the share over 1,050 printed; each settled wait over 1,350 printed with its tick, halt and side).
+      Gate 5(a) is asserted as restated: the opening load is taken at +2,252, inside the last opening kit's load
+      (+1,345) plus the quiet lap (1,460) and inside 2,805; the trains past a full load before it are three owed a
+      kit (+329, +835, +1,238) and the footing wagon's train (+1,717), exempt by name. **Which change moved the
+      settled worst from 1,343, a reading and not a measurement:** the two cannot be split, because the rebase alone
+      does not run (building `ring-joined` stops on the load check, 'steel sent rails', with the works and a leg
+      reading each other's kit). At 0 laid, where steel first is in force, the four seeds' rows are within 3 ticks
+      of the pre-rebase ones (worst 730, 705, 694, 717 against 730, 708, 694, 717). The settled run starts 4,000
+      ticks after the Gorge opens with the steel kit lying unfed in the yard, so steel first has no rule in play
+      there; what differs is build 2's own changes (the 8.2 m extent, the head gap by boiler) and the state the leg
+      arrives in, within the 136-tick spread between seeds. **Leftover (P2):** the kit still owed counts every log and rail on a back as leg
       kit, the steel yard's included, so a leg load can be put off while someone carries the works' kit.
 - [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
@@ -1558,6 +1570,12 @@ this plan, not measurements.
    - No, 2 minutes 15 is the limit: leg 1 waits for a rule that buys back five seconds, or for train spacing.
    - Drop the finished-line limit for the greybox: only the 2 minutes 40 cap applies everywhere until train spacing.
    Answer: ___
+
+**Gate 5(a) names the footing wagon's train** (orchestrator, 12 November, Default; call 108): no train passes a full
+load at a leg's opening unless it is owed a kit, carries one it can unload now, or is the footing wagon's train, which
+slice 5's call 4 already keeps from every freight stop; each pass is printed with its errand or "wagon". The restated
+gate did not know call 4. No stop rule changes. Whether the wagon's exemption should end once no footings are owed
+(so all three trains take stone; today loads come 2,884 ticks apart after the rivet) is put to the owner.
 
 **What the owner is told about stone:** with the steel kit first, the Village's first stone after the rivet arrives
 about 1 minute 45 later than before, once a leg. The other choice was to make kit trains stop for stone, which slows
