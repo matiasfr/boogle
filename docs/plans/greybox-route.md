@@ -38,6 +38,10 @@ rail-map's answered question 1 makes three of the legs line 2 growing on, so the
 
 **Port from Place.** Nothing is ported. No fit check is needed.
 
+> **Hub towns (12 November):** the owner decided the larger hubs each have a town that grows and receives freight. The
+> stand-in town each hub leg owes is listed in [campaign-outline](campaign-outline.md#towns-at-the-hubs), section 4; this
+> plan is not otherwise changed.
+
 ## 1. What "greybox" means for one area
 
 A reviewer ticks all ten per area. Nothing else is in scope.

@@ -70,7 +70,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-02 · junctions unlock the network, and you still haul each track segment ([entry](#d-2026-11-02-junctions-unlock-the-network-and-you))
 - 2026-11-02 · trains growing the town from cargo is the part that lands ([entry](#d-2026-11-02-trains-growing-the-town-from-cargo))
 - 2026-11-02 · the next test is a real place with a choice ([entry](#d-2026-11-02-the-next-test-is-a-real))
-- 2026-11-02 · towns grow, and you can see them ([entry](#d-2026-11-02-towns-grow-and-you-can-see))
+- 2026-11-02 · towns grow, and you can see them ([entry](#d-2026-11-02-towns-grow-and-you-can-see)) _(which towns: the larger hubs each have one, growing and receiving freight like the Village; other areas are sources ([rewards, 12 November](decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight)))_
 - 2026-11-02 · the train is far faster than walking, and islands may be vastly far apart ([entry](#d-2026-11-02-the-train-is-far-faster-than))
 - 2026-11-02 · what you can see from far off and reach the long way round is the part of `?proto=place` that lands ([entry](#d-2026-11-02-what-you-can-see-from-far))
 - 2026-11-02 · construction is physical, not things scaling up ([entry](#d-2026-11-02-construction-is-physical-not-things-scaling))

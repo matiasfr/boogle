@@ -5,6 +5,10 @@
 
 # Slice 5: train cargo grows the Village, then Boogles and one plot buy
 
+> **Hub towns (12 November):** the Village is the first of five towns that receive freight. What R2b, R3, R4 and the views
+> must not hard-wire to one town is listed in [campaign-outline](campaign-outline.md#towns-at-the-hubs), section 4; this
+> plan is not otherwise changed.
+
 ## Goal
 
 Trains start carrying timber and stone home, and what they bring decides how big the Village may get. Riders pay
