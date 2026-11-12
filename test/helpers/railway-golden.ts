@@ -33,6 +33,7 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
   [
     'boiler-camp',
     'trains-on',
+    'freight-running',
     'q6-stocked',
     'q6-finishing',
     'q6-done',
