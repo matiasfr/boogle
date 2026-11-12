@@ -2,14 +2,14 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 11 November 2026, 17:30 PST, in the 11–12 November orchestrator session (started about 11:20, assumed 24 hours; hourly heartbeat; wind-down at 11:00 on 12 November). World v27 is live; main is green at R5 part 1, and main's CI takes about 5.5 minutes. Everything dated below is 11 November, times PST, unless it says otherwise.
+**Updated:** 12 November about 07:00 UTC (11 November 23:00 PST), in the 11–12 November orchestrator session (started about 11:20 PST on 11 November; hourly heartbeat; wind-down at 11:00 PST on 12 November). World v28 is live (slice 5 R1+R2); main's CI takes about 5.5 minutes. Normal mode (Claude only) until 13 November; the models table puts player-visible work, reviews and design on Fable medium.
 
 ## Links
 
 - [Owner calls](owner-calls.md), [decision index](../decisions.md#current-decision-index), [direction](../direction.md) (the one roadmap)
-- Current plans: [ECS migration](../plans/ecs-migration-railway.md), [M12 and M13 steps](../plans/ecs-m12-m13.md), [CI diet](../plans/ci-diet.md), [Ring Island build 1](../plans/ring-island-build1.md), [line 2 B5–B8](../plans/line2-b5-b8.md), [remote runner](../plans/remote-runner.md)
+- Current plans: [Ring Island build 2](../plans/ring-island-build2.md), [slice 5 town economy](../plans/slice5-town-economy.md), [greybox route](../plans/greybox-route.md), [campaign outline](../plans/campaign-outline.md) (hub towns), [remote runner](../plans/remote-runner.md); the ECS migration is done.
 - [Production core](../plans/production-core.md), [Round 4 tracker](../plans/round-4-notes.md), [playtests](../playtests.md), [replay guide](https://claude.ai/artifact/TAb4PhNz2E9g1DiZD5bHoF)
-- Patch notes video: https://boogle.club/updates/video-2026-11-11/
+- Open calls page (version 6, all 14 questions answered): https://claude.ai/artifact/MQizAujJpyybXc7fL7Fw3W
 - Briefs:
   - proposed: [money](../brainstorms/money.md), [cart first](../brainstorms/cart-first.md), [first evening](../brainstorms/first-evening.md);
   - approved: [recovery rack](../brainstorms/recovery-rack.md), [signposts](../brainstorms/signposts.md);
@@ -17,73 +17,97 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Where the work stands
 
-**On main, in order (11 November):**
+**On main since 17:30 PST on 11 November (12 November UTC, newest last):**
 
-- #1590–#1603: the owner's answers and calls; batches A and B (unit shards, R2d, the halt map, X1–X4, M12c, M13a and b, the leaf with several players); CI diet batch 1; the pennant pole; docs.
-- #1604, #1606: Windows tool fixes. #1605: the wing model behind `?layer=wing`, with an asset-viewer entry (`/character/?asset=track-wing`). #1607: acts.
-- #1608: the migration stack (batch C, M12e, M12f): tools and views read rows and queries; the adapter is `railway-session.ts`, `railway-intents.ts`, `railway-effects.ts`. #1610: M12b, the old read model deleted.
-- #1611: CI diet batch 2. #1612: the gated-fill eval waits in server ticks; the reload bot's command is in its eval's header.
-- #1613: the chunked far ground on by default ([owner](../decisions-process.md#d-2026-11-11-far-ground-on-by-default)). #1617: Ring Island's ground tiled the same way.
-- d975817e3: R4d the Meet and R4e the island's folk. a5f54113c: the hook-walk ledge fix (a level landing in `src/place/tech-layout.ts`), the zero-size boot fix (`src/render/drawable-size.ts`), a Windows test fix.
-- #1616: M13c (64 Place-only tools deleted, 15 rebuilt native). #1618: M13d (the level check off Place, a service-walkway ledge rule).
-- R5 part 1: the Ring Island bot segment (`npm run playthrough -- --from gap-footed --to ring-ride`) and its stops in the loop graph.
+- #1622 rail kit levels and split rings (performance.md; the distance LOD). #1623–#1626 M13e–M13g close the ECS migration. #1628 the `?home=b` boot crash (sources inspect by slot). #1630 the adapter's clock is `adapter.read.tickNow()`: the adapter read cut, migration complete.
+- #1633–#1635: campaign outline fix, slice 5 plan with design review, the breaker prompt fix (3ae0dced6), the TRAA warm-up note. #1636 R5b: both Ring Island jump-ins, seed fixtures regenerated.
+- #1638 greybox route plan with design review. #1639 the owner's 14 answers. #1640 slice 5 stone-stop ruling (R2b spec). #1641 slice 5 R1+R2 (freight yards, plots staked by deliveries; WORLD_NS v28). #1642 greybox leg 1 step 1 (map data; 0 of 299 spans over 4%).
+- #1643 hub towns decision and proposal. #1644 market hub; #1645 its answer. #1646 economy-stops ruling. #1647 greybox leg 1 step 2 (`src/sim/railway-route.ts`, 22 sections, LegYard naming).
 
-**Running at 17:30 PST (branch, state):**
+**Owner decisions, 12 November UTC** (all in the log): the 14 answers ([core loop](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered), [rail](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered), [town economy](../decisions-rewards.md#d-2026-11-12-town-economy-answered)); hub towns (Home, Ring Island, High Gorge, Canopy Town, Port Quay; the others are sources: [entry](../decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight)); the market hub at Bell Rock, built out in stages ([entry](../decisions-rewards.md#d-2026-11-12-market-hub-answered)); the seed-fixture regeneration call (owner-calls).
+
+**Running (branch, state):**
 
 | Branch | State |
 | --- | --- |
-| `ecs/m13e` | Deleting `src/proto/place` and its entry. Its report lists any Boogler lines that exist only in Place. Needs an independent review if it touches a review path |
-| `perf/rail-kit-distance` | Distance LOD and culling for the rail kit chunks (about 31k triangles each, dozens drawn at Far Head) and the always-drawn rings-and-cove mesh |
-| `feature/ring-r5b` | The ring seeds carry the glider (dev seed data, may be under `src/sim`: independent review); prove `--from leaf-raised`; build `--from deck-laid` |
-| HOTBOX | The full eval and scenario sweep on dbc3ebb4e; then a frame-time pass (below) |
+| `ring2/rules` (Mac, worktree `.claude/worktrees/agent-a8f0bb88b7688c06c`) | Ring Island build 2. R1–R2 reviewed (ship after fixes, fixed); R3 reviewed (ship). R4 (server allow-list for `rail.install`, `rail.steelTake`, `rail.steel`; bump to v30) and R5 (bot, loop, seed) in progress by one agent. Needs an independent review, then ships as one outside the owner's sessions. Then views V1–V3 on Fable |
+| HOTBOX `rail/slice5-r2b-stone-stop-e` | Slice 5 R2b stone stop (v29; ship with notes). Adding a rack-kept-full delivery harness for gate 3 |
+| HOTBOX `rail/slice5-r3-fares-c`, rebuilt as `-d` | R3 riders and fares (v31 placeholder). Blocker: `Town.acc` replicates every tick; moving to a non-replicated `TownClock` |
 
-**Next, in order:** review and ship the three branches (load https://boogle.club/ after any that changes what loads); M13f and M13g, which end the migration; R6 docs; a frame-time pass on HOTBOX and a device run, before and after the perf changes ([owner call](owner-calls.md#frame-time-60)); trees (one always-drawn batch), then shadow draws; `railway-session.ts` (573 lines against the plan's 450) after the `railway-read.ts` cut: the rest is `settle`, `submit` and `hear`, closures over the session state (see the M12f as-built note).
+HOTBOX is a peer session (address under Peers). The Mac ships its branches when HOTBOX sends tips and stamps. HOTBOX then takes greybox leg 1 step 3 (rules): it starts only after R2b and R3 are on main and re-runs slice 5's seven-item gate.
 
-**Rules learned on 11 November** (the lessons; the orchestrator keeps them):
+**Bump order:** R2b v29, build 2 v30, R3 v31, greybox step 3 after; renumber at ship time.
 
-1. Never run `ship-queue` through `| tail`: it hides the exit code and the error. Log to a file, and grep the log narrowly (`ship-check|error|rejected`), never the whole test output.
-2. A test that spawns git under the pre-push hook inherits `GIT_DIR`. One set `core.bare=true` and a fake user in the real `.git/config`; fixed in #1601 (`test/helpers/scratch-git.ts`; `testEnv()` strips `GIT_*`). If every worktree says "this operation must be run in a work tree", check `git config core.bare`.
+**Next, in order:** review and ship build 2 (load https://boogle.club/ after it); ship R2b, then R3; greybox step 3; views V1–V3; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)); trees, then shadow draws.
+
+**Waiting on the owner** (each proceeds on its recommendation):
+
+- "Cargo trains" A, B or C (A is built: no economy stop while footings are owed; B: stone always stops; C: dedicated cargo trains later), with the measured lock-out (wagon coupled, Q7 laid, ring unfooted: no scheduled stone, 16 for 20 minutes).
+- Three hub-town questions: does the Village receive far goods; what growing a hub town gives; stand-in towns in the greybox now.
+- The full-load reading of "stops at all sources".
+- Older: his picks in the [story brief](https://claude.ai/artifact/F7U3suEtidLnJyyd3eK2Hk) (saving unconfirmed on his device: read `picks/owner`); the wing's folded size; the remote runner's five questions; the halt map at phone size. Eight server symlink tests fail on HOTBOX until he turns on Developer Mode there.
+
+**Rules learned** (the lessons; the orchestrator keeps them):
+
+1. Never run `ship-queue` through `| tail`: it hides the exit code. Log to a file, grep narrowly (`ship-check|error|rejected`).
+2. A test that spawns git under the pre-push hook inherits `GIT_DIR` (fixed in #1601: `test/helpers/scratch-git.ts`). If every worktree says "this operation must be run in a work tree", check `git config core.bare`.
 3. A rebased branch is pushed under a new name, never force-pushed. A branch with merge commits can't be rebased by `ship-branch`: squash it onto origin/main on a new branch.
-4. Agents that each run the full unit suite count toward the Mac's limit of about three. Briefs ask for typecheck, lint and the touched tests only. HOTBOX crashes tabs with three looks at once: two at most.
-5. The default shell is Node 24: export Node 26 on `PATH` (`$HOME/.nvm/versions/node/v26.13.0/bin`). Run unit tests with `node dev/test-unit.ts <files>`, not `npx vitest`.
-6. Reviewers found real defects in three reviews (batch C's tick-less queries; the CI diet's classifier holes, twice). Keep them.
-7. The ship gate asks for a review of any new test file. Three ships bounced on feature tests outside the [test diet](tests.md#tests); every brief now says "no new unit test files" unless the code is lockstep.
-8. The registry's 14,000-character must-read budget per route is nearly full (the one-off-message route has a few characters spare): an edit to `tests.md` or `sync.md` must not grow them.
-9. A solo look warps page time about 12x while the server runs at real speed: evals wait on server ticks (`railAt()`), never page seconds. Two-player warp looks need `--warp-speed 2`.
-10. `refs/stash` is shared across worktrees: no `git stash` in any brief (HOTBOX lost and restored a hunk this way).
-11. Two ships fetching at once fail with "cannot lock ref"; rerun the ship.
-12. After a ship that changes what loads at startup, load https://boogle.club/ before calling the site healthy (the 04:55–07:10 outage; `dev/live-boot.ts` is now the guard). A pane opened hidden showed the zero-size error until a5f54113c; that fix is unverified in the real pane.
-13. During a GitHub Actions outage, run the CI jobs locally and merge by pull request ([owner call](owner-calls.md)).
+4. About three full-suite agents is the Mac's limit; briefs ask for typecheck, lint and touched tests only. HOTBOX: two looks at once at most.
+5. Default shell is Node 24: export Node 26 (`$HOME/.nvm/versions/node/v26.13.0/bin`). Run tests with `node dev/test-unit.ts <files>`, not `npx vitest`.
+6. Keep independent reviewers: they found real defects in batch C, the CI diet and ring2 R1–R2.
+7. New test files need review and must fit the [test diet](tests.md#tests); briefs say "no new unit test files" unless the code is lockstep.
+8. The registry's 14,000-character must-read budget per route is nearly full: an edit to `tests.md` or `sync.md` must not grow them.
+9. A solo look warps page time about 12x while the server runs at real speed: evals wait on server ticks (`railAt()`). Two-player warp looks need `--warp-speed 2`.
+10. `refs/stash` is shared across worktrees: no `git stash` in any brief. Two ships fetching at once fail with "cannot lock ref"; rerun.
+11. After a ship that changes startup loading, load https://boogle.club/ before calling the site healthy (`dev/live-boot.ts` guards it). During a GitHub Actions outage, run CI locally and merge by PR ([owner call](owner-calls.md)).
+12. An artifact page must copy what its store returns before mutating it: the store's objects are read-only and a write fails silently (the open-calls page lost answers this way). Do not republish a page while the owner is using it.
+13. A proof gate for anything touching line 2's trains must include the footing wagon's arrival trip by trip and every footing delivery tick; a gate on stage ticks and lever waits missed a cumulative wagon delay.
+14. A rule change that moves pinned fixtures needs its own WORLD_NS bump even when the save shape is unchanged.
+15. Give a peer or agent the plan text on a pushed branch before asking it to build to a ruling; HOTBOX built two steps from a chat summary and had to reconcile.
+16. Before telling the owner he played, check the room: a tab the orchestrator left open on boogle.club logs as play sessions under the default name (the `freight-running-gm82nj` sessions on 12 November were the orchestrator's pane).
+17. The owner's earlier words are often in `docs/brainstorms` and `docs/plans/town-layout.md` under his own term (he says "rotunda" for the Roundhouse): search those before saying something is not in the plan.
 
-**Peers.** HOTBOX is the owner's Windows desktop; its peer session is "Orchestrator coordination for development", address `bridge:session_013GeHMBXhojhecCo8EUn8eh`. It shares the build load ([owner call](owner-calls.md)). D3D12 looks run there with `LOOK_CHANNEL=msedge`. `gh` (portable, logged in as the owner) and ffmpeg are installed there. Messages to it are not confirmed read, but it answers.
+**Peers.** HOTBOX is the owner's Windows desktop; its peer session is "Orchestrator coordination for development", address `bridge:session_013GeHMBXhojhecCo8EUn8eh` (SendMessage; delivery is never confirmed but it answers). It shares the build load ([owner call](owner-calls.md)). D3D12 looks run there with `LOOK_CHANNEL=msedge`. `gh` and ffmpeg are installed there.
 
-**Housekeeping.** To clear at wind-down: about 20 merged agent worktrees and their branches (`batch-1111-*`, `agent-*`, `ci-diet-2`, `ci-diet-2b`, `save-cleanup-win`, `hotbox-fixes`, `state-evening`, `review-*`; `review-m12c` has a symlinked `node_modules`: delete it, don't reuse it); `/private/tmp/claude-501/wt-main`; the `boogle-test-speed` worktree and `claude/test-speed` (PR #1553 closed on the owner's word); the five `archive/review/*` tags (all checked: landed or obsolete). The 2D trade prototype artifact is dropped (owner, 11 November: "no need").
+**Housekeeping.** To clear at wind-down: many merged agent worktrees and branches; the `review/*` test branches (`review/ring2-rules-tests`, `review/ring2-r3-tests`); worktrees outside `.claude` (`boogle-freight-stops`, `boogle-hub-towns`, `boogle-economy-stops`, `boogle-test-speed` with `claude/test-speed`); `/private/tmp/claude-501/wt-main`; the five `archive/review/*` tags; `archive/place` (local only).
 
-**Still waiting on the owner** (nothing blocks): his picks in the [story brief](https://claude.ai/artifact/F7U3suEtidLnJyyd3eK2Hk) ([his call](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s); its saving was rebuilt six times and is unconfirmed on his device: read `picks/owner`, or use its Copy responses button); the wing's folded size (wider and longer than today's machine); the remote runner's five questions ([plan](../plans/remote-runner.md)); the halt map at phone size. His to overrule when seen: one cottage on arrival, the clock free with a stone footing, blank stake boards until the first fare, the village sign's 12; the Pier's platform and rack east from Q6; the forge's show length; the hook walk's level landing. Eight server symlink tests fail on HOTBOX until he turns on Developer Mode there.
+**Leftovers from 11–12 November, by rank:**
 
-**Leftovers from 11 November, by rank:**
-
-- P1: the ring seeds never take the glider (`rail.glide` is set only in `glide-earned`); in `feature/ring-r5b`.
-- P2: frame time is unmeasured for every perf change of 11 November (triangles and draws only); nothing was tested on a device.
-- P2: other evals may wait in page time on server-paced things (q6, the cart waits in `bots/railway.ts`).
-- P2: `dev/look/restore-pair.ts` and `look --at` restore checks still import Place (M13e).
-- P2: nothing audits the T3 and stack physical probes since M13d (the old audit was never green).
-- P2: R4d: the breaker is not visibly carried at the rivet; the whistle bark and rivet toss are not built; a sim-side early-strike guard needs a field and a bump.
-- P2: the wing is not solid and has no level check.
-- P2: the notify lane sits over Drop at 568x320, and Toss is off-screen in landscape.
-- P2: a red pre-deploy boot skips `recover` and opens no issue.
+- P2: `?home=b` draws 315 of 388 trees off the sim's positions.
+- P2: `railway-session.ts` is 573 lines against the 450 cap (needs a state object).
+- P2: the map JSON's own heights are stale, so `?blockout=world` and the 2D page draw platforms at new heights and rails at old ones; regenerate before the blockout is looked at again.
+- P2: White Wall sections 437 to 850 m and both ending sections (865, 726 m) exceed the design review's 650 m guide; the designer rules before that leg is built.
+- P2: how the ring's goods reach Bell Rock (open design item).
+- P2: Port Quay's rotunda and the engine sheds are decided (10 November) but not drawn in map data.
+- P2: town prices were tuned for six hours, not re-run for four to five.
+- P2: frame time is unmeasured for every perf change of 11 November; nothing tested on a device. Other evals may wait in page time (q6, the cart waits in `bots/railway.ts`).
+- P2: nothing audits the T3 and stack physical probes since M13d. The wing is not solid and has no level check. The notify lane sits over Drop at 568x320, and Toss is off-screen in landscape. A red pre-deploy boot skips `recover` and opens no issue.
+- P3: the avatar is drawn face-to-camera on a jump-in landing though its node faces up the line (pre-existing).
+- P3: the load check accepts a train standing at a line's end on the un-turned track, which then never leaves.
+- P3: Works seeds drop Q5 logs on the breaker pedestal (`seed-route.ts:181`). A 0.7 m dip at the Q2 trestle abutment. The bot `earlyLedge` branch is untested.
+- P3: `npm run perf` cannot take a pose or a production build; level-check cannot take planned positions.
+- P3: the seat and workshop are on the old wiring; seated-rider is still never taken.
+- P3: the `boiler fit` check rejects a fitted boiler with an empty bay; relax it when something first spends `Shed.steel`.
+- P3: the drawn longer engine is 6.7 m ahead while `TRAIN_EXTENT.aheadCm` is 820 (the views step reconciles).
+- P3: 14 evals "unknown" and `double-jump-action` is a delete candidate.
+- P3: Ring Island's ground is about 101k triangles at the island; `bloom.ts:13` re-sets its size every frame on a canvas under 64 px; `src/proto/greybox` precompiles without awaiting `drawable`.
+- P3: the gifts, piles and mushrooms adapters have no unit tests; `toeShove` has no sideways bound; lint skips `server/`; the halt map at phone size is the owner's look.
 - P2: `backOf` in `dev/peer-test/ws-railway.ts` and `mark()` in `dev/look/bots/railway.ts` still own shapes.
 - P2: R5: the standing rider over the bow, a two-player run, the plan's `ring-glide.ts` eval and perf runs.
-- P3: Ring Island's ground is still about 101k triangles at the island (wants its own LOD distances); far-ground tiles build at land load, cost unmeasured; the far ground's seams at 180 m and 420 m are unchecked on a phone.
-- P3: `bloom.ts:13` re-sets its size every frame on a canvas under 64 px; `src/proto/greybox` precompiles without awaiting `drawable`; a canvas collapsing to 0x0 mid-game is untested.
-- P3: `reconnect-edit`'s "landed" check proves the roster changed, not that it was the held edit; `dev/codex/look-broker.ts:56` has a dead `--regenerate` entry (M13e); the trusted broker needs a relaunch for M13c's change.
+- P3: Ring Island's ground wants its own LOD distances; far-ground tiles build at land load, cost unmeasured; the far ground's seams at 180 m and 420 m are unchecked on a phone. A canvas collapsing to 0x0 mid-game is untested.
+- P3: `reconnect-edit`'s "landed" check proves the roster changed, not that it was the held edit; `dev/codex/look-broker.ts:56` has a dead `--regenerate` entry; the trusted broker needs a relaunch for M13c's change.
 - P3: the lighting wedge's play-distance camera hides Buddy at the spawn; the `__placeDone` and `--place=` names remain.
 - P3: `ship-check`'s walker misses a path passed as a function parameter (the UNFOLLOWED gap); `ship-check` reported 0 affected tests for a new test file.
+- P2: `dev/look/restore-pair.ts` and `look --at` restore checks still import Place (M13e).
 - P3: the Talk prompt during an act card is untested; a stall cue's clear on reconnect is unverified; the cart at `trains-on` parks underground on the baseline too.
 - P3: the pennant is untested beside a real train and from Home's shore; the "mayor" comment in `src/place/folk.ts` is stale.
-- P3: the gifts, piles and mushrooms adapters have no unit tests; `toeShove` has no sideways bound; `rewardBusy` is separate from `momentBusy`; lint skips `server/`; the adapter exposes `tickNow` twice; Q7 `started` is untested at the seeds.
-- P3: the halt map at phone size (names small, the hold badge reads as the Pier's, the glider icon crowds "Quarry"): the owner's look.
+- P3: `rewardBusy` is separate from `momentBusy`; the adapter exposes `tickNow` twice; Q7 `started` is untested at the seeds.
+- P3: the halt map at phone size (names small, the hold badge reads as the Pier's, the glider icon crowds "Quarry").
 - P3: the live smoke after #1610 timed out reading the server's commit; the next four passed.
+- P3: stutter during the arrival fall through the clouds "until it jump in", again on a fresh reload; curio shelves "weirdly at angles" (owner picked layout A). Ball throw: extremely low priority (owner, 10 November).
+- Bot queue: a served look session held the slot for 47 minutes, and 44 runs sat on one slot at 22:00 UTC on 9 November. Sessions must open, capture and close; ask for one proof look per fix, no "before" capture where the code already shows the bug, and withdraw lower-rank looks when P1 proofs are waiting.
+- Water: the owner's from-scratch rebuild request (no Ultra baggage, flat underwater tint, light shallows and foam kept, Mario Odyssey/Sunshine range, seabed following terrain; archive tag `archive/water-ultra-2026-11-09`) is unverified as complete; check against the water rebuild (#1354).
+- Parked (owner's build-order call): R4d's breaker carried at the rivet, the whistle bark and rivet toss, and a sim-side early-strike guard (needs a field and a bump).
 - Unverified on GitHub: the automerge `--touches` step, the bisect.
 
 ## How merging works
@@ -105,35 +129,24 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
   - **Level check:** it measures reach from the line's centre every 2 m, so it misses jumps from the deck's edge (one jump onto p2 from s 94–97 already works). Its hook-walk standing places turn on once line 2 is laid over s 84–92, earlier than the game does (Q2, s 122).
   - **Up-track bed edge:** still 0.25–0.89 m in about 11 m of each line (trestle and ramp ends, the Village merge s 40–45, line 2 s 307).
   - **Bot detour:** the B8 bot's Far Head detour is probably unneeded now that the ground is banked.
-  - **Passenger car on a grade (fixed 10 November, on main):** the bench, the cargo car's stakes and boards, and seated riders' drawn bodies take the car's pitch (`Seat.frame`, view only); the level boards cutting the tilted deck were the doubled planks. Not checked: the wardrobe pet beside a rider still sits level on a grade; pets read `avatar.rotation.y`, which is now a fraction of a degree off while tilted.
   - **Shadow on/off stall:** turning the sun's shadow off and on stalled 3–21 s in a direct probe (10 November, on a loaded Mac), seen with and without the toon lighting since removed; benches missed Home's timing sample right after the switch. Phones turn shadows off on the detail ladder, so bench it on a quiet Mac and a phone.
   - **Rooms:** a room whose disk never answers still refuses joins and holds a hosted-room slot. Shutdown skips a room that `offline()` is closing; the 8 s hard exit covers it.
   - **Smoke rooms:** `smoke-node-N` keep their names across `WORLD_NS` bumps, so an old save that won't load fails their close every week. Resetting them is an owner call.
   - **Pages deploy:** `actions/deploy-pages` timed out twice for f8576e65 (15:18 and about 15:40 UTC) and the site lagged the server. The smoke then fails on a build mismatch; wait for the site before treating it as real.
   - **v25 notes:** a rider beside the line near a passing train can ring the bell cord (the reach is about 37 m at cruise); the quarry is a service stop whenever the pier still needs footings, so a short dwell can happen with nothing to load.
-  - **Agents and node_modules:** three agents symlinked node_modules; the rule is now in tools.md.
   - **Ring Island:** a strong swimmer can skip the glide (about 15 s against 2.5 s); accepted. Untested: the hook from the water, and a swimmer walking out at the last bent.
 
-- **Model rule (#1364, owner):** the orchestrator, planner and designer run Fable (planner and designer at medium, owner 10 November); code review and hardest design run on Opus. `npm run models` has the table.
 - **Pages deploys still hang:** twice more on 10 November (03:00 and 03:06 UTC). The server restarts first, so until the site deploy lands the smoke test fails on a build mismatch; cancel the hung run and the queued one goes. From 10 November 03:20 UTC the deploy step fails after three minutes instead of ten, so the workflow's own `recover` job retries; unproven until a hang meets it.
 - **Production resets of `rail-v23-boogle` on the owner's word (peer session):** 02:04 UTC (1 player kicked, backup `rail-v23-boogle@20261110T020452261Z.json`) and 02:51 UTC (empty, backup `rail-v23-boogle@20261110T025116035Z.json`). Both predate the reset feature, so players landed in town.
 
 - **Owner playtest notes, 10 November about 02:40 UTC (live build, desktop):**
   - P3: "due to proximity of e to open, i was able to open the mossy scarf chest from the ground instead of on the platform". The chest's open reach ignores height; it should need you on its platform (vertical limit or a reach test from the platform). Not started.
   - P3, with an iPad screenshot at the gorge: "the bridge is longer than it needs to be and it's narrow to walk around when i cross. it can be made nicer". The footbridge overshoots both banks; shorten it to the banks and give each end a proper landing with room to pass. Not started. (The same screenshot is the first real-device sight of the new water: shallows, foam lip and caustics render on iPad Safari.)
-  - P3: "the water splash particles are extremely dark/gray" after the water rebuild (#1354). Fixed in #1367.
-  - Stutter during the arrival fall through the clouds "until it jump in", again on a fresh reload. See Running.
-  - The pet sits on the seated rider's head: wants the shoulder, or beside the rider on the deck. Train stools: "in the middle and be a low stool like the track layer", rider properly seated. Done (#1362).
-  - Curio shelves "weirdly at angles and not spaced intentionally with everything else in the town". Owner picked layout A; see Running.
 
 - **Ball throw:** extremely low priority (owner, 10 November); it comes back with the old island.
-- **Outage, 10 November 01:18 to 01:40 UTC:** voice chat (#1334) made the server import `src/net/rtc-wire.ts`, which the image did not copy; the server crash-looped. Fixed by #1346, merged directly on the owner's word. Tests, two reviews and CI all ran from the full checkout. A review of any server change must now check new shared imports against `server/Dockerfile`.
 - **Pages deploys hang in `actions/deploy-pages`** (four times on 9 and 10 November, twice in a row at 01:36 and 01:44 UTC). Cancel after five minutes and rerun; the site stays on the previous build meanwhile, which also makes the smoke test fail on a server identity mismatch. After the playtest: rerun `deploy.yml` on main.
 - **Flaky server test:** "SIGKILL during checkpoint replacement restores a whole checkpoint with every unit conserved" failed once in CI on a branch with no server change (F2, #1340).
-- **Bot queue:** a served look session held the slot for 47 minutes (the water agent). Sessions must open, capture and close.
-- **Water:** the owner picked B, then asked for a from-scratch rebuild with no Ultra baggage, underwater cut to a flat tint, the baked sky removed if constants can replace it, the light shallows and shore foam kept, the look "somewhere in the range of Mario odyssey and Mario sunshine", and the seabed following the terrain. One agent (`ab3669d122eb5069c`) holds all of it; archive tag `archive/water-ultra-2026-11-09` first.
 
-- **Bot queue:** 44 runs on one slot at 22:00 UTC on 9 November. The bot-queue job adds shared stills and rank order; until it lands, ask for one proof look per fix, no "before" capture where the code already shows the bug, and withdraw lower-rank looks when P1 proofs are waiting.
 - **Glider B nits** (second review, 9 Nov): `forge-call.ts` line 66's comment and the plan's "NaN scale" sentence are wrong (a zero-length line returns a finite distance); the reach host tests bracket the glider's window without pinning its edges (±1 cm at 320/321 across, +300/+301 above, −220/−221 below); the v23 history line in `namespace.ts` credits the 24-rail cart, which shipped under v22.
 - **Smoke "bye":** the live smoke failed twice at 23:49 and 23:51 UTC on 9 November with `WebSocket timed out: ["bye"]` (the server answering "restart") and passed by hand at 00:05; the same happened at 22:53. Find what restarts the server after a Pages-only merge.
 - **Pier halt review nits:** footings hop 11 to 19 m in a fixed 0.9 s; `MACHINE_GAP` and the parked setback are copied into the test, not imported; `split-rock-roundhouse.md` still pins 730 m.
@@ -200,7 +213,6 @@ From 5–6 November; drop each when answered.
 - Keep about three agents running; no more than two browser looks at once on HOTBOX.
 - Report perf work in frame time as well as triangles ([owner call](owner-calls.md#frame-time-60)).
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
-- Tidy: the last code pass was `ca3212d0` (render/audio, #1248, 9 November). Run the remaining code areas, then architecture, docs and memory.
 - At 11:00 on 12 November: wind down, clear what Housekeeping lists, and hand over by updating this file.
 
 ## Peers
