@@ -2,7 +2,7 @@
 
 ## Round 4 shore arrival
 
-Round 4's bare URL (room `boogle`) and `?proto=place` land a newcomer's existing trolley/title fall on
+The bare URL (room `boogle`; a retired `?proto=place` address opens the same game) lands a newcomer's existing trolley/title fall on
 the west-shore clearing at local `(-199,10)`, facing inland. Its level 16 m clearing is 3 m high; a broad
 ramp reaches village height by x=-150. The village is reached by walking a 130 m path between the
 cottages, with one low optional rock hop. The target is 25–35 seconds with looking; the measured walk
@@ -15,9 +15,8 @@ SPAWN stays at the village: returning players skip the fall, valid saved positio
 positions fall back there. Position saves include the ground height; moved ground, water, or an older
 save without that sample falls back to SPAWN. Get unstuck keeps its existing nearby-ground/path recovery.
 
-Each newcomer has their own fall while partners keep playing. `?proto=place&v=village&intro=1`
-keeps the previous landing and terrain in `proto-place-village` (`proto-place-village-coop` with `&coop=1`),
-including room-only invites. It cannot join a shore room. `&greeting=off` keeps the shore and removes the ask.
+Each newcomer has their own fall while partners keep playing. The `v=village` comparison (the previous landing in
+its own room) went with Place (M13e). `&greeting=off` keeps the shore and removes the ask.
 The classic island has no entry of its own (6 November). Automated browsers skip the intro and start at the landing unless capturing it; `look --island` starts at the island's SPAWN.
 A threshold worker gives a grounded newcomer one visible passing wave and a five-second bubble while
 the machine sleeps: “Machine's asleep. Give us a hand?” Optional Talk can recover it. The ask and heard
@@ -32,8 +31,8 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it
   until the island can be drawn; Jump in reads "Loading island" until then. Pad A presses it. In the Home Screen app, a first
-  visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. Round 4 on the
-  bare URL and `?proto=place` uses this same opening, landing on the shore before the walk into the village.
+  visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. The bare URL
+  uses this same opening, landing on the shore before the walk into the village.
   Other `?proto=` and `?play` pages, and automated browsers, get the plain card instead. `intro=1` lets a harness inspect
   a new player's opening; `intro=0` skips the fall. These debug flags are not kept by the Home Screen launch memory.
   The loading screen waits up to 45 seconds for Buddy to finish preparing, then permits a recoverable `load-deadline` capsule.

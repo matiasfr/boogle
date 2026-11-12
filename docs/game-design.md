@@ -13,7 +13,7 @@ different systems don't touch the same file. A new system adds its file and one 
 
 ## 1. Overview
 
-Boogle is a drop-in browser game for up to 8 friends. The default URL now opens [round 4 in Threefold Reach](game-design/place.md), with the clean tester view and co-op enabled in `boogle`: chop and carry, open a walking path, earn better tools and abilities, and unlock trains. Explicit prototype and room links still work. The entry switch leaves the prototype code in place; its retirement and the architecture pass follow later.
+Boogle is a drop-in browser game for up to 8 friends. The default URL now opens [round 4 in Threefold Reach](game-design/place.md), with the clean tester view and co-op enabled in `boogle`: chop and carry, open a walking path, earn better tools and abilities, and unlock trains. Explicit prototype and room links still work. Place's prototype code was deleted on 11 November (ecs-m12-m13 M13e); `?proto=place` opens the live game.
 
 **The classic island** (owner, 6 November) has no entry of its own any more: `?classic=1`, its `beach` room and the
 `island=low` comparison are gone. The original island stands in the same world as the current game, at the world's
@@ -88,7 +88,7 @@ tick of 100 ms (10 per second).
 - [6.26 Prototype: the long crossing (`?proto=crossing`)](game-design/crossing.md)
 - [6.26b Water](game-design/water.md)
 - [6.27 Prototype: the line feeds the town (`?proto=net`)](game-design/net.md)
-- [6.28 Prototype: a real place (`?proto=place`)](game-design/place.md)
+- [6.28 Prototype: a real place (`?proto=place`, deleted; the live game's record)](game-design/place.md)
 - [6.29 Prototype: procedural sky (`?proto=sky`)](game-design/sky-proto.md)
 - [6.30 Dev menu (`?dev=1`)](game-design/dev-menu.md)
 

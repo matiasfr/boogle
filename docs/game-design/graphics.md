@@ -190,7 +190,7 @@
   compositing and the sky-derived fill is re-read at loading; shape and coverage stay fixed. Neutral replaces
   key, upper-fill and ground-fill chromaticity with equal linear RGB while preserving each source light's
   luminance. It is not a Kelvin setting or a warm post grade. Material colours and the separate airborne arrival
-  cloud deck are unchanged. `dev/look/beats/cloud-defaults.ts` compares the old `1/0` settings against unpatched
+  cloud deck are unchanged. `dev/look/beats/cloud-defaults.ts` (deleted at M13c, in git history) compared the old `1/0` settings against unpatched
   production defaults at spawn, town and shore on the same frozen current-source scene. Device appearance and
   real-time feel require owner replay; a successful capture is not device validation.
 - **Measurement and hitches.** Graphics **Measure on/off** uses Performance's real-frame profiler for warmed

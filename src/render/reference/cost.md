@@ -9,7 +9,7 @@
   copy/clear/mipmap passes and XR layer splits. `npm run counts` keeps its existing nightly fields and adds these
   details under `measurement` (still no timings).
 - `npm run perf -- --hardware --view overview --seconds 5` opens a visible browser without forcing software
-  rendering and samples real animation frames. `--query 'proto=place&look=all'` selects flags; `--url` uses a
+  rendering and samples real animation frames. `--query 'look=all'` selects flags; `--url` uses a
   running dev server, and `--json file` saves the report. Views come from `dev/look/lib.ts`; without `--view` or
   `--json`, it measures the current player camera. `--json` still defaults to the fixed overview/sun. Check the
   reported adapter (unavailable on some browsers) and keep the GPU to yourself; a headed browser alone does not

@@ -1,5 +1,10 @@
 # 6.28 Prototype: a real place (`?proto=place`)
 
+**Deleted (11 November 2026, [ecs-m12-m13](../plans/ecs-m12-m13.md) M13e).** `src/proto/place/` and the
+`?proto=place` entry are gone; `?proto=place` now opens the live game. The source is at the tag `archive/place`
+(`a6fc476fb`; local until the owner pushes it). What follows is the prototype's record: its files, flags, rooms,
+saves and evals are history, and the live game's parts are in `src/place/`, `src/entities/` and their own sections.
+
 _A throwaway greybox, round 4 ([plan](../plans/round-4.md)): "Did you get hungry for a better way, and did finding one feel great?" The owner and Grant after round 3: "the only thing asked of me was to just chop 1 or 2 trees, so I wasn't feeling hungry for more efficiency yet"; "seeing a path between two areas open up which was previously tedious was satisfying"; the trains were "too much too soon". So: a good slog by hand, a path you can walk, a ladder of relief, and trains last. Chop, carry, stacking and laying keep their feel from round 2 ("it felt like my work became the track"), and the crates and little guys from round 3 stay. The decision log's rules bind it: nothing consumed and vanishing, construction that drops into place, what looks solid is solid, a small prompt is direction enough, first gifts are cosmetic.
 Serves DESIGN.md 1 (Toys before chores), 7 (Telegraph everything) and 9 (Leave something for the next visitor). Layout:
 Threefold Reach (`.look/previz/home-redesign/`, section 3). Research: [construction you can watch](../research/construction-you-can-watch.md),
@@ -1499,8 +1504,8 @@ code-authored toy primitives, not a new GLB, skeleton or skin-weight pipeline.
 `chop-motion.ts` defaults to the pre-#924 floating axe arc in the back socket, without
 two-arm posing or extra body lean (owner: Start animation simple). The current axe meshes,
 **0.12 s contact**, **0.24 s restart interval**, 35 ms bite hold and 0.90 s visible tail remain.
-Dev → Tests → **Two-handed chop (retuning trial)** retains the experimental two-arm pose
-for later work; it is Local, off on every reload and never saved or sent. The asset stage
+The experimental two-arm pose stays in `chop-motion.ts` (`chopPresentation.twoHanded`), but its Dev → Tests
+toggle went with the Tests panel (M13e), so nothing turns it on; it is Local, off on every reload and never saved or sent. The asset stage
 uses the same default floating arc and socket. Strokes, yields, costs and saved/wire state
 remain unchanged. Full-back refusal lifts sideways; hardwood refusal recoils sooner.
 
@@ -1750,10 +1755,11 @@ with the shared backwash clock.
 Local presentation and static Owner collision; no new save or lockstep state, so `WORLD_NS` did not move. H uses the
 actual grid triangles plus kit surfaces. The tree catalog is captured before the shore is shaped, so tree IDs, harvest
 state, progression and The Boogler's copy are unchanged. Owner playtest and device validation remain pending.
-Serves DESIGN.md 11, Show, don't tell. The look evals (`dev/look/evals/terrain-cove.ts`, `coveShot=arrival|wide|previz`)
-and the collision audit (`npm run level-check -- --place=place --physics --region=cove`) now run against the default game, with no flags.
+Serves DESIGN.md 11, Show, don't tell. The cove's collision audit is `npm run level-check -- --cove` (its look eval
+`terrain-cove.ts` was deleted in M13c).
 
-`?proto=place&water=new&shelf=demo` is a Local geometry-only A/B experiment. It copies the owner's measured Ultra
+*Deleted in M13e (a `?proto=place` address now joins a shared room, whose land must not change):*
+`?proto=place&water=new&shelf=demo` was a Local geometry-only A/B experiment. It copied the owner's measured Ultra
 Water bearing-95 beach profile onto the east shore at world (1219.513, 8.505), oriented 95° clockwise from north.
 The exact-profile strip is 70 m wide, blending to unchanged terrain by 110 m; cross-shore blending runs from
 −30 to −10 m inland and +60 to +90 m offshore. Its offshore bar is intentional. The finished 2 m height grid supplies
