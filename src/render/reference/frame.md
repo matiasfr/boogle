@@ -42,3 +42,27 @@
   `setPixelRatio` or `scenePass.setResolutionScale` from other owners. The Local frame cap gates only the final
   `renderFrame()`; every callback still runs physics, input, networking, water FFT/queries and the adaptive observer.
   Skipped draws close profiling's callback state without incrementing its completed-render count.
+
+## Known: TRAA and the warm-up compile race on the sea's opaque depth (three r187)
+
+Found 11 November on Windows (Edge, D3D12, RTX 3080); not fixed. The default game is clean, because every context
+that draws the sea is 4x. It bites the look lab's `high`, `ultra` and `+ssgi` presets and `fx=taa` in real time:
+`renderPipeline_sea: Binding multisampled flag (1) doesn't match the layout's multisampled flag (0)`.
+
+- **Repro** (about 20 s; needs `--real`, a warped warm-up does not fail; with MSAA off it does not fail):
+  `LOOK_CHANNEL=msedge npm run look -- --real --view court --seconds 2 --query 'proto=look&lookpanel=0&fx=taa'`
+- **Cause.** The binding is the sea's opaque depth, `viewportDepthTexture` in
+  [`water/surface.ts`](../water/surface.ts):
+  1. The depth node keeps one depth copy per render target; its `.value` is whichever copy the last draw used.
+  2. three picks `texture_depth_2d` or `texture_depth_multisampled_2d` from `.value` when it builds the shader, and
+     builds the bind group layout later from the copy for the context being compiled.
+  3. With TRAA on, the lab's scene pass is 1-sample; drawing the sea leaves the 1-sample copy in `.value`.
+  4. The warm-up's `compileAsync` ([`precompile.ts`](../precompile.ts)) builds the sea for the 4x frame-buffer
+     target across several frames; a lab frame in between puts the 1-sample copy back in `.value`.
+  5. The shader declares a plain depth texture, the layout holds the 4x copy and pipeline creation fails.
+- **Why Windows only so far:** timing. The check is Dawn's and shared with Metal; the Mac was not tested.
+- **Fix options, neither taken yet:**
+  - Give the sea's depth nodes a `value` getter that returns
+    `getTextureForReference(renderer.getRenderTarget() ?? renderer.getCanvasTarget())`. It removed the error for
+    every preset in a scratch run, but it overrides a three internal; the proper fix is upstream.
+  - Keep warm-up compiles from running while TRAA is on (lab only).
