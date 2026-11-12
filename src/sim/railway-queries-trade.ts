@@ -7,10 +7,15 @@
 //   freightAboard(w, yard)         a yard's crates aboard its line's trains
 //   plotsStakedOf(town, wood, stone, bought)   the plots staked for those deliveries (R2), lowest first
 //   plotsStaked(w, town)           the same on the world (no plot is bought before R4)
+//   freightStop(w, slot, r, k, dir)  R2b's full-load stop: halt k going `dir` is a service stop for train `slot`
 import type { World } from '../ecs/index.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
-import { TRADE } from './railway-trade-layout.ts';
-import { Town, Train, Yard } from './railway-components.ts';
+import { TRADE, type TradeYard } from './railway-trade-layout.ts';
+import { RAIL_TRAINS } from './railway-lines.ts';
+import { WORKS } from './railway-works-layout.ts';
+import type { RailTrain } from './railway-train.ts';
+import { Town, Train, Works, Yard } from './railway-components.ts';
+import { kitOwed, stopsOf, worksId } from './railway-queries.ts';
 
 export const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
 export const townId = (w: World, slot: number) => w.lookup(Town, slot)!;
@@ -40,4 +45,21 @@ export function plotsStaked(w: World, town: number): number[] {
   const id = w.lookup(Town, town),
     t = id === undefined ? undefined : w.get(Town, id);
   return t ? plotsStakedOf(town, t.wood, t.stone) : [];
+}
+/** R2b, the full-load stop (the freight-stops ruling, calls 3 to 5): halt `k` going `dir` is a service stop for train
+ * `slot` (row `r`) when its line's yard stands at that middle halt, the train is heading home, the yard's `after` is
+ * met (the pier's twelve footings), the yard holds TRADE.loadStop crates and the train has room for them (empty, at 8),
+ * and the train is on no build errand (call 4: not the footing wagon's, no kit aboard, no kit owed). A yard at a line's
+ * end needs none: every train stands there. A train standing at the yard for any other reason loads all the same
+ * (freightLoads). */
+export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: number, dir: number) {
+  const line = RAIL_TRAINS[slot]!.line,
+    y = lineYard(line);
+  if (y < 0 || dir >= 0) return false;
+  const yard: TradeYard = TRADE.yards[y]!;
+  if (k !== yard.stop || k === 0 || k >= stopsOf(w, line).length - 1) return false;
+  if (yard.after === 'pier' && w.get(Works, worksId(w))!.pierSet < WORKS.pier) return false;
+  if (r.wagon || r.logs + r.rails > 0 || kitOwed(w, r)) return false;
+  const freight = w.get(Train, w.lookup(Train, slot)!)!.freight;
+  return w.get(Yard, yardId(w, y))!.stock >= TRADE.loadStop && TRADE.freightCap - freight >= TRADE.loadStop;
 }
