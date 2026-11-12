@@ -251,7 +251,7 @@ async function main() {
   if (!Number.isFinite(stallS) || stallS <= 0) throw new Error('--stall must be positive game seconds');
   const evalFile = path.resolve(
     checkout,
-    opt('--eval', `dev/look/evals/${rail.seed ? 'railway-b5b8-bot.ts' : 'railway-job.ts'}`),
+    opt('--eval', `dev/look/evals/${rail.seed ? rail.seed.bot : 'railway-job.ts'}`),
   );
   const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: checkout, encoding: 'utf8' }).trim();
   const name = opt('--name', commit);

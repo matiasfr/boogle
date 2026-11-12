@@ -1349,7 +1349,7 @@ and redraw when the stage changes, `island-map.ts` has `MAP_CELL` and `MAP_SEA_S
 - [x] `place.md`, "Departure boards at the halts".
 - [ ] The in-game proof look (`npm run look`, the 3D face at 1.5 m): not taken, the machine was at load 140; the map texture was drawn by the game's own `drawMapBase` in a browser canvas instead.
 
-- [ ] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
+- [~] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
   loop graph's `crossing` node are re-run with the rack on the east platform (call 54): the bot no longer crosses the
   track, and `npm run loop -- node crossing` reports the new carry (expected 5–9 m, was 11 m).
   `dev/look/bots/railway-ring.ts` (registered in `bots/railway.ts`): from
@@ -1369,6 +1369,23 @@ and redraw when the stage changes, `island-map.ts` has `MAP_CELL` and `MAP_SEA_S
   ring-joined` (hashes agree), `npm run perf` on the stub and at the island halt. Proof look (Done means):
   `--rail-seed gap-footed --eval dev/look/evals/ring-glide.ts`, its landing still. Then `npm run ship` for R3a–R5
   together, not mid-session.
+  > **Built (implementer, 12 November 2026): R5's segment, on `feature/ring-r5` (from `origin/main` a5f54113c); not shipped,
+  > only the one segment proved.** `npm run playthrough -- --from gap-footed --to ring-ride` passes, solo, real input, no
+  > recovery: ride line 2 from the Village to the Railhead, sprint off the platform's end and glide the gap to the brace
+  > platform (dry, 8.4 m), "Knock out the pawl", hook back to the gold pad, four footings rack to jib, the leaf lands, "Strike
+  > the rivet" (ring joined), then the Railhead's outbound lever (the joint's west platform, hopped up onto), the train to the
+  > island and a hop off at its halt. Checkpoints (`RAIL_STOPS`): `railhead`, `gap`, `braced`, `ring-joined`, `ring-ride`;
+  > seeds `gap-footed` and `leaf-raised` in `RAIL_FROM` (each now names its `bot` eval; `railway-ring-bot.ts` for these). Shared,
+  > not copied: `railway-ride.ts` (`line2Rides`: the Works bot's ride, now also the Ring bot's, plus `rideFrom` for the
+  > Railhead's levers and `hopTo`), `glideAcross` (the flight loop of `glideToBoiler`), `hookTo`/`hookLanding` for the island
+  > ring. `dev/loop/graph.ts`: the stops sit on `bents` (railhead), `brace` (gap, braced) and `rivet` (ring-joined, ring-ride);
+  > the Q7, bents, brace, weights and rivet cues are now on-main world cues (no separate `Q7`, `gap` or `ring` nodes: they would
+  > need marks the game does not emit). `npm run loop -- node crossing`: carry 9 m (was 11); `npm run loop -- run` has no softlock.
+  > **Found:** the ring seeds are built on the works seeds, which never took the glider (`rail.glide` is only in `glide-earned`),
+  > so at `gap-footed` the gap cannot be glided: the bot climbs Needle Bell and takes it as the route does (about 70 s of page
+  > time), where a seed would do. **Not done:** `--from deck-laid` (the 14 bents), the standing rider over the bow and back,
+  > the railhead idle log, the 2-player `--from leaf-raised`, `--from leaf-raised` itself, `ring-glide.ts` (the missed-glide
+  > eval), `npm run perf`. Timing under load is not evidence.
 - [ ] **6. R6, docs.** New `docs/game-design/ring-island.md` (what exists: the Meet, the rules, the numbers, the folk)
   and its index line; the brief's status (build 1 built, the greybox findings answered: step 0's results); the atlas
   railway story (a footing set at the railhead jib through `Aperture` to the leaf); this plan's status. Stills: the

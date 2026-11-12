@@ -20,14 +20,23 @@ export const RAIL_STOPS = {
   Q6: 'Q6 laid',
   pier: 'pier',
   crossing: 'crossing footed',
+  // Ring Island's part (dev/look/bots/railway-ring.ts), from `--from gap-footed` or `leaf-raised`: these are its checkpoints.
+  railhead: 'railhead reached',
+  gap: 'gap glided',
+  braced: 'leaf braced',
+  'ring-joined': 'ring joined',
+  'ring-ride': 'ring ridden',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
-/** `--from <stage>`: an accepted `--rail-seed` server save that railway-b5b8-bot.ts resumes from (its `railFrom`).
+/** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
  * Seeds are written per run through the real host's save path; there are no client fixtures to keep. */
 export const RAIL_FROM = {
-  'q5-done': { railFrom: 'boiler', after: 'Q5' },
-  'trains-on': { railFrom: 'q6', after: 'trains' },
-} as const satisfies Record<string, { railFrom: string; after: RailStop }>;
+  'q5-done': { railFrom: 'boiler', after: 'Q5', bot: 'railway-b5b8-bot.ts' },
+  'trains-on': { railFrom: 'q6', after: 'trains', bot: 'railway-b5b8-bot.ts' },
+  // Ring Island build 1 (R5): the footed gap, the leaf raised on its pawl, the wagon's last four on the railhead rack.
+  'gap-footed': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
+  'leaf-raised': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
+} as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [
   'wake',

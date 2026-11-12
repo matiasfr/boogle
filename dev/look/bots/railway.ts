@@ -49,7 +49,12 @@ export function aimHook(id: string) {
 }
 async function hookLanding(bot: Bot, id: string) {
   const { PADS } = await import('../../../src/place/tech-layout.ts');
-  const pad = PADS.find((p) => p.id === id)!;
+  // Ring Island's ring (ring-island-build1, R4b) lands on the railhead platform's gold pad, in world cm like the layout.
+  const { RING_HOOK } = await import('../../../src/sim/railway-ring-layout.ts');
+  const pad =
+    id === 'island'
+      ? { x: RING_HOOK.pad.x / 100 - 1000, z: RING_HOOK.pad.z / 100, top: RING_HOOK.pad.y / 100 }
+      : PADS.find((p) => p.id === id)!;
   hookCheck(
     bot,
     await bot.until(
@@ -411,6 +416,43 @@ export async function takeGlider(bot: Bot) {
   return { card };
 }
 
+/** In the air with W held: open the canopy with the Glide action and steer at `target` (metres, x/z), letting go of the
+ * stick `releaseWithin` m short so the canopy brakes, until the ground or the sea. Full stick from 3 s after the canopy
+ * opens to the let-go is sampled. The caller holds and clears KeyW. Shared by the glide home and the Ring Island gap. */
+export async function glideAcross(
+  bot: Bot,
+  target: { x: number; z: number },
+  { releaseWithin, pitch = -0.35, budgetMs = 90000 }: { releaseWithin: number; pitch?: number; budgetMs?: number },
+) {
+  const b = me.body!;
+  const face = () => {
+    cam.yaw = me.yaw = Math.atan2(-(target.x - b.position.x), -(target.z - b.position.z));
+    cam.pitch = pitch;
+  };
+  const started = performance.now();
+  const samples: { sink: number; speed: number }[] = [];
+  let released = 0;
+  face();
+  triggerAction('glide', 'down');
+  triggerAction('glide', 'up');
+  const open = await bot.until(() => inspectRailway()!.glider.open, 1000, 'the Glide action opens the canopy');
+  hookCheck(bot, open, 'the Glide action opens the canopy');
+  const opened = performance.now();
+  for (;;) {
+    face();
+    if (!released && performance.now() - opened >= 3000)
+      samples.push({ sink: -b.velocity.y, speed: Math.hypot(b.velocity.x, b.velocity.z) });
+    if (!released && Math.hypot(b.position.x - target.x, b.position.z - target.z) < releaseWithin) {
+      input.keys.delete('KeyW');
+      released = performance.now();
+    }
+    if (me.coyote > 0 || me.swimming) break;
+    hookCheck(bot, performance.now() - started < budgetMs, 'the glide lands within its budget');
+    await bot.wait(100);
+  }
+  return { samples, released };
+}
+
 /** From beside the taken device: step off the summit's west edge and fly to the boiler's apron by the forge, letting go
  * of the stick 9 m short so the canopy brakes and sinks you onto dry ground. Full stick from 3 s after the canopy
  * opens to the let-go is sampled for the BotW numbers. Real inputs only; the result goes in the bot's notes. */
@@ -422,38 +464,18 @@ export async function glideToBoiler(bot: Bot) {
   // The step-off: a stride south-east of the drum, so the line to the pedestal clears it, the switch on the left.
   const pedestal = { x: LINE2_BOILER.x / 100, z: LINE2_BOILER.z / 100 };
   check(await bot.straight(device.x + 1, device.z + 1.3, 0.4, 6000), 'stood at the summit step-off');
-  const face = () => {
-    const p = me.body!.position;
-    cam.yaw = me.yaw = Math.atan2(-(pedestal.x - p.x), -(pedestal.z - p.z));
-    cam.pitch = -0.35;
-  };
   const toPedestal = () => Math.hypot(me.body!.position.x - pedestal.x, me.body!.position.z - pedestal.z);
   const b = me.body!;
   const flightsBefore = read().glider.flights;
-  face();
+  cam.yaw = me.yaw = Math.atan2(-(pedestal.x - b.position.x), -(pedestal.z - b.position.z));
+  cam.pitch = -0.35;
   input.keys.add('KeyW');
   const started = performance.now();
-  const samples: { sink: number; speed: number }[] = [];
-  let opened: number,
+  let samples: { sink: number; speed: number }[] = [],
     released = 0;
   try {
     await until(() => me.coyote <= 0 && b.velocity.y < -0.5, 'stepped off the summit, falling', 8000);
-    triggerAction('glide', 'down');
-    triggerAction('glide', 'up');
-    await until(() => read().glider.open, 'the Glide action opens the canopy', 1000);
-    opened = performance.now();
-    for (;;) {
-      face();
-      if (!released && performance.now() - opened >= 3000)
-        samples.push({ sink: -b.velocity.y, speed: Math.hypot(b.velocity.x, b.velocity.z) });
-      if (!released && toPedestal() < 9) {
-        input.keys.delete('KeyW');
-        released = performance.now();
-      }
-      if (me.coyote > 0 || me.swimming) break;
-      check(performance.now() - started < 90000, 'the glide lands within 90 s');
-      await bot.wait(100);
-    }
+    ({ samples, released } = await glideAcross(bot, pedestal, { releaseWithin: 9 }));
   } finally {
     input.keys.delete('KeyW');
   }
