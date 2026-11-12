@@ -6,6 +6,8 @@ export type RoomHost = { upgrade(req: http.IncomingMessage, socket: Duplex, head
 
 export function routeUpgrades(server: http.Server, { roomHost }: { roomHost: () => RoomHost | null }) {
   server.on('upgrade', (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
+    // Node drops its own socket error listener on upgrade: a reset during a refusal must not reach the process.
+    socket.on('error', () => {});
     // Never parse req.url with URL here: a target like `//[` throws, and a throw in this listener exits the process.
     const pathname = (req.url ?? '/').split('?')[0]!;
     const host = roomHost();

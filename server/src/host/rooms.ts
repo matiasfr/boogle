@@ -148,13 +148,14 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     status(id: string) {
       const room = rooms.get(id);
       if (!room) return { mode: 'server', tick: store.readSync(id)?.tick ?? 0, players: 0, max: cfg.maxPlayers };
-      const { boot: b, tick, players, max, noSave, replication, railway, steps } = room.status();
+      const { boot: b, tick, players, max, dropped, noSave, replication, railway, steps } = room.status();
       return {
         mode: 'server',
         boot: b,
         tick,
         players,
         max,
+        dropped,
         noSave,
         replication,
         railway,
@@ -187,6 +188,9 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const pid = params.get('pid');
       const key = params.get('key');
       wss.handleUpgrade(req, socket, head, (ws) => {
+        // Before any refusal: a refused socket's bad frame (oversized, unmasked, bad opcode) emits 'error', and with
+        // no listener that exits the process. hosted-room.ts's join adds its own for the sockets it takes.
+        ws.on('error', () => {});
         if (stopping) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
         if (
           ws.protocol !== WS_PROTOCOL ||
