@@ -189,11 +189,7 @@ export const ENTITY_MESSAGE =
 // src/pois/ stays suppressed: the home redesign replaces it, so migrating it now would be wasted.
 // The services that stay on onFrame ("Entity or system" in that plan).
 const ENTITY_SERVICES = [
-  // Moved from src/proto/place with their hooks and adds unchanged (ecs-migration-railway M6); the owner conversion is listed under M13.
-  'src/entities/railway/car.ts',
-  'src/entities/railway/seat.ts',
-  'src/entities/railway/stations.ts',
-  'src/entities/railway/track-machine.ts',
+  'src/entities/railway/seat.ts', // a service the railway view and the workshop both register chairs with: one local sitter, and two frame hooks in the update and world phases that an owner's animate cannot place (M13f1)
   'src/entities/town/workshop.ts', // moved from src/proto/place with its add unchanged (M7)
   'src/features/identity.ts', // keeps this player's name and colour on the room's roster; no screen and no object
   'src/loop.ts', // onFrame itself, and the profiler

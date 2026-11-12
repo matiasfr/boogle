@@ -54,6 +54,7 @@ export const seekS = (s: number) => {
 };
 
 const look = wagonLook(CARS.length - 1);
+onFrame(look.step, { phase: 'update', order: 8 });
 const a: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 },
   b: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 

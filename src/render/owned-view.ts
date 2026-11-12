@@ -1,6 +1,6 @@
 // One view's meshes, collision bodies and subscriptions. Shared materials stay with their caches.
 import * as THREE from 'three/webgpu';
-import { removeBody, type Body } from '../physics/engine.ts';
+import { addBody, removeBody, type Body } from '../physics/engine.ts';
 import type { FrameCtx } from '../loop.ts';
 
 const owners = new WeakMap<THREE.Object3D, OwnedView>();
@@ -46,6 +46,13 @@ export function createOwnedView() {
       }
     },
     body(body: Body) {
+      bodies.add(body);
+      return body;
+    },
+    /** Adds a body to the world and owns it: it leaves with the view. */
+    addBody(body: Body) {
+      // boogle-disable-next-line boogle/use-an-entity -- the view's owner is where a body's lifetime is kept
+      addBody(body);
       bodies.add(body);
       return body;
     },

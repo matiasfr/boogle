@@ -7,7 +7,6 @@
 // when the train speeds up or slows down. All of it is derived from where ./index.ts put the cars this frame, which is
 // a function of the shared tick, so every tab draws the same. Local, cosmetic.
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../loop.ts';
 import type { OwnedView } from './owned-view.ts';
 import { reducedMotion } from '../constants.ts';
 import { clamp } from '../math.ts';
@@ -25,7 +24,8 @@ export const CRATES = [
   { x: -0.4, z: -0.7, sz: 0.5, yaw: 0.4, base: 0.7 }, // stacked on the first
 ];
 
-export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D };
+/** `step` is the look's own motion (wheels, rods, buffer slack): the caller runs it each frame, at order 8. */
+export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D; step: (ctx: { dt: number }) => void };
 
 /** Builds one loco and `trailers` flatbeds, in train order from the outbound end. */
 /** A cargo flatbed's fittings, in its deck's frame (y = 0 on the deck top): dark stakes up both long sides and low
@@ -154,8 +154,7 @@ export function wagonLook(trailers: number, crated = true, owner?: OwnedView): W
     outer.add(inner);
     return outer;
   });
-  animate(cars, bodies, [locoWheels, ...trailerWheels], gear, owner);
-  return { cars, chimneyTop };
+  return { cars, chimneyTop, step: animate(cars, bodies, [locoWheels, ...trailerWheels], gear) };
 }
 
 // ---------------------------------------------------------------- motion
@@ -178,8 +177,7 @@ function animate(
   bodies: THREE.Object3D[],
   wheelSets: THREE.Mesh[][],
   gear: Gear[],
-  owner?: OwnedView,
-): void {
+) {
   const radius = wheelSets.map((ws) => (ws[0]!.geometry as THREE.CylinderGeometry).parameters.radiusTop);
   const angle = cars.map(() => 0);
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
@@ -231,7 +229,5 @@ function animate(
       b.position.z = slack[n]!.x;
     });
   };
-  if (owner) owner.animate(step, 8);
-  // boogle-disable-next-line boogle/use-an-entity -- module-level add kept as in proto; owner conversion is M13 (ecs-migration-railway)
-  else onFrame(step, { phase: 'update', order: 8 });
+  return step;
 }

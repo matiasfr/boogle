@@ -651,6 +651,24 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
       equal at `spawn`, `town`, `forge`; `npm run level-check` equal; a look at `--rail-seed trains-on` with a seated
       rider (f1), the village (f2). Each is startup code: the live-boot rule of M13e applies.
 
+  **f1 and f3 as built (12 November, `ecs/m13f-1-3`, one commit; f2 not started; not shipped).** The exemptions
+  for `car.ts`, `stations.ts` and `track-machine.ts` are gone from `ENTITY_SERVICES`: `makeCar`, `buildStation` and
+  `buildMachine` take the view's owner (required), the `else scene.add`/`else onFrame` branches are deleted, and a car's
+  body goes in through the new `OwnedView.addBody` (one `use-an-entity` disable there, where bodies' lifetimes are
+  kept). `machine-model.ts` left `INPUT_ALLOW`: its "key read" was the literal `'wheel'` (a mouse-wheel event name to
+  the rule), now `recipe === recipes.wheel`. **`seat.ts` stays on `ENTITY_SERVICES`, with its reason:** it is one local
+  sitter shared by the railway view and the workshop, and its two frame hooks run in the `update` and `world` phases,
+  which an owner's `animate` (update only) cannot place; moving them is a behaviour change, so it waits for a kind with
+  phases (leftover P2). f3: `boxes.makeSet` no longer adds its mesh (callers add it: owner, `scene` for `src/proto/net`
+  and `src/place/pieces.ts`, workshop's proxy); `crates.ts` takes a `stage` (`deck(frame, dipV, stage)`, `hopTo`,
+  `drawHeaps`: the view's `owner.root`, or `scene` for `?proto=net`), so the module-level ground heap mesh now joins the
+  scene on its first `drawHeaps` instead of at import (the live game never draws one: one empty mesh fewer);
+  `wagonLook` returns its `step` and the caller registers it (`owner.animate` in the train and machine views,
+  `onFrame` in `?proto=wagon` and `?proto=crossing`). Four inline `use-an-entity` disables deleted. Deleted exports
+  with no reader: `flyToStock`; `seat.ts` `freeSeat` and `standUp` are no longer exported. Left from M13e's list (files
+  not touched here): the rest. **Proof:** typecheck, lint, registry, ship-check green; `level-check` equals main's
+  but for pids. Look `--rail-seed trains-on` with `railway-passenger-car.ts`: boarded, seated (`railway:train2-1-seat1`), rode, stood, walked off; the still shows the quarry halt, bench, board and crates (a still of the seated rider itself was not taken: `--until` with `--action` ran out its warm-up). Bench census and `live-boot` not run (for the ship).
+
 - [ ] **M13g. One list of stations.** _M, Medium. After M13e (Place's readers are gone); not beside f2 (`src/place`)._
       `src/place/layout.ts`'s `LINKS[n].stations` is built from `LINE1_STATIONS` and `LINE2_STATIONS`
       (`src/sim/railway-line-layout.ts`, `railway-line2-layout.ts`) with only what is the land's own (a platform's

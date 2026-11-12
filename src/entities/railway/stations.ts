@@ -5,8 +5,7 @@
 import * as THREE from 'three/webgpu';
 import { guardInstances } from '../../render/draw-count.ts';
 import { material } from '../../render/materials.ts';
-import { scene } from '../../render/scene.ts';
-import { removeBody, type Body } from '../../physics/engine.ts';
+import { type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { flat } from '../../render/flat.ts';
@@ -16,7 +15,7 @@ import { H, addStatic } from '../../place/land.ts';
 import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from '../../place/look.ts';
 import { kitBatch, stationKit } from '../../place/look-kit.ts';
 import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
-import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot } from '../../place/pieces.ts';
+import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
 import { addFoot } from '../../place/sites.ts';
 import {
   FRAME_D,
@@ -33,23 +32,6 @@ export { frameBesideLine, type FrameAt } from '../../place/spatial-station.ts';
 export type StationRun = ReturnType<typeof buildStation>;
 /** The bill's paint: ink on paper, like the village's boards (src/place/signs.ts). */
 const BILL_LOOK = { ground: '#fff3d6', ink: '#2a1c10', rim: '#2a1c10' };
-/** The same deposit flight locally and on a partner's screen. Origins and landing effects belong to the caller. */
-export function flyToStock(
-  st: StationRun,
-  kind: Goods,
-  n: number,
-  from: THREE.Vector3,
-  land: () => void,
-  owner?: OwnedView,
-) {
-  if (kind === 'logs')
-    send('log', from, st.logSlot(n, new THREE.Vector3()), { dur: 0.32, apex: 0.9, size: [1, 2.2], land }, owner);
-  else if (kind === 'rails')
-    send('rail', from, st.railSlot(n, new THREE.Vector3()), { dur: 0.36, apex: 0.9, land }, owner);
-  else if (kind === 'stone')
-    send('stone', from, st.stoneAt(n, new THREE.Vector3()), { dur: 0.34, apex: 0.9, land }, owner);
-  else send('log', from, st.at, { dur: 0.5, apex: 1.4, size: [4, 4], land }, owner);
-}
 const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
   stoneMat = material('stone');
 stoneGeo.computeBoundingBox();
@@ -94,7 +76,7 @@ function saddles(g: THREE.Group) {
     },
   };
 }
-export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) {
+export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   const { x, z, yaw, lx, lz } = place;
   const y = place.y ?? H(x, z);
   const at = new THREE.Vector3(x, y + 0.12, z);
@@ -175,8 +157,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     }
     g.add(feeder);
   }
-  if (owner) owner.add(g);
-  else scene.add(g);
+  owner.add(g);
   // The empty frame is low rails and four posts, not a head-high solid block. In particular, T3 must not
   // trap the player or collapse the camera just as the first path opens. Stock gets its own body below.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
@@ -205,8 +186,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
       b.position.set(railAt.x + Math.sin(yaw) * off, y + 0.1, railAt.z + Math.cos(yaw) * off);
       b.rotation.y = yaw;
       b.castShadow = true;
-      if (owner) owner.add(b);
-      else scene.add(b);
+      owner.add(b);
     }
   }
 
@@ -221,8 +201,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
   rails.castShadow = true;
   rails.frustumCulled = false;
   rails.count = 0;
-  if (owner) owner.add(rails);
-  else scene.add(rails);
+  owner.add(rails);
   // Stone in a low heap beside the frame; the great beam, when it comes, across the frame's top.
   const stones = spec0.stone ? new THREE.InstancedMesh(stoneGeo, stoneMat, spec0.stone) : null;
   guardInstances(logs, `station ${spec0.id} logs`);
@@ -232,8 +211,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     stones.castShadow = true;
     stones.frustumCulled = false;
     stones.count = 0;
-    if (owner) owner.add(stones);
-    else scene.add(stones);
+    owner.add(stones);
   }
   const beam = spec0.beam
     ? new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.32, 5.6, 8).rotateX(Math.PI / 2), flat('#7a5430'))
@@ -243,8 +221,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     beam.position.set(x, y + 1.7, z);
     beam.rotation.y = yaw;
     beam.visible = false;
-    if (owner) owner.add(beam);
-    else scene.add(beam);
+    owner.add(beam);
   }
   // The great beam pass (C1): two empty timber saddles on the frame's top with loose gold lashings, a beam-shaped gap
   // from the moment the station opens; the lashings tie round the beam when it lands. Local, from accepted state.
@@ -271,7 +248,6 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
   }
   bill.mesh.position.set(bx, place.y ?? H(bx, bz), bz);
   bill.mesh.rotation.y = byaw;
-  if (!owner) scene.add(bill.mesh);
   let painted = '';
 
   const slot = new THREE.Vector3();
@@ -329,8 +305,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
       const rows = Math.ceil(logs.count / PER_ROW);
       if (rows !== stockRows) {
         if (stockBody) {
-          if (owner) owner.removeBody(stockBody);
-          else removeBody(stockBody);
+          owner.removeBody(stockBody);
         }
         stockBody = null;
         stockRows = rows;

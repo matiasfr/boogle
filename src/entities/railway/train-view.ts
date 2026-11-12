@@ -118,6 +118,7 @@ export async function createRailwayTrains(
   const trains = RAIL_TRAINS.map(({ line }, slot) => {
     if (look.LOOK.kit) kitModels ??= RAIL_TRAINS.map(() => kit.trainLook(2, () => false, engineKit));
     const model = look.LOOK.kit ? kitModels![slot]! : wagon.wagonLook(2, false, owner);
+    if ('step' in model) owner.animate(model.step, 8);
     const cars = offsets.slice(0, WAGON).map((_, n) => {
       const car = rail.makeCar(
         wagon.TRAIN_CARS[n]!,
@@ -154,7 +155,7 @@ export async function createRailwayTrains(
     fit(false);
     engine.platform.topAt = (x, z, feet) =>
       shape.engineDeckAt(x, z, feet === undefined ? -Infinity : feet + centre, fitted) - centre;
-    const crateDeck = crates.deck(model.cars[2]!, () => {});
+    const crateDeck = crates.deck(model.cars[2]!, () => {}, owner.root);
     // Car 2 carries the cargo (the deck above): a freight car, loaded or empty, with stakes and boards and no seats
     // (owner, 10 November: "if there's cargo then it shouldnt have seats"). Car 1 is the passenger car, a knifeboard of four seats.
     const fittings = wagon.cargoFittings(owner);

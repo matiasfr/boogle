@@ -11,6 +11,7 @@
 // `tune.set` and a filled ring is `tune.fill` (all accepted in `proto-` rooms). Everything else (crates, camps' piles,
 // the town's stage) is counted in this tab and kept in localStorage per room, so a reload keeps your place. No counters
 // or progress bars: the heap, the load and the buildings are the readout.
+import { scene } from '../../render/scene.ts';
 import './net.css';
 import * as THREE from 'three/webgpu';
 import { rules } from '../../world/game-world.ts';
@@ -73,14 +74,14 @@ wagonApi.setTimetable(
 // and whose smoke hides the view at 10 m/s.
 Object.assign(wagonApi.FEEL, { rock: 0.012, bounce: 0.03, puffs: 0.7, puffSize: 1, shake: 0.6 });
 const rear = wagonApi.cars[wagonApi.cars.length - 1]!;
-const load = deck(rear.rock.children[0]!, (v) => void (rear.dipV += v));
+const load = deck(rear.rock.children[0]!, (v) => void (rear.dipV += v), scene);
 
 // ---------------------------------------------------------------- local state, kept per room
 const KEY = `boogle-net-v1:${getRoomId()}`;
 type Saved = { stage: number; wood: number; stone: number; heap: Kind[]; piles: Kind[][] };
 const village = heap(stopAt(0).x + 4.2, stopAt(0).z + 3, 4);
 const piles = CAMPS.map((c) => heap(c.pile.x, c.pile.z, 3));
-const depots = protoV('net') === 'depot' ? createDepots(load, () => drawHeaps(allHeaps)) : null;
+const depots = protoV('net') === 'depot' ? createDepots(load, () => drawHeaps(allHeaps, scene)) : null;
 const allHeaps: Heap[] = [village, ...piles, ...(depots?.heaps ?? [])];
 const s = { stage: 0, wood: 0, stone: 0 };
 function restore() {
@@ -121,7 +122,7 @@ function startOver() {
   village.list = [];
   for (const p of piles) p.list = [];
   depots?.reset();
-  drawHeaps(allHeaps);
+  drawHeaps(allHeaps, scene);
   sleepCamps();
   resetTown();
   snap = true;
@@ -163,11 +164,18 @@ function make(now: number) {
     p = piles[best]!;
   doorAt.set(c.door.x, groundHeight(c.door.x, c.door.z) + 0.6, c.door.z);
   nextSlot(p, landAt);
-  hopTo(c.kind, doorAt, landAt, 0, () => {
-    p.list.push(c.kind);
-    drawHeaps(allHeaps);
-    save();
-  });
+  hopTo(
+    c.kind,
+    doorAt,
+    landAt,
+    0,
+    () => {
+      p.list.push(c.kind);
+      drawHeaps(allHeaps, scene);
+      save();
+    },
+    scene,
+  );
 }
 
 // ---------------------------------------------------------------- the wagon at a stop
@@ -239,7 +247,7 @@ function loadGoods(stop: number) {
     hopOn(load, kind, ground, n++ * TUNE.stagger);
   }
   if (n) {
-    drawHeaps(allHeaps);
+    drawHeaps(allHeaps, scene);
     save();
   }
 }
@@ -248,7 +256,7 @@ function land(kind: Kind) {
   village.list.push(kind);
   if (kind === 'wood') s.wood++;
   if (kind === 'stone') s.stone++;
-  drawHeaps(allHeaps);
+  drawHeaps(allHeaps, scene);
   save();
 }
 function stageWanted(): number {
@@ -289,7 +297,7 @@ onFrame(
       woke = 0;
       wake(sites.open, 0, false);
       wasOpen = sites.open;
-      drawHeaps(allHeaps);
+      drawHeaps(allHeaps, scene);
     }
     if (proto) tuneRoom(now);
     // Sections

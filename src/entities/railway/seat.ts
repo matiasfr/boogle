@@ -122,7 +122,7 @@ const reachable = (s: Seat) => {
     Math.abs(b.position.y - p.y) < 1.4
   );
 };
-export function freeSeat() {
+function freeSeat() {
   return seats
     .filter((s) => reachable(s) && !grants[s.id])
     .sort((a, b) => {
@@ -152,7 +152,7 @@ function occupy(s: Seat) {
   me.yaw = p.yaw;
   me.body.velocity.set(carry.x, carry.y, carry.z);
 }
-export function standUp(reason = 'stand input') {
+function standUp(reason = 'stand input') {
   recordRelease(reason);
   const s = sitting;
   sitting = null;

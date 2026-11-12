@@ -1,10 +1,9 @@
 // A car: a kinematic body following a planned pose (moved from the rail of ?proto=place).
 import { P } from './line-geometry.ts';
 import * as THREE from 'three/webgpu';
-import { scene } from '../../render/scene.ts';
 import { FIXED } from '../../constants.ts';
 import { angleLerp } from '../../math.ts';
-import { BODY, addBody, createBody, onPreStep, teleport, type Body } from '../../physics/engine.ts';
+import { BODY, createBody, onPreStep, teleport, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
 import { carry, CARRY, fromPlatform, registerPlatform, toPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
@@ -73,7 +72,7 @@ export function makeCar(
   rock: THREE.Object3D,
   before: () => void,
   extra: Parameters<typeof createBody>[0],
-  owner?: OwnedView,
+  owner: OwnedView,
 ) {
   const hy = (spec.top - BOTTOM) / 2;
   const body = createBody({
@@ -83,14 +82,12 @@ export function makeCar(
     position: { x: ORIGIN.x, y: -60, z: ORIGIN.z },
     shapes: [{ kind: 'box', hx: spec.hx, hy, hz: spec.hz }, ...(extra?.shapes ?? [])],
   });
-  addBody(body);
-  owner?.body(body);
+  owner.addBody(body);
   const mesh = new THREE.Group();
   rock.position.y = -(BOTTOM + hy);
   mesh.add(rock);
   mesh.visible = false;
-  if (owner) owner.add(mesh);
-  else scene.add(mesh);
+  owner.add(mesh);
   const car: Car = {
     spec,
     hy,
@@ -117,7 +114,7 @@ export function makeCar(
   };
   const unregister = registerPlatform(car.platform);
   decks.set(car.platform, car);
-  owner?.cleanup(() => {
+  owner.cleanup(() => {
     unregister();
     decks.delete(car.platform);
   });
