@@ -321,7 +321,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       fuzz, 20,000 ticks under random lever asks on the grown line, keeps `sepCm`, the end blocks and a 105 s worst wait.
       *As built so far (12 November; not shipped, held at the gates; no bump, no fixtures yet):* the rules are on the
       local branch `wip/greybox-leg1-step3`. **Held:** the 105 s worst wait on the grown line fails (line 2 up to 1,169
-      ticks with four trains and 1,130 with five at the Gorge, the WAIT_BOUND way; 1,440 in the whole-leg fuzz), and
+      ticks with four trains and 1,130 with five at the Gorge, the WAIT_BOUND way; 1,440 in the whole-leg fuzz; under-asked: see "The ask method" below), and
       stone stops while the leg is built (every train carries a waiting kit and slice 5's call 4 refuses it a freight
       stop); both await rulings. In plain words, for the designer:
       - **When a leg opens:** the stack leg opens the moment Ring Island's rivet is struck (its `after` is -1). A leg
@@ -381,17 +381,20 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       8,000 at three laid); at the signals a train follows block by block, and the quiet lap is within 3.3% of non-stop
       at every stage. Riders cannot step off at a signal. The headway hold is unchanged: it is worked out every tick from
       the open stops' non-stop lap and the running fleet (73 to 74% of an even split of the measured lap at 75%), and it
-      barely binds under the fuzz's asks (0, 0, 19, 416 and 932 standing ticks over 20,000 at 0, 25, 50, 75 and 100%).
+      barely binds under the fuzz's asks (0, 0, 19, 416 and 932 standing ticks over 20,000 at 0, 25, 50, 75 and 100%;
+      under-asked).
       **Gates (round 3's list, base `a82a0d6e`, four seeds at 75%):** 1 to 4 pass (every stage before the rivet on
       main's tick and rows; at `ring-joined` only the kit, depot and forge fields and the new rows differ). 5 passes:
       a full load's longest wait 1,266 at the rivet inside its first-lap allowance (the quiet lap, 1,426), then at most
       1,136; landed 32, 32, 40, 32, 32 at 0 to 4 laid; 32 from `crossing-done` and the idle rivet; no stone stop on a kit
-      errand. 6, 7, 10 to 14 and 16 pass (ride 1.03, 1.02, 1.03, 1.03, 1.01; whole-leg worst 1,478; a train at the new
-      railhead within 1,135 ticks of every lay; joins 449 ticks after section 1; rivet to Gorge 3,055, idle 651, 536,
+      errand. 6, 7, 10 to 14 and 16 pass (ride 1.03, 1.02, 1.03, 1.03, 1.01; whole-leg worst 1,478 and a train at the new
+      railhead within 1,135 ticks of every lay, both under-asked; joins 449 ticks after section 1; rivet to Gorge 3,055, idle 651, 536,
       355 and 309). **8 and 9 fail at 75%** and are printed, not asserted, until the owner answers question 1: fixed
       stages worst 1,395 (two laid, 5eed), 1,307 (four laid); settled worst 1,430 and mean 543 (badd), 1,217 (777);
       typical waits about 50 s, 1.5 to 1.8% of waits over 1,158. None of 0, 25 and 50% passes them either. The stage-0
-      part of 9 passes (worst 908, means 340 to 384). 15 is not run (build 2 is not on main). **Open owner question 1:**
+      part of 9 passes (worst 908, means 340 to 384). Every figure in this paragraph that comes from lever asks
+      (8, 9, 11 and the hold's standing ticks) was measured under-asked; this build's figures on the ruled method
+      are under "The ask method" below; 0, 25 and 50% are not re-run. 15 is not run (build 2 is not on main). **Open owner question 1:**
       the grown line's wait bound.
       *As built after the step 4 review (its b, k and finding 1; still local, no bump):* **Positions.** The stack leg's
       first frame and rack stand on Ring Island's west platform (`ringAt(45300, -830)` and `ringAt(44600, -840)`, y 8.9
@@ -405,21 +408,39 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       (endMoved: a train running up to it stops there once), a train standing at an old head turns back up and runs
       on, and the lay leaves an up-way lever ask at the old head, so the first up train after the lay stops there. From
       each lay, someone standing at the old head is at the new head within 899 ticks on four seeds at 75% (whole-leg
-      fuzz: 478 to 899) and 536 fed every tick. **Heads 1 and 2 close behind** (the orchestrator's ruling): once
+      fuzz: 478 to 899; under-asked, re-measured below) and 536 fed every tick. **Heads 1 and 2 close behind** (the orchestrator's ruling): once
       the section after next lays (head 1 with section 3, head 2 with the Gorge) a passed head passes both ways: no
       lever ask, no rider stop, no kit or stone business, no train stops there; its block signal stays and the halt
       stays in the line's row, so open stops are still a prefix. The close is counted in open stops (`closesAt`), not
       on the first train leaving: a lay is the one moment the rules already change a line's stops, it needs no new row
       field, and two lays on, call 88's ride-on from that head is long over (at most 951 ticks; a section takes 760 to
-      840 fed). The lay that closes a head turns a train standing there into one at a signal and drops every ask there.
+      840 fed). The lay that closes a head turns a train standing there into one at a signal and drops every ask there. The cost,
+      accepted by the orchestrator: an old head stays askable, a stop someone can call a train to, for one section more
+      than it serves the build (760 to 840 ticks fed).
       Head 3 stays the review's `Stack halt`, served both ways. Re-measured on this build: call 88 fed 536, 463, 341,
       342 ticks; at 75% on the four seeds (20,000 ticks) 951, 362, 313, 318 / 427, 937, 313, 318 / 711, 572, 731, 614 /
       711, 640, 416, 432. Gate 14: the Gorge 3,195 ticks from the rivet, idle 651, 536, 463, 341. Gates 1 to 3: the 39
-      stages before the rivet identical to main. Printed gates 8 and 9 (75%, four seeds, 20,000 ticks; asks 6.6 to
-      10.6 a minute by stage, 7.2 to 7.5 whole leg and settled): fixed stages worst 694 to 1,366, means 303 to 597;
-      whole leg worst 1,248 to 1,408, means 550 to 584, 5 to 10 of 241 to 248 waits over 1,050 and 2 to 8 over 1,158;
-      settled worst 1,182 to 1,343, means 603 to 632, 10 to 17 of 239 to 250 over 1,050 and 2 to 5 over 1,158. Every
-      asserted gate passes. **The route gates run long and short:** `ROUTE_GATES=1` (the long mode) runs their fuzzes
+      stages before the rivet identical to main. Every asserted gate passes. **The ask method** (the orchestrator's ruling): the
+      gates are measured main's way (`test/railway-trains.test.ts`, the WAIT_BOUND method): on 5% of ticks a lever ask
+      at a halt picked uniformly among the halts a player could ask at (open and not closed behind), main's total rate,
+      plus riders' asks at 3% and junk calls at 1%. The route rules test's fuzzes (the whole-leg fuzz, the stage and
+      settled waits, call 88's fuzz) all pick that way (`askPool`). The earlier sheets (rounds 1 to 3 and the step 4
+      review, the scratch probes and this test before closed-behind) picked uniformly from the whole grown catalog, 22
+      and then 24 halts, and dropped a pick at a halt not open: at 0 laid only 8 are open, as on main, so they asked each
+      open halt at about 36% (0 laid) to 45% (4 laid) of main's per-halt rate. Their stage-0 figures changed only for
+      that: the earlier and the current rules give identical rows at 0 laid on the ruled method. Gates 8 and 9 printed
+      on the ruled method, this build, 75%, four seeds (worst / mean / waits over 1,050 / over 1,158 / waits served;
+      stages 3,000 ticks each, whole leg and settled 20,000):
+
+      | Seed | 0 laid | 1 | 2 | 3 | 4 | Whole leg | Settled |
+      | --- | --- | --- | --- | --- | --- | --- | --- |
+      | c0ffee | 730 / 389 / 0 / 0 / 37 | 700 / 328 / 0 / 0 / 41 | 1017 / 390 / 0 / 0 / 44 | 1219 / 455 / 1 / 1 / 40 | 1153 / 546 / 2 / 0 / 39 | 1304 / 584 / 6 / 2 / 248 | 1320 / 612 / 14 / 5 / 246 |
+      | 777 | 708 / 418 / 0 / 0 / 36 | 769 / 315 / 0 / 0 / 53 | 1213 / 452 / 1 / 1 / 46 | 1067 / 470 / 1 / 0 / 43 | 1337 / 588 / 6 / 2 / 39 | 1408 / 571 / 10 / 8 / 241 | 1281 / 632 / 17 / 4 / 239 |
+      | 5eed | 694 / 452 / 0 / 0 / 35 | 1033 / 322 / 0 / 0 / 46 | 1366 / 383 / 2 / 1 / 44 | 1122 / 502 / 2 / 0 / 41 | 1223 / 597 / 5 / 2 / 40 | 1346 / 560 / 8 / 5 / 245 | 1182 / 606 / 10 / 2 / 250 |
+      | badd | 717 / 390 / 0 / 0 / 33 | 667 / 303 / 0 / 0 / 50 | 1360 / 445 / 2 / 1 / 44 | 1222 / 506 / 6 / 3 / 46 | 998 / 549 / 0 / 0 / 43 | 1248 / 550 / 5 / 3 / 247 | 1343 / 603 / 13 / 3 / 249 |
+      | asks a minute | 7.4, 7.2, 7, 6.6 | 8.2, 10.6, 9.2, 10 | 8.8, 9.2, 8.8, 8.8 | 8, 8.6, 8.2, 9.2 | 7.8, 7.8, 8, 8.6 | 7.5, 7.3, 7.4, 7.5 | 7.4, 7.2, 7.5, 7.5 |
+
+      **The route gates run long and short:** `ROUTE_GATES=1` (the long mode) runs their fuzzes
       at 20,000 ticks on the four ruled seeds (226 s audited); every other mode runs 3,000 ticks, the same seeds, every
       asserted gate still asserted (25 s at the pre-push settings). The long version is run and its output pasted
       before this step ships and before any later train-rule change ships ([ship pipeline](../agents/ship-pipeline.md#unit-test-settings)). **A unit lost off the rack is owed again**

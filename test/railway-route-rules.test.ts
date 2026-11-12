@@ -592,7 +592,9 @@ test('replicated rows change only at a kit load, a feed or a lay: never every ti
 
 // ---------------------------------------------------------------- the trains on the grown line
 /** The halts a lever ask may name now: open on their line and not closed behind (the orchestrator's ruling on call 88:
- * a passed head takes no ask), by RAIL_HALTS id. */
+ * a passed head takes no ask), by RAIL_HALTS id. Every fuzz here asks at 5% of ticks, one of these picked uniformly:
+ * main's total rate (test/railway-trains.test.ts, the WAIT_BOUND method), the gates' method as ruled. Picking from the
+ * whole grown catalog instead wastes about two picks in three on halts no one can ask at (under-asked). */
 function askPool(w: World) {
   return RAIL_HALTS.flatMap((h, id) => {
     const n = stopsOf(w, h.line).length;
@@ -910,7 +912,7 @@ function quietLap(base: Seed) {
   }
   return (left.at(-1)! - left[0]!) / (left.length - 1);
 }
-/** The lever waits the WAIT_BOUND way (test/railway-trains.test.ts): asks at 5% a tick, riders' asks, junk calls and
+/** The lever waits the WAIT_BOUND way (test/railway-trains.test.ts): asks at 5% a tick from askPool, riders' asks, junk calls and
  * restores, nothing fed; line 2's served waits, the worst and the mean. Spacing checked as it runs. */
 function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
   let s = unaudited({ w: restore(base.w), t: base.t });
@@ -986,9 +988,10 @@ test('gate 9, stage 0: the leg open and nobody feeding, four seeds at 75%: worst
 });
 
 // TODO(owner question 1, greybox-route.md "Rulings on round 3"): the grown line's wait bound is the owner's choice.
-// At the shipped hold (75%) five trains give a typical wait of about 50 s, 1.5 to 1.8% of waits over 1,158 ticks and a
-// worst of 1,430 (settled, seed badd). Gates 8 and 9's four-seed runs are printed here, not asserted, until he answers.
-// Lowest passing hold of 0, 25 and 50%: none of them passes; see owner question 1.
+// At the shipped hold (75%), on main's ask method, five trains give settled means of 603 to 632 ticks, 2 to 5 of about
+// 245 waits over 1,158 and a worst of 1,343 (seed badd; 20,000 ticks). Gates 8 and 9's four-seed runs are printed here,
+// not asserted, until he answers. Holds of 0, 25 and 50% failed them too, but were measured under-asked (picks from the
+// whole grown catalog) and are not re-run on this method.
 test('gates 8 and 9, printed: fixed stages 0 to 4 and the settled line, four seeds at 75% (owner question 1)', (t) => {
   const stages = stageWorlds();
   const settled = unaudited({ w: restore(stages[N]!.w), t: stages[N]!.t });
@@ -1002,7 +1005,7 @@ test('gates 8 and 9, printed: fixed stages 0 to 4 and the settled line, four see
       `${seed.toString(16)} | ${row.map((f) => `${f.worst} (${f.mean})`).join(' | ')} | ${set.worst} (${set.mean}), ${set.over} of ${set.n}`,
     );
   }
-  t.diagnostic('lowest passing hold of 0, 25 and 50%: none of them passes; see owner question 1');
+  t.diagnostic('holds of 0, 25 and 50%: none passed, measured under-asked, not re-run; see owner question 1');
 });
 
 test('gate 5: a full load never waits in the Quarry yard over 1,158 (once, in the first lap after the leg opens, up to the quiet lap); landed follows the loads; no stone stop on a kit errand', (t) => {
