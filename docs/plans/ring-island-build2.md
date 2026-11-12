@@ -368,13 +368,16 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       pass-through once the ring is joined), `railway-steel-take-logs`, `-feed`, `-take-rails`, `-feed` until lit
       (20 takes and feeds), ask for the home train at the island's lever, ride home, stand 1.3 m west of the post and
       hold `railway-install` until `Line.boiler` is 1. Each phase reads the rows first, so it resumes from the steel
-      seeds. **Proved in pieces, not whole:** `--from ring-joined` reaches "steel works lit" (twice, 12:10 to 12:26 of
-      game); `--from steel-lit` passes to "boiler installed" (the steel came home by itself; the hold, `Line.boiler`
-      1). **The whole segment is blocked on fix/carry-sticky-deck:** the homeward ride loses the rider at about z -370
-      (line 2's s 757, past the bow's crest): `deckUnder` (`src/physics/platforms.ts`) lets a stationary
-      `railway:T1:flatbed`, the track layer parked on the homeward lane, take the rider from the car (the car's terms were
-      all in bounds; the flatbed is listed first and overlaps), so the train leaves without them. Not worked round in the
-      bot. Also found and fixed on this branch (view only): the island's levers stood at u 466, 18 m from the platform
+      seeds. **Proved whole (rebase 3, on main's ride-home fix #1657, tip 9d63d738):** `npm run playthrough -- --from
+      ring-joined --to boiler-long --stall 6000 --wall 2700` passes with no recovery: the ride to the island (12:22 of
+      game, tick 11929), the kit taken and fed (20 takes and feeds), the works lit (12:33, tick 11936), the home train
+      called at the island's lever (13:34), boarded (20:03), the ride home standing on a car (y 26) past the pier head
+      (z -370) to the Village (about 27:30), steel home (27:49, tick 13238), the install held, boiler installed (27:54,
+      tick 13244; 28 minutes of game in 4 minutes). `npm run checkpoints -- steel-kit steel-lit steel-home boiler-long`:
+      all four build (24.1, 0.3, 2.4 and 2.1 s). Still: `.look/village-long-still.png` (the longer-boiler train
+      standing at the Village's line 2 platform). Before the fix the homeward ride lost the rider at about z -370: the
+      parked track layer's flatbed took the rider from the car in `deckUnder`; main's fix keeps the current deck and
+      stows the track layer once Q7 is laid, and the bot needed no change for it. Also found and fixed on this branch (view only): the island's levers stood at u 466, 18 m from the platform
       centre the server judges a lever ask from (reach 12.6 m), so every ask was refused; they now stand at u 457
       (`halts-view.ts`; `.look/lever-u457b-still.png`: both levers on their platforms, clear of the shed, loader and
       stacks); `steel11` boarded from the lever. `rideToIsland` is now exported from `railway-ring.ts` (the ring bot's
