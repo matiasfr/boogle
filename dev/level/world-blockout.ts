@@ -73,7 +73,7 @@ export const SERVICES: Service[] = [
     legs: [{ id: 'incline', reverse: true }, { id: 'final' }],
     halts: [
       { name: 'High Gorge', place: 'gorge' },
-      { name: 'Bell Rock', place: 'bell' },
+      { name: 'Bell Rock', place: 'bell', deck: 4 },
       { name: 'Original Island', place: 'original' },
     ],
     note: "The Gorge's low station at the water, Bell Rock (stage 4), and the last line over the shallows to The Boogler's island.",
@@ -213,6 +213,9 @@ const ROUTES: Record<string, Route> = {
   // The bow ends at the island halt (no Ring top); the pier head and first bent at 24.3 m, then 4% down to the halt.
   ringx: { pts: lineOf('ringx').pts.slice(0, 5), heights: [24.3, 24.3, null, null, null], ruled: true },
   ledge: { pts: STACK_LEDGE },
+  // Bell Rock on two levels (rail-map question 3): the bay line on the skerry at 15 m, the north-south line at the water.
+  incline: { pts: lineOf('incline').pts, heights: NULLS(lineOf('incline').pts.length) },
+  final: { pts: lineOf('final').pts, heights: NULLS(lineOf('final').pts.length) },
   // The bay trestle leaves the same halt and the same shore, then runs on to Bell Rock as drawn.
   'ring-bell': {
     pts: [...SHORE_OUT, ...lineOf('ring-bell').pts.slice(16)],
