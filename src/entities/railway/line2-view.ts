@@ -237,18 +237,7 @@ export async function createRailwayLine2(
     const out = { x: -P7.uz, z: P7.ux };
     frames.push(
       stations.buildStation(
-        // "Line 2, station 7" follows the others' board ("Station 7"); the plan names no label for it.
-        {
-          id: 'Q7',
-          s: 742,
-          to: 862,
-          side: 1,
-          logs: 20,
-          rails: 20,
-          label: 'Line 2, station 7',
-          crate: true,
-          rack: 'train',
-        },
+        layout.landStation(LINE2_STATIONS[Q7]!),
         {
           x: RING_Q7_FRAME.x / 100,
           z: RING_Q7_FRAME.z / 100,
