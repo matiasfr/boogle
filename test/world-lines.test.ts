@@ -6,6 +6,8 @@ import { execFileSync } from 'node:child_process';
 import { FORMATION, LIVE_SECOND_TRACK, WORLD_LINES } from '../src/sim/railway-world-lines.ts';
 import { TRAIN, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { LINES, ORIGIN } from '../src/place/layout.ts';
+import { layout, parseMapPage } from '../src/sickle/map-data.ts';
+import { readFileSync } from 'node:fs';
 
 test('the catalog and the world-blockout page are current with the map JSON', () => {
   // The generator reads Place's terrain, which needs the dev hooks (import.meta.glob), so it runs in its own process.
@@ -94,4 +96,46 @@ test('no future span is steeper than the 4% ruling grade, and the Gorge halts st
       !l.halts.some((h) => h.name === 'Ring top' || h.name === 'High Port'),
       `${l.id} has no Ring top or High Port`,
     );
+});
+
+test("the map JSON's rails agree with the catalog's decks at every vertex and halt", () => {
+  // The blockout draws platforms and crossovers from the catalog and rails from the map JSON: they must meet. The
+  // generator writes the JSON's rails from the catalog; this fails when they drift (or the JSON is hand-edited).
+  const TOL_M = 0.25; // height: the JSON's centimetre rounding, with slack
+  const NEAR_M = 1; // and the rail must run within a metre of the vertex
+  const page = readFileSync(new URL('../docs/world/map-prototypes.html', import.meta.url), 'utf8');
+  const map = layout(parseMapPage(page), 'sickle', 'A');
+  for (const l of WORLD_LINES) {
+    const rails = l.legs.map((g) => {
+      const line = map.lines.find((x) => x.id === g.id);
+      assert.ok(line?.heights, `${l.id}: map line ${g.id} has heights`);
+      assert.equal(line.heights.length, line.pts.length);
+      return line.pts.map((p, i) => ({ x: p[0] + ORIGIN.x, z: p[1] + ORIGIN.z, y: line.heights![i]! }));
+    });
+    /** The rail's height (m) at the point of any leg nearest (x, z) metres, and how far that point is. */
+    const railAt = (x: number, z: number) => {
+      let best = { d: Infinity, y: 0 };
+      for (const r of rails)
+        for (let i = 1; i < r.length; i++) {
+          const a = r[i - 1]!,
+            b = r[i]!;
+          const vx = b.x - a.x,
+            vz = b.z - a.z;
+          const t = Math.max(0, Math.min(1, ((x - a.x) * vx + (z - a.z) * vz) / (vx * vx + vz * vz || 1)));
+          const d = Math.hypot(x - (a.x + vx * t), z - (a.z + vz * t));
+          if (d < best.d) best = { d, y: a.y + (b.y - a.y) * t };
+        }
+      return best;
+    };
+    const meets = (what: string, x: number, z: number, y: number) => {
+      const r = railAt(x / 100, z / 100);
+      assert.ok(r.d <= NEAR_M, `${l.id} ${what}: the map rail is ${r.d.toFixed(1)} m off the catalog`);
+      assert.ok(
+        Math.abs(r.y - y / 100) <= TOL_M,
+        `${l.id} ${what}: map rail ${r.y.toFixed(2)} m, catalog ${(y / 100).toFixed(2)} m`,
+      );
+    };
+    l.pts.forEach((p, i) => meets(`vertex ${i}`, p[0], p[1], p[2]));
+    for (const h of l.halts) meets(h.name, h.x, h.z, h.y);
+  }
 });

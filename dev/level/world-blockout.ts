@@ -2,6 +2,7 @@
 // docs/world/map-prototypes.html and Place's real line 2 (docs/plans/world-blockout.md):
 //   src/sim/railway-world-lines.ts    every future line as a pinned catalog in the sim's own shape (world cm, stops, halts)
 //   docs/world/world-blockout.html  the top-down map and its tables, for the owner's review
+//   docs/world/map-prototypes.html  the map JSON's rails (points, heights) for those links, written from the catalog
 // `--check` writes nothing and exits 1 if either file is stale (test/world-lines.test.ts runs the same comparison).
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +23,7 @@ import {
 import { H } from '../../src/place/terrain.ts';
 import { GATES, GATE_SLAB, PILLARS } from '../../src/place/tech-layout.ts';
 import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/place/spatial-station.ts';
-import { layout, parseMapPage, polyLen, smoothRing, type XZ } from '../../src/sickle/map-data.ts';
+import { layout, parseMapPage, polyLen, smoothRing, type Line, type XZ } from '../../src/sickle/map-data.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
 import { FAR } from '../../src/place/layout.ts';
 
@@ -137,7 +138,9 @@ const B = layout(MAP, 'sickle', 'B');
 // meets an island at its height, and no span is steeper than 4%. The map JSON's heights predate them (they jump onto
 // cliffs at 45 to 340%), so the heights here come from the rulings, not from `heights`: a station's deck, a plateau
 // where the JSON holds a deck at an island's height, and the sea deck everywhere else. A line eases between them at the
-// ruling grade, beside the higher end. The 2D map page and the live blockout still draw the JSON's own heights.
+// ruling grade, beside the higher end. The JSON's rails for these links are then written back from the catalog
+// (`mapPage`): a rewritten line keeps what it was in `authored`, the only part of it this file reads, so a rerun is
+// stable and the 2D map page and the live blockout draw the catalog's own rails.
 const SEA_DECK = 4;
 /** An authored height above this is a cliff or a summit the JSON climbed onto: the line stays at the sea deck instead. */
 const DECK_CAP = 16;
@@ -201,10 +204,14 @@ const STACK_LEDGE = [
 ];
 
 type Route = { pts: XZ[]; heights?: (number | null)[]; ruled?: boolean };
-const lineOf = (id: string) => {
+/** A line's points and heights before the rulings: kept as `authored` once `mapPage` has written the catalog's rails over them. */
+type Authored = { pts: XZ[]; heights?: (number | null)[] };
+const authoredOf = (l: Line): Authored => (l as Line & { authored?: Authored }).authored ?? l;
+const lineOf = (id: string): Line => {
   const l = A.lines.find((x) => x.id === id);
   if (!l) throw new Error(`no map line ${id}`);
-  return l;
+  const { pts, heights } = authoredOf(l);
+  return { ...l, pts, heights };
 };
 const NULLS = (n: number) => Array.from({ length: n }, () => null);
 /** The links the rulings redraw; every other link runs as the map JSON draws it. `ruled`: its heights are the rulings' own
@@ -1102,9 +1109,49 @@ ${stills}
 // Written as Prettier leaves them, so the format hook never makes a generated file look stale.
 const pretty = async (file: string, text: string) =>
   prettier.format(text, { ...(await prettier.resolveConfig(ROOT + file)), filepath: ROOT + file });
+
+// ---------------------------------------------------------------- the map JSON's rails, from the catalog
+/** map-prototypes.html with every service link's points and heights (Sickle Isles) replaced by the catalog's, ruling
+ * corners included; links no service runs over (the lift, today's lines) keep their own. A link's old points and heights
+ * stay in its `authored` key, which `lineOf` reads, so this file's inputs never come from its own output. */
+function mapPage(): string {
+  const m = /(<script type="application\/json" id="map-data">)([\s\S]*?)(<\/script>)/.exec(html);
+  if (!m) throw new Error('map-prototypes.html has no #map-data block');
+  const data = JSON.parse(m[2]!);
+  const lines: (Line & { authored?: Authored })[] = [
+    ...data.common.lines,
+    ...data.options.find((o: { id: string }) => o.id === 'sickle').lines,
+  ];
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  for (const b of BUILT) {
+    const along = [b.fromCm];
+    for (let i = 1; i < b.pts.length; i++)
+      along.push(
+        along[i - 1]! + Math.round(Math.hypot(b.pts[i]![0] - b.pts[i - 1]![0], b.pts[i]![1] - b.pts[i - 1]![1])),
+      );
+    for (const g of b.legs) {
+      const line = lines.find((l) => l.id === g.id);
+      if (!line) throw new Error(`no map line ${g.id}`);
+      line.authored ??= { pts: line.pts, ...(line.heights ? { heights: line.heights } : {}) };
+      const own = b.pts.filter((_, i) => along[i]! >= g.fromCm && along[i]! <= g.toCm);
+      if (g.reverse) own.reverse();
+      line.pts = own.map((p) => [r2(p[0] / 100 - ORIGIN.x), r2(p[1] / 100 - ORIGIN.z)]);
+      line.heights = own.map((p) => r2(p[2] / 100));
+    }
+  }
+  return (
+    html.slice(0, m.index + m[1]!.length) +
+    '\n' +
+    JSON.stringify(data, null, 2) +
+    '\n' +
+    html.slice(m.index + m[0].length - m[3]!.length)
+  );
+}
+const MAP_PAGE = 'docs/world/map-prototypes.html';
 const outputs: [string, string][] = [
   [CATALOG, await pretty(CATALOG, catalog())],
   [PAGE, await pretty(PAGE, page())],
+  [MAP_PAGE, await pretty(MAP_PAGE, mapPage())],
 ];
 const check = process.argv.includes('--check');
 let stale = false;
