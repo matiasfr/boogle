@@ -20,6 +20,9 @@ export const RAIL_STOPS = {
   // Slice 5 (R1, R2): meant with `--from trains-on`; the bot waits until line 1's first timber is at the Village. A bare
   // `--to freight` plays the whole route first (past the 300 s limit in a run on 12 November).
   freight: 'freight home',
+  // Slice 5 (R3): meant with `--from trains-on` too (the trade seeds are jump-ins, not `--from` seeds); the bot waits
+  // until the first fare is in the strongbox (the mirror's Till.landed > 0).
+  fare: 'fare landed',
   Q6: 'Q6 laid',
   pier: 'pier',
   crossing: 'crossing footed',
