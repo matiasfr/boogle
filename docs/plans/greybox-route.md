@@ -448,6 +448,31 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       no longer stops at what was once loaded, so a log or rail dropped, or fed to another bill, is loaded again and the
       leg always completes. Whether a unit lifted from the leg's rack can short build 2's steel bill is build 2's side,
       owed at the rebase, with finding 3 (a long-boiler engine stops short of a stub's buffer).
+      *As built on Ring Island build 2 (12 November; branch `greybox/leg1-step3-v2`, rebased onto main, world v32,
+      fixtures regenerated; not shipped: gates 5 and 9 are with the designer):* **Steel first (call 64, answered by
+      the owner).** The works' kit and a leg's kit ride the same two fields of a train's row, so a train's cargo is
+      marked a leg's (`Train.legKit`) when a leg loads it and unmarked when its last unit is off. On line 2 a leg's kit
+      loads only when the works wants none brought (`steelNeed`: its kit is fed, in the yard or aboard) and never onto
+      a train carrying the works' kit, so a train never carries both; the leg's rules read marked cargo only and the
+      works' rules unmarked cargo only. At the rivet the first train at the Village takes the steel kit and the leg's
+      first kit loads 436 ticks later, on the next. A lost steel load is aboard again in 399 ticks and in the yard in
+      1,093 with the leg fed every tick, and no leg kit loads meanwhile. **Rebase resolutions** (the orchestrator's
+      rulings A to D): the Village's load step runs the works' load, then the leg's; `serviceOf` keeps both sides'
+      stops; `headTicks(line, stops, headPct, boiler, n)` takes the leaving train's boiler and the trains in service;
+      the shelf bound and the steel check's sent-rails bound both count the legs' rails. `railway-predict.ts` holds
+      back both the works' lighting and a leg's lay start. `lineStages` lists no stage for a shut line. Build 2's
+      `boiler-long` seed waits for the trains in service, not the shed rows. Two assertions of build 2's steel review
+      test are edited for the open leg, in their own commit. **Gates on this build** (the long run, 75%, four seeds):
+      8 passes the owner's 1,350 (fixed stages worst 1,166). **9 fails it on two seeds:** settled worst 1,261, 1,340,
+      1,397 and 1,367 (means 602 to 624; 8 to 12 of about 240 waits over 1,158); its stage-0 part passes (worst 766 to
+      820). 11 passes (whole-leg worst 1,210 to 1,421; a train at each new railhead within 820). 14 passes: rivet to
+      Gorge 3,575, idle 1,130, 563, 357, 321. 15 passes: the steel kit in the yard at +651 with the leg open and on
+      build 2 alone; first steel home and the install at +1,824 with the leg idle (build 2 alone +1,824) and +2,157
+      with the leg fed every tick. Call 88: 313 to 1,060. **5 fails at 0 laid:** with the steel kit first, kits 1 to 3
+      load at +436, +942 and +1,345, every train is owed a kit or carries one it can unload until then, and the first
+      full stone load waits 2,252 ticks against the quiet lap's 1,460 (1,266 before steel first). No limit and no stop
+      rule is changed for either. **Leftover (P2):** the kit still owed counts every log and rail on a back as leg
+      kit, the steel yard's included, so a leg load can be put off while someone carries the works' kit.
 - [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
