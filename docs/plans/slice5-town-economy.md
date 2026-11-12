@@ -243,7 +243,10 @@ checkpoint runs for it.
     `fareOf(w, route, farePct)`. **Still one town:** one route per town and per line; `wait0`/`wait1` are two ends
     only; `Train.riders` is one integer with one destination; riders are generated only by the town at `a`; `wood`
     and `stone` are fixed fields; freight conservation assumes one yard per town and goods; `dearestOnOffer` is 0
-    until R4; `TRADE_TOWNS` is 1.
+    until R4; `TRADE_TOWNS` is 1. **Jump-in and stop:** the "Fares paid" row lands on line 2's Village platform,
+    where riders board, facing the Quarry (land stilled on Windows/Edge, 12 November, not on a device); the
+    playthrough's `fare` stop is meant with `--from trains-on` (the trade seeds are jump-ins, not `--from` seeds, so
+    not the `freight-running` this step's proof names) and waits for the mirror's `Till.landed > 0`; no hash moved.
 - [ ] **R4. Plots and the buy (M). Independent review: yes (`src/sim`, `src/world`, the op list).**
   - Files: `railway-components.ts`, `railway-sys-trade.ts`, `railway-systems.ts` (`'rail.buy': [buy]`),
     `railway-queries-trade.ts`, `railway-check-trade.ts`, `src/sim/town-facts.ts`, `test/town-facts.test.ts`,
