@@ -15,6 +15,8 @@
 //   endMoved(io, line, last, tick) the line runs on past its old end `last` (Q6, Q7, the rivet)
 //   stopMoved(io, line, k, tick)  halt k's stop moved on (the railhead's next bent)
 //   trainSpacing(rows, ...)       the spacing invariants at a tick (tests sample it); lineSpacing for one line
+//   servingSlots(rows, line)      a line's trains in service (the greybox route's fleet rows wait in the shed)
+//   fleetJoin(io, line, tick)     a shed train joins at the line's first halt once its stage runs one more (step 3)
 //
 // Every `line` is a LineRef: a catalog index, or a test's fixture line (./railway-lines.ts).
 import {
@@ -68,6 +70,13 @@ export function lineSlots(line: LineRef): readonly number[] {
   const k = lineIndex(line);
   return k >= 0 ? LINE_SLOTS[k]! : Array.from({ length: lineDef(line).trains }, (_v, j) => j);
 }
+/** A line's slots in service now, in slot order: its rows not in the shed (TRAIN_PHASE.SHED; the greybox route's fleet
+ * rows, step 3). A line with no fleet has none in the shed, so this is lineSlots. Every rule that reads the other
+ * trains of a line (the block rule, service, the holds, the spacing) reads these. */
+export function servingSlots(rows: Rows, line: LineRef): readonly number[] {
+  const all = lineSlots(line);
+  return lineDef(line).fleet ? all.filter((k) => rows(k).phase !== TRAIN_PHASE.SHED) : all;
+}
 
 // ---------------------------------------------------------------- the ends
 /** One open end's block, both tracks from `from` to `to` (cm along the line: from a stub's turnout's far side, or a
@@ -101,10 +110,15 @@ export const atEnd = (stop: number, stops: readonly number[]) => stop === 0 || s
 export function cycleTicks(line: LineRef, stops: readonly number[], boiler = 0) {
   return 2 * trainLegTicks(stops[stops.length - 1]! - stops[0]!, 0, boilerKin(line, boiler)) + 2 * TRAIN.dwellTicks;
 }
-/** The least gap between two trains leaving the same end: `headPct` of an even split of the round trip of the train
- * leaving (its `boiler`); none with one train. */
-export function headTicks(line: LineRef, stops: readonly number[], headPct = TRAIN_HEAD_PCT, boiler = 0) {
-  const n = lineDef(line).trains;
+/** The least gap between two trains leaving the same end: `headPct` of an even split, over `n` trains (those in
+ * service; `trains` by default), of the round trip of the train leaving (its `boiler`); none with one train. */
+export function headTicks(
+  line: LineRef,
+  stops: readonly number[],
+  headPct = TRAIN_HEAD_PCT,
+  boiler = 0,
+  n = lineDef(line).trains,
+) {
   return n < 2 ? 0 : Math.floor((cycleTicks(line, stops, boiler) * headPct) / (100 * n));
 }
 
@@ -135,13 +149,14 @@ export function blockFree(
   const c = circuitLen(stops),
     me = trainPose(rows(slot), line, stops, tick);
   const leg = circuitAhead(me.c, circuitCm(stops, track, dest) % c, c);
-  for (const other of lineSlots(line)) {
+  const serving = servingSlots(rows, line);
+  for (const other of serving) {
     if (other === slot) continue;
     const gap = circuitAhead(me.c, trainPose(rows(other), line, stops, tick).c, c);
     if (leg + TRAIN.sepCm > gap) return false;
   }
   for (const b of endBlocks(line, stops))
-    if (within(b, dest) && lineSlots(line).some((k) => k !== slot && inBlock(rows(k), line, b, tick))) return false;
+    if (within(b, dest) && serving.some((k) => k !== slot && inBlock(rows(k), line, b, tick))) return false;
   return true;
 }
 /** The train a lever ask at `stop` heading `dir` is for: the one with the least circuit distance to that platform
@@ -163,7 +178,7 @@ export function trainServes(
     a = kin.brake ?? kin.accel;
   let best = -1,
     near = c;
-  for (const slot of lineSlots(line)) {
+  for (const slot of servingSlots(rows, line)) {
     const r = rows(slot),
       p = trainPose(r, line, stops, tick),
       d = circuitAhead(p.c, at, c);
@@ -226,6 +241,11 @@ export function planLeg(
   for (const b of endBlocks(line, stops))
     if (b.dir === dir && (goal - b.signal) * dir > 0 && trainCanBrake(s, v, dir, b.signal, kin))
       holds.push({ to: -1, dest: b.signal });
+  // A line's block signals (RailLineDef.signals, the greybox route's long stretches): a hold between here and the goal,
+  // either track, so a train follows the one ahead block by block rather than waiting for the whole stretch to clear.
+  for (const sig of kin.signals ?? [])
+    if ((goal - sig) * dir > 0 && (sig - s) * dir > 0 && trainCanBrake(s, v, dir, sig, kin))
+      holds.push({ to: -1, dest: sig });
   if (blockFree(rows, line, stops, slot, track, goal, tick)) return { to: k, dest: goal, reason: true };
   holds.sort((p, q) => (q.dest - p.dest) * dir);
   for (const h of holds) if (blockFree(rows, line, stops, slot, track, h.dest, tick)) return { ...h, reason: false };
@@ -253,6 +273,9 @@ export type TrainIO<L extends LineRef = number> = {
   standing(slot: number, tick: number): 'hold' | 'again' | 'on';
   /** Never held for headway (the footing wagon's train while the pier still owes footings). */
   headExempt(slot: number): boolean;
+  /** The trains the line runs at its stage now (railway-train.ts, fleetOf; the greybox route, step 3). Absent (a test's
+   * fixture IO): no train ever joins from the shed. */
+  fleet?(line: L): number;
 };
 /** A running train's leg, judged again from its pose now: shortened for a reason it can still brake for, or
  * lengthened past a hold the train ahead has moved off. The pose stays continuous (`from` is where it is now). */
@@ -303,7 +326,7 @@ export function balancedHold<L extends LineRef>(
     r = io.row(slot);
   if (cap === undefined || !balanceOk(cap) || io.headExempt(slot)) return false;
   if (tick >= r.arrived + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
-  const others = lineSlots(line).filter((k) => k !== slot);
+  const others = servingSlots(io.row, line).filter((k) => k !== slot);
   if (!others.length) return false;
   const b = endBlocks(line, stops)[from === 0 ? 0 : 1],
     inbound = b.dir > 0 ? 0 : 1;
@@ -322,9 +345,44 @@ export function balancedHold<L extends LineRef>(
   }
   return ahead < behind;
 }
+/** The greybox route's fleet (step 3): while the line runs fewer trains than its stage's fleet, its first shed train
+ * joins, standing at the first halt on the up track as if it had just arrived, once no train in service is in or bound
+ * for that end's block and every one is at least `TRAIN.sepCm` from it round the circuit either way. One a tick; the
+ * dwell, the headway and the balanced hold then judge its leaving as any train's. */
+export function fleetJoin<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
+  if (!io.fleet || tick < io.awake + TRAIN.wakeTicks) return;
+  const serving = servingSlots(io.row, line);
+  if (serving.length >= io.fleet(line)) return;
+  const slot = lineSlots(line).find((k) => io.row(k).phase === TRAIN_PHASE.SHED);
+  const stops = io.stops(line);
+  if (slot === undefined || stops.length < 2) return;
+  const c = circuitLen(stops),
+    b = endBlocks(line, stops)[0];
+  for (const k of serving) {
+    const p = trainPose(io.row(k), line, stops, tick).c;
+    if (inBlock(io.row(k), line, b, tick) || circuitAhead(0, p, c) < TRAIN.sepCm || circuitAhead(p, 0, c) < TRAIN.sepCm)
+      return;
+  }
+  const s0 = stops[0]!;
+  io.set(slot, {
+    phase: TRAIN_PHASE.STAND,
+    at: 0,
+    to: 0,
+    track: 0,
+    depart: tick,
+    arrived: tick,
+    req: 0,
+    from: s0,
+    v0: 0,
+    dest: s0,
+    turn: false,
+  });
+}
 export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
   if (io.awake < 0) return;
-  for (const slot of lineSlots(line)) {
+  fleetJoin(io, line, tick);
+  const serving = servingSlots(io.row, line);
+  for (const slot of serving) {
     for (let guard = 0; guard < 16; guard++) {
       const r = io.row(slot),
         stops = io.stops(line),
@@ -367,7 +425,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
       // moved on from: stopMoved), which it leaves as from that end.
       const from = r.at >= 0 ? r.at : endStanding(line, stops, r),
         end = from >= 0 && atEnd(from, stops);
-      const head = headTicks(line, stops, io.headPct, r.boiler ?? 0),
+      const head = headTicks(line, stops, io.headPct, r.boiler ?? 0, serving.length),
         left = from === 0 ? io.line(line).left0 : io.line(line).left1;
       if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
       if (end && balancedHold(io, line, stops, slot, from, tick)) break;
@@ -406,9 +464,11 @@ export function endMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, last: n
   const halt = lineDef(line).halts[last]!,
     stops = io.stops(line),
     edge = halt.end!.edgeCm + stops[last]! - halt.s;
+  // Every slot: a shed train (the greybox route's fleet) is neither running nor standing, so it is never moved; a slot
+  // the IO holds no row for (a caller's own rows for the trains it moves: test/railway-trains.test.ts) is skipped.
   for (const slot of lineSlots(line)) {
-    const r = io.row(slot);
-    if (r.phase !== TRAIN_PHASE.RUN || r.track !== 0 || r.to !== last) continue;
+    const r = io.row(slot) as Readonly<RailTrain> | undefined;
+    if (!r || r.phase !== TRAIN_PHASE.RUN || r.track !== 0 || r.to !== last) continue;
     if (trainAlong(r, line, tick) + TRAIN_EXTENT.aheadCm > edge) io.set(slot, { turn: true });
     else if (halt.only === undefined) io.set(slot, { req: reqAdd(r.req, last, 1, stops.length) });
   }
@@ -419,7 +479,8 @@ export function endMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, last: n
 export function stopMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, k: number, tick: number) {
   const stops = io.stops(line);
   for (const slot of lineSlots(line)) {
-    const r = io.row(slot);
+    const r = io.row(slot) as Readonly<RailTrain> | undefined;
+    if (!r) continue; // as endMoved: a slot the IO holds no row for
     if (r.phase === TRAIN_PHASE.STAND && r.at === k) io.set(slot, { at: -1, to: -1 });
     else if (r.phase === TRAIN_PHASE.RUN && r.to === k) {
       const pose = trainPose(r, line, stops, tick);
@@ -507,7 +568,9 @@ export function lineBlocksBroken(trains: readonly Readonly<RailTrain>[], line: L
 /** One line's spacing invariants at `tick` (null when they hold): every train at least `TRAIN.sepCm` behind the one
  * ahead round its circuit, and at most one train in or bound for each end block. */
 export function lineSpacing(rows: Rows, line: LineRef, st: readonly number[], tick: number): string | null {
-  const slots = lineSlots(line),
+  // A line with no open end yet (the greybox route's shut rows) has no train in service and nothing to space.
+  if (st.length < 2) return null;
+  const slots = servingSlots(rows, line),
     c = circuitLen(st),
     name = typeof line === 'number' ? line : line.id;
   if (slots.length > 1) {

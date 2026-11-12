@@ -77,7 +77,8 @@ test("line 2's extension starts at line 2's rail end and counts on from it", () 
   const end = [Math.round((E.xs.at(-1)! + ORIGIN.x) * 100), Math.round((E.zs.at(-1)! + ORIGIN.z) * 100)];
   assert.ok(Math.hypot(ring.pts[0]![0] - end[0]!, ring.pts[0]![1] - end[1]!) < 150, 'first point at the rails end');
   assert.ok(Math.abs(ring.fromCm - Math.round(E.len * 100)) <= 1);
-  assert.ok(ring.stops[0]! > TRAIN_STOPS[1]!.at(-1)!, 'its stops come after the pier stop');
+  // Ring Island's stop (halt 5): the line's last before the greybox route's own halts, which the ring row's stops make.
+  assert.ok(ring.stops[0]! > TRAIN_STOPS[1]![5]!, 'its stops come after the pier stop');
 });
 
 test('no future span is steeper than the 4% ruling grade, and the Gorge halts stand low in the split', () => {

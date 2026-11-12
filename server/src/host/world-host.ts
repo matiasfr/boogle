@@ -434,6 +434,26 @@ export function createRailwayWorldHost({
       }
     }
   };
+  // A greybox leg's rack units on a leaver's back (the step 3 review's P2-2): each account's lifted count is state, so
+  // through the grace its units stay counted held for the leg's frame; past it the release takes off that account's
+  // own units only (the leg loads them again), and a released account is no holder, so a leaver never stalls the leg.
+  const legAway = new Map<string, number>();
+  const maintainLegKit = () => {
+    const holders = api.legKitHolders();
+    for (const pid of legAway.keys()) if (!holders.some((h) => h.pid === pid)) legAway.delete(pid);
+    for (const { pid, epoch } of holders) {
+      if (requests.active(pid)) {
+        legAway.delete(pid);
+        continue;
+      }
+      const away = legAway.get(pid) ?? now();
+      legAway.set(pid, away);
+      if (now() - away >= rules.tune.get('railBeamGraceS') * 1000) {
+        api.legKitRelease(pid, epoch);
+        legAway.delete(pid);
+      }
+    }
+  };
   const ready = (async () => {
     attach();
     await sync.whenDurable();
@@ -491,6 +511,7 @@ export function createRailwayWorldHost({
             maintainBeam();
             maintainBoiler();
             maintainFeet();
+            maintainLegKit();
           }
           const ms = performance.now() - time;
           stats.wakes++;
@@ -574,6 +595,7 @@ export function createRailwayWorldHost({
         maintainBeam();
         maintainBoiler();
         maintainFeet();
+        maintainLegKit();
       }
     },
     status: () => ({
@@ -610,6 +632,8 @@ export function createRailwayWorldHost({
         boilerAway = now();
       if (session && !requests.active(session.pid) && api.footHolders().some((h) => h.pid === session.pid))
         footAway.set(session.pid, now());
+      if (session && !requests.active(session.pid) && api.legKitHolders().some((h) => h.pid === session.pid))
+        legAway.set(session.pid, now());
     },
     async close({ save = true } = {}) {
       closed = true;

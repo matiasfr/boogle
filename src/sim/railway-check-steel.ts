@@ -12,6 +12,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { BOILER_MAX } from './railway-train.ts';
+import { Leg } from './railway-components.ts';
 import { cart, lines, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
 import { aboard, ringJoined } from './railway-queries.ts';
 
@@ -50,7 +51,11 @@ export function checkSteel(w: World) {
   const r0 = rail(w),
     c = cart(w);
   if (r0.depot + c.logs + aboard(w, 'logs') + s.yardLogs > r0.depotProduced + s.outLogs) bad('steel sent logs');
-  if (r0.depotRails + c.rails + aboard(w, 'rails') + s.yardRails > r0.shelfOut + s.outRails) bad('steel sent rails');
+  // The greybox route's kit rails (Leg.loadedRails, off the forge rack at the Village) ride and rack beside them.
+  let legRails = 0;
+  w.each([Leg], (_id, l) => (legRails += l.loadedRails));
+  if (r0.depotRails + c.rails + aboard(w, 'rails') + s.yardRails > r0.shelfOut + s.outRails + legRails)
+    bad('steel sent rails');
   if (s.lit >= 0 !== (s.logs === STEEL.logs && s.rails === STEEL.rails)) bad('steel lit');
   if (s.lit >= 0 && lastCast < s.lit) bad('steel cast clock');
   if (s.lit < 0 && (s.poured || lastCast)) bad('steel unlit cast');

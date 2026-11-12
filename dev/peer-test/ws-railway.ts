@@ -808,7 +808,7 @@ export async function railwayRequestStop(c: Ctx) {
   const { railwayCheck } = await import('../../src/sim/railway-check.ts');
   const { LINE_HALTS, TRAIN_PHASE, reqHas } = await import('../../src/sim/railway-train.ts');
   const { trainStops } = await import('../../src/sim/railway-queries-trains.ts');
-  const { LINE2, RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
+  const { LINE2, RAIL_LINES, lineRows } = await import('../../src/sim/railway-lines.ts');
   const { LINE_SLOTS, trainServes } = await import('../../src/sim/railway-trains.ts');
   const seed = railwayAtTrains('trains-on');
   const roomId = railwayRoomId(`${c.room}-request`);
@@ -859,7 +859,8 @@ export async function railwayRequestStop(c: Ctx) {
   }, 10000);
   c.check(
     `request stop: every tab mirrors line 2's ${slots.length} trains`,
-    slots.length === RAIL_LINES[LINE2]!.trains && bothMirrored >= 0,
+    // Every row line 2 has: its fleet's two shed rows too (the greybox route, v32), mirrored where they wait.
+    slots.length === lineRows(RAIL_LINES[LINE2]!) && bothMirrored >= 0,
   );
   c.check('request stop: the seed starts with nothing asked at the quarry', !asked(leverReq()));
   // From off the platform: refused, nothing set.

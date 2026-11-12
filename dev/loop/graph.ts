@@ -163,6 +163,10 @@ export const GENERIC_OPS = [
   'rail.call',
   'rail.footTake',
 ] as const;
+/** Rail actions whose nodes are not built yet: the greybox route's stack line (the frame feed, the pickup, the barrier,
+ * the arrival). Its nodes (`stack-1` to `stack-4`, `gorge`, `pick`) are greybox-route.md's step 5; until then the loop
+ * models area 4 as a stand-in (dev/loop/standins.ts) and these ops are named here, not owned by a node. */
+export const PENDING_OPS = ['rail.legStock', 'rail.grant', 'rail.gate', 'rail.arrive'] as const;
 /** Marks that are activity, attributed to the node current at the time (dev/loop/trace.ts). */
 export const ACTIVITY_MARKS: readonly RegExp[] = [
   /^chop$/,

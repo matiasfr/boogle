@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CROSSING_BENTS, CROSSING_DECK_Y } from '../src/sim/railway-works-layout.ts';
-import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM } from '../src/sim/railway-lines.ts';
+import { RAIL_LINES, TRAIN_EXTENT, TURNOUT_CM, LINE2_ON } from '../src/sim/railway-lines.ts';
 import { TRAIN } from '../src/sim/railway-train.ts';
 import { ringHeight } from '../src/proto/greybox/ring-cones.ts';
 import { FORMATION, ORIGIN } from '../src/place/layout.ts';
@@ -30,7 +30,8 @@ import {
 const dist = (ax: number, az: number, bx: number, bz: number) =>
   Math.sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 // Line 2's path up to the pier head (v26's): from v27 the catalog's path runs on with RING_PATH appended.
-const line2 = RAIL_LINES[1]!.path.slice(0, RAIL_LINES[1]!.path.length - RING_PATH.length);
+// Place's line 2, before RING_PATH (and the greybox route's path on past Ring Island, LINE2_ON).
+const line2 = RAIL_LINES[1]!.path.slice(0, RAIL_LINES[1]!.path.length - RING_PATH.length - LINE2_ON.length);
 /** Line 2's path at s cm, lat cm east of it (its 10 m chords, as railLinePoint reads them). */
 function onLine2(s: number, lat: number) {
   const k = Math.floor(s / 1000),

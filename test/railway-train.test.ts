@@ -23,7 +23,7 @@ import {
   stopKin,
   trainPassesBy,
 } from '../src/sim/railway-train.ts';
-import { RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { LINE2_ON, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RING_END, RING_END_BRAKE_CMS2, RING_HEAD, RING_PATH } from '../src/sim/railway-ring-layout.ts';
 import { LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
@@ -164,8 +164,9 @@ test('request sets: two digits a stop, safe integers with room for 26 stops', ()
 test('halts and stops match the pinned Place layout', () => {
   // Place's stops, plus line 2's pier stop (the Works catalog) and v27's Railhead and Ring Island (the ring layout,
   // checked in test/railway-ring-layout.test.ts), which Place does not have.
-  TRAIN_STOPS.forEach((s, k) =>
-    assert.deepEqual(s, [
+  // The greybox route's halts (line 2's past Ring Island, and its own rows) are the route catalog's.
+  TRAIN_STOPS.slice(0, 2).forEach((s, k) =>
+    assert.deepEqual(s.slice(0, k ? 6 : undefined), [
       ...LINKS[k]!.stops.map((v) => v * 100),
       ...(k ? [PIER_STOP_CM, RING_HEAD[0]!.s, RING_END.s] : []),
     ]),
@@ -187,7 +188,10 @@ test('halts and stops match the pinned Place layout', () => {
 test("the server's coarse line path follows Place's rails within a metre", () => {
   const q = { x: 0, z: 0, ux: 0, uz: 0 };
   // Line 2 as far as Place lays it: RING_PATH (v27) runs on past it, the ring layout's (test/railway-ring-layout.test.ts).
-  const placeEnd = [TRAIN_STOPS[0]!.at(-1)!, ((RAIL_LINES[1]!.path.length - RING_PATH.length) / 2 - 1) * 1000];
+  const placeEnd = [
+    TRAIN_STOPS[0]!.at(-1)!,
+    ((RAIL_LINES[1]!.path.length - RING_PATH.length - LINE2_ON.length) / 2 - 1) * 1000,
+  ];
   for (const k of [0, 1])
     for (let cm = 0; cm <= placeEnd[k]!; cm += 50) {
       lineAt(LINKS[k]!.line, cm / 100, q);
@@ -216,8 +220,9 @@ test('pose is continuous across arrivals, departures, requests and replans', () 
       prev[k] = at;
     });
   }
+  // A fleet row in the shed (the greybox route) never runs before its stage.
   assert.ok(
-    arrived.every((n) => n >= 4),
+    arrived.every((n, k) => n >= 4 || RAIL_TRAINS[k]!.shed),
     JSON.stringify(arrived),
   );
   assert.equal(invariant(w.w), null);
@@ -248,7 +253,7 @@ test('with nothing asked, trains run end to end, straight through the middle hal
   for (const stage of ['q6-stocked', 'q6-done'] as const) {
     const w = railwayAtTrains(stage),
       n = trainStops(w.w, 1).length;
-    for (const k of L2) {
+    for (const k of L2.filter((j) => !RAIL_TRAINS[j]!.shed)) {
       const made = arrivals(w, 2000, false, k);
       assert.ok(made.length >= 2, stage);
       for (const [at] of made) assert.ok(at === 0 || at === n - 1, `${stage}: stopped at ${at}`);

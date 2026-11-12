@@ -26,6 +26,7 @@ import {
   Beam,
   Boiler,
   Forge,
+  Leg,
   Line,
   Rail,
   Shed,
@@ -46,6 +47,7 @@ import {
   type Row,
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
+import { legKitPut } from './railway-sys-route-kit.ts';
 
 /** Take logs (kind 0) or rails (kind 1) off the island yard, up to your back's room, once the rivet is struck. */
 export const steelTake = defineSystem(
@@ -73,7 +75,7 @@ export const steelTake = defineSystem(
  * rails count, not only the yard's. */
 export const steelFeed = defineSystem(
   'rail.steel',
-  { reads: [Aperture], writes: [Steel, SteelClock, Account], phase: 'act', order: 55 },
+  { reads: [Aperture], writes: [Steel, SteelClock, Account, Leg], phase: 'act', order: 55 },
   (w, { a: aid, tick }: Act) => {
     const id = steelId(w),
       s = w.get(Steel, id)!;
@@ -89,6 +91,8 @@ export const steelFeed = defineSystem(
     sm.logs += logs;
     sm.rails += rails;
     if (sm.logs === STEEL.logs && sm.rails === STEEL.rails) sm.lit = w.mut(SteelClock, id)!.lastCast = tick;
+    // A leg rack's units fed here are no longer held for its frame (the step 3 review's P2-2): owed again.
+    legKitPut(w, aid, logs, rails);
     return logs + rails;
   },
 );
@@ -101,6 +105,8 @@ export const RING_ISLAND = 5;
 export function steelLoads(w: World, id: number) {
   const need = steelNeed(w),
     r = w.get(Train, id)!;
+  // A train carrying a greybox leg's kit takes none of the works' (greybox-route, call 64: never both).
+  if (r.legKit) return;
   const logs = Math.min(LINE2_KIT.logs - r.logs, need.logs),
     rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
   if (logs <= 0 && rails <= 0) return;
@@ -132,6 +138,8 @@ export function steelArrives(w: World, r: Row<typeof Train>) {
       w.mut(Shed, shedId(w))!.steel += r.steel;
       r.steel = 0;
     }
+    // A greybox leg's kit aboard is not the works' to send home (greybox-route, call 64).
+    if (r.legKit) return;
     const lack = lacks(w),
       logs = r.logs - Math.min(r.logs, lack.logs),
       rails = r.rails - Math.min(r.rails, lack.rails);
@@ -147,8 +155,9 @@ export function steelArrives(w: World, r: Row<typeof Train>) {
     const id = steelId(w),
       s = w.get(Steel, id)!,
       lack = lacks(w);
-    const logs = Math.min(r.logs, lack.logs),
-      rails = Math.min(r.rails, lack.rails),
+    // A greybox leg's kit aboard is not the works' (greybox-route, call 64): only steel is taken on.
+    const logs = r.legKit ? 0 : Math.min(r.logs, lack.logs),
+      rails = r.legKit ? 0 : Math.min(r.rails, lack.rails),
       steel = Math.min(STEEL.trip - r.steel, s.rack);
     if (logs <= 0 && rails <= 0 && steel <= 0) return;
     const sm = w.mut(Steel, id)!;
@@ -165,11 +174,13 @@ export function steelArrives(w: World, r: Row<typeof Train>) {
  * steel waits and the kit car has room. */
 export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number, dir: number) {
   if (!ringJoined(w)) return false;
+  // The works' kit aboard: none on a train carrying a greybox leg's (greybox-route, call 64).
   const lack = lacks(w),
-    usable = Math.min(r.logs, lack.logs) + Math.min(r.rails, lack.rails);
+    kit = r.legKit ? 0 : r.logs + r.rails,
+    usable = r.legKit ? 0 : Math.min(r.logs, lack.logs) + Math.min(r.rails, lack.rails);
   if (k === 0 && dir < 0) {
     const need = steelNeed(w);
-    return r.steel > 0 || usable < r.logs + r.rails || (r.logs + r.rails === 0 && need.logs + need.rails > 0);
+    return r.steel > 0 || usable < kit || (r.logs + r.rails === 0 && need.logs + need.rails > 0);
   }
   if (k !== RING_ISLAND || dir < 0) return false;
   return usable > 0 || (w.get(Steel, steelId(w))!.rack > 0 && r.steel < STEEL.trip);

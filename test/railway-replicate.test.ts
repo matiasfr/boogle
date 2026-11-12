@@ -292,8 +292,9 @@ test('the railway state is a server state: saved by the host, never hashed or se
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
   // the depot cart, boiler and trains; the Works and the shed; the lines; the aperture (v27); the yards, the town and
-  // the till (slice 5); the steel works (ring-island-build2)
-  assert.equal(RAIL_SCHEMAS.length, 21);
+  // the till (slice 5); the steel works (ring-island-build2); the legs, the junction yard and the route (the greybox
+  // route)
+  assert.equal(RAIL_SCHEMAS.length, 24);
 });
 
 test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
@@ -606,7 +607,8 @@ test("every train and line row reaches the mirror through the replicated compone
     agree(r, 'a');
     const server = r.api.world(),
       mirror = r.mirrors.get('a')!.confirmed();
-    assert.equal(trains(mirror).length, 4);
+    // v27's four, and the greybox route's two fleet rows (in the shed until the stack line is laid).
+    assert.equal(trains(mirror).length, 6);
     assert.deepEqual(trains(mirror), trains(server));
     assert.deepEqual(lines(mirror), lines(server));
   }

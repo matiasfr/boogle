@@ -14,7 +14,7 @@ import { WORKS } from './railway-works-layout.ts';
 import { LINE2 } from './railway-lines.ts';
 import { endMoved, stopMoved } from './railway-trains.ts';
 import { railInt } from './railway.ts';
-import { Account, Aperture, Beam, Boiler, QJob, Train, Works } from './railway-components.ts';
+import { Account, Aperture, Beam, Boiler, Leg, QJob, Train, Works } from './railway-components.ts';
 import { apertureId, boilerHeld, FOOT, q7Laid, roomFor, worksId } from './railway-queries.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
 import type { Act } from './railway-sys-core.ts';
@@ -43,7 +43,7 @@ export const ringFootTake = defineSystem(
  * fewer than four hang, and the fourth with the leaf braced brings it down. */
 export const ringFootSet = defineSystem(
   'rail.ringFootSet',
-  { reads: [QJob], writes: [Aperture, Account, Train], phase: 'act', order: 51 },
+  { reads: [QJob, Leg], writes: [Aperture, Account, Train], phase: 'act', order: 51 },
   (w, { a: aid, e, tick }: Act) => {
     if (e.site !== 3 || w.get(Account, aid)!.foot !== 1 || !q7Laid(w)) return 0;
     const id = apertureId(w),
@@ -75,7 +75,7 @@ export const brace = defineSystem('rail.brace', { writes: [Aperture], phase: 'ac
  * being the end (endMoved). A repeat strike moves nothing; not while you haul the boiler (the seams' rule). */
 export const ringStrike = defineSystem(
   'rail.ringStrike',
-  { reads: [Account, Boiler, Works, QJob], writes: [Aperture, Train], phase: 'act', order: 53 },
+  { reads: [Account, Boiler, Works, QJob, Leg], writes: [Aperture, Train], phase: 'act', order: 53 },
   (w, { a: aid, e, tick }: Act) => {
     if (!railInt(e.id, 2) || e.id !== 2 || boilerHeld(w, w.get(Account, aid)!.pid)) return 0;
     const id = apertureId(w),

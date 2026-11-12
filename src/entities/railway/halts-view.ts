@@ -10,7 +10,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
-import { LINE2, RAIL_TRAINS } from '../../sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
@@ -585,8 +585,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
    * Pier at Far Head's, Ring Island at the joint's), or the line's last halt where none does. */
   function label(x: Spot) {
     if (x.dir < 0) return haltName(x.line, 0);
+    // The greybox route's halts (a leg's, or a shut row's) have no lever here yet (its views are step 4's).
     const n = stopsNow[x.line]!.length,
-      count = LINE_HALTS.filter((r) => r.line === x.line).length;
+      count = LINE_HALTS.filter((r, id) => r.line === x.line && !RAIL_HALTS[id]!.leg && !RAIL_HALTS[id]!.shut).length;
     return haltName(x.line, chained(x) ? Math.min(n, count - 1) : n - 1);
   }
   /** Whether a lever stands: its halt is up and its frame shown (an up lever with today's halt's). */
@@ -677,17 +678,20 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       boards.redraw(next.scale);
     }
     boards.trains(
-      RAIL_TRAINS.map(({ line }, k) => (shown ? trainAlong(trainRow(w, k), line, clock) / 100 : null)),
+      // A fleet row in the shed (the greybox route) is on no board until it joins.
+      RAIL_TRAINS.map(({ line }, k) =>
+        shown && trainRow(w, k).phase !== TRAIN_PHASE.SHED ? trainAlong(trainRow(w, k), line, clock) / 100 : null,
+      ),
       RAIL_TRAINS.map((_t, k) => {
         const r = trainRow(w, k);
-        return shown && r.phase !== TRAIN_PHASE.STAND ? r.to : null;
+        return shown && r.phase === TRAIN_PHASE.RUN ? r.to : null;
       }),
       RAIL_TRAINS.map((_t, k) => shown && railTrainHeld(w, k, tick)),
     );
     halts.forEach((h) => {
       h.update(
         dt,
-        someTrain(w, h.k, (r) => r.phase !== TRAIN_PHASE.STAND && r.to === h.stop),
+        someTrain(w, h.k, (r) => r.phase === TRAIN_PHASE.RUN && r.to === h.stop),
       );
     });
     // The Works in gold (docs/plans/works-signposting-2.md, beats 2, 4 and 8): each seam still to strike while the

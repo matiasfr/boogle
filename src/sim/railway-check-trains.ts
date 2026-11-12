@@ -9,7 +9,9 @@
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
-import { lineBlocksBroken, lineReqOk, trainRowBroken } from './railway-trains.ts';
+import { lineBlocksBroken, lineReqOk, servingSlots, trainRowBroken } from './railway-trains.ts';
+import { TRAIN_PHASE, fleetOf, trainIdle } from './railway-train.ts';
+import { legsLaid } from './railway-queries-route.ts';
 import { lines, rail, trains } from './railway-rows.ts';
 import { stopsOf } from './railway-queries.ts';
 import { railTrainsOf } from './railway-queries-trains.ts';
@@ -31,7 +33,33 @@ export function checkTrains(w: World) {
       bad('line');
     if (!awake && (l.req || l.left0 >= 0 || l.left1 >= 0)) bad('line asleep');
   });
-  trains(w).forEach((r, slot) => {
+  const rows = trains(w);
+  // The greybox route's fleet: a shed train is exactly its idle row, only a fleet row is ever in the shed, the shed
+  // rows are the line's last, and a line runs no more than its stage's fleet nor fewer than its first stage's.
+  const legs = legsLaid(w);
+  rows.forEach((r, slot) => {
+    if (r.phase !== TRAIN_PHASE.SHED) return;
+    const idle = trainIdle(slot);
+    if (
+      !RAIL_TRAINS[slot]!.shed ||
+      r.freight ||
+      r.riders ||
+      (Object.keys(idle) as (keyof typeof idle)[]).some((key) => r[key] !== idle[key])
+    )
+      bad('shed train');
+  });
+  RAIL_LINES.forEach((l, line) => {
+    const serving = servingSlots((k) => rows[k]!, line),
+      all = railTrainsOf(w, line);
+    if (
+      serving.length > Math.max(l.trains, fleetOf(line, legs)) ||
+      serving.length < l.trains ||
+      all.slice(serving.length).some((r) => r.phase !== TRAIN_PHASE.SHED)
+    )
+      bad('fleet');
+  });
+  rows.forEach((r, slot) => {
+    if (r.phase === TRAIN_PHASE.SHED) return;
     const { line, home, track } = RAIL_TRAINS[slot]!;
     const asleep =
       !awake &&
@@ -43,5 +71,13 @@ export function checkTrains(w: World) {
   });
   // Without a tick: standing in a block, or a leg ending in one.
   for (let line = 0; line < RAIL_LINES.length; line++)
-    if (lineBlocksBroken(railTrainsOf(w, line), line, stops(line))) bad('end block');
+    if (
+      stops(line).length >= 2 &&
+      lineBlocksBroken(
+        railTrainsOf(w, line).filter((r) => r.phase !== TRAIN_PHASE.SHED),
+        line,
+        stops(line),
+      )
+    )
+      bad('end block');
 }

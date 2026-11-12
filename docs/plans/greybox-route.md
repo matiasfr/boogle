@@ -319,6 +319,191 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       line. Verify: `test/railway-route-rules.test.ts`: each refusal above; a section lays and the railhead halt
       moves; the Gorge opens on the fourth; `pick` is refused before it and granted after; the existing mixed-fleet
       fuzz, 20,000 ticks under random lever asks on the grown line, keeps `sepCm`, the end blocks and a 105 s worst wait.
+      *As built so far (12 November; not shipped, held at the gates; no bump, no fixtures yet):* the rules are on the
+      local branch `wip/greybox-leg1-step3`. **Held:** the 105 s worst wait on the grown line fails (line 2 up to 1,169
+      ticks with four trains and 1,130 with five at the Gorge, the WAIT_BOUND way; 1,440 in the whole-leg fuzz; under-asked: see "The ask method" below), and
+      stone stops while the leg is built (every train carries a waiting kit and slice 5's call 4 refuses it a freight
+      stop); both await rulings. In plain words, for the designer:
+      - **When a leg opens:** the stack leg opens the moment Ring Island's rivet is struck (its `after` is -1). A leg
+        whose rules are not built yet (legs 2 to 8: their line holds no railhead halt) never opens, whatever its `after`.
+      - **What a train loads, and where:** at the Village (line 2's home halt) a train loads one section's kit (20 logs,
+        20 rails; logs minted as the depot's, rails off the forge rack, holding up to 11 s for rails as Q6's kit did)
+        while the leg still owes kit: all its remaining sections at once (`kitLead`, "all remaining", the longest leg's
+        section count). It keeps running its service with the kit aboard. At the leg's rack (Ring Island's halt while
+        nothing is laid, then the stack railhead) it unloads only what the current section still lacks; the rest rides
+        on until a later railhead opens. The rack is Q6's and Q7's depot rack (`Rail.depot`, `Rail.depotRails`), taken
+        with today's `rail.depotTake` and `rail.depotRailTake`, judged at the current frame once the Q jobs are done.
+      - **`kitOwed`, per line:** a Q job's kit first (Q6, Q7: before any leg opens); with none, an empty train is owed a
+        kit when its line's open leg still has kit to load. Slice 5's freight rule reads it: a train owed a kit, or
+        carrying one, makes no stone stop.
+      - **When the stack railhead is a stop:** from the first section laid, at the last section laid's end (10 m short
+        of it, a stub end that moves on with each section); once the Gorge opens on the fourth it stays a stop at the
+        third section's end, as the Railhead stays at bent 13 (a departure the orchestrator accepted).
+      - **The fleet by stage:** 3, 4, 5, 5 and 5 trains with 0 to 4 sections laid (call 26; since ruled 3, then 5:
+        below). The extra two are rows
+        that wait in a shed (phase `SHED`, hidden, on no board) and join at the Village on the up track, one at a time,
+        once their stage runs them and the Village's end block is clear and every train is a block's gap away.
+      - **Lay time:** a section lays 30 s after its last unit is fed (`LEG_TUNE.layTicks` 300), whatever its length.
+        `kitLead` and the lay time are constants in `src/sim/railway-route.ts`, not room tunables (accepted for now).
+      Built: `Leg`, `LegYard` (nothing feeds it until leg 2) and `Route`, spawned last; `src/sim/railway-sys-route.ts`
+      (`rail.legStock`, the lay tick, `rail.grant`, `rail.gate`, `rail.arrive`), `railway-sys-route-kit.ts` (the kit on
+      the trains), `railway-queries-route.ts`, `railway-check-route.ts`; line 2's stack railhead and High Gorge halts
+      and its path on to the Gorge; `ns`, `bay` and `cave` as lines 2 to 4, every halt shut, no trains (their train
+      rows come with leg 2 and its own bump). The server validates the four ops (catalog indexes, judged at the frame,
+      the post or the marker). Departures, accepted by the orchestrator: the "gate shut" refusal of `rail.legStock`
+      cannot be tested yet (no built leg has a barrier on a section; the incline's opens only once leg 2 is built);
+      conservation (`railCounts`, the depot and shelf sums) stands in for "kit loaded equals aboard, racked and fed",
+      which units carried off break; `rail.arrive` checks that a train stands at the causeway's end now; the `ring`
+      row's centimetres run 100 cm ahead of line 2's s (the generator measured the pier head along Place's sampled
+      path, line 2 counts from RING_S_HEAD), so the rules shift the row rather than regenerate the catalog or move
+      line 2's halts (a comment in `railway-route.ts`; a test ties the shift to the catalog and to line 2).
+      **Not predicted:** `railway-predict.ts` is unchanged, so `rail.legStock`, `rail.grant`, `rail.gate` and
+      `rail.arrive` wait for the server: the player's press shows nothing until the reply, about one round trip later
+      (a feed whose units leave the back late, a post or barrier that answers late). Acceptable for the greybox, not
+      final: the views step decides. **The endMoved test** (`test/railway-trains.test.ts`, "endMoved at Far Head is
+      v26's Q6 hunk, row for row"): it drives `endMoved` with its own rows for line 2's first three trains only and
+      checks the world's tick moves them exactly as v26's Q6 hunk did. With the fleet rows, `endMoved` and `stopMoved`
+      walked slots the test's IO holds no row for and threw; they now skip a slot with no row (a shed train is never
+      moved anyway), so the test passes unedited and every train it holds moves as before.
+      *As built after the step 3 rulings (rounds 1 to 3, 12 November; still local, no bump, no fixtures, not rebased
+      onto build 2):* the rules the designer ruled, in plain words. **Fleet:** 3 trains, then 5 from the first section
+      laid (A.4). **Kit:** all remaining kit owed at once, one kit a train, carried on at most the running trains less
+      one (`kitTrains`, C): a room that does nothing after the rivet rests by +1,500 with kit 1 on the rack, two trains
+      carrying a kit each and one empty kit car (60 logs and 60 rails loaded, not 80). **Stone (D):** a train makes no
+      stone stop while it is owed a kit or carries one it can unload at a halt open now; a train whose kit waits for a
+      railhead not yet open is an ordinary train and stops for stone (one line in slice 5's `freightStop`; no slice 5
+      test assertion moved). **Prediction (F):** `rail.legStock` is predicted on the client; a press that fills the
+      frame shows it full and the lay starts only when the server says so. `rail.grant`, `rail.gate` and `rail.arrive`
+      still wait for the server (once a leg, once a game). **Block signals (round 2):** line 2 has holds with no
+      platform at the stack line's section ends but the last (`RailLineDef.signals`). The block rule lets a train plan
+      a leg only when its whole length is clear of the train ahead, and the 1.5 km from Ring Island to the railhead had
+      nowhere to stop, so followers stood at Ring Island until the leader reached the end (5,408 standing ticks there in
+      8,000 at three laid); at the signals a train follows block by block, and the quiet lap is within 3.3% of non-stop
+      at every stage. Riders cannot step off at a signal. The headway hold is unchanged: it is worked out every tick from
+      the open stops' non-stop lap and the running fleet (73 to 74% of an even split of the measured lap at 75%), and it
+      barely binds under the fuzz's asks (0, 0, 19, 416 and 932 standing ticks over 20,000 at 0, 25, 50, 75 and 100%;
+      under-asked).
+      **Gates (round 3's list, base `a82a0d6e`, four seeds at 75%):** 1 to 4 pass (every stage before the rivet on
+      main's tick and rows; at `ring-joined` only the kit, depot and forge fields and the new rows differ). 5 passes:
+      a full load's longest wait 1,266 at the rivet inside its first-lap allowance (the quiet lap, 1,426), then at most
+      1,136; landed 32, 32, 40, 32, 32 at 0 to 4 laid; 32 from `crossing-done` and the idle rivet; no stone stop on a kit
+      errand. 6, 7, 10 to 14 and 16 pass (ride 1.03, 1.02, 1.03, 1.03, 1.01; whole-leg worst 1,478 and a train at the new
+      railhead within 1,135 ticks of every lay, both under-asked; joins 449 ticks after section 1; rivet to Gorge 3,055, idle 651, 536,
+      355 and 309). **8 and 9 fail at 75%** and are printed, not asserted, until the owner answers question 1: fixed
+      stages worst 1,395 (two laid, 5eed), 1,307 (four laid); settled worst 1,430 and mean 543 (badd), 1,217 (777);
+      typical waits about 50 s, 1.5 to 1.8% of waits over 1,158. None of 0, 25 and 50% passes them either. The stage-0
+      part of 9 passes (worst 908, means 340 to 384). Every figure in this paragraph that comes from lever asks
+      (8, 9, 11 and the hold's standing ticks) was measured under-asked; this build's figures on the ruled method
+      are under "The ask method" below; 0, 25 and 50% are not re-run. 15 is not run (build 2 is not on main). **Open owner question 1:**
+      the grown line's wait bound.
+      *As built after the step 4 review (its b, k and finding 1; still local, no bump):* **Positions.** The stack leg's
+      first frame and rack stand on Ring Island's west platform (`ringAt(45300, -830)` and `ringAt(44600, -840)`, y 8.9
+      m); frames 1 to 3 8 m short of each railhead and racks 1 to 3 18 m short, 4.8 m right going out, 90 cm over the
+      deck; reach 4 m on each; `pick` on the north stack's rim (x -7435, z -203262, y 8500); the incline's barrier at
+      the `ns` halt point, y 390. The server judges `rail.legStock` at the frame and the depot takes at the rack.
+      Frames and racks 1 to 3 match the review's metres to 3 cm. **The 1 m at Ring Island:** `RING_END.u` (448) and
+      line 2's stop (119000) are right; the generated `ring` row's `fromCm` (74300) is the one a metre out, as the row
+      shift above says. **Call 88, riding on from an old head:** each head is its own halt now (`Stack head 1` to `3`),
+      each a stub end while it is the line's last. When the next section lays, the line runs on past the old end
+      (endMoved: a train running up to it stops there once), a train standing at an old head turns back up and runs
+      on, and the lay leaves an up-way lever ask at the old head, so the first up train after the lay stops there. From
+      each lay, someone standing at the old head is at the new head within 899 ticks on four seeds at 75% (whole-leg
+      fuzz: 478 to 899; under-asked, re-measured below) and 536 fed every tick. **Heads 1 and 2 close behind** (the orchestrator's ruling): once
+      the section after next lays (head 1 with section 3, head 2 with the Gorge) a passed head passes both ways: no
+      lever ask, no rider stop, no kit or stone business, no train stops there; its block signal stays and the halt
+      stays in the line's row, so open stops are still a prefix. The close is counted in open stops (`closesAt`), not
+      on the first train leaving: a lay is the one moment the rules already change a line's stops, it needs no new row
+      field, and two lays on, call 88's ride-on from that head is long over (at most 951 ticks; a section takes 760 to
+      840 fed). The lay that closes a head turns a train standing there into one at a signal and drops every ask there. The cost,
+      accepted by the orchestrator: an old head stays askable, a stop someone can call a train to, for one section more
+      than it serves the build (760 to 840 ticks fed).
+      Head 3 stays the review's `Stack halt`, served both ways. Re-measured on this build: call 88 fed 536, 463, 341,
+      342 ticks; at 75% on the four seeds (20,000 ticks) 951, 362, 313, 318 / 427, 937, 313, 318 / 711, 572, 731, 614 /
+      711, 640, 416, 432. Gate 14: the Gorge 3,195 ticks from the rivet, idle 651, 536, 463, 341. Gates 1 to 3: the 39
+      stages before the rivet identical to main. Every asserted gate passes. **The ask method** (the orchestrator's ruling): the
+      gates are measured main's way (`test/railway-trains.test.ts`, the WAIT_BOUND method): on 5% of ticks a lever ask
+      at a halt picked uniformly among the halts a player could ask at (open and not closed behind), main's total rate,
+      plus riders' asks at 3% and junk calls at 1%. The route rules test's fuzzes (the whole-leg fuzz, the stage and
+      settled waits, call 88's fuzz) all pick that way (`askPool`). The earlier sheets (rounds 1 to 3 and the step 4
+      review, the scratch probes and this test before closed-behind) picked uniformly from the whole grown catalog, 22
+      and then 24 halts, and dropped a pick at a halt not open: at 0 laid only 8 are open, as on main, so they asked each
+      open halt at about 36% (0 laid) to 45% (4 laid) of main's per-halt rate. Their stage-0 figures changed only for
+      that: the earlier and the current rules give identical rows at 0 laid on the ruled method. Gates 8 and 9 printed
+      on the ruled method, this build, 75%, four seeds (worst / mean / waits over 1,050 / over 1,158 / waits served;
+      stages 3,000 ticks each, whole leg and settled 20,000):
+
+      | Seed | 0 laid | 1 | 2 | 3 | 4 | Whole leg | Settled |
+      | --- | --- | --- | --- | --- | --- | --- | --- |
+      | c0ffee | 730 / 389 / 0 / 0 / 37 | 700 / 328 / 0 / 0 / 41 | 1017 / 390 / 0 / 0 / 44 | 1219 / 455 / 1 / 1 / 40 | 1153 / 546 / 2 / 0 / 39 | 1304 / 584 / 6 / 2 / 248 | 1320 / 612 / 14 / 5 / 246 |
+      | 777 | 708 / 418 / 0 / 0 / 36 | 769 / 315 / 0 / 0 / 53 | 1213 / 452 / 1 / 1 / 46 | 1067 / 470 / 1 / 0 / 43 | 1337 / 588 / 6 / 2 / 39 | 1408 / 571 / 10 / 8 / 241 | 1281 / 632 / 17 / 4 / 239 |
+      | 5eed | 694 / 452 / 0 / 0 / 35 | 1033 / 322 / 0 / 0 / 46 | 1366 / 383 / 2 / 1 / 44 | 1122 / 502 / 2 / 0 / 41 | 1223 / 597 / 5 / 2 / 40 | 1346 / 560 / 8 / 5 / 245 | 1182 / 606 / 10 / 2 / 250 |
+      | badd | 717 / 390 / 0 / 0 / 33 | 667 / 303 / 0 / 0 / 50 | 1360 / 445 / 2 / 1 / 44 | 1222 / 506 / 6 / 3 / 46 | 998 / 549 / 0 / 0 / 43 | 1248 / 550 / 5 / 3 / 247 | 1343 / 603 / 13 / 3 / 249 |
+      | asks a minute | 7.4, 7.2, 7, 6.6 | 8.2, 10.6, 9.2, 10 | 8.8, 9.2, 8.8, 8.8 | 8, 8.6, 8.2, 9.2 | 7.8, 7.8, 8, 8.6 | 7.5, 7.3, 7.4, 7.5 | 7.4, 7.2, 7.5, 7.5 |
+
+      **The route gates run long and short:** `ROUTE_GATES=1` (the long mode) runs their fuzzes
+      at 20,000 ticks on the four ruled seeds (226 s audited); every other mode runs 3,000 ticks, the same seeds, every
+      asserted gate still asserted (25 s at the pre-push settings). The long version is run and its output pasted
+      before this step ships and before any later train-rule change ships ([ship pipeline](../agents/ship-pipeline.md#unit-test-settings)). **A unit lost off the rack is owed again**
+      (finding 2, the leg's side): the kit still owed counts what is fed, racked, aboard and on the players' backs, and
+      no longer stops at what was once loaded, so a log or rail dropped, or fed to another bill, is loaded again and the
+      leg always completes. Whether a unit lifted from the leg's rack can short build 2's steel bill is build 2's side,
+      owed at the rebase, with finding 3 (a long-boiler engine stops short of a stub's buffer).
+      *As built on Ring Island build 2 (12 November; branch `greybox/leg1-step3-v2`, rebased onto main, world v32,
+      fixtures regenerated; not shipped: gates 5 and 9 are with the designer):* **Steel first (call 64, answered by
+      the owner).** The works' kit and a leg's kit ride the same two fields of a train's row, so a train's cargo is
+      marked a leg's (`Train.legKit`) when a leg loads it and unmarked when its last unit is off. On line 2 a leg's kit
+      loads only when the works wants none brought (`steelNeed`: its kit is fed, in the yard or aboard) and never onto
+      a train carrying the works' kit, so a train never carries both; the leg's rules read marked cargo only and the
+      works' rules unmarked cargo only. At the rivet the first train at the Village takes the steel kit and the leg's
+      first kit loads 436 ticks later, on the next. A lost steel load is aboard again in 399 ticks and in the yard in
+      1,093 with the leg fed every tick, and no leg kit loads meanwhile. **Rebase resolutions** (the orchestrator's
+      rulings A to D): the Village's load step runs the works' load, then the leg's; `serviceOf` keeps both sides'
+      stops; `headTicks(line, stops, headPct, boiler, n)` takes the leaving train's boiler and the trains in service;
+      the shelf bound and the steel check's sent-rails bound both count the legs' rails. `railway-predict.ts` holds
+      back both the works' lighting and a leg's lay start. `lineStages` lists no stage for a shut line. Build 2's
+      `boiler-long` seed waits for the trains in service, not the shed rows. Two assertions of build 2's steel review
+      test are edited for the open leg, in their own commit. **Gates on this build** (the long run, 75%, four seeds):
+      8 passes the owner's 1,350 (fixed stages worst 1,166). **9 fails it on two seeds:** settled worst 1,261, 1,340,
+      1,397 and 1,367 (means 602 to 624; 8 to 12 of about 240 waits over 1,158); its stage-0 part passes (worst 766 to
+      820). 11 passes (whole-leg worst 1,210 to 1,421; a train at each new railhead within 820). 14 passes: rivet to
+      Gorge 3,575, idle 1,130, 563, 357, 321. 15 passes: the steel kit in the yard at +651 with the leg open and on
+      build 2 alone; first steel home and the install at +1,824 with the leg idle (build 2 alone +1,824) and +2,157
+      with the leg fed every tick. Call 88: 313 to 1,060. **5 fails at 0 laid:** with the steel kit first, kits 1 to 3
+      load at +436, +942 and +1,345, every train is owed a kit or carries one it can unload until then, and the first
+      full stone load waits 2,252 ticks against the quiet lap's 1,460 (1,266 before steel first). No limit and no stop
+      rule is changed for either. *After the fourth sheet and call 108 (same branch, rebased onto main with the
+      rulings):* gates 8 and 9 are asserted (fixed stages at most 1,350, the settled line and stage 0 at most 1,400;
+      the mean and the share over 1,050 printed; each settled wait over 1,350 printed with its tick, halt and side).
+      Gate 5(a) is asserted as restated: the opening load is taken at +2,252, inside the last opening kit's load
+      (+1,345) plus the quiet lap (1,460) and inside 2,805; the trains past a full load before it are three owed a
+      kit (+329, +835, +1,238) and the footing wagon's train (+1,717), exempt by name. **Which change moved the
+      settled worst from 1,343, a reading and not a measurement:** the two cannot be split, because the rebase alone
+      does not run (building `ring-joined` stops on the load check, 'steel sent rails', with the works and a leg
+      reading each other's kit). At 0 laid, where steel first is in force, the four seeds' rows are within 3 ticks
+      of the pre-rebase ones (worst 730, 705, 694, 717 against 730, 708, 694, 717). The settled run starts 4,000
+      ticks after the Gorge opens with the steel kit lying unfed in the yard, so steel first has no rule in play
+      there; what differs is build 2's own changes (the 8.2 m extent, the head gap by boiler) and the state the leg
+      arrives in, within the 136-tick spread between seeds. *After the independent review's three P2s (branch
+      `greybox/leg1-step3-v3`, same v32 bump):* **Surplus leg kit goes home** (P2-1): at the Village a marked train
+      sends home the leg kit no leg on its line can use (`legKitSurplus`: all of it once the leg is complete, else
+      what passes the remaining sections' lack, as when logs were fed from backs while it rode), as `steelArrives`
+      does for the works': logs unmade (out of `Rail.depotProduced` and the leg's `loadedLogs`), rails back onto the
+      forge rack (out of `loadedRails`), the mark cleared, so the works may load the car again; no leg cargo rides once
+      the leg is complete. **The kit owed counts only the rack's units on backs** (P2-2, the leftover): `Leg.heldLogs`
+      and `Leg.heldRails` count what `rail.depotTake` and `rail.depotRailTake` lift while a leg is open (clamped to its
+      remaining bills less fed, the load check's bound), and what leaves a back counts off (fed to the frame, dropped,
+      fed to the steel works, the kiln or the cradle; never under 0: a doubt is a unit owed again, its surplus going
+      home). Each account counts its own lifted units (`Account.legLogs`, `Account.legRails`; the leg's held counts
+      are their sum, the load check's equality), and `legKitNeed` reads each account's, never more than that back
+      carries. A leaver's own lifted units are released by the host's leaver check after the grace (`railBeamGraceS`,
+      as a footing's carrier, its clock stamped at departure): state, so idempotent and kept across a restart, and
+      never a present carrier's units (the re-review's P2). A leaver stalls the leg at most for the grace. Open P3
+      (re-review): leg kit goes home only at its line's kit halt, checked before the rack halt in `legKitArrive`. **Build 2's longer-fleet tests run** (P2-3): they wait on the trains in
+      service; b011e7 at 75% still breaches 1,050 (1,152, the Quarry down) and stays todo; fa575 at 0% passes (730)
+      and is asserted. Gates on this build, the long run (`RAIL_AUDIT=1 FUZZ_STRIDE=1 ROUTE_GATES=1`, 261 s), equal to
+      the fourth sheet's run: 8 fixed stages worst 1,166; 9 settled 1,261, 1,340, 1,397, 1,367 and stage 0 766 to 820;
+      11 whole-leg 1,210 to 1,421; 5 the opening load at +2,252; 14 rivet to Gorge 3,575; 15 +651 and +1,824 / +2,157.
+      Fixtures regenerated for the two Leg fields.
 - [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
@@ -1404,6 +1589,12 @@ this plan, not measurements.
    - No, 2 minutes 15 is the limit: leg 1 waits for a rule that buys back five seconds, or for train spacing.
    - Drop the finished-line limit for the greybox: only the 2 minutes 40 cap applies everywhere until train spacing.
    Answer: ___
+
+**Gate 5(a) names the footing wagon's train** (orchestrator, 12 November, Default; call 108): no train passes a full
+load at a leg's opening unless it is owed a kit, carries one it can unload now, or is the footing wagon's train, which
+slice 5's call 4 already keeps from every freight stop; each pass is printed with its errand or "wagon". The restated
+gate did not know call 4. No stop rule changes. Whether the wagon's exemption should end once no footings are owed
+(so all three trains take stone; today loads come 2,884 ticks apart after the rivet) is put to the owner.
 
 **What the owner is told about stone:** with the steel kit first, the Village's first stone after the rivet arrives
 about 1 minute 45 later than before, once a leg. The other choice was to make kit trains stop for stone, which slows

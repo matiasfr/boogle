@@ -198,8 +198,9 @@ export function railwayAtTrains(stage: TrainStage): Seed {
     } else {
       need(act(s, 'a', 'rail.boilerFit', { revision: boiler(w).revision }) === 1, 'the boiler fitted');
       advance(s, 20);
+      // A fleet row (the greybox route) stays in the shed (phase 2) until its stage runs it.
       need(
-        trains(w).every((r) => r.phase === 0),
+        trains(w).every((r) => r.phase === 0 || r.phase === 2),
         'every train waiting',
       );
     }

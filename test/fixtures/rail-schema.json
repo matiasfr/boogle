@@ -1,5 +1,5 @@
 {
-  "worldNs": "v31",
+  "worldNs": "v32",
   "components": [
     {
       "kind": "rail",
@@ -277,7 +277,9 @@
         ["rails", "int"],
         ["foot", "int"],
         ["epoch", "int"],
-        ["request", "int"]
+        ["request", "int"],
+        ["legLogs", "u8"],
+        ["legRails", "u8"]
       ]
     },
     {
@@ -361,7 +363,8 @@
         ["freight", "int"],
         ["riders", "int"],
         ["steel", "int"],
-        ["boiler", "u8"]
+        ["boiler", "u8"],
+        ["legKit", "bool"]
       ]
     },
     {
@@ -548,6 +551,55 @@
       "requires": [],
       "defaults": {},
       "fields": [["lastCast", "int"]]
+    },
+    {
+      "kind": "leg",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "start": -1
+      },
+      "fields": [
+        ["slot", "int"],
+        ["laid", "int"],
+        ["logs", "int"],
+        ["rails", "int"],
+        ["start", "int"],
+        ["loadedLogs", "int"],
+        ["loadedRails", "int"],
+        ["heldLogs", "int"],
+        ["heldRails", "int"]
+      ]
+    },
+    {
+      "kind": "legYard",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["logs", "int"],
+        ["rails", "int"]
+      ]
+    },
+    {
+      "kind": "route",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {
+        "arrived": -1
+      },
+      "fields": [
+        ["grants", "int"],
+        ["gates", "int"],
+        ["arrived", "int"]
+      ]
     }
   ]
 }

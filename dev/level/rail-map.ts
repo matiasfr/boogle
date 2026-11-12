@@ -170,9 +170,10 @@ const stageOf = (l: (typeof WORLD_LINES)[number]) => {
     b = Math.max(...st.map((s) => s[1] ?? -1));
   return { a: a < 0 ? null : a, b: b < 0 ? null : b };
 };
-const TRAIN_STOPS_M = RAIL_LINES.map((l) => l.halts.map((h) => h.s / 100));
-/** The island halt's s in v27: the pier head plus the halt's middle. */
-const ISLAND_S = (RING_S_HEAD + (RING_HALT.u0 + RING_HALT.u1) / 2) / 100;
+// Line 2 as built to Ring Island (its own row), and grown on to High Gorge by the greybox route (the `ring` row's): a leg
+// halt (`leg`) is the route's. The route's three heads are building stops, so the grown trip runs Ring Island to the Gorge.
+const TRAIN_STOPS_M = RAIL_LINES.map((l) => l.halts.filter((h) => !h.leg && !h.shut).map((h) => h.s / 100));
+const GORGE_M = RAIL_LINES[1]!.halts.findLast((h) => h.leg)!.s / 100;
 function lineRows(): LineRow[] {
   const l1 = LINES.north.len,
     l2 = LINES.east.len;
@@ -232,7 +233,7 @@ function lineRows(): LineRow[] {
       length: len,
       halts: l.halts.map((h) => h.name),
       trains: l.id === 'ring' ? "line 2's" : `${trainsFor(cycle)} (estimate, ${Math.round(cycle)} s round trip)`,
-      trip: trip(l.id === 'ring' ? [...TRAIN_STOPS_M[1]!, ISLAND_S] : l.stops.map((x) => x / 100)),
+      trip: trip(l.id === 'ring' ? [...TRAIN_STOPS_M[1]!, GORGE_M] : l.stops.map((x) => x / 100)),
       ends: [end(l.ends.find((e) => e.at === 'start')), end(l.ends.find((e) => e.at === 'end'))],
       after: AFTER[l.id] ?? ['', ''],
     });

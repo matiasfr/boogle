@@ -13,7 +13,7 @@ import { railwayAtRing } from './railway-seed-ring.ts';
 import { account, line, shed, steel, train } from './railway-rows.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2 } from './railway-lines.ts';
-import { LINE_SLOTS } from './railway-trains.ts';
+import { servingSlots } from './railway-trains.ts';
 
 export type SteelStage = 'steel-kit' | 'steel-lit' | 'steel-home' | 'boiler-long';
 export const STEEL_STAGES: readonly SteelStage[] = ['steel-kit', 'steel-lit', 'steel-home', 'boiler-long'];
@@ -74,7 +74,9 @@ function build(s: Seed, stage: SteelStage): Seed {
       need(act(s, 'a', 'rail.install', { line: LINE2, part: 1, revision: line(w, LINE2).boiler }) === 1, 'installed');
       until(
         s,
-        () => LINE_SLOTS[LINE2]!.every((k) => train(w, k).boiler === 1),
+        // The trains in service: a fleet row still in the shed (the greybox route) takes the fit when it joins and
+        // stands at the Village.
+        () => servingSlots((k) => train(w, k), LINE2).every((k) => train(w, k).boiler === 1),
         3000,
         'every line 2 train wearing the longer boiler',
       );

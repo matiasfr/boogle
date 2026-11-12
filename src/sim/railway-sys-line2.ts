@@ -17,6 +17,7 @@ import { TRAIN, TRAIN_PHASE, TRAIN_STOPS } from './railway-train.ts';
 import { LINE2, RAIL_LINES, trainPlaces } from './railway-lines.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
+import { legKitLifted } from './railway-sys-route-kit.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
 import {
@@ -35,6 +36,7 @@ import {
   Shed,
   Train,
   Works,
+  Leg,
 } from './railway-components.ts';
 import {
   aboard,
@@ -129,7 +131,7 @@ export const boilerDrop = defineSystem(
 );
 export const boilerFit = defineSystem(
   'rail.boilerFit',
-  { reads: [Account, QJob, Works, Aperture], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
+  { reads: [Account, QJob, Works, Aperture, Leg], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (w.get(Rail, railId(w))!.trains >= 0 || !boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
@@ -138,9 +140,10 @@ export const boilerFit = defineSystem(
     w.mut(Rail, railId(w))!.trains = tick;
     // Each line's trains spread round its circuit (docs/plans/generic-lines.md, "Starting"): line 2's at the Village
     // (up) and Far Head (down); they wake together.
+    // A line's fleet rows past its first stage stay in the shed (the greybox route): the first `trains` slots wake.
     RAIL_LINES.forEach((_l, line) => {
       const places = trainPlaces(line, stopsOf(w, line));
-      LINE_SLOTS[line]!.forEach((slot, k) => {
+      LINE_SLOTS[line]!.slice(0, places.length).forEach((slot, k) => {
         const { stop, track } = places[k]!,
           s = TRAIN_STOPS[line]![stop]!;
         Object.assign(w.mut(Train, trainId(w, slot))!, {
@@ -255,7 +258,7 @@ export const forgeTake = defineSystem(
 );
 export const depotTake = defineSystem(
   'rail.depotTake',
-  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 22 },
+  { reads: [Boiler, Beam, Aperture], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -264,13 +267,15 @@ export const depotTake = defineSystem(
     const n = Math.min(rail.depot, room);
     rail.depot -= n;
     a.carry += n;
+    // Off an open leg's rack: held on this back until fed or put down (the step 3 review's P2-2).
+    legKitLifted(w, aid, n, 0);
     return n;
   },
 );
 /** Rails from the shelf by a `shelf` stretch's rack (moved there from the forge; railValid checks the stretch). */
 export const depotRailTake = defineSystem(
   'rail.depotRailTake',
-  { reads: [Boiler, Beam], writes: [Rail, Account], phase: 'act', order: 25 },
+  { reads: [Boiler, Beam, Aperture], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = free(w, a);
@@ -279,6 +284,7 @@ export const depotRailTake = defineSystem(
     const n = Math.min(rail.depotRails, room);
     rail.depotRails -= n;
     a.rails += n;
+    legKitLifted(w, aid, 0, n);
     return n;
   },
 );
@@ -441,7 +447,7 @@ export function layLine2(w: World, tick: number) {
 }
 export const line2Tick = defineSystem(
   'rail.line2Tick',
-  { reads: [Aperture], writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
+  { reads: [Aperture, Leg], writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
   (w, { tick }: Tick) => layLine2(w, tick),
 );
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */

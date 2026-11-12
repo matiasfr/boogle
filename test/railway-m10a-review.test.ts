@@ -126,8 +126,11 @@ test('a full pending window keeps every train shown (train-view.ts step: hidden 
   assert.equal(shown(), true, 'the trains stay shown while the whole state is in and the window is full');
 });
 
-// train-view.ts (ISLAND_STOPS, its cargo filter) and halts-view.ts (the ring's halts) index line two as LINE2 among
-// two lines: a third line, or line two moved, must revisit them.
-test('the views index two lines, line two at 1', () => {
-  assert.deepEqual([RAIL_LINES.length, LINE2], [2, 1]);
+// train-view.ts (its crossover end, its cargo filter) and halts-view.ts (the ring's halts) index line two as LINE2: a
+// line added, or line two moved, must revisit them. The greybox route (step 3) appends three rows, every halt shut and
+// no train, which the views do not draw yet (halt-map.ts maps lines 1 and 2, the shed trains are hidden); its views
+// (step 4) revisit them.
+test('the views index line two at 1 of five lines, the greybox route three of them', () => {
+  assert.deepEqual([RAIL_LINES.length, LINE2], [5, 1]);
+  assert.ok(RAIL_LINES.slice(2).every((l) => l.trains === 0 && l.halts.every((h) => h.shut)));
 });

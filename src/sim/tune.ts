@@ -112,6 +112,9 @@ export const TUNABLES = [
     label: 'Railway helped footing speed (centimetres per second)',
   },
   // The trains' headway hold at a line's ends (docs/plans/generic-lines.md, 4; railway-trains.ts TRAIN_HEAD_PCT).
+  // The greybox route's grown line 2 (docs/plans/greybox-route.md, rulings on round 3): the default 75% does not pass
+  // its wait gates 8 and 9 on five trains; 0, 25 and 50% did not either, measured under-asked (not re-run on the
+  // gates' ruled ask method); see owner question 1.
   {
     key: 'railTrainHeadPct',
     def: 75,

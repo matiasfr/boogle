@@ -71,8 +71,8 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     why: 'imports each file in src/sim through the folder URL the walk follows (src/sim: the full suite anyway)',
   },
   'test/unit-modes.test.ts: new URL': {
-    reaches: ['src/sim/railway-drive.ts'],
-    why: 'its url() helper resolves the probe modules it runs (src/sim: the full suite anyway; a core test)',
+    reaches: ['src/sim/railway-drive.ts', 'test/helpers/rail-no-audit.ts'],
+    why: 'its url() helper resolves the probe modules it runs and the preload it passes to --import (src/sim: the full suite anyway; a core test)',
   },
   'test/lint-determinism.test.ts: new URL': {
     reaches: [],
@@ -93,9 +93,8 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
   'dev/peer-test/node-player.ts: build': { reaches: [], why: 'bundles a dev/peer-test entry for the net job' },
   'dev/peer-test/node-player.ts: import': { reaches: [], why: 'imports the bundle it just built, for the net job' },
   'test/unit-modes.test.ts: spawnSync': {
-    count: 2,
     reaches: [],
-    why: 'runs probe modules written inline, which load what its url() entry lists',
+    why: 'runs probe modules written inline, which load what its url() entry lists (its second spawn names its preload, which the walk follows)',
   },
   'dev/look/lib.ts: spawn': {
     count: 2,

@@ -30,10 +30,12 @@ export type MapStage = { open: number; head: number };
 export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }): { lines: MapLine[]; scale: number } {
   const Q: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   const sea = stage.open >= 4;
-  const lines = RAIL_LINES.map((def, k): MapLine => {
+  // Lines 1 and 2 as far as Ring Island: the greybox route's halts (a leg's, a shut row's) are step 4's to map.
+  const lines = RAIL_LINES.slice(0, 2).map((def, k): MapLine => {
     // Line 2's halts in order: Village, Quarry, Far Head, Pier, Railhead (it moves with `head`), Ring Island.
     const picks = def.halts
       .map((h, i) => ({ h, i }))
+      .filter(({ h }) => !h.leg && !h.shut)
       .filter(({ h }) => (k === 0 ? !h.heads && !h.ring : h.ring ? sea : h.heads ? stage.open >= 5 : true));
     const stops = picks.map(({ h, i }) => ({
       name: LINE_HALTS.find((x) => x.line === k && x.stop === i)!.name.split(',')[0]!,

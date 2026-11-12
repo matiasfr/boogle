@@ -64,10 +64,13 @@ import { railwayCheck } from '../sim/railway-check.ts';
 import { railApply, railOutcome, railTick } from '../sim/railway-systems.ts';
 import { railBoilerPutDown, railBoilerStood } from '../sim/railway-sys-line2.ts';
 import { railFootHolders, railFootRelease } from '../sim/railway-sys-works.ts';
+import { railLegKitHolders, railLegKitRelease } from '../sim/railway-sys-route-kit.ts';
 import { railBeamPutDown, railBeamRelease, railBeamStood } from '../sim/railway-sys-line1.ts';
 import { railLine2Active, ringHead } from '../sim/railway-queries.ts';
 import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
 import { railSession, railSettle } from '../sim/railway-sys-core.ts';
+import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
+import { haltHead, legOpen, legRow } from '../sim/railway-queries-route.ts';
 import type { World } from '../ecs/index.ts';
 import { GLOBAL_CELL, cellOf, type Fields } from './replicate.ts';
 import { touchChanges, worldProjections } from './replicate-world.ts';
@@ -126,6 +129,11 @@ export const RAIL_ACTIONS = new Set([
   'rail.steelTake',
   'rail.steel',
   'rail.install',
+  // The greybox route (step 3).
+  'rail.legStock',
+  'rail.grant',
+  'rail.gate',
+  'rail.arrive',
 ]);
 
 /** A passenger's reach of its train: 10 m of the train's pose (its cars run 7.4 m behind it), at the tick or in the
@@ -219,8 +227,9 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
           nearTrain(w, e.train, tick, actor) &&
           actor.cadence(e.op)
         );
-      // The Railhead's down platform moves out with its head (v27): judged where the head stands now.
-      const p = haltPlatform(h, e.dir, ringHead(w));
+      // The Railhead's down platform moves out with its head (v27), a leg's railhead with its sections laid (the greybox
+      // route): judged where the head stands now.
+      const p = haltPlatform(h, e.dir, haltHead(w, e.id!, ringHead(w)));
       return height(p.y) && near(p.x, p.z, p.reach);
     }
     case 'rail.beamTake': {
@@ -244,11 +253,13 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return near(LINE2_FORGE.rackX, LINE2_FORGE.rackZ, 340);
     case 'rail.depotTake': {
       const spec = LINE2_STATIONS[railLine2Active(w)];
-      return !!spec && spec.depot && near(spec.x, spec.z, LINE2_DEPOT.reach);
+      if (!spec) return legRackNear(w, at);
+      return spec.depot && near(spec.x, spec.z, LINE2_DEPOT.reach);
     }
     case 'rail.depotRailTake': {
       const spec = LINE2_STATIONS[railLine2Active(w)];
-      return !!spec && spec.shelf && near(spec.x, spec.z, LINE2_DEPOT.reach);
+      if (!spec) return legRackNear(w, at);
+      return spec.shelf && near(spec.x, spec.z, LINE2_DEPOT.reach);
     }
     case 'rail.pack':
       return near(LINE2_PACK.x, LINE2_PACK.z, 340);
@@ -291,8 +302,28 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.install':
       // At the table: line 2 (1), the longer boiler (1), on the fit the actor saw; a stale one is the rule's noop.
       return e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX) && at(SHED_TABLE);
+    // The greybox route (step 3): ids are catalog indexes; whether the leg is open, the pickup's leg laid or the grant
+    // held is the rule's (./railway-sys-route.ts), never this.
+    case 'rail.legStock': {
+      // At the frame of the leg's current section (none once it is complete).
+      if (!railInt(e.leg, RAIL_LEGS.length - 1)) return false;
+      const laid = legRow(w, e.leg).laid;
+      return laid < RAIL_LEGS[e.leg]!.sections.length && at(legFrame(RAIL_LEGS[e.leg]!, laid));
+    }
+    case 'rail.grant':
+      return railInt(e.id, RAIL_GRANTS.length - 1) && at(RAIL_GRANTS[e.id]!.at);
+    case 'rail.gate':
+      return railInt(e.id, RAIL_GATES.length - 1) && at(RAIL_GATES[e.id]!.at);
+    case 'rail.arrive':
+      return at(RAIL_ARRIVAL);
   }
   return false;
+}
+/** After the last Q job, the depot's racks are the open leg's (the greybox route: its kit unloads onto Rail.depot and
+ * Rail.depotRails), judged at its current rack (legRack); with no leg open there is no rack to take from. */
+function legRackNear(w: World, at: (p: { x: number; z: number; y: number; reach: number }) => boolean) {
+  const k = RAIL_LEGS.findIndex((_l, j) => legOpen(w, j));
+  return k >= 0 && at(legRack(RAIL_LEGS[k]!, legRow(w, k).laid));
 }
 
 export function install(sync: SyncView & { roomStep(): number }, rules: { tune: TuneApi }, replication: Replicator) {
@@ -410,6 +441,14 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     footHolders: () => railFootHolders(world),
     footRelease(pid: string, epoch: number) {
       const n = railFootRelease(world, pid, epoch);
+      commit();
+      return n;
+    },
+    /** Who carries units lifted off a greybox leg's rack (the step 3 review's P2-2), and in which session. */
+    legKitHolders: () => railLegKitHolders(world),
+    /** The carrier stayed away past the grace: what they carry is no longer counted held, so the leg is loaded again. */
+    legKitRelease(pid: string, epoch: number) {
+      const n = railLegKitRelease(world, pid, epoch);
       commit();
       return n;
     },
