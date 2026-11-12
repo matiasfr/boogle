@@ -6,6 +6,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
 
+- 2026-11-11 · The chunked far ground is on by default; the cheaper far sea stays behind its setting until its own stills ([entry](#d-2026-11-11-far-ground-on-by-default)). _Completes point 5 of 7 November's "keep going while the owner is away" for the ground._
 - 2026-11-11 · M13 deletes Place-only tools outright; a tool still needed is rebuilt as a native dev tool against rows and queries, not kept alive behind Place ([entry](#d-2026-11-11-native-dev-tools-not-place-only-ones)). _Completes the Place tools line of the ECS migration answers (10 November)._
 - 2026-11-10 · ECS migration answers: the railway "read model" is deleted entirely and its tests rewritten against components; held builds resume at the gates (rules after M3, views after M6 and M8); views stay objects that read components through queries; the temporary re-export files go right after M3 with a lint rule; Place's tools: delete those with a live-game twin, retarget the level check, tag an archive of Place first; train seats are not made server-owned in this migration; the passenger set's bay at Home is in [Rail](decisions-rail.md#d-2026-11-10-the-passenger-set-does-not-stand) ([entry](#d-2026-11-10-ecs-migration-answers))
 - 2026-11-10 · priority call: migrate the game out of `src/proto` onto the ECS, railway first; then chunk, cull and stream the world; device tests run remotely ([entry](#d-2026-11-10-priority-call-migrate-the-game-out))
@@ -79,6 +80,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-11-far-ground-on-by-default"></a>**2026-11-11, far ground on by default** (owner, 11 November, after off/on stills at the village green and from Ring Island: "Yes, ship it on"). The chunked far ground (frustum-culled 192 m tiles, three LODs, stitched borders, `src/place/far-ground.ts`) becomes the default: the main island's terrain draw falls from 241,836 to about 105k triangles at the green with no visible difference in the stills. Measured in triangles and draws, not frame time; not tested on a device. To revert, set `default` back to `false` in `far-ground.ts`. The far sea half of 7 November's point 5 still waits for its stills.
 
 - <a id="d-2026-11-11-native-dev-tools-not-place-only-ones"></a>**2026-11-11, native dev tools, not Place-only ones** (owner, 11 November, on M13c of the [M12 and M13 plan](plans/ecs-m12-m13.md): "m13c, shouldn't we just create native dev tools if they're still needed? rather than something place only?"). Orchestrator's reading: M13 deletes a Place-only tool outright; a tool that a current job still uses is rebuilt as a native dev tool against rows and queries (`dev/look/rail-read.ts`), not kept alive behind Place or retargeted through it. The plan's M13c rule for each listed tool follows from this.
 
