@@ -1,5 +1,6 @@
-// One entry point for the classic island's composition and Round 4 (place) progression. Known classic issues keep their
-// bounded allowances; place assertions have no allowances. The classic island stands in the same world, at the origin.
+// One entry point for the classic island's composition and the village's (src/place) progression, the production world's
+// land and tech layout. Known classic issues keep their bounded allowances; place assertions have no allowances. The classic
+// island stands in the same world, at the origin.
 //   npm run level-check                           classic + layout fixtures + place progression
 //   npm run level-check -- --all                  also print known classic issues and their reasons
 //   npm run level-check -- --place=place          only place progression, all existing states and facts
@@ -7,7 +8,7 @@
 
 //   npm run level-check -- my-layout.json         only that classic layout fixture
 //   npm run level-check -- --json                 coverage, issues, allowances and place facts as JSON
-//   npm run level-check -- --place=place --physics --region=T3 --state=empty
+//   npm run level-check -- --cove                 the cove's mesh and heightfield facade in Rapier (opt-in, alone)
 import '../node-version.ts'; // first: re-runs under the pinned Node
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,8 +19,7 @@ import type { Issue } from './rules.ts';
 
 const argv = process.argv.slice(2);
 const t0 = performance.now();
-const physics = argv.includes('--physics');
-const replay = argv.includes('--replay');
+const cove = argv.includes('--cove');
 const place = argv.find((a) => a.startsWith('--place='))?.slice('--place='.length);
 const files = argv.filter((a) => !a.startsWith('--'));
 const showAll = argv.includes('--all');
@@ -27,27 +27,22 @@ const json = argv.includes('--json');
 const bad = argv.filter(
   (a) =>
     a.startsWith('--') &&
-    !['--all', '--json', '--place=classic', '--place=place', '--physics', '--replay'].includes(a) &&
-    !((a.startsWith('--region=') || a.startsWith('--state=') || a.startsWith('--fixture=')) && physics),
+    !['--all', '--json', '--place=classic', '--place=place', '--cove'].includes(a),
 );
 if (
   bad.length ||
   argv.filter((a) => a.startsWith('--place=')).length > 1 ||
-  (physics && (place !== 'place' || files.length || replay)) ||
-  (replay && argv.length !== 1) ||
+  (cove && argv.length !== 1) ||
   (place === 'place' && files.length)
 ) {
   console.error(
-    `level-check: unsupported selection${bad.length ? `: ${bad.join(', ')}` : ''}. Use --place=classic|place or a layout file; --physics requires --place=place; --replay runs alone.`,
+    `level-check: unsupported selection${bad.length ? `: ${bad.join(', ')}` : ''}. Use --place=classic|place or a layout file; --cove runs alone.`,
   );
   process.exit(2);
 }
-if (physics) {
-  const { runSpatialAudit } = await import('./spatial.ts');
-  await runSpatialAudit(argv);
-} else if (replay) {
-  const { runReplays } = await import('./replay.ts');
-  await runReplays();
+if (cove) {
+  const { auditCove } = await import('./cove.ts');
+  await auditCove();
 } else await runChecks();
 
 async function runChecks() {
@@ -55,7 +50,7 @@ async function runChecks() {
   const build = sourceBuild();
   const checkPlace = place === 'place' || (!place && !files.length);
   const coverage = {
-    defaultBrowser: 'place (Round 4; ?proto=place&fresh=1&coop=1)',
+    defaultBrowser: 'the railway world (the production entry; the village is src/place)',
     included: [...(classic ? ['classic'] : []), ...(checkPlace ? ['place'] : [])],
     excluded: [
       ...(!classic ? [{ scope: 'classic', reason: 'Only --place=place was selected.' }] : []),
@@ -200,6 +195,19 @@ async function runChecks() {
       for (const c of timber.contacts)
         console.log(
           `  ${c.deck} (${c.owner}) passes ${c.depthCm.toFixed(1)} cm into ${c.track} near (${c.x.toFixed(1)}, ${c.z.toFixed(1)})`,
+        );
+    }
+    const { checkServiceLedges } = await import('./timber-track.ts');
+    const ledges = checkServiceLedges();
+    failed += ledges.failures;
+    report.push(ledges);
+    if (!json) {
+      console.log(
+        `service walkways: ${ledges.routes} routes, ${ledges.samples} centreline samples, ${ledges.failures} ledges over ${ledges.ledgeM} m`,
+      );
+      for (const l of ledges.ledges)
+        console.log(
+          `  ${l.route} deck ${l.deck}: deck ${l.over} stands ${l.above.toFixed(2)} m above it near (${l.x.toFixed(1)}, ${l.z.toFixed(1)})`,
         );
     }
     const start = performance.now();

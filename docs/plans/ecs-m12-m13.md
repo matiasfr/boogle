@@ -569,11 +569,29 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
   Left for M13d to g: `src/proto/place/nearest.ts` has no importer now; `dev/look/restore-pair.ts` (and `look.ts`'s
   `READ_RESTORED`, `before-after --verify-restore`, `test/restore-pair.test.ts`) still import `src/proto/place/job.ts`
   and read Place's saves (M13a called it live: it is not); `docs/game-design/place.md` names deleted evals.
-- [ ] **M13d. The level check.** _M, Low (tooling). After M13a._ Group 4: `dev/level/check.ts`'s `--place=place`
+- [x] **M13d. The level check.** _M, Low (tooling). After M13a._ Group 4: `dev/level/check.ts`'s `--place=place`
       progression and `replay.ts` onto railway seeds and `src/sim/railway-*-layout.ts`; `spatial.ts`,
       `track-continuity.ts`, `world-blockout.ts`, `dev/economy/place-level.ts`. **Done:** `npm run level-check`
       prints the same reports for the live world as on main (diff the output); each assertion removed as Place-only
       is listed in the commit body.
+
+  **As built (11 November, `ecs/m13d`).** The level check's production part never read Place's code: `place-level.ts`
+  floods `src/place/*` (the village, which the railway world draws), and `check.ts` holds no layout number. Only the
+  two audits that read `src/proto/place` source text were Place's. Level-check output diffed against `ecs/m13c`: the
+  only changes are the source hash, the coverage line (the stale "?proto=place" entry text), timings, and one new line.
+
+  | File | Decision | Why |
+  | --- | --- | --- |
+  | `dev/level/replay.ts` | delete | `--replay` ran three historical Place source fragments from git and the current `handCrate` of `src/proto/place/run.ts`; one case already reported MISSED; no job in `package.json`, CI or docs/agents uses it. Lost: the three one-off proofs |
+  | `dev/level/spatial.ts` | delete | `--physics` (T3, stack) inventoried creators in `src/proto/place/*.ts`, always exited 1 ("26 missing creators"), and called `replay.ts`. Lost: the T3 and stack static probes (never green). The live village station frames stay checked by `machine-clearance` and `timber-track` |
+  | `dev/level/cove.ts`, `scene.ts` | keep, native | the cove audit read `src/place/cove`, live; its door moves to `npm run level-check -- --cove` (was `--physics --region=cove`) |
+  | `dev/level/check.ts` | rebuilt | flags `--physics`, `--replay`, `--region/--state/--fixture` removed; `--cove` added; the coverage text names the production entry; the new service-walkway ledge report is printed |
+  | `dev/level/timber-track.ts` | rebuilt | `checkServiceLedges()`: walking each service route's centreline, no deck may stand more than 0.3 m above the deck underfoot inside the walker's footprint (the rule of the deleted `test/hook-walk-lip.test.ts`). Source labels now name the live files |
+  | `dev/level/track-continuity.ts`, `world-blockout.ts`, `dev/economy/place-level.ts`, `dev/economy/model.ts` | text | comments named `src/proto/place` files and deleted evals |
+
+  **Ledge proof.** On this branch: `service walkways: 2 routes, 322 centreline samples, 0 ledges over 0.3 m`. With
+  the new route point of `c93503ac2` removed in a scratch edit (reverted, not committed): `1 ledges`, "hook deck 3:
+  deck 4 stands 0.73 m above it near (989.7, 14.9)", the 0.73 m of that commit and the bot's stuck point.
 - [ ] **M13e. Delete Place.** _M, Medium. After M13b, c, d._ D1a, D1b, D1c as written; delete
       `src/proto/place/` (44 files), `src/features/proto-place.ts`, `src/debug/dev/place.ts` and its callers'
       branches, `place-owner.ts`, the 230-line remainder of `rail.ts`.
