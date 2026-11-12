@@ -1321,3 +1321,225 @@ is what is built; "fix how trains turn at the ends" is no longer part of it.
 | 81 | Trains may stand at block signals at the stack line's section ends | Default | Ruling 5 |
 
 **Counts:** 0 Decided, 0 New, 4 Default.
+
+## Design review (designer, 2026-11-12): leg 1 step 4
+
+Answers the step 4 reader's questions b, e, f, g, i, j, k and l before the views are built, and fixes the catalog
+positions step 3 takes before its bump. Where this differs from step 4's text or the reviews above, this is what gets
+built. The steps above are left as written.
+
+**Read:** the reader's sheet (relayed, 12 November UTC); this plan's section 1, steps 3 to 5 and the reviews above;
+`src/sim/railway-route.ts`, `railway-ring-layout.ts` and `railway-world-lines.ts` (the `ring`, `ns` and `cave` rows);
+`src/entities/ring-island/view.ts` and `ground.ts` (what stands on the halt today); `halt-map.ts`; the map JSON's
+Gorge entries (`stack-n`, `stack-s`, the `gorge` line, the falls); world-blockout ruling 5; junction-stations' High
+Gorge; build 2's level findings. **Not read:** the step 3 branch and build 2's views (neither is on this base; build
+2's positions are the ones the orchestrator relayed). **Ran:** a script over the catalog for the positions below.
+**No stills:** this worktree has no packages, and nothing of step 3, build 2 or the Gorge is drawn on this base.
+Every sightline here is arithmetic on the data. Step 4's first looks are the first eyes on it; the three stills it
+owes are listed under Findings.
+
+**Frames of reference.** At Ring Island: `u` and `lat` as `railway-ring-layout.ts` (lat + is east). Along the stack
+line: `s` in metres along line 2 (the catalog's cm), `lat` square to the path, + to the right going out. In the split:
+`a` metres along it from the row's end point (world −103.00, −1988.00), + back towards Ring Island; `c` metres across,
++ towards the south stack (the falls side). The walls are at `c` ±45.
+
+### Verdict
+
+Buildable as answered. **One thing must be settled in the rules before step 3's bump** (finding 1): how a body gets
+from a head to the next one, 510 m on. **Two proofs are owed with it** (findings 2 and 3). 6 decided, 1 new, 16
+default.
+
+### b. Ring Island: two bills, one each side of the tracks
+
+The steel works keeps the east side. The stack line takes the west platform, which is empty from u 444 to u 462
+(the fingerpost is at u 436, the map table at u 442, the ramp to the path at u 464).
+
+| Thing | Where | What the player reads |
+| --- | --- | --- |
+| The stack line's rack | u 446.0, lat −8.4, on the west platform (y 8.9) | A stack of logs and rails with a plate, straight across the tracks from the steel pallets |
+| The first frame | u 453.0, lat −8.3; 2.6 m along, 2.0 m across, leaving 1.5 m of platform at the edge | An empty grey frame 7 m north of its rack, the buffers and end board 30 m beyond it |
+| Its bill sign | On a post at the frame's north end, u 454.5, face to the tracks | The line's name and the count |
+| The west lever | u 457, where it is: 2.7 m clear of the frame | |
+
+- **Why west.** The tracks become the divider: east is the works, west is the line on. The fingerpost on the same
+  platform already points at the Gorge. Rack to frame is 7 m, level, no track crossed (Q7's carry). From the train's
+  door on the east platform the frame is 13 m away, straight across, in view as you step off.
+- **The kit hop.** At stage 0 trains still stand at the east face, so the kit hops 8 m over the up track to its
+  rack. A hop is a view; it is drawn as build 1's unload is.
+- **The two signs (placeholder text, not The Boogler's).** East, a heading added over build 2's counts: `STEEL
+  WORKS`. West: `LINE TO HIGH GORGE` / `SECTION 1 OF 4` / `LOGS 0/20   RAILS 0/20` / `KIT: ON A TRAIN` or `KIT: ON
+  THE RACK`. Rack plates: `KIT 1` west, `STEEL KIT` east. The heading is the largest line on each sign.
+
+**Catalog positions for step 3** (world cm; `reach` 400 on each, not the halt's 1,260):
+
+| Row | Rule | Value |
+| --- | --- | --- |
+| Frame 0 | Explicit: `ringAt(45300, -830)`, y 890 | x 140602, z −82506 |
+| Rack 0 | Explicit: `ringAt(44600, -840)`, y 890 | x 140573, z −81806 |
+| Frames 1 to 3 | 8 m short of the railhead `R` (`sectionFromCm(leg, k)`), lat +4.8, y deck + 90 | (980.75, −921.38), (566.92, −1194.48), (226.63, −1566.30) m; y 4.9 m |
+| Racks 1 to 3 | Abreast of the kit wagon at the head's stop, lat +4.8: `R` − 18 m on `RING_HEAD`'s stop | (990.56, −919.95), (574.42, −1187.87), (232.07, −1557.92) m |
+| `pick` | The north stack's rim, `a` 1.5, `c` −53, y 8500 | x −7435, z −203262: 12 m east, 56 m north and 82 m above the `ring` row's Gorge halt point |
+| Gate 0 (the incline's barrier) | The `ns` row's Gorge halt point, on a pad behind the south platform, y 390 | x −9726, z −196884 (`a` 15, `c` +13; unmoved in x and z) |
+
+Frames 1 to 3 follow `RING_HEAD` exactly: the platform is lat +1.8 to +6.3, the frame's near edge 2 m back from the
+platform's edge, the buffer's face at `R` − 1.8. The catalog's halt stop at Ring Island is u 449; `RING_END.u` is 448.
+One of them is a metre out, and the builder says which.
+
+### e. Block signals get a post
+
+One grey post at each section end (s 1701, 2211, 2721), right of each track, 3 m beyond where an engine's nose
+stands, with the halts' existing signal arm and a plate facing back down the train: `SIGNAL` over `TRAIN AHEAD`. The
+arm is at danger while a train is held there and clear otherwise, from the accepted block state. A train standing at
+sea then reads as held at a red signal. No platform, no deck to step onto.
+
+### f. Shed trains: no shed
+
+The two extra trains have no building in the greybox. A shed with a road to it is the Roundhouse's depth design
+(junction-stations draws the engine sheds). The joiner is drawn from the moment it stands at the Village and comes in
+over one second (a scale-in from the accepted join), so nobody sees a train blink into being. The room that caused the
+join is at the first frame, 1.2 km away. Each departure board gains its marker on the same tick.
+
+### g. The railhead as a halt
+
+- **At each live head** (`RING_HEAD`'s kit, grey): one 25 m platform on the right going out (`R` − 25 to `R`, lat +1.8
+  to +6.3, deck + 0.9), one lever (homeward; no chained up lever at a line's end), a departure board, the rack, the
+  frame and its sign, the buffer with the board of answer i, and `railheadRamp`'s sea ramp, since the deck is 4 m over
+  open water. This narrows call 27: 40 m both sides is for High Gorge, not for a stub.
+- **At an old head:** the platform, lever, board, rack, ramp and buffer all go on with the head. The signal post of
+  answer e stays. Nothing a rider could step onto is left: a slab where trains stop and no door opens to anything is
+  a way to be stranded.
+- **The third head once the Gorge opens:** kept as a request halt, as step 3's rules appear to have it (round 3's
+  sheet has an ask standing there after the Gorge opened). Label `Stack halt` (placeholder). It keeps platform, lever,
+  board and ramp and loses the rack, frame and buffer. Condition: it is served both ways. If up trains cannot stand
+  at it, it closes with the others and the builder reports; a homeward-only platform 510 m short of the Gorge would
+  mislead. Owner question 1.
+
+### i. Ring Island's end, and the garage's run
+
+- **Stage 0** (the leg open, nothing laid): the buffers stay. The blank end board reads `LINE TO HIGH GORGE` /
+  `UNDER CONSTRUCTION`, the board the owner's answer on the live greybox asked for.
+- **From the first section laid:** both buffers and the end board are hidden, the run-off bed is plain track, and
+  the buffer and board stand at the current head, then at the Gorge's end without the second line. The crossover
+  stays drawn.
+- **The garage's run** follows the line's open stops, so it grows to each head and then the Gorge. No new art.
+
+### j. Why a kit train passes the rack
+
+A number, in two places. Each kit car carries a board with its section's number (`2`, `3`, `4`; `S` for the steel
+kit), and each frame's sign and rack plate carry the same number at the same size. The sign's last line says where
+this frame's kit is. Nothing else: no hovering label, no words on the train.
+
+### k. The Gorge's stair
+
+- **Is 165 m right?** As a length, yes: it is an 82 m climb (platform 3.9 m, rim 85 m) at 30 degrees. Built at the
+  Ring ramps' proven pitch (5.4 in 10) with landings it is about 215 m walked from the platform, about 40 s, under the
+  60 s guide. It stays, and it stays the full height. Height is the one thing the Gorge's stand-in tests.
+- **The cut is in turns, not in metres:** four long flights, not sixteen short ones. Each runs 38 m along the wall and
+  rises 20.3 m, 3 m wide, with a solid 1 m parapet on the open side. Stacked on one strip, they draw a zigzag on the
+  canyon wall that an arriving train faces: a big shape to steer by.
+- **On the north wall, not the falls side.** The `ns` row comes through the south wall at `a` 50 and the `cave` row
+  at `a` 4, so a stair there sits on two later legs. The north wall is clear for its whole length, and the climb
+  faces the falls. Ruling 5's falls-side stair is the Gorge's own build.
+- **What stands where:**
+  - a concourse behind the buffers joining both platforms (`a` −4 to 0, `c` −9.3 to +9.3, y 3.9);
+  - a gangway from it to the wall (`a` 0 to 3, `c` −9.3 to −41.5);
+  - flights along `c` −44.5 to −41.5 between `a` 3 and `a` 41, with landings of 3 m, the last ending at `a` 3 on
+    the rim;
+  - a level 6 m pad at the top with the `pick` post 8 m back from the edge;
+  - one slipway from the water to the gangway (nobody is stranded: the glide down can end in the split's water).
+- **Budget:** 16 boxes as colliders, merged into the massing's mesh, no draw added. If frame time objects, go to
+  eight flights of half the length. Never a lift marker (a teleport is a new mechanism, and the lift is the Gorge's
+  later shortcut), and never a lower pickup.
+- **The barrier** stands on a pad behind the south platform, reached over the concourse. It is in view from the top
+  of the stair and from where a glide lands.
+
+### l. Maps and the objective line
+
+- **The halt map** (every display, the Ring Island map table included): line 2 solid to the current head, dashed on
+  to a dim High Gorge, the head a lit stop named `Stack railhead`, with a square frame mark beside it. One fit for the
+  whole leg from the moment it opens, so the map does not rescale at each lay. High Gorge lights when it opens;
+  `Stack halt` replaces the head's name.
+- **The Home hall's line map:** the same marks. A friend who joins late at Home needs them most.
+- **The pause map:** there is none in the game. Step 4 builds none.
+- **The objective line** (placeholder text; it stays by the owner's entries, and step 4 adds no new HUD element for
+  it: where the route has no on-screen line, these are the telemetry objective and the signs carry the direction):
+
+| State | Text |
+| --- | --- |
+| Section 1 open | `Build the line to High Gorge: section 1 of 4. The frame is on Ring Island's west platform.` |
+| Sections 2 to 4 | `Build the line to High Gorge: section N of 4. Ride line 2 to the railhead.` |
+| The Gorge open, `pick` not taken | `High Gorge is open. Ride line 2 to its end and climb the stair.` |
+| `pick` held, the barrier shut | `Open the barrier behind High Gorge's south platform.` |
+
+### Findings
+
+1. **Change before step 3's bump: a body has no stated way from one head to the next** (near-universal rule 3; rule
+   1). Each lay moves the halt 510 m. The sheets measured idle with units fed every tick, not with someone standing
+   on a platform that has just moved. On the bow the head moved 20 m and left a walkway; here the choice would be a
+   91 s walk on a running double track or a menu. **Ruling (New):** the head's halt stays where it is until the first
+   train after the lay has stood there and left; that train runs on to the new head. The views follow the accepted
+   halt position, so the old platform goes as that train leaves. A straggler left behind uses Get unstuck (change 6).
+   **Owed:** from each lay, a player standing at the old head and asking nothing more than the lever is at the new
+   frame within 1,158 ticks, printed. If step 3 already does this, the proof is all that is owed.
+2. **Proof owed: a unit lifted from one rack cannot short the other bill** (rule 3: keys can't be lost). Two racks of
+   logs and rails stand 17 m apart with exactly a bill's worth on each. Either a unit taken from a rack feeds only
+   its own bill, or a shortfall is owed again. State which, and test it.
+3. **Proof owed: the stub stop with the long boiler fitted.** The steel is optional before this leg, so a long engine
+   may arrive at a head. Its nose must stop short of the buffer, and the rack follows the kit wagon, which is why the
+   rack's rule above is "abreast of the wagon".
+4. **The lens "one main line" bends at Ring Island** (two open bills, as ruled in step 3's review B). The tracks
+   between them and the headings are the answer. Watch the first owner session for logs carried across the tracks.
+5. **The catalog draws three rows to one point in the split.** The `ns` and `cave` rows end on the `ring` row's own
+   end point, across its south platform. Leg 1 lays neither, so nothing here breaks, but the Gorge's platform plan is
+   leg 2's level check before its design review.
+6. **Research.** [route-contract](../research/route-contract.md): holds. The stair is a travel edge, `pick` still
+   refuses until the fourth section is laid, and a glide or a swim reaches the rim's pad early and finds a post that
+   reads "Not yet" (call 28). [level-design](../research/level-design.md) and
+   [progression-flow-layout](../research/progression-flow-layout.md): the zigzag is the big shape, the signs the small
+   one; "the key in sight of the lock" holds at the Gorge (the barrier from the stair's top). Top blocks not re-read
+   for this ruling.
+7. **Stills owed by step 4, read before it ships:** from the east platform's door at Ring Island looking west (both
+   signs in one frame); from a train 200 m out in the split (the zigzag and the platform); from the rim's pad looking
+   down (the barrier).
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 82 | Grey, labelled, readable; no character detail | Decided | [Owner call, 11 November](../agents/owner-calls.md#mechanisms-systems-greybox-details) |
+| 83 | Trains haul; the player does not carry freight or call a train for it: kit comes to a rack, the last carry is short | Decided | [12 November](../decisions-rewards.md#d-2026-11-12-town-economy-answered) |
+| 84 | The greybox is live for everyone, with a "line under construction" board at its end | Decided | [12 November](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered) |
+| 85 | Ends have buffers and read as terminals | Decided | 10 November (call 9) |
+| 86 | Trains stop on request; a lever a platform side; a departure board | Decided | 10 and 9 November (call 10) |
+| 87 | The objective line stays; words and signs sparingly | Decided | [10 November](../decisions-core-loop.md#d-2026-11-10-the-objective-marker-may-come-back), [9 November](../decisions-core-loop.md#d-2026-11-09-signposting-words-and-beacons-are-allowed) |
+| 88 | A head's halt stays until the first train after the lay has stood there and left; that train runs on to the new head | **New** | Finding 1 |
+| 89 | The first frame and its rack on Ring Island's west platform (u 453 and u 446); the works keeps the east | Default | b |
+| 90 | Frames 1 to 3 stand 8 m short of the railhead at lat +4.8, racks abreast of the kit wagon; reach 4 m | Default | b |
+| 91 | The two signs' headings and lines; rack plates | Default | b; placeholder text |
+| 92 | `pick` on the north stack's rim, 82 m up, 8 m back from the edge | Default | k; places call 18 |
+| 93 | The Gorge's stair: four long flights on the north wall, about 40 s; never a lift marker or a lower pickup | Default | k |
+| 94 | A concourse behind the Gorge's buffers, a gangway, a slipway from the split's water; the barrier on a pad behind the south platform | Default | k |
+| 95 | A block signal is a post with an arm and a plate | Default | e |
+| 96 | No shed; a joining train comes in over one second at the Village | Default | f |
+| 97 | A live head has one 25 m platform, one lever, a board, a buffer and a sea ramp; an old head keeps only its signal | Default | g; narrows call 27 |
+| 98 | The third head stays as a request halt, `Stack halt`, if it is served both ways | Default | g. Owner question 1 |
+| 99 | Ring Island's buffers and end board are hidden from the first lay; the board reads "under construction" before it and travels with the head | Default | i |
+| 100 | The garage's run follows the open stops | Default | i |
+| 101 | Kit cars and frames carry the section's number | Default | j |
+| 102 | The halt map and the Home hall's line map mark the head and its frame, fitted once for the whole leg; no pause map | Default | l |
+| 103 | The objective line's four texts; no new HUD element in step 4 | Default | l; placeholder text |
+| 104 | Three stills and three proofs owed | Default | Findings 1, 2, 3 and 7 |
+
+**Counts:** 6 Decided, 1 New, 16 Default. **Suspect lines of The Boogler's:** none written or changed. **Port from
+Place:** nothing.
+
+### Owner question
+
+It does not hold the build.
+
+1. **"Once the line reaches High Gorge, should the last building platform, out at sea three quarters of the way
+   there, stay as a stop?"**
+   - **Yes, as a request stop (recommended; built until he answers).** Trains pass it unless someone pulls the lever,
+     so it costs no wait, and it is a place to get off over open water.
+   - No: it goes when the Gorge opens, and the line is Ring Island to High Gorge with nothing between.
+   Answer: ___
