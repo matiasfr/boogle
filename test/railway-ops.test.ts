@@ -2,7 +2,8 @@
 // points that no seed stage runs (or runs only to be refused), each driven here on a world a seed stage or the route's
 // own opening leaves, with the world hash after every step recorded in test/fixtures/railway-ops-golden.json. Like
 // test/railway-golden.test.ts, a refactor step must NEVER regenerate it (`GOLDEN=1 node --test test/railway-ops.test.ts`
-// is for a deliberate rule change that bumps WORLD_NS).
+// is for a deliberate rule change that bumps WORLD_NS; see the rule and its seed-data exception in
+// test/helpers/railway-golden.ts).
 //
 // Not run by any stage: rail.take, rail.rackTake, rail.axe (the route calls it before the forge is lit, so it is
 // always refused), rail.beamDrop, rail.call, rail.jump, rail.reject and an unknown op, and the entry points
@@ -185,7 +186,7 @@ if (process.env.GOLDEN === '1') writeFileSync(FILE, JSON.stringify(got, null, 1)
 const golden = JSON.parse(readFileSync(FILE, 'utf8')) as Record<string, Step[]>;
 const HOW =
   'The railway rules changed under a scripted op. A refactor step must never regenerate this golden: undo the change. ' +
-  'Only a deliberate rule change that bumps WORLD_NS regenerates it (GOLDEN=1).';
+  'Only a deliberate rule change that bumps WORLD_NS regenerates it (GOLDEN=1); see the rule and its seed-data exception in test/helpers/railway-golden.ts.';
 
 test('the ops golden lists the same scenarios', () => {
   assert.deepEqual(Object.keys(golden), Object.keys(got), HOW);

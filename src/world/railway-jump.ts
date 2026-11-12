@@ -115,13 +115,7 @@ export const JUMPS: readonly Jump[] = [
   {
     stage: 'gap-footed',
     label: 'Gap footed',
-    line: 'All fourteen bent footings are set; the leaf is raised and the gap is ahead',
-    land: RAILHEAD_LAND, // the Railhead platform's middle, facing the gap
-  },
-  {
-    stage: 'leaf-raised',
-    label: 'Leaf raised',
-    line: "The footings for the leaf's counterweight wait on the Railhead's rack",
+    line: "All fourteen bent footings are set; the leaf is raised and the counterweight's footings wait on the rack",
     land: RAILHEAD_LAND, // the Railhead platform's middle, facing the gap
   },
   {

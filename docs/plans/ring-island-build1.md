@@ -1390,8 +1390,8 @@ and redraw when the stage changes, `island-map.ts` has `MAP_CELL` and `MAP_SEA_S
   > takes `rail.glide`, `src/sim/railway-seed-ring.ts`; the works seeds below it still lack it, patching their shared base
   > would re-pin about 20 stages) and the bot's Needle Bell detour is gone. Proved solo, no recovery: `--from gap-footed`,
   > `--from leaf-raised` and `--from deck-laid` (`--to ring-ride`; the last with `--stall 3000 --wall 2700`: it waits on the
-  > wagon's loads in server ticks and hops up onto the platform each time it slides out). Playtest jump-ins "Gap footed", "Leaf
-  > raised" and "Ring joined" (`railway-jump.ts`). **Left:** the standing rider over the bow and back, the railhead idle log,
+  > wagon's loads in server ticks and hops up onto the platform each time it slides out). Playtest jump-ins "Gap footed" (`leaf-raised` is the same world: no row)
+  > and "Ring joined" (`railway-jump.ts`). **Left:** the standing rider over the bow and back, the railhead idle log,
   > `--players 2`, `ring-glide.ts`, `npm run perf`. R5 is otherwise done; ticked.
 - [ ] **6. R6, docs.** New `docs/game-design/ring-island.md` (what exists: the Meet, the rules, the numbers, the folk)
   and its index line; the brief's status (build 1 built, the greybox findings answered: step 0's results); the atlas

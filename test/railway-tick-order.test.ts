@@ -4,7 +4,7 @@
 // systems in the same order with the same result on every tick, not only after 1,200 (the hash golden).
 //
 // A refactor step must NEVER re-record test/fixtures/railway-tick-order.json. Only a deliberate change to the tick's
-// systems or rules (which also bumps WORLD_NS) may: `TICK_ORDER=1 node --test test/railway-tick-order.test.ts`.
+// systems or rules (which also bumps WORLD_NS) may (see the rule and its seed-data exception in test/helpers/railway-golden.ts): `TICK_ORDER=1 node --test test/railway-tick-order.test.ts`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
