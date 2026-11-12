@@ -393,6 +393,28 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       typical waits about 50 s, 1.5 to 1.8% of waits over 1,158. None of 0, 25 and 50% passes them either. The stage-0
       part of 9 passes (worst 908, means 340 to 384). 15 is not run (build 2 is not on main). **Open owner question 1:**
       the grown line's wait bound.
+      *As built after the step 4 review (its b, k and finding 1; still local, no bump):* **Positions.** The stack leg's
+      first frame and rack stand on Ring Island's west platform (`ringAt(45300, -830)` and `ringAt(44600, -840)`, y 8.9
+      m); frames 1 to 3 8 m short of each railhead and racks 1 to 3 18 m short, 4.8 m right going out, 90 cm over the
+      deck; reach 4 m on each; `pick` on the north stack's rim (x -7435, z -203262, y 8500); the incline's barrier at
+      the `ns` halt point, y 390. The server judges `rail.legStock` at the frame and the depot takes at the rack.
+      Frames and racks 1 to 3 match the review's metres to 3 cm. **The 1 m at Ring Island:** `RING_END.u` (448) and
+      line 2's stop (119000) are right; the generated `ring` row's `fromCm` (74300) is the one a metre out, as the row
+      shift above says. **Call 88, riding on from an old head:** each head is its own halt now (`Stack head 1` to `3`),
+      each a stub end while it is the line's last. When the next section lays, the line runs on past the old end
+      (endMoved: a train running up to it stops there once), a train standing at an old head turns back up and runs
+      on, and the lay leaves an up-way lever ask at the old head, so the first up train after the lay stops there. From
+      each lay, someone standing at the old head is at the new head within 899 ticks on four seeds at 75% (whole-leg
+      fuzz: 478 to 899) and 536 fed every tick. **The old heads stay request halts** in the rules after their train has
+      gone: the stops model needs open stops to be a prefix of a line's halts, so a halt cannot close behind an open
+      one. That keeps the third head as the review's `Stack halt` (served both ways), and it keeps heads 1 and 2 as
+      request halts too, where the review has only a signal post; their views and the rider ask there are step 4's to
+      settle. With three stops more on the line the printed gates 8 and 9 rise (settled worst 1,369 to 1,481, means 551
+      to 574; fixed stages up to 1,462); every asserted gate still passes. **A unit lost off the rack is owed again**
+      (finding 2, the leg's side): the kit still owed counts what is fed, racked, aboard and on the players' backs, and
+      no longer stops at what was once loaded, so a log or rail dropped, or fed to another bill, is loaded again and the
+      leg always completes. Whether a unit lifted from the leg's rack can short build 2's steel bill is build 2's side,
+      owed at the rebase, with finding 3 (a long-boiler engine stops short of a stub's buffer).
 - [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
