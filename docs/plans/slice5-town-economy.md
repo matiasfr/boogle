@@ -506,6 +506,19 @@ shipped, else bump B (a rule change, no shape change).
   - **The fallback was built, measured and removed.** Refusing the stop while the wagon's train was next behind cut
     `gap-footed` from 40 stone in 5 stops to 32 in 4 and left every worst wait identical to the tick, so it bought
     nothing; the orchestrator dropped it.
+  - While a kit is owed no train makes the stone stop (in a live room, until players pour Q7's rails); stone still
+    moves by a lever or rider ask then (the review's finding 5; `test/railway-trade.test.ts` holds both).
+  - **Finding for the designer (review, 12 November; measured, nothing asked, 12,000 ticks): the stone stop delays the
+    footing wagon's train by more than the ruling's "at most 108 ticks a time", and the delay grows trip over trip.**
+    Arrivals at the line's far end, cumulative drift against R1+R2: `gap-footed` and `leaf-raised` 0, −1, −1, +130,
+    +130, +241, +241, +350, +350; `ring-joined` 0, +56, +56, +164, +164, +272, +272, +380; `crossing-done` 0, +33,
+    +33, +33, +66, +66, +66, +99, +99, +99, +132; `deck-laid` none (−1). A plain train stops for stone just ahead of the wagon's,
+    which closes up and is then held a dwell at Far Head behind it. The fallback (refuse the stop while the wagon's
+    train is next behind) does not remove it: `gap-footed` 0 for six trips, then +31, +33, +200; `ring-joined` 0, +46, +46,
+    +103, +103, +103, +170, +170; `crossing-done` as without it; its stone drops to 32 at `gap-footed` and its waits match the shipped rule.
+    With footings aboard (`deck-laid`, 6 a trip) the wagon is not delayed and the one delivery lands at the same tick.
+    The wagon ran empty in the delayed cases and no seed stage moved a tick. Not changed in the rule; the designer
+    rules. `test/railway-trade.test.ts` carries it as a todo test.
 - **Finding (line 2 with the wagon and the leaf, not freight).** With a lever ask at every line 2 halt both ways
   every 600 ticks, R1's own worst waits pass the 1,050 bound late in the route: `deck-laid` 1,039, `gap-footed` and
   `leaf-raised` 1,124 (R2b: 1,099, 1,129, 1,129, each within +90 of R1), against 702 and 588 the `WAIT_BOUND` way.
