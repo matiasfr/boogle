@@ -3,7 +3,6 @@
 // one instanced mesh; the load sits in slots on the rear flatbed and moves with it; between them a crate hops on an arc
 // and lands with a little dust. Written beside src/proto/wagon/freight.ts, which shows helper-hut freight. Local.
 import * as THREE from 'three/webgpu';
-import { scene } from './scene.ts';
 import { emit } from './particles.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { reducedMotion } from '../constants.ts';
@@ -30,8 +29,6 @@ const ground = new THREE.InstancedMesh(geo, new THREE.MeshStandardNodeMaterial({
 ground.count = 0;
 ground.castShadow = ground.receiveShadow = true;
 ground.frustumCulled = false;
-// boogle-disable-next-line boogle/use-an-entity -- module-level add kept as in proto; owner conversion is M13 (ecs-migration-railway)
-scene.add(ground);
 ground.setColorAt(0, new THREE.Color('#ffffff'));
 
 // `y`: the ground under it, for a heap off the island's grid (?proto=place).
@@ -68,8 +65,9 @@ const m4 = new THREE.Matrix4(),
   tv = new THREE.Vector3(),
   ts = new THREE.Vector3(SIZE, SIZE, SIZE),
   tc = new THREE.Color();
-/** Redraws every heap (call when one changes). */
-export function drawHeaps(heaps: Heap[]): void {
+/** Redraws every heap (call when one changes). The heaps' mesh joins `stage` the first time. */
+export function drawHeaps(heaps: Heap[], stage: THREE.Object3D): void {
+  if (!ground.parent) stage.add(ground);
   let c = 0;
   for (const h of heaps)
     h.list.forEach((kind, n) => {
@@ -106,10 +104,12 @@ export type Deck = {
   frame: THREE.Object3D; // the rear flatbed's look: what the load is parented to
   dipV: (v: number) => void; // kicks the flatbed's springs as a crate lands on it or lets go
   held: ({ kind: Kind; mesh: THREE.Mesh; landed: boolean } | null)[]; // reserved in flight, solid once landed
+  stage: THREE.Object3D; // what its hopping crates fly in: the owning view's root (or the scene, for a prototype)
 };
-export const deck = (frame: THREE.Object3D, dipV: (v: number) => void): Deck => ({
+export const deck = (frame: THREE.Object3D, dipV: (v: number) => void, stage: THREE.Object3D): Deck => ({
   frame,
   dipV,
+  stage,
   held: SLOTS.map(() => null),
 });
 const pool: Record<Kind, THREE.Mesh[]> = { wood: [], stone: [], fill: [] };
@@ -172,12 +172,12 @@ function launch(
   to: THREE.Vector3,
   delay: number,
   land: () => void,
+  stage: THREE.Object3D,
   extra?: Pick<Hop, 'aim' | 'leave'>,
 ) {
   const mesh = take(kind);
   mesh.visible = false;
-  // boogle-disable-next-line boogle/use-an-entity -- module-level add kept as in proto; owner conversion is M13 (ecs-migration-railway)
-  scene.add(mesh);
+  stage.add(mesh);
   hops.push({
     kind,
     mesh,
@@ -216,6 +216,7 @@ export function hopOn(d: Deck, kind: Kind, from: THREE.Vector3, delay: number, l
       d.dipV(-1.1);
       landed?.();
     },
+    d.stage,
     { aim },
   );
   return true;
@@ -233,12 +234,18 @@ export function hopOff(d: Deck, k: number, to: THREE.Vector3, delay: number, lan
     give(c.kind, c.mesh);
     if (d.held[k] === c) d.held[k] = null;
   };
-  launch(c.kind, to, to, delay, landed, { leave });
+  launch(c.kind, to, to, delay, landed, d.stage, { leave });
 }
 
 /** A crate hops between two world points. */
-export const hopTo = (kind: Kind, from: THREE.Vector3, to: THREE.Vector3, delay: number, landed: () => void) =>
-  launch(kind, from, to, delay, landed);
+export const hopTo = (
+  kind: Kind,
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  delay: number,
+  landed: () => void,
+  stage: THREE.Object3D,
+) => launch(kind, from, to, delay, landed, stage);
 
 function landDust(x: number, y: number, z: number) {
   for (let n = 0; n < (reducedMotion ? 3 : 8); n++) {

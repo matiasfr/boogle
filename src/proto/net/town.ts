@@ -3,6 +3,7 @@
 // rises slowest and last, then fireworks go up from its top, big enough to read from the far end of the line, and the
 // chimneys start to smoke. Heard anywhere: the mini-games' fanfare (a kept sound). Local: the stage is counted in this
 // tab (./index.ts), a reload snaps to it without the show.
+import { scene } from '../../render/scene.ts';
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
 import { thump, whistle } from '../../render/machine-sfx.ts';
@@ -18,6 +19,7 @@ function part(stage: number, keep: boolean): Part {
   const smokes: Smoke[] = [];
   const blocks = STAGES[stage]!.blocks.filter((b) => !!b.keep === keep);
   const set = makeSet(blocks.flatMap((b) => blockBoxes(b, smokes)));
+  scene.add(set.mesh);
   const delay = Float32Array.from(set.boxes, (b) => {
     const d = Math.hypot(b.x - TOWN.x, b.z - TOWN.z) / RIPPLE_MPS;
     return b.pop > 1 ? Math.max(d, LANDMARK_AFTER) : d;

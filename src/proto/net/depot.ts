@@ -9,6 +9,7 @@
 // Sync: no new state or ops, after the haul prototype's sandbar (../haul/wave.ts). The far palms' bundles move here
 // (`haulHooks.moved`), so a load is several `src.take`s at once, counted and refilled by the same lockstep sources.
 // What's on your back stays logs; the crates are Local, counted in this tab, and a reload finds a standing depot stocked.
+import { scene } from '../../render/scene.ts';
 import * as THREE from 'three/webgpu';
 import { rules } from '../../world/game-world.ts';
 import { onApplied, submitEdit } from '../../world/sync.ts';
@@ -225,10 +226,17 @@ export function createDepots(load: Deck, redraw: () => void) {
         const line = to.set(d.at.x, groundHeight(d.at.x, d.at.y) + 1, d.at.y).clone();
         for (let n = 0; n < d.starter; n++) {
           nextSlot({ ...d.heap, list: new Array<Kind>(n) }, to);
-          hopTo('fill', line, to, secs - 1 + n * 0.2, () => {
-            d.heap.list.push('fill');
-            redraw();
-          });
+          hopTo(
+            'fill',
+            line,
+            to,
+            secs - 1 + n * 0.2,
+            () => {
+              d.heap.list.push('fill');
+              redraw();
+            },
+            scene,
+          );
         }
       }
     },

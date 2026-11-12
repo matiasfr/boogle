@@ -34,7 +34,8 @@ export type DropSet = BoxSet & {
 };
 export function dropSet(boxes: Box[], onLand: (k: number) => void, owner?: OwnedView): DropSet {
   const set = makeSet(boxes);
-  owner?.add(set.mesh);
+  if (owner) owner.add(set.mesh);
+  else scene.add(set.mesh);
   const air: { k: number; t: number; fall: number; h: number; landed: boolean }[] = [];
   const write = (k: number, y: number, a: number) => {
     const b = boxes[k]!;

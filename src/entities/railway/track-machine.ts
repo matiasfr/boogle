@@ -2,7 +2,6 @@
 import { BOTTOM, drawCar, makeCar, poseCarOnLine, snapCar } from './car.ts';
 import type { Track } from './track.ts';
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../../loop.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
@@ -30,7 +29,7 @@ import { buildWing } from './machine-wing.ts';
 /** What the machine carries, drawn in the flatbed's frame: its rack of rails down each side, its cradle of logs. */
 const CRADLE_LOGS = 40;
 export type Machine = ReturnType<typeof buildMachine>;
-export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 'panels') {
+export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = 'panels') {
   const panelled = mode === 'panels';
   // ?layer=wing: the greybox second hand for the up track (docs/brainstorms/track-layers-double.md). Off, nothing changes.
   const wingOn = panelled && new URLSearchParams(location.search).get('layer') === 'wing';
@@ -54,6 +53,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     : null;
   const kitLook = !panelled && LOOK.kit ? machineLook(owner) : null;
   const look = model ?? kitLook ?? wagonLook(1, false, owner);
+  if ('step' in look) owner.animate(look.step, 8);
   if (model)
     background(
       import('../../render/assets.ts').then(async ({ loadAsset }) =>
@@ -88,11 +88,9 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
   flatbed.supportAt = (_x, z) =>
     z < -TRAILER.hz ? { x: 0, z: step.z, hx: step.hx, hz: step.hz } : { x: 0, z: 0, hx: TRAILER.hx, hz: TRAILER.hz };
   const loco = makeCar(LOCO, locoRock, () => {}, {}, owner);
-  if (owner) {
-    flatbed.platform.id = 'railway:T1:flatbed';
-    loco.platform.id = 'railway:T1:loco';
-    flatbed.platform.shared = loco.platform.shared = true;
-  }
+  flatbed.platform.id = 'railway:T1:flatbed';
+  loco.platform.id = 'railway:T1:loco';
+  flatbed.platform.shared = loco.platform.shared = true;
   const o = new THREE.Object3D();
   const toRig = new THREE.Matrix4(),
     seatAt = new THREE.Vector3(),
@@ -130,7 +128,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
         exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
         available: () => flatbed.y > -30,
       });
-      owner?.cleanup(unregister);
+      owner.cleanup(unregister);
     });
     heldRail = model.heldRail;
     heldRail.visible = false;
@@ -601,18 +599,16 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
       m.onPanelFrame(dt);
     }
   };
-  if (owner) {
-    // Revisit the completed groups: some attached details were made after makeCar mounted their roots.
-    owner.add(flatbed.mesh, loco.mesh);
-    owner.animate(animate, 7);
-    owner.cleanup(() => {
-      wing?.dispose();
-      glass.dispose();
-      shine.dispose();
-      beamMat.dispose();
-      fire.dispose();
-    });
-  } else onFrame(animate, { phase: 'update', order: 7 });
+  // Revisit the completed groups: some attached details were made after makeCar mounted their roots.
+  owner.add(flatbed.mesh, loco.mesh);
+  owner.animate(animate, 7);
+  owner.cleanup(() => {
+    wing?.dispose();
+    glass.dispose();
+    shine.dispose();
+    beamMat.dispose();
+    fire.dispose();
+  });
   return m;
 }
 

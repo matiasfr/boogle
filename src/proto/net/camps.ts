@@ -186,7 +186,9 @@ function viewOf(c: Camp): View {
     t += GAP;
     return t;
   });
-  v = { set: makeSet(boxesOf(c)), pieces: c.pieces, at, t: 0, landed: c.pieces.map(() => false), done: false, camp: c };
+  const set = makeSet(boxesOf(c));
+  scene.add(set.mesh);
+  v = { set, pieces: c.pieces, at, t: 0, landed: c.pieces.map(() => false), done: false, camp: c };
   views.set(c, v);
   return v;
 }
@@ -292,7 +294,9 @@ function buildStakes() {
       out.push(box(x, z, place(0, 0, 0, 0.12, 1.4, 0.12, yaw), '#e8d9b0'));
       out.push(box(x, z, place(0.14, 1.05, 0, 0.3, 0.3, 0.04, yaw), '#ff7a2f'));
     }
-    return makeSet(out);
+    const set = makeSet(out);
+    scene.add(set.mesh);
+    return set;
   });
 }
 
@@ -373,7 +377,9 @@ export function buildFrontier() {
       z = end.z + uz * d;
     out.push(box(x, z, place(0, Math.max(0.35, 0.4 - groundHeight(x, z)), 0, 3, 0.2, 1.8, yaw), '#8a6a48'));
   }
-  draw(makeSet(out), () => 1);
+  const road = makeSet(out);
+  scene.add(road.mesh);
+  draw(road, () => 1);
   // The far island: flat colour with no fog, so it reads as a shape on the horizon straight ahead down the last leg.
   const mat = new THREE.MeshBasicNodeMaterial({ color: '#8fa6b8', fog: false });
   const ix = end.x + ux * 340,

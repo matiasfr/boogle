@@ -91,6 +91,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   proxy.mesh.material = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
   draw(proxy, () => 1);
   proxy.mesh.visible = false;
+  scene.add(proxy.mesh);
   const bodies: Body[] = [];
   let wasReady = false,
     inside = false;

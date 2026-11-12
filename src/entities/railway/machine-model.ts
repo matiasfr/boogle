@@ -89,7 +89,7 @@ export function dressMachine(source: THREE.Object3D) {
     let entry = owned.get(role);
     if (!entry) {
       const mat = material(recipe[0], { normals: 'authored' }).clone();
-      mat.vertexColors = role === 'wheel';
+      mat.vertexColors = recipe === recipes.wheel;
       const [r, g, b] = recipe[1];
       mat.color.setRGB(r, g, b, THREE.LinearSRGBColorSpace);
       const clean = mat.color.clone();

@@ -179,6 +179,7 @@ function advance(dt: number) {
 // ?proto=net loads the rear flatbed itself (src/render/crates.ts): no fixed crates, drawn or solid.
 const CRATED = !protoOn('net');
 const look = wagonLook(CARS.length - 1, CRATED);
+onFrame(look.step, { phase: 'update', order: 8 });
 type Car = {
   spec: CarSpec;
   off: number;
