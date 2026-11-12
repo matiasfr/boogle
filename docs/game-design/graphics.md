@@ -74,7 +74,7 @@
   `material.walls` (cream plaster), and `material.roofs`. Each selects 0 Current, 1 Fresh, 2 Cool or 3 Soft.
   The owner picked 1 Fresh as the default for every family on 6 November; every visit applies it as a constant ratio
   and the other candidates stay selectable through the tunables. The
-  [material boards](../../dev/look/beats/material-palettes.ts) pair lit and `view=raw` at calibration, town,
+  material boards (`dev/look/beats/material-palettes.ts`, a Place fixture deleted at M13c; in git history) paired lit and `view=raw` at calibration, town,
   shore and the first gameplay spawn view. Lighting stays at the owner's cell 5: cloud radiance 0.8,
   neutral light profile 1, gain 0.12, key 1.12 and fill 3.2, with Neutral, bloom off and fixed resolution.
   Each family applies a linear RGB ratio between decoded sRGB anchor swatches, retaining authored colour

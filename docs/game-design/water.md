@@ -7,7 +7,7 @@ that day and is kept in the local tag `archive/water-ultra-2026-11-09`; read the
 ## Visual pipeline stages 0–1 (5 November 2026)
 
 The iPhone follow-up (5 November, 23:45: clouds too bright and lighting too warm) is compared by
-`dev/look/beats/cloud-warmth.ts` at the real first-visit landing camera and the existing town doorway.
+`dev/look/beats/cloud-warmth.ts` (a Place board, deleted at M13c; in git history) at the real first-visit landing camera and the existing town doorway.
 Local authoring controls `sky.cloudBrightness` (1/.8/.6, cloud radiance before atmospheric compositing) and
 `sky.lightColourProfile` (0=original, 1=neutral, 2=slightly cool) now default to .8 and 1: the owner selected
 cell 5 on 6 November. The latter preserves
@@ -23,7 +23,7 @@ cell 1 reconstructs the recorded settings on the current build; accepted cell 5 
 The actual first gameplay camera points down, with no sky in frame. A separately labelled upward glance
 from that same spawn position supplements its board; it is not presented as the first gameplay framing.
 
-The owner comparison uses `dev/look/beats/visual-pipeline.ts`: fixed Neutral, bloom off and full fixed resolution,
+The owner comparison used `dev/look/beats/visual-pipeline.ts` (a Place board, deleted at M13c; in git history): fixed Neutral, bloom off and full fixed resolution,
 surface gain 0.12/0.14/0.16 against current key/fill 1.12/3.2, softer 0.96/4, and stronger 1.28/2.4.
 Calibration/Buddy, town/doorway and shore/horizon are authored fixtures, not played progression. Cell 1 rebuilds
 the recorded morning settings on current source; it is not an archived morning screenshot. Defaults stay 0.12,
@@ -34,7 +34,7 @@ Material and later pipeline passes have not started.
 The colour audit corrects missing sRGB tags on the coloured canvas textures for honk sparkles, the frisbee
 twinkle and lighthouse halo. Their authored colours and alpha stay the same; RGB now decodes once into linear
 light, like the existing physical-board and name-label textures. White-only alpha masks remain data textures.
-The palette before/after control is `dev/look/beats/colour-textures.ts`; it reproduces the texture RGB transfer,
+The palette before/after control was `dev/look/beats/colour-textures.ts` (a Place board, deleted at M13c); it reproduced the texture RGB transfer,
 not the live effects' motion or additive composition. Readable compensation remains scoped to existing ink and
 reward owners; physical boards receive scene light and shadows.
 
