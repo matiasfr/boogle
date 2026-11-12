@@ -36,7 +36,7 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
   const railBatch = (n: number) => {
     // The stack and the carried pair are the committed track's own kit rail; nothing lies flat
     // enough to need a second shadow draw.
-    const rails = kitBatch('rail', STEEL, n);
+    const rails = kitBatch('rail', STEEL, n, owner);
     rails.castShadow = false;
     rails.receiveShadow = true;
     return rails;
@@ -45,9 +45,9 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
   const GAP = panelled ? MACHINE_GAP : 3.7;
   const model = panelled
     ? machineModel(
-        kitBatch('rail', STEEL, 1),
-        kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1),
-        kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1),
+        kitBatch('rail', STEEL, 1, owner),
+        kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1, owner),
+        kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1, owner),
         railBatch,
       )
     : null;

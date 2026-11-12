@@ -6,8 +6,6 @@ import { emit, type Particle } from './particles.ts';
 /** Small typed authoring surface; visual-only, never saved or sent to another player. */
 const particleEffects = {
   dustAlpha: 0.36,
-  contactAlpha: 0.62,
-  contactMaxHeight: 4,
   chipSize: 0.22,
   chipGravity: 12,
   landingMaxHeight: 4,
@@ -46,16 +44,6 @@ const puff: Particle = {
   alphaCurve: [0.35, 0.9, 0],
   colorCurve: [dust, dustMid, dustEnd],
 };
-// Separate birth record: heavy contacts must not retune footsteps, wake steam or construction rings.
-const billow: Particle = {
-  ...puff,
-  intensity: 1,
-  drag: 2.4,
-  gravity: 0.9,
-  sizeCurve: [0.8, 1.9, 2.4],
-  alphaCurve: [0.7, 1, 0],
-};
-
 export function chips(x: number, y: number, z: number, n = 10, floor = y - 1.1, yaw?: number, rock = false, scale = 1) {
   if (reducedMotion) return;
   n = Math.min(36, n);
@@ -116,55 +104,4 @@ export function dustRing(
 export function landingDust(x: number, y: number, z: number, height: number) {
   const weight = Math.min(1, Math.max(0, height) / particleEffects.landingMaxHeight);
   dustRing(x, y, z, 4 + Math.round(weight * 8), 0.8 + weight * 1.6, 0.2 + weight * 0.35);
-}
-
-const contactWeight = (height: number) => Math.min(1, Math.max(0, height) / particleEffects.contactMaxHeight);
-
-/** Outward momentum damps while gravity returns the low lobes to their contact plane. */
-function contactBillow(x: number, y: number, z: number, weight: number, n: number, direction?: number) {
-  billow.alpha = particleEffects.contactAlpha * (direction === undefined ? 1 : 0.85);
-  billow.floor = y + 0.025;
-  for (let k = 0; k < n; k++) {
-    const a = direction === undefined ? (k / n) * Math.PI * 2 : direction + (Math.random() - 0.5) * 1.3;
-    const speed = (1.6 + weight * 2.2) * (0.8 + Math.random() * 0.4);
-    // Wide, staggered beam lobes overlap between sites instead of making a dotted line.
-    const along = direction === undefined ? 0 : (Math.random() - 0.5) * 0.9;
-    billow.x = x + Math.cos(a) * 0.18 + Math.sin(a) * along;
-    billow.y = y + 0.24 + Math.random() * 0.12;
-    billow.z = z + Math.sin(a) * 0.18 - Math.cos(a) * along;
-    billow.vx = Math.cos(a) * speed;
-    billow.vz = Math.sin(a) * speed;
-    billow.vy = 0.35 + Math.random() * 0.2;
-    billow.life = 1.05 + weight * 0.3 + Math.random() * 0.15;
-    billow.size = (0.65 + weight * 0.45) * (0.85 + Math.random() * 0.3) * (direction === undefined ? 1 : 1.7);
-    billow.rotation = Math.random() * Math.PI * 2;
-    billow.spin = (k % 2 ? 1 : -1) * (0.35 + Math.random() * 0.45);
-    emit(billow);
-  }
-}
-
-/** A completed log flight or rock collapse, at the existing contact edge only. */
-export function impactDust(x: number, y: number, z: number, height: number, rock = false) {
-  if (reducedMotion) return;
-  const weight = contactWeight(height);
-  contactBillow(x, y, z, weight, 10 + Math.round(weight * 10));
-  // Rock strikes already throw fragments; only log deposits need the extra small splinters.
-  if (!rock) chips(x, y + 0.18, z, 2, y, undefined, false, 0.65);
-}
-
-/** Seven contact sites on both sides, reaching the beam ends without burying births inside its footprint. */
-export function cargoDust(x: number, y: number, z: number, yaw: number, beam: boolean, height: number) {
-  if (reducedMotion) return;
-  if (!beam) {
-    dustRing(x, y, z, 12, 2.2, 0.5);
-    return;
-  }
-  const weight = contactWeight(height);
-  for (let k = -3; k <= 3; k++)
-    for (let side = -1; side <= 1; side += 2) {
-      const cx = x + Math.sin(yaw) * k * 1.5 + Math.cos(yaw) * side * 0.8;
-      const cz = z + Math.cos(yaw) * k * 1.5 - Math.sin(yaw) * side * 0.8;
-      contactBillow(cx, y, cz, weight, 3 + Math.round(weight * 3), -yaw + (side < 0 ? Math.PI : 0));
-      if (k % 3 === 0) chips(cx, y + 0.2, cz, 1, y, undefined, false, 0.65);
-    }
 }

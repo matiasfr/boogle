@@ -5,11 +5,10 @@ import { flat } from '../render/flat.ts';
 import { paletteMaterial } from '../render/material-palette.ts';
 import { woodMaterial, type GrainAxis } from '../render/wood.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
-import { scene } from '../render/scene.ts';
 import { readableGlow } from '../render/readable-unlit.ts';
 import { shoreApronHeight } from '../render/water/shore-providers.ts';
 import { SEA } from '../constants.ts';
-import { addBody, createBody, type Shape } from '../physics/engine.ts';
+import { createBody, type Shape } from '../physics/engine.ts';
 import { GROUP, groundMat } from '../physics/physics.ts';
 import { smoothstep } from '../math.ts';
 import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
@@ -76,7 +75,7 @@ function macroSlopeY(x: number, z: number) {
   return 1 / Math.hypot(1, dx / 24, dz / 24);
 }
 
-function buildMesh(owner?: OwnedView) {
+function buildMesh(owner: OwnedView) {
   // Continue the visible bed into the atlas's offshore apron. Ending the opaque mesh at the shallow
   // grid edge made refraction switch straight from sand to sky, even though bathymetry was continuous.
   // Six rings follow bathymetry; four more sink below optical visibility (blue transmission < 0.05%).
@@ -243,10 +242,9 @@ function buildMesh(owner?: OwnedView) {
     mesh.material.colorNode = null;
   }
   dressCoveGround(mesh.material, (x, z) => macroSlopeY(x - ORIGIN.x, z - ORIGIN.z));
-  owner?.cleanup(() => mesh.material.dispose());
+  owner.cleanup(() => mesh.material.dispose());
   mesh.frustumCulled = false;
-  if (owner) owner.add(mesh);
-  else scene.add(mesh);
+  owner.add(mesh);
   const inCove = (i: number, j: number) =>
     cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
   addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
@@ -273,30 +271,33 @@ function buildMesh(owner?: OwnedView) {
 /** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
  * bit out of its arm, so the wall it's cut away doesn't push the lens into your back (docs/research/town-interiors.md). */
 export const ROOM_GROUP = 8;
-export function addStatic(
+export function staticBody(
   shape: Shape,
   position: { x: number; y: number; z: number },
   rotation?: THREE.Quaternion,
   group: number = GROUP.SCENERY,
-  owner?: OwnedView,
 ) {
-  const body = createBody({
+  return createBody({
     material: groundMat,
     group,
     position,
     ...(rotation ? { rotation: { x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w } } : {}),
     shapes: [shape],
   });
-  addBody(body);
-  owner?.body(body);
-  return body;
 }
+/** A solid thing that leaves with the view's owner. */
+export const addStatic = (
+  shape: Shape,
+  position: { x: number; y: number; z: number },
+  rotation: THREE.Quaternion | undefined,
+  group: number | undefined,
+  owner: OwnedView,
+) => owner.addBody(staticBody(shape, position, rotation, group));
 
 /** Many small solid things in one body: `offset`s are from `position`. */
-export function addStatics(shapes: Shape[], position: { x: number; y: number; z: number }, owner?: OwnedView) {
+export function addStatics(shapes: Shape[], position: { x: number; y: number; z: number }, owner: OwnedView) {
   const body = createBody({ material: groundMat, group: GROUP.SCENERY, position, shapes });
-  addBody(body);
-  owner?.body(body);
+  owner.addBody(body);
   return body;
 }
 
@@ -309,7 +310,7 @@ export function slab(
   topA: number,
   topB: number,
   width: number,
-  owner?: OwnedView,
+  owner: OwnedView,
   overlap = 0.05,
   surface: StepSurface = 'rail',
 ) {
@@ -338,7 +339,7 @@ export function plank(
   width: number,
   color: string,
   thick = 0.3,
-  owner?: OwnedView,
+  owner: OwnedView,
 ) {
   const mx = (ax + bx) / 2,
     mz = (az + bz) / 2,
@@ -360,13 +361,12 @@ export function plank(
   m.position.set(c.x, c.y, c.z);
   m.quaternion.copy(q);
   m.castShadow = m.receiveShadow = true;
-  if (owner) owner.add(m);
-  else scene.add(m);
+  owner.add(m);
   return m;
 }
 
 // ---------------------------------------------------------------- the spire: Needle Bell, 105 m, the address of the place
-function buildSpire(owner?: OwnedView) {
+function buildSpire(owner: OwnedView) {
   const X = SPIRE.x + ORIGIN.x,
     Z = SPIRE.z + ORIGIN.z;
   const ROCK = spireRock('#8c8478'),
@@ -385,8 +385,7 @@ function buildSpire(owner?: OwnedView) {
     m.position.set(X + dx, y + h / 2, Z + dz);
     m.rotation.y = y * 0.7;
     m.castShadow = true;
-    if (owner) owner.add(m);
-    else scene.add(m);
+    owner.add(m);
     // Round 4: every drum's solid, as high as it's drawn. You climb this now.
     addStatic(
       { kind: 'cylinder', rTop: r1, rBottom: r0, h, segments: 8 },
@@ -404,16 +403,15 @@ function buildSpire(owner?: OwnedView) {
   mast.position.set(X + 8, top + 2, Z - 1);
   const vane = new THREE.Mesh(new THREE.BoxGeometry(5, 1.6, 0.25), FLAT('#f0752c'));
   vane.position.set(X + 9.6, top + 4.4, Z - 1);
-  if (owner) owner.add(mast, vane);
-  else scene.add(mast, vane);
+  owner.add(mast, vane);
 }
 
 // ---------------------------------------------------------------- footbridges, trees, a few places to stop at
 // The path's bridge segment runs bank top to bank top; the deck only spans the water, from a short landing on the sand
 // each side, with a low arch and open ends you can step off sideways. The path's points (and so the terrain) are unchanged.
 const BRIDGE = { landing: 1.25, level: 0.3, width: 3.4, crown: 0.3, railIn: 1.7, railH: 1, ramp: 0.25 };
-function buildBridges(owner?: OwnedView) {
-  const add = (...m: THREE.Object3D[]) => (owner ? owner.add(...m) : scene.add(...m));
+function buildBridges(owner: OwnedView) {
+  const add = (...m: THREE.Object3D[]) => owner.add(...m);
   const post = TIMBER('#7f5630', 'y'),
     rail = TIMBER('#7f5630', 'z'),
     edge = TIMBER('#8d5e33', 'z');
@@ -554,7 +552,7 @@ function beam(
 
 // ---------------------------------------------------------------- what stands across the sea
 // Too far to reach: a dark island with a broken ring on it and a bright shard in the ring's middle, hazy over a kilometre.
-function buildFar(owner?: OwnedView) {
+function buildFar(owner: OwnedView) {
   const X = FAR.x + ORIGIN.x,
     Z = FAR.z + ORIGIN.z;
   const LAND = '#4a4d5c',
@@ -569,26 +567,23 @@ function buildFar(owner?: OwnedView) {
     const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), FLAT(color));
     m.position.set(X + dx, h / 2 - 4, Z + dz);
     m.rotation.y = dx;
-    if (owner) owner.add(m);
-    else scene.add(m);
+    owner.add(m);
   }
   const ring = new THREE.Mesh(new THREE.TorusGeometry(120, 13, 6, 22, Math.PI * 1.45), FLAT('#2c2e3a'));
   ring.position.set(X + 10, 120, Z);
   ring.rotation.set(0, -0.3, 0.45);
-  if (owner) owner.add(ring);
-  else scene.add(ring);
+  owner.add(ring);
   const shard = new THREE.Mesh(
     new THREE.OctahedronGeometry(38, 0),
     readableGlow(new THREE.MeshStandardNodeMaterial({ color: '#7fd0ff', emissive: '#58c8ff', emissiveIntensity: 1.6 })),
   );
   shard.scale.set(0.55, 1.5, 0.55);
   shard.position.set(X + 10, 140, Z);
-  if (owner) owner.add(shard);
-  else scene.add(shard);
-  owner?.cleanup(() => shard.material.dispose());
+  owner.add(shard);
+  owner.cleanup(() => shard.material.dispose());
 }
 
-export function buildLand(owner?: OwnedView) {
+export function buildLand(owner: OwnedView) {
   buildMesh(owner);
   if (SHORE_COAST) {
     // A simple solid timber landing over the existing cove. Its inland end rests on the
@@ -607,8 +602,7 @@ export function buildLand(owner?: OwnedView) {
         );
         post.position.set(x, base + height / 2, z);
         post.castShadow = post.receiveShadow = true;
-        if (owner) owner.add(post);
-        else scene.add(post);
+        owner.add(post);
         addStatic({ kind: 'box', hx: 0.2, hy: height / 2, hz: 0.2 }, post.position, undefined, undefined, owner);
       }
     // Keep the existing low rock as a shoulder detail, clear of the ordinary walk into town.
@@ -621,8 +615,7 @@ export function buildLand(owner?: OwnedView) {
     );
     rock.position.set(x + ORIGIN.x, y + height / 2, z + ORIGIN.z);
     rock.castShadow = rock.receiveShadow = true;
-    if (owner) owner.add(rock);
-    else scene.add(rock);
+    owner.add(rock);
     addStatic(
       { kind: 'cylinder', rTop: top, rBottom: bottom, h: height, segments: 7 },
       rock.position,

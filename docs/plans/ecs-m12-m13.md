@@ -643,7 +643,7 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
   `lookout/view.ts` `telescopeTuning`; and the line `SHORE_ASK` (The Boogler's-copy rule: kept, listed). `return-spot.ts`
   never runs (it already did not). `?proto=place` comments in `src/place`, `src/entities` and `hands.ts`, the
   `__placeDone` flag and `--place=` names stay for M13f and later.
-- [ ] **M13f. Owners for the moved modules.** _S each, Medium (render). After M13e (Place's callers are gone);
+- [x] **M13f. Owners for the moved modules.** _S each, Medium (render). After M13e (Place's callers are gone);
       three agents, no shared file._ **f1:** `src/entities/railway/{car,track-machine,seat,stations,machine-model}.ts`
       (the machine keeps order 7 through the owner's `animate`); **f2:** `src/place/{land,pieces,look-kit,look,folk}.ts`;
       **f3:** `src/render/{boxes,crates,wagon-look}.ts` and the `?proto=net`, `wagon`, `crossing` callers. Each
@@ -668,6 +668,25 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
   with no reader: `flyToStock`; `seat.ts` `freeSeat` and `standUp` are no longer exported. Left from M13e's list (files
   not touched here): the rest. **Proof:** typecheck, lint, registry, ship-check green; `level-check` equals main's
   but for pids. Look `--rail-seed trains-on` with `railway-passenger-car.ts`: boarded, seated (`railway:train2-1-seat1`), rode, stood, walked off; the still shows the quarry halt, bench, board and crates (a still of the seated rider itself was not taken: `--until` with `--action` ran out its warm-up). Bench census and `live-boot` not run (for the ship).
+
+  **f2 as built (12 November, `ecs/m13f-2`; not shipped).** `src/place/{land,pieces,look-kit,look}.ts` take the view's
+  owner (required) and the `else scene.add`, `else onFrame` and legacy-singleton branches are deleted (`land.ts`'s
+  bodies go in through `owner.addBody`; `pieces.ts` and `look-kit.ts` lose their page-lifetime `legacyFlights` and
+  `legacyStations`). `src/place/**` is off the `use-an-entity` ignore: lint finds no offender. `trainLook` takes the
+  owner, and `train-view.ts` builds its four models per mount (the page-lifetime `kitModels` is gone; the four trains share
+  one wheel batch per owner, `WeakMap<OwnedView>`). `buildTrack` and `buildSites` require their owner; `land.ts` gains
+  `staticBody` (the body unadded) for the workshop, which stays on `ENTITY_SERVICES` and adds its own bodies.
+  `folk.ts`: its four meshes no longer join `scene` at import (`mountFolk` gives them to the owner); the stale "mayor"
+  comment is reworded. `dev/level/{grounding-props,grounding-track,machine-clearance}.ts` pass stub owners to the
+  source-linked functions. Deleted exports: `folk.ts` `pourOut`, `setFolkEnv` (`setRiders`, `setPushers`, `resetFolk` no
+  longer exported); `sites.ts` `clearDrops`, `siteSmokes`; `shore-layout.ts` `SHORE_TOWN`, `SHORE_WORKER_LOOK`;
+  `particle-effects.ts` `impactDust`, `cargoDust` and their helpers; de-exported: `CAST`, `scheduleWake`, `CHOP_SIDE`,
+  `telescopeTuning`. **Left:** `seat.ts` (needs a kind with frame phases, P2); `SHORE_ASK` kept; `mark.ts`
+  `playObjective`/`playWhere` (a documented hook) and `feel-tuning.ts` `endFeelChop` (its lock has no other release,
+  so a reader may be missing: P3) stay. Teardown and remount were not looked at (no ready eval). **Proof:** typecheck,
+  lint, registry, ship-check green; `level-check` equals main's but for hash and timings; build then `live-boot
+  --offline` PASS. Looks: summit view (land, far islands, spire, bridge, village), town street (folk, houses), Ring
+  Island folk, trains passing (kit locos, cars, laid track).
 
 - [x] **M13g. One list of stations.** _M, Medium. After M13e (Place's readers are gone); not beside f2 (`src/place`)._
       `src/place/layout.ts`'s `LINKS[n].stations` is built from `LINE1_STATIONS` and `LINE2_STATIONS`

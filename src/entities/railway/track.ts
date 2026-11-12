@@ -1,7 +1,7 @@
 // Each line's track and trestle as separate pieces that fall into place as the machine passes, with colliders that grow with what's down (moved from the rail of ?proto=place).
 import { P, lateral } from './line-geometry.ts';
 import * as THREE from 'three/webgpu';
-import { removeBody, type Body } from '../../physics/engine.ts';
+import type { Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { box, place } from '../../render/boxes.ts';
 import { H, addStatic, slab } from '../../place/land.ts';
@@ -64,7 +64,7 @@ type PieceKind = 'sleeper' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'br
 export function buildTrack(
   spec: LineSpec,
   thudAt: (k: number, kind: PieceKind, x: number, y: number, z: number) => void,
-  owner?: OwnedView,
+  owner: OwnedView,
   mode: 'panels' | 'continuous' = 'panels',
 ) {
   const panelled = mode === 'panels';
@@ -720,7 +720,7 @@ export function buildTrack(
       return merge.length ? Math.min(...merge.map((m) => m.from)) : formation.to;
     },
   };
-  owner?.cleanup(() => {
+  owner.cleanup(() => {
     for (const solid of solids) removeBodies(solid, owner);
     set.clear();
   });
@@ -732,11 +732,8 @@ function growSolids(t: Track, to: number) {
     so.on = so.add();
   }
 }
-function removeBodies(so: Solid, owner?: OwnedView) {
+function removeBodies(so: Solid, owner: OwnedView) {
   for (const b of [so.on].flat())
-    if (b) {
-      if (owner) owner.removeBody(b);
-      else removeBody(b);
-    }
+    if (b) owner.removeBody(b);
   so.on = null;
 }

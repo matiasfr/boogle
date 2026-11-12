@@ -5,7 +5,6 @@
 import * as THREE from 'three/webgpu';
 import { material } from '../render/materials.ts';
 export { chips, dustRing } from '../render/particle-effects.ts';
-import { scene } from '../render/scene.ts';
 import { PIECE, pieceColor, pieceMesh, commitPieces } from '../render/haul-pieces.ts';
 import { makeSet, type Box, type BoxSet } from '../render/boxes.ts';
 import { LOOK, STEEL, lookBackLogs } from './look.ts';
@@ -32,10 +31,9 @@ export type DropSet = BoxSet & {
   /** Whatever's in the air stops where it is: start over. */
   clear: () => void;
 };
-export function dropSet(boxes: Box[], onLand: (k: number) => void, owner?: OwnedView): DropSet {
+export function dropSet(boxes: Box[], onLand: (k: number) => void, owner: OwnedView): DropSet {
   const set = makeSet(boxes);
-  if (owner) owner.add(set.mesh);
-  else scene.add(set.mesh);
+  owner.add(set.mesh);
   const air: { k: number; t: number; fall: number; h: number; landed: boolean }[] = [];
   const write = (k: number, y: number, a: number) => {
     const b = boxes[k]!;
@@ -88,7 +86,7 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void, owner?: Owned
 
 // ---------------------------------------------------------------- pieces in the air
 export type PieceKind = 'log' | 'rail' | 'stone';
-function createPieceFlights(owner?: OwnedView) {
+function createPieceFlights(owner: OwnedView) {
   const railGeo = new THREE.BoxGeometry(1, 1, 1);
   const railMat = new THREE.MeshStandardNodeMaterial({ color: '#4c5058', roughness: 0.45, metalness: 0.6 });
   const MAX = 96;
@@ -99,15 +97,13 @@ function createPieceFlights(owner?: OwnedView) {
   rails.count = 0;
   rails.frustumCulled = false;
   rails.castShadow = true;
-  if (owner) owner.add(logs, rails);
-  else scene.add(logs, rails);
+  owner.add(logs, rails);
   // A lump of stone: one shape, tumbling.
   const stones = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.2, 0), material('stone'), 32);
   stones.count = 0;
   stones.frustumCulled = false;
   stones.castShadow = true;
-  if (owner) owner.add(stones);
-  else scene.add(stones);
+  owner.add(stones);
 
   type Trip = {
     kind: PieceKind;
@@ -198,15 +194,13 @@ function createPieceFlights(owner?: OwnedView) {
       stones.instanceMatrix.needsUpdate = true;
     }
   }
-  owner?.cleanup(clearTrips);
-  owner?.cleanup(() => railMat.dispose());
+  owner.cleanup(clearTrips);
+  owner.cleanup(() => railMat.dispose());
   return { send, sending, clearTrips, updatePieces };
 }
 
-let legacyFlights: ReturnType<typeof createPieceFlights> | undefined;
 const ownedFlights = new WeakMap<OwnedView, ReturnType<typeof createPieceFlights>>();
-function flights(owner?: OwnedView) {
-  if (!owner) return (legacyFlights ??= createPieceFlights());
+function flights(owner: OwnedView) {
   let view = ownedFlights.get(owner);
   if (!view) {
     view = createPieceFlights(owner);
@@ -220,19 +214,18 @@ export const send = (
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: Parameters<ReturnType<typeof createPieceFlights>['send']>[3],
-  owner?: OwnedView,
+  owner: OwnedView,
 ) => flights(owner).send(kind, from, to, options);
-export const sending = (owner?: OwnedView) => flights(owner).sending();
-export const clearTrips = (owner?: OwnedView) => flights(owner).clearTrips();
-export const updatePieces = (dt: number, owner?: OwnedView) => flights(owner).updatePieces(dt);
+export const sending = (owner: OwnedView) => flights(owner).sending();
+export const clearTrips = (owner: OwnedView) => flights(owner).clearTrips();
+export const updatePieces = (dt: number, owner: OwnedView) => flights(owner).updatePieces(dt);
 
 // ---------------------------------------------------------------- stacks of real pieces standing somewhere
 /** A log as it lies in a frame or on the machine: the same log, cut to a length that reads at this distance. */
 export const STACK_LOG = { size: 2.2, thick: 1.5 };
-export const logStackMesh = (max: number, owner?: OwnedView) => {
+export const logStackMesh = (max: number, owner: OwnedView) => {
   const g = LOOK.kit ? kitLogs(max, owner) : pieceMesh(max);
-  if (owner) owner.add(g);
-  else scene.add(g);
+  owner.add(g);
   return g;
 };
 const stackM = new THREE.Matrix4(),

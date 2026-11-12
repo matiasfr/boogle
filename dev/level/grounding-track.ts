@@ -8,6 +8,9 @@ import { carriedPiece, trackPanels } from '../../src/entities/railway/track-pane
 import { chunkOf } from '../../src/entities/railway/track-chunks.ts';
 import { sourceFunction } from './source.ts';
 
+// The sources are stubbed past the boxes, so the owner is never asked for anything.
+const noOwner = {} as import('../../src/render/owned-view.ts').OwnedView;
+
 /** Every settled track box of both lines, panelled and continuous, as the game's own buildTrack makes them. */
 export function trackBoxes() {
   const file = 'src/entities/railway/track.ts';
@@ -44,7 +47,7 @@ export function trackBoxes() {
   return LINKS.flatMap((spec) =>
     (['panels', 'continuous'] as const).map((mode) => {
       try {
-        buildTrack(spec, () => {}, undefined, mode);
+        buildTrack(spec, () => {}, noOwner, mode);
       } catch (error) {
         if (error !== complete) throw error;
       }

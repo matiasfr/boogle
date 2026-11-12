@@ -27,7 +27,6 @@ import {
   vec3,
   vertexColor,
 } from 'three/tsl';
-import { scene } from '../render/scene.ts';
 import { flat } from '../render/flat.ts';
 import { dressBundleLogs } from '../render/haul-bundle.ts';
 import { patchNode } from '../render/material-patch.ts';
@@ -312,10 +311,9 @@ export function lookBox(w: number, h: number, d: number) {
 }
 
 const BLOBS = 4096;
-let blobMesh: THREE.InstancedMesh | null = null;
 const ownedBlobs = new WeakMap<OwnedView, THREE.InstancedMesh>();
-function blobMeshOf(owner?: OwnedView) {
-  const existing = owner ? ownedBlobs.get(owner) : blobMesh;
+function blobMeshOf(owner: OwnedView) {
+  const existing = ownedBlobs.get(owner);
   if (existing) return existing;
   const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, polygonOffset: true });
   m.polygonOffsetFactor = -2;
@@ -328,15 +326,10 @@ function blobMeshOf(owner?: OwnedView) {
   mesh.count = 0;
   mesh.frustumCulled = false;
   mesh.renderOrder = 1;
-  if (owner) {
-    owner.add(mesh);
-    owner.cleanup(() => m.dispose());
-    owner.cleanup(() => ownedBlobs.delete(owner));
-    ownedBlobs.set(owner, mesh);
-  } else {
-    scene.add(mesh);
-    blobMesh = mesh;
-  }
+  owner.add(mesh);
+  owner.cleanup(() => m.dispose());
+  owner.cleanup(() => ownedBlobs.delete(owner));
+  ownedBlobs.set(owner, mesh);
   return mesh;
 }
 const bm = new THREE.Matrix4(),
@@ -345,15 +338,15 @@ const bm = new THREE.Matrix4(),
   bs = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 /** A soft dark patch on the ground, w x d m, yaw turned. Returns its handle for `setBlob`. */
-export function addBlob(x: number, y: number, z: number, w: number, d: number, yaw = 0, owner?: OwnedView) {
+export function addBlob(x: number, y: number, z: number, w: number, d: number, yaw: number, owner: OwnedView) {
   const mesh = blobMeshOf(owner);
   if (mesh.count >= BLOBS) return -1;
   const k = mesh.count++;
   setBlob(k, x, y, z, w, d, yaw, owner);
   return k;
 }
-export function setBlob(k: number, x: number, y: number, z: number, w: number, d: number, yaw = 0, owner?: OwnedView) {
-  const mesh = owner ? ownedBlobs.get(owner) : blobMesh;
+export function setBlob(k: number, x: number, y: number, z: number, w: number, d: number, yaw: number, owner: OwnedView) {
+  const mesh = ownedBlobs.get(owner);
   if (!mesh || k < 0) return;
   bm.compose(bp.set(x, y + 0.03, z), bq.setFromAxisAngle(UP, yaw), bs.set(w, 1, d));
   // Compare the exact uploaded float values, not an epsilon: stationary cars must not dirty the whole blob pool.

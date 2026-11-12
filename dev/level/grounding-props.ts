@@ -5,6 +5,7 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dequantize } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
+import type { OwnedView } from '../../src/render/owned-view.ts';
 import { sourceModule, sourceFunction } from './source.ts';
 import { openingStops, WOOD2 } from '../../src/place/opening-plans.ts';
 import { CRANE, RACK, ORIGIN, LINKS, PATHS, lineAt, railY } from '../../src/place/layout.ts';
@@ -164,7 +165,7 @@ export async function checkPropGrounding() {
   // Cove supports are constructed by the production function; omit only terrain and mounted deck boards.
   const shore: THREE.Mesh[] = [];
   let coveUnderside = Infinity;
-  const buildLand = sourceFunction<() => void>('src/place/land.ts', 'buildLand', {
+  const buildLand = sourceFunction<(owner: OwnedView) => void>('src/place/land.ts', 'buildLand', {
     THREE,
     SHORE_COAST,
     SHORE_HOP,
@@ -178,7 +179,6 @@ export async function checkPropGrounding() {
     TIMBER: () => mat,
     paletteMaterial: (source: THREE.Material) => source,
     spireRock: (s: string) => s,
-    scene: { add: (m: THREE.Mesh) => shore.push(m) },
     addStatic: () => {},
     plank: (
       _ax: number,
@@ -198,7 +198,7 @@ export async function checkPropGrounding() {
     buildBridges: () => {},
     buildFar: () => {},
   });
-  buildLand();
+  buildLand({ add: (m: THREE.Mesh) => shore.push(m) } as unknown as OwnedView);
   for (const [i, mesh] of shore.entries()) {
     mesh.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(mesh),
@@ -276,7 +276,7 @@ export async function checkPropGrounding() {
   // planks: only the chain's two outer ends bear on the sand.
   type Strip = { footprint: Footprint; base: number; top: number };
   const chains: { a: Strip; b: Strip; bx: number; bz: number }[][] = [];
-  const buildBridges = sourceFunction<() => void>('src/place/land.ts', 'buildBridges', {
+  const buildBridges = sourceFunction<(owner: OwnedView) => void>('src/place/land.ts', 'buildBridges', {
     THREE,
     PATHS,
     ORIGIN,
@@ -289,7 +289,6 @@ export async function checkPropGrounding() {
     FLAT: () => mat,
     TIMBER: () => mat,
     GROUP: { SCENERY: 2 },
-    scene: { add: () => {} },
     addStatic: () => {},
     plank: (
       ax: number,
@@ -314,7 +313,7 @@ export async function checkPropGrounding() {
       else chains.push([plank]);
     },
   });
-  buildBridges();
+  buildBridges({ add: () => {} } as unknown as OwnedView);
   chains.forEach((chain, bridge) => {
     for (const [end, s] of [
       ['a', chain[0]!.a],
