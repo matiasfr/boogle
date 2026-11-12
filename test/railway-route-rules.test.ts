@@ -17,6 +17,8 @@ import {
   Yard,
   RAIL_REPLICATED,
   Route,
+  Shed,
+  Steel,
   Train,
   createRailwayWorld,
 } from '../src/sim/railway-components.ts';
@@ -37,7 +39,7 @@ import {
   rowPoint,
 } from '../src/sim/railway-route.ts';
 import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
-import { RING_END, RING_S_HEAD, ringAt } from '../src/sim/railway-ring-layout.ts';
+import { RING_END, RING_S_HEAD, STEEL, ringAt } from '../src/sim/railway-ring-layout.ts';
 import { TRAIN, TRAIN_PHASE, fleetOf, trainDir, trainPassesBy, trainStopsOf } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, cycleTicks, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
@@ -45,7 +47,7 @@ import { rail, train, trains } from '../src/sim/railway-rows.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
 import { legKitNeed, legKitWaiting, legRow, legsLaid, routeRow } from '../src/sim/railway-queries-route.ts';
 import { freightStop } from '../src/sim/railway-queries-trade.ts';
-import { kitOwed } from '../src/sim/railway-queries.ts';
+import { kitOwed, steelNeed } from '../src/sim/railway-queries.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { RAIL_PREDICTED, railPredict } from '../src/world/railway-predict.ts';
 import { railCounts } from '../src/sim/railway-queries-line2.ts';
@@ -368,12 +370,14 @@ test("the server: each op's ids are catalog indexes, judged at the frame, post o
 // ---------------------------------------------------------------- the kit
 /** Gate 16: kit units loaded equal units aboard, racked, fed, laid and on backs (the rack and backs hold none at the
  * rivet), logs and rails. */
+const legCarrier = (w: World, k: number) => train(w, k).legKit && train(w, k).logs + train(w, k).rails > 0;
 function kitEquality(w: World) {
   const g = legRow(w, STACK);
   let logs = g.logs,
     rails = g.rails;
   for (const sec of LEG.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
-  for (const r of trains(w)) [logs, rails] = [logs + r.logs, rails + r.rails];
+  // A leg's kit aboard is the marked cargo (Train.legKit): the steel works' kit rides the same cars (steel first).
+  for (const r of trains(w)) if (r.legKit) [logs, rails] = [logs + r.logs, rails + r.rails];
   w.each([Account], (_id, a) => ((logs += a.carry), (rails += a.rails)));
   return [g.loadedLogs - logs - rail(w).depot, g.loadedRails - rails - rail(w).depotRails];
 }
@@ -385,7 +389,7 @@ test('the idle room (ruling B, gate 13): at rest by +1,500, kit 1 racked, two ki
     advance(s, 1);
     assert.deepEqual(kitEquality(s.w), backs, `kit units at +${k + 1}`);
   }
-  const carriers = LINE_SLOTS[LINE2]!.filter((k) => train(s.w, k).logs + train(s.w, k).rails > 0);
+  const carriers = LINE_SLOTS[LINE2]!.filter((k) => legCarrier(s.w, k));
   const empty = servingSlots((j) => train(s.w, j), LINE2).filter((k) => !carriers.includes(k));
   assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [20, 20], 'kit 1 racked');
   assert.equal(carriers.length, 2, 'two kit trains (the running three less one)');
@@ -459,7 +463,7 @@ function fedLeg() {
     w.step(s.w, s.t, before);
     if (laid === N) continue;
     const running = servingSlots((j) => train(s.w, j), LINE2).length,
-      carrying = LINE_SLOTS[LINE2]!.filter((j) => train(s.w, j).logs + train(s.w, j).rails > 0).length;
+      carrying = LINE_SLOTS[LINE2]!.filter((j) => legCarrier(s.w, j)).length;
     if (carrying > running - 1) kitBreaks.push(`${carrying} kit trains of ${running} at ${s.t}`);
     const eq = kitEquality(s.w);
     if (eq[0] || eq[1]) kitBreaks.push(`kit units ${eq.join('/')} at ${s.t}`);
@@ -510,6 +514,20 @@ test('the load check refuses a broken leg, yard, route or fleet', () => {
   refuse('fed over the bill', (w) => leg(w, { logs: 21 }), /leg bounds/);
   refuse('laying with the bill short', (w) => leg(w, { start: 5 }), /leg laying/);
   refuse('a full bill not laying', (w) => leg(w, { logs: 20, rails: 20 }), /leg laying/);
+  // Steel first: the mark that keeps a leg's kit and the works' apart stands only with cargo aboard, on a line with a
+  // leg reached.
+  const mark = (w: World, slot: number, patch: Record<string, number | boolean>) =>
+    Object.assign(w.mut(Train, w.lookup(Train, slot)!)!, patch);
+  refuse(
+    'a leg kit mark with nothing aboard',
+    (w) => mark(w, LINE_SLOTS[LINE2]![0]!, { legKit: true, logs: 0, rails: 0 }),
+    /leg kit mark/,
+  );
+  refuse(
+    'a leg kit mark on a line with no leg',
+    (w) => mark(w, LINE_SLOTS[0]![0]!, { legKit: true, logs: 1 }),
+    /leg kit mark/,
+  );
   refuse(
     'an unbuilt leg laid',
     (w) => Object.assign(w.mut(Leg, w.lookup(Leg, 1)!)!, { laid: 1 }),
@@ -1164,4 +1182,125 @@ test('a unit lifted off the leg rack and lost is owed again; one carried to the 
   feedSection(s);
   assert.equal(legRow(s.w, STACK).laid, 1, 'the section still lays');
   assert.equal(invariant(s.w), null);
+});
+
+// ---------------------------------------------------------------- steel first (call 64; owner, 12 November)
+const steelRow = (w: World) => w.get(Steel, w.single(Steel))!;
+const bay = (w: World) => w.get(Shed, w.single(Shed))!.steel;
+/** Take what the steel yard holds and feed the works, as build 2's own test does (test/railway-steel.test.ts). */
+function feedSteel(s: Seed, pid = 'a') {
+  for (const kind of [0, 1])
+    for (let k = 0; k < 8; k++) {
+      act(s, pid, 'rail.steelTake', { kind });
+      if (!act(s, pid, 'rail.steel')) break;
+    }
+}
+/** One tick, with the kit car's ledger checked: what the trains took aboard is what the leg and the works gave, each onto
+ * its own trains (a leg's onto a marked train, the works' onto an unmarked one), a train's cargo never changes owner
+ * while it has any, and no leg kit loads on a tick that ends with the works still wanting kit brought. */
+function steelFirstTick(s: Seed, what: string) {
+  const before = trains(s.w).map((r) => ({ ...r })),
+    leg0 = legRow(s.w, STACK).loadedLogs + legRow(s.w, STACK).loadedRails,
+    out0 = steelRow(s.w).outLogs + steelRow(s.w).outRails;
+  advance(s, 1);
+  const dLeg = legRow(s.w, STACK).loadedLogs + legRow(s.w, STACK).loadedRails - leg0,
+    dSteel = steelRow(s.w).outLogs + steelRow(s.w).outRails - out0;
+  let onLeg = 0,
+    onSteel = 0;
+  trains(s.w).forEach((r, slot) => {
+    const p = before[slot]!,
+      had = p.logs + p.rails,
+      has = r.logs + r.rails;
+    assert.equal(!!r.legKit && has === 0, false, `${what}: train ${slot} marked with nothing aboard at ${s.t}`);
+    if (had > 0 && has > 0)
+      assert.equal(!!r.legKit, !!p.legKit, `${what}: train ${slot}'s kit changed owner at ${s.t}`);
+    // Loads happen only standing at the Village; an unload and a load never share a tick there.
+    const up = Math.max(0, r.logs - p.logs) + Math.max(0, r.rails - p.rails);
+    if (r.legKit) onLeg += up;
+    else onSteel += up;
+  });
+  assert.deepEqual([onLeg, onSteel], [dLeg, dSteel], `${what}: each kit onto its own trains at ${s.t}`);
+  const need = steelNeed(s.w);
+  if (need.logs + need.rails > 0)
+    assert.equal(dLeg, 0, `${what}: a leg kit loaded while the works wants kit at ${s.t}`);
+}
+test('steel first: a train never carries both kits; no leg kit loads while the works wants one; a lost steel load comes again while the leg is fed', (t) => {
+  const s = unaudited(copy(JOINED)),
+    t0 = s.t;
+  // At the rivet the works' kit is aboard and none of the leg's is loaded.
+  assert.deepEqual([steelRow(s.w).outLogs, steelRow(s.w).outRails], [STEEL.logs, STEEL.rails]);
+  assert.deepEqual([legRow(s.w, STACK).loadedLogs, legRow(s.w, STACK).loadedRails], [0, 0]);
+  const feedLeg = () => legRow(s.w, STACK).laid < N && legRow(s.w, STACK).start < 0 && stock(s);
+  const run = (ok: () => boolean, max: number, what: string) => {
+    for (let k = 0; !ok(); k++) {
+      assert.ok(k < max, `${what} in time (tick ${s.t})`);
+      feedLeg();
+      steelFirstTick(s, what);
+      if (k % 250 === 0) assert.equal(invariant(s.w), null, `${what} at ${s.t}`);
+    }
+  };
+  let firstLeg = -1;
+  run(
+    () => {
+      if (firstLeg < 0 && legRow(s.w, STACK).loadedLogs > 0) firstLeg = s.t - t0;
+      return steelRow(s.w).yardLogs + steelRow(s.w).yardRails === STEEL.logs + STEEL.rails;
+    },
+    4000,
+    'the steel kit in the yard',
+  );
+  const yardAt = s.t - t0;
+  // The yard's logs carried off and dropped are ordinary cargo: the works wants them again (build 2's finding 2), and
+  // from here no leg kit loads until a train has them aboard.
+  assert.equal(act(s, 'a', 'rail.steelTake', { kind: 0 }), STEEL.logs);
+  assert.equal(act(s, 'a', 'rail.drop', { kind: 0, n: STEEL.logs, x: 141000, y: 890, z: -81500 }), STEEL.logs);
+  assert.deepEqual(steelNeed(s.w), { logs: STEEL.logs, rails: 0 });
+  const lostAt = s.t,
+    legAtLoss = legRow(s.w, STACK).loadedLogs;
+  run(() => steelNeed(s.w).logs === 0, 6000, 'the lost logs aboard again');
+  assert.equal(legRow(s.w, STACK).loadedLogs, legAtLoss, 'no leg kit loaded while the works wanted its logs');
+  const aboardIn = s.t - lostAt;
+  // Build 2's own bound for a lost load (test/railway-steel.test.ts: 6,000 ticks), with the leg fed throughout.
+  run(() => steelRow(s.w).yardLogs === STEEL.logs, 6000, 'the lost logs in the yard again');
+  const againIn = s.t - lostAt;
+  feedSteel(s);
+  assert.ok(steelRow(s.w).lit >= 0, 'lit');
+  run(() => legRow(s.w, STACK).laid === N && bay(s.w) === STEEL.total, 40000, 'the Gorge open and all twelve home');
+  assert.equal(invariant(s.w), null);
+  t.diagnostic(
+    `steel kit in the yard +${yardAt}; first leg kit loaded +${firstLeg}; a lost steel load aboard again in ${aboardIn}, in the yard in ${againIn}`,
+  );
+});
+
+// Build 2 alone (origin/main 4e769acd, v31), the same script from `ring-joined`: the kit in the yard, the works fed
+// the tick it lands, the install pressed the tick the first steel is home. Measured with the leg's rules absent.
+const BUILD2 = { yard: 651, home: 1824 } as const;
+function gate15(fed: boolean) {
+  const s = unaudited(copy(JOINED)),
+    t0 = s.t;
+  let yard = -1,
+    home = -1,
+    installed = -1;
+  for (let k = 0; installed < 0; k++) {
+    assert.ok(k < 12000, `gate 15 (${fed ? 'fed' : 'idle'}): the install in time`);
+    if (fed && legRow(s.w, STACK).laid < N && legRow(s.w, STACK).start < 0) stock(s);
+    steelFirstTick(s, `gate 15 ${fed ? 'fed' : 'idle'}`);
+    const st = steelRow(s.w);
+    if (yard < 0 && st.yardLogs + st.yardRails === STEEL.logs + STEEL.rails) yard = s.t - t0;
+    if (yard >= 0 && st.lit < 0) feedSteel(s);
+    if (home < 0 && bay(s.w) >= 1) home = s.t - t0;
+    if (home >= 0 && act(s, 'a', 'rail.install', { line: LINE2, part: 1, revision: 0 })) installed = s.t - t0;
+  }
+  assert.equal(invariant(s.w), null);
+  return { yard, home, installed };
+}
+test("gate 15: with the leg open the steel kit reaches the yard on build 2's own tick; first steel home and the install at most 1,050 ticks later", (t) => {
+  for (const fed of [false, true]) {
+    const g = gate15(fed);
+    t.diagnostic(
+      `leg ${fed ? 'fed every tick' : 'idle'}: kit in the yard +${g.yard} (build 2 alone +${BUILD2.yard}); first steel home +${g.home} and the install +${g.installed} (build 2 alone +${BUILD2.home})`,
+    );
+    assert.equal(g.yard, BUILD2.yard, "the steel kit on build 2's own tick");
+    assert.ok(g.home <= BUILD2.home + 1050, `first steel home +${g.home}`);
+    assert.ok(g.installed <= BUILD2.home + 1050, `the install +${g.installed}`);
+  }
 });

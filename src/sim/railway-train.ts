@@ -114,8 +114,13 @@ function lineStagesOf(line: LineRef): { stops: readonly number[]; trains: number
       }
   return out;
 }
-/** Every stage a line's stops can reach (each `opens` slot laid in turn, each head, the rivet, each leg's sections). */
-export const lineStages = (line: LineRef): (readonly number[])[] => lineStagesOf(line).map((st) => st.stops);
+/** Every stage a line's stops can reach (each `opens` slot laid in turn, each head, the rivet, each leg's sections). A
+ * line with every halt shut (the greybox route's `ns`, `bay` and `cave` until their legs are built) has none: a stage
+ * is two open stops at least, so every stage has both its ends. */
+export const lineStages = (line: LineRef): (readonly number[])[] =>
+  lineStagesOf(line)
+    .map((st) => st.stops)
+    .filter((stops) => stops.length >= 2);
 // The catalog is refused at load if any line's trains could not all be placed at a stage they wake at (trainPlaces
 // throws rather than stack two), so the wake (rail.boilerFit) never meets it in a room; each stage is checked with the
 // trains its fleet runs there. Note: this runs when the module is imported, so a bad catalog row throws at the first
@@ -172,6 +177,8 @@ export type RailTrain = {
   arrived: number;
   /** The boiler it wears (v28; BOILER_SPEED's row): its cruise. Absent reads 0 (a fixture line's row). */
   boiler?: number;
+  /** The logs and rails aboard are a greybox leg's kit, not the steel works' or a Q job's (call 64). Absent reads false. */
+  legKit?: boolean;
 };
 /** Train `slot` standing at its home, asleep (a fleet row: in the shed, TRAIN_PHASE.SHED). */
 export function trainIdle(slot: number): RailTrain {

@@ -70,9 +70,12 @@ export function legKitCap(w: World, k: number) {
   const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid];
   return s ? { logs: s.logs, rails: s.rails } : { logs: 0, rails: 0 };
 }
-/** Kit units of leg k's line aboard its trains. */
+/** Leg kit units of leg k's line aboard its trains (a train's `legKit` cargo; the steel works' kit is not the leg's). */
 const aboardLine = (w: World, line: number, key: 'logs' | 'rails') =>
-  LINE_SLOTS[line]!.reduce((n, s) => n + w.get(Train, w.lookup(Train, s)!)![key], 0);
+  LINE_SLOTS[line]!.reduce((n, s) => {
+    const t = w.get(Train, w.lookup(Train, s)!)!;
+    return n + (t.legKit ? t[key] : 0);
+  }, 0);
 /** Logs or rails on the players' backs (a unit lifted off the rack on its way to the frame). */
 const onBacks = (w: World, key: 'carry' | 'rails') => {
   let n = 0;
@@ -117,18 +120,18 @@ export const legKitTrains = (w: World, line: number) =>
     0,
     LINE_SLOTS[line]!.filter((s) => w.get(Train, w.lookup(Train, s)!)!.phase !== TRAIN_PHASE.SHED).length - 1,
   );
-/** The trains of `line` carrying kit units now. */
+/** The trains of `line` carrying a leg's kit now (the steel works' kit rides the car `kitTrains` leaves empty). */
 export const legKitCarriers = (w: World, line: number) =>
   LINE_SLOTS[line]!.filter((s) => {
     const t = w.get(Train, w.lookup(Train, s)!)!;
-    return t.logs + t.rails > 0;
+    return t.legKit && t.logs + t.rails > 0;
   }).length;
 /** Row `r` on `line` carries a leg's kit that cannot unload at any halt open now: its open leg's current section
  * lacks nothing it carries (the next railhead is not open yet). Ruling D: such a train makes the stone stop. A Q
  * job's kit can always unload (no leg is open before the rivet). */
 export function legKitWaiting(w: World, line: number, r: Readonly<RailTrain>) {
   const k = openLeg(w, line);
-  if (k < 0 || r.logs + r.rails <= 0) return false;
+  if (k < 0 || !r.legKit || r.logs + r.rails <= 0) return false;
   const need = legRackNeed(w, k);
   return !(r.logs > 0 && need.logs > 0) && !(r.rails > 0 && need.rails > 0);
 }

@@ -137,6 +137,9 @@ export const Train = defineComponent(
     // The boiler this train wears (ring-island-build2, R3): BOILER_SPEED's row (./railway-train.ts), 0 the standard
     // one. It takes its line's fit (`Line.boiler`) standing at the Village, never in flight.
     boiler: 'u8',
+    // The logs and rails aboard are a greybox leg's kit, not the steel works' or a Q job's (greybox-route, call 64:
+    // steel first, and a train never carries both). Set by the leg's load, cleared when the last unit is off.
+    legKit: 'bool',
   },
   { key: 'slot' },
 );

@@ -8,12 +8,13 @@
 //                   complete leg; laying only with the bill full; nothing laid, fed or loaded before the leg opens;
 //                   loaded never over the leg's bill; a yard's bounds (nothing feeds one yet); a grant bit only with
 //                   its leg complete, a gate bit only with its grant and its leg reached, `arrived` only with the
-//                   route's last leg complete (throws on the first broken one)
+//                   route's last leg complete; a train's `legKit` mark only with cargo aboard on a line with a leg
+//                   reached (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { legBuilt } from './railway-lines.ts';
+import { RAIL_TRAINS, legBuilt } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
-import { LegYard } from './railway-components.ts';
+import { LegYard, Train } from './railway-components.ts';
 import { gateLeg, legDone, legReached, legRow, routeRow } from './railway-queries-route.ts';
 
 const bad = (what: string): never => {
@@ -45,6 +46,13 @@ export function checkRoute(w: World) {
     if (!legReached(w, k) && (r.laid || r.logs || r.rails || r.loadedLogs || r.loadedRails)) bad('leg before it opens');
     // A gated section is fed only once its barrier is open.
     if (sec?.gate !== undefined && (r.logs || r.rails) && !(routeRow(w).gates & (1 << sec.gate))) bad('leg gate');
+  });
+  // A train's `legKit` mark stands exactly while it carries a leg's kit: on a line with a leg reached, with cargo aboard
+  // (steel first, call 64: the mark is what keeps the works' kit and a leg's apart).
+  w.each([Train], (_id, t) => {
+    if (!t.legKit) return;
+    const line = RAIL_TRAINS[t.slot]!.line;
+    if (t.logs + t.rails <= 0 || !RAIL_LEGS.some((l, k) => l.line === line && legReached(w, k))) bad('leg kit mark');
   });
   w.each([LegYard], (_id, y) => {
     if (!railInt(y.slot, RAIL_YARDS.length - 1) || !railInt(y.logs, KIT_CAP) || !railInt(y.rails, KIT_CAP))

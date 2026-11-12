@@ -5,13 +5,15 @@
 // (the running trains less one: ruling C, call 65); it keeps running its
 // service with the kit aboard, and at the leg's rack (its first halt, then its railhead) unloads what the current
 // section still lacks, the rest riding on until a later section's railhead opens. Transfers are atomic inside the
-// tick's apply. Pure integers.
+// tick's apply. Pure integers. On line 2 the steel works' kit comes first (call 64): a leg's kit loads only when the
+// works wants none, onto a train not carrying the works', and is marked `Train.legKit` so neither side reads the other's.
 //
 //   legKitService(w, slot, r)   the kit's service stop: the rack's halt while this train carries kit it can unload
 //   legKitArrive(w, slot)       come to a stand: unload onto the rack (Rail.depot and Rail.depotRails)
 //   legKitLoad(w, slot, tick)   standing at the kit halt: load, holding for the forge's rails as Q6's and Q7's kit does
 import type { World } from '../ecs/index.ts';
-import { RAIL_TRAINS } from './railway-lines.ts';
+import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
+import { steelNeed } from './railway-queries.ts';
 import { TRAIN, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { Forge, Leg, Rail, Train } from './railway-components.ts';
 import {
@@ -31,7 +33,7 @@ const trainOf = (w: World, slot: number) => w.lookup(Train, slot)!;
  * section still lacks. Its kit halt needs none: it is the line's first halt, an end every train stands at. */
 export function legKitService(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
   const k = openLeg(w, RAIL_TRAINS[slot]!.line);
-  if (k < 0 || r.logs + r.rails <= 0) return () => false;
+  if (k < 0 || !r.legKit || r.logs + r.rails <= 0) return () => false;
   const at = legKitStop(w, k),
     need = legRackNeed(w, k),
     some = (r.logs > 0 && need.logs > 0) || (r.rails > 0 && need.rails > 0);
@@ -43,7 +45,7 @@ export function legKitArrive(w: World, slot: number) {
   const k = openLeg(w, RAIL_TRAINS[slot]!.line);
   if (k < 0) return;
   const r = w.get(Train, trainOf(w, slot))!;
-  if (r.at !== legKitStop(w, k) || r.logs + r.rails <= 0) return;
+  if (r.at !== legKitStop(w, k) || !r.legKit || r.logs + r.rails <= 0) return;
   const need = legRackNeed(w, k),
     logs = Math.min(r.logs, need.logs),
     rails = Math.min(r.rails, need.rails);
@@ -54,6 +56,7 @@ export function legKitArrive(w: World, slot: number) {
   rail.depotRails += rails;
   m.logs -= logs;
   m.rails -= rails;
+  if (m.logs + m.rails === 0) m.legKit = false;
 }
 /** Train `slot`, standing, before its dwell is judged: at its line's kit halt it loads the open leg's kit, up to one
  * section's bill aboard (one kit a train): logs minted (counted production, as the depot's), rails off the forge rack.
@@ -65,6 +68,13 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
   if (k < 0) return 'on';
   const r = w.get(Train, trainOf(w, slot))!;
   if (r.at !== legKitHalt(line)) return 'on';
+  // Steel first (call 64; owner, 12 November): the steel works' kit has the kit car and the forge's rails first. A leg's
+  // kit loads only when the works wants none brought (steelNeed: its kit is fed, in the yard or aboard), and never onto
+  // a train carrying the works' kit, so a train never carries both.
+  if (line === LINE2) {
+    const steel = steelNeed(w);
+    if (steel.logs + steel.rails > 0 || (!r.legKit && r.logs + r.rails > 0)) return 'on';
+  }
   // At most `kitTrains` (the running trains less one) carry kit: an empty train loads only below that.
   if (r.logs + r.rails === 0 && legKitCarriers(w, line) >= legKitTrains(w, line)) return 'on';
   const cap = legKitCap(w, k),
@@ -81,6 +91,7 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
     m.logs += logs;
     leg.loadedRails += rails;
     m.rails += rails;
+    m.legKit = true;
     if (rails) w.mut(Forge, w.single(Forge))!.rack -= rails;
   }
   const now = w.get(Train, trainOf(w, slot))!;

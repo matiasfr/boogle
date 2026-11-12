@@ -295,6 +295,12 @@ export const footOwed = (w: World, aboard: number) => (q7Laid(w) ? ringOwed(w, a
 export const steelId = (w: World) => w.single(Steel);
 /** The rivet is struck: Ring Island is open and its steel works takes a kit (ring-island-build2, R1). */
 export const ringJoined = (w: World) => w.get(Aperture, apertureId(w))!.joined >= 0;
+/** Logs or rails aboard line 2's trains that are not a greybox leg's kit (`Train.legKit`): the works' kit after the rivet. */
+const steelAboard = (w: World, key: 'logs' | 'rails') =>
+  LINE2_SLOTS.reduce((n, k) => {
+    const t = w.get(Train, trainId(w, k))!;
+    return n + (t.legKit ? 0 : t[key]);
+  }, 0);
 /** What the steel works' kit still needs brought (design review, finding 2: nothing may be lost from the bill): its bill
  * less what is fed, in the yard and aboard line 2's trains. Logs and rails on a back or a pile are ordinary cargo and not
  * counted, so a train brings the shortfall again. None before the rivet, none once lit. */
@@ -302,8 +308,8 @@ export function steelNeed(w: World) {
   const s = w.get(Steel, steelId(w))!;
   if (!ringJoined(w) || s.lit >= 0) return { logs: 0, rails: 0 };
   return {
-    logs: Math.max(0, STEEL.logs - s.logs - s.yardLogs - aboard(w, 'logs')),
-    rails: Math.max(0, STEEL.rails - s.rails - s.yardRails - aboard(w, 'rails')),
+    logs: Math.max(0, STEEL.logs - s.logs - s.yardLogs - steelAboard(w, 'logs')),
+    rails: Math.max(0, STEEL.rails - s.rails - s.yardRails - steelAboard(w, 'rails')),
   };
 }
 /** The active train-fed job's kit (Q6's or Q7's) is still owed to its halt and none of it is aboard: the train must go
@@ -312,7 +318,14 @@ export function steelNeed(w: World) {
 export function kitOwed(w: World, r: Readonly<RailTrain>, line = LINE2) {
   const k = kitJob(w);
   if (r.logs + r.rails > 0) return false;
-  if (k < 0) return legKitOwed(w, line, r);
+  // Steel first (greybox-route, call 64): on line 2 a leg's kit is owed only while the works wants none brought.
+  if (k < 0) {
+    if (line === LINE2) {
+      const steel = steelNeed(w);
+      if (steel.logs + steel.rails > 0) return false;
+    }
+    return legKitOwed(w, line, r);
+  }
   const j = w.get(QJob, qjobId(w, k))!;
   if (j.start >= 0) return false;
   const need = depotNeed(w, k, j);
