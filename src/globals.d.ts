@@ -40,7 +40,6 @@ declare global {
     __feel?: unknown; // src/features/feel.ts tuning, for scenarios
     __carry?: unknown; // src/physics/platforms.ts tuning and state
     __warp?: { go(speed: number): void }; // dev/look/warp.ts, in the harness only
-    __place?: unknown; // src/proto/place/index.ts (?proto=place) tuning and state
     __crossing?: unknown; // src/proto/crossing/index.ts (?proto=crossing) tuning and state
     __wagon?: unknown; // src/proto/wagon/index.ts (?proto=wagon) state and the look evals' shortcuts
     __net?: unknown; // src/proto/net/index.ts (?proto=net): its state and shortcuts, for the look evals

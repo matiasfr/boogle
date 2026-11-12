@@ -164,14 +164,14 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       ],
       sync: 'Local query-selected appearance; this is not a per-player earned hat protocol',
       checks: `${look}; npm run assets -- --check (rebuild authored asset through its pipeline first)`,
-      lookalikes: ['src/proto/place/gifts.ts', 'src/sim/gift-catalog.ts'],
+      lookalikes: ['src/render/cosmetic-parts.ts', 'src/sim/gift-catalog.ts'],
       warning:
         'Choose built-in vs earned scope first; the sim gift catalog is throwable/carried items, not wearable rewards.',
     },
     {
       scope: 'Earned place hats',
-      owners: ['src/proto/place/gifts.ts'],
-      example: 'src/proto/place/gifts.ts',
+      owners: ['src/entities/wardrobe', 'src/render/cosmetic-parts.ts'],
+      example: 'src/render/cosmetic-parts.ts',
       copy: 'hat/beanie catalog entries, hat slot and WEAR fit; copy data, not prototype lifecycle into core',
       mustRead: [...core],
       readIf: [
@@ -412,7 +412,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
     {
       scope: 'Flagged experiment',
       owners: ['src/proto', 'src/features', 'protos/protos.ts'],
-      example: 'src/features/proto-place.ts',
+      example: 'src/features/proto-net.ts',
       copy: 'Small flag-gated dynamic loader; keep implementation under proto',
       mustRead: [
         ...core,

@@ -47,7 +47,7 @@ so hashed file names don't depend on it).
 - `guest/`: playing as the guest (engine glue in `native/guest/`), and the dino who offers it; the eager glue is
   `features/dino.ts`. Working on it: [guest/README.md](guest/README.md).
 - `place/`: the village's land and layout (metres), terrain, cove and shore, folk, signs, building plans and the shared
-  look kit that several entities draw with; moved out of `proto/place/` (docs/plans/ecs-migration-railway.md, M5).
+  look kit that several entities draw with; moved out of Place's prototype (docs/plans/ecs-migration-railway.md, M5).
 - `proto/`: find-the-fun prototypes too big for one feature file, loaded behind their `?proto=` flag by a stub in
   `features/` that asks `proto/flags.ts` (`protoOn`, `protoV`); Place is also the default entry. `proto/session.ts`
   starts spawn placement, counters and traces without an in-game panel (docs/plans/find-the-fun.md).

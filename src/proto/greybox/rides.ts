@@ -15,7 +15,7 @@ export type WorkRide = {
   legs: RideLeg[];
 };
 
-/** Where the depot cart loads, on line 1 (src/proto/place/depot.ts `L1_FROM`), and its Q4 stop on line 2 (`stopFor`). */
+/** Where the depot cart loads, on line 1 (Place's deleted depot.ts `L1_FROM`), and its Q4 stop on line 2 (`stopFor`). */
 export const CART_LOAD_S = STUB.camp + 5;
 export const CART_Q4_S = EAST.quarry - 13;
 /** The boiler's carry: "546 m home, about 98 s" (docs/game-design/place.md, The run 7). */

@@ -1,6 +1,6 @@
 {
   "id": "dev-menu",
-  "title": "You set up a disposable mechanic test",
+  "title": "You open the Dev tools",
   "kind": "local",
   "order": 96,
   "steps": [
@@ -15,13 +15,8 @@
       "cite": [{ "file": "src/debug/dev-menu.ts" }]
     },
     {
-      "go": [["you.features", "you.screen"]],
-      "text": "A fresh solo place run gets its own room, scoped saves and a TEST badge. Travel and stage setup check the exact launched session and refuse shared rooms.",
-      "cite": [{ "file": "src/debug/dev/fixtures.ts" }, { "file": "src/proto/place/job.ts" }]
-    },
-    {
       "hl": ["you.screen"],
-      "text": "The report records build, setup, poses and command results. Its setup link asks before launching another disposable run; it is not an exact world replay.",
+      "text": "The report records build, flags, poses and command results. It is not an exact world replay.",
       "cite": [{ "file": "src/debug/dev/report.ts" }]
     }
   ]
