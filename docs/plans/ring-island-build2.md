@@ -330,7 +330,7 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       room with an empty bay, so the first feature that spends bay steel relaxes it. No new shared file outside
       `src/sim/` or `src/world/` reaches the server. **Independent review of the server hunk: not run here** (the
       coordinator's, with R4-R5's review).
-- [ ] **R5. The loop graph and the bot (M, HOTBOX).** Edit `dev/loop/graph.ts` (nodes `steelkit`, `steelworks`,
+- [x] **R5. The loop graph and the bot (M, HOTBOX).** Edit `dev/loop/graph.ts` (nodes `steelkit`, `steelworks`,
       `steelhome`, `install`, each with its bill, supply, cue and `requires: rivet`), `dev/look/bots/railway-ring.ts`
       or a new `railway-steel.ts`, `dev/look/evals/railway-steel-bot.ts`. Checks: `npm run loop -- node <id>` for the
       four and `npm run loop -- run` for one to four players (the route's rules changed); the bot segment below.
@@ -347,6 +347,29 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       feed and the Install have no prompt until V1 (the island's interactables) and V3 (the garage's hold sends
       `rail.install`). Proposed: the steel bot, its eval and the "ring-joined to boiler-long" segment move to after V3,
       with Checkpoint A's bot proof at Checkpoint B.
+      _As built, the bot (ring2/v3-garage, 12 November): `dev/look/bots/railway-steel.ts`, its eval
+      `dev/look/evals/railway-steel-bot.ts`, stops `steel-lit`, `steel-home` and `boiler-long` in `dev/look/segments.ts`
+      (beats "steel works lit", "steel home", "boiler installed", the graph's marks; the three nodes `steelworks`,
+      `steelhome` and `install` take them as stops) and `--from ring-joined|steel-kit|steel-lit|steel-home`. Ordinary
+      inputs only, prompts pressed by id: ride line 2 from the Village to the island in one ride (the Railhead is a
+      pass-through once the ring is joined), `railway-steel-take-logs`, `-feed`, `-take-rails`, `-feed` until lit
+      (20 takes and feeds), ask for the home train at the island's lever, ride home, stand 1.3 m west of the post and
+      hold `railway-install` until `Line.boiler` is 1. Each phase reads the rows first, so it resumes from the steel
+      seeds. **Proved in pieces, not whole:** `--from ring-joined` reaches "steel works lit" (twice, 12:10 to 12:26 of
+      game); `--from steel-lit` passes to "boiler installed" (the steel came home by itself; the hold, `Line.boiler`
+      1). **The whole segment is blocked on fix/carry-sticky-deck:** the homeward ride loses the rider at about z -370
+      (line 2's s 757, past the bow's crest): `deckUnder` (`src/physics/platforms.ts`) lets a stationary
+      `railway:T1:flatbed`, the track layer parked on the homeward lane, take the rider from the car (the car's terms were
+      all in bounds; the flatbed is listed first and overlaps), so the train leaves without them. Not worked round in the
+      bot. Also found and fixed on this branch (view only): the island's levers stood at u 466, 18 m from the platform
+      centre the server judges a lever ask from (reach 12.6 m), so every ask was refused; they now stand at u 457
+      (`halts-view.ts`; `.look/lever-u457b-still.png`: both levers on their platforms, clear of the shed, loader and
+      stacks); `steel11` boarded from the lever. `rideToIsland` is now exported from `railway-ring.ts` (the ring bot's
+      own ride, unchanged). Timing: the bot's 11.5 minutes in the `steel-lit` run was page time from the seed's start,
+      the first steel home was at 10 min 5 s after it began waiting at the Village (the run waited for the next
+      line 2 train with steel: 109 to 117 s after lighting at unit level), at the 1x warp of a solo run that held 1x.
+      After the carry fix lands: rebase, one full `npm run playthrough -- --from ring-joined --to boiler-long --stall
+      6000 --wall 2700`, then tick this.
 - [ ] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
       `--rail-seed ring-joined` to the `boiler-long` state**, logging minutes per beat; `test:net`'s reconnect pair
       once with a carrier leaving mid-carry. Then ship v28 under the mid-session hold.
