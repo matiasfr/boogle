@@ -14,6 +14,7 @@ import { createRailwayRailhead } from './railhead-view.ts';
 import { createRailwayLeaf } from './leaf-view.ts';
 import { createRingMeet } from '../ring-meet/view.ts';
 import { createRingFolk } from '../ring-folk/view.ts';
+import { createRingSteel } from '../ring-steel/view.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -29,17 +30,18 @@ export async function createRailwayWorksLive(
 ) {
   const shapes = await import('../../render/part-geometry.ts');
   const breaker = createRailwayBreaker(adapter, owner, shapes);
-  const [works, roundhouse, crossing] = await Promise.all([
+  const [works, roundhouse, crossing, steel] = await Promise.all([
     createRailwayWorks(adapter, owner, { contactIn: breaker.contactIn, seated: deps.seated, busy: deps.busy }),
     createRailwayRoundhouse(adapter, owner, { contactIn: breaker.contactIn }),
     createRailwayCrossing(adapter, owner, deps),
+    createRingSteel(adapter, owner),
   ]);
   const footings = createRailwayFootings(adapter, owner);
   const railhead = createRailwayRailhead(adapter, owner, deps);
   const leaf = createRailwayLeaf(adapter);
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
-  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk];
+  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, steel];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -73,6 +75,7 @@ export async function createRailwayWorksLive(
       ...leaf.targets(),
       ...meet.targets(),
       ...folk.targets(),
+      ...steel.targets(),
     ],
     inspect: () => ({
       ...works.inspect(),
@@ -80,6 +83,7 @@ export async function createRailwayWorksLive(
       ...leaf.inspect(),
       ...meet.inspect(),
       ...folk.inspect(),
+      ...steel.inspect(),
       ...roundhouse.inspect(),
       ...breaker.inspect(),
       footings: footings.inspect(),
