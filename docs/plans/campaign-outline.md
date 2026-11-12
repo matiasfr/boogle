@@ -1,0 +1,311 @@
+> **Status: draft for the owner's review (11 November 2026).** A proposal. Nothing here is decided until he rules;
+> the orchestrator then refreshes [direction.md](../direction.md) and the decision files. No code, no world positions.
+
+# Campaign outline: from today to Alpha
+
+**Goal.** One page that scopes the road from main at `439612f5d` (world v27) to an Alpha build of the whole game, so
+the owner can rule on the area list, the cuts and the order (owner, 11 November: "I want you to scope the future beyond
+the current tasks. What will bring us to an Alpha build of the complete game?"). It serves DESIGN.md's core loop
+("The rail builds the world") and principle 8 (enjoyable alone and together). It bends nothing; the proposed cuts that
+touch a decision are under [Owner decisions](#7-owner-decisions).
+
+**How to read the labels.** **Decided** cites its entry. **Default** is my recommendation inside existing direction,
+taken under "Pick and log" unless he objects. **New** needs his word. Story, characters and names are his
+([decision, 11 November](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s)): every
+option offered here is a placeholder for his pick.
+
+**Research.** Uses the phase map and exit evidence in
+[game-direction](../research/game-direction.md#proposed-phase-map-from-here-to-a-finished-boogle) (phases 2 to 4);
+the Sickle Isles map and art-surface numbers in [map-prototypes](../world/map-prototypes.md); the area table, legs and
+double-backs in [world-blockout](world-blockout.md); the six-hour pacing model in
+[ring-and-economy](../brainstorms/ring-and-economy.md#six-hours-for-one-two-or-three). Departs from game-direction's
+order in one place: the whole-route greybox comes before the target-quality pass is finished, because the owner asked
+for the whole map blocked out first
+([10 November](../decisions-rail.md#d-2026-11-10-block-out-the-whole-map-then)).
+
+**Level findings.** None: this outline places nothing in the world. Each area's plan runs its own level check.
+
+## 1. What Alpha means for Boogle
+
+Decided frame: about six hours for one to three players, a rough target
+([6 November](../decisions-core-loop.md#d-2026-11-06-roughly-six-hours-close-for-one)); it ends back on the original
+island, meeting The Boogler ([Design Table](../decisions-core-loop.md#d-2026-11-02-the-call-on-the-design-table)); every
+area is visited in one playthrough ([6 November](../decisions-rail.md#d-2026-11-06-ring-and-economy-answers)). The
+roadmap's phase map defines Alpha as "every campaign-critical feature works end to end; placeholders allowed".
+
+**The acceptance run (default).** Alpha is reached when all four pass on the live site, default URL, no flags, no
+jump-in seeds, no debug skips:
+
+| Run | What it proves |
+| --- | --- |
+| Solo, fresh room, wake to the ending, over at least three sittings with the room left empty between them and at least one deploy between sittings | One person can finish; the paused world and away credit behave; the save survives an update |
+| Two or three players: one joins after Ring Island, one leaves while carrying and comes back after a server restart, all reach the ending | Drop-in, drop-out and rejoin at every area's state; shared progression and wallet |
+| The bot, wake to the ending, plus `npm run loop -- run` for one to four players | The route is completable by the rules in every allowed order; timings per area |
+| A device run per area on the Mac, on HOTBOX and on an iPad; a phone run recorded as best effort | Frame time reported against the 60 fps target ([owner call](../agents/owner-calls.md#frame-time-60)); nothing reads as broken |
+
+| May be placeholder at Alpha | May not |
+| --- | --- |
+| Terrain and buildings as greybox massing past Ring Island; interiors as empty rooms (the walk-in rule still holds) | A missing gate, bill, ability, line, halt or the ending trigger |
+| Folk, names and lines as marked drafts for the owner; no new Boogler lines | Any change to The Boogler's existing copy |
+| Music as one or two states; ambience beds per area | A save lost to a deploy during the run; a rejoin that loses carried goods or progress |
+| Cosmetics, station houses, train looks, the wardrobe's later slots | A point where a player cannot find the next goal (a P1 by the ranking rule) |
+| Prices and bills as stand-ins tuned on the model | A stall a player feels as broken (seconds, not a slow frame) |
+
+## 2. As built today
+
+World v27 on main. Abilities live in the rules: axe, double jump, pack, hook, glider, breaker (`rail.axe`, `rail.jump`,
+`rail.pack`, `rail.hook`, `rail.glide`, `rail.breaker`).
+
+| Stretch | Measured (people) | Bot-timed (headless loop, a lower bound) | Model's allowance |
+| --- | --- | --- | --- |
+| Home: wake to the pier (lines 1 and 2, forge, hook, glider, boiler, trains) | 24.0 min, two players, v24, 10 November; a fresh pair reached Far Head in 13.3 min on 9 November | 13:07 solo, 12:37 for four | 36 min |
+| Split-rock Works and the smallest Roundhouse: breaker to the last pier footing | 17.3 min, the same two players (before v25's request stops) | 9:11 solo | 36 min |
+| Ring Island build 1: Q7, the bents, the Meet | None yet | 8:07 solo | 36 min, with build 2 |
+| **Whole route, wake to the rivet** | **About 50 to 60 min, estimated**: 43.5 min measured to the last footing plus the Ring stretch | 34:01 solo straight-line, 40:09 calibrated; 29:12 and 32:51 for four | 108 min |
+
+Sources: [playtests](../playtests.md) (10 November, wake 05:19:00 to the last footing 06:02:32 UTC; 9 November co-op);
+`npm run loop -- run` on this branch (it walks straight lines at 5.6 m/s, never rides and has no regrowth); the
+allowances are [world-blockout](world-blockout.md#areas)'s, from the economy model.
+
+**Share of six hours: about 15% (estimated), against the model's 30% for the same three areas.** The built route
+plays at roughly half its allowance for experienced players. No fresh player has played the whole route, so the
+first-time figure is unknown. This is the outline's largest open number (decision 2).
+
+## 3. The finite area list
+
+**Decided:** the Sickle Isles map ([6 and 7 November](../world/map-prototypes.md#owner-decisions-after-the-greybox-7-november));
+the Original Island is the classic island, reached last by a lantern causeway from Bell Rock; materials replace eras;
+big areas unlock a component that upgrades several systems and smaller areas carry puzzles, abilities and discovery
+([5 November](../decisions-core-loop.md#d-2026-11-05-progression-direction)); a far island is first reached by building
+the line over the sea ([2 November](../decisions-core-loop.md#d-2026-11-02-first-reaching-a-far-island)); every building
+can be walked into ([10 November](../decisions-core-loop.md#d-2026-11-10-every-building-can-be-walked-into)). The order
+below (High Port after both branches) is an open agent call ([agent-calls](../agent-calls.md), world-blockout conflict 7).
+**Everything in areas 4 to 9 beyond its name and place on the map is a proposal** from the briefs.
+
+Size is relative to one unit, U, the cost of Split-rock Works (section 6): S about half, M one, L two to three.
+
+| # | Area | Player outcome | Unlocks, and the systems it upgrades | New verb or contrast | First reached by | Target (model) | Exists | Size |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | **Home** | You wake a machine, lay two lines and start trains | Logs, stone, rails; axe, double jump, pack, hook, glider | Chop, haul, lay; drag the beam | The arrival | 36 min | Built; town growth from cargo is not (slice 5) | Done |
+| 2 | **Split-rock Works** and the Roundhouse | You cast footings and start a line over the sea | Footings: the pier, the crossing's bents, the wagon | Strike seams; carry heavy, alone or helped | Line 2's quarry halt | 36 min | Built (v22 to v25) | Done (1 U) |
+| 3 | **Ring Island** | The line meets the islanders' half; you bring steel home | Steel: the longer boiler (20 to 25 m/s, one more car), the bigger cradle, the first real garage install | The Meet: glide the gap, brace, rivet; then thread the ring | Building the crossing | 36 min | Build 1 on main bar R5b and R6; build 2 (steel works, boiler fit, the saddle) not built | Build 2: M |
+| 4 | **High Gorge** | You climb a split sea stack and wire it with copper | Copper: powered pick (harvest rate, breaks plugs), hook reel (longer pulls), the station lift | Vertical play: hook up, mine, ride a lift | The stack line from Ring Island's halt, 1.7 km | 72 min as first branch | Map, blockout massing, a line catalog entry; station concept (agent call) | L |
+| 5 | **Bell Rock** and the bay shortcut | You close the first loop: Home is a minute away | The shortcut (rides fall from 5.2 to 2.9 min); crystal seeds, by hand | A junction on two levels; the first ride that passes Home | The stack incline down from the Gorge | 30 min | Map, blockout, catalog | M |
+| 6 | **Canopy Town** | You reach the forest town behind the Wall | Fibre: carry sling (back capacity), glider cloth (glide speed), seat bills | Carry more, glide further; a town in trees | The bay line from Bell Rock, 1.2 km | 42 min as second branch | Map, blockout, catalog | L |
+| 7 | **Sea cave, Saltpan, High Port** | You break the plug you saw on day one and build the port | Town services, the harbour crane, the faster engine; a four-material refit | The big double-back; salt-flat sliding; a harbour | The cave line from Home's West landing | 48 min | Map, blockout, catalog | L, the largest |
+| 8 | **The White Wall line** | The ring closes and trains lap the whole map | Crystal collars for the one deep span; the lap; the service train as express | One exceptional crossing; the first full lap, through Ring Island's ring | From High Port north over six chalk islets, 3.8 km | 48 min | Map, blockout (one islet kit), catalog | M to L |
+| 9 | **Lantern Notch, the causeway, the Original Island** | You light the lantern, ride to The Boogler's island and meet him | The ending; the world stays open after ([decided](../decisions-core-loop.md#d-undated-after-the-finale)) | A long glide to the arch; the last ride | The Notch line, then the causeway from Bell Rock, 0.75 km | 18 min | Classic island geometry (`src/island`); map, blockout, catalog; no ending flow | M |
+
+Targets sum to 366 minutes (6.1 h); they are the model's allowances, not measurements.
+
+### High Gorge and Canopy Town, side by side
+
+[docs/world/README.md](../world/README.md) still describes the two as substitutes ("High Gorge **or** Canopy Town").
+The map the owner chose later visits both, with a choice of order at Ring Island, and his 6 November answer is that
+every area is visited. So the live question is the order choice, not which area exists.
+
+| | High Gorge | Canopy Town |
+| --- | --- | --- |
+| Land | Two basalt stacks, 370 × 300 m each, 85 m tall, a 90 m split | A 720 × 600 m forest isle at 12 m, mother trees to 150 m |
+| Gives | Copper; powered pick; hook reel | Fibre; carry sling; glider cloth |
+| Changes the play by | Height and machines: builds on the hook and the breaker | Range and load: builds on the glider, just used at the Meet |
+| Later locks it opens | The sea cave at Home (seen from spawn), the route's main double-back | The glide from Canopy's ledge to the Notch, the ending's approach |
+| If first, the rail built | Stack line 1.7 km, then the incline to Bell Rock 1.16 km | Bay trestle 1.43 km (built in this order only), then Bell Rock to Canopy 1.2 km |
+| Hard parts | The halt is at 3 m and the town at 85 m (a stair always, a lift from copper) | The largest walkable footprint; the line enters through a 70 m cleft in the Wall |
+| If cut | The sea cave and High Port lose their key; the Port's bill loses a material | The ending loses its glide and its ledge; seats lose fibre |
+
+**Recommendation (new): build both, High Gorge first, as one fixed order through the greybox and Alpha.** It gives the
+biggest contrast after a glide-heavy Ring Island, puts the day-one lock's key in hand earliest, and places glider cloth
+next to the glide that uses it. It cuts the bay trestle (1.43 km of single-use track), the second service plan, the
+second branch's either-material bills and one whole bot route and acceptance run: about half a unit of build and a
+quarter of the proving. The order choice stays in the data (`src/sickle/world-lines.ts` already carries both stage
+numbers) and can return for Beta if he wants it. This bends "your choice of order"
+([2 November](../decisions-core-loop.md#d-2026-11-02-the-network)), so it is decision 1. Cutting either area outright
+is not recommended: each holds a key the route needs.
+
+### Proposed cuts
+
+| # | Cut for Alpha | Saves | Status |
+| --- | --- | --- | --- |
+| 1 | The order choice at Ring Island (fixed Gorge first) | About 0.5 U and one acceptance route | New (decision 1) |
+| 2 | The mainland stays a backdrop, never walked | A whole extra L area | New (decision 4): two entries disagree |
+| 3 | The end-game tier of goals after the ending (5.8 h in the model) | The economy's second half; the world still stays open | Default; say if you object |
+| 4 | Double-backs: keep three (the sea cave, the first branch's hidden section, the train through the ring), move the Closest Pew and Split-rock's upper seam to Beta | Two set pieces, about 0.5 U | New (decision 7) |
+| 5 | Ability upgrades: one per ability (hook reel, glider cloth), no ladders; no bombs (the breaker is the wall tool) | Two or three abilities and their gates | New (decision 7) |
+| 6 | The express as the service train with a headboard only; the bought passenger set waits | A train set, a bay and its bills | Default: it is stage one of the [decided](../decisions-rail.md#current-rules) express |
+| 7 | Saltpan is a halt with one verb, not an area with a town | About 0.5 U | Default |
+| 8 | Mini-games, opening days, Som and knacks, the dino and guest, day and night with a purpose, rarity boxes | Unbounded | Already parked by decision; listed so Alpha's scope is closed |
+
+### Story and character placeholders (the owner's pick; none decided)
+
+| Where the route needs one | Option A | Option B | Option C |
+| --- | --- | --- | --- |
+| High Gorge's folk | Lift operators who have never been to the top and are fine with that | Two stacks that have not spoken since the split, with one shared clothesline | Echo collectors who rate your shout out of ten |
+| Canopy Town's folk | Everyone lives one branch higher than they can afford | A town run by its laundry rota | Tree surgeons who ask the tree first and wait for an answer |
+| High Port's folk | A harbourmaster with no boats who logs every wave | Dockers on a strike nobody remembers starting | Customs officers who only inspect hats |
+| The meeting on the Original Island | He has been waiting to cut a ribbon and has lost the scissors | The railway turns out to be his franchise, and you were the contractors (the frame parked in [ideas](../ideas.md)) | He does not remember inviting you and tries to sell you a ticket home |
+
+Ring Island's shard religion and its folk are already drafted for him
+([10 November](../decisions-rail.md#d-2026-11-10-ring-island-the-meet-the-shard)). No option above writes a Boogler line.
+
+## 4. Campaign-critical systems
+
+| System | Status on main (checked in code) | Decided | Smallest first build |
+| --- | --- | --- | --- |
+| Roundhouse, garage and upgrades | The smallest Roundhouse is in the rules (v22). The train garage's first build is view only: `garage-state.ts` says "nothing here is sent, saved or read by the simulation"; no install op exists | The works copy, Install as a one-second hold, the longer boiler free as the first steel install ([10 November](../decisions-core-loop.md#d-2026-11-10-the-train-garage-a-works-copy)) | One install op for the longer boiler in Ring Island build 2; trains take it at their next Home stop |
+| Economy and town growth on the server (production-core slice 5) | Not built. `town-facts.ts` keeps `town` and `stone` false "until production-core slice 5 brings train cargo". No fares, wallet or Boogles in `src/sim` | Fares only, shared strongbox, houses bought on plots, first buy a 300-Boogle house ([rewards rules](../decisions-rewards.md#current-rules)); model and 2D page first | Train cargo grows the Village on the server; then the wallet as integers and one plot buy |
+| Paused world and away credit | Built: `railway-away.ts`, `railway-sys-away.ts`, a 30 s pause grace, H of 2 hours, host tests. Not checked here: the forge and depot inside the credit | [6 November](../decisions-rail.md#d-2026-11-06-ring-and-economy-answers) | Each new producer joins the credit in its own area's plan; one empty-room proof per area |
+| The ability set and its gates | Six live (section 2). Not built: powered pick, hook reel, carry sling, glider cloth, crystal collars. Co-op ability grants (option E, approved 6 November) are queued, not built | Abilities are unlocks that open paths; each gets iterative upgrades | Each arrives with its area; option E's flourish lands with the powered pick, the first new one |
+| The ending and the return | Nothing. The classic island exists as geometry only | Ends on the original island with The Boogler; the world stays open | The causeway as a generic server line, an arrival fact, one shared moment and a thanks card; in the greybox first |
+| Onboarding and the first evening | The arrival card, the cart intro, Sleeves, acts derived from progress. [first-evening](../brainstorms/first-evening.md) is proposed and unanswered | Late-arrival onboarding is not a milestone (DESIGN 8) | One watched fresh-player session on the built route; fix only what stops them |
+| Drop-in, drop-out and rejoin | Server-hosted rooms, reconnect scenarios, a restart mid-Works survived in play (10 November) | DESIGN 8: must stay reliable | One join, leave and rejoin proof per area, at its checkpoint |
+| Saves that survive updates | None: the world is at v27 and every bump wipes, by decision | "A world wipe is a new save... in the future we can change this once the game is in a more complete phase" ([8 November](../decisions-process.md#d-2026-11-08-a-world-wipe-is-a-new)) | See below |
+| Audio minimum | Buses (music, ambience, sfx and five more), locomotion and machine sounds. Music content not verified. Firefox throws once a session from the audio | Procedural sound and music | Per area: one ambience bed and its verb's sounds; two music states (arrival, ending) |
+| Phone tier and 60 fps | A detail ladder with a governor; remote device runs. A 27 s freeze on an iPhone at Far Head (9 November); frame time unmeasured for 11 November's perf changes | Lowest target an M4 iPad Pro; phones best effort; frame time is the measure; numbers guide and do not gate ([owner call](../agents/owner-calls.md#performance-guides-not-gates)) | A device run at each area's greybox; the streaming rule below; the pass when he calls it |
+| World streaming | Far ground chunked; Ring Island tiled. One coast texture cannot cover islands past Ring Island (world-blockout conflict 9) | Chunk, cull and stream after the migration ([10 November](../decisions-process.md#current-rules)) | "One island resident at a time" (map-prototypes question 3, unanswered): default yes, proved at High Gorge |
+
+**Saves.** A six-hour campaign is played over several evenings, and main deploys many times a day. The acceptance run
+cannot pass while a bump wipes the room. The migration path has to exist **before the first multi-sitting run, so at
+the start of the Alpha phase**, not before: until then jump-in seeds (`playthrough --from`) stand in for a save and the
+standing "wipe at will" call keeps iteration fast. What it needs: additive changes to the railway's saved snapshot by
+default, a versioned migration step for the rest, and personal things (wardrobe, claims) kept outside the world
+version. This reverses a standing call at its own stated trigger, so it is decision 5.
+
+## 5. Order of work
+
+| Phase | Enters when | Work | Exit evidence |
+| --- | --- | --- | --- |
+| **A. Close what is open** | Now | Ring Island build 1 (R5b, R6); the migration (M13e to g) | The bot plays wake to the island halt on main; `src/proto/place` is gone |
+| **B. The whole route, rough** | A done | Every future line becomes a real server line from the generic-line components with stand-in bills; each area a walkable massing with one stand-in gate for its ability; the causeway and an ending fact; the loop graph and the bot extended to the ending | `npm run loop -- run` and the bot reach the ending with no skips; a table of minutes per area for one to three players against six hours; the owner rides it once. This is the proof of length and pacing before art |
+| **Q. The target-quality session** (alongside B) | Ring Island build 2 playable | One full session on Home, the Works and Ring Island at the quality he accepts, watched with a fresh player | His verdict on experience and quality; a first-time duration for the built route; the cost of a second area (already measured: section 6) |
+| **C. Areas to depth, one at a time** | B's table accepted, cuts ruled | Areas 4 to 9 in route order, each: brainstorm, 2D page, rules, views, bot segment, device run. Systems land with the area that first needs them | Per area: the bot segment, a join and rejoin proof, measured minutes; the remaining areas still fit the rate |
+| **D. Alpha** | Area 9 playable | The save path; the four acceptance runs; P1 fixes only | Section 1's runs pass; the owner freezes or cuts remaining features |
+
+**Two machines, about three agents each.** The Mac judges anything seen; HOTBOX takes rules, server and tests.
+
+| Phase | Mac | HOTBOX |
+| --- | --- | --- |
+| A | Ring Island views and looks; the R6 docs | M13e to g; the full eval sweep; the frame-time pass |
+| B | Walkable massing and gates per area; the route's looks | Server lines and stand-in bills; the loop graph and bot to the ending |
+| Q, with B | The fresh-player session and its fixes; Ring Island build 2's views | Build 2's rules and the first install op; slice 5 (cargo to town growth) |
+| C | The current area's terrain, views and station; the next area's brainstorm and 2D page | The current area's rules and bot segment; the system that area needs; streaming |
+| D | Device runs; readability fixes | The save path; the acceptance scenarios |
+
+**The first three steps after Ring Island build 1 and the migration close:**
+
+1. **Extend the loop graph to the ending with stand-in nodes** (`dev/loop/graph.ts`; areas 4 to 9 with allowance-sized
+   bills and the legs' real lengths) and run it. A day's work that gives the first whole-campaign lower bound and tells
+   decision 2 how short the route really is, before any line is built.
+2. **Ring Island build 2**, with the first real install: the steel works, the longer boiler through the garage, the
+   train through the ring. It closes the first "big area unlocks a component" loop end to end and makes the garage real.
+3. **The greybox route's plan and first leg**: the stack line to High Gorge as a server line with a stand-in bill,
+   while `/brainstorm --panel` runs on High Gorge (a big new area, so the owner call asks for it) and slice 5 starts
+   on HOTBOX.
+
+## 6. Sizing
+
+**The basis, measured from `git log origin/main`** (counts are by keyword on merge titles, so approximate):
+
+| Area | Elapsed | Merged PRs | Commits | Play it added |
+| --- | --- | --- | --- | --- |
+| Split-rock Works and the Roundhouse (J1 to J5, signposting, the late game) | About 2.5 days, 8 to 10 November; first playable in about one | About 25 | About 100 | 17.3 min measured |
+| Ring Island build 1 (R1 to R5 part 1), unfinished | About 2 days so far, 10 to 11 November | About 40 | About 130 | 8 min, bot lower bound |
+
+Main took 131 to 136 PRs a day on 9 to 11 November, so each area used a tenth to a sixth of the studio's merges while
+the migration, Home's station, water and tooling ran beside it. One unit, U, is about 2.5 elapsed days for a
+medium area.
+
+**Applied.** Remaining areas: 13 U (Ring build 2 at 1, Gorge 2.5, Bell Rock 1, Canopy 2.5, the Port 3, the Wall 1.5,
+the ending 1.5). Systems: about 8 U (garage 1, economy 2, saves 1, audio 1, streaming and the perf pass 2, onboarding
+and rejoin proofs 1). The greybox route: about 3 U. That is 24 U, or 60 lane-days; two lanes halve it to about 30.
+
+**The range: roughly 5 to 14 weeks of days like 9 to 11 November** (both machines, the owner answering the same day).
+The low end assumes units run two abreast and large areas cost what the sizes say. The high end assumes large areas
+cost half again as much, which nothing yet contradicts, and that rulings and reviews keep areas mostly serial.
+
+**How weak this is.** Two samples, both medium, both beside Home on line 2's kit, neither with a town of walk-in
+buildings, new island terrain, a new material's producers or streaming. No large area has been built. The minutes are
+experienced players'. Elapsed days were set as much by his answers and by reviews as by building. Usage limits and a
+new model can move the rate either way. Phase B replaces this estimate with a measured one; do not plan against a date
+before then.
+
+## 7. Owner decisions
+
+**Blocks the outline**
+
+1. **Do both branch areas keep a choice of order?**
+   - **Both areas, High Gorge first, fixed for Alpha (recommended).** Saves about half a unit and a second route to
+     prove; the choice can return for Beta.
+   - Both, with the choice at Ring Island, as the map is drawn. Adds the bay trestle, a second service plan and bills
+     that take either material.
+   - One branch only. Saves a large area and 40 to 70 minutes, but the sea cave or the ending's glide loses its key,
+     and the Port's bill is redrawn.
+2. **If the rough route measures well under six hours, what gives?** (The built third plays at about half its
+   allowance.)
+   - **Measure first in phase B, then add puzzles and discovery to the small areas; never larger bills (recommended).**
+     Follows "smaller areas carry puzzles" and his wariness of grinds.
+   - Accept a shorter game, four to five hours. Costs nothing; changes the decided target.
+   - Hold six hours with the economy: town growth and Boogle goals on the main path. Leans on the least-built system.
+3. **What happens on the Original Island at Alpha?**
+   - **The causeway ride, a meeting with The Boogler, one shared moment and a thanks card; the world stays open
+     (recommended).** One medium area. The meeting's premise is his pick from section 3's table or his own.
+   - That, plus a communal finale (the parade in [story-and-finale](../proposals/story-and-finale.md), parked). Adds a
+     ritual system and an absent-friend echo.
+   - A stand-in card only, the real ending at Beta. Smallest, but Alpha then proves no ending flow.
+4. **Is the mainland ever walked?** The log says both: "reachable at the end, and you can walk around it"
+   ([undated](../decisions-core-loop.md#d-undated-the-mainland-port-city)) and, on 7 November, "never reached in the
+   main game".
+   - **A backdrop only; the 7 November call stands and the older entry is archived (recommended).** High Port is the
+     port you walk.
+   - Reached after the ending, post-Alpha. Keeps the old entry as a Beta goal.
+   - Reached in the main game. Adds an area larger than any here.
+
+**Can wait**
+
+5. **When do saves start surviving updates?**
+   - **At the start of the Alpha phase (recommended).** Wipes stay free through phases B and C.
+   - When the first far island is content-complete. Earlier safety for his own evening play; slows every later change.
+   - Not until Beta; Alpha's runs use a frozen build. Cheapest, but the solo acceptance run stops proving updates.
+6. **When is the fresh-player session at target quality?**
+   - **After Ring Island build 2, on the built route, alongside the greybox (recommended).** Earliest read on
+     readability and first-time length.
+   - After the rough route exists, so the fresh player can see the whole shape.
+   - At Alpha only. Risks finding a readability problem six areas late.
+7. **Which of the remaining cuts stand?** (Cuts 4 and 5 in section 3: three double-backs instead of five; one upgrade
+   per ability and no bombs.)
+   - **Both (recommended).** About one unit and several gates saved.
+   - Keep all five double-backs. They reuse built places, about half a unit.
+   - Keep ability ladders. Each rung needs its own gate somewhere on the route.
+
+## 8. Risks, and what sends us back a phase
+
+| Risk | Sign | Back to |
+| --- | --- | --- |
+| The route is far shorter than six hours | Phase B's table reads under four hours solo | Decision 2, before phase C starts |
+| A large area costs far more than 2.5 U | High Gorge passes 8 elapsed days | Re-size section 6; offer cuts before Canopy Town |
+| The next area does not change the play | High Gorge plays as "another bill, further away" in his session | That area's brainstorm, not the whole outline |
+| Generic server lines do not stretch to eight lines and 21 halts | Train rules or the fuzz tests blow up (v27 already pushed the unit job past 10 minutes) | Phase B's first leg; fix the line model before more lines |
+| Streaming: islands past Ring Island break the coast texture or the frame time | The device run at High Gorge's greybox | The streaming step, ahead of Canopy Town; gameplay is not cut for it without his word |
+| A late save path corrupts or wipes during the acceptance run | Any loss in phase D | Phase D's first step; the runs restart |
+| Hot files (`rail-seed.ts`, the bot, `place.md`) make two lanes collide | Rebase conflicts on most ships | Split them before phase C (already queued) |
+| Rulings become the limiter | Areas wait on answers more than a day | Fewer, larger decision pages per area; more defaults logged |
+| Usage limits or a GitHub outage | A paused lane | The standing calls already cover both; the range's high end assumes some |
+
+**Room safety and mixed builds.** Nothing here changes a wire shape. Each area's plan carries its own `WORLD_NS` bump
+under the standing calls until decision 5's trigger.
+
+## Contradictions found while checking
+
+1. [docs/world/README.md](../world/README.md) version 2 calls High Gorge and Canopy Town substitutes; the chosen map
+   and [world-blockout](world-blockout.md) visit both.
+2. The mainland: two entries in force disagree (decision 4). "A last link from Home to the port" (2 November) also
+   predates the causeway ending.
+3. [direction.md](../direction.md) is at 8 November (phase 1, world v21, Split-rock "next"), and orders the
+   target-quality pass before any route, which the 10 November blockout call overtook.
+4. Ring Island's entry says build 1 is v26 and build 2 v27; build 1 shipped as v27.
+5. [money](../brainstorms/money.md) (Bucks, a comic score) is still listed as an open brief, but the Boogles decisions
+   of 10 and 11 November replaced its premise; the six-hours entry still says "Bucks".
+6. [world-blockout](world-blockout.md)'s tables keep the Ring top halt and the crane-lift leg, which the 10 November
+   rail-map ruling removed; `src/sickle/world-lines.ts` still has "Ring top".
+7. [production-core](production-core.md)'s slices 2 to 4 are unticked though built; slice 7 is M13e.
+8. DESIGN.md's four sync kinds have no row for the railway's server-replicated state (`namespace.ts`, v14).
