@@ -5,7 +5,8 @@
 // mean. A catalog slot or singleton that is missing throws.
 //
 //   singletons     rail, railClock, beam, forge, forgeClock, cart, boiler, works, worksClock, shed
-//   by slot        job, jobRun, qjob, qjobRun, tree, hardwood, rock, train, line (and the lists below)
+//   by slot        job, jobRun, qjob, qjobRun, tree, hardwood, rock, train, line, yard, yardClock, town (and the
+//                  lists below)
 //   by key or id   account(w, pid) (undefined when absent), pile(w, id), outcomes(w), piles(w), accounts(w)
 import type { AnyComponent, RowOf, World } from '../ecs/index.ts';
 import { RAILWAY_SOURCES } from './railway-layout.ts';
@@ -13,6 +14,7 @@ import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import {
   Account,
   Aperture,
@@ -33,10 +35,13 @@ import {
   RailClock,
   Rock,
   Shed,
+  Town,
   Train,
   Tree,
   Works,
   WorksClock,
+  Yard,
+  YardClock,
 } from './railway-components.ts';
 
 export type Read<C extends AnyComponent> = Readonly<RowOf<C>>;
@@ -106,6 +111,12 @@ export const hardwoods = listed(hardwood, 2);
 export const rocks = listed(rock, RAIL_ROCKS.length);
 export const trains = listed(train, RAIL_TRAINS.length);
 export const lines = listed(line, RAIL_LINES.length);
+// Slice 5's town economy (docs/plans/slice5-town-economy.md).
+export const yard = slotted(Yard);
+export const yardClock = slotted(YardClock, Yard);
+export const town = slotted(Town);
+export const yards = listed(yard, TRADE.yards.length);
+export const towns = listed(town, TRADE_TOWNS);
 
 export const account = (w: World, pid: string): Read<typeof Account> | undefined => {
   const id = w.lookup(Account, pid);
