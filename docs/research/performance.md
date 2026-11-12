@@ -374,3 +374,27 @@ DPR 2, MSAA 4), 2–5 runs a build, interleaved, at load averages of 14–49 (th
   GPUs and CPUs run as slowly as the deadline allows, so ms a frame there is not work).
 - The Windows run on f9ecb4749 (head 11.68 / 15.87 ms) has no earlier run on that machine to compare with.
 - Not tested on a device. Safari's own frame cost was not measured here (no WebKit automation on this Mac).
+
+## 10. The ground's draw, measured in triangles (11 November, on main 5b2896a5)
+
+The Windows D3D12 run (960x600) had the Place ground as one 241,836-triangle draw (34% of the frame) from Ring Island, a
+kilometre away. `farGround` (Chunked LOD tiles, `src/place/far-ground.ts`) already existed, off, and the Mac found no GPU
+gain (section 7: the M1 Max is not triangle-bound). It is now on by default. `dev/look/evals/terrain-draws.ts` wraps
+`renderer.backend.draw` and counts triangles and draws per completed frame at fixed poses (`--real`, 960x600, fov 62):
+
+| pose | main tris before / after | main draws | shadow tris / draws (unchanged) |
+| --- | --- | --- | --- |
+| village green | 541,324 / 404,452 | 175 / 179 | 91,748 / 68 |
+| Far Head (`--rail-seed ring-joined`) | 1,254,490 / 1,147,540 | 658 / 670 | 142,846 / 88 |
+| Ring Island halt (same seed) | 590,502 / 381,514 | 102 / 102 | 150,110 / 102 |
+
+At the green the ground's draw went from 241,836 to about 105k (the always-drawn offshore rings and cove are 32,848 of
+that); at the Ring Island halt the main island's tiles are culled or coarse. Stills off and on at the same camera
+(`.look/terrain-{green,head,ring,south}-{off,on}-still.png`): no cracks, coastline, ridgelines or shadows differ to the eye
+(the `south` pair looks from the Ring Island pier at the main island). Mac frame time was not compared (load 3 to 15 from
+other agents; section 7 says it would not show). Not tested on a device.
+
+Left (expected win): the 32,848-triangle offshore ring/cove mesh is always drawn (about 30k, split by side); Ring
+Island's own ground (199,960 triangles, one draw, `ring-island-ground`) wants the same tiles; `place kit rail` chunks are
+about 31k triangles each and dozens draw at Far Head; trees are already instanced but one batch with
+`frustumCulled = false`.
