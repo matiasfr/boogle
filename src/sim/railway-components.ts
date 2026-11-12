@@ -5,8 +5,8 @@
 //
 //   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
 //                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
-//                                  outcome, line, aperture (v27), yard(+yardClock), town(+townClock), till (slice 5); RAIL_REPLICATED
-//                                  is the wire
+//                                  outcome, line, aperture (v27), yard(+yardClock), town(+townClock), till (slice 5),
+//                                  steel(+steelClock) (ring-island-build2, R1); RAIL_REPLICATED is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 import { createWorld, defineComponent, type AnyComponent } from '../ecs/index.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
@@ -130,6 +130,11 @@ export const Train = defineComponent(
     freight: 'int',
     // R3: riders aboard, all bound for the route halt ahead of it (one destination per route).
     riders: 'int',
+    // Steel riding home on the kit car's deck (ring-island-build2, R2; ruling C): any line 2 train, STEEL.trip a trip.
+    steel: 'int',
+    // The boiler this train wears (ring-island-build2, R3): BOILER_SPEED's row (./railway-train.ts), 0 the standard
+    // one. It takes its line's fit (`Line.boiler`) standing at the Village, never in flight.
+    boiler: 'u8',
   },
   { key: 'slot' },
 );
@@ -143,12 +148,36 @@ export const Aperture = defineComponent(
   { set: 'int', rack: 'int', cw: 'u8', brace: 'u8', joined: 'int' },
   { defaults: { brace: 1, joined: -1 } },
 );
+/** Ring Island's steel works (docs/plans/ring-island-build2.md, R1; rules in ./railway-sys-steel.ts): the kit lying in
+ * the island yard off the train (`yardLogs`, `yardRails`), what has been fed into its bill (`logs`, `rails`, STEEL's
+ * eight and twelve), `lit` the tick the bill filled (-1 not yet), the steel on its `rack` and `poured` in all. `outLogs`
+ * and `outRails` count what the Village has ever loaded for it (logs made for the kit, rails off the forge rack; the
+ * depot's `DEPOT_OUT` and `shelfOut` for the works), so the conserved counts and the kit's bounds hold. Nothing here
+ * before the rivet. */
+export const SteelClock = defineComponent('steelClock', { lastCast: 'int' }, { replicate: false });
+export const Steel = defineComponent(
+  'steel',
+  {
+    yardLogs: 'int',
+    yardRails: 'int',
+    logs: 'int',
+    rails: 'int',
+    lit: 'int',
+    rack: 'int',
+    poured: 'int',
+    outLogs: 'int',
+    outRails: 'int',
+  },
+  { requires: [SteelClock], defaults: { lit: -1 } },
+);
 /** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
- * and the tick a train last left its start end and its far end (-1 never), for the headway hold. */
+ * and the tick a train last left its start end and its far end (-1 never), for the headway hold. Since v28
+ * (ring-island-build2, R3) the room's boiler fit for the line (`boiler`, BOILER_SPEED's row; rail.install) and the
+ * tick it was installed (`fitted`, -1 never). */
 export const Line = defineComponent(
   'line',
-  { slot: 'int', req: 'int', left0: 'int', left1: 'int' },
-  { key: 'slot', defaults: { left0: -1, left1: -1 } },
+  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int' },
+  { key: 'slot', defaults: { left0: -1, left1: -1, fitted: -1 } },
 );
 /** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
 export const WorksClock = defineComponent('worksClock', { lastCast: 'int' }, { replicate: false });
@@ -179,6 +208,8 @@ export const Shed = defineComponent(
     table: 'u8',
     tableRev: 'int',
     ready: 'int',
+    // Steel landed in the Roundhouse bay off line 2's trains (ring-island-build2, R2): shown, never spent in build 2.
+    steel: 'int',
   },
   { defaults: { fitted: -1, ready: -1 } },
 );
@@ -296,6 +327,8 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Town,
   TownClock,
   Till,
+  Steel,
+  SteelClock,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
@@ -328,5 +361,6 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   TRADE.yards.forEach(({ cap }, slot) => w.spawn([Yard, { slot, stock: cap, made: cap }], [YardClock, {}]));
   for (let slot = 0; slot < TRADE_TOWNS; slot++) w.spawn([Town, { slot }], [TownClock, {}]);
   w.spawn([Till, {}]);
+  w.spawn([Steel, {}], [SteelClock, {}]);
   return w;
 }

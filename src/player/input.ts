@@ -359,6 +359,8 @@ export function initInput() {
     input.triggerL = input.triggerR = 0;
     releaseJump();
     cancelCharge();
+    // A held interact (the boiler install's hold) lets go through its wrapped release, as a keyup would.
+    triggerAction('interact', 'up');
   }
   releaseInputFn = releaseAll;
   addEventListener('blur', releaseAll);

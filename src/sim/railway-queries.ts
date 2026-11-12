@@ -27,9 +27,11 @@ import {
   QJobRun,
   Rail,
   Shed,
+  Steel,
   Train,
   Works,
 } from './railway-components.ts';
+import { STEEL } from './railway-ring-layout.ts';
 
 export type Row<C> = C extends { defaults: infer R } ? { -readonly [K in keyof R]: R[K] } : never;
 const TIMING_KEYS = Object.keys(LINE_TIMING) as (keyof LineTiming)[];
@@ -41,8 +43,8 @@ export const boilerId = (w: World) => w.single(Boiler);
 export const trainId = (w: World, slot: number) => w.lookup(Train, slot)!;
 export const lineId = (w: World, line: number) => w.lookup(Line, line)!;
 export const LINE2_SLOTS = LINE_SLOTS[LINE2]!;
-/** What line 2's trains carry between them (a train-fed job's kit, footings). */
-export const aboard = (w: World, key: 'logs' | 'rails' | 'foot') =>
+/** What line 2's trains carry between them (a train-fed job's kit or the steel works', footings, steel). */
+export const aboard = (w: World, key: 'logs' | 'rails' | 'foot' | 'steel') =>
   LINE2_SLOTS.reduce((n, k) => n + w.get(Train, trainId(w, k))![key], 0);
 /** The slot the footing wagon is coupled to, or -1. */
 export const wagonSlot = (w: World) => LINE2_SLOTS.find((k) => w.get(Train, trainId(w, k))!.wagon) ?? -1;
@@ -289,6 +291,20 @@ export function footingsOwed(w: World, line: number) {
 /** The footings the wagon is to bring now: the pier's until Q7 is laid, then the ring's (the two never overlap: Q7
  * opens only once the pier's twelve are set). */
 export const footOwed = (w: World, aboard: number) => (q7Laid(w) ? ringOwed(w, aboard) : pierOwed(w, aboard));
+export const steelId = (w: World) => w.single(Steel);
+/** The rivet is struck: Ring Island is open and its steel works takes a kit (ring-island-build2, R1). */
+export const ringJoined = (w: World) => w.get(Aperture, apertureId(w))!.joined >= 0;
+/** What the steel works' kit still needs brought (design review, finding 2: nothing may be lost from the bill): its bill
+ * less what is fed, in the yard and aboard line 2's trains. Logs and rails on a back or a pile are ordinary cargo and not
+ * counted, so a train brings the shortfall again. None before the rivet, none once lit. */
+export function steelNeed(w: World) {
+  const s = w.get(Steel, steelId(w))!;
+  if (!ringJoined(w) || s.lit >= 0) return { logs: 0, rails: 0 };
+  return {
+    logs: Math.max(0, STEEL.logs - s.logs - s.yardLogs - aboard(w, 'logs')),
+    rails: Math.max(0, STEEL.rails - s.rails - s.yardRails - aboard(w, 'rails')),
+  };
+}
 /** The active train-fed job's kit (Q6's or Q7's) is still owed to its halt and none of it is aboard: the train must go
  * home to the village to load it. */
 export function kitOwed(w: World, r: Readonly<RailTrain>) {

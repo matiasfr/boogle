@@ -33,6 +33,10 @@ export const RAIL_STOPS = {
   braced: 'leaf braced',
   'ring-joined': 'ring joined',
   'ring-ride': 'ring ridden',
+  // Ring Island build 2's part (dev/look/bots/railway-steel.ts), from `--from ring-joined` or a steel seed: its checkpoints.
+  'steel-lit': 'steel works lit',
+  'steel-home': 'steel home',
+  'boiler-long': 'boiler installed',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
@@ -44,6 +48,12 @@ export const RAIL_FROM = {
   'deck-laid': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
   'gap-footed': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
   'leaf-raised': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
+  // Ring Island build 2 (R5): the steel bot rides out, feeds the works, brings the steel home and holds the Install.
+  // Each phase reads the rows first, so it resumes from the steel seeds as well.
+  'ring-joined': { railFrom: 'steel', after: 'ring-joined', bot: 'railway-steel-bot.ts' },
+  'steel-kit': { railFrom: 'steel', after: 'ring-joined', bot: 'railway-steel-bot.ts' },
+  'steel-lit': { railFrom: 'steel', after: 'steel-lit', bot: 'railway-steel-bot.ts' },
+  'steel-home': { railFrom: 'steel', after: 'steel-home', bot: 'railway-steel-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [

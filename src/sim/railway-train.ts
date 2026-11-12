@@ -22,9 +22,16 @@ export const TRAIN = {
   dwellTicks: 50,
   wakeTicks: 60,
   kitWaitTicks: 60,
-  /** The block rule's gap round the circuit: a train's length (RIDER_SPAN, the footing wagon's tail) plus 20 m. */
+  /** The block rule's gap round the circuit (27.4 m, set as the footing wagon's tail, RIDER_SPAN, plus 20 m). Since
+   * v31's 8.2 m extent ahead of the pose (TRAIN_EXTENT), the nose-to-tail clearance at this floor is 10.2 m (R3 review). */
   sepCm: 2740,
 } as const;
+/** A train's cruise (cm a tick) by the boiler it wears (`Train.boiler`; ring-island-build2, R3): the standard boiler
+ * (its line's own speed, 20 m/s) and the longer one (25 m/s, line 2's install). Row 0 is never read for a speed: a
+ * train on the standard boiler runs at its line's, so every v27 leg is bit for bit (test/railway-install.test.ts). */
+export const BOILER_SPEED = [200, 250] as const;
+/** The last boiler row. */
+export const BOILER_MAX = BOILER_SPEED.length - 1;
 /** A line's cruise (cm a tick) and acceleration (cm a tick²); TRAIN's by default. `brake` (cm a tick²), when set, is
  * the leg's braking rate instead of `accel` (a halt's eased end stop: stopKin). */
 export type TrainKin = { readonly speed: number; readonly accel: number; readonly brake?: number };
@@ -111,6 +118,8 @@ export type RailTrain = {
   /** The tick it last came to a stand (v27): the balanced hold's cap runs from here, so a lever ask, which restarts
    * `depart` (the dwell), never restarts the cap. At most `depart`. */
   arrived: number;
+  /** The boiler it wears (v28; BOILER_SPEED's row): its cruise. Absent reads 0 (a fixture line's row). */
+  boiler?: number;
 };
 /** Train `slot` standing at its home, asleep. */
 export function trainIdle(slot: number): RailTrain {
@@ -209,16 +218,28 @@ export function trainLegSpeed(dist: number, t: number, v0 = 0, kin: TrainKin = T
   return p.dec * (p.total - t);
 }
 
-/** The kin a leg to halt `to` (-1 a signal) on `track` runs at: its line's, braking at the halt's `brake` when it
- * ends there going up (track 0). */
-export function stopKin(line: LineRef, to: number, track: number): TrainKin {
-  const l = lineDef(line),
-    brake = track === 0 && to >= 0 ? l.halts[to]?.brake : undefined;
+/** A train's cruise on `line` wearing `boiler`: the line's own on the standard boiler, else BOILER_SPEED's. */
+export const boilerSpeed = (line: LineRef, boiler = 0) => (boiler > 0 ? BOILER_SPEED[boiler]! : lineDef(line).speed);
+/** The kin a train wearing `boiler` runs at on `line` (its line's own object on the standard boiler). */
+export function boilerKin(line: LineRef, boiler = 0): TrainKin {
+  const l = lineDef(line);
+  return boiler > 0 ? { speed: boilerSpeed(line, boiler), accel: l.accel } : l;
+}
+/** The kin a leg to halt `to` (-1 a signal) on `track` runs at, wearing `boiler`: its line's (the boiler's cruise),
+ * braking at the halt's `brake` when it ends there going up (track 0). With `boiler` 0 it is v27's, unchanged. */
+export function stopKin(line: LineRef, to: number, track: number, boiler = 0): TrainKin {
+  const l = boilerKin(line, boiler),
+    brake = track === 0 && to >= 0 ? lineDef(line).halts[to]?.brake : undefined;
   return brake === undefined ? l : { speed: l.speed, accel: l.accel, brake };
 }
-// The pose is the row's (its `to` and `track` pick the braking rate) and its line's kin alone (never a stop table).
+// The pose is the row's (its `to` and `track` pick the braking rate, its `boiler` the cruise) and its line's kin alone
+// (never a stop table).
 const kinOf = (row: Readonly<RailTrain>, line?: LineRef): TrainKin =>
-  line === undefined ? TRAIN : typeof line === 'number' && !RAIL_LINES[line] ? TRAIN : stopKin(line, row.to, row.track);
+  line === undefined
+    ? TRAIN
+    : typeof line === 'number' && !RAIL_LINES[line]
+      ? TRAIN
+      : stopKin(line, row.to, row.track, row.boiler ?? 0);
 const legDist = (row: Readonly<RailTrain>) => Math.abs(row.dest - row.from);
 /** Which way the train goes: its track's (+1 up, -1 down). */
 export const trainDir = (row: Readonly<{ track: number }>) => (row.track ? -1 : 1);

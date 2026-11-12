@@ -3,7 +3,7 @@
 //
 //   railwayCheck(world)            the load check: archetypes, counts, then every domain invariant on the world
 //                                  (accounts, piles, outcomes, catalog here; ./railway-check-line1.ts, -line2.ts,
-//                                  -trains.ts, -works.ts, -ring.ts, -trade.ts; the conserved logs)
+//                                  -trains.ts, -works.ts, -ring.ts, -trade.ts, -steel.ts; the conserved logs)
 //
 // A build-out's component adds its check as its own function in its own railway-check-<domain>.ts, called from
 // checkRailway, and one entry per `throw` to test/fixtures/railway-bad-worlds.ts.
@@ -42,6 +42,8 @@ import {
   Till,
   Town,
   TownClock,
+  Steel,
+  SteelClock,
   Train,
   Tree,
   Works,
@@ -73,6 +75,7 @@ import { checkTrains } from './railway-check-trains.ts';
 import { checkWorks } from './railway-check-works.ts';
 import { checkRing } from './railway-check-ring.ts';
 import { checkTrade } from './railway-check-trade.ts';
+import { checkSteel } from './railway-check-steel.ts';
 
 const ARCHETYPES = [
   [Rail, RailClock],
@@ -96,6 +99,7 @@ const ARCHETYPES = [
   [Yard, YardClock],
   [Town, TownClock],
   [Till],
+  [Steel, SteelClock],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the world. */
 export function railwayCheck(w: World) {
@@ -127,6 +131,7 @@ export function railwayCheck(w: World) {
     [Yard, TRADE.yards.length],
     [Town, TRADE_TOWNS],
     [Till, 1],
+    [Steel, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
@@ -139,7 +144,7 @@ const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
 };
 /** The domain's invariants on the world (M8b): the accounts, piles, outcomes and catalog here, then line one, line
- * two, the trains, the Works, the ring and the trade (./railway-check-*.ts), then the conserved logs. Every row and slot is
+ * two, the trains, the Works, the ring, the trade and the steel works (./railway-check-*.ts), then the conserved logs. Every row and slot is
  * there: railwayCheck counted them first. */
 function checkRailway(w: World) {
   const ts = trees(w),
@@ -246,6 +251,7 @@ function checkRailway(w: World) {
   checkWorks(w);
   checkRing(w);
   checkTrade(w);
+  checkSteel(w);
   const counts = worldCounts(w);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) bad('conservation');
 }

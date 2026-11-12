@@ -75,7 +75,7 @@ export const railSession = (w: World, pid: string, epoch: number): boolean => w.
 /** The wire's job clock: `ahead` and `end` follow from what the tick advanced (written only when they change). */
 export const jobClock = defineSystem<Tick | undefined>(
   'rail.jobClock',
-  { reads: [JobRun, QJobRun], writes: [Job, QJob], phase: 'tick', order: 5 },
+  { reads: [JobRun, QJobRun], writes: [Job, QJob], phase: 'tick', order: 6 },
   (w) => {
     const settle = (c: typeof Job | typeof QJob, run: typeof JobRun | typeof QJobRun, id: number) => {
       const j = w.get(c, id)!,

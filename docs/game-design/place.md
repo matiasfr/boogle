@@ -769,6 +769,27 @@ readable from Home is not on the leaf: it flies from its own fixed pole on a foo
 **Not built yet:** the splash, the creak on the pawl, the lit bracket, the rivet's glint, and a tumble for the one walked
 clear. Not tested on a device.
 
+**The steel works, a greybox (12 November 2026; [ring-island-build2](../plans/ring-island-build2.md), V1).** On the
+island halt's works yard, east of the east platform, from v31: a grey open shed stands over the drop hammer with a
+doorway facing the platform, a box loader and a rack stand beside the platform's south half, and two pallets lie on
+the open deck between the tarp and the shed. Once the rivet is struck a bill sign under the shed's roof reads
+"logs 0/8  rails 0/12"; the first train out unloads the kit onto the pallets. **Take logs** and **Take rails** at the
+stacks put them on your back ("Your back is full" when it is); **Feed the works** at the doorway puts your logs and
+rails into the bill, and with an empty or wrong back shows blocked with "Bring logs or rails". When the bill is full the
+server lights the works: the sign reads "lit  steel n/12" and orange steel blocks appear on the rack, up to six, for
+the next train's kit car. Every label here is a placeholder. No sound or effect yet. **On the train (V2):** steel
+rides home as orange blocks on the kit car of whichever line 2 train took it, up to six; a train that has taken the
+longer boiler at the Village wears the longer engine (a longer frame and barrel ahead of the same cab), drawn only:
+its collider is the short engine's. **At Home (V3):** from the rivet a grey pallet and a post stand on the open ground
+east of the Roundhouse table, between line 2's two roads. Steel that has come home lies on the pallet as orange blocks,
+up to twelve, and the post's lamp turns orange. Standing by the post, "Install the longer boiler" is a hold of 1.2 s
+(the post's bar fills; a tap reads "Hold to install"); while the footing wagon is rolling out it shows blocked with
+"The table's busy". Nothing is predicted: when the server accepts, every page in the room shows the banner "Longer
+boiler installed / Line 2's trains take it at the Village", the lamp and bar go green and the prompt is gone; each
+line 2 train takes the boiler the next time it stands at the Village. The steel stays on the pallet (nothing spends
+it yet). No sound, no camera move. The garage's own install moment (`?home=b`) is not wired and waits for the Home
+flip. Not tested on a device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 After the pier the forge casts its third thing, the **breaker**, onto the boiler's old pedestal under the forge's

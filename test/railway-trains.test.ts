@@ -176,15 +176,15 @@ test("line 2's cycle and headway: 92.4 s to the pier, 72 s before it, 105 s to t
   // track outside it by a train's lead, at least a train's gap from the end stop (review of v26, P2-1).
   const [village, farHead] = endBlocks(LINE2, before);
   assert.deepEqual([village.from, village.to, village.signal], [1700, 5400, 6300]);
-  assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48380]);
+  assert.deepEqual([farHead.from, farHead.to, farHead.signal], [49000, 52400, 48180]);
   assert.deepEqual(
     endBlocks(LINE2, pier).map((b) => b.signal),
-    [6300, 52980],
+    [6300, 52780],
     "the far end's block moves to the pier's stub",
   );
   assert.deepEqual(
     endBlocks(LINE2, railhead).map((b) => b.signal),
-    [6300, 80580],
+    [6300, 80380],
     "and on to the Railhead's at Q7",
   );
 });
@@ -666,12 +666,12 @@ test('the fixture line: three trains, a 1173 m line, 138.8 s round, 462 ticks ap
   assert.equal(Math.floor(cycleTicks(V, joined) / 3), 462);
   assert.equal(headTicks(V, joined), Math.floor((1388 * TRAIN_HEAD_PCT) / 300));
   const [, island] = endBlocks(V, joined);
-  assert.deepEqual([island.from, island.to, island.signal], [113700, 119000, 113080]);
+  assert.deepEqual([island.from, island.to, island.signal], [113700, 119000, 112880]);
   // The railhead's block and signal follow its stop: at bent 6 and at bent 13, its end in turn.
   const [, at6] = endBlocks(V, line2Stops(7, 0)),
     [, at13] = endBlocks(V, line2Stops(7, 7));
-  assert.deepEqual([at6.from, at6.to, at6.signal], [81200, 85200, 80580]);
-  assert.deepEqual([at13.from, at13.to, at13.signal], [95200, 99200, 94580]);
+  assert.deepEqual([at6.from, at6.to, at6.signal], [81200, 85200, 80380]);
+  assert.deepEqual([at13.from, at13.to, at13.signal], [95200, 99200, 94380]);
   // v26's ends are unmoved at Q6 (the catalog's line and its copy, the same row).
   assert.deepEqual(endBlocks(LINE2, TRAIN_STOPS[LINE2]!.slice(0, 4)), endBlocks(V, line2Stops(6)));
 });
@@ -698,7 +698,7 @@ test('an up train into the open island stands at 119000 on its row alone, turns 
   assert.ok(f.rows[0]!.dest < 119000, 'homeward');
 });
 
-test("a second up train holds at the island's signal (113080) until the first is out of its block", () => {
+test("a second up train holds at the island's signal (112880) until the first is out of its block", () => {
   const stops = line2Stops(7, 7, true);
   const f = new FixtureLine(stops);
   f.rows = [standingAt(stops, ISLAND, 1, 0), standingAt(stops, HEAD, 0, 0), standingAt(stops, 0, 0)];
@@ -709,7 +709,7 @@ test("a second up train holds at the island's signal (113080) until the first is
     assert.ok(t < 4000, 'B reaches the island');
     stepF(f, t);
     const b = f.rows[1]!;
-    if (b.to === -1 && b.dest === 113080) held = true;
+    if (b.to === -1 && b.dest === 112880) held = true;
     const aIn = alongF(f, 0, t) + TRAIN_EXTENT.aheadCm > block.from;
     if (aIn)
       assert.ok(alongF(f, 1, t) + TRAIN_EXTENT.aheadCm <= block.from, `B is out of the block while A is in (${t})`);
@@ -758,10 +758,10 @@ test("endMoved at Far Head is v26's Q6 hunk, row for row, on the world", () => {
   while (qCompleted(probe.w) < 6) railTick(probe.w, ++probe.t);
   let turned = 0,
     asked = 0;
-  for (const from of [40000, 46000, 48300, 48380, 48381, 48500, 50000, 52000]) {
+  for (const from of [40000, 46000, 48100, 48180, 48181, 48500, 50000, 52000]) {
     const w = restore(base.w);
     for (let t = base.t + 1; t < probe.t; t++) railTick(w, t);
-    // A runs up to Far Head as the line's end, its nose `from` + 6.2 m at the opening tick; B stands at the village.
+    // A runs up to Far Head as the line's end, its nose `from` + 8.2 m at the opening tick; B stands at the village.
     Object.assign(w.mut(Train, trainId(w, A))!, runRow(from, 2, 52400, probe.t));
     Object.assign(w.mut(Train, trainId(w, A))!, { at: 1 });
     Object.assign(w.mut(Train, trainId(w, B))!, standingAt(TRAIN_STOPS[LINE2]!, 0, 0, probe.t));
@@ -795,8 +795,8 @@ test("endMoved at Far Head is v26's Q6 hunk, row for row, on the world", () => {
 test("at Q7 a train past the Pier stub's turnout (s 536 m) turns back there; one short runs on with no Pier stop", () => {
   for (const [from, turns] of [
     [52000, false],
-    [52979, false],
-    [52981, true],
+    [52779, false],
+    [52781, true],
     [60000, true],
   ] as const) {
     const q6 = line2Stops(6),
@@ -822,8 +822,8 @@ test("at Q7 a train past the Pier stub's turnout (s 536 m) turns back there; one
 test("on the rivet a train past the railhead stub's turnout turns back; one short stops there once and runs on", () => {
   for (const [from, turns] of [
     [90000, false],
-    [94579, false],
-    [94581, true],
+    [94379, false],
+    [94381, true],
     [97000, true],
   ] as const) {
     const before = line2Stops(7, 7),

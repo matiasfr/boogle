@@ -1,5 +1,5 @@
 > **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Ring Island
-> build 2 as a systems-first greybox, `WORLD_NS` v28. Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
+> build 2 as a systems-first greybox, `WORLD_NS` v31 (main took v28 for slice 5; v29 is the Quarry stone stop's and v30 is the riders step's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
 > in the bill, steel on the kit car, the works prompt shown blocked).
@@ -100,7 +100,7 @@ generator, no `env` fact. The sim is in `src/sim/` and follows lockstep.md (inte
 | The install moment, the whistle, the boiler swapping on a train | Local, from accepted state | each tab | adapter edges, snapped on restore |
 | Yard stacks, bill sign, rack, loader, the shed | Local | each tab | new `src/entities/ring-steel/` |
 
-**State (all appended; any schema change is the v28 bump).**
+**State (all appended; any schema change is the v31 bump).**
 
 ```ts
 // railway-components.ts
@@ -169,17 +169,18 @@ malformed fields refused (`railInt(e.kind, 1)`, `e.line === 1`, `e.part === 1`, 
 
 **Save, bump and shipping.**
 
-- **v28**, one dated line in `src/world/namespace.ts`, no migration: the `Steel` and `SteelClock` components, two
+- **v31**, one dated line in `src/world/namespace.ts`, no migration, made in R4 as a bump-only commit (as built: R1 to R3 were
+  built on main's v28, whose slice 5 bump came first, and v29 is the stone stop's and v30 the riders step's; it still ships only with R5): the `Steel` and `SteelClock` components, two
   `Train` fields, two `Line` fields, one `Shed` field, `WORKS.total` 40, `TRAIN_EXTENT`, four ops.
 - **It ships when R1 to R5 are reviewed, as one ship, and never while the owner is mid-session**: check play sessions
   in `npm run heartbeat` first and hold if he is playing (owner calls "Nothing waits on a world bump" and its one
   hold). The views (V1 to V3) follow with no bump. Between the two ships the kit rides out and steel rides home unseen
   off the train, which is harmless; a jump-in row puts him back at any beat in one click.
 - **Mixed builds during the deploy.** Dev phase: no compatibility code. A room's id carries the namespace
-  (`rail-v28-<name>`, `railway-namespace.ts`), so an open v27 tab stays in its v27 room until the update notice reloads
-  it, and never sends a v28 op to a v28 world. A new client that reaches a server still on v27 asks for a `rail-v28-`
+  (`rail-v31-<name>`, `railway-namespace.ts`), so an open v28 or v29 tab stays in its own room until the update notice
+  reloads it, and never sends a v31 op to an older world. A new client that reaches an older server asks for a `rail-v31-`
   room, which that server's `isRailwayRoom` does not accept as a railway room, so no v27-shaped save is written under
-  a v28 name; the tab plays alone until the server is current. Every new op is refused cleanly by v27 rules (not in
+  a v31 name; the tab plays alone until the server is current. Every new op is refused cleanly by older rules (not in
   the allow-list).
 
 ## 4. Steps
@@ -188,7 +189,7 @@ Sizes: S under half a day, M about a day, L two. **HOTBOX** takes rules, server 
 views and looks (V steps) and can start V1 against the seeds as soon as R1 and R4 are on the rules branch. Each step
 leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` are the two checkpoints'.
 
-- [ ] **R1. The steel works' rules (M, HOTBOX).** Create `src/sim/railway-sys-steel.ts`, `railway-check-steel.ts`,
+- [x] **R1. The steel works' rules (M, HOTBOX).** Create `src/sim/railway-sys-steel.ts`, `railway-check-steel.ts`,
       `test/railway-steel.test.ts`. Edit `railway-components.ts` (`Steel`, `SteelClock`, the spawn),
       `railway-ring-layout.ts` (`STEEL`, the two points), `railway-works-layout.ts` (`total: 40`), `railway-rows.ts`
       and `railway-queries.ts` (`steelId`, `steelOwed`), `railway-systems.ts` (four `OPS` rows, `steelTick`),
@@ -197,14 +198,65 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       Checks: each op's refusals (before `joined`, a full bill, a full back, a lit works); the bill lights on the last
       item whichever op brings it; a seeded `mulberry32` op fuzz holding every invariant.
       **Independent sim review.**
-- [ ] **R2. The train carries it (M, HOTBOX).** Edit `railway-sys-trains.ts` (`standing`, `arrive`, `wagonArrives`,
+      _As built (ring2/rules, 11 November), on ruling B:_ `Steel` is `yardLogs, yardRails, logs, rails, lit, rack,
+      poured, outLogs, outRails` (no `yardFoot`, `foot`); `STEEL` is `{ logs: 8, rails: 12, castTicks: 80, rackCap: 6,
+      total: 12 }` (no `foot`). No rack 3, site 4, `steelOwed`, `WORKS.total` change or `footingTotal` change. **Added
+      beyond the step:** `outLogs`/`outRails` (what the Village has loaded for the works, the depot's `DEPOT_OUT` and
+      `shelfOut` for it): the kit's logs are made at the Village, so `railCounts().produced` counts `outLogs`, and the
+      yard is bounded by them; R2's line-2 checks (`depot stock`, `shelf bounds`) widen by them. `steelNeed(w)`
+      (railway-queries.ts) is the kit's need per finding 2: the bill less fed, yard and aboard (backs and piles not
+      counted, so a train brings what is lost). `steelTick` runs at tick order 5 and `jobClock` moves to 6. Points
+      (level flags 1 and 2): the yard at u 445.5, lat +8 (the open deck between the tarp and the shed), the works at the
+      shed's doorway, u 452, lat +6.5; yard to works 6.7 m, not 12 (V1's look may move them). `dev/level/ring.ts`
+      asserts both: on the deck, clear of the tarp, anvil and hammer posts. Ruling E's blocked prompt is V1's (no sim
+      part). Tests: `test/railway-steel.test.ts` (refusals, lighting on either kind, the first cast, the check's
+      refusals, a two-seed fuzz that re-asserts the bill can be completed every 500 ops). **The v28 bump moved here
+      from R4** (orchestrator's ruling, 11 November): R1 is the first save-shape change (a new component kind and
+      entity change every world hash), and the fixture rule (test/helpers/railway-golden.ts) regenerates only with a
+      bump, so no step from R1 to R3 could pass its checks with the bump at R4. The branch still ships once, after R5,
+      outside his sessions. Proof that R1 changed no existing behaviour: with `Steel`, `SteelClock`, `steelTick` and the
+      steel counts taken out again in a scratch edit (jobClock left at order 6, the new op rows left in), all 148
+      pinned tests (goldens, tick order, ops stream, M12 trace, schema) pass on the old fixtures. The tick-order move is
+      inert: `steelTick` writes only `Steel` and `SteelClock`, which `jobClock` never reads, and does nothing before the
+      works is lit. The fixtures are then regenerated in a commit of their own.
+- [x] **R2. The train carries it (M, HOTBOX).** Edit `railway-sys-trains.ts` (`standing`, `arrive`, `wagonArrives`,
       `serviceOf`, `headExempt` while the works owes footings), `railway-components.ts` (`Train.steel`, `Shed.steel`),
       `railway-queries-line2.ts` (the kit's need for the works), `test/railway-trains.test.ts`. Checks: a kit loaded
       at the Village reaches `yardLogs` and `yardRails`; eight footings arrive in two wagon loads; steel racked at the
       island reaches `Shed.steel`; footings out and steel home never exceed `wagonCap`; no train stops at the island
       with nothing to do. Also confirm the forge still has 12 rails to give after Q7 (`npm run loop -- run`); if not,
       the bill's rails drop to what it has and the number is logged. **Independent sim review.**
-- [ ] **R3. The install and the boiler's speed (L, HOTBOX).** Create `test/railway-install.test.ts`. Edit
+      _As built (ring2/rules, 11 November), on rulings B and C:_ `Train.steel` and `Shed.steel` (appended; inside v28).
+      The trains' side lives in `railway-sys-steel.ts` (`steelLoads`, `steelArrives`, `steelService`), called from
+      `standing`, `arrive` and `serviceOf`; `trainTick` now declares `Steel` and `Shed` as writes. After the rivet any
+      line 2 train standing at the Village loads `steelNeed` onto its kit car (logs made, `outLogs`; rails off the forge
+      rack, `outRails`); at Ring Island (halt 5) the kit goes into the yard, capped at what the bill lacks (any more
+      rides on), and the kit car takes up to `STEEL.trip` (6) off the rack; at the Village its steel goes into the bay.
+      **Not built (ruling B):** footings to the works, `wagonArrives` and `headExempt` changes; the "eight footings in two
+      loads" and `wagonCap` checks. **Not the cradle (ruling C):** steel rides any train's kit car; the check holds
+      `Train.steel <= STEEL.trip`, line 2 only, and `poured === rack + aboard + Shed.steel`. `depot stock` and `shelf
+      bounds` widen by `outLogs` and `outRails`. **Dropped from R1's check:** "the yard holds no more than was sent":
+      a stretch kit's leftover logs (a frame filled from backs while its kit rode) would land in the yard and fail a
+      room's load; the yard's bounds (the bill) still hold. "No train stops at the island with nothing to do": Ring
+      Island is the line's end, where every train stands, so there is no extra stop to forbid; `steelService` asks for it
+      only with an errand. Measured (test): the kit is in the yard 65 s after the rivet, all of it on one train (the
+      forge rack holds 24, so 12 rails are there); the first steel is home 109 s after lighting; all 12 reach the bay.
+      A load lost from the yard (taken and dropped) comes again on the next train. The ring-joined stage now holds
+      that kit aboard (the first train after the rivet loads it): `test/railway-m11-review.test.ts`'s two ring-joined
+      literal rows move from 3986 logs and 161 rails to 3994 and 169 (173 after three days' credit); fixtures
+      regenerated in their own commit.
+      _Independent review (11 November), fixed:_ **P2-1**, kit stranded aboard for good when the bill is fed from backs
+      while it rides: kit the bill can no longer use now goes home at the train's next Village arrival (logs onto the
+      depot, rails back onto the forge rack, both conserved), and `steelService` asks for Ring Island only with kit the
+      bill lacks and for the Village with kit it can't use (the reviewer's `test/railway-steel-review.test.ts` passes).
+      **P3-1**, `serviceOf` hands `steelService` its own row. **P3-2**, a `railway-bad-worlds.ts` entry per
+      `checkSteel` throw (a `ring-joined` stage joins the corpus), and `railway-check-steel.ts` joins the message
+      census. The dropped "yard <= sent" returns in the reviewer's weaker, proved form as `steel sent logs` and
+      `steel sent rails` (depot, cart, aboard and yard within `depotProduced + outLogs`, and the shelf's rails within
+      `shelfOut + outRails`), in the load check every fuzz op runs. No pinned fixture moved: no seed stage feeds a
+      bill from backs. **P3-3**, noted: the rules commit precedes the bump commit on this branch; that order stands
+      because the branch ships as one, after R5.
+- [x] **R3. The install and the boiler's speed (L, HOTBOX).** Create `test/railway-install.test.ts`. Edit
       `railway-components.ts` (`Line.boiler`, `Line.fitted`, `Train.boiler`), `railway-train.ts` (`BOILER_SPEED`,
       `stopKin`'s fourth argument and its callers), `railway-trains.ts` (the leg planner, `cycleTicks` and the balanced
       hold read each train's boiler), `railway-lines.ts` (`TRAIN_EXTENT.aheadCm` 820), `railway-sys-works.ts` or the
@@ -214,9 +266,51 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       Village; `boiler === 0` legs bit-identical to v27; **a mixed fleet** (one train at 25 m/s behind two at 20) run
       for 20,000 ticks under random lever asks keeps `sepCm`, the end blocks and the 105 s wait bound; the Pier and
       island stops still clear with the 820 extent. **Independent sim review, P1: the mixed fleet.**
-- [ ] **R4. Server, prediction, seeds, the bump (M, HOTBOX).** Create `src/sim/railway-seed-steel.ts`,
+      _As built (ring2/rules, 12 November):_ `Train.boiler` (u8), `Line.boiler` (u8) and `Line.fitted` (int, -1),
+      appended inside v28. `BOILER_SPEED = [200, 250]`, `boilerSpeed`, `boilerKin` and `stopKin(line, to, track,
+      boiler = 0)` in `railway-train.ts`; the pose reads the row's `boiler` (an absent field reads 0), and on boiler 0 the
+      kin is the line's own object, so v27's legs are bit for bit (a test over every line, halt, track and leg).
+      `RailTrain.boiler` is optional (fixture rows). In `railway-trains.ts`: `trainPose` caps a replan's speed at the
+      train's own cruise (it capped at the line's, which would have cut a 25 m/s train's `v0` to 20), `cycleTicks` and
+      `headTicks` take the leaving train's boiler, `trainRowBroken` bounds `boiler` and `v0` by it. Braking distances
+      read only rates, so `planLeg`, `trainServes` and `trainRequestable` are unchanged; the balanced hold reads poses
+      only. `rail.install { line: 1, part: 1, revision }` is `install` in `railway-sys-steel.ts` (order 56); the table is
+      refused only mid roll-out (`Shed.ready` set, no wagon coupled). `boilerAdopt` runs first in `standing` for any
+      line 2 train at the Village. `checkSteel` gains `boiler bounds`, `boiler fit` (line 2 only, `fitted` exactly when
+      fitted, steel in the bay) and `boiler aboard` (no train above its line's fit), each with a bad world.
+      **Changed from the step:** `test/railway-train.test.ts` needed no edit (the bit-identical test is in the new
+      file); `test/railway-lines.test.ts`'s drawn-extent check now holds `aheadCm` at 820 and at least the drawn
+      engine with the longer frame (6.2 + 0.5 = 6.7 m: the drawn long engine is 1.5 m shorter than rail-map's 8.2 m;
+      V2's to reconcile), and its and `test/railway-trains.test.ts`'s literal far signals and endMoved boundaries move
+      2 m (Far Head 48180, Pier 52780, Railhead 80380 and 94380, island 112880). Measured: Village to Ring Island
+      64.4 s at 20 m/s and 54.1 s at 25 (10.3 s saved, the ten-second rule by 0.3 s), home by the Pier 70.1 s and
+      61.3 s (8.8 s); round trip 138.8 s and 118.2 s. After an install the three trains took it 0.1 s, 51.1 s and
+      90.9 s later. Every middle halt at every stage clears both end blocks by at least 3.8 m with the 8.2 m extent
+      (Far Head before the Pier is the tightest). **The mixed fleet** (three 20,000-tick runs on the real rules from a
+      world with steel home and the install made, 5% lever and 3% rider asks a tick, restores; slower trains put back
+      on the standard boiler at each Village stand so the mix lasts): one fast train, two fast, and one fast with the
+      headway hold off. Every tick: no pose jump past its cruise, `trainSpacing` (sepCm, one train an end block);
+      every 50 ticks the load check. Worst line 2 lever waits 87.8 s, 87.2 s and 85.6 s (bound 105 s); longest stand
+      36.5 s. The runs never brought a fast train within 239 m of the one ahead (the balanced hold keeps them even), so
+      a directed test lets a fast train go right behind a slow one with no headway hold: the block rule holds it at the
+      halt behind (37 s on held legs, closest 157 m, the halt spacing), never under sepCm, never past. No fallback
+      needed.
+      _After rebase 3 (onto main's fares, v30; ruling in docs/agent-calls.md, Rail, 12 November):_ the hand-held mixed
+      fleet measured 1,064 ticks on b011e7 (a fast train pulls away from a slow one, which then makes three lever stops),
+      but it is not reachable in play, so it is now a safety test with its waits printed. The wait bound (worst 1,050,
+      mean 525) is asserted on the fleets a room can have, 20,000 ticks each: **the real handover** (install through the
+      accepted op) worst/mean 833/439 (b011e7), 938/433 (5eed25), 813/437 (0fa575), the same bit for bit at 75% and 0%
+      hold; **all standard** 786/474 (b011e7, 75%) and 815/487 (0fa575, 0%). **All-longer breaches 1,050 on one seed;
+      with the owner:** 1,100 at b011e7 with the hold on (an ask for the Quarry down while all three trains run out, at
+      the tick the last took the fit; the nearest goes up to the island and makes three lever stops, Railhead, Pier and
+      Far Head, on its way down), 726 at 0fa575 (0%), 991 or under on eight more seeds; a todo test until he answers.
+      The hold never binds under these asks: the handover runs are identical at 75% and 0%, and so is main's all-standard
+      line 2 before build 2 (from ring-joined, b011e7: 792/477 at both settings; the least gap between Village departures
+      599 ticks against the hold's 347). With no asks the hold does bind (main: least gap 347 at 75%, 201 at 0%). So
+      lever stops keep trains later than the hold, on main as on this branch; nothing here changed it.
+- [x] **R4. Server, prediction, seeds (M, HOTBOX; the bump moved to R1).** Create `src/sim/railway-seed-steel.ts`,
       `server/test/railway-steel-host.test.ts`. Edit `src/world/railway-server.ts`, `railway-predict.ts`,
-      `namespace.ts` (v28), `railway-jump.ts` (four rows, section 6), `src/sim/railway-seeds.ts`,
+      `railway-jump.ts` (four rows, section 6), `src/sim/railway-seeds.ts`,
       `src/sim/railway-sys-away.ts` (the works' casts in the away credit, capped by the rack),
       `src/adapters/railway-intents.ts` (five intents), `test/railway-jump.test.ts`,
       `server/test/railway-away.test.ts` (one empty-room case). Checks: reach refusals from the wrong place; a
@@ -225,25 +319,127 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       No new shared file is imported by the server from outside `src/sim/` or `src/world/` (if one is, it joins
       `server/Dockerfile`, `dev/server-build.ts` and deploy-server.yml in the same step). **Independent review of the
       server hunk.**
-- [ ] **R5. The loop graph and the bot (M, HOTBOX).** Edit `dev/loop/graph.ts` (nodes `steelkit`, `steelworks`,
+      _As built (ring2/rules, 12 November):_ `railway-server.ts`: `rail.steelTake` (`railInt(e.kind, 1)`) at
+      `RING_STEEL_YARD`, `rail.steel` at `RING_STEEL_WORKS`, `rail.install` (`e.line === LINE2`, `e.part === 1`,
+      `railInt(e.revision, BOILER_MAX)`) at `SHED_TABLE`, all three on the allow-list; `server/src/host/railway-requests.ts`
+      keeps `kind`, `line`, `part` and `revision`, and events carry `line` and `part`. `railway-predict.ts`: the yard take
+      and the feed are predicted (the works' `lit` and `lastCast` held for the server, as the kiln's); `rail.install` is
+      not predicted (as `rail.brace`), **so V3's moment plays on the accepted event, not on the press** (step V3 says
+      "from the prediction"; the handover's "as rail.brace" wins: the brace is not predicted either). Three intents, not
+      five (ruling B: no rack 3, site 4): `steelTake(kind)`, `feedSteel()`, `installBoiler(revision)`; marks "steel kit
+      taken", "works fed", "boiler installed". The away credit casts while the room is empty, capped by the rack and the
+      total (**the kiln is not in the away credit**, so this follows the forge's pattern, not the kiln's). Seeds in
+      `src/sim/railway-seed-steel.ts` from accepted ops and ticks; jump rows land on the island halt's east platform
+      (u 444, lat +4), 4 m off the table's centre facing the garage post, and the Village's line 2 platform; each
+      landing passes the arrival's surface test (`jump-land-probe`), and the steel-kit jump was looked at
+      (`.look/steel-kit-jump-still.png`: standing on the deck by the track, facing along it). Checkpoints: steel-kit
+      61.3 s, steel-lit 0.7 s, steel-home 5.9 s, boiler-long 5.0 s. Tests: `server/test/railway-steel-host.test.ts`
+      (reach, malformed fields, two presses install once), the away case in `server/test/railway-away.test.ts`, and in
+      `test/railway-replicate.test.ts` the predicted take and feed (lit held back, install never predicted) and a take a
+      friend beat you to coming back as `onCorrected`. **The bump:** a bump-only commit to v31 (namespace line, rail-schema's
+      `worldNs`, `rail-v31-` in `test/railway-cart.test.ts`), then the golden regenerated in a fixtures-only commit:
+      keyed against v28, all 39 existing stages unchanged, the four steel stages added, nothing else moved. **For the
+      views (R3 review, P3):** nothing spends `Shed.steel` in build 2; `checkSteel`'s `boiler fit` refuses a fitted
+      room with an empty bay, so the first feature that spends bay steel relaxes it. No new shared file outside
+      `src/sim/` or `src/world/` reaches the server. **Independent review of the server hunk: not run here** (the
+      coordinator's, with R4-R5's review).
+- [x] **R5. The loop graph and the bot (M, HOTBOX).** Edit `dev/loop/graph.ts` (nodes `steelkit`, `steelworks`,
       `steelhome`, `install`, each with its bill, supply, cue and `requires: rivet`), `dev/look/bots/railway-ring.ts`
       or a new `railway-steel.ts`, `dev/look/evals/railway-steel-bot.ts`. Checks: `npm run loop -- node <id>` for the
       four and `npm run loop -- run` for one to four players (the route's rules changed); the bot segment below.
+      _As built (ring2/rules, 12 November): the graph and the loop; **the bot is not built.**_ Nodes `steelkit`,
+      `steelworks` (8 logs, 12 rails by the kit train to the yard; its edge on `steelkit` held by the world: any logs
+      and rails feed it, but nobody carries a bill 1.2 km to the island), `steelhome` and `install`, each with a cue
+      marked decided and not built (V1 to V3) and no stops. `npm run loop -- run`: 1 to 4 players finish, no softlock,
+      no graph bug; rivet to install 4:06, 4:31, 4:34 and 4:40 straight-line (kit 1:05 to 1:39 after the rivet, the
+      feed 5 to 6 s, steel home 1:38 later; the install's 1:16 is the straight-line walk home, which a rider doesn't
+      make). An order probe whose held node finishes on its own (the train brings the steel home) before the press is
+      now inconclusive instead of a graph bug. `dev/economy/ring-data.ts` corrected (finding 6: the boiler free, the
+      siding 12 rails and 8 logs, the brace the counterweight's four footings; prototype rebuilt: 1p 5.79 h, 2p 5.28 h).
+      **Blocked, for the coordinator:** a bot plays only through ordinary inputs (no direct op), and the yard take, the
+      feed and the Install have no prompt until V1 (the island's interactables) and V3 (the garage's hold sends
+      `rail.install`). Proposed: the steel bot, its eval and the "ring-joined to boiler-long" segment move to after V3,
+      with Checkpoint A's bot proof at Checkpoint B.
+      _As built, the bot (ring2/v3-garage, 12 November): `dev/look/bots/railway-steel.ts`, its eval
+      `dev/look/evals/railway-steel-bot.ts`, stops `steel-lit`, `steel-home` and `boiler-long` in `dev/look/segments.ts`
+      (beats "steel works lit", "steel home", "boiler installed", the graph's marks; the three nodes `steelworks`,
+      `steelhome` and `install` take them as stops) and `--from ring-joined|steel-kit|steel-lit|steel-home`. Ordinary
+      inputs only, prompts pressed by id: ride line 2 from the Village to the island in one ride (the Railhead is a
+      pass-through once the ring is joined), `railway-steel-take-logs`, `-feed`, `-take-rails`, `-feed` until lit
+      (20 takes and feeds), ask for the home train at the island's lever, ride home, stand 1.3 m west of the post and
+      hold `railway-install` until `Line.boiler` is 1. Each phase reads the rows first, so it resumes from the steel
+      seeds. **Proved whole (rebase 3, on main's ride-home fix #1657, tip 9d63d738):** `npm run playthrough -- --from
+      ring-joined --to boiler-long --stall 6000 --wall 2700` passes with no recovery: the ride to the island (12:22 of
+      game, tick 11929), the kit taken and fed (20 takes and feeds), the works lit (12:33, tick 11936), the home train
+      called at the island's lever (13:34), boarded (20:03), the ride home standing on a car (y 26) past the pier head
+      (z -370) to the Village (about 27:30), steel home (27:49, tick 13238), the install held, boiler installed (27:54,
+      tick 13244; 28 minutes of game in 4 minutes). `npm run checkpoints -- steel-kit steel-lit steel-home boiler-long`:
+      all four build (24.1, 0.3, 2.4 and 2.1 s). Still: `.look/village-long-still.png` (the longer-boiler train
+      standing at the Village's line 2 platform). Before the fix the homeward ride lost the rider at about z -370: the
+      parked track layer's flatbed took the rider from the car in `deckUnder`; main's fix keeps the current deck and
+      stows the track layer once Q7 is laid, and the bot needed no change for it. Also found and fixed on this branch (view only): the island's levers stood at u 466, 18 m from the platform
+      centre the server judges a lever ask from (reach 12.6 m), so every ask was refused; they now stand at u 457
+      (`halts-view.ts`; `.look/lever-u457b-still.png`: both levers on their platforms, clear of the shed, loader and
+      stacks); `steel11` boarded from the lever. `rideToIsland` is now exported from `railway-ring.ts` (the ring bot's
+      own ride, unchanged). Timing: the bot's 11.5 minutes (`steel-lit` run, "steel home" at 681 s) was the harness's wall
+      clock from the bot's start (`Date.now`, boot and entry included); by the server's ticks the same wait is
+      1,175 ticks (works lit at tick 11448, steel home at 12623), 117.5 s at 10 ticks a second, exactly the unit-level 109
+      to 117 s. So the rules are on time and that room ran about 6 times slower than real time in wall seconds (a
+      headless page's warp speeds the page, not the server). Read waits in server ticks.
+      After the carry fix lands: rebase, one full `npm run playthrough -- --from ring-joined --to boiler-long --stall
+      6000 --wall 2700`, then tick this.
 - [ ] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
       `--rail-seed ring-joined` to the `boiler-long` state**, logging minutes per beat; `test:net`'s reconnect pair
       once with a carrier leaving mid-carry. Then ship v28 under the mid-session hold.
-- [ ] **V1. The works on the island (M, Mac).** Create `src/entities/ring-steel/{index,view}.ts`. Greybox boxes only:
+- [x] **V1. The works on the island (M, Mac).** Create `src/entities/ring-steel/{index,view}.ts`. Greybox boxes only:
       yard stacks drawn from `yardLogs`, `yardRails`, `yardFoot`; a bill sign over the works (the frame sign's
       have/need per material, `stock-sign.ts`'s pattern); the rack's steel blocks; a box jib for the loader between
       u 436.9 and 444.3; an open shed over the hammer with a doorway and a collider; the four interactables. Build 1's
       tarp stack stays as it is. Effects only from accepted edges. Proof: one look,
       `npm run look -- --rail-seed steel-kit` at the yard, phone and desktop width. **Visual review** per
       `npm run models`.
-- [ ] **V2. Steel and the boiler on the train (S, Mac).** Edit `src/entities/railway/train-view.ts`, `cars.ts`,
+      _As built (ring2/v1-works, 12 November), on rulings B and E:_ one file, `src/entities/ring-steel/view.ts`
+      (`createRingSteel`), mounted by `railway/works-live.ts` beside the Meet (**no `index.ts`**: the prompts send
+      through the adapter that only the railway's view holds, as the Meet's and the folk's do). It reads `Steel`,
+      `Aperture` and the local `Account` off `adapter.read.world()` at the head of every entry point and keeps nothing;
+      drawn only while the island's near view is mounted. Static grey boxes (`drawWorksBoxes`, with colliders): the
+      shed inside u 448 to 455, lat 6.5 to 14 (four posts, a roof at 6.9 m over the gantry, a 3.6 m door wall with a
+      2.4 m doorway at u 452; the other three sides open), the loader (a mast and a post at lat 6.6, a beam from
+      u 436.9 to 444.3 at 4.6 m, an arm over the platform), the rack's bed (u 438.6 to 442.6, lat 6.3) and two yard
+      pallets (logs u 444.75, rails u 446.6, lat 8.3). From the rows (`createBoxBatch`): up to 8 logs and 12 rails on
+      the pallets from `yardLogs` and `yardRails`, up to 6 orange steel blocks on the rack from `rack`. The bill sign
+      (6.4 by 1.4 m, hung under the roof's front edge, facing the platform) stands from `joined`: "logs 0/8  rails
+      0/12" over "Steel works", then "lit  steel n/12" from `lit` and `poured` (the server's; nothing predicts it).
+      **Three interactables, not four** (ruling B, no footings): "Take logs" and "Take rails" at their stacks inside
+      the yard's reach (blocked "Your back is full"), and "Feed the works" at the doorway until lit (blocked "Bring
+      logs or rails", ruling E); none before the rivet. **Changed from the step:** no `yardFoot`; the sign is under
+      the roof edge, not on the lintel (build 1's RINGWORKS board, u 445.4 to 450.6 at lat 5.0, hid it from the
+      platform's south end at the first look); no effect or sound on any edge (greybox order), so `accepted` is
+      empty; the yard and works points stay where R1 put them. Looks (desktop width; no phone shot, owner call "Fast
+      ships"): `.look/v1-works-cold-still.png` (steel-kit) and `.look/v1-works-lit-still.png` (steel-lit). Not shown
+      in a still: the three prompts (the jump-in lands 4.3 m from the yard point, outside its reach) and the stacks
+      shrinking on a take; the prompts were pressed in a browser afterwards (V2's `railway-steel-prompts.ts`: take,
+      feed, the blocked feed and the server lighting the works) and by R5's steel bot, by id. One of the folk stood beside the rack's bed in the steel-lit landing still (their posts were not moved). Not tested on a device.
+- [x] **V2. Steel and the boiler on the train (S, Mac).** Edit `src/entities/railway/train-view.ts`, `cars.ts`,
       `engine-kit.ts`. Steel blocks on the cradle from `Train.steel`; the built, unwired `engine_*_long` meshes when
       `Train.boiler === 1`; `cars.ts`'s extent test follows `TRAIN_EXTENT`. No whistle variation, no smoke change.
       Proof: covered by V3's look.
-- [ ] **V3. The bay and the real Install (M, Mac).** Edit `roundhouse-view.ts` (a box stack in the bay from
+      _As built (ring2/v2-train, 12 November), on ruling C:_ `train-view.ts` draws up to `STEEL.trip` orange blocks
+      two abreast on a line 2 train's **kit car** (not the cradle) from its row's `steel`, in a batch of their own;
+      aboard when the row says so, with no hop from the rack or into the bay. `engine-kit.ts` gains `engineLong(rope)`:
+      the long body cut as the short one is (`splitBody` now takes either body) and drawn without its cab, the long
+      boiler and its lashing in the rope's gold, and the chimney's cap read off the mesh. A train whose row wears
+      boiler 1 hides the short body's rest and the short boiler and shows these; the cab's faces, doors, stool, rods
+      and drivers stay the short engine's, so the cutaway and the doors work as before, and the steam leaves the long
+      chimney (the puffs themselves are unchanged). **Not changed:** `cars.ts` (R3 already holds `aheadCm` at 820 in
+      `test/railway-lines.test.ts`; the drawn long engine reaches 6.7 m ahead, inside the 8.2 m the rules reserve, so
+      nothing needed reconciling and no rule moved); the engine's collider (the long frame's extra 0.5 m ahead and the
+      longer barrel are drawn only). A leftover kit riding on would share the deck with the steel (not seen). Two
+      looks, since no seed has both (by `boiler-long` all twelve steel are home): `.look/v2-steel-aboard-still.png`
+      (steel-lit) and `.look/v2-long-boiler-still.png` (boiler-long), `dev/look/evals/railway-steel-train.ts`. V1's
+      prompts were pressed in a browser first (`dev/look/evals/railway-steel-prompts.ts`: take, feed, the blocked
+      feed, rails, and the server lighting the works on the last feed). Not tested on a device.
+- [x] **V3. The bay and the real Install (M, Mac).** Edit `roundhouse-view.ts` (a box stack in the bay from
       `Shed.steel`; its position is set here and level-checked here), `garage-state.ts` (`roomFacts` gains
       `steelHome` and `longFitted`; the header's "nothing is sent" comment goes), `garage-data.ts` (the tile's
       standing from the facts; `BOILERS.long.speed` from `BOILER_SPEED`), `src/features/garage.ts` and
@@ -252,6 +448,45 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       else), `docs/game-design/` (the owning section). No dialog, no new moment. Proof: one look, two players,
       `--rail-seed steel-home`: one holds Install, both pages show the next line 2 train at the Village wearing the
       long boiler. **Visual review.**
+      _As built (ring2/v3-garage, 12 November), on the coordinator's ruling, not the step:_ **a plain hold at the
+      default table, not the garage.** The step could not work as written: the garage mounts only under `?home=b`
+      at layout B's table (x 942.1, z 17.1; its post x 947.0, z 14.3), and `rail.install` is judged at
+      `SHED_TABLE` (x 918, z 12, reach 6 m, from the position the action carries), 29.0 m from that post, so every
+      hold there would be refused; the default layout has no garage. Ruling (orchestrator, Default, logged in
+      agent-calls): the install is a plain hold at the default table until the Home flip. One new file,
+      `src/entities/railway/boiler-install-view.ts` (`createBoilerInstall`), mounted by `works-live.ts`; it reads
+      `Shed`, `Line`, `Aperture` and the trains' `wagon` off `adapter.read.world()` at the head of every entry
+      point and keeps nothing. Drawn from the rivet (`Aperture.joined`), with no colliders: **the bay** is a grey
+      pallet 5.7 m east and 1.8 m north of the table's centre, on the open ground between line 2's two roads (about
+      3 m clear of the road to the Village platform, clear of the deck, the stall road and line 2's frame), with up
+      to twelve orange blocks from `Shed.steel`; a post 5.2 m east (inside the 6 m reach) with a lamp (grey, orange
+      once steel is home, green once fitted) and the hold's bar. **The prompt** `railway-install`, "Install the
+      longer boiler": only while `Shed.steel > 0` and `Line.boiler` is 0, within 2.6 m of the post and 5.6 m of
+      the table's centre; blocked with "The table's busy" mid roll-out (the rule's refusal); a hold of 1.2 s (the
+      garage's Large hold), "Keep holding" while held, "Hold to install" for 1.5 s after a tap. There was no hold
+      prompt to follow, so the press starts it and a wrap on the interact action's release ends it. The completed
+      hold calls `installBoiler(line(w, LINE2).boiler)` and hides the prompt for up to 4 s for the answer. **Not
+      predicted:** on the accepted `rail.install` every page plays the shared moment "longer boiler" (the existing
+      banner, "Longer boiler installed" over "Line 2's trains take it at the Village", 4.5 s, and a playtest mark);
+      the lamp and bar follow the rows, so a restore or late join gets them green with no banner. The banner is
+      room-wide, as the other shared moments (not "near" only). No sound, camera or new effect.
+      **Not built from the step:** nothing in `roundhouse-view.ts`, `garage-state.ts`, `garage-data.ts`,
+      `garage.ts` or `garage-view.ts` (the garage stays a view-only Try it; its headers stay true; its tile still
+      reads "Needs steel"); no whistle for an away tab; no two-player look. **The fourth car** (owner, 12 November:
+      steel's free first car arrives with the install) is a rules matter not in R3 and is the step after build 2
+      (call 29): open, not built. **The `steel-home` landing** moved: the old spot (4 m west, 2 m south) put the
+      camera inside the stall's shell (`.look/v1-steel-home-jump-still.png`); now 5.2 m east, 1.7 m south, yaw
+      1.255, facing the table (`.look/v3-steel-home-jump-still.png`). **Looks** (default layout, the game's
+      camera, `dev/look/evals/railway-install.ts`): `.look/v3-install-prompt-still.png` (the prompt over the
+      post, the orange lamp, five blocks on the pallet) and `.look/v3-install-after-still.png` (the banner, the
+      lamp and bar green, no prompt). Rows after the server confirmed: `Line.boiler` 1, `Line.fitted` 12675; a
+      tap installed nothing; a line 2 train (slot 1) wore boiler 1 standing at the Village 45.6 s after the install
+      (the other two were not waited for). The hold's 1.2 s was not timed in real time (the look's clock is
+      warped), and the touch button's release was not exercised: if it never reaches the action's release, a tap
+      on touch completes the hold. `npm run level-check` passes; it does not know the pallet (no collider), whose
+      clearance is the stills' and the arithmetic above. Not tested on a device.
+      **Open, for the Home flip:** when Home flips to layout B, `SHED_TABLE` moves to layout B's table (a rules
+      change with its own bump) and the garage's Install replaces this prompt, with its moment on the accepted event.
 - [ ] **Checkpoint B (views).** `npm run check`; `npm run perf` at the island halt and the Roundhouse, before and
       after, reported; the two looks above; one device run (`npm run device`) or the line "not tested on a device".
 - [ ] **T. The train through the ring: a layout and a still, no rules (S, Mac; waits for question 1).** A planned

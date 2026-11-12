@@ -17,6 +17,7 @@ import { LINE2_FORGE, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.
 import { railAwayCredit, RAIL_AWAY } from '../../src/sim/railway-away.ts';
 import { yards as yardRows } from '../../src/sim/railway-rows.ts';
 import { TRADE } from '../../src/sim/railway-trade-layout.ts';
+import { STEEL } from '../../src/sim/railway-ring-layout.ts';
 import {
   account,
   act,
@@ -33,6 +34,7 @@ import {
   piles,
   rail,
   railClock,
+  steel,
   railSession,
   railwayAtQ2,
   railwayAtQ4,
@@ -149,11 +151,7 @@ test('a paused room stands still, and the next join applies one capped credit to
     f.host.wake();
     assert.equal(f.host.paused(), false);
     assert.equal(forge(f.w).rack, LINE2_FORGE.rackMax, 'the forge rack is full, never past it');
-    assert.equal(
-      forge(f.w).poured,
-      paused.poured + LINE2_FORGE.rackMax - paused.rack,
-      'credited rails are counted',
-    );
+    assert.equal(forge(f.w).poured, paused.poured + LINE2_FORGE.rackMax - paused.rack, 'credited rails are counted');
     assert.equal(rail(f.w).depot, LINE2_STATIONS[1]!.bill[0], 'the cart brings what Q2 needs, no more');
     assert.equal(railCounts(f.w).total - railCounts(f.w).produced, total, 'every log stays counted');
     assert.ok(railClock(f.w).resumeMarker > paused.marker, 'one credit consumed');
@@ -287,6 +285,29 @@ test('slice 5: 8 hours away fills both crate yards to their cap once; a restart 
     await f.restart(0);
     f.host.wake();
     assert.deepEqual(cratesOf(f.w), after, 'the credited time is not credited again');
+  } finally {
+    await f.close();
+  }
+});
+
+test("ring-island-build2: 8 hours away fills the lit steel works' rack to its cap once; a restart adds nothing", async () => {
+  const f = await fixture('away-steel');
+  try {
+    f.host.wake();
+    await f.adopt(buildSeedWorld('steel-lit'));
+    f.host.pause();
+    const before = { ...steel(f.w) };
+    assert.ok(before.lit >= 0 && before.rack < STEEL.rackCap, 'lit, with room on the rack');
+    f.clock.now += 8 * HOUR;
+    f.host.wake();
+    const after = { ...steel(f.w) };
+    assert.equal(after.rack, STEEL.rackCap, 'the rack at its cap');
+    assert.equal(after.poured, before.poured + STEEL.rackCap - before.rack, 'poured by the same, within the total');
+    assert.ok(after.poured <= STEEL.total);
+    assert.equal(invariant(f.w), null);
+    await f.restart(0);
+    f.host.wake();
+    assert.deepEqual({ ...steel(f.w) }, after, 'the credited time is not credited again');
   } finally {
     await f.close();
   }

@@ -5,8 +5,8 @@ import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
 import { railInt, railYaw } from '../sim/railway.ts';
 import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId } from '../sim/railway-line-layout.ts';
 import { LINE2_PACK, type Line2StationId } from '../sim/railway-line2-layout.ts';
-import { LINE_HALTS } from '../sim/railway-train.ts';
-import { RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
+import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { RAIL_ROCKS } from '../sim/railway-works-layout.ts';
 import { Pile } from '../sim/railway-components.ts';
 import { activeStation } from '../sim/railway-queries.ts';
@@ -30,7 +30,8 @@ export type RailwayIntent =
         | 'rail.pack'
         | 'rail.breaker'
         | 'rail.kiln'
-        | 'rail.cradle';
+        | 'rail.cradle'
+        | 'rail.steel';
     }
   | { op: 'rail.call'; id: number; dir: -1 | 1; train?: number }
   | { op: 'rail.strike'; id: number }
@@ -38,6 +39,8 @@ export type RailwayIntent =
   | { op: 'rail.footSet'; site: 0 | 1 | 2 | 3 }
   | { op: 'rail.brace'; revision: 1 }
   | { op: 'rail.turn'; to: 0 | 1; revision: number }
+  | { op: 'rail.steelTake'; kind: 0 | 1 }
+  | { op: 'rail.install'; line: number; part: 1; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
   | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamTake'; revision: number }
@@ -53,7 +56,13 @@ export const CARRY_MAX = LINE2_PACK.carry;
 export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.wake') return { op: e.op };
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
-  if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle') return { op: e.op };
+  if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle' || e.op === 'rail.steel')
+    return { op: e.op };
+  // Ring Island's steel works and the install (v31): a kind of 0 is left out of the event.
+  if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
+    return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
+  if (e.op === 'rail.install' && e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX))
+    return { op: e.op, line: LINE2, part: 1, revision: e.revision };
   if (e.op === 'rail.strike' && railInt(e.id, 2)) return { op: e.op, id: e.id };
   if (e.op === 'rail.footTake' && railInt(e.rack, 2)) return { op: e.op, rack: e.rack as 0 | 1 | 2 };
   if (e.op === 'rail.footSet' && railInt(e.site, 3)) return { op: e.op, site: e.site as 0 | 1 | 2 | 3 };
@@ -156,6 +165,7 @@ export const TAKES: ReadonlySet<string> = new Set([
   'rail.depotTake',
   'rail.depotRailTake',
   'rail.footTake',
+  'rail.steelTake',
 ]);
 /** The ops that never move material, so a held beam does not block them. */
 export const NOT_MATERIAL: ReadonlySet<string> = new Set([
@@ -179,6 +189,7 @@ export const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.strike',
   'rail.brace',
   'rail.turn',
+  'rail.install',
 ]);
 /** Refused only while you haul the boiler, as the sim refuses them (one thing on your back at a time). */
 export const NOT_WHILE_HAULING: ReadonlySet<string> = new Set(['rail.breaker', 'rail.strike']);
@@ -263,6 +274,13 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     /** Turn the table to a road (0 the stall road, 1 line 2's) on the revision you saw. */
     turnTable: (to: 0 | 1, revision: number) =>
       railInt(to, 1) && railInt(revision) && submit({ op: 'rail.turn', to, revision }),
+    /** Ring Island's steel works (ring-island-build2): take logs (0) or rails (1) off the yard; feed your back's logs
+     * and rails into its bill. */
+    steelTake: (kind: 0 | 1) => railInt(kind, 1) && submit({ op: 'rail.steelTake', kind }),
+    feedSteel: () => submit({ op: 'rail.steel' }),
+    /** Install line 2's longer boiler at the table, on the line's fit you saw (`Line.boiler`). */
+    installBoiler: (revision: number) =>
+      railInt(revision, BOILER_MAX) && submit({ op: 'rail.install', line: LINE2, part: 1, revision }),
     pullLever: () => submit({ op: 'rail.lever' }),
     pullSeaSwitch: () => submit({ op: 'rail.seaSwitch' }),
     claimHook: () => submit({ op: 'rail.hook' }),

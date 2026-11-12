@@ -27,18 +27,26 @@ import {
   RailClock,
   Rock,
   Shed,
+  Steel,
+  SteelClock,
   Train,
   Tree,
   Works,
   WorksClock,
 } from '../../src/sim/railway-components.ts';
 import { reqAdd } from '../../src/sim/railway-train.ts';
-import { LINE2 } from '../../src/sim/railway-lines.ts';
+import { LINE2, RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../src/sim/railway-trains.ts';
 import { stopsOf } from '../../src/sim/railway-queries.ts';
 
-/** The stages the entries are built on: line one only, a line-two stretch on its way, and everything done. */
-export const BAD_WORLD_STAGES = ['awake', 'q2-arriving', 'crossing-done'] as const satisfies readonly SeedStage[];
+/** The stages the entries are built on: line one only, a line-two stretch on its way, line two done, and the rivet
+ * struck (the steel works'). */
+export const BAD_WORLD_STAGES = [
+  'awake',
+  'q2-arriving',
+  'crossing-done',
+  'ring-joined',
+] as const satisfies readonly SeedStage[];
 export type BadWorld = {
   /** The validator and its site, for the reader: `<file> <message>`, with a suffix where one message has two sites. */
   site: string;
@@ -59,7 +67,8 @@ const firstPile = (w: World, kind: number) => w.ids(Pile).find((id) => w.get(Pil
 
 const A = 'awake',
   Q = 'q2-arriving',
-  X = 'crossing-done';
+  X = 'crossing-done',
+  J = 'ring-joined';
 export const BAD_WORLDS: readonly BadWorld[] = [
   // ------------------------------------------------ railwayCheck's own (src/sim/railway-check.ts)
   { site: 'check catalog', message: 'railway: catalog', stage: A, break: (w) => set(w, Tree, { left: 16 }, 0) },
@@ -389,6 +398,94 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: footing conservation',
     stage: X,
     break: (w) => set(w, Works, { rack: 1 }),
+  },
+  // ------------------------------------------------ the steel works (src/sim/railway-check-steel.ts, ring-island-build2)
+  // Each throws before the log count, which runs last, so a bill set by hand takes no logs from elsewhere; rails are
+  // counted earlier (line two's rail conservation), so they come off ring-joined's forge rack (20).
+  { site: 'steel bounds', message: 'railway: steel bounds', stage: X, break: (w) => set(w, Steel, { lit: -2 }) },
+  {
+    site: 'steel aboard (line 1)',
+    message: 'railway: steel aboard',
+    stage: X,
+    break: (w) =>
+      set(
+        w,
+        Train,
+        { steel: 1 },
+        RAIL_TRAINS.findIndex((t) => t.line !== LINE2),
+      ),
+  },
+  {
+    site: 'steel before the rivet',
+    message: 'railway: steel before the rivet',
+    stage: X,
+    break: (w) => set(w, Steel, { outLogs: 1 }),
+  },
+  {
+    // ring-joined's slack is 76 logs (every stretch's depot output): a full depot and cart leave 6, the yard's 8 break it.
+    site: 'steel sent logs',
+    message: 'railway: steel sent logs',
+    stage: J,
+    break: (w) => {
+      set(w, Rail, { depot: 64 });
+      set(w, Cart, { logs: 6 });
+      set(w, Steel, { yardLogs: 8 });
+    },
+  },
+  {
+    site: 'steel sent rails',
+    message: 'railway: steel sent rails',
+    stage: J,
+    break: (w) => {
+      set(w, Forge, { rack: 19 });
+      set(w, Steel, { yardRails: 1 });
+    },
+  },
+  { site: 'steel lit', message: 'railway: steel lit', stage: J, break: (w) => set(w, Steel, { lit: 5 }) },
+  {
+    site: 'steel cast clock',
+    message: 'railway: steel cast clock',
+    stage: J,
+    break: (w) => {
+      set(w, Forge, { rack: 8 });
+      set(w, Steel, { logs: 8, rails: 12, lit: 100 });
+      set(w, SteelClock, { lastCast: 50 });
+    },
+  },
+  {
+    site: 'steel unlit cast',
+    message: 'railway: steel unlit cast',
+    stage: J,
+    break: (w) => set(w, Steel, { rack: 1, poured: 1 }),
+  },
+  {
+    site: 'steel conservation',
+    message: 'railway: steel conservation',
+    stage: J,
+    break: (w) => {
+      set(w, Forge, { rack: 8 });
+      set(w, Steel, { logs: 8, rails: 12, lit: 100, poured: 1 });
+      set(w, SteelClock, { lastCast: 100 });
+    },
+  },
+  // The boiler fit (R3): no steel is in ring-joined's bay, so any fit there breaks "after steel is home".
+  {
+    site: 'boiler bounds',
+    message: 'railway: boiler bounds',
+    stage: J,
+    break: (w) => set(w, Line, { boiler: 2 }, LINE2),
+  },
+  {
+    site: 'boiler fit',
+    message: 'railway: boiler fit',
+    stage: J,
+    break: (w) => set(w, Line, { boiler: 1, fitted: 100 }, LINE2),
+  },
+  {
+    site: 'boiler aboard',
+    message: 'railway: boiler aboard',
+    stage: J,
+    break: (w) => set(w, Train, { boiler: 1 }, LINE_SLOTS[LINE2]![0]),
   },
 ];
 

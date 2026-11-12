@@ -4,8 +4,8 @@
 // builders, so none of their code reaches the client bundle. Adding a row: src/sim/railway-seeds.ts's header.
 import type { SeedStage } from '../sim/railway-seeds.ts';
 import { LINE2_BOILER, LINE2_HOOK, LINE2_LEVER, LINE2_SEA, LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
-import { RING_HEAD, RING_JOINT_UP, ringAt } from '../sim/railway-ring-layout.ts';
-import { CROSSING_BENTS, PIER_STOP, WORKS_KILN } from '../sim/railway-works-layout.ts';
+import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
+import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
@@ -40,11 +40,18 @@ const ringLand = (p: { x: number; z: number; y: number }, lat: number): JumpLand
 const RAILHEAD_LAND = ringLand(RING_HEAD[7]!.platform, 405);
 const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 
+/** Ring Island build 2 (R4, v31). The island halt's east (down) platform at u 444, lat +4, on its deck, facing the
+ * works' doorway (u 452, lat +6.5), beside the loader's mast (V1). */
+const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100, RING_STEEL_WORKS);
+/** 5.5 m east of the Roundhouse table's centre (5.2 m east, 1.7 m south), on the open ground between line 2's two
+ * roads (surface 18.1 m by `jump-land-probe`), facing the table's centre with the stall behind it. Inside the table's
+ * 6 m reach. The spot before (4 m west, 2 m south) put the camera inside the stall's shell. */
+const TABLE_LAND = near(SHED_TABLE, 5.2, 1.7, 18.1, SHED_TABLE);
 /** Line 1's Village and Camp platforms (slice 5's freight-running lands on the first, facing the second). */
 const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
   CAMP_LINE1 = RAIL_LINES[0]!.halts[1]!.platforms[0];
 /** Line 2's Village and Quarry platforms (slice 5's fares-running lands on the first, where riders board, facing the
- * second: along the line). */
+ * second: along the line; boiler-long lands there too, to ride out at 25 m/s). */
 const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
   QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[1];
 
@@ -150,6 +157,31 @@ export const JUMPS: readonly Jump[] = [
     label: 'Ring joined',
     line: 'The leaf is down and riveted; trains run to Ring Island',
     land: JOINT_LAND, // the joint's west platform by the outbound lever, facing the island
+  },
+  // Ring Island build 2 (R4, v31). Labels and lines are placeholders (owner direction, 11 November).
+  {
+    stage: 'steel-kit',
+    label: 'Steel kit landed',
+    line: 'The kit is in the island yard; the works is cold',
+    land: STEEL_LAND, // the island halt's east platform, facing the works
+  },
+  {
+    stage: 'steel-lit',
+    label: 'Steel works lit',
+    line: 'The works is casting; steel is on its rack',
+    land: STEEL_LAND,
+  },
+  {
+    stage: 'steel-home',
+    label: 'Steel at Home',
+    line: 'The first steel is on the pallet by Home’s table',
+    land: TABLE_LAND, // east of the table, facing it
+  },
+  {
+    stage: 'boiler-long',
+    label: 'Longer boiler',
+    line: "Line 2's trains wear the longer boiler",
+    land: near(VILLAGE_LINE2, 0, 0, VILLAGE_LINE2.y / 100, QUARRY_LINE2), // the Village's line 2 platform
   },
 ];
 export const jumpOf = (stage: string): Jump | undefined => JUMPS.find((j) => j.stage === stage);

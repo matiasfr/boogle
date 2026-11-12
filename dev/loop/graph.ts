@@ -40,7 +40,14 @@ import {
   PIER_RACK,
   PIER_FRAME,
 } from '../../src/sim/railway-works-layout.ts';
-import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-layout.ts';
+import {
+  RING_BRACE,
+  RING_HEAD,
+  RING_RIVET,
+  RING_STEEL_WORKS,
+  RING_STEEL_YARD,
+  STEEL,
+} from '../../src/sim/railway-ring-layout.ts';
 
 export type NodeId =
   | 'wake'
@@ -77,7 +84,11 @@ export type NodeId =
   | 'bents'
   | 'brace'
   | 'weights'
-  | 'rivet';
+  | 'rivet'
+  | 'steelkit'
+  | 'steelworks'
+  | 'steelhome'
+  | 'install';
 
 /** World centimetres, as the catalogs pin them. `y` only where the catalog gives a height. */
 export type Point = { x: number; z: number; y?: number };
@@ -162,6 +173,8 @@ export const ACTIVITY_MARKS: readonly RegExp[] = [
   /^train called$/,
   /^train ride$/,
   /^footing shouldered$/,
+  /^steel kit taken$/,
+  /^works fed$/,
   /^stretch funded [TQ]\d$/,
 ];
 
@@ -299,6 +312,15 @@ for (const s of LINE2_STATIONS)
     throw new Error(`loop graph: ${s.id}'s kit (its bill) is more than the kit car holds`);
 const RULES_RING = 'src/sim/railway-sys-ring.ts';
 const RING_PLAN = 'docs/plans/ring-island-build1.md';
+const RULES_STEEL = 'src/sim/railway-sys-steel.ts';
+// The steel works' kit rides line 2's trains to the island yard (ring-island-build2, R2): rails off the forge rack, logs
+// made at the Village; on foot, logs from the trees and rails from the forge rack.
+const steelKit = (foot: HandSupply): Supply => ({
+  by: 'train',
+  rack: p(RING_STEEL_YARD),
+  label: 'kit train to the island yard',
+  foot,
+});
 
 export const NODES: readonly LoopNode[] = [
   {
@@ -782,7 +804,13 @@ export const NODES: readonly LoopNode[] = [
       dec('Q7', 'rules', `${RULES_RING} ringFootSet: Q7 laid`),
       dec('table', 'rules', `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon to the Railhead`),
     ],
-    cue: [onMain('world', 'the railhead, its rack and jib moving out a bent each pair', 'src/entities/railway/railhead-view.ts')],
+    cue: [
+      onMain(
+        'world',
+        'the railhead, its rack and jib moving out a bent each pair',
+        'src/entities/railway/railhead-view.ts',
+      ),
+    ],
   },
   {
     id: 'brace',
@@ -818,7 +846,9 @@ export const NODES: readonly LoopNode[] = [
       dec('bents', 'rules', `${RULES_RING} ringFootSet: the counterweight once set === 14`),
       { on: 'brace', status: 'free', by: 'none', source: `${RING_PLAN} call 9: brace and weights in either order` },
     ],
-    cue: [onMain('world', "the counterweight bracket's lit outline under the plate", 'src/entities/ring-island/bracket.ts')],
+    cue: [
+      onMain('world', "the counterweight bracket's lit outline under the plate", 'src/entities/ring-island/bracket.ts'),
+    ],
   },
   {
     id: 'rivet',
@@ -835,6 +865,82 @@ export const NODES: readonly LoopNode[] = [
       dec('weights', 'rules', `${RULES_RING} ringStrike: the leaf down (cw === 4)`),
     ],
     cue: [onMain('world', 'the gold glint over the rivet stud', 'src/entities/ring-meet/view.ts')],
+  },
+  // Ring Island build 2 (docs/plans/ring-island-build2.md, R5): the steel works and the install. Their stops wait for
+  // the bot, which needs V1's prompts and V3's Install.
+  {
+    id: 'steelkit',
+    label: 'The steel kit lands in the island yard',
+    area: 'line 2',
+    at: p(RING_STEEL_YARD),
+    bill: {},
+    supply: {},
+    ops: [],
+    reached: { mark: 'steel kit landed' },
+    stops: [],
+    requires: [dec('rivet', 'rules', `${RULES_STEEL} steelLoads, steelArrives: ringJoined`)],
+    cue: [
+      onMain(
+        'world',
+        "the kit's stacks in the yard and the bill sign over the works (0 of 8, 0 of 12)",
+        'src/entities/ring-steel/view.ts',
+      ),
+    ],
+  },
+  {
+    id: 'steelworks',
+    label: `Feed the steel works (${STEEL.logs} logs, ${STEEL.rails} rails)`,
+    area: 'line 2',
+    at: p(RING_STEEL_WORKS),
+    bill: { logs: STEEL.logs, rails: STEEL.rails },
+    supply: { logs: steelKit(trees), rails: steelKit(forgeRails) },
+    ops: ['rail.steel', 'rail.steelTake'],
+    reached: { mark: 'steel works lit' },
+    stops: ['steel-lit'],
+    requires: [
+      dec('rivet', 'rules', `${RULES_STEEL} steelFeed: ringJoined; railway-server.ts railValid rail.steel`),
+      // Any logs and rails count, not only the yard's, but nobody carries a bill's worth 1.2 km to the island.
+      dec('steelkit', 'world', `${RULES_STEEL} steelTake: the yard holds the kit; steelFeed takes any logs and rails`),
+    ],
+    cue: [onMain(
+        'world',
+        '"Feed the works", shown blocked with its reason to an empty back (ruling E)',
+        'src/entities/ring-steel/view.ts targets',
+      ),],
+  },
+  {
+    id: 'steelhome',
+    label: 'The first steel home to the Roundhouse bay',
+    area: 'line 2',
+    at: p(SHED_TABLE),
+    bill: {},
+    supply: {},
+    ops: [],
+    reached: { mark: 'steel home' },
+    stops: ['steel-home'],
+    requires: [dec('steelworks', 'rules', `${RULES_STEEL} steelTick: lit; steelArrives: the kit car takes the rack`)],
+    cue: [onMain(
+        'world',
+        "steel on the kit car's deck and the pallet by the Roundhouse table",
+        'src/entities/railway/boiler-install-view.ts',
+      )],
+  },
+  {
+    id: 'install',
+    label: "Install line 2's longer boiler",
+    area: 'line 2',
+    at: p(SHED_TABLE),
+    bill: {},
+    supply: {},
+    ops: ['rail.install'],
+    reached: { mark: 'boiler installed' },
+    stops: ['boiler-long'],
+    requires: [dec('steelhome', 'rules', `${RULES_STEEL} install: Shed.steel >= 1; railway-server.ts railValid`)],
+    cue: [onMain(
+        'world',
+        'the install post by the table: a hold, sending rail.install',
+        'src/entities/railway/boiler-install-view.ts',
+      )],
   },
 ];
 

@@ -37,7 +37,9 @@ import {
   qjob,
   rail,
   rocks as rocksOf,
+  line as lineOf,
   shed,
+  steel as steelOf,
   trains as trainsOf,
   tree,
   works,
@@ -56,7 +58,15 @@ import {
   PIER_RACK,
   PIER_FRAME,
 } from '../../src/sim/railway-works-layout.ts';
-import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-layout.ts';
+import {
+  RING_BRACE,
+  RING_HEAD,
+  RING_RIVET,
+  RING_STEEL_WORKS,
+  RING_STEEL_YARD,
+  STEEL,
+} from '../../src/sim/railway-ring-layout.ts';
+import { LINE2 } from '../../src/sim/railway-lines.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
 import { DETOUR, NODES, WALK_MPS, cm, detourOf, node, proposeOrders, type NodeId, type Point } from './graph.ts';
 import { createHost, type Host } from './host.ts';
@@ -86,7 +96,7 @@ const ticksFor = (cmd: Cmd, n: number) => {
   if (!('act' in cmd)) return 0;
   if (cmd.act === 'rail.chop' || cmd.act === 'rail.mine' || cmd.act === 'rail.beamChop' || cmd.act === 'rail.strike')
     return SWING;
-  if (cmd.act === 'rail.deposit' || cmd.act === 'rail.kiln' || cmd.act === 'rail.cradle')
+  if (cmd.act === 'rail.deposit' || cmd.act === 'rail.kiln' || cmd.act === 'rail.cradle' || cmd.act === 'rail.steel')
     return Math.max(PRESS, Math.ceil((n * T1.unloadMs) / 100));
   return PRESS;
 };
@@ -94,6 +104,7 @@ const CARRY_OPS = new Set([
   'rail.deposit',
   'rail.kiln',
   'rail.cradle',
+  'rail.steel',
   'rail.footSet',
   'rail.beamDeposit',
   'rail.boilerFit',
@@ -463,6 +474,33 @@ function* footings(
     g.bringing.delete(mark);
   }
 }
+/** Ring Island's steel works (ring-island-build2): every player takes what the yard holds, a back at a time, and feeds
+ * it in at the works' doorway until the bill lights; with the yard empty and the bill short, the next train brings the
+ * shortfall (steelNeed). */
+function* steelWorks(g: Game, pl: Player): Policy {
+  const st = () => steelOf(g.w);
+  yield* dropBig(g, pl);
+  yield* clearBack(g, pl);
+  for (let guard = 0; st().lit < 0 && guard < 400; guard++) {
+    const kind = st().yardLogs ? 0 : st().yardRails ? 1 : -1;
+    if (kind < 0) {
+      yield { wait: 10 };
+      continue;
+    }
+    yield* walk(RING_STEEL_YARD);
+    // A press's count is not handed back across the ticks it takes: read the back instead.
+    yield* press('rail.steelTake', { kind });
+    const a = g.acct(pl.pid);
+    if (a.carry + (a.rails ?? 0) === 0) {
+      yield { wait: 10 };
+      continue;
+    }
+    yield* walk(RING_STEEL_WORKS);
+    yield* press('rail.steel');
+    // A bill already full of that kind (a friend fed it first): put the rest down here.
+    yield* clearBack(g, pl);
+  }
+}
 function* cradle(g: Game, pl: Player): Policy {
   const sh = () => shed(g.w);
   if (pl.i === g.players.length - 1 || g.players.length === 1) {
@@ -544,6 +582,13 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     brace: () => aperture(w()).brace !== 1,
     weights: () => aperture(w()).cw >= WORKS.counterweight,
     rivet: () => aperture(w()).joined >= 0,
+    steelkit: () => {
+      const st = steelOf(w());
+      return st.lit >= 0 || (st.yardLogs + st.logs >= STEEL.logs && st.yardRails + st.rails >= STEEL.rails);
+    },
+    steelworks: () => steelOf(w()).lit >= 0,
+    steelhome: () => shed(w()).steel >= 1,
+    install: () => lineOf(w(), LINE2).boiler >= 1,
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
   const policy: Record<NodeId, (pl: Player) => Policy> = {
@@ -631,6 +676,21 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
         () => (byHand.has('weights') ? works(w()).rack : aperture(w()).rack),
       ),
     rivet: (pl) => strike(g, pl, 2),
+    // The kit and the first steel home are the trains': one player waits at the yard, then at the table.
+    steelkit: (pl) =>
+      (function* () {
+        if (pl.i !== 0) return;
+        yield* walk(RING_STEEL_YARD);
+        yield* waitFor(g, done.steelkit);
+      })(),
+    steelworks: (pl) => steelWorks(g, pl),
+    steelhome: (pl) =>
+      (function* () {
+        if (pl.i !== 0) return;
+        yield* walk(SHED_TABLE);
+        yield* waitFor(g, done.steelhome);
+      })(),
+    install: (pl) => device(g, pl, SHED_TABLE, 'rail.install', done.steelhome),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };
 }
@@ -658,6 +718,8 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
       const fields = { ...cmd.fields };
       // The table turn and fit name the revision the actor sees now.
       if (cmd.act === 'rail.turn') Object.assign(fields, { to: 1, revision: shed(g.w).tableRev });
+      if (cmd.act === 'rail.install')
+        Object.assign(fields, { line: LINE2, part: 1, revision: lineOf(g.w, LINE2).boiler });
       const res = g.h.act(pl.pid, cmd.act, fields, pl.at);
       t.actions++;
       if (res.status === 'rejected') {
@@ -717,9 +779,11 @@ function probe(h: Host, players: Player[], id: NodeId, before: NodeId): Probe | 
   const own = new Set([...node(id).ops, 'rail.deposit', 'rail.kiln']);
   let accepted = false;
   for (let k = 0; k < PROBE && pl.gen; k++) {
-    const before = t.accepted;
+    // The held node finished on its own (a train brought what it waits for) before the press: the probe can't tell.
+    if (!accepted && r.done[before]()) return null;
+    const was = t.accepted;
     step(r, pl, t, []);
-    if (t.accepted > before && t.last && 'act' in t.last && own.has(t.last.act)) accepted = true;
+    if (t.accepted > was && t.last && 'act' in t.last && own.has(t.last.act)) accepted = true;
     copy.advance();
   }
   const edge = node(id).requires.find((e) => e.on === before && e.status === 'decided')!;

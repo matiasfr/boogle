@@ -30,8 +30,9 @@ import {
 import { railCounts, line2Active, line2GateOpen, line2Completed } from '../sim/railway-queries-line2.ts';
 import { railMaxDuration, railPanelCount, railPanelStock, railPhase } from '../sim/railway-queries-line1.ts';
 import { trainAlong, trainSpeed } from '../sim/railway-train.ts';
-import { RAIL_HALTS, RAIL_TRAINS, haltPlatform } from '../sim/railway-lines.ts';
-import { RING_BRACE, RING_HEAD, RING_RIVET } from '../sim/railway-ring-layout.ts';
+import { LINE2, RAIL_HALTS, RAIL_TRAINS, haltPlatform } from '../sim/railway-lines.ts';
+import { BOILER_MAX } from '../sim/railway-train.ts';
+import { RING_BRACE, RING_HEAD, RING_RIVET, RING_STEEL_WORKS, RING_STEEL_YARD } from '../sim/railway-ring-layout.ts';
 import { railLinePoint } from '../sim/railway-line-path.ts';
 import {
   PIER_FRAME,
@@ -122,6 +123,9 @@ export const RAIL_ACTIONS = new Set([
   'rail.brace',
   'rail.cradle',
   'rail.turn',
+  'rail.steelTake',
+  'rail.steel',
+  'rail.install',
 ]);
 
 /** A passenger's reach of its train: 10 m of the train's pose (its cars run 7.4 m behind it), at the tick or in the
@@ -279,6 +283,14 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.turn':
       // A turn names the table it saw: a stale one is refused, like a contested beam.
       return railInt(e.to, 1) && e.revision === w.get(Shed, w.single(Shed))!.tableRev && at(SHED_TABLE);
+    case 'rail.steelTake':
+      // Ring Island's steel works (v31, ring-island-build2 R4): logs (0) or rails (1) off the yard where it lies.
+      return railInt(e.kind, 1) && at(RING_STEEL_YARD);
+    case 'rail.steel':
+      return at(RING_STEEL_WORKS);
+    case 'rail.install':
+      // At the table: line 2 (1), the longer boiler (1), on the fit the actor saw; a stale one is the rule's noop.
+      return e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX) && at(SHED_TABLE);
   }
   return false;
 }

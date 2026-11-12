@@ -61,7 +61,12 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     clean.station = e.station;
     clean.n = e.n;
   }
-  if (['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake'].includes(String(e.op))) clean.kind = e.kind;
+  if (['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake', 'rail.steelTake'].includes(String(e.op)))
+    clean.kind = e.kind;
+  if (e.op === 'rail.install') {
+    clean.line = e.line;
+    clean.part = e.part;
+  }
   if (
     [
       'rail.beamTake',
@@ -72,6 +77,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
       'rail.boilerFit',
       'rail.turn',
       'rail.brace',
+      'rail.install',
     ].includes(String(e.op))
   )
     clean.revision = e.revision;
@@ -89,7 +95,21 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
 
 /** The fields an accepted action's effect event carries (the intent and the actor; the count moved is `accepted`, a
  * felled tree's fall is in the state, and a kind of 0 is left out). */
-const EVENT_FIELDS = ['id', 'station', 'kind', 'revision', 'x', 'y', 'z', 'rack', 'site', 'to', 'dir'] as const;
+const EVENT_FIELDS = [
+  'id',
+  'station',
+  'kind',
+  'revision',
+  'x',
+  'y',
+  'z',
+  'rack',
+  'site',
+  'to',
+  'dir',
+  'line',
+  'part',
+] as const;
 /** What the result adds for effects (src/world/railway-predict.ts RailEffect), without what the intent already says:
  * a drop's pile stands at its x/y/z, and a take's pile is its id (its position still comes from here: it may be gone). */
 const EFFECT_FIELDS = ['carried', 'level', 'pile', 'px', 'py', 'pz'] as const;

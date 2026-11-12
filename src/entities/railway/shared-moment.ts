@@ -8,7 +8,7 @@
 import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import { playMark } from '../../proto/mark.ts';
 
-export type SharedMoment = 'quarry gate' | 'sea gate' | 'works throat' | 'glider' | 'the meet';
+export type SharedMoment = 'quarry gate' | 'sea gate' | 'works throat' | 'glider' | 'the meet' | 'longer boiler';
 
 /** Plays `moment` on this page for an accepted `event`: `show(mine)` starts what this page sees (the shot, the banner,
  * the finder's card) and returns whether a camera shot was queued (reduced motion and a seated player get none). */

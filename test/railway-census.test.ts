@@ -87,7 +87,9 @@ test('the tick runs in the declared order the hand-coded tick used', () => {
       // Slice 5 R3's riders, after the trains.
       ['rail.tradeTick', 'tick', 3.5],
       ['rail.worksTick', 'tick', 4],
-      ['rail.jobClock', 'tick', 5],
+      // Ring Island build 2's steel works casts after the kiln (ring-island-build2, R1).
+      ['rail.steelTick', 'tick', 5],
+      ['rail.jobClock', 'tick', 6],
     ],
   );
 });

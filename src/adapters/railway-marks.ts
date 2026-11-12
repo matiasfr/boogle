@@ -1,6 +1,7 @@
 // Local playtest observations, never a gameplay or prediction input.
 import type { RailwayIntent } from './railway-intents.ts';
-import { aperture, forge, jobs, qjobs, rail, works, type ReadWorld } from '../sim/railway-rows.ts';
+import { aperture, forge, jobs, qjobs, rail, shed, steel, works, type ReadWorld } from '../sim/railway-rows.ts';
+import { STEEL } from '../sim/railway-ring-layout.ts';
 import type { World } from '../ecs/index.ts';
 import type { PlayData } from '../proto/mark.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
@@ -34,6 +35,9 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.footSet': 'footing set',
     'rail.cradle': 'cradle rails',
     'rail.turn': 'table turned',
+    'rail.steelTake': 'steel kit taken',
+    'rail.steel': 'works fed',
+    'rail.install': 'boiler installed',
     'rail.depotTake': 'depot pick up',
     'rail.depotRailTake': 'depot pick up',
     'rail.deposit': 'deposit',
@@ -43,6 +47,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
   if (!name) return [];
   if ('station' in intent) data.station = intent.station;
   if ('kind' in intent) data.material = intent.kind === 2 ? 'rails' : intent.kind === 1 ? 'stone' : 'logs';
+  if (intent.op === 'rail.steelTake') data.material = intent.kind === 1 ? 'rails' : 'logs';
   if (intent.op === 'rail.beamDeposit') data.material = 'beam';
   if (intent.op === 'rail.depotTake') data.material = 'logs';
   if (intent.op === 'rail.depotRailTake') data.material = 'rails';
@@ -75,6 +80,14 @@ export function createRailwayProgressMarks() {
     const ring = aperture(w);
     facts.set('gap footed', ring.set >= 14);
     facts.set('ring joined', ring.joined >= 0);
+    // Ring Island build 2 (v31): the whole kit in the island yard (or already fed), the works lit, the first steel home.
+    const st = steel(w);
+    facts.set(
+      'steel kit landed',
+      st.lit >= 0 || (st.yardLogs + st.logs >= STEEL.logs && st.yardRails + st.rails >= STEEL.rails),
+    );
+    facts.set('steel works lit', st.lit >= 0);
+    facts.set('steel home', shed(w).steel >= 1);
     const marks: RailwayMark[] = [];
     if (previous && !baseline)
       for (const [name, value] of facts)
