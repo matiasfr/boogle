@@ -13,7 +13,7 @@ import {
 import type { RailwayIntent } from '../src/adapters/railway-intents.ts';
 import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
-import { Forge, Job, QJob, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
+import { Forge, Job, QJob, Rail, Shed, Steel, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { jobId, qjobId } from '../src/sim/railway-queries.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { RAIL_STOPS } from '../dev/look/segments.ts';
@@ -32,7 +32,8 @@ function markNames() {
   for (const op of RAIL_ACTIONS)
     for (const [name] of railwayActionMarks({ op } as unknown as RailwayIntent, 1, true)) names.add(name);
   // A world with every line-one and line-two job funded and laid, the forge lit and the trains unlocked, or none of it
-  // (ECS M11). The Works and Ring Island rows stay at their defaults. The marks read its rows (M12).
+  // (ECS M11), and Ring Island's steel works lit with steel home (build 2). The Works and the gap stay at their defaults.
+  // The marks read its rows (M12).
   const state = (on: boolean) => {
     const w = createRailwayWorld();
     if (on) {
@@ -42,6 +43,8 @@ function markNames() {
         Object.assign(w.mut(QJob, qjobId(w, k))!, { start: 0, completion: 1 });
       w.mut(Forge, w.single(Forge))!.lit = 0;
       w.mut(Rail, w.single(Rail))!.trains = 0;
+      w.mut(Steel, w.single(Steel))!.lit = 0;
+      w.mut(Shed, w.single(Shed))!.steel = 1;
     }
     return w;
   };

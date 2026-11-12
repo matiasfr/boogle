@@ -1,6 +1,7 @@
 // Local playtest observations, never a gameplay or prediction input.
 import type { RailwayIntent } from './railway-intents.ts';
-import { aperture, forge, jobs, qjobs, rail, works, type ReadWorld } from '../sim/railway-rows.ts';
+import { aperture, forge, jobs, qjobs, rail, shed, steel, works, type ReadWorld } from '../sim/railway-rows.ts';
+import { STEEL } from '../sim/railway-ring-layout.ts';
 import type { World } from '../ecs/index.ts';
 import type { PlayData } from '../proto/mark.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
@@ -79,6 +80,14 @@ export function createRailwayProgressMarks() {
     const ring = aperture(w);
     facts.set('gap footed', ring.set >= 14);
     facts.set('ring joined', ring.joined >= 0);
+    // Ring Island build 2 (v30): the whole kit in the island yard (or already fed), the works lit, the first steel home.
+    const st = steel(w);
+    facts.set(
+      'steel kit landed',
+      st.lit >= 0 || (st.yardLogs + st.logs >= STEEL.logs && st.yardRails + st.rails >= STEEL.rails),
+    );
+    facts.set('steel works lit', st.lit >= 0);
+    facts.set('steel home', shed(w).steel >= 1);
     const marks: RailwayMark[] = [];
     if (previous && !baseline)
       for (const [name, value] of facts)
