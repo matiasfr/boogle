@@ -38,7 +38,7 @@ import {
 } from '../src/sim/railway-route.ts';
 import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
 import { RING_END, RING_S_HEAD, ringAt } from '../src/sim/railway-ring-layout.ts';
-import { TRAIN, TRAIN_PHASE, fleetOf, trainDir, trainStopsOf } from '../src/sim/railway-train.ts';
+import { TRAIN, TRAIN_PHASE, fleetOf, trainDir, trainPassesBy, trainStopsOf } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, cycleTicks, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, train, trains } from '../src/sim/railway-rows.ts';
@@ -51,9 +51,19 @@ import { RAIL_PREDICTED, railPredict } from '../src/world/railway-predict.ts';
 import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
-import { act, advance, buildSeedWorld, chopTo, invariant, restore, unaudited, type Seed } from './helpers/rail.ts';
+import {
+  act,
+  advance,
+  apply,
+  buildSeedWorld,
+  chopTo,
+  invariant,
+  restore,
+  unaudited,
+  type Seed,
+} from './helpers/rail.ts';
 import { checkRoute } from '../src/sim/railway-check-route.ts';
-import { fuzzTicks } from './helpers/fuzz.ts';
+import { ROUTE_GATES, fuzzTicks, routeTicks } from './helpers/fuzz.ts';
 
 const STACK = 0;
 const LEG = RAIL_LEGS[STACK]!;
@@ -81,20 +91,38 @@ const nowhere: Actor = { reach: () => false, height: () => false, cadence: () =>
 const anywhere: Actor = { reach: () => true, height: () => true, cadence: () => true };
 const op = (o: string, f: Record<string, unknown> = {}) => ({ op: o, epoch: 0, request: 0, ...f }) as never;
 
+/** Players a and b take what the rack holds and stock the frame, by apply alone: act (src/sim/railway-seed-route.ts) checks
+ * the whole invariant after every op, some forty times a fed tick's cost, so the feeding loops check it at each lay. */
+function stock(s: Seed, k = STACK) {
+  let stocked = 0;
+  for (const pid of ['a', 'b'])
+    for (const [o, f] of [
+      ['rail.depotTake', {}],
+      ['rail.depotRailTake', {}],
+      ['rail.legStock', { leg: k }],
+    ] as const) {
+      const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
+      const r = apply(s.w, pid, { op: o, epoch: a.epoch, request: a.request + 1, ...f } as never, s.t);
+      if (o === 'rail.legStock' && r.accepted) stocked++;
+    }
+  return stocked; // the players whose press stocked the frame
+}
+/** Player a's rail.call, by apply alone (as stock): the fuzzes check the invariant every 250 ticks. */
+function ask(s: Seed, f: Record<string, unknown>) {
+  const a = s.w.get(Account, s.w.lookup(Account, 'a')!)!;
+  return apply(s.w, 'a', { op: 'rail.call', epoch: a.epoch, request: a.request + 1, ...f } as never, s.t).accepted;
+}
 /** Players a and b take what the leg's rack holds and feed the frame, every tick, until the current section starts to
  * lay; then until it is laid. Returns the tick the frame was full. */
 function feedSection(s: Seed, k = STACK) {
   const was = legRow(s.w, k).laid;
   for (let guard = 0; legRow(s.w, k).start < 0; guard++) {
     assert.ok(guard < 6000, `section ${was} never fed`);
-    for (const pid of ['a', 'b']) {
-      act(s, pid, 'rail.depotTake');
-      act(s, pid, 'rail.depotRailTake');
-      act(s, pid, 'rail.legStock', { leg: k });
-    }
+    stock(s, k);
     if (legRow(s.w, k).start < 0) advance(s, 1);
   }
   const full = s.t;
+  assert.equal(invariant(s.w), null, `section ${was} fed`);
   while (legRow(s.w, k).laid === was) advance(s, 1);
   return full;
 }
@@ -226,13 +254,10 @@ const acc = (s: Seed, pid: string) => s.w.get(Account, s.w.lookup(Account, pid)!
 function feedSectionStart(s: Seed) {
   for (let guard = 0; legRow(s.w, STACK).start < 0; guard++) {
     assert.ok(guard < 6000);
-    for (const pid of ['a', 'b']) {
-      act(s, pid, 'rail.depotTake');
-      act(s, pid, 'rail.depotRailTake');
-      act(s, pid, 'rail.legStock', { leg: STACK });
-    }
+    stock(s);
     if (legRow(s.w, STACK).start < 0) advance(s, 1);
   }
+  assert.equal(invariant(s.w), null, 'the frame fed');
 }
 
 test('a section lays LEG_TUNE.layTicks after its frame is full, and the railhead halt opens and moves on', () => {
@@ -397,26 +422,60 @@ test('the idle room (ruling B, gate 13): at rest by +1,500, kit 1 racked, two ki
   assert.ok(legKitNeed(s.w, STACK).logs > 0, 'the fourth kit is still owed: only the cap holds it');
   assert.equal(invariant(s.w), null);
 });
-test('kitTrains: at most the running trains less one carry kit, whatever is owed; a fed leg still lays through', () => {
-  const s = unaudited(copy(JOINED));
-  for (let k = 0; k < N; k++) {
-    for (let guard = 0; legRow(s.w, STACK).laid === k; guard++) {
-      assert.ok(guard < 6000);
-      if (legRow(s.w, STACK).start < 0)
-        for (const pid of ['a', 'b']) {
-          act(s, pid, 'rail.depotTake');
-          act(s, pid, 'rail.depotRailTake');
-          act(s, pid, 'rail.legStock', { leg: STACK });
-        }
-      advance(s, 1);
-      const running = servingSlots((j) => train(s.w, j), LINE2).length,
-        carrying = LINE_SLOTS[LINE2]!.filter((j) => train(s.w, j).logs + train(s.w, j).rails > 0).length;
-      assert.ok(carrying <= running - 1, `${carrying} kit trains of ${running} at ${s.t}`);
-      assert.deepEqual(kitEquality(s.w), [0, 0], `kit units at ${s.t}`);
+/** The leg fed every tick from the rivet (the rack into the frame whenever it can lay), played once and shared by the
+ * whole-leg tests that feed it so (kitTrains, gate 14 and call 88's fed proof): what each asserts, recorded as it ran. */
+let FED:
+  | {
+      kitBreaks: string[];
+      need: { logs: number; rails: number };
+      broken: string | null;
+      toGorge: number;
+      idle: number[];
+      rides: number[];
+    }
+  | undefined;
+function fedLeg() {
+  if (FED) return FED;
+  const s = unaudited(copy(JOINED)),
+    t0 = s.t,
+    w = rideOnWatch(),
+    kitBreaks: string[] = [],
+    idle: number[] = [];
+  let ready = s.t,
+    complete = -1,
+    need = { logs: -1, rails: -1 },
+    broken: string | null = 'never laid',
+    toGorge = -1;
+  for (let guard = 0; legRow(s.w, STACK).laid < N || w.done().length < N; guard++) {
+    assert.ok(guard < 12000, 'the fed leg: laid, and every lay ridden on');
+    const g = legRow(s.w, STACK),
+      laid = g.laid;
+    if (laid < N) {
+      if (complete < 0 && g.logs + rail(s.w).depot >= 20 && g.rails + rail(s.w).depotRails >= 20) complete = s.t;
+      if (g.start < 0) stock(s);
+    }
+    const before = trains(s.w).map((r) => ({ ...r }));
+    advance(s, 1);
+    w.step(s.w, s.t, before);
+    if (laid === N) continue;
+    const running = servingSlots((j) => train(s.w, j), LINE2).length,
+      carrying = LINE_SLOTS[LINE2]!.filter((j) => train(s.w, j).logs + train(s.w, j).rails > 0).length;
+    if (carrying > running - 1) kitBreaks.push(`${carrying} kit trains of ${running} at ${s.t}`);
+    const eq = kitEquality(s.w);
+    if (eq[0] || eq[1]) kitBreaks.push(`kit units ${eq.join('/')} at ${s.t}`);
+    if (legRow(s.w, STACK).laid > laid) {
+      idle.push(complete - ready);
+      [ready, complete] = [s.t, -1];
+      if (laid + 1 === N) [toGorge, need, broken] = [s.t - t0, legKitNeed(s.w, STACK), invariant(s.w)];
     }
   }
-  assert.deepEqual(legKitNeed(s.w, STACK), { logs: 0, rails: 0 });
-  assert.equal(invariant(s.w), null);
+  return (FED = { kitBreaks, need, broken, toGorge, idle, rides: w.done() });
+}
+test('kitTrains: at most the running trains less one carry kit, whatever is owed; a fed leg still lays through', () => {
+  const f = fedLeg();
+  assert.deepEqual(f.kitBreaks.slice(0, 5), []);
+  assert.deepEqual(f.need, { logs: 0, rails: 0 });
+  assert.equal(f.broken, null);
 });
 
 test('conservation and the load check hold through the whole leg, the world round-tripping through a save', () => {
@@ -516,12 +575,7 @@ test('replicated rows change only at a kit load, a feed or a lay: never every ti
   for (let k = 0; k < 6000; k++) {
     const laid = legRow(s.w, STACK).laid,
       start = legRow(s.w, STACK).start;
-    if (k % 3 === 0)
-      for (const pid of ['a', 'b']) {
-        act(s, pid, 'rail.depotTake');
-        act(s, pid, 'rail.depotRailTake');
-        if (act(s, pid, 'rail.legStock', { leg: STACK })) events++;
-      }
+    if (k % 3 === 0) events += stock(s);
     advance(s, 1);
     const r = legRow(s.w, STACK),
       l = r.loadedLogs + r.loadedRails;
@@ -537,12 +591,21 @@ test('replicated rows change only at a kit load, a feed or a lay: never every ti
 });
 
 // ---------------------------------------------------------------- the trains on the grown line
+/** The halts a lever ask may name now: open on their line and not closed behind (the orchestrator's ruling on call 88:
+ * a passed head takes no ask), by RAIL_HALTS id. */
+function askPool(w: World) {
+  return RAIL_HALTS.flatMap((h, id) => {
+    const n = stopsOf(w, h.line).length;
+    return h.stop < n && !(trainPassesBy(h.line, h.stop, 1, n) && trainPassesBy(h.line, h.stop, -1, n)) ? [id] : [];
+  });
+}
 /** Gate 11 as restated (greybox-route.md, rulings on the re-measure, 5): the worst line 2 wait is at most 1,600, and
  * from each section laying a train stands at the new railhead (or the Gorge) within 1,158 ticks. A wait over 1,158
  * asked later than 3,000 ticks after the Gorge opens is reported under gate 9 (a diagnostic), not gated twice. */
 const GROWTH_CAP = 1600,
   SETTLED_CAP = 1158;
-const FUZZ = fuzzTicks(20000);
+/** The gate fuzzes' length: 20,000 in the long run (ROUTE_GATES=1), 3,000 otherwise (test/helpers/fuzz.ts). */
+const FUZZ = routeTicks();
 // Round 3, ruling 1: the waits are owed at the shipped hold (75%) on four seeds; at 0% two seeds run for the structural
 // checks only (spacing, end blocks, block signals, the load check, the leg completing) and their waits are printed.
 for (const [seed, headPct] of [
@@ -570,29 +633,24 @@ for (const [seed, headPct] of [
     const standSince = new Map<number, number>();
     for (let k = 0; k < FUZZ; k++) {
       // The room plays the leg: what the rack holds goes into the frame (a carry every few seconds).
-      if (k % 30 === 0)
-        for (const pid of ['a', 'b']) {
-          act(s, pid, 'rail.depotTake');
-          act(s, pid, 'rail.depotRailTake');
-          act(s, pid, 'rail.legStock', { leg: STACK });
-        }
+      if (k % 30 === 0) stock(s);
       const n2 = stopsOf(s.w, LINE2).length;
       if (rand() < 0.05) {
-        const id = Math.floor(rand() * RAIL_HALTS.length),
+        const id = askPool(s.w)[Math.floor(rand() * askPool(s.w).length)]!,
           dir = rand() < 0.5 ? -1 : 1;
         const h = RAIL_HALTS[id]!;
-        if (h.stop < stopsOf(s.w, h.line).length && act(s, 'a', 'rail.call', { id, dir }) && !asked.has(`${id}/${dir}`))
+        if (h.stop < stopsOf(s.w, h.line).length && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`))
           asked.set(`${id}/${dir}`, s.t);
       }
       if (rand() < 0.03 && n2 > 2) {
         const serving = servingSlots((j) => train(s.w, j), LINE2);
         const slot = serving[Math.floor(rand() * serving.length)]!,
           stop = 1 + Math.floor(rand() * (n2 - 2));
-        act(s, 'a', 'rail.call', { id: haltId(LINE2, stop), dir: trainDir(train(s.w, slot)), train: slot });
+        ask(s, { id: haltId(LINE2, stop), dir: trainDir(train(s.w, slot)), train: slot });
       }
       if (rand() < 0.01) {
         const tr = [-1, 5, 99, 1.5, -0, Number.NaN, 2 ** 60, '1', null][Math.floor(rand() * 9)];
-        act(s, 'a', 'rail.call', { id: Math.floor(rand() * 12) - 1, dir: rand() < 0.5 ? -1 : 2, train: tr } as never);
+        ask(s, { id: Math.floor(rand() * 12) - 1, dir: rand() < 0.5 ? -1 : 2, train: tr } as never);
       }
       const before = servingSlots((j) => train(s.w, j), LINE2).length;
       railTick(s.w, ++s.t, headPct);
@@ -619,6 +677,11 @@ for (const [seed, headPct] of [
       for (const [key, since] of asked) {
         const [id, dir] = key.split('/').map(Number) as [number, number];
         const h = RAIL_HALTS[id]!;
+        // An ask at a head that has since closed behind is withdrawn with it (the lay drops it): no wait to time.
+        if (askPool(s.w).indexOf(id) < 0) {
+          asked.delete(key);
+          continue;
+        }
         const there = LINE_SLOTS[h.line]!.some((j) => {
           const r = train(s.w, j);
           return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && trainDir(r) === dir;
@@ -660,7 +723,7 @@ for (const [seed, headPct] of [
     t.diagnostic(
       `waits: ${line2.map(([key, v]) => `${RAIL_HALTS[Number(key.split('/')[0])]!.name} ${key.endsWith('/-1') ? 'down' : 'up'} ${v / 10} s`).join('; ')}`,
     );
-    if (FUZZ >= 20000) {
+    if (ROUTE_GATES) {
       assert.equal(legRow(s.w, STACK).laid, N, 'the leg was laid in the run');
       assert.equal(joins.length, 2, 'the fourth and fifth trains joined');
       if (headPct === 75) assert.equal(toRailhead.length, N, 'a train reached the new railhead after every lay');
@@ -790,20 +853,9 @@ test("block signals: line 2 holds at the stack line's section ends, between its 
   assert.equal(RAIL_LINES[0]!.signals, undefined);
 });
 test('gate 10: at every stage of the leg the quiet round trip is at most 1.2 times non-stop', () => {
-  const s = unaudited(copy(JOINED));
-  for (let laid = 0; laid <= N; laid++) {
-    for (let guard = 0; legRow(s.w, STACK).laid < laid; guard++) {
-      assert.ok(guard < 6000);
-      if (legRow(s.w, STACK).start < 0)
-        for (const pid of ['a', 'b']) {
-          act(s, pid, 'rail.depotTake');
-          act(s, pid, 'rail.depotRailTake');
-          act(s, pid, 'rail.legStock', { leg: STACK });
-        }
-      advance(s, 1);
-    }
-    const u = unaudited({ w: restore(s.w), t: s.t });
-    advance(u, 3000);
+  stageWorlds().forEach((base, laid) => {
+    const u = unaudited({ w: restore(base.w), t: base.t });
+    if (laid === 0) advance(u, 3000); // the stage worlds' rivet is the seed itself; the others are settled 3,000
     const slot = LINE_SLOTS[LINE2]![0]!,
       left: number[] = [];
     let prev = { ...train(u.w, slot) };
@@ -817,7 +869,7 @@ test('gate 10: at every stage of the leg the quiet round trip is at most 1.2 tim
     const lap = (left.at(-1)! - left[0]!) / (left.length - 1),
       nonstop = cycleTicks(LINE2, stopsOf(u.w, LINE2));
     assert.ok(lap <= 1.2 * nonstop, laid + ' laid: a lap of ' + lap + ' against ' + nonstop + ' non-stop');
-  }
+  });
 });
 
 // ---------------------------------------------------------------- round 3's gates 5, 8, 9 and 14 (greybox-route.md)
@@ -825,14 +877,10 @@ test('gate 10: at every stage of the leg the quiet round trip is at most 1.2 tim
 function playTo(s: Seed, laid: number) {
   for (let guard = 0; legRow(s.w, STACK).laid < laid; guard++) {
     assert.ok(guard < 9000, `the leg reaches ${laid} laid`);
-    if (legRow(s.w, STACK).start < 0)
-      for (const pid of ['a', 'b']) {
-        act(s, pid, 'rail.depotTake');
-        act(s, pid, 'rail.depotRailTake');
-        act(s, pid, 'rail.legStock', { leg: STACK });
-      }
+    if (legRow(s.w, STACK).start < 0) stock(s);
     advance(s, 1);
   }
+  assert.equal(invariant(s.w), null, `${laid} laid`);
 }
 /** The stage worlds of round 3's sheet: 0 is the rivet; 1 to 4 played from it and settled 3,000 ticks. */
 let STAGES: Seed[] | undefined;
@@ -872,26 +920,30 @@ function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
   for (let k = 0; k < ticks; k++) {
     const n2 = stopsOf(s.w, LINE2).length;
     if (rand() < 0.05) {
-      const id = Math.floor(rand() * RAIL_HALTS.length),
+      const id = askPool(s.w)[Math.floor(rand() * askPool(s.w).length)]!,
         dir = rand() < 0.5 ? -1 : 1;
       const h = RAIL_HALTS[id]!;
-      if (h.stop < stopsOf(s.w, h.line).length && act(s, 'a', 'rail.call', { id, dir }) && !asked.has(`${id}/${dir}`))
+      if (h.stop < stopsOf(s.w, h.line).length && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`))
         asked.set(`${id}/${dir}`, s.t);
     }
     if (rand() < 0.03 && n2 > 2) {
       const serving = servingSlots((j) => train(s.w, j), LINE2);
       const slot = serving[Math.floor(rand() * serving.length)]!,
         stop = 1 + Math.floor(rand() * (n2 - 2));
-      act(s, 'a', 'rail.call', { id: haltId(LINE2, stop), dir: trainDir(train(s.w, slot)), train: slot });
+      ask(s, { id: haltId(LINE2, stop), dir: trainDir(train(s.w, slot)), train: slot });
     }
     if (rand() < 0.01) {
       const tr = [-1, 5, 99, 1.5, -0, Number.NaN, 2 ** 60, '1', null][Math.floor(rand() * 9)];
-      act(s, 'a', 'rail.call', { id: Math.floor(rand() * 12) - 1, dir: rand() < 0.5 ? -1 : 2, train: tr } as never);
+      ask(s, { id: Math.floor(rand() * 12) - 1, dir: rand() < 0.5 ? -1 : 2, train: tr } as never);
     }
     railTick(s.w, ++s.t, headPct);
     for (const [key, since] of asked) {
       const [id, dir] = key.split('/').map(Number) as [number, number];
       const h = RAIL_HALTS[id]!;
+      if (askPool(s.w).indexOf(id) < 0) {
+        asked.delete(key); // withdrawn: its head closed behind
+        continue;
+      }
       const there = LINE_SLOTS[h.line]!.some((j) => {
         const r = train(s.w, j);
         return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && trainDir(r) === dir;
@@ -909,6 +961,7 @@ function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
       );
       assert.equal(broken, null, `spacing at ${s.t}`);
     }
+    if (k % 250 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     if (rand() < 0.002) s = unaudited({ w: restore(s.w), t: s.t });
   }
   for (const [key, since] of asked) if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2) waits.push(s.t - since);
@@ -921,7 +974,7 @@ function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
   };
 }
 const SEEDS = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
-const SETTLED_FUZZ = fuzzTicks(20000);
+const SETTLED_FUZZ = routeTicks();
 
 test('gate 9, stage 0: the leg open and nobody feeding, four seeds at 75%: worst at most 1,158, mean at most 525', (t) => {
   for (const seed of SEEDS) {
@@ -941,7 +994,8 @@ test('gates 8 and 9, printed: fixed stages 0 to 4 and the settled line, four see
   const settled = unaudited({ w: restore(stages[N]!.w), t: stages[N]!.t });
   advance(settled, 1000); // 4,000 ticks after the Gorge opened
   t.diagnostic('seed | 0 laid | 1 | 2 | 3 | 4 | settled: worst (mean), and waits over 1,158 of all');
-  for (const seed of SEEDS) {
+  // Printed, not asserted: the four seeds in the long run (ROUTE_GATES=1), the first alone in the short one.
+  for (const seed of ROUTE_GATES ? SEEDS : SEEDS.slice(0, 1)) {
     const row = stages.map((st) => leverWaits(st, seed, 75, fuzzTicks(3000)));
     const set = leverWaits(settled, seed, 75, SETTLED_FUZZ);
     t.diagnostic(
@@ -993,30 +1047,11 @@ test('gate 5: a full load never waits in the Quarry yard over 1,158 (once, in th
 });
 
 test('gate 14: fed every tick from the rivet, the Gorge within 3,700 ticks; the first frame idle at most 1,200, the others 600', (t) => {
-  const s = unaudited(copy(JOINED)),
-    t0 = s.t,
-    idle: number[] = [];
-  let ready = s.t;
-  for (let k = 0; k < N; k++) {
-    let complete = -1;
-    while (legRow(s.w, STACK).laid === k) {
-      const g = legRow(s.w, STACK);
-      if (complete < 0 && g.logs + rail(s.w).depot >= 20 && g.rails + rail(s.w).depotRails >= 20) complete = s.t;
-      if (g.start < 0)
-        for (const pid of ['a', 'b']) {
-          act(s, pid, 'rail.depotTake');
-          act(s, pid, 'rail.depotRailTake');
-          act(s, pid, 'rail.legStock', { leg: STACK });
-        }
-      advance(s, 1);
-      assert.ok(s.t - t0 <= 3700, 'the Gorge within 3,700 ticks');
-    }
-    idle.push(complete - ready);
-    ready = s.t;
-  }
-  t.diagnostic(`rivet to Gorge ${s.t - t0}; idle per frame ${idle.join(', ')}`);
-  assert.ok(idle[0]! <= 1200, 'the first frame');
-  for (const v of idle.slice(1)) assert.ok(v <= 600, `a later frame idle ${v}`);
+  const f = fedLeg();
+  t.diagnostic(`rivet to Gorge ${f.toGorge}; idle per frame ${f.idle.join(', ')}`);
+  assert.ok(f.toGorge >= 0 && f.toGorge <= 3700, 'the Gorge within 3,700 ticks');
+  assert.ok(f.idle[0]! <= 1200, 'the first frame');
+  for (const v of f.idle.slice(1)) assert.ok(v <= 600, `a later frame idle ${v}`);
 });
 
 // ---------------------------------------------------------------- step 4's review: the catalog positions (b, k)
@@ -1082,22 +1117,10 @@ function rideOnWatch() {
   };
 }
 test('call 88: fed every tick, someone at each old head is at the new head within 1,158 ticks of the lay', (t) => {
-  const s = unaudited(copy(JOINED)),
-    w = rideOnWatch();
-  for (let guard = 0; legRow(s.w, STACK).laid < N || w.done().length < N; guard++) {
-    assert.ok(guard < 12000, 'every lay ridden on');
-    if (legRow(s.w, STACK).start < 0 && legRow(s.w, STACK).laid < N)
-      for (const pid of ['a', 'b']) {
-        act(s, pid, 'rail.depotTake');
-        act(s, pid, 'rail.depotRailTake');
-        act(s, pid, 'rail.legStock', { leg: STACK });
-      }
-    const before = trains(s.w).map((r) => ({ ...r }));
-    advance(s, 1);
-    w.step(s.w, s.t, before);
-  }
-  t.diagnostic(`old head to the new head after each lay: ${w.done().join(', ')} ticks`);
-  for (const v of w.done()) assert.ok(v <= SETTLED_CAP, `a ride on took ${v}`);
+  const f = fedLeg();
+  t.diagnostic(`old head to the new head after each lay: ${f.rides.join(', ')} ticks`);
+  assert.equal(f.rides.length, N, 'every lay ridden on');
+  for (const v of f.rides) assert.ok(v <= SETTLED_CAP, `a ride on took ${v}`);
 });
 for (const seed of [0xc0ffee, 0x777, 0x5eed, 0xbadd])
   test(`call 88, fuzz ${seed.toString(16)} at 75%: someone at each old head is at the new head within 1,158 ticks`, (t) => {
@@ -1105,24 +1128,20 @@ for (const seed of [0xc0ffee, 0x777, 0x5eed, 0xbadd])
     const rand = mulberry32(seed),
       w = rideOnWatch();
     for (let k = 0; k < FUZZ && (legRow(s.w, STACK).laid < N || w.done().length < N); k++) {
-      if (k % 30 === 0)
-        for (const pid of ['a', 'b']) {
-          act(s, pid, 'rail.depotTake');
-          act(s, pid, 'rail.depotRailTake');
-          act(s, pid, 'rail.legStock', { leg: STACK });
-        }
+      if (k % 30 === 0) stock(s);
       if (rand() < 0.05) {
-        const id = Math.floor(rand() * RAIL_HALTS.length),
+        const id = askPool(s.w)[Math.floor(rand() * askPool(s.w).length)]!,
           dir = rand() < 0.5 ? -1 : 1;
-        if (RAIL_HALTS[id]!.stop < stopsOf(s.w, RAIL_HALTS[id]!.line).length) act(s, 'a', 'rail.call', { id, dir });
+        if (RAIL_HALTS[id]!.stop < stopsOf(s.w, RAIL_HALTS[id]!.line).length) ask(s, { id, dir });
       }
       const before = trains(s.w).map((r) => ({ ...r }));
       railTick(s.w, ++s.t, 75);
       w.step(s.w, s.t, before);
+      if (k % 250 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
       if (rand() < 0.002) s = unaudited({ w: restore(s.w), t: s.t });
     }
     t.diagnostic(`old head to the new head after each lay: ${w.done().join(', ')} ticks`);
-    assert.equal(w.done().length, N, 'every lay ridden on');
+    if (ROUTE_GATES) assert.equal(w.done().length, N, 'every lay ridden on');
     for (const v of w.done()) assert.ok(v <= SETTLED_CAP, `a ride on took ${v}`);
   });
 

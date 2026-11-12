@@ -9,6 +9,9 @@
 //   FUZZ_FIRST_SEED   1: each fuzz runs only the first of its own seeds (a non-review ship's CI); FUZZ_SEEDS still wins
 //   FUZZ_LIGHT        1: the trains fuzz asks at a playtest's rate, one lever ask every 60-90 s
 //   FUZZ_TRAINS       the island fuzz's train count (the line's own, or 4: call 47)
+//   ROUTE_GATES       1: the greybox route's gate fuzzes at full length (routeTicks: 20,000), as the long run sets it;
+//                     otherwise their short version (3,000), every gate still asserted. Their seeds are the four ruled
+//                     ones in every mode (FUZZ_SEEDS does not replace them).
 //
 // A count that is not a whole number of 1 or more throws: NaN would make a sweep skip every offset and pass.
 function count(name: string, own: number): number {
@@ -28,3 +31,6 @@ export const fuzzSeeds = (own: readonly number[]): readonly number[] =>
 export const SAVE_TICKS = count('SAVE_TICKS', 500);
 export const FUZZ_LIGHT = process.env.FUZZ_LIGHT === '1';
 export const fuzzTrains = (own: number) => count('FUZZ_TRAINS', own);
+export const ROUTE_GATES = process.env.ROUTE_GATES === '1';
+/** A route gate fuzz's length: 20,000 ticks under ROUTE_GATES=1 (the long run), else 3,000; FUZZ_TICKS still wins. */
+export const routeTicks = () => count('FUZZ_TICKS', ROUTE_GATES ? 20000 : 3000);
