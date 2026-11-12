@@ -459,10 +459,11 @@ export function endMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, last: n
   const halt = lineDef(line).halts[last]!,
     stops = io.stops(line),
     edge = halt.end!.edgeCm + stops[last]! - halt.s;
-  // Every slot: a shed train (the greybox route's fleet) is neither running nor standing, so it is never moved.
+  // Every slot: a shed train (the greybox route's fleet) is neither running nor standing, so it is never moved; a slot
+  // the IO holds no row for (a caller's own rows for the trains it moves: test/railway-trains.test.ts) is skipped.
   for (const slot of lineSlots(line)) {
-    const r = io.row(slot);
-    if (r.phase !== TRAIN_PHASE.RUN || r.track !== 0 || r.to !== last) continue;
+    const r = io.row(slot) as Readonly<RailTrain> | undefined;
+    if (!r || r.phase !== TRAIN_PHASE.RUN || r.track !== 0 || r.to !== last) continue;
     if (trainAlong(r, line, tick) + TRAIN_EXTENT.aheadCm > edge) io.set(slot, { turn: true });
     else if (halt.only === undefined) io.set(slot, { req: reqAdd(r.req, last, 1, stops.length) });
   }
@@ -473,7 +474,8 @@ export function endMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, last: n
 export function stopMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, k: number, tick: number) {
   const stops = io.stops(line);
   for (const slot of lineSlots(line)) {
-    const r = io.row(slot);
+    const r = io.row(slot) as Readonly<RailTrain> | undefined;
+    if (!r) continue; // as endMoved: a slot the IO holds no row for
     if (r.phase === TRAIN_PHASE.STAND && r.at === k) io.set(slot, { at: -1, to: -1 });
     else if (r.phase === TRAIN_PHASE.RUN && r.to === k) {
       const pose = trainPose(r, line, stops, tick);
