@@ -169,7 +169,7 @@ malformed fields refused (`railInt(e.kind, 1)`, `e.line === 1`, `e.part === 1`, 
 
 **Save, bump and shipping.**
 
-- **v28**, one dated line in `src/world/namespace.ts`, no migration: the `Steel` and `SteelClock` components, two
+- **v28**, one dated line in `src/world/namespace.ts`, no migration, made in R1 (as built; it still ships only with R5): the `Steel` and `SteelClock` components, two
   `Train` fields, two `Line` fields, one `Shed` field, `WORKS.total` 40, `TRAIN_EXTENT`, four ops.
 - **It ships when R1 to R5 are reviewed, as one ship, and never while the owner is mid-session**: check play sessions
   in `npm run heartbeat` first and hold if he is playing (owner calls "Nothing waits on a world bump" and its one
@@ -209,11 +209,15 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       shed's doorway, u 452, lat +6.5; yard to works 6.7 m, not 12 (V1's look may move them). `dev/level/ring.ts`
       asserts both: on the deck, clear of the tarp, anvil and hammer posts. Ruling E's blocked prompt is V1's (no sim
       part). Tests: `test/railway-steel.test.ts` (refusals, lighting on either kind, casts to the cap, the check's seven
-      refusals, a two-seed fuzz that re-asserts the bill can be completed every 500 ops). **The pinned fixtures moved
-      and were not regenerated** (a new component kind and entity change every world hash): `railway-golden.json`
-      (every stage), `railway-tick-order.json`, `railway-ops-golden.json`, `railway-m12-trace.json` and
-      `rail-schema.json` (which fails without the bump). The step order put the bump in R4; regenerating needs the
-      owner's word and belongs with the v28 bump.
+      refusals, a two-seed fuzz that re-asserts the bill can be completed every 500 ops). **The v28 bump moved here
+      from R4** (orchestrator's ruling, 11 November): R1 is the first save-shape change (a new component kind and
+      entity change every world hash), and the fixture rule (test/helpers/railway-golden.ts) regenerates only with a
+      bump, so no step from R1 to R3 could pass its checks with the bump at R4. The branch still ships once, after R5,
+      outside his sessions. Proof that R1 changed no existing behaviour: with `Steel`, `SteelClock`, `steelTick` and the
+      steel counts taken out again in a scratch edit (jobClock left at order 6, the new op rows left in), all 148
+      pinned tests (goldens, tick order, ops stream, M12 trace, schema) pass on the old fixtures. The tick-order move is
+      inert: `steelTick` writes only `Steel` and `SteelClock`, which `jobClock` never reads, and does nothing before the
+      works is lit. The fixtures are then regenerated in a commit of their own.
 - [ ] **R2. The train carries it (M, HOTBOX).** Edit `railway-sys-trains.ts` (`standing`, `arrive`, `wagonArrives`,
       `serviceOf`, `headExempt` while the works owes footings), `railway-components.ts` (`Train.steel`, `Shed.steel`),
       `railway-queries-line2.ts` (the kit's need for the works), `test/railway-trains.test.ts`. Checks: a kit loaded
@@ -231,9 +235,9 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       Village; `boiler === 0` legs bit-identical to v27; **a mixed fleet** (one train at 25 m/s behind two at 20) run
       for 20,000 ticks under random lever asks keeps `sepCm`, the end blocks and the 105 s wait bound; the Pier and
       island stops still clear with the 820 extent. **Independent sim review, P1: the mixed fleet.**
-- [ ] **R4. Server, prediction, seeds, the bump (M, HOTBOX).** Create `src/sim/railway-seed-steel.ts`,
+- [ ] **R4. Server, prediction, seeds (M, HOTBOX; the bump moved to R1).** Create `src/sim/railway-seed-steel.ts`,
       `server/test/railway-steel-host.test.ts`. Edit `src/world/railway-server.ts`, `railway-predict.ts`,
-      `namespace.ts` (v28), `railway-jump.ts` (four rows, section 6), `src/sim/railway-seeds.ts`,
+      `railway-jump.ts` (four rows, section 6), `src/sim/railway-seeds.ts`,
       `src/sim/railway-sys-away.ts` (the works' casts in the away credit, capped by the rack),
       `src/adapters/railway-intents.ts` (five intents), `test/railway-jump.test.ts`,
       `server/test/railway-away.test.ts` (one empty-room case). Checks: reach refusals from the wrong place; a
