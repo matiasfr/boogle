@@ -483,8 +483,24 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       of the pre-rebase ones (worst 730, 705, 694, 717 against 730, 708, 694, 717). The settled run starts 4,000
       ticks after the Gorge opens with the steel kit lying unfed in the yard, so steel first has no rule in play
       there; what differs is build 2's own changes (the 8.2 m extent, the head gap by boiler) and the state the leg
-      arrives in, within the 136-tick spread between seeds. **Leftover (P2):** the kit still owed counts every log and rail on a back as leg
-      kit, the steel yard's included, so a leg load can be put off while someone carries the works' kit.
+      arrives in, within the 136-tick spread between seeds. *After the independent review's three P2s (branch
+      `greybox/leg1-step3-v3`, same v32 bump):* **Surplus leg kit goes home** (P2-1): at the Village a marked train
+      sends home the leg kit no leg on its line can use (`legKitSurplus`: all of it once the leg is complete, else
+      what passes the remaining sections' lack, as when logs were fed from backs while it rode), as `steelArrives`
+      does for the works': logs unmade (out of `Rail.depotProduced` and the leg's `loadedLogs`), rails back onto the
+      forge rack (out of `loadedRails`), the mark cleared, so the works may load the car again; no leg cargo rides once
+      the leg is complete. **The kit owed counts only the rack's units on backs** (P2-2, the leftover): `Leg.heldLogs`
+      and `Leg.heldRails` count what `rail.depotTake` and `rail.depotRailTake` lift while a leg is open (clamped to its
+      remaining bills less fed, the load check's bound), and what leaves a back counts off (fed to the frame, dropped,
+      fed to the steel works, the kiln or the cradle; never under 0: a doubt is a unit owed again, its surplus going
+      home); `legKitNeed` reads the smaller of that and every back's. A leaver's units are released from the count by
+      the host's leaver check after the grace (`railBeamGraceS`, as a footing's carrier), once a session, so a leaver
+      stalls the leg at most for the grace. **Build 2's longer-fleet tests run** (P2-3): they wait on the trains in
+      service; b011e7 at 75% still breaches 1,050 (1,152, the Quarry down) and stays todo; fa575 at 0% passes (730)
+      and is asserted. Gates on this build, the long run (`RAIL_AUDIT=1 FUZZ_STRIDE=1 ROUTE_GATES=1`, 261 s), equal to
+      the fourth sheet's run: 8 fixed stages worst 1,166; 9 settled 1,261, 1,340, 1,397, 1,367 and stage 0 766 to 820;
+      11 whole-leg 1,210 to 1,421; 5 the opening load at +2,252; 14 rivet to Gorge 3,575; 15 +651 and +1,824 / +2,157.
+      Fixtures regenerated for the two Leg fields.
 - [ ] **4. The views and the massing (Mac, M; P1 and P3).** New `src/entities/route-greybox/`: `index.ts` (plug-in
       lifecycle), `massing.ts` (the Gorge's stacks and split from `src/proto/greybox/blockout.ts`, one merged mesh per
       material, resident by P1's rule), `leg-view.ts` (deck and trestle bents from `laid`, the frame, rack, bill sign
