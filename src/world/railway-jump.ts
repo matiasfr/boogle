@@ -43,13 +43,10 @@ const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 /** Ring Island build 2 (R4, v30). The island halt's east (down) platform at u 444, lat +4, on its deck, facing the
  * works' doorway (u 452, lat +6.5), beside the loader's mast (V1). */
 const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100, RING_STEEL_WORKS);
-/** 4.5 m from the Roundhouse table's centre (4 m back, 2 m across) toward the Village platform side, facing the garage's lever post
- * (60 degrees round the rim, 5.6 m out: src/entities/railway/roundhouse-view.ts), on the table's deck. */
-const GARAGE_POST = {
-  x: SHED_TABLE.x + Math.round(Math.sin((60 * Math.PI) / 180) * 560),
-  z: SHED_TABLE.z - Math.round(Math.cos((60 * Math.PI) / 180) * 560),
-};
-const TABLE_LAND = near(SHED_TABLE, -4, 2, SHED_TABLE.y / 100, GARAGE_POST);
+/** 5.5 m east of the Roundhouse table's centre (5.2 m east, 1.7 m south), on the open ground between line 2's two
+ * roads (surface 18.1 m by `jump-land-probe`), facing the table's centre with the stall behind it. Inside the table's
+ * 6 m reach. The spot before (4 m west, 2 m south) put the camera inside the stall's shell. */
+const TABLE_LAND = near(SHED_TABLE, 5.2, 1.7, 18.1, SHED_TABLE);
 /** Line 2's Village platform, facing out along the line toward the Quarry (boiler-long: ride out at 25 m/s). */
 const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
   QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[1];
@@ -182,7 +179,7 @@ export const JUMPS: readonly Jump[] = [
     stage: 'steel-home',
     label: 'Steel at Home',
     line: 'The first steel is in the Roundhouse bay',
-    land: TABLE_LAND, // by the table, facing the garage post
+    land: TABLE_LAND, // east of the table, facing it
   },
   {
     stage: 'boiler-long',
