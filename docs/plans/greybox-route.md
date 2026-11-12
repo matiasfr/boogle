@@ -1238,3 +1238,86 @@ proceeds.
 | 77 | G1 ships with the settled wait gate recorded as failing (1,286) | Default | Ruling 4; call 67 confirmed |
 
 **Counts:** 0 Decided, 0 New, 4 Default.
+
+### Rulings on round 3 (designer, 2026-11-12, third sheet)
+
+**Read:** the round 3 sheet (relayed; base `a82a0d6e`, still without build 2) and `railTrainHeadPct` in
+`src/sim/tune.ts` on main (default 75, range 0 to 100, a room tuning knob, not a player setting). **Not run or read by
+me:** anything else. This is the last ruling on waits unless the one run named in ruling 1 fails.
+
+1. **The wait bound is owed at the shipped setting, on every seed; with the hold at 0% it is reported, and only the
+   safety checks are asserted** (Default). The gates measured the wrong thing by accident: every sheet paired one seed
+   with 75% and the other with 0%, so "both seeds" was half a test of the shipped game and half a test of a setting
+   no room starts in. What they should measure is what a player meets: the default. A tuning knob is there to try
+   states outside the shipped one; if every extreme of every knob had to pass the service gates, no knob could exist.
+   So: service gates (8, 9, 11's waits) at 75%; never colliding, never blocking an end and finishing the leg at 75%
+   and at 0%. The range is not narrowed and no rule changes. Main's short-line fuzz at both settings stays as it is.
+   - **Owed, and it decides this ruling:** gates 8, 9 and 11 at 75% on all four seeds (c0ffee, 777, 5eed, badd). Seeds
+     777 and badd have only ever run at 0%. If either breaches at 75%, the gate fails as written and the builder
+     reports; nothing moves.
+   - **Printed for whoever turns the knob:** the lowest hold, of 0, 25 and 50%, at which gates 8 and 9 pass on five
+     trains, in the test's table and in the tunable's comment.
+2. **Gate 5(a) at the rivet is an opening transient, allowed once a leg at one lap.** In the first lap after a leg
+   opens a full load may wait up to that stage's quiet round trip (1,426 at the rivet; measured 1,266). The reason:
+   opening a leg puts an errand on every train that can take stone for one lap, and the kit is for a player standing
+   at a frame while the crates are watched by nobody. After that lap, 1,158 as written.
+3. **A.7 is withdrawn, and finding 1 above was wrong.** The 800 ticks a train that looked like the end turn was the
+   block rule. With block signals at the stack line's section ends, five trains lap the finished line in 3,467, a
+   headway of 693, and the ride is within 3.3% of non-stop at every stage. The end turn is not the next rail step. If
+   ruling 1's run breaches on the settled line, A.7 returns as written.
+4. **The bound stays 1,158** and does not go back to 1,050: its reason is the stone stop, and four laid measures
+   1,092.
+5. **Block signals where a train may stand with no platform** (Default): accepted, at section ends only. Riders
+   cannot step off there.
+
+**The gate for step 3, whole** (replaces E and the amended list above). Nothing asked, 12,000 ticks, against main
+with build 2 and the town economy in, unless said. "Four seeds" are c0ffee, 777, 5eed and badd, hold at 75%.
+
+1. **Stage ticks:** all stages before the rivet land on main's tick; at `ring-joined` only the listed kit, depot and
+   forge fields and the new rows differ.
+2. **The wagon, trip by trip,** on main's tick wherever footings are owed.
+3. **Footing delivery ticks** match main.
+4. **Waits, the town economy's six stages:** main's committed fuzz, both hold settings, no higher than main's.
+5. **Stone.** (a) With no footings owed, a full load never waits in the Quarry's yard over 1,158 ticks, at any stage,
+   fed or idle; once a leg, in its first lap, up to that stage's quiet round trip. (b) Stone landed in 20 minutes is
+   at least 8 times the loads taken in the window less one round trip, printed with the load ticks. (c) 32 from
+   `crossing-done` and from the idle rivet. (d) No freight stop while footings are owed, and none by a train owed a
+   kit or carrying one it can unload now. Timber unchanged.
+6. **Fares:** at least 40 a minute at every stage; neither crowd at `crowdCap` for 1,200 ticks running.
+7. **`npm run loop -- run`:** order and bills unmoved.
+8. **Waits, fixed stages 0 to 4:** worst at most 1,158, four seeds.
+9. **The settled fuzz,** 20,000 ticks from 4,000 after the Gorge opens, four seeds: worst at most 1,158, mean at most
+   525. The same at stage 0 with the leg open and nobody feeding.
+10. **The ride:** quiet round trip at most 1.2 times non-stop at every stage.
+11. **The whole-leg fuzz,** four seeds: the leg completes; worst wait at most 1,600; a train stands at the new
+    railhead or the Gorge within 1,158 ticks of each section laying. With the hold at 0%, two seeds: the leg
+    completes and the worst wait is printed. At both settings `sepCm`, the end blocks, the block signals and the load
+    check never break.
+12. **The join window:** both extra trains running within 1,050 ticks of the first section laying; no running train
+    held for a join.
+13. **The idle room:** at rest by +1,500 with kit 1 racked, at most two trains carrying a kit, one kit car empty and
+    the fourth kit not loaded; then 20 minutes with stone at least 32, fares at least 40 a minute, gate 9's figures,
+    and nothing loaded.
+14. **Leg timing, fed every tick:** rivet to Gorge at most 3,700; idle at the first frame at most 1,200, at frames two
+    to four at most 600 each.
+15. **Build 2 with the leg open:** the steel kit reaches the yard on build 2's own tick; first steel home and the
+    install no more than 1,050 ticks later than build 2 alone, printed.
+16. **Step 3's own tests:** each refusal; a section lays and the railhead moves; the Gorge opens on the fourth; `pick`
+    refused before and granted after; kit units balance on every tick of gates 11 and 13.
+
+**Still owed before step 3 ships.** Ruling 1's four-seed run; the rebase onto Ring Island build 2; steel-first; gate
+15; gates 1 to 4 and 14 again on that base; the G1 `WORLD_NS` bump with its dated line, outside the owner's session;
+the pinned fixtures regenerated; the independent review of steps 2, 3 and 5 as one batch. Steps 4 and 5 ship with it.
+
+**What the owner is told** (owner question 1, figures replaced again): a typical wait of about 50 s; at worst about
+109 s on the finished line and about 148 s for the few minutes a line is being extended. The question's first answer
+is what is built; "fix how trains turn at the ends" is no longer part of it.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 78 | Wait gates are owed at the shipped headway hold (75%) on four seeds; at 0% waits are printed and only safety is asserted; the knob keeps its range | Default | Ruling 1 |
+| 79 | Once a leg, in its first lap, a full load of stone may wait one round trip | Default | Ruling 2 |
+| 80 | The end turn is not the next rail step; call 67 withdrawn | Default | Ruling 3 |
+| 81 | Trains may stand at block signals at the stack line's section ends | Default | Ruling 5 |
+
+**Counts:** 0 Decided, 0 New, 4 Default.
