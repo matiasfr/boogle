@@ -169,6 +169,67 @@ Built on `ci/diet-batch-1` (11 November); `.github/workflows` changes are unprov
 4. Tier 2's milestone checkpoint replaces per-branch `check:full` in tests.md for `src/net*` and `server/` work; CI's
    path-scoped `server` and `net` still run on those ships.
 
+**As built on `ci/diet-batch-2` (11 November).** The `ci.yml` changes are unproven until GitHub runs them. Scope under the
+owner's Batch 3 answer: ships that touch lockstep or a review path keep all four shards, audit on, every offset and seed.
+- [x] 1. `dev/ci/unit-select.ts` (run by CI's `changes` job beside `change-class.ts`) picks the unit run. Full (`--ci`,
+   four shards) when the diff is empty, deletes or renames a file, touches `src/sim`, `src/net`, `src/world`, `src/ecs`
+   or `server/src` (`REVIEW_PATHS`), changes a test that reaches them, or changes what every test shares
+   (`test/helpers/`, `test/fixtures/`, `dev/ci/`, `dev/test-env.ts`, `dev/test-unit.ts`, package and lock files,
+   `tsconfig`, `vite.config`, `ci.yml`). Main always. Otherwise one job, `test:unit -- --ship`: the tests whose import
+   closure holds a changed file plus `CORE_TESTS`. Measured locally: a tool-only diff selects 15 files, 151 tests, 4.2 s.
+   The matrix is `fromJSON(unit_shards)`; automerge reads the run's conclusion, so job names do not matter.
+- [x] 2. `ship` mode in `dev/test-env.ts`: audit on, `FUZZ_STRIDE=16`, `FUZZ_FIRST_SEED=1` (each fuzz's first own seed:
+   `fuzzSeeds` and the island fuzz's list in `railway-trains.test.ts`). Only non-review ships run it, so it rarely meets a
+   sweep; the saving is mostly item 1.
+- [ ] 3. Review tests not retired. Measured (local mode, one file at a time): `railway-r3b2-review` 65 s, 57 of it three
+   world-fuzz seeds of 19 s each; `-m11-review` 13 s; `-m12-review` 4.5 s; `review-v26` 4.4 s; `review-v25` 1.1 s. A ship
+   that changes them is on a review path and keeps the full suite whatever they cost. Deleting a pin on a past lockstep
+   bug loses coverage rather than moving it, and "the goldens and the rules' own tests still cover it" has not been
+   checked case by case. Left for the orchestrator to judge with these numbers.
+- [x] 4. `tests.md`: `check:full` for `src/net*` and `server/` work is a checkpoint's; CI's `server` and `net` still
+   run on those ships. `ship-pipeline.md` documents the ship mode and the selection.
+- Not built: the Batch 1 review leftovers (the plan assigns none to Batch 2); `ship-check`'s direct-importers-only walk
+  for lockstep diffs (Batch 3's local half).
+- Conservative picks: full suite for any deleted or renamed file, any changed test that reaches a review path (most
+  test-only ships), and `dev/ci/`, `ci.yml` and `vite.config`. `railway-tick-order` (39 s) is not in the core though the
+  plan lists it, nor are `railway-check`, `-ops` and `-m12` (16 to 94 s): the core stays under 2 s a file. A
+  `workflow_dispatch` on a branch is classed by its diff, not forced full (a `WORLD_NS` bump touches `src/world`, so it
+  is full).
+
+**Fixed after the Batch 2 review (11 November).** The verdict was "ship after fixes"; nothing here lets a lockstep ship
+run less than the full suite.
+- P1, loads the unit walk could not follow. A test's closure (`createWalker` in `dev/ci/unit-select.ts`) now follows
+  repo-rooted path literals (an esbuild entry, a script run with `--check`, a source `dev/level/source.ts` evaluates, a
+  `--import` hook), folder URLs (every file under the folder; one naming the root is a base, not a folder) including a
+  computed URL under a literal folder, and `import.meta.glob` patterns. The seven missed tests (`railway-r4c-leaf`,
+  `-m10a-views`, `sw-worker`, `place-coop-snapshot`, `rail-map`, `world-lines`, `railway-lint-review`) are selected;
+  `test/unit-select-review.test.ts` holds them. What no walk follows is in `UNFOLLOWED`, each with what it reaches
+  (joined to the closure of every test reaching the file) and what covers it. The guard in `test/unit-select.test.ts`
+  parses every file of every test's closure: a literal load target the walk did not find fails, and so does a computed
+  import or URL, a worker, a child process running node or npm, an esbuild call, a `sourceFunction`/`sourceModule`, a
+  computed glob or `registerHooks` that is not listed. Calls are recognised by what their callee was imported from, so
+  `regex.exec` and an ECS `spawn` are not child processes. `dev/lint/policy.ts` names lint scopes, not loads
+  (`NAMES_ONLY`); the guard still checks its load sites. Over-reach accepted: a test that names paths as data (the case
+  tables in core tests, `atlas`, `review-m3b`, `railway-lint-review` through `dev/lint/safety.ts`) is selected more
+  often; a client change now selects about 21 to 28 files, against 15 before.
+- P2. `FULL_ON` holds `dev/ci/unit-select.ts`'s import closure, computed (`dev/review-stamp.ts`, `dev/server-build.ts`
+  and `dev/ci/`).
+- P3(a), built. A file review-path code loads from outside `REVIEW_PATHS` is full: today `src/constants.ts`,
+  `src/proto/flags.ts` and `protos/review-types.ts`.
+- P3(b), built. `dev/ship-check.ts` uses `affectedTests` (the same walk plus the core). It keeps the local unit settings
+  (audit off, sampled offsets: tests.md), and a lockstep diff still runs only its affected tests locally; CI runs the
+  full suite for it.
+- P3(c), logged. `src/adapters/gifts.ts`, `piles.ts` and `mushrooms.ts` are reached now only by broad readers (`atlas`,
+  `loop-graph`, `loop-trace`, `registry` and the tests that bundle or evaluate views); no unit test asserts what they do.
+  Under the test diet that is the intended state for feature adapters, not a gap this selector can close.
+- Guard follow-ups (re-check). The guard counts an fs read (`readFileSync`, `readdirSync`, `statSync`, `existsSync`,
+  their `fs/promises` forms, `globSync`) as a load when its path, with the file's own bindings substituted, has a
+  literal `src`, `dev`, `server`, `protos` or `test/fixtures` segment after nothing but bases and `./`/`../`; a temp
+  dir (`mkdtemp`, `tmpdir`), a URL (the URL rules) and a path passed in as a parameter are not. A fully literal one
+  passes when the walk has its files; any other is listed, unless only core tests reach the file. None outside the
+  core today. `UNFOLLOWED` entries carry a `count` (default 1) the sites must match, so a second load of a listed kind
+  fails; it found `dev/look/lib.ts`'s second `spawn` (vite, from `node_modules`), now listed with `count: 2`.
+
 ## Batch 3: answered, not built
 
 **The owner, 11 November: "lockstep ships can keep the unit suite for now."** So ships that change lockstep code

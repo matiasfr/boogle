@@ -67,7 +67,7 @@ import {
   works as worksRow,
   type Seed,
 } from './helpers/rail.ts';
-import { FUZZ_LIGHT as LIGHT, fuzzSeeds, fuzzTicks, fuzzTrains } from './helpers/fuzz.ts';
+import { FUZZ_LIGHT as LIGHT, firstCases, fuzzSeeds, fuzzTicks, fuzzTrains } from './helpers/fuzz.ts';
 
 const LINE2 = 1;
 /** Line 2's trains: A at the Village (up), B at Far Head (down) and, since v27, C at the Quarry (down). */
@@ -958,10 +958,10 @@ const waitTable = (worst: Map<string, number>) =>
 const LONG_SEEDS = fuzzSeeds([]);
 const ISLAND_SEEDS: readonly (readonly [number, number])[] = LONG_SEEDS.length
   ? LONG_SEEDS.flatMap((sd) => [[sd, TRAIN_HEAD_PCT] as const, [sd, 0] as const])
-  : [
+  : firstCases([
       [0xc0ffee, TRAIN_HEAD_PCT],
       [0x777, 0],
-    ];
+    ] as const);
 const ISLAND_LINE = { ...V, trains: fuzzTrains(V.trains) };
 for (const [seed, headPct] of ISLAND_SEEDS)
   test(`fixture fuzz ${seed.toString(16)} at ${headPct}%: ${ISLAND_LINE.trains} trains to the open island, the worst wait each way`, (t) => {
