@@ -5,7 +5,7 @@
 // Why that mesh is never culled: land.ts sets frustumCulled = false on it (a prototype default, no vertex displacement),
 // and one mesh over the whole island could not be culled anyway, since the camera stands inside its bounds. On, that mesh hides and its main
 // grid draws as tiles with bounds, so the frustum drops what is out of view, and tiles far from the camera use coarser
-// cells. The cove's fine patch and the offshore rings stay one always-drawn mesh, unchanged. Ring Island's ground
+// cells. The cove's fine patch and the offshore rings are drawn at full density, split three by three so each part is culled. Ring Island's ground
 // (entities/ring-island/view.ts) uses the same tiles with no extra part; its view is at the world origin, so a mesh's
 // local frame is the world's.
 //
@@ -17,6 +17,7 @@ import * as THREE from 'three/webgpu';
 import { camera, scene } from '../render/scene.ts';
 import { registerGraphics, graphicsInitial } from '../graphics-settings.ts';
 import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
+import { lodLevel } from '../render/lod-level.ts';
 import { tileIndex } from './far-ground-index.ts';
 
 const TILE = 96; // cells per tile side (192 m)
@@ -26,6 +27,8 @@ const LEVELS: readonly [step: number, from: number][] = [
   [2, 180],
   [4, 420],
 ];
+
+const LEVEL_FROM = LEVELS.map(([, from]) => from);
 
 type Tile = { mesh: THREE.Mesh; levels: THREE.BufferGeometry[]; box: THREE.Box3; level: number };
 type Built = { group: THREE.Group; tiles: Tile[] };
@@ -75,8 +78,7 @@ function pick() {
         Math.max(tile.box.min.x - p.x, 0, p.x - tile.box.max.x),
         Math.max(tile.box.min.z - p.z, 0, p.z - tile.box.max.z),
       );
-      let level = 0;
-      while (level + 1 < LEVELS.length && d >= LEVELS[level + 1]![1]) level++;
+      const level = lodLevel(LEVEL_FROM, d);
       if (level === tile.level) continue;
       tile.level = level;
       setViewGeometry(tile.mesh, tile.levels[level]!);
@@ -158,12 +160,36 @@ function build(
       tiles.push({ mesh, levels, box: levels[0]!.boundingBox!.clone(), level: 0 });
       group.add(mesh);
     }
-  // The cove's fine patch and the offshore rings: everything after the main grid, drawn as before.
+  // The cove's fine patch and the offshore rings: everything after the main grid. One mesh over the whole island could
+  // never be culled, so the triangles go into a 3 x 3 split by where each lies (centroid) over the rest's own extent: the
+  // four sides, the four corners and the middle (the cove). Each has its own bounds, so a side behind the camera is dropped.
   if (mainEnd < index.length) {
-    const restMesh = new THREE.Mesh(compact(Array.from(index.subarray(mainEnd))), full.material);
-    restMesh.receiveShadow = full.receiveShadow;
-    restMesh.frustumCulled = false;
-    group.add(restMesh);
+    const position = source.getAttribute('position') as THREE.BufferAttribute;
+    const triangles = Array.from(index.subarray(mainEnd));
+    const centre = (t: number, axis: 'getX' | 'getZ') =>
+      (position[axis](triangles[t]!) + position[axis](triangles[t + 1]!) + position[axis](triangles[t + 2]!)) / 3;
+    const lo = [Infinity, Infinity],
+      hi = [-Infinity, -Infinity];
+    for (let t = 0; t < triangles.length; t += 3)
+      ['getX', 'getZ'].forEach((axis, k) => {
+        const c = centre(t, axis as 'getX' | 'getZ');
+        lo[k] = Math.min(lo[k]!, c);
+        hi[k] = Math.max(hi[k]!, c);
+      });
+    const split = new Map<number, number[]>();
+    const third = (c: number, k: number) => Math.min(2, Math.floor((3 * (c - lo[k]!)) / (hi[k]! - lo[k]! || 1)));
+    for (let t = 0; t < triangles.length; t += 3) {
+      const cell = third(centre(t, 'getX'), 0) + 3 * third(centre(t, 'getZ'), 1);
+      const list = split.get(cell) ?? [];
+      list.push(triangles[t]!, triangles[t + 1]!, triangles[t + 2]!);
+      split.set(cell, list);
+    }
+    for (const list of split.values()) {
+      const part = new THREE.Mesh(compact(list), full.material);
+      part.name = 'far ground rest';
+      part.receiveShadow = full.receiveShadow;
+      group.add(part);
+    }
   }
 
   // An owner takes its own copies of the geometries it sees (setViewGeometry copies the other levels once); `made` stays ours.

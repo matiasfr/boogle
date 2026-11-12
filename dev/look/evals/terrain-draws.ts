@@ -4,7 +4,7 @@
 //   npm run look -- --real --fov 62 --query 'tpose=green&graphics=farGround:true' --cam 909,24.45,35 --look 903,19.15,20 \
 //     --eval dev/look/evals/terrain-draws.ts --name terrain-green-on
 // ring needs `--rail-seed ring-joined` (the island's near view mounts when the player stands on its side of the gap).
-// Prints `TERRAIN DRAWS {...}`: totals per pass and the five biggest rows of each.
+// Prints `TERRAIN DRAWS {...}`: totals per pass and the fifteen biggest rows of each, and the biggest eight object names with their draws and triangles.
 import type { Object3D, Material, BufferGeometry, InstancedMesh } from 'three';
 
 const { renderer } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
@@ -73,12 +73,26 @@ try {
   const start = window.boogle!.prof.last.frames;
   while (window.boogle!.prof.last.frames < start + 3) await new Promise((r) => setTimeout(r, 20));
   const all = [...rows.values()];
+  // The same rows grouped by the object's own name (a view's chunks share one): draws and triangles per name, top 8.
+  const byName = (part: Row[]) => {
+    const names = new Map<string, { draws: number; tris: number }>();
+    for (const row of part) {
+      const key = row.path.slice(row.path.lastIndexOf('/') + 1);
+      const sum = names.get(key) ?? { draws: 0, tris: 0 };
+      sum.draws += row.draws;
+      sum.tris += row.tris;
+      names.set(key, sum);
+    }
+    return [...names].sort((a, b) => b[1].tris - a[1].tris).slice(0, 8).map(([k, v]) => `${k} d${v.draws} t${v.tris}`);
+  };
   const sum = (shadow: boolean) => {
     const part = all.filter((row) => row.shadow === shadow).sort((a, b) => b.tris - a.tris);
     return {
       draws: part.reduce((n, row) => n + row.draws, 0),
       tris: part.reduce((n, row) => n + row.tris, 0),
-      top: part.slice(0, 5).map((row) => `${row.path} d${row.draws} t${row.tris}`),
+      top: part.slice(0, 15).map((row) => `${row.path} d${row.draws} t${row.tris}`),
+      byName: byName(part),
+      track: part.filter((row) => /place kit (rail|sleeper)/.test(row.path)).map((row) => `${row.path.split('/').pop()!.slice(10)} t${row.tris}`),
     };
   };
   const seen = new Set(all.filter((row) => !row.shadow).map((row) => row.id));

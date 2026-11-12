@@ -394,7 +394,26 @@ that); at the Ring Island halt the main island's tiles are culled or coarse. Sti
 (the `south` pair looks from the Ring Island pier at the main island). Mac frame time was not compared (load 3 to 15 from
 other agents; section 7 says it would not show). Not tested on a device.
 
-Left (expected win): the 32,848-triangle offshore ring/cove mesh is always drawn (about 30k, split by side); Ring
-Island's own ground (199,960 triangles, one draw, `ring-island-ground`) wants the same tiles; `place kit rail` chunks are
-about 31k triangles each and dozens draw at Far Head; trees are already instanced but one batch with
-`frustumCulled = false`.
+Left (expected win) at that measurement: the 32,848-triangle offshore ring/cove mesh always drawn; `place kit rail` chunks of
+about 31k triangles each, dozens at Far Head; Ring Island's own ground (199,960 triangles, one draw) wants the same tiles;
+trees are already instanced but one batch with `frustumCulled = false`.
+
+### Rail kit by distance, rings and cove split (12 November)
+
+A `place kit rail` chunk is 144 rails of 228 triangles (most of it joint plates and bolts); 200 m chunks already had bounds
+and were culled. Each rail, sleeper and tie-plate chunk now draws at one of three levels by its nearest piece
+(`lodLevel`, `src/render/lod-level.ts`, shared with `far-ground.ts`): under 50 m the kit's own pieces; 50 to 120 m the rail
+without joint plates and bolts (44 triangles) and the plates without spikes; beyond, plain boxes (12 triangles per rail,
+sleeper, plate pair of 24). Levels step back 15 m inside their distance. The rings and the cove are split 3 x 3 by where each
+triangle lies, so the sides behind the camera are culled (8 draws at Far Head, the same 32,848 triangles). Same eval and
+poses as above (`terrain-draws.ts` now prints 15 rows, rows grouped by name, and the track rows):
+
+| pose | main tris before / after | main draws | rail / plates / sleepers tris |
+| --- | --- | --- | --- |
+| village green | 533,288 / 516,452 | 240 / 242 | all within 50 m: unchanged |
+| Far Head | 1,147,576 / 984,104 | 671 / 678 | 245,784 / 132,600; 92,352 / 56,432; 39,116 / 24,748 |
+| Ring Island halt | 283,086 / 250,238 | 115 / 114 | n/a (rings culled: 32,848 gone) |
+
+What is left at Far Head is four rail chunks under 50 m (about 118k): the station's tracks. Chunks of 100 m cut another 32k
+triangles for 28 more draws (706 vs 678), so they stay 200 m. Stills at Far Head, on the track and down a straight
+(`rk-{head,close,straight}-{before,after}`) look the same. Not tested on a device; no timing taken.

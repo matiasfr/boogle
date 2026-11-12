@@ -2,6 +2,7 @@
 // share one instanced batch, the bounds of what has landed in a batch, and when a batch's shadow is worth its draw.
 // No scene, no clock: `lookTrack` (src/place/look-kit.ts) wires these to meshes. Local and cosmetic.
 import * as THREE from 'three/webgpu';
+import { lodLevel } from '../../render/lod-level.ts';
 
 /** Length of a chunk along the line, in u metres, for the kinds that are heavy to draw (rails of 228 triangles, sleepers
  * and their plates). 200 m, not the 50 m the plan first set: every chunk is a draw, the whole line shows from Far
@@ -17,6 +18,16 @@ export const TRACK_SHADOW_M = 120;
 export const TRACK_SHADOW_HYSTERESIS_M = 20;
 /** Kinds whose shadow is gated by distance; the rest (sleepers, rails, planks) keep what they had. */
 export const SHADOW_GATED = new Set(['cap', 'stringer', 'leg', 'brace']);
+
+/** Distance (m, from the camera to a chunk's nearest bound) at which a rail, sleeper or tie-plate chunk steps down a level:
+ * 0 the kit's full pieces; 1 without the rail's joint plates and bolts and the tie plates' spikes (a bolt is 3 cm, about
+ * a pixel at 50 m, 62 degrees and 1080p); 2 plain boxes (a rail's 0.1 m is under a pixel at 120 m). A rail is 228,
+ * 44 and 12 triangles. Chunks are 200 m, so one steps whole, by its nearest point. */
+export const TRACK_LOD_FROM: readonly number[] = [0, 50, 120];
+/** A chunk that stepped down returns to the finer level only this much inside the distance, so a camera on the edge does not flicker. */
+export const TRACK_LOD_HYSTERESIS_M = 15;
+/** Kinds with a plain far shape. */
+export const FAR_KINDS = new Set(['rail', 'sleeper', 'sleeper_steel']);
 
 /** Piece of `kind` at `u`: its chunk. Without a kind, the heavy span. */
 export const chunkOf = (u: number, kind = 'rail') => Math.floor(u / (HEAVY.has(kind) ? TRACK_CHUNK_M : TRACK_LIGHT_CHUNK_M));
@@ -68,6 +79,9 @@ export const isHidden = (m: THREE.Matrix4) => {
   const e = m.elements;
   return !(e[0] || e[1] || e[2] || e[4] || e[5] || e[6] || e[8] || e[9] || e[10]);
 };
+/** The level (`TRACK_LOD_FROM`) a chunk draws at `distance` m from the camera, given the one it had. */
+export const trackLevel = (distance: number, was: number) =>
+  lodLevel(TRACK_LOD_FROM, distance, was, TRACK_LOD_HYSTERESIS_M);
 /** Whether a chunk `distance` m from the camera casts, given whether it did last frame. */
 export const castsShadow = (distance: number, was: boolean) =>
   distance < TRACK_SHADOW_M + (was ? TRACK_SHADOW_HYSTERESIS_M : 0);
