@@ -133,6 +133,41 @@ test("route host: a leaver's leg rack rails stay counted through the grace, then
   }
 });
 
+// Review of the step 3 fixes (P2-2's host release): the release is "once per session epoch", but `legReleased` is
+// forgotten whenever no leg holds a unit (legKitHolders is empty then), and the leaver still carries what they left
+// with. So the next player who lifts off the rack has their units counted off a grace later, for an account that has
+// been gone all along and was already released: the held count P2-2 added stops counting, and a train loads a second
+// kit for units a present player is carrying to the frame.
+test("route host (review): a leaver already released is not released again off a present carrier's units", async () => {
+  const r = await host('leg-leaver-twice', buildSeedWorld('ring-joined'), { s: 'a', t: 'b' });
+  try {
+    const racked = async () => {
+      for (let k = 0; rail(r.w).depotRails === 0; k++) {
+        assert.ok(k < 6000, 'kit racked');
+        await r.ticks(1);
+      }
+      return spot(legRack(RAIL_LEGS[0]!, legRow(r.w, 0).laid));
+    };
+    assert.equal(await r.action({ op: 'rail.depotRailTake' }, await racked(), 't'), 'accepted');
+    assert.ok(legRow(r.w, 0).heldRails > 0, 'held on b');
+    r.depart('t');
+    await r.ticks(2);
+    r.later(r.grace());
+    await r.ticks(3);
+    assert.equal(legRow(r.w, 0).heldRails, 0, 'b released past the grace (the fix, as built)');
+    // a, here all along, lifts the next rails off the rack and walks them to the frame.
+    assert.equal(await r.action({ op: 'rail.depotRailTake' }, await racked(), 's'), 'accepted');
+    const held = legRow(r.w, 0).heldRails;
+    assert.ok(held > 0, 'held on a');
+    await r.ticks(2);
+    r.later(r.grace());
+    await r.ticks(3);
+    assert.equal(legRow(r.w, 0).heldRails, held, "a's units stay counted: b's session was released once already");
+  } finally {
+    await r.done();
+  }
+});
+
 test('steel host: malformed kinds, lines, parts and revisions refused without a throw', async () => {
   const r = await host('malformed', fixture('steel-home'));
   try {
