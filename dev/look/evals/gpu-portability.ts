@@ -1,3 +1,5 @@
+// npm run look -- --real --rail-seed q5-stocked --query 'gpuProfile=portable&gpuShot=depot&dev=1&graphics=msaa:false' --eval dev/look/evals/gpu-portability.ts --warm 0 --name portable-depot --frames 4 --seconds 1
+//  (gpuShot=depot|cart|jump|rockets: cart q5-stocked, jump q4-done with the -action file, rockets q5-finishing)
 // Existing broker look operation, accepted --rail-seed fixtures, production views and real jump input.
 // gpuShot=depot|cart|jump|rockets; gpuProfile=portable constrains the device before renderer initialization.
 const query = new URLSearchParams(location.search);

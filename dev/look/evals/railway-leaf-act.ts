@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed leaf-raised --action dev/look/evals/railway-leaf-act.ts
+//  (leafdo=under in --query steps under the toe at the end; docs/plans/ring-island-build1.md step 4c)
 // R4c proof (docs/plans/ring-island-build1.md, step 4c), `look --action` at `--rail-seed leaf-raised`: the leaf's swing
 // reached through the real prompts. The bot is set down on the brace platform and knocks out the pawl at the gold strut ("Knock out the pawl"), then four
 // times takes a footing off the railhead rack and sets it at the jib ("Shoulder a footing", "Hang the weight"); the

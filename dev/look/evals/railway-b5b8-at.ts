@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q6-stocked --room b58a --eval dev/look/evals/railway-b5b8-at.ts --query 'b58at=q6'
+//  (b58at=village|head|apron|q6|...; seed to match the pose: q5-done for head)
 // Disposable accepted B5-B8 seed framing; no route bot or browser-side shared-state fabrication.
 const {
   inspectRailway,

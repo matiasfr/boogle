@@ -1,3 +1,4 @@
+// npm run look -- --eval dev/look/evals/particles.ts --name particles --hud
 // 200 long-lived soft particles beside the court, for checking particle size and softness.
 const { emit } = (await import(
   '/src/render/particles.ts' as string

@@ -1,3 +1,5 @@
+// npm run look -- --real --query 'phoneStartup=1&prof=1' --size 440x796 --eval dev/look/evals/replay-phone-cost.ts --warm 1
+// needs: BOOGLE_BOOT_FAULTS=1 node .look/see-client.ts look --production (the pre-boot phone proxy)
 // Broker --production --real, BOOGLE_BOOT_FAULTS=1, &phoneStartup=1&prof=1.
 // Existing proxy configures the top-level document before boot: 440x796, DPR 2, .60 resolution, touch MSAA.
 // Mac Chromium only. Each broker invocation starts a fresh browser profile; Metal caches are uncontrolled.

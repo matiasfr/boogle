@@ -1,3 +1,4 @@
+// command: unknown, needs a pose: a --real run with --eval of this file, --hud off, camera from --cam/--look (written for the colour-defaults comparison; no doc or bot calls it)
 const { hardwareTiming } = (await import(
   '/src/debug/prof-overlay.ts' as string
 )) as typeof import('../../../src/debug/prof-overlay.ts');

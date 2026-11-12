@@ -1,3 +1,4 @@
+// command: unknown, needs the seed: a disposable --rail-seed with the Q4/Q5 gate unfunded and rails in hand (--query 'gated=1', gatedAction=1 leaves the last rails for an --action of this file); no doc names it
 // Disposable --rail-seed proof: relocations frame the fixture; pickups, unloads and pulls use real interactions.
 // gatedAction=1 leaves the last carried rails for --action: unload, wait full, pull, then lay in one real-time clip.
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');

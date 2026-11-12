@@ -1,3 +1,4 @@
+// command: unknown, needs a pose: --real --eval dev/look/evals/fixed-exposure-crossing.ts on the default island (it moves __debugCam through the water for 18 s; no doc or bot calls it)
 // Reuse color-vibrance-3's diagnostic descent/ascent. Real water, not a player-controlled swim.
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { waterRuntime } = (await import(

@@ -1,3 +1,5 @@
+// npm run look -- --question "Can I walk into the house, and does the roof lift?" --eval dev/look/evals/railway-town.ts --query 'townat=house'
+//  (townat=house|shop|museum|street|sleeves|shelf; townact=walkout|try|take; add --rail-seed for later stages)
 // The live game's town (src/entities/town/): stand Buddy at a door, facing in, with the debug camera behind, then
 // optionally act. Seed later stages with --rail-seed; no shared state is written here.
 //   townat=house|shop|museum  1 m inside that door, facing in (a plot not yet built: in front of its stake board)
@@ -38,9 +40,7 @@ const { partnerWearing, wardrobe } = (await import(
 )) as typeof import('../../../src/entities/wardrobe/state.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
 const talk = (await import('/src/place/talk.ts' as string)) as typeof import('../../../src/place/talk.ts');
-const layout = (await import(
-  '/src/place/layout.ts' as string
-)) as typeof import('../../../src/place/layout.ts');
+const layout = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
 const land = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const shore = (await import(
   '/src/place/shore-layout.ts' as string

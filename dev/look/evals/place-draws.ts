@@ -1,3 +1,4 @@
+// command: unknown, needs a saved beat and pose: an --action at a posed beat (docs/research/perf-pass-2026-11-05.md ran it with --cam/--look after five seconds; dev/look/evals/place-kit-draws.ts imports it per pose)
 // Count actual backend draws for one completed game frame. No timing verdict or extra render.
 // Use as broker --action at a saved beat; positions and scene paths identify unnamed prototype meshes.
 import type { Object3D, Material, BufferGeometry } from 'three';

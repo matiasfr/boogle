@@ -131,8 +131,29 @@ if (args.includes('--json')) {
   process.exit(prototypeFacts.errors.length || agentDocs.errors.length ? 1 : 0);
 }
 
+// Every look eval opens with its exact command (`// npm run look -- ...`), or says why it has none, so a runner never
+// has to guess seeds, queries and poses. A driver line ("driven by: ...") names the tool that supplies the eval.
+function evalHeaderErrors(): string[] {
+  const dir = path.join(ROOT, 'dev/look/evals');
+  const out: string[] = [];
+  for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.ts'))) {
+    const lines = fs.readFileSync(path.join(dir, f), 'utf8').split('\n');
+    const block: string[] = [];
+    for (const l of lines) {
+      if (!l.startsWith('//')) break;
+      block.push(l);
+    }
+    if (!/npm run (look|playthrough) --|command: unknown|driven by:/.test(block.join('\n')))
+      out.push(
+        `dev/look/evals/${f} has no command header: open it with "// npm run look -- ..." (its exact command), "// command: unknown, needs <what>" or "// driven by: <tool>"`,
+      );
+  }
+  return out;
+}
+
 const decisionLog = checkDecisions(ROOT);
 const errors = [
+  ...evalHeaderErrors(),
   ...agentDocs.errors,
   ...decisionLog.errors.map((e) => `decision log: ${e} (npm run decisions)`),
   ...checkRegistry(head),

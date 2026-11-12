@@ -1,3 +1,4 @@
+// npm run look -- --real --eval dev/look/evals/railway-instant.ts --action dev/look/evals/railway-instant-act.ts --query 'shot=play&railLag=200' --video --seconds 16 --name instant-200
 // Action for the instant-feedback capture (replication R1b; setup: railway-instant.ts): three strokes at the tree, then
 // the walk to the active frame, whose automatic unload deposits. Each stroke's logs must reach the back on its contact
 // beat, not a round trip later: it logs press -> visible carry per stroke, and the adapter's own press -> effect cost.

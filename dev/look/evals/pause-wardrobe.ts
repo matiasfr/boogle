@@ -1,3 +1,5 @@
+// npm run look -- --query 'own=strawhat,scarf&wear=strawhat' --eval dev/look/evals/pause-wardrobe.ts --hud --name wardrobe
+//  (pause=0 leaves Pause for dev/look/evals/pause-wardrobe-act.ts as --action; chosen=1 and --players 2 for the partner view)
 // The pause view's You page (src/entities/wardrobe/menu.ts) on the production railway: give this capture's player some
 // wearables, then open Pause the way a press does. Personal wardrobe only; nothing shared is written.
 //   own=strawhat,scarf     what to grant (default: a hat, a second hat, a scarf, glasses, a raincoat and the stowaway);

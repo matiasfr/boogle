@@ -1,3 +1,4 @@
+// driven by: node dev/look/asset-motion.ts <asset> (it supplies this as --eval with --query stage=<encoded stage>; the /character/ stage, not the game)
 // Existing look/broker setup: mount the real same-origin stage, never another browser.
 import type { AssetStage } from '../../../character/main.ts';
 const query = new URLSearchParams(location.search).get('stage');

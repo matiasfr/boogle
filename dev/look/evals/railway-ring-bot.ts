@@ -1,3 +1,5 @@
+// npm run playthrough -- --from gap-footed --to ring-ride
+//  (the harness runs this bot: railFrom=ring with --rail-seed gap-footed or leaf-raised; railStop ends at a checkpoint)
 // Ring Island's part of the route against an accepted host seed (docs/plans/ring-island-build1.md, R5): `railFrom=ring`
 // with `--rail-seed gap-footed` or `leaf-raised`; `railStop` ends at a named checkpoint. No teleport, direct op or
 // recovery. Through the harness: npm run playthrough -- --from gap-footed --to ring-ride

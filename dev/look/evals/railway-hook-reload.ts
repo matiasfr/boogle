@@ -1,3 +1,4 @@
+// command: unknown, needs the seed and the --until expression that re-attaches after the real reload (see railway-reload.ts for the pattern); player 2 is the helper, so --players 2 --real
 // Existing look eval/until mechanism re-enters after a real page reload.
 const { startHookReload } = (await import(
   '/dev/look/bots/railway.ts' as string

@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q5-done --eval dev/look/evals/railway-b4-at.ts --query 'b4at=q5'
+//  (b4at=<pose>; b4edge, b4pull, b4show and b4signal refine it; the seed must hold line 2 section B4)
 // Disposable accepted --rail-seed fixture. No route bot, no shared-state fabrication in the browser.
 const { inspectRailway, line2Completed, line2Jobs, line2SeaOpen, railRead, rw } = (await import(
   '/dev/look/rail-read.ts' as string

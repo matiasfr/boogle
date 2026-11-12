@@ -20,7 +20,7 @@ const RECOLOUR = `const me = window.boogle.me, c = me.colorIdx === 0 ? 1 : 0;
   return sent;`;
 
 export default {
-  sourceImports: false,
+  sourceImports: true, // the colour check imports the roster and identity from the source
   about: 'a tab drops off the network, edits while reconnecting, and the edit lands once it is back',
   timeout: 300000, // generous: two software-rendered tabs on a busy machine
   async run(t: T) {
@@ -70,6 +70,18 @@ export default {
       'the held edit reaches the other tab',
       landed >= 0,
       `roster hash ${String(before)} -> ${await other.eval(`return ${ROSTER};`)} (own ${await client.eval(`return ${ROSTER};`)})`,
+    );
+    // The roster change must be the held edit itself: the dropped tab's colour, read from the other tab's roster.
+    const pid = await client.eval(`const { identity } = await import('/src/player/identity.ts'); return identity.pid;`);
+    const want = await client.eval(`return window.boogle.me.colorIdx;`);
+    const roster = await other.eval(
+      `const { rules } = await import('/src/world/game-world.ts'); const k = rules.roster.indexOf(${JSON.stringify(pid)});
+       return k < 0 ? null : rules.roster.colorOf(k);`,
+    );
+    t.check(
+      "the other tab's roster has the dropped tab's new colour",
+      roster === want,
+      `${String(pid)}: roster ${String(roster)}, wanted ${String(want)}`,
     );
     t.check(
       'the tab dropped no held edit',

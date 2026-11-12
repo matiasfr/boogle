@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed works-arrive --query 'shot=play&railFrom=works' --eval dev/look/evals/railway-works-bot.ts --until window.__railStop
+//  (railFrom=works with works-arrive, railFrom=wagon with --rail-seed wagon-on; dev/look/evals/railway-photo.ts imports it)
 // Run either Split-rock half against an accepted host seed (docs/plans/split-rock-roundhouse.md, J5e):
 // `railFrom=works` with `--rail-seed works-arrive`, `railFrom=wagon` with `--rail-seed wagon-on`; `railStop` ends at a
 // named checkpoint. No teleport, direct op or recovery.

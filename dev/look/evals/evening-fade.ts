@@ -1,3 +1,5 @@
+// npm run look -- --query 'evening=preview' --real --action dev/look/evals/evening-fade.ts --name evening-fade
+//  (evening=preview prepares the evening look but starts on day; evening=1 starts on it; the eval fades day -> evening -> day with setEveningLook)
 // Broker --action: prepared day -> evening -> day. Real scene, no milestone or invented shared state.
 const { setEveningLook } = (await import(
   '/src/render/water/evening-transition.ts' as string

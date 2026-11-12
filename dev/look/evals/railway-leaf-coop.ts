@@ -1,3 +1,4 @@
+// npm run look -- --players 2 --rail-seed leaf-raised --eval dev/look/evals/railway-leaf-coop.ts --action dev/look/evals/railway-leaf-coop-hang.ts --seconds 3 --frames 8
 // R4c's two-page proof (docs/plans/ring-island-build1.md, step 4c), `look --players 2 --rail-seed leaf-raised`: player 2
 // knocks out the pawl at the gold strut ("Knock out the pawl") and then steps under the toe (u 259.4, facing the hinge); player 1 carries three
 // footings from the railhead rack to the jib ("Shoulder a footing", "Hang the weight"), shoulders the fourth and waits at

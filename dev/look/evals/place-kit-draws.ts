@@ -1,3 +1,4 @@
+// command: unknown, needs a rail seed: it poses the production town itself (views listed in the file); run as --eval with --real, the seed that holds the town (not stated anywhere)
 // Matched production poses through the existing broker; draw attribution stays in place-draws.ts.
 const { installWarp } = (await import('/dev/look/warp.ts' as string)) as typeof import('../warp.ts');
 if (!window.__warp) installWarp();

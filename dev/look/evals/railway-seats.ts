@@ -1,3 +1,5 @@
+// npm run look -- --query 'ride=1&seat=1&railStop=T1%20seated' --eval dev/look/evals/railway-seats.ts --until window.__railStop
+//  (railStop=T1 seated|T1 seated laying|T1 seated ride completed|T1 stood up; --players 2 shows both riders)
 // Track-layer seats in the production railway, through the real-input bot (&ride=1&seat=1, dev/look/bots/railway.ts):
 // it boards T1's layer, sits by Interact, rides the laying seated and stands up aboard. &railStop=<beat> holds that
 // beat ('T1 seated', 'T1 seated laying', 'T1 seated ride completed', 'T1 stood up') on the game's follow camera,

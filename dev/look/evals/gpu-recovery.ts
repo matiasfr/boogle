@@ -1,3 +1,5 @@
+// npm run look -- --real --warm 1 --hud --query 'gpuCase=hidden-loss' --action dev/look/evals/gpu-recovery.ts --name gpu-loss
+// needs: a deliberate device loss (the file synthesises it from gpuCase); docs/research/gpu-recovery.md runs it through node .look/see-client.ts look
 // Broker action regression: --real --hud --action dev/look/evals/gpu-recovery.ts
 // gpuCase=hidden|loss|hidden-loss|error|sustained|recovered|burst|throw; gpuBaseline=1 records the old failure without assertions.
 // Visibility is a synthetic Page Visibility sequence, not OS suspension or Safari eviction.

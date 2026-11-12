@@ -12,9 +12,7 @@ const { interactTarget } = (await import(
 )) as typeof import('../../../src/player/hands.ts');
 const { inReach } = (await import('/src/player/reach.ts' as string)) as typeof import('../../../src/player/reach.ts');
 const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
-const { ORIGIN } = (await import(
-  '/src/place/layout.ts' as string
-)) as typeof import('../../../src/place/layout.ts');
+const { ORIGIN } = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
 const { SECRETS, padById } = (await import(
   '/src/place/tech-layout.ts' as string
 )) as typeof import('../../../src/place/tech-layout.ts');

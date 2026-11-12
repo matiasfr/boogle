@@ -1,3 +1,5 @@
+// TUNE_CONTROLLER_KEY=tunablesproofcontroller01 npm run look -- --players 2 --real --room proto-tuneproof --query 'dev=1&t.post.centre=0.24' --eval dev/look/evals/tunables-proof.ts --wall 240
+// Needs a proto- room (the tune rule only allows those), the controller key in the server's env (look passes TUNE_CONTROLLER_KEY on), and shared writes only for railway.regrowMinutes, railway.recoveryMinutes (src/debug/dev/tunables.ts validate).
 // Loaded through Vite by look's existing --eval. No new browser or harness.
 const { identity } = (await import(
   '/src/player/identity.ts' as string
@@ -17,9 +19,7 @@ const { onTuneRecord } = (await import(
 const { recordTuneSnapshot } = (await import(
   '/src/debug/dev/tunables.ts' as string
 )) as typeof import('../../../src/debug/dev/tunables.ts');
-const { renderer } = (await import(
-  '/src/render/scene.ts' as string
-)) as typeof import('../../../src/render/scene.ts');
+const { renderer } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
 const { exposureSettings } = (await import(
   '/src/render/exposure.ts' as string
 )) as typeof import('../../../src/render/exposure.ts');
@@ -53,23 +53,23 @@ async function run() {
     await connectRoom();
     await until(() => worldStatus().ready && net.state === 'live', 'controller reconnect');
     const result = await api.run('tunables', 'set', {
-      id: 'haul.yield',
-      value: 6,
+      id: 'railway.regrowMinutes',
+      value: 60,
       expectedRevision: rules.tune.tune.revision,
     });
     const data = result.data as { requestId: string; status: string };
     assert(data.status === 'pending', 'shared write queued');
-    await until(() => rules.tune.get('yield') === 6, 'shared write applied');
+    await until(() => rules.tune.get('railRegrowMinutes') === 60, 'shared write applied');
     const applied = await api.run('tunables', 'status', { requestId: data.requestId });
     assert((applied.data as { status: string }).status === 'applied', 'correlated apply');
-    const stale = await api.run('tunables', 'set', { id: 'haul.yield', value: 7, expectedRevision: 0 });
+    const stale = await api.run('tunables', 'set', { id: 'railway.regrowMinutes', value: 70, expectedRevision: 0 });
     assert(!stale.ok, 'stale revision refused');
     const local = await api.run('tunables', 'set', { id: 'post.centre', value: 0.32 });
     assert(local.ok, 'local exposure applied');
     console.log('TUNABLES ' + JSON.stringify({ player, initial, applied, stale }));
   } else {
-    await until(() => rules.tune.get('yield') === 6, 'peer receives shared value');
-    const denied = await api.run('tunables', 'set', { id: 'haul.yield', value: 9 });
+    await until(() => rules.tune.get('railRegrowMinutes') === 60, 'peer receives shared value');
+    const denied = await api.run('tunables', 'set', { id: 'railway.regrowMinutes', value: 90 });
     const requestId = (denied.data as { requestId: string }).requestId;
     let status = 'pending';
     // Poll through the bounded public API; never infer rejection from an unchanged value.

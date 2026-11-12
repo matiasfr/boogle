@@ -1,3 +1,4 @@
+// driven by: node dev/look/asset-motion.ts <asset> (it supplies this as --action with --real --video; its help lists asset, clip, pose and camera options)
 // Runs after the existing look harness starts its real-time video.
 import type { AssetStage } from '../../../character/main.ts';
 const frame = document.getElementById('asset-motion-stage') as HTMLIFrameElement;

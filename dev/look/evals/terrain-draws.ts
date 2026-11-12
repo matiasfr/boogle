@@ -83,7 +83,10 @@ try {
       sum.tris += row.tris;
       names.set(key, sum);
     }
-    return [...names].sort((a, b) => b[1].tris - a[1].tris).slice(0, 8).map(([k, v]) => `${k} d${v.draws} t${v.tris}`);
+    return [...names]
+      .sort((a, b) => b[1].tris - a[1].tris)
+      .slice(0, 8)
+      .map(([k, v]) => `${k} d${v.draws} t${v.tris}`);
   };
   const sum = (shadow: boolean) => {
     const part = all.filter((row) => row.shadow === shadow).sort((a, b) => b.tris - a.tris);
@@ -92,7 +95,9 @@ try {
       tris: part.reduce((n, row) => n + row.tris, 0),
       top: part.slice(0, 15).map((row) => `${row.path} d${row.draws} t${row.tris}`),
       byName: byName(part),
-      track: part.filter((row) => /place kit (rail|sleeper)/.test(row.path)).map((row) => `${row.path.split('/').pop()!.slice(10)} t${row.tris}`),
+      track: part
+        .filter((row) => /place kit (rail|sleeper)/.test(row.path))
+        .map((row) => `${row.path.split('/').pop()!.slice(10)} t${row.tris}`),
     };
   };
   const seen = new Set(all.filter((row) => !row.shadow).map((row) => row.id));

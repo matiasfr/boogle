@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q5-done --query 'shot=play&railFrom=glide' --eval dev/look/evals/railway-b5b8-bot.ts --until window.__railStop
+//  (the bot half; railFrom=glide|boiler|q6; dev/look/evals/railway-photo.ts imports it)
 // Run either half against an accepted host seed. No teleport, direct op or recovery. railFrom=glide (from
 // --rail-seed q5-done) climbs Needle Bell from the village, takes the glider, glides home and plays on from the boiler.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');

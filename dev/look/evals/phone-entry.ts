@@ -1,3 +1,6 @@
+// npm run look -- --real --warm 0 --eval dev/look/evals/phone-entry.ts --name phone-entry
+//  (queries avatarHold=1, avatarFailure=1, releaseBuddy=1 pick the case)
+// needs: node .look/see-client.ts look --production (the worker-owned production proxy; Mac Chromium, not Safari)
 // Existing broker eval and worker-owned production proxy; Mac Chromium, not iPhone Safari.
 const { renderer } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
 const { gpuDone } = (await import(

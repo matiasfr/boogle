@@ -1,3 +1,4 @@
+// command: unknown, needs the camera pose: wait with --until for a line-2 train on the bents past the pier head (world z -605 to -545, about u 173 to 233) from --rail-seed ring-joined; the file names no window flag
 // R4b proof: wait (the warm-up's --until) for a line-2 train to be on the bents past the pier head, in the stretch the
 // camera frames (world z -605 to -545, about u 173 to 233), then let the capture run. Look only.
 const { inspectRailway } = (await import(

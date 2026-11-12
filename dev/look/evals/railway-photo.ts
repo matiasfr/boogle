@@ -1,3 +1,4 @@
+// command: unknown, needs the railFrom/railStop pair: --query 'shot=play&railFrom=<seed stage>&railStop=<checkpoint>' (docs/plans/line2-b4.md C3 passes railFrom=sea&railStop=sea gate through the bot halves it imports)
 // Frame a checkpoint reached by the existing real-input bot; this does not restore or seed shared progress.
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { play } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');

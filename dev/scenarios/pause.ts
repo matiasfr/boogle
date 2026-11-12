@@ -80,7 +80,9 @@ export default {
     );
     // 3b. You: the Room page renames you, the You page (the start page) recolours you; both saved for next time.
     await g.page.fill('.pause-you-edit input', 'Renamed');
-    await g.eval(`const { pauseNavigation } = await import('/src/player/pause-pages.ts'); pauseNavigation.open('you');`);
+    await g.eval(
+      `const { pauseNavigation } = await import('/src/player/pause-pages.ts'); pauseNavigation.open('you');`,
+    );
     await g.wait(0.3);
     await g.eval(`document.querySelector('.you-colour .pause-swatch[data-color="3"]').click();`);
     await g.wait(0.3);
@@ -91,7 +93,9 @@ export default {
       you.name === 'Renamed' && you.color === 3 && you.saved[0] === 'Renamed' && you.saved[1] === '3',
       JSON.stringify(you),
     );
-    await g.eval(`const { pauseNavigation } = await import('/src/player/pause-pages.ts'); pauseNavigation.open('room');`);
+    await g.eval(
+      `const { pauseNavigation } = await import('/src/player/pause-pages.ts'); pauseNavigation.open('room');`,
+    );
     await g.wait(0.3);
     await g.page.fill('.pause-you-edit input', 'pauser');
     await g.eval(`document.activeElement?.blur(); document.querySelector('[data-act=back]').focus();`);
@@ -246,7 +250,13 @@ export default {
     const phoneShot = await phone.still('hud');
     t.check(
       'on a phone the menu button is 44px, on screen, and clear of the name tag and roster (the pill lives in the pause view)',
-      lay.size[0] >= 44 && lay.size[1] >= 44 && lay.inView && !lay.pillOnHud && !lay.hitsPill && !lay.hitsTag && !lay.hitsTL,
+      lay.size[0] >= 44 &&
+        lay.size[1] >= 44 &&
+        lay.inView &&
+        !lay.pillOnHud &&
+        !lay.hitsPill &&
+        !lay.hitsTag &&
+        !lay.hitsTL,
       `${JSON.stringify(lay)}; ${phoneShot}`,
     );
     await phone.eval(`document.querySelector('.menu-btn').click();`);

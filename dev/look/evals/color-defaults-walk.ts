@@ -1,3 +1,4 @@
+// command: unknown, needs a pose: a --real run with --eval of this file (it walks SHORE_PATH with makeBot and sets __debugCam; no doc or bot calls it)
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { SHORE_PATH } = (await import(
   '/src/place/shore-layout.ts' as string

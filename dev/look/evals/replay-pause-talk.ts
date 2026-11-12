@@ -1,3 +1,5 @@
+// npm run look -- --real --query 'phoneStartup=1&uiTalk=1' --eval dev/look/evals/replay-pause-talk.ts --size 440x796 --name pause-talk
+// needs: node .look/see-client.ts look --production for phoneStartup=1 (the production proxy sets the phone profile); uiTalk=1 leaves a talk open, uiPlay=1 the play HUD, else Pause
 // Targeted acceptance through the existing look broker, not a new scenario.
 // phoneStartup=1 uses the production proxy's pre-boot touch/DPR profile; Mac Chromium, not a device.
 // uiTalk=1 leaves a diagnostic conversation open; uiPlay=1 leaves the play HUD; otherwise Pause.

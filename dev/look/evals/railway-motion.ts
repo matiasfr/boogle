@@ -1,3 +1,4 @@
+// command: unknown, needs the beam checkpoint it follows: a --video/--curves run after dev/look/bots/railway.ts earns it (no doc or bot names the exact --query)
 // A short ordinary-input beam walk for --video/--curves after the real-input beam checkpoint.
 const { beam, inspectRailway, railPid, rw } = (await import(
   '/dev/look/rail-read.ts' as string

@@ -1,3 +1,6 @@
+// npm run look -- --real --warm 0 --hud --query 'retryProof=wasm-once' --action dev/look/evals/boot-retry.ts --name wasm-once
+//  (retryProof=wasm-once is the default; see the file for the others)
+// needs: env BOOGLE_BOOT_FAULTS=1 node .look/see-client.ts look --production with the same flags (a fresh production boot)
 // Existing look --action, with BOOGLE_BOOT_FAULTS=1 on see-client.ts --production.
 // Keep the parent game alive for capture health; the full-size fresh iframe exercises the real boot.
 // The deliberate HTTP/boot console errors remain strict and make the capture command fail after saving its images.

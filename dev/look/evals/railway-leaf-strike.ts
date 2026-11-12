@@ -1,3 +1,5 @@
+// npm run look -- --players 2 --rail-seed leaf-raised --eval dev/look/evals/railway-leaf-coop.ts --action dev/look/evals/railway-leaf-strike.ts --seconds 3 --frames 8
+//  (strikedo=none stops short of the press)
 // R4d proof action (docs/plans/ring-island-build1.md, step 4d), the strike after dev/look/evals/railway-leaf-coop.ts on
 // player 1's page (`--rail-seed leaf-raised`): hang the fourth footing (the leaf comes down), walk to the rivet at
 // u 259.5 on the joint's deck, say what the game offers there (the breaker is a room-wide rung the seed has already
