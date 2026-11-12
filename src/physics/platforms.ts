@@ -128,29 +128,34 @@ onPreStep(
   { order: 10 },
 );
 
-// The deck the body stands on, with its feet gap (m, + = air below), or null.
+// The deck the body stands on, with its feet gap (m, + = air below), or null. The deck already carrying you is kept
+// while it still qualifies: where two decks overlap (a train passing the parked track layer, which registered first),
+// the other one takes over only once you leave yours.
 let gap = 0;
 function deckUnder(b: Body) {
-  for (const p of platforms) {
-    const q = p.body.position,
-      yaw = yawOf(p.body.quaternion);
-    const rx = b.position.x - q.x,
-      rz = b.position.z - q.z;
-    const c = Math.cos(yaw),
-      s = Math.sin(yaw);
-    const lx = rx * c - rz * s,
-      lz = rx * s + rz * c;
-    if (Math.abs(lx) > p.hx + CARRY.edge || Math.abs(lz) > p.hz + CARRY.edge) continue;
-    const feet = b.position.y - PLAYER_R - q.y;
-    const g = feet - (p.topAt?.(lx, lz, feet) ?? p.top);
-    if (g > CARRY.above || g < -CARRY.below) continue;
-    // An attached rider has last step's vertical speed. A crest changes the deck's next speed, not the rider's
-    // intent: comparing against that new speed mistakes a descending deck for a jump.
-    if (b.velocity.y - carryVerticalSpeed(p) > CARRY.leaveVy) continue;
-    gap = g;
-    return p;
-  }
+  const held = carry.on;
+  if (held && stands(b, held)) return held;
+  for (const p of platforms) if (p !== held && stands(b, p)) return p;
   return null;
+}
+function stands(b: Body, p: Platform) {
+  const q = p.body.position,
+    yaw = yawOf(p.body.quaternion);
+  const rx = b.position.x - q.x,
+    rz = b.position.z - q.z;
+  const c = Math.cos(yaw),
+    s = Math.sin(yaw);
+  const lx = rx * c - rz * s,
+    lz = rx * s + rz * c;
+  if (Math.abs(lx) > p.hx + CARRY.edge || Math.abs(lz) > p.hz + CARRY.edge) return false;
+  const feet = b.position.y - PLAYER_R - q.y;
+  const g = feet - (p.topAt?.(lx, lz, feet) ?? p.top);
+  if (g > CARRY.above || g < -CARRY.below) return false;
+  // An attached rider has last step's vertical speed. A crest changes the deck's next speed, not the rider's
+  // intent: comparing against that new speed mistakes a descending deck for a jump.
+  if (b.velocity.y - carryVerticalSpeed(p) > CARRY.leaveVy) return false;
+  gap = g;
+  return true;
 }
 
 // Once per fixed step, before the player's steering (src/entities/player/state.ts). me.coyote > 0: on some ground.
