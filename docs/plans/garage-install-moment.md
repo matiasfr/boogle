@@ -262,3 +262,130 @@ and stay as they are.
    needs one small presence field, the only wire change this could have.
    - **Not now; friends see it from the commit. Add it with the second install (recommended).**
    - Now, as an additive presence field.
+
+## Design review (designer, 2026-11-12)
+
+**Verdict: cleared to build, with the changes under "What the build takes".** Nothing waits for the owner: no sim,
+wire or save change, nothing irreversible, and the order is his ("but prioritize the garage moment").
+
+**Read.** DESIGN.md; the 10 and 12 November entries cited in section 3, in full; agent-calls' garage rows (I9 to I26,
+calls 17 and 21, the 12 November plain-hold row); engine-garage's install spec and both reviews; the top blocks of
+[upgrade-economy](../research/upgrade-economy.md) (rec 2, used below in finding 6) and
+[construction-sound](../research/construction-sound.md) (rec 2, "trigger sound from the visible accepted action":
+supports call 10); `garage-view.ts`, `garage-data.ts` (`MOMENT`), `garage-state.ts`, `railway-jump.ts` (`TABLE_LAND`);
+`npm run loop -- node install`. **Port from Place:** nothing new; the crew stays as ruled on 10 November (I13).
+
+**Looked at.** Four stills of today's table from `steel-home` on fe04ff83b: the plan's top-down; the planned south
+camera (918, 21, 22.8); the east camera (928.8, 21, 12); the approach from the north-east. **Not seen:** the garage,
+the copy, the jib or the stand at today's table (none is drawn there yet), a train standing at either platform from
+the two camera spots, anything in motion, a second player. Every placement below is arithmetic on the plan's numbers
+and those stills; G2's still is the proof.
+
+### The calls
+
+Calls 1 to 20 are sorted as the plan has them, with these rulings and four added.
+
+| # | Call | Kind | Ruling |
+| --- | --- | --- | --- |
+| 1 to 5 | As the plan | Decided | Agreed; the entries say what the plan says |
+| 6 | Plain hold "for now"; the moment prioritised | Decided | The entry's "until the Home flip" is the orchestrator's framing; his words are "yes, plain for now" and "but prioritize the garage moment". Ending the plain hold early is call 7, logged, not a contradiction |
+| 7 | The garage mounts at today's table; the plain post becomes the garage's | **New** | **Take it.** It is the only way to prioritise the moment without a rules change, and it costs one data row. See finding 1 for what is really thrown away |
+| 8 | The works copy always on the table, solid | **New** | **Take it, with findings 2 and 3.** The table has had no play since "Turn the table" stopped being offered (10 November); the copy gives it a job and is the 10 November decision made visible |
+| 9 | A friend sees the moment from the commit, not the hold | **New** | **Take it for this build.** No owner decision covers the shared hold (I11 is my open call, now deferred to the second install). No friend's camera or input is touched, so "never freeze a friend" holds. Finding 4 |
+| 10 | The drop waits for the accept; 2.5 s lowers the part | **New** | **Take it.** A drop that could be untrue is worse than a hang. Finding 5 sets what keeps it from reading as a stall |
+| 11 to 18 | As the plan | Default | Agreed |
+| 19 | Placement at today's table | Default | Changed by finding 3 |
+| 20 | "Cars it pulls 3 to 4" with no fourth car | Default | Ships. Finding 6 |
+| 21 | The installer's camera and input are taken from the commit to rest or skip, about 4 s, skip from `c+800` | Decided | The shot rule (9 November) as engine-garage I5 and I21 record it; it is the installer's own choice, the world does not pause. With the wait of call 10 the worst case is 6.5 s; the lock must end on a deny, a timeout and a lost connection |
+| 22 | The copy's first appearance on a live tick: behind one steam puff with a short toot, once the shunt is finished | Default | Added. Rolling it out of the stall is the detail pass |
+| 23 | The copy's collider stays at the rest pose while the table turns; nobody is pushed, carried or moved | Default | Added. Finding 2 |
+| 24 | Nothing fixed stands within 4.8 m of the table's centre | Default | Added. Finding 3 |
+
+**Seven decided, thirteen default, four new.**
+
+### Findings
+
+1. **Call 7, and what goes at the flip.** Thrown away: `GARAGE_GEO.a`, its test rows, the `installHere` fallback, the
+   camera bearing and section 5's still, and every placement this review rules on. Kept: all the behaviour. That is
+   about a day of placement work spent twice, against the moment waiting for a rules change with its own bump. Worth
+   it. Mixed builds are safe: the garage's post stands where the plain post stands.
+2. **The solid copy (call 8) needs three things the plan does not have.**
+   - **Reach is claimed, not proven.** The post is on the critical path and stands in the east wedge; an 8.5 m solid
+     copy now lies across a 9.6 m deck between it and the village, with a platform slab at each end of the bridge
+     (seen in the top-down still). From either platform the wedge is one track-crossing away, so nobody is stranded,
+     but the walk from the village is not measured. G2 proves it: a walk from the forge door to the post with the
+     copy solid, in seconds, with no jump. If it adds more than 3 s over today or needs a jump, the first car's box
+     comes off.
+   - **Never push or trap a player.** Add each box only once no player of this tab stands in it; no pop-out.
+   - **Not before the shunt is done.** `wagonCoupled` alone may be true while the shunter is still backing over the
+     deck; show the copy only when the deck is at rest (`deckK === null`), on call 22's puff.
+   A friend on the deck during the show-off is passed through by the turning copy for 2.2 s. Accepted (call 23):
+   moving them would be a sim change, and it is funny once.
+3. **The copy sweeps the stand and one crew figure (changes section 5, rows 4 and 5).** The copy's corners reach
+   4.4 m and turn a full circle in the show-off and at 6° a second whenever the garage is open on a turning category.
+   The stand at 3.9 m (legs 0.9 m either side, the part lying at 0.85 m) and the crew figure at 4.3 m are inside that
+   circle: the engine's nose passes through the waiting boiler on every half turn, in the hero shot. The plan saw only
+   the rails through the legs. **Ruling:** nothing fixed within 4.8 m (call 24). The stand goes off the deck, lying
+   along the radius (the part pointing at its seat) at about 120°, centre 5.6 m; the jib behind it at about 6.6 m with
+   its arm lengthened to match; both crew rest spots at 5.0 m or more (they may step onto the deck to bolt and step
+   back before the turn, as the spec has them). **No `src/world` edit:** `TABLE_LAND` (108°, 5.5 m) is the owner's
+   jump-in landing and stays; the stand has no collider, and lying radially its edge is about 0.9 m from the landing
+   and 0.1 m clear of line 2's sleeper ends. If G2's still shows that does not fit, the view-only pallet and post move,
+   never the landing. The jib at 120° instead of B's 105° (the landing; a crew figure on the rails) is right.
+4. **Call 9, co-op.** What a friend at the table gets before the commit: the part on its stand, the orange knob, a
+   Boogle held at the post. What they lose is the anticipation. Fine for one install. Two things to hold: a friend in
+   the garage whose own Try it is dropped keeps input and Back (as G4 says), and the loser of a race is never camera
+   locked (their moment is not `mine`). The shared hold returns with the second install as an additive presence field.
+5. **Call 10, feel.** The plan already lets the clock run through the designed 180 ms quiet and holds only at its end,
+   so an accept inside 180 ms costs nothing; keep that exactly. Past it, the part must look held, not frozen: a slow
+   sway on the hook and the ring pulsing, view only. After a deny or the 2.5 s timeout the hold can be retried at
+   once. The checkpoint capture reports press-to-drop in a real room; over about 400 ms typical, say so.
+6. **The fourth car.** The owner decided the car arrives with the install, in the step straight after build 2 (12
+   November, answer 2), then put the moment first the same day. The readout already ships (build 2's call 16). So
+   the moment goes first and the fourth car is the next Ring Island step after it, with nothing between: upgrade-economy
+   rec 2 (an upgrade repays a visible inconvenience) is not met until something couples. Two notes for that step, not
+   this one: the tail at s 4.3 stands 0.5 m on the deck, inside the copy's 4.4 m sweep and against the jib's side of
+   line 2, so that step moves line 2's stop mark out (a rules change, its bump) and does not ask the garage to
+   move; and the car's coupling joins the platform beat.
+7. **The camera (section 5, row 6).** Both stills have a fault. South: the forge crane's yellow mast stands dead
+   centre behind where the chimney will be, line 2's platform fills the lower right, and a train standing on line 2
+   takes the right third. East: the open stall is the backdrop, which is what the garage review asked for (finding
+   12b, said to wait for the flip; it need not), and the two standing trains frame it left and right; but the post and
+   the installer sit low centre, over the wheels that run up in the moment, and the timber frame's capped post is in
+   the bottom of the frame at 10.8 m. **Ruling:** try east first, at 80° to 90° so the post falls right of centre,
+   clear of the timber frame; south is the fallback. G2's still passes when the engine is clear from the wheels up,
+   the stand and jib are in frame, and no mast or post meets the chimney.
+8. **Flow.** No route, reach or ability is added, so rules 1 to 3 hold apart from finding 2's proof. The next goal can
+   be found: arriving on line 2 with steel, the 3.4 m jib and the copy stand at the rim beside the platform end,
+   seconds from the pallet and the post (key in sight of the lock). Solo and late join are the same rows. Reduced
+   motion keeps what the Try it already does (I25); G3 and G4 must not add a push, shake or turn outside it.
+
+### Suspect and placeholder lines (for the owner; none rewritten, none The Boogler's)
+
+- "It runs faster and pulls one more car." True by the rules, with nothing to couple until the fourth car.
+- "Ready", "Replaced", "Install", "Installed": placeholders, ship as they are.
+- On main already: "Keep holding", "Hold to install", "Trying it on", "Look at the engine", "Longer boiler installed"
+  over "Line 2's trains take it at the Village".
+
+### Owner questions
+
+None blocks the build; each proceeds on its recommendation and is logged in [agent-calls](../agent-calls.md).
+
+1. **Ship the moment before the fourth car?** Recommended and taken: yes, the fourth car is the very next step.
+2. **Does the plain grey post go when the garage's Install lands?** Recommended and taken: yes, one place to install.
+3. **Should a friend see your hold?** Recommended and taken: not now; with the second install.
+
+### What the build takes
+
+- **G1.** As planned.
+- **G2.** `GARAGE_GEO.a` per finding 3 (stand radial at about 120°, 5.6 m; jib about 6.6 m; crew at 5.0 m or more);
+  camera east first (finding 7). The copy appears only with the deck at rest, on a puff and a toot (call 22); each
+  box is added only when the local player is clear of it; the collider does not turn. The test also asserts every
+  fixed piece is 4.8 m or more from the centre and that `TABLE_LAND` is untouched. Proofs added: the village-to-post
+  walk in seconds with the copy solid, and stills from the camera with a train standing on line 2.
+- **G3.** The clock runs through the 180 ms quiet before holding; the hanging part sways and the ring pulses; a deny,
+  a timeout or a lost connection ends the lock and the hold can be retried at once.
+- **G4.** As planned; the proof also shows the friend on the deck during the turn (passed through, not moved) and a
+  race where the second holder keeps camera and input.
+- **G5.** As planned.
+- **Checkpoint.** Report press-to-drop from the real-time capture. The fourth car is the next Ring Island step.
