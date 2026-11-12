@@ -209,13 +209,6 @@ const RECORDER = String.raw`(() => {
 
 // ---------------------------------------------------------------- takes
 // Page-code snippets the takes share.
-const TP = (x: string | number, z: string | number) => `{
-  const { teleport } = await import('/src/physics/engine.ts');
-  const { groundHeight } = await import('/src/island/terrain.ts');
-  const b = window.boogle.me.body;
-  teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
-  b.velocity.set(0, 0, 0);
-}`;
 const PRE = `const R = window.__rec, { sleep, until } = R;`;
 // A take that calls `calls` (page code) in order, `gap` ms apart; each entry is one statement.
 const seq = (imports: string, calls: string[], gap: number) => `${imports}
@@ -389,66 +382,25 @@ const PAGES: Page[] = [
     ],
   },
   {
-    key: 'build',
-    // The classic island's helper hut, at the origin of every world. Its pours are classic lockstep ops, which only a
-    // classic-registry room accepts (the current game's server refuses them), so this take uses the explicit Place room.
-    query: 'proto=place',
-    setup: `await until(() => window.boogle.me.entered, 90000);
-      ${TP(8, 16)}
-      window.__debugCam.set([12, 4.3, 11], [17, 2.4, 5.8]);
-      await sleep(1500);`,
-    takes: [
-      {
-        id: 'build-hut',
-        group: 'Build',
-        title: 'The helper hut goes up',
-        when: 'The Helper ring filled: pieces land on wooden notes up a pentatonic scale per phase, each phase resolving on a chord.',
-        body: `const { rules } = await import('/src/world/game-world.ts');
-          const { submitEdit } = await import('/src/world/sync.ts');
-          const { identity } = await import('/src/player/identity.ts');
-          const { HELPER } = await import('/src/sim/route.ts');
-          // Pour the whole ring (logs from the bundles, the usual ops); the hut keeps going up for a while after the
-          // ring is full: record the whole build.
-          return R.run(null, async () => {
-            for (let n = 0; n < 200 && !rules.sites.sites.list[0].helpers; n++) {
-              const mine = rules.stacks.count(identity.pid);
-              if (mine > 0) submitEdit({ op: 'site.stock', i: 0, j: 0, s: 0, ring: HELPER, n: mine });
-              else {
-                const id = rules.sources.list().findIndex((_, i) => rules.sources.charges(i) > 0);
-                const c = rules.sources.list()[id];
-                submitEdit({ op: 'src.take', i: c.i, j: c.j, id });
-              }
-              await sleep(250);
-            }
-            if (!rules.sites.sites.list[0].helpers) throw new Error('Helper stock was not accepted');
-            // Piece arrivals have bounded gaps below 1.5s, including phase pauses. Follow their real source
-            // completion until the queue rests, instead of assuming every build takes 34 seconds.
-            await until(() => R.ctx.currentTime > R.lastEnd + 1.5, 45000);
-          });`,
-      },
-    ],
-  },
-  {
-    key: 'place',
-    query: 'proto=place',
-    room: 'proto-place',
+    key: 'ambience',
+    query: '',
     setup: `await until(() => window.boogle.me.entered && window.boogle.me.body, 90000);
       await sleep(1000);`,
     takes: [
       {
-        id: 'place-mix',
-        group: 'A real place (?proto=place)',
+        id: 'ambience-mix',
+        group: 'The island (the production entry)',
         title: 'The ambience under the game',
         when: 'Standing at spawn with everything playing: the bed against the little guys and whatever else is going on.',
         body: `return R.run(30, null, { trim: false });`,
       },
       ...[
-        ['coast', 'on the beach', 'place-coast', -125, 130],
-        ['river', 'on the river bank, at the bottom of the gorge', 'place-river', 8, 30],
-        ['inland', 'inland, on the village green', 'place-inland', -100, 14],
+        ['coast', 'on the beach', 'ambience-coast', -125, 130],
+        ['river', 'on the river bank, at the bottom of the gorge', 'ambience-river', 8, 30],
+        ['inland', 'inland, on the village green', 'ambience-inland', -100, 14],
       ].map(([where, title, id, x, z]) => ({
         id: id as string,
-        group: 'A real place (?proto=place)',
+        group: 'The island (the production entry)',
         title: `Ambience ${title}`,
         when: `The sea, gulls and breeze alone (the other buses muted), standing ${title}, 45 s (${where}).`,
         body: `const { getAudio } = await import('/src/render/audio.ts');
@@ -463,8 +415,8 @@ const PAGES: Page[] = [
           return R.run(45, null, { trim: false });`,
       })),
       {
-        id: 'place-gulls',
-        group: 'A real place (?proto=place)',
+        id: 'ambience-gulls',
+        group: 'The island (the production entry)',
         title: 'Gull calls, one of each',
         when: 'Each pattern the ambience picks from, near and far: a lone mew, a pair, a long call, and one answered.',
         body: seq(
@@ -623,7 +575,7 @@ if (args.includes('--offline-place') || args.includes('--offline-locomotion')) {
       '.look/see-client.ts',
       'look',
       '--query',
-      'proto=place&ambience=off',
+      'ambience=off',
       '--eval',
       evalFile,
       '--warm',

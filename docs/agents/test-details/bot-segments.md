@@ -35,9 +35,6 @@ server step both sampled. Real inputs only: no recovery teleports. Segment evide
 Read `report.txt`, `verdict.json` and the images even on failure. The full production proof is
 `npm run playthrough -- --long --stall 6000` (the same as `--query 'shot=play' --eval dev/look/evals/railway-job.ts`).
 
-`--query 'proto=place&shot=play'` keeps the legacy Place route with its `.look/checkpoints/{solo,coop}` fixtures,
-`--from at-cove|t1-done|t2-funded|pier-ending` and `--regenerate`, until D1 deletes it; no routed check uses it.
-
 All harness browser launches share the machine queue at `/tmp/boogle-bots-<uid>` (across worktrees). Short runs go ahead of waiting `--long` playthroughs until a long one has waited 20 minutes (`BOOGLE_BOT_YIELD_MS`); a running job is never interrupted.
 Light runs share the machine: a plain `npm run look` still (no `--video`, `--curves`, `--real`, `--players 2` or
 `--long`) may run beside one other light run (`BOOGLE_BOT_CONCURRENCY`, default 2; 1 restores one run at a time).

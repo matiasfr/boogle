@@ -5,11 +5,6 @@ import type { Game } from '../../look/lib.ts';
 // ---- Window handles only (window.boogle, window.boogle.sync): safe for scenarios that also run on a built site
 // (`--url`: smoke, reconnect-edit). Never add a /src/ import to this section.
 
-// A tossed gift at a beach cell west of the court. k is the catalog index (0 seeds, 1 frisbee; renumbered at each WORLD_NS bump); n is the
-// toss's seed, a number or a page expression.
-export const toss = (k = 1, n: number | string = 7) =>
-  `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: ${k}, y: -1, n: ${n}, l: [0, 100, 0, 0, 0, 0] })`;
-export const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205)`;
 // How long to wait for a tab to apply an edit, a toss or a pick-up. At about a frame a second (a CI runner's software
 // WebGPU) a tab's world clock gains 2.5 ticks a frame (src/world/sync.ts, MAX_STEPS on a 50 ms dt), so it applies one it
 // has already received 80 s or more late. On a real GPU it lands at once and the wait returns.
@@ -88,8 +83,3 @@ export const INV = `const I = await import('/src/player/inventory.ts'); const H 
 // the world's state, so it can draw a sixteenth of the pixels there. Stills stay sharp on a real GPU.
 export const lowResOnCi = (g: Game) =>
   process.env.CI ? g.eval(`(await import('/src/render/scene.ts')).renderer.setPixelRatio(0.25);`) : undefined;
-// The item `toss()` made: its id, kind and world position.
-export const TOSSED_ITEM = `
-  const { CELL, HALF } = await import('/src/constants.ts');
-  const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.i === 230 && it.j === 205);
-  return { id: it.id, kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`;

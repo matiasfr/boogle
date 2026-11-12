@@ -1,21 +1,20 @@
-// The stations' platforms (halts.ts) at the two places the level check found them against line 2's rails: a still of each from
-// the same state. Uses the tester's "Skip to trains" (window.__place, so no `&fresh=1`), which lays both lines and builds the
-// halts; the platform code is the same one the default game builds when trains come.
-// node dev/look/playthrough.ts --name halts-after --query 'proto=place' --eval dev/look/evals/railway-halts.ts
-type Shot = { name: string; camera: [number, number, number]; target: [number, number, number] };
-const shots: Shot[] = [
+// The stations' platforms (halts.ts) at the two places the level check found them against line 2's rails, from the
+// accepted trains-on server save (both lines laid, the halts built):
+//   npm run look -- --rail-seed trains-on --query 'halt=village2' --eval dev/look/evals/railway-halts.ts \
+//     --until window.__haltReady --question "..."        (halt=quarry for the other)
+const shots: Record<string, { camera: [number, number, number]; target: [number, number, number] }> = {
   // Line 2's village platform, at the end where the line bends toward it (rails at 0.5 m, sleepers to 1.15 m).
-  { name: 'halt-village2', camera: [934, 24, 42], target: [936.5, 18.8, 31.6] },
+  village2: { camera: [934, 24, 42], target: [936.5, 18.8, 31.6] },
   // The quarry platform, where line 2 swings toward it before the quarry's bend.
-  { name: 'halt-quarry', camera: [1064, 31, 25], target: [1068.8, 24.5, 38.8] },
-];
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const w = window as Window & { __placeDone?: boolean; __shotList?: Shot[]; __place?: { skipTrains(): void } };
-void (async () => {
-  while (!w.__place) await wait(100);
-  w.__place.skipTrains();
-  await wait(4000);
-  w.__shotList = shots;
-  w.__placeDone = true;
-})();
+  quarry: { camera: [1064, 31, 25], target: [1068.8, 24.5, 38.8] },
+};
+const halt = new URLSearchParams(location.search).get('halt') ?? 'village2';
+const shot = shots[halt];
+if (!shot) throw new Error(`railway-halts: halt=${Object.keys(shots).join('|')}`);
+const { railReady } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
+if (!(await railReady())) throw new Error('railway-halts: the railway never became ready');
+const frame = () => window.__debugCam!.set(shot.camera, shot.target, 65);
+frame();
+setInterval(frame, 100);
+(window as unknown as { __haltReady: boolean }).__haltReady = true;
 export {};

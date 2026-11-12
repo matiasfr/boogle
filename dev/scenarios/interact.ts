@@ -130,7 +130,7 @@ export default {
     // saying Throw), a wind-up at the stall and a dropped frisbee behind a log bundle come back with R3.
 
     // A bag of seeds where nothing can grow: the click says why. The search starts at the beach cell west of the court
-    // where the tossed frisbee used to land (lib/world.ts, toss). Anything in hand turns you to the camera every frame
+    // where the tossed frisbee used to land. Anything in hand turns you to the camera every frame
     // (src/entities/player/state.ts), so the camera faces the searched heading too, and the click comes in the same
     // eval as the search: pressed a few frames later, a slow browser had turned to ground that grows and planted
     // silently (Mac nightly 10 November, Edge on Windows 11 November).

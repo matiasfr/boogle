@@ -9,7 +9,6 @@ export type SaveState = {
   t: number;
   pose: { x: number; y: number; z: number; yaw: number; pitch: number } | null;
   storage: Record<string, string>;
-  route?: { step: number; delivered: number; mode: 'solo' | 'coop' };
 };
 export type Observed = { lines: SeenLine[]; painted: PaintedLine[]; saves: SaveState[] };
 
@@ -101,7 +100,6 @@ export function installObserver(ignore: string) {
       read(): Observed;
       current(): { text: string; where: string }[];
       pose: () => SaveState['pose'];
-      flush?: () => void;
       lastBeat: number;
     };
   };
@@ -121,31 +119,12 @@ export function installObserver(ignore: string) {
       named.add(beat);
       w.__observe.lastBeat = now(); // only what's new: a bot opening one crate forever is stuck, however busy it looks
       const capture = () => {
-        w.__observe.flush?.();
         const storage: Record<string, string> = {};
         for (let k = 0; k < localStorage.length; k++) {
           const name = localStorage.key(k)!;
           storage[name] = localStorage.getItem(name)!;
         }
-        const cursor = sessionStorage.getItem('look.route.step');
-        saves.push({
-          beat,
-          t: now(),
-          pose: w.__observe.pose(),
-          storage,
-          ...(immediate && cursor
-            ? {
-                route: {
-                  step: Number(cursor),
-                  delivered: Number(sessionStorage.getItem('look.coop.delivered') ?? 0),
-                  mode:
-                    new URLSearchParams(location.search).get('coopRoute') === '1'
-                      ? ('coop' as const)
-                      : ('solo' as const),
-                },
-              }
-            : {}),
-        });
+        saves.push({ beat, t: now(), pose: w.__observe.pose(), storage });
       };
       if (immediate) capture();
       else setTimeout(capture, 200);
@@ -174,11 +153,7 @@ export const WATCH_MARKS = `
     const p = me.body?.position;
     return p ? { x: p.x, y: p.y, z: p.z, yaw: me.yaw, pitch: cam.pitch } : null;
   };
-  // Legacy checkpoints flush their own save. Production checkpoints hold pose/profile only; the server owns work.
-  // Never load a legacy save owner merely to observe the production entry.
-  const { productionRailway } = await import('/src/proto/flags.ts');
-  if (!productionRailway)
-    await import('/src/proto/place/job.ts').then((m) => (o.flush = m.save)).catch(() => {});
+  // Checkpoints hold pose/profile only; the server owns work, so there is no client save to flush.
   const marks = await import('/src/proto/mark.ts');
   if (!marks.watchPlayMarks) return false;
   let line = '';

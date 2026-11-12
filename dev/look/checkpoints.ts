@@ -3,8 +3,6 @@
 // keep or migrate. This writes each stage the routed checks and `playthrough --from` use (or the stages named) into a
 // throwaway data directory, so a world or route change that breaks a seed shows here, before a browser run needs it.
 // With no stages named it also builds every jump-in the server offers (docs/plans/playtest-jump-in.md).
-// The legacy ?proto=place fixtures regenerate with `npm run playthrough -- --regenerate --long --query 'proto=place&shot=play'`
-// until D1 deletes them.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

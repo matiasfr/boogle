@@ -15,7 +15,7 @@ import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { Forge, Job, QJob, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { jobId, qjobId } from '../src/sim/railway-queries.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
-import { BEATS, RAIL_STOPS } from '../dev/look/segments.ts';
+import { RAIL_STOPS } from '../dev/look/segments.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
@@ -74,10 +74,9 @@ test('the hand-kept beat lists agree with the graph', () => {
     );
   const stops = new Set(NODES.flatMap((n) => n.stops));
   for (const s of stops) assert.ok(s in RAIL_STOPS, `${s} is not a RAIL_STOPS key`);
-  // Not loop beats: the audio check, and the legacy ?proto=place route's cove start.
-  const notLoop = new Set(['audio-loop', 'at-cove', 'pier-ending']);
+  // Not a loop beat: the audio check.
+  const notLoop = new Set(['audio-loop']);
   for (const s of Object.keys(RAIL_STOPS)) assert.ok(stops.has(s) || notLoop.has(s), `RAIL_STOPS ${s} has no node`);
-  for (const s of BEATS) assert.ok(stops.has(s) || notLoop.has(s), `BEATS ${s} has no node`);
 });
 
 test('the solver proposes the canonical order and each soft edge flipped', () => {

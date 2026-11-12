@@ -3,15 +3,14 @@ import type { ShotList } from '../shot-types.ts';
 const keys: [number, number, number] = [0.96, 1.12, 1.28];
 const fills: [number, number, number] = [2.4, 3.2, 4];
 
-// Authored Place fixture, not played progression. Cell 5 is the accepted look.
+// The production entry at its first-visit spawn, not played progression. Cell 5 is the accepted look.
 export default {
   question: 'At fixed exposure, how do key and fill change Buddy, the town surfaces and open shade at play distance?',
   size: [640, 400],
   beats: [
     {
-      name: 'Town key/fill wedge — authored fixture',
-      query: 'proto=place&dev=1&shot=pack',
-      setup: 'dev/look/evals/place-job.ts',
+      name: 'Town key/fill wedge — production spawn',
+      query: 'dev=1',
       warm: 3,
       cameras: [{ name: 'Town play distance', anchor: 'player', cam: [6, 6, 15], look: [0, 0.7, 0], fov: 62 }],
       wedge: {
