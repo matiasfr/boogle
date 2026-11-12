@@ -23,6 +23,7 @@ export const SOURCES = [
   'dev/economy/play-trade.ts',
   'dev/economy/trade-model.ts',
   'dev/economy/trade-data.ts',
+  'src/sim/railway-trade-layout.ts',
   'dev/economy/play-map.ts',
   'dev/economy/play-page.ts',
   'dev/economy/build-prototype.ts',
