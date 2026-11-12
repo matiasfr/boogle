@@ -10,6 +10,7 @@ const {
   piles: pileRows,
   rail,
   railBack,
+  railAt,
   railRead,
   rw,
 } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
@@ -24,6 +25,9 @@ const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof impor
 const { LINE2_STATIONS } = (await import(
   '/src/sim/railway-line2-layout.ts' as string
 )) as typeof import('../../../src/sim/railway-line2-layout.ts');
+const { cartCycleTicks } = (await import(
+  '/src/sim/railway-cart.ts' as string
+)) as typeof import('../../../src/sim/railway-cart.ts');
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const query = new URLSearchParams(location.search);
 const k = query.get('gated') === 'q4' ? 3 : 4;
@@ -53,8 +57,15 @@ function move(p: { x: number; y: number; z: number }, dx = 0.8, dz = 0.8) {
   cam.yaw = me.yaw = Math.atan2(-dx, -dz) + Math.PI;
   cam.pitch = -0.1;
 }
+/** A solo look warps page time but leaves the server at real speed, so a page-time wait on the cart shrinks to a few
+ * server seconds as the warp climbs. Its trip is server ticks (100 ms): wait one whole trip to this stretch's rack and
+ * home (cartCycleTicks: 1006 ticks, 100.6 s, for Q4) plus 300 ticks for a forge pour or a late departure. */
+async function untilCart(fn: () => unknown, label: string) {
+  const deadline = railAt() + cartCycleTicks(k) + 300;
+  if (!(await bot.until(() => fn() || railAt() > deadline, 3_600_000)) || !fn()) throw new Error(label);
+}
 async function take(kind: 0 | 2) {
-  await until(
+  await untilCart(
     () => (kind === 0 ? rail(rw()).depot > 0 : rail(rw()).depotRails > 0),
     'cart delivered requested material',
   );
