@@ -749,11 +749,14 @@ export const NODES: readonly LoopNode[] = [
       ),
     ],
   },
-  // Ring Island build 1 (v27, R3b): the rules are in; the views (R4) and the bot's stops (R5) are not yet.
+  // Ring Island build 1 (v27): the rules (R3b), the views (R4) and the bot's stops (R5, dev/look/bots/railway-ring.ts).
   quarryStation(
     'Q7',
     [dec('crossing', 'rules', `${RULES_QUERIES} qActive(): Q7 opens on Works.crossing (opens: 'crossing')`)],
-    { stops: [], cue: [unbuilt("Q7's frame and the double deck over bents 1-6", `${RING_PLAN} R4a`)] },
+    {
+      stops: [],
+      cue: [onMain('world', "Q7's frame and the double deck over bents 1-6", 'src/entities/railway/crossing-view.ts')],
+    },
   ),
   {
     id: 'bents',
@@ -771,12 +774,12 @@ export const NODES: readonly LoopNode[] = [
     },
     ops: [],
     reached: { mark: 'footing set', data: { site: 3 }, nth: WORKS.ring, also: ['gap footed'] },
-    stops: [],
+    stops: ['railhead'],
     requires: [
       dec('Q7', 'rules', `${RULES_RING} ringFootSet: Q7 laid`),
       dec('table', 'rules', `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon to the Railhead`),
     ],
-    cue: [unbuilt('the railhead, its rack and jib moving out a bent each pair', `${RING_PLAN} R4`)],
+    cue: [onMain('world', 'the railhead, its rack and jib moving out a bent each pair', 'src/entities/railway/railhead-view.ts')],
   },
   {
     id: 'brace',
@@ -787,9 +790,9 @@ export const NODES: readonly LoopNode[] = [
     supply: {},
     ops: ['rail.brace'],
     reached: { mark: 'leaf braced' },
-    stops: [],
+    stops: ['gap', 'braced'],
     requires: [dec('bents', 'rules', `${RULES_RING} brace: set === 14`)],
-    cue: [unbuilt('the gold strut on the brace platform', `${RING_PLAN} R4`)],
+    cue: [onMain('world', 'the gold strut on the brace platform', 'src/entities/railway/leaf-view.ts')],
   },
   {
     id: 'weights',
@@ -812,7 +815,7 @@ export const NODES: readonly LoopNode[] = [
       dec('bents', 'rules', `${RULES_RING} ringFootSet: the counterweight once set === 14`),
       { on: 'brace', status: 'free', by: 'none', source: `${RING_PLAN} call 9: brace and weights in either order` },
     ],
-    cue: [unbuilt("the counterweight's cage on the jib", `${RING_PLAN} R4`)],
+    cue: [onMain('world', "the counterweight bracket's lit outline under the plate", 'src/entities/ring-island/bracket.ts')],
   },
   {
     id: 'rivet',
@@ -823,12 +826,12 @@ export const NODES: readonly LoopNode[] = [
     supply: {},
     ops: [],
     reached: { mark: 'seam struck', data: { seam: 2 }, also: ['ring joined'] },
-    stops: [],
+    stops: ['ring-joined', 'ring-ride'],
     requires: [
       dec('brace', 'rules', `${RULES_RING} ringStrike: the leaf down (brace === 0)`),
       dec('weights', 'rules', `${RULES_RING} ringStrike: the leaf down (cw === 4)`),
     ],
-    cue: [unbuilt('the rivet over the joint', `${RING_PLAN} R4`)],
+    cue: [onMain('world', 'the gold glint over the rivet stud', 'src/entities/ring-meet/view.ts')],
   },
 ];
 

@@ -17,9 +17,7 @@ import {
   works as worksRow,
 } from '../rail-read.ts';
 import { me, cam } from '../../../src/player/player.ts';
-import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
-import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import {
   WORKS,
   WORKS_BREAKER,
@@ -33,6 +31,7 @@ import {
   PIER_FRAME,
 } from '../../../src/sim/railway-works-layout.ts';
 import { STALL_SOCKETS } from '../../../src/entities/railway/works-shape.ts';
+import { HALT, line2Rides } from './railway-ride.ts';
 
 export type WorksRoute = {
   bot: Bot;
@@ -43,14 +42,6 @@ export type WorksRoute = {
 export type WorksFrom = 'pier' | 'works' | 'wagon';
 
 type Scene = NonNullable<ReturnType<typeof inspectRailway>>;
-type Trains = ReturnType<
-  Awaited<ReturnType<typeof import('../../../src/entities/railway/train-view.ts').createRailwayTrains>>['inspect']
->;
-type Halts = ReturnType<
-  Awaited<ReturnType<typeof import('../../../src/entities/railway/halts-view.ts').createRailwayHalts>>['inspect']
->;
-/** Line 2's halts in `view().halts`: Place's five, then the Pier halt. */
-const HALT = { village2: 2, quarry: 3, pier: 5 } as const;
 const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
 
 export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from: WorksFrom = 'pier') {
@@ -64,7 +55,6 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
   const works = () => worksRow(rw());
   const shed = () => shedRow(rw());
   const trains = () => trainRows(rw());
-  const view = () => scene().line2View as Scene['line2View'] & Trains & Halts;
   const check = (ok: unknown, beat: string) => {
     if (!ok) throw new Error(beat);
   };
@@ -85,97 +75,8 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     const p = me.body!.position;
     cam.yaw = me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
   };
-
-  /** Request a line-2 train at `haltId` by its lever, the handle the way to `destination`, board it by a real jump,
-   * ask for a middle `destination` aboard ("Request stop: <halt>"), ride there and step off onto its halt. */
-  const ride = async (haltId: number, destination: number) => {
-    const halt = view().halts[haltId]!;
-    await until(() => view().halts[haltId]!.up, `${halt.name} halt stands`);
-    const dir = destination > halt.stop ? 1 : -1;
-    const handle = view().halts[haltId]!.lever.find((h) => h.on && h.dir === dir);
-    check(handle, `${halt.name} has a handle toward stop ${destination}`);
-    if (!handle!.over) await use(handle!, /^Request stop/, `request a train at ${halt.name}`);
-    await until(() => view().halts[haltId]!.calling, `${halt.name} signal drops for the request`);
-    await walk(halt.x, halt.z, 0.5);
-    // Whichever of line 2's trains stops for the lever is the ride (v26).
-    const standing = () =>
-      view()
-        .trains.filter((t) => t.line === 1)
-        .find((t) => {
-          const r = trains()[t.slot]!;
-          return r.phase === 0 && r.at === halt.stop && (r.track ? -1 : 1) === dir;
-        })?.slot;
-    await until(() => standing() !== undefined, `a train toward stop ${destination} stands at ${halt.name}`);
-    const slot = standing()!;
-    const row = () => trains()[slot]!;
-    const train = () => view().trains.find((t) => t.slot === slot)!;
-    // Its cars, the wagon's too while coupled (train-view.ts inspect).
-    const aboard = () => train().cars.some((car) => car.riding);
-    const end = performance.now() + 20000;
-    try {
-      while (!aboard() && performance.now() < end) {
-        const car = train().cars[1]!;
-        face(car.x, car.z);
-        input.keys.add('KeyW');
-        if (me.coyote > 0) pressJump();
-        await bot.wait(120);
-        releaseJump();
-        await bot.wait(80);
-      }
-    } finally {
-      input.keys.delete('KeyW');
-      releaseJump();
-    }
-    check(aboard(), `boarded line 2 at ${halt.name} by a real jump`);
-    const to = view().halts.find((h) => h.line === 1 && h.stop === destination)!;
-    if (to.lever.filter((h) => h.on).length === 2) {
-      // A middle halt stops only on request: ask aboard.
-      await until(
-        () => interactTarget()?.id === 'railway-request-aboard',
-        `"Request stop: ${to.name}" offered aboard`,
-        20000,
-      );
-      check(interactTarget()?.verb === `Request stop: ${to.name}`, `the prompt names ${to.name}`);
-      if (interactTarget()?.run) bot.press();
-      await until(() => row().to === destination || row().at === destination, `the train will stop at ${to.name}`);
-    }
-    let ran = false;
-    let sample: Promise<void> | undefined;
-    await until(() => {
-      check(aboard() && !me.swimming, 'rider stays aboard the line-2 train');
-      const r = row();
-      ran ||= r.phase === 1;
-      // `railPerf`: one real-frame sample aboard a moving train (with the wagon once it is coupled).
-      if (r.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf'))
-        sample = (async () => {
-          // Needs `prof=1` (hardware timing). The counts are read just after a game frame, when renderer.info
-          // still holds that frame's scene pass (as dev/look/perf.ts does).
-          const { hardwareTiming } = await import('../../../src/debug/prof-overlay.ts');
-          const { renderer } = await import('../../../src/render/scene.ts');
-          const timing = await hardwareTiming(3);
-          await new Promise((done) => requestAnimationFrame(() => setTimeout(done, 0)));
-          const calls = renderer.info.render.drawCalls,
-            tris = renderer.info.render.triangles;
-          const gpu = timing.gpu.render.stats;
-          console.log(`RAILWAY MOVING PERF ${JSON.stringify({ wagon: r.wagon, calls, tris, gpu, cpu: timing.cpu })}`);
-        })();
-      return ran && r.phase === 0 && r.at === destination;
-    }, `line 2 arrives at stop ${destination} with its rider`);
-    await sample;
-    const arrivalId = view().halts.findIndex((h) => h.line === 1 && h.stop === destination);
-    const arrival = view().halts[arrivalId]!;
-    // Come in going up at a middle halt, the train stands at the up platform: step off onto it, then walk to today's
-    // side over the plank crossing (generic-lines, finding 5), never across the running tracks.
-    const up = view().upPlatforms.find((u) => u.pair === arrivalId);
-    if (up && row().track === 0) {
-      check(await bot.straight(up.x, up.z, 0.5, 12000), `stepped off onto the ${arrival.name} up platform`);
-      await until(() => !aboard() && me.coyote > 0, 'off the train, on the up platform', 10000);
-      for (const [i, p] of up.path.entries())
-        check(await bot.straight(p.x, p.z, 0.5, 12000), `${arrival.name} plank crossing, step ${i + 1}`);
-    }
-    check(await bot.straight(arrival.x, arrival.z, 0.5, 12000), `stepped across to the ${arrival.name} halt`);
-    await until(() => !aboard() && me.coyote > 0, 'stepped off the train onto the halt', 10000);
-  };
+  const { ride: rideLine2, view } = line2Rides(bot);
+  const ride = async (haltId: number, destination: number) => void (await rideLine2(haltId, destination));
 
   /** Fill the back with logs from the nearest reachable ordinary trees (the route's own chop loop). */
   const fillLogs = async (max: number) => {
