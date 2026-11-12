@@ -21,7 +21,7 @@ import './catalog.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import type { World } from '../../src/ecs/index.ts';
 import { Account, Aperture, Works } from '../../src/sim/railway-components.ts';
-import { LINE2, RAIL_HALTS, circuitAhead, circuitCm, circuitLen } from '../../src/sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, circuitAhead, circuitCm, circuitLen } from '../../src/sim/railway-lines.ts';
 import { RAIL_LEGS } from '../../src/sim/railway-route.ts';
 import { TRAIN, TRAIN_PHASE, trainDir, trainPassesBy } from '../../src/sim/railway-train.ts';
 import { LINE_SLOTS, cycleTicks, servingSlots, trainPose, trainSpacing } from '../../src/sim/railway-trains.ts';
@@ -87,7 +87,20 @@ function stageWorlds(): Seed[] {
   }
   return (STAGES = out);
 }
+// SPACING_CONTROL_LATE=1: the base worlds are built with line 2's `control` unset (as E0 built them) and the control
+// is set again for the run alone, so a candidate is judged from main's arrival state.
+const LATE = process.env.SPACING_CONTROL_LATE === '1';
+const lineCtl = RAIL_LINES[LINE2]!.control;
+const setCtl = (on: boolean) => Object.assign(RAIL_LINES[LINE2]!, { control: on ? lineCtl : undefined });
 function base(where: string): Seed {
+  if (LATE) setCtl(false);
+  try {
+    return base0(where);
+  } finally {
+    if (LATE) setCtl(true);
+  }
+}
+function base0(where: string): Seed {
   if (where === 'whole') return unaudited(copy(JOINED));
   const st = stageWorlds();
   if (where === 'settled') {
