@@ -4,6 +4,7 @@
 //   yardTick (rail.yardTick)   while the trains run, each yard makes a crate every `everyTicks` up to its cap
 //   freightLoads(w, slot)      a train standing at its line's yard heading home loads what it has room for
 //   freightArrives(w, slot)    a train come to a stand at its line's Village halt unloads into the Town
+//   yardsAway(w, ticks, tick)  the away credit's part for the yards (R2): called by rail.resume's awayCredit
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE, trainDir } from './railway-train.ts';
@@ -64,4 +65,22 @@ export function freightArrives(w: World, slot: number) {
   if (r.at !== yard.home || !r.freight) return;
   w.mut(Town, townId(w, 0))![yard.goods] += r.freight;
   w.mut(Train, trainId(w, slot))!.freight = 0;
+}
+/** The yards' away credit (R2): `ticks` of production (railAwayCredit's, the same as the forge's and the cart's) gives
+ * each yard `floor(ticks / everyTicks)` crates, never past its cap, while the trains are awake; `made` grows with it
+ * and the clock moves to `tick`, so the next crate comes a whole interval after the join. Trains do not run while
+ * away, so nothing is loaded or delivered. Applied once per resume marker (rail.resume refuses a marker already
+ * used before it gets here). */
+export function yardsAway(w: World, ticks: number, tick: number) {
+  if (ticks <= 0 || w.get(Rail, railId(w))!.trains < 0) return;
+  TRADE.yards.forEach((y, slot) => {
+    const id = yardId(w, slot),
+      n = Math.min(y.cap - w.get(Yard, id)!.stock, Math.floor(ticks / y.everyTicks));
+    if (n > 0) {
+      const ym = w.mut(Yard, id)!;
+      ym.stock += n;
+      ym.made += n;
+    }
+    w.mut(YardClock, id)!.last = tick;
+  });
 }
