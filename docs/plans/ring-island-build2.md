@@ -798,3 +798,12 @@ cannot couple; left as it is, for the owner with question 2.
    wagon load.
    **Answered (owner, 12 November UTC): the steel works takes logs and rails only, no cement (recommended).** Recorded
    in the [decisions](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered).
+
+**The wait limit (owner, 12 November UTC, asked on the greybox and train-spacing plans):** "A looser rate for the
+greybox": "Ship build 2 and leg 1 now with waits up to about 2 minutes 15, and tighten when train spacing lands."
+Orchestrator's reading: until train spacing lands, build 2's wait gate is a worst lever wait of 1,350 ticks on a
+settled line and 1,600 while a line grows (measured worst 1,100), mean and share over 1,050 printed and not gated; it
+tightens to [train-spacing](train-spacing.md#c-the-limit-as-a-rate)'s table when spacing lands. The install stays a
+plain hold at Home's table until the Home flip ("yes, plain for now", with "but prioritize the garage moment"); the
+garage's install moment is the next Ring Island item after greybox leg 1 step 3. Recorded in the
+[decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered).
