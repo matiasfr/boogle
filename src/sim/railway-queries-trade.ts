@@ -34,8 +34,10 @@ export function plotsStakedOf(
   }
   return out;
 }
-/** plotsStakedOf on the world's Town row. No plot can be bought until R4 adds the Plot row and `rail.buy`. */
+/** plotsStakedOf on the world's Town row; a town with no row has nothing staked ([], as plotsStakedOf for a town
+ * with no priced plots). No plot can be bought until R4 adds the Plot row and `rail.buy`. */
 export function plotsStaked(w: World, town: number): number[] {
-  const t = w.get(Town, townId(w, town))!;
-  return plotsStakedOf(town, t.wood, t.stone);
+  const id = w.lookup(Town, town),
+    t = id === undefined ? undefined : w.get(Town, id);
+  return t ? plotsStakedOf(town, t.wood, t.stone) : [];
 }

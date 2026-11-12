@@ -1,4 +1,4 @@
-// The railway while nobody plays (docs/plans/ecs-migration-railway.md, section 2): offline resume with the yards'
+// The railway while nobody plays (docs/plans/ecs-migration-railway.md, section 2): offline resume with the producers'
 // away credit (./railway-away.ts), and the supply pulse (regrowth and recovery, ./railway-supply.ts).
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
@@ -57,10 +57,11 @@ import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from '.
 import { yardsAway } from './railway-sys-trade.ts';
 
 // ---------------------------------------------------------------- offline catch-up, sessions, supply, the beam
-/** The away credit's yards (./railway-away.ts): `ticks` of production for the forge's rack and the depot cart, as the
- * rule tick would make them, never past the rack or the stretch's need. Counted like a tick: poured and the depot's
- * output grow with what is made. Applied before the funded job finishes, so nothing is made for a stretch not yet
- * reached. */
+/** The away credit's producers (./railway-away.ts): `ticks` of production for the forge's rack and the depot cart, as
+ * the rule tick would make them, never past the rack or the stretch's need, then slice 5's crate yards (the Yard rows,
+ * yardsAway). Counted like a tick: poured and the depot's output grow with what is made. Applied before the funded job
+ * finishes, so nothing is made for a stretch not yet reached. Returns the forge's and the cart's count (no caller reads
+ * it). */
 function awayCredit(w: World, ticks: number, tick: number) {
   if (ticks <= 0) return 0;
   let made = 0;
@@ -92,11 +93,11 @@ function awayCredit(w: World, ticks: number, tick: number) {
     Object.assign(w.mut(Cart, cartId(w))!, { phase: CART_PHASE.REST, depart: tick, from: 0 });
     made += n;
   }
-  // Slice 5's yards (R2; their crates are not the route's production, so not counted in `made`).
+  // Slice 5's crate yards (R2): their own counter is Yard.made.
   yardsAway(w, ticks, tick);
   return made;
 }
-/** Bounded catch-up for the funded stretch only (the yards' credit comes first, from awayCredit). */
+/** Bounded catch-up for the funded stretch only (the producers' credit comes first, from awayCredit). */
 export const resume = defineSystem(
   'rail.resume',
   {
@@ -147,8 +148,8 @@ export const resume = defineSystem(
     return n;
   },
 );
-/** One away credit, consumed once per absolute marker: `yard` production ticks for the yards first (the forge and
- * the depot), then up to `ticks` for the funded job. Returns the job ticks advanced. */
+/** One away credit, consumed once per absolute marker: `yard` production ticks for the producers first (the forge, the
+ * depot and slice 5's crate yards), then up to `ticks` for the funded job. Returns the job ticks advanced. */
 export function railResume(w: World, ticks: number, marker: number, tick: number, yard = 0): number {
   const n = w.run(resume, { ticks, marker, tick, yard });
   w.run(jobClock, undefined);
