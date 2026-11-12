@@ -6,24 +6,12 @@
 // reads the rows first, so the bot also resumes from `steel-kit`, `steel-lit` and `steel-home` seeds. Inspection
 // observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
-import {
-  account,
-  aperture,
-  line,
-  railAt,
-  railPid,
-  railRead,
-  rw,
-  shed,
-  steel,
-} from '../rail-read.ts';
+import { account, aperture, line, railAt, railPid, railRead, rw, shed, steel } from '../rail-read.ts';
 import { me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { RING_HALT, STEEL, ringAt } from '../../../src/sim/railway-ring-layout.ts';
-import { PLAYER_R } from '../../../src/constants.ts';
-import { CARRY, carry } from '../../../src/physics/platforms.ts';
 import { LINE2 } from '../../../src/sim/railway-lines.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
 
@@ -120,7 +108,6 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
           }
         ).ringLevers;
       const homeward = () => levers().find((l) => l.halt === STOP.island && l.dir === -1 && l.on);
-      const sample = carryProbe(bot);
       await rideFrom(
         {
           name: 'Ring Island',
@@ -134,7 +121,7 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
           wait: { x: homeward()!.x, z: homeward()!.z },
         },
         STOP.village,
-      ).finally(sample);
+      );
     }
     await untilTicks(() => home() >= 1, 'the first steel home in the bay', 12000);
     await checkpoint('steel home');
@@ -156,61 +143,4 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
     }
     await checkpoint('boiler installed');
   }
-}
-
-/** The carry terms (src/physics/platforms.ts deckUnder) every frame, kept for the last 8, and written out when the deck
- * lets go of the rider: lx and lz against the deck's half sizes plus the edge, the feet gap against above and below, and
- * the body's vertical speed minus the carry's against leaveVy. The first term out of bounds is the cause. */
-function carryProbe(bot: Bot) {
-  type Rec = Record<string, number | string | null>;
-  const last: Rec[] = [];
-  let on = false,
-    live = true,
-    wasId = '';
-  const frame = () => {
-    if (!live) return;
-    const b = me.body!,
-      p = carry.on;
-    if (p) {
-      const q = p.body.position,
-        yaw = Math.atan2(
-          2 * (p.body.quaternion.w * p.body.quaternion.y + p.body.quaternion.x * p.body.quaternion.z),
-          1 - 2 * (p.body.quaternion.y ** 2 + p.body.quaternion.x ** 2),
-        );
-      const rx = b.position.x - q.x,
-        rz = b.position.z - q.z,
-        c = Math.cos(yaw),
-        s = Math.sin(yaw);
-      const lx = rx * c - rz * s,
-        lz = rx * s + rz * c;
-      const feet = b.position.y - PLAYER_R - q.y;
-      const top = p.topAt?.(lx, lz, feet) ?? p.top;
-      last.push({
-        id: p.id ?? '',
-        z: +b.position.z.toFixed(1),
-        lx: +lx.toFixed(2),
-        lxMax: +(p.hx + CARRY.edge).toFixed(2),
-        lz: +lz.toFixed(2),
-        lzMax: +(p.hz + CARRY.edge).toFixed(2),
-        gapRaw: +(feet - top).toFixed(3),
-        vyRel: +(b.velocity.y - carry.y).toFixed(3),
-        vy: +b.velocity.y.toFixed(3),
-        carryY: +carry.y.toFixed(3),
-      });
-      if (last.length > 8) last.shift();
-      on = true;
-      wasId = p.id ?? '';
-    } else if (on) {
-      on = false;
-      bot.note(
-        `carry let go of ${wasId}: ${JSON.stringify({ limits: { above: CARRY.above, below: CARRY.below, leaveVy: CARRY.leaveVy }, last, vyNow: +b.velocity.y.toFixed(3), z: +b.position.z.toFixed(1), coyote: me.coyote })}`,
-      );
-    }
-  };
-  const timer = setInterval(frame, 40);
-  return () => {
-    live = false;
-    clearInterval(timer);
-    bot.note(`carry probe ended: ${JSON.stringify({ on, last: last.slice(-6) })}`);
-  };
 }
