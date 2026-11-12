@@ -61,8 +61,9 @@ export const SEED_STAGES = [
   'boiler',
   'boiler-camp',
   'trains-on',
-  // Slice 5 (./railway-seed-trade.ts): trains-on with the first timber home.
+  // Slice 5 (./railway-seed-trade.ts): trains-on with the first timber home; then the first fares.
   'freight-running',
+  'fares-running',
   'q6-stocked',
   'q6-finishing',
   'q6-done',

@@ -321,7 +321,10 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     { server: true },
   );
   sync.onTick((tick) => {
-    railTick(world, tick, rules.tune.get('railTrainHeadPct'));
+    railTick(world, tick, rules.tune.get('railTrainHeadPct'), {
+      farePct: rules.tune.get('railFarePct'),
+      riderPct: rules.tune.get('railRiderPct'),
+    });
     commit();
   }, 'railway');
   const touchAll = () => {
