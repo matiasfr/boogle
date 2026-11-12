@@ -6,6 +6,8 @@
 // Bench: a 1210x834 page at pixel ratio 2 (2420x1668, the M4 iPad Pro 11" panel), ms per frame from batches
 // rendered back to back (lookLab.bench), median of 7. Writes bench.json next to the images. Serves DESIGN.md "Understandable at
 // a glance" (the visual target is measured, not guessed).
+// Known failing on Windows (11 November): the high and ultra presets and the ssgi and taa layers, from a three r187
+// compile race on the sea's depth texture. See "Known: TRAA" in src/render/reference/frame.md.
 import fs from 'node:fs';
 import path from 'node:path';
 
