@@ -196,10 +196,13 @@ export const SERVICE_ROUTES = {
     // Runs alongside the trestle deck (both tracks' 7.6 m formation, its edge 5.8 m left) with its 3 m of stone butting the
     // deck's edge, not through its planks, so you step on from anywhere along it: flush with the deck's top on the grade.
     // It rises round p2's far side from t0 (down the line, then behind the pillar), every point more than two jumps
-    // from t0 so t0 still needs the hook (review of generic-lines step 2; test/hook-walk-t0.test.ts).
+    // from t0 so t0 still needs the hook (review of generic-lines step 2; test/hook-walk-t0.test.ts). It is level for its
+    // last 3 m before turning back: the next deck's inner half lies over this one, so a rise there is a ledge across the
+    // walk (test/hook-walk-lip.test.ts).
     beside(E, 92, -1, 3.4 - UP_LAT),
     beside(E, 88, -1, 3.4 - UP_LAT),
     beside(E, 84, -1, 3.4 - UP_LAT),
+    { x: P2.x - 5.9, z: P2.z - 2, y: P2.y + 1.5 },
     { x: P2.x - 5.9, z: P2.z - 5, y: P2.y + 1.5 },
     { x: P2.x - 2, z: P2.z - 3, y: P2.y + 2.2 },
   ],
