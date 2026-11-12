@@ -231,7 +231,15 @@ checkpoint runs for it.
 
     As built, in detail. **What is replicated:** the riders' accrual (`acc`) is written every rule tick, so it lives
     on a non-replicated `TownClock` beside `Town` (as `YardClock` beside `Yard`); `Town` and `Till` change only on a
-    tick a rider arrives at an end, boards or steps off (a test counts them). **The money check** keeps
+    tick a rider arrives at an end, boards or steps off. A test checks every replicated component: run 3,000 ticks
+    from `fares-running` with riders on and again with `railRiderPct` 0. Each tick on which a component changed
+    only in the riders-on run must carry a rider event (160 ticks against 140, with 53 rider events).
+    **The far end moving, ticked:** gate 3's harness, run with riders on, plays every footing from `wagon-on`, then
+    strikes the rivet and plays 3,000 ticks more (about 3.3 s). With `railwayCheck` every tick, boarded less
+    stepped off equals the riders aboard, and each rider stepping off pays that tick's fare once. Both end moves
+    happen with riders aboard (the Pier to the Railhead at +2,445 with 7 aboard, to Ring Island at +6,253 with 7).
+    Riders step off at the Pier, the Railhead and Ring Island, never at the Quarry or Far Head (two mutations
+    checked: a homeward double charge, and riders held to the Pier). **The money check** keeps
     `boogles = landed + poured − spent` only; `landed + lost = alighted × fare` is held by a per-tick test at a fixed
     percent, because a moving fare and a tunable percent break it as an invariant. **The far end moving:** a train
     already on the old end's crossover when the end moves turns back there; its riders ride home and pay the new fare at
@@ -555,7 +563,11 @@ shipped, else bump B (a rule change, no shape change).
     and at `gap-footed`; a homeward lever or rider ask at the Quarry still loads it. Gate 3 is a committed test: every
     footing played as it arrives from `wagon-on` (the pier's 6 and 6, the ring's 6, 6 and 6 with the counterweight's
     four), every delivery and wagon arrival on the no-stone-stop tick, and equal to main's (+570, +1,602, +3,864,
-    +5,025, +6,246). Footings owed with no wagon coupled also refuses the stop; that state is not reachable in a room
+    +5,025, +6,246). That harness measures one played sequence, and in it a stone stop happens not to move anything
+    (with the footings condition removed from `freightStop` it still passes): gate 2's test is the guard for that
+    condition. A second played sequence, added with R3's review, does bite it: a slower player setting one footing
+    every 900 ticks from `deck-laid` (with the condition removed the wagon reaches the Railhead a tick off, 9,022
+    against 9,023; about 0.7 s). Footings owed with no wagon coupled also refuses the stop; that state is not reachable in a room
     (the wagon couples before the pier can have its footings and never uncouples).
   - While a kit is owed no train makes the stone stop (in a live room, until players pour Q7's rails); stone still
     moves by a lever or rider ask then. `test/railway-trade.test.ts` holds both, the wagon's arrivals against no stone
