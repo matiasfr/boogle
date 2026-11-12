@@ -7,7 +7,7 @@ import { LINE2_KIT } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
 import { TRAIN, TRAIN_PHASE, reqAdd, reqHas, trainDir, trainPassesBy, type ServiceStop } from './railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
-import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
+import { LINE_SLOTS, atEnd, servingSlots, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt } from './railway.ts';
 import {
@@ -57,7 +57,7 @@ import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
-import { legsLaid } from './railway-queries-route.ts';
+import { legKitWaiting, legsLaid } from './railway-queries-route.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -245,6 +245,16 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
     // The greybox route: the trains a line runs at its legs' stage (its fleet).
     fleet: (line) => fleetOf(line, legsLaid(w)),
+    // Candidate B (scratch): the control halt is off while the line owes footings and for a train on an errand (the
+    // footing wagon's, a kit aboard that can unload now, a kit owed); with `whole`, while any train of the line is.
+    controlOff(line, slot) {
+      if (footingsOwed(w, line)) return true;
+      const errand = (k: number) => {
+        const r = row(k);
+        return r.wagon || (r.logs + r.rails > 0 && !legKitWaiting(w, line, r)) || kitOwed(w, r, line);
+      };
+      return RAIL_LINES[line]!.control?.whole ? servingSlots(row, line).some(errand) : errand(slot);
+    },
   };
 }
 function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {

@@ -90,6 +90,27 @@ export type RailLineDef = {
    * track, with no halt, between halts too far apart for the block rule to let a follower start (it needs the whole leg
    * clear of the train ahead). Each stands between two halts of the line, never at one. */
   signals?: readonly number[];
+  /** Scratch, train spacing candidate B (docs/plans/train-spacing.md, 2B): control halts (indexes into `halts`) where a
+   * train with much less room ahead than behind stops (`ahead + on < behind`, `off` once bound for or standing there)
+   * and, past its dwell, stands while `ahead + off < behind`, at most `cap` ticks past the dwell (./railway-trains.ts,
+   * controlStop and controlHold). `whole`: off while any train of the line is on an errand. `asks` (a diagnostic, not a
+   * candidate): acts for a train a lever ask is assigned to. Absent: no control. */
+  control?: { halts: readonly number[]; cap: number; on: number; off: number; whole?: true; asks?: true };
+};
+/** Whether a line's `control` is absent or well formed: middle halts, a cap as `balance`'s, 0 <= off <= on. */
+export const controlOk = (l: Pick<RailLineDef, 'control' | 'halts'>) => {
+  const c = l.control;
+  if (c === undefined) return true;
+  const int = (x: number) => Number.isSafeInteger(x) && x >= 0;
+  return (
+    c.halts.every((k) => int(k) && k > 0 && k < l.halts.length) &&
+    int(c.cap) &&
+    c.cap >= 1 &&
+    c.cap <= BALANCE_MAX_TICKS &&
+    int(c.on) &&
+    int(c.off) &&
+    c.off <= c.on
+  );
 };
 /** The longest balanced hold a line may ask for: 3 minutes, about one round trip of line 2 to the island (138.8 s
  * non-stop, about 220 s under heavy asks). */
@@ -517,6 +538,7 @@ export function trainPlaces(line: LineRef, stops: readonly number[], n = lineDef
     c = circuitLen(stops),
     last = stops.length - 1;
   if (!balanceOk(l.balance)) throw new Error(`railway: line ${l.id} has a balance of ${l.balance} ticks`);
+  if (!controlOk(l)) throw new Error(`railway: line ${l.id} has a malformed control`);
   const at = (k: number, track: number) => circuitCm(stops, track, stops[k]!);
   const home = at(l.home, l.home === last ? 1 : 0);
   const taken: { stop: number; track: number }[] = [];
