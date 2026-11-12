@@ -72,7 +72,7 @@ test("the Pier's landings stand on the east platform's south end, facing the cro
   const q = { x: 0, z: 0, ux: 0, uz: 0 };
   lineAt(LINKS[1]!.line, 720.5, q);
   const at = { x: ORIGIN.x + q.x - q.uz * 2.9, z: ORIGIN.z + q.z + q.ux * 2.9 };
-  for (const stage of ['q6-done', 'crossing-finishing', 'crossing-done', 'deck-laid', 'ring-joined']) {
+  for (const stage of ['q6-done', 'crossing-finishing', 'crossing-done', 'deck-laid']) {
     const land = JUMPS.find((j) => j.stage === stage)!.land!;
     assert.ok(Math.hypot(land.x - at.x, land.z - at.z) < 0.05, `${stage}: s 720.5, lat +2.9`);
     assert.ok(Math.abs(land.y - (railY(LINKS[1]!.line, 720.5) + 0.72)) < 0.05, `${stage}: on the platform's deck`);

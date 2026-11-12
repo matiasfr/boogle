@@ -58,6 +58,7 @@ function build(s: Seed, stage: RingStage): Seed {
   const w = s.w;
   switch (stage) {
     case 'deck-laid': {
+      need(rail(w).glide, 'the room has the glider (trainBase takes it)');
       // Q7's kit is its bill (call 63), loaded at the Village and off at the Pier (call 62).
       const [logs, rails] = LINE2_STATIONS[Q7]!.bill;
       until(s, () => rail(w).depot === logs && rail(w).depotRails === rails, 6000, 'Q7 kit unloaded at the Pier');

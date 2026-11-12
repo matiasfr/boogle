@@ -5,7 +5,9 @@
 // faster than the audited seed world and hashes the same.
 //
 // A refactor step must NEVER regenerate test/fixtures/railway-golden.json. Only a deliberate rule change that also
-// bumps WORLD_NS may: `GOLDEN=1 node --test --test-concurrency=1 'test/railway-golden-*.test.ts'` (each shard rewrites
+// bumps WORLD_NS may, with one exception (owner, 11 November, "yes"): pinned fixtures may also be regenerated, without a
+// WORLD_NS bump, when ONLY dev seed data changes (the seed builders' own op sequences under src/sim/railway-seed*.ts), never for a rule, tick, wire or save-shape change. The regeneration must change only the stages whose
+// seeds changed; an independent reviewer confirms that by a keyed comparison. `GOLDEN=1 node --test --test-concurrency=1 'test/railway-golden-*.test.ts'` (each shard rewrites
 // its own stages in the file, so they must not run at once).
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -54,7 +56,7 @@ type Golden = { worldNs: string; ticks: number; stages: Record<string, Row> };
 
 const HOW =
   'The railway rules or the seed route changed. A refactor step must never regenerate this golden: undo the change. ' +
-  'Only a deliberate rule change that bumps WORLD_NS regenerates it (GOLDEN=1, see test/helpers/railway-golden.ts).';
+  'Only a deliberate rule change that bumps WORLD_NS regenerates it (GOLDEN=1); see the rule and its seed-data exception at the top of this file.';
 
 export function goldenShard(shard: number) {
   // Built at module scope, outside the 5 s test timeout (as test/railway-trains.test.ts does).

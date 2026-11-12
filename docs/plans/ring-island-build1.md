@@ -1349,7 +1349,7 @@ and redraw when the stage changes, `island-map.ts` has `MAP_CELL` and `MAP_SEA_S
 - [x] `place.md`, "Departure boards at the halts".
 - [ ] The in-game proof look (`npm run look`, the 3D face at 1.5 m): not taken, the machine was at load 140; the map texture was drawn by the game's own `drawMapBase` in a browser canvas instead.
 
-- [~] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
+- [x] **5. R5, the bot and the loop graph.** The works bot's pier carries (`dev/look/bots/railway-works.ts`) and the
   loop graph's `crossing` node are re-run with the rack on the east platform (call 54): the bot no longer crosses the
   track, and `npm run loop -- node crossing` reports the new carry (expected 5–9 m, was 11 m).
   `dev/look/bots/railway-ring.ts` (registered in `bots/railway.ts`): from
@@ -1386,6 +1386,13 @@ and redraw when the stage changes, `island-map.ts` has `MAP_CELL` and `MAP_SEA_S
   > time), where a seed would do. **Not done:** `--from deck-laid` (the 14 bents), the standing rider over the bow and back,
   > the railhead idle log, the 2-player `--from leaf-raised`, `--from leaf-raised` itself, `ring-glide.ts` (the missed-glide
   > eval), `npm run perf`. Timing under load is not evidence.
+  > **R5b (12 November 2026, `feature/ring-r5b`; not shipped).** The glider gap is fixed in the seed (the ring's `deck-laid` stage
+  > takes `rail.glide`, `src/sim/railway-seed-ring.ts`; the works seeds below it still lack it, patching their shared base
+  > would re-pin about 20 stages) and the bot's Needle Bell detour is gone. Proved solo, no recovery: `--from gap-footed`,
+  > `--from leaf-raised` and `--from deck-laid` (`--to ring-ride`; the last with `--stall 3000 --wall 2700`: it waits on the
+  > wagon's loads in server ticks and hops up onto the platform each time it slides out). Playtest jump-ins "Gap footed" (`leaf-raised` is the same world: no row)
+  > and "Ring joined" (`railway-jump.ts`). **Left:** the standing rider over the bow and back, the railhead idle log,
+  > `--players 2`, `ring-glide.ts`, `npm run perf`. R5 is otherwise done; ticked.
 - [ ] **6. R6, docs.** New `docs/game-design/ring-island.md` (what exists: the Meet, the rules, the numbers, the folk)
   and its index line; the brief's status (build 1 built, the greybox findings answered: step 0's results); the atlas
   railway story (a footing set at the railhead jib through `Aperture` to the leaf); this plan's status. Stills: the

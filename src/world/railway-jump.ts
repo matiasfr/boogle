@@ -4,6 +4,7 @@
 // builders, so none of their code reaches the client bundle. Adding a row: src/sim/railway-seeds.ts's header.
 import type { SeedStage } from '../sim/railway-seeds.ts';
 import { LINE2_BOILER, LINE2_HOOK, LINE2_LEVER, LINE2_SEA, LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
+import { RING_HEAD, RING_JOINT_UP, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, WORKS_KILN } from '../sim/railway-works-layout.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
@@ -30,6 +31,13 @@ function near(anchor: Cm, dx: number, dz: number, y: number, toward: Cm | number
  * (lat +3 and +4 on the apron) are inside the platform and the rack. R4a draws the platform: until then this lands
  * 0.7 m above the apron and drops onto it. */
 const PIER_LAND = near(PIER_STOP, 3.15, 5.87, 25.0, CROSSING_BENTS[0]!);
+
+/** The ring's landings (R5): the Railhead's platform at its last bent (middle, deck + 90 cm) and the joint's west platform
+ * (where the outbound lever stands), both facing out along the line toward the island. `y` is the platform's top. */
+const ringLand = (p: { x: number; z: number; y: number }, lat: number): JumpLand =>
+  near(p, 0, 0, p.y / 100, ringAt(28500, lat));
+const RAILHEAD_LAND = ringLand(RING_HEAD[7]!.platform, 405);
+const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */
@@ -105,10 +113,16 @@ export const JUMPS: readonly Jump[] = [
     land: PIER_LAND, // the Pier platform's south end, facing the crossing
   },
   {
+    stage: 'gap-footed',
+    label: 'Gap footed',
+    line: "All fourteen bent footings are set; the leaf is raised and the counterweight's footings wait on the rack",
+    land: RAILHEAD_LAND, // the Railhead platform's middle, facing the gap
+  },
+  {
     stage: 'ring-joined',
     label: 'Ring joined',
     line: 'The leaf is down and riveted; trains run to Ring Island',
-    land: PIER_LAND, // the Pier platform's south end, facing the crossing
+    land: JOINT_LAND, // the joint's west platform by the outbound lever, facing the island
   },
 ];
 export const jumpOf = (stage: string): Jump | undefined => JUMPS.find((j) => j.stage === stage);

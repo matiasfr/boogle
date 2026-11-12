@@ -180,6 +180,9 @@ export function railwayAtTrains(stage: TrainStage): Seed {
       need(n > 0, 'Q5 depot logs taken');
       need(act(base, 'a', 'rail.drop', { x: 91900, y: 1815, z: 540, n, kind: 0 }) === n, 'Q5 depot logs dropped');
     }
+    // The route glides home from Needle Bell before the boiler, so a room has taken the glider by here: every seed built
+    // on this base (the trains, the Works, the ring's) carries it, not only `glide-earned`.
+    need(act(base, 'a', 'rail.glide') === 1, 'the glider taken');
     trainBase = base;
   }
   const s = { w: restore(trainBase.w), t: trainBase.t };

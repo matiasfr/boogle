@@ -777,7 +777,7 @@ export const NODES: readonly LoopNode[] = [
     },
     ops: [],
     reached: { mark: 'footing set', data: { site: 3 }, nth: WORKS.ring, also: ['gap footed'] },
-    stops: ['railhead'],
+    stops: ['railhead', 'gap-footed'],
     requires: [
       dec('Q7', 'rules', `${RULES_RING} ringFootSet: Q7 laid`),
       dec('table', 'rules', `${RULES_TRAINS} wagonArrives: the ring's footings ride the wagon to the Railhead`),
