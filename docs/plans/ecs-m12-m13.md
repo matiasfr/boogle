@@ -524,7 +524,7 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
       look -- --at list` still lists; `npm run unused`.
       **Done 11 November: the twin table leaves 2 files to delete** (`place-early-beam`, `replay-bridge`, 134 lines);
       the other 52 move to M13c, M13d and M13e as the table says. M13c also takes the 43 it names.
-- [ ] **M13c. Retarget group 3.** _M, Low. After M13b, D3 and D4 (it edits `railway-b4-at`, `railway-b5b8-at`,
+- [x] **M13c. Retarget group 3.** _M, Low. After M13b, D3 and D4 (it edits `railway-b4-at`, `railway-b5b8-at`,
       `railway-bench`, `railway-passenger-car*`)._ The 18 evals, 9 beats and their fixture, the harness files, and
       the five tests of group 3 onto the production entry and `--rail-seed`. It may run as two agents split at
       `dev/look/` against everything else. **Checks:** typecheck; each retargeted eval and beat run once; `npm run
@@ -535,6 +535,40 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
       native dev tool against rows and queries (`dev/look/rail-read.ts`, `src/sim/railway-queries-*.ts`), never kept
       alive behind Place. The implementer lists in the commit body, for each file, which it did and why (the job that
       still needs it, or "no current job"). A tool whose only subject is a Place-only mechanic is deleted.
+
+  **As built (11 November, `ecs/m13c`, two commits: rebuilds, then deletions; 98 files, 9,739 lines out, 241 in).**
+  The 99 files (M13a's 43 + 5 found, group 3's 51) and the files found beside them: **deleted 64, rebuilt native 15
+  (+1 new eval), native already or by a text fix 27, left for M13e 4.** "No current job" means no hit in `package.json`, `.claude`, `docs/agents`, the
+  decision logs and `agent-calls.md`, `.github/workflows`, `dev/daily`, `dev/checks-for.ts`, `dev/codex`, the
+  look harness or another tool's imports (research, brainstorms and done plans are history). Runs: the wing
+  (`--rail-seed awake`, park), the halt (`trains-on`, village2), `lighting-wedge` and `dev-looks` shots, `npm run sheet
+  -- --stages awake,trains-on`, `npm run scenario -- reconnect-edit` (8/8), `npm run playthrough -- --to wake`, an
+  ambience take.
+
+  | Tool | Decision | Why, and the job or twin |
+  | --- | --- | --- |
+  | `evals/place-*` (24, incl. `place-job`, `place-act`), `placement-audit`, `tunables-chop`, `double-jump`, `replay-idle-landing`; `bots/place`, `place-landing`, `double-jump` | delete | Place's own mechanics; no current job. Live cover as M13a's table names it (`bots/railway.ts`, `railway-*` evals, `rail-coop.ts`) |
+  | `evals/sheet-glide`, `sheet-hook`, `sheet-ride`, `sheet-opening`, `sheet-enter` | delete | twins `railway-glide-first`, `railway-hook-capture`, `railway-passenger-car`; the sheet no longer dispatches them |
+  | `evals/track-layer`, `track-layer-action`, `track-panel-contract` | delete | the wing greybox's Place looks; the wing's look is `track-wing` (below) |
+  | `video/shots/place`, `round4`, `round4-pair` | delete | clips of Place's beats; no job |
+  | `evals/axe-chop`, `carry-tag` (+`carry-tag-act`), `color-defaults-capture`, `-unlit` (+`-motion`), `draw-overflow`, `fixed-exposure-controls`, `-review`, `gpu-reload`, `sky`, `tone`, `terrain-cove`; `beats/chair-comparison` (+`fixtures/`, `evals/`), `cloud-warmth` (+`cloud-defaults`), `colour-textures`, `material-palettes`, `terrain-cove`, `unlit`, `visual-pipeline` (+`fixtures/`, `evals/`) | delete | built on Place modules or its staging fixture; only research and game-design records name them (now marked deleted). `gpu-reload`'s GPU loss stays in `gpu-recovery.ts` |
+  | `coop-playthrough.ts`, `checkpoint-pair.ts`, `test/checkpoint-pair.test.ts` | delete | the Place pair and its save shape; twin `rail-coop.ts` (`playthrough --players 2`); test: no twin, its subject is gone |
+  | `playthrough.ts`, `segments.ts`, `saves.ts`, `observe.ts`, `coop-warp.ts`, `codex/look-broker.ts` | rebuild native | `npm run playthrough` (bot-segments.md): the legacy route, fixtures, flush, route cursor and `__place` sample are gone; `?proto=place` is refused |
+  | `sheet.ts` (+ new `evals/sheet-stage.ts`) | rebuild native | `npm run sheet` (look skill): one still per railway stage from `--rail-seed`, framed on the machine; `--before`, `--moments`, the opening went with Place's client saves |
+  | `beats/lighting-wedge`, `dev-looks` | rebuild native | tools.md and the look skill: the production spawn, no fixture |
+  | `evals/track-wing` | rebuild native | the wing is live work (#1605): framed in the flatbed's frame from a rail seed; the asset viewer shows the model alone, not the wing on the line |
+  | `evals/railway-halts` | rebuild native | home-station plan: `--rail-seed trains-on`, `?halt=` |
+  | `scenarios/reconnect-edit` (+ `lib/world.ts`) | rebuild native | ws-room.ts and its header: the held edit is `who.set`; `toss` helpers deleted |
+  | `audio/render.ts` | rebuild native | `npm run audio:measure`: ambience takes on the production entry; the classic hut build take deleted |
+  | `codex/see.ts`, `codex/README.md`, `look/README.md`, `playtester.md`, `patch.ts`, `scenarios/run.ts`, `evals/railway-job`, `railway-clips` | native (text) | only an example command or comment named Place |
+  | `evals/railway-b4-at`, `b5b8-at`, `bench`, `passenger-car`, `-two`, `place-draws`, `place-kit-draws`, `replay-pause-*` (2), `replay-phone-cost`; `garage-showroom`, `bots/railway`, `playtest/beats`, `loop/graph`, `economy/model`, the three tests | already native | no Place path (the flag `__placeDone`, `src/place/*`, an interaction id, or a comment) |
+  | `test/loop-graph.test.ts` | native | the legacy `BEATS` line deleted; twin: the `RAIL_STOPS` line of the same test |
+  | `scan/retained.ts`, `scan/task-routes.ts`, `protos/protos.ts`, `test/invite-flags.test.ts` | left for M13e | they name `src/proto/place` files or the card's URLs, which go with the source |
+  | `bots/railway-reload.ts` | not in the list | not a Place tool (no Place path), so untouched; its runnability under `look` (the first reload kills the page) is its own leftover |
+
+  Left for M13d to g: `src/proto/place/nearest.ts` has no importer now; `dev/look/restore-pair.ts` (and `look.ts`'s
+  `READ_RESTORED`, `before-after --verify-restore`, `test/restore-pair.test.ts`) still import `src/proto/place/job.ts`
+  and read Place's saves (M13a called it live: it is not); `docs/game-design/place.md` names deleted evals.
 - [ ] **M13d. The level check.** _M, Low (tooling). After M13a._ Group 4: `dev/level/check.ts`'s `--place=place`
       progression and `replay.ts` onto railway seeds and `src/sim/railway-*-layout.ts`; `spatial.ts`,
       `track-continuity.ts`, `world-blockout.ts`, `dev/economy/place-level.ts`. **Done:** `npm run level-check`
