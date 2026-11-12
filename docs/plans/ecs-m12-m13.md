@@ -669,7 +669,7 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
   not touched here): the rest. **Proof:** typecheck, lint, registry, ship-check green; `level-check` equals main's
   but for pids. Look `--rail-seed trains-on` with `railway-passenger-car.ts`: boarded, seated (`railway:train2-1-seat1`), rode, stood, walked off; the still shows the quarry halt, bench, board and crates (a still of the seated rider itself was not taken: `--until` with `--action` ran out its warm-up). Bench census and `live-boot` not run (for the ship).
 
-- [ ] **M13g. One list of stations.** _M, Medium. After M13e (Place's readers are gone); not beside f2 (`src/place`)._
+- [x] **M13g. One list of stations.** _M, Medium. After M13e (Place's readers are gone); not beside f2 (`src/place`)._
       `src/place/layout.ts`'s `LINKS[n].stations` is built from `LINE1_STATIONS` and `LINE2_STATIONS`
       (`src/sim/railway-line-layout.ts`, `railway-line2-layout.ts`) with only what is the land's own (a platform's
       offset, a sign) kept beside it by station id. Start by listing the 18 `LINKS[0]` and `LINKS[1]` readers under
@@ -681,6 +681,17 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
     frame and box). Startup code: the live-boot rule of M13e applies after the ship.
   - **Reviewer attacks:** a station's position moving by a rounding of cm to m; a reader that indexed `stations` by
     position and now meets Q7.
+  - **As built.** `src/place/layout.ts`: `LINKS[0|1].stations = onLine(LINE1_STATIONS | LINE2_STATIONS, line)`, each
+    row through `landStation` (s/to = cm / 100, all whole metres; line 1's second good is stone, line 2's rails; speed
+    = row % of `TUNE.laySpeed`; rack from `feed`/`depot`; fields at nothing left out). The land's own (frame side,
+    board) is `STATION_LAND`, a `Record` over every sim station id: a sim station without its land entry fails the
+    typecheck, which pins the outage's invariant without a test. No `src/sim` edit: Q7 stays out of `LINKS[1]`
+    because its stretch (742-862 m) lies past line 2's end (743 m), not by a new sim field (that would reshape a
+    catalog row). `line2-view.ts` builds Q7's deck frame from `landStation(LINE2_STATIONS[Q7])` instead of a copy of
+    its numbers (the row gains `speed: 9`, which no frame reads). Proof: a scratch script printing both lines' rows
+    (keys in order, values) on main and here, layouts A and B: identical. Level check equal to main but hash and
+    timings; live boot offline PASS; Q1/Q2 on the default entry and Q7's frame and box at `deck-laid` looked at.
+    Left for later: `dev/loop/graph.ts`, `dev/playtest/beats.ts`, `dev/economy/*` still list station ids.
 
 ## 6. The unit suite's time
 
