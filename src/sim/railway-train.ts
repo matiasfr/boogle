@@ -10,6 +10,7 @@ import {
   RAIL_HALTS,
   RAIL_LINES,
   RAIL_TRAINS,
+  TRAIN_SEP_CM,
   lineDef,
   trainPassesBy,
   trainPlaces,
@@ -23,7 +24,7 @@ export const TRAIN = {
   wakeTicks: 60,
   kitWaitTicks: 60,
   /** The block rule's gap round the circuit: a train's length (RIDER_SPAN, the footing wagon's tail) plus 20 m. */
-  sepCm: 2740,
+  sepCm: TRAIN_SEP_CM,
 } as const;
 /** A line's cruise (cm a tick) and acceleration (cm a tick²); TRAIN's by default. `brake` (cm a tick²), when set, is
  * the leg's braking rate instead of `accel` (a halt's eased end stop: stopKin). */

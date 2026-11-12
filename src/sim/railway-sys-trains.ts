@@ -142,6 +142,13 @@ function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop 
     (k === 3 && r.wagon && r.foot > 0 && !q7Laid(w)) ||
     (k === 4 && dir > 0 && r.wagon && r.foot > 0);
 }
+/** A line-2 train on a build errand (docs/plans/train-spacing.md, 2A; scratch): the footing wagon's while footings are
+ * owed, one carrying a kit, or one the active job's kit is owed to. It neither passes a lever ask back nor takes one. */
+export function trainErrand(w: World, slot: number) {
+  if (RAIL_TRAINS[slot]!.line !== LINE2) return false;
+  const r = w.get(Train, trainId(w, slot))!;
+  return (r.wagon && footingsOwed(w, LINE2)) || r.logs + r.rails > 0 || kitOwed(w, r);
+}
 /** The rows a moved end or stop rewrites (endMoved, stopMoved in ./railway-trains.ts), over the world's Train rows and
  * open stops (read after the change that moved them). */
 export function trainMoveIO(w: World): TrainMoveIO {
@@ -227,6 +234,7 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
     // The footing wagon's train is never held for headway (nor by the balanced hold) while the pier or the ring still
     // owes footings (design review, 9; ring-island-build1, R3).
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
+    errand: (slot) => trainErrand(w, slot),
   };
 }
 function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {

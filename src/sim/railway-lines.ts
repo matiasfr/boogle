@@ -68,7 +68,18 @@ export type RailLineDef = {
    * a train ready to leave an end waits for the gap ahead to grow to the gap behind. A safe integer from 1 to
    * BALANCE_MAX_TICKS (balanceOk; trainPlaces refuses any other). */
   balance?: number;
+  /** Set on a line that passes a lever ask back (docs/plans/train-spacing.md, 2A; scratch): the train nearest a
+   * platform runs through it when it is late (more room ahead of it than behind by over `band` cm) and the next train
+   * is within `cm` behind it; that one stops instead. Whole cm; trainPlaces refuses `band < cm - TRAIN_SEP_CM`, so the
+   * train the ask passes to can never pass it on again. */
+  pass?: { cm: number; band: number };
 };
+/** The block rule's gap round the circuit (TRAIN.sepCm, ./railway-train.ts, reads it). */
+export const TRAIN_SEP_CM = 2740;
+/** Whether a line's `pass` is absent, or whole cm with a band that stops a second pass. */
+export const passOk = (p: RailLineDef['pass']) =>
+  p === undefined ||
+  (Number.isSafeInteger(p.cm) && Number.isSafeInteger(p.band) && p.cm >= 1 && p.band >= p.cm - TRAIN_SEP_CM);
 /** The longest balanced hold a line may ask for: 3 minutes, about one round trip of line 2 to the island (138.8 s
  * non-stop, about 220 s under heavy asks). */
 export const BALANCE_MAX_TICKS = 1800;
@@ -399,6 +410,7 @@ export function trainPlaces(line: LineRef, stops: readonly number[]) {
     c = circuitLen(stops),
     last = stops.length - 1;
   if (!balanceOk(l.balance)) throw new Error(`railway: line ${l.id} has a balance of ${l.balance} ticks`);
+  if (!passOk(l.pass)) throw new Error(`railway: line ${l.id} has a pass of ${JSON.stringify(l.pass)}`);
   const at = (k: number, track: number) => circuitCm(stops, track, stops[k]!);
   const home = at(l.home, l.home === last ? 1 : 0);
   const taken: { stop: number; track: number }[] = [];
