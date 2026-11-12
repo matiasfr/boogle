@@ -1,5 +1,5 @@
 {
-  "worldNs": "v29",
+  "worldNs": "v31",
   "components": [
     {
       "kind": "rail",
@@ -358,7 +358,8 @@
         ["wagon", "bool"],
         ["foot", "int"],
         ["arrived", "int"],
-        ["freight", "int"]
+        ["freight", "int"],
+        ["riders", "int"]
       ]
     },
     {
@@ -475,12 +476,41 @@
       "key": "slot",
       "replicate": true,
       "track": true,
-      "requires": [],
+      "requires": ["townClock"],
       "defaults": {},
       "fields": [
         ["slot", "int"],
         ["wood", "int"],
-        ["stone", "int"]
+        ["stone", "int"],
+        ["wait0", "int"],
+        ["wait1", "int"],
+        ["boarded", "int"],
+        ["alighted", "int"]
+      ]
+    },
+    {
+      "kind": "townClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["acc", "int"]]
+    },
+    {
+      "kind": "till",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["boogles", "int"],
+        ["landed", "int"],
+        ["lost", "int"],
+        ["spent", "int"],
+        ["sack", "int"],
+        ["poured", "int"]
       ]
     }
   ]

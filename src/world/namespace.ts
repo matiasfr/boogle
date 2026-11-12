@@ -53,7 +53,11 @@
 // v29 (2026-11-12): slice 5's R2b (docs/plans/slice5-town-economy.md): line 2's homeward trains make a full-load stone
 // stop at the Quarry once the pier's twelve footings are set (`loadStop` 8, build-errand trains exempt, none while the
 // wagon is owed footings); a rule change, no shape change; no migration.
-export const WORLD_NS = 'v29';
+// v31 (2026-11-12; placeholder number, v30 is build 2's): slice 5's R3 (docs/plans/slice5-town-economy.md): riders
+// between the Village and line 2's current end, distance fares and the one strongbox (`till`; `train.riders`; the
+// town's `wait0`, `wait1`, `boarded`, `alighted`; a `townClock` for its riders' accrual, not replicated), the
+// rail.tradeTick system, the railFarePct, railRiderPct and railPricePct tunables; riders add no stop; no migration.
+export const WORLD_NS = 'v31';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
