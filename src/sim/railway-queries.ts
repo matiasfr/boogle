@@ -277,6 +277,14 @@ export function ringOwed(w: World, aboard: number) {
   w.each([Account], (_id, r) => (backs += r.foot));
   return WORKS.ring + WORKS.counterweight - a.set - a.cw - a.rack - aboard - backs;
 }
+/** The pier or the ring still has footings to be set (the pier's twelve; once Q7 is laid, the ring's bents and
+ * counterweight): the window in which the footing wagon's train is never held for headway, and (slice 5 R2b, the
+ * ruling of 12 November) in which the economy adds no stop on line 2 while the wagon runs. */
+export function footingsOwed(w: World) {
+  if (w.get(Works, worksId(w))!.pierSet < WORKS.pier) return true;
+  const a = w.get(Aperture, apertureId(w))!;
+  return q7Laid(w) && a.set + a.cw < WORKS.ring + WORKS.counterweight;
+}
 /** The footings the wagon is to bring now: the pier's until Q7 is laid, then the ring's (the two never overlap: Q7
  * opens only once the pier's twelve are set). */
 export const footOwed = (w: World, aboard: number) => (q7Laid(w) ? ringOwed(w, aboard) : pierOwed(w, aboard));
