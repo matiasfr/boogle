@@ -44,6 +44,7 @@ import {
   TRAIN_HEAD_PCT,
   cycleTicks,
   endBlocks,
+  servingSlots,
   trainPose,
   trainSpacing,
 } from '../src/sim/railway-trains.ts';
@@ -268,7 +269,8 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
   let s = copy(HOME);
   if (fleet !== 'standard') assert.equal(install(s), 1);
   if (fleet === 'longer')
-    for (let k = 0; LINE_SLOTS[LINE2]!.some((k2) => train(s.w, k2).boiler !== 1); k++) {
+    // The trains in service (servingSlots): the fleet's shed rows never stand at the Village to take the fit.
+    for (let k = 0; servingSlots((j) => train(s.w, j), LINE2).some((k2) => train(s.w, k2).boiler !== 1); k++) {
       assert.ok(k < 4000, `every train fitted in time (tick ${s.t})`);
       railTick(s.w, ++s.t, headPct);
     }
@@ -421,13 +423,15 @@ for (const [fleet, seed, headPct] of [
 // eight more seeds. Whether line 2's wait bound holds for the longer boiler is the owner's open question (docs/agent-calls.md,
 // Rail, 12 November); until he answers this is a todo test: it prints its figures and its failure does not fail the
 // suite. The safety checks inside fleetRun (spacing, end blocks, jumps, the load check) still throw as todo failures.
-for (const [seed, headPct] of [
-  [0xb011e7, TRAIN_HEAD_PCT],
-  [0x0fa575, 0],
+// On the greybox route's world (v32) b011e7 measures 1,152 (the Quarry down) and fa575 at 0% passes (worst 730), so
+// only b011e7 stays todo; fa575 is held to the bound.
+for (const [seed, headPct, todo] of [
+  [0xb011e7, TRAIN_HEAD_PCT, true],
+  [0x0fa575, 0, false],
 ] as const)
   test(
     `longer fleet ${seed.toString(16)} at ${headPct}%: ${FUZZ} ticks, the 105 s worst wait and the 52.5 s mean`,
-    { todo: 'all-longer breaches 1,050 on one seed (1,100 at b011e7); with the owner' },
+    todo ? { todo: 'all-longer breaches 1,050 on one seed (1,152 at b011e7 on v32); with the owner' } : {},
     (t) => {
       const r = fleetRun('longer', seed, headPct);
       for (const n of r.notes) t.diagnostic(n);
