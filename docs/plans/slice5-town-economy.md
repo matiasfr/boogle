@@ -108,7 +108,7 @@ and built `TRADE.buildTicks` after `at`, so a late joiner and a reload agree wit
 ### Numbers (`src/sim/railway-trade-layout.ts`, new; `TRADE`, all stand-ins)
 
 - `yards`: Camp `{ line: 0, stop: 1, everyTicks: 150, cap: 8 }`, Quarry `{ line: 1, stop: 1, everyTicks: 300, cap: 8 }`;
-  `freightCap: 8` a train; `loadStop: 4`; yards seeded full. Timber unloads at line 1's Village halt, stone at line 2's.
+  `freightCap: 8` a train; `loadStop: 8` (R2b; was 4); yards seeded full. Timber unloads at line 1's Village halt, stone at line 2's.
 - `routes: [{ town: 0, line: 1, a: 0, b: 2 }]` (the Village and Far Head); `ridersPerMin: 2`, `startBuildings: 2`,
   `crowdStop: 4`, `crowdCap: 24`, `seats: 4`; `fare: { board: 2, per100m: 1 }`.
 - `plots[0]`: `[{ base: 300, wood: 8, stone: 0 }, { base: 800, wood: 24, stone: 0 }, { base: 3000, wood: 40, stone: 16 }]`;
@@ -487,6 +487,31 @@ shipped, else bump B (a rule change, no shape change).
      to 85.
   - If 2 or 3 fails: also refuse the stop while the wagon's train is the next train behind on the down track, and
     measure again. If it still fails, report to the designer; do not raise the limits.
+- **As built (12 November; figures measured, replacing the arithmetic above where they differ).** `freightStop` in
+  `railway-queries-trade.ts` as specified, ored into `serviceOf` ahead of the line 2 early return; `loadStop: 8`, the
+  Quarry yard's `after: 'pier'`. No state, op or shape change; a rule change that moves pinned fixtures, so `WORLD_NS` v29. Measured against R1+R2 (main `e2a63297`):
+  - Rows: every stage through `crossing-finishing`, and `crossing-done` at the stage, identical at the stage and every
+    100 ticks for 1,200 ticks. **No stage moved a tick** (gate 2: 0 against 108 and 324). Fixtures moved for
+    `crossing-done` (after its stage) and `deck-laid` to `ring-joined` only.
+  - Stone in 20 minutes with nothing asked: 32 from `crossing-done`, `deck-laid` and `ring-joined`, 40 from
+    `gap-footed` and `leaf-raised` (4 or 5 stops, each exactly 8; the arithmetic's "about 40"). At `crossing-done`
+    Q7's kit is owed first, so no train stops for stone until it is aboard. Timber is unchanged from R1 at every
+    stage (78 at `crossing-done` under both; the gate's "79 to 85" was R1's range on other stages): gate 4 is read
+    as "timber unchanged from R1".
+  - Worst line 2 lever wait the `WAIT_BOUND` way (the test's own fuzz loop, both seeds, 3,000 ticks; worst of the
+    two), R1 → R2b: `q6-stocked` 546 → 546 (the test prints 54.6 s), `crossing-done` 603 → 603, `deck-laid` 702 →
+    702, `gap-footed` and `leaf-raised` 588 → 547, `ring-joined` 735 → 764; all under 1,050 (gate 3, judged this way
+    only: orchestrator, 12 November). A first copy of the loop skipped one random draw (the light-mode `nextAsk`) and
+    read 605 at `q6-stocked`; these are from the corrected copy, which matches the test's printout.
+  - **The fallback was built, measured and removed.** Refusing the stop while the wagon's train was next behind cut
+    `gap-footed` from 40 stone in 5 stops to 32 in 4 and left every worst wait identical to the tick, so it bought
+    nothing; the orchestrator dropped it.
+- **Finding (line 2 with the wagon and the leaf, not freight).** With a lever ask at every line 2 halt both ways
+  every 600 ticks, R1's own worst waits pass the 1,050 bound late in the route: `deck-laid` 1,039, `gap-footed` and
+  `leaf-raised` 1,124 (R2b: 1,099, 1,129, 1,129, each within +90 of R1), against 702 and 588 the `WAIT_BOUND` way.
+  That method asks everywhere at once, so every train stops at every middle halt each trip and the trips lengthen;
+  the fuzz asks one random halt at a time. The long waits come with the footing wagon's trips and the raised leaf;
+  C1's report should carry them.
 
 **Findings.**
 
