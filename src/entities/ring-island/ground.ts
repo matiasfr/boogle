@@ -5,6 +5,7 @@
 // Pure: no three.js, no physics. The view builds the drawn mesh and the heightfield collider from `heights`; recovery
 // and the saved pose read `islandH`, the same triangles the collider has. World metres.
 import { RING_END, RING_ORIGIN } from '../../sim/railway-ring-layout.ts';
+import { ROW_SHIFT, rowPoint } from '../../sim/railway-route.ts';
 
 /** dx, dz, radius, height from the island's centre, as RING_CONES. */
 export type Cone = readonly [number, number, number, number];
@@ -16,6 +17,34 @@ export const ISLAND_BED = -7.5;
 export const ISLAND_FILL = { top: 7.4, u0: 42700, u1: 46900, lat0: -1030, lat1: 630, fall: 1 / 1.5 } as const;
 /** The deepest the run-off's cutting goes into the cones (Level finding 15 counts 1.5 m at the faces; the cone is 9.4 m at the bed's end, so 2 m leaves room). */
 export const ISLAND_CUT_MAX = 2;
+/** The stack line's cutting (docs/plans/greybox-route.md, leg 1 step 4): line 2 runs on from the halt along the `ring`
+ * row, across the island's north-west hillside (the cones stand up to 26.7 m over its 4.0 m deck there), falling from
+ * 8.0 m to that deck. The ground is cut to 0.6 m under the rails across both tracks (the formation's middle is 2 m west
+ * of the down track, 4.6 m either side) with rock walls rising 3 in 1 outside, a notch and not a slice through the hill;
+ * it stops at the station house terrace (STACK_KEEP: Level finding 20's ground, kept as it was). Samples every 2 m from
+ * s 1210 m (the platforms' north end) to s 1580 m, where the hillside has fallen under the deck; world metres. */
+const STACK_CUT = (() => {
+  const out: { x: number; z: number; y: number }[] = [];
+  for (let cm = 121000; cm <= 158000; cm += 200) {
+    const p = rowPoint('ring', cm + ROW_SHIFT.ring),
+      q = rowPoint('ring', cm + ROW_SHIFT.ring + 100),
+      len = Math.hypot(q.x - p.x, q.z - p.z);
+    out.push({ x: (p.x + ((q.z - p.z) / len) * 200) / 100, z: (p.z - ((q.x - p.x) / len) * 200) / 100, y: p.y / 100 });
+  }
+  return out;
+})();
+// 4.6 m of formation and a 2 m grid cell, so the triangles between nodes stay under the deck's edge.
+const STACK_CUT_HALF = 6.6,
+  STACK_CUT_WALL = 3;
+/** The station house terrace grown by a metre (src/proto/greybox/ring-house.ts CONCOURSE.terrace; u and lat, m). */
+/** The cutting's samples' box, grown by the reach of its walls: outside it no node is tested against them. */
+const STACK_BOX = {
+  x0: Math.min(...STACK_CUT.map((p) => p.x)) - 16,
+  x1: Math.max(...STACK_CUT.map((p) => p.x)) + 16,
+  z0: Math.min(...STACK_CUT.map((p) => p.z)) - 16,
+  z1: Math.max(...STACK_CUT.map((p) => p.z)) + 16,
+};
+const STACK_KEEP = { u0: 467, u1: 478.5, lat0: -21, lat1: -8.3 };
 const UNIT = Math.sqrt(1 + 0.0272 * 0.0272);
 /** u and lat (m) of a world point: the inverse of ringAt (its orthogonal unit axes, unrounded). */
 export function ringUL(x: number, z: number) {
@@ -73,8 +102,25 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
       0,
       Math.min(c - RING_END.cut / 100 - ISLAND_FILL.fall * d, ISLAND_CUT_MAX - ISLAND_FILL.fall * d),
     );
-    return Math.max(c - depth, ISLAND_FILL.top - ISLAND_FILL.fall * fillOut(x, z));
+    return Math.max(stackCut(x, z, c - depth), ISLAND_FILL.top - ISLAND_FILL.fall * fillOut(x, z));
   }
+  /** The height the stack line's cutting caps the ground at (STACK_CUT): 0.6 m under the rails across the formation,
+   * rising 3 in 1 outside it; Infinity away from the line and on the station house terrace. */
+  function stackCap(x: number, z: number) {
+    if (x < STACK_BOX.x0 || x > STACK_BOX.x1 || z < STACK_BOX.z0 || z > STACK_BOX.z1) return Infinity;
+    const { u, lat } = ringUL(x, z);
+    if (u >= STACK_KEEP.u0 && u <= STACK_KEEP.u1 && lat >= STACK_KEEP.lat0 && lat <= STACK_KEEP.lat1) return Infinity;
+    let best = Infinity;
+    for (const p of STACK_CUT) {
+      const dx = x - p.x,
+        dz = z - p.z;
+      if (Math.abs(dx) > 16 || Math.abs(dz) > 16) continue;
+      const out = Math.max(0, Math.hypot(dx, dz) - STACK_CUT_HALF);
+      best = Math.min(best, p.y - 0.6 + STACK_CUT_WALL * out);
+    }
+    return best;
+  }
+  const stackCut = (x: number, z: number, h: number) => Math.min(h, stackCap(x, z));
 
   // Row-major from (x0, z0): heights[i + j * nx], i along +x, j along +z.
   const heights = new Float32Array(nx * nz);
@@ -123,6 +169,7 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
     cone,
     fillOut,
     bedOut,
+    stackCap,
     collider,
   };
 }

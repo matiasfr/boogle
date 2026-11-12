@@ -15,6 +15,8 @@ import {
 } from '../../place/layout.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
 import { RING_S_HEAD, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
+import { ROW_SHIFT } from '../../sim/railway-route.ts';
+import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
 
 const LINE = LINKS[1]!.line;
 /** Where the ring takes over from the layout's line, metres along line 2 (the pier head: Q6's toCm). */
@@ -40,9 +42,107 @@ const ringLocal = (s: number, out: LinePoint) => {
   return out;
 };
 const ring = { x: 0, z: 0, ux: 0, uz: 1 };
+
+// ---------------------------------------------------------------- the stack line, on from Ring Island (greybox-route)
+// Past the island halt line 2 follows the catalog's `ring` row to High Gorge (src/sim/railway-lines.ts LINE2_ON). The
+// row is a polyline with a vertex every 15 m or so, so the views read it smoothed (the mean of three row points 7.5 m
+// apart) from a table every 5 m. The row turns off the ring's straight run at s 1200 m, inside the island's platforms
+// (they end at s 1210 m); the sim's own path is the straight run to s 1210 m and the row from s 1220 m, so the views
+// keep the straight run and its 8.0 m deck to STACK_S and ease onto the row over the 30 m after it: a train standing at
+// the island halt is on straight track and nothing steps at the join.
+/** Where the views' line 2 takes the row's path, and where the row ends (metres along line 2). */
+export const STACK_S = 1210;
+const STACK_EASE = 30,
+  TABLE_S = 1200;
+const RING_ROW = WORLD_LINES.find((l) => l.id === 'ring')!;
+export const LINE2_END_S = (RING_ROW.fromCm + RING_ROW.lengthCm - ROW_SHIFT.ring) / 100;
+const STACK_STEP = 5;
+/** The row's spans' lengths (cm), and its point `cm` along it, unrounded (the sim's rowPoint rounds to the centimetre,
+ * which over a 5 m chord is a heading a car's length shows); past either end the end span runs on straight. */
+const ROW_LEN = RING_ROW.pts.slice(1).map((b, i) => Math.hypot(b[0] - RING_ROW.pts[i]![0], b[1] - RING_ROW.pts[i]![1]));
+function rowAt(cm: number) {
+  let want = cm - RING_ROW.fromCm,
+    i = 0;
+  while (i < ROW_LEN.length - 1 && want > ROW_LEN[i]!) want -= ROW_LEN[i++]!;
+  const a = RING_ROW.pts[i]!,
+    b = RING_ROW.pts[i + 1]!,
+    t = want / ROW_LEN[i]!;
+  return {
+    x: a[0] + (b[0] - a[0]) * t,
+    z: a[1] + (b[1] - a[1]) * t,
+    y: a[2] + (b[2] - a[2]) * Math.max(0, Math.min(1, t)),
+  };
+}
+const STACK_TABLE = (() => {
+  const
+    n = Math.ceil((LINE2_END_S - TABLE_S) / STACK_STEP) + 2,
+    out = new Float64Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const cm = (TABLE_S + i * STACK_STEP) * 100 + ROW_SHIFT.ring;
+    let x = 0,
+      z = 0,
+      y = 0;
+    for (const d of [-750, 0, 750]) {
+      const p = rowAt(cm + d);
+      x += p.x;
+      z += p.z;
+      y += p.y;
+    }
+    out.set([x / 300 - ORIGIN.x, z / 300 - ORIGIN.z, y / 300], i * 3);
+  }
+  return out;
+})();
+/** The smoothed row at `s` (local x, z and the rail height), linear between the table's rows. */
+const rowLocal = (s: number, out: { x: number; z: number; y: number }) => {
+  const f = Math.max(0, Math.min(STACK_TABLE.length / 3 - 1.001, (s - TABLE_S) / STACK_STEP)),
+    i = Math.floor(f) * 3,
+    t = f - Math.floor(f),
+    T = STACK_TABLE;
+  out.x = T[i]! + (T[i + 3]! - T[i]!) * t;
+  out.z = T[i + 1]! + (T[i + 4]! - T[i + 1]!) * t;
+  out.y = T[i + 2]! + (T[i + 5]! - T[i + 2]!) * t;
+  return out;
+};
+const row = { x: 0, z: 0, y: 0 },
+  straight = { x: 0, z: 0, ux: 0, uz: 1 };
+/** The stack line's point at `s` >= STACK_S: the ring's straight run eased onto the smoothed row over STACK_EASE. */
+const stackPoint = (s: number, out: { x: number; z: number; y: number }) => {
+  rowLocal(s, row);
+  const w = ease((s - STACK_S) / STACK_EASE);
+  if (w >= 1) {
+    out.x = row.x;
+    out.z = row.z;
+    out.y = row.y;
+    return out;
+  }
+  ringLocal(s, straight);
+  out.x = straight.x + (row.x - straight.x) * w;
+  out.z = straight.z + (row.z - straight.z) * w;
+  out.y = 8 + (row.y - 8) * w;
+  return out;
+};
+const before = { x: 0, z: 0, y: 0 },
+  after = { x: 0, z: 0, y: 0 },
+  here = { x: 0, z: 0, y: 0 };
+const stackLocal = (s: number, out: LinePoint) => {
+  // The heading is the chord's over the 5 m about `s` (a table row's corner is spread over a car's bogie spacing).
+  stackPoint(Math.max(STACK_S, s - 2.5), before);
+  stackPoint(Math.max(STACK_S, s - 2.5) + 5, after);
+  stackPoint(s, here);
+  const hx = after.x - before.x,
+    hz = after.z - before.z,
+    len = Math.hypot(hx, hz);
+  out.x = here.x;
+  out.z = here.z;
+  out.ux = hx / len;
+  out.uz = hz / len;
+  return out;
+};
+const stackY = (s: number) => stackPoint(s, here).y;
 /** Local coordinates (the layout's, without ORIGIN) and heading of `s` metres along line 2, past the pier head too. */
 export function line2At(s: number, out: LinePoint) {
   if (s < RING_S - BLEND) return lineAt(LINE, s, out);
+  if (s >= STACK_S) return stackLocal(s, out);
   ringLocal(s, ring);
   if (s >= RING_S) {
     out.x = ring.x;
@@ -62,8 +162,10 @@ export function line2At(s: number, out: LinePoint) {
   out.uz = uz / len;
   return out;
 }
-/** Rail height at `s`: the layout's to the pier head, then the bow (ringDeckY: 24.3 m to bent 1, 4% down to 8.0 m). */
-export const line2Y = (s: number) => (s <= RING_S ? railY(LINE, s) : ringDeckY((s - RING_S) * 100) / 100);
+/** Rail height at `s`: the layout's to the pier head, then the bow (ringDeckY: 24.3 m to bent 1, 4% down to 8.0 m),
+ * then the stack line's row (8.0 m down to the 4.0 m sea deck, 3.0 m in the Gorge). */
+export const line2Y = (s: number) =>
+  s <= RING_S ? railY(LINE, s) : s >= STACK_S ? stackY(s) : ringDeckY((s - RING_S) * 100) / 100;
 /** World (x, z) of `lat` metres east of line 2's down track at `s`. */
 export function line2World(s: number, lat: number, out: { x: number; z: number }) {
   const p = line2At(s, tmp);

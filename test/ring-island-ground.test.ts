@@ -14,6 +14,7 @@ import {
   ringDeckY,
 } from '../src/sim/railway-ring-layout.ts';
 import { CONCOURSE } from '../src/proto/greybox/ring-house.ts';
+import { ROW_SHIFT, rowPoint } from '../src/sim/railway-route.ts';
 import { createIslandGround, ISLAND_BED, ISLAND_FILL, ringUL } from '../src/entities/ring-island/ground.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
@@ -24,8 +25,13 @@ const w = (u: number, lat: number) => {
   const p = ringAt(Math.round(u * 100), Math.round(lat * 100));
   return { x: p.x / 100, z: p.z / 100 };
 };
-/** Off the fills: well clear of the halt's fill and the run-off bed's cutting, and of their embankments' reach. */
-const offFills = (x: number, z: number) => g.fillOut(x, z) > 25 && g.bedOut(x, z) > 25;
+/** Off the fills: well clear of the halt's fill and the run-off bed's cutting, and of their embankments' reach, and
+ * not in the stack line's cutting (the greybox route, leg 1 step 4: `stackCap` is under the cones only there). */
+const offFills = (x: number, z: number) =>
+  g.fillOut(x, z) > 25 &&
+  g.bedOut(x, z) > 25 &&
+  // within a cell either way, so no triangle the point lies on has a cut node
+  [-2, 0, 2].every((dx) => [-2, 0, 2].every((dz) => g.stackCap(x + dx, z + dz) >= g.cone(x + dx, z + dz)));
 
 test('ringUL inverts ringAt', () => {
   for (const [u, lat] of [
@@ -154,6 +160,8 @@ test('the cutting is at most 2 m deep and its banks stop short of the station ho
         z = g.z0 + j * g.cell,
         { u, lat } = ringUL(x, z);
       if (u < bed.u0 / 100 || g.fillOut(x, z) === 0) continue;
+      // The stack line's cutting (the greybox route) is deeper and wider than the run-off's notch: its own test, below.
+      if (g.stackCap(x, z) < g.cone(x, z)) continue;
       const cut = g.cone(x, z) - g.at(i, j);
       if (cut > 1e-3) {
         deepest = Math.max(deepest, cut);
@@ -162,4 +170,26 @@ test('the cutting is at most 2 m deep and its banks stop short of the station ho
     }
   assert.ok(deepest > 0.5 && deepest <= 2 + 0.05, `deepest cut ${deepest}`);
   assert.ok(reach >= -8.5, `the cutting reaches lat ${reach}`);
+});
+
+test("the stack line's cutting stays 50 cm under its rails across both tracks, from the halt to the sea deck", () => {
+  // Line 2's row on from the halt (src/sim/railway-route.ts): a sweep 4 m either side of the formation's middle, which
+  // is 2 m west (left, going out) of the row's down track. The station house terrace is kept (Level finding 20), so the
+  // sweep starts past it.
+  let swept = 0;
+  for (let cm = 123000; cm <= 156000; cm += 500) {
+    const p = rowPoint('ring', cm + ROW_SHIFT.ring),
+      n = rowPoint('ring', cm + ROW_SHIFT.ring + 100),
+      len = Math.hypot(n.x - p.x, n.z - p.z),
+      ux = (n.x - p.x) / len,
+      uz = (n.z - p.z) / len;
+    for (let lat = -6; lat <= 2; lat += 1) {
+      const x = p.x / 100 - uz * lat,
+        z = p.z / 100 + ux * lat;
+      if (!g.onIsland(x, z)) continue;
+      swept++;
+      assert.ok(g.islandH(x, z) <= p.y / 100 - 0.5 + 1e-4, `s ${cm / 100 - 1}, lat ${lat}: ${g.islandH(x, z)} under ${p.y / 100}`);
+    }
+  }
+  assert.ok(swept > 400, `${swept} points`);
 });

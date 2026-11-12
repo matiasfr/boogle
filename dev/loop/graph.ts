@@ -179,6 +179,10 @@ export const ACTIVITY_MARKS: readonly RegExp[] = [
   /^footing shouldered$/,
   /^steel kit taken$/,
   /^works fed$/,
+  // The greybox route's leg 1 (step 4's prompts): activity until step 5 builds its nodes.
+  /^leg frame fed$/,
+  /^route pickup taken$/,
+  /^route barrier opened$/,
   /^stretch funded [TQ]\d$/,
 ];
 
