@@ -6,14 +6,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
-import { createRailwayWorld, Town, Train, Yard, YardClock } from '../src/sim/railway-components.ts';
+import { createRailwayWorld, Town, Train, Works, Yard, YardClock } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { checkTrade } from '../src/sim/railway-check-trade.ts';
 import { buildSeedWorld, SEED_STAGES } from '../src/sim/railway-seeds.ts';
 import { TRADE_STAGES } from '../src/sim/railway-seed-trade.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, town, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
-import { freightAboard, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
+import { freightAboard, freightStop, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
+import { kitOwed, worksId } from '../src/sim/railway-queries.ts';
+import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { railResume } from '../src/sim/railway-sys-away.ts';
 import { RAIL_AWAY, railAwayCredit } from '../src/sim/railway-away.ts';
 import { TOWN_PLOTS } from '../src/place/town-plan.ts';
@@ -37,6 +39,8 @@ const FREIGHT = buildSeedWorld('freight-running');
 const ASLEEP = buildSeedWorld('awake');
 /** The footing wagon running (a later stage for the per-tick world check). */
 const WAGON = buildSeedWorld('wagon-on');
+/** The pier's twelve footings set (R2b's stone stop is on). */
+const CROSSED = buildSeedWorld('crossing-done');
 const MIN20 = 20 * 600;
 const [CAMP, QUARRY] = [0, 1];
 const LINE1_SLOT = RAIL_TRAINS.findIndex((t) => t.line === 0);
@@ -120,7 +124,7 @@ test('the first line 1 arrival home delivers a full load of 8', () => {
   assert.fail('line 1 never came home');
 });
 
-test('freight never adds a stop: with nothing asked, line 2 trains stand only at the ends for 20 minutes', () => {
+test("before the pier's footings freight adds no stop: with nothing asked, line 2 trains stand only at the ends for 20 minutes", () => {
   const w = copy(ON.w),
     n = stopsOf(w, LINE2).length;
   let arrivals = 0;
@@ -427,4 +431,107 @@ test("the plots' thresholds never fall, so the lowest met unbought plots are the
 
 test('stakedAtOnce has one value: the trade table and the town plan agree', () => {
   assert.equal(TRADE.stakedAtOnce, TOWN_PLOTS.stakedAtOnce);
+});
+
+// ---------------------------------------------------------------- R2b: the Quarry's full-load stone stop
+test("R2b's stop: only heading home at the Quarry, after the pier's footings, with 8 crates there and an empty train", () => {
+  const w = copy(CROSSED.w),
+    q = TRADE.yards[QUARRY]!,
+    slot = LINE2_SLOTS.find((k) => !train(w, k).wagon)!;
+  assert.equal(w.get(Works, worksId(w))!.pierSet, WORKS.pier);
+  // Q7's kit is owed at crossing-done (no train stops for stone then); on until it is aboard and no longer owed.
+  for (let t = CROSSED.t + 1; kitOwed(w, { ...train(w, slot), logs: 0, rails: 0 }); t++) {
+    assert.ok(t < CROSSED.t + 6000, "Q7's kit is taken");
+    railTick(w, t);
+  }
+  const set = (stock: number, freight: number, pierSet: number = WORKS.pier) => {
+    const y = w.mut(Yard, yardId(w, QUARRY))!;
+    y.stock = stock;
+    w.mut(Train, w.lookup(Train, slot)!)!.freight = freight;
+    w.mut(Works, worksId(w))!.pierSet = pierSet;
+  };
+  const stop = (k: number = q.stop, dir = -1, r = train(w, slot)) => freightStop(w, slot, r, k, dir);
+  set(TRADE.loadStop, 0);
+  assert.equal(TRADE.loadStop, TRADE.freightCap, 'a whole trainload');
+  assert.equal(stop(), true);
+  assert.equal(stop(q.stop, 1), false, 'going out');
+  assert.equal(stop(q.stop + 1), false, 'another halt');
+  set(TRADE.loadStop, 0, WORKS.pier - 1);
+  assert.equal(stop(), false, 'before the twelfth footing');
+  set(TRADE.loadStop - 1, 0);
+  assert.equal(stop(), false, 'under a trainload in the yard');
+  set(TRADE.loadStop, 1);
+  assert.equal(stop(), false, 'a train with freight aboard');
+  set(TRADE.loadStop, 0);
+  // The build errands (call 4): the wagon's train, a kit aboard.
+  assert.equal(stop(q.stop, -1, { ...train(w, slot), wagon: true }), false, "the footing wagon's train");
+  assert.equal(stop(q.stop, -1, { ...train(w, slot), logs: 1 }), false, 'a kit aboard');
+  assert.equal(stop(q.stop, -1, { ...train(w, slot), rails: 1 }), false, 'a kit aboard');
+  // Line 1's yard is at its end: no service stop, every train stands there.
+  assert.equal(freightStop(w, LINE1_SLOT, train(w, LINE1_SLOT), TRADE.yards[CAMP]!.stop, -1), false);
+});
+
+test('R2b: no stone stop for any train while a kit is owed', () => {
+  // trains-on: Q6's kit is owed at the Village; the pier's footings set by hand here, only for the query.
+  const w = copy(ON.w),
+    slot = LINE2_SLOTS.find((k) => !train(w, k).wagon && !train(w, k).logs && !train(w, k).rails)!;
+  w.mut(Works, worksId(w))!.pierSet = WORKS.pier;
+  const y = w.mut(Yard, yardId(w, QUARRY))!;
+  y.stock = TRADE.loadStop;
+  const r = { ...train(w, slot), freight: 0 };
+  w.mut(Train, w.lookup(Train, slot)!)!.freight = 0;
+  assert.equal(kitOwed(w, r), true);
+  assert.equal(freightStop(w, slot, r, TRADE.yards[QUARRY]!.stop, -1), false);
+});
+
+test('R2b: after the footings, with nothing asked, each stone stop loads exactly 8 and no build-errand train makes one', () => {
+  const w = copy(CROSSED.w),
+    q = TRADE.yards[QUARRY]!,
+    n = stopsOf(w, LINE2).length;
+  const stone0 = town(w, 0).stone;
+  let stops = 0;
+  for (let t = CROSSED.t + 1; t <= CROSSED.t + MIN20; t++) {
+    const was = LINE2_SLOTS.map((k) => ({ ...train(w, k) }));
+    railTick(w, t);
+    LINE2_SLOTS.forEach((k, i) => {
+      const r = train(w, k),
+        p = was[i]!;
+      if (p.phase !== TRAIN_PHASE.RUN || r.phase !== TRAIN_PHASE.STAND || r.at <= 0 || r.at >= n - 1) return;
+      // Nothing is asked, so a middle-halt stand is a service stop: the wagon's own, or the stone stop.
+      if (r.wagon) return;
+      assert.equal(r.at, q.stop, `train ${k} stood at halt ${r.at} at ${t}`);
+      assert.equal(r.track, 1, 'heading home');
+      assert.ok(!p.logs && !p.rails && p.freight === 0, 'an empty train on no errand');
+      assert.equal(r.freight, TRADE.loadStop, 'exactly a trainload');
+      stops++;
+    });
+    if (t % 600 === 0) checkTrade(w);
+  }
+  railwayCheck(w);
+  assert.ok(stops >= 4, `${stops} stone stops`);
+  assert.ok(town(w, 0).stone - stone0 >= 32, `stone delivered ${town(w, 0).stone - stone0}`);
+});
+
+test("R2b: a rider's ask homeward at the Quarry still loads stone before the footings", () => {
+  const s = { w: copy(ON.w), t: ON.t },
+    q = TRADE.yards[QUARRY]!;
+  advance(s, q.cap * q.everyTicks);
+  const halt = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === q.stop);
+  for (let i = 0; i < 4000; i++) {
+    const k = LINE2_SLOTS.find((j) => train(s.w, j).phase === TRAIN_PHASE.RUN && train(s.w, j).track === 1);
+    if (k !== undefined && act(s, 'a', 'rail.call', { id: halt, dir: -1, train: k }) === 1) {
+      for (let j = 0; j < 3000; j++) {
+        advance(s, 1);
+        const r = train(s.w, k);
+        if (r.phase === TRAIN_PHASE.STAND && r.at === q.stop) {
+          assert.equal(r.track, 1);
+          assert.equal(r.freight, TRADE.freightCap);
+          return;
+        }
+        if (r.phase === TRAIN_PHASE.STAND && r.at === 0) break; // it could not brake for the ask: ask again
+      }
+    }
+    advance(s, 1);
+  }
+  assert.fail('no rider ask was served at the Quarry');
 });
