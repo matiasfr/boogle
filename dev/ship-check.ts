@@ -27,9 +27,11 @@ function run(args: string[]) {
 function runTests(args: string[], env = testEnv().env) {
   execFileSync(process.execPath, ['--test', ...args], { stdio: 'inherit', env });
 }
+// `npm run registry`, as CI's docs and registry jobs run it, on every diff: about 2s, and prose (must-read budgets, the
+// live agent-calls table) breaks it as easily as code.
+run(['dev/registry/check.ts', '--base', base]);
 // Docs-only (dev/ci/change-class.ts): the same fast checks as CI's docs job, no lint, typecheck or unit tests.
 if (changeClass([...files]) === 'docs') {
-  run(['dev/registry/check.ts', '--base', base]);
   runTests(['--test-timeout=5000', 'test/models.test.ts', 'test/change-class.test.ts']);
   console.log(`ship-check: docs only (${files.size} files), registry and agent checks; ${elapsed()}`);
   process.exit(0);
@@ -49,4 +51,4 @@ if (tests.length) {
   const { env, flags } = testEnv();
   runTests([...flags, ...tests], env);
 }
-console.log(`ship-check: ${lint.length} lint files, typecheck, ${tests.length} affected tests; ${elapsed()}`);
+console.log(`ship-check: registry, ${lint.length} lint files, typecheck, ${tests.length} affected tests; ${elapsed()}`);
