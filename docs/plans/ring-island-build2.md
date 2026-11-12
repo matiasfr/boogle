@@ -365,9 +365,11 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       centre the server judges a lever ask from (reach 12.6 m), so every ask was refused; they now stand at u 457
       (`halts-view.ts`; `.look/lever-u457b-still.png`: both levers on their platforms, clear of the shed, loader and
       stacks); `steel11` boarded from the lever. `rideToIsland` is now exported from `railway-ring.ts` (the ring bot's
-      own ride, unchanged). Timing: the bot's 11.5 minutes in the `steel-lit` run was page time from the seed's start,
-      the first steel home was at 10 min 5 s after it began waiting at the Village (the run waited for the next
-      line 2 train with steel: 109 to 117 s after lighting at unit level), at the 1x warp of a solo run that held 1x.
+      own ride, unchanged). Timing: the bot's 11.5 minutes (`steel-lit` run, "steel home" at 681 s) was the harness's wall
+      clock from the bot's start (`Date.now`, boot and entry included); by the server's ticks the same wait is
+      1,175 ticks (works lit at tick 11448, steel home at 12623), 117.5 s at 10 ticks a second, exactly the unit-level 109
+      to 117 s. So the rules are on time and that room ran about 6 times slower than real time in wall seconds (a
+      headless page's warp speeds the page, not the server). Read waits in server ticks.
       After the carry fix lands: rebase, one full `npm run playthrough -- --from ring-joined --to boiler-long --stall
       6000 --wall 2700`, then tick this.
 - [ ] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
