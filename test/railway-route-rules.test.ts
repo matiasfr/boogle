@@ -36,7 +36,7 @@ import {
 import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
 import { RING_END, RING_S_HEAD, ringAt } from '../src/sim/railway-ring-layout.ts';
 import { TRAIN, TRAIN_PHASE, fleetOf, trainDir, trainStopsOf } from '../src/sim/railway-train.ts';
-import { LINE_SLOTS, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
+import { LINE_SLOTS, cycleTicks, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, train, trains } from '../src/sim/railway-rows.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
@@ -524,9 +524,9 @@ test('replicated rows change only at a kit load, a feed or a lay: never every ti
 });
 
 // ---------------------------------------------------------------- the trains on the grown line
-/** Ruling A (greybox-route.md, leg 1 step 3): while the line grows (from the leg opening until 3,000 ticks after its far
- * end last moves) the worst line 2 wait is at most 1,600 and an ask up the line at the current railhead at most 1,158;
- * no wait over 1,158 is asked later than 3,000 ticks after the Gorge opens (gate 11). */
+/** Gate 11 as restated (greybox-route.md, rulings on the re-measure, 5): the worst line 2 wait is at most 1,600, and
+ * from each section laying a train stands at the new railhead (or the Gorge) within 1,158 ticks. A wait over 1,158
+ * asked later than 3,000 ticks after the Gorge opens is reported under gate 9 (a diagnostic), not gated twice. */
 const GROWTH_CAP = 1600,
   SETTLED_CAP = 1158;
 const FUZZ = fuzzTicks(20000);
@@ -539,7 +539,11 @@ for (const [seed, headPct] of [
     const rand = mulberry32(seed);
     const asked = new Map<string, number>(),
       worst = new Map<string, number>(),
-      over: string[] = [];
+      over: string[] = [],
+      settledOver: string[] = [],
+      toRailhead: number[] = [];
+    let laidNow = legRow(s.w, STACK).laid,
+      laidAt = -1;
     const joins: number[] = [];
     let restores = 0,
       longest = 0,
@@ -575,6 +579,17 @@ for (const [seed, headPct] of [
       railTick(s.w, ++s.t, headPct);
       if (servingSlots((j) => train(s.w, j), LINE2).length > before) joins.push(s.t);
       if (gorgeAt < 0 && legRow(s.w, STACK).laid === N) gorgeAt = s.t;
+      if (legRow(s.w, STACK).laid > laidNow) [laidNow, laidAt] = [legRow(s.w, STACK).laid, s.t];
+      if (laidAt >= 0) {
+        const last = stopsOf(s.w, LINE2).length - 1;
+        const there = servingSlots((j) => train(s.w, j), LINE2).some(
+          (j) => train(s.w, j).phase === TRAIN_PHASE.STAND && train(s.w, j).at === last,
+        );
+        if (there) {
+          toRailhead.push(s.t - laidAt);
+          laidAt = -1;
+        } else assert.ok(s.t - laidAt <= SETTLED_CAP, 'a train at the new railhead within 1,158 ticks of the lay');
+      }
       assert.deepEqual(kitEquality(s.w), [0, 0], `kit units at ${s.t}`);
       trains(s.w).forEach((r, slot) => {
         if (r.phase !== TRAIN_PHASE.STAND || RAIL_TRAINS[slot]!.line !== LINE2) return void standSince.delete(slot);
@@ -592,12 +607,7 @@ for (const [seed, headPct] of [
           worst.set(key, Math.max(worst.get(key) ?? 0, s.t - since));
           if (h.line === LINE2 && s.t - since > SETTLED_CAP) {
             over.push(`${h.name} ${dir > 0 ? 'up' : 'down'} asked ${since} served ${s.t}`);
-            const railhead = h.stop === stopsOf(s.w, LINE2).length - 1 || !!h.leg;
-            assert.ok(!(railhead && dir > 0), `an ask up the line at the railhead waited ${s.t - since}`);
-            assert.ok(
-              gorgeAt < 0 || since <= gorgeAt + 3000,
-              `${h.name}: waited ${s.t - since}, asked on the settled line`,
-            );
+            if (gorgeAt >= 0 && since > gorgeAt + 3000) settledOver.push(`${h.name} ${s.t - since}`);
           }
           asked.delete(key);
         }
@@ -625,11 +635,15 @@ for (const [seed, headPct] of [
     );
     t.diagnostic(`over ${SETTLED_CAP}: ${over.join('; ') || 'none'}; the Gorge opened at ${gorgeAt}`);
     t.diagnostic(
+      `a train at the new railhead after each lay: ${toRailhead.join(', ')} ticks; settled over ${SETTLED_CAP} (gate 9's): ${settledOver.join('; ') || 'none'}`,
+    );
+    t.diagnostic(
       `waits: ${line2.map(([key, v]) => `${RAIL_HALTS[Number(key.split('/')[0])]!.name} ${key.endsWith('/-1') ? 'down' : 'up'} ${v / 10} s`).join('; ')}`,
     );
     if (FUZZ >= 20000) {
       assert.equal(legRow(s.w, STACK).laid, N, 'the leg was laid in the run');
       assert.equal(joins.length, 2, 'the fourth and fifth trains joined');
+      assert.equal(toRailhead.length, N, 'a train reached the new railhead after every lay');
     }
     for (const [key, v] of line2)
       assert.ok(v <= GROWTH_CAP, `line 2 ${key}: waited ${v} ticks (growth cap ${GROWTH_CAP})`);
@@ -738,4 +752,49 @@ test('ruling F: rail.legStock is predicted; the press that fills the frame shows
   assert.deepEqual([g.logs, g.rails, g.start], [20, 20, -1], 'full, not laying until the server says so');
   assert.equal(act(s, 'a', 'rail.legStock', { leg: STACK }), p.n, 'the server takes the same');
   assert.equal(legRow(s.w, STACK).start, s.t);
+});
+
+// ---------------------------------------------------------------- re-measure rulings 1 and 2: the ride, every stage
+test("block signals: line 2 holds at the stack line's section ends, between its halts, never at one", () => {
+  const l = RAIL_LINES[LINE2]!;
+  assert.deepEqual(
+    l.signals,
+    LEG.sections.slice(0, -1).map((sec) => legS(LEG, sec.toCm)),
+  );
+  for (const sig of l.signals!) assert.ok(!l.halts.some((h) => h.s === sig || h.heads?.includes(sig)), 'at no halt');
+  assert.ok(
+    l.signals!.every((x) => x > RAIL_LINES[LINE2]!.halts[RING]!.s),
+    'none before Ring Island',
+  );
+  assert.equal(RAIL_LINES[0]!.signals, undefined);
+});
+test('gate 10: at every stage of the leg the quiet round trip is at most 1.2 times non-stop', () => {
+  const s = unaudited(copy(JOINED));
+  for (let laid = 0; laid <= N; laid++) {
+    for (let guard = 0; legRow(s.w, STACK).laid < laid; guard++) {
+      assert.ok(guard < 6000);
+      if (legRow(s.w, STACK).start < 0)
+        for (const pid of ['a', 'b']) {
+          act(s, pid, 'rail.depotTake');
+          act(s, pid, 'rail.depotRailTake');
+          act(s, pid, 'rail.legStock', { leg: STACK });
+        }
+      advance(s, 1);
+    }
+    const u = unaudited({ w: restore(s.w), t: s.t });
+    advance(u, 3000);
+    const slot = LINE_SLOTS[LINE2]![0]!,
+      left: number[] = [];
+    let prev = { ...train(u.w, slot) };
+    for (let k = 0; k < 12000; k++) {
+      advance(u, 1);
+      const r = train(u.w, slot);
+      if (prev.phase === TRAIN_PHASE.STAND && prev.at === 0 && r.phase === TRAIN_PHASE.RUN) left.push(u.t);
+      prev = { ...r };
+    }
+    assert.ok(left.length >= 3, 'laps at ' + laid + ' laid');
+    const lap = (left.at(-1)! - left[0]!) / (left.length - 1),
+      nonstop = cycleTicks(LINE2, stopsOf(u.w, LINE2));
+    assert.ok(lap <= 1.2 * nonstop, laid + ' laid: a lap of ' + lap + ' against ' + nonstop + ' non-stop');
+  }
 });
