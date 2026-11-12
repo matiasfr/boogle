@@ -1,12 +1,28 @@
 // Loaded through Vite by look's existing --eval. No new browser or harness.
-import { identity } from '../../../src/player/identity.ts';
-import { net, connectRoom } from '../../../src/netplay/net.ts';
-import { rules } from '../../../src/world/game-world.ts';
-import { snapshot, detachWorld, worldStatus } from '../../../src/world/sync.ts';
-import { onTuneRecord } from '../../../src/tunables/events.ts';
-import { recordTuneSnapshot } from '../../../src/debug/dev/tunables.ts';
-import { renderer } from '../../../src/render/scene.ts';
-import { exposureSettings } from '../../../src/render/exposure.ts';
+const { identity } = (await import(
+  '/src/player/identity.ts' as string
+)) as typeof import('../../../src/player/identity.ts');
+const { net, connectRoom } = (await import(
+  '/src/netplay/net.ts' as string
+)) as typeof import('../../../src/netplay/net.ts');
+const { rules } = (await import(
+  '/src/world/game-world.ts' as string
+)) as typeof import('../../../src/world/game-world.ts');
+const { snapshot, detachWorld, worldStatus } = (await import(
+  '/src/world/sync.ts' as string
+)) as typeof import('../../../src/world/sync.ts');
+const { onTuneRecord } = (await import(
+  '/src/tunables/events.ts' as string
+)) as typeof import('../../../src/tunables/events.ts');
+const { recordTuneSnapshot } = (await import(
+  '/src/debug/dev/tunables.ts' as string
+)) as typeof import('../../../src/debug/dev/tunables.ts');
+const { renderer } = (await import(
+  '/src/render/scene.ts' as string
+)) as typeof import('../../../src/render/scene.ts');
+const { exposureSettings } = (await import(
+  '/src/render/exposure.ts' as string
+)) as typeof import('../../../src/render/exposure.ts');
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function until(check: () => boolean, label: string) {
@@ -19,7 +35,7 @@ async function until(check: () => boolean, label: string) {
 function assert(value: unknown, label: string): asserts value {
   if (!value) throw new Error(`Tunables: ${label}`);
 }
-export async function run() {
+async function run() {
   await until(() => !!window.boogle?.dev && worldStatus().ready && net.state === 'live', 'API/room ready');
   const api = window.boogle.dev!;
   await until(() => exposureSettings.centre === 0.24, 'URL exposure after Look restoration');
@@ -83,3 +99,6 @@ export async function run() {
       }),
   );
 }
+await run();
+
+export {}; // a module for the type checker; look.ts strips this line (an eval body, not imported)

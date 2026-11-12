@@ -1,6 +1,6 @@
 // An iPad with a Magic Keyboard (the owner's playtest device): the page starts in touch mode (coarse pointer), a key
 // press or a trackpad click switches to keyboard and mouse (no touch overlay, the reticle), a finger switches back.
-// In both modes the HUD's own buttons take presses: the menu button.
+// Touch has the HUD menu button; keyboard mode opens the menu with Escape.
 // Serves DESIGN.md "Designed for drop-in, drop-out".
 type Page = {
   touchscreen: { tap: (x: number, y: number) => Promise<void> };
@@ -37,7 +37,7 @@ const CLOSE = `const P = await import('/src/features/pause.ts'); P.closePause();
 
 export default {
   about:
-    'iPad + keyboard: the input mode follows the last key, trackpad or finger, and HUD buttons take presses in both',
+    'iPad + keyboard: the input mode follows the last key, trackpad or finger, and touch has the menu button, the keyboard opens the menu with Escape',
   timeout: 240000,
   async run(t: Run) {
     const room = 'proto-ipad' + Math.random().toString(36).slice(2, 6);
@@ -47,7 +47,7 @@ export default {
     t.check('still: touch mode', true, await g.still('ipad-touch'));
 
     // Touch: the menu button sits above the touch overlay.
-    let menu = (await g.eval(CENTRE('.menu-btn'))) as Spot;
+    const menu = (await g.eval(CENTRE('.menu-btn'))) as Spot;
     await g.page.touchscreen.tap(menu.x, menu.y);
     t.check('touch: a tap on the menu button opens the menu', (await g.waitFor(PAUSED, { timeout: 3000 })) >= 0);
     await g.eval(CLOSE);
@@ -62,9 +62,13 @@ export default {
       )),
     );
     t.check('still: keyboard mode', true, await g.still('ipad-keyboard'));
-    menu = (await g.eval(CENTRE('.menu-btn'))) as Spot;
-    await g.page.mouse.click(menu.x, menu.y);
-    t.check('keyboard: a click on the menu button opens the menu', (await g.waitFor(PAUSED, { timeout: 3000 })) >= 0);
+    // The menu button is touch-only (src/features/pause.css: body.touch.playing); with a keyboard, Escape opens the menu.
+    t.check(
+      'keyboard: the menu button is hidden',
+      !!(await g.eval(`return getComputedStyle(document.querySelector('.menu-btn')).display === 'none';`)),
+    );
+    await g.page.keyboard.press('Escape');
+    t.check('keyboard: Escape opens the menu', (await g.waitFor(PAUSED, { timeout: 3000 })) >= 0);
     await g.eval(CLOSE);
 
     // A finger switches back.
