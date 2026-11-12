@@ -7,7 +7,7 @@ import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, Q6 } from './railway-line2-layout.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD } from './railway-cart.ts';
-import { DEPOT_OUT } from './railway-components.ts';
+import { DEPOT_OUT, Leg } from './railway-components.ts';
 import { accounts, beam, boiler, cart, forge, forgeClock, rail, steel } from './railway-rows.ts';
 import { line2Jobs, scheduleOf } from './railway-queries.ts';
 import {
@@ -87,9 +87,14 @@ export function checkLine2(w: World) {
   });
   if ((r0.depot || r0.depotProduced) && !jobs[0]!.job.completion) bad('early depot');
   const depotOut = DEPOT_OUT.map((key) => r0[key]);
+  // The greybox route's kit: the logs a leg's kit halt minted (Leg.loadedLogs) are depot production too, and the rails
+  // it gave off the forge rack (Leg.loadedRails) may be on the shelf (its rack) or aboard beside the Q jobs'.
+  let legLogs = 0,
+    legRails = 0;
+  w.each([Leg], (_id, l) => ((legLogs += l.loadedLogs), (legRails += l.loadedRails)));
   if (
     depotOut.some((n, k) => !railInt(n, LINE2_STATIONS[k]!.bill[0]) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
-    depotOut.reduce((a, b) => a + b, 0) !== r0.depotProduced
+    depotOut.reduce((a, b) => a + b, 0) + legLogs !== r0.depotProduced
   )
     bad('depot output');
   const c = cart(w);
@@ -117,7 +122,7 @@ export function checkLine2(w: World) {
   if (
     !railInt(r0.depotRails, 64) ||
     !railInt(r0.shelfOut, 64) ||
-    r0.depotRails + c.rails + line2Aboard(w, 'rails') > r0.shelfOut + steel(w).outRails
+    r0.depotRails + c.rails + line2Aboard(w, 'rails') > r0.shelfOut + steel(w).outRails + legRails
   )
     bad('shelf bounds');
   if (r0.shelfOut) {

@@ -286,7 +286,21 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     stage: A,
     break: (w) => set(w, Line, { left0: 5 }, 0),
   },
-  { site: 'trains train', message: 'railway: train', stage: A, break: (w) => set(w, Train, { phase: 2 }, 0) },
+  // Phase 3: no phase (2 is the greybox route's shed, refused by its own site below).
+  { site: 'trains train', message: 'railway: train', stage: A, break: (w) => set(w, Train, { phase: 3 }, 0) },
+  // The greybox route's fleet (step 3): a shed row moved; a fleet row in service before its stage runs it.
+  {
+    site: 'trains shed train',
+    message: 'railway: shed train',
+    stage: A,
+    break: (w) => set(w, Train, { from: 5000 }, LINE_SLOTS[LINE2]!.at(-1)!),
+  },
+  {
+    site: 'trains fleet',
+    message: 'railway: fleet',
+    stage: X,
+    break: (w) => set(w, Train, { phase: 0 }, LINE_SLOTS[LINE2]!.at(-1)!),
+  },
   {
     site: 'trains rider ask',
     message: 'railway: rider ask',
@@ -298,9 +312,9 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: end block',
     stage: X,
     break: (w) => {
-      // Both of line two's trains standing at its start end.
+      // Both of line two's trains standing at its start end (those in service: its fleet rows stay in the shed).
       const s0 = stopsOf(w, LINE2)[0]!;
-      for (const slot of LINE_SLOTS[LINE2]!)
+      for (const slot of LINE_SLOTS[LINE2]!.filter((k) => w.get(Train, w.lookup(Train, k)!)!.phase !== 2))
         set(w, Train, { phase: 0, at: 0, to: 0, from: s0, dest: s0, track: 0, v0: 0, req: 0, turn: false }, slot);
     },
   },

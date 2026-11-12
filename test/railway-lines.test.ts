@@ -13,6 +13,7 @@ import {
   PIER_EAST,
   haltPlatform,
   trainPlaces,
+  LINE2_ON,
 } from '../src/sim/railway-lines.ts';
 import {
   RING_END,
@@ -69,25 +70,28 @@ const V25_PATHS = [
 ];
 
 test("v25's stop, home and halt tables are views of the catalog, with v27's two halts appended", () => {
-  assert.deepEqual(TRAIN_STOPS, [V25_STOPS[0], [...V25_STOPS[1]!, ...V27_STOPS]]);
+  // The greybox route (step 3) appends after these: line 2's two halts, its fleet rows and the ns, bay and cave rows
+  // (test/railway-route-rules.test.ts).
+  assert.deepEqual([TRAIN_STOPS[0], TRAIN_STOPS[1]!.slice(0, 6)], [V25_STOPS[0], [...V25_STOPS[1]!, ...V27_STOPS]]);
   assert.deepEqual([...TRAIN_HOME].slice(0, 2), V25_HOME, 'the first train of each line stands where v25s did');
-  assert.deepEqual([...TRAIN_HOME], V27_HOME);
+  assert.deepEqual([...TRAIN_HOME].slice(0, 4), V27_HOME);
   // Halt ids 0-4 keep v25's down platform; the Pier's moved east of the down track (call 53).
   assert.deepEqual(LINE_HALTS.slice(0, 5), V25_HALTS.slice(0, 5));
   assert.deepEqual(LINE_HALTS[5], { name: 'Pier', line: 1, stop: 3, ...PIER_EAST });
   assert.deepEqual(
-    LINE_HALTS.slice(6).map((h) => [h.name, h.line, h.stop]),
+    LINE_HALTS.slice(6, 8).map((h) => [h.name, h.line, h.stop]),
     [
       ['Railhead', 1, 4],
       ['Ring Island', 1, 5],
     ],
   );
   assert.deepEqual(
-    RAIL_TRAINS.map((t) => t.line),
+    RAIL_TRAINS.slice(0, 4).map((t) => t.line),
     [0, 1, 1, 1],
     'line 1 one train, line 2 three',
   );
-  assert.equal(RAIL_HALTS.length, V25_HALTS.length + 2);
+  // v27's two, then the greybox route's: line 2's stack railhead and High Gorge, and the ns, bay and cave rows' 3 + 4 + 5.
+  assert.equal(RAIL_HALTS.length, V25_HALTS.length + 2 + 2 + 12);
   RAIL_HALTS.slice(0, 5).forEach((h, id) => {
     assert.equal(h.s, V25_STOPS[h.line]![h.stop], `halt ${id} stands at its stop`);
     // Today's platform serves the down track; Quarry and Far Head have an up one (step 2), the stubs' ends one.
@@ -129,13 +133,14 @@ test("every halt's opening slot exists, and halts run in s order", () => {
   }
   assert.deepEqual(
     RAIL_LINES.map((l) => l.id),
-    ['line1', 'line2'],
+    ['line1', 'line2', 'ns', 'bay', 'cave'],
   );
 });
 
 test("railLinePoint reads the catalog's path, v25's PATHS and line 2's on to Ring Island", () => {
-  const paths = [V25_PATHS[0]!, [...V25_PATHS[1]!, ...RING_PATH]];
-  RAIL_LINES.forEach((l, line) => {
+  // Line 2 runs on past Ring Island along the greybox route's `ring` row (LINE2_ON); the route's own rows are theirs.
+  const paths = [V25_PATHS[0]!, [...V25_PATHS[1]!, ...RING_PATH, ...LINE2_ON]];
+  RAIL_LINES.slice(0, 2).forEach((l, line) => {
     assert.deepEqual(l.path, paths[line]);
     for (let k = 0; k < l.path.length / 2; k++)
       assert.deepEqual(railLinePoint(line, k * 1000), { x: paths[line]![k * 2], z: paths[line]![k * 2 + 1] });
@@ -145,6 +150,8 @@ test("railLinePoint reads the catalog's path, v25's PATHS and line 2's on to Rin
 test("every halt that can be its line's open end says how it turns trains back, inside the line", () => {
   for (const l of RAIL_LINES)
     l.halts.forEach((h, k) => {
+      // A shut halt (the greybox route's rows) gets its end with the leg whose rules open it.
+      if (h.shut) return;
       const last = k === 0 || k === l.halts.length - 1 || l.halts[k + 1]!.opens >= 0;
       assert.equal(!!h.end, last, `${h.name}`);
       if (h.end) {
@@ -258,7 +265,13 @@ test("the catalog: every fixed halt's platform by way is its own; v27's fields o
     ]
       .filter(Boolean)
       .join();
-    assert.equal(v27, { Pier: 'only', Railhead: 'heads,brake', 'Ring Island': 'ring' }[h.name] ?? '', h.name);
+    // The greybox route's two on line 2 open after the rivet too (`ring`), the railhead with its heads.
+    const fields = { Pier: 'only', Railhead: 'heads,brake', 'Ring Island': 'ring', 'Stack railhead': 'ring,heads' };
+    assert.equal(
+      v27,
+      h.line === 1 ? ((fields as Record<string, string>)[h.name] ?? (h.name === 'High Gorge' ? 'ring' : '')) : '',
+      h.name,
+    );
   });
 });
 

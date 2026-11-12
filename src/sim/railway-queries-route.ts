@@ -1,0 +1,128 @@
+// The greybox route's facts on the world (docs/plans/greybox-route.md, step 3): pure reads that the route's systems
+// (./railway-sys-route.ts), the trains' side of the kit (./railway-sys-route-kit.ts), the server's reach checks and
+// the load check share. Queries never write. Imports no other query module, so ./railway-queries.ts can read it.
+//
+//   legId, routeId, legRow, routeRow   the rows
+//   legsLaid(w)                  sections laid by RAIL_LEGS slot (what the stops read)
+//   legDone, legReached, legOpen, openLeg   a leg complete; reached (built, its `after` complete); open (reached, not
+//                                complete); the open leg on a line
+//   legSection(w, k)             the section being fed (its index), or -1 with the leg complete
+//   legKitHalt(line), legKitStop(w, k)   where a leg's kit loads (its line's home halt) and unloads (the rack's halt)
+//   legKitCap(w, k)              one kit: the current section's bill (one kit a train)
+//   legKitNeed(w, k)             the kit still to load for the sections owed ahead (LEG_TUNE.kitLead)
+//   legRackNeed(w, k)            what the current section still lacks, fed and racked
+//   legKitOwed(w, line, r)       an empty train on `line` is owed a kit at its kit halt
+//   gateLeg(g)                   the leg and section a RAIL_GATES row shuts
+//   haltHead(w, halt)            the head a `heads` halt stands at now (the Railhead's ring head, a leg's sections)
+import type { World } from '../ecs/index.ts';
+import { RAIL_HALTS, RAIL_LINES, legBuilt } from './railway-lines.ts';
+import { LEG_TUNE, RAIL_LEGS, legS } from './railway-route.ts';
+import { LINE_SLOTS } from './railway-trains.ts';
+import type { RailTrain } from './railway-train.ts';
+import { Aperture, Leg, Rail, Route, Train } from './railway-components.ts';
+
+export const legId = (w: World, slot: number) => w.lookup(Leg, slot)!;
+export const routeId = (w: World) => w.single(Route);
+export const legRow = (w: World, slot: number) => w.get(Leg, legId(w, slot))!;
+export const routeRow = (w: World) => w.get(Route, routeId(w))!;
+/** Sections laid, by RAIL_LEGS slot. */
+export const legsLaid = (w: World): number[] => RAIL_LEGS.map((_l, k) => legRow(w, k).laid);
+/** Leg k's sections are all laid. */
+export const legDone = (w: World, k: number) => legRow(w, k).laid >= RAIL_LEGS[k]!.sections.length;
+/** Leg k may be built on: its rules are built (legBuilt) and the leg before it is complete (`after` -1: Ring Island's
+ * rivet struck). */
+export function legReached(w: World, k: number) {
+  const leg = RAIL_LEGS[k];
+  if (!leg || !legBuilt(k)) return false;
+  return leg.after < 0 ? w.get(Aperture, w.single(Aperture))!.joined >= 0 : legDone(w, leg.after);
+}
+/** Leg k takes kit and feeding now: reached (legReached) and not complete. */
+export const legOpen = (w: World, k: number) => legReached(w, k) && !legDone(w, k);
+/** The open leg on `line` whose kit loads at the line's home halt, or -1 (the catalog opens one leg at a time: each
+ * leg's `after` is the one before it). */
+export const openLeg = (w: World, line: number) =>
+  RAIL_LEGS.findIndex((l, k) => l.line === line && l.kit === 'home' && legOpen(w, k));
+/** The section of leg k being fed or laid now, or -1 once it is complete. */
+export const legSection = (w: World, k: number) => (legDone(w, k) ? -1 : legRow(w, k).laid);
+/** The halt a line's legs load their kit at: its home halt (line 2's Village). */
+export const legKitHalt = (line: number) => RAIL_LINES[line]!.home;
+/** The halt (an index on its line) leg k's rack stands at now: its first halt while nothing is laid, then its railhead;
+ * -1 once complete. */
+export function legKitStop(w: World, k: number) {
+  const leg = RAIL_LEGS[k]!,
+    laid = legRow(w, k).laid;
+  if (laid >= leg.sections.length) return -1;
+  if (laid > 0) return leg.railheadHalt;
+  const from = legS(leg, leg.fromCm);
+  return RAIL_LINES[leg.line]!.halts.findIndex((h) => h.s === from);
+}
+const billOf = (k: number, from: number, to: number) => {
+  let logs = 0,
+    rails = 0;
+  for (const s of RAIL_LEGS[k]!.sections.slice(from, to)) [logs, rails] = [logs + s.logs, rails + s.rails];
+  return { logs, rails };
+};
+/** One kit (one train's): the current section's bill. */
+export function legKitCap(w: World, k: number) {
+  const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid];
+  return s ? { logs: s.logs, rails: s.rails } : { logs: 0, rails: 0 };
+}
+/** Kit units of leg k's line aboard its trains. */
+const aboardLine = (w: World, line: number, key: 'logs' | 'rails') =>
+  LINE_SLOTS[line]!.reduce((n, s) => n + w.get(Train, w.lookup(Train, s)!)![key], 0);
+/** The kit still to load for leg k (ruling 1.4, "the kit runs ahead by the whole leg"): the bills of the current
+ * section and the next LEG_TUNE.kitLead - 1, less what is fed, on the rack (Rail.depot, Rail.depotRails: the
+ * train-fed rack, Q6's and Q7's) and aboard the line's trains; never more than those bills less what was ever loaded
+ * for the leg (units taken off the rack and dropped elsewhere are not minted again, as depotNeed). */
+export function legKitNeed(w: World, k: number) {
+  const leg = RAIL_LEGS[k]!,
+    row = legRow(w, k),
+    rail = w.get(Rail, w.single(Rail))!,
+    to = Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead);
+  const out = billOf(k, row.laid, to),
+    all = billOf(k, 0, to);
+  return {
+    logs: Math.max(
+      0,
+      Math.min(out.logs - row.logs - rail.depot - aboardLine(w, leg.line, 'logs'), all.logs - row.loadedLogs),
+    ),
+    rails: Math.max(
+      0,
+      Math.min(out.rails - row.rails - rail.depotRails - aboardLine(w, leg.line, 'rails'), all.rails - row.loadedRails),
+    ),
+  };
+}
+/** What leg k's current section still lacks, counting what is fed and on the rack: a train unloads only this. */
+export function legRackNeed(w: World, k: number) {
+  const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid],
+    row = legRow(w, k),
+    rail = w.get(Rail, w.single(Rail))!;
+  if (!s || row.start >= 0) return { logs: 0, rails: 0 };
+  return {
+    logs: Math.max(0, s.logs - row.logs - rail.depot),
+    rails: Math.max(0, s.rails - row.rails - rail.depotRails),
+  };
+}
+/** An empty train on `line` is owed a kit: the line's open leg still has kit to load. */
+export function legKitOwed(w: World, line: number, r: Readonly<RailTrain>) {
+  const k = openLeg(w, line);
+  if (k < 0 || r.logs + r.rails > 0) return false;
+  const need = legKitNeed(w, k);
+  return need.logs > 0 || need.rails > 0;
+}
+/** The leg and section RAIL_GATES[g] shuts, or undefined. */
+export function gateLeg(g: number) {
+  for (const [leg, l] of RAIL_LEGS.entries()) {
+    const section = l.sections.findIndex((s) => s.gate === g);
+    if (section >= 0) return { leg, section };
+  }
+  return undefined;
+}
+/** The head a `heads` halt (a RAIL_HALTS id) stands at now: a leg's railhead by its sections laid, Ring Island's
+ * Railhead by its bent (`ring`, ./railway-queries.ts's ringHead). */
+export function haltHead(w: World, halt: number, ring: number) {
+  const h = RAIL_HALTS[halt];
+  if (!h?.heads) return 0;
+  if (!h.leg) return ring;
+  return Math.max(0, Math.min(h.heads.length - 1, legRow(w, h.leg.slot).laid - 1 - h.leg.section));
+}

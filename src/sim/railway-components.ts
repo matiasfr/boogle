@@ -6,7 +6,8 @@
 //   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
 //                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
 //                                  outcome, line, aperture (v27), yard(+yardClock), town(+townClock), till (slice 5),
-//                                  steel(+steelClock) (ring-island-build2, R1); RAIL_REPLICATED is the wire
+//                                  steel(+steelClock) (ring-island-build2, R1), leg, legYard, route (the greybox
+//                                  route); RAIL_REPLICATED is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 import { createWorld, defineComponent, type AnyComponent } from '../ecs/index.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
@@ -14,9 +15,10 @@ import { LINE1_GREAT_TREE, LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { LINE_TIMING } from './railway-line.ts';
-import { TRAIN_STOPS } from './railway-train.ts';
+import { TRAIN_PHASE, TRAIN_STOPS } from './railway-train.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
+import { RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import type { RailResult } from './railway.ts';
 
 /** A job's timing fields, in wire order (the job's schedule reads them: railway-line-schedule.ts). */
@@ -297,6 +299,29 @@ export const Till = defineComponent('till', {
   sack: 'int',
   poured: 'int',
 });
+// The greybox route (docs/plans/greybox-route.md, step 3; rules in ./railway-sys-route.ts, the catalog in
+// ./railway-route.ts). Defined here with the other components so the schema has one module. Nothing here is written
+// every tick: a section's lay clock is its `start` tick, read against the tick, and changes only when it starts and
+// when it lays.
+/** A leg by RAIL_LEGS slot: `laid` sections complete (0 to its sections); `logs` and `rails` fed into the current
+ * section's frame; `start` the tick that section began to lay (-1 not laying); and the kit units ever loaded onto its
+ * trains for it (`loadedLogs`, `loadedRails`: the cap on what its kit halt mints and gives). */
+export const Leg = defineComponent(
+  'leg',
+  { slot: 'int', laid: 'int', logs: 'int', rails: 'int', start: 'int', loadedLogs: 'int', loadedRails: 'int' },
+  { key: 'slot', defaults: { start: -1 } },
+);
+/** A junction yard by RAIL_YARDS slot (`LegYard`, kind `legYard`: slice 5's `Yard` is the town economy's crate yard):
+ * the kit units its `fedBy` leg's trains have unloaded there for the legs that load there. Nothing feeds it until leg
+ * 2's rules. */
+export const LegYard = defineComponent('legYard', { slot: 'int', logs: 'int', rails: 'int' }, { key: 'slot' });
+/** The route's one row: the grants taken (bit k: RAIL_GRANTS[k]), the gates opened (bit k: RAIL_GATES[k]) and the
+ * tick the room arrived at the meeting marker (-1 never). */
+export const Route = defineComponent(
+  'route',
+  { grants: 'int', gates: 'int', arrived: 'int' },
+  { defaults: { arrived: -1 } },
+);
 export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Rail,
   RailClock,
@@ -329,6 +354,10 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Till,
   Steel,
   SteelClock,
+  // The greybox route.
+  Leg,
+  LegYard,
+  Route,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
@@ -349,9 +378,11 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   RAIL_ROCKS.forEach((r, slot) => w.spawn([Rock, { slot, left: r.initial }]));
   w.spawn([Cart, {}]);
   w.spawn([Boiler, {}]);
-  RAIL_TRAINS.forEach(({ line, home, track }, slot) => {
+  RAIL_TRAINS.forEach(({ line, home, track, shed }, slot) => {
     const s = TRAIN_STOPS[line]![home]!;
-    w.spawn([Train, { slot, at: home, to: home, track, from: s, dest: s }]);
+    // A fleet row (the greybox route) starts in the shed.
+    if (shed) w.spawn([Train, { slot, phase: TRAIN_PHASE.SHED, at: home, to: home, track, from: s, dest: s }]);
+    else w.spawn([Train, { slot, at: home, to: home, track, from: s, dest: s }]);
   });
   w.spawn([Works, {}], [WorksClock, {}]);
   w.spawn([Shed, {}]);
@@ -362,5 +393,9 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   for (let slot = 0; slot < TRADE_TOWNS; slot++) w.spawn([Town, { slot }], [TownClock, {}]);
   w.spawn([Till, {}]);
   w.spawn([Steel, {}], [SteelClock, {}]);
+  // The greybox route: every leg and yard in catalog order, nothing laid, and the route's row.
+  RAIL_LEGS.forEach((_l, slot) => w.spawn([Leg, { slot }]));
+  RAIL_YARDS.forEach((_y, slot) => w.spawn([LegYard, { slot }]));
+  w.spawn([Route, {}]);
   return w;
 }

@@ -37,7 +37,9 @@ export const BOILER_MAX = BOILER_SPEED.length - 1;
 export type TrainKin = { readonly speed: number; readonly accel: number; readonly brake?: number };
 /** The rate a leg brakes at. */
 const brakeOf = (kin: TrainKin) => kin.brake ?? kin.accel;
-export const TRAIN_PHASE = { STAND: 0, RUN: 1 } as const;
+/** SHED (the greybox route, step 3): a fleet row not yet in service (RailLineDef.fleet), at its idle row in the shed at
+ * its line's first halt; no rule reads its pose until it joins (./railway-trains.ts, fleetJoin). */
+export const TRAIN_PHASE = { STAND: 0, RUN: 1, SHED: 2 } as const;
 // v25's tables, now views of the catalog (src/sim/railway-lines.ts).
 export const TRAIN_STOPS: readonly (readonly number[])[] = RAIL_LINES.map((l) => l.halts.map((h) => h.s));
 /** v26's boolean `laid`: true is "Q6 is laid" (its six slots complete), which opens the pier. */
@@ -46,34 +48,84 @@ const Q6_LAID = 6;
  * index) and whether the rivet is struck (a `ring` halt opens). */
 export type RingOpen = { readonly head: number; readonly joined: boolean };
 const RING_SHUT: RingOpen = { head: 0, joined: false };
+/** The greybox route's sections laid, by RAIL_LEGS slot (step 3; absent slots read 0). */
+export type LegsLaid = readonly number[];
+const NO_LEGS: LegsLaid = [];
 /** The stops a line serves now: the halts whose `opens` QJob slot is complete and, for a `ring` halt, the rivet
  * struck; a `heads` halt's stop is `heads[ring.head]` (every decision reads this, while the pose reads only the row).
  * Open stops are a prefix of the halts (endBlocks reads the last's end). `laid` is how many QJob slots are complete,
- * or v26's boolean (true: Q6 is laid). */
-export const trainStopsOf = (line: LineRef, laid: number | boolean, ring: RingOpen = RING_SHUT): readonly number[] => {
+ * or v26's boolean (true: Q6 is laid). The greybox route (step 3): a `shut` halt never opens; a `leg` halt opens once
+ * its section of `legs` is laid and every halt before it is open, its `heads` read by sections laid. */
+export const trainStopsOf = (
+  line: LineRef,
+  laid: number | boolean,
+  ring: RingOpen = RING_SHUT,
+  legs: LegsLaid = NO_LEGS,
+): readonly number[] => {
   const done = laid === true ? Q6_LAID : laid === false ? 0 : laid;
   const out: number[] = [];
-  for (const h of lineDef(line).halts)
-    if (h.opens < done && (!h.ring || ring.joined)) out.push(h.heads ? h.heads[ring.head]! : h.s);
+  lineDef(line).halts.forEach((h, k) => {
+    if (h.opens >= done || (h.ring && !ring.joined) || h.shut) return;
+    if (h.leg) {
+      const n = legs[h.leg.slot] ?? 0;
+      if (n <= h.leg.section || out.length !== k) return;
+      out.push(h.heads ? h.heads[Math.min(h.heads.length - 1, n - 1 - h.leg.section)]! : h.s);
+    } else out.push(h.heads ? h.heads[ring.head]! : h.s);
+  });
   return out;
 };
-/** Every stage a line's stops can reach (each `opens` slot laid in turn, each head, the rivet). */
-export function lineStages(line: LineRef): (readonly number[])[] {
+/** The trains line `line` runs with `legs` laid: its fleet's at its leg's sections laid, else `trains`. */
+export function fleetOf(line: LineRef, legs: LegsLaid = NO_LEGS) {
+  const l = lineDef(line);
+  return l.fleet ? l.fleet.trains[Math.min(l.fleet.trains.length - 1, legs[l.fleet.leg] ?? 0)]! : l.trains;
+}
+/** Every stage a line's stops can reach, with the trains it runs there: each `opens` slot laid in turn, each head, the
+ * rivet, and each section of the legs its halts open. */
+function lineStagesOf(line: LineRef): { stops: readonly number[]; trains: number }[] {
   const halts = lineDef(line).halts,
     top = Math.max(0, ...halts.map((h) => h.opens + 1)),
-    heads = Math.max(1, ...halts.map((h) => h.heads?.length ?? 1));
-  const out: (readonly number[])[] = [];
+    heads = Math.max(1, ...halts.map((h) => (h.leg ? 1 : (h.heads?.length ?? 1))));
+  // The legs on this line, each laid 0 to its last halt's section + 1 (one leg a line today: the product is its count).
+  const legs: number[][] = [[]];
+  for (const slot of [...new Set(halts.flatMap((h) => (h.leg ? [h.leg.slot] : [])))]) {
+    const most = Math.max(...halts.flatMap((h) => (h.leg?.slot === slot ? [h.leg.section + 1] : [])));
+    legs.splice(
+      0,
+      legs.length,
+      ...legs.flatMap((l) =>
+        Array.from({ length: most + 1 }, (_v, n) => {
+          const next = [...l];
+          next[slot] = n;
+          return next;
+        }),
+      ),
+    );
+  }
+  // A leg is laid only once every halt before its first is open (its `after` needs the line built to it).
+  const first = (slot: number) => halts.findIndex((h) => h.leg?.slot === slot);
+  const out: { stops: readonly number[]; trains: number }[] = [];
   for (let laid = 0; laid <= top; laid++)
     for (let head = 0; head < heads; head++)
-      for (const joined of [false, true]) out.push(trainStopsOf(line, laid, { head, joined }));
+      for (const joined of [false, true]) {
+        const base = trainStopsOf(line, laid, { head, joined }).length;
+        for (const l of legs)
+          if (l.every((n, slot) => !n || base === first(slot)))
+            out.push({ stops: trainStopsOf(line, laid, { head, joined }, l), trains: fleetOf(line, l) });
+      }
   return out;
 }
+/** Every stage a line's stops can reach (each `opens` slot laid in turn, each head, the rivet, each leg's sections). */
+export const lineStages = (line: LineRef): (readonly number[])[] => lineStagesOf(line).map((st) => st.stops);
 // The catalog is refused at load if any line's trains could not all be placed at a stage they wake at (trainPlaces
-// throws rather than stack two), so the wake (rail.boilerFit) never meets it in a room. Note: this runs when the module
-// is imported, so a bad catalog row throws at the first import of railway-train.ts (server start, page load, any
-// test), not inside a rule; a fixture line (a test's RailLineDef) is never checked here and is placed when its test
-// calls trainPlaces.
-RAIL_LINES.forEach((_l, line) => lineStages(line).forEach((stops) => trainPlaces(line, stops)));
+// throws rather than stack two), so the wake (rail.boilerFit) never meets it in a room; each stage is checked with the
+// trains its fleet runs there. Note: this runs when the module is imported, so a bad catalog row throws at the first
+// import of railway-train.ts (server start, page load, any test), not inside a rule; a fixture line (a test's
+// RailLineDef) is never checked here and is placed when its test calls trainPlaces.
+RAIL_LINES.forEach((_l, line) =>
+  lineStagesOf(line).forEach(({ stops, trains }) => {
+    if (stops.length >= 2) trainPlaces(line, stops, trains);
+  }),
+);
 /** The stop each train (by slot) stands at before it wakes. */
 export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);
 /** The track each train (by slot) stands on before it wakes. */
@@ -121,12 +173,12 @@ export type RailTrain = {
   /** The boiler it wears (v28; BOILER_SPEED's row): its cruise. Absent reads 0 (a fixture line's row). */
   boiler?: number;
 };
-/** Train `slot` standing at its home, asleep. */
+/** Train `slot` standing at its home, asleep (a fleet row: in the shed, TRAIN_PHASE.SHED). */
 export function trainIdle(slot: number): RailTrain {
   const at = TRAIN_HOME[slot]!,
     here = TRAIN_STOPS[RAIL_TRAINS[slot]!.line]![at]!;
   return {
-    phase: TRAIN_PHASE.STAND,
+    phase: RAIL_TRAINS[slot]!.shed ? TRAIN_PHASE.SHED : TRAIN_PHASE.STAND,
     at,
     to: at,
     track: TRAIN_HOME_TRACK[slot]!,

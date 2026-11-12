@@ -1,10 +1,11 @@
 // The greybox route's catalog (docs/plans/greybox-route.md, section 2 and the design review): every leg, pickup, barrier
 // and yard in one place, pure integers, derived from the generated line catalog (./railway-world-lines.ts). Nothing here
-// is state: step 3 reads it to spawn `Leg`, `Yard` and `Route` rows in catalog order, so reordering anything below is a
+// is state: step 3 reads it to spawn `Leg`, `LegYard` and `Route` rows in catalog order, so reordering anything below is a
 // WORLD_NS break (the plan's bump G1 installs all of it at once, nothing laid).
 //
 // Lockstep math: integers and `+ - * /`, `Math.floor`, `Math.round` and `Math.sqrt` only (docs/agents/lockstep.md).
-import { LINE2, type RailPlatform } from './railway-lines.ts';
+import type { RailPlatform } from './railway-lines.ts';
+import { RING_S_HEAD } from './railway-ring-layout.ts';
 import { WORLD_LINES, type WorldLine } from './railway-world-lines.ts';
 
 /** One section of a leg: it lays when `logs` + `rails` are fed to its frame; `gate` (a RAIL_GATES index) shuts the frame. */
@@ -34,7 +35,9 @@ export type RouteLeg = {
 
 /** The sim line of each catalog row. Line 2 is the existing one; step 3 appends `ns`, `bay` and `cave` after it in this
  * order. `bay-trestle` is not a sim row (the greybox never builds it). */
-export const ROW_LINE = { ring: LINE2, ns: 2, bay: 3, cave: 4 } as const;
+// `ring` is LINE2: railway-lines.ts reads this file to build its rows, so this file imports only its types and the
+// literal is checked there.
+export const ROW_LINE = { ring: 1, ns: 2, bay: 3, cave: 4 } as const;
 export type RowId = keyof typeof ROW_LINE;
 
 const row = (id: RowId): WorldLine => {
@@ -359,3 +362,34 @@ export const RAIL_PLACES: readonly { id: string; halts: readonly (readonly [stri
 ];
 
 export const ROUTE = { branchFirst: 'gorge', branches: 'both', ending: 'card', upgrades: 'one' } as const;
+
+// ---------------------------------------------------------------- step 3: what the rules read (greybox-route.md)
+/** A row's centimetres against its sim line's `s`: the `ring` row counts on from the pier head at its `fromCm` (74300),
+ * line 2 from RING_S_HEAD (74200), so the same place is 100 cm further along the row (the Ring Island halt: row 119100,
+ * line 2's 119000). The other rows are their own lines and count from 0. */
+export const ROW_SHIFT: Readonly<Record<RowId, number>> = {
+  ring: row('ring').fromCm - RING_S_HEAD,
+  ns: 0,
+  bay: 0,
+  cave: 0,
+};
+/** Cm along a leg's sim line of `cm` along its row. */
+export const legS = (leg: Pick<RouteLeg, 'row'>, cm: number) => cm - ROW_SHIFT[leg.row];
+/** A catalog row's point `cm` along it (row cm) and a catalog halt's platform point: the sim catalog's sources. */
+export const rowPoint = pointAt;
+export const rowHalt = haltAt;
+/** Section k's frame (placeholder: on the row at the section's first centimetre, a halt's reach; step 4 places it
+ * beside the railhead with its rack): where `rail.legStock` is judged, and where the leg's rack stands. */
+export function legFrame(leg: RouteLeg, k: number): RailPlatform {
+  return pointAt(leg.row, sectionFromCm(leg, k));
+}
+/** The meeting marker on the Original Island (placeholder: at the `ns` row's last halt, 25 m round it): `rail.arrive`. */
+export const RAIL_ARRIVAL: RailPlatform = { ...haltAt('ns', 2), reach: 2500 };
+/** The route's named tunables (design review of 12 November, rulings 1.3 and 1.4): `layTicks`, a section's lay time
+ * whatever its length (30 s); `kitLead`, the sections whose kit is owed ahead of the frame, "all remaining" (the
+ * longest leg's count), never under 2. Catalog data, not room tunables: a change is a rules change, no state. */
+export const LEG_TUNE = {
+  layTicks: 300,
+  kitLead: Math.max(...RAIL_LEGS.map((l) => l.sections.length)),
+} as const;
+if (LEG_TUNE.kitLead < 2) throw new Error('railway-route: kitLead under 2');

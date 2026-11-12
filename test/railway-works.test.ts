@@ -175,10 +175,11 @@ test('no breaker and no strike while hauling the boiler', () => {
   w.mut(Rail, w.single(Rail))!.trains = -1;
   Object.assign(w.mut(Boiler, w.single(Boiler))!, { state: 'held', holder: 'a', epoch, age: 0 });
   // Cold trains stand at home, empty (the kit was hand-carried in that world).
-  RAIL_TRAINS.forEach(({ line, home: at, track }, slot) => {
+  // A fleet row (the greybox route) stays in the shed (phase 2).
+  RAIL_TRAINS.forEach(({ line, home: at, track, shed }, slot) => {
     const here = TRAIN_STOPS[line]![at]!;
     Object.assign(w.mut(Train, w.lookup(Train, slot)!)!, {
-      ...{ phase: 0, at, to: at, track, depart: 0, arrived: 0, req: 0, from: here, v0: 0, dest: here },
+      ...{ phase: shed ? 2 : 0, at, to: at, track, depart: 0, arrived: 0, req: 0, from: here, v0: 0, dest: here },
     });
   });
   for (const id of w.ids(Line)) Object.assign(w.mut(Line, id)!, { req: 0, left0: -1, left1: -1 });

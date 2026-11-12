@@ -35,6 +35,7 @@ import {
   Shed,
   Train,
   Works,
+  Leg,
 } from './railway-components.ts';
 import {
   aboard,
@@ -129,7 +130,7 @@ export const boilerDrop = defineSystem(
 );
 export const boilerFit = defineSystem(
   'rail.boilerFit',
-  { reads: [Account, QJob, Works, Aperture], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
+  { reads: [Account, QJob, Works, Aperture, Leg], writes: [Boiler, Rail, Train], phase: 'act', order: 31 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
     if (w.get(Rail, railId(w))!.trains >= 0 || !boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
@@ -138,9 +139,10 @@ export const boilerFit = defineSystem(
     w.mut(Rail, railId(w))!.trains = tick;
     // Each line's trains spread round its circuit (docs/plans/generic-lines.md, "Starting"): line 2's at the Village
     // (up) and Far Head (down); they wake together.
+    // A line's fleet rows past its first stage stay in the shed (the greybox route): the first `trains` slots wake.
     RAIL_LINES.forEach((_l, line) => {
       const places = trainPlaces(line, stopsOf(w, line));
-      LINE_SLOTS[line]!.forEach((slot, k) => {
+      LINE_SLOTS[line]!.slice(0, places.length).forEach((slot, k) => {
         const { stop, track } = places[k]!,
           s = TRAIN_STOPS[line]![stop]!;
         Object.assign(w.mut(Train, trainId(w, slot))!, {
@@ -441,7 +443,7 @@ export function layLine2(w: World, tick: number) {
 }
 export const line2Tick = defineSystem(
   'rail.line2Tick',
-  { reads: [Aperture], writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
+  { reads: [Aperture, Leg], writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works, Train], phase: 'tick', order: 1 },
   (w, { tick }: Tick) => layLine2(w, tick),
 );
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */

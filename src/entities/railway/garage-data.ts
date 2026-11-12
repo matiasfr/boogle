@@ -192,7 +192,8 @@ export type BoilerId = keyof typeof BOILERS;
  * and the per-minute numbers are about. */
 export const PLANNED_RUN_CM = 120000;
 export function lineRunCm(line = GARAGE_LINE): { cm: number; planned: boolean; end: string } {
-  const halts = RAIL_LINES[line]!.halts;
+  // As far as Ring Island: the greybox route's halts past it (a leg's) are not the garage's run yet.
+  const halts = RAIL_LINES[line]!.halts.filter((h) => !h.leg && !h.shut);
   const real = halts.at(-1)!.s - halts[0]!.s;
   return real >= PLANNED_RUN_CM
     ? { cm: real, planned: false, end: halts.at(-1)!.name }

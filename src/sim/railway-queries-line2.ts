@@ -11,6 +11,7 @@ import type { World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
 import { CART, CART_PHASE } from './railway-cart.ts';
+import { RAIL_LEGS } from './railway-route.ts';
 import {
   Account,
   Beam,
@@ -27,6 +28,7 @@ import {
   Steel,
   Tree,
   Works,
+  Leg,
 } from './railway-components.ts';
 import {
   aboard,
@@ -131,7 +133,17 @@ export function line2KitOwed(w: World) {
     ),
   };
 }
-/** Line two's logs, wherever they are (conserved with the line-one totals in railCounts). */
+/** The greybox route's logs or rails fed into its legs' frames and laid (spent) in their sections. */
+function legsSpent(w: World, key: 'logs' | 'rails') {
+  let n = 0;
+  w.each([Leg], (_id, l) => {
+    n += l[key];
+    for (const s of RAIL_LEGS[l.slot]!.sections.slice(0, l.laid)) n += s[key];
+  });
+  return n;
+}
+/** Line two's logs, wherever they are (conserved with the line-one totals in railCounts), the greybox route's fed and
+ * laid among them. */
 export function line2Logs(w: World, at?: number) {
   const f = w.get(Forge, forgeId(w))!,
     rail = w.get(Rail, railId(w))!,
@@ -143,7 +155,8 @@ export function line2Logs(w: World, at?: number) {
     s.logs +
     w.get(Cart, cartId(w))!.logs +
     aboard(w, 'logs') +
-    line2Jobs(w, at).reduce((n, { job: j, run }) => n + j.stock + run.allocation + run.used, 0)
+    line2Jobs(w, at).reduce((n, { job: j, run }) => n + j.stock + run.allocation + run.used, 0) +
+    legsSpent(w, 'logs')
   );
 }
 const sumAccounts = (w: World, key: 'carry' | 'stone' | 'rails' | 'foot') => {
@@ -170,7 +183,8 @@ export function line2Rails(w: World, at?: number) {
     sumAccounts(w, 'rails') +
     sumPiles(w, (k) => k === RAILS) +
     line2Jobs(w, at).reduce((n, { job: j, run }) => n + j.railStock + run.railAllocation + run.railUsed, 0) +
-    w.get(Shed, shedId(w))!.cradleRails
+    w.get(Shed, shedId(w))!.cradleRails +
+    legsSpent(w, 'rails')
   );
 }
 /** Conserved totals, including the depot cart and the line-2 kit train through line2Logs and line2Rails, and the

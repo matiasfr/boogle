@@ -140,6 +140,8 @@ test('line 2 up lateral: Far Head crossover while it is the end, the pier stub, 
   assert.equal(line2Lat(up(5), RING_END.mergeCm / 100, island), -4);
   assert.equal(line2Lat(up(5), RING_END.mergeCm / 100 + 22, island), 0);
   assert.ok(worstStep(up(5), island, 700, 1210) < 0.3, 'no jump over the island crossover');
-  // The end's halt is the catalog's last, so the stops the lateral reads are the catalog's open ones.
-  assert.equal(RAIL_LINES[LINE2]!.halts.length, 6);
+  // The end's halt is the open stops' last, so the stops the lateral reads are the catalog's open ones: Ring Island the
+  // sixth, then the greybox route's stack railhead and High Gorge (their laterals are step 4's).
+  assert.equal(RAIL_LINES[LINE2]!.halts.length, 8);
+  assert.equal(RAIL_LINES[LINE2]!.halts[5]!.name, 'Ring Island');
 });

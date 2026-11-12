@@ -36,6 +36,7 @@ import {
   Works,
   Yard,
   YardClock,
+  Leg,
 } from './railway-components.ts';
 import {
   activeStation,
@@ -120,7 +121,7 @@ function awayCredit(w: World, ticks: number, tick: number) {
 export const resume = defineSystem(
   'rail.resume',
   {
-    reads: [Aperture],
+    reads: [Aperture, Leg],
     writes: [
       Rail,
       RailClock,

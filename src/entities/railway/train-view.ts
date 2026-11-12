@@ -44,8 +44,11 @@ const FAR_HEAD = 2;
 const RAILHEAD = 4;
 /** How fast the drawn merge follows the railhead (m/s): a bent in about 3 s, as the lever's slide. */
 const MERGE_SLIDE = 7;
-/** The open stops of line 2 once Ring Island is the end: its crossover carries the up trains. */
-const ISLAND_STOPS = RAIL_LINES[LINE2]!.halts.length;
+/** Whether line 2's open end (its last open stop) turns trains on a crossover (Ring Island's; the greybox route's High
+ * Gorge): its up trains cross onto the down track there. Far Head's is read on its own (FAR_HEAD, and a train its
+ * opening caught there). */
+const crossoverEnd = (stops: readonly number[]) =>
+  RAIL_LINES[LINE2]!.halts[stops.length - 1]?.end?.kind === 'crossover';
 /** The passenger car's upgrade (roof, lamps; assets/src/passenger-car.py `car_upgrade`) is built and switched off: no
  * upgrade rule exists yet. The hook is here: pass what the room says about the car's upgrade in its place. */
 const PASSENGER_CAR_UPGRADED = false;
@@ -312,7 +315,7 @@ export async function createRailwayTrains(
     row.track === 0 &&
     formations[tr.line]!.crossover !== undefined &&
     (tr.line === LINE2
-      ? stops2.length - 1 === FAR_HEAD || (row.turn && row.to === FAR_HEAD) || stops2.length === ISLAND_STOPS
+      ? stops2.length - 1 === FAR_HEAD || (row.turn && row.to === FAR_HEAD) || crossoverEnd(stops2)
       : row.turn);
   /** Poses a car of line 2 on the path that goes on past the layout's pier head (./line2-path.ts). */
   const a2 = { x: 0, z: 0, ux: 0, uz: 1 },
@@ -395,7 +398,8 @@ export async function createRailwayTrains(
       const along = trainAlong(row, tr.line, clock) / 100;
       tr.speed = on ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
       const lat = (x: number) => latOf(tr, row, x);
-      const hidden = !shown || (tr.line !== 0 && !secondVisible);
+      // A fleet row in the shed (the greybox route) is not on the line until it joins.
+      const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
       const pose = (c: Car, at: number) =>
         tr.line === LINE2 ? poseOnLine2(c, at, lat) : rail.poseCarOnLine(c, line, at, 1, lat);
       tr.cars.forEach((c, n) => {

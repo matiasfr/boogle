@@ -26,6 +26,7 @@ import {
   Works,
   Yard,
   Till,
+  Leg,
 } from './railway-components.ts';
 import {
   apertureId,
@@ -54,6 +55,9 @@ import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railw
 import { freightStop } from './railway-queries-trade.ts';
 import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
+import { legKitArrive, legKitLoad, legKitService } from './railway-sys-route-kit.ts';
+import { fleetOf } from './railway-train.ts';
+import { legsLaid } from './railway-queries-route.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -63,7 +67,7 @@ import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-s
  * up way once Q7 is laid: trainPassesBy). */
 export const call = defineSystem(
   'rail.call',
-  { reads: [Rail, QJob, Aperture], writes: [Train, Line], phase: 'act', order: 32 },
+  { reads: [Rail, QJob, Aperture, Leg], writes: [Train, Line], phase: 'act', order: 32 },
   (w, { e, tick }: Act) => {
     const halt = railInt(e.id, RAIL_HALTS.length - 1) ? RAIL_HALTS[e.id] : undefined;
     if (!halt || (e.dir !== -1 && e.dir !== 1) || w.get(Rail, railId(w))!.trains < 0) return 0;
@@ -75,12 +79,14 @@ export const call = defineSystem(
     if (trainPassesBy(halt.line, halt.stop, dir, n)) return 0;
     const wait = (slot: number) => {
       const r = w.get(Train, trainId(w, slot))!;
+      // A shed train (the greybox route's fleet) is not in service: never at a platform.
       if (r.phase === TRAIN_PHASE.STAND && r.at === halt.stop && trainDir(r) === dir && tick > r.depart)
         w.mut(Train, trainId(w, slot))!.depart = tick;
     };
     if (e.train !== undefined) {
       if (!railInt(e.train, RAIL_TRAINS.length - 1) || RAIL_TRAINS[e.train]!.line !== halt.line) return 0;
       const r = w.get(Train, trainId(w, e.train))!;
+      if (r.phase === TRAIN_PHASE.SHED) return 0;
       if (atEnd(halt.stop, stops) || trainDir(r) !== dir || reqHas(r.req, halt.stop, dir, n)) return 0;
       w.mut(Train, trainId(w, e.train))!.req = reqAdd(r.req, halt.stop, dir, n);
       wait(e.train);
@@ -126,8 +132,10 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
  * footings). Riders add no stop (the ruling of 12 November): they board and step off where a train already stands.
  * Trains run end to end on their track since v26, so no ask can turn one back short of an errand. */
 function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>): ServiceStop {
-  // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop).
-  const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir);
+  // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop); the greybox route's kit
+  // at its rack, on any line with an open leg (legKitService).
+  const route = legKitService(w, slot, r);
+  const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir) || route(k, dir);
   if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
   return (k, dir) =>
     freight(k, dir) ||
@@ -165,6 +173,8 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
     arrive(slot) {
       freightArrives(w, slot);
       ridersArrive(w, slot, pct);
+      // The greybox route: a leg's kit off at its rack (none while a Q job's kit is owed: one open leg comes after Q7).
+      legKitArrive(w, slot);
       if (!line2(slot)) return;
       const r = w.mut(Train, trainId(w, slot))!;
       // A kit unloads at its job's halt (Q6's at Far Head, Q7's at the Pier: call 62).
@@ -183,7 +193,10 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
       freightLoads(w, slot);
       // R3: riders waiting here to ride its way board, whatever it stopped for.
       ridersBoard(w, slot);
-      if (!line2(slot)) return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
+      if (!line2(slot)) {
+        if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
+        return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
+      }
       const r = row(slot);
       // A train standing at the Village takes line 2's boiler fit (ring-island-build2, R3): standing, so no leg in
       // flight changes speed.
@@ -224,11 +237,14 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
       }
       // After the rivet the kit car is the steel works' (ring-island-build2, R2): its kit's need loads here.
       if (r.at === 0 && kit < 0 && ringJoined(w)) steelLoads(w, trainId(w, slot));
-      return 'on';
+      // The greybox route: the open leg's kit loads at the kit halt (never alongside a Q job's: legs open after Q7).
+      return legKitLoad(w, slot, tick);
     },
     // The footing wagon's train is never held for headway (nor by the balanced hold) while the pier or the ring still
     // owes footings (design review, 9; ring-island-build1, R3).
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
+    // The greybox route: the trains a line runs at its legs' stage (its fleet).
+    fleet: (line) => fleetOf(line, legsLaid(w)),
   };
 }
 function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
@@ -240,7 +256,7 @@ export const trainTick = defineSystem(
   'rail.trainTick',
   {
     reads: [QJob, Cart, Account],
-    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed],
+    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg],
     phase: 'tick',
     order: 3,
   },

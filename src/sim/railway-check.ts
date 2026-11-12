@@ -3,7 +3,7 @@
 //
 //   railwayCheck(world)            the load check: archetypes, counts, then every domain invariant on the world
 //                                  (accounts, piles, outcomes, catalog here; ./railway-check-line1.ts, -line2.ts,
-//                                  -trains.ts, -works.ts, -ring.ts, -trade.ts, -steel.ts; the conserved logs)
+//                                  -trains.ts, -works.ts, -ring.ts, -trade.ts, -steel.ts, -route.ts; the conserved logs)
 //
 // A build-out's component adds its check as its own function in its own railway-check-<domain>.ts, called from
 // checkRailway, and one entry per `throw` to test/fixtures/railway-bad-worlds.ts.
@@ -15,6 +15,7 @@ import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
+import { RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
 import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWAY_PILES } from './railway.ts';
 import {
@@ -51,6 +52,9 @@ import {
   TIMING,
   Yard,
   YardClock,
+  Leg,
+  LegYard,
+  Route,
 } from './railway-components.ts';
 import {
   account,
@@ -76,6 +80,7 @@ import { checkWorks } from './railway-check-works.ts';
 import { checkRing } from './railway-check-ring.ts';
 import { checkTrade } from './railway-check-trade.ts';
 import { checkSteel } from './railway-check-steel.ts';
+import { checkRoute } from './railway-check-route.ts';
 
 const ARCHETYPES = [
   [Rail, RailClock],
@@ -100,6 +105,10 @@ const ARCHETYPES = [
   [Town, TownClock],
   [Till],
   [Steel, SteelClock],
+  // The greybox route.
+  [Leg],
+  [LegYard],
+  [Route],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the world. */
 export function railwayCheck(w: World) {
@@ -132,6 +141,9 @@ export function railwayCheck(w: World) {
     [Town, TRADE_TOWNS],
     [Till, 1],
     [Steel, 1],
+    [Leg, RAIL_LEGS.length],
+    [LegYard, RAIL_YARDS.length],
+    [Route, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
@@ -252,6 +264,7 @@ function checkRailway(w: World) {
   checkRing(w);
   checkTrade(w);
   checkSteel(w);
+  checkRoute(w);
   const counts = worldCounts(w);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) bad('conservation');
 }

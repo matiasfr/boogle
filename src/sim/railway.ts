@@ -55,6 +55,8 @@ export type RailAction = RailRequest & {
   part?: number;
   /** rail.wake: the rule tick its actor pressed at (the client's estimate); the server bounds it (railWakeTick). */
   tk?: number;
+  /** rail.legStock: the greybox route's leg (a RAIL_LEGS index) whose frame it feeds. */
+  leg?: number;
 };
 export const railInt = (v: unknown, max = RAILWAY_MAX_INT, min = 0): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max && !Object.is(v, -0);
