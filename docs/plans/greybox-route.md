@@ -471,9 +471,7 @@ points, so the prototype's lengths and every reference run moved; the new length
 | 3p eager, gorge first | 4.408 to 4.406 | 10.880 to 10.879 | 10 to 12 |
 
 The closed-form model's figures are unchanged. `dev/loop/standins.ts` reads the catalog, not these lengths, so it is
-unaffected. Figures in `docs/plans/campaign-outline.md` from the old lengths (not edited): line 88 (High Gorge 1.70 km),
-line 182 (stack line 1.7 km; bay trestle 1.43 km), line 188 (bay trestle 1.43 km), and probably lines 91 and 92 (1.68 km
-and 3.82 km, which include the cave and Wall links).
+unaffected. Figures in `docs/plans/campaign-outline.md` from the old lengths are corrected there (lines 88, 91, 92, 182 and 188, marked "ruled route, 12 November"); its modelled times are not recomputed, and a line under its table says so.
 
 1. **Do far legs ever take footings by hand?**
    - **No footings on any greybox bill; a sea leg's trestle rises with its section (recommended).** The route then

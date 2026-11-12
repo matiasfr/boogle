@@ -85,14 +85,16 @@ alternatives are flags (`--branch-first canopy`, `--one-branch`, `--bills 1.5`).
 | 1 | Home | Bot-timed (built) | | | 17 | 14 | 13 | 36 |
 | 2 | Split-rock Works | Bot-timed (built) | | | 8 | 9 | 9 | 36 |
 | 3 | Ring Island, build 1 | Bot-timed (built) | | | 8 | 8 | 8 | 36 |
-| 4 | High Gorge | Modelled | 160 | 1.70 km | 25 | 23 | 23 | 72 |
+| 4 | High Gorge | Modelled | 160 | 2.05 km (ruled route, 12 November) | 25 | 23 | 23 | 72 |
 | 5 | Bell Rock and the bay shortcut | Modelled | 154 | 2.38 km | 27 | 25 | 25 | 30 |
 | 6 | Canopy Town | Modelled | 156 | 1.20 km | 21 | 19 | 19 | 42 |
-| 7 | Sea cave, Saltpan, High Port | Modelled | 270 | 1.68 km | 41 | 37 | 37 | 48 |
-| 8 | The White Wall line | Modelled | 252 | 3.82 km | 35 | 32 | 32 | 48 |
+| 7 | Sea cave, Saltpan, High Port | Modelled | 270 | 1.73 km (ruled route, 12 November) | 41 | 37 | 37 | 48 |
+| 8 | The White Wall line | Modelled | 252 | 4.06 km (ruled route, 12 November) | 35 | 32 | 32 | 48 |
 | 9 | Lantern Notch, the causeway, the Original Island | Modelled | 25 | 1.63 km | 7 | 7 | 7 | 18 |
 | | **Whole route, minutes** | | 1,017 | 12.4 km | **191** | **173** | **175** | 366 |
 | | **Hours, and share of the six-hour target** | | | | **3:11 (53%)** | **2:53 (48%)** | **2:55 (49%)** | 6:06 |
+
+The modelled times in rows 4, 5, 7 and 8, the km total (12.4 km) and the whole-route minutes still rest on the old lengths (High Gorge 1.70, bay 1.43, cave leg 1.68, Wall 3.82 km); they are not recomputed. Rows 7 and 8 are leg totals, not single links: the cave leg's `seacave` link grew 688 to 740 m and the Wall's `wall-s` 1,849 to 2,109 m, and 1.73 and 4.06 km are the old leg figure plus the growth (row 8 as the route plan's 4.06 km). Row 5's 2.38 km is unchanged.
 
 **Measured:** rows 1 to 3 only, and by a bot: straight-line walking at 5.6 m/s, no rides, every press right first
 time. Nothing here is a person's time. **Modelled:** rows 4 to 9. Each bill is the main-route bill the economy model
@@ -179,13 +181,13 @@ every area is visited. So the live question is the order choice, not which area 
 | Gives | Copper; powered pick; hook reel | Fibre; carry sling; glider cloth |
 | Changes the play by | Height and machines: builds on the hook and the breaker | Range and load: builds on the glider, just used at the Meet |
 | Later locks it opens | The sea cave at Home (seen from spawn), the route's main double-back | The glide from Canopy's ledge to the Notch, the ending's approach |
-| If first, the rail built | Stack line 1.7 km, then the incline to Bell Rock 1.16 km | Bay trestle 1.43 km (built in this order only), then Bell Rock to Canopy 1.2 km |
+| If first, the rail built | Stack line 2.05 km (ruled route, 12 November), then the incline to Bell Rock 1.16 km | Bay trestle 1.58 km (ruled route, 12 November; built in this order only), then Bell Rock to Canopy 1.2 km |
 | Hard parts | The halt is at 3 m and the town at 85 m (a stair always, a lift from copper) | The largest walkable footprint; the line enters through a 70 m cleft in the Wall |
 | If cut | The sea cave and High Port lose their key; the Port's bill loses a material | The ending loses its glide and its ledge; seats lose fibre |
 
 **Recommendation (new): build both, High Gorge first, as one fixed order through the greybox and Alpha.** It gives the
 biggest contrast after a glide-heavy Ring Island, puts the day-one lock's key in hand earliest, and places glider cloth
-next to the glide that uses it. It cuts the bay trestle (1.43 km of single-use track), the second service plan, the
+next to the glide that uses it. It cuts the bay trestle (1.58 km of single-use track on the ruled route, 12 November), the second service plan, the
 second branch's either-material bills and one whole bot route and acceptance run: about half a unit of build and a
 quarter of the proving. The order choice stays in the data (`src/sickle/world-lines.ts` already carries both stage
 numbers) and can return for Beta if he wants it. This bends "your choice of order"

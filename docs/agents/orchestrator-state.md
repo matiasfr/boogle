@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 12 November about 07:00 UTC (11 November 23:00 PST), in the 11–12 November orchestrator session (started about 11:20 PST on 11 November; hourly heartbeat; wind-down at 11:00 PST on 12 November). World v28 is live (slice 5 R1+R2); main's CI takes about 5.5 minutes. Normal mode (Claude only) until 13 November; the models table puts player-visible work, reviews and design on Fable medium.
+**Updated:** 12 November about 15:00 UTC (07:00 PST), in the 11–12 November orchestrator session (started about 11:20 PST on 11 November; hourly heartbeat; wind-down at 11:00 PST, 19:00 UTC, on 12 November). World v30 is on main (slice 5 R1 to R3); main's CI takes about 5.5 minutes. Normal mode (Claude only) until 13 November; the models table puts player-visible work, reviews and design on Fable medium.
 
 ## Links
 
@@ -19,31 +19,34 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 **On main since 17:30 PST on 11 November (12 November UTC, newest last):**
 
-- #1622 rail kit levels and split rings (performance.md; the distance LOD). #1623–#1626 M13e–M13g close the ECS migration. #1628 the `?home=b` boot crash (sources inspect by slot). #1630 the adapter's clock is `adapter.read.tickNow()`: the adapter read cut, migration complete.
-- #1633–#1635: campaign outline fix, slice 5 plan with design review, the breaker prompt fix (3ae0dced6), the TRAA warm-up note. #1636 R5b: both Ring Island jump-ins, seed fixtures regenerated.
-- #1638 greybox route plan with design review. #1639 the owner's 14 answers. #1640 slice 5 stone-stop ruling (R2b spec). #1641 slice 5 R1+R2 (freight yards, plots staked by deliveries; WORLD_NS v28). #1642 greybox leg 1 step 1 (map data; 0 of 299 spans over 4%).
-- #1643 hub towns decision and proposal. #1644 market hub; #1645 its answer. #1646 economy-stops ruling. #1647 greybox leg 1 step 2 (`src/sim/railway-route.ts`, 22 sections, LegYard naming).
+- #1622 rail kit levels and split rings. #1623–#1626 M13e–M13g close the ECS migration. #1628 the `?home=b` boot crash. #1630 the adapter's clock is `adapter.read.tickNow()`.
+- #1633–#1636: campaign outline fix, slice 5 plan with design review, the breaker prompt fix, R5b (both Ring Island jump-ins). #1638 greybox route plan. #1639 the owner's 14 answers. #1640 slice 5 stone-stop ruling. #1641 slice 5 R1+R2 (v28). #1642 greybox leg 1 step 1. #1643 hub towns decision. #1644 market hub; #1645 its answer. #1646 economy-stops ruling. #1647 greybox leg 1 step 2 (`src/sim/railway-route.ts`).
+- Since 07:00 UTC: #1649 host hotfix (every room socket has an error listener, typeof checks, dropped count in status). #1650 slice 5 R2b, the Quarry stone stop (v29). #1651 Wall and Bell Rock design rulings. #1652 slice 5 R3, riders and fares (v30). #1653 greybox map rails and the economy model on the ruled route. #1654 Fares paid landing. #1655, #1656, #1658 greybox leg 1 step 3 design rulings. #1659 step 4 design answers and catalog positions. #1657 the ride-home fix (carry keeps the deck you ride; the parked track layer is stowed once Q7 is laid).
 
 **Owner decisions, 12 November UTC** (all in the log): the 14 answers ([core loop](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered), [rail](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered), [town economy](../decisions-rewards.md#d-2026-11-12-town-economy-answered)); hub towns (Home, Ring Island, High Gorge, Canopy Town, Port Quay; the others are sources: [entry](../decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight)); the market hub at Bell Rock, built out in stages ([entry](../decisions-rewards.md#d-2026-11-12-market-hub-answered)); the seed-fixture regeneration call (owner-calls).
 
-**Running (branch, state):**
+**BLOCKED ON THE OWNER (the top item): the platform wait limit.** Facts on main's method (5% of ticks an ask at a uniformly picked open halt, about 8 lever asks a minute; 10 ticks = 1 s; bound 1,050): main today holds on 48 of 48 seeds at 3,000 ticks at every stage; at 20,000 ticks 40 of 48 at gap-footed (worst 1,087) and 47 of 48 at ring-joined (worst 1,120), means 234 to 439, at most 0.12% of waits over 1,050. Build 2: about 1 seed in 24 over on every fleet (worst 1,100), handover 813 to 938. Greybox leg 1 (5 trains, line to High Gorge): settled mean 603 to 632, 5.5% of waits over 1,050, worst 1,343. The orchestrator's recommendation put to him: restate the limit as a rate, ship build 2 on it, do a train-spacing job before the greybox line. Until he answers neither ships.
+
+**Ready but not shipped:**
 
 | Branch | State |
 | --- | --- |
-| `ring2/rules` (Mac, worktree `.claude/worktrees/agent-a8f0bb88b7688c06c`) | Ring Island build 2. R1–R2 reviewed (ship after fixes, fixed); R3 reviewed (ship). R4 (server allow-list for `rail.install`, `rail.steelTake`, `rail.steel`; bump to v30) and R5 (bot, loop, seed) in progress by one agent. Needs an independent review, then ships as one outside the owner's sessions. Then views V1–V3 on Fable |
-| HOTBOX `rail/slice5-r2b-stone-stop-e` | Slice 5 R2b stone stop (v29; ship with notes). Adding a rack-kept-full delivery harness for gate 3 |
-| HOTBOX `rail/slice5-r3-fares-c`, rebuilt as `-d` | R3 riders and fares (v31 placeholder). Blocker: `Town.acc` replicates every tick; moving to a non-replicated `TownClock` |
+| `ring2/v3-garage` (local only, worktree `.claude/worktrees/agent-a8f0bb88b7688c06c`) | Ring Island build 2: rules R1–R5, views V1–V3 (the install is a plain hold at Home's table until the Home flip; the garage's moment waits), steel bot, v31. All reviews done (final review: ship after fixes, fixed); the bot's full loop passed (ring-joined to boiler installed); the all-longer fleet's wait is a TODO test. Needs: the owner's answer, a rebase onto whatever main is then, ship-check, a ship outside his sessions |
+| HOTBOX `wip/greybox-leg1-step3` (local, not on origin: the pre-push hook refuses until bump and fixtures) | Greybox leg 1 step 3 (rules): fleet 3 then 5, block signals at section ends, kit on at most running trains minus one, the stone stop allowed for a kit that cannot unload, call 88 ride-on, heads closing two lays on, catalog positions. Every gate passes except the wait gates 8 and 9 (printed, TODO, with the owner). Needs: the owner's answer, build 2 on main, rebase, steel-first, gate 15, bump (v32), fixtures, independent review, `test:net` |
 
-HOTBOX is a peer session (address under Peers). The Mac ships its branches when HOTBOX sends tips and stamps. HOTBOX then takes greybox leg 1 step 3 (rules): it starts only after R2b and R3 are on main and re-runs slice 5's seven-item gate.
+HOTBOX is a peer session (address under Peers). The Mac ships its branches when HOTBOX sends tips and stamps.
 
-**Bump order:** R2b v29, build 2 v30, R3 v31, greybox step 3 after; renumber at ship time.
+**Running at 15:00 UTC:** a planner writing `docs/plans/train-spacing.md`; an investigation of `test:net`'s one-off failures and the server suite's slow tests; the docs job that wrote this update.
 
-**Next, in order:** review and ship build 2 (load https://boogle.club/ after it); ship R2b, then R3; greybox step 3; views V1–V3; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)); trees, then shadow draws.
+**Bump order:** build 2 v31, greybox step 3 v32; renumber at ship time.
 
-**Waiting on the owner** (each proceeds on its recommendation):
+**Next, in order:** the owner's wait-limit answer; ship build 2 (load https://boogle.club/ after it); the train-spacing job; greybox step 3; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)); trees, then shadow draws.
+
+**Other open owner questions** (each proceeding on its recommendation; the wait limit is above):
 
 - "Cargo trains" A, B or C (A is built: no economy stop while footings are owed; B: stone always stops; C: dedicated cargo trains later), with the measured lock-out (wagon coupled, Q7 laid, ring unfooted: no scheduled stone, 16 for 20 minutes).
 - Three hub-town questions: does the Village receive far goods; what growing a hub town gives; stand-in towns in the greybox now.
+- The market shows goods without freight; the plain install prompt until the Home flip; leg 1's kit arriving by itself after the rivet; the last building platform kept as a request stop.
 - The full-load reading of "stops at all sources".
 - Older: his picks in the [story brief](https://claude.ai/artifact/F7U3suEtidLnJyyd3eK2Hk) (saving unconfirmed on his device: read `picks/owner`); the wing's folded size; the remote runner's five questions; the halt map at phone size. Eight server symlink tests fail on HOTBOX until he turns on Developer Mode there.
 
@@ -66,16 +69,26 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 15. Give a peer or agent the plan text on a pushed branch before asking it to build to a ruling; HOTBOX built two steps from a chat summary and had to reconcile.
 16. Before telling the owner he played, check the room: a tab the orchestrator left open on boogle.club logs as play sessions under the default name (the `freight-running-gm82nj` sessions on 12 November were the orchestrator's pane).
 17. The owner's earlier words are often in `docs/brainstorms` and `docs/plans/town-layout.md` under his own term (he says "rotunda" for the Roundhouse): search those before saying something is not in the plan.
+18. A probe that copies a test's fuzz must reproduce the test's own printed figures and ask rate before its numbers are used (HOTBOX's probe threw away two asks in three and every wait figure for a day was low).
+19. A bound proven on a test's own seeds is not proven: try 24 to 48 seeds and the long length before telling the owner a limit holds.
+20. When a gate fails, the designer restates it only where it measured the wrong thing; after two rounds the question goes to the owner as a choice.
+21. An agent must not edit files while its bot run is in flight (the edit reloads the page under the bot). Read a bot run's `verdict.json` yourself rather than waiting for the agent to say.
+22. The orchestrator's own browser checks log as play sessions under the default name (see 16).
 
 **Peers.** HOTBOX is the owner's Windows desktop; its peer session is "Orchestrator coordination for development", address `bridge:session_013GeHMBXhojhecCo8EUn8eh` (SendMessage; delivery is never confirmed but it answers). It shares the build load ([owner call](owner-calls.md)). D3D12 looks run there with `LOOK_CHANNEL=msedge`. `gh` and ffmpeg are installed there.
 
-**Housekeeping.** To clear at wind-down: many merged agent worktrees and branches; the `review/*` test branches (`review/ring2-rules-tests`, `review/ring2-r3-tests`); worktrees outside `.claude` (`boogle-freight-stops`, `boogle-hub-towns`, `boogle-economy-stops`, `boogle-test-speed` with `claude/test-speed`); `/private/tmp/claude-501/wt-main`; the five `archive/review/*` tags; `archive/place` (local only).
+**Housekeeping.** To clear at wind-down: many merged agent worktrees and branches; the `review/*` test branches (`review/ring2-rules-tests`, `review/ring2-r3-tests`); worktrees outside `.claude` (`boogle-freight-stops`, `boogle-hub-towns`, `boogle-economy-stops`, `boogle-design-legs`, `boogle-design-step3`, `boogle-design-step4`, `boogle-plan-spacing`, `boogle-test-speed` with `claude/test-speed`); `review/ring2-r4-tests` and `review/ring2-final`; `ring2/before-rebase-2` and `-3`; `/private/tmp/claude-501/wt-main`; the five `archive/review/*` tags; `archive/place` (local only).
 
 **Leftovers from 11–12 November, by rank:**
 
 - P2: `?home=b` draws 315 of 388 trees off the sim's positions.
 - P2: `railway-session.ts` is 573 lines against the 450 cap (needs a state object).
-- P2: the map JSON's own heights are stale, so `?blockout=world` and the 2D page draw platforms at new heights and rails at old ones; regenerate before the blockout is looked at again.
+- Closed: the map JSON's stale rail heights (#1653, `c9906f458`/`d0b43a588`: rails written from the catalog, a test fails on disagreement). The Ring Island ride-home drop is fixed (#1657, `c37c555d5`).
+- P2: the server has no last-resort crash handler and the rail step timer is unguarded (`server/src/index.ts:30-31`, `server/src/host/world-host.ts:482`, `src/world/sync.ts:391`). Classic rooms accept an array op and save it (`src/world/sync.ts` stamp).
+- P2: the track layer still parks on a running line at line 1 s 19–30 until the forge is lit and at each line 2 frontier.
+- P2: `test:net` failed one check on two runs (different checks) and four server tests timed out in a full run (GC while building late seed stages): under investigation.
+- P2: the headway hold never binds under lever asks (identical results at 75% and 0% on main).
+- P3: "Bring logs or rails" family and install prompt strings are placeholders; the longer engine is hard to tell apart without a side-by-side; steel's fourth car is not built; the garage tile in `?home=b` still reads "Needs steel" after an install.
 - P2: White Wall sections 437 to 850 m and both ending sections (865, 726 m) exceed the design review's 650 m guide; the designer rules before that leg is built.
 - P2: how the ring's goods reach Bell Rock (open design item).
 - P2: Port Quay's rotunda and the engine sheds are decided (10 November) but not drawn in map data.
