@@ -284,13 +284,28 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       map JSON's heights are not regenerated, so `?blockout=world` draws the new platforms and crossovers (from the
       catalog) on rails drawn from the old heights: regenerate the JSON's heights before the blockout is looked at
       again (src/proto/greybox/build.ts:457 is untouched). Row ids changed, so `dev/level/rail-map.ts` follows (its prose maps, `rail-map.html` regenerated).
-- [ ] **2. The catalog, pure (HOTBOX, S).** `git mv src/sickle/world-lines.ts src/sim/railway-world-lines.ts` (it is
+- [x] **2. The catalog, pure (HOTBOX, S).** `git mv src/sickle/world-lines.ts src/sim/railway-world-lines.ts` (it is
       written to the sim's rules; update the generator's path and the three readers). Create
       `src/sim/railway-route.ts` with the types above and all six legs' rows derived from it: `sectionsOf(leg, n)`
       cuts a leg into `n` equal sections on whole centimetres; `pathOf(pts)` samples a line every 10 m with
       `Math.sqrt` only. Verify: new `test/railway-route.test.ts`: every leg's sections cover its length exactly; bills
       match the table in section 1; each `after` and `needs` points backwards; the three long-range gates equal
       `standins.ts`'s `GATES`.
+      *As built (11 November):* `src/sim/railway-route.ts` holds eight `RAIL_LEGS` (stack, incline, bay-cut, bell-canopy,
+      cave, wall, notch-tunnel, causeway: legs 2 and 6 are two rows each, so "six legs" are eight entries) and 22 sections, per
+      the design review (change 4, call 21: 20 + 20 a section, the ending 6 + 6), not the section 1 table's 24 sections and
+      1,024 units. Sections end at places: equal cuts (`sectionsOf`) where the leg has no place on the way (the stack leg's
+      four of 510 m; the incline 2 x 568 m; bay-cut 2 x 604 m; bell-canopy 3 x 401 m), halts, and the Wall's islets
+      (measured on the map JSON: cm 192954, 265899, 420401, 478711; the Wall's sections run 523 to 845 m, over the 650 m guide
+      because 4.06 km in six cannot be less; the sixth, the deep gap, carries the `seeds` barrier, not "the fourth"). The
+      cave's far mouth is not in the map data: the West landing to Saltpan span is cut in halves. `RAIL_GRANTS` are four
+      (`pick`, `seeds`, `cloth`, `lantern`; the hook reel and sling are out, per the review) and `RAIL_GATES` six, standing
+      at their halt or frame (placeholder positions; step 4 moves pickups off the platform). `RAIL_PLACES` lists the pairs
+      that are one place (Ring Island halt, West landing, Gorge, Bell Rock, Canopy), tested within 40 m. Step 3 needs:
+      `ROW_LINE` (`ns`, `bay`, `cave` appended after line 2 as lines 2, 3, 4), one railhead halt per leg appended after each
+      row's catalog halts in `RAIL_LEGS` order (line 2: railhead 6, then High Gorge as `dest` 1 of the catalog row, which
+      step 3 maps to its own halt index), and the one yard (`gorge`, fed by the stack leg) used by the incline and causeway
+      kits. Nothing here is read by the sim yet. The catalog file moved with `git mv` to `src/sim/railway-world-lines.ts`.
 - [ ] **3. The rules (HOTBOX, L).** `railway-components.ts`: `Leg`, `Yard`, `Route`, spawned in catalog order in
       `createRailwayWorld`. New `railway-sys-route.ts`: `rail.legStock`, the lay tick (a section lays over
       `layTicks`, as a QJob does), `rail.grant`, `rail.gate`, `rail.arrive`. `railway-lines.ts`: line 2 gains a
