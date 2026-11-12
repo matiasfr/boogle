@@ -780,7 +780,15 @@ server lights the works: the sign reads "lit  steel n/12" and orange steel block
 the next train's kit car. Every label here is a placeholder. No sound or effect yet. **On the train (V2):** steel
 rides home as orange blocks on the kit car of whichever line 2 train took it, up to six; a train that has taken the
 longer boiler at the Village wears the longer engine (a longer frame and barrel ahead of the same cab), drawn only:
-its collider is the short engine's. The Roundhouse bay and the Install are the next step. Not tested on a device.
+its collider is the short engine's. **At Home (V3):** from the rivet a grey pallet and a post stand on the open ground
+east of the Roundhouse table, between line 2's two roads. Steel that has come home lies on the pallet as orange blocks,
+up to twelve, and the post's lamp turns orange. Standing by the post, "Install the longer boiler" is a hold of 1.2 s
+(the post's bar fills; a tap reads "Hold to install"); while the footing wagon is rolling out it shows blocked with
+"The table's busy". Nothing is predicted: when the server accepts, every page in the room shows the banner "Longer
+boiler installed / Line 2's trains take it at the Village", the lamp and bar go green and the prompt is gone; each
+line 2 train takes the boiler the next time it stands at the Village. The steel stays on the pallet (nothing spends
+it yet). No sound, no camera move. The garage's own install moment (`?home=b`) is not wired and waits for the Home
+flip. Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 

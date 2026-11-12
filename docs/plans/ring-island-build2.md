@@ -397,7 +397,7 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       (steel-lit) and `.look/v2-long-boiler-still.png` (boiler-long), `dev/look/evals/railway-steel-train.ts`. V1's
       prompts were pressed in a browser first (`dev/look/evals/railway-steel-prompts.ts`: take, feed, the blocked
       feed, rails, and the server lighting the works on the last feed). Not tested on a device.
-- [ ] **V3. The bay and the real Install (M, Mac).** Edit `roundhouse-view.ts` (a box stack in the bay from
+- [x] **V3. The bay and the real Install (M, Mac).** Edit `roundhouse-view.ts` (a box stack in the bay from
       `Shed.steel`; its position is set here and level-checked here), `garage-state.ts` (`roomFacts` gains
       `steelHome` and `longFitted`; the header's "nothing is sent" comment goes), `garage-data.ts` (the tile's
       standing from the facts; `BOILERS.long.speed` from `BOILER_SPEED`), `src/features/garage.ts` and
@@ -406,24 +406,45 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       else), `docs/game-design/` (the owning section). No dialog, no new moment. Proof: one look, two players,
       `--rail-seed steel-home`: one holds Install, both pages show the next line 2 train at the Village wearing the
       long boiler. **Visual review.**
-      _Not built (ring2/v3-garage, 12 November): **blocked, for the coordinator.**_ The garage and the server's install
-      point are in two different places. The garage is mounted only under `?home=b`, at layout B's table (world
-      x 942.1, z 17.1; its lever post at x 947.0, z 14.3). `rail.install` is judged at `SHED_TABLE` (x 918, z 12,
-      reach 6 m, from the position the action carries: `railValid`'s `at`, `world-host.ts`'s `reach`), 24.6 m from
-      that table and 29.0 m from the post, so every completed hold at the garage would be refused (worked from the
-      code; not exercised, the hold is not wired). On the default layout there is no post and no garage, so a live
-      player has no way to install: build 2 cannot be finished by a real player today. Making it work needs one of:
-      the garage mounted at the default table (view only, but the table sits between line 2's two roads, the
-      platform and the stall, `.look/v3-table-top-still.png`: the jib at bearing 105 and the stand land on track, so
-      it is a layout job, and it shows the garage's first build to every player); a plain "Install" hold at the
-      default table's rim outside the garage (a new prompt, against "the garage's existing Install"); or a rules
-      change to where the install is judged (not a view step). Nothing of V3 is built. **The fourth car** (owner,
-      12 November: steel's free first car arrives with the install) is a rules matter not in R3 and is the step after
-      build 2 (call 29): open, not built. **Changed here:** the `steel-home` landing only. The old spot (4 m west,
-      2 m south of the table) put the camera inside the stall's shell with the player out of frame
-      (`.look/v1-steel-home-jump-still.png`); it is now 5.2 m east and 1.7 m south, facing the table's centre, yaw
-      1.255, on open ground at 18.1 m, inside the table's reach (`.look/v3-steel-home-jump-still.png`: the player
-      mid-frame, the table ahead, the stall behind it, the forge to the right; default layout).
+      _As built (ring2/v3-garage, 12 November), on the coordinator's ruling, not the step:_ **a plain hold at the
+      default table, not the garage.** The step could not work as written: the garage mounts only under `?home=b`
+      at layout B's table (x 942.1, z 17.1; its post x 947.0, z 14.3), and `rail.install` is judged at
+      `SHED_TABLE` (x 918, z 12, reach 6 m, from the position the action carries), 29.0 m from that post, so every
+      hold there would be refused; the default layout has no garage. Ruling (orchestrator, Default, logged in
+      agent-calls): the install is a plain hold at the default table until the Home flip. One new file,
+      `src/entities/railway/boiler-install-view.ts` (`createBoilerInstall`), mounted by `works-live.ts`; it reads
+      `Shed`, `Line`, `Aperture` and the trains' `wagon` off `adapter.read.world()` at the head of every entry
+      point and keeps nothing. Drawn from the rivet (`Aperture.joined`), with no colliders: **the bay** is a grey
+      pallet 5.7 m east and 1.8 m north of the table's centre, on the open ground between line 2's two roads (about
+      3 m clear of the road to the Village platform, clear of the deck, the stall road and line 2's frame), with up
+      to twelve orange blocks from `Shed.steel`; a post 5.2 m east (inside the 6 m reach) with a lamp (grey, orange
+      once steel is home, green once fitted) and the hold's bar. **The prompt** `railway-install`, "Install the
+      longer boiler": only while `Shed.steel > 0` and `Line.boiler` is 0, within 2.6 m of the post and 5.6 m of
+      the table's centre; blocked with "The table's busy" mid roll-out (the rule's refusal); a hold of 1.2 s (the
+      garage's Large hold), "Keep holding" while held, "Hold to install" for 1.5 s after a tap. There was no hold
+      prompt to follow, so the press starts it and a wrap on the interact action's release ends it. The completed
+      hold calls `installBoiler(line(w, LINE2).boiler)` and hides the prompt for up to 4 s for the answer. **Not
+      predicted:** on the accepted `rail.install` every page plays the shared moment "longer boiler" (the existing
+      banner, "Longer boiler installed" over "Line 2's trains take it at the Village", 4.5 s, and a playtest mark);
+      the lamp and bar follow the rows, so a restore or late join gets them green with no banner. The banner is
+      room-wide, as the other shared moments (not "near" only). No sound, camera or new effect.
+      **Not built from the step:** nothing in `roundhouse-view.ts`, `garage-state.ts`, `garage-data.ts`,
+      `garage.ts` or `garage-view.ts` (the garage stays a view-only Try it; its headers stay true; its tile still
+      reads "Needs steel"); no whistle for an away tab; no two-player look. **The fourth car** (owner, 12 November:
+      steel's free first car arrives with the install) is a rules matter not in R3 and is the step after build 2
+      (call 29): open, not built. **The `steel-home` landing** moved: the old spot (4 m west, 2 m south) put the
+      camera inside the stall's shell (`.look/v1-steel-home-jump-still.png`); now 5.2 m east, 1.7 m south, yaw
+      1.255, facing the table (`.look/v3-steel-home-jump-still.png`). **Looks** (default layout, the game's
+      camera, `dev/look/evals/railway-install.ts`): `.look/v3-install-prompt-still.png` (the prompt over the
+      post, the orange lamp, five blocks on the pallet) and `.look/v3-install-after-still.png` (the banner, the
+      lamp and bar green, no prompt). Rows after the server confirmed: `Line.boiler` 1, `Line.fitted` 12675; a
+      tap installed nothing; a line 2 train (slot 1) wore boiler 1 standing at the Village 45.6 s after the install
+      (the other two were not waited for). The hold's 1.2 s was not timed in real time (the look's clock is
+      warped), and the touch button's release was not exercised: if it never reaches the action's release, a tap
+      on touch completes the hold. `npm run level-check` passes; it does not know the pallet (no collider), whose
+      clearance is the stills' and the arithmetic above. Not tested on a device.
+      **Open, for the Home flip:** when Home flips to layout B, `SHED_TABLE` moves to layout B's table (a rules
+      change with its own bump) and the garage's Install replaces this prompt, with its moment on the accepted event.
 - [ ] **Checkpoint B (views).** `npm run check`; `npm run perf` at the island halt and the Roundhouse, before and
       after, reported; the two looks above; one device run (`npm run device`) or the line "not tested on a device".
 - [ ] **T. The train through the ring: a layout and a still, no rules (S, Mac; waits for question 1).** A planned
