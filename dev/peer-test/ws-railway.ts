@@ -102,7 +102,16 @@ export async function railwayChecks(c: Ctx) {
   );
   railCheck(
     'both mirrors show the wake finish on its schedule',
-    (await waitFor(async () => (await Promise.all([RA, RB].map(rail))).every((s) => s.phase === 'idle'))) >= 0,
+    (await waitFor(
+      async () =>
+        (await Promise.all([RA, RB].map(rail))).every(
+          (s) => s.phase === 'idle' && s.awake >= 0 && s.awake + RAILWAY_T1.wakeTicks <= s.tick,
+        ),
+      30000, // a ceiling: the wait is the wake's own ticks (awake + wakeTicks <= mirror tick), not a real-time budget
+      50,
+      async () =>
+        (await Promise.all([RA, RB].map(rail))).map((s) => ({ tick: s.tick, awake: s.awake, phase: s.phase })),
+    )) >= 0,
   );
   const chopA = { op: 'rail.chop', epoch: epochA, request: 2, id: RAILWAY_SOURCES[0]![0], yaw: 0, collapsed: false };
   await act(RA, chopA, 'source');
@@ -229,6 +238,16 @@ export async function railwayChecks(c: Ctx) {
       ),
     )) >= 0,
   );
+  // The schedule's own length bounds the wait: three times its ticks at 100 ms each (laying measured about 11 s).
+  const t1Ticks = (await rail(RA2)).scheduleTicks;
+  const laying = async () =>
+    (await Promise.all([RA2, RB, RC].map(rail))).map((s) => ({
+      tick: s.tick,
+      awake: s.awake,
+      phase: s.phase,
+      completion: s.counts.completion,
+      used: s.counts.used,
+    }));
   railCheck(
     'every mirror lays T1 from its start tick and opens T2',
     (await waitFor(
@@ -240,7 +259,9 @@ export async function railwayChecks(c: Ctx) {
             s.phase === 'idle' &&
             s.activeStation === 1,
         ),
-      20000,
+      t1Ticks * 100 * 3,
+      50,
+      laying,
     )) >= 0,
   );
   railCheck('mirrors agree after completion', await agree([RA2, RB, RC]));
@@ -793,8 +814,7 @@ export async function railwayRequestStop(c: Ctx) {
   // A plain mirror (no session) brings the room up; the seed loads before any player opens a session, since a load
   // replaces the accounts a live session's next action would read.
   const host = await c.web.open('Q-host', `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=reqhost`);
-  await waitFor(async () => !!c.hosted(roomId), 15000);
-  const world = c.hosted(roomId)!.world as RailwayWorldHost;
+  const world = await hostedWorld(c, roomId);
   await advancePast(world, seed.t + 5);
   world.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
   world.rules.railway.touchAll();
@@ -922,8 +942,7 @@ export async function railwayLeaf(c: Ctx) {
     `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=${pid}&lat=${lat}&adapter=1`;
   // As railwayRequestStop: a plain mirror brings the room up and the seed loads before any session opens.
   const host = await c.web.open('L-host', `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=leafhost`);
-  await waitFor(async () => !!c.hosted(roomId), 15000);
-  const world = c.hosted(roomId)!.world as RailwayWorldHost;
+  const world = await hostedWorld(c, roomId);
   await advancePast(world, seed.t + 5);
   world.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
   world.rules.railway.touchAll();
@@ -1081,6 +1100,15 @@ export async function railwayJumpIn(c: Ctx) {
 // it publishes) is durable, and that write lands only when the event loop runs: a plain synchronous step loop started
 // before then spins forever. So wait for startup, and yield whenever a step did not move the clock; every wait, a
 // stalled startup save included, shares one 30 s deadline.
+/** The room's hosted world once the server has it up; an assertion failure (not a TypeError) when it never does. */
+async function hostedWorld(c: Ctx, roomId: string): Promise<RailwayWorldHost> {
+  const up = await waitFor(async () => !!c.hosted(roomId), 15000);
+  const hosted = c.hosted(roomId);
+  if (up < 0 || !hosted)
+    throw new Error(`the server never hosted room ${roomId} within 15 s (room host missing under load?)`);
+  return hosted.world as RailwayWorldHost;
+}
+
 async function advancePast(world: RailwayWorldHost, tick: number) {
   const end = performance.now() + 30000;
   const held = () => new Error(`the room clock is held at tick ${world.sync.world.tick}`);
