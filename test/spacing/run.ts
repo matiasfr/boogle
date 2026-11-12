@@ -15,7 +15,14 @@
 // world hash every 1,000 ticks. `stages` builds every seed stage and prints its tick and hash.
 import { createHash } from 'node:crypto';
 import { mulberry32 } from '../../src/sim/rng.ts';
-import { RAIL_HALTS, RAIL_LINES, circuitAhead, circuitCm, circuitLen, trainPlaces } from '../../src/sim/railway-lines.ts';
+import {
+  RAIL_HALTS,
+  RAIL_LINES,
+  circuitAhead,
+  circuitCm,
+  circuitLen,
+  trainPlaces,
+} from '../../src/sim/railway-lines.ts';
 import { TRAIN, TRAIN_PHASE, lineStages, trainAlong, trainDir } from '../../src/sim/railway-train.ts';
 import * as trainsMod from '../../src/sim/railway-trains.ts';
 import * as sysTrains from '../../src/sim/railway-sys-trains.ts';
@@ -270,7 +277,17 @@ export function fuzz(stage: string, seed: number, headPct: number, ticks: number
         let t = track.get(key);
         if (!t) {
           askedN++;
-          t = { base: new Set(), cur: -1, curSince: w.t, curDist: 0, prevB: -1, through: [], passedAt: -1, lampOut: 0, forward: 0 };
+          t = {
+            base: new Set(),
+            cur: -1,
+            curSince: w.t,
+            curDist: 0,
+            prevB: -1,
+            through: [],
+            passedAt: -1,
+            lampOut: 0,
+            forward: 0,
+          };
           track.set(key, t);
         }
         const b = servedBy(h.stop, dir, false),
@@ -379,8 +396,15 @@ export function quiet(stage: string, seed: number, ticks: number, headPct = 75) 
     [...w.w.ids(c)].reduce((a, id) => a + f(w.w.get(c, id) as T), 0);
   const stone0 = sum<{ stone: number }>(Town, (r) => r.stone),
     fares0 = sum<{ landed: number }>(Till, (r) => r.landed);
+  // Footing deliveries and placings: the Works rack, the pier rack and set, the railhead rack and set.
   const footNow = () =>
-    `${sum<{ pierSet: number }>(Works, (r) => r.pierSet)}/${sum<{ set: number }>(Aperture, (r) => r.set)}`;
+    [
+      sum<{ rack: number }>(Works, (r) => r.rack),
+      sum<{ pierRack: number }>(Works, (r) => r.pierRack),
+      sum<{ pierSet: number }>(Works, (r) => r.pierSet),
+      sum<{ rack: number }>(Aperture, (r) => r.rack),
+      sum<{ set: number }>(Aperture, (r) => r.set),
+    ].join('/');
   let foot = footNow();
   const lastDep = new Map<number, number>();
   for (let k = 0; k < ticks; k++) {
