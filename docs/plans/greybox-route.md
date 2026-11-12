@@ -921,6 +921,7 @@ no op, no catalog change, no bump):
 **Owner question (one).** "Is it right that the market shows each connected place's goods without a train carrying
 them there?" **Recommended: yes**; it changes no line and keeps freight for the towns that use it. Until he answers:
 stalls are views, no market yard rows, no transfer, and the bay trestle stays out of the greybox.
+**Answered (owner, 12 November UTC): yes, for now (recommended).** Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered).
 
 ### Calls
 
@@ -1166,12 +1167,20 @@ Neither holds the build.
    - Leave it: waits up to about two and a half minutes are fine in a greybox, and the ends wait for the real
      stations.
    Answer: ___
+   **Answered (owner, 12 November UTC): "A looser rate for the greybox"**, whose text was: "Ship build 2 and leg 1 now
+   with waits up to about 2 minutes 15, and tighten when train spacing lands. The grey route arrives sooner and feels
+   slow at the platforms." Orchestrator's reading: until train spacing lands, gates 8 and 9 (and build 2's) are a
+   worst lever wait of 1,350 ticks settled and 1,600 while a line grows, mean and share over 1,050 printed and not
+   gated; [train-spacing](train-spacing.md#c-the-limit-as-a-rate)'s table is the target they tighten to. Recorded
+   in the [decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered).
 2. **"After the rivet, should the stack line's first kit come by itself while you work the steel, or only once the
    longer boiler is installed?"**
    - **By itself, the steel kit first (recommended; built until he answers).** Two jobs on the island at once; a
      room in a hurry can leave the boiler for later.
    - Only after the install. One job at a time, steel always done, and 6 to 9 minutes before the west shore wakes.
    Answer: ___
+   **Answered (owner, 12 November UTC): by itself, the steel kit first (recommended).** Recorded in the
+   [decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered).
 
 ### Rulings on the re-measure (designer, 2026-11-12, later the same day)
 
@@ -1283,9 +1292,11 @@ with build 2 and the town economy in, unless said. "Four seeds" are c0ffee, 777,
    kit or carrying one it can unload now. Timber unchanged.
 6. **Fares:** at least 40 a minute at every stage; neither crowd at `crowdCap` for 1,200 ticks running.
 7. **`npm run loop -- run`:** order and bills unmoved.
-8. **Waits, fixed stages 0 to 4:** worst at most 1,158, four seeds.
+8. **Waits, fixed stages 0 to 4:** worst at most 1,158, four seeds. _Owner, 12 November: until train spacing lands,
+   worst at most 1,350 on a settled stage and 1,600 while the line grows ([decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered))._
 9. **The settled fuzz,** 20,000 ticks from 4,000 after the Gorge opens, four seeds: worst at most 1,158, mean at most
-   525. The same at stage 0 with the leg open and nobody feeding.
+   525. The same at stage 0 with the leg open and nobody feeding. _Owner, 12 November: until train spacing lands,
+   worst at most 1,350; the mean and the share over 1,050 are printed, not gated (measured worst 1,343)._
 10. **The ride:** quiet round trip at most 1.2 times non-stop at every stage.
 11. **The whole-leg fuzz,** four seeds: the leg completes; worst wait at most 1,600; a train stands at the new
     railhead or the Gorge within 1,158 ticks of each section laying. With the hold at 0%, two seeds: the leg
@@ -1541,3 +1552,5 @@ It does not hold the build.
      so it costs no wait, and it is a place to get off over open water.
    - No: it goes when the Gorge opens, and the line is Ring Island to High Gorge with nothing between.
    Answer: ___
+   **Answered (owner, 12 November UTC): yes, as a request stop (recommended).** Recorded in the
+   [decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered).

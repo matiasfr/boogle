@@ -595,6 +595,7 @@ shipped, else bump B (a rule change, no shape change).
    **yes.** Every source is served with nobody asking, and a train stops about once in four minutes instead of every
    trip. The alternative, every down train stopping at the Quarry, costs 10.8 s on each trip for the rest of the
    game. Until he answers, R2b builds the full-load stop; switching is `loadStop` 8 to 1. Answer: ___
+   **Answered (owner, 12 November UTC): yes, the full-load stop (recommended).** Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered).
 
 ## Design review (designer, 2026-11-12): economy stops (R2b and R3)
 
@@ -700,3 +701,4 @@ footings are owed and the builder reports back. No result re-opens a rider stop 
    - **C.** A cargo train of its own on each line, hauled for at the garage, pulling into a short siding at each
      source so nothing queues behind it, with little guys on the passenger set. A later plan, after the greybox route.
    Recommended: **A now, C as where it ends up.** Until he answers, A is built; B is one clause removed. Answer: ___
+   **Answered (owner, 12 November UTC): "A now, C later" (recommended).** Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered).

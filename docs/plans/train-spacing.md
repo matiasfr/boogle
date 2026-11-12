@@ -1,6 +1,8 @@
 > **Status: plan for the designer's and the owner's review (12 November 2026).** Nothing is built or measured by the
 > planner: figures are the orchestrator's brief of 12 November (main's method) unless marked *arithmetic*. Section 1's
-> limit is a proposal; the owner has it open ([greybox-route](greybox-route.md#design-review-designer-2026-11-12-leg-1-step-3), question 1).
+> limit is a proposal. **Owner, 12 November UTC: "A looser rate for the greybox"** ([decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered)): build 2 and
+> greybox leg 1 ship now on a worst wait of 1,350 settled and 1,600 growing (orchestrator's reading), and the gates
+> tighten to [section C](#c-the-limit-as-a-rate)'s table when this plan's spacing lands. Questions 2 and 3 are open.
 
 # Train spacing: even gaps along a line, so waits stay short as lines grow
 
@@ -21,6 +23,10 @@ beat's bill, supply or cue changes; nothing is placed). **Inflight:** `ring2/v3-
 train files; greybox step 3, on another machine, adds block signals to `planLeg`. See Risks.
 
 ## 1. The player outcome, and the limit as a rate (proposal)
+
+_Owner, 12 November UTC: the looser rate for the greybox until spacing lands; this limit, as restated in
+[section C](#c-the-limit-as-a-rate) (mean at most 525, at most 1.0% over 1,050, none over 1,158 settled), is the target
+the gates tighten to when it does ([decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered))._
 
 You pull a lever and a train your way is usually there in under a minute, on the short line and on the long one. A
 train that runs past your lever is dark and the lit one is close behind it. Nobody sits on a train queued outside a
@@ -240,7 +246,7 @@ For the owner; none holds steps 0 to 2. Planner's own: none beyond "could not de
 
 1. **"Should platform waits be judged by the single worst wait ever seen, or by how often a wait is long?"** **By
    how often (recommended):** typically under 52 s, at most one in a hundred over 105 s, never over 116 s on a
-   finished line. Or keep the single worst wait at 105 s. Answer: ___
+   finished line. Or keep the single worst wait at 105 s. Answer: replaced by the review's question 1, answered below.
 2. **"May a train run past your pulled lever when another is about 20 s behind it and will stop for you?"** **Yes
    (recommended):** the passing train is dark, the lit one in sight, and nobody is held. Or no: the nearest train
    always stops, and evenness comes only from holding trains. Answer: ___
@@ -503,6 +509,9 @@ These replace the plan's three. None holds steps 0 to 2 or the build.
      test. Build 2 and the greybox line ship meanwhile, and evening the trains out is the next rail job.
    - Keep the single worst wait at 105 s: build 2 and the greybox line wait for the spacing work.
    Answer: ___
+   **Answered (owner, 12 November UTC): "A looser rate for the greybox"**: "Ship build 2 and leg 1 now with waits up
+   to about 2 minutes 15, and tighten when train spacing lands. The grey route arrives sooner and feels slow at the
+   platforms." Recorded in the [decisions](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered).
 2. **"May an ordinary train run past your pulled lever when another is about 20 s behind it and will stop for you?"**
    - **Yes (recommended; built until he answers):** your lever stays pulled, the train that will stop is lit and
      marked on the halt's map, the one running through whistles, and a friend aboard it can still stop it with the

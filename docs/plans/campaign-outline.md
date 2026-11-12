@@ -477,10 +477,13 @@ hubs?" is answered: larger hubs only.
 
 1. **Does the Village also receive what the far sources make?** Recommended: no; each town takes its neighbours'
    goods, so the Village keeps timber and stone and later gains steel. Until he answers: neighbours only.
+   **Answered (owner, 12 November UTC), no option picked; his note:** "I feel like resources when one goes to upgrade, should essentially live in a "shared pool" regardless of which hub they are stored at. essentially hub is pseudo connected across the world." Orchestrator's reading, for him to confirm: upgrades pay from one world-wide pool of each resource; what each town visibly receives stays neighbours only. Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool).
 2. **What should growing a hub town give?** Recommended: riders and fares, a building with a character, and its
    sources' upgrades; nothing the route needs. Until he answers: that list.
+   **Answered (owner, 12 November UTC): riders, a character's building, source upgrades (recommended).** Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered).
 3. **Do the stand-in towns go into the greybox now, or wait for each area's depth pass?** Recommended: now, at the
    minimum above. Until he answers: each hub leg not yet built carries one; nothing already built is redone.
+   **Answered (owner, 12 November UTC): now, at the minimum (recommended).** Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered).
 
 ## 7. Owner decisions
 

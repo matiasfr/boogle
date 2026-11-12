@@ -25,14 +25,14 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 **Owner decisions, 12 November UTC** (all in the log): the 14 answers ([core loop](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered), [rail](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered), [town economy](../decisions-rewards.md#d-2026-11-12-town-economy-answered)); hub towns (Home, Ring Island, High Gorge, Canopy Town, Port Quay; the others are sources: [entry](../decisions-rewards.md#d-2026-11-12-hub-towns-grow-and-receive-freight)); the market hub at Bell Rock, built out in stages ([entry](../decisions-rewards.md#d-2026-11-12-market-hub-answered)); the seed-fixture regeneration call (owner-calls).
 
-**BLOCKED ON THE OWNER (the top item): the platform wait limit.** Facts on main's method (5% of ticks an ask at a uniformly picked open halt, about 8 lever asks a minute; 10 ticks = 1 s; bound 1,050): main today holds on 48 of 48 seeds at 3,000 ticks at every stage; at 20,000 ticks 40 of 48 at gap-footed (worst 1,087) and 47 of 48 at ring-joined (worst 1,120), means 234 to 439, at most 0.12% of waits over 1,050. Build 2: about 1 seed in 24 over on every fleet (worst 1,100), handover 813 to 938. Greybox leg 1 (5 trains, line to High Gorge): settled mean 603 to 632, 5.5% of waits over 1,050, worst 1,343. The orchestrator's recommendation put to him: restate the limit as a rate, ship build 2 on it, do a train-spacing job before the greybox line. Until he answers neither ships.
+**Answered (owner, 12 November UTC): the platform wait limit.** He picked "A looser rate for the greybox": "Ship build 2 and leg 1 now with waits up to about 2 minutes 15, and tighten when train spacing lands." Orchestrator's reading ([entry](../decisions-rail.md#d-2026-11-12-greybox-waits-and-build-2-answered)): until train spacing lands, build 2's and leg 1's wait gates are a worst lever wait of 1,350 ticks settled and 1,600 growing (measured: build 2 worst 1,100; leg 1 settled 1,343, growing 1,408), mean and share over 1,050 printed, not gated; the [train-spacing](../plans/train-spacing.md#c-the-limit-as-a-rate) table is the target they tighten to. The same page answered the other open questions, each as recommended except the Village's far goods ([rewards](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered); the shared-pool note, [to confirm](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool)); the plain install stands until the Home flip, with "but prioritize the garage moment".
 
 **Ready but not shipped:**
 
 | Branch | State |
 | --- | --- |
-| `ring2/v3-garage` (local only, worktree `.claude/worktrees/agent-a8f0bb88b7688c06c`) | Ring Island build 2: rules R1–R5, views V1–V3 (the install is a plain hold at Home's table until the Home flip; the garage's moment waits), steel bot, v31. All reviews done (final review: ship after fixes, fixed); the bot's full loop passed (ring-joined to boiler installed); the all-longer fleet's wait is a TODO test. Needs: the owner's answer, a rebase onto whatever main is then, ship-check, a ship outside his sessions |
-| HOTBOX `wip/greybox-leg1-step3` (local, not on origin: the pre-push hook refuses until bump and fixtures) | Greybox leg 1 step 3 (rules): fleet 3 then 5, block signals at section ends, kit on at most running trains minus one, the stone stop allowed for a kit that cannot unload, call 88 ride-on, heads closing two lays on, catalog positions. Every gate passes except the wait gates 8 and 9 (printed, TODO, with the owner). Needs: the owner's answer, build 2 on main, rebase, steel-first, gate 15, bump (v32), fixtures, independent review, `test:net` |
+| Ring Island build 2 | On main: #1672 (`4e769acde`), world v31, shipped 12 November 20:15 UTC as `ring2/v4-garage` on the looser rate. The all-longer fleet's wait stays a TODO test; `server/test/railway-steel-host.test.ts` ran 4.8 s against its 5 s limit locally (P3: may flake) |
+| HOTBOX `wip/greybox-leg1-step3` (local, not on origin: the pre-push hook refuses until bump and fixtures) | Greybox leg 1 step 3 (rules): fleet 3 then 5, block signals at section ends, kit on at most running trains minus one, the stone stop allowed for a kit that cannot unload, call 88 ride-on, heads closing two lays on, catalog positions. Every gate passes except the wait gates 8 and 9 (printed, TODO; the owner's looser rate sets them). Needs (wait limit answered: gates 8 and 9 at 1,350 settled, 1,600 growing; build 2 is on main; HOTBOX is rebasing as `greybox/leg1-step3-v2`): rebase, steel-first, gate 15, bump (v32), fixtures, independent review, `test:net` |
 
 HOTBOX is a peer session (address under Peers). The Mac ships its branches when HOTBOX sends tips and stamps.
 
@@ -42,14 +42,12 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 
 **Bump order:** build 2 v31, greybox step 3 v32; renumber at ship time.
 
-**Next, in order:** the owner's wait-limit answer; ship build 2 (load https://boogle.club/ after it); the train-spacing job; greybox step 3; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)); trees, then shadow draws.
+**Next, in order:** greybox leg 1 step 3 (v32) and step 4 views on the looser rate; the garage's install moment (owner: prioritise); train spacing, then tighten the rate; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)); trees, then shadow draws.
 
-**Other open owner questions** (each proceeding on its recommendation; the wait limit is above):
+**Other open owner questions** (each proceeding on its recommendation):
 
-- "Cargo trains" A, B or C (A is built: no economy stop while footings are owed; B: stone always stops; C: dedicated cargo trains later), with the measured lock-out (wagon coupled, Q7 laid, ring unfooted: no scheduled stone, 16 for 20 minutes).
-- Three hub-town questions: does the Village receive far goods; what growing a hub town gives; stand-in towns in the greybox now.
-- The market shows goods without freight; the plain install prompt until the Home flip; leg 1's kit arriving by itself after the rivet; the last building platform kept as a request stop.
-- The full-load reading of "stops at all sources".
+- To confirm: the reading of his shared-pool note (upgrades pay from one world-wide pool; towns visibly receive neighbours' goods only), and how it meets "taken where it lies" ([entry](../decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool)).
+- Train spacing's questions 2 (a late train passes the ask back) and 3 (a capped hold at Ring Island).
 - Older: his picks in the [story brief](https://claude.ai/artifact/F7U3suEtidLnJyyd3eK2Hk) (saving unconfirmed on his device: read `picks/owner`); the wing's folded size; the remote runner's five questions; the halt map at phone size. Eight server symlink tests fail on HOTBOX until he turns on Developer Mode there.
 
 **Rules learned** (the lessons; the orchestrator keeps them):
