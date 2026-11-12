@@ -13,6 +13,7 @@ import {
 import { SEED_STAGES, TRAIN_STAGES } from '../src/sim/railway-seeds.ts';
 import { WORKS_STAGES } from '../src/sim/railway-seed-works.ts';
 import { RING_STAGES } from '../src/sim/railway-seed-ring.ts';
+import { STEEL_STAGES } from '../src/sim/railway-seed-steel.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../src/world/railway-namespace.ts';
 import { DEFAULT_ROOM } from '../src/constants.ts';
 
@@ -30,9 +31,9 @@ test('jump-in rows are unique, buildable and in route order', () => {
   );
 });
 
-test('the seed catalog holds every train, works and ring stage', () => {
+test('the seed catalog holds every train, works, ring and steel stage', () => {
   assert.equal(new Set(seeds).size, seeds.length);
-  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES]) assert.ok(seeds.includes(s), s);
+  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES, ...STEEL_STAGES]) assert.ok(seeds.includes(s), s);
 });
 
 test('jump room names stay readable and never match the shared room', () => {

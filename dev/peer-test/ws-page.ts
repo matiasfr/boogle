@@ -495,6 +495,12 @@ function startWorld(room: Room) {
           return adapter.turnTable(intent.to, intent.revision);
         case 'rail.brace':
           return adapter.braceLeaf();
+        case 'rail.steelTake':
+          return adapter.steelTake(intent.kind);
+        case 'rail.steel':
+          return adapter.feedSteel();
+        case 'rail.install':
+          return adapter.installBoiler(intent.revision);
       }
     };
   }

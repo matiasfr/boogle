@@ -34,6 +34,9 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.footSet': 'footing set',
     'rail.cradle': 'cradle rails',
     'rail.turn': 'table turned',
+    'rail.steelTake': 'steel kit taken',
+    'rail.steel': 'works fed',
+    'rail.install': 'boiler installed',
     'rail.depotTake': 'depot pick up',
     'rail.depotRailTake': 'depot pick up',
     'rail.deposit': 'deposit',
@@ -43,6 +46,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
   if (!name) return [];
   if ('station' in intent) data.station = intent.station;
   if ('kind' in intent) data.material = intent.kind === 2 ? 'rails' : intent.kind === 1 ? 'stone' : 'logs';
+  if (intent.op === 'rail.steelTake') data.material = intent.kind === 1 ? 'rails' : 'logs';
   if (intent.op === 'rail.beamDeposit') data.material = 'beam';
   if (intent.op === 'rail.depotTake') data.material = 'logs';
   if (intent.op === 'rail.depotRailTake') data.material = 'rails';

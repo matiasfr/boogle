@@ -19,6 +19,7 @@ import type { World } from '../src/ecs/index.ts';
 import {
   account,
   act as seedAct,
+  buildSeedWorld,
   advance as seedAdvance,
   beam,
   boiler,
@@ -45,11 +46,13 @@ import {
   rock,
   rocks,
   shed,
+  steel,
   train,
   trains,
   trees,
   works,
 } from './helpers/rail.ts';
+import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { railPanelCount, railPhase } from '../src/sim/railway-queries-line1.ts';
 import { line2SeaOpen, railCounts } from '../src/sim/railway-queries-line2.ts';
@@ -739,4 +742,109 @@ test('the kiln lit, the cradle fitted and the wagon rolling out are never predic
   assert.equal(shed(s.w).ready, -1, 'fitted, the table still facing the stall');
   assert.equal(seedAct(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
   assert.equal(shed(s.w).ready, s.t + WORKS.rollTicks);
+});
+
+// Ring Island's steel works (ring-island-build2, R4): the yard take and the feed are predicted like the kiln's; the
+// works lit by the feed that fills the bill is the server's, and the install is never predicted.
+test('the steel works: its yard take and feed are predicted, its lighting and the install are not', () => {
+  const w = buildSeedWorld('steel-kit');
+  const a = () => account(w.w, 'a')!;
+  const shown0 = shownOf(w.w);
+  const take = { op: 'rail.steelTake', kind: 1, epoch: a().epoch, request: a().request + 1 };
+  const got = railPredict(shown0, 'a', take, w.t);
+  assert.ok(got.n > 0, 'rails off the yard on the press');
+  assert.equal(steel(shown0).yardRails, STEEL.rails - got.n);
+  assert.deepEqual([got.effect!.carried, got.effect!.level], [account(shown0, 'a')!.rails, STEEL.rails - got.n]);
+  // Feed everything but the last back, then predict the feed that fills the bill.
+  for (let guard = 0; ; guard++) {
+    assert.ok(guard < 16);
+    const kind = steel(w.w).yardLogs ? 0 : 1;
+    seedAct(w, 'a', 'rail.steelTake', { kind });
+    if (steel(w.w).yardLogs + steel(w.w).yardRails === 0) break;
+    seedAct(w, 'a', 'rail.steel');
+  }
+  const shown = shownOf(w.w);
+  const feed = { op: 'rail.steel', epoch: a().epoch, request: a().request + 1 };
+  assert.ok(railPredict(shown, 'a', feed, w.t).n > 0);
+  assert.deepEqual(
+    [steel(shown).logs, steel(shown).rails, steel(shown).lit],
+    [STEEL.logs, STEEL.rails, -1],
+    'full, lit by the server',
+  );
+  assert.ok(seedAct(w, 'a', 'rail.steel') > 0);
+  assert.equal(steel(w.w).lit, w.t, 'lit on the server');
+  const install = { op: 'rail.install', line: 1, part: 1, revision: 0, epoch: a().epoch, request: a().request + 1 };
+  assert.equal(RAIL_PREDICTED.has('rail.install'), false);
+  assert.equal(railPredict(shownOf(w.w), 'a', install, w.t).n, 0);
+});
+
+test('a steel kit take a friend beat you to comes back as onCorrected', () => {
+  const seed = buildSeedWorld('steel-kit'),
+    r = room();
+  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
+  r.api.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())));
+  r.api.touchAll();
+  r.join('a');
+  r.pump();
+  agree(r, 'a');
+  const adapter = createRailwayAdapter({
+    mirror: r.mirrors.get('a')!,
+    movement: () => ({
+      ...railMovement({ get: (k) => specOf(k)!.def }),
+      beamSoloSpeed: 2,
+      beamHelpSpeed: 5,
+      jumpImpulse: 6,
+      jumpTurn: 1,
+      jumpSteer: 25,
+      jumpApexSpeed: 1,
+    }),
+    pid: 'a',
+    pose: () => ({ x: 4455, y: 9, z: 0 }),
+    now: () => 1000,
+  });
+  let hear: ((message: unknown, from: string) => void) | undefined;
+  const sent: Record<string, unknown>[] = [],
+    corrections: RailwayCorrection[] = [];
+  adapter.onCorrected((c) => corrections.push(c));
+  adapter.attach({
+    selfId: 'a',
+    send: (m) => void sent.push((m as { e: Record<string, unknown> }).e),
+    onMessage: (fn) => {
+      hear = fn;
+      return () => {};
+    },
+    onConnection: () => () => {},
+  });
+  const server = (pid: string, e: Record<string, unknown>) => {
+    const acc = r.api.account(pid)!;
+    return r.api.act(pid, { epoch: acc.epoch, request: acc.request + 1, ...e } as RailAction, anywhere);
+  };
+  hear!(
+    { t: 'r:session', to: 'a', epoch: r.api.account('a')!.epoch, next: r.api.account('a')!.request + 1 },
+    SERVER_ID,
+  );
+  r.pump();
+  assert.equal(steel(r.api.world()).yardLogs, STEEL.logs);
+  // A friend takes the rails and puts them down beside the yard (the mirror is current once a change reaches it).
+  assert.equal(server('b', { op: 'rail.steelTake', kind: 1 }).status, 'accepted');
+  const rails = account(r.api.world(), 'b')!.rails;
+  assert.equal(server('b', { op: 'rail.drop', x: 0, y: 900, z: 0, n: rails, kind: 2 }).status, 'accepted');
+  r.pump();
+  assert.equal(adapter.steelTake(0), true, 'predicted on the press');
+  assert.ok(account(adapter.read.world(), 'a')!.carry > 0);
+  assert.equal(server('b', { op: 'rail.steelTake', kind: 0 }).status, 'accepted', 'the friend got there first');
+  assert.equal(steel(r.api.world()).yardLogs, 0);
+  const e = sent.at(-1)!;
+  assert.equal(e.op, 'rail.steelTake');
+  assert.equal(r.api.act('a', e as RailAction, anywhere).status, 'noop');
+  r.replication.ack('a', e.epoch as number, e.request as number);
+  r.pump();
+  assert.equal(adapter.read.pending(), 0);
+  assert.equal(account(adapter.read.world(), 'a')!.carry, 0, 'the logs go back');
+  assert.deepEqual(
+    corrections.map((c) => [c.event.op, c.lost > 0]),
+    [['rail.steelTake', true]],
+  );
+  adapter.dispose();
+  agree(r, 'a');
 });

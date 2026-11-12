@@ -29,6 +29,8 @@ import {
   Rail,
   RailClock,
   Rock,
+  Steel,
+  SteelClock,
   Train,
   Tree,
   Works,
@@ -49,15 +51,17 @@ import {
   qjobId,
   railId,
   scheduleOf,
+  steelId,
   worksId,
 } from './railway-queries.ts';
+import { STEEL } from './railway-ring-layout.ts';
 import { jobClock } from './railway-sys-core.ts';
 import { layLine1 } from './railway-sys-line1.ts';
 import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from './railway-sys-line2.ts';
 import { yardsAway } from './railway-sys-trade.ts';
 
 // ---------------------------------------------------------------- offline catch-up, sessions, supply, the beam
-/** The away credit's producers (./railway-away.ts): `ticks` of production for the forge's rack and the depot cart, as
+/** The away credit's producers (./railway-away.ts): `ticks` of production for the forge's rack, the depot cart and the steel works' rack, as
  * the rule tick would make them, never past the rack or the stretch's need, then slice 5's crate yards (the Yard rows,
  * yardsAway). Counted like a tick: poured and the depot's output grow with what is made. Applied before the funded job
  * finishes, so nothing is made for a stretch not yet reached. Returns the forge's and the cart's count (no caller reads
@@ -93,6 +97,21 @@ function awayCredit(w: World, ticks: number, tick: number) {
     Object.assign(w.mut(Cart, cartId(w))!, { phase: CART_PHASE.REST, depart: tick, from: 0 });
     made += n;
   }
+  // Ring Island's steel works (ring-island-build2, R4): its casts while away, as steelTick makes them, never past its
+  // rack or its total; counted in Steel.poured.
+  const sid = steelId(w);
+  if (w.get(Steel, sid)!.lit >= 0) {
+    const st = w.mut(Steel, sid)!;
+    const n = Math.min(STEEL.rackCap - st.rack, STEEL.total - st.poured, Math.floor(ticks / STEEL.castTicks));
+    if (n > 0) {
+      st.rack += n;
+      st.poured += n;
+    }
+    if (st.rack >= STEEL.rackCap || st.poured >= STEEL.total) {
+      const c = w.mut(SteelClock, sid)!;
+      c.lastCast = Math.max(c.lastCast, tick);
+    }
+  }
   // Slice 5's crate yards (R2): their own counter is Yard.made.
   yardsAway(w, ticks, tick);
   return made;
@@ -118,6 +137,8 @@ export const resume = defineSystem(
       Works,
       Yard,
       YardClock,
+      Steel,
+      SteelClock,
     ],
     phase: 'resume',
     order: 0,

@@ -1,5 +1,6 @@
 // Boiler and train call ops are never predicted: the unique boiler and route decisions wait for acceptance. Nor are the
-// Works' mechanism facts (rail.breaker, rail.strike, rail.turn): they wait for the server.
+// Works' mechanism facts (rail.breaker, rail.strike, rail.turn, rail.brace) or line 2's install (rail.install, v30):
+// they wait for the server.
 // Replication R1b (docs/plans/replication.md, section 2): what a client predicts of its own railway actions, and the
 // effect facts both ends compute for an accepted action. Headless and pure: the server runs railEffect after each
 // action it applies; a client runs railPredict on a clone of its confirmed world with the very same railApply (M12: the
@@ -7,7 +8,8 @@
 //
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
 //                                     depot and shelf takes, wake, lever, summit switch, pack, the kiln, footings and
-//                                     the cradle, the glider take); the rest wait for the server as in R1a
+//                                     the cradle, the glider take, the steel works' yard take and feed); the rest wait
+//                                     for the server as in R1a
 //   railPredict(w, pid, e, tick)      apply e to w (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
 //                                     fills is lit only when confirmed, and so are the Works' thresholds (the kiln lit,
@@ -42,6 +44,8 @@ import {
   QJobRun,
   Rail,
   Shed,
+  Steel,
+  SteelClock,
   Works,
   WorksClock,
 } from '../sim/railway-components.ts';
@@ -65,6 +69,8 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.footSet',
   'rail.cradle',
   'rail.glide',
+  'rail.steelTake',
+  'rail.steel',
 ]);
 /** Swing and unload cadence on the actor's own action clock (replication revision 1): the server refuses an action
  * closer than `ms - RAIL_CADENCE_SLACK_MS` to the last of its kind, and a client predicts the same check. */
@@ -103,11 +109,13 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
   const kind =
     e.op === 'rail.mine'
       ? 1
-      : e.op === 'rail.forgeTake' || e.op === 'rail.depotRailTake'
+      : e.op === 'rail.forgeTake' || e.op === 'rail.depotRailTake' || (e.op === 'rail.steelTake' && e.kind === 1)
         ? 2
-        : e.kind === 1 || e.kind === 2
-          ? e.kind
-          : 0;
+        : e.op === 'rail.steelTake'
+          ? 0
+          : e.kind === 1 || e.kind === 2
+            ? e.kind
+            : 0;
   const effect: RailEffect = { carried: kind === 1 ? a.stone : kind === 2 ? a.rails : a.carry };
   // A footing: what is on your back after it (0 or 1), and the count where it went or came from.
   if (
@@ -129,6 +137,11 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
       effect.carried = a.rails;
       effect.level = shed.cradleRails;
     }
+  }
+  // The steel works (v30): the yard's count of the kind taken, or the bill's fed logs and rails.
+  if (e.op === 'rail.steelTake' || e.op === 'rail.steel') {
+    const st = w.get(Steel, w.single(Steel))!;
+    effect.level = e.op === 'rail.steel' ? st.logs + st.rails : e.kind === 1 ? st.yardRails : st.yardLogs;
   }
   if (e.op === 'rail.drop') {
     let hit = 0;
@@ -191,6 +204,9 @@ export function railPredict(w: World, pid: string, e: RailAction, tick: number):
   // The leaf coming down under its fourth weight (v27) is the server's, like the crossing footed.
   const apId = w.single(Aperture),
     brace0 = w.get(Aperture, apId)!.brace;
+  // The steel works lit by the feed that fills its bill (v30), like the kiln.
+  const stId = w.single(Steel),
+    steel0 = [w.get(Steel, stId)!.lit, w.get(SteelClock, stId)!.lastCast] as const;
   let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
@@ -234,6 +250,10 @@ export function railPredict(w: World, pid: string, e: RailAction, tick: number):
   }
   if (shed.fitted !== shed0.fitted || shed.ready !== shed0.ready) Object.assign(w.mut(Shed, sid)!, shed0);
   if (w.get(Aperture, apId)!.brace !== brace0) w.mut(Aperture, apId)!.brace = brace0;
+  if (w.get(Steel, stId)!.lit !== steel0[0]) {
+    w.mut(Steel, stId)!.lit = steel0[0];
+    w.mut(SteelClock, stId)!.lastCast = steel0[1];
+  }
   const n = result.status === 'accepted' ? result.accepted : 0;
   return { n, effect: n > 0 ? railEffect(w, pid, e, before) : null };
 }
