@@ -10,6 +10,7 @@ import {
   renderFrame,
   graphicsFailed,
   guardGraphicsFrame,
+  drawable,
 } from './render/scene.ts';
 import { shouldRender } from './render/quality.ts';
 import { precompile, gpuDone, shadersMark, lateBuilt } from './render/precompile.ts';
@@ -97,6 +98,7 @@ function start() {
 
 async function play() {
   await Promise.all([waterReady, avatarReady]); // the real body and frozen sky precede the shader escape deadline
+  await drawable; // a first load with no size yet (a hidden pane) builds its screen targets once it has one
   // A cold Metal cache takes about 14 s on an M1 Max (docs/research/water-metal-cold.md). Slow GPUs (and software
   // rendering) can take longer: past 16 s the game opens anyway and the rest builds on.
   const giveUp = new Promise((r) => setTimeout(r, 16000));

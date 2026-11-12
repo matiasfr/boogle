@@ -3,7 +3,9 @@
 - [`scene.ts`](../scene.ts) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
   modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: the network and lobby start at once, and
   `main.ts` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
-  screen). Behind it, [`precompile.ts`](../precompile.ts) builds what the lobby view draws (its real frame, with Buddy
+  screen); it also waits for `drawable`, the canvas's first non-zero box, so a load into a hidden or 0x0 pane builds
+  no screen target until it is shown ([`drawable-size.ts`](../drawable-size.ts): the drawing buffer, the scene pass
+  and scaled targets such as water bloom never size below 1x1). Behind it, [`precompile.ts`](../precompile.ts) builds what the lobby view draws (its real frame, with Buddy
   in it so his shadow pipelines build too, plus the `warmUp()` objects that are not deferred); the rest of the scene
   builds after the loading screen lifts, in rings out from the camera: compileAsync for the camera pass, then the
   ring's shadow casters unculled a batch a frame (compileAsync builds only the camera pass). From the end of the first
