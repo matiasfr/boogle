@@ -155,10 +155,11 @@ export function line2Rides(bot: Bot) {
     return { slot, row, train, aboard };
   };
   /** Off a car over its side rail onto a platform at (x, z): W at it with a jump on each landing, as boarding does. */
-  const hopTo = async (x: number, z: number, beat: string, ms = 15000, r = 1.5) => {
+  const hopTo = async (x: number, z: number, beat: string, ms = 15000, r = 1.5, minY = -Infinity) => {
+    const there = () => Math.hypot(me.body!.position.x - x, me.body!.position.z - z) <= r && me.body!.position.y >= minY;
     const end = performance.now() + ms;
     try {
-      while (Math.hypot(me.body!.position.x - x, me.body!.position.z - z) > r && performance.now() < end) {
+      while (!there() && performance.now() < end) {
         face(x, z);
         input.keys.add('KeyW');
         if (me.coyote > 0) pressJump();
@@ -170,7 +171,7 @@ export function line2Rides(bot: Bot) {
       input.keys.delete('KeyW');
       releaseJump();
     }
-    check(Math.hypot(me.body!.position.x - x, me.body!.position.z - z) <= r, beat);
+    check(there(), beat);
   };
   return { ride, rideFrom, hopTo, view, until, check, face };
 }

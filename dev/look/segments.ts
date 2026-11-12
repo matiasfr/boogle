@@ -20,8 +20,9 @@ export const RAIL_STOPS = {
   Q6: 'Q6 laid',
   pier: 'pier',
   crossing: 'crossing footed',
-  // Ring Island's part (dev/look/bots/railway-ring.ts), from `--from gap-footed` or `leaf-raised`: these are its checkpoints.
+  // Ring Island's part (dev/look/bots/railway-ring.ts), from `--from deck-laid`, `gap-footed` or `leaf-raised`: these are its checkpoints.
   railhead: 'railhead reached',
+  'gap-footed': 'gap footed',
   gap: 'gap glided',
   braced: 'leaf braced',
   'ring-joined': 'ring joined',
@@ -34,6 +35,7 @@ export const RAIL_FROM = {
   'q5-done': { railFrom: 'boiler', after: 'Q5', bot: 'railway-b5b8-bot.ts' },
   'trains-on': { railFrom: 'q6', after: 'trains', bot: 'railway-b5b8-bot.ts' },
   // Ring Island build 1 (R5): the footed gap, the leaf raised on its pawl, the wagon's last four on the railhead rack.
+  'deck-laid': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
   'gap-footed': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
   'leaf-raised': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
