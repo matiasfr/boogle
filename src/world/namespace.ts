@@ -50,7 +50,10 @@
 // v28 (2026-11-11): slice 5's town economy, R1 (docs/plans/slice5-town-economy.md, bump A): `yard` (+`yardClock`) and
 // `town` components, `train.freight`, the rail.yardTick system; freight loads only where a train already stands (no
 // new stop); no migration.
-export const WORLD_NS = 'v28';
+// v29 (2026-11-12): slice 5's R2b (docs/plans/slice5-town-economy.md): line 2's homeward trains make a full-load stone
+// stop at the Quarry once the pier's twelve footings are set (`loadStop` 8, build-errand trains exempt, none while the
+// wagon is owed footings); a rule change, no shape change; no migration.
+export const WORLD_NS = 'v29';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
