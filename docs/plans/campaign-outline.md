@@ -58,9 +58,9 @@ World v27 on main. Abilities live in the rules: axe, double jump, pack, hook, gl
 
 | Stretch | Measured (people) | Bot-timed (headless loop, a lower bound) | Model's allowance |
 | --- | --- | --- | --- |
-| Home: wake to the pier (lines 1 and 2, forge, hook, glider, boiler, trains) | 24.0 min, two players, v24, 10 November; a fresh pair reached Far Head in 13.3 min on 9 November | 13:07 solo, 12:37 for four | 36 min |
-| Split-rock Works and the smallest Roundhouse: breaker to the last pier footing | 17.3 min, the same two players (before v25's request stops) | 9:11 solo | 36 min |
-| Ring Island build 1: Q7, the bents, the Meet | None yet | 8:07 solo | 36 min, with build 2 |
+| Home: wake to the pier (lines 1 and 2, forge, hook, glider, boiler, trains) | 24.0 min, two players, v24, 10 November; a fresh pair reached Far Head in 13.3 min on 9 November | 17:28 solo, 13:07 for three, 12:37 for four | 36 min |
+| Split-rock Works and the smallest Roundhouse: breaker to the last pier footing | 17.3 min, the same two players (before v25's request stops) | 8:28 solo, 9:11 for three | 36 min |
+| Ring Island build 1: Q7, the bents, the Meet | None yet | 8:05 solo, 8:07 for three | 36 min, with build 2 |
 | **Whole route, wake to the rivet** | **About 50 to 60 min, estimated**: 43.5 min measured to the last footing plus the Ring stretch | 34:01 solo straight-line, 40:09 calibrated; 29:12 and 32:51 for four | 108 min |
 
 Sources: [playtests](../playtests.md) (10 November, wake 05:19:00 to the last footing 06:02:32 UTC; 9 November co-op);
@@ -118,7 +118,7 @@ modelled minutes solo.
 **What this cannot tell.** Puzzles, discovery, looking for the next goal, first-time confusion, falls and retries,
 the ending, and any new verb (the lift, salt sliding, the lap): the stand-ins hold none. The economy model budgets
 160 of its 258 minutes for areas 4 to 9 as that authored play, and all of it is absent here. It also leaves out Ring
-Island build 2, town growth and Boogle goals, the five double-backs, waiting for trains, and the rides between areas.
+Island build 2, town growth and Boogle goals, the five double-backs, waiting for trains beyond the 25 s of dwell and boarding each ride already counts, and the rides between areas.
 People are slower than the bot: the one measured pair took 43.5 minutes to the last pier footing, where two bots take
 22:40, so 1.9 times. If that held for the whole route (an extrapolation from one session on a third of the game), two
 experienced players would take about 5.5 hours, and 3.6 at the floor.
