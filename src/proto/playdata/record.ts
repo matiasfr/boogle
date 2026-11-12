@@ -25,7 +25,7 @@ import { getRoomId, onNetState, onPeopleChanged, remotes } from '../../netplay/n
 import { coarseUa, firstFrame, scrub } from '../../netplay/report-format.ts';
 import { BUILD } from '../../build-id.ts';
 import { IDLE_S } from '../../../protos/store.ts';
-import { PROTO, protoV, pageQuery, productionRailway } from '../flags.ts';
+import { CARD, protoV, pageQuery, productionRailway } from '../flags.ts';
 import { railwayWorldRead } from '../../entities/railway/state.ts';
 import { qjob } from '../../sim/railway-rows.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
@@ -75,7 +75,7 @@ let backoff = SEND_MS;
 let sentBytes = 0;
 let stopped = false;
 
-const card = currentCard?.id ?? PROTO;
+const card = currentCard?.id ?? CARD;
 
 function push(k: string, fields: Record<string, string | number | boolean | null> = {}, ms?: number) {
   if (stopped) return;
@@ -270,7 +270,7 @@ onPlayMark((name, data: PlayData | undefined, ms) => {
     if (v !== undefined && !(k in fields) && k !== 't' && k !== 'k') fields[k] = v;
   push('m', fields, ms);
 });
-push('step', { card: PROTO, v: protoV(PROTO) });
+push('step', { card, v: protoV(card) });
 
 // ---------------------------------------------------------------- inputs, in summary
 const acts: Record<string, number> = {};

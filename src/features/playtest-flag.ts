@@ -1,6 +1,6 @@
 // The playtest flag (M, or d-pad right): a local bookmark in the playtest data, a `flag` mark with where you are and what
 // you are doing, so a moment can be found again without typing. No world change and no message; a tick is the only
-// acknowledgement. Live game only (?proto=place keeps its own, src/proto/place/flag.ts, until it is deleted).
+// acknowledgement. Live game only.
 // Serves the owner's call-first feedback (docs/agents/owner-calls.md).
 import { onStart } from '../loop.ts';
 import { productionRailway } from '../proto/flags.ts';

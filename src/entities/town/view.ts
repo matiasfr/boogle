@@ -2,8 +2,7 @@
 // shop's and museum's plots with their stake boards, and the residents who live in them. Which rooms stand and what's on
 // Pip's desk come from the town facts (src/sim/town-facts.ts), read from the shared railway, so everyone sees one town;
 // the cutaway, the indoor camera, the barks and what's drawn near you are Local; what the residents told you is Personal
-// Local (./memory.ts). The museum's 1:120 table shows the shared railway as it stands (place-retirement T3). Until place-retirement R3 the pieces load from src/proto/place with import(), as the railway's
-// view does.
+// Local (./memory.ts). The museum's 1:120 table shows the shared railway as it stands (place-retirement T3).
 import type { FrameCtx } from '../../loop.ts';
 import { conversation } from '../../player/conversation.ts';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';

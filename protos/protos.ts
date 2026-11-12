@@ -55,29 +55,12 @@ export const PROTOS: Proto[] = [
     title: 'A real place',
     step: 8,
     status: 'live',
-    url: '/?room=proto-place&proto=place',
+    url: '/',
     question: 'Did splitting up beat staying together?',
     what: 'In co-op, load rails onto the cart and ride to your partner, then carry a beam together and make a see-saw.',
     since: '2026-11-02',
     spawn: { x: 903, z: 14, yaw: -0.25 }, // at the village's edge, with the shelf, the path, the forge and the stub ahead
     verb: 'chops',
-    variants: [
-      {
-        name: 'fixed',
-        url: '/?proto=place&telescope=v2&v=fixed',
-        what: 'Did you want another look after something changed? The ridge telescope restores one railway-and-ring view.',
-      },
-      {
-        name: 'pan',
-        url: '/?proto=place&telescope=v2&v=pan',
-        what: 'The same telescope view and zoom, with a little optional bounded panning.',
-      },
-      {
-        name: 'village',
-        url: '/?proto=place&v=village&intro=1',
-        what: 'The previous village landing, for comparison with the walk up from shore.',
-      },
-    ],
   },
   {
     id: 'net',

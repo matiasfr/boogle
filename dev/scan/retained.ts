@@ -10,7 +10,6 @@ export const RETAINED: Record<string, string> = {
   'docs/research/notes/entity-architecture/dispatch-bench.ts':
     'Reproducible research benchmark, run directly with Node.',
   'native/guest/build.ts': 'Manual guest engine build documented in native/guest/README.md.',
-  'src/proto/place/ambience.ts': 'ambienceState is a documented manual browser listening inspection.',
   'src/player/identity.ts': 'adoptPid is the owner-kept transfer and account seam (docs/plans/0.1-groundwork.md).',
   'src/sim/tiers.ts': 'Held until rewards are designed (docs/decisions.md, Controls).',
 };

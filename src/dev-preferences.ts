@@ -18,11 +18,6 @@ const debugFlags = [
   'record',
   'startup',
   'tune',
-  'setup',
-  'fixture',
-  'test',
-  'scenario',
-  'destination',
   'graphicsMsaa',
   'graphics',
   'lookPreset',
@@ -37,11 +32,6 @@ export function clearDevPreferences() {
     } catch {
       /* private storage */
     }
-  }
-  try {
-    sessionStorage.removeItem('boogle.dev.launch.v1');
-  } catch {
-    /* private storage */
   }
 }
 export function devOffUrl() {

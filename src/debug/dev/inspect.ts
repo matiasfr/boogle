@@ -5,7 +5,7 @@ import { forEachStatic } from '../../physics/engine.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { waterRuntime } from '../../render/water-render.ts';
 import { me } from '../../player/state.ts';
-import { PROTO, productionRailway } from '../../proto/flags.ts';
+import { productionRailway } from '../../proto/flags.ts';
 import { inspectRailway, railwayWorldRead } from '../../entities/railway/state.ts';
 import { el, command, note, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
@@ -35,11 +35,7 @@ export async function inspectSummary() {
     player: p ? { x: p.x, y: p.y, z: p.z, swimming: me.swimming } : null,
     water: p ? waterField.nearby(p) : null,
     waterRuntime: waterRuntime.inspect(),
-    place: productionRailway
-      ? railwayDump()
-      : PROTO === 'place'
-        ? (await import('./place.ts')).inspectPlace()
-        : null,
+    place: productionRailway ? railwayDump() : null,
     queryNote: 'Synchronous nearby water query only; no new GPU readback requested.',
   };
 }

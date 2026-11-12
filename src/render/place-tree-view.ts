@@ -1,5 +1,4 @@
-// Local tree geometry, fall poses and colliders for the railway entity. Legacy Place still keeps its own copy in
-// src/proto/place/chop.ts until the town port retires it.
+// Local tree geometry, fall poses and colliders for the railway entity.
 // No material account, save, co-op or progression owner lives here.
 import * as THREE from 'three/webgpu';
 import { createTreeRoots, type TreeRoot } from './tree-roots.ts';

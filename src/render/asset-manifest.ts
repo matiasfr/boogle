@@ -17,7 +17,7 @@
 // multi-island world (matched once areas and eras exist; until then an asset that names one is never prefetched).
 // Local only: what one tab downloads changes nothing for anyone else.
 
-import { PROTO } from '../proto/flags.ts';
+import { CARD } from '../proto/flags.ts';
 
 export type Priority = 'first' | 'soon' | 'later';
 export type AssetKind = 'model' | 'texture' | 'audio' | 'data';
@@ -58,7 +58,7 @@ export function prefetchList(list: AssetEntry[], place: AssetPlace) {
   return list.filter((e) => e.priority === 'soon' && applies(e, place)).map((e) => e.url);
 }
 
-export const here = (): AssetPlace => ({ proto: PROTO || null });
+export const here = (): AssetPlace => ({ proto: CARD || null });
 
 type IdleWindow = { requestIdleCallback?: (fn: () => void, o?: { timeout: number }) => number };
 const idle = (fn: () => void) => {

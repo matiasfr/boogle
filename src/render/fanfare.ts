@@ -1,5 +1,5 @@
 // Shared bits of the mini-game toys: a personal best per toy in localStorage, synthesized sounds, confetti. All Local:
-// cosmetic, Math.random is fine. (The big world label is src/proto/place/label.ts, used only by Place.)
+// cosmetic, Math.random is fine.
 import * as THREE from 'three/webgpu';
 import { emit } from './particles.ts';
 import { CONFETTI } from './reward-particles.ts';

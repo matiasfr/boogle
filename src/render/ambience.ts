@@ -2,7 +2,7 @@
 // cosmetic, on the shared audio context's ambience bus (./audio.ts), so it starts after the first gesture, ducks under
 // voices and follows the player's volume. docs/research/audio-and-music.md, section 12: brown noise rather than hiss,
 // slow unrelated periods, one-shots far away on long gaps. Serves DESIGN.md 1 (Toys before chores: a place worth being in
-// with nothing to do). src/features/ambience.ts starts it in Place's world: the live game, and ?proto=place.
+// with nothing to do). src/features/ambience.ts starts it in the live game.
 //
 // Turn it off with &ambience=off; shift the whole bed with &ambience=-6 (dB). Everything else is in LEVELS and FEEL.
 import { dbToGain, getAudio } from './audio.ts';

@@ -53,7 +53,7 @@ const VALUES: Record<Operation, string[]> = {
 };
 const FLAGS: Record<Operation, string[]> = {
   look: ['--video', '--heatmap', '--hud', '--warp', '--real', '--curves'],
-  playthrough: ['--full', '--long', '--real', '--regenerate'],
+  playthrough: ['--full', '--long', '--real'],
   scenario: ['--no-trace'],
   'cold-start': ['--video-probe'],
   net: [],

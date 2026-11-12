@@ -1,45 +1,27 @@
 // Local launch flags: ?proto=<id>[&v=<variant>] runs one prototype. Cheap for eager loaders.
 import { DEFAULT_ROOM } from '../constants.ts';
 
-/** Effective launch flags. The address always wins; the bare address, and headless tools, open the current game.
- * The current game is Place's world run by the production railway, without rewriting the URL. */
+/** Effective launch flags. The address always wins; the bare address, and headless tools, open the current game in
+ * the room `boogle`. The retired `?proto=place` entry opens the current game too (ecs-m12-m13 M13e). */
 export function pageQuery(search = typeof location === 'undefined' ? '' : location.search): URLSearchParams {
   const q = new URLSearchParams(search);
-  if (!q.has('proto')) {
-    q.set('proto', 'place');
-    if (!q.has('room')) q.set('room', DEFAULT_ROOM);
-    if (!q.has('fresh')) q.set('fresh', '1');
-    if (!q.has('coop')) q.set('coop', '1');
-  }
-  if (q.get('proto') === 'place') {
-    const room = q.get('room');
-    const villageRoom = room === 'proto-place-village' || room === 'proto-place-village-coop';
-    if (q.get('v') === 'village' || villageRoom) {
-      q.set('v', 'village');
-      q.set('room', villageRoom ? room : q.get('coop') === '1' ? 'proto-place-village-coop' : 'proto-place-village');
-    } else if (!room) q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place');
-  }
+  if (q.get('proto') === 'place') q.delete('proto');
+  if (!q.has('proto') && !q.has('room')) q.set('room', DEFAULT_ROOM);
   return q;
 }
 
-/** The explicit address selects authority; the effective Place flag alone cannot distinguish the two entries. */
+/** The current game runs wherever the effective flags name no prototype. */
 export function isProductionRailway(search: string) {
-  return !new URLSearchParams(search).has('proto');
+  return !pageQuery(search).has('proto');
 }
 
 /** Invite the same entry and variant without copying local debug, save or presentation flags. */
 export function roomInviteQuery(room: string, search: string): string {
-  const address = new URLSearchParams(search);
   const flags = pageQuery(search);
   const invite = new URLSearchParams();
-  if (address.has('proto')) {
-    invite.set('proto', address.get('proto')!);
-    for (const key of ['v', 'coop']) if (flags.has(key)) invite.set(key, flags.get(key)!);
-    invite.set('room', room);
-  } else {
-    for (const key of ['v', 'coop']) if (address.has(key)) invite.set(key, address.get(key)!);
-    if (room !== DEFAULT_ROOM) invite.set('room', room);
-  }
+  if (flags.has('proto')) invite.set('proto', flags.get('proto')!);
+  for (const key of ['v', 'coop']) if (flags.has(key)) invite.set(key, flags.get(key)!);
+  if (flags.has('proto') || room !== DEFAULT_ROOM) invite.set('room', room);
   const query = invite.toString();
   return query ? `?${query}` : '';
 }
@@ -49,6 +31,8 @@ const q = pageQuery();
 export const productionRailway = typeof location !== 'undefined' && isProductionRailway(location.search);
 /** The page's `?proto=` ('' for none). */
 export const PROTO = q.get('proto') ?? '';
+/** The page's card id: its `?proto=`, or `place` for the current game (playtest history is keyed by it). */
+export const CARD = PROTO || (productionRailway ? 'place' : '');
 /** Whether prototype `id` runs on this page. */
 export const protoOn = (id: string): boolean => PROTO === id;
 /** The addressed variant ('' for the default). */

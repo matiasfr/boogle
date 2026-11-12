@@ -527,7 +527,7 @@ export function buildGreybox(map: Layout, ground: Ground, { review = true } = {}
     if (loops.length) boxes(loops, flat(UNBUILT, 0.7), root);
   }
 
-  // Lines 1 and 2's second track is built now (generic-lines step 2, src/proto/place/rail.ts): the live railway draws it,
+  // Lines 1 and 2's second track is built now (generic-lines step 2): the live railway draws it,
   // so the greybox no longer draws a survey bed beside them. LIVE_SECOND_TRACK stays the blockout page's record.
   {
     const mesh = new THREE.Mesh(mergeGeometries(beds), flat('#4a4038', 0.9));

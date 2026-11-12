@@ -1,6 +1,6 @@
 // The one presenter for the railway's full-screen moments, and the one check that says whether one is showing.
 //
-//   showMomentBanner(title, line, s)  Place's banner style (src/proto/place/celebrate.ts, showBanner): a big line and an
+//   showMomentBanner(title, line, s)  Place's banner style (its deleted celebrate.ts showBanner): a big line and an
 //                                     optional small one, high on the screen for a few seconds
 //   showActCard(card)                 the same element as a quiet full-screen title: "Act 2" over a camera move or live
 //                                     play, no panel, no input taken

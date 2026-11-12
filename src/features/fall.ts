@@ -5,7 +5,7 @@
 // explicitly. Serves DESIGN.md 10
 // (Slapstick over precision).
 import { isFirstVisit } from '../player/arrival.ts';
-import { PROTO, pageQuery } from '../proto/flags.ts';
+import { pageQuery, productionRailway } from '../proto/flags.ts';
 import { warmUp } from '../render/precompile.ts';
 import { fallArrival } from '../fall/arrival.ts';
 import { JUMP_ROOM_RE } from '../world/railway-jump.ts';
@@ -13,7 +13,7 @@ import { JUMP_ROOM_RE } from '../world/railway-jump.ts';
 const intro = pageQuery().get('intro');
 // A playtest jump room (docs/plans/playtest-jump-in.md) lands everyone at its segment, a first visit included.
 const jumpRoom = JUMP_ROOM_RE.test(pageQuery().get('room') ?? '');
-if (intro !== '0' && isFirstVisit() && PROTO === 'place' && !jumpRoom && (!navigator.webdriver || intro === '1')) {
+if (intro !== '0' && isFirstVisit() && productionRailway && !jumpRoom && (!navigator.webdriver || intro === '1')) {
   fallArrival.active = true; // before the place's asynchronous loader can position the player
   const loaded = (async () => {
     const [{ LANDING, toWorld }, { H }] = await Promise.all([

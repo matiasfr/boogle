@@ -5,13 +5,12 @@ import { releaseInput } from '../../player/input.ts';
 import { modalOpen } from '../../player/modal.ts';
 import { devInput } from '../../player/dev-input.ts';
 import { onKey, describeControl, isTyping } from '../../player/controls.ts';
-import { PROTO, productionRailway } from '../../proto/flags.ts';
+import { CARD, productionRailway } from '../../proto/flags.ts';
 import { SEA, SPAWN } from '../../constants.ts';
 import { groundHeight } from '../../island/heights.ts';
 import { MASSIF } from '../../island/shape.ts';
 import lighthouse from '../../pois/lighthouse/site.ts';
 import { ROUTE } from '../../sim/route.ts';
-import { destinationName, DESTINATIONS } from './fixtures.ts';
 import { el, button, command, note, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 
@@ -30,7 +29,10 @@ let removeInput = () => {};
 type Bookmark = { position: number[]; rotation: number[]; fov: number; route: string };
 const bookmarks = new Map<number, Bookmark>();
 const STORAGE = 'boogle.dev.camera.v1';
-const route = () => PROTO;
+const route = () => CARD;
+// Named viewpoints over the classic island; the current game has none (its Go to went with Place, M13e).
+const VIEWS = ['spawn', 'shore', 'shallow', 'deep', 'plunge', 'tower', 'head', 'forge', 'frame'] as const;
+const viewName = (value: unknown): value is (typeof VIEWS)[number] => VIEWS.some((id) => id === value);
 const vector = (v: unknown, n: number, bound: number): v is number[] =>
   Array.isArray(v) &&
   v.length === n &&
@@ -389,38 +391,27 @@ export const tool: Tool = {
       rotation.y -= Math.max(-100, Math.min(100, args.x)) * 0.005;
       rotation.x -= Math.max(-100, Math.min(100, args.y)) * 0.005;
     } else if (commandName === 'bookmark') {
-      if (!destinationName(args.destination)) return no('Choose a named bookmark.');
+      if (!viewName(args.destination)) return no('Choose a named bookmark.');
       if (productionRailway) return no('This bookmark is unavailable at this stage.');
-      if (PROTO === 'place') {
-        const target = (await import('./place.ts')).destination(args.destination);
-        if (!target) return no('This bookmark is unavailable at this stage.');
-        const result = start();
-        if (!result.ok) return result;
-        position.set(target.x + 12, target.y + 10, target.z + 14);
-        camera.position.copy(position);
-        camera.lookAt(target.x, target.y, target.z);
-        rotation.setFromQuaternion(camera.quaternion, 'YXZ');
-      } else {
-        const result = start();
-        if (!result.ok) return result;
-        const home: Record<string, [number, number]> = {
-          spawn: [SPAWN.x, SPAWN.z],
-          shore: homeCoast(SEA + 0.8),
-          shallow: homeCoast(SEA - 0.7),
-          deep: homeCoast(SEA - 5),
-          plunge: homeCoast(SEA - 5),
-          tower: [lighthouse.x, lighthouse.z],
-          head: [MASSIF.x, MASSIF.z],
-          forge: [ROUTE[0]!.x, ROUTE[0]!.z],
-          frame: [ROUTE[0]!.x, ROUTE[0]!.z],
-        };
-        const [x, z] = home[args.destination]!;
-        const y = Math.max(SEA, groundHeight(x, z));
-        position.set(x + 12, y + (args.destination === 'plunge' ? 35 : 12), z + 14);
-        camera.position.copy(position);
-        camera.lookAt(x, y, z);
-        rotation.setFromQuaternion(camera.quaternion, 'YXZ');
-      }
+      const result = start();
+      if (!result.ok) return result;
+      const home: Record<string, [number, number]> = {
+        spawn: [SPAWN.x, SPAWN.z],
+        shore: homeCoast(SEA + 0.8),
+        shallow: homeCoast(SEA - 0.7),
+        deep: homeCoast(SEA - 5),
+        plunge: homeCoast(SEA - 5),
+        tower: [lighthouse.x, lighthouse.z],
+        head: [MASSIF.x, MASSIF.z],
+        forge: [ROUTE[0]!.x, ROUTE[0]!.z],
+        frame: [ROUTE[0]!.x, ROUTE[0]!.z],
+      };
+      const [x, z] = home[args.destination]!;
+      const y = Math.max(SEA, groundHeight(x, z));
+      position.set(x + 12, y + (args.destination === 'plunge' ? 35 : 12), z + 14);
+      camera.position.copy(position);
+      camera.lookAt(x, y, z);
+      rotation.setFromQuaternion(camera.quaternion, 'YXZ');
     }
     clamp();
     return ok('Camera updated.', { position: position.toArray(), rotation: [rotation.x, rotation.y], fov: camera.fov });
@@ -443,7 +434,7 @@ export const tool: Tool = {
     command(parent, ctx, 'camera', 'Return to player camera', 'return');
     const views = el('select');
     views.setAttribute('aria-label', 'Camera viewpoint');
-    for (const destination of DESTINATIONS) {
+    for (const destination of VIEWS) {
       const option = el('option', destination);
       option.value = destination;
       views.append(option);

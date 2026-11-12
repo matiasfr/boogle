@@ -7,8 +7,7 @@
   else winds up a throw. Winding up a throw, you pick up nothing: an item already on its way goes back on the ground.
   The live game (the production railway room) offers no throw until replication R3 makes island throwing work, since
   its server refuses `gift.toss` (owner, 9 November, [decisions.md](../decisions.md)): there the click and RT wind up
-  nothing, and neither the name tag, the touch main button nor Toss says Throw, the ball included. `?proto=place`
-  throws as before.
+  nothing, and neither the name tag, the touch main button nor Toss says Throw, the ball included.
 - **Controls.** E / pad X picks up; use (click / pad RT); Toss on touch. No keys or buttons to change what you hold: no
   1-5, LB or RB (the owner cut the hotbar, 2 November: [decisions.md](../decisions.md)).
 - **Sync kind.** Local for what you hold; Owner for what others see (presence `hd`, a catalog index or −1). Items cross

@@ -28,7 +28,8 @@ surface gain 0.12/0.14/0.16 against current key/fill 1.12/3.2, softer 0.96/4, an
 Calibration/Buddy, town/doorway and shore/horizon are authored fixtures, not played progression. Cell 1 rebuilds
 the recorded morning settings on current source; it is not an archived morning screenshot. Defaults stay 0.12,
 1.12/3.2 and underwater +0.81 EV, retained by the owner's 6 November town-cell-1 choice. This historical wedge
-explicitly retains the original cloud/profile settings; `cloud-defaults.ts` compares the accepted combined look.
+explicitly retains the original cloud/profile settings; `cloud-defaults.ts` compared the accepted combined look (deleted
+at M13c).
 Material and later pipeline passes have not started.
 
 The colour audit corrects missing sRGB tags on the coloured canvas textures for honk sparkles, the frisbee
@@ -40,7 +41,7 @@ reward owners; physical boards receive scene light and shadows.
 
 ## Agent tuning proof (5 November 2026)
 
-`?proto=place&tune=1&t.post.centre=0.24` applies a Local surface gain after saved appearance restoration.
+`?tune=1&t.post.centre=0.24` applies a Local surface gain after saved appearance restoration.
 `boogle.dev.run('tunables', 'get', {id: 'post.centre'})` reports its resolved value and provenance; `set`
 uses the existing uniform binding, with no new pass, draw call or frame scan. Unsupported routes report
 reload-required. The value is transient, bounded to 0.01–2, and included with defaults, build and starting
@@ -48,7 +49,7 @@ setup in tuning snapshots and playtest data. Resetting it changes appearance onl
 
 ## Prepared evening preview (5 November 2026)
 
-Local, off by default: `?proto=place&evening=1` opens the authored evening; `&evening=preview`
+Local, off by default: `?evening=1` opens the authored evening; `&evening=preview`
 prepares both looks but opens in day. `setEveningLook(true | false)` from
 `src/render/water/evening-transition.ts` is the single future milestone seam: it starts a 0.45 s cover,
 exchanges the prepared package while fully covered, then reveals over 0.65 s. It returns false without
@@ -270,8 +271,7 @@ sea shader, splash droplets (`src/render/splash.ts`, the shared particle pool), 
 
 ## Production water tuning
 
-Open `?proto=place&tune=1` to tune the real sea on the place page, or append `&tune=1` to another
-Place or crossing room link. Dev visits also enable editable uniforms without `tune=1`. The dependency-free panel is dynamically imported into the Dev dock on the deployed build as well as locally.
+Open `?tune=1` to tune the real sea in the live game, or append `&tune=1` to a crossing room link. Dev visits also enable editable uniforms without `tune=1`. The dependency-free panel is dynamically imported into the Dev dock on the deployed build as well as locally.
 Without Dev/tuning opt-in it loads no panel code, CSS, DOM or saved overrides. These preferences belong to this viewer;
 they add no room state, messages, controls or gamepad slot. The cursor stays free on tuning visits; drag the scene
 to look around. The game keeps running while the panel takes mouse and keyboard events aimed at its controls.

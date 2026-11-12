@@ -257,20 +257,6 @@
   touch-action: none;
   user-select: none;
 }
-.dev-test {
-  position: fixed;
-  left: max(12px, env(safe-area-inset-left));
-  top: max(12px, env(safe-area-inset-top));
-  z-index: 100;
-  color: #182016;
-  background: #d6ef92;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font: 700 12px/1.4 system-ui;
-  pointer-events: none;
-  max-width: calc(100vw - 24px);
-  box-sizing: border-box;
-}
 .dev-page [data-water-panel] {
   position: static;
   width: 100%;

@@ -13,7 +13,7 @@
 
 /** Where the seven crystals stand, in Place's layout coordinates (the view puts them in the world with `toWorld` and the
  * land's height). On a lookout, through an arch, on a river bank, at the top of the ridge, behind the old kiln, by the old
- * cart, on the far table. Ported from src/proto/place/crystals.ts's SPOTS. */
+ * cart, on the far table. Ported from Place's crystals.ts SPOTS (archive/place). */
 export const CRYSTAL_SPOTS: readonly (readonly [x: number, z: number])[] = [
   [-111, -126],
   [-142, -66],

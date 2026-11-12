@@ -592,7 +592,7 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
   **Ledge proof.** On this branch: `service walkways: 2 routes, 322 centreline samples, 0 ledges over 0.3 m`. With
   the new route point of `c93503ac2` removed in a scratch edit (reverted, not committed): `1 ledges`, "hook deck 3:
   deck 4 stands 0.73 m above it near (989.7, 14.9)", the 0.73 m of that commit and the bot's stuck point.
-- [ ] **M13e. Delete Place.** _M, Medium. After M13b, c, d._ D1a, D1b, D1c as written; delete
+- [x] **M13e. Delete Place.** _M, Medium. After M13b, c, d._ D1a, D1b, D1c as written; delete
       `src/proto/place/` (44 files), `src/features/proto-place.ts`, `src/debug/dev/place.ts` and its callers'
       branches, `place-owner.ts`, the 230-line remainder of `rail.ts`.
   - **It changes what loads at startup.** On 11 November v27 broke the boot because `createStationBoxes` read
@@ -605,6 +605,44 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
     playthrough -- --to T2`; `?proto=place` opens the production game; first-load gzip reported.
   - **Reviewer attacks:** a module whose import ran a side effect the live game relied on (a `scene.add`, a CSS
     import, a `registerAction`); `asset-manifest.ts`'s `proto` key and the playdata card id (both stay `place`).
+
+  **As built (11 November, `ecs/m13e`, three commits: D1a-c, deletions, docs; not shipped).** Outside
+  `src/proto/place`, only `features/proto-place.ts`, `features/pause.ts` and `debug/dev/place.ts` imported it; `grep
+  -rn "proto/place" src` is now empty. `place-owner.ts` no longer existed. No file under `src/sim`, `src/net`,
+  `src/world`, `src/ecs` or `server/` changed; no wire, save or `WORLD_NS` change.
+
+  | File | Decision | Why |
+  | --- | --- | --- |
+  | `src/proto/flags.ts` | D1a | `pageQuery()` drops `proto=place` and sets only `room=boogle`; `isProductionRailway` reads the effective flags, so `?proto=place` opens the live game. New `CARD` (`place` for the live game) replaces six copies of "`PROTO` or `place`" |
+  | `features/{fall,proto-session,playdata,return-spot,ambience}.ts`, `proto/{card,playdata/record}.ts`, `render/asset-manifest.ts`, `debug/{prof-overlay,dev/tunables,dev/camera}.ts` | D1a | read `productionRailway` or `CARD`; card id stays `place` |
+  | `src/place/shore-layout.ts`, `terrain.ts` | D1a, consequence | `SHORE_COAST` always on and the `shelf=demo` A/B deleted: with `?proto=place` joining shared rooms, either flag would have changed a shared room's land |
+  | `protos/protos.ts`, `dev/registry/prototypes.ts`, `test/invite-flags.test.ts` | D1a | the card's URL is `/`, its variants go; the registry exempts it (no loader); the test now proves `?proto=place` is production |
+  | `features/pause.ts` | D1b | the Place branch of Get unstuck |
+  | `debug/dev/{place,fixtures,scenarios,destinations}.ts` | D1c delete | Place-only; the TEST badge, `dev-launch`, the Go to button and CSS, five `debugFlags` and the launch-record clear go; the report loses its setup link; camera bookmarks keep the classic views |
+  | `src/proto/place/` (44), `features/proto-place.ts` | delete | `archive/place` (local) holds them |
+  | `test/big-cargo`, `train-nudge`, `place-coop-snapshot` | delete | subjects were Place modules only |
+  | `dev/look/restore-pair.ts` (+test), `look.ts --restore-report`, `before-after --verify-restore` | delete | read Place's `job.ts` and saves; no current job |
+  | `docs/atlas/stories/coop.json` | delete | Place's peer co-op story, every cite deleted |
+  | `scan/retained.ts`, `scan/task-routes.ts`, `test/unit-select-review.test.ts`, `globals.d.ts`, `codex/look-broker.ts` (`--regenerate`), comments | text | named deleted files |
+  | current game-design docs, `cost.md`, the dev-menu atlas story | text | no longer describe `?proto=place`, Go to or Tests as live; `cloud-defaults.ts` in the past |
+
+  **Proof.** typecheck, lint, registry, ship-check, atlas test green. `level-check` output equals `f7ad5e062`'s but
+  for the source hash and timings. `node dev/live-boot.ts --offline` on the built site: PASS for `/` and
+  `/?proto=place`. `playthrough --to T2`: pass. Look `--rail-seed awake` at the village: forge frame, machine, houses,
+  Ring Island. Build: all JS 5,075,803 → 4,770,456 bytes (354 → 311 files); the bench's first load 7.23 → 7.02 MB,
+  gzip 2.65 → 2.57 MB; no Place string left in `dist`. `main-*.js` grew 510.5 → 530.8 kB because modules Place shared
+  merged into it; its static closure fell 2,529,100 → 2,520,768 bytes. Bench census (scene objects, meshes,
+  instances, casters) equal at `spawn` and `town`; calls and tris equal at both (spawn 331 / 458,103: main's first run read 330, its rerun 331, so one frustum-edge
+  draw, not this change).
+
+  **Left:** `check:full` not run (for the ship). `chopPresentation.twoHanded` has no switch now. Newly unused exports
+  (M13f's): `folk.ts` `pourOut`, `setRiders`, `resetFolk`, `setFolkEnv`, `setPushers`; `sites.ts` `clearDrops`,
+  `siteSmokes`; `seat.ts` `freeSeat`, `standUp`; `stations.ts` `flyToStock`; `residents.ts` `CAST`; `shore-layout.ts`
+  `SHORE_TOWN`, `SHORE_WORKER_LOOK`; `particle-effects.ts` `impactDust`, `cargoDust`; `wake-presentation.ts`
+  `scheduleWake`; `mark.ts` `playObjective`, `playWhere`; `feel-tuning.ts` `endFeelChop`; `chop-motion.ts` `CHOP_SIDE`;
+  `lookout/view.ts` `telescopeTuning`; and the line `SHORE_ASK` (The Boogler's-copy rule: kept, listed). `return-spot.ts`
+  never runs (it already did not). `?proto=place` comments in `src/place`, `src/entities` and `hands.ts`, the
+  `__placeDone` flag and `--place=` names stay for M13f and later.
 - [ ] **M13f. Owners for the moved modules.** _S each, Medium (render). After M13e (Place's callers are gone);
       three agents, no shared file._ **f1:** `src/entities/railway/{car,track-machine,seat,stations,machine-model}.ts`
       (the machine keeps order 7 through the owner's `animate`); **f2:** `src/place/{land,pieces,look-kit,look,folk}.ts`;

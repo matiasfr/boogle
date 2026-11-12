@@ -10,20 +10,17 @@ import { devInput } from '../player/dev-input.ts';
 import { isTyping } from '../player/controls.ts';
 import { modalOpen } from '../player/modal.ts';
 import { canvas } from '../render/scene.ts';
-import { fixture, fixtureReason, scenarioName, destinationName, VERSION } from './dev/fixtures.ts';
 import { el, button, note, more } from './dev/ui.ts';
 import { no, type Args, type Context, type Tool, type Result, type DockPanel } from './dev/types.ts';
 
 const entries: DockPanel[] = [
   { id: 'water', label: 'Water', load: () => import('./dev/water.ts') },
-  { id: 'destinations', label: 'Go to', load: () => import('./dev/destinations.ts') },
   { id: 'camera', label: 'Camera', load: () => import('./dev/camera.ts') },
   { id: 'inspect', label: 'Inspect', load: () => import('./dev/inspect.ts') },
   { id: 'performance', label: 'Perf', load: () => import('./dev/performance.ts') },
   { id: 'tunables', label: 'Audio mix', load: () => import('./dev/tunables.ts') },
   { id: 'room', label: 'Room', load: () => import('./dev/room.ts') },
   { id: 'report', label: 'Report', load: () => import('./dev/report.ts') },
-  { id: 'scenarios', label: 'Tests', load: () => import('./dev/scenarios.ts') },
 ];
 /** Register a lazy panel before or after installation, using the same bounded commands as its agent API. */
 export function registerDockPanel(panel: DockPanel) {
@@ -117,7 +114,6 @@ const context: Context = {
   close: () => collapse(),
   snapshot: () => ({
     build: BUILD,
-    fixture: fixture(),
     selected,
     position,
     collapsed,
@@ -125,7 +121,6 @@ const context: Context = {
     commands: [...history],
   }),
 };
-defineKind('dev-launch', { update: 10 });
 defineKind('dev-dock', {});
 export function installDevMenu() {
   // Optional panels register after this module loads, before installation.
@@ -371,12 +366,9 @@ export function installDevMenu() {
     }
   });
   report.dataset.devReport = '';
-  const goTo = button('Go to', () => show('destinations'));
-  goTo.dataset.devGoto = '';
   strip.append(
     cameraButton,
     returnButton,
-    goTo,
     report,
     button('Tools', () => show()),
     play,
@@ -387,8 +379,6 @@ export function installDevMenu() {
   document.body.append(shell);
   const pauseEntry = { id: 'dev', label: 'Dev', mount: () => () => {}, open: () => void show() };
   pausePages.push(pauseEntry);
-  let pending: ReturnType<typeof spawn> | null = null;
-  let badge: HTMLElement | null = null;
   let shellEntity: ReturnType<typeof spawn> | null = null;
   const dispose = () => {
     if (!alive) return;
@@ -398,8 +388,6 @@ export function installDevMenu() {
     disposeCameraControls();
     cameraModule?.returnCamera();
     for (const value of loaded.values()) value.dispose?.();
-    if (pending) despawn(pending);
-    badge?.remove();
     shell.remove();
     removeEventListener('dev-camera-change', updateCamera);
     removeEventListener('pagehide', dispose);
@@ -454,26 +442,4 @@ export function installDevMenu() {
   };
   layout();
   if (!collapsed) void show(selected);
-  const current = fixture();
-  if (current.launched && current.version === VERSION) {
-    badge = el('div', `TEST · ${current.scenario} · disposable solo`, 'dev-test');
-    badge.dataset.devTest = '';
-    document.body.append(badge);
-    let started = false;
-    pending = spawn({
-      kind: 'dev-launch',
-      update() {
-        if (started || fixtureReason() || (!me.swimming && (me.coyote <= 0 || Math.abs(me.body!.velocity.y) > 0.5)))
-          return;
-        started = true;
-        if (pending) despawn(pending);
-        pending = null;
-        void (async () => {
-          if (scenarioName(current.scenario)) await run('scenarios', 'apply', { scenario: current.scenario });
-          if (destinationName(current.destination) && current.destination !== 'spawn')
-            await run('destinations', 'go', { destination: current.destination });
-        })();
-      },
-    });
-  }
 }

@@ -16,7 +16,6 @@ const P1: [string, string, string][] = [
   ['src/entities/railway/leaf-view.ts', 'test/railway-m10a-views.test.ts', 'a folder URL over the views'],
   ['src/entities/railway/view.ts', 'test/railway-m10a-views.test.ts', 'a folder URL over the views'],
   ['src/boot/sw-worker.ts', 'test/sw-worker.test.ts', 'an esbuild entry'],
-  ['src/proto/place/coop.ts', 'test/place-coop-snapshot.test.ts', 'an esbuild entry'],
   ['src/proto/greybox/ground.ts', 'test/rail-map.test.ts', 'imported by the script it runs with --check'],
   ['dev/level/rail-map.ts', 'test/rail-map.test.ts', 'the script it runs with --check'],
   ['dev/level/world-blockout.ts', 'test/world-lines.test.ts', 'the script it runs with --check'],
