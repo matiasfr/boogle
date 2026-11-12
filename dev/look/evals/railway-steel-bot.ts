@@ -44,6 +44,11 @@ background(
       throw new Error('Steel seed did not arrive');
     await steelRoute({ bot, checkpoint: railCheckpoint(bot, 'Steel seeded', facts) });
     // The route's last beat: every line 2 train wears the longer boiler once the install has been adopted at the Village.
+    await bot.until(
+      () => LINE_SLOTS[LINE2]!.every((slot) => train(rw(), slot).boiler >= 1),
+      120000,
+      'Every line 2 train wears the longer boiler',
+    );
     bot.finish('Steel seeded to the longer boiler; no recovery');
   })().catch((error: unknown) => {
     bot.never(`Steel seeded: ${error instanceof Error ? error.message : String(error)}`);

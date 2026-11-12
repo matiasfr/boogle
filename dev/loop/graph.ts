@@ -313,7 +313,6 @@ for (const s of LINE2_STATIONS)
 const RULES_RING = 'src/sim/railway-sys-ring.ts';
 const RING_PLAN = 'docs/plans/ring-island-build1.md';
 const RULES_STEEL = 'src/sim/railway-sys-steel.ts';
-const STEEL_PLAN = 'docs/plans/ring-island-build2.md';
 // The steel works' kit rides line 2's trains to the island yard (ring-island-build2, R2): rails off the forge rack, logs
 // made at the Village; on foot, logs from the trees and rails from the forge rack.
 const steelKit = (foot: HandSupply): Supply => ({
@@ -881,7 +880,11 @@ export const NODES: readonly LoopNode[] = [
     stops: [],
     requires: [dec('rivet', 'rules', `${RULES_STEEL} steelLoads, steelArrives: ringJoined`)],
     cue: [
-      unbuilt("the kit's stacks in the yard and the bill sign over the works (0 of 8, 0 of 12)", `${STEEL_PLAN} V1`),
+      onMain(
+        'world',
+        "the kit's stacks in the yard and the bill sign over the works (0 of 8, 0 of 12)",
+        'src/entities/ring-steel/view.ts',
+      ),
     ],
   },
   {
@@ -899,7 +902,11 @@ export const NODES: readonly LoopNode[] = [
       // Any logs and rails count, not only the yard's, but nobody carries a bill's worth 1.2 km to the island.
       dec('steelkit', 'world', `${RULES_STEEL} steelTake: the yard holds the kit; steelFeed takes any logs and rails`),
     ],
-    cue: [unbuilt('"Feed the works", shown blocked with its reason to an empty back (ruling E)', `${STEEL_PLAN} V1`)],
+    cue: [onMain(
+        'world',
+        '"Feed the works", shown blocked with its reason to an empty back (ruling E)',
+        'src/entities/ring-steel/view.ts targets',
+      ),],
   },
   {
     id: 'steelhome',
@@ -912,7 +919,11 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'steel home' },
     stops: ['steel-home'],
     requires: [dec('steelworks', 'rules', `${RULES_STEEL} steelTick: lit; steelArrives: the kit car takes the rack`)],
-    cue: [unbuilt("steel on the kit car's deck and the stack in the Roundhouse bay", `${STEEL_PLAN} V2, V3`)],
+    cue: [onMain(
+        'world',
+        "steel on the kit car's deck and the pallet by the Roundhouse table",
+        'src/entities/railway/boiler-install-view.ts',
+      )],
   },
   {
     id: 'install',
@@ -925,7 +936,11 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'boiler installed' },
     stops: ['boiler-long'],
     requires: [dec('steelhome', 'rules', `${RULES_STEEL} install: Shed.steel >= 1; railway-server.ts railValid`)],
-    cue: [unbuilt("the garage tile's Install, held at the table, sending rail.install", `${STEEL_PLAN} V3`)],
+    cue: [onMain(
+        'world',
+        'the install post by the table: a hold, sending rail.install',
+        'src/entities/railway/boiler-install-view.ts',
+      )],
   },
 ];
 

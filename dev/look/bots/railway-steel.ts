@@ -13,16 +13,15 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { RING_HALT, STEEL, ringAt } from '../../../src/sim/railway-ring-layout.ts';
 import { LINE2 } from '../../../src/sim/railway-lines.ts';
+import { POST } from '../../../src/entities/railway/boiler-install-view.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
 
 export type SteelRoute = { bot: Bot; checkpoint: (name: string) => Promise<void> };
 const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
 /** Ring Island is line 2's stop 5, the Village its stop 0. */
 const STOP = { village: 0, island: 5 } as const;
-/** The install's post (boiler-install-view.ts POST: the table's centre plus 5.2 m east, 0.2 m south). */
-const POST = { x: 923.2, z: 12.2 };
 /** Where the hold is made from: 1.3 m west of the post, inside its 2.6 m and the table's reach. */
-const POST_STAND = { x: 921.9, z: 12.1 };
+const POST_STAND = { x: POST.x - 1.3, z: POST.z - 0.1 };
 const TICKS = 1500; // bounds below are in server ticks, never page time
 
 export async function steelRoute({ bot, checkpoint }: SteelRoute) {

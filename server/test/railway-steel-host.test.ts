@@ -1,4 +1,4 @@
-// Ring Island's steel works and the install on the real host (docs/plans/ring-island-build2.md, R4, v30): the yard
+// Ring Island's steel works and the install on the real host (docs/plans/ring-island-build2.md, R4, v31): the yard
 // take judged at the yard, the feed at the works' doorway, the install at the Roundhouse table; malformed kinds, lines,
 // parts and revisions refused without a throw, and a stale install a noop.
 import test from 'node:test';
