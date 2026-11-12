@@ -1,5 +1,5 @@
 // Boiler and train call ops are never predicted: the unique boiler and route decisions wait for acceptance. Nor are the
-// Works' mechanism facts (rail.breaker, rail.strike, rail.turn, rail.brace) or line 2's install (rail.install, v30):
+// Works' mechanism facts (rail.breaker, rail.strike, rail.turn, rail.brace) or line 2's install (rail.install, v31):
 // they wait for the server.
 // Replication R1b (docs/plans/replication.md, section 2): what a client predicts of its own railway actions, and the
 // effect facts both ends compute for an accepted action. Headless and pure: the server runs railEffect after each
@@ -138,7 +138,7 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
       effect.level = shed.cradleRails;
     }
   }
-  // The steel works (v30): the yard's count of the kind taken, or the bill's fed logs and rails.
+  // The steel works (v31): the yard's count of the kind taken, or the bill's fed logs and rails.
   if (e.op === 'rail.steelTake' || e.op === 'rail.steel') {
     const st = w.get(Steel, w.single(Steel))!;
     effect.level = e.op === 'rail.steel' ? st.logs + st.rails : e.kind === 1 ? st.yardRails : st.yardLogs;
@@ -204,7 +204,7 @@ export function railPredict(w: World, pid: string, e: RailAction, tick: number):
   // The leaf coming down under its fourth weight (v27) is the server's, like the crossing footed.
   const apId = w.single(Aperture),
     brace0 = w.get(Aperture, apId)!.brace;
-  // The steel works lit by the feed that fills its bill (v30), like the kiln.
+  // The steel works lit by the feed that fills its bill (v31), like the kiln.
   const stId = w.single(Steel),
     steel0 = [w.get(Steel, stId)!.lit, w.get(SteelClock, stId)!.lastCast] as const;
   let heldBack = false;

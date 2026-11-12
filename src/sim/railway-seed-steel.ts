@@ -1,4 +1,4 @@
-// Seeds for Ring Island build 2 (docs/plans/ring-island-build2.md, R4, v30), on ./railway-seed-ring.ts's
+// Seeds for Ring Island build 2 (docs/plans/ring-island-build2.md, R4, v31), on ./railway-seed-ring.ts's
 // `ring-joined` (./railway-seeds.ts is the catalog and how to add a stage). Accepted sim ops and ticks only, no direct
 // state writes: the kit train to the island yard, the bill fed by hand, the casts, the ride home and the install.
 //

@@ -80,7 +80,7 @@ export function createRailwayProgressMarks() {
     const ring = aperture(w);
     facts.set('gap footed', ring.set >= 14);
     facts.set('ring joined', ring.joined >= 0);
-    // Ring Island build 2 (v30): the whole kit in the island yard (or already fed), the works lit, the first steel home.
+    // Ring Island build 2 (v31): the whole kit in the island yard (or already fed), the works lit, the first steel home.
     const st = steel(w);
     facts.set(
       'steel kit landed',

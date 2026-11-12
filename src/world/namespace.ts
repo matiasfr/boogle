@@ -57,7 +57,10 @@
 // end, distance fares and the one strongbox (`till`; `train.riders`; the town's `wait0`, `wait1`, `boarded`,
 // `alighted`; a `townClock` for its riders' accrual, not replicated), the rail.tradeTick system, the railFarePct,
 // railRiderPct and railPricePct tunables; riders add no stop; no migration.
-export const WORLD_NS = 'v30';
+// v31 (2026-11-12): Ring Island build 2 (docs/plans/ring-island-build2.md, R1 to R5): `steel` (+`steelClock`) components,
+// `train.steel` and `train.boiler`, `line.boiler` and `line.fitted`, `shed.steel`; rail.steelTake, rail.steel and
+// rail.install; the steel works' cast tick and its away credit; `TRAIN_EXTENT.aheadCm` 820; no migration.
+export const WORLD_NS = 'v31';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

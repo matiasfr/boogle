@@ -58,7 +58,7 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
   if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle' || e.op === 'rail.steel')
     return { op: e.op };
-  // Ring Island's steel works and the install (v30): a kind of 0 is left out of the event.
+  // Ring Island's steel works and the install (v31): a kind of 0 is left out of the event.
   if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
   if (e.op === 'rail.install' && e.line === LINE2 && e.part === 1 && railInt(e.revision, BOILER_MAX))

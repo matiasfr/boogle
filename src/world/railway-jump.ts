@@ -40,7 +40,7 @@ const ringLand = (p: { x: number; z: number; y: number }, lat: number): JumpLand
 const RAILHEAD_LAND = ringLand(RING_HEAD[7]!.platform, 405);
 const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 
-/** Ring Island build 2 (R4, v30). The island halt's east (down) platform at u 444, lat +4, on its deck, facing the
+/** Ring Island build 2 (R4, v31). The island halt's east (down) platform at u 444, lat +4, on its deck, facing the
  * works' doorway (u 452, lat +6.5), beside the loader's mast (V1). */
 const STEEL_LAND = near({ ...ringAt(44400, 400) }, 0, 0, RING_HALT.down.y / 100, RING_STEEL_WORKS);
 /** 5.5 m east of the Roundhouse table's centre (5.2 m east, 1.7 m south), on the open ground between line 2's two
@@ -158,7 +158,7 @@ export const JUMPS: readonly Jump[] = [
     line: 'The leaf is down and riveted; trains run to Ring Island',
     land: JOINT_LAND, // the joint's west platform by the outbound lever, facing the island
   },
-  // Ring Island build 2 (R4, v30). Labels and lines are placeholders (owner direction, 11 November).
+  // Ring Island build 2 (R4, v31). Labels and lines are placeholders (owner direction, 11 November).
   {
     stage: 'steel-kit',
     label: 'Steel kit landed',

@@ -770,7 +770,7 @@ readable from Home is not on the leaf: it flies from its own fixed pole on a foo
 clear. Not tested on a device.
 
 **The steel works, a greybox (12 November 2026; [ring-island-build2](../plans/ring-island-build2.md), V1).** On the
-island halt's works yard, east of the east platform, from v30: a grey open shed stands over the drop hammer with a
+island halt's works yard, east of the east platform, from v31: a grey open shed stands over the drop hammer with a
 doorway facing the platform, a box loader and a rack stand beside the platform's south half, and two pallets lie on
 the open deck between the tarp and the shed. Once the rivet is struck a bill sign under the shed's roof reads
 "logs 0/8  rails 0/12"; the first train out unloads the kit onto the pallets. **Take logs** and **Take rails** at the

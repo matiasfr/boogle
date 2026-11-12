@@ -284,7 +284,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       // A turn names the table it saw: a stale one is refused, like a contested beam.
       return railInt(e.to, 1) && e.revision === w.get(Shed, w.single(Shed))!.tableRev && at(SHED_TABLE);
     case 'rail.steelTake':
-      // Ring Island's steel works (v30, ring-island-build2 R4): logs (0) or rails (1) off the yard where it lies.
+      // Ring Island's steel works (v31, ring-island-build2 R4): logs (0) or rails (1) off the yard where it lies.
       return railInt(e.kind, 1) && at(RING_STEEL_YARD);
     case 'rail.steel':
       return at(RING_STEEL_WORKS);

@@ -1,5 +1,5 @@
 > **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Ring Island
-> build 2 as a systems-first greybox, `WORLD_NS` v30 (main took v28 for slice 5; v29 is the Quarry stone stop's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
+> build 2 as a systems-first greybox, `WORLD_NS` v31 (main took v28 for slice 5; v29 is the Quarry stone stop's and v30 is the riders step's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
 > in the bill, steel on the kit car, the works prompt shown blocked).
@@ -100,7 +100,7 @@ generator, no `env` fact. The sim is in `src/sim/` and follows lockstep.md (inte
 | The install moment, the whistle, the boiler swapping on a train | Local, from accepted state | each tab | adapter edges, snapped on restore |
 | Yard stacks, bill sign, rack, loader, the shed | Local | each tab | new `src/entities/ring-steel/` |
 
-**State (all appended; any schema change is the v30 bump).**
+**State (all appended; any schema change is the v31 bump).**
 
 ```ts
 // railway-components.ts
@@ -169,18 +169,18 @@ malformed fields refused (`railInt(e.kind, 1)`, `e.line === 1`, `e.part === 1`, 
 
 **Save, bump and shipping.**
 
-- **v30**, one dated line in `src/world/namespace.ts`, no migration, made in R4 as a bump-only commit (as built: R1 to R3 were
-  built on main's v28, whose slice 5 bump came first, and v29 is the stone stop's; it still ships only with R5): the `Steel` and `SteelClock` components, two
+- **v31**, one dated line in `src/world/namespace.ts`, no migration, made in R4 as a bump-only commit (as built: R1 to R3 were
+  built on main's v28, whose slice 5 bump came first, and v29 is the stone stop's and v30 the riders step's; it still ships only with R5): the `Steel` and `SteelClock` components, two
   `Train` fields, two `Line` fields, one `Shed` field, `WORKS.total` 40, `TRAIN_EXTENT`, four ops.
 - **It ships when R1 to R5 are reviewed, as one ship, and never while the owner is mid-session**: check play sessions
   in `npm run heartbeat` first and hold if he is playing (owner calls "Nothing waits on a world bump" and its one
   hold). The views (V1 to V3) follow with no bump. Between the two ships the kit rides out and steel rides home unseen
   off the train, which is harmless; a jump-in row puts him back at any beat in one click.
 - **Mixed builds during the deploy.** Dev phase: no compatibility code. A room's id carries the namespace
-  (`rail-v30-<name>`, `railway-namespace.ts`), so an open v28 or v29 tab stays in its own room until the update notice
-  reloads it, and never sends a v30 op to an older world. A new client that reaches an older server asks for a `rail-v30-`
+  (`rail-v31-<name>`, `railway-namespace.ts`), so an open v28 or v29 tab stays in its own room until the update notice
+  reloads it, and never sends a v31 op to an older world. A new client that reaches an older server asks for a `rail-v31-`
   room, which that server's `isRailwayRoom` does not accept as a railway room, so no v27-shaped save is written under
-  a v30 name; the tab plays alone until the server is current. Every new op is refused cleanly by older rules (not in
+  a v31 name; the tab plays alone until the server is current. Every new op is refused cleanly by older rules (not in
   the allow-list).
 
 ## 4. Steps
@@ -336,8 +336,8 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       61.3 s, steel-lit 0.7 s, steel-home 5.9 s, boiler-long 5.0 s. Tests: `server/test/railway-steel-host.test.ts`
       (reach, malformed fields, two presses install once), the away case in `server/test/railway-away.test.ts`, and in
       `test/railway-replicate.test.ts` the predicted take and feed (lit held back, install never predicted) and a take a
-      friend beat you to coming back as `onCorrected`. **The bump:** a bump-only commit to v30 (namespace line, rail-schema's
-      `worldNs`, `rail-v30-` in `test/railway-cart.test.ts`), then the golden regenerated in a fixtures-only commit:
+      friend beat you to coming back as `onCorrected`. **The bump:** a bump-only commit to v31 (namespace line, rail-schema's
+      `worldNs`, `rail-v31-` in `test/railway-cart.test.ts`), then the golden regenerated in a fixtures-only commit:
       keyed against v28, all 39 existing stages unchanged, the four steel stages added, nothing else moved. **For the
       views (R3 review, P3):** nothing spends `Shed.steel` in build 2; `checkSteel`'s `boiler fit` refuses a fitted
       room with an empty bay, so the first feature that spends bay steel relaxes it. No new shared file outside
