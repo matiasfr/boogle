@@ -47,7 +47,10 @@
 // to the Pier; rail `out6`), the bents to the gap, `Aperture` (rail.footTake rack 2, rail.footSet site 3, rail.brace,
 // rail.strike id 2), the Railhead and Ring Island halts (buffers and a crossover), the Pier homeward-only and east of
 // the down track, line 2's third train with the balanced hold, `WORKS.total` 32; no migration.
-export const WORLD_NS = 'v27';
+// v28 (2026-11-11): slice 5's town economy, R1 (docs/plans/slice5-town-economy.md, bump A): `yard` (+`yardClock`) and
+// `town` components, `train.freight`, the rail.yardTick system; freight loads only where a train already stands (no
+// new stop); no migration.
+export const WORLD_NS = 'v28';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
