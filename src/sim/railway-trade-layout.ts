@@ -16,7 +16,9 @@ export type TradeYard = {
   /** One crate every this many ticks while the trains run, up to `cap`. */
   everyTicks: number;
   cap: number;
-  /** The halt its freight unloads at (the line's Village halt) and the Town field it counts in. */
+  /** Its destination, named on the row (hub towns, 12 November: never inferred from the line): the town (Town slot),
+   * the halt on its line its freight unloads at, and the Town field it counts in. */
+  town: number;
   home: number;
   goods: 'wood' | 'stone';
   /** R2b: its full-load stop is made only once this is met ('pier': the pier's twelve footings set). */
@@ -26,8 +28,8 @@ export type TradeYard = {
 export type TradePlot = { wood: number; stone: number };
 export const TRADE = {
   yards: [
-    { line: 0, stop: 1, everyTicks: 150, cap: 8, home: 0, goods: 'wood' },
-    { line: 1, stop: 1, everyTicks: 300, cap: 8, home: 0, goods: 'stone', after: 'pier' },
+    { line: 0, stop: 1, everyTicks: 150, cap: 8, town: 0, home: 0, goods: 'wood' },
+    { line: 1, stop: 1, everyTicks: 300, cap: 8, town: 0, home: 0, goods: 'stone', after: 'pier' },
   ] as const satisfies readonly TradeYard[],
   freightCap: 8,
   // R2b (the freight-stops ruling, call 5): a whole trainload.
