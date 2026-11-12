@@ -55,6 +55,7 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads } from './railway-sys-trade.ts';
+import { freightStop } from './railway-queries-trade.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -125,8 +126,11 @@ function wagonArrives(w: World, row: Row<typeof Train>) {
  * carries nothing by train. Trains run end to end on their track since v26, so no ask can turn one back short of an
  * errand. */
 function serviceOf(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
-  if (RAIL_TRAINS[slot]!.line !== LINE2) return () => false;
+  // Slice 5 R2b: a yard's full-load stop, on any line from its TRADE.yards row (freightStop).
+  const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir);
+  if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
   return (k, dir) =>
+    freight(k, dir) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
     (k === 1 && dir > 0 && r.wagon && r.foot < WORKS.wagonCap && footOwed(w, r.foot) > 0) ||
