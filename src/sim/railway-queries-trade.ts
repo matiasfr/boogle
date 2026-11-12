@@ -16,7 +16,7 @@ import { RAIL_TRAINS } from './railway-lines.ts';
 import { WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
 import { Town, Train, Works, Yard } from './railway-components.ts';
-import { kitOwed, stopsOf, worksId } from './railway-queries.ts';
+import { footingsOwed, kitOwed, stopsOf, worksId } from './railway-queries.ts';
 
 export const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
 export const townId = (w: World, slot: number) => w.lookup(Town, slot)!;
@@ -61,6 +61,8 @@ export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: n
   if (k !== yard.stop || k === 0 || k >= stopsOf(w, line).length - 1) return false;
   if (yard.after === 'pier' && w.get(Works, worksId(w))!.pierSet < WORKS.pier) return false;
   if (r.wagon || r.logs + r.rails > 0 || kitOwed(w, r)) return false;
+  // The ruling of 12 November: while line 2's wagon is owed footings, the economy adds no stop on that line.
+  if (footingsOwed(w, line)) return false;
   const freight = w.get(Train, w.lookup(Train, slot)!)!.freight;
   return w.get(Yard, yardId(w, y))!.stock >= TRADE.loadStop && TRADE.freightCap - freight >= TRADE.loadStop;
 }
