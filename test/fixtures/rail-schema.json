@@ -359,7 +359,9 @@
         ["foot", "int"],
         ["arrived", "int"],
         ["freight", "int"],
-        ["riders", "int"]
+        ["riders", "int"],
+        ["steel", "int"],
+        ["boiler", "u8"]
       ]
     },
     {
@@ -411,7 +413,8 @@
         ["fitted", "int"],
         ["table", "u8"],
         ["tableRev", "int"],
-        ["ready", "int"]
+        ["ready", "int"],
+        ["steel", "int"]
       ]
     },
     {
@@ -422,13 +425,16 @@
       "requires": [],
       "defaults": {
         "left0": -1,
-        "left1": -1
+        "left1": -1,
+        "fitted": -1
       },
       "fields": [
         ["slot", "int"],
         ["req", "int"],
         ["left0", "int"],
-        ["left1", "int"]
+        ["left1", "int"],
+        ["boiler", "u8"],
+        ["fitted", "int"]
       ]
     },
     {
@@ -512,6 +518,36 @@
         ["sack", "int"],
         ["poured", "int"]
       ]
+    },
+    {
+      "kind": "steel",
+      "key": null,
+      "replicate": true,
+      "track": true,
+      "requires": ["steelClock"],
+      "defaults": {
+        "lit": -1
+      },
+      "fields": [
+        ["yardLogs", "int"],
+        ["yardRails", "int"],
+        ["logs", "int"],
+        ["rails", "int"],
+        ["lit", "int"],
+        ["rack", "int"],
+        ["poured", "int"],
+        ["outLogs", "int"],
+        ["outRails", "int"]
+      ]
+    },
+    {
+      "kind": "steelClock",
+      "key": null,
+      "replicate": false,
+      "track": false,
+      "requires": [],
+      "defaults": {},
+      "fields": [["lastCast", "int"]]
     }
   ]
 }
