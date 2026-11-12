@@ -282,9 +282,7 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       live in `ROUTES`. Bell Rock is on two levels as rail-map has it: the `ns` halt at the water (4 m), the `bay` halt on the
       skerry (15 m). One place, two halt positions: the Ring Island halt differs by 30 m between `ring` and `bay-trestle`
       and West landing by 37 m between `bay` and `cave`, so step 2's sectioning must treat each pair as one place. The
-      map JSON's heights are not regenerated, so `?blockout=world` draws the new platforms and crossovers (from the
-      catalog) on rails drawn from the old heights: regenerate the JSON's heights before the blockout is looked at
-      again (src/proto/greybox/build.ts:457 is untouched). Row ids changed, so `dev/level/rail-map.ts` follows (its prose maps, `rail-map.html` regenerated).
+      map JSON's rails were not regenerated then; see "Map JSON rails" at the end of this plan. Row ids changed, so `dev/level/rail-map.ts` follows (its prose maps, `rail-map.html` regenerated).
 - [x] **2. The catalog, pure (HOTBOX, S).** `git mv src/sickle/world-lines.ts src/sim/railway-world-lines.ts` (it is
       written to the sim's rules; update the generator's path and the three readers). Create
       `src/sim/railway-route.ts` with the types above and all six legs' rows derived from it: `sectionsOf(leg, n)`
@@ -436,7 +434,46 @@ on them before its design review.
 
 ## Open questions
 
-Open item (step 1): the map JSON's heights must be regenerated from the rulings before `?blockout=world` is looked at again; its rails still draw the old heights while its platforms follow the catalog.
+Closed (step 1 leftover, 12 November): the map JSON's rails are written from the catalog; see "Map JSON rails" below.
+
+### Map JSON rails (12 November)
+
+`node dev/level/world-blockout.ts` also writes the Sickle Isles option's rails in `docs/world/map-prototypes.html` (points
+and heights, the ruling's corner vertices included) for every link a service runs over, from the catalog it builds. What
+those links were before is in `dev/level/world-blockout-authored.json`, the generator's own input (the live game imports the
+page raw, so the copies are not in it). `ringx` is copied into the option's own lines; `common` and the other options
+(`eight`, `spine`, `climb`, `stones`) are as authored, and `layout` lets an option's line replace the shared one of its id.
+`wall-s` now runs `quay` to `canopy` (it was `port` to `canopy`: the Wall grows from Port Quay and the lift is its own link,
+so a trip over both is not counted twice). `test/world-lines.test.ts` fails if a rail is more than 0.25 m off a catalog
+vertex or halt.
+
+**The economy model follows the ruled route, on purpose.** `dev/economy/play-map.ts` takes each link's length from its
+points, so the prototype's lengths and every reference run moved; the new lengths are the ruled route.
+
+| Link | Before | After |
+| --- | --- | --- |
+| ringx (pier to ring) | 761 m | 458 m |
+| ledge (ring to gorge) | 1,700 m | 2,050 m |
+| ring-bell | 1,427 m | 1,579 m |
+| seacave | 688 m | 740 m |
+| wall-s (was port to canopy) | 1,849 m | 2,109 m (quay to canopy) |
+
+| Reference run | mainH | endH | wallet |
+| --- | --- | --- | --- |
+| 1p gorge first | 5.699 to 5.710 | 12.072 to 12.083 | 8 to 10 |
+| 2p gorge first | 5.219 to 5.217 | 11.673 to 11.671 | 11 to 8 |
+| 3p gorge first | 5.166 to 5.165 | 11.624 to 11.626 | 11 to 10 |
+| 1p canopy first | 5.635 to 5.629 | 12.021 to 12.014 | 8 to 9 |
+| 2p canopy first | 5.046 to 5.049 | 11.532 to 11.532 | 8 to 9 |
+| 3p canopy first | 4.863 to 4.876 | 11.324 to 11.334 | 9 to 11 |
+| 1p eager, gorge first | 5.773 to 5.770 | 12.117 to 12.115 | 10 to 9 |
+| 2p eager, gorge first | 4.581 to 4.598 | 11.038 to 11.052 | 9 to 9 |
+| 3p eager, gorge first | 4.408 to 4.406 | 10.880 to 10.879 | 10 to 12 |
+
+The closed-form model's figures are unchanged. `dev/loop/standins.ts` reads the catalog, not these lengths, so it is
+unaffected. Figures in `docs/plans/campaign-outline.md` from the old lengths (not edited): line 88 (High Gorge 1.70 km),
+line 182 (stack line 1.7 km; bay trestle 1.43 km), line 188 (bay trestle 1.43 km), and probably lines 91 and 92 (1.68 km
+and 3.82 km, which include the cave and Wall links).
 
 1. **Do far legs ever take footings by hand?**
    - **No footings on any greybox bill; a sea leg's trestle rises with its section (recommended).** The route then

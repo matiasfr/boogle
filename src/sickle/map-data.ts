@@ -294,7 +294,11 @@ export function layout(data: MapData, optionId: string, pick: Pick = 'A'): Layou
     pick,
     ride: data.ride,
     places: [...data.common.places, ...option.places],
-    lines: [...data.common.lines, ...option.lines],
+    // An option's own line replaces the shared one of its id (where the shared one stood); the rest follow.
+    lines: [
+      ...data.common.lines.map((l) => option.lines.find((o) => o.id === l.id) ?? l),
+      ...option.lines.filter((o) => !data.common.lines.some((l) => l.id === o.id)),
+    ],
     works: data.common.works ?? [],
     land,
     terrain,

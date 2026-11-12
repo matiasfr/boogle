@@ -2,6 +2,8 @@
 // docs/world/map-prototypes.html and Place's real line 2 (docs/plans/world-blockout.md):
 //   src/sim/railway-world-lines.ts    every future line as a pinned catalog in the sim's own shape (world cm, stops, halts)
 //   docs/world/world-blockout.html  the top-down map and its tables, for the owner's review
+//   docs/world/map-prototypes.html  the Sickle Isles option's rails (points, heights) for those links, from the catalog
+//   dev/level/world-blockout-authored.json  what those links were before (the generator's own input, not the live game's)
 // `--check` writes nothing and exits 1 if either file is stale (test/world-lines.test.ts runs the same comparison).
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +24,7 @@ import {
 import { H } from '../../src/place/terrain.ts';
 import { GATES, GATE_SLAB, PILLARS } from '../../src/place/tech-layout.ts';
 import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/place/spatial-station.ts';
-import { layout, parseMapPage, polyLen, smoothRing, type XZ } from '../../src/sickle/map-data.ts';
+import { layout, parseMapPage, polyLen, smoothRing, type Line, type XZ } from '../../src/sickle/map-data.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
 import { FAR } from '../../src/place/layout.ts';
 
@@ -137,7 +139,10 @@ const B = layout(MAP, 'sickle', 'B');
 // meets an island at its height, and no span is steeper than 4%. The map JSON's heights predate them (they jump onto
 // cliffs at 45 to 340%), so the heights here come from the rulings, not from `heights`: a station's deck, a plateau
 // where the JSON holds a deck at an island's height, and the sea deck everywhere else. A line eases between them at the
-// ruling grade, beside the higher end. The 2D map page and the live blockout still draw the JSON's own heights.
+// ruling grade, beside the higher end. The JSON's rails for these links are then written back from the catalog
+// (`mapPage`) into the Sickle Isles option's own lines; what they were stays in AUTHORED_FILE, the only copy of them this
+// file reads, so a rerun is stable. The 2D map page and the live blockout then draw the catalog's own rails, and the
+// shared `common` lines (and the options the owner did not choose) stay as authored.
 const SEA_DECK = 4;
 /** An authored height above this is a cliff or a summit the JSON climbed onto: the line stays at the sea deck instead. */
 const DECK_CAP = 16;
@@ -200,11 +205,19 @@ const STACK_LEDGE = [
   ]).slice(1),
 ];
 
-type Route = { pts: XZ[]; heights?: (number | null)[]; ruled?: boolean };
-const lineOf = (id: string) => {
+type Route = { pts: XZ[]; heights?: (number | null)[]; ruled?: boolean; from?: string };
+/** A line's points and heights before the rulings. A sidecar, not part of the page: the live game imports the page raw. */
+type Authored = { pts: XZ[]; heights?: (number | null)[] };
+const AUTHORED_FILE = 'dev/level/world-blockout-authored.json';
+const AUTHORED: Record<string, Authored> = fs.existsSync(ROOT + AUTHORED_FILE)
+  ? JSON.parse(fs.readFileSync(ROOT + AUTHORED_FILE, 'utf8'))
+  : {};
+const authoredOf = (l: Line): Authored => AUTHORED[l.id] ?? l;
+const lineOf = (id: string): Line => {
   const l = A.lines.find((x) => x.id === id);
   if (!l) throw new Error(`no map line ${id}`);
-  return l;
+  const { pts, heights } = authoredOf(l);
+  return { ...l, pts, heights };
 };
 const NULLS = (n: number) => Array.from({ length: n }, () => null);
 /** The links the rulings redraw; every other link runs as the map JSON draws it. `ruled`: its heights are the rulings' own
@@ -223,8 +236,10 @@ const ROUTES: Record<string, Route> = {
   },
   // One West landing: the cave line starts at the bay line's station (ruling 6), 25 m off the cave mouth it is to meet.
   seacave: { pts: [[-199, 10], [-205, 75], ...lineOf('seacave').pts.slice(1)] },
-  // The White Wall's south end starts from the quay, not the 55 m top the lift reaches (ruling 4's knock-on).
+  // The White Wall's south end starts from the quay, not the 55 m top the lift reaches (ruling 4's knock-on): the link
+  // runs quay to Canopy, so the lift is its own link and a trip over both is not counted twice (`from`).
   'wall-s': {
+    from: 'quay',
     pts: [
       ...hermite([
         [[-880, 960], 150, 250],
@@ -1102,9 +1117,53 @@ ${stills}
 // Written as Prettier leaves them, so the format hook never makes a generated file look stale.
 const pretty = async (file: string, text: string) =>
   prettier.format(text, { ...(await prettier.resolveConfig(ROOT + file)), filepath: ROOT + file });
+
+// ---------------------------------------------------------------- the map JSON's rails, from the catalog
+/** map-prototypes.html with every service link's points and heights (Sickle Isles) replaced by the catalog's, ruling
+ * corners included, in the option's own lines: ringx is copied out of `common` first, so the other options still draw
+ * the shared one as authored. Links no service runs over (the lift, today's lines) keep their own. */
+function mapPage(): { page: string; authored: string } {
+  const m = /(<script type="application\/json" id="map-data">)([\s\S]*?)(<\/script>)/.exec(html);
+  if (!m) throw new Error('map-prototypes.html has no #map-data block');
+  const data = JSON.parse(m[2]!);
+  const own: Line[] = data.options.find((o: { id: string }) => o.id === 'sickle').lines;
+  const authored = { ...AUTHORED };
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  for (const b of BUILT) {
+    const along = [b.fromCm];
+    for (let i = 1; i < b.pts.length; i++)
+      along.push(
+        along[i - 1]! + Math.round(Math.hypot(b.pts[i]![0] - b.pts[i - 1]![0], b.pts[i]![1] - b.pts[i - 1]![1])),
+      );
+    for (const g of b.legs) {
+      const shared: Line | undefined = data.common.lines.find((l: Line) => l.id === g.id);
+      const line = own.find((l) => l.id === g.id) ?? (shared && own[own.push(structuredClone(shared)) - 1]);
+      if (!line) throw new Error(`no map line ${g.id}`);
+      authored[g.id] ??= { pts: line.pts, ...(line.heights ? { heights: line.heights } : {}) };
+      const pts3 = b.pts.filter((_, i) => along[i]! >= g.fromCm && along[i]! <= g.toCm);
+      if (g.reverse) pts3.reverse();
+      line.pts = pts3.map((p) => [r2(p[0] / 100 - ORIGIN.x), r2(p[1] / 100 - ORIGIN.z)]);
+      line.heights = pts3.map((p) => r2(p[2] / 100));
+      if (ROUTES[g.id]?.from) line.from = ROUTES[g.id]!.from!;
+    }
+  }
+  return {
+    page:
+      html.slice(0, m.index + m[1]!.length) +
+      '\n' +
+      JSON.stringify(data, null, 2) +
+      '\n' +
+      html.slice(m.index + m[0].length - m[3]!.length),
+    authored: JSON.stringify(authored),
+  };
+}
+const MAP_PAGE = 'docs/world/map-prototypes.html';
+const map = mapPage();
 const outputs: [string, string][] = [
   [CATALOG, await pretty(CATALOG, catalog())],
   [PAGE, await pretty(PAGE, page())],
+  [MAP_PAGE, await pretty(MAP_PAGE, map.page)],
+  [AUTHORED_FILE, await pretty(AUTHORED_FILE, map.authored)],
 ];
 const check = process.argv.includes('--check');
 let stale = false;
