@@ -468,6 +468,25 @@ export const BAD_WORLDS: readonly BadWorld[] = [
       set(w, SteelClock, { lastCast: 100 });
     },
   },
+  // The boiler fit (R3): no steel is in ring-joined's bay, so any fit there breaks "after steel is home".
+  {
+    site: 'boiler bounds',
+    message: 'railway: boiler bounds',
+    stage: J,
+    break: (w) => set(w, Line, { boiler: 2 }, LINE2),
+  },
+  {
+    site: 'boiler fit',
+    message: 'railway: boiler fit',
+    stage: J,
+    break: (w) => set(w, Line, { boiler: 1, fitted: 100 }, LINE2),
+  },
+  {
+    site: 'boiler aboard',
+    message: 'railway: boiler aboard',
+    stage: J,
+    break: (w) => set(w, Train, { boiler: 1 }, LINE_SLOTS[LINE2]![0]),
+  },
 ];
 
 /** The world check's `throw` sites no edit to a world can reach, and why. */

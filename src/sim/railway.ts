@@ -49,6 +49,10 @@ export type RailAction = RailRequest & {
   dir?: number;
   /** rail.call aboard: the slot of the rider's train (absent: the halt's lever, from its platform for `dir`). */
   train?: number;
+  /** rail.install (v28): the line the part is for (1, line 2's index) and the part (1, the longer boiler); its
+   * `revision` is the line's boiler fit the actor saw. */
+  line?: number;
+  part?: number;
   /** rail.wake: the rule tick its actor pressed at (the client's estimate); the server bounds it (railWakeTick). */
   tk?: number;
 };

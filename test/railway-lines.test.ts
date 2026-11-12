@@ -24,6 +24,7 @@ import {
 } from '../src/sim/railway-ring-layout.ts';
 import { LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
 import { TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
+import { ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { FORMATION, TURNOUT } from '../src/place/layout.ts';
 import { LINE_HALTS, TRAIN, TRAIN_HOME, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
@@ -159,7 +160,11 @@ test("every halt that can be its line's open end says how it turns trains back, 
 test("the sim's train reach and turnout are the drawn ones, and every signal stands clear of its block", () => {
   const ahead = Math.max(...TRAIN_CARS.map((c, n) => TRAIN_OFFSETS[n]! + c.hz)),
     behind = Math.max(...TRAIN_CARS.map((c, n) => c.hz - TRAIN_OFFSETS[n]!));
-  assert.deepEqual(TRAIN_EXTENT, { aheadCm: Math.round(ahead * 100), behindCm: Math.round(behind * 100) });
+  // From v28 (ring-island-build2, R3, call 15) the reach ahead is rail-map's long train (8.2 m) on either boiler: at
+  // least the drawn engine's with the longer boiler's frame (6.7 m), the wagon's tail behind as drawn.
+  assert.equal(TRAIN_EXTENT.behindCm, Math.round(behind * 100));
+  assert.equal(TRAIN_EXTENT.aheadCm, 820);
+  assert.ok(TRAIN_EXTENT.aheadCm >= Math.round((ahead + ENGINE_LONG_AHEAD) * 100), 'covers the longer engine as drawn');
   assert.equal(TURNOUT * 100, TURNOUT_CM);
   const drawn = [FORMATION.timber, FORMATION.quarry];
   RAIL_LINES.forEach((l, line) =>
@@ -182,7 +187,7 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
   );
   // The reviewer's numbers: the village's signal about 63 m, the pier's about 530 m.
   assert.equal(RAIL_LINES[1]!.halts[0]!.end!.signalCm, 6300);
-  assert.equal(RAIL_LINES[1]!.halts[3]!.end!.signalCm, 52980);
+  assert.equal(RAIL_LINES[1]!.halts[3]!.end!.signalCm, 52780);
 });
 
 // ---------------------------------------------------------------- v27's line 2 (ring-island-build1, R3b)
@@ -225,14 +230,14 @@ test("v27's line 2 keeps v26's halts, moves the Pier east of the down track and 
   assert.equal(head.s, RING_HEAD[0]!.s);
   assert.deepEqual(head.platforms, [RING_JOINT_UP, RING_HEAD[0]!.platform]);
   assert.equal(head.brake, RING_END_BRAKE_CMS2 / 100);
-  assert.deepEqual(head.end, { kind: 'stub', mergeCm: 83200, edgeCm: 81200, signalCm: 80580 });
+  assert.deepEqual(head.end, { kind: 'stub', mergeCm: 83200, edgeCm: 81200, signalCm: 80380 });
   // Ring Island: the crossover on the Way, the buffers 15 m on.
   const island = halts[5]!;
   assert.equal(island.s, RING_END.s);
   assert.equal(island.s, 119000);
   assert.deepEqual(island.platforms, [RING_HALT.up, RING_HALT.down]);
   assert.equal(island.ring, true);
-  assert.deepEqual(island.end, { kind: 'crossover', mergeCm: 113700, edgeCm: 113700, signalCm: 113080 });
+  assert.deepEqual(island.end, { kind: 'crossover', mergeCm: 113700, edgeCm: 113700, signalCm: 112880 });
   // A heads halt's down side is the railhead's platform where it stands now.
   for (let k = 0; k < RING_HEAD.length; k++) {
     assert.equal(haltPlatform(head, -1, k), RING_HEAD[k]!.platform);

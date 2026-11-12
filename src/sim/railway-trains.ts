@@ -5,7 +5,8 @@
 //
 //   circuitCm, circuitLen         (./railway-lines.ts) one number round a line, for ordering and spacing only
 //   endBlocks(line, stops)        the two open ends' blocks (turnout to end stop, both tracks) and their signals
-//   cycleTicks, headTicks         the non-stop round trip; the least gap between two departures from an end
+//   cycleTicks, headTicks         the non-stop round trip; the least gap between two departures from an end (both
+//                                 by the leaving train's boiler, v28)
 //   blockFree(...)                whether a train may plan a leg to `dest` now: the block rule and the end blocks
 //   trainServes(...)              the train a lever ask (halt, way) is for: the nearest that way that can still brake
 //   planLeg(...)                  the leg a train plans from a pose: its next reason, or the farthest hold short of it
@@ -29,8 +30,11 @@ import {
   type LineRef,
 } from './railway-lines.ts';
 import {
+  BOILER_MAX,
   TRAIN,
   TRAIN_PHASE,
+  boilerKin,
+  boilerSpeed,
   reqAdd,
   reqAt,
   reqDrop,
@@ -93,21 +97,23 @@ const within = (b: EndBlock, s: number) => s - TRAIN_EXTENT.behindCm < b.to && s
 export const atEnd = (stop: number, stops: readonly number[]) => stop === 0 || stop === stops.length - 1;
 
 // ---------------------------------------------------------------- the headway
-/** The non-stop round trip between the open ends, two dwells included. */
-export function cycleTicks(line: LineRef, stops: readonly number[]) {
-  return 2 * trainLegTicks(stops[stops.length - 1]! - stops[0]!, 0, lineDef(line)) + 2 * TRAIN.dwellTicks;
+/** The non-stop round trip between the open ends, two dwells included, for a train wearing `boiler` (v28). */
+export function cycleTicks(line: LineRef, stops: readonly number[], boiler = 0) {
+  return 2 * trainLegTicks(stops[stops.length - 1]! - stops[0]!, 0, boilerKin(line, boiler)) + 2 * TRAIN.dwellTicks;
 }
-/** The least gap between two trains leaving the same end: `headPct` of an even split; none with one train. */
-export function headTicks(line: LineRef, stops: readonly number[], headPct = TRAIN_HEAD_PCT) {
+/** The least gap between two trains leaving the same end: `headPct` of an even split of the round trip of the train
+ * leaving (its `boiler`); none with one train. */
+export function headTicks(line: LineRef, stops: readonly number[], headPct = TRAIN_HEAD_PCT, boiler = 0) {
   const n = lineDef(line).trains;
-  return n < 2 ? 0 : Math.floor((cycleTicks(line, stops) * headPct) / (100 * n));
+  return n < 2 ? 0 : Math.floor((cycleTicks(line, stops, boiler) * headPct) / (100 * n));
 }
 
 // ---------------------------------------------------------------- poses, blocks and service
-/** Where a train is now: cm along the line, speed (whole cm a tick, as a replan starts from it) and circuit position. */
+/** Where a train is now: cm along the line, speed (whole cm a tick, as a replan starts from it, at most its boiler's
+ * cruise) and circuit position. */
 export function trainPose(row: Readonly<RailTrain>, line: LineRef, stops: readonly number[], tick: number) {
   const s = trainAlong(row, line, tick);
-  const v = Math.min(lineDef(line).speed, Math.round(trainSpeed(row, line, tick)));
+  const v = Math.min(boilerSpeed(line, row.boiler ?? 0), Math.round(trainSpeed(row, line, tick)));
   return { s, v, c: circuitCm(stops, row.track, s) % circuitLen(stops) };
 }
 /** Whether a train is in an end block or bound for it: standing or running inside it, or its leg ending in it. */
@@ -200,6 +206,8 @@ export function planLeg(
 ): Leg | null {
   const { s, v, track } = pose,
     dir = track ? -1 : 1,
+    // Braking distances read only a rate (the line's or a halt's), never a cruise, so they are the same on either
+    // boiler (v28): the pose's speed `v` is what the longer boiler changes.
     kin = lineDef(line),
     at = (j: number) => stopKin(line, j, track);
   const k = trainNextStop(stops, s, v, dir, reasons, at);
@@ -359,7 +367,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
       // moved on from: stopMoved), which it leaves as from that end.
       const from = r.at >= 0 ? r.at : endStanding(line, stops, r),
         end = from >= 0 && atEnd(from, stops);
-      const head = headTicks(line, stops, io.headPct),
+      const head = headTicks(line, stops, io.headPct, r.boiler ?? 0),
         left = from === 0 ? io.line(line).left0 : io.line(line).left1;
       if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
       if (end && balancedHold(io, line, stops, slot, from, tick)) break;
@@ -456,7 +464,8 @@ export function trainRowBroken(
     !reqValid(r.req, st.length) ||
     !int(r.from, st[last]!, st[0]!) ||
     !int(r.dest, st[last]!, st[0]!) ||
-    !int(r.v0, lineDef(line).speed) ||
+    !int(r.boiler ?? 0, BOILER_MAX) ||
+    !int(r.v0, boilerSpeed(line, r.boiler ?? 0)) ||
     !int(r.logs, cargo) ||
     !int(r.rails, cargo) ||
     (r.phase === TRAIN_PHASE.STAND && (r.at !== r.to || r.from !== r.dest || r.v0 !== 0)) ||

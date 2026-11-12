@@ -132,6 +132,9 @@ export const Train = defineComponent(
     riders: 'int',
     // Steel riding home on the kit car's deck (ring-island-build2, R2; ruling C): any line 2 train, STEEL.trip a trip.
     steel: 'int',
+    // The boiler this train wears (ring-island-build2, R3): BOILER_SPEED's row (./railway-train.ts), 0 the standard
+    // one. It takes its line's fit (`Line.boiler`) standing at the Village, never in flight.
+    boiler: 'u8',
   },
   { key: 'slot' },
 );
@@ -168,11 +171,13 @@ export const Steel = defineComponent(
   { requires: [SteelClock], defaults: { lit: -1 } },
 );
 /** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
- * and the tick a train last left its start end and its far end (-1 never), for the headway hold. */
+ * and the tick a train last left its start end and its far end (-1 never), for the headway hold. Since v28
+ * (ring-island-build2, R3) the room's boiler fit for the line (`boiler`, BOILER_SPEED's row; rail.install) and the
+ * tick it was installed (`fitted`, -1 never). */
 export const Line = defineComponent(
   'line',
-  { slot: 'int', req: 'int', left0: 'int', left1: 'int' },
-  { key: 'slot', defaults: { left0: -1, left1: -1 } },
+  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int' },
+  { key: 'slot', defaults: { left0: -1, left1: -1, fitted: -1 } },
 );
 /** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
 export const WorksClock = defineComponent('worksClock', { lastCast: 'int' }, { replicate: false });

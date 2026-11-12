@@ -53,7 +53,7 @@ import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
 import { freightStop } from './railway-queries-trade.ts';
 import type { TradePct } from './railway-trade-layout.ts';
-import { steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
+import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat (or a friend's same ask) moves nothing. From a halt's lever it is the line's (`Line.req`), served by the
@@ -185,6 +185,9 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
       ridersBoard(w, slot);
       if (!line2(slot)) return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       const r = row(slot);
+      // A train standing at the Village takes line 2's boiler fit (ring-island-build2, R3): standing, so no leg in
+      // flight changes speed.
+      if (r.at === 0) boilerAdopt(w, trainId(w, slot));
       // The footing wagon couples to the first line 2 train standing at the village once it has rolled out; a train
       // standing there when it is due holds its departure for it (at most WORKS.rollTicks).
       if (r.at === 0 && wagonSlot(w) < 0) {

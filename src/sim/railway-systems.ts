@@ -65,7 +65,7 @@ import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
 import { tradeTick, yardTick } from './railway-sys-trade.ts';
 import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
-import { steelFeed, steelTake, steelTick } from './railway-sys-steel.ts';
+import { install, steelFeed, steelTake, steelTick } from './railway-sys-steel.ts';
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
@@ -107,6 +107,8 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   // Ring Island build 2 (./railway-sys-steel.ts): the kit off the island yard, and the steel works' bill.
   'rail.steelTake': [steelTake],
   'rail.steel': [steelFeed],
+  // The longer boiler for line 2, once steel is home (R3).
+  'rail.install': [install],
 };
 
 export function railOutcome(w: World, pid: string, epoch: number, request: number): RailResult | null {

@@ -5,12 +5,14 @@
 //
 //   checkSteel(w)   bounds; nothing before the rivet; what is out was sent; lit exactly when the bill is full;
 //                   the cast clock; steel only on
-//                   line 2's kit cars, a trip's worth each; steel conserved (throws on the first broken one)
+//                   line 2's kit cars, a trip's worth each; steel conserved; the boiler fit: line 2's only, after
+//                   steel is home, and no train wearing more than its line's (R3) (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
-import { cart, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
+import { BOILER_MAX } from './railway-train.ts';
+import { cart, lines, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
 import { aboard, ringJoined } from './railway-queries.ts';
 
 const bad = (what: string): never => {
@@ -54,4 +56,12 @@ export function checkSteel(w: World) {
   if (s.lit < 0 && (s.poured || lastCast)) bad('steel unlit cast');
   // Every steel cast is on the rack, aboard a train or in the bay.
   if (s.poured !== s.rack + ts.reduce((n, r) => n + r.steel, 0) + bay) bad('steel conservation');
+  // The boiler fit (R3): line 2's alone, installed (with its tick) only once steel is in the bay; a train wears at most
+  // its line's fit.
+  const ls = lines(w);
+  if (ls.some((l) => !railInt(l.boiler, BOILER_MAX) || !railInt(l.fitted, RAILWAY_MAX_INT, -1)))
+    bad('boiler bounds');
+  if (ls.some((l, line) => l.boiler > 0 !== l.fitted >= 0 || (l.boiler > 0 && (line !== LINE2 || bay < 1))))
+    bad('boiler fit');
+  if (ts.some((r, slot) => !railInt(r.boiler, ls[RAIL_TRAINS[slot]!.line]!.boiler))) bad('boiler aboard');
 }

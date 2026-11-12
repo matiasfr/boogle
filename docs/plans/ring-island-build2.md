@@ -255,7 +255,7 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       `shelfOut + outRails`), in the load check every fuzz op runs. No pinned fixture moved: no seed stage feeds a
       bill from backs. **P3-3**, noted: the rules commit precedes the bump commit on this branch; that order stands
       because the branch ships as one, after R5.
-- [ ] **R3. The install and the boiler's speed (L, HOTBOX).** Create `test/railway-install.test.ts`. Edit
+- [x] **R3. The install and the boiler's speed (L, HOTBOX).** Create `test/railway-install.test.ts`. Edit
       `railway-components.ts` (`Line.boiler`, `Line.fitted`, `Train.boiler`), `railway-train.ts` (`BOILER_SPEED`,
       `stopKin`'s fourth argument and its callers), `railway-trains.ts` (the leg planner, `cycleTicks` and the balanced
       hold read each train's boiler), `railway-lines.ts` (`TRAIN_EXTENT.aheadCm` 820), `railway-sys-works.ts` or the
@@ -265,6 +265,35 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       Village; `boiler === 0` legs bit-identical to v27; **a mixed fleet** (one train at 25 m/s behind two at 20) run
       for 20,000 ticks under random lever asks keeps `sepCm`, the end blocks and the 105 s wait bound; the Pier and
       island stops still clear with the 820 extent. **Independent sim review, P1: the mixed fleet.**
+      _As built (ring2/rules, 12 November):_ `Train.boiler` (u8), `Line.boiler` (u8) and `Line.fitted` (int, -1),
+      appended inside v28. `BOILER_SPEED = [200, 250]`, `boilerSpeed`, `boilerKin` and `stopKin(line, to, track,
+      boiler = 0)` in `railway-train.ts`; the pose reads the row's `boiler` (an absent field reads 0), and on boiler 0 the
+      kin is the line's own object, so v27's legs are bit for bit (a test over every line, halt, track and leg).
+      `RailTrain.boiler` is optional (fixture rows). In `railway-trains.ts`: `trainPose` caps a replan's speed at the
+      train's own cruise (it capped at the line's, which would have cut a 25 m/s train's `v0` to 20), `cycleTicks` and
+      `headTicks` take the leaving train's boiler, `trainRowBroken` bounds `boiler` and `v0` by it. Braking distances
+      read only rates, so `planLeg`, `trainServes` and `trainRequestable` are unchanged; the balanced hold reads poses
+      only. `rail.install { line: 1, part: 1, revision }` is `install` in `railway-sys-steel.ts` (order 56); the table is
+      refused only mid roll-out (`Shed.ready` set, no wagon coupled). `boilerAdopt` runs first in `standing` for any
+      line 2 train at the Village. `checkSteel` gains `boiler bounds`, `boiler fit` (line 2 only, `fitted` exactly when
+      fitted, steel in the bay) and `boiler aboard` (no train above its line's fit), each with a bad world.
+      **Changed from the step:** `test/railway-train.test.ts` needed no edit (the bit-identical test is in the new
+      file); `test/railway-lines.test.ts`'s drawn-extent check now holds `aheadCm` at 820 and at least the drawn
+      engine with the longer frame (6.2 + 0.5 = 6.7 m: the drawn long engine is 1.5 m shorter than rail-map's 8.2 m;
+      V2's to reconcile), and its and `test/railway-trains.test.ts`'s literal far signals and endMoved boundaries move
+      2 m (Far Head 48180, Pier 52780, Railhead 80380 and 94380, island 112880). Measured: Village to Ring Island
+      64.4 s at 20 m/s and 54.1 s at 25 (10.3 s saved, the ten-second rule by 0.3 s), home by the Pier 70.1 s and
+      61.3 s (8.8 s); round trip 138.8 s and 118.2 s. After an install the three trains took it 0.1 s, 51.1 s and
+      90.9 s later. Every middle halt at every stage clears both end blocks by at least 3.8 m with the 8.2 m extent
+      (Far Head before the Pier is the tightest). **The mixed fleet** (three 20,000-tick runs on the real rules from a
+      world with steel home and the install made, 5% lever and 3% rider asks a tick, restores; slower trains put back
+      on the standard boiler at each Village stand so the mix lasts): one fast train, two fast, and one fast with the
+      headway hold off. Every tick: no pose jump past its cruise, `trainSpacing` (sepCm, one train an end block);
+      every 50 ticks the load check. Worst line 2 lever waits 87.8 s, 87.2 s and 85.6 s (bound 105 s); longest stand
+      36.5 s. The runs never brought a fast train within 239 m of the one ahead (the balanced hold keeps them even), so
+      a directed test lets a fast train go right behind a slow one with no headway hold: the block rule holds it at the
+      halt behind (37 s on held legs, closest 157 m, the halt spacing), never under sepCm, never past. No fallback
+      needed.
 - [ ] **R4. Server, prediction, seeds (M, HOTBOX; the bump moved to R1).** Create `src/sim/railway-seed-steel.ts`,
       `server/test/railway-steel-host.test.ts`. Edit `src/world/railway-server.ts`, `railway-predict.ts`,
       `railway-jump.ts` (four rows, section 6), `src/sim/railway-seeds.ts`,

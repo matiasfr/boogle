@@ -12,12 +12,39 @@
 //   steelArrives   arriving                  the kit into the island yard and the rack's steel aboard; steel into the
 //                                            Roundhouse bay at the Village
 //   steelService   serviceOf                 the stops those errands ask for
+//   install        rail.install { line, part, revision }   line 2's longer boiler, once steel is in the bay (R3)
+//   boilerAdopt    standing at the Village   a line 2 train takes its line's boiler fit
 import { defineSystem, type World } from '../ecs/index.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2_KIT } from './railway-line2-layout.ts';
 import { railInt } from './railway.ts';
-import { Account, Aperture, Beam, Boiler, Forge, Rail, Shed, Steel, SteelClock, Train } from './railway-components.ts';
-import { forgeId, free, railId, ringJoined, shedId, steelId, steelNeed, type Row } from './railway-queries.ts';
+import { LINE2 } from './railway-lines.ts';
+import { BOILER_MAX } from './railway-train.ts';
+import {
+  Account,
+  Aperture,
+  Beam,
+  Boiler,
+  Forge,
+  Line,
+  Rail,
+  Shed,
+  Steel,
+  SteelClock,
+  Train,
+} from './railway-components.ts';
+import {
+  forgeId,
+  free,
+  lineId,
+  railId,
+  ringJoined,
+  shedId,
+  steelId,
+  steelNeed,
+  wagonSlot,
+  type Row,
+} from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 /** Take logs (kind 0) or rails (kind 1) off the island yard, up to your back's room, once the rivet is struck. */
@@ -146,6 +173,32 @@ export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number
   }
   if (k !== RING_ISLAND || dir < 0) return false;
   return usable > 0 || (w.get(Steel, steelId(w))!.rack > 0 && r.steel < STEEL.trip);
+}
+// ---------------------------------------------------------------- the install (R3)
+/** Install the longer boiler for line 2 (decided: a hold at the table, no dialog, free): the first steel is in the
+ * Roundhouse bay, the fit is the revision the actor saw (`Line.boiler`, so two presses at once install once, as
+ * rail.turn), and the table is not mid roll-out (the wagon rolling to the Village: `Shed.ready` set, not yet coupled).
+ * It spends nothing; line 2's trains each take the fit standing at the Village (boilerAdopt). */
+export const install = defineSystem(
+  'rail.install',
+  { reads: [Shed, Train], writes: [Line], phase: 'act', order: 56 },
+  (w, { e, tick }: Act) => {
+    if (e.line !== LINE2 || e.part !== 1 || !railInt(e.revision, BOILER_MAX)) return 0;
+    const id = lineId(w, LINE2),
+      l = w.get(Line, id)!,
+      h = w.get(Shed, shedId(w))!;
+    if (e.revision !== l.boiler || l.boiler >= e.part || h.steel < 1) return 0;
+    if (h.ready >= 0 && wagonSlot(w) < 0) return 0;
+    const m = w.mut(Line, id)!;
+    m.boiler = e.part;
+    m.fitted = tick;
+    return 1;
+  },
+);
+/** A line 2 train standing at the Village takes its line's boiler fit (never in flight, so no leg changes speed). */
+export function boilerAdopt(w: World, id: number) {
+  const fit = w.get(Line, lineId(w, LINE2))!.boiler;
+  if (w.get(Train, id)!.boiler < fit) w.mut(Train, id)!.boiler = fit;
 }
 /** The works' cast: once lit, one steel to the rack every castTicks while the rack has room, STEEL.total in all. A full
  * rack waits; the next cast comes as soon as there is room. */
