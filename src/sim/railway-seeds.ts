@@ -1,6 +1,6 @@
 // Railway seeds: worlds at a stage of the route, built from accepted sim ops only (no direct state writes), for the
 // server's jump-ins (server/src/seeds/, docs/plans/playtest-jump-in.md), look's --rail-seed and the rule tests
-// (test/helpers/rail.ts re-exports them; the builders are in ./railway-seed-route.ts, ./railway-seed-works.ts and ./railway-seed-ring.ts). Never
+// (test/helpers/rail.ts re-exports them; the builders are in ./railway-seed-route.ts, ./railway-seed-works.ts, ./railway-seed-ring.ts and ./railway-seed-trade.ts). Never
 // imported by the game, rules or adapters. A seed is an E world and its tick, driven by ./railway-drive.ts.
 //
 // Adding a stage, as content lands:
@@ -32,11 +32,12 @@ import {
 } from './railway-seed-route.ts';
 import { chopTo, railwayAtWorks, WORKS_STAGES, type WorksStage } from './railway-seed-works.ts';
 import { railwayAtRing, RING_STAGES, type RingStage } from './railway-seed-ring.ts';
+import { railwayAtTrade, TRADE_STAGES, type TradeStage } from './railway-seed-trade.ts';
 
 export * from './railway-seed-route.ts';
 
 /** Every stage a seed can be built at, in route order (test/railway-jump.test.ts checks it holds TRAIN_STAGES,
- * WORKS_STAGES and RING_STAGES). */
+ * WORKS_STAGES and RING_STAGES; test/railway-trade.test.ts that it holds TRADE_STAGES). */
 export const SEED_STAGES = [
   'awake',
   'q1-done',
@@ -60,6 +61,8 @@ export const SEED_STAGES = [
   'boiler',
   'boiler-camp',
   'trains-on',
+  // Slice 5 (./railway-seed-trade.ts): trains-on with the first timber home.
+  'freight-running',
   'q6-stocked',
   'q6-finishing',
   'q6-done',
@@ -109,6 +112,7 @@ export function buildSeedWorld(stage: SeedStage): Seed {
   }
   if ((WORKS_STAGES as readonly string[]).includes(stage)) return railwayAtWorks(stage as WorksStage);
   if ((RING_STAGES as readonly string[]).includes(stage)) return railwayAtRing(stage as RingStage);
+  if ((TRADE_STAGES as readonly string[]).includes(stage)) return railwayAtTrade(stage as TradeStage);
   if (stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q2-arriving' || stage === 'q3-stocked') {
     const s = railwayAtQ2();
     if (stage === 'q3-stocked') {
