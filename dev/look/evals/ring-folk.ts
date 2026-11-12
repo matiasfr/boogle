@@ -4,6 +4,9 @@
 //   rest      the two resting crew from 3 m: they turn toward the player when near
 //   whistle   from 8 s before a shift boundary: Hooter's whistle, two walk off the posts and two walk on
 //   platform  from the east platform at the train doors (u 448): where you step off: can you see the lookers?
+//   toss      Rivet off shift on the lane, tossing a rivet (run with --until "window.__folkRivetRests?.()" --real --warm 120)
+// `fcam=u,lat,y` and `flook=u,lat,y` (metres from the halt's west end, over the yard deck) move the camera; the pause
+// button and any open dialog are hidden so nothing sits over the shot.
 //   npm run look -- --rail-seed ring-joined --eval dev/look/evals/ring-folk.ts --size 960x600
 //   npm run look -- --rail-seed ring-joined --eval dev/look/evals/ring-folk.ts --size 390x844 --name phone
 //   npm run look -- --rail-seed ring-joined --query folk=whistle --real --warm 120 --until "window.__folkInto?.() >= 365 && window.__folkInto() < 440" --seconds 14 --frames 12 --eval dev/look/evals/ring-folk.ts
@@ -48,7 +51,9 @@ const stand: UV =
     ? { u: h0 + 6.5, lat: 6.2 }
     : mode === 'platform' || mode === 'whistle'
       ? { u: h0 + 19, lat: 3.4 }
-      : { u: folk.POST_UV[0]!.u - 7, lat: 6.2 };
+      : mode === 'toss'
+        ? { u: h0 + 21, lat: 3.4 }
+        : { u: folk.POST_UV[0]!.u - 7, lat: 6.2 };
 const p = to(stand);
 teleport(b, p.x, Y + PLAYER_R + 0.3, p.z);
 b.velocity.set(0, 0, 0);
@@ -63,6 +68,13 @@ if (mode === 'whistle') {
   // 5 to 8 s before the whistle.
   (window as unknown as { __folkInto: () => number }).__folkInto = () =>
     (inspectRailway()?.tick ?? 0) % folk.ROTA_TICKS;
+} else if (mode === 'toss') {
+  // Rivet (crew 0) rests in one shift of three; `into` past 150 so the walk to the lane is over.
+  (window as unknown as { __folkRivetRests: () => boolean }).__folkRivetRests = () => {
+    const tick = inspectRailway()?.tick ?? 0,
+      into = tick % folk.ROTA_TICKS;
+    return folk.stationOf(folk.RIVET_CREW, folk.shiftAt(tick)).kind === 'rest' && into > 150 && into < 300;
+  };
 } else await wait(1500);
 // look would otherwise freeze its own default camera over the staging: a fixed one per mode.
 type Eye = UV & { y: number };
@@ -84,7 +96,22 @@ const cams: Record<string, [Eye, Eye]> = {
     { ...folk.SQUARE_UV, y: Y + 1.2 },
   ],
 };
-const [e, l] = cams[mode] ?? cams.stare!;
+cams.toss = [
+  { u: folk.REST_UV[0]!.u + 3.5, lat: 1.2, y: Y + 1.5 },
+  { u: folk.REST_UV[0]!.u, lat: 6.2, y: Y + 0.9 },
+];
+const [e0, l0] = cams[mode] ?? cams.stare!;
+const qp = new URLSearchParams(location.search);
+const pick = (k: string, d: Eye): Eye => {
+  const v = qp.get(k)?.split(',').map(Number);
+  return v && v.length === 3 ? { u: h0 + v[0]!, lat: v[1]!, y: Y + v[2]! } : d;
+};
+const e = pick('fcam', e0),
+  l = pick('flook', l0);
+document.querySelectorAll('dialog[open]').forEach((d) => (d as HTMLDialogElement).close());
+const hide = document.createElement('style');
+hide.textContent = 'dialog, .pause-menu-btn, [class*="pause"] { display: none !important; }';
+document.head.append(hide);
 const ew = to(e),
   lw = to(l);
 window.__debugCam!.set([ew.x, e.y, ew.z], [lw.x, l.y, lw.z]);

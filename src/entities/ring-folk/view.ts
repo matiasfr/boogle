@@ -13,12 +13,16 @@ import type { Interactable } from '../../player/hands.ts';
 import { conversation } from '../../player/conversation.ts';
 import { me } from '../../player/player.ts';
 import { whistle } from '../../render/machine-sfx.ts';
+import { emit } from '../../render/particles.ts';
+import { camera } from '../../render/scene.ts';
+import { babble } from '../../place/chatter.ts';
 import { accounts, aperture } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createSeen } from '../railway/ability-arrival.ts';
 import { railwayGlideOpen } from '../railway/glide.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 import { ringUV } from '../ring-meet/shape.ts';
+import { HOOTER } from './lines.ts';
 import {
   CREW,
   HOOTER_UV,
@@ -63,6 +67,10 @@ const voice = (baseHz: number, formantScale: number) => ({
   grainMs: [55, 85] as [number, number],
   vowels: [0.3, 0.15, 0.2, 0.25, 0.1] as const,
 });
+/** The whistle's cue: how long Hooter holds it up and it steams (the sound runs 1.5 s), the steam's rate, and how long
+ * his line stays over his head. */
+const BLAST = { holdS: 1.6, steamS: 1.1, perS: 46, barkS: 3.4, hideM: 30 } as const;
+const STEAM = new THREE.Color('#f6f7f8');
 const NAMES: Record<Who, string> = { rivet: 'Rivet', squint: 'Squint', hooter: 'Hooter' };
 const VOICES: Record<Who, ReturnType<typeof voice>> = {
   rivet: voice(210, 1.05),
@@ -81,10 +89,65 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
     lastShift: number | null = null,
     wasMounted = false,
     whistled = 0,
+    steamOwed = 0,
+    barkLeft = 0,
     lastSwim = -1e9,
     speaking: Who | null = null;
   const cursor: Record<Who, number> = { rivet: 0, squint: 0, hooter: 0 };
   const stats = { whistles: 0, snaps: 0 };
+  // Hooter's line at the whistle, in the town's bark bubble (town.css `.place-bark`, loaded with the railway).
+  const bubble = document.createElement('div');
+  bubble.className = 'place-bark';
+  (document.querySelector('.hud') ?? document.body).append(bubble);
+  owner.cleanup(() => bubble.remove());
+  const screen = new THREE.Vector3();
+  function stopBark() {
+    if (barkLeft <= 0 && !bubble.classList.contains('on')) return;
+    barkLeft = 0;
+    bubble.classList.remove('on');
+    if (hooter && speaking !== 'hooter') hooter.guy.chat = 0;
+  }
+  /** Steam from the whistle's mouth while it blows, and the bubble kept over Hooter's hat. */
+  function blast(dt: number, k: Kit, h: Figure) {
+    if (whistled > BLAST.holdS - BLAST.steamS) {
+      const g = h.guy,
+        top = k.WHISTLE_TOP,
+        sin = Math.sin(g.yaw),
+        cos = Math.cos(g.yaw);
+      const x = g.x + top.x * cos + top.z * sin,
+        z = g.z - top.x * sin + top.z * cos;
+      for (steamOwed += dt * BLAST.perS; steamOwed >= 1; steamOwed--)
+        emit({
+          x: x + (Math.random() - 0.5) * 0.06,
+          y: YARD_Y + top.y,
+          z: z + (Math.random() - 0.5) * 0.06,
+          vx: (Math.random() - 0.5) * 0.9,
+          vy: 3.4 + Math.random() * 1.6,
+          vz: (Math.random() - 0.5) * 0.9,
+          life: 0.9 + Math.random() * 0.6,
+          size: 0.13,
+          color: STEAM,
+          alpha: 0.85,
+          gravity: -0.4,
+          drag: 2.2,
+          grow: [0.7, 3.6],
+          fade: 0.65,
+        });
+    }
+    if (barkLeft <= 0) return;
+    barkLeft -= dt;
+    const g = h.guy;
+    if (
+      barkLeft <= 0 ||
+      conversation.open ||
+      Math.hypot(g.x - camera.position.x, g.z - camera.position.z) > BLAST.hideM
+    )
+      return stopBark();
+    screen.set(g.x, YARD_Y + 1.5, g.z).project(camera);
+    const on = screen.z < 1 && Math.abs(screen.x) < 1.1 && Math.abs(screen.y) < 1.1;
+    bubble.classList.toggle('on', on);
+    bubble.style.transform = `translate(-50%, -100%) translate(${(((screen.x + 1) / 2) * innerWidth).toFixed(1)}px, ${(((1 - screen.y) / 2) * innerHeight).toFixed(1)}px)`;
+  }
 
   void Promise.all([import('../../place/folk.ts'), import('../../place/talk.ts')]).then(([k, t]) => {
     if (!owner.alive) return;
@@ -98,6 +161,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
     for (const f of [...crew, hooter]) f.guy.on = false;
     owner.cleanup(() => {
       if (speaking) t.endTalk();
+      stopBark();
       for (const f of [...crew, hooter!]) {
         const i = k.folk.guys.indexOf(f.guy);
         if (i >= 0) k.folk.guys.splice(i, 1);
@@ -158,7 +222,15 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
     if (hooter) {
       const w = worldOf(hooter.uv);
       whistle(w.x, w.z);
-      whistled = 1.6;
+      whistled = BLAST.holdS;
+      steamOwed = 0;
+      // His line with the whistle, rotating (the Copy table): the shift picks it, so every page reads the same one.
+      if (!conversation.open) {
+        bubble.textContent = HOOTER[shift % HOOTER.length]!;
+        barkLeft = BLAST.barkS;
+        hooter.guy.chat = 1;
+        babble(shift, hooter.guy.k, w.x, w.z);
+      }
     }
     stats.whistles++;
   }
@@ -202,6 +274,8 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
       for (const f of [...crew, hooter]) f.guy.on = mounted;
       if (!mounted) {
         wasMounted = false;
+        whistled = 0;
+        stopBark();
         return;
       }
       const shift = shiftAt(adapter.read.tick());
@@ -224,16 +298,18 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
           g.mood = 'walk';
           g.yaw = angleLerp(g.yaw, Math.atan2(g.x - was.x, g.z - was.z), Math.min(1, dt * 10));
         } else {
-          g.mood = 'idle';
+          // Rivet off shift tosses a rivet and catches it (the plan's "rivet toss"): a fidget, nothing to do with it.
+          g.mood = c === RIVET_CREW && f.station?.kind === 'rest' && !talking ? 'toss' : 'idle';
           if (talking) facePlayer(f, dt);
           else if (f.station?.kind === 'rest' && near(f, 5)) facePlayer(f, dt);
           else faceShard(f, dt);
         }
       }
-      // Hooter: by the board, a wave with the whistle; turns to a player nearby.
+      // Hooter: by the board, the whistle held up and steaming as it sounds; turns to a player nearby.
       whistled = Math.max(0, whistled - dt);
-      hooter.guy.mood = whistled > 0 ? 'wave' : 'idle';
+      hooter.guy.mood = whistled > 0 ? 'whistle' : 'idle';
       place(hooter);
+      blast(dt, kit, hooter);
       if (near(hooter, 6) || speaking === 'hooter') facePlayer(hooter, dt);
       else faceShard(hooter, dt);
       talk?.updateTalkCard();
@@ -274,6 +350,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
       folkView: {
         shift: lastShift,
         whistles: stats.whistles,
+        bark: barkLeft > 0 ? bubble.textContent : null,
         snaps: stats.snaps,
         posts: POST_UV.length,
         crew: crew.map((f) => ({

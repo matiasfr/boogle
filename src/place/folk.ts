@@ -61,7 +61,14 @@ const HAND = new THREE.Color(SKIN),
   BOOT = new THREE.Color('#4a3424'),
   LOG = new THREE.Color('#8a5a32'),
   HANDLE = new THREE.Color('#a9794c'),
-  IRON = new THREE.Color('#5d6068');
+  IRON = new THREE.Color('#5d6068'),
+  HOT = new THREE.Color('#ff8a2a'), // a rivet fresh from the heater
+  BRASS = new THREE.Color('#e2b23c');
+/** The idle toss (a looker's `toss` mood): one throw and catch every `every` s of pose time; `flick` s of wind-up, the
+ * rivet `air` s off the hand and `peak` m over it. The whistle held up (`whistle` mood) is `WHISTLE_TOP`, its mouth in
+ * the figure's own frame, for whoever draws its steam. */
+export const TOSS = { every: 2.1, flick: 0.16, air: 0.82, peak: 0.78 } as const;
+export const WHISTLE_TOP = { x: 0.33, y: 1.05, z: 0.1 } as const;
 
 // ---------------------------------------------------------------- what each one is doing
 type Job =
@@ -78,7 +85,8 @@ type Job =
   | 'resident'
   | 'greeter'
   | 'looker';
-type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
+type Mood =
+  'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat' | 'toss' | 'whistle';
 type Guy = {
   k: number;
   job: Job;
@@ -785,6 +793,10 @@ function pose(g: Guy) {
     hr = [0.25, 0.28, 0.02];
   let itemA = false,
     itemB = false;
+  let tossed = false,
+    tossUp = 0,
+    tossSpin = 0,
+    blowing = 0;
   let lift = 0,
     liftL = 0,
     liftR = 0;
@@ -851,6 +863,34 @@ function pose(g: Guy) {
       const reach = Math.min(1, g.poseTime / 0.22);
       tilt = w * 0.08;
       hr = [0.3 + (0.1 + w * 0.03) * reach, 0.28 + 0.58 * reach, 0.02];
+      break;
+    }
+    case 'toss': {
+      // A rivet thrown from the right hand and caught again: a dip and a flick, the rivet up over the hat tumbling, the
+      // hand giving a little under the catch, then a beat with it held before the next.
+      const u = g.poseTime % TOSS.every,
+        a = (u - TOSS.flick) / TOSS.air;
+      const flick = u < TOSS.flick ? u / TOSS.flick : 1;
+      const give = a >= 1 ? Math.exp(-(a - 1) * TOSS.air * 9) : 0;
+      const handY =
+        u < TOSS.flick
+          ? 0.4 - Math.sin(flick * Math.PI) * 0.07 + flick * flick * 0.16
+          : 0.4 + (a < 1 ? 0.16 * (1 - a) : 0) - give * 0.09;
+      sq = 1 + Math.sin(t * 0.8) * 0.02 - give * 0.03;
+      tilt = Math.sin(t * 0.35 + g.k) * 0.03;
+      hr = [0.27, handY, 0.2];
+      tossed = true;
+      tossUp = a > 0 && a < 1 ? 4 * a * (1 - a) * TOSS.peak : 0;
+      tossSpin = a > 0 && a < 1 ? a * Math.PI * 4 : 0;
+      break;
+    }
+    case 'whistle': {
+      // The whistle held straight up, a lean back into the blast.
+      const reach = Math.min(1, g.poseTime / 0.18);
+      pitch = -0.1 * reach;
+      sq = 1 + Math.sin(g.poseTime * 30) * 0.012 * reach;
+      hr = [0.25 + 0.08 * reach, 0.28 + 0.5 * reach, 0.02 + 0.08 * reach];
+      blowing = reach;
       break;
     }
     case 'cheer': {
@@ -929,6 +969,29 @@ function pose(g: Guy) {
         .multiply(tr.makeTranslation(0, 0, 3.1)),
     );
     held.setColorAt(i1, IRON);
+  } else if (tossed) {
+    // The rivet: a shank and a round-ish head, sitting on the palm or tumbling over it.
+    q.setFromEuler(e.set(tossSpin, 0, tossSpin * 0.31, 'XYZ'));
+    p.set(hr[0]!, hr[1]! + 0.13 + tossUp, hr[2]!);
+    held.setMatrixAt(i0, m.compose(p, q, s.set(0.075, 0.17, 0.075)).premultiply(base));
+    held.setColorAt(i0, HOT);
+    held.setMatrixAt(
+      i1,
+      m
+        .compose(p, q, s.set(0.16, 0.07, 0.16))
+        .premultiply(base)
+        .multiply(tr.makeTranslation(0, 1.5, 0)),
+    );
+    held.setColorAt(i1, HOT);
+  } else if (blowing) {
+    // The whistle: a brass barrel in the fist and its bell over it.
+    q.identity();
+    p.set(hr[0]!, hr[1]! + 0.1 * blowing, hr[2]!);
+    held.setMatrixAt(i0, m.compose(p, q, s.set(0.085, 0.2 * blowing, 0.085)).premultiply(base));
+    held.setColorAt(i0, BRASS);
+    p.y += 0.12 * blowing;
+    held.setMatrixAt(i1, m.compose(p, q, s.set(0.13, 0.05 * blowing, 0.13)).premultiply(base));
+    held.setColorAt(i1, BRASS);
   } else {
     held.setMatrixAt(i0, ZERO);
     held.setMatrixAt(i1, ZERO);

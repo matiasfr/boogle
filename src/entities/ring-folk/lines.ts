@@ -3,7 +3,8 @@
 //
 // Suspect lines for the owner: the two new early-arrival lines (`early`, `swamAcross`), and "The picture only had one
 // box" (`coop`) in a room of three or four. "Rivet" now sits beside the prompt "Strike the rivet" (kept, 10 November).
-// The Hooter lines are the table's "with the whistle, rotating"; they are spoken on Talk, not barked (see the report).
+// The Hooter lines are the table's "with the whistle, rotating": barked in a bubble at each whistle (the shift picks
+// the line) and also spoken on Talk.
 
 export const RIVET = {
   /** Any time. */
