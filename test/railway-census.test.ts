@@ -81,6 +81,8 @@ test('the tick runs in the declared order the hand-coded tick used', () => {
       ['rail.lineTick', 'tick', 0],
       ['rail.line2Tick', 'tick', 1],
       ['rail.cartTick', 'tick', 2],
+      // Slice 5's yards, between the cart and the trains.
+      ['rail.yardTick', 'tick', 2.5],
       ['rail.trainTick', 'tick', 3],
       ['rail.worksTick', 'tick', 4],
       ['rail.jobClock', 'tick', 5],
