@@ -944,3 +944,233 @@ stalls are views, no market yard rows, no transfer, and the bay trestle stays ou
 
 **Counts:** 5 Decided, 3 New, 5 Default. **Suspect lines of The Boogler's:** none written or changed. **Port from
 Place:** nothing.
+
+## Design review (designer, 2026-11-12): leg 1 step 3
+
+Rules on step 3 as built on HOTBOX, stopped on three failed proof gates, and on line 2's wait bound as a whole. Where
+this differs from the two reviews above or from the
+[economy stops ruling](slice5-town-economy.md#design-review-designer-2026-11-12-economy-stops-r2b-and-r3), this is what
+gets built. **Read:** the builder's measurement sheet and its three addenda (relayed by the orchestrator, 12 November
+UTC, base `a82a0d6e`), this plan's step 3 and both reviews, the economy stops ruling and its seven gates, build 2's
+outcome and rulings A to F, the 12 November owner entries (rewards, core loop, rail) and the 10 November "three trains
+for now" entry. **Not read:** the step 3 code (another machine); every figure is the builder's, in ticks, 10 a second,
+unit runs, no device. **Not run by me:** anything. **No stills:** nothing is placed, moved or gated. Lines marked
+*arithmetic* are my sums from the sheet's ticks, not measurements.
+
+**Verdict.** The fleet is 3, then 5 from the first section on; seven trains are refused. The wait bound is restated
+for line 2 as a whole: 1,158 on the settled line, 1,600 while the line is growing, with a ride gate beside it. The leg
+opens on the rivet, unasked, steel kit first. All kit is owed at once, on all but one of the running trains. A train
+carrying a kit that cannot unload yet makes the stone stop. 7 decided, 5 new, 8 default.
+
+### What the sheet says
+
+- **Train count is not the lever.** Each end turns about one train per 800 ticks, so mean headway is about 803 quiet
+  and 906 to 931 under asks with five trains or seven. Seven trains pass the settled fuzz (0 breaches) only by
+  queueing: one train's round trip goes from 4,015 to 5,680 against 3,428 non-stop, about 80 s more aboard at each end
+  (*arithmetic*). Five trains run 17% over non-stop and show one settled breach, 1,114.
+- **The breaches are a growth effect.** They are asked while kit loads and trains join, or 1,000 to 3,000 ticks after
+  the far end moves, nearly all "down" at old-line halts. The builder at the railhead waiting to ride on is not in the
+  list.
+- **The bound has no room for the stops since added to it.** Headway under asks is 920 to 930 with five trains, so
+  1,050 holds only while gaps stay within 13% of even. One stone stop costs 108. The economy's riders (1,144), build
+  2's mixed fleet (1,064 after its rebase onto the stone stop) and this step have each met it.
+- **`stone` is free:** on either fleet, leg time, idle, waits, the fuzz, joins, fares and the wagon are identical;
+  only stone moves, 0 to 32 at the rivet.
+- **Slowing or capping the kit hard costs idle at the fourth frame:** `k2` and `two` 1,269, `one` 2,054, against 484.
+- **The idle room is a stone failure and a steel risk, not a kit failure.** Kit 1 on the rack at +651 is the cue for
+  the next goal. What is wrong is no stone stop, and no empty kit car left for build 2's steel.
+
+### A. The wait bound for line 2, and the fleet
+
+**What 1,050 was.** The owner accepted "about 105 s" as what three trains gave on the line to Ring Island
+([10 November](../decisions-rail.md#d-2026-11-10-line-2-runs-three-trains-for-now)); the test figure was a regression
+bound logged the same day. Two days later he ruled that trains stop at every resource source
+([12 November](../decisions-rewards.md#d-2026-11-12-town-economy-answered)). The figure never contained that stop.
+
+1. **What the bound measures** (New; replaces the flat 1,050 for every plan on line 2). Three things, so that none can
+   be met by spoiling another:
+   - **The worst wait:** lever ask to a train standing there, that way, every halt, in the 20,000-tick fuzz at both
+     seeds, as today.
+   - **The typical wait:** the mean of those waits, at most 525 (half the owner's figure: an even line).
+   - **The ride:** one train's quiet round trip at most 1.2 times the non-stop round trip. Five trains to the Gorge
+     are at 1.17; seven are at 1.66 and fail. Without this gate, trains queued outside the terminals pass the wait
+     gate with the player sitting in them.
+2. **The settled line: worst wait at most 1,050 plus 108 for each resource source a train on that line stops at.**
+   Line 2 has one, the Quarry: **1,158.** The reason is his two entries read together, not room to pass: 108 is the
+   measured cost of the one stop he added (50 dwell, about 57 braking and starting). Kit, riders, joins and slower
+   trains get no allowance. "Settled" means no section laid, no train joined and no end moved in the last 3,000 ticks.
+3. **The growth phase: worst wait at most 1,600**, from a leg opening until 3,000 ticks after its far end last moved,
+   and **at most 1,158 for an ask up the line at the current railhead**, where the room that laid the section stands.
+   The reason: 1,600 is two end turns, so growing the line may cost a waiting player one train's slot, never two. The
+   worst measured is 1,440 on the planned fleet.
+4. **Fleet 3, then 5, 5, 5, 5** (New; replaces call 26). Seven is refused by the ride gate. Five from the first
+   section passes every measured fixed-stage cell under 1,158 (910/697, 822/845, 1,030/957, 1,130/973) where four
+   trains at one section do not (1,169), and both extra trains join in one window, not three. **Not measured as a
+   whole fleet: re-measure it.** If it fails at one section laid, the planned 3, 4, 5, 5, 5 ships and that stage is
+   judged by the growth cap, since no room rests there.
+5. **The joiner waits; the line does not** (Default): an extra train leaves the shed only into a gap, and no running
+   train is held to make room.
+6. **The real lever is the turn at each end** (finding 1). When a later plan brings the end turn under about 500
+   ticks, item 2 returns to a flat 1,050 with three stops of margin, and the fleet is sized again.
+7. **The settled fuzz the builder is running, both outcomes** (three fleets from 18,022; the sheet's second addendum
+   has it, and a longer or third-seed run may still differ):
+   - **Breaches only in the growth phase** (as measured): items 2 and 3 as written.
+   - **Settled breaches persist over 1,158 on five trains:** do not add trains and do not move the figure. Gate 9 is
+     recorded as failing with its table, G1 ships on the growth cap applied throughout, and the end turn becomes the
+     next rail step before leg 2's fleet is set.
+
+### B. When leg 1 opens
+
+**On the rivet, as built, unasked; the steel kit loads first** (New).
+
+| Option | What the player sees | Verdict |
+| --- | --- | --- |
+| On the rivet | The ring joins; the next train brings the steel kit, the one after brings the frame's first kit to a rack in sight of the halt; two bills on one island, one for each of two players | **Built.** It is the owner's "player shouldn't have to" call a train for freight, it is how build 2's kit already comes, and the first kit's ride is hidden behind the steel work |
+| On a player act (the frame's prompt, a lever, the install) | A frame with nothing beside it, a press, then 65 to 170 s of nothing | No. It is calling a train for freight under another name, and it puts the bare first wait back |
+| After the works is lit, or steel is home | Nothing on the west shore for 6 to 9 minutes | No. It makes steel a work edge on the main line and the two beats serial; a room that rushes may skip the boiler (owner, 12 November: a three-hour rush is fine) |
+
+- **Order** (part of the same call): after the rivet the first train with an empty kit car takes the steel kit, and
+  the steel kit has first call on the forge's rails. Build 2's 90 s test for its kit is not to move.
+- **The idle room is redefined, not forbidden** (Default): a room that does nothing after the rivet comes to rest by
+  +1,500 with kit 1 racked 20/20, at most two trains carrying one kit each, at least one train with an empty kit car,
+  the fourth kit not loaded (60 logs and 60 rails taken in all, not 80), and from then no change to the `Leg` row, the
+  rack or any train's cargo. The fixed order makes the stack line the only way on, so that kit is prepaid, not wasted.
+- **Flow.** Rule 1 (the next goal can be found) is served by the racked kit. The lens "one main line" bends, with two
+  open bills of the same materials at one halt; it is the co-op split this island lacked, and the bill signs name
+  each. Watch in the first owner session for logs carried to the wrong site.
+
+### C. Kit pacing
+
+**All remaining kit owed at once, one kit a train, on at most `kitTrains` trains: the trains running minus one**
+(New; amends call 46). So two at the rivet, then four.
+
+- **Figures from the sheet, base and `stone` rows:** rivet to Gorge 3,230; idle at the frames 651 / 536 / 355 / 484;
+  stone in 20 minutes 32 / 32 / 32 / 24 / 24; fares 59.3 a minute and up.
+- **What the cap changes** (*arithmetic*): in a fed room nothing. Kit 1 is off its train at +651, before kit 3 loads
+  at +945, and the fleet has grown before kit 4 loads at +1,345. In the idle room it keeps the third train's kit car
+  empty for steel. It is not `two`: a flat cap of two starves the fourth frame (1,269, leg 4,015).
+- **What steel-first changes** (*arithmetic*): the leg's first kit rides the second train, about 436 ticks later, so
+  the first frame's idle is about 1,090 and rivet to Gorge about 3,670 from a jump seed. In the route that wait is the
+  steel work, and call 40 allows three minutes.
+- **Not `k2`, not `one`:** 4,123 and 6,287, with 127 s and 205 s at the fourth frame against a 60 s target.
+- **Re-measure, on build 2's base, as one run of the sheet:** fleet 3, 5, 5, 5, 5 with `stone`, `kitTrains` and
+  steel-first.
+- **If the fed room's leg time comes out over 3,700 or a later frame over 600:** drop the cap to stage 0 only and
+  report; the steel order stays.
+
+### D. The stone stop with a kit aboard
+
+**Amended** (New; amends the economy stops ruling's kit exemption, not an owner entry). A train makes no stone stop
+while it is owed a kit, or carries one it can unload at a halt open now: somebody may be standing at that rack. A
+train carrying a kit whose railhead is not open yet is an ordinary train and stops for stone. Q6's and Q7's kits can
+always unload, so nothing before the rivet moves. This is nearer his words ("trains should be stopping at all
+resource sources") than the rule it replaces. The footing clause stands untouched.
+
+### E. The proof gate for step 3
+
+Nothing asked, 12,000 ticks, against main with build 2 and the town economy in, unless said. Items 1 to 7 are slice
+5's seven, re-run; A's bound replaces "under 1,050" in its item 4 and in build 2's mixed-fleet test.
+
+1. **Stage ticks:** all 40 seed stages land on main's tick. At `ring-joined` the state may differ only in the `Leg`
+   rows, kit aboard, and the depot and forge counters that kit moved; the builder lists the fields.
+2. **The wagon, trip by trip,** on main's tick at every stage where footings are owed.
+3. **Footing delivery ticks** match main.
+4. **Waits, slice 5's six stages:** no higher than main's and at most 1,158.
+5. **Stone:** at least 32 in 20 minutes from `crossing-done` and from the rivet (stage 0, fed or idle); at least 24 at
+   one to four sections laid; no freight stop while footings are owed; none by a train owed a kit or carrying one it
+   can unload now; timber unchanged.
+6. **Fares:** at least 40 a minute at every stage, the five leg stages included; neither crowd at `crowdCap` for 1,200
+   ticks running.
+7. **`npm run loop -- run`:** order and bills unmoved.
+8. **Waits, fixed stages:** the `WAIT_BOUND` way at 0 to 4 sections laid, both seeds, at most 1,158.
+9. **The settled fuzz:** 20,000 ticks of random asks from 4,000 ticks after the Gorge opens, both seeds: worst at
+   most 1,158, mean at most 525. The same at stage 0 with the leg open and nobody feeding.
+10. **The ride:** quiet round trip at four sections laid at most 1.2 times non-stop (4,114); printed at the other
+    stages.
+11. **The whole-leg fuzz,** both seeds: the leg completes; `sepCm`, the end blocks and the load check never break;
+    worst wait at most 1,600; no ask up the line at the current railhead waits over 1,158; no wait over 1,158 asked
+    later than 3,000 ticks after the Gorge opens. Every wait over 1,158 is printed with its tick, halt and side.
+12. **The join window:** both extra trains running within 1,050 ticks of the first section laying; no running train
+    held for a join.
+13. **The idle room:** B's rest state by +1,500, then 20 minutes with stone at least 32, fares at least 40 a minute
+    and gate 9's figures, and no kit loaded after it.
+14. **Leg timing, fed every tick:** rivet to Gorge at most 3,700; idle at the first frame at most 1,200 and at frames
+    two to four at most 600 each.
+15. **Build 2 with the leg open:** the steel kit reaches the yard on build 2's own tick; first steel home and the
+    install no more than 1,050 ticks later than build 2 alone, printed.
+16. **Step 3's own tests:** each refusal; a section lays and the railhead moves; the Gorge opens on the fourth; `pick`
+    refused before and granted after; kit units loaded equal units aboard, racked and fed, every tick of gates 11
+    and 13.
+
+### F. What may wait
+
+- **Ships with G1, though it may land after the rules are proven:** `rail.legStock` predicted on the client. It is
+  pressed some eight times a section by everyone, and the route is live for every room (owner, 12 November).
+- **A later step:** prediction of `rail.grant`, `rail.gate` and `rail.arrive` (once a leg, once a game; the prompt
+  shows from the accepted state); legs 2 to 8 opening; `LegYard` in use; lay time or `kitLead` per leg; the
+  `gorge-open` seed starting with kit 1 racked (step 5).
+- **Not later:** the steel order, the cap, the stone amendment and the join rule. They are what the gates measure.
+
+### Findings
+
+1. **Line 2's ends set its service, and no plan owns them.** One train per 800 ticks at each end caps the line at
+   about four trains' worth of service to the Gorge, whatever is added. Every later line inherits it, and rail-map's
+   ring "sized by an even headway of about a minute" cannot be met through such an end. It needs a rail step of its
+   own (the end block, the dwell, or a terminal that takes two trains). Owner question 1.
+2. **The fare jump at the Gorge is a gameplay call nobody made.** Fares go from about 58 to 168 a minute when the
+   fourth section lays, against the economy ruling's call 9 ("the fare stays 7 while the far end moves"). It ships as
+   built and is reported, not gated (Default); the town economy's next table should show minutes to plot 3 before and
+   after, since the first ruling counted three hours.
+3. **Step 3's "105 s worst wait" line was never a settled-line test.** It ran one fuzz across the fleet changes.
+   Gates 8 to 12 split it.
+4. **Research.** [route-contract](../research/route-contract.md): holds, no ruling here lets movement supply work.
+   [carrying-and-logistics-play](../research/carrying-and-logistics-play.md) rec 2 is the ground for B. The index was
+   not otherwise re-read for this ruling.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 54 | Three trains when line 2 reaches Ring Island; about 105 s worst wait | Decided | [10 November](../decisions-rail.md#d-2026-11-10-line-2-runs-three-trains-for-now). Stage 0 and the bound's base figure |
+| 55 | Freight is hauled by trains that stop at every source; the player does not carry it or call a train for it | Decided | [12 November](../decisions-rewards.md#d-2026-11-12-town-economy-answered). Why the leg opens unasked, and the 108 |
+| 56 | The stone stop runs once the pier's footings are done | Decided | The same entry. D restores it after the rivet |
+| 57 | High Gorge first, fixed order; a three-hour rush is fine | Decided | [12 November](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered). The idle room's kit is prepaid; steel does not gate the leg |
+| 58 | The works takes logs and rails only; steel rides the kit car until the install | Decided | [12 November](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered). Why one kit car stays empty |
+| 59 | The greybox route is live for everyone, each leg shipped whole | Decided | The same entry. Why `rail.legStock` is predicted before G1 |
+| 60 | You haul for each segment; the network brings materials closer | Decided | [2 November](../decisions-core-loop.md#d-2026-11-02-hauling) |
+| 61 | Line 2's wait bound: worst 1,050 plus 108 a source stop on the settled line (1,158), mean 525, and a round trip within 1.2 of non-stop | **New** | A.1, A.2. Owner question 1 |
+| 62 | While a line grows the worst wait may reach 1,600, never over 1,158 up the line at the railhead | **New** | A.3 |
+| 63 | Line 2's fleet is 3, then 5 from the first section; seven refused | **New** | A.4 |
+| 64 | Leg 1 opens on the rivet, unasked; the steel kit loads first and has first call on the forge's rails | **New** | B. Owner question 2 |
+| 65 | All remaining kit owed at once, one kit a train, on at most the running trains minus one (`kitTrains`); a train carrying a kit that cannot unload yet makes the stone stop | **New** | C and D. Amends call 46 and the economy ruling's kit exemption |
+| 66 | The joiner waits and the line does not; both extra trains within 1,050 ticks | Default | A.5, gate 12 |
+| 67 | If settled breaches persist, G1 ships on the growth cap and the end turn is the next rail step | Default | A.7 |
+| 68 | The idle room's rest state | Default | B |
+| 69 | Stone at least 24 in 20 minutes at one to four sections laid | Default | The measured figure; the longer line passes the Quarry less often |
+| 70 | Leg timing limits: 3,700 to the Gorge, 1,200 at the first frame, 600 at the others | Default | C; the 60 s target stands |
+| 71 | `rail.legStock` predicted before G1; the other three ops wait for the server through the greybox | Default | F |
+| 72 | The Gorge fare jump ships as built, reported and not gated | Default | Finding 2 |
+| 73 | The proof gate above, sixteen items | Default | E |
+
+**Counts:** 7 Decided, 5 New, 8 Default. **Suspect lines of The Boogler's:** none written or changed. **Port from
+Place:** nothing.
+
+### Owner questions
+
+Neither holds the build.
+
+1. **"Trains now stop for stone, and each end of the line can only turn a train about every 80 s. What wait at a
+   platform is acceptable?"**
+   - **About 116 s at worst on a finished line, up to 160 s for the few minutes a line is being extended, and fixing
+     how fast trains turn at the ends is the next rail job (recommended; built until he answers).** More trains were
+     measured and only queue outside the stations.
+   - Hold 105 s now: the end turn is fixed before leg 1 ships.
+   - Leave it: waits up to about two and a half minutes are fine in a greybox, and the ends wait for the real
+     stations.
+   Answer: ___
+2. **"After the rivet, should the stack line's first kit come by itself while you work the steel, or only once the
+   longer boiler is installed?"**
+   - **By itself, the steel kit first (recommended; built until he answers).** Two jobs on the island at once; a
+     room in a hurry can leave the boiler for later.
+   - Only after the install. One job at a time, steel always done, and 6 to 9 minutes before the west shore wakes.
+   Answer: ___
