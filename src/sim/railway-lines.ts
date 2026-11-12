@@ -442,8 +442,8 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     accel: 3.5,
     // The balanced hold, capped 60 s past the dwell (R3b, call 47).
     balance: 600,
-    // The greybox route: 3, 4, 5 and 5 trains while sections 1 to 4 are laid, and 5 at the Gorge (call 26).
-    fleet: { leg: STACK_LEG, trains: [3, 4, 5, 5, 5] },
+    // The greybox route: 3, then 5 from the first section laid (ruling A.4, call 63).
+    fleet: { leg: STACK_LEG, trains: [3, 5, 5, 5, 5] },
   },
   // The greybox route's own rows (step 3), every halt shut.
   rowLine('ns'),

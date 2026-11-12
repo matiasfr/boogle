@@ -27,6 +27,7 @@ import { WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
 import { Town, Train, Works, Yard } from './railway-components.ts';
 import { footingsOwed, kitOwed, stopsOf, worksId } from './railway-queries.ts';
+import { legKitWaiting } from './railway-queries-route.ts';
 
 export const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
 export const townId = (w: World, slot: number) => w.lookup(Town, slot)!;
@@ -70,7 +71,9 @@ export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: n
   const yard: TradeYard = TRADE.yards[y]!;
   if (k !== yard.stop || k === 0 || k >= stopsOf(w, line).length - 1) return false;
   if (yard.after === 'pier' && w.get(Works, worksId(w))!.pierSet < WORKS.pier) return false;
-  if (r.wagon || r.logs + r.rails > 0 || kitOwed(w, r)) return false;
+  // Ruling D (greybox route, 12 November; amends call 4's kit exemption): no stop while a kit is owed or aboard and able
+  // to unload at a halt open now; a leg kit waiting for its railhead (legKitWaiting) is no errand.
+  if (r.wagon || (r.logs + r.rails > 0 && !legKitWaiting(w, line, r)) || kitOwed(w, r, line)) return false;
   // The ruling of 12 November: while line 2's wagon is owed footings, the economy adds no stop on that line.
   if (footingsOwed(w, line)) return false;
   const freight = w.get(Train, w.lookup(Train, slot)!)!.freight;

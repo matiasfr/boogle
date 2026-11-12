@@ -1,7 +1,8 @@
 // The greybox route's kit on the trains (docs/plans/greybox-route.md, step 3, and the design review of 12 November,
 // ruling 1.4: "the kit runs ahead by the whole leg, one kit a train"): the trains' side of a leg's kit, called from
 // the trains' step (./railway-sys-trains.ts) as slice 5's freight is. A train standing at its line's kit halt (the
-// Village) with room loads one section's kit while the leg's kitLead sections still owe kit; it keeps running its
+// Village) with room loads one section's kit while the leg's kitLead sections still owe kit, at most kitTrains of them
+// (the running trains less one: ruling C, call 65); it keeps running its
 // service with the kit aboard, and at the leg's rack (its first halt, then its railhead) unloads what the current
 // section still lacks, the rest riding on until a later section's railhead opens. Transfers are atomic inside the
 // tick's apply. Pure integers.
@@ -13,7 +14,17 @@ import type { World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { Forge, Leg, Rail, Train } from './railway-components.ts';
-import { legId, legKitCap, legKitHalt, legKitNeed, legKitStop, legRackNeed, openLeg } from './railway-queries-route.ts';
+import {
+  legId,
+  legKitCap,
+  legKitCarriers,
+  legKitHalt,
+  legKitNeed,
+  legKitStop,
+  legKitTrains,
+  legRackNeed,
+  openLeg,
+} from './railway-queries-route.ts';
 
 const trainOf = (w: World, slot: number) => w.lookup(Train, slot)!;
 /** The kit's service stop for train `slot` (row `r`): its line's open leg's rack halt, while it carries kit the current
@@ -54,6 +65,8 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
   if (k < 0) return 'on';
   const r = w.get(Train, trainOf(w, slot))!;
   if (r.at !== legKitHalt(line)) return 'on';
+  // At most `kitTrains` (the running trains less one) carry kit: an empty train loads only below that.
+  if (r.logs + r.rails === 0 && legKitCarriers(w, line) >= legKitTrains(w, line)) return 'on';
   const cap = legKitCap(w, k),
     need = legKitNeed(w, k),
     forge = w.get(Forge, w.single(Forge))!;

@@ -11,14 +11,16 @@
 //   legKitCap(w, k)              one kit: the current section's bill (one kit a train)
 //   legKitNeed(w, k)             the kit still to load for the sections owed ahead (LEG_TUNE.kitLead)
 //   legRackNeed(w, k)            what the current section still lacks, fed and racked
-//   legKitOwed(w, line, r)       an empty train on `line` is owed a kit at its kit halt
+//   legKitOwed(w, line, r)       an empty train on `line` is owed a kit at its kit halt (within kitTrains)
+//   legKitTrains, legKitCarriers  the trains that may carry kit (running less one), and those that do
+//   legKitWaiting(w, line, r)    the kit aboard cannot unload at any halt open now (the stone stop's test)
 //   gateLeg(g)                   the leg and section a RAIL_GATES row shuts
 //   haltHead(w, halt)            the head a `heads` halt stands at now (the Railhead's ring head, a leg's sections)
 import type { World } from '../ecs/index.ts';
 import { RAIL_HALTS, RAIL_LINES, legBuilt } from './railway-lines.ts';
 import { LEG_TUNE, RAIL_LEGS, legS } from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
-import type { RailTrain } from './railway-train.ts';
+import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
 import { Aperture, Leg, Rail, Route, Train } from './railway-components.ts';
 
 export const legId = (w: World, slot: number) => w.lookup(Leg, slot)!;
@@ -104,9 +106,32 @@ export function legRackNeed(w: World, k: number) {
   };
 }
 /** An empty train on `line` is owed a kit: the line's open leg still has kit to load. */
+/** The trains of `line` that may carry a leg's kit at once (`kitTrains`, call 65): those running less one, so one kit
+ * car stays empty (for build 2's steel). */
+export const legKitTrains = (w: World, line: number) =>
+  Math.max(
+    0,
+    LINE_SLOTS[line]!.filter((s) => w.get(Train, w.lookup(Train, s)!)!.phase !== TRAIN_PHASE.SHED).length - 1,
+  );
+/** The trains of `line` carrying kit units now. */
+export const legKitCarriers = (w: World, line: number) =>
+  LINE_SLOTS[line]!.filter((s) => {
+    const t = w.get(Train, w.lookup(Train, s)!)!;
+    return t.logs + t.rails > 0;
+  }).length;
+/** Row `r` on `line` carries a leg's kit that cannot unload at any halt open now: its open leg's current section
+ * lacks nothing it carries (the next railhead is not open yet). Ruling D: such a train makes the stone stop. A Q
+ * job's kit can always unload (no leg is open before the rivet). */
+export function legKitWaiting(w: World, line: number, r: Readonly<RailTrain>) {
+  const k = openLeg(w, line);
+  if (k < 0 || r.logs + r.rails <= 0) return false;
+  const need = legRackNeed(w, k);
+  return !(r.logs > 0 && need.logs > 0) && !(r.rails > 0 && need.rails > 0);
+}
 export function legKitOwed(w: World, line: number, r: Readonly<RailTrain>) {
   const k = openLeg(w, line);
   if (k < 0 || r.logs + r.rails > 0) return false;
+  if (legKitCarriers(w, line) >= legKitTrains(w, line)) return false;
   const need = legKitNeed(w, k);
   return need.logs > 0 || need.rails > 0;
 }
