@@ -1,6 +1,6 @@
 // Train-spacing harness, the sweep (docs/plans/train-spacing.md, section 3): runs test/spacing/run.ts over the
 // stages, holds, ask rates and seeds in at most SPACING_WORKERS processes, pools the waits by stage, and writes the
-// section 3 columns as a markdown table (sheet.md) and JSON (sheet.json) under SPACING_OUT, with every run's raw line
+// section 3 columns as a markdown table (sheet.txt) and JSON (sheet.json) under SPACING_OUT, with every run's raw line
 // (runs.jsonl). Scratch measurement only: nothing in a suite runs it. Settings, all by environment:
 //
 //   SPACING_OUT      output directory (required)
@@ -12,6 +12,7 @@
 //   SPACING_WORKERS  4
 //   SPACING_QUIET    12000         nothing-asked ticks a stage (0: skip); also trains-on, fares-running, wagon-on
 //   SPACING_SEED_STAGES  1          also build all 40 seed stages and print their ticks and hashes
+//   SPACING_FROM     runs.jsonl     re-aggregate an earlier sweep's raw lines instead of running
 //
 //   SPACING_OUT=/tmp/x node test/spacing/sweep.ts
 import fs from 'node:fs';
@@ -77,18 +78,22 @@ const runOne = (args: Job) =>
     });
   });
 let next = 0;
-await Promise.all(
-  Array.from({ length: WORKERS }, async () => {
-    while (next < jobs.length) await runOne(jobs[next++]!);
-  }),
-);
+// SPACING_FROM=<runs.jsonl>: re-aggregate an earlier sweep's runs, running nothing.
+if (process.env.SPACING_FROM)
+  lines.push(...fs.readFileSync(process.env.SPACING_FROM, 'utf8').split('\n').filter((l) => l.trim()));
+else
+  await Promise.all(
+    Array.from({ length: WORKERS }, async () => {
+      while (next < jobs.length) await runOne(jobs[next++]!);
+    }),
+  );
 fs.writeFileSync(path.join(OUT, 'runs.jsonl'), lines.join('\n') + '\n');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 const runs: Any[] = lines.map((l) => JSON.parse(l));
 const errors = runs.filter((r) => r.kind === 'error');
 
-const pct = (x: number) => `${(100 * x).toFixed(2)}%`;
+const pct = (x: number) => `${(100 * x).toFixed(3)}%`;
 const q = (xs: number[], p: number) => {
   const s = [...xs].sort((a, b) => a - b);
   return s.length ? s[Math.min(s.length - 1, Math.ceil(p * s.length) - 1)]! : 0;
@@ -101,7 +106,10 @@ for (const rate of RATES)
         (r) => r.kind === 'fuzz' && r.stage === stage && r.headPct === hold && r.light === (rate === 'light'),
       );
       if (!R.length) continue;
-      const waits: number[] = R.flatMap((r) => r.waits);
+      // The brief's pooling (12 November): every line-2 lever wait served, plus each ask still waiting at the end at
+      // its wait so far. `served` and `servedMean` are the served waits alone (the committed test's diagnostic).
+      const served: number[] = R.flatMap((r) => r.waits);
+      const waits: number[] = R.flatMap((r) => [...r.waits, ...(r.unserved ?? [])]);
       const worst = R.reduce((a, r) => (r.worst.ticks > a.worst.ticks ? r : a));
       const head: Record<string, { n: number; sum: number; sq: number }> = {};
       for (const r of R)
@@ -134,8 +142,10 @@ for (const rate of RATES)
         stage,
         hold,
         seeds: R.length,
-        served: waits.length,
-        mean: Math.round(waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length)),
+        served: served.length,
+        waits: waits.length,
+        servedMean: Math.round(served.reduce((a, b) => a + b, 0) / Math.max(1, served.length)),
+        mean: Number((waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length)).toFixed(1)),
         p95: q(waits, 0.95),
         over1050: waits.filter((x) => x > 1050).length / Math.max(1, waits.length),
         over1158: waits.filter((x) => x > 1158).length / Math.max(1, waits.length),
@@ -181,12 +191,12 @@ fs.writeFileSync(
 const md: string[] = [];
 md.push(`Ticks ${TICKS}; seeds ${S0.toString(16)}-${S1.toString(16)}; errors ${errors.length}`, '');
 md.push(
-  '| rate | stage | hold | seeds | served | mean | p95 | >1,050 | >1,158 | worst (halt way, tick, seed) | seeds >1,050 | asks/min (line 2) | hold a lap V/far | longest stand | passed (share) | extra mean/worst | passed total worst | too close | two past | lamp fwd | lamp out |',
+  '| rate | stage | hold | seeds | served (+unserved) | mean (served only) | p95 | >1,050 | >1,158 | worst (halt way, tick, seed) | seeds >1,050 | asks/min (line 2) | hold a lap V/far | longest stand | passed (share) | extra mean/worst | passed total worst | too close | two past | lamp fwd | lamp out |',
   '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
 );
 for (const r of rows)
   md.push(
-    `| ${r.rate} | ${r.stage} | ${r.hold} | ${r.seeds} | ${r.served} | ${r.mean} | ${r.p95} | ${pct(r.over1050)} | ${pct(r.over1158)} | ${r.worst.ticks} (${r.worst.at}, ${r.worst.tick}, ${r.worst.seed}${r.worst.open ? ', unserved' : ''}) | ${r.seedsOver} | ${r.asksMin} (${r.line2AsksMin}) | ${r.holdLap.village}/${r.holdLap.far} | ${r.longest.ticks} | ${r.passed} (${pct(r.passedShare)}) | ${r.extraMean}/${r.extraWorst} | ${r.passedTotalWorst} | ${r.tooClose} | ${r.twoPast} | ${r.lampForward} | ${r.lampOut} |`,
+    `| ${r.rate} | ${r.stage} | ${r.hold} | ${r.seeds} | ${r.served} (+${r.waits - r.served}) | ${r.mean} (${r.servedMean}) | ${r.p95} | ${pct(r.over1050)} | ${pct(r.over1158)} | ${r.worst.ticks} (${r.worst.at}, ${r.worst.tick}, ${r.worst.seed}${r.worst.open ? ', unserved' : ''}) | ${r.seedsOver} | ${r.asksMin} (${r.line2AsksMin}) | ${r.holdLap.village}/${r.holdLap.far} | ${r.longest.ticks} | ${r.passed} (${pct(r.passedShare)}) | ${r.extraMean}/${r.extraWorst} | ${r.passedTotalWorst} | ${r.tooClose} | ${r.twoPast} | ${r.lampForward} | ${r.lampOut} |`,
   );
 md.push('', 'Headway mean (CV) by halt and way:', '');
 for (const r of rows)
@@ -206,5 +216,5 @@ if (quiet.length) {
       `| ${r.stage} | ${r.rideMean} | ${r.rideWorst} | ${r.lapMean} | ${r.lapWorst} | ${r.wagon.length} | ${r.footing.length} | ${r.stone} | ${r.fares} |`,
     );
 }
-fs.writeFileSync(path.join(OUT, 'sheet.md'), md.join('\n') + '\n');
+fs.writeFileSync(path.join(OUT, 'sheet.txt'), md.join('\n') + '\n');
 console.log(md.join('\n'));
