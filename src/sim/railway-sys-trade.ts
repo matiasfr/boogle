@@ -3,7 +3,7 @@
 //
 //   yardTick (rail.yardTick)   while the trains run, each yard makes a crate every `everyTicks` up to its cap
 //   freightLoads(w, slot)      a train standing at its line's yard heading home loads what it has room for
-//   freightArrives(w, slot)    a train come to a stand at its line's Village halt unloads into the Town
+//   freightArrives(w, slot)    a train come to a stand at its yard's `home` halt unloads into the yard's `town`
 //   yardsAway(w, ticks, tick)  the away credit's part for the yards (R2): called by rail.resume's awayCredit
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
@@ -63,7 +63,7 @@ export function freightArrives(w: World, slot: number) {
   const r = w.get(Train, trainId(w, slot))!,
     yard = TRADE.yards[y]!;
   if (r.at !== yard.home || !r.freight) return;
-  w.mut(Town, townId(w, 0))![yard.goods] += r.freight;
+  w.mut(Town, townId(w, yard.town))![yard.goods] += r.freight;
   w.mut(Train, trainId(w, slot))!.freight = 0;
 }
 /** The yards' away credit (R2): `ticks` of production (railAwayCredit's, the same as the forge's and the cart's) gives

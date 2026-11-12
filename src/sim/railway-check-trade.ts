@@ -29,7 +29,12 @@ export function checkTrade(w: World) {
     ts.some((t) => !railInt(t.wood) || !railInt(t.stone))
   )
     bad('trade bounds');
-  // Every crate a yard made is in its stock, aboard its line's trains or delivered to the Village.
-  if (ys.some((y, slot) => y.made !== y.stock + freightAboard(w, slot) + ts[0]![TRADE.yards[slot]!.goods]))
+  // Every crate a yard made is in its stock, aboard its line's trains or delivered to its town.
+  if (
+    ys.some((y, slot) => {
+      const row = TRADE.yards[slot]!;
+      return y.made !== y.stock + freightAboard(w, slot) + ts[row.town]![row.goods];
+    })
+  )
     bad('freight conservation');
 }
