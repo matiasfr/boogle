@@ -441,9 +441,12 @@ main route gains no wait: R2b's full-load rule applies to these rows.
 **Finding.** The skerry is 240 × 190 m on two levels, carrying two lines' platforms. Whether five stalls and a board fit on the
 upper deck round the tower is unproven; Bell Rock's own plan runs the level check before anything is placed.
 
-**Owner question (one).** Is the market Bell Rock, built out in stages as lines arrive (recommended), or did you mean
-the last place unlocked, which on this map is the Original Island? Until he answers: Bell Rock, timing (b), as
-greybox markers only; nothing is built on the Original Island beyond the recorded ending.
+**Owner question (one).** Answered (owner, 12 November UTC): Bell Rock, built out in stages as lines arrive,
+timing (b) (recommended). His words: "Okay, I'll take your recommendation." Recorded in the
+[decisions](../decisions-rewards.md#d-2026-11-12-market-hub-answered); greybox markers only for now, the real design after the route is greyboxed.
+
+**Open design item (orchestrator's, not his words).** How the ring's goods reach Bell Rock: with High Gorge first only the
+bay and north–south lines meet there. Settle before the lines past leg 2 are laid, since it affects line layout.
 
 ### Findings
 

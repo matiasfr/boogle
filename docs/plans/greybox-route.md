@@ -435,6 +435,8 @@ Open item (step 1): the map JSON's heights must be regenerated from the rulings 
    - **Answered (owner, 12 November UTC): live for everyone, grey and labelled (recommended)**; see owner question 1
      below.
 
+4. **How do the ring's goods reach Bell Rock, the market hub?** (Open design item, not an owner question: with High Gorge first only the bay and north–south lines meet there; settle before the lines past leg 2 are laid, as it affects line layout; [outline](campaign-outline.md#the-market-hub-bell-rock).)
+
 ## Contradictions found while checking
 
 1. The outline asks for "every future line as a real server line"; rail-map's answered question 1 makes the stack
