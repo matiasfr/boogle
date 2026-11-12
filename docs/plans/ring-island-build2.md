@@ -295,6 +295,19 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       a directed test lets a fast train go right behind a slow one with no headway hold: the block rule holds it at the
       halt behind (37 s on held legs, closest 157 m, the halt spacing), never under sepCm, never past. No fallback
       needed.
+      _After rebase 3 (onto main's fares, v30; ruling in docs/agent-calls.md, Rail, 12 November):_ the hand-held mixed
+      fleet measured 1,064 ticks on b011e7 (a fast train pulls away from a slow one, which then makes three lever stops),
+      but it is not reachable in play, so it is now a safety test with its waits printed. The wait bound (worst 1,050,
+      mean 525) is asserted on the fleets a room can have, 20,000 ticks each: **the real handover** (install through the
+      accepted op) worst/mean 833/439 (b011e7), 938/433 (5eed25), 813/437 (0fa575), the same bit for bit at 75% and 0%
+      hold; **all standard** 786/474 (b011e7, 75%) and 815/487 (0fa575, 0%). **All-longer breaches 1,050 on one seed;
+      with the owner:** 1,100 at b011e7 with the hold on (an ask for the Quarry down while all three trains run out, at
+      the tick the last took the fit; the nearest goes up to the island and makes three lever stops, Railhead, Pier and
+      Far Head, on its way down), 726 at 0fa575 (0%), 991 or under on eight more seeds; a todo test until he answers.
+      The hold never binds under these asks: the handover runs are identical at 75% and 0%, and so is main's all-standard
+      line 2 before build 2 (from ring-joined, b011e7: 792/477 at both settings; the least gap between Village departures
+      599 ticks against the hold's 347). With no asks the hold does bind (main: least gap 347 at 75%, 201 at 0%). So
+      lever stops keep trains later than the hold, on main as on this branch; nothing here changed it.
 - [x] **R4. Server, prediction, seeds (M, HOTBOX; the bump moved to R1).** Create `src/sim/railway-seed-steel.ts`,
       `server/test/railway-steel-host.test.ts`. Edit `src/world/railway-server.ts`, `railway-predict.ts`,
       `railway-jump.ts` (four rows, section 6), `src/sim/railway-seeds.ts`,
