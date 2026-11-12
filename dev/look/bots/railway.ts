@@ -582,6 +582,12 @@ export async function boilerToPier(
     await until(() => R.town(R.rw(), 0).wood >= 8, 'line 1 brings its first timber home');
     await checkpoint(RAIL_STOPS.freight);
   }
+  // Slice 5 (R3): `--to fare` waits, the same way, until the first rider's fare is in the strongbox (the mirror's
+  // Till.landed > 0); asked for only.
+  if (params.get('railStop') === RAIL_STOPS.fare || params.get('botTo') === 'fare') {
+    await until(() => R.till(R.rw()).landed > 0, 'the first fare lands in the strongbox');
+    await checkpoint(RAIL_STOPS.fare);
+  }
   // Trains stop on request (works-late-game step 1): the lever on the platform the way to `destination`; every ride
   // here ends at its line's end, so nothing is asked aboard. Whichever of the line's trains stops for it is the ride
   // (v26: line 2 runs two).
