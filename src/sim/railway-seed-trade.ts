@@ -4,13 +4,15 @@
 //
 //   freight-running   trains-on advanced until the Village has its first timber (Town.wood >= 8): line 1's train
 //                     home from the Camp with a full load
+//   fares-running     R3: freight-running advanced until the strongbox holds 100 Boogles (riders' fares, Village to
+//                     Far Head)
 import { invariant, need } from './railway-drive.ts';
 import { advance, railwayAtTrains, type Seed } from './railway-seed-route.ts';
-import { town } from './railway-rows.ts';
+import { till, town } from './railway-rows.ts';
 import { TRADE } from './railway-trade-layout.ts';
 
-export type TradeStage = 'freight-running';
-export const TRADE_STAGES: readonly TradeStage[] = ['freight-running'];
+export type TradeStage = 'freight-running' | 'fares-running';
+export const TRADE_STAGES: readonly TradeStage[] = ['freight-running', 'fares-running'];
 
 /** The railway at a trade stage. */
 export function railwayAtTrade(stage: TradeStage): Seed {
@@ -22,6 +24,11 @@ export function railwayAtTrade(stage: TradeStage): Seed {
     need(waited++ <= 6000, `${stage}: no timber reached the Village`);
     advance(s, 1);
   }
+  if (stage === 'fares-running')
+    while (till(s.w).boogles < 100) {
+      need(waited++ <= 12000, `${stage}: no fares landed`);
+      advance(s, 1);
+    }
   const broken = invariant(s.w);
   need(broken === null, `railwayAtTrade ${stage}: ${broken}`);
   return s;

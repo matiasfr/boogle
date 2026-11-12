@@ -35,7 +35,9 @@ import {
   RailClock,
   Rock,
   Shed,
+  Till,
   Town,
+  TownClock,
   Train,
   Tree,
   Works,
@@ -115,8 +117,12 @@ export const lines = listed(line, RAIL_LINES.length);
 export const yard = slotted(Yard);
 export const yardClock = slotted(YardClock, Yard);
 export const town = slotted(Town);
+/** R3: a town's rider clock (not replicated). */
+export const townClock = slotted(TownClock, Town);
 export const yards = listed(yard, TRADE.yards.length);
 export const towns = listed(town, TRADE_TOWNS);
+/** R3's one strongbox. */
+export const till = one(Till);
 
 export const account = (w: World, pid: string): Read<typeof Account> | undefined => {
   const id = w.lookup(Account, pid);
