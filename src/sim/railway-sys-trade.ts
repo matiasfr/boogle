@@ -41,8 +41,8 @@ export const yardTick = defineSystem(
   },
 );
 /** Train `slot` standing at its line's yard, heading home (an end's train has already turned), loads
- * `min(freightCap - freight, stock)`: whatever it stopped for (an end, a lever or a rider ask, the kit or the wagon).
- * Freight never adds a stop (slice 5, R1 as built).
+ * `min(freightCap - freight, stock)`: whatever it stopped for (an end, a lever or a rider ask, the kit, the wagon, or
+ * R2b's full-load stop, the one stop freight adds: freightStop in ./railway-queries-trade.ts).
  * Called every tick it stands, so it also takes a crate made while it waits. */
 export function freightLoads(w: World, slot: number) {
   const y = lineYard(RAIL_TRAINS[slot]!.line);
