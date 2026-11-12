@@ -12,6 +12,8 @@ import {
   Aperture,
   Leg,
   LegYard,
+  Rail,
+  Yard,
   RAIL_REPLICATED,
   Route,
   Train,
@@ -38,7 +40,10 @@ import { LINE_SLOTS, servingSlots, trainSpacing } from '../src/sim/railway-train
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, train, trains } from '../src/sim/railway-rows.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
-import { legKitNeed, legRow, legsLaid, routeRow } from '../src/sim/railway-queries-route.ts';
+import { legKitNeed, legKitWaiting, legRow, legsLaid, routeRow } from '../src/sim/railway-queries-route.ts';
+import { freightStop } from '../src/sim/railway-queries-trade.ts';
+import { TRADE } from '../src/sim/railway-trade-layout.ts';
+import { RAIL_PREDICTED, railPredict } from '../src/world/railway-predict.ts';
 import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
@@ -142,10 +147,10 @@ test('the ring row counts 100 cm ahead of line 2: the shift is the catalog row a
   assert.deepEqual([RAIL_LINES[LINE2]!.path[2 * k], RAIL_LINES[LINE2]!.path[2 * k + 1]], [p0.x, p0.z]);
 });
 
-test('the fleet: 3, 4, 5, 5 and 5 trains as 0 to 4 sections are laid; the fourth and fifth rows start in the shed', () => {
+test('the fleet: 3, then 5 from the first section laid (ruling A.4); the fourth and fifth rows start in the shed', () => {
   assert.deepEqual(
     Array.from({ length: N + 1 }, (_v, n) => fleetOf(LINE2, [n])),
-    [3, 4, 5, 5, 5],
+    [3, 5, 5, 5, 5],
   );
   assert.deepEqual(
     RAIL_TRAINS.map((t) => [t.line, !!t.shed]),
@@ -322,21 +327,80 @@ test("the server: each op's ids are catalog indexes, judged at the frame, post o
 });
 
 // ---------------------------------------------------------------- the kit
-test('the kit runs ahead by the whole leg, one kit a train: four kits loaded, one racked at Ring Island, the rest aboard', () => {
+/** Gate 16: kit units loaded equal units aboard, racked, fed, laid and on backs (the rack and backs hold none at the
+ * rivet), logs and rails. */
+function kitEquality(w: World) {
+  const g = legRow(w, STACK);
+  let logs = g.logs,
+    rails = g.rails;
+  for (const sec of LEG.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
+  for (const r of trains(w)) [logs, rails] = [logs + r.logs, rails + r.rails];
+  w.each([Account], (_id, a) => ((logs += a.carry), (rails += a.rails)));
+  return [g.loadedLogs - logs - rail(w).depot, g.loadedRails - rails - rail(w).depotRails];
+}
+test('the idle room (ruling B, gate 13): at rest by +1,500, kit 1 racked, two kit trains, one kit car empty, 60 and 60 loaded; then nothing moves', () => {
   const s = unaudited(copy(JOINED));
-  const loaded = () => legRow(s.w, STACK).loadedLogs;
-  for (let guard = 0; loaded() < N * LEG.sections[0]!.logs; guard++) {
-    assert.ok(guard < 9000, 'every kit loads');
+  assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [0, 0]);
+  const backs = trains(s.w).length && kitEquality(s.w);
+  for (let k = 0; k < 1500; k++) {
     advance(s, 1);
+    assert.deepEqual(kitEquality(s.w), backs, `kit units at +${k + 1}`);
   }
-  for (const k of LINE_SLOTS[LINE2]!) {
-    const r = train(s.w, k);
-    assert.ok(r.logs <= 20 && r.rails <= 20, 'one kit a train');
+  const carriers = LINE_SLOTS[LINE2]!.filter((k) => train(s.w, k).logs + train(s.w, k).rails > 0);
+  const empty = servingSlots((j) => train(s.w, j), LINE2).filter((k) => !carriers.includes(k));
+  assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [20, 20], 'kit 1 racked');
+  assert.equal(carriers.length, 2, 'two kit trains (the running three less one)');
+  assert.ok(empty.length >= 1, 'a kit car empty');
+  assert.ok(
+    carriers.every((k) => train(s.w, k).logs === 20 && train(s.w, k).rails === 20),
+    'one kit a train',
+  );
+  assert.deepEqual(
+    [legRow(s.w, STACK).loadedLogs, legRow(s.w, STACK).loadedRails],
+    [60, 60],
+    'the fourth kit not loaded',
+  );
+  const rest = JSON.stringify([
+    legRow(s.w, STACK),
+    rail(s.w).depot,
+    rail(s.w).depotRails,
+    trains(s.w).map((r) => [r.logs, r.rails]),
+  ]);
+  for (let k = 0; k < 3000; k++) {
+    advance(s, 1);
+    if (k % 100 === 0)
+      assert.equal(
+        JSON.stringify([
+          legRow(s.w, STACK),
+          rail(s.w).depot,
+          rail(s.w).depotRails,
+          trains(s.w).map((r) => [r.logs, r.rails]),
+        ]),
+        rest,
+        `no change at rest, +${1501 + k}`,
+      );
   }
-  advance(s, 2000);
-  assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [20, 20], "section 1's kit on the rack, no more");
-  const aboard = LINE_SLOTS[LINE2]!.reduce((n, k) => n + train(s.w, k).logs, 0);
-  assert.equal(aboard, (N - 1) * 20, 'the rest ride on');
+  assert.ok(legKitNeed(s.w, STACK).logs > 0, 'the fourth kit is still owed: only the cap holds it');
+  assert.equal(invariant(s.w), null);
+});
+test('kitTrains: at most the running trains less one carry kit, whatever is owed; a fed leg still lays through', () => {
+  const s = unaudited(copy(JOINED));
+  for (let k = 0; k < N; k++) {
+    for (let guard = 0; legRow(s.w, STACK).laid === k; guard++) {
+      assert.ok(guard < 6000);
+      if (legRow(s.w, STACK).start < 0)
+        for (const pid of ['a', 'b']) {
+          act(s, pid, 'rail.depotTake');
+          act(s, pid, 'rail.depotRailTake');
+          act(s, pid, 'rail.legStock', { leg: STACK });
+        }
+      advance(s, 1);
+      const running = servingSlots((j) => train(s.w, j), LINE2).length,
+        carrying = LINE_SLOTS[LINE2]!.filter((j) => train(s.w, j).logs + train(s.w, j).rails > 0).length;
+      assert.ok(carrying <= running - 1, `${carrying} kit trains of ${running} at ${s.t}`);
+      assert.deepEqual(kitEquality(s.w), [0, 0], `kit units at ${s.t}`);
+    }
+  }
   assert.deepEqual(legKitNeed(s.w, STACK), { logs: 0, rails: 0 });
   assert.equal(invariant(s.w), null);
 });
@@ -460,8 +524,11 @@ test('replicated rows change only at a kit load, a feed or a lay: never every ti
 });
 
 // ---------------------------------------------------------------- the trains on the grown line
-/** The worst wait the WAIT_BOUND way (test/railway-trains.test.ts): 105 s on line 2. */
-const WAIT_BOUND = 1050;
+/** Ruling A (greybox-route.md, leg 1 step 3): while the line grows (from the leg opening until 3,000 ticks after its far
+ * end last moves) the worst line 2 wait is at most 1,600 and an ask up the line at the current railhead at most 1,158;
+ * no wait over 1,158 is asked later than 3,000 ticks after the Gorge opens (gate 11). */
+const GROWTH_CAP = 1600,
+  SETTLED_CAP = 1158;
 const FUZZ = fuzzTicks(20000);
 for (const [seed, headPct] of [
   [0x5eed, 75],
@@ -471,10 +538,12 @@ for (const [seed, headPct] of [
     let s = unaudited(copy(JOINED));
     const rand = mulberry32(seed);
     const asked = new Map<string, number>(),
-      worst = new Map<string, number>();
+      worst = new Map<string, number>(),
+      over: string[] = [];
     const joins: number[] = [];
     let restores = 0,
-      longest = 0;
+      longest = 0,
+      gorgeAt = -1;
     const standSince = new Map<number, number>();
     for (let k = 0; k < FUZZ; k++) {
       // The room plays the leg: what the rack holds goes into the frame (a carry every few seconds).
@@ -505,6 +574,8 @@ for (const [seed, headPct] of [
       const before = servingSlots((j) => train(s.w, j), LINE2).length;
       railTick(s.w, ++s.t, headPct);
       if (servingSlots((j) => train(s.w, j), LINE2).length > before) joins.push(s.t);
+      if (gorgeAt < 0 && legRow(s.w, STACK).laid === N) gorgeAt = s.t;
+      assert.deepEqual(kitEquality(s.w), [0, 0], `kit units at ${s.t}`);
       trains(s.w).forEach((r, slot) => {
         if (r.phase !== TRAIN_PHASE.STAND || RAIL_TRAINS[slot]!.line !== LINE2) return void standSince.delete(slot);
         if (!standSince.has(slot)) standSince.set(slot, s.t);
@@ -519,6 +590,15 @@ for (const [seed, headPct] of [
         });
         if (there) {
           worst.set(key, Math.max(worst.get(key) ?? 0, s.t - since));
+          if (h.line === LINE2 && s.t - since > SETTLED_CAP) {
+            over.push(`${h.name} ${dir > 0 ? 'up' : 'down'} asked ${since} served ${s.t}`);
+            const railhead = h.stop === stopsOf(s.w, LINE2).length - 1 || !!h.leg;
+            assert.ok(!(railhead && dir > 0), `an ask up the line at the railhead waited ${s.t - since}`);
+            assert.ok(
+              gorgeAt < 0 || since <= gorgeAt + 3000,
+              `${h.name}: waited ${s.t - since}, asked on the settled line`,
+            );
+          }
           asked.delete(key);
         }
       }
@@ -543,6 +623,7 @@ for (const [seed, headPct] of [
       `${FUZZ} ticks; laid ${legRow(s.w, STACK).laid}; joins at ${joins.join(', ')}; restores ${restores}; ` +
         `worst line 2 lever wait ${top / 10} s; longest stand ${longest / 10} s`,
     );
+    t.diagnostic(`over ${SETTLED_CAP}: ${over.join('; ') || 'none'}; the Gorge opened at ${gorgeAt}`);
     t.diagnostic(
       `waits: ${line2.map(([key, v]) => `${RAIL_HALTS[Number(key.split('/')[0])]!.name} ${key.endsWith('/-1') ? 'down' : 'up'} ${v / 10} s`).join('; ')}`,
     );
@@ -550,13 +631,15 @@ for (const [seed, headPct] of [
       assert.equal(legRow(s.w, STACK).laid, N, 'the leg was laid in the run');
       assert.equal(joins.length, 2, 'the fourth and fifth trains joined');
     }
-    for (const [key, v] of line2) assert.ok(v <= WAIT_BOUND, `line 2 ${key}: waited ${v} ticks (bound ${WAIT_BOUND})`);
+    for (const [key, v] of line2)
+      assert.ok(v <= GROWTH_CAP, `line 2 ${key}: waited ${v} ticks (growth cap ${GROWTH_CAP})`);
     assert.ok(longest < 1200, 'no line-2 train stands two minutes');
     assert.equal(invariant(s.w), null);
   });
 
 // The wake leaves the fleet rows in the shed (rail.boilerFit places the first stage's trains only), and the tick the
-// fourth train joins it stands at the Village on the up track with a fresh dwell.
+// fourth train joins it stands at the Village on the up track with a fresh dwell. Gate 12: both extra trains run within
+// 1,050 ticks of the first section laying, and no running train is held for a join (the join writes no other row).
 test('a joining train stands at the Village going up, its dwell from the join, clear of the end block', () => {
   const s = copy(JOINED);
   feedSectionStart(s);
@@ -569,9 +652,31 @@ test('a joining train stands at the Village going up, its dwell from the join, c
   assert.equal(legRow(s.w, STACK).laid, 1);
   const r = train(s.w, slot);
   assert.deepEqual([r.phase, r.at, r.track, r.depart, r.arrived], [TRAIN_PHASE.STAND, 0, 0, s.t, s.t]);
-  assert.equal(train(s.w, LINE_SLOTS[LINE2]![4]!).phase, TRAIN_PHASE.SHED, 'the fifth waits for section 2');
   assert.equal(invariant(s.w), null);
   advance(s, TRAIN.dwellTicks + 2000);
+  assert.equal(invariant(s.w), null);
+});
+test('gate 12: both extra trains join within 1,050 ticks of the first section laying, each into a gap', () => {
+  // fleetJoin writes only the joiner's row (./railway-trains.ts) and only when every running train is a block's gap from
+  // the Village and none is in or bound for its end block: no running train is held for a join.
+  const s = unaudited(copy(JOINED));
+  feedSectionStart(s);
+  while (legRow(s.w, STACK).laid === 0) advance(s, 1);
+  const laidAt = s.t;
+  const [fourth, fifth] = [LINE_SLOTS[LINE2]![3]!, LINE_SLOTS[LINE2]![4]!];
+  while (train(s.w, fourth).phase === TRAIN_PHASE.SHED || train(s.w, fifth).phase === TRAIN_PHASE.SHED) {
+    assert.ok(s.t - laidAt <= 1050, 'both joined within 1,050 ticks of the first section laying');
+    advance(s, 1);
+    assert.equal(
+      trainSpacing(
+        (j) => train(s.w, j),
+        (l) => stopsOf(s.w, l),
+        s.t,
+      ),
+      null,
+      'spacing',
+    );
+  }
   assert.equal(invariant(s.w), null);
 });
 
@@ -584,4 +689,53 @@ test('replay: the same ops from the same seed give the same hash, through a save
     return s.w.hash();
   };
   assert.equal(run(), run());
+});
+
+// ---------------------------------------------------------------- ruling D: the stone stop with a kit aboard
+test('ruling D: a train whose kit cannot unload yet makes the stone stop; owed a kit, or able to unload, it does not', () => {
+  const s = unaudited(copy(JOINED));
+  advance(s, 1500); // the idle room's rest: kit 1 racked, two trains each with a kit waiting for a railhead
+  const quarry = TRADE.yards.findIndex((y) => y.line === LINE2),
+    stop = TRADE.yards[quarry]!.stop;
+  s.w.mut(Yard, s.w.lookup(Yard, quarry)!)!.stock = TRADE.loadStop;
+  const carrier = LINE_SLOTS[LINE2]!.find((k) => train(s.w, k).logs > 0)!;
+  assert.ok(carrier !== undefined);
+  const r = { ...train(s.w, carrier), freight: 0 };
+  assert.equal(legKitWaiting(s.w, LINE2, r), true);
+  assert.equal(freightStop(s.w, carrier, r, stop, -1), true, 'a waiting kit is no errand');
+  // Empty the rack: the same kit can unload now, so it is an errand again.
+  Object.assign(s.w.mut(Rail, s.w.single(Rail))!, { depot: 0, depotRails: 0 });
+  assert.equal(legKitWaiting(s.w, LINE2, r), false);
+  assert.equal(freightStop(s.w, carrier, r, stop, -1), false, 'a kit that can unload');
+  // An empty train owed a kit (below kitTrains) is on an errand too.
+  const empty = { ...r, logs: 0, rails: 0 };
+  for (const k of LINE_SLOTS[LINE2]!)
+    if (k !== carrier) Object.assign(s.w.mut(Train, s.w.lookup(Train, k)!)!, { logs: 0, rails: 0 });
+  assert.equal(freightStop(s.w, carrier, empty, stop, -1), false, 'owed a kit');
+});
+
+// ---------------------------------------------------------------- ruling F: rail.legStock predicted
+test('ruling F: rail.legStock is predicted; the press that fills the frame shows full and leaves the lay to the server', () => {
+  assert.ok(RAIL_PREDICTED.has('rail.legStock'));
+  for (const op of ['rail.grant', 'rail.gate', 'rail.arrive']) assert.ok(!RAIL_PREDICTED.has(op), `${op} waits`);
+  const s = copy(JOINED);
+  while (rail(s.w).depot < 20 || rail(s.w).depotRails < 20) advance(s, 1);
+  // Player a carries and feeds until what is on a's back fills the frame; that last press is predicted.
+  for (let guard = 0; ; guard++) {
+    assert.ok(guard < 20);
+    act(s, 'a', 'rail.depotTake');
+    act(s, 'a', 'rail.depotRailTake');
+    const g = legRow(s.w, STACK),
+      a = s.w.get(Account, s.w.lookup(Account, 'a')!)!;
+    if (a.carry >= 20 - g.logs && a.rails >= 20 - g.rails) break;
+    act(s, 'a', 'rail.legStock', { leg: STACK });
+  }
+  const shown = s.w.clone();
+  const a = shown.get(Account, shown.lookup(Account, 'a')!)!;
+  const p = railPredict(shown, 'a', { op: 'rail.legStock', leg: STACK, epoch: a.epoch, request: a.request + 1 }, s.t);
+  assert.ok(p.n > 0, 'predicted');
+  const g = legRow(shown, STACK);
+  assert.deepEqual([g.logs, g.rails, g.start], [20, 20, -1], 'full, not laying until the server says so');
+  assert.equal(act(s, 'a', 'rail.legStock', { leg: STACK }), p.n, 'the server takes the same');
+  assert.equal(legRow(s.w, STACK).start, s.t);
 });

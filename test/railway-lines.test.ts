@@ -201,8 +201,9 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
 test("v27's line 2 keeps v26's halts, moves the Pier east of the down track and appends the Railhead and the island", () => {
   const line2 = RAIL_LINES[1]!,
     halts = line2.halts;
+  // The greybox route's stack railhead and High Gorge follow (test/railway-route-rules.test.ts).
   assert.deepEqual(
-    halts.map((h) => h.name),
+    halts.slice(0, 6).map((h) => h.name),
     ['Village, line 2', 'Quarry', 'Far Head', 'Pier', 'Railhead', 'Ring Island'],
   );
   halts.slice(0, 4).forEach((h, k) => assert.equal(h.s, V25_STOPS[1]![k], `${h.name} stands where v26's did`));
@@ -220,8 +221,8 @@ test("v27's line 2 keeps v26's halts, moves the Pier east of the down track and 
     assert.equal(p.reach, 1260);
   }
   assert.equal(halts[3]!.only, -1);
-  // The path runs on: line 2's, then RING_PATH, its index still s / 1000.
-  assert.equal(line2.path.length, V25_PATHS[1]!.length + RING_PATH.length);
+  // The path runs on: line 2's, then RING_PATH, then the greybox route's LINE2_ON, its index still s / 1000.
+  assert.equal(line2.path.length, V25_PATHS[1]!.length + RING_PATH.length + LINE2_ON.length);
   assert.deepEqual(line2.path.slice(0, V25_PATHS[1]!.length), V25_PATHS[1]);
   assert.equal(line2.trains, 3);
   assert.equal(line2.balance, 600, 'the balanced hold, capped 60 s past the dwell (call 47)');
