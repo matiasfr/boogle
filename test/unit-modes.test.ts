@@ -5,7 +5,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
 import { MODE_VARS, testEnv, type TestMode } from '../dev/test-env.ts';
 
 const url = (p: string) => new URL(p, import.meta.url).href;
@@ -76,7 +75,9 @@ test("the server suite's preload (server/package.json) audits with RAIL_AUDIT=1 
     else env.RAIL_AUDIT = audit;
     return spawnSync(
       process.execPath,
-      ['--import', join(import.meta.dirname, 'helpers', 'rail-no-audit.ts'), '--input-type=module', '-e', PROBE],
+      // A file URL, not a path: on Windows `--import C:\...` is read as a URL with the scheme `c:` and the probe dies
+      // before it prints.
+      ['--import', url('./helpers/rail-no-audit.ts'), '--input-type=module', '-e', PROBE],
       { env, encoding: 'utf8' },
     ).stdout.trim();
   };
