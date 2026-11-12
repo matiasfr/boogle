@@ -241,6 +241,11 @@ export function planLeg(
   for (const b of endBlocks(line, stops))
     if (b.dir === dir && (goal - b.signal) * dir > 0 && trainCanBrake(s, v, dir, b.signal, kin))
       holds.push({ to: -1, dest: b.signal });
+  // A line's block signals (RailLineDef.signals, the greybox route's long stretches): a hold between here and the goal,
+  // either track, so a train follows the one ahead block by block rather than waiting for the whole stretch to clear.
+  for (const sig of kin.signals ?? [])
+    if ((goal - sig) * dir > 0 && (sig - s) * dir > 0 && trainCanBrake(s, v, dir, sig, kin))
+      holds.push({ to: -1, dest: sig });
   if (blockFree(rows, line, stops, slot, track, goal, tick)) return { to: k, dest: goal, reason: true };
   holds.sort((p, q) => (q.dest - p.dest) * dir);
   for (const h of holds) if (blockFree(rows, line, stops, slot, track, h.dest, tick)) return { ...h, reason: false };

@@ -82,6 +82,10 @@ export type RailLineDef = {
    * (`trains[0]` is `trains`). A stage's extra trains wait in the shed (TRAIN_PHASE.SHED) until they join at the line's
    * first halt (./railway-trains.ts, fleetJoin). Absent: `trains` at every stage. */
   fleet?: { leg: number; trains: readonly number[] };
+  /** Block signals (the greybox route, step 3): cm along the line where a train may hold short of its goal on either
+   * track, with no halt, between halts too far apart for the block rule to let a follower start (it needs the whole leg
+   * clear of the train ahead). Each stands between two halts of the line, never at one. */
+  signals?: readonly number[];
 };
 /** The longest balanced hold a line may ask for: 3 minutes, about one round trip of line 2 to the island (138.8 s
  * non-stop, about 220 s under heavy asks). */
@@ -444,6 +448,9 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     balance: 600,
     // The greybox route: 3, then 5 from the first section laid (ruling A.4, call 63).
     fleet: { leg: STACK_LEG, trains: [3, 5, 5, 5, 5] },
+    // Block signals at the stack line's section ends but the last (10 m past each railhead stop), so a train follows
+    // another up the 1.5 km from Ring Island block by block (re-measure ruling 1).
+    signals: STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm)),
   },
   // The greybox route's own rows (step 3), every halt shut.
   rowLine('ns'),
