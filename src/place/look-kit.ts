@@ -10,7 +10,16 @@ import kitUrl from '../../assets/built/place-kit.glb?url';
 import { onFrame } from '../loop.ts';
 import { camera, scene } from '../render/scene.ts';
 import { warmDraw } from '../render/precompile.ts';
-import { SHADOW_GATED, castsShadow, chunkRuns, growBounds, isHidden, type ChunkRun } from '../entities/railway/track-chunks.ts';
+import {
+  FAR_KINDS,
+  SHADOW_GATED,
+  castsShadow,
+  chunkRuns,
+  growBounds,
+  isHidden,
+  trackLevel,
+  type ChunkRun,
+} from '../entities/railway/track-chunks.ts';
 import { LOCO, TRAILER } from '../render/wagon-look.ts';
 import { H } from './land.ts';
 import { LOOK, STEEL, addBlob, bakeContact, honeyOf, paint, setBlob, type Paint } from './look.ts';
@@ -121,6 +130,7 @@ void import('../render/assets.ts')
       for (const m of meshes) useKitGeometry(m, g);
     }
     waiting.clear();
+    for (const c of liveChunks) c.level = 0; // every batch has just taken its full shape
   });
 function useKitGeometry(mesh: THREE.Mesh, geometry: THREE.BufferGeometry) {
   setViewGeometry(mesh, geometry);
@@ -193,6 +203,12 @@ const tm = new THREE.Matrix4();
 type TrackChunk = {
   run: ChunkRun;
   meshes: THREE.InstancedMesh[];
+  /** Each mesh with its kit piece, to swap for the plain shape. */
+  parts: { mesh: THREE.InstancedMesh; name: string }[];
+  /** The level (`TRACK_LOD_FROM`) its parts draw at; far kinds only. */
+  level: number;
+  /** Where each piece lies (x, y, z per slot; NaN while hidden): a chunk's box is loose on a bend, so its level goes by its nearest piece. */
+  at: Float32Array;
   box: THREE.Box3;
   sphere: THREE.Sphere;
   placed: boolean;
@@ -224,7 +240,11 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chun
       : STEEL;
     const n = run.count;
     const list: Part[] = [];
-    if (LOOK.kit) list.push({ mesh: kitBatch(KIT_NAME[run.kind] ?? run.kind, p, n, owner), inv });
+    const names: string[] = [];
+    if (LOOK.kit) {
+      names.push(KIT_NAME[run.kind] ?? run.kind);
+      list.push({ mesh: kitBatch(names[0]!, p, n, owner), inv });
+    }
     else {
       const mesh = new THREE.InstancedMesh(unitBox, paint(p), n);
       mesh.castShadow = mesh.receiveShadow = true;
@@ -234,12 +254,16 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chun
       const plates = kitBatch('sleeper_steel', STEEL, n, owner);
       plates.castShadow = false;
       list.push({ mesh: plates, inv });
+      names.push('sleeper_steel');
     }
     // The grain's seed is the instance index (the piece's place in its whole-line batch): this chunk starts at `from`.
     // Bounds come from what has landed (below); nothing is drawn until something has.
     const chunk: TrackChunk = {
       run,
       meshes: list.map((q) => q.mesh),
+      parts: LOOK.kit ? list.map((q, k) => ({ mesh: q.mesh, name: names[k]! })) : [],
+      level: 0,
+      at: new Float32Array(FAR_KINDS.has(run.kind) ? n * 3 : 0).fill(NaN),
       box: new THREE.Box3(),
       sphere: new THREE.Sphere(),
       placed: false,
@@ -289,6 +313,10 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chun
       q.mesh.setMatrixAt(r.at, tm.copy(m).scale(q.inv));
       q.mesh.instanceMatrix.needsUpdate = true;
     }
+    if (r.chunk.at.length) {
+      const hidden = isHidden(m);
+      r.chunk.at.set(hidden ? [NaN, NaN, NaN] : [m.elements[12]!, m.elements[13]!, m.elements[14]!], r.at * 3);
+    }
     if (!isHidden(m)) {
       growBounds(r.chunk.box, m).getBoundingSphere(r.chunk.sphere);
       if (!r.chunk.placed) {
@@ -304,16 +332,112 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView, chun
   set.update = (dt: number) => {
     update(dt);
     for (const c of state) {
-      if (!c.gated || !c.placed) continue;
-      const casts = castsShadow(c.box.distanceToPoint(camera.position), c.shadow);
-      if (casts !== c.shadow) {
-        c.shadow = casts;
-        setChunk(c);
+      if (!c.placed) continue;
+      const distance = c.box.distanceToPoint(camera.position);
+      if (c.gated) {
+        const casts = castsShadow(distance, c.shadow);
+        if (casts !== c.shadow) {
+          c.shadow = casts;
+          setChunk(c);
+        }
+      } else if (loadedKit && FAR_KINDS.has(c.run.kind) && c.parts.length) {
+        const level = trackLevel(nearest(c, camera.position), c.level);
+        if (level !== c.level) {
+          c.level = level;
+          for (const q of c.parts) setViewGeometry(q.mesh, farGeometry(q.name, level));
+        }
       }
     }
   };
   return set;
 }
+/** A kit piece's connected parts (triangles that meet at the same position) whose bounds `keep` accepts, as a geometry with the
+ * piece's own attributes: a rail without its joint plates and bolts, the tie plates without their spikes. */
+function keepParts(source: THREE.BufferGeometry, keep: (box: THREE.Box3) => boolean) {
+  const position = source.getAttribute('position') as THREE.BufferAttribute;
+  const index = source.getIndex()!.array;
+  const root = new Map<string, string>();
+  const find = (k: string): string => {
+    let r = root.get(k) ?? k;
+    while (r !== (root.get(r) ?? r)) r = root.get(r)!;
+    root.set(k, r);
+    return r;
+  };
+  const key = (i: number) => `${position.getX(i).toFixed(4)},${position.getY(i).toFixed(4)},${position.getZ(i).toFixed(4)}`;
+  for (let t = 0; t < index.length; t += 3) {
+    const a = find(key(index[t]!));
+    for (const o of [1, 2]) root.set(find(key(index[t + o]!)), a);
+  }
+  const boxes = new Map<string, THREE.Box3>();
+  const point = new THREE.Vector3();
+  for (let t = 0; t < index.length; t += 3) {
+    const r = find(key(index[t]!));
+    const box = boxes.get(r) ?? boxes.set(r, new THREE.Box3()).get(r)!;
+    for (let o = 0; o < 3; o++) box.expandByPoint(point.fromBufferAttribute(position, index[t + o]!));
+  }
+  const kept: number[] = [];
+  for (let t = 0; t < index.length; t += 3)
+    if (keep(boxes.get(find(key(index[t]!)))!)) kept.push(index[t]!, index[t + 1]!, index[t + 2]!);
+  const g = source.clone();
+  g.setIndex(kept);
+  g.computeBoundingBox();
+  g.computeBoundingSphere();
+  return g;
+}
+const size = new THREE.Vector3();
+/** The shapes a heavy track piece (rail, sleeper, tie plates) takes beyond the kit's own (`TRACK_LOD_FROM`), by name and
+ * level, in the kit piece's frame and with its vertex attributes, so the same pipeline draws every level. Level 1 drops
+ * the hardware; level 2 is boxes over the piece's footprint (12 triangles each: a rail's body, a sleeper, a plate under
+ * each rail). */
+const lowered = new Map<string, THREE.BufferGeometry>();
+function farGeometry(name: string, level: number) {
+  if (level === 0) return kitGeometry(name);
+  const id = `${name}:${level}`;
+  let g = lowered.get(id);
+  if (g) return g;
+  const near = kitGeometry(name);
+  near.computeBoundingBox();
+  const b = near.boundingBox!;
+  if (level === 1) {
+    if (name === 'rail') g = keepParts(near, (box) => box.getSize(size).z > 1);
+    else if (name === 'sleeper_steel') g = keepParts(near, (box) => box.getSize(size).x > 0.2);
+    else g = near;
+  } else {
+    const parts: THREE.BufferGeometry[] = [];
+    const add = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number) => {
+      const part = new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0);
+      part.deleteAttribute('uv');
+      parts.push(part.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2));
+    };
+    const cx = (b.min.x + b.max.x) / 2;
+    if (name === 'rail') add(cx - 0.045, cx + 0.045, b.min.y, b.max.y, b.min.z, b.max.z);
+    else if (name === 'sleeper') add(b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z);
+    else if (name === 'sleeper_steel') {
+      // One plate under each rail: 0.3 m across, 0.018 m thick (assets/src/place-kit.py).
+      add(b.min.x, b.min.x + 0.3, b.min.y, b.min.y + 0.018, b.min.z, b.max.z);
+      add(b.max.x - 0.3, b.max.x, b.min.y, b.min.y + 0.018, b.min.z, b.max.z);
+    } else throw new Error(`no plain shape for ${name}`);
+    g = mergeGeometries(parts, false);
+    for (const part of parts) part.dispose();
+    if (!g) throw new Error(`plain ${name}`);
+    if (LOOK.contact) bakeContact(g);
+    g.computeBoundingBox();
+    g.computeBoundingSphere();
+  }
+  lowered.set(id, g);
+  return g;
+}
+const nearest = (c: TrackChunk, p: THREE.Vector3) => {
+  let best = Infinity;
+  for (let i = 0; i < c.at.length; i += 3) {
+    const dx = c.at[i]! - p.x,
+      dy = c.at[i + 1]! - p.y,
+      dz = c.at[i + 2]! - p.z;
+    const d = dx * dx + dy * dy + dz * dz;
+    if (d < best) best = d; // NaN (hidden) never wins
+  }
+  return Math.sqrt(best);
+};
 function setChunk(c: TrackChunk) {
   for (const m of c.meshes) {
     m.visible = c.placed;
