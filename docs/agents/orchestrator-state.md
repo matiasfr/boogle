@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 12 November about 15:00 UTC (07:00 PST), in the 11–12 November orchestrator session (started about 11:20 PST on 11 November; hourly heartbeat; wind-down at 11:00 PST, 19:00 UTC, on 12 November). World v30 is on main (slice 5 R1 to R3); main's CI takes about 5.5 minutes. Normal mode (Claude only) until 13 November; the models table puts player-visible work, reviews and design on Fable medium.
+**Updated:** 12 November 19:00 UTC (11:00 PST), at the wind-down of the 11–12 November orchestrator session; nothing is running on the Mac. Main is `32886fd93` (#1668), green and deployed. World v30 is on main (slice 5 R1 to R3); main's CI takes about 5.5 minutes. Normal mode (Claude only) until 13 November; the models table puts player-visible work, reviews and design on Fable medium.
 
 ## Links
 
@@ -36,7 +36,9 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 HOTBOX is a peer session (address under Peers). The Mac ships its branches when HOTBOX sends tips and stamps.
 
-**Running at 15:00 UTC:** a planner writing `docs/plans/train-spacing.md`; an investigation of `test:net`'s one-off failures and the server suite's slow tests; the docs job that wrote this update.
+**On main since 15:00 UTC:** #1661 and #1662 the [train-spacing plan](../plans/train-spacing.md) and its design review (candidate A "pass the ask back", fallback B a Ring Island hold capped at 20 s; the designer adds a light-asks run, since 8 asks a minute is no real room's rate). #1664 test fixes (the server suite builds rail seed stages unaudited unless `RAIL_AUDIT=1`, which CI sets, so CI time is unchanged; `test:net` waits on ticks). #1667 the parked track layer measured safe (look eval `railway-pier-parked-layer.ts`). #1668 kinematic bodies turn about their origin (`src/physics/backend-rapier.ts`; Rapier turned the engine about its centre of mass and slid riders 0.26 m sideways per Village to Pier ride; reviewed, not lockstep, no bump; https://boogle.club/ loaded clean after it).
+
+**HOTBOX at wind-down: silent since a system-update restart about 17:15 UTC.** A reconnect message got no answer and both its Remote Control sessions show offline; the owner may need to reopen the session there. Unconfirmed: whether local `wip/greybox-leg1-step3` survived, and how far the train-spacing experiments got (E0 at heavy and light ask rates, on main and on step 3; nothing reported). Ask before restarting them.
 
 **Bump order:** build 2 v31, greybox step 3 v32; renumber at ship time.
 
@@ -77,7 +79,7 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 
 **Peers.** HOTBOX is the owner's Windows desktop; its peer session is "Orchestrator coordination for development", address `bridge:session_013GeHMBXhojhecCo8EUn8eh` (SendMessage; delivery is never confirmed but it answers). It shares the build load ([owner call](owner-calls.md)). D3D12 looks run there with `LOOK_CHANNEL=msedge`. `gh` and ffmpeg are installed there.
 
-**Housekeeping.** To clear at wind-down: many merged agent worktrees and branches; the `review/*` test branches (`review/ring2-rules-tests`, `review/ring2-r3-tests`); worktrees outside `.claude` (`boogle-freight-stops`, `boogle-hub-towns`, `boogle-economy-stops`, `boogle-design-legs`, `boogle-design-step3`, `boogle-design-step4`, `boogle-plan-spacing`, `boogle-test-speed` with `claude/test-speed`); `review/ring2-r4-tests` and `review/ring2-final`; `ring2/before-rebase-2` and `-3`; `/private/tmp/claude-501/wt-main`; the five `archive/review/*` tags; `archive/place` (local only).
+**Housekeeping.** Cleared at wind-down (12 November 19:00 UTC): 84 clean, fully merged worktrees with their branches, and every landed branch with no worktree. Left, 41 worktrees and about 80 branches: `ring2/v3-garage` (build 2, keep); the unmerged `review/*` test branches (`review/ring2-rules-tests`, `-r3-tests`, `-r4-tests`, `review/ring2-final`, `review/leaf-coop`, `review/m12e`, `review/m12b-1`, `review/unit-speed`), the `ecs/m12e`/`m12f` and `batch/1111-b`/`-c` worktrees, `feature/ring-r4e`, `ring2/before-rebase-2` and `-3`, `ring2/rules*`, `ring2/v1-works`, `ring2/v2-train` and about 20 one-commit `worktree-agent-*` branches: check each one's tests are on main, then archive-tag and remove once 48 hours old (from 13 November evening). Three with uncommitted changes stay for the owner (`codex/hook-swing-prototype`, `codex/two-player-track`, `worktree-agent-aad5cd795cee72677`). The daily-job checkouts are never touched. The five `archive/review/*` tags and `archive/place` are local only.
 
 **Leftovers from 11–12 November, by rank:**
 
@@ -85,8 +87,10 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 - P2: `railway-session.ts` is 573 lines against the 450 cap (needs a state object).
 - Closed: the map JSON's stale rail heights (#1653, `c9906f458`/`d0b43a588`: rails written from the catalog, a test fails on disagreement). The Ring Island ride-home drop is fixed (#1657, `c37c555d5`).
 - P2: the server has no last-resort crash handler and the rail step timer is unguarded (`server/src/index.ts:30-31`, `server/src/host/world-host.ts:482`, `src/world/sync.ts:391`). Classic rooms accept an array op and save it (`src/world/sync.ts` stamp).
-- P2: the track layer still parks on a running line at line 1 s 19–30 until the forge is lit and at each line 2 frontier.
-- P2: `test:net` failed one check on two runs (different checks) and four server tests timed out in a full run (GC while building late seed stages): under investigation.
+- Closed: the parked track layer (#1667: no train reaches it at line 1 or line 2's frontiers; the Pier engine stops 1.65 m short). `test:net`'s one-off failures and the slow server tests (#1664; the new timeout message is unverified).
+- P2: local `ship-check` does not run `npm run registry`, so a ship can pass locally and fail CI (twice on 12 November: the docs must-read budget, and a `closed` row in the live agent-calls table). Add it to ship-check or to briefs.
+- P2: Spotlight (`corespotlightd`, `mds_stores`) burns CPU on the Mac, probably indexing agent worktrees; the owner may exclude `~/Developer/boogle/.claude/worktrees` in System Settings (an agent must not change system settings).
+- P3: a rider at the front of the boiler stands inside the chimney model (no collider); a small dark square floats above the engine in every still; a rider dropped into the cab's solid parts is not carried (the cab floor carries). `test/kinematic-turn.test.ts`'s dynamic half only asserts "falls"; a kinematic body's Rapier mass now reads 1.
 - P2: the headway hold never binds under lever asks (identical results at 75% and 0% on main).
 - P3: "Bring logs or rails" family and install prompt strings are placeholders; the longer engine is hard to tell apart without a side-by-side; steel's fourth car is not built; the garage tile in `?home=b` still reads "Needs steel" after an install.
 - P2: White Wall sections 437 to 850 m and both ending sections (865, 726 m) exceed the design review's 650 m guide; the designer rules before that leg is built.
@@ -226,7 +230,7 @@ From 5–6 November; drop each when answered.
 - Keep about three agents running; no more than two browser looks at once on HOTBOX.
 - Report perf work in frame time as well as triangles ([owner call](owner-calls.md#frame-time-60)).
 - Keep the playtest guide current: https://claude.ai/artifact/Ud7yddruEMLszCgModu4WC
-- At 11:00 on 12 November: wind down, clear what Housekeeping lists, and hand over by updating this file.
+- First: reach HOTBOX and get the train-spacing results to the owner with the wait-limit question; then ship build 2 on his answer.
 
 ## Peers
 
