@@ -165,7 +165,8 @@ export async function createStationBoxes(
           const c = completion(box);
           if (box.previous === 0 && c && machineFrom && !wardrobe()?.isOpened(box.spec.id)) {
             machineFrom(box.from);
-            box.flight = 0;
+            // Stowed under the land (Q7 laid, line2-view.ts): no hand-down, the crate is simply there.
+            if (box.from.y > -30) box.flight = 0;
           }
           box.previous = c;
         }
@@ -214,6 +215,8 @@ export async function createStationBoxes(
           x: box.at.x,
           y: box.at.y,
           z: box.at.z,
+          flight: box.flight,
+          drawnY: box.mesh.position.y,
         })),
       };
     },

@@ -226,7 +226,8 @@ export async function createRailwayLine2(
   // Place's quarry link frames Q1-Q6, the ones the laying machine works at; `machined` is those. Q7 (v27) is laid on the
   // pier's piled deck (call 55): its frame is the sim's (RING_Q7_FRAME) at the trestle's deck height, a frame like the
   // others for deposits, feeds, tags and the depot rack, but the machine stays parked at the pier head while its deck is
-  // laid (./ring-deck.ts), so everything that follows the machine reads `machined`.
+  // laid (./ring-deck.ts) and leaves the scene once it is (`stowed`), so everything that follows the machine reads
+  // `machined`.
   const MACHINED = frames.length;
   const machined = (k: number) => k >= 0 && k < MACHINED;
   /** Q7's frame is built once the pier is laid (its deck, ./crossing-view.ts, stands from Q6): before then there is

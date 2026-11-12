@@ -30,6 +30,8 @@ background(
       )) as typeof import('../../../src/entities/railway/state.ts');
       const aim = () => {
         const m = inspectRailway()!.machine;
+        // Line 1's beats only: from Q7 on the machine is out of the scene (line2-view.ts `stowed`), nothing to frame.
+        if (m.y < -30) throw new Error('railAt: the track layer is stowed (Q7 laid); no chairs to frame');
         window.__debugCam!.set([m.x + at[0]!, m.y + at[1]!, m.z + at[2]!], [m.x + at[3]!, m.y + at[4]!, m.z + at[5]!]);
       };
       aim();

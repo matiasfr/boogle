@@ -1,11 +1,12 @@
 // npm run look -- --rail-seed ring-joined --eval dev/look/evals/railway-ring-home-carry.ts --until window.__placeDone \
-//   --wall 2400 --question "Does the rider stay carried by the line-2 car past the parked track layer?"
-// Add --query carryShot=flatbed to end the warm-up just past the parked track-layer flatbed (world z > -360) for a
-// still mid-ride on the follow camera; the default ends at the Village and logs the verdict.
+//   --wall 2400 --question "Does the rider stay carried by the line-2 car past the pier head?"
+// Add --query carryShot=pierhead to end the warm-up just past the pier head (world z > -360) for a
+// still mid-ride from a camera beside the train; the default ends at the Village and logs the verdict.
 // A carry regression probe (src/physics/platforms.ts deckUnder): Buddy stands on the island's down platform, a line-2
 // train already standing at the island (stop 5) is boarded by a teleport onto its passenger car (the island's homeward
 // lever is out of the server's reach on main, so no train is called), and every frame of the ride home checks that
-// carry.on is one of that train's cars. Logs `CARRY HOME PASS` or `CARRY HOME FAIL` with where the rider was lost.
+// carry.on is one of that train's cars. Until 12 November the track layer stood parked at the pier head
+// (s ~757), and its loco pushed the rider off; it now leaves the scene once Q7 is laid (line2-view.ts `stowed`). Logs `CARRY HOME PASS` or `CARRY HOME FAIL` with where the rider was lost.
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
@@ -54,7 +55,7 @@ background(
     while (!row().cars.some((c) => c.id === carry.on?.id) && performance.now() < end) await wait(50);
     if (!row().cars.some((c) => c.id === carry.on?.id)) throw new Error(`never carried by train ${slot}`);
     console.log(`CARRY HOME BOARDED ${JSON.stringify({ slot, on: carry.on?.id, at: pos() })}`);
-    // Every fixed step: deckUnder's terms against the boarded car and the parked flatbed, kept for the last few steps
+    // Every fixed step: deckUnder's terms against the boarded car and the track layer's flatbed (y -60 once stowed), kept for the last few steps
     // and printed when the deck under the rider changes.
     const boarded = platformById(carry.on!.id!)!;
     const terms = (p: Platform | null) => {
@@ -113,9 +114,9 @@ background(
         return;
       }
       ran ||= r.phase === 1;
-      if (shot === 'flatbed' && ran && me.body.position.z > -360) {
-        console.log(`CARRY HOME PAST FLATBED ${JSON.stringify({ on, at: pos() })}`);
-        // Side on from the east, a little ahead: the rider on the car, the parked flatbed behind (about z -372).
+      if (shot === 'pierhead' && ran && me.body.position.z > -360) {
+        console.log(`CARRY HOME PAST PIER HEAD ${JSON.stringify({ on, at: pos() })}`);
+        // Side on from the east, a little ahead: the rider on the car, the pier head (where the machine stood, about z -372) behind.
         const p = me.body.position;
         window.__debugCam!.set([p.x + 14, p.y + 5, p.z + 4], [p.x, p.y - 1, p.z - 8], 60);
         w.__placeDone = true;
