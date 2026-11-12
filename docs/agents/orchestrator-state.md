@@ -81,6 +81,8 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 
 **Leftovers from 11–12 November, by rank:**
 
+- P1: leg 1's finished-line waits on 48 seeds: worst 1,553 (heavy) and 1,535 (light), 7.2% and 3.0% over 1,050; the 1,400 gate holds on the test's four seeds only (call 109). Train spacing: candidate A dies on main's stages (a passed ask waits 340 to 380 ticks extra); candidate B (Ring Island hold, on 15%, cap 200) cuts light settled 3.0% to 0.4% but does nothing under heavy asks; next is the short turn's own plan. Sheets on `scratch/spacing-*`.
+
 - P2: `?home=b` draws 315 of 388 trees off the sim's positions.
 - P2: `railway-session.ts` is 573 lines against the 450 cap (needs a state object).
 - Closed: the map JSON's stale rail heights (#1653, `c9906f458`/`d0b43a588`: rails written from the catalog, a test fails on disagreement). The Ring Island ride-home drop is fixed (#1657, `c37c555d5`).
