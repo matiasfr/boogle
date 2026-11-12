@@ -240,6 +240,7 @@ export async function railwayChecks(c: Ctx) {
   );
   // The schedule's own length bounds the wait: three times its ticks at 100 ms each (laying measured about 11 s).
   const t1Ticks = (await rail(RA2)).scheduleTicks;
+  if (!Number.isFinite(t1Ticks) || t1Ticks <= 0) throw new Error(`T1 schedule ticks unreadable: ${t1Ticks}`);
   const laying = async () =>
     (await Promise.all([RA2, RB, RC].map(rail))).map((s) => ({
       tick: s.tick,
