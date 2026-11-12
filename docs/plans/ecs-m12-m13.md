@@ -686,8 +686,10 @@ Its proof line "the full railway bot" is replaced by segments (owner: the long r
     = row % of `TUNE.laySpeed`; rack from `feed`/`depot`; fields at nothing left out). The land's own (frame side,
     board) is `STATION_LAND`, a `Record` over every sim station id: a sim station without its land entry fails the
     typecheck, which pins the outage's invariant without a test. No `src/sim` edit: Q7 stays out of `LINKS[1]`
-    because its stretch (742-862 m) lies past line 2's end (743 m), not by a new sim field (that would reshape a
-    catalog row). `line2-view.ts` builds Q7's deck frame from `landStation(LINE2_STATIONS[Q7])` instead of a copy of
+    because its `STATION_LAND` entry is marked `own` (its own frame on the pier's piled deck), not by a sim field.
+    At module load `onLine` throws, naming the station, if a row beside its line runs past the line's end or an `own`
+    row lies on it (review, 12 November: a silently dropped or doubled frame was the outage's path); unmarking Q7
+    in a scratch edit threw "station Q7 runs past its line's end (743 m) but is not marked own". `line2-view.ts` builds Q7's deck frame from `landStation(LINE2_STATIONS[Q7])` instead of a copy of
     its numbers (the row gains `speed: 9`, which no frame reads). Proof: a scratch script printing both lines' rows
     (keys in order, values) on main and here, layouts A and B: identical. Level check equal to main but hash and
     timings; live boot offline PASS; Q1/Q2 on the default entry and Q7's frame and box at `deck-laid` looked at.
