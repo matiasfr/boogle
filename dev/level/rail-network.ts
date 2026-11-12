@@ -25,7 +25,7 @@ import {
   type LinePoint,
 } from '../../src/place/layout.ts';
 import { GATES } from '../../src/place/tech-layout.ts';
-import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
+import { LINE2_ON, RAIL_LINES } from '../../src/sim/railway-lines.ts';
 import { TRAIN_STOPS } from '../../src/sim/railway-train.ts';
 import { FORMATION as WORLD_FORMATION, WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import {
@@ -224,7 +224,8 @@ export function tracks(): Track[] {
     });
   }
   // The sim's path in v27: line 2's RAIL_LINES path (to s 740) with RING_PATH appended (railLinePoint, 10 m).
-  const l2 = RAIL_LINES[1]!.path;
+  // As far as RING_PATH: the greybox route's path on (LINE2_ON) is the ring row's own draft.
+  const l2 = RAIL_LINES[1]!.path.slice(0, RAIL_LINES[1]!.path.length - LINE2_ON.length);
   const simRing: Pt[] = [];
   for (let i = l2.length - 8; i < l2.length; i += 2)
     simRing.push({ x: m(l2[i]!), z: m(l2[i + 1]!), y: 24.3, s: (i / 2) * 10 });
@@ -347,7 +348,7 @@ export function joins(): Join[] {
     note: `spline end at u ${(r0.u / 100).toFixed(2)} m, ${(r0.lat / 100).toFixed(2)} m off the crossing's line`,
   });
   // The sim: line 2's path end (s 740) to RING_PATH[0] (u 8): the reviewer's 11.55 m chord.
-  const p = RAIL_LINES[1]!.path;
+  const p = RAIL_LINES[1]!.path.slice(0, RAIL_LINES[1]!.path.length - LINE2_ON.length);
   const q0 = { x: m(p.at(-4)!), z: m(p.at(-3)!) },
     q1 = { x: m(p.at(-2)!), z: m(p.at(-1)!) },
     r1 = { x: m(RING_PATH[0]!), z: m(RING_PATH[1]!) },
