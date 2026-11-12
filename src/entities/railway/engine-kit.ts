@@ -64,12 +64,14 @@ export function enginePart(part: EnginePart, rust = true) {
 export const CAB_FACES = ['roof', 'back', 'front', 'left', 'right'] as const;
 export type CabFace = (typeof CAB_FACES)[number];
 type Split = { rest: THREE.BufferGeometry; faces: Record<CabFace, THREE.BufferGeometry>; shell: THREE.BufferGeometry };
-let split: Split | null = null;
-/** The body cut in two: the cab's walls and roof by face, and everything else. Each box the recipe makes is its own
- * closed piece of the mesh, so the pieces are the connected triangles, sorted by where their middle is. */
-function splitBody(): Split {
+const splits = new Map<EnginePart, Split>();
+/** A body cut in two: the cab's walls and roof by face, and everything else. Each box the recipe makes is its own
+ * closed piece of the mesh, so the pieces are the connected triangles, sorted by where their middle is. The longer
+ * boiler's body carries the same cab in the same place (engine.py), so it cuts the same way. */
+function splitBody(body: 'engine_body' | 'engine_body_long' = 'engine_body'): Split {
+  let split = splits.get(body);
   if (split) return split;
-  const g = geometry('engine_body'),
+  const g = geometry(body),
     pos = g.getAttribute('position'),
     index = g.index!;
   const root = Array.from({ length: pos.count }, (_, i) => i);
@@ -118,6 +120,7 @@ function splitBody(): Split {
   };
   const faces = Object.fromEntries(CAB_FACES.map((f) => [f, part(lists[f])])) as Record<CabFace, THREE.BufferGeometry>;
   split = { rest: part(lists.rest), faces, shell: part(lists.shell) };
+  splits.set(body, split);
   return split;
 }
 const shadowOnly = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
@@ -142,6 +145,31 @@ export function engineBodyWithCab() {
   shadow.castShadow = true;
   shadow.visible = false;
   return { body: mesh(s.rest, 'engine_body'), faces, shadow };
+}
+
+/** The longer boiler's engine (ring-island-build2, V2), for a train whose row wears boiler 1: its body without the cab
+ * (the short body's cab faces stay, so the cutaway still moves them), and the longer boiler with its lashing in `rope`,
+ * all in the car's frame. `chimney` is where its steam leaves. The geometry and paint are the kit's (never dispose
+ * them). The frame reaches ENGINE_LONG_AHEAD further forward; the cab, drivers and rods are the short engine's. */
+export function engineLong(rope: THREE.Material) {
+  const body = new THREE.Mesh(splitBody('engine_body_long').rest, paint(RUSTED));
+  body.name = 'engine_body_long';
+  const boiler = enginePart('engine_boiler_long', false);
+  const lashing = new THREE.Mesh(geometry('engine_lashing_long'), rope);
+  lashing.name = 'engine_lashing_long';
+  body.castShadow = body.receiveShadow = lashing.castShadow = true;
+  // The chimney's cap: the middle of the boiler's highest ring of vertices.
+  const pos = boiler.geometry.getAttribute('position');
+  let top = -Infinity,
+    z = 0,
+    n = 0;
+  for (let i = 0; i < pos.count; i++) top = Math.max(top, pos.getY(i));
+  for (let i = 0; i < pos.count; i++)
+    if (pos.getY(i) > top - 0.02) {
+      z += pos.getZ(i);
+      n++;
+    }
+  return { body, boiler, lashing, chimney: { y: top, z: z / n } };
 }
 
 /** The door's hinge: its back edge, inside the +x doorway. */

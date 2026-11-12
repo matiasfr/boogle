@@ -26,6 +26,7 @@ import {
 } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { STEEL } from '../../sim/railway-ring-layout.ts';
 import { line2Active, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { aperture, rail as railRow, train as trainRow, works as worksRow } from '../../sim/railway-rows.ts';
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
@@ -35,6 +36,8 @@ import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 
 const BRASS = '#c79a3e';
+/** Steel, the island's orange (ring-island/view.ts, ring-steel/view.ts). */
+const STEEL_BLOCK = '#e8742c';
 /** Far Head's stop on line 2: its facing crossover is the line's end until the pier is laid. */
 const FAR_HEAD = 2;
 /** The Railhead's stop on line 2: where the wagon's ring footings come off. */
@@ -208,6 +211,17 @@ export async function createRailwayTrains(
     boiler.position.copy(engineKit.BOILER_CENTRE);
     owner.add(boiler);
     model.cars[0]!.add(boiler);
+    // The longer boiler (ring-island-build2, V2): its body and boiler stand in for the short ones while the train's row
+    // wears boiler 1 (`rail.install`, taken up at the Village). The cab, doors, drivers and collider are the short
+    // engine's; the frame's extra 0.5 m ahead is drawn only.
+    const long = engineKit.engineLong(lashMaterial);
+    const longParts = [long.body, long.boiler, long.lashing];
+    for (const part of longParts) {
+      part.visible = false;
+      owner.add(part);
+      model.cars[0]!.add(part);
+    }
+    owner.cleanup(() => longParts.forEach((part) => part.removeFromParent()));
     // The stop lamp (docs/plans/works-late-game.md, step 1): amber on the cab's roof at its front, lit while the train
     // runs to a stop someone asked for, so the platform sees it is coming in. Out when it stops.
     const lampMaterial = new THREE.MeshBasicNodeMaterial({ color: LAMP.off });
@@ -244,6 +258,8 @@ export async function createRailwayTrains(
       deck: crateDeck,
       solid: solidLoad,
       boiler,
+      long,
+      wears: 0,
       lamp: { mesh: stopLamp, material: lampMaterial, on: false },
       hold: { mesh: holdLamp, material: holdMaterial, on: false },
       fit,
@@ -462,6 +478,32 @@ export async function createRailwayTrains(
     }
     batch.commit();
   }
+  // Steel riding home on a line 2 train's kit car (ruling C: any train's, up to STEEL.trip), two abreast on its deck.
+  // Greybox: it is aboard when the row says so, with no hop from the works' rack or into the Roundhouse bay.
+  const steelBatch = createBoxBatch(owner, RAIL_TRAINS.length * STEEL.trip);
+  function drawSteel() {
+    steelBatch.begin();
+    const w = adapter.read.world();
+    for (const tr of trains) {
+      const kitCar = tr.cars[2]!,
+        n = tr.line === LINE2 && line2Trains(w) ? Math.min(trainRow(w, tr.slot).steel ?? 0, STEEL.trip) : 0;
+      if (!n || kitCar.y < -30) continue;
+      const frame = tr.model.cars[2]!;
+      frame.updateWorldMatrix(true, false);
+      for (let i = 0; i < n; i++)
+        steelBatch.part(
+          frame.matrixWorld,
+          i % 2 ? 0.45 : -0.45,
+          wagon.TRAIN_CARS[2]!.top + 0.2,
+          -0.9 + (i >> 1) * 0.9,
+          0.8,
+          0.4,
+          0.5,
+          STEEL_BLOCK,
+        );
+    }
+    steelBatch.commit();
+  }
   function stepFootFlights(dt: number) {
     for (let i = footFlights.length - 1; i >= 0; i--) {
       const f = footFlights[i]!;
@@ -654,6 +696,7 @@ export async function createRailwayTrains(
     swingDoors(dt);
     cutCab(dt);
     drawWagon();
+    drawSteel();
     if (shudder)
       first.cars.forEach((c, n) => {
         c.rock.rotation.z = Math.sin(now * 0.073 + n * 1.3) * 0.018 * shudder;
@@ -765,8 +808,18 @@ export async function createRailwayTrains(
           tr.hold.on = held;
           tr.hold.material.color.set(held ? HOLD.on : HOLD.off);
         }
-        tr.boiler.visible = on && !(tr.slot === 0 && boilerFlying());
-        if (tr.boiler.visible !== tr.fitted()) tr.fit(tr.boiler.visible);
+        const worn = on && !(tr.slot === 0 && boilerFlying()),
+          wears = on ? (row.boiler ?? 0) : 0;
+        if (wears !== tr.wears) {
+          tr.wears = wears;
+          if (tr.cab) tr.cab.body.visible = !wears;
+          tr.long.body.visible = !!wears;
+          const c = wears ? tr.long.chimney : shape.ENGINE_BOILER.chimney;
+          tr.model.chimneyTop.position.set(0, c.y, c.z);
+        }
+        tr.boiler.visible = worn && !wears;
+        tr.long.boiler.visible = tr.long.lashing.visible = worn && !!wears;
+        if (worn !== tr.fitted()) tr.fit(worn);
         if (tr.last && on && row.phase === TRAIN_PHASE.RUN && tr.last.phase !== TRAIN_PHASE.RUN)
           whistle(tr.cars[0]!.x, tr.cars[0]!.z);
         // A train-fed job's kit unloads at its own halt: Q6's at Far Head, Q7's at the Pier, onto that job's rack.
@@ -842,7 +895,8 @@ export async function createRailwayTrains(
         along: trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock),
         cars: carsOf(tr).map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
-        lashed: tr.boiler.visible,
+        lashed: tr.boiler.visible || tr.long.boiler.visible,
+        longBoiler: tr.long.body.visible,
         stopLamp: tr.lamp.on,
         holdLamp: tr.hold.on,
         crossing: crossing(tr, trainRow(adapter.read.world(), tr.slot)),
