@@ -177,7 +177,7 @@ checkpoint runs for it.
     `stakedAtOnce`. No server change: `world-host.ts` already passes `railAwayCredit(away)` as `yard`.
   - Ops: none. State and save shape: unchanged from R1.
   - `WORLD_NS`: bump A (v28). **As built:** `yardsAway` (`railway-sys-trade.ts`) from `awayCredit`; `plotsStakedOf`
-    takes R4's bought set; no hash moved; jump-in "Timber home" (land not yet stilled); `freight` stop in segments.
+    takes R4's bought set; no hash moved; jump-in "Timber home" (land stilled on Edge); `freight` stop in segments.
   - Tests: 10 minutes, 8 hours and 3 days away each leave both yards at or under the cap and the yard invariant true;
     a second resume at the same marker adds nothing; `plotsStaked` at 0, 8, 24 and 40 timber with and without stone.
   - Proof: the empty-room proof for this area, once: a hosted room on `freight-running`, emptied past the pause

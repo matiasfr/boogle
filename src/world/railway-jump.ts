@@ -86,7 +86,9 @@ export const JUMPS: readonly Jump[] = [
     land: near(LINE2_SEA, 2.2, 1, 102.4, LINE2_STATIONS[0]!), // on the summit deck, facing the glide home
   },
   { stage: 'trains-on', label: 'Trains running', line: 'The boiler is fitted and both lines run' },
-  // Slice 5 (R1, R2). Its land is worked from the halt's platform point, not yet checked with a still.
+  // Slice 5 (R1, R2). Its position was checked with a still on Windows/Edge, 12 November (on the platform, not
+  // clipped); not on a device. Facing: camera and yaw toward the Camp, measured on Windows/Edge 12 November; the
+  // avatar is drawn face to camera on landing, as on other rows.
   {
     stage: 'freight-running',
     label: 'Timber home',
