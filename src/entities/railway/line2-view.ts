@@ -23,7 +23,7 @@ import {
   line2Trains,
   farHeadLaid,
 } from '../../sim/railway-queries-line2.ts';
-import { aboard, line2Jobs, type QJobRead } from '../../sim/railway-queries.ts';
+import { aboard, line2Jobs, q7Laid, type QJobRead } from '../../sim/railway-queries.ts';
 import { freeCarryIgnoringBig, railPhase } from '../../sim/railway-queries-line1.ts';
 import {
   account,
@@ -538,6 +538,9 @@ export async function createRailwayLine2(
     // Q6's frame once the active job is not the machine's (all laid, or Q7): the machine parks at the pier's end.
     return machined(active) ? active : MACHINED - 1;
   };
+  // Once Q7 is laid trains run on past the pier head, through where the machine parks: it leaves the scene (no siding
+  // there: the platform fills the east side and the deck ends a metre or two west of the up track).
+  const stowed = () => q7Laid(rd.world());
   const jobElapsed = (k: number, active: number, jobs: QJobRead[]) => {
     const { job, run } = jobs[k]!;
     return run.elapsed + (k === active && job.start >= 0 && !job.completion && rd.ready() ? sinceTick * 10 : 0);
@@ -597,6 +600,7 @@ export async function createRailwayLine2(
     owner,
   );
   function step(dt: number) {
+    if (stowed()) return machine.stow();
     const previous = visualHead - setback;
     const w = rd.world(),
       active = line2Active(w),
@@ -651,7 +655,8 @@ export async function createRailwayLine2(
     pier.restore(jobs[5]!.job.completion === 1);
     visualHead = targetHead = working() ? head(active, jobs) : TURN_HEAD;
     setback = 2.4;
-    if (working()) {
+    if (working() && stowed()) machine.stow();
+    else if (working()) {
       const k = activeIndex(active);
       if (phaseOf(k, jobs) === 'laying')
         setback = Math.min(machine.F, 2.4 + visualHead - LINE2_STATIONS[k]!.fromCm / 100);

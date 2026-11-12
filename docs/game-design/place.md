@@ -727,7 +727,7 @@ track instead of jumping across (it once jumped 4 m for a tick). The levers of t
 once Q7 is laid, sliding with the railhead and offering no prompt while it moves; west: chained until the rivet) and
 **Ring Island** (east: way home, live from the rivet; west: chained) are drawn on those platforms; a chained lever's
 plaque names the halt that opens next. Not yet: the laying machine does not travel out onto the deck (it stays parked
-at the pier head while the deck drops in), the halt displays' map keeps v26's six stops (the Railhead's and Ring
+at the pier head while the deck drops in, then leaves the scene once Q7 is laid: line 2 runs through where it stood), the halt displays' map keeps v26's six stops (the Railhead's and Ring
 Island's names do not fit the 320 x 256 faces beside the Pier's). Not tested on a device.
 
 **The railhead and the gap (11 November 2026, R4b; step 4b; calls 14, 16, 49, 51).** Once Q7 is laid line 2 runs on
