@@ -2,7 +2,8 @@
 // table so a change of mind is a change of numbers. All coordinates are metres relative to ORIGIN, north is -z. The
 // gorge is three straight arms from the spire's islet with a slight wiggle; the lobes' heights meet along those rays, and
 // the walls hide the seam. Foot paths are polylines with explicit heights; rail lines are curves with explicit ends.
-// docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim.
+// docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim; it
+// reads the sim's station rows (LINE1_STATIONS, LINE2_STATIONS) and turnout length, never the other way round.
 import { smoothstep } from '../math.ts';
 import { TURNOUT_CM } from '../sim/railway-lines.ts';
 import { LINE1_STATIONS, type LineStation, type LineStationId } from '../sim/railway-line-layout.ts';
@@ -303,8 +304,10 @@ export const STUB = { camp: N - 30, village: 30, east: 7 };
 export const EAST = { quarry: 178, rim: 286, head: 546, headStop: 524 };
 /** What the land keeps of each station beside the sim's row (LINE1_STATIONS, LINE2_STATIONS: the one list of
  * stations): which side of the track its frame stands, and its board. Typed over every sim station id, so a station
- * added there without its entry here fails the typecheck (the 11 November outage: v27 added Q7 to the sim only). */
-const STATION_LAND: Record<LineStationId | Line2StationId, { side: number; label: string }> = {
+ * added there without its entry here fails the typecheck (the 11 November outage: v27 added Q7 to the sim only).
+ * `own`: the station has its own frame, not one beside the line (Q7's on the pier's piled deck, RING_Q7_FRAME, built
+ * by line2-view.ts), so it is not in its line's `LINKS` stations and the laying machine never works it. */
+const STATION_LAND: Record<LineStationId | Line2StationId, { side: number; label: string; own?: true }> = {
   T1: { side: 1, label: 'Station 1' },
   T2: { side: 1, label: 'Station 2' },
   T3: { side: 1, label: 'Station 3' },
@@ -316,7 +319,7 @@ const STATION_LAND: Record<LineStationId | Line2StationId, { side: number; label
   Q5: { side: -1, label: 'Line 2, station 5' },
   Q6: { side: -1, label: 'The pier' },
   // "Line 2, station 7" follows the others' board ("Station 7"); the plan names no label for it.
-  Q7: { side: 1, label: 'Line 2, station 7' },
+  Q7: { side: 1, label: 'Line 2, station 7', own: true },
 };
 /** A sim station row as the land reads it: metres along its line, its bill by goods, line 2's laying speed in m/s
  * (the row's is per cent of TUNE.laySpeed) and its rack (a depot's cart, or a kit by train). Line 1's second good is
@@ -341,10 +344,19 @@ export function landStation(row: LineStation | Line2Station): Station {
     ...(two && row.gate ? { gate: row.gate } : {}),
   };
 }
-/** The stations whose frames stand beside a line's laid track: every sim row whose stretch lies on it. Q7's lies past
- * line 2's end, on the pier's piled deck (RING_Q7_FRAME): line2-view.ts frames it there, and the machine never works it. */
-const onLine = (rows: readonly (LineStation | Line2Station)[], line: Line) =>
-  rows.filter((row) => Math.max(row.fromCm, row.toCm) <= line.len * 100).map(landStation);
+/** The stations whose frames stand beside a line's laid track: every sim row not marked `own`. Checked at load, so a
+ * mismatch fails every Node run and the pre-deploy live boot by name instead of dropping or doubling a frame: a row
+ * beside the line must lie on it, and an `own` row must lie past its end. */
+function onLine(rows: readonly (LineStation | Line2Station)[], line: Line) {
+  for (const row of rows) {
+    const on = Math.max(row.fromCm, row.toCm) <= line.len * 100;
+    if (on === !!STATION_LAND[row.id].own)
+      throw new Error(
+        `layout: station ${row.id} ${on ? 'is marked own but lies on its line' : `runs past its line's end (${line.len} m) but is not marked own`}`,
+      );
+  }
+  return rows.filter((row) => !STATION_LAND[row.id].own).map(landStation);
+}
 export const LINKS: LineSpec[] = [
   {
     id: 'timber',
