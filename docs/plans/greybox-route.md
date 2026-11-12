@@ -405,12 +405,24 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       (endMoved: a train running up to it stops there once), a train standing at an old head turns back up and runs
       on, and the lay leaves an up-way lever ask at the old head, so the first up train after the lay stops there. From
       each lay, someone standing at the old head is at the new head within 899 ticks on four seeds at 75% (whole-leg
-      fuzz: 478 to 899) and 536 fed every tick. **The old heads stay request halts** in the rules after their train has
-      gone: the stops model needs open stops to be a prefix of a line's halts, so a halt cannot close behind an open
-      one. That keeps the third head as the review's `Stack halt` (served both ways), and it keeps heads 1 and 2 as
-      request halts too, where the review has only a signal post; their views and the rider ask there are step 4's to
-      settle. With three stops more on the line the printed gates 8 and 9 rise (settled worst 1,369 to 1,481, means 551
-      to 574; fixed stages up to 1,462); every asserted gate still passes. **A unit lost off the rack is owed again**
+      fuzz: 478 to 899) and 536 fed every tick. **Heads 1 and 2 close behind** (the orchestrator's ruling): once
+      the section after next lays (head 1 with section 3, head 2 with the Gorge) a passed head passes both ways: no
+      lever ask, no rider stop, no kit or stone business, no train stops there; its block signal stays and the halt
+      stays in the line's row, so open stops are still a prefix. The close is counted in open stops (`closesAt`), not
+      on the first train leaving: a lay is the one moment the rules already change a line's stops, it needs no new row
+      field, and two lays on, call 88's ride-on from that head is long over (at most 951 ticks; a section takes 760 to
+      840 fed). The lay that closes a head turns a train standing there into one at a signal and drops every ask there.
+      Head 3 stays the review's `Stack halt`, served both ways. Re-measured on this build: call 88 fed 536, 463, 341,
+      342 ticks; at 75% on the four seeds (20,000 ticks) 951, 362, 313, 318 / 427, 937, 313, 318 / 711, 572, 731, 614 /
+      711, 640, 416, 432. Gate 14: the Gorge 3,195 ticks from the rivet, idle 651, 536, 463, 341. Gates 1 to 3: the 39
+      stages before the rivet identical to main. Printed gates 8 and 9 (75%, four seeds, 20,000 ticks; asks 6.6 to
+      10.6 a minute by stage, 7.2 to 7.5 whole leg and settled): fixed stages worst 694 to 1,366, means 303 to 597;
+      whole leg worst 1,248 to 1,408, means 550 to 584, 5 to 10 of 241 to 248 waits over 1,050 and 2 to 8 over 1,158;
+      settled worst 1,182 to 1,343, means 603 to 632, 10 to 17 of 239 to 250 over 1,050 and 2 to 5 over 1,158. Every
+      asserted gate passes. **The route gates run long and short:** `ROUTE_GATES=1` (the long mode) runs their fuzzes
+      at 20,000 ticks on the four ruled seeds (226 s audited); every other mode runs 3,000 ticks, the same seeds, every
+      asserted gate still asserted (25 s at the pre-push settings). The long version is run and its output pasted
+      before this step ships and before any later train-rule change ships ([ship pipeline](../agents/ship-pipeline.md#unit-test-settings)). **A unit lost off the rack is owed again**
       (finding 2, the leg's side): the kit still owed counts what is fed, racked, aboard and on the players' backs, and
       no longer stops at what was once loaded, so a log or rail dropped, or fed to another bill, is loaded again and the
       leg always completes. Whether a unit lifted from the leg's rack can short build 2's steel bill is build 2's side,
