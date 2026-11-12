@@ -31,8 +31,8 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 | Branch | State |
 | --- | --- |
-| `ring2/v3-garage` (local only, worktree `.claude/worktrees/agent-a8f0bb88b7688c06c`) | Ring Island build 2: rules R1–R5, views V1–V3 (the install is a plain hold at Home's table until the Home flip; the garage's moment waits), steel bot, v31. All reviews done (final review: ship after fixes, fixed); the bot's full loop passed (ring-joined to boiler installed); the all-longer fleet's wait is a TODO test. Needs (wait limit answered: the looser rate): a rebase onto whatever main is then, ship-check, a ship outside his sessions |
-| HOTBOX `wip/greybox-leg1-step3` (local, not on origin: the pre-push hook refuses until bump and fixtures) | Greybox leg 1 step 3 (rules): fleet 3 then 5, block signals at section ends, kit on at most running trains minus one, the stone stop allowed for a kit that cannot unload, call 88 ride-on, heads closing two lays on, catalog positions. Every gate passes except the wait gates 8 and 9 (printed, TODO; the owner's looser rate sets them). Needs (wait limit answered: gates 8 and 9 at 1,350 settled, 1,600 growing): build 2 on main, rebase, steel-first, gate 15, bump (v32), fixtures, independent review, `test:net` |
+| Ring Island build 2 | On main: #1672 (`4e769acde`), world v31, shipped 12 November 20:15 UTC as `ring2/v4-garage` on the looser rate. The all-longer fleet's wait stays a TODO test; `server/test/railway-steel-host.test.ts` ran 4.8 s against its 5 s limit locally (P3: may flake) |
+| HOTBOX `wip/greybox-leg1-step3` (local, not on origin: the pre-push hook refuses until bump and fixtures) | Greybox leg 1 step 3 (rules): fleet 3 then 5, block signals at section ends, kit on at most running trains minus one, the stone stop allowed for a kit that cannot unload, call 88 ride-on, heads closing two lays on, catalog positions. Every gate passes except the wait gates 8 and 9 (printed, TODO; the owner's looser rate sets them). Needs (wait limit answered: gates 8 and 9 at 1,350 settled, 1,600 growing; build 2 is on main; HOTBOX is rebasing as `greybox/leg1-step3-v2`): rebase, steel-first, gate 15, bump (v32), fixtures, independent review, `test:net` |
 
 HOTBOX is a peer session (address under Peers). The Mac ships its branches when HOTBOX sends tips and stamps.
 
@@ -42,7 +42,7 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 
 **Bump order:** build 2 v31, greybox step 3 v32; renumber at ship time.
 
-**Next, in order:** ship build 2 (load https://boogle.club/ after it); greybox leg 1 step 3 (v32) and step 4 views on the looser rate; the garage's install moment (owner: prioritise); train spacing, then tighten the rate; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)); trees, then shadow draws.
+**Next, in order:** greybox leg 1 step 3 (v32) and step 4 views on the looser rate; the garage's install moment (owner: prioritise); train spacing, then tighten the rate; Ring Island R6 docs; a frame-time pass and device run ([owner call](owner-calls.md#frame-time-60)); trees, then shadow draws.
 
 **Other open owner questions** (each proceeding on its recommendation):
 
