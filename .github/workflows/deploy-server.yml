@@ -45,6 +45,8 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+        env:
+          RAIL_AUDIT: '1'
       - name: Build the image (from the repo root)
         working-directory: .
         run: docker build -f server/Dockerfile --build-arg BOOGLE_BUILD=ci-boot -t boogle-server:ci .

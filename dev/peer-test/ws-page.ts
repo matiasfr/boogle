@@ -14,11 +14,11 @@ import { delayedRoom } from '../../src/world/delayed-room.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import type { RailAction, RailAccount } from '../../src/sim/railway.ts';
-import { railActiveStation, railJobs } from '../../src/sim/railway-queries.ts';
-import { freeCarryIgnoringBig, railPhase } from '../../src/sim/railway-queries-line1.ts';
+import { railActiveStation, railId, railJobs } from '../../src/sim/railway-queries.ts';
+import { freeCarryIgnoringBig, railMaxDuration, railPhase } from '../../src/sim/railway-queries-line1.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { account, accounts, aperture, cart, lines, qjobs, train, trains, tree } from '../../src/sim/railway-rows.ts';
-import { Pile } from '../../src/sim/railway-components.ts';
+import { Pile, Rail } from '../../src/sim/railway-components.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import { specOf } from '../../src/sim/tune.ts';
 import { createRailwayAdapter } from '../../src/adapters/railway-session.ts';
@@ -40,6 +40,9 @@ export type RailwayProbe = {
   step: number;
   hash: number;
   phase: ReturnType<typeof railPhase>;
+  /** The tick the confirmed world woke the rail at (-1 asleep), and the active station's whole schedule in ticks. */
+  awake: number;
+  scheduleTicks: number;
   activeStation: number;
   counts: ReturnType<typeof railCounts>;
   accounts: RailAccount[];
@@ -534,6 +537,8 @@ function startWorld(room: Room) {
         step: rail.step(),
         hash: rail.hash(),
         phase: railPhase(mw, tick, tick),
+        awake: mw.get(Rail, railId(mw))!.awake,
+        scheduleTicks: railMaxDuration(mw),
         activeStation: railActiveStation(mw),
         counts: railCounts(mw, tick),
         accounts: accounts(mw).map((a) => ({ ...a })),

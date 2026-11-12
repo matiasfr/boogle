@@ -5,7 +5,9 @@
 // unaudited world steps and hashes exactly as an audited one. Preloaded, this rewrites those calls in memory to
 // `{ audit: false }`; nothing on disk changes, the game, the server and the rules never load it, and a test that asks
 // for an audited world itself (`createRailwayWorld({ audit: true })` in test/) keeps it. dev/test-env.ts preloads it
-// unless RAIL_AUDIT=1, which CI's unit job (`--ci`) and the nightly long run set:
+// unless RAIL_AUDIT=1, which CI's unit job (`--ci`) and the nightly long run set. The server suite (`npm test` in
+// server/) preloads it too and, with RAIL_AUDIT=1 (CI's server job and deploy-server.yml set it), the hooks below
+// are not registered, so the audit stays on:
 //
 //   node --import ./test/helpers/rail-no-audit.ts --test test/railway-trains.test.ts
 //
@@ -14,14 +16,15 @@ import { registerHooks } from 'node:module';
 
 const CALL = 'createRailwayWorld({ audit: true })';
 const SITES: Record<string, number> = { '/src/sim/railway-drive.ts': 1 };
-registerHooks({
-  load(url, context, nextLoad) {
-    const out = nextLoad(url, context);
-    const file = Object.keys(SITES).find((f) => url.endsWith(f));
-    if (!file) return out;
-    const source = String(out.source);
-    const n = source.split(CALL).length - 1;
-    if (n !== SITES[file]) throw new Error(`rail-no-audit: ${n} of ${CALL} in ${file}, expected ${SITES[file]}`);
-    return { ...out, source: source.replaceAll(CALL, 'createRailwayWorld({ audit: false })') };
-  },
-});
+if (process.env.RAIL_AUDIT !== '1')
+  registerHooks({
+    load(url, context, nextLoad) {
+      const out = nextLoad(url, context);
+      const file = Object.keys(SITES).find((f) => url.endsWith(f));
+      if (!file) return out;
+      const source = String(out.source);
+      const n = source.split(CALL).length - 1;
+      if (n !== SITES[file]) throw new Error(`rail-no-audit: ${n} of ${CALL} in ${file}, expected ${SITES[file]}`);
+      return { ...out, source: source.replaceAll(CALL, 'createRailwayWorld({ audit: false })') };
+    },
+  });

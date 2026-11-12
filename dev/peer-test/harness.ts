@@ -14,8 +14,9 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright') as typeof import('playwright');
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// Polls fn until truthy; returns elapsed ms, or -1 on timeout.
-export async function waitFor(fn: () => unknown, timeout = 8000, step = 50): Promise<number> {
+// Polls fn until truthy; returns elapsed ms, or -1 on timeout. `describe`, when given, is read on a timeout and printed
+// (a check that waits on ticks says where the mirrors stood).
+export async function waitFor(fn: () => unknown, timeout = 8000, step = 50, describe?: () => unknown): Promise<number> {
   const t0 = Date.now();
   for (;;) {
     try {
@@ -23,7 +24,16 @@ export async function waitFor(fn: () => unknown, timeout = 8000, step = 50): Pro
     } catch {
       /* page may be mid-navigation */
     }
-    if (Date.now() - t0 > timeout) return -1;
+    if (Date.now() - t0 > timeout) {
+      if (describe) {
+        try {
+          console.log(`  waitFor timed out after ${timeout} ms: ${JSON.stringify(await describe())}`);
+        } catch (e) {
+          console.log(`  waitFor timed out after ${timeout} ms (state unreadable: ${e})`);
+        }
+      }
+      return -1;
+    }
     await sleep(step);
   }
 }

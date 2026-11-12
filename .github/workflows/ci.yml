@@ -214,6 +214,8 @@ jobs:
         run: npm ci
       - if: needs.changes.outputs.server == 'true'
         run: npm test
+        env:
+          RAIL_AUDIT: '1' # the rail audit on, as the unit job's --ci (test/helpers/rail-no-audit.ts)
       - name: Build the image (from the repo root, as the deploy does)
         if: needs.changes.outputs.image == 'true'
         working-directory: .

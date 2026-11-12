@@ -93,6 +93,7 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
   'dev/peer-test/node-player.ts: build': { reaches: [], why: 'bundles a dev/peer-test entry for the net job' },
   'dev/peer-test/node-player.ts: import': { reaches: [], why: 'imports the bundle it just built, for the net job' },
   'test/unit-modes.test.ts: spawnSync': {
+    count: 2,
     reaches: [],
     why: 'runs probe modules written inline, which load what its url() entry lists',
   },

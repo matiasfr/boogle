@@ -5,6 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 import { MODE_VARS, testEnv, type TestMode } from '../dev/test-env.ts';
 
 const url = (p: string) => new URL(p, import.meta.url).href;
@@ -65,4 +66,20 @@ test("a ship's CI keeps the audit and a real stride, and runs one seed of each f
   assert.equal(under('ship', read('[7, 8, 9]')).stdout, '16 7');
   assert.equal(under('ci', read('[7, 8, 9]')).stdout, '1 7,8,9');
   assert.equal(under('local', read('[7, 8, 9]')).stdout, '16 7,8,9');
+});
+
+test("the server suite's preload (server/package.json) audits with RAIL_AUDIT=1 and is unaudited without it", () => {
+  const probe = (audit: string | undefined) => {
+    const env = { ...process.env };
+    for (const k of MODE_VARS) delete env[k];
+    if (audit === undefined) delete env.RAIL_AUDIT;
+    else env.RAIL_AUDIT = audit;
+    return spawnSync(
+      process.execPath,
+      ['--import', join(import.meta.dirname, 'helpers', 'rail-no-audit.ts'), '--input-type=module', '-e', PROBE],
+      { env, encoding: 'utf8' },
+    ).stdout.trim();
+  };
+  assert.equal(probe(undefined), 'unaudited');
+  assert.equal(probe('1'), 'audited');
 });

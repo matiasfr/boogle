@@ -73,8 +73,8 @@ function filesUnder(dir: string, root = ROOT): string[] {
 const SHARED_FALLBACK = ['package.json', 'package-lock.json', '.nvmrc', '.github/workflows/ci.yml', 'dev/ci/'];
 /** Per job: the directory whose files are its roots, and the paths a walk cannot see. A path ending in / is a prefix. */
 export const JOBS = {
-  // server/ whole: its package files, fixtures read from disk, the Dockerfile.
-  server: { roots: 'server/test', fallback: [...SHARED_FALLBACK, 'server/'] },
+  // server/ whole: its package files, fixtures read from disk, the Dockerfile; the preload its test script imports.
+  server: { roots: 'server/test', fallback: [...SHARED_FALLBACK, 'server/', 'test/helpers/rail-no-audit.ts'] },
   // esbuild bundles ws-page.ts by name and reads tsconfig.json; playwright's browser comes from the lock.
   net: {
     roots: 'dev/peer-test',
