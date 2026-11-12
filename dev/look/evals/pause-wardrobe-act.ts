@@ -1,3 +1,4 @@
+// npm run look -- --real --query 'pause=0&keys=Down,Right,Right&settle=1500' --eval dev/look/evals/pause-wardrobe.ts --action dev/look/evals/pause-wardrobe-act.ts --video --seconds 4 --hud --name wardrobe-keys
 // Real key presses on the pause view's You page (dev/look/evals/pause-wardrobe.ts sets it open): Down moves from Resume
 // to Hat, then Right steps the hat. Keyboard events on the window, as the menu key handler sees them.
 //   settle=1500   (query) ms to wait after the presses, so the camera has swung

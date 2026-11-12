@@ -1,3 +1,5 @@
+// npm run look -- --query 'loadCase=normal' --action dev/look/evals/load-screen.ts --name load-normal
+// needs: BOOGLE_BOOT_FAULTS=1 node .look/see-client.ts look --production (a fresh production boot in an iframe); loadCase=normal|graphics|avatar|failure|details|literal, phone=1, reduced=1
 // Broker action: a fresh real production boot, viewed in an iframe. No synthesized boot marks or staged UI.
 // BOOGLE_BOOT_FAULTS=1 node .look/see-client.ts look --production --action dev/look/evals/load-screen.ts
 // Parent query: loadCase=normal|graphics|avatar|failure|details|literal, phone=1, reduced=1.

@@ -1,3 +1,5 @@
+// npm run look -- --players 2 --hud --rail-seed leaf-raised --eval dev/look/evals/railway-leaf-prompts.ts --name leaf-prompts
+//  (touchui=1 in --query for the phone layout, with --size 844x390)
 // The leaf's two prompts in view (owner's labels, 11 November), `look --players 2 --hud --rail-seed leaf-raised`:
 // player 1 shoulders a footing and stands at the railhead jib ("Hang the weight"), player 2 stands at the gold strut
 // ("Knock out the pawl"); neither presses. `touchui=1` puts the page in the touch layout (body.touch: the verb on the

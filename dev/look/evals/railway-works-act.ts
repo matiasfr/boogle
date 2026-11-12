@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed works-arrive --query 'worksat=halt&worksdo=take' --eval dev/look/evals/railway-works-at.ts --action dev/look/evals/railway-works-act.ts
+//  (worksdo=take|strike0|strike1|kiln|foot|set|turn|pier; worksat poses: halt ledge bowl stall table turn pier forge kiln throat rack call callmid callnear crossing pierhead bents wagon; pierhead needs --rail-seed crossing-finishing)
 // J4 Works moments as a person does them, for `look --action` after `--eval railway-works-at.ts` (which poses the
 // player): `worksdo=take|strike0|strike1|foot|set|turn`, and (J5) `pier`: shoulder a footing off the pier rack, then
 // set it from the pier-head apron (pose `pierhead`, seed `crossing-finishing`; `pierN=2` sets both). The bot is set down a few metres short of the thing on the

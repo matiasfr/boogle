@@ -99,8 +99,8 @@ export default {
     );
     const talkShot = await g.still('diagram-talking');
     t.check(
-      'RB cycles to the Talking set: confirm, X, back, the stick and the D-pad are marked',
-      talk.context === 'talking' && talk.hot === 6 && talk.calls === 18 && !talk.hscroll,
+      'RB cycles to the Talking set: confirm, X, back, the stick and the four D-pad slots are marked (8)',
+      talk.context === 'talking' && talk.hot === 8 && talk.calls === 18 && !talk.hscroll,
       `${JSON.stringify({ talk, hot })}; ${talkShot}`,
     );
     await g.eval(`${SHOWN} closePause(); document.body.classList.remove('gamepad'); delete document.body.dataset.pad;`);

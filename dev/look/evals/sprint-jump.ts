@@ -1,3 +1,4 @@
+// npm run look -- --at "path opened" --curves --action dev/look/evals/sprint-jump.ts --seconds 6 --frames 2
 // An action for `--curves`: sprint from standing, jump twice, stop. Real keys' state; pair with --seconds 6 and --at.
 const { input } = await import('/src/player/input.ts' as string);
 const { me } = await import('/src/player/player.ts' as string);

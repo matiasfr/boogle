@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q6-stocked --query b58at=apron --eval dev/look/evals/railway-b5b8-at.ts --action dev/look/evals/railway-q6-forge.ts --video --seconds 10
+//  (seed: any with station 6 active; trains-on shows the rails rack after trains run)
 // Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 1), for `look --action` after `--eval
 // railway-b5b8-at.ts --query b58at=apron` on a seed with station 6 active: walk up to the forge's rails rack, then to
 // the boiler's pedestal, logging what each offers. Before trains the rack offers no "Take rails"; once they run it does.

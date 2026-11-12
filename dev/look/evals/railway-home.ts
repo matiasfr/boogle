@@ -1,3 +1,5 @@
+// npm run playthrough -- --query 'railStop=path%20walked%20home' --eval dev/look/evals/railway-home.ts
+// command: playthrough, not look: it plays the bot to the checkpoint first
 // A targeted played checkpoint, not a full-route proof: the same bot earns the path before the still.
 // playthrough --query 'railStop=path%20walked%20home' --eval dev/look/evals/railway-home.ts
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');

@@ -1,3 +1,4 @@
+// npm run look -- --rail-seed q6-stocked --eval dev/look/evals/railway-roof-start.ts --until window.__placeDone
 // The production bot's planner from the roof of a parked train car at the Q6 halt (J4 long-run "BOT HEMMED").
 // A car is a moving body, so the bot's static probe can't see it: standing 2 m up, every way down read as too far.
 // Feet at 26.44 over the track bed (24.4) and the halt deck (25.02) used to give a one-node path; it must route off.

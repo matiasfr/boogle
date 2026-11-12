@@ -78,18 +78,25 @@ export default {
       rm.title === room && rm.copy && rm.people.includes('pauser'),
       `${JSON.stringify(rm)}; ${roomShot}`,
     );
-    // 3b. You: rename and recolour from the room page, saved for next time.
+    // 3b. You: the Room page renames you, the You page (the start page) recolours you; both saved for next time.
     await g.page.fill('.pause-you-edit input', 'Renamed');
-    await g.eval(`document.querySelector('.pause-you-edit [data-color="3"]').click();`);
+    await g.eval(
+      `const { pauseNavigation } = await import('/src/player/pause-pages.ts'); pauseNavigation.open('you');`,
+    );
+    await g.wait(0.3);
+    await g.eval(`document.querySelector('.you-colour .pause-swatch[data-color="3"]').click();`);
     await g.wait(0.3);
     const you = await g.eval(`return { name: window.boogle.me.name, color: window.boogle.me.colorIdx,
-      saved: [localStorage.getItem('boogle.name'), localStorage.getItem('boogle.color')],
-      listed: [...document.querySelectorAll('.pause-name')].map((e) => e.textContent) };`);
+      saved: [localStorage.getItem('boogle.name'), localStorage.getItem('boogle.color')] };`);
     t.check(
-      'the room page renames and recolours you, saved for next time',
+      'the Room page renames you and the You page recolours you, saved for next time',
       you.name === 'Renamed' && you.color === 3 && you.saved[0] === 'Renamed' && you.saved[1] === '3',
       JSON.stringify(you),
     );
+    await g.eval(
+      `const { pauseNavigation } = await import('/src/player/pause-pages.ts'); pauseNavigation.open('room');`,
+    );
+    await g.wait(0.3);
     await g.page.fill('.pause-you-edit input', 'pauser');
     await g.eval(`document.activeElement?.blur(); document.querySelector('[data-act=back]').focus();`);
     await g.key('Escape');
@@ -166,6 +173,9 @@ export default {
     await g.eval(`document.body.classList.add('gamepad');`);
     await g.eval(`const { actionById } = await import('/src/player/controls.ts'); actionById('pause').down();`);
     await g.wait(0.4);
+    // The menu opens on You (the start page); RB on the pad goes on to Options.
+    await g.eval(`const { padModal } = await import('/src/player/controls.ts'); padModal()('rb');`);
+    await g.wait(0.3);
     await g.eval(`document.querySelector('[data-act=controls]').click();`);
     await g.wait(0.3);
     const pad = await g.eval(`const { listControls } = await import('/src/player/controls.ts');
@@ -230,16 +240,23 @@ export default {
     await phone.eval(`const I = await import('/src/player/inventory.ts'); I.take('frisbee');`);
     await phone.wait(0.5);
     const lay = await phone.eval(`
-      const r = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
-      const hit = (a, b) => !(a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t);
+      const r = (s) => { const e = document.querySelector(s); if (!e || !e.isConnected) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
+      const hit = (a, b) => !!a && !!b && !(a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t);
       const btn = r('.menu-btn'), net = r('.net'), tl = r('.hud-tl');
-      return { btn, net, tl, size: [btn.w, btn.h],
+      // the connection pill and the roster live in the pause view now (src/features/pause.ts), not on the HUD
+      return { btn, net, tl, size: [btn.w, btn.h], pillOnHud: !!net,
         hitsPill: hit(btn, net), hitsTag: hit(btn, r('.held-name')), hitsTL: hit(btn, tl),
         inView: btn.l >= 0 && btn.r <= innerWidth && btn.t >= 0 };`);
     const phoneShot = await phone.still('hud');
     t.check(
-      'on a phone the menu button is 44px, on screen, and clear of the pill, name tag and roster',
-      lay.size[0] >= 44 && lay.size[1] >= 44 && lay.inView && !lay.hitsPill && !lay.hitsTag && !lay.hitsTL,
+      'on a phone the menu button is 44px, on screen, and clear of the name tag and roster (the pill lives in the pause view)',
+      lay.size[0] >= 44 &&
+        lay.size[1] >= 44 &&
+        lay.inView &&
+        !lay.pillOnHud &&
+        !lay.hitsPill &&
+        !lay.hitsTag &&
+        !lay.hitsTL,
       `${JSON.stringify(lay)}; ${phoneShot}`,
     );
     await phone.eval(`document.querySelector('.menu-btn').click();`);
@@ -247,6 +264,8 @@ export default {
     const ph = await phone.eval(`const c = document.querySelector('.pause-card').getBoundingClientRect();
       return { open: document.querySelector('dialog.pause').open, fits: c.left >= 0 && c.right <= innerWidth && c.bottom <= innerHeight };`);
     const phoneMain = await phone.still('main');
+    await phone.eval(`document.querySelector('.you-options').click();`); // You is the start page; Options is one tap on
+    await phone.wait(0.3);
     await phone.eval(`document.querySelector('[data-act=controls]').click();`);
     await phone.wait(0.4);
     const pc = await phone.eval(`const c = document.querySelector('.pause-card').getBoundingClientRect();

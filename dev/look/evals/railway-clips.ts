@@ -1,3 +1,5 @@
+// node dev/look/playthrough.ts --name clips-after --query 'shot=play&railStop=hook%20taken' --eval dev/look/evals/railway-clips.ts
+// npm run look -- is not the runner: npm run playthrough -- --name clips-after --query 'shot=play&railStop=hook%20taken' --eval dev/look/evals/railway-clips.ts
 // One played checkpoint, then a still of every place a timber deck or walkway meets the laid track (dev/level/timber-track.ts
 // finds them): the bot earns the state through real inputs, parks, and `playthrough` takes one still per entry in
 // `window.__shotList` before its own final one.

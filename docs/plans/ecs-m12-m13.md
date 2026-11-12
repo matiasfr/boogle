@@ -241,19 +241,19 @@ typecheck`, `npm run lint`.
       reads of `api.railway`, its seeds from `railway-live.ts` and `helpers/railway-trains.ts` onto
       `test/helpers/rail.ts`), `test/railway-adapter-m1-review.test.ts` (206; the frame-memo cases are deleted, the
       two dispose cases move into the adapter file as `read.ready()` asserts, the file is deleted).
-- [ ] **X2. The mirror's tests and the trace.** _M._ `test/railway-replicate.test.ts` (765: `shownOf` becomes rows
+- [x] **X2. The mirror's tests and the trace.** (**As built:** fb5480af4 and 9838b4ac4, #1600. `shownOf` in `test/railway-replicate.test.ts` is `const shownOf = cloneWorld`, a local alias that reads the clone's rows, so its nine uses are the rows the step asked for, not unfinished work.) _M._ `test/railway-replicate.test.ts` (765: `shownOf` becomes rows
       of the clone; `api.railway` becomes `api.world()`), `test/railway-r4a-views.test.ts`,
       `test/railway-r4b-views.test.ts` (one read each), `test/railway-m12.test.ts` with
       `test/fixtures/railway-m12-trace.json`: drop the `inspect()` column and re-record in a commit that changes
       only those two files, on unchanged source, and show the other columns' hashes equal before and after.
-- [ ] **X3. Triage a, b, c.** _L._ `test/railway-m10a-views.test.ts`, `railway-m10a-review.test.ts`,
+- [x] **X3. Triage a, b, c.** (**As built:** 1ce06ae86, #1600; the twins file is gone.) _L._ `test/railway-m10a-views.test.ts`, `railway-m10a-review.test.ts`,
       `railway-m10b-review.test.ts`, `railway-m10c-views.test.ts`, `railway-m10c-review.test.ts`,
       `test/helpers/railway-m10a-twins.ts` (deleted once X2's r4a edit is on main; otherwise left for M12e). Kept
       and re-pointed at the server's rows: the late joiner, the source checks ("neither view calls…": now a `grep`
       over every view for `.inspect()` on the adapter), `boiler-view`'s press closure, the `forgeTake` flight, the
       Q5 and crossing "goes active the frame the server's row does" cases, the hidden-trains case (rebase over
       `hotbox/trains-visible`, which keeps trains drawn with actions pending and unskips it).
-- [ ] **X4. Triage d, e, f and the session.** _M._ `test/railway-m10d-review.test.ts`, `railway-m10e-review.test.ts`,
+- [x] **X4. Triage d, e, f and the session.** (**As built:** adf835d56, #1600.) _M._ `test/railway-m10d-review.test.ts`, `railway-m10e-review.test.ts`,
       `railway-m10f-review.test.ts`, `railway-read-session.test.ts`. Kept: a predicted press shows before the
       answer; a footing set down reads as a pile; `read.movement()` identity and rev; `read.tick()` one value a
       frame; `read.ready()` false at a full window. `treeGrowth` and `freeCarryIgnoringBig` are asserted against
@@ -301,11 +301,11 @@ typecheck`, `npm run lint`.
     `deck-laid`; the M flag pressed with a full back (the mark's `logs`); the Dev menu's Inspect opened.
   - **Reviewer attacks:** the lookout before the railway mounts and after it unmounts (null read: buoys afloat, as
     today); a journey mark firing twice across a refill.
-- [ ] **D1. The route bot.** _L._ `dev/look/bots/railway.ts` alone (about 124 reads; its `read = () =>
+- [x] **D1. The route bot.** (**As built:** #1608; `dev/look/bots/railway.ts` reads through `rw()`. Its remaining `inspectRailway()` calls read the hook and scene, not world rows.) _L._ `dev/look/bots/railway.ts` alone (about 124 reads; its `read = () =>
       inspectRailway()!` closures become `rw()` closures). **Hold:** Ring Island R5 edits this file; check `npm run
       inflight` and land the day it is rebased. **Checks:** `npm run playthrough -- --to T2`, `--from q5-done --to
       trains`, `--players 2 --to t1-done`; the witness hashes in the two-player run still agree at every step.
-- [ ] **D2. The other bots.** _S._ `dev/look/bots/railway-glide.ts`, `railway-held-jump.ts`, `railway-works.ts`,
+- [x] **D2. The other bots.** (**As built:** #1608; no `inspectRailwayLegacy` or `INSPECT_LEGACY_IMPORTERS` is left outside this plan.) _S._ `dev/look/bots/railway-glide.ts`, `railway-held-jump.ts`, `railway-works.ts`,
       `coop-unlock.ts`, `railway-reload.ts` (the last two found by M12c's typecheck).
       **Checks:** each bot's own eval once (`railway-works-bot.ts`, the glide and held-jump looks).
 - [x] **D3. Line 2's evals.** _M._ `dev/look/evals/`: `railway-b4-at`, `railway-b4-bot`, `railway-b5b8-at`,
@@ -319,7 +319,7 @@ typecheck`, `npm run lint`.
       adapter.inspect()` become the facade and `debug()`).
       `dev/look/evals/railway-finds.ts` and `railway-town.ts` read `railwayRead()?.ready`: they become `railReady()`
       and leave `RAILWAY_READ_IMPORTERS` (found by M12c's review).
-- [ ] **D5. The ready-wait loops.** _S. After M12c; beside D1 to D4 (it touches only the loop lines)._ Each page
+- [x] **D5. The ready-wait loops.** (**As built:** #1608. Three composite waits (body, fall arrival, coyote and ready) remain in `bots/railway.ts` and `ring-folk.ts`; none is a plain ready loop.) _S. After M12c; beside D1 to D4 (it touches only the loop lines)._ Each page
       tool's own "wait until the railway is ready" loop becomes `railReady(ms)` from `dev/look/rail-read.ts` (section
       4; M12c replaced `dev/look/lib.ts`'s). At M12c, on the narrow door: `jump-land-probe`, `railway-forge-finish`,
       `railway-glide-map`, `railway-roof-start`, `ring-house`, `ring-island-walk`; the loops in files a D batch

@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed wagon-on --query 'home=b&garage=select' --hud --eval dev/look/evals/garage-open.ts --action dev/look/evals/garage-act.ts
+//  (garage=select|hold|moment|cat:<id>; hold=<ms>)
 // Action half of garage-open.ts: hands the camera back to the garage, then does what `&garage=` says.
 //   select    choose the longer boiler (readouts' preview, the ghost on the engine)
 //   hold      select, then hold Try it for `&hold=<ms>` (default 700: mid-lift) and stay holding

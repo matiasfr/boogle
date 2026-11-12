@@ -1,3 +1,5 @@
+// npm run look -- --real --query intro=1 --warm 0 --eval dev/look/evals/spawn-view.ts --name spawn-view
+//  (derived from the file: it needs the real first-visit fall, intro=1 on a fresh profile)
 // The real first-visit fall, with no movement, teleport or authored camera.
 const { fallArrival } = (await import(
   '/src/fall/arrival.ts' as string

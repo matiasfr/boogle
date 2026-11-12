@@ -1,3 +1,4 @@
+// npm run look -- --rail-seed q5-done --query b58at=head --eval dev/look/evals/railway-b5b8-at.ts --action dev/look/evals/railway-q6-wait.ts --video --seconds 12
 // Station 6 waits for the train (docs/plans/boiler-first-choice.md, step 1), for `look --action` on `--rail-seed
 // q5-done` after `--eval railway-b5b8-at.ts --query b58at=head`: chop a load from the nearest tree, stand at the depot rack
 // (whose leftover logs offer no "Pick up"), then walk into the frame's reach loaded. Logs what was offered, the sign

@@ -1,3 +1,4 @@
+// npm run look -- --players 2 --rail-seed leaf-raised --eval dev/look/evals/railway-leaf-coop.ts --action dev/look/evals/railway-leaf-coop-hang.ts --seconds 3 --frames 8
 // The action for dev/look/evals/railway-leaf-coop.ts (player 1's page): hang the fourth footing at the jib, so the
 // motion sheet that follows films the swing; logs player 1's own leaf and where it draws player 2 as it lands.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');

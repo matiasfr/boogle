@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q4-done --eval dev/look/evals/railway-b4-bot.ts --query 'shot=play&railFrom=sea&railStop=sea gate' --until window.__railStop
+//  (the bot half; dev/look/evals/railway-photo.ts imports it for railFrom=sea)
 // Run either half against an accepted host seed. No teleport, direct op or recovery.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { seaToFarHead } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');

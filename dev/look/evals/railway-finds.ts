@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q6-done --query 'findk=0' --eval dev/look/evals/railway-finds.ts --name find-lookout
+//  (findk=0..6 or findsecret=<id>; findsact=open|dismiss|bay; --players 2 for the partner views)
 // The production railway's finds (place-retirement K1): stand by a crystal, walk into it, and see its stub light on the
 // curio shelf. Use with the production railway (no ?proto=):
 //   findk=0..6               which crystal (default 0, the lookout)

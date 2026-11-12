@@ -1,3 +1,5 @@
+// npm run look -- --real --eval dev/look/evals/sky-pan.ts --warm 2 --seconds 6 --video --name sky-pan
+//  (command derived from the file, not from a doc: it turns __debugCam through 360 degrees over 6 s at the shore)
 // Diagnostic full horizon turn at the established shore, not player input or a timing benchmark.
 const { waterRuntime } = (await import(
   '/src/render/water-render.ts' as string

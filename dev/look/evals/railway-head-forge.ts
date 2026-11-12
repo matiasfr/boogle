@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q5-done --query headfov=30 --eval dev/look/evals/railway-head-forge.ts --name head-forge
+//  (headfov narrows the lens; derived from the file)
 // From Far Head's halt, at eye height, looking back at the forge apron (919, 18, 5) where the boiler waits
 // (docs/plans/boiler-first-choice.md, step 1: is the forge's call plume visible against the tree line from there?).
 // Run with `--eval` on a Q5-done seed; `headfov=30` narrows the lens to see what a player squinting would.

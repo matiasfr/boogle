@@ -1,3 +1,4 @@
+// command: unknown, needs the rail seed and pose: derived from the file, queries are packCam=back|side|three, packLoad=0|8|16, packSubject=me|remote (two pages for remote), packOn, and ride=1&seat=1&railStop=T1%20seated for the seated pack; no doc or bot calls it
 // Buddy's carry frame (the railway's shared pack) on a back, framed close. The railway's own seams stand in for the
 // world state: backSeam.pack says the pack is open, backSeam.count the logs on every back (&packLoad=0|8|16).
 //   &packCam=back|side|three  &packSubject=me|remote (two pages: player 1 looks at player 2)

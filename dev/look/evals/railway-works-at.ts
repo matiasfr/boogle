@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed <seed> --eval dev/look/evals/railway-works-at.ts --query 'worksat=<pose>'
+//  (poses: halt ledge bowl stall table turn pier forge kiln throat rack call callmid callnear crossing pierhead bents wagon; pierhead needs crossing-finishing; a fresh world needs no seed; workswalk=1 walks the colliders)
 // J2 poses, plus a no-jump walk through the real colliders. Works on a fresh world; with --rail-seed (look's seeded
 // room, look-rail) it first waits for the accepted Works state, then prints the adapter's `works` and `shed`.
 const { account, inspectRailway, railPid, railReady, rw, shed, trains, works, worksStage } = (await import(

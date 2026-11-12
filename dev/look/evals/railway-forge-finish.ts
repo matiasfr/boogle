@@ -1,3 +1,5 @@
+// npm run look -- --rail-seed q1-done --query 'forge=before' --eval dev/look/evals/railway-forge-finish.ts --until window.__forgeShot --video --seconds 20
+//  (without forge=before it waits for the forge to light: use the playthrough --to forge-lit segment)
 // The forge's finished look (docs/plans/works-late-game.md, step 6; owner, 10 November: it finishes when it lights), as
 // an `--eval` that watches the forge from above the village and sets `window.__forgeShot` once the show starts, so
 // `--until` starts the real-time capture there. It needs the forge about to light (feed it in the page, or take the

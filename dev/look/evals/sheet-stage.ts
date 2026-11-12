@@ -1,3 +1,4 @@
+// driven by: npm run sheet (dev/look/sheet.ts supplies this as --eval with --rail-seed <stage>)
 // npm run sheet's frame for a railway stage (dev/look/sheet.ts): once the seeded railway is in, the camera looks down
 // at the track machine from behind and above, where the stage's laid track and the station it last fed are in view.
 const { railReady, inspectRailway } = (await import(
