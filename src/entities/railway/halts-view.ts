@@ -540,18 +540,22 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       () => 247.5 + 6,
       () => aperture(wd0()).set >= 14,
     ),
+    // The island's levers stand at u 457: the server judges a lever ask from the halt's platform centre (u 448, reach
+    // 12.6 m: railway-server.ts), and u 466 was 18 m from it, so every ask was refused. 457 is inside that reach, east
+    // of the steel works' shed (u 448 to 455, lat 6.5 to 14), loader and yard stacks (lat 6.6 and 8.3) and 2.45 m
+    // (down) and -6.3 m (up) from the track, on the platforms (u 428 to 468).
     ringSpot(
       RING_ISLAND,
       false,
       2.45,
-      () => 466,
+      () => 457,
       () => true,
     ),
     ringSpot(
       RING_ISLAND,
       true,
       -6.3,
-      () => 466,
+      () => 457,
       () => true,
     ),
   );

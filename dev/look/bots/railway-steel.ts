@@ -7,7 +7,6 @@
 // observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
 import {
-  trains as trainRows,
   account,
   aperture,
   line,
@@ -40,7 +39,7 @@ const TICKS = 1500; // bounds below are in server ticks, never page time
 
 export async function steelRoute({ bot, checkpoint }: SteelRoute) {
   const tools = line2Rides(bot);
-  const { ride, rideFrom, hopTo, until, check, face } = tools;
+  const { ride, rideFrom, hopTo, view, until, check, face } = tools;
   const st = () => steel(rw());
   const home = () => shed(rw()).steel;
   const boiler = () => line(rw(), LINE2).boiler;
@@ -113,18 +112,26 @@ export async function steelRoute({ bot, checkpoint }: SteelRoute) {
   if (home() < 1) {
     if (nearIsland()) {
       await untilTicks(() => st().rack >= 1, 'the first steel on the rack', 3000);
-      // The line runs end to end, so a train stands at the island with the steel aboard and goes home without being
-      // asked (the island's homeward lever was refused in the first runs, "railway refused"): wait on the platform,
-      // board the one that stands, ride it to the Village.
+      // The island's homeward lever (halts-view.ts, u 457), as a rider asks for the train home.
+      const levers = () =>
+        (
+          view() as unknown as {
+            ringLevers: { halt: number; dir: number; on: boolean; over: boolean; x: number; z: number }[];
+          }
+        ).ringLevers;
+      const homeward = () => levers().find((l) => l.halt === STOP.island && l.dir === -1 && l.on);
       const sample = carryProbe(bot);
       await rideFrom(
         {
           name: 'Ring Island',
           stop: STOP.island,
-          stands: () => true,
-          handle: () => ({ over: true, x: island.x, z: island.z }),
-          calling: () => true,
-          wait: island,
+          stands: () => !!homeward(),
+          handle: (dir) => {
+            const l = levers().find((x) => x.halt === STOP.island && x.dir === dir && x.on);
+            return l && { over: l.over, x: l.x, z: l.z };
+          },
+          calling: () => !!homeward()?.over,
+          wait: { x: homeward()!.x, z: homeward()!.z },
         },
         STOP.village,
       ).finally(sample);
