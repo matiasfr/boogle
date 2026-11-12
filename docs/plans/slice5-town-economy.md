@@ -509,6 +509,13 @@ shipped, else bump B (a rule change, no shape change).
     (refuse the stop while the wagon's train is next behind) removed none of it (+200 at `gap-footed`) and was dropped;
     candidate (i), no stop while the wagon is owed footings, is the ruling's rule. Stone then waits for the ring: none
     moves from Q7 laid to the rivet unless asked for.
+  - **Accepted cost, the lock-out (measured; left as the ruling writes it, with the owner):** with the wagon coupled,
+    Q7 laid and the ring unfooted, no stone is scheduled: the Village sits at 16 stone for 20 minutes at `deck-laid`
+    and at `gap-footed`; a homeward lever or rider ask at the Quarry still loads it. Gate 3 is a committed test: every
+    footing played as it arrives from `wagon-on` (the pier's 6 and 6, the ring's 6, 6 and 6 with the counterweight's
+    four), every delivery and wagon arrival on the no-stone-stop tick, and equal to main's (+570, +1,602, +3,864,
+    +5,025, +6,246). Footings owed with no wagon coupled also refuses the stop; that state is not reachable in a room
+    (the wagon couples before the pier can have its footings and never uncouples).
   - While a kit is owed no train makes the stone stop (in a live room, until players pour Q7's rails); stone still
     moves by a lever or rider ask then. `test/railway-trade.test.ts` holds both, the wagon's arrivals against no stone
     stop while footings are owed (equal) and outside the window (reported).
