@@ -751,3 +751,159 @@ Neither holds the build.
    - One branch only. The sea cave or the ending's glide loses its key.
    - **Answered (owner, 12 November UTC): both areas, High Gorge first, fixed order**, by the campaign outline's
      decision 1 ([decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered)).
+
+## Design review (designer, 2026-11-12)
+
+Two rulings before the legs past leg 1 are built. Where this differs from the 11 November review, this is what gets
+built. **Read:** this plan's legs table, step 2's as-built note and the first review; `src/sim/railway-route.ts`; the
+outline's towns and market sections; the three 12 November rewards entries; rail-map and junction-stations on Bell
+Rock; DESIGN.md's core loop. **Measured:** section lengths, kit distances and closest passes from the catalog and the
+map JSON (a script over `WORLD_LINES` and `layout()`); seconds are arithmetic at 20 m/s and the 105 s worst wait, not
+played. **Could not see:** no stills were taken; Bell Rock's two levels are judged from coordinates only.
+
+### Ruling 1: section lengths stay as built, 22 sections
+
+**What a long section costs, by leg 1's own arithmetic.** A section is three things to a solo player with the kit
+on the rack: the feed (four carries of 7 m, about 30 s, whatever the length), the lay (about 30 s) and the ride to the
+new railhead (length at 20 m/s plus about 15 s of starting and stopping).
+
+| Section | Feed | Lay | Ride on | Total | Hands' share |
+| --- | --- | --- | --- | --- | --- |
+| 510 m (leg 1) | 30 s | 30 s | 40 s | 1:40 | 30% |
+| 850 m (the Wall's first) | 30 s | 30 s | 58 s | 2:00 | 25% |
+| 437 m (the Wall's second) | 30 s | 30 s | 37 s | 1:37 | 31% |
+
+So 850 m adds about 18 s, all of it riding, and no hand work. Two more cuts on the Wall would add two more feeds, lays
+and kit trips (about 2.5 minutes) and nothing new to see: more of "another bill, further away", which the first
+review warned the greybox would build in.
+
+**The wait for kit does not depend on section length. It depends on how far the frame is from the kit halt, and the
+first review got it wrong.** With the kit one section ahead (change 2 as written), the next kit is owed when this one
+is racked, loads at the kit halt within 0 to 105 s and then rides the whole line out. The player is ready for it about
+100 to 120 s after the rack fills.
+
+| Frame | From its kit halt | Kit's ride out | Idle at the rack, kit one ahead (mean; range) |
+| --- | --- | --- | --- |
+| Leg 1, section 2 | Village, 1.8 km | 91 s | 43 s (0 to 96) |
+| Leg 1, section 4 | 2.8 km | 142 s | 94 s (42 to 147) |
+| Wall 2, at wall-s2 | West landing, 2.08 km | 104 s | 38 s (0 to 91) |
+| Wall 4, at Canopy | 3.34 km | 167 s | 103 s (51 to 156) |
+| Wall 6, the deep gap | 4.70 km | 235 s | 185 s (133 to 238) |
+
+Summed over the Wall that is about nine minutes at an empty rack, and leg 1's later sections already break the 60 s
+target. "The waits after the first become the ride to the new railhead" (leg 1 pacing) holds only if the kit is
+already out on the line.
+
+**Rulings.**
+
+1. **Keep the cuts as built: 22 sections** (Default). The guide in change 4 is reworded: a section ends at a place;
+   where a leg has no place on the way it is cut near 500 m; length is otherwise free up to about 900 m. Two places
+   were weighed and left as sights from the train, not stops: wall-cs (194 m off the line, 352 m past wall-s1) and
+   wall-cn (98 m off, 268 m past Canopy, still on Canopy's shore).
+2. **The bill does not grow with length** (Default): 20 + 20 is one train's kit car (32 + 32), and a larger bill is two
+   trains for one frame.
+3. **A section's lay time is per section, not per metre** (Default; replaces "at Q7's speed" in call 37): about 30 s,
+   a tunable, so a long section's deck rolls out faster and is never a 50 s watch.
+4. **The kit runs ahead by the whole leg, one kit a train** (New; amends change 2 and call 17). When a leg opens, each
+   train that passes its kit halt with an empty kit car takes the next section's kit, in order, and keeps running its
+   service with the kit aboard until that section's railhead halt opens, then unloads there. The wait at a new rack is
+   then one headway at most, whatever the distance. Named tunable `kitLead` (sections owed ahead), starting at "all
+   remaining", never under 2. The 60 s target stands and Checkpoint A's idle log judges it; step 3 is not built yet,
+   so this costs no rework.
+5. **The ending's two stay single sections** (Default): one barrier, one feed of 6 + 6 (about 10 s), one ride. A cut
+   would put a frame in the tunnel or on the sunken causeway and a kit trip into the last ride.
+
+**The table.** Cuts are cm along the row; "kit halt" distances are to the section's frame.
+
+| # | Leg | Section ends at | Length | Bill | Frame from its kit halt |
+| --- | --- | --- | --- | --- | --- |
+| 14 | Wall | wall-s2's closest pass | 850 m | 20 + 20 | 1.23 km (Port Quay) |
+| 15 | Wall | wall-s1's closest pass | 437 m | 20 + 20 | 2.08 km |
+| 16 | Wall | Canopy Town halt | 822 m | 20 + 20 | 2.52 km |
+| 17 | Wall | wall-n2's closest pass | 818 m | 20 + 20 | 3.34 km |
+| 18 | Wall | wall-n1's closest pass | 540 m | 20 + 20 | 4.16 km |
+| 19 | Wall | High Gorge, behind the `seeds` barrier | 593 m | 20 + 20 | 4.70 km |
+| 21 | Notch tunnel | Lantern Notch, behind `cloth` | 865 m | 6 + 6 | 2.41 km from West landing by the bay line |
+| 22 | Causeway | The Original Island, behind `lantern` | 726 m | 6 + 6 | 1.14 km from the Gorge yard |
+
+Before them: leg 1 four of 510 m, the incline 2 of 568 m, the bay cut 2 of 604 m, Bell Rock to Canopy 3 of 401 m, the
+cave 360, 360 and 510 m. **22 of 22: no change to the catalog or its test.**
+
+**No owner question.** The idle log at Checkpoint A answers it better than he can from a table.
+
+### Ruling 2: the ring's goods are shown at Bell Rock, not freighted there
+
+| Option | Cost (outline's U) | What the player sees | Against the rules |
+| --- | --- | --- | --- |
+| (a) A stall rises when its place is connected; goods shown, no yard rows | About -0.25 (the market's 0.25 of systems goes) | A stall and its crates by the platform of the line that leads to that place | Holds "no routing or quotas" and one town a yard row: the market has no rows |
+| (b) A transfer at the Gorge carries a token load down the north–south line | About +0.5 (a transfer stock, rows, R2b's proof twice: salt needs a second transfer at the West landing) | Crates changing trains at the Gorge for a market that never uses them | Breaks "freight never changes line" (outline, section 3); adds full-load waits on the incline for no purchase |
+| (c) The bay trestle in both orders | About +1 (a seventh leg of 1.54 km, a second line on the skerry's top) | A third line into Bell Rock | Fixes steel only, salt still cannot arrive; reopens the answered fixed order; unapproved scope |
+
+**Ruled: (a), with the stall's level as the improvement** (New). No line changes, which is the worry the owner raised.
+
+- **Nothing is freighted to the market.** No `Town` row, no yard row, no stock. A stall is a view of the accepted
+  route state. The market never sells or converts materials (Decided, 12 November), so a crate that arrived would have
+  no use; carrying it would be logistics with nothing at the end. This replaces the outline's "it receives a little
+  of what each line carries" and its Default "the market has yard rows of its own".
+- **A stall rises by a fixed table, in data, one row a place.** Nobody chooses and nothing is computed at run time:
+
+  | Stall (its goods) | Rises when | Level |
+  | --- | --- | --- |
+  | High Gorge (copper) | The incline is laid: the first north–south train in | Lower, by the north–south platform |
+  | Ring Island (steel) | The same train | Lower |
+  | Home (timber, stone) | The bay cut is laid | Upper, by the bay platform |
+  | Canopy Town (fibre) | Bell Rock to Canopy is laid | Upper |
+  | Port Quay (salt) | The cave line reaches the quay | Upper |
+
+- **A stall stands on the level of the line you would ride to reach its place**, so the market is also the junction's
+  signpost: steel is downstairs because Ring Island is by the north–south train and a change at the Gorge; salt is
+  upstairs because the Port is by the bay train and a change at the West landing.
+- **At depth, not now:** the little guys carry a stall's first crates off the train that raised it, once, so the goods
+  are seen to come by rail (machines show their work). The network buys list the same connected places.
+- **The Port's stall rises while nobody is there** (leg 4 never touches Bell Rock). Accepted: it is found on the next
+  pass through, which the causeway forces.
+
+**Map data.** The skerry is an ellipse of 240 × 190 m with a 14 m top; the pinnacle (40 m) stands 29 m from the halts.
+Five stalls of about 6 × 4 m and a board are under 200 m² of roughly 35,000, so area is not the limit. **Unproven:**
+the catalog puts both halts at the skerry's centre, 1 m apart in plan and 11 m apart in height, where rail-map says
+the lower terminal is "at the skerry's foot"; so the lower platform is in a cut or under the upper one, and whether
+that level has any open ground for two stalls is unknown. Also unproven: the top's flat area once two 80 m platforms,
+the tower and the seed terraces are in, and what is seen from each platform. Leg 2's look settles these; if the lower
+level has no ground, its two stalls go to the ramp's head and the level rule is dropped.
+
+**What greybox leg 2 stands up at Bell Rock** (all Local views in `route-greybox`, read from `Leg.laid`; no sim row,
+no op, no catalog change, no bump):
+
+1. The two decks and the plain ramp, as planned; `seeds` on the lower deck, the Canopy frame and its barrier on top.
+2. Five stall pads, outlined and labelled from the start ("Stall: High Gorge (placeholder)" and so on), two on the
+   lower deck within 30 m of the ramp's foot, three on the upper within 30 m of its head. An empty pad reads "Not
+   connected yet".
+3. A grey box on a pad once its row above is true: two when the incline is laid, Home's when the bay cut is laid.
+   Legs 3 and 4 add Canopy's and the Port's with one line each.
+4. One post at the ramp's head, "Market board (placeholder)", which does nothing.
+5. Two stills, one from each platform's lever end, and a profile across the skerry, in leg 2's look.
+
+**Owner question (one).** "Is it right that the market shows each connected place's goods without a train carrying
+them there?" **Recommended: yes**; it changes no line and keeps freight for the towns that use it. Until he answers:
+stalls are views, no market yard rows, no transfer, and the bay trestle stays out of the greybox.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 41 | You haul for each segment; the network brings materials closer | Decided | [2 November](../decisions-core-loop.md#d-2026-11-02-hauling) |
+| 42 | Bell Rock is the market, built out in stages, network buys only, never materials | Decided | [12 November](../decisions-rewards.md#d-2026-11-12-market-hub-answered) |
+| 43 | Bell Rock on two levels, the bay line on top | Decided | [10 November](../decisions-rail.md#d-2026-11-10-open-calls-answered-the-rail-map) |
+| 44 | High Gorge first, fixed; no bay trestle | Decided | [12 November](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered) |
+| 45 | No routing or quotas | Decided | DESIGN.md, the rail builds the world |
+| 46 | The kit runs ahead by the whole leg, one kit a train (`kitLead`) | **New** | Ruling 1.4 |
+| 47 | The market's stalls show goods; nothing is freighted there; no market yard rows | **New** | Ruling 2 |
+| 48 | A stall rises by a fixed table and stands on the level of the line that leads to its place | **New** | Ruling 2 |
+| 49 | Sections stay as built, 22; the length guide is "ends at a place, up to about 900 m" | Default | Ruling 1.1 |
+| 50 | The bill does not grow with length; the ending's two stay single | Default | Rulings 1.2 and 1.5 |
+| 51 | A section lays in about 30 s whatever its length | Default | Ruling 1.3 |
+| 52 | Leg 2's Bell Rock markers: five labelled pads, boxes from `Leg.laid`, an inert board post | Default | Ruling 2; every label a placeholder |
+| 53 | The Port's stall rises unseen and is found on the next pass | Default | Ruling 2 |
+
+**Counts:** 5 Decided, 3 New, 5 Default. **Suspect lines of The Boogler's:** none written or changed. **Port from
+Place:** nothing.

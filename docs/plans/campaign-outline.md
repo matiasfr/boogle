@@ -412,9 +412,13 @@ north–south lines and, through them, of Home, High Gorge, Canopy Town and the 
 - **It grows by connection, not by plots.** One stall for each place whose line reaches Bell Rock, put up by the
   little guys when the first train from that place arrives: no stakes, no price, no thresholds. This is the thing
   that grows because a train came, beside towns that grow because the room paid.
-- **It receives a little of what each of those lines carries.** A stall shows its place's crates. Reachable goods,
-  Gorge first: copper (north–south line), fibre (bay line), timber and stone (the bay line from West landing). Steel
-  and salt do not reach it without a change of line; their stalls wait for a later brief or stay absent.
+- **It shows what each connected place makes; nothing is freighted to it** (ruled 12 November,
+  [greybox-route](greybox-route.md#ruling-2-the-rings-goods-are-shown-at-bell-rock-not-freighted-there); this
+  replaces "it receives a little of what each line carries"). A stall carries its place's crates as a view of the
+  route's state. Five stalls by a fixed table: High Gorge (copper) and Ring Island (steel) when the incline is laid,
+  Home (timber, stone) with the bay cut, Canopy Town (fibre) with its leg, Port Quay (salt) when the cave line reaches
+  the quay. A stall stands on the level of the line you would ride to reach its place, so steel is downstairs and salt
+  upstairs.
 - **What is bought there:** the wallet's network buys, in one place and in view: source upgrades for any connected
   source and station fit-outs. Houses stay at each town's own plots. It never sells materials or turns goods into
   Boogles ("materials and Boogles never convert", decided), and Fine Prices stays free.
@@ -434,9 +438,10 @@ north–south lines and, through them, of Home, High Gorge, Canopy Town and the 
 and keeps the ending alone at the end. It does not make Bell Rock the final hub unlocked; it makes it the last one
 finished.
 
-**The destination rule does not change.** A yard row still has one town. The market adds rows of its own on the two
-lines that reach it (a hub on two lines has a row on each); no crate is split and nothing is routed. **Default:** the
-main route gains no wait: R2b's full-load rule applies to these rows.
+**The destination rule does not change, and the market has no yard rows** (ruled 12 November; replaces "the market
+adds rows of its own"). A yard row still has one town and freight never changes line. A transfer at the Gorge (about
++0.5 U, and salt would need a second at the West landing) and the bay trestle in both orders (about +1 U, steel only)
+were weighed and not taken. No line layout changes. The market's cost falls from about 1 U to about 0.75.
 
 **Finding.** The skerry is 240 × 190 m on two levels, carrying two lines' platforms. Whether five stalls and a board fit on the
 upper deck round the tower is unproven; Bell Rock's own plan runs the level check before anything is placed.
@@ -445,8 +450,12 @@ upper deck round the tower is unproven; Bell Rock's own plan runs the level chec
 timing (b) (recommended). His words: "Okay, I'll take your recommendation." Recorded in the
 [decisions](../decisions-rewards.md#d-2026-11-12-market-hub-answered); greybox markers only for now, the real design after the route is greyboxed.
 
-**Open design item (orchestrator's, not his words).** How the ring's goods reach Bell Rock: with High Gorge first only the
-bay and north–south lines meet there. Settle before the lines past leg 2 are laid, since it affects line layout.
+**Ruled (designer, 12 November): the ring's goods are shown at Bell Rock, not freighted there.** The full ruling, the
+three options' costs, what the map data does and does not prove about the skerry's two levels, and the markers
+greybox leg 2 stands up are in
+[greybox-route](greybox-route.md#ruling-2-the-rings-goods-are-shown-at-bell-rock-not-freighted-there). One owner
+question is open there ("is it right that the market shows goods without a train carrying them?", recommended yes);
+until he answers, stalls are views and no line is added.
 
 ### Findings
 
