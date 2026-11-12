@@ -78,3 +78,25 @@ test("the Pier's landings stand on the east platform's south end, facing the cro
     assert.ok(Math.abs(land.y - (railY(LINKS[1]!.line, 720.5) + 0.72)) < 0.05, `${stage}: on the platform's deck`);
   }
 });
+
+test("the fares-running row lands on line 2's Village platform, where riders board, facing the Quarry (slice 5 R3)", async () => {
+  const { RAIL_LINES } = await import('../src/sim/railway-lines.ts');
+  const { TRADE } = await import('../src/sim/railway-trade-layout.ts');
+  const row = JUMPS.find((j) => j.stage === 'fares-running')!;
+  assert.ok(OFFERED_STAGES.includes('fares-running'));
+  assert.equal(TRADE.routes[0]!.line, 1, 'riders ride line 2');
+  assert.equal(TRADE.routes[0]!.a, 0, "from the line's first halt, the Village");
+  const at = RAIL_LINES[1]!.halts[0]!.platforms[0],
+    quarry = RAIL_LINES[1]!.halts[1]!.platforms[1];
+  const land = row.land!;
+  assert.ok(Math.hypot(land.x - at.x / 100, land.z - at.z / 100) < 0.01, 'on the platform');
+  assert.ok(Math.abs(land.y - at.y / 100) < 0.01, "on the platform's top");
+  // Forward is (-sin yaw, -cos yaw): toward the Quarry.
+  const fx = -Math.sin(land.yaw!),
+    fz = -Math.cos(land.yaw!);
+  const dx = quarry.x / 100 - land.x,
+    dz = quarry.z / 100 - land.z;
+  assert.ok((fx * dx + fz * dz) / Math.hypot(dx, dz) > 0.999, 'facing the Quarry');
+  const order = JUMPS.map((j) => j.stage);
+  assert.equal(order.indexOf('fares-running'), order.indexOf('freight-running') + 1, 'right after Timber home');
+});

@@ -3,16 +3,20 @@
 // crates while the trains run, and the trains carry them home to the Village. Determinism, conservation, the caps, no
 // freight stop before the pier's footings (a train loads where it already stands), the first timber home, the save
 // round trip and the trade check's refusals; R2: the yards' away credit, once per marker, and the plots staked from
-// deliveries; R2b: the Quarry's full-load stone stop after the footings, its exemptions and the wagon's drift.
+// deliveries; R2b: the Quarry's full-load stone stop after the footings, its exemptions and the wagon's drift; R3:
+// riders and fares (once a rider a trip), the one strongbox's cap and lost, no replay, the moving far end, the
+// tunables, determinism and the check's refusals.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
 import {
   Aperture,
   createRailwayWorld,
+  RAIL_REPLICATED,
   Forge,
   ForgeClock,
   QJob,
+  Till,
   Town,
   Train,
   Works,
@@ -24,8 +28,18 @@ import { checkTrade } from '../src/sim/railway-check-trade.ts';
 import { buildSeedWorld, SEED_STAGES } from '../src/sim/railway-seeds.ts';
 import { TRADE_STAGES } from '../src/sim/railway-seed-trade.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
-import { rail, town, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
-import { freightAboard, freightStop, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
+import { rail, town, townClock, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
+import {
+  boxCap,
+  fareOf,
+  freightAboard,
+  freightStop,
+  plotsStaked,
+  plotsStakedOf,
+  routeFar,
+  tillRate,
+} from '../src/sim/railway-queries-trade.ts';
+import { okTune, TUNABLES } from '../src/sim/tune.ts';
 import { footingsOwed, kitOwed, wagonSlot, worksId } from '../src/sim/railway-queries.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
@@ -33,7 +47,7 @@ import { RAILWAY_MAX_INT } from '../src/sim/railway.ts';
 import { railResume } from '../src/sim/railway-sys-away.ts';
 import { RAIL_AWAY, railAwayCredit } from '../src/sim/railway-away.ts';
 import { TOWN_PLOTS } from '../src/place/town-plan.ts';
-import { TRADE } from '../src/sim/railway-trade-layout.ts';
+import { TRADE, TRADE_PCT } from '../src/sim/railway-trade-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { TRAIN_PHASE, trainAlong } from '../src/sim/railway-train.ts';
 import { act, advance } from '../src/sim/railway-seed-route.ts';
@@ -710,25 +724,42 @@ test("R2b: the wagon's arrivals with no footings owed, against no stone stop (re
 /** From a world at `wagon-on`, play every footing as it arrives, as a room would: the pier's off its rack into the
  * pier, Q7's kit off the Pier into its frame, the ring's off the railhead rack onto the jib, the brace once the gap is
  * footed and the counterweight hung; the kiln keeps the Works rack supplied. Returns each footing delivery (a rack
- * gaining) and each wagon arrival at either end, as `what@tick`, until the counterweight is hung. */
-function playFootings(start: World, t0: number, max: number) {
+ * gaining) and each wagon arrival at either end, as `what@tick`, until the counterweight is hung. Options: `every`,
+ * a slower player who sets one footing at most every so many ticks; `onTick`, called after each tick; `join`, once the
+ * counterweight is hung strike the rivet and play that many ticks more. */
+type Play = { every?: number; onTick?: (w: World, t: number) => void; join?: number };
+function playFootings(start: World, t0: number, max: number, opts: Play = {}) {
   const s = { w: copy(start), t: t0 },
     w = s.w,
     out: string[] = [];
   const [q7Logs, q7Rails] = LINE2_STATIONS[Q7]!.bill;
   let prev = trains(w).map((r) => r.phase),
     pierRack = w.get(Works, worksId(w))!.pierRack,
-    headRack = w.get(Aperture, w.single(Aperture))!.rack;
+    headRack = w.get(Aperture, w.single(Aperture))!.rack,
+    last = -Infinity,
+    joinAt = -1;
   for (let i = 0; i < max; i++) {
     const wk = w.get(Works, worksId(w))!,
       ap = w.get(Aperture, w.single(Aperture))!;
-    if (ap.cw === WORKS.counterweight) return out;
-    if (wk.pierRack > 0) {
+    if (ap.cw === WORKS.counterweight && opts.join === undefined) return out;
+    if (ap.cw === WORKS.counterweight && joinAt < 0) {
+      assert.equal(ap.brace, 0, 'the leaf is down');
+      assert.equal(act(s, 'a', 'rail.strike', { id: 2 }), 1, 'the rivet struck');
+      out.push(`rivet@${s.t - t0}`);
+      joinAt = s.t;
+    }
+    if (joinAt >= 0 && s.t - joinAt >= opts.join!) return out;
+    const every = opts.every ?? 0;
+    if (s.t - last < every) {
+      // A slower player: nothing set this tick.
+    } else if (wk.pierRack > 0) {
       assert.equal(act(s, 'a', 'rail.footTake', { rack: 1 }), 1);
       assert.equal(act(s, 'a', 'rail.footSet', { site: 2 }), 1);
+      last = s.t;
     } else if (ap.rack > 0 && w.get(QJob, w.lookup(QJob, Q7)!)!.completion) {
       assert.equal(act(s, 'a', 'rail.footTake', { rack: 2 }), 1);
       assert.equal(act(s, 'a', 'rail.footSet', { site: 3 }), 1);
+      last = s.t;
     }
     if (ap.set === WORKS.ring && ap.brace === 1) assert.equal(act(s, 'a', 'rail.brace', { revision: 1 }), 1);
     const r0 = rail(w);
@@ -742,6 +773,7 @@ function playFootings(start: World, t0: number, max: number) {
           assert.equal(act(s, pid, 'rail.deposit', { station: 'Q7', kind, n }), n);
         }
     advance(s, 1);
+    opts.onTick?.(w, s.t);
     const n = stopsOf(w, LINE2).length;
     trains(w).forEach((r, k) => {
       if (r.wagon && prev[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND && (r.at === n - 1 || r.at === 0))
@@ -766,4 +798,463 @@ test('R2b gate 3: the whole footing sequence, played, lands every delivery and w
   assert.ok(a.filter((x) => x.startsWith('pier')).length >= 2 && a.some((x) => x.startsWith('railhead')));
   t.diagnostic(`${a.length} events: ${a.join(' ')}`);
   assert.deepEqual(a, b);
+});
+// The run above is one played sequence, and in it a stone stop happens not to delay anything: removing the
+// footings-owed condition from freightStop leaves it passing (gate 2's test is the guard for that condition). A slower
+// player, setting one footing every 900 ticks from deck-laid through the ring and the counterweight, keeps the trains
+// running while footings are owed long enough that a stone stop on the line moves the wagon's arrival by a tick: with
+// the condition removed this one fails (the wagon at the Railhead on 9,022 against 9,023 with no stone stop), with it
+// the two runs are equal.
+test('R2b gate 3, a slower player: one footing every 900 ticks from deck-laid lands every event on the no-stone-stop tick', (t) => {
+  const a = playFootings(DECK.w, DECK.t, 40000, { every: 900 }),
+    b = playFootings(noStone(DECK.w), DECK.t, 40000, { every: 900 });
+  assert.ok(
+    a.filter((x) => x.startsWith('railhead')).length >= 2 && a.filter((x) => x.startsWith('wagon')).length >= 20,
+  );
+  t.diagnostic(`${a.length} events, the last ${a[a.length - 1]}`);
+  assert.deepEqual(a, b);
+});
+// ---------------------------------------------------------------- R3: riders, fares and the one strongbox
+const FARES = buildSeedWorld('fares-running');
+/** Q6's kit in its frame, the last 450 ticks of its laying to go: the far end moves to the Pier soon after. */
+const Q6_FINISHING = buildSeedWorld('q6-finishing');
+const tillRow = (w: World) => w.get(Till, w.single(Till))!;
+const earned = (w: World) => tillRow(w).landed + tillRow(w).lost;
+
+test('R3: a fresh railway has an empty strongbox and nobody waiting or aboard', () => {
+  const w = createRailwayWorld();
+  assert.deepEqual({ ...tillRow(w) }, { boogles: 0, landed: 0, lost: 0, spent: 0, sack: 0, poured: 0 });
+  const t = town(w, 0);
+  assert.deepEqual([townClock(w, 0).acc, t.wait0, t.wait1, t.boarded, t.alighted], [0, 0, 0, 0, 0]);
+  assert.ok(trains(w).every((r) => r.riders === 0));
+});
+
+test('R3: riders conserve and every fare is charged once a rider a trip, for 30 minutes from freight-running', () => {
+  const w = copy(FREIGHT.w),
+    fare = fareOf(w, 0);
+  assert.equal(fare, 7, 'the Village to Far Head: 2 + floor(507 m / 100 m)');
+  let alighted = town(w, 0).alighted,
+    paid = earned(w);
+  for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 30 * 600; t++) {
+    railTick(w, t);
+    checkTrade(w);
+    const a = town(w, 0).alighted;
+    // Every rider who stepped off this tick paid one fare, no more, whatever the box took.
+    assert.equal(earned(w) - paid, (a - alighted) * fare, `tick ${t}`);
+    assert.ok(tillRow(w).boogles <= boxCap(w, TRADE_PCT), 'never past the cap');
+    alighted = a;
+    paid = earned(w);
+    if (t % 1800 === 0) railwayCheck(w);
+  }
+  assert.ok(town(w, 0).alighted - town(FREIGHT.w, 0).alighted > 200, 'riders rode');
+  assert.ok(town(w, 0).wait0 < TRADE.crowdCap && town(w, 0).wait1 < TRADE.crowdCap, 'nobody strands');
+});
+
+test("R3: the box's cap (20 minutes of the demand rate) lands no fare past it and counts the rest in lost", () => {
+  const w = copy(FREIGHT.w);
+  assert.equal(tillRate(w, TRADE_PCT), 56, '2 buildings × 2 riders × 2 ways × 7');
+  assert.equal(boxCap(w, TRADE_PCT), 1120);
+  for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 30 * 600; t++) railTick(w, t);
+  const b = tillRow(w);
+  assert.equal(b.boogles, 1120, 'full');
+  assert.ok(b.lost > 0, 'fares past the cap are lost');
+  assert.equal(b.boogles, b.landed + b.poured - b.spent);
+});
+
+test('R3: railFarePct 200 doubles the fare and so what lands; railRiderPct 0 sends no rider', () => {
+  const run = (pct: { farePct: number; riderPct: number }) => {
+    const w = copy(FREIGHT.w);
+    for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 3000; t++) railTick(w, t, undefined, pct);
+    return w;
+  };
+  const one = run(TRADE_PCT),
+    two = run({ farePct: 200, riderPct: 100 });
+  assert.equal(fareOf(two, 0, 200), 14);
+  const base = tillRow(FREIGHT.w).landed;
+  assert.equal(tillRow(two).landed - base, 2 * (tillRow(one).landed - base));
+  const none = run({ farePct: 100, riderPct: 0 });
+  assert.equal(townClock(none, 0).acc, townClock(FREIGHT.w, 0).acc, 'no rider accrues');
+  // Only the riders already waiting can board: none more arrive.
+  const was = town(FREIGHT.w, 0);
+  assert.ok(town(none, 0).boarded <= was.boarded + was.wait0 + was.wait1);
+});
+
+test('R3: the three trade tunables, appended, default 100, inside their bounds', () => {
+  for (const [key, min, max] of [
+    ['railFarePct', 0, 1000],
+    ['railRiderPct', 0, 1000],
+    ['railPricePct', 1, 1000],
+  ] as const) {
+    const t = TUNABLES.find((s) => s.key === key)!;
+    assert.deepEqual([t.def, t.min, t.max], [100, min, max], key);
+    assert.ok(okTune(key, min) && okTune(key, max) && okTune(key, 100));
+    assert.ok(!okTune(key, min - 1) && !okTune(key, max + 1) && !okTune(key, 50.5), key);
+  }
+});
+
+test('R3: no replay: a save and load, a resume and a second resume change no rider or Boogle', () => {
+  const w = copy(FARES.w);
+  const before = JSON.stringify([tillRow(w), town(w, 0), trains(w).map((r) => r.riders)]);
+  const back = createRailwayWorld();
+  back.load(JSON.parse(JSON.stringify(w.snapshot())), railwayCheck);
+  assert.equal(back.hash(), w.hash(), 'a load (a restart or a late joiner) is the same world');
+  railResume(back, 8 * 36000, 5, FARES.t + 1, railAwayCredit(8 * 36000));
+  railResume(back, 8 * 36000, 5, FARES.t + 1, railAwayCredit(8 * 36000));
+  const after = JSON.stringify([tillRow(back), town(back, 0), trains(back).map((r) => r.riders)]);
+  // The yards' credit moves crates (Town.wood and stone are untouched by it); nothing about riders or Boogles moves.
+  const strip = (j: string) => JSON.parse(j).map((x: unknown) => x);
+  assert.deepEqual(strip(after)[0], strip(before)[0], 'the strongbox');
+  const tw = (j: string) => {
+    const t = strip(j)[1];
+    return [t.wait0, t.wait1, t.boarded, t.alighted];
+  };
+  assert.deepEqual(tw(after), tw(before), 'the riders');
+  assert.deepEqual(strip(after)[2], strip(before)[2], 'riders aboard');
+});
+
+test('R3: two worlds driven alike stay equal row for row', () => {
+  const a = copy(FARES.w),
+    b = copy(FARES.w);
+  for (let t = FARES.t + 1; t <= FARES.t + 6000; t++) {
+    railTick(a, t);
+    railTick(b, t);
+    if (t % 100 === 0) assert.equal(a.hash(), b.hash(), `tick ${t}`);
+  }
+  assert.deepEqual(a.snapshot(), b.snapshot());
+});
+
+test("R3: when line 2's end moves on, the far end's crowd waits at the new end and riders aboard ride on to it", () => {
+  const w = copy(Q6_FINISHING.w);
+  assert.equal(routeFar(w, 0), 2, 'Far Head while Q6 lays');
+  let t = Q6_FINISHING.t;
+  for (;;) {
+    const was = { ...town(w, 0) },
+      aboard = trains(w).reduce((n, r) => n + r.riders, 0),
+      paid = earned(w);
+    railTick(w, ++t);
+    assert.ok(t < Q6_FINISHING.t + 3000, 'Q6 completes');
+    if (routeFar(w, 0) === 2) continue;
+    // The tick it moves: the far end's crowd is the new end's, riders aboard stay aboard, nobody pays for the move.
+    assert.equal(routeFar(w, 0), 3, 'the Pier');
+    const now = town(w, 0);
+    assert.ok(now.wait1 >= Math.min(was.wait1, TRADE.crowdCap) - (now.boarded - was.boarded), 'the crowd is not lost');
+    assert.equal(
+      trains(w).reduce((n, r) => n + r.riders, 0),
+      aboard + (now.boarded - was.boarded) - (now.alighted - was.alighted),
+      'riders aboard stay aboard',
+    );
+    checkTrade(w);
+    assert.equal(earned(w) - paid, (now.alighted - was.alighted) * fareOf(w, 0));
+    break;
+  }
+  assert.equal(fareOf(w, 0), 9, 'the Village to the Pier: 2 + floor(709 m / 100 m)');
+  // Riders aboard an up train now step off at the Pier and pay the Pier's fare.
+  let atPier = 0;
+  for (let k = 0; k < 6000 && !atPier; k++) {
+    const was = trains(w).map((r) => ({ ...r })),
+      alighted = town(w, 0).alighted,
+      paid = earned(w);
+    railTick(w, ++t);
+    trains(w).forEach((r, slot) => {
+      const p = was[slot]!;
+      if (RAIL_TRAINS[slot]!.line !== LINE2 || p.phase !== TRAIN_PHASE.RUN || r.phase !== TRAIN_PHASE.STAND) return;
+      if (r.at === 3 && p.riders > 0) {
+        assert.equal(town(w, 0).alighted - alighted, p.riders);
+        assert.equal(earned(w) - paid, p.riders * 9);
+        atPier++;
+      }
+    });
+  }
+  assert.ok(atPier > 0, 'riders stepped off at the Pier');
+  checkTrade(w);
+});
+
+test('R3: the check refuses bad riders and a bad strongbox, each with its message', () => {
+  const on = copy(FARES.w);
+  const verdict = (edit: (w: World) => void) => {
+    const w = on.clone();
+    edit(w);
+    return worldVerdict(w);
+  };
+  const line2 = RAIL_TRAINS.findIndex((t) => t.line === LINE2),
+    line1 = RAIL_TRAINS.findIndex((t) => t.line === 0);
+  assert.equal(
+    verdict((w) => (w.mut(Train, w.lookup(Train, line2)!)!.riders = TRADE.seats + 1)),
+    'railway: riders bounds',
+  );
+  assert.equal(
+    verdict((w) => (w.mut(Train, w.lookup(Train, line1)!)!.riders = 1)),
+    'railway: riders bounds',
+    'a line with no route carries nobody',
+  );
+  assert.equal(
+    verdict((w) => (w.mut(Town, w.lookup(Town, 0)!)!.wait0 = TRADE.crowdCap + 1)),
+    'railway: riders bounds',
+  );
+  assert.equal(
+    verdict((w) => (w.mut(Town, w.lookup(Town, 0)!)!.boarded += 1)),
+    'railway: riders conservation',
+  );
+  assert.equal(
+    verdict((w) => (w.mut(Till, w.single(Till))!.lost = -1)),
+    'railway: till bounds',
+  );
+  assert.equal(
+    verdict((w) => (w.mut(Till, w.single(Till))!.boogles += 1)),
+    'railway: till conservation',
+  );
+});
+
+test('R3: no tick at which a train stops for riders: trains run as with no rider at all', () => {
+  // crossing-done, Far Head a middle halt: the same world with no rider accruing and nobody waiting.
+  const w = copy(CROSSED.w),
+    none = copy(CROSSED.w);
+  const t0 = none.mut(Town, none.lookup(Town, 0)!)!;
+  t0.wait0 = t0.wait1 = 0;
+  const pace = (x: World) =>
+    JSON.stringify(trains(x).map((r) => [r.phase, r.at, r.to, r.track, r.depart, r.from, r.dest, r.req]));
+  for (let t = CROSSED.t + 1; t <= CROSSED.t + 6000; t++) {
+    railTick(w, t);
+    railTick(none, t, undefined, { farePct: 100, riderPct: 0 });
+    assert.equal(pace(w), pace(none), `tick ${t}`);
+  }
+  assert.ok(town(w, 0).alighted > town(CROSSED.w, 0).alighted, 'riders rode');
+});
+
+test('R3: at every stage both crowds board in every 1,200 ticks and neither sits at its cap for 1,200 ticks running', () => {
+  for (const [name, seed] of [
+    ['trains-on', ON],
+    ['freight-running', FREIGHT],
+    ['fares-running', FARES],
+    ['q6-finishing', Q6_FINISHING],
+    ['wagon-on', WAGON],
+    ['crossing-done', CROSSED],
+    ['deck-laid', DECK],
+    ['gap-footed', GAP],
+    ['leaf-raised', LEAF],
+  ] as const) {
+    const w = copy(seed.w);
+    let last = { ...town(w, 0) },
+      acc = townClock(w, 0).acc,
+      board0 = seed.t,
+      board1 = seed.t,
+      cap0 = -1,
+      cap1 = -1;
+    for (let t = seed.t + 1; t <= seed.t + 6000; t++) {
+      railTick(w, t);
+      const now = town(w, 0),
+        arrived = townClock(w, 0).acc < acc ? 1 : 0;
+      if (now.boarded > last.boarded) {
+        if (now.wait0 < last.wait0 + arrived) board0 = t;
+        if (now.wait1 < last.wait1 + arrived) board1 = t;
+      }
+      acc = townClock(w, 0).acc;
+      cap0 = now.wait0 >= TRADE.crowdCap ? (cap0 < 0 ? t : cap0) : -1;
+      cap1 = now.wait1 >= TRADE.crowdCap ? (cap1 < 0 ? t : cap1) : -1;
+      assert.ok(t - board0 <= 1200 && t - board1 <= 1200, `${name}: a crowd waited 1,200 ticks unboarded at ${t}`);
+      assert.ok((cap0 < 0 || t - cap0 < 1200) && (cap1 < 0 || t - cap1 < 1200), `${name}: a crowd at its cap at ${t}`);
+      last = { ...now };
+    }
+  }
+});
+
+test('R3: every replicated component changes only where it does with riders off, or on a tick with a rider event', (t) => {
+  // The same 3,000 ticks twice from fares-running, riders on and riders off (railRiderPct 0; trains run the same, as
+  // riders add no stop). Per replicated component, the ticks it changed with riders on but not off must each carry a
+  // rider event (a rider arriving, boarding or stepping off); the clock is not replicated, so its every-tick write is
+  // not among them.
+  const kinds = RAIL_REPLICATED.map((c) => c.kind);
+  const run = (riderPct: number) => {
+    const w = copy(FARES.w),
+      changed = new Map<string, Set<number>>(kinds.map((k) => [k, new Set()])),
+      events = new Set<number>();
+    const rows = () => w.snapshot().c as Record<string, unknown>;
+    const before = Object.fromEntries(kinds.map((k) => [k, JSON.stringify(rows()[k])]));
+    let acc = townClock(w, 0).acc;
+    for (let tk = FARES.t + 1; tk <= FARES.t + 3000; tk++) {
+      const was = { ...town(w, 0) };
+      railTick(w, tk, undefined, { farePct: 100, riderPct });
+      const now = town(w, 0),
+        all = rows();
+      if (townClock(w, 0).acc < acc || now.boarded !== was.boarded || now.alighted !== was.alighted) events.add(tk);
+      acc = townClock(w, 0).acc;
+      for (const k of kinds) {
+        const after = JSON.stringify(all[k]);
+        if (after !== before[k]) changed.get(k)!.add(tk);
+        before[k] = after;
+      }
+    }
+    return { changed, events };
+  };
+  const on = run(100),
+    off = run(0);
+  assert.ok(on.events.size > 0 && on.events.size < 300, `${on.events.size} rider events`);
+  let extra = 0;
+  for (const k of kinds)
+    for (const tk of on.changed.get(k)!)
+      if (!off.changed.get(k)!.has(tk)) {
+        extra++;
+        assert.ok(on.events.has(tk), `tick ${tk}: ${k} changed with riders on, with no rider event`);
+      }
+  const ticks = (r: typeof on) => new Set([...r.changed.values()].flatMap((x) => [...x])).size;
+  t.diagnostic(
+    `ticks with a replicated change: ${ticks(on)} riders on, ${ticks(off)} off; ${extra} extra (component, tick) changes, ${on.events.size} rider events`,
+  );
+  assert.ok(ticks(on) <= ticks(off) + on.events.size);
+});
+
+test('R3: a full train boards nobody; at railRiderPct 1000 the crowds stay at their cap and no train holds more than its seats', () => {
+  // A line 2 train standing at the Village to leave up: fill its seats by hand (boarded raised with it) and crowd the
+  // platform; on the next tick nobody boards it.
+  const s = { w: copy(FARES.w), t: FARES.t };
+  let slot = -1;
+  for (let i = 0; i < 3000 && slot < 0; i++) {
+    advance(s, 1);
+    slot =
+      LINE2_SLOTS.find((k) => {
+        const r = train(s.w, k);
+        return r.phase === TRAIN_PHASE.STAND && r.at === 0 && r.track === 0;
+      }) ?? -1;
+  }
+  assert.ok(slot >= 0, 'a train stands at the Village');
+  const r = s.w.mut(Train, s.w.lookup(Train, slot)!)!,
+    tw = s.w.mut(Town, s.w.lookup(Town, 0)!)!;
+  tw.boarded += TRADE.seats - r.riders;
+  r.riders = TRADE.seats;
+  tw.wait0 = 5;
+  checkTrade(s.w);
+  advance(s, 1);
+  assert.equal(train(s.w, slot).riders, TRADE.seats, 'still full');
+  assert.ok(town(s.w, 0).wait0 >= 5, 'nobody boarded it');
+  // A flood of riders: the crowds stop at their cap and the seats hold.
+  const w = copy(FARES.w);
+  for (let t = FARES.t + 1; t <= FARES.t + 3000; t++) {
+    railTick(w, t, undefined, { farePct: 100, riderPct: 1000 });
+    assert.ok(
+      town(w, 0).wait0 <= TRADE.crowdCap && town(w, 0).wait1 <= TRADE.crowdCap,
+      `tick ${t}: a crowd past its cap`,
+    );
+    assert.ok(
+      trains(w).every((x) => x.riders <= TRADE.seats),
+      `tick ${t}: a train past its seats`,
+    );
+  }
+  assert.equal(Math.max(town(w, 0).wait0, town(w, 0).wait1), TRADE.crowdCap, 'the flood reached the cap');
+});
+
+test('R3: riders step off and pay only at the route halt ahead: a homeward lever stop at the Quarry lets nobody off', () => {
+  const s = { w: copy(FARES.w), t: FARES.t };
+  const halt = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === 1);
+  assert.equal(act(s, 'a', 'rail.call', { id: halt, dir: -1 }), 1);
+  for (let i = 0; i < 4000; i++) {
+    const was = trains(s.w).map((r) => ({ ...r })),
+      alighted = town(s.w, 0).alighted,
+      paid = earned(s.w);
+    advance(s, 1);
+    for (const k of LINE2_SLOTS) {
+      const r = train(s.w, k),
+        p = was[k]!;
+      if (p.phase !== TRAIN_PHASE.RUN || r.phase !== TRAIN_PHASE.STAND || r.at !== 1 || r.track !== 1) continue;
+      assert.equal(r.riders, p.riders, 'its riders stay aboard');
+      assert.equal(town(s.w, 0).alighted, alighted, 'nobody steps off');
+      assert.equal(earned(s.w), paid, 'nobody pays');
+      if (p.riders > 0) return;
+      assert.equal(act(s, 'a', 'rail.call', { id: halt, dir: -1 }), 1, 'ask again for a train with riders');
+    }
+  }
+  assert.fail('no train with riders stood at the Quarry homeward');
+});
+
+test('R3: Q7 laid and the rivet move the far end on (hand-set rows): the Railhead at 10, Ring Island at 13', () => {
+  // Hand-set on crossing-done: the queries alone (the end, the fare, the cap). The ticked moves are the gate 3
+  // harness's test below.
+  const w = copy(CROSSED.w);
+  const before = JSON.stringify([town(w, 0), tillRow(w), trains(w).map((r) => r.riders)]);
+  assert.deepEqual([routeFar(w, 0), fareOf(w, 0)], [3, 9], 'the Pier');
+  w.mut(QJob, w.lookup(QJob, Q7)!)!.completion = 1;
+  assert.deepEqual([routeFar(w, 0), fareOf(w, 0), boxCap(w, TRADE_PCT)], [4, 10, 1600], 'the Railhead');
+  w.mut(Aperture, w.single(Aperture))!.joined = 0;
+  assert.deepEqual([routeFar(w, 0), fareOf(w, 0), boxCap(w, TRADE_PCT)], [5, 13, 2080], 'Ring Island');
+  assert.equal(JSON.stringify([town(w, 0), tillRow(w), trains(w).map((r) => r.riders)]), before);
+  checkTrade(w);
+});
+
+// Gate 3's harness with riders on, ticked from wagon-on through the pier, Q7, the ring, the counterweight and the rivet,
+// then 3,000 ticks on to Ring Island: the far end moves three times (Far Head to the Pier, the Railhead, Ring Island)
+// with trains running and riders aboard.
+test('R3: played through pier, ring, counterweight and rivet, riders aboard when the far end moves are conserved and each is charged once', (t) => {
+  const w0 = WAGON.w,
+    moves: string[] = [];
+  let far = routeFar(w0, 0),
+    aboard = 0,
+    t0 = town(w0, 0),
+    paid = earned(w0);
+  const phase = LINE2_SLOTS.map((k) => train(w0, k).phase);
+  const offAt = [0, 0, 0, 0, 0, 0]; // riders stepped off, by line 2 stop
+  const line2 = (w: World) => LINE2_SLOTS.reduce((n, k) => n + train(w, k).riders, 0);
+  aboard = line2(w0);
+  assert.equal(t0.boarded - t0.alighted, aboard, 'riders aboard at the start');
+  const events = playFootings(w0, WAGON.t, 40000, {
+    join: 3000,
+    onTick: (w, tk) => {
+      railwayCheck(w);
+      const tw = town(w, 0),
+        now = line2(w),
+        stepped = tw.alighted - t0.alighted,
+        fare = fareOf(w, 0);
+      // Every rider is aboard, waiting or stepped off: boarded less stepped off is aboard, every tick.
+      assert.equal(tw.boarded - tw.alighted, now, `tick ${tk}: riders aboard`);
+      // Each rider stepping off pays one fare (the route's fare that tick), no more and no less.
+      assert.equal(earned(w) - paid, stepped * fare, `tick ${tk}: ${stepped} stepped off at ${fare}`);
+      // Who stepped off where: the riders stepping off this tick left the line 2 train that arrived this tick.
+      const came = LINE2_SLOTS.filter(
+        (k, i) => phase[i] === TRAIN_PHASE.RUN && train(w, k).phase === TRAIN_PHASE.STAND,
+      );
+      if (stepped) {
+        assert.equal(came.length, 1, `tick ${tk}: one train arrived as riders stepped off`);
+        const at = train(w, came[0]!).at;
+        offAt[at] = offAt[at]! + stepped;
+      }
+      LINE2_SLOTS.forEach((k, i) => (phase[i] = train(w, k).phase));
+      const f = routeFar(w, 0);
+      if (f !== far) {
+        // The end moved this tick: the riders aboard before it are still aboard (or stepped off and paid, above).
+        assert.equal(now, aboard - stepped + (tw.boarded - t0.boarded), `tick ${tk}: aboard across the move`);
+        moves.push(`${far}->${f}@${tk - WAGON.t} with ${aboard} aboard`);
+        far = f;
+      }
+      aboard = now;
+      t0 = { ...tw };
+      paid = earned(w);
+    },
+  });
+  t.diagnostic(`far end moves: ${moves.join(', ')}; ${events.length} events, the last ${events[events.length - 1]}`);
+  assert.deepEqual(
+    moves.map((m) => m.split('@')[0]),
+    ['3->4', '4->5'],
+    'the Pier to the Railhead (Q7 laid), the Railhead to Ring Island (the rivet)',
+  );
+  assert.ok(
+    events.some((x) => x.startsWith('rivet')),
+    'the rivet struck',
+  );
+  assert.ok(
+    moves.some((m) => !m.endsWith(' 0 aboard')),
+    'riders were aboard at a move',
+  );
+  t.diagnostic(`stepped off by stop (Village, Quarry, Far Head, Pier, Railhead, Ring Island): ${offAt.join(', ')}`);
+  assert.deepEqual(
+    [offAt[1], offAt[2]],
+    [0, 0],
+    'nobody steps off at the Quarry or Far Head (no longer an end once the Pier opens)',
+  );
+  assert.ok(offAt[3]! > 0 && offAt[4]! > 0 && offAt[5]! > 0, 'riders rode to the Pier, the Railhead and Ring Island');
+});
+
+test('R3: income at the first route settles within one fare a minute of min(56, the seat-capped rate)', () => {
+  const w = copy(FREIGHT.w),
+    e0 = earned(w);
+  for (let t = FREIGHT.t + 1; t <= FREIGHT.t + 6000; t++) railTick(w, t);
+  const perMin = (earned(w) - e0) / 10;
+  assert.ok(Math.abs(perMin - 56) <= fareOf(w, 0), `${perMin} a minute`);
 });

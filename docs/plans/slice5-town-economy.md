@@ -98,7 +98,8 @@ price, so a room that ignores all of it still finishes.
 | `Yard` | `slot` (0 Camp timber, 1 Quarry stone) | `stock`, `made` | R1 |
 | `YardClock` | with `Yard`, `replicate: false` | `last` (tick of the last crate, as `ForgeClock`) | R1 |
 | `Train` (existing) | `slot` | adds `freight` (R1), `riders` (R3) | R1, R3 |
-| `Town` | `slot` (0 the Village) | `wood`, `stone` delivered (R1); `acc`, `wait0`, `wait1`, `boarded`, `alighted` (R3) | R1, R3 |
+| `Town` | `slot` (0 the Village) | `wood`, `stone` delivered (R1); `wait0`, `wait1`, `boarded`, `alighted` (R3) | R1, R3 |
+| `TownClock` | with `Town`, `replicate: false` | `acc` (riders accrued, written every tick; as built, off `Town`) | R3 |
 | `Till` | singleton | `boogles`, `landed`, `lost`, `spent`, `sack`, `poured` | R3, R5 |
 | `Plot` | `slot` (town × 16 + k) | `at` (the tick it was bought, −1 not yet) | R4 |
 
@@ -206,6 +207,54 @@ checkpoint runs for it.
   - Seed: `fares-running` (`freight-running` advanced until `boogles ≥ 100`).
   - Proof: `playthrough --from freight-running --to fare` (the bot waits for `Till.landed > 0`); one look at the
     Village's line 2 platform.
+  - **As built (12 November, the designer's ruling: riders never add a stop in this slice).** No rider clause in
+    `serviceOf`: riders board where a train stands to leave their way and step off at the route halt ahead of it.
+    `TRADE.routes` is the Village to `'end'`: the far halt is line 2's current open end, a query (`routeFar`), so the
+    route grows with Q6, Q7 and the rivet. The fare stays the distance rule, 2 + 1 a 100 m (the orchestrator's Default, over the ruling's call 9 "the fare stays 7"):
+    7, 9 at the Pier, 10 at the Railhead, 13 at Ring Island; the cap (20 minutes of the demand rate) follows it: 1,120,
+    1,440, 1,600, 2,080. `crowdStop` stays in the table, unused (the ruling's spec 2). Riders waiting at the far end wait at the new end
+    the tick it moves; riders aboard ride on to it and pay its fare (or, on a train already turning back on the old
+    end's crossover, ride home and pay it at the Village). `rail.tradeTick` runs at order 3.5. No new op;
+    the tunables go through `tune.set` (`railFarePct`, `railRiderPct` 0 to 1,000; `railPricePct` 1 to 1,000, R4's).
+    `WORLD_NS` v30 (build 2 moves to v31). Measured, 20 minutes with nothing asked (fares earned = landed +
+    lost a minute; the box is full late on, which is the cap working; waiting at the finish, Village / far end):
+    | Stage | Far end, fare | Earned | Landed | Waiting |
+    | --- | --- | --- | --- | --- |
+    | `trains-on`, `freight-running`, `q6-stocked` | Far Head, 7 | 53.5 to 56 | 53.5 to 56 | 0 to 1 / 0 to 1 |
+    | `q6-done`, `wagon-on`, `crossing-done` | Pier, 9 | 71 to 72 | 58 to 72 | 0 to 2 / 0 to 1 |
+    | `deck-laid`, `gap-footed`, `leaf-raised` | Railhead, 10 | 77.5 to 79 | 36.6 to 55.6 | 1 to 3 / 1 to 2 |
+    | `ring-joined` | Ring Island, 13 | 102 | 59.3 | 1 / 2 |
+
+    The gate against main: every stage on main's tick; the wagon's arrivals and every footing delivery on main's tick;
+    the worst line 2 wait (the `WAIT_BOUND` way) 546 to 733, never above main's; stone as R2b; `npm run loop -- run`
+    unmoved. The fallback (riders on line 1, the Village to the Camp, about 24 a minute) was not needed.
+
+    As built, in detail. **What is replicated:** the riders' accrual (`acc`) is written every rule tick, so it lives
+    on a non-replicated `TownClock` beside `Town` (as `YardClock` beside `Yard`); `Town` and `Till` change only on a
+    tick a rider arrives at an end, boards or steps off. A test checks every replicated component: run 3,000 ticks
+    from `fares-running` with riders on and again with `railRiderPct` 0. Each tick on which a component changed
+    only in the riders-on run must carry a rider event (160 ticks against 140, with 53 rider events).
+    **The far end moving, ticked:** gate 3's harness, run with riders on, plays every footing from `wagon-on`, then
+    strikes the rivet and plays 3,000 ticks more (about 3.3 s). With `railwayCheck` every tick, boarded less
+    stepped off equals the riders aboard, and each rider stepping off pays that tick's fare once. Both end moves
+    happen with riders aboard (the Pier to the Railhead at +2,445 with 7 aboard, to Ring Island at +6,253 with 7).
+    Riders step off at the Pier, the Railhead and Ring Island, never at the Quarry or Far Head (two mutations
+    checked: a homeward double charge, and riders held to the Pier). **The money check** keeps
+    `boogles = landed + poured − spent` only; `landed + lost = alighted × fare` is held by a per-tick test at a fixed
+    percent, because a moving fare and a tunable percent break it as an invariant. **The far end moving:** a train
+    already on the old end's crossover when the end moves turns back there; its riders ride home and pay the new fare at
+    the Village (charged once; conservation holds); riders waiting at the far end wait at the new end. **Tunables at
+    0:** `railRiderPct` or `railFarePct` at 0 makes the cap 0, so the fares of riders already aboard go to `lost`;
+    Boogles already in the box are never removed. **Boarding** happens in `standing`, after the turn at an end (the
+    ruling's wording boards in `arrive`): a difference for the orchestrator to answer. **Query signatures** differ
+    from the plan text: `townBuildings()`, `trainSeats()`, `tillRate(w, pct)`, `boxCap(w, pct)`,
+    `fareOf(w, route, farePct)`. **Still one town:** one route per town and per line; `wait0`/`wait1` are two ends
+    only; `Train.riders` is one integer with one destination; riders are generated only by the town at `a`; `wood`
+    and `stone` are fixed fields; freight conservation assumes one yard per town and goods; `dearestOnOffer` is 0
+    until R4; `TRADE_TOWNS` is 1. **Jump-in and stop:** the "Fares paid" row lands on line 2's Village platform,
+    where riders board, facing the Quarry (land stilled on Windows/Edge, 12 November, not on a device); the
+    playthrough's `fare` stop is meant with `--from trains-on` (the trade seeds are jump-ins, not `--from` seeds, so
+    not the `freight-running` this step's proof names) and waits for the mirror's `Till.landed > 0`; no hash moved.
 - [ ] **R4. Plots and the buy (M). Independent review: yes (`src/sim`, `src/world`, the op list).**
   - Files: `railway-components.ts`, `railway-sys-trade.ts`, `railway-systems.ts` (`'rail.buy': [buy]`),
     `railway-queries-trade.ts`, `railway-check-trade.ts`, `src/sim/town-facts.ts`, `test/town-facts.test.ts`,
@@ -514,7 +563,11 @@ shipped, else bump B (a rule change, no shape change).
     and at `gap-footed`; a homeward lever or rider ask at the Quarry still loads it. Gate 3 is a committed test: every
     footing played as it arrives from `wagon-on` (the pier's 6 and 6, the ring's 6, 6 and 6 with the counterweight's
     four), every delivery and wagon arrival on the no-stone-stop tick, and equal to main's (+570, +1,602, +3,864,
-    +5,025, +6,246). Footings owed with no wagon coupled also refuses the stop; that state is not reachable in a room
+    +5,025, +6,246). That harness measures one played sequence, and in it a stone stop happens not to move anything
+    (with the footings condition removed from `freightStop` it still passes): gate 2's test is the guard for that
+    condition. A second played sequence, added with R3's review, does bite it: a slower player setting one footing
+    every 900 ticks from `deck-laid` (with the condition removed the wagon reaches the Railhead a tick off, 9,022
+    against 9,023; about 0.7 s). Footings owed with no wagon coupled also refuses the stop; that state is not reachable in a room
     (the wagon couples before the pier can have its footings and never uncouples).
   - While a kit is owed no train makes the stone stop (in a live room, until players pour Q7's rails); stone still
     moves by a lever or rider ask then. `test/railway-trade.test.ts` holds both, the wagon's arrivals against no stone

@@ -655,4 +655,8 @@ const RAIL_TUNE_KEYS = new Set([
   'railFootSoloSpeed',
   'railFootHelpSpeed',
   'railTrainHeadPct',
+  // Slice 5 R3's trade tunables.
+  'railFarePct',
+  'railRiderPct',
+  'railPricePct',
 ]);

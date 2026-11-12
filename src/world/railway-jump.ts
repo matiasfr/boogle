@@ -43,6 +43,10 @@ const JOINT_LAND = ringLand(RING_JOINT_UP, -770);
 /** Line 1's Village and Camp platforms (slice 5's freight-running lands on the first, facing the second). */
 const VILLAGE_LINE1 = RAIL_LINES[0]!.halts[0]!.platforms[0],
   CAMP_LINE1 = RAIL_LINES[0]!.halts[1]!.platforms[0];
+/** Line 2's Village and Quarry platforms (slice 5's fares-running lands on the first, where riders board, facing the
+ * second: along the line). */
+const VILLAGE_LINE2 = RAIL_LINES[1]!.halts[0]!.platforms[0],
+  QUARRY_LINE2 = RAIL_LINES[1]!.halts[1]!.platforms[1];
 
 /** In route order. Labels and lines are UI text (not The Boogler's), logged in docs/agent-calls.md. Each `land` was
  * checked with a still (docs/plans/playtest-jump-in.md, step 7); `y` is the surface measured there. */
@@ -94,6 +98,13 @@ export const JUMPS: readonly Jump[] = [
     label: 'Timber home',
     line: "Line 1's first load of timber is at the Village; plot 1 is staked",
     land: near(VILLAGE_LINE1, 0, 0, VILLAGE_LINE1.y / 100, CAMP_LINE1), // the Village's line 1 platform, facing the Camp
+  },
+  // Slice 5 (R3). Its position was checked with a still on Windows/Edge, 12 November; not on a device.
+  {
+    stage: 'fares-running',
+    label: 'Fares paid',
+    line: "Riders board at the Village's line 2 platform; the strongbox holds 100 Boogles",
+    land: near(VILLAGE_LINE2, 0, 0, VILLAGE_LINE2.y / 100, QUARRY_LINE2), // where riders board, facing the Quarry
   },
   {
     stage: 'q6-done',

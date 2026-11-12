@@ -62,7 +62,8 @@ import { call, trainTick } from './railway-sys-trains.ts';
 import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
 import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStrike } from './railway-sys-ring.ts';
-import { yardTick } from './railway-sys-trade.ts';
+import { tradeTick, yardTick } from './railway-sys-trade.ts';
+import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
@@ -127,13 +128,16 @@ export const RAIL_TICK: readonly System<never, unknown>[] = [
   // Slice 5's yards (./railway-sys-trade.ts), between the cart and the trains.
   yardTick,
   trainTick,
+  // Slice 5 R3's riders, after the trains.
+  tradeTick,
   worksTick,
   jobClock,
 ];
 const TICK = createSchedule(RAIL_TICK);
-/** The rule tick; `headPct` is the room's railTrainHeadPct (the trains' headway hold). */
-export function railTick(w: World, tick: number, headPct = TRAIN_HEAD_PCT) {
-  TICK.run(w, 'tick', { tick, headPct });
+/** The rule tick; `headPct` is the room's railTrainHeadPct (the trains' headway hold), `trade` its railFarePct and
+ * railRiderPct (slice 5 R3). */
+export function railTick(w: World, tick: number, headPct = TRAIN_HEAD_PCT, trade: TradePct = TRADE_PCT) {
+  TICK.run(w, 'tick', { tick, headPct, farePct: trade.farePct, riderPct: trade.riderPct });
 }
 /** The systems the server and the host call by name (lifecycle, the request history and absent carriers). The job
  * clock is the tick's, and also runs after an applied action (railSettle) and a resume. */
