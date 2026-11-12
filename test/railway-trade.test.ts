@@ -2,7 +2,7 @@
 // railway-queries-trade.ts, railway-check-trade.ts). R1: the Camp's timber yard and the Quarry's stone yard make
 // crates while the trains run, and the trains carry them home to the Village. Determinism, conservation, the caps, no
 // freight stop (a train loads only where it already stands), the first timber home, the save round trip and the trade
-// check's refusals.
+// check's refusals; R2: the yards' away credit, once per marker, and the plots staked from deliveries.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
@@ -13,7 +13,9 @@ import { buildSeedWorld, SEED_STAGES } from '../src/sim/railway-seeds.ts';
 import { TRADE_STAGES } from '../src/sim/railway-seed-trade.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { rail, town, train, trains, yard, yards } from '../src/sim/railway-rows.ts';
-import { freightAboard } from '../src/sim/railway-queries-trade.ts';
+import { freightAboard, plotsStaked, plotsStakedOf } from '../src/sim/railway-queries-trade.ts';
+import { railResume } from '../src/sim/railway-sys-away.ts';
+import { RAIL_AWAY, railAwayCredit } from '../src/sim/railway-away.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { TRAIN_PHASE } from '../src/sim/railway-train.ts';
@@ -303,4 +305,111 @@ test('the trade check refuses a corrupt or hostile save, each with its message',
     verdict(on, (w) => (w.mut(Town, w.lookup(Town, 0)!)!.stone += 1)),
     'railway: freight conservation',
   );
+});
+
+// ---------------------------------------------------------------- R2: the away credit and the staked plots
+/** The host's one credit for `away` ticks (world-host.ts credit()): the job's ticks, the marker, the yards' ticks. */
+const resumeAway = (w: World, away: number, marker: number, tick: number) =>
+  railResume(w, away >= RAIL_AWAY.finishTicks ? Number.MAX_SAFE_INTEGER : away, marker, tick, railAwayCredit(away));
+
+test('10 minutes, 8 hours and 3 days away fill each yard by whole intervals of the credit, never past its cap', () => {
+  for (const away of [10 * 600, 8 * 36000, 3 * 24 * 36000]) {
+    // freight-running with both yards part-empty: the Camp at 0 (line 1 took it), the Quarry drained to 0 as well.
+    const w = copy(FREIGHT.w),
+      tick = FREIGHT.t + 1;
+    const q = w.mut(Yard, yardId(w, QUARRY))!;
+    q.made -= q.stock;
+    q.stock = 0;
+    const before = yards(w).map((y) => ({ ...y })),
+      credit = railAwayCredit(away);
+    resumeAway(w, away, 1_000_000, tick);
+    railwayCheck(w);
+    yards(w).forEach((y, slot) => {
+      const c = TRADE.yards[slot]!,
+        n = Math.min(c.cap - before[slot]!.stock, Math.floor(credit / c.everyTicks));
+      assert.ok(y.stock <= c.cap, `${away}: yard ${slot} at or under its cap`);
+      assert.equal(y.stock, before[slot]!.stock + n, `${away}: yard ${slot} credited ${n}`);
+      assert.equal(y.made, before[slot]!.made + n, `${away}: made grows with it`);
+      assert.equal(w.get(YardClock, yardId(w, slot))!.last, tick, 'the clock moves to the join');
+    });
+    // Nothing runs while away: no train moved freight.
+    assert.deepEqual(
+      trains(w).map((r) => r.freight),
+      trains(FREIGHT.w).map((r) => r.freight),
+    );
+    assert.deepEqual(town(w, 0), town(FREIGHT.w, 0));
+  }
+  // Ten minutes: the Camp makes 1 every 15 s, the Quarry 1 every 30 s; the credit (9.6 min) fills both.
+  assert.ok(Math.floor(railAwayCredit(6000) / TRADE.yards[QUARRY]!.everyTicks) >= TRADE.yards[QUARRY]!.cap);
+});
+
+test('a short absence credits only its whole intervals, and a second resume at the same marker adds nothing', () => {
+  const w = copy(FREIGHT.w),
+    tick = FREIGHT.t + 1,
+    camp = TRADE.yards[CAMP]!;
+  const stock = yard(w, CAMP).stock;
+  assert.ok(stock + 2 < camp.cap);
+  // 2.5 intervals away: two crates (the credit of so short an absence is nearly the whole absence).
+  const away = Math.floor(camp.everyTicks * 2.5);
+  assert.equal(Math.floor(railAwayCredit(away) / camp.everyTicks), 2);
+  resumeAway(w, away, 777, tick);
+  assert.equal(yard(w, CAMP).stock, stock + 2);
+  const after = JSON.stringify(w.snapshot());
+  resumeAway(w, away, 777, tick + 5);
+  resumeAway(w, 8 * 36000, 776, tick + 5); // an older marker
+  assert.equal(JSON.stringify(w.snapshot()), after, 'the same or an older marker changes nothing');
+  // A save and a load (or a late joiner's whole state) carries the marker: the credit is never applied again.
+  const back = createRailwayWorld();
+  back.load(JSON.parse(after), railwayCheck);
+  resumeAway(back, away, 777, tick + 5);
+  assert.equal(JSON.stringify(back.snapshot()), after);
+});
+
+test('no yard credit while the trains sleep', () => {
+  const w = copy(ASLEEP.w),
+    before = JSON.stringify(yards(w).map((y) => [y.stock, y.made])),
+    clocks = yards(w).map((_y, slot) => w.get(YardClock, yardId(w, slot))!.last);
+  resumeAway(w, 8 * 36000, 1, ASLEEP.t + 1);
+  assert.equal(JSON.stringify(yards(w).map((y) => [y.stock, y.made])), before);
+  assert.deepEqual(
+    yards(w).map((_y, slot) => w.get(YardClock, yardId(w, slot))!.last),
+    clocks,
+  );
+});
+
+test('after the credit, the next crate comes one whole interval after the join', () => {
+  const w = copy(FREIGHT.w),
+    tick = FREIGHT.t + 1,
+    camp = TRADE.yards[CAMP]!;
+  resumeAway(w, Math.floor(camp.everyTicks * 1.5), 9, tick);
+  const made = yard(w, CAMP).made;
+  for (let t = tick + 1; t < tick + camp.everyTicks; t++) railTick(w, t);
+  assert.equal(yard(w, CAMP).made, made, 'none sooner');
+  railTick(w, tick + camp.everyTicks);
+  assert.equal(yard(w, CAMP).made, made + 1);
+});
+
+test('plotsStaked: the lowest unbought plots whose timber and stone are in, two at most', () => {
+  const cases: [number, number, number[]][] = [
+    [0, 0, []],
+    [7, 0, []],
+    [8, 0, [0]],
+    [23, 16, [0]],
+    [24, 0, [0, 1]],
+    [40, 0, [0, 1]],
+    [40, 16, [0, 1]],
+  ];
+  for (const [wood, stone, want] of cases) assert.deepEqual(plotsStakedOf(0, wood, stone), want, `${wood}/${stone}`);
+  // With plot 1 bought (R4) the third is staked once its stone is in, and not before.
+  const bought = (k: number) => k === 0;
+  assert.deepEqual(plotsStakedOf(0, 40, 15, bought), [1]);
+  assert.deepEqual(plotsStakedOf(0, 40, 16, bought), [1, 2]);
+  assert.deepEqual(
+    plotsStakedOf(0, 40, 16, (k) => k < 2),
+    [2],
+  );
+  assert.deepEqual(plotsStakedOf(1, 99, 99), [], 'no other town has priced plots');
+  // On the world: freight-running has the first timber home, so plot 1 is staked.
+  assert.deepEqual(plotsStaked(FREIGHT.w, 0), [0]);
+  assert.deepEqual(plotsStaked(ON.w, 0), []);
 });
