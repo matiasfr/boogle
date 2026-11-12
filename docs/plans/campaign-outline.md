@@ -1,4 +1,5 @@
-> **Status: draft for the owner's review (11 November 2026).** A proposal. Nothing here is decided until he rules;
+> **Status: draft for the owner's review (11 November 2026); the seven owner decisions in [section 7](#7-owner-decisions)
+> were answered on 12 November (UTC).** A proposal. Nothing else here is decided until he rules;
 > the orchestrator then refreshes [direction.md](../direction.md) and the decision files. No code, no world positions.
 
 # Campaign outline: from today to Alpha
@@ -309,25 +310,37 @@ before then.
      that take either material.
    - One branch only. Saves a large area and 40 to 70 minutes, but the sea cave or the ending's glide loses its key,
      and the Port's bill is redrawn.
+   - **Answered (owner, 12 November UTC): both areas, High Gorge first, fixed order (recommended).** Recorded in the [decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered).
 2. **If the rough route measures well under six hours, what gives?** (The built third plays at about half its
    allowance.)
    - **Measure first in phase B, then add puzzles and discovery to the small areas; never larger bills (recommended).**
      Follows "smaller areas carry puzzles" and his wariness of grinds.
    - Accept a shorter game, four to five hours. Costs nothing; changes the decided target.
    - Hold six hours with the economy: town growth and Boogle goals on the main path. Leans on the least-built system.
+   - **Answered (owner, 12 November UTC): add puzzles and discovery to the small areas (recommended).** His note: "we
+     dont need to author the puzzles now but it feels ok that someone could bum rush the game at 3 hours, but if they
+     interact with the world, npcs, abilities, puzzles, it will be closer to 4-5". The orchestrator's reading: a
+     three-hour rush is acceptable; the target for a player who engages is four to five hours, not six; puzzles are
+     not authored during the greybox. Recorded in the [decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered).
 3. **What happens on the Original Island at Alpha?**
    - **The causeway ride, a meeting with The Boogler, one shared moment and a thanks card; the world stays open
      (recommended).** One medium area. The meeting's premise is his pick from section 3's table or his own.
    - That, plus a communal finale (the parade in [story-and-finale](../proposals/story-and-finale.md), parked). Adds a
      ritual system and an absent-friend echo.
    - A stand-in card only, the real ending at Beta. Smallest, but Alpha then proves no ending flow.
+   - **Answered (owner, 12 November UTC): the ride, the meeting, one shared moment, a thanks card (recommended).** His
+     note: "don tknow about the thanks card, bu tmeeting the boogler is a fun ending potentially. although im
+     interested in scoping a sort of post-game twist at some point, its cool when games do that". The orchestrator's
+     reading: the meeting with The Boogler is the ending; the thanks card is undecided; a post-game twist is an idea to
+     scope later ([ideas](../ideas.md)). Recorded in the [decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered).
 4. **Is the mainland ever walked?** The log says both: "reachable at the end, and you can walk around it"
-   ([undated](../decisions-core-loop.md#d-undated-the-mainland-port-city)) and, on 7 November, "never reached in the
+   ([undated](../decisions-archive.md#archive-core-loop-pacing-and-progression)) and, on 7 November, "never reached in the
    main game".
    - **A backdrop only; the 7 November call stands and the older entry is archived (recommended).** High Port is the
      port you walk.
    - Reached after the ending, post-Alpha. Keeps the old entry as a Beta goal.
    - Reached in the main game. Adds an area larger than any here.
+   - **Answered (owner, 12 November UTC): a backdrop only (recommended).** Recorded in the [decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered); the older entry is archived.
 
 **Can wait**
 
@@ -335,16 +348,21 @@ before then.
    - **At the start of the Alpha phase (recommended).** Wipes stay free through phases B and C.
    - When the first far island is content-complete. Earlier safety for his own evening play; slows every later change.
    - Not until Beta; Alpha's runs use a frozen build. Cheapest, but the solo acceptance run stops proving updates.
+   - **Answered (owner, 12 November UTC): at the start of the Alpha phase (recommended).** Recorded in the [decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered).
 6. **When is the fresh-player session at target quality?**
    - **After Ring Island build 2, on the built route, alongside the greybox (recommended).** Earliest read on
      readability and first-time length.
    - After the rough route exists, so the fresh player can see the whole shape.
    - At Alpha only. Risks finding a readability problem six areas late.
+   - **Answered (owner, 12 November UTC): after Ring Island build 2, on the built route (recommended).** Recorded in the [decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered).
 7. **Which of the remaining cuts stand?** (Cuts 4 and 5 in section 3: three double-backs instead of five; one upgrade
    per ability and no bombs.)
    - **Both (recommended).** About one unit and several gates saved.
    - Keep all five double-backs. They reuse built places, about half a unit.
    - Keep ability ladders. Each rung needs its own gate somewhere on the route.
+   - **Answered (owner, 12 November UTC): both cuts (recommended).** Three double-backs instead of five (the sea cave,
+     the first branch's hidden section, the train through the ring; the Closest Pew and Split-rock's upper seam move to
+     Beta); one upgrade per ability (hook reel, glider cloth) and no bombs. Recorded in the [decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered).
 
 ## 8. Risks, and what sends us back a phase
 

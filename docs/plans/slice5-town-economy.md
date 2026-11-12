@@ -1,7 +1,7 @@
 > **Status: plan, not built (2026-11-11).** Production-core slice 5, "economy and town growth on the server", systems
 > first. Rules and server steps R1 to R5, then greybox views V1 to V4. Two `WORLD_NS` bumps. Designer-reviewed 11
-> November: **build with changes**, already made in the steps ([review](#design-review-designer-2026-11-11)). Two owner
-> questions at the end; neither blocks.
+> November: **build with changes**, already made in the steps ([review](#design-review-designer-2026-11-11)). Its two owner
+> questions were answered on 12 November (UTC); one design item is open ([below](#open-design-item-trains-stop-at-every-resource-source)).
 
 # Slice 5: train cargo grows the Village, then Boogles and one plot buy
 
@@ -362,9 +362,25 @@ November). Old question 3 (leave the crowd) is **settled by its default**. Two a
 1. **What should train cargo do at the Village now?** Recommended: **deliveries stake the plots** (timber stakes
    plots 1 and 2; plot 3 also needs stone). The alternative is the route staking plots by milestone, as his 11
    November answer worded it ("plots the route stakes"), with cargo doing nothing you can see at Home. Answer: ___
+   **Answered (owner, 12 November UTC): deliveries stake the plots (recommended).** Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-town-economy-answered).
 2. **Should growing the town be something you do, not something you wait for?** Recommended: **yes, as the next
    plan, not this one.** Here cargo and fares arrive by themselves. If the route measures short (campaign outline,
    decision 2), raising a bought house by hand from the crates the trains brought is the play to add. Answer: ___
+   **Answered (owner, 12 November UTC): yes, as the next plan (recommended).** Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-town-economy-answered).
+3. **How does stone get from the Quarry to the Village?** Recommended: line 2 stops at the Quarry for freight only when
+   `loadStop` (4) crates wait. **Answered (owner, 12 November UTC): not the recommended option; his pick: "Trains make
+   a stone stop once the pier's footings are done".** His note: "I feel cago trains should be stopping at all resource
+   sources to pick up cargo. player shouldnt have to be carrying that". Recorded in the [decisions](../decisions-rewards.md#d-2026-11-12-town-economy-answered). The build proceeds
+   on the plan as written until the design item below is ruled.
+
+### Open design item: trains stop at every resource source
+
+Not redesigned here. The orchestrator's reading of his note: freight is carried by trains that stop at every resource
+source; the player does not haul cargo by hand or have to call the train for it. The earlier rule in this plan, "freight
+loads only where trains already stand" (the `loadStop` condition and the yard-halt load in `trainIO.arrive`), is
+superseded for stone once the pier's footings are done. The wider principle, a stop at all sources, needs the
+designer to rule on how it meets "freight adds no waiting on the main route" (finding 2 of the review below) before
+this plan's rules, numbers or steps change.
 
 ## Design review (designer, 2026-11-11)
 

@@ -1,6 +1,6 @@
 > **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Phase B of
-> [campaign-outline](campaign-outline.md): the whole route, rough. Three owner questions are open
-> ([below](#open-questions)); leg 1 does not wait for them.
+> [campaign-outline](campaign-outline.md): the whole route, rough. Its owner questions were answered on 12 November
+> (UTC) ([below](#owner-questions)); the open questions below are the planner's own.
 
 # The greybox route: every remaining area playable, wake to the ending
 
@@ -412,6 +412,8 @@ on them before its design review.
    - **Yes: it is the live game past Ring Island, grey and labelled as placeholder (recommended).** It is the only way
      he rides it on real trains, and nothing waits for a playtest.
    - Behind a room flag until leg 6. Hides the grey islands, and adds a second world shape to keep working.
+   - **Answered (owner, 12 November UTC): live for everyone, grey and labelled (recommended)**; see owner question 1
+     below.
 
 ## Contradictions found while checking
 
@@ -696,9 +698,14 @@ Neither holds the build.
      rides each leg by link. This is what ships until he answers.
    - Never in the shared room as greybox; an area goes live when it is built to depth. Keeps the live game finished,
      and the whole shape is never played together until Alpha.
+   - **Answered (owner, 12 November UTC): live for everyone, grey and labelled, each leg shipped whole (recommended).**
+     So G1 does not need the "closed in the shared room" bit that was to ship until he answered. Recorded in the
+     [decisions](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered).
 2. **"Do both branch areas keep a choice of order?"** (the outline's decision 1; G1 installs the answer)
    - **Both areas, High Gorge first, fixed for the greybox (recommended).** The choice can come back later for one
      more line (the bay trestle) and a bump.
    - Both orders in the greybox now. Adds the bay trestle, a second route to prove and bills that take either
      material.
    - One branch only. The sea cave or the ending's glide loses its key.
+   - **Answered (owner, 12 November UTC): both areas, High Gorge first, fixed order**, by the campaign outline's
+     decision 1 ([decisions](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered)).
