@@ -67,6 +67,9 @@ const bodies = new Set<MBody>(); // in the world
 const byCollider = new Map<number, MBody>();
 const thinColliders = new Set<number>(); // handles, for sweepSphere
 const THIN = 0.8; // m: half the width under which a shape counts as thin
+const ZERO = { x: 0, y: 0, z: 0 },
+  ONE = { x: 1, y: 1, z: 1 },
+  IDENTITY = { x: 0, y: 0, z: 0, w: 1 };
 // Across the ground: a tree's height doesn't make it wide, unless it's lying down (a rotated cylinder or box).
 function isThin(s: Shape) {
   if (s.kind === 'sphere') return s.r < THIN;
@@ -154,11 +157,25 @@ function buildColliders(b: MBody) {
     d.setRestitutionCombineRule(r.CoefficientCombineRule.Multiply);
     d.setCollisionGroups(groups(b)).setSensor(!b.response);
     if (b.kind === 'dynamic') d.setMass(k === 0 ? b.mass : 0);
+    // A kinematic body's shapes weigh nothing: its mass is put at its origin below (test/kinematic-turn.test.ts).
+    else if (b.kind === 'kinematic') d.setDensity(0);
     const col = w.createCollider(d, rb);
     b.colliders.push(col);
     byCollider.set(col.handle, b);
     if (isThin(s)) thinColliders.add(col.handle);
   });
+  // Rapier turns a body about its centre of mass, but every mover sets its velocity for its origin and the carry turns
+  // riders about that (src/entities/railway/car.ts moveCar, src/physics/platforms.ts carryStep). A kinematic body is
+  // never pushed, so its mass can be anything: put it all at the origin. Off-centre shapes (the engine's boiler and cab)
+  // otherwise slid every rider sideways by that offset times each turn of the line.
+  if (b.kind !== 'static')
+    rb.setAdditionalMassProperties(
+      b.kind === 'kinematic' ? 1 : 0,
+      ZERO,
+      b.kind === 'kinematic' ? ONE : ZERO,
+      IDENTITY,
+      false,
+    );
 }
 function rbType(kind: BodyKind) {
   const t = R!.RigidBodyType;
