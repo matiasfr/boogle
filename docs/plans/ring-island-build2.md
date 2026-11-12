@@ -1,6 +1,8 @@
 > **Status: plan for the owner's and the designer's review (11 November 2026).** Nothing here is built. Ring Island
 > build 2 as a systems-first greybox, `WORLD_NS` v28. Three owner questions are open ([below](#open-questions)); steps
-> R1 to R5 do not wait for them.
+> R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
+> [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
+> in the bill, steel on the kit car, the works prompt shown blocked).
 
 # Ring Island build 2: steel comes home and the first install
 
@@ -363,3 +365,195 @@ true to the rules from then.
    not spent in build 2.
 7. `garage-state.ts` and `garage-data.ts` say nothing there is sent or read by the simulation; V3 makes that false and
    rewrites both headers.
+
+## Design review (designer, 2026-11-11)
+
+**Verdict: cleared to build, on the rulings below.** Steps R1 to R5 and V1 to V3 keep their shape; rulings A to F
+change what three of them build, and where a step and a ruling differ the ruling is what gets built. Nothing here waits
+for the owner: two questions are his, and the build proceeds on the recommendation for each.
+
+Read for this: DESIGN.md; owner-calls (the 11 November
+[greybox order](../agents/owner-calls.md#mechanisms-systems-greybox-details), "Pick and log", "Brainstorm new gameplay
+first", "Wary of: material grinds"); the Current rules of core loop and rail and the entries the table cites; the
+newest playtests (9 and 10 November); `npm run loop` and `loop -- node bents`; build 1's review (finding 5);
+`src/entities/ring-island/view.ts` (the works yard), `railway-works-layout.ts`, `railway-train.ts`,
+`garage-data.ts`. Research: the plan's four citations hold; one more applies,
+[upgrade-economy](../research/upgrade-economy.md) rec 2 ("repay a visible inconvenience"), against the size of the
+payoff (finding 3).
+
+**Not seen.** No stills. `npm run look` cannot start in this worktree (no install: `express` is not found) and the
+main checkout is out of step with its lock (`@fontsource/figtree`, `@fontsource/lilita-one`), so the look tool refuses
+there too; `level-check` stops on the missing `rapier.js`, as the planner found. These are tooling leftovers for the
+orchestrator. Every placement below is arithmetic on the built geometry and is re-checked by V1's and V3's looks.
+
+### Detail audit (the 11 November direction)
+
+The plan carries no quirks, barks, idles or bespoke props, and section 7 parks the right things. Two strikes:
+
+- Section 8's "the works' glow" is not built. A lit works reads from its sign and the steel on its rack.
+- V3 plays the garage's existing moment as it is on main and adds nothing to it.
+
+Step T (a layout and one still) is level blockout, not detail. It stays last and never gates v28.
+
+### Calls
+
+| # | Call | Kind | Source or ruling |
+| --- | --- | --- | --- |
+| 1–8 | As the plan's table | Decided | As cited there. Checked against each entry's words; none is contradicted |
+| 21 | The kit lies in a yard at the island halt and is taken where it lies | Decided | [yards at halts](../decisions-rail.md#d-2026-11-10-open-calls-answered-yards-at-halts): "a yard at each halt: take it where it lies; trains later carry it" |
+| 22 | Line 2 keeps three trains and the 105 s worst wait | Decided | [three trains](../decisions-rail.md#d-2026-11-10-line-2-runs-three-trains-for-now); R3's mixed-fleet test holds it |
+| 9 | The bill | Default, amended | Ruling B: 8 logs and 12 rails, no footings. `WORKS.total` stays 32 |
+| 10 | Fed by hand from the yard, each item once, about 12 m | Default | Ruling A. Proceeds |
+| 11 | Steel is never carried by hand | Default | Agreed |
+| 12 | How steel rides home | Default, changed | Ruling C: the kit car's empty deck on any line 2 train, 6 a trip. Not the cradle |
+| 13 | 12 steel, one every 80 ticks, rack cap 6; the first one home unlocks; the install spends none | Default | Agreed; the stack is shown and not spent, which is what "free" means |
+| 14, 15 | `Line.boiler` and `Train.boiler`; every block sized for the longer engine from v28 | Default | Agreed |
+| 16 | "Pulls one more car" is a readout only | Default | Proceeds for build 2. It bends the open 10 November call "pulls 4 never ships with an empty place"; owner question 2 |
+| 17 | An open shed over the hammer, one empty room | Default | Agreed; level flags 1 to 3 |
+| 18 | Placeholder labels | Default | Agreed, with ruling E |
+| 19 | The works joins the away credit, capped by its rack | Default | Agreed |
+| 23 | Four jump-in rows and their placeholder labels | Default | Agreed |
+| 24 | A swimmer reaches the yard and works before the rivet | Default | Accepted (the plan's level finding 3). Every op needs `joined`, the yard is empty and no prompt shows. A travel edge that supplies no work, as [route-contract](../research/route-contract.md) asks |
+| 25 | "Feed the works" shows blocked, with its reason, to an empty or wrong back | Default | Ruling E |
+| 26 | Pacing targets and what the bot logs | Default | Ruling F |
+| 27 | Where the yard and the works point stand | Default | Level flags 1 and 2; set at V1's look |
+| 20 | The train through the ring | **New** | Ruling D; owner question 1 |
+| 28 | No footings in the steel bill | **New** | Ruling B |
+| 29 | Steel's free first car arrives as the longer boiler's fourth car, in the step after build 2 | **New** | Owner question 2 |
+
+Ten decided, sixteen default, three new.
+
+### Rulings
+
+**A. Hand-fed from a yard: proceed (Default, not the owner's).** A decided rule covers the yard (call 21), the carry is
+12 m on one level deck with no track crossed, and it is build 1's rack-to-jib pattern (15 m). In the loop graph's
+measure it is three to five carries of 12 m, under every hauling beat on the route. It is not "the longest grind"
+(9 November: rails hauled on foot to the pier station) nor the footing carries of 10 November (100 m and more, one at a time).
+
+**B. No footings in the steel bill (New; the build proceeds on it).** The plan's bill makes the works wait on two
+different trains, and footings ride only the wagon's. That repeats build 1's worst leg, three times over:
+
+- Build 1 measured about 70 s idle between wagon loads (finding 5) and R5b 199 s idle at the rack over 14 footings.
+  Its logged remedy was already due at 60 s.
+- Here, 8 footings at `wagonCap` 6 are two loads. The second load brings two footings (20 s of work) after a full lap
+  of one particular train, about 2.5 to 3.5 minutes on the longer line (arithmetic from the 65 s run and the 105 s
+  worst wait; not measured).
+- The works lights after that train has left, so the first steel waits another lap for the same train.
+- Footings are also the one-at-a-time carry the owner called "the most pain" (10 November).
+
+So: the bill is 8 logs and 12 rails, which any line 2 train brings in one trip. `STEEL.foot`, `yardFoot`, rack 3,
+site 4, `steelOwed` and the `WORKS.total` change are not built. R1 and R2 lose those parts and gain nothing. If the
+owner wants cement in steel, it returns as 6 footings (one wagon load, `STEEL.foot <= WORKS.wagonCap` asserted), never
+8.
+
+**C. Steel rides home on the kit car's deck, on any line 2 train (Default; changes the planner's pick).** On the
+cradle, steel leaves only on one train in three, and a player rides home with their steel one time in three. On the
+kit car the next train takes it (55 s on average, 105 s at worst), and the player rides home on the train carrying it,
+which is the beat's picture. The kit car runs home empty today. `Train.foot + Train.steel <= wagonCap` and "steel only
+on the wagon's train" leave the invariants; `Train.steel <= 6` replaces them. It is a stand-in until steel has its own
+car (question 2).
+
+**D. The train through the ring is not in build 2 (New; the build proceeds on it).** The line ends at buffers at
+u 483 by the owner's answer, the rail map ruled out the climb to Ring top, and there is no summit halt. The ride is
+undesigned gameplay: it needs `/brainstorm` before any rule, as the plan says. The "build 2 threads the ring" clause is
+the orchestrator's 10 November call, not an owner pick, and its own words are "a still first", which step T provides.
+The date of the ride is the owner's (question 1).
+
+**E. Prompts follow the kiln's fix (Default).** The plan shows the island's prompts "only when usable". That is the hole
+the owner hit at the kiln ("Fill the kiln never showed", 10 November) and the boiler (9 November), and the logged fix
+is to show the prompt blocked with its reason. "Feed the works" shows to an empty or wrong back, blocked with "Bring
+logs or rails" (placeholder). The bill sign stands from `joined`, reading 0 of 8 and 0 of 12, so the empty yard has
+something to read while the first train comes.
+
+**F. Pacing (Default).** Targets for the beat, rivet to riding a 25 m/s train: **solo 6 to 9 minutes, two players 5 to 8.**
+The waits are trains, so a second player saves little; the natural split is one feeding the works and one at Home by
+the table. No wait outside a ride runs over 60 s with nothing to do (build 1's logged bound).
+
+- What the plan's numbers implied: about 10 to 13 minutes solo, under 2 of them hands-on, with three waits of 2 to 3
+  minutes in a row; the same for two players. Its own "5 to 8 minutes" counted the casts and carries, not the laps.
+- With rulings B and C: the kit train (1 to 3 minutes after the rivet), three to five carries (under a minute), the next train
+  (105 s at worst), a 65 s ride, the hold, and the next train at the Village.
+- Checkpoint A's bot logs idle seconds per wait beside minutes per beat. If rivet to the first kit in the yard runs
+  over 90 s, the kit loads at the Village from the leaf going down, not from the rivet (a logged remedy, not built
+  first).
+- Ring Island then plays at roughly 20 to 27 minutes against the model's 36. That is campaign-outline's open decision 2
+  (measure in phase B; never a bigger bill), not a reason to restore the footings.
+
+### Findings
+
+1. **"Feed the works" hidden from an empty back (change before building).** Ruling E.
+2. **Nothing may be lost from the bill (flow rule 3; check in R1 and R2).** Logs and rails taken from the yard are
+   ordinary back cargo: a player can spend them elsewhere, drop them or leave. The kit's need must be the bill less
+   what is fed, in the yard and aboard, so a train brings the shortfall. R1's fuzz asserts the bill can always be
+   completed; `test:net`'s leaver case asserts the same.
+3. **The loop closes in the rules; the felt change is small.** `trainLegTicks` gives Village to island 65.3 s at 20 m/s
+   and 54.8 s at 25: 10.5 s saved non-stop, 9.1 s with a stop at the Pier. The decided ten-second rule holds by half a
+   second (R3 asserts it on the real stops). What a player notices on the next ride is the longer engine on all three
+   trains and the works copy, not the time; the train still has three cars. The step that makes it felt is the fourth
+   car (question 2). Build 2 is right to ship without it.
+4. **First sight is good on paper.** Every train stands at the east platform; the yard is on the same deck; the hammer's
+   6.5 m gantry is the landmark 12 m along it, with the mural wall behind. The key is in sight of the lock, and the
+   beat ends at the platform the train home leaves from. The rivet is 189 m (34 s) from the halt, and the Meet's shot
+   ends at the halt.
+5. **The install's cue is unproved.** The tile has read "Needs steel" with a ghost to try since the garage's first
+   build, so the payoff is telegraphed at the table. Nothing yet tells a player on the island, or one stepping off at
+   the Village, that the table is where steel goes. R5 gives the `install` node a cue; V3's look shows whether the bay
+   stack is seen from the Village platform and whether the platform is seen from the table.
+6. **`dev/economy/ring-data.ts` is stale** (a boiler priced at 8 steel and 4 footings; "first steel, by hand"). R5
+   corrects it with the loop graph, or the model's minutes are wrong.
+
+### The stretch as legs
+
+| Leg | From, to | Distance | Time |
+| --- | --- | --- | --- |
+| 1 | The rivet to the island halt's east platform | 189 m along the deck | 34 s walk; the shot ends there |
+| 2 | Wait for the kit train | | 1 to 3 min (the first train over the bridge) |
+| 3 | Yard to works, three to five round trips | 12 m each way | 15 to 25 s walking |
+| 4 | Lit to steel aboard | The same platform | 8 s cast, then the next train: 105 s at worst |
+| 5 | Island to the Village | 1190 m | 65 s |
+| 6 | Village platform to the table | Not measured here | V3 |
+| 7 | Hold Install; the next train takes the boiler standing at the Village | | 1 s, then 105 s at worst |
+
+Flow rules: the next goal can be found at legs 1 to 5 and is unproved at 6 (finding 5); no gate loses its meaning
+(call 24); nobody is stranded once finding 2 holds. Co-op: a friend who arrives late finds the works lit or the boiler
+on, with nothing to redo; the install is the room's.
+
+### Level flags for the layout step
+
+1. **The works point (u 452, lat +9) is inside the hammer's west post**, not on open deck: the gantry's posts stand at
+   lat 9.1 and 12.9, half a metre square (`view.ts`, the hammer block). Move it clear, to the shed's doorway.
+2. **The yard point is in a 1.8 m aisle** between the platform edge and the tarp. Drawn stacks would fill it. Prefer
+   the open deck between the tarp's end (u 443.4) and the anvil (u 450.8); V1 confirms the loader's span reaches.
+3. **The shed** must clear a 6.5 m gantry and leaves 1.2 m between its door wall and the platform edge. V1's look.
+4. **The bay stack** and both Home sightlines (finding 5): V3.
+5. **The Pier's 1.2 m clearance** with the 820 extent: R3's test.
+6. Reach is unproved by any tool for every planned point. R1 adds them to `dev/level/ring.ts`; `npm run loop -- run`
+   at R5 proves order and softlocks.
+
+### The planner's contradictions
+
+1. Threading: ruling D. The orchestrator reconciles campaign-outline section 5 and the 10 November entry's build 2
+   clause once question 1 is answered.
+2. The version numbers (v27, v28): clerical, the orchestrator's.
+3. "First car free" against three cars: question 2.
+4. `rail.fit`, "Fit it for everyone?" and "steel's carry kind" are superseded by the decided Install and by call 11.
+   The plan is right; the briefs get a note, not this plan.
+5. `ring-data.ts`: finding 6.
+6. The stack shown and not spent: consistent with "free".
+7. The garage headers: V3's, as planned.
+
+### Suspect lines
+
+None are The Boogler's. The garage tile's "It runs faster and pulls one more car." (on main) promises a car build 2
+cannot couple; left as it is, for the owner with question 2.
+
+### Owner questions
+
+1. **When does the train go through the ring?** Recommended: at the White Wall lap, as the late double-back; build 2
+   ships a layout and one still. The alternative is a 750 m spur now, after a brainstorm.
+2. **When does steel's free first car arrive?** "A new resource's first car is free at its unlock" meets an engine that
+   pulls three cars, all taken. Recommended: it arrives with the install, as the longer boiler's fourth car, in the
+   step straight after build 2 (it changes train length and every platform check). Until then steel rides the kit car
+   and the tile's "one more car" is a cap with nothing to couple.
+3. **Should the steel works take cement?** Recommended: no, logs and rails only (ruling B). If yes, 6 footings in one
+   wagon load.
