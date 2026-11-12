@@ -32,6 +32,8 @@ import {
   Train,
   Tree,
   Works,
+  Yard,
+  YardClock,
 } from './railway-components.ts';
 import {
   activeStation,
@@ -52,6 +54,7 @@ import {
 import { jobClock } from './railway-sys-core.ts';
 import { layLine1 } from './railway-sys-line1.ts';
 import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from './railway-sys-line2.ts';
+import { yardsAway } from './railway-sys-trade.ts';
 
 // ---------------------------------------------------------------- offline catch-up, sessions, supply, the beam
 /** The away credit's yards (./railway-away.ts): `ticks` of production for the forge's rack and the depot cart, as the
@@ -89,6 +92,8 @@ function awayCredit(w: World, ticks: number, tick: number) {
     Object.assign(w.mut(Cart, cartId(w))!, { phase: CART_PHASE.REST, depart: tick, from: 0 });
     made += n;
   }
+  // Slice 5's yards (R2; their crates are not the route's production, so not counted in `made`).
+  yardsAway(w, ticks, tick);
   return made;
 }
 /** Bounded catch-up for the funded stretch only (the yards' credit comes first, from awayCredit). */
@@ -96,7 +101,23 @@ export const resume = defineSystem(
   'rail.resume',
   {
     reads: [Aperture],
-    writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock, Cart, Boiler, Train, Works],
+    writes: [
+      Rail,
+      RailClock,
+      Job,
+      JobRun,
+      QJob,
+      QJobRun,
+      Beam,
+      Forge,
+      ForgeClock,
+      Cart,
+      Boiler,
+      Train,
+      Works,
+      Yard,
+      YardClock,
+    ],
     phase: 'resume',
     order: 0,
   },
