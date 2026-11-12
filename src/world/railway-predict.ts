@@ -8,8 +8,9 @@
 //
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
 //                                     depot and shelf takes, wake, lever, summit switch, pack, the kiln, footings and
-//                                     the cradle, the glider take, the steel works' yard take and feed); the rest wait
-//                                     for the server as in R1a
+//                                     the cradle, the glider take, the steel works' yard take and feed, the greybox
+//                                     route's frame feed); the rest wait for the server as in R1a (the route's grant,
+//                                     gate and arrive among them)
 //   railPredict(w, pid, e, tick)      apply e to w (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
 //                                     fills is lit only when confirmed, and so are the Works' thresholds (the kiln lit,
@@ -48,6 +49,7 @@ import {
   SteelClock,
   Works,
   WorksClock,
+  Leg,
 } from '../sim/railway-components.ts';
 
 export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
@@ -71,6 +73,9 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.glide',
   'rail.steelTake',
   'rail.steel',
+  // The greybox route's frame feed (ruling F): pressed some eight times a section by everyone. Its threshold, the
+  // section starting to lay, is the server's (held back below, as a funded bill is).
+  'rail.legStock',
 ]);
 /** Swing and unload cadence on the actor's own action clock (replication revision 1): the server refuses an action
  * closer than `ms - RAIL_CADENCE_SLACK_MS` to the last of its kind, and a client predicts the same check. */
@@ -207,6 +212,8 @@ export function railPredict(w: World, pid: string, e: RailAction, tick: number):
   // The steel works lit by the feed that fills its bill (v31), like the kiln.
   const stId = w.single(Steel),
     steel0 = [w.get(Steel, stId)!.lit, w.get(SteelClock, stId)!.lastCast] as const;
+  // A leg's frame that this action fills shows full and waits for the server to start it laying.
+  const legs0 = w.ids(Leg).map((id) => [id, w.get(Leg, id)!.start] as const);
   let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
@@ -254,6 +261,7 @@ export function railPredict(w: World, pid: string, e: RailAction, tick: number):
     w.mut(Steel, stId)!.lit = steel0[0];
     w.mut(SteelClock, stId)!.lastCast = steel0[1];
   }
+  for (const [id, start] of legs0) if (w.get(Leg, id)!.start !== start) w.mut(Leg, id)!.start = start;
   const n = result.status === 'accepted' ? result.accepted : 0;
   return { n, effect: n > 0 ? railEffect(w, pid, e, before) : null };
 }
