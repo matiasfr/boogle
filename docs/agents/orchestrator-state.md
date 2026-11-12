@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision log](../decisions.md#decided).
 
-**Updated:** 12 November 2026 UTC (11 November PST evening), in the 11–12 November orchestrator session (started about 11:20 PST on 11 November; hourly heartbeat; wind-down at 11:00 PST on 12 November). World v28 is live (slice 5 R1+R2); main's CI takes about 5.5 minutes. Normal mode (Claude only) until 13 November; the models table puts player-visible work, reviews and design on Fable medium.
+**Updated:** 12 November about 07:00 UTC (11 November 23:00 PST), in the 11–12 November orchestrator session (started about 11:20 PST on 11 November; hourly heartbeat; wind-down at 11:00 PST on 12 November). World v28 is live (slice 5 R1+R2); main's CI takes about 5.5 minutes. Normal mode (Claude only) until 13 November; the models table puts player-visible work, reviews and design on Fable medium.
 
 ## Links
 
@@ -81,7 +81,7 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 - P2: Port Quay's rotunda and the engine sheds are decided (10 November) but not drawn in map data.
 - P2: town prices were tuned for six hours, not re-run for four to five.
 - P2: frame time is unmeasured for every perf change of 11 November; nothing tested on a device. Other evals may wait in page time (q6, the cart waits in `bots/railway.ts`).
-- P2: nothing audits the T3 and stack physical probes since M13d. R4d: the breaker is not visibly carried at the rivet; the whistle bark and rivet toss are not built. The wing is not solid and has no level check. The notify lane sits over Drop at 568x320, and Toss is off-screen in landscape. A red pre-deploy boot skips `recover` and opens no issue.
+- P2: nothing audits the T3 and stack physical probes since M13d. The wing is not solid and has no level check. The notify lane sits over Drop at 568x320, and Toss is off-screen in landscape. A red pre-deploy boot skips `recover` and opens no issue.
 - P3: the avatar is drawn face-to-camera on a jump-in landing though its node faces up the line (pre-existing).
 - P3: the load check accepts a train standing at a line's end on the un-turned track, which then never leaves.
 - P3: Works seeds drop Q5 logs on the breaker pedestal (`seed-route.ts:181`). A 0.7 m dip at the Q2 trestle abutment. The bot `earlyLedge` branch is untested.
@@ -91,8 +91,23 @@ HOTBOX is a peer session (address under Peers). The Mac ships its branches when 
 - P3: the drawn longer engine is 6.7 m ahead while `TRAIN_EXTENT.aheadCm` is 820 (the views step reconciles).
 - P3: 14 evals "unknown" and `double-jump-action` is a delete candidate.
 - P3: Ring Island's ground is about 101k triangles at the island; `bloom.ts:13` re-sets its size every frame on a canvas under 64 px; `src/proto/greybox` precompiles without awaiting `drawable`.
-- P3: `ship-check`'s walker misses a path passed as a function parameter; it reported 0 affected tests for a new test file. `dev/look/restore-pair.ts` and `look --at` restore checks still import Place.
 - P3: the gifts, piles and mushrooms adapters have no unit tests; `toeShove` has no sideways bound; lint skips `server/`; the halt map at phone size is the owner's look.
+- P2: `backOf` in `dev/peer-test/ws-railway.ts` and `mark()` in `dev/look/bots/railway.ts` still own shapes.
+- P2: R5: the standing rider over the bow, a two-player run, the plan's `ring-glide.ts` eval and perf runs.
+- P3: Ring Island's ground wants its own LOD distances; far-ground tiles build at land load, cost unmeasured; the far ground's seams at 180 m and 420 m are unchecked on a phone. A canvas collapsing to 0x0 mid-game is untested.
+- P3: `reconnect-edit`'s "landed" check proves the roster changed, not that it was the held edit; `dev/codex/look-broker.ts:56` has a dead `--regenerate` entry; the trusted broker needs a relaunch for M13c's change.
+- P3: the lighting wedge's play-distance camera hides Buddy at the spawn; the `__placeDone` and `--place=` names remain.
+- P3: `ship-check`'s walker misses a path passed as a function parameter (the UNFOLLOWED gap); `ship-check` reported 0 affected tests for a new test file.
+- P2: `dev/look/restore-pair.ts` and `look --at` restore checks still import Place (M13e).
+- P3: the Talk prompt during an act card is untested; a stall cue's clear on reconnect is unverified; the cart at `trains-on` parks underground on the baseline too.
+- P3: the pennant is untested beside a real train and from Home's shore; the "mayor" comment in `src/place/folk.ts` is stale.
+- P3: `rewardBusy` is separate from `momentBusy`; the adapter exposes `tickNow` twice; Q7 `started` is untested at the seeds.
+- P3: the halt map at phone size (names small, the hold badge reads as the Pier's, the glider icon crowds "Quarry").
+- P3: the live smoke after #1610 timed out reading the server's commit; the next four passed.
+- P3: stutter during the arrival fall through the clouds "until it jump in", again on a fresh reload; curio shelves "weirdly at angles" (owner picked layout A). Ball throw: extremely low priority (owner, 10 November).
+- Bot queue: a served look session held the slot for 47 minutes, and 44 runs sat on one slot at 22:00 UTC on 9 November. Sessions must open, capture and close; ask for one proof look per fix, no "before" capture where the code already shows the bug, and withdraw lower-rank looks when P1 proofs are waiting.
+- Water: the owner's from-scratch rebuild request (no Ultra baggage, flat underwater tint, light shallows and foam kept, Mario Odyssey/Sunshine range, seabed following terrain; archive tag `archive/water-ultra-2026-11-09`) is unverified as complete; check against the water rebuild (#1354).
+- Parked (owner's build-order call): R4d's breaker carried at the rivet, the whistle bark and rivet toss, and a sim-side early-strike guard (needs a field and a bump).
 - Unverified on GitHub: the automerge `--touches` step, the bisect.
 
 ## How merging works
