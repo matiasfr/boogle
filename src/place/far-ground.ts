@@ -1,5 +1,9 @@
-// The coarser far ground, behind Dev Graphics → farGround (owner call, 7 November 2026: off by default, stills before it
-// becomes the default). Off, the ground stays the one full-density mesh land.ts builds. On, that mesh hides and its main
+// The coarser far ground, Dev Graphics → farGround. Pattern: Chunked LOD (see far-ground-index.ts), the terrain practice of
+// Unity Terrain patches and Unreal Landscape components. On by default since the 11 November perf pass (Windows D3D12:
+// the one 241,836-triangle ground draw was 34% of a frame even a kilometre away; matched stills in docs/research/performance.md
+// section 10 show no visible change); `?dev=1&graphics=farGround:false` brings back the one full-density mesh land.ts builds.
+// Why that mesh is never culled: land.ts sets frustumCulled = false on it (a prototype default, no vertex displacement),
+// and one mesh over the whole island could not be culled anyway, since the camera stands inside its bounds. On, that mesh hides and its main
 // grid draws as tiles with bounds, so the frustum drops what is out of view, and tiles far from the camera use coarser
 // cells. The cove's fine patch and the offshore rings stay one always-drawn mesh, unchanged.
 //
@@ -11,6 +15,7 @@ import * as THREE from 'three/webgpu';
 import { camera, scene } from '../render/scene.ts';
 import { registerGraphics, graphicsInitial } from '../graphics-settings.ts';
 import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
+import { tileIndex } from './far-ground-index.ts';
 
 const TILE = 96; // cells per tile side (192 m)
 // [step in cells, from this distance (m) between the camera and the tile's bounds]. Step 1 is the full grid.
@@ -26,13 +31,13 @@ type Built = { group: THREE.Group; tiles: Tile[] };
 type View = { full: THREE.Mesh; build: () => Built; built: Built | null };
 const views = new Set<View>();
 const CHOICES = [false, true] as const;
-let enabled = graphicsInitial('farGround', CHOICES, false) === true;
+let enabled = graphicsInitial('farGround', CHOICES, true) === true;
 
 registerGraphics({
   id: 'farGround',
   label: 'Coarser far ground',
   choices: CHOICES,
-  default: false,
+  default: true,
   applyMode: 'live',
   cost: 'ground triangles and one draw per visible tile',
   skips:
@@ -109,7 +114,6 @@ function build(
 ): Built {
   const source = full.geometry;
   const index = source.getIndex()!.array;
-  const at = (i: number, j: number) => i + j * nx;
   const group = new THREE.Group();
   group.name = 'far ground tiles';
   const tiles: Tile[] = [];
@@ -142,63 +146,7 @@ function build(
     for (let i0 = 0; i0 < nx - 1; i0 += TILE) {
       const i1 = Math.min(i0 + TILE, nx - 1),
         j1 = Math.min(j0 + TILE, nz - 1);
-      const quad = (out: number[], i: number, j: number) => {
-        if (skip(i, j)) return;
-        const a = at(i, j),
-          b = at(i + 1, j),
-          c = at(i, j + 1),
-          d = at(i + 1, j + 1);
-        out.push(a, c, b, b, c, d);
-      };
-      const levels = LEVELS.map(([s]) => {
-        const out: number[] = [];
-        const ba = Math.floor((i1 - i0) / s),
-          bb = Math.floor((j1 - j0) / s);
-        // A block is coarse when it lies whole inside the tile and none of its cells is skipped.
-        const block = (a: number, b: number) => {
-          if (s === 1 || a < 0 || b < 0 || a >= ba || b >= bb) return false;
-          for (let j = j0 + b * s; j < j0 + (b + 1) * s; j++)
-            for (let i = i0 + a * s; i < i0 + (a + 1) * s; i++) if (skip(i, j)) return false;
-          return true;
-        };
-        const covered = (i: number, j: number) => {
-          const a = Math.floor((i - i0) / s),
-            b = Math.floor((j - j0) / s);
-          return block(a, b);
-        };
-        for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) if (!covered(i, j)) quad(out, i, j);
-        for (let b = 0; b < bb; b++)
-          for (let a = 0; a < ba; a++) {
-            if (!block(a, b)) continue;
-            const x = i0 + a * s,
-              y = j0 + b * s;
-            const left = block(a - 1, b),
-              top = block(a, b + 1),
-              right = block(a + 1, b),
-              bottom = block(a, b - 1);
-            if (left && top && right && bottom) {
-              const p0 = at(x, y),
-                p1 = at(x + s, y),
-                p2 = at(x, y + s),
-                p3 = at(x + s, y + s);
-              out.push(p0, p2, p1, p1, p2, p3);
-              continue;
-            }
-            // Boundary in the winding of the full mesh's (a, c, b): up the left side, along the top, down the right,
-            // back along the bottom. Sides facing a block keep only their corners.
-            const ring: number[] = [];
-            const side = (coarse: boolean, from: [number, number], step: [number, number]) => {
-              for (let k = 0; k < s; k += coarse ? s : 1) ring.push(at(from[0] + step[0] * k, from[1] + step[1] * k));
-            };
-            side(left, [x, y], [0, 1]);
-            side(top, [x, y + s], [1, 0]);
-            side(right, [x + s, y + s], [0, -1]);
-            side(bottom, [x + s, y], [-1, 0]);
-            const centre = at(x + s / 2, y + s / 2);
-            for (let k = 0; k < ring.length; k++) out.push(centre, ring[k]!, ring[(k + 1) % ring.length]!);
-          }
-        return compact(out);
-      });
+      const levels = LEVELS.map(([s]) => compact(tileIndex(nx, [i0, j0, i1, j1], s, skip)));
       const mesh = new THREE.Mesh(levels[0]!, full.material);
       mesh.receiveShadow = full.receiveShadow;
       mesh.castShadow = full.castShadow;

@@ -130,12 +130,11 @@
   Pause → Graphics → Detail (Auto / Full / Simpler sea / No shadows / Lowest) fixes a rung; `?dpr=fixed`
   harness pages ignore the remembered rung. Shadows off or on compiles pipelines on first use: a hitch.
   Not tested on a device.
-- **Cheaper far sea and coarser far ground (Dev only, off).** `farSea`: sea vertices outside the camera's
-  azimuth cone (past 40 grid units, 0.3 rad margin) skip displacement, and water past 300 m skips the
-  refraction retreat and the glitter. `farGround`: the Place ground draws as 192 m tiles with bounds (out of
-  view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every tile
-  border so there are no cracks ([far-ground.ts](../../src/place/far-ground.ts)). Both wait for the
-  owner's stills before becoming defaults; `?dev=1&graphics=farSea:true,farGround:true` turns them on.
+- **Coarser far ground (on by default since 11 November).** `farGround`: the Place ground draws as 192 m tiles with
+  bounds (out of view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every
+  tile border so there are no cracks ([far-ground.ts](../../src/place/far-ground.ts); the pattern is Chunked LOD, see
+  [rendering](../agents/rendering.md)). Matched stills: [performance research](../research/performance.md), section 10.
+  `?dev=1&graphics=farGround:false` is the old one-mesh ground. (`farSea` went with Ultra Water.)
 - **Terrain pass experiment (flag only, off).** `?terrain=1` redraws one wedge of Place south of the village on the
   owner's terrain answers (grass to a beach, sandstone with subtle beds and 1 m ledges only on unwalkable cliffs, worn
   paths); `a`, `b` and `ab` keep the first round's candidates. The collider and every ground
