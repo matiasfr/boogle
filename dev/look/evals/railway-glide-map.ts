@@ -1,5 +1,6 @@
 // The halts' map displays marking the waiting glider (woken, untaken) on Needle Bell's summit. From --rail-seed
-// trains-on (halts up, glider untaken): waits for the halts to stand and logs every display face and the mark, so
+// trains-on (halts up; since the ring seeds the room has taken the glider there, so the mark reads false and there is no
+// waiting-glider seed with trains running: a mark check needs one): waits for the halts to stand and logs every display face and the mark, so
 // the next run can frame one with --cam/--look.
 //   npm run look -- --rail-seed trains-on --eval dev/look/evals/railway-glide-map.ts --until window.__placeDone \
 //     --cam <face + 1.2 m out> --look <face> --name glide-map
