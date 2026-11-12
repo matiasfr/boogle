@@ -245,13 +245,14 @@ function trainIO(w: World, headPct: number, pct: TradePct): TrainIO {
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
     // The greybox route: the trains a line runs at its legs' stage (its fleet).
     fleet: (line) => fleetOf(line, legsLaid(w)),
-    // Candidate B (scratch): the control halt is off while the line owes footings and for a train on an errand (the
-    // footing wagon's, a kit aboard that can unload now, a kit owed); with `whole`, while any train of the line is.
+    // Candidate B (scratch): the control halt is off while the line owes footings (the wagon's errand) and for a train
+    // on a kit errand (a kit aboard that can unload now, a kit owed: the designer's list, section B); with `whole`,
+    // while any train of the line is. The wagon's train with no footings owed is on no errand (headExempt's window).
     controlOff(line, slot) {
       if (footingsOwed(w, line)) return true;
       const errand = (k: number) => {
         const r = row(k);
-        return r.wagon || (r.logs + r.rails > 0 && !legKitWaiting(w, line, r)) || kitOwed(w, r, line);
+        return (r.logs + r.rails > 0 && !legKitWaiting(w, line, r)) || kitOwed(w, r, line);
       };
       return RAIL_LINES[line]!.control?.whole ? servingSlots(row, line).some(errand) : errand(slot);
     },
