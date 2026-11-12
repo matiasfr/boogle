@@ -125,9 +125,9 @@ background(
     const nose = () => {
       const e = row().cars[0]!,
         h = heading();
-      // On the cab roof, 1.2 m behind the engine's middle. (On the boiler's front a rider drifts to its edge on line
-      // 2's first bends and the deck lookup drops them at lx 0.63 against r 0.625; dropped into the cab, Buddy was never
-      // carried in 20 s: neither is this probe's class.)
+      // On the cab roof, 1.2 m behind the engine's middle. (The boiler's front and the cab floor are measured in
+      // railway-engine-carry-spots.ts: the sideways drift seen here was Rapier turning the engine about its centre of
+      // mass, fixed in src/physics/backend-rapier.ts.)
       return { x: e.x - h.x * 1.2, y: e.y + 3.4, z: e.z - h.z * 1.2 };
     };
     const n = nose();
