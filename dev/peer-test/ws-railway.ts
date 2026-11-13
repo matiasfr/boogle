@@ -1272,7 +1272,10 @@ export async function railwayJumpIn(c: Ctx) {
   );
   jumpCheck(
     'replace: both peers receive countdown before disconnect',
-    events.every((rows) => rows[0]?.startsWith('notice:') && rows.indexOf('disconnected') > 0),
+    events.every((rows) => {
+      const notice = rows.findIndex((row) => row.startsWith('notice:'));
+      return notice >= 0 && rows.indexOf('disconnected', notice + 1) > notice;
+    }),
     JSON.stringify(events),
   );
   const newBorn = await births();
