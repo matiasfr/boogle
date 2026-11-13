@@ -1,0 +1,50 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { validateArtifact, validateJson, validateLevel, validatePrefab } from '../src/prefab/validate.ts';
+import { metadata, type PrefabDef } from '../src/prefab/types.ts';
+import type { NameRegistry } from '../src/prefab/names.ts';
+
+const registry: NameRegistry = {
+  builders: ['chair'],
+  interactions: [],
+  gates: [],
+  materials: [],
+  assets: { chair: { nodes: ['Seat'] } },
+  retired: ['town.retired'],
+};
+const prefab = (): PrefabDef => ({
+  key: 'town.chair',
+  visual: { none: true },
+  colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 1, 1] }],
+  scope: 'owner',
+});
+test('valid records and artifacts validate', () => {
+  validatePrefab(prefab(), registry);
+  validateArtifact({ ...metadata, format: 'boogle-prefabs', prefabs: { 'town.chair': prefab() } }, registry);
+});
+for (const [name, change] of Object.entries({
+  'unknown builder': { visual: { builder: 'missing', params: {} } },
+  'unknown asset': { visual: { asset: 'missing' } },
+  'unknown node': { visual: { asset: 'chair', node: 'Missing' } },
+  'retired key reused': { key: 'town.retired' },
+  'non-JSON value': { components: { value: () => 1 } },
+  'degenerate collider': { colliders: [{ shape: 'box', at: [0, 0, 0], half: [0, 1, 1] }] },
+  'seat without exit': { attach: { seat: { kind: 'seat', at: [0, 1, 0], yaw: 0 } } },
+}))
+  test(name, () => assert.throws(() => validatePrefab({ ...prefab(), ...change }, registry)));
+test('duplicate placements, unresolved references and cycles fail', () => {
+  const p = { id: 'chair', prefab: 'town.chair', pos: [0, 0, 0] };
+  const defs = { 'town.chair': prefab() as PrefabDef };
+  assert.throws(() => validateLevel({ place: 'town', placements: [p, p] }, defs));
+  assert.throws(() => validateLevel({ place: 'town', placements: [{ ...p, prefab: 'town.missing' }] }, defs));
+  assert.throws(() => validateLevel({ place: 'town', placements: [{ ...p, parent: 'chair' }] }, defs));
+});
+test('unknown artifact version fails closed', () =>
+  assert.throws(() => validateArtifact({ ...metadata, version: 2, format: 'boogle-prefabs', prefabs: {} }, registry)));
+test('JSON rejects values serialization would erase', () => {
+  for (const value of [undefined, NaN, Infinity, new Date(), { a: undefined }, Array(2), { a: 1n }])
+    assert.throws(() => validateJson(value));
+  const cycle: unknown[] = [];
+  cycle.push(cycle);
+  assert.throws(() => validateJson(cycle));
+});
