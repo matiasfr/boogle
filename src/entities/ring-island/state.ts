@@ -4,6 +4,7 @@
 //                    R4a sets once Q7 is laid so the near view stays mounted at any distance
 //   islandGround()   the island's ground (./ground.ts) once, for recovery and the saved pose (railway arrival.ts)
 //   ringUnstuck()    where Get unstuck puts someone past the gap (call 31)
+//   RING_CROSSING    the island halt's foot crossing, and ringCrossingPlanks() its spans between the rails
 import { jumpOf, type JumpLand } from '../../world/railway-jump.ts';
 import { RING_GAP, RING_FORMATION, RING_HALT, ringAt } from '../../sim/railway-ring-layout.ts';
 import { createIslandGround, ringUL, type IslandGround } from './ground.ts';
@@ -18,6 +19,30 @@ export const RING_MAP_TABLE = (() => {
   const p = ringAt(RING_HALT.u0 + 1400, RING_FORMATION.left - 175);
   return { x: p.x / 100, z: p.z / 100, top: RING_HALT.y / 100 + 0.9 + 0.95, w: 2.4, d: 2.0 };
 })();
+/** The island halt's foot crossing (docs/plans/ring-island-crossing.md), in ring metres: planks over both tracks from
+ * `u0` to `u1` at the platforms' south end, a landing each side over `landing` at the rail tops (`top`, m), and a ramp
+ * the platform's full width up to the platform at `rampTop`, where the platforms now start. view.ts builds it and
+ * dev/level/ring.ts checks it against the standing trains. Static scenery: no state, no sync. */
+export const RING_CROSSING = {
+  u0: 428.1,
+  u1: 430.5,
+  landing: [428, 430.6],
+  rampTop: 434.6,
+  top: RING_HALT.y / 100 + 0.22,
+} as const;
+/** The crossing's plank spans across the bed, [lat0, lat1] m, east to west: the bed's width less a flangeway by each
+ * rail (rails 0.5 m either side of a track, 0.08 m clear each side, as Place's crossingPlanks). */
+export function ringCrossingPlanks(): [number, number][] {
+  const out: [number, number][] = [];
+  let from = RING_FORMATION.right / 100;
+  for (const t of [...RING_FORMATION.tracks].sort((a, b) => b - a))
+    for (const rail of [t / 100 + 0.5, t / 100 - 0.5]) {
+      out.push([rail + 0.08, from]);
+      from = rail - 0.08;
+    }
+  out.push([RING_FORMATION.left / 100, from]);
+  return out;
+}
 
 let ground: Promise<IslandGround> | null = null;
 /** The island's ground, built once (about 40 ms) from Place's cones. */
