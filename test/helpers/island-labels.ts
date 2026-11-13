@@ -1,10 +1,11 @@
 // Every halt display's map names, for the layout this process loads (BOOGLE_HOME picks it): no two names' boxes
 // touch, none leaves the face, and none sits on a stop's ring or a train standing there. At every stage line 2 has
 // (src/entities/railway/halt-map.ts): the Pier unlaid (five names, today's sizes), the Pier laid (six, the sea line
-// and Ring Island dim), Q7 laid at each of the eight railheads (seven) and joined. Pure numbers: the same boxes, sizes
-// and fit the game draws.
+// and Ring Island dim), Q7 laid at each of the eight railheads (seven), joined (eight: the stack line dashed on to a dim
+// High Gorge) and each of the stack line's four sections laid (nine). Every display is checked at every stage, the
+// stack line's own (halt-map.ts stackDisplays) too. Pure numbers: the same boxes, sizes and fit the game draws.
 import assert from 'node:assert/strict';
-import { fitMap, MAP_CELL, mapLabels, mapPx, mapSizes, stopClear, type MapLabel } from '../../src/render/island-map.ts';
+import { fitMap, MAP_CELL, mapLabels, mapLabelSteps, mapPx, mapSizes, stopClear, type MapLabel } from '../../src/render/island-map.ts';
 import { haltDisplays, haltMap, type MapStage } from '../../src/entities/railway/halt-map.ts';
 
 const CW = MAP_CELL.w,
@@ -15,7 +16,9 @@ export const MAP_STAGES: readonly { at: string; stage: MapStage; names: number }
   { at: 'Pier unlaid', stage: { open: 3, head: 0 }, names: 5 },
   { at: 'Pier laid', stage: { open: 4, head: 0 }, names: 6 },
   ...Array.from({ length: 8 }, (_, head) => ({ at: `railhead ${head}`, stage: { open: 5, head }, names: 7 })),
-  { at: 'joined', stage: { open: 6, head: 7 }, names: 7 },
+  // Joined: the seven and a dim High Gorge. Then a section a stage: Stack railhead (Stack halt at the last) too.
+  { at: 'joined', stage: { open: 6, head: 7 }, names: 8 },
+  ...Array.from({ length: 4 }, (_, k) => ({ at: `stack ${k + 1} laid`, stage: { open: 7 + k, head: 7 }, names: 9 })),
 ];
 
 export async function checkHaltLabels() {
@@ -28,11 +31,16 @@ export async function checkHaltLabels() {
       clear = stopClear(CH, scale);
     assert.equal(scale, stage.open >= 4 ? 0.7 : 1, `${stageAt}: marks at 0.7 once the sea line is on the map`);
     for (const d of displays) {
+      // A stack line board not yet laid to, or closed behind, does not stand at this stage: nobody reads its face.
+      if (d.shut(stage.open)) continue;
       const n = { x: Math.sin(d.yaw), z: Math.cos(d.yaw) };
       const v = fitMap(lines, { x: -n.x, z: -n.z }, CW, CH, CH * MAP_CELL.pad);
       const labels = mapLabels(lines, v, CW, CH, d.here, scale);
       const at = `${d.name} (${stageAt})`;
-      const names = new Set(lines.flatMap((l) => l.stops.map((s) => s.name)));
+      assert.ok(mapLabelSteps < 300_000, `${at}: the names are placed inside the search's budget`);
+      // A stop with no name (a stack head trains still stop at behind the railhead, or one closed and hidden) has no
+      // label to place.
+      const names = new Set(lines.flatMap((l) => l.stops.flatMap((s) => (s.name ? [s.name] : []))));
       assert.equal(names.size, count, `${at}: ${count} names on the map`);
       assert.equal(labels.length, names.size, `${at}: every name placed once`);
       assert.equal(new Set(labels.map((b) => b.name)).size, names.size, `${at}: no name twice`);
@@ -45,7 +53,8 @@ export async function checkHaltLabels() {
           const clash = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
           assert.ok(!clash, `${at}: "${a.name}" and "${b.name}" overlap`);
         }
-      const stops = lines.flatMap((l) => l.stops.map((s) => ({ s, p: mapPx(v, s.x, s.z) })));
+      // Every stop drawn (a hidden one has no ring, dot or train to cover).
+      const stops = lines.flatMap((l) => l.stops.filter((s) => !s.hide).map((s) => ({ s, p: mapPx(v, s.x, s.z) })));
       for (const { s, p } of stops) {
         for (const b of labels) {
           const dx = p[0] - Math.max(b.x, Math.min(p[0], b.x + b.w)),
@@ -58,7 +67,7 @@ export async function checkHaltLabels() {
         for (let j = i + 1; j < stops.length; j++) {
           const a = stops[i]!,
             b = stops[j]!;
-          if (a.s.name === b.s.name) continue;
+          if (a.s.name && a.s.name === b.s.name) continue;
           const gap = Math.hypot(a.p[0] - b.p[0], a.p[1] - b.p[1]);
           assert.ok(gap >= S.ring + S.dot, `${at}: ${a.s.name} and ${b.s.name} are ${gap.toFixed(1)} px apart`);
         }

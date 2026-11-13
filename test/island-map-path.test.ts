@@ -36,7 +36,8 @@ test('the map shows the Railhead only once Q7 is laid, and lights Ring Island wh
   const pier = haltMap(layout, { open: 4, head: 0 }).lines[1]!;
   assert.equal(pier.laid, pier.stops.find((s) => s.name === 'Pier')!.s, 'solid track ends at the Pier until Q7');
   const joined = haltMap(layout, { open: 6, head: 7 }).lines[1]!;
-  assert.equal(joined.laid, joined.stops.at(-1)!.s, 'joined: solid to Ring Island');
+  assert.equal(joined.laid, joined.stops.find((s) => s.name === 'Ring Island')!.s, 'joined: solid to Ring Island');
+  assert.equal(joined.stops.at(-1)!.name, 'High Gorge', 'joined: the stack line runs on, dashed, to High Gorge');
   assert.equal(
     joined.stops.find((s) => s.name === 'Railhead')!.s,
     RING_HEAD[7]!.s / 100,

@@ -6,7 +6,17 @@
 // world, or `drawMarker` into a canvas), so a moving train never redraws the map.
 // Pure canvas drawing: callers own the canvas, the texture and when to redraw.
 
-export type MapStop = { name: string; s: number; x: number; z: number };
+export type MapStop = {
+  /** Its name on the map; '' for a stop drawn as a dot with no name. */
+  name: string;
+  s: number;
+  x: number;
+  z: number;
+  /** Not drawn and not named: a halt trains no longer stop at, kept so a stop's index stays its line's. */
+  hide?: true;
+  /** A small square before its name: the building frame stands here (the greybox route's railhead). */
+  frame?: true;
+};
 export type MapLine = {
   color: string;
   /** The track, world metres, with `s` (metres along the line) at each point, in order. */
@@ -152,7 +162,11 @@ export type MapLabel = {
   here: boolean;
   /** The box's side nearer its stop, where the (narrower) drawn text is set. */
   align: CanvasTextAlign;
+  /** The box's first `frameWidth` holds a stop's frame square, the name after it. */
+  frame: boolean;
 };
+/** What a frame square takes off the front of its name's box, at label `size` px. */
+export const frameWidth = (size: number) => size * 0.95;
 /** A name's box width at `size` px: a per-letter allowance for the bold face with 8% to spare, so placing names needs no
  * canvas and a unit test sees the same boxes the game draws (the drawn text, set at its stop's side, is narrower:
  * measured in the game, Figtree 700, "Camp" 2.73 em against 3.07, "Quarry" 3.23 against 3.54). */
@@ -168,6 +182,8 @@ export function stopClear(h: number, scale = 1) {
   return Math.max(S.ring, Math.hypot(S.markW, S.markH) / 2) + S.label * 0.08;
 }
 
+/** The most steps `mapLabels` searches before it settles for the best placement found. */
+const SEARCH_MAX = 300_000;
 // Where a name may sit around its stop: right, left, above, below, then the diagonals; the bias prefers the sides.
 const SIDES: readonly [number, number, number][] = [
   [1, 0, 0],
@@ -184,6 +200,8 @@ const SIDES: readonly [number, number, number][] = [
  * side of it keeps the names off each other, off the face's edge, off every stop's ring and standing train, and as far
  * as it can off the track, preferring the side away from the map's middle, close to its stop. Small enough (a handful
  * of names, a few dozen spots each) to search every combination, cutting branches that can't beat the best so far. */
+/** Steps the last `mapLabels` call searched, for the label tests. */
+export let mapLabelSteps = 0;
 export function mapLabels(
   lines: readonly MapLine[],
   v: MapView,
@@ -198,12 +216,15 @@ export function mapLabels(
     lh = S.label * 1.05,
     edge = h * 0.04;
   const stops: [number, number][] = [];
-  const names = new Map<string, { x: number; y: number; n: number; lit: boolean; here: boolean }>();
+  const names = new Map<string, { x: number; y: number; n: number; lit: boolean; here: boolean; frame: boolean }>();
   lines.forEach((l, li) =>
     l.stops.forEach((st, si) => {
+      if (st.hide) return;
       const [x, y] = mapPx(v, st.x, st.z);
       stops.push([x, y]);
-      const n = names.get(st.name) ?? { x: 0, y: 0, n: 0, lit: false, here: false };
+      if (!st.name) return;
+      const n = names.get(st.name) ?? { x: 0, y: 0, n: 0, lit: false, here: false, frame: false };
+      n.frame ||= !!st.frame;
       n.x += x;
       n.y += y;
       n.n++;
@@ -221,7 +242,7 @@ export function mapLabels(
       const steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 3));
       for (let i = 0; i <= steps; i++) track.push([ax + ((bx - ax) * i) / steps, ay + ((by - ay) * i) / steps]);
     }
-  const list = [...names].map(([name, n]) => ({ name, x: n.x / n.n, y: n.y / n.n, lit: n.lit, here: n.here }));
+  const list = [...names].map(([name, n]) => ({ ...n, name, x: n.x / n.n, y: n.y / n.n }));
   let mx = 0,
     my = 0;
   for (const n of list) {
@@ -235,7 +256,7 @@ export function mapLabels(
   };
   // Each name's candidate boxes with their own cost, cheapest first.
   const options = list.map((n) => {
-    const lw = labelWidth(n.name, S.label);
+    const lw = labelWidth(n.name, S.label) + (n.frame ? frameWidth(S.label) : 0);
     const ox = n.x - mx,
       oy = n.y - my,
       od = Math.hypot(ox, oy) || 1;
@@ -258,6 +279,7 @@ export function mapLabels(
           lit: n.lit,
           here: n.here,
           align: sx > 0 ? 'left' : sx < 0 ? 'right' : 'center',
+          frame: n.frame,
         };
         const out =
           Math.max(0, edge - box.x) +
@@ -288,7 +310,11 @@ export function mapLabels(
   // The cheapest the names still to place could cost, to stop early on a branch that can't win.
   const rest = options.map(() => 0);
   for (let i = options.length - 2; i >= 0; i--) rest[i] = rest[i + 1]! + options[i + 1]![0]!.cost;
+  // A face with no clean placement would otherwise search every combination (seconds, on the page's one thread): past
+  // `SEARCH_MAX` steps it keeps the best found. No face the label tests cover comes near it.
+  let steps = 0;
   const search = (i: number, sum: number) => {
+    if (steps++ > SEARCH_MAX) return;
     if (sum + (i < options.length ? options[i]![0]!.cost + rest[i]! : 0) >= best) return;
     if (i === options.length) {
       best = sum;
@@ -304,6 +330,7 @@ export function mapLabels(
     }
   };
   search(0, 0);
+  mapLabelSteps = steps;
   return pick;
 }
 
@@ -355,6 +382,7 @@ export function drawMapBase(
   }
   lines.forEach((l, li) =>
     l.stops.forEach((st, si) => {
+      if (st.hide) return;
       const [x, y] = mapPx(v, st.x, st.z);
       const laid = st.s <= l.laid + 0.01,
         me = here.some((h) => h.line === li && h.stop === si);
@@ -378,8 +406,18 @@ export function drawMapBase(
   g.textBaseline = 'middle';
   for (const b of mapLabels(lines, v, w, h, here, scale)) {
     g.textAlign = b.align;
-    g.fillStyle = b.here ? MAP_INK : b.lit ? NAME_LIT : MAP_DIM;
-    g.fillText(b.name, b.align === 'left' ? b.x : b.align === 'right' ? b.x + b.w : b.x + b.w / 2, b.y + b.h / 2);
+    g.fillStyle = g.strokeStyle = b.here ? MAP_INK : b.lit ? NAME_LIT : MAP_DIM;
+    // A frame square leads the name, hard against the drawn text (which is narrower than its box).
+    const fw = b.frame ? frameWidth(S.label) : 0,
+      at = b.align === 'left' ? b.x + fw : b.align === 'right' ? b.x + b.w : b.x + (fw + b.w) / 2;
+    if (fw) {
+      const tw = g.measureText(b.name).width,
+        left = b.align === 'left' ? at : b.align === 'right' ? at - tw : at - tw / 2,
+        side = S.label * 0.6;
+      g.lineWidth = S.label * 0.14;
+      g.strokeRect(left - side - S.label * 0.25, b.y + b.h / 2 - side / 2, side, side);
+    }
+    g.fillText(b.name, at, b.y + b.h / 2);
   }
   g.restore();
 }

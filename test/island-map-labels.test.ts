@@ -5,6 +5,6 @@ import assert from 'node:assert/strict';
 import { checkHaltLabels } from './helpers/island-labels.ts';
 
 test('every halt display places its names clear of each other, the edge and the stops', async () => {
-  // Five halts and the Pier.
-  assert.equal(await checkHaltLabels(), 6);
+  // Five halts and the Pier, then the stack line's three heads and High Gorge.
+  assert.equal(await checkHaltLabels(), 10);
 });
