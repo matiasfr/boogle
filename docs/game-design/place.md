@@ -819,6 +819,30 @@ train takes the boiler the next time it stands at the Village, and whoever is th
 the chimney, the longer barrel and taller chimney on it 0.4 s later with a clank and a small squash, then a whistle.
 Riders keep their seats. Not tested on a device.
 
+**The steel car, a greybox (13 November 2026; [fourth-car](../plans/fourth-car.md), V1 and V2).** From v33 a line 2
+train that wears the longer boiler pulls one more car, last: a grey flatbed the kit car's size with an orange stripe
+down each side and four short black stakes, 7.4 m behind the passenger car, or 11.1 m behind on the train that has
+the footing wagon (so that train is four cars long and the others three; line 1 never has it). Its deck is flat and
+solid, with no seats: you can stand and ride on it, and "Request stop" works from it. Line 2 now stands 18.25 m
+along at the Village (it was 17.0 m), so the wagon train's steel car is off the table's deck, 0.18 m from the garage
+stand's nearer leg. **Coupling:** it comes on in the platform beat above: a second puff of white steam at the tail
+with the chimney's, the car there 0.4 s later, and a second clank from the tail 0.3 s after the engine's. A reload,
+a late join and reduced motion just show it. A train that joins from the shed grows it in with its other cars.
+Anyone standing on the track where the car arrives is set on its deck (on their own screen; nobody is pushed or
+launched). **Steel** rides on the steel car of a fitted train, two abreast, up to six, and on the kit car of a train
+not yet fitted. In today's game that is one trip at most: the works casts twelve steel in all at six a trip and the
+install needs one home, so after an install the car carries the second trip or none, and then runs empty until a
+later steel part gives it a load. **At the Pier** only homeward trains stop, on request. A plain train's steel car
+stands beside the halt deck's landward end: stepping off its platform side lands you on the halt deck, the other
+side on the trestle's planks at rail height; keep walking 7 m either way and you go off the trestle's open edge
+into the sea, 26 m down, and swim (the same edge as beside any car there). The wagon train's steel car stands 3.7 m
+further landward, wholly off the halt deck: stepping off its track side lands you on the planks at rail height; its
+other side has not been walked. **In the garage** Cargo has a fourth tile, "Steel car":
+"Later" with "Comes with the longer boiler. 6 steel a trip." before the install, "Owned" with "Came with the longer
+boiler. 6 steel a trip." after (placeholder strings). The parts strip scrolls the chosen tile into view. At phone
+width the garage hides every part's description line, this one's too. "Cars it pulls 3 to 4" on the Engine tab is
+unchanged: exact on the wagon's train, one more than the others pull. Not tested on a device.
+
 **The stack line to High Gorge, a greybox (12 November 2026; [greybox-route](../plans/greybox-route.md), leg 1 step
 4).** Every label below is a placeholder, grey and readable, with no sound or effect. **On Ring Island** the tracks
 divide two bills: the steel works east (its sign now headed "STEEL WORKS", the counts under it) and the line on west.
