@@ -253,8 +253,13 @@ Source-file additions/removals invalidate it. The graph deliberately over-approx
 dependency values: its API/edge counts are architectural reachability, not actual body/seat/object counts. It
 covers all 50 audit paths and seven injected constructors; that audit list is validation evidence, not production
 configuration. Existing approved consumers can reuse an acquired API; arbitrary global/reflected/generated-code
-effects remain outside a sandbox guarantee. The requested rebase, regenerated per-entry debt differences and
-final checks are recorded in this follow-up's handoff under `.look/prefab-step-5-edges/`.
+effects remain outside a sandbox guarantee. Rebased on local `origin/main` at `c279b824c` (including Home flip
+`9c9b4cd67`) on `codex/prefab-data-step-5-2`. The regenerated baseline has 111 collider files/302 violations,
+13 seat files/16 violations, 296 computed exports and 23,539 importer edges. The boiler install view drops its
+`POST` export; 107 computed export records change consumer sets (202 edges added, 161 removed) through inherited
+Home/railway/tree changes. Every changed entry is listed in [the rebase delta](prefab-data-step-5-rebase.md).
+The Home hall treads reuse an existing helper, so their added collider instances do not increase syntactic
+violation counts. Final checks are recorded in this follow-up's handoff under `.look/prefab-step-5-edges/`.
 
 **Step 5 structural re-review correction (supersedes its syntax-based boundary notes):** the four new findings
 were ported first as five failing fixtures (including both physics and seat laundering). All failed at
