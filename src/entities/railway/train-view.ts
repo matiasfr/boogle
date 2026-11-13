@@ -8,7 +8,7 @@ import { carry } from '../../physics/platforms.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
 type CabFace = import('./engine-kit.ts').CabFace;
-import { setShapes, stepAlpha, type Shape } from '../../physics/engine.ts';
+import { setShapes, stepAlpha, teleport, type Shape } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
 import { createWakePresentation } from '../../render/wake-presentation.ts';
@@ -33,6 +33,7 @@ import { aperture, rail as railRow, train as trainRow, works as worksRow } from 
 import { railTrainAsked, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
+import { STEEL_CAR, steelCarOffset } from './cars.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
@@ -257,11 +258,27 @@ export async function createRailwayTrains(
       for (const c of model.cars) c.removeFromParent();
     });
     const solidLoad = load.solidTrainLoad(cars[2]!, crateDeck);
+    // Steel's own car (docs/plans/fourth-car.md, V1), one a line 2 train, built as the wagon's car is: the last car
+    // while the train's row wears the longer boiler, under the land otherwise. A flat deck you can stand on, no seats.
+    const steelRock = new THREE.Group();
+    const steel = line === LINE2 ? rail.makeCar(STEEL_CAR, steelRock, () => {}, {}, owner) : null;
+    if (steel) {
+      steel.platform.id = `railway:train${slot}-steel`;
+      steel.platform.shared = true;
+      steel.speedLimit = 30;
+      owner.cleanup(() => {
+        steel.mesh.visible = false;
+        steelRock.removeFromParent();
+      });
+    }
     return {
       slot,
       line,
       model,
       cars,
+      steel,
+      /** The steel car is coupled as drawn: the row wears the longer boiler and a live fit's puff has covered it. */
+      carOn: false,
       deck: crateDeck,
       solid: solidLoad,
       // Line 2's kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j).
@@ -292,7 +309,7 @@ export async function createRailwayTrains(
     };
   });
   /** The platform beat's times, seconds from the row's change: the swap under the puff, the squash's length, the toot. */
-  const BEAT = { swap: 0.4, squash: 0.18, toot: 1.2 } as const;
+  const BEAT = { swap: 0.4, couple: 0.7, squash: 0.18, toot: 1.2 } as const;
   const BEAT_STEAM = new THREE.Color('#e9eef2');
   /** A shed train's scale-in (the greybox route's step 4 review, answer f: "shed trains, no shed"): the second its
    * cars take to grow where it joins, standing at the Village, so no train blinks into being. */
@@ -314,8 +331,15 @@ export async function createRailwayTrains(
   });
   /** The train the footing wagon is coupled to now, or null. */
   const wagonTrain = () => cargo.find((tr) => trainRow(adapter.read.world(), tr.slot).wagon) ?? null;
-  /** Every car of `tr`, the wagon behind it while it's coupled. */
-  const carsOf = (tr: (typeof trains)[number]) => (wagonTrain() === tr ? [...tr.cars, wagonCar] : tr.cars);
+  /** The cars that grow in with a joining train: its own, and its steel car (a fleet row that joins after the install
+   * takes the fit as it stands there, so the car comes on mid-growth and stays coupled). */
+  const grown = (tr: (typeof trains)[number]) => (tr.steel ? [...tr.cars, tr.steel] : tr.cars);
+  /** Every car of `tr`, the wagon behind it while it's coupled and its steel car while it has one. */
+  const carsOf = (tr: (typeof trains)[number]) => [
+    ...tr.cars,
+    ...(wagonTrain() === tr ? [wagonCar] : []),
+    ...(tr.steel && tr.carOn ? [tr.steel] : []),
+  ];
   /** The up track's offset at s (m) for train `tr` on `row`'s track. Line 1 and line 2 before the pier: 4 m left
    * between the turnouts, easing over each 20 m turnout, and over Far Head's crossover onto today's track while the
    * train is crossing. Line 2 once the pier is laid reads the open end from the room's rows (./line2-path.ts: the
@@ -437,9 +461,36 @@ export async function createRailwayTrains(
         pose(wagonCar, along + offsets[WAGON]!);
         if (hidden) wagonCar.y = -60;
       }
+      if (tr.steel) {
+        const was = tr.steel.y > -30;
+        pose(tr.steel, along + steelCarOffset(row.wagon) * tr.steel.mesh.scale.x);
+        if (hidden || !tr.carOn) tr.steel.y = -60;
+        else if (!was) standClear(tr.steel);
+      }
       tr.solid();
     });
     if (!coupled) wagonCar.y = -60;
+  }
+  /** A car that arrives where you stand (the steel car couples under a puff, at the tail, where the room is after an
+   * install) would close its box round you: nothing pushes a player out of a kinematic body. You are set on its deck
+   * instead, where you stood, on this tab alone; the deck's edge lets you slide off if you were at its side. */
+  function standClear(c: Car) {
+    const b = me.body;
+    if (!b) return;
+    const rx = b.position.x - c.x,
+      rz = b.position.z - c.z,
+      cos = Math.cos(c.yaw),
+      sin = Math.sin(c.yaw);
+    const top = c.y + c.hy;
+    if (
+      Math.abs(rx * cos - rz * sin) >= c.spec.hx + PLAYER_R ||
+      Math.abs(rx * sin + rz * cos) >= c.spec.hz + PLAYER_R ||
+      b.position.y - PLAYER_R >= top ||
+      b.position.y + PLAYER_R <= top - c.spec.top
+    )
+      return;
+    teleport(b, b.position.x, top + PLAYER_R + 0.02, b.position.z);
+    b.velocity.set(b.velocity.x, Math.max(0, b.velocity.y), b.velocity.z);
   }
   function drawLoad(tr: typeof first, count: number) {
     if (tr.count === count) return;
@@ -509,23 +560,40 @@ export async function createRailwayTrains(
     }
     batch.commit();
   }
-  // Steel riding home on a line 2 train's kit car (ruling C: any train's, up to STEEL.trip), two abreast on its deck.
-  // Greybox: it is aboard when the row says so, with no hop from the works' rack or into the Roundhouse bay.
-  const steelBatch = createBoxBatch(owner, RAIL_TRAINS.length * STEEL.trip);
+  // Steel riding home on a line 2 train (ruling C: any train's, up to STEEL.trip), two abreast: on its steel car once
+  // it has one, on the kit car's deck until then. The steel car is drawn here too (greybox: a flatbed, low stakes and
+  // an orange stripe down each side). It is aboard when the row says so, with no hop from the works' rack or into the
+  // Roundhouse bay.
+  const STEEL_CAR_PARTS = 15;
+  const steelBatch = createBoxBatch(owner, RAIL_TRAINS.length * (STEEL.trip + STEEL_CAR_PARTS));
   function drawSteel() {
     steelBatch.begin();
     const w = adapter.read.world();
     for (const tr of trains) {
+      const car = tr.steel && tr.steel.mesh.visible ? tr.steel : null;
+      if (car) {
+        car.mesh.updateMatrixWorld(true);
+        const f = car.rock.matrixWorld,
+          { hx, hz, top } = car.spec;
+        steelBatch.part(f, 0, top - 0.2, 0, hx * 2, 0.4, hz * 2, '#6f7275');
+        for (const x of [-0.85, 0.85])
+          for (const z of [-1, 1]) steelBatch.part(f, x, 0.15, z, 0.25, 0.5, 0.5, '#3a3c3c');
+        for (const x of [-hx, hx]) {
+          steelBatch.part(f, x, top - 0.2, 0, 0.05, 0.16, hz * 2 - 0.1, STEEL_BLOCK);
+          for (const z of [-hz + 0.15, hz - 0.15])
+            steelBatch.part(f, x * 0.96, top + 0.15, z, 0.1, 0.3, 0.1, '#1e1e22');
+        }
+      }
       const kitCar = tr.cars[2]!,
         n = tr.line === LINE2 && line2Trains(w) ? Math.min(trainRow(w, tr.slot).steel ?? 0, STEEL.trip) : 0;
       if (!n || kitCar.y < -30) continue;
-      const frame = tr.model.cars[2]!;
+      const frame = car ? car.rock : tr.model.cars[2]!;
       frame.updateWorldMatrix(true, false);
       for (let i = 0; i < n; i++)
         steelBatch.part(
           frame.matrixWorld,
           i % 2 ? 0.45 : -0.45,
-          wagon.TRAIN_CARS[2]!.top + 0.2,
+          (car ? car.spec : wagon.TRAIN_CARS[2]!).top + 0.2,
           -0.9 + (i >> 1) * 0.9,
           0.8,
           0.4,
@@ -611,15 +679,19 @@ export async function createRailwayTrains(
       tr.seen = false;
       tr.beat = -1;
       tr.join = -1;
-      for (const c of tr.cars) {
+      for (const c of grown(tr)) {
         c.mesh.scale.setScalar(1);
         c.rock.position.y = -(BOTTOM + c.hy);
       }
+      tr.carOn = on && (last.boiler ?? 0) >= 1;
       tr.model.cars[0]!.scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
     step();
-    trains.forEach((tr) => tr.cars.forEach(rail.snapCar));
+    trains.forEach((tr) => {
+      tr.cars.forEach(rail.snapCar);
+      if (tr.steel) rail.snapCar(tr.steel);
+    });
     rail.snapCar(wagonCar);
   }
   // ---------------------------------------------------------------- the cab doors
@@ -732,7 +804,10 @@ export async function createRailwayTrains(
     mesh.position.y = shape.ENGINE_CAB.floor * (1 - s);
   }
   owner.animate(({ now, dt }) => {
-    trains.forEach((tr) => tr.cars.forEach((c) => rail.drawCar(c, stepAlpha())));
+    trains.forEach((tr) => {
+      tr.cars.forEach((c) => rail.drawCar(c, stepAlpha()));
+      if (tr.steel) rail.drawCar(tr.steel, stepAlpha());
+    });
     rail.drawCar(wagonCar, stepAlpha());
     swingDoors(dt);
     cutCab(dt);
@@ -789,7 +864,8 @@ export async function createRailwayTrains(
       return { mesh: tr.model.cars[0]!, top: st.footrest, up: st.seat - st.footrest - 0.035, x: st.x, z: st.z, yaw: 0 };
     },
     isTrain: (platform: Platform | null) =>
-      platform === wagonCar.platform || trains.some((tr) => tr.cars.some((c) => c.platform === platform)),
+      platform === wagonCar.platform ||
+      trains.some((tr) => tr.steel?.platform === platform || tr.cars.some((c) => c.platform === platform)),
     /** Aboard a running line: "Request stop: <halt>" for the next halt your own train would run through, from any of
      * its cars; greyed once it stops there anyway. The press pulls the bell cord on this tab and names the train
      * (docs/plans/generic-lines.md, 7: only it serves the ask); the bell rings when the server accepts it. */
@@ -846,7 +922,7 @@ export async function createRailwayTrains(
           const u = reducedMotion ? 1 : Math.min(1, tr.join / JOIN_S),
             s = Math.max(0.02, u * u * (3 - 2 * u));
           // Each car grows from the rails under it (its frame hangs BOTTOM + hy under the body's centre).
-          for (const c of tr.cars) {
+          for (const c of grown(tr)) {
             c.mesh.scale.setScalar(s);
             c.rock.position.y = -(BOTTOM + c.hy) / s;
           }
@@ -873,11 +949,14 @@ export async function createRailwayTrains(
         if (tr.seen && fit === 1 && tr.wears === 0 && tr.beat < 0 && !reducedMotion) {
           tr.beat = 0;
           tr.model.chimneyTop.getWorldPosition(beatAt);
-          for (let i = 0; i < 18; i++)
+          // The same steam at the tail, where the steel car comes on (posed there already, under the land).
+          const kitCar = tr.cars[2]!,
+            tail = tr.steel;
+          for (let i = 0; i < (tail ? 32 : 18); i++)
             emit({
-              x: beatAt.x + (Math.random() - 0.5) * 1.6,
-              y: beatAt.y - 0.9 + Math.random() * 1.2,
-              z: beatAt.z + (Math.random() - 0.5) * 1.6,
+              x: (i < 18 ? beatAt.x : tail!.x) + (Math.random() - 0.5) * (i < 18 ? 1.6 : 3),
+              y: (i < 18 ? beatAt.y - 0.9 : kitCar.y) + Math.random() * 1.2,
+              z: (i < 18 ? beatAt.z : tail!.z) + (Math.random() - 0.5) * (i < 18 ? 1.6 : 3),
               vx: (Math.random() - 0.5) * 0.7,
               vy: 0.5 + Math.random() * 0.9,
               vz: (Math.random() - 0.5) * 0.7,
@@ -899,6 +978,8 @@ export async function createRailwayTrains(
           const at = (t: number) => before < t && tr.beat >= t;
           if (tr.beat < BEAT.swap) wears = 0;
           if (at(BEAT.swap)) clank(tr.cars[0]!.x, tr.cars[0]!.z);
+          // The coupling: the steel car is on the tail from the swap, and its own clank lands there after the engine's.
+          if (at(BEAT.couple) && tr.steel) clank(tr.steel.x, tr.steel.z);
           const u = (tr.beat - BEAT.swap) / BEAT.squash;
           const k = u > 0 && u < 1 ? Math.sin(u * Math.PI) : 0;
           loco.scale.set(1 + 0.04 * k, 1 - 0.07 * k, 1 + 0.04 * k);
@@ -909,6 +990,8 @@ export async function createRailwayTrains(
           }
         }
         tr.seen = true;
+        // A restore, a late join and reduced motion have no beat: the car is there with the row.
+        tr.carOn = !!wears;
         if (wears !== tr.wears) {
           tr.wears = wears;
           if (tr.cab) tr.cab.body.visible = !wears;
