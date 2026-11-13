@@ -18,6 +18,9 @@ declare module 'esquery' {
     local?: Node;
     specifiers?: Node[];
     params?: Node[];
+    arguments?: Node[];
+    expressions?: Node[];
+    quasis?: { value: { cooked?: string; raw: string } }[];
     raw?: string;
   };
   type Selector = object;

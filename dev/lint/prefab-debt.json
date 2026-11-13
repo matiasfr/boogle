@@ -1,62 +1,290 @@
 {
   "colliders": {
-    "src/adapters/mushrooms.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/boogler/boogler.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/ball/state.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/finds/secrets-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/lookout/view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/boiler-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/car.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/crossing-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/far-head-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/garage-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/gate-rig.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/glide-device-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/halts-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/hook-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/line-cargo.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/line2-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/opening-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/path.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/railhead-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/ring-deck.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/roundhouse-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/sea-gate-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/sources.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/stations.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/tools.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/track.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/trophy-plinth.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/up-platforms.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/works-box-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/works-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/ring-island/view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/route-greybox/boxes.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/route-greybox/leg-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/route-greybox/massing-bell.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/route-greybox/massing.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/town/curio-shelf.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/town/rooms.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/town/workshop.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/fall/letters.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/features/hut-build.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/features/track-machine.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/place/cove-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/place/sites.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/pois/caves/decor.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/pois/caves/index.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/pois/lighthouse/index.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/pois/windmills/index.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/proto/crossing/train.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/proto/crossing/world.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/proto/greybox/build.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/proto/greybox/ring-house.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/proto/greybox/ring.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/proto/wagon/index.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/render/place-tree-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records."
+    "src/adapters/mushrooms.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/boogler/boogler.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/debug/perf-poses.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/ball/state.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/finds/secrets-view.ts": {
+      "count": 8,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/finds/view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/lookout/view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/props/state.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/arrival.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/boiler-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/car.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/crates-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/crossing-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/far-head-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/forge-finish.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/garage-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/gate-rig.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/glide-device-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/greeter.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/halts-view.ts": {
+      "count": 9,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/home-station-view.ts": {
+      "count": 4,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/hook-view.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/line-cargo.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/line2-view.ts": {
+      "count": 8,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/opening-view.ts": {
+      "count": 5,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/path.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/railhead-view.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/reward.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/ring-deck.ts": {
+      "count": 4,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/roundhouse-view.ts": {
+      "count": 6,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/sea-gate-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/shelf-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/sources.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/stations.ts": {
+      "count": 5,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/tools.ts": {
+      "count": 6,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/track.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/train-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/trophy-plinth.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/up-platforms.ts": {
+      "count": 6,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/works-box-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/works-view.ts": {
+      "count": 4,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/ring-island/view.ts": {
+      "count": 4,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/ring-steel/view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/route-greybox/boxes.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/route-greybox/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/route-greybox/leg-view.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/route-greybox/massing-bell.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/route-greybox/massing.ts": {
+      "count": 18,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/town/curio-shelf.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/town/rooms.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/town/workshop.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/fall/letters.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/features/hut-build.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/features/track-machine.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/place/cove-view.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/place/sites.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/pois/caves/decor.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/pois/caves/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/pois/lighthouse/index.ts": {
+      "count": 3,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/pois/windmills/index.ts": {
+      "count": 4,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/proto/crossing/train.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/proto/crossing/world.ts": {
+      "count": 5,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/proto/greybox/build.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/proto/greybox/ring-house.ts": {
+      "count": 7,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/proto/greybox/ring.ts": {
+      "count": 4,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/proto/wagon/index.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/render/place-tree-view.ts": {
+      "count": 4,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    }
   },
   "seats": {
-    "src/entities/railway/track-machine.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records.",
-    "src/entities/railway/train-view.ts": "2026-11-13: Owner-approved step 5 baseline; migrate existing hand-built content to prefab records."
+    "src/entities/railway/track-machine.ts": {
+      "count": 2,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/train-view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    },
+    "src/entities/railway/view.ts": {
+      "count": 1,
+      "reason": "2026-11-13: Owner-approved step 5 review baseline; existing creation APIs and solid-helper imports/calls."
+    }
   }
 }

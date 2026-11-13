@@ -203,6 +203,33 @@ The Godot portability proof remains step 14, after checkpoint B. `npm run inflig
 and this task permits network only to the local broker. No browser run or images are needed for lint enforcement.
 Final check results and the source fingerprint are recorded in this task's local handoff/evidence.
 
+### Step 5 independent review corrections
+
+The five accepted findings from the independent review were reproduced first: all five named regression tests
+failed before production edits (`.look/prefab-step-5-review/red.log`). Creation API imports are now rejected
+outside the named runtime door and debt files, including renamed exports, namespace access, dynamic imports
+and require; local aliases cannot hide the original import. Legacy solid helper entry points (`drawWorksBoxes`,
+`drawGreyBoxes`, `plank`, `buildLand`, `staticSpheresBody`) follow the same rule. The prefab directory is no longer
+a blanket collider exemption: only `instantiate.ts` is. Pure named helpers and type-only imports remain usable.
+
+The debt schema is now `{ count, reason }` per file. Both lint and registry reject excess violations and demand
+that fewer violations lower the recorded count; registry additionally rejects per-file budget growth and file
+substitution. The expanded rules find **68 collider files / 209 violations** and **3 seat files / 4 violations**
+(imports and calls, not runtime object counts). Fourteen additional collider baseline files are existing imports
+or helper consumers newly covered by the corrected rule, plus one existing dynamic seat-module importer,
+verified against the local base; no runtime code was
+added. The baseline transition derives counts from that base's source for the old reason-only schema too; once
+the base contains counts, it never accepts file or count growth. Dates remain mandatory.
+
+Content browser-global checks now use lexical scope resolution, so a local `origin`, a shadowed `document` or
+a local `globalThis` is valid data code, while unresolved DOM access still fails. Inline `TSImportType` nodes
+are covered by the same content import whitelist. Scope analysis runs only on content files; the two creation
+rules share their import/call traversal to keep whole-repo lint near the review's four-second median.
+
+These corrections change no runtime source, Home station file, compiled artifact, golden, namespace or game
+behavior. No browser run, PNG or bot result is claimed; the fresh static checks, timing samples and final stamp
+belong to `.look/prefab-step-5-review/`, superseding this task's earlier static evidence.
+
 ## 6. What can start today, and what waits
 
 **Step 3 review-4 serialization correction:** the reviewer’s quarter-turn regression was ported first and failed (`.look/prefab-review-4/red.log`). Choice **(a)**: emit lossless JSON numbers for rotations and all other numeric record/transform fields. This removes serialization roundoff independently of the scale ratio and preserves fractional compensation too; increasing only angle precision would leave that second failure. The sorted-key and array-order rules remain. Both goldens and the committed chair artifacts are byte-identical; no golden or content regeneration was needed.

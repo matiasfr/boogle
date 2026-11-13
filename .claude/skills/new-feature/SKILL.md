@@ -23,7 +23,8 @@ docs/agents/plugins.md has the rules; this is the order to apply them in.
    New placed world content starts with `npm run prefab:new -- <area>.<name>`: put records and placements in
    `src/content/`, procedural visuals in `src/prefab/builders/`, and call `src/prefab/instantiate.ts` under the owner's
    `OwnedView`. Colliders and seats come from the record. Run `npm run prefabs` and commit the JSON artifacts.
-   Never grow `dev/lint/prefab-debt.json`; the existing hand-built file exemptions only shrink.
+   Never grow `dev/lint/prefab-debt.json`; file entries and per-file violation counts only shrink. Lower the count
+   when removing legacy imports/calls. New prefab-folder wrappers cannot import the creation APIs either.
 4. Wire it through the registries, not new listeners: `registerAction` for any key/pad/touch control (on a slot from
    `npm run registry -- --json`; one must stay unclaimed for `src/features/updates.ts`, so if that's the only one free,
    stop and report that there's no slot: no key-only controls), `registerInteractable` for things the interact button acts on, `emit` for particles,

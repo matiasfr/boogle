@@ -6,6 +6,7 @@ import query from 'esquery';
 import type { Node } from 'esquery';
 import ignore from 'ignore';
 import globals from 'globals';
+import { analyze } from '@typescript-eslint/scope-manager';
 import prefabDebt from './prefab-debt.json' with { type: 'json' };
 import { policy, ENTITY_MESSAGE, INPUT_MESSAGE, INPUT_SELECTORS, RETIRED_RAILWAY_NAMES } from './policy.ts';
 import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
@@ -22,7 +23,53 @@ export const customRules = new Set([
   'boogle/seats-from-records',
   'boogle/records-are-data',
 ]);
-export type PrefabDebt = { colliders: Record<string, string>; seats: Record<string, string> };
+export type PrefabBudget = { count: number; reason: string };
+export type PrefabDebt = { colliders: Record<string, PrefabBudget>; seats: Record<string, PrefabBudget> };
+const prefabRules = [
+  {
+    kind: 'colliders',
+    rule: 'boogle/colliders-from-records',
+    names: [
+      'addStatic',
+      'addStatics',
+      'staticBody',
+      'createBody',
+      'slab',
+      'plank',
+      'buildLand',
+      'staticSpheresBody',
+      'drawWorksBoxes',
+      'drawGreyBoxes',
+    ],
+    modules:
+      /(?:^|\/)(?:physics\/(?:engine|physics)|place\/land|(?:entities\/)?railway\/works-box-view|(?:entities\/)?route-greybox\/boxes)\.[jt]s$/,
+  },
+  {
+    kind: 'seats',
+    rule: 'boogle/seats-from-records',
+    names: ['registerSeat'],
+    modules: /(?:^|\/)(?:entities\/)?railway\/seat\.[jt]s$/,
+  },
+] as const;
+function stringOf(node: Node | undefined): string | undefined {
+  if (node?.expression) return stringOf(node.expression);
+  if (node?.type === 'Literal') return node.value;
+  if (node?.type === 'TemplateLiteral' && !node.expressions?.length) return node.quasis?.[0]?.value.cooked;
+  return undefined;
+}
+const moduleNodes =
+  'ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportEqualsDeclaration, TSImportType, CallExpression';
+function moduleSource(node: Node): string | undefined {
+  return stringOf(
+    node.source ?? node.moduleReference?.expression ?? (isRequire(node) ? node.arguments?.[0] : undefined),
+  );
+}
+const isRequire = (node: Node) =>
+  node.type === 'CallExpression' &&
+  (node.callee?.name === 'require' ||
+    (node.callee?.object?.name === 'module' && node.callee.property?.name === 'require'));
+const resolveModule = (file: string, source: string) =>
+  source.startsWith('.') ? path.posix.normalize(path.posix.join(path.posix.dirname(file), source)) : source;
 const contentImports = new Set([
   'src/prefab/types.ts',
   'src/prefab/names.ts',
@@ -90,48 +137,84 @@ export function lintSafety(code: string, file: string, debt: PrefabDebt = prefab
       return diagnostics;
     }
   }
-  const parsed = parseSync(file, code);
+  const parsed = parseSync(file, code, { range: !!rules['boogle/records-are-data'], preserveParens: false });
   if (parsed.errors.length) {
     for (const e of parsed.errors) report({ start: e.labels[0]?.start ?? 0 }, 'boogle/parse', e.message);
     return diagnostics;
   }
   const ast = parsed.program as unknown as Node;
   const select = (selector: string) => query.match(ast, selectorOf(selector), { fallback: 'iteration' });
-  for (const [kind, rule, names] of [
-    ['colliders', 'boogle/colliders-from-records', ['addStatic', 'addStatics', 'staticBody', 'createBody', 'slab']],
-    ['seats', 'boogle/seats-from-records', ['registerSeat']],
-  ] as const) {
-    if (!rules[rule] || Object.hasOwn(debt[kind], file)) continue;
+  // Share one traversal across both doors and content imports, rather than re-walking for every API.
+  const importsAndCalls = file.startsWith('src/') ? select(moduleNodes) : [];
+  for (const { rule, names, modules } of prefabRules) {
+    if (!rules[rule]) continue;
     const banned = new Set<string>(names);
-    // An import alias must not turn createBody into a second door.
-    for (const node of select('ImportSpecifier'))
-      if (banned.has(node.imported?.name ?? node.imported?.value ?? '')) banned.add(node.local!.name!);
-    for (const node of select('CallExpression')) {
-      const c = node.callee!;
-      const name = c.type === 'Identifier' ? c.name : (c.property?.name ?? c.property?.value);
-      if (name && banned.has(name)) report(node, rule, prefabDoor);
+    for (const node of importsAndCalls) {
+      const source = moduleSource(node);
+      const specifiers = node.specifiers ?? [];
+      const typeOnly =
+        node.importKind === 'type' ||
+        node.exportKind === 'type' ||
+        node.type === 'TSImportType' ||
+        (specifiers.length > 0 && specifiers.every((s) => s.importKind === 'type' || s.exportKind === 'type'));
+      if (
+        source &&
+        !typeOnly &&
+        (specifiers.some((s) => banned.has((s.imported ?? s.local)?.name ?? (s.imported ?? s.local)?.value ?? '')) ||
+          ((modules.test(resolveModule(file, source)) || modules.test(source)) &&
+            (!specifiers.length ||
+              specifiers.some(
+                (s) =>
+                  s.type === 'ImportNamespaceSpecifier' ||
+                  s.type === 'ImportDefaultSpecifier' ||
+                  s.type === 'ExportNamespaceSpecifier',
+              ))))
+      )
+        report(node, rule, prefabDoor);
+      if (node.type === 'CallExpression') {
+        const c = node.callee!;
+        const name = c.type === 'Identifier' ? c.name : (c.property?.name ?? c.property?.value);
+        if (name && banned.has(name)) report(node, rule, prefabDoor);
+      }
     }
   }
   if (rules['boogle/records-are-data']) {
     const rule = 'boogle/records-are-data';
     const message = `Content is portable data: import only prefab types/names, constants, math-pure or listed pure layout helpers. ${prefabDoor}`;
-    for (const node of select(
-      'ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportEqualsDeclaration',
-    )) {
-      const source = node.source?.value ?? node.moduleReference?.expression?.value;
-      if (!source && node.type !== 'ImportExpression' && node.type !== 'TSImportEqualsDeclaration') continue;
-      const resolved = source?.startsWith('.')
-        ? path.posix.normalize(path.posix.join(path.posix.dirname(file), source))
-        : source;
+    for (const node of importsAndCalls) {
+      if (node.type === 'CallExpression' && !isRequire(node)) continue;
+      const source = moduleSource(node);
+      if (!source && (node.type === 'ExportNamedDeclaration' || node.type === 'ExportAllDeclaration')) continue;
+      const resolved = source ? resolveModule(file, source) : undefined;
       if (!resolved || !contentImports.has(resolved)) report(node, rule, message);
     }
-    for (const node of select(
-      'Identifier:not(MemberExpression[computed=false] > Identifier.property):not(Property[computed=false] > Identifier.key)',
-    ))
+    const scope = analyze(parsed.program as unknown as Parameters<typeof analyze>[0], {
+      sourceType: 'module',
+      lib: [],
+    });
+    const unresolved = new Set<number>();
+    for (const reference of scope.globalScope!.through) {
+      const node = reference.identifier as unknown as Node;
+      unresolved.add(node.start);
       if (browserGlobals.has(node.name!)) report(node, rule, `Content cannot use browser/DOM globals. ${prefabDoor}`);
+    }
     for (const node of select('MemberExpression[object.name="globalThis"]'))
-      if (browserGlobals.has(node.property?.name ?? node.property?.value ?? ''))
+      if (unresolved.has(node.object!.start) && browserGlobals.has(node.property?.name ?? node.property?.value ?? ''))
         report(node, rule, `Content cannot use browser/DOM globals. ${prefabDoor}`);
+  }
+  for (const { kind, rule } of prefabRules) {
+    const budget = debt[kind][file];
+    if (!budget) continue;
+    const actual = diagnostics.filter((d) => d.rule === rule).length;
+    if (actual <= budget.count) {
+      for (let i = diagnostics.length - 1; i >= 0; i--) if (diagnostics[i]!.rule === rule) diagnostics.splice(i, 1);
+      if (actual < budget.count)
+        report(
+          { start: 0 },
+          rule,
+          `Prefab debt has ${actual} violations, budget ${budget.count}: lower the count to ${actual} (remove a zero entry). ${prefabDoor}`,
+        );
+    }
   }
   // CommonJS was the legacy config's default latest/sloppy scope. The two non-native recommended rules still
   // apply there even though the strict-module parser subsumes them for .js/.mjs.

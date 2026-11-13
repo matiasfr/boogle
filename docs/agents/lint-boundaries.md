@@ -13,18 +13,26 @@ Before changing module dependencies, services or lockstep boundaries, read this 
 - Input: outside `INPUT_LAYER` and `INPUT_ALLOW` (`policy.ts`, each entry with its reason) nothing names a key/mouse/wheel/touch/pointer/pad event, `getGamepads` or a `KeyboardEvent`-style type (`boogle/input-through-actions`, owner call in `owner-calls.md`). Use `registerAction` (`key`, `mouse`, `touch`), `onKey`, `onMenuKey` (menus) or `touchHold` in `src/player/controls.ts`. A text field's own key handler takes `boogle-disable-next-line boogle/input-through-actions -- reason`.
 - No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
 - Prefab doors (`policy.ts`, `safety.ts`): `boogle/colliders-from-records` allows `addStatic`, `addStatics`,
-  `staticBody`, `createBody`, `slab` only in `src/prefab/`, `src/physics/`, `src/place/land.ts` and the explicit
+  `staticBody`, `createBody`, `slab` only in `src/prefab/instantiate.ts`, `src/physics/`, `src/place/land.ts` and the explicit
   collider debt files. `boogle/seats-from-records` allows `registerSeat` only in `src/prefab/instantiate.ts` and
-  seat debt files. Calls through imported aliases and member names are checked, including prototypes/debug.
+  seat debt files. Imports of these APIs are forbidden too: named/renamed, namespace, re-export, dynamic import
+  and require. This closes local aliasing at the import. The collider rule also covers `drawWorksBoxes`,
+  `drawGreyBoxes`, `plank`, `buildLand` and `staticSpheresBody`; namespace/dynamic/require access to their modules
+  is a capability import. Pure named helpers and type-only imports stay available. New prefab-folder wrappers
+  have no exemption. Both rules include prototypes/debug; raw calls also count against existing debt.
   Use `npm run prefab:new -- <area>.<name>`, records/placements in `src/content/`, procedural visuals in
   `src/prefab/builders/` and the owning view's `instantiate` call. This is not a blanket mesh-constructor ban.
 - `boogle/records-are-data`: content imports/re-exports only prefab `types.ts`/`names.ts`, `src/constants.ts`,
   `src/math-pure.ts`, and explicitly listed pure layout helpers (`place/layout.ts`, `entities/railway/line2-path.ts`).
-  No three.js (even types), browser/DOM globals or unknown/computed dynamic imports. The compiler separately
+  No three.js (even inline `import('three').Mesh` types), browser/DOM globals or unknown/computed dynamic imports.
+  Browser globals are unresolved scope references: local names such as `origin`, function parameters and imports
+  do not count as browser access. The compiler separately
   rejects non-JSON exported values; compiled JSON remains committed.
-- `dev/lint/prefab-debt.json` lists existing collider/seat files with dated reasons. Registry rejects any new file
-  identity, even when another is removed, and stale entries after migration. Against a base predating the list,
-  it bootstraps only files with matching calls already in that local base. No fetch or namespace exemption.
+- `dev/lint/prefab-debt.json` lists existing collider/seat files with `{ count, reason }` budgets. Lint and registry
+  reject excess violations and require fewer violations to **lower the count** (remove a zero entry). Registry
+  also rejects any new file identity or per-file count growth, even when another file/count shrinks. Against a
+  base predating count budgets, it derives the baseline from matching imports/calls in that local base, including
+  the old reason-only list's transition. Thereafter the recorded counts bind. No fetch or namespace exemption.
   Every entry needs `YYYY-MM-DD: reason`; reasons do not authorize growth. These three prefab rules cannot be
   disabled by comments. Signs/interactions are deferred to prefab step 9; Godot proof to step 14.
 

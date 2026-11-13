@@ -260,7 +260,7 @@ const policyBlocks: PolicyBlock[] = [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
   {
     files: ['src/**/*.{js,ts}'],
-    ignores: ['src/prefab/**', 'src/physics/**', 'src/place/land.ts'],
+    ignores: ['src/prefab/instantiate.ts', 'src/physics/**', 'src/place/land.ts'],
     rules: { 'boogle/colliders-from-records': 'error' },
   },
   {

@@ -27,7 +27,7 @@
     "rule": "boogle/colliders-from-records",
     "file": "src/prefab/builders/probe.ts",
     "code": "staticBody(shape, pos);",
-    "fail": false
+    "fail": true
   },
   {
     "rule": "boogle/colliders-from-records",
