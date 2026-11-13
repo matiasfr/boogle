@@ -24,7 +24,7 @@ import type { Body } from '../../physics/engine.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { camera } from '../../render/scene.ts';
-import { signBoard, type SignBoard } from '../../render/sign-board.ts';
+import { signBoard } from '../../render/sign-board.ts';
 import { playObjective } from '../../proto/mark.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
@@ -35,6 +35,7 @@ import { account, aperture, rail, train } from '../../sim/railway-rows.ts';
 import { free, heldBig } from '../../sim/railway-queries.ts';
 import { gateLeg, legDone, legOpen, legReached, legRow, routeRow } from '../../sim/railway-queries-route.ts';
 import { createBoxBatch } from '../railway/works-box-view.ts';
+import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
 import { LINE2_END_S, line2At, line2World, line2Y } from '../railway/line2-path.ts';
 import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
@@ -63,7 +64,6 @@ export const LEG_OBJECTIVES = {
   gate: "Open the barrier behind High Gorge's south platform.",
 } as const;
 
-const SIGN_LOOK = { ground: '#fff3d6', ink: '#2a1c10' };
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
   GREY_LIGHT = '#b4b6b8',
@@ -126,38 +126,6 @@ const local = (site: Site, along: number, toTrack: number) => ({
   z: site.z + site.hz * along + site.tz * toTrack,
 });
 
-/** A sign's lines, largest first where `size` says so (fractions of the face's height). */
-function paint(sign: SignBoard, lines: readonly { t: string; size: number }[], badge = '') {
-  const { g, cw, ch } = sign;
-  g.clearRect(0, 0, cw, ch);
-  g.fillStyle = SIGN_LOOK.ground;
-  g.fillRect(0, 0, cw, ch);
-  g.strokeStyle = SIGN_LOOK.ink;
-  g.lineWidth = ch * 0.03;
-  g.strokeRect(ch * 0.03, ch * 0.03, cw - ch * 0.06, ch - ch * 0.06);
-  g.fillStyle = SIGN_LOOK.ink;
-  g.textBaseline = 'middle';
-  g.textAlign = 'center';
-  // The section's number in a square at the left, the same on the frame's sign and the rack's plate (answer j).
-  const left = badge ? ch * 0.62 : 0;
-  if (badge) {
-    g.fillRect(ch * 0.1, ch * 0.14, ch * 0.5, ch * 0.72);
-    g.fillStyle = SIGN_LOOK.ground;
-    g.font = `900 ${ch * 0.56}px Figtree, system-ui, sans-serif`;
-    g.fillText(badge, ch * 0.35, ch * 0.53);
-    g.fillStyle = SIGN_LOOK.ink;
-  }
-  const total = lines.reduce((n, l) => n + l.size * 1.25, 0);
-  let y = (ch * (1 - total)) / 2;
-  for (const l of lines) {
-    g.font = `900 ${ch * l.size}px Figtree, system-ui, sans-serif`;
-    y += ch * l.size * 0.625;
-    g.fillText(l.t, left + (cw - left) / 2, y, (cw - left) * 0.88);
-    y += ch * l.size * 0.625;
-  }
-  sign.painted();
-}
-
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
   const deck = createBoxBatch(owner, 2400, false),
@@ -187,7 +155,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     const text = `${badge}|${lines.map((l) => l.t).join('|')}`;
     if (text !== s.text) {
       s.text = text;
-      paint(s, lines, badge);
+      paintPlate(s, lines, badge);
     }
     s.mesh.position.set(at.x, y, at.z);
     s.mesh.rotation.y = Math.atan2(nx, nz);
@@ -506,9 +474,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       );
       // The rack: a pallet, the logs and rails a train has set down, and the plate with the section's number.
       put(k, 0, 0, 0.06, 1.9, 0.12, 2.6, GREY_DARK);
-      for (let i = 0; i < Math.min(r.rack.logs, 40); i++)
+      // A unit still in the air from a kit car (railway/kit-board.ts) is drawn on the rack once it lands.
+      const lying = { logs: r.rack.logs - legKitFlight.logs, rails: r.rack.rails - legKitFlight.rails };
+      for (let i = 0; i < Math.min(lying.logs, 40); i++)
         put(k, -1.05 + (i % 5) * 0.22, 0, 0.24 + Math.floor(i / 5) * 0.22, 1.7, 0.2, 0.2, LOG);
-      for (let i = 0; i < Math.min(r.rack.rails, 40); i++)
+      for (let i = 0; i < Math.min(lying.rails, 40); i++)
         put(k, 0.2 + (i % 5) * 0.2, 0, 0.18 + Math.floor(i / 5) * 0.12, 1.7, 0.1, 0.1, RAIL);
       show(plate, local(k, -1.6, 0), k.y, k.tx, k.tz, [{ t: `KIT ${n}`, size: 0.5 }], n);
     }

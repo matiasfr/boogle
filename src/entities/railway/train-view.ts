@@ -35,6 +35,7 @@ import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
+import { createKitBoard, kitMarks } from './kit-board.ts';
 
 const BRASS = '#c79a3e';
 /** Steel, the island's orange (ring-island/view.ts, ring-steel/view.ts). */
@@ -261,6 +262,11 @@ export async function createRailwayTrains(
       cars,
       deck: crateDeck,
       solid: solidLoad,
+      // Line 2's kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j).
+      board:
+        line === LINE2
+          ? createKitBoard(owner, model.cars[2]!, wagon.TRAIN_CARS[2]!.top, wagon.TRAIN_CARS[2]!.hz)
+          : null,
       boiler,
       long,
       wears: 0,
@@ -811,8 +817,10 @@ export async function createRailwayTrains(
         on = line2Trains(w);
       // Each line's open stops, worked out once for the frame and shared by the lamps.
       const stops = [trainStops(w, 0), trainStops(w, LINE2)];
+      const marks = kitMarks(w, tick);
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
+        tr.board?.set(marks.get(tr.slot) ?? '');
         // Amber: on its way to a request stop it will make, its riders' or a lever's it serves (so a train running
         // through a lit lever is dark, and the one behind it lit). Red: held, standing for the block or the headway.
         const lit = railTrainAsked(w, tr.slot, tick, stops[tr.line]);
@@ -955,6 +963,7 @@ export async function createRailwayTrains(
         along: trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock),
         cars: carsOf(tr).map((c) => ({ id: c.platform.id, x: c.x, y: c.y, z: c.z, riding: carry.on === c.platform })),
         crates: crates.deckCount(tr.deck),
+        kitBoard: tr.board?.mark() ?? '',
         lashed: tr.boiler.visible || tr.long.boiler.visible,
         longBoiler: tr.long.body.visible,
         stopLamp: tr.lamp.on,
