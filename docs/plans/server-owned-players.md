@@ -182,3 +182,124 @@ Shared physical props (the ball, the great beam on server Rapier); movement vali
 5. **Talking, riding and wary stay presence facts the server reads, with only presents and puffs as commands?** Recommended: yes. Commands for continuous facts add a lost-stop failure and buy nothing until his memory is per account.
 
 **Not read or run:** the bodies of `replicate-server.ts` and `replicate-client.ts` beyond their contracts; `talk.ts`, `dialogue.ts`, `fx.ts`, `hud.ts` and `lines.ts` beyond searches; `rooms.ts`; the railway system bodies; prefab id character sets (the `SEAT_ID` pattern must be checked against them in step 1). No test, bot, perf or level run was made; `npm run inflight` and reads only. No fit check applies (not a Place port). `npm run map -- --kind plan` is not a kind the tool knows; the AGENTS.md table rows were followed instead.
+
+## Design review (designer, 2026-11-13)
+
+**Verdict: build with changes.** Nothing here needs the owner before building. One change is required before step 1 (finding 1); four more are required in the steps that own them (findings 2 to 5). 30 gameplay calls: 7 decided, 21 default, 2 new.
+
+**Read:** DESIGN.md; owner-calls; the routing table and the Current rules for characters, controls, rail, rewards and process (searched for The Boogler and seats); `docs/game-design/boogler.md`, `gifts.md`, `mushrooms.md`, `retired-classic-copy.md`, `island.md` (lines 14 to 23); `src/entities/railway/seat-claims.ts`, `seat.ts:170-260`, `src/boogler/boogler.ts:196-298` (`think`), `src/boogler/play.ts:56-92,225-310`, `src/sim/gift-catalog.ts`; the reconnect grace in `server/src/host/hosted-room.ts:109`. **Not read or run:** the research docs' top blocks (only the index; the plan's own citations of engine-long-term and coop-glitches were not opened), `talk.ts`, `lines.ts`, `fx.ts` bodies, find-the-fun (a search found no Boogler or seat rule in it), no look, loop, bot or playtest-data run. No level review: nothing is placed, moved or gated. No fit check: not a Place port.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| S1 | One seat per player; a sitter is never displaced | Default | As built (`seat-claims.ts`, "never time a held seat out"); kept |
+| S2 | A contested chair goes to the request that reaches the server first (today: the lower peer id among requests the lead hears in the same pass) | Default | Fairer and explainable; see "Seat rules" below |
+| S3 | The loser slides to the first free chair of the list their own screen sent, nearest first, up to 7 (today: the group's registration order) | Default | Nearest is the better neighbour; same outcome on a four-seat car |
+| S4 | Sit and stand show on the press; the receipt only corrects | Decided | [Input gets instant feedback](../agents/owner-calls.md) (6 November) |
+| S5 | Another player's tab leaving, hiding or reconnecting never stands you up | Decided | DESIGN.md 8 ("joining, leaving, reconnecting must remain reliable"); [13 November](../decisions-process.md#d-2026-11-13-server-owned-state-answered) |
+| S6 | You stay seated through your own reconnect and a server restart, by re-claiming once a second (question 4) | Default | Yes. Add the alternates to the re-claim (finding 2) |
+| S7 | A chair is freed when its player's session departs after the 1.5 s reconnect grace; every chair is cleared when the room pauses | Default | The grace is short enough that no ghost holds a stool anyone notices |
+| S8 | Opaque seat ids: the server cannot refuse a sit from far away | Default | Harm is one chair per hostile player in a game tuned for one to three friends ([Tune for 1-3 players](../agents/owner-calls.md)); the plan's "exploits do not matter (6 November)" citation was not opened |
+| S9 | `SEAT_SIT_MS` 400 ms between accepted sits per player | Default | Keep the number; **finding 1** changes what a refusal for it does |
+| S10 | A friend is drawn in a chair only when the server row and their own pose both name it | Default | Standing shows at presence speed; sitting shows after the row arrives (one round trip, fine) |
+| S11 | Prototype pages and offline: seats local and unarbitrated, a Boogler per tab (question 3) | Default | [Prototypes are temporary](../agents/owner-calls.md): no core reshaping around them |
+| B1 | The server sends legs; every screen computes the walk (question 1, option B) | Default | Agents own architecture ([The codebase is the agents' to own](../agents/owner-calls.md)); the feel test is the step 4 clip against main |
+| B2 | His brain runs on the server at 10 Hz, so stopping for a talk, speeding up under a rider and fleeing arrive one server round trip plus up to 100 ms after the cause. Today the solo player is the lead and gets these in the same frame | **New** | Acceptable for the ride and the flee; **not** for the talk on the talker's own screen (finding 3) |
+| B3 | He stands still while the room is empty | Decided | DESIGN.md 9 ("An empty world is paused") and "Server hosts every room"; [rewards, 10 November](../decisions-rewards.md#d-2026-11-10-open-calls-answered-riders-and-boogles) ("nothing runs while the room is empty") |
+| B4 | His position and facing are saved; a deploy or restart leaves him where he was (question 2) | Default | Yes. Revalidate the spot on load (finding 4) |
+| B5 | A room reset or a `WORLD_NS` bump puts him back at his start | Decided | [A room reset starts the game over too, The Boogler included](../decisions-controls.md#d-2026-11-09-a-room-reset-starts-the-game); [a world wipe is a new save](../decisions-process.md#d-2026-11-08-a-world-wipe-is-a-new). The plan does not say it: finding 4 |
+| B6 | His wander is seeded from the world seed and the tick he wakes at | Default | Invisible; nobody can tell a seeded wander from today's |
+| B7 | While idle, the server names who he looks at and each screen turns him toward that player | Default | A few degrees of difference between screens is not noticeable |
+| B8 | A new leg eases from where he is shown and snaps past 6 m, including while someone stands on him | Default | Today's follower rule. Check it under a rider (finding 5) |
+| B9 | With no session the tab runs the same brain locally and eases to the server's place on joining | Default | He lives 800 m from the landing; nobody is watching at join |
+| B10 | Talking, riding and wary stay presence; the server reads them (question 5) | Default | They heal by themselves; a lost stop command would leave him frozen at a player who left |
+| B11 | Presents and puffs become server commands; the shared reaction comes from the catalogue's taste, not the client's claim | Default | Same mapping as `play.ts:259` (love or like: hearts; dislike: grumpy; otherwise the small squish) |
+| B12 | Present within 5.6 m, one per 1,500 ms per player; puff within 2.6 m, one per 2,000 ms | Default | 2 m and 1 m of slack over the client's 3.6 m talk and 1.6 m ride ranges covers the easing; a ride cannot puff twice inside 2 s (3.5 s patience, 1.5 s when wary, plus the 750 ms puff and a flight) |
+| B13 | The giver and the rider see and hear their reaction on the press | Decided | Input gets instant feedback (6 November) |
+| B14 | A refused present or puff means friends see nothing; nothing is taken back | Default | Right for a cosmetic. Count refusals so a wrong range shows up (finding 5) |
+| B15 | Friends see hearts, the grumpy face and the puff one server round trip later than today | **New** | Fine within the budget below; the puff must still end at the launch, not 750 ms after it arrives (finding 5) |
+| B16 | No line of his moves, changes or goes on the wire | Decided | [Keep The Boogler's copy](../agents/owner-calls.md) |
+| B17 | The two retired reaction branches (old pet, old celebration) stop playing; their numbers stay reserved | Decided | [No old builds in development](../agents/owner-calls.md); `boogler.md` "Known issues" keeps the numbers |
+| B18 | He walks the server's baked copy of the island and may clip a new prop until it is re-pinned | Default | The classic island rarely changes; a clip is a P3 |
+| B19 | The server accepts the frisbee as a present kind although nothing gives one | Default | Keep it accepted, so the line works the day a frisbee source returns |
+
+Unchanged and not counted: his speeds (1.5, 2.3, 3.4 m/s), turn rate, the 5, 7 and 9 m ranges, trip odds, ride patience, launch, forgiveness, the Sit and Stand up prompts, exits and the seated pose.
+
+### How late a reaction may be
+
+| Reaction | Budget | Reads as broken |
+| --- | --- | --- |
+| Anything on the presser's own screen (sit, stand, hearts, puff, the talk box, him stopping for your talk) | The same frame; never waits for the server | Over 100 ms |
+| A friend's hearts or grumpy face on your screen | 250 ms after their press | Over about 500 ms: the talk has moved on and the hearts have no cause |
+| A friend's puff on your screen | Must start at least 350 ms before the launch (within about 400 ms of the rider's press) and end with the launch | The rider flies off before he has puffed |
+| Him stopping for a friend's talk; speeding up under a rider | 300 ms | Over about 600 ms he has walked a metre with a talk open |
+| Him fleeing a wary player | 1 s (today's re-check is 0.8 s) | Over 2 s |
+
+The plan's paths fit these on a normal connection (uplink, up to 100 ms for the rule tick, downlink: about 150 to 250 ms), except the first row for the talk (finding 3).
+
+### Rulings asked for
+
+**Section 6, the eight changes.** 1, 2, 4 and 8: acceptable, and 1 and 4 are the fixes the owner asked for. 3: acceptable; who wins changes slightly (S2), the outcomes do not. 5: acceptable (B3, B4). 6: acceptable only if the step 4 clip shows the same walk; the per-screen idle look is fine. 7: acceptable inside the budget above, with the puff fix. None changes his wander, wariness, ride or launch rules. The one change to how he **feels** is B2: a solo player on boogle.club is the lead today, so he reacts to them in the same frame; after step 6 he reacts a round trip later. That is why finding 3 is required.
+
+**The five owner questions.** None is a real owner question; all five are defaults the build proceeds on, logged below.
+
+1. Legs or 10 Hz pose: architecture, the agents' call. B.
+2. Saved, and still in an empty room: standing still is already decided (B3). It also fits him: nobody is there to see him live on, and the only thing a player can observe is where he is when they return. "Where you left him" is the honest answer for a paused world and matches every other thing in the room. Saved, yes. If the owner later wants him to have "been somewhere", that is one line (re-pick a spot near home after a long pause) and a character quirk, which is his to choose ([11 November](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s)); not built now.
+3. Prototype pages: local. Covered by the prototypes call.
+4. Stay seated through your own reconnect and a restart: yes; DESIGN.md 8 points the same way.
+5. Presence for the continuous facts, commands for the one-offs: yes.
+
+What does wait for the owner is already in the plan: he commits the DESIGN.md sync and authority tables that step 8 drafts.
+
+**Seat rules in a contested moment.** Three differences from today, all fine for a co-op game of one to three:
+
+- Ties go to whoever's request reaches the server first, not the lower peer id. Nobody could have predicted the old rule; the new one is "I pressed first".
+- The loser slides to the nearest free chair on their own screen, not the first registered one.
+- A sitter is still never displaced, and a third player at the machine's two stools still steps off, as today. The passenger car has four seats ([rail, 10 November](../decisions-rail.md#d-2026-11-10-open-calls-answered-older-calls)), so with up to four players nobody is refused there.
+
+Opaque ids change nothing between honest players. The rate limit does, as planned: finding 1.
+
+**Are his present reactions still reachable?** Checked in code at this commit:
+
+- **Seed: reachable.** The stand's Take is local (`src/adapters/mushrooms.ts:364`, `take('seeds')`) and did not go with the gift state. The stand is on the classic island's Home, the island he lives on, so anyone who can talk to him can bring him a bag. Not checked by walking there.
+- **Frisbee: unreachable.** `src/adapters/gifts.ts` is gone and nothing in `src` takes a frisbee (`rg "'frisbee'"` finds only the catalogue and the throw profile). The lighthouse still names `FRISBEE_SPOT` with nothing on it.
+- **Ball: reachable** (his refusal line; the ball is picked up as before).
+
+The plan should assume: one giftable kind in play today (the seed, taste "like", so hearts), the ball's refusal, and the frisbee kept valid on the server (B19). Step 7's look uses a seed bag. "Dislike" and "meh" have no item in the catalogue today, so the grumpy face and the squish cannot be produced by a present in play; test them in the host test only.
+
+**Suspect lines for the owner (nothing changed):**
+
+- `src/sim/gift-catalog.ts:24`, the frisbee line ("A frisbee! A plate that flies! ..."): cannot be heard, no frisbee exists. Already kept by `retired-classic-copy.md`; listed again because that file does not say it is unreachable.
+- `docs/game-design/gifts.md` says "the seed stand and The Boogler's gift dialogue still use it" without saying the frisbee has no source. A doc line, not his copy; step 7 should correct it.
+
+### Findings
+
+1. **Required before step 1: a rate-limit refusal must never stand a player up.** The plan sits you on the press and steps you off on "refused". Sit, hop off (Jump stands you), sit again inside 400 ms is an ordinary thing to do in a slapstick game, and the slide to a neighbour is itself a second sit. As written the second sit is refused "without spending" and the player is thrown onto the exit from a free chair. Step 1 defines the op and its tests, so fix it there: the refusal carries its reason; only "every chair taken" steps you off; a rate refusal holds the predicted seat and the once-a-second reconcile asks again. Add the host test: two sits 100 ms apart on a free chair leave the player seated and in the row within the next reconcile.
+2. **Step 2: the re-claim sends the alternates too.** After a restart or a reconnect, a friend may have taken your chair in the gap. Re-claiming only that chair stands you up beside three free seats; with `alt` you slide over, as in a first sit.
+3. **Step 6: your own talk stops him on your screen at once.** Today the solo player and the lead see him stop in the frame they press Talk. After step 6 he walks on for a round trip plus a tick (up to about 0.4 m at 1.5 m/s) with the talk box open and the camera framing him. Followers already see this today, so it is not broken, but it moves the common case (one player on the live site) the wrong way against "Input gets instant feedback", which the owner made the acceptance test for netcode work. Required: when you open a talk, your screen holds him where he is shown and turns him to you (Local, like the idle look), then eases to the server's leg when it arrives. No such need for the ride (he is under you either way) or the flee.
+4. **Step 6: his saved spot is checked and can be wiped.** (a) On load, a saved position that is blocked, wet or off the land in the current baked file falls back to `findStart`; otherwise a re-pinned island can leave him inside a prop for good. (b) State and test that a room reset and a `WORLD_NS` bump return him to his start (B5), since "saved" is new for him.
+5. **Step 7 and checkpoint B, three small ones.** (a) A friend's puff ends at the launch: play it for the time that remains, not a full 750 ms from arrival. (b) Refused presents and puffs are counted in the room status, so a range that is too tight (his shown pose eases behind the server's) is seen instead of silently costing friends their hearts. (c) Checkpoint B's ride look includes a solo player stepping onto him mid-walk: the leg changes at that moment (the mode becomes ridden), and the ease must not slide him out from under the rider.
+
+**What a player could feel that the plan does not list.** No new stall was found: sitting, standing, presents and the puff never wait for the server. When the eight-request window is full of rail actions, a sit is still shown at once and only its row is late; friends see you standing in the car until the reconcile lands, which is acceptable. While your own connection is down he finishes his leg and stands (or the local brain walks him), then eases or snaps back on reconnect: acceptable, and better than today's per-tab disagreement.
+
+### Owner questions
+
+None. For the owner's information, not his decision: the frisbee line cannot be heard today, and his saved position is new (B4).
+
+### Rows for docs/agent-calls.md (status `open`; the orchestrator files them)
+
+For "Architecture, tools and prototype lifecycle":
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-13 | Default: The Boogler's movement is sent as legs and computed on every screen; talking, riding and wary stay presence the server reads; presents and puffs are server commands; prototype pages and offline keep local seats and a Boogler per tab | [server-owned-players](plans/server-owned-players.md#design-review-designer-2026-11-13), calls B1, B10, B11, S11 | designer (server-owned players review) | Architecture is the agents' call; continuous facts heal by themselves, one-offs need a receipt; prototypes do not shape core code | open |
+| 2026-11-13 | Default: seats on the server: one per player, nobody displaced, the first request to arrive wins a contested chair, the loser slides to the nearest free one or steps off, opaque seat ids with no reach check, 400 ms between accepted sits (a rate refusal never stands you up), you stay seated through your own reconnect and a server restart, a chair frees 1.5 s after its player goes | [server-owned-players](plans/server-owned-players.md#design-review-designer-2026-11-13), calls S1 to S10 | designer (server-owned players review) | Same outcomes as today for honest players; ties become "pressed first"; the hostile case costs one chair | open |
+
+For "Characters, cosmetics and story":
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-13 | New: The Boogler's reactions to players come from the server (10 Hz), so he stops for a friend's talk, speeds up under a rider and flees up to about 300 ms later than on today's lead tab; your own talk stops him on your screen at once. Friends see hearts and the puff one round trip later, and the puff still ends at the launch | [server-owned-players](plans/server-owned-players.md#design-review-designer-2026-11-13), calls B2, B15 | designer (server-owned players review) | The price of no lead tab; kept inside stated budgets, with the presser's screen never waiting | open |
+| 2026-11-13 | Default: The Boogler's position and facing are saved: he is where you left him after a deploy or an empty room, returns to his start on a room reset or world bump, and moves to a clear spot if the saved one is no longer clear. His wander is seeded per room; who he looks at while idle is picked by the server and turned per screen | [server-owned-players](plans/server-owned-players.md#design-review-designer-2026-11-13), calls B4 to B9 | designer (server-owned players review) | An empty world is paused (DESIGN.md 9); "where you left him" matches everything else in the room; a "he has been somewhere" quirk is the owner's to add | open |
+| 2026-11-13 | Default: presents within 5.6 m, one per 1,500 ms; puffs within 2.6 m, one per 2,000 ms; a refusal only means friends miss the reaction; the frisbee stays a valid present kind although nothing gives one today (its line is unreachable; the seed and the ball's refusal are reachable) | [server-owned-players](plans/server-owned-players.md#design-review-designer-2026-11-13), calls B12, B14, B19 | designer (server-owned players review) | Slack over the client ranges covers the easing; keeping the frisbee valid costs nothing and keeps his line working when a source returns | open |
