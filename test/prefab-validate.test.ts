@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateArtifact, validateJson, validateLevel, validatePrefab } from '../src/prefab/validate.ts';
-import { metadata, type PrefabDef, type Placement } from '../src/prefab/types.ts';
+import { metadata, type PrefabDef, type Placement, type ColliderDef } from '../src/prefab/types.ts';
 import type { NameRegistry } from '../src/prefab/names.ts';
 import { compile } from '../dev/prefab/compiler.ts';
 
@@ -42,6 +42,67 @@ test('duplicate placements, unresolved references and cycles fail', () => {
 });
 test('unknown artifact version fails closed', () =>
   assert.throws(() => validateArtifact({ ...metadata, version: 2, format: 'boogle-prefabs', prefabs: {} }, registry)));
+
+test('trimesh recipes retain their triangles and reject malformed geometry', () => {
+  const collider = {
+    shape: 'trimesh',
+    at: [0, 0, 0],
+    vertices: [0, 0, 0, 1, 0, 0, 0, 0, 1],
+    indices: [0, 2, 1],
+  } satisfies ColliderDef;
+  const record = { ...prefab(), colliders: [collider] };
+  const outputs = compile(
+    [record],
+    [{ place: 'rock', placements: [{ id: 'rim', prefab: record.key, pos: [0, 0, 0] }] }],
+    registry,
+  );
+  const parsed = JSON.parse(outputs.get('prefabs.json')!);
+  assert.deepEqual(parsed.prefabs[record.key].colliders, [collider]);
+  for (const change of [
+    { vertices: [0, 0, 0] },
+    { vertices: [...collider.vertices, 1] },
+    { vertices: [0, 0, 0, 1, 0, 0, 2, 0, 0] },
+    { vertices: [0, 0, NaN, 1, 0, 0, 0, 0, 1] },
+    { indices: [] },
+    { indices: [0, 2] },
+    { indices: [0, 1, 3] },
+    { indices: [0, -1, 2] },
+    { indices: [0, 0.5, 2] },
+    { indices: [0, 0, 2] },
+  ])
+    assert.throws(() => validatePrefab({ ...record, colliders: [{ ...collider, ...change }] }, registry));
+});
+
+test('compound batch transforms and label references validate before instantiation', () => {
+  const record: PrefabDef = {
+    ...prefab(),
+    visual: {
+      builder: 'greybox.box',
+      params: {},
+      batch: 'boxes',
+      instances: [{ pos: [0, 0, 0], scale: [4, 0.06, 0.15] }],
+    },
+    attach: { label: { kind: 'label', at: [0, 1, 0], facing: [0, 0, 1], w: 4, h: 1 } },
+  };
+  const batchRegistry = { ...registry, builders: ['greybox.box'] };
+  validatePrefab(record, batchRegistry);
+  const p = { id: 'pad', prefab: record.key, pos: [0, 0, 0], labels: { label: 'authored.copy' } };
+  validateLevel({ place: 'pad', placements: [p] }, { [record.key]: record });
+  for (const labels of [undefined, { other: 'copy' }, { label: '' }])
+    assert.throws(() =>
+      validateLevel(
+        { place: 'pad', placements: [{ ...p, ...(labels ? { labels } : { labels: {} }) }] },
+        { [record.key]: record },
+      ),
+    );
+  for (const visual of [
+    { builder: 'greybox.box', params: {}, instances: [{ pos: [0, 0, 0] }] },
+    { builder: 'greybox.box', params: {}, batch: 'boxes', instances: [] },
+    { builder: 'greybox.box', params: {}, batch: 'boxes', instances: [{ pos: [0, 0], scale: [1, 1, 1] }] },
+    { builder: 'greybox.box', params: {}, batch: 'boxes', instances: [{ pos: [0, 0, 0], scale: [0, 1, 1] }] },
+  ])
+    assert.throws(() => validatePrefab({ ...record, visual }, batchRegistry));
+});
 test('JSON rejects values serialization would erase', () => {
   for (const value of [undefined, NaN, Infinity, new Date(), { a: undefined }, Array(2), { a: 1n }])
     assert.throws(() => validateJson(value));
