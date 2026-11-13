@@ -15,7 +15,7 @@ import { layout, parseMapPage } from '../../sickle/map-data.ts';
 /** The map's local metres are the world's less this in x (src/place/layout.ts, ORIGIN). */
 const MAP_ORIGIN_X = 1000;
 export type XZ = { x: number; z: number };
-export type Tone = 'grey' | 'light' | 'dark' | 'pale';
+export type Tone = 'grey' | 'light' | 'dark' | 'pale' | 'black';
 /** One box: a rectangle on the ground (centre, yaw of its length, `w` across, `d` along) under a top face that is
  * level at `top`, or runs from `top` at its -d/2 end to `top + rise` at its +d/2 end (a ramp), `h` thick. */
 export type Piece = {
@@ -378,7 +378,7 @@ function gorge() {
       { ...tl.box('incline-n', 16, 56, BED, PLAT, GORGE_DECK, 0.5, 'light'), posts: true },
       { ...tl.box('incline-s', 16, 56, -PLAT, -BED, GORGE_DECK, 0.5, 'light'), posts: true },
       // Call 116: the tunnel's mouth is marked on the south wall where the row enters the rock; nothing is bored.
-      { ...ac.box('portal', 45.1, 54.1, 44.7, 45, GORGE_RAIL + 7, 7, 'dark'), solid: false },
+      { ...ac.box('portal', 45.1, 54.1, 44.7, 45, GORGE_RAIL + 7, 7, 'black'), solid: false },
     ] as Piece[],
     pads: [] as Pad[],
     posts: [] as Post[],

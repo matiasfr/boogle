@@ -6,7 +6,14 @@ import { signBoard, type SignBoard } from '../../render/sign-board.ts';
 import { span, type GreyBox } from './boxes.ts';
 import { PAD_SIZE, type Pad, type Piece, type Post, type Tone } from './leg2-layout.ts';
 
-const TONES: Record<Tone, string> = { grey: '#9c9ea1', light: '#b4b6b8', dark: '#6f7275', pale: '#e4e5e6' };
+const TONES: Record<Tone, string> = {
+  grey: '#9c9ea1',
+  light: '#b4b6b8',
+  dark: '#6f7275',
+  pale: '#e4e5e6',
+  // The tunnel's mouth: darker than a stack's wall in shade.
+  black: '#101113',
+};
 /** Posts go down to here, under the sea's surface. */
 const SEABED = -8;
 

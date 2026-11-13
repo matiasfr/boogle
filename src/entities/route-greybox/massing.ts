@@ -12,6 +12,8 @@
 import { LINE2_END_S, line2World, line2Y } from '../railway/line2-path.ts';
 import { RAIL_GATES, RAIL_GRANTS } from '../../sim/railway-route.ts';
 import { span, type GreyBox } from './boxes.ts';
+import { leg2Boxes } from './leg2-draw.ts';
+import { LEG2 } from './leg2-layout.ts';
 
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
@@ -174,5 +176,8 @@ export function gorgeMassing(): GreyBox[] {
         slab(a + da - 0.06, a + da + 0.06, c + dc - 0.06, c + dc + 0.06, GORGE_DECK, GORGE_DECK + 0.9, STAKE, false),
       );
   }
+  // Leg 2 (docs/plans/greybox-leg2-massing.md, step 6): the incline's two platforms beside the `ns` row, t 16 to 56
+  // (call 118), and the dark mark on the south wall where the row enters the rock (call 116; nothing is bored).
+  out.push(...leg2Boxes(LEG2.gorge.pieces, []));
   return out;
 }
