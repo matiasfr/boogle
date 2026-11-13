@@ -15,7 +15,7 @@ import {
   lineAt,
 } from './layout.ts';
 import { CELL, H, PATH_SAMPLES, SHORE_SAMPLES, at, catalogClearMask, clearMask, gorgeD, NX, NZ } from './terrain.ts';
-import { PLANTING_CLEAR, PLANTING_LOW, PLANTING_HEIGHTS } from './tree-planting-mask.ts';
+import { PLANTING_CLEAR, PLANTING_LOW, PLANTING_HEIGHT_BITS } from './tree-planting-mask.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { JUMP_COURSE, JUMP_RECOVERY } from './tech-layout.ts';
 
@@ -25,6 +25,7 @@ export type LandTree = { id: number; x: number; y: number; z: number; size: numb
 const plantingMask = new Uint8Array(NX * NZ);
 for (const [start, end] of [...PLANTING_CLEAR, ...PLANTING_LOW]) plantingMask.fill(1, start, end);
 const planted: LandTree[] = [];
+const plantingHeights = new Float32Array(Uint32Array.from(PLANTING_HEIGHT_BITS).buffer);
 const firstId = GROVES.reduce((n, g) => n + g.n, 0) + 2; // the oak and great tree follow the groves
 const rng = mulberry32(31);
 for (let n = 0; n < 2600 && planted.length < 400; n++) {
@@ -43,7 +44,7 @@ for (let n = 0; n < 2600 && planted.length < 400; n++) {
   planted.push({
     id: firstId + planted.length,
     x: x + ORIGIN.x,
-    y: PLANTING_HEIGHTS[planted.length]!,
+    y: plantingHeights[planted.length]!,
     z: z + ORIGIN.z,
     size: 0.8 + rng() * 0.7,
     hardwood: false,

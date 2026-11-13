@@ -1,5 +1,5 @@
 // The coast texture in regions (docs/plans/ring-island-build1.md, step R2a): shores far apart bake as separate regions
-// packed as rows of one texture, and today's shores (Home and Place, one region) bake exactly as they did before.
+// packed as rows of one texture, and Home and Place keep their baked bytes when a far region is added.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -85,28 +85,37 @@ function digest(coast: Coast) {
   return { width: tex.image.width, height: tex.image.height, texture, sampled, n };
 }
 
-// Captured from the single-union coast.ts (main at 9fb37b50) with the shores above.
-const TODAY = {
+// v36 Home flip: terrain inputs changed through layout.ts; coast/shader code is unchanged.
+// Print replacement texture/sample digests after an intentional terrain change (then review and update only those pins):
+// PRINT_COAST_BASELINE=1 node --test --test-name-pattern='two shores' test/coast-regions.test.ts
+// Size, transform, lattice bounds and region assertions remain independent of regeneration.
+const COAST_BASELINE = {
   width: 2015,
   height: 780,
-  texture: 'cdff2e3d2a6395497ccf87038c9e45b3d06e79d0489c732f5f8594fb4d065fa4',
-  sampled: '522f4e737e59ef338a40948109eea18b883700658d92e8180cfc5323fcb4cb0d',
+  texture: '80c0bb7f407a1d1c08cfa601bbd704c68b963742fea1cc0ee24a8cbab530ebb3',
+  sampled: '599a82e3d1988183723d2a04663070a702a9b99917796b1edecacdb5373d955d',
   transform: [-375, -400, 0.0004962779156327543, 0.001282051282051282],
 };
 
-test("today's two shores bake as one region, byte for byte as before", () => {
+test('the two shores bake as one region with the pinned terrain bytes', () => {
   const off = registerToday();
   const coast = createCoast();
   try {
     coast.sync();
     const { n, ...d } = digest(coast);
-    assert.deepEqual(d, { width: TODAY.width, height: TODAY.height, texture: TODAY.texture, sampled: TODAY.sampled });
+    if (process.env.PRINT_COAST_BASELINE === '1') console.log(JSON.stringify(d, null, 2));
+    assert.deepEqual(d, {
+      width: COAST_BASELINE.width,
+      height: COAST_BASELINE.height,
+      texture: COAST_BASELINE.texture,
+      sampled: COAST_BASELINE.sampled,
+    });
     assert.ok(n > 1e6);
     const { coast: c } = coast.inspect();
     assert.equal(c.regions.length, 1);
     assert.deepEqual(c.regions[0]!.ids, ['home', 'place']);
-    assert.deepEqual(c.regions[0]!.transform, TODAY.transform);
-    assert.equal(c.textureBytes, TODAY.width * TODAY.height * 4);
+    assert.deepEqual(c.regions[0]!.transform, COAST_BASELINE.transform);
+    assert.equal(c.textureBytes, COAST_BASELINE.width * COAST_BASELINE.height * 4);
   } finally {
     coast.dispose();
     off();
@@ -139,15 +148,15 @@ test('a far island bakes as its own region at 1 m, and the sea between reads ope
         [['ring-test'], 1],
       ],
     );
-    assert.deepEqual(c.regions[0]!.transform, TODAY.transform, 'Home and Place keep their texels');
-    assert.equal(c.regions[1]!.row, TODAY.height);
-    assert.ok(c.height <= 2048 && c.width === TODAY.width);
+    assert.deepEqual(c.regions[0]!.transform, COAST_BASELINE.transform, 'Home and Place keep their texels');
+    assert.equal(c.regions[1]!.row, COAST_BASELINE.height);
+    assert.ok(c.height <= 2048 && c.width === COAST_BASELINE.width);
     // Home and Place's rows are today's bytes; the island's sit below them.
     const data = coast.texture().image.data as Uint16Array;
     const rows = createHash('sha256')
-      .update(new Uint8Array(data.buffer, 0, TODAY.width * TODAY.height * 4))
+      .update(new Uint8Array(data.buffer, 0, COAST_BASELINE.width * COAST_BASELINE.height * 4))
       .digest('hex');
-    assert.equal(rows, TODAY.texture);
+    assert.equal(rows, COAST_BASELINE.texture);
     // The island's own bed, its shore and its waterline normal pointing out to sea.
     assert.ok(Math.abs(coast.sampleAt(cx, cz).bed - 20) < 0.1);
     const shore = coast.sampleAt(cx + 250, cz);

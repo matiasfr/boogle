@@ -25,7 +25,15 @@ import {
 import { H } from '../../src/place/terrain.ts';
 import { GATES, GATE_SLAB, PILLARS } from '../../src/place/tech-layout.ts';
 import { FRAME_D, FRAME_W, frameBesideLine } from '../../src/place/spatial-station.ts';
-import { layout, parseMapPage, polyLen, smoothRing, type Line, type XZ } from '../../src/sickle/map-data.ts';
+import {
+  layout,
+  parseMapPage,
+  syncHomeMap,
+  polyLen,
+  smoothRing,
+  type Line,
+  type XZ,
+} from '../../src/sickle/map-data.ts';
 import { RING_CONES } from '../../src/proto/greybox/ground.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -130,7 +138,7 @@ const FULL_LOOP: Leg[] = [
 ];
 
 const html = fs.readFileSync(ROOT + 'docs/world/map-prototypes.html', 'utf8');
-const MAP = parseMapPage(html);
+const MAP = syncHomeMap(parseMapPage(html));
 const A = layout(MAP, 'sickle', 'A');
 const B = layout(MAP, 'sickle', 'B');
 
@@ -1125,8 +1133,8 @@ const pretty = async (file: string, text: string) =>
 function mapPage(): { page: string; authored: string } {
   const m = /(<script type="application\/json" id="map-data">)([\s\S]*?)(<\/script>)/.exec(html);
   if (!m) throw new Error('map-prototypes.html has no #map-data block');
-  const data = JSON.parse(m[2]!);
-  const own: Line[] = data.options.find((o: { id: string }) => o.id === 'sickle').lines;
+  const data = syncHomeMap(parseMapPage(html));
+  const own: Line[] = data.options.find((o) => o.id === 'sickle')!.lines;
   const authored = { ...AUTHORED };
   const r2 = (v: number) => Math.round(v * 100) / 100;
   for (const b of BUILT) {

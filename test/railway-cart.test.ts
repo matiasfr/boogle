@@ -107,7 +107,8 @@ test('the pose: whole centimetres along the road, eased, continuous across every
     assert.equal(cartAlong(a, b.depart), cartAlong(b, b.depart), `phase ${a.phase} -> ${b.phase}`);
   }
   assert.equal(cartAlong(trip.at(-1)!, cartEnd(trip.at(-1)!)), 0, 'home at the camp');
-  assert.equal(R, 36100, "Q4's rack stop: 361 m from the camp, behind the waiting machine");
+  assert.equal(CART_ROAD.forgeCm, 20632, "Home's forge stop on the station road");
+  assert.equal(R, 37132, "Q4's rack stop: 371.32 m from the camp, behind the waiting machine");
 });
 
 test('a load is conserved across a mid-trip snapshot and load, and the restored cart runs on identically', () => {
@@ -175,7 +176,7 @@ test('a save still carrying the cart recall column is refused whole, and older s
   const snap = JSON.parse(JSON.stringify(atQ2().w.snapshot()));
   snap.c.cart.push(snap.c.cart[0].map(() => 0));
   assert.throws(() => createRailwayWorld().load(snap, railwayCheck), /load: cart columns/);
-  assert.match(railwayRoomId('boogle'), /^rail-v35-/);
+  assert.match(railwayRoomId('boogle'), /^rail-v36-/);
 });
 
 test('the away credit counts the cart: the load under way lands, whole trips bring the rest, the cart is home', () => {

@@ -126,14 +126,14 @@ test("the fares-running row lands on line 2's Village platform, where riders boa
   const at = RAIL_LINES[1]!.halts[0]!.platforms[0],
     quarry = RAIL_LINES[1]!.halts[1]!.platforms[1];
   const land = row.land!;
-  // On the platform's line (line 2, lat +3.1, the island runs s 6 to 28 m), 5 m on from where riders board (s 17), so
-  // the station canopy is behind the follow camera.
-  const { LINKS, ORIGIN, lineAt } = await import('../src/place/layout.ts');
-  const q = { x: 0, z: 0, ux: 0, uz: 0 };
-  lineAt(LINKS[1]!.line, 22, q);
-  const s22 = { x: ORIGIN.x + q.x - q.uz * 3.1, z: ORIGIN.z + q.z + q.ux * 3.1 };
-  assert.ok(Math.hypot(land.x - s22.x, land.z - s22.z) < 0.05, 'on the platform, s 22, lat +3.1');
-  assert.ok(Math.hypot(land.x - at.x / 100, land.z - at.z / 100) < 5, 'within 5 m of where riders board');
+  // Five metres ahead along Home's island axis from where riders board, with the canopy behind the camera.
+  const { AXIS, ISLAND, ISLAND_A, ISLAND_C, toAxis } = await import('../src/place/home-station.ts');
+  const { ORIGIN } = await import('../src/place/layout.ts');
+  const ahead = { x: at.x / 100 + AXIS.d.x * 5, z: at.z / 100 + AXIS.d.z * 5 };
+  assert.ok(Math.hypot(land.x - ahead.x, land.z - ahead.z) < 0.01, '5 m along the platform to the nearest centimetre');
+  const onDeck = toAxis({ x: land.x - ORIGIN.x, z: land.z });
+  assert.ok(onDeck.a >= ISLAND_A.deck0 && onDeck.a <= ISLAND_A.deck1, 'within the deck ends');
+  assert.ok(Math.abs(onDeck.c - ISLAND_C) <= ISLAND.width / 2, 'within the island edges');
   assert.ok(Math.abs(land.y - at.y / 100) < 0.01, "on the platform's top");
   // Forward is (-sin yaw, -cos yaw): toward the Quarry.
   const fx = -Math.sin(land.yaw!),

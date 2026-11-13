@@ -22,7 +22,7 @@ import {
 } from '../src/place/layout.ts';
 import { H, PATH_SAMPLES } from '../src/place/terrain.ts';
 import { distToLine, parseMapPage, type XZ } from '../src/proto/greybox/map-data.ts';
-import { LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_BOILER, LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';
 import { TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS } from '../src/entities/railway/cars.ts';
@@ -150,7 +150,8 @@ test('the rack serves the halt', () => {
 test('the wagon waits between the table and the train', () => {
   assert.ok(WAGON_S / 100 - 1.6 > TURNTABLE.r);
   assert.ok(WAGON_S / 100 + 1.6 < 12.95, 'short of the plain train at the stop (v33: 18.25 less 3.7 and 1.6)');
-  assert.deepEqual(local(SHED_TABLE), [TURNTABLE.x, TURNTABLE.z]);
+  assert.equal(SHED_TABLE.x, Math.round((ORIGIN.x + TURNTABLE.x) * 100));
+  assert.equal(SHED_TABLE.z, Math.round((ORIGIN.z + TURNTABLE.z) * 100));
   assert.deepEqual(SHED_ROAD, { stall: 0, line2: 1 });
 });
 test('the pier stop fits', () => {
@@ -250,8 +251,9 @@ test('one footing for every use', () => {
   assert.equal(WORKS.pier, 2 * CROSSING_BENTS.length);
   assert.deepEqual(RAIL_ROCKS, [...LINE1_ROCKS, ...WORKS_ROCKS]);
   assert.equal(new Set(RAIL_ROCKS.map((r) => r.id)).size, RAIL_ROCKS.length);
-  // LINE2_BOILER is not on this origin/main yet. Pin the same pedestal from props.ts's FORGE + (6, 8.4).
-  assert.equal(WORKS_BREAKER.x, Math.round((ORIGIN.x + FORGE.x + 6) * 100));
-  assert.equal(WORKS_BREAKER.z, Math.round((ORIGIN.z + FORGE.z + 8.4) * 100));
+  // The breaker uses the boiler's pedestal at Home (home-flip X1).
+  assert.deepEqual([WORKS_BREAKER.x, WORKS_BREAKER.z], [92200, -117]);
+  assert.equal(WORKS_BREAKER.x, LINE2_BOILER.x);
+  assert.equal(WORKS_BREAKER.z, LINE2_BOILER.z);
   assert.equal(WORKS_BREAKER.y, Math.round(H(WORKS_BREAKER.x / 100, WORKS_BREAKER.z / 100) * 100));
 });

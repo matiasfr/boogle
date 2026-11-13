@@ -3,7 +3,7 @@
 // drawn, and nothing in the game imports town-plan.ts yet.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AXIS, HALL, STALLS, headPoints, homeLayout, stallFrame, type XZ } from '../src/place/home-station.ts';
+import { AXIS, HALL, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
 import { LINES, VILLAGE, lineAt } from '../src/place/layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
 import {
@@ -246,10 +246,9 @@ test('the yard find is 4.5 m behind the gate cottage, and the forge door and the
   near(TOWN_PROPS.bay.z, 21.8, 0.01, 'bay.z');
 });
 
-test('the tree catalog is unchanged: this module moves no tree (length, first and last rows, per layout)', () => {
-  const b = homeLayout();
+test('the tree catalog retains its stable planting order (length, first and last rows)', () => {
   const at = (i: number) => [Math.round(LAND_TREES[i]!.x * 100) / 100, Math.round(LAND_TREES[i]!.z * 100) / 100];
-  assert.equal(LAND_TREES.length, b ? 361 : 362);
+  assert.equal(LAND_TREES.length, 362);
   assert.deepEqual(at(0), [1081.13, -89.07]);
-  assert.deepEqual(at(LAND_TREES.length - 1), b ? [1330.21, -157.39] : [1426.55, -214.11]);
+  assert.deepEqual(at(LAND_TREES.length - 1), [1426.55, -214.11]);
 });

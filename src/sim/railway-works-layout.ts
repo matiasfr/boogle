@@ -28,7 +28,7 @@ export const WORKS_SEAMS = [
   // The gold rivet at the leaf's toe (rail.strike id 2, Ring Island's): struck once the leaf is down.
   { id: 2, name: 'rivet', ...RING_RIVET },
 ] as const;
-export const WORKS_BREAKER = { x: 92200, z: -105, y: 1800, reach: 420 } as const;
+export const WORKS_BREAKER = { x: 92200, z: -117, y: 1800, reach: 420 } as const;
 export const WORKS_CLEFT = { x: 116000, z: 12000, y: 2148 } as const;
 export const WORKS_KILN = { x: 112800, z: 8700, y: 2420, reach: 450 } as const;
 export const WORKS_RACK = { x: 108800, z: 5000, y: 2400, reach: 400 } as const;

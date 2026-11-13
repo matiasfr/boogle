@@ -1,11 +1,21 @@
-// Every halt display's map names, for the layout this process loads (BOOGLE_HOME picks it): no two names' boxes
+// Every halt display's map names for Home's island: no two names' boxes
 // touch, none leaves the face, and none sits on a stop's ring or a train standing there. At every stage line 2 has
 // (src/entities/railway/halt-map.ts): the Pier unlaid (five names, today's sizes), the Pier laid (six, the sea line
 // and Ring Island dim), Q7 laid at each of the eight railheads (seven), joined (eight: the stack line dashed on to a dim
 // High Gorge) and each of the stack line's four sections laid (nine). Every display is checked at every stage, the
 // stack line's own (halt-map.ts stackDisplays) too, and Ring Island's map table (RING_TABLE_DISPLAY) from the rivet. Pure numbers: the same boxes, sizes and fit the game draws.
 import assert from 'node:assert/strict';
-import { boxGap, fitMap, MAP_CELL, mapLabels, mapLabelSteps, mapPx, mapSizes, stopClear, type MapLabel } from '../../src/render/island-map.ts';
+import {
+  boxGap,
+  fitMap,
+  MAP_CELL,
+  mapLabels,
+  mapLabelSteps,
+  mapPx,
+  mapSizes,
+  stopClear,
+  type MapLabel,
+} from '../../src/render/island-map.ts';
 import { haltDisplays, haltMap, RING_TABLE_DISPLAY, type MapStage } from '../../src/entities/railway/halt-map.ts';
 
 const CW = MAP_CELL.w,

@@ -222,7 +222,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         name: 'Village',
         s: 1400,
         opens: -1,
-        platforms: both({ x: 93007, z: 367, y: 1902, reach: 1260 }),
+        platforms: both({ x: 92985, z: 375, y: 1902, reach: 1260 }),
         end: railEnd('stub', 3600, -1),
       },
       {
@@ -403,7 +403,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         // 18.25 m from v33 (docs/plans/fourth-car.md, R2): the wagon train's steel car stands off the table's deck.
         s: 1825,
         opens: -1,
-        platforms: both({ x: 93013, z: 365, y: 1902, reach: 1260 }),
+        platforms: both({ x: 92985, z: 375, y: 1902, reach: 1260 }),
         end: railEnd('stub', 3400, -1),
       },
       {

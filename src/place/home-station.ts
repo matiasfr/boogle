@@ -274,9 +274,9 @@ export const CROSSING = {
 export const PROPS = {
   rack: { x: -84.53, z: 10.05 },
   greeter: { x: -95.86, z: 9.65 },
-  pedestal: { x: -78.0, z: -1.05 },
+  pedestal: { x: -78.0, z: -1.17 }, // the existing 3.5 m rail clearance, including the pedestal's footprint
   crane: { x: -72.4, z: -3.1 },
-  dock: { x: -76.15, z: -1.73 },
+  dock: { x: -76.07, z: -1.73 }, // retain 2 m between the dock and the pedestal
   yard: { x: -46, z: 22 },
 };
 /** The curio shelf's footprint in its own frame (`curio-shelf.ts`): the crown's half-width, how far the crown reaches in

@@ -9,7 +9,7 @@ export const RECOVERY_RACK = { x: 90500, z: 100 };
 // Pinned centimetre bounds of the two initially laid stubs and T1's whole corridor, plus 8 m clearance.
 // Clear the eventual corridor throughout construction too; never recreate an obstruction around finished track.
 export const RAILWAY_TRACK_CLEARINGS = [
-  [91000, 94574, -1859, 2000],
+  [90934, 95284, -1859, 2035],
   [96400, 103164, -15744, -11403],
 ] as const;
 export const railGrowthAllowed = (k: number, line1 = false) => {
