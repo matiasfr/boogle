@@ -13,7 +13,7 @@ import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
 import { addAdmin } from './admin.ts';
 import { addJump, type JumpConfig } from './jump.ts';
-import { addReplace, type ReplaceConfig } from './replace.ts';
+import { addReplace, replacementClientAddress, type ReplaceConfig } from './replace.ts';
 import { createReplacements } from './replacements.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
@@ -72,6 +72,7 @@ export function loadConfig(
     advanceKey: env.ADVANCE_KEY || '',
     advanceShared: env.ADVANCE_SHARED === '1',
     replaceRatePerMin: Number(env.REPLACE_RATE_PER_MIN) || 30,
+    replaceFlyProxy: env.REPLACE_FLY_PROXY === '1',
     saveCleanup: env.SAVE_CLEANUP === 'off' ? 'off' : 'trash',
     serverRooms: env.SERVER_ROOMS ? list(env.SERVER_ROOMS) : ['*'], // rooms it hosts (docs/plans/server-host.md); default all
     tuneControllerKey: env.TUNE_CONTROLLER_KEY || '',
@@ -142,7 +143,15 @@ export type ServerConfig = ReplaceConfig & {
 };
 
 /** Token buckets with at most 1,024 addresses, evicting the least recently seen first. */
-function createRateLimiter({ perMinute, global = false }: { perMinute: number; global?: boolean }) {
+function createRateLimiter({
+  perMinute,
+  global = false,
+  address,
+}: {
+  perMinute: number;
+  global?: boolean;
+  address?: (req: Request) => string;
+}) {
   const buckets = new Map<string, { tokens: number; t: number }>();
   const refillPerMs = perMinute / 60000;
   const sweep = setInterval(() => {
@@ -152,7 +161,7 @@ function createRateLimiter({ perMinute, global = false }: { perMinute: number; g
   sweep.unref();
   const middleware = (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
-    const key = global ? 'server' : req.ip || 'unknown';
+    const key = global ? 'server' : address ? address(req) : req.ip || 'unknown';
     let b = buckets.get(key);
     buckets.delete(key); // Refresh insertion order for the bounded LRU, even on refusal.
     if (buckets.size >= 1024) buckets.delete(buckets.keys().next().value!);
@@ -199,6 +208,10 @@ function cleanReport(r: any): Report | null {
  * Returns { app, server, listen(port), close({ save }), config, roomHost(), jumps }.
  */
 export function createService(cfg: ServerConfig) {
+  if (cfg.advanceKey && cfg.advanceKey.length < 32) {
+    cfg.log('ADVANCE_KEY must contain at least 32 characters; room replacement disabled. Generate a random key.');
+    cfg = { ...cfg, advanceKey: '' };
+  }
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', cfg.trustProxy);
@@ -390,7 +403,10 @@ export function createService(cfg: ServerConfig) {
     roomHost: () => roomHost,
     jumps,
     replacements,
-    ipLimit: createRateLimiter({ perMinute: cfg.replaceRatePerMin }),
+    ipLimit: createRateLimiter({
+      perMinute: cfg.replaceRatePerMin,
+      address: (req) => replacementClientAddress(req, cfg.replaceFlyProxy),
+    }),
     failedAuthLimit: createRateLimiter({ perMinute: 24, global: true }),
     operatorLimit: createRateLimiter({ perMinute: 24, global: true }),
   });

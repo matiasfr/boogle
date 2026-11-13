@@ -58,9 +58,10 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `REPORT_RATE_PER_MIN`        | `12`        | Per-IP token bucket for `POST /report` (the client batches, so one POST carries several reports).                                                                      |
 | `REPORT_MAX_BYTES_PER_DAY`   | `5242880`   | Cap on each day's report file (5 MB); further reports that day get 507.                                                                                                |
 | `REPORT_TOKEN`               | unset       | Enables `GET /reports` for whoever sends this bearer token. Unset: reports are write-only (read them on the volume).                                                   |
-| `ADVANCE_KEY` | unset | Enables room replacement for this bearer only; `REPORT_TOKEN` cannot authorize it. |
+| `ADVANCE_KEY` | unset | Randomly generated bearer, at least 32 characters, for room replacement only. A shorter nonempty key disables replacement with a warning; the game server keeps running. `REPORT_TOKEN` cannot authorize it. |
 | `ADVANCE_SHARED` | off | `1` permits replacing the shared `boogle` island behind `ADVANCE_KEY`. |
 | `REPLACE_RATE_PER_MIN` | `30` | Per-IP replacement requests, before authentication. Failed authentication and authenticated operators have separate fixed server-wide 24/minute token buckets. |
+| `REPLACE_FLY_PROXY` | off | `1` trusts Fly's edge-set `Fly-Client-IP` for replacement admission. Set in `server/fly.toml`; never enable on a directly exposed listener or a proxy that preserves client-supplied values. |
 | `PLAY_RATE_PER_MIN`          | `240`       | Per-IP token bucket for `POST /playdata` (a tab sends a batch every 5 s; friends may share an IP).                                                                     |
 | `PLAY_NEW_SESSIONS_PER_HOUR` | `40`        | New sessions per IP per hour on `POST /playdata`; each page load is one.                                                                                               |
 | `PLAY_MAX_SESSION_BYTES`     | `4194304`   | Cap on one session's file (4 MB); further batches get 507.                                                                                                             |
@@ -72,7 +73,7 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `JUMP_BUILD`                 | `any`       | Where seeds come from: `any` builds a missing one in a worker thread (local, tests), `prebuilt` serves only the image's `server/seeds/` (the image sets it; 503 otherwise).    |
 | `JUMP_IDLE_DAYS`             | `3`         | A jump room nobody has touched this long is deleted, with its sidecar (at boot and before each jump).                                                                  |
 | `JUMP_MAX_ROOMS`             | `200`       | Jump rooms at once; past it `POST /jump` gets 507, so jump-ins can't fill `MAX_ROOMS`.                                                                                 |
-| `TRUST_PROXY`                | `1`         | Express `trust proxy` (hops, `true`, or `false`). `1` suits Fly/Render/Railway; needed so the rate limit sees the real client IP.                                      |
+| `TRUST_PROXY`                | `1`         | Express proxy trust for existing non-replacement paths. A multi-hop Fly chain can group clients at the app-side hop; those limiters need separate review. Replacement uses its own trusted-address resolver. |
 | `SERVER_ROOMS`               | `*`         | Rooms this server hosts (above): `*` for every valid room id (production, `npm run dev` and the test harnesses), or a comma-separated list (loaded at start and kept). |
 | `ROOM_IDLE_MS`               | `600000`    | With `*`: a room nobody has been in this long is saved and unloaded (it loads again on the next join).                                                                 |
 | `MAX_HOSTED_ROOMS`           | `20`        | With `*`: rooms loaded at once; a join past it gets `full` with `rooms: true`.                                                                                         |
@@ -188,6 +189,13 @@ refusal spends neither global budget. Failed guesses cannot drain operator capac
 so one operator can use the full 24/minute operator budget; an exhausted shared IP still throttles all its callers.
 Each IP limiter tracks at most 1,024 addresses, evicting the least recently seen. Credentials are never logged or
 echoed; wrong credentials share generic responses without length/prefix hints.
+On Fly, replacement admission uses the edge-set `Fly-Client-IP`, not any `X-Forwarded-For` entry. Missing or
+invalid Fly headers fall back to the socket address. With `REPLACE_FLY_PROXY` off (local/dev), all forwarding
+headers are ignored. This relies on Fly's edge replacing the header on every public request; live deployment
+behavior has not been verified by the local tests. Other server limiters still use Express `req.ip` unchanged.
+Generate `ADVANCE_KEY` with `openssl rand -base64 32` and store it as a secret. Length alone cannot establish
+randomness: use random output, never a memorable phrase. Fewer than 32 characters disables replacement at
+startup with a warning that contains no credential; health checks and gameplay remain available.
 
 On success the response identifies the pinned backup and restore command. Pins live under
 `DATA_DIR/.backups/pinned/` and survive normal pruning until released. The `replacements/` journal is reconciled
@@ -205,7 +213,7 @@ Local invocation (the server must have the same key; choose a disposable room):
 
 ```sh
 export BOOGLE_SERVER=http://127.0.0.1:9000
-export ADVANCE_KEY=local-replace-key
+export ADVANCE_KEY="$(openssl rand -base64 32)"
 npm run server -- replace test-room awake --override
 curl -X POST "$BOOGLE_SERVER/admin/rooms/rail-v41-test-room/replace" \
   -H "Authorization: Bearer $ADVANCE_KEY" -H 'Content-Type: application/json' \

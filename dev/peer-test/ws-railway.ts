@@ -1267,7 +1267,7 @@ export async function railwayJumpIn(c: Ctx) {
   const preChange = await rail(J0);
   const replaced = await fetch(`http://127.0.0.1:${c.port()}/admin/rooms/${id}/replace`, {
     method: 'POST',
-    headers: { Authorization: 'Bearer peer-test-advance', 'Content-Type': 'application/json' },
+    headers: { Authorization: 'Bearer peer-test-advance-32-char-key-000000', 'Content-Type': 'application/json' },
     body: JSON.stringify({ stage: 'q3-done', confirm: room, override: true }),
   });
   jumpCheck('replace: authenticated request succeeds', replaced.status === 200, await replaced.clone().text());

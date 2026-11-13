@@ -10,11 +10,13 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { SeedValidationBusyError, validateSeedDoc } from '../src/seeds/validate.ts';
 
+const KEY = 'replace-test-key-01234567890123456789';
+
 async function start(overrides: Partial<ServerConfig> = {}, existing?: string) {
   const dataDir = existing ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-replace-')));
   const svc = createService(
     loadConfig(
-      { DATA_DIR: dataDir, ADVANCE_KEY: 'advance', REPORT_TOKEN: 'report' },
+      { DATA_DIR: dataDir, ADVANCE_KEY: KEY, REPORT_TOKEN: 'report', REPLACE_FLY_PROXY: '1' },
       {
         log: () => {},
         replaceRatePerMin: 1000,
@@ -24,7 +26,7 @@ async function start(overrides: Partial<ServerConfig> = {}, existing?: string) {
     ),
   );
   const base = `http://127.0.0.1:${await svc.listen(0)}`;
-  const post = (body: unknown, key = 'advance', room = 'testing') =>
+  const post = (body: unknown, key = KEY, room = 'testing') =>
     fetch(`${base}/admin/rooms/${railwayRoomId(room)}/replace`, {
       method: 'POST',
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
@@ -45,13 +47,13 @@ test('replace: disabled, wrong key, report token, confirmation, room and stage g
       (
         await fetch(`${s.base}/admin/rooms/not-current/replace`, {
           method: 'POST',
-          headers: { authorization: 'Bearer advance', 'content-type': 'application/json' },
+          headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json' },
           body: JSON.stringify(body),
         })
       ).status,
       400,
     );
-    assert.equal((await s.post({ stage: 'awake', confirm: 'boogle' }, 'advance', 'boogle')).status, 403);
+    assert.equal((await s.post({ stage: 'awake', confirm: 'boogle' }, KEY, 'boogle')).status, 403);
     assert.deepEqual(
       (await fs.readdir(s.dataDir)).filter((f) => f.endsWith('.json')),
       [],
@@ -91,7 +93,7 @@ test('replace: aggregate authentication budget rejects a distributed burst befor
     for (let n = 1; n <= 32; n++) {
       const response = await fetch(`${s.base}/admin/rooms/${railwayRoomId('testing')}/replace`, {
         method: 'POST',
-        headers: { authorization: 'Bearer wrong', 'x-forwarded-for': `192.0.2.${n}` },
+        headers: { authorization: 'Bearer wrong', 'fly-client-ip': `192.0.2.${n}` },
       });
       statuses.push(response.status);
       await response.text();
@@ -120,17 +122,17 @@ test('replace: at most two authenticated rooms prepare concurrently and capacity
     await gate;
     return { status: 500, error: 'fixture failed' };
   };
-  const first = s.post({ stage: 'awake', confirm: 'one' }, 'advance', 'one');
-  const second = s.post({ stage: 'q1-done', confirm: 'two' }, 'advance', 'two');
+  const first = s.post({ stage: 'awake', confirm: 'one' }, KEY, 'one');
+  const second = s.post({ stage: 'q1-done', confirm: 'two' }, KEY, 'two');
   try {
     await until(() => builds === 2);
-    const third = s.post({ stage: 'q3-done', confirm: 'three' }, 'advance', 'three');
+    const third = s.post({ stage: 'q3-done', confirm: 'three' }, KEY, 'three');
     const response = await Promise.race([third, new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000))]);
     assert.equal(response?.status, 429, 'excess work is refused without waiting for a build');
     assert.equal(builds, 2);
     release();
     await Promise.all([first, second]);
-    assert.notEqual((await s.post({ stage: 'q3-done', confirm: 'three' }, 'advance', 'three')).status, 429);
+    assert.notEqual((await s.post({ stage: 'q3-done', confirm: 'three' }, KEY, 'three')).status, 429);
     assert.equal(builds, 3);
   } finally {
     release();
@@ -152,7 +154,7 @@ test('replace: seed, new birth, host record, pinned backup, restore, and earlier
   const seed = await buildSeedDoc('q1-done');
   const s = await start({ advanceShared: true, jumpBuildDoc: async () => seed });
   try {
-    const first = await s.post({ stage: 'q1-done', confirm: 'boogle' }, 'advance', 'boogle');
+    const first = await s.post({ stage: 'q1-done', confirm: 'boogle' }, KEY, 'boogle');
     assert.equal(first.status, 200, await first.clone().text());
     const result = (await first.json()) as { backup: string; born: string; bornBefore: string; restore: string };
     assert.notEqual(result.born, result.bornBefore);
@@ -175,7 +177,7 @@ test('replace: seed, new birth, host record, pinned backup, restore, and earlier
       observer.ws.close();
     }
     await until(() => s.svc.roomHost()!.room(id)!.status().players === 0);
-    assert.equal((await s.post({ stage: 'awake', confirm: 'boogle' }, 'advance', 'boogle')).status, 409);
+    assert.equal((await s.post({ stage: 'awake', confirm: 'boogle' }, KEY, 'boogle')).status, 409);
     const restore = await fetch(`${s.base}/admin/rooms/${id}/restore?backup=${encodeURIComponent(result.backup)}`, {
       method: 'POST',
       headers: { authorization: 'Bearer report' },
@@ -218,7 +220,7 @@ test('replace: a replaced jump room survives jump expiry, including restart', as
     });
     const { room } = (await jump.json()) as { room: string };
     assert.equal(jump.status, 200);
-    const r = await s.post({ stage: 'awake', confirm: room }, 'advance', room);
+    const r = await s.post({ stage: 'awake', confirm: room }, KEY, room);
     assert.equal(r.status, 200);
     await s.svc.close();
     stopped = true;
