@@ -35,7 +35,9 @@ import { line2At, line2Lat, line2Y, endMergeM } from './line2-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
-import { createKitBoard, kitMarks } from './kit-board.ts';
+import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
+import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
+import { legKitStop, legRow, openLeg } from '../../sim/railway-queries-route.ts';
 
 const BRASS = '#c79a3e';
 /** Steel, the island's orange (ring-island/view.ts, ring-steel/view.ts). */
@@ -591,6 +593,7 @@ export async function createRailwayTrains(
     merge2 = mergeShown = endMergeM(stops2);
     secondVisible = on;
     flyingLogs = flyingRails = 0;
+    legKitFlight.logs = legKitFlight.rails = 0;
     unloading = false;
     footFlights.length = 0;
     for (const tr of cargo) crates.clearCrates(tr.deck);
@@ -936,6 +939,30 @@ export async function createRailwayTrains(
                 tr.count = -1;
               }
             });
+          }
+        }
+        // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
+        // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
+        // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight).
+        const leg = tr.line === LINE2 && tr.last?.legKit ? openLeg(w, LINE2) : -1;
+        if (leg >= 0 && tr.last && row.phase === TRAIN_PHASE.STAND && row.at === legKitStop(w, leg) && tr.count > 0) {
+          const logs = tr.last.logs - row.logs,
+            rails = tr.last.rails - row.rails,
+            keep = Math.ceil((row.logs + row.rails) / 8),
+            count = tr.count - keep;
+          if (logs >= 0 && rails >= 0 && logs + rails > 0 && count > 0) {
+            const rack = legRack(RAIL_LEGS[leg]!, legRow(w, leg).laid);
+            legKitFlight.logs += logs;
+            legKitFlight.rails += rails;
+            for (let i = 0; i < count; i++) {
+              const to = new THREE.Vector3(rack.x / 100, rack.y / 100 + 0.5, rack.z / 100);
+              const share = (n: number) => Math.floor((n * (i + 1)) / count) - Math.floor((n * i) / count);
+              crates.hopOff(tr.deck, keep + i, to, i * 0.09, () => {
+                legKitFlight.logs = Math.max(0, legKitFlight.logs - share(logs));
+                legKitFlight.rails = Math.max(0, legKitFlight.rails - share(rails));
+              });
+            }
+            tr.count = keep;
           }
         }
         if (!unloading || tr.line !== LINE2) drawLoad(tr, Math.ceil((row.logs + row.rails) / 8));
