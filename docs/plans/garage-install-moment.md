@@ -459,3 +459,66 @@ None blocks the build; each proceeds on its recommendation and is logged in [age
   race where the second holder keeps camera and input.
 - **G5.** As planned.
 - **Checkpoint.** Report press-to-drop from the real-time capture. The fourth car is the next Ring Island step.
+
+## Design ruling on G2 as built (designer, 2026-11-12)
+
+**My finding 3 was wrong in its numbers.** I sized the stand by its legs (0.9 m either side), not by the 3.15 m by
+1.25 m barrel that lies on it, so "radial at 5.6 m" put the barrel's inner end inside the sweep it was meant to
+clear. The rule (call 24, nothing fixed within 4.8 m) stands; the placement is replaced by this ruling.
+
+**Looked at** (the builder's stills on a46c987cf): `g2-top-still`, `g2-cam-still` (100°), `g2-cam-east85-still`,
+`g2-cam-180-still`. **Not seen:** the arm parked, the barrel from 86° to 92°, the jump-in's first frame, anything
+moving, the empty stand beside a car. Those are G3's stills, named below.
+
+| # | Ruling | Kind |
+| --- | --- | --- |
+| R1 | **The stand stays as built:** 118°, middle 6.5 m, along the radius, the barrel nose to the table (4.93 to 8.08 m). The 0.34 m over line 2's sleeper ends and the 0.33 m from the landing point are accepted | Default |
+| R2 | **The stand's legs must clear a car on line 2:** legs at 6.0 m or further out, no wider than 0.5 m either side of the barrel's axis, asserted in `test/garage-geo.test.ts` | Default |
+| R3 | **The jib keeps its size** (mast 4.4 m at 8.4 m, arm 10.6 m) **but the arm parks off the table.** It points at the table only while a part waits (steel home, not yet fitted) and through the install; otherwise it is swung away from the table over the open grass east-south-east. It swings in over about 2 s when steel comes home on a live tick, with one `cordPull` and a `clank`; swings back after the show-off; snaps on a restore | Default |
+| R4 | **The camera is 85°, not 100°.** The builder may nudge it to at most 92° if the barrel's nose then enters the left edge, takes a tenth of the frame or less and stays off the car's wheels; otherwise 85° | Default |
+| R5 | **What the camera still must show:** the engine clear from the wheels up; nothing meeting the chimney; the post and its knob; with a part waiting, the arm in frame leading to the engine. Dropped: the mast in frame, the whole stand in frame, a line 2 train in frame | Default |
+| R6 | **The pallet may move** (it is view only) within 60° to 75°, 6 to 7 m, so it is no more than a corner of the 85° frame | Default |
+| R7 | The builder's own calls stand: the garage opens only once the copy stands; the jib and empty stand are there whenever the copy is; the crew from steel home; wheels and chuff only in the garage; the flat car can be stood on; the first car's box stays (the walk is 2 m longer, no jump); the copy shows on "coupled and the deck at rest" (the builder's test, not my `deckK === null`) | Default |
+
+**Why, option by option.**
+
+- **Accept the stand (the builder's option 1): yes.** Line 2 inside s 8.0 is track no train stands on, the barrel has
+  no collider, and the landing is the owner's jump-in, not a place a player arrives at in play. The barrel and the
+  fourth car never meet: the car arrives with the install, which takes the barrel off the stand. What is left is the
+  empty stand, hence R2. At its inner end the barrel's axis is 1.39 m from line 2's centre, which a car's side (about
+  1.25 m) all but touches; at 6.0 m it is 1.75 m, room for legs 0.5 m wide.
+- **Option 2 (62° to 81°, the pallet moved): no.** A barrel whose top is about 2.1 m up, 3.6 m in front of a camera
+  2.7 m up, hides the engine below about 1.2 m: the wheels that run up in the moment. It would force the south
+  camera, which has the forge crane's mast behind the cab (seen in `g2-cam-180-still`).
+- **Option 3 (line 2's far side, by the platform end): no.** That slab end is the walk from a line 2 train to the
+  table; a barrel there is walked through or blocks it.
+- **Along the rim or on end: no.** Along the rim needs 3.15 m of arc that the wedge only has where option 2 puts it.
+  On end it fits (118°, 6.2 m) but stands 3 m tall half a metre off the jump-in's camera line and stops reading as a
+  boiler waiting to go on.
+- **The arm.** A mast behind a radial stand is 8.4 m from the centre and must reach a seat 1.9 m past it; no smaller
+  jib does that, and there is no room for a mast at the rim beside the stand (the landing one side, the sleepers the
+  other). So the size is kept and the fault is fixed in time, not space: the arm crosses the copy only while there is
+  something to install. That also turns the crane swinging round into the telegraph that steel is home, seen from
+  line 2's platform. `armPivot` already exists, so this is one yaw by state.
+- **The camera.** `g2-cam-east85-still` is the best frame taken: the engine large and clear with the open stall
+  behind it, the post and knob low centre, off the wheels. At 100° the barrel is a quarter of the frame and hides the
+  car's wheels. The part is not lost at 85°: it comes in from the left along the arm that is already in frame.
+- **The line 2 train condition** was there to catch a standing train blocking the frame. None is in frame from the
+  east, so it is dropped.
+
+**Fallback.** If parking the arm is more than a small edit, the arm stays fixed over the stand for this build and
+that is logged as built; nothing else here depends on it.
+
+**For the Home flip, not this plan.** Layout B's row has the stand at 3.9 m, inside the 4.8 m rule; the flip re-places
+it. Line 1's tail stands 0.2 m off the rim (s 5.0, not the 8.7 of section 5's row 1): clear of the 4.4 m sweep by
+0.6 m, accepted.
+
+**What the builder changes (G3 carries it, or a small G2b first).**
+
+1. `GARAGE_GEO.a.camBearing`: 100 to 85 (up to 92 under R4's test).
+2. The stand's legs per R2, with the test.
+3. The arm's park and swing per R3; the parked arm out of the garage frame or only at its top edge.
+4. The pallet per R6 if it is more than a corner of the frame.
+5. Stills: the garage camera with a part waiting and with the stand empty and the arm parked; the top-down with the
+   arm parked; the `steel-home` jump-in's first frame (the barrel must not stand between the camera and the player).
+6. Section 5 and "G2 as built" updated with the numbers as built.
