@@ -62,8 +62,9 @@ test('a durable write holds the railway room clock: blocked steps are not counte
     const tick = host.sync.world.tick;
     const step = host.sync.roomStep();
     const seen = steps.length;
-    // A lockstep edit (the roster's who.set) is durable before it is published: unpublished until its write lands.
-    host.deliver({ t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: 'Al', c: 1 } }, 'a');
+    // The retained classic tail still blocks its clock. No production client op enters it after step 4.
+    host.sync.registerOp('test.tail', { apply: () => null });
+    assert.equal(host.sync.receiveEdit({ op: 'test.tail', i: 0, j: 0 }, 'a'), true);
     host.step(0.5);
     await Promise.resolve();
     assert.equal(host.sync.worldStatus().recoveryPending, true);

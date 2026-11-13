@@ -168,18 +168,25 @@ export async function railwayChecks(c: Ctx) {
   railCheck(
     'the room registers only the classic lockstep states; the railway is mirrored',
     JSON.stringify(initial.registry.states) ===
-      JSON.stringify(['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'tune', 'opening']),
+      JSON.stringify(['gifts', 'stacks', 'piles', 'sites', 'sources', 'bank', 'tune', 'opening']),
   );
   // Re-sent until it shows, as src/features/identity.ts does every 3 s: just after the restart the host can drop an
   // edit that arrives before its world runs again (CI run 42723426132), and the host refuses one that changes nothing.
   let whoSent = -Infinity;
   railCheck(
-    'identity is accepted in the lockstep roster',
+    'identity is accepted in the server roster',
     (await waitFor(async () => {
       if ((await rail(RB)).people.some((p) => p.pid === 'raila' && p.name === 'Alice')) return true;
       if (Date.now() - whoSent >= 1000) {
         whoSent = Date.now();
-        await ev(RA2.page, () => window.T.railBaseEdit({ op: 'who.set', i: 0, j: 0, n: 'Alice', c: 2 }));
+        await ev(
+          RA2.page,
+          (epoch: number) => {
+            window.T.railStand(0, 0, 0);
+            window.T.railEdit({ op: 'who.set', n: 'Alice', c: 2, epoch, request: 1 });
+          },
+          epochRestored,
+        );
       }
       return false;
     })) >= 0,
@@ -192,7 +199,7 @@ export async function railwayChecks(c: Ctx) {
 
   const epochB2 = await session(RB);
   const next = new Map<Page, number>([
-    [RA2, 1],
+    [RA2, 2],
     [RB, 1],
   ]);
   const epochs = new Map<Page, number>([

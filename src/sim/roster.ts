@@ -18,7 +18,8 @@ export function cleanName(s: unknown): string {
     .replace(/[\p{Cc}\p{Cf}]/gu, '')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, NAME_MAX);
+    .slice(0, NAME_MAX)
+    .trimEnd(); // truncation can expose a trailing space: persisted names must already be load-stable
 }
 
 export type Roster = { pids: string[]; names: string[]; colors: number[]; index: Map<string, number> };

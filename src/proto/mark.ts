@@ -58,3 +58,37 @@ export function onPlayMark(fn: PlayFn) {
   playFn = fn;
   for (const [name, data, ms] of early.splice(0)) fn(name, data, ms);
 }
+
+/** Latest replicated roster. Names are the consented exception. Sync kind: Local diagnostics only. */
+export type RosterSnapshot = { rows: readonly (readonly [string, string, number])[]; tick: number };
+export const ROSTER_SNAPSHOT_MS = 30_000;
+let rosterSnapshot: RosterSnapshot | undefined;
+const rosterListeners = new Set<() => void>();
+/** Renames remain budgeted marks. Request a coalesced recovery snapshot so dropped marks never lose final state. */
+export function recordRosterSnapshot(snapshot: RosterSnapshot) {
+  rosterSnapshot = snapshot;
+  for (const listener of rosterListeners) listener();
+}
+/** Each recorder starts complete, even when loaded late. Subsequent dirty/refill snapshots have a fixed trailing
+ * window: more updates replace the pending state without postponing the flush. No idle timer or unbounded queue. */
+export function onRosterSnapshot(listener: (snapshot: RosterSnapshot) => void) {
+  let started = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const receive = () => {
+    if (!started) {
+      started = true;
+      listener(rosterSnapshot!);
+    } else if (timer === undefined) {
+      timer = setTimeout(() => {
+        timer = undefined;
+        listener(rosterSnapshot!);
+      }, ROSTER_SNAPSHOT_MS);
+    }
+  };
+  rosterListeners.add(receive);
+  if (rosterSnapshot) receive();
+  return () => {
+    rosterListeners.delete(receive);
+    if (timer !== undefined) clearTimeout(timer);
+  };
+}

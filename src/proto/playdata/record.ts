@@ -32,7 +32,7 @@ import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts'
 import { createRailwayJourneyMarks } from '../../adapters/railway-marks.ts';
 import { HEAD, ORIGIN } from '../../place/layout.ts';
 import { currentCard } from '../card.ts';
-import { hookActivity, onPlayMark, playMark, playWhereNow, type PlayData } from '../mark.ts';
+import { hookActivity, onPlayMark, onRosterSnapshot, playMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
 import { onTuneRecord } from '../../tunables/events.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
@@ -86,6 +86,12 @@ function push(k: string, fields: Record<string, string | number | boolean | null
 // Complete configuration segments bypass the mark-rate budget. Queue loss remains explicit;
 // summaries reject missing begin/value/end records instead of guessing a configuration.
 onTuneRecord(push);
+// Like tune segments, all rows of one snapshot enter the queue synchronously without spending marks.
+onRosterSnapshot(({ rows, tick }) => {
+  push('roster.begin', { tick, count: rows.length });
+  rows.forEach(([pid, name, color], ordinal) => push('roster.player', { pid, name, color, ordinal, tick }));
+  push('roster.end', { tick, count: rows.length });
+});
 function recordTuning() {
   if (tuningVisit)
     background(
@@ -390,13 +396,7 @@ function sample(ms: number) {
   const read = productionRailway ? railwayWorldRead() : null;
   const w = read?.world();
   if (read && w && read.ready())
-    for (const [name, data] of journeyMarks(
-      b,
-      carry.on?.id,
-      line2Trains(w),
-      qjob(w, 5).completion === 1,
-      me.swimming,
-    ))
+    for (const [name, data] of journeyMarks(b, carry.on?.id, line2Trains(w), qjob(w, 5).completion === 1, me.swimming))
       playMark(name, data);
   if (
     productionRailway &&

@@ -81,7 +81,8 @@
 // the cart's longer road and the 110-tick shunt; tree planting frozen before station clearance, with stable IDs.
 // A clean reset for the moved station and tree table; no shape change or migration.
 // v37 (2026-11-13): rail tunables move from lockstep tune into Server-kind railTune, replicated as tuneValue/tuneRev.
-export const WORLD_NS = 'v37';
+// v38 (2026-11-13): roster leaves classic snapshots/hashes; durable who.set uses r:edit and global player rows.
+export const WORLD_NS = 'v38';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

@@ -211,7 +211,7 @@ const T = (window.T = {
   railSnapshot: null as unknown as () => boolean,
   railOpen: () => railRoom!.send({ t: 'r:open' }),
   // A client action carries where its actor stands (cm, the last railPose) and its action clock (ms).
-  railEdit: (e: RailAction) => {
+  railEdit: (e: RailAction | { op: 'who.set'; n: string; c: number; epoch: number; request: number }) => {
     T.railSent.push({ at: Date.now(), epoch: e.epoch, request: e.request, op: e.op });
     railRoom!.send({ t: 'r:edit', e: { ...(railAt ? { at: railAt } : {}), ms: Math.round(performance.now()), ...e } });
   },
@@ -248,8 +248,8 @@ function startWorld(room: Room) {
     return w.worldStatus().resyncs > before;
   };
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
-  const rules = installRules(w, land);
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
+  const rules = installRules(w, land, rail ? () => rail.roster : undefined);
   // What the probes read (ECS M11, M12): the mirror's confirmed world, published only once a whole state has fully
   // arrived (a late join's first chunk already carries Rail, its trees and jobs come later) and kept through a refill
   // and a reset; a fresh railway before that. Not `rail.synced()`: it goes false during a refill while the world is

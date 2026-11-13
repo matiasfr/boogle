@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { createSync } from '../../src/world/sync.ts';
 import { RULES } from '../../src/world/rules/index.ts';
 import * as classicTune from './classic-tune-oracle.ts';
+import * as classicRoster from './classic-roster-oracle.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import type { Edit, Land, Rules, Stream } from '../../src/world/rules/types.ts';
 import { homeLand } from './land.ts';
@@ -68,7 +69,7 @@ export function recordTrace(seed: number, ops: readonly (string | TraceInput)[])
   const land = homeLand();
   const installed: Record<string, unknown> = {};
   for (const module of RULES) {
-    const m = module.name === 'tune' ? classicTune : module;
+    const m = module.name === 'tune' ? classicTune : module.name === 'roster' ? classicRoster : module;
     installed[m.name] = (m.install as (s: typeof sync, l: Land, r: unknown) => unknown)(sync, land, installed);
   }
   const rules = installed as Rules;

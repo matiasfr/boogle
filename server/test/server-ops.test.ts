@@ -344,13 +344,13 @@ test('a departed session cannot publish a held receipt into its replacement', as
   assert.deepEqual(f.flush().rej, [[1, 1, 'session']]);
 });
 
-test('production admits rail tune commands while roster and haul retain the classic registry', async (t) => {
+test('production admits rail tune and roster commands; only haul retains classic ops', async (t) => {
   const f = await fixture(t);
   for (const op of ['tune.set', 'tune.commit', 'who.set']) {
-    assert.equal(f.host.ops.has(op), op !== 'who.set');
-    assert.ok(f.host.sync.registry().ops.includes(op));
+    assert.equal(f.host.ops.has(op), true);
+    assert.equal(f.host.sync.registry().ops.includes(op), op !== 'who.set');
   }
-  f.edit(1, { op: 'who.set' });
+  f.edit(1, { op: 'who.set', n: '' });
   assert.deepEqual(f.flush().rej, [[1, 1, 'refused']]);
   assert.equal(f.applies(), 0);
 });
