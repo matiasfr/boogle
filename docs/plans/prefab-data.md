@@ -164,6 +164,14 @@ no independent review, push or ship is claimed. Not tested on a device.
 
 [Full proof, schema extensions, sign texts, manifests and limits](prefab-data-step-7.md). Checkpoint B remains separate.
 
+**Step 7 independent review correction (v41):** the review's missing/moved `bell.rock` mutation reproduced a false
+pass before edits. The checker now resolves actual placed colliders and their complete supported world transforms,
+including box dimensions/offsets/rotations in West and Gorge and placed pad scales. Six rim mutations fail with a
+rim finding; the unmodified report and twelve golden fixtures remain byte-identical. Rebased onto seat step 2 on
+`codex/prefab-data-step-7-2`. Final checks pass (147 prefab tests, 1,807 full-check passes and one existing TODO,
+362 ship-check assertions, thirteen level reports); stamp `3cd906ad5e43` needs re-review. Fresh Bell and West PNGs
+were opened. [Mutation, source and browser proof](prefab-data-step-7-review.md). No push or ship; not tested on a device.
+
 ### Step 6 as built: all High Gorge massing
 
 Baseline commit `db0eb0b8` executed the old draw boundary and recaptured the existing collider and placement
