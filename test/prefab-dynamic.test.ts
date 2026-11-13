@@ -42,7 +42,8 @@ const cases: Record<string, string> = {
 function fixture(body: string, file = 'src/fixture.ts', name = 'build') {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-prefab-dynamic-'));
   const sources = {
-    'src/physics/engine.ts': 'export function createBody(){}; export function sweepSphere(){};',
+    'src/physics/engine.ts':
+      'export function createBody(){}; export function setShapes(body,shapes){}; export function sweepSphere(){};',
     'src/render/owned-view.ts': 'export function createOwnedView(){return {};}',
     'src/prefab/instantiate.ts':
       "import{createBody}from '../physics/engine';export function instantiate(){createBody();}",
@@ -148,3 +149,57 @@ for (const [name, code] of Object.entries({
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+test('a generic callback receiver does not inherit construction from another argument', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-prefab-callback-scope-'));
+  const sources = {
+    'src/physics/engine.ts': 'export function createBody(){}',
+    'src/pose.ts': 'export function pose(data, callback){callback();}',
+    'src/driver.ts':
+      "import{pose}from './pose';export async function driver(){const api=await import('./physics/engine');pose(api,()=>api.createBody());}",
+  };
+  const entry = { count: 1, exports: [], reason: '2026-11-13: Fixture.' };
+  try {
+    for (const [file, code] of Object.entries(sources)) {
+      fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      fs.writeFileSync(path.join(root, file), code);
+    }
+    const graph = computeLegacyGraph(
+      sources,
+      { colliders: { 'src/pose.ts': entry, 'src/driver.ts': entry }, seats: {} },
+      createModuleResolver(root),
+    );
+    assert.equal(graph.constructors['src/pose.ts#pose'], undefined);
+    assert.ok(graph.constructors['src/driver.ts#driver']);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('replacing shapes is a collider construction capability', () => {
+  const graph = fixture("const {setShapes}=await import('./physics/engine');setShapes({},[]);");
+  assert.ok(graph.constructors['src/fixture.ts#build']);
+});
+
+test('typed shape-to-body recipe callbacks remain construction without poisoning ordinary callbacks', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-prefab-shape-factory-'));
+  const sources = {
+    'src/physics/engine.ts': 'export type Shape={kind:string};export type Body={id:number};',
+    'src/recipe.ts':
+      "import type{Shape,Body}from './physics/engine';type Factory=(shape:Shape)=>Body;export function build(make:Factory){return make({kind:'box'});}",
+  };
+  try {
+    for (const [file, code] of Object.entries(sources)) {
+      fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      fs.writeFileSync(path.join(root, file), code);
+    }
+    const graph = computeLegacyGraph(
+      sources,
+      { colliders: { 'src/recipe.ts': { count: 1, exports: ['build'], reason: '2026-11-13: Fixture.' } }, seats: {} },
+      createModuleResolver(root),
+    );
+    assert.deepEqual(graph.constructors['src/recipe.ts#build']?.kinds, ['colliders']);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -64,7 +64,6 @@ export function computeLegacyGraph(
   const aliases = new Map<string, Set<string>>();
   const bindings = new Map<string, Binding>();
   const modules = new Map<string, Facts>();
-  const seeds = new Map<string, Set<ConstructionKind>>();
   const add = (graph: Map<string, Set<string>>, from: string, to: string) => {
     let set = graph.get(from);
     if (!set) graph.set(from, (set = new Set()));
@@ -75,11 +74,6 @@ export function computeLegacyGraph(
   const link = (from: string, to: string, alias = false) => {
     const grew = add(deps, from, to);
     return (alias ? add(aliases, from, to) : false) || grew;
-  };
-  const seed = (id: string, kind: ConstructionKind) => {
-    let set = seeds.get(id);
-    if (!set) seeds.set(id, (set = new Set()));
-    set.add(kind);
   };
   const namespace = new Map<string, Set<string>>();
   for (const [file, text] of Object.entries(sources)) {
@@ -259,7 +253,6 @@ export function computeLegacyGraph(
   for (const f of modules.values()) for (const id of f.exports.values()) link(namespaceId(f.file), id, true);
   const providers = new Set([...Object.keys(debt.colliders), ...Object.keys(debt.seats)]);
   const doors = new Set(Object.values(PREFAB_DOORS).flat());
-  const eligible = (file: string) => providers.has(file) && !doors.has(file) && !(file in NOT_CONSTRUCTORS);
   const targets = (f: Facts, node: Node): Set<string> => {
     const out = new Set<string>();
     if (node.type === 'Identifier') {
@@ -394,6 +387,9 @@ export function computeLegacyGraph(
     walk(b.fn, (n) => {
       if (n.type !== 'CallExpression' && n.type !== 'NewExpression') return;
       for (const target of callees(f, n.callee)) link(id, target);
+      // Passing an existing creation function/module grants capability in this caller, not in the generic
+      // helper receiving it. Private lexical callbacks are analyzed in their own bodies as well.
+      for (const arg of n.arguments) for (const target of callees(f, arg as Node)) link(id, target);
       for (const target of values.extraCalls.get(n) ?? []) link(id, target);
     });
     const unknown = values.fallback.get(b.file) ?? new Set<number>();
@@ -406,11 +402,8 @@ export function computeLegacyGraph(
     if (unresolved) {
       conservative.add(b.file);
       conservativeSeeds.set(id, new Set(kinds));
-      for (const kind of kinds) seed(id, kind);
     }
   }
-  for (const f of modules.values())
-    for (const kind of kinds) if (isCapability(kind, f.file)) for (const id of f.exports.values()) seed(id, kind);
   const reverse = new Map<string, Set<string>>();
   for (const [from, to] of deps) for (const d of to) add(reverse, d, from);
   const propagate = <T extends string>(initial: Map<string, Set<T>>, stop = new Set<string>()) => {
@@ -440,11 +433,62 @@ export function computeLegacyGraph(
   const allocationSeeds = new Map<string, Set<ConstructionKind>>();
   for (const f of modules.values())
     for (const [name, id] of f.exports) {
-      if (kinds.some((kind) => isCapability(kind, f.file)) && name === 'createBody')
+      if (kinds.some((kind) => isCapability(kind, f.file)) && ['createBody', 'setShapes'].includes(name))
         for (const implementation of deps.get(id) ?? []) allocationSeeds.set(implementation, new Set(['colliders']));
       if (f.file === 'src/entities/railway/seat.ts' && name === 'registerSeat')
         for (const implementation of deps.get(id) ?? []) allocationSeeds.set(implementation, new Set(['seats']));
     }
+  // Injected recipe constructors carry creation authority by their declared descriptor -> Body contract.
+  // This is not arbitrary callback taint: numeric pose callbacks and existing-body getters do not qualify.
+  for (const f of modules.values()) {
+    if (!analysisFile(f.file)) continue;
+    const typeAliases = new Map<string, Node>(),
+      physicalTypes = new Map<string, string>();
+    for (const n of f.program.body) {
+      const d = n.type === 'ExportNamedDeclaration' ? n.declaration : n;
+      if (d?.type === 'TSTypeAliasDeclaration') typeAliases.set(d.id.name, d.typeAnnotation);
+      if (n.type === 'ImportDeclaration' && isCapability('colliders', resolve(f.file, n.source.value) ?? ''))
+        for (const spec of n.specifiers)
+          if (spec.type === 'ImportSpecifier')
+            physicalTypes.set(
+              spec.local.name,
+              spec.imported.type === 'Identifier' ? spec.imported.name : spec.imported.value,
+            );
+    }
+    const type = (node: Node, seen = new Set<string>()): Node => {
+      if (node.type === 'TSTypeAnnotation') return type(node.typeAnnotation, seen);
+      if (
+        node.type === 'TSTypeReference' &&
+        node.typeName.type === 'Identifier' &&
+        !seen.has(node.typeName.name) &&
+        typeAliases.has(node.typeName.name)
+      ) {
+        seen.add(node.typeName.name);
+        return type(typeAliases.get(node.typeName.name)!, seen);
+      }
+      return node;
+    };
+    const physical = (node: Node, name: string) => {
+      const n = type(node);
+      return (
+        n.type === 'TSTypeReference' && n.typeName.type === 'Identifier' && physicalTypes.get(n.typeName.name) === name
+      );
+    };
+    for (const b of bindings.values())
+      if (b.file === f.file && b.fn && 'params' in b.fn)
+        for (const param of b.fn.params)
+          if (param.type === 'Identifier' && param.typeAnnotation) {
+            const t = type(param.typeAnnotation);
+            if (t.type !== 'TSFunctionType' || !physical(t.returnType, 'Body')) continue;
+            let shape = false;
+            for (const p of t.params)
+              walk(p, (n) => {
+                if (n.type === 'TSTypeReference' && (physical(n, 'Shape') || physical(n, 'BodyOptions'))) shape = true;
+              });
+            const id = f.defs.get(param.start);
+            if (shape && id) allocationSeeds.set(id, new Set(['colliders']));
+          }
+  }
   const allocationReached = propagate(allocationSeeds);
   const uncertainReached = propagate(conservativeSeeds);
   const creationSeeds = new Map<string, Set<ConstructionKind>>(allocationSeeds);
@@ -462,19 +506,6 @@ export function computeLegacyGraph(
     allocation: !!allocationReached.get(id)?.size,
     uncertain: !!uncertainReached.get(id)?.size,
   });
-  const safeStops = new Set<string>();
-  for (const f of modules.values())
-    for (const [name, id] of f.exports)
-      if ((f.file in NOT_CONSTRUCTORS || `${f.file}#${name}` in NOT_CONSTRUCTION_EXPORTS) && !creationOf(id).size) {
-        const todo = [id];
-        while (todo.length) {
-          const next = todo.pop()!;
-          if (safeStops.has(next)) continue;
-          safeStops.add(next);
-          for (const alias of aliases.get(next) ?? []) todo.push(alias);
-        }
-      }
-  const reached = propagate(seeds, safeStops);
   const exemptionAudit: LegacyGraph['exemptionAudit'] = {};
   for (const f of modules.values())
     for (const [name, id] of f.exports)
@@ -498,13 +529,9 @@ export function computeLegacyGraph(
     for (const [name, id] of modules.get(file)?.exports ?? []) {
       // The record-only instantiate door is intentionally open to new authored content.
       if (doors.has(file)) continue;
-      const unsafe = creationOf(id).size > 0;
-      if ((!eligible(file) || `${file}#${name}` in NOT_CONSTRUCTION_EXPORTS) && !unsafe) continue;
-      if (!providers.has(file) && !unsafe) continue;
-      // Capability exports are terminal APIs for callers, not automatically constructors themselves.
-      const found = new Set<ConstructionKind>(creationOf(id));
-      for (const implementation of deps.get(id) ?? [])
-        for (const kind of reached.get(implementation) ?? []) found.add(kind);
+      // Whole-module acquisition bans remain separate. A helper calling a query/attachment API is not
+      // construction: only allocation/registration or opaque dynamic use justifies an importer budget.
+      const found = creationOf(id);
       if (!found?.size) continue;
       const key = `${file}#${name}`;
       constructors[key] = { kinds: [...found].sort(), importers: [] };

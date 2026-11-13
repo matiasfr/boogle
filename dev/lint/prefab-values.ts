@@ -336,20 +336,9 @@ export function moduleValues(
           if (known(callee)) note(consumed, f, callee);
           else note(fallback, f, callee);
           const args = n.arguments.map((a) => evaluate(f, a as Node));
-          const refs = functionRefs(callee);
-          for (const arg of args)
-            if (originSet(arg).size) {
-              note(fallback, f, arg); // Module identities escaping into arbitrary arguments need a conservative proof.
-
-              if (!refs.size) note(fallback, f, arg);
-              else
-                for (const id of refs) {
-                  const fn = functions.get(id)!,
-                    module = byFile.get(fn.file)!;
-                  if ('params' in fn.fn)
-                    for (const [i, param] of fn.fn.params.entries()) if (args[i]) bind(module, param, args[i]!);
-                }
-            }
+          for (const arg of args) if (originSet(arg).size) note(fallback, f, arg);
+          // Opaque arguments belong to the importing caller's conservative result. Do not taint a
+          // general-purpose receiver with caller-supplied callbacks or data (registration is not creation).
           // Ordinary function results are not aliases of their factories.
         }
       }

@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { stripTypeScriptTypes } from 'node:module';
 import debt from '../dev/lint/prefab-debt.json' with { type: 'json' };
 import { computeLegacyGraph } from '../dev/lint/prefab-constructors.ts';
 import { createModuleResolver } from '../dev/lint/prefab-boundaries.ts';
@@ -14,7 +15,35 @@ import { checkPrefabDebt, comparePrefabDebt, PREFAB_DEBT_FILE } from '../dev/reg
 
 test('review 4: the complete documented OwnedView feature is a free door', () => {
   const code = fs.readFileSync(new URL('./fixtures/prefab-owned-feature.txt', import.meta.url), 'utf8');
+  const before = fs.readFileSync(PREFAB_DEBT_FILE, 'utf8');
   assert.deepEqual(lintSafety(code, 'src/features/review-legitimate-a.ts'), []);
+  assert.equal(fs.readFileSync(PREFAB_DEBT_FILE, 'utf8'), before);
+});
+
+test('a new HUD-only feature uses engine lifecycle, entity and player state without construction debt', () => {
+  const code = fs.readFileSync(new URL('./fixtures/prefab-hud-feature.txt', import.meta.url), 'utf8');
+  const before = fs.readFileSync(PREFAB_DEBT_FILE, 'utf8');
+  assert.deepEqual(lintSafety(code, 'src/features/review-hud.ts'), []);
+  assert.ok(!stripTypeScriptTypes(code).includes('../physics/engine.ts'));
+  assert.equal(fs.readFileSync(PREFAB_DEBT_FILE, 'utf8'), before);
+});
+
+test('proven non-creating helpers stay available to new ordinary features', () => {
+  const code =
+    "import {poseCarOnLine} from '../entities/railway/car.ts'; import {kitBatch}from '../place/look-kit.ts'; import {addResident}from '../place/folk.ts'; export const helpers={poseCarOnLine,kitBatch,addResident};";
+  assert.deepEqual(lintSafety(code, 'src/features/review-pure-helpers.ts'), []);
+});
+
+test('HUD fixtures do not weaken the raw physics/seat module import ban', () => {
+  for (const code of [
+    "import{physicsTime}from '../physics/engine.ts'; export const now=physicsTime;",
+    "import{sitDown}from '../entities/railway/seat.ts';export const sit=sitDown;",
+  ])
+    assert.ok(
+      lintSafety(code, 'src/features/review-raw-engine.ts').some(
+        (d) => d.rule === 'boogle/colliders-from-records' || d.rule === 'boogle/seats-from-records',
+      ),
+    );
 });
 
 for (const [name, barrel] of Object.entries({
