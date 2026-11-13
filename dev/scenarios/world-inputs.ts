@@ -12,6 +12,7 @@ import type { T } from './run.ts';
 import { enterGame } from '../look/lib.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
+import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import type { Land } from '../../src/world/rules/types.ts';
 import * as line from '../../src/sim/railway-line-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
@@ -43,7 +44,7 @@ export default {
   async run(t: T) {
     // The current game installs the classic registry (src/world/game-world.ts); the railway is mirrored, not
     // registered. The fixture pins the classic registry, which Node tests run the rules on.
-    const g = await t.open({ name: 'inputs', size: [192, 120] });
+    const g = await t.open({ name: 'inputs', size: [192, 120], query: 'proto=net' });
     const ready = await g.waitFor(`window.boogle?.land?.layout?.trees?.length > 0`, { timeout: 90000 });
     if (!t.check('the game is up with the gifts layout', ready >= 0, ready + ' ms')) return;
     const page = await g.eval(READ);
@@ -142,7 +143,8 @@ export default {
         },
       };`);
     const node = createSync();
-    installRules(node, land as Land);
+    const mirrored = createRailwayMirror();
+    installRules(node, land as Land, () => mirrored.roster);
     // The railway is Server kind (replication R1a): a tab mirrors it and registers no railway op or state.
     t.check('production mirrors line one in the browser', actual.installed);
     same('production state and op registration order (classic only)', actual.registry, node.registry());

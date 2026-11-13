@@ -94,7 +94,7 @@ export default {
     // One tab renames itself (who.set, the roster edit the current game's server accepts from anyone); the other's
     // roster changes with it. A reused room may hold an older name, so each run picks a new one.
     const rename = `Smoke ${id.slice(-6)}`;
-    const roster = `window.boogle.sync.stateHashes().roster`;
+    const roster = `JSON.stringify((await import('/src/world/game-world.ts')).rules.roster.roster.colors) + JSON.stringify((await import('/src/world/game-world.ts')).rules.roster.roster.names)`;
     const before = await host.eval(`return ${roster};`);
     const item = `${roster} !== ${JSON.stringify(before)}`;
     // A starved runner's tab drops and reopens its socket (runs 41421157347, 41418371480: reconnects for a minute or two),
@@ -108,7 +108,8 @@ export default {
       if ((await client.waitFor(LIVE, { timeout: 30000 })) < 0) continue;
       sent.push(
         await client.eval(
-          `return window.boogle.sync.submitEdit({ op: 'who.set', i: 0, j: 0, n: ${JSON.stringify(rename)}, c: 3 });`,
+          `window.boogle.me.name = ${JSON.stringify(rename)}; window.boogle.me.colorIdx = 3;
+           return (await import('/src/entities/railway/state.ts')).railwayCommands()?.act('who.set', { n: ${JSON.stringify(rename)}, c: 3 });`,
         ),
       );
       landed = await host.waitFor(item, { timeout: EDIT_WAIT_MS / 3 });

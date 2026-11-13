@@ -121,7 +121,9 @@ moves on purpose.
 
 Railway tuning is Server kind: `railTune` is checkpointed, projected as global `tuneValue`/`tuneRev` rows and mirrored
 on clients. `tune.set` and durable `tune.commit` go through `server-ops.ts` on the railway session's request sequence.
-The eight haul tune keys stay lockstep with their readers; their revision and hash exclude every rail key. The only
-classic edit admitted by a railway room is now `who.set`. Current recovery verifies the registered state, checksum,
+The eight haul tune keys stay lockstep with their readers; their revision and hash exclude every rail key. All
+classic edits are no longer admitted by railway rooms. Roster is Server kind, with durable `who.set` commands and
+global `player` rows keyed by stable roster ordinal. Clients read a mirror; server stacks retain direct ordinal access.
+Current recovery verifies the registered state, checksum,
 checkpoint hash and accepted tail before atomic replacement. The seven inactive classic states are retained until
 server-owned-state step 5.

@@ -1,7 +1,7 @@
-// An edit submitted while the room is reconnecting still lands (sync.ts held edits, through real ws-room timing), on
+// An identity changed while the room is reconnecting lands through its server command session, on
 // the production entry. One tab's socket drops (room.pause: closed as a network loss would, reconnects held for
-// PAUSE_MS), so it goes to 'connecting'; it changes its colour then (a `who.set`, the roster's op, the one classic edit
-// the current game's server takes), and reconnects once the pause is over. (Chromium's offline mode spares localhost.)
+// PAUSE_MS), so it goes to 'connecting'; it changes its local colour, then identity.ts sends durable who.set when
+// its session is ready again. (Chromium's offline mode spares localhost.)
 // Once it is live again the other tab's roster has changed, the tab dropped no held edit, and both tabs hash every
 // state the same at one tick. The tab's own colour is set too, so identity.ts does not send it back.
 // Run it after changing held edits in src/world/sync.ts, reconnects in src/net/ws-room.ts, or src/netplay/net.ts
@@ -12,12 +12,11 @@ import type { T } from './run.ts';
 
 const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 const PAUSE_MS = 2000; // well under sync's 5 s held-edit age
-const ROSTER = `window.boogle.sync.stateHashes().roster`;
+const ROSTER = `JSON.stringify((await import('/src/world/game-world.ts')).rules.roster.roster.colors)`;
 // The tab's colour, changed, as a held who.set; the tab's own state follows so identity.ts agrees with it.
 const RECOLOUR = `const me = window.boogle.me, c = me.colorIdx === 0 ? 1 : 0;
-  const sent = window.boogle.sync.submitEdit({ op: 'who.set', i: 0, j: 0, n: me.name, c });
   me.colorIdx = c;
-  return sent;`;
+  return true;`;
 
 export default {
   sourceImports: true, // the colour check imports the roster and identity from the source
@@ -45,7 +44,7 @@ export default {
     await other.waitFor(`window.boogle.sync.worldStatus().ready`, { timeout: 30000 });
     await new Promise((r) => setTimeout(r, 4000));
     const before = await other.eval(`return ${ROSTER};`);
-    if (!t.check('the other tab has a roster', typeof before === 'number', String(before))) return;
+    if (!t.check('the other tab has a roster', typeof before === 'string' && before !== '[]', String(before))) return;
 
     await client.eval(`window.boogle.net.room.pause(${PAUSE_MS});`);
     const down = await client.waitFor(`window.boogle.net.state === 'connecting'`, { timeout: 5000 });
@@ -54,7 +53,7 @@ export default {
       !t.check(
         "the dropped tab goes to 'connecting' and edits there",
         down >= 0 && sent === true,
-        `${down} ms after the drop, submitEdit -> ${sent}`,
+        `${down} ms after the drop, local colour changed -> ${sent}`,
       )
     )
       return;
@@ -64,10 +63,10 @@ export default {
     const after = await roles(A, B);
     t.check('the tab is live again on the server', up >= 0 && after.ok, `${up} ms; ${after.modes.join(',')}`);
 
-    const landed = await other.waitFor(`${ROSTER} !== ${String(before)}`, { timeout: EDIT_WAIT_MS });
+    const landed = await other.waitFor(`${ROSTER} !== ${JSON.stringify(before)}`, { timeout: EDIT_WAIT_MS });
     const st = await client.eval(`return window.boogle.sync.worldStatus();`);
     t.check(
-      'the held edit reaches the other tab',
+      'the identity command reaches the other tab after reconnect',
       landed >= 0,
       `roster hash ${String(before)} -> ${await other.eval(`return ${ROSTER};`)} (own ${await client.eval(`return ${ROSTER};`)})`,
     );

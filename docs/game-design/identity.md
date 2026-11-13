@@ -23,7 +23,7 @@
   as reward claims. Player-supplied engine files, session plumbing and service-worker caches are untouched.
 - **No rank on the player.** Contribution tiers ([haul.md](haul.md)) stay as data; nothing shows them until rewards
   are designed (owner, 2 Nov 2026).
-- **Sync kind.** Local storage for this browser; presence (`name`, colour) and the lockstep roster carry them to others.
+- **Sync kind.** Local storage for this browser; Owner presence (`name`, colour) updates avatars immediately. In the live railway, the durable roster is Server kind: authenticated `who.set` commands share the railway request sequence, and acceptance waits for the checkpoint. Global player rows mirror names, colours and stable ordinals to every peer, including late joins and reconnects. Every peer records the replicated roster in its session, including changes submitted by someone else. Classic prototypes retain their lockstep roster until retirement.
 - **Files.** [src/player/you-editor.ts](../../src/player/you-editor.ts), [src/player/arrival.ts](../../src/player/arrival.ts),
   [src/player/hud.ts](../../src/player/hud.ts), [src/features/identity.ts](../../src/features/identity.ts).
 
