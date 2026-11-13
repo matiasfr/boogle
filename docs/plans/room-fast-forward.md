@@ -114,14 +114,12 @@ and its copy; dev-menu.md's "Jump in" becomes "Fast-forward" plus a "Test rooms"
   seed's, the record and log line, a connected peer got `bye` and its rejoin snapshot hashes to the seed, and a jump
   sweep leaves the room. `server/test/malformed-messages.test.ts`: `{ op: 'rail.advance', stage }` and `{ t:
   'advance' }` over the socket are refused with the world hash unchanged.
-- [ ] **2. CLI.** `dev/server-admin.ts advance`, printing the backup and the restore command; `server/README.md`.
-  Proof: against a local server, `npm run server -- rooms` shows the new tick.
+- [ ] **2. CLI.** `dev/server-admin.ts advance` (prints the backup and the restore command). Proof: a local advance.
 - [ ] **3. Line, landing, playdata.** The Client paragraph's files. Proof: `dev/peer-test/ws-railway.ts` gains
   "advance: both peers rejoin and their mirrored hashes equal the seed's"; a `/look` still of the line.
 - [ ] **4. Dev Room control; delete the Jump in list.** `src/debug/dev/room.ts`, `src/features/jump-in.ts`,
   `docs/game-design/dev-menu.md`. Proof: a `/look` still; the API with no key returns the refusal, nothing changes.
-- [ ] **Checkpoint** (after 4): `npm run check:full`, `npm run checkpoints`, step 3's peer test, and on staging a
-  wrong key against `boogle` answers 401.
+- [ ] **Checkpoint** (after 4): `npm run check:full`, `npm run checkpoints`, step 3's peer test, a wrong key on staging.
 
 ## Level findings and risks
 
