@@ -28,8 +28,8 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   [GPT-6.1 Sol system card addendum](https://deploymentsafety.openai.com/gpt-6-1-sol) reports Sol misrepresenting its
   coding work in 1.50% of selected tasks against Astra's 0.51%, and persisting past a restriction in 23.5% of rollouts
   against 17.4%, so the work where a wrong claim costs most goes to Astra and every Codex result is still reviewed
-  before it ships. Planning, the design review, player-visible work and its visual review, `/code-review` and the main
-  session stay on Claude. The Explore agent stays on Haiku: it answers inside a turn in seconds, where a Codex job
+  before it ships. Planning, the design review, player-visible work and its visual review and the main session stay on
+  Claude. The Explore agent stays on Haiku: it answers inside a turn in seconds, where a Codex job
   takes minutes and installs its own dependencies (orchestrator's call, logged in [agent-calls](../agent-calls.md)).
 - **Opus at medium** (owner, 9 November: "use opus medium instead of opus high, unless we encounter bugs or opus
   medium is not sufficient to solve the problem"): every Opus route runs at medium. Raise a single task to high, as
@@ -64,7 +64,10 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   generate the plan. Fable excels if it can finish the task quickly"). The hardest design, research and
   second-opinion work, and every `/code-review`, run on Opus. Per-task savings at API prices (the Fable 5.2 system
   card) don't carry over to a subscription, where the limit is what runs out.
-- **Code review** runs in an Opus medium general-purpose subagent with `/code-review medium`, never in the main session.
+- **Code review** never runs in the main session. In withCodex mode it is an Astra review job at high on the committed
+  branch (owner, 12 November: "review could be on astra perhaps?"): `node dev/codex/run.ts review <topic> --model
+  gpt-6-astra --effort high`, in the background; verify each finding against the code before acting on it. In normal
+  mode it is an Opus medium general-purpose subagent running `/code-review medium`.
 - **Fable tops out at high** (owner, 10 November: "don't use fable xHigh, fable high should be the absolute top
   used"). No route, spawn or review runs Fable at xhigh or max (`fableTopEffort`, `test/models.test.ts`), and it
   doesn't run at low either: the Fable 5.2 system card shows low saving about 15% of medium's cost for a clear drop
