@@ -609,8 +609,23 @@ Each step leaves `node dev/ship-check.ts` green. Steps 1 and 2 ship on their own
       platform between the frame and the rack), `map-gorge-open` (High Gorge lit and ringed, `Stack halt` 30 px
       from it, two trains over the Gorge's dot), `map-gorge-home` (the Village's board, every name clear),
       `map-laid-2-phone` (440 by 796: names read; the dim Gorge is faint; markers bunch at the head). **Left in
-      4b:** kit cars' number boards (j), the joining train's scale-in and board marker (f), the kit's hop to the
-      rack and the `STEEL KIT` plate (b). Not tested on a device.
+      4b:** the Ring Island map table (answer l's "the Ring Island map table included": it is separate greybox in
+      `src/entities/ring-island/view.ts`, so a player at the first frame with nothing laid sees none of the new
+      marks there), kit cars' number boards (j), the joining train's scale-in and board marker (f), the kit's hop
+      to the rack and the `STEEL KIT` plate (b). Not tested on a device.
+      *After the independent review (same branch):* **Names and their stops.** A name placed a line out from its
+      stop, or as near another stop as its own, is tied to its own stop by a thin leader; that place costs more,
+      most of all for the stop you stand at and the frame's. Faces with a name as near another stop as its own:
+      34 of 97 standing faces (42 before; 18 of 66 on main), 40 names, each with a leader (a higher cost took it
+      to 28 but set "Quarry" on the track on the `?home=b` board); two names one right under the other cost too
+      ("Railhead" under "Ring Island" read as one two-line name); 17 of the 40 are the
+      `here` or frame name where no clean near placement exists (the Village board's "Village", 55 px from the
+      face's edge between Camp and Quarry; "Stack railhead" beside the ring's Railhead). The costs apply before
+      the rivet too, so those faces are no longer pixel-identical to main. The label helper asserts the `here` and
+      frame names are nearer their own stop than any other drawn stop or carry a leader. A board that is down is
+      not drawn (it is when it stands). **Notes for the owner, left as they are:** train markers cover stops at
+      the leg's end (one clips the "y" of "Quarry"); the dim High Gorge is faint at phone width; the frame's
+      square reads as an unticked checkbox; the short-drawn leg makes the Gorge look nearer than it is.
 - [ ] **5. Seeds, jump rows, the loop and the bot (HOTBOX, M).** New `src/sim/railway-seed-legs.ts` from
       `ring-joined`, accepted ops only: `gorge-open` (the leg open, nothing fed), `gorge-mid` (two sections laid, kit
       aboard a train), `gorge-reached` (four laid, `pick` not taken). `SEED_STAGES`; two `JUMPS` rows ("Stack line

@@ -164,7 +164,19 @@ export type MapLabel = {
   align: CanvasTextAlign;
   /** The box's first `frameWidth` holds a stop's frame square, the name after it. */
   frame: boolean;
+  /** Its own stop's pixel, when the name needs a leader to it: it sits a line out from its stop, or another stop is as
+   * near its box as its own. */
+  lead?: [number, number];
 };
+/** Pixels from a box to a point (0 inside it). */
+export function boxGap(b: { x: number; y: number; w: number; h: number }, px: number, py: number) {
+  return Math.hypot(px - Math.max(b.x, Math.min(px, b.x + b.w)), py - Math.max(b.y, Math.min(py, b.y + b.h)));
+}
+/** What a far slot, or a place as near another stop as its own, costs the `here` name and the frame's; what that
+ * place costs any other name (whose far slot costs 2.5); and what two names pay for sitting one right under the other. */
+const FAR_KEY = 8,
+  STRAY = 2,
+  STACKED = 4;
 /** What a frame square takes off the front of its name's box, at label `size` px. */
 export const frameWidth = (size: number) => size * 0.95;
 /** A name's box width at `size` px: a per-letter allowance for the bold face with 8% to spare, so placing names needs no
@@ -215,13 +227,13 @@ export function mapLabels(
     gap = S.label * 0.15,
     lh = S.label * 1.05,
     edge = h * 0.04;
-  const stops: [number, number][] = [];
+  const stops: [number, number, string][] = [];
   const names = new Map<string, { x: number; y: number; n: number; lit: boolean; here: boolean; frame: boolean }>();
   lines.forEach((l, li) =>
     l.stops.forEach((st, si) => {
       if (st.hide) return;
       const [x, y] = mapPx(v, st.x, st.z);
-      stops.push([x, y]);
+      stops.push([x, y, st.name]);
       if (!st.name) return;
       const n = names.get(st.name) ?? { x: 0, y: 0, n: 0, lit: false, here: false, frame: false };
       n.frame ||= !!st.frame;
@@ -286,9 +298,30 @@ export function mapLabels(
           Math.max(0, box.x + lw - (w - edge)) +
           Math.max(0, edge - box.y) +
           Math.max(0, box.y + lh - (h - edge));
+        // The far slot costs more for the name you stand at and the frame's: those two sit beside their own dots
+        // wherever a clean placement has them there.
         let cost =
-          bias + far * 2.5 + Math.abs(slide) + 3 * (1 - (cx * ox + cy * oy) / od) + (out > 0 ? 1e5 + out * 100 : 0);
+          bias +
+          far * (n.here || n.frame ? FAR_KEY : 2.5) +
+          Math.abs(slide) +
+          3 * (1 - (cx * ox + cy * oy) / od) +
+          (out > 0 ? 1e5 + out * 100 : 0);
         for (const [x, y] of stops) if (hitsCircle(box, x, y, clear)) cost += 1e4;
+        // A name as near another stop as its own reads as that stop's: it costs, and it is tied to its own stop by a
+        // leader (so is every name in a far slot).
+        let own = Infinity,
+          other = Infinity,
+          ownAt: [number, number] = [n.x, n.y];
+        for (const [x, y, name] of stops) {
+          const d = boxGap(box, x, y);
+          if (name !== n.name) other = Math.min(other, d);
+          else if (d < own) {
+            own = d;
+            ownAt = [x, y];
+          }
+        }
+        if (other <= own) cost += n.here || n.frame ? FAR_KEY : STRAY;
+        if (far || other <= own) box.lead = ownAt;
         for (const [x, y] of track)
           if (
             x > box.x - S.track / 2 &&
@@ -304,6 +337,9 @@ export function mapLabels(
   const PAD = S.label * 0.1;
   const clash = (a: MapLabel, b: MapLabel) =>
     a.x < b.x + b.w + PAD && b.x < a.x + a.w + PAD && a.y < b.y + b.h + PAD && b.y < a.y + a.h + PAD;
+  // Two names one right under the other read as one two-line name.
+  const stacked = (a: MapLabel, b: MapLabel) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h + S.label * 0.5 && b.y < a.y + a.h + S.label * 0.5;
   let best = Infinity,
     pick: MapLabel[] = [];
   const chosen: MapLabel[] = [];
@@ -311,7 +347,7 @@ export function mapLabels(
   const rest = options.map(() => 0);
   for (let i = options.length - 2; i >= 0; i--) rest[i] = rest[i + 1]! + options[i + 1]![0]!.cost;
   // A face with no clean placement would otherwise search every combination (seconds, on the page's one thread): past
-  // `SEARCH_MAX` steps it keeps the best found. No face the label tests cover comes near it.
+  // `SEARCH_MAX` steps it keeps the best found. The label tests hold every standing face under it.
   let steps = 0;
   const search = (i: number, sum: number) => {
     if (steps++ > SEARCH_MAX) return;
@@ -323,7 +359,7 @@ export function mapLabels(
     }
     for (const o of options[i]!) {
       let extra = o.cost;
-      for (const c of chosen) if (clash(o.box, c)) extra += 1e6;
+      for (const c of chosen) extra += clash(o.box, c) ? 1e6 : stacked(o.box, c) ? STACKED : 0;
       chosen.push(o.box);
       search(i + 1, sum + extra);
       chosen.pop();
@@ -418,6 +454,21 @@ export function drawMapBase(
       g.strokeRect(left - side - S.label * 0.25, b.y + b.h / 2 - side / 2, side, side);
     }
     g.fillText(b.name, at, b.y + b.h / 2);
+    if (b.lead) {
+      // The leader: a thin tick from the box's nearest point to the edge of its own stop's dot.
+      const [sx, sy] = b.lead,
+        bx = Math.max(b.x, Math.min(sx, b.x + b.w)),
+        by = Math.max(b.y + b.h * 0.2, Math.min(sy, b.y + b.h * 0.8)),
+        len = Math.hypot(sx - bx, sy - by) || 1,
+        stop = Math.max(0, len - S.dot * 1.5);
+      g.lineWidth = S.label * 0.1;
+      g.globalAlpha = 0.7;
+      g.beginPath();
+      g.moveTo(bx, by);
+      g.lineTo(bx + ((sx - bx) * stop) / len, by + ((sy - by) * stop) / len);
+      g.stroke();
+      g.globalAlpha = 1;
+    }
   }
   g.restore();
 }

@@ -5,7 +5,7 @@
 // High Gorge) and each of the stack line's four sections laid (nine). Every display is checked at every stage, the
 // stack line's own (halt-map.ts stackDisplays) too. Pure numbers: the same boxes, sizes and fit the game draws.
 import assert from 'node:assert/strict';
-import { fitMap, MAP_CELL, mapLabels, mapLabelSteps, mapPx, mapSizes, stopClear, type MapLabel } from '../../src/render/island-map.ts';
+import { boxGap, fitMap, MAP_CELL, mapLabels, mapLabelSteps, mapPx, mapSizes, stopClear, type MapLabel } from '../../src/render/island-map.ts';
 import { haltDisplays, haltMap, type MapStage } from '../../src/entities/railway/halt-map.ts';
 
 const CW = MAP_CELL.w,
@@ -61,6 +61,13 @@ export async function checkHaltLabels() {
             dy = p[1] - Math.max(b.y, Math.min(p[1], b.y + b.h));
           assert.ok(Math.hypot(dx, dy) >= clear - 1e-6, `${at}: "${b.name}" covers ${s.name}'s ring or train`);
         }
+      }
+      // The name of the stop you stand at, and the frame's, read as their own stop's: nearer it than any other drawn
+      // stop, or tied to it by a leader.
+      for (const b of labels.filter((l) => l.here || l.frame)) {
+        const gap = (own: boolean) =>
+          Math.min(...stops.filter(({ s }) => (s.name === b.name) === own).map(({ p }) => boxGap(b, p[0], p[1])));
+        assert.ok(gap(true) < gap(false) || b.lead, `${at}: "${b.name}" sits nearer another stop, with no leader`);
       }
       // Two stops of different names keep a ring and a dot between their centres.
       for (let i = 0; i < stops.length; i++)
