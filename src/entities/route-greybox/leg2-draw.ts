@@ -11,6 +11,9 @@ const records = (() => {
 })();
 function compiled(value: unknown) {
   validateLevelArtifact(value, records.prefabs);
+  for (const p of value.placements)
+    for (const key of Object.values(p.labels ?? {}))
+      if (!Object.hasOwn(LEG2_TEXT, key)) throw new Error(`prefabs: missing label text ${key}`);
   return value;
 }
 const batched = (key: string) => {
