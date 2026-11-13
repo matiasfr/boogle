@@ -570,9 +570,25 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const stub = h.end?.kind === 'stub',
       u = (h.s - RING_S_HEAD) / 100 + 4,
       shut = () => h.closesAt !== undefined && stopsNow[LINE2]!.length >= h.closesAt;
-    spots.push(ringSpot(stop, false, 2.45, () => u, () => !shut()));
+    spots.push(
+      ringSpot(
+        stop,
+        false,
+        2.45,
+        () => u,
+        () => !shut(),
+      ),
+    );
     if (stub && h.closesAt === undefined)
-      spots.push(ringSpot(stop, true, 2.45, () => u - 4, () => stopsNow[LINE2]!.length > stop + 1));
+      spots.push(
+        ringSpot(
+          stop,
+          true,
+          2.45,
+          () => u - 4,
+          () => stopsNow[LINE2]!.length > stop + 1,
+        ),
+      );
   }
   const ringSpots = spots.filter((x) => x.ring);
   // The stack line's departure boards (leg 1 step 4b; the design review's answer g): the halt map on a grey stand at
@@ -691,6 +707,11 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   boards.redraw();
   // The boards' own smooth clock in ticks, pulled gently onto shared time (as train-view's), so markers glide.
   let clock = -1;
+  /** Each train: whether its row was in the shed last frame (null: not yet seen since a restore), the seconds into
+   * its marker's scale-in (-1: none) and the marker's size now (1 whole). */
+  const inShed: (boolean | null)[] = RAIL_TRAINS.map(() => null),
+    joining = RAIL_TRAINS.map(() => -1),
+    grow = RAIL_TRAINS.map(() => 1);
   /** Each of today's platforms' signal: down while an ask stands for its way (the lever's, or a rider's on a train of
    * its line) or a train of its line stands at it leaving that way. */
   function signals(quiet = false) {
@@ -725,6 +746,16 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       boards.redraw(next.scale);
     }
     stackBoardsFor(shown ? open : 0);
+    // A shed train that joins gains its marker on that tick, growing over the second its cars do (train-view.ts's
+    // JOIN_S; the step 4 review's answer f). A live edge only: `inShed` is null after a restore.
+    RAIL_TRAINS.forEach((_t, k) => {
+      const shed = trainRow(w, k).phase === TRAIN_PHASE.SHED;
+      if (inShed[k] === true && !shed && shown) joining[k] = 0;
+      inShed[k] = shed;
+      const t = joining[k]!;
+      grow[k] = t < 0 ? 1 : 1 - (1 - t) ** 3;
+      if (t >= 0) joining[k] = t + dt >= 1 ? -1 : t + dt;
+    });
     boards.trains(
       // A fleet row in the shed (the greybox route) is on no board until it joins.
       RAIL_TRAINS.map(({ line }, k) =>
@@ -735,6 +766,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         return shown && r.phase === TRAIN_PHASE.RUN ? r.to : null;
       }),
       RAIL_TRAINS.map((_t, k) => shown && railTrainHeld(w, k, tick)),
+      grow,
     );
     halts.forEach((h) => {
       h.update(
@@ -767,6 +799,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     restore() {
       refreshStops();
       shown = line2Trains(adapter.read.world());
+      inShed.fill(null);
+      joining.fill(-1);
       pulled.clear();
       halts.forEach((h, k) => h.snap(wanted(k)));
       ups.update(0, (k) => halts[k]!.up, true);

@@ -274,6 +274,8 @@ export async function createRailwayTrains(
        * restore, and the seconds into its longer boiler going on, or -1. */
       seen: false,
       beat: -1,
+      /** Seconds into its scale-in after joining from the shed (JOIN_S), or -1. */
+      join: -1,
       lamp: { mesh: stopLamp, material: lampMaterial, on: false },
       hold: { mesh: holdLamp, material: holdMaterial, on: false },
       fit,
@@ -290,6 +292,9 @@ export async function createRailwayTrains(
   /** The platform beat's times, seconds from the row's change: the swap under the puff, the squash's length, the toot. */
   const BEAT = { swap: 0.4, squash: 0.18, toot: 1.2 } as const;
   const BEAT_STEAM = new THREE.Color('#e9eef2');
+  /** A shed train's scale-in (the greybox route's step 4 review, answer f: "shed trains, no shed"): the second its
+   * cars take to grow where it joins, standing at the Village, so no train blinks into being. */
+  const JOIN_S = 1;
   const beatAt = new THREE.Vector3();
   const first = trains[0]!;
   /** Line 2's trains: the ones that carry the kit and the footing wagon. */
@@ -597,6 +602,8 @@ export async function createRailwayTrains(
       // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
       tr.seen = false;
       tr.beat = -1;
+      tr.join = -1;
+      for (const c of tr.cars) c.mesh.scale.setScalar(1);
       tr.model.cars[0]!.scale.set(1, 1, 1);
       drawLoad(tr, Math.ceil((last.logs + last.rails) / 8));
     });
@@ -821,6 +828,15 @@ export async function createRailwayTrains(
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
         tr.board?.set(marks.get(tr.slot) ?? '');
+        // Joined from the shed on a live tick: its cars grow in over JOIN_S (their bodies are whole at once).
+        if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) tr.join = 0;
+        if (tr.join >= 0) {
+          tr.join += dt;
+          const u = reducedMotion ? 1 : Math.min(1, tr.join / JOIN_S),
+            s = Math.max(0.02, 1 - (1 - u) ** 3);
+          for (const c of tr.cars) c.mesh.scale.setScalar(s);
+          if (u >= 1) tr.join = -1;
+        }
         // Amber: on its way to a request stop it will make, its riders' or a lever's it serves (so a train running
         // through a lit lever is dark, and the one behind it lit). Red: held, standing for the block or the headway.
         const lit = railTrainAsked(w, tr.slot, tick, stops[tr.line]);
