@@ -1,6 +1,6 @@
 # Leg 1: the lay ask can expire before boarding
 
-13 November 2026, `codex/leg1-lost-ask-2`, rebased onto fetched main `c3a816c72`. The original diagnosis below is the **v34 baseline**, committed at
+13 November 2026, `codex/leg1-lost-ask-2`, rebased onto main `66d902242` (initial fetch `c3a816c72`). The original diagnosis below is the **v34 baseline**, committed at
 `7c28778a`. The [v35 bounded correction](#v35-bounded-correction) below supersedes the unrestricted-repeat
 candidate at `77bb44f3`. The owner ruled that the existing anti-spam assertions win unchanged.
 **The original failure was reproduced in the sim; the corrected rule is committed for independent review.**
@@ -144,7 +144,7 @@ unchanged and now pass. The earlier candidate's two failures remain in its archi
 - The added save/stand test starts with a request pending before arrival, permits one extension, restores the world,
   then spams until departure without prolonging the original hold. A second real stand gets its own allowance.
   The real Ring host test permits the first call, refuses a second near the cap, and leaves on the original cap.
-- `src/entities/railway/halts-view.ts:583`: the previous correction still offers an outward lever at every still-open
+- `src/entities/railway/halts-view.ts:593`: the previous correction still offers an outward lever at every still-open
   old head after the next section opens, including heads 1 and 2. `dev/look/bots/railway-ride.ts:73` and
   `railway-legs.ts:158` use it when no outward train stands, and recover a consumed ask during the walk.
 - `test/railway-jump.test.ts:38`: pin all **22 visible `MENU_JUMPS` rows** literally, in order. Keep main's
@@ -157,7 +157,7 @@ unchanged and now pass. The earlier candidate's two failures remain in its archi
   the previously generated v35 fixture remains valid, so nothing was regenerated during this rebase.
 
 No new prompt literal was introduced. **Suspect placeholder lines for the owner:** the existing outward-lever
-wording now offered at heads 1 and 2, “Request stop: to Stack railhead” (`halts-view.ts:656`, `:834`). The homeward prompts are unchanged.
+wording now offered at heads 1 and 2, “Request stop: to Stack railhead” (`halts-view.ts:665`, `:846`). The homeward prompts are unchanged.
 
 ### Final 960-case table beside the baseline
 
@@ -179,7 +179,7 @@ was weakened. The original bot timing analysis above remains historical; there i
 
 ### Final route gates and checks
 
-The fresh post-rebase audited run passes **77/77**, no TODOs, in 380.9 s. Its 960-case distribution and route-gate
+The fresh audited run after the first rebase passes **77/77**, no TODOs, in 380.9 s. Its 960-case distribution and route-gate
 table are identical to the accepted pre-rebase run at `2a2870f98`; both tables here are freshly verified. Exact command (timeout bounds the entire process):
 
 ```sh
@@ -202,12 +202,16 @@ frame idle **1129/559/363/363**, below **1200/600/600/600**. Call 88 old-to-new-
 its four fuzz journeys peak at **1076**. Gate 15: steel kit **+651**; first steel home/install **+1823 idle / +2396 fed**,
 versus build-2 **+1824**, fed penalty **572 ≤1050**. The 48-seed light/heavy checkpoint sheet was not rerun.
 
-Fresh checks after the rebase conflict resolution and the final `MENU_JUMPS` test edit:
+Checks after the rebase conflict resolution and final `MENU_JUMPS` test edit, with check and ship-check repeated
+on the final `66d902242` base. The second base update changed **none of the 98 files** in the route audit's import
+closure (including its test runner and environment), and none of `src/sim`, `src/world`, `server/src` or test helpers.
+The [dependency proof](../../.look/lost-ask-rebased/audit-dependency-proof.json) and byte hashes preserve the audited
+result across that update; the six-minute audit was not repeated for unrelated Home view changes.
 
 | Check                                                    | Result                                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `npm run check`, scoped `UNIT_ONLY`                      | exit 0: 68/68, no TODOs; lint, typecheck, registry, level, assets and build pass                          |
-| `timeout 600 node dev/ship-check.ts` (default main base) | exit 0: 1079 pass, 0 fail, one unchanged all-longer-fleet TODO; 92 affected test files                    |
+| `timeout 600 node dev/ship-check.ts` (default main base) | exit 0: 1080 pass, 0 fail, one unchanged all-longer-fleet TODO; 92 affected test files                    |
 | All nine golden shards, menu, trains and r3b1-review     | 166/166, no TODOs; includes all eight main six-hold cases and the original unchanged anti-spam assertions |
 | Real hold-host tests                                     | 4/4: late join, restart, bounded repeat, assigned-ask release                                             |
 | Audited route gates and 960-case sweep                   | 77/77, no TODOs; tables identical to the accepted pre-rebase run                                          |
@@ -234,9 +238,12 @@ Fresh logs, all 155 >1200 traces, distributions and source hashes are indexed in
 Fetch succeeded. Created **`codex/leg1-lost-ask-2`** in the same worktree, preserving the original branch at
 `2a2870f98`. Ran `git rebase --onto origin/main aa256023e`, where `aa256023e` is the last commit not authored by this
 job. Exactly the six original job commits replayed; the spacing and step-5 history beneath them is excluded.
+During verification, another job advanced shared `origin/main` to **`66d902242`** with Home layout changes. Replayed
+this job's eight then-current commits once more with `git rebase --onto 66d902242 c3a816c72`; it applied without
+conflicts. The final branch therefore includes both current main and only this job's changes above it.
 The only conflict was the two outward-lever conditions in `halts-view.ts`: main's view, including its closed-head
 “Track clear” request, remains intact, with this job's still-open-head outward conditions applied on top. The bot
-files are byte-identical to the accepted pre-rebase tip. Commit `e22eb30e` adapts the full-list pin to main's menu.
+files are byte-identical to the accepted pre-rebase tip. Commit `f74df52a` adapts the full-list pin to main's menu.
 
 **Requested core comparison: empty apart from what main brought.** The raw diff from `2a2870f98` is not empty:
 it contains main's changes to `railway-queries-trade.ts`, `railway-sys-trains.ts`, `railway-trains.ts`, `tune.ts` and
@@ -245,13 +252,13 @@ for an open-end ask in `controlFree`, hold wording and `MENU_JUMPS`. No extra si
 
 Two normalized zero-context patch comparisons verify this, including all of `src/sim`, `src/world`, `server/src`:
 
-- main's delta (`aa256023e` → `c3a816c72`) equals pre-tip → rebased tip:
+- main's core delta (`aa256023e` → `66d902242`) equals pre-tip → rebased tip:
   `136f5f6ee500c4698dd4e70b638d3ce8291a5529`.
 - this job's own original delta (`aa256023e` → `2a2870f98`) equals main → rebased tip:
   `6e2d0c7e10befb19d6f7dcac0b320e62802ad24b`.
 
 [Comparison evidence](../../.look/lost-ask-rebased/rebase-comparison.json) records the base, files and both comparisons.
-The latest menu adaptation is test-only, so neither comparison changes. Rebased code checkpoint: `e22eb30e`;
+The latest menu adaptation is test-only, so neither comparison changes. Rebased code checkpoint: `f74df52a`;
 the final report is committed separately.
 
 `review stamp c8571ddabd15 (10 files since origin/main).`
