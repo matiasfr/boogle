@@ -212,11 +212,11 @@ const supply = {
   },
   railTrainHoldCap: {
     id: 'railway.trainHoldCap',
-    units: 'ticks past the dwell',
+    units: 'ticks past arrival plus the dwell',
     at: 'next rule tick',
     owner: 'src/sim/railway-trains.ts',
     meaning:
-      'The Ring Island hold: the most a train stands at a control halt past its dwell while the gap ahead of it is much shorter than the gap behind; 0 turns the hold off.',
+      "The Ring Island hold: the most a train stands at a control halt, counted from its arrival plus the dwell, while the gap ahead of it is much shorter than the gap behind; a lever ask at its own platform restarts the dwell, as at the line's ends; 0 turns the hold off.",
   },
   railTrainHoldPct: {
     id: 'railway.trainHoldPct',

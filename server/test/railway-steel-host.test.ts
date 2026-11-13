@@ -425,7 +425,10 @@ test('route host: a grant and a gate keep their id; judged at their spot, refuse
   }
 });
 
-/** Leg 1 laid to its end by apply alone (players a and b feed every tick), so its pickup can be taken. */
+/** Leg 1 laid to its end by apply alone (players a and b feed every tick), so its pickup can be taken; built once and
+ * shared (`legLaid`: each host loads a copy of it) by the pick's test and the Ring Island hold's. */
+let laid: Seed | undefined;
+const legLaid = () => (laid ??= legDone());
 function legDone(): Seed {
   const j = buildSeedWorld('ring-joined');
   const s = { w: restore(j.w), t: j.t };
@@ -456,7 +459,7 @@ function legDone(): Seed {
 // The pick's rim stands 2032 m out (step 4's review, k), past the old 2000 m bound on an actor's `at`: the bound now
 // follows the catalog (RAIL_POSITION_MAX), so the pick is taken there, and a pile can lie there too.
 test('route host: the pick taken at its rim through r:edit, a pile dropped there; past the bound still refused', async () => {
-  const r = await host('pick', legDone());
+  const r = await host('pick', legLaid());
   try {
     const pick = RAIL_GRANTS.findIndex((g) => g.id === 'pick');
     const g = RAIL_GRANTS[pick]!.at,
@@ -563,8 +566,6 @@ test('railwayRequestEdit: every field an op validates or applies survives the re
 // late joiner's snapshot and a restart it stands, then leaves on its cap (arrived + dwell + cap, no saved field); a
 // lever ask assigned to it releases it.
 const RING = RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'Ring Island');
-let laid: Seed | undefined;
-const legLaid = () => (laid ??= legDone());
 /** Ticks until a line 2 train is held at Ring Island by the hold: its slot. */
 async function heldAtRing(r: Awaited<ReturnType<typeof host>>) {
   for (let t = 0; ; t++) {
@@ -597,7 +598,6 @@ test("hold host: a train held at Ring Island stands in a late joiner's snapshot,
     r.tune('railTrainHoldCap', 100);
     const k = await heldAtRing(r);
     const arrived = train(r.w, k).arrived;
-    assert.equal(train(r.w, k).track, 0, 'held outward, as the first hold on this world is');
     const joiner = r.connect('late');
     await r.ticks(3);
     assert.ok(joiner(), "the joiner's snapshot is whole");

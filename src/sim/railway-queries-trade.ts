@@ -64,6 +64,14 @@ export function plotsStaked(w: World, town: number): number[] {
  * and the train is on no build errand (call 4: not the footing wagon's, no kit aboard, no kit owed). A yard at a line's
  * end needs none: every train stands there. A train standing at the yard for any other reason loads all the same
  * (freightLoads). */
+/** The Ring Island hold is off for row `r` of `line` (docs/plans/short-turn.md, the ruling on step 1's sheet, call 7;
+ * railway-trains.ts, controlFree through TrainIO.controlOff): while the line owes footings (the wagon's errand), with a
+ * kit aboard that can unload at a halt open now, or owed a kit, as the train-spacing sheets ran it (candidate B's
+ * errand list). The wagon's train with no footings owed is on no errand. */
+export function holdOff(w: World, line: number, r: Readonly<RailTrain>) {
+  if (footingsOwed(w, line)) return true;
+  return (r.logs + r.rails > 0 && !legKitWaiting(w, line, r)) || kitOwed(w, r, line);
+}
 export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: number, dir: number) {
   const line = RAIL_TRAINS[slot]!.line,
     y = lineYard(line);

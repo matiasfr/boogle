@@ -272,7 +272,9 @@ export function controlStop(
 /** The hold for train `slot` now, or null where it may not act: no hold (controlOf), while a train of the line waits
  * in the shed to join (greybox call 66: no running train is held for a join), for the headway-exempt train, one the IO
  * puts off (`controlOff`: footings owed, an errand), or one a lever ask is assigned to (other than the ask at the
- * platform it stands at, which its standing serves). */
+ * platform it stands at, which its standing serves). An open end's ask is one digit for both ways (reqIndex): it is
+ * asked the way in, as trainReasons serves it (the review of spacing/six-hold, P2-1: asked the way out, the train
+ * braking into the end had no claim on it and it went to the train behind). */
 function controlFree<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, tick: number): Control | null {
   const ctl = controlOf(io, line);
   if (!ctl || io.headExempt(slot) || io.controlOff?.(line, slot) !== false) return null;
@@ -283,7 +285,7 @@ function controlFree<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, t
     r = io.row(slot),
     way = r.track ? -1 : 1;
   for (let k = 0; k < n; k++)
-    for (const dir of [1, -1]) {
+    for (const dir of k === 0 ? [-1] : k === n - 1 ? [1] : [1, -1]) {
       if (!reqHas(req, k, dir, n)) continue;
       if (r.phase === TRAIN_PHASE.STAND && r.at === k && dir === way) continue;
       if (trainServes(io.row, line, stops, k, dir, tick) === slot) return null;
@@ -291,8 +293,9 @@ function controlFree<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, t
   return ctl;
 }
 /** The control hold: a train standing at a control halt (not an end) past its dwell waits while the gap ahead plus
- * `off` is shorter than the gap behind, at most `cap` ticks past the dwell from its `arrived` (no saved field: as
- * balancedHold's cap, a lever ask's restarted dwell never moves it). */
+ * `off` is shorter than the gap behind, until `cap` ticks past `arrived` plus the dwell (no saved field). As at the end
+ * holds (balancedHold), a lever ask at its own platform restarts the dwell, which the asker is owed, so a hold is at
+ * most dwell + cap and one asker's dwell. */
 function controlHold<L extends LineRef>(io: TrainIO<L>, line: L, stops: readonly number[], slot: number, tick: number) {
   const r = io.row(slot);
   if (r.at < 0 || atEnd(r.at, stops) || !lineDef(line).halts[r.at]?.control) return false;
