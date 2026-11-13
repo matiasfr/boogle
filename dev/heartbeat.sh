@@ -43,7 +43,7 @@ for w in ci.yml deploy.yml deploy-server.yml smoke.yml unit-long.yml; do
   gh run list --workflow "$w" --branch main -L 1 --json conclusion,status,createdAt,headSha \
     -q ".[] | \"$w: \(.conclusion // .status) \(.headSha[0:8]) \(.createdAt)\"" 2>/dev/null
 done
-say "Play sessions (newest first; a WORLD_NS bump waits while the owner is mid-session)"
+say "Play sessions (newest first; shown for information: ships hold only on the owner's word)"
 (cd "$main" && node dev/playtest/cli.ts 2>&1 | head -6 | cut -c1-160)
 # Device runs (npm run device) are bot sessions, so they are not in the list above; unpulled ones can be evicted.
 (cd "$main" && [ -f dev/device/cli.ts ] && node dev/device/cli.ts waiting 2>&1 | head -2 | cut -c1-160)
