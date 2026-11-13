@@ -168,3 +168,35 @@ No route-contract finding: the level check's progression lines match in both lay
 1. **The flip under "Engine foundations first".** Recommended: **yes.** It moves constants and one table, adds no component, op or system, so there is nothing to migrate; he agreed to the flip on 13 November. The one cost is a collision if the engine work is open on `src/sim/railway-lines.ts` at the same time.
 2. **One bump at X1, perhaps a second at R2.** Recommended: **yes**; his standing calls already cover it.
 3. **The first sealed building opens empty.** Recommended: **yes.**
+
+### F1 and F2 as built: design ruling (designer, 2026-11-13)
+
+On `home/flip-f1` at fe9366edd, view only, behind `?home=b`. Read: the builder's notes under F1 and F2, `CROSSING`, `ISLAND_LEVER` and `shuntPath` in `src/place/home-station.ts`, `roundhouse-view.ts` (the shunt has no collider), and five stills in `.look/` (taken at `q1-done` on 724e05d6b with uncommitted changes, before the two commits).
+
+**Seen.**
+
+- `f1-platform-still`: from the hall's back bay a player stands on the pale apron with clear ground either side; the north wall has a gap with the forge and a worker through it; the crane and both buffers read. I could not pick the rack out with certainty from the hall's posts and the buffer in this frame, so the 1.97 m lane rests on the builder's measurement and its test, not on this still.
+- `f1-arrival-still`: Sleeves stands on the sand at the frame's lower left, in front of the wall and post; the open bay between the two posts is clear and shows through to the apron; the shelf fills the right. He is close to the frame's edge.
+- `noflag-arrival-still`: the old Home, Sleeves in front of the shelf, no station. The default view is unchanged.
+- `f2-crossing-tail-still`: the boards lie over road 2 with a player on them, at the buffer; beyond them open grass, the garage's stand, then the stall's grey frames and the table's deck. The stall reads as a place; its sockets do not read as sockets at 23 m.
+- `f2-crossing-still`: from down road 2 toward the hall, the boards sit tight against the buffer and the hall's end.
+
+**Not seen.** The island's deck, both ramps, the moved levers and their prompts, any train, the cart, the shunt (the deck drops in with the trains and `q1-done` has none). So no still shows the step from the head ramp onto the boards, or the boards from where a player gets off line 2's train. Phone size. Two players in the lane.
+
+| # | Deviation | Ruling |
+| --- | --- | --- |
+| 1 | The crossing on the buffer stub (road 2, s 2.0 to 3.6) instead of the island's far end | **Accept the site.** The far end has 1.05 m between the engine's nose and the points; boards there would sit under a standing train. It meets the condition in the sense that matters (flow rule 1): it is behind the train's tail, off the points, and from it the stall is in plain sight across open ground. It does **not** shorten the walk: it marks the ramp way (about 36 m in home-station's count), and the 19 m hop off the deck's edge stays the short way. Both are accepted under call 15. One open risk: a player gets off facing the stall with the boards behind them, toward the hall; X1 must show that view. **The shunt over the boards: does not matter.** It is drawn only, has no collider, cannot push or trap, and runs once a build; a wagon passing through a player who stands there is a greybox look, not a rule. Do not add a collider to the boards or the shunt for it |
+| 2 | The rack's lane is 1.97 m, not 2.2 m | **Accept.** One player has room; two pass in file; the lane is a side way and the goods door is the other. Do not take the further 0.2 m (0.16 m off the cart is worse). If X1 shows a squeeze, the change is to turn the rack to the station's axis, not to shift it |
+| 3 | The island's levers moved to their own edges, 3.70 m apart | **Accept; 0.10 m is enough.** The rule is "no spot offers both prompts"; it is exact arithmetic on fixed points and a test pins it. They cannot go further without leaving the 4.3 m deck. If the prompt reach ever grows, the test fails and the answer is then "the nearer lever wins", not a wider deck |
+| 4 | Sleeves 1.9 m in front of the second front post, between the two open north bays | **Meets the condition.** In front of a post is beside a bay, not in it, and the arrival still shows the bay clear |
+| 5 | The shunt as two tracks (the deck turns 120°, the pair backs down the spur shunter first, rests at the cusp, the shunter pushes the wagon out), at about twice the planned pace until the flip | **Accept.** The order is a real shunt and reads as one on paper; the pace is wrong only behind the flag and X1's `rollTicks` 110 ends it. Unseen, so X1's video is its proof |
+
+**F1 and F2 may ship now behind the flag.** Nothing waits. All five are Default (placements and one animation order, each one constant or one track to change). The prompt wording "Request stop: to <end>" is placeholder, not The Boogler's, and stays on the suspect list.
+
+**X1 must show, because of these deviations** (added to "What the stills must show"):
+
+1. **The crossing from the train.** At `trains-on`, from the deck where a player gets off line 2's footing wagon, at eye height, facing the stall: are the boards, or the ramp that leads to them, in frame, and does the stall read as the goal. Then one from the head ramp's foot: the step onto the boards and the line to the stall's door, with the standing train's tail and the cart's forge stop in frame. If the boards are out of sight from the wagon, the fix is a second cue at the stall (a mark at the sockets), not moving the boards.
+2. **Both levers and plaques** in the platform still, each under its mast on its own edge, a train at each edge: the lever does not stand in the way of boarding. One frame with a player midway between them: no prompt, or one.
+3. **The lane with two players** beside the rack, and the rack's far posts against the cart on road 2 (the cart's reversal video, `q4-arriving`, must have the rack in frame: 0.36 m, no clipping).
+4. **The roll-out video** (`cradle-fitted`, real time, at 110 ticks) framed to hold the table, the spur, the cusp and the boards: the deck's 120° turn, the pair backing down shunter first, the rest at the cusp, the push out. It passes if the direction change reads as meant and the wagon ends where line 2's train takes it.
+5. **Arrival** with Sleeves whole in frame from spawn's own camera, also at phone size (he is at the edge of F1's frame).
