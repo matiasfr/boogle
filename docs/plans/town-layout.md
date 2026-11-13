@@ -1,3 +1,5 @@
+> **Status, 12 November (owner, late session): to be scheduled, not parked.** On opening the sealed buildings: "I think this stuff could be in conjunction with the first version of the updated town that we designed that we plan to implement. Make sure that we plan to implement that." The sealed buildings open together with the Round's first build ([owner calls](../agents/owner-calls.md)).
+
 > **Status: layout chosen, reviewed (2026-11-10).** The owner picked **option 2, the Round**. The
 > [design review](#design-review-designer-2026-11-10) ruled every call and its rulings are applied to the body below.
 > **Note, 10 November (owner): the ring is built regular**; the review's designed irregularity (its call 2) is
