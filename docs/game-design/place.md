@@ -63,7 +63,7 @@ The same finite ordinary trees, eight-log back, 24-log first frame, wake animati
 **Line 2, part 2's first playable: the pack and Q4 (7 November; [plan](../plans/line2-part2-greybox.md), B1-B2).** The pack frame's chest stands beside the forge once its first bill (24 logs) is in; whoever opens it opens it for everyone, so every back carries 16 from then on (the card for the opener, a flourish for the rest, as with the axe). Q4 (16 logs, 16 rails, 178 → 286 m, to the rim) waits behind the quarry gate: its frame takes nothing until the lever has dropped the slab. Its depot cart runs as soon as Q3 is laid: eight logs a trip, as before, and from Q4 on it also takes up to 16 of the stretch's rails off the forge rack onto a low shelf beside the log rack ("Take rails"), so the forge rack drops by what the shelf gains: rails are moved, never made. Rails left on the shelf when the frame funds (someone brought rails by hand) go back to the forge rack. A survey stake with a teal flag marks the rim where Q4 ends. For now the cart has no body: its loads appear (B3 gives it its trip). The away credit runs the shelf too. Once it is open every Buddy wears the open timber carry frame on the back (the same frame as Place's, with its shelf under the logs; yours and every friend's, derived from the shared pack flag, no presence field), and the haul bundle sits on it. Code: `rail.pack`, `rail.depotRailTake` and the depot in `src/sim/railway-systems.ts`; views `tools.ts` (the chest and the worn frame) and `shelf-view.ts`. `WORLD_NS` v18. Not tested on a device.
 **Line 2, part 2's first playable: the pack and Q4 (7 November; [plan](../plans/line2-part2-greybox.md), B1-B2).** The pack frame's chest stands beside the forge once its first bill (24 logs) is in; whoever opens it opens it for everyone, so every back carries 16 from then on (the card for the opener, a flourish for the rest, as with the axe). Q4 (16 logs, 16 rails, 178 → 286 m, to the rim) waits behind the quarry gate: its frame takes nothing until the lever has dropped the slab. Its depot cart runs as soon as Q3 is laid: eight logs a trip, as before, and from Q4 on it also takes up to 16 of the stretch's rails off the forge rack onto a low shelf beside the log rack ("Take rails"), so the forge rack drops by what the shelf gains: rails are moved, never made. Rails left on the shelf when the frame funds (someone brought rails by hand) go back to the forge rack. A survey stake with a teal flag marks the rim where Q4 ends. The away credit runs the shelf too. Code: `rail.pack`, `rail.depotRailTake` and the depot in `src/sim/railway-systems.ts`; views `tools.ts` (the chest) and `shelf-view.ts`. `WORLD_NS` v18. Not tested on a device.
 
-**The depot cart's real trip (8 November; [plan](../plans/line2-part2-greybox.md), B3).** The cart now has a body and a road: from its stop at the timber camp (line 1, 196 m from the turntable) down line 1, over the turntable beside the forge, and out along line 2 to a stop 13 m behind the waiting machine, by the active frame's rack. It loads up to 24 logs at the camp (Place's load; the depot mints them there, counted as production), stops at the turntable, and from Q4 on waits there for the stretch's rails off the forge rack (up to 16; an empty forge keeps it waiting, and the rack's tag says **Waiting for forge**), then runs out, heaves its load onto the rack and shelf in a stream and goes home. It runs at 9 m/s and eases in and out of every stop at 3 m/s²: about 70 s for a round trip to Q2, 88 s to Q3 and 101 s to Q4. The rack's tag reads **Loading**, **On the way** or **Unloading**, with **More coming**, while it serves the stretch. There is no call handle: the amber **Call cart to forge** handle by the turntable was cut (owner, 9 November; [decision](../decisions.md#trains-and-the-world)), since the cart already serves the next rack by itself; its op and the cart's `recall` field went with `WORLD_NS` v25. To ride out, board it at the forge stop while it takes rails (about 3 s). You can ride it anywhere along its road; a partner sees you on it. There is no ridden speed bonus in this build (owner, question 3). The server owns the trip: the cart is sent only when its phase changes, and every tab places it from its estimate of the server's tick, so its pose is the same everywhere. A load that set out for a stretch someone filled by hand goes on to the next stretch's rack. The away credit lands the load under way and runs whole trips for what is still owed. Code: `src/sim/railway-cart.ts` (the pose), `rail.cartTick` and `rail.cartCall` in `src/sim/railway-systems.ts`, the view `src/entities/railway/cart-view.ts`. `WORLD_NS` v19. Not tested on a device.
+**The depot cart's real trip (Home flip, 13 November).** From the camp at line 1 s 196, the cart runs down to s 54, takes the 38.32 m leg into road 2 at s 26, then runs to the buffers beside the forge rack. The forge stop is 206.32 m along its road. It reverses there without turning and runs out along line 2 to the active rack, 13 m behind the waiting machine. It loads up to 24 logs at the camp and, from Q4, up to 24 rails at the forge (one full rack); an empty forge keeps it waiting. Speed remains 9 m/s, easing at 3 m/s². The extra road adds about 2.4 s to a round trip; rack stops keep their line-2 distances. The labels **Loading**, **On the way**, **Unloading**, **Waiting for forge** and **More coming** are unchanged. There is no call handle. The server owns phase changes; the Local view samples the actual road without scaling. A load for a stretch filled by hand serves the next rack, and away credit counts whole trips. Code: `src/sim/railway-cart.ts`, `src/place/home-station.ts`, `src/entities/railway/cart-view.ts`. The reversal with the rack in frame remains an owed real-time proof; not tested on a device.
 
 **Instant feedback (replication R1b, 6 November; owner call "Input gets instant feedback").** Your own chop, mine, pickup (pile, recovery rack, forge rails, depot), drop and deposit play their result on the press, before the server answers: the stroke's logs or stone fly to your back, the tree shakes or falls, a dropped pile appears, the frame fills, the carry tag counts. Waking the machine starts its 3.1 s wake on the press, and the server starts the wake at the tick you pressed, so the machine is ready exactly as its animation ends; pulling the quarry lever swings it at once. Partners still see your action about one round trip later, as before. A stroke the rules would not take yet (the machine still waking) bounces off with the rebound sound and sends nothing; a full back keeps its full cue. When the server refuses or someone else got there first (the last log in a pile), what you were shown goes back physically: the pieces lift off your back and arc to whoever got them, or back to the tree, rock, rack or pile; a pile you dropped onto shrinks as they return to you; a tree that fell in your view stands back up with a shake. A stroke unanswered after a second shows the stall cue: the axe hangs at the bite, wobbling, until the server answers. Bills completing and the forge lighting are left to the server: the frame shows full at once, and the machine starts when the server confirms it (one round trip). Serves DESIGN.md 7 (Telegraph everything) and 11 (Show, don't tell).
 
@@ -110,6 +110,17 @@ All motion and sparkle are Local; accepted contacts still own harvest sounds, ch
 **Proof boundary:** fresh solo/co-op runs on the integrated main build pass T2/T3, the earned axe, unique beam and both path walks; both co-op players ride all three panel stretches and exercise helped beam carrying. The [production acceptance ledger](../plans/production-core.md) links the inspected T2, T3, helped-beam and walk-home stills, every failure/repair, and measured segment wall times. The panels and village approach are readable; one beam spans both players, though their hands remain down and grip feel is unverified. Static checks pass with 396 unit tests and ten grounded placements without problems; server tests pass 104/104 and queued network assertions pass 196/196. The trusted `world-inputs` run passes classic only; production parity and the listed T1 acceptance gaps remain open. Timing under load does not establish responsiveness, smoothness or feel. Not tested on a device. Stop for the owner's first-path verdict: “Did finishing this line make the walk home feel worth the work?” The Boogler's copy remains untouched. New prompt lines for owner review: “Empty your back first”, “A proper axe first”, “Help carry” and “Let go”.
 
 ## The place
+
+**Home's one station (13 November, home-flip X1/X2).** The terminus is the only Home. Two buffer roads share a
+4.3 m island, an apron and an open hall; the shelf faces the square from the hall, and Sleeves stands beside its
+north bay. The rack leaves the accepted 1.97 m lane; the goods door reaches the forge. The table is on its own spur,
+with one open radial stall and two ruin outlines. Board crossing s 2.0–3.6 on road 2 marks the ramp way to the stall;
+it and the shunt have no collider. Each island lever calls its own line and the knobs stay 3.70 m apart.
+The rules use the new path heads, island centres and tool anchors, with stop marks unchanged. Line 1's Home turnout
+has the accepted 9.5 m radius. The pedestal is 12 cm north and the dock 8 cm east of the plan's initial pins to retain
+existing clearance assertions. Trees are planted against frozen v35 exclusions in the original RNG order: all 362
+survive, with no removed trees; Q1/Q2 wood and both hardwoods keep their identities and positions. One v36 reset covers
+the flip; save resets are never a development cost. [Proof and owed views](../reviews/home-flip-x1.md).
 
 **Track-layer clearance (5 November iPhone follow-up).** With no first panel target, the empty boom now parks
 along the track instead of pointing through its own origin and cutting sideways into the camp chimney. The
@@ -810,26 +821,21 @@ server lights the works: the sign reads "lit  steel n/12" and orange steel block
 the next train's kit car. Every label here is a placeholder. No sound or effect yet. **On the train (V2):** steel
 rides home as orange blocks on the kit car of whichever line 2 train took it, up to six; a train that has taken the
 longer boiler at the Village wears the longer engine (a longer frame and barrel ahead of the same cab), drawn only:
-its collider is the short engine's. **At Home (V3):** from the rivet a grey pallet and a post stand on the open ground
-east of the Roundhouse table, between line 2's two roads. Steel that has come home lies on the pallet as orange blocks,
-up to twelve, and the post's lamp turns orange. Standing by the post, "Install the longer boiler" is a hold of 1.2 s
-(the post's bar fills; a tap reads "Hold to install"); while the footing wagon is rolling out it shows blocked with
-"The table's busy". Nothing is predicted: when the server accepts, every page in the room shows the banner "Longer
-boiler installed / Line 2's trains take it at the Village", the lamp and bar go green and the prompt is gone; each
-line 2 train takes the boiler the next time it stands at the Village. The steel stays on the pallet (nothing spends
-it yet). No sound, no camera move. **The garage at today's table (garage-install-moment, G1 and G2, 12 November):**
+its collider is the short engine's. **At Home (Home flip, 13 November):** the grey pallet east of the spur table holds the steel that has come home,
+up to twelve orange blocks. The old grey install post and hold prompt are removed; installation is through the garage.
+**The garage at Home's table (garage-install-moment G1/G2, moved by X1):**
 once the footing wagon has coupled and the shunter is back in its stall, a works copy of the engine and its first car
 stands on the table along the bridge, solid, wearing the room's boiler (the longer one with its four bolts once it is
 installed). On a live tick it arrives behind a puff of steam with a whistle; a reload or a late join just finds it
 there. The grey post is now the garage's lever post, with a knob that is brass, orange while steel waits and green
-once the longer boiler is on. A jib and a stand are south-east of the table, off the deck, the jib's arm parked away
+once the longer boiler is on. The stand lies radially at bearing 85°, 6.5 m from the table centre, with the jib and
+crew behind it and outside the sweep; the jib's arm is parked away
 from the table over the grass; when steel is home the arm swings round over the stand (a pull on its cord and a
 clank), the longer boiler lies there under its hook and two crew figures wait by the mast. The pallet is north-east
 of the post. Interact at the post opens
-the garage ("Look at the engine") on a camera from the east, and the deck turns the copy a quarter turn for it, nose
+the garage ("Look at the engine") on a camera from bearing 15°, and the deck turns the copy a quarter turn for it, nose
 to the stand. In the garage the Longer boiler tile reads "Needs steel", then "Ready", then "Installed", and the old
-Boiler "Replaced". **The Install (G3, 12 November):** at today's table the garage is the one way to install; the
-plain post, its bar and its "Install the longer boiler" prompt are gone there (they remain only under `?home=b`). With
+Boiler "Replaced". **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go
 lowers it. While the Longer boiler is chosen and ready the table does not turn idly: the engine stays at the opening
@@ -957,7 +963,9 @@ deliberate "before": they raise the stall frame and pull its tarp off. The cradl
 (**Fit the cradle**), which turn it brass (it took two footings too until 10 November;
 [works-late-game](../plans/works-late-game.md), step 2). **Turn the table** is accepted only when ready (owner, 10
 November): once the cradle is fitted and before the wagon rolls out, so the one turn there is sends the shunter
-pushing the wagon out to wait on line 2. Earlier, while it rolls out, and after line 2 couples it, a turn is refused
+and wagon over the spur in 110 ticks (11 s). The deck turns 120°, the pair backs down shunter first, rests at the
+cusp, then the shunter pushes the wagon out to line 2 at the unchanged coupling mark. Earlier, while it rolls out,
+and after line 2 couples it, a turn is refused
 and the prompt isn't offered (until 10 November a turn before the fit was accepted and did nothing, and after
 coupling the table was a toy). From then the wagon is line 2's fourth car: arriving at the quarry, up to six
 footings hop from the Works rack onto its cradle; arriving at the new **Pier** halt (open once Q6 is laid), they hop
@@ -1041,7 +1049,7 @@ mast (10 November). Every standing halt has a **map display**: a free-standing s
 legs, a dark frame whose back is a plain panel, and a roof-red cap, its 1.0 × 0.8 m face centred 1.35 m above the
 deck. It stands at the platform's back edge under the shelter roof, between the bench and the shelter post nearer
 the rear ramp, facing the rails: you read it where you wait, and it is out of the aisle and the train's clearance.
-It has no collider, so it can't trap anyone or block the railway bot. The Home island (`?home=b`) has one display
+It has no collider, so it can't trap anyone or block the railway bot. The Home island has one display
 for both edges, in the middle of the deck between the canopy posts, facing the head ramp you come up, with both its
 stops ringed. The mast carries only the signal arm (and, on an island edge, its destination plaque). Each face draws
 **the island's railway as a map**:
@@ -1284,8 +1292,7 @@ ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwaySc
   shelf. Mark `crate opened`.
 - **Late joiners and reloads** find an unopened box for every stretch already laid; an opened one is gone for you and
   still there for a partner who hasn't opened theirs.
-- **The curio shelf** stands in the village by the forge, on its west wall line at (−91.6, 8.5), square to the street
-  and facing west across it (10 November; `?home=b`: in the hall's front, facing the square): what you own of the boxes' gifts stands on
+- **The curio shelf** stands in the hall's front, facing the square: what you own of the boxes' gifts stands on
   it, the rest under dust sheets (and the two shapes that never come out of this run's boxes). A sheet comes off with a
   puff of cloth when a box's card is put away within 40 m. It is the display only: it has no prompts. You dress from Pause's
   You page (owner, 10 November; its four "Swap" prompts went). The stowaway's slot came with C2 (below); the finders' bay comes with F2.

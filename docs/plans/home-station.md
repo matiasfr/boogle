@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-09).** Next: the designer rules on the Level findings and open questions, then build.
+> **Status: built to step 6 (2026-11-13), not shipped.** F1/F2 and X1/X2 of [home-flip](home-flip.md) implement the station, tools and the sole Home with v36. The owner approved the flip; save resets never hold development. The older implementation notes below are historical where the flip supersedes them. Browser proof and independent review are owed as listed in [X1 evidence](../reviews/home-flip-x1.md); later station dressing remains unbuilt.
 
 # Home station: one terminus, layout B
 
@@ -151,7 +151,7 @@ could sit inside the new station. Everything that needs a reset rides this one, 
 3. step 7 of [boiler-first-choice](boiler-first-choice.md) (the two boiler pace tunables);
 4. the Pier halt fix, if its review finds it must move `PIER_STOP_CM`.
 
-It ships only when `npm run heartbeat` shows no live owner session.
+The owner retired the session hold on 13 November: save resets never block development; a ship holds only on his explicit word.
 
 ### The cart
 
@@ -403,16 +403,16 @@ change; the full loop once a day").
     from spawn as the right metric. not everything has to be visible, it just has to be a well designed town
     spatially"). The open call on a 1.1 m north wall or a higher spawn camera is closed; the 2.4 m walls and the
     shelf's place stand as built. The hall is judged as a space ("Hall as a space", below).
-- [ ] **4. The owner sees it.** Send the full link `https://boogle.club/?home=b` and the three stills. Designer rules on
+- [x] **4. Owner approval superseded by the Home flip approval (13 November). Historical request:** Send the full link `https://boogle.club/?home=b` and the three stills. Designer rules on
   the Level findings and questions 1 to 7. Adjust step 1's numbers if he moves anything, and rerun steps 1 to 3's checks.
-- [ ] **5. Make tools follow the anchors.** No behaviour change.
+- [x] **5. Make tools follow the anchors.** No behaviour change.
   - `dev/look/bots/railway.ts`, `railway-works.ts`, `dev/look/evals/railway-home.ts`, `railway-halts.ts`,
     `railway-gated-fill.ts`, `railway-works-at.ts`: every Home waypoint that is a literal becomes a value read from the
     sim constant it stands for (`LINE2_FORGE`, `LINE2_BOILER`, `WORKS_BREAKER`, `SHED_TABLE`, `SHED_STALL`,
     `WORKS_SEAMS[0]`, `LINE_HALTS`, Q1 and Q2), with offsets.
   - Verify: `npm run playthrough -- --to forge-lit`; `npm run look -- --rail-seed q1-done --eval
     dev/look/evals/railway-home.ts`. Coordinate with the hot-file split of `railway.ts` and `rail-seed.ts`.
-- [ ] **6. The flip, with the one bump (v24). Independent review (`src/sim`, `src/world`).**
+- [x] **6. The flip, built as home-flip X1 with v36. Independent review and browser proofs owed before ship. Historical implementation list:**
   - `src/proto/place/home-station.ts`, `layout.ts`: B is the layout; delete `homeLayout()`, the flag and today's
     branches.
   - The constants table above, in `src/sim/railway-train.ts`, `railway-line2-layout.ts`, `railway-works-layout.ts`,

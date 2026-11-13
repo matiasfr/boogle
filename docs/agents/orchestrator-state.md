@@ -86,16 +86,16 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 **Leftovers from 11–12 November, by rank:**
 - P2 (12 November evening): the request guard test is blind to `kind` on every op and to `rail.wake`'s `tk` (`server/test/railway-steel-host.test.ts`, the baseline subtraction): subtract the baseline from `railValid`'s reads only.
-- P2: the garage on a phone: a real touch hold is untested; sound is unchecked on every capture; the race loser hears a deny and sees a second lift; a refusal's resync test was not run against the old code. Layout B's stand (3.9 m) sits inside the 4.8 m sweep and needs re-placing at the Home flip.
+- P2: the garage on a phone: a real touch hold is untested; sound is unchecked on every capture; the race loser hears a deny and sees a second lift; a refusal's resync test was not run against the old code. Closed by F1/X1: the stand is radial at 85°, 6.5 m out, with its inner end outside the 4.8 m sweep; X1's garage view is still owed.
 - P2: leg 1 step 4: the barrier is a red fleck from the stair's top landing and its plate is unreadable from the concourse; the legs' deck batch is never frustum-culled; the old heads keep their platform one section longer than the review said (step 3's `closesAt`).
 - P2: the maps after the rivet: 18 of 37 faces have a name as near another stop as its own (each with a leader); "Village" beside Camp's dot on Far Head's board when a train covers Village; train markers cover the leg's end stops; the dim High Gorge is faint at phone width.
-- P3: G5's puff sits above the chimney and the squash is invisible; readouts pass through in-between values after the drop; one frame inside the smokebox on leaving the garage (main has it by the code); `test/garage-geo.test.ts` breaks by design at the Home flip.
+- P3: G5's puff sits above the chimney and the squash is invisible; readouts pass through in-between values after the drop; one frame inside the smokebox on leaving the garage (main has it by the code); Closed in X1: `test/garage-geo.test.ts` uses the sole station, with the sweep, install reach, landing and steel-car clearance assertions passing.
 - P3: `server/test/railway-steel-host.test.ts`'s yard take ran 4.8 s against a 5 s limit locally; `legKitArrive` returns at the kit halt before the unload branch (matters only for a home-kit leg whose rack halt is the line's home halt); a late piece of P3 from the step 3 review: gates 8 and 9 on four seeds run only in the long mode.
 - P2: Spotlight took the Mac to load 30 on 12 November (`corespotlightd` at 240% CPU); the owner may exclude `~/Developer/boogle/.claude/worktrees` (an agent must not change system settings).
 
 - P1: leg 1's finished-line waits on 48 seeds: worst 1,553 (heavy) and 1,535 (light), 7.2% and 3.0% over 1,050; the 1,400 gate holds on the test's four seeds only (call 109). Train spacing: candidate A dies on main's stages (a passed ask waits 340 to 380 ticks extra); candidate B (Ring Island hold, on 15%, cap 200) cuts light settled 3.0% to 0.4% but does nothing under heavy asks; next is the short turn's own plan. Sheets on `scratch/spacing-*`.
 
-- P2: `?home=b` draws 315 of 388 trees off the sim's positions.
+- Closed in X1: the sole Home plants against frozen v35 exclusions. All 362 scenery trees retain IDs, positions and order; zero trees dropped. Starter-source and hardwood tables match. See [X1 proof](../reviews/home-flip-x1.md).
 - P2: `railway-session.ts` is 573 lines against the 450 cap (needs a state object).
 - Closed: the map JSON's stale rail heights (#1653, `c9906f458`/`d0b43a588`: rails written from the catalog, a test fails on disagreement). The Ring Island ride-home drop is fixed (#1657, `c37c555d5`).
 - P2: the server has no last-resort crash handler and the rail step timer is unguarded (`server/src/index.ts:30-31`, `server/src/host/world-host.ts:482`, `src/world/sync.ts:391`). Classic rooms accept an array op and save it (`src/world/sync.ts` stamp).
@@ -104,7 +104,7 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 - P3: a rider at the front of the boiler stands inside the chimney model (no collider); a small dark square floats above the engine in every still; a rider dropped into the cab's solid parts is not carried (the cab floor carries). `test/kinematic-turn.test.ts`'s dynamic half only asserts "falls"; a kinematic body's Rapier mass now reads 1.
 - P2: the headway hold never binds under lever asks (identical results at 75% and 0% on main).
 - P2: the footing wagon's train never takes stone (slice 5 call 4 exempts it and nothing uncouples the wagon), so after the rivet loads come 2,884 ticks apart; whether the exemption ends once no footings are owed is a question for the owner (call 108).
-- P3: "Bring logs or rails" family and install prompt strings are placeholders; the longer engine is hard to tell apart without a side-by-side; steel's fourth car is not built; the garage tile in `?home=b` still reads "Needs steel" after an install.
+- P3: "Bring logs or rails" family and install prompt strings are placeholders; the longer engine is hard to tell apart without a side-by-side; closed: steel's fourth car landed, and G1 made the garage tile read installed state (X1 retains it on the sole Home).
 - P2: White Wall sections 437 to 850 m and both ending sections (865, 726 m) exceed the design review's 650 m guide; the designer rules before that leg is built.
 - P2: how the ring's goods reach Bell Rock (open design item).
 - P2: Port Quay's rotunda and the engine sheds are decided (10 November) but not drawn in map data.

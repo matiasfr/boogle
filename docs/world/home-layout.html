@@ -3,535 +3,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta
   name="description"
-  content="Home's station, tracks and roundhouse today and as planned (layout B), to scale from the code, with walks, moves and clearances."
+  content="Home's station, tracks and roundhouse, to scale from the code, with walks and clearances."
 />
 <script type="application/json" id="home-data">
   {
-    "sourceCommit": "2f211e674864b48fb3a823db14a7e808d1f3add8",
+    "sourceCommit": "53d6d71359e31524d4dcfd60a12d39c26ddd756e",
     "sourceHashes": {
-      "src/place/layout.ts": "fe06628ec345ab0ed67b048a86833cb28aaee016c517c184406d26956b598ea8",
-      "src/place/home-station.ts": "730b1a0b9cd1dead40de3190339021acc77eca55b006e44816c848a7c5d47763",
-      "src/entities/railway/cars.ts": "be86379b41085e78f3ee65a3e6909ad25472e1cc2eac5c8d81e2c49082ea08f2",
-      "src/sim/railway-train.ts": "dd1a35856a415b8117153b8e4db7e5cefde3d9a912195d74f535e45b0ccffa73",
-      "src/sim/railway-line2-layout.ts": "d5595c480d8a0b040286111f56f42b3d93fe0f6b4615699be36b5965ef88f3fc",
-      "src/sim/railway-works-layout.ts": "90415dac2a29431d2aac454bdd233abecfc0ad2bd3b582592512336adc84cbe2",
-      "src/sim/railway-cart.ts": "700b1bf322dd487c370f828ba11a94dca86b23e2635ebd34fa7832d517917eb3"
+      "src/place/layout.ts": "e4de08abc5fa1b5418f3486b87377a6bf670c01ab20f65c5593c85fca1db5c1d",
+      "src/place/home-station.ts": "8f16db5f4fb5c29d8bc7dd87b6ab0b8a57d0344b23d6090e0faf541384019409",
+      "src/entities/railway/cars.ts": "87d79b98a66dbc8e13a34c1ace62090c5ad6228d78ef31ccfb1e4a4efcd00172",
+      "src/sim/railway-train.ts": "f55b0cc8a55128150a3350641400706950648a8f6c9e50f188419174c6bd493c",
+      "src/sim/railway-lines.ts": "d07a188322cb46b5cda09c54fc5e073acd510adecada806ed5644be3f809385e",
+      "src/sim/railway-line-layout.ts": "1aa96252c677ed7beee13a5973eb3936b3a23cfba3a754cdcf947e7abf345a48",
+      "src/sim/railway-line2-layout.ts": "a7d22ccad6fba5042f21b6aaeb1d6f7619f5fbd5e7d0abf905c15515ba66ceef",
+      "src/sim/railway-works-layout.ts": "1b0ab6ec7cf88506bf53c725d233133ed36c8522e2c2b51cc1ad1ff5ada7487d",
+      "src/sim/railway-cart.ts": "34bfc9efe6d20f159b4be559b805c176f8e1111f0bf310be7633391f94316b83"
     },
     "generator": "node --import ./dev/sim/hooks.ts dev/level/home-station-page.ts",
     "units": "metres; Place-local x,z; north = -z; yaw is three.js rotation.y (w along local x, d along local z)",
     "origin": { "x": 1000, "z": 0 },
     "engine": [1, 1.25, 1.4],
-    "today": {
-      "lines": {
-        "l1": {
-          "pts": [
-            [-82, 12],
-            [-81.35, 11.24],
-            [-80.7, 10.48],
-            [-80.05, 9.72],
-            [-79.4, 8.96],
-            [-78.75, 8.2],
-            [-78.1, 7.44],
-            [-77.44, 6.69],
-            [-76.79, 5.93],
-            [-76.14, 5.17],
-            [-75.49, 4.41],
-            [-74.84, 3.65],
-            [-74.19, 2.89],
-            [-73.54, 2.13],
-            [-72.89, 1.37],
-            [-72.24, 0.61],
-            [-71.59, -0.15],
-            [-70.94, -0.91],
-            [-70.29, -1.67],
-            [-69.63, -2.42],
-            [-68.97, -3.18],
-            [-68.31, -3.92],
-            [-67.64, -4.66],
-            [-66.96, -5.4],
-            [-66.28, -6.14],
-            [-65.61, -6.87],
-            [-64.93, -7.61],
-            [-64.25, -8.35],
-            [-63.58, -9.09],
-            [-62.92, -9.83],
-            [-62.26, -10.59],
-            [-61.61, -11.35],
-            [-60.97, -12.11],
-            [-60.34, -12.89],
-            [-59.72, -13.68],
-            [-59.11, -14.47],
-            [-58.52, -15.28],
-            [-57.94, -16.09],
-            [-57.36, -16.91],
-            [-56.79, -17.73],
-            [-56.22, -18.55],
-            [-55.66, -19.37],
-            [-55.1, -20.2],
-            [-54.54, -21.03],
-            [-53.99, -21.87],
-            [-53.44, -22.71],
-            [-52.9, -23.55],
-            [-52.36, -24.39],
-            [-51.83, -25.24],
-            [-51.31, -26.09],
-            [-50.8, -26.95],
-            [-50.29, -27.81],
-            [-49.79, -28.67],
-            [-49.29, -29.54],
-            [-48.81, -30.42],
-            [-48.33, -31.3],
-            [-47.86, -32.18],
-            [-47.41, -33.07],
-            [-46.96, -33.97],
-            [-46.53, -34.87],
-            [-46.1, -35.77],
-            [-45.69, -36.68],
-            [-45.29, -37.6],
-            [-44.91, -38.52],
-            [-44.53, -39.45],
-            [-44.17, -40.38],
-            [-43.82, -41.32],
-            [-43.47, -42.26],
-            [-43.14, -43.2],
-            [-42.81, -44.14],
-            [-42.49, -45.09],
-            [-42.18, -46.04],
-            [-41.87, -46.99],
-            [-41.57, -47.95],
-            [-41.27, -48.9],
-            [-40.98, -49.86],
-            [-40.69, -50.82],
-            [-40.41, -51.78],
-            [-40.13, -52.73],
-            [-39.84, -53.69],
-            [-39.56, -54.65],
-            [-39.28, -55.61],
-            [-39.01, -56.57],
-            [-38.73, -57.53],
-            [-38.44, -58.49],
-            [-38.16, -59.45],
-            [-37.88, -60.41],
-            [-37.6, -61.37],
-            [-37.32, -62.33],
-            [-37.05, -63.3],
-            [-36.78, -64.26],
-            [-36.52, -65.22],
-            [-36.26, -66.19],
-            [-36, -67.15],
-            [-35.74, -68.12],
-            [-35.48, -69.09],
-            [-35.23, -70.05],
-            [-34.97, -71.02],
-            [-34.72, -71.99],
-            [-34.47, -72.96],
-            [-34.22, -73.92],
-            [-33.97, -74.89],
-            [-33.72, -75.86],
-            [-33.47, -76.83],
-            [-33.22, -77.8],
-            [-32.97, -78.77],
-            [-32.72, -79.73],
-            [-32.47, -80.7],
-            [-32.22, -81.67],
-            [-31.97, -82.64],
-            [-31.72, -83.61],
-            [-31.46, -84.57],
-            [-31.21, -85.54],
-            [-30.95, -86.51],
-            [-30.69, -87.47],
-            [-30.43, -88.44],
-            [-30.17, -89.4],
-            [-29.9, -90.37],
-            [-29.61, -91.32],
-            [-29.32, -92.28],
-            [-29.01, -93.23],
-            [-28.68, -94.18],
-            [-28.35, -95.12],
-            [-28.01, -96.06],
-            [-27.66, -97],
-            [-27.31, -97.93],
-            [-26.96, -98.87],
-            [-26.6, -99.8],
-            [-26.25, -100.74],
-            [-25.91, -101.68],
-            [-25.58, -102.63],
-            [-25.27, -103.58],
-            [-24.98, -104.53],
-            [-24.72, -105.5],
-            [-24.49, -106.47],
-            [-24.3, -107.45],
-            [-24.14, -108.44],
-            [-24.04, -109.43],
-            [-23.99, -110.43],
-            [-24, -111.43],
-            [-24.08, -112.43],
-            [-24.23, -113.42],
-            [-24.42, -114.4],
-            [-24.65, -115.37],
-            [-24.91, -116.34],
-            [-25.2, -117.29],
-            [-25.51, -118.24],
-            [-25.83, -119.19],
-            [-26.16, -120.14],
-            [-26.49, -121.08],
-            [-26.8, -122.03],
-            [-27.1, -122.98],
-            [-27.38, -123.95],
-            [-27.62, -124.92],
-            [-27.81, -125.9],
-            [-27.94, -126.89],
-            [-28, -127.89],
-            [-27.99, -128.89],
-            [-27.97, -129.89],
-            [-27.93, -130.89],
-            [-27.87, -131.88],
-            [-27.78, -132.88],
-            [-27.66, -133.87],
-            [-27.52, -134.86],
-            [-27.34, -135.85],
-            [-27.11, -136.82],
-            [-26.85, -137.78],
-            [-26.53, -138.73],
-            [-26.16, -139.66],
-            [-25.73, -140.56],
-            [-25.22, -141.43],
-            [-24.65, -142.24],
-            [-24, -143],
-            [-23.27, -143.68],
-            [-22.47, -144.29],
-            [-21.63, -144.83],
-            [-20.76, -145.32],
-            [-19.86, -145.75],
-            [-18.94, -146.15],
-            [-18.01, -146.51],
-            [-17.06, -146.83],
-            [-16.11, -147.14],
-            [-15.15, -147.42],
-            [-14.18, -147.67],
-            [-13.21, -147.92],
-            [-12.24, -148.14],
-            [-11.26, -148.36],
-            [-10.28, -148.56],
-            [-9.3, -148.75],
-            [-8.32, -148.94],
-            [-7.33, -149.11],
-            [-6.34, -149.25],
-            [-5.35, -149.35],
-            [-4.35, -149.41],
-            [-3.35, -149.44],
-            [-2.35, -149.44],
-            [-1.35, -149.43],
-            [-0.35, -149.39],
-            [0.65, -149.34],
-            [1.65, -149.29],
-            [2.64, -149.22]
-          ],
-          "s0": 0
-        },
-        "l2": {
-          "pts": [
-            [-82, 12],
-            [-81.29, 12.71],
-            [-80.59, 13.41],
-            [-79.88, 14.12],
-            [-79.17, 14.83],
-            [-78.46, 15.54],
-            [-77.76, 16.24],
-            [-77.05, 16.95],
-            [-76.34, 17.66],
-            [-75.64, 18.36],
-            [-74.93, 19.07],
-            [-74.22, 19.78],
-            [-73.51, 20.49],
-            [-72.81, 21.19],
-            [-72.1, 21.9],
-            [-71.39, 22.61],
-            [-70.69, 23.31],
-            [-69.98, 24.02],
-            [-69.29, 24.74],
-            [-68.62, 25.48],
-            [-67.96, 26.24],
-            [-67.32, 27.01],
-            [-66.69, 27.79],
-            [-66.07, 28.56],
-            [-65.44, 29.34],
-            [-64.8, 30.12],
-            [-64.16, 30.88],
-            [-63.5, 31.63],
-            [-62.81, 32.36],
-            [-62.11, 33.07],
-            [-61.37, 33.75],
-            [-60.6, 34.38],
-            [-59.79, 34.97],
-            [-58.95, 35.5],
-            [-58.06, 35.97],
-            [-57.15, 36.38],
-            [-56.22, 36.75],
-            [-55.28, 37.08],
-            [-54.32, 37.37],
-            [-53.35, 37.63],
-            [-52.38, 37.85],
-            [-51.4, 38.03],
-            [-50.41, 38.18],
-            [-49.41, 38.29],
-            [-48.42, 38.37],
-            [-47.42, 38.43],
-            [-46.42, 38.45],
-            [-45.42, 38.44],
-            [-44.42, 38.41],
-            [-43.42, 38.36],
-            [-42.42, 38.28],
-            [-41.43, 38.18],
-            [-40.44, 38.06],
-            [-39.45, 37.91],
-            [-38.46, 37.72],
-            [-37.49, 37.5],
-            [-36.52, 37.24],
-            [-35.57, 36.96],
-            [-34.61, 36.65],
-            [-33.67, 36.33],
-            [-32.72, 36],
-            [-31.78, 35.66],
-            [-30.85, 35.3],
-            [-29.91, 34.95],
-            [-28.98, 34.58],
-            [-28.05, 34.22],
-            [-27.12, 33.85],
-            [-26.19, 33.49],
-            [-25.26, 33.13],
-            [-24.32, 32.77],
-            [-23.38, 32.42],
-            [-22.44, 32.08],
-            [-21.5, 31.75],
-            [-20.55, 31.43],
-            [-19.6, 31.13],
-            [-18.64, 30.84],
-            [-17.68, 30.58],
-            [-16.71, 30.34],
-            [-15.73, 30.13],
-            [-14.74, 29.96],
-            [-13.76, 29.8],
-            [-12.77, 29.65],
-            [-11.78, 29.52],
-            [-10.78, 29.39],
-            [-9.79, 29.29],
-            [-8.79, 29.19],
-            [-7.8, 29.12],
-            [-6.8, 29.06],
-            [-5.8, 29.02],
-            [-4.8, 29],
-            [-3.8, 29],
-            [-2.8, 29.02],
-            [-1.8, 29.05],
-            [-0.8, 29.1],
-            [0.2, 29.16],
-            [1.19, 29.24],
-            [2.19, 29.33],
-            [3.18, 29.42],
-            [4.18, 29.53],
-            [5.17, 29.64],
-            [6.17, 29.76],
-            [7.16, 29.89],
-            [8.15, 30.02],
-            [9.14, 30.17],
-            [10.13, 30.33],
-            [11.11, 30.5],
-            [12.09, 30.69],
-            [13.07, 30.89],
-            [14.05, 31.09],
-            [15.03, 31.31],
-            [16, 31.53],
-            [16.98, 31.75],
-            [17.95, 31.98],
-            [18.92, 32.22],
-            [19.89, 32.45],
-            [20.87, 32.69],
-            [21.84, 32.93],
-            [22.81, 33.18],
-            [23.78, 33.42],
-            [24.74, 33.67],
-            [25.71, 33.91],
-            [26.68, 34.16],
-            [27.65, 34.4],
-            [28.62, 34.64],
-            [29.59, 34.88],
-            [30.57, 35.12],
-            [31.54, 35.36],
-            [32.51, 35.59],
-            [33.48, 35.82],
-            [34.46, 36.05],
-            [35.43, 36.27],
-            [36.41, 36.48],
-            [37.39, 36.69],
-            [38.37, 36.89],
-            [39.35, 37.09],
-            [40.33, 37.28],
-            [41.31, 37.45],
-            [42.3, 37.62],
-            [43.29, 37.77],
-            [44.28, 37.91],
-            [45.27, 38.03],
-            [46.27, 38.14],
-            [47.26, 38.24],
-            [48.26, 38.32],
-            [49.25, 38.4],
-            [50.25, 38.46],
-            [51.25, 38.52],
-            [52.25, 38.57],
-            [53.25, 38.6],
-            [54.25, 38.63],
-            [55.25, 38.65],
-            [56.25, 38.67],
-            [57.25, 38.67],
-            [58.25, 38.67],
-            [59.25, 38.66],
-            [60.25, 38.65],
-            [61.25, 38.63],
-            [62.25, 38.61],
-            [63.25, 38.57],
-            [64.25, 38.54],
-            [65.25, 38.5],
-            [66.24, 38.46],
-            [67.24, 38.41],
-            [68.24, 38.36],
-            [69.24, 38.31],
-            [70.24, 38.25],
-            [71.24, 38.2],
-            [72.24, 38.14],
-            [73.23, 38.09],
-            [74.23, 38.04],
-            [75.23, 37.99],
-            [76.23, 37.96],
-            [77.23, 37.97],
-            [78.23, 38.01],
-            [79.23, 38.08],
-            [80.22, 38.17],
-            [81.22, 38.24],
-            [82.22, 38.21],
-            [83.2, 38.03],
-            [84.16, 37.74],
-            [85.09, 37.38],
-            [86.01, 36.98],
-            [86.91, 36.55],
-            [87.8, 36.1],
-            [88.69, 35.64],
-            [89.57, 35.16],
-            [90.44, 34.67],
-            [91.3, 34.16],
-            [92.16, 33.65],
-            [93.02, 33.13],
-            [93.87, 32.6],
-            [94.71, 32.07],
-            [95.55, 31.53],
-            [96.39, 30.99],
-            [97.23, 30.44],
-            [98.07, 29.89],
-            [98.9, 29.34],
-            [99.73, 28.78],
-            [100.56, 28.23],
-            [101.39, 27.66],
-            [102.21, 27.1]
-          ],
-          "s0": 0
-        }
-      },
-      "trains": {
-        "l1": [
-          { "x": -70.48, "z": -1.44, "w": 1.6, "d": 3, "yaw": 2.43, "kind": "loco" },
-          { "x": -72.89, "z": 1.37, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" },
-          { "x": -75.3, "z": 4.18, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" }
-        ],
-        "l2": [
-          { "x": -67.52, "z": 26.78, "w": 1.6, "d": 3, "yaw": 0.69, "kind": "loco" },
-          { "x": -69.98, "z": 24.02, "w": 2.2, "d": 3.2, "yaw": 0.77, "kind": "car" },
-          { "x": -72.6, "z": 21.4, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" },
-          { "x": -75.21, "z": 18.79, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" }
-        ]
-      },
-      "trainsAt": {
-        "1": {
-          "l1": [
-            { "x": -70.48, "z": -1.44, "w": 1.6, "d": 3, "yaw": 2.43, "kind": "loco" },
-            { "x": -72.89, "z": 1.37, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" },
-            { "x": -75.3, "z": 4.18, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" }
-          ],
-          "l2": [
-            { "x": -67.52, "z": 26.78, "w": 1.6, "d": 3, "yaw": 0.69, "kind": "loco" },
-            { "x": -69.98, "z": 24.02, "w": 2.2, "d": 3.2, "yaw": 0.77, "kind": "car" },
-            { "x": -72.6, "z": 21.4, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" },
-            { "x": -75.21, "z": 18.79, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" }
-          ]
-        },
-        "1.25": {
-          "l1": [
-            { "x": -70.24, "z": -1.72, "w": 2, "d": 3.75, "yaw": 2.43, "kind": "loco" },
-            { "x": -72.89, "z": 1.37, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" },
-            { "x": -75.3, "z": 4.18, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" }
-          ],
-          "l2": [
-            { "x": -67.28, "z": 27.07, "w": 2, "d": 3.75, "yaw": 0.68, "kind": "loco" },
-            { "x": -69.98, "z": 24.02, "w": 2.2, "d": 3.2, "yaw": 0.77, "kind": "car" },
-            { "x": -72.6, "z": 21.4, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" },
-            { "x": -75.21, "z": 18.79, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" }
-          ]
-        },
-        "1.4": {
-          "l1": [
-            { "x": -70.09, "z": -1.89, "w": 2.24, "d": 4.2, "yaw": 2.43, "kind": "loco" },
-            { "x": -72.89, "z": 1.37, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" },
-            { "x": -75.3, "z": 4.18, "w": 2.2, "d": 3.2, "yaw": 2.43, "kind": "car" }
-          ],
-          "l2": [
-            { "x": -67.13, "z": 27.24, "w": 2.24, "d": 4.2, "yaw": 0.68, "kind": "loco" },
-            { "x": -69.98, "z": 24.02, "w": 2.2, "d": 3.2, "yaw": 0.77, "kind": "car" },
-            { "x": -72.6, "z": 21.4, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" },
-            { "x": -75.21, "z": 18.79, "w": 2.2, "d": 3.2, "yaw": 0.79, "kind": "car" }
-          ]
-        }
-      },
-      "table": { "x": -82, "z": 12, "r": 4.8 },
-      "halts": [
-        {
-          "name": "Village",
-          "deck": { "x": -71.81, "z": -4.34, "w": 2.5, "d": 22, "yaw": 2.42 },
-          "roof": { "x": -75.26, "z": -0.93, "w": 2.7, "d": 8.4, "yaw": 2.42 }
-        },
-        {
-          "name": "Village, line 2",
-          "deck": { "x": -72.21, "z": 26.17, "w": 2.5, "d": 22, "yaw": 0.77 },
-          "roof": { "x": -75.85, "z": 23.1, "w": 2.7, "d": 8.4, "yaw": 0.77 }
-        }
-      ],
-      "stall": [{ "x": -90.5, "z": 18.5, "w": 4.4, "d": 9, "yaw": 1.57 }],
-      "stallRoad": [
-        [-85.39, 15.39],
-        [-86.5, 18.5],
-        [-95, 18.5]
-      ],
-      "forge": { "x": -87, "z": -3, "w": 10, "d": 8, "yaw": 0 },
-      "anchors": {
-        "forgeRack": [-85.5, 5.4],
-        "pedestal": [-81, 5.4],
-        "chest": [-86, -9],
-        "axeStand": [-92.5, -15],
-        "shelf": [-90.5, 8.5],
-        "cartStop": [-82, 12],
-        "cartCall": [-84.8, 14.8],
-        "q1Frame": [-72.81, 10.59],
-        "q2Rack": [-50.41, 38.18],
-        "q2Frame": [-50.52, 30.56],
-        "wagonWait": [-75.21, 18.79],
-        "stallDoor": [-87.6, 17.6],
-        "haltL1": [-71.81, -4.34],
-        "haltL2": [-72.21, 26.17],
-        "crane": [-80, 2.5],
-        "dock": [-78.6, -1.5],
-        "stoneYard": [-62, 20],
-        "spawn": [-97, 14],
-        "square": [-98, 9]
-      }
-    },
     "town": [
       { "x": -108, "z": -4, "w": 5.4, "d": 4.4, "yaw": 0.5, "type": "cottage", "stage": "start" },
       { "x": -123, "z": 19, "w": 5.4, "d": 4.4, "yaw": 1.6, "type": "cottage", "stage": "start" },
@@ -552,7 +43,7 @@
       { "x": -116, "z": 31, "w": 10, "d": 8, "yaw": 2.05, "id": "shop" },
       { "x": -125, "z": -8, "w": 13, "d": 12, "yaw": 0.97, "id": "museum" }
     ],
-    "B": {
+    "home": {
       "lines": {
         "l1": {
           "pts": [
@@ -969,59 +460,60 @@
       },
       "trains": {
         "l1": [
-          { "x": -65.87, "z": -1.85, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
+          { "x": -65.4, "z": -2.02, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
           { "x": -69.35, "z": -0.59, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
           { "x": -72.83, "z": 0.68, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
         ],
         "l2": [
-          { "x": -63.21, "z": 5.27, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
-          { "x": -66.69, "z": 6.53, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-          { "x": -70.17, "z": 7.8, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-          { "x": -73.64, "z": 9.06, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
+          { "x": -61.57, "z": 4.67, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
+          { "x": -65.51, "z": 6.11, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+          { "x": -68.99, "z": 7.37, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+          { "x": -72.47, "z": 8.64, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
         ]
       },
       "trainsAt": {
         "1": {
           "l1": [
-            { "x": -65.87, "z": -1.85, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
+            { "x": -65.4, "z": -2.02, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
             { "x": -69.35, "z": -0.59, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
             { "x": -72.83, "z": 0.68, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
           ],
           "l2": [
-            { "x": -63.21, "z": 5.27, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
-            { "x": -66.69, "z": 6.53, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-            { "x": -70.17, "z": 7.8, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-            { "x": -73.64, "z": 9.06, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
+            { "x": -61.57, "z": 4.67, "w": 1.6, "d": 3, "yaw": 1.92, "kind": "loco" },
+            { "x": -65.51, "z": 6.11, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+            { "x": -68.99, "z": 7.37, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+            { "x": -72.47, "z": 8.64, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
           ]
         },
         "1.25": {
           "l1": [
-            { "x": -65.52, "z": -1.98, "w": 2, "d": 3.75, "yaw": 1.92, "kind": "loco" },
+            { "x": -65.05, "z": -2.15, "w": 2, "d": 3.75, "yaw": 1.92, "kind": "loco" },
             { "x": -69.35, "z": -0.59, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
             { "x": -72.83, "z": 0.68, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
           ],
           "l2": [
-            { "x": -62.86, "z": 5.14, "w": 2, "d": 3.75, "yaw": 1.92, "kind": "loco" },
-            { "x": -66.69, "z": 6.53, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-            { "x": -70.17, "z": 7.8, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-            { "x": -73.64, "z": 9.06, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
+            { "x": -61.21, "z": 4.54, "w": 2, "d": 3.75, "yaw": 1.92, "kind": "loco" },
+            { "x": -65.51, "z": 6.11, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+            { "x": -68.99, "z": 7.37, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+            { "x": -72.47, "z": 8.64, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
           ]
         },
         "1.4": {
           "l1": [
-            { "x": -65.31, "z": -2.06, "w": 2.24, "d": 4.2, "yaw": 1.92, "kind": "loco" },
+            { "x": -64.84, "z": -2.23, "w": 2.24, "d": 4.2, "yaw": 1.92, "kind": "loco" },
             { "x": -69.35, "z": -0.59, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
             { "x": -72.83, "z": 0.68, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
           ],
           "l2": [
-            { "x": -62.65, "z": 5.06, "w": 2.24, "d": 4.2, "yaw": 1.92, "kind": "loco" },
-            { "x": -66.69, "z": 6.53, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-            { "x": -70.17, "z": 7.8, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
-            { "x": -73.64, "z": 9.06, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
+            { "x": -61, "z": 4.46, "w": 2.24, "d": 4.2, "yaw": 1.92, "kind": "loco" },
+            { "x": -65.51, "z": 6.11, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+            { "x": -68.99, "z": 7.37, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" },
+            { "x": -72.47, "z": 8.64, "w": 2.2, "d": 3.2, "yaw": 1.92, "kind": "car" }
           ]
         }
       },
       "table": { "x": -57.9, "z": 17.12, "r": 4.8 },
+      "forge": { "x": -87, "z": -3, "w": 10, "d": 8, "yaw": 0 },
       "island": { "x": -72.17, "z": 4.48, "w": 4.3, "d": 30.3, "yaw": 1.92 },
       "apron": { "x": -84.85, "z": 9.1, "w": 4.3, "d": 3.3, "yaw": 1.92 },
       "deck": { "x": -70.15, "z": 3.75, "w": 4.3, "d": 18, "yaw": 1.92 },
@@ -1201,22 +693,21 @@
         { "b": 220, "door": [-63.36, 23.63], "back": [-69.15, 30.53], "open": false, "w": 4.4 }
       ],
       "anchors": {
-        "forgeRack": [-84.9, 9.12],
-        "pedestal": [-78, -1.05],
+        "forgeRack": [-84.53, 10.05],
+        "pedestal": [-78, -1.17],
         "chest": [-86, -9],
         "axeStand": [-92.5, -15],
         "shelf": [-91.45, 13.31],
         "cartStop": [-82.66, 12.35],
-        "cartCall": [-84.8, 14.8],
         "q1Frame": [-74.93, 17.51],
         "q2Rack": [-42.92, 5.81],
         "q2Frame": [-40.52, -1.51],
-        "wagonWait": [-73.64, 9.06],
+        "wagonWait": [-72.47, 8.64],
         "stallDoor": [-59.37, 25.49],
-        "haltL1": [-70.88, 1.73],
-        "haltL2": [-69.41, 5.77],
+        "haltL1": [-70.15, 3.75],
+        "haltL2": [-70.15, 3.75],
         "crane": [-72.4, -3.1],
-        "dock": [-76.15, -1.73],
+        "dock": [-76.07, -1.73],
         "stoneYard": [-46, 22],
         "spawn": [-97, 14],
         "square": [-98, 9]
@@ -1557,19 +1048,13 @@
 <main>
   <h1>Home station layout</h1>
   <p class="lede">
-    Home's tracks, platforms, turntable and stall today, and Home as one terminus station (layout B, as planned in
-    <code>docs/plans/home-station.md</code>), drawn to scale. Every number on this page is generated from the code by
-    <code>dev/level/home-station-page.ts</code>, the same <code>src/place/home-station.ts</code> that draws
-    <code>?home=b</code> in the game (source commit <code id="commit"></code>). North is up; one unit is one metre
-    (Place-local; world x is local x + 1000). Walk lines are straight-line distances at Buddy's 5.6 m/s, so real walks
-    are a little longer.
+    Home's tracks, platforms, turntable and stalls as one terminus station, drawn to scale. Every generated number comes
+    from <code>dev/level/home-station-page.ts</code> and the same layout and sim anchors used by the game (source commit
+    <code id="commit"></code>). North is up; one unit is one metre (Place-local; world x is local x + 1000). Walk lines
+    are straight-line distances at Buddy's 5.6 m/s, so real walks are a little longer.
   </p>
 
   <div class="bar">
-    <div class="tabs" role="tablist" aria-label="Layout">
-      <button role="tab" data-tab="today" aria-selected="true">Today</button>
-      <button role="tab" data-tab="B" aria-selected="false">B as planned</button>
-    </div>
     <div class="views" role="group" aria-label="View">
       <button data-view="home" aria-selected="true">Home</button>
       <button data-view="station" aria-selected="false">Station close-up</button>
@@ -1606,7 +1091,7 @@
       <div class="legend" id="legend"></div>
       <h3>Clearance check</h3>
       <p class="muted">
-        Run on this tab's geometry: track within 1.75 m of a building (half the sleepers plus a walkway), a stall wedge
+        Run on Home's geometry: track within 1.75 m of a building (half the sleepers plus a walkway), a stall wedge
         within 0.5 m of a building or 0.3 m of another track, a line passing a turntable it doesn't serve, and anchors
         standing on a track, in the pit or inside a building.
       </p>
@@ -1615,79 +1100,24 @@
     <div class="card">
       <div id="stats" class="stats"></div>
 
-      <section class="info" data-for="today">
-        <h3>What is off today (measured)</h3>
-        <ol>
-          <li>
-            <b>Two stations.</b> The 22 m halts stand 30.5 m apart on the outer sides of the fork and face away from
-            each other.
-          </li>
-          <li>
-            <b>No throat.</b> Both lines start at the turntable's centre and leave it 94° apart; no line train ever
-            turns on it.
-          </li>
-          <li>
-            <b>The stall isn't on the table.</b> Its road leaves the rim at 225°, kinks about 25° and 70°, and ends at a
-            4 × 9 m ruin that is not radial.
-          </li>
-          <li>
-            <b>Toy-short train.</b> Cars are 3.2 × 2.2 m (2 BH long, 1.4 BH wide); real coaches are about 11 BH long and
-            1.7 BH wide. The four-car train (14.2 m) is about the forge's length.
-          </li>
-          <li>
-            <b>Turntable 3.2× the loco</b> (real: about 1.1×), and a raised disc rather than a pit. Against shunter plus
-            footing wagon (7.6 m) it is 1.26×, which is fine.
-          </li>
-          <li>
-            <b>Goods on the passenger side.</b> Crane, dock and boiler pedestal stand 3.5–6 m off line 1, on the line-1
-            platform's side.
-          </li>
-          <li>
-            <b>Q1's frame stands in the fork</b> between both lines; the cart-call handle is 3.96 m from the table's
-            centre, on the disc's footprint (the handle is being cut).
-          </li>
-          <li>
-            <b>The town faces a junction with no station.</b> Pip's house, the shop, the museum and the wood-1 hall all
-            turn their doors toward the table; the nearest platform is 44–53 m from each.
-          </li>
-          <li>
-            <b>Line 2's tightest curve</b> (15 m, s 32–34) starts just past its platform, and half that platform runs
-            beside a 47–55 m curve.
-          </li>
-        </ol>
-      </section>
-
-      <section class="info" data-for="B" hidden>
-        <h3>B as planned: one terminus; the forge is the goods side</h3>
+      <section class="info">
+        <h3>One terminus; the forge is the goods side</h3>
         <p>
           Both lines leave buffer stops beside a <span data-n="hall"></span> open-fronted hall, either side of a
-          <span data-n="island"></span> island, and join today's lines at line 1 s 60 and line 2 s 84 with every
+          <span data-n="island"></span> island, and meet the outer lines at line 1 s 60 and line 2 s 84 with every
           <code>s</code> past the joins unchanged. Before trains run the island is a kerb outline round its apron; when
-          they run its deck and canopy drop in, as the halts do today. Each platform edge's halt board carries a picture
-          of where its trains go. The <span data-n="table"></span> turntable stands on its own spur off road 2, with
-          three radial stall roads at 160°, 190° and 220°: the middle stall open, the other two ruin outlines. No line
-          train turns on the table.
+          they run its deck and canopy drop in, with the trains. Each platform edge's halt board carries a picture of
+          where its trains go. The <span data-n="table"></span> turntable stands on its own spur off road 2, with three
+          radial stall roads at 160°, 190° and 220°: the middle stall open, the other two ruin outlines. No line train
+          turns on the table.
         </p>
         <p>
           <b>The cart</b> rides out road 1, across the leg (<span data-n="leg"></span>, dashed when shown) and back down
-          road 2 to rest at its forge stop by the buffers, so <code>CART_ROAD.forgeCm</code> becomes
+          road 2 to rest at its forge stop by the buffers, so <code>CART_ROAD.forgeCm</code> is
           <span data-n="forgeCm"></span>. <b>The track layer</b>, once the forge has turned it, drives the same way
           round from road 1 s 19 to road 2 s 7: <span data-n="drive"></span> (the orange dashes).
         </p>
-        <p>
-          <b>Costs.</b> <code>TRAIN_STOPS</code> and every <code>s</code> value stay. Re-pinned x/z values in step 6,
-          behind one <code>WORLD_NS</code> bump: <code>LINE_HALTS</code>, Q1 and Q2 frames, the forge rack,
-          <code>LINE2_BOILER</code>, <code>SHED_TABLE</code>, <code>SHED_STALL</code>, <code>WORKS_SEAMS[0]</code> and
-          <code>CART_ROAD</code>. Until then <code>?home=b</code> is a look only: the rules keep today's anchors.
-        </p>
       </section>
-
-      <h3>What moves</h3>
-      <p class="muted">
-        Anchors more than 0.5 m from today's position. Catalog values are in <code>src/sim</code> and run in lockstep;
-        scenery is Place layout only.
-      </p>
-      <div class="scroll"><table id="moves"></table></div>
     </div>
   </div>
 
@@ -1695,104 +1125,91 @@
     <h2 style="margin-top: 0">Walks at Home, beat by beat</h2>
     <p class="muted">
       From the plan's design review (9 November). Walk 5.6 m/s; boiler haul 3.0 m/s solo and 5.4 m/s helped; footing
-      carry 2.2 m/s solo. Straight-line metres; no bot route exists for B yet.
+      carry 2.2 m/s solo. Straight-line estimates from the design review; actual routes can be longer.
     </p>
     <div class="scroll">
       <table>
         <tr>
           <th>Beat to beat</th>
-          <th>B</th>
-          <th>Today</th>
-          <th>Seconds (B)</th>
+          <th>Home</th>
+
+          <th>Seconds</th>
           <th>What pulls you on</th>
         </tr>
         <tr>
           <td>Shore path's last leg to the square</td>
           <td class="n">9 m</td>
-          <td class="n">9 m</td>
+
           <td class="n">2</td>
           <td>The hall's open front</td>
         </tr>
         <tr>
           <td>T3 laid, machine home</td>
           <td>Parks at road 1 s 19</td>
-          <td>The same</td>
+
           <td class="n">—</td>
           <td>The line home</td>
         </tr>
         <tr>
           <td>Forge lit, machine to line 2</td>
           <td>About <span data-n="driveM"></span> drive (recommended)</td>
-          <td>A cut by the table</td>
+
           <td class="n">About 12</td>
           <td>The whistle; the machine coming round to Q1</td>
         </tr>
         <tr>
           <td>Forge rack to Q1's frame</td>
           <td class="n">13 m</td>
-          <td class="n">13.7 m</td>
+
           <td class="n">2.3</td>
           <td>The frame by the spur</td>
         </tr>
         <tr>
           <td>Forge rack to Q2's cart stop</td>
           <td class="n">30 m</td>
-          <td class="n">36 m</td>
+
           <td class="n">5.4</td>
           <td>Q2's frame and rack</td>
         </tr>
         <tr>
           <td>Far Head to the pedestal</td>
           <td class="n">About 536 m</td>
-          <td>The same</td>
+
           <td class="n">About 96</td>
           <td>Forge plume and whistle</td>
         </tr>
         <tr>
           <td>Pedestal to the old train (haul)</td>
           <td class="n">172 m</td>
-          <td class="n">179 m</td>
+
           <td class="n">57 solo, 32 helped</td>
           <td>The empty saddle</td>
         </tr>
         <tr>
           <td>Pier to pedestal to stall seam</td>
           <td class="n">32 m from the pedestal</td>
-          <td class="n">14 m</td>
+
           <td class="n">5.7</td>
           <td>The cracked slab</td>
         </tr>
         <tr>
           <td>Quarry halt to stall, four footings</td>
           <td class="n">19 to 29 m each from the island</td>
-          <td class="n">11 m</td>
+
           <td class="n">9 to 13 each</td>
           <td>Gold ghosts in the sockets</td>
         </tr>
         <tr>
           <td>Forge rack to stall, cradle rails</td>
           <td class="n">32 m</td>
-          <td class="n">15 m</td>
+
           <td class="n">5.7</td>
           <td>The wagon's empty cradle</td>
         </tr>
       </table>
     </div>
-    <h3>Still open for the owner</h3>
-    <ol>
-      <li>
-        <b>Stalls at 160°, 190° and 220°</b> (drawn here): recommended yes; the table visibly turns 60° from the spur to
-        the open stall.
-      </li>
-      <li>
-        <b>The engine's size</b>: 1.25× is the floor the review set (the driver's head and hat clear); compare 1.4×
-        above, in the engine pass.
-      </li>
-      <li>
-        <b>Spawn's facing</b>: keep it, or turn it to about 40° so the forge and the hall's front share the frame;
-        decided from the step-3 spawn still.
-      </li>
-    </ol>
+    <h3>Engine comparison</h3>
+    <p>The engine controls above compare the current size with the review's 1.25× floor and a 1.4× option.</p>
   </div>
 </main>
 
@@ -1845,7 +1262,6 @@
       ['wagonWait', 'stallDoor', 'footings: wagon to the stall', 'var(--walk3)'],
     ];
     const ROOM_NAMES = { house: "Pip's house", shop: 'shop', museum: 'museum' };
-    let tab = 'today';
     let view = 'home';
     let trainsRun = true;
     let engine = '1';
@@ -1893,15 +1309,15 @@
           n = Math.hypot(ux, uz) || 1;
         return [p[0] - (uz / n) * k, p[1] + (ux / n) * k];
       });
-    /** A stall's footprint: B's are 4.4 m rectangles (`w`); a tapered wedge otherwise. */
+    /** A stall's footprint: Home's are 4.4 m rectangles (`w`). */
     const wedge = (s) => {
       const ux = s.back[0] - s.door[0],
         uz = s.back[1] - s.door[1],
         n = Math.hypot(ux, uz);
       const nx = -uz / n,
         nz = ux / n;
-      const front = s.w ? s.w / 2 : 1.55,
-        back = s.w ? s.w / 2 : 3.9;
+      const front = s.w / 2,
+        back = s.w / 2;
       return [
         [s.door[0] + nx * front, s.door[1] + nz * front],
         [s.back[0] + nx * back, s.back[1] + nz * back],
@@ -1925,27 +1341,13 @@
       return [a[0] + (b[0] - a[0]) * (s - k), a[1] + (b[1] - a[1]) * (s - k)];
     };
 
-    /** One tab's drawable layout, with today's shared pieces filled in. */
-    function layout(key) {
-      const o = D[key];
+    /** Home's drawable layout at the selected train stage and engine size. */
+    function layout() {
+      const o = D.home;
       return {
-        key,
-        lines: o.lines,
-        table: o.table,
-        forge: D.today.forge,
-        halts: key === 'today' && trainsRun ? D.today.halts : [],
-        stallBox: key === 'today' ? D.today.stall : [],
-        stallRoad: key === 'today' ? D.today.stallRoad : null,
-        stalls: o.stalls ?? [],
-        spur: o.spur ?? null,
-        leg: o.leg ?? null,
-        drive: o.drive ?? null,
-        island: o.island ?? null,
-        apron: o.apron ?? null,
-        house: o.house ?? null,
-        roof: trainsRun ? (o.roof ?? null) : null,
+        ...o,
+        roof: trainsRun ? o.roof : null,
         trains: trainsRun ? o.trainsAt[engine] : {},
-        anchors: o.anchors,
       };
     }
 
@@ -1984,7 +1386,7 @@
           let best = Infinity;
           for (let t = 0; t <= 1.0001; t += 0.05) {
             const p = [s.door[0] + (s.back[0] - s.door[0]) * t, s.door[1] + (s.back[1] - s.door[1]) * t];
-            best = Math.min(best, boxDist(b, p[0], p[1]) - (s.w ? s.w / 2 : 1.55 + 2.35 * t));
+            best = Math.min(best, boxDist(b, p[0], p[1]) - s.w / 2);
           }
           if (best < 0.5)
             out.push([
@@ -1996,7 +1398,7 @@
           let best = Infinity;
           for (let t = 0; t <= 1.0001; t += 0.05) {
             const p = [s.door[0] + (s.back[0] - s.door[0]) * t, s.door[1] + (s.back[1] - s.door[1]) * t];
-            for (const q of P) best = Math.min(best, dist(q, p) - (s.w ? s.w / 2 : 1.55 + 2.35 * t) - 1.15);
+            for (const q of P) best = Math.min(best, dist(q, p) - s.w / 2 - 1.15);
           }
           if (best < 0.3) out.push(['warn', `stall at ${s.b}° crosses ${k} (${best.toFixed(2)} m)`]);
         }
@@ -2039,7 +1441,7 @@
     // ---------------------------------------------------------------- the map
     const svg = document.getElementById('map');
     function render() {
-      const L = layout(tab);
+      const L = layout();
       const V = VIEWS[view];
       svg.setAttribute('viewBox', V.join(' '));
       svg.replaceChildren();
@@ -2105,16 +1507,10 @@
           'stroke-width': fs * 0.25,
         },
         town,
-      ).textContent = tab === 'B' ? 'forge (goods side)' : 'forge';
+      ).textContent = 'forge (goods side)';
 
       // platforms and station buildings
       const plat = g();
-      for (const h of L.halts)
-        el(
-          'path',
-          { d: pathD(boxPts(h.deck), true), fill: 'var(--platform)', stroke: 'var(--station)', 'stroke-width': hair },
-          plat,
-        );
       if (L.island) {
         // Before trains run: the apron and a kerb outline. After: the deck.
         if (!trainsRun && L.apron)
@@ -2160,7 +1556,6 @@
       const extra = [];
       if (L.spur) extra.push(L.spur);
       if (L.leg) extra.push(L.leg);
-      if (L.stallRoad) extra.push(L.stallRoad);
       for (const s of L.stalls) if (s.open) extra.push([s.door, s.back]);
       for (const P of [...lineSets, ...extra])
         el(
@@ -2209,28 +1604,27 @@
           track,
         ).textContent = `track layer's drive round, ${Math.round(L.drive.length)} m`;
       }
-      // buffer stops for B
-      if (tab === 'B')
-        for (const l of Object.values(L.lines)) {
-          const P = pts(l),
-            a = P[0],
-            b = P[1],
-            ux = b[0] - a[0],
-            uz = b[1] - a[1],
-            n = Math.hypot(ux, uz);
-          el(
-            'line',
-            {
-              x1: a[0] - (uz / n) * 1.2,
-              y1: a[1] + (ux / n) * 1.2,
-              x2: a[0] + (uz / n) * 1.2,
-              y2: a[1] - (ux / n) * 1.2,
-              stroke: 'var(--warn)',
-              'stroke-width': 0.5,
-            },
-            track,
-          );
-        }
+      // Home buffer stops
+      for (const l of Object.values(L.lines)) {
+        const P = pts(l),
+          a = P[0],
+          b = P[1],
+          ux = b[0] - a[0],
+          uz = b[1] - a[1],
+          n = Math.hypot(ux, uz);
+        el(
+          'line',
+          {
+            x1: a[0] - (uz / n) * 1.2,
+            y1: a[1] + (ux / n) * 1.2,
+            x2: a[0] + (uz / n) * 1.2,
+            y2: a[1] - (ux / n) * 1.2,
+            stroke: 'var(--warn)',
+            'stroke-width': 0.5,
+          },
+          track,
+        );
+      }
 
       // turntable and stalls
       const shed = g();
@@ -2261,18 +1655,6 @@
         },
         shed,
       ).textContent = 'turntable 9.6 m';
-      for (const b of L.stallBox)
-        el(
-          'path',
-          {
-            d: pathD(boxPts(b), true),
-            fill: 'var(--stall)',
-            'fill-opacity': 0.35,
-            stroke: 'var(--stall)',
-            'stroke-width': 0.25,
-          },
-          shed,
-        );
       for (const s of L.stalls) {
         el(
           'path',
@@ -2300,20 +1682,6 @@
           },
           shed,
         );
-      for (const h of L.halts)
-        el(
-          'path',
-          {
-            d: pathD(boxPts(h.roof), true),
-            fill: 'var(--roof)',
-            'fill-opacity': 0.08,
-            stroke: 'var(--roof)',
-            'stroke-width': 0.25,
-            'stroke-dasharray': '1 0.7',
-          },
-          shed,
-        );
-
       // trains at their stops
       const trains = g();
       for (const cars of Object.values(L.trains))
@@ -2439,7 +1807,7 @@
       s.replaceChildren();
       const lab = (x, t, y = 5.6) =>
         (el('text', { x, y, 'font-size': 1.05, 'text-anchor': 'middle', fill: 'var(--ink)' }, s).textContent = t);
-      const [loco, car] = D.B.trainsAt[engine].l2;
+      const [loco, car] = D.home.trainsAt[engine].l2;
       el('circle', { cx: 0.45, cy: 0, r: 0.45, fill: 'var(--walk1)' }, s);
       lab(0.45, 'Buddy', 7);
       el('rect', { x: 2.5, y: -loco.w / 2, width: loco.d, height: loco.w, fill: 'var(--loco)' }, s);
@@ -2544,48 +1912,18 @@
       });
     }
 
-    // ---------------------------------------------------------------- per-tab text: stats, moves, conflicts
+    // ---------------------------------------------------------------- stats and conflicts
     function renderInfo(L) {
-      for (const s of document.querySelectorAll('.info')) s.hidden = s.dataset.for !== tab;
       const a = L.anchors;
       const stat = (v, t) => `<div class="stat"><b>${v}</b><span>${t}</span></div>`;
-      const st = document.getElementById('stats');
-      st.innerHTML =
-        stat(
-          dist(a.haltL1, a.haltL2).toFixed(1) + ' m',
-          tab === 'B' ? 'edge to edge, one island' : 'platform to platform',
-        ) +
+      document.getElementById('stats').innerHTML =
+        stat(dist(a.haltL1, a.haltL2).toFixed(2) + ' m', 'halt centres, one island') +
         WALKS.map(([p, q, n]) =>
           stat(
             dist(a[p], a[q]).toFixed(0) + ' m',
             n.split(':')[0] + ' walk, ' + (dist(a[p], a[q]) / WALK).toFixed(1) + ' s',
           ),
-        ).join('') +
-        stat(dist([L.table.x, L.table.z], [D.today.table.x, D.today.table.z]).toFixed(1) + ' m', 'turntable moves');
-
-      const mv = document.getElementById('moves');
-      const rows = [];
-      if (tab !== 'today') {
-        for (const [k, p] of Object.entries(a)) {
-          const d = dist(p, D.today.anchors[k]);
-          if (d <= 0.5) continue;
-          const [name, src, kind] = NAMES[k] ?? [k, '', 'scenery'];
-          let what =
-            kind === 'scenery' ? 'scenery' : kind === 'xz' ? 're-pin in step 6' : 'follows the line; value unchanged';
-          if (k === 'cartStop') what = `CART_ROAD: the leg; forgeCm ${D.B.numbers.cartForgeCm}`;
-          rows.push(
-            `<tr><td>${name}</td><td class="n">${d.toFixed(1)} m</td><td><code>${src}</code></td><td>${what}</td></tr>`,
-          );
-        }
-        const td = dist([L.table.x, L.table.z], [D.today.table.x, D.today.table.z]);
-        if (td > 0.5)
-          rows.unshift(
-            `<tr><td>turntable</td><td class="n">${td.toFixed(1)} m</td><td><code>SHED_TABLE</code>, <code>TURNTABLE</code></td><td>re-pin catalog value and layout</td></tr>`,
-          );
-      }
-      mv.innerHTML = rows.length
-        ? '<tr><th>What</th><th>Moves</th><th>Owner</th><th>Kind</th></tr>' + rows.join('')
-        : '<tr><td class="muted">Today: nothing moves.</td></tr>';
+        ).join('');
 
       const list = document.getElementById('conflicts');
       const c = conflicts(L);
@@ -2631,7 +1969,7 @@
         ['<path d="M1 7H21" stroke="var(--walk3)" stroke-width="2.5" stroke-dasharray="4 2"/>', 'footings walk'],
         [
           '<path d="M1 7H21" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="4 2"/>',
-          "B: the track layer's drive round",
+          "the track layer's drive round",
         ],
         [
           '<rect x="1" y="2" width="20" height="10" fill="none" stroke="var(--station)" stroke-dasharray="3 2"/>',
@@ -2644,15 +1982,6 @@
         .join('');
     }
 
-    for (const b of document.querySelectorAll('[data-tab]'))
-      b.addEventListener('click', () => {
-        tab = b.dataset.tab;
-        for (const o of document.querySelectorAll('[data-tab]')) o.setAttribute('aria-selected', String(o === b));
-        try {
-          history.replaceState(null, '', '#' + tab);
-        } catch {}
-        render();
-      });
     const pick = (attr, set) =>
       document.querySelectorAll(`[${attr}]`).forEach((b) =>
         b.addEventListener('click', () => {
@@ -2664,15 +1993,15 @@
       );
     pick('data-trains', (v) => (trainsRun = v === '1'));
     pick('data-engine', (v) => (engine = v));
-    const N = D.B.numbers;
+    const N = D.home.numbers;
     const fill = {
       hall: `${N.hall.w} × ${N.hall.d} m`,
       island: `${N.island.width} m wide, ${N.island.deck} m deck`,
-      table: `${D.B.table.r * 2} m`,
+      table: `${D.home.table.r * 2} m`,
       leg: `${N.leg} m`,
       forgeCm: String(N.cartForgeCm),
-      drive: `${D.B.drive.length} m`,
-      driveM: `${Math.round(D.B.drive.length)} m`,
+      drive: `${D.home.drive.length} m`,
+      driveM: `${Math.round(D.home.drive.length)} m`,
     };
     for (const e of document.querySelectorAll('[data-n]')) e.textContent = fill[e.dataset.n] ?? '';
     document.getElementById('commit').textContent = D.sourceCommit.slice(0, 8);
@@ -2682,12 +2011,6 @@
         for (const o of document.querySelectorAll('[data-view]')) o.setAttribute('aria-selected', String(o === b));
         render();
       });
-    const fromHash = (location.hash || '').slice(1);
-    if (D[fromHash]) {
-      tab = fromHash;
-      for (const o of document.querySelectorAll('[data-tab]'))
-        o.setAttribute('aria-selected', String(o.dataset.tab === tab));
-    }
     let t;
     addEventListener('resize', () => {
       clearTimeout(t);
