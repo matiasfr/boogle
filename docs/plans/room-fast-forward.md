@@ -19,35 +19,29 @@ general, I'm not a fan of the jump-in rooms as separate rooms. We should just ha
 have a mechanism to fast-forward progress for testing in the game to move the server in the same room". Serves **How we
 work: playtest constantly**, **8. Enjoyable alone and together** and **Clear authority**. It bends **9. Leave something
 for the next visitor** and the 2026-11-09 decision "playtest jump-ins (a requirement)" (`docs/decisions-process.md:107`:
-"The shared `boogle` world and its saves are never touched"). Its goal (reach a stage without replaying) stands; its
-mechanism (a separate room) is what the owner reversed. What protects the shared save now: owner question 1.
-
-**Research.** [dev-menu-plan](../research/dev-menu-plan.md): uses Source's `sv_cheats` (the authority that executes
-enforces the gate), Caves of Qud (exact ids, bounded choices, confirm a destructive command) and Factorio (no second
-simulation). Departs from "Keep cheats in disposable tests", on the owner's word above.
+"The shared `boogle` world and its saves are never touched"): its goal stands, its separate room is what the owner
+reversed, and what protects the shared save now is owner question 1.
+**Research.** [dev-menu-plan](../research/dev-menu-plan.md): uses Source's `sv_cheats` (the executing authority enforces
+the gate) and Caves of Qud (exact ids, confirm a destructive command); departs from "Keep cheats in disposable tests".
 
 ## What exists
 
 - **Building a seed** is from nothing only: `buildSeedWorld(stage)` (`src/sim/railway-seeds.ts:95`) starts at
   `createRailway()` and drives sessions `a` and `b` through accepted ops, asserting exact counts (`need`).
 - **Applying a seed** is a whole-world replace, never a merge: `server/src/seeds/build.ts:29` loads the snapshot into a
-  host (`world().load(json, railwayCheck)`, all or nothing) and saves a room doc `{ tick, data }`. Production serves
-  prebuilt docs for `OFFERED_STAGES` only (`server/src/seeds/prebuild.ts`).
-- **Jump-ins**: `POST /jump` (`server/src/jump.ts`) names a new room `<stage>-<6 chars>`, creates its save from the doc
-  and writes a sidecar `DATA_DIR/jumps/<room>.json`; `seedRoom` refuses a loaded room or one with a save. Client:
-  `?from=` (`src/boot/jump-in.ts`), Pause → More → Jump in (`src/features/jump-in.ts`), the landing
+  host (all or nothing, through `railwayCheck`) and saves a room doc `{ tick, data }`; production serves prebuilt docs
+  for `OFFERED_STAGES` only. `POST /jump` (`server/src/jump.ts`) puts the doc in a new room `<stage>-<6 chars>` with a
+  sidecar in `DATA_DIR/jumps/`; `seedRoom` refuses a loaded room or one with a save. Client: `?from=`
+  (`src/boot/jump-in.ts`), Pause → More → Jump in (`src/features/jump-in.ts`), the landing
   (`src/entities/railway/arrival.ts:86-92`), `seed` on `GET /rooms/:id/host` (`src/netplay/room-seed.ts`).
-- **Replacing a live room's save exists**: `POST /admin/rooms/:id/restore` (`server/src/admin.ts`) backs the save up,
-  takes the room offline (`roomHost.offline`, `server/src/host/rooms.ts:213`: everyone gets `bye`, reconnects in 0.5 to
-  1.5 s and takes the snapshot as a late join) and writes a doc. Bearer `REPORT_TOKEN`, HTTP only.
-- **Tooling**: look's `--rail-seed`, `npm run checkpoints`, playthrough `--from/--to` (`dev/look/segments.ts`); the
-  `hud-glance` scenario and `src/boot/device-entry.ts` use the real `?from=`.
+- **Replacing a live room's save exists**: `POST /admin/rooms/:id/restore` (`server/src/admin.ts`, bearer
+  `REPORT_TOKEN`) backs the save up, takes the room offline (`roomHost.offline`, `server/src/host/rooms.ts:213`:
+  everyone gets `bye`, reconnects in 0.5 to 1.5 s and takes the snapshot as a late join) and writes a doc.
 
 ## Options
 
-- **(a) Replace (recommended).** The server writes the stage's seed doc over the room's save through the restore path.
-  Two proven paths, no op, no state; the resync is the late join. Swapping in process with sockets open was dropped:
-  clients' prediction, request epochs and tick order assume a join.
+- **(a) Replace (recommended).** The server writes the stage's seed doc over the room's save through the restore path:
+  two proven paths, no op, no state, and the resync is the late join. (A swap in process, sockets open, was dropped.)
 - **(b) Simulate.** Honest but slow: the bot's full route is about 1,700 s of wall clock at 5x warp
   (`dev/look/playthrough.ts:9`), `deck-laid` needs `--wall 2700`, and it needs a browser per bot on the server. The
   same states build as seeds in 0.1 to 5.7 s ([playtest-jump-in](playtest-jump-in.md)). Rejected.
@@ -55,14 +49,14 @@ simulation). Departs from "Keep cheats in disposable tests", on the owner's word
   refused (bills filled, trees cut) and `need` throws. It needs a delta builder per stage. Rejected.
 
 **What (a) does to the room and the people in it** (one line each, for the owner):
-- Everything built, stocked or earned becomes the stage's: progress past the stage is lost, earlier progress is gained.
-- The old save is backed up first, so the operator can put the room back.
+- Everything built, stocked or earned becomes the stage's: progress past the stage is lost (the old save is
+  backed up first, so the operator can put the room back).
 - What anyone carries (logs, stone, rails, leg kit, a held beam) is gone; real players' account rows start again.
 - Trains, their riders and loads, the cart and the wagon restart where the seed has them; someone riding is set down.
 - The town economy (yards, towns, the strongbox's Boogles) becomes the seed's figures.
 - Wardrobe finds stay: claims are personal and keyed by the room id, which does not change.
-- Everyone present sees about a second of reconnecting, then lands at the stage's spot with one line of text.
-- Players who are away find the room at the new stage when they return, with the same line once.
+- Everyone present reconnects for about a second, then lands at the stage's spot with one line of text; players who
+  are away find the room at the new stage when they return, with the same line once.
 
 ## Design
 
@@ -76,14 +70,12 @@ simulation). Departs from "Keep cheats in disposable tests", on the owner's word
    chosen by the client. Never a room message: nothing joins `RAIL_ACTIONS`, the ws wire or the room interface.
 2. What: 400 for an id that is not a current railway room or a stage failing `isSeedStage`; 503 `stage not built` as
    `/jump`; 409 unless `confirm` equals the room's plain name (for `boogle` the control says it is the shared island).
-3. Forward-only against the record: 409 when the room's last recorded stage is later in `SEED_STAGES`. Going back is
-   the operator's `npm run server -- restore <room>`. A room never advanced has no record, and the server cannot tell
-   how far play took it, so the control always says "replaces this room's progress".
+3. Forward-only against the record: 409 when the room's last recorded stage is later in `SEED_STAGES`; going back is
+   the operator's `npm run server -- restore <room>`. Play is not recorded, so the control says "replaces progress".
 4. Do: `jumps.docFor(stage)` (exported), then `roomHost.offline`: admin's `keep(id, true)` (exported),
    `store.write(id, { tick, writerId: SERVER_ID, data, updatedAt: now })` (now, for the away credit), the record.
-5. Record: `DATA_DIR/advances/<room>.json` `{ stage, at, build, backup, players }`, a line appended to
-   `advances/log.jsonl`, and `cfg.log`. Not `jumps/`: the jump sweep deletes what it indexes. `GET /rooms/:id/host`
-   gains `advanced: { stage, at }`.
+5. Record: `DATA_DIR/advances/<room>.json` `{ stage, at, build, backup, players }`, a line in `advances/log.jsonl`
+   and `cfg.log` (not `jumps/`: its sweep deletes what it indexes); `GET /rooms/:id/host` gains `advanced`.
 
 **Client.** `src/netplay/room-seed.ts` gains `roomAdvanced()` (fetched on every room-ready, so a reconnect sees it).
 New `src/features/fast-forward.ts`: when `advanced.at` is newer than `boogle.advance.seen.v1:<room>` it shows the
@@ -95,15 +87,13 @@ build reconnects and plays on with no line; no compatibility code.
 
 **Control.** Dev dock → **Room** (`src/debug/dev/room.ts`): "Fast-forward this room", listing `JUMPS` rows after the
 recorded stage, the count of other players, a key field (`sessionStorage`; never in a URL, invite or report) and the
-typed room name. Agent API `boogle.dev.run('room', 'advance', { stage, confirm })`; CLI `npm run server -- advance
-<room> <stage>`. No action id, pad slot, key, touch button or guide row (`freeSlots()` untouched). No URL flag: a link
-that changes a room on load is a hazard.
+typed room name; also `boogle.dev.run('room', 'advance', { stage, confirm })` and `npm run server -- advance <room>
+<stage>`. No action id, pad slot, key, touch button or guide row; no URL flag (a link must not change a room on load).
 
 **`?from=` and the bot.** Kept as test tooling, because bots and looks need isolation and a deterministic fresh start:
 `SEED_STAGES`, the builders, `server/src/seeds/`, `POST /jump`, `?from=`, `--rail-seed`, `--from/--to`, `npm run
-checkpoints`, and in jump rooms the "This room started at …" header, the arrival line and the three-day sweep.
-Deleted: the Pause → More → Jump in row list and its copy; `docs/game-design/dev-menu.md`'s "Jump in" section becomes
-"Fast-forward" plus a short "Test rooms" note. Renamed: nothing (`JUMPS` stays the stage catalog; it is a hotspot).
+checkpoints`, and jump rooms' header, arrival line and three-day sweep. Deleted: the Pause → More → Jump in row list
+and its copy; dev-menu.md's "Jump in" becomes "Fast-forward" plus a "Test rooms" note. Renamed: nothing.
 
 ## Steps
 
@@ -133,19 +123,13 @@ Deleted: the Pause → More → Jump in row list and its copy; `docs/game-design
 - [ ] **Checkpoint** (after 4): `npm run check:full`, `npm run checkpoints`, step 3's peer test, and on staging a
   wrong key against `boogle` answers 401.
 
-## Level findings
+## Level findings and risks
 
-Nothing is placed, so `npm run level-check` was not run. Landings are `JUMPS`' existing `land` values, each checked
-with a still for a first arrival; landing people who were elsewhere is new (designer call 2).
-
-## Risks
-
+- **Level findings**: nothing is placed, so `npm run level-check` was not run; landings are `JUMPS`' checked `land`s.
 - **Room safety**: "Save or serve unverified state": the doc passes `okDoc` and the host's all-or-nothing load, as
   restore's does. A server file importing new shared code needs the three image lists (`test/server-image.test.ts`).
-- **Unverified**: that a client holding a higher tick rejoins cleanly onto the seed's lower tick. Restore has the same
-  shape; steps 1 and 3 test it.
-- **The key in a browser**: hence a separate `ADVANCE_KEY` that does nothing else. **Backups**: `.backups` keeps the
-  newest 30 across all rooms, so an advance's backup ages out.
+- **Unverified**: that a client holding a higher tick rejoins cleanly onto the seed's lower tick (steps 1, 3 test it).
+- **The key in a browser**: hence a separate `ADVANCE_KEY`. **Backups**: only the newest 30 are kept, across all rooms.
 - **In flight**: `greybox/leg1-step5` edits `railway-seeds.ts`, `railway-jump.ts` and `world-host.ts` (its `gorge-*`
   stages become targets with no work here). `npm run inflight` named no other branch on these files.
 - **Performance**: no meshes, lights or tick work; an advance is one file write and a room reload.
@@ -154,15 +138,14 @@ with a still for a first arrival; landing people who were elsewhere is new (desi
 
 1. The line's wording, and the Room group's labels and its warning for `boogle`.
 2. Landing: everyone at the stage's spot (recommended: the ground changes under saved poses) or only the asker.
-3. `?from=` stays linkable for people (recommended, undocumented) or becomes harness-only.
-4. The list offers `JUMPS` rows (recommended: production prebuilds only those) or every `SEED_STAGES` entry.
+3. `?from=` stays linkable for people (recommended, undocumented) or becomes harness-only; the list offers `JUMPS`
+   rows (recommended: production prebuilds only those) or every `SEED_STAGES` entry.
 
 ## Owner questions
 
 1. **Who may fast-forward, and which rooms?** Recommended: only a holder of the dev key, in any room including the
-   shared `boogle` island, behind the typed confirmation and the automatic backup. Alternative: never the shared
-   island (the 9 November rule as written); he plays in a named room.
+   shared `boogle` island, behind the typed confirmation and the automatic backup. Or: never the shared island.
 2. **Does it move everyone without asking?** Recommended: yes, showing him the count of others first; they get the one
-   line. Alternative: refused while anyone else is in the room.
-3. **Is going back allowed?** Recommended: not in the game; only by restoring the backup from the command line.
-   Alternative: any stage may be picked, earlier ones included.
+   line. Or: refused while anyone else is in the room.
+3. **Is going back allowed?** Recommended: not in the game, only by restoring the backup from the command line. Or:
+   any stage may be picked, earlier ones included.
