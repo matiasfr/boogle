@@ -137,22 +137,22 @@ sitting and leaves `node dev/ship-check.ts` green. 1 to 3 are high-risk server w
   "no closed bit: any room at the rivet has leg 0 open" (`buildSeedWorld('ring-joined')`: `legOpen(w, 0)`, `rail.legStock`
   accepted, `Route`'s fields exactly those three); `server/test/railway-ring-host.test.ts`: a `boogle` host loaded
   from that doc accepts `rail.legStock`. No bump.
-- [ ] **1. Recovery primitives** (server, high-risk). `store.replace`; `offline`'s `{ save: true }`; pinned backups,
+- [x] **1. Recovery primitives** (server, high-risk). `store.replace`; `offline`'s `{ save: true }`; pinned backups,
   `release`, restore from a pin; the journal and its recovery; a seam `replaceFailAt: 'backup' | 'save' | 'record'`.
   `server/test/replace-recovery.test.ts`: each failure point leaves a whole, loadable save and the stated files; a pin
   survives 31 later backups; a failed close replaces nothing; `born` changes on replace and returns on restore.
-- [ ] **2. The endpoint** (server, high-risk). `server/src/replace.ts`, `server/src/seeds/validate.ts`,
+- [x] **2. The endpoint** (server, high-risk). `server/src/replace.ts`, `server/src/seeds/validate.ts`,
   `server/src/server.ts` (`ADVANCE_KEY`, `ADVANCE_SHARED`, `replaceRatePerMin` 6), `replaced` on the host status.
   `server/test/replace.test.ts`: key unset 404; no bearer, a wrong one and `REPORT_TOKEN` 401 with the save's bytes
   unchanged; shared island 403, and 200 with `ADVANCE_SHARED`; unknown stage 400; wrong `confirm` 409; earlier stage
   409; occupied 409 with the count, 200 with `override`; an invalid target 422, room untouched; over the rate 429;
   success: the save equals the seed and the record names its restore command. `malformed-messages.test.ts`:
   `{ op: 'rail.replace' }`, `{ t: 'replace' }` and a client-sent `{ t: 'replacing' }` change nothing.
-- [ ] **3. Countdown and the wire message** (server and net, high-risk). `hosted-room.ts`, `ws-wire.ts`, `ws-room.ts`,
+- [x] **3. Countdown and the wire message** (server and net, high-risk). `hosted-room.ts`, `ws-wire.ts`, `ws-room.ts`,
   `src/net/README.md`. Tests: every peer gets `replacing` before `bye`; a second request during the countdown is 409;
   a peer joining mid-countdown is told. `dev/peer-test/ws-railway.ts`: "replace: both peers are told, rejoin, and
   their mirrored hashes equal the seed's".
-- [ ] **4. CLI** (tooling). `dev/server-admin.ts`: `replace` (prints the four categories and the count, asks for the
+- [x] **4. CLI** (tooling). `dev/server-admin.ts`: `replace` (prints the four categories and the count, asks for the
   room name, prints the pin and the restore command), `release`, pins in `rooms`; `server/README.md`.
 - [ ] **5. Notice, line, landing, playdata** (client view). The Client paragraph's files and `dev/playtest/summary.ts`.
   Proof: `/look` stills of the countdown and of the line after a local replacement; a no-`land` row at the spawn.
@@ -222,3 +222,41 @@ and removal of Jump in rows remain open; no server test establishes those client
 The later line is also pending client review: "The shared island was replaced with <label> for testing. The world
 changed for everyone, and what you carried and found here is gone." (Private room: "This room was replaced…".)
 The Boogler's copy is unchanged.
+
+### Verification and handoff, 13 November
+
+Server steps 0–4 and the notice text hooks are built. The full client checkpoint above remains open.
+The endpoint contract, exact recovery command and local curl invocation are in
+[server/README.md](../../server/README.md#operator-tools). Replaced jump rooms are removed from jump expiry,
+including after journal recovery. Fresh rooms get an initial verified checkpoint to pin. Fatal/failed closes
+refuse replacement and restore; shutdown checkpoints other rooms without waiting for seed preparation.
+Hostile-message coverage lives in `server/test/replace-wire.test.ts` rather than `malformed-messages.test.ts`.
+
+Checks on implementation tip `d89b4107` (rebased on already-fetched `859abbe7`, no authored prefab changes):
+
+- `npm run check`: pass, 1,798 unit tests and one existing train-wait TODO; lint, typecheck, registry, level/assets and build pass.
+- `npm --prefix server test`: 253 pass. The rebase changed no server, sim, world or net runtime files.
+- `npm run test:net` directly: 152/152 pass. Both peers receive notices before replacement disconnects, observe
+  the same new birth, reload to a lower seed tick, agree, then restore the pin and original birth/world hash.
+  Final trace: before tick 2322/hash 2093773740, seed tick 1715/hash 4123723040, restored tick 2369/hash 2093773740.
+  The bare net page reproduces production's birth-triggered reload explicitly; it installs no game features.
+  Its loopback upgrade budget matches its existing load fixture so repeated reloads do not consume production's
+  per-IP admission budget. Production limits are unchanged.
+- `npm run checkpoints`: all 25 routed/offered seeds build through the host save path.
+- `node dev/ship-check.ts`: pass, 437 assertions across 42 affected test files; 19 lint files, typecheck and registry pass.
+- `npm run registry`: pass. `npm run review-stamp -- . --no-fetch`: **5d6cba7be4d4**, independently reviewed with
+  no remaining actionable findings. The review's shutdown finding has a red-first, then passing regression.
+- Local CLI exercised end to end: typed confirmation, replacement, pinned listing, restore to original birth, release.
+
+[Local check evidence](../../.look/evidence/room-fast-forward-server/evidence.json) contains the logs and identities.
+[Two-player T2 bot](../../.look/evidence/1794605819661-47456/evidence.json): both finish, mirrors agree at 93 sampled
+server steps, no missed beats or graphics errors. Opened `run/end-still.png` and `run/p2-end-still.png`: both players
+and completed rails are visible; both overlays finish at T2. This capture predates the upstream High Gorge rebase
+and final test-harness corrections; it is a regression observation, not a visual proof of the replacement UI.
+Warped clock drift leaves real-time smoothness unverified; no device test.
+
+[World inputs](../../.look/evidence/1794605720611-44768/evidence.json) fails its initial gifts-layout readiness check
+on the old `d87c0571` broker harness. Opened `world-inputs/inputs-final-still.png`: Home and the player render;
+the log reports no graphics errors. The stale scenario's contract remains unverified. Visible countdown/line,
+stage landing, returning absent-player personal-state behavior, playdata and Dev dock controls remain for the client
+job. No push or ship was run.
