@@ -3,6 +3,7 @@
 // pair on the bench. Short: a hang is not retried.
 // npm run look -- --players 2 --rail-seed trains-on --query shot=play --eval dev/look/evals/railway-passenger-car-two.ts \
 //   --until window.__placeDone --wall 240 --name passenger-car-two
+// Add &seatQuiet=1 with --real: player 1 pauses presence through capture; player 2 proves 3 s of silence while seated.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { inspectRailway, railRead, rw, trains } = (await import(
   '/dev/look/rail-read.ts' as string
@@ -101,7 +102,7 @@ background(
         [...window.boogle.remotes.values()].some(
           (r) => r.avatar && performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 300,
         ),
-      'the partner is drawn seated from its server row and Owner pose',
+      'the partner is drawn seated',
       30000,
     );
     if (player === '2' && query.has('seatContest')) {
@@ -165,6 +166,36 @@ background(
     aim();
     setInterval(aim, 16);
     await bot.wait(1500);
+    if (query.has('seatQuiet')) {
+      if (player === '1') {
+        const { net } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
+        net.lastSend = Infinity; // Only this test page's periodic presence; the socket and server row stay live.
+        await bot.wait(3500);
+        console.log('SEAT QUIET sender presence paused through capture');
+      } else {
+        const friend = [...window.boogle.remotes.values()][0]!;
+        let last = friend.lastT;
+        let quietSince = performance.now();
+        await until(
+          () => {
+            if (friend.lastT !== last) {
+              last = friend.lastT;
+              quietSince = performance.now();
+            }
+            return performance.now() - quietSince >= 3100;
+          },
+          'partner presence is quiet for at least 3 s',
+          15000,
+        );
+        const row = Object.entries(seatState().occupants).find(([, pid]) => pid === friend.pid);
+        check(row && friend.avatar, 'quiet partner retains its server chair and avatar');
+        const poseAge = performance.now() - friend.avatar!.userData.seatedAt!;
+        check(poseAge < 200, 'quiet partner is still drawn seated');
+        console.log(
+          `SEAT QUIET watcher silence=${performance.now() - quietSince}ms poseAge=${poseAge}ms seat=${row![0]}`,
+        );
+      }
+    }
     shot.__placeDone = true;
   })(),
   'passenger-car-two look',

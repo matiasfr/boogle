@@ -15,6 +15,7 @@ import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
 import type { Part } from '../../render/cosmetic-parts.ts';
 import { onRailwayCommands } from './state.ts';
 import { createSeatSession } from './seat-session.ts';
+import { seatViews, type SeatPose } from './seat-view.ts';
 import { railwayMirror } from '../../world/game-world.ts';
 import { recordSeats } from '../../adapters/seat-recording.ts';
 
@@ -41,6 +42,7 @@ const seats: Seat[] = [];
 let sitting: Seat | null = null;
 let claims: ReturnType<typeof createSeatSession> | null = null;
 const remoteSeats = new Map<string, Seat>();
+const remotePoses = new Map<string, SeatPose>();
 const occupants = railwayMirror?.seats;
 if (occupants) recordSeats(occupants);
 const pose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
@@ -205,15 +207,12 @@ export function withSeatTargets(others: Interactable[]): Interactable[] {
 addPresenceField('placeSeatPose', () => sitting?.id ?? null);
 onRemotePresence((r, pr) => {
   const seated = find(pr.placeSeatPose);
-  if (seated && occupants?.occupant(seated.id) === r.pid && r.avatar) {
-    r.avatar.userData.seatedAt = performance.now();
-    r.avatar.userData.seatRise = seatRise(seated);
-    r.avatar.userData.seatAhead = seatAhead(seated);
-    remoteSeats.set(r.peer, seated);
-  } else remoteSeats.delete(r.peer);
+  if (seated && r.pid) remotePoses.set(r.peer, { id: seated.id, pid: r.pid, at: performance.now() });
+  else remotePoses.delete(r.peer);
 });
 onPeerRemoved((r) => {
   remoteSeats.delete(r.peer);
+  remotePoses.delete(r.peer);
 });
 onPreStep(
   () => {
@@ -250,8 +249,20 @@ onPreStep(
   { order: 21 },
 );
 onFrame(
-  () => {
+  ({ now }) => {
     if (sitting) me.yaw = world(sitting, false, true).yaw;
+    // Set the animation input before remote-player poses its rig in the update phase. A quiet Owner stream
+    // must not expire a confirmed seated animation while the server keeps the chair through reconnect grace.
+    const drawn = seatViews(occupants?.rows() ?? [], [...remotePoses.values()], now, sitting?.id ?? null);
+    remoteSeats.clear();
+    for (const r of remotes.values()) {
+      const seat = find(r.pid ? drawn.get(r.pid) : undefined);
+      if (seat) remoteSeats.set(r.peer, seat);
+      if (!r.avatar) continue;
+      r.avatar.userData.seatedAt = seat ? now : -Infinity;
+      r.avatar.userData.seatRise = seat ? seatRise(seat) : 0;
+      r.avatar.userData.seatAhead = seat ? seatAhead(seat) : 0;
+    }
   },
   { phase: 'world', order: 100 },
 );
@@ -267,9 +278,8 @@ onFrame(
     for (const r of remotes.values()) {
       if (!r.avatar) continue;
       const seat = remoteSeats.get(r.peer);
-      const confirmed = seat && occupants?.occupant(seat.id) === r.pid;
-      if (confirmed && seat.anchorView) drawAtSeat(r.avatar, seat);
-      if (confirmed && performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 200) {
+      if (seat) {
+        drawAtSeat(r.avatar, seat);
         const inner = r.avatar.userData.inner as THREE.Object3D | undefined;
         if (inner) inner.position.y -= SEATED_DROP;
       }
