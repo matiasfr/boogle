@@ -4,25 +4,48 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
-import { LEG2, PAD_SIZE, bellRockOutlines } from '../src/entities/route-greybox/leg2-layout.ts';
+import { LEG2_TEXT } from '../src/entities/route-greybox/leg2-layout.ts';
+import type { Placement } from '../src/prefab/types.ts';
 import type { Shape } from '../src/physics/engine.ts';
 import * as validation from '../src/prefab/validate.ts';
 import { names } from '../src/prefab/names.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import workshop from '../content/built/levels/workshop.json' with { type: 'json' };
 import gorge from '../content/built/levels/gorge.json' with { type: 'json' };
+import bellLevel from '../content/built/levels/bell.json' with { type: 'json' };
+import westLevel from '../content/built/levels/west.json' with { type: 'json' };
+
+const expected = {
+  bell: {
+    colliders: fs.readFileSync('test/fixtures/prefab-bell-colliders.json', 'utf8'),
+    placements: fs.readFileSync('test/fixtures/prefab-bell-placements.json', 'utf8'),
+    counts: fs.readFileSync('test/fixtures/prefab-bell-counts.json', 'utf8'),
+  },
+  west: {
+    colliders: fs.readFileSync('test/fixtures/prefab-west-colliders.json', 'utf8'),
+    placements: fs.readFileSync('test/fixtures/prefab-west-placements.json', 'utf8'),
+    counts: fs.readFileSync('test/fixtures/prefab-west-counts.json', 'utf8'),
+  },
+};
 
 for (const area of ['bell', 'west'] as const)
   test(`${area} collider and placement bytes match the old leg 2`, async () => {
     const colliders: unknown[] = [],
       signs: { mesh: THREE.Group; options: unknown; lines: string[] }[] = [];
+    const active = new Set<unknown>();
     const record = (shape: Shape, at: { x: number; y: number; z: number }, q?: THREE.Quaternion) => {
       colliders.push({ shape, at: [at.x, at.y, at.z], rotation: q?.toArray() });
+      return {};
     };
     const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.ts').createOwnedView>(
       'src/render/owned-view.ts',
       'createOwnedView',
-      { THREE, owners: new WeakMap(), addBody() {}, removeBody() {} },
+      {
+        THREE,
+        owners: new WeakMap(),
+        addBody: (body: unknown) => active.add(body),
+        removeBody: (body: unknown) => active.delete(body),
+      },
     );
     const signBoard = (
       owner: ReturnType<typeof createOwnedView> | undefined,
@@ -37,6 +60,7 @@ for (const area of ['bell', 'west'] as const)
         cw: options.px,
         ch: Math.round((options.px * options.h) / options.w),
         painted() {},
+        dispose() {},
         g: {
           fillRect() {},
           strokeRect() {},
@@ -52,34 +76,35 @@ for (const area of ['bell', 'west'] as const)
       registerBuilder: (name: string, build: unknown) => builders.set(name, build),
     });
     builders.set('seat.chair', () => new THREE.Group());
+    const { makeGreyboxLabel } = sourceModule<typeof import('../src/prefab/builders/greybox-label.ts')>(
+      fs.readFileSync('src/prefab/builders/greybox-label.ts', 'utf8'),
+      { signBoard },
+    );
     const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
       fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
-      { THREE, artifact, workshop, gorge, names, ...validation, builders, staticBody: record },
+      { THREE, artifact, workshop, gorge, names, ...validation, builders, makeGreyboxLabel, staticBody: record },
     );
     const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
       fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
-      runtime,
+      { ...runtime, artifact, ...validation },
     );
     const draw = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
       fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
-      { ...boxes, PAD_SIZE, signBoard },
+      { ...runtime, artifact, ...validation, LEG2_TEXT },
     );
-    const source = fs
-      .readFileSync(`src/entities/route-greybox/massing-${area}.ts`, 'utf8')
-      .replace("await import('../../place/land.ts')", 'land');
-    const massing = sourceModule<Record<string, (owner?: ReturnType<typeof createOwnedView>) => unknown>>(source, {
-      THREE,
-      LEG2,
-      ...draw,
-      bellRockOutlines,
-      mapPage: fs.readFileSync('docs/world/map-prototypes.html', 'utf8'),
-      land: { addStatic: record },
-    });
+    type Massing = Record<string, (owner?: ReturnType<typeof createOwnedView>) => unknown>;
+    const massing = {
+      bell: sourceModule<Massing>(fs.readFileSync('src/entities/route-greybox/massing-bell.ts', 'utf8'), {
+        ...draw,
+        level: bellLevel,
+      }),
+      west: sourceModule<Massing>(fs.readFileSync('src/entities/route-greybox/massing-west.ts', 'utf8'), {
+        ...draw,
+        level: westLevel,
+      }),
+    }[area];
     const owner = createOwnedView();
-    const { mesh, solids } = await boxes.drawGreyBoxes(
-      owner,
-      massing[`${area}Massing`]!() as ReturnType<typeof draw.leg2Boxes>,
-    );
+    const { mesh, solids } = await boxes.drawGreyBoxes(owner, massing[`${area}Massing`]!() as readonly Placement[]);
     await massing[`${area}Extras`]!(owner);
     owner.root.updateWorldMatrix(true, true);
     const placements = Array.from({ length: mesh.count }, (_, i) => {
@@ -100,12 +125,53 @@ for (const area of ['bell', 'west'] as const)
           signs: signs.map(({ mesh, options, lines }) => ({ matrix: mesh.matrixWorld.toArray(), options, lines })),
         },
       ],
-      ['counts', { visible: mesh.count, bodies: colliders.length, signs: signs.length, batches: 1 }],
+      [
+        'counts',
+        {
+          visible: mesh.count,
+          bodies: colliders.length,
+          signs: signs.length,
+          batches: owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length,
+        },
+      ],
     ] as const) {
       const file = `test/fixtures/prefab-${area}-${suffix}.json`,
         bytes = JSON.stringify(value, null, 2) + '\n';
       if (process.env.GOLDEN === '1') fs.writeFileSync(file, bytes);
-      assert.equal(bytes, fs.readFileSync(file, 'utf8'), file);
+      assert.equal(bytes, expected[area][suffix], file);
     }
     owner.dispose();
+    assert.equal(active.size, 0, 'all boxes and rim colliders leave with the owner');
+    if (area === 'bell') {
+      const nextOwner = createOwnedView();
+      const pad = (massing.bellMassing!() as readonly Placement[]).find((p) => p.prefab === 'greybox.pad')!;
+      const target = runtime.createPrefabBatch('greybox.box', 8, nextOwner);
+      const first = runtime.instantiate(pad.prefab, pad, { owner: nextOwner, batch: { target, index: 0 } });
+      const matrix = new THREE.Matrix4();
+      for (let i = 0; i < 4; i++) {
+        target.mesh.getMatrixAt(i, matrix);
+        assert.equal(matrix.determinant(), 0);
+      }
+      first.setEnabled(true);
+      for (let i = 0; i < 4; i++) {
+        target.mesh.getMatrixAt(i, matrix);
+        assert.ok(matrix.determinant() > 0);
+      }
+      const roots = nextOwner.root.children.length;
+      assert.throws(
+        () => runtime.instantiate(pad.prefab, pad, { owner: nextOwner, batch: { target, index: 2 } }),
+        /occupied/,
+      );
+      assert.equal(nextOwner.root.children.length, roots, 'overlapping slots reject before allocation');
+      first.setEnabled(false);
+      for (let i = 0; i < 4; i++) {
+        target.mesh.getMatrixAt(i, matrix);
+        assert.equal(matrix.determinant(), 0);
+      }
+      first.dispose();
+      runtime.instantiate(pad.prefab, pad, { owner: nextOwner, batch: { target, index: 0 } }).setEnabled(true);
+      nextOwner.dispose();
+      assert.equal(target.slots.size, 0, 'disposing the owner releases every compound slot');
+      assert.equal(active.size, 0);
+    }
   });

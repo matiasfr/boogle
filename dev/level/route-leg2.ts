@@ -12,16 +12,77 @@ import { H } from '../../src/place/terrain.ts';
 import { inside, layout, parseMapPage, type XZ as MapXZ } from '../../src/sickle/map-data.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
-import {
-  LEG2,
-  PAD_SIZE,
-  bellRockOutlines,
-  type Piece,
-  type Reserve,
-  type XZ,
-} from '../../src/entities/route-greybox/leg2-layout.ts';
+import type { XZ } from '../../src/entities/route-greybox/leg2-layout.ts';
+import type { Leg2Analysis, Reserve } from '../../src/content/levels/leg2.ts';
+import artifact from '../../content/built/prefabs.json' with { type: 'json' };
+import { validateArtifact, validateLevelArtifact } from '../../src/prefab/validate.ts';
 import { flood, type Grid } from './flood.ts';
 import { MOVER } from './rules.ts';
+
+const records = (() => {
+  const value: unknown = artifact;
+  validateArtifact(value);
+  return value;
+})();
+type Surface = {
+  id: string;
+  x: number;
+  z: number;
+  yaw: number;
+  w: number;
+  d: number;
+  top: number;
+  rise: number;
+  h: number;
+  solid: boolean;
+  over: boolean;
+};
+function readArea<K extends keyof Leg2Analysis>(id: K) {
+  const value: unknown = JSON.parse(fs.readFileSync(`content/built/levels/${id}.json`, 'utf8'));
+  validateLevelArtifact(value, records.prefabs);
+  if (!value.analysis) throw new Error(`route-leg2: missing analysis for ${id}`);
+  const analysis = value.analysis as unknown as Leg2Analysis[K];
+  const byId = new Map(value.placements.map((p) => [p.id, p]));
+  const placement = (id: string) => {
+    const p = byId.get(id);
+    if (!p || p.parent) throw new Error(`route-leg2: missing or parented surface ${id}`);
+    return p;
+  };
+  const pieces: Surface[] = analysis.surfaces.map((s) => {
+    const p = placement(s.id),
+      [w, h, length] = p.scale ?? [1, 1, 1],
+      [yaw, pitch, roll] = p.rot ?? [0, 0, 0];
+    if (roll) throw new Error(`route-leg2: rolled surface ${s.id}`);
+    const rise = -Math.sin(pitch) * length,
+      d = Math.cos(pitch) * length;
+    return {
+      id: s.name,
+      x: p.pos[0],
+      z: p.pos[2],
+      yaw,
+      w,
+      d,
+      h,
+      top: p.pos[1] + (h / 2) * Math.cos(pitch) - rise / 2,
+      rise,
+      over: s.over,
+      solid: records.prefabs[p.prefab]!.colliders.length > 0,
+    };
+  });
+  const point = (s: { id: string; name: string }) => {
+    const p = placement(s.id);
+    return { id: s.name, x: p.pos[0], y: p.pos[1], z: p.pos[2], yaw: p.rot?.[0] ?? 0 };
+  };
+  const { pads, posts, ...context } = analysis;
+  return { ...context, pieces, pads: pads.map(point), posts: posts.map(point) };
+}
+const LEG2 = { bell: readArea('bell'), west: readArea('west'), gorge: readArea('gorge') };
+const padVisual = records.prefabs['greybox.pad']!.visual;
+if (!('builder' in padVisual) || !padVisual.instances) throw new Error('route-leg2: missing pad outline instances');
+const PAD_SIZE = {
+  along: Math.abs(padVisual.instances[0]!.pos[2]) * 2,
+  across: Math.abs(padVisual.instances[2]!.pos[0]) * 2,
+};
 
 type Entry = { kind: 'fact' | 'section'; message: string } | { kind: 'assertion'; passed: boolean; message: string };
 const f1 = (x: number) => x.toFixed(1);
@@ -36,7 +97,7 @@ function local(b: { x: number; z: number; yaw: number }, p: XZ) {
   return { along: dx * s + dz * c, across: dx * c - dz * s };
 }
 /** The piece's top at `p`, or null outside it. */
-function topAt(b: Piece, p: XZ) {
+function topAt(b: Surface, p: XZ) {
   const l = local(b, p);
   if (Math.abs(l.along) > b.d / 2 || Math.abs(l.across) > b.w / 2) return null;
   return b.top + (b.rise ?? 0) * (l.along / b.d + 0.5);
@@ -96,7 +157,7 @@ function gridAbout(o: XZ, half: number, cell: number) {
     if (i < 0 || j < 0 || i >= n || j >= n) throw new Error(`route-leg2: (${f1(p.x)}, ${f1(p.z)}) is off the grid`);
     return i * n + j;
   };
-  const heights = (ground: (p: XZ) => number, pieces: readonly Piece[]) => {
+  const heights = (ground: (p: XZ) => number, pieces: readonly Surface[]) => {
     const h = new Float32Array(n * n);
     for (let i = 0; i < n; i++)
       for (let j = 0; j < n; j++) {
@@ -148,7 +209,10 @@ function bell(entries: Entry[]) {
   const g = gridAbout(B.origin, 140, 0.5);
   const page = fs.readFileSync('docs/world/map-prototypes.html', 'utf8');
   // The rock as the massing makes it solid (the lands' own outlines), and as the map draws it (read again here).
-  const lands = bellRockOutlines(page).map((o) => o.map((p): MapXZ => [p.x, p.z]));
+  const lands = records.prefabs['greybox.bell-rock']!.colliders.map((c) => {
+    if (c.shape !== 'trimesh') throw new Error('route-leg2: Bell Rock needs outline trimeshes');
+    return Array.from({ length: c.vertices.length / 6 }, (_, i): MapXZ => [c.vertices[i * 3]!, c.vertices[i * 3 + 2]!]);
+  });
   const drawn = layout(parseMapPage(page), 'sickle')
     .land.filter((l) => l.on?.includes('bell'))
     .map((l) => l.outline);
@@ -255,7 +319,8 @@ function bell(entries: Entry[]) {
     `the widest unsolid rim (drawn rock with nothing solid under it) is ${f1(widest)} m${widest ? ` from the nearest solid ground, at (${f1(g.x(wi))}, ${f1(g.z(wj))})` : ''}; ${Math.round(area * g.cell * g.cell)} m² of rim in all (needs under 3 m)`,
   );
   // Change 2: every ramp foot, the step's foot and the pinnacle's foot stand on the rock, 6 m from any unsolid rim.
-  for (const [name, p] of Object.entries(M.feet)) {
+  for (const name of B.footOrder) {
+    const p = M.feet[name]!;
     const k = g.node(p),
       rock = over.h[k]! >= B.rockTop - 0.1;
     assertion(
@@ -327,7 +392,7 @@ function west(entries: Entry[]) {
   const y = (p: XZ) => grid.h[g.node(p)]!;
   entries.push({
     kind: 'fact',
-    message: `  ground under the root ${f1(H(W.at(0, 0).x, W.at(0, 0).z))} m, under the stop ${f1(H(W.origin.x, W.origin.z))} m, under the platforms' sea end ${f1(H(W.at(40, 0).x, W.at(40, 0).z))} m; the commons mark stands at ${f1(y(M.commons))} m`,
+    message: `  ground under the root ${f1(H(M.root.x, M.root.z))} m, under the stop ${f1(H(W.origin.x, W.origin.z))} m, under the platforms' sea end ${f1(H(M.seaEnd.x, M.seaEnd.z))} m; the commons mark stands at ${f1(y(M.commons))} m`,
   });
   // Change 3. The flood passes the 56 degree cliff by a thin margin: step 5's walk, up and down, is the proof
   // (change 1), and a plain grey stair the fix if the way up fails.

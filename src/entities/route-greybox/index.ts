@@ -15,7 +15,7 @@ import { gorgePlacements } from '../../prefab/instantiate.ts';
 import { bellExtras, bellMassing } from './massing-bell.ts';
 import { westExtras, westMassing } from './massing-west.ts';
 import { AREA_CENTRES } from './leg2-layout.ts';
-import { drawGreyBoxes, type GreyBox } from './boxes.ts';
+import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
 
 const MOUNT = { near: 400, far: 550 };
@@ -26,7 +26,7 @@ defineKind('route-greybox-area', {});
 type Area = {
   id: string;
   centre: { x: number; z: number };
-  build: () => readonly (GreyBox | Placement)[];
+  build: () => readonly Placement[];
   extras?: (owner: OwnedView) => void | Promise<void>;
 };
 const AREAS: readonly Area[] = [

@@ -10,14 +10,14 @@ const { input } = (await import('/src/player/input.ts' as string)) as typeof imp
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { LEG2 } = (await import(
-  '/src/entities/route-greybox/leg2-layout.ts' as string
-)) as typeof import('../../../src/entities/route-greybox/leg2-layout.ts');
+const { default: west } = (await import('/content/built/levels/west.json' as string)) as {
+  default: typeof import('../../../content/built/levels/west.json');
+};
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const f1 = (n: number) => +n.toFixed(1);
 const b = me.body!;
-const M = LEG2.west.marks;
+const M = west.analysis.marks;
 type XZ = { x: number; z: number };
 
 async function stage(p: XZ, y: number) {

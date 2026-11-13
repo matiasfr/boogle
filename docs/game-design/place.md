@@ -924,12 +924,19 @@ device.
 High Gorge's static massing is authored in `src/content/levels/gorge.ts` and loaded from compiled JSON through
 the prefab runtime (prefab-data step 6). Its 86 placements retain 84 visible boxes, two hidden stack colliders,
 55 bodies and one shared massing batch. Positions, colours, collider recipes and insertion order match the
-old massing goldens byte for byte. The incline platforms still derive from the existing leg-2 layout authority.
+old massing goldens byte for byte. The incline platforms derive from the leg-2 authoring in `src/content/levels/leg2.ts`.
 This changes no route, interaction, sign copy or resident distance.
 
 **Greybox leg 2: Bell Rock, Home's West landing, the Gorge's incline platforms (13 November 2026;
 [greybox-leg2-massing](../plans/greybox-leg2-massing.md)).** Layout only, live for everyone: grey boxes, labelled
 pads and boards, no rails, no rules, nothing to press. Every label is a placeholder.
+
+Static Bell Rock and West landing geometry is authored in `src/content/levels/leg2.ts`, compiled to the Bell/West
+level JSON, and instantiated through the prefab runtime (prefab-data step 7). Pads share the existing cube batch;
+their boards use label attachments referencing unchanged copy in `leg2-layout.ts`. Bell Rock's two outline
+trimeshes are explicit collider records, with their original vertices and winding. The level report reads compiled
+placements, collider records and examiner marks; it does not import the TypeScript layout at runtime. Resident
+distances, geometry, colours, body order and placeholder wording are unchanged. New static legs use level files.
 
 **Bell Rock** is two lands on every map, cut through north to south, and the cut is sea. All the rock that is drawn
 is solid. **The lower level** stands in the cut on posts: the north-south line's unlaid bed (a dark slab, no rails),

@@ -23,6 +23,8 @@ function inside(point: Vec3, c: ColliderDef) {
       return x * x + z * z <= c.r * c.r && Math.abs(y) <= c.h / 2;
     case 'capsule':
       return x * x + z * z + Math.max(0, Math.abs(y) - c.halfHeight) ** 2 <= c.r * c.r;
+    case 'trimesh':
+      throw new Error('Seat clearance on trimeshes needs an authored floor authority');
   }
 }
 test('every compiled record has valid geometry, names and clear seat exits', () => {

@@ -72,6 +72,7 @@ const contentImports = new Set([
   'src/entities/railway/line2-path.ts',
   'src/entities/route-greybox/massing.ts',
   'src/entities/route-greybox/leg2-layout.ts',
+  'src/content/levels/leg2.ts',
 ]);
 const browserGlobals = new Set(Object.keys(globals.browser).filter((name) => !(name in globals.es2022)));
 const prefabDoor = 'Declare src/content/prefabs/ and levels/ data; use src/prefab/instantiate.ts (npm run prefab:new).';
