@@ -147,3 +147,63 @@ the planned positions were measured against its envelopes and constants; step 1 
 6. **If (b): every line or the island only?** Every line (recommended, one rule); it changes Quarry and Far Head.
 7. **Sit against Request stop** while a train stands (finding 8): Sit wins during a stand, both shown, or as is.
 8. **Order:** the crossing ships at checkpoint A before the fender is built (recommended).
+
+## Design review (designer, 2026-11-12)
+
+Read: DESIGN 2, 7, 10, 11; the rail topic's Current rules; generic-lines' finding 5 and call 32; the open rows this
+touches in agent-calls (short turn's `meet`, the landing leaf "shoves a player clear, never pins", the aboard request
+prompt); the halt block in `src/entities/ring-island/view.ts`; `withSeatTargets` and the aboard `targets()`; the two
+stills (taken before the crossing exists). Research: none on a foot crossing; [route-contract](../research/route-contract.md)
+applies only as "opens nothing early", which level finding 4 covers. Not seen: the crossing itself (unbuilt), and the
+first sight from a car door; step 2's stills are the check.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | The crossing sits at the south end, u 428.1..430.5, cut into the platforms' first 6.6 m | Default | Agreed. Same place and vocabulary as the Quarry and Far Head crossings (generic-lines call 32: the platforms' halt end), clear of the v33 tail, and it is the crossing the short turn's `meet` row asked to be "planned and level-checked first". It is the far end from the west platform's path ramp (u 464): about 11 s from a car door round by the planks. Accepted because the kerb jump stays and the fingerpost stands at this end |
+| 2 | Full-width 9.6 degree ramps, not steps | Default | Agreed. A carried footing or crate walks it; two abreast fit |
+| 3 | No mark beyond the timber band | Default | Agreed (DESIGN 11). It reads as the other halts' crossings do. If step 2's stills show the band hidden behind a standing tail from the car door, add a painted edge to the ramp top, nothing with words |
+| 4 | The kerb jump stays | Default | Agreed. 20 of 20, slapstick, the short way to the path; no rail in the bed |
+| 5 | The shove: (b) the player is pushed sideways out of the car's path | New | Agreed. Generic-lines finding 5: slapstick is fine, "being hit while walking to the only way out is not"; the island's own precedent is the landing leaf, which "shoves a player clear, never pins". (c) hides the bump, (d) lets one player hold the room's railway |
+| 6 | Where the fender acts | New | **Not every line. The Ring Island halt's bed only** (about u 423..468: the planks, 5 m of lead, the platforms' length), where kerbs stop the push ending by itself. Elsewhere a train carries you as today |
+| 7 | Sit against Request stop while a train stands | Decided, contradicted by the code | Owner, 2 November, "you can sit on the train": Interact sits you down. An open default (the aboard request prompt, 10 November) now hides it on any train whose next halt is a request stop. Sit wins while the train stands and a seat is free; Request stop returns once it moves. A separate small change, not this plan |
+| 8 | The crossing ships at checkpoint A, before the fender | Default | Agreed. A is no worse than today (the bed is already the only way) |
+| 9 | `FEND` numbers (0.6 m ahead, 4 m/s across, flip after 8 ticks) and one `pop` on entry | Default | Tunables. See finding 2 |
+
+Decided 1, Default 6, New 2.
+
+### Findings
+
+1. **Step 3 as written must change before it is built: scope it to the halt.** "Every line" removes being carried
+   on an engine's nose along open track and the trestle, a thing players can do today, to fix a problem measured only
+   where kerbs pen the player in. That is DESIGN 2's test (does this break a toy that's already there?) and it
+   overturns generic-lines' slapstick ruling for Quarry and Far Head with no evidence from them. Changing it everywhere
+   is the owner's (question 1). Built on my recommendation: the pre-step tests the car's u against the halt's zone from
+   `RING_CROSSING` and `RING_HALT`; a player caught south of it by a down train is carried as today; one carried in by
+   an up train is fended at the zone's edge. Checkpoint B's Quarry look becomes "unchanged".
+2. **The 3 m bar does not fit the numbers for a passing train.** Clearing a car's half width plus the player at 4 m/s
+   takes about 0.4 s, which is about 8 m at 20 m/s. Keep the bar for a stopping train; for a passing one the bar is:
+   out of the path within the platforms' length, standing in the six-foot or on the planks, never past u 468 or below
+   8.0 m. Raise `FEND.speed` before lengthening `ahead`: a longer reach grabs players who would have made it across.
+3. **The six-foot with both trains standing** (the hold makes this common): the plan's fit is against the tracks, not
+   the cars. Step 3's eval should stand a player there between two standing trains and walk out south to the planks,
+   including the 0.22 m step onto the slab. Nobody-stranded is the rule this proves.
+4. **Sit is hidden by Request stop** (call 7): an owner decision shadowed by a default. Outside this plan; build it as
+   its own change. Follow-up for the small-calls list: a seated rider is offered only "Stand up", so asking for a stop
+   means standing first.
+5. **Flow, one lens, no change asked:** the beat ends facing away from the way on (planks south, path north). It works
+   here because the fingerpost that states the choice is at the planks and the jump is still the short way.
+
+### Cleared
+
+- **Steps 0 to 2 and checkpoint A: build now** on calls 1 to 4 and 8.
+- **Step 3: build after A, scoped to the Ring Island halt** (findings 1 to 3). The every-line version waits for the
+  owner.
+
+### Owner questions
+
+1. **Should a train push you aside on every line, or only in Ring Island's halt?** Recommended: only the halt. Being
+   carried along by a train elsewhere stays as it is.
+2. **While a train stands at a platform, should Interact offer Sit ahead of Request stop?** Recommended: yes (your
+   2 November call). Not waiting on this.
