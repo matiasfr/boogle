@@ -10,6 +10,10 @@
 //   West landing: `s` from the rows' root along the `bay` row; `lat` + landward (east, the commons' side).
 //   Gorge: `t` along the `ns` row from the split's origin (massing.ts's a 0.741 t, c 0.672 t); `lat` + south-east.
 
+import { layout, parseMapPage } from '../../sickle/map-data.ts';
+
+/** The map's local metres are the world's less this in x (src/place/layout.ts, ORIGIN). */
+const MAP_ORIGIN_X = 1000;
 export type XZ = { x: number; z: number };
 export type Tone = 'grey' | 'light' | 'dark' | 'pale';
 /** One box: a rectangle on the ground (centre, yaw of its length, `w` across, `d` along) under a top face that is
@@ -149,21 +153,20 @@ function bell() {
     // Call 119: the deck stays 1.9 m over the rock, with a short ramp down.
     en.ramp('upper-step', -46, UPPER, -50, ROCK, -15, -11, 'grey'),
   ];
-  // The rock: four colliders inside the two map polys, under the backdrop's mesh. The rim past them is drawn and not
-  // solid (call 121, accepted off the route only; the level report prints its widest part).
-  const rock = (id: string, n0: number, n1: number, e0: number, e1: number): Piece => ({
-    ...ne.box(id, n0, n1, e0, e1, ROCK, ROCK + 10, 'grey'),
+  // The rock itself is not a box here: ./massing-bell.ts makes the map's two Bell Rock lands solid as drawn (their
+  // own outlines, top at `rockTop`), so no drawn rock is left without a collider. The pinnacle's collider is the box
+  // the backdrop draws (22 m east to west, 18 m north to south, square to the map).
+  pieces.push({
+    id: 'pinnacle',
+    ...PINNACLE,
+    yaw: 0,
+    w: 22,
+    d: 18,
+    top: 54,
+    h: 54 - ROCK,
+    tone: 'grey',
     hidden: true,
   });
-  // Their faces on the cut are flush with the decks' edges (the plan's stood 1 m back: a slot a walker fell into
-  // through the drawn wall).
-  pieces.push(
-    rock('rock-w', -55, 80, -85, -24),
-    rock('rock-nw', -77, -26, -70, -10),
-    rock('rock-sw', 26, 82, -85, -10),
-    rock('rock-e', -100, 75, 9, 65),
-    { id: 'pinnacle', ...PINNACLE, yaw: 0.4, w: 22, d: 18, top: 54, h: 54 - ROCK, tone: 'grey', hidden: true },
-  );
   const pad = (id: string, place: string, n: number, e: number, y: number): Pad => ({
     id,
     ...ne.at(n, e),
@@ -174,6 +177,9 @@ function bell() {
   return {
     origin: BELL_O,
     at: ne.at,
+    /** The rock's top (the map's `top` for both lands) and how far down its solid walls go. */
+    rockTop: ROCK,
+    rockBase: -10,
     pieces,
     pads: [
       pad('pad-gorge', 'High Gorge', -20, -14, LOWER),
@@ -320,6 +326,12 @@ function gorge() {
 }
 
 export const LEG2 = { bell: bell(), west: west(), gorge: gorge() };
+/** Bell Rock's lands as the map draws them (the text of docs/world/map-prototypes.html): world outlines. */
+export function bellRockOutlines(mapPage: string): XZ[][] {
+  return layout(parseMapPage(mapPage), 'sickle', 'A')
+    .land.filter((l) => l.on?.includes('bell'))
+    .map((l) => l.outline.map(([x, z]) => ({ x: x + MAP_ORIGIN_X, z })));
+}
 /** The three areas' centres: an area's massing is resident within 400 m of its centre (./index.ts). */
 export const AREA_CENTRES = { gorge: LEG2.gorge.origin, bell: LEG2.bell.origin, west: LEG2.west.origin } as const;
 /** The size of a pad's outline, along its yaw and across. */

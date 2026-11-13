@@ -12,7 +12,14 @@ import { H } from '../../src/place/terrain.ts';
 import { inside, layout, parseMapPage, type XZ as MapXZ } from '../../src/sickle/map-data.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
-import { LEG2, PAD_SIZE, type Piece, type Reserve, type XZ } from '../../src/entities/route-greybox/leg2-layout.ts';
+import {
+  LEG2,
+  PAD_SIZE,
+  bellRockOutlines,
+  type Piece,
+  type Reserve,
+  type XZ,
+} from '../../src/entities/route-greybox/leg2-layout.ts';
 import { flood, type Grid } from './flood.ts';
 import { MOVER } from './rules.ts';
 
@@ -139,11 +146,20 @@ function bell(entries: Entry[]) {
   const B = LEG2.bell,
     M = B.marks;
   const g = gridAbout(B.origin, 140, 0.5);
+  const page = fs.readFileSync('docs/world/map-prototypes.html', 'utf8');
+  // The rock as the massing makes it solid (the lands' own outlines), and as the map draws it (read again here).
+  const lands = bellRockOutlines(page).map((o) => o.map((p): MapXZ => [p.x, p.z]));
+  const drawn = layout(parseMapPage(page), 'sickle')
+    .land.filter((l) => l.on?.includes('bell'))
+    .map((l) => l.outline);
+  if (lands.length !== 2 || drawn.length !== 2)
+    throw new Error(`route-leg2: expected Bell Rock's two lands in the map, found ${drawn.length}`);
+  const rockAt = (p: XZ) => (lands.some((poly) => inside([p.x, p.z], poly)) ? B.rockTop : SEA);
   const under = g.heights(
-      () => SEA,
+      rockAt,
       B.pieces.filter((p) => !p.over),
     ),
-    over = g.heights(() => SEA, B.pieces);
+    over = g.heights(rockAt, B.pieces);
   const on = (seen: { under: Uint8Array; over: Uint8Array }, p: XZ, upper = false) =>
     (upper ? seen.over : seen.under)[g.node(p)] === 1 || (!upper && seen.over[g.node(p)] === 1);
   const pad = (id: string) => B.pads.find((p) => p.id === id)!;
@@ -199,7 +215,7 @@ function bell(entries: Entry[]) {
     assertion(got.ok, `a swimmer in the sea ${name}: ${got.text}`);
   }
   const noSlip = g.heights(
-    () => SEA,
+    rockAt,
     B.pieces.filter((p) => !p.over && p.id !== 'slipway'),
   );
   const stranded = flood(noSlip, MOVER, [g.node(M.seaOutside)], { swim: true });
@@ -207,55 +223,47 @@ function bell(entries: Entry[]) {
     `  without the slipway a swimmer reaches ${stranded[g.node(M.lowerWest)] || stranded[g.node(M.westRock)] ? 'the rock anyway' : 'neither level: the slipway is the one way out of the sea'}`,
   );
 
-  // The rim: inside the map's two polys, outside every collider. Drawn by the backdrop, not solid (call 121).
-  const map = layout(parseMapPage(fs.readFileSync('docs/world/map-prototypes.html', 'utf8')), 'sickle');
-  const polys = map.land.filter((l) => l.on?.includes('bell')).map((l) => l.outline);
-  if (polys.length !== 2)
-    throw new Error(`route-leg2: expected Bell Rock's two lands in the map, found ${polys.length}`);
+  // The rim: drawn rock (inside the map's two lands) with nothing solid under it. The massing makes the lands solid
+  // as drawn, so this is the grid's own error; it was 68.5 m with the plan's four boxes.
   const n = g.n;
   const rim = new Uint8Array(n * n),
-    rock = new Uint8Array(n * n);
+    solid = new Uint8Array(n * n);
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++) {
       const k = i * n + j,
         p: MapXZ = [g.x(i) - ORIGIN.x, g.z(j) - ORIGIN.z];
-      if (over.h[k]! > SEA) rock[k] = 1;
-      else if (polys.some((poly) => inside(p, poly))) rim[k] = 1;
+      if (over.h[k]! > SEA) solid[k] = 1;
+      else if (drawn.some((poly) => inside(p, poly))) rim[k] = 1;
     }
-  const toRock = distances(rock, n, g.cell);
-  // A sliver is rim under 2 m wide between a collider's edge and the map's outline (the cut's walls, where the drop
-  // is the cut's own): the feet are measured against rim wider than that.
-  const SLIVER = 2;
-  const wide = new Uint8Array(n * n);
-  for (let k = 0; k < n * n; k++) if (rim[k] && toRock[k]! >= SLIVER) wide[k] = 1;
-  const toWide = distances(wide, n, g.cell);
+  const toSolid = distances(solid, n, g.cell),
+    toRim = distances(rim, n, g.cell);
   let widest = 0,
     at = 0,
-    drawn = 0;
+    area = 0;
   for (let k = 0; k < n * n; k++) {
     if (!rim[k]) continue;
-    drawn++;
-    if (toRock[k]! > widest) {
-      widest = toRock[k]!;
+    area++;
+    if (toSolid[k]! > widest) {
+      widest = toSolid[k]!;
       at = k;
     }
   }
   const wi = Math.floor(at / n),
     wj = at - wi * n;
-  fact(
-    `  the widest unsolid rim (drawn rock with no collider under it): ${f1(widest)} m from the nearest solid box, at (${f1(g.x(wi))}, ${f1(g.z(wj))}); ${Math.round(drawn * g.cell * g.cell)} m² of rim in all`,
+  assertion(
+    widest < 3,
+    `the widest unsolid rim (drawn rock with nothing solid under it) is ${f1(widest)} m${widest ? ` from the nearest solid ground, at (${f1(g.x(wi))}, ${f1(g.z(wj))})` : ''}; ${Math.round(area * g.cell * g.cell)} m² of rim in all (needs under 3 m)`,
   );
-  // Change 2: every ramp foot, the step's foot and the pinnacle's foot stand on a collider, 6 m from any rim.
+  // Change 2: every ramp foot, the step's foot and the pinnacle's foot stand on the rock, 6 m from any unsolid rim.
   for (const [name, p] of Object.entries(M.feet)) {
     const k = g.node(p),
-      solid = over.h[k]! >= 13.9,
-      clear = toWide[k]! - SLIVER;
+      rock = over.h[k]! >= B.rockTop - 0.1;
     assertion(
-      solid && clear >= 6,
-      `${name} lands on solid rock ${solid ? `${f1(clear)} m from the nearest unsolid rim` : `: NOT, the ground there is ${f1(over.h[k]!)} m`} (needs 6; slivers under ${SLIVER} m at a collider's edge aside)`,
+      rock && toRim[k]! >= 6,
+      `${name} lands on solid rock${rock ? (area ? `, ${f1(toRim[k]!)} m from the nearest unsolid rim (needs 6)` : '') : `: NOT, the ground there is ${f1(over.h[k]!)} m`}`,
     );
   }
-  reserves(entries, 'bell');
+  reserves(entries, 'bell', [], rockAt);
 }
 
 /** Metres from each node to the nearest marked one (a two-pass chamfer; good to a few per cent). */
@@ -285,10 +293,22 @@ function distances(mark: Uint8Array, n: number, cell: number) {
   return d;
 }
 
-function reserves(entries: Entry[], id: 'bell' | 'west' | 'gorge', extra: Reserve[] = []) {
+/** `rock`: the height of solid ground that is not a box (Bell Rock's lands), sampled each half metre of a reserve. */
+function reserves(entries: Entry[], id: 'bell' | 'west' | 'gorge', extra: Reserve[] = [], rock?: (p: XZ) => number) {
   const area = LEG2[id];
   const all = [...area.reserves, ...extra];
-  const bad = all.map((r) => ({ r, in: intruders(area, r) })).filter((x) => x.in.length);
+  const inRock = (r: Reserve) => {
+    if (!rock) return false;
+    const s = Math.sin(r.yaw),
+      c = Math.cos(r.yaw);
+    for (let a = -r.d / 2 + 0.25; a < r.d / 2; a += 0.5)
+      for (let b = -r.w / 2 + 0.25; b < r.w / 2; b += 0.5)
+        if (rock({ x: r.x + s * a + c * b, z: r.z + c * a - s * b }) > r.y0 + 0.01) return true;
+    return false;
+  };
+  const bad = all
+    .map((r) => ({ r, in: [...intruders(area, r), ...(inRock(r) ? ['the rock'] : [])] }))
+    .filter((x) => x.in.length);
   entries.push({
     kind: 'assertion',
     passed: !bad.length,

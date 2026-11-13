@@ -2,7 +2,7 @@
 // ./boxes.ts's boxes, puts posts under what stands over the sea, outlines the labelled pads and paints their signs.
 // Shared by ./massing-bell.ts and ./massing-west.ts. Local scenery; every label is placeholder text.
 import type { OwnedView } from '../../render/owned-view.ts';
-import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
+import { signBoard, type SignBoard } from '../../render/sign-board.ts';
 import { span, type GreyBox } from './boxes.ts';
 import { PAD_SIZE, type Pad, type Piece, type Post, type Tone } from './leg2-layout.ts';
 
@@ -86,6 +86,28 @@ export function leg2Boxes(pieces: readonly Piece[], pads: readonly Pad[]): GreyB
 }
 
 const PAINT = { ground: '#e4e5e6', ink: '#2c2e30', rim: '#6f7275' };
+/** One or two centred lines, the first larger, each in the largest type that fits the board's width unsqueezed. */
+function paint(s: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: readonly string[]) {
+  const { g, cw, ch } = s;
+  g.fillStyle = PAINT.ground;
+  g.fillRect(0, 0, cw, ch);
+  g.strokeStyle = PAINT.rim;
+  g.lineWidth = ch * 0.04;
+  g.strokeRect(ch * 0.04, ch * 0.04, cw - ch * 0.08, ch - ch * 0.08);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = PAINT.ink;
+  const rows = lines.length > 1 ? [0.36, 0.74] : [0.5],
+    sizes = lines.length > 1 ? [0.34, 0.22] : [0.44];
+  lines.slice(0, 2).forEach((text, k) => {
+    let px = ch * sizes[k]!;
+    g.font = `900 ${px}px Figtree, system-ui, sans-serif`;
+    const wide = g.measureText(text).width;
+    if (wide > cw * 0.9) px *= (cw * 0.9) / wide;
+    g.font = `900 ${px}px Figtree, system-ui, sans-serif`;
+    g.fillText(text, cw / 2, ch * rows[k]!);
+  });
+}
 /** The pads' signs (at the pad's back edge, facing `face`) and the free-standing posts' boards. */
 export function leg2Signs(
   owner: OwnedView,
@@ -100,8 +122,8 @@ export function leg2Signs(
     lines: readonly string[],
     w: number,
   ) => {
-    const s = signBoard(owner, { w, h: w * 0.4, px: 768, foot: 1.2, posts: 'two', wood: '#5d6063' });
-    paintTwoLines(s, lines[0] ?? '', lines[1] ?? '', PAINT);
+    const s = signBoard(owner, { w, h: w * 0.32, px: 1024, foot: 1.2, posts: 'two', wood: '#5d6063' });
+    paint(s, lines);
     s.painted();
     s.mesh.name = 'route-greybox:sign';
     s.mesh.position.set(at.x, at.y, at.z);
@@ -114,7 +136,7 @@ export function leg2Signs(
       face.nx,
       face.nz,
       p.lines,
-      3.6,
+      4.6,
     );
-  for (const p of free) stand(p, p.nx, p.nz, p.lines, 4.4);
+  for (const p of free) stand(p, p.nx, p.nz, p.lines, 4.6);
 }
