@@ -56,7 +56,9 @@ for (const rate of RATES)
             .join(','),
         ]);
     }
-if (QUIET > 0) for (const where of WHERE) jobs.push(['quiet', where, String(QUIET)]);
+if (QUIET > 0)
+  for (const where of WHERE)
+    for (const hold of HOLDS) if (hold > 0) jobs.push(['quiet', where, String(QUIET), String(hold)]);
 
 const lines: string[] = [];
 const runOne = (args: string[]) =>
@@ -171,6 +173,34 @@ for (const rate of RATES)
         longest: R.reduce((a, r) => (r.longest.ticks > a.ticks ? r.longest : a), { ticks: 0 }),
         tripUp: [Math.round(mean(up)), Math.max(0, ...up)],
         tripDown: [Math.round(mean(down)), Math.max(0, ...down)],
+        journey: (() => {
+          const js: number[] = R.flatMap((r) => r.journeys ?? []);
+          return {
+            n: js.length,
+            mean: Math.round(mean(js)),
+            p95: q(js, 0.95),
+            worst: Math.max(0, ...js),
+            open: R.reduce((a, r) => a + (r.journeysOpen ?? 0), 0),
+          };
+        })(),
+        plat: (() => {
+          const P: Record<string, [number, number, number, number]> = {};
+          for (const r of R)
+            for (const [k, v] of Object.entries((r.plat ?? {}) as Record<string, [number, number, number, number]>)) {
+              const p = (P[k] ??= [0, 0, 0, 0]);
+              p[0] += v[0];
+              p[1] += v[1];
+              p[2] += v[2];
+              p[3] = Math.max(p[3], v[3]);
+            }
+          return Object.fromEntries(
+            Object.entries(P).map(([k, p]) => [
+              k,
+              { n: p[0], mean: Math.round(p[1] / Math.max(1, p[0])), over1050: p[2] / Math.max(1, p[0]), worst: p[3] },
+            ]),
+          );
+        })(),
+        startGaps: R[0].startGaps,
         gorgeAt:
           where === 'whole' ? [Math.min(...R.map((r) => r.gorgeAt)), Math.max(...R.map((r) => r.gorgeAt))] : undefined,
       });
@@ -209,12 +239,12 @@ for (const r of rows)
 if (quiet.length) {
   md.push(
     '',
-    '| nothing asked | laps / non-stop | wagon arrivals | footing changes | kit changes | last hash |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| nothing asked | hold | laps / non-stop | wagon arrivals | footing changes | kit changes | stone | fares | last hash |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   );
   for (const r of quiet)
     md.push(
-      `| ${r.where} | ${Math.max(0, ...r.laps)} worst of ${r.laps.length} | ${r.wagon.length} | ${r.footing.length} | ${r.kits.length} | ${r.hashes.at(-1)} |`,
+      `| ${r.where} | ${r.headPct ?? 75} | ${Math.max(0, ...r.laps)} worst of ${r.laps.length} | ${r.wagon.length} | ${r.footing.length} | ${r.kits.length} | ${r.stone ?? '-'} | ${r.fares ?? '-'} | ${r.hashes.at(-1)} |`,
     );
 }
 fs.writeFileSync(path.join(OUT, 'sheet.txt'), md.join('\n') + '\n');
