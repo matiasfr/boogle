@@ -1,0 +1,120 @@
+{
+  "level": "route leg 2 (planned)",
+  "entries": [
+    {
+      "kind": "section",
+      "message": "Bell Rock (0.5 m grid, two levels)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the lower west platform: the High Gorge pad, the Ring Island pad, the seeds spot, the ramp's foot, the ramp's head, the Home pad, the Canopy Town pad, the Port Quay pad, the lower east platform, the west rock"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the upper deck: the in half north platform, the in half south platform, the out half north platform, the out half south platform, the east rock, the pinnacle's foot, the lower west platform (back down)"
+    },
+    {
+      "kind": "fact",
+      "message": "  the east rock and the pinnacle's foot are reached by the bridge only"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "a swimmer in the sea west of the lower deck (the cut, south): the slipway's foot, the lower west platform, the lower deck (the seeds spot)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "a swimmer in the sea east of the bed (the cut, north): the slipway's foot, the lower west platform, the lower deck (the seeds spot)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "a swimmer in the sea outside, north of the rock: the slipway's foot, the lower west platform, the lower deck (the seeds spot)"
+    },
+    {
+      "kind": "fact",
+      "message": "  without the slipway a swimmer reaches neither level: the slipway is the one way out of the sea"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "the widest unsolid rim (drawn rock with nothing solid under it) is 0.0 m; 0 m² of rim in all (needs under 3 m)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "upper-in-n-end lands on solid rock"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "upper-in-s-end lands on solid rock"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "upper-out-n-end lands on solid rock"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "upper-out-s-end lands on solid rock"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "upper-step lands on solid rock"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "the pinnacle's foot lands on solid rock"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: ns row, bay row, in, bay row, out, seeds spot, Canopy frame and barrier, lower-east lever end, lower-west lever end, upper-in-n lever end, upper-in-s lever end, upper-out-n lever end, upper-out-s lever end"
+    },
+    {
+      "kind": "section",
+      "message": "Home's West landing (1 m grid over Home's terrain)"
+    },
+    {
+      "kind": "fact",
+      "message": "  ground under the root 3.0 m, under the stop 2.4 m, under the platforms' sea end -4.2 m; the commons mark stands at 17.4 m"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from platform A to the commons (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from platform B to the commons (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the commons down to platform A (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: bay row, apron, platform-a lever end, platform-b lever end, cave row (0.0 to 65.3 m), cave row (65.3 to 80.0 m)"
+    },
+    {
+      "kind": "section",
+      "message": "High Gorge's incline platforms"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: ns row, incline-n lever end, incline-s lever end"
+    }
+  ],
+  "failures": 0
+}
