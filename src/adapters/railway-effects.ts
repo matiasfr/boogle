@@ -2,6 +2,7 @@
 // accepted action (yours predicted, or anyone's from the server) and a correction of one, plus the wire reads that
 // build them. The session's settle and submit play them; nothing here does.
 import { railInt, RAILWAY_MAX_INT } from '../sim/railway.ts';
+import { railPos } from '../sim/railway-route.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { line2Trains as line2TrainsIn } from '../sim/railway-queries-line2.ts';
 import { trainStops } from '../sim/railway-queries-trains.ts';
@@ -60,7 +61,7 @@ export const effectOf = (v: Record<string, unknown>) => {
   if (railInt(v.carried, CARRY_MAX)) out.carried = v.carried;
   if (railInt(v.level, RAILWAY_MAX_INT)) out.level = v.level;
   if (railInt(v.pile, RAILWAY_MAX_INT, 1)) out.pile = v.pile;
-  for (const k of ['px', 'py', 'pz'] as const) if (railInt(v[k], 200000, -200000)) out[k] = v[k];
+  for (const k of ['px', 'py', 'pz'] as const) if (railPos(v[k])) out[k] = v[k];
   return out;
 };
 export const accepted = (v: Record<string, unknown>) =>

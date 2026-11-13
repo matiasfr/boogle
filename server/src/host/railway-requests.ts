@@ -21,6 +21,7 @@
 //                       the actor's predicted pile
 //                     a wake's `tk` (the tick its actor pressed at) sets its start, bounded by railWakeTick
 import { railInt, RAILWAY_MAX_INT, type RailAction } from '../../../src/sim/railway.ts';
+import { railPos } from '../../../src/sim/railway-route.ts';
 import { RAIL_ACTIONS, type Actor, type RailwayApi } from '../../../src/world/railway-server.ts';
 import { railTempPile, RAIL_PREDICTED } from '../../../src/world/railway-predict.ts';
 import type { Replicator } from '../../../src/world/replicate-server.ts';
@@ -34,7 +35,7 @@ const token = (v: Obj) => railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.requ
  * (centimetres) and the client's action clock (ms). Judged while applying; never saved or replicated. */
 export type ActorFacts = { pid: string; epoch: number; request: number; at: [number, number, number]; ms: number };
 const position = (v: unknown): v is [number, number, number] =>
-  Array.isArray(v) && v.length === 3 && v.every((n) => railInt(n, 200000, -200000));
+  Array.isArray(v) && v.length === 3 && v.every((n) => railPos(n));
 
 /** The action as the rules see it: only this op's wire shape. The actor's `at`/`ms` are validation facts. */
 export function railwayRequestEdit(e: Obj, epoch: number, request: number): RailAction {

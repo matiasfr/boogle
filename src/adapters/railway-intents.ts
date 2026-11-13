@@ -3,6 +3,7 @@
 // Nothing here sends, predicts or plays: that is railway-session.ts.
 import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
 import { railInt, railYaw } from '../sim/railway.ts';
+import { railPos } from '../sim/railway-route.ts';
 import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId } from '../sim/railway-line-layout.ts';
 import { LINE2_PACK, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
@@ -70,14 +71,8 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.turn' && railInt(e.to, 1) && railInt(e.revision))
     return { op: e.op, to: e.to as 0 | 1, revision: e.revision };
   // A footing goes down and comes up alone, as pile kind 3.
-  if (
-    e.op === 'rail.drop' &&
-    e.kind === 3 &&
-    e.n === 1 &&
-    railInt(e.x, 200000, -200000) &&
-    railInt(e.z, 200000, -200000)
-  )
-    return { op: e.op, x: e.x, z: e.z, n: 1, kind: 3, ...(railInt(e.y, 200000, -200000) ? { y: e.y } : {}) };
+  if (e.op === 'rail.drop' && e.kind === 3 && e.n === 1 && railPos(e.x) && railPos(e.z))
+    return { op: e.op, x: e.x, z: e.z, n: 1, kind: 3, ...(railPos(e.y) ? { y: e.y } : {}) };
   if (e.op === 'rail.take' && e.kind === 3 && railInt(e.id)) return { op: e.op, id: e.id, kind: 3 };
   if (
     e.op === 'rail.axe' ||
@@ -106,9 +101,9 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (
     (e.op === 'rail.beamDrop' || e.op === 'rail.boilerDrop') &&
     railInt(e.revision) &&
-    railInt(e.x, 200000, -200000) &&
-    railInt(e.y, 200000, -200000) &&
-    railInt(e.z, 200000, -200000)
+    railPos(e.x) &&
+    railPos(e.y) &&
+    railPos(e.z)
   )
     return { op: e.op, revision: e.revision, x: e.x, y: e.y, z: e.z };
   if (e.op === 'rail.rackTake') return { op: e.op, kind: kind === 1 ? 1 : 0 };
@@ -134,13 +129,8 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     railInt(e.n, CARRY_MAX, 1)
   )
     return { op: e.op, station: e.station, n: e.n, kind };
-  if (
-    e.op === 'rail.drop' &&
-    railInt(e.n, CARRY_MAX, 1) &&
-    railInt(e.x, 200000, -200000) &&
-    railInt(e.z, 200000, -200000)
-  )
-    return { op: e.op, x: e.x, z: e.z, n: e.n, kind, ...(railInt(e.y, 200000, -200000) ? { y: e.y } : {}) };
+  if (e.op === 'rail.drop' && railInt(e.n, CARRY_MAX, 1) && railPos(e.x) && railPos(e.z))
+    return { op: e.op, x: e.x, z: e.z, n: e.n, kind, ...(railPos(e.y) ? { y: e.y } : {}) };
   return null;
 }
 /** What the server leaves out of an event because the intent already says it (railway-requests.ts EVENT_FIELDS). */
@@ -206,11 +196,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     beamChop: () => railBeamChoppable(view()) && submit({ op: 'rail.beamChop' }),
     beamTake: (revision: number) => railInt(revision) && submit({ op: 'rail.beamTake', revision }),
     beamDrop: (x: number, y: number, z: number, revision: number) =>
-      railInt(revision) &&
-      railInt(x, 200000, -200000) &&
-      railInt(y, 200000, -200000) &&
-      railInt(z, 200000, -200000) &&
-      submit({ op: 'rail.beamDrop', revision, x, y, z }),
+      railInt(revision) && railPos(x) && railPos(y) && railPos(z) && submit({ op: 'rail.beamDrop', revision, x, y, z }),
     beamDeposit: (revision: number) => railInt(revision) && submit({ op: 'rail.beamDeposit', revision, station: 'T3' }),
     mine: (id: number) => railInt(id, RAIL_ROCKS.length - 1) && submit({ op: 'rail.mine', id }),
     chop(id: number, yaw?: number, collapsed?: boolean) {
@@ -228,9 +214,9 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     /** Kind 3 puts down the footing on your back (n 1). */
     drop(x: number, y: number, z: number, n = 1, kind: RailMaterial | 2 | 3 = 0) {
       return (
-        railInt(x, 200000, -200000) &&
-        railInt(y, 200000, -200000) &&
-        railInt(z, 200000, -200000) &&
+        railPos(x) &&
+        railPos(y) &&
+        railPos(z) &&
         railInt(n, kind === 3 ? 1 : CARRY_MAX, 1) &&
         submit({ op: 'rail.drop', x, y, z, n, kind })
       );
@@ -246,9 +232,9 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     takeBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
     dropBoiler: (x: number, y: number, z: number, revision: number) =>
       railInt(revision) &&
-      railInt(x, 200000, -200000) &&
-      railInt(y, 200000, -200000) &&
-      railInt(z, 200000, -200000) &&
+      railPos(x) &&
+      railPos(y) &&
+      railPos(z) &&
       submit({ op: 'rail.boilerDrop', revision, x, y, z }),
     fitBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerFit', revision }),
     /** A stop request (docs/plans/generic-lines.md, 7): halt `id`, heading `dir` (-1 toward its line's stop 0, +1

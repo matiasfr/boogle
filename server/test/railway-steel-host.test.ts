@@ -17,12 +17,21 @@ import { SHED_TABLE } from '../../src/sim/railway-works-layout.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
 import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
-import { RAIL_LEGS, legRack } from '../../src/sim/railway-route.ts';
+import {
+  RAIL_GATES,
+  RAIL_GRANTS,
+  RAIL_LEGS,
+  RAIL_POSITION_MARGIN,
+  RAIL_POSITION_MAX,
+  RAIL_ROUTE_POINTS,
+  legFrame,
+  legRack,
+} from '../../src/sim/railway-route.ts';
 import { legKitNeed, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
-import { RAIL_GATES, RAIL_GRANTS, legFrame } from '../../src/sim/railway-route.ts';
-import { restore } from '../../test/helpers/rail.ts';
+import { act, apply, railTick, restore, trees } from '../../test/helpers/rail.ts';
+import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railApply } from '../../src/sim/railway-systems.ts';
-import { Account } from '../../src/sim/railway-components.ts';
+import { Account, Pile } from '../../src/sim/railway-components.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
 import { RAIL_ACTIONS, railValid, type Actor } from '../../src/world/railway-server.ts';
 import { railwayRequestEdit } from '../src/host/railway-requests.ts';
@@ -246,8 +255,7 @@ test('route host: the frame feed keeps its leg; fed at the frame, refused away a
 });
 
 // A grant and a gate the rules cannot give yet (seeds' leg is not laid, the incline wants the pick): at their spot each
-// reaches the rule, a noop; refused away and malformed. Before the request kept `id`, every one was refused. (The pick
-// itself is not taken here: its rim lies 2032 m out, past the 2000 m `at` bound in railway-requests.ts.)
+// reaches the rule, a noop; refused away and malformed. Before the request kept `id`, every one was refused.
 test('route host: a grant and a gate keep their id; judged at their spot, refused away and for a malformed id', async () => {
   const r = await host('leg-grant', buildSeedWorld('ring-joined'));
   try {
@@ -268,6 +276,69 @@ test('route host: a grant and a gate keep their id; judged at their spot, refuse
   } finally {
     await r.done();
   }
+});
+
+/** Leg 1 laid to its end by apply alone (players a and b feed every tick), so its pickup can be taken. */
+function legDone(): Seed {
+  const j = buildSeedWorld('ring-joined');
+  const s = { w: restore(j.w), t: j.t };
+  const n = RAIL_LEGS[STACK]!.sections.length;
+  for (let guard = 0; legRow(s.w, STACK).laid < n; guard++) {
+    assert.ok(guard < 40000, 'leg 1 laid');
+    for (const pid of ['a', 'b'])
+      for (const [op, f] of [
+        ['rail.depotTake', {}],
+        ['rail.depotRailTake', {}],
+        ['rail.legStock', { leg: STACK }],
+      ] as const) {
+        const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
+        apply(s.w, pid, { op, epoch: a.epoch, request: a.request + 1, ...f }, s.t);
+      }
+    railTick(s.w, ++s.t);
+  }
+  // A log on a's back to put down at the rim: chopped by the rule alone (the host judges reach; the fixture does not).
+  for (let k = 0; s.w.get(Account, s.w.lookup(Account, 'a')!)!.carry === 0; k++) {
+    const tree = trees(s.w).findIndex((t) => t.left > 0);
+    assert.ok(k < 40 && tree >= 0, 'a standing source');
+    act(s, 'a', 'rail.chop', { id: RAILWAY_SOURCES[tree]![0], yaw: 0, collapsed: false });
+  }
+  assert.equal(invariant(s.w), null);
+  return s;
+}
+
+// The pick's rim stands 2032 m out (step 4's review, k), past the old 2000 m bound on an actor's `at`: the bound now
+// follows the catalog (RAIL_POSITION_MAX), so the pick is taken there, and a pile can lie there too.
+test('route host: the pick taken at its rim through r:edit, a pile dropped there; past the bound still refused', async () => {
+  const r = await host('pick', legDone());
+  try {
+    const pick = RAIL_GRANTS.findIndex((g) => g.id === 'pick');
+    const g = RAIL_GRANTS[pick]!.at,
+      rim = spot(g),
+      far: At = [RAIL_POSITION_MAX + 1, g.y, g.z];
+    assert.ok(Math.abs(g.z) > 200000, 'the rim is past the old bound');
+    assert.equal(await r.action({ op: 'rail.grant', id: pick }, [g.x, g.y, -RAIL_POSITION_MAX - 1]), 'rejected');
+    assert.equal(await r.action({ op: 'rail.grant', id: pick }, rim), 'accepted');
+    assert.equal(routeRow(r.w).grants & (1 << pick), 1 << pick, 'the room holds the pick');
+    // The fixture's log on a's back, put down at the rim.
+    const drop = (x: number, at: At) => r.action({ op: 'rail.drop', x, y: g.y, z: g.z, n: 1, kind: 0 }, at);
+    assert.equal(await drop(RAIL_POSITION_MAX + 1, rim), 'rejected', 'a drop past the bound');
+    assert.equal(await drop(g.x, far), 'rejected', 'an actor past the bound');
+    assert.equal(await drop(g.x, rim), 'accepted', 'a pile at the rim');
+    assert.ok(
+      r.w.ids(Pile).some((id) => r.w.get(Pile, id)!.z === g.z),
+      'the pile lies at the rim',
+    );
+  } finally {
+    await r.done();
+  }
+});
+
+test('the position bound holds every route point with its margin', () => {
+  assert.equal(RAIL_ROUTE_POINTS.length, 55, 'grants, gates, the arrival, each leg section frame and rack');
+  for (const p of RAIL_ROUTE_POINTS)
+    for (const v of [p.x, p.y, p.z])
+      assert.ok(Math.abs(v) + RAIL_POSITION_MARGIN <= RAIL_POSITION_MAX, `${p.x},${p.y},${p.z}`);
+  assert.ok(RAIL_POSITION_MAX + RAIL_POSITION_MAX <= Number.MAX_SAFE_INTEGER);
 });
 
 test('railwayRequestEdit: the route ops come out in their exact wire shape', () => {

@@ -28,6 +28,7 @@ import {
 import { line2Active, line2KitOwed, line2Rails, line2Trains } from '../src/sim/railway-queries-line2.ts';
 import { Account, Boiler, Forge, Pile, QJob, Rail, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
+import { RAIL_POSITION_MAX } from '../src/sim/railway-route.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { trainOwed, waitsForTrain } from '../src/entities/railway/forge-offer.ts';
@@ -132,7 +133,7 @@ test("the hauler's stood point is checked: never -0, never out of range, and the
     [100700, 3030, -0],
     [-0, 3030, -14400],
     [100700, 1e300, -14400],
-    [200001, 3030, -14400],
+    [RAIL_POSITION_MAX + 1, 3030, -14400],
     [100700, 3030, 0.5],
     [NaN, 3030, -14400],
   ])

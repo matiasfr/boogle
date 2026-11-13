@@ -10,6 +10,7 @@ import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { Beam } from '../../src/sim/railway-components.ts';
+import { RAIL_POSITION_MAX } from '../../src/sim/railway-route.ts';
 
 type Obj = Record<string, unknown>;
 
@@ -106,7 +107,7 @@ test("the carrier's stood point is checked: never -0, never out of range, and th
       [98000, 3000, -0],
       [-0, 3000, -13000],
       [98000, 1e300, -13000],
-      [200001, 3000, -13000],
+      [RAIL_POSITION_MAX + 1, 3000, -13000],
       [98000, 3000, 0.5],
       [NaN, 3000, -13000],
     ])

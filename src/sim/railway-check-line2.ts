@@ -5,6 +5,7 @@
 //                    the lever, hook, glider and pack; the shelf; the boiler; rail conservation (throws on the first)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
+import { railPos } from './railway-route.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, Q6 } from './railway-line2-layout.ts';
 import { CART, CART_PHASE, CART_PHASES, CART_ROAD } from './railway-cart.ts';
 import { DEPOT_OUT, Leg } from './railway-components.ts';
@@ -138,9 +139,9 @@ export function checkLine2(w: World) {
     !railInt(b.epoch) ||
     !railInt(b.revision) ||
     !railInt(b.age, 21) ||
-    !railInt(b.x, 200000, -200000) ||
-    !railInt(b.y, 200000, -200000) ||
-    !railInt(b.z, 200000, -200000) ||
+    !railPos(b.x) ||
+    !railPos(b.y) ||
+    !railPos(b.z) ||
     (b.state === 'none') !== done < 5 ||
     (b.state === 'fitted') !== r0.trains >= 0 ||
     (b.holder !== '') !== (b.state === 'held') ||

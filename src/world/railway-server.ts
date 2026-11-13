@@ -69,7 +69,7 @@ import { railBeamPutDown, railBeamRelease, railBeamStood } from '../sim/railway-
 import { railLine2Active, ringHead } from '../sim/railway-queries.ts';
 import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
 import { railSession, railSettle } from '../sim/railway-sys-core.ts';
-import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
+import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, railPos } from '../sim/railway-route.ts';
 import { haltHead, legOpen, legRow } from '../sim/railway-queries-route.ts';
 import type { World } from '../ecs/index.ts';
 import { GLOBAL_CELL, cellOf, type Fields } from './replicate.ts';
@@ -188,9 +188,9 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return (
         railInt(e.n, LINE2_PACK.carry, 1) &&
         pileKind &&
-        railInt(e.x, 200000, -200000) &&
-        railInt(e.z, 200000, -200000) &&
-        railInt(e.y, 200000, -200000) &&
+        railPos(e.x) &&
+        railPos(e.z) &&
+        railPos(e.y) &&
         near(e.x, e.z, 320)
       );
     case 'rail.take': {
@@ -238,13 +238,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     }
     case 'rail.boilerDrop':
     case 'rail.beamDrop':
-      return (
-        railInt(e.revision) &&
-        railInt(e.x, 200000, -200000) &&
-        railInt(e.y, 200000, -200000) &&
-        railInt(e.z, 200000, -200000) &&
-        near(e.x, e.z, 320)
-      );
+      return railInt(e.revision) && railPos(e.x) && railPos(e.y) && railPos(e.z) && near(e.x, e.z, 320);
     case 'rail.beamDeposit':
       return e.station === 'T3' && railInt(e.revision) && near(LINE1_STATIONS[2]!.x, LINE1_STATIONS[2]!.z, T1.reach);
     case 'rail.jump':

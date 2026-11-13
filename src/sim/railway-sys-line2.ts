@@ -19,7 +19,8 @@ import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
 import { legKitLifted } from './railway-sys-route-kit.ts';
 import { WORKS } from './railway-works-layout.ts';
-import { railInt, RAILWAY_MAX_INT } from './railway.ts';
+import { RAILWAY_MAX_INT } from './railway.ts';
+import { railPos } from './railway-route.ts';
 import {
   Account,
   Aperture,
@@ -119,12 +120,7 @@ export const boilerDrop = defineSystem(
     const a = w.get(Account, aid)!;
     if (!boilerReleasable(w, a.pid, a.epoch, e.revision!)) return 0;
     boilerPedestal(w);
-    if (
-      railInt(e.x, 200000, -200000) &&
-      railInt(e.y, 200000, -200000) &&
-      railInt(e.z, 200000, -200000) &&
-      line2BoilerGround(e.x, e.y, e.z)
-    )
+    if (railPos(e.x) && railPos(e.y) && railPos(e.z) && line2BoilerGround(e.x, e.y, e.z))
       Object.assign(w.mut(Boiler, boilerId(w))!, { state: 'ground', x: e.x, y: e.y, z: e.z });
     return 1;
   },
@@ -462,8 +458,7 @@ export const boilerStood = defineSystem(
   (w, q: { pid: string; x: number; y: number; z: number }) => {
     const b = w.get(Boiler, boilerId(w))!;
     // The point comes from presence: the same bounds as rail.boilerDrop, and never -0 (off the int schema).
-    if (!railInt(q.x, 200000, -200000) || !railInt(q.y, 200000, -200000) || !railInt(q.z, 200000, -200000))
-      return false;
+    if (!railPos(q.x) || !railPos(q.y) || !railPos(q.z)) return false;
     if (b.state !== 'held' || b.holder !== q.pid || (b.x === q.x && b.y === q.y && b.z === q.z)) return false;
     Object.assign(w.mut(Boiler, boilerId(w))!, { x: q.x, y: q.y, z: q.z });
     return true;
