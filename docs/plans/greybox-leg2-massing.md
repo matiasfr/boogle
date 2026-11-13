@@ -74,7 +74,7 @@ at https://boogle.club/; Bell Rock and the Gorge by the DEV strip's Free cam (a 
 
 ## Steps
 
-- [ ] **1. The data, the list and the level report (S).** `leg2-layout.ts`: the frames, every box above as named
+- [x] **1. The data, the list and the level report (S).** `leg2-layout.ts`: the frames, every box above as named
       data (`LEG2.bell`, `.west`, `.gorge`), the reserves, pads and posts. `index.ts`: an `AREAS` list of `{ id,
       centre, build, signs }`, the Gorge first; signs by `signBoard`; `describe()` gains `bell`, `west`. `stack-at.ts`
       waits for the area within 380 m. `dev/level/route-leg2.ts` (`checkLeg2`, `printLeg2`, from `check.ts`): `flood`

@@ -23,15 +23,25 @@ while (!me.body || !me.entered || !railRead()?.whole()) {
   if (performance.now() > deadline) throw new Error('stack-at: the player or the railway did not become ready');
   await wait(100);
 }
-const gorge = () =>
-  inspect().kinds.find((k) => k.kind === 'route-greybox')?.entities[0]?.state?.gorge as
-    { resident: boolean; boxes?: number; solids?: number } | undefined;
-console.log('STACK before', JSON.stringify(gorge()));
+const { AREA_CENTRES } = (await import(
+  '/src/entities/route-greybox/leg2-layout.ts' as string
+)) as typeof import('../../../src/entities/route-greybox/leg2-layout.ts');
+/** What the massing reports, an area: `{ gorge: { resident, boxes, solids }, ... }` (only the areas it builds). */
+const areas = () =>
+  (inspect().kinds.find((k) => k.kind === 'route-greybox')?.entities[0]?.state ?? {}) as Record<
+    string,
+    { resident: boolean; boxes?: number; solids?: number } | undefined
+  >;
+
+console.log('STACK before', JSON.stringify(areas()));
 teleport(me.body, at[0]!, at[1]!, at[2]!);
 me.body.velocity.set(0, 0, 0);
-const near = Math.hypot(at[0]! + 103, at[2]! + 1988) < 380;
-for (let k = 0; near && !gorge()?.resident; k++) {
-  if (k > 300) throw new Error("stack-at: High Gorge's massing did not mount");
+// The areas within 380 m of where you stand (they mount within 400 m) that this build has.
+const near = Object.entries(AREA_CENTRES)
+  .filter(([id, c]) => id in areas() && Math.hypot(at[0]! - c.x, at[2]! - c.z) < 380)
+  .map(([id]) => id);
+for (let k = 0; near.some((id) => !areas()[id]?.resident); k++) {
+  if (k > 300) throw new Error(`stack-at: the massing did not mount: ${near.join(', ')}`);
   // Held where it was put until the colliders are there.
   teleport(me.body, at[0]!, at[1]!, at[2]!);
   me.body.velocity.set(0, 0, 0);
@@ -42,7 +52,7 @@ const p = me.body.position;
 console.log(
   'STACK at',
   JSON.stringify({ x: +p.x.toFixed(1), y: +p.y.toFixed(1), z: +p.z.toFixed(1) }),
-  JSON.stringify(gorge()),
+  JSON.stringify(areas()),
   JSON.stringify(inspectRailway()?.worksView?.legView ?? null),
 );
 export {};
