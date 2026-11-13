@@ -16,6 +16,9 @@ export type Jump = {
   label: string; // owner-readable, shown in the menu and in playtest summaries
   line: string; // one short line under the label
   land?: JumpLand; // omitted: the usual spawn
+  /** `false`: tooling only (bots, looks, checkpoints, `?from=<stage>`), never a button in a menu: the owner's call for one
+   * live game and a fast-forward in the room, not new jump-in rooms (docs/agents/owner-calls.md). */
+  menu?: false;
 };
 
 type Cm = { readonly x: number; readonly z: number };
@@ -205,17 +208,21 @@ export const JUMPS: readonly Jump[] = [
   // The greybox route's leg 1 (step 5). Labels and lines are placeholders, logged in docs/agent-calls.md.
   {
     stage: 'gorge-open',
+    menu: false,
     label: 'Stack line open',
-    line: 'The ring is joined; the first kit is on Ring Island\'s rack and the frame is bare',
+    line: "The ring is joined; the first kit is on Ring Island's rack and the frame is bare",
     land: STACK_LAND, // Ring Island's west platform between the first rack and frame, facing the frame
   },
   {
     stage: 'gorge-reached',
+    menu: false,
     label: 'High Gorge reached',
     line: 'The stack line is laid to High Gorge; the powered pick waits on the rim',
     land: GORGE_LAND, // the Gorge halt's north platform, facing the pickup on the rim
   },
 ];
+/** The rows a menu lists: every row but the tooling-only ones. */
+export const MENU_JUMPS: readonly Jump[] = JUMPS.filter((j) => j.menu !== false);
 export const jumpOf = (stage: string): Jump | undefined => JUMPS.find((j) => j.stage === stage);
 /** The seed stages a jump-in offers (production prebuilds only these). */
 export const OFFERED_STAGES: readonly SeedStage[] = JUMPS.flatMap((j) => (j.stage === 'start' ? [] : [j.stage]));

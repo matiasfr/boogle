@@ -6,8 +6,10 @@ import {
   claimCountsIn,
   isJumpWorld,
   JUMPS,
+  MENU_JUMPS,
   JUMP_ROOM_RE,
   jumpRoomName,
+  jumpOf,
   OFFERED_STAGES,
 } from '../src/world/railway-jump.ts';
 import { SEED_STAGES, TRAIN_STAGES } from '../src/sim/railway-seeds.ts';
@@ -34,7 +36,8 @@ test('jump-in rows are unique, buildable and in route order', () => {
 
 test('the seed catalog holds every train, works, ring, steel and leg stage', () => {
   assert.equal(new Set(seeds).size, seeds.length);
-  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES, ...STEEL_STAGES, ...LEG_STAGES]) assert.ok(seeds.includes(s), s);
+  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES, ...STEEL_STAGES, ...LEG_STAGES])
+    assert.ok(seeds.includes(s), s);
 });
 
 test('jump room names stay readable and never match the shared room', () => {
@@ -108,4 +111,18 @@ test("the fares-running row lands on line 2's Village platform, where riders boa
   assert.ok((fx * dx + fz * dz) / Math.hypot(dx, dz) > 0.999, 'facing the Quarry');
   const order = JUMPS.map((j) => j.stage);
   assert.equal(order.indexOf('fares-running'), order.indexOf('freight-running') + 1, 'right after Timber home');
+});
+
+test('the menu lists the rows it always did: the leg 1 stages are tooling, still resolved by ?from=', () => {
+  // Pinned: a new stage joins the menu only by an owner's call that edits this list (docs/agents/owner-calls.md).
+  assert.equal(MENU_JUMPS.at(-1)!.stage, 'boiler-long');
+  assert.equal(MENU_JUMPS.length, JUMPS.length - 2);
+  assert.deepEqual(
+    JUMPS.filter((j) => !MENU_JUMPS.includes(j)).map((j) => j.stage),
+    ['gorge-open', 'gorge-reached'],
+  );
+  for (const stage of ['gorge-open', 'gorge-reached']) {
+    assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);
+    assert.ok(OFFERED_STAGES.includes(stage as never), `${stage} stays buildable by ?from=`);
+  }
 });

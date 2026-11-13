@@ -10,7 +10,7 @@ import { pausePages } from '../player/pause-pages.ts';
 import { roomSeed } from '../netplay/room-seed.ts';
 import { getRoomId } from '../netplay/net.ts';
 import { railwayRoomId } from '../world/railway-namespace.ts';
-import { JUMPS, jumpOf } from '../world/railway-jump.ts';
+import { MENU_JUMPS, jumpOf } from '../world/railway-jump.ts';
 import type { RoomSeed } from '../world/railway-jump.ts';
 import { notify } from '../ui/notify.ts';
 import { me } from '../player/player.ts';
@@ -44,7 +44,7 @@ function mount(parent: HTMLElement) {
     b.onclick = () => location.assign(href);
     list.append(b);
   };
-  for (const j of JUMPS) go(j.label, j.line, `/?from=${j.stage}`);
+  for (const j of MENU_JUMPS) go(j.label, j.line, `/?from=${j.stage}`);
   parent.append(head, list);
   let disposed = false;
   background(
