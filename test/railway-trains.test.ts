@@ -1071,3 +1071,86 @@ test('the load check refuses an up train standing at the homeward-only Pier; a l
   assert.ok(r.phase === TRAIN_PHASE.STAND && r.at === -1 && r.to === -1 && r.from === 72650, JSON.stringify(r));
   assert.equal(f.broken(), null);
 });
+
+// ---------------------------------------------------------------- review (spacing/six-hold): the control halt and an end's ask
+// Independent review of the Ring Island hold (docs/plans/short-turn.md, step 2 as built). The fixture line with the
+// Railhead as its control halt (a middle halt once the island is open), the room's defaults (cap 200, on 15%), no
+// train on an errand. controlFree takes the hold off "a train a lever ask is assigned to" by asking trainServes about
+// every ask both ways; an end's ask is one digit that reads set both ways (reqIndex), and asked the way out
+// trainServes has no `braking` clause for the train running into that end, so on the ticks that train is inside its
+// braking distance at the plain rate the ask is "assigned" to the train behind it, which the sim never stops for it
+// (trainReasons asks the train's own way: the train braking into the end keeps it).
+const CONTROL: typeof V = {
+  ...V,
+  id: 'line2-control',
+  halts: V.halts.map((h, k) => (k === HEAD ? { ...h, control: true as const } : h)),
+};
+function controlLine(stops: readonly number[], rows: RailTrain[], req: number) {
+  const f = new FixtureLine(stops, 0, TRAIN_HEAD_PCT, CONTROL);
+  f.rows = rows;
+  f.lineRow = { req, left0: -1, left1: -1 };
+  const io = () => ({ ...f.io(), hold: { cap: 200, pct: 15 }, controlOff: () => false });
+  return { f, step: (t: number) => trainStepLine(io(), CONTROL, t) };
+}
+
+test("review (six-hold): the island's lever ask, which the train running into the island serves, does not release the train held at the control halt behind it", () => {
+  const stops = line2Stops(7, 7, true),
+    n = stops.length;
+  // Train 0 runs into the island from a block's gap past the Railhead; train 1 stands at the Railhead going up, its
+  // dwell done at 50, the gap ahead far the shorter (train 2 is parked at Far Head going down): held to its cap.
+  const left = (req: number) => {
+    const { f, step } = controlLine(
+      stops,
+      [
+        runRow(stops[HEAD]! + TRAIN.sepCm, ISLAND, stops[ISLAND]!, 40),
+        standingAt(stops, HEAD, 0, 0),
+        standingAt(stops, 2, 1, 1e6),
+      ],
+      req,
+    );
+    for (let t = 41; t < 400; t++) {
+      const rows = (k: number) => f.rows[k]!;
+      // The sim's own answer all along: the island's ask is train 0's (running into it its way, then standing there).
+      if (reqHas(f.lineRow.req, ISLAND, -1, n))
+        assert.equal(
+          trainServes(rows, CONTROL, stops, ISLAND, trainDir(f.rows[0]!), t),
+          0,
+          `the ask is train 0's (${t})`,
+        );
+      step(t);
+      if (f.rows[1]!.phase === TRAIN_PHASE.RUN) return t;
+    }
+    return -1;
+  };
+  assert.equal(left(0), TRAIN.dwellTicks + 200, 'nothing asked: held to its cap');
+  assert.equal(
+    left(reqAdd(0, ISLAND, -1, n)),
+    TRAIN.dwellTicks + 200,
+    "the island's ask is not its to serve: still held",
+  );
+});
+
+test("review (six-hold): the island's lever ask does not flip the leg of a train bound for the control halt tick by tick", () => {
+  const stops = line2Stops(7, 7, true),
+    n = stops.length;
+  // Train 0 leaves the Railhead for the island; train 1 follows from Far Head and is stopped at the Railhead by the
+  // hold (train 2 parked at Far Head going down). Its `to` changes are counted until it stands at the Railhead.
+  const changes = (req: number) => {
+    const { f, step } = controlLine(
+      stops,
+      [standingAt(stops, HEAD, 0, 0), standingAt(stops, 2, 0, 0), standingAt(stops, 2, 1, 1e6)],
+      req,
+    );
+    let count = 0;
+    for (let t = 51; !standF(f, 1, HEAD); t++) {
+      assert.ok(t < 700, 'train 1 reaches the Railhead');
+      const to = f.rows[1]!.to;
+      step(t);
+      if (f.rows[1]!.phase === TRAIN_PHASE.RUN && f.rows[1]!.to !== to) count++;
+    }
+    return count;
+  };
+  const quiet = changes(0);
+  assert.ok(quiet <= 2, `nothing asked: it plans its leg and is stopped by the hold (${quiet} changes)`);
+  assert.equal(changes(reqAdd(0, ISLAND, -1, n)), quiet, "the island's ask changes nothing for it");
+});
