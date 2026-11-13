@@ -17,6 +17,34 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Where the work stands
 
+**Status at 13 November 18:45 UTC (read this first; paragraphs below are older and may be superseded).** Mode: withCodex. `WORLD_NS` is v40; next free v41. Main is at #1734.
+
+*On main on 13 November UTC, newest last (each reviewed independently where its stamp asked):*
+
+- Owner-call records #1694–#1715; research docs #1704, #1707, #1716 (dev saves and stage jumps, engine long term, ECS alternatives live); ECS-facade and input lint rules #1701; simplify pass 1 (d7fb4d713, reviewed up to 1b6d7a93f for its areas).
+- Railway: fourth car (v33), Ring Island foot crossing #1712, train spacing with six trains and the Ring Island hold (v34), leg 1 step 5 seeds and bot, leg 2 massing, the lost-ask fix #1723 (v35; leg 1 playable end to end by bot), stack-head lever plaques and order #1725.
+- Home flip: F1/F2 #1721, X1/X2 #1729 (v36): layout B is the only Home, `?home=` is gone, hall treads, spawn faces the open bay. Generated world pages now cap numbers at three decimals (a Linux/macOS byte difference failed CI once).
+- Prefab data ([plan](../plans/prefab-data.md)): steps 1–3 #1726 (six review rounds on the collider scale rule), step 4 #1727 (High Gorge north platform from compiled records).
+- Server-owned state ([plan](../plans/server-owned-state.md)): steps 1–2 #1722, step 3 #1730 (30 rail tunables, v37), step 4 #1732 (live roster, v38; 3 s per-player rename limit, coalesced roster snapshots), step 5 #1733 (seven classic states retired, v39, 12,455 lines), step 9 #1734 (classic lockstep transport deleted, v40). Steps 6–8 are skipped (owner chose Retire). Checkpoint B (`npm run check:full`, a two-device play of join, reconnect and restart) is not done.
+- CI: eight balanced unit shards #1724; smoke waits up to 12 minutes for the server deploy #1731 (passed first time on #1732–#1733).
+
+*In flight:* prefab step 5 (lint rules that force placed content through prefab records) on `codex/prefab-data-step-5-4`, in its sixth review round; it needs a rebase after #1734. Design fixed by the orchestrator: an importer COUNT ratchet per construction export, not a full edge list (the full list was 23,539 edges and reached `engine`, `entity`, `physics`); importer swaps and reflection are accepted gaps.
+
+*Next:* seats and The Boogler off the lead tab (owner: right after server-state); Home flip R1–R3 (the Round's first step; the gate cottage opens empty); prefab steps 6 on; the engine decision (Bevy ECS in Rust, needs Rust installed and the owner's go, or checked Becsy) is still the owner's.
+
+*Owner calls made on 13 November* are in [owner-calls](owner-calls.md) and the decision logs: playtest before bespoke functionality; pre-playtest list; one live game with fast-forward instead of jump-in rooms; development is live (not a live-service game, no flags hiding unfinished work); save resets never block development; no ship holds for online sessions unless he says so; engine foundations first; retire the seven classic states and move authority now; Home flip and prefab steps approved.
+
+*Open for the owner (13 November):* where players cross line 1 at Home's terminus (the walking plank at s 30 now lies on grass past the island's end, P3); the lighthouse frisbee prop is gone and nothing gives a frisbee (P3); the classic island lost its Section plaques, signs and track machine (P3); the proposed DESIGN.md sync-table text in `docs/plans/server-owned-state-step9-report.md` is his to commit; who may replace a room, and going back (fast-forward build held); fender on every line or the Ring Island halt only; Bell Rock cut and incline tunnel; suspect placeholder lines: "Request stop: to <end>" in all its forms ("to Camp", "to Far Head", "to Village", "to Stack railhead"), the Steel car tile strings, and the archived "Opening day happened while you were away".
+
+*Leftovers from 13 November (ranked):*
+
+- P2 harness: `reconnect-edit`'s last assertion (rewritten in #1734) can fail in an idle room when two tabs never sample the same server step; it passed on rerun. Compare the latest stable sample or trigger a shared change first.
+- P2: Ring Island walk to the lookout fails about 60 m north of the platforms. P2: the workshop chair's sit pose faces the wall.
+- P3 tooling: the Codex broker's net and world-inputs harness is stale (imports deleted files; with `--url` its `roomHost` is a stub); run `npm run test:net` in the worktree instead (140/140 on #1734).
+- P3: a seated rider is stood up when the lead tab changes (goes away with server-owned seats). P3: a swapped-out held item disappears instead of dropping. P3: the follow camera goes inside a standing train on Home's island; canopy posts and the map board stand on the deck's centreline. P3: `dev/look/evals/railway-works-at.ts` and `railway-works-act.ts` hold old-Home coordinates.
+- P3 docs: stale text after the retirements: `docs/game-design/haul.md`, `docs/game-design/net.md`, `docs/atlas/stories/opening.json`, comments citing deleted files (`src/features/acts.ts:13`, `src/net/ws-room.ts:5`, `src/features/syncsafety.ts`, `src/pois/lighthouse/index.ts:34`), `.claude/skills/new-feature/SKILL.md:16`, `.claude/skills/look/references/scenarios.md`.
+- Not started: simplify pass 2 over sim, net and server; Sit before Request stop; the small fixes (Boogler bubble distance, cosmetics fit, the "Connecting to the railway" toast); the playtest guide; the failing long weekly job; worktree housekeeping (48-hour archive rule; due from the evening of 13 November).
+
 **On main since 17:30 PST on 11 November (12 November UTC, newest last):**
 
 - #1622 rail kit levels and split rings. #1623–#1626 M13e–M13g close the ECS migration. #1628 the `?home=b` boot crash. #1630 the adapter's clock is `adapter.read.tickNow()`.
