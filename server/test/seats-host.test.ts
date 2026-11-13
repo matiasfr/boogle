@@ -9,6 +9,138 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { assignSeats, type Grants, type SeatRequest } from '../../src/entities/railway/seat-claims.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 import { fixture as adapterFixture } from './helpers/rail-tune.ts';
+import { createSeatShadow } from '../../src/entities/railway/seat-shadow.ts';
+
+test('review: sit-stand-sit 100 ms apart recovers the shadow row within 1 second', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice');
+  const shadow = createSeatShadow(a.adapter, f.now);
+  t.after(() => shadow.dispose());
+  const run = (n: number) => {
+    for (let k = 0; k < n; k++) {
+      f.run();
+      shadow.update();
+    }
+  };
+  f.run(3);
+  shadow.sit({ id: 'chair' });
+  f.run(1);
+  shadow.stand();
+  f.run(1);
+  f.advanceTime(66);
+  shadow.sit({ id: 'chair' });
+  f.run(1);
+  assert.equal(a.refused.at(-1)?.reason, 'rate');
+  run(70);
+  assert.deepEqual(f.host.status().seats, [{ id: 'chair', pid: 'alice' }]);
+  const sent = a.edits.length;
+  run(180);
+  assert.equal(a.edits.length, sent, 'accepted receipt stops shadow retries');
+  console.log('Rapid re-sit: rate refused at 100 ms; reclaimed after one 1000 ms retry; retries stop on acceptance');
+});
+
+test('shadow retries a full request window with its alternates; taken stops without sending a stand', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice'),
+    b = f.join('bob');
+  const shadow = createSeatShadow(a.adapter, f.now);
+  t.after(() => shadow.dispose());
+  const run = (n: number) => {
+    for (let i = 0; i < n; i++) {
+      f.run();
+      shadow.update();
+    }
+  };
+  run(70);
+  assert.equal(a.edits.length, 0, 'startup does not send an unsolicited stand');
+  b.adapter.act('seat.sit', { id: 'chair' });
+  f.run(2);
+  for (let i = 0; i < 8; i++) a.adapter.act('tune.set', { key: 'railRegrowMinutes', v: 30 + i });
+  shadow.sit({ id: 'chair', alt: ['next'] });
+  assert.equal(
+    a.edits.some((e) => e.op === 'seat.sit'),
+    false,
+    'the full window refused queuing',
+  );
+  run(70);
+  assert.ok(f.host.status().seats.some((r) => r.pid === 'alice' && r.id === 'next'));
+  assert.deepEqual(a.edits.find((e) => e.op === 'seat.sit')?.alt, ['next']);
+  shadow.stand();
+  run(2);
+  shadow.sit({ id: 'chair' });
+  run(70);
+  assert.equal(a.refused.at(-1)?.reason, 'taken');
+  const sent = a.edits.length;
+  run(180);
+  assert.equal(a.edits.length, sent, 'taken ends this claim without standing the visible sitter');
+  assert.deepEqual(f.host.status().seats, [{ id: 'chair', pid: 'bob' }]);
+});
+
+test('shadow reclaims after a whole reconnect mirror and disposes its receipt listeners', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice');
+  const shadow = createSeatShadow(a.adapter, f.now);
+  const run = (n: number) => {
+    for (let i = 0; i < n; i++) {
+      f.run();
+      shadow.update();
+    }
+  };
+  run(3);
+  shadow.sit({ id: 'chair', alt: ['next'] });
+  run(3);
+  a.disconnect();
+  f.host.rules.seats.clear();
+  a.reconnect();
+  run(100);
+  assert.deepEqual(f.host.status().seats, [{ id: 'chair', pid: 'alice' }]);
+  assert.equal(a.edits.filter((e) => e.op === 'seat.sit').length, 2);
+  shadow.dispose();
+  a.disconnect();
+  f.host.rules.seats.clear();
+  a.reconnect();
+  run(100);
+  assert.deepEqual(f.host.status().seats, [], 'disposed helper does not react to later resets');
+});
+
+test('existing roster, rail tuning and railway refusals retain their reasons and session behavior', async (t) => {
+  const f = await adapterFixture(t);
+  const a = f.join('alice');
+  f.run(3);
+  const epoch = a.adapter.read.debug().epoch;
+  for (const [op, fields] of [
+    ['who.set', { n: 42, c: 0 }],
+    ['tune.set', { key: 'railRegrowMinutes', v: -1 }],
+    ['tune.commit', { key: 'railRegrowMinutes', v: 40, expectedRevision: -1, requestId: 'bad' }],
+  ] as const) {
+    assert.notEqual(a.adapter.act(op, fields), false);
+    f.run(2);
+    assert.equal(a.refused.at(-1)?.op, op);
+    assert.equal(a.refused.at(-1)?.reason, 'refused');
+    assert.equal(a.adapter.read.debug().epoch, epoch, op);
+    assert.equal(a.adapter.read.ready(), true, op);
+  }
+  const railRefused: string[] = [];
+  a.adapter.onRefused((e) => railRefused.push(e.reason));
+  assert.equal(a.adapter.callTrain(0, 1), true); // no reachable halt from this fixture's wake pose
+  f.run(2);
+  assert.deepEqual(railRefused, ['refused']);
+  assert.equal(a.adapter.read.debug().epoch, epoch);
+  assert.equal(a.adapter.read.ready(), true);
+});
+
+for (const reason of ['order', 'session'] as const) {
+  test(`existing ${reason} receipt still invalidates the client session`, async (t) => {
+    const f = await adapterFixture(t);
+    const a = f.join('alice');
+    f.run(3);
+    const { epoch, next } = a.adapter.read.debug();
+    f.host.replication.reject('alice', epoch, next, reason);
+    f.run();
+    assert.equal(a.adapter.read.debug().epoch, 0);
+    assert.equal(a.adapter.read.ready(), false);
+  });
+}
 
 async function fixture(t: TestContext) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-seats-'));

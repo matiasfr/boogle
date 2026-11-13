@@ -146,7 +146,7 @@ export function createHostedRoom({
           for (const [id, value] of Object.entries(raw)) {
             if (!value || typeof value !== 'object') continue;
             const peer = (value as Record<string, unknown>).peer;
-            const pid = typeof peer === 'string' ? clients.get(peer)?.pid : null;
+            const pid = typeof peer === 'string' ? (clients.get(peer)?.pid ?? gone.get(peer)?.pid) : null;
             if (pid) rows.push({ id, pid });
           }
           return rows;

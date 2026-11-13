@@ -15,9 +15,11 @@ import { assignSeats, type Grants, type SeatRequest } from '../../src/entities/r
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
 
-async function start(env: Record<string, string> = {}, dataDir?: string) {
+async function start(env: Record<string, string> = {}, dataDir?: string, reconnectGraceMs = FAST.reconnectGraceMs) {
   dataDir ??= await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-host-'));
-  const svc = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: 'beach', ...env }, FAST));
+  const svc = createService(
+    loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: 'beach', ...env }, { ...FAST, reconnectGraceMs }),
+  );
   const port = await svc.listen(0);
   return { svc, dataDir, base: `ws://127.0.0.1:${port}` };
 }
@@ -59,6 +61,39 @@ function connect(base: string, room: string, self: string, pid = self + 'pid', k
 const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+test('review: an unchanged lead grant agrees during follower reconnect grace', async () => {
+  const room = railwayRoomId('review-grace');
+  const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*' }, undefined, 1500);
+  const a = connect(base, room, 'seata');
+  await a.next(is('welcome'));
+  const b = connect(base, room, 'seatb');
+  try {
+    await b.next(is('welcome'));
+    const world = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
+    await world.whenReady();
+    b.send({ t: 'm', d: { t: 'r:open' } });
+    const session = (await b.next(isWorld('r:session'))).d;
+    b.send({
+      t: 'm',
+      d: { t: 'r:edit', e: { op: 'seat.sit', id: 'chair', epoch: session.epoch, request: 1, at: [0, 0, 0], ms: 0 } },
+    });
+    await b.next((m) => isWorld('s')(m) && m.d.ack?.[1] === 1);
+    a.send({ t: 'p', s: 1, d: { v: 1, placeSeatGrants: { chair: { peer: 'seatb', ticket: 1 } } } });
+    for (let i = 0; i < 100 && world.status().seatShadow.agreements < 1; i++) await sleep(20);
+    assert.equal(world.status().seatShadow.mismatches, 0);
+    b.ws.close();
+    await b.closed;
+    await sleep(800);
+    assert.deepEqual(world.status().seats, [{ id: 'chair', pid: 'seatbpid' }]);
+    assert.equal(world.status().seatShadow.mismatches, 0, 'unchanged grants and held row must still agree');
+  } finally {
+    a.ws.close();
+    b.ws.close();
+    await svc.close({ save: false });
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
 
 test('seat shadow over two sockets agrees after every sit/stand and retains a chair through reconnect grace', async () => {
   const room = railwayRoomId('seat-shadow');
