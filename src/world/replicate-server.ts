@@ -71,7 +71,7 @@ type Client = {
   drops: Despawn[];
   ev: Fields[];
   fresh: boolean; // joined, whole state not yet sent: the next send ends with w: 1
-  hashAt: number; // the step from which this client is due a hash (subscribed to everything only)
+  hashAt: number; // next common server-step boundary due a hash (subscribed to everything only)
 };
 /** Refusals and acceptances held for one backed-up client; older ones are dropped (the ack still settles them; a
  * client has at most PREDICTION_WINDOW actions out, so only a long backlog of its own could lose any). */
@@ -258,12 +258,13 @@ export function createReplicator() {
     if (cl.ev.length) cur.ev = cl.ev.splice(0);
     if (cl.fresh) {
       cur.w = 1;
-      cl.hashAt = step + HASH_STEPS; // a whole send needs no check yet
     }
     if (hashDue) {
       cur.h = hashNow(step);
-      cl.hashAt = step + HASH_STEPS;
     }
+    // Join, refill and late delivery must not give each client its own idle-packet phase. A backed-up socket still
+    // gets its overdue hash when writable, then rejoins the common server-step cadence at the next boundary.
+    if (cl.fresh || hashDue) cl.hashAt = step + HASH_STEPS - (step % HASH_STEPS);
     cl.fresh = false;
     cl.ackDue = false;
     packets.push(cur);
