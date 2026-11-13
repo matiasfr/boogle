@@ -1,0 +1,8 @@
+{
+  "name": "boogle-becsy-model-spike",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@lastolivegames/becsy": "0.16.1"
+  }
+}
