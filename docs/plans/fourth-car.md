@@ -393,3 +393,42 @@ None blocks. The plan's three are answered: 1 and 2 are logged calls (19, 20), 3
 
 1. **The steel car is empty for the rest of today's game after one trip. Fine until the next steel pick?**
    Recommended: yes; the bigger cradle's plan gives it its load.
+
+## Design ruling on the 48-seed sheet (designer, 2026-11-12)
+
+Ruled on the orchestrator's reported sheet for `car4/rules` (bba431ac4) against main at 789efad45; I did not re-run
+it. Reported: leg 1, 14 rows, every mean, p95 and share inside the bar and every worst under 1,600; main's five
+stages, 9 of 10 rows inside against main today; footing delivery ticks identical; line 1 unmoved. Two rows break on
+the worst alone: light stage 2, 1,213 to 1,270 (seed 1021, an ask cut off by the run's end), and light ring-joined,
+856 to 918 (seed 1002, served).
+
+1. **The bar measured the wrong thing for worsts, and is replaced.** A worst of 48 seeds is one wait, and moving a
+   stop mark 1.25 m shifts every meeting by a few ticks, so one ask landing either side of a train moves it by a
+   headway's worth with nothing getting slower. Two single waits moving 57 and 62 ticks, with mean, p95 and share
+   still, are that and not a miss. **The bar as it stands:**
+   - **Mean, p95 and the share over 1,050,** each row, on 48 seeds: no worse than the reference by more than 10 ticks
+     or 0.3 points.
+   - **Worsts are held to the caps in force and nothing else:** 1,350 on main's five fixed stages, 1,600 on every leg
+     1 row at both rates (call 109), until the spacing step lands and its own row takes over (light settled 1,350,
+     heavy settled 1,500, growing 1,600).
+   - **A worst that moves by more than 50 ticks** on a row is re-run on a second seed block. The row passes if that
+     block's mean, p95 and share hold and its worst is under the cap. If the worst rises by more than 50 on the same
+     row in both blocks it is a pattern, and the sheet comes to the designer.
+   - **A wait cut off by the run's end is not a figure.** It is extended until served, on both sides, and the count
+     of cut-off asks is printed. 1,270 for seed 1021 is a floor, not the wait.
+2. **Main's five stages are re-baselined to main at 789efad45: yes.** A step is judged against the code it lands on;
+   the 12 November sheet (eb2d30c0b) predates build 2 and leg 1 step 3, and holding the car to it charges it for
+   their cost. "Fixed" was there to stop each step taking ten ticks unseen; that job moves to a ledger: each rail
+   ship records its 48-seed sheet and sha in orchestrator-state, and the caps catch the sum. Leg 1's rows are
+   unchanged (main today reproduces them).
+3. **Main's drift is inside what the owner accepted, and he is told it as a fact, not asked.** Ring-joined's heavy
+   worst went 1,120 to 1,322 with means down 25 to 65: fewer long waits on average, one longer tail, under the 1,350
+   he picked ("up to about 2 minutes 15") by 28 ticks. It is rule 25 again: the gate's four seeds read 1,166. One
+   line in the next report: "on 48 seeds at the heaviest asks, main's built stages now wait 2 min 12 at worst, 3 s
+   inside your limit; the average is better". Attributed to build 2 and leg 1 step 3 by the sheets' dates, not
+   bisected; no bisect is asked for.
+4. **Cleared to ship once the views are reviewed,** on: the rules review (ship, no P1 or P2); identical footing
+   ticks; line 1 unmoved; every mean, p95 and share inside the bar on all 24 rows against main at 789efad45; every
+   worst under its cap. **One condition, already running:** seed 1021's ask extended until served comes in under
+   1,600, and the second block (1030 to 105f) holds mean, p95 and share on the two rows. If the extended wait is
+   over 1,600 the step stops and the sheet comes back. The views' review does not wait for it.
